@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: database.c,v 1.2 2001/07/01 15:28:31 grubba Exp $
+** $Id: database.c,v 1.3 2001/08/11 09:10:40 mirar Exp $
 **
 */ 
 #include "internal.h"
@@ -28,7 +28,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: database.c,v 1.2 2001/07/01 15:28:31 grubba Exp $";
+   "$Id: database.c,v 1.3 2001/08/11 09:10:40 mirar Exp $";
 
 /* forward declarations */
 
@@ -138,7 +138,7 @@ MIRD_RES mird_open(struct mird *db)
    if ( (db->flags & MIRD_EXCL) ) flags|=O_EXCL;
 
    res=mird_open_file(db,flags,!(db->flags&MIRD_READONLY),&(db->db_fd));
-   if (res) {
+   if (res) 
       if (res->error_no!=MIRDE_CREATED_FILE)
 	 return res;
       else
@@ -163,7 +163,7 @@ MIRD_RES mird_open(struct mird *db)
 
 	 /* always open the new file as an old anyway */
       }
-   }
+
    db->buffer=smalloc(db->block_size);
    if (!db->buffer)
    {
@@ -573,7 +573,7 @@ static MIRD_RES mird_open_old_database(struct mird *db)
 	      (db->next_transaction.msb!=READ_BLOCK_LONG(data,22)) ||
 	      (db->next_transaction.lsb!=READ_BLOCK_LONG(data,23)) )
 	 {
-	    if ((db->next_transaction.msb=READ_BLOCK_LONG(data,22) &&
+	    if ((db->next_transaction.msb==READ_BLOCK_LONG(data,22) &&
 		 db->next_transaction.lsb>READ_BLOCK_LONG(data,23)) ||
 		db->next_transaction.msb>READ_BLOCK_LONG(data,22))
 	    {
