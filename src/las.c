@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.105 1999/11/12 18:34:56 grubba Exp $");
+RCSID("$Id: las.c,v 1.106 1999/11/12 19:03:32 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -343,8 +343,12 @@ void free_all_nodes(void)
 		if(cdr_is_node(tmp)) _CDR(tmp)=0;
 #ifdef SHARED_NODES
 		tmp->hash = hash_node(tmp);
-
-		fprintf(stderr, "Freeing node that had %d refs.\n", tmp->refs);
+#ifdef PIKE_DEBUG
+		if (l_flag > 3) {
+		  fprintf(stderr, "Freeing node that had %d refs.\n",
+			  tmp->refs);
+		}
+#endif /* PIKE_DEBUG */
 		/* Force the node to be freed. */
 		tmp->refs = 1;
 #endif /* SHARED_NODES */
