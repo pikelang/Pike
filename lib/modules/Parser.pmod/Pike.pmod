@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.25 2002/12/20 18:03:11 grubba Exp $
+// $Id: Pike.pmod,v 1.26 2002/12/20 18:04:01 grubba Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -233,7 +233,7 @@ array(string) split(string data, void|mapping state)
 	int bqstart = pos;
         while(data[pos]=='`')
           ++pos;
-        if (pos - bqstart > 3) // max. three ``` {
+        if (pos - bqstart > 3) { // max. three ``` {
 	  pos = bqstart;
           UNKNOWN_TOKEN;
 	}
