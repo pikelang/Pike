@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.127 2003/11/14 04:52:35 mast Exp $
+|| $Id: cpp.c,v 1.128 2003/11/14 10:26:43 mast Exp $
 */
 
 #include "global.h"
@@ -19,7 +19,6 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "operators.h"
-#include "opcodes.h"
 #include "constants.h"
 #include "time.h"
 #include "stuff.h"

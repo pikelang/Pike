@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.67 2003/11/14 07:40:04 mast Exp $
+|| $Id: math.c,v 1.68 2003/11/14 10:26:43 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,6 @@
 #include "module_support.h"
 #include "operators.h"
 #include "bignum.h"
-#include "opcodes.h"
 
 #include <math.h>
 
@@ -37,7 +36,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.67 2003/11/14 07:40:04 mast Exp $");
+RCSID("$Id: math.c,v 1.68 2003/11/14 10:26:43 mast Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080

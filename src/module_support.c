@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.54 2003/11/14 09:24:56 mast Exp $
+|| $Id: module_support.c,v 1.55 2003/11/14 10:26:43 mast Exp $
 */
 
 #include "global.h"
@@ -14,11 +14,11 @@
 #include "pike_error.h"
 #include "mapping.h"
 #include "object.h"
-#include "opcodes.h"
+#include "operators.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.54 2003/11/14 09:24:56 mast Exp $");
+RCSID("$Id: module_support.c,v 1.55 2003/11/14 10:26:43 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.

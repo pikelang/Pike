@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.154 2003/10/12 18:49:59 grubba Exp $
+|| $Id: mpz_glue.c,v 1.155 2003/11/14 10:26:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.154 2003/10/12 18:49:59 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.155 2003/11/14 10:26:43 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -34,7 +34,6 @@ RCSID("$Id: mpz_glue.c,v 1.154 2003/10/12 18:49:59 grubba Exp $");
 #include "pike_types.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
-#include "opcodes.h"
 #include "module_support.h"
 #include "bignum.h"
 #include "operators.h"

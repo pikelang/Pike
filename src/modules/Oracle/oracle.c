@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.79 2003/10/13 17:40:29 grubba Exp $
+|| $Id: oracle.c,v 1.80 2003/11/14 10:26:43 mast Exp $
 */
 
 /*
@@ -35,7 +35,6 @@
 #include "mapping.h"
 #include "multiset.h"
 #include "builtin_functions.h"
-#include "opcodes.h"
 #include "pike_macros.h"
 #include "version.h"
 
@@ -54,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.79 2003/10/13 17:40:29 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.80 2003/11/14 10:26:43 mast Exp $");
 
 
 /* User-changable defines: */

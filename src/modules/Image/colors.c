@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.68 2003/11/07 05:28:36 nilsson Exp $
+|| $Id: colors.c,v 1.69 2003/11/14 10:26:43 mast Exp $
 */
 
 /*
@@ -191,7 +191,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.68 2003/11/07 05:28:36 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.69 2003/11/14 10:26:43 mast Exp $");
 
 #include "image_machine.h"
 
@@ -210,7 +210,7 @@ RCSID("$Id: colors.c,v 1.68 2003/11/07 05:28:36 nilsson Exp $");
 #include "dmalloc.h"
 #include "operators.h"
 #include "module_support.h"
-#include "opcodes.h"
+#include "sscanf.h"
 #include "program_id.h"
 
 #include "image.h"
