@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.125 1998/10/09 22:44:25 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.126 1998/10/09 23:12:45 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1019,13 +1019,13 @@ void f_values(INT32 args)
   switch(sp[-args].type)
   {
   case T_STRING:
-    size=sp[-args].u.string->len;
-    a=allocate_array_no_init(size,0);
-    while(--size>=0)
+    size = sp[-args].u.string->len;
+    a = allocate_array_no_init(size,0);
+    while(--size >= 0)
     {
-      ITEM(a)[size].type=T_INT;
-      ITEM(a)[size].subtype=NUMBER_NUMBER;
-      ITEM(a)[size].u.integer=EXTRACT_UCHAR(sp[-args].u.string->str+size);
+      ITEM(a)[size].type = T_INT;
+      ITEM(a)[size].subtype = NUMBER_NUMBER;
+      ITEM(a)[size].u.integer = index_shared_string(sp[-args].u.string, size);
     }
     break;
 
