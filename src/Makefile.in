@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.249 2001/09/01 21:25:11 marcus Exp $
+# $Id: Makefile.in,v 1.250 2001/09/28 12:33:27 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -235,6 +235,9 @@ pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
 	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options 2>/dev/null` $(LIBS) -o pike
+	-@if [ -f "post_module.o" -a "$(POBJ)" = "module.o" ]; then \
+	  touch $(SRCDIR)/post_module.c; \
+	else :; fi
 
 # purify
 pure: $(OBJ) $(POBJ) master.pike module_objects
