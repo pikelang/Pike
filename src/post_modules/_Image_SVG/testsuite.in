@@ -1,0 +1,13 @@
+
+cond_resolv( Image.SVG.decode, [[
+
+  test_equal( Image.SVG.decode_header( #string "SRCDIR/pike.svg" ),
+  ([ "type" : "image/svg",
+     "xsize": 468,
+     "ysize": 203 ]) )
+
+  test_equal( Image.SVG.decode( #string "SRCDIR/pike.svg" )->xsize(), 468 )
+  test_true( mappingp( Image.SVG._decode( #string "SRCDIR/pike.svg" ) ) )
+  test_true( objectp(Image.SVG.decode_layers( #string "SRCDIR/pike.svg" )[0]) )
+
+]])
