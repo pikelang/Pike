@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.65 2000/12/01 08:09:46 hubbe Exp $");
+RCSID("$Id: error.c,v 1.66 2000/12/04 19:38:26 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -316,7 +316,7 @@ PMOD_EXPORT struct svalue throw_value = { PIKE_T_INT };
 int throw_severity;
 static const char *in_error;
 
-PMOD_EXPORT DECLSPEC(noreturn) void low_error(char *buf) ATTRIBUTE((noreturn))
+PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
   free_svalue(& throw_value);
