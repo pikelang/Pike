@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.101 1999/02/18 16:31:22 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.102 1999/03/10 03:45:34 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -116,7 +116,33 @@ static struct callback *signal_evaluator_callback =0;
 static int set_priority( int pid, char *to );
 
 
-#ifndef __NT__
+
+#ifdef HAVE_WAITPID
+#define WAITPID(PID,STATUS,OPT) waitpid(PID,STATUS,OPT)
+#else
+#ifdef HAVE_WAIT4
+#define WAITPID(PID,STATUS,OPT) wait4( (PID),(STATUS),(OPT),0 )
+#else
+#define WAITPID(PID,STATUS,OPT) -1
+#endif
+#endif
+
+#ifdef HAVE_WAITPID
+#define MY_WAIT_ANY(STATUS,OPT) waitpid(-1,STATUS,OPT)
+#else
+#ifdef HAVE_WAIT3
+#define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
+#else
+#ifdef HAVE_WAIT4
+#define MY_WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
+#else
+#define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
+#endif
+#endif
+#endif
+
+
+#ifdef USE_SIGCHILD
 struct wait_data {
   pid_t pid;
   WAITSTATUSTYPE status;
@@ -126,7 +152,7 @@ static volatile struct wait_data wait_buf[WAIT_BUFFER];
 static volatile int firstwait=0;
 static volatile int lastwait=0;
 
-#endif /* ! NT */
+#endif /* USE_SIGCHILD */
 
 struct sigdesc
 {
@@ -407,7 +433,7 @@ static RETSIGTYPE receive_signal(int signum)
     firstsig=tmp;
   }
 
-#ifndef __NT__
+#ifdef USE_SIGCHILD
   if(signum==SIGCHLD)
   {
     pid_t pid;
@@ -533,6 +559,87 @@ static void report_child(int pid,
 }
 #endif
 
+#ifdef USE_WAIT_THREAD
+static COND_T process_status_change;
+static COND_T start_wait_thread;
+static MUTEX_T wait_thread_mutex;
+
+static void do_da_lock(void)
+{
+  mt_lock(&wait_thread_mutex);
+}
+
+static void do_bi_do_da_lock(void)
+{
+#ifdef PROC_DEBUG
+  fprintf(stderr, "wait thread: This is your wakeup call!\n");
+#endif
+  co_signal(&start_wait_thread);
+  mt_unlock(&wait_thread_mutex);
+}
+
+static void *wait_thread(void *data)
+{
+  if(pthread_atfork(do_da_lock,do_bi_do_da_lock,0))
+  {
+    perror("pthread atfork");
+    exit(1);
+  }
+  
+  while(1)
+  {
+    WAITSTATUSTYPE status;
+    int pid;
+
+    mt_lock(&wait_thread_mutex);
+    pid=MY_WAIT_ANY(&status, WNOHANG);
+    
+    if(pid < 0 && errno==ECHILD)
+    {
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait_thread: sleeping\n");
+#endif
+      co_wait(&start_wait_thread, &wait_thread_mutex);
+
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait_thread: waking up\n");
+#endif
+    }
+
+    mt_unlock(&wait_thread_mutex);
+
+    if(pid <= 0) pid=MY_WAIT_ANY(&status, 0);
+
+#ifdef PROC_DEBUG
+    fprintf(stderr, "wait thread: pid=%d errno=%d\n",pid,errno);
+#endif
+    
+    if(pid>0)
+    {
+      mt_lock(&interpreter_lock);
+      report_child(pid, status);
+      co_broadcast(& process_status_change);
+
+      mt_unlock(&interpreter_lock);
+      continue;
+    }
+
+    if(pid == -1)
+    {
+      switch(errno)
+      {
+	case EINTR:
+	case ECHILD:
+	  break;
+
+	default:
+	  fprintf(stderr,"Wait thread: waitpid returned error: %d\n",errno);
+      }
+    }
+  }
+}
+#endif
+
 static void f_pid_status_wait(INT32 args)
 {
   pop_n_elems(args);
@@ -566,13 +673,18 @@ static void f_pid_status_wait(INT32 args)
   }
 #else
 
-#if 1
-#define BUGGY_WAITPID
+#ifdef USE_WAIT_THREAD
+
+  while(THIS->state == PROCESS_RUNNING)
+  {
+    SWAP_OUT_CURRENT_THREAD();
+    co_wait( & process_status_change, &interpreter_lock);
+    SWAP_IN_CURRENT_THREAD();
+  }
+
+#else
 
   {
-#ifdef BUGGY_WAITPID
-    int errorcount=0;
-#endif
     int err=0;
     while(THIS->state == PROCESS_RUNNING)
     {
@@ -582,35 +694,21 @@ static void f_pid_status_wait(INT32 args)
 
       if(err)
       {
-
-#ifdef BUGGY_WAITPID
 	struct svalue key,*s;
 	key.type=T_INT;
 	key.u.integer=pid;
 	s=low_mapping_lookup(pid_mapping, &key);
 	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
-	  errorcount++;
-	  if(errorcount==50)
-	    error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+	  error("Operating system failiuer: Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
 
-	  if(!(errorcount%10)) sleep(1);
 	}
 	else
-#endif
-	error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
-    }
+	  error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+      }
 
       THREADS_ALLOW();
-#ifdef HAVE_WAITPID
-      pid=waitpid(pid,& status,0);
-#else
-#ifdef HAVE_WAIT4
-      pid=wait4(pid,&status,0,0);
-#else
-      pid=-1;
-#endif
-#endif
+      pid=WAITPID(pid,& status,0);
       THREADS_DISALLOW();
       if(pid > -1)
       {
@@ -629,14 +727,6 @@ static void f_pid_status_wait(INT32 args)
       check_signals(0,0,0);
     }
   }
-#else
-  init_signal_wait();
-  while(THIS->state == PROCESS_RUNNING)
-  {
-    wait_for_signal();
-    check_threads_etc();
-  }
-  exit_signal_wait();
 #endif
   push_int(THIS->result);
 #endif /* __NT__ */
@@ -1804,6 +1894,7 @@ void f_create_process(INT32 args)
 
       pop_n_elems(sp - stack_save);
 
+#ifdef USE_SIGCHILD
       /* FIXME: Can anything of the following throw an error? */
       if(!signal_evaluator_callback)
       {
@@ -1811,6 +1902,7 @@ void f_create_process(INT32 args)
 						  check_signals,
 						  0,0);
       }
+#endif
       THIS->pid = pid;
       THIS->state = PROCESS_RUNNING;
       ref_push_object(fp->current_object);
@@ -2117,12 +2209,14 @@ void f_fork(INT32 args)
   if(pid)
   {
     struct pid_status *p;
+#ifdef USE_SIGCHILD
     if(!signal_evaluator_callback)
     {
       signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						check_signals,
 						0,0);
     }
+#endif
     o=low_clone(pid_status_program);
     call_c_initializers(o);
     p=(struct pid_status *)get_storage(o,pid_status_program);
@@ -2279,7 +2373,7 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
     {
       if(++lastsig == SIGNAL_BUFFER) lastsig=0;
 
-#ifdef SIGCHLD
+#ifdef USE_SIGCHLD
       if(sigbuf[lastsig]==SIGCHLD)
       {
 	int tmp2 = firstwait;
@@ -2355,12 +2449,14 @@ static void f_signal(int args)
     error("Signal out of range.\n");
   }
 
+#ifdef USE_SIGCHILD
   if(!signal_evaluator_callback)
   {
     signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 					      check_signals,
 					      0,0);
   }
+#endif
 
   if(args == 1)
   {
@@ -2369,7 +2465,7 @@ static void f_signal(int args)
 
     switch(signum)
     {
-#ifdef SIGCHLD
+#ifdef USE_SIGCHLD
     case SIGCHLD:
       func=receive_signal;
       break;
@@ -2507,9 +2603,21 @@ void init_signals(void)
 {
   int e;
 
-#ifdef SIGCHLD
+#ifdef USE_SIGCHLD
   my_signal(SIGCHLD, receive_signal);
 #endif
+
+#ifdef USE_WAIT_THREAD
+  {
+    THREAD_T foo;
+    co_init(& process_status_change);
+    co_init(& start_wait_thread);
+    mt_init(& wait_thread_mutex);
+    th_create_small(&foo,wait_thread,0);
+    my_signal(SIGCHLD, SIG_DFL);
+  }
+#endif
+
 
 #ifdef SIGPIPE
   my_signal(SIGPIPE, SIG_IGN);
