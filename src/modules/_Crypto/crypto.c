@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.14 1997/02/27 13:51:54 nisse Exp $
+ * $Id: crypto.c,v 1.15 1997/03/03 23:47:21 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -190,6 +190,35 @@ static void f_hex_to_string(INT32 args)
   sp[-1].u.string->refs++;
 }
 
+static INLINE unsigned INT8 parity(unsigned INT8 c)
+{
+  c ^= (c >> 4);
+  c ^= (c >> 2);
+  c ^= (c >> 1);
+  return c & 1;
+}
+
+static void f_des_parity(INT32 args)
+{
+  struct pike_string *s;
+  int i;
+  if (args != 1) {
+    error("Wrong number of arguments to des_parity()\n");
+  }
+  if (sp[-1].type != T_STRING) {
+    error("Bad argument 1 to des_parity()\n");
+  }
+
+  s = begin_shared_string(sp[-1].u.string->len);
+  MEMCPY(s->str, sp[-1].u.string->str, s->len);
+  
+  for (i=0; i< s->len; i++)
+    s->str[i] ^= ! parity(s->str[i]);
+  pop_n_elems(args);
+  push_string(end_shared_string(s));
+}
+
+  
 /*
  * /precompiled/crypto
  */
@@ -488,6 +517,7 @@ void pike_module_init(void)
 {
   add_function("string_to_hex", f_string_to_hex, "function(string:string)", OPT_TRY_OPTIMIZE);
   add_function("hex_to_string", f_hex_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
+  add_function("des_parity", f_des_parity, "function(string:string)", OPT_TRY_OPTIMIZE);
 #if 0
   MOD_INIT(md2)();
 #endif
