@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.218 2003/06/30 17:06:10 mast Exp $
+|| $Id: pike_types.c,v 1.219 2003/07/01 15:11:30 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.218 2003/06/30 17:06:10 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.219 2003/07/01 15:11:30 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -812,7 +812,8 @@ void debug_push_finished_type_with_markers(struct pike_type *type,
   if (type->type == T_ASSIGN) {
     /* Strip assign */
 #if 0
-    fprintf(stderr, "Assign to marker %d.\n", CAR_TO_INT(type);
+    fprintf(stderr, "Assign to marker %"PRINTPTRDIFFT"d.\n",
+	    CAR_TO_INT(type);
 #endif /* 0 */
     type = type->cdr;
     goto recurse;
@@ -1414,7 +1415,7 @@ void simple_describe_type(struct pike_type *s)
 	break;
 
       case T_SCOPE:
-	fprintf(stderr, "scope(%"PRINTSIZET"d, ", CAR_TO_INT(s));
+	fprintf(stderr, "scope(%"PRINTPTRDIFFT"d, ", CAR_TO_INT(s));
 	simple_describe_type(s->cdr);
 	fprintf(stderr, ")");
 	break;
@@ -1426,7 +1427,7 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, ")");	
 	break;
       case T_ASSIGN:
-	fprintf(stderr, "%"PRINTSIZET"d = ", CAR_TO_INT(s));
+	fprintf(stderr, "%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
 	simple_describe_type(s->cdr);
 	break;
       case T_INT:
@@ -1451,7 +1452,7 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, ")");
 	break;
       case T_OBJECT:
-	fprintf(stderr, "object(%s %"PRINTSIZET"d)",
+	fprintf(stderr, "object(%s %"PRINTPTRDIFFT"d)",
 	       s->car?"is":"implements",
 		CDR_TO_INT(s));
 	break;
@@ -1619,7 +1620,7 @@ static void low_describe_type(struct pike_type *t)
       if (t->cdr)
       {
 	char buffer[100];
-	sprintf(buffer,"object(%s %"PRINTSIZET"d)",
+	sprintf(buffer,"object(%s %"PRINTPTRDIFFT"d)",
 		t->car?"is":"implements",
 		CDR_TO_INT(t));
 	my_strcat(buffer);
@@ -2344,7 +2345,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	}
 #endif
 #ifdef PIKE_DEBUG
-	if(PTR_TO_INT(a_markers[m]->type) == m+'0')
+	if(a_markers[m]->type == m+'0')
 	  Pike_fatal("Cyclic type!\n");
 #endif
       }
@@ -2430,7 +2431,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	}
 #endif
 #ifdef PIKE_DEBUG
-	if(PTR_TO_INT(b_markers[m]->type) == m+'0')
+	if(b_markers[m]->type == m+'0')
 	  Pike_fatal("Cyclic type!\n");
 #endif
       }
