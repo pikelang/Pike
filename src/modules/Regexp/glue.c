@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 
 #include "global.h"
 
@@ -20,7 +21,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.21 2001/02/06 16:18:23 grubba Exp $");
+RCSID("$Id: glue.c,v 1.22 2001/04/19 14:33:39 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -50,6 +51,9 @@ struct regexp_glue
 
 #define THIS ((struct regexp_glue *)(Pike_fp->current_storage))
 
+/*! @modeule Regexp
+ */
+
 static void do_free(void)
 {
   if(THIS->regexp)
@@ -63,6 +67,8 @@ static void do_free(void)
   }
 }
 
+/*! @decl void create(string re)
+ */
 static void regexp_create(INT32 args)
 {
   const char *str;
@@ -170,6 +176,8 @@ static void regexp_match(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Regexp.regexp->match", 1, "string|array(string)");
 }
 
+/*! @decl array(string) split(string s)
+ */
 static void regexp_split(INT32 args)
 {
   struct pike_string *s;
@@ -254,6 +262,8 @@ static void exit_regexp_glue(struct object *o)
   do_free();
 }
 
+/*! @endmodule
+ */
 
 void pike_module_exit(void) {}
 
