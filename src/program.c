@@ -178,7 +178,132 @@ void toss_current_program()
   toss_buffer(& inherit_names);
 }
 
+#ifdef DEBUG
+void check_program(struct program *p, int pass)
+{
+  INT32 size,e;
+  unsigned INT32 checksum;
 
+  if(pass)
+  {
+    if(checked((void *)p,0) != p->refs)
+      fatal("Program has wrong number of references.\n");
+
+    return;
+  }
+
+  if(p->refs <=0)
+    fatal("Program has zero refs.\n");
+
+  if(p->next && p->next->prev != p)
+    fatal("Program ->next->prev != program.\n");
+
+  if(p->prev)
+  {
+    if(p->prev->next != p)
+      fatal("Program ->prev->next != program.\n");
+  }else{
+    if(first_program != p)
+      fatal("Program ->prev == 0 but first_program != program.\n");
+  }
+
+  if(p->id > current_program_id || p->id < 0)
+    fatal("Program id is wrong.\n");
+
+  if(p->storage_needed < 0)
+    fatal("Program->storage_needed < 0.\n");
+
+  size=MY_ALIGN(sizeof(struct program));
+  size+=MY_ALIGN(p->num_linenumbers);
+  size+=MY_ALIGN(p->program_size);
+  size+=MY_ALIGN(p->num_constants * sizeof(struct svalue));
+  size+=MY_ALIGN(p->num_strings * sizeof(struct lpc_string *));
+  size+=MY_ALIGN(p->num_identifiers * sizeof(struct identifier));
+  size+=MY_ALIGN(p->num_identifier_references * sizeof(struct reference));
+  size+=MY_ALIGN(p->num_inherits * sizeof(struct inherit));
+
+  size+=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
+
+  if(size > p->total_size)
+    fatal("Program size is in error.\n");
+
+  size-=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
+  size+=MY_ALIGN(p->num_identifier_references * sizeof(INT16));
+
+  if(size < p->total_size)
+    fatal("Program size is in error.\n");
+
+
+#define CHECKRANGE(X,Y) if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Program->%s is wrong.\n",Y)
+
+  CHECKRANGE(program,"program");
+  CHECKRANGE(strings,"strings");
+  CHECKRANGE(inherits,"inherits");
+  CHECKRANGE(identifier_references,"identifier_references");
+  CHECKRANGE(identifiers,"identifier");
+  CHECKRANGE(identifier_index,"identifier_index");
+  CHECKRANGE(constants,"constants");
+  CHECKRANGE(linenumbers,"linenumbers");
+
+  checksum=hashmem(p->program, p->program_size, p->program_size) +
+    hashmem((unsigned char*)p->linenumbers,p->num_linenumbers,p->num_linenumbers);
+
+  if(!checksum) checksum=1;
+
+  if(!p->checksum)
+  {
+    p->checksum=checksum;
+  }else{
+    if(p->checksum != checksum)
+      fatal("Someone changed a program!!!\n");
+  }
+
+  for(e=0;e<p->num_constants;e++)
+  {
+    check_svalue(p->constants + e);
+  }
+
+  for(e=0;e<p->num_strings;e++)
+    check_string(p->strings[e]);
+
+  for(e=0;e<p->num_identifiers;e++)
+  {
+    check_string(p->identifiers[e].name);
+    check_string(p->identifiers[e].type);
+
+    if(p->identifiers[e].flags & ~7)
+      fatal("Unknown flags in identifier flag field.\n");
+
+    if(p->identifiers[e].run_time_type!=T_MIXED)
+      check_type(p->identifiers[e].run_time_type);
+  }
+
+  for(e=0;e<p->num_identifier_references;e++)
+  {
+    if(p->identifier_references[e].inherit_offset > p->num_inherits)
+      fatal("Inherit offset is wrong!\n");
+
+    if(p->identifier_references[e].identifier_offset >
+       p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
+      fatal("Identifier offset is wrong!\n");
+  }
+
+  for(e=0;e<p->num_identifier_indexes;e++)
+  {
+    if(p->identifier_index[e] > p->num_identifier_references)
+      fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
+  }
+
+  for(e=0;e<p->num_inherits;e++)
+  {
+    if(p->inherits[e].storage_offset < 0)
+      fatal("Inherit->storage_offset is wrong.\n");
+
+    checked((void *)p->inherits[e].prog,1);
+  }
+  checked((void *)p,-1); /* One too many were added above */
+}
+#endif
 
 /* internal function to make the index-table */
 static int funcmp(const void *a,const void *b)
@@ -304,6 +429,10 @@ struct program *end_program()
     if(prog->next=first_program)
       first_program->prev=prog;
     first_program=prog;
+
+#ifdef DEBUG
+    check_program(prog,0);
+#endif
   }
 
   if(previous_compilation)
@@ -390,7 +519,7 @@ int low_reference_inherited_identifier(int e,struct lpc_string *name)
     return -1;
 
   funp=p->identifier_references[i];
-  funp.inherit_offset=e;
+  funp.inherit_offset+=e;
   funp.flags|=ID_HIDDEN;
 
   for(d=0;d<fake_program.num_identifier_references;d++)
@@ -664,7 +793,7 @@ INT32 define_function(struct lpc_string *name,
 	))
     {
       /* match types against earlier prototype or vice versa */
-      if(!match_types(funp->type, type))
+      if(!match_types(type, funp->type))
       {
 	my_yyerror("Prototype doesn't match for function %s.",name->str);
       }
@@ -1093,131 +1222,6 @@ void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 }
 
 #ifdef DEBUG
-void check_program(struct program *p, int pass)
-{
-  INT32 size,e;
-  unsigned INT32 checksum;
-
-  if(pass)
-  {
-    if(checked((void *)p,0) != p->refs)
-      fatal("Program has wrong number of references.\n");
-
-    return;
-  }
-
-  if(p->refs <=0)
-    fatal("Program has zero refs.\n");
-
-  if(p->next && p->next->prev != p)
-    fatal("Program ->next->prev != program.\n");
-
-  if(p->prev)
-  {
-    if(p->prev->next != p)
-      fatal("Program ->prev->next != program.\n");
-  }else{
-    if(first_program != p)
-      fatal("Program ->prev == 0 but first_program != program.\n");
-  }
-
-  if(p->id > current_program_id || p->id < 0)
-    fatal("Program id is wrong.\n");
-
-  if(p->storage_needed < 0)
-    fatal("Program->storage_needed < 0.\n");
-
-  size=MY_ALIGN(sizeof(struct program));
-  size+=MY_ALIGN(p->num_linenumbers);
-  size+=MY_ALIGN(p->program_size);
-  size+=MY_ALIGN(p->num_constants * sizeof(struct svalue));
-  size+=MY_ALIGN(p->num_strings * sizeof(struct lpc_string *));
-  size+=MY_ALIGN(p->num_identifiers * sizeof(struct identifier));
-  size+=MY_ALIGN(p->num_identifier_references * sizeof(struct reference));
-  size+=MY_ALIGN(p->num_inherits * sizeof(struct inherit));
-
-  size+=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
-
-  if(size > p->total_size)
-    fatal("Program size is in error.\n");
-
-  size-=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
-  size+=MY_ALIGN(p->num_identifier_references * sizeof(INT16));
-
-  if(size < p->total_size)
-    fatal("Program size is in error.\n");
-
-
-#define CHECKRANGE(X,Y) if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Program->%s is wrong.\n",Y)
-
-  CHECKRANGE(program,"program");
-  CHECKRANGE(strings,"strings");
-  CHECKRANGE(inherits,"inherits");
-  CHECKRANGE(identifier_references,"identifier_references");
-  CHECKRANGE(identifiers,"identifier");
-  CHECKRANGE(identifier_index,"identifier_index");
-  CHECKRANGE(constants,"constants");
-  CHECKRANGE(linenumbers,"linenumbers");
-
-  checksum=hashmem(p->program, p->program_size, p->program_size) +
-    hashmem((unsigned char*)p->linenumbers,p->num_linenumbers,p->num_linenumbers);
-
-  if(!checksum) checksum=1;
-
-  if(!p->checksum)
-  {
-    p->checksum=checksum;
-  }else{
-    if(p->checksum != checksum)
-      fatal("Someone changed a program!!!\n");
-  }
-
-  for(e=0;e<p->num_constants;e++)
-  {
-    check_svalue(p->constants + e);
-  }
-
-  for(e=0;e<p->num_strings;e++)
-    check_string(p->strings[e]);
-
-  for(e=0;e<p->num_identifiers;e++)
-  {
-    check_string(p->identifiers[e].name);
-    check_string(p->identifiers[e].type);
-
-    if(p->identifiers[e].flags & ~7)
-      fatal("Unknown flags in identifier flag field.\n");
-
-    if(p->identifiers[e].run_time_type!=T_MIXED)
-      check_type(p->identifiers[e].run_time_type);
-  }
-
-  for(e=0;e<p->num_identifier_references;e++)
-  {
-    if(p->identifier_references[e].inherit_offset > p->num_inherits)
-      fatal("Inherit offset is wrong!\n");
-
-    if(p->identifier_references[e].identifier_offset >
-       p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
-      fatal("Identifier offset is wrong!\n");
-  }
-
-  for(e=0;e<p->num_identifier_indexes;e++)
-  {
-    if(p->identifier_index[e] > p->num_identifier_references)
-      fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
-  }
-
-  for(e=0;e<p->num_inherits;e++)
-  {
-    if(p->inherits[e].storage_offset < 0)
-      fatal("Inherit->storage_offset is wrong.\n");
-
-    checked((void *)p->inherits[e].prog,1);
-  }
-  checked((void *)p,-1); /* One too many were added above */
-}
-
 void check_all_programs(int pass)
 {
   struct program *p;

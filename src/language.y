@@ -396,7 +396,6 @@ arguments2: new_arg_name { $$ = 1; }
           | arguments2 ',' new_arg_name { $$ = $1 + 1; }
           ;
 
-
 modifier: F_NO_MASK    { $$ = ID_NOMASK; }
         | F_STATIC     { $$ = ID_STATIC; }
 	| F_PRIVATE    { $$ = ID_PRIVATE; }
@@ -441,14 +440,52 @@ type3: F_INT_ID      { push_type(T_INT); }
      | F_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
      | F_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
      | F_LIST_ID opt_array_type { push_type(T_LIST); }
-     | F_FUNCTION_ID
-     {
-        push_type(T_TRUE);
-        push_type(T_MIXED);
-        push_type(T_MANY);
-        push_type(T_FUNCTION);
-     }
+     | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
      ;
+
+opt_function_type: '('
+                 {
+                   type_stack_mark();
+                   type_stack_mark();
+		 }
+ 		 function_type_list
+                 optional_dot_dot_dot
+                 ':'
+                 {
+                   if ($4)
+		   {
+                     push_type(T_MANY);
+                     type_stack_reverse();
+                   }else{
+                     type_stack_reverse();
+		     push_type(T_MANY);
+		     push_type(T_VOID);
+		   }
+                   type_stack_mark();
+		 }
+                 type ')'
+                 {
+		   type_stack_reverse();
+		   type_stack_reverse();
+		 }
+                 | {
+                   push_type(T_MIXED);
+                   push_type(T_MIXED);
+                   push_type(T_MANY);
+                 };
+
+function_type_list: /* Empty */ optional_comma
+                  | function_type_list2 optional_comma
+                  ;
+
+function_type_list2: type 
+                  | function_type_list2 ','
+                  {
+                    type_stack_reverse();
+                    type_stack_mark();
+                  }
+	          type
+                  ;
 
 opt_array_type: '(' type ')'
               |  { push_type(T_MIXED); }

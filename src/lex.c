@@ -311,6 +311,18 @@ char *get_f_name(int n)
   }
 }
 
+char *get_token_name(int n)
+{
+  static char buf[30];
+  if (n<F_MAX_INSTR && instrs[n-F_OFFSET].name)
+  {
+    return instrs[n-F_OFFSET].name;
+  }else{
+    sprintf(buf, "<OTHER %d>", n);
+    return buf;
+  }
+}
+
 /* foo must be a shared string */
 static int lookup_resword(struct lpc_string *s)
 {

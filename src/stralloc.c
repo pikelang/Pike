@@ -28,6 +28,9 @@ void check_string(struct lpc_string *s)
   if(debug_findstring(s) !=s)
     fatal("Shared string not shared.\n");
 
+  if(s->str[s->len])
+    fatal("Shared string is not zero terminated properly.\n");
+
   checked((void *)s,1);
 }
 
