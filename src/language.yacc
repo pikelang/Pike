@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.293 2002/09/15 22:42:16 marcus Exp $");
+RCSID("$Id: language.yacc,v 1.294 2002/09/21 14:20:35 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3136,27 +3136,46 @@ idents2: idents
 						       Pike_compiler->new_program,
 						       SEE_STATIC|
 						       SEE_PRIVATE)) >= 0)) {
-      if (!(Pike_compiler->new_program->identifier_references[i].id_flags & ID_HIDDEN)) {
-	/* We need to generate a new reference. */
-	int d;
-	struct reference funp = Pike_compiler->new_program->identifier_references[i];
-	funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
-	i = -1;
-	for(d = 0; d < (int)Pike_compiler->new_program->num_identifier_references; d++) {
-	  struct reference *refp;
-	  refp = Pike_compiler->new_program->identifier_references + d;
+      struct reference *ref = Pike_compiler->new_program->identifier_references + i;
+      if (!TEST_COMPAT (7, 2) &&
+	  IDENTIFIER_IS_VARIABLE (
+	    ID_FROM_PTR (Pike_compiler->new_program, ref)->identifier_flags)) {
+	/* Allowing local:: on variables would lead to pathological
+	 * behavior: If a non-local variable in a class is referenced
+	 * both with and without local::, both references would
+	 * address the same variable in all cases except where an
+	 * inheriting program overrides it (c.f. [bug 1252]).
+	 *
+	 * Furthermore, that's not how it works currently; if this
+	 * error is removed then local:: will do nothing on variables
+	 * except forcing a lookup in the closest surrounding class
+	 * scope. */
+	yyerror ("Cannot make local references variables.");
+	$$ = 0;
+      }
+      else {
+	if (!(ref->id_flags & ID_HIDDEN)) {
+	  /* We need to generate a new reference. */
+	  int d;
+	  struct reference funp = *ref;
+	  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
+	  i = -1;
+	  for(d = 0; d < (int)Pike_compiler->new_program->num_identifier_references; d++) {
+	    struct reference *refp;
+	    refp = Pike_compiler->new_program->identifier_references + d;
 
-	  if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) {
-	    i = d;
-	    break;
+	    if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) {
+	      i = d;
+	      break;
+	    }
+	  }
+	  if (i < 0) {
+	    add_to_identifier_references(funp);
+	    i = Pike_compiler->new_program->num_identifier_references - 1;
 	  }
 	}
-	if (i < 0) {
-	  add_to_identifier_references(funp);
-	  i = Pike_compiler->new_program->num_identifier_references - 1;
-	}
+	$$ = mkidentifiernode(i);
       }
-      $$ = mkidentifiernode(i);
     } else {
       if (!Pike_compiler->num_parse_error) {
 	if (Pike_compiler->compiler_pass == 2) {
