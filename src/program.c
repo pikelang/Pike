@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.89 1998/04/29 00:21:13 hubbe Exp $");
+RCSID("$Id: program.c,v 1.90 1998/05/15 18:43:45 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2114,8 +2114,14 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 {
   va_list args;
   char buf[8192];
+
   va_start(args,fmt);
-  VSPRINTF(buf,fmt,args);
+
+#ifdef HAVE_VSNPRINTF
+  vsnprintf(buf, 8190, fmt, args);
+#else /* !HAVE_VSNPRINTF */
+  VSPRINTF(buf, fmt, args);
+#endif /* HAVE_VSNPRINTF */
 
   if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in my_yyerror.\n");
