@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.39 2004/03/15 16:39:54 jonasw Exp $
+ * $Id: Tree.pmod,v 1.40 2004/04/20 19:25:22 grubba Exp $
  *
  */
 
@@ -546,7 +546,8 @@ class Node {
   static string		mNamespace;	// Resolved namespace
   static string         mTagName;
 //   private int            mTagCode;
-  static mapping        mAttributes;
+  static mapping        mAttributes;		// Resolved attributes
+  static mapping	mShortAttributes;	// Shortened attributes
   static array(Node) mAttrNodes;   //  created on demand
   static string         mText;
   static int            mDocOrder;
@@ -586,6 +587,13 @@ class Node {
   //! Returns this nodes attributes, which can be altered
   //! destructivly to alter the nodes attributes.
   mapping get_attributes()   { return (mAttributes); }
+
+  //! Returns this nodes name-space adjusted attributes.
+  //!
+  //! @note
+  //!   @[set_short_namespaces()] must have been called before
+  //!   calling this function.
+  mapping get_short_attributes()   { return (mShortAttributes); }
 
   //! Returns the node type. See defined node type constants.
   int get_node_type()        { return (mNodeType); }
@@ -766,9 +774,10 @@ class Node {
 	break;
       
       data->add("<", tagname);
-      if (mapping attr = n->get_attributes()) {
-	foreach(indices(attr), string a)
+      if (mapping attr = n->get_short_attributes()) {
+	foreach(indices(attr), string a) {
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
+	}
       }
       if (n->count_children())
 	data->add(">");
@@ -853,6 +862,7 @@ class Node {
     }
     // First check if any namespaces are defined by this tag.
     mapping attrs = get_attributes() || ([]);
+    mapping short_attrs = attrs + ([]);
     foreach(indices(attrs), string attr_name) {
       if (has_prefix(attr_name, "xmlns")) {
 	string short_prefix = "";
@@ -879,6 +889,7 @@ class Node {
 	backward_lookup[mShortNamespace] = mNamespace;
 	forward_lookup[mNamespace] = mShortNamespace;
 	attrs["xmlns:NS"+i] = mNamespace;
+	short_attrs["xmlns:NS"+i] = mNamespace;
       }
     }
     // Then set the short namespaces for any attributes.
@@ -891,21 +902,25 @@ class Node {
 	}
 	if (i >= 0) {
 	  string ns = attr_name[..i-1];
-	  if (!(forward_lookup[ns])) {
+	  string prefix;
+	  if (!(prefix = forward_lookup[ns])) {
 	    // We need to allocate a short namespace symbol.
 	    // FIXME: This is O(n²).
 	    int i;
-	    string prefix;
 	    while(backward_lookup[prefix = ("NS"+i+":")]) {
 	      i++;
 	    }
 	    backward_lookup[mShortNamespace] = ns;
 	    forward_lookup[mNamespace] = prefix;
 	    attrs["xmlns:NS"+i] = ns;
+	    short_attrs["xmlns:NS"+i] = ns;
 	  }
+	  m_delete(short_attrs, attr_name);
+	  short_attrs[prefix + ns] = attrs[attr_name];
 	}
       }
     }
+    mShortAttributes = short_attrs;
     // And then do it for all the children.
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
