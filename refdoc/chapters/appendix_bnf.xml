@@ -13,7 +13,7 @@
  constant_names       ::=   constant_name ( "," constant_name )*
  constant_name        ::=   identifier "=" expression2
  class_def            ::=   modifiers+ class ";"?
-// Is it arguments or arguments? in class?
+<!-- Is it arguments or arguments? in class? -->
  class                ::=   "class" identifier? ( "(" arguments ")" )? "{" program "}"
  modifiers            ::=   ( "extern" | "final" | "inline" | "local" | "nomask" | "optional" | "private" |
                               "protected" | "public" | "static" | "variant" )
@@ -27,9 +27,9 @@
  case_block           ::=   "{" ( case | default | statement | break | continue )* "}"
  case                 ::=   "case" expression [ ".." expression ] ":"
  default              ::=   "default" ":"
-// It can't be expression6 here, since that would make foreach(x, "hello") valid
+<!-- It can't be expression6 here, since that would make foreach(x, "hello") valid -->
  foreach              ::=   "foreach" "(" expression "," expression6 ")" statement
-// Labelled breaks
+<!-- Labelled breaks -->
  break                ::=   "break" ";"
  continue             ::=   "continue" ";"
  expression           ::=   expression2 ( "," expression2 )*
@@ -75,8 +75,8 @@
  varargs              ::=   type "..." identifier
  prot_arguments       ::=   ( type ( "," type )* ( type "..." )? | ( type "..." ) ) ","?
  program_specifier    ::=   string_constant | constant_identifier
- string               ::=   ( "\"" string_literal* "\"" )+
- string_literal       ::=   [0x0000 - 0xffff] | "\\" [0x00 - 0xff] | "\\" number
+ string               ::=   ( 0x22 string_literal* 0x22 )+
+ string_literal       ::=   [0x0000 - 0xffff] | "\" [0x00 - 0xff] | "\" number
  identifier           ::=   letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" |
                             "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" |
                             "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
