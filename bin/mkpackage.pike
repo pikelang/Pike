@@ -33,16 +33,38 @@ string sh_quote(string s)
   return "'"+replace(s, "'", "'\"'\"'")+"'";
 }
 
-class Package(string my_name,
-	      string pike_filename, 
-	      string install_filename, 
-	      string extra_help, 
-	      string extra_advanced_help, 
-	      string extra_flags,
-	      string extra_license,
-	      string extra_version)
+class Package
 {
-  static private mapping(array(string):string) options =
+  static string my_name;
+  static string pike_filename; 
+  static string install_filename; 
+  static string extra_help; 
+  static string extra_advanced_help; 
+  static string extra_flags;
+  static string extra_license;
+  static string extra_version;
+
+  static private mapping(array(string):string) options;
+  
+  static void create(string my_name_,
+		     string pike_filename_, 
+		     string install_filename_, 
+		     string extra_help_, 
+		     string extra_advanced_help_, 
+		     string extra_flags_,
+		     string extra_license_,
+		     string extra_version_)
+  {
+    my_name = my_name_;
+    pike_filename_;
+    install_filename = install_filename_;
+    extra_help = extra_help_;
+    extra_advanced_help = extra_advanced_help_;
+    extra_flags_ = extra_flags;
+    extra_license = extra_license;
+    extra_version = extra_version_;
+
+    options =
   ([ ({ "-h", "--help" }):
      "echo \"Usage: $MY_NAME [options]\"\n"
      "echo \n"
@@ -95,6 +117,8 @@ class Package(string my_name,
      ({ "-l", "--list" }):
      "echo \"$CONTENTS\"\n"
      "EXIT=yes" ]);
+  }
+  
   static private array(string) packages = ({});
   
   static private string unique_name(int c)
