@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.32 2003/07/03 16:47:03 grubba Exp $
+|| $Id: auto.c.in,v 1.33 2003/07/03 16:50:20 grubba Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.32 2003/07/03 16:47:03 grubba Exp $");
+RCSID("$Id: auto.c.in,v 1.33 2003/07/03 16:50:20 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -414,6 +414,26 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
   return tt|(arr?ZT_ARRAY:0);
 }
 
+#define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
+#define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])
+#define glClearAccum3v(f) glClearAccum((f)[0], (f)[1], (f)[2], 0.0)
+#define glClearAccum4v(f) glClearAccum((f)[0], (f)[1], (f)[2], (f)[3])
+#define glEvalPoint1v(i) glEvalPoint1((i)[0]);
+#define glEvalPoint2v(i) glEvalPoint2((i)[0], (i)[1]);
+
+static void pre_init()
+{
+  add_function_constant("glFrustum", my_glFrustum,
+			"function(float,float,float,float,float,float:void)",
+			OPT_SIDE_EFFECT);
+}
+
+static void post_init()
+{
+}
+
+@@
+
 void my_glFrustum(INT32 args) {
   float right,left,bottom,top,near,far;
 
@@ -448,23 +468,3 @@ void my_glFrustum(INT32 args) {
   aggregate_array(16);
   f_glMultMatrix(1);
 }
-
-#define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
-#define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])
-#define glClearAccum3v(f) glClearAccum((f)[0], (f)[1], (f)[2], 0.0)
-#define glClearAccum4v(f) glClearAccum((f)[0], (f)[1], (f)[2], (f)[3])
-#define glEvalPoint1v(i) glEvalPoint1((i)[0]);
-#define glEvalPoint2v(i) glEvalPoint2((i)[0], (i)[1]);
-
-static void pre_init()
-{
-  add_function_constant("glFrustum", my_glFrustum,
-			"function(float,float,float,float,float,float:void)",
-			OPT_SIDE_EFFECT);
-}
-
-static void post_init()
-{
-}
-
-@@
