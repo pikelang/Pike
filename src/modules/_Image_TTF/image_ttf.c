@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.29 2000/04/05 15:09:16 grubba Exp $
+ * $Id: image_ttf.c,v 1.30 2000/12/11 23:16:32 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.29 2000/04/05 15:09:16 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.30 2000/12/11 23:16:32 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -839,7 +839,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
      ttf_please_translate_8bit(face_s->face,
 			       sp[-args].u.string,&sstr,&len,base,
 			       "Image.TTF.FaceInstance->ponder()");
-   else if(sp[-args].u.string->size_shift == 0)
+   else if(sp[-args].u.string->size_shift == 1)
      ttf_please_translate_16bit(face_s->face,
 			       sp[-args].u.string,&sstr,&len,base,
 			       "Image.TTF.FaceInstance->ponder()");
