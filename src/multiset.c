@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.76 2003/08/20 12:06:33 grubba Exp $
+|| $Id: multiset.c,v 1.77 2003/08/26 18:46:40 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.76 2003/08/20 12:06:33 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.77 2003/08/26 18:46:40 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -1664,7 +1664,9 @@ PMOD_EXPORT ptrdiff_t multiset_last (struct multiset *l)
 /* Returns -1 if there's no predecessor. If the node is deleted, the
  * predecessor of the closest following nondeleted node is returned.
  * If there is no following nondeleted node, the last node is
- * returned. */
+ * returned. Note that this function never alters the noderefs; it has
+ * no opinion whether you "walk" to the previous node or only "peek"
+ * at it. */
 PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos)
 {
   struct multiset_data *msd = l->msd;
@@ -1706,8 +1708,10 @@ PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos)
 
 /* Returns -1 if there's no successor. If the node is deleted, the
  * successor of the closest preceding nondeleted node is returned. If
- * there is no preceding nondeleted node, the first node is
- * returned. */
+ * there is no preceding nondeleted node, the first node is returned.
+ * Note that this function never alters the noderefs; it has no
+ * opinion whether you "walk" to the next node or only "peek" at
+ * it. */
 PMOD_EXPORT ptrdiff_t multiset_next (struct multiset *l, ptrdiff_t nodepos)
 {
   struct multiset_data *msd = l->msd;
@@ -5294,7 +5298,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.76 2003/08/20 12:06:33 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.77 2003/08/26 18:46:40 mast Exp $");
 
 struct multiset *first_multiset;
 
