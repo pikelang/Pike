@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.183 2003/11/13 21:55:34 mast Exp $
+|| $Id: operators.c,v 1.184 2003/11/13 22:27:59 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.183 2003/11/13 21:55:34 mast Exp $");
+RCSID("$Id: operators.c,v 1.184 2003/11/13 22:27:59 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -568,7 +568,7 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_FLOAT:
   {
-    FLOAT_TYPE sum;
+    FLOAT_ARG_TYPE sum;
     sum=0.0;
     for(e=-args; e<0; e++) sum+=sp[e].u.float_number;
     sp-=args-1;
@@ -578,7 +578,7 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_FLOAT|BIT_INT:
   {
-    FLOAT_TYPE sum;
+    FLOAT_ARG_TYPE sum;
     sum=0.0;
     for(e=-args; e<0; e++)
     {
@@ -586,7 +586,7 @@ PMOD_EXPORT void f_add(INT32 args)
       {
 	sum+=sp[e].u.float_number;
       }else{
-	sum+=(FLOAT_TYPE)sp[e].u.integer;
+	sum+=(FLOAT_ARG_TYPE)sp[e].u.integer;
       }
     }
     sp-=args-1;
@@ -2366,7 +2366,7 @@ PMOD_EXPORT void o_multiply(void)
   case TWO_TYPES(T_INT,T_FLOAT):
     sp--;
     sp[-1].u.float_number= 
-      (FLOAT_TYPE) sp[-1].u.integer * (FLOAT_TYPE)sp[0].u.float_number;
+      (FLOAT_TYPE) sp[-1].u.integer * sp[0].u.float_number;
     sp[-1].type=T_FLOAT;
     return;
 
@@ -2538,7 +2538,7 @@ PMOD_EXPORT void o_divide(void)
       {
 	struct array *a;
 	ptrdiff_t size, pos, last, e;
-	double len;
+	FLOAT_ARG_TYPE len;
 
 	len=sp[-1].u.float_number;
 	if(len==0.0)
@@ -2593,9 +2593,9 @@ PMOD_EXPORT void o_divide(void)
       case TWO_TYPES(T_ARRAY, T_INT):
       {
 	struct array *a;
-	ptrdiff_t size,e,len,pos;
+	ptrdiff_t size,e,pos;
 
-	len=sp[-1].u.integer;
+	INT_TYPE len=sp[-1].u.integer;
 	if(!len)
 	  OP_DIVISION_BY_ZERO_ERROR("`/");
 	
@@ -2627,7 +2627,7 @@ PMOD_EXPORT void o_divide(void)
       {
 	struct array *a;
 	ptrdiff_t last,pos,e,size;
-	double len;
+	FLOAT_ARG_TYPE len;
 
 	len=sp[-1].u.float_number;
 	if(len==0.0)
@@ -2739,6 +2739,7 @@ PMOD_EXPORT void o_divide(void)
     sp--;
 
     /* What is this trying to solve? /Noring */
+    /* It fixes rounding towards negative infinity. /mast */
     if((sp[-1].u.integer<0) != (sp[0].u.integer<0))
       if(tmp*sp[0].u.integer!=sp[-1].u.integer)
 	tmp--;
@@ -2870,13 +2871,12 @@ PMOD_EXPORT void o_mod(void)
 	if(!sp[-1].u.integer)
 	  OP_MODULO_BY_ZERO_ERROR("`%");
 
-	tmp=sp[-1].u.integer;
-	if(tmp<0)
+	if(sp[-1].u.integer<0)
 	{
-	  tmp=s->len % -tmp;
+	  tmp=s->len % -sp[-1].u.integer;
 	  base=0;
 	}else{
-	  tmp=s->len % tmp;
+	  tmp=s->len % sp[-1].u.integer;
 	  base=s->len - tmp;
 	}
 	s=string_slice(s, base, tmp);
@@ -2889,17 +2889,16 @@ PMOD_EXPORT void o_mod(void)
       case TWO_TYPES(T_ARRAY,T_INT):
       {
 	struct array *a=sp[-2].u.array;
-	INT32 tmp,base;
+	ptrdiff_t tmp,base;
 	if(!sp[-1].u.integer)
 	  OP_MODULO_BY_ZERO_ERROR("`%");
 
-	tmp=sp[-1].u.integer;
-	if(tmp<0)
+	if(sp[-1].u.integer<0)
 	{
-	  tmp=a->size % -tmp;
+	  tmp=a->size % -sp[-1].u.integer;
 	  base=0;
 	}else{
-	  tmp=a->size % tmp;
+	  tmp=a->size % sp[-1].u.integer;
 	  base=a->size - tmp;
 	}
 
