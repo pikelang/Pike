@@ -632,14 +632,14 @@ static void low_print_tree(node *foo,int needlval)
   default:
     if(!car_is_node(foo) && !cdr_is_node(foo))
     {
-      printf("%s",get_f_name(foo->token));
+      printf("%s",get_token_name(foo->token));
       return;
     }
     if(foo->token<256)
     {
       printf("%c(",foo->token);
     }else{
-      printf("%s(",get_f_name(foo->token));
+      printf("%s(",get_token_name(foo->token));
     }
     if(car_is_node(foo)) low_print_tree(CAR(foo),0);
     if(car_is_node(foo) && cdr_is_node(foo))
@@ -885,7 +885,7 @@ static void low_build_function_type(node *n)
 
   case F_PUSH_ARRAY: /* We let this ruin type-checking for now.. */
     reset_type_stack();
-    push_type(T_TRUE);
+    push_type(T_MIXED);
     push_type(T_MIXED); /* is varargs */
     push_type(T_MANY);
     return;
@@ -937,7 +937,7 @@ void fix_type_field(node *n)
   case F_APPLY:
   {
     struct lpc_string *s;
-    push_type(T_TRUE); /* match any return type, even void */
+    push_type(T_MIXED); /* match any return type, even void */
     push_type(T_VOID); /* not varargs */
     push_type(T_MANY);
     low_build_function_type(CDR(n));
@@ -1289,7 +1289,7 @@ static void optimize(node *n)
 		    mknode(F_ARG_LIST,
 			   mkcastnode(void_type_string, CADR(n)),
 			   mkcastnode(void_type_string, CDDR(n))));
-	CADR(n)=CADR(n)=CAAR(n)=0;
+	CDDR(n)=CADR(n)=CAAR(n)=0;
 	goto use_tmp1;
       }
 
@@ -1426,7 +1426,6 @@ static void optimize(node *n)
 
 int eval_low(node *n)
 {
-  
   INT32 num_strings, jump, num_constants;
   struct svalue *save_sp = sp;
   int ret;

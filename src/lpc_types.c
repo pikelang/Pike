@@ -32,7 +32,6 @@
  * they are coded like this:
  * T_FUNCTION <arg type> <arg type> ... <arg type> T_MANY <arg type> <return type>
  * note that the type after T_MANY can be T_VOID
- * T_TRUE matches anything
  * T_MIXED matches anything except T_VOID
  * T_UNKNOWN only matches T_MIXED and T_UNKNOWN
  */
@@ -94,7 +93,6 @@ static int type_length(char *t)
   case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
-  case T_TRUE:
   case T_UNKNOWN:
     break;
   }
@@ -173,7 +171,7 @@ static void internal_parse_type(char **s)
       ++*s;
       type_stack_reverse();
     }else{
-      push_type(T_TRUE);
+      push_type(T_MIXED);
       push_type(T_MIXED);
       push_type(T_MANY);
     }
@@ -280,7 +278,6 @@ void stupid_describe_type(char *a,INT32 len)
     case T_LIST: printf("list"); break;
 
     case T_UNKNOWN: printf("unknown"); break;
-    case T_TRUE: printf("true"); break;
     case T_MANY: printf("many"); break;
     case T_OR: printf("or"); break;
     case T_VOID: printf("void"); break;
@@ -290,6 +287,11 @@ void stupid_describe_type(char *a,INT32 len)
     }
   }
   printf("\n");
+}
+
+void simple_describe_type(struct lpc_string *s)
+{
+  stupid_describe_type(s->str,s->len);
 }
 #endif
 
@@ -303,10 +305,6 @@ char *low_describe_type(char *t)
 
   case T_MIXED:
     my_strcat("mixed");
-    break;
-
-  case T_TRUE:
-    my_strcat("true");
     break;
 
   case T_UNKNOWN:
@@ -395,7 +393,6 @@ TYPE_T compile_type_to_runtime_type(struct lpc_string *s)
   {
   case T_OR:
   case T_MANY:
-  case T_TRUE:
   case T_UNKNOWN:
     return T_MIXED;
 
@@ -431,12 +428,9 @@ static char *low_match_types(char *a,char *b)
     return low_match_types(a,b);
   }
 
-  if(EXTRACT_UCHAR(a)==T_TRUE) return a;
-  if(EXTRACT_UCHAR(b)==T_TRUE) return a;
-
-  /* 'mixed' matches anything except 'void' */
-  if(EXTRACT_UCHAR(a) == T_MIXED && EXTRACT_UCHAR(b) != T_VOID) return a;
-  if(EXTRACT_UCHAR(b) == T_MIXED && EXTRACT_UCHAR(a) != T_VOID) return a;
+  /* 'mixed' matches anything */
+  if(EXTRACT_UCHAR(a) == T_MIXED) return a;
+  if(EXTRACT_UCHAR(b) == T_MIXED) return a;
   if(EXTRACT_UCHAR(a) != EXTRACT_UCHAR(b)) return 0;
 
   ret=a;
@@ -458,7 +452,7 @@ static char *low_match_types(char *a,char *b)
 
       if(EXTRACT_UCHAR(b)==T_MANY)
       {
-	b_tmp=a+1;
+	b_tmp=b+1;
       }else{
 	b_tmp=b;
 	b+=type_length(b);
@@ -469,10 +463,10 @@ static char *low_match_types(char *a,char *b)
     /* check the 'many' type */
     a++;
     b++;
-    if(EXTRACT_UCHAR(b)==T_VOID)
+    if(EXTRACT_UCHAR(b)==T_VOID || EXTRACT_UCHAR(a)==T_VOID)
     {
-      b++;
       a+=type_length(a);
+      b+=type_length(b);
     }else{
       if(!low_match_types(a,b)) return 0;
     }
@@ -496,9 +490,7 @@ static char *low_match_types(char *a,char *b)
   case T_PROGRAM:
   case T_VOID:
   case T_MIXED:
-  case T_TRUE:
     break;
-
 
   default:
     fatal("error in type string.\n");

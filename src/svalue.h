@@ -55,8 +55,7 @@ struct svalue
 #define T_FLOAT 7
 #define T_INT 8
 
-#define T_UNKNOWN 248
-#define T_TRUE 249
+#define T_UNKNOWN 249
 #define T_MANY 250
 #define T_OR 251
 #define T_SHORT_LVALUE 252
