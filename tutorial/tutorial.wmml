@@ -3706,7 +3706,7 @@ transfer speed when it does.
 </method>
 
 
-<-- FIXME: Update to out-of-band data -->
+<!-- FIXME: Update to out-of-band data -->
 <method name=set_nonblocking title="make stream nonblocking">
 <man_syntax>
 void set_nonblocking(function read_callback,<br>
@@ -12200,7 +12200,7 @@ Throws an error if characters not legal in an UTF16 stream are encountered.
 Valid characters are in the range 0x00000 - 0x10ffff, except for characters
 0xfffe and 0xffff.
 <p>
-Characters outside in range 0x010000 - 0x10ffff are encoded using surrogates.
+Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
 </man_description>
 <man_note>
 This function is only available in Pike 0.6.105 and later.
