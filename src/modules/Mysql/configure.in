@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.19 2001/01/22 16:02:45 grubba Exp $
+# $Id: configure.in,v 1.20 2001/02/06 16:39:53 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -240,7 +240,41 @@ fi
     AC_DEFINE(HAVE_MYSQL)
 
     # Note: mysql_port and mysql_unix_port aren't functions, but that shouldn't matter
-    AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths mysql_port mysql_unix_port)
+    define([PIKE_CHECK_MYSQL_FUNC], [
+      changequote(<<, >>)dnl
+      define(<<AC_CV_NAME>>, translit(pike_cv_mysql_$1, [ *], [_p]))dnl
+      changequote([, ])dnl
+      AC_MSG_CHECKING(for $1)
+      AC_CACHE_VAL(AC_CV_NAME, [
+        AC_TRY_COMPILE([
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+
+#ifndef STDCALL
+#define STDCALL
+#endif /* STDCALL */
+
+        ], [ $1(); ], [$AC_CV_NAME="yes"], [$AC_CV_NAME="no"])
+      ])
+      if test "$AC_CV_NAME" = "yes"; then
+        AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
+      fi
+      AC_MSG_RESULT($AC_CV_NAME)
+    ])
+    
+    PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
+    PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
+
+    # The following two are variables.
+    AC_CHECK_FUNCS(mysql_port mysql_unix_port)
+
     if test "$ac_cv_func_mysql_fetch_lengths" = "yes"; then
       #
       # In 3.20.6b mysql_fetch_lengths() returns an uint *.
