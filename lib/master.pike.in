@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.173 2001/10/28 17:54:43 nilsson Exp $
+ * $Id: master.pike.in,v 1.174 2001/11/07 21:51:19 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -19,7 +19,10 @@
 #endif /* !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0) */
 constant bt_max_string_len = BT_MAX_STRING_LEN;
 
-//! @decl constant bt_max_string_len = int
+//! @decl constant bt_max_string_len = 200
+//! This constant contains the maximum number of lines a backtrace may
+//! contain. Defaults to 200 if no BT_MAX_STRING_LEN define has been
+//! given.
 
 // Enables the out of date warning in low_find_prog().
 #ifndef OUT_OF_DATE_WARNING
@@ -27,7 +30,10 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
 
-//! @decl constant out_of_date_warning = int(0..1)
+//! @decl constant out_of_date_warning = 1
+//! Should Pike complain about out of date compiled files.
+//! 1 means yes and 0 means no. Controlled by the OUT_OF_DATE_WARNING
+//! define.
 
 #ifndef PIKE_WARNINGS
 #define PIKE_WARNINGS 0
@@ -39,6 +45,7 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
  * Functions begin here.
  */
 
+// FIXME: Should the pikeroot-things be private?
 #ifdef PIKE_FAKEROOT
 object o;
 string fakeroot(string s)
@@ -1142,12 +1149,13 @@ class CompatResolver
   int want_warnings = PIKE_WARNINGS;
   string ver;
 
-  void create(mixed v)
+  //! The ComparResolver is initialized with a value that can be
+  //! casted into a "%d.%d" string, e.g. a version object.
+  void create(mixed version)
     {
-      ver=(string)v;
+      ver=(string)version;
     }
 
-  //! @appears add_include_path
   //! Add a directory to search for include files.
   //!
   //! This is the same as the command line option @tt{-I@}.
@@ -1166,7 +1174,6 @@ class CompatResolver
       pike_include_path=({tmp})+pike_include_path;
     }
 
-  //! @appears remove_include_path
   //! Remove a directory to search for include files.
   //!
   //! This function performs the reverse operation of @[add_include_path()].
@@ -1180,7 +1187,6 @@ class CompatResolver
       pike_include_path-=({tmp});
     }
   
-  //! @appears add_module_path
   //! Add a directory to search for modules.
   //!
   //! This is the same as the command line option @tt{-M@}.
@@ -1195,8 +1201,6 @@ class CompatResolver
       pike_module_path=({tmp})+pike_module_path;
     }
   
-  
-  //! @appears remove_module_path
   //! Remove a directory to search for modules.
   //!
   //! This function performs the reverse operation of @[add_module_path()].
@@ -1210,8 +1214,6 @@ class CompatResolver
       pike_module_path-=({tmp});
     }
   
-  
-  //! @appears add_program_path
   //! Add a directory to search for programs.
   //!
   //! This is the same as the command line option @tt{-P@}.
@@ -1226,8 +1228,6 @@ class CompatResolver
       pike_program_path=({tmp})+pike_program_path;
     }
   
-  
-  //! @appears remove_program_path
   //! Remove a directory to search for programs.
   //!
   //! This function performs the reverse operation of @[add_program_path()].
@@ -1241,6 +1241,7 @@ class CompatResolver
       pike_program_path-=({tmp});
     }
 
+  //!
   mapping get_default_module()
     {
       /* This is an ugly kluge to avoid an infinite recursion.
@@ -1265,6 +1266,7 @@ class CompatResolver
       return x;
     }
 
+  //!
   mixed resolv_base(string identifier, string|void current_file,
 		    object|void current_handler)
     {
@@ -1307,6 +1309,8 @@ class CompatResolver
     }
   
   mapping resolv_cache = set_weak_flag( ([]), 1 );
+
+  //!
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
     {
@@ -1368,13 +1372,13 @@ class CompatResolver
       
       return path;
     }
-  
+
+  //!
   string read_include(string f)
     {
       AUTORELOAD_CHECK_FILE(f)
 	return master_read_file(f);
     }
-
 
   string _sprintf()
     {
@@ -2554,25 +2558,34 @@ class Codec
   }
 }
 
-
+//! Contains version information about a Pike version.
 class Version
 {
+
+  //! The major and minor parts of the version.
   int major;
   int minor;
+
+  //! @decl void create(int major, int minor)
+  //! Set the version in the object.
   void create(int maj, int min)
-    {
-      major=maj;
-      minor=min;
-    }
+  {
+    major = maj;
+    minor = min;
+  }
 
 #define CMP(X)  ((major - (X)->major) || (minor - (X)->minor))
   
+  //! Methods define so that version objects
+  //! can be compared and ordered.
   int `<(Version v) { return CMP(v) < 0; }
   int `>(Version v) { return CMP(v) > 0; }
   int `==(Version v) { return CMP(v)== 0; }
   int _hash() { return major * 4711 + minor ; }
 
   string _sprintf() { return sprintf("%d.%d",major,minor); }
+
+  //! The version object can be casted into a string.
   mixed cast(string type)
     {
       switch(type)
@@ -2583,7 +2596,9 @@ class Version
     }
 }
 
+//! Version information about the current Pike version.
 Version currentversion=Version(__MAJOR__,__MINOR__);
+
 mapping(Version:CompatResolver) compat_handler_cache=set_weak_flag( ([]), 1);
 
 CompatResolver get_compilation_handler(int major, int minor)
