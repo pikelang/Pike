@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.20 2000/05/01 03:33:45 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.21 2000/05/01 08:54:37 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1571,6 +1571,7 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
     apply_low(Pike_fp->current_object,
 	      arg1+Pike_fp->context.identifier_level,
 	      Pike_sp - *--Pike_mark_sp);
+    pc+=sizeof(INT32);
   }else{
     fast_check_threads_etc(6);
     check_c_stack(8192);
