@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.191 2004/08/11 14:37:22 grubba Exp $
+|| $Id: operators.c,v 1.192 2004/08/24 14:05:22 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.191 2004/08/11 14:37:22 grubba Exp $");
+RCSID("$Id: operators.c,v 1.192 2004/08/24 14:05:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1533,9 +1533,12 @@ PMOD_EXPORT void f_add(INT32 args)
 
 static int generate_sum(node *n)
 {
-  node **first_arg, **second_arg;
+  node **first_arg, **second_arg, **third_arg;
+  int num_args;
   switch(count_args(CDR(n)))
   {
+  case 0: return 0;
+
   case 1:
     do_docode(CDR(n),0);
     return 1;
@@ -1559,6 +1562,44 @@ static int generate_sum(node *n)
     {
       emit0(F_ADD);
     }
+    return 1;
+
+  case 3:
+    first_arg = my_get_arg(&_CDR(n), 0);
+    second_arg = my_get_arg(&_CDR(n), 1);
+    third_arg = my_get_arg(&_CDR(n), 2);
+    
+    if(first_arg[0]->type == float_type_string &&
+       second_arg[0]->type == float_type_string)
+    {
+      do_docode(*first_arg, 0);
+      do_docode(*second_arg, 0);
+      emit0(F_ADD_FLOATS);
+      if (third_arg[0]->type == float_type_string) {
+	do_docode(*third_arg, 0);
+	emit0(F_ADD_FLOATS);
+	return 1;
+      }
+    }
+    else if(pike_types_le(first_arg[0]->type, int_type_string) &&
+	    pike_types_le(second_arg[0]->type, int_type_string))
+    {
+      do_docode(*first_arg, 0);
+      do_docode(*second_arg, 0);
+      emit0(F_ADD_INTS);
+      if (pike_types_le(third_arg[0]->type, int_type_string)) {
+	do_docode(*third_arg, 0);
+	emit0(F_ADD_INTS);
+	return 1;
+      }
+    }
+    else
+    {
+      return 0;
+    }
+    do_docode(*third_arg, 0);
+    emit0(F_ADD);
+    
     return 1;
 
   default:
@@ -1722,6 +1763,7 @@ static node *optimize_binary(node *n)
 	 CAR(*first_arg)->token == F_CONSTANT &&
 	 is_eq(& CAR(*first_arg)->u.sval, & CAR(n)->u.sval))
       {
+	/* binop(binop(@a_args), b)  ==>  binop(@a_args, b) */
 	ADD_NODE_REF2(CAR(n),
 	ADD_NODE_REF2(CDR(*first_arg),
 	ADD_NODE_REF2(*second_arg,
@@ -1738,6 +1780,7 @@ static node *optimize_binary(node *n)
 	 CAR(*second_arg)->token == F_CONSTANT &&
 	 is_eq(& CAR(*second_arg)->u.sval, & CAR(n)->u.sval))
       {
+	/* binop(a, binop(@b_args))  ==>  binop(a, @b_args) */
 	ADD_NODE_REF2(CAR(n),
 	ADD_NODE_REF2(*first_arg,
 	ADD_NODE_REF2(CDR(*second_arg),
