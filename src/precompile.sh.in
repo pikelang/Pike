@@ -2,9 +2,10 @@
 
 #set -x
 
+exec 5>&1 1>&2
+
 SCRIPT="$1"
-TARGET="$2"
-shift 2
+shift 1
 
 TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
@@ -31,7 +32,9 @@ fi
 
 old_method="${method-}"
 
-while test "$retries" != ............. ; do
+OLD_RUNPIKE="$RUNPIKE"
+
+while test "$retries" != .............. ; do
 
 RUNPIKE=
 case $method in
@@ -45,14 +48,23 @@ case $method in
     RUNPIKE=$TMP_BUILDDIR/test-pike
   ;;
   QQQQ)
-    LAST_PIKE=pike
-    method=QQQQQ
-    RUNPIKE="$LAST_PIKE -DOLD"
+    if test x"$OLD_RUNPIKE" != x; then
+      LAST_PIKE="$OLD_RUNPIKE"
+      method=QQQQQ
+      RUNPIKE="$OLD_RUNPIKE"
+    else
+      RUNPIKE=""
+    fi
   ;;
   QQQQQ)
+    LAST_PIKE=pike
+    method=QQQQQQ
     RUNPIKE="$LAST_PIKE -DOLD"
   ;;
   QQQQQQ)
+    RUNPIKE="$LAST_PIKE -DOLD"
+  ;;
+  QQQQQQQ)
     ifs_save="${IFS- 	}"
     IFS=" :"
     for dir in $PATH
@@ -72,13 +84,13 @@ case $method in
         fi
       done
       if [ "x$RUNPIKE" != x ]; then
-        method=QQQQQ
+        method=QQQQQQ
         break
       fi
     done
     IFS="${ifs_save}"
   ;;
-  QQQQQQQ)
+  QQQQQQQQ)
     method=
   ;;
 esac
@@ -94,7 +106,7 @@ else
   if ln -s "$TMP_BINDIR/$SCRIPT"  ./$SCRIPT; then :; else
     # We might be on a filesystem that doesn't support symlinks (eg FAT).
     echo "Trying copying instead..."
-    cp "$TMP_BINDIR/$SCRIPT" ./$SCRIPT && cmod 755 ./$SCRIPT
+    cp "$TMP_BINDIR/$SCRIPT" ./$SCRIPT && chmod 755 ./$SCRIPT
   fi
 fi
 
@@ -111,10 +123,11 @@ fi
 
 
 if test "x${RUNPIKE-}" != x ; then
-echo "precompile: $RUNPIKE ./$SCRIPT $@ >$TARGET (method=$method)"
-if $RUNPIKE ./$SCRIPT "$@" >"$TARGET" ; then
+echo "precompile: $RUNPIKE ./$SCRIPT $@ (method=$method)"
+if $RUNPIKE ./$SCRIPT "$@" >&5 ; then
 
-cat > "$TMP_BUILDDIR/precompile-method" <<EOF
+cat > "$TMP_BUILDDIR/precompile-method.$$" <<EOF && \
+  mv "$TMP_BUILDDIR/precompile-method.$$" "$TMP_BUILDDIR/precompile-method"
 LAST_PIKE="$LAST_PIKE"
 method="$method"
 #retries="$retries"
@@ -129,5 +142,5 @@ retries=".$retries"
 
 done # retry
 # Total failure
-rm "$TARGET"
+
 exit 1
