@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.7 1998/11/13 02:35:05 grubba Exp $
+ * $Id: parser.pike,v 1.8 1998/11/13 14:06:44 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.7 1998/11/13 02:35:05 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.8 1998/11/13 14:06:44 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -61,7 +61,7 @@ import Array;
 
 //. o state_queue
 //.
-//. This is a combined set and queue.
+//. This is a queue.
 class state_queue {
   //. + head
   //. Index of the head of the queue.
@@ -70,48 +70,21 @@ class state_queue {
   //. Index of the tail of the queue.
   int tail;
   //. + arr
-  //. The queue/set itself.
+  //. The queue itself.
   array(object(LR.kernel)) arr=allocate(64);
 
-  //. + members
-  //.   Hashes of the states that are members.
-  mapping(string:int) members = ([]);
-
-  //. - memberp
-  //.   Returns the index of the state in arr if present.
-  //.   Returns -1 on failure.
-  //. > state
-  //.   State to search for.
-  int|object(LR.kernel) memberp(object(LR.kernel) state)
-  {
-    if (!state->kernel_hash) {
-      state->make_kernel_hash();
-    }
-    if (zero_type(members[state->kernel_hash])) {
-      return(-1);
-    }
-    return(members[state->kernel_hash]);
-  }
-
-  //. - push_if_new
+  //. - push
   //.   Pushes the state on the queue if it isn't there already.
   //. > state
   //.   State to push.
-  object(LR.kernel) push_if_new(object(LR.kernel) state)
+  object(LR.kernel) push(object(LR.kernel) state)
   {
-    int index;
-
-    if ((index = memberp(state)) >= 0) {
-      return (arr[index]);
-    } else {
-      if (tail == sizeof(arr)) {
-	arr += allocate(tail);
-      }
-      members[state->kernel_hash] = tail;
-      arr[tail++] = state;
-
-      return(state);
+    if (tail == sizeof(arr)) {
+      arr += allocate(tail);
     }
+    arr[tail++] = state;
+
+    return(state);
   }
 
   //. - next
@@ -163,6 +136,10 @@ int error=0;
 
 /* Number of next rule (used only for conflict resolving) */
 static private int next_rule_number = 1;
+
+//. + known_states
+//.   LR0 states that are already known to the compiler.
+mapping(string:object(kernel)) known_states = ([]);
 
 /*
  * Functions
@@ -520,6 +497,10 @@ static private object(kernel) first_state()
 {
   object(kernel) state = kernel();
 
+  array(int) first_state_item_ids = sort(grammar[0]->number);
+  string kernel_hash = sprintf("%@4c", first_state_item_ids);
+  known_states[kernel_hash] = state;
+
   foreach (grammar[0], object(rule) r) {
     if (!state->rules[r]) {
       object(item) i = item();
@@ -550,10 +531,7 @@ static private object(state_queue) s_q;
 
 static private object(kernel) do_goto(object(kernel) state, int|string symbol)
 {
-  object(kernel) new_state = kernel();
   multiset(object(item)) items;
-  object(rule) r;
-  int offset;
 
   if (verbose) {
     werror(sprintf("Performing GOTO on <%s>\n", symbol_to_string(symbol)));
@@ -561,42 +539,56 @@ static private object(kernel) do_goto(object(kernel) state, int|string symbol)
 
   items = state->symbol_items[symbol];
   if (items) {
-    foreach (indices(items), object(item) i) {
-      int|string lookahead;
+    array(int) new_state_item_ids = Array.map(sort(indices(items)->item_id),
+					      `+, 1);
+    string kernel_hash = sprintf("%@4c", new_state_item_ids);
 
-      object(item) new_item = item();
+    object(kernel) new_state = known_states[kernel_hash];
 
-      offset = i->offset;
+    if (!new_state) {
+      known_states[kernel_hash] = new_state = kernel();
+    
+      foreach (indices(items), object(item) i) {
+	int|string lookahead;
 
-      new_item->offset = ++offset;
-      new_item->r = r = i->r;
-      new_item->item_id = r->number + offset;
+	object(item) new_item = item();
+	object(rule) r;
+	int offset = i->offset;
 
-      new_state->add_item(new_item);
+	new_item->offset = ++offset;
+	new_item->r = r = i->r;
+	new_item->item_id = r->number + offset;
 
-      if ((offset != sizeof(r->symbols)) &&
-	  intp(lookahead = r->symbols[offset])) {
-	make_closure(new_state, lookahead);
+	new_state->add_item(new_item);
+
+	if ((offset != sizeof(r->symbols)) &&
+	    intp(lookahead = r->symbols[offset])) {
+	  make_closure(new_state, lookahead);
+	}
+      }
+
+      s_q->push(new_state);
+    } else {
+      // werror("Known state\n");
+    }
+    /* DEBUG */
+
+    if (verbose) {
+      werror(sprintf("GOTO on %s generated state:\n%s\n",
+		     symbol_to_string(symbol),
+		     state_to_string(new_state)));
+    }
+
+    /* !DEBUG */
+
+    if (items) {
+      foreach (indices(items), object(item) i) {
+	i->next_state = new_state;
       }
     }
-  }
-
-  /* DEBUG */
-
-  if (verbose) {
-    werror(sprintf("GOTO on %s generated state:\n%s\n",
-		   symbol_to_string(symbol),
-		   state_to_string(new_state)));
-  }
-
-  /* !DEBUG */
-
-  new_state = s_q->push_if_new(new_state);
-
-  if (items) {
-    foreach (indices(items), object(item) i) {
-      i->next_state = new_state;
-    }
+  } else {
+    werror(sprintf("WARNING: do_goto() on unknown symbol <%s>\n",
+		   symbol_to_string(symbol)));
   }
 }
 
@@ -1061,7 +1053,7 @@ int compile()
   multiset(int|string) symbols, conflicts;
 
   s_q = state_queue();
-  s_q->push_if_new(first_state());
+  s_q->push(first_state());
 
   /* First make LR(0) states */
 
