@@ -3,7 +3,7 @@
 //! module Protocols
 //! submodule DNS
 //!
-//! $Id: DNS.pmod,v 1.44 2001/03/18 20:53:00 grubba Exp $
+//! $Id: DNS.pmod,v 1.45 2002/01/13 18:46:37 marcus Exp $
 
 constant NOERROR=0;
 constant FORMERR=1;
@@ -114,8 +114,8 @@ class protocol
 
   int decode_int(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+1],"%2c",int ret);
-    next[0]+=2;
+    sscanf(s[next[0]..next[0]+3],"%4c",int ret);
+    next[0]+=4;
     return ret;
   }
   
