@@ -325,6 +325,10 @@ class PikeType
   string type_number()
     {
       string btype=basetype();
+
+      if (btype == "function") {
+	btype = "mixed";
+      }
       return "PIKE_T_"+upper_case(btype);
     }
 
