@@ -1,8 +1,10 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.4 2003/02/22 10:21:18 mirar Exp $
+// $Id: Session.pike,v 1.5 2003/03/04 17:01:57 mirar Exp $
 
 import Protocols.HTTP;
+
+typedef string|Standards.URI|SessionURL URL;
 
 //!	The number of redirects to follow, if any.
 //!	This is the default to the created Request objects.
@@ -63,7 +65,7 @@ class Request
 
    array(string|int|mapping) prepare_method(
       string method,
-      string|Standards.URI url,
+      URL url,
       void|mapping query_variables,
       void|mapping request_headers,
       void|string data)
@@ -98,7 +100,8 @@ class Request
 	 "connection":
 	    (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive",
       ]);
-	 
+      if (url->referer)
+	 request_headers->referer=(string)url->referer;
 
       if(url->user || url->passwd)
 	 default_headers->authorization = "Basic "
@@ -534,7 +537,7 @@ void decode_cookies(string data,void|int(0..1) no_clear)
 //!	and delete expired cookies from the @[Session] unless 
 //!	@[no_delete] is true.
 
-array(string) get_cookies(Standards.URI for_url,
+array(string) get_cookies(Standards.URI|SessionURL for_url,
 			  void|int(0..1) no_delete)
 {
    mapping(string:Cookie) sc=
@@ -761,7 +764,7 @@ Request do_method(string method,
 // Request|array(string) generic_do_method(
 //    string method,
 //    string mode,
-//    string|Standards.URI url,
+//    URL url,
 //    string|mapping|function ...misc)
 // {
 //    array args;
@@ -802,38 +805,38 @@ Request do_method(string method,
 // 			  extra_headers,data);
 // }
 
-//! @decl Request get_url(string|Standards.URI url, @
+//! @decl Request get_url(URL url, @
 //!                       void|mapping query_variables)
-//! @decl Request post_url(string|Standards.URI url, @
+//! @decl Request post_url(URL url, @
 //!                        mapping query_variables)
-//! @decl Request put_url(string|Standards.URI url,string file, @
+//! @decl Request put_url(URL url,string file, @
 //!                       void|mapping query_variables)
-//! @decl Request delete_url(string|Standards.URI url, @
+//! @decl Request delete_url(URL url, @
 //!                          void|mapping query_variables)
 //! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in the URL
 //!	and returns the created and initialized @[Request] object.
 //!	0 is returned upon failure. 
 //!
-Request get_url(string|Standards.URI url,
+Request get_url(URL url,
 		void|mapping query_variables)
 {
    return do_method("GET", url, query_variables);
 }
 
-Request put_url(string|Standards.URI url,
+Request put_url(URL url,
 		void|string file,
 		void|mapping query_variables)
 {
    return do_method("PUT", url, query_variables, file);
 }
 
-Request delete_url(string|Standards.URI url,
+Request delete_url(URL url,
 		   void|mapping query_variables)
 {
    return do_method("DELETE", url, query_variables);
 }
 
-Request post_url(string|Standards.URI url,
+Request post_url(URL url,
 		 mapping query_variables)
 {
    return do_method("POST", url, 0,
@@ -841,13 +844,13 @@ Request post_url(string|Standards.URI url,
 }
 
 
-//! @decl array(string) get_url_nice(string|Standards.URI url, @
+//! @decl array(string) get_url_nice(URL url, @
 //!                                  mapping query_variables)
-//! @decl string get_url_data(string|Standards.URI url, @
+//! @decl string get_url_data(URL url, @
 //!                           mapping query_variables)
-//! @decl array(string) post_url_nice(string|Standards.URI url, @
+//! @decl array(string) post_url_nice(URL url, @
 //!                                   mapping query_variables)
-//! @decl string post_url_data(string|Standards.URI url, @
+//! @decl string post_url_data(URL url, @
 //!                            mapping query_variables)
 //!	Returns an array of @tt{({content_type,data})@} and just the data
 //!	string respective, 
@@ -859,14 +862,14 @@ Request post_url(string|Standards.URI url,
 //!	of as a GET.
 //!
 
-array(string) get_url_nice(string|Standards.URI url,
+array(string) get_url_nice(URL url,
 			   void|mapping query_variables)
 {
    Request c = get_url(url, query_variables);
    return c && ({ c->headers()["content-type"], c->data() });
 }
 
-string get_url_data(string|Standards.URI url,
+string get_url_data(URL url,
 		    void|mapping query_variables)
 {
    Request z = get_url(url, query_variables);
@@ -874,14 +877,14 @@ string get_url_data(string|Standards.URI url,
 }
 
 
-array(string) post_url_nice(string|Standards.URI url,
+array(string) post_url_nice(URL url,
 			    mapping query_variables)
 {
    object c = post_url(url, query_variables);
    return c && ({ c->headers["content-type"], c->data() });
 }
 
-string post_url_data(string|Standards.URI url,
+string post_url_data(URL url,
 		     mapping query_variables)
 {
    Request z = post_url(url, query_variables);
@@ -892,7 +895,7 @@ string post_url_data(string|Standards.URI url,
 // async operation
 
 Request async_do_method(string method,
-			Standards.URI|string url,
+			URL url,
 			void|mapping query_variables,
 			void|string data,
 			function callback_headers_ok,
@@ -919,26 +922,26 @@ Request async_do_method(string method,
 }
 
 
-//! @decl Request async_get_url(string|Standards.URI url,
+//! @decl Request async_get_url(URL url,
 //! 			    void|mapping query_variables,
 //! 			    function callback_headers_ok,
 //! 			    function callback_data_ok,
 //! 			    function callback_fail,
 //! 			    mixed... callback_arguments);
-//! @decl Request async_put_url(string|Standards.URI url,
+//! @decl Request async_put_url(URL url,
 //! 			    void|string file,
 //! 			    void|mapping query_variables,
 //! 			    function callback_headers_ok,
 //! 			    function callback_data_ok,
 //! 			    function callback_fail,
 //! 			    mixed... callback_arguments);
-//! @decl Request async_delete_url(string|Standards.URI url,
+//! @decl Request async_delete_url(URL url,
 //! 			       void|mapping query_variables,
 //! 			       function callback_headers_ok,
 //! 			       function callback_data_ok,
 //! 			       function callback_fail,
 //! 			       mixed... callback_arguments);
-//! @decl Request async_post_url(string|Standards.URI url,
+//! @decl Request async_post_url(URL url,
 //! 			     mapping query_variables,
 //! 			     function callback_headers_ok,
 //! 			     function callback_data_ok,
@@ -962,7 +965,7 @@ Request async_do_method(string method,
 //!
 //!	The created Request object is returned.
 
-Request async_get_url(string|Standards.URI url,
+Request async_get_url(URL url,
 		      void|mapping query_variables,
 		      function callback_headers_ok,
 		      function callback_data_ok,
@@ -974,7 +977,7 @@ Request async_get_url(string|Standards.URI url,
 			  callback_fail,callback_arguments);
 }
 
-Request async_put_url(string|Standards.URI url,
+Request async_put_url(URL url,
 		      void|string file,
 		      void|mapping query_variables,
 		      function callback_headers_ok,
@@ -987,7 +990,7 @@ Request async_put_url(string|Standards.URI url,
 			  callback_fail,callback_arguments);
 }
 
-Request async_delete_url(string|Standards.URI url,
+Request async_delete_url(URL url,
 			 void|mapping query_variables,
 			 function callback_headers_ok,
 			 function callback_data_ok,
@@ -999,7 +1002,7 @@ Request async_delete_url(string|Standards.URI url,
 			  callback_fail,callback_arguments);
 }
 
-Request async_post_url(string|Standards.URI url,
+Request async_post_url(URL url,
 		       mapping query_variables,
 		       function callback_headers_ok,
 		       function callback_data_ok,
@@ -1010,4 +1013,25 @@ Request async_post_url(string|Standards.URI url,
 			  http_encode_query(query_variables),
 			  callback_headers_ok,callback_data_ok,
 			  callback_fail,callback_arguments);
+}
+
+//! Class to store URL+referer
+
+class SessionURL
+{
+   inherit Standards.URI;
+
+//! the referer to this URL
+   URL referer;
+
+//! instantiate a SessionURL object;
+//! when fed to Protocols.HTTP.Session calls, will add
+//! referer to the HTTP handshaking variables
+   void create(URL uri,
+	       URL base_uri,
+	       URL _referer)
+   {
+      ::create(uri,base_uri);
+      referer=_referer;
+   }
 }
