@@ -52,7 +52,7 @@ static void check_callback_chain(struct callback_list *lst)
   int e,len=0;
   struct callback_block *tmp;
   struct callback *foo;
-  if(d_flag)
+  if(d_flag>1)
   {
     for(foo=lst->callbacks;foo;foo=foo->next)
     {
