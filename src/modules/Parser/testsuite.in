@@ -1263,3 +1263,11 @@ test_any(
   p->_set_data_callback (lambda () {});
   return p->finish ("<foo>")->read();
 ]], "");
+test_any(
+  [[
+    Parser.HTML p1 = Parser.HTML();
+    p1->add_quote_tag ("?", lambda () {return ({"p1"});}, "?");
+    Parser.HTML p2 = p1->clone();
+    p2->add_quote_tag ("?", lambda () {return ({"p2"});}, "?");
+    return p1->finish("<??>")->read();
+  ]], "p1")
