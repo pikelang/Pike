@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.131 1999/03/12 01:12:02 hubbe Exp $
+# $Id: Makefile.in,v 1.132 1999/03/19 11:37:58 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -509,9 +509,6 @@ depend: $(SRCDIR)/language.c
 
 docs:
 	mkdir docs
-
-html_docs: docs
-	$(RUNPIKE) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `echo $(SRCDIR)/modules/*/doc`
 
 wmml: force
 	@test -d wmml/. || mkdir wmml
