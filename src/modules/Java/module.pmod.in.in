@@ -273,6 +273,11 @@ static class jarray {
       return ([])[0];
   }
 
+  mixed `[]=(int n, mixed value)
+  {
+    return wrap_result(obj->`[]=(n, value), info);
+  }
+
   void create(object o, mapping(string:mixed) i)
   {
     obj = o;
