@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.59 1998/05/05 13:26:48 marcus Exp $");
+RCSID("$Id: signal_handler.c,v 1.60 1998/05/06 00:32:02 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -346,7 +346,7 @@ static RETSIGTYPE receive_signal(int signum)
 {
   int tmp;
 
-#ifdef DEBUG
+#ifdef DEBUG 
   if(signum<0 || signum>=MAX_SIGNALS)
     fatal("Received signal %u >= %u!!!\n", signum, MAX_SIGNALS);
 #endif
@@ -517,24 +517,43 @@ static void f_pid_status_wait(INT32 args)
 #else
 
 #if 1
-  while(THIS->state == PROCESS_RUNNING)
   {
-    int pid, status;
-    pid=THIS->pid;
-    THREADS_ALLOW();
+    int err=0;
+    while(THIS->state == PROCESS_RUNNING)
+    {
+      int pid, status;
+      pid=THIS->pid;
+
+      if(err)
+	error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+
+      THREADS_ALLOW();
 #ifdef HAVE_WAITPID
-    pid=waitpid(pid,& status,0);
+      pid=waitpid(pid,& status,0);
 #else
 #ifdef HAVE_WAIT4
-    pid=wait4(pid,&status,0,0);
+      pid=wait4(pid,&status,0,0);
 #else
-    pid=-1;
+      pid=-1;
 #endif
 #endif
-    THREADS_DISALLOW();
-    if(pid > -1)
-      report_child(pid, status);
-    check_signals(0,0,0);
+      THREADS_DISALLOW();
+      if(pid > -1)
+      {
+	report_child(pid, status);
+      }else{
+	switch(errno)
+	{
+	  case EINTR: break;
+
+	  default:
+	    err=errno;
+	}
+      }
+	
+      
+      check_signals(0,0,0);
+    }
   }
 #else
   init_signal_wait();
@@ -598,6 +617,27 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 
       if(fd == -1)
 	error("File for %s is not open.\n",name);
+
+#if 0
+      {
+	int q;
+	for(q=0;q<MAX_OPEN_FILEDESCRIPTORS;q++)
+	{
+	  if(fd_type[q]<-1)
+	  {
+	    DWORD flags;
+	    fprintf(stderr,"%3d: %d %08x",q,fd_type[q],da_handle[q],flags);
+	    GetHandleInformation((HANDLE)da_handle[q],&flags);
+	    if(flags & HANDLE_FLAG_INHERIT)
+	      fprintf(stderr," inheritable");
+	    if(flags & HANDLE_FLAG_PROTECT_FROM_CLOSE)
+	      fprintf(stderr," non-closable");
+	    fprintf(stderr,"\n");
+	  }
+	}
+      }
+#endif
+
 
       if(!(fd_query_properties(fd, 0) & fd_INTERPROCESSABLE))
       {
@@ -1215,14 +1255,7 @@ void f_create_process(INT32 args)
 #ifdef HAVE_NICE
 	if ((tmp=low_mapping_string_lookup(optional, storage.nice_s))) {
 	  if (tmp->type == T_INT) {
-	    int n = nice(0);
-	    int nn = tmp->u.integer;
-
-	    if (nn > (NZERO-1)) {
-	      nn = NZERO-1;
-	    }
-
-	    nice(nn - n);
+	    nice(tmp->u.integer);
 	  }
 	}
 #endif /* HAVE_NICE */
