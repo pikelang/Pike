@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.30 1997/09/03 04:58:17 per Exp $");
+RCSID("$Id: threads.c,v 1.31 1997/09/03 08:07:36 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -130,6 +130,7 @@ void f_thread_create(INT32 args)
   }
 }
 
+#ifdef UNIX_THREADS
 void f_thread_set_concurrency(INT32 args)
 {
   int c=1;
@@ -139,6 +140,7 @@ void f_thread_set_concurrency(INT32 args)
   num_lwps=c;
   th_setconcurrency(c);
 }
+#endif
 
 void f_this_thread(INT32 args)
 {
