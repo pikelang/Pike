@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.184 2002/09/14 02:58:33 mast Exp $");
+RCSID("$Id: threads.c,v 1.185 2002/09/29 13:52:08 nilsson Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -813,7 +813,7 @@ int num_lwps = 1;
 /*! @class Thread
  */
 
-/* @decl void create(function(mixed...:void) f, mixed ... args)
+/*! @decl void create(function(mixed...:void) f, mixed ... args)
  *!
  *! This function creates a new thread which will run simultaneously
  *! to the rest of the program. The new thread will call the function
