@@ -70,8 +70,8 @@ o Module system.
     automatically cloned.
 
 
-Master:
--------
+The Pike master:
+----------------
 
 o The new option --dumpversion prints out the Pike version in a more
   easily pared way than --version.
@@ -89,11 +89,28 @@ o The -e Pike environment has been improved with a lot of convenience
   lacked one. Finally there is a predefined variable env that contains
   the environment variables as a string:string mapping.
 
+
 Building and installing pike:
 -----------------------------
-o bundles
-o no tpike
-o installs documentation (_nodoc)
+
+o To simplify the process of building Pike source distributions it is
+  now possible to bundle less common libraries such as Nettle with
+  Pike. The bundle, found in the bundle directory, will be compiled
+  and statically linked if the no matching library is found on the
+  system.
+
+o The Pike build process no longer builds a bootstrap pike, used to
+  run various small programs to generate source files. This means that
+  in order to build Pike from CVS you need the latest major version of
+  Pike installed on your system. Pike source distributions contains
+  the generated files and is not affected (except it compiles in less
+  time).
+
+o By default pike want you to build a documentation source file, i.e.
+  "make && make doc && make install". This makes it possible for third
+  party modules to integrate its documentation into the system Pike
+  documentation. If you do not want to build a documentation source
+  file, use "make install_nodoc" instead of "make install".
 
 
 Language additions:
@@ -292,8 +309,18 @@ o GLUE
 
 o _ADT
 o Geography RT38
+
 o Int
+    The Int module contains a few functions and constants that deals
+    specifically with the integer data type. Currently it contains
+    parity and byte swapping functions and constants for the system
+    maxint and minint.
+
 o Pike.Security
+    Functions and classes that deals with the Pike security system
+    (requires Pike to be compiled with --with-security to be present)
+    are stored in this module. Beware that the Pike security system is
+    still very experimental.
 
 o Protocols.HTTP.Session
     Handles an HTTP connection as a session, with cookies, redirects,
@@ -301,11 +328,31 @@ o Protocols.HTTP.Session
 
 o Bz2
     Support for the compression format used by the bzip2 program. The
-    module interface is identical with the Gz module.
+    module interface is almost identical with the Gz module, so
+    changing between Bz2 and Gz is just a matter of a few characters
+    difference.
 
 o Process.Process
+    The Process.Process class is extended to handle a time out
+    callback and a read callback, to better manage processes in an
+    asunchronous way.
+
 o Error
+    The beginning of the Pike exception hiearchy. Even though it is
+    work in progress, it is already usable.
+
+      > mixed err = catch( 1/0 );
+      > err;
+      (1) Result: Error.Math("Division by zero.\n")
+      > object_program(err)==Error.Math;
+      (2) Result: 1
+
 o Float
+    Here constants and functions that deals specifically with the
+    float data type is stored. Currently contains only various
+    constants that describe the precision and limitations of the float
+    type Pike is compiled with.
+
 o Protocols.Bittorrent
 
 o Protocols.LMTP/Protocols.SMTP
@@ -346,15 +393,18 @@ o Web.RDF/RDFS/OWL/RSS
        return 0;
      }  
  
+o Array
+    The Array module has been extended with Array.all and Array.any
+    which determines if all or any of the elements in an array meets a
+    given condition. Also the function Array.partition has been added,
+    which divides the elements of an array into two arrays, selected
+    by a given condition.
 
-o Parser.RCS
-
-o Array.any
-o Array.all
-o Array.partition
-o Function.call_callback
-o Function.Y
-o Function.curry
+o Function
+    The Function module has been extended with the fixpoint combinator
+    "Y", useful when writing recursive lambdas, a curry function, to
+    partially evaluate a function call, and a callback caller function
+    that protects the caller from exceptions in the callback function.
 
 o Thread
     Thread.Fifo and Thread.Queue has been extended with try_*
@@ -363,7 +413,6 @@ o Thread
     fallbacks for running in nonthreaded mode.
 
 o Filesystem.Traversion
-
     The Filesystem.Traversion iterator is a handy way to descend into
     a directory structure (depth first) and perform actions on all or
     some of the files.
@@ -391,7 +440,9 @@ o EXIF
     support for Nikon cameras.
 
 o Standards.IDNA
-
+    This module implements various algorithms specified by the
+    Internationalizing Domain Names in Applications (IDNA) memo by the
+    Internet Engineering Task Force (IETF), RFC 3490.
 
 Optimizations:
 --------------
