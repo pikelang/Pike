@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.15 2000/12/01 08:10:36 hubbe Exp $
+ * $Id: stat.c,v 1.16 2001/05/31 22:53:03 hubbe Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.15 2000/12/01 08:10:36 hubbe Exp $");
+RCSID("$Id: stat.c,v 1.16 2001/05/31 22:53:03 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -123,6 +123,7 @@ static void stat_index_set (INT32 args);
 
 static int stat_compat_set (size_t pos, INT64 val)
 {
+  if(pos<0) pos=7-pos;
   switch (pos) {
     case 0: DO_NOT_WARN(THIS_STAT->s.st_mode = val); break;
     case 1:
@@ -152,7 +153,8 @@ static int stat_compat_set (size_t pos, INT64 val)
 
 static void stat_push_compat(INT_TYPE n)
 {
-   switch (n)
+  if(n<0) n=7-n;
+  switch (n)
    {
       case 0: push_int(THIS_STAT->s.st_mode); break;
       case 1: 
