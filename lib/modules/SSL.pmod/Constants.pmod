@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: Constants.pmod,v 1.1 2003/01/27 15:03:00 nilsson Exp $
+/* $Id: Constants.pmod,v 1.2 2003/11/08 17:22:29 grubba Exp $
  *
  */
 
@@ -52,17 +52,21 @@ constant HASH_md5      = 1;
 constant HASH_sha      = 2;
 constant HASH_hashes = (< HASH_md5, HASH_sha >);
 
-/* Key exchange */
-constant KE_rsa	= 1;
-/* We ignore the distinction between dh_dss and dh_rsa for now. */
-constant KE_dh	= 2;
-constant KE_dhe_dss = 3;
-constant KE_dhe_rsa = 4;
-constant KE_dh_anon = 5;
-constant KE_dms	= 6;
+//! Key exchange methods.
+enum KeyExchangeType {
+  KE_rsa	= 1,	//! Rivest-Shamir-Adelman
+  /* We ignore the distinction between dh_dss and dh_rsa for now. */
+  KE_dh		= 2,	//! Diffie-Hellman
+  KE_dhe_dss	= 3,
+  KE_dhe_rsa	= 4,
+  KE_dh_anon	= 5,
+  KE_dms	= 6,
+};
 
-/* Compression methods */
-constant COMPRESSION_null = 0;
+//! Compression methods.
+enum CompressionType {
+  COMPRESSION_null = 0,	//! No compression.
+};
 
 /* Alert messages */
 constant ALERT_warning			= 1;
