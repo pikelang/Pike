@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.200 2004/04/07 20:00:53 grubba Exp $
+// $Id: module.pmod,v 1.201 2004/04/11 15:18:49 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1268,7 +1268,7 @@ class Port
     debug_ip = (ip||"ANY");
     debug_port = p;
 
-    if( cb )
+    if( cb || ip )
       if( ip )
         ::create( p, cb, ip );
       else
