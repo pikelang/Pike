@@ -13,7 +13,7 @@ class protocol
       space=' ';
       string tmp=news::gets();
       if(!tmp) return 0;
-      sscanf(tmp,"%d%c%s",code,int space,rest);
+      sscanf(tmp,"%d%c%s",code,space,rest);
     } while(space == '-');
     return code;
   }
