@@ -14,7 +14,7 @@ CRYPTO_INCLUDES=$(SRCDIR)/../include
 PREFLAGS=$(DEFINES) $(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR)
 
 # The flags to generate a shared library
-CFLAGS=$(PREFLAGS) $(OTHER_FLAGS) $(EXTRA_CFLAGS)
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(EXTRA_CFLAGS)
 
 default: algorithms.a
 
