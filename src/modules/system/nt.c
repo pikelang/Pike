@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.68 2004/11/20 16:18:58 nilsson Exp $
+|| $Id: nt.c,v 1.69 2005/01/16 15:24:39 nilsson Exp $
 */
 
 /*
@@ -194,7 +194,7 @@ static void f_cp(INT32 args)
   push_int(ret);
 }
 
-static void push_tchar(TCHAR *buf, DWORD len)
+static void push_tchar(const TCHAR *buf, DWORD len)
 {
   push_string(make_shared_binary_pcharp(
     MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
