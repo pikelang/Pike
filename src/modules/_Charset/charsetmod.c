@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.13 1999/04/27 20:24:37 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.14 1999/04/29 15:11:54 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -72,7 +72,7 @@ static void f_create(INT32 args)
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
   check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT,
-		 BIT_FUNCTION|BIT_VOID|BIT_INT);
+		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
   if(args>0 && sp[-args].type == T_STRING) {
     if(s->replace != NULL)
