@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.40 2002/10/21 17:06:15 marcus Exp $
+|| $Id: x.c,v 1.41 2004/02/08 02:07:06 nilsson Exp $
 */
 
 /*
@@ -32,7 +32,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.40 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: x.c,v 1.41 2004/02/08 02:07:06 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -680,7 +680,10 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b=ntohs(translate[*(s++)])<<(32-vbpp); 
+            /* NOTE: The ntohs macro may evaluate it's argument more
+             * than once. */
+	    unsigned short t = translate[*(s++)];
+	    b=ntohs(t)<<(32-vbpp);
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
