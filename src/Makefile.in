@@ -160,7 +160,7 @@ run_hilfe:
 
 # make export archive (requires compiled uLPC)
 # Do not compile in source tree if you want to use this!
-export: $(TMP_LIBDIR)/testsuite.lpc
+export: $(TMP_LIBDIR)/testsuite.lpc configure
 	$(RUNULPC) $(TMP_BINDIR)/export.lpc
 
 # make dependencies (requires compiled uLPC)
