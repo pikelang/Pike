@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.527 2003/09/30 13:18:15 grubba Exp $
+|| $Id: program.c,v 1.528 2003/10/20 13:12:18 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.527 2003/09/30 13:18:15 grubba Exp $");
+RCSID("$Id: program.c,v 1.528 2003/10/20 13:12:18 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5393,7 +5393,7 @@ static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
 
       if(chr > 255)
       {
-	sprintf(buffer+ptr,"\\0x%x",chr);
+	sprintf(buffer+ptr,"\\u%04X",chr);
 	ptr+=strlen(buffer+ptr);
       }else{
 	buffer[ptr++]=chr;
