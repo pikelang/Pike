@@ -148,7 +148,6 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
       if (!sizeof(node->children))
         return 0;
       newChildren = ({});
-
       {
         array(TextNode) toMerge = ({});
         foreach (node->children, ParseNode child) {

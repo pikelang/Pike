@@ -82,7 +82,7 @@ static void advance() {
 static int lookingAtFieldStart(void|int offset) {
   multiset(string) fields = options["fields"];
   //  SHOW(tokens);
-  return peek(offset)[0] == TOKEN_WORD
+  return peek(offset)[0] == TOKEN_TEXT
     && fields[ lower_case(peek(offset)[1]) ]
     && peek(offset + 1)[0] == TOKEN_COLON;
 }
@@ -221,8 +221,7 @@ static ParseNode parseExpr5() {
          || (peek()[0] == TOKEN_LPAREN))
       break; // it was a higher level IMPLICIT AND
     if (peek()[0] == TOKEN_OR)
-      if (peek(1)[0] == TOKEN_WORD
-          && peek(2)[0] == TOKEN_COLON
+      if (lookingAtFieldStart(1)
           || peek(1)[0] == TOKEN_LPAREN)
         break;   // it was a higher level OR
       else
@@ -254,16 +253,13 @@ static void parseExpr6(TextNode node) {
   if (!prefix && options["implicit"] == "and")
     prefix = '+';
 
-  while (!(< TOKEN_PHRASE,
-             TOKEN_WORD,
-             TOKEN_END >) [ peek()[0] ])
+  while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
     advance();   // ... ?????????  or something smarter ?????
 
-  if (peek()[0] == TOKEN_PHRASE
-      || peek()[0] == TOKEN_WORD) {
-    string phrase = peek()[1];
+  if (peek()[0] == TOKEN_TEXT) {
+    string text = peek()[1];
     advance();
-    array(string) words = Unicode.split_words_and_normalize(phrase);
+    array(string) words = Unicode.split_words_and_normalize(text);
     if (!words || !sizeof(words))
       return;
     if (sizeof(words) == 1)
@@ -288,11 +284,10 @@ static ParseNode parseDate() {
 loop:
   for (;;) {
     switch (peek()[0]) {
-      case TOKEN_WORD:
+      case TOKEN_TEXT:
         if (lookingAtFieldStart())
           break loop;  // it's a field specifier
         break;
-      case TOKEN_UNKNOWN:
       case TOKEN_MINUS:
       case TOKEN_COLON:
         break;
