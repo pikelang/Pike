@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.5 2003/03/07 17:41:05 nilsson Exp $
+// $Id: FakeFile.pike,v 1.6 2003/04/14 12:51:12 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -112,14 +112,12 @@ string read(void|int(0..) len, void|int(0..1) not_all) {
   int start = ptr;
   int end;
 
+  if(len>sizeof(data)) len=sizeof(data);
   if(zero_type(len))
     end = sizeof(data)-1;
   else
     end = start+len-1;
   ptr = end+1;
-
-  if(!not_all && (end >= sizeof(data)))
-    return 0;
 
   return data[start..end];
 }
