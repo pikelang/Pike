@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.3 2000/12/12 00:28:40 per Exp $");
+RCSID("$Id: freetype.c,v 1.4 2001/06/24 03:42:27 per Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -31,8 +31,8 @@ struct face
 {
   FT_Face face;
 };
-#define FACE(X) ((struct face*)get_storage(X,face_program))->face
-#define TFACE   FACE(fp->current_object)
+
+#define TFACE   ((struct face*)Pike_fp->current_storage)->face
 
 
 static void image_ft_face_free( struct object *o )
