@@ -2,11 +2,13 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.h,v 1.1 2001/04/30 17:30:25 mast Exp $
+ * $Id: rbtree.h,v 1.2 2001/05/01 01:11:23 mast Exp $
  */
 
 #ifndef RBTREE_H
 #define RBTREE_H
+
+#include "array.h"
 
 /* A red/black tree is a binary tree with one extra bit of info in
  * each node - the color of it. The following properties holds:
@@ -31,7 +33,7 @@ struct rb_node_hdr {
 
 /* Note: Don't access the ind svalue (or at least not its type field)
  * in the following directly, since the flags above overlay that. Use
- * assign_rb_node_ind_no_free() instead. */
+ * assign_rb_node_ind_no_free() or similar instead. */
 
 struct rb_node_ind {
   struct rb_node_ind *prev, *next; /* Must be first. */
@@ -79,6 +81,49 @@ union rb_node {
 #define RB_IND_FLAG_MASK 0xf000
 /* The flag marker is set to nail direct uses of the ind type field. */
 
+PMOD_EXPORT int rb_ind_default_cmp (struct svalue *key, union rb_node *node);
+typedef int low_rb_cmp_fn (void *key, struct rb_node_hdr *node);
+
+PMOD_EXPORT union rb_node *rb_find_eq_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_lt_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_gt_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_le_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_ge_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less);
+PMOD_EXPORT struct rb_node_hdr *rb_first (struct rb_node_hdr *tree);
+PMOD_EXPORT struct rb_node_hdr *rb_last (struct rb_node_hdr *tree);
+PMOD_EXPORT struct rb_node_hdr *rb_prev (struct rb_node_hdr *node);
+PMOD_EXPORT struct rb_node_hdr *rb_next (struct rb_node_hdr *node);
+
+#ifdef PIKE_DEBUG
+/* To get good type checking. */
+static inline struct rb_node_hdr *rb_node_ind_check (struct rb_node_ind *node)
+  {return (struct rb_node_hdr *) node;}
+static inline struct rb_node_hdr *rb_node_indval_check (struct rb_node_indval *node)
+  {return (struct rb_node_hdr *) node;}
+#else
+#define rb_node_ind_check(node) ((struct rb_node_hdr *) (node))
+#define rb_node_indval_check(node) ((struct rb_node_hdr *) (node))
+#endif
+
+#define RB_DECL_FIND_FUNC(type, func, tree, key, cmp_less)		\
+  ((struct type *) debug_malloc_pass (					\
+    (cmp_less) ? (struct rb_node_hdr *) PIKE_CONCAT (func, _extcmp) (	\
+      (union rb_node *) debug_malloc_pass (PIKE_CONCAT (type, _check) (tree)), \
+      dmalloc_touch (struct svalue *, key),				\
+      (cmp_less))							\
+    : PIKE_CONCAT (low_, func) (					\
+      (struct rb_node_hdr *) debug_malloc_pass (PIKE_CONCAT (type, _check) (tree)), \
+      (low_rb_cmp_fn *) rb_ind_default_cmp,				\
+      dmalloc_touch (struct svalue *, key))))
+#define RB_DECL_STEP_FUNC(type, func, node)				\
+  ((struct type *) debug_malloc_pass (					\
+    func ((struct rb_node_hdr *) debug_malloc_pass (PIKE_CONCAT (type, _check) (node)))))
+
 /* Operations:
  *
  * insert:
@@ -105,7 +150,7 @@ union rb_node {
  *     right node among several with the same index.
  *
  * find_eq:
- *     Returns an arbitrary entry which have the given index, or zero
+ *     Returns an arbitrary entry which has the given index, or zero
  *     if none exists.
  *
  * find_lt, find_gt, find_le, find_ge:
@@ -131,6 +176,15 @@ PMOD_EXPORT int rb_ind_delete (struct rb_node_ind **tree,
 			       struct svalue *cmp_less);
 PMOD_EXPORT struct rb_node_ind *rb_ind_copy (struct rb_node_ind *tree);
 PMOD_EXPORT void rb_ind_free (struct rb_node_ind *tree);
+#define rb_ind_find_eq(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_eq, tree, key, cmp_less)
+#define rb_ind_find_lt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_lt, tree, key, cmp_less)
+#define rb_ind_find_gt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_gt, tree, key, cmp_less)
+#define rb_ind_find_le(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_le, tree, key, cmp_less)
+#define rb_ind_find_ge(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_ge, tree, key, cmp_less)
+#define rb_ind_first(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_first, tree)
+#define rb_ind_last(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_last, tree)
+#define rb_ind_prev(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_prev, tree)
+#define rb_ind_next(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_next, tree)
 
 /* Functions for handling nodes with index and value. */
 PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tree,
@@ -154,64 +208,15 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_delete_node (struct rb_node_indval 
 							  struct svalue *cmp_less);
 PMOD_EXPORT struct rb_node_indval *rb_indval_copy (struct rb_node_indval *tree);
 PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree);
-
-/* Functions for handling both types of nodes. */
-PMOD_EXPORT union rb_node *rb_find_eq (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_lt (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_gt (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_le (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_ge (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less);
-
-/* Functions for handling any type of node. */
-PMOD_EXPORT struct rb_node_hdr *rb_first (struct rb_node_hdr *tree);
-PMOD_EXPORT struct rb_node_hdr *rb_last (struct rb_node_hdr *tree);
-PMOD_EXPORT struct rb_node_hdr *rb_prev (struct rb_node_hdr *node);
-PMOD_EXPORT struct rb_node_hdr *rb_next (struct rb_node_hdr *node);
-
-#define RB_IND_FIND_FUNC(func, tree, key, cmp_less) \
-  ((struct rb_node_ind *) func ((union rb_node *) (tree), (key), (cmp_less)))
-#define RB_IND_STEP_FUNC(func, tree) \
-  ((struct rb_node_ind *) func ((struct rb_node_hdr *) (tree)))
-
-#define rb_ind_find_eq(tree, key, cmp_less) \
-  RB_IND_FIND_FUNC (rb_find_eq, tree, key, cmp_less)
-#define rb_ind_find_lt(tree, key, cmp_less) \
-  RB_IND_FIND_FUNC (rb_find_lt, tree, key, cmp_less)
-#define rb_ind_find_gt(tree, key, cmp_less) \
-  RB_IND_FIND_FUNC (rb_find_gt, tree, key, cmp_less)
-#define rb_ind_find_le(tree, key, cmp_less) \
-  RB_IND_FIND_FUNC (rb_find_le, tree, key, cmp_less)
-#define rb_ind_find_ge(tree, key, cmp_less) \
-  RB_IND_FIND_FUNC (rb_find_ge, tree, key, cmp_less)
-#define rb_ind_first(tree) RB_IND_STEP_FUNC (rb_first, tree)
-#define rb_ind_last(tree) RB_IND_STEP_FUNC (rb_last, tree)
-#define rb_ind_prev(tree) RB_IND_STEP_FUNC (rb_prev, tree)
-#define rb_ind_next(tree) RB_IND_STEP_FUNC (rb_next, tree)
-
-#define RB_INDVAL_FIND_FUNC(func, tree, key, cmp_less) \
-  ((struct rb_node_indval *) func ((union rb_node *) (tree), (key), (cmp_less)))
-#define RB_INDVAL_STEP_FUNC(func, tree) \
-  ((struct rb_node_indval *) func ((struct rb_node_hdr *) (tree)))
-
-#define rb_indval_find_eq(tree, key, cmp_less) \
-  RB_INDVAL_FIND_FUNC (rb_find_eq, tree, key, cmp_less)
-#define rb_indval_find_lt(tree, key, cmp_less) \
-  RB_INDVAL_FIND_FUNC (rb_find_lt, tree, key, cmp_less)
-#define rb_indval_find_gt(tree, key, cmp_less) \
-  RB_INDVAL_FIND_FUNC (rb_find_gt, tree, key, cmp_less)
-#define rb_indval_find_le(tree, key, cmp_less) \
-  RB_INDVAL_FIND_FUNC (rb_find_le, tree, key, cmp_less)
-#define rb_indval_find_ge(tree, key, cmp_less) \
-  RB_INDVAL_FIND_FUNC (rb_find_ge, tree, key, cmp_less)
-#define rb_indval_first(tree) RB_INDVAL_STEP_FUNC (rb_first, tree)
-#define rb_indval_last(tree) RB_INDVAL_STEP_FUNC (rb_last, tree)
-#define rb_indval_prev(tree) RB_INDVAL_STEP_FUNC (rb_prev, tree)
-#define rb_indval_next(tree) RB_INDVAL_STEP_FUNC (rb_next, tree)
+#define rb_indval_find_eq(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_eq, tree, key, cmp_less)
+#define rb_indval_find_lt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_lt, tree, key, cmp_less)
+#define rb_indval_find_gt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_gt, tree, key, cmp_less)
+#define rb_indval_find_le(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_le, tree, key, cmp_less)
+#define rb_indval_find_ge(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_ge, tree, key, cmp_less)
+#define rb_indval_first(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_first, tree)
+#define rb_indval_last(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_last, tree)
+#define rb_indval_prev(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_prev, tree)
+#define rb_indval_next(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_next, tree)
 
 /* Accessing the index svalue in a node. */
 #define assign_rb_node_ind_no_free(to, node) do {			\
@@ -397,6 +402,8 @@ do {									\
 	     --PIKE_CONCAT (depth_, label), "", node); {pop;});		\
 } while (0)
 
+/* The `cmp' code should set the variable cmp_res to the result of the
+ * comparison between the key and the current node `node'. */
 #define LOW_RB_FIND(node, cmp, got_lt, got_eq, got_gt)			\
 do {									\
   int cmp_res;								\
@@ -459,7 +466,33 @@ do {									\
   }									\
 } while (0)
 
-typedef int low_rb_cmp_fn (void *key, struct rb_node_hdr *node);
+/* An alternative to low_rb_insert, which might or might not insert
+ * the newly created node. This one compares nodes like LOW_RB_FIND
+ * and will only run the code `insert' when a new node actually is to
+ * be inserted, otherwise it runs the code `replace' on the matching
+ * existing node. */
+#define LOW_RB_INSERT(tree, node, cmp, insert, replace)			\
+do {									\
+  if (((node) = *(tree))) {						\
+    RBSTACK_INIT (slice, ssp);						\
+    LOW_RB_TRACK (slice, ssp, node, cmp, {				\
+      DO_IF_DEBUG ((node) = 0);						\
+      {insert;}								\
+      low_rb_link_at_next ((tree), slice, ssp, (node));			\
+    }, {								\
+      {replace;}							\
+      RBSTACK_FREE (slice);						\
+    }, {								\
+      DO_IF_DEBUG ((node) = 0);						\
+      {insert;}								\
+      low_rb_link_at_prev ((tree), slice, ssp, (node));			\
+    });									\
+  }									\
+  else {								\
+    {insert;}								\
+    low_rb_init_root (*(tree) = (node));				\
+  }									\
+} while (0)
 
 /* Used when unlinking nodes. Since an interior node can't be unlinked
  * we need to move over the data from a leaf node and unlink that

@@ -2,11 +2,10 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.1 2001/04/30 17:30:25 mast Exp $
+ * $Id: rbtree.c,v 1.2 2001/05/01 01:11:23 mast Exp $
  */
 
 #include "global.h"
-#include "array.h"
 #include "constants.h"
 #include "builtin_functions.h"
 #include "interpret.h"
@@ -16,7 +15,9 @@
 #include "rbtree.h"
 #include "block_alloc.h"
 
-#ifdef PIKE_DEBUG
+/* #define TEST_RBTREE */
+
+#if defined (PIKE_DEBUG) || defined (TEST_RBTREE)
 
 typedef void dump_data_fn (struct rb_node_hdr *node);
 static void debug_dump_ind_data (struct rb_node_ind *node);
@@ -25,71 +26,22 @@ static void debug_dump_rb_tree (struct rb_node_hdr *tree, dump_data_fn *dump_dat
 DECLSPEC(noreturn) static void debug_rb_fatal (struct rb_node_hdr *tree, const char *fmt, ...) ATTRIBUTE((noreturn, format (printf, 2, 3)));
 DECLSPEC(noreturn) static void debug_rb_ind_fatal (struct rb_node_ind *tree, const char *fmt, ...) ATTRIBUTE((noreturn, format (printf, 2, 3)));
 DECLSPEC(noreturn) static void debug_rb_indval_fatal (struct rb_node_indval *tree, const char *fmt, ...) ATTRIBUTE((noreturn, format (printf, 2, 3)));
-#define rb_fatal (fprintf (stderr, "%s:%d: Fatal in rbtree: ", __FILE__, __LINE__), debug_rb_fatal)
-#define rb_ind_fatal (fprintf (stderr, "%s:%d: Fatal in rbtree: ", __FILE__, __LINE__), debug_rb_ind_fatal)
-#define rb_indval_fatal (fprintf (stderr, "%s:%d: Fatal in rbtree: ", __FILE__, __LINE__), debug_rb_indval_fatal)
+#define rb_fatal (fprintf (stderr, "%s:%d: Fatal in rbtree: ", \
+			   __FILE__, __LINE__), debug_rb_fatal)
+#define rb_ind_fatal (fprintf (stderr, "%s:%d: Fatal in ind rbtree: ", \
+			       __FILE__, __LINE__), debug_rb_ind_fatal)
+#define rb_indval_fatal (fprintf (stderr, "%s:%d: Fatal in indval rbtree: ", \
+				  __FILE__, __LINE__), debug_rb_indval_fatal)
 
 #endif
 
 #define HDR(node) ((struct rb_node_hdr *) (node))
-#define PREV(node) ((union rb_node *) (node)->h.prev)
-#define NEXT(node) ((union rb_node *) (node)->h.next)
 
-#define LOW_IND_FIND(node, key, cmp, got_lt, got_eq, got_gt)		\
-do {									\
-  int cmp_res;								\
-  struct svalue cur;							\
-  while (1) {								\
-    DO_IF_DEBUG (if (!node) fatal ("Recursing into null node.\n"));	\
-    cur = (node)->i.ind;						\
-    cur.type &= ~RB_IND_FLAG_MASK;					\
-    {cmp;}								\
-    if (cmp_res > 0) {							\
-      if ((node)->h.flags & RB_THREAD_NEXT) {				\
-	{got_lt;}							\
-	break;								\
-      }									\
-      (node) = NEXT (node);						\
-    }									\
-    else if (cmp_res < 0) {						\
-      if ((node)->h.flags & RB_THREAD_PREV) {				\
-	{got_gt;}							\
-	break;								\
-      }									\
-      (node) = PREV (node);						\
-    }									\
-    else {								\
-      {got_eq;}								\
-      break;								\
-    }									\
-  }									\
-} while (0)
-
-#define IND_FIND(node, key, cmp_less, descend, got_lt, got_eq, got_gt)	\
-do {									\
-  if (cmp_less)								\
-    LOW_IND_FIND (node, key, {						\
-      {descend;}							\
-      push_svalue (key);						\
-      push_svalue (&cur);						\
-      apply_svalue (cmp_less, 2);					\
-      if (IS_ZERO (sp - 1))						\
-	cmp_res = !is_eq (key, &cur);					\
-      else								\
-	cmp_res = -1;							\
-      pop_stack();							\
-    }, got_lt, got_eq, got_gt);						\
-  else									\
-    LOW_IND_FIND (node, key, {						\
-      {descend;}							\
-      cmp_res = set_svalue_cmpfun (key, &cur);				\
-    }, got_lt, got_eq, got_gt);						\
-} while (0)
-
-static int internal_cmp (struct svalue *key, struct rb_node_ind *node)
+/* The default compare function for ind and indval. */
+PMOD_EXPORT int rb_ind_default_cmp (struct svalue *key, union rb_node *node)
 {
   struct svalue tmp;
-  return set_svalue_cmpfun (key, &use_rb_node_ind (node, tmp));
+  return set_svalue_cmpfun (key, &use_rb_node_ind (&(node->i), tmp));
 }
 
 struct svalue_cmp_data
@@ -97,18 +49,43 @@ struct svalue_cmp_data
   struct svalue *key, *cmp_less;
 };
 
-static int svalue_cmp (struct svalue_cmp_data *data, struct rb_node_ind *node)
+static int svalue_cmp_eq (struct svalue_cmp_data *data, struct rb_node_ind *node)
 {
   int cmp_res;
   struct svalue tmp;
-  use_rb_node_ind (node, tmp);
   push_svalue (data->key);
-  push_svalue (&tmp);
+  push_svalue (&use_rb_node_ind (node, tmp));
   apply_svalue (data->cmp_less, 2);
   if (IS_ZERO (sp - 1))
     cmp_res = !is_eq (data->key, &tmp);
   else
     cmp_res = -1;
+  pop_stack();
+  return cmp_res;
+}
+
+/* Considers equal as greater. */
+static int svalue_cmp_ge (struct svalue_cmp_data *data, struct rb_node_ind *node)
+{
+  int cmp_res;
+  struct svalue tmp;
+  push_svalue (data->key);
+  push_svalue (&use_rb_node_ind (node, tmp));
+  apply_svalue (data->cmp_less, 2);
+  cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
+  pop_stack();
+  return cmp_res;
+}
+
+/* Considers equal as less. */
+static int svalue_cmp_le (struct svalue_cmp_data *data, struct rb_node_ind *node)
+{
+  int cmp_res;
+  struct svalue tmp;
+  push_svalue (&use_rb_node_ind (node, tmp));
+  push_svalue (data->key);
+  apply_svalue (data->cmp_less, 2);
+  cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
   pop_stack();
   return cmp_res;
 }
@@ -128,39 +105,37 @@ PMOD_EXPORT struct rb_node_ind *rb_ind_insert (struct rb_node_ind **tree,
 					       struct svalue *ind,
 					       struct svalue *cmp_less)
 {
-  union rb_node *new;
+  struct rb_node_ind *node;
+  struct svalue tmp;
 
-  if (*tree) {
-    union rb_node *node = (union rb_node *) *tree;
-    RBSTACK_INIT (slice, ssp);
-
-    IND_FIND (node, ind, cmp_less, {
-      RBSTACK_PUSH (slice, ssp, &node->h);
-    }, {			/* Got less. */
-      new = (union rb_node *) alloc_rb_node_ind();
-      assign_svalue_no_free (&new->i.ind, ind);
-      DO_IF_DEBUG (new->h.flags |= RB_FLAG_MARKER);
-      low_rb_link_at_next ((struct rb_node_hdr **) tree, slice, ssp, &new->h);
-      return &new->i;
-    }, {			/* Got equal. */
-      RBSTACK_FREE (slice);
-      return 0;
-    }, {			/* Got greater. */
-      new = (union rb_node *) alloc_rb_node_ind();
-      assign_svalue_no_free (&new->i.ind, ind);
-      DO_IF_DEBUG (new->h.flags |= RB_FLAG_MARKER);
-      low_rb_link_at_prev ((struct rb_node_hdr **) tree, slice, ssp, &new->h);
-      return &new->i;
+  if (cmp_less) {
+    struct svalue_cmp_data data;
+    data.cmp_less = cmp_less;
+    data.key = ind;
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
+      cmp_res = svalue_cmp_eq (&data, node);
+    }, {			/* Insert. */
+      node = alloc_rb_node_ind();
+      assign_svalue_no_free (&node->ind, ind);
+      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+    }, {			/* Replace. */
+      node = 0;
     });
   }
 
   else {
-    new = (union rb_node *) (*tree = alloc_rb_node_ind());
-    assign_svalue_no_free (&new->i.ind, ind);
-    DO_IF_DEBUG (new->h.flags |= RB_FLAG_MARKER);
-    low_rb_init_root (&new->h);
-    return &new->i;
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
+      cmp_res = set_svalue_cmpfun (ind, &use_rb_node_ind (node, tmp));
+    }, {			/* Insert. */
+      node = alloc_rb_node_ind();
+      assign_svalue_no_free (&node->ind, ind);
+      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+    }, {			/* Replace. */
+      node = 0;
+    });
   }
+
+  return node;
 }
 
 PMOD_EXPORT struct rb_node_ind *rb_ind_add (struct rb_node_ind **tree,
@@ -177,12 +152,12 @@ PMOD_EXPORT struct rb_node_ind *rb_ind_add (struct rb_node_ind **tree,
     data.cmp_less = cmp_less;
     data.key = ind;
     low_rb_add ((struct rb_node_hdr **) tree,
-		(low_rb_cmp_fn *) svalue_cmp, &data,
+		(low_rb_cmp_fn *) svalue_cmp_eq, &data,
 		HDR (new));
   }
   else
     low_rb_add ((struct rb_node_hdr **) tree,
-		(low_rb_cmp_fn *) internal_cmp, ind,
+		(low_rb_cmp_fn *) rb_ind_default_cmp, ind,
 		HDR (new));
   return new;
 }
@@ -197,12 +172,12 @@ PMOD_EXPORT int rb_ind_delete (struct rb_node_ind **tree,
     data.cmp_less = cmp_less;
     data.key = ind;
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
-			       (low_rb_cmp_fn *) svalue_cmp, &data,
+			       (low_rb_cmp_fn *) svalue_cmp_eq, &data,
 			       (low_rb_move_data_fn *) move_ind_data);
   }
   else
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
-			       (low_rb_cmp_fn *) internal_cmp, ind,
+			       (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
 			       (low_rb_move_data_fn *) move_ind_data);
   if (old) {
     struct svalue tmp;
@@ -255,42 +230,39 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tre
 						     struct svalue *val,
 						     struct svalue *cmp_less)
 {
-  union rb_node *new;
+  struct rb_node_indval *node;
+  struct svalue tmp;
 
-  if (*tree) {
-    union rb_node *node = (union rb_node *) *tree;
-    RBSTACK_INIT (slice, ssp);
-
-    IND_FIND (node, ind, cmp_less, {
-      RBSTACK_PUSH (slice, ssp, &node->h);
-    }, {			/* Got less. */
-      new = (union rb_node *) alloc_rb_node_indval();
-      assign_svalue_no_free (&new->iv.ind, ind);
-      assign_svalue_no_free (&new->iv.val, val);
-      DO_IF_DEBUG (new->h.flags |= RB_FLAG_MARKER);
-      low_rb_link_at_next ((struct rb_node_hdr **) tree, slice, ssp, &new->h);
-      return &new->iv;
-    }, {			/* Got equal. */
-      RBSTACK_FREE (slice);
-      return 0;
-    }, {			/* Got greater. */
-      new = (union rb_node *) alloc_rb_node_indval();
-      assign_svalue_no_free (&new->iv.ind, ind);
-      assign_svalue_no_free (&new->iv.val, val);
-      DO_IF_DEBUG (new->h.flags |= RB_FLAG_MARKER);
-      low_rb_link_at_prev ((struct rb_node_hdr **) tree, slice, ssp, &new->h);
-      return &new->iv;
+  if (cmp_less) {
+    struct svalue_cmp_data data;
+    data.cmp_less = cmp_less;
+    data.key = ind;
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
+      cmp_res = svalue_cmp_eq (&data, (struct rb_node_ind *) node);
+    }, {			/* Insert. */
+      node = alloc_rb_node_indval();
+      assign_svalue_no_free (&node->ind, ind);
+      assign_svalue_no_free (&node->val, val);
+      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+    }, {			/* Replace. */
+      node = 0;
     });
   }
 
   else {
-    new = (union rb_node *) (*tree = alloc_rb_node_indval());
-    assign_svalue_no_free (&new->iv.ind, ind);
-    assign_svalue_no_free (&new->iv.val, val);
-    DO_IF_DEBUG (new->h.flags |= RB_FLAG_MARKER);
-    low_rb_init_root (&new->h);
-    return &new->iv;
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
+      cmp_res = set_svalue_cmpfun (ind, &use_rb_node_ind (node, tmp));
+    }, {			/* Insert. */
+      node = alloc_rb_node_indval();
+      assign_svalue_no_free (&node->ind, ind);
+      assign_svalue_no_free (&node->val, val);
+      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+    }, {			/* Replace. */
+      node = 0;
+    });
   }
+
+  return node;
 }
 
 PMOD_EXPORT struct rb_node_indval *rb_indval_add (struct rb_node_indval **tree,
@@ -309,12 +281,12 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_add (struct rb_node_indval **tree,
     data.cmp_less = cmp_less;
     data.key = ind;
     low_rb_add ((struct rb_node_hdr **) tree,
-		(low_rb_cmp_fn *) svalue_cmp, &data,
+		(low_rb_cmp_fn *) svalue_cmp_eq, &data,
 		HDR (new));
   }
   else
     low_rb_add ((struct rb_node_hdr **) tree,
-		(low_rb_cmp_fn *) internal_cmp, ind,
+		(low_rb_cmp_fn *) rb_ind_default_cmp, ind,
 		HDR (new));
   return new;
 }
@@ -373,12 +345,12 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_add_after (struct rb_node_indval **
     data.cmp_less = cmp_less;
     data.key = ind;
     low_rb_add_after ((struct rb_node_hdr **) tree,
-		      (low_rb_cmp_fn *) svalue_cmp, &data,
+		      (low_rb_cmp_fn *) svalue_cmp_eq, &data,
 		      HDR (new), HDR (node));
   }
   else
     low_rb_add_after ((struct rb_node_hdr **) tree,
-		      (low_rb_cmp_fn *) internal_cmp, ind,
+		      (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
 		      HDR (new), HDR (node));
   return new;
 }
@@ -393,12 +365,12 @@ PMOD_EXPORT int rb_indval_delete (struct rb_node_indval **tree,
     data.cmp_less = cmp_less;
     data.key = ind;
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
-			       (low_rb_cmp_fn *) svalue_cmp, &data,
+			       (low_rb_cmp_fn *) svalue_cmp_eq, &data,
 			       (low_rb_move_data_fn *) move_indval_data);
   }
   else
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
-			       (low_rb_cmp_fn *) internal_cmp, ind,
+			       (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
 			       (low_rb_move_data_fn *) move_indval_data);
   if (old) {
     struct svalue tmp;
@@ -423,13 +395,13 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_delete_node (struct rb_node_indval 
     data.cmp_less = cmp_less;
     data.key = &tmp;
     HDR (old) = low_rb_delete_node ((struct rb_node_hdr **) tree,
-				    (low_rb_cmp_fn *) svalue_cmp, &data,
+				    (low_rb_cmp_fn *) svalue_cmp_eq, &data,
 				    (low_rb_move_data_fn *) move_ind_data,
 				    HDR (node));
   }
   else
     HDR (old) = low_rb_delete_node ((struct rb_node_hdr **) tree,
-				    (low_rb_cmp_fn *) internal_cmp, &tmp,
+				    (low_rb_cmp_fn *) rb_ind_default_cmp, &tmp,
 				    (low_rb_move_data_fn *) move_ind_data,
 				    HDR (node));
   free_svalue (&use_rb_node_ind (old, tmp));
@@ -467,95 +439,61 @@ PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree)
 
 /* Functions for handling both types of nodes. */
 
-PMOD_EXPORT union rb_node *rb_find_eq (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less)
+PMOD_EXPORT union rb_node *rb_find_eq_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less)
 {
-  if (tree)
-    IND_FIND (tree, key, cmp_less, ;, ;, return tree;, ;);
-  return 0;
+  struct svalue_cmp_data data;
+  data.cmp_less = cmp_less;
+  data.key = key;
+  return (union rb_node *)
+    low_rb_find_eq (HDR (tree), (low_rb_cmp_fn *) svalue_cmp_eq, &data);
 }
 
-PMOD_EXPORT union rb_node *rb_find_lt (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less)
+PMOD_EXPORT union rb_node *rb_find_lt_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less)
 {
-  if (tree) {
-    if (cmp_less)
-      LOW_IND_FIND (tree, key, {
-	push_svalue (&cur);
-	push_svalue (key);
-	apply_svalue (cmp_less, 2);
-	cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
-	pop_stack();
-      }, return tree, ;, return PREV (tree));
-    else
-      LOW_IND_FIND (tree, key,
-		    cmp_res = set_svalue_cmpfun (&cur, key) < 0 ? 1 : -1,
-		    return tree, ;, return PREV (tree));
-  }
-  return 0;
+  struct svalue_cmp_data data;
+  data.cmp_less = cmp_less;
+  data.key = key;
+  return (union rb_node *)
+    low_rb_find_lt (HDR (tree), (low_rb_cmp_fn *) svalue_cmp_le, &data);
 }
 
-PMOD_EXPORT union rb_node *rb_find_gt (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less)
+PMOD_EXPORT union rb_node *rb_find_gt_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less)
 {
-  if (tree) {
-    if (cmp_less)
-      LOW_IND_FIND (tree, key, {
-	push_svalue (key);
-	push_svalue (&cur);
-	apply_svalue (cmp_less, 2);
-	cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
-	pop_stack();
-      }, return NEXT (tree), ;, return tree);
-    else
-      LOW_IND_FIND (tree, key,
-		    cmp_res = set_svalue_cmpfun (key, &cur) < 0 ? -1 : 1,
-		    return NEXT (tree), ;, return tree);
-  }
-  return 0;
+  struct svalue_cmp_data data;
+  data.cmp_less = cmp_less;
+  data.key = key;
+  return (union rb_node *)
+    low_rb_find_gt (HDR (tree), (low_rb_cmp_fn *) svalue_cmp_ge, &data);
 }
 
-PMOD_EXPORT union rb_node *rb_find_le (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less)
+PMOD_EXPORT union rb_node *rb_find_le_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less)
 {
-  if (tree) {
-    if (cmp_less)
-      LOW_IND_FIND (tree, key, {
-	push_svalue (key);
-	push_svalue (&cur);
-	apply_svalue (cmp_less, 2);
-	cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
-	pop_stack();
-      }, return tree, ;, return PREV (tree));
-    else
-      LOW_IND_FIND (tree, key,
-		    cmp_res = set_svalue_cmpfun (key, &cur) < 0 ? -1 : 1,
-		    return tree, ;, return PREV (tree));
-  }
-  return 0;
+  struct svalue_cmp_data data;
+  data.cmp_less = cmp_less;
+  data.key = key;
+  return (union rb_node *)
+    low_rb_find_le (HDR (tree), (low_rb_cmp_fn *) svalue_cmp_ge, &data);
 }
 
-PMOD_EXPORT union rb_node *rb_find_ge (union rb_node *tree, struct svalue *key,
-				       struct svalue *cmp_less)
+PMOD_EXPORT union rb_node *rb_find_ge_extcmp (union rb_node *tree, struct svalue *key,
+					      struct svalue *cmp_less)
 {
-  if (tree) {
-    if (cmp_less)
-      LOW_IND_FIND (tree, key, {
-	push_svalue (&cur);
-	push_svalue (key);
-	apply_svalue (cmp_less, 2);
-	cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
-	pop_stack();
-      }, return NEXT (tree), ;, return tree);
-    else
-      LOW_IND_FIND (tree, key,
-		    cmp_res = set_svalue_cmpfun (&cur, key) < 0 ? 1 : -1,
-		    return NEXT (tree), ;, return tree);
-  }
-  return 0;
+  struct svalue_cmp_data data;
+  data.cmp_less = cmp_less;
+  data.key = key;
+  return (union rb_node *)
+    low_rb_find_ge (HDR (tree), (low_rb_cmp_fn *) svalue_cmp_le, &data);
 }
 
 /* Functions for handling any type of node. */
+
+/* Each of these step functions is O(log n), but when used to loop
+ * through a tree they still sum up to O(n) since every node is
+ * visited at most twice. */
 
 PMOD_EXPORT struct rb_node_hdr *rb_first (struct rb_node_hdr *tree)
 {
@@ -619,7 +557,7 @@ do {									\
  *            /   \                    /    \
  *           a     b                  b      c
  */
-INLINE static struct rb_node_hdr *rot_right (struct rb_node_hdr *node)
+static inline struct rb_node_hdr *rot_right (struct rb_node_hdr *node)
 {
   /* Note that we don't need to do anything special to keep the
    * pointers in a, b and c intact, even if they're thread
@@ -647,7 +585,7 @@ INLINE static struct rb_node_hdr *rot_right (struct rb_node_hdr *node)
  *                /   \             /    \
  *               b     c           a      b
  */
-INLINE static struct rb_node_hdr *rot_left (struct rb_node_hdr *node)
+static inline struct rb_node_hdr *rot_left (struct rb_node_hdr *node)
 {
   struct rb_node_hdr *ret = node->next;
   if (ret->flags & RB_THREAD_PREV) {
@@ -1054,7 +992,10 @@ static struct rb_node_hdr *rebalance_after_delete (
 
 void low_rb_init_root (struct rb_node_hdr *node)
 {
-  node->flags = (node->flags & ~RB_FLAG_MASK) | RB_THREAD_PREV | RB_THREAD_NEXT;
+#ifdef PIKE_DEBUG
+  if (!node) fatal ("New node is null.\n");
+#endif
+  node->flags = (node->flags & ~RB_RED) | RB_THREAD_PREV | RB_THREAD_NEXT;
   node->prev = node->next = 0;
 }
 
@@ -1066,8 +1007,8 @@ void low_rb_link_at_prev (struct rb_node_hdr **tree,
   struct rb_node_hdr *parent;
   RBSTACK_PEEK (slice, ssp, parent);
 #ifdef PIKE_DEBUG
-  if (!parent)
-    fatal ("Cannot link in root node.\n");
+  if (!new) fatal ("New node is null.\n");
+  if (!parent) fatal ("Cannot link in root node.\n");
   if (!(parent->flags & RB_THREAD_PREV))
     fatal ("Cannot link in node at interior prev link.\n");
 #endif
@@ -1088,8 +1029,8 @@ void low_rb_link_at_next (struct rb_node_hdr **tree,
   struct rb_node_hdr *parent;
   RBSTACK_PEEK (slice, ssp, parent);
 #ifdef PIKE_DEBUG
-  if (!parent)
-    fatal ("Cannot link in root node.\n");
+  if (!new) fatal ("New node is null.\n");
+  if (!parent) fatal ("Cannot link in root node.\n");
   if (!(parent->flags & RB_THREAD_NEXT))
     fatal ("Cannot link in node at interior next link.\n");
 #endif
@@ -1398,6 +1339,21 @@ struct rb_node_hdr *low_rb_find_ge (struct rb_node_hdr *tree,
 
 void init_rbtree()
 {
+#ifdef PIKE_DEBUG
+  union rb_node test;
+  test.h.flags = 0;
+  test.i.ind.type = (1 << 8) - 1;
+  test.i.ind.subtype = (1 << 16) - 1;
+  test.i.ind.u.refs = (INT32 *) (ptrdiff_t) -1;
+  if (test.h.flags & (RB_IND_FLAG_MASK))
+    fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+  test.h.flags |= RB_FLAG_MASK;
+  if (test.i.ind.type & RB_FLAG_MARKER)
+    fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+  test.i.ind.type |= RB_FLAG_MARKER;
+  if ((test.i.ind.type & ~RB_IND_FLAG_MASK) != (1 << 8) - 1)
+    fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+#endif
   init_rb_node_ind_blocks();
   init_rb_node_indval_blocks();
 }
@@ -1409,7 +1365,7 @@ void exit_rbtree()
   free_all_rb_node_indval_blocks();
 }
 
-#ifdef PIKE_DEBUG
+#if defined (PIKE_DEBUG) || defined (TEST_RBTREE)
 
 static void debug_dump_ind_data (struct rb_node_ind *node)
 {
@@ -1584,7 +1540,7 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
   }
 }
 
-#if 0
+#ifdef TEST_RBTREE
 
 #define TEST_I_FIND(fn, exp)						\
 do {									\
@@ -1602,15 +1558,6 @@ do {									\
   if (i_node->ind.u.integer != exp)					\
     rb_ind_fatal (i_tree, #fn " failed to find %d "			\
 		  "with cmp_less - got %d instead (%d).\n",		\
-		  exp, i_node->ind.u.integer, i);			\
-  HDR (i_node) = PIKE_CONCAT (low_rb_, fn) (				\
-    HDR (i_tree), (low_rb_cmp_fn *) internal_cmp, sp - 1);		\
-  if (!i_node)								\
-    rb_ind_fatal (i_tree, #fn " failed to low find %d (%d).\n",		\
-		  exp, i);						\
-  if (i_node->ind.u.integer != exp)					\
-    rb_ind_fatal (i_tree, #fn " failed to low find %d - "		\
-		  "got %d instead (%d).\n",				\
 		  exp, i_node->ind.u.integer, i);			\
 } while (0)
 
@@ -1666,15 +1613,6 @@ do {									\
   if (iv_node->ind.u.integer != exp)					\
     rb_indval_fatal (iv_tree, #fn " failed to find %d "			\
 		     "with cmp_less - got %d instead (%d).\n",		\
-		     exp, iv_node->ind.u.integer, i);			\
-  HDR (iv_node) = PIKE_CONCAT (low_rb_, fn) (				\
-    HDR (iv_tree), (low_rb_cmp_fn *) internal_cmp, sp - 1);		\
-  if (!iv_node)								\
-    rb_indval_fatal (iv_tree, #fn " failed to low find %d (%d).\n",	\
-		     exp, i);						\
-  if (iv_node->ind.u.integer != exp)					\
-    rb_indval_fatal (iv_tree, #fn " failed to low find %d - "		\
-		     "got %d instead (%d).\n",				\
 		     exp, iv_node->ind.u.integer, i);			\
 } while (0)
 
@@ -1983,6 +1921,6 @@ void test_rbtree()
   fprintf (stderr, "             \r");
 }
 
-#endif
+#endif /* TEST_RBTREE */
 
 #endif /* PIKE_DEBUG */
