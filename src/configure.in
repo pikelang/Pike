@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.133 1997/11/03 00:07:03 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.134 1997/11/03 03:11:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -139,6 +139,7 @@ esac
 #############################################################################
 
 
+# option, cache_name, variable
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   AC_MSG_CHECKING($1)
@@ -152,24 +153,26 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   CFLAGS="[$]OLD_CFLAGS"
   
   if test x"[$]pike_cv_option_$2" = "xyes" ; then
-    OPTIMIZE="[$]OPTIMIZE $1"
+    $3="[$]$3 $1"
     AC_MSG_RESULT(yes)
   else
     AC_MSG_RESULT(no)
   fi
 ])
 
+# arch, option, cache_name, variable
 AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
 [
  if test "`uname -m 2>/dev/null`" = "$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3)
+    AC_SYS_COMPILER_FLAG($2,$3,$4)
  fi
 ])
 
+# os, option, cache_name, variable
 AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
 [
  if test "x$pike_cv_sys_os" = "x$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3)
+    AC_SYS_COMPILER_FLAG($2,$3,$4)
  fi
 ])
 
@@ -181,80 +184,79 @@ if test $cflags_is_set = no; then
   WARN="-W -Wall -Wpointer-arith -Wno-unused"
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
-  AC_SYS_CPU_COMPILER_FLAG(sun4c,-msparclite,sparclite)
-  AC_SYS_CPU_COMPILER_FLAG(sun4m,-mv8,microsparc)
-  AC_SYS_CPU_COMPILER_FLAG(sun4d,-msupersparc,supersparc)
-  AC_SYS_CPU_COMPILER_FLAG(sun4u,-msupersparc,ultrasparc)
+  AC_SYS_CPU_COMPILER_FLAG(sun4c,-msparclite,sparclite,OPTIMIZE)
+  AC_SYS_CPU_COMPILER_FLAG(sun4m,-mv8,microsparc,OPTIMIZE)
+  AC_SYS_CPU_COMPILER_FLAG(sun4d,-msupersparc,supersparc,OPTIMIZE)
+  AC_SYS_CPU_COMPILER_FLAG(sun4u,-msupersparc,ultrasparc,OPTIMIZE)
  else
 
 ### Non-gcc thingies. This should probably be enhanced...
 
   # Solaris
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-dalign,dalign)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-fast,fast)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-fd,fd)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-mt,mt)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-native,native)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-xdepend,xdepend)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-xtransition,xtransition)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-dalign,dalign,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-fast,fast,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-native,native,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-xdepend,xdepend,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-fd,fd,WARN)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-xtransition,xtransition,WARN)
   # Causes __STDC__ to be 1 which causes several headerfiles to behave
   # differently.
-  # AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc)
+  # AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc,WARN)
 
   # HP-UX
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_O3)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_O3,OPTIMIZE)
   # Ignore warnings 530 and 414 if you turn this on.
-  # AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1)
+  # AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1,WARN)
 
   # OSF/1
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1,WARN)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos,WARN)
 
   # IRIX
   # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
-  # AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
+  # AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt,OPTIMIZE)
 
   # -n32 moved to smartlink so it will affekt cc as well as linker
   # this way the user can override it by setting LDFLAGS and/or CFLAGS
-  # AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32)
-  AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3)
-  AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn)
+  # AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32,CFLAGS)
+  AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn,WARN)
   if test x$with_debug = xyes ; then
-    AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw)
+    AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw,WARN)
   fi
 
 dnl
 dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
 dnl  
-dnl AC_SYS_COMPILER_FLAG(-native,native)
+dnl AC_SYS_COMPILER_FLAG(-native,native,OPTIMIZE)
 dnl
 
 dnl ### Ok. This is for apcc...
 case "$CC" in
   *apcc)
-    AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt)
-    AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2)
+    AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2,OPTIMIZE)
   ;;
 esac
 
 
-  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc)
-  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc)
-  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc)
+  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc,OPTIMIZE)
+  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc,OPTIMIZE)
+  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc,OPTIMIZE)
 
   case "${CFLAGS-} $OPTIMIZE" in
      *-O*) ;;
      *+O*) ;;
      *-fast*) ;;
      *)
-      AC_SYS_COMPILER_FLAG(-O2,O2)
+      AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE)
       if test "x$pike_cv_option_O2" != "xyes"; then
-        AC_SYS_COMPILER_FLAG(-O,O)
+        AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
       fi
      ;;
   esac
@@ -265,7 +267,7 @@ fi
 
 if test "$GCC" = "yes"; then
   if test $cflags_is_set = no; then
-    AC_SYS_COMPILER_FLAG(-pipe, pipe)
+    AC_SYS_COMPILER_FLAG(-pipe, pipe, CFLAGS)
   fi
 else
 #
