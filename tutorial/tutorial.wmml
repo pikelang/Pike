@@ -119,10 +119,10 @@ typeof         (Not a function and is documented in one way in misc
 
 
 Wrongly placed functions:
-_do_call_outs
-new
-basename  
-cpp 
+FIXED: _do_call_outs
+FIXED: new
+FIXED: basename  
+FIXED: cpp 
 
 
 Errors:
@@ -10372,6 +10372,25 @@ Pike if used incorrectly. Use with extreme caution.
 
 <HR NEWPAGE>
 
+<function name=_do_call_outs title="do all pending call_outs">
+<man_syntax>
+void _do_call_out();
+</man_syntax>
+<man_description>
+This function runs all pending call_outs that should have been
+run if Pike returned to the backend.  It should not be used in
+normal operation.
+<p>
+As a side-effect, this function sets the value returned by
+<tt>time(1)</tt> to the current time.
+</man_description>
+<man_see>
+call_out, find_call_out, remove_call_out
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=_exit title="Really exit" fullpath>
 <man_syntax>
 void _exit(int <i>returncode</I>);
@@ -10756,21 +10775,6 @@ tan, asin, acos
 
 <HR NEWPAGE>
 
-<function name=basename title="get the base of a filename">
-<man_syntax>
-string basename(string <i>filename</i>);
-</man_syntax>
-<man_description>
-This function returns the base of a filename, for instance the base of
-<tt>"/home/hubbe/bin/pike"</tt> would be <tt>"pike"</tt>.
-</man_description>
-<man_see>
-dirname, explode_path
-</man_see>
-</function>
-
-<HR NEWPAGE>
-
 <function name=backtrace title="get a description of the call stack">
 <man_syntax>
 array(array) backtrace();
@@ -10798,17 +10802,16 @@ catch, throw
 
 <HR NEWPAGE>
 
-<function name=cpp title="run the preprocessor on a string">
+<function name=basename title="get the base of a filename">
 <man_syntax>
-string cpp ( string <i>source</i>, string <i>filename</i>);
+string basename(string <i>filename</i>);
 </man_syntax>
 <man_description>
-This function runs the Pike preprocessor on a string. The second argument
-<i>filename</i> will be used for inserting <tt>#line</tt> statements into
-the result.
+This function returns the base of a filename, for instance the base of
+<tt>"/home/hubbe/bin/pike"</tt> would be <tt>"pike"</tt>.
 </man_description>
 <man_see>
-compile, compile_string, compile_file
+dirname, explode_path
 </man_see>
 </function>
 
@@ -10867,25 +10870,6 @@ contains an array that looks like this:
 <tr valign=top><td> ...   </td><td> /* and so on... */ </td></tr>
 </table>
 </dl>})<br>
-</man_description>
-<man_see>
-call_out, find_call_out, remove_call_out
-</man_see>
-</function>
-
-<HR NEWPAGE>
-
-<function name=_do_call_outs title="do all pending call_outs">
-<man_syntax>
-void _do_call_out();
-</man_syntax>
-<man_description>
-This function runs all pending call_outs that should have been
-run if Pike returned to the backend.  It should not be used in
-normal operation.
-<p>
-As a side-effect, this function sets the value returned by
-<tt>time(1)</tt> to the current time.
 </man_description>
 <man_see>
 call_out, find_call_out, remove_call_out
@@ -10955,23 +10939,6 @@ with <i>args</i> as arguments.
 </man_description>
 <man_see>
 new, destruct, compile_string, compile_file
-</man_see>
-</function>
-
-<HR NEWPAGE>
-
-<function name=new title="clone an object from a program">
-<man_syntax>
-object new(program <I>p</I>,mixed ... <I>args</I>);
-</man_syntax>
-<man_description>
-<tt>new()</tt> creates an object from the program <i>p</i>. Or in C++ terms:
-It creates an instance of the class <i>p</i>. This clone will first have
-all global variables initialized, and then <tt>create()</tt> will be called
-with <i>args</i> as arguments.
-</man_description>
-<man_see>
-clone, destruct, compile_string, compile_file
 </man_see>
 </function>
 
@@ -11104,6 +11071,22 @@ Returns the cosine value for <i>f</i>.
 </man_description>
 <man_see>
 acos, sin
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=cpp title="run the preprocessor on a string">
+<man_syntax>
+string cpp ( string <i>source</i>, string <i>filename</i>);
+</man_syntax>
+<man_description>
+This function runs the Pike preprocessor on a string. The second argument
+<i>filename</i> will be used for inserting <tt>#line</tt> statements into
+the result.
+</man_description>
+<man_see>
+compile, compile_string, compile_file
 </man_see>
 </function>
 
@@ -11988,6 +11971,23 @@ file already exists, it will be overwritten. Returns 1 on success,
 </man_description>
 <man_see>
 rm
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=new title="clone an object from a program">
+<man_syntax>
+object new(program <I>p</I>,mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
+<tt>new()</tt> creates an object from the program <i>p</i>. Or in C++ terms:
+It creates an instance of the class <i>p</i>. This clone will first have
+all global variables initialized, and then <tt>create()</tt> will be called
+with <i>args</i> as arguments.
+</man_description>
+<man_see>
+clone, destruct, compile_string, compile_file
 </man_see>
 </function>
 
@@ -13596,6 +13596,47 @@ the Pike binaries, libraries and include files in the directory you selected
 earlier.
 <p>
 You are now ready to use Pike.
+</appendix>
+
+<appendix title="How to convert from old versions of Pike" name=oldpike_info>
+
+This appendix contains some information about keywords, functions and
+old behavior. But there are only information about migration from old
+an old Pike to a new one, not the other way around.
+
+<dl>
+<dt> GIF-methonds in Image-objects.
+<dd> A lot of old GIF-methods are replaced with the Image.GIF-module.
+
+<dt> Image.image
+<dd> It is now Image.Image.
+
+<dt> PNM-methonds in Image-objects.
+<dd> PNM-methods are replaced with the Image.PNM-module.
+
+<dt> query_host_name
+<dd> This is no longer a global function but is still present in
+the Simulate-module.
+
+<dt> varargs
+<dd> The former keyword varargs is now removed. The syntax now is like
+<tt>void foo(string ... bar) {write(foo*"\n"+"\n");}</tt>.
+
+<dt> 
+<dd> 
+
+<dt> 
+<dd> 
+
+<dt> 
+<dd> 
+
+<dt> 
+<dd> 
+
+<dt> 
+<dd> 
+</dl>
 </appendix>
 
 <insert_added_appendices>
