@@ -155,6 +155,15 @@ string read_file(string filename,void|int start,void|int len)
   f=FILE();
   if(!f->open(filename,"r")) return 0;
 
+  // Disallow devices and directories.
+  array st;
+  if (f->stat && (st = f->stat()) && (st[1] < 0)) {
+    throw(({ sprintf("Stdio.read_file(): File \"%s\" is not a regular file!\n",
+		     filename),
+	     backtrace()
+    }));
+  }
+
   switch(query_num_arg())
   {
   case 1:
@@ -187,6 +196,15 @@ string read_bytes(string filename,void|int start,void|int len)
   if(!f->open(filename,"r"))
     return 0;
   
+  // Disallow devices and directories.
+  array st;
+  if (f->stat && (st = f->stat()) && (st[1] < 0)) {
+    throw(({sprintf("Stdio.read_bytes(): File \"%s\" is not a regular file!\n",
+		    filename),
+	    backtrace()
+    }));
+  }
+
   switch(query_num_arg())
   {
   case 1:
