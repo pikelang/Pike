@@ -20,6 +20,7 @@
 #include "threads.h"
 #include "array.h"
 #include "error.h"
+#include "builtin_functions.h"
 
 #include "image.h"
 

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.29 1999/04/21 23:33:34 mirar Exp $
+**!	$Id: image.h,v 1.30 1999/05/10 23:03:41 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -136,6 +136,10 @@ void image_mirrory(INT32 args);
 
 void image_toppm(INT32 args);
 void image_frompnm(INT32 args);
+
+/* x.c */
+
+void image_x_encode_pseudocolor(INT32 args);
  
 /* pattern.c */
 

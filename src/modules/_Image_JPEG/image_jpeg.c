@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.24 1999/05/01 19:00:58 mirar Exp $
+ * $Id: image_jpeg.c,v 1.25 1999/05/10 23:03:50 mirar Exp $
  */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.24 1999/05/01 19:00:58 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.25 1999/05/10 23:03:50 mirar Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
@@ -206,7 +206,7 @@ static int store_int_in_table(struct array *a,
 }
 
 static int parameter_qt(struct svalue *map,struct pike_string *what,
-			struct jpeg_compress_struct *cinfo)
+			j_compress_ptr cinfo)
 {
    struct svalue *v;
    unsigned int table[DCTSIZE2];
@@ -238,6 +238,65 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
 		  k->ind.u.integer,z,DCTSIZE2);
 
 	 jpeg_add_quant_table(cinfo,k->ind.u.integer,table,100,0);
+      }
+
+   return 1;
+}
+
+static int parameter_qt_d(struct svalue *map,struct pike_string *what,
+			  struct jpeg_decompress_struct *cinfo)
+{
+   struct svalue *v;
+   unsigned int table[DCTSIZE2];
+   struct mapping *m;
+   INT32 e;
+   struct keypair *k;
+
+   v=low_mapping_string_lookup(map->u.mapping,what);
+
+   if (!v) return 0;
+   else if (v->type!=T_MAPPING) 
+      error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
+
+   m=v->u.mapping;
+   MAPPING_LOOP(m)
+      {
+	 int z;
+	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
+	    error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
+
+	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
+	    error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
+
+	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
+	     DCTSIZE2)
+	    error("Image.JPEG.encode: illegal value of option quant_table;"
+		  " quant_table %d array is of illegal size (%d), "
+		  "expected %d integers\n",
+		  k->ind.u.integer,z,DCTSIZE2);
+
+	 /* jpeg_add_quant_table(cinfo,k->ind.u.integer,table,100,0); */
+
+	 do /* ripped from jpeg_add_quant_table */
+	 {
+	    JQUANT_TBL ** qtblptr = & cinfo->quant_tbl_ptrs[k->ind.u.integer];
+	    int i;
+	    long temp;
+
+	    if (*qtblptr == NULL)
+	       *qtblptr = jpeg_alloc_quant_table((j_common_ptr) cinfo);
+
+	    for (i = 0; i < DCTSIZE2; i++) {
+	       temp = table[i];
+	       /* limit the values to the valid range */
+	       if (temp <= 0L) temp = 1L;
+	       if (temp > 32767L) temp = 32767L; 
+	       (*qtblptr)->quantval[i] = (UINT16) temp;
+	    }
+
+	    (*qtblptr)->sent_table = FALSE;
+	 }
+	 while (0);
       }
 
    return 1;
@@ -595,7 +654,44 @@ static void img_jpeg_decode(INT32 args,int mode)
    cinfo.src=(struct jpeg_source_mgr*)&srcmgr;
 
    jpeg_read_header(&cinfo,TRUE);
-   
+
+   /* we can only handle RGB or GRAYSCALE */
+
+   if (cinfo.jpeg_color_space==JCS_GRAYSCALE)
+      cinfo.out_color_space=JCS_GRAYSCALE;
+   else
+      cinfo.out_color_space=JCS_RGB;
+
+   /* check configuration */
+
+   if (args>1)
+   {
+      INT32 p,q;
+
+      p=0;
+      q=75;
+      if (parameter_int(sp+1-args,param_method,&p)
+	  && (p==JDCT_IFAST ||
+	      p==JDCT_FLOAT ||
+	      p==JDCT_DEFAULT ||
+	      p==JDCT_ISLOW ||
+	      p==JDCT_FASTEST))
+	 cinfo.dct_method=p;
+
+      if (parameter_int(sp+1-args,param_fancy_upsampling,&p))
+	 cinfo.do_fancy_upsampling=!!p;
+      
+      if (parameter_int(sp+1-args,param_block_smoothing,&p))
+	 cinfo.do_block_smoothing=!!p;
+      
+      if (parameter_int(sp+1-args,param_scale_denom,&p)
+	 &&parameter_int(sp+1-args,param_scale_num,&q))
+	 cinfo.scale_num=q,
+	 cinfo.scale_denom=p;
+
+      parameter_qt_d(sp+1-args,param_quant_tables,&cinfo);
+   }
+
    if (mode!=IMG_DECODE_IMAGE)
    {
       /* standard header info */
@@ -656,41 +752,6 @@ static void img_jpeg_decode(INT32 args,int mode)
 
       push_text("adobe_marker"); n++;
       push_int(cinfo.saw_Adobe_marker);
-   }
-
-   /* we can only handle RGB or GRAYSCALE */
-
-   if (cinfo.jpeg_color_space==JCS_GRAYSCALE)
-      cinfo.out_color_space=JCS_GRAYSCALE;
-   else
-      cinfo.out_color_space=JCS_RGB;
-
-   /* check configuration */
-
-   if (args>1)
-   {
-      INT32 p,q;
-
-      p=0;
-      q=75;
-      if (parameter_int(sp+1-args,param_method,&p)
-	  && (p==JDCT_IFAST ||
-	      p==JDCT_FLOAT ||
-	      p==JDCT_DEFAULT ||
-	      p==JDCT_ISLOW ||
-	      p==JDCT_FASTEST))
-	 cinfo.dct_method=p;
-
-      if (parameter_int(sp+1-args,param_fancy_upsampling,&p))
-	 cinfo.do_fancy_upsampling=!!p;
-      
-      if (parameter_int(sp+1-args,param_block_smoothing,&p))
-	 cinfo.do_block_smoothing=!!p;
-      
-      if (parameter_int(sp+1-args,param_scale_denom,&p)
-	 &&parameter_int(sp+1-args,param_scale_num,&q))
-	 cinfo.scale_num=q,
-	 cinfo.scale_denom=p;
    }
 
    if (mode!=IMG_DECODE_HEADER)

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.22 1999/04/23 15:25:18 mirar Exp $");
+RCSID("$Id: png.c,v 1.23 1999/05/10 23:03:45 mirar Exp $");
 
 #include "config.h"
 
@@ -14,6 +14,8 @@ RCSID("$Id: png.c,v 1.22 1999/04/23 15:25:18 mirar Exp $");
 #include "error.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
+#include "builtin_functions.h"
+#include "operators.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -32,11 +34,6 @@ static struct pike_string *param_alpha;
 static struct pike_string *param_type;
 static struct pike_string *param_bpp;
 static struct pike_string *param_background;
-
-
-void f_add(INT32 args);
-void f_aggregate(INT32 args);
-void f_index(INT32 args);
 
 
 /*

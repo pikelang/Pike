@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.3 1999/04/15 04:08:38 hubbe Exp $");
+RCSID("$Id: xbm.c,v 1.4 1999/05/10 23:03:47 mirar Exp $");
 
 #include "config.h"
 
@@ -33,7 +33,7 @@ RCSID("$Id: xbm.c,v 1.3 1999/04/15 04:08:38 hubbe Exp $");
 #include "cyclic.h"
 #include "signal_handler.h"
 #include "security.h"
-
+#include "builtin_functions.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -250,7 +250,6 @@ static struct pike_string *param_bg;
 static struct pike_string *param_invert;
 static void image_xbm__decode( INT32 args )
 {
-  extern void f_aggregate(INT32 args);
   struct array *fg = NULL;
   struct array *bg = NULL;
   int invert=0, ele;

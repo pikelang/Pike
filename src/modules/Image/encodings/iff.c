@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.2 1999/04/09 16:18:42 marcus Exp $ */
+/* $Id: iff.c,v 1.3 1999/05/10 23:03:44 mirar Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.2 1999/04/09 16:18:42 marcus Exp $");
+RCSID("$Id: iff.c,v 1.3 1999/05/10 23:03:44 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -13,6 +13,7 @@ RCSID("$Id: iff.c,v 1.2 1999/04/09 16:18:42 marcus Exp $");
 #include "array.h"
 #include "error.h"
 #include "operators.h"
+#include "builtin_functions.h"
 
 
 static INT32 low_parse_iff(unsigned char *data, INT32 len, unsigned char *hdr,
