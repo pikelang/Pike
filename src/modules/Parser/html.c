@@ -23,8 +23,8 @@ extern struct program *parser_html_program;
 
 /*
 #define SCAN_DEBUG
-*/
 #define DEBUG
+*/
 
 #ifdef DEBUG
 #undef DEBUG
@@ -2818,13 +2818,13 @@ static void try_feed(int finished)
    for (;;)
    {
       newstate res;
-      if (THIS->stack->prev) ignore_tag_cb = 0;
+      st=THIS->stack;
       res = do_try_feed(THIS,THISOBJ,
-			THIS->stack,
-			THIS->stack->prev
-			?&(THIS->stack->local_feed)
+			st,
+			st->prev
+			?&(st->local_feed)
 			:&(THIS->feed),
-			finished||(THIS->stack->prev!=NULL),
+			finished||(st->prev!=NULL),
 			ignore_tag_cb);
       ignore_tag_cb = 0;
       switch (res)
@@ -2851,7 +2851,7 @@ static void try_feed(int finished)
 	    return;
 
 	 case STATE_REPARSE: /* user requested another go at the current data */
-	    if (THIS->ignore_unknown) ignore_tag_cb = 1;
+	    if (THIS->ignore_unknown && st == THIS->stack) ignore_tag_cb = 1;
 	    /* FALL THROUGH */
 
 	 case STATE_REREAD: /* reread stack head */
