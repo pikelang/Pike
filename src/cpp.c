@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.44 1999/02/26 01:09:31 grubba Exp $
+ * $Id: cpp.c,v 1.45 1999/02/26 23:29:46 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -1442,6 +1442,54 @@ static INT32 low_cpp(struct cpp *this,
 
       goto unknown_preprocessor_directive;
 
+    case 'c': /* charset */
+      if (WGOBBLE("charset")) {
+	/* FIXME: Should probably only be allowed in 8bit strings.
+	 *
+	 * FIXME: Should probably only be allowed at top-level (flags == 0).
+	 */
+
+	INT32 p;
+	struct pike_string *s;
+
+	SKIPSPACE();
+
+	p = pos;
+	while(data[pos] && !isspace(((unsigned char *)data)[pos])) {
+	  pos++;
+	}
+
+	if (pos != p) {
+	  /* The rest of the string. */
+	  s = begin_shared_string(len - pos);
+	  MEMCPY(s->str, data + pos, len - pos);
+	  push_string(end_shared_string(s));
+
+	  /* The charset name */
+	  s = begin_shared_string(pos - p);
+	  MEMCPY(s->str, data + p, pos - p);
+	  push_string(end_shared_string(s));
+
+	  SAFE_APPLY_MASTER("decode_charset", 2);
+
+	  if (sp[-1].type != T_STRING) {
+	    pop_stack();
+	    cpp_error(this, "Unknown charset.");
+	  }
+
+	  low_cpp(this, sp[-1].u.string->str, sp[-1].u.string->len, flags);
+	  pop_stack();
+
+	  /* FIXME: Is this the correct thing to return? */
+	  return len;
+	} else {
+	  cpp_error(this, "What charset?");
+	}
+	
+	break;
+      }
+      goto unknown_preprocessor_directive;
+
     case 'p': /* pragma */
       if(WGOBBLE("pragma"))
 	{
@@ -2359,6 +2407,7 @@ static struct pike_string *filter_bom(struct pike_string *data)
   return(data);
 }
 
+/* string cpp(string data, string|void current_file, int|string|void charset) */
 void f_cpp(INT32 args)
 {
   struct pike_string *data;
@@ -2373,6 +2422,8 @@ void f_cpp(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to cpp()\n");
 
+  data = sp[-args].u.string;
+
   if(args>1)
   {
     if(sp[1-args].type != T_STRING)
@@ -2380,16 +2431,27 @@ void f_cpp(INT32 args)
     copy_shared_string(this.current_file, sp[1-args].u.string);
 
     if (args > 2) {
-      if (sp[2-args].type != T_INT) {
+      if (sp[2-args].type == T_STRING) {
+	stack_dup();
+	ref_push_string(data);
+	stack_swap();
+	SAFE_APPLY_MASTER("decode_charset", 2);
+	if (sp[-1].type != T_STRING) {
+	  error("Unknown charset\n");
+	}
+	data = sp[-1].u.string;
+	sp--;
+      } else if (sp[2-args].type == T_INT) {
+	auto_convert = sp[2-args].u.integer;
+      } else {
 	error("Bad argument 3 to cpp()\n");
       }
-      auto_convert = sp[2-args].u.integer;
     }
   }else{
     this.current_file=make_shared_string("-");
   }
 
-  add_ref(data = sp[-args].u.string);
+  add_ref(data);
 
   if (auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
@@ -2466,7 +2528,7 @@ void init_cpp()
 
   
 /* function(string,string|void,int|void:string) */
-  ADD_EFUN("cpp",f_cpp,tFunc(tStr tOr(tStr,tVoid) tOr(tInt,tVoid),tStr),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("cpp",f_cpp,tFunc(tStr tOr(tStr,tVoid) tOr(tInt,tOr(tStr,tVoid)),tStr),OPT_EXTERNAL_DEPEND);
 }
 
 
