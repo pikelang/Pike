@@ -1,0 +1,12 @@
+#!/bin/sh
+
+
+case "x$1" in
+  x[a-zA-Z]:*)
+    . $NTTOOLS
+    do_cmd "mkdir `fixpath $1`"
+    exit 0
+  ;;
+esac
+
+exec /bin/mkdir "$@"

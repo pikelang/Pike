@@ -1,0 +1,14 @@
+#!/bin/sh
+
+dest=`eval echo '$'$#`
+
+case "x$dest" in
+  x[a-zA-Z]:*)
+    . $NTTOOLS
+    do_cmd "copy `fixpath $*`"
+    exit 0
+  ;;
+esac
+
+exec /bin/cp "$@"
+

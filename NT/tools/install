@@ -1,0 +1,24 @@
+#!/bin/sh
+
+dest=`eval echo '$'$#`
+
+
+case "x$dest" in
+  x[a-zA-Z]:*)
+    . $NTTOOLS
+
+   if test "x$1" = "x-c" ; then
+     shift
+   fi
+
+   if test -f "$1.exe" ; then
+     set -- "$1.exe" "$2"
+   fi
+    
+    do_cmd "copy `fixpath $*`"
+    exit 0
+  ;;
+esac
+
+exec /usr/bin/install "$@"
+

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+dest=`eval echo '$'$#`
+
+case "x$dest" in
+  x[a-zA-Z]:*)
+    exit 0
+  ;;
+esac
+
+exec /bin/chmod "$@"

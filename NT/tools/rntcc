@@ -13,6 +13,7 @@ OPERATION=linking
 INCLUDE_PATH=
 LDOPTS="OPTION STACK=8m"
 LIBRARIES=""
+NTCC=wcc386
 
 DEBUG=no
 OPTIMIZE=no
@@ -138,19 +139,19 @@ fi
 
 case $OPERATION in
   compiling)
-    do_cmd wcc386 $CFLAGS $OFLAGS `fixpath $SOURCES $OBJECTS`
+    do_cmd $NTCC $CFLAGS $OFLAGS `fixpath $SOURCES $OBJECTS`
     TARGET=$OUTPUT
   ;;
 
   preprocessing)
-    do_cmd wcc386 -p $CFLAGS `fixpath $SOURCES`
+    do_cmd $NTCC -p $CFLAGS `fixpath $SOURCES`
   ;;
 
   linking)
     for a in `fixpath $SOURCES`
     do
       BASE=`echo $a | sed -e 's/\.c//'`
-      do_cmd wcc386 -i$IPATH $CFLAGS -fo=$BASE.obj $a
+      do_cmd $NTCC -i$IPATH $CFLAGS -fo=$BASE.obj $a
       OBJECTS="$OBJECTS $BASE.obj"
     done
 

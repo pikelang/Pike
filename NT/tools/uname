@@ -6,7 +6,7 @@ M=no
 N=no
 S=no
 
-for a in "$*"
+for a in "$@"
 do
   case "$a" in
     --version)
