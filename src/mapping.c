@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.76 2000/04/16 22:25:06 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.77 2000/04/17 16:42:16 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1926,12 +1926,10 @@ void gc_free_all_unreferenced_mappings(void)
       m->data->refs++;
 
       unlink_mapping_data(md);
-      next=m->next;
 #ifdef PIKE_DEBUG
       m->debug_size=0;
 #endif
-
-      free_mapping(m);
+      SET_NEXT_AND_FREE(m, free_mapping);
     }
     else if(m->flags & MAPPING_FLAG_WEAK)
     {
