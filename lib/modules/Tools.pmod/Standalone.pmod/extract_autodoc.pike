@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.20 2002/12/05 16:48:45 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.21 2002/12/05 16:51:48 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -74,7 +74,7 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
   string file = Stdio.read_file(filename);
 
   int i;
-  if (has_value(file, "**!") ||
+  if (has_value(file, "**""!") ||
       (((i = search(file, "//! ""module ")) != -1) &&
        (sizeof(array_sscanf(file[i+11..],"%s\n%*s")[0]/" ") == 1))) {
     // Mirar-style markup.
