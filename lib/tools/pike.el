@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.26 2001/04/23 20:55:03 mast Exp $
+;;; $Id: pike.el,v 1.27 2001/04/24 14:46:32 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -142,7 +142,7 @@ The name is assumed to begin with a capital letter.")
 (defconst pike-font-lock-maybe-type-end
   (concat "\\(\\.\\.\\.\\|[\]\)]\\)"	; 1
 	  pike-font-lock-semantic-whitespace ; 2-4
-	  "\\(\\<\\sw\\|\\<\\s_\\|`\\|\(\\)" ; 5
+	  "\\(\\<\\sw\\|\\<\\s_\\|[`\(]\\)" ; 5
 	  "\\|"
 	  "\\(\\sw\\|\\s_\\)"		; 6
 	  pike-font-lock-semantic-whitespace ; 7-9
@@ -306,7 +306,8 @@ The name is assumed to begin with a capital letter.")
 Used after `pike-font-lock-find-type' or `pike-font-lock-fontify-type'
 have matched."
   (pike-font-lock-forward-syntactic-ws)
-  (while (> (skip-chars-forward ":().|,&!~") 0)
+  (while (and (< (point) pike-font-lock-last-type-end)
+	      (> (skip-chars-forward ":().|,&!~") 0))
     (pike-font-lock-forward-syntactic-ws))
   (if (< (point) pike-font-lock-last-type-end)
       (if (looking-at pike-font-lock-identifier-or-integer)
@@ -575,16 +576,37 @@ types are recognized.")
 	      nil
 	      (1 font-lock-reference-face t t)
 	      (1 pike-font-lock-refdoc-keyword-face prepend t)
-	      (3 pike-font-lock-refdoc-error-face t t))
+	      (3 pike-font-lock-refdoc-error-face t t)))
+
+	    (,(concat "^\\([^/]\\|/[^/]\\)*//[.!|][^\n\r]*" ; 1
+		      "@\\(decl\\|member\\|index\\|elem\\)") ; 2
+	     ;; A Pike declaration inside the comment. Reset the
+	     ;; comment highlight so that we can redo it as code.
 	     ((lambda (limit)
-		(if (looking-at "[ \t]*@\\(decl\\|member\\|index\\|elem\\)")
-		    (progn
-		      (put-text-property (match-end 0) limit 'face nil)
-		      (goto-char limit)
-		      t)))
-	      (if (match-end 4) (goto-char (match-end 4)) (end-of-line))
+		(put-text-property (point) limit 'face nil))
+	      (goto-char (match-end 0))
 	      nil)
-	     ))
+	     ;; Must (re)handle the string literals ourselves.
+	     ("\"[^\"]*\"\\|'[^']*'"
+	      (goto-char (match-end 0))
+	      nil
+	      (0 font-lock-string-face))
+	     ;; Always highlight the first argument after @member and @elem
+	     ;; as a type; the type recognition code might miss it since it
+	     ;; may be followed by a non-identifier. FIXME: This doesn't
+	     ;; work when the pike type contains whitespace.
+	     (pike-font-lock-fontify-type
+	      (if (progn
+		    (goto-char (match-beginning 2))
+		    (looking-at "\\(member\\|elem\\)\\s *\\(\\S *\\)"))
+		  (progn
+		    (setq pike-font-lock-last-type-end (match-end 0)
+			  pike-font-lock-more-identifiers nil
+			  pike-font-lock-maybe-ids nil)
+		    (goto-char (match-beginning 2)))
+		(setq pike-font-lock-last-type-end (point)))
+	      (end-of-line)
+	      (1 font-lock-type-face nil t))))
 
 	  pike-font-lock-more
 
