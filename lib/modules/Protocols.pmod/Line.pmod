@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.2 1998/09/12 12:53:14 grubba Exp $
+ * $Id: Line.pmod,v 1.3 1998/09/28 01:17:07 per Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -15,6 +15,12 @@ class simple
 
   static int timeout;		// Idle time before timeout.
   static int timeout_time;	// Time at which next timeout will occur.
+
+  static void send(string s)
+  {
+    send_q->put(s);
+    con->set_write_callback(write_callback);
+  }
 
   static void do_timeout()
   {
