@@ -445,7 +445,7 @@ void update_tracker(void|string event,void|int contact)
    if (q->status!=200)
    {
       error("tracker request failed, code %d %O:\n%O\n",
-	    q->status,q->status_desc[..50],
+	    q->status, (q->status_desc ? q->status_desc[..50] : "?"),
 	    q->data()[..77]);
    }
 
