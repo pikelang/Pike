@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.567 2002/03/06 01:01:25 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.568 2002/03/07 09:58:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1318,6 +1318,7 @@ if test "$cflags_is_set" = "no"; then
     # Foundation framework needed by JavaVM.framework. The OS X 10.1 linker
     # no longer includes indirect dependencies so we need to add them here.
     AC_SYS_COMPILER_FLAG(-framework Foundation, framework_Foundation, LDFLAGS)
+    AC_SYS_COMPILER_FLAG(-framework System, fraework_System, LDFLAGS)
 
     # -flat_namespace only needed for linking with libMallocDebug
     # AC_SYS_COMPILER_FLAG(-flat_namespace, flat_namespace, LDFLAGS)
@@ -5435,7 +5436,7 @@ if test -z "$LDSHARED" ; then
       fi
     ;;
     Darwin*)
-      LDSHARED="ld -bundle -bind_at_load -undefined suppress -lbundle1.o"
+      LDSHARED="ld -bundle -bind_at_load -flat_namespace -undefined suppress -lbundle1.o"
     ;;
     IRIX*)
       if test "$GCC" = yes ; then
