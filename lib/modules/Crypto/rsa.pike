@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.13 1997/11/30 11:58:43 nisse Exp $
+/* $Id: rsa.pike,v 1.14 1998/08/26 06:12:52 nisse Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -46,10 +46,17 @@ bignum get_prime(int bits, function r)
 {
   int len = (bits + 7) / 8;
   int bit_to_set = 1 << ( (bits - 1) % 8);
+
+  object p;
   
-  string s = r(len);
-  return BIGNUM(sprintf("%c%s", (s[0] & (bit_to_set - 1)) | bit_to_set, s[1..]),
-		256)->next_prime();
+  do {
+    string s = r(len);
+    p = BIGNUM(sprintf("%c%s", (s[0] & (bit_to_set - 1))
+			      | bit_to_set, s[1..]),
+		      256)->next_prime();
+  } while (p->size() > bits);
+  
+  return p;
 }
 
 int query_blocksize() { return size - 3; }
@@ -96,13 +103,26 @@ string rsa_unpad(bignum block, int type)
   return s[i+1..];
 }
 
+object raw_sign(string digest)
+{
+  return rsa_pad(digest, 1, 0)->powm(d, n);
+}
+
+int raw_verify(string digest, object s)
+{
+  return s->powm(e, n) == rsa_pad(digest, 1, 0);
+}
+
 object sign(string message, program h, mixed|void r)
 {
-  return rsa_pad(Signature.build_digestinfo(message, h()), 1, r)->powm(d, n);
+  // FIXME: The r argument is ignored and should be removed
+  return raw_sign(Signature.build_digestinfo(message, h()));
 }
 
 int verify(string msg, program h, object sign)
 {
+  // FIXME: Use raw_verify()
+  
   // werror(sprintf("msg: '%s'\n", Crypto.string_to_hex(msg)));
   string s = Signature.build_digestinfo(msg, h());
   // werror(sprintf("rsa: s = '%s'\n", s));
@@ -114,6 +134,7 @@ int verify(string msg, program h, object sign)
 
 string sha_sign(string message, mixed|void r)
 {
+  // FIXME: Use raw_sign()
   object hash = Crypto.sha();
   string s;
 
@@ -125,6 +146,8 @@ string sha_sign(string message, mixed|void r)
   
 int sha_verify(string message, string signature)
 {
+  // FIXME: Use raw_verify()
+  
   object hash = Crypto.sha();
   string s;
   
@@ -142,14 +165,15 @@ object generate_key(int bits, function|void r)
   if (bits < 128)
     throw( ({ "Crypto.rsa->generate_key: ridicously small key\n",
 		backtrace() }) );
-  bits /= 2; /* Size of each of the primes */
-
+  int s1 = bits / 2; /* Size of the first prime */
+  int s2 = bits - s1;
+  
   string msg = "This is a valid RSA key pair\n";
   
   do
   {
-    p = get_prime(bits, r);
-    q = get_prime(bits, r);
+    p = get_prime(s1, r);
+    q = get_prime(s2, r);
     bignum phi = Gmp.mpz(p-1)*Gmp.mpz(q-1);
 
     array gs; /* gcd(pub, phi), and pub^-1 mod phi */
@@ -201,3 +225,5 @@ string crypt_block(string s)
 {
   return (encrypt_mode ? encrypt(s) : decrypt(s));
 }
+
+int rsa_size() { return n->size(); }
