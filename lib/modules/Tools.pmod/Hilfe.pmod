@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.65 2002/04/15 23:22:48 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.66 2002/04/16 00:59:05 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -14,8 +14,9 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - int x=x; does not generate an error when x is undefined.
 - Hilfe can not handle enums.
 - Hilfe can not handle typedefs.
-- Hilfe can not handle generated types, e.g.
-  constant boolean = typeof(0)|typeof(1); boolean flag = 1;
+- Hilfe can not handle implicit lambdas.
+- Hilfe can not handle unnamed classes.
+- Hilfe can not handle named lambdas.
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
 - Some preprocessor stuff works. Some doesn't. They should be
@@ -222,7 +223,7 @@ private class CommandSet {
 
     if(line=="") return;
     write("No setting named %O exists.\n", line);
-    // Prompt (>/>>)
+    // FIXME: Allow user to change prompt (>/>>)?
   }
 }
 
@@ -685,10 +686,9 @@ private class Expression {
            "(", "~", "[", "`" >)[ `[](position) ] )
       return -1;
 
-    // FIXME: Foo.Bar|int
     for(; position<sizeof(positions); position++) {
       if( (< "(", "->", "[", ":", ";", "+", "-",
-             "%", "/", "&", "&&", "|", "||",
+             "%", "/", "&", "&&", "||",
              "<", ">", "==", "=", "!=", "?",
              "+=", "-=", "%=", "/=", "&=", "|=",
              "~=", "<<", ">>", "<<=", ">>=", "<=",
