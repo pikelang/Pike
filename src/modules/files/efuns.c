@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.110 2002/02/05 19:08:58 mast Exp $");
+RCSID("$Id: efuns.c,v 1.111 2002/03/05 20:00:23 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -126,57 +126,6 @@ struct array *encode_stat(struct stat *s)
   ITEM(a)[6].u.integer=s->st_gid;
   return a;
 }
-
-/*! @module Stdio
- */
-/*! @class Stat
- *!
- *!   This object is used to repreaent file ststus information
- *!   from eg @[file_stat()].
- *!
- *!   It contains the following items usually found in a C @tt{struct stat@}:
- *!   @tt{dev@}, @tt{ino@}, @tt{mode@}, @tt{nlink@}, @tt{uid@}, @tt{gid@},
- *!   @tt{rdev@}, @tt{size@}, @tt{atime@}, @tt{mtime@} and @tt{ctime@}.
- *!
- *!   It also contains some items that correspond to the C @tt{IS*@} macros:
- *!   @tt{islnk@}, @tt{isreg@}, @tt{isdir@}, @tt{ischr@}, @tt{isblk@},
- *!   @tt{isfifo@} and @tt{issock@}.
- *!
- *!   And then two that are Pike-specific:
- *!   @dl
- *!     @item type
- *!       The type encoded as a string.
- *!     @item mode_string
- *!       The file mode encoded as a string in @tt{ls -l@} style.
- *!   @enddl
- *!
- *!   Additionally, the object may casted to @tt{array@} (in which case
- *!   a 'traditional' LPC stat-array will result), but it's also possible
- *!   to index the object directly with integers, which then will correspond
- *!   to the array.
- *!
- *!   The indices are:
- *!   @array
- *!     @elem int mode
- *!
- *!     @elem int size
- *!        Size of the file, or -2=directory, -3=symlink and -4=device.
- *!
- *!     @elem int atime
- *!
- *!     @elem int mtime
- *!
- *!     @elem int ctime
- *!
- *!     @elem int uid
- *!
- *!     @elem int gid
- *!   @endarray
- */
-/*! @endclass
- */
-/*! @endmodule
- */
 
 /*! @decl Stdio.Stat file_stat(string path, void|int(0..1) symlink)
  *!

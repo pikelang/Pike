@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.19 2001/12/16 02:49:48 mast Exp $
+ * $Id: stat.c,v 1.20 2002/03/05 20:00:23 mast Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.19 2001/12/16 02:49:48 mast Exp $");
+RCSID("$Id: stat.c,v 1.20 2002/03/05 20:00:23 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -19,6 +19,106 @@ RCSID("$Id: stat.c,v 1.19 2001/12/16 02:49:48 mast Exp $");
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
+
+/*! @module Stdio
+ */
+/*! @class Stat
+ *!
+ *!   This object is used to represent file status information
+ *!   from e.g. @[file_stat()].
+ *!
+ *!   It contains the following items usually found in a C @tt{struct
+ *!   stat@}:
+ *!   @dl
+ *!     @item mode
+ *!       File mode (see @tt{mknod(2)@}).
+ *!     @item size
+ *!       File size in bytes.
+ *!     @item uid
+ *!       User ID of the file's owner.
+ *!     @item gid
+ *!       Group ID of the file's owner.
+ *!     @item atime
+ *!       Time of last access in seconds since 00:00:00 UTC, 1970-01-01.
+ *!     @item mtime
+ *!       Time of last data modification.
+ *!     @item ctime
+ *!       Time of last file status change.
+ *!     @item ino
+ *!       Inode number.
+ *!     @item nlink
+ *!       Number of links.
+ *!     @item dev
+ *!       ID of the device containing a directory entry for this file.
+ *!     @item rdev
+ *!       ID of the device.
+ *!   @enddl
+ *!
+ *!   It also contains some items that correspond to the C @tt{IS*@} macros:
+ *!   @dl
+ *!     @item isreg
+ *!       Set if the file is a regular file.
+ *!     @item isdir
+ *!       Set if the file is a directory.
+ *!     @item islnk
+ *!       Set if the file is a symbolic link. Note that symbolic links
+ *!       are normally followed by the stat functions, so this might
+ *!       only be set if you turn that off, e.g. by giving a nonzero
+ *!       second argument to @[file_stat()].
+ *!     @item isfifo
+ *!       Set if the file is a FIFO (aka named pipe).
+ *!     @item issock
+ *!       Set if the file is a socket.
+ *!     @item ischr
+ *!       Set if the file is a character device.
+ *!     @item isblk
+ *!       Set if the file is a block device.
+ *!   @enddl
+ *!
+ *!   There are also some items that provide alternative representations
+ *!   of the above:
+ *!   @dl
+ *!     @item type
+ *!       The type as a string, can be any of @tt{"reg"@},
+ *!       @tt{"dir"@}, @tt{"lnk"@}, @tt{"fifo"@}, @tt{"sock"@},
+ *!       @tt{"chr"@}, @tt{"blk"@}, and @tt{"unknown"@}.
+ *!     @item mode_string
+ *!       The file mode encoded as a string in @tt{ls -l@} style, e.g.
+ *!       @tt{"drwxr-xr-x"@}.
+ *!   @enddl
+ *!
+ *!   Note that some items might not exist or have meaningful values
+ *!   on some platforms.
+ *!
+ *!   Additionally, the object may be initialized from or casted to an
+ *!   @tt{array@} on the form of a 'traditional' LPC stat-array, and
+ *!   it's also possible to index the object directly with integers as
+ *!   if it were such an array. The stat-array has this format:
+ *!
+ *!   @array
+ *!     @elem int 0
+ *!       File mode, same as @tt{mode@}.
+ *!     @elem int 1
+ *!       If zero or greater, the file is a regular file and this is
+ *!       its size in bytes. If less than zero it gives the type:
+ *!       -2=directory, -3=symlink and -4=device.
+ *!     @elem int 2
+ *!       Time of last access, same as @tt{atime@}.
+ *!     @elem int 3
+ *!       Time of last data modification, same as @tt{mtime@}.
+ *!     @elem int 4
+ *!       Time of last file status change, same as @tt{ctime@}.
+ *!     @elem int 5
+ *!       User ID of the file's owner, same as @tt{uid@}.
+ *!     @elem int 6
+ *!       Group ID of the file's owner, same as @tt{gid@}.
+ *!   @endarray
+ *!
+ *!   It's possible to modify the stat struct by assigning values to
+ *!   the items. They essentially work as variables, although some of
+ *!   them affect others, e.g. setting @tt{isdir@} clears @tt{isreg@}
+ *!   and setting @tt{mode_string@} changes many of the other items.
+ */
 
 /* Let's define these mode flags if they don't exist, so reading and
  * writing the Stat structure will behave identically regardless of
@@ -188,6 +288,22 @@ static void stat_push_compat(INT_TYPE n)
    }
 }
 
+/*! @decl void create (void|object|array stat);
+ *!
+ *! A new @[Stdio.Stat] object can be initialized in two ways:
+ *!
+ *! @ul
+ *!   @item
+ *!     @[stat] is an object, typically another @[Stdio.Stat]. The
+ *!     stat info is copied from the object by getting the values of
+ *!     @tt{mode@}, @tt{size@}, @tt{atime@}, @tt{mtime@}, @tt{ctime@},
+ *!     @tt{uid@}, @tt{gid@}, @tt{dev@}, @tt{ino@}, @tt{nlink@}, and
+ *!     @tt{rdev@}.
+ *!   @item
+ *!     @[stat] is a seven element array on the 'traditional' LPC
+ *!     stat-array form (see the class doc).
+ *! @endul
+ */
 static void stat_create (INT32 args)
 {
   if (args >= 1) {
@@ -797,6 +913,11 @@ void push_stat(struct stat *s)
    stor->s=*s;
    push_object(o);
 }
+
+/*! @endclass
+ */
+/*! @endmodule
+ */
 
 /* ---------------------------------------------------------------- */
 
