@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.157 2004/12/30 15:07:29 grubba Exp $
+// $Id: install.pike,v 1.158 2005/01/06 02:20:05 nilsson Exp $
 
 #define USE_GTK
 
@@ -1188,7 +1188,7 @@ void do_export()
 				     "Name":"Pike",
 				     "Language":"1033",
 				     "UpgradeCode":pike_upgrade_guid,
-				     "Id":Standards.UUID.new_string(),
+				     "Id":Standards.UUID.make_version1(-1)->str(),
 				     "Version":sprintf("%d.%d.%d",
 						       __REAL_MAJOR__,
 						       __REAL_MINOR__,
@@ -1200,7 +1200,7 @@ void do_export()
 			  "Languages":"1033",
 			  "InstallerVersion":"200",
 			  "Platforms":"Intel",
-			  "Id":Standards.UUID.new_string(),
+			  "Id":Standards.UUID.make_version1(-1)->str(),
 			  "Compressed":"yes",
 			  "SummaryCodepage":"1252",
 			])))->
@@ -1232,7 +1232,7 @@ void do_export()
 				    "Id":"Pike",
 				  ]))))->
       add_child(WixNode("Upgrade", ([
-			  "Id":Standards.UUID.new_string(),
+			  "Id":Standards.UUID.make_version1(-1)->str(),
 			]))->
 		add_child(WixNode("UpgradeVersion", ([
 				    "Minimum":sprintf("%d.0.0",
