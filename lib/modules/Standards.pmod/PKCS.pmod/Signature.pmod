@@ -1,4 +1,4 @@
-/* signature.pmod
+/* Signature.pmod
  *
  */
 
