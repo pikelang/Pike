@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.65 2003/06/23 12:27:45 tomas Exp $
+# $Id: configure.in,v 1.66 2003/12/07 19:32:35 marcus Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -427,9 +427,9 @@ int main()
       return 0;
    return 1;
 }
-],[pike_cv_have_rdtsc=yes],[pike_cv_have_rdtsc=no])])
+],[pike_cv_have_rdtsc=yes],[pike_cv_have_rdtsc=no],[pike_cv_have_rdtsc="possibly not"])])
 AC_MSG_RESULT($pike_cv_have_rdtsc)
-if test $pike_cv_have_rdtsc = yes; then
+if test "$pike_cv_have_rdtsc" = yes; then
   AC_DEFINE(HAVE_RDTSC)
 fi
 
