@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.250 1998/11/06 21:34:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.251 1998/11/09 09:46:05 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -839,6 +839,7 @@ fi
 
 if test x$with_threads = xyes ; then
   OLDLIBS="$LIBS"
+  OLDCFLAGS="$CFLAGS"
 
 if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
   # NT has threads...
@@ -897,7 +898,8 @@ int main(int argc, char **argv)
         AC_MSG_RESULT(no)
       else
         AC_MSG_RESULT(yes)
-        LIBS="${OLDLIBS} -pthread"
+        CFLAGS="${CFLAGS} -pthread"
+        LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
       fi
     ;;
 
@@ -1050,6 +1052,7 @@ int main()
   else
     AC_MSG_RESULT(no)
     LIBS="$OLDLIBS"
+    CFLAGS="$OLDCFLAGS"
 
     # No POSIX threads.
 
@@ -1103,6 +1106,7 @@ int main()
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
+      CFLAGS="$OLDCFLAGS"
 
       # Now we've sunk really low -- test for proprietary threads
 
@@ -2708,6 +2712,23 @@ AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 if test x$pike_cv_sys_dynamic_loading = xno ; then
   with_dynamic_modules=no
 fi
+
+#
+# Since configure doesn't always know if we will be linking with ld or cc,
+# We use this little code snippet to add flags to ld that would otherwise
+# be given automatically by $(CC) $(CFLAGS)
+# /Hubbe
+#
+
+case "x$LD" in
+  $CC*)
+    # Options in CFLAGS, no stuff needs to be added
+  ;;
+  *)
+    LD="${LD} ${LD_FALLBACK_FLAGS-}"
+  ;;
+esac
+
 
 
 #############################################################################
