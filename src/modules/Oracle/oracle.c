@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.20 2000/02/28 23:33:57 hubbe Exp $
+ * $Id: oracle.c,v 1.21 2000/02/29 03:12:38 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -35,7 +35,7 @@
 #include <ociapr.h>
 
 
-RCSID("$Id: oracle.c,v 1.20 2000/02/28 23:33:57 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.21 2000/02/29 03:12:38 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -105,6 +105,7 @@ static void exit_dbresult_struct(struct object *o)
     r->dbcon->cdas = r->curs;
   }
 
+/*  fprintf(stderr,"Unlocking dbcon\n"); */
   mt_unlock(& r->dbcon->lock);
 
   if(r->parent)
@@ -535,7 +536,10 @@ static void f_big_query(INT32 args)
 
   THREADS_ALLOW();
 
+/*  fprintf(stderr,"Locking dbcon.\n"); */
   mt_lock( & dbcon->lock );
+
+/*  fprintf(stderr,"ocan.\n"); */
 
   ocan(&curs->cda);
 
@@ -618,6 +622,7 @@ static void f_big_query(INT32 args)
 
   THREADS_ALLOW();
 
+/*  fprintf(stderr,"oexec.\n"); */
   rc = oexec(&curs->cda);
 
   THREADS_DISALLOW();
@@ -640,6 +645,10 @@ static void f_big_query(INT32 args)
     curs->next = THIS->cdas;
     THIS->cdas = curs;
     push_int(0);
+
+    /* NIL */
+/*    fprintf(stderr,"NIL\n"); */
+    mt_unlock(&dbcon->lock);
     return;
   }
 
@@ -781,8 +790,10 @@ void pike_module_init(void)
 
   set_init_callback(init_dbresult_struct);
   set_exit_callback(exit_dbresult_struct);
+  
 
   oracle_result_program = end_program();
+  oracle_result_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
 #endif
 }
 
