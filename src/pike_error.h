@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.26 2003/03/28 18:18:48 mast Exp $
+|| $Id: pike_error.h,v 1.27 2003/03/28 22:00:46 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -240,6 +240,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *expected_type,
   struct svalue *got,
   const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
+PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error_2(
+  const char *func,
+  struct svalue *base_sp,  int args,
+  int which_arg,
+  struct svalue *got,
+  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 6, 7)));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -264,20 +270,29 @@ void cleanup_error(void);
 /* Some useful error macros. */
 
 
+/* This one should be used when the type of the argument is wrong. */
 PMOD_EXPORT extern const char msg_bad_arg[];
+#define SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT) \
+   bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
+		 msg_bad_arg, ARG, FUNC, EXPECT)
+/* Less descriptive macro name kept for compatibility. */
 #define SIMPLE_BAD_ARG_ERROR(FUNC, ARG, EXPECT) \
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
-                 msg_bad_arg, ARG, FUNC, EXPECT)
+		 msg_bad_arg, ARG, FUNC, EXPECT)
 
-PMOD_EXPORT extern const char msg_too_few_args[];
-#define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC, ARG) \
-   bad_arg_error(FUNC, Pike_sp-args, args, ARG, "void", 0,\
-		 msg_too_few_args,FUNC, ARG)
+/* This one should be used when there's some other problem with the
+ * argument than a bogus type. PROBLEM is a full sentence without a
+ * trailing newline. */
+PMOD_EXPORT extern const char msg_bad_arg_2[];
+#define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
+   bad_arg_error_2(FUNC, Pike_sp-args, args, ARG, Pike_sp+ARG-1-args,\
+		   msg_bad_arg_2, ARG, FUNC, PROBLEM)
 
-PMOD_EXPORT extern const char msg_wrong_num_args[];
 #define SIMPLE_WRONG_NUM_ARGS_ERROR(FUNC, ARG) \
-   bad_arg_error(FUNC, Pike_sp-args, args, ARG, "void", 0,\
-		 msg_wrong_num_args,FUNC, ARG)
+  wrong_number_of_args_error (FUNC, args, ARG)
+/* The following is for compatibility. */
+#define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC, ARG) \
+  wrong_number_of_args_error (FUNC, args, ARG)
 
 PMOD_EXPORT extern const char msg_out_of_mem[];
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \

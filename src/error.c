@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.103 2003/03/28 18:18:48 mast Exp $
+|| $Id: error.c,v 1.104 2003/03/28 22:00:46 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.103 2003/03/28 18:18:48 mast Exp $");
+RCSID("$Id: error.c,v 1.104 2003/03/28 22:00:46 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -47,10 +47,8 @@ PMOD_EXPORT const char msg_assert_onerr[] =
 #endif
 PMOD_EXPORT const char msg_bad_arg[] =
   "Bad argument %d to %s(). Expected %s.\n";
-PMOD_EXPORT const char msg_too_few_args[] =
-  "Too few arguments to %s(). Expected at least %d.\n";
-PMOD_EXPORT const char msg_wrong_num_args[] =
-  "Invalid number of arguments to %s(). Expected %d.\n";
+PMOD_EXPORT const char msg_bad_arg_2[] =
+  "Bad argument %d to %s(). %s\n";
 PMOD_EXPORT const char msg_out_of_mem[] =
   "Out of memory.\n";
 PMOD_EXPORT const char msg_div_by_zero[] =
@@ -768,6 +766,30 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   ERROR_DONE(generic);
 }
 
+/* This one doesn't record an expected type. */
+PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error_2(
+  const char *func,
+  struct svalue *base_sp,  int args,
+  int which_arg,
+  struct svalue *got,
+  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
+{
+  INIT_ERROR(bad_arg);
+  ERROR_COPY(bad_arg, which_arg);
+  ERROR_STRUCT(bad_arg,o)->expected_type=NULL;
+  if(got)
+  {
+    ERROR_COPY_SVALUE(bad_arg, got);
+  }else{
+    ERROR_STRUCT(bad_arg,o)->got.type=PIKE_T_INT;
+    ERROR_STRUCT(bad_arg,o)->got.subtype=NUMBER_UNDEFINED;
+    ERROR_STRUCT(bad_arg,o)->got.u.integer=0;
+  }
+  DWERROR((stderr, "%s():Bad arg %d\n",
+	   func, which_arg));
+  ERROR_DONE(generic);
+}
+
 PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -814,15 +836,16 @@ PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
 
 PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
 {
-  char *msg;
   if(expected>args)
   {
-    msg="Too few arguments.\n";
-  }else{
-    msg="Too many arguments.\n";
+    bad_arg_error_2 (name, Pike_sp-args, args, expected, NULL,
+		     "Too few arguments to %s(). Expected at least %d.\n",
+		     name, expected);
+  }else {
+    bad_arg_error_2 (name, Pike_sp-args, args, expected, NULL,
+		     "Too many arguments to %s(). Expected at most %d.\n",
+		     name, expected);
   }
-
-  new_error(name, msg, Pike_sp-args, args, 0,0);
 }
 
 #ifdef PIKE_DEBUG
