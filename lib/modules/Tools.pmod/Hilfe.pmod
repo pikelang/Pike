@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.70 2002/04/24 00:46:14 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.71 2002/04/24 15:31:10 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1207,7 +1207,7 @@ class Evaluator {
 	    break;
 
 	  case "lambda":
-	  case "class":
+	  case "class": // Unnamed class
 	    while(expr[p-1]!=")") {
 	      p = relocate(expr, symbols, new_scope, p, ",");
 	      p++;
@@ -1221,6 +1221,13 @@ class Evaluator {
 	    break;
 	  }
 
+	}
+	else if( type=="class" && expr[p+1]=="(" ) {
+	  p += 2; // Skip class name
+	  while(expr[p-1]!=")") {
+	    p = relocate(expr, symbols, new_scope, p, ",");
+	    p++;
+	  }
 	}
 
 	if(expr[p]=="{") {
@@ -1252,7 +1259,8 @@ class Evaluator {
 			 multiset(string) next_symbols, int p, void|string safe_word,
 			 void|int(0..1) top) {
     int op = p;
-    werror("%O %O\n", indices(symbols)*", ", indices(next_symbols)*", ");
+    //    werror("%O %O\n", (symbols?indices(symbols||(<>))*", ":0),
+    //	   (next_symbols?indices(next_symbols||(<>))*", ":0) );
     p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
     werror("relocate %O %O\n", op, expr[op..p]);
     return p;
@@ -1268,14 +1276,15 @@ class Evaluator {
     if(pos>=0) {
       pos++;
 
-      if( (< ";", ",", "=" >)[expr[pos+1]] ) {
+      if( (< ";", ",", "=", ")" >)[expr[pos+1]]) {
 	// We are declaring the variable expr[pos]
 	while(pos<sizeof(expr)) {
 	  int from = pos;
 	  int plevel;
-	  while((expr[pos]!="," && expr[pos]!=";") || plevel>0) {
+	  while( !(< ",", ";",")" >)[expr[pos]] || plevel ) {
 	    if(expr[pos]=="(" || expr[pos]=="{") plevel++;
 	    else if(expr[pos]==")" || expr[pos]=="}") plevel--;
+
 	    pos++;
 	    if(pos==sizeof(expr)) {
 	      // Something went wrong. End relocation completely.
@@ -1297,12 +1306,13 @@ class Evaluator {
 	  if(top)
 	    symbols[expr[from]] = 1;
 
-	  if( expr[pos]==safe_word || expr[pos]==";" || plevel<0 )
+	  if( expr[pos]==safe_word || (< ";", ")" >)[expr[pos]] ||
+	      plevel<0 )
 	    return pos;
 
 	  pos++;
 	}
-	p = pos;
+	return pos;
       }
     }
 
