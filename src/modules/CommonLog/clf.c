@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.12 2003/04/09 18:18:47 nilsson Exp $
+|| $Id: clf.c,v 1.13 2003/09/06 23:37:00 nilsson Exp $
 */
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.12 2003/04/09 18:18:47 nilsson Exp $");
+RCSID("$Id: clf.c,v 1.13 2003/09/06 23:37:00 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -18,6 +18,7 @@ RCSID("$Id: clf.c,v 1.12 2003/04/09 18:18:47 nilsson Exp $");
 #include "module_support.h"
 #include "pike_error.h"
 #include "bignum.h"
+#include "security.h"
 
 #include "threads.h"
 #include <stdio.h>
@@ -189,6 +190,51 @@ static void f_read_clf( INT32 args )
     my_fd = 0;
   } else if(file->type == T_STRING &&
 	    file->u.string->size_shift == 0) {
+#ifdef PIKE_SECURITY
+      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+      {
+	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
+	  Pike_error("Permission denied.\n");
+	push_text("read");
+	push_int(0);
+	ref_push_string(file->u.string);
+	push_text("r");
+	push_int(00666);
+
+	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
+	switch(Pike_sp[-1].type)
+	{
+	case PIKE_T_INT:
+	  switch(Pike_sp[-1].u.integer)
+	  {
+	  case 0: /* return 0 */
+	    errno=EPERM;
+	    Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
+		       errno);
+
+	  case 2: /* ok */
+	    pop_stack();
+	    break;
+
+	  case 3: /* permission denied */
+	    Pike_error("CommonLog.read: permission denied.\n");
+
+	  default:
+	    Pike_error("Error in user->valid_open, wrong return value.\n");
+	  }
+	  break;
+
+	default:
+	  Pike_error("Error in user->valid_open, wrong return type.\n");
+
+	case PIKE_T_STRING:
+	  /*	  if(Pike_sp[-1].u.string->shift_size) */
+	  /*	    file=Pike_sp[-1]; */
+	  pop_stack();
+	}
+
+      }
+#endif
     do {
       THREADS_ALLOW();
       f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);
