@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.582 2004/12/19 14:47:12 grubba Exp $
+|| $Id: program.c,v 1.583 2004/12/19 16:43:38 grubba Exp $
 */
 
 #include "global.h"
@@ -4290,16 +4290,10 @@ int define_variable(struct pike_string *name,
   switch(run_time_type)
   {
 #ifdef AUTO_BIGNUM
-#if 0
-    case T_OBJECT:
-      /* This is to allow room for integers in variables declared as
-       * 'object', however, this could be changed in the future to only
-       * make room for integers if the variable was declared as
-       * 'object(Gmp.mpz)'                                     /Hubbe
-       */
-#endif
     case T_INT:
 #endif
+    case T_OBJECT:
+      /* Make place for the object subtype. */
     case T_FUNCTION:
     case T_PROGRAM:
       run_time_type = T_MIXED;
@@ -7074,6 +7068,7 @@ void init_program(void)
     placeholder_object=fast_clone_object(placeholder_program);
 
     s.type=T_OBJECT;
+    s.subtype = 0;
     s.u.object=placeholder_object;
     low_add_constant("__placeholder_object",&s);
     debug_malloc_touch(placeholder_object);
@@ -7570,6 +7565,7 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
       if (!p) return 0;
 
 #if 0
+      p = p->inherits[s->subtype].prog;
       if ((call_fun = FIND_LFUN(p, LFUN_CALL)) >= 0) {
 	/* Get the program from the return type. */
 	struct identifier *id = ID_FROM_INT(p, call_fun);
@@ -8005,6 +8001,10 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
   
   if((Pike_sp[-1].type == T_OBJECT) && (Pike_sp[-1].u.object->prog))
   {
+    if (Pike_sp[-1].subtype) {
+      /* FIXME: */
+      Pike_error("Subtyped compat handlers are not supported yet.\n");
+    }
     compat_handler = dmalloc_touch(struct object *, Pike_sp[-1].u.object);
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;

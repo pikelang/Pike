@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.259 2004/11/12 13:16:06 grubba Exp $
+|| $Id: object.c,v 1.260 2004/12/19 16:42:15 grubba Exp $
 */
 
 #include "global.h"
@@ -1255,6 +1255,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 	struct svalue tmp;
 	fprintf(stderr,"Placeholder deployed for %p when indexing ", p);
 	tmp.type = T_OBJECT;
+	tmp.subtype = 0;
 	tmp.u.object = o;
 	print_svalue (stderr, &tmp);
 	fputs (" with ", stderr);
@@ -1263,6 +1264,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 #endif
 	add_ref(to->u.object=placeholder_object);
 	to->type=T_OBJECT;
+	to->subtype = 0;
 	return;
       }
     }
