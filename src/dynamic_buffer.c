@@ -76,11 +76,15 @@ void low_init_buf_with_string(string s,dynamic_buffer *buf)
 {
   if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; } 
   buf->s=s;
-  if(!buf->s.str) init_buf();
+  if(!buf->s.str) initialize_buf(buf);
   /* if the string is an old buffer, this realloc will set the old
      the bufsize back */
   for(buf->bufsize=BUFFER_BEGIN_SIZE;buf->bufsize<buf->s.len;buf->bufsize*=2);
   buf->s.str=realloc(buf->s.str,buf->bufsize);
+#ifdef DEBUG
+  if(!buf->s.str)
+    fatal("Realloc failed.\n");
+#endif
 }
 
 string complex_free_buf(void)
