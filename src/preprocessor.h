@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.9 1999/03/09 00:17:56 grubba Exp $
+ * $Id: preprocessor.h,v 1.10 1999/03/14 01:09:32 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -783,11 +783,30 @@ static INT32 lower_cpp(struct cpp *this,
       PUTNL();
       goto do_skipwhite;
 
+    case 0x1b: case 0x9b:	/* ESC or CSI */
+      /* Assume ANSI/DEC escape sequence.
+       * Format supported:
+       * 	<ESC>[\040-\077]+[\100-\177]
+       * or
+       * 	<CSI>[\040-\077]*[\100-\177]
+       */
+      while ((tmp = data[pos]) && (tmp == ((tmp & 0x1f)|0x20))) {
+	pos++
+      }
+      if (tmp == ((tmp & 0x3f)|0x40)) {
+	pos++
+      } else {
+	/* FIXME: Warning here? */
+      }
+
+      PUTC(' ');
+      break;
+
     case '\t':
     case ' ':
     case '\r':
       PUTC(' ');
-      
+
     do_skipwhite:
       while(data[pos]==' ' || data[pos]=='\r' || data[pos]=='\t')
 	pos++;
