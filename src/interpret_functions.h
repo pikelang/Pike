@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.131 2003/01/26 22:10:00 mirar Exp $
+|| $Id: interpret_functions.h,v 1.132 2003/01/26 22:16:03 mirar Exp $
 */
 
 /*
@@ -767,7 +767,7 @@ OPCODE0(F_INC, "++x", 0, {
      )
      )
   {
-    INT32 val = ++u->integer;
+    INT_TYPE val = ++u->integer;
     pop_2_elems();
     push_int(val);
   } else {
@@ -787,7 +787,7 @@ OPCODE0(F_DEC, "--x", 0, {
      )
      )
   {
-    INT32 val = --u->integer;
+    INT_TYPE val = --u->integer;
     pop_2_elems();
     push_int(val);
   } else {
@@ -845,7 +845,7 @@ OPCODE0(F_POST_INC, "x++", 0, {
      )
      )
   {
-    INT32 val = u->integer++;
+    INT_TYPE val = u->integer++;
     pop_2_elems();
     push_int(val);
   } else {
@@ -868,7 +868,7 @@ OPCODE0(F_POST_DEC, "x--", 0, {
      )
      )
   {
-    INT32 val = u->integer--;
+    INT_TYPE val = u->integer--;
     pop_2_elems();
     push_int(val);
   } else {
@@ -1757,7 +1757,7 @@ OPCODE0(F_INDIRECT, "indirect", 0, {
 });
       
 OPCODE0(F_SIZEOF, "sizeof", 0, {
-  INT32 val = pike_sizeof(Pike_sp-1);
+  INT_TYPE val = pike_sizeof(Pike_sp-1);
   pop_stack();
   push_int(val);
 });
