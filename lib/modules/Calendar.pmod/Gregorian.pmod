@@ -1170,8 +1170,9 @@ class Second
       else if (sizeof(arg)==1)
       {
 	 mapping t=localtime(arg[0]);
-	 y=1900+t->year;
-	 d=t->yday;
+	 m=Year(1900+t->year)->month(1+t->mon)->day(t->mday)->
+	    hour(t->hour)->minute(t->min);
+	 s=t->sec;
       }
       else 
       {
