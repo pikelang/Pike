@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.29 2003/08/13 15:58:03 grubba Exp $
+|| $Id: lex.h,v 1.30 2003/09/23 17:35:33 grubba Exp $
 */
 
 #ifndef LEX_H
@@ -63,6 +63,8 @@ struct keyword
 #define I_ISBRANCHARG	(I_HASARG | I_HASPOINTER | I_JUMP | I_BRANCH)
 #define I_ISBRANCHARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP | I_BRANCH)
 #define I_IS_MASK	(I_TWO_ARGS | I_POINTER | I_HASPOINTER | I_JUMP)
+
+#define I_UPDATE_ALL	(I_UPDATE_SP | I_UPDATE_FP | I_UPDATE_M_SP)
 
 /* Valid masked flags:
  *
