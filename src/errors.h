@@ -83,6 +83,7 @@ DECLARE_ERROR(bad_arg,
 
 DECLARE_ERROR(math,
 	      ERR_INHERIT(generic),
+  ERR_VAR(struct svalue, mixed, T_MIXED, number)
 )
 
 DECLARE_ERROR(resource,
