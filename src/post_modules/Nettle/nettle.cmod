@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.39 2004/10/22 22:42:10 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.40 2005/01/27 19:15:01 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -236,8 +236,8 @@ static const char *crypto_functions[] = {
   0
 };
 
-static const char * assert_is_crypto_object(struct program *p,
-				    const char **required) {
+static const char *assert_is_crypto_object(struct program *p,
+				    const char *const *required) {
   while (*required) {
     if (find_identifier( (char *) *required, p) < 0)
       return *required;
@@ -330,7 +330,7 @@ PIKECLASS CBC
     THIS->iv = 0;
   }
 
-  INLINE static void cbc_encrypt_step(const unsigned INT8 *source,
+  INLINE static void cbc_encrypt_step(const unsigned INT8 *const source,
 				      unsigned INT8 *dest)
   {
     INT32 block_size = THIS->block_size;
@@ -354,7 +354,7 @@ PIKECLASS CBC
     pop_stack();
   }
 
-  INLINE static void cbc_decrypt_step(const unsigned INT8 *source,
+  INLINE static void cbc_decrypt_step(const unsigned INT8 *const source,
 				      unsigned INT8 *dest)
   {
     INT32 block_size = THIS->block_size;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt_md5.c,v 1.6 2005/01/26 23:12:51 nilsson Exp $
+|| $Id: crypt_md5.c,v 1.7 2005/01/27 19:15:01 nilsson Exp $
 */
 
 /*
@@ -38,7 +38,8 @@ static const unsigned char itoa64[] =	/* 0 ... 63 => ascii - 64 */
  *p++ = itoa64[ (l>>=6) & 0x3f ];
 
 
-char *pike_crypt_md5(int pl, const char *pw, int sl, const char *salt)
+char *pike_crypt_md5(int pl, const char *const pw,
+		     int sl, const char *const salt)
 {
   static const char *const magic = "$1$"; /*
 			       * This string is magic for
