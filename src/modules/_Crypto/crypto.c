@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.29 2000/01/26 19:51:08 grubba Exp $
+ * $Id: crypto.c,v 1.30 2000/02/21 01:21:22 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -512,6 +512,7 @@ void pike_module_init(void)
   pike_cbc_init();
   pike_pipe_init();
   pike_invert_init();
+  pike_nt_init();
 
   /* BEGIN NATIONAL SECURITY */  
 
