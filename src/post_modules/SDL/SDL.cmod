@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.12 2002/11/26 21:29:23 mast Exp $
+|| $Id: SDL.cmod,v 1.13 2003/03/18 03:27:16 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.12 2002/11/26 21:29:23 mast Exp $");
+RCSID("$Id: SDL.cmod,v 1.13 2003/03/18 03:27:16 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -229,7 +229,6 @@ PIKEFUN int was_init(int flags) {
  *!  @[SDL.init()],  @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
  */ 
 PIKEFUN void quit() {
-printf("SDL Quit\n");
   SDL_Quit();
 }
 
@@ -296,7 +295,6 @@ PIKEFUN int get_mod_state() {
  *!  @[SDL.pump_events()] to update the state array.
  *! 
  */
-
 PIKEFUN string get_key_state() {
   int numkeys;
   char *state = SDL_GetKeyState(&numkeys);
@@ -370,7 +368,13 @@ PIKECLASS Rect {
   PIKEFUN mixed `[]=(string key, int value) {
     f_Rect_cq__backtick_2D_3E_eq(args);
   }
-  
+
+  /*! @decl mixed cast(string type)
+   *! It is possible to cast a Rect object to an array or
+   *! to a mapping. The array will have the values in the
+   *! x, y, w, h order and the mapping will have the values
+   *! associated with those names.
+   */
   PIKEFUN mixed cast( string type )
   {
     struct pike_string *array_t;
@@ -902,7 +906,6 @@ PIKECLASS Surface {
   CVAR SDL_Surface *_s;
   CVAR void (*fast_set_pixel)(Uint16 x, Uint16 y, Uint32 pixel);
   
-
   static void fast_set_pixel1(Uint16 x, Uint16 y, Uint32 pixel) {
     SDL_Surface *screen = THIS->_s;
     *((Uint8 *)screen->pixels + y * screen->pitch + x) = pixel;
@@ -928,7 +931,8 @@ PIKECLASS Surface {
     SDL_Surface *screen = THIS->_s;
     *((Uint32 *)screen->pixels + y * (screen->pitch>>2) + x) = pixel;
   }
-  static void (*get_fast_set_pixel(int bpp))(Uint16 x, Uint16 y, Uint32 pixel) {
+  static void (*get_fast_set_pixel(int bpp))(Uint16 x, Uint16 y, Uint32 pixel)
+  {
     switch(bpp) {
     case 1: return &fast_set_pixel1; 
     case 2: return &fast_set_pixel2; 
@@ -937,6 +941,7 @@ PIKECLASS Surface {
     }
     return NULL;
   }
+
   /*! @decl int get_pixel(int x, int y)
    *! Get the value of the specified pixel. The surface needs to be
    *! locked before this method can be used.
@@ -1384,6 +1389,11 @@ PIKECLASS Surface {
     }
   }
 
+   /*! @decl object blit(SDL.Surface dst, SDL.Rect|void srcrect,@
+    *!                   SDL.Rect|void dstrect)
+    *! @fixme
+    *!   Document this function
+    */
   PIKEFUN object blit(object dst, object|void _srcrect, object|void _dstrect) {
     SDL_Rect *srcrect = NULL, *dstrect = NULL;
     CHECK_CLASS(dst, Surface, 1);
@@ -1407,31 +1417,56 @@ PIKECLASS Surface {
     RET_THIS();
   }
 
+  /*! @decl object fill_rect(int color, SDL.Rect dstrect)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object fill_rect(int color, object dstrect) {
     CHECK_INIT();
     CHECK_CLASS(dstrect, Rect, 2);
     SDL_FillRect(THIS->_s,&(OBJ2_RECT(dstrect)->rect), (Uint32)color);
     RET_THIS();
   }
-  
+
+  /*! @decl object fill(int color)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object fill(int color) {
     CHECK_INIT();
     SDL_FillRect(THIS->_s, NULL, (Uint32)color);
     RET_THIS();
   }
 
+  /*! @decl object set_color_key(int flag, int key)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object set_color_key(int flag, int key)  {
     CHECK_INIT();
     SDL_SetColorKey(THIS->_s, flag, key);
     RET_THIS();
   }
 
+  /*! @decl object set_alpha(int flag, int alpha)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object set_alpha(int flag, int alpha)  {
     CHECK_INIT();
     SDL_SetAlpha(THIS->_s, flag, alpha);
     RET_THIS();
   }
 
+  /*! @decl object set_clip_rect(SDL.Rect rect)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object set_clip_rect(object rect)  {
     CHECK_INIT();
     CHECK_CLASS(rect, Rect, 1);
@@ -1439,6 +1474,11 @@ PIKECLASS Surface {
     RET_THIS();
   }
 
+  /*! @decl object convert_surface(SDL.PixelFormat fmt, int flags)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object convert_surface(object fmt, int flags) {
     struct object *new_surface;
     SDL_Surface *tmp;
@@ -1461,6 +1501,11 @@ PIKECLASS Surface {
 
 /* SDL Video Method */
 
+/*! @decl int video_mode_ok(int width, int height, int bpp, int flags)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
   RETURN SDL_VideoModeOK(width, height, bpp, flags);
 }
@@ -1541,10 +1586,20 @@ PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
   SDL_UpdateRect(vs, x, y, w, h);
 }
 
+/*! @decl int set_gamma(float red, float green, float blue)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int set_gamma(float red, float green, float blue) {
   RETURN SDL_SetGamma(red, green, blue);
 }
 
+/*! @decl void|object get_video_surface()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void|object get_video_surface()
 {
   SDL_Surface *screen = SDL_GetVideoSurface();
@@ -1559,6 +1614,11 @@ PIKEFUN void|object get_video_surface()
   push_int(0);
 }
 
+/*! @decl void|object get_video_info()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void|object get_video_info()
 {
   const SDL_VideoInfo *vidinfo = SDL_GetVideoInfo();
@@ -1572,11 +1632,21 @@ PIKEFUN void|object get_video_info()
   push_int(0);
 }
 
+/*! @decl void gl_set_attribute(int attribute, int value)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void gl_set_attribute( int attribute, int value )
 {
   SDL_GL_SetAttribute( attribute, value );
 }
 
+/*! @decl void gl_get_attribute(int attribute)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int gl_get_attribute( int attribute )
 {
   int res;
@@ -1584,21 +1654,41 @@ PIKEFUN int gl_get_attribute( int attribute )
   RETURN res;
 }
 
+/*! @decl int show_cursor(int show)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int show_cursor( int show )
 {
   RETURN SDL_ShowCursor( show );
 }
 
+/*! @decl void warp_moude(int xpos, int ypos)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void warp_mouse( int xpos, int ypos )
 {
   SDL_WarpMouse( xpos, ypos );
 }
 
+/*! @decl void gl_swap_buffers()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void gl_swap_buffers( )
 {
   SDL_GL_SwapBuffers( );
 }
 
+/*! @decl object set_video_mode(int width, int height, int bpp, int flags)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
 {
   SDL_Surface *screen;
@@ -1628,6 +1718,12 @@ PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
   Pike_error("Failed to set video mode: %s\n", SDL_GetError());
 }
 
+/*! @decl int blit_surface(SDL.Surface src, SDL.Surface dst,@
+ *!                        SDL.Rect srcrect, SDL.Rect dstrect)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int blit_surface(object src, object dst,
 			 object|void _srcrect,
 			 object|void _dstrect) {
@@ -1653,6 +1749,11 @@ PIKEFUN int blit_surface(object src, object dst,
 			 OBJ2_SURFACE(dst)->_s, dstrect);
 }
 
+/*! @decl void|string video_driver_name()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void|string video_driver_name() {
   char tmp[256];
   tmp[0] = 0;
@@ -1663,11 +1764,21 @@ PIKEFUN void|string video_driver_name() {
   }
   push_text(tmp);
 }
-  
+
+/*! @decl void set_caption(string title, string icon)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void set_caption(string title, string icon) {
   SDL_WM_SetCaption(title->str, icon->str);
 }
 
+/*! @decl array(string) get_caption()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN array(string) get_caption() {
   char *title, *icon;
   SDL_WM_GetCaption(&title, &icon);
@@ -1677,10 +1788,20 @@ PIKEFUN array(string) get_caption() {
   f_aggregate(2);
 }
 
+/*! @decl int iconify_window()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int iconify_window() {
   RETURN SDL_WM_IconifyWindow();
 }
 
+/*! @decl int toggle_fullscreen(void|SDL.Surface screen)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int toggle_fullscreen(void|object screen) {
   SDL_Surface *vs = 0;
   if(!screen) {
@@ -1695,11 +1816,19 @@ PIKEFUN int toggle_fullscreen(void|object screen) {
   RETURN SDL_WM_ToggleFullScreen(vs);
 }
 
+/*! @int grab_input(int mode)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int grab_input(int mode) {
   RETURN SDL_WM_GrabInput(mode);
 }
 
 /* Joystick related functionality */
+
+/*! @class Joystick
+ */
 
 #define CHECK_INIT() if(THIS->joystick == NULL) { Pike_error("Joystick unitialized!\n"); }
 PIKECLASS Joystick {
@@ -1714,7 +1843,12 @@ PIKECLASS Joystick {
       THIS->joystick = NULL;
     }
   }
-  
+
+  /*! @decl void create(int device_index)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN void create(int device_index) {
     THIS->joystick = SDL_JoystickOpen(device_index);
     if(!THIS->joystick) {
@@ -1723,43 +1857,83 @@ PIKECLASS Joystick {
     }
   }
 
+  /*! @decl int index()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int index() {
     CHECK_INIT();
     RETURN SDL_JoystickIndex(THIS->joystick);
   }
-  
+
+  /*! @decl int num_axes()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int num_axes() {
     CHECK_INIT();
     RETURN SDL_JoystickNumAxes(THIS->joystick);
   }
 
+  /*! @decl int num_balls()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int num_balls() {
     CHECK_INIT();
     RETURN SDL_JoystickNumBalls(THIS->joystick);
   }
 
+  /*! @decl int num_hats()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int num_hats() {
     CHECK_INIT();
     RETURN SDL_JoystickNumHats(THIS->joystick);
   }
 
+  /*! @decl int num_buttons()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int num_buttons() {
     CHECK_INIT();
     RETURN SDL_JoystickNumButtons(THIS->joystick);
   }
 
+  /*! @decl float get_axis(int axis)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN float get_axis(int axis) {
     int axis_value;
     CHECK_INIT();
     axis_value = SDL_JoystickGetAxis(THIS->joystick, axis);
     RETURN (FLOAT_TYPE)axis_value / (FLOAT_TYPE)32768;
   }
-  
+
+  /*! @decl int get_hat(int hat)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int get_hat(int hat) {
     CHECK_INIT();
     RETURN SDL_JoystickGetHat(THIS->joystick, hat);
   }
-  
+
+  /*! @decl array(int) get_ball(int ball)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN array(int) get_ball(int ball) {
     int dx, dy;
     CHECK_INIT();
@@ -1770,11 +1944,21 @@ PIKECLASS Joystick {
     f_aggregate(2);
   }
 
+  /*! @decl int get_button(int button)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int get_button(int button) {
     CHECK_INIT();
     RETURN SDL_JoystickGetButton(THIS->joystick, button);
   }
 
+  /*! @decl string name()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN string name() {
     const char *name;
     CHECK_INIT();
@@ -1789,10 +1973,23 @@ PIKECLASS Joystick {
 }
 #undef CHECK_INIT
 
+/*! @endclass
+ */
+
+/*! @decl int num_joysticks()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int num_joysticks() {
   RETURN SDL_NumJoysticks();
 }
 
+/*! @decl string joystick_name(int device_index)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN string joystick_name(int device_index) {
   const char *name = SDL_JoystickName(device_index);
   pop_n_elems(args);
@@ -1803,20 +2000,45 @@ PIKEFUN string joystick_name(int device_index) {
   }
 }
 
+/*! @decl int joystick_opened(int device_index)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int joystick_opened(int device_index) {
   RETURN SDL_JoystickOpened(device_index);
 }
 
+/*! @decl void joystick_update()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void joystick_update() {
   SDL_JoystickUpdate();
 }
 
+/*! @decl int joystick_event_state(int state)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int joystick_event_state(int state) {
   RETURN SDL_JoystickEventState(state);
 }
 
 /* CD Related methods */
 
+/*! @class CDTrack
+ *!
+ *! @decl int id
+ *! @decl int length
+ *! @decl int offset
+ *! @decl int type
+ *!
+ *! @fixme
+ *!   Document this variable
+ */
 PIKECLASS CDTrack {
   CVAR SDL_CDtrack track;
   INIT {
@@ -1851,7 +2073,11 @@ PIKECLASS CDTrack {
   }
 
 }
+/*! @endclass
+ */
 
+/*! @class CD
+ */
 #define CHECK_INIT() if(THIS->cd == NULL) { Pike_error("CD unitialized!\n"); }
 PIKECLASS CD {
   CVAR SDL_CD *cd;
@@ -1864,15 +2090,27 @@ PIKECLASS CD {
       THIS->cd = NULL;
     };
   }
-  
+
+  /*! @decl void create(int drive)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN void create(int drive) {
     THIS->cd = SDL_CDOpen(drive);
     if(!THIS->cd) {
       Pike_error("Failed to open CD %d: %s\n", drive, SDL_GetError());
     }
   }
-  
-  
+
+  /*! @decl int current_frame
+   *! @decl int current_track
+   *! @decl int id
+   *! @decl int numtracks
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
   PIKEFUN mixed `->(string key) {
     struct pike_string *current_frame;
     struct pike_string *current_track;
@@ -1902,6 +2140,11 @@ PIKECLASS CD {
     f_arrow(2); 
   }
     
+  /*! @decl CDTrack track(int track)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object track(int track) {
     struct object *trackobj;
     if(track >= THIS->cd->numtracks || track < 0) {
@@ -1911,42 +2154,92 @@ PIKECLASS CD {
     OBJ2_CDTRACK(trackobj)->track = THIS->cd->track[track];
     RETURN trackobj;
   }
-    
+
+  /*! @decl int status()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int status() {
     RETURN SDL_CDStatus(THIS->cd);
   }
 
+  /*! @decl int play(int start, int length)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int play(int start, int length) {
     RETURN SDL_CDPlay(THIS->cd, start, length);
   }
+
+  /*! @decl int play_tracks(int start_track, int start_frame, @
+   *!                       int ntracks, int nframes)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int play_tracks(int start_track, int start_frame,
 			  int ntracks, int nframes) {
     RETURN SDL_CDPlayTracks(THIS->cd, start_track, start_frame,
 			    ntracks, nframes);
   }
-    
+
+  /*! @decl int pause()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int pause() {
     RETURN SDL_CDPause(THIS->cd);
   }
-    
+
+  /*! @decl int resume()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int resume() {
     RETURN SDL_CDResume(THIS->cd);
   }
 
+  /*! @decl int stop()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int stop() {
     RETURN SDL_CDStop(THIS->cd);
   }
 
+  /*! @int eject()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int eject() {
     RETURN SDL_CDEject(THIS->cd);
   }
 }
 #undef CHECK_INIT
 
+/*! @endclass
+ */
+
+/*! @decl int cd_num_drivers()
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN int cd_num_drives() {
   RETURN SDL_CDNumDrives();
 }
 
+/*! @decl string|void cd_name(int drive)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN string|void cd_name(int drive) {
   const char *name = SDL_CDName(drive);
   pop_n_elems(args);
@@ -1962,6 +2255,8 @@ PIKEFUN string|void cd_name(int drive) {
  * library.
  */
 
+/*! @class Music
+ */
 PIKECLASS Music {
   CVAR Mix_Music *music;
 
@@ -1975,6 +2270,11 @@ PIKECLASS Music {
     }
   }
 
+  /*! @decl void create(string fname)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN void create(string fname) {
     if(THIS->music) {
       // Since you can manually call this...
@@ -1987,33 +2287,79 @@ PIKECLASS Music {
     }
   }
 
+  /*! @decl object pause()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object pause() {
     Mix_PauseMusic();
     RET_THIS();
   }
+
+  /*! @decl object halt()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object halt() {
     Mix_HaltMusic();
     RET_THIS();
   }
+
+  /*! @decl object resume()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object resume() {
     Mix_ResumeMusic();
     RET_THIS();
   }
+
+  /*! @decl object rewind()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object rewind() {
     Mix_RewindMusic();
     RET_THIS();
   }
+
   /* Status queries */
+  /*! @decl int paused()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int paused() {
     RETURN Mix_PausedMusic();
   }
+
+  /*! @decl int playing()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int playing() {
     RETURN Mix_PlayingMusic();
   }
+
+  /*! @decl int fading()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int fading() {
     RETURN Mix_FadingMusic();
   }
 
+  /*! @decl object play(int|void loops)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object play(int|void _loops) {
     int loops = -1;
     if(_loops) {
@@ -2027,6 +2373,11 @@ PIKECLASS Music {
     RET_THIS();
   }
 
+  /*! @decl object fade_in(int ms, int|void loops)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object fade_in(int ms, int|void _loops) {
     int loops = -1;
     if(_loops) {
@@ -2040,22 +2391,45 @@ PIKECLASS Music {
     RET_THIS();
   }
 
+  /*! @decl object fade_out(int ms)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN object fade_out(int ms) {
     Mix_FadeOutMusic(ms);
     RET_THIS();
   }
-  
+
+  /*! @decl float set_volume(float vol)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN float set_volume(float vol) {
     if(vol > 1.0)       { vol = 1.0; }
     else if(vol < 0.0)  { vol = 0.0; }
     RETURN (FLOAT_TYPE)Mix_VolumeMusic((int)(128 * vol)) / 128.0;
   }
 
+  /*! @decl float volume()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN float volume() {
     RETURN (FLOAT_TYPE)Mix_VolumeMusic(-1) / 128.0;
   }
 }
 
+/*! @endclass
+ */
+
+/*! @decl void open_audio(int frequency, int format, int channels, int bufsize)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
 PIKEFUN void open_audio(int frequency, int format, int channels, int bufsize) {
   SDL_InitSubSystem(SDL_INIT_AUDIO); /* Just in case */
   if(Mix_OpenAudio(frequency, format, channels, bufsize) == -1) {
@@ -2068,6 +2442,9 @@ PIKEFUN void open_audio(int frequency, int format, int channels, int bufsize) {
 
 
 /* SDL_event handling */
+
+/*! @class Event
+ */
 PIKECLASS Event {
   CVAR SDL_Event event;
 
@@ -2075,14 +2452,29 @@ PIKECLASS Event {
     THIS->event.type = SDL_NOEVENT;
   }
 
+  /*! @decl int get()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int get() {
     RETURN SDL_PollEvent(&THIS->event);
   }
-  
+
+  /*! @decl int wait()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int wait() {
     RETURN SDL_WaitEvent(&THIS->event);
   }
 
+  /*! @decl int poll()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
   PIKEFUN int poll() {
     RETURN SDL_PollEvent(NULL);
   }
@@ -2093,6 +2485,24 @@ PIKECLASS Event {
     f_arrow(2); 
   }
 
+  /*! @decl int axis
+   *! @decl int ball
+   *! @decl int button
+   *! @decl int code
+   *! @decl int gain
+   *! @decl int h
+   *! @decl int hat
+   *! @decl Keysym keysym
+   *! @decl int state
+   *! @decl int type
+   *! @decl int value
+   *! @decl int w
+   *! @decl int which
+   *! @decl int x
+   *! @decl int xrel
+   *! @decl int y
+   *! @decl int yrel
+   */
   PIKEFUN mixed `->(string key) {
     struct pike_string *axis;
     struct pike_string *ball;
@@ -2326,6 +2736,10 @@ PIKECLASS Event {
     OBJ_INDEX();
   }
 }
+
+/*! @endclass
+ */
+
 /* Pike initialization modules below */
 
 PIKE_MODULE_INIT
