@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.20 1999/09/11 08:15:56 hubbe Exp $
+ * $Id: las.h,v 1.21 1999/09/25 20:11:49 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -112,6 +112,7 @@ int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_string *type,
 	      int modifiers);
+void resolv_program(node *n);
 /* Prototypes end here */
 
 #define CAR(n) ((n)->u.node.a)
