@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dct.c,v 1.23 2002/10/21 17:06:13 marcus Exp $
+|| $Id: dct.c,v 1.24 2003/08/20 22:26:32 nilsson Exp $
 */
 
 /*
@@ -86,10 +86,12 @@ void image_dct(INT32 args)
    
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
+#ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
 	   DO_NOT_WARN((unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize)),
 	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
-    
+#endif
+
    if (!(area=malloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1)))
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
@@ -159,9 +161,13 @@ void image_dct(INT32 args)
 	 sum.b *= (float)d;
 	 area[u+v*THIS->xsize]=sum;
       }
+#ifdef DCT_DEBUG
       fprintf(stderr,"."); fflush(stderr);
+#endif
    }
+#ifdef DCT_DEBUG
    fprintf(stderr,"\n");
+#endif
 
    dx=((double)(THIS->xsize-1))/(img->xsize);
    dy=((double)(THIS->ysize-1))/(img->ysize);
@@ -201,7 +207,9 @@ void image_dct(INT32 args)
 	 pix->b=testrange((DOUBLE_TO_INT(sum.b+0.5)));
 	 pix++;
       }
+#ifdef DCT_DEBUG
       fprintf(stderr,"."); fflush(stderr);
+#endif
    }
 
    free(area);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.16 2003/05/25 02:58:40 nilsson Exp $
+|| $Id: gettext.c,v 1.17 2003/08/20 22:26:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.16 2003/05/25 02:58:40 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.17 2003/08/20 22:26:11 nilsson Exp $");
 
 /*! @module Locale
  */
@@ -266,7 +266,6 @@ void f_setlocale(INT32 args)
   INT_TYPE category;
   get_all_args("Gettext.setlocale", args, "%d%S", &category, &locale);
 
-  fprintf(stderr, "locale: %s, category: %d\n", locale->str, category);
   returnstring = setlocale(category, locale->str);
   pop_n_elems(args);
   if(returnstring == NULL)
