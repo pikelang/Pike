@@ -1,0 +1,11 @@
+# $Id: Makefile.in,v 1.1 2000/08/12 06:18:22 per Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=roxen.o
+MODULE_LDFLAGS=@LDFLAGS@
+#  streamed_parser.o
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@
