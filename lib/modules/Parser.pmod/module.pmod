@@ -1,11 +1,12 @@
 //
-// $Id: module.pmod,v 1.21 2003/11/07 18:38:50 nilsson Exp $
+// $Id: module.pmod,v 1.22 2004/02/24 12:27:36 jhs Exp $
 
 #pike __REAL_VERSION__
 
 // inherit Parser._parser;
 
 constant HTML = Parser._parser.HTML;
+constant _RCS = Parser._parser._RCS;
 
 static int(0..0) return_zero() {return 0;}
 static HTML xml_parser =
