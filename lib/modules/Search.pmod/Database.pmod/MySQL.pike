@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.59 2001/08/13 19:51:32 nilsson Exp $
+// $Id: MySQL.pike,v 1.60 2001/08/16 21:27:49 nilsson Exp $
 
 inherit .Base;
 
@@ -344,6 +344,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
   int s = time();
   int q;
   Sql.Sql db = Sql.Sql( host );
+  werror("----------- sync() %4d docs --------------\n", docs);
   do
   {
     [string word, _WhiteFish.Blob b] = blobs->read();
@@ -361,6 +362,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
 
   if( sync_callback )
     sync_callback();
+  werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 }
 
 static object old_thread;
