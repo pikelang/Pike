@@ -1032,6 +1032,10 @@ string parse_not_doc(Node n) {
       }
       break;
 
+    // We don't need import information.
+    case "import":
+      break;
+
     default:
       error( "Illegal element " + c->get_any_name() + " in !doc.\n" );
       break;
