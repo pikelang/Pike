@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.10 1999/12/07 09:40:55 hubbe Exp $
+ * $Id: constants.h,v 1.11 1999/12/13 12:08:12 mast Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -78,4 +78,16 @@ void cleanup_added_efuns(void);
 
 #define ADD_EFUN2(NAME,FUN,TYPE,FLAGS,OPTIMIZE,DOCODE) \
     quick_add_efun(NAME,CONSTANT_STRLEN(NAME),FUN,TYPE,CONSTANT_STRLEN(TYPE),FLAGS,OPTIMIZE,DOCODE)
+
+#define ADD_EFUN_DTYPE(NAME,FUN,DTYPE,FLAGS) do {				\
+  DTYPE_START;									\
+  {DTYPE}									\
+  {										\
+    struct pike_string *_t;							\
+    DTYPE_END(_t);								\
+    quick_add_efun(NAME,CONSTANT_STRLEN(NAME),FUN,_t->str,_t->len,FLAGS,0,0);	\
+    free_string(_t);								\
+  }										\
+} while (0)
+
 #endif

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.91 1999/12/12 18:31:33 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.92 1999/12/13 12:08:12 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -235,6 +235,13 @@ void push_type_int(INT32 i)
 {
   int e;
   for(e=0;e<(int)sizeof(i);e++)
+    push_type( (i>>(e*8)) & 0xff );
+}
+
+void push_type_int_backwards(INT32 i)
+{
+  int e;
+  for(e=(int)sizeof(i);e-->0;)
     push_type( (i>>(e*8)) & 0xff );
 }
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.68 1999/11/23 10:38:16 mast Exp $
+ * $Id: program.h,v 1.69 1999/12/13 12:08:13 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -464,6 +464,17 @@ int implements(struct program *a, struct program *b);
 
 #define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
   quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
+
+#define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {				\
+  DTYPE_START;									\
+  {DTYPE}									\
+  {										\
+    struct pike_string *_t;							\
+    DTYPE_END(_t);								\
+    quick_add_function(NAME,CONSTANT_STRLEN(NAME),FUN,_t->str,_t->len,FLAGS,0);	\
+    free_string(_t);								\
+  }										\
+} while (0)
 
 #ifndef NO_PIKE_SHORTHAND
 #define add_function pike_add_function

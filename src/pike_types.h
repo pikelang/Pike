@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.28 1999/12/07 09:41:00 hubbe Exp $
+ * $Id: pike_types.h,v 1.29 1999/12/13 12:08:13 mast Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -101,6 +101,10 @@ extern struct pike_string *any_type_string;
   }							\
 } while(0)
 
+#define unsafe_push_type(X) do {			\
+  *type_stackp=(X);					\
+  type_stackp++;					\
+} while(0)
 
 #define type_stack_mark() do {				\
   if(pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
@@ -109,6 +113,11 @@ extern struct pike_string *any_type_string;
     *pike_type_mark_stackp=type_stackp;				\
     pike_type_mark_stackp++;					\
   }							\
+} while(0)
+
+#define unsafe_type_stack_mark() do {				\
+  *pike_type_mark_stackp=type_stackp;				\
+  pike_type_mark_stackp++;					\
 } while(0)
 
 #define reset_type_stack() do {			\
@@ -124,6 +133,7 @@ void pop_type_stack(void);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
 void push_type_int(INT32 i);
+void push_type_int_backwards(INT32 i);
 INT32 extract_type_int(char *p);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_string *type);
@@ -162,6 +172,61 @@ char *get_name_of_type(int t);
 void cleanup_pike_types(void);
 int type_may_overload(char *type, int lfun);
 /* Prototypes end here */
+
+/* "Dynamic types" - use with ADD_FUNCTION_DTYPE */
+#define dtStore(TYPE) {int e; for (e=0; e<CONSTANT_STRLEN(TYPE); e++) unsafe_push_type((TYPE)[e]);}
+#define dtArr(VAL) {unsafe_push_type(PIKE_T_ARRAY); {VAL}}
+#define dtArray dtArr(dtMix)
+#define dtMap(IND,VAL) {unsafe_push_type(PIKE_T_MAPPING); {VAL} {IND}}
+#define dtMapping dtMap(dtMix,dtMix)
+#define dtSet(IND) {unsafe_push_type(PIKE_T_MULTISET); {IND}}
+#define dtMultiset dtSet(dtMix)
+#define dtObjImpl(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(0); push_type_int_backwards((PROGRAM)->id);}
+#define dtObjInher(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(1); push_type_int_backwards((PROGRAM)->id);}
+#define dtObj dtStore(tObj)
+#define dtFuncV(ARGS,REST,RET) MagicdtFuncV(RET,REST,ARGS)
+#define dtFunc(ARGS,RET) MagicdtFunc(RET,ARGS)
+#define MagicdtFuncV(RET,REST,ARGS) {unsafe_push_type(PIKE_T_FUNCTION); {ARGS} unsafe_push_type(T_MANY); {REST} {RET}}
+#define MagicdtFunc(RET,ARGS) dtFuncV(ARGS {}, dtVoid, RET)
+#define dtFunction dtFuncV({},dtAny,dtAny)
+#define dtNone {}
+#define dtPrg {unsafe_push_type(PIKE_T_PROGRAM);}
+#define dtProgram {unsafe_push_type(PIKE_T_PROGRAM);}
+#define dtStr {unsafe_push_type(PIKE_T_STRING);}
+#define dtString {unsafe_push_type(PIKE_T_STRING);}
+#define dtType {unsafe_push_type(PIKE_T_TYPE);}
+#define dtFlt {unsafe_push_type(PIKE_T_FLOAT);}
+#define dtFloat {unsafe_push_type(PIKE_T_FLOAT);}
+#define dtIntRange(LOW,HIGH) {unsafe_push_type(PIKE_T_INT); push_type_int_backwards(LOW); push_type_int_backwards(HIGH);}
+#define dtInt dtStore(tInt)
+#define dtZero {unsafe_push_type(PIKE_T_ZERO);}
+#define dtVoid {unsafe_push_type(T_VOID);}
+#define dtVar(X) {unsafe_push_type(X);}
+#define dtSetvar(X,TYPE) {unsafe_push_type(T_ASSIGN); {TYPE}}
+#define dtNot(TYPE) {unsafe_push_type(T_NOT); {TYPE}}
+#define dtAnd(A,B) {unsafe_push_type(T_AND); {A} {B}}
+#define dtOr(A,B) {unsafe_push_type(T_OR); {A} {B}}
+#define dtOr3(A,B,C) dtOr(A,dtOr(B,C))
+#define dtOr4(A,B,C,D) dtOr(A,dtOr3(B,C,D))
+#define dtOr5(A,B,C,D,E) dtOr(A,dtOr4(B,C,D,E))
+#define dtOr6(A,B,C,D,E,F) dtOr(A,dtOr5(B,C,D,E,F))
+#define dtMix {unsafe_push_type(T_MIXED);}
+#define dtMixed {unsafe_push_type(T_MIXED);}
+#define dtComplex dtStore(tComplex)
+#define dtStringIndicable dtStore(tStringIndicable)
+#define dtRef dtStore(tRef)
+#define dtIfnot(A,B) dtAnd(dtNot(A),B)
+#define dtAny dtStore(tAny)
+#define DTYPE_START do {						\
+  unsafe_type_stack_mark();						\
+  unsafe_type_stack_mark();						\
+} while (0)
+#define DTYPE_END(TYPESTR) do {						\
+  if(type_stackp >= type_stack + sizeof(type_stack))			\
+    fatal("Type stack overflow.");					\
+  type_stack_reverse();							\
+  (TYPESTR)=pop_unfinished_type();					\
+} while (0)
 
 #ifdef DEBUG_MALLOC
 #define pop_type() ((struct pike_string *)debug_malloc_update_location(debug_pop_type(),__FILE__,__LINE__))
