@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.593 2002/06/25 18:08:40 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.594 2002/08/01 14:50:42 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -319,9 +319,13 @@ fi
 
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
+MANDIR=`(cd $srcdir/../man ; pwd)`
+BASEDIR=`(cd $srcdir/.. ; pwd)`
 BUILDDIR=`pwd`
 AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
+AC_SUBST(MANDIR)
+AC_SUBST(BASEDIR)
 AC_SUBST(BUILDDIR)
 
 #############################################################################
