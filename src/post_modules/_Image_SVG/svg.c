@@ -1,14 +1,14 @@
 #include "config.h"
 
 /*
- * $Id: svg.c,v 1.3 2002/05/11 14:27:57 nilsson Exp $
+ * $Id: svg.c,v 1.4 2002/07/10 22:45:23 nilsson Exp $
  */
 
 #ifdef HAVE_SVG
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.3 2002/05/11 14:27:57 nilsson Exp $");
+RCSID("$Id: svg.c,v 1.4 2002/07/10 22:45:23 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -27,13 +27,13 @@ RCSID("$Id: svg.c,v 1.3 2002/05/11 14:27:57 nilsson Exp $");
 
 #include <librsvg/rsvg.h>
 
-/*
-*! @module Image
-*/
+/*! @module Image
+ */
 
-/*
-*! @module SVG
-*/
+/*! @module SVG
+ *! This is a glue against the librsvg-2.0 library,
+ *! providing Scalable Vector Graphics (SVG) for Pike.
+ */
 
 
 static void _do_free_mapping( void *opts )
