@@ -78,7 +78,7 @@ PIKECLASS CryptContext
       case NTE_KEYSET_NOT_DEF:
 	Pike_error("CryptContext->create(): Crypto Service Provider not set up correctly.\n");
 	break;
-      else
+      default:
 	Pike_error("CryptContext->create(): Failed with code 0x%08x.\n",
 		   errcode);
 	break;
