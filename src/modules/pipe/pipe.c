@@ -20,6 +20,34 @@
 #include "svalue.h"
 #include "error.h"
 
+
+#if !defined(S_ISREG) && defined(__NeXT__)
+#define S_IRUSR _S_IRUSR        /* read permission, owner */
+#define S_IRGRP 0000040         /* read permission, group */
+#define S_IROTH 0000004         /* read permission, other */
+#define S_IWUSR _S_IWUSR        /* write permission, owner */
+#define S_IWGRP 0000020         /* write permission, group */
+#define S_IWOTH 0000002         /* write permission, other */
+#define S_IXUSR _S_IXUSR        /* execute/search permission, */
+/* owner */
+#define S_IXGRP 0000010         /* execute/search permission, */
+/* group */
+#define S_IXOTH 0000001         /* execute/search permission, */
+/* other */
+#define S_IRWXU 0000700         /* read, write, execute */
+/* permissions, owner */
+#define S_IRWXG 0000070         /* read, write, execute */
+/* permissions, group */
+#define S_IRWXO 0000007         /* read, write, execute */
+/* permissions, other */
+
+#define S_ISBLK(mode)   (((mode) & (_S_IFMT)) == (_S_IFBLK))
+#define S_ISCHR(mode)   (((mode) & (_S_IFMT)) == (_S_IFCHR))
+#define S_ISDIR(mode)   (((mode) & (_S_IFMT)) == (_S_IFDIR))
+#define S_ISFIFO(mode)  (((mode) & (_S_IFMT)) == (_S_IFIFO))
+#define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
+#endif
+
 /*
 #define PIPE_STRING_DEBUG
 #define PIPE_MMAP_DEBUG
@@ -669,11 +697,7 @@ static void pipe_output(INT32 args)
     if ((sp[-1].type==T_INT)
 	&& (fd=sp[-1].u.integer)>=0
 	&& (fstat(fd,&s)==0)
-#ifdef S_ISREG
 	&& S_ISREG(s.st_mode)
-#else
-	&& 0
-#endif
 	&& (THIS->fd=dup(fd))!=-1 )
     {
       push_int(THIS->fd);
