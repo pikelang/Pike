@@ -9,6 +9,8 @@ import ".";
 
 int main(int argc, string *argv)
 {	
+  random_seed(0); // increase cache hit potential
+
   mixed *ER=catch {
     program output=(program)argv[2];
     if (!output) error("can't cast %O to program\n",argv[2]);
