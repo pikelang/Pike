@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.233 2002/11/29 11:09:39 grubba Exp $
+// $Id: master.pike.in,v 1.234 2002/12/01 23:47:00 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -44,7 +44,7 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 //! backtrace. Defaults to 200 if no BT_MAX_STRING_LEN define has been
 //! given.
 
-// Enables the out of date warning in low_find_prog().
+// Enables the out of date warning in low_findprog().
 #ifndef OUT_OF_DATE_WARNING
 #define OUT_OF_DATE_WARNING 1
 #endif /* OUT_OF_DATE_WARNING */
@@ -495,7 +495,12 @@ static program low_findprog(string pname,
   if(!autoreload_on || load_time[fname]>=time())
 #endif
   {
-    if(!zero_type (ret=programs[fname])) return ret;
+    if(!zero_type (ret=programs[fname])) {
+#ifdef RESOLV_DEBUG
+      werror ("low_findprog: %s returning cached (no autoreload)\n", fname);
+#endif
+      return ret;
+    }
   }
 
 #ifdef __NT__
@@ -519,7 +524,12 @@ static program low_findprog(string pname,
 
 #ifdef PIKE_AUTORELOAD
     if (load_time[fname] > s[3])
-      if (!zero_type (ret=programs[fname])) return ret;
+      if (!zero_type (ret=programs[fname])) {
+#ifdef RESOLV_DEBUG
+	werror ("low_findprog: %s returning cached (autoreload)\n", fname);
+#endif
+	return ret;
+      }
 #endif
 
     switch(ext)
@@ -533,9 +543,13 @@ static program low_findprog(string pname,
 	  {
 	    mixed err=catch {
 	      AUTORELOAD_CHECK_FILE(oname);
-	      return programs[fname] =
-		decode_value(master_read_file(oname),
-			     Codec(fname, mkobj));
+	      ret = decode_value(master_read_file(oname),
+				 Codec(fname, mkobj));
+#ifdef RESOLV_DEBUG
+	      werror ("low_findprog: %s returning decoded dump\n", fname);
+#endif
+	      return programs[fname] = ret;
+
 	    };
 	    m_delete(programs, fname);
 	    if (handler && handler->compile_warning) {
@@ -558,7 +572,10 @@ static program low_findprog(string pname,
 	}
       }
       
-      programs[fname]=ret=__empty_program();
+#ifdef RESOLV_DEBUG
+      werror ("low_findprog: %s compiling\n", fname);
+#endif
+      programs[fname]=ret=__empty_program(0, fname);
       if ( mixed e=catch {
 	ret=compile_file(fname,
 			 handler,
@@ -577,7 +594,10 @@ static program low_findprog(string pname,
 		"%s\n", pname, ext, describe_backtrace(backtrace()) );
       }
 
-  ret=load_module(fakeroot(fname));
+      ret=load_module(fakeroot(fname));
+#ifdef RESOLV_DEBUG
+      werror ("low_findprog: %s loaded binary\n", fname);
+#endif
 #endif /* load_module */
     }
 
@@ -585,6 +605,9 @@ static program low_findprog(string pname,
 
     return programs[fname]=ret;
   }
+#ifdef RESOLV_DEBUG
+  werror ("low_findprog: %s file not found\n", fname);
+#endif
   return 0;
 }
 
@@ -606,7 +629,7 @@ void unregister(program p)
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
 	n->delete_value (p);
   }
-  if (zero_type(objects[p]) != 1)
+  if (objectp (objects[p]))
     m_delete(objects, p);
   foreach (fc; string name; mixed mod)
     if (objectp(mod) && object_program(mod) == p)
@@ -820,7 +843,7 @@ object low_cast_to_object(string oname, string current_file,
 
   p = low_cast_to_program(oname, current_file, current_handler, 1);
   if(!p) return 0;
-  if(zero_type (o=objects[p])) o=objects[p]=p();
+  if(!objectp (o=objects[p])) o=objects[p]=p();
   return o;
 }
 
@@ -829,8 +852,8 @@ object low_cast_to_object(string oname, string current_file,
 //! may also receive more arguments in the future.
 object cast_to_object(string oname, string current_file)
 {
-  if(object o=low_cast_to_object(oname, current_file))
-    return o;
+  object o = low_cast_to_object(oname, current_file);
+  if (objectp (o)) return o;
   error("Cast '"+oname+"' to object failed"+
 	((current_file && current_file!="-")?sprintf(" for '%s'",current_file):"")+".\n");
   return 0;
@@ -841,6 +864,8 @@ class dirnode
   string dirname;
   object|void handler;
   constant is_resolv_dirnode = 1;
+  // objectp() is intentionally not used on the module object, to
+  // allow a module to deny its own existence with `!.
   mixed module=module_checker();
   mapping(string:mixed) cache=([]);
   array(string) files;
@@ -965,10 +990,6 @@ class dirnode
       return UNDEFINED;
     }
     ret=ind(index);
-
-    // Kluge!
-    if(ret == __placeholder_object) return ret;
-
     cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
     return ret;
   }
@@ -1177,7 +1198,7 @@ object findmodule(string fullname, object|void handler)
       return dirnode(fullname+".pmod", handler);
   }
 
-  if(o = low_cast_to_object(fullname+".pmod", "/.", handler))
+  if(objectp (o = low_cast_to_object(fullname+".pmod", "/.", handler)))
     return fc[fullname]=o;
     
 #if constant(load_module)
@@ -1185,7 +1206,7 @@ object findmodule(string fullname, object|void handler)
     return fc[fullname] = low_cast_to_object(fullname, "/.", handler);
 #endif
 
-  return fc[fullname]=UNDEFINED;
+  return fc[fullname] = 0;
 }
 
 mixed handle_import(string what, string|void current_file, object|void handler)
@@ -1373,10 +1394,9 @@ class CompatResolver
       foreach(pike_module_path, string path)
 	{
 	  string file=combine_path(dir, path, identifier);
-	  mixed ret;
-	  if(!zero_type(ret=findmodule(file, current_handler))) {
-	    if ((objectp(ret)) &&
-		(ret->is_resolv_dirnode || ret->is_resolv_joinnode)) {
+	  mixed ret = findmodule(file, current_handler);
+	  if(objectp (ret)) {	// ret is either zero or an object here.
+	    if (ret->is_resolv_dirnode || ret->is_resolv_joinnode) {
 	      if (mixed new_ret = ret->_module_value) {
 		ret = new_ret;
 	      }
@@ -2366,13 +2386,13 @@ string describe_module(object|program mod, array(object)|void ret_obj)
     if (ret_obj) ret_obj[0] = mod;
   } else {
     parent_fun = mod;
-    if (!zero_type (mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
+    if (objectp (mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
   }
   if (mod) {
     catch {
       string res = sprintf("%O", mod);
       if (res != "object" && res != "")
-	return (!zero_type (objects[parent_fun]) && programs["/master"] != parent_fun?
+	return (objectp (objects[parent_fun]) && programs["/master"] != parent_fun?
 		res+".":res+"->");
     };
   }
@@ -2387,8 +2407,9 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 			       object_program(parent_fun),
 			       parent_obj);
   // werror("So far: %O parent_obj:%O\n", res, parent_obj);
-  object|program parent = parent_obj[0] || object_program(parent_fun);
-  if (mod && parent) {
+  object|program parent =
+    objectp (parent_obj[0]) ? parent_obj[0] : object_program(parent_fun);
+  if (mod && (objectp (parent) || parent)) {
     // Object identified.
     catch {
       // Check if we're an object in parent.
@@ -2406,7 +2427,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 
   // No such luck.
   // Try identifying a clone of ourselves.
-  if (!mod && parent) {
+  if (!mod && (objectp (parent) || parent)) {
     catch {
       // Check if there's a clone of parent_fun in parent_obj.
       int i;
@@ -2436,10 +2457,10 @@ string describe_object(object|program o)
   catch {
     object|program parent_obj = function_object(parent_fun);
 
-    if (parent_obj) {
+    if (objectp (parent_obj)) {
       /* Check if we have a constant object. */
       object tmp = objects[parent_obj];
-      if (!zero_type (tmp)) parent_obj = tmp;
+      if (objectp (tmp)) parent_obj = tmp;
 
       /* Try finding ourselves in parent_obj. */
       int i;
@@ -2458,7 +2479,7 @@ string describe_object(object|program o)
       }
     }
   };
-  if(!zero_type (objects[parent_fun]))
+  if(objectp (objects[parent_fun]))
     if(s=get_clean_program_path(parent_fun, "", "", "()"))
       return s;
   /* Try identifying the program. */
@@ -2739,7 +2760,7 @@ class Codec (void|string fname, void|int mkobj)
 	programs[fname]=prog_to_mkobj=p;
 	fname=0;
 	if (mkobj)
-	  return zero_type (objects[p]) ? (objects[p]=__null_program()) : objects[p];
+	  return objectp (objects[p]) ? objects[p] : (objects[p]=__null_program());
       }
       return 0;
     }
@@ -2777,9 +2798,10 @@ class Codec (void|string fname, void|int mkobj)
       if(sscanf(x,"efun:%s",x)) return f[x];
       if(sscanf(x,"resolv:%s",x)) return resolv(x);
       if(sscanf(x,"mpath:%s",x))
-	foreach(pike_module_path, string path)
-	  if(object ret=low_cast_to_object(combine_path(path,x),0))
-	    return ret;
+	foreach(pike_module_path, string path) {
+	  object ret = low_cast_to_object(combine_path(path,x),0);
+	  if (objectp (ret)) return ret;
+	}
       return cast_to_object(x,0);
     }
   
