@@ -31,5 +31,5 @@ do
 done
 
 if test x$need_to_make_depend = xyes ; then
-  echo You need to run \"make depend\" after \"configure\".
+  echo You need to run \"make depend\" after \"configure\", and then \"configure\" again.
 else :; fi
