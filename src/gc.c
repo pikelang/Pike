@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.223 2003/08/02 01:10:53 mast Exp $
+|| $Id: gc.c,v 1.224 2003/08/20 12:00:03 grubba Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.223 2003/08/02 01:10:53 mast Exp $");
+RCSID("$Id: gc.c,v 1.224 2003/08/20 12:00:03 grubba Exp $");
 
 int gc_enabled = 1;
 
@@ -1009,7 +1009,7 @@ again:
 	    INT32 line;
 	    struct pike_string *file;
 	    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
-		id->func.offset &&
+		id->func.offset >= 0 &&
 		(file = get_line(p->program + id->func.offset, p, &line))) {
 	      fprintf(stderr, "%*s**Function %s at %s:%ld\n",
 		      indent, "", id->name->str, file->str, (long) line);
