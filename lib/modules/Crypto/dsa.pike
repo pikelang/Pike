@@ -78,7 +78,7 @@ int raw_verify(bignum h, bignum r, bignum s)
 
 string sign_rsaref(string msg)
 {
-  [bignum r, bignum s] = raw_sign(dsa_hash(msg), random);
+  [bignum r, bignum s] = raw_sign(dsa_hash(msg));
 
   return sprintf("%'\0'20s%'\0'20s", r->digits(256), s->digits(256));
 }
@@ -96,7 +96,7 @@ int verify_rsaref(string msg, string s)
 string sign_ssl(string msg)
 {
   return Standards.ASN1.Types.asn1_sequence(
-    Array.map(raw_sign(dsa_hash(msg), random),
+    Array.map(raw_sign(dsa_hash(msg)),
 	      Standards.ASN1.Types.asn1_integer))->get_der();
 }
 
