@@ -452,6 +452,7 @@ testfont binary
 /src/modules/_Roxen/Makefile.in foreign_ident
 /src/modules/_Roxen/configure.in foreign_ident
 /src/modules/_math/Makefile.in foreign_ident
+/src/modules/_math/acconfig.h foreign_ident
 /src/modules/_math/configure.in foreign_ident
 /src/modules/_math/math.c foreign_ident
 /src/modules/call_out/Makefile.in foreign_ident
