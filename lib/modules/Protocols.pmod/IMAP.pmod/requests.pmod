@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.82 1999/03/29 15:15:17 grubba Exp $
+ * $Id: requests.pmod,v 1.83 1999/03/29 15:22:24 grubba Exp $
  */
 
 import .types;
@@ -128,7 +128,7 @@ class noop
 	foreach(status, array a)
 	  send("*", @a);
       
-      send(tag, "OK NOOP done");
+      send(tag, "OK", "NOOP done");
       
       return ([ "action" : "finished" ]);
     }
@@ -142,7 +142,7 @@ class capability
   mapping easy_process()
     {
       send("*", "CAPABILITY", @server->capabilities(session));
-      send(tag, "OK CAPABILITY done");
+      send(tag, "OK", "CAPABILITY done");
       return ([ "action" : "finished" ]);
     }
 }
@@ -164,10 +164,10 @@ class login
       
       if (!uid)
       {
-	send(tag, "NO LOGIN failed");
+	send(tag, "NO", "LOGIN failed");
 	return ([ "action" : "finished" ]);
       }
-      send(tag, "OK LOGIN done");
+      send(tag, "OK", "LOGIN done");
       return ([ "action" : "logged_in_state" ]);
     }
 }
@@ -180,7 +180,7 @@ class logout
   mapping easy_process()
     {
       send("*", "BYE");
-      send(tag, "OK");
+      send(tag, "OK", "LOGOUT done");
       return ([ "action" : "close" ]);
     }
 }
@@ -193,9 +193,9 @@ class create_mailbox
   mapping easy_process(string mailbox_name)
   {
     if (server->create_mailbox(session, mailbox_name)) {
-      send(tag, "OK");
+      send(tag, "OK", "CREATE done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "CREATE failed");
     }
     return ([ "action" : "finished" ]);
   }
@@ -209,9 +209,9 @@ class delete
   mapping easy_process(string mailbox_name)
   {
     if (server->delete(session, mailbox_name)) {
-      send(tag, "OK");
+      send(tag, "OK", "DELETE done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "DELETE failed");
     }
     return ([ "action" : "finished" ]);
   }
@@ -225,9 +225,9 @@ class rename
   mapping easy_process(string old_mailbox_name, string new_mailbox_name)
   {
     if (server->rename(session, old_mailbox_name, new_mailbox_name)) {
-      send(tag, "OK");
+      send(tag, "OK", "RENAME done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "RENAME failed");
     }
     return ([ "action" : "finished" ]);
   }
@@ -254,9 +254,9 @@ class list
       foreach(mailboxes, array a)
 	send("*", "LIST", @a);
       
-      send(tag, "OK LIST done");
+      send(tag, "OK", "LIST done");
     } else {
-      send(tag, "NO LIST failed");
+      send(tag, "NO", "LIST failed");
     }
     return ([ "action" : "finished" ]);
   }
@@ -370,13 +370,14 @@ class copy
       //   it is certain that the destination mailbox can not be created, the
       //   server MUST send the response code "[TRYCREATE]" as the prefix of
       //   the tagged NO response.
-      send(tag, "NO", imap_prefix(({ "TRYCREATE" })));
+      send(tag, "NO", imap_prefix(({ "TRYCREATE" })),
+	   "COPY mailbox doesn't exist");
       break;
     case 0:
-      send(tag, "NO");
+      send(tag, "NO", "COPY failed");
       break;
     case 1:
-      send(tag, "OK");
+      send(tag, "OK", "COPY done");
       break;
     default:
       throw(({ "Bad returncode from copy().\n", backtrace() }));
@@ -399,9 +400,9 @@ class expunge
       foreach(res, array(object|string)a) {
 	send("*", @a);
       }
-      send(tag, "OK");
+      send(tag, "OK", "EXPUNGE done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "EXPUNGE failed");
     }
     return ([ "action" : "finished" ]);
   }
@@ -417,9 +418,9 @@ class close
   {
     int res = server->close(session);
     if (res) {
-      send(tag, "OK");
+      send(tag, "OK", "CLOSE done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "CLOSE failed");
     }
     return ([ "action" : "logged_in_state" ]);
   }
@@ -467,9 +468,9 @@ class store
 	  send("*", @row);
 	}
       }
-      send(tag, "OK");
+      send(tag, "OK", "STORE done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "STORE failed");
     }
     return ([ "action" : "finished" ]);
   }
@@ -587,9 +588,9 @@ class fetch
     {
       foreach(info, array a)
 	send("*", @a);
-      send(tag, "OK FETCH done");
+      send(tag, "OK", "FETCH done");
     } else 
-      send(tag, "NO FETCH failed");
+      send(tag, "NO", "FETCH failed");
 
     return ([ "action" : "finished" ]);
   }
@@ -725,10 +726,10 @@ class search
       if (matches)
       {
 	send("*", "SEARCH", @matches);
-    	send(tag, "OK");
+    	send(tag, "OK", "SEARCH done");
       }  
       else
-    	send(tag, "NO");
+    	send(tag, "NO", "SEARCH failed");
 
       return ([ "action" : "finished" ]);
     }
@@ -1003,9 +1004,9 @@ class find
       foreach(mailboxes, array a)
 	send("*", "MAILBOX", a[-1]);
       
-      send(tag, "OK FIND done");
+      send(tag, "OK", "FIND done");
     } else {
-      send(tag, "NO FIND failed");
+      send(tag, "NO", "FIND failed");
     }
     return ([ "action" : "finished" ]);
   }
