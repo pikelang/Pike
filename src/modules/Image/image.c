@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.55 1997/11/09 18:40:52 mirar Exp $ */
+/* $Id: image.c,v 1.56 1997/11/09 18:54:48 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.55 1997/11/09 18:40:52 mirar Exp $
+**!	$Id: image.c,v 1.56 1997/11/09 18:54:48 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -84,7 +84,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.55 1997/11/09 18:40:52 mirar Exp $");
+RCSID("$Id: image.c,v 1.56 1997/11/09 18:54:48 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2442,7 +2442,7 @@ void image_modify_by_intensity(INT32 args)
 **!	<pre>img=Image.colortable(img,19,({({255,255,255}),({0,0,0})}))->map(img);</pre>
 */
 
-void image_map_compat(INT32 args) /* compat function */
+void _image_map_compat(INT32 args,int fs) /* compat function */
 {
   struct neo_colortable *nct;
   struct object *o,*co;
@@ -2454,6 +2454,9 @@ void image_map_compat(INT32 args) /* compat function */
 
   co=clone_object(image_colortable_program,args);
   nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
+
+  if (fs) image_colortable_internal_floyd_steinberg(
+		     get_storage(co,image_colortable_program));
 
   push_int(this->xsize);
   push_int(this->ysize);
@@ -2471,6 +2474,9 @@ void image_map_compat(INT32 args) /* compat function */
   free_object(co);
   push_object(o);
 }
+
+void image_map_compat(INT32 args) { _image_map_compat(args,0); }
+void image_map_fscompat(INT32 args) { _image_map_compat(args,1); }
 
 void image_select_colors(INT32 args)
 {
@@ -2827,7 +2833,7 @@ void pike_module_init(void)
                 "function(array(array(int)):object)",0);
    add_function("map_fast",image_map_compat,
                 "function(array(array(int)):object)",0);
-   add_function("map_fs",image_map_compat,
+   add_function("map_fs",image_map_fscompat,
                 "function(array(array(int)):object)",0);
    add_function("select_colors",image_select_colors,
                 "function(int:array(array(int)))",0);
