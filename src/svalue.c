@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.97 2001/02/25 13:37:51 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.98 2001/03/03 17:53:23 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -125,6 +125,14 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
     break;
     
   case T_TYPE:
+#ifdef USE_PIKE_TYPE
+    really_free_pike_type(s->u.type);
+#ifdef PIKE_DEBUG
+    s->type = 99;
+#endif /* PIKE_DEBUG */
+    break;
+#endif /* USE_PIKE_TYPE */
+    /* FALL_THROUGH */
   case T_STRING:
     really_free_string(s->u.string);
 #ifdef PIKE_DEBUG
