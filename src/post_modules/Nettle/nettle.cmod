@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.16 2003/08/24 18:28:24 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.17 2003/08/25 03:34:23 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -187,7 +187,8 @@ PIKECLASS Yarrow
 
 char *crypt_md5(int pl, const char *pw, int sl, const char *salt);
 
-/*! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
+/*! @decl string crypt_md5(string password, string salt)
+ *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
  *! It is assumed that @[salt] does not contain "$".
  */
 PIKEFUN string crypt_md5(string pw, string salt)
