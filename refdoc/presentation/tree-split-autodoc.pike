@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.25 2002/03/06 10:54:01 mast Exp $
+ * $Id: tree-split-autodoc.pike,v 1.26 2002/06/24 00:43:36 manual Exp $
  *
  */
 
@@ -300,7 +300,7 @@ class Node
 
   string make_navbar_really_low(array(Node) children, void|int notables)
   {
-    string a="<tr><td>", b="</td></tr>\n";
+    string a="<tr><td nowrap='nowrap'>", b="</td></tr>\n";
     if(notables)
     {
       a=""; b="<br />\n";
@@ -315,10 +315,10 @@ class Node
 	my_name="<b>"+my_name+"</b>";
 
       if(node==this_object())
-	res += sprintf("%s·&nbsp;%s%s",
+	res += sprintf("%s&nbsp;%s%s",
 		       a, my_name, b);
       else
-	res += sprintf("%s·&nbsp;<a href='%s'>%s</a>%s",
+	res += sprintf("%s&nbsp;<a href='%s'>%s</a>%s",
 		       a, make_link(node), my_name, b);
     }
     return res;
@@ -353,12 +353,12 @@ class Node
 
     res += make_navbar_really_low(root->module_children);
     if(sizeof(root->class_children))
-      res += "<tr><td><br /><b>Classes</b></td></tr>\n" +
+      res += "<tr><td nowrap='nowrap'><br /><b>Classes</b></td></tr>\n" +
 	make_navbar_really_low(root->class_children) + "<br />";
 
     if(root->appendix_children) {
       if(sizeof(root->appendix_children))
-	res += "<tr><td><br /><b>Appendices</b></td></tr>\n"+
+	res += "<tr><td nowrap='nowrap'><br /><b>Appendices</b></td></tr>\n"+
 	  make_navbar_really_low(root->appendix_children) + "<br />";
     }
     else
@@ -534,9 +534,9 @@ class TopNode {
     string contents = "<table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
-      contents += "<td>" + make_navbar_really_low(children, 1) + "</td>";
+      contents += "<td nowrap='nowrap'>" + make_navbar_really_low(children, 1) + "</td>";
 
-    contents += "</tr><tr><td colspan='4'>" +
+    contents += "</tr><tr><td colspan='4' nowrap='nowrap'>" +
       parse_children(Parser.XML.Tree.parse_input(data),
 		     "docgroup", parse_docgroup, 1) +
       "</td></tr></table>";
