@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.30 2002/02/23 17:45:36 jhs Exp $
+// $Id: Hilfe.pmod,v 1.31 2002/02/24 16:51:06 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -21,9 +21,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   end of that token can not be found.
 - Filter exit/quit from history. Could be done by adding a 'pop'
   method to Readline.History and call it from StdinHilfes' destroy.
-- Remove tokens_to_code kludge, either by fixing Parser.Pike so
-  that it returns the correct tokens, or by fixing Pike so that
-  \"( < > )\" is a valid statement.
 - Shorten backtraces that are outputted in hilfe.
 - Add some better multiline edit support.
 - Tab completion of variable and module names.
@@ -448,6 +445,49 @@ private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
 
+private class Expression {
+  private array(string) tokens;
+  private mapping(int:int) positions;
+
+  void create(array(string) t) {
+    tokens = t;
+    positions = ([]);
+    int pos;
+    for(int i; i<sizeof(t); i++) {
+      if(whitespace[t[i][0]]) continue;
+      positions[pos++] = i;
+    }
+  }
+
+  int _sizeof() {
+    return sizeof(positions);
+  }
+
+  // We do not test for out of boundery indexing here...
+  string `[](int f, void|int t) {
+    if(!t)
+      return tokens[positions[f]];
+    if(t>=sizeof(positions))
+      t = sizeof(positions)-1;
+
+    return tokens[positions[f]..positions[t]]*"";
+  }
+
+  string check_modifiers() {
+    foreach(sort(values(positions)), int pos)
+      if(modifier[tokens[pos]])
+	return "Hilfe Error: Modifier \"" + tokens[pos] +
+	  "\" not allowed on top level in Hilfe.\n";
+      else
+	return 0;
+    return 0;
+  }
+
+  string code() {
+    return tokens*"";
+  }
+}
+
 //! In every Hilfe object (@[Evaluator]) there is a ParserState object
 //! that manages the current state of the parser. Essentially tokens are
 //! entered in one end and complete expressions is outputted in the other.
@@ -457,7 +497,7 @@ private class ParserState {
   private constant starts = ([ ")":"(", "}":"{", "]":"[",
 			       ">)":"(<", "})":"({", "])":"([" ]);
   private array(string) pipeline = ({ });
-  private array(array(string)) ready = ({ });
+  private array(Expression) ready = ({ });
   private string last;
   private string block;
 
@@ -492,14 +532,14 @@ private class ParserState {
 
       // expressions
       if(token==";" && !pstack->ptr) {
-	ready += ({ pipeline });
+	ready += ({ Expression(pipeline) });
 	pipeline = ({});
       }
 
       // If we end a block at the uppermost level, and it doesn't need a ";",
       // then we can move out that block of the pipeline.
       if(token=="}" && !pstack->ptr && !termblock[block]) {
-	ready += ({ pipeline });
+	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
       }
@@ -511,8 +551,13 @@ private class ParserState {
 
   //! Read out completed expressions. Returns an array where every element
   //! is an expression represented as an array of tokens.
-  array(array(string)) read() {
-    array ret = ready;
+  array(Expression) read() {
+    array(Expression) ret = ({});
+
+    foreach(ready, Expression expr)
+      if(expr[0]!=";")
+	ret += ({ expr });
+
     ready = ({});
     return ret;
   }
@@ -751,8 +796,8 @@ class Evaluator {
 
     // See if any complete expressions came out on the other side.
     if(state->datap())
-      foreach(state->read(), array(string) tokens) {
-	string|int ret = parse_expression(tokens);
+      foreach(state->read(), Expression expression) {
+	string|int ret = parse_expression(expression);
 	if(ret) write(ret);
       }
   }
@@ -764,53 +809,48 @@ class Evaluator {
   //
   //
 
-  private array(string) remove_whitespace_tokens(array(string) tokens) {
-    array(string) ret = ({});
-    foreach(tokens, string token) {
-      if(whitespace[token[0]]) continue;
-      ret += ({ token });
-    }
-    return ret;
-  }
-
-  private void add_hilfe_constant(array(string) tokens) {
-    if(object o=hilfe_compile("constant " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
-		     tokens[0] + "; }\n", tokens[0])) {
-      constants[tokens[0]] = o->___HilfeWrapper();
+  private void add_hilfe_constant(string code, string var) {
+    if(object o = hilfe_compile("constant " + code +
+				";\nmixed ___HilfeWrapper() { return " +
+				var + "; }\n", var)) {
+      constants[var] = o->___HilfeWrapper();
     }
   }
 
-  private void add_hilfe_variable(string type, array(string) tokens) {
+  private void add_hilfe_variable(string type, string code, string var) {
     int(0..1) existed;
     mixed old_value;
-    if(!zero_type(variables[tokens[0]])) {
-      old_value = m_delete(variables, tokens[0]);
+    if(!zero_type(variables[var])) {
+      old_value = m_delete(variables, var);
       existed = 1;
     }
-    if(object o=hilfe_compile("class ___HilfeWrapper {\n" +
-			      type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
-			      tokens[0] + "; }\n}\n", tokens[0])) {
-      variables[tokens[0]] = o->___HilfeWrapper()->___HilfeWrapper();
-      types[tokens[0]] = type;
+    if(object o = hilfe_compile("class ___HilfeWrapper {\n" +
+				type + " " + code +
+				";\nmixed ___HilfeWrapper() { return " +
+				var + "; }\n}\n", var)) {
+      variables[var] = o->___HilfeWrapper()->___HilfeWrapper();
+      types[var] = type;
     }
     else if(existed)
-      variables[tokens[0]] = old_value;
+      variables[var] = old_value;
   }
 
-  private void add_hilfe_entity(string type, array(string) tokens, mapping vtype) {
+  private void add_hilfe_entity(string type, string code,
+				string var, mapping vtype) {
     int(0..1) existed;
     mixed old_value;
-    if(vtype[tokens[0]]) {
-      old_value = m_delete(vtype, tokens[0]);
+    if(vtype[var]) {
+      old_value = m_delete(vtype, var);
       existed = 1;
     }
 
-    if(object o=hilfe_compile(type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
-			      tokens[0] + "; }\n", tokens[0])) {
-      vtype[tokens[0]] = o->___HilfeWrapper();
+    if(object o = hilfe_compile(type + " " + code +
+				";\nmixed ___HilfeWrapper() { return " +
+				var + "; }\n", var)) {
+      vtype[var] = o->___HilfeWrapper();
     }
     else if(existed)
-      vtype[tokens[0]] = old_value;
+      vtype[var] = old_value;
   }
 
   private constant object_ops = (< ";", "->", "[",
@@ -820,25 +860,16 @@ class Evaluator {
 
   //! Parses a Pike expression. Returns 0 if everything went well,
   //! or a string with an error message otherwise.
-  int(0..0)|string parse_expression(array(string) tokens)
+  int(0..0)|string parse_expression(Expression expr)
   {
-    string code = tokens*"";
-    tokens = remove_whitespace_tokens(tokens);
-
-    if(tokens[0]==";") return 0;
+    // Check for modifiers
+    expr->check_modifiers();
 
     // Identify the type of statement so that we can intercept
     // variable declarations and store them locally.
-    foreach(tokens, string token)
-      if(modifier[token])
-	return "Hilfe Error: Modifier \"" + token +
-	  "\" not allowed on top level in Hilfe.\n";
-      else
-	break;
-
-    string type = tokens[0];
-    if(tokens[1]==".") type=".object";
-    if(programs[tokens[0]] && tokens[1]!="(") type=".local";
+    string type = expr[0];
+    if(expr[1]==".") type=".object";
+    if(programs[expr[0]] && expr[1]!="(") type=".local";
 
     switch(type)
     {
@@ -848,12 +879,12 @@ class Evaluator {
       case "while":
       case "foreach":
 	// Parse loops.
-	evaluate(code, 0);
+	evaluate(expr->code(), 0);
 	return 0;
 
       case "inherit":
       {
-	inherits += ({ tokens_to_code(tokens[1..sizeof(tokens)-2]) });
+	inherits += ({ expr[1..sizeof(expr)-2] });
 	if(!hilfe_compile(""))
 	  inherits = inherits[..sizeof(inherits)-2];
 	return 0;
@@ -861,7 +892,7 @@ class Evaluator {
 
       case "import":
       {
-	imports += ({ tokens_to_code(tokens[1..sizeof(tokens)-2]) });
+	imports += ({ expr[1..sizeof(expr)-2] });
 	if(!hilfe_compile(""))
 	  imports = imports[..sizeof(imports)-2];
 	return 0;
@@ -871,25 +902,25 @@ class Evaluator {
       {
 	int pos = 1;
 
-	while(pos<sizeof(tokens)) {
-	  array def = ({});
+	while(pos<sizeof(expr)) {
+	  int from = pos;
 	  int plevel;
-	  while((tokens[pos]!="," && tokens[pos]!=";") || plevel) {
-	    if(tokens[pos]=="(") plevel++;
-	    if(tokens[pos]==")") plevel--;
-	    def += ({ tokens[pos++] });
-	    if(pos==sizeof(tokens))
+	  while((expr[pos]!="," && expr[pos]!=";") || plevel) {
+	    if(expr[pos]=="(") plevel++;
+	    if(expr[pos]==")") plevel--;
+	    pos++;
+	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in constant handling. Please report this!\n";
 	  }
+	  add_hilfe_constant([string]expr[from..pos-1], expr[from]);
 	  pos++;
-	  add_hilfe_constant(def);
 	}
 
 	return 0;
       }
 
       case "class":
-	add_hilfe_entity(tokens[0], tokens[1..], programs);
+	add_hilfe_entity(expr[0], [string]expr[1..], expr[1], programs);
 	return 0;
 
       case "int":
@@ -908,48 +939,48 @@ class Evaluator {
       {
 	// This is either a variable declaration or a new function.
 
-	string type = tokens[0];
+	string type = expr[0];
 	int pos=1;
 
 	// Find out the whole type, e.g. Stdio.File|mapping(string:int(0..3))
-	while(tokens[pos]=="." || tokens[pos]=="|" || tokens[pos]=="(") {
-	  if(tokens[pos]=="." || tokens[pos]=="|")
-	    type += tokens[pos++] + tokens[pos++];
+	while(expr[pos]=="." || expr[pos]=="|" || expr[pos]=="(") {
+	  if(expr[pos]=="." || expr[pos]=="|")
+	    type += expr[pos++] + expr[pos++];
 	  else {
 	    int plevel=0;
 	    do {
-	      type += tokens[pos];
-	      if(tokens[pos]==",") type += " ";
-	      if(tokens[pos]=="(") plevel++;
-	      if(tokens[pos]==")") plevel--;
+	      type += expr[pos];
+	      if(expr[pos]==",") type += " ";
+	      if(expr[pos]=="(") plevel++;
+	      if(expr[pos]==")") plevel--;
 	      pos++;
 	    } while(plevel);
 	  }
 	}
 
-	if(object_ops[tokens[pos]])
+	if(object_ops[expr[pos]])
 	  break;
 
 	// This is a new function
-	if(tokens[pos+1]=="(") {
-	  if(constants[tokens[pos]])
-	    return "Hilfe Error: \"" + tokens[pos] + "\" already defined as constant.\n";
-	  add_hilfe_entity(type, tokens[pos..], functions);
+	if(expr[pos+1]=="(") {
+	  if(constants[expr[pos]])
+	    return "Hilfe Error: \"" + expr[pos] + "\" already defined as constant.\n";
+	  add_hilfe_entity(type, [string]expr[pos..], expr[pos], functions);
 	  return 0;
 	}
 
-	while(pos<sizeof(tokens)) {
-	  array def = ({});
+	while(pos<sizeof(expr)) {
+	  int from = pos;
 	  int plevel;
-	  while((tokens[pos]!="," && tokens[pos]!=";") || plevel) {
-	    if(tokens[pos]=="(") plevel++;
-	    if(tokens[pos]==")") plevel--;
-	    def += ({ tokens[pos++] });
-	    if(pos==sizeof(tokens))
+	  while((expr[pos]!="," && expr[pos]!=";") || plevel) {
+	    if(expr[pos]=="(") plevel++;
+	    if(expr[pos]==")") plevel--;
+	    pos++;
+	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in variable handeling. Please report this!\n";
 	  }
+	  add_hilfe_variable(type, [string]expr[from..pos-1], expr[from]);
 	  pos++;
-	  add_hilfe_variable(type, def);
 	}
 
 	return 0;
@@ -957,7 +988,7 @@ class Evaluator {
     }
 
     // parse expressions
-    evaluate("return " + code, 1);
+    evaluate("return " + expr->code(), 1);
     return 0;
   }
 
@@ -1010,18 +1041,6 @@ class Evaluator {
 	if(type=='O' || type=='t') return "HilfeCompileHandler";
       }
     }();
-
-  // We need this as long as "( < > )" isn't valid Pike code.
-  private string tokens_to_code(array(string) tokens) {
-    string ret = "";
-    foreach(tokens, string token) {
-      if(token=="." && sizeof(ret))
-	ret = ret[..sizeof(ret)-2];
-      ret += token;
-      if( !(< "(", ">", "." >)[token] ) ret += " ";
-    }
-    return ret;
-  }
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
   //! If a new variable is compiled to be tested, it's name
