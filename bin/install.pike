@@ -546,13 +546,16 @@ This is free software and you are welcome to redistribute it under
 certain conditions; Read the files COPYING and DISCLAIMER in the
 Pike distribution for more details.
 \";
+		  rm -f "+tmpname+#".x
                   exit 0 ;;
 
               -h|\\
           --help) echo \"" + helptext + #"\"
+		  rm -f "+tmpname+#".x
                   exit 0 ;;
 
       --features) echo \"" + Tools.Install.features()*"\n" + #"\"
+		  rm -f "+tmpname+#".x
                   exit 0 ;;
 
               -s|\\
