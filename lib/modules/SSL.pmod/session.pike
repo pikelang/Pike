@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.17 2001/09/17 14:51:19 nilsson Exp $
+/* $Id: session.pike,v 1.18 2001/09/17 21:19:57 nilsson Exp $
  *
  */
 
@@ -207,9 +207,9 @@ array generate_keys(string client_random, string server_random,array(int) versio
 //!
 //! @returns
 //!   @array
-//!     @elem object(State)
+//!     @elem State read_state
 //!       Read state
-//!     @elem object(State)
+//!     @elem State write_state
 //!       Write state
 //!   @endarray
 array new_server_states(string client_random, string server_random,array(int) version)
@@ -248,9 +248,9 @@ array new_server_states(string client_random, string server_random,array(int) ve
 //!
 //! @returns
 //!   @array
-//!     @elem object(State)
+//!     @elem State read_state
 //!       Read state
-//!     @elem object(State)
+//!     @elem State write_state
 //!       Write state
 //!   @endarray
 array new_client_states(string client_random, string server_random,array(int) version)
