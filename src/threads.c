@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.240 2004/09/18 20:50:56 nilsson Exp $
+|| $Id: threads.c,v 1.241 2004/12/30 13:50:35 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -853,7 +853,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   if(SETJMP(back))
   {
-    if(throw_severity < THROW_EXIT)
+    if(throw_severity <= THROW_ERROR)
       call_handle_error();
     if(throw_severity == THROW_EXIT)
     {
@@ -1713,13 +1713,24 @@ static struct callback *thread_interrupt_callback = NULL;
 static void check_thread_interrupt(struct callback *foo,
 				   void *bar, void *gazonk)
 {
-  if (Pike_interpreter.thread_state->flags & THREAD_FLAG_INTR) {
-    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_INTR;
+  if (Pike_interpreter.thread_state->flags & THREAD_FLAG_SIGNAL_MASK) {
+    if (Pike_interpreter.thread_state->flags & THREAD_FLAG_TERM) {
+      throw_severity = THROW_THREAD_EXIT;
+    } else {
+      throw_severity = THROW_ERROR;
+    }
+    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(foo);
       thread_interrupt_callback = NULL;
     }
-    Pike_error("Interrupted.\n");
+    if (throw_severity == THROW_ERROR) {
+      Pike_error("Interrupted.\n");
+    } else {
+      push_int(-1);
+      assign_svalue(&throw_value, Pike_sp-1);
+      pike_throw();
+    }
   }
 }
 
@@ -1739,7 +1750,7 @@ static void f_thread_id_interrupt(INT32 args)
   /* FIXME: The msg argument is not supported yet. */
   pop_n_elems(args);
 
-  if (!(THIS_THREAD->flags & THREAD_FLAG_INTR)) {
+  if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
     THIS_THREAD->flags |= THREAD_FLAG_INTR;
     num_pending_interrupts++;
     if (!thread_interrupt_callback) {
@@ -1748,6 +1759,29 @@ static void f_thread_id_interrupt(INT32 args)
     }
     /* FIXME: Actually interrupt the thread. */
   }
+  push_int(0);
+}
+
+/*! @decl void kill()
+ *!
+ *! Interrupt the thread, and terminate it.
+ *!
+ *! @note
+ *!   Interrupts are asynchronous, and are currently not queued.
+ */
+static void f_thread_id_kill(INT32 args)
+{
+  pop_n_elems(args);
+
+  if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
+    num_pending_interrupts++;
+    if (!thread_interrupt_callback) {
+      thread_interrupt_callback =
+	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
+    }
+    /* FIXME: Actually interrupt the thread. */
+  }
+  THIS_THREAD->flags |= THREAD_FLAG_TERM;
   push_int(0);
 }
 
@@ -1771,8 +1805,8 @@ void init_thread_obj(struct object *o)
 
 void exit_thread_obj(struct object *o)
 {
-  if (THIS_THREAD->flags & THREAD_FLAG_INTR) {
-    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_INTR;
+  if (THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK) {
+    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
       thread_interrupt_callback = NULL;
@@ -2202,6 +2236,7 @@ void th_init(void)
   ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
   ADD_FUNCTION("interrupt", f_thread_id_interrupt,
 	       tFunc(tOr(tVoid,tStr), tVoid), 0);
+  ADD_FUNCTION("kill", f_thread_id_kill, tFunc(tNone, tVoid), 0);
   set_gc_recurse_callback(thread_was_recursed);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);

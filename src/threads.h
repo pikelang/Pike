@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.129 2004/08/12 12:37:35 grubba Exp $
+|| $Id: threads.h,v 1.130 2004/12/30 13:50:35 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -31,6 +31,8 @@ extern PIKE_MUTEX_T interleave_lock;
 /* Thread flags */
 #define THREAD_FLAG_TERM	1	/* Pending termination. */
 #define THREAD_FLAG_INTR	2	/* Pending interrupt. */
+
+#define THREAD_FLAG_SIGNAL_MASK	3	/* All of the above. */
 
 /* Debug flags */
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
