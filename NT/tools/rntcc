@@ -73,24 +73,23 @@ int compile(string *sources,
     return silent_do_cmd(cmd);
 }
 
-string check_errorfile(string errorfile)
+void check_errorfile(string errorfile)
 {
   object f=Stdio.File();
-  if(f->open(errorfile,"r"))
-  {
-    string data;
-    werror(data=f->read());
-    f->close();
-    data=replace(data,"\r","");
-    rm(errorfile);
-    foreach(data/"\n", string line)
-      {
-	if(!strlen(line)) continue;
-	if(search(line,"Warning")!=-1) continue;
-	werror("Error in compilation detected. "+line+"\n");
-	exit(1);
-      }
-  }
+  if(!f->open(errorfile,"r")) return;
+	
+  string data;
+  werror(data=f->read());
+  f->close();
+  data=replace(data,"\r","");
+  rm(errorfile);
+  foreach(data/"\n", string line)
+    {
+      if(!strlen(line)) continue;
+      if(search(line,"Warning")!=-1) continue;
+      werror("Error in compilation detected. "+line+"\n");
+      exit(1);
+    }
 }
 
 int main(int argc, string *argv)
@@ -144,11 +143,11 @@ int main(int argc, string *argv)
 	case "oper_pre": operation="preprocess"; break;
 	case "oper_comp": operation="compile"; break;
 	case "debug":
-	  cflags+=({"-d2"});
-	  ldopts+=({"DEBUG","WATCOM","ALL"});
+//	  cflags+=({"-d2i","-hw"});
+//	  ldopts+=({"DEBUG","WATCOM","ALL"});
 
-//	  cflags+=({"-d2","-hd"});
-//	  ldopts+=({"DEBUG","DWARF"});
+	  cflags+=({"-d2","-hd"});
+	  ldopts+=({"DEBUG","DWARF"});
 
 //	  cflags+=({"-d2","-hc"});
 //	  ldopts+=({"DEBUG","CODEVIEW","OPTION","CVPACK"});
@@ -252,7 +251,7 @@ int main(int argc, string *argv)
 
   if(output) rm(output);
 
-  string errorfile="tmp"+getpid()+".err";
+  string errorfile="TMP"+getpid()+".ERR";
   rm(errorfile);
   tmpfiles+=({errorfile});
 
@@ -350,7 +349,8 @@ int main(int argc, string *argv)
 		     "int main(int argc, string *argv) {\n"
 		     "argv[0]+=\".exe\";\n"
 		     "argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
-		     "  exit(silent_do_cmd(argv));\n"
+		     "  int ret=silent_do_cmd(argv);\n"
+		     "  exit(ret);\n"
 		     "}\n");
     chmod(output,0755);
   }
