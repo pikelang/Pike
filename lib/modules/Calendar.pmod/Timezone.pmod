@@ -923,6 +923,7 @@ class Runtime_timezone_compiler
       werror("Searching for zone %O\n",s);
 #endif
       if (zone_cache[s]) return zone_cache[s];
+      if (s=="") return ([])[0];
 
       if (!all_rules) all_rules=get_all_rules();
 

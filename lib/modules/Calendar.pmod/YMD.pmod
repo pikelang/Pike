@@ -883,7 +883,6 @@ class YMD
 	    if (z[i]->utc_offset()!=uo)
 	    {
 	       int uq=(z[i]->utc_offset()-uo);
-	       werror("%O %O\n",z[i],z);
 	       if (uq<0)
 	       {
 		  if (uq<=-step) uq=-(-uq%step);
@@ -899,7 +898,6 @@ class YMD
 		     map(z[i..sizeof(z)-2],"add",uq,sec);
 		  i++;
 	       }
-	       werror("=> %O %O\n",z[i],z);
 	       uo=z[i]->utc_offset();
 	    }
       }
@@ -2284,14 +2282,60 @@ class cSuperTimeRange
 //!	%s second (needs %m)
 //!     %f fraction of a second (needs %s)
 //!	%t short time (205314, 2053)
+//!	%z zone
 //!	</pre>
 //!
+//! returns 0 if format doesn't match data, or the appropriate time object.
+//!
 //! note:
-//!	Returns 0 if format doesn't match data.
+//!	The zone will be a guess if it doesn't state an exact
+//!	regional timezone (like "Europe/Stockholm") - 
+//!	most zone abbriviations (like "CET") are used by more
+//!	then one region with it's own daylight saving rules.
+//!	Also beware that for instance CST can be up to four different zones,
+//!	central Australia or America being the most common.
+//!
+//!	<pre>
+//! 	Abbreviation Interpretation
+//!	AMT          America/Manaus       [UTC-4]
+//!	AST	     America/Curacao      [UTC-4]
+//!	CDT	     America/Costa_Rica   [UTC-6]
+//!	CST	     America/El Salvador  [UTC-6]
+//!	EST	     America/Panama       [UTC-5]
+//!	GST          Asia/Dubai           [UTC+4]
+//!	IST          Asia/Jerusalem       [UTC+2]
+//!	WST          Australia/Perth      [UTC+8]
+//!	</pre>
+//!
+//!	This mapping is modifiable in the ruleset, 
+//!	see <ref>Ruleset.set_abbr2zone</ref>.
+
+
+TimeRange dwim_zone(TimeRange origin,string zonename,int ...args)
+{
+   if (zonename=="") return 0;
+   if (origin->rules->abbr2zone[zonename])
+      zonename=origin->rules->abbr2zone[zonename];
+   Ruleset.Timezone zone=Timezone[zonename];
+   if (!zone)
+   {
+      array pz=TZnames.abbr2zones[zonename];
+      if (!pz) return 0;
+      foreach (pz,string zn)
+      {
+	 TimeRange try=dwim_zone(origin,zn,@args);
+	 if (try->tzname()==zonename) return try;
+      }
+      return 0;
+   }
+   else
+      return origin->set_timezone(zone)->second(@args);
+}
 
 TimeRange parse(string fmt,string arg)
 {
    string nfmt;
+
    nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
 #define ALNU "%[^ -,./:-?[-`{-¿]"
 #define NUME "%[0-9]"
@@ -2311,16 +2355,9 @@ TimeRange parse(string fmt,string arg)
 
    TimeRange low;
 
-   werror("%O\n",m);
-
    Calendar cal=this_object();
 
    if (catch {
-
-      if (m->z) 
-	 cal=cal->set_timezone(m->z);
-      werror("%O\n",m->z);
-
       string x;
       if (m->Y) 
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
@@ -2376,31 +2413,29 @@ TimeRange parse(string fmt,string arg)
 	    low=m->day=cal->Day();
       }
 
+      int h=0,mi=0,s=0,g=0;
+      
       if (m->t)
       {
-	 int h,mi,s;
-      
 	 if (strlen(m->t)==6)
-	    [h,mi,s]=(array(int))(m->t/2);
+	    [h,mi,s]=(array(int))(m->t/2),g=1;
 	 else if (strlen(m->t)==4)
-	    [h,mi]=(array(int))(m->t/2),s=0;
+	    [h,mi]=(array(int))(m->t/2),g=1;
 	 else return 0;
-      
-	 low=m->second=m->day->second(h,mi,s);
       }
-      else if (!zero_type(m->h) && !zero_type(m->m) && !zero_type(m->s))
-	 low=m->second=m->day->second(m->h,m->m,m->s);
       else
       {
-	 if (!zero_type(m->h))
-	    low=m->hour=(m->day||cal->Day())->hour(m->h);
-	 if (!zero_type(m->m))
-	    low=m->minute=(m->hour||cal->Hour())->minute(m->m);
-	 if (!zero_type(m->s))
-	    low=m->second=(m->minute||cal->Minute())->second(m->s);
+	 if (!zero_type(m->h)) h=m->h,g=1;
+	 if (!zero_type(m->m)) mi=m->m,g=1;
+	 if (!zero_type(m->s)) s=m->s,g=1;
       }
-      return low;
 
+      if (m->z) // zone
+	 return dwim_zone(low,m->z,h,mi,s);
+      else if (g)
+	 return low->second(h,mi,s);
+      else
+	 return low;
    })
        return 0;
 }
