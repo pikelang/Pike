@@ -164,7 +164,6 @@ varargs string generate(SGML data, function mkt)
   string ret="";
   if(!mkt)
   {
-    werror("ARNING");
     mkt=mktag;
   }
   foreach(data, TAG foo)
