@@ -357,6 +357,7 @@ testfont binary
 /src/modules/Gz/acconfig.h foreign_ident
 /src/modules/Gz/configure.in foreign_ident
 /src/modules/Gz/gz_test.c foreign_ident
+/src/modules/Gz/module.pmod.in foreign_ident
 /src/modules/Gz/testsuite.in foreign_ident
 /src/modules/Gz/zlibmod.c foreign_ident
 /src/modules/HTTPLoop/Makefile.in foreign_ident
