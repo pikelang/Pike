@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.195 2002/01/24 16:41:51 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.196 2002/02/04 17:10:04 tomas Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1876,6 +1876,10 @@ static void internal_add_limit( struct perishables *storage,
 
 /*! @endmodule */
 
+#ifdef __NT__
+DEFINE_IMUTEX(handle_protection_mutex);
+#endif /* __NT */
+
 void f_create_process(INT32 args)
 {
   struct array *cmd=0;
@@ -2023,10 +2027,16 @@ void f_create_process(INT32 args)
     
     GetStartupInfo(&info);
 
+    /* Protect inherit status for handles */
+    LOCK_IMUTEX(&handle_protection_mutex);
+
     info.dwFlags|=STARTF_USESTDHANDLES;
     info.hStdInput=GetStdHandle(STD_INPUT_HANDLE);
     info.hStdOutput=GetStdHandle(STD_OUTPUT_HANDLE);
     info.hStdError=GetStdHandle(STD_ERROR_HANDLE);
+    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, 0);
 
     if(optional)
     {
@@ -2092,6 +2102,9 @@ void f_create_process(INT32 args)
     THREADS_ALLOW_UID();
 
 
+    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
     ret=CreateProcess(filename,
 		      command_line,
 		      NULL,  /* process security attribute */
@@ -2105,6 +2118,8 @@ void f_create_process(INT32 args)
     err=GetLastError();
     THREADS_DISALLOW_UID();
     
+    UNLOCK_IMUTEX(&handle_protection_mutex);
+
     if(env) pop_stack();
     if(command_line) free(command_line);
 #if 1
@@ -3459,6 +3474,8 @@ void init_signals(void)
 
   INIT_FIFO(sig, unsigned char);
   INIT_FIFO(wait,wait_data);
+
+  init_interleave_mutex(&handle_protection_mutex);
 
 #ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
