@@ -102,7 +102,7 @@ static int parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
   // werror("parseError! \n");
   // werror("%s\n", describe_backtrace(backtrace()));
-  error("PikeParser: %s (%d)\n", message, positions[tokenPtr]);
+  error("PikeParser: %s (%s:%d)\n", message, filename, positions[tokenPtr]);
 }
 
 private int tokenPtr = 0;
