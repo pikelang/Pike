@@ -1,0 +1,36 @@
+cond([[ master()->programs["/precompiled/image"] ]],
+[[
+  test_true(programp(Image))
+  test_true(objectp(clone(Image)))
+  test_true(objectp(clone(Image)->new(10,10)))
+  test_true(objectp(clone(Image)->new(10,10,1,1,1)))
+  test_true(objectp(clone(Image)->new(10,10,1,1,1)->copy()))
+  test_true(objectp(clone(Image)->new(10,10)->crop(2,2,3,3)))
+  test_true(objectp(clone(Image)->new(10,10)->autocrop()))
+  test_true(objectp(clone(Image)->new(10,10)->gray()))
+  test_true(objectp(clone(Image)->new(10,10)->color(2,2,4)))
+  test_true(objectp(clone(Image)->new(10,10)->invert()))
+  test_true(objectp(clone(Image)->new(10,10)->threshold(10,20,30)))
+dnl matrix
+  test_true(objectp(clone(Image)->new(10,10)->scale(2.1)))
+  test_true(objectp(clone(Image)->new(10,10)->scale(0.2)))
+  test_true(objectp(clone(Image)->new(10,10)->scale(2.0,0.2)))
+  test_true(objectp(clone(Image)->new(10,10)->scale(0.2,2.2)))
+  test_true(objectp(clone(Image)->new(10,10)->scale(0.2,2.2)))
+  test_true(objectp(clone(Image)->new(10,10)->scale(0.2,2.2)))
+  test_true(stringp(clone(Image)->new(10,10)->toppm()))
+dnl fromppm
+  test_true(stringp(clone(Image)->new(10,10)->toppm()))
+  test_true(stringp(clone(Image)->new(10,10)->togif()))
+  test_true(objectp(clone(Image)->new(10,10)->paste(clone(Image)->new(3,3),2,3)))
+dnl past_alpha
+dnl past_mask
+  test_do(clone(Image)->new(10,10)->setcolor(2,2,2))
+  test_do(clone(Image)->new(10,10)->setpixel(2,2,2,2,2))
+  test_do(clone(Image)->new(10,10)->line(2,2,4,4,2,2,2))
+  test_do(clone(Image)->new(10,10)->box(2,2,4,4,2,2,2))
+  test_do(clone(Image)->new(10,10)->circle(2,2,4,4,2,2,2))
+dnl tuned_box
+  test_eq(clone(Image)->new(10,10)->xsize(),10)
+  test_eq(clone(Image)->new(10,10)->ysize(),10)
+]])
