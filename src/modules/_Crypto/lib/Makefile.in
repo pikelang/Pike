@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.35 2002/05/03 19:23:13 nilsson Exp $
+# $Id: Makefile.in,v 1.36 2002/05/04 16:51:33 mast Exp $
 #
 # Makefile for low-level crypto library
 
@@ -138,3 +138,5 @@ algorithms.a: $(OBJS)
 	rm -f algorithms.a
 	$(AR) cru algorithms.a $(OBJS)
 	$(RANLIB) algorithms.a
+
+@dependencies@
