@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.20 2000/08/04 11:32:43 grubba Exp $
+ * $Id: odbc_result.c,v 1.21 2000/08/31 12:40:15 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.20 2000/08/04 11:32:43 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.21 2000/08/31 12:40:15 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -32,6 +32,7 @@ RCSID("$Id: odbc_result.c,v 1.20 2000/08/04 11:32:43 grubba Exp $");
 #include "pike_memory.h"
 #include "pike_macros.h"
 #include "module_support.h"
+#include "bignum.h"
 
 #include "precompiled_odbc.h"
 
@@ -145,7 +146,9 @@ static void odbc_fix_fields(void)
     while (1) {
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
 		       SQLDescribeCol(PIKE_ODBC_RES->hstmt, i+1,
-				      buf, buf_size, &name_len,
+				      buf,
+				      DO_NOT_WARN(buf_size),
+				      &name_len,
 				      &sql_type, &precision, &scale, &nullable),
 		       0);
       if (name_len < (ptrdiff_t)buf_size) {
@@ -237,7 +240,7 @@ static void odbc_fix_fields(void)
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     }
-    push_text("length"); push_int(precision);
+    push_text("length"); push_int64(precision);
     push_text("decimals"); push_int(scale);
     push_text("flags");
     nbits = 0;
@@ -303,7 +306,8 @@ static void f_execute(INT32 args)
   get_all_args("odbc_result->execute", args, "%S", &q);
 
   odbc_check_error("odbc_result->execute", "Query failed",
-		   SQLExecDirect(hstmt, (unsigned char *)q->str, q->len),
+		   SQLExecDirect(hstmt, (unsigned char *)q->str,
+				 DO_NOT_WARN(q->len)),
 		   NULL);
 
   odbc_check_error("odbc_result->execute", "Couldn't get the number of fields",
@@ -329,7 +333,7 @@ static void f_execute(INT32 args)
 static void f_num_rows(INT32 args)
 {
   pop_n_elems(args);
-  push_int(PIKE_ODBC_RES->num_rows);
+  push_int64(PIKE_ODBC_RES->num_rows);
 }
 
 /* int num_fields() */

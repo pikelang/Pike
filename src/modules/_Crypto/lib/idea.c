@@ -1,4 +1,4 @@
-/* $Id: idea.c,v 1.5 1998/03/28 14:03:53 grubba Exp $
+/* $Id: idea.c,v 1.6 2000/08/31 12:43:56 grubba Exp $
  *
  * The basic IDEA transformation
  *
@@ -42,7 +42,7 @@
  * compiler doesn't schedule branches.
  */
 #ifdef SMALL_CACHE
-const static unsigned INT16
+static unsigned INT16
 mul(unsigned INT16 a, unsigned INT16 b)
 {
   register unsigned INT32 p;
@@ -70,7 +70,7 @@ mul(unsigned INT16 a, unsigned INT16 b)
  * algorithm. It is unrolled twice to avoid swapping the registers each
  * iteration, and some subtracts of t have been changed to adds.
  */
-static const unsigned INT16
+static unsigned INT16
 inv(unsigned INT16 x)     
 {
   unsigned INT16 t0, t1;

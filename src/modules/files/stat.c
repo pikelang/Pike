@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.11 2000/08/30 21:14:20 mast Exp $
+ * $Id: stat.c,v 1.12 2000/08/31 12:49:52 grubba Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.11 2000/08/30 21:14:20 mast Exp $");
+RCSID("$Id: stat.c,v 1.12 2000/08/31 12:49:52 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -124,11 +124,11 @@ static void stat_index_set (INT32 args);
 static int stat_compat_set (size_t pos, INT64 val)
 {
   switch (pos) {
-    case 0: THIS_STAT->s.st_mode = val; break;
+    case 0: DO_NOT_WARN(THIS_STAT->s.st_mode = val); break;
     case 1:
       if (val >= 0) {
 	THIS_STAT->s.st_mode = (THIS_STAT->s.st_mode & ~S_IFMT) | S_IFREG;
-	THIS_STAT->s.st_size = val;
+	DO_NOT_WARN(THIS_STAT->s.st_size = val);
       }
       else {
 	THIS_STAT->s.st_size = 0;
@@ -140,11 +140,11 @@ static int stat_compat_set (size_t pos, INT64 val)
 	  THIS_STAT->s.st_mode = THIS_STAT->s.st_mode & ~S_IFMT;
       }
       break;
-    case 2: THIS_STAT->s.st_atime = val; break;
-    case 3: THIS_STAT->s.st_mtime = val; break;
-    case 4: THIS_STAT->s.st_ctime = val; break;
-    case 5: THIS_STAT->s.st_uid = val; break;
-    case 6: THIS_STAT->s.st_gid = val; break;
+    case 2: DO_NOT_WARN(THIS_STAT->s.st_atime = val); break;
+    case 3: DO_NOT_WARN(THIS_STAT->s.st_mtime = val); break;
+    case 4: DO_NOT_WARN(THIS_STAT->s.st_ctime = val); break;
+    case 5: DO_NOT_WARN(THIS_STAT->s.st_uid = val); break;
+    case 6: DO_NOT_WARN(THIS_STAT->s.st_gid = val); break;
     default: return 0;
   }
   return 1;
@@ -667,21 +667,21 @@ static void stat_index_set (INT32 args)
 	  SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2, "integer");
 
 	switch (code) {
-	  case STAT_DEV: THIS_STAT->s.st_dev = int_val; break;
-	  case STAT_INO: THIS_STAT->s.st_ino =  int_val; break;
-	  case STAT_MODE: THIS_STAT->s.st_mode = int_val; break;
-	  case STAT_NLINK: THIS_STAT->s.st_nlink = int_val; break;
-	  case STAT_UID: THIS_STAT->s.st_uid = int_val; break;
-	  case STAT_GID: THIS_STAT->s.st_gid = int_val; break;
-	  case STAT_RDEV: THIS_STAT->s.st_rdev = int_val; break;
-	  case STAT_SIZE: THIS_STAT->s.st_size = int_val; break;
+	  case STAT_DEV: DO_NOT_WARN(THIS_STAT->s.st_dev = int_val); break;
+	  case STAT_INO: DO_NOT_WARN(THIS_STAT->s.st_ino = int_val); break;
+	  case STAT_MODE: DO_NOT_WARN(THIS_STAT->s.st_mode = int_val); break;
+	  case STAT_NLINK: DO_NOT_WARN(THIS_STAT->s.st_nlink = int_val); break;
+	  case STAT_UID: DO_NOT_WARN(THIS_STAT->s.st_uid = int_val); break;
+	  case STAT_GID: DO_NOT_WARN(THIS_STAT->s.st_gid = int_val); break;
+	  case STAT_RDEV: DO_NOT_WARN(THIS_STAT->s.st_rdev = int_val); break;
+	  case STAT_SIZE: DO_NOT_WARN(THIS_STAT->s.st_size = int_val); break;
 #if 0
-	  case STAT_BLKSIZE: THIS_STAT->s.st_blksize = int_val; break;
-	  case STAT_BLOCKS: THIS_STAT->s.st_blocks = int_val; break;
+	  case STAT_BLKSIZE: DO_NOT_WARN(THIS_STAT->s.st_blksize = int_val); break;
+	  case STAT_BLOCKS: DO_NOT_WARN(THIS_STAT->s.st_blocks = int_val); break;
 #endif /* 0 */
-	  case STAT_ATIME: THIS_STAT->s.st_atime = int_val; break;
-	  case STAT_MTIME: THIS_STAT->s.st_mtime = int_val; break;
-	  case STAT_CTIME: THIS_STAT->s.st_ctime = int_val; break;
+	  case STAT_ATIME: DO_NOT_WARN(THIS_STAT->s.st_atime = int_val); break;
+	  case STAT_MTIME: DO_NOT_WARN(THIS_STAT->s.st_mtime = int_val); break;
+	  case STAT_CTIME: DO_NOT_WARN(THIS_STAT->s.st_ctime = int_val); break;
 
 	  default:
 	    fatal ("stat_index_set is not kept up-to-date with stat_map.\n");

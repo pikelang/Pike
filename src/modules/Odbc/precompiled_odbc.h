@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.12 2000/08/30 11:26:02 grubba Exp $
+ * $Id: precompiled_odbc.h,v 1.13 2000/08/31 12:39:51 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -77,7 +77,7 @@ struct field_info {
 
 struct precompiled_odbc {
   HDBC hdbc;
-  int affected_rows;
+  SQLLEN affected_rows;
   unsigned int flags;
   struct pike_string *last_error;
 };
