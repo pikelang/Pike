@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.11 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_search.c,v 1.12 2003/03/14 15:39:12 grubba Exp $
 */
 
 /* New memory searcher functions */
@@ -73,8 +73,16 @@ void free_mem_searcher(void *m)
 #define hubbe_search_free  free_mem_searcher
 
 /* magic stuff for hubbesearch */
+/* NOTE: GENERIC_GET4_CHARS(PTR) must be compatible with
+ *       the GET_4_{,UN}ALIGNED_CHARS0() variants!
+ */
+#if PIKE_BYTEORDER == 4321
 #define GENERIC_GET4_CHARS(PTR) \
  ( ((PTR)[0] << 24) + ( (PTR)[1] << 16 ) +( (PTR)[2] << 8 ) +  (PTR)[3] )
+#else /* PIKE_BYTEORDER != 4321 */
+#define GENERIC_GET4_CHARS(PTR) \
+ ( ((PTR)[3] << 24) + ( (PTR)[2] << 16 ) +( (PTR)[1] << 8 ) +  (PTR)[0] )
+#endif /* PIKE_BYTEORDER == 4321 */
 
 #define HUBBE_ALIGN0(q) q=(char *)( ((ptrdiff_t)q) & -sizeof(INT32))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
