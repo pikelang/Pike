@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.345 2004/12/01 19:33:29 grubba Exp $
+# $Id: Makefile.in,v 1.346 2004/12/01 20:09:01 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -437,11 +437,11 @@ Pike_banner.bmp: $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_
 	$(RUNPIKE) $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif >Pike_banner.bmp || rm Pike_banner.bmp
 
 PikeWin32Installer.vbs: $(PACKAGINGDIR)/windows/installer.vbs
-	@if [ -f "$@" ] && cmp "$<" "$@" >/dev/null; then :; else \
+	@if [ -f "$@" ] && cmp "$<" "$@" >/dev/null; then \
+	  echo "PikeWin32Installer.vbs is up to date."; \
+	else \
 	  echo cp '"'"$<"'"' '"'"$@"'"'; \
 	  cp "$<" "$@"; \
-	else \
-	  echo "PikeWin32Installer.vbs is up to date."; \
 	fi
 
 Pike_module.msm: PikeWin32Installer.vbs
