@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.5 2002/02/23 18:24:10 jhs Exp $
+// $Id: RCS.pike,v 1.6 2002/02/23 21:03:07 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -422,7 +422,7 @@ class Revision
   //!   If supplied, substitutes keywords for that text instead, using values
   //!   that would apply for this revision. Otherwise, this revision is used.
   //! @note
-  //!   Does not expand the $Log$ keyword (which lacks sane quoting rules)
+  //!   Does not expand the Log keyword (which lacks sane quoting rules)
   string expand_keywords(string|void text)
   {
     if(!text)
