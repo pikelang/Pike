@@ -32,6 +32,10 @@
 #include <ieeefp.h>
 #endif
 
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif /* HAVE_FLOAT_H */
+
 /* isnan()...
  */
 #ifdef HAVE_ISNAN
@@ -58,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.97 2001/06/12 19:46:04 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.98 2001/06/12 22:48:36 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
