@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.19 2000/02/15 14:28:14 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.20 2000/03/29 15:48:46 marcus Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -14,9 +14,9 @@ constant cvs_id = "$Id: module.pmod,v 1.19 2000/02/15 14:28:14 noring Exp $";
 
 #if constant(thread_create)
 #define THREAD_SAFE
-#define LOCK() do { object key___; catch(key___=lock())
+#define LOCK() do { object key___; catch(key___=mutex_lock())
 #define UNLOCK() key___=0; } while(0)
-#define INHERIT_MUTEX static inherit Thread.Mutex;
+#define INHERIT_MUTEX static inherit Thread.Mutex:mutex; function(int(0..2)|void:object) mutex_lock = mutex::lock;
 #else
 #undef  THREAD_SAFE
 #define LOCK() do {
