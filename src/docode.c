@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.102 2001/02/25 17:55:07 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.103 2001/05/15 00:03:25 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -409,7 +409,8 @@ int do_lfun_call(int id,node *args)
   PUSH_CLEANUP_FRAME(do_pop_mark, 0);
   do_docode(args,0);
 #if 1
-  if(id == Pike_compiler->compiler_frame->current_function_number)
+  if(id == Pike_compiler->compiler_frame->current_function_number &&
+     !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
   {
     int n=count_args(args);
     if(n == Pike_compiler->compiler_frame->num_args)
