@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.179 2000/07/17 22:54:25 hubbe Exp $");
+RCSID("$Id: file.c,v 1.180 2000/07/21 18:21:36 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1266,6 +1266,10 @@ static void file_open(INT32 args)
   if (Pike_sp[-args].type==T_STRING)
   {
      str=Pike_sp[-args].u.string;
+
+     if (strlen(str->str) != str->len) {
+       error("Filenames with NUL are not supported.\n");
+     }
 
 #ifdef PIKE_SECURITY
      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
