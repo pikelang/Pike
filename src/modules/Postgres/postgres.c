@@ -7,6 +7,8 @@
  * of the GNU General Public License, version 2.
  */
 
+#define NO_PIKE_SHORTHAND
+
 #include "global.h"
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
@@ -38,7 +40,7 @@
 
 /* Actual code */
 #ifdef _REENTRANT
-MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
+PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex);
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex);
 #else
@@ -59,9 +61,9 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.18 2000/07/28 07:14:33 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.19 2000/08/06 05:00:55 hubbe Exp $");
 
-#define THIS ((struct pgres_object_data *) fp->current_storage)
+#define THIS ((struct pgres_object_data *) Pike_fp->current_storage)
 
 static void set_error (char * newerror)
 {
@@ -77,7 +79,7 @@ static void pgres_create (struct object * o) {
 	THIS->dblink=NULL;
 	THIS->last_error=NULL;
 	THIS->notify_callback=(struct svalue*)xalloc(sizeof(struct svalue));
-	THIS->notify_callback->type=T_INT;
+	THIS->notify_callback->type=PIKE_T_INT;
 }
 
 static void pgres_destroy (struct object * o)
@@ -97,7 +99,7 @@ static void pgres_destroy (struct object * o)
 			free_string(THIS->last_error);
 		THIS->last_error=NULL;
 	}
-	if (THIS->notify_callback->type!=T_INT) {
+	if (THIS->notify_callback->type!=PIKE_T_INT) {
 		free_svalue(THIS->notify_callback);
 		free(THIS->notify_callback);
 	}
@@ -131,48 +133,48 @@ static void f_create (INT32 args)
 	switch(args) {
 		default:
 		case 5:
-			if (sp[2-args].type==T_INT &&  /*this check is maybe redundant*/
-					sp[2-args].u.integer <=65535 && 
-			    		sp[2-args].u.integer >= 0) {
-				if (sp[2-args].u.integer>0) {
+			if (Pike_sp[2-args].type==PIKE_T_INT &&  /*this check is maybe redundant*/
+					Pike_sp[2-args].u.integer <=65535 && 
+			    		Pike_sp[2-args].u.integer >= 0) {
+				if (Pike_sp[2-args].u.integer>0) {
 					port=xalloc(10*sizeof(char)); /*we only need 6, we just checked.*/
-					sprintf(port,"%d",sp[2-args].u.integer);
+					sprintf(port,"%d",Pike_sp[2-args].u.integer);
 				}
 			}
 		case 4:
-			if (sp[3-args].type==T_STRING && sp[3-args].u.string->len)
-				pass=sp[3-args].u.string->str;
+			if (Pike_sp[3-args].type==PIKE_T_STRING && Pike_sp[3-args].u.string->len)
+				pass=Pike_sp[3-args].u.string->str;
 		case 3:
-			if (sp[2-args].type==T_STRING && sp[2-args].u.string->len)
-				user=sp[2-args].u.string->str;
+			if (Pike_sp[2-args].type==PIKE_T_STRING && Pike_sp[2-args].u.string->len)
+				user=Pike_sp[2-args].u.string->str;
 		case 2:
-			if (sp[1-args].type==T_STRING && sp[1-args].u.string->len)
-				db=sp[1-args].u.string->str;
+			if (Pike_sp[1-args].type==PIKE_T_STRING && Pike_sp[1-args].u.string->len)
+				db=Pike_sp[1-args].u.string->str;
 		case 1:
-			if(sp[-args].type==T_STRING && sp[-args].u.string->len)
-				host=sp[-args].u.string->str;
+			if(Pike_sp[-args].type==PIKE_T_STRING && Pike_sp[-args].u.string->len)
+				host=Pike_sp[-args].u.string->str;
 		case 0:
 			;
 	}
 #if 0
 	/* Old arguments-checking code */
 	if (args>=1)
-		if(sp[-args].type==T_STRING && sp[-args].u.string->len)
-			host=sp[-args].u.string->str;
+		if(Pike_sp[-args].type==PIKE_T_STRING && Pike_sp[-args].u.string->len)
+			host=Pike_sp[-args].u.string->str;
 		/* postgres docs say they use hardwired defaults if no variable is found*/
 	if (args>=2)
-		if (sp[1-args].type==T_STRING && sp[1-args].u.string->len)
-			db=sp[1-args].u.string->str;
+		if (Pike_sp[1-args].type==PIKE_T_STRING && Pike_sp[1-args].u.string->len)
+			db=Pike_sp[1-args].u.string->str;
 		/* This is not beautiful code, but it works:
 		 * it specifies the port to connect to if there is a third
 		 * argument greater than 0. It accepts integer arguments >= 0
 		 * to allow simpler code in pike wrappers part.
 		 */
 	if (args==3)
-		if (sp[2-args].type==T_INT && sp[2-args].u.integer <=65535 && sp[2-args].u.integer >= 0) {
-			if (sp[2-args].u.integer>0) {
+		if (Pike_sp[2-args].type==PIKE_T_INT && Pike_sp[2-args].u.integer <=65535 && Pike_sp[2-args].u.integer >= 0) {
+			if (Pike_sp[2-args].u.integer>0) {
 				port=xalloc(10*sizeof(char)); /*it's enough, we need only 6*/
-				sprintf(port,"%d",sp[2-args].u.integer);
+				sprintf(port,"%d",Pike_sp[2-args].u.integer);
 			}
 		}
 		else
@@ -231,12 +233,12 @@ static void f_select_db (INT32 args)
 	/* This is an optimization, but people may want to reset a connection
 	 * re-selecting its database.
 	 */
-	if (!strcmp(sp[-args].u.string->str,db)) {
+	if (!strcmp(Pike_sp[-args].u.string->str,db)) {
 		pop_n_elems(args);
 		return;
 	}
 #endif
-	db=sp[-args].u.string->str;
+	db=Pike_sp[-args].u.string->str;
 	/* This could be really done calling f_create, but it's more efficient this
 	 * way */
 	THREADS_ALLOW();
@@ -272,8 +274,8 @@ static void f_big_query(INT32 args)
 	if (!conn)
 		error ("Not connected.\n");
 
-	if (sp[-args].u.string->len)
-		query=sp[-args].u.string->str;
+	if (Pike_sp[-args].u.string->len)
+		query=Pike_sp[-args].u.string->str;
 	else
 		query=" ";
 
@@ -303,7 +305,7 @@ static void f_big_query(INT32 args)
 		pgdebug("Incoming notification: \"%s\"\n",notification->relname);
 		push_text(notification->relname);
 		apply_svalue(THIS->notify_callback,1); 
-		/* apply_svalue simply returns if the first argument is a T_INT */
+		/* apply_svalue simply returns if the first argument is a PIKE_T_INT */
 		free (notification);
 	}
 	if (!res) {
@@ -387,8 +389,8 @@ static void f_trace (INT32 args)
 {
 	if (args!=1)
 		error ("Wrong args for trace().\n");
-	if (sp[-args].type==T_INT)
-		if (sp[-args].u.integer==0)
+	if (Pike_sp[-args].type==PIKE_T_INT)
+		if (Pike_sp[-args].u.integer==0)
 			PQuntrace(THIS->dblink);
 		else
 			error ("Wrong argument for postgres->trace().\n");
@@ -397,7 +399,7 @@ static void f_trace (INT32 args)
  * /precompiled/file... I guess there's the name stored somewhere..
  * For now let's presume that if it's an object, then it's a /precompiled/file*/
 		PQtrace(THIS->dblink,
-				((struct file_struct*)sp[-args].u.object->storage)->fd);
+				((struct file_struct*)Pike_sp[-args].u.object->storage)->fd);
 }
 #endif
 
@@ -405,16 +407,16 @@ static void f_callback(INT32 args)
 {
 	check_all_args("postgres->_set_notify_callback()",BIT_INT|BIT_FUNCTION,0);
 
-	if (sp[-args].type==T_INT) {
-		if (THIS->notify_callback->type!=T_INT) {
+	if (Pike_sp[-args].type==PIKE_T_INT) {
+		if (THIS->notify_callback->type!=PIKE_T_INT) {
 			free_svalue(THIS->notify_callback);
-			THIS->notify_callback->type=T_INT;
+			THIS->notify_callback->type=PIKE_T_INT;
 		}
 		pop_n_elems(args);
 		return;
 	}
 	/*let's assume it's a function otherwise*/
-	assign_svalue(THIS->notify_callback,sp-args);
+	assign_svalue(THIS->notify_callback,Pike_sp-args);
 	pop_n_elems(args);
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.13 2000/07/28 07:14:33 hubbe Exp $
+ * $Id: pgresult.c,v 1.14 2000/08/06 05:00:55 hubbe Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -33,6 +33,8 @@
  *   moving the check inside the actual sql classes.
  */
 
+#define NO_PIKE_SHORTHAND
+
 #include "global.h"
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
@@ -63,10 +65,10 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.13 2000/07/28 07:14:33 hubbe Exp $");
+RCSID("$Id: pgresult.c,v 1.14 2000/08/06 05:00:55 hubbe Exp $");
 
 #ifdef _REENTRANT
-MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
+PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex)
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
 #else
@@ -80,7 +82,7 @@ MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
 #include "module_magic.h"
 
 
-#define THIS ((struct postgres_result_object_data *) fp->current_storage)
+#define THIS ((struct postgres_result_object_data *) Pike_fp->current_storage)
 
 #ifdef PGRESDEBUG
 #define pgdebug printf
@@ -105,11 +107,11 @@ static void f_create (INT32 args)
 	check_all_args("postgres_result->create",args,BIT_OBJECT,0);
 	pgdebug("result->f_create(%d).\n",args);
 
-	storage=get_storage(sp[-args].u.object,postgres_program);
+	storage=get_storage(Pike_sp[-args].u.object,postgres_program);
 	if (!storage)
 		error ("I need a Postgres object or an heir of it.\n");
 	THIS->result=((struct pgres_object_data *)storage)->last_result;
-	((struct pgres_object_data *) sp[-args].u.object->storage)->last_result=NULL;
+	((struct pgres_object_data *) Pike_sp[-args].u.object->storage)->last_result=NULL;
 	/* no fear of memory leaks, we've only moved the pointer from there to here */
 
 	pop_n_elems(args);
@@ -176,7 +178,7 @@ static void f_seek (INT32 args)
 {
 	int howmuch;
 	check_all_args("postgres_result->seek",args,BIT_INT,0);
-	howmuch=sp[-args].u.integer;
+	howmuch=Pike_sp[-args].u.integer;
 	if (THIS->cursor+howmuch < 0)
 		error ("Cannot seek to negative result indexes!\n");
 	if (THIS->cursor+howmuch > PQntuples(THIS->result))
