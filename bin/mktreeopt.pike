@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.10 1999/11/08 23:58:47 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.11 1999/11/09 00:22:21 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -37,21 +37,44 @@
  *
  * in the table above. ie:
  *
- *      X        X                    X      X                       	 X
- *     / \  ->  / \                  / \    / \                      	/ \
- *    -   -    -   -                -   *  *   -                       *   *
- *			            
- *      X             	X             X                        	  X      X
- *     / \  ->         / \           / \                       	 / \    / \
- *    -   X           -   X         -   *                      	*   X  *   *
- *	              
- *      X                      X             X             X           	 X
- *     / \  ->                / \           / \           / \          	/ \
- *    X   -                  X   -         *   -         X   *         *   *
- *	                     
- *      X                                           X      X      X      X
- *     / \  ->                                     / \    / \    / \    / \
- *    X   X                                       X   X  X   *  *   X  *   *
+ *      X        X                           X      X                    X
+ *     / \  ->  / \                         / \    / \                  / \
+ *    -   -    -   -                       -   *  *   -                *   *
+ *
+ *      X             	X                    X             X             X
+ *     / \  ->         / \                  / \           / \           / \
+ *    -   X           -   X                -   *         *   X         *   *
+ *
+ *      X                      X          	    X             X      X
+ *     / \  ->                / \         	   / \           / \    / \
+ *    X   -                  X   -        	  *   -         X   *  *   *
+ *
+ *      X                             X                    X      X      X
+ *     / \  ->                       / \                  / \    / \    / \
+ *    X   X                         X   X                *   X  X   *  *   *
+ *
+ * Note: It might be better to let * not match -.
+ *       The result would then be:
+ *
+ *      X        X
+ *     / \  ->  / \
+ *    -   -    -   -
+ *
+ *      X             	X                    X
+ *     / \  ->         / \                  / \
+ *    -   X           -   X                -   *
+ *
+ *      X                      X          	    X
+ *     / \  ->                / \         	   / \
+ *    X   -                  X   -        	  *   -
+ *
+ *      X                             X                    X      X      X
+ *     / \  ->                       / \                  / \    / \    / \
+ *    X   X                         X   X                *   X  X   *  *   *
+ *
+ * Which would be much easier to generate code for, since every match node
+ * occurrs exactly once, and no goto's would be needed.
+ *
  *
  * Pseudocode: (Real code needs fixing...)
  *
@@ -89,7 +112,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.10 1999/11/08 23:58:47 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.11 1999/11/09 00:22:21 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
