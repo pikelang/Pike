@@ -175,9 +175,8 @@ static void port_bind(INT32 args)
 
   set_close_on_exec(fd,1);
 
-#ifdef __CHECKER__
+
   MEMSET((char *)&addr,0,sizeof(addr));
-#endif
 
   addr.sin_family = AF_INET;
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
@@ -189,13 +188,14 @@ static void port_bind(INT32 args)
 
     addr.sin_addr.s_addr = inet_addr(sp[2-args].u.string->str);
   }else{
-    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
   }
-
+  
   if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
      listen(fd, 16384) < 0 )
   {
     THIS->errno=errno;
+    printf("Error opening socket: %s\n", strerror(errno));
     close(fd);
     pop_n_elems(args);
     push_int(0);
