@@ -73,16 +73,6 @@ void monitor(object(Stdio.File) io, object proc)
   }
 }
 
-#ifdef WINE
-void my_proxy(Stdio.File from, Stdio.File to)
-{
-  while(string s=from->read(128,1))
-    if(to->write(s)!=strlen(s))
-      return;
-
-}
-#endif
-
 string opt_path(string p1, string p2)
 {
   return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
@@ -220,6 +210,14 @@ void handle_incoming_connection(object(Stdio.File) io)
 
     default:
 #ifdef WINE
+      void my_proxy(Stdio.File from, Stdio.File to)
+ 	{	
+	  while(string s=from->read(128,1))
+	    if(to->write(s)!=strlen(s))
+	      return;
+	  if(p) p->kill(9); /* DIE! */
+	}
+
     {
       werror("Proxying.....\n");
       object p3=Stdio.File();
@@ -231,6 +229,22 @@ void handle_incoming_connection(object(Stdio.File) io)
       thread_create(my_proxy,io,p4);
       io=p3;
     }
+#endif
+
+#if __VERSION__ >= 0.699999
+       write("Trapping OOB\n");
+   if(io->read_oob)
+   {
+     thread_create(lambda() {
+       while(1)
+       {
+	 string tmp=io->read_oob(1);
+	 if(!tmp || !sizeof(tmp)) return;
+	 werror("**Interrupt received, killing child.\n");
+	 p->kill(9);
+       }
+     });
+   }
 #endif
 
       mixed err=catch {
