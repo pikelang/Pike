@@ -53,6 +53,9 @@ mixed map(mixed arr, mixed fun, mixed ... args)
       ret[e]=fun(arr[e],@args);
     return ret;
 
+  case "multiset":
+    return rows(fun, arr);
+
   default:
     error("Bad argument 2 to Array.map().\n");
   }
