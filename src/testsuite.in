@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.496 2002/04/15 12:27:32 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.497 2002/04/18 10:50:14 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1670,6 +1670,19 @@ int maxdepth;
 int quiet;
 string status_prefix="";
 
+class Codec {
+  string nameof(mixed x)
+  {
+    return ([ trace:"efun:trace", werror:"efun:werror", `+:"efun:`+" ])[x];
+  }
+
+  function functionof(string x)
+  {
+    return ([ "efun:trace":trace, "efun:werror":werror, "efun:`+":`+ ])[x] ||
+      0;
+  }
+}
+
 void low_generate(int depth,
 		  array(string) code,
 		  string acc,
@@ -1700,13 +1713,17 @@ void low_generate(int depth,
       res=tmp->Q();
       if(res != ans)
       throw("Test failed");
+      tmp = decode_value(encode_value(tmp, Codec()), Codec());
+      res=tmp->Q();
+      if(res != ans)
+      throw("Test failed for encode/decode.");
     };
     mixed x=Program.inherit_list(object_program(tmp));
     if(err)
     {
       errors++;
       werror("\nTest failed:\n----------------------------------\n%s\n---------------------------------\nexpected answer: %O\nAnswer received: %O\n",test,ans,res);
-      if(err!="Test failed")
+      if(!stringp(err) || !has_prefix(err, "Test failed"))
       {
 	string tmp=master()->describe_backtrace(err);
 	array s=tmp/"\n";
