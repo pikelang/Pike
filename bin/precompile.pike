@@ -1682,10 +1682,10 @@ class ParseBlock
 				 arg->line()) });
 	    }
 
-	    else if(arg->may_be_void() && "mixed" != (string)arg->basetype())
+	    else if(arg->may_be_void())
 	    {
 	      ret+=({
-		PC.Token(sprintf("if(args > %d) ",argnum)),
+		PC.Token(sprintf("if (args > %d) {",argnum)),
 	      });
 	    }
 
@@ -1749,13 +1749,6 @@ class ParseBlock
 	    }
 
 	    else {
-	      if(arg->may_be_void())
-	      {
-		ret+=({
-		  PC.Token(sprintf("if(args > %d) { ",argnum)),
-		});
-	      }
-
 	      switch(arg->basetype())
 	      {
 		case "int":
@@ -1809,9 +1802,7 @@ class ParseBlock
 
 	      if(arg->may_be_void())
 	      {
-		ret+=({  PC.Token(sprintf("}else{\n"
-					  "%s=0;\n"
-					  "}", arg->name())) });
+		ret+=({  PC.Token(sprintf("} else %s=0;\n", arg->name())) });
 	      }
 	    }
 
