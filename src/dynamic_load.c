@@ -17,7 +17,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.61 2002/04/30 22:55:31 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.62 2002/05/10 21:53:14 per Exp $");
 
 #else /* TESTING */
 
@@ -390,7 +390,7 @@ void f_load_module(INT32 args)
    * detect linking problems at runtime..
    */
   module=dlopen(module_name, 
-                RTLD_NOW |RTLD_GLOBAL  );
+                RTLD_NOW /*|RTLD_GLOBAL*/  );
 
   if(!module)
   {
