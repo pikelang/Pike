@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.30 2004/02/04 12:58:22 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.31 2004/02/04 21:36:29 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -494,7 +494,7 @@ PIKECLASS CBC
 /*! @endclass
  */
 
-/*! @class Proxy
+/*! @class Buffer
  *! Acts as a buffer so that data can be fed to a cipher in blocks
  *! that doesn't correspond to cipher block sizes.
  */
@@ -660,10 +660,10 @@ PIKECLASS Proxy {
       safe_apply(THIS->object, "crypt", 1);
 
       if (Pike_sp[-1].type != T_STRING)
-      Pike_error("crypt() did not return string\n");
+	Pike_error("crypt() did not return string.\n");
       if (Pike_sp[-1].u.string->len != len)
-      Pike_error("crypt() Unexpected string length %ld\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+	Pike_error("crypt() Unexpected string length %ld.\n",
+		   DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
 
       MEMCPY(result + roffset, Pike_sp[-1].u.string->str, len);
 
@@ -696,7 +696,7 @@ PIKECLASS Proxy {
       THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
   
     THIS->backlog[THIS->block_size - 1] =
-      DO_NOT_WARN((unsigned char)(7 - THIS->backlog_len));
+      DO_NOT_WARN((unsigned char)(THIS->block_size - THIS->backlog_len - 1));
 
     push_string(make_shared_binary_string((const char *)THIS->backlog,
 					  THIS->block_size));
@@ -716,15 +716,24 @@ PIKECLASS Proxy {
    *! @seealso
    *!   @[pad()]
    */
-  PIKEFUN string unpad(string data) {
+  PIKEFUN string unpad(string str) {
     ptrdiff_t len;
-    struct pike_string *str;
 
-    str = Pike_sp[-1].u.string;
     len = str->len;
 
+    if( len % THIS->block_size)
+      Pike_error("String must be integral numbers of blocks.\n");
+    safe_apply(THIS->object, "crypt", 1);
+    if (Pike_sp[-1].type != T_STRING)
+      Pike_error("crypt() did not return string.\n");
+    if (Pike_sp[-1].u.string->len != len)
+      Pike_error("crypt() Unexpected string length %ld.\n",
+		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+    str = Pike_sp[-1].u.string;
+
     if (str->str[len - 1] > (THIS->block_size - 1))
-      Pike_error("Invalid padding\n");
+      Pike_error("Invalid padding (%d > %d)\n",
+		 str->str[len-1], THIS->block_size-1);
 
     len -= (str->str[len - 1] + 1);
 
