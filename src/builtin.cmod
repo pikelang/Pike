@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.18 2001/06/08 14:26:40 mast Exp $
+ * $Id: builtin.cmod,v 1.19 2001/06/15 00:26:09 mast Exp $
  */
 
 #include "global.h"
@@ -292,11 +292,18 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     *sp=s;
     sp++;
   }
-  else
+  else if (map->type == T_OBJECT)
   {
-    apply_lfun( map->u.object, LFUN__M_DELETE, 1 );
+    int id = FIND_LFUN(map->u.object->prog, LFUN__M_DELETE);
+
+    if( id == -1 )
+      SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object with _m_delete");
+
+    apply_low( map->u.object, id, 1 );
     stack_swap();
     pop_stack();
+  } else {
+    SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object|mapping");
   }
 }
 
