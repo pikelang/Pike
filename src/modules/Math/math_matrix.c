@@ -14,6 +14,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "mapping.h"
+#include "module_support.h"
 
 #include "math_module.h"
 
@@ -50,6 +51,7 @@ struct matrix_storage
 static struct pike_string *s_array;
 static struct pike_string *s__clr;
 static struct pike_string *s_identity;
+static struct pike_string *s_rotate;
 
 /* ---------------------------------------------------------------- */
 
@@ -68,6 +70,7 @@ static void exit_matrix(struct object *o)
 
 /*
 **! method void create(array(array(int|float)))
+**! method void create(array(int|float))
 **! method void create(int n,int m)
 **! method void create(int n,int m,string type)
 **! method void create(int n,int m,float|int init)
@@ -94,7 +97,7 @@ static void exit_matrix(struct object *o)
 static void matrix_create(INT32 args)
 {
    int ys=0,xs=0;
-   int i,j;
+   int i=0,j=0,k=0;
    FTYPE *m=NULL;
 
    if (!args)
@@ -108,8 +111,15 @@ static void matrix_create(INT32 args)
    {
       ys=THIS->ysize=sp[-args].u.array->size;
 
-      if (ys<1)
-	 SIMPLE_BAD_ARG_ERROR("matrix",1,"non-empty array");
+      if (ys<1 || sp[-args].u.array->item[0].type!=T_ARRAY)
+      {
+	 push_svalue(sp-args);
+	 f_aggregate(THIS->ysize=ys=1); 
+	 free_svalue(sp-args-1);
+	 sp[-args-1]=sp[-1];
+	 sp--;
+      }
+
       for (i=0; i<ys; i++)
       {
 	 if (sp[-args].u.array->item[i].type!=T_ARRAY)
@@ -182,7 +192,8 @@ static void matrix_create(INT32 args)
 	       args=2;
 	    }
 	    else
-	       SIMPLE_BAD_ARG_ERROR("matrix",3,"\"identity\"|int|float");
+	       SIMPLE_BAD_ARG_ERROR("matrix",3,
+				    "valid matrix mode (identity)");
 	    /* insert other base matrices here */
 	 }
 	 else
@@ -200,6 +211,59 @@ static void matrix_create(INT32 args)
 
 done_made:
       ;
+   }
+   else if (sp[-args].type==T_STRING)
+   {
+      char *dummy;
+      INT_TYPE side,n;
+
+      if (sp[-args].u.string==s_identity)
+      {
+	 get_all_args("matrix",args,"%s%i",&dummy,&side);
+
+	 THIS->xsize=THIS->ysize=side;
+	 THIS->m=m=malloc(sizeof(FTYPE)*xs*ys);
+	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR("matrix",sizeof(FTYPE)*side*side);
+
+	 n=side*side;
+	 while (n--) *(m++)=0.0;
+	 for (n=0; i<side; i++)
+	    THIS->m[i*(side+1)]=1.0;
+      }
+      else if (sp[-args].u.string==s_rotate)
+      {
+	 float r;
+	 int axis;
+
+	 /* "rotate",size,degrees,axis */
+
+	 get_all_args("matrix",args,"%s%i%F%i",&dummy,&side,&r,&axis);
+	 
+	 if (side<2)
+	    SIMPLE_BAD_ARG_ERROR("matrix",2,"int(2..)");
+	 if (side==2 && axis!=2)
+	    SIMPLE_BAD_ARG_ERROR("matrix",3,"int(2..2)");
+
+	 THIS->xsize=THIS->ysize=side;
+	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
+	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR("matrix",sizeof(FTYPE)*side*side);
+
+	 n=side*side;
+	 while (n--) *(m++)=0.0;
+	 for (n=0; i<side; i++)
+	    THIS->m[i*(side+1)]=1.0;
+	 if (axis==0) j=1;
+	 k=j+1; 
+	 while (k==axis) k++;
+	 r=r*M_PI/180.0;
+	 THIS->m[j+j*side]=cos(r);
+	 THIS->m[k+j*side]=-sin(r);
+	 THIS->m[j+k*side]=sin(r);
+	 THIS->m[k+k*side]=cos(r);
+      }
+      else
+	 SIMPLE_BAD_ARG_ERROR("matrix",1,
+			      "valid matrix mode (identity or rotate)");
    }
    else
       SIMPLE_BAD_ARG_ERROR("matrix",1,"array|int");
@@ -245,6 +309,49 @@ void matrix_cast(INT32 args)
 
    SIMPLE_BAD_ARG_ERROR("matrix->cast",1,"string");
 }
+
+/*
+**! method array(array(float)) cast(string to_what)
+**! 	This is to be able to get the matrix values.
+**!	This gives back a double array of floats.
+*/
+
+void matrix__sprintf(INT32 args)
+{
+   FTYPE *m=THIS->m;
+   int x,y,n=0;
+   char buf[80]; /* no %6.6g is bigger */
+
+   get_all_args("_sprintf",args,"%i",&x);
+
+   switch (x)
+   {
+      case 'O':
+	 push_constant_text("Math.Matrix( ");
+	 push_constant_text("({ ({ ");
+	 n=2;
+	 for (y=0; y<THIS->ysize; y++)
+	 {
+	    for (x=0; x<THIS->xsize; x++)
+	    {
+	       sprintf(buf,"%6.4g%s",*(m++),
+		       (x<THIS->xsize-1)?", ":"");
+	       push_text(buf); n++;
+	    }
+	    if (y<THIS->ysize-1)
+	       push_constant_text("})\n                ({ "); 
+	    n++;
+	 }
+	 push_constant_text("}) }) )"); 
+	 f_add(n);
+	 stack_pop_n_elems_keep_top(args);
+	 return;
+   }
+
+   pop_n_elems(args);
+   push_int(0);
+}
+
 
 /* --- helpers ---------------------------------------------------- */
 
@@ -292,6 +399,7 @@ static void matrix_transpose(INT32 args)
 /*
 **! method float norm()
 **! method float norm2()
+**! method object normv()
 **! 	Norm of the matrix, and the square of the norm
 **!	of the matrix. (The later method is because you
 **!	may skip a square root sometimes.)
@@ -300,6 +408,8 @@ static void matrix_transpose(INT32 args)
 **!	A<sub>1</sub><sup>2</sup> + ... + A<sub>n</sub><sup>2</sup> ).
 **!
 **!	It is only usable with 1xn or nx1 matrices.
+**!
+**!	m->normv() is equal to m*(1.0/m->norm()).
 */
 
 static void matrix_norm(INT32 args)
@@ -340,6 +450,18 @@ static void matrix_norm2(INT32 args)
       z+=*s**s,s++;
 
    push_float(z);
+}
+
+static void matrix_normv(INT32 args)
+{
+   pop_n_elems(args);
+   matrix_norm(0);
+   if (sp[-1].u.float_number==0.0 || sp[-1].u.float_number==-0.0)
+      math_error("Matrix->normv",sp-args,args,0,
+		 "vector is zero, cannot be normalized");
+      
+   sp[-1].u.float_number=1.0/sp[-1].u.float_number;
+   matrix_mult(1);
 }
 
 /*
@@ -509,15 +631,59 @@ scalar_mult:
    pop_stack();
 }
 
+/*
+**! method object `×(object with)
+**! method object ``×(object with)
+**! method object cross(object with)
+**!	Matrix cross-multiplication.
+*/
+
+static void matrix_cross(INT32 args)
+{
+   struct matrix_storage *mx=NULL;
+   struct matrix_storage *dmx;
+   int n,i,j,k,m,p;
+   FTYPE *a,*b,*d,*st;
+   FTYPE z;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`*",1);
+
+   pop_n_elems(args-1); /* shouldn't be needed */
+
+   if (sp[-1].type!=T_OBJECT ||
+       !((mx=(struct matrix_storage*)
+	  get_storage(sp[-1].u.object,math_matrix_program))))
+      SIMPLE_BAD_ARG_ERROR("matrix->`*",1,"object(Math.Matrix)");
+
+   if (mx->xsize*mx->ysize != 3 ||
+       THIS->ysize*THIS->xsize != 3)
+      math_error("Matrix->cross",sp-args,args,0,
+		 "Matrices must both be of size 1x3 or 3x1");
+
+   dmx=_push_new_matrix(THIS->xsize,THIS->ysize);
+   a=THIS->m;
+   b=mx->m;
+   d=dmx->m;
+   
+   d[0]=a[1]*b[2] - a[2]*b[1];
+   d[1]=a[2]*b[0] - a[0]*b[2];
+   d[2]=a[0]*b[1] - a[1]*b[0];
+
+   stack_swap();
+   pop_stack();
+}
+
 
 /* ---------------------------------------------------------------- */
 
 void init_math_matrix()
 {
 #define MKSTR(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
-  dmalloc_accept_leak( s_array=MKSTR("array") );
-  dmalloc_accept_leak( s__clr=MKSTR("clr") );
-  dmalloc_accept_leak( s_identity=MKSTR("identity") );
+   dmalloc_accept_leak( s_array=MKSTR("array") );
+   dmalloc_accept_leak( s_rotate=MKSTR("rotate") );
+   dmalloc_accept_leak( s__clr=MKSTR("clr") );
+   dmalloc_accept_leak( s_identity=MKSTR("identity") );
 
    ADD_STORAGE(struct matrix_storage);
    
@@ -526,20 +692,26 @@ void init_math_matrix()
 
    add_function("create",matrix_create,
 		"function(array(array(int|float)):object)|"
+		"function(string,mixed...:object)|"
 		"function(int(1..),int(1..),int|float|string|void:object)",
 		0);
    
    add_function("cast",matrix_cast,
 		"function(string:array(array(float)))",0);
-
+   add_function("_sprintf",matrix__sprintf,
+		"function(int,mapping:string)",0);
 
    add_function("transpose",matrix_transpose,
+		"function(:object)",0);
+   add_function("t",matrix_transpose,
 		"function(:object)",0);
 
    add_function("norm",matrix_norm,
 		"function(:float)",0);
    add_function("norm2",matrix_norm2,
 		"function(:float)",0);
+   add_function("normv",matrix_normv,
+		"function(:object)",0);
 
    add_function("add",matrix_add,
 		"function(object:object)",0);
@@ -558,4 +730,11 @@ void init_math_matrix()
 		"function(object|float|int:object)",0);
    add_function("``·",matrix_mult,
 		"function(object|float|int:object)",0);
+
+   add_function("cross",matrix_cross,
+		"function(object:object)",0);
+   add_function("`×",matrix_cross,
+		"function(object:object)",0);
+   add_function("``×",matrix_cross,
+		"function(object:object)",0);
 }
