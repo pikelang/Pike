@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.244 2000/06/26 12:19:12 grubba Exp $");
+RCSID("$Id: program.c,v 1.245 2000/06/26 15:56:28 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1526,17 +1526,21 @@ int low_reference_inherited_identifier(struct program_state *q,
   return np->num_identifier_references -1;
 }
 
-int find_inherit(struct program *p, int num_inherits,
-		 struct pike_string *name, int level)
+int find_inherit(struct program *p, struct pike_string *name)
 {
   int e;
 
-  if (num_inherits <= 1) return 0;
-
-  /* This depends deeply on the inherit structure. */
-  for(e = num_inherits-1; e>0; e--) {
-    if (p->inherits[e].inherit_level > level) continue;
-    if (p->inherits[e].inherit_level < level) return 0;
+#if 0
+  fprintf(stderr, "find_inherit(0x%08lx, \"%s\")...\n",
+	  (unsigned long)p, name->str);
+#endif /* 0 */
+  for(e = p->num_inherits-1; e>0; e--) {
+#if 0
+    fprintf(stderr, "  %04d: %04d %s\n",
+	    e, p->inherits[e].inherit_level,
+	    p->inherits[e].name?p->inherits[e].name->str:"NULL");
+#endif /* 0 */
+    if (p->inherits[e].inherit_level > 1) continue;
     if (name == p->inherits[e].name) return e;
   }
   return 0;
