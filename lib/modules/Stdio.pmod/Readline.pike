@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.2 1999/03/15 17:25:16 marcus Exp $
+// $Id: Readline.pike,v 1.3 1999/03/17 23:35:40 marcus Exp $
 
 class OutputController
 {
@@ -55,10 +55,10 @@ class OutputController
       n -= l;
       xpos = 0;
       if(!term->tgetflag("am"))
-	outfd->write("\r\n");
+	outfd->write((term->put("cr")||"\r")+(term->put("do")||"\n"));
     }
     if(xpos==0 && term->tgetflag("am"))
-      outfd->write(" "+term->put("le"));
+      outfd->write(" "+(term->put("le")||"\b"));
     if(n>0) {
       outfd->write(s);
       xpos += n;
@@ -89,7 +89,7 @@ class OutputController
     if(n<=0)
       return;
     if(xpos+n<columns) {
-      outfd->write(term->put("RI", n) || (term->put("ri")||"")*n);
+      outfd->write(term->put("RI", n) || (term->put("ri")||" ")*n);
       xpos += n;
     } else {
       int l = (xpos+n)/columns;
@@ -107,7 +107,7 @@ class OutputController
     if(n<=0)
       return;
     if(xpos-n>=0) {
-      outfd->write(term->put("LE", n) || (term->put("le")||"")*n);
+      outfd->write(term->put("LE", n) || (term->put("le")||"\b")*n);
       xpos -= n;
     } else {
       int l = 1+(n-xpos-1)/columns;
@@ -149,13 +149,13 @@ class OutputController
 
   void newline()
   {
-    outfd->write("\r\n");
+    outfd->write((term->put("cr")||"\r")+(term->put("do")||"\n"));
     xpos = 0;
   }
 
   void bol()
   {
-    outfd->write("\r");
+    outfd->write(term->put("cr")||"\r");
     xpos = 0;
   }
 
@@ -171,7 +171,7 @@ class OutputController
       outfd->write(term->put("ho")||term->put("cm", 0, 0)||"\f");
       xpos = 0;
     }
-    outfd->write(term->put("cd")||"");
+    outfd->write(term->put("cd")||(partial?"":"\f"));
   }
 
   void create(object|void _outfd, object|string|void _term)
