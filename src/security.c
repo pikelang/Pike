@@ -75,8 +75,16 @@ static int valid_creds_object(struct object *o)
 
 static void restore_creds(struct object *creds)
 {
-  SET_CURRENT_CREDS(creds);
-  free_object(creds);
+  if(Pike_interpreter.frame_pointer)
+  {
+    if(Pike_interpreter.frame_pointer->current_creds)
+      free_object(Pike_interpreter.frame_pointer->current_creds);
+    Pike_interpreter.frame_pointer->current_creds = CHECK_VALID_UID(creds);
+  }else{
+    if(Pike_interpreter.current_creds)
+      free_object(Pike_interpreter.current_creds);
+    Pike_interpreter.current_creds = CHECK_VALID_UID(creds);
+  }
 }
 
 /*! @decl mixed call_with_creds(object(Creds) creds, mixed func, @
