@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.10 1997/05/29 19:37:11 mirar Exp $ */
+/* $Id: blit.c,v 1.11 1997/09/01 01:35:32 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.10 1997/05/29 19:37:11 mirar Exp $<br>
+**!	$Id: blit.c,v 1.11 1997/09/01 01:35:32 per Exp $<br>
 **! class image
 */
 
@@ -260,12 +260,26 @@ void image_paste(INT32 args)
    }
    else x1=y1=0;
 
+   if(x1 >= THIS->xsize || y1 >= THIS->ysize) /* Per */
+   {
+     pop_n_elems(args);
+     THISOBJ->refs++;
+     push_object(THISOBJ);
+     return;
+   }   
    x2=x1+img->xsize-1;
    y2=y1+img->ysize-1;
 
+   if(x2 < 0 || y2 < 0) /* Per */
+   {
+     pop_n_elems(args);
+     THISOBJ->refs++;
+     push_object(THISOBJ);
+     return;
+   }   
    blitwidth=min(x2,THIS->xsize-1)-max(x1,0)+1;
    blitheight=min(y2,THIS->ysize-1)-max(y1,0)+1;
-
+   
    img_blit(THIS->img+max(0,x1)+(THIS->xsize)*max(0,y1),
 	    img->img+max(0,-x1)+(x2-x1+1)*max(0,-y1),
 	    blitwidth,
@@ -328,15 +342,36 @@ void image_paste_alpha(INT32 args)
    }
    else x1=y1=0;
 
-/* tråda här nåndag */
+   if(x1 >= THIS->xsize || y1 >= THIS->ysize) /* Per */
+   {
+     pop_n_elems(args);
+     THISOBJ->refs++;
+     push_object(THISOBJ);
+     return;
+   }   
 
-   for (x=0; x<img->xsize; x++)
-      for (y=0; y<img->ysize; y++)
-      {
-	 THIS->rgb=pixel(img,x,y);
-	 setpixel_test(x1+x,y1+y);
-      }
+/* tråda här nåndag.. Ok /Per */
 
+   {
+     rgb_group *source = img->img;
+     struct image *this = THIS;
+     int xs = this->xsize, ix, mx=img->xsize, my=img->ysize, x;
+     int ys = this->ysize, iy, y;
+
+     THREADS_ALLOW();
+     for (iy=0; iy<my; iy++)
+       for (ix=0; ix<mx; ix++)
+       {
+	 x = ix + x1; y = iy + y1;
+	 if(x>=0 && y>=0 && x<xs && y<ys)
+	   if(this->alpha)
+	     set_rgb_group_alpha(this->img[x+y*xs],*(source),this->alpha);
+	   else
+	     this->img[x+y*xs]=*(source);
+	 source++;
+       }
+     THREADS_DISALLOW();
+   }
    pop_n_elems(args);
    THISOBJ->refs++;
    push_object(THISOBJ);
