@@ -529,5 +529,5 @@ int `>(object pos)
 //!
 string _sprintf(int|void t)
 {
-  return t=='O' && sprintf("%O(%s, %s)", latitude(), longitude());
+  return t=='O' && sprintf("%O(%s, %s)", object_program(this_object()), latitude(), longitude());
 }
