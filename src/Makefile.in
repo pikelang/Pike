@@ -114,22 +114,22 @@ all: module_objects
 	$(MAKE) $(MAKE_FLAGS) pike
 
 pike: $(OBJ) modules/linker_options
-	-@mv pike pike.old 2>/dev/null
+	-@mv pike pike.old 2>/dev/null || true
 	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
 pure: $(OBJ) module_objects
-	-@mv pike pike.old 2>/dev/null
+	-@mv pike pike.old 2>/dev/null || true
 	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) module_objects
-	-@mv pike pike.old 2>/dev/null
+	-@mv pike pike.old 2>/dev/null || true
 	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) module_objects
-	-@mv pike pike.old 2>/dev/null
+	-@mv pike pike.old 2>/dev/null || true
 	quantify gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # install
