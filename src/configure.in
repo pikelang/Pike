@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.71 1997/04/11 02:05:23 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.72 1997/04/11 02:11:01 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -513,7 +513,7 @@ int main()
       AC_MSG_CHECKING(for pthread_attr_setstacksize)
       AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
         AC_TRY_COMPILE([
-          void foo(pthread_attr*x) { pthread_attr_setstacksize(x, 1024*1024); }
+          void foo(pthread_attr_t*x) { pthread_attr_setstacksize(x, 1024*1024); }
         ],[],[
 	  pike_cv_have_pthread_attr_setstacksize=yes
 	],[
