@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.102 2001/07/01 21:34:50 mast Exp $");
+RCSID("$Id: encode.c,v 1.103 2001/07/01 22:30:36 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2019,6 +2019,8 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
         case 3:
+	  tmp=data->counter;
+	  data->counter.u.integer++;
 	  decode_value2(data);
 	  if ((Pike_sp[-1].type == T_INT) &&
 	      (Pike_sp[-1].u.integer < PROG_DYNAMIC_ID_START) &&
