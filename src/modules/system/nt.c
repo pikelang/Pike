@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.8 1999/02/10 21:55:27 hubbe Exp $
+ * $Id: nt.c,v 1.9 1999/03/23 20:25:28 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -13,15 +13,12 @@
 
 #ifdef __NT__
 
-#include "interpret.h"
-#include "object.h"
 #include "program.h"
-#include "svalue.h"
 #include "stralloc.h"
-#include "las.h"
 #include "threads.h"
 #include "module_support.h"
 #include "array.h"
+#include "constants.h"
 
 #include <winsock.h>
 #include <windows.h>
