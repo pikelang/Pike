@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.563 2004/07/08 13:22:42 marcus Exp $
+|| $Id: builtin_functions.c,v 1.564 2004/07/14 13:57:29 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.563 2004/07/08 13:22:42 marcus Exp $");
+RCSID("$Id: builtin_functions.c,v 1.564 2004/07/14 13:57:29 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6311,13 +6311,19 @@ PMOD_EXPORT void f_replace_master(INT32 args)
  *!
  *!   Return the current master object.
  *!
+ *! @note
+ *!   May return @[UNDEFINED] if no master has been loaded yet.
+ *!
  *! @seealso
  *!   @[replace_master()]
  */
 PMOD_EXPORT void f_master(INT32 args)
 {
+  struct object *o;
   pop_n_elems(args);
-  ref_push_object(master());
+  o = get_master();
+  if (o) ref_push_object(o);
+  else push_undefined();
 }
 
 #ifdef HAVE_SYS_TIME_H
