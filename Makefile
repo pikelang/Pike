@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.7 1999/04/29 09:37:45 mast Exp $
+# $Id: Makefile,v 1.8 1999/05/10 13:53:05 mast Exp $
 #
 # Meta Makefile
 #
@@ -115,3 +115,6 @@ distclean:
 
 cvsclean: distclean
 	for d in `find src -type d -print`; do if test -f "$$d/.cvsignore"; then (cd "$$d" && rm -f `cat ".cvsignore"`); else :; fi; done
+
+depend:
+	-cd "$(BUILDDIR)" && $(MAKE) depend
