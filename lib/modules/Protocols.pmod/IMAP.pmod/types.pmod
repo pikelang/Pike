@@ -13,7 +13,20 @@ string imap_format(mixed x)
 
 string imap_format_array(array a)
 {
-  return Array.map(a, imap_format) * " ";
+  if (!sizeof(a)) {
+    return("");
+  }
+  a = Array.map(a, imap_format);
+  string res = a[0];
+  for(int i=1; i < sizeof(a); i++) {
+    if (sizeof(res) && (res[-1] == '\n')) {
+      // Special case - No space needed.
+      res += a[i];
+    } else {
+      res += " " + a[i];
+    }
+  }
+  return res;
 }
 
 /* Output types */
