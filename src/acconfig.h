@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.110 2003/01/05 14:29:54 grubba Exp $
+|| $Id: acconfig.h,v 1.111 2003/01/08 19:35:42 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -462,9 +462,6 @@
 
 /* Enable code to handle Out-Of-Band data */
 #undef WITH_OOB
-
-/* Enable individual tracing of threads */
-#undef THREAD_TRACE
 
 /* Enable tracing of the compiler */
 #undef YYDEBUG

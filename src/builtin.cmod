@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.103 2003/01/08 14:00:53 grubba Exp $
+|| $Id: builtin.cmod,v 1.104 2003/01/08 19:35:42 mast Exp $
 */
 
 #include "global.h"
@@ -316,11 +316,9 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   RETURN mkmultiset(a);
 }
 
-/*! @decl int trace(int t)
+/*! @decl int trace(int trace_level, void|int all_threads)
  *!
  *! This function changes the debug trace level.
- *!
- *! The old level is returned.
  *!
  *! Trace level 1 or higher means that calls to Pike functions are
  *! printed to stderr, level 2 or higher means calls to builtin functions
@@ -328,14 +326,35 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *! arguments to these opcodes are printed as well.
  *!
  *! See the @tt{-t@} command-line option for more information.
+ *!
+ *! @param trace_level
+ *!   The new trace level.
+ *!
+ *! @param all_threads
+ *!   The trace level is set in all threads if this is nonzero.
+ *!   Otherwise only the trace level in the current thread is
+ *!   affected. Setting it in all threads can be useful to track down
+ *!   deadlock bugs etc.
+ *!
+ *! @returns
+ *!   The old level in the current thread is returned.
  */
-PIKEFUN int trace(int t)
+PIKEFUN int trace(int t, void|int all_threads)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
   pop_n_elems(args);
   push_int(t_flag);
+#ifdef PIKE_THREADS
+  if (!all_threads || UNSAFE_IS_ZERO (all_threads))
+    t_flag=t;
+  else {
+    struct thread_state *s;
+    FOR_EACH_THREAD(s, s->state.trace_level = t);
+  }
+#else
   t_flag=t;
+#endif
 }
 
 /*! @decl string ctime(int timestamp)

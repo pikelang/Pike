@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.25 2003/01/08 19:32:08 mast Exp $
+|| $Id: pike_threadlib.h,v 1.26 2003/01/08 19:35:42 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -497,15 +497,6 @@ PMOD_EXPORT extern unsigned long thread_yields;
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern THREAD_T threads_disabled_thread;
 #endif
-
-#ifdef THREAD_TRACE
-PMOD_EXPORT extern int t_flag;
-#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->status.t_flag = t_flag; } while(0)
-#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->status.t_flag; } while(0)
-#else /* !THREAD_TRACE */
-#define SWAP_OUT_TRACE(_tmp)
-#define SWAP_IN_TRACE(_tmp)
-#endif /* THREAD_TRACE */
 
 #define SWAP_OUT_THREAD(_tmp) do {				\
        (_tmp)->state=Pike_interpreter;				\

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.672 2003/01/05 14:29:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.673 2003/01/08 19:35:42 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1321,9 +1321,6 @@ MY_AC_ARG_WITH(oob, MY_DESCR([--without-oob],
     AC_MSG_ERROR([Support for out of band data is mandatory on NT.])
   else :; fi
 ],[with_oob=yes])
-AC_ARG_WITH(thread-trace, MY_DESCR([--without-thread-trace],
-				   [disable individual tracing of threads]),
-	    [],[with_thread_trace=yes])
 MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
@@ -1425,10 +1422,6 @@ AC_SUBST(VALGRINDARGS)
 
 if test "x$with_checker" = "xyes"; then
   AC_DEFINE(__CHECKER__)
-else :; fi
-
-if test "x$with_thread_trace" = "xyes"; then
-  AC_DEFINE(THREAD_TRACE)
 else :; fi
 
 if test "x$with_relocatable_dumped_modules" = xyes; then

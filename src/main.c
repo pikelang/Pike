@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.160 2003/01/02 19:51:26 nilsson Exp $
+|| $Id: main.c,v 1.161 2003/01/08 19:35:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.160 2003/01/02 19:51:26 nilsson Exp $");
+RCSID("$Id: main.c,v 1.161 2003/01/08 19:35:42 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -81,7 +81,6 @@ PMOD_EXPORT int debug_options=0;
 PMOD_EXPORT int runtime_options=0;
 PMOD_EXPORT int d_flag=0;
 PMOD_EXPORT int c_flag=0;
-PMOD_EXPORT int t_flag=0;
 PMOD_EXPORT int default_t_flag=0;
 PMOD_EXPORT int a_flag=0;
 PMOD_EXPORT int l_flag=0;

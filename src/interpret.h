@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.120 2002/11/23 20:48:09 mast Exp $
+|| $Id: interpret.h,v 1.121 2003/01/08 19:35:42 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -40,10 +40,10 @@ struct Pike_interpreter {
   char *stack_bottom;
 #endif
 
-#ifdef THREAD_TRACE
-  int t_flag;
-#endif /* THREAD_TRACE */
+  int trace_level;
 };
+
+#define t_flag (Pike_interpreter.trace_level)
 
 #ifndef STRUCT_FRAME_DECLARED
 #define STRUCT_FRAME_DECLARED
