@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.351 2004/06/27 14:11:40 nilsson Exp $
+// $Id: master.pike.in,v 1.352 2004/07/04 12:38:49 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2679,7 +2679,7 @@ void _main(array(string) orig_argv, array(string) env)
 	error("Error: %s has no main().\n", argv[0]);
       ret=script->main(sizeof(argv),argv,env);
     };
-  // Disable traceing.
+  // Disable tracing.
   trace = predef::trace(trace);
   if (err) {
     handle_error (err);
@@ -3693,6 +3693,8 @@ array get_backtrace (object|array err)
 #endif
 
 class Encoder
+//! @appears Pike.Encoder
+//!
 //! Codec for use with @[encode_value]. It understands all the
 //! standard references to builtin functions and pike modules.
 //!
@@ -4069,6 +4071,8 @@ class Encoder
 }
 
 class Decoder (void|string fname, void|int mkobj)
+//! @appears Pike.Decoder
+//!
 //! Codec for use with @[decode_value]. This is the decoder
 //! corresponding to @[Encoder]. See that one for more details.
 {
@@ -4231,6 +4235,8 @@ Decoder get_codec(string|void fname, int|void mkobj)
 }
 
 class Codec
+//! @appears Pike.Codec
+//!
 //! @[Encoder] and @[Decoder] rolled into one. This is for mainly
 //! compatibility; there's typically no use combining encoding and
 //! decoding into the same object.
