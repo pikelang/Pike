@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.47 2002/04/12 09:30:12 grubba Exp $");
+RCSID("$Id: peep.c,v 1.48 2003/10/10 01:17:44 mast Exp $");
 
 static void asm_opt(void);
 
@@ -241,6 +241,7 @@ void assemble(void)
     }
     
     c=(p_instr *)instrbuf.s.str;
+    length=instrbuf.s.len / sizeof(p_instr);
     for(e=0;e<length;e++)
       if(c[e].opcode == F_LABEL && c[e].arg>=0)
 	labels[c[e].arg]=DO_NOT_WARN((INT32)e);
@@ -284,7 +285,7 @@ void assemble(void)
 	      
 	    case TWOO(F_LOR, F_RETURN):
 	      c[e].opcode=F_RETURN_IF_TRUE;
-	      break;
+	      goto pointer_opcode_done;
 	      
 	    case TWOO(F_BRANCH, F_RETURN):
 	    case TWOO(F_BRANCH, F_RETURN_0):
@@ -293,12 +294,17 @@ void assemble(void)
 	      if(c[e].file) free_string(c[e].file);
 	      c[e]=c[tmp];
 	      if(c[e].file) add_ref(c[e].file);
-	      break;
+	      goto pointer_opcode_done;
 	  }
 	  break;
 	}
+#ifdef PIKE_DEBUG
+	if (c[e].arg < 0 || c[e].arg > max_label)
+	  fatal ("Invalid index into uses: %d\n", c[e].arg);
+#endif
 	uses[c[e].arg]++;
       }
+    pointer_opcode_done:;
     }
     
     for(e=0;e<=max_label;e++)
