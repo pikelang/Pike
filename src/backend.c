@@ -3,12 +3,14 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#include "global.h"
 #include <errno.h>
 #include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #include <sys/param.h>
 #include <string.h>
-#include "global.h"
 #include "interpret.h"
 #include "object.h"
 #include "types.h"
