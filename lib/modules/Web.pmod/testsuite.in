@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.5 2004/01/28 11:57:17 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.6 2004/01/28 12:43:51 nilsson Exp $"]]);
 
 
 // - Web.RDF
@@ -18,13 +18,16 @@ test_any_equal([[
   r->add_statement( x,
 		    r->URIResource("http://www.example.org/terms/language"),
 		    r->LiteralResource("English") );
-  return (multiset)(r->get_n_triples()/"\n");
+  string res = r->get_n_triples();
+  while(sscanf(res, "%s_:Resource%*d %s", string a, string b)==3)
+    res = a + "RESOURCE " + b;
+  return (multiset)(res/"\n");
 ]], (< /* 5 elements */
     "",
-    "_:Resource9 <http://www.example.org/terms/language> \"English\" .",
-    "_:Resource9 <http://www.example.org/terms/creation-date> _:Resource12 .",
-    "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> _:Resource9 .",
-    "_:Resource12 <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
+    "RESOURCE <http://www.example.org/terms/language> \"English\" .",
+    "RESOURCE <http://www.example.org/terms/creation-date> RESOURCE .",
+    "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> RESOURCE .",
+    "RESOURCE <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
 >))
 
 test_do([[ add_constant("my_rdf", Web.RDF()); ]])
@@ -188,6 +191,39 @@ test_any_equal([[
 ]], [[$2]])
 ]])
 
+define(test_xmlparse2,[[
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string r = rdf->get_n_triples();
+  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
+    r = a + "RESOURCE " + b;
+  return (multiset)(r/"\n") - (<"">);
+]], [[$2]])
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string nt = rdf->get_n_triples();
+  rdf = Web.RDF();
+  rdf->parse_n_triples(nt);
+  string r = rdf->get_n_triples();
+  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
+    r = a + "RESOURCE " + b;
+  return (multiset)(r/"\n") - (<"">);
+]], [[$2]])
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string xml = rdf->get_xml();
+  rdf = Web.RDF();
+  rdf->parse_xml(xml);
+  string r = rdf->get_n_triples();
+  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
+    r = a + "RESOURCE " + b;
+  return (multiset)(r/"\n") - (<"">);
+]], [[$2]])
+]])
+
 test_xmlparse(<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'/>,
 (<>))
 
@@ -319,7 +355,7 @@ test_xmlparse([[
 // RDF/XML Syntax Specification (Revised)
 
 // Example 1
-test_xmlparse([[
+test_xmlparse2([[
 <rdf:RDF
  xmlns:ex='http://www.example.org/terms/'
  xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
@@ -336,12 +372,12 @@ test_xmlparse([[
 </rdf:Description>
 </rdf:RDF>
 ]], [[ (<
-  "_:Resource9 <http://www.example.org/terms/editor> _:Resource11 .",
-  "_:Resource11 <http://www.example.org/terms/homePage> _:Resource13 ."
+  "RESOURCE <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/homePage> RESOURCE ."
 >) ]])
 
 // Example 2
-test_xmlparse([[
+test_xmlparse2([[
 <rdf:RDF
  xmlns:ex='http://www.example.org/terms/'
  xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
@@ -358,42 +394,9 @@ test_xmlparse([[
 </rdf:Description>
 </rdf:RDF>
 ]], [[ (<
-  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> _:Resource11 .",
-  "_:Resource11 <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> ."
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> ."
 >) ]])
-
-define(test_xmlparse2,[[
-test_any_equal([[
-  object rdf = Web.RDF();
-  rdf->parse_xml(#"$1");
-  string r = rdf->get_n_triples();
-  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
-    r = a + "RESOURCE " + b;
-  return (multiset)(r/"\n") - (<"">);
-]], [[$2]])
-test_any_equal([[
-  object rdf = Web.RDF();
-  rdf->parse_xml(#"$1");
-  string nt = rdf->get_n_triples();
-  rdf = Web.RDF();
-  rdf->parse_n_triples(nt);
-  string r = rdf->get_n_triples();
-  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
-    r = a + "RESOURCE " + b;
-  return (multiset)(r/"\n") - (<"">);
-]], [[$2]])
-test_any_equal([[
-  object rdf = Web.RDF();
-  rdf->parse_xml(#"$1");
-  string xml = rdf->get_xml();
-  rdf = Web.RDF();
-  rdf->parse_xml(xml);
-  string r = rdf->get_n_triples();
-  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
-    r = a + "RESOURCE " + b;
-  return (multiset)(r/"\n") - (<"">);
-]], [[$2]])
-]])
 
 // Example 3
 test_xmlparse2([[
@@ -613,6 +616,22 @@ test_xmlparse([[
 ]], [[ (<
   "<http://example.org/thing> <http://purl.org/dc/elements/1.1/title> \"A marvelous thing\" .",
   "<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> ."
+>) ]])
+
+// Example 17
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+  <rdf:Seq rdf:about='http://example.org/favourite-fruit'>
+    <rdf:_1 rdf:resource='http://example.org/banana'/>
+    <rdf:_2 rdf:resource='http://example.org/apple'/>
+    <rdf:_3 rdf:resource='http://example.org/pear'/>
+  </rdf:Seq>
+</rdf:RDF>
+]], [[ (<
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> ."
 >) ]])
 
 test_any_equal([[
