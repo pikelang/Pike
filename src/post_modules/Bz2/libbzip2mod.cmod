@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.2 2003/01/22 15:04:01 nilsson Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.3 2003/01/22 20:26:28 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -16,7 +16,12 @@ RCSID("$Id: libbzip2mod.cmod,v 1.2 2003/01/22 15:04:01 nilsson Exp $");
 #include "libbzip2mod_config.h"
 
 #include <stdio.h>
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
+#endif
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
