@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.757 2003/12/17 22:47:18 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.758 2003/12/19 13:16:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -689,11 +689,11 @@ case "$pike_cv_sys_os" in
    ;;
   FreeBSD*)
       # FreeBSD have other naming convention for gtk-config and sdl-config
-      if test "x${GTK_CONFIG}" == "x"; then
+      if test "x${GTK_CONFIG}" = "x"; then
          GTK_CONFIG=`which ${ac_tool_prefix}gtk12-config`
          export GTK_CONFIG
       fi
-      if test "x${SDL_CONFIG}" == "x"; then
+      if test "x${SDL_CONFIG}" = "x"; then
          SDL_CONFIG=`which ${ac_tool_prefix}sdl11-config`
 	 export SDL_CONFIG
       fi
@@ -3231,9 +3231,9 @@ PIKE_CHECK_CONSTANTS(recursive mutex flag,
 
 # NOTE: The following test is hardcoded to fail when crosscompiling
 # It also clobbers $LIBOBJS.
-#
-# Handle the latest autoconf incompatibility...
+
 ifdef([m4_pattern_allow], [
+  # Handle the latest autoconf incompatibility...
   m4_pattern_allow(LIBOBJS)
 ])
 OLD_LIBOBJS="${LIBOBJS}"
