@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.25 2003/02/18 10:40:00 mast Exp $
+|| $Id: pike_error.h,v 1.26 2003/03/28 18:18:48 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -272,7 +272,12 @@ PMOD_EXPORT extern const char msg_bad_arg[];
 PMOD_EXPORT extern const char msg_too_few_args[];
 #define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC, ARG) \
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, "void", 0,\
-                 msg_too_few_args,FUNC)
+		 msg_too_few_args,FUNC, ARG)
+
+PMOD_EXPORT extern const char msg_wrong_num_args[];
+#define SIMPLE_WRONG_NUM_ARGS_ERROR(FUNC, ARG) \
+   bad_arg_error(FUNC, Pike_sp-args, args, ARG, "void", 0,\
+		 msg_wrong_num_args,FUNC, ARG)
 
 PMOD_EXPORT extern const char msg_out_of_mem[];
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
