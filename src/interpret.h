@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.29 1999/04/12 20:00:37 grubba Exp $
+ * $Id: interpret.h,v 1.30 1999/04/15 19:12:50 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -57,7 +57,7 @@ struct pike_frame
   long x_= ((char *)&x_) + STACK_DIRECTION * (X) - stack_top ;	\
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
-    error("C stack overflow.\n");					\
+    low_error("C stack overflow.\n");					\
   }while(0)
 
 

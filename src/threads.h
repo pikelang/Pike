@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.64 1999/04/07 23:10:12 hubbe Exp $
+ * $Id: threads.h,v 1.65 1999/04/15 19:12:51 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -490,6 +490,21 @@ struct thread_state {
      } \
    } while(0)
 
+#define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
+  struct thread_state *_tmp=thread_state_for_id(th_self());	\
+  HIDE_GLOBAL_VARIABLES();					\
+  THREADS_DISALLOW()
+
+#ifdef PIKE_DEBUG
+#define ASSERT_THREAD_SWAPPED_IN() do { 			\
+  struct thread_state *_tmp=thread_state_for_id(th_self());	\
+  if(_tmp->swapped) fatal("Thread is not swapped in!\n"); \
+  }while(0)
+
+#else
+#define ASSERT_THREAD_SWAPPED_IN()
+#endif
+
 /* Prototypes begin here */
 struct thread_starter;
 void *new_thread_func(void * data);
@@ -550,6 +565,8 @@ void exit_interleave_mutex(IMUTEX_T *im);
 #define THREADS_DISALLOW_UID()
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
+#define ASSERT_THREAD_SWAPPED_IN()
+#define SWAP_IN_THREAD_IF_REQUIRED()
 #define th_init()
 #define low_th_init()
 #define th_cleanup()

@@ -17,8 +17,9 @@
 #include "backend.h"
 #include "operators.h"
 #include "module_support.h"
+#include "threads.h"
 
-RCSID("$Id: error.c,v 1.32 1999/04/02 15:18:05 hubbe Exp $");
+RCSID("$Id: error.c,v 1.33 1999/04/15 19:12:49 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -110,14 +111,25 @@ void push_error(char *description)
 
 struct svalue throw_value = { T_INT };
 int throw_severity;
-
 static const char *in_error;
+
+void low_error(char *buf)
+{
+  push_error(buf);
+  free_svalue(& throw_value);
+  throw_value = *--sp;
+  throw_severity=THROW_ERROR;
+  in_error=0;
+  pike_throw();  /* Hope someone is catching, or we will be out of balls. */
+}
+
 /* FIXME: NOTE: This function uses a static buffer.
  * Check sizes of arguments passed!
  */
 void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   char buf[4096];
+  SWAP_IN_THREAD_IF_REQUIRED();
   if(in_error)
   {
     const char *tmp=in_error;
@@ -146,19 +158,15 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
   if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in error()\n");
   
-  push_error(buf);
-  free_svalue(& throw_value);
-  throw_value = *--sp;
-  throw_severity=THROW_ERROR;
-
-  in_error=0;
-  pike_throw();  /* Hope someone is catching, or we will be out of balls. */
+  low_error(buf);
 }
 
 void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn))
 {
   int i;
+
+  ASSERT_THREAD_SWAPPED_IN();
 
   if(in_error)
   {
@@ -320,8 +328,10 @@ void f_error_backtrace(INT32 args)
 
 #define INIT_ERROR(FEL)\
   va_list foo; \
-  struct object *o=low_clone(PIKE_CONCAT(FEL,_error_program)); \
-  va_start(foo,desc);
+  struct object *o; \
+  va_start(foo,desc); \
+  ASSERT_THREAD_SWAPPED_IN(); \
+  o=low_clone(PIKE_CONCAT(FEL,_error_program));
 
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
