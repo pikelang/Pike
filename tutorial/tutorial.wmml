@@ -29,7 +29,7 @@ Programming, using and understanding
 This book was written with the intention of making anybody with a little
 programming experience able to use Pike. It should also be possible to
 gain a deep understanding of how Pike works and to some extent why it works
-the way does from this book. It will teach you how to write your own
+the way it does from this book. It will teach you how to write your own
 extensions to Pike. I have been trying for years to get someone else to
 write this book, but since it seems impossible without paying a fortune for
 it I will have to do it myself. 
@@ -350,10 +350,10 @@ Also note the comments:
 	    write("hello world\n"); // old style
 </example>
 The <tt>//</tt> begins a comment which continues to the end of the line.
-Comments will be ignore by the computer when it reads the code.
+Comments will be ignored by the computer when it reads the code.
 This allows to inform whoever might read your code (like yourself) of
 what the program does to make it easier to understand.
-Comments are also allowed to look like C-style comments, ie. <tt>/* ... */</tt>, which can extend over several lines. The <tt>//</tt> comment only extends to the end of the line.
+Comments are also allowed to look like C-style comments, i.e. <tt>/* ... */</tt>, which can extend over several lines. The <tt>//</tt> comment only extends to the end of the line.
 <p>
 </section>
 
@@ -403,8 +403,8 @@ interesting programming.
 Another control structure we have already seen is the function.
 A function is simply a block of Pike code that can be executed with different arguments from different places in the program.
 A function is declared like this:
-<example language=pike meta=modifiers,type,name1,name2,statements>
-	modifiers type name(type name1, type name2, ...)
+<example language=pike meta=modifiers,type,varname1,varname2,statements>
+	modifiers type name(type varname1, type varname2, ...)
 	{
 	  statements
 	}
@@ -446,19 +446,20 @@ later chapter devoted only to control structures.
 Throughout this chapter the words <b>true</b> and <b>false</b> have been used
 without any explanation to what they mean. Pike has a fairly simple way of
 looking at this. The number 0 is false and everything else is true.
-(Except when using operator overloading as I will discuss in a later chapter.)
+(Except when using operator overloading as I will explain in a later chapter.)
 <p>
 </section>
 
 <section title="Data Types">
-As you saw in our first examples we have to indicate the type of value returned by a functions or contained in a variable. We used integers (<tt>int</tt>.), strings (<tt>string</tt>), and arrays (with the * notation).
+As you saw in our first examples we have to indicate the type of value returned by a function or contained in a variable. We used integers (<tt>int</tt>), strings (<tt>string</tt>), and arrays (with the * notation).
 The others are <tt>mapping</tt>, <tt>mixed</tt>, <tt>void</tt>, <tt>float</tt>, <tt>multiset</tt>, <tt>function</tt>, <tt>object</tt> and <tt>program</tt>.
 Neither <tt>mixed</tt> nor <tt>void</tt> are really types, <tt>void</tt> signifies that no value should be returned and <tt>mixed</tt> that the return value can be of any type, or that the variable can contain any type of value.
 <tt>Function</tt>, <tt>object</tt> and <tt>program</tt> are all types related to object orientation. We will not discuss the last three in any great detail here,
 
 <dl>
 <dt>Int
-<dd>The integer type stores an integer.
+<dd>The integer type stores a signed integer. It is 32 bit or 64 depending
+on architecture.
 <dt>Float
 <dd>This variable type stores a floating point number.
 <dt>Array
@@ -471,8 +472,8 @@ The values in the array can be set when creating the array like this:
 </example>
 Or, if you have already created an array, you can change the values
 in the array like this:
-<example language=pike>
-	<i>arr</i> [ <i>ind</i> ] = <i>data</i>;
+<example language=pike meta=arr,ind,data>
+	arr [ ind ] = data;
 </example>
 This sets entry number <i>ind</i> in the array <i>arr</i> to <i>data</i>.
 <i>ind</i> must be an integer.
@@ -486,7 +487,7 @@ front of the variable name we want:
 
 We can also declare several array variables on the same line:
 <example language=pike>
-	string i, j;
+	array i, j;
 </example>
 If we want to specify that the variable should hold an array of strings,
 we would write:
@@ -514,9 +515,9 @@ When writing a string in a program, you enclose it in double quotes. To write sp
 <dd>A mapping is basically an array that can be indexed on any type, not just integers. It can also be seen as a way of linking data (usually strings) together. It consists of a lot of index-data pairs which are linked together in such a way that map[index1] returns data1.
 A mapping can be created in a way similar to arrays:
 <example language=pike>
-	map=([five:good, ten:excellent]);
+	mapping(string:string) map=(["five":"good", "ten":"excellent"]);
 </example>
-You can also set that data by writing map[five]=good.
+You can also set that data by writing map["five"]="good".
 If you try to set an index in a mapping that isn't already present in the mapping it will be added as well.
 <dt>Multiset
 <dd>A multiset is basically a mapping without data values. When referring to an index in the multiset a 1 (one) will be returned if the index is present and 0 (zero) otherwise.
@@ -559,7 +560,7 @@ of one record.
 	]);
 </example>
 We want to be able to get a simple list of the records in our database. The function <tt>list_records</tt> just goes through the mapping <tt>records</tt> and puts the indices, i.e. the record names, in an array of strings, record_names. By using the builtin function <tt>sort</tt> we put the record names into the array in alphabetical order which might be a nice touch.
-For the printout we just print a header, "Records:", followed by a newline. Then we use the loop control structure for to traverse the array and print every item in it, including the number of the record, by counting up from zero to the last item of the array. The builtin function <tt>sizeof</tt> gives the number of items in an array. The printout is formatted through the use of <tt>sprintf</tt> which works more or less like the C function of the same name.
+For the printout we just print a header, "Records:", followed by a newline. Then we use the loop control structure <tt>for</tt> to traverse the array and print every item in it, including the number of the record, by counting up from zero to the last item of the array. The builtin function <tt>sizeof</tt> gives the number of items in an array. The printout is formatted through the use of <tt>sprintf</tt> which works more or less like the C function of the same name.
 <example language=pike>
 	void list_records()
 	{
@@ -571,7 +572,7 @@ For the printout we just print a header, "Records:", followed by a newline. Then
 	    write(sprintf("%3d: %s\n", i+1, record_names[i]));
 	}
 </example>
-If the command line contained a number our program will find the record of that number and print its name along with the songs of this record. First we create the same array of record names as in the previous function, then we find the name of the record whose number (num) we gave as an argument to this function. Next we put the songs of this record in the array <tt>songs</tt> and print the record name followed by the songs, each song on a separate line.
+If the command line contained a number our program will find the record of that number and print its name along with the songs of this record. First we create the same array of record names as in the previous function, then we find the name of the record whose number (<tt>num</tt>) we gave as an argument to this function. Next we put the songs of this record in the array <tt>songs</tt> and print the record name followed by the songs, each song on a separate line.
 <example language=pike>
 	void show_record(int num)
 	{
@@ -641,19 +642,19 @@ Note the <tt>+=</tt> operator. It is the same as saying
 The main function now does not care about any command line arguments.
 Instead we use <tt>readline()</tt> to prompt the user for instructions
 and arguments. The available instructions are "add", "list" and "quit".
-What you enter into the variables cmd and args is checked in the
+What you enter into the variables <tt>cmd</tt> and <tt>args</tt> is checked in the
 <tt>switch()</tt> block. If you enter something that is not covered
 in any of the case statements the program just silently ignores it and
 asks for a new command.
-In a <tt>switch()</tt> the argument (in this case cmd) is checked in the case statements. The first case where the expression equals cmd (the argument) then executes the statement after the colon. If no expression is equal, we just fall through without any action.
+In a <tt>switch()</tt> the argument (in this case <tt>cmd</tt>) is checked in the <tt>case</tt> statements. The first case where the expression equals <tt>cmd</tt> then executes the statement after the colon. If no expression is equal, we just fall through without any action.
 
-The only command that takes an argument is "list" which works like the first version of the program.
-If "list" receives an argument that record is shown along with all the songs
+The only command that takes an argument is "list" which works as in the first version of the program.
+If "list" receives an argument, that record is shown along with all the songs
 on it. If there is no argument it shows a list of the records in the database.
 
- When the program returns from either of the listing functions, the break instruction tells the program to jump out of the <tt>switch()</tt> block.
-"Add" of course turns control over to the function described above.
-If the command given is "quit" the <tt>exit(0)</tt> statement stops the execution of the program and returns 0 (zero) to the operating systems, telling it that everything was ok.
+ When the program returns from either of the listing functions, the <tt>break</tt> instruction tells the program to jump out of the <tt>switch()</tt> block.
+"add" of course turns control over to the function described above.
+If the command given is "quit" the <tt>exit(0)</tt> statement stops the execution of the program and returns 0 (zero) to the operating system, telling it that everything was ok.
 <example language=pike>
 	int main(int argc, array(string) argv)
 	{
@@ -694,7 +695,7 @@ Now we will introduce you to programming with objects.
 To open a file for reading or writing we will use one of the programs which is builtin in Pike called <tt>Stdio.File</tt>.
 To Pike, a program is a data type which contains code, functions and variables.
 A program can be <i>cloned</i> which means that Pike creates a data area
- in memory for the program, place a reference to the program in the data area, and initialize it to act on the data file in question. The methods (ie. functions in the object) and variables in the object Stdio.File enables us to perform actions on the associated data file.
+ in memory for the program, places a reference to the program in the data area, and initializes it to act on the data in question. The methods (i.e. functions in the object) and variables in the object Stdio.File enable us to perform actions on the associated data file.
 The methods we need to use are open, read, write and close. See <ref to=io>
 for more details. <!-- Does this link work? -->
 <p>
@@ -817,7 +818,7 @@ Then we find the name of the record of the number <tt>num</tt> and use the built
 </section>
 
 <section title="search()">
-Searching for songs is quite easy too. To count the number of <tt>hits</tt> we declare the variable hits. Note that it's not necessary to initialize variables, that is done automatically when the variable is declared if you do not do it explicitly. To be able to use the builtin function <tt>search()</tt>, which searches for the presence of a given string inside another, we put the search string in lowercase and compare it with the lowercase version of every song. The use of <tt>search()</tt> enables us to search for partial song titles as well.
+Searching for songs is quite easy too. To count the number of hits we declare the variable <tt>hits</tt>. Note that it's not necessary to initialize variables, that is done automatically when the variable is declared if you do not do it explicitly. To be able to use the builtin function <tt>search()</tt>, which searches for the presence of a given string inside another, we put the search string in lowercase and compare it with the lowercase version of every song. The use of <tt>search()</tt> enables us to search for partial song titles as well.
 When a match is found it is immediately written to standard output with the record name followed by the name of the song where the search string was found and a newline.
 If there were no hits at all, the function prints out a message saying just that.
 <example language=pike>
@@ -924,7 +925,7 @@ Please note that there is no semicolon after the parenthesis or after the
 
 This is actually more or less how the interpreter executes the if statement.
 In short, <i>statement1</i> is executed if <i>expression</i> is <b>true</b>
-otherwise <i>statement2</i> is executed. If you are not interested in
+otherwise <i>statement2</i> is executed. If you are interested in
 having something executed if the expression is false you can drop the
 whole else part like this:
 <example language=pike meta=expression,statement1>
@@ -954,7 +955,7 @@ would look like this;
 </example>
 </section>
 
-<section title="Switch">
+<section title="switch">
 
 A more sophisticated condition control structure is the <b>switch
 statement</b>.
@@ -1200,8 +1201,8 @@ is run.
 <li> If you failed to get the program to work properly in the last exercise
      of chapter 2, try it again now.
 <li> Make a program that writes all the numbers from 1 to 1000.
-<li> Modify the program in the previous exercise to NOT write numbers dividable by 3, 7 or 17.
-<li> Make a program that writes all the prime numbers between 1 to 1000.
+<li> Modify the program in the previous exercise to NOT write numbers divisible by 3, 7 or 17.
+<li> Make a program that writes all the prime numbers between 1 and 1000.
 </ul>
 </box>
 </section>
@@ -1215,7 +1216,7 @@ really gone into how they work. In this chapter we will also see which
 operators and functions work with the different types.
 There are two categories of data types in Pike: <b>basic types</b>, and
 <b>pointer types</b>. The difference is that basic types are copied when
-assigned to variable. With pointer types, merely the pointer is copied,
+assigned to a variable. With pointer types, merely the pointer is copied,
 that way you get two variables pointing to the same thing.
 <p>
 
@@ -1243,7 +1244,7 @@ means that each digit is worth 16 times as much as the one after.
 Hexadecimal notation uses the letters a, b, c, d, e and f to represent the
 numbers 10, 11, 12, 13, 14 and 15. The ASCII notation gives the ASCII
 value of the character between the single quotes. In this case the character
-is <tt>N</tt> which just happen to be 78 in ASCII.
+is <tt>N</tt> which just happens to be 78 in ASCII.
 <p>
 Integers are coded in 2-complement and overflows are silently ignored
 by Pike. This means that if your integers are 32-bit and you add 1 to
@@ -1310,10 +1311,10 @@ Also, these functions operates on floats:
 <dd>This computes the square root of <i>x</i>.
 
 <dt><tt>float floor(float <i>x</i>)</tt>
-<dd>This function computes the highest integer value lower or equal to <i>x</i>. Note that the value is returned as a <tt>float</tt>, not an <tt>int</tt>.
+<dd>This function computes the largest integer value less than or equal to <i>x</i>. Note that the value is returned as a <tt>float</tt>, not an <tt>int</tt>.
 
 <dt><tt>float ceil(float <i>x</i>)</tt>, 
-<dd>This function computes the lowest integer value higher or equal to <i>x</i> and returns it as a <tt>float</tt>.
+<dd>This function computes the smallest integer value greater than or equal to <i>x</i> and returns it as a <tt>float</tt>.
 </dl>
 </section>
 
@@ -1376,7 +1377,7 @@ All the comparison operators plus the operators listed here can be used on strin
      character. For instance if you do <tt>"foobargazonk" / "o"</tt> the
      result would be <tt>({"f","","bargaz","nk"})</tt>.
 <dt> Multiplication
-<dd> The reverse of the division operator can be accomplished by multiplying
+<dd> The inverse of the division operator can be accomplished by multiplying
      an array with a string. So if you evaluate
      <tt>({"f","","bargaz","nk"}) * "o"</tt> the result would be
      <tt>"foobargazonk"</tt>.
@@ -1397,8 +1398,8 @@ Also, these functions operates on strings:
 <dd>This function returns a copy of <i>s</i> with the last byte from <i>s</i>
     first, the second last in second place and so on.
 
-<dt><tt>string search(string <i>haystack</i>, string <i>needle</i>)</tt>
-<dd>This function finds the first occurrence of <i>needle</i> in <i>haystack</i>.
+<dt><tt>int search(string <i>haystack</i>, string <i>needle</i>)</tt>
+<dd>This function finds the first occurrence of <i>needle</i> in <i>haystack</i> and returns where it found it.
 
 <dt><tt>string sizeof(string <i>s</i>)</tt>
 <dd>Same as <tt>strlen(<i>s</i>)</tt>, returns the length of the string.
@@ -1417,7 +1418,7 @@ Also, these functions operates on strings:
 </section>
 
 <section title="Pointer types">
-The basic types are, as the name implies, very basic. They are foundation,
+The basic types are, as the name implies, very basic. They are the foundation,
 most of the pointer types are merely interesting ways to store the basic
 types. The pointer types are <tt>array</tt>, <tt>mapping</tt>,
 <tt>multiset</tt>, <tt>program</tt>, <tt>object</tt> and <tt>function</tt>.
@@ -1551,7 +1552,7 @@ For example: <tt>rows( ({"a","b","c"}), ({ 2,1,2,0}) ) </tt> will return
 
 
 <dt><tt>int sizeof(mixed <i>arr</i>)</tt>
-<dd>This function returns the number of elements in the array <i>arr</i>
+<dd>This function returns the number of elements in the array <i>arr</i>.
 
 <dt><tt>array sort(array <i>arr</i>, array ... <i>rest</i>)</tt>
 <dd>This function sorts <i>arr</i> in smaller-to-larger order. Numbers, floats
@@ -1561,7 +1562,7 @@ For example: <tt>rows( ({"a","b","c"}), ({ 2,1,2,0}) ) </tt> will return
 
 <dt><tt>array uniq(array <i>a</i>)</tt>
 <dd>This function returns a copy of the array <i>a</i> with all duplicate
-    elements removed. Note that that this function can return the elements
+    elements removed. Note that this function can return the elements
     in any order.
 </dl>
 </section>
@@ -1602,16 +1603,16 @@ fourteenth key-index pair, since there is no way of telling which one is
 the fourteenth. Because of this, you cannot use the range operator on
 mappings.
 <p>
-The following operators and functions are important to use mappings:
+The following operators and functions are important:
 <dl>
 <dt> indexing ( <tt><i>m</i> [ <i>ind</i> ]</tt> )
 <dd> As discussed above, indexing is used to retrieve, store and add values
      to the mapping.
 <dt> addition, subtraction, union, intersection and xor
 <dd> All these operators works exactly as on arrays, with the difference that
-     they operate on the indexes. In those cases when the value can come from
+     they operate on the indices. In those cases when the value can come from
      either mapping, it will be taken from the right side of the operator.
-     This is to make it easier to add new values to a mapping with <tt>+=</tt>.
+     This makes it easier to add new values to a mapping with <tt>+=</tt>.
      Some examples:<br>
      <tt>([1:3, 3:1]) + ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5, 3:7 ])</tt><br>
      <tt>([1:3, 3:1]) - ([2:5, 3:7])</tt> returns <tt>([1:3])</tt><br>
@@ -1622,11 +1623,11 @@ The following operators and functions are important to use mappings:
 <dt> same ( <tt><i>a</i> == <i>b</i></tt> )
 <dd> Returns 1 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 0 otherwise.
 
-<dt> not same <tt><i>a</i> != <i>b</i></tt> )
+<dt> not same ( <tt><i>a</i> != <i>b</i></tt> )
 <dd> Returns 0 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 1 otherwise.
 
 <dt><tt>array indices(mapping <i>m</i>)</tt>
-<dd><tt>Indices</tt> returns an array containing all the indexes in the mapping <i>m</i>.
+<dd><tt>Indices</tt> returns an array containing all the indices in the mapping <i>m</i>.
 
 <dt><tt>void m_delete(mapping <i>m</i>, mixed <i>ind</i>)</tt>
 <dd>This function removes the index-value pair with the index <i>ind</i> from the mapping <i>m</i>.
@@ -1679,9 +1680,9 @@ Writing a constant multiset is similar to writing an array:
 <pre>
 	(&lt; &gt;)      // Empty multiset
 	(&lt; 17 &gt;)  // Multiset with one index: 17
-	(&lt; "", 1, 3.0, 1 &gt;) // Multiset with 3 indexes
+	(&lt; "", 1, 3.0, 1 &gt;) // Multiset with 3 indices
 </pre>
-Note that you can actually have two of the same index in a multiset. This is
+Note that you can actually have more than one of the same index in a multiset. This is
 normally not used, but can be practical at times.
 </section>
 
@@ -1717,7 +1718,7 @@ You can also use the <b>cast</b> operator like this:
 This will also load the program <tt>hello_world.pike</tt>, the only difference
 is that it will cache the result so that next time you do <tt>(program)"hello_world"</tt> you will receive the _same_ program. If you call
 <tt>compile_file("hello_world.pike")</tt> repeatedly you will get a new program
-for each time.
+ each time.
 <p>
 There is also a way to write programs inside programs with the help of the
 <tt>class</tt> keyword:
@@ -1943,7 +1944,7 @@ syntax is the same as for a normal function, except you write
 	lambda ( types ) { statements }
 </example>
 The major difference is that this is an expression that can be used inside
-other function. Example:
+an other function. Example:
 <example language=pike>
 	function bar() { return lambda() { return 1; }; )
 </example>
@@ -1979,7 +1980,7 @@ This is what you can do with a function pointer.
 </section>
 
 <section title="Sharing data">
-As mention in the beginning of this chapter, the assignment operator
+As mentioned in the beginning of this chapter, the assignment operator
 (<tt>=</tt>) does not copy anything when you use it on a pointer type.
 Instead it just creates another reference to the memory object.
 In most situations this does not present a problem, and it speeds up
@@ -2047,14 +2048,14 @@ Here is a list of what is possible:
 <dd> This means that the variable can contain any type, or the
 	function return any value
 <dt> <tt>array( <i>type</i> )</tt>
-<dd> This means an array of <i>type</i>.
+<dd> This means an array of elements with the type <i>type</i>.
 <dt> <tt><i>type</i> *</tt>
-<dd> This also means an array of <i>type</i>.
+<dd> This also means an array of elements with the type <i>type</i>.
 <dt> <tt>mapping( <i>key type</i> : <i>value type</i> )</tt>
 <dd> This is a mapping where the keys are of type <i>key type</i> and the
       values of <i>value type</i>.
 <dt> <tt>multiset ( <i>type</i> )</tt>
-<dd> This means a multiset containing values of type <i>type</i>.
+<dd> This means a multiset containing values of the type <i>type</i>.
 <dt> <tt>object ( <i>program</i> )</tt>
 <dd> This means an object cloned from the specified program. The
      <i>program</i> can be a class, a constant, or a string. If the program
@@ -2166,7 +2167,7 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><tt><i>multiset</i>&nbsp;+&nbsp;<i>multiset</i></tt></td><td>multiset</td><td>A multiset with all the indices from both muiltisets is returned.</td>
+<td><tt><i>multiset</i>&nbsp;+&nbsp;<i>multiset</i></tt></td><td>multiset</td><td>A multiset with all the indices from both multisets is returned.</td>
 </tr>
 
 <tr>
@@ -2184,11 +2185,11 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><tt><i>array</i>&nbsp;-&nbsp;<i>array</i></tt></td><td>array</td><td>A copy of the right array with all elements present in the right array removed. Example: <tt>({2,1,4,5,3,6,7}) - ({3,5,1})</tt> will return <tt>({2,4,6,7})</tt>.</td>
+<td><tt><i>array</i>&nbsp;-&nbsp;<i>array</i></tt></td><td>array</td><td>A copy of the left array with all elements present in the right array removed. Example: <tt>({2,1,4,5,3,6,7}) - ({3,5,1})</tt> will return <tt>({2,4,6,7})</tt>.</td>
 </tr>
 
 <tr>
-<td><tt><i>mapping</i>&nbsp;-&nbsp;<i>mapping</i></tt></td><td>mapping</td><td>A new mapping with all index-value pairs from the left mapping, except those indexes that are also present in the right mapping.</td>
+<td><tt><i>mapping</i>&nbsp;-&nbsp;<i>mapping</i></tt></td><td>mapping</td><td>A new mapping with all index-value pairs from the left mapping, except those indices that are also present in the right mapping.</td>
 </tr>
 
 <tr>
@@ -2269,7 +2270,7 @@ For this purpose there are six comparison operators:
 </center>
 
 The <tt>==</tt> and <tt>!=</tt> operators can be used on any type. For two
-values to be <b>same</b> they must be the same type. Therefor 1 and 1.0 are
+values to be <b>same</b> they must be the same type. Therefore 1 and 1.0 are
 not <b>same</b>. Also, for two values of <b>pointer types</b> to be the same
 the two values must be pointers to the same object. It is not enough that
 the two objects are of the same size and contain the same data.
@@ -2277,8 +2278,8 @@ the two objects are of the same size and contain the same data.
 The other operators in the table above can only be used with integers, floats
 and strings. If you compare an integer with a float, the int will be promoted
 to a float before the comparison. When comparing strings, lexical order is
-used and the value of the environment variables <tt>LC_CTYPE</tt> and
-<tt>LC_LANG</tt> is respected.
+used and the values of the environment variables <tt>LC_CTYPE</tt> and
+<tt>LC_LANG</tt> are respected.
 </section>
 
 <section title="Logical operators">
@@ -2324,7 +2325,7 @@ pretty obvious.
 The other three, intersection, union and symmetric difference, can be used with
 integers, arrays, multisets and mappings. When used with integers, these
 operators considers each bit in the integer a separate element. If you do
-not know about how bits in integers I suggest you go look it up in some other
+not know about how bits in integers work I suggest you go look it up in some other
 programming book or just don't use these operators on integers.
 <p>
 When intersection, union or symmetric difference is used on an array each element
@@ -2333,9 +2334,9 @@ in an array with all elements that are present in both arrays. Example:
 <tt>({7,6,4,3,2,1}) &amp; ({1, 23, 5, 4, 7})</tt> will return
 <tt>({7,4,1})</tt>. The order of the elements in the returned array will
 always be taken from the left array. Elements in multisets are treated
-the same as elements in arrays. When doing a set operator on a mapping
+the same as elements in arrays. When doing a set operation on a mapping
 however, only the indices are considered. The values are just copied with
-the indexes. If a particular index is present in both the right and left
+the indices. If a particular index is present in both the right and left
 argument to a set operator, the one from the right side will be used.
 Example: <tt>([1:2]) | ([1:3])</tt> will return <tt>([1:3])</tt>.
 </section>
@@ -2389,6 +2390,21 @@ can only be indexed on certain things as shown in this list:
 
 <tr>
 <td><tt>
+  <i>mapping</i>[<i>mixed</i>]<br>
+  <i>mapping</i>-&gt;<i>identifier</i>
+     </tt></td><td>Returns the value associated with the index, 0 if it is not found.</td>
+</tr>
+
+
+<tr>
+<td><tt>
+  <i>mapping</i>[<i>mixed</i>]=<i>mixed</i><br>
+  <i>mapping</i>-&gt;<i>identifier</i>=<i>mixed</i>
+     </tt></td><td>Associate the second mixed value with the first mixed value.</td>
+</tr>
+
+<tr>
+<td><tt>
   <i>multiset</i>[<i>mixed</i>]<br>
   <i>multiset</i>-&gt;<i>identifier</i>
      </tt></td><td>Returns 1 if the index (the value between the brackets) is present in the multiset, 0 otherwise.</td>
@@ -2402,21 +2418,6 @@ can only be indexed on certain things as shown in this list:
      </tt></td><td>If the mixed value is <b>true</b> the index is added to the multiset. Otherwise the index is removed from the multiset.</td>
 </tr>
 
-
-<tr>
-<td><tt>
-  <i>mapping</i>[<i>mixed</i>]<br>
-  <i>mapping</i>-&gt;<i>identifier</i>
-     </tt></td><td>Returns the value associated with the index, 0 if it is not found.</td>
-</tr>
-
-
-<tr>
-<td><tt>
-  <i>mapping</i>[<i>mixed</i>]=<i>mixed</i><br>
-  <i>mapping</i>-&gt;<i>identifier</i>=<i>mixed</i>
-     </tt></td><td>Associate the second mixed value with the first mixed value.</td>
-</tr>
 
 <tr>
 <td><tt>
@@ -2442,6 +2443,8 @@ can only be indexed on certain things as shown in this list:
 </tr>
 </table>
 
+</center>
+
 <p>
 When indexing an <tt>array</tt> or <tt>string</tt> it is sometimes convenient
 to access index from the end instead of from the beginning. This function
@@ -2452,7 +2455,7 @@ arguments to a suitable range. This means that
 <tt><i>a</i>[<i>b</i>..<i>c</i>]</tt> will be treated as follows:
 
 <ul>
-<li> If <i>b</i> i less than zero, the range will begin at the start
+<li> If <i>b</i> is less than zero, the range will begin at the start
      of the array as if <i>b</i> had been zero.
 <li> If <i>b</i> is greater or equal to sizeof(<i>a</i>) an empty array/string
      will be returned.
@@ -2512,8 +2515,8 @@ Here is a list of all the combinations:
 </table>
 </center>
 <p>
-In all of the above expression <i>variable</i> can also be an index in an 
-array, mapping or multiset.
+In all of the above expressions <i>variable</i> can also be an element from 
+an array, mapping or multiset. Example: <tt>foo["bar"]+=10;</tt>
 </section>
 
 <section title="The rest of the operators">
@@ -2527,10 +2530,10 @@ not fit in any particular categories.
 <tr><th>Function</th>		<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
 <tr><td>Calling</td>	<td>a ( arguments ) </td><td>`()</td>	<td>Calls the function a.</td></tr>
 <tr><td>splice</td>	<td>@ <i>a</i></td><td>none</td>	<td>Sends each element in the array a as an individual argument to a function call.</td></tr>
-<tr><td>Increment</td>	<td>++ a</td>		<td>none</td>	<td>Increments a and returns the new value for a.</td></tr>
-<tr><td>Decrement</td>	<td>-- a</td>		<td>none</td>	<td>Decrements a and returns the new value for a.</td></tr>
-<tr><td>Post increment</td><td>a ++</td>	<td>none</td>	<td>Increments a and returns the old value for a.</td></tr>
-<tr><td>Post decrement</td><td>a --</td>	<td>none</td>	<td>Decrements a and returns the old value for a.</td></tr>
+<tr><td>Increment</td>	<td>++ a</td>		<td>none</td>	<td>Increments a and returns the new value of a.</td></tr>
+<tr><td>Decrement</td>	<td>-- a</td>		<td>none</td>	<td>Decrements a and returns the new value of a.</td></tr>
+<tr><td>Post increment</td><td>a ++</td>	<td>none</td>	<td>Increments a and returns the old value of a.</td></tr>
+<tr><td>Post decrement</td><td>a --</td>	<td>none</td>	<td>Decrements a and returns the old value of a.</td></tr>
 <tr><td>casting</td>	<td>(<i>type</i>) a</td><td>none</td>	<td>Tries to convert a into a value of the specified type.</td></tr>
 <tr><td>Null</td>	<td>a, b</td>		<td>none</td>	<td>Evaluates a and b, then returns b.</td></tr>
 </table>
@@ -2602,8 +2605,8 @@ or to make defines that can be used in expressions.
 When evaluating an expression, you can always use parenthesis to tell
 the compiler in which order to evaluate things. Normally, the compiler
 will evaluate things from left to right, but it will evaluate operators
-with higher priority before those will lower. The following table shows
-how the relative priority of all the operators in descending order:
+with higher priority before those with lower. The following table shows
+the relative priority of all the operators in descending order:
 <p>
 <center>
 <table border=1 halign=center>
@@ -2636,7 +2639,7 @@ Examples:
 <tr><td><tt> 1+2*2 </tt></td><td><tt> 1+(2*2) </tt></td></tr>
 <tr><td><tt> 1+2*2*4 </tt></td><td><tt> 1+((2*2)*4) </tt></td></tr>
 <tr><td><tt> (1+2)*2*4 </tt></td><td><tt> ((1+2)*2)*4 </tt></td></tr>
-<tr><td><tt> 1+4,c=2|3+5 </tt></td><td><tt> (1+4),(c=(2|3)+5) </tt></td></tr>
+<tr><td><tt> 1+4,c=2|3+5 </tt></td><td><tt> (1+4),(c=((2|3)+5)) </tt></td></tr>
 <tr><td><tt> 1+5 &amp; 4 == 3 </tt></td><td><tt> (1+(5 &amp; 4)) == 3 </tt></td></tr>
 <tr><td><tt> c=1,99 </tt></td><td><tt> (c=1),99 </tt></td></tr>
 <tr><td><tt> !a++ + ~--a()</tt></td><td><tt> (!(a++)) + (~((--a)())) </tt></td></tr>
@@ -2667,19 +2670,19 @@ look at some examples:
 </chapter>
 
 <chapter title="Object orientation">
-As mention several times, Pike is object oriented. This does not mean that
+As mentioned several times, Pike is object oriented. This does not mean that
 it is identical to C++ in any way. Pike uses a less strict approach to
 object orientation which creates a more relaxed programming style. If you
 have never come in contact with object oriented programming before, be
 warned that the ideas expressed in Pike and in this chapter are my own and
 do not necessarily reflect what other people think about object
-orientated programming.
+oriented programming.
 
 <section title="Terminology">
 As mentioned before, Pike uses a different terminology than C++ does.
 This has historic reasons, but might be changed in the future. In
 the meantime, you might benefit from this mini-dictionary which translates
-C++-ish to Pike-ish:
+C++-ish between Pike-ish:
 <dl>
 <dt> a <i>class</i> <dd> a class
 <dt> a <i>clone</i> <dd> an instance of a class
@@ -2690,7 +2693,7 @@ C++-ish to Pike-ish:
 </section>
 
 <section title="The approach">
-Think of the data type program as an executable file. Then we clone this
+Think of the data type <tt>program</tt> as an executable file. Then we clone this
 program and create an object. The object is then a running program. The
 object has its own data and its own functions, however, it can work
 together with other programs by calling functions in those objects.
@@ -2720,7 +2723,7 @@ In my experience, the advantages of object oriented programming are:
     pieces, these pieces are usually easier to write than the whole.
 
 <dt>Local data scope
-<dd>This is a very nifty with object oriented programs. If your program
+<dd>This is a very nifty thing with object oriented programs. If your program
     uses several files, windows, stacks, TCP connections or whatever, you
     simply write a <tt>program</tt> that handles one such file, window,
     stack or TCP connection. If correctly written, you can then just create
@@ -2738,7 +2741,7 @@ Most of these things can be done without object orientation, but it is
 object orientation that makes them easy.
 </section>
 
-<section title="Pike and Object Orientation">
+<section title="Pike and object orientation">
 In most object oriented languages there is a way to write functions outside
 of all classes. Some readers might think this is what we have been doing
 until now. However, in Pike, all functions have to reside within a program.
@@ -2791,7 +2794,7 @@ thing:
 	class foo {};
 	constant foo = class {};
 </example>
-Because classes defined as constants, it is possible to use a class defined
+Because classes are defined as constants, it is possible to use a class defined
 inside classes you define later, like this:
 <example language=pike>
 	class foo
@@ -2846,8 +2849,8 @@ and let each inherit the previous part. It would look something like this:
 <image xfig=inherit><br>
 </center>
 Note that the actual code is not copied, only the list of references.
-Also note that the list of inherits is copied when you inherit a program
-this does not mean you can access those copied inherit with the <tt>::</tt>
+Also note that the list of inherits is copied when you inherit a program.
+This does not mean you can access those copied inherits with the <tt>::</tt>
 operator, it is merely an implementation detail. Although this example does
 not show an example of a re-defined function, it should be easy to see how
 that works by just changing what an identifier is pointing at.
@@ -2856,7 +2859,7 @@ that works by just changing what an identifier is pointing at.
 
 <section title="Multiple inherit">
 You can inherit any number of programs in one program, you can even inherit the
-same thing more than once. If you do this you will a separate set of functions
+same thing more than once. If you do this you will get a separate set of functions
 and variables for each inherit. To access a specific function you need to name
 your inherits. Here is an example of named inherits:
 <example language=pike>
@@ -2870,9 +2873,9 @@ your inherits. Here is an example of named inherits:
 	{
 	  File::read(); // Read data from the first inherit
 	  FILE::read(); // Read data from the second inherit
-	  hello_world::main(0,({})); // Call main in third inherit
-	  test1::read(); // Read data from fourth inherit
-	  test2::main(0,({})); // Call main in fourth inherit
+	  hello_world::main(0,({})); // Call main in the third inherit
+	  test1::read(); // Read data from the fourth inherit
+	  test2::main(0,({})); // Call main in the fifth inherit
 	  ::read();  // Read data from all inherits
 	}
 </example>
@@ -2909,7 +2912,7 @@ It reads all the files given on the command line and writes them to
 stdout. As an example, I have inherited Stdio.File twice to show you
 that both files are usable from my program.
 </section>
-<section title="Pike Inherit compared to other languages">
+<section title="Pike inherit compared to other languages">
 Many other languages assign special meaning to inherit. Most common is the
 notion that if you inherit a class, it means that your class should obey
 the same rules as the inherited class. In Pike, this is not necessarily so.
@@ -2953,7 +2956,7 @@ from the index and arrow operators, making the inherit available only to the
 code in this program.
 </section>
 
-<section title="Operator Overloading">
+<section title="Operator overloading">
 Sometimes you want an object to act as if it was a string, an integer or some
 other data type. It is especially interesting to be able to use the normal
 operators on objects to allow short and readable syntax. In Pike, special
@@ -3203,7 +3206,7 @@ here is a list of the basic Pike modules:
 <dt>Stdio
 <dd>This module contains file I/O routines.
 <dt>Array
-<dd>This function contains functions that operate on arrays.
+<dd>This module contains functions that operate on arrays.
 <dt>Gdbm *
 <dd>This module contains support for Gdbm databases.
 <dt>Getopt
@@ -3233,7 +3236,7 @@ here is a list of the basic Pike modules:
 <dt>Sql *
 <dd>Generic SQL database support.
 <dt>System
-<dd>Support for system specific functions
+<dd>Support for system specific functions.
 <dt>Thread *
 <dd>Thread support functions.
 <dt>Yp *
@@ -3250,7 +3253,7 @@ one symbol. For instance, the module <tt>Stdio</tt> contains the objects
 <tt>stdin</tt>, <tt>stdout</tt> and <tt>stderr</tt>. To access these objects
 you can write <tt>Stdio.stdin</tt>, <tt>Stdio.stdout</tt> or
 <tt>Stdio.stderr</tt> anywhere in your program where an object of that type
-is acceptable. If you use <tt>Stdio</tt> a lot you can use put
+is acceptable. If you use <tt>Stdio</tt> a lot you can put
 <tt>import Stdio;</tt> in the beginning of your program. This will import
 all the identifiers from the module Stdio into your program, making it
 possible to write just <tt>stdin</tt> instead of <tt>Stdio.stdin</tt>.
@@ -3307,7 +3310,7 @@ Here is an example of a simple module:
 	constant PI = 3.14159265358979323846264338327950288419716939937510;
 	float cos2(float f) { return pow(cos(f),2.0); }
 </example>
-if we save this short file as <tt>Trig.pike.pmod</tt> we can now use this
+if we save this short file as <tt>Trig.pmod.pike</tt> we can now use this
 module like this:
 <example language=pike>
 	int main()
@@ -3588,7 +3591,7 @@ this function does not set the file nonblocking.
 void set_blocking();<br>
 </man_syntax>
 <man_description>
-This function sets a stream to blocking mode. ie. all reads and writes
+This function sets a stream to blocking mode. i.e. all reads and writes
 will wait until data has been written before returning.
 </man_description>
 <man_see>Stdio.File-&gt;set_nonblocking</man_see>
@@ -5132,10 +5135,10 @@ array map(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
 <man_description>
 First syntax:<br>
 Map array returns an array holding the items of arr mapped through
-the function fun. ie. arr[x]=fun(arr[x], @args) for all x.
+the function fun. i.e. arr[x]=fun(arr[x], @args) for all x.
 <p>Second syntax:<br>
 Map array calls function fun in all objects in the array arr.
-ie. arr[x]=arr[x]-&gt;fun(@ args);
+i.e. arr[x]=arr[x]-&gt;fun(@ args);
 <p>Third syntax:<br>
 Map array calls the functions in the array arr:
 arr[x]=arr[x]-&gt;fun(@ args);
@@ -8672,7 +8675,7 @@ multiset aggregate_multiset(mixed ... <I>elems</I>);<br>
 (&lt; elem1, elem2, ... &gt;);
 </man_syntax>
 <man_description>
-Construct a multiset with the arguments as indexes. This function
+Construct a multiset with the arguments as indices. This function
 could be written in Pike as:
 <p>multiset aggregate(mixed ... elems) { return mkmultiset(elems); }
 <p>The only problem is that mkmultiset is implemented using
@@ -8987,7 +8990,7 @@ This function is exactly equivalent to:
 map_array(data, lambda(mixed x,mixed y) { return x[y]; }, index)
 </example>
 Except of course it is a lot shorter and faster.
-That is, it indexes every index in the array data on the value of
+That is, it indices every index in the array data on the value of
 the argument index and returns an array with the results.
 </man_description>
 <man_example>
@@ -10201,7 +10204,7 @@ array rows(mixed data, mixed *index);
 This function is exactly equivalent to:
 <p>map_array(index,lambda(mixed x,mixed y) { return y[x]; },data)
 <p>Except of course it is a lot shorter and faster.
-That is, it indexes data on every index in the array index and
+That is, it indices data on every index in the array index and
 returns an array with the results.
 </man_description>
 <man_see>
@@ -10364,7 +10367,7 @@ asin, cos
 int sizeof(string|multiset|mapping|array|object <I>a</I>);
 </man_syntax>
 <man_description>
-This function returns the number of indexes available in the argument
+This function returns the number of indices available in the argument
 given to it. It replaces older functions like strlen, m_sizeof and
 size.
 </man_description>
@@ -10397,7 +10400,7 @@ This function sorts the array 'index' destructively. That means
 that the array itself is changed and returned, no copy is created.
 If extra arguments are given, they are supposed to be arrays of the
 same size. Each of these arrays will be modified in the same way as
-'index'. Ie. if index 3 is moved to position 0 in 'index' index 3
+'index'. I.e. if index 3 is moved to position 0 in 'index' index 3
 will be moved to position 0 in all the other arrays as well.
 <p>Sort can sort strings, integers and floats in ascending order.
 Arrays will be sorted first on the first element of each array.
