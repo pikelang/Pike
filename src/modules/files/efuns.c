@@ -101,17 +101,24 @@ void f_file_stat(INT32 args)
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
 #ifdef HAVE_SYS_STATVFS_H
+/* Kludge for broken SCO headerfiles */
+#ifdef _SVID3
 #include <sys/statvfs.h>
+#else
+#define _SVID3
+#include <sys/statvfs.h>
+#undef _SVID3
+#endif /* _SVID3 */
 #endif /* HAVE_SYS_STATVFS_H */
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
 #endif /* HAVE_SYS_VFS_H */
 #ifdef HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
-#endif
+#endif /* HAVE_SYS_STATFS_H */
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
+#endif /* HAVE_SYS_PARAM_H */
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif /* HAVE_SYS_MOUNT_H */
@@ -122,14 +129,15 @@ void f_filesystem_stat(INT32 args)
 {
 #ifdef HAVE_STATVFS
   struct statvfs st;
-#else
+#else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
   struct statfs st;
-#else
+#else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
   struct stat statbuf;
   struct ustat st;
-#else
+#else /* !HAVE_USTAT */
+  /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
@@ -146,19 +154,20 @@ void f_filesystem_stat(INT32 args)
   THREADS_ALLOW();
 #ifdef HAVE_STATVFS
   i = statvfs(s, &st);
-#else
+#else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_SYSV_STATFS
   i = statfs(s, &st, sizeof(st), 0);
 #else
   i = statfs(s, &st);
 #endif /* HAVE_SYSV_STATFS */
-#else
+#else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
   if (!(i = stat(s, &statbuf))) {
     i = ustat(statbuf.st_rdev, &st);
   }
 #else
+  /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
@@ -189,7 +198,7 @@ void f_filesystem_stat(INT32 args)
     push_text("fsname");
     push_text(st.f_fstr);
     f_aggregate_mapping(9*2);
-#else
+#else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
     push_text("blocksize");
     push_int(st.f_bsize);
@@ -212,7 +221,7 @@ void f_filesystem_stat(INT32 args)
 #else
     f_aggregate_mapping(6*2);
 #endif /* HAVE_STATFS_F_BAVAIL */
-#else
+#else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
     push_text("bfree");
     push_int(st.f_tfree);
@@ -222,6 +231,7 @@ void f_filesystem_stat(INT32 args)
     push_text(st.f_fname);
     f_aggregate_mapping(3*2);
 #else
+    /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
