@@ -3,7 +3,9 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.2 2001/01/11 22:17:42 js Exp $
+// $Id: URI.pike,v 1.3 2001/01/12 23:52:23 grubba Exp $
+
+#pragma strict_types
 
 //! Scheme component of URI
 string scheme;
@@ -28,7 +30,7 @@ string host, user, password;
 int port;
 
 //! The base URI object, if present
-object|int(0..0) base_uri; 
+object(this_program) base_uri; 
 
 string raw_uri;
 
@@ -51,14 +53,14 @@ static void parse_authority()
 	      ({ user, password }));
   }
   if(scheme)
-    port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
+    port = [int]Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
   sscanf(authority, "%[^:]%*[:]%d", host, port);
   debug_n("parse_authority(): host=%O, port=%O", ({ host, port }));
 }
 
 
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
-static void inherit_properties(object uri)
+static void inherit_properties(object(this_program) uri)
 { 
   authority = uri->authority;
   scheme = uri->scheme;
@@ -159,17 +161,17 @@ string combine_uri_path(string base, string rel)
 //! outlined by RFC 2396, Uniform Resource Identifiers (URI): Generic Syntax.
 //! @param base_uri
 //!   Set the new base URI to this.  
-void reparse_uri(object|string|void _base_uri)
+void reparse_uri(object(this_program)|string|void base_uri)
 {
   string uri = raw_uri;
   
-  if(stringp(_base_uri))
+  if(stringp(base_uri))
   {
-    debug("cloning base URI %O", _base_uri);
-    base_uri = object_program(this_object())(_base_uri); // create a new URI object
+    debug("cloning base URI %O", base_uri);
+    local::base_uri = object_program(this_object())(base_uri); // create a new URI object
   }
   else
-    base_uri = _base_uri;
+    local::base_uri = [object(this_program)]base_uri;
 
   // RFC 2396, §5.2:
   // 1) The URI reference is parsed into the potential four components and
@@ -185,14 +187,14 @@ void reparse_uri(object|string|void _base_uri)
   if(!raw_uri || raw_uri == "")
   { 
     debug("Path is empty -- Inherit entire base URI as per RFC 2396, §5.2 step 2. Done!", 0);
-    inherit_properties(base_uri);
+    inherit_properties(local::base_uri);
     return;
   }
 
   if(raw_uri[0] == '#')
   { 
     debug("Fragment only. Using entire base URI, except fragment.", 0);
-    inherit_properties(base_uri);
+    inherit_properties(local::base_uri);
     fragment=raw_uri[1..];
     return;
   }
@@ -205,7 +207,7 @@ void reparse_uri(object|string|void _base_uri)
   if(sscanf(uri, "%[A-Za-z0-9+.-]:%s", scheme, uri) < 2)
   {
     scheme = 0;
-    if(!base_uri)
+    if(!local::base_uri)
 	error("Standards.URI: got a relative URI (no scheme) lacking a base_uri!\n");
   }
   debug("Found scheme %O", scheme);
@@ -225,6 +227,8 @@ void reparse_uri(object|string|void _base_uri)
   path = uri;						
   debug("Found path %O", path);
 
+  if(authority)
+    parse_authority();
 
   // 3) If the scheme component is defined, indicating that the reference
   //    starts with a scheme name, then the reference is interpreted as an
@@ -235,11 +239,8 @@ void reparse_uri(object|string|void _base_uri)
     debug("Scheme found! RFC 2396, §5.2, step 3 says we're absolute. Done!", 0);
     return;		
   }
-  scheme = base_uri->scheme;			
+  scheme = local::base_uri->scheme;			
   debug("Inherited scheme %O from base URI", scheme);
-
-  if(authority)
-    parse_authority();
 
   
   // 4) If the authority component is defined, then the reference is a
@@ -249,7 +250,7 @@ void reparse_uri(object|string|void _base_uri)
   //	use an authority component.
   if(!authority || !sizeof(authority))			
   {
-    authority = base_uri->authority;
+    authority = local::base_uri->authority;
     debug("Inherited authority %O from base URI", authority);
     parse_authority();
 
@@ -264,8 +265,9 @@ void reparse_uri(object|string|void _base_uri)
       //    describe a simple method using a separate string buffer.
 
       debug_n("Combining base path %O with path %O => %O",
-	      ({ base_uri->path, path, combine_uri_path(base_uri->path, path) }));
-      path = combine_uri_path(base_uri->path, path); 
+	      ({ local::base_uri->path, path,
+		 combine_uri_path(local::base_uri->path, path) }));
+      path = combine_uri_path(local::base_uri->path, path); 
       
     }
   }
@@ -290,18 +292,19 @@ void reparse_uri(object|string|void _base_uri)
 //!   When uri is another URI object, the created
 //!   URI will inherit all properties of the supplied uri
 //!   except, of course, for its base_uri.
-void create(object|string uri, object|string|void _base_uri)
+void create(object(this_program)|string uri,
+	    object(this_program)|string|void base_uri)
 {
-  debug_n("Create(%O, %O) called!", ({ uri, _base_uri }));
+  debug_n("Create(%O, %O) called!", ({ uri, base_uri }));
   if(stringp(uri))
-    raw_uri = uri; // Keep for future runs of reparse_uri after a base_uri change
+    raw_uri = [string]uri; // Keep for future runs of reparse_uri after a base_uri change
   else // if(objectp(uri)) (implied)
   {
     raw_uri = uri->raw_uri;
-    inherit_properties(uri);
+    inherit_properties([object(this_program)]uri);
   }
   
-  reparse_uri(_base_uri);
+  reparse_uri(base_uri);
 }
 
 
@@ -329,12 +332,12 @@ mixed `[]=(string property, mixed value)
 	return value;
 
     case "authority":
-      authority = value;
+      authority = [string]value;
       parse_authority(); // Set user, password, host and port accordingly
       return value;
 
     case "base_uri":
-      reparse_uri(value);
+      reparse_uri([object(this_program)|string]value);
       return base_uri;
 
     default:
