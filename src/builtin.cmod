@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.80 2002/04/06 21:04:46 grubba Exp $
+ * $Id: builtin.cmod,v 1.81 2002/04/07 11:15:39 nilsson Exp $
  */
 
 #include "global.h"
@@ -116,6 +116,7 @@ PIKEFUN string basetype(mixed x)
 
 
 /*! @decl string int2char(int x)
+ *! @appears String.int2char
  *!
  *! Same as sprintf("%c",x);
  *!
@@ -164,6 +165,7 @@ PIKEFUN string int2char(int|object x)
 }
 
 /*! @decl string int2hex(int x)
+ *! @appears String.int2hex
  *!
  *! Same as sprintf("%x",x);
  *!

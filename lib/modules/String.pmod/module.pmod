@@ -13,6 +13,8 @@ constant Iterator = __builtin.string_iterator;
 constant SplitIterator = __builtin.string_split_iterator;
 constant Replace = __builtin.multi_string_replace;
 constant SingleReplace = __builtin.single_string_replace;
+constant int2char = int2char;
+constant int2hex = int2hex;
 
 //! This function implodes a list of words to a readable string, e.g.
 //! ({"straw","berry","pie"}) becomes "straw, berry and pie".
