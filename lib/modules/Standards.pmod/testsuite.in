@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.6 2003/03/19 20:34:02 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.7 2003/04/10 23:13:17 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -67,6 +67,151 @@ test_any([[
 ]], 2)
 test_do( add_constant("my_rdf"); )
 
+define(test_lassila,[[test_any([[
+  object rdf = Standards.RDF();
+  rdf->parse_xml(#"$1");
+  return rdf->get_n_triples();
+]], [[ "<http://www.w3.org/Home/Lassila> "
+       "<http://description.org/schema/Creator> \"Ora Lassila\" .\n" ]]) ]])
+test_lassila([[
+<?xml version='1.0'?>
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+ <rdf:Description about='http://www.w3.org/Home/Lassila'>
+   <s:Creator>Ora Lassila</s:Creator>
+ </rdf:Description>
+</rdf:RDF>
+]])
+test_lassila([[
+<?xml version='1.0'?>
+<RDF
+ xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+ <Description about='http://www.w3.org/Home/Lassila'>
+   <s:Creator>Ora Lassila</s:Creator>
+ </Description>
+</RDF>
+]])
+test_lassila([[
+<?xml version='1.0'?>
+<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+ <Description about='http://www.w3.org/Home/Lassila'>
+   <s:Creator xmlns:s='http://description.org/schema/'>Ora Lassila</s:Creator>
+ </Description>
+</RDF>
+]])
+test_lassila([[
+<?xml version='1.0'?>
+<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+ <Description about='http://www.w3.org/Home/Lassila'>
+   <Creator xmlns='http://description.org/schema/'>Ora Lassila</Creator>
+ </Description>
+</RDF>
+]])
+test_lassila([[
+<RDF
+ xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+ <Description about='http://www.w3.org/Home/Lassila'
+              s:Creator='Ora Lassila' />
+</RDF>
+]])
+define(test_xmlparse,[[test_any_equal([[
+  object rdf = Standards.RDF();
+  rdf->parse_xml(#"$1");
+  return (multiset)(rdf->get_n_triples()/"\n");
+]], [[$2]]) ]])
+test_xmlparse(<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'/>,
+(<"">))
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+  <rdf:Description about=\"http://www.w3.org\">
+    <s:Publisher>World Wide Web Consortium</s:Publisher>
+    <s:Title>W3C Home Page</s:Title>
+    <s:Date>1998-10-03T02:27</s:Date>
+  </rdf:Description>
+</rdf:RDF>
+]],[[ (<
+  "",
+  "<http://www.w3.org> <http://description.org/schema/Date> \"1998-10-03T02:27\" .",
+  "<http://www.w3.org> <http://description.org/schema/Title> \"W3C Home Page\" .",
+  "<http://www.w3.org> <http://description.org/schema/Publisher> \"World Wide Web Consortium\" ."
+>) ]])
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+  <rdf:Description about=\"http://www.w3.org\"
+       s:Publisher='World Wide Web Consortium'
+       s:Title='W3C Home Page'
+       s:Date='1998-10-03T02:27'/>
+</rdf:RDF>
+]],[[ (<
+  "",
+  "<http://www.w3.org> <http://description.org/schema/Date> \"1998-10-03T02:27\" .",
+  "<http://www.w3.org> <http://description.org/schema/Title> \"W3C Home Page\" .",
+  "<http://www.w3.org> <http://description.org/schema/Publisher> \"World Wide Web Consortium\" ."
+>) ]])
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'
+ xmlns:v='http://v.com/'>
+  <rdf:Description about='http://www.w3.org/Home/Lassila'>
+    <s:Creator rdf:resource='http://www.w3.org/staffId/85740'/>
+  </rdf:Description>
+
+  <rdf:Description about='http://www.w3.org/staffId/85740'>
+    <v:Name>Ora Lassila</v:Name>
+    <v:Email>lassila@w3.org</v:Email>
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
+  "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'
+ xmlns:v='http://v.com/'>
+  <rdf:Description about='http://www.w3.org/Home/Lassila'>
+    <s:Creator>
+      <rdf:Description about='http://www.w3.org/staffId/85740'>
+        <v:Name>Ora Lassila</v:Name>
+        <v:Email>lassila@w3.org</v:Email>
+      </rdf:Description>
+    </s:Creator>
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
+  "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'
+ xmlns:v='http://v.com/'>
+  <rdf:Description about='http://www.w3.org/Home/Lassila'>
+    <s:Creator rdf:resource='http://www.w3.org/staffId/85740'
+       v:Name='Ora Lassila'
+       v:Email='lassila@w3.org' />
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
+  "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
 
 // - Standards.URI
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
