@@ -1,6 +1,5 @@
 This document describes the keywords recognized by the AutoDoc parser, and their
-intended use. JHS is working on a more elaborate manual and style guide, which
-will most likely appear in pike/autodoc/tags.txt when this file is discarded.
+intended use.
 
 ================================================================================
 
@@ -261,7 +260,7 @@ ________________________________________________________________________________
 
 Keyword:      @array - @endarray
 Description:  Documentation of the layout of an array.
-Arguments:    <name>
+Arguments:    [name]
 Children:     @elem
 Groups with:  -
 Examples:     @array
@@ -358,7 +357,7 @@ ________________________________________________________________________________
 
 Keyword:      @int - @endint
 Description:  Documentation of the different values an integer may have.
-Arguments:    <name>
+Arguments:    [name]
 Children:     @value
 Examples:     @int
                 @value 0
@@ -389,7 +388,7 @@ ________________________________________________________________________________
 
 Keyword:      @mapping - @endmapping
 Description:  Documentation of the layout of a mapping.
-Arguments:    <name>
+Arguments:    [name]
 Children:     @member
 Examples:     @mapping
                 @member int "ip"
@@ -424,7 +423,7 @@ ________________________________________________________________________________
 
 Keyword:      @multiset - @endmultiset
 Description:  Documentation of the layout of a multiset.
-Arguments:    <name>
+Arguments:    [name]
 Children:     @index
 Examples:     @multiset
                 @index "cat"
@@ -512,7 +511,7 @@ ________________________________________________________________________________
 
 Keyword:      @string - @endstring
 Description:  Documentation of the layout of a mapping.
-Arguments:    <name>
+Arguments:    [name]
 Children:     @value
 Examples:     @string
                 @value "GMT"
