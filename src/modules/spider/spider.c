@@ -1,3 +1,4 @@
+#include "global.h"
 #include "config.h"
 
 
@@ -28,7 +29,6 @@
 
 #include "fdlib.h"
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "machine.h"
 #include "object.h"
@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.67 1998/04/20 18:54:00 grubba Exp $");
+RCSID("$Id: spider.c,v 1.68 1998/06/12 19:36:51 noring Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
