@@ -1,11 +1,15 @@
+Pike-v0.3.tar.gz
 Pike_v0.1.tar.gz
 Pike_v0.2.tar.gz
+Pike_v0.3.tar.gz
 alpha
 alpha-gcc
 alpha-no-debug
 alpha_cc
 build
+mud
 mudlib
+obsolete
 reports
 smap
 smap.tar.gz
@@ -13,5 +17,3 @@ solaris
 test
 test1
 testcache
-obsolete
-mud
