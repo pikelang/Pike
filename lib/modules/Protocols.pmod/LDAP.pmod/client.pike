@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.59 2004/09/14 10:40:07 mast Exp $
+// $Id: client.pike,v 1.60 2005/01/26 14:41:20 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.59 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.60 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -753,8 +753,12 @@ import SSL.Constants;
       res += pre;
       if (sscanf (val, "%2x%s", int chr, val) == 2)
 	res += sprintf ("%c", chr);
-      else {
+      else if (val != "" && (<'*', '(', ')'>)[val[0]]) {
 	res += val[..0];
+	val = val[1..];
+      }
+      else {
+	res += "\\" + val[..0];
 	val = val[1..];
       }
     }
