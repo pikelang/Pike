@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.54 2001/02/22 19:30:32 hubbe Exp $
+ * $Id: oracle.c,v 1.55 2001/04/04 17:30:48 leif Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.54 2001/02/22 19:30:32 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.55 2001/04/04 17:30:48 leif Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -1096,8 +1096,11 @@ static void push_inout_value(struct inout *inout,
 #ifdef AUTO_BIGNUM
 	unsigned char buffer[80];
 	ub4 buf_size=sizeof(buffer)-1;
-#define N8 "99999999"
-#define FMT "FM" N8 N8 N8 N8  N8 N8 N8 N8
+#define FMT "FM99999999999999999999999999999999999999"
+/* There should be no more than 38 '9':s in the FMT string. Oracle only
+ * allows 38 digits of precision, and can cause an "ORA-22061: invalid
+ * format text" if the format string requests more digits than this.
+ */
 
 	ret=OCINumberToText(dbcon->error_handle,
 			    &inout->u.num,
