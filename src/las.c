@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.178 2001/06/07 21:51:59 hubbe Exp $");
+RCSID("$Id: las.c,v 1.179 2003/03/21 12:24:13 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1949,6 +1949,8 @@ static void find_written_vars(node *n,
   case F_APPLY:
     if(n->tree_info & OPT_SIDE_EFFECT)
       MEMSET(p->globals, VAR_USED, MAX_GLOBAL);
+    find_written_vars(CAR(n), p, 0);
+    find_written_vars(CDR(n), p, 0);
     break;
 
   case F_INDEX:
