@@ -1,14 +1,14 @@
 #! /bin/sh
-# prerm script for pike7.5
+# prerm script for pike7.7
 #
 # see: dh_installdeb(1)
 # 
-# $Id: prerm,v 1.6 2003/01/27 23:43:23 grendel Exp $
+# $Id: prerm,v 1.7 2004/04/30 17:17:27 grendel Exp $
 #
 
 set -e
 
-PIKE=7.5
+PIKE=7.7
 PIKEBIN=pike${PIKE}
 
 # summary of how this script can be called:

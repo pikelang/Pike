@@ -1,0 +1,10 @@
+Document: pike7.7-manual
+Title: Pike 7.7 Manual
+Author: The Pike Authors
+Abstract: This manual describes the Pike 7.7 language and contains
+ a short tutorial on the language.
+Section: Apps/Programming
+
+Format: HTML
+Index: /usr/share/doc/pike7.7-doc/html/manual/index.html
+Files: /usr/share/doc/pike7.7-doc/html/manual/*.html
