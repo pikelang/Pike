@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.60 2000/06/29 20:25:57 grubba Exp $
+ * $Id: acconfig.h,v 1.61 2000/08/20 17:14:15 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -228,6 +228,9 @@
 
 /* define if declaration of getenv is missing */
 #undef GETENV_DECL_MISSING
+
+/* define if you are using crypt.c. */
+#undef USE_CRYPT_C
 
 /* Define if we can declare 'extern char **environ' */
 #undef DECLARE_ENVIRON
