@@ -221,7 +221,6 @@ mixed resolv(string identifier, string current_file)
   mixed ret;
   string *tmp,path;
   multiset tested=(<>);
-  mapping tested=([]);
   mixed *modules=({});
 
   tmp=current_file/"/";
