@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.7 2002/09/09 20:38:37 manual Exp $
+ * $Id: ffmpeg.c,v 1.8 2002/09/10 12:31:06 hop Exp $
  *
  */
 
@@ -402,6 +402,48 @@ static void f_list_codecs(INT32 args) {
 }
 
 /*! @endclass
+ */
+
+/*! @decl constant CODEC_ID_NONE
+ *! @decl constant CODEC_ID_AC3
+ *! @decl constant CODEC_ID_ADPCM_IMA_QT
+ *! @decl constant CODEC_ID_ADPCM_IMA_WAV
+ *! @decl constant CODEC_ID_ADPCM_MS
+ *! @decl constant CODEC_ID_H263
+ *! @decl constant CODEC_ID_H263I
+ *! @decl constant CODEC_ID_H263P
+ *! @decl constant CODEC_ID_MJPEG
+ *! @decl constant CODEC_ID_MPEG1VIDEO
+ *! @decl constant CODEC_ID_MPEG4
+ *! @decl constant CODEC_ID_MP2
+ *! @decl constant CODEC_ID_MP3LAME
+ *! @decl constant CODEC_ID_MSMPEG4V1
+ *! @decl constant CODEC_ID_MSMPEG4V2
+ *! @decl constant CODEC_ID_MSMPEG4V3
+ *! @decl constant CODEC_ID_PCM_ALAW
+ *! @decl constant CODEC_ID_PCM_MULAW
+ *! @decl constant CODEC_ID_PCM_S16BE
+ *! @decl constant CODEC_ID_PCM_S16LE
+ *! @decl constant CODEC_ID_PCM_S8
+ *! @decl constant CODEC_ID_PCM_U16BE
+ *! @decl constant CODEC_ID_PCM_U16LE
+ *! @decl constant CODEC_ID_PCM_U8
+ *! @decl constant CODEC_ID_RAWVIDEO
+ *! @decl constant CODEC_ID_RV10
+ *! @decl constant CODEC_ID_SVQ1
+ *! @decl constant CODEC_ID_VORBIS
+ *! @decl constant CODEC_ID_WMV1
+ *! @decl constant CODEC_ID_WMV2
+ *!
+ *!  Various audio and video codecs.
+ *!
+ *! @note
+ *!   The list of supported codecs depends on Ffmpeg library.
+ *!
+ *! @decl constant CODEC_TYPE_AUDIO
+ *! @decl constant CODEC_TYPE_VIDEO
+ *!
+ *!  Type of codec.
  */
 
 /*! @endmodule
