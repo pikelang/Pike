@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! Support for parsing PEM-style messages.
 
@@ -7,7 +8,7 @@
 
 // Regexp used to decide if an encapsulated message includes headers
 // (conforming to rfc 934).
-static object rfc822_start_re = Regexp(
+static Regexp.SimpleRegexp rfc822_start_re = Regexp(
   "^([-a-zA-Z][a-zA-Z0-9]*[ \t]*:|[ \t]*\n\n)");
 
 
@@ -16,7 +17,7 @@ static object rfc822_start_re = Regexp(
 // middle between ---foo  --- is at least two characters long. Also
 // allow a trailing \r or other white space characters.
 
-static object rfc934_eb_re = Regexp(
+static Regexp.SimpleRegexp rfc934_eb_re = Regexp(
   "^-*[ \r\t]*([^- \r\t]"	// First non dash-or-space character
   ".*[^- \r\t])"		// Last non dash-or-space character
   "[ \r\t]*-*[ \r\t]*$");	// Trailing space, dashes and space
@@ -27,59 +28,38 @@ static object rfc934_eb_re = Regexp(
 // A string of at least two charecters, possibly surrounded by whitespace
 #define RE "[ \t]*([^ \t].*[^ \t])[ \t]*"
 
-static object begin_pem_re = Regexp("^BEGIN" RE "$");
-static object end_pem_re = Regexp("^END" RE "$");
-
-static array(string) dash_split(string data)
-{
-  // Find suspected encapsulation boundaries
-  array parts = data / "\n-";
-    
-  // Put the newlines back
-  for (int i; i < sizeof(parts) - 1; i++)
-    parts[i]+= "\n";
-  return parts;
-}
-
-static string dash_stuff(string msg)
-{
-  array parts = dash_split(msg);
-    
-  if (sizeof(parts[0]) && (parts[0][0] == '-'))
-    parts[0] = "- " + parts[0];
-  return parts * "- -";
-}
+static Regexp.SimpleRegexp begin_pem_re = Regexp("^BEGIN" RE "$");
+static Regexp.SimpleRegexp end_pem_re = Regexp("^END" RE "$");
 
 // Strip dashes
 static string extract_boundary(string s)
 {
-  array a = rfc934_eb_re->split(s);
+  array(string) a = rfc934_eb_re->split(s);
   return a && a[0];
 }
 
 // ------------
 
 
-class encapsulated_message {
+class EncapsulatedMsg {
 
   string boundary;
   string body;
   mapping(string:string) headers;
 
-  this_program init(string eb, string contents)
+  void create(string eb, string contents)
   {
     boundary = eb;
 
     if (rfc822_start_re->match(contents))
       {
 	array a = MIME.parse_headers(contents);
-	headers = a[0];
-	body = a[1];
+	headers = [mapping(string:string)]a[0];
+	body = [string]a[1];
       } else {
 	headers = 0;
 	body = contents;
       }
-    return this;
   }
   
   string decoded_body()
@@ -95,7 +75,7 @@ class encapsulated_message {
   string canonical_body()
   {
     // Replace singular LF with CRLF
-    array lines = body / "\n";
+    array(string) lines = body / "\n";
 
     // Make all lines terminated with \r (but the last, which is
     // either empty or a "line" that was not terminated).
@@ -118,16 +98,36 @@ class encapsulated_message {
   }
 }
 
-class rfc934 {
+class RFC934 {
 
   string initial_text;
   string final_text;
   string final_boundary;
-  array(object) encapsulated;
+  array(EncapsulatedMsg) encapsulated;
   
-  this_program init(string data)
+  static array(string) dash_split(string data)
   {
-    array parts = dash_split(data);
+    // Find suspected encapsulation boundaries
+    array(string) parts = data / "\n-";
+    
+    // Put the newlines back
+    for (int i; i < sizeof(parts) - 1; i++)
+      parts[i]+= "\n";
+    return parts;
+  }
+
+  static string dash_stuff(string msg)
+  {
+    array(string) parts = dash_split(msg);
+    
+    if (sizeof(parts[0]) && (parts[0][0] == '-'))
+      parts[0] = "- " + parts[0];
+    return parts * "- -";
+  }
+
+  void create(string data)
+  {
+    array(string) parts = dash_split(data);
 
     int i = 0;
     string current = "";
@@ -167,7 +167,7 @@ class rfc934 {
 	  werror("boundary='%s'\ncurrent='%s'\n", boundary, current);
 #endif
 	  encapsulated
-	    += ({ encapsulated_message()->init(boundary, current) });
+	    += ({ EncapsulatedMsg(boundary, current) });
 	}
 	
 	current = "";
@@ -191,21 +191,19 @@ class rfc934 {
       }
     final_text = current;
     final_boundary = boundary;
-    
-    return this;
   }
 
   string get_final_boundary()
   {
     return extract_boundary(final_boundary);
   }
-    
+
   string to_string()
   {
     string s = dash_stuff(initial_text);
     if (sizeof(encapsulated))
       {
-	foreach(encapsulated, object m)
+	foreach(encapsulated, EncapsulatedMsg m)
 	  s += m->boundary + dash_stuff(m->to_string());
 	s += final_boundary + dash_stuff(final_text);
       }
@@ -216,18 +214,18 @@ class rfc934 {
 // Disassembles PGP and PEM style messages with parts
 // separated by "-----BEGIN FOO-----" and "-----END FOO-----".
 
-class pem_msg
+class Msg
 {
   string initial_text;
   string final_text;
-  mapping(string:object) parts;
+  mapping(string:EncapsulatedMsg) parts;
 
-  this_program init(string s)
-    {
+  void create(string s)
+   {
 #ifdef PEM_DEBUG
-      werror("pem_msg->init: '%s'\n", s);
+      werror("Msg->create(%O)\n", s);
 #endif
-      object msg = rfc934()->init(s);
+      RFC934 msg = RFC934(s);
       parts = ([ ]);
 
       initial_text = msg->initial_text;
@@ -265,8 +263,7 @@ class pem_msg
 	
 	parts[name] = msg->encapsulated[i];
       }
-      return this;
-    }
+   }
 }
 
 // Doesn't use general rfc934 headers and boundaries
@@ -276,4 +273,25 @@ string simple_build_pem(string tag, string data)
 		 "%s\n"
 		 "-----END %s-----\n",
 		 tag, MIME.encode_base64(data), tag);
+}
+
+
+// Compat
+
+class pem_msg {
+  inherit Msg;
+  void create() { }
+  this_program init(string s) { ::create(s); return this; }
+}
+
+class rfc934 {
+  inherit RFC934;
+  void create() { }
+  this_program init(string s) { ::create(s); return this; }
+}
+
+class encapsulated_message {
+  inherit EncapsulatedMsg;
+  void create() { }
+  this_program init(string s, string t) { ::create(s,t); return this; }
 }
