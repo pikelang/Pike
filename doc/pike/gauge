@@ -11,5 +11,8 @@ DESCRIPTION
 	given as arguments. The number of milliseconds used is returned
 	as an integer.
 
+KEYWORDS
+	control
+
 SEE ALSO
 	catch, builtin/rusage
