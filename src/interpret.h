@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.144 2003/11/25 22:13:58 mast Exp $
+|| $Id: interpret.h,v 1.145 2003/12/05 13:35:10 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -455,19 +455,22 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   {									\
     really_free_pike_frame(_fp_);					\
   }else{								\
+    ptrdiff_t num_expendible = _fp_->expendible - _fp_->locals;		\
     DO_IF_DEBUG(							\
       if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
-	  (Pike_sp < _fp_->expendible))					\
+	  (Pike_sp < _fp_->expendible) ||				\
+	  (num_expendible < 0) || (num_expendible > _fp_->num_locals))	\
 	Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",	\
 		   _fp_->locals, _fp_->num_locals,			\
 		   _fp_->locals+_fp_->num_locals,			\
 		   Pike_sp,_fp_->expendible));				\
     debug_malloc_touch(_fp_);						\
-    if(_fp_->num_locals)						\
+    if(num_expendible)							\
     {									\
       struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-					       _fp_->num_locals);	\
-      assign_svalues_no_free(s, _fp_->locals, _fp_->num_locals,		\
+					       num_expendible);		\
+      _fp_->num_locals = num_expendible;				\
+      assign_svalues_no_free(s, _fp_->locals, num_expendible,		\
 			     BIT_MIXED);				\
       _fp_->locals=s;							\
       _fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;				\
