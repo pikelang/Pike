@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.24 2003/08/12 16:47:52 nilsson Exp $
+|| $Id: pike_regexp.c,v 1.25 2003/12/06 15:09:08 nilsson Exp $
 */
 
 /*
@@ -314,8 +314,6 @@ regexp *pike_regcomp(char *exp,int excompat)
 
     /* Allocate space. */
     r = (regexp *) xalloc(sizeof(regexp) + (unsigned) regsize);
-    if (r == (regexp *) NULL)
-	FAIL("out of space");
 
     /* Second pass: emit code. */
     regparse = exp2;
