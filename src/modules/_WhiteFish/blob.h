@@ -1,16 +1,16 @@
 typedef struct _Blob
 {
-  int word;
   struct svalue *feed;
+
+  int word;
   int docid;
-  char *blob;
-  int len;
-  int pos;
   int eof;
-  struct pike_string *str;
+  
+  struct buffer *b;
 } Blob;
 
 typedef enum {
+  HIT_NOTHING,
   HIT_BODY,
   HIT_FIELD,
   HIT_ANCHOR

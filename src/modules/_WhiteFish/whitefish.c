@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.6 2001/05/22 14:03:31 per Exp $");
+RCSID("$Id: whitefish.c,v 1.7 2001/05/23 10:58:00 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -27,7 +27,7 @@ struct  tofree
   struct object *res;
 };
 
-void free_stuff( void *_t )
+static void free_stuff( void *_t )
 {
   struct tofree *t= (struct tofree *)_t;
   int i;
