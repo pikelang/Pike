@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.112 1998/08/05 22:45:02 hubbe Exp $
+# $Id: Makefile.in,v 1.113 1998/08/07 15:48:02 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -132,6 +132,18 @@ OBJ= \
 
 all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) pike
+
+compiler-warnings : clean
+	@echo Summarizing compiler warnings.
+	@echo
+	@if $(MAKE) $(MAKE_FLAGS) all 2>compiler-warnings ; then \
+	  echo; \
+	  echo 'Compilation warning summary:'; \
+	else \
+	  echo; \
+	  echo 'Compilation warning and error summary:'; \
+	fi
+	@cat compiler-warnings
 
 pike: $(OBJ) modules/linker_options
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
@@ -292,6 +304,7 @@ clean: tidy
 	-rm -f TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike
+	-rm -f compiler-warnings
 	find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 #	-rm -f lib/master.pike
 
