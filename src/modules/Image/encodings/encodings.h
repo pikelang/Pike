@@ -2,25 +2,53 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encodings.h,v 1.7 2003/12/01 19:37:52 nilsson Exp $
+|| $Id: encodings.h,v 1.8 2004/03/20 15:36:49 grubba Exp $
 */
 
 #ifndef IMAGE_ENCODINGS_ENCODINGS_H
 #define IMAGE_ENCODINGS_ENCODINGS_H
 
-void image_pcx_decode(INT32 args);
-void image_pvr_f__decode(INT32 args);
-void image_pvr_f_decode_header(INT32 args);
-void image_tim_f__decode(INT32 args);
-void image_tim_f_decode_header(INT32 args);
-void image_xwd__decode(INT32 args);
-void image_xwd_decode_header(INT32 args);
-void img_bmp__decode(INT32 args);
-void img_bmp_decode_header(INT32 args);
-void img_ilbm_decode(INT32 args);
-void img_pnm_decode(INT32 args);
-void img_ras_decode(INT32 args);
-void img_ras__decode(INT32 args);
-void img_neo_f_decode(INT32 args);
+#define IMAGE_PROTOTYPE(FORMAT)			\
+  void PIKE_CONCAT(init_image_, FORMAT)(void);	\
+  void PIKE_CONCAT(exit_image_, FORMAT)(void)
+#define IMAGE_DECODE_PROTOTYPE(FORMAT, DECODE_PREFIX)			\
+  IMAGE_PROTOTYPE(FORMAT);						\
+  void PIKE_CONCAT4(image_, FORMAT, DECODE_PREFIX, _decode)(INT32 args)
+#define IMAGE_DECODE_HEADER_PROTOTYPE(FORMAT, DECODE_PREFIX)		\
+  IMAGE_DECODE_PROTOTYPE(FORMAT, DECODE_PREFIX);			\
+  void PIKE_CONCAT4(image_, FORMAT, DECODE_PREFIX, decode_header)(INT32 args)
+#define IMG_DECODE_PROTOTYPE(FORMAT, DECODE_PREFIX)			\
+  IMAGE_PROTOTYPE(FORMAT);						\
+  void PIKE_CONCAT4(img_, FORMAT, DECODE_PREFIX, _decode)(INT32 args)
+#define IMG_DECODE_HEADER_PROTOTYPE(FORMAT, DECODE_PREFIX)		\
+  IMG_DECODE_PROTOTYPE(FORMAT, DECODE_PREFIX);				\
+  void PIKE_CONCAT4(img_, FORMAT, DECODE_PREFIX, decode_header)(INT32 args)
+
+#ifndef EMPTY_SYMBOL
+#define EMPTY_SYMBOL
+#endif
+
+IMAGE_PROTOTYPE(any);
+IMAGE_PROTOTYPE(avs);
+IMG_DECODE_HEADER_PROTOTYPE(bmp, _);
+IMAGE_PROTOTYPE(dsi);
+IMAGE_PROTOTYPE(hrz);
+IMG_DECODE_PROTOTYPE(ilbm, EMPTY_SYMBOL);
+IMG_DECODE_PROTOTYPE(neo, _f);
+IMAGE_DECODE_PROTOTYPE(pcx, EMPTY_SYMBOL);
+IMAGE_PROTOTYPE(png);
+IMG_DECODE_PROTOTYPE(pnm, EMPTY_SYMBOL);
+IMAGE_PROTOTYPE(psd);
+IMAGE_DECODE_HEADER_PROTOTYPE(pvr, _f_);
+IMG_DECODE_PROTOTYPE(ras, EMPTY_SYMBOL);
+IMG_DECODE_PROTOTYPE(ras, _);
+IMAGE_PROTOTYPE(tga);
+IMAGE_DECODE_HEADER_PROTOTYPE(tim, _f_);
+IMAGE_PROTOTYPE(wbf);
+IMAGE_PROTOTYPE(x);
+IMAGE_PROTOTYPE(xbm);
+IMAGE_PROTOTYPE(xcf);
+IMAGE_DECODE_HEADER_PROTOTYPE(xwd, _);
+IMAGE_PROTOTYPE(_xpm);
 
 #endif /* !IMAGE_ENCODINGS_ENCODINGS_H */
