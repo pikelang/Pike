@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.14 2001/09/06 20:11:00 nilsson Exp $
+ * $Id: mysql.pike,v 1.15 2002/01/02 06:20:58 per-bash Exp $
  *
  * Glue for the Mysql-module
  */
@@ -12,6 +12,19 @@
 #if constant(Mysql.mysql)
 
 inherit Mysql.mysql;
+
+#if constant( Mysql.mysql.MYSQL_NO_ADD_DROP_DB )
+// Documented in the C-file.
+void create_db( string db )
+{
+  ::big_query( "CREATE DATABASE "+db );
+}
+
+void drop_db( string db )
+{
+  ::big_query( "DROP DATABASE "+db );
+}
+#endif
 
 //! Quote a string so that it can safely be put in a query.
 //!

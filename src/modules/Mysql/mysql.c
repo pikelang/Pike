@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.51 2001/12/07 22:35:05 nilsson Exp $
+ * $Id: mysql.c,v 1.52 2002/01/02 06:20:37 per-bash Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.51 2001/12/07 22:35:05 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.52 2002/01/02 06:20:37 per-bash Exp $");
 
 /*! @module Mysql
  *!
@@ -683,7 +683,6 @@ static void f_big_query(INT32 args)
     res->result = result;
   }
 }
-
 /*! @decl void create_db(string database)
  *!
  *! Create a new database
@@ -694,6 +693,7 @@ static void f_big_query(INT32 args)
  *! @seealso
  *!   @[select_db()], @[drop_db()]
  */
+#ifdef USE_OLD_FUNCTIONS
 static void f_create_db(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
@@ -721,7 +721,6 @@ static void f_create_db(INT32 args)
     MYSQL_ALLOW();
 
     tmp = mysql_create_db(socket, database);
-
     MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
@@ -804,6 +803,7 @@ static void f_drop_db(INT32 args)
 
   pop_n_elems(args);
 }
+#endif
 
 /*! @decl void shutdown()
  *!
@@ -1462,10 +1462,14 @@ void pike_module_init(void)
   ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
   /* function(string:int|object) */
   ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tOr(tInt,tObj)), ID_PUBLIC);
+#ifdef USE_OLD_FUNCTIONS
   /* function(string:void) */
   ADD_FUNCTION("create_db", f_create_db,tFunc(tStr,tVoid), ID_PUBLIC);
   /* function(string:void) */
   ADD_FUNCTION("drop_db", f_drop_db,tFunc(tStr,tVoid), ID_PUBLIC);
+#else
+  add_integer_constant( "MYSQL_NO_ADD_DROP_DB", 1, 0 );
+#endif
   /* function(void:void) */
   ADD_FUNCTION("shutdown", f_shutdown,tFunc(tVoid,tVoid), ID_PUBLIC);
   /* function(void:void) */
