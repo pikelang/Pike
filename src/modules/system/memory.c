@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.12 2001/12/06 10:35:49 per-bash Exp $
+ * $Id: memory.c,v 1.13 2002/01/11 23:06:42 per-bash Exp $
  */
 
 /*! @module system
@@ -16,7 +16,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.12 2001/12/06 10:35:49 per-bash Exp $");
+RCSID("$Id: memory.c,v 1.13 2002/01/11 23:06:42 per-bash Exp $");
 
 #include "system_machine.h"
 
@@ -523,10 +523,13 @@ static void memory_cast(INT32 args)
  *! @decl string pread32(int(0..) pos,int(0..) len)
  *! @decl string pread16i(int(0..) pos,int(0..) len)
  *! @decl string pread32i(int(0..) pos,int(0..) len)
+ *! @decl string pread16n(int(0..) pos,int(0..) len)
+ *! @decl string pread32n(int(0..) pos,int(0..) len)
  *!
- *!	Read a string from the memory. The 16 and 32 variants
- *!	reads widestrings, 16 or 32 bits (2 or 4 bytes) wide,
- *!	the i variants in intel byteorder, the normal in network byteorder.
+ *!	Read a string from the memory. The 16 and 32 variants reads
+ *!	widestrings, 16 or 32 bits (2 or 4 bytes) wide, the i variants
+ *!	in intel byteorder, the normal in network byteorder, and the n
+ *!	variants in native byteorder.
  *!
  *!	@[len] is the number of characters, wide or not. @[pos]
  *!	is the byte position (!).
@@ -646,6 +649,9 @@ MEMORY_PREADN(memory_pread16i,"Memory.pread16i",2,make_reverse_order_string1)
 MEMORY_PREADN(memory_pread32i,"Memory.pread32i",4,make_reverse_order_string2)
 #endif
 
+MEMORY_PREADN(memory_pread16n,"Memory.pread16n",2,make_shared_binary_string1)
+MEMORY_PREADN(memory_pread32n,"Memory.pread32n",4,make_shared_binary_string2)
+
 /*! @decl int pwrite(int(0..) pos,string data)
  *! @decl int pwrite16(int(0..) pos,string data)
  *! @decl int pwrite32(int(0..) pos,string data)
@@ -745,6 +751,8 @@ PWRITEN(memory_pwrite32,"pwrite32",2,0)
 PWRITEN(memory_pwrite16i,"pwrite16i",1,1)
 PWRITEN(memory_pwrite32i,"pwrite32i",2,1)
 #endif
+PWRITEN(memory_pwrite16n,"pwrite16n",1,0)
+PWRITEN(memory_pwrite32n,"pwrite32n",2,0)
 
 /*! @decl int `[](int pos)
  *! @decl string `[](int pos1,int pos2)
@@ -921,12 +929,16 @@ void init_system_memory(void)
    ADD_FUNCTION("pread32",memory_pread32,tFunc(tInt tInt,tStr),0);
    ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr),0);
    ADD_FUNCTION("pread32i",memory_pread32i,tFunc(tInt tInt,tStr),0);
+   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tInt),0);
 
    ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite32",memory_pwrite32,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite16i",memory_pwrite16i,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite32i",memory_pwrite32i,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite32n",memory_pwrite32n,tFunc(tInt tStr,tInt),0);
 
    set_init_callback(init_memory);
    set_exit_callback(exit_memory);
