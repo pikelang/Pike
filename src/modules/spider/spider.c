@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.51 1998/01/25 08:28:24 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.52 1998/02/10 14:50:23 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -701,7 +701,7 @@ void do_html_parse(struct pike_string *ss,
 	  push_string(ss2);
 	  (*strings)++;
 
-	  free_svalue(&sval1);
+	  free_svalue(&sval1);	/* FIXME: Double free? */
 	  continue;
 	}
 	pop_stack();
