@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.38 1999/09/21 21:16:26 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.39 1999/09/22 19:01:27 grubba Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -1265,6 +1265,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->codec=codec;
   data->pickyness=0;
 
+  if (tmp->size_shift) return 0;
   if(data->len < 5) return 0;
   if(GETC() != 182 ||
      GETC() != 'k' ||
@@ -1389,7 +1390,8 @@ void f_decode_value(INT32 args)
   struct pike_string *s;
   struct object *codec;
 
-  check_all_args("decode_value",args, BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, 0);
+  check_all_args("decode_value", args,
+		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, 0);
 
   s = sp[-args].u.string;
   if(args<2)
