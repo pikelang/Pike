@@ -21,6 +21,7 @@ STRING(id);
 STRING(color_data);
 STRING(resource_data);
 STRING(channels);
+STRING(name);
 STRING(data);
 STRING(image_data);
 STRING(layers);

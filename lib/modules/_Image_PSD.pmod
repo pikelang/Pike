@@ -4,7 +4,7 @@ inherit Image._PSD;
 
 class Layer
 {
-  string mode;
+  string mode, name;
   int opacity;
   object image;
   object alpha;
@@ -16,43 +16,12 @@ class Layer
   int mask_flags;
   int mask_xoffset, mask_yoffset;
   int mask_width, mask_height;
-
-
-  Layer copy()
-  {
-    Layer l = Layer();
-    l->mode = mode;
-    l->opacity = opacity;
-    l->image = image;
-    l->alpha = alpha;
-    l->flags = flags;
-    l->xoffset = xoffset;
-    l->yoffset = yoffset;
-    l->width = width;
-    l->height = height;
-    return l;
-  }
-
-
-  Layer get_opaqued( int opaque_value )
-  {
-    Layer res = copy();
-    if(opaque_value != 255)
-    {
-      if(res->alpha)
-        res->alpha *= opaque_value/255.0;
-      else
-        res->alpha = Image.image(width,height,
-                                 opaque_value,opaque_value,opaque_value);
-    }
-    return res;
-  }
 }
 
 int foo;
 Layer decode_layer(mapping layer, mapping i)
 {
-//   int stt = gethrtime();
+  int stt = gethrtime();
   Layer l = Layer();
   int use_cmap;
   l->opacity = layer->opacity;
@@ -63,6 +32,7 @@ Layer decode_layer(mapping layer, mapping i)
   l->image = Image.image( l->width, l->height );
   l->mode = layer->mode;
   l->flags = layer->flags;
+  l->name = layer->name;
 
   l->mask_width = layer->mask_right-layer->mask_left;
   l->mask_height = layer->mask_bottom-layer->mask_top;
@@ -98,10 +68,11 @@ Layer decode_layer(mapping layer, mapping i)
        }
        if( mode )
        {
-//          int st = gethrtime();
+         int st = gethrtime();
          if( !sizeof(lays) )
            lays += ({ 
-             Image.Layer(___decode_image_channel(l->width, l->height,
+             Image.Layer(___decode_image_channel(l->width,
+						 l->height,
                                                  c->data))
            });
          else
@@ -111,16 +82,15 @@ Layer decode_layer(mapping layer, mapping i)
              "mode":mode, 
 	   ]) )
            }));
-//          werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+         werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
          c->data = 0;
        }
      }
-//      int st = gethrtime();
+     int st = gethrtime();
      l->image = Image.lay( lays )->image();
-//      werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+     werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
      break;
-
-   case CMYK:
+    case CMYK:
      inverted = 1;
      colors = ({ ({255,0,0,}),
                  ({0,255,0,}),
@@ -140,7 +110,7 @@ Layer decode_layer(mapping layer, mapping i)
      })*24;
      break;
   }
-//   int st = gethrtime();
+  int st = gethrtime();
   foreach(layer->channels, mapping c)
   {
     object tmp;
@@ -193,8 +163,8 @@ Layer decode_layer(mapping layer, mapping i)
     }
     c->data = 0;
   }
-//   werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
-//   werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
+  werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+  werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
   return l;
 }
 
@@ -306,14 +276,21 @@ array decode_layers( string|mapping what, mapping|void opts )
 
   foreach(reverse(what->layers), object l)
   {
-    if( string m = translate_mode( l->mode ) )
+    if( !(l->flags & LAYER_FLAG_INVISIBLE) || opts->draw_all_layers )
     {
-      Image.Layer lay = Image.Layer( l->image, l->alpha, m );
-      l->image = 0; l->alpha = 0;
-      if( l->opacity != 255 )
-	lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
-      lay->set_offset( l->xoffset, l->yoffset );
-      layers += ({ lay });
+      if( string m = translate_mode( l->mode ) )
+      {
+	Image.Layer lay = Image.Layer( l->image, l->alpha, m );
+
+        lay->set_misc_value( "visible", !(l->flags & LAYER_FLAG_INVISIBLE) );
+        lay->set_misc_value( "name",      l->name );
+
+	l->image = 0; l->alpha = 0;
+	if( l->opacity != 255 )
+	  lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
+	lay->set_offset( l->xoffset, l->yoffset );
+	layers += ({ lay });
+      }
     }
   }
   return layers;

@@ -424,7 +424,7 @@ array decode_layers( string|object|mapping what, mapping|void opts,
   }
 
   foreach(what->layers, object l)
-    if((l->flags->visible || opts->draw_all_layers) && l->opacity > 0)
+    if((l->flags->visible && l->opacity > 0) || opts->draw_all_layers)
     {
       Image.Layer lay = l->image->get_layer( shrink );
       lay->set_mode( translate_mode( l->mode ) );

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.22 2000/08/11 18:36:44 grubba Exp $");
+RCSID("$Id: psd.c,v 1.23 2000/11/16 18:26:20 per Exp $");
 
 #include "image_machine.h"
 
@@ -139,6 +139,16 @@ static struct buffer read_string( struct buffer *data )
   return res;
 }
 
+static struct buffer read_pstring( struct buffer *data )
+{
+  struct buffer res;
+  res.len = read_uchar( data );
+  res.str = (unsigned char *)read_data( data, res.len );
+  if(!res.str)
+    error("String read failed\n");
+  return res;
+}
+
 enum image_mode
 {
   Bitmap = 0,
@@ -199,6 +209,7 @@ struct layer
   struct channel_info channel_info[24];
   struct buffer mode;
   struct buffer extra_data;
+  struct buffer name;
 };
 
 static void decode_layers_and_masks( struct psd_image *dst, 
@@ -249,6 +260,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->flags = read_uchar( src );
     read_uchar( src );
     layer->extra_data = read_string( src );
+    layer->extra_data.len++;
     if(layer->extra_data.len)
     {
       struct buffer tmp = layer->extra_data;
@@ -261,8 +273,14 @@ static void decode_layers_and_masks( struct psd_image *dst,
         layer->mask_bottom = psd_read_int( &tmp2 );
         layer->mask_right  = psd_read_int( &tmp2 );
         layer->mask_default_color = read_uchar( &tmp2 );
-        layer->mask_flags = read_uchar( &tmp2 );
+/*         layer->mask_flags = read_uchar( &tmp2 ); */
       }
+      tmp2 = read_string( &tmp );
+      if( tmp2.len )
+      {
+	/* ranges (?) */
+      }
+      layer->name = read_pstring( &tmp );
     }
   }
   while(layer->next)
@@ -551,6 +569,7 @@ void push_layer( struct layer  *l)
   ref_push_string( s_compression );   push_int( l->compression );
   ref_push_string( s_mode );          push_buffer( &l->mode );
   ref_push_string( s_extra_data );    push_buffer( &l->extra_data );
+  ref_push_string( s_name );          push_buffer( &l->name );
   ref_push_string( s_channels );
   for( i = 0; i<l->num_channels; i++ )
   {
@@ -666,8 +685,8 @@ void init_image_psd()
 
 
 
-  add_integer_constant("LAYER_FLAG_VISIBLE", 0x01, 0 );
-  add_integer_constant("LAYER_FLAG_OBSOLETE", 0x02, 0 );
+  add_integer_constant("LAYER_FLAG_PRESERVE_TRANSPARENCY", 0x01, 0 );
+  add_integer_constant("LAYER_FLAG_INVISIBLE", 0x02, 0 );
   add_integer_constant("LAYER_FLAG_BIT4", 0x04, 0 );
   add_integer_constant("LAYER_FLAG_NOPIX", 0x08, 0 );
 
