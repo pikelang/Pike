@@ -105,6 +105,11 @@ class asn1_object
     {
       return (der = s);
     }
+
+  string record_der_contents(string s)
+    {
+      record_der(build_der(s));
+    }
   
   string get_der()
     {
@@ -142,7 +147,7 @@ class asn1_compound
     {
       WERROR(sprintf("asn1_compound[%s]->begin_decode_constructed\n",
 		     type_name));
-      record_der(raw);
+      record_der_contents(raw);
       return this_object();
     }
 
@@ -190,7 +195,7 @@ class asn1_string
 
   object decode_primitive(string contents)
     {
-      record_der(contents);
+      record_der_contents(contents);
       value = contents;
       return this_object();
     }
@@ -224,7 +229,7 @@ class asn1_boolean
 	WERROR("asn1_boolean->decode_primitive: Bad length.\n");
 	return 0;
       }
-      record_der(contents);
+      record_der_contents(contents);
       value = contents[0];
       return this_object();
     }
@@ -270,7 +275,7 @@ class asn1_integer
   
   object decode_primitive(string contents)
     {
-      record_der(contents);
+      record_der_contents(contents);
       value = Gmp.mpz(contents, 256);
       if (contents[0] & 0x80)  /* Negative */
 	value -= Gmp.pow(256, strlen(contents));
@@ -321,7 +326,7 @@ class asn1_bit_string
   
   object decode_primitive(string contents)
     {
-      record_der(contents);
+      record_der_contents(contents);
       if (!sizeof(contents))
 	return 0;
       unused = contents[0];
@@ -361,7 +366,7 @@ class asn1_utf8_string
 
   object decode_primitive(string contents)
     {
-      record_der(contents);
+      record_der_contents(contents);
       if (catch {
 	value = utf8_to_string(contents);
       })
@@ -382,7 +387,7 @@ class asn1_null
 
   object decode_primitive(string contents)
     {
-      record_der(contents);
+      record_der_contents(contents);
       return !sizeof(contents) && this_object();
     }
 
@@ -421,7 +426,7 @@ class asn1_identifier
 
   object decode_primitive(string contents)
     {
-      record_der(contents);
+      record_der_contents(contents);
 
       if (contents[0] < 120)
 	id = ({ contents[0] / 40, contents[0] % 40 });
