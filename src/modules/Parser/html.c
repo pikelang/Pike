@@ -287,6 +287,16 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 
 /****** debug helper ********************************/
 
+/* Avoid loss of precision warnings. */
+#ifdef __ECL
+static inline long TO_LONG(ptrdiff_t x)
+{
+  return DO_NOT_WARN((long)x);
+}
+#else /* !__ECL */
+#define TO_LONG(x)	((long)(x))
+#endif /* __ECL */
+
 #ifdef DEBUG
 void debug_mark_spot(char *desc,struct piece *feed,int c)
 {
@@ -2873,9 +2883,11 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 #ifdef DEBUG
       if (*feed && feed[0]->s->len < st->c) 
-	 fatal("len (%d) < st->c (%d)\n",feed[0]->s->len,st->c);
+	 fatal("len (%ld) < st->c (%ld)\n",
+	       TO_LONG(feed[0]->s->len), TO_LONG(st->c));
       if (*feed && cmp_feed_pos (*feed, st->c, dst, cdst) > 0)
-	fatal ("Going backwards from %p:%d to %p:%d.\n", *feed, st->c, dst, cdst);
+	fatal ("Going backwards from %p:%ld to %p:%ld.\n",
+	       *feed, TO_LONG(st->c), dst, TO_LONG(cdst));
 #endif
 
       /* do we need to check data? */
@@ -2978,8 +2990,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 #ifdef DEBUG
       if (*feed != dst || st->c != cdst)
-	fatal ("Internal position confusion: feed: %p:%d, dst: %p:%d.\n",
-	       *feed, st->c, dst, cdst);
+	fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld.\n",
+	       *feed, TO_LONG(st->c), dst, TO_LONG(cdst));
 #endif
 
       ch=index_shared_string(dst->s,cdst);
@@ -3464,8 +3476,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 #ifdef DEBUG
 	if (!scan_entity) fatal ("Shouldn't parse entities now.\n");
 	if (*feed != dst || st->c != cdst)
-	  fatal ("Internal position confusion: feed: %p:%d, dst: %p:%d\n",
-		 *feed, st->c, dst, cdst);
+	  fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld\n",
+		 *feed, TO_LONG(st->c), dst, TO_LONG(cdst));
 #endif
 	/* just search for end of entity */
 

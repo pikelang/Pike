@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.58 2000/08/15 12:48:54 grubba Exp $ */
+/* $Id: gif.c,v 1.59 2000/08/16 19:50:13 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.58 2000/08/15 12:48:54 grubba Exp $
+**!	$Id: gif.c,v 1.59 2000/08/16 19:50:13 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.58 2000/08/15 12:48:54 grubba Exp $");
+RCSID("$Id: gif.c,v 1.59 2000/08/16 19:50:13 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -221,7 +221,9 @@ void image_gif_header_block(INT32 args)
    }
 
    if (numcolors+alphaentry>256)
-      error("Image.GIF.header_block(): too many colors (%d%s)\n",numcolors+alphaentry,alphaentry?" including alpha channel color":"");
+      error("Image.GIF.header_block(): too many colors (%ld%s)\n",
+	    DO_NOT_WARN((long)(numcolors + alphaentry)),
+	    alphaentry?" including alpha channel color":"");
 
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
 
@@ -716,7 +718,9 @@ CHRONO("gif render_block begin");
    if (numcolors==0)
       error("Image.GIF.render_block(): no colors in colortable\n");
    else if (numcolors>256)
-      error("Image.GIF.render_block(): too many colors in given colortable: %d (256 is max)\n",numcolors);
+      error("Image.GIF.render_block(): too many colors in given colortable: "
+	    "%ld (256 is max)\n",
+	    DO_NOT_WARN((long)numcolors));
 
    if (args>=5)
    {

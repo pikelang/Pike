@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.16 2000/08/10 09:51:54 per Exp $ */
+/* $Id: math_matrix.c,v 1.17 2000/08/16 19:58:59 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -189,7 +189,7 @@ static void matrix_create(INT32 args)
 	 SIMPLE_OUT_OF_MEMORY_ERROR("matrix",
 				    sizeof(FTYPE)*xs*ys);
       
-      if (args>2)
+      if (args>2) {
 	 if (sp[2-args].type==T_INT)
 	    z=(FTYPE)sp[2-args].u.integer;
 	 else if (sp[2-args].type==T_FLOAT)
@@ -214,6 +214,7 @@ static void matrix_create(INT32 args)
 	 }
 	 else
 	    SIMPLE_BAD_ARG_ERROR("matrix",3,"int|float|string");
+      }
       
       xs*=ys;
       while (xs--) *(m++)=z;
@@ -335,7 +336,7 @@ void matrix_cast(INT32 args)
 	    int i,j;
 	    int xs=THIS->xsize,ys=THIS->ysize;
 	    FTYPE *m=THIS->m;
-	    check_stack(xs+ys);
+	    check_stack(DO_NOT_WARN((long)(xs+ys)));
 	    pop_n_elems(args);
 	    for (i=0; i<ys; i++)
 	    {
@@ -365,7 +366,7 @@ void matrix_vect(INT32 args)
       int i,j;
       int xs=THIS->xsize,ys=THIS->ysize;
       FTYPE *m=THIS->m;
-      check_stack(xs+ys);
+      check_stack(DO_NOT_WARN((long)(xs+ys)));
       pop_n_elems(args);
       for (i=0; i<ys; i++)
 	 for (j=0; j<xs; j++)

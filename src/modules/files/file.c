@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.187 2000/08/16 16:06:27 grubba Exp $");
+RCSID("$Id: file.c,v 1.188 2000/08/16 20:12:50 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -890,12 +890,12 @@ static void file_write(INT32 args)
     while(i--) {
       if (a->item[i].type != PIKE_T_STRING) {
 	error("Bad argument 1 to file->write().\n"
-	      "Element %d is not a string.\n",
-	      i);
+	      "Element %ld is not a string.\n",
+	      DO_NOT_WARN((long)i));
       } else if (a->item[i].u.string->size_shift) {
 	error("Bad argument 1 to file->write().\n"
-	      "Element %d is a wide string.\n",
-	      i);
+	      "Element %ld is a wide string.\n",
+	      DO_NOT_WARN((long)i));
       }
     }
 
@@ -2648,6 +2648,16 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
 
 #include "file_functions.h"
 
+/* Avoid loss of precision warnings. */
+#ifdef __ECL
+static inline long TO_LONG(ptrdiff_t x)
+{
+  return DO_NOT_WARN((long)x);
+}
+#else /* !__ECL */
+#define TO_LONG(x)	((long)(x))
+#endif /* __ECL */
+
 #ifdef PIKE_DEBUG
 void check_static_file_data(struct callback *a, void *b, void *c)
 {
@@ -2655,7 +2665,8 @@ void check_static_file_data(struct callback *a, void *b, void *c)
   {
 #define FILE_FUNC(X,Y,Z) \
     if(PIKE_CONCAT(Y,_function_number)<0 || PIKE_CONCAT(Y,_function_number)>file_program->num_identifier_references) \
-      fatal(#Y "_function_number is incorrect: %d\n",PIKE_CONCAT(Y,_function_number));
+      fatal(#Y "_function_number is incorrect: %ld\n", \
+            TO_LONG(PIKE_CONCAT(Y,_function_number)));
 #include "file_functions.h"
   }
 }

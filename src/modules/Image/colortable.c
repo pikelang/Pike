@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.93 2000/08/15 12:43:02 grubba Exp $ */
+/* $Id: colortable.c,v 1.94 2000/08/16 19:48:40 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.93 2000/08/15 12:43:02 grubba Exp $
+**!	$Id: colortable.c,v 1.94 2000/08/16 19:48:40 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.93 2000/08/15 12:43:02 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.94 2000/08/16 19:48:40 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3663,7 +3663,8 @@ void image_colortable_index_32bit(INT32 args)
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
 
    if (sizeof(unsigned INT32)!=4)
-      fatal("INT32 isn't 32 bits (sizeof is %d)\n",sizeof(unsigned INT32));
+      fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
+	    (long)TO_UINT32(sizeof(unsigned INT32)));
 
    ps=begin_wide_shared_string(src->xsize*src->ysize,2);
 

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.20 2000/08/12 23:06:54 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.21 2000/08/16 19:54:51 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1164,8 +1164,9 @@ void image_xcf_f__decode_tiles( INT32 args )
     }
 
     if( (size_t)(tile->len) < (size_t)(eheight * ewidth * bpp ))
-      error("Too small tile, was %d bytes, I really need %d\n",
-            tile->len, eheight*ewidth * bpp);
+      error("Too small tile, was %ld bytes, I really need %d\n",
+            DO_NOT_WARN((long)tile->len),
+	    eheight*ewidth * bpp);
 
     s = (unsigned char *)tile->str;
 

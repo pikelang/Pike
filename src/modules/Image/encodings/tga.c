@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.22 2000/08/13 14:43:15 grubba Exp $
+ * $Id: tga.c,v 1.23 2000/08/16 19:54:05 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.22 2000/08/13 14:43:15 grubba Exp $");
+RCSID("$Id: tga.c,v 1.23 2000/08/16 19:54:05 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -186,7 +186,8 @@ static struct image_alpha load_image(struct pike_string *str)
   buffer.len = str->len;
 
   if(buffer.len < ((sizeof(struct tga_footer)+sizeof(struct tga_header))))
-    error("Data (%d bytes) is too short\n", buffer.len);
+    error("Data (%ld bytes) is too short\n",
+	  DO_NOT_WARN((long)buffer.len));
 
 
 /*   MEMCPY(&footer, (buffer.str+(buffer.len-sizeof(struct tga_footer))), */

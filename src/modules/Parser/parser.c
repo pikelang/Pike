@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.8 2000/07/28 07:14:14 hubbe Exp $");
+RCSID("$Id: parser.c,v 1.9 2000/08/16 20:02:02 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -80,8 +80,24 @@ static struct
   { 0,0,0,0,0 }
 };
 
+/* Avoid loss of precision warnings. */
+#ifdef __ECL
+static inline long TO_LONG(ptrdiff_t x)
+{
+  return DO_NOT_WARN((long)x);
+}
+#else /* !__ECL */
+#define TO_LONG(x)	((long)(x))
+#endif /* __ECL */
+
 #ifdef PIKE_DEBUG
-#define PARSER_CHECK_STACK(X)	do { if (save_sp != sp) { fatal("%s:%d: %d droppings on stack! previous init: %s\n", __FILE__, __LINE__, sp - save_sp,X); } } while(0)
+#define PARSER_CHECK_STACK(X)	do { \
+    if (save_sp != sp) { \
+      fatal("%s:%d: %d droppings on stack! previous init: %s\n", \
+            __FILE__, __LINE__, \
+            TO_LONG(sp - save_sp), X); \
+    } \
+  } while(0)
 #else
 #define PARSER_CHECK_STACK(X)
 #endif /* PIKE_DEBUG */

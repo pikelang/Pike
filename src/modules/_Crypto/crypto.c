@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.37 2000/08/16 16:09:55 grubba Exp $
+ * $Id: crypto.c,v 1.38 2000/08/16 20:08:19 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -259,7 +259,8 @@ static void f_create(INT32 args)
 
   if ((!THIS->block_size) ||
       (THIS->block_size > 4096)) {
-    error("crypto->create(): Bad block size %d\n", THIS->block_size);
+    error("crypto->create(): Bad block size %ld\n",
+	  DO_NOT_WARN((long)THIS->block_size));
   }
 
   THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
@@ -340,8 +341,8 @@ static void f_crypto_crypt(INT32 args)
 	error("crypto->crypt(): crypt_block() did not return string\n");
       }
       if (sp[-1].u.string->len != THIS->block_size) {
-	error("crypto->crypt(): Unexpected string length %d\n",
-	      sp[-1].u.string->len);
+	error("crypto->crypt(): Unexpected string length %ld\n",
+	      DO_NOT_WARN((long)sp[-1].u.string->len));
       }
 	
       MEMCPY(result, sp[-1].u.string->str, THIS->block_size);
@@ -371,8 +372,8 @@ static void f_crypto_crypt(INT32 args)
       error("crypto->crypt(): crypt_block() did not return string\n");
     }
     if (sp[-1].u.string->len != len) {
-      error("crypto->crypt(): Unexpected string length %d\n",
-	    sp[-1].u.string->len);
+      error("crypto->crypt(): Unexpected string length %ld\n",
+	    DO_NOT_WARN((long)sp[-1].u.string->len));
     }
 	
     MEMCPY(result + roffset, sp[-1].u.string->str, len);
