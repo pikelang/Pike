@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.22 1997/02/07 01:04:01 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.23 1997/02/11 07:09:11 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -193,6 +193,7 @@ struct locals *local_variables = 0;
 
 static int varargs;
 static INT32  current_modifiers;
+static struct pike_string *last_identifier=0;
 
 void fix_comp_stack(int sp)
 {
@@ -364,7 +365,14 @@ program_ref: string_constant
   }
   | idents
   {
-    push_string(make_shared_string(""));
+    if(last_identifier)
+    {
+      push_string(last_identifier);
+      last_identifier->refs++;
+    }else{
+      push_text("");
+    }
+    
     resolv_constant($1);
     if(sp[-1].type == T_OBJECT)
     {
@@ -1155,6 +1163,8 @@ idents: low_idents
     $$=index_node($1, $3);
     free_node($1);
     free_string($3);
+    free_string(last_identifier);
+    copy_shared_string(last_identifier, $3);
   }
   ;
 
@@ -1162,6 +1172,8 @@ low_idents: F_IDENTIFIER
   {
     int i;
     struct efun *f;
+    if(last_identifier) free_string(last_identifier);
+    copy_shared_string(last_identifier, $1);
     if((i=islocal($1))>=0)
     {
       $$=mklocalnode(i);
