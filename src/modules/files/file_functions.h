@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.24 2002/11/09 21:34:26 per Exp $
+|| $Id: file_functions.h,v 1.25 2003/09/12 12:04:29 marcus Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -71,7 +71,11 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
   FILE_FUNC("trylock",file_trylock,"function(void|int:object)")
 #endif
 
-#if defined(HAVE_GRANTPT)
+#if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
+   FILE_FUNC("openpt",file_openpt,"function(string:int)")
+#endif
+
+#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD)
    FILE_FUNC("grantpt",file_grantpt,"function(void:string)")
 #endif
 

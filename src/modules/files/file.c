@@ -2,17 +2,18 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.255 2003/03/30 01:27:10 mast Exp $
+|| $Id: file.c,v 1.256 2003/09/12 12:04:29 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.255 2003/03/30 01:27:10 mast Exp $");
+RCSID("$Id: file.c,v 1.256 2003/09/12 12:04:29 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
+#include "mapping.h"
 #include "object.h"
 #include "pike_macros.h"
 #include "backend.h"
@@ -1467,16 +1468,57 @@ static int do_close(int flags)
 
 /*! @decl string grantpt()
  *!
- *!  If this file has been created by opening /dev/ptmx, return the
+ *!  If this file has been created by calling @[openpt()], return the
  *!  filename of the associated pts-file. This function should only be
  *!  called once.
  */
 static void file_grantpt( INT32 args )
 {
-#if defined(HAVE_GRANTPT)
+#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
   pop_n_elems(args);
+#if defined(USE_PT_CHMOD) || defined(USE_CHGPT)
+  push_constant_text("Process.Process");
+  APPLY_MASTER("resolv", 1);
+
+#ifdef USE_PT_CHMOD
+  /* pt_chmod wants to get the fd number as the first argument. */
+  push_constant_text(USE_PT_CHMOD);
+  push_constant_text("4");
+  f_aggregate(2);
+
+  /* Send the pty as both fd 3 and fd 4. */
+  push_constant_text("fds");
+  ref_push_object(Pike_fp->current_object);
+  ref_push_object(Pike_fp->current_object);
+  f_aggregate(2);
+  f_aggregate_mapping(2);
+#else /* USE_CHGPT */
+  /* chgpt on HPUX doesn't like getting any arguments... */
+  push_constant_text(USE_CHGPT);
+  f_aggregate(1);
+
+  /* chgpt wants to get the pty on fd 0. */
+  push_constant_text("stdin");
+  ref_push_object(Pike_fp->current_object);
+  f_aggregate_mapping(2);
+#endif /* USE_PT_CHMOD */
+
+  apply_svalue(Pike_sp-3, 2);
+  apply(Pike_sp[-1].u.object, "wait", 0);
+  if(!UNSAFE_IS_ZERO(Pike_sp-1)) {
+    Pike_error(
+#ifdef USE_PT_CHMOD
+	       USE_PT_CHMOD
+#else /* USE_CHGPT */
+	       USE_CHGPT
+#endif /* USE_PT_CHMOD */
+	       " returned error %d.\n", Pike_sp[-1].u.integer);
+  }
+  pop_n_elems(3);
+#else /* HAVE_GRANTPT */
   if( grantpt( FD ) )
     Pike_error("grantpt failed: %s\n", strerror(errno));
+#endif /* USE_PT_CHMOD || USE_CHGPT */
   push_text( ptsname( FD ) );
 #if defined(HAVE_UNLOCKPT)
   if( unlockpt( FD ) )
@@ -1684,6 +1726,70 @@ static void file_open(INT32 args)
   pop_n_elems(args);
   push_int(fd>=0);
 }
+
+#if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
+/*! @decl int openpt(string mode)
+ *!
+ *! Open the master end of a pseudo-terminal pair.
+ *!
+ *! @seealso
+ *!   @[grantpt()]
+ */
+static void file_openpt(INT32 args)
+{
+  int flags,fd;
+#ifdef HAVE_POSIX_OPENPT
+  struct pike_string *flag_str;
+#endif
+  close_fd();
+
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->openpt", 2);
+
+  if(Pike_sp[-args].type != PIKE_T_STRING)
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->openpt", 1, "string");
+
+#ifdef HAVE_POSIX_OPENPT
+  flags = parse((flag_str = Pike_sp[-args].u.string)->str);
+  
+  if(!( flags &  (FILE_READ | FILE_WRITE)))
+    Pike_error("Must open file for at least one of read and write.\n");
+
+  do {
+    THREADS_ALLOW_UID();
+    fd=posix_openpt(map(flags));
+    THREADS_DISALLOW_UID();
+    if ((fd < 0) && (errno == EINTR))
+      check_threads_etc();
+  } while(fd < 0 && errno == EINTR);
+
+  if(!Pike_fp->current_object->prog)
+  {
+    if (fd >= 0)
+      fd_close(fd);
+    Pike_error("Object destructed in Stdio.File->open()\n");
+  }
+
+  if(fd < 0)
+  {
+    ERRNO=errno;
+  }
+  else
+  {
+    init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+    set_close_on_exec(fd,1);
+  }
+  pop_n_elems(args);
+  push_int(fd>=0);
+#else
+  if(args > 1)
+    pop_n_elems(args - 1);
+  push_constant_text(PTY_MASTER_PATHNAME);
+  stack_swap();
+  file_open(2);
+#endif
+}
+#endif
 
 #ifdef HAVE_FSYNC
 /*! @decl int(0..1) sync()
@@ -3587,6 +3693,10 @@ PIKE_MODULE_INIT
 #endif
 #ifdef HAVE_SYS_UN_H
   add_integer_constant("__HAVE_CONNECT_UNIX__",1,0);
+#endif
+
+#if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
+  add_integer_constant("__HAVE_OPENPT__",1,0);
 #endif
 
   /* function(:array(int)) */

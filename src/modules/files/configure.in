@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.83 2003/05/14 20:41:59 marcus Exp $
+# $Id: configure.in,v 1.84 2003/09/12 12:04:29 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -17,8 +17,8 @@ AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
- grantpt unlockpt ptsname socketpair writev sendfile munmap madvise poll \
- setsockopt getprotobyname truncate64 ftruncate64)
+ grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
+ madvise poll setsockopt getprotobyname truncate64 ftruncate64)
 
 AC_FUNC_MMAP
 
@@ -1068,7 +1068,7 @@ int sig_child(int arg)
   wait3(-1,0,WNOHANG,0);
 #else
 
-  /* Leave'em hanging */
+  /* Leave them hanging */
 
 #endif /* HAVE_WAIT4 */
 #endif /* HAVE_WAIT3 */
@@ -1102,6 +1102,74 @@ if test "$pike_cv_func_working_getcwd" = yes; then
   AC_DEFINE(HAVE_WORKING_GETCWD)
 else
   AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(for pty master device)
+AC_CACHE_VAL(pike_cv_pty_master_pathname, [
+  pike_cv_pty_master_pathname=no
+  for i in ptmx ptc; do
+    if test -c /dev/$i; then
+      pike_cv_pty_master_pathname="/dev/$i"
+      break
+    else
+      :
+    fi
+  done
+])
+AC_MSG_RESULT($pike_cv_pty_master_pathname)
+if test no = "$pike_cv_pty_master_pathname"; then
+  :
+else
+  AC_DEFINE_UNQUOTED(PTY_MASTER_PATHNAME, "$pike_cv_pty_master_pathname")
+fi
+
+if test yes = "$ac_cv_func_grantpt"; then
+  pt_chmod_dirs=""
+  case "$pike_cv_sys_os" in
+    Solaris|HP-UX|OSF1) pt_chmod_dirs="/lib /usr/lib /lbin /usr/lbin" ;;
+  esac
+  if test x = x"$pt_chmod_dirs"; then
+    :
+  else
+    AC_MSG_CHECKING(for pt_chmod since OS is $pike_cv_sys_os)
+    AC_CACHE_VAL(pike_cv_pt_chmod_path, [
+      pike_cv_pt_chmod_path=no
+      for i in $pt_chmod_dirs; do
+        if test -x ${i}/pt_chmod; then
+          pike_cv_pt_chmod_path="${i}/pt_chmod"
+	  break
+        else
+          :
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_pt_chmod_path)
+    if test no = "$pike_cv_pt_chmod_path"; then
+      :
+    else
+      AC_DEFINE_UNQUOTED(USE_PT_CHMOD,"$pike_cv_pt_chmod_path")
+    fi
+    AC_MSG_CHECKING(for chgpt since OS is $pike_cv_sys_os)
+    AC_CACHE_VAL(pike_cv_chgpt_path, [
+      pike_cv_chgpt_path=no
+      for i in $pt_chmod_dirs; do
+        if test -x ${i}/chgpt; then
+          pike_cv_chgpt_path="${i}/chgpt"
+	  break
+        else
+          :
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_chgpt_path)
+    if test no = "$pike_cv_chgpt_path"; then
+      :
+    else
+      AC_DEFINE_UNQUOTED(USE_CHGPT,"$pike_cv_chgpt_path")
+    fi
+  fi
+else
+  :
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.18 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: acconfig.h,v 1.19 2003/09/12 12:04:29 marcus Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -76,5 +76,16 @@
 
 /* With termios */
 #undef WITH_TERMIOS 
+
+/* Define to path of pseudo terminal master device if available */
+#undef PTY_MASTER_PATHNAME
+
+/* Define to path of chgpt to use chgpt directly rather than
+   calling grantpt (needed on SysV's like HPUX & OSF/1) */
+#undef USE_CHGPT
+
+/* Define to path of pt_chmod to use pt_chmod directly rather than
+   calling grantpt (needed on SysV's like Solaris) */
+#undef USE_PT_CHMOD
 
 #endif
