@@ -52,6 +52,7 @@ peep_engine.c
 pike
 pike.syms
 pike.tmp
+posix_to_native.sh
 precompile
 precompile-method
 precompile.sh
