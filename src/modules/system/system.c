@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.132 2002/12/06 21:13:53 mirar Exp $
+|| $Id: system.c,v 1.133 2002/12/07 08:07:21 mirar Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.132 2002/12/06 21:13:53 mirar Exp $");
+RCSID("$Id: system.c,v 1.133 2002/12/07 08:07:21 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2558,7 +2558,7 @@ static void f_getrusage(INT32 args)
    pop_n_elems(args);
    
    if (!pike_get_rusage(rusage_values))
-      error("error in getrusage call\n");
+      Pike_error("error in getrusage call\n");
 
    push_text("utime");      push_int(rusage_values[n++]);
    push_text("stime");      push_int(rusage_values[n++]);
