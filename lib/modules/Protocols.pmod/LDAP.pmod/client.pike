@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.79 2005/03/11 16:49:57 mast Exp $
+// $Id: client.pike,v 1.80 2005/03/13 13:21:17 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -482,7 +482,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.79 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.80 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -817,12 +817,14 @@ static function(string:string) get_attr_encoder (string attr)
   //!
   //! @returns
   //!  Returns @expr{1@} if at least one of the values for the
-  //!  attribute in the directory is equal to @[value], @expr{0@}
-  //!  otherwise.
+  //!  attribute in the directory is equal to @[value], @expr{0@} if
+  //!  it didn't match or there was some error (use @[error_number] to
+  //!  find out).
   //!
   //! @note
-  //!   The API change: the returning code was changed in Pike 7.3+
-  //!	to follow his logic better.
+  //!   This function has changed arguments since version 7.6. From
+  //!   7.3 to 7.6 it was effectively useless since it always returned
+  //!   true.
   //!
   //! @note
   //!   The equality matching rule for the attribute governs the
