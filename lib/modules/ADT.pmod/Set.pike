@@ -1,4 +1,4 @@
-// $Id: Set.pike,v 1.1 2004/10/10 23:05:30 stensson Exp $
+// $Id: Set.pike,v 1.2 2004/10/10 23:33:33 stensson Exp $
 
 //! ADT.Set implements a datatype for sets. These sets behave much
 //! like multisets, except that they are restricted to containing only
@@ -137,9 +137,6 @@ int(0..1) superset(ADT.Set other)
 //! and all items in B are present in A. Otherwise, it returns false.
 int(0..1) `==(ADT.Set other)
 {
-  if (predef::`==(this, other))
-    return 1; // Identical.
-
   foreach(indices(set), mixed item)
     if (!other->contains(item))
       return 0;
