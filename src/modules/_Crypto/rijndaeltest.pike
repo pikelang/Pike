@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.8 2003/08/26 16:38:59 nilsson Exp $
+ * $Id: rijndaeltest.pike,v 1.9 2003/10/05 01:31:41 nilsson Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -55,10 +55,10 @@ int check_ecb_e_m()
 
     werror("\nRijndael ECB Encryption (%s): %s\r", keysize, v->I);
 
-    string pt = Crypto.hex_to_string(v->PT);
-    string ct = Crypto.hex_to_string(v->CT);
+    string pt = String.hex2string(v->PT);
+    string ct = String.hex2string(v->CT);
 
-    aes->set_encrypt_key(Crypto.hex_to_string(v->KEY));
+    aes->set_encrypt_key(String.hex2string(v->KEY));
 
     for(int i = 0; i < 10000; i++) {
       pt = aes->crypt_block(pt);
@@ -88,10 +88,10 @@ int check_ecb_d_m()
 
     werror("Rijndael ECB Decryption (%s): %s\r", keysize, v->I);
 
-    string pt = Crypto.hex_to_string(v->PT);
-    string ct = Crypto.hex_to_string(v->CT);
+    string pt = String.hex2string(v->PT);
+    string ct = String.hex2string(v->CT);
 
-    aes->set_decrypt_key(Crypto.hex_to_string(v->KEY));
+    aes->set_decrypt_key(String.hex2string(v->KEY));
 
     for(int i = 0; i < 10000; i++) {
       ct = aes->crypt_block(ct);
@@ -121,11 +121,11 @@ int check_cbc_e_m()
 
     werror("Rijndael CBC Encryption (%s): %s\r", keysize, v->I);
 
-    string pt = Crypto.hex_to_string(v->PT);
-    string ct = Crypto.hex_to_string(v->CT);
-    string iv = Crypto.hex_to_string(v->IV);
+    string pt = String.hex2string(v->PT);
+    string ct = String.hex2string(v->CT);
+    string iv = String.hex2string(v->IV);
 
-    aes_cbc->set_encrypt_key(Crypto.hex_to_string(v->KEY));
+    aes_cbc->set_encrypt_key(String.hex2string(v->KEY));
     aes_cbc->set_iv(iv);
 
     pt += iv;
@@ -158,11 +158,11 @@ int check_cbc_d_m()
 
     werror("Rijndael CBC Decryption (%s): %s\r", keysize, v->I);
 
-    string pt = Crypto.hex_to_string(v->PT);
-    string ct = Crypto.hex_to_string(v->CT);
-    string iv = Crypto.hex_to_string(v->IV);
+    string pt = String.hex2string(v->PT);
+    string ct = String.hex2string(v->CT);
+    string iv = String.hex2string(v->IV);
 
-    aes_cbc->set_decrypt_key(Crypto.hex_to_string(v->KEY));
+    aes_cbc->set_decrypt_key(String.hex2string(v->KEY));
     aes_cbc->set_iv(iv);
 
     for(int i = 0; i < 10000; i++) {
@@ -191,11 +191,11 @@ int check_ecb_tbl()
     }
     if (!v->I) return;
 
-    string pt = Crypto.hex_to_string(v->PT);
-    string ct = Crypto.hex_to_string(v->CT);
+    string pt = String.hex2string(v->PT);
+    string ct = String.hex2string(v->CT);
 
-    aes_e->set_encrypt_key(Crypto.hex_to_string(v->KEY));
-    aes_d->set_decrypt_key(Crypto.hex_to_string(v->KEY));
+    aes_e->set_encrypt_key(String.hex2string(v->KEY));
+    aes_d->set_decrypt_key(String.hex2string(v->KEY));
 
     string _ct = aes_e->crypt_block(pt);
     string _pt = aes_d->crypt_block(ct);
