@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $ */
+/* $Id: xwd.c,v 1.16 2000/08/04 10:49:52 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $
+**!	$Id: xwd.c,v 1.16 2000/08/04 10:49:52 grubba Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: xwd.c,v 1.16 2000/08/04 10:49:52 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -145,7 +145,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       error("Image.XWD._decode: header to small\n");
    header.header_size=CARD32n(s,0);
 
-   if ((unsigned long)s->len<header.header_size || s->len<100)
+   if ((size_t)s->len < header.header_size || s->len<100)
       error("Image.XWD._decode: header to small\n");
 
    header.file_version=CARD32n(s,1);     

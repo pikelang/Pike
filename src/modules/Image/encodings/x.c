@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.28 2000/08/03 21:25:32 grubba Exp $ */
+/* $Id: x.c,v 1.29 2000/08/04 10:48:14 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.28 2000/08/03 21:25:32 grubba Exp $
+**!	$Id: x.c,v 1.29 2000/08/04 10:48:14 grubba Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.28 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: x.c,v 1.29 2000/08/04 10:48:14 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -779,7 +779,7 @@ static void image_x_decode_truecolor(INT32 args)
 {
    struct pike_string *ps;
    unsigned char *s;
-   unsigned long len;
+   size_t len;
    INT32 width,height,bpp,alignbits,swapbytes;
    INT32 rbits,rshift,gbits,gshift,bbits,bshift;
    int i;
@@ -796,7 +796,7 @@ static void image_x_decode_truecolor(INT32 args)
 
    ps=sp[-args].u.string;
    s=(unsigned char*)ps->str;
-   len=ps->len;
+   len = ps->len;
    width=sp[1-args].u.integer;
    height=sp[2-args].u.integer;
    bpp=sp[3-args].u.integer;
@@ -1017,7 +1017,7 @@ void image_x_decode_pseudocolor(INT32 args)
 {
    struct pike_string *ps;
    unsigned char *s;
-   unsigned long len;
+   size_t len;
    INT32 width,height,bpp,alignbits,swapbytes;
    int i;
    INT32 n, m;
@@ -1042,7 +1042,7 @@ void image_x_decode_pseudocolor(INT32 args)
 
    add_ref(ps=sp[-args].u.string);
    s=(unsigned char*)ps->str;
-   len=ps->len;
+   len = ps->len;
    width=sp[1-args].u.integer;
    height=sp[2-args].u.integer;
    bpp=sp[3-args].u.integer;

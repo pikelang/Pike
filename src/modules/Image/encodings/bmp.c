@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.24 2000/08/04 00:41:59 grubba Exp $ */
+/* $Id: bmp.c,v 1.25 2000/08/04 10:53:20 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.24 2000/08/04 00:41:59 grubba Exp $
+**!	$Id: bmp.c,v 1.25 2000/08/04 10:53:20 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.24 2000/08/04 00:41:59 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.25 2000/08/04 10:53:20 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -491,7 +491,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
    struct neo_colortable *nct=NULL;
    struct object *o;
    rgb_group *d;
-   int n=0,j=0,i,y,skip;
+   int n=0,i,y,skip;
+   ptrdiff_t j=0;
    int windows=0;
    int quality=50; /* for JPEG decoding */
 

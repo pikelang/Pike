@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.53 2000/08/03 21:25:31 grubba Exp $ */
+/* $Id: gif.c,v 1.54 2000/08/04 10:46:55 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.53 2000/08/03 21:25:31 grubba Exp $
+**!	$Id: gif.c,v 1.54 2000/08/04 10:46:55 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.53 2000/08/03 21:25:31 grubba Exp $");
+RCSID("$Id: gif.c,v 1.54 2000/08/04 10:46:55 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1256,7 +1256,7 @@ static void _decode_get_extension(unsigned char **s,
 				  size_t *len)
 {
    int ext;
-   unsigned long n,sz;
+   size_t n,sz;
 
    if (*len<3) { (*s)+=*len; (*len)=0; return; }
    n=0;
@@ -1294,7 +1294,7 @@ static void _decode_get_render(unsigned char **s,
 			       size_t *len)
 {
    int n=0,bpp;
-   unsigned long sz;
+   size_t sz;
 
 /* byte ...
    0  0x2c (render block init)
@@ -1332,7 +1332,7 @@ static void _decode_get_render(unsigned char **s,
    push_int( !!((*s)[9]&64) );
 
    if ( ((*s)[9]&128) ) {
-      if ((*len)>10+(unsigned long)(3<<bpp) )
+      if ((*len)>10+(size_t)(3<<bpp) )
       {
 	 push_string(make_shared_binary_string((char *)(*s)+10,3<<bpp));
 	 (*s)+=10+(3<<bpp);
@@ -2478,7 +2478,8 @@ static void image_gif_lzw_decode(INT32 args)
    int earlychange=0;
    ptrdiff_t len;
    signed long n;
-   signed long clearcode,endcode,last,q,bit,m,dlen,dlen0;
+   signed long clearcode,endcode,last,q,bit,m;
+   ptrdiff_t dlen,dlen0;
    unsigned int mask;
    struct lzwc *c;
    signed long bits,obits=8;

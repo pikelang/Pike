@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.34 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: png.c,v 1.35 2000/08/04 10:51:49 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -516,7 +516,7 @@ static int _png_write_rgb(rgb_group *w1,
 			  unsigned char *s,
 			  size_t len,
 			  unsigned long width,
-			  unsigned long n,
+			  size_t n,
 			  struct neo_colortable *ct,
 			  struct pike_string *trns)
 {
@@ -530,7 +530,7 @@ static int _png_write_rgb(rgb_group *w1,
    rgb_group *d1=w1;
    rgb_group *da1=wa1;
 
-   unsigned long n0=n;
+   size_t n0=n;
 
    unsigned long x;
    int mz;
