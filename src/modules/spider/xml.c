@@ -896,14 +896,23 @@ static int gobble(struct xmldata *data, char *s)
       name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	 \
       sp[-1]=*sp;							 \
       SET_ONERROR(tmp3, do_free_string, name);				 \
-      									 \
+									 \
       do {								 \
 									 \
 	if(IS_ZERO(sp-1))						 \
 	{								 \
 	  pop_stack();							 \
-	  push_constant_text("entity");					 \
-	  ref_push_string(name);					 \
+          if(index_shared_string(name,0)=='%')				 \
+          { 								 \
+	    push_constant_text("%");					 \
+	    ref_push_string(name);					 \
+	    push_int(1);						 \
+	    push_int(0x7fffffff);					 \
+	    o_range();							 \
+	  }else{							 \
+	    push_constant_text("&");					 \
+	    ref_push_string(name);					 \
+	  }								 \
 	  push_constant_text("in_attribute");				 \
 	  push_int(ATTR);						 \
 	  f_aggregate_mapping(2); /* attributes */			 \
@@ -1114,37 +1123,60 @@ static int read_smeg_pereference(struct xmldata *data)
   if(!THIS->entities)
   {
     XMLERROR("XML->__entities is not a mapping");
-    f_aggregate_mapping(0);
   }else{
-    ref_push_mapping(THIS->entities);
-  }
-  push_constant_text("%");
-  SIMPLE_READNAME();
-  f_add(2);
-  if(PEEK(0)!=';')
-    XMLERROR("Missing ';' after parsed entity reference.");
-  READ(1);
-  /* lookup entry in mapping and parse it recursively */
-  /* Generate error if entity is not defined */
-  f_index(2);
-  if(IS_ZERO(sp-1))
-  {
-    XMLERROR("No such entity in pereference.");
-    pop_stack();
-  }else{
-    if(sp[-1].type!=T_STRING)
-    {
-      XMLERROR("XML->__entities value is not a string!");
-    }else{
-      struct pike_string *s=sp[-1].u.string;
-      IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
-			  data->input.datap.ptr, data->input.len,
-			  data->input.pos, data->input.to_free));
-      PUSH(s);
-      READ(0); /* autopop empty strings */
-      pop_stack();
-      return 1;
-    }
+    struct pike_string *name=0;
+    ONERROR tmp3;			
+
+    push_constant_text("%");
+    SIMPLE_READNAME();
+    add_ref(name=sp[-1].u.string);
+    SET_ONERROR(tmp3, do_free_string, name);
+
+    f_add(2);
+    if(PEEK(0)!=';')
+      XMLERROR("Missing ';' after parsed entity reference.");
+    READ(1);
+    /* lookup entry in mapping and parse it recursively */
+    /* Generate error if entity is not defined */
+
+    map_delete_no_free(THIS->entities, sp-1, sp);
+    free_svalue(sp-1);
+    sp[-1]=*sp;
+
+    do {
+      if(IS_ZERO(sp-1))
+      {
+	pop_stack();
+	push_constant_text("%");
+	ref_push_string(name);
+	f_aggregate_mapping(0);
+	push_int(0); /* no data */
+	SYS();					
+	if(sp[-1].type != T_STRING)	
+	{				
+	  pop_stack();		
+	  XMLERROR("No such entity in pereference.");
+	  
+	  break;				
+	}					
+      }
+
+      if(sp[-1].type!=T_STRING)
+      {
+	XMLERROR("XML->__entities value is not a string!");
+      }else{
+	struct pike_string *s=sp[-1].u.string;
+	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
+			    data->input.datap.ptr, data->input.len,
+			    data->input.pos, data->input.to_free));
+	PUSH(s);
+	READ(0); /* autopop empty strings */
+	pop_stack();
+	return 1;
+      }
+
+    }while(0);
+    CALL_AND_UNSET_ONERROR(tmp3);
   }
   return 0;
 }
