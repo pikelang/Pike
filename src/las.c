@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.316 2002/12/20 15:25:51 grubba Exp $
+|| $Id: las.c,v 1.317 2002/12/27 19:34:39 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.316 2002/12/20 15:25:51 grubba Exp $");
+RCSID("$Id: las.c,v 1.317 2002/12/27 19:34:39 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2928,7 +2928,6 @@ static int find_used_variables(node *n,
 
   case F_ARROW:
   case F_INDEX:
-    p->ext_flags = VAR_USED;
     find_used_variables(CAR(n),p,noblock,0);
     find_used_variables(CDR(n),p,noblock,0);
     break;
@@ -3048,10 +3047,12 @@ static void find_written_vars(node *n,
 
   case F_INDEX:
   case F_ARROW:
-    if (lvalue)
-      p->ext_flags = VAR_USED;
-    find_written_vars(CAR(n), p, 0);
+    find_written_vars(CAR(n), p, lvalue);
     find_written_vars(CDR(n), p, 0);
+    break;
+
+  case F_SOFT_CAST:
+    find_written_vars(CAR(n), p, lvalue);
     break;
 
   case F_INC:
@@ -3150,7 +3151,7 @@ static int depend_p2(node *a, node *b)
   UNSET_ONERROR(free_bb);
   UNSET_ONERROR(free_aa);
 
-  if(aa.err || bb.err || aa.ext_flags == VAR_USED) {
+  if(aa.err || bb.err) {
     free_vars(&aa);
     free_vars(&bb);
     return 1;
