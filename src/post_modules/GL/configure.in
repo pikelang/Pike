@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 1999/08/17 20:59:13 marcus Exp $
+# $Id: configure.in,v 1.6 1999/10/25 00:38:54 mirar Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -18,6 +18,9 @@ AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
 AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
 
 AC_CHECK_HEADERS(windef.h wingdi.h GL/gl.h GL/glx.h)
+
+AC_CHECK_LIB(X11,XDrawPoint)
+AC_CHECK_LIB(Xext,XShmPutImage)
 
 AC_CHECK_LIB(GL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
 AC_CHECK_LIB(MesaGL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBMESAGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
