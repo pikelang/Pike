@@ -92,6 +92,10 @@ int err;
 #define CHR_LINK_MEM_DISCARDABLE 0x2000000
 
 
+#define MACHINE_I386 0x14c
+#define MACHINE_IA64 0x200
+
+
 class Linker
 {
   string stringtable="";
@@ -212,7 +216,8 @@ class Linker
 
       if(s->relocs)
 	foreach(s->relocs, Reloc r)
-	  add_symbol(r->sym);
+	  if(r->sym)
+	    add_symbol(r->sym);
 
       foreach(s->symbols_in_this_section, Symbol sym)
 	add_symbol(sym);
@@ -278,7 +283,7 @@ class Linker
 	    foreach(s->relocs, Reloc r)
 	      sectiondata+=sprintf("%-4c%-4c%-2c",
 				   r->loc,
-				   add_symbol(r->sym),
+				   r->sym && add_symbol(r->sym),
 				   r->type);
 	}
 
@@ -314,7 +319,7 @@ class Linker
 		"%s%s%s%s" /* the rest */ , 
 		
 		/* coff */
-		0x14c, /* Intel x86 */
+		MACHINE_I386, /* Intel x86 */
 		sizeof(section_to_number),
 		time(),
 		base+strlen(sectiondata),
@@ -339,9 +344,11 @@ class Linker
   
 }
 
+
 mapping machine_table = ([
   0:"Unknown",
-  0x14c:"Intel x86",
+  MACHINE_I386:"Intel x86",
+  MACHINE_IA64:"Intel IA64",
   ]);
 
 class Bitfield
@@ -428,6 +435,7 @@ class dumpfile
   string filename;
   string data;
   int base;
+  int machine;
 
   int stringtable;
   int symboltable, numsymbols;
@@ -502,19 +510,47 @@ class dumpfile
 
   string decodeRelocType(int t)
     {
-      switch(t)
+      switch(machine)
       {
-	case 0: return "absolute";
-	case 1: return "dir16";
-	case 2: return "rel16";
-	case 6: return "dir32";
-	case 7: return "dir32nb";
-	case 9: return "seg12";
-	case 10: return "sect";
-	case 11: return "secrel";
-	case 20: return "rel32";
-	default: return sprintf("<%d>",t);
+        case MACHINE_I386:
+	  switch(t)
+	  {
+	    case 0: return "absolute";
+	    case 1: return "dir16";
+	    case 2: return "rel16";
+	    case 6: return "dir32";
+	    case 7: return "dir32nb";
+	    case 9: return "seg12";
+	    case 10: return "sect";
+	    case 11: return "secrel";
+	    case 20: return "rel32";
+	  }
+	  break;
+        case MACHINE_IA64:
+	  switch(t)
+	  {
+	    case 0: return "absolute";
+	    case 1: return "imm14";
+	    case 2: return "imm22";
+	    case 3: return "imm64";
+	    case 4: return "dir32";
+	    case 5: return "dir64";
+	    case 6: return "pcrel21b";
+	    case 7: return "pcrel21m";
+	    case 8: return "pcrel21f";
+	    case 9: return "gprel22";
+	    case 10: return "ltoff22";
+	    case 11: return "sect";
+	    case 12: return "secrel22";
+	    case 13: return "secrel64i";
+	    case 14: return "secrel32";
+	    case 15: return "ltoff64";
+	    case 16: return "dir32nb";
+	    case 31: return "addend";
+	  }
+	  break;
       }
+      return sprintf("<%d>",t);
     }
 
 
@@ -532,12 +568,14 @@ class dumpfile
 #endif
 	Reloc r=Reloc();
 	r->loc=i4(pos);
-	r->sym=file_symbols[i4(pos+4)];
 	r->type=i2(pos+8);
 
-	if (!r->sym) {
-	  write("  Failed to find symbol %O for relocation.\n",
-		getsymbolname(i4(pos+4)));
+	if(machine != MACHINE_IA64 || r->type != 31) {
+	  r->sym=file_symbols[i4(pos+4)];
+	  if (!r->sym) {
+	    write("  Failed to find symbol %O for relocation.\n",
+		  getsymbolname(i4(pos+4)));
+	  }
 	}
 
 	pos+=10;
@@ -847,7 +885,7 @@ class dumpfile
 	     symboltable,
 	     int timestamp,
 	     numsections,
-	     int machine);
+	     machine);
 
 #ifdef DEBUG
       write("Machine     : %s\n",machine_table[machine] || sprintf("%x",machine));
@@ -1052,7 +1090,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.19 2002/10/24 12:38:07 grubba Exp $\n"
+	 "$Id: pntld,v 1.20 2002/10/24 14:27:10 marcus Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
