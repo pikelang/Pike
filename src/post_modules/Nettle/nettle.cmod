@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.29 2004/01/29 23:16:03 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.30 2004/02/04 12:58:22 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -362,10 +362,6 @@ PIKECLASS CBC
     MEMCPY(THIS->iv, source, block_size);
   }
 
-  static void cbc_free_this_object() {
-    if(THIS->object) free_object(THIS->object);
-  }
-
   /*! @decl void create(program|object|function cipher, mixed ... args)
    *! Initialize the CBC wrapper with a cipher algorithm. If it is a
    *! program, an object will be instantiated with @[args] as arguments.
@@ -374,12 +370,14 @@ PIKECLASS CBC
    *! that function will be called with @[args] as arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more) {
+    int old_block_size = THIS->block_size;
     THIS->object = make_cipher_object(args);
 
     safe_apply(THIS->object, "block_size", 0);
 
     if(Pike_sp[-1].type != T_INT)
       Pike_error("block_size() didn't return an int.\n");
+
     THIS->block_size = Pike_sp[-1].u.integer;
 
     pop_stack();
@@ -388,6 +386,10 @@ PIKECLASS CBC
 	(THIS->block_size > 4096))
       Pike_error("Bad block size %d.\n", THIS->block_size);
 
+    if(THIS->iv) {
+      MEMSET(THIS->iv, 0, old_block_size);
+      free(THIS->iv);
+    }
     THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
     MEMSET(THIS->iv, 0, THIS->block_size);
   }
@@ -434,8 +436,11 @@ PIKECLASS CBC
    *! with the given @[key].
    */
   PIKEFUN object set_decrypt_key(string key) {
-    f_CBC_set_encrypt_key(args);
+    assert(THIS->block_size);
     THIS->mode = 1;
+    safe_apply(THIS->object, "set_decrypt_key", args);
+    pop_stack();
+    RETURN this_object();
   }
 
   /*! @decl this_program set_iv(string iv)
@@ -474,7 +479,7 @@ PIKECLASS CBC
     }
     else {
       while (offset < data->len) {
-	cbc_encrypt_step((const unsigned INT8 *)data->str + offset,
+	cbc_decrypt_step((const unsigned INT8 *)data->str + offset,
 			 result + offset);
 	offset += THIS->block_size;
       }
