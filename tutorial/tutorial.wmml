@@ -6674,40 +6674,29 @@ Gz.deflate-&gt;deflate
 
 <hr noshade size=1>
 
-<anchor name=Yp>
+<module name=Yp>
 <section title="Yp">
 This module is an interface to the Yellow Pages functions. Yp is also
 known as NIS (Network Information System) and is most commonly used to
 distribute passwords and similar information within a network.
 
 <hr noshade size=1>
-<anchor name=Yp.default_yp_domain>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.default_yp_domain</tt> - get the default Yp domain
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string default_yp_domain()<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Yp.default_yp_domain title="get the default Yp domain">
+<man_syntax>
+string default_yp_domain();
+</man_syntax>
+<man_description>
 Returns the default yp-domain.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <hr noshade size=1>
 
-<anchor name=Yp.YpDomain>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpDomain</tt> - class representing an Yp domain
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object(Yp.YpDomain) Yp.YpDomain(string|void <i>domain</i>);
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<class name=Yp.YpDomain title="class representing an Yp domain">
+<man_syntax>
+object(Yp.YpDomain) Yp.YpDomain(string|void <i>domain</i>);
+</man_syntax>
+<man_description>
 This creates a new YpDomain object.
 <p>
 If there is no YP server available for the domain, this
@@ -6717,262 +6706,231 @@ is not configurable from the C interface to Yp either.
 <p>
 If no domain is given, the default domain will be used. (As returned
 by Yp.default_yp_domain)
-</dl>
-</anchor>
+</man_description>
+</class>
 
 <hr noshade size=1>
-<anchor name=Yp.YpDomain.bind>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpDomain-&gt;bind</tt> - bind this object to another domain
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void bind(string|void <i>domain</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Yp.YpDomain-&gt;bind title="bind this object to another domain">
+<man_syntax>
+void bind(string|void <i>domain</i>);
+</man_syntax>
+<man_description>
 Re-bind the object to another (or the same) domain. If no domain is given,
 the default domain will be used.
-<p>
-</dl>
-</anchor>
+</man_description>
+</method>
 
 <hr noshade size=1>
-<anchor name=Yp.YpDomain.match>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.Ypdomain-&gt;match</tt> - match a key in a map
+
+<method name=Yp.YpDomain-&gt;match title="match a key in a map">
+<man_syntax>
+string match(string <i>map</i>, string <i>key</i>);
+</man_syntax>
+<man_description>
+If 'map' does not exist, an error will be generated. 
+Otherwise the string matching the key will be returned.
+If there is no such key in the map, 0 will be returned.
 <p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string match(string <i>map</i>, string <i>key</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-   If 'map' does not exist, an error will be generated. 
-   Otherwise the string matching the key will be returned.
-   If there is no such key in the map, 0 will be returned.
-<p>
-   <i>arguments</i> is the map Yp-map to search in. This must be a full map
-   name, for example, you should use <tt>passwd.byname</tt> instead of
-   just <tt>passwd</tt>. <i>key</i> is the key to search for. The key
-   must match exactly, no pattern matching of any kind is done.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
+<i>arguments</i> is the map Yp-map to search in. This must be a full map
+name, for example, you should use <tt>passwd.byname</tt> instead of
+just <tt>passwd</tt>. <i>key</i> is the key to search for. The key
+must match exactly, no pattern matching of any kind is done.
+</man_description>
+<man_example>
 <example language=pike>
 object dom = Yp.YpDomain();
 write(dom->match("passwd.byname", "root"));
 </example>
-</dl>
-</anchor>
-<hr noshade size=1>
-<anchor name=Yp.YpDomain.all>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpDomain-&gt;all</tt> - return the whole map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:string) all(string <i>map</i>)</tt>
+</man_example>
+</method>
 
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-  Returns the whole map as a mapping. <i>map</i> is the YP-map to search in.
-  This must be the full map name, you have to use <tt>passwd.byname</tt>
-  instead of just <tt>passwd</tt>.
-<p>
-</dl>
-</anchor>
 <hr noshade size=1>
 
-<anchor name=Yp.YpDomain.map>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpDomain-&gt;map</tt> - call a function for each entry in an Yp map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void map(string <i>map</i>, function(string,string:void) <i>over</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-    For each entry in 'map', call the function(s) specified by 'over'.
-    Over will get two arguments, the first being the key, and the
-    second the value. <i>map</i> is the YP-map to search in.
-    This must be the full map name, as an
-    example, passwd.byname instead of just passwd.
-<p>
-</dl>
-</anchor>
-<hr noshade size=1>
-<anchor name=Yp.YpDomain.server>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpDomain-&gt;server</tt> - find an Yp server
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string server(string <i>map</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-  Returns the hostname of the server serving the map <i>map</i>. <i>map</i>
-  is the YP-map to search in. This must be the full map name, as an
-    example, passwd.byname instead of just passwd.
-<p>
-</dl>
-</anchor>
-<hr noshade size=1>
-<anchor name=Yp.YpDomain.order>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpDomain-&gt;order</tt> - get the 'order' for specified map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int order(string <i>map</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-  Returns the 'order' number for the map <i>map</i>. This is usually a
-  time_t (see the global function time()). When the map is changed, this number
-  will change as well. <i>map</i> is
-    the YP-map to search in. This must be the full map name, as an
-    example, passwd.byname instead of just passwd.
-</dl>
-</anchor>
+<method name=Yp.YpDomain-&gt;all title="return the whole map">
+<man_syntax>
+mapping(string:string) all(string <i>map</i>);
+</man_syntax>
+<man_description>
+Returns the whole map as a mapping. <i>map</i> is the YP-map to search in.
+This must be the full map name, you have to use <tt>passwd.byname</tt>
+instead of just <tt>passwd</tt>.
+</man_description>
+</method>
+
 <hr noshade size=1>
 
-<anchor name=Yp.YpMap>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap</tt> - class representing one Yp map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object(Yp.YpMap) Yp.Ypmap(string <i>map</i>, string|void <i>domain</i>)</tt>
-<dt><encaps>DESCRIPTION</encaps><dd>
-  This creates a new YpMap object. 
-<p>
-  If there is no YP server available for the domain, this
-  function call will block until there is one. If no server appears
-  in about ten minutes or so, an error will be returned. The timeout
-  is not configurable from the C-yp interface either. <i>map</i> is
-    the YP-map to bind to. This must be the full map name, as an
-    example, passwd.byname instead of just passwd.
-  If no domain is specified, the
-  default domain will be used. This is usually best.
-<p>
-</dl>
-</anchor>
-<hr noshade size=1>
-<anchor name=Yp.YpMap.match>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap-&gt;match</tt> - find key in map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string match(string <i>key</i>)</tt><br>
-or<br>
-<tt>string <i>Yp.YpMap</i>[string <i>key</i>]</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-  Search for the key <i>key</i>. If there is no <i>key</i> in the map, 0
-  will be returned, otherwise the string matching the key will
-  be returned.
-  <i>key</i> must match exactly, no pattern
-   matching of any kind is done.
-</dl>
-</anchor>
+<method name=Yp.YpDomain-&gt;map title="call a function for each entry in an Yp map">
+<man_syntax>
+void map(string <i>map</i>, function(string,string:void) <i>over</i>);
+</man_syntax>
+<man_description>
+For each entry in 'map', call the function(s) specified by 'over'.
+Over will get two arguments, the first being the key, and the
+second the value. <i>map</i> is the YP-map to search in.
+This must be the full map name, as an
+example, passwd.byname instead of just passwd.
+</man_description>
+</method>
+
 <hr noshade size=1>
 
+<method name=Yp.YpDomain-&gt;server title="find an Yp server">
+<man_syntax>
+string server(string <i>map</i>);
+</man_syntax>
+<man_description>
+Returns the hostname of the server serving the map <i>map</i>. <i>map</i>
+is the YP-map to search in. This must be the full map name, as an
+example, passwd.byname instead of just passwd.
+</man_description>
+</method>
 
-<anchor name=Yp.YpMap.all>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap-&gt;all</tt> - return the whole map as a mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:string) all();</tt><br>
-or<br>
-<tt>(mapping) <i>Yp.YpMap</i></tt><br>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-    Returns the whole map as a mapping.
-</dl>
-</anchor>
-<hr noshade size=1>
-<p>
-<anchor name=Yp.YpMap.map>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap-&gt;map</tt> - call a function for each entry in the map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void map(function(string,string:void) <i>over</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-    For each entry in the map, call the function(s) specified by 'over'.
-    The function will be called like 'void over(string key, string value)'
-</dl>
-</anchor>
 <hr noshade size=1>
 
+<method name=Yp.YpDomain-&gt;order title="get the 'order' for specified map">
+<man_syntax>
+int order(string <i>map</i>);
+</man_syntax>
+<man_description>
+Returns the 'order' number for the map <i>map</i>. This is usually a
+time_t (see the global function time()). When the map is changed, this number
+will change as well. <i>map</i> is
+the YP-map to search in. This must be the full map name, as an
+example, passwd.byname instead of just passwd.
+</man_description>
+</method>
 
-<anchor name=Yp.YpMap.server>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap-&gt;server</tt> - find what server servers this map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string server()</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-    Returns the hostname of the server serving this map.
-</dl>
-</anchor>
 <hr noshade size=1>
+
+<class name=Yp.YpMap title="class representing one Yp map">
+<man_syntax>
+object(Yp.YpMap) Yp.Ypmap(string <i>map</i>, string|void <i>domain</i>);
+</man_syntax>
+<man_description>
+This creates a new YpMap object. 
 <p>
-<anchor name=Yp.YpMap.order>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap-&gt;order()</tt> - find the 'order' of this map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int order()</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-    Returns the 'order' number for this map. This is usually a
-    time_t (see the global function time())
-</dl>
-</anchor>
+If there is no YP server available for the domain, this
+function call will block until there is one. If no server appears
+in about ten minutes or so, an error will be returned. The timeout
+is not configurable from the C-yp interface either. <i>map</i> is
+the YP-map to bind to. This must be the full map name, as an
+example, passwd.byname instead of just passwd.
+If no domain is specified, the
+default domain will be used. This is usually best.
+</man_description>
+</class>
+
 <hr noshade size=1>
-<p>
-<anchor name=Yp.YpMap._sizeof>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap._sizeof</tt> - return the number of entries in the map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int sizeof(<i>Yp.YpMap</i>)</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-   Returns the number of entries in the map. This is equivalent to
+
+<method name=Yp.YpMap-&gt;match title="find key in map">
+<man_syntax>
+string match(string <i>key</i>)<br>;
+string <i>Yp.YpMap</i>[string <i>key</i>];<br>
+</man_syntax>
+<man_description>
+Search for the key <i>key</i>. If there is no <i>key</i> in the map, 0
+will be returned, otherwise the string matching the key will
+be returned.
+<i>key</i> must match exactly, no pattern
+matching of any kind is done.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Yp.YpMap-&gt;all title="return the whole map as a mapping">
+<man_syntax>
+mapping(string:string) all();<br>
+(mapping) <i>Yp.YpMap</i>;<br>
+</man_syntax>
+<man_description>
+Returns the whole map as a mapping.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Yp.YpMap-&gt;map title="call a function for each entry in the map">
+<man_syntax>
+void map(function(string,string:void) <i>over</i>);
+</man_syntax>
+<man_description>
+For each entry in the map, call the function(s) specified by 'over'.
+The function will be called like 'void over(string key, string value)'.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Yp.YpMap-&gt;server title="find what server servers this map">
+<man_syntax>
+string server();
+</man_syntax>
+<man_description>
+Returns the hostname of the server serving this map.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Yp.YpMap-&gt;order title="find the 'order' of this map">
+<man_syntax>
+int order();
+</man_syntax>
+<man_description>
+Returns the 'order' number for this map. This is usually a
+time_t (see the global function time())
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Yp.YpMap-&gt;_sizeof title="return the number of entries in the map">
+<man_syntax>
+int sizeof(<i>Yp.YpMap</i>);
+</man_syntax>
+<man_description>
+Returns the number of entries in the map. This is equivalent to
 <tt>sizeof((mapping)map);</tt>
-</dl>
-</anchor>
+</man_description>
+</method>
+
 <hr noshade size=1>
 
-<anchor name=Yp.YpMap._indices>
-<anchor name=Yp.YpMap._values>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Yp.YpMap._indices</tt> - return the indices from the map<br>
-<tt>Yp.YpMap._values</tt> - return the values from the map
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
+<method name=Yp.YpMap-&gt;_indices title="return the indices from the map">
+<man_syntax>
 array(string) indices(<i>Yp.YpMap</i>)<br>
-array(string) values(<i>Yp.Ypmap</i>)
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-  Returns the indices of the map. If indices is called first, values must
-  be called immediately after. If values is called first, it is the
-  other way around.
-</dl>
-</anchor>
-</anchor>
+</man_syntax>
+<man_description>
+Returns the indices of the map. If indices is called first, values must
+be called immediately after. If values is called first, it is the
+other way around.
+</man_description>
+<man_see>
+Yp.YpMap-&gt;_values
+</man_see>
+</method>
 
-<p>
+
+<hr noshard size=1>
+
+<method name=Yp.YpMap-&gt;_values title="return the values from the map">
+<man_syntax>
+array(string) values(<i>Yp.Ypmap</i>)
+</man_syntax>
+<man_description>
+Returns the values of the map. If values is called first, indices must
+be called immediately after. If indices is called first, it is the
+other way around.
+</man_description>
+<man_see>
+Yp.YpMap-&gt;_indices
+</man_see>
+</method>
+
 <hr noshade size=1>
+
 Here is an example program using the Yp module, it lists users and
 their GECOS field from the Yp map "passwd.byname" if your system uses
 Yp.
@@ -7003,7 +6961,8 @@ Yp.
 	}
 </example>
 </section>
-</anchor>
+</module>
+
 <hr noshade size=1>
 
 <anchor name=MIME>
