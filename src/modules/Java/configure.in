@@ -151,6 +151,11 @@ if test "x$with_java" = xyes; then
 
   if test "$ac_cv_header_jni_h" = yes; then
 
+    AC_CHECK_LIB(hpi, sysOpen, [
+      LIBS="$LIBS -lhpi"
+      JAVA_LIBS="${JAVA_LIBS} -lhpi"
+    ], [])
+
     AC_MSG_CHECKING([for JNI_CreateJavaVM in -ljvm])
     AC_CACHE_VAL(ac_cv_lib_jvm_JNI_CreateJavaVM, [
       ac_save_LIBS="$LIBS"
@@ -180,11 +185,6 @@ if test "x$with_java" = xyes; then
       AC_CHECK_LIB(zip, Java_java_util_zip_Inflater_inflateBytes, [
         LIBS="-lzip $LIBS"
         JAVA_LIBS="-lzip ${JAVA_LIBS}"
-      ], [])
-
-      AC_CHECK_LIB(hpi, sysOpen, [
-        LIBS="$LIBS -lhpi"
-        JAVA_LIBS="${JAVA_LIBS} -lhpi"
       ], [])
 
       AC_CHECK_LIB(thread, thr_create, [
