@@ -198,11 +198,12 @@ class VarargsType {
 // DOCUMENTATION OBJECT
 //========================================================================
 
-class Documentation {
-  string text;
-  string xml;
-  SourcePosition position;
-}
+class Documentation(string|void text, string|void xml,
+		    SourcePosition|void position)
+{}
+
+static Documentation EmptyDoc =
+  Documentation("", "\n", SourcePosition(__FILE__, __LINE__, __LINE__));
 
 class DocGroup {
   array(PikeObject) objects = ({ });
@@ -346,8 +347,11 @@ class _Class_or_Module {
     children -= ({ 0 }); // FIXME
     foreach (children, _Class_or_Module c)
       contents += c->xml();
-    foreach (inherits, Inherit in)
-      contents += in->xml();
+    foreach (inherits, Inherit in) {
+      // Wrap the undocumented inherits in docgroups.
+      DocGroup dg = DocGroup(({in}), EmptyDoc);
+      contents += dg->xml();
+    }
     foreach (docGroups, DocGroup dg)
       contents += dg->xml();
     mapping(string:string) m = standardAttributes();
