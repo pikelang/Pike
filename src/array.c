@@ -21,7 +21,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.50 1999/08/17 01:04:20 mast Exp $");
+RCSID("$Id: array.c,v 1.51 1999/08/17 03:17:06 mast Exp $");
 
 struct array empty_array=
 {
@@ -182,13 +182,15 @@ void simple_array_index_no_free(struct svalue *s,
       break;
 
     case T_STRING:
-      check_stack(4);
-      ref_push_array(a);
-      assign_svalue_no_free(sp++,ind);
-      f_column(2);
-      s[0]=sp[-1];
-      sp--;
-      break;
+      if (ind->subtype == 1) {
+	check_stack(4);
+	ref_push_array(a);
+	assign_svalue_no_free(sp++,ind);
+	f_column(2);
+	s[0]=sp[-1];
+	sp--;
+	break;
+      }
 	
     default:
       {
