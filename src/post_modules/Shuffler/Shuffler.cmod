@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.31 2004/06/27 19:00:41 srb Exp $
+|| $Id: Shuffler.cmod,v 1.32 2004/06/27 19:16:03 srb Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.31 2004/06/27 19:00:41 srb Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.32 2004/06/27 19:16:03 srb Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -212,7 +212,9 @@ PIKECLASS Shuffle
   EXIT
   {
     SHUFFLE_DEBUG1("exit()\n", THIS );
-    //change_fd_for_box(&THIS->box, -1);  // unnecessary?
+#if 0
+    change_fd_for_box(&THIS->box, -1);  /* unnecessary? */
+#endif
     { struct Backend_struct*ob = THIS->box.backend;
       unhook_fd_callback_box(&THIS->box);
       if(THIS->chainbox) {
