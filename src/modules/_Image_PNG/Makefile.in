@@ -1,8 +1,0 @@
-# $Id: Makefile.in,v 1.2 1998/03/28 14:53:51 grubba Exp $
-SRCDIR=@srcdir@
-VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=image_png.o
-MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-
-@dynamic_module_makefile@
-@dependencies@
