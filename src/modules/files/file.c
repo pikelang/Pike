@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.121 1998/08/06 23:38:08 grubba Exp $");
+RCSID("$Id: file.c,v 1.122 1998/08/08 13:53:23 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -73,6 +73,15 @@ RCSID("$Id: file.c,v 1.121 1998/08/06 23:38:08 grubba Exp $");
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
 #endif
+
+/* Fix warning on OSF/1
+ *
+ * NOERROR is defined by both sys/stream.h (-1), and arpa/nameser.h (0),
+ * the latter is included by netdb.h.
+ */
+#ifdef NOERROR
+#undef NOERROR
+#endif /* NOERROR */
 
 #ifdef HAVE_NETDB_H
 #include <netdb.h>

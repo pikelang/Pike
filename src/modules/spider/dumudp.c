@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.40 1998/08/06 23:51:38 grubba Exp $
+ * $Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.40 1998/08/06 23:51:38 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -77,6 +77,15 @@ RCSID("$Id: dumudp.c,v 1.40 1998/08/06 23:51:38 grubba Exp $");
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
 #endif
+
+/* Fix warning on OSF/1
+ *
+ * NOERROR is defined by both sys/stream.h (-1), and arpa/nameser.h (0),
+ * the latter is included by netdb.h.
+ */
+#ifdef NOERROR
+#undef NOERROR
+#endif /* NOERROR */
 
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
@@ -179,8 +188,8 @@ void udp_read(INT32 args)
 {
   int flags = 0, res=0, fd;
   struct sockaddr_in from;
-  int  fromlen = sizeof(struct sockaddr_in);
   char buffer[UDP_BUFFSIZE];
+  ACCEPT_SIZE_T fromlen = sizeof(struct sockaddr_in);
   
   if(args)
   {
