@@ -1,0 +1,55 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: adt.cmod,v 1.1 2003/02/12 18:35:16 peta Exp $
+*/
+#include "global.h"
+#include "main.h"
+
+#include "object.h"
+#include "mapping.h"
+#include "multiset.h"
+#include "svalue.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "pike_error.h"
+#include "pike_memory.h"
+#include "dynamic_buffer.h"
+#include "interpret.h"
+#include "las.h"
+#include "gc.h"
+#include "stralloc.h"
+#include "security.h"
+#include "block_alloc.h"
+#include "opcodes.h"
+#include "pike_error.h"
+#include "program.h"
+#include "operators.h"
+#include "builtin_functions.h"
+#include "constants.h"
+
+
+#include "program.h"
+#include "program_id.h"
+
+
+#include "fdlib.h"
+#include "fd_control.h"
+#include "backend.h"
+#include "module_support.h"
+#include "array_adapter.h"
+
+DECLARATIONS
+
+PIKE_MODULE_INIT
+{
+  INIT;
+  pike_init_ArrayAdapter_module();
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+  pike_exit_ArrayAdapter_module();  
+} 
