@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.141 2004/09/16 15:25:34 grubba Exp $
+|| $Id: array.c,v 1.142 2004/09/16 17:41:03 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.141 2004/09/16 15:25:34 grubba Exp $");
+RCSID("$Id: array.c,v 1.142 2004/09/16 17:41:03 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -330,7 +330,8 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   }else{
     struct array *ret;
 
-    ret=allocate_array_no_init(v->size+1, (v->size >> 3) + 1);
+    ret = array_set_flags(allocate_array_no_init(v->size+1, (v->size >> 3) + 1),
+			  v->flags);
     ret->type_field = v->type_field;
 
     MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
@@ -1949,6 +1950,12 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,struct processi
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
+
+  if (!a->size) {
+    add_ref(&empty_array);
+    return array_set_flags(&empty_array,
+			   a->flags & ~(ARRAY_LVALUE|ARRAY_CONSIDER_REALLOC));
+  }
 
   doing.next=p;
   doing.pointer_a=(void *)a;
