@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.31 2003/03/17 18:05:24 grubba Exp $ */
+/* $Id: block_alloc.h,v 1.32 2003/03/17 18:53:22 grubba Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -181,7 +181,7 @@ static void PIKE_CONCAT(DATA,_rehash)()					     \
 }									     \
 									     \
 static inline struct DATA *						     \
- PIKE_CONCAT(just_find_,DATA)(void *ptr, size_t hval)			     \
+ PIKE_CONCAT(really_low_just_find_,DATA)(void *ptr, size_t hval)	     \
 {									     \
   struct DATA *p,**pp;							     \
   p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
@@ -204,7 +204,7 @@ static struct DATA *PIKE_CONCAT(just_find_,DATA)(void *ptr)		     \
     return 0;                                                                \
   }                                                                          \
   hval %= PIKE_CONCAT(DATA,_hash_table_size);				     \
-  p=PIKE_CONCAT3(just_find_,DATA,_unlocked)(ptr, hval);			     \
+  p=PIKE_CONCAT(really_low_just_find_,DATA)(ptr, hval);			     \
   return p;								     \
 }									     \
 									     \
