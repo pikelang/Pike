@@ -28,7 +28,7 @@ array(int) preferred_suites =
    SSL_rsa_with_rc4_128_md5,
    SSL_rsa_with_3des_ede_cbc_sha,
    SSL_rsa_with_des_cbc_sha,
-//   SSL_rsa_export_with_rc4_40_md5,
+   SSL_rsa_export_with_rc4_40_md5,
    SSL_rsa_with_null_sha,
    SSL_rsa_with_null_md5
 });
@@ -37,7 +37,7 @@ array(int) preferred_compressors =
 ({ COMPRESSION_null });
 
 constant Session = (program) "session";
-constant Queue = (program) "queue";
+constant Queue = ADT.queue;
 
 int use_cache = 1;
 int session_lifetime = 600; /* Time to remember a session, in seconds */

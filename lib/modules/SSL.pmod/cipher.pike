@@ -14,12 +14,14 @@ class CipherSpec {
   int iv_size;
 }
 
+#if 0
 class mac_none
 {
   /* Dummy MAC algorithm */
 //  string hash_raw(string data) { return ""; }
   string hash(string data, object seq_num) { return ""; }
 }
+#endif
 
 class mac_sha
 {
@@ -72,6 +74,7 @@ class mac_md5 {
   program algorithm = Crypto.md5;
 }
 
+#if 0
 class crypt_none
 {
   /* Dummy stream cipher */
@@ -79,6 +82,7 @@ class crypt_none
   object set_decrypt_key(string k) { return this_object(); }  
   string crypt(string s) { return s; }
 }
+#endif
 
 class des
 {
@@ -143,7 +147,7 @@ array lookup(int suite)
     res->bulk_cipher_algorithm = Crypto.rc4;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
-    res->key_material = 5;
+    res->key_material = 16;
     res->iv_size = 0;
     break;
   case CIPHER_des:
@@ -168,7 +172,7 @@ array lookup(int suite)
     res->iv_size = 8;
     break;
   case CIPHER_null:
-    res->bulk_cipher_algorithm = crypt_none;
+    res->bulk_cipher_algorithm = 0;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
     res->key_material = 0;
@@ -189,7 +193,7 @@ array lookup(int suite)
     res->hash_size = 16;
     break;
   case 0:
-    res->mac_algorithm = mac_none;
+    res->mac_algorithm = 0;
     res->hash_size = 0;
     break;
   default:

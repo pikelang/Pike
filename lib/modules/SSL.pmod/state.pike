@@ -27,10 +27,12 @@ void create(object s)
  * there was an error, otherwise 0. */
 object decrypt_packet(object packet)
 {
+  werror(sprintf("SSL.state->decrypt_packet: data = '%s'\n", packet->fragment));
+  
   if (crypt)
   {
     string msg;
-//    werror("Trying decrypt..\n");
+    werror("SSL.state: Trying decrypt..\n");
     msg = crypt->crypt(packet->fragment); 
     if (! msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message);
@@ -40,11 +42,11 @@ object decrypt_packet(object packet)
     packet->fragment = msg;
   }
 
-//  werror(sprintf("Decrypted_packet '%s'\n", packet->fragment));
+  werror(sprintf("SSL.state: Decrypted_packet '%s'\n", packet->fragment));
 
   if (mac)
   {
-//    werror("Trying mac verification...\n");
+    werror("SSL.state: Trying mac verification...\n");
     int length = strlen(packet->fragment) - session->cipher_spec->hash_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
@@ -56,7 +58,7 @@ object decrypt_packet(object packet)
 
   if (compress)
   {
-//    werror("Trying decompression...\n");
+    werror("SSL.state: Trying decompression...\n");
     string msg;
     msg = compress(packet->fragment);
     if (!msg)

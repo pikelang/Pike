@@ -15,7 +15,7 @@ int closing;
 inherit "constants";
 inherit "handshake";
 
-constant Queue = (program) "queue";
+constant Queue = ADT.queue;
 constant State = (program) "state";
 
 inherit Queue : alert;
@@ -182,7 +182,7 @@ string|int got_data(string s)
 
     if (packet->is_alert)
     { /* Reply alert */
-      werror("Bad recieved packet\n");
+      werror("SSL.connection: Bad recieved packet\n");
       send_packet(packet);
       if (packet->level == ALERT_fatal)
 	return -1;

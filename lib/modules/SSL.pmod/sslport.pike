@@ -90,11 +90,11 @@ class sslfile
   
   private void ssl_read_callback(mixed id, string s)
   {
-    werror(sprintf("sslfile->ssl_read_callback\n"));
+    werror(sprintf("SSL.sslfile->ssl_read_callback\n"));
     string|int data = got_data(s);
     if (stringp(data))
     {
-      werror(sprintf("sslfile: application_data: '%s'\n", data));
+      werror(sprintf("SSL.sslfile: application_data: '%s'\n", data));
       if (strlen(data))
       {
 	read_buffer += data;

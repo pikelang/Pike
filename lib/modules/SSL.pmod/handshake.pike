@@ -37,7 +37,7 @@ int reuse;
 string my_random;
 string other_random;
 
-constant Struct = (program) "struct";
+constant Struct = ADT.struct;
 constant Session = (program) "session";
 constant Packet = (program) "packet";
 constant Alert = (program) "alert";
@@ -76,16 +76,22 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
 {
   reuse = 0;
   session = context->new_session();
-
-//  werror(sprintf("ciphers: me: %O, client: %O\n",
-//		   context->preferred_suites, cipher_suites)); 
+  multiset(int) common_suites;
+  
+  werror(sprintf("ciphers: me: %O, client: %O\n",
+		   context->preferred_suites, cipher_suites)); 
 //  werror(sprintf("compr: me: %O, client: %O\n",
 //		   context->preferred_compressors, compression_methods)); 
-  cipher_suites &= context->preferred_suites;
-  if (sizeof(cipher_suites))
-    session->set_cipher_suite(cipher_suites[0]);
-  else
+  
+  common_suites = mkmultiset(cipher_suites & context->preferred_suites);
+  werror(sprintf("intersection: %O\n", common_suites));
+  if (sizeof(common_suites))
   {
+    int suite;
+    foreach(context->preferred_suites, suite)
+      if (common_suites[suite]) break;
+    session->set_cipher_suite(suite);
+  } else {
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure));
     return -1;
   }
@@ -245,11 +251,11 @@ int handle_handshake(int type, string data, string raw)
 			 "Version %d.%d hello detected\n", @version));
 
 	if (strlen(id))
-	  werror(sprintf("Looking up session %s\n", id));
+	  werror(sprintf("SSL.handshake: Looking up session %s\n", id));
 	session = strlen(id) && context->lookup_session(id);
 	if (session)
 	{
-	  werror(sprintf("Reusing session %s\n", id));
+	  werror(sprintf("SSL.handshake: Reusing session %s\n", id));
 	  /* Reuse session */
 	  reuse = 1;
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))

@@ -90,10 +90,11 @@ class no_random {
   }
 }
 
+#if 0
 /* ad-hoc asn.1-decoder */
 
 class ber_decode {
-  inherit "struct";
+  inherit ADT.struct;
 
   array get_asn1()
   {
@@ -128,6 +129,7 @@ class ber_decode {
       return ({ tag, contents });
   }
 }
+#endif
 
 /* PKCS#1 Private key structure:
 
@@ -157,13 +159,13 @@ int main()
   werror(sprintf("Cert: '%s'\n", Crypto.string_to_hex(my_certificate)));
   werror(sprintf("Key:  '%s'\n", Crypto.string_to_hex(my_key)));
 //  werror(sprintf("Decoded cert: %O\n", ber_decode(my_certificate)->get_asn1()));
-  array key = ber_decode(my_key)->get_asn1()[1];
+  array key = asn1.ber_decode(my_key)->get_asn1()[1];
   werror(sprintf("Decoded key: %O\n", key));
-  object n = Gmp.mpz(key[1][1], 256);
-  object e = Gmp.mpz(key[2][1], 256);
-  object d = Gmp.mpz(key[3][1], 256);
-  object p = Gmp.mpz(key[4][1], 256);
-  object q = Gmp.mpz(key[5][1], 256);
+  object n = key[1][1];
+  object e = key[2][1];
+  object d = key[3][1];
+  object p = key[4][1];
+  object q = key[5][1];
 
   werror(sprintf("n =  %s\np =  %s\nq =  %s\npq = %s\n",
 		 n->digits(), p->digits(), q->digits(), (p*q)->digits()));
@@ -173,5 +175,11 @@ int main()
   certificates = ({ my_certificate });
   random = no_random()->read;
   werror("Starting\n");
-  return bind(PORT, my_accept_callback) ? -17 : 17;
+  if (!bind(PORT, my_accept_callback))
+  {
+    perror("");
+    return 17;
+  }
+  else
+    return -17;
 }
