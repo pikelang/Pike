@@ -19,7 +19,7 @@ static int open(string file, string how)
       return 1;
     }else{
       current_file=current_mode=0;
-      return 1;
+      return 0;
     }
   }
 }
@@ -344,6 +344,7 @@ void create()
   add_efun("PI",3.1415926535897932384626433832795080);
   add_efun("capitalize",capitalize);
   add_efun("code_value",code_value);
+  add_efun("exec","exec");
   add_efun("file_size",file_size);
   add_efun("filter_array",filter_array);
   add_efun("l_sizeof",sizeof);
@@ -364,7 +365,7 @@ void create()
   add_efun("strstr",search);
   add_efun("sum_arrays",sum_arrays);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.6E-12"; });
+  add_efun("version",lambda() { return "uLPC v1.7E-12"; });
   add_efun("write_file",write_file);
   add_efun("get_function",get_function);
   add_efun("regexp",regexp);
