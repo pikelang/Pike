@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.7 2003/08/24 21:17:28 nilsson Exp $
+// $Id: Struct.pike,v 1.8 2003/10/03 14:22:53 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -16,8 +16,8 @@
 //!     Item artist = Chars(30);
 //!     Item album = Chars(30);
 //!     Item year = Chars(4);
-//!     Item genre = Byte();
 //!     Item comment = Chars(30);
+//!     Item genre = Byte();
 //!   }
 //!
 //!   Stdio.File f = Stdio.File("foo.mp3");
@@ -162,7 +162,7 @@ class Byte {
   }
 
   void set(int(0..255) in) {
-    if(in<0 || in>255) error("Value out of bound\n");
+    if(in<0 || in>255) error("Value %d out of bound (0..255).\n", in);
     value = in;
   }
   void decode(object f) { sscanf(f->read(1), "%c", value); }
@@ -187,7 +187,8 @@ class Word {
   }
 
   void set(int(0..) in) {
-    if(in<0 || in>=pow(2,size*8)) error("Value out of bound.\n");
+    if(in<0 || in>=pow(2,size*8)) error("Value %d out of bound (0..%d).\n",
+					in, pow(2,size*8));
     value = in;
   }
   void decode(object f) { sscanf(f->read(size), "%"+size+"c", value); }
@@ -242,7 +243,9 @@ class Chars {
   }
 
   void set(string in) {
-    if(sizeof(in)!=size) error("String has wrong size.\n");
+    if(sizeof(in)!=size)
+      error("String has wrong size (%d instead of %d).\n",
+	    sizeof(in), size);
     if(String.width(in)!=8) error("Wide strings not allowed.\n");
     value = in;
   }
