@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.80 1999/03/28 23:45:05 grubba Exp $
+ * $Id: requests.pmod,v 1.81 1999/03/29 00:34:50 grubba Exp $
  */
 
 import .types;
@@ -623,7 +623,7 @@ class fetch
       {
 	res->wanted = "bodystructure";
 	res->raw_wanted = "body";  // What to say in the response
-	res->no_extention_data = 1;
+	res->no_extension_data = 1;
 	return res;
       }
       /* Fall through */
