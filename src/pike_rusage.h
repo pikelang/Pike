@@ -2,11 +2,18 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.15 2003/02/14 20:00:53 mast Exp $
+|| $Id: pike_rusage.h,v 1.16 2003/11/27 19:57:35 mast Exp $
 */
 
 #ifndef PIKE_RUSAGE_H
 #define PIKE_RUSAGE_H
+
+#ifdef HAVE_TIMES
+extern long pike_clk_tck;
+#define init_rusage() (pike_clk_tck = sysconf (_SC_CLK_TCK))
+#else
+#define init_rusage()
+#endif
 
 /* Prototypes begin here */
 typedef long pike_rusage_t[29];

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.35 2003/02/23 17:50:52 grubba Exp $
+|| $Id: rusage.c,v 1.36 2003/11/27 19:57:35 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.35 2003/02/23 17:50:52 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.36 2003/11/27 19:57:35 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -45,8 +45,8 @@ RCSID("$Id: rusage.c,v 1.35 2003/02/23 17:50:52 grubba Exp $");
  * cpu usage.
  */
 
-#if defined (HAVE_TIMES) && !defined (CLK_TCK) && defined (_SC_CLK_TCK)
-#define CLK_TCK sysconf(_SC_CLK_TCK)
+#ifdef HAVE_TIMES
+long pike_clk_tck = 0;
 #endif
 
 /*
@@ -223,26 +223,29 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 
 #else /* HAVE_GETRUSAGE */
 
-#if defined(HAVE_TIMES) && defined(CLK_TCK)
+#if defined(HAVE_TIMES)
 
 int pike_get_rusage(pike_rusage_t rusage_values)
 {
   struct tms tms;
-  clock_t ticks, ret = times (&tms);
+  clock_t ret = times (&tms);
+
+#ifdef PIKE_DEBUG
+  if (!pike_clk_tck) error ("Called before dbm_main.\n");
+#endif
 
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   if (ret == (clock_t) -1) return 0;
 
-  ticks = CLK_TCK;
-  rusage_values[0] = CONVERT_TIME (tms.tms_utime, ticks, 1000);
-  rusage_values[1] = CONVERT_TIME (tms.tms_stime, ticks, 1000);
+  rusage_values[0] = CONVERT_TIME (tms.tms_utime, pike_clk_tck, 1000);
+  rusage_values[1] = CONVERT_TIME (tms.tms_stime, pike_clk_tck, 1000);
 
   /* It's not really clear if ret is real time; in at least Linux it
    * is, but GNU libc says "The return value is the calling process'
    * CPU time (the same value you get from `clock()'" and "In the GNU
    * system, the CPU time is defined to be equivalent to the sum of
    * the `tms_utime' and `tms_stime' fields returned by `times'." */
-  rusage_values[18] = CONVERT_TIME (ret, ticks, 1000);
+  rusage_values[18] = CONVERT_TIME (ret, pike_clk_tck, 1000);
 
   return 1;
 }
@@ -326,21 +329,22 @@ cpu_time_t get_cpu_time (void)
     prs.pr_stime.tv_nsec * (CPU_TIME_TICKS / 1000000000);
 }
 
-#elif defined (HAVE_TIMES) && defined (CLK_TCK)
+#elif defined (HAVE_TIMES)
 
-/* Prefer times() over clock() since CLK_TCK isn't defined by POSIX to
- * some constant and it thus lies closer to the real accurancy.
- * (CLOCKS_PER_SEC is always defined to 1000000 which means that
- * clock() wraps much more often than necessary.) */
+/* Prefer times() over clock() since the ticks per second isn't
+ * defined by POSIX to some constant and it thus lies closer to the
+ * real accurancy. (CLOCKS_PER_SEC is always defined to 1000000 which
+ * means that clock() wraps much more often than necessary.) */
 
 cpu_time_t get_cpu_time (void)
 {
   struct tms tms;
-  clock_t ticks;
+#ifdef PIKE_DEBUG
+  if (!pike_clk_tck) error ("Called before dbm_main.\n");
+#endif
   if (times (&tms) == (clock_t) -1)
     return (cpu_time_t) -1;
-  ticks = CLK_TCK;
-  return CONVERT_TIME (tms.tms_utime + tms.tms_stime, ticks, CPU_TIME_TICKS);
+  return CONVERT_TIME (tms.tms_utime + tms.tms_stime, pike_clk_tck, CPU_TIME_TICKS);
 }
 
 #elif defined (HAVE_CLOCK) && defined (CLOCKS_PER_SEC)

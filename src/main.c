@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.185 2003/11/14 10:13:39 mast Exp $
+|| $Id: main.c,v 1.186 2003/11/27 19:57:35 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.185 2003/11/14 10:13:39 mast Exp $");
+RCSID("$Id: main.c,v 1.186 2003/11/27 19:57:35 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -49,6 +49,7 @@ RCSID("$Id: main.c,v 1.185 2003/11/14 10:13:39 mast Exp $");
 
 #include "las.h"
 
+#include <unistd.h>
 #include <errno.h>
 
 #ifdef HAVE_LOCALE_H
@@ -200,6 +201,8 @@ int dbm_main(int argc, char **argv)
 #endif
 
   TRACE((stderr, "dbm_main()\n"));
+
+  init_rusage();
 
   /* Attempt to make sure stderr is unbuffered. */
 #ifdef HAVE_SETVBUF
