@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.439 2001/07/04 13:00:43 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.440 2001/07/04 13:19:11 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2015,7 +2015,8 @@ test_program(inherit test; inherit TEST; )
 
 test_any([[
   class Foo {  };
-  return  function_object(object_program(Foo())) == this_program;
+  return  function_object(object_program(Foo())) ==
+	  object_program(this_object());
 ]], 1)
 
 test_any([[
