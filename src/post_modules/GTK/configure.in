@@ -504,19 +504,19 @@ fi
 
 AC_MSG_CHECKING([OpenGL])
 
-LIBS="$saved_LIBS $GL_LDOPTS -lGL"
+LIBS="$saved_LIBS $GL_LDOPTS -lGL $GTK_LIBS"
 AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_GL=yes, have_GL=no)
 AC_MSG_RESULT($have_GL)
 
 if test "x$have_GL" = "xno" ; then
   AC_MSG_CHECKING([Mesa])
-  LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL"
+  LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL $GTK_LIBS"
   AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_MesaGL=yes, have_MesaGL=no)
   AC_MSG_RESULT($have_MesaGL)
 
   if test "x$have_MesaGL" = "xno"; then
    AC_MSG_CHECKING([Mesa with pthreads])
-   LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL -lpthread"
+   LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL -lpthread $GTK_LIBS"
    AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_MesaGL_pthread=yes, have_MesaGL_pthread=no)
    AC_MSG_RESULT($have_MesaGL_pthread)
   fi
