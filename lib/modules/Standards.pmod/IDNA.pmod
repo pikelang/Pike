@@ -1,13 +1,13 @@
 #pike __REAL_VERSION__
 
 //! This module implements various algorithms specified by
-//! the Internationalizing Domain Names in Applications (IDNA) drafts by
+//! the Internationalizing Domain Names in Applications (IDNA) memo by
 //! the Internet Engineering Task Force (IETF), see
-//! @url{http://www.ietf.org/internet-drafts/draft-ietf-idn-idna-14.txt@}.
+//! @url{ftp://ftp.rfc-editor.org/in-notes/rfc3490.txt@}.
 
 //! Punycode transcoder, see
-//! @url{http://www.ietf.org/internet-drafts/draft-ietf-idn-punycode-03.txt@}.
-//! Punycode is used by [to_ascii] as an "ASCII Compatible Encoding" when
+//! @url{ftp://ftp.rfc-editor.org/in-notes/rfc3492.txt@}.
+//! Punycode is used by @[to_ascii] as an "ASCII Compatible Encoding" when
 //! needed.
 object Punycode = class {
 
@@ -299,7 +299,7 @@ static constant stringprep_casefold_dest =
 
 
 
-//! Prepare a Unicode string for ACE transcoding.  Used by [to_ascii].
+//! Prepare a Unicode string for ACE transcoding.  Used by @[to_ascii].
 //! Nameprep is a profile of Stringprep, which is described in RFC 3454.
 //!
 //! @param s
@@ -428,7 +428,7 @@ string to_unicode(string s)
 
 
 //! Takes a sequence of labels separated by '.' and applies
-//! [to_ascii] on each.
+//! @[to_ascii] on each.
 string zone_to_ascii(string s, int(0..1)|void allow_unassigned,
 		     int(0..1)|void use_std3_ascii_rules)
 {
@@ -437,7 +437,7 @@ string zone_to_ascii(string s, int(0..1)|void allow_unassigned,
 
 
 //! Takes a sequence of labels separated by '.' and applies
-//! [to_unicode] on each.
+//! @[to_unicode] on each.
 string zone_to_unicode(string s)
 {
   return to_unicode((s/".")[*])*".";
