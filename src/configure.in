@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.796 2004/03/07 12:39:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.797 2004/03/07 14:06:01 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -56,6 +56,15 @@ fi
 # Some OS's also have a seriously broken /bin/sh (eg NetBSD).
 if test "x$CONFIG_SHELL" = "x"; then 
   AC_PATH_PROG(bash_prog, bash, no)
+  if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
+    AC_MSG_CHECKING([if $ac_cv_path_bash_prog works])
+    if "$ac_cv_path_bash_prog" -norc -c : 2>&AC_FD_CC; then
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+      ac_cv_path_bash_prog=no
+    fi
+  fi
   if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
     AC_MSG_WARN([Found bash as $ac_cv_path_bash_prog.
 Will attempt to restart configure with bash for performance.
