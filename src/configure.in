@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.774 2004/02/26 19:08:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.775 2004/02/27 12:48:53 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1184,21 +1184,21 @@ AC_ARG_WITH(bundles,
 	    MY_DESCR([--without-bundles],
 		     [do not enable bundled libraries]),
 	       [with_bundles=yes])
+pike_bundle_dir=""
 if test "$with_bundles" = "no"; then :; else
   if test -d "$with_bundles/."; then
     # The user has specified a bundle directory. Use it.
     pike_bundle_dir="$with_bundles"
-    export pike_bundle_dir
   elif test -d "$srcdir/../bundles/."; then
     # We have a bundle directory; enable them if needed.
     pike_bundle_dir=`cd "$srcdir/../bundles" && pwd`
-    export pike_bundle_dir
   fi
   if test -d bundles || mkdir bundles; then
     LDFLAGS="$LDFLAGS -L`pwd`/bundles/lib"
     CPPFLAGS="$CPPFLAGS -I`pwd`/bundles/include"
   fi
 fi
+export pike_bundle_dir
 AC_ARG_WITH(site-prefixes,
 	    MY_DESCR([--with-site-prefixes],
 		     [list of prefixes to search for include, lib and bin dirs.]))
