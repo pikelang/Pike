@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.7 2002/10/30 01:07:03 nilsson Exp $
+// $Id: RDF.pike,v 1.8 2002/11/29 01:29:44 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -37,7 +37,6 @@ class Resource {
   static string __sprintf(string c, int t) {
     if(t=='t') return "RDF."+c;
     if(t=='O') return "RDF."+c+"(" + get_n_triple_name() + ")";
-    error("Can not represent RDF.%s as %c.\n", c, t);
   }
 
   string _sprintf(int t) { return __sprintf("Resource", t); }
@@ -185,7 +184,7 @@ int parse_n_triples(string in) {
 
   class Temp(string id) {
     constant type = "";
-    string _sprintf() { return sprintf("%s(%O)", type, id); }
+    string _sprintf(int t) { return t=='O' && sprintf("%s(%O)", type, id); }
   };
   class TempURI {
     inherit Temp;
@@ -373,7 +372,5 @@ int _sizeof() {
 }
 
 string _sprintf(int t) {
-  if(t=='t') return "RDF";
-  if(t=='O') return "RDF(" + _sizeof() + ")";
-  error("Can not represent RDF as %c.\n", t);
+  return t=='O' && sprintf("%O(%d)", _sizeof());
 }

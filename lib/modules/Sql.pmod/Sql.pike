@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.61 2002/06/17 15:03:32 grubba Exp $
+ * $Id: Sql.pike,v 1.62 2002/11/29 01:28:57 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -247,14 +247,8 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
 
 string _sprintf(int type, mapping|void flags)
 {
-  switch(type)
-  {
-    case 't': return "Sql";
-    case 'O':
-      if(master_sql && master_sql->_sprintf)
-	return sprintf("Sql.%O", master_sql);
-      return "Sql()";
-  }
+  if(type=='O' && master_sql && master_sql->_sprintf)
+    return sprintf("Sql.%O", master_sql);
 }
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)

@@ -154,15 +154,10 @@ optional class Fifo {
 
   static string _sprintf( int f )
   {
-    switch( f )
-    {
-      case 't':
-	return "Thread.Fifo";
-      case 'O':
-	return sprintf( "%t(%d / %d)", this_object(), size(), read_tres );
-    }
+    return f=='O' && sprintf( "%O(%d / %d)", this_program,
+			      size(), read_tres );
   }
-};
+}
 
 //! @[Queue] implements a queue, or a pipeline. The main difference
 //! between @[Queue] and @[Fifo] is that @[Queue]
@@ -233,13 +228,7 @@ optional class Queue {
 
   static string _sprintf( int f )
   {
-    switch( f )
-    {
-      case 't':
-	return "Thread.Queue";
-      case 'O':
-	return sprintf( "%t(%d)", this_object(), size() );
-    }
+    return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
 }
 
@@ -400,7 +389,8 @@ optional class Farm
 	case 't':
 	  return "Thread.Farm().Handler";
 	case 'O':
-	  return sprintf( "%t(%f / %d,  %d)", total_time, max_time,handled );
+	  return sprintf( "%t(%f / %d,  %d)", this_object(),
+			  total_time, max_time, handled );
       }
     }
   }
@@ -517,19 +507,10 @@ optional class Farm
     return res;
   }
 
-
   static string _sprintf( int f )
   {
-    switch( f )
-    {
-      case 't':
-	return "Thread.Farm";
-      case 'O':
-	return sprintf( "%t(/* %s */)", this_object, debug_status() );
-    }
+    return f=='O' && sprintf( "%O(/* %s */)", this_program, debug_status() );
   }
-
-
 
   static void create()
   {

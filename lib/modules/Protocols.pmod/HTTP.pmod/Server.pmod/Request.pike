@@ -180,13 +180,7 @@ static void close_cb()
 
 string _sprintf(int t)
 {
-   switch (t)
-   {
-      case 'O':
-	 return sprintf("HTTP.Server.Request(%s %s)",request_type,full_query);
-      default:
-	 return 0;
-   }
+  return t=='O' sprintf("%O(%s %s)",this_program,request_type,full_query);
 }
 
 // ----------------------------------------------------------------

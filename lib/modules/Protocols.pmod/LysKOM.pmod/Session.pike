@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.31 2002/05/05 14:10:17 mast Exp $
+//  $Id: Session.pike,v 1.32 2002/11/29 01:12:44 nilsson Exp $
 
 import ".";
 
@@ -128,8 +128,9 @@ void async_new_text_old()
 
 class MiscInfo
 {
-  string _sprintf()
+  string _sprintf(int t)
   {
+    if(t!='O') return 0;
     array(string) to = ({});
     if(sizeof(recpt))
       to += ({ "To: " + String.implode_nicely(recpt->conf->no) });
@@ -138,8 +139,8 @@ class MiscInfo
     if(sizeof(bccrecpt))
       to += ({ "Bcc: " + String.implode_nicely(bccrecpt->conf->no) });
 
-    return sprintf("MiscInfo(%s)", sizeof(to) ? to * "; "
-					      : "No recipients");
+    return sprintf("%O(%s)", this_program,
+		   sizeof(to) ? to * "; " : "No recipients");
   }
 
   class Recpt
@@ -149,10 +150,10 @@ class MiscInfo
     object received_at;
     object sent_by;
     object sent_at;
-    string _sprintf()
+    string _sprintf(int t)
     {
-      return sprintf("Recpt(conf %d: text %d)",
-		     conf && conf->no, local_no);
+      return t=='O' && sprintf("%O(conf %d: text %d)", this_program,
+			       conf && conf->no, local_no);
     }
   }
 
@@ -471,9 +472,10 @@ class AuxItemInput
     data = _data;
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("AuxItemInput(%s)", search(itemname_to_tag, tag));
+    return t=='O' && sprintf("%O(%s)", this_program,
+			     search(itemname_to_tag, tag));
   }
 }
 
@@ -481,13 +483,15 @@ class AuxItemInput
 //!   Undocumented
 class AuxItems
 {
-  string _sprintf()
+  string _sprintf(int t)
   {
+    if(t!='O') return 0;
     array desc = ({});
     foreach((array)tag_to_items, [int tag, mixed item])
       desc += ({ search(itemname_to_tag, tag) });
-    return sprintf("AuxItems(%s)", sizeof(desc) ? String.implode_nicely(desc)
-						: "none present");
+    return sprintf("%O(%s)", this_program,
+		   sizeof(desc) ? String.implode_nicely(desc)
+		   : "none present");
   }
 
   mapping(int:array(ProtocolTypes.AuxItem)) tag_to_items = ([]);
@@ -578,9 +582,9 @@ class Text
        error */
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Text(%d)", no);
+    return t=='O' && sprintf("%O(%d)", this_program, no);
   }
 
   //! @decl mixed prefetch_text
@@ -845,9 +849,9 @@ class Membership
 
   mixed `->(string what) { return `[](what); }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Membership(%d)", conf->no);
+    return t=='O' && sprintf("%O(%d)", this_program, conf->no);
   }
 
   array(string) _indices()
@@ -974,9 +978,9 @@ class Person
 
    mixed `->(string what) { return `[](what); }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Person(%d)", no);
+    return t=='O' && sprintf("%O(%d)", this_program, no);
   }
 
   array(string) _indices()
@@ -1084,9 +1088,9 @@ class Conference
 	      "permitted_submitters", });
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Conference(%d)", no);
+    return t=='O' && sprintf("%O(%d)", this_program, no);
   }
 }
 
@@ -1249,7 +1253,7 @@ void register_async_message_callback(function(int,int,string:void) cb)
   con->con->add_async_callback("async-send-message", cb);
 }
 
-string _sprintf()
+string _sprintf(int t)
 {
-  return sprintf("Session(%s)", server);
+  return t=='O' && sprintf("%O(%s)", this_program, server);
 }

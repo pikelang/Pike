@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.3 2002/07/22 13:47:55 nilsson Exp $
+// $Id: FakeFile.pike,v 1.4 2002/11/29 01:30:43 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -146,12 +146,8 @@ int(0..1) truncate(int length) {
 }
 
 string _sprintf(int t) {
-  switch(t) {
-  case 't': return "Stdio.FakeFile";
-  case 'O': return "Stdio.FakeFile(" + sizeof(data) + ", \"" +
-	      make_type_str() + "\")";
-  }
-  error("Could not format Stdio.FakeFile as '%c'.\n", t);
+  return t=='O' && sprintf("%O(%d,%O)", this_program, sizeof(data),
+			   make_type_str());
 }
 
 //! @ignore

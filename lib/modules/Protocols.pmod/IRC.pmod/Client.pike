@@ -433,15 +433,9 @@ class Person
 
    string _sprintf(int t)
    {
-      switch (t)
-      {
-	 case 'O':
-	    return sprintf("Person(%s!%s@%s%s)",
-			   nick,user||"?",ip||"?",
-			   (realname!="?")?"("+realname+")":"");
-	 default:
-	    return 0;
-      }
+     return t=='O' && sprintf("%O(%s!%s@%s%s)", this_program,
+			      nick,user||"?",ip||"?",
+			      (realname!="?")?"("+realname+")":"");
    }
 }
 

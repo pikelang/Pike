@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.46 2002/11/26 16:46:40 mirar Exp $
+// $Id: Query.pike,v 1.47 2002/11/29 01:09:27 nilsson Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -839,10 +839,10 @@ void async_fetch(function callback,mixed ... extra)
    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
 }
 
-static string _sprintf()
+static string _sprintf(int t)
 {
-  return status ? sprintf("Query(%d %s)", status, status_desc)
-		: "Query()";
+  return t=='O' && status && sprintf("%O(%d %s)", this_program,
+				     status, status_desc);
 }
 
 /************************ example *****************************/

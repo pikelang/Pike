@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.49 2002/10/25 20:01:31 nilsson Exp $
+/* $Id: sslfile.pike,v 1.50 2002/11/29 01:22:14 nilsson Exp $
  *
  */
 
@@ -577,11 +577,7 @@ void create(object f, object c, int|void is_client, int|void is_blocking)
 }
 
 string _sprintf(int t) {
-  switch(t) {
-  case 't': return "SSL.sslfile";
-  case 'O': return sprintf("SSL.sslfile(%O,%O)", _fd, context);
-  }
-  error("Can not output SSL.sslfile as %c\n", t);
+  return t=='O' && sprintf("%O(%O,%O)", this_program, _fd, context);
 }
 
 void renegotiate()

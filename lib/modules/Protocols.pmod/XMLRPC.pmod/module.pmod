@@ -49,10 +49,11 @@ class Call(string method_name, array params)
   //! datatypes have been converted to equivalent or similar datatypes
   //! in Pike.
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Protocols.XMLRPC.Call(%O, %d param%s)",
-		   method_name, sizeof(params), sizeof(params) == 1 ? "" : "s");
+    return t=='O' && sprintf("%O(%O, %d param%s)", this_program,
+			     method_name, sizeof(params),
+			     sizeof(params) == 1 ? "" : "s");
   }
 }
 
@@ -69,9 +70,10 @@ class Fault(int fault_code, string fault_string)
   //! @decl int fault_string
   //! Represents @tt{faultString@} in the XML-RPC standard.
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Protocols.XMLRPC.Fault(%O, %O)", fault_code, fault_string);
+    return t=='O' && sprintf("%O(%O, %O)", this_program,
+			     fault_code, fault_string);
   }
 }
 
@@ -334,11 +336,8 @@ class Client(string|Standards.URI url)
 	   };
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Protocols.XMLRPC.Client(%O)",
-		   url);
+    return t=='O' && sprintf("%O(%O)", this_program, url);
   }
-
-  
 }

@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.160 2002/11/28 00:36:13 marcus Exp $
+// $Id: module.pmod,v 1.161 2002/11/29 01:30:30 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -38,17 +38,6 @@ class Stream
   optional string read_oob(int nbytes);
   optional int write_oob(string data);
 #endif
-
-  static string _sprintf( int type )
-  {
-    switch( type )
-    {
-     case 'O':
-       return sprintf("%t()", this_object());
-     case 't':
-       return "Stdio.Stream";
-    }
-  }
 }
 
 //! The Stdio.NonblockingStream API.
@@ -83,15 +72,6 @@ class NonblockingStream
   void set_nonblocking( function a, function b, function c,
                         function|void d, function|void e);
   void set_blocking();
-
-  static string _sprintf( int type )
-  {
-    switch( type )
-    {
-     case 't': return "Stdio.NonblockingStream";
-    }
-    return ::_sprintf( type );
-  }
 }
 
 //! The Stdio.BlockFile API.
@@ -109,14 +89,6 @@ class BlockFile
   inherit Stream;
   int seek(int to);
   int tell();
-  static string _sprintf( int type )
-  {
-    switch( type )
-    {
-     case 't': return "Stdio.BlockFile";
-    }
-    return ::_sprintf( type );
-  }
 }
 
 //! This is the basic I/O object, it provides socket communication as well
@@ -177,23 +149,18 @@ class File
 
   static string _sprintf( int type, mapping flags )
   {
+    if(type!='O') return 0;
     int do_query_fd( )
     {
       int fd = -1;
       catch{ fd = query_fd(); };
       return fd;
     };
-    switch( type )
-    {
-     case 'O':
-       return sprintf("%t(%O, %O, %o /* fd=%d */)", 
-                      this_object(), 
-                      debug_file, debug_mode,
-                      debug_bits||0777,
-                      do_query_fd() );
-     case 't':
-       return "Stdio.File";
-    }
+    return sprintf("%O(%O, %O, %o /* fd=%d */)",
+		   this_program,
+		   debug_file, debug_mode,
+		   debug_bits||0777,
+		   do_query_fd() );
   }
 
   //  @decl int open(int fd, string mode)
@@ -1108,13 +1075,7 @@ class Port
 
   static string _sprintf( int f )
   {
-    switch( f )
-    {
-     case 't':
-       return "Stdio.Port";
-     case 'O':
-       return sprintf( "%t(%s:%O)", this_object(), debug_ip, debug_port );
-    }
+    return f=='O' && sprintf( "%O(%s:%O)", this_program, debug_ip, debug_port );
   }
 
   //! @decl void create()
@@ -1213,8 +1174,6 @@ class FILE
   
   static string _sprintf( int type, mapping flags )
   {
-    if( type == 't' )
-      return "Stdio.FILE";
     return ::_sprintf( type, flags );
   }
 
@@ -2519,17 +2478,6 @@ class UDP
 
   private static array extra=0;
   private static function callback=0;
-
-  static string _sprintf( int f )
-  {
-    switch( f )
-    {
-    case 't':
-      return "Stdio.UDP";
-    case 'O':
-      return sprintf("%t()", this_object() );
-    }
-  }
 
   //! @decl UDP set_nonblocking()
   //! @decl UDP set_nonblocking(function(mapping(string:int|string), @
