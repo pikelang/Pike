@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.144 1998/02/17 23:37:57 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.145 1998/03/02 15:28:49 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -72,6 +72,10 @@ case $CC in
    ac_cv_prog_CC="$CC"
  ;;
 esac
+
+REALCC="`echo $CC| sed -e 's/.*smartlink //'`"
+export REALCC
+AC_SUBST(REALCC)
 
 #############################################################################
 
