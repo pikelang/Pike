@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.201 2004/09/16 15:25:34 grubba Exp $
+|| $Id: gc.c,v 1.202 2004/09/30 12:12:10 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.201 2004/09/16 15:25:34 grubba Exp $");
+RCSID("$Id: gc.c,v 1.202 2004/09/30 12:12:10 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2487,7 +2487,7 @@ live_recurse:
     /* A thing previously popped as dead is now being marked live.
      * Have to remove the extra ref added by gc_cycle_pop(). */
     gc_free_extra_ref(x);
-    if (!--*(INT32 *) x) {
+    if (!sub_ref ((struct ref_dummy *) x)) {
 #ifdef PIKE_DEBUG
       gc_fatal(x, 0, "Thing got zero refs after removing the dead gc ref.\n");
 #endif
