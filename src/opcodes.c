@@ -320,7 +320,14 @@ void f_cast()
       switch(sp[-1].type)
       {
       case T_STRING:
-	APPLY_MASTER("cast_to_object",1);
+	if(fp->pc)
+	{
+	  INT32 lineno;
+	  push_text(get_line(fp->pc, fp->context.prog, &lineno));
+	}else{
+	  push_int(0);
+	}
+	APPLY_MASTER("cast_to_object",2);
 	break;
 	
       case T_FUNCTION:
@@ -330,7 +337,14 @@ void f_cast()
       break;
 
     case T_PROGRAM:
-      APPLY_MASTER("cast_to_program",1);
+      if(fp->pc)
+      {
+	INT32 lineno;
+	push_text(get_line(fp->pc, fp->context.prog, &lineno));
+      }else{
+	push_int(0);
+      }
+      APPLY_MASTER("cast_to_program",2);
       break;
 
     case T_FUNCTION:

@@ -58,7 +58,7 @@ static program findprog(string pname)
  * or a implict cast. In the future it might receive more arguments,
  * to aid the master finding the right program.
  */
-program cast_to_program(string pname)
+program cast_to_program(string pname, string current_file)
 {
   if(pname[sizeof(pname)-3..sizeof(pname)]==".pike")
     pname=pname[0..sizeof(pname)-4];
@@ -68,18 +68,24 @@ program cast_to_program(string pname)
     pname=combine_path("/",pname);
     return findprog(pname);
   }else{
-    if(search(pname,"/")==-1)
+    string cwd;
+    if(current_file)
     {
-      string path;
-      if(string path=getenv("PIKE_INCLUDE_PATH"))
-      {
-	foreach(path/":", path)
-	  if(program ret=findprog(combine_path(getcwd(),
-					       combine_path(path,pname))))
-	     return ret;
-      }
+      string *tmp=current_file/"/";
+      cwd=tmp[..sizeof(tmp)-2]*"/";
+    }else{
+      cwd=getcwd();
     }
-    return findprog(combine_path(getcwd(),pname));
+
+    if(string path=getenv("PIKE_INCLUDE_PATH"))
+    {
+      foreach(path/":", path)
+	if(program ret=findprog(combine_path(cwd,
+					     combine_path(path,pname))))
+	  return ret;
+    }
+
+    return findprog(combine_path(cwd,pname));
   }
 }
 
@@ -96,7 +102,9 @@ void handle_error(mixed *trace)
 
 object new(mixed prog, mixed ... args)
 {
-  return ((program)prog)(@args);
+  if(stringp(prog))
+    prog=cast_to_program(prog,backtrace()[-2][0]);
+  return prog(@args);
 }
 
 /* Note that create is called before add_precompiled_program
@@ -126,13 +134,7 @@ void create()
  */
 program handle_inherit(string pname, string current_file)
 {
-  program p;
-  string *tmp;
-  p=cast_to_program(pname);
-  if(p) return p;
-  tmp=current_file/"/";
-  tmp[-1]=pname;
-  return cast_to_program(tmp*"/");
+  return cast_to_program(pname, current_file);
 }
 
 mapping (string:object) objects=(["/master":this_object()]);
@@ -141,19 +143,29 @@ mapping (string:object) objects=(["/master":this_object()]);
  * to an object because of an implict or explicit cast. This function
  * may also receive more arguments in the future.
  */
-object cast_to_object(string oname)
+object cast_to_object(string oname, string current_file)
 {
   object ret;
 
   if(oname[0]!='/')
-    oname=combine_path(getcwd(),oname);
+  {
+    string cwd;
+    if(current_file)
+    {
+      string *tmp=current_file/"/";
+      cwd=tmp[..sizeof(tmp)-2]*"/";
+    }else{
+      cwd=getcwd();
+    }
+    oname=combine_path(cwd,oname);
+  }
 
   if(oname[sizeof(oname)-3..sizeof(oname)]==".pike")
     oname=oname[0..sizeof(oname)-4];
 
   if(ret=objects[oname]) return ret;
 
-  return objects[oname]=cast_to_program(oname)();
+  return objects[oname]=cast_to_program(oname,"/")();
 }
 
 class dirnode
@@ -248,7 +260,7 @@ varargs mixed resolv(string identifier, string current_file)
   string path=combine_path(pike_library_path+"/modules",identifier);
   if(ret=findmodule(path)) return ret;
 
-  if(ret=_static_modules[identifier]) return ret;;
+  if(ret=_static_modules[identifier]) return ret;
   return UNDEFINED;
 }
 
@@ -283,8 +295,9 @@ void _main(string *argv, string *env)
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
 	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
 	  ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
-	    ({"ignore",tmp->HAS_ARG,"-ms"}),
-	      ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1),
+	    ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
+	      ({"ignore",tmp->HAS_ARG,"-ms"}),
+		({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1),
 	  mixed *opts)
     {
       switch(opts[0])
@@ -299,7 +312,9 @@ void _main(string *argv, string *env)
       case "help":
 	werror("Usage: pike [-driver options] script [script arguments]\n"
 	       "Driver options include:\n"
-	       " -e --execute <cmd>   : Run the given command instead of a script.\n"
+	       " -I --include-path=<p>: Add <p> to the include path\n"
+	       " -M --module-path=<p> : Add <p> to the module path\n"
+	       " -e --execute=<cmd>   : Run the given command instead of a script.\n"
 	       " -h --help            : see this message\n"
 	       " -v --version         : See what version of pike you have.\n"
 	       " -s#                  : Set stack size\n"
@@ -314,8 +329,20 @@ void _main(string *argv, string *env)
 	exit(0);
 
       case "modpath":
-	putenv("PIKE_MODULE_PATH",opts[1]+":"+(getenv("PIKE_MODULE_PATH")||""));
+      {
+	string path=getenv("PIKE_MODULE_PATH")||"";
+	path=opts[1]+":"+path;
+	putenv("PIKE_MODULE_PATH",(path/":"-({""}))*":");
 	break;
+      }
+
+      case "ipath":
+      {
+	string path=getenv("PIKE_INCLUDE_PATH")||"";
+	path=opts[1]+":"+path;
+	putenv("PIKE_INCLUDE_PATH",(path/":"-({""}))*":");
+	break;
+      }
 
       case "ignore":
 	break;
@@ -438,7 +465,7 @@ string handle_include(string f,
     if(path[-1]=='h' && path[-2]=='.' &&
        file_stat(path[0..sizeof(path)-2]+"pre.pike"))
     {
-      cast_to_object(path[0..sizeof(path)-2]+"pre.pike");
+      cast_to_object(path[0..sizeof(path)-2]+"pre.pike","/");
     }
   }
 
