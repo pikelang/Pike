@@ -259,13 +259,13 @@ void check_program(struct program *p, int pass)
 
   size+=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
 
-  if(size > p->total_size)
+  if(size > (INT32)p->total_size)
     fatal("Program size is in error.\n");
 
   size-=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
   size+=MY_ALIGN(p->num_identifier_references * sizeof(INT16));
 
-  if(size < p->total_size)
+  if(size < (INT32)p->total_size)
     fatal("Program size is in error.\n");
 
 

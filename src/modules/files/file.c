@@ -1062,7 +1062,7 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
   }
   else if(name[0]>='0' && name[0]<='9')
   {
-    if (inet_addr(name) == -1)
+    if ((long)inet_addr(name) == (long)-1)
       error("Malformed ip number.\n");
 
     addr->sin_addr.s_addr = inet_addr(name);
@@ -1097,7 +1097,7 @@ static void file_query_address(INT32 args)
     i=getpeername(FD,(struct sockaddr *)&addr,&len);
   }
   pop_n_elems(args);
-  if(i < 0 || len < sizeof(addr))
+  if(i < 0 || len < (int)sizeof(addr))
   {
     THIS->errno=errno;
     push_int(0);
