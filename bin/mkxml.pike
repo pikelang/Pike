@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.12 2001/05/06 16:07:55 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.13 2001/05/06 18:52:04 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -293,6 +293,7 @@ string fixdesc(string s,string prefix,string where)
 
    s+=htmlify(t);
 
+   // Paragraph handling.
    t=s; s="";
    for (;;)
    {
@@ -302,7 +303,7 @@ string fixdesc(string s,string prefix,string where)
       if (b[..11]=="illustration" &&
 	  sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
       {
-	 s+=replace(t,"\n\n","\n\n<p>")+
+	 s+="<p>"+replace(t,"\n\n","\n\n</p><p>")+
 	    "<illustration __from__='"+where+"' src=image_ill.pnm"+q+">\n"
 	    +replace(u,"lena()","src")+"</illustration>";
 	 t=v;
@@ -310,19 +311,19 @@ string fixdesc(string s,string prefix,string where)
       else if (b[..2]=="pre" &&
 	  sscanf(t,"%s<pre%s>%s</pre>%s",t,q,u,v)==4)
       {
-	 s+=replace(t,"\n\n","\n\n<p>")+
-	    "<pre"+q+">\n"+u+"</pre>";
+	 s+="<p>"+replace(t,"\n\n","\n\n</p><p>")+
+	    "<pre"+q+">\n"+u+"</pre></p>";
 	 t=v;
       }
       else
       {
-	 s+=replace(a,"\n\n","\n\n<p>")+"<"+b+">";
+	 s+="<p>"+replace(a,"\n\n","\n\n</p><p>")+"<"+b+"></p>";
 	 t=c;
       }
    }
-   s+=replace(t,"\n\n","\n\n<p>");
+   s+="<p>"+replace(t,"\n\n","\n\n</p><p>")+"</p>";
 
-   return s;
+   return replace(s, "<p></p>", "");
 }
 
 
