@@ -1,3 +1,8 @@
+Sun Sep 28 18:12:55 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* arr->identifier is now the same as column(arr,"identifier")
+	* Dynamic loading now works on AIX, but only with GCC
+
 Sun Sep  7 17:55:47 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* array.c: sort() now handles the `< method
