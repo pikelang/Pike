@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.63 2003/11/14 00:28:38 mast Exp $
+|| $Id: las.h,v 1.64 2003/11/14 00:42:10 mast Exp $
 */
 
 #ifndef LAS_H
@@ -29,8 +29,12 @@ void cleanup_compiler(void);
 
 extern int cumulative_parse_error;
 
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
 struct node_s;
 typedef struct node_s node;
+#endif
 
 struct local_variable
 {
@@ -109,10 +113,6 @@ struct node_s
   unsigned INT16 token;
   union node_data u;
 };
-
-#ifndef STRUCT_NODE_S_DECLARED
-#define STRUCT_NODE_S_DECLARED
-#endif
 
 #ifdef SHARED_NODES_MK2
 
