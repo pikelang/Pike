@@ -273,6 +273,52 @@ string get_text(SGML data)
 }
 
 
+class Codec
+{
+  string nameof(mixed o)
+    {
+      if(objectp(o)) return ([])[0];
+      if(o==Tag) return "TAG";
+      error("Cannot encode that!\n");
+    }
+
+  program functionof(string p)
+    {
+      if(p=="TAG") return Tag;
+    }
+
+  mixed encode_object(object o)
+    {
+      return ({
+	o->tag,
+	o->pos,
+	o->params,
+	o->data,
+	o->file
+	  });
+    }
+
+  void decode_object(object o, mixed data)
+    {
+      [ o->tag,
+	o->pos,
+	o->params,
+	o->data,
+	o->file ] = data;
+    }
+}
+
+string encode(SGML data)
+{
+  return encode_value(data,Codec());
+}
+
+SGML decode(string data)
+{
+  return decode_value(data,Codec());
+}
+
+
 #ifdef TEST
 int main()
 {
