@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.6 2001/01/16 14:34:12 norlin Exp $
+ * $Id: Tree.pmod,v 1.7 2001/01/23 13:42:41 norlin Exp $
  *
  */
 
@@ -28,6 +28,22 @@ constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
 #define  XML_ATTR     0x0080     //  Attribute nodes are created on demand
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
 					   XML_PI | XML_COMMENT | XML_ATTR)
+
+string text_quote(string data) {
+  data = replace(data, "&", "&amp;");
+  data = replace(data, "<", "&lt;");
+  data = replace(data, ">", "&gt;");
+  return data;
+}
+
+string attribute_quote(string data) {
+  data = replace(data, "&",  "&amp;");
+  data = replace(data, "<",  "&lt;");
+  data = replace(data, ">",  "&gt;");
+  data = replace(data, "\"", "&quot;");
+  data = replace(data, "'",  "&apos;");
+  return data;
+}
 
 void throw_error(mixed ...args)
 {
@@ -366,19 +382,16 @@ class Node {
 		    lambda(Node n) {
 		      switch(n->get_node_type()) {
 		      case XML_TEXT:
-			data += n->get_text();
+                        data += text_quote(n->get_text());
 			break;
 		      case XML_ELEMENT:
 			if (!strlen(n->get_tag_name()))
 			  break;
 			data += "<" + n->get_tag_name();
 			if (mapping attr = n->get_attributes()) {
-			  foreach(indices(attr), string a) {
-			    if (search(attr[a], "\"") > -1)
-			      data += " " + a + "='" + attr[a] + "'";
-			    else
-			      data += " " + a + "=\"" + attr[a] + "\"";
-			  }
+                          foreach(indices(attr), string a)
+                            data += " " + a + "='"
+                              + attribute_quote(attr[a]) + "'";
 			}
 			if (n->count_children())
 			  data += ">";
