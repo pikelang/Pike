@@ -267,38 +267,57 @@ function this_function()
   return backtrace()[-2][2];
 }
 
-varargs mixed *sort_array(array foo,function cmp,mixed ... args)
+varargs mixed *sort_array2(array foo,function cmp, mixed ... args)
 {
-  int ap,bp,retp;
-  mixed *a,*b,*ret;
-
-  if(sizeof(foo)<2) return copy_value(foo);
-
+  array bar,tmp;
+  int len,start;
+  int length;
+  int foop, fooend, barp, barend;
+  
   if(!cmp) cmp=`>;
+  length=sizeof(foo);
 
-  a=sort_array(foo[0..sizeof(foo)/2-1],cmp,@args);
-  b=sort_array(foo[sizeof(foo)/2..sizeof(foo)],cmp,@args);
-  ret=allocate(sizeof(foo));
+  foo+=({});
+  bar=allocate(length);
 
-  while(1)
+  for(len=1;len<length;len*=2)
   {
-    if(cmp(a[ap],b[bp],@args) <= 0)
+    start=0;
+    while(start+len < length)
     {
-      ret[retp++]=a[ap++];
-      if(ap == sizeof(a))
+      foop=start;
+      barp=start+len;
+      fooend=barp;
+      barend=barp+len;
+      if(barend > length) barend=length;
+      
+      while(1)
       {
-	while(bp < sizeof(b)) ret[retp++]=b[bp++];
-	return ret;
-      }
-    }else{
-      ret[retp++]=b[bp++];
-      if(bp == sizeof(b))
-      {
-	while(ap < sizeof(a)) ret[retp++]=a[ap++];
-	return ret;
+	if(cmp(foo[foop],foo[barp],@args) <= 0)
+	{
+	  bar[start++]=foo[foop++];
+	  if(foop == fooend)
+	  {
+	    while(barp < barend) bar[start++]=foo[barp++];
+	    break;
+	  }
+	}else{
+	  bar[start++]=foo[barp++];
+	  if(barp == barend)
+	  {
+	    while(foop < fooend) bar[start++]=foo[foop++];
+	    break;
+	  }
+	}
       }
     }
+
+    tmp=foo;
+    foo=bar;
+    bar=tmp;
   }
+
+  return foo;
 }
 
 string capitalize(string s)
