@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.179 2004/05/11 14:16:07 grubba Exp $
+|| $Id: encode.c,v 1.180 2004/05/11 14:50:30 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.179 2004/05/11 14:16:07 grubba Exp $");
+RCSID("$Id: encode.c,v 1.180 2004/05/11 14:50:30 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2127,21 +2127,6 @@ static void decode_value2(struct decode_data *data)
 
   DECODE("decode_value2");
 
-#ifdef ENCODE_DEBUG
-  if(data->debug)
-  {
-    if((what & TAG_MASK ) == TAG_AGAIN)
-      fprintf(stderr, "%*sDecoding TAG_AGAIN from <%d>\n",
-	      data->depth, "", num);
-    
-    else
-      if(data->debug > 1)
-	fprintf(stderr, "%*sDecoding to <%d>: TAG%d (%d)\n",
-		data->depth, "", data->counter.u.integer ,
-		what & TAG_MASK, num);
-  }
-#endif
-
   check_stack(1);
 
   switch(what & TAG_MASK)
@@ -2198,9 +2183,6 @@ static void decode_value2(struct decode_data *data)
     case TAG_STRING:
     {
       struct pike_string *str;
-      entry_id.type = T_INT;
-      entry_id=data->counter;
-      data->counter.u.integer++;
       get_string_data(str, num, data);
       push_string(str);
       break;
@@ -2359,7 +2341,6 @@ static void decode_value2(struct decode_data *data)
 	types |= 1 << ITEM(a)[e].type;
       }
       a->type_field = types;
-      array_fix_type_field(a);
 #ifdef PIKE_NEW_MULTISETS
       {
 	struct multiset *l = mkmultiset (a);
@@ -2563,10 +2544,9 @@ static void decode_value2(struct decode_data *data)
 	  p = program_from_svalue(Pike_sp-1);
 
 	  if (!p) {
-	    if(data->pickyness) {
+	    if(data->pickyness)
 	      decode_error(NULL, Pike_sp - 1,
 			   "Failed to decode program. Got: ");
-	    }
 	    pop_stack();
 	    push_undefined();
 	    break;
@@ -2622,8 +2602,8 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      placeholder=Pike_sp[-1].u.object;
 	      if(placeholder->prog != null_program)
-		Pike_error("Placeholder object is not a null_program clone!\n");
-	      Pike_sp--;
+		Pike_error("Placeholder object is not a __null_program clone.\n");
+	      dmalloc_touch_svalue(Pike_sp-1);
 	    }
 	    else if (Pike_sp[-1].type != T_INT ||
 		     Pike_sp[-1].u.integer)
@@ -3133,8 +3113,6 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
         case 3:
-	  entry_id=data->counter;
-	  data->counter.u.integer++;
 	  decode_value2(data);
 	  if ((Pike_sp[-1].type == T_INT) &&
 	      (Pike_sp[-1].u.integer < PROG_DYNAMIC_ID_START) &&
