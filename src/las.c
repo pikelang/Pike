@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.231 2001/01/12 02:28:06 mast Exp $");
+RCSID("$Id: las.c,v 1.232 2001/01/18 02:18:27 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1313,7 +1313,7 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
   copy_shared_string(res->type,type);
 
   if(match_types(object_type_string, type) ||
-     match_types(object_type_string, type))
+     match_types(program_type_string, type))
     res->node_info |= OPT_SIDE_EFFECT;
 
   res->tree_info |= n->tree_info;
