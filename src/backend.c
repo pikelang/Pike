@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.63 2001/03/04 21:20:25 grubba Exp $");
+RCSID("$Id: backend.c,v 1.64 2001/06/29 15:06:53 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -65,7 +65,7 @@ PMOD_EXPORT int fds_size = 0;
 
 #define ASSURE_FDS_SIZE(X) do{while(fds_size-1 < X) grow_fds();}while(0)
 
-void grow_fds( )
+void grow_fds(void)
 {
   if( !fds_size )
     fds_size = 16;
