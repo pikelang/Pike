@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.155 2000/12/05 21:08:19 per Exp $");
+RCSID("$Id: object.c,v 1.156 2001/01/17 10:13:52 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1236,6 +1236,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
   {
     int e;
     struct program *p;
+
+    if(o->next == o) return; /* Fake object used by compiler */
 
     if (o == gc_mark_object_pos)
       gc_mark_object_pos = o->next;
