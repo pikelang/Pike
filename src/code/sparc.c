@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.35 2003/04/18 15:41:12 mast Exp $
+|| $Id: sparc.c,v 1.36 2003/08/15 16:51:20 grubba Exp $
 */
 
 /*
@@ -500,7 +500,7 @@ void sparc_escape_catch(void)
  *
  */
 
-static void low_ins_call(void *addr, int delay_ok)
+static void low_ins_call(void *addr, int delay_ok, int i_flags)
 {
   SPARC_FLUSH_UNSTORED();
 
@@ -530,8 +530,23 @@ static void low_ins_call(void *addr, int delay_ok)
 
   ADD_CALL(addr, delay_ok);
 
+#if 1
+  /* Invalidate cached values if needed. */
+  if (i_flags & (I_UPDATE_SP|I_UPDATE_M_SP|I_UPDATE_FP)) {
+    if (i_flags & I_UPDATE_SP) {
+      sparc_codegen_state &= ~SPARC_CODEGEN_SP_IS_SET;
+    }
+    if (i_flags & I_UPDATE_M_SP) {
+      sparc_codegen_state &= ~SPARC_CODEGEN_MARK_SP_IS_SET;
+    }
+    if (i_flags & I_UPDATE_FP) {
+      sparc_codegen_state &= ~SPARC_CODEGEN_FP_IS_SET;
+    }
+  }
+#else /* !1 */
   /* This is probably only needed for some instructions, but... */
   SPARC_UNLOAD_CACHED();
+#endif /* 1 */
 }
 
 static void low_ins_f_byte(unsigned int b, int delay_ok)
@@ -617,7 +632,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     /* F_ZERO_TYPE? */
   }
 
-  low_ins_call(addr, delay_ok);
+  low_ins_call(addr, delay_ok, instrs[b].flags);
 }
 
 void ins_f_byte(unsigned int opcode)
