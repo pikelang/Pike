@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.104 1999/11/12 18:19:42 grubba Exp $");
+RCSID("$Id: las.c,v 1.105 1999/11/12 18:34:56 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2233,13 +2233,11 @@ static void optimize(node *n)
     {
 #include "treeopt.h"
     use_car:
-      tmp1 = CAR(n);
-      ADD_NODE_REF(CAR(n));
+      ADD_NODE_REF2(CAR(n), tmp1 = CAR(n));
       goto use_tmp1;
 
     use_cdr:
-      tmp1 = CDR(n);
-      ADD_NODE_REF(CDR(n));
+      ADD_NODE_REF2(CDR(n), tmp1 = CDR(n));
       goto use_tmp1;
 
     zap_node:
