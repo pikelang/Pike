@@ -1316,9 +1316,6 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
     register char   c;
     register int    no;
     register int    len;
-#ifndef strncpy
-    extern char    *strncpy();
-#endif
 
     if (prog == (regexp *)NULL || 
 	source == (char *)NULL || dest == (char *)NULL) {
