@@ -206,7 +206,6 @@ testfont binary
 /lib/modules/_Image.pmod/Dims.pmod foreign_ident
 /lib/modules/_Image.pmod/module.pmod foreign_ident
 /lib/modules/_Image_DWG.pmod foreign_ident
-/lib/modules/system.pmod foreign_ident
 /lib/modules/testsuite.in foreign_ident
 /lib/tools/pike.el foreign_ident
 /man/pike.1 foreign_ident
