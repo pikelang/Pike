@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.89 2004/09/30 02:33:06 nilsson Exp $
+|| $Id: multiset.c,v 1.90 2004/09/30 14:00:15 mast Exp $
 */
 
 #include "global.h"
@@ -839,9 +839,9 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l)
   return size;
 }
 
-PMOD_EXPORT struct multiset *allocate_multiset (int allocsize,
-						int flags,
-						struct svalue *cmp_less)
+PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
+						     int flags,
+						     struct svalue *cmp_less)
 {
   struct multiset *l = alloc_multiset();
 

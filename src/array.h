@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.65 2004/09/28 23:58:26 mast Exp $
+|| $Id: array.h,v 1.66 2004/09/30 14:00:14 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -87,8 +87,12 @@ typedef int (*short_cmpfun)(union anything *, union anything *);
 typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
 
+#define low_allocate_array(size, extra_space)				\
+  dmalloc_touch (struct array *,					\
+		 real_allocate_array ((size), (extra_space)))
+
 /* Prototypes begin here */
-PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
+PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
 PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);

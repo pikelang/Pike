@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.38 2004/09/28 23:58:26 mast Exp $
+|| $Id: multiset.h,v 1.39 2004/09/30 14:00:15 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -358,9 +358,13 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos);
 #define push_multiset_value(L, NODEPOS)					\
   push_svalue (get_multiset_value (L, NODEPOS))
 
-PMOD_EXPORT struct multiset *allocate_multiset (int allocsize,
-						int flags,
-						struct svalue *cmp_less);
+#define allocate_multiset(allocsize, flags, cmp_less)			\
+  dmalloc_touch (struct multiset *,					\
+		 real_allocate_multiset ((allocsize), (flags), (cmp_less)))
+
+PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
+						     int flags,
+						     struct svalue *cmp_less);
 PMOD_EXPORT void do_free_multiset (struct multiset *l);
 void multiset_fix_type_field (struct multiset *l);
 PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.172 2004/09/27 21:47:49 nilsson Exp $
+|| $Id: array.c,v 1.173 2004/09/30 14:00:13 mast Exp $
 */
 
 #include "global.h"
@@ -69,8 +69,8 @@ PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig)
  * NOTE: the new array has zero references
  */
 
-PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size,
-					     ptrdiff_t extra_space)
+PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
+					      ptrdiff_t extra_space)
 {
   struct array *v;
   ptrdiff_t e;
