@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.660 2003/07/02 12:49:04 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.661 2003/07/02 20:09:33 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9713,6 +9713,12 @@ test_any([[
     return sprintf("Bad termination returncode from wait():%d (expected -1).",
 		   code);
   }
+
+  if (state != 3) {
+    return sprintf("Unexpected termination in state %d, signal %d.",
+		   state, proc->last_signal());
+  }
+
   int sig = proc->last_signal();
   if (sig != signum("KILL")) {
     proc->kill(signum("KILL"));
