@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.367 2004/12/08 15:02:08 mast Exp $
+// $Id: master.pike.in,v 1.368 2004/12/26 01:06:18 per Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -394,6 +394,12 @@ string combine_path_with_cwd(string ... paths)
 int invalidate_time;
 mapping(string:multiset(string)) dir_cache = ([]);
 
+
+array(string) master_get_dir( string x )
+{
+    return get_dir( x );
+}
+
 Stat master_file_stat(string x)
 {
   string dir = combine_path_with_cwd(x);
@@ -409,7 +415,7 @@ Stat master_file_stat(string x)
   multiset(string) d = dir_cache[dir];
   if( zero_type(d) )
   {
-    array(string) tmp = get_dir(dir);
+    array(string) tmp = master_get_dir(dir);
     if(tmp)
     {
 #ifdef __NT__
@@ -1242,7 +1248,7 @@ class dirnode
     if(has_suffix(FIX_CASE(dirname),".pmod")) {
       fc[dirname[..<5]]=this;
     }
-    array(string) files = sort(get_dir(d)||({}));
+    array(string) files = sort(master_get_dir(d)||({}));
     if (!sizeof(d)) return;
     array(string) bases = map(files, base_from_filename);
     files = filter(files, bases);
@@ -4366,7 +4372,7 @@ CompatResolver get_compilation_handler(int major, int minor)
   array(Version) available=({});
 
 #if "¤share_prefix¤"[0]!='¤'
-  if (!(files = get_dir("¤share_prefix¤"))) {
+  if (!(files = master_get_dir("¤share_prefix¤"))) {
     werror ("Error listing directory %O: %s\n",
 	    "¤share_prefix¤", strerror (errno()));
     files = ({});
@@ -4383,7 +4389,7 @@ CompatResolver get_compilation_handler(int major, int minor)
 #endif
 
 #if "¤lib_prefix¤"[0]!='¤'
-  if (!(files = get_dir("¤lib_prefix¤"))) {
+  if (!(files = master_get_dir("¤lib_prefix¤"))) {
     werror ("Error listing directory %O: %s\n",
 	    "¤lib_prefix¤", strerror (errno()));
     files = ({});
