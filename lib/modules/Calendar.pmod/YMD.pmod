@@ -2143,6 +2143,7 @@ class YMD_Time
    int month_day_name() { return RBASE->month_day_name(); }
    int week_day() { return RBASE->week_day(); }
    int year_day() { return RBASE->year_day(); }
+   int year_name() { return RBASE->year_name(); }
    string week_name() { return RBASE->week_name(); }
    string week_day_name() { return RBASE->week_day_name(); }
    string week_day_shortname() { return RBASE->week_day_shortname(); }
