@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.450 2002/10/12 11:57:09 grubba Exp $
+|| $Id: program.c,v 1.451 2002/10/30 16:02:00 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.450 2002/10/12 11:57:09 grubba Exp $");
+RCSID("$Id: program.c,v 1.451 2002/10/30 16:02:00 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1030,8 +1030,6 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 
 struct node_s *resolve_identifier(struct pike_string *ident)
 {
-  struct node_s *ret;
-
   if(resolve_cache)
   {
     struct svalue *tmp=low_mapping_string_lookup(resolve_cache,ident);
@@ -1053,7 +1051,6 @@ struct node_s *resolve_identifier(struct pike_string *ident)
       my_yyerror("Recursive module dependency in %s.",
 		 ident->str);
     }else{
-      int i;
       SET_CYCLIC_RET(1);
 
       ref_push_string(ident);
@@ -1446,7 +1443,6 @@ void fixate_program(void)
   {
     for(i=0;i<(int)p->num_identifier_references;i++)
     {
-      struct identifier *id;
       if((p->identifier_references[i].id_flags & (ID_NOMASK|ID_HIDDEN)) ==
 	 ID_NOMASK)
       {
