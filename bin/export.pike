@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.28 1999/09/08 20:14:54 hubbe Exp $ */
+/* $Id: export.pike,v 1.29 1999/09/10 00:08:43 hubbe Exp $ */
 
 #include <simulate.h>
 import Stdio;
@@ -22,7 +22,10 @@ string *get_files(string path)
 {
   string *files,tmp,*ret;
   files=get_dir(path);
-  files-=({"CVS","RCS",".cvsignore"});
+
+  if(!getenv("PIKE_EXPORT_CVS_DIRS"))
+    files-=({"CVS","RCS",".cvsignore"});
+
   ret=({});
   foreach(files,tmp)
   {
