@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.156 2004/12/14 18:59:01 grubba Exp $
+// $Id: install.pike,v 1.157 2004/12/30 15:07:29 grubba Exp $
 
 #define USE_GTK
 
@@ -2335,6 +2335,14 @@ void do_install()
 #endif
     install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
 		 pike+".syms");
+    
+    // Support installation in LIBPIKE mode.
+    if (file_stat("pike.so")) {
+      if (export == 1) {
+	low_install_file("pike.so", combine_path(prefix, "build/pike.so"));
+      }
+      low_install_file("pike.so", combine_path(vars->TMP_LIBDIR, "pike.so"));
+    }
 
     string master_src=combine_path(vars->LIBDIR_SRC,"master.pike.in");
 
