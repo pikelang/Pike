@@ -13,6 +13,7 @@ constant Buffer = __builtin.Buffer;
 //! Intersections between needles are not counted, ie
 //! @tt{count("....","..")@} is @tt{2@}.
 //!
+
 constant count=__builtin.string_count;
 
 //! @decl int width(string s)
@@ -20,6 +21,7 @@ constant count=__builtin.string_count;
 //! Returns the width in bits (8, 16 or 32) of the widest character
 //! in @[s].
 //!
+
 constant width=__builtin.string_width;
 
 /*

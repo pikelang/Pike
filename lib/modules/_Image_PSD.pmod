@@ -257,7 +257,7 @@ string translate_mode( string mode )
   }
 }
 
-//! @decl array(Image.Layer) decode_layers( string data, mapping|void options ))
+//! @decl array(Image.Layer) decode_layers( string data, mapping|void options )
 //!
 //! Decodes a PSD image to an array of Image.Layer objects
 //!
@@ -265,7 +265,7 @@ string translate_mode( string mode )
 //! "draw_all_layers":1.
 //!
 //! The layer object have the following extra variables (to be queried
-//! using @ref[Image.Layer()->get_misc_value]):
+//! using @[Image.Layer()->get_misc_value]):
 //!
 //! @string
 //!   @value "image_guides"
@@ -360,7 +360,7 @@ array decode_layers( string|mapping what, mapping|void opts )
 //!
 //! Decodes a PSD image to a mapping, with at least an
 //! 'image' and possibly an 'alpha' object. Data is either a PSD image, or
-//! a mapping (as received from @ref[__decode])
+//! a mapping (as received from @[__decode])
 //!
 //! Supported options
 //!
@@ -388,9 +388,10 @@ array decode_layers( string|mapping what, mapping|void opts )
 //!
 //!   @value "mark_active_layer:1"
 //!     Draw an outline around the active layer
+//! @endstring
 //!
 //! @note
-//!   Throws upon error in data. For more information, see @ref[__decode]
+//!   Throws upon error in data. For more information, see @[__decode]
 mapping _decode( string|mapping what, mapping|void opts )
 {
   mapping data;
