@@ -6,13 +6,15 @@
  * Henrik Grubbström 1996-10-15
  */
 
+/* This file should be removed when things have stabilized */
+
 #ifndef PRECOMPILED_CRYPTO_H
 #define PRECOMPILED_CRYPTO_H
 
-#define MODULE_PREFIX "/precompiled/crypto/"
-#define MOD_INIT(x) init_##x##_efuns
-#define MOD_INIT2(x) init_##x##_programs
-#define MOD_EXIT(x)  exit_##x
+#define MODULE_PREFIX ""
+#define MOD_INIT(x) pike_crypto_##x##_init
+#define MOD_EXIT(x) pike_crypto_##x##_exit
+#define MOD_INIT2(x) ignore_##x
 
 /*
  * Includes
