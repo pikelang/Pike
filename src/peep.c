@@ -81,6 +81,7 @@ int insert_opcode2(int f,int current_line, struct pike_string *current_file)
   return insert_opcode(f,0,current_line, current_file);
 }
 
+
 void update_arg(int instr,INT32 arg)
 {
   p_instr *p;
@@ -153,6 +154,7 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     case F_DEC_NEQ_LOOP: \
     case F_LAND: \
     case F_LOR: \
+    case F_EQ_OR: \
     case F_CATCH: \
     case F_FOREACH
 
@@ -191,20 +193,41 @@ void assemble(void)
 
   for(e=0;e<length;e++)
   {
-    int tmp;
     switch(c[e].opcode)
     {
     case BRANCH_CASES:
     case F_POINTER:
       while(1)
       {
+	int tmp,tmp2;
 	tmp=labels[c[e].arg];
 	
 	while(c[tmp].opcode == F_LABEL ||
 	      c[tmp].opcode == F_NOP) tmp++;
 	
-	if(c[tmp].opcode!=F_BRANCH) break;
-	c[e].arg=c[tmp].arg;
+	if(c[tmp].opcode==F_BRANCH)
+	{
+	  c[e].arg=c[tmp].arg;
+	  continue;
+	}
+
+#define TWOO(X,Y) (((X)<<8)+(Y))
+
+	switch(TWOO(c[e].opcode,c[tmp].opcode))
+	{
+	case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
+	  c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
+	case TWOO(F_LOR,F_LOR):
+	  c[e].arg=c[tmp].arg;
+	continue;
+	
+	case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
+	  c[e].opcode=F_BRANCH_WHEN_ZERO;
+	case TWOO(F_LAND,F_LAND):
+	  c[e].arg=c[tmp].arg;
+	continue;
+	}
+	break;
       }
       uses[c[e].arg]++;
     }
@@ -311,6 +334,47 @@ void assemble(void)
 static int fifo_len, eye,len;
 static p_instr *instructions;
 
+int insopt(int f, INT32 b, int cl, struct pike_string *cf)
+{
+  p_instr *p;
+
+#ifdef DEBUG
+  if(!hasarg(f) && b)
+    fatal("hasarg() is wrong!\n");
+#endif
+
+  p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
+
+  if(fifo_len)
+  {
+    MEMMOVE(p-fifo_len+1,p-fifo_len,fifo_len*sizeof(p_instr));
+    p-=fifo_len;
+    fifo_len++;
+  }
+
+#ifdef DEBUG
+  if(!instrbuf.s.len)
+    fatal("Low make buf space failed!!!!!!\n");
+#endif
+
+  p->opcode=f;
+  p->line=current_line;
+  copy_shared_string(p->file, current_file);
+  p->arg=b;
+
+  return p - (p_instr *)instrbuf.s.str;
+}
+
+int insopt2(int f, int cl, struct pike_string *cf)
+{
+#ifdef DEBUG
+  if(hasarg(f))
+    fatal("hasarg() is wrong!\n");
+#endif
+  return insert_opcode(f,0,cl, cf);
+}
+
+
 static void debug()
 {
   if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
@@ -336,23 +400,18 @@ static p_instr *instr(int offset)
 
   debug();
 
-  if(offset >= 0)
+  if(offset < fifo_len)
   {
-    if(offset < fifo_len)
-    {
-      p=(p_instr *)low_make_buf_space(0, &instrbuf);
-      p-=fifo_len;
-      p+=offset;
-      return p;
-    }else{
-      offset-=fifo_len;
-      offset+=eye;
-      if(offset >= len) return 0;
-      return instructions+offset;
-    }
+    p=(p_instr *)low_make_buf_space(0, &instrbuf);
+    p-=fifo_len;
+    p+=offset;
+    if(((char *)p)<instrbuf.s.str)  return 0;
+    return p;
   }else{
-    fatal("Can't handle negative offsets in peephole optimizer!\n");
-    return 0; /* Make GCC happy */
+    offset-=fifo_len;
+    offset+=eye;
+    if(offset >= len) return 0;
+    return instructions+offset;
   }
 }
 
@@ -393,37 +452,24 @@ static void pop_n_opcodes(int n)
   {
     p_instr *p;
 
-    d=fifo_len;
-    if(d>n) d=n;
+    d=n;
+    if(d>fifo_len) d=fifo_len;
 #ifdef DEBUG
     if((long)d > (long)instrbuf.s.len / (long)sizeof(p_instr))
       fatal("Popping out of instructions.\n");
 #endif
 
-    low_make_buf_space(-((INT32)sizeof(p_instr))*fifo_len, &instrbuf);
     p=(p_instr *)low_make_buf_space(0, &instrbuf);
+    p-=fifo_len;
     for(e=0;e<d;e++) free_string(p[e].file);
     fifo_len-=d;
     if(fifo_len) MEMMOVE(p,p+d,fifo_len*sizeof(p_instr));
     n-=d;
+    low_make_buf_space(-((INT32)sizeof(p_instr))*d, &instrbuf);
   }
   eye+=n;
 }
 
-static void dofix()
-{
-  p_instr *p,tmp;
-  int e;
-
-  if(fifo_len)
-  {
-    p=(p_instr *)low_make_buf_space(0, &instrbuf);
-    tmp=p[-1];
-    for(e=0;e<fifo_len;e++)
-      p[-1-e]=p[-2-e];
-    p[-1-e]=tmp;
-  }
-}
 
 static void asm_opt(void)
 {

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.12 1997/03/05 05:22:55 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.13 1997/03/09 09:11:10 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -22,6 +22,7 @@ RCSID("$Id: docode.c,v 1.12 1997/03/05 05:22:55 hubbe Exp $");
 #include "builtin_functions.h"
 #include "peep.h"
 #include "docode.h"
+#include "operators.h"
 
 INT32 current_break=-1;
 INT32 current_continue=-1;
@@ -159,6 +160,13 @@ int do_docode(node *n,INT16 flags)
 
 void do_jump_when_zero(node *n,int j);
 
+static int is_efun(node *n, c_fun fun)
+{
+  return n && n->token == F_CONSTANT &&
+     n->u.sval.subtype == FUNCTION_BUILTIN &&
+    n->u.sval.u.efun->function == fun;
+}
+
 void do_jump_when_non_zero(node *n,int j)
 {
   if(!node_is_tossable(n))
@@ -175,10 +183,28 @@ void do_jump_when_non_zero(node *n,int j)
 
   switch(n->token)
   {
+  case F_APPLY:
+    if(is_efun(CAR(n), f_not))
+    {
+      do_jump_when_zero(CDR(n), j);
+      return;
+    }
+    break;
+      
   case F_NOT:
     do_jump_when_zero(CAR(n), j);
     return;
-  case F_OR:
+
+  case F_LAND:
+  {
+    int tmp=alloc_label();
+    do_jump_when_zero(CAR(n), tmp);
+    do_jump_when_non_zero(CDR(n), j);
+    emit(F_LABEL,tmp);
+    return;
+  }
+    
+  case F_LOR:
     do_jump_when_non_zero(CAR(n), j);
     do_jump_when_non_zero(CDR(n), j);
     return;
@@ -205,10 +231,28 @@ void do_jump_when_zero(node *n,int j)
 
   switch(n->token)
   {
+  case F_APPLY:
+    if(is_efun(CAR(n), f_not))
+    {
+      do_jump_when_non_zero(CDR(n), j);
+      return;
+    }
+    break;
+
   case F_NOT:
     do_jump_when_non_zero(CAR(n), j);
     return;
-  case F_AND:
+
+  case F_LOR:
+  {
+    int tmp=alloc_label();
+    do_jump_when_non_zero(CAR(n), tmp);
+    do_jump_when_zero(CDR(n), j);
+    emit(F_LABEL,tmp);
+    return;
+  }
+
+  case F_LAND:
     do_jump_when_zero(CAR(n), j);
     do_jump_when_zero(CDR(n), j);
     return;

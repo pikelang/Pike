@@ -15,6 +15,7 @@ COMPARISON(f_lt,"`<" , is_lt(sp-2,sp-1))
 COMPARISON(f_le,"`<=",!is_gt(sp-2,sp-1))
 COMPARISON(f_gt,"`>" , is_gt(sp-2,sp-1))
 COMPARISON(f_ge,"`>=",!is_lt(sp-2,sp-1))
+
 void f_add(INT32 args);
 void o_subtract();
 void f_minus(INT32 args);
@@ -40,6 +41,9 @@ void o_compl();
 void f_compl(INT32 args);
 void o_negate();
 void o_range();
+void f_index(INT32 args);
+void f_arrow(INT32 args);
+void f_sizeof(INT32 args);
 void init_operators();
 /* Prototypes end here */
 

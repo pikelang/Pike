@@ -312,20 +312,21 @@ void dump2(mixed *data,int ind)
       {
 	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
 	{
-	  write(sprintf("%*ninsert_opcode(%s,arg%d,cl,cf);\n",ind,d[1][i],i));
+	  write(sprintf("%*ninsopt(%s,arg%d,cl,cf);\n",ind,d[1][i],i));
 	  i++;
 	}else{
-	  write(sprintf("%*ninsert_opcode2(%s,cl,cf);\n",ind,d[1][i]));
+	  write(sprintf("%*ninsopt2(%s,cl,cf);\n",ind,d[1][i]));
 	}
 	q++;
       }
       if(sizeof(d[1]))
       {
 	if(q)
-	  write(sprintf("%*nfifo_len+=%d;\n",ind,q+JUMPBACK));
+	  write(sprintf("%*nfifo_len+=%d;\n",ind,q));
 	write(sprintf("%*nfree_string(cf);\n",ind));
 	write(sprintf("%*ndebug();\n",ind));
       }
+      write(sprintf("%*nfifo_len+=%d;\n",ind,q+JUMPBACK));
       write(sprintf("%*ncontinue;\n",ind));
 
       ind-=2;
@@ -373,6 +374,17 @@ int main(int argc, string *argv)
   write("    INT32 current_line;\n");
   write("    struct pike_string *current_file;\n");
   write("\n");
+  write("#ifdef DEBUG\n");
+  write("    if(a_flag>5) {\n");
+  write("      fprintf(stderr,\"#%d,%d:\",eye,fifo_len);\n");
+  write("      fprintf(stderr,\"%s(%d)\",  get_token_name(opcode(-2)),argument(-2));\n");
+  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(-1)),argument(-1));\n");
+  write("      fprintf(stderr,\" . %s(%d)\",  get_token_name(opcode(0)),argument(0));\n");
+  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(1)),argument(1));\n");
+  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(2)),argument(2));\n");
+  write("      fprintf(stderr,\" %s(%d)\\n\",get_token_name(opcode(3)),argument(3));\n");
+  write("    }\n");
+  write("#endif\n\n");
 
   dump2(data,4);
 

@@ -1,4 +1,5 @@
-test_true([["$Id: testsuite.in,v 1.33 1997/03/08 12:54:09 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.34 1997/03/09 09:11:13 hubbe Exp $"]])
+test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
 test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
