@@ -1,3 +1,7 @@
+Tue Dec  3 02:53:25 1996  Henrik Grubbström  <grubba@cuckoo.infovav.se>
+
+	* modules/ssleay/configure.in: Made the tests more paranoid
+
 Sun Dec  1 22:15:12 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* array.c: ({ destructed_object }) - ({ 0 }) should now work properly
