@@ -100,7 +100,7 @@ void f_load_module(INT32 args)
   module=dlopen(module_name, RTLD_NOW);
   if(!module)
   {
-    char *err = dlerror();
+    const char *err = dlerror();
     if(!err) err = "Unknown reason";
     error("load_module(\"%s\") failed: %s\n",
 	  sp[-args].u.string->str, err);
