@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.209 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: image.c,v 1.210 2004/05/02 21:04:32 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.209 2004/03/05 23:04:02 nilsson Exp $");
+RCSID("$Id: image.c,v 1.210 2004/05/02 21:04:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -3744,6 +3744,9 @@ static void image_apply_curve_2( struct object *o,
 }
 
 
+struct pike_string *s_red, *s_green, *s_blue;
+struct pike_string *s_saturation, *s_value, *s_hue;
+
 static void image_apply_curve( INT32 args )
 {
   int i, j;
@@ -3768,31 +3771,30 @@ static void image_apply_curve( INT32 args )
      }
    case 2:
      {
-       struct pike_string *s_red, *s_green, *s_blue;
-       struct pike_string *s_saturation, *s_value, *s_hue;
        unsigned char curve[256];
        int chan = 0, co = 0;
        struct object *o;
-       MAKE_CONSTANT_SHARED_STRING(s_red,"red");
-       MAKE_CONSTANT_SHARED_STRING(s_green,"green");
-       MAKE_CONSTANT_SHARED_STRING(s_blue,"blue");
-       MAKE_CONSTANT_SHARED_STRING(s_saturation,"saturation");
-       MAKE_CONSTANT_SHARED_STRING(s_value,"value");
-       MAKE_CONSTANT_SHARED_STRING(s_hue,"hue");
 
        if( sp[-args].type != T_STRING )
-         bad_arg_error("Image.Image->apply_curve", 
-                       sp-args, args, 0, "", sp-args,
-                       "Bad arguments to apply_curve()\n" );
+	 SIMPLE_BAD_ARG_ERROR("Image.Image->apply_curve()", 1,
+			      "string");
        if( sp[-args+1].type != T_ARRAY ||
            sp[-args+1].u.array->size != 256 )
-         bad_arg_error("Image.Image->apply_curve", 
-                       sp-args, args, 0, "", sp-args,
-                       "Bad arguments to apply_curve()\n" );
-       else
-         for( j = 0; j<256; j++ )
-           if( sp[-args+1].u.array->item[j].type == T_INT )
-             curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+	 SIMPLE_BAD_ARG_ERROR("Image.Image->apply_curve()", 2,
+			      "256 element array");
+
+       for( j = 0; j<256; j++ )
+	 if( sp[-args+1].u.array->item[j].type == T_INT )
+	   curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+
+       if(!s_red) {
+	 MAKE_CONSTANT_SHARED_STRING(s_red,"red");
+	 MAKE_CONSTANT_SHARED_STRING(s_green,"green");
+	 MAKE_CONSTANT_SHARED_STRING(s_blue,"blue");
+	 MAKE_CONSTANT_SHARED_STRING(s_saturation,"saturation");
+	 MAKE_CONSTANT_SHARED_STRING(s_value,"value");
+	 MAKE_CONSTANT_SHARED_STRING(s_hue,"hue");
+       }
 
        if( sp[-args].u.string == s_red )
        {
@@ -3824,6 +3826,8 @@ static void image_apply_curve( INT32 args )
          chan = 2;
          co = 0;
        }
+       else
+	 Pike_error("Unknown channel in argument 1.\n");
 
        if( co )
        { 
@@ -4853,8 +4857,23 @@ void init_image_image(void)
    PIKE_MODULE_EXPORT(Image, image_colortable_internal_floyd_steinberg );
 #endif
 
+
+   s_red=0;
+   s_green=0;
+   s_blue=0;
+   s_value=0;
+   s_saturation=0;
+   s_hue=0;
 }
 
 void exit_image_image(void) 
 {
+  if(s_red) {
+    free_string(s_red);
+    free_string(s_green);
+    free_string(s_blue);
+    free_string(s_value);
+    free_string(s_saturation);
+    free_string(s_hue);
+  }
 }
