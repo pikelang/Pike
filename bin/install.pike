@@ -1303,7 +1303,7 @@ void do_install()
       make_master(unpack_master, master_src, "build/lib", "build", "lib");
 #endif
       to_export+=({
-	unpack_master, master_src,
+	unpack_master,
 	combine_path(vars->TMP_BUILDDIR,"specs"),
 	combine_path(vars->TMP_BUILDDIR,
 		     "modules/dynamic_module_makefile"),
