@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.39 2004/06/01 23:36:44 nilsson Exp $
+// $Id: mkpeep.pike,v 1.40 2004/06/05 17:23:29 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -473,7 +473,7 @@ int main(int argc, array(string) argv)
   a[0]->make_child_fun();
   write( functions );
 
-  write("inline static void low_asm_opt(void) {\n");
+  write("INLINE static void low_asm_opt(void) {\n");
   write( a[0]->get_string(2) );
 
   write("}\n");
