@@ -220,44 +220,56 @@ class client {
 
   static private mapping etc_hosts;
 
-  static private string match_etc_hosts(string host)
-  {
-    if (!etc_hosts) {
-      string raw;
 #ifdef __NT__
-      raw = RegGetValue(HKEY_LOCAL_MACHINE,
-			"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
-			"DataBasePath");
-      raw+="\\hosts";
-#else
-      raw="/etc/hosts";
+  string get_tcpip_param(string val)
+    {
+      foreach(({
+	"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+	  "SYSTEM\\CurrentControlSet\\Services\\VxD\\MSTCP"
+	  }),string key)
+	{
+	  catch {
+	    return RegGetValue(HKEY_LOCAL_MACHINE, key, value);
+	  };
+	}
+    }
 #endif
-      raw = Stdio.read_file(raw);
-
-      etc_hosts = ([ "localhost":"127.0.0.1" ]);
-
-      if (raw) {
-	foreach(raw/"\n", string line) {
-	  // Handle comments, and split the line on white-space
-	  line = lower_case(replace((line/"#")[0], "\t", " "));
-	  array arr = (line/" ") - ({ "" });
-
-	  if (sizeof(arr) > 1) {
-	    if (is_ip(arr[0])) {
-	      foreach(arr[1..], string name) {
-		etc_hosts[name] = arr[0];
-	      }
-	    } else {
-	      // Bad /etc/hosts entry ignored.
+  
+  static private string match_etc_hosts(string host)
+    {
+      if (!etc_hosts) {
+	string raw;
+#ifdef __NT__
+	raw=get_tcpip_param("DataBasePath")+"\\hosts";
+#else
+	raw="/etc/hosts";
+#endif
+	raw = Stdio.read_file(raw);
+	
+	etc_hosts = ([ "localhost":"127.0.0.1" ]);
+	
+	if (raw) {
+	  foreach(raw/"\n", string line) {
+	    // Handle comments, and split the line on white-space
+		 line = lower_case(replace((line/"#")[0], "\t", " "));
+	    array arr = (line/" ") - ({ "" });
+	    
+	    if (sizeof(arr) > 1) {
+	      if (is_ip(arr[0])) {
+		foreach(arr[1..], string name) {
+		  etc_hosts[name] = arr[0];
+		}
+	      } else {
+		// Bad /etc/hosts entry ignored.
+		     }
 	    }
 	  }
+	} else {
+	  // Couldn't read /etc/hosts.
 	}
-      } else {
-	// Couldn't read /etc/hosts.
       }
+      return(etc_hosts[lower_case(host)]);
     }
-    return(etc_hosts[lower_case(host)]);
-  }
 
   array(string) nameservers = ({});
   array domains = ({});
@@ -267,15 +279,11 @@ class client {
     {
       string domain;
 #if __NT__
-      domain=RegGetValue(HKEY_LOCAL_MACHINE,
-			 "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
-			 "Domain");
-      nameservers = ({ RegGetValue(HKEY_LOCAL_MACHINE,
-				   "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
-				   "NameServer") });
-      domains=RegGetValue(HKEY_LOCAL_MACHINE,
-			  "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
-			  "SearchList") / " "- ({""});
+
+      
+      domain=get_tcpip_param("Domain");
+      nameservers = ({ get_tcpip_param("NameServer") });
+      domains=get_tcpip_param("SearchList") / " "- ({""});
 #else
       string resolv_conf = Stdio.read_file("/etc/resolv.conf");
 
