@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.48 2001/12/18 18:31:43 mast Exp $
+# $Id: Makefile,v 1.49 2002/01/11 16:50:07 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -164,6 +164,33 @@ bin_export:
 
 feature_list:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
+
+autobuild:
+	@test -d build || mkdir build
+	@test -d build/autobuild || mkdir build/autobuild
+	@$(MAKE) $(MAKE_FLAGS) autobuild_low || /bin/true
+	@echo Begin response assembly | tee -a build/autobuild/autobuildlog.txt
+	@date >> build/autobuild/autobuildlog.txt
+# AIX:
+# grep -v "-fpic ignored for AIX" makelog.txt | grep -v "-fPIC ignored for AIX" | grep -v "0711-327" > tmp
+# mv tmp makelog.txt
+	@cp "$(BUILDDIR)/config.info" build/autobuild/configinfo.txt || /bin/true
+# Add all config.log and config.cache?
+	@cp "$(BUILDDIR)/testsuite" build/autobuild/testsuite.txt || /bin/true
+	@cp "$(BUILDDIR)/dumpmodule.log" build/autobuild/dumplog.txt || /bin/true
+	@tar -c build/autobuild/*.txt > autobuild_result.tar
+	@gzip -f9 autobuild_result.tar
+
+autobuild_low:
+	@echo Begin build | tee -a build/autobuild/autobuildlog.txt
+	@date >> build/autobuild/autobuildlog.txt
+	@$(MAKE) $(MAKE_FLAGS) TERM=dumb > build/autobuild/makelog.txt 2>&1
+	@echo Begin verify | tee -a build/autobuild/autobuildlog.txt
+	@date >> build/autobuild/autobuildlog.txt
+	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TERM=dumb TESTARGS="-a -q" > build/autobuild/verifylog.txt 2>&1
+	@echo Begin export | tee -a build/autobuild/autobuildlog.txt
+	@date >> build/autobuild/autobuildlog.txt
+	@$(MAKE) $(MAKE_FLAGS) TERM=dumb export > build/autobuild/exportlog.txt 2>&1
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
