@@ -7623,7 +7623,7 @@ Billions and billions as Mr Attenborough would have said..
 The Gmp library can handle large integers, floats and rational numbers, but
 currently Pike only has support for large integers. The others will be added
 later or when demand arises. Large integers are implemented as objects cloned
-from Gmp.Mpz. 
+from Gmp.mpz. 
 
 <class name=Gmp.mpz title="bignum program">
 <man_description>
@@ -7643,9 +7643,9 @@ found when Pike was compiled.
 
 <method name=Gmp.mpz.create title="initialize a bignum">
 <man_syntax>
-object Mpz();<br>
-object Mpz(int|object|float <I>i</I>);<br>
-object Mpz(string <I>digits</I>, int <I>base</I>);<br>
+object mpz();<br>
+object mpz(int|object|float <I>i</I>);<br>
+object mpz(string <I>digits</I>, int <I>base</I>);<br>
 </man_syntax>
 <man_description>
 When cloning an mpz it is by default initialized to zero. However,
@@ -7668,7 +7668,7 @@ object powm(int|string|float|object <I>a</I>,int|string|float|object <I>b</I>);<
 </man_syntax>
 <man_description>
 This function returns ( mpz ** <i>a</i> ) % <i>b</i>.
-For example, <tt> Mpz(2)-&gt;powm(10,42); </tt> would return <tt>16</tt>
+For example, <tt> mpz(2)-&gt;powm(10,42); </tt> would return <tt>16</tt>
 since 2 to the power of 10 is 1024 and 1024 modulo 42 is 16.
 </man_description>
 </method>
