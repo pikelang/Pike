@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.229 2001/02/25 14:42:55 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.230 2001/02/26 22:44:08 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1190,10 +1190,10 @@ type3: TOK_INT_ID  opt_int_range    {}
   | TOK_MIXED_ID    { push_type(T_MIXED); }
   | TOK_STRING_ID { push_type(T_STRING); }
   | TOK_OBJECT_ID   opt_object_type {}
-  | TOK_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
+  | TOK_MAPPING_ID opt_mapping_type {}
   | TOK_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
-  | TOK_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
+  | TOK_FUNCTION_ID opt_function_type {}
   ;
 
 type8: type3 | identifier_type ;
@@ -1294,7 +1294,9 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
 opt_function_type: '('
   {
     type_stack_mark();
+#ifndef USE_PIKE_TYPE
     type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
   }
   function_type_list optional_dot_dot_dot ':'
   {
@@ -1308,24 +1310,40 @@ opt_function_type: '('
 	if (Pike_compiler->compiler_pass == 1) {
 	  yyerror("Missing type before ... .");
 	}
+#ifndef USE_PIKE_TYPE
 	type_stack_reverse();
 	type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
 	push_type(T_MIXED);
       }
     }else{
+#ifndef USE_PIKE_TYPE
       type_stack_reverse();
       type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
       push_type(T_VOID);
     }
+#ifndef USE_PIKE_TYPE
     /* Rotate T_MANY into the proper position. */
     push_type(T_MANY);
     type_stack_reverse();
     type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
   }
   type7 ')'
   {
+#ifdef USE_PIKE_TYPE
+    push_reverse_type(T_MANY);
+    Pike_compiler->pike_type_mark_stackp--;
+    while (*Pike_compiler->pike_type_mark_stackp <
+	   Pike_compiler->type_stackp) {
+      push_reverse_type(T_FUNCTION);
+    }
+#else /* !USE_PIKE_TYPE */
     type_stack_reverse();
     type_stack_reverse();
+    push_type(T_FUNCTION); 
+#endif /* USE_PIKE_TYPE */
   }
   | /* empty */
   {
@@ -1338,6 +1356,9 @@ opt_function_type: '('
    push_type(T_OR);
 
    push_type(T_MANY);
+#ifndef USE_PIKE_TYPE
+   push_type(T_FUNCTION); 
+#endif /* !USE_PIKE_TYPE */
   }
   ;
 
@@ -1348,8 +1369,10 @@ function_type_list: /* Empty */ optional_comma { $$=0; }
 function_type_list2: type7 { $$=1; }
   | function_type_list2 ','
   {
+#ifndef USE_PIKE_TYPE
     type_stack_reverse();
     type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
   }
   type7
   ;
@@ -1360,24 +1383,34 @@ opt_array_type: '(' type7 ')'
 
 opt_mapping_type: '('
   { 
+#ifndef USE_PIKE_TYPE
     type_stack_mark();
     type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
   }
   type7 ':'
   { 
+#ifndef USE_PIKE_TYPE
     type_stack_reverse();
     type_stack_mark();
+#endif /* !USE_PIKE_TYPE */
   }
   type7
   { 
+#ifdef USE_PIKE_TYPE
+    push_reverse_type(T_MAPPING);
+#else /* !USE_PIKE_TYPE */
     type_stack_reverse();
     type_stack_reverse();
+    push_type(T_MAPPING);
+#endif /* USE_PIKE_TYPE */
   }
   ')'
   | /* empty */ 
   {
     push_type(T_MIXED);
     push_type(T_MIXED);
+    push_type(T_MAPPING);
   }
   ;
 
