@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.35 2005/02/22 09:22:07 grubba Exp $ */
+/* $Id: socktest.pike,v 1.36 2005/02/22 09:24:59 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -549,6 +549,11 @@ int main()
      (has_value(testargs/" ", "-q") ||
       has_value(testargs/" ", "-quiet") ) )
     quiet=1;
+
+  werror("\nSocket test");
+#ifdef IPV6
+  werror(" IPv6 mode");
+#endif /* IPV6 */
 
 #if constant(System.getrlimit)
   array(int) file_limit = System.getrlimit("nofile");
