@@ -472,6 +472,8 @@ array rgb_to_hsv(array|int ri, int|void gi, int|void bi)
   float h, s, v;
 
   if(arrayp(ri)) return rgb_to_hsv(@ri);
+  if((ri==gi) && (gi==bi)) return ({ 0, 0, ri }); // greyscale..
+  
   r = (float)ri/255.0; g = (float)gi/255.0; b = (float)bi/255.0;
   max = MAX3(r,g,b);
   min = -(MAX3(-r,-g,-b));
