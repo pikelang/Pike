@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.525 2002/07/29 14:34:34 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.526 2002/07/29 17:20:06 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1983,19 +1983,7 @@ array(int) a()
 {
   werror("\nTesting vtables and scope access.\n");
 
-  string testargs=getenv()->TESTARGS;
-  if(testargs &&
-     (has_value(testargs/" ", "-q") ||
-      has_value(testargs/" ", "-quiet") ) )
-    quiet=1;
-
-  switch(getenv("TERM"))
-  {
-    case "dumb":
-    case "emacs":
-      quiet=1;
-      werror("Max depth: ");
-  }
+  quiet = !_verbose;
 
   int total_tests;
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
@@ -5109,19 +5097,7 @@ ifefun(gc,
       // 		 }}),
     });
 
-    int quiet;
-    string testargs=getenv()->TESTARGS;
-    if(testargs &&
-       (has_value(testargs/" ", "-q") ||
-        has_value(testargs/" ", "-quiet") ) )
-      quiet=1;
-
-    switch(getenv("TERM"))
-    {
-      case "dumb":
-      case "emacs":
-        quiet=1;
-    }
+    int quiet = !_verbose;
 
     int tests_failed = 0;
     int tests = 0;
