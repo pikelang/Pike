@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.19 2003/05/22 13:18:02 grubba Exp $
+# $Id: configure.in,v 1.20 2003/05/23 10:28:48 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -107,8 +107,7 @@ else
     glutJoystickFunc glutKeyboardUpFunc glutLeaveGameMode \
     glutPostWindowOverlayRedisplay glutPostWindowRedisplay glutReportErrors \
     glutSetKeyRepeat glutSpecialUpFunc], [], [
-      ac_tr_func=`echo $ac_tr_func|sed -e 's/HAVE_/MISSING_/'`
-      AC_DEFINE_UNQUOTED($ac_tr_func)
+      AC_DEFINE_UNQUOTED(`echo "MISSING_$ac_func" | tr '[[a-z]]' '[[A-Z]]'`)
   ])
 fi
 
