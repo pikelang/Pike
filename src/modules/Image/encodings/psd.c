@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.18 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: psd.c,v 1.19 2000/08/08 11:08:36 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -116,11 +116,11 @@ static int read_char( struct buffer *from )
 }
 
 
-static char *read_data( struct buffer * from, unsigned int len )
+static char *read_data( struct buffer * from, size_t len )
 {
   char *res;
   if( from->len < len )
-    error("Not enough space for %u bytes\n", len);
+    error("Not enough space for %lu bytes\n", len);
   res = (char *)from->str;
   from->str += len;
   from->len -= len;
