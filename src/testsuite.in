@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.279 2000/02/29 03:17:54 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.280 2000/03/03 01:31:13 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -535,6 +535,7 @@ test_false([[Program.implements( class { int x; string y; void foo(int x) {} },
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
+test_any([[if(int x=1,y=2) return x;]],1)
 test_any([[int x; x++; if(x) return x; return -1;]],1)
 test_any([[int x; if(x) return x; return -1;]],-1)
 test_any([[int x,y; if(x==y || x==1) return 2; return 0;]],2);
