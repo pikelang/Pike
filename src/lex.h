@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.24 2002/10/11 01:39:33 nilsson Exp $
+|| $Id: lex.h,v 1.25 2002/11/02 13:39:28 grubba Exp $
 */
 
 #ifndef LEX_H
@@ -20,17 +20,42 @@ struct keyword
 #endif
 };
 
-#define I_HASARG	1
-#define I_POINTER	2
-#define I_JUMP		4
-#define I_HASARG2	16
-#define I_PC_AT_NEXT	32
+/*
+ * Instruction flags
+ *
+ * Flags used to classify the instructions.
+ *
+ * Note that branches that take arguments use an immediately
+ * following F_POINTER instruction to hold the destination
+ * address.
+ */
+#define I_HASARG	1	/* Instruction has a parameter. */
+#define I_POINTER	2	/* arg is a label number. */
+#define I_JUMP		4	/* Instruction performs a jump to its pointer. */
+#define I__DATA		8	/* Instruction is raw data (data, byte)*/
+#define I_HASARG2	16	/* Instruction has a second parameter. */
+#define I_HASPOINTER	32	/* Instruction is followed by a F_POINTER. */
+#define I_PC_AT_NEXT	64	/* Opcode needs PC to be updated. */
 
-#define I_ISPOINTER	(I_HASARG | I_POINTER)
-#define I_ISJUMP	(I_HASARG | I_POINTER | I_JUMP)
-#define I_DATA		(I_HASARG | 8)
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
-#define I_IS_MASK	(I_HASARG | I_POINTER | I_JUMP | I_HASARG2)
+#define I_DATA		(I_HASARG | I__DATA)
+#define I_ISPOINTER	(I_HASARG | I_POINTER)	/* Only F_POINTER */
+#define I_ISJUMP	(I_HASARG | I_POINTER | I_JUMP)
+#define I_ISJUMPARG	(I_HASARG | I_HASPOINTER | I_JUMP)
+#define I_ISJUMPARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP)
+#define I_IS_MASK	(I_TWO_ARGS | I_POINTER | I_HASPOINTER | I_JUMP)
+
+/* Valid masked flags:
+ *
+ * 0		Generic instruction without immediate arguments.
+ * I_HAS_ARG	Generic instruction with one argument.
+ * I_TWO_ARGS	Generic instruction with two arguments.
+ * I_DATA	Raw data (F_BYTE or F_DATA).
+ * I_ISPOINTER	Raw jump address (F_POINTER).
+ * I_ISJUMP	Branch instruction or F_CATCH.
+ * I_ISJUMPARG	Branch instruction with one argument.
+ * I_ISJUMPARGS	Branch instruction with two arguments.
+ */
 
 #ifdef PIKE_DEBUG
 #define INSTR_PROFILING
