@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.23 1999/04/11 07:21:22 per Exp $
+# $Id: Makefile.in,v 1.24 1999/04/12 10:30:02 per Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
-OBJS = gif.o gif_lzw.o pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o
+OBJS = gif.o gif_lzw.o pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o
 
 @SET_MAKE@
 
