@@ -11,19 +11,17 @@ BUGS
 
 ============================================================================
 NAME
-	create - initielize the buffer
+	flush - flush the contents of the buffer
 
 SYNTAX
 	#include <string.h>
 
-	void string_buffer->create();
-	or
-	object clone(String_buffer);
+	void string_buffer->flush();
 
 DESCRIPTION
-	This function initializes the string buffer. You can call this
-	function to clear the contents of the buffer once it has been
-	used.
+	This function empties the string buffer. You don't need to call this
+	function if you use the string buffer only once since the start
+	state for a string buffer is flushed.
 
 ============================================================================
 NAME
