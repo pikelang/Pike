@@ -1,4 +1,4 @@
-// $Id: OWL.pike,v 1.2 2004/01/10 23:18:12 nilsson Exp $
+// $Id: OWL.pike,v 1.3 2004/03/08 19:11:28 stensson Exp $
 
 #pike __REAL_VERSION__
 
@@ -36,6 +36,8 @@ OWLResource owl_complementOf    = OWLResource("complementOf");
 OWLResource owl_equivalentClass = OWLResource("equivalentClass");
 OWLResource owl_disjointWith    = OWLResource("disjointWith");
 OWLResource owl_Restriction     = OWLResource("Restriction");
+
+constant function parse_owl = parse_xml;
 
 void add_Class(Resource c)
 {
