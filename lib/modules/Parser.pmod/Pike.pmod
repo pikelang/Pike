@@ -4,14 +4,14 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.26 2002/12/20 18:04:01 grubba Exp $
+// $Id: Pike.pmod,v 1.27 2002/12/30 14:40:16 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
 inherit "C.pmod";
 
 #define UNKNOWN_TOKEN \
-  error(sprintf("Unknown pike token: %O\n",data[pos..pos+20]))
+  error("Unknown pike token: %O\n", data[pos..pos+20])
 
 static mapping(string : int) backquoteops =
 (["/":1,
