@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.250 2001/10/05 01:30:12 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.251 2001/10/22 19:09:48 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1758,6 +1758,40 @@ void slow_check_stack(void)
   }
 }
 
+static const char *safe_idname_from_int(struct program *prog, int func)
+{
+  /* ID_FROM_INT with a thick layer of checks. */
+  struct reference *ref;
+  struct inherit *inher;
+  struct identifier *id;
+  if (!prog)
+    return "<null program *>";
+  if (func < 0 || func >= prog->num_identifier_references)
+    return "<offset outside prog->identifier_references>";
+  if (!prog->identifier_references)
+    return "<null prog->identifier_references>";
+  ref = prog->identifier_references + func;
+  if (ref->inherit_offset >= prog->num_inherits)
+    return "<offset outside prog->inherits>";
+  if (!prog->inherits)
+    return "<null prog->inherits>";
+  inher = prog->inherits + ref->inherit_offset;
+  prog = inher->prog;
+  if (!prog)
+    return "<null inherited prog>";
+  if (ref->identifier_offset >= prog->num_identifiers)
+    return "<offset outside inherited prog->identifiers>";
+  if (!prog->identifiers)
+    return "<null inherited prog->identifiers>";
+  id = prog->identifiers + ref->identifier_offset;
+  if (!id->name)
+    return "<null identifier->name>";
+  if (!id->name->str)
+    return "<null identifier->name->str>";
+  /* FIXME: Wide string identifiers. */
+  return id->name->str;
+}
+
 /*: Prints the Pike backtrace for the interpreter context in the given
  *: thread to stderr, without messing in the internals (doesn't even
  *: use dynamic_buffer).
@@ -1808,7 +1842,7 @@ void gdb_backtrace (
 
       if (f->current_object && f->current_object->prog) {
 	/* FIXME: Wide string identifiers. */
-	fputs (ID_FROM_INT (f->current_object->prog, f->fun)->name->str, stderr);
+	fputs (safe_idname_from_int(f->current_object->prog, f->fun), stderr);
 	fputc ('(', stderr);
       }
       else
@@ -1912,7 +1946,7 @@ void gdb_backtrace (
 	    if(arg->subtype == FUNCTION_BUILTIN)
 	      fputs (arg->u.efun->name->str, stderr);
 	    else if(arg->u.object->prog)
-	      fputs (ID_FROM_INT(arg->u.object->prog,arg->subtype)->name->str, stderr);
+	      fputs (safe_idname_from_int(arg->u.object->prog,arg->subtype), stderr);
 	    else
 	      fputc ('0', stderr);
 	    break;
