@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.88 2002/07/13 08:45:35 mikael Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.89 2002/07/14 11:23:31 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -19,8 +19,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Hilfe can not handle named lambdas.
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
-- Some preprocessor stuff works. Some doesn't. They should be
-  reviewed and fixed where possible.
 - Filter exit/quit from history. Could be done by adding a 'pop'
   method to Readline.History and calling it from StdinHilfe's
   destroy.
@@ -899,26 +897,37 @@ private class ParserState {
     foreach(tokens, string token) {
       if(sizeof(token)>1 && (token[0..1]=="//" || token[0..1]=="/*")) continue; // comments
 
+      pipeline += ({ token });
+
       // If we start a block at the uppermost level, what kind of block is it?
       if(token=="{" && !pstack->ptr) {
 	if(!block)
 	  block = last;
 	else if(block=="class" && last=="class")
 	  block = "class stop";
+	pstack->push(token);
+	continue;
       }
-      if(token=="lambda" && !pstack->ptr)
+      if(token=="lambda" && !pstack->ptr) {
 	block = token;
+	last = token;
+	continue;
+      }
       if(token=="class" && !pstack->ptr) {
-	if(sizeof(pipeline))
+	if(sizeof(pipeline)>1)
 	  block = "class stop"; // Kludge to get "object foo=class{}();" past the kludge below.
 	else
 	  block = token; // Kludge to get "class A {}" to work without semicolon.
+	last = token;
+	continue;
       }
 
       // Do we begin any kind of parenthesis level?
       if(token=="(" || token=="{" || token=="[" ||
-	 token=="(<" || token=="({" || token=="([")
+	 token=="(<" || token=="({" || token=="([") {
 	pstack->push(token);
+	continue;
+      }
 
       // Do we end any kind of parenthesis level?
       if(token==")" || token=="}" || token=="]" ||
@@ -931,13 +940,12 @@ private class ParserState {
 	pstack->pop();
       }
 
-      pipeline += ({ token });
-
       // expressions
       if(token==";" && !pstack->ptr) {
 	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
+	continue;
       }
 
       // If we end a block at the uppermost level, and it doesn't need a ";",
@@ -946,6 +954,18 @@ private class ParserState {
 	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
+	continue;
+      }
+
+      // Preprocessor
+      if( token[0]=='#' ) {
+	string tmp = token-" ";
+	if( has_prefix(tmp, "#error") && !pstack->ptr) {
+	  ready += ({ Expression( pipeline ) });
+	  pipeline = ({});
+	  block = 0;
+	  continue;
+	}
       }
 
       if(!whitespace[token[0]])
@@ -983,6 +1003,32 @@ private class ParserState {
   array(string) push_string(string line) {
     array(string) tokens;
     array err;
+    if(sizeof(line) && line[0]=='#') {
+      string tmp = line-" ";
+      if( has_prefix(tmp, "#define") ) {
+	caught_error = "Preprocessor defines not possible inside Hilfe.\n";
+	return 0;
+      }
+      // FIXME: It should be possible to add charset support, but would it be worth it?
+      if( has_prefix(tmp, "#charset") ) {
+	caught_error = "Preprocessor charset declaration not possible inside Hilfe.\n";
+	return 0;
+      }
+      // FIXME: We would like #pike to work.
+      if( has_prefix(tmp, "#pike") ) {
+	caught_error = "Version selection does not work inside Hilfe.\n";
+	return 0;
+      }
+      if( has_prefix(tmp, "#pragma") ){
+	caught_error = "Pragma does not work inside Hilfe.\n";
+	return 0;
+      }
+      if( has_prefix(tmp, "#if") || has_prefix(tmp, "#elif") ||
+	  has_prefix(tmp, "#else") || has_prefix(tmp, "#endif") ) {
+	caught_error = "Preprocess instructions if, elif, else and endif not possible in Hilfe.\n";
+	return 0;
+      }
+    }
     if(err = catch( tokens = Parser.Pike.split(line, low_state) )) {
       caught_error = err[0];
       return 0;
@@ -1194,7 +1240,7 @@ class Evaluator {
   void print_version()
   {
     safe_write(version()+
-	      " running Hilfe v3.4 (Incremental Pike Frontend)\n");
+	      " running Hilfe v3.5 (Incremental Pike Frontend)\n");
   }
 
   //! Clears the current state, history and removes all locally
@@ -1263,7 +1309,7 @@ class Evaluator {
     }
 
     // Push new tokens into our state.
-    string err = catch( state->feed(tokens) );
+    mixed err = catch( state->feed(tokens) );
     if(err) {
       if(stringp(err))
 	safe_write("Hilfe Error: %s\n", err);

@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.12 2002/07/01 00:56:45 nilsson Exp $
+// $Id: testhilfe.pike,v 1.13 2002/07/14 11:23:31 nilsson Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -73,7 +73,7 @@ int main(int num, array(string) args) {
     verbose++;
   }
 
-  test(".", version() + " running Hilfe v3.4 (Incremental Pike Frontend)\n");
+  test(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
   test("set format sprintf \"%s\"", "");
   test("1;", "1");
 
@@ -155,7 +155,7 @@ int main(int num, array(string) args) {
 
   // Clear history...
   testhilfe=TestHilfe();
-  test(".", version() + " running Hilfe v3.4 (Incremental Pike Frontend)\n");
+  test(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
   test("set format sprintf \"%s\"", "");
 
   // Testing history.
