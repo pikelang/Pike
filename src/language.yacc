@@ -186,7 +186,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.159 1999/12/31 01:53:57 mast Exp $");
+RCSID("$Id: language.yacc,v 1.160 2000/01/02 23:39:11 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1201,7 +1201,7 @@ opt_function_type: '('
    push_type(T_VOID);
    push_type(T_OR);
 
-   push_type(T_MIXED);
+   push_type(T_ZERO);
    push_type(T_VOID);
    push_type(T_OR);
 
@@ -1695,7 +1695,7 @@ class: modifiers F_CLASS optional_identifier
       if ($1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, $3->u.sval.u.string, $1 & ~ID_EXTERN);
+      low_start_new_program(0, $3->u.sval.u.string);
       if(lex.current_file)
       {
 	store_linenumber(lex.current_line, lex.current_file);
@@ -1710,7 +1710,7 @@ class: modifiers F_CLASS optional_identifier
       i=isidentifier($3->u.sval.u.string);
       if(i<0)
       {
-	low_start_new_program(new_program,0,0);
+	low_start_new_program(new_program,0);
 	yyerror("Pass 2: program not defined!");
       }else{
 	id=ID_FROM_INT(new_program, i);
@@ -1720,15 +1720,14 @@ class: modifiers F_CLASS optional_identifier
 	  s=&PROG_FROM_INT(new_program,i)->constants[id->func.offset].sval;
 	  if(s->type==T_PROGRAM)
 	  {
-	    low_start_new_program(s->u.program, $3->u.sval.u.string,
-				  $1 & ~ID_EXTERN);
+	    low_start_new_program(s->u.program, $3->u.sval.u.string);
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(new_program, 0,0);
+	    low_start_new_program(new_program, 0);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(new_program, 0,0);
+	  low_start_new_program(new_program, 0);
 	}
       }
       compiler_pass=tmp;
@@ -1737,6 +1736,7 @@ class: modifiers F_CLASS optional_identifier
   }
   failsafe_program
   {
+    int id;
     struct program *p;
     if(compiler_pass == 1)
       p=end_first_pass(0);
@@ -1745,12 +1745,23 @@ class: modifiers F_CLASS optional_identifier
 
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
 
-    $$=mkidentifiernode(isidentifier($3->u.sval.u.string));
-
-    if(!p)
+    if(!p) {
+      struct svalue s;
       yyerror("Class definition failed.");
-    else
+      s.type = T_INT;
+      s.subtype = 0;
+      s.u.integer = 0;
+      id = add_constant($3->u.sval.u.string, &s, $1 & ~ID_EXTERN);
+    }
+    else {
+      struct svalue s;
+      s.type = T_PROGRAM;
+      s.u.program = p;
+      id = add_constant($3->u.sval.u.string, &s, $1 & ~ID_EXTERN);
       free_program(p);
+    }
+
+    $$=mkidentifiernode(id);
 
     free_node($3);
     check_tree($$,0);
