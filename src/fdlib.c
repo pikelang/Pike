@@ -421,7 +421,7 @@ FD fd_dup(FD from)
   return fd;
 }
 
-FD fd_dup2(FD to, FD from)
+FD fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
   if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,1,DUPLICATE_SAME_ACCESS))
@@ -455,5 +455,197 @@ FD fd_dup2(FD to, FD from)
 
   return to;
 }
+
+#endif
+
+#if 0
+
+#ifdef FD_LINEAR
+struct fd_mapper
+{
+  int size;
+  void **data;
+};
+
+void init_fd_mapper(struct fd_mapper *x)
+{
+  x->size=64;
+  x->data=(void **)xalloc(x->size*sizeof(void *));
+}
+
+void exit_fd_mapper(struct fd_mapper *x)
+{
+  free((char *)x->data);
+}
+
+void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
+{
+  while(fd>=x->size)
+  {
+    x->size*=2;
+    x->data=(void **)realloc((char *)x->data, x->size*sizeof(void *));
+    if(!x->data)
+      fatal("Out of memory.\n");
+    x->data=nd;
+  }
+  x->data[fd]=data;
+  
+}
+
+void *fd_mapper_get(struct fd_mapper *x, FD fd)
+{
+  return x->data[fd];
+}
+#else
+struct fd_mapper_data
+{
+  FD x;
+  void *data;
+};
+struct fd_mapper
+{
+  int num;
+  int hsize;
+  struct fd_mapper_data *data;
+};
+
+void init_fd_mapper(struct fd_mapper *x)
+{
+  int i;
+  x->num=0;
+  x->hsize=127;
+  x->data=(struct fd_mapper_data *)xalloc(x->hsize*sizeof(struct fd_mapper_data));
+  for(i=0;i<x->hsize;i++) x->data[i].fd=-1;
+}
+
+void exit_fd_mapper(struct fd_mapper *x)
+{
+  free((char *)x->data);
+}
+
+void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
+{
+  int hval;
+  x->num++;
+  if(x->num*2 > x->hsize)
+  {
+    struct fd_mapper_data *old=x->data;
+    int i,old_size=x->hsize;
+    x->hsize*=3;
+    x->num=0;
+    x->data=(struct fd_mapper_data *)xalloc(x->size*sizeof(struct fd_mapper_data *));
+    for(i=0;i<x->size;i++) x->data[i].fd=-1;
+    for(i=0;i<old_size;i++)
+      if(old[i].fd!=-1)
+	fd_mapper_set(x, old[i].fd, old[i].data);
+  }
+
+  hval=fd % x->hsize;
+  while(x->data[hval].fd != -1)
+  {
+    hval++;
+    if(hval==x->hsize) hval=0;
+  }
+  x->data[hval].fd=fd;
+  x->data[hval].data=data;
+}
+
+void *fd_mapper_get(struct fd_mapper *x, FD fd)
+{
+  int hval=fd % x->hsize;
+  while(x->data[hval].fd != fd)
+  {
+    hval++;
+    if(hval==x->hsize) hval=0;
+  }
+  return x->data[hval].data;
+}
+#endif
+
+
+#ifdef FDLIB_USE_SELECT
+
+struct fd_waitor
+{
+  fd_FDSET storage;
+  fd_FDSET temporary;
+  FD last;
+  int numleft;
+  int max;
+};
+
+#define init_waitor(X) do { (X)->numleft=0; (X)->max=0; fd_FDZERO(&X->storage); } while(0)
+
+void fd_waitor_add_customer(fd_waitor *x, FD customer)
+{
+  fd_FD_SET(& x->storage, customer);
+  if(customer>x->max) x->max=customer;
+}
+
+void fd_waitor_remove_customer(fd_waitor *x, FD customer)
+{
+  fd_FD_CLR(& x->storage, customer);
+  if(customer == x->max)
+  {
+    x->max--;
+    while(!fd_ISSET(& x->storage), x->max) x->max--;
+  }
+}
+
+FD fd_waitor_idle(fd_waitor *x)
+{
+  int tmp;
+  if(!x->numleft)
+  {
+    x->temporary=x->storage;
+    tmp=select(x->max, & x->temporary, 0, 0, 0);
+    if(tmp<0) return -1;
+
+    x->last=0;
+    x->numleft=tmp;
+  }
+  while(x->numleft)
+  {
+    while(x->last<x->max)
+    {
+      if(fd_FD_ISSET(& x->temporary, x->last))
+      {
+	numleft--;
+	return 1;
+      }
+    }
+  }
+}
+
+#endif
+
+#ifdef FDLIB_USE_WAITFORMULTIPLEOBJECTSEX
+
+#define FD_MAX 16384
+
+struct fd_waitor
+{
+  int occupied;
+  HANDLE customers[FD_MAX];
+  FD pos_to_fd[FD_MAX];
+};
+
+void fd_waitor_add_customer(fd_waitor *x, FD customer)
+{
+  HANDLE h=CreateEvent();
+  customers[x->occupied]=h;
+  pos_to_fd[x->occupied]=customer;
+  x->occupied++;
+}
+
+void fd_waitor_remove_customer(fd_waitor *x, FD customer)
+{
+  CloseHandle(customers[x]);
+  
+  customers[x]=
+  pos_to_fd[x
+}
+
+#endif
 
 #endif

@@ -56,13 +56,13 @@ SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
 int fd_close(FD fd);
 long fd_write(FD fd, void *buf, long len);
-long fd_read(FD fd, void *buf, long len);
+long fd_read(FD fd, void *to, long len);
 long fd_lseek(FD fd, long pos, int where);
 int fd_fstat(FD fd, struct stat *s);
 int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
 int fd_ioctl(FD fd, int cmd, void *data);
-FD fd_dup(FD fd);
-FD fd_dup2(FD to, FD from);
+FD fd_dup(FD from);
+FD fd_dup2(FD from, FD to);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -123,7 +123,7 @@ typedef int FD;
 #define fd_RDWR O_RDWR
 #define fd_APPEND O_APPEND
 #define fd_CREAT O_CREAT
-#define fd_TRUNC O_TRUC
+#define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
 
 #define fd_open open
