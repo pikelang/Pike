@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.70 2000/10/20 10:03:41 grubba Exp $
+ * $Id: gc.h,v 1.71 2000/10/21 12:10:13 grubba Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -217,14 +217,14 @@ void cleanup_gc(void);
 #define DMALLOC_TOUCH_MARKER(X, EXPR) (EXPR)
 #endif
 
-#ifdef PIKE_DEBUG
 #define gc_check(VP) \
   DMALLOC_TOUCH_MARKER(VP, real_gc_check(debug_malloc_pass(VP)))
-#endif /* PIKE_DEBUG */
 #define gc_check_weak(VP) \
   DMALLOC_TOUCH_MARKER(VP, real_gc_check_weak(debug_malloc_pass(VP)))
+#ifdef PIKE_DEBUG
 #define debug_gc_check(X, T, DATA) \
   DMALLOC_TOUCH_MARKER(X, debug_low_gc_check(debug_malloc_pass(X), (T), (DATA)))
+#endif /* PIKE_DEBUG */
 
 #define gc_recurse_svalues(S,N)						\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
