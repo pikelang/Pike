@@ -3,6 +3,7 @@ AC_CONFIG_HEADER(config.h)
 
 sinclude(../module_configure.in)
 
+AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
