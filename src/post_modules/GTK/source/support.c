@@ -585,8 +585,12 @@ static void build_push_callbacks( )
 
   CB( GTK_TYPE_SELECTION_DATA,   pgtk_push_selection_data_param );
   CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
+#ifdef GTK_TYPE_CTREE_NODE
   CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
+#endif
+#ifdef GTK_TYPE_GDK_DRAG_CONTEXT
   CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
+#endif
   CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
 
   CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
@@ -666,15 +670,19 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
 {
   int i, res, return_value = 0;
   struct svalue *osp = Pike_sp;
-  GtkSignalQuery *opts = gtk_signal_query( d->signal_id );
-
-  if( !opts )
-  {
-    fprintf( stderr, "** Warning: Got signal callback for "
-             "non-existing signal!\n" );
-    return 0;
-  }
-
+/* #ifdef HAVE_GTK_20 */
+/*   GSignalQuery _opts; */
+/*   GSignalQuery *opts = &_opts; */
+/*   g_signal_query( d->signal_id, &_opts ); */
+/* #else */
+/*   GtkSignalQuery *opts = gtk_signal_query( d->signal_id ); */
+/*   if( !opts ) */
+/*   { */
+/*     fprintf( stderr, "** Warning: Got signal callback for " */
+/*              "non-existing signal!\n" ); */
+/*     return 0; */
+/*   } */
+/* #endif */
 
   if( !last_used_callback )
     build_push_callbacks();
@@ -687,18 +695,18 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
 
   for( i = 0; i<nparams; i++ )
   {
-    if( params[i].type != opts->params[i] )
-      fprintf( stderr, "** Warning: Parameter type mismatch %d: %u / %u\n"
-               "Expect things to break in spectacular ways\n\n"
-               "The most likely reason is that GTK has been compiled with\n"
-               "a different C-compiler. Especially with gcc that's a very\n"
-               "bad idea, since the varargs implementation recides in libgcc\n"
-               "which has a tendency to change in incompatible ways now and "
-               "then\nPlease recompile gtk+, or change to the C-compiler\n"
-               "that was used when GTK+ was compiled.\n",
-               i,  params[i].type, opts->params[i] );
+/*     if( params[i].type != opts->params[i] ) */
+/*       fprintf( stderr, "** Warning: Parameter type mismatch %d: %u / %u\n" */
+/*                "Expect things to break in spectacular ways\n\n" */
+/*                "The most likely reason is that GTK has been compiled with\n" */
+/*                "a different C-compiler. Especially with gcc that's a very\n" */
+/*                "bad idea, since the varargs implementation recides in libgcc\n" */
+/*                "which has a tendency to change in incompatible ways now and " */
+/*                "then\nPlease recompile gtk+, or change to the C-compiler\n" */
+/*                "that was used when GTK+ was compiled.\n", */
+/*                i,  params[i].type, opts->params[i] ); */
 
-    push_param_r( params+i,opts->params[i] );
+    push_param_r( params+i,params[i].type );
   }
   
   if( d->new_interface || pgtk_new_signal_call_convention)
@@ -753,7 +761,9 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
      }
   }
   pop_stack();
-  g_free( opts );
+/* #ifndef HAVE_GTK_20 */
+/*   g_free( opts ); */
+/* #endif */
   return res;
 }
 
@@ -776,10 +786,11 @@ gchar *pgtk_get_str( struct svalue *sv )
   struct pike_string *s;
   int i;
   gunichar *tmp;
+  int nofree = 0;
   gchar *res;
   if( sv->type != PIKE_T_STRING )
     return 0;
-  s = s->u.string;
+  s = sv->u.string;
   switch( s->size_shift )
   {
    case 0:
@@ -793,11 +804,11 @@ gchar *pgtk_get_str( struct svalue *sv )
        tmp[i] = ((unsigned short *)s->str)[i];
      break;
    case 2:
-     tmp = (gunichar *)s->str;
+     tmp = (int *)s->str;
      nofree = 1;
      break;
   }
-  res = g_ucs4_to_utf8( tmp, s->len );
+  res = g_ucs4_to_utf8( tmp, s->len, 0,0,0 );
   if(!nofree) g_free( tmp );
   return res;
 }
