@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.74 2003/08/04 16:34:04 mast Exp $
+|| $Id: port.c,v 1.75 2003/10/03 12:17:55 grubba Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.74 2003/08/04 16:34:04 mast Exp $");
+RCSID("$Id: port.c,v 1.75 2003/10/03 12:17:55 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -544,9 +544,15 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 	/* The exponent overflowed a `long int'.  It is probably a safe
 	   assumption that an exponent that cannot be represented by
 	   a `long int' exceeds the limits of a `double'.  */
+	/* NOTE: Don't trust the value returned from STRTOL.
+	 * We need to find the sign of the exponent by hand.
+	 */
+	while(ISSPACE(*s)) {
+	  s++;
+	}
 	if (endptr != NULL)
 	  *endptr = end;
-	if (exp < 0)
+	if (*s == '-')
 	  goto underflow;
 	else
 	  goto overflow;

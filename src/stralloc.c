@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.157 2003/07/30 20:29:27 mast Exp $
+|| $Id: stralloc.c,v 1.158 2003/10/03 12:17:54 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.157 2003/07/30 20:29:27 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.158 2003/10/03 12:17:54 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -2553,9 +2553,16 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 	/* The exponent overflowed a `long int'.  It is probably a safe
 	   assumption that an exponent that cannot be represented by
 	   a `long int' exceeds the limits of a `double'.  */
+	/* NOTE: Don't trust the value returned from STRTOL.
+	 * We need to find the sign of the exponent by hand.
+	 */
+	p_wchar2 c;
+	while(WIDE_ISSPACE(c = EXTRACT_PCHARP(s))) {
+	  INC_PCHARP(s, 1);
+	}
 	if (endptr != NULL)
 	  *endptr = end;
-	if (exp < 0)
+	if (c == '-')
 	  goto underflow;
 	else
 	  goto overflow;
