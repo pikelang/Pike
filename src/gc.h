@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.86 2001/09/06 16:53:44 mast Exp $
+ * $Id: gc.h,v 1.87 2001/12/09 19:58:36 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -364,6 +364,7 @@ void cleanup_gc(void);
 #define GC_PASS_POSTTOUCH	510
 
 #define GC_PASS_LOCATE -1
+#define GC_PASS_DISABLED -2
 
 #ifdef PIKE_DEBUG
 extern int gc_in_cycle_check;

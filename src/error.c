@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.79 2001/11/10 19:43:51 mast Exp $");
+RCSID("$Id: error.c,v 1.80 2001/12/09 19:58:36 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -364,14 +364,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   dump_backlog();
 #endif
 
-  {
-    extern int Pike_in_gc;
-    if(Pike_in_gc)
-    {
-      fprintf(stderr,"Pike was in GC stage %d when this fatal occured:\n",Pike_in_gc);
-      Pike_in_gc=0;
-    }
-  }
+  if(Pike_in_gc)
+    fprintf(stderr,"Pike was in GC stage %d when this fatal occured:\n",Pike_in_gc);
+  Pike_in_gc = GC_PASS_DISABLED;
 
   (void)VFPRINTF(stderr, fmt, args);
 
