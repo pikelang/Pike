@@ -1,6 +1,6 @@
-# New ports collection makefile for:	pike
-# Date created:		02 Aug 2002
-# Whom:			kiwi@caudium.net
+# New ports collection makefile for:	pike74
+# Date created:		24 Jun 2003
+# Whom:			kiwi@oav.net
 #
 # $FreeBSD$
 #
@@ -14,7 +14,7 @@ MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${PORTVERSION}/ \
 		http://ftp.oav.net/pkg_freebsd/distfiles/ \
 		ftp://ftp.oav.net/pike/7.4/export/ \
 		http://ftp.oav.net/pike/7.4/export/ \
-		http://grendel.firewall.com/caudium-pkg/ 
+		http://grendel.firewall.com/caudium-pkg/
 DISTNAME=	Pike-v${PORTVERSION}
 
 MAINTAINER=	kiwi@oav.net
@@ -33,14 +33,9 @@ LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
-#BROKEN=		Configure script is broken.
-
 WANT_MESA=	yes
 WANT_GTK=	yes
 WANT_GNOME=	yes
-#USE_AUTOMAKE=	yes
-#USE_AUTOCONF=	yes
-#WANT_AUTOCONF_VER=253
 
 GNU_CONFIGURE=  yes
 
@@ -251,7 +246,7 @@ CONFIGURE_ARGS+= --without-GL --without-GLUT
 USE_GNOME=	yes
 USE_GTK=	yes
 USE_GLI=	yes
-CONFIGURE_ARGS+= --with-GTK --with-gnome --with-glade --with-libglade-config=/usr/X11R6/bin/libglade-config
+CONFIGURE_ARGS+= --with-GTK --with-gnome --with-glade --with-libglade-config=${X11BASE}/bin/libglade-config
 .else
 CONFIGURE_ARGS+= --without-GTK --without-gnome --without-glade --without-libglade-config
 .endif
@@ -320,10 +315,7 @@ pre-everything::
 	@${ECHO_MSG} "database using FreeTDS be defining WITH_TDS."
 .endif
 
-
 pre-configure:
-#	@cd ${WRKSRC}; \
-#	./run_autoconfig
 	@${ECHO} ${CONFIGURE_ARGS}
 
 post-install:
