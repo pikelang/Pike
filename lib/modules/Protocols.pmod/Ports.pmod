@@ -1,5 +1,5 @@
 /*
- * $Id: Ports.pmod,v 1.8 2001/01/10 16:35:24 js Exp $
+ * $Id: Ports.pmod,v 1.9 2001/01/11 20:23:40 js Exp $
  *
  * IP port assignments
  *
@@ -768,6 +768,7 @@ constant tcp = ([
   "vettcp":            78,	//    vettcp
   "finger":            79,	//    Finger
   "www-http":          80,	//    World Wide Web HTTP
+  "http":              80,	//    World Wide Web HTTP
   "hosts2-ns":         81,	//    HOSTS2 Name Server
   "xfer":              82,	//    XFER Utility
   "mit-ml-dev":        83,	//    MIT ML Device
