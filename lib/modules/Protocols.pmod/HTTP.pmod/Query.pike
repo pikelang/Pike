@@ -535,8 +535,14 @@ string data()
       l=len-strlen(buf)+datapos;
    if (l>0 && con)
    {
-      string s=con->read(l);
-      buf+=s;
+     if(headers->server == "WebSTAR")
+     { // Some servers reporting this name exhibit some really hideous behaviour:
+       buf += con->read(); // First, they may well lie about the content-length
+       if(buf[datapos..datapos+1] == "\r\n")
+	 datapos += 2; // And, as if that wasn't enough! *mumble*
+     }
+     else
+       buf += con->read(l);
    }
    // note! this can't handle keep-alive × HEAD requests.
    return buf[datapos..];
