@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.83 2000/08/16 16:05:31 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.84 2000/08/18 21:43:36 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -176,7 +176,7 @@ void f_file_truncate(INT32 args)
     HANDLE h = CreateFile(str->str, GENERIC_WRITE,
 			  FILE_SHARE_READ|FILE_SHARE_WRITE,
 			  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(h == INVALID_HANDLE_VALUE) {
+    if(h == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
       errno = GetLastError();
       res=-1;
     } else {

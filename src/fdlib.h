@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.35 2000/08/17 21:18:31 grubba Exp $
+ * $Id: fdlib.h,v 1.36 2000/08/18 21:32:21 grubba Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -134,10 +134,10 @@ SOCKFUN5(sendto,void *,int,int,struct sockaddr *,unsigned int)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_close(FD fd);
-PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len);
-PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len);
-PMOD_EXPORT long debug_fd_lseek(FD fd, long pos, int where);
-PMOD_EXPORT long debug_fd_ftruncate(FD fd, long len);
+PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len);
+PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
+PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where);
+PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len);
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
 PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s);
 PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);

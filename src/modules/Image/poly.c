@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.9 2000/08/16 18:41:17 grubba Exp $
+**!	$Id: poly.c,v 1.10 2000/08/18 21:40:22 grubba Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.9 2000/08/16 18:41:17 grubba Exp $");
+RCSID("$Id: poly.c,v 1.10 2000/08/18 21:40:22 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -416,7 +416,7 @@ static void mend_crossed_lines(struct poly *p)
    struct line **active,*l;
    int nactive;
    int from,i,j=0;
-   float f;
+   double f;
    int new;
    PFLOAT x,y;
 

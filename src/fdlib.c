@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.40 2000/08/17 21:18:17 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.41 2000/08/18 21:32:32 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -188,7 +188,7 @@ PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode)
 	       NULL);
 
   
-  if(x == (HANDLE)(ptrdiff_t)INVALID_HANDLE_VALUE)
+  if(x == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
     errno=GetLastError();
     return -1;
@@ -312,6 +312,7 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addr
   }
   s=(SOCKET)da_handle[fd];
   mt_unlock(&fd_mutex);
+  *addrlen = 0;		/* Just in case it's a larger type than it should be */
   s=accept(s, addr, addrlen);
   if(s==INVALID_SOCKET)
   {
@@ -497,10 +498,10 @@ PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len)
   }
 }
 
-PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len)
+PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 {
   DWORD ret;
-  int rret;
+  ptrdiff_t rret;
   HANDLE handle;
 
   mt_lock(&fd_mutex);
@@ -514,7 +515,9 @@ PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len)
   switch(ret)
   {
     case FD_SOCKET:
-      rret=recv((SOCKET)handle, to, len, 0);
+      rret=recv((SOCKET)handle, to,
+		DO_NOT_WARN((int)len),
+		0);
       if(rret<0)
       {
 	errno=WSAGetLastError();
@@ -528,7 +531,9 @@ PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len)
     case FD_FILE:
     case FD_PIPE:
       ret=0;
-      if(!ReadFile(handle, to, len, &ret,0) && ret<=0)
+      if(!ReadFile(handle, to,
+		   DO_NOT_WARN((DWORD)len),
+		   &ret,0) && ret<=0)
       {
 	errno=GetLastError();
 	switch(errno)
@@ -549,10 +554,11 @@ PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len)
   }
 }
 
-PMOD_EXPORT long debug_fd_lseek(FD fd, long pos, int where)
+PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where)
 {
-  long ret;
+  ptrdiff_t ret;
   HANDLE h;
+
   mt_lock(&fd_mutex);
   if(fd_type[fd]!=FD_FILE)
   {
@@ -571,8 +577,10 @@ PMOD_EXPORT long debug_fd_lseek(FD fd, long pos, int where)
   h = da_handle[fd];
   mt_unlock(&fd_mutex);
 
-  ret = SetFilePointer(h, pos, 0, where);
-  if(ret == 0xffffffff)
+  ret = SetFilePointer(h,
+		       DO_NOT_WARN((LONG)pos),
+		       0, where);
+  if(!~ret)
   {
     errno=GetLastError();
     return -1;
@@ -580,11 +588,12 @@ PMOD_EXPORT long debug_fd_lseek(FD fd, long pos, int where)
   return ret;
 }
 
-PMOD_EXPORT long debug_fd_ftruncate(FD fd, long len)
+PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len)
 {
-  long ret;
+  ptrdiff_t ret;
   HANDLE h;
   LONG oldfp_lo, oldfp_hi;
+
   mt_lock(&fd_mutex);
   if(fd_type[fd]!=FD_FILE)
   {
@@ -597,18 +606,20 @@ PMOD_EXPORT long debug_fd_ftruncate(FD fd, long len)
 
   oldfp_hi = 0;
   oldfp_lo = SetFilePointer(h, 0, &oldfp_hi, FILE_CURRENT);
-  if(oldfp_lo == 0xffffffff) {
+  if(!~oldfp_lo) {
     errno=GetLastError();
     if(errno != NO_ERROR)
       return -1;
   }
-  if(SetFilePointer(h, len, NULL, FILE_BEGIN) == 0xffffffff ||
+  if(!~SetFilePointer(h,
+		      DO_NOT_WARN((LONG)len),
+		      NULL, FILE_BEGIN) ||
      !SetEndOfFile(h)) {
     errno=GetLastError();
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
     return -1;
   }
-  if(SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN) == 0xffffffff) {
+  if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
     errno=GetLastError();
     if(errno != NO_ERROR)
       return -1;
@@ -902,7 +913,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
 
   /* This may require appending a slash and a star... */
   ret->h=FindFirstFile( (LPCTSTR) foo, & ret->find_data);
-  if(ret->h == (HANDLE)(ptrdiff_t)INVALID_HANDLE_VALUE)
+  if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
     errno=ENOENT;
     free((char *)ret);

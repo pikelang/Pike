@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.25 2000/08/16 16:12:43 grubba Exp $
+ * $Id: mime.c,v 1.26 2000/08/18 21:41:15 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.25 2000/08/16 16:12:43 grubba Exp $");
+RCSID("$Id: mime.c,v 1.26 2000/08/18 21:41:15 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -501,7 +501,8 @@ static void do_uue_encode(ptrdiff_t groups, unsigned char **srcp, char **destp,
 	DO_NOT_WARN((char)(3*g + last));
       last = 0;
     } else
-      *dest++ = ' ' + (3*g);
+      *dest++ = ' ' + 
+	DO_NOT_WARN((char)(3*g));
 
     groups -= g;
 
