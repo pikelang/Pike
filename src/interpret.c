@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.81 1998/05/12 23:51:23 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.82 1998/05/24 00:49:47 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -801,6 +801,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_ARRAY_LVALUE);
       f_aggregate(GET_ARG()*2);
       sp[-1].u.array->flags |= ARRAY_LVALUE;
+      sp[-1].u.array->type_field |= BIT_UNFINISHED;
       sp[0]=sp[-1];
       sp[-1].type=T_ARRAY_LVALUE;
       sp++;
@@ -1420,7 +1421,8 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_RETURN);
     do_return:
 #if defined(DEBUG) && defined(GC2)
-      if(d_flag > 2) do_gc();
+      if(d_flag>2) do_gc();
+      if(d_flag>3) do_debug();
       check_threads_etc();
 #endif
 
