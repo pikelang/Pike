@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.258 2001/07/19 16:20:26 grubba Exp $");
+RCSID("$Id: las.c,v 1.259 2001/07/20 12:54:37 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -31,6 +31,7 @@ RCSID("$Id: las.c,v 1.258 2001/07/19 16:20:26 grubba Exp $");
 #include "cyclic.h"
 #include "block_alloc.h"
 #include "opcodes.h"
+#include "pikecode.h"
 
 #define LASDEBUG
 
