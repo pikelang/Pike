@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.577 2002/04/07 19:28:16 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.578 2002/04/07 21:33:53 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4643,10 +4643,13 @@ else :; fi
 
 if test "$with_machine_code" = "yes" ; then
   AC_DEFINE_UNQUOTED(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_`echo $pike_cv_machine_code_arch | tr a-z A-Z`)
+  byte_code_format=$pike_cv_machine_code_arch
 elif test "x$pike_cv_gcc_computed_goto" = "xyes"; then
   AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_GOTO)
+  byte_code_format="computed goto"
 else
   AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_DEFAULT)
+  byte_code_format="virtual machine"
 fi
 
 #############################################################################
@@ -6017,6 +6020,7 @@ PAD_FEATURE([cdebug])$with_cdebug
 PAD_FEATURE([rtldebug])$with_rtldebug
 PAD_FEATURE([dmalloc])$with_dmalloc
 PAD_FEATURE([mmx])$with_mmx$mmx_reason
+PAD_FEATURE([byte code format])$byte_code_format
 PAD_FEATURE([module reloc])${with_relocatable_dumped_modules:-no}
 EOF
 
