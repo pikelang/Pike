@@ -228,7 +228,7 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h \
 values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h sys/mman.h)
+sys/resource.h sys/select.h sys/mman.h setjmp.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)

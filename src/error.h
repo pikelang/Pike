@@ -6,9 +6,15 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-#include <setjmp.h>
-#include <stdarg.h>
 #include "machine.h"
+
+#ifdef HAVE_SETJMP_H
+#include <setjmp.h>
+#undef HAVE_SETJMP_H
+#endif
+
+#include <stdarg.h>
+
 #include "svalue.h"
 
 
