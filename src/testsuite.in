@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.668 2003/08/10 19:32:01 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.669 2003/08/18 14:12:05 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2422,6 +2422,19 @@ mixed a()
   return 3.0 == B()->C()->y;
 }
 ]])
+
+test_program_eq([[
+  constant x = X;
+  class X {constant c = "right";}
+
+  constant y = Y;
+  class Y {constant c = "wrong";}
+
+  string a()
+  {
+    return ::`[]("x")->c;
+  }
+]], "right")
 
 
 dnl Come back when we decide that this should be possible
