@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.172 2003/04/02 21:03:53 mast Exp $
+|| $Id: main.c,v 1.173 2003/04/02 21:24:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.172 2003/04/02 21:03:53 mast Exp $");
+RCSID("$Id: main.c,v 1.173 2003/04/02 21:24:53 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -857,7 +857,6 @@ void low_exit_main(void)
   exit_auto_bignum();
 #endif
   exit_pike_searching();
-  th_cleanup();
   exit_object();
   exit_signals();
   exit_builtin();
