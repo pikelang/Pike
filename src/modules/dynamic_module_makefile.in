@@ -3,7 +3,7 @@ CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" $(MODULE_MAKE_FLAGS)
 
-all: subdirs module.@SO@ dummy
+all: subdirs dummy module.@SO@
 
 subdirs:
 	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; fi ; done
