@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.48 2004/05/14 18:29:33 grubba Exp $
+ * $Id: Tree.pmod,v 1.49 2004/05/14 18:31:12 grubba Exp $
  *
  */
 
@@ -426,10 +426,12 @@ class AbstractNode {
   //! Returns the parent node.
   AbstractNode get_parent()          { return (mParent); }
 
+#if 0
   static void create()
   {
     error("Creating a plain AbstractNode.\n");
   }
+#endif /* 0 */
 
   //! Returns an initialized copy of the node.
   //! @note
