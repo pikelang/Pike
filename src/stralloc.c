@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.115 2001/02/02 20:36:22 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.116 2001/02/04 02:34:51 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1449,7 +1449,7 @@ PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
   pike_string_cpy(tmp,a);
   INC_PCHARP(tmp,a->len);
   pike_string_cpy(tmp,b);
-  return end_shared_string(ret);
+  return low_end_shared_string(ret);
 }
 
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
