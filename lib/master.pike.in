@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.362 2004/10/09 11:47:02 per Exp $
+// $Id: master.pike.in,v 1.363 2004/10/09 11:50:49 per Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2669,11 +2669,11 @@ void _main(array(string) orig_argv, array(string) env)
 
     if (err) {
       if( !file_stat(argv[0]) )
-	exit(1, "Could not find file %O.\n", argv[0]);
+	exit(1, "Could not find file %O. %s.\n", argv[0], strerror(errno()));
       if( !file_stat(argv[0])->isreg )
 	exit(1, "File %O is not a regular file.\n", argv[0]);
       if( !master_read_file(argv[0]) )
-	exit(1, "File %O is not readable.\n", argv[0]);
+	exit(1, "File %O is not readable. %s.\n", argv[0], strerror(errno()));
       error( "Pike: Failed to compile script:\n"
 	     "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
     }
