@@ -276,6 +276,7 @@ class Traversion {
 
   static void set_current() {
     current = file_stat(path + files[pos]);
+    if(!current) return;
     if(!current->isdir) return;
     if(symlink && file_stat(path + files[pos],1)->islnk) {
       pos++;
