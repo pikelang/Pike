@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.39 2002/02/09 08:13:31 per-bash Exp $
+/* $Id: sslfile.pike,v 1.40 2002/03/07 13:21:19 tomas Exp $
  *
  */
 
@@ -121,6 +121,12 @@ void close()
     }
     if(sizeof(write_buffer) && blocking) {
       write_blocking();
+    }
+
+    if (!blocking)
+    {
+      // FIXME: Timeout?
+      return;
     }
 
     if (socket) socket->close();
@@ -390,7 +396,15 @@ private void ssl_write_callback(mixed id)
     res = queue_write();
   }
   if (!strlen(write_buffer) && socket)
+  {
     socket->set_write_callback(0);
+    if (is_closed)
+    {
+      socket->close();
+      socket = 0;
+      return;
+    }
+  }
   if (res)
     die(res);
 }
