@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.89 2003/08/14 15:49:11 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.90 2003/10/13 15:23:50 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -211,6 +211,19 @@ int main(int argc, array(string) argv)
   int end=0x7fffffff;
   string extra_info="";
   int shift;
+
+#if constant(System.getrlimit)
+  // Attempt to enable coredumps.
+  // Many Linux distributions default to having coredumps disabled.
+  catch {
+    [ int current, int max ] = System.getrlimit("core");
+    if ((current != -1) && ((current < max) || (max == -1))) {
+      // Not unlimited, and less than max.
+      // Attempt to raise.
+      System.setrlimit("core", max, max);
+    }
+  };
+#endif /* constant(System.getrlimit) */
 
   if(signum("SIGQUIT")>=0)
   {
