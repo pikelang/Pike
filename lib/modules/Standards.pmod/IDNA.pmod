@@ -380,8 +380,10 @@ string to_ascii(string s, int(0..1)|void allow_unassigned,
 		int(0..1)|void use_std3_ascii_rules)
 {
   int is_ascii = max(@values(s)) < 128;
-  if(!is_ascii)
+  if(!is_ascii) {
     s = nameprep(s, allow_unassigned);
+    is_ascii = max(@values(s)) < 128;
+  }
   if(use_std3_ascii_rules) {
     if(array_sscanf(s, "%*[^\0-,./:-@[-`{-\x7f]%n")[0] != sizeof(s))
       error("Label is not valid accoring to STD3: non-LDH codepoint\n");
@@ -409,18 +411,19 @@ string to_ascii(string s, int(0..1)|void allow_unassigned,
 //!   The sequence of Unicode code points to transform.
 string to_unicode(string s)
 {
+  string s0 = s;
   if(max(@values(s)) >= 128 &&
      catch(s = nameprep(s, 1)))
-    return s;
+    return s0;
   if(lower_case(s[..3]) != "xn--")
-    return s;
-  string orig_s = s;
+    return s0;
+  string ascii_s = s;
   catch {
     s = Punycode->decode(s[4..]);
-    if(lower_case(to_ascii(s, 1)) == lower_case(orig_s))
+    if(lower_case(to_ascii(s, 1)) == lower_case(ascii_s))
       return s;
   };
-  return orig_s;
+  return s0;
 }
 
 
