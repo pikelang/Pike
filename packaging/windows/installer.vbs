@@ -1,42 +1,47 @@
 '
-' $Id: installer.vbs,v 1.4 2004/12/03 19:42:24 grubba Exp $
+' $Id: installer.vbs,v 1.5 2004/12/06 16:50:26 grubba Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
 ' 2004-12-01 Henrik Grubbström
 '
 
-' At call time the CustomActionData property has been set to [TARGETDIR]
+' At call time the CustomActionData property has been set to [TARGETDIR].
 '
 ' First make a new master.
 '
-' Then start a pike to Finalize Pike.
+' Then finalize Pike.
 Function FinalizePike()
-  Dim fso, targetdir, source, dest, re
-  targetdir = Session.Property("CustomActionData")
+  Dim targetdir, fso
 
+  targetdir = Session.Property("CustomActionData")
   Set fso = CreateObject("Scripting.FileSystemObject")
 
-  Set source = fso.OpenTextFile(targetdir & "lib\master.pike.in", 1, False, 0)
-
-  Set dest = fso.CreateTextFile(targetdir & "lib\master.pike", True)
-
-  source = source.ReadAll
-
-  Set re = New RegExp
-  re.Global = True
-
-  re.Pattern = "¤lib_prefix¤"
-  source = re.Replace(source, target & "lib")
-
-  re.Pattern = "¤include_prefix¤"
-  source = re.Replace(source, target & "include\pike")
-
-  're.Pattern = "¤share_prefix¤"
-  'source = re.Replace(source, "¤share_prefix¤")
-
-  dest.Write(source)
-  dest.Close
+''  Dim targetdir_unix, source, dest, re
+''
+''  Set source = fso.OpenTextFile(targetdir & "lib\master.pike.in", 1, False, 0)
+''
+''  Set dest = fso.CreateTextFile(targetdir & "lib\master.pike", True)
+''
+''  source = source.ReadAll
+''
+''  Set re = New RegExp
+''  re.Global = True
+''
+''  re.Pattern = "\"
+''  targetdir_unix = re.Replace(targetdir, "/")
+''
+''  re.Pattern = "¤lib_prefix¤"
+''  source = re.Replace(source, targetdir_unix & "lib")
+''
+''  re.Pattern = "¤include_prefix¤"
+''  source = re.Replace(source, targetdir_unix & "include/pike")
+''
+''  're.Pattern = "¤share_prefix¤"
+''  'source = re.Replace(source, "¤share_prefix¤")
+''
+''  dest.Write(source)
+''  dest.Close
 
   ' FIXME: Is there no support for binary files in vbs?
 
@@ -44,6 +49,12 @@ Function FinalizePike()
 
   Set WshShell = CreateObject("WScript.Shell")
   WshShell.CurrentDirectory = targetdir
+
+  WshShell.Run "bin\pike" &_
+    " -mlib\master.pike" &_
+    " bin\install.pike" &_
+    " --install-master BASEDIR=.", 0, True
+
   WshShell.Run "bin\pike" &_
     " -mlib\master.pike" &_
     " bin\install.pike" &_
