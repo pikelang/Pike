@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.27 2000/08/23 18:53:47 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.28 2000/09/14 19:58:43 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -68,7 +68,7 @@ PMOD_EXPORT void really_free_multiset(struct multiset *l)
   DOUBLEUNLINK(first_multiset, l);
 
   free((char *)l);
-  GC_FREE();
+  GC_FREE(l);
 }
 
 PMOD_EXPORT void do_free_multiset(struct multiset *l)

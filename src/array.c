@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.86 2000/09/08 16:19:42 grubba Exp $");
+RCSID("$Id: array.c,v 1.87 2000/09/14 19:58:43 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -103,7 +103,7 @@ static void array_free_no_free(struct array *v)
 
   free((char *)v);
 
-  GC_FREE();
+  GC_FREE(v);
 }
 
 /*

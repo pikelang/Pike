@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.104 2000/09/14 15:23:41 mast Exp $");
+RCSID("$Id: mapping.c,v 1.105 2000/09/14 19:58:43 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -67,7 +67,7 @@ DO_IF_DEBUG(								\
   }									\
   DOUBLEUNLINK(first_mapping, m);					\
 									\
-  GC_FREE();
+  GC_FREE(m);
 
 
 #undef COUNT_OTHER
@@ -199,9 +199,6 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
   debug_malloc_touch(md);
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
-    fatal("Can't free a mapping_data inside gc.\n");
-
   if (md->refs) {
     fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
 	  md->refs);
@@ -215,6 +212,7 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
   }
 
   free((char *) md);
+  GC_FREE_BLOCK(md);
 }
 
 PMOD_EXPORT void do_free_mapping(struct mapping *m)
@@ -311,9 +309,6 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(md->refs <=0)
     fatal("Zero refs in mapping->data\n");
 
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
-    fatal("Can't rehash a mapping inside gc.\n");
-
   if(d_flag>1)  check_mapping(m);
 #endif
 
@@ -336,6 +331,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
       mapping_rehash_backwards_evil(new_md, md->hash[e]);
 
     free((char *)md);
+    GC_FREE_BLOCK(md);
   }
 
 #ifdef PIKE_DEBUG

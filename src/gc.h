@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.64 2000/09/03 23:09:38 mast Exp $
+ * $Id: gc.h,v 1.65 2000/09/14 19:58:43 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -49,15 +49,27 @@ extern void *gc_svalue_location;
 } while(0)
 #endif
 
-#define GC_FREE() do {							\
-  DO_IF_DEBUG(								\
-    extern int d_flag;							\
-    if(d_flag) CHECK_INTERPRETER_LOCK();				\
+#ifdef PIKE_DEBUG
+#define GC_FREE_BLOCK(PTR) do {						\
+  extern int d_flag;							\
+  if(d_flag) CHECK_INTERPRETER_LOCK();					\
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK) {	\
     if(Pike_in_gc == GC_PASS_CHECK)					\
       fatal("Freeing objects in this gc pass is not allowed.\n");	\
+    else								\
+      remove_marker(PTR);						\
+  }									\
+} while (0)
+#else
+#define GC_FREE_BLOCK(PTR) do {} while (0)
+#endif
+
+#define GC_FREE(PTR) do {						\
+  GC_FREE_BLOCK(PTR);							\
+  DO_IF_DEBUG(								\
     if(num_objects < 1)							\
       fatal("Panic!! less than zero objects!\n");			\
-  )									\
+  );									\
   num_objects-- ;							\
 }while(0)
 

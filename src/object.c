@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.147 2000/09/11 18:50:17 grubba Exp $");
+RCSID("$Id: object.c,v 1.148 2000/09/14 19:58:43 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -743,7 +743,7 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
       /* It's a fake object which isn't counted by the gc, so
        * counteract the num_objects-- done by GC_FREE. */
       num_objects++;
-    GC_FREE();
+    GC_FREE(o);
 
     FREE_PROT(o);
 
