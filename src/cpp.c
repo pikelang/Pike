@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.123 2003/09/30 15:41:57 grubba Exp $
+|| $Id: cpp.c,v 1.124 2003/09/30 15:55:42 grubba Exp $
 */
 
 #include "global.h"
@@ -469,13 +469,18 @@ static void simple_add_define(struct cpp *this,
     case '\n':								\
       cpp_error(this,"Newline in string.");				\
       this->current_line++;						\
+      PUTNL();								\
       break;								\
     case '"': break;							\
     case '\\':								\
-      if(data[pos]=='\n') this->current_line++;				\
+      if(data[pos]=='\n') {						\
+	this->current_line++;						\
+	PUTNL();							\
+      }									\
       else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
 	this->current_line++;						\
 	pos++;								\
+	PUTNL();							\
       }									\
       pos++;								\
     default: continue;							\
@@ -495,13 +500,18 @@ static void simple_add_define(struct cpp *this,
     {									\
     case '\n':								\
       this->current_line++;						\
+      PUTNL();								\
       continue;								\
     case '"': break;							\
     case '\\':								\
-      if(data[pos]=='\n') this->current_line++;				\
+      if(data[pos]=='\n') {						\
+	this->current_line++;						\
+	PUTNL();							\
+      }									\
       else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
 	this->current_line++;						\
 	pos++;								\
+	PUTNL();							\
       }									\
       pos++;								\
     default: continue;							\
@@ -530,13 +540,18 @@ static void simple_add_define(struct cpp *this,
     case '\n':							\
       cpp_error(this,"Newline in char.");			\
       this->current_line++;					\
+      PUTNL();							\
       break;							\
     case '\'': break;						\
     case '\\':							\
-      if(data[pos]=='\n') this->current_line++;			\
+      if(data[pos]=='\n') {					\
+	this->current_line++;					\
+	PUTNL();						\
+      }								\
       else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {	\
 	this->current_line++;					\
 	pos++;							\
+	PUTNL();						\
       }								\
       pos++;							\
     default: continue;						\
