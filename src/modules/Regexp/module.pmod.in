@@ -1,6 +1,7 @@
 // -*- Pike -*-
 
 #pike __REAL_VERSION__
+#include <regexp.h>
 
 #if constant(_Regexp_PCRE)
 constant PCRE=_Regexp_PCRE; // Regexp.PCRE
@@ -8,14 +9,16 @@ constant PCRE=_Regexp_PCRE; // Regexp.PCRE
 
 inherit @module@;
 
+//!
 class SimpleRegexp
 {
-  inherit _SimpleRegexp;
+  inherit _SimpleRegexp; // Most autodoc in here.
 
   static private object repreg;
   static private string regexp_string;
 
   // Semi-optimal speed, yes, I agree, but it should work.
+  //!
   string replace(string in, string|function(string:string) transform)
   {
     if(!repreg)
@@ -64,22 +67,44 @@ class SimpleRegexp
     return 0;
   }
 
+  //! Regexp objects can be encoded and decoded.
+  //! @seealso
+  //!   @[encode_value], @[decode_value]
   mixed _encode() { return regexp_string; }
   mixed _decode(string s) { create(s); }
 }
 
+//! Convenience/compatibility method to get a @[SimpleRegexp] object.
 SimpleRegexp `()(void|string regexp) { return SimpleRegexp(regexp); }
 
+
+#if constant(_Regexp_PCRE)
+
+// ****************************************************************
+
+//! Calls @[Regexp.PCRE.Plain.match] in a temporary regexp object.
+//! Faster to type but slower to run...
 int(0..1) match(string regexp, string data) {
-  return SimpleRegexp(regexp)->match(data);
+  return QUICK(regexp)->match(data);
 }
 
+//! Calls @[Regexp.PCRE.Plain.split] in a temporary regexp object.
+//! Faster to type but slower to run...
 array split(string regexp, string data) {
-  return SimpleRegexp(regexp)->split(data);
+  return QUICK(regexp)->split(data);
 }
 
+//! Calls @[Regexp.PCRE.Plain.split2] in a temporary regexp object.
+//! Faster to type but slower to run...
+array split2(string regexp, string data) {
+  return QUICK(regexp)->split2(data);
+}
+
+//! Calls @[Regexp.PCRE.Plain.replace] in a temporary regexp object.
+//! Faster to type but slower to run...
 string replace(string regexp, string data,
 	       string|function(string:string) transform) {
-  return SimpleRegexp(regexp)->replace(data, transform);
+  return QUICK(regexp)->replace(data, transform);
 }
 
+#endif
