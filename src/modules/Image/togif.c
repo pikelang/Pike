@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.7 1997/04/30 01:46:54 mirar Exp $ 
+$Id: togif.c,v 1.8 1997/05/05 20:59:05 hubbe Exp $ 
 
 */
 
@@ -898,6 +898,7 @@ CHRONO("done");
 **!	      img2->gif_add(0,0,100)+
 **!	      img1->gif_end());
 **!	// voila, a gif animation...
+**!     </pre>
 **!
 **! note
 **!	I (Mirar) recommend reading about the GIF file format before 
