@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.65 2002/05/24 17:15:04 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.66 2002/05/27 11:57:04 nilsson Exp $ */
 
 import Stdio;
 
@@ -878,23 +878,27 @@ constant doc = #"
 Usage: test_pike [args] [testfiles]
 
 --no-watchdog       Watchdog will not be used.
---watchdog=pid      Run only the watchdog and monitor the process with the given pid.
+--watchdog=pid      Run only the watchdog and monitor the process with the given
+                    pid.
 -h, --help          Prints this message.
 -v[level],
---verbose[=level]   Select the level of verbosity. Every verbose level includes the
-                    printouts from the levels below.
+--verbose[=level]   Select the level of verbosity. Every verbose level includes
+                    the printouts from the levels below.
                     0  No extra printouts.
-                    1  Some extra information about test that will or won't be run.
+                    1  Some extra information about test that will or won't be
+                       run.
                     2  Every test is printed out.
                     3  Time spent in individual tests are printed out.
-                    10 The actual pike code compiled, including wrappers, is printed.
+                    10 The actual pike code compiled, including wrappers, is
+                       printed.
 -p, --prompt        The user will be asked before every test is run.
 -q, --quiet         Less outputs than normal.
--sX, --start=X      Where in the testsuite testing should start, e.g. ignores X tests
-                    in every testsuite.
+-sX, --start=X      Where in the testsuite testing should start, e.g. ignores X
+                    tests in every testsuite.
 -eX, --end=X        How many tests should be run.
 -f, --fail          If set, the testsuite always fails.
--lX, --loop=X       The number of times the testsuite should be run. Default is 1.
+-lX, --loop=X       The number of times the testsuite should be run. Default is
+                    1.
 -tX, --trace=X      Run tests with trace level X.
 -c[X], --check[=X]  The level of extra pike consistency checks performed.
                     1   _verify_internals is run before every test.
@@ -902,8 +906,8 @@ Usage: test_pike [args] [testfiles]
                     3   _verify_internals is run after every test.
                     4   An extra gc and _verify_internals is run before
                         every test.
-                    X<0 For values below zero, _verify_internals will be run before
-                        every n:th test, where n=abs(X).
+                    X<0 For values below zero, _verify_internals will be run
+                        before every n:th test, where n=abs(X).
 -m, --mem, --memory Print out memory allocations after the tests.
 -a, --auto          Let the test program find the testsuits self.
 -T, --notty         Format output for non-tty.
