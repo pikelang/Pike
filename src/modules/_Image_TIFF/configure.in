@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.10 2004/03/04 20:13:12 grubba Exp $
+# $Id: configure.in,v 1.11 2004/03/05 12:01:16 grubba Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
       PIKE_FEATURE([Image.TIFF],[no (tifflib version 42)])
     else
       AC_MSG_RESULT([yes])
-      AC_DEFINE(HAVE_LIBTIFF) 
+      AC_DEFINE(HAVE_WORKING_LIBTIFF) 
       PIKE_FEATURE_OK(Image.TIFF)
       AC_CHECK_LIB(jpeg, main, [
   	LIBS="${LIBS-} -ljpeg"

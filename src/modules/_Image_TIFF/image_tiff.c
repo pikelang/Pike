@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.39 2004/03/02 20:46:36 nilsson Exp $
+|| $Id: image_tiff.c,v 1.40 2004/03/05 12:01:16 grubba Exp $
 */
 
 #include "global.h"
@@ -15,8 +15,8 @@
 /*! @module TIFF
  */
 
-#ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.39 2004/03/02 20:46:36 nilsson Exp $");
+#ifdef HAVE_WORKING_LIBTIFF
+RCSID("$Id: image_tiff.c,v 1.40 2004/03/05 12:01:16 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -956,7 +956,7 @@ void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
 #endif /* HAVE_VSNPRINTF */
 }
 
-#endif /* HAVE_LIBTIFF */
+#endif /* HAVE_WORKING_LIBTIFF */
 
 /*! @decl constant COMPRESSION_NONE
  */
@@ -996,7 +996,7 @@ void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
 
 PIKE_MODULE_INIT
 {
-#ifdef HAVE_LIBTIFF
+#ifdef HAVE_WORKING_LIBTIFF
 #ifdef DYNAMIC_MODULE
    push_text("Image");
    SAFE_APPLY_MASTER("resolv",1);
@@ -1057,12 +1057,12 @@ PIKE_MODULE_INIT
    opt_dpy = make_shared_string( "dpy" );
    opt_xdpy = make_shared_string( "xdpy" );
    opt_ydpy = make_shared_string( "ydpy" );
-#endif /* HAVE_LIBTIFF */
+#endif /* HAVE_WORKING_LIBTIFF */
 }
 
 PIKE_MODULE_EXIT
 {
-#ifdef HAVE_LIBTIFF
+#ifdef HAVE_WORKING_LIBTIFF
   free_string(opt_compression);
   free_string(opt_name);
   free_string(opt_comment);
@@ -1070,5 +1070,5 @@ PIKE_MODULE_EXIT
   free_string(opt_dpy);
   free_string(opt_xdpy);
   free_string(opt_ydpy);
-#endif
+#endif /* HAVE_WORKING_LIBTIFF */
 }
