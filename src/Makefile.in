@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.341 2002/12/12 21:20:46 nilsson Exp $
+# $Id: Makefile.in,v 1.342 2003/01/09 19:52:22 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -20,6 +20,9 @@ LIBDIR_SRC = @LIBDIR@
 TMP_BINDIR = @BINDIR@
 TMP_BUILDDIR = @BUILDDIR@
 TMP_LIBDIR = $(TMP_BUILDDIR)/lib
+
+# This is used during autodoc extraction.
+DOCDIR = @DOCDIR@
 
 # These are used during binary exports and installation.
 MANDIR_SRC = @MANDIR@
@@ -213,8 +216,8 @@ all: module_objects tools
 	  echo; \
 	fi
 
-documentation: pike
-	cd $(SRCDIR)/../refdoc && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" $(DOCTARGET)
+documentation: onepage.xml traditional.xml modref.xml
+	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" $(DOCTARGET)
 
 # Backward compat.
 post_modules: post_module_objects
@@ -602,6 +605,61 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 # that file. Works like the .h_src.h target.
 master-stamp: master.pike
 	@test -f master-stamp || echo foo > master-stamp
+
+#
+# Documentation related stuff.
+#
+
+onepage.xml: autodoc.xml $(DOCDIR)/structure/onepage.xml
+	(cd "$(DOCDIR)" && \
+	  $(RUNPIKE) -x assemble_autodoc structure/onepage.xml \
+	    $(TMP_BUILDDIR)/autodoc.xml) >onepage.xml
+
+traditional.xml: autodoc.xml $(DOCDIR)/structure/traditional.xml
+	( cd "$(DOCDIR)" && \
+	  $(RUNPIKE) -x assemble_autodoc structure/traditional.xml \
+	    $(TMP_BUILDDIR)/autodoc.xml) >traditional.xml
+
+modref.xml: autodoc.xml $(DOCDIR)/structure/modref.xml
+	(cd "$(DOCDIR)" && \
+	  $(RUNPIKE) -x assemble_autodoc structure/modref.xml \
+	    $(TMP_BUILDDIR)/autodoc.xml) >modref.xml
+
+autodoc.xml: pike doc_build/src doc_build/lib doc_build/images images force
+	$(RUNPIKE) -x extract_autodoc -q $(SRCDIR) $(DOCDIR)/src_images \
+	  doc_build/src doc_build/images
+	$(RUNPIKE) -x extract_autodoc -q $(LIBDIR_SRC) $(DOCDIR)/src_images \
+	  doc_build/lib doc_build/images
+	$(RUNPIKE) -x join_autodoc --quiet --post-process autodoc.xml doc_build
+
+images: doc_build/src/post_modules/GTK/refdoc/images
+	@cp $(SRCDIR)/post_modules/GTK/refdoc/images/*.png \
+	  doc_build/src/post_modules/GTK/refdoc/images/
+
+# Directories
+
+doc_build:
+	@test -d doc_build || mkdir doc_build
+
+doc_build/src: doc_build
+	@test -d doc_build/src || mkdir doc_build/src
+
+doc_build/lib: doc_build
+	@test -d doc_build/lib || mkdir doc_build/lib
+
+doc_build/images: doc_build
+	@test -d doc_build/images || mkdir doc_build/images
+
+doc_build/src/post_modules/GTK/refdoc/images: doc_build/src
+	@test -d doc_build/src/post_modules || \
+	  mkdir doc_build/src/post_modules
+	@test -d doc_build/src/post_modules/GTK || \
+	  mkdir doc_build/src/post_modules/GTK
+	@test -d doc_build/src/post_modules/GTK/refdoc || \
+	  mkdir doc_build/src/post_modules/GTK/refdoc
+	@test -d doc_build/src/post_modules/GTK/refdoc/images || \
+	  mkdir doc_build/src/post_modules/GTK/refdoc/images
+
 
 pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(SRCDIR)/builtin_functions.c
 	( cat $(SRCDIR)/*.h *.h | egrep  '^[  ]*#[     ]*define[      ][       ]*[a-zA-Z_0-9]*[       ][      ]*[0-9][xabcdefABCDEF0-9]*[  ]*' ; \
