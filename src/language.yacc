@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.105 1998/11/10 22:50:56 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.106 1998/11/11 22:19:48 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -814,7 +814,7 @@ identifier_type: idents
      }
      ;
 
-type4: type2 | identifier_type
+type4: type2 | identifier_type ;
 
 type2: type2 '|' type3 { push_type(T_OR); }
   | type3 
@@ -839,6 +839,7 @@ opt_string_type:  /* Empty */ { $$=1; }
     if ($2 != 1) yyerror("Wide strings are not supported.");
     $$=1;
   }
+  ;
 
 opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
   | '(' program_ref ')'
@@ -1611,7 +1612,7 @@ expr4: string
   | '(' '{' expr_list '}' ')'
     { $$=mkefuncallnode("aggregate",$3); }
   | '(' '[' m_expr_list ']' ')'
-    { $$=mkefuncallnode("aggregate_mapping",$3); };
+    { $$=mkefuncallnode("aggregate_mapping",$3); }
   | F_MULTISET_START expr_list F_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
   | '(' error ')' { $$=mkintnode(0); yyerrok; }
