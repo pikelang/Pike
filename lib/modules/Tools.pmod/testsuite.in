@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.12 2004/05/13 09:59:10 nilsson Exp $
+// $Id: testsuite.in,v 1.13 2004/11/05 20:16:25 grubba Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -122,7 +122,7 @@ test_hilfe("foreach( ({ 1, 2, 3, }); int i; int m) { n+=m; }", "Ok.\n")
 test_hilfe("n;", "12")
 
 test_hilfe("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n")
-test_hilfe("j;", "Compiler Error: 1:Undefined identifier \"j\".\n")
+test_hilfe("j;", "Compiler Error: 1:Undefined identifier j.\n")
 test_hilfe("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n")
 test_hilfe("i;", "1")
 test_hilfe("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340")
