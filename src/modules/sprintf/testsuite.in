@@ -78,17 +78,18 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("        876edcba9877", [[ sprintf("%20.12x",-0x123456789123456789)]])
 ]])
 
-dnl FIXME: Octal numbers.
 test_eq("77777777760000000000", [[ sprintf("%.20o", -0x80000000) ]])
 
 test_true(stringp(sprintf("")))
 test_true(sprintf("--real %1.20f --imaginary %1.20f --scale %1.20f\n",-0.9,-0.9,-0.9))
-test_eq(sprintf("%d",1),"1")
 test_eq(sprintf("%%"),"%")
 test_eq(sprintf("%d",1),"1")
 test_eq(sprintf("%d",-1),"-1")
+test_eq(sprintf("%o",1),"1")
 test_eq(sprintf("%u",1<<31),"2147483648")
+test_false(sprintf("%u",-1)=="-1")
 test_eq(sprintf("%o",255),"377")
+test_eq(sprintf("%o",012345670),"12345670")
 test_eq(sprintf("%x",255),"ff")
 test_eq(sprintf("%X",255),"FF")
 test_eq(sprintf("%c",255),"\377")
