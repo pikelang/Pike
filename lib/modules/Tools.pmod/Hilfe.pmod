@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.68 2002/04/18 12:35:01 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.69 2002/04/21 16:16:21 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1208,7 +1208,7 @@ class Evaluator {
 
 	  case "lambda":
 	  case "class":
-	    while(expr[p]!=")") {
+	    while(expr[p-1]!=")") {
 	      p = relocate(expr, symbols, new_scope, p, ",");
 	      p++;
 	    }
@@ -1244,6 +1244,19 @@ class Evaluator {
     }
     return p;
   }
+
+#if 0
+  // Some debug code to intercept calls to relocate. Aspect
+  // Oriented Programming would be handy here...
+  private int relocate( Expression expr, multiset(string) symbols,
+			 multiset(string) next_symbols, int p, void|string safe_word,
+			 void|int(0..1) top) {
+    int op = p;
+    p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
+    werror("relocate %O %O\n", op, expr[op..p]);
+    return p;
+  }
+#endif
 
   private int relocate( Expression expr, multiset(string) symbols,
 			 multiset(string) next_symbols, int p, void|string safe_word,
@@ -1392,7 +1405,7 @@ class Evaluator {
 
       case "class":
 	// FIXME: Unnamed create
-	add_hilfe_entity(expr[0], [string]expr[1..], expr[1], programs);
+	add_hilfe_entity("class", [string]expr[1..], expr[1], programs);
 	return 0;
     }
 
