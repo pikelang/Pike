@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.86 2001/12/16 02:49:50 mast Exp $");
+RCSID("$Id: sprintf.c,v 1.87 2002/01/02 02:19:13 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1366,7 +1366,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  else
 	  {
 	    *p++ = '-';
-	    val = (-val) & 0xffffffff;	/* Workaround for bug in gcc/ia64 */
+	    val = -val;
 	    do {
 	      if((*p++ = '0'|(val&((1<<base)-1)))>'9')
 		p[-1] += (mode=='X'? 'A'-'9'-1 : 'a'-'9'-1);
