@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.587 2005/02/09 16:35:50 mast Exp $
+|| $Id: builtin_functions.c,v 1.588 2005/02/09 16:40:35 mast Exp $
 */
 
 #include "global.h"
@@ -7328,6 +7328,15 @@ PMOD_EXPORT void f_map(INT32 args)
 			      "multiset|string|object");
    }
 
+   if (UNSAFE_IS_ZERO (Pike_sp-args+1)) {
+     free_svalue (Pike_sp-args+1);
+     move_svalue (Pike_sp-args+1, Pike_sp-args);
+     Pike_sp[-args].type = T_INT;
+     mega_apply (APPLY_STACK, args-1, 0, 0);
+     stack_pop_keep_top();
+     return;
+   }
+
    f_aggregate(args-2);
    mysp=Pike_sp;
    splice=mysp[-1].u.array->size;
@@ -7434,19 +7443,6 @@ PMOD_EXPORT void f_map(INT32 args)
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
 
-      case T_INT:
-	 if (mysp[-2].u.integer==0)
-	 {
-	    /* ret=arr(@extra); */
-	    stack_swap(); /* arr fun extra -> arr extra fun */
-	    pop_stack();  /* arr extra */
-	    Pike_sp--;
-	    dmalloc_touch_svalue(Pike_sp);
-	    push_array_items(Pike_sp->u.array);
-	    f_call_function(1+splice);
-	    return;
-	 }	    
-	 /* no break here */
       default:
 	 SIMPLE_BAD_ARG_ERROR("map",2,
 			      "function|program|object|"
