@@ -6,12 +6,12 @@
 //! @example
 //!  > object x=Debug.Wrapper(Crypto.MD5());
 //!  Debug.Wrapper is proxying ___Nettle.MD5_State()
-//!    > x->name();
+//!  > x->name();
 //!  ___Nettle.MD5_State()->name
-//!    (1) Result: "md5"
-//!    > !x;
+//!  (1) Result: "md5"
+//!  > !x;
 //!  !___Nettle.MD5_State()
-//!    (2) Result: 0
+//!  (2) Result: 0
 
 static object wrappee;
 static object compile_handler;
