@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.217 2004/09/19 00:25:44 nilsson Exp $
+|| $Id: image.c,v 1.218 2004/10/07 21:46:27 nilsson Exp $
 */
 
 /*
@@ -103,7 +103,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.217 2004/09/19 00:25:44 nilsson Exp $");
+RCSID("$Id: image.c,v 1.218 2004/10/07 21:46:27 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -3556,7 +3556,7 @@ CHRONO("apply_matrix, end");
 static void _image_outline(INT32 args,int mask)
 {
    static const unsigned char defaultmatrix[9]={0,1,0,1,1,1,0,1,0};
-   unsigned char *matrix=defaultmatrix;
+   unsigned char *matrix = (unsigned char *)defaultmatrix;
    int height=3;
    int width=3;
    unsigned char *tmp,*d;
