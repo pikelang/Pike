@@ -12,6 +12,20 @@ shift
 case "$CC" in
   *rntcl)
     case "E$OPTIONS" in
+      *x*)
+        ofixed="`fixpath $OUTPUT`"
+        if [ $# = 0 ]; then
+          to_extract=`do_cmd lib -list -nologo "$ofixed"`
+        else
+          to_extract=$@
+        fi
+        for a in $to_extract
+        do
+          do_cmd lib -nologo "-extract:$a" "$ofixed"
+        done
+        exit $?
+
+      ;;
       *d*) exit 1 ;;
       *x*) exit 1 ;;
       *q*|*r*)
@@ -19,7 +33,6 @@ case "$CC" in
         exit $?
       ;;
     esac
-
   ;;
 
   *rntcc)
