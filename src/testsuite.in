@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.260 2000/01/07 04:19:53 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.261 2000/01/19 17:57:05 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -955,6 +955,34 @@ test_any_equal([[
 ]], ({({(["a":1]),(["a":1]),(["a":1,"c":17])}),
       ({(["a":1]),(["a":1])}),
       (["a":1,"b":"d"])}))
+
+test_any_equal([[
+  /* This test tests a wild program pointer in the object o. The bug can trig
+     a coredump in a later test. */
+  class A {
+    array a = ({1});
+    void `->= (string var, mixed val) {::`->= (var, val);}
+  };
+  class B {
+    inherit A;
+    void `->= (string var, mixed val) {if (var) ::`->= (var, val);}
+  };
+  object o = B();
+  o->a += ({2});
+  return o->a;
+]], ({1,2}))
+test_any_equal([[
+  class A {
+    array a = ({1});
+    void `->= (string var, mixed val) {::`->= (var, val);}
+  };
+  class B {
+    inherit A;
+  };
+  object o = B();
+  o->a += ({2});
+  return o->a;
+]], ({1,2}))
 
 test_true(mappingp(_memory_usage()))
 test_true(_refs(""));
