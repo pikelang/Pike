@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.317 2001/05/02 14:09:48 grubba Exp $");
+RCSID("$Id: program.c,v 1.318 2001/05/05 13:58:02 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -428,7 +428,7 @@ static char *raw_lfun_types[] = {
  *!   @[`->=()]
  */
 
-/*! @decl int _sizeof()
+/*! @decl int lfun::_sizeof()
  *!
  *! Sizeof operator callback.
  *!
@@ -436,7 +436,7 @@ static char *raw_lfun_types[] = {
  *!   @[sizeof()]
  */
 
-/*! @decl array _indices()
+/*! @decl array lfun::_indices()
  *!
  *! Indices operator callback.
  *!
@@ -444,7 +444,7 @@ static char *raw_lfun_types[] = {
  *!   @[indices()]
  */
 
-/*! @decl array _values()
+/*! @decl array lfun::_values()
  *!
  *! Values operator callback.
  *!
@@ -452,7 +452,7 @@ static char *raw_lfun_types[] = {
  *!   @[values()]
  */
 
-/*! @decl mixed `()(zero ... args)
+/*! @decl mixed lfun::`()(zero ... args)
  *!
  *! Function call operator callback.
  *!
