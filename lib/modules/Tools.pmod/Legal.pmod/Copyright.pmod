@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.3 2003/03/27 03:32:47 nilsson Exp $
+// $Id: Copyright.pmod,v 1.4 2003/08/31 21:24:27 nilsson Exp $
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
@@ -18,7 +18,7 @@ static mapping(string:array(string)) copyrights = ([
   }),
 
   "Unicode Character Database":
-  ({ "Copyright © 1991-2002 Unicode, Inc." }),
+  ({ "Copyright © 1991-2003 Unicode, Inc." }),
 
   "TrueVision Targa code":
   ({ "Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit" }),
