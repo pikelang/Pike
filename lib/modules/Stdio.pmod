@@ -66,7 +66,7 @@ class File
 	break;
 	
       case "stdout":
-	_fd=_stdin;
+	_fd=_stdout;
 	break;
 	
       case "stderr":
