@@ -364,6 +364,17 @@ ObjectType parseObject() {
   return obj;
 }
 
+ProgramType parseProgram() {
+  ProgramType prg = ProgramType();
+  eat("program");
+  if( peekToken() == "(" ) {
+    readToken();
+    prg->classname = readToken();
+    eat(")");
+  }
+  return prg;
+}
+
 TypeType parseTypeType()
 {
   eat("type");
@@ -385,9 +396,6 @@ Type parseType() {
     case "mixed":
       eat("mixed");
       return MixedType();
-    case "program":
-      eat("program");
-      return ProgramType();
     case "string":
       eat("string");
       return StringType();
@@ -410,6 +418,8 @@ Type parseType() {
       return parseMultiset();
     case "object":
       return parseObject();
+    case "program":
+      return parseProgram();
     case "type":
       return parseTypeType();
     case ".":

@@ -40,6 +40,14 @@ class ArrayType {
 
 class ProgramType {
   inherit Type;
+  string classname;
+  string print() {
+    if(classname)
+      return "program(" + classname + ")";
+    else
+      return "program";
+  }
+  // FIXME xml() needs to be overridden.
   void create() { ::create("program"); }
 }
 
