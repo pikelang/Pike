@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.189 2002/07/03 09:05:56 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.190 2002/07/23 12:01:42 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2516,7 +2516,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	if(a->cdr != b->cdr) return 0;
       }else{
 	/* object(0 *) =? object(0 *) */
-	/* FIXME: Ought to check the implements relation */
+	struct program *ap,*bp;
+	ap = id_to_program((ptrdiff_t)a->cdr);
+	bp = id_to_program((ptrdiff_t)b->cdr);
+	if (!is_compatible(ap, bp)) return 0;
 	break;
       }
     }
@@ -2537,10 +2540,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #else /* !1 */
       if(a->car)
       {
-	if(!implements(implements_a=ap,implements_b=bp))
+	if (!is_compatible(implements_a=ap,implements_b=bp)) {
 	  return 0;
       }else{
-	if(!implements(implements_a=bp,implements_b=ap))
+	if(!is_compatible(implements_a=bp,implements_b=ap))
 	  return 0;
       }
 #endif /* 1 */
