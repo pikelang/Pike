@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.9 1998/03/28 15:10:10 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.10 1998/04/10 23:29:59 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -85,9 +85,9 @@ void check_all_args(const char *fnname, int args, ... )
   {
   case ERR_NONE: return;
   case ERR_TOO_FEW:
-    error("Too few arguments to %s()\n",fnname);
+    new_error(fnname, "Too few arguments to %s()\n", sp, args, NULL, 0);
   case ERR_TOO_MANY:
-    error("Too many argumens to %s()\n",fnname);
+    new_error(fnname, "Too many arguments to %s()\n", sp, args, NULL, 0);
 
   case ERR_BAD_ARG:
   {
