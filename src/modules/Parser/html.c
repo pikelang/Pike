@@ -3981,10 +3981,10 @@ static void html_current(INT32 args)
 */
 
 static void tag_name(struct parser_html_storage *this,struct piece *feed,
-		     int c, int skip_tag_start)
+		     ptrdiff_t c, int skip_tag_start)
 {
    struct piece *s1=NULL,*s2=NULL;
-   int c1=0,c2=0;
+   ptrdiff_t c1=0,c2=0;
    int pushed = 0;
 
    if (skip_tag_start) {
