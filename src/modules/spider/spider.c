@@ -497,7 +497,7 @@ int push_parsed_tag(char *s,int len)
     oldi = i;
     i = extract_word(s, i, len);
     f_lower_case(1);            /* Since SGML want's us to... */
-    if (i+1 >= len || (s[i] != '=') || (s[i]=='>') || (s[i+1]=='>'))
+    if (i+1 >= len || (s[i] != '='))
     {
       /* No 'Y' part here. Assign to 'X' */
       assign_svalue_no_free(sp,sp-1);
