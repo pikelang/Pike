@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.394 2001/07/13 11:26:40 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.395 2001/07/16 09:08:00 norlin Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7248,6 +7248,9 @@ PMOD_EXPORT void f_function_defined(INT32 args)
   push_int(0);
   
 }
+
+/*! @endmodule Function
+ */
 
 void init_builtin_efuns(void)
 {
