@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.33 2004/01/16 05:32:23 nilsson Exp $
+// $Id: RDF.pike,v 1.34 2004/01/16 06:26:39 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -104,6 +104,9 @@ RDFResource rdf_predicate = RDFResource("predicate");
 RDFResource rdf_subject   = RDFResource("subject");
 RDFResource rdf_object    = RDFResource("object");
 RDFResource rdf_type      = RDFResource("type");
+
+RDFResource rdf_datatype  = RDFResource("datatype");
+
 RDFResource rdf_first     = RDFResource("first");
 RDFResource rdf_rest      = RDFResource("rest");
 RDFResource rdf_nil       = RDFResource("nil");
@@ -115,6 +118,9 @@ class LiteralResource {
   constant is_literal_resource = 1;
   static string id;
 
+  //! Used to contain rdf:datatype value.
+  string datatype;
+
   //! The resource will be identified by @[literal].
   static void create(string literal) {
     id = literal;
@@ -122,7 +128,9 @@ class LiteralResource {
   }
 
   string get_n_triple_name() {
-    return "\"" + encode_n_triple_string(id) + "\"";
+    string ret = "\"" + encode_n_triple_string(id) + "\"";
+    if(datatype) ret += "^^<" + datatype + ">";
+    return ret;
   }
 
   string get_3_tuple_name() {
@@ -449,10 +457,9 @@ string get_n_triples() {
 
   foreach(statements; Resource n; ADT.Relation.Binary rel) {
     string rel_name = n->get_n_triple_name();
-    foreach(rel; Resource left; Resource right) {
+    foreach(rel; Resource left; Resource right)
       ret->add( left->get_n_triple_name(), " ", rel_name,
 		" ", right->get_n_triple_name(), " .\n" );
-    }
   }
 
   return (string)ret;
@@ -479,9 +486,10 @@ int parse_n_triples(string in) {
   class TempLiteral {
     inherit Temp;
     constant type = "TempLiteral";
+    string datatype;
   };
 
-  array(string) tokens = ({});
+  array(string|Temp) tokens = ({});
   int pos;
   while(pos<sizeof(in)) {
     int start = pos;
@@ -511,6 +519,12 @@ int parse_n_triples(string in) {
 	if( in[pos]=='\\' ) pos++;
       string str = decode_n_triple_string( in[start+1..pos-1] );
       tokens += ({ TempLiteral(str) });
+      if( in[pos]=='^' ) {
+	pos += 2; // ^^
+	start = pos+1;
+	while(in[++pos]!='>');
+	tokens[-1]->datatype = in[start..pos-1];
+      }
 
       // language (ignored)
       start = pos;
@@ -556,7 +570,10 @@ int parse_n_triples(string in) {
 	return ret;
       return URIResource( res->id );
 
-    case "TempLiteral": return LiteralResource( res->id );
+    case "TempLiteral":
+      ret = LiteralResource( res->id );
+      ret->datatype = res->datatype;
+      return ret;
 
     case "TempNode":
       if(ret=anonymous[res->id])
@@ -716,7 +733,7 @@ static Node add_xml_children(Node p, string rdfns) {
       }
     }
     else {
-      string ptype = c->get_attributes()->parserType;
+      string ptype = c->get_ns_attributes(rdfns)->parseType;
       if( !(< "Literal", "Resource", 0 >)[ptype] )
 	error("Illegal parserType value %O.\n", ptype);
 
@@ -731,6 +748,7 @@ static Node add_xml_children(Node p, string rdfns) {
       }
 
       obj = LiteralResource((array(string))c->get_children()*"");
+      obj->datatype = c->get_ns_attributes(rdfns)->datatype;
     }
     add_statement( subj, make_resource(pred_uri), obj );
   }
@@ -828,6 +846,8 @@ static class XML {
 	if(right->is_literal_resource) {
 	  if(ind) buf->add("  "*ind);
 	  buf->add("<", left->get_qname());
+	  if(right->datatype)
+	    buf->add(" rdf:datatype='", right->datatype, "'");
 	  buf->add(">", right->get_xml(), "</", left->get_qname(), ">\n");
 	}
 	else if(right->is_uri_resource) {
@@ -854,16 +874,17 @@ static class XML {
   }
 
   string make_prop_attr(mapping(Resource:array(Resource)) rel,
-			int nl) {
+			int nl, int i2) {
 
     foreach(rel; Resource left; array(Resource) rights) {
       if(!left->is_uri_resource) continue;
       foreach(rights; int p; Resource right) {
 	if(!right->is_literal_resource) continue;
+	if(right->datatype) continue;
 	if(has_value(right->get_xml(), "\n")) continue;
 	add_ns(left);
 	if(nl++)
-	  buf->add("\n ", "  "*(ind+8));
+	  buf->add("\n", "  "*ind, " "*i2);
 	buf->add(left->get_qname(), "='", right->get_xml(), "'");
 	rights[p]=0;
       }
@@ -890,7 +911,16 @@ static class XML {
 	m_delete(rel, rdf_type);
       if(ind) buf->add("  "*ind);
       add_ns(c);
-      buf->add("<", c->get_qname(), " rdf:about='", n->get_uri(), "'>\n");
+      buf->add("<", c->get_qname());
+      if(n->is_uri_resource) {
+	buf->add(" rdf:about='", n->get_uri(), "'");
+	make_prop_attr(rel, 1, sizeof(c->get_qname())+2);
+      }
+      else {
+	buf->add(" ");
+	make_prop_attr(rel, 0, sizeof(c->get_qname())+2);
+      }
+      buf->add(">\n");
       low_add_Description(rel);
       if(ind) buf->add("  "*ind);
       buf->add("</", c->get_qname(), ">\n");
@@ -899,11 +929,11 @@ static class XML {
       if(ind) buf->add("  "*ind);
       if(n->is_uri_resource) {
 	buf->add("<rdf:Description rdf:about='", n->get_uri(), "'");
-	make_prop_attr(rel, 1);
+	make_prop_attr(rel, 1, 17);
       }
       else {
 	buf->add("<rdf:Description ");
-	make_prop_attr(rel, 0);
+	make_prop_attr(rel, 0, 17);
       }
 
       if(!sizeof(rel)) {
