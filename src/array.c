@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.143 2003/04/28 00:32:42 mast Exp $
+|| $Id: array.c,v 1.144 2003/04/28 17:15:35 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.143 2003/04/28 00:32:42 mast Exp $");
+RCSID("$Id: array.c,v 1.144 2003/04/28 17:15:35 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -273,8 +273,10 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 
     case T_STRING:
     {
-      s->type = T_ARRAY;
+      /* Set the type afterwards to avoid a clobbered svalue in case
+       * array_column throws. */
       s->u.array = array_column (a, ind);
+      s->type = T_ARRAY;
       break;
     }
 	
