@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.41 2001/01/14 20:05:26 grubba Exp $
+ * $Id: interpret_functions.h,v 1.42 2001/01/15 00:21:47 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -712,6 +712,10 @@ BREAK;
 
 OPCODE0(F_POP_MARK, "pop mark")
   --Pike_mark_sp;
+BREAK;
+
+OPCODE0(F_POP_TO_MARK, "pop to mark")
+  pop_n_elems(Pike_sp - *--Pike_mark_sp);
 BREAK;
 
 OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype")
