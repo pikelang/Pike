@@ -1,3 +1,30 @@
+pike7.3 (7.3.53-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * src/modules/Perl/perlmod.c: Adjustment to work better with Perl
+          5.8.0, plus a few minor layout changes to make the code nicer to
+          read.
+        * lib/modules/Local.pmod: Added support for specifying paths using
+          the PIKE_LOCAL_PATH environment variable.
+        * src/language.yacc: Fixed typing for intranges with bignum
+          intervals.
+        * lib/modules/Stdio.pmod/GZipFile.pike: Added basic support for
+          reading and writing gzip files.  This is the first version and it
+          is still a bit experimental.  Uses Gz._file() for lowlevel support.
+        * src/modules/Gz/zlibmod.c: Added basic support for reading and
+          writing gzip files.  Lowlevel functions are located in Gz._file().
+        * src/builtin_functions.c: Fixed incorrect info about rusage() and
+          added a bit more description about some of the items.
+        * src/language.yacc: Added the "global" keyword to
+          magic_identifiers so it can be used after ->.
+        * src/pike_types.c: parse_type() now supports the syntax
+          object(this_program), and defaults to implements mode.
+        * src/modules/Postgres/: configure.in, pgres_config.h.in,
+          postgres.c: this makes the Postgres module detect/work correctly
+          with the PostgreSQL 7.2+
+
+ -- Marek Habersack <grendel@debian.org>  Sun,  1 Sep 2002 00:22:22 +0200
+
 pike7.3 (7.3.51-4) unstable; urgency=low
 
   * Enabled the Pike security.
