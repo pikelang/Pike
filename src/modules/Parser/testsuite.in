@@ -186,6 +186,27 @@ test_any([[
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
   return p->finish("<t a=\"f'o><t>")->read();
 ]], "f'o><t>");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {return ({a["b/a"]+"|"+a["/a"]+"|"+a["a/"]+"|"+a["a"]});});
+  return p->finish("<t b/a> <t b /a> <t b a/> "
+		   "<t b /a=fo> <t b a/=fo> <t b a=/fo> "
+		   "<t b a=f/o> <t b a=fo/> <t b a='fo/'>")->read();
+}]], ("b/a|0|0|0 0|/a|0|0 0|0|0|a "
+      "0|fo|0|0 0|0|fo|0 0|0|0|/fo "
+      "0|0|0|f/o 0|0|0|fo 0|0|0|fo/"));
+test_any([[{
+  object p = Parser.HTML();
+  p->xml_tag_syntax (0);
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {return ({a["b/a"]+"|"+a["/a"]+"|"+a["a/"]+"|"+a["a"]});});
+  return p->finish("<t b/a> <t b /a> <t b a/> "
+		   "<t b /a=fo> <t b a/=fo> <t b a=/fo> "
+		   "<t b a=f/o> <t b a=fo/> <t b a='fo/'>")->read();
+}]], ("b/a|0|0|0 0|/a|0|0 0|0|a/|0 "
+      "0|fo|0|0 0|0|fo|0 0|0|0|/fo "
+      "0|0|0|f/o 0|0|0|fo/ 0|0|0|fo/"));
 
 // Local feeds
 test_any([[
@@ -252,6 +273,22 @@ test_any([[
 ]], "f>");
 test_any([[
   object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return (p->feed("<")->feed("t")->feed(" ")->feed("a")->feed("=")->feed("'")->
+	  feed("f")->feed("o")->feed("o")->feed("'")->feed(">")->read());
+]], "foo");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("c", lambda (object p, mapping a, string c)
+			   {return ({"[", a->a, "|", c, "]"});});
+  return (p->feed("<")->feed("c")->feed(" ")->feed("a")->feed("=")->feed("'")->
+	  feed("f")->feed("o")->feed("o")->feed("'")->feed(">")->feed("x")->
+	  feed("y")->feed("<")->feed("c")->feed(">")->feed("z")->feed("<")->
+	  feed("t")->feed(">")->feed("<")->feed("/")->feed("c")->feed(">")->
+	  feed("q")->feed("<")->feed("/")->feed("c")->feed(">")->feed(".")->read());
+}]], "[foo|xy<c>z<t></c>q].");
+test_any([[
+  object p = Parser.HTML();
   p->add_entity ("e", lambda (object p) {return "e";});
   return p->feed("&e")->read() + " " + p->feed(";")->read();
 ]], " e");
@@ -274,6 +311,20 @@ test_any([[
 	  p->feed("x--")->read() + " " +
 	  p->feed("->")->read());
 ]], "   x-");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_quote_tag ("!--", lambda (object p, string s) {return ({"1",s});}, "--");
+  p->add_quote_tag ("!--[", lambda (object p, string s) {return ({"2",s});}, "]-");
+  p->add_quote_tag ("![", lambda (object p, string s) {return ({"3",s});}, "]");
+  return (p->feed("<")->read() + "a" + p->feed("!")->read() + "b" +
+	  p->feed("-")->read() + "c" + p->feed("-")->read() + "d" +
+	  p->feed("X")->read() + "e" + p->feed("Y")->read() + "f" +
+	  p->feed("]")->read() + "g" + p->feed(">")->read() + "h" +
+	  p->feed("]")->read() + "i" + p->feed("-")->read() + "j" +
+	  p->feed(">")->read() + "k" + p->feed("-")->read() + "l" +
+	  p->feed("-")->read() + "m" + p->feed("-")->read() + "n" +
+	  p->feed(">")->read());
+}]], "abcdefghijklmn1XY]>]->-");
 
 // Exception handling
 test_any([[{
@@ -451,6 +502,82 @@ test_any([[
   return p->finish("<a href=\"<t>\">")->read();
 ]], "<a href=\"b\">");
 
+// XML syntax
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->add_container ("c", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  return p->finish ("a<t>b</t>c<c>d</c>e<t/>f</t>g<c/>h</c>i")->read();
+}]], "a()b</t>c[d]e()f</t>g[h]i");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->add_container ("c", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (2);
+  return p->finish ("a<t>b</t>c<c>d</c>e<t/>f</t>g<c/>h</c>i")->read();
+}]], "a()b</t>c[d]e()f</t>g[]h</c>i");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->add_container ("c", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b</t>c<c>d</c>e<t/>f</t>g<c/>h</c>i")->read();
+}]], "a()c[d]e()f</t>g[]h</c>i");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a()b</t>c()d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a[b]c[d]e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a()b</t>c()d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->xml_tag_syntax (2);
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a()b</t>c()d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (2);
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a[b]c[]d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (2);
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a[b]c()d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a()c()d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a[b]c[]d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "()");
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
+}]], "a[b]c()d</t>e");
+
 // Misc
 test_any([[
   object p = Parser.HTML();
@@ -518,3 +645,16 @@ test_any([[
   return p->finish("<t bar <foo>>")->read();
   //                       ^ bogus char that we should jump over.
 ]], [["[<t bar <foo>|bar,foo]>"]]);
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "T");
+  p->add_tag ("", "E");
+  return p->finish("< t>")->read();
+}]], "E");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "T");
+  p->add_tag ("", "E");
+  p->ws_before_tag_name (1);
+  return p->finish("< t>")->read();
+}]], "T");
