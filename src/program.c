@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.409 2002/04/07 15:40:02 grubba Exp $");
+RCSID("$Id: program.c,v 1.410 2002/04/08 01:00:09 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4507,14 +4507,7 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
     return optimizer;
   }
 
-#ifdef PIKE_USE_MACHINE_CODE
-  if( (long)pc > (long)prog->program)
-    offset = pc - prog->program;
-  else
-    offset = (long) pc;
-#else
   offset = pc - prog->program;
-#endif
 
   if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0)) {
     struct pike_string *not_found;
