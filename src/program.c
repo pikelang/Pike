@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.97 1998/07/17 13:31:22 grubba Exp $");
+RCSID("$Id: program.c,v 1.98 1998/07/17 22:37:10 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2683,7 +2683,12 @@ static struct find_child_cache_s find_child_cache[FIND_CHILD_HASHSIZE];
 
 int find_child(struct program *parent, struct program *child)
 {
-  INT32 h=(parent->id  * 9248339 + child->id) % FIND_CHILD_HASHSIZE;
+  unsigned INT32 h=(parent->id  * 9248339 + child->id);
+  h= h % FIND_CHILD_HASHSIZE;
+#ifdef DEBUG
+  if(h>=FIND_CHILD_HASHSIZE)
+    fatal("find_child failed to hash within boundaries.\n");
+#endif  
   if(find_child_cache[h].pid == parent->id &&
      find_child_cache[h].cid == child->id)
   {
@@ -2761,6 +2766,10 @@ int implements(struct program *a, struct program *b)
 
   hval = a->id*9248339 + b->id;
   hval %= IMPLEMENTS_CACHE_SIZE;
+#ifdef DEBUG
+  if(hval >= IMPLEMENTS_CACHE_SIZE)
+    fatal("Implements_cache failed!\n");
+#endif
   if(implements_cache[hval].aid==a->id && implements_cache[hval].bid==b->id)
   {
     return implements_cache[hval].ret;
