@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.79 1998/04/17 01:22:34 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.80 1998/04/17 02:53:10 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1693,7 +1693,9 @@ lvalue: expr4
     $$=mklocalnode(islocal($2->u.sval.u.string));
     free_node($2);
   }
-
+  | bad_lvalue
+  { $$=mkintnode(0); }
+  ;
 low_lvalue_list: lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
   ;
 
@@ -1719,10 +1721,15 @@ string: F_STRING
  * Some error-handling
  */
 
-bad_identifier:
+bad_identifier: bad_lvalue
+  | F_CLASS
+  { yyerror("class is a reserved word."); }
+  ;
+
+bad_lvalue:
     F_INLINE
   { yyerror("inline is a reserved word."); }
-  | F_LOCAL
+  | F_LOCAL_ID
   { yyerror("local is a reserved word."); }
   | F_NO_MASK
   { yyerror("nomask is a reserved word."); }
@@ -1738,14 +1745,24 @@ bad_identifier:
   { yyerror("static is a reserved word."); }
   | F_ARRAY_ID
   { yyerror("array is a reserved word."); }
+  | F_FINAL_ID
+  { yyerror("final is a reserved word.");}
   | F_FLOAT_ID
   { yyerror("float is a reserved word.");}
+  | F_FUNCTION_ID
+  { yyerror("function is a reserved word.");}
   | F_INT_ID
   { yyerror("int is a reserved word."); }
   | F_MAPPING_ID
   { yyerror("mapping is a reserved word."); }
+  | F_MIXED_ID
+  { yyerror("mixed is a reserved word."); }
   | F_MULTISET_ID
   { yyerror("multiset is a reserved word."); }
+  | F_OBJECT_ID
+  { yyerror("mapping is a reserved word."); }
+  | F_PROGRAM_ID
+  { yyerror("mapping is a reserved word."); }
   | F_STRING_ID
   { yyerror("string is a reserved word."); }
   | F_VOID_ID
@@ -1762,8 +1779,6 @@ bad_identifier:
   { yyerror("import is a reserved word."); }
   | F_INHERIT
   { yyerror("inherit is a reserved word."); }
-  | F_CLASS
-  { yyerror("class is a reserved word."); }
   | F_CATCH
   { yyerror("catch is a reserved word."); }
   | F_GAUGE
