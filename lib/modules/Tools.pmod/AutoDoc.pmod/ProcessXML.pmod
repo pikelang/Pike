@@ -164,8 +164,11 @@ string moveImages(string docXMLFile,
 
 	    mapping args = n->get_attributes();
             werror("copying from [%s] to [%s]\n", imageFilename, destFilename);
-	    if(!Stdio.cp(imageFilename, destFilename))
+	    if(!Stdio.cp(imageFilename, destFilename)) {
 	      werror("Error: Could not move %s to %s.\n", imageFilename, destFilename);
+	      if(!Stdio.read_file(imageFilename))
+		werror("(Could not read %s)\n", imageFilename);
+	    }
 	    else {
 	      Image.Image o = Image.load(imageFilename);
 	      if(o && o->xsize() && o->ysize()) {
@@ -439,6 +442,7 @@ static class ScopeStack {
   mapping resolveRef(string ref) {
     //werror("[[[[ resolving %O\n", ref);
     array(string) idents = splitRef(ref);
+    int not_param = has_suffix(ref, "()");
     if (!sizeof(idents))
       ref = "";
     else {
@@ -453,7 +457,7 @@ static class ScopeStack {
         if (!s)
           break;  // end of array
         if (s->idents[firstIdent])
-          if (s->type == "params") {
+          if (s->type == "params" && !not_param) {
             return ([ "param" : ref ]);
           }
           else {
@@ -491,7 +495,6 @@ static void fixupRefs(ScopeStack scopes, Node node) {
           mapping m = n->get_attributes();
           if (m["resolved"])
             return;
-          string ref = n->value_of_node();
           //werror("いい resolving reference %O\n", ref);
           //foreach (scopes->scopeArr, Scope s)
           //  werror("いい    %O\n", s ? s->name : "NULL");
@@ -593,7 +596,7 @@ void resolveRefs(Node tree) {
 // Call this method after the extraction and merge of the tree.
 void postProcess(Node tree) {
   handleAppears(tree);
-  //  resolveRefs(tree);
+  resolveRefs(tree);
 }
 
 
@@ -792,7 +795,7 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
           if (attr["resolved"]) {
             string href = findHref(targets, attr["resolved"] / ".");
             if (!href)
-              werror("unable to find href to %O", attr["resolved"]);
+              werror("unable to find href to %O\n", attr["resolved"]);
             else
               attr["href"] = href;
           }
