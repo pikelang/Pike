@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.419 2000/09/16 12:15:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.420 2000/09/16 22:47:49 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -53,6 +53,15 @@ pike_cv_prog_CC_save="$CC"
 # MY_AC_PROG_CC
 # The above has problems if the smartlink binary is removed. /grubba
 AC_PROG_CC
+AC_PROG_CPP
+
+#############################################################################
+
+AC_ISC_POSIX
+AC_AIX
+AC_MINIX
+ 
+#############################################################################
 
 if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
   #
@@ -142,9 +151,6 @@ EOF
   fi
 fi
 
-AC_ISC_POSIX
-AC_PROG_CPP
-
 #
 # Some cross-compilation support
 #
@@ -203,11 +209,7 @@ if test "x$ac_cv_header_fnord_fnord_fnord_h" = xyes ; then
   exit 1
 fi
 AC_MSG_RESULT(yes)
-#############################################################################
 
-AC_AIX
-AC_MINIX
- 
 #############################################################################
 
 if test $ac_cv_prog_gcc = yes; then
