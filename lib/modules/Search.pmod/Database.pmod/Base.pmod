@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.14 2001/08/08 17:44:29 nilsson Exp $
+// $Id: Base.pmod,v 1.15 2001/08/16 22:07:16 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -142,3 +142,21 @@ void remove_field(string field);
 //! @returns
 //!   A mapping with the fields in the index part, and the corresponding numeric field id as values.
 mapping(string:int) list_fields();
+
+//! Retrieve statistics about the number of documents in different languages.
+//! @returns
+//!   A mapping with the the language code in the index part, and the corresponding number of documents
+//!   as values.
+mapping(string|int:int) get_language_stats();
+
+//! FIXME
+int get_num_words();
+
+//! FIXME
+int get_database_size();
+
+//! FIXME
+int get_num_deleted_documents();
+
+//! FIXME
+array(array) get_most_common_words(void|int count);

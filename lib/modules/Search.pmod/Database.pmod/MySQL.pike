@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.60 2001/08/16 21:27:49 nilsson Exp $
+// $Id: MySQL.pike,v 1.61 2001/08/16 22:07:16 js Exp $
 
 inherit .Base;
 
@@ -397,6 +397,43 @@ array(int) get_deleted_documents()
 			       "order by doc_id")->doc_id;
 }
 
+
+mapping(string|int:int) get_language_stats()
+{
+  array a=db->query("select count(id) as c,language from document group by language");
+  return mkmapping( a->language, a->c);
+}
+
+int get_num_words()
+{
+  return (int)db->query("select count(word) as c from word_hit group by word")[0]->c;
+}
+
+int get_database_size()
+{
+  int size;
+  foreach(db->query("show table status"), mapping table)
+    size += (int)table->Data_length + (int)table->Index_length;
+  return size;
+}
+
+int get_num_deleted_documents()
+{
+  return (int)db->query("select count(*) as c from deleted_document")[0]->c;
+
+}
+
+array(array) get_most_common_words(void|int count)
+{
+  array a =
+    db->query("select word, sum(length(hits))/7 as c from word_hit "
+	      "group by word order by c desc limit %d", count||10);
+
+  if(!sizeof(a))
+    return ({ });
+  else
+    return Array.transpose( ({ map(a->word, utf8_to_string), (array(int))a->c }) );
+}
 
 void clear()
 {
