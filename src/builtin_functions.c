@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.409 2001/10/28 18:04:06 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.410 2001/10/30 10:50:44 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -597,9 +597,12 @@ PMOD_EXPORT void f_search(INT32 args)
 		    "length of the string.\n");
 
     if(Pike_sp[1-args].type == T_STRING) {
-      start = string_search(haystack,
-			    Pike_sp[1-args].u.string,
-			    start);
+      /* Handle searching for the empty string. */
+      if (Pike_sp[1-args].u.string->len) {
+	start = string_search(haystack,
+			      Pike_sp[1-args].u.string,
+			      start);
+      }
     } else if (Pike_sp[1-args].type == T_INT) {
       INT_TYPE val = Pike_sp[1-args].u.integer;
       
