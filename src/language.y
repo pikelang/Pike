@@ -12,7 +12,8 @@
 %token F_ADD_256 F_ADD_512 F_ADD_768 F_ADD_1024 F_ADD_256X
 %token F_PREFIX_256 F_PREFIX_512 F_PREFIX_768 F_PREFIX_1024
 %token F_PREFIX_CHARX256 F_PREFIX_WORDX256 F_PREFIX_24BITX256
-%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_CALL_LFUN
+%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2
+%token F_CALL_LFUN F_CALL_LFUN_AND_POP
 
 %token F_BRANCH F_BRANCH_WHEN_ZERO F_BRANCH_WHEN_NON_ZERO
 %token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
@@ -34,7 +35,6 @@
 %token F_CLEAR_LOCAL
 %token F_CONSTANT F_FLOAT F_STRING
 %token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
-
 /*
  * These are the predefined functions that can be accessed from LPC.
  */
@@ -42,7 +42,7 @@
 %token F_INC F_DEC F_POST_INC F_POST_DEC F_INC_AND_POP F_DEC_AND_POP
 %token F_INC_LOCAL F_INC_LOCAL_AND_POP F_POST_INC_LOCAL
 %token F_DEC_LOCAL F_DEC_LOCAL_AND_POP F_POST_DEC_LOCAL
-%token F_RETURN F_DUMB_RETURN F_RETURN_0
+%token F_RETURN F_DUMB_RETURN F_RETURN_0 F_THROW_ZERO
 
 %token F_ASSIGN F_ASSIGN_AND_POP
 %token F_ASSIGN_LOCAL F_ASSIGN_LOCAL_AND_POP
@@ -59,6 +59,8 @@
 %token F_SWITCH F_SSCANF F_CATCH
 %token F_CAST
 %token F_FOREACH
+
+%token F_SIZEOF F_SIZEOF_LOCAL
 
 /*
  * These are token values that needn't have an associated code for the
@@ -1038,13 +1040,13 @@ comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
                     | comma_expr
                     ;
 
-gauge: F_GAUGE '(' unused ')'
+gauge: F_GAUGE catch_arg
   {
     $$=mkopernode("`-",
 		  mkopernode("`-",
 			     mknode(F_INDEX,mkefuncallnode("rusage",0),
 				    mkintnode(GAUGE_RUSAGE_INDEX)),
-			     mknode(F_ARG_LIST,$3,
+			     mknode(F_ARG_LIST,$2,
 				    mknode(F_INDEX,mkefuncallnode("rusage",0),
 					   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
   } ;
