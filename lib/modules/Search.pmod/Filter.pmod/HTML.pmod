@@ -79,9 +79,9 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   int h = gethrtime();
   parser->feed(data);
   parser->finish();
-  werror("\n%.1f\n", (gethrtime()-h)/1000000.0 );
+//   werror("\n%.1f\n", (gethrtime()-h)/1000000.0 );
   array links = lf->read();
-  werror("%O\n", links );
+//   werror("%O\n", links );
   res->links = map( links, fix_entities );
   
   res->fields->body=fix_entities(databuf->get());
