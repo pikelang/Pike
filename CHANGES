@@ -6,6 +6,10 @@ o New syntax to index from the end in range operations.
   from the end instead. This is convenient to e.g. chop off the last
   element in an array: a[..<1].
 
+o Several declarations and definitions (most notably the debug and
+  runtime flags) have moved from main.h to pike_embed.h, in an attempt
+  to add support for embedding.
+
 o New `[..] operator function.
   Range operations have been separated from the `[] operator function
   and is handled by a new `[..] which provides greater control in how
