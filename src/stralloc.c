@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.130 2001/08/15 11:52:23 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.131 2001/08/29 11:51:59 grubba Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -1953,6 +1953,8 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
   }
   i = s->s->len++;
   low_set_index(s->s,i,ch);
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 
@@ -1968,6 +1970,8 @@ PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *st
       fatal("Illegal magnitude!\n");
   }
   s->s->len+=len;
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 
@@ -1986,6 +1990,8 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
   string_build_mkspace(s, len, shift);
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);
   s->s->len+=len;
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_fill(struct string_builder *s,
@@ -2010,6 +2016,8 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     MEMSET(string_builder_allocate(s,howmany,0),
 	   EXTRACT_PCHARP(from),
 	   howmany);
+    /* Ensure NUL-termination */
+    s->s->str[s->s->len << s->s->size_shift] = 0;
     return;
   }
 
@@ -2052,6 +2060,8 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
       s->s->len+=tmp;
     }
   }
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str)
@@ -2066,6 +2076,8 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
   s->known_shift=MAXIMUM(s->known_shift,(size_t)str->size_shift);
   s->s->len+=str->len;
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 
@@ -2073,6 +2085,8 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 {
   s->known_shift=0;
   s->s->len=0;
+  /* Ensure NUL-termination */
+  s->s->str[0] = 0;
 }
 
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
@@ -2083,6 +2097,7 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s)
 
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
+  /* Ensure NUL-termination */
   low_set_index(s->s,s->s->len,0);
   if (s->s->len <= SHORT_STRING_THRESHOLD) {
     ptrdiff_t len = s->s->len;
