@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.18 1999/06/19 20:24:47 hubbe Exp $
+**!	$Id: layers.c,v 1.19 1999/06/19 22:11:35 grubba Exp $
 **! class Layer
 */
 
@@ -9,7 +9,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.18 1999/06/19 20:24:47 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.19 1999/06/19 22:11:35 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -2125,10 +2125,6 @@ void init_image_layers(void)
 
    ADD_FUNCTION("xoffset",image_layer_xoffset,tFunc(tNone,tInt),0);
    ADD_FUNCTION("yoffset",image_layer_yoffset,tFunc(tNone,tInt),0);
-
-   ADD_FUNCTION("alpha_value",image_layer_alpha_value,tFunc(tNone,tFloat),0);
-   ADD_FUNCTION("fill",image_layer_fill,tFunc(tNone,tObj),0);
-   ADD_FUNCTION("fill_alpha",image_layer_fill_alpha,tFunc(tNone,tObj),0);
 
    ADD_FUNCTION("alpha_value",image_layer_alpha_value,tFunc(tNone,tFloat),0);
    ADD_FUNCTION("fill",image_layer_fill,tFunc(tNone,tObj),0);
