@@ -230,6 +230,8 @@ class Connection {
   // The commands this module supports
   array(string) commands = ({ "ehlo", "helo", "mail", "rcpt", "data",
 			      "rset", "vrfy", "quit", "noop" });
+  // do we speak LMTP ?
+  int lmtp_mode = 0;
 
   // the fd of the socket
   static object fd = Stdio.File();
@@ -253,6 +255,8 @@ class Connection {
 
   // the sequence of commands the client send
   static array(string) sequence = ({ });
+  // the message id of the current mail
+  private string|int messageid;
   
   // the callback functions used to guess if user is ok or not
   static function cb_rcptto;
@@ -264,10 +268,13 @@ class Connection {
 
   array(string) features = ({ "PIPELINING", "8BITMIME", "SIZE " + maxsize });
     
-   static void handle_timeout()
+   static void handle_timeout(string cmd)
    {
-     catch(fd->write("421 Error: timeout exceeded\r\n"));
-     close_cb();
+     string errmsg = "421 Error: timeout exceeded after command " +
+       cmd || "unknown command!" + "\r\n";
+     catch(fd->write(errmsg));
+     log(errmsg);
+     close_cb(1);
    }
    
    static void outcode(int code)
@@ -280,20 +287,26 @@ class Connection {
   
    static void log(string fmt, mixed ... args)
    {
-     werror("Pike SMTP server : " + fmt + "\n", args);
+     string errmsg = Calendar.now()->format_time() + 
+       " Pike SMTP server : ";
+     if(messageid)
+       errmsg += messageid + ": ";
+     errmsg += fmt + "\n";
+     werror(errmsg, args);
    }
   
    // make the received header
-   static string received(int messageid)
+   static string received()
    {
      string remotehost =
         Protocols.DNS.client()->gethostbyaddr(remoteaddr)[0]
      	|| remoteaddr;
      string rec;
+     string mode = lmtp_mode ? "LMTP": "ESMTP";
      rec=sprintf("from %s (%s [%s]) "
-      "by %s (Pike SMTP server) with %s id %d ; %s",
+      "by %s (Pike %s server) with %s id %d ; %s",
        ident, remotehost, remoteaddr,
-       gethostname(), "ESMTP", messageid,
+       gethostname(), mode, mode, messageid,
        Calendar.now()->format_smtp());
      return rec;
    }
@@ -301,7 +314,7 @@ class Connection {
    void helo(string argument)
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "HELO");
      if(sizeof(argument) > 0)
      {
        fd->write("250 %s\r\n", localhost);
@@ -318,7 +331,7 @@ class Connection {
    void ehlo(string argument)
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "EHLO");
      if(sizeof(argument) > 0)
      {
        string out = "250-" + localhost + "\r\n";
@@ -388,10 +401,10 @@ class Connection {
    void mail(string argument)
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "MAIL FROM");
      int sequence_ok = 0;
      foreach(({ "ehlo", "helo", "lhlo" }), string needle)
-     {  
+     {
        if(has_value(sequence, needle))
          sequence_ok = 1;
      }
@@ -403,14 +416,14 @@ class Connection {
        else
        {
          mixed err;
-	 int check;
-	 err = catch(check = cb_mailfrom(email));
-	 if(err || !check)
-	 {
+      	 int check;
+         err = catch(check = cb_mailfrom(email));
+         if(err || !check)
+         {
            outcode(451);
            log(describe_backtrace(err));
            return;
-	 }
+         }
          if(check/100 == 2)
 	 {
 	   mailfrom = email;
@@ -429,9 +442,9 @@ class Connection {
 	   data
 	   354 Start mail input; end with <CRLF>.<CRLF>
            */
-	   sequence -= ({ "rcpt to" });
+           sequence -= ({ "rcpt to" });
            sequence += ({ "mail from" });
-	 }
+         }
          outcode(check);
        }
      }
@@ -443,7 +456,7 @@ class Connection {
    {
      mixed err;
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "RCPT TO");
      if(!has_value(sequence, "mail from"))
      {
        outcode(503);
@@ -479,7 +492,7 @@ class Connection {
    void data(string argument)
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 610);
+     call_out(handle_timeout, 610, "DATA");
      if(!has_value(sequence, "rcpt to"))
      {
        outcode(503);
@@ -491,7 +504,7 @@ class Connection {
 
    MIME.Message format_headers(MIME.Message message)
    {
-     int messageid = hash(message->getdata()[..1000]) || random(100000);
+     messageid = hash(message->getdata()[..1000]) || random(100000);
      // first add missing headers
      if(!message->headers->to)
        message->headers->to = "Undisclosed-recipients";
@@ -500,9 +513,9 @@ class Connection {
      if(!message->headers->subject)
        message->headers->subject = "";
      if(!message->headers->received)
-       message->headers->received = received(messageid);
+       message->headers->received = received();
      else
-       message->headers->received = received(messageid)
+       message->headers->received = received()
          + "\0"+message->headers->received;
      if(!message->headers["message-id"])
      {
@@ -538,34 +551,63 @@ class Connection {
        log(describe_backtrace(err));
        return;
      }
-     int check;
-     if(givedata)
-       err = catch(check = cb_data(message, mailfrom, mailto, content));
-     else
-       err = catch(check = cb_data(message, mailfrom, mailto));
-     if(err || !check)
+     // if we are in LMTP mode we call cb_data for each recipient
+     // and with one recipient. This way we have one mime message per
+     // recipient and one outcode to display to the client per recipient
+     // (that is LMTP specific)
+     if(lmtp_mode)
      {
-       outcode(554);
-       log(describe_backtrace(err));
-       return;
+       foreach(mailto, string recipient)
+       {
+         int check;
+         if(givedata)
+           err = catch(check = cb_data(copy_value(message), mailfrom, 
+              recipient, content));
+         else
+           err = catch(check = cb_data(copy_value(message), mailfrom, recipient));
+         if(err || !check)
+         {
+           outcode(554);
+           log(describe_backtrace(err));
+           continue;
+         }
+         outcode(check);
+       }
      }
-     outcode(check);
+     // SMTP mode, cb_data is called one time with an array of recipients
+     // and the same MIME object
+     else
+     {
+       int check;
+       if(givedata)
+         err = catch(check = cb_data(message, mailfrom, mailto, content));
+       else
+         err = catch(check = cb_data(message, mailfrom, mailto));
+       if(err || !check)
+       {
+         outcode(554);
+         log(describe_backtrace(err));
+         return;
+       }
+       outcode(check);
+     }
    }
    
    void noop()
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "NOOP");
      outcode(250);
    }
   
    void rset()
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "RSET");
      inputbuffer = "";
      mailfrom = "";
      mailto = ({ });
+     messageid = 0;
      //sequence = ({ });
      outcode(250);
    }
@@ -573,7 +615,7 @@ class Connection {
    void vrfy()
    {
      remove_call_out(handle_timeout);
-     call_out(handle_timeout, 310);
+     call_out(handle_timeout, 310, "VRFY");
      outcode(252);
    }
    
@@ -581,7 +623,7 @@ class Connection {
    {
      fd->write("221 " + replace(replycodes[221], "<host>", localhost)
 	       + "\r\n");
-     close_cb();
+     close_cb(1);
    }
    
    static int launch_functions(string line)
@@ -639,18 +681,18 @@ class Connection {
        if(!datamode)
        {
          launch_functions(inputbuffer[..end]);
-	 if(lower_case(inputbuffer[..end]) == "quit")
-	 {
+         if(lower_case(inputbuffer[..end]) == "quit")
+         {
            destruct(this_object());
-	   return;
-	 }
-	 pattern = "\n";
+           return;
+         }
+         pattern = "\n";
        }
        if(datamode)
        {
          if(pattern=="\n.\n")
-	   message(inputbuffer[..end+1]);
-	 pattern = "\n.\n";
+           message(inputbuffer[..end+1]);
+         pattern = "\n.\n";
        }
        // end of buffer detection
        if(bufferposition + sizeof(pattern) >= sizeof(inputbuffer))
@@ -658,7 +700,7 @@ class Connection {
 #ifdef SMTP_DEBUG
          write("breaking\n");
 #endif
-	 inputbuffer = "";
+         inputbuffer = "";
          break;
        }
        inputbuffer = inputbuffer[bufferposition..];
@@ -673,8 +715,15 @@ class Connection {
      fd->set_write_callback(0);
    }
 
-   static void close_cb()
+   static void close_cb(int i_close_the_stream)
    {
+     if(!i_close_the_stream)
+     {
+       string errmsg = "Connexion closed by client ";
+       if(sequence && sizeof(sequence) > 1)
+         errmsg += sequence[-1];
+       log(errmsg);
+     }
      catch (fd->close());
      remove_call_out(handle_timeout);
    }
@@ -695,19 +744,19 @@ class Connection {
      {
        fd->write("421 " + replace(replycodes[421], "<host>", localhost)
 		 + "\r\n");
-       close_cb();
+       close_cb(1);
        return;
      }
      if(!localaddr)
      {
        fd->write("421 " + replace(replycodes[421], "<host>", localhost)
 		 + "\r\n");
-       close_cb();
+       close_cb(1);
        return;
      }
      //log("connection from %s to %s:%d", remoteaddr, localaddr, localport);
      fd->set_nonblocking(read_cb, write_cb, close_cb);
-     call_out(handle_timeout, 300);
+     call_out(handle_timeout, 300, "'First connexion'");
    }
 
 };
