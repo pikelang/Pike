@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.862 2004/12/29 09:11:45 agehall Exp $")
+AC_REVISION("$Id: configure.in,v 1.863 2004/12/29 11:52:56 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1804,7 +1804,7 @@ if test "$cflags_is_set" = "no"; then
     ])
    ;;
    i686)
-    AC_SYS_COMPILER_FLAG(-mpu=i686,mcpu_i686,CFLAGS,[
+    AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,CFLAGS,[
         AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,CFLAGS,[
 	    AC_SYS_COMPILER_FLAG(-mcpu=pentium,mcpu_pentium,CFLAGS,[
 		AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
@@ -7163,9 +7163,13 @@ done
 if test x$with_dynamic_modules = xyes ; then
   dmmsrc="modules/dynamic_module_makefile.in"
   CCSHARED="${CCSHARED} -DDYNAMIC_MODULE"
+  PIKE_LIB="pike.so"
 else
   dmmsrc="modules/static_module_makefile.in"
+  PIKE_LIB="pike.a"
 fi
+
+AC_SUBST(PIKE_LIB)
 
 #############################################################################
 
@@ -7188,6 +7192,8 @@ echo "Shared linker: $LDSHARED"
 echo
 echo "Shared object extension: $SO"
 echo "Dynamic modules: $with_dynamic_modules"
+echo
+echo "PIKE_LIB:      $PIKE_LIB"
 echo
 echo "CPPFLAGS:      $CPPFLAGS"
 echo "CFLAGS:        $CFLAGS"
