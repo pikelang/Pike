@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.160 2003/09/08 15:28:14 mast Exp $
+|| $Id: mapping.c,v 1.161 2003/11/09 01:32:30 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.160 2003/09/08 15:28:14 mast Exp $");
+RCSID("$Id: mapping.c,v 1.161 2003/11/09 01:32:30 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -472,7 +472,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 % md->hashsize;					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & (1 << key->type))			\
+    if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
       {								\
@@ -495,7 +495,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 % md->hashsize;					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & (1 << key->type))			\
+    if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
     {								\
       k2=omd->hash[h2 % omd->hashsize];			        \
       prev= md->hash + h;					\
