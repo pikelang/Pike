@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.196 1998/06/02 19:51:43 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.197 1998/06/04 13:12:17 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1848,10 +1848,17 @@ if test "$ac_cv_header_sys_procfs_h" = "yes"; then
   AC_MSG_CHECKING(getrusage() through procfs)
   AC_CACHE_VAL(pike_cv_getrusage_procfs, [
     AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #include <sys/procfs.h>
 #include <sys/fcntl.h>
 int proc_fd;
 char proc_name[20];
+prusage_t  pru;
+prstatus_t prs;
     ],[
       sprintf(proc_name, "/proc/%05d", getpid());
       proc_fd = open(proc_name, O_RDONLY);
