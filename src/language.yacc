@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.147 1999/12/16 21:02:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.148 1999/12/16 21:28:34 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -621,11 +621,7 @@ close_bracket_or_missing: ']'
 push_compiler_frame0: /* empty */
   {
     push_compiler_frame(0);
-  }
-  ;
 
-def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
-  {
     if(!compiler_frame->previous ||
        !compiler_frame->previous->current_type)
     {
@@ -637,6 +633,9 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
 			 compiler_frame->previous->current_type);
     }
   }
+  ;
+
+def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
   '(' arguments close_paren_or_missing
   {
     int e;
@@ -650,7 +649,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     
     push_finished_type(compiler_frame->current_return_type);
     
-    e=$8-1;
+    e=$7-1;
     if(varargs)
     {
       push_finished_type(compiler_frame->variable[e].type);
@@ -675,7 +674,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
 
     if(compiler_pass==1)
     {
-      $<number>6=define_function(check_node_hash($4)->u.sval.u.string,
+      $<number>5=define_function(check_node_hash($4)->u.sval.u.string,
 				 check_node_hash($<n>$)->u.sval.u.string,
 				 $1,
 				 IDENTIFIER_PIKE_FUNCTION,
@@ -685,12 +684,12 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
   block_or_semi
   {
     int e;
-    if($11)
+    if($10)
     {
       int f;
       node *check_args = NULL;
 
-      for(e=0; e<$8; e++)
+      for(e=0; e<$7; e++)
       {
 	if(!compiler_frame->variable[e].name ||
 	   !compiler_frame->variable[e].name->len)
@@ -723,22 +722,22 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
 
       if (check_args) {
 	/* Prepend the arg checking code. */
-	$11 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $11);
+	$10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
       }
 
-      f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($11),
-		  check_node_hash($<n>10)->u.sval.u.string, $1);
+      f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($10),
+		  check_node_hash($<n>9)->u.sval.u.string, $1);
 #ifdef PIKE_DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
 
-      if(compiler_pass == 1 && f!=$<number>6)
-	fatal("define_function screwed up! %d != %d\n",f,$<number>6);
+      if(compiler_pass == 1 && f!=$<number>5)
+	fatal("define_function screwed up! %d != %d\n",f,$<number>5);
 #endif
     }
     pop_compiler_frame();
     free_node($4);
-    free_node($<n>10);
+    free_node($<n>9);
   }
   | modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     error
