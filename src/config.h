@@ -8,7 +8,7 @@
  * with DEBUG defined debugging becomes much easier.
  */
 
-#undef DEBUG
+/* #define DEBUG */
 
 /*
  * Define the evaluator stack size, used for just about everything.
@@ -30,7 +30,7 @@
 /*
  * Define the size of the shared string hash table.
  */
-#define	HTABLE_SIZE 4711
+#define	HTABLE_SIZE 117
 
 /*
  * Define the size of the cache that is used for method lookup.
@@ -45,8 +45,5 @@
 #ifdef DEBUG
 #define YYDEBUG 1
 #endif
-
-/* Not parently used */
-#define GC_TIME 60
 
 #endif

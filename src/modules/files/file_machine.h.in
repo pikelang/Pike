@@ -1,6 +1,10 @@
 #ifndef FILE_MACHINE_H
 #define FILE_MACHINE_H
 
+
+#undef HAVE_SYS_PROTOSW_H
+#undef HAVE_SYS_STREAM_H
+
 /* Define if you have arpa/inhet.h */
 #undef HAVE_ARPA_INET_H
 

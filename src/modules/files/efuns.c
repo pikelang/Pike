@@ -195,6 +195,9 @@ void f_getcwd(INT32 args)
   pop_n_elems(args);
 
 #ifdef HAVE_GETWD
+#ifndef MAXPATHLEN
+#define MAXPATHLEN (1024*20)
+#endif
   e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
   if(!e)
     fatal("Couldn't fetch current path.\n");
