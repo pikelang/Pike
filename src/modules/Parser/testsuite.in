@@ -897,3 +897,19 @@ test_any([[{
   p->add_tag ("/t", "T");
   return p->finish("</t>")->read();
 }]], "T");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "T");
+  p->add_container ("c", "C");
+  p->add_entity ("e", "E");
+  p->ignore_tags (1);
+  return p->finish("<t &e;><&e;><c>&e;</c><t>")->read();
+}]], "<t E><E><c>E</c><t>");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("t", "T");
+  p->add_container ("c", "C");
+  p->add_entity ("e", "E");
+  p->ignore_tags (1);
+  return p->clone()->finish("<t &e;><&e;><c>&e;</c><t>")->read();
+}]], "<t E><E><c>E</c><t>");
