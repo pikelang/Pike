@@ -344,8 +344,8 @@ static void recurseAppears(Node root, Node current) {
         recurseAppears(root, child);
 }
 
-// Take care of all the @appears and @belongs directives everywhere,
-// and rearrange the nodes in the tree accordingly
+//! Take care of all the @@appears and @@belongs directives everywhere,
+//! and rearrange the nodes in the tree accordingly
 void handleAppears(Node root) {
   tasks = ({ });
   recurseAppears(root, root);
@@ -361,7 +361,7 @@ void handleAppears(Node root) {
     string newName = task->newName;
     Node belongsNode = findNode(root, belongsRef);
     if (!belongsNode) {
-      werror("couldn't find the node: %O\n", belongsRef);
+      werror("Couldn't find the node: %O\n", belongsRef*".");
       continue;
     }
     if (type == "docgroup") {
@@ -464,6 +464,12 @@ static class ScopeStack {
       if (idents[0] == "top::")
         // top:: is an anchor to the root.
         ref = mergeRef(idents[1..]);
+      else if(idents[0] == "predef::") {
+	// Better-than-nothing
+	// FIXME: Should look backwards until it finds a
+	// matching symbol.
+        ref = mergeRef(idents[1..]);
+      }
       else
         ref = mergeRef(idents);
       string firstIdent = idents[0];
