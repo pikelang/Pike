@@ -37,6 +37,8 @@ PIKECLASS CryptContext
 {
   CVAR HCRYPTPROV handle;
 
+  /*! @decl void create(string|int str1, string|int str2, int type, int flags)
+   */
   PIKEFUN void create(string|int str1, string|int str2, int type, int flags)
     flags ID_STATIC;
   {
@@ -55,11 +57,11 @@ PIKECLASS CryptContext
     pop_n_elems(args);
   }
 
-  /*! @decl string CryptGenRandom(int size, string|void init)
+  /*! @decl string read(int size, string|void init)
    *!
-   *! Retreive some random data.
+   *! Retreive some random data. Calls CryptGenRandom in the NT API.
    */
-  PIKEFUN string CryptGenRandom(int size, string|void init)
+  PIKEFUN string read(int size, string|void init)
     optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *res;
