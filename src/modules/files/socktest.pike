@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.16 2001/02/03 03:43:36 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.17 2001/09/06 18:17:15 mast Exp $ */
 
 
 import Stdio;
@@ -21,8 +21,7 @@ class Socket {
 
 //  int id=idnum++;
 
-  object daemon=function_object(backtrace()[-2][2]);
-  int num=daemon->num_running;
+  int num=num_running;
 
   string input_buffer="";
 
@@ -36,7 +35,7 @@ class Socket {
   {
     if(input_finished && output_finished)
     {
-      daemon->finish();
+      finish();
       close();
       destruct(this_object());
     }
@@ -45,7 +44,7 @@ class Socket {
   void close_callback()
   {
     int err=errno();
-    daemon->got_callback();
+    got_callback();
     if(input_buffer != expected_data)
     {
       werror("Failed to read complete data, errno=%d.\n",err);
@@ -72,7 +71,7 @@ class Socket {
 
   void write_callback()
   {
-    daemon->got_callback();
+    got_callback();
     if(strlen(output_buffer))
     {
       int tmp=write(output_buffer);
@@ -93,14 +92,14 @@ class Socket {
 
   void read_callback(mixed id, string foo)
   {
-    daemon->got_callback();
+    got_callback();
     input_buffer+=foo;
   }
 
   void create(object|void o)
   {
-    daemon->got_callback();
-    daemon->start();
+    got_callback();
+    start();
     if(o)
     {
       o->set_id(0);
@@ -117,6 +116,37 @@ class Socket {
     set_nonblocking(read_callback,write_callback,close_callback);
   }
 };
+
+class Socket2
+{
+  inherit Socket;
+
+  void write_callback()
+  {
+    got_callback();
+    if(strlen(output_buffer))
+    {
+      int prerefs = _refs ("%s");
+      int tmp=write(({"%s"}), output_buffer);
+      if (_refs ("%s") != prerefs) {
+	werror ("Format string leak from %d to %d.\n", prerefs, _refs ("%s"));
+	exit (1);
+      }
+      if(tmp >= 0)
+      {
+	output_buffer=output_buffer[tmp..];
+      } else {
+	werror("Failed to write all data.\n");
+	exit(1);
+      }
+    }else{
+      set_write_callback(0);
+      close("w");
+      output_finished++;
+      cleanup();
+    }
+  }
+}
 
 void die()
 {
@@ -337,8 +367,30 @@ void finish()
 	}
 	break;
 
+      case 49: {
+	string data1="foobar" * 20;
+	string data2="fubar" * 20;
+	socks=spair(1);
+	sock1=socks[0];
+	sock2=socks[1];
+	if(!sock2)
+	{
+	  werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
+	  exit(1);
+	}
+	sock1=Socket2(sock1);
+	sock2=Socket2(sock2);
+	  
+	sock1->output_buffer=data1;
+	sock2->expected_data=data1;
+	  
+	sock2->output_buffer=data2;
+	sock1->expected_data=data2;
+	break;
+      }
+
 #if Stdio.__OOB__ >= 3
-    case 49:
+    case 50:
       werror("Testing out-of-band data. ");
       start();
       socks = spair(0);
@@ -349,6 +401,7 @@ void finish()
       socks[1]->set_nonblocking(0,0,0,got_oob1,0);
       break;
 #endif /* __HAVE_OOB__ */
+
     default:
       exit(0);
       break;
