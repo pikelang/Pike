@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.31 2000/06/17 03:16:34 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.32 2000/06/26 13:45:21 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -96,7 +96,9 @@ int debug_fd_stat(char *file, struct stat *buf)
   char fname[MAX_PATH];
   if(file[l-1]=='/' || file[l-1]=='\\')
   {
-    while(l && ( file[l]=='/' || file[l]=='\\' )) l--;
+    do l--;
+    while(l && ( file[l]=='/' || file[l]=='\\' ));
+    l++;
     if(l+1 > sizeof(fname))
     {
       errno=EINVAL;
@@ -119,7 +121,9 @@ FD debug_fd_open(char *file, int open_mode, int create_mode)
   char fname[MAX_PATH];
   if(file[l-1]=='/' || file[l-1]=='\\')
   {
-    while(l && ( file[l]=='/' || file[l]=='\\' )) l--;
+    do l--;
+    while(l && ( file[l]=='/' || file[l]=='\\' ));
+    l++;
     if(l+1 > sizeof(fname))
     {
       errno=EINVAL;
