@@ -110,7 +110,7 @@ static private class Extractor {
         }
         decls = ({ c });
         tokens = tokens[1..];
-        parseClassBody(c);
+        parseClassBody(c, root);
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p ? p->metadata() : 0;
         if (!endmeta || endmeta->type != "end" + meta->type)
