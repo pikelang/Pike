@@ -189,11 +189,16 @@ string make_response_header(mapping m)
    else
       res+=({"Last-Modified: "+http_now});
 
-// FIXME: insert extra headers and cookies here
+   if (m->extra_heads)
+      foreach (m->extra_heads;string name;array|string arr)
+	 foreach (Array.arrayify(arr);;string value)
+	    res+=({String.capitalize(name)+": "+value});
+
+// FIXME: insert cookies here?
 
    if (zero_type(m->size))
       if (m->data)
-	 m->size=m->data;
+	 m->size=strlen(m->data);
       else if (m->stat)
 	 m->size=m->stat->size;
       else 
@@ -243,8 +248,6 @@ void response_and_finish(mapping m)
    send_pos=0;
    my_fd->set_nonblocking(0,send_write,send_close);
 
-   m->file->read(1);
-
    if (m->file)
    {
       send_fd=m->file;
@@ -285,7 +288,7 @@ void send_write()
       finish();
       return;
    }
-   
+
    int n=my_fd->write(send_buf[send_pos..]);
    send_pos+=n;
 }
