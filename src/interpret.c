@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.95 1998/10/16 02:44:36 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.96 1998/10/16 15:29:39 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -190,7 +190,7 @@ void check_stack(INT32 size)
 void check_mark_stack(INT32 size)
 {
   if(mark_sp - mark_stack + size >= stack_size)
-    error("Stack overflow.\n");
+    error("Mark stack overflow.\n");
 }
 
 void check_c_stack(INT32 size)
@@ -198,7 +198,7 @@ void check_c_stack(INT32 size)
   long x=((char *)&size) + STACK_DIRECTION * size - stack_top ;
   x*=STACK_DIRECTION;
   if(x>0)
-    error("Stack overflow.\n");
+    error("C stack overflow.\n");
 }
 
 
@@ -546,7 +546,7 @@ static int eval_instruction(unsigned char *pc)
 	fatal("Stack error (stupid!).\n");
 
       if(recoveries && sp-evaluator_stack < recoveries->sp)
-	fatal("Stack error (underflow)\n");
+	fatal("Stack error (underflow).\n");
       
       if(d_flag > 9) do_debug();
 
@@ -2304,7 +2304,7 @@ void slow_check_stack(void)
   debug_check_stack();
 
   if(sp > &(evaluator_stack[stack_size]))
-    fatal("Stack overflow\n");
+    fatal("Stack overflow.\n");
 
   if(mark_sp > &(mark_stack[stack_size]))
     fatal("Mark stack overflow.\n");
