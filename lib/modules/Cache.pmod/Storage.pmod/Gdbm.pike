@@ -2,7 +2,7 @@
  * A GBM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Gdbm.pike,v 1.10 2004/04/14 20:21:40 nilsson Exp $
+ * $Id: Gdbm.pike,v 1.11 2004/04/17 10:54:43 grubba Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -17,7 +17,7 @@
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 1000
 
-#if constant(Gdbm)
+#if constant(Gdbm.gdbm)
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 int have_dependants=0;
@@ -180,7 +180,7 @@ void create(string path) {
 
 #else
 constant this_program_does_not_exist=1;
-#endif // constant(Gdbm)
+#endif // constant(Gdbm.gdbm)
 
 /**************** thoughts and miscellanea ******************/
 //maybe we should split the database into two databases, one for the data
