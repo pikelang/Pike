@@ -1,5 +1,7 @@
+#! /usr/bin/env pike
+
 /*
- * $Id: make_ci.pike,v 1.9 2003/02/10 12:27:16 mast Exp $
+ * $Id: make_ci.pike,v 1.10 2003/11/19 16:47:46 nilsson Exp $
  *
  * Creates the file case_info.h
  *
@@ -20,11 +22,11 @@ int main(int argc, array(string) argv)
   array(array(int)) ci = ({({ 0, CIM_NONE, 0 })});
   int prevchar = 0;
 
-  if (argc < 2) {
-    werror("Missing argument.\n"
+  if (argc < 2 || argv[1]=="--help" ) {
+    werror("Creates case info file by reading the unicode database from\n"
+	   "stdin and outputs it to a file.\n"
 	   "\n"
-	   "Usage:\n"
-	   "\t%s case_info.h\n", argv[0]);
+	   "Usage: make_ci.pike output_file.h\n");
     exit(1);
   }
 
@@ -110,7 +112,7 @@ int main(int argc, array(string) argv)
   outfile->
     write(sprintf("/*\n"
 		  " * Created by\n"
-		  " * $Id: make_ci.pike,v 1.9 2003/02/10 12:27:16 mast Exp $\n"
+		  " * $Id: make_ci.pike,v 1.10 2003/11/19 16:47:46 nilsson Exp $\n"
 		  " * on %s"
 		  " *\n"
 		  " * Table used for looking up the case of\n"
