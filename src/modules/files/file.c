@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.295 2003/10/15 16:00:37 mast Exp $
+|| $Id: file.c,v 1.296 2003/10/15 16:57:59 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.295 2003/10/15 16:00:37 mast Exp $");
+RCSID("$Id: file.c,v 1.296 2003/10/15 16:57:59 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -751,12 +751,19 @@ static struct pike_string *do_read_oob(int fd,
  *! @decl string read(int len)
  *! @decl string read(int len, int(0..1) not_all)
  *!
- *! Read data from a file or a socket.
+ *! Read data from a file or a stream.
  *!
  *! Attempts to read @[len] bytes from the file, and return it as a
- *! string. Less than @[len] bytes can be returned if end-of-file is
- *! encountered or, in the case it's a socket or pipe, it was closed
- *! from the other end.
+ *! string. Less than @[len] bytes can be returned if
+ *!
+ *! @ul
+ *!   @item
+ *!     end-of-file is encountered for a normal file, or
+ *!   @item
+ *!     it's a socket or pipe that has been closed from the other end, or
+ *!   @item
+ *!     nonblocking mode is used.
+ *! @endul
  *!
  *! If @[not_all] is nonzero, @[read()] will not try its best to read
  *! as many bytes as you have asked for, but will merely return as
@@ -765,15 +772,27 @@ static struct pike_string *do_read_oob(int fd,
  *! a time.
  *!
  *! If something goes wrong and @[not_all] is set, zero will be
- *! returned. If something goes wrong and @[not_all] is not set, then
- *! either zero or a string shorter than @[len] is returned.
+ *! returned. If something goes wrong and @[not_all] is not set,
+ *! either zero or a string shorter than @[len] is returned. If the
+ *! problem persists then a later call to @[read()] will fail and
+ *! return zero, however.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
  *! will return zero. That includes an end due to end-of-file or
  *! remote close.
  *!
  *! If no arguments are given, @[read()] will read to the
- *! end of the file/stream.
+ *! end of the file or stream.
+ *!
+ *! @note
+ *! It's not necessary to set @[not_all] to avoid blocking reading
+ *! when nonblocking mode is used.
+ *!
+ *! @note
+ *! When at the end of a file or stream, repeated calls to @[read()]
+ *! will return the empty string since it's not considered an error.
+ *! The empty string is never returned in other cases, unless
+ *! nonblocking mode is used or @[len] is zero.
  *!
  *! @seealso
  *!   @[read_oob()], @[write()]
@@ -1098,7 +1117,9 @@ DO_DISABLE(write_oob_callback)
  *! -1 is returned if something went wrong and no bytes were written.
  *!
  *! @note
- *!   Writing of wide strings is not supported.
+ *!   Writing of wide strings is not supported. You have to encode the
+ *!   data somehow, e.g. with @[string_to_utf8] or with one of the
+ *!   charsets supported by @[Locale.Charset.encoder].
  *!
  *! @seealso
  *!   @[read()], @[write_oob()]
@@ -1553,11 +1574,17 @@ static void file_grantpt( INT32 args )
  *! If direction is not specified, both the read and the write direction
  *! will be closed. Otherwise only the directions specified will be closed.
  *!
- *! An exception is thrown if an I/O error occurs.
- *!
  *! @returns
  *! Nonzero is returned if the file or stream wasn't open in the
  *! specified direction, zero otherwise.
+ *!
+ *! @throws
+ *! An exception is thrown if an I/O error occurs.
+ *!
+ *! @note
+ *! @[close()] has no effect if this file object has been associated
+ *! with an already opened file, i.e. if @[open()] was given an
+ *! integer as the first argument.
  *!
  *! @seealso
  *!   @[open()], @[open_socket()]
@@ -1595,9 +1622,62 @@ static void file_close(INT32 args)
  *! @decl int open(string filename, string mode, int access)
  *! @decl int open(int fd, string mode)
  *!
- *! Open a file or fd.
+ *! Open a file, or use an existing fd.
  *!
- *! If @[access] is not specified, it will default to @expr{00666@}.
+ *! If @[filename] is given, attempt to open the named file. If @[fd]
+ *! is given instead, it should be the file descriptor for an already
+ *! opened file, which will then be used by this object.
+ *!
+ *! @[mode] describes how the file will be opened. It's a
+ *! case-insensitive string consisting of one or more of the following
+ *! letters:
+ *!
+ *! @dl
+ *!   @item "r"
+ *!     Open for reading.
+ *!   @item "w"
+ *!     Open for writing.
+ *!   @item "a"
+ *!     Append new data to the end.
+ *!   @item "c"
+ *!     Create the file if it doesn't exist already.
+ *!   @item "t"
+ *!     Truncate the file to zero length if it already contains data.
+ *!     Use only together with @expr{"w"@}.
+ *!   @item "x"
+ *!     Open exclusively - the open will fail if the file already
+ *!     exists. Use only together with @expr{"c"@}. Note that it's not
+ *!     safe to assume that this is atomic on some systems.
+ *! @enddl
+ *!
+ *! @[access] specifies the permissions to use if a new file is
+ *! created. It is a UNIX style permission bitfield:
+ *!
+ *! @dl
+ *!   @item 0400
+ *!     User has read permission.
+ *!   @item 0200
+ *!     User has write permission.
+ *!   @item 0100
+ *!     User has execute permission.
+ *!   @item 0040
+ *!     Group has read permission.
+ *!   @item 0020
+ *!     Group has write permission.
+ *!   @item 0010
+ *!     Group has execute permission.
+ *!   @item 0004
+ *!     Others have read permission.
+ *!   @item 0002
+ *!     Others have write permission.
+ *!   @item 0001
+ *!     Others have execute permission.
+ *! @enddl
+ *!
+ *! It's system dependent on which of these bits that are actually
+ *! heeded. If @[access] is not specified, it will default to
+ *! @expr{00666@}, but note that on UNIX systems it's masked with the
+ *! process umask before use.
  *!
  *! @seealso
  *!   @[close()]
