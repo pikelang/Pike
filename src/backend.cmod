@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.111 2004/04/04 11:33:28 grubba Exp $
+|| $Id: backend.cmod,v 1.112 2004/04/04 11:36:28 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.111 2004/04/04 11:33:28 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.112 2004/04/04 11:36:28 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1583,7 +1583,7 @@ PIKECLASS Backend
     set_close_on_exec(me->set, 1);
 
     /* Restore the poll-state for all the fds. */
-    for (fd = 0; fd < me->num_fdboxes; fd++)
+    for (fd = 0; fd < me->num_fd_boxes; fd++)
       if (GET_BOX(me, fd)) UPDATE_BLACK_BOX(me, fd);
   }
 #endif /* CHILD_NEEDS_TO_REOPEN */
