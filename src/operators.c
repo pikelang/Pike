@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.88 2000/04/08 15:29:02 grubba Exp $");
+RCSID("$Id: operators.c,v 1.89 2000/04/12 11:14:50 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -652,12 +652,45 @@ static int call_lfun(int left, int right)
   return 0;
 }
 
+struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+					    struct array *b, INT32 op);
+struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+					      struct array *b, INT32 op);
+
 void o_subtract(void)
 {
   if (sp[-2].type != sp[-1].type && !float_promote())
   {
     if(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
       return;
+
+    if (sp[-2].type==T_MAPPING)
+       switch (sp[-1].type)
+       {
+	  case T_ARRAY:
+	  {
+	     struct mapping *m;
+
+	     m=merge_mapping_array_unordered(sp[-2].u.mapping,
+					     sp[-1].u.array,
+					     PIKE_ARRAY_OP_SUB);
+	     pop_n_elems(2);
+	     push_mapping(m);
+	     return;
+	  }
+	  case T_MULTISET:
+	  {
+	     struct mapping *m;
+
+	     m=merge_mapping_array_ordered(sp[-2].u.mapping,
+					   sp[-1].u.multiset->ind,
+					   PIKE_ARRAY_OP_SUB);
+	     pop_n_elems(2);
+	     push_mapping(m);
+	     return;
+	  }
+       }
+
     bad_arg_error("`-", sp-2, 2, 2, get_name_of_type(sp[-2].type),
 		  sp-1, "Subtract on different types.\n");
   }
@@ -782,44 +815,76 @@ void o_and(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
-    if(call_lfun(LFUN_AND, LFUN_RAND)) {
-      return;
-    } else if (((sp[-1].type == T_TYPE) || (sp[-1].type == T_PROGRAM) ||
-		(sp[-1].type == T_FUNCTION)) &&
-	       ((sp[-2].type == T_TYPE) || (sp[-2].type == T_PROGRAM) ||
-		(sp[-2].type == T_FUNCTION))) {
-      if (sp[-2].type != T_TYPE) {
-	struct program *p = program_from_svalue(sp - 2);
-	if (!p) {
-	  int args = 2;
-	  SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
+     if(call_lfun(LFUN_AND, LFUN_RAND)) 
+	return;
+     else if (((sp[-1].type == T_TYPE) || (sp[-1].type == T_PROGRAM) ||
+	       (sp[-1].type == T_FUNCTION)) &&
+	      ((sp[-2].type == T_TYPE) || (sp[-2].type == T_PROGRAM) ||
+	       (sp[-2].type == T_FUNCTION))) 
+     {
+	if (sp[-2].type != T_TYPE) 
+	{
+	   struct program *p = program_from_svalue(sp - 2);
+	   if (!p) {
+	      int args = 2;
+	      SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
+	   }
+	   type_stack_mark();
+	   push_type_int(p->id);
+	   push_type(0);
+	   push_type(T_OBJECT);
+	   free_svalue(sp - 2);
+	   sp[-2].u.string = pop_unfinished_type();
+	   sp[-2].type = T_TYPE;
 	}
-	type_stack_mark();
-	push_type_int(p->id);
-	push_type(0);
-	push_type(T_OBJECT);
-	free_svalue(sp - 2);
-	sp[-2].u.string = pop_unfinished_type();
-	sp[-2].type = T_TYPE;
-      }
-      if (sp[-1].type != T_TYPE) {
-	struct program *p = program_from_svalue(sp - 1);
-	if (!p) {
-	  int args = 2;
-	  SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
+	if (sp[-1].type != T_TYPE) 
+	{
+	   struct program *p = program_from_svalue(sp - 1);
+	   if (!p) 
+	   {
+	      int args = 2;
+	      SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
+	   }
+	   type_stack_mark();
+	   push_type_int(p->id);
+	   push_type(0);
+	   push_type(T_OBJECT);
+	   free_svalue(sp - 1);
+	   sp[-1].u.string = pop_unfinished_type();
+	   sp[-1].type = T_TYPE;
 	}
-	type_stack_mark();
-	push_type_int(p->id);
-	push_type(0);
-	push_type(T_OBJECT);
-	free_svalue(sp - 1);
-	sp[-1].u.string = pop_unfinished_type();
-	sp[-1].type = T_TYPE;
-      }
-    } else {
-      int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`&", 2, get_name_of_type(sp[-2].type));
-    }
+     } 
+     else if (sp[-2].type==T_MAPPING)
+	switch (sp[-1].type)
+	{
+	   case T_ARRAY:
+	   {
+	      struct mapping *m;
+
+	      m=merge_mapping_array_unordered(sp[-2].u.mapping,
+					      sp[-1].u.array,
+					      PIKE_ARRAY_OP_AND);
+	      pop_n_elems(2);
+	      push_mapping(m);
+	      return;
+	   }
+	   case T_MULTISET:
+	   {
+	      struct mapping *m;
+
+	      m=merge_mapping_array_ordered(sp[-2].u.mapping,
+					    sp[-1].u.multiset->ind,
+					    PIKE_ARRAY_OP_AND);
+	      pop_n_elems(2);
+	      push_mapping(m);
+	      return;
+	   }
+	}
+     else 
+     {
+	int args = 2;
+	SIMPLE_BAD_ARG_ERROR("`&", 2, get_name_of_type(sp[-2].type));
+     }
   }
 
   switch(sp[-2].type)
@@ -2514,27 +2579,59 @@ void init_operators(void)
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
 		 tFuncV(tArr(tSetvar(0,tMix)),tArray,tArr(tVar(0))),
 		 tFuncV(tMap(tSetvar(1,tMix),tSetvar(2,tMix)),
-			tMapping,tMap(tVar(1),tVar(2))),
+			tOr3(tMapping,tArray,tMultiset),
+			tMap(tVar(1),tVar(2))),
 		 tFunc(tSet(tSetvar(3,tMix)) tMultiset,tSet(tVar(3))),
 		 tFuncV(tStr,tStr,tStr)),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
+/*
+
+object & mixed -> mixed
+mixed & object -> mixed
+
+int & int -> int
+array & array -> array
+multiset & multiset -> multiset
+mapping & mapping -> mapping
+string & string -> string
+type|program & type|program -> type|program
+
+mapping & array -> mapping
+array & mapping -> mapping
+mapping & multiset -> mapping
+multiset & mapping -> mapping
+
+ */
+
+
+#define F_AND_TYPE(Z)						\
+	    tOr(tFunc(tSetvar(0,Z),tVar(0)),			\
+		tIfnot(tFunc(Z,tMix),				\
+		       tFuncV(tSetvar(1,Z),tSetvar(2,Z),	\
+			      tOr(tVar(1),tVar(2)))))		
+			     
+
   ADD_EFUN2("`&",f_and,
-	    tOr8(tFunc(tSetvar(0,tMix),tVar(0)),
-		 tOr(tFuncV(tMix tObj,tMix,tMix),
-		     tFuncV(tObj tMix,tMix,tMix)),
-		 tFuncV(tInt tInt,tInt,tInt),
-		 tOr(tFunc(tMapping tSetvar(1,tMapping),tVar(1)),
-		     tFuncV(tMapping tMapping tSetvar(2,tMapping),
-			    tSetvar(3,tMapping),tOr(tVar(2),tVar(3)))),
-		 tOr(tFunc(tMultiset tSetvar(4,tMultiset),tVar(4)),
-		     tFuncV(tMultiset tMultiset tSetvar(5,tMultiset),
-			    tSetvar(6,tMultiset),tOr(tVar(5),tVar(6)))),
-		 tOr(tFunc(tArray tSetvar(7,tArray),tVar(7)),
-		     tFuncV(tArray tArray tSetvar(8,tArray),
-			    tSetvar(9,tArray),tOr(tVar(8),tVar(9)))),
-		 tFuncV(tString tString,tString,tString),
-		 tFuncV(tOr(tType,tPrg) tOr(tType,tPrg),tOr(tType,tPrg),tType)),
+	    tOr4(
+	       tFunc(tSetvar(0,tMix),tVar(0)),
+
+	       tOr(tFuncV(tMix tObj,tMix,tMix),
+		   tFuncV(tObj tMix,tMix,tMix)),
+	       
+	       tOr6( F_AND_TYPE(tInt),
+		     F_AND_TYPE(tArray),
+		     F_AND_TYPE(tMapping),
+		     F_AND_TYPE(tMultiset),
+		     F_AND_TYPE(tString),
+		     F_AND_TYPE(tOr(tType,tPrg)) ),
+
+	       tIfnot(tFuncV(tNone,tOr(tArray,tMultiset),tMix),
+		      tFuncV(tNone,
+			     tOr3(tArray,tMultiset,tSetvar(4,tMapping)),
+			     tVar(4)) )
+	       ),
+	       
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
 #define LOG_TYPE								\
