@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.40 2004/10/19 16:59:56 mast Exp $
+|| $Id: backend.cmod,v 1.41 2005/01/27 16:49:31 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.40 2004/10/19 16:59:56 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.41 2005/01/27 16:49:31 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1022,8 +1022,7 @@ PIKECLASS Backend
 	SET_ONERROR (uwp, low_backend_cleanup, me);
 
 	if (timeout->tv_sec < 0) {
-	  next_timeout.tv_sec = 100000000;
-	  next_timeout.tv_usec = 999999;
+	  next_timeout.tv_sec = -1;
 	}
 	else {
 	  next_timeout.tv_sec = timeout->tv_sec;
@@ -1033,7 +1032,8 @@ PIKECLASS Backend
 
 	/* Call outs */
 	if(me->num_pending_calls)
-	  if(my_timercmp(& CALL(0)->tv, < , &next_timeout))
+	  if(next_timeout.tv_sec < 0 ||
+	     my_timercmp(& CALL(0)->tv, < , &next_timeout))
 	    next_timeout = CALL(0)->tv;
 
 #ifdef PIKE_DEBUG
@@ -1041,13 +1041,20 @@ PIKECLASS Backend
 #endif
 	call_callback(& me->backend_callbacks, NULL);
 #ifdef PIKE_DEBUG
-	if (my_timercmp (&max_timeout, <, &next_timeout))
+	if (max_timeout.tv_sec >= 0 &&
+	    (next_timeout.tv_sec < 0 ||
+	     my_timercmp (&max_timeout, <, &next_timeout)))
 	  Pike_fatal ("Timeout raised from %ld.%ld to %ld.%ld by a backend callback.\n",
 		      max_timeout.tv_sec, max_timeout.tv_usec,
 		      next_timeout.tv_sec, next_timeout.tv_usec);
 #endif
 
-	if(my_timercmp(&next_timeout, > , &current_time))
+	if (next_timeout.tv_sec < 0) {
+	  /* Wait "forever". */
+	  next_timeout.tv_sec = 100000000;
+	  next_timeout.tv_usec = 0;
+	}
+	else if(my_timercmp(&next_timeout, > , &current_time))
 	{
 	  my_subtract_timeval(&next_timeout, &current_time);
 	}else{
