@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.22 2004/04/04 19:00:57 mast Exp $
+|| $Id: backend.h,v 1.23 2004/04/04 19:58:34 mast Exp $
 */
 
 #ifndef BACKEND_H
@@ -23,9 +23,11 @@ PMOD_EXPORT extern int fds_size;
 PMOD_EXPORT extern struct program *Backend_program;
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
+#if 1
 struct Backend_struct *get_backend_for_fd(int fd);
 PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd);
 PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new);
+#endif
 
 PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b);
 PMOD_EXPORT void wake_up_backend(void);
@@ -50,7 +52,7 @@ typedef int (*fd_box_callback) (struct fd_callback_box *box, int event);
 struct fd_callback_box
 {
   struct Backend_struct *backend; /* Not refcounted. Cleared when the backend
-				   * is destructed. */
+				   * is destructed or the box is unhooked. */
   struct object *ref_obj;	/* If set, it's the object containing the box.
 				 * It then acts as the ref from the backend to
 				 * the object and is refcounted by the backend
@@ -90,6 +92,8 @@ struct fd_callback_box
 #define PIKE_BIT_FD_READ_OOB	(1 << PIKE_FD_READ_OOB)
 #define PIKE_BIT_FD_WRITE_OOB	(1 << PIKE_FD_WRITE_OOB)
 
+/* Note: If ref_obj is used, both unhook_fd_callback_box and
+ * set_fd_callback_events might free the object containing the box. */
 PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events);
@@ -100,6 +104,7 @@ PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
 /* Old style callback interface. This only accesses the default backend. It
  * can't be mixed with the new style interface above for the same fd. */
 
+#if 1
 typedef int (*file_callback)(int,void *);
 
 PMOD_EXPORT void set_read_callback(int fd,file_callback cb,void *data);
@@ -114,6 +119,7 @@ PMOD_EXPORT void *query_read_callback_data(int fd);
 PMOD_EXPORT void *query_write_callback_data(int fd);
 PMOD_EXPORT void *query_read_oob_callback_data(int fd);
 PMOD_EXPORT void *query_write_oob_callback_data(int fd);
+#endif
 
 #define add_backend_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_backend_callback((X),(Y),(Z)))

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.118 2004/04/04 19:00:57 mast Exp $
+|| $Id: backend.cmod,v 1.119 2004/04/04 19:58:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.118 2004/04/04 19:00:57 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.119 2004/04/04 19:58:34 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1750,12 +1750,16 @@ PIKECLASS Backend
 
   PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box)
   {
+    /* Accept an unhooked box; can happen when we're called from an
+     * object exit hook due to being freed by free_object below. */
+    if (!box->backend) return;
     check_box (box, INT_MAX);
     IF_PD(fprintf(stderr, "BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
 		  box->backend->id, box->fd, box->ref_obj));
     if (box->fd >= 0) update_fd_set (box->backend, box->fd, box->events, 0);
     remove_fd_box (box);
-    if (box->ref_obj)
+    box->backend = NULL;
+    if (box->ref_obj && box->events)
       /* No use zeroing box->ref_obj if it's freed here; we assume
        * it's inside its own storage, so it's valid for as long as it
        * can be read. */
@@ -1802,7 +1806,6 @@ PIKECLASS Backend
     }
   }
 
-  /* Conceivably only used to make a box active or inactive. */
   PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd)
   {
     int old_fd = box->fd;
@@ -2971,7 +2974,6 @@ PIKECLASS Backend
       if (me->fd_boxes) {
 	FOR_EACH_ACTIVE_FD_BOX (me, box, {
 	    check_box (box, INT_MAX);
-	    box->backend = NULL;
 
 #ifdef PIKE_DEBUG
 	    if (get_backend_for_fd (box->fd) != me)
@@ -2989,7 +2991,11 @@ PIKECLASS Backend
 	      really_free_compat_cb_box ((struct compat_cb_box *) box);
 	    }
 
-	    if (box->ref_obj) free_object (box->ref_obj);
+	    if (box->backend) {
+	      box->backend = NULL;
+	      if (box->ref_obj && box->events)
+		free_object (box->ref_obj);
+	    }
 	  });
 
 	free(me->fd_boxes);
@@ -3388,7 +3394,6 @@ void init_backend(void)
     struct object *o=clone_object(Backend_program,0);
     default_backend=OBJ2_BACKEND(o);
     add_object_constant("__backend",o,0);
-    free_object(o);
   }
 #ifdef CHILD_NEEDS_TO_REOPEN
   /* /dev/poll and kqueue fds get invalidated at fork. */
@@ -3397,15 +3402,18 @@ void init_backend(void)
 #endif
 }
 
+#ifdef DO_PIKE_CLEANUP
 void exit_backend()
 {
+  free_object (default_backend->backend_obj);
+  default_backend = 0;
   EXIT;
 }
 
-/* Note: This is called when the last backend object is freed. */
+/* Note: This is called when the last backend object, which might be
+ * after exit_backend if there's garbage. */
 static void backend_cleanup()
 {
-  default_backend=0;
   free_all_call_out_s_blocks();
   free_all_compat_cb_box_blocks();
   if(fd_map)
@@ -3418,3 +3426,4 @@ static void backend_cleanup()
   cleanup_close_on_exec();
 #endif /* HAVE_BROKEN_F_SETFD */
 }
+#endif
