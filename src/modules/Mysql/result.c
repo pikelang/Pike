@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.18 2000/12/05 21:08:29 per Exp $
+ * $Id: result.c,v 1.19 2001/09/06 13:12:27 grubba Exp $
  *
  * mysql query result
  *
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.18 2000/12/05 21:08:29 per Exp $");
+RCSID("$Id: result.c,v 1.19 2001/09/06 13:12:27 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -217,52 +217,107 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
   }
 }
 
+/*! @module Mysql
+ */
+
+/*! @class mysql_result
+ *!
+ *! Objects of this class contain the result from Mysql queries.
+ *!
+ *! @seealso
+ *!   @[Mysql.mysql], @[Mysql.mysql->big_query()]
+ */
+
 /*
  * Methods
  */
 
-/* void create(object(mysql)) */
+/*! @decl void create(Mysql.mysql connection)
+ *!
+ *! Make a new @[Mysql.mysql_result] object.
+ *!
+ *! @seealso
+ *!   @[Mysql.mysql->big_query()], @[Mysql.mysql->list_dbs()],
+ *!   @[Mysql.mysql->list_tables()], @[Mysql.mysql->list_processes()],
+ *!   @[Mysql.mysql]
+ */
 static void f_create(INT32 args)
 {
-  struct precompiled_mysql *mysql;
-
   if (!args) {
     Pike_error("Too few arguments to mysql_result()\n");
   }
-  if ((sp[-args].type != T_OBJECT) ||
-      (!(mysql = (struct precompiled_mysql *)get_storage(sp[-args].u.object,
-							 mysql_program)))) {
+  if (sp[-args].type != T_OBJECT) {
     Pike_error("Bad argument 1 to mysql_result()\n");
   }
 
+  if (PIKE_MYSQL_RES->result) {
+    mysql_free_result(PIKE_MYSQL_RES->result);
+  }
+
+  PIKE_MYSQL_RES->result = NULL;
+
+  if (PIKE_MYSQL_RES->connection) {
+    free_object(PIKE_MYSQL_RES->connection);
+  }
+
   add_ref(PIKE_MYSQL_RES->connection = sp[-args].u.object);
-  PIKE_MYSQL_RES->result = mysql->last_result;
-  mysql->last_result = NULL;
   
   pop_n_elems(args);
-
-  if (!PIKE_MYSQL_RES->result) {
-    Pike_error("mysql_result(): No result to clone\n");
-  }
 }
 
-/* int num_rows() */
+/*! @decl int num_rows()
+ *!
+ *! Number of rows in the result.
+ *!
+ *! @seealso
+ *!   @[num_fields()]
+ */
 static void f_num_rows(INT32 args)
 {
   pop_n_elems(args);
-  push_int(mysql_num_rows(PIKE_MYSQL_RES->result));
+  if (PIKE_MYSQL_RES->result) {
+    push_int(mysql_num_rows(PIKE_MYSQL_RES->result));
+  } else {
+    push_int(0);
+  }
 }
 
-/* int num_fields() */
+/*! @decl int num_fields()
+ *!
+ *! Number of fields in the result.
+ *!
+ *! @seealso
+ *!   @[mun_rows()]
+ */
 static void f_num_fields(INT32 args)
 {
   pop_n_elems(args);
-  push_int(mysql_num_fields(PIKE_MYSQL_RES->result));
+  if (PIKE_MYSQL_RES->result) {
+    push_int(mysql_num_fields(PIKE_MYSQL_RES->result));
+  } else {
+    push_int(0);
+  }
 }
 
 #ifdef SUPPORT_FIELD_SEEK
 
-/* void field_seek(int fieldno) */
+/*! @decl void field_seek(int field_no)
+ *!
+ *! Skip to specified field.
+ *!
+ *! Places the field cursor at the specified position. This affects
+ *! which field mysql_result->fetch_field() will return next.
+ *!
+ *! Fields are numbered starting with 0.
+ *!
+ *! @note
+ *!   This function is usually not enabled. To enable it
+ *!   @tt{SUPPORT_FIELD_SEEK@} must be defined when compiling
+ *!   the mysql-module.
+ *!
+ *! @seealso
+ *!   @[fetch_field()], @[fetch_fields()]
+ */
 static void f_field_seek(INT32 args)
 {
   if (!args) {
@@ -271,28 +326,68 @@ static void f_field_seek(INT32 args)
   if (sp[-args].type != T_INT) {
     Pike_error("Bad argument 1 to mysql->field_seek()\n");
   }
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't seek in uninitialized result object.\n");
+  }
   mysql_field_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
   pop_n_elems(args);
 }
 
 #endif /* SUPPORT_FIELD_SEEK */
 
-/* int eof() */
+/*! @decl int(0..1) eof()
+ *!
+ *! Sense end of result table.
+ *!
+ *! Returns @tt{1@} when all rows have been read, and @tt{0@} (zero)
+ *! otherwise.
+ *!
+ *! @seealso
+ *!   @[fetch_row()]
+ */
 static void f_eof(INT32 args)
 {
   pop_n_elems(args);
-  push_int(mysql_eof(PIKE_MYSQL_RES->result));
+  if (PIKE_MYSQL_RES->result) {
+    push_int(mysql_eof(PIKE_MYSQL_RES->result));
+  } else {
+    push_int(0);
+  }
 }
 
 #ifdef SUPPORT_FIELD_SEEK
 
-/* int|mapping(string:mixed) fetch_field() */
+/*! @decl int|mapping(string:mixed) fetch_field()
+ *!
+ *! Return specification of the current field.
+ *!
+ *! Returns a mapping with information about the current field, and
+ *! advances the field cursor one step. Returns @tt{0@} (zero) if
+ *! there are no more fields.
+ *! 
+ *! The mapping contains the same entries as those returned by
+ *! @[Mysql.mysql->list_fields()], except that the entry @tt{"default"@}
+ *! is missing.
+ *!
+ *! @note
+ *!   This function is usually not enabled. To enable it
+ *!   @tt{SUPPORT_FIELD_SEEK@} must be defined when compiling
+ *!   the mysql-module.
+ *!
+ *! @seealso
+ *!   @[fetch_fields()], @[field_seek()], @[Mysql.mysql->list_fields()]
+ */
 static void f_fetch_field(INT32 args)
 {
   MYSQL_FIELD *field;
   MYSQL_RES *res = PIKE_MYSQL_RES->result;
 
   pop_n_elems(args);
+
+  if (!res) {
+    push_int(0);
+    return;
+  }
 
   THREADS_ALLOW();
 
@@ -305,12 +400,35 @@ static void f_fetch_field(INT32 args)
 
 #endif /* SUPPORT_FIELD_SEEK */
 
-/* array(int|mapping(string:mixed)) fetch_fields() */
+/*! @decl array(int|mapping(string:mixed)) fetch_fields()
+ *!
+ *! Get specification of all remaining fields.
+ *!
+ *! Returns an array with one mapping for every remaining field in the
+ *! result table.
+ *! 
+ *! The returned data is similar to the data returned by
+ *! @[Mysql.mysql->list_fields()], except for that the entry
+ *! @tt{"default"@} is missing.
+ *!
+ *! @note
+ *!   Resets the field cursor to @tt{0@} (zero).
+ *!
+ *!   This function always exists even when @[fetch_field()] and
+ *!   @[field_seek()] don't.
+ *!
+ *! @seealso
+ *!   @[fetch_field()], @[field_seek()], @[Mysql.mysql->list_fields()]
+ */
 static void f_fetch_fields(INT32 args)
 {
   MYSQL_FIELD *field;
   int i = 0;
-  
+
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't fetch fields from uninitialized result object.\n");
+  }
+
   pop_n_elems(args);
 
   while ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
@@ -322,7 +440,16 @@ static void f_fetch_fields(INT32 args)
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
-/* void seek(int row) */
+/*! @decl void seek(int rows)
+ *!
+ *! Skip ahead @[rows] rows.
+ *!
+ *! @note
+ *!   Can only seek forward.
+ *!
+ *! @seealso
+ *!   @[fetch_row()]
+ */
 static void f_seek(INT32 args)
 {
   if (!args) {
@@ -334,19 +461,43 @@ static void f_seek(INT32 args)
   if (sp[-args].u.integer < 0) {
     Pike_error("Negative argument 1 to mysql_result->seek()\n");
   }
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't seek in uninitialized result object.\n");
+  }
+
   mysql_data_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
 
   pop_n_elems(args);
 }
 
-/* int|array(string|float|int) fetch_row() */
+/*! @decl int|array(string) fetch_row()
+ *!
+ *! Fetch the next row from the result.
+ *!
+ *! Returns an array with the contents of the next row in the result.
+ *! Advances the row cursor to the next now.
+ *!
+ *! Returns @tt{0@} (zero) at the end of the table.
+ *!
+ *! @seealso
+ *!   @[seek()]
+ */
 static void f_fetch_row(INT32 args)
 {
-  int num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
-  MYSQL_ROW row = mysql_fetch_row(PIKE_MYSQL_RES->result);
+  int num_fields;
+  MYSQL_ROW row;
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
-  FETCH_LENGTHS_TYPE *row_lengths =
-    mysql_fetch_lengths(PIKE_MYSQL_RES->result);
+  FETCH_LENGTHS_TYPE *row_lengths;
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't fetch data from an uninitialized result object.\n");
+  }
+
+  num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
+  row = mysql_fetch_row(PIKE_MYSQL_RES->result);
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  row_lengths = mysql_fetch_lengths(PIKE_MYSQL_RES->result);
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 
   pop_n_elems(args);
@@ -411,6 +562,12 @@ static void f_fetch_row(INT32 args)
 
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
