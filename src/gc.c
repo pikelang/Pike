@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.252 2004/04/17 23:35:53 mast Exp $
+|| $Id: gc.c,v 1.253 2004/04/18 02:16:05 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.252 2004/04/17 23:35:53 mast Exp $");
+RCSID("$Id: gc.c,v 1.253 2004/04/18 02:16:05 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -321,10 +321,11 @@ int attempt_to_identify(void *something, void **inblock)
   if(safe_debug_findstring((struct pike_string *)something))
     return T_STRING;
 
-  for (i = 0; i < pike_type_hash_size; i++)
-    for (t = pike_type_hash[i]; t; t = t->next)
-      if (t == (struct pike_type *) something)
-	return T_TYPE;
+  if (pike_type_hash)
+    for (i = 0; i < pike_type_hash_size; i++)
+      for (t = pike_type_hash[i]; t; t = t->next)
+	if (t == (struct pike_type *) something)
+	  return T_TYPE;
 
   for (c = first_callable; c; c = c->next)
     if (c == (struct callable *) something)
@@ -1528,14 +1529,28 @@ static void cleanup_markers (void)
 {
 #ifdef DO_PIKE_CLEANUP
   size_t e=0;
-  struct marker *h;
+
+  if (gc_keep_markers) {
+    /* Carry over any GC_CLEANUP_FREED flags but reinitialize them
+     * otherwise. */
+    for(e=0;e<marker_hash_table_size;e++) {
+      struct marker *m;
+      for (m = marker_hash_table[e]; m; m = m->next) {
+	m->flags &= GC_CLEANUP_FREED;
+	m->refs = m->weak_refs = m->xrefs = 0;
+	m->saved_refs = -1;
+	m->frame = 0;
+      }
+    }
+    return;
+  }
+
   for(e=0;e<marker_hash_table_size;e++)
     while(marker_hash_table[e])
       remove_marker(marker_hash_table[e]->data);
 #endif
   exit_marker_hash();
 }
-
 
 static void init_gc(void)
 {
@@ -1544,16 +1559,16 @@ static void init_gc(void)
     /* The marker hash table is left around after a previous gc if
      * gc_keep_markers is set. */
     if (marker_hash_table) cleanup_markers();
+    if (!marker_hash_table)
 #endif
-
-    low_init_marker_hash(num_objects);
+      low_init_marker_hash(num_objects);
     get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
 #ifdef PIKE_DEBUG
   }
 #endif
 }
 
-static void exit_gc(void)
+void exit_gc(void)
 {
   if (gc_evaluator_callback) {
     remove_callback(gc_evaluator_callback);
@@ -1763,6 +1778,16 @@ int gc_mark_external (void *a, const char *place)
     gc_fatal(a, 1, "Ref counts are wrong.\n");
   return 0;
 }
+
+#ifdef DO_PIKE_CLEANUP
+void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
+{
+  struct marker *m = find_marker (a);
+  if (m && (m->flags & GC_CLEANUP_FREED))
+    fprintf (stderr, "Free of leaked %s %p from %s:%d, %d refs remaining\n",
+	     get_name_of_type (type), a, file, line, *(INT32 *)a - 1);
+}
+#endif
 
 void debug_really_free_gc_frame(struct gc_frame *l)
 {

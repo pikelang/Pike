@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.58 2004/03/17 15:27:26 grubba Exp $
+|| $Id: array.h,v 1.59 2004/04/18 02:16:05 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -68,7 +68,16 @@ extern struct array *gc_internal_array;
 #define PIKE_ARRAY_OP_SUB PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_SKIP_A ,PIKE_ARRAY_OP_SKIP_B)
 
 
-#define free_array(V) do{ struct array *v_=(V); debug_malloc_touch(v_); if(!sub_ref(v_)) really_free_array(v_); }while(0)
+#define free_array(V) do{						\
+    struct array *v_=(V);						\
+    debug_malloc_touch(v_);						\
+    DO_IF_PIKE_CLEANUP (						\
+      if (gc_external_refs_zapped)					\
+	gc_check_zapped (v_, PIKE_T_ARRAY, __FILE__, __LINE__);		\
+    );									\
+    if(!sub_ref(v_))							\
+      really_free_array(v_);						\
+  }while(0)
 
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))

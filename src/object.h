@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.81 2004/03/15 22:47:15 mast Exp $
+|| $Id: object.h,v 1.82 2004/04/18 02:16:06 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -38,7 +38,17 @@ extern struct program *magic_set_index_program;
 extern struct program *magic_indices_program;
 extern struct program *magic_values_program;
 
-#define free_object(O) do{ struct object *o_=(O); debug_malloc_touch(o_); debug_malloc_touch(o_->storage); if(!sub_ref(o_)) schedule_really_free_object(o_); }while(0)
+#define free_object(O) do{						\
+    struct object *o_=(O);						\
+    debug_malloc_touch(o_);						\
+    debug_malloc_touch(o_->storage);					\
+    DO_IF_PIKE_CLEANUP (						\
+      if (gc_external_refs_zapped)					\
+	gc_check_zapped (o_, PIKE_T_OBJECT, __FILE__, __LINE__);	\
+    );									\
+    if(!sub_ref(o_))							\
+      schedule_really_free_object(o_);					\
+  }while(0)
 
 #ifdef DEBUG_MALLOC
 #define PIKE_OBJ_STORAGE(O) ((char *)debug_malloc_pass( (O)->storage ))
