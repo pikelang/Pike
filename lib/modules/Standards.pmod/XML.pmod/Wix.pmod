@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.10 2004/11/08 12:42:11 grubba Exp $
+// $Id: Wix.pmod,v 1.11 2004/11/23 14:52:52 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -207,6 +207,52 @@ class Directory
     }
   }
 
+  class Shortcut
+  {
+    string id;
+    string name;
+    string short_name;
+    string show = "normal";
+    string description;
+    string directory;
+    string working_dir;
+    string target;
+    string arguments;
+
+    static void create(string name, string directory, string id,
+		       string|void target, string|void arguments,
+		       string|void working_dir)
+    {
+      Shortcut::name = name;
+      Shortcut::directory = directory;
+      Shortcut::id = id;
+      Shortcut::target = target;
+      Shortcut::arguments = arguments;
+      Shortcut::working_dir = working_dir;
+    }
+
+    WixNode gen_xml()
+    {
+      mapping(string:string) attrs = ([
+	"Id":id,
+	"Name":gen_8dot3(name),
+	"LongName":name,
+	"Directory":directory,
+	"Show":show,
+      ]);
+      if (target) {
+	attrs->Target = replace(target, "/", "\\");
+      }
+      if (arguments) {
+	attrs->Arguments = arguments;
+      }
+      if (working_dir) {
+	attrs->WorkingDirectory = replace(working_dir, "/", "\\");
+      }
+      return WixNode("Shortcut", attrs);
+    }
+  }
+
   Directory low_add_path(array(string) path, string|void dir_id)
   {
     Directory d = this_object();
@@ -235,6 +281,19 @@ class Directory
     if (has_suffix(src, "/"+dest)) {
       sub_sources[combine_path(src, "..")]++;
     }
+  }
+
+  void low_add_shortcut(string dest, string directory, string|void id,
+			string|void target, string|void arguments,
+			string|void working_dir)
+  {
+    if (!id) {
+      id = "_" +
+	Standards.UUID.make_version3(dest, guid->encode())->str() -
+	"-";
+    }
+    other_entries[directory + "\\" + dest] =
+      Shortcut(dest, directory, id, target, arguments, working_dir);
   }
 
   void merge_module(string dest, string module, string id,
