@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.4 1997/04/18 20:05:58 nisse Exp $
+ * $Id: md5.c,v 1.5 1997/08/26 08:19:16 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -7,7 +7,7 @@
  *
  * Henrik Grubbström 1996-10-24
  *
- * SSL dependencies purged, 1997-0227. /Niels Möller
+ * SSL dependencies purged, 1997-02-27. /Niels Möller
  */
 
 
@@ -61,6 +61,13 @@ static void f_update(INT32 args)
   push_object(this_object());
 }
 
+static void f_identifier(INT32 args)
+{
+  pop_n_elems(args);
+  push_string(make_shared_binary_string(
+    "\x2a\x86\x48\x86\xf7\x0d\x02\x05", 8));
+}
+
 static void f_digest(INT32 args)
 {
   struct pike_string *s;
@@ -87,5 +94,6 @@ void MOD_INIT(md5)(void)
   add_function("create", f_create, "function(void|object:void)", 0);
   add_function("update", f_update, "function(string:object)", 0);
   add_function("digest", f_digest, "function(void:string)", 0);
+  add_function("identifier", f_identifier, "function(void:string)", 0);
   end_class(MODULE_PREFIX "md5", 0);
 }

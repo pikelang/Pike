@@ -14,5 +14,8 @@ string pad(void);		/* Perform the needed padding */
 string unpad(string);		/* Unpad the string */
 string name(void);		/* Name of the algorithm */
 
+string asn1_identifier(void);   /* ASN.1 object identifier, if
+				 * one is assigned. */
+
 The padding method follows SSL, appending n random bytes,
 followed by n itself, where 0 <= n < block_size .
