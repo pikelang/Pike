@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.6 1998/03/03 10:51:37 mast Exp $
+ * $Id: passwords.c,v 1.7 1998/03/26 14:31:02 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -15,7 +15,7 @@
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.6 1998/03/03 10:51:37 mast Exp $");
+RCSID("$Id: passwords.c,v 1.7 1998/03/26 14:31:02 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -59,7 +59,10 @@ static void push_pwent(struct passwd *ent)
   if(!strcmp(ent->pw_passwd, "x"))
   {
     struct spwd *foo;
-    if((foo = getspnam(ent->pw_name)))
+    THREADS_ALLOW_UID();
+    foo = getspnam(ent->pw_name);
+    THREADS_DISALLOW_UID();
+    if(foo)
       push_text(foo->sp_pwdp);
     else
       push_text("x");
@@ -103,7 +106,9 @@ void f_getgrgid(INT32 args)
   int gid;
   struct group *foo;
   get_all_args("getgrgid", args, "%d", &gid);
+  THREADS_ALLOW_UID();
   foo = getgrgid( gid );
+  THREADS_DISALLOW_UID();
   pop_n_elems( args );
   push_grent( foo );
 }
@@ -116,7 +121,9 @@ void f_getgrnam(INT32 args)
   char *str;
   struct group *foo;
   get_all_args("getgrnam", args, "%s", &str);
+  THREADS_ALLOW_UID();
   foo = getgrnam( str );
+  THREADS_DISALLOW_UID();
   pop_n_elems( args );
   push_grent( foo );
 }
@@ -131,7 +138,9 @@ void f_getpwnam(INT32 args)
 
   get_all_args("getpwnam", args, "%s", &str);
 
+  THREADS_ALLOW_UID();
   foo = getpwnam(str);
+  THREADS_DISALLOW_UID();
 
   pop_n_elems(args);
   push_pwent(foo);
@@ -147,7 +156,9 @@ void f_getpwuid(INT32 args)
   
   get_all_args("getpwuid", args, "%i", &uid);
 
+  THREADS_ALLOW_UID();
   foo = getpwuid(uid);
+  THREADS_DISALLOW_UID();
 
   pop_n_elems(args);
   push_pwent(foo);
@@ -158,7 +169,9 @@ void f_getpwuid(INT32 args)
 /* int setpwent() */
 void f_setpwent(INT32 args)
 {
+  THREADS_ALLOW();
   setpwent();
+  THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
 }
@@ -168,7 +181,9 @@ void f_setpwent(INT32 args)
 /* int endpwent() */
 void f_endpwent(INT32 args)
 {
+  THREADS_ALLOW();
   endpwent();
+  THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
 }
@@ -180,7 +195,9 @@ void f_getpwent(INT32 args)
 {
   struct passwd *foo;
   pop_n_elems(args);
+  THREADS_ALLOW_UID();
   foo = getpwent();
+  THREADS_DISALLOW_UID();
   if(!foo)
   {
     push_int(0);
@@ -194,7 +211,9 @@ void f_getpwent(INT32 args)
 /* int setgrent() */
 void f_setgrent(INT32 args)
 {
+  THREADS_ALLOW();
   setgrent();
+  THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
 }
@@ -204,7 +223,9 @@ void f_setgrent(INT32 args)
 /* int endgrent() */
 void f_endgrent(INT32 args)
 {
+  THREADS_ALLOW();
   endgrent();
+  THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
 }
@@ -216,7 +237,9 @@ void f_getgrent(INT32 args)
 {
   struct group *foo;
   pop_n_elems(args);
+  THREADS_ALLOW_UID();
   foo = getgrent();
+  THREADS_DISALLOW_UID();
   if(!foo)
   {
     push_int(0);

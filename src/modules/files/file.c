@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.82 1998/03/26 03:12:39 hubbe Exp $");
+RCSID("$Id: file.c,v 1.83 1998/03/26 14:31:01 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -882,11 +882,11 @@ static void file_open(INT32 args)
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     error("Must open file for at least one of read and write.\n");
 
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   do {
     fd=fd_open(str->str,map(flags), access);
   } while(fd < 0 && errno == EINTR);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
 
   if(!fp->current_object->prog)
     error("Object destructed in file->open()\n");

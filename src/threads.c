@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.64 1998/03/26 05:48:24 per Exp $");
+RCSID("$Id: threads.c,v 1.65 1998/03/26 14:30:59 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -15,6 +15,10 @@ int threads_disabled = 0;
 #include "program.h"
 #include "gc.h"
 #include "main.h"
+
+int live_threads = 0;
+COND_T live_threads_change;
+COND_T threads_disabled_change;
 
 #ifdef __NT__
 
@@ -155,11 +159,18 @@ struct thread_starter
 void exit_threads_disable(struct object *o)
 {
   if(threads_disabled) threads_disabled--;
+  co_broadcast(&threads_disabled_change);
 }
 
 void init_threads_disable(struct object *o)
 {
   threads_disabled++;
+  while (live_threads) {
+    THREADS_FPRINTF((stderr,
+		     "_disable_threads(): Waiting for %d threads to finish\n",
+		     live_threads));
+    co_wait(&live_threads_change, &interpreter_lock);
+  }
 }
 
 /* Thread hashtable */
@@ -723,6 +734,8 @@ void th_init(void)
   mt_init( & interpreter_lock);
   mt_lock( & interpreter_lock);
   mt_init( & thread_table_lock);
+  co_init( & live_threads_change);
+  co_init( & threads_disabled_change);
   thread_table_init();
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);

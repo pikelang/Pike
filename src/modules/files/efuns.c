@@ -60,11 +60,13 @@
 # endif
 #endif
 
+#include "dmalloc.h"
+
 #ifdef HAVE_PROCESS_H
 #include <process.h>
 #endif
 
-#include "dmalloc.h"
+/* #define DEBUG_FILE */
 
 struct array *encode_stat(struct stat *s)
 {
@@ -78,7 +80,12 @@ struct array *encode_stat(struct stat *s)
 #ifdef S_IFLNK
   case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
 #endif
-  default: ITEM(a)[1].u.integer=-4; break;
+  default:
+#ifdef DEBUG_FILE
+    fprintf(stderr, "encode_stat(): mode:%ld\n", (long)S_IFMT & s->st_mode);
+#endif /* DEBUG_FILE */
+    ITEM(a)[1].u.integer=-4;
+    break;
   }
   ITEM(a)[2].u.integer=s->st_atime;
   ITEM(a)[3].u.integer=s->st_mtime;
@@ -102,7 +109,7 @@ void f_file_stat(INT32 args)
 
   s = sp[-args].u.string->str;
   l = (args>1 && !IS_ZERO(sp-1-args))?1:0;
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
   if(l)
     i=lstat(s, &st);
@@ -110,7 +117,7 @@ void f_file_stat(INT32 args)
 #endif
     i=stat(s, &st);
 
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   pop_n_elems(args);
   if(i==-1)
   {
@@ -326,7 +333,7 @@ void f_rm(INT32 args)
 
   s = sp[-args].u.string->str;
   
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
   i=lstat(s, &st) != -1;
 #else
@@ -341,7 +348,7 @@ void f_rm(INT32 args)
       i=unlink(s) != -1;
     }
   }
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
       
   pop_n_elems(args);
   push_int(i);
@@ -367,13 +374,13 @@ void f_mkdir(INT32 args)
     i=sp[1-args].u.integer;
   }
   s=sp[-args].u.string->str;
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
 #if MKDIR_ARGS == 2
   i=mkdir(s, i) != -1;
 #else
   i=mkdir(s) != -1;
 #endif
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(i);
 }
@@ -395,9 +402,9 @@ void f_get_dir(INT32 args)
   get_all_args("get_dir",args,"%s",&path);
 
 #if defined(_REENTRANT) && defined(HAVE_READDIR_R)
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   dir=opendir(path);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   if(dir)
   {
 #define FPR 1024
@@ -561,9 +568,9 @@ void f_getcwd(INT32 args)
 #define MAXPATHLEN 32768
 #endif
   tmp=xalloc(MAXPATHLEN+1);
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   e=(char *)getwd(tmp);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
 #endif
   if(!e) {
     if (tmp) 

@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.35 1998/03/12 18:44:30 per Exp $");
+RCSID("$Id: dumudp.c,v 1.36 1998/03/26 14:31:02 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -136,7 +136,11 @@ static void udp_bind(INT32 args)
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
   addr.sin_family = AF_INET;
 
+  THREADS_ALLOW_UID();
+
   tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr))<0;
+
+  THREADS_DISALLOW_UID();
 
   if(tmp)
   {

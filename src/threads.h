@@ -45,6 +45,7 @@
 
 
 extern int num_threads;
+extern int live_threads;
 struct object;
 extern struct object *thread_id;
 
@@ -221,6 +222,8 @@ int co_destroy(COND_T *c);
 
 extern MUTEX_T interpreter_lock;
 
+extern COND_T live_threads_change;		/* Used by _disable_threads */
+extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
 struct svalue;
 struct frame;
@@ -338,8 +341,9 @@ struct thread_state {
      struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x (#%d)\n", \
+			__FILE__, __LINE__, \
+			(unsigned int)_tmp->thread_id, live_threads)); \
        mt_unlock(& interpreter_lock); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
@@ -348,9 +352,43 @@ struct thread_state {
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp->swapped) { \
        mt_lock(& interpreter_lock); \
-       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d ... t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d... t:%08x (#%d)\n", \
+			__FILE__, __LINE__, \
+                        (unsigned int)_tmp->thread_id, live_threads)); \
+       while (threads_disabled) { \
+         THREADS_FPRINTF((stderr, "THREADS_DISALLOW(): Threads disabled\n")); \
+         co_wait(&live_threads_change, &interpreter_lock); \
+       } \
        SWAP_IN_THREAD(_tmp);\
+     } \
+   } while(0)
+
+#define THREADS_ALLOW_UID() do { \
+     struct thread_state *_tmp_uid=(struct thread_state *)thread_id->storage; \
+     if(num_threads > 1 && !threads_disabled) { \
+       SWAP_OUT_THREAD(_tmp_uid); \
+       live_threads++; \
+       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x (#%d)\n", \
+			__FILE__, __LINE__, \
+			(unsigned int)_tmp_uid->thread_id, live_threads)); \
+       mt_unlock(& interpreter_lock); \
+     } else {} \
+     HIDE_GLOBAL_VARIABLES()
+
+#define THREADS_DISALLOW_UID() \
+     REVEAL_GLOBAL_VARIABLES(); \
+     if(_tmp_uid->swapped) { \
+       mt_lock(& interpreter_lock); \
+       live_threads--; \
+       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d... t:%08x (#%d)\n", \
+			__FILE__, __LINE__, \
+                        (unsigned int)_tmp_uid->thread_id, live_threads)); \
+       while (threads_disabled) { \
+         THREADS_FPRINTF((stderr, "THREADS_DISALLOW(): Threads disabled\n")); \
+         co_signal(&live_threads_change); \
+         co_wait(&threads_disabled_change, &interpreter_lock); \
+       } \
+       SWAP_IN_THREAD(_tmp_uid);\
      } \
    } while(0)
 

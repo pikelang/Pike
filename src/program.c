@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.66 1998/03/18 20:22:31 per Exp $");
+RCSID("$Id: program.c,v 1.67 1998/03/26 14:30:58 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -837,6 +837,7 @@ struct program *end_first_pass(int finish)
 
   compilation_depth--;
   threads_disabled--;
+  co_signal(&threads_disabled_change);
   free_all_nodes();
   return prog;
 }

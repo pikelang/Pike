@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.4 1997/12/07 21:59:15 grubba Exp $
+ * $Id: syslog.c,v 1.5 1998/03/26 14:31:02 grubba Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.4 1997/12/07 21:59:15 grubba Exp $");
+RCSID("$Id: syslog.c,v 1.5 1998/03/26 14:31:02 grubba Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -135,8 +135,12 @@ void f_openlog(INT32 args)
   if(p_facility & (1<<16)) facility |= LOG_SYSLOG;
   if(p_facility & (1<<17)) facility |= LOG_USER;
   if(p_facility & (1<<18)) facility |= LOG_UUCP;
+
+  THREADS_ALLOW();
   
   openlog(ident, option, facility);
+
+  THREADS_DISALLOW();
 
   pop_n_elems(args);
 }

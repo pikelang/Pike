@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.46 1998/03/26 00:52:48 hubbe Exp $
+ * $Id: system.c,v 1.47 1998/03/26 14:31:03 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.46 1998/03/26 00:52:48 hubbe Exp $");
+RCSID("$Id: system.c,v 1.47 1998/03/26 14:31:03 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -172,11 +172,11 @@ void f_hardlink(INT32 args)
 
   get_all_args("hardlink",args, "%s%s", &from, &to);
 
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   do {
     err = link(from, to);
   } while ((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
 
   if (err < 0) {
     report_error("hardlink");
@@ -195,11 +195,11 @@ void f_symlink(INT32 args)
 
   get_all_args("symlink",args, "%s%s", &from, &to);
 
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   do {
     err = symlink(from, to);
   } while ((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
 
   if (err < 0) {
     report_error("symlink");
@@ -227,11 +227,11 @@ void f_readlink(INT32 args)
       error("readlink(): Out of memory\n");
     }
 
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     do {
       err = readlink(path, buf, buflen);
     } while ((err < 0) && (errno == EINTR));
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
   } while (err >= buflen - 1);
 
   if (err < 0) {
@@ -250,11 +250,11 @@ void f_chmod(INT32 args)
   int err;
 
   get_all_args("chmod", args, "%s%i", &path, &mode);
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   do {
     err = chmod(path, mode);
   } while ((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   if (err < 0) {
     report_error("chmod");
   }
@@ -270,11 +270,11 @@ void f_chown(INT32 args)
   int err;
 
   get_all_args("chown", args, "%s%i%i", &path, &uid, &gid);
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   do {
     err = chown(path, uid, gid);
   } while((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   if (err < 0) {
     report_error("chown");
   }
