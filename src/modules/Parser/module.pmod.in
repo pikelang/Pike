@@ -1,0 +1,8 @@
+/*
+ * $Id: module.pmod.in,v 1.1 1999/02/19 04:58:40 mirar Exp $
+ *
+ */
+
+inherit @module@;
+
+

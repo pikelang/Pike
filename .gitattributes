@@ -222,6 +222,11 @@ testfont binary
 /src/modules/Oracle/acconfig.h foreign_ident
 /src/modules/Oracle/configure.in foreign_ident
 /src/modules/Oracle/oracle.c foreign_ident
+/src/modules/Parser/Makefile.in foreign_ident
+/src/modules/Parser/acconfig.h foreign_ident
+/src/modules/Parser/configure.in foreign_ident
+/src/modules/Parser/module.pmod.in foreign_ident
+/src/modules/Parser/parser.c foreign_ident
 /src/modules/Perl/Makefile.in foreign_ident
 /src/modules/Perl/acconfig.h foreign_ident
 /src/modules/Perl/configure.in foreign_ident
