@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.5 1999/03/14 00:46:53 grubba Exp $
+ * $Id: lexer.h,v 1.6 1999/03/14 01:34:04 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -783,6 +783,7 @@ static int low_yylex(YYSTYPE *yylval)
 
 #undef LOOK
 #undef GETC
+#undef SKIP
 #undef GOBBLE
 #undef SKIPSPACE
 #undef SKIPWHITE
