@@ -22,7 +22,6 @@ testfont binary
 /lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/ADT.pmod/queue.pike foreign_ident
-/lib/modules/ADT.pmod/struct.pike foreign_ident
 /lib/modules/Crypto/des3.pike foreign_ident
 /lib/modules/Crypto/des3_cbc.pike foreign_ident
 /lib/modules/Crypto/des_cbc.pike foreign_ident

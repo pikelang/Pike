@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.32 1998/04/19 00:31:06 grubba Exp $
+ * $Id: Xlib.pmod,v 1.33 1998/04/20 01:49:36 nisse Exp $
  */
 
 /*
@@ -149,7 +149,7 @@ class Display
   // FIXME! Should use some sort of (global) db.
   mapping compose_patterns;
   
-  program Struct = my_struct.struct;
+  program Struct = ADT.struct;
   
   constant STATE_WAIT_CONNECT = 0;
   constant STATE_WAIT_CONNECT_DATA = 1;

@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.3 1998/04/19 00:30:59 grubba Exp $
+ * $Id: Auth.pmod,v 1.4 1998/04/20 01:49:35 nisse Exp $
  */
 
 /*
@@ -45,7 +45,7 @@ class auth_file
       {
 	mapping m = ([ ]);
 	
-	m->family = struct->get_int(2);
+	m->family = struct->get_uint(2);
 	m->address = struct->get_var_string(2);
 	m->display = (int) struct->get_var_string(2);
 	m->name = struct->get_var_string(2);

@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.6 1998/02/11 05:19:05 nisse Exp $
+/* $Id: handshake.pike,v 1.7 1998/04/20 01:49:37 nisse Exp $
  *
  */
 
@@ -61,11 +61,11 @@ object server_hello_packet()
 {
   object struct = Struct();
   /* Build server_hello message */
-  struct->put_int(3,1); struct->put_int(0,1); /* version */
+  struct->put_uint(3,1); struct->put_uint(0,1); /* version */
   struct->put_fix_string(my_random);
   struct->put_var_string(session->identity, 1);
-  struct->put_int(session->cipher_suite, 2);
-  struct->put_int(session->compression_algorithm, 1);
+  struct->put_uint(session->cipher_suite, 2);
+  struct->put_uint(session->compression_algorithm, 1);
 
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
@@ -123,7 +123,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
 #ifdef SSL3_DEBUG
 //    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
 #endif
-    struct->put_int(len + 3 * sizeof(context->certificates), 3);
+    struct->put_uint(len + 3 * sizeof(context->certificates), 3);
     foreach(context->certificates, string cert)
       struct->put_var_string(cert, 3);
     send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
@@ -136,10 +136,10 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   {
     /* Send a CertificateRequest message */
     object struct = Struct();
-    struct->put_var_array(context->preferred_auth_methods, 1, 1);
+    struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
     int len = `+(@ Array.map(context->authorities, strlen));
-    struct->put_int(len + 2 * sizeof(context->authorities), 2);
+    struct->put_uint(len + 2 * sizeof(context->authorities), 2);
     foreach(context->authorities, string auth)
       struct->put_var_string(auth, 2);
     send_packet(handshake_packet(HANDSHAKE_certificate_request,
@@ -251,12 +251,12 @@ int handle_handshake(int type, string data, string raw)
 	array(int) compression_methods;
              
 	if (catch{
-	  version = input->get_fix_array(1, 2);
+	  version = input->get_fix_uint_array(1, 2);
 	  other_random = input->get_fix_string(32);
 	  id = input->get_var_string(1);
-	  cipher_len = input->get_int(2);
-	  cipher_suites = input->get_fix_array(2, cipher_len/2);
-	  compression_methods = input->get_var_array(1, 1);
+	  cipher_len = input->get_uint(2);
+	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
+	  compression_methods = input->get_var_uint_array(1, 1);
 	} || (version[0] != 3) || (cipher_len & 1))
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
@@ -319,10 +319,10 @@ int handle_handshake(int type, string data, string raw)
 	int ch_len;
 	array(int) version;
 	if (catch{
-	  version = input->get_fix_array(1, 2);
-	  ci_len = input->get_int(2);
-	  id_len = input->get_int(2);
-	  ch_len = input->get_int(2);
+	  version = input->get_fix_uint_array(1, 2);
+	  ci_len = input->get_uint(2);
+	  id_len = input->get_uint(2);
+	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16)
 	|| (version[0] != 3))
 	{
@@ -337,7 +337,7 @@ int handle_handshake(int type, string data, string raw)
 
 	string challenge;
 	if (catch{
-	  cipher_suites = input->get_fix_array(3, ci_len/3);
+	  cipher_suites = input->get_fix_uint_array(3, ci_len/3);
 	  challenge = input->get_fix_string(ch_len);
 	} || !input->is_empty()) 
 	{

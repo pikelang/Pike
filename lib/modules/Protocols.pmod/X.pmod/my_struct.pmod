@@ -3,6 +3,8 @@
  * This should replace ADT.struct at some time.
  */
 
+#error Obsolete!
+
 #include "error.h"
 
 class struct {     
