@@ -49,7 +49,13 @@ static void perhaps_create_table(  )
     ");
 }
   
-mapping hascache = ([]);
+static mapping hascache = ([]);
+
+void clear_cache()
+{
+  hascache = ([]);
+}
+
 static int has_uri( string|Standards.URI uri )
 {
   uri = (string)uri;

@@ -15,4 +15,5 @@ class Queue
   int num_with_stage( int ... stage );
   void set_stage( Standards.URI uri, int stage );
   void remove_uri(string|Standards.URI uri);
+  void clear_cache();
 }
