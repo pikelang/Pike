@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.38 1998/02/03 18:11:35 hubbe Exp $");
+RCSID("$Id: object.c,v 1.39 1998/02/19 02:58:37 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -902,7 +902,7 @@ void gc_mark_object_as_referenced(struct object *o)
     o->refs++;
 
     if(o->parent)
-      gc_mark_object_as_referenced(o);
+      gc_mark_object_as_referenced(o->parent);
 
     frame.parent_frame=fp;
     frame.current_object=o;  /* refs already updated */
