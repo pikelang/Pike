@@ -1,6 +1,7 @@
-// $Id: Koremutake.pmod,v 1.1 2004/02/14 02:43:16 nilsson Exp $
+// $Id: Koremutake.pmod,v 1.2 2005/01/23 15:28:21 nilsson Exp $
 
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! Quote from Koremutake home page @url{http://shorl.com/koremutake@}:
 //!
@@ -37,7 +38,7 @@ static constant table = ({
 string encrypt(int m) {
   string c="";
   while(m) {
-    c = table[m&127] + c;
+    c = [string]table[m&127] + c;
     m >>= 7;
   }
   return c;
@@ -91,9 +92,13 @@ class `() {
   this_program make_key() { return this; }
 
   int|string crypt(int|string x) {
-    if(mode)
-      return decrypt(x);
-    else
-      return encrypt(x);
+    if(mode) {
+      if(!stringp(x)) error("Wrong type. Expected string.\n");
+      return decrypt([string]x);
+    }
+    else {
+      if(!intp(x)) error("Wrong type. Expected int.\n");
+      return encrypt([int]x);
+    }
   }
 }

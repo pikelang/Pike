@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! AES (American Encryption Standard) is a quite new block cipher,
 //! specified by NIST as a replacement for the older DES standard. The

@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! The inadequate key size of @[DES] has already been mentioned. One
 //! way to increase the key size is to pipe together several DES boxes

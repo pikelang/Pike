@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! MD2 is a message digest function constructed by Burton Kaliski,
 //! and is described in RFC 1319. It outputs message digests of 128

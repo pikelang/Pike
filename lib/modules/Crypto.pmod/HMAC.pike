@@ -2,6 +2,7 @@
 //! HMAC, defined by RFC-2104
 
 #pike __REAL_VERSION__
+#pragma strict_types
 
 #if constant(Crypto.Hash)
 

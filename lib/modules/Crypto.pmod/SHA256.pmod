@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! SHA256 is another hash function specified by NIST, intended as a
 //! replacement for @[SHA], generating larger digests. It outputs hash

@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! SHA1 is a hash function specified by NIST (The U.S. National
 //! Institute for Standards and Technology). It outputs hash values of

@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! DES is the old Data Encryption Standard, specified by NIST. It
 //! uses a block size of 64 bits (8 octets), and a key size of 56

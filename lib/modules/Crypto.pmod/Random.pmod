@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.14 2004/04/14 19:27:01 nilsson Exp $
+#pragma strict_types
+// $Id: Random.pmod,v 1.15 2005/01/23 15:28:21 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -61,7 +62,7 @@ class Source {
 
     // Attempt to generate some entropy by running some
     // statistical commands.
-    mapping(string:string) env = getenv() + ([
+    mapping(string:string) env = [mapping(string:string)]getenv() + ([
       "PATH":"/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin",
     ]);
     mapping(string:mixed) modifiers = ([
@@ -103,7 +104,7 @@ static class RND {
   static Source s;
 
   static int last_tick;
-  static function ticker;
+  static function(void:int) ticker;
 
   static void create(int(0..1) no_block) {
     // Source 0: /dev/random or CryptGenRandom
@@ -175,8 +176,9 @@ string random_string(int len) {
 //! Returns a @[Gmp.mpz] object with a random value between @expr{0@}
 //! and @[top]. Uses @[random_string].
 Gmp.mpz random(int top) {
-  return Gmp.mpz(rnd_func( (int)ceil( log((float)top)/log(2.0) ) ),
-		 256) % top;
+  return [object(Gmp.mpz)]( Gmp.mpz(rnd_func( (int)ceil( log((float)top)/
+							 log(2.0) ) ),
+				    256) % top);
 }
 
 //! Works as @[random_string], but may block in order to gather enough

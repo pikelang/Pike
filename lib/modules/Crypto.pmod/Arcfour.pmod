@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! Arcfour is a stream cipher, also known under the trade marked name
 //! RC4, and it is one of the fastest ciphers around. A problem is

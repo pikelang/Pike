@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! The IDEA(tm) block cipher is covered by patents held by ETH and a
 //! Swiss company called Ascom-Tech AG. The Swiss patent number is

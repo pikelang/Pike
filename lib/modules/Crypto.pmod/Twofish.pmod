@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! Another @[AES] finalist, this one designed by Bruce Schneier and
 //! others.

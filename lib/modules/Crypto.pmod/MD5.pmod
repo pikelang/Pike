@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! MD5 is a message digest function constructed by Ronald Rivest, and
 //! is described in RFC 1321. It outputs message digests of 128 bits,

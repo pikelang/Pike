@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! SERPENT is one of the AES finalists, designed by Ross Anderson,
 //! Eli Biham and Lars Knudsen. Thus, the interface and properties are
