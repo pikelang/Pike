@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.44 1998/05/01 15:41:34 grubba Exp $
+# $Id: configure.in,v 1.45 1998/05/17 19:08:41 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -181,12 +181,18 @@ int main()
   exit(0);
 
   /* NOT REACHED */
+  /* NOTE:
+   *   If there isn't any prototype for statfs this will succeed even
+   *   on BSDs. This doesn't matter since the first two arguments are
+   *   the same on both BSD and SysV.
+   *	/grubba 1998-05-17
+   */
   statfs((char *)0, (struct statfs *)0, 0, 0);
 }
 ],pike_cv_func_sysv_statfs=yes,pike_cv_func_sysv_statfs=no)
   ])
   if test x$pike_cv_func_sysv_statfs = xyes ; then
-    AC_MSG_RESULT(SysV style)
+    AC_MSG_RESULT([SysV style, or no prototype])
     AC_DEFINE(HAVE_SYSV_STATFS)
   else
     AC_MSG_RESULT(BSD style)
