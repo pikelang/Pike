@@ -67,4 +67,5 @@ void create()
 #endif
   context::create();
   accept_queue::create();
+  set_id(this_object());
 }

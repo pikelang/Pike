@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.20 2000/09/05 15:06:40 per Exp $
+/* $Id: handshake.pike,v 1.21 2000/10/22 11:35:13 sigge Exp $
  *
  */
 
@@ -11,6 +11,11 @@ inherit "cipher";
 #else /*! SSL3_DEBUG */
 #define SSL3_DEBUG_MSG
 #endif /* SSL3_DEBUG */
+
+/* For client authentication */
+int auth_level;			// Wether to ask or require a client certificate
+array(string) authorities;	// List of authorities accepted for client
+				// certificates (DER-encoded)
 
 object session;
 object context;
@@ -70,6 +75,11 @@ object handshake_packet(int type, string data)
   packet->fragment = sprintf("%c%3c%s", type, strlen(data), data);
   handshake_messages += packet->fragment;
   return packet;
+}
+
+object hello_request()
+{
+  return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
 object server_hello_packet()
@@ -255,15 +265,15 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   if (key_exchange)
     send_packet(key_exchange);
   
-  if (context->auth_level >= AUTHLEVEL_ask)
+  if (auth_level >= AUTHLEVEL_ask)
   {
     /* Send a CertificateRequest message */
     object struct = Struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
-    int len = `+(@ Array.map(context->authorities, strlen));
-    struct->put_uint(len + 2 * sizeof(context->authorities), 2);
-    foreach(context->authorities, string auth)
+    int len = `+(@ Array.map(authorities, strlen));
+    struct->put_uint(len + 2 * sizeof(authorities), 2);
+    foreach(authorities, string auth)
       struct->put_var_string(auth, 2);
     send_packet(handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data()));
@@ -334,7 +344,9 @@ string server_derive_master_secret(string data)
 	  dh_state->set_other(struct->get_bignum);
 	} || !struct->is_empty())
       {
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "SSL.session->handle_handshake: unexpected message\n",
+		      backtrace()));
 	return 0;
       }
 
@@ -502,7 +514,9 @@ int handle_handshake(int type, string data, string raw)
 
 	} || (version[0] != 3) || (cipher_len & 1))
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "SSL.session->handle_handshake: unexpected message\n",
+		      backtrace()));
 	  return -1;
 	}
 
@@ -574,7 +588,9 @@ int handle_handshake(int type, string data, string raw)
 	  werror(sprintf("SSL.handshake: Error decoding SSL2 handshake:\n"
 			 "%s\n", describe_backtrace(err)));
 #endif /* SSL3_DEBUG */
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "SSL.session->handle_handshake: unexpected message\n",
+		      backtrace()));
 	  return -1;
 	}
 
@@ -590,15 +606,19 @@ int handle_handshake(int type, string data, string raw)
 	  challenge = input->get_fix_string(ch_len);
 	} || !input->is_empty()) 
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "SSL.session->handle_handshake: unexpected message\n",
+		      backtrace()));
 	  return -1;
 	}
 	client_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
-	err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
-	if (err)
-	  return err;
+	{
+	  int err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
+	  if (err)
+	    return err;
+	}
 	handshake_state = STATE_server_wait_for_client;
-	
+
 	break;
       }
      }
@@ -620,7 +640,9 @@ int handle_handshake(int type, string data, string raw)
 	 digest = input->get_fix_string(36);
        } || !input->is_empty())
        {
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "SSL.session->handle_handshake: unexpected message\n",
+		      backtrace()));
 	 return -1;
        }
        if (rsa_message_was_bad       /* Error delayed until now */
@@ -630,7 +652,9 @@ int handle_handshake(int type, string data, string raw)
 	   SSL3_DEBUG_MSG("rsa_message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "SSL.session->handle_handshake: unexpected message\n",
+		      backtrace()));
 	 return -1;
        }
        handshake_messages += raw; /* Second hash includes this message,
@@ -692,11 +716,11 @@ int handle_handshake(int type, string data, string raw)
       }
       else
 	handshake_state = STATE_server_wait_for_verify;
-      
+
       break;
     case HANDSHAKE_certificate:
      {
-       if (certificate_state == CERT_requested) //FIXME: huh?
+       if (certificate_state != CERT_requested)
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			   "SSL.session->handle_handshake: unexpected message\n",
@@ -704,7 +728,11 @@ int handle_handshake(int type, string data, string raw)
 	 return -1;
        }
        if (catch {
-	 session->client_certificate = input->get_var_string(3);
+	 int certs_len = input->get_uint(3);
+	 array certs = ({ });
+	 while(!input->is_empty())
+	   certs += ({ input->get_var_string(3) });
+	 session->client_certificate_chain = certs;
        } || !input->is_empty())
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
@@ -718,7 +746,8 @@ int handle_handshake(int type, string data, string raw)
     }
     break;
   case STATE_server_wait_for_verify:
-    handshake_messages += raw;
+    // handshake_messages += raw;
+    // compute challenge first, then update handshake_messages /Sigge
     switch(type)
     {
     default:
@@ -729,10 +758,26 @@ int handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate_verify:
       if (!rsa_message_was_bad)
       {
-	session->client_challenge =
-	  mac_md5(session->master_secret)->hash_master(handshake_messages) +
-	  mac_sha(session->master_secret)->hash_master(handshake_messages);
-	session->client_signature = data;
+	int verification_ok;
+	if( catch
+	{
+	  object(Gmp.mpz) signature = input->get_bignum();
+	  Struct handshake_messages_struct = Struct();
+	  handshake_messages_struct->put_fix_string(handshake_messages);
+	  verification_ok = session->cipher_spec->verify(
+	    context, "", handshake_messages_struct, signature);
+	} || verification_ok)
+	{
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+			    "SSL.session->handle_handshake: verification of"
+			    " CertificateVerify message failed\n",
+			    backtrace()));
+	  return -1;
+	}
+// 	session->client_challenge =
+// 	  mac_md5(session->master_secret)->hash_master(handshake_messages) +
+// 	  mac_sha(session->master_secret)->hash_master(handshake_messages);
+// 	session->client_signature = data;
       }
       handshake_messages += raw;
       handshake_state = STATE_server_wait_for_finish;
@@ -804,15 +849,14 @@ int handle_handshake(int type, string data, string raw)
       SSL3_DEBUG_MSG("Handshake: Certificate message recieved\n");
       int certs_len = input->get_uint(3);
       array certs = ({ });
-      int i=0;
       while(!input->is_empty())
 	certs += ({ input->get_var_string(3) });
-      session->server_certificate = certs[0];
+      session->server_certificate_chain = certs;
 
       if (catch
       {
 	object public_key = Tools.X509.decode_certificate(
-	  session->server_certificate)->public_key;
+	  session->server_certificate_chain[0])->public_key;
 	if(public_key->type == "rsa")
 	{
 	  object rsa = Crypto.rsa();
@@ -940,6 +984,7 @@ int handle_handshake(int type, string data, string raw)
 
 void create(int is_server)
 {
+  auth_level = context->auth_level;
   if (is_server)
     handshake_state = STATE_server_wait_for_hello;
   else

@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.13 2000/08/04 19:07:11 sigge Exp $
+/* $Id: connection.pike,v 1.14 2000/10/22 11:35:13 sigge Exp $
  *
  * SSL packet layer
  */
@@ -176,7 +176,7 @@ int handle_alert(string s)
   }
   if (description == ALERT_no_certificate)
   {
-    if ((certificate_state == CERT_requested) && (context->auth_level == AUTHLEVEL_ask))
+    if ((certificate_state == CERT_requested) && (auth_level == AUTHLEVEL_ask))
     {
       certificate_state = CERT_no_certificate;
       return 0;

@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.11 2000/08/04 19:07:11 sigge Exp $
+/* $Id: session.pike,v 1.12 2000/10/22 11:35:13 sigge Exp $
  *
  */
 
@@ -16,8 +16,8 @@ string master_secret; /* 48 byte secret shared between client and server */
 constant Struct = ADT.struct;
 constant State = SSL.state;
 
-string client_certificate;
-string server_certificate;
+array(string) client_certificate_chain;
+array(string) server_certificate_chain;
 
 void set_cipher_suite(int suite)
 {

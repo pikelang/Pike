@@ -1,12 +1,10 @@
-/* $Id: context.pike,v 1.11 2000/08/04 19:08:07 sigge Exp $
+/* $Id: context.pike,v 1.12 2000/10/22 11:35:13 sigge Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
  */
 
 inherit "constants";
-
-int auth_level;
 
 object rsa;  /* Servers private key */
 
@@ -23,9 +21,6 @@ function(int:string) random; /* Random number generator */
 /* Chain of X509.v3 certificates
  * Senders certificate first, root certificate last .*/
 array(string) certificates; 
-
-/* For client authentication */
-array(string) authorities; /* List of authorities distinguished names */
 
 array(int) preferred_auth_methods =
 ({ AUTH_rsa_sign });

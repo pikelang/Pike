@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.24 2000/08/15 21:35:43 mast Exp $
+/* $Id: sslfile.pike,v 1.25 2000/10/22 11:35:14 sigge Exp $
  *
  */
 
@@ -139,7 +139,7 @@ int write(string|array(string) s)
 private void ssl_read_callback(mixed id, string s)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->ssl_read_callback\n"));
+  werror(sprintf("SSL.sslfile->ssl_read_callback, connected=%d, handshake_finished=%d\n", connected, handshake_finished));
 #endif
   string|int data = got_data(s);
   if (stringp(data))
@@ -351,4 +351,13 @@ void create(object f, object c, int|void is_client)
   socket = f;
   socket->set_nonblocking(ssl_read_callback, ssl_write_callback, ssl_close_callback);
   connection::create(!is_client);
+}
+
+void renegotiate()
+{
+  expect_change_cipher = certificate_state = 0;
+  send_packet(hello_request());
+  socket->set_write_callback(ssl_write_callback);
+  handshake_finished = 0;
+  connected = 0;
 }
