@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.19 2001/07/31 15:29:47 js Exp $
+// $Id: Utils.pmod,v 1.20 2001/08/06 17:23:45 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -33,6 +33,7 @@ public string normalize(string in)
 
 #define THROW(X) throw( ({ (X), backtrace() }) )
 
+//! A result entry from the @[ProfileCache].
 class ProfileEntry {
 
   private int last_stat;
@@ -48,15 +49,25 @@ class ProfileEntry {
   private Search.RankingProfile ranking;
   private array(string) stop_words;
 
+  //! @decl void create(int database_profile_id, int search_profile_id,@
+  //!                   ProfileCache cache)
+  //! @param cache
+  //!  The parent cache object.
   void create(int _database_profile_id,
 	      int _search_profile_id,
 	      ProfileCache _my_cache) {
     database_profile_id = _database_profile_id;
     search_profile_id = _search_profile_id;
     my_cache = _my_cache;
-    int last_stat = time(1)-2;
+    int last_stat = time(1);
   }
 
+  //! Checks with the parent @[ProfileCache] if any dependent
+  //! profile is updated. If so, the potentially stale cached
+  //! values are cleared. Checks against the parent @[ProfileCache]
+  //! are done with at least five minutes intervals, and never when
+  //! the object is unused, i.e. this method is called from
+  //! @[get_database], @[get_ranking] and @[get_stop_words].
   void refresh() {
     //    werror("Time since check: %d\n", time(1)-last_stat);
     if(time(1)-last_stat < 5*60) return;
@@ -74,21 +85,24 @@ class ProfileEntry {
       ranking = 0;
       stop_words = 0;
     }
-    last_stat = time(1)-2;
+    last_stat = time(1);
   }
 
+  //! Returns the database profile value @[index].
   mixed get_database_value(string index) {
     if(!database_values)
       database_values = my_cache->get_value_mapping(database_profile_id);
     return database_values[index];
   }
 
+  //! Returns the search profile value @[index].
   mixed get_search_value(string index) {
     if(!search_values)
       search_values = my_cache->get_value_mapping(search_profile_id);
     return search_values[index];
   }
 
+  //! Returns a cached search database for the current database profile.
   Search.Database.MySQL get_database() {
     refresh();
     if(!db) {
@@ -102,6 +116,8 @@ class ProfileEntry {
     return db;
   }
 
+  //! Returns a cached ranking profile for the current database and
+  //! search profile.
   Search.RankingProfile get_ranking() {
     refresh();
     if(!ranking)
@@ -152,6 +168,7 @@ class ProfileEntry {
     }
   }
 
+  //! Returns a cached array of stop words for the current search profile.
   array(string) get_stop_words() {
     refresh();
     if(!stop_words) {
@@ -176,6 +193,7 @@ class ProfileEntry {
   }
 }
 
+//!
 class ProfileCache (string db_name) {
 
   private mapping(int:ProfileEntry) entry_cache = ([]);
@@ -193,6 +211,16 @@ class ProfileCache (string db_name) {
     return db;
   }
 
+  //! Checks if the profile @[profile_id] has been changed, and clears
+  //! related caches if so.
+  //! @returns
+  //!  @int
+  //!   @value -1
+  //!    The profile is deleted.
+  //!   @value 0
+  //!    The profile is up to date.
+  //!   @value 1
+  //!  @endint
   int(-1..1) up_to_datep(int profile_id) {
     //    werror("Called up-to-date...\n");
     array(mapping(string:string)) res;
@@ -240,7 +268,7 @@ class ProfileCache (string db_name) {
     return 0;
   }
 
-  //! Return the profile number for the given database profile.
+  //! Returns the profile number for the given database profile.
   int get_db_profile_number(string name) {
     int db_profile;
     if(db_profile=db_profile_names[name])
@@ -255,7 +283,7 @@ class ProfileCache (string db_name) {
     return db_profile_names[name] = (int)res[0]->id;
   }
 
-  //! Return the profile number for the given search profile.
+  //! Returns the profile number for the given search profile.
   int get_srh_profile_number(string name, int db_profile) {
     int srh_profile;
     if(srh_profile=srh_profile_names[(string)db_profile+"\n"+name])
@@ -271,6 +299,8 @@ class ProfileCache (string db_name) {
   }
 
   private int last_db_prof_stat = 0;  // 1970
+
+  //! Returns a list of available database profiles.
   array(string) list_db_profiles() {
     if (time(1) - last_db_prof_stat < 5*60)
       return indices(db_profile_names);
@@ -283,6 +313,8 @@ class ProfileCache (string db_name) {
   }
 
   private int last_srh_prof_stat = 0;  // 1970
+
+  //! Returns a list of available search profiles for the given database profile @[db_profile].
   array(string) list_srh_profiles(int db_profile) {
     if (time(1) - last_srh_prof_stat >= 5*60) {
       array res = get_db()->query("SELECT name, id, parent FROM wf_profile WHERE parent<>0");
@@ -319,7 +351,7 @@ class ProfileCache (string db_name) {
     return compile_string("mixed foo=" + str + ";", 0, compile_handler)()->foo;
   }
 
-  //! Return the value mapping for the given profile.
+  //! Returns the value mapping for the given profile.
   mapping get_value_mapping(int profile) {
     mapping val;
     if(val=copy_value(value_cache[profile]))
@@ -333,6 +365,9 @@ class ProfileCache (string db_name) {
     return val;
   }
 
+  //! Returns a @[ProfileEntry] object with the states needed for
+  //! commiting searches in the database profile @[db_name] with
+  //! the rules from search profile @[srh_name].
   ProfileEntry get_profile_entry(string db_name, void|string srh_name) {
     //    werror("Entry: %O\n", indices(entry_cache));
     //    werror("Value: %O\n", indices(value_cache));
@@ -349,7 +384,7 @@ class ProfileCache (string db_name) {
     return entry_cache[srh] = entry;
   }
 
-  //! Flushes an entry from the profile cache.
+  //! Flushes profile entry @[p] from the profile cache.
   void flush_profile(int p) {
     m_delete(value_cache, p);
     foreach(indices(db_profile_names), string name)
@@ -366,6 +401,7 @@ class ProfileCache (string db_name) {
   }
 }
 
+//!
 class Logger {
 
   private string|Sql.Sql logdb;
@@ -386,6 +422,8 @@ class Logger {
     return db;
   }
 
+  //! @decl void create(Sql.Sql db_object, int profile)
+  //! @decl void create(string db_url, int profile)
   void create(string|Sql.Sql _logdb, int _profile) {
     logdb = _logdb;
     profile = _profile;
@@ -405,6 +443,7 @@ class Logger {
 		"extra varchar(255))");
   }
 
+  //!
   void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
     if(!db) return;
@@ -420,18 +459,22 @@ class Logger {
 		log_profile, code, type);
   }
 
+  //!
   void log_error( int code, void|string extra, void|int log_profile ) {
-    log_event( code, "error", extra );
+    log_event( code, "error", extra, log_profile );
   }
 
+  //!
   void log_warning( int code, void|string extra, void|int log_profile ) {
     log_event( code, "warning", extra, log_profile );
   }
 
+  //!
   void log_notice( int code, void|string extra, void|int log_profile ) {
     log_event( code, "notice", extra, log_profile );
   }
 
+  //!
   int add_program_name(int code, string name) {
     int add = search( ({ "multiprocess_crawler", "buffer_c2f", "filter",
 			 "buffer_f2i", "indexer" }), name );
@@ -507,6 +550,7 @@ class Logger {
   ]);
     
 
+  //!
   array(array(string|int)) get_log( int profile, array(string) types,
 				int from, int to ) {
 
