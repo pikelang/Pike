@@ -1287,10 +1287,12 @@ class ParseBlock
       {
 	array var=x[f];
 	int pos=search(var,PC.Token(";",0),);
-	mixed name=var[pos-1];
-	PikeType type=PikeType(var[..pos-2]);
+	int pos2=parse_type(var,0);
+	mixed name=var[pos2];
+	PikeType type=PikeType(var[..pos2-1]);
 	array rest=var[pos+1..];
 	string define=make_unique_name("var",name,base,"defined");
+	mapping attributes = parse_attributes(var[pos2+1..pos]);
     
 //    werror("type: %O\n",type);
 
@@ -1300,10 +1302,10 @@ class ParseBlock
 	addfuncs+=
 	  IFDEF(define,
 		({
-		  sprintf("  map_variable(%O,%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), %s);",
+		  sprintf("  map_variable(%O,%O,%s,%s_storage_offset + OFFSETOF(%s_struct, %s), %s);",
 			  (string)name,
 			  type->output_pike_type(0),
-			  0,
+			  attributes->flags || "0",
 			  base,
 			  base,
 			  name,
