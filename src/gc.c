@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.178 2001/12/10 02:08:14 mast Exp $");
+RCSID("$Id: gc.c,v 1.179 2001/12/16 18:51:47 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1342,7 +1342,7 @@ void locate_references(void *a)
   tmp=d_flag;
   d_flag=0;
 
-  fprintf(stderr,"**Looking for references:\n");
+  fprintf(stderr,"**Looking for references to %p:\n", a);
   
   check_for=a;
 
@@ -1386,6 +1386,8 @@ void locate_references(void *a)
 #endif
   }
 #endif
+
+  fprintf(stderr,"**Done looking for references to %p.\n", a);
 
   Pike_in_gc = orig_in_gc;
   if(i) exit_gc();
