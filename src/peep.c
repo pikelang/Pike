@@ -11,8 +11,9 @@
 #include "pike_memory.h"
 #include "peep.h"
 #include "dmalloc.h"
+#include "stuff.h"
 
-RCSID("$Id: peep.c,v 1.22 1998/04/27 09:54:16 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.23 1998/05/01 15:45:55 grubba Exp $");
 
 struct p_instr_s
 {
