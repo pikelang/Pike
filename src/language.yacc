@@ -128,6 +128,7 @@
 %token F_VOID_ID
 %token F_WHILE
 %token F_XOR_EQ
+%token F_NOP
 
 %token F_ALIGN
 %token F_POINTER
@@ -156,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.27 1997/03/01 17:56:04 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.28 1997/03/05 05:12:07 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -422,8 +423,10 @@ import: modifiers F_IMPORT idents ';'
 constant_name: F_IDENTIFIER '=' expr0
   {
     int tmp;
+    node *n;
     /* This can be made more lenient in the future */
-    if(!is_const($3))
+    n=mknode(F_ARG_LIST,$3,0); /* Make sure it is optimized */
+    if(!is_const(n))
     {
       struct svalue tmp;
       yyerror("Constant definition is not constant.");
@@ -431,8 +434,8 @@ constant_name: F_IDENTIFIER '=' expr0
       tmp.u.integer=0;
       add_constant($1,&tmp, current_modifiers);
     } else {
-      tmp=eval_low($3);
-      free_node($3);
+      tmp=eval_low(n);
+      free_node(n);
       if(tmp < 1)
       {
 	yyerror("Error in constant definition.");
