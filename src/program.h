@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.162 2002/06/11 17:41:36 mast Exp $
+ * $Id: program.h,v 1.163 2002/06/11 17:48:11 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -27,12 +27,6 @@
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
-
-#ifdef PIKE_DEBUG
-#define PROGRAM_LINE_ARGS int line, char *file
-#else
-#define PROGRAM_LINE_ARGS void
-#endif
 
 extern struct pike_string *this_program_string;
 
@@ -221,6 +215,7 @@ struct program_constant
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 #define ID_SAVE_PARENT  0x10000 /* #pragma save_parent */
+#define ID_DONT_SAVE_PARENT 0x20000 /* #pragma dont_save_parent */
 
 
 /*
@@ -471,7 +466,7 @@ void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp);
-PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS);
+PMOD_EXPORT void debug_start_new_program(int line, char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void dump_program_tables (struct program *p, int indent);
@@ -726,7 +721,7 @@ void count_memory_in_programs(INT32*,INT32*);
 #ifdef PIKE_DEBUG
 #define start_new_program() debug_start_new_program(__LINE__,__FILE__)
 #else
-#define start_new_program() debug_start_new_program()
+#define start_new_program() debug_start_new_program(0, "native module")
 #endif
 
 #define gc_cycle_check_program(X, WEAK) \

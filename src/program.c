@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.434 2002/06/11 17:41:36 mast Exp $");
+RCSID("$Id: program.c,v 1.435 2002/06/11 17:48:11 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1590,23 +1590,6 @@ void low_start_new_program(struct program *p,
     {
       tmp.u.program=p;
       id=add_constant(name, &tmp, flags & ~ID_EXTERN);
-      if(TEST_COMPAT(7,2) || (lex.pragmas && ID_SAVE_PARENT))
-      {
-	p->flags |= PROGRAM_USES_PARENT;
-      }else{
-	struct pike_string *tmp=findstring("__pragma_save_parent__");
-	if(tmp)
-	{
-	  struct node_s *n=find_module_identifier(tmp, 0);
-	  if(n)
-	  {
-	    free_node(n);
-	    p->flags |= PROGRAM_USES_PARENT;
-	  }
-	}
-      }
-
-
 #if 0
       fprintf(stderr,"Compiling class %s, depth=%d\n",name->str,compilation_depth);
     }else{
@@ -1715,6 +1698,23 @@ void low_start_new_program(struct program *p,
 	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
 
+  if(TEST_COMPAT(7,2) || (lex.pragmas & ID_SAVE_PARENT))
+  {
+    p->flags |= PROGRAM_USES_PARENT;
+  }else if (!(lex.pragmas & ID_DONT_SAVE_PARENT)) {
+    struct pike_string *tmp=findstring("__pragma_save_parent__");
+    if(tmp)
+    {
+      struct node_s *n=find_module_identifier(tmp, 0);
+      if(n)
+      {
+	int do_save_parent = !node_is_false(n); /* Default to true. */
+	free_node(n);
+	if (do_save_parent) p->flags |= PROGRAM_USES_PARENT;
+      }
+    }
+  }
+
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 
@@ -1791,21 +1791,25 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
-PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS)
+PMOD_EXPORT void debug_start_new_program(int line, char *file)
 {
+  struct pike_string *save_file = lex.current_file;
+  int save_line = lex.current_line;
+  lex.current_file = make_shared_string(file);
+  lex.current_line = line;
+
   CDFPRINTF((stderr,
-	     "th(%ld) start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(),threads_disabled, compilation_depth));
+	     "th(%ld) start_new_program(%d, %s): "
+	     "threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), line, file, threads_disabled, compilation_depth));
 
   low_start_new_program(0,0,0,0);
-#ifdef PIKE_DEBUG
-  {
-    struct pike_string *s=make_shared_string(file);
-    store_linenumber(line,s);
-    free_string(s);
-    debug_malloc_name(Pike_compiler->new_program, file, line);
-  }
-#endif
+  store_linenumber(line,lex.current_file);
+  debug_malloc_name(Pike_compiler->new_program, file, line);
+
+  free_string(lex.current_file);
+  lex.current_file = save_file;
+  lex.current_line = save_line;
 }
 
 

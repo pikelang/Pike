@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.36 2002/05/05 13:03:42 mast Exp $
+ * $Id: lexer.h,v 1.37 2002/06/11 17:48:11 mast Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -586,6 +586,10 @@ static int low_yylex(YYSTYPE *yylval)
 	  else if (ISWORD("save_parent"))
 	  {
 	    lex.pragmas |= ID_SAVE_PARENT;
+	  }
+	  else if (ISWORD("dont_save_parent"))
+	  {
+	    lex.pragmas |= ID_DONT_SAVE_PARENT;
 	  }
 	  break;
 	}
