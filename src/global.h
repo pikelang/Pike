@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.26 1998/11/22 11:02:50 hubbe Exp $
+ * $Id: global.h,v 1.27 1999/02/27 17:19:12 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -190,6 +190,11 @@ typedef unsigned char p_wchar0;
 typedef unsigned INT16 p_wchar1;
 typedef unsigned INT32 p_wchar2;
 
+typedef struct p_wchar_p
+{
+  p_wchar0 *ptr;
+  int shift;
+} PCHARP;
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
 #define RCSID(X) \
