@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.3 2003/10/01 10:39:09 mirar Exp $
+// $Id: module.pmod.in,v 1.4 2003/10/06 16:58:03 grubba Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -35,9 +35,13 @@ class Plain
 		    ERROR.BADOPTION:"ERROR.BADOPTION",
 		    ERROR.BADMAGIC :"ERROR.BADMAGIC",
 		    ERROR.UNKNOWN_NODE:"ERROR.UNKNOWN_NODE",
+#if constant(@module@.ERROR.MATCHLIMIT)
 		    ERROR.MATCHLIMIT  :"ERROR.MATCHLIMIT",
-		    ERROR.CALLOUT     :"ERROR.CALLOUT"])[error_no]
-		  ||sprintf("unknown error: %d\n",error_no));
+#endif /* PCRE.ERROR.MATCHLIMIT */
+#if constant(@module@.ERROR.CALLOUT)
+		    ERROR.CALLOUT     :"ERROR.CALLOUT",
+#endif /* PCRE.ERROR.CALLOUT */
+		  ])[error_no] || sprintf("unknown error: %d\n",error_no));
       }
    }
 
