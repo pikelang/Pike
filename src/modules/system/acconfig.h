@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.2 1998/05/22 12:50:22 grubba Exp $
+ * $Id: acconfig.h,v 1.3 1998/05/31 14:07:51 grubba Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -23,5 +23,8 @@
 
 /* Define if you have pw_gecos in the passwd struct */
 #undef HAVE_PW_GECOS
+
+/* Define if <netinet/in.h> defines the in_addr_t type. */
+#undef HAVE_IN_ADDR_T
 
 #endif /* SYSTEM_MACHINE_H */
