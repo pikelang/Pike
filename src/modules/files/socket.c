@@ -256,7 +256,7 @@ static void port_create(INT32 args)
       if(strcmp("stdin",sp[-args].u.string->str))
 	error("port->create() called with string other than 'stdin'\n");
 
-      THIS->fd=0;
+      THIS->fd=0;	/* FIXME: Shouldn't there be a close() here? */
 
       if(listen(THIS->fd, 16384) < 0)
       {
