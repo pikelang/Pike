@@ -7,6 +7,7 @@
 #include "pike_macros.h"
 #include "callback.h"
 #include "error.h"
+#include "block_alloc.h"
 
 struct callback_list fork_child_callback;
 
@@ -27,15 +28,8 @@ struct callback
 };
 
 #define CALLBACK_CHUNK 128
+BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 
-struct callback_block {
-  struct callback_block *next;
-  struct callback callbacks[CALLBACK_CHUNK];
-};
-
-static struct callback_block *callback_chunks=0;
-static struct callback *first_callback =0;
-static struct callback *free_callbacks =0;
 
 #ifdef DEBUG
 extern int d_flag;
@@ -73,35 +67,35 @@ static void check_callback_chain(struct callback_list *lst)
       len++;
     }
     
-    for(tmp=callback_chunks;tmp;tmp=tmp->next)
+    for(tmp=callback_blocks;tmp;tmp=tmp->next)
     {
       for(e=0;e<CALLBACK_CHUNK;e++)
       {
 	int d;
 	struct callback_block *tmp2;
 	
-	if(tmp->callbacks[e].free_func == (callback_func)remove_callback)
+	if(tmp->x[e].free_func == (callback_func)remove_callback)
 	{
-	  if(!is_in_free_list(tmp->callbacks+e))
+	  if(!is_in_free_list(tmp->x+e))
 	    fatal("Lost track of a struct callback!\n");
 
-	  if(tmp->callbacks[e].next &&
-	     !is_in_free_list(tmp->callbacks[e].next))
+	  if(tmp->x[e].next &&
+	     !is_in_free_list(tmp->x[e].next))
 	    fatal("Free callback has next in Z'ha'dum!\n");
 
 	}else{
-	  if(is_in_free_list(tmp->callbacks[e].next))
+	  if(is_in_free_list(tmp->x[e].next))
 	    fatal("Non-free callback has next in free list!\n");
 	}
 	
-	if(tmp->callbacks[e].next)
+	if(tmp->x[e].next)
 	{
 	  d=CALLBACK_CHUNK;
-	  for(tmp2=callback_chunks;tmp2;tmp2=tmp2->next)
+	  for(tmp2=callback_blocks;tmp2;tmp2=tmp2->next)
 	  {
 	    for(d=0;d<CALLBACK_CHUNK;d++)
 	    {
-	      if(tmp2->callbacks+d == tmp->callbacks[e].next)
+	      if(tmp2->x+d == tmp->x[e].next)
 		break;
 	      
 	      if(d < CALLBACK_CHUNK) break;
@@ -120,28 +114,7 @@ static void check_callback_chain(struct callback_list *lst)
 #endif
 
 /* Return the first free callback struct, allocate more if needed */
-static struct callback *get_free_callback(void)
-{
-  struct callback *tmp;
-  if(!free_callbacks)
-  {
-    int e;
-    struct callback_block *tmp2;
-    tmp2=ALLOC_STRUCT(callback_block);
-    tmp2->next=callback_chunks;
-    callback_chunks=tmp2;
 
-    for(e=0;e<CALLBACK_CHUNK;e++)
-    {
-      tmp2->callbacks[e].next=free_callbacks;
-      tmp2->callbacks[e].free_func=(callback_func)remove_callback;
-      free_callbacks=tmp2->callbacks+e;
-    }
-  }
-  tmp=free_callbacks;
-  free_callbacks=tmp->next;
-  return tmp;
-}
 
 /* Traverse a linked list of callbacks and call all the active callbacks
  * in the list. Deactivated callbacks are freed and placed in the free list.
@@ -180,8 +153,8 @@ void call_callback(struct callback_list *lst, void *arg)
       }
 
       *ptr=l->next;
-      l->next=free_callbacks;
-      free_callbacks=l;
+      free_callback(l);
+
 #ifdef DEBUG
       l->free_func=(callback_func)remove_callback;
 #endif
@@ -199,7 +172,7 @@ struct callback *add_to_callback(struct callback_list *lst,
 				 callback_func free_func)
 {
   struct callback *l;
-  l=get_free_callback();
+  l=alloc_callback();
   l->call=call;
   l->arg=arg;
   l->free_func=free_func;
@@ -223,7 +196,7 @@ void *remove_callback(struct callback *l)
 }
 
 /* Free all the callbacks in a linked list of callbacks */
-void free_callback(struct callback_list *lst)
+void free_callback_list(struct callback_list *lst)
 {
   struct callback *l,**ptr;
   check_callback_chain(lst);
@@ -233,8 +206,7 @@ void free_callback(struct callback_list *lst)
     if(l->free_func)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
-    l->next=free_callbacks;
-    free_callbacks=l;
+    free_callback(l);
 #ifdef DEBUG
     l->free_func=(callback_func)remove_callback;
 #endif
@@ -243,13 +215,7 @@ void free_callback(struct callback_list *lst)
 
 void cleanup_callbacks(void)
 {
-  while(callback_chunks)
-  {
-    struct callback_block *tmp=callback_chunks;
-    callback_chunks=tmp->next;
-    free((char *)tmp);
-  }
-  free_callbacks=0;
+  free_all_callback_blocks();
 }
 
 
@@ -258,7 +224,7 @@ void count_memory_in_callbacks(INT32 *num_, INT32 *size_)
   INT32 num=0, size=0;
   struct callback_block *tmp;
   struct callback *tmp2;
-  for(tmp=callback_chunks;tmp;tmp=tmp->next)
+  for(tmp=callback_blocks;tmp;tmp=tmp->next)
   {
     num+=CALLBACK_CHUNK;
     size+=sizeof(struct callback_block);
