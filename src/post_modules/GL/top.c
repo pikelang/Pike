@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.13 2000/12/01 08:10:40 hubbe Exp $
+ * $Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $
  *
  */
 
@@ -22,11 +22,9 @@
 
 #endif /* HAVE_GL */
 
-#include "module_magic.h"
-
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.13 2000/12/01 08:10:40 hubbe Exp $");
+RCSID("$Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -35,6 +33,8 @@ RCSID("$Id: top.c,v 1.13 2000/12/01 08:10:40 hubbe Exp $");
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "pike_error.h"
+
+#include "module_magic.h"
 
 #ifdef HAVE_GL
 
