@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.21 2003/05/19 19:23:41 mast Exp $
+|| $Id: my_gmp.h,v 1.22 2003/05/19 19:41:02 mast Exp $
 */
 
 /*
@@ -67,7 +67,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
 /* In old gmp versions (at least 2.0) mpz_getlimbn doesn't understand
  * that negative numbers are stored with negative sizes, so it regards
  * all N to be outside the mantissa then. */
-mp_limb_t MPZ_GETLIMBN (mpz_srcptr gmp_z, mp_size_t gmp_n)
+static inline mp_limb_t MPZ_GETLIMBN (mpz_srcptr gmp_z, mp_size_t gmp_n)
 {
   if (mpz_size (gmp_z) <= gmp_n || gmp_n < 0)
     return 0;
