@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.106 2004/03/15 22:47:15 mast Exp $
+|| $Id: gc.h,v 1.107 2004/03/16 14:23:20 mast Exp $
 */
 
 #ifndef GC_H
@@ -57,6 +57,8 @@ extern int gc_generation;
 extern int gc_trace, gc_debug;
 #ifdef DO_PIKE_CLEANUP
 extern int gc_destruct_everything;
+#else
+#define gc_destruct_everything 0
 #endif
 extern cpu_time_t auto_gc_time;
 
