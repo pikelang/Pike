@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.183 2000/07/11 10:27:24 grubba Exp $");
+RCSID("$Id: las.c,v 1.184 2000/07/11 11:31:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -923,6 +923,7 @@ node *debug_mkexternalnode(int level,
 
   /* Can't freeze the node, since the type-info may become wrong. */
   /* return freeze_node(res); */
+  res->hash = hash_node(res);
   return res;
 }
 
