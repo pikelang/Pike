@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.27 2004/04/02 16:14:24 grubba Exp $ */
+/* $Id: socktest.pike,v 1.28 2004/04/04 15:47:02 grubba Exp $ */
 
 
 import Stdio;
@@ -433,18 +433,20 @@ void finish()
 	break;
       }
 
-#if Stdio.__OOB__ >= 3
+#if constant(Stdio.__OOB__)
     case 50:
-      werror("Testing out-of-band data. ");
-      start();
-      socks = spair(0);
-      oob_originator = socks[0];
-      oob_loopback = socks[1];
+      if (Stdio.__OOB__ >= 3) {
+	werror("Testing out-of-band data. ");
+	start();
+	socks = spair(0);
+	oob_originator = socks[0];
+	oob_loopback = socks[1];
       
-      socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
-      socks[1]->set_nonblocking(0,0,0,got_oob1,0);
-      break;
-#endif /* __HAVE_OOB__ */
+	socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
+	socks[1]->set_nonblocking(0,0,0,got_oob1,0);
+	break;
+      }
+#endif /* constant(Stdio.__OOB__) */
 
     default:
       exit(0);
@@ -483,7 +485,8 @@ int main()
 	max_fds = file_limit[1];
       }
     }
-    werror("Available fds: %d\n", max_fds);
+    werror("\n"
+	   "Available fds: %d\n", max_fds);
   }
 #endif /* constant(System.getrlimit) */
 
