@@ -1,15 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Error.pmod,v 1.1 2004/04/18 02:19:38 mast Exp $
-
-//! @class Generic
-//!
-//! Class for exception objects for errors of unspecified type.
-//!
-//! @note
-//! For historical reasons, erro
-
-//! @endclass
+// $Id: Error.pmod,v 1.2 2004/04/20 13:56:52 nilsson Exp $
 
 constant Generic = __builtin.GenericError;
 
