@@ -194,23 +194,18 @@ class Window
     switch(sym)
     {
      case XK_Scroll_Lock: return 0; break;
-     case XK_Mode_switch:  alt_gr = 0; return 0;
-     case XK_Num_Lock:    num_lock = 0; return 0;
+     case XK_Mode_switch:  alt_gr = 0; return;
+     case XK_Num_Lock:    num_lock = 0; return;
      case XK_Shift_L:
      case XK_Shift_Lock:
-     case XK_Shift_R:     shift=0; return 0;
-     case XK_Control_L:
-     case XK_Control_R:   control=0; return 0;
-     case XK_Caps_Lock:  caps_lock=0; return 0;
+     case XK_Shift_R:     shift=0; return;
+     case XK_Control_L: case XK_Control_R:   control=0; return;
+     case XK_Caps_Lock:  caps_lock=0; return;
 
-     case XK_Meta_L:
-     case XK_Meta_R:   meta=0; return 0;
-     case XK_Alt_L:
-     case XK_Alt_R:   alt=0; return 0;
-     case XK_Super_L:
-     case XK_Super_R:   super=0; return 0;
-     case XK_Hyper_L:
-     case XK_Hyper_R:   hyper=0; return 0;
+     case XK_Meta_L: case XK_Meta_R:   meta=0; return;
+     case XK_Alt_L:  case XK_Alt_R:   alt=0; return;
+     case XK_Super_L:case XK_Super_R:   super=0; return;
+     case XK_Hyper_L: case XK_Hyper_R:   hyper=0; return;
     }
   }
 
@@ -273,10 +268,10 @@ class Window
     switch(keysym)
     {
      case XK_A..XK_Z: 
-     case XK_a..XK_z:  /* Uäääärk */
-       keysym = keysym&0xdf;
-       if(!shift && !caps_lock)
-	 keysym=keysym+0x20;
+     case XK_a..XK_z:
+       keysym = keysym&0xdf;      // Upper..
+       if(!shift && !caps_lock)  //
+	 keysym=keysym+0x20;    // .. and lower ..
        break;
 
      case XK_Mode_switch:  alt_gr = 1; return 0;
@@ -297,11 +292,11 @@ class Window
      case XK_Hyper_R:   hyper=1; return 0;
     }
 
-
     compose_state += sprintf("%4c", keysym);
-    if(arrayp(compose_patterns[compose_state]))
-      return 0;
-    if(keysym)
+
+    if(arrayp(compose_patterns[compose_state]))  return 0; // More to come..
+
+    if(compose_patterns[compose_state])
     {
       keysym = compose_patterns[compose_state];
       compose_state="";
@@ -319,28 +314,23 @@ class Window
     return _LookupKeysym( keysym );
   }
 
-
   string handle_keys(mapping evnt)
   {
     int code=evnt->detail, keysym;
     evnt->keycode = code;
 
     array keysymopts = display->key_mapping[ code ];
-//     werror(sprintf("%d%d", shift,alt_gr));
     keysym = keysymopts[ alt_gr*2+shift ];
-//     werror(sprintf("<%d{%{%d,%}}> ", keysym,keysymopts));
 
     if( keysym )
+    {
       if(evnt->type == "KeyPress")
-      {
 	evnt->data = LookupKeysym( keysym );
-	if(evnt->data)
-	  werror("("+evnt->data+") ");
-      }
       else
 	foreach(keysymopts, int k)
 	  ReleaseKey( k );
-    evnt->keysym = keysym;
+      evnt->keysym = keysym;
+    }
   }
   
   object CreateWindow_req(int x, int y, int width, int height,
