@@ -2368,7 +2368,12 @@ TimeRange parse(string fmt,string arg)
 
    Calendar cal=this_object();
 
+//  #define NOCATCH
+#ifndef NOCATCH
    if (catch {
+#else
+      werror("%O\n",m);
+#endif
       string x;
       if (m->Y) 
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
@@ -2497,7 +2502,9 @@ TimeRange parse(string fmt,string arg)
 	 return low[g](h,mi,s);
       else
 	 return low;
+#ifndef NOCATCH
    })
+#endif
        return 0;
 }
 
@@ -2622,12 +2629,12 @@ TimeofDay dwim_time(string what)
 	     string zone )
    foreach ( ({ "%t",
 		"T%t",
-		"%h:%*[ :]%m%*[ :]:%s %p",
-		"%h:%*[ :]%m%*[ :]:%s",
+		"%h:%*[ :]%m%*[ :]%s %p",
+		"%h:%*[ :]%m%*[ :]%s",
 		"%h:%*[ :]%m %p",
 		"%h:%*[ :]%m",
-		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]:%s %p",
-		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]:%s",
+		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p",
+		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s",
 		"%[a-zA-Z.] %h:%*[ :]%m %p",
 		"%[a-zA-Z.] %h:%*[ :]%m", }),
 	     string todformat )

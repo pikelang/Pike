@@ -209,11 +209,21 @@ static private Ruleset.Timezone _magic_timezone(string tz)
 //     werror("%O\n",t2-t1);
    if (p) return p;
 
-   if (sscanf(tz,"%s+%f",z,d)==2)
+   if (sscanf(tz,"%s+%f",z,d)==2 && z!="")
       return _make_new_timezone(z,d);
-   if (sscanf(tz,"%s-%f",z,d)==2)
+   if (sscanf(tz,"%s-%f",z,d)==2 && z!="")
       return _make_new_timezone(z,-d);
    if ((z=_military_tz[tz])) return `[](z);
+
+   if (sscanf(tz,"%[-+]%[0-9]",string a,string b)==2 &&
+       (<"-","+">)[a])
+      switch (strlen(b))
+      {
+	 case 2: return _magic_timezone("UTC"+a+b[..1]);
+	 case 4: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..]);
+	 case 6: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..3]+":"+b[4..]);
+      }
+
    return ::`[](replace(tz,"-/+"/1,"__p"/1));
 }
 
