@@ -57,6 +57,12 @@ import ".";
 #endif /* constant(Parser.Pike) */
 #endif /* OLD */
 
+#if !constant(has_prefix) || defined(OLD)
+int has_prefix(string s, string p)
+{
+  return (s[..sizeof(p)-1] == p);
+}
+#endif /* !constant(has_prefix) || OLD */
 
 int parse_type(array x, int pos)
 {
