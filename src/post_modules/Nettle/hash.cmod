@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.15 2004/01/23 01:05:06 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.16 2004/02/14 02:54:57 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -57,6 +57,7 @@ PIKECLASS HashInfo
    *! Returns a human readable name for the algorithm.
    */
   PIKEFUN string name()
+    optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
 	Pike_error("HashInfo not properly initialized.\n");
@@ -69,6 +70,7 @@ PIKECLASS HashInfo
    *! Returns the size of a hash digests.
    */
   PIKEFUN int digest_size()
+    optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
 	Pike_error("HashInfo not properly initialized.\n");
@@ -81,6 +83,7 @@ PIKECLASS HashInfo
    *! Returns the internal block size of the hash algorithm.
    */
   PIKEFUN int block_size()
+    optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
 	Pike_error("HashInfo not properly initialized.\n");
@@ -119,6 +122,7 @@ PIKECLASS HashState
    *! Hashes more data.
    */
   PIKEFUN object update(string data)
+    optflags OPT_SIDE_EFFECT;
     {
       const struct nettle_hash *meta =
 	GET_META(Pike_fp->current_object);

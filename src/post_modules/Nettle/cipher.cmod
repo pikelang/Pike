@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.27 2004/01/23 08:04:16 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.28 2004/02/14 02:54:57 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -98,6 +98,7 @@ PIKECLASS CipherInfo
    *!   A human readable name for the algorithm.
    */
   PIKEFUN string name()
+    optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
 	Pike_error("CipherInfo not properly initialized.\n");
@@ -111,6 +112,7 @@ PIKECLASS CipherInfo
    *!   The recommended key size for the cipher.
    */
   PIKEFUN int key_size()
+    optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
 	Pike_error("CipherInfo not properly initialized.\n");
@@ -124,6 +126,7 @@ PIKECLASS CipherInfo
    *!   The block size of the cipher (1 for stream ciphers).
    */
   PIKEFUN int block_size()
+    optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
 	Pike_error("CipherInfo not properly initialized.\n");
@@ -176,6 +179,7 @@ PIKECLASS CipherState
    *!   @[set_decrypt_key], @[crypt]
    */
   PIKEFUN object set_encrypt_key(string key, void|int force)
+    optflags OPT_SIDE_EFFECT;
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
       assert(info);
@@ -201,6 +205,7 @@ PIKECLASS CipherState
    *!   @[set_encrypt_key], @[crypt]
    */
   PIKEFUN object set_decrypt_key(string key, void|int force)
+    optflags OPT_SIDE_EFFECT;
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
       assert(info);
@@ -229,6 +234,7 @@ PIKECLASS CipherState
    *!   @[set_encrypt_key]
    */
   PIKEFUN string make_key()
+    optflags OPT_EXTERNAL_DEPEND;
   {
     struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
     assert(info);
@@ -252,6 +258,7 @@ PIKECLASS CipherState
    *!   The encrypted or decrypted data.
    */
   PIKEFUN string crypt (string data)
+    optflags OPT_EXTERNAL_DEPEND;
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
       struct pike_string *s;
@@ -277,6 +284,7 @@ PIKECLASS CipherState
    *!   The actual key size for this cipher.
    */
   PIKEFUN int key_size()
+    optflags OPT_EXTERNAL_DEPEND;
     {
       RETURN THIS->key_size;
     }

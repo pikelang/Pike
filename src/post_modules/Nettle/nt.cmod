@@ -38,6 +38,7 @@ PIKECLASS CryptContext
   CVAR HCRYPTPROV handle;
 
   PIKEFUN void create(string|int str1, string|int str2, int type, int flags)
+    flags ID_STATIC;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
     if(str1->type==T_INT) str1=0;
@@ -59,6 +60,7 @@ PIKECLASS CryptContext
    *! Retreive some random data.
    */
   PIKEFUN string CryptGenRandom(int size, string|void init)
+    optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *res;
     struct pike_string *str = 0;
