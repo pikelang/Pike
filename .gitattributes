@@ -204,6 +204,7 @@ testfont binary
 /lib/modules/Tools.pmod/testsuite.in foreign_ident
 /lib/modules/Web.pmod/Crawler.pmod foreign_ident
 /lib/modules/Yabu.pmod/module.pmod foreign_ident
+/lib/modules/Yabu.pmod/testsuite.in foreign_ident
 /lib/modules/_Image.pmod/Dims.pmod foreign_ident
 /lib/modules/_Image.pmod/module.pmod foreign_ident
 /lib/modules/_Image_DWG.pmod foreign_ident
