@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.462 2003/01/13 04:00:43 mast Exp $
+|| $Id: builtin_functions.c,v 1.463 2003/01/16 16:10:11 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.462 2003/01/13 04:00:43 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.463 2003/01/16 16:10:11 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2545,8 +2545,24 @@ PMOD_EXPORT void f_object_program(INT32 args)
   if(Pike_sp[-args].type == T_OBJECT)
   {
     struct object *o=Pike_sp[-args].u.object;
-    struct program *p;
-    if((p=o->prog))
+    struct program *p = o->prog;
+
+#if 0
+    /* This'd be nice, but it doesn't work well since the returned
+     * function can't double as a program (program_from_svalue returns
+     * NULL for it). */
+    if (p == pike_trampoline_program) {
+      struct pike_trampoline *t = (struct pike_trampoline *) o->storage;
+      if (t->frame && t->frame->current_object) {
+	add_ref (o = t->frame->current_object);
+	pop_n_elems (args);
+	push_function (o, t->func);
+	return;
+      }
+    }
+#endif
+
+    if(p)
     {
       if((p->flags & PROGRAM_USES_PARENT) && 
 	 PARENT_INFO(o)->parent &&
@@ -2556,9 +2572,7 @@ PMOD_EXPORT void f_object_program(INT32 args)
 	o=PARENT_INFO(o)->parent;
 	add_ref(o);
 	pop_n_elems(args);
-	push_object(o);
-	Pike_sp[-1].subtype=id;
-	Pike_sp[-1].type=T_FUNCTION;
+	push_function(o, id);
 	return;
       }else{
 	add_ref(p);
@@ -7378,26 +7392,21 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 	      tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
 	      
 	      find_external_context(&tmp, in->parent_offset-1);
-	      ref_push_object(tmp.o);
-	      Pike_sp[-1].subtype=in->parent_identifier + 
-		tmp.inherit->identifier_level;
-	      Pike_sp[-1].type=T_FUNCTION;
+	      ref_push_function(tmp.o,
+				in->parent_identifier +
+				tmp.inherit->identifier_level);
 	    }
 	  }
 	  break;
 	  
 	  case -17:
-	    ref_push_object(in->parent);
-	    Pike_sp[-1].subtype=in->parent_identifier;
-	    Pike_sp[-1].type=T_FUNCTION;
+	    ref_push_function(in->parent, in->parent_identifier);
 	    break;
 	    
 	  case -18:
 	    if(par)
 	    {
-	      ref_push_object(par);
-	      Pike_sp[-1].subtype=parid;
-	      Pike_sp[-1].type=T_FUNCTION;
+	      ref_push_function(par, parid);
 	    }else{
 	      ref_push_program(in->prog);
 	    }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.127 2003/01/12 16:00:14 mast Exp $
+|| $Id: interpret_functions.h,v 1.128 2003/01/16 16:10:12 mast Exp $
 */
 
 /*
@@ -306,11 +306,8 @@ OPCODE0(F_FLOAT, "push float", 0, {
 });
 
 OPCODE1(F_LFUN, "local function", 0, {
-  Pike_sp->u.object=Pike_fp->current_object;
-  add_ref(Pike_fp->current_object);
-  Pike_sp->subtype=arg1+Pike_fp->context.identifier_level;
-  Pike_sp->type=PIKE_T_FUNCTION;
-  Pike_sp++;
+  ref_push_function (Pike_fp->current_object,
+		     arg1+Pike_fp->context.identifier_level);
   print_return_value();
 });
 
@@ -330,10 +327,7 @@ OPCODE2(F_TRAMPOLINE, "trampoline", 0, {
   }
   add_ref( ((struct pike_trampoline *)(o->storage))->frame=f );
   ((struct pike_trampoline *)(o->storage))->func=arg1+Pike_fp->context.identifier_level;
-  push_object(o);
-  /* Make it look like a function. */
-  Pike_sp[-1].subtype = pike_trampoline_program->lfuns[LFUN_CALL];
-  Pike_sp[-1].type = T_FUNCTION;
+  push_function(o, pike_trampoline_program->lfuns[LFUN_CALL]);
   print_return_value();
 });
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.160 2003/01/07 19:51:26 grubba Exp $
+|| $Id: encode.c,v 1.161 2003/01/16 16:10:11 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.160 2003/01/07 19:51:26 grubba Exp $");
+RCSID("$Id: encode.c,v 1.161 2003/01/16 16:10:11 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1022,9 +1022,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	  if(p->inherits[d].parent)
 	  {
-	    ref_push_object(p->inherits[d].parent);
-	    Pike_sp[-1].subtype=p->inherits[d].parent_identifier;
-	    Pike_sp[-1].type=T_FUNCTION;
+	    ref_push_function(p->inherits[d].parent,
+			      p->inherits[d].parent_identifier);
 	    EDB(3,fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
 			p->id, p->inherits[d].parent, p->inherits[d].parent_identifier););
 	  }else if(p->inherits[d].prog){
