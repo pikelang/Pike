@@ -877,7 +877,7 @@ o Some global symbols have been renamed to avoid name clashes.
     fatal -> Pike_fatal
     empty_string -> empty_pike_string
 
-o --with-internal-profiling
+o Module symbols not available from other modules.
     FIXME: Expand on this.
 
 o C-module symbols not available from other modules.
@@ -892,6 +892,18 @@ o Pike valgrinded
     resolved, partially due to Valgrind breakage, our confidence in
     the quality of Pike has been reassured.
 
+o Some gdb helpers.
+    If Pike is compiled with --with-rtldebug there's a function
+    gdb_backtraces that can be called from gdb (using the "call"
+    command) to print all Pike thread backtraces. It doesn't do any
+    destructive changes of the memory structures (besides the stack)
+    and it tries to be tolerant wrt inconsistencies.
+
+    --with-rtldebug also makes a dummy function _gdb_breakpoint
+    available in Pike. It doesn't do anything and is intended to be
+    used by setting a gdb breakpoint on the C level counterpart
+    pike_gdb_breakpoint and then use _gdb_breakpoint at the
+    appropriate place in the Pike code to enter gdb at that point.
 
 Bugs fixed:
 -----------
