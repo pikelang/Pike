@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.72 2004/10/16 12:17:47 grubba Exp $
+|| $Id: jvm.c,v 1.73 2004/10/17 06:52:05 agehall Exp $
 */
 
 /*
@@ -2983,7 +2983,7 @@ static void f_att_create(INT32 args)
   att->args.group = NULL;
 
   att->tid = th_self();
-  if((*jvm->jvm)->AttachCurrentThread(jvm->jvm, &att->env, &att->args)<0)
+  if((*jvm->jvm)->AttachCurrentThread(jvm->jvm, (void *)&att->env, &att->args)<0)
     destruct(Pike_fp->current_object);
 }
 
