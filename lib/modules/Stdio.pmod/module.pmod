@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.82 2000/08/06 14:54:28 js Exp $
+// $Id: module.pmod,v 1.83 2000/08/28 21:07:57 hubbe Exp $
 
 import String;
 
@@ -497,7 +497,14 @@ class FILE {
       while((p=search(b, "\n", bpos+tmp)) == -1)
       {
 	tmp=strlen(b)-bpos;
-	if(!get_data()) return 0;
+	if(!get_data()) 
+	{
+	  if(bpos==sizeof(b))
+	     return 0;
+	  else
+	    return extract(sizeof(b)-bpos,0);
+	}
+
       }
       return extract(p-bpos, 1);
     }
