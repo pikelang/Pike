@@ -1,59 +1,49 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
+//
+// $Id: MySQL.pike,v 1.8 2001/03/18 05:19:46 js Exp $
 
 inherit Search.Database.Base;
 
 // Creates the SQL tables we need.
-// FIXME: last_changed and last_indexed should be in the same format. (fix here or in query?)
-// FIXME: last changed and last_indexed should be named modified and indexed.
 
-mapping table_defs =
-([
-  "fulltext":
-#"(word_id int unsigned not null,
-   document_id int unsigned not null,
-   word_position mediumint unsigned not null,
-   ranking tinyint not null,
-   INDEX index_word_id (word_id),
-   INDEX index_document_id (document_id))",
-
-]);
 void create_tables()
 {
+  catch(db->query("drop table uri"));
   catch(db->query("drop table document"));
-  catch(db->query("drop table word"));
+  catch(db->query("drop table field"));
   catch(db->query("drop table occurance"));
   db->query(
-#"create table uri      (id int unsigned primary key auto_increment not null,
-                         uri_first varchar(235),
-                         uri_rest text not null,
-                         uri_md5 char(16) not null default '',
-                         protocol_id tinyint,
+#"create table uri      (id          int unsigned primary key auto_increment not null,
+                         uri_first   varchar(235),
+                         uri_rest    text not null,
+                         uri_md5     char(16) not null default '',
                          UNIQUE(uri_md5),
                          INDEX index_uri_first (uri_first(235))"
 			 );
 
   db->query(
-#"create table language (id smallint unsigned primary key auto_increment not null,
-                         language_code char(3) not null)"
-                         );
-  db->query(
-#"create table document (id int unsigned primary key auto_increment not null,
-                         uri_id int unsigned not null,
-                         title varchar(255),
-                         description text,
-                         last_indexed timestamp,
-                         last_changed int unsigned,
-                         size int unsigned,
-                         mime_type smallint unsigned,
-                         language_id smallint unsigned)"
+#"create table document (id            int unsigned primary key auto_increment not null,
+                         uri_id        int unsigned not null,
+                         language_code char(3) not null,
+                         INDEX index_language_code (language_code),
+                         INDEX index_uri_id (uri_id))"
 			 );
   
   db->query(
-#"create table mime_type (id smallint unsigned primary_key auto_increment not null,
-                          name varchar(127))"
-                          );
-                          
+#"create table occurance (word_id      int unsigned not null,
+                          document_id  int unsigned not null,
+                          offset       mediumint unsigned not null,
+                          field_id     tinyint unsigned not null
+                          INDEX index_offset (offset),
+                          INDEX index_field_id (field_id),
+                          INDEX index_word_id (word_id),
+                          INDEX index_document_id (document_id))");
+
+  db->query(
+#"create table field (id    tinyint unsigned primary_key auto_increment not null,
+                      name  varchar(127),
+                      INDEX index_name (name))");
 }
 
 // This is the database object that all queries will be made to.
@@ -91,18 +81,19 @@ string to_md5(string url)
 // Useful information for crawlers
 mapping(string:int) page_stat(string uri)
 {
-  array res=db->query("SELECT last_changed, last_indexed, size "
-		      "FROM document WHERE uri_md5='%s'", to_md5(uri));
-  if(!sizeof(res)) return 0;
-  return (mapping(string:int))res[0];
+//   array res=db->query("SELECT last_changed, last_indexed, size "
+// 		      "FROM document WHERE uri_md5='%s'", to_md5(uri));
+//   if(!sizeof(res)) return 0;
+//   return (mapping(string:int))res[0];
 }
 
 
 // Takes about 50 us, i.e. not much. :)
-int hash_word(string word) {
+int hash_word(string word)
+{
   string hashed=Crypto.md5()->update(word[..254])->digest();
   return hashed[0]*16777216 +  // 2^24
-    hashed[1]*65536 +  // 2^16
+    hashed[1]*65536 +  // 2>^16
     hashed[2]*256 +  // 2^8
     hashed[3];
 }
@@ -114,98 +105,71 @@ array(string) split_uri(string in)
   return ({ in[..218], in[219..] });
 }
 
-// Insert or update a page in the database.
-// title and description is already in words.
-void insert_page(string uri, string title, string description, int last_changed,
-		 int size, int mime_type, array words)
+
+int find_or_create_uri_id(string uri)
 {
-  // Find out our document id
-  int doc_id;
-  if( catch( doc_id=(int)db->query("SELECT id FROM document "
-				   "WHERE uri_md5='%s'", to_md5(uri))[0]->id ))
-    doc_id=0;
+  string s=sprintf("select id from uri where uri_md5='%s'", to_md5(uri));
+  array a=db->query(s);
+  if(sizeof(a))
+    return (int)a[0]->id;
 
+  s=sprintf("insert into uri (uri_first,uri_rest,uri_md5) "
+	    "values ('%s','%s','%s')",
+	    @map(uri, db->quote), to_md5(uri));
+  db->query(s);
+  return db->master_sql->insert_id();
+}
 
-  int new;
-  if(!doc_id)
-  {
-    db->query("INSERT INTO document "
-	      "(uri_first, uri_rest, uri_md5, title, description, last_changed, size, mime_type)"
-	      " VALUES ('%s', '%s', '%s', '%s', '%s', %s, %s, %s)",
-	      @split_uri(uri), to_md5(uri), title, description, last_changed, size, mime_type);
-    werror("[%s] ",uri);
-    doc_id = db->master_sql->insert_id();
-    new=1;
-  }
-  else
-  {
-    // Page was already indexed.
-    db->query("UPDATE document SET title='%s', description='%s', "
-	      "last_changed='%s', size='%s', mime_type='%s' WHERE id=%s",
-	      title, description, last_changed, size, mime_type, doc_id);
-    db->query("DELETE FROM occurance WHERE document_id=%s", doc_id);
-  }
+int find_or_create_document_id(string uri, void|string language_code)
+{
+  int uri_id=find_or_create_uri_id(string uri);
+  
+  string s=sprintf("select id from document where "
+		   "uri_id='%d'", uri_id);
+  if(language)
+    s+=sprintf(" and language_code='%s'",db->quote(language_code));
 
-  // Add word occurances.
-  // Should a proper cache be used?
-  werror("doc_id: %O\n",doc_id);
+  array a = db->query(s);
+  if(sizeof(a))
+    return (int)a[0]->id;
+
+  s=sprintf("insert into document (uri_id, language_code) "
+	    "values ('%d',%s)",
+	    uri_id,
+	    language_code?("'"+language_code+"'"):"NULL");
+
+  db->query(s);
+  return db->master_sql->insert_id();
+}
+
+//! Inserts the words of a resource into the database
+void insert_words(Standards.URI|string uri, void|string language,
+		  string field, array words)
+{
+  int doc_id=find_or_create_document_id((string)uri, language);
+  int field_id=find_or_create_field_id(field);
 
   mapping word_ids=([]);
-  int word_pos;
-  string s="INSERT INTO occurance (word_id, document_id, word_position, "
-           "ranking) VALUES ";
+  int offset;
+  string s="insert into occurance (word_id, document_id, offset, "
+           "field_id) values ";
+  
   foreach(words, mapping word)
   {
     int word_id;
     string the_word=word->word;
-    if(!(word_id=word_ids[the_word])) {
+    if(!(word_id=word_ids[the_word]))
       word_id=hash_word(the_word);
-      //       word_ids[the_word]=word_id;
-      //       array res = db->query("SELECT word FROM word WHERE id="+word_id);
-      //       if(!sizeof(res))
-      // 	db->query("INSERT INTO word (id,word) VALUES (%s,'%s')",
-      // 		  word_id, the_word);
-    }
     s+=sprintf("(%d,%d,%d,%d),",
-	       word_id, doc_id, word_pos++, word->rank);
+	       word_id, doc_id, offset++, field_id);
     wc++;
   }
   if(sizeof(words))
     db->query(s[..sizeof(s)-2]);
 }
 
-void remove_page(string uri)
+void remove_document(string uri)
 {
-  int doc_id;
-  mixed error=catch( doc_id=db->query("SELECT id FROM document WHERE uri_md5='%s'",
-				      to_md5(uri) )[0]->id );
-  if(error) return;
-  db->query("REMOVE FROM document WHERE id=%s", doc_id);
-  db->query("REMOVE FROM occurence WHERE document_id=%s", doc_id);
-  removed++;
-}
-
-void garbage_collect()
-{
-  removed=0;
-
-  array ids;
-  if( catch( ids = db->query("SELECT id FROM word")->id ))
-    return;
-
-  foreach(ids, string id) {
-    int existence = sizeof(db->query("SELECT id FROM occurance WHERE word_id="+id+" LIMIT 1"));
-//     if(!existence) db->query("REMOVE FROM word WHERE word_id="+id);
-  }
-
-//   db->query("OPTIMIZE TABLE word");
-  db->query("OPTIMIZE TABLE occurance");
-  db->query("OPTIMIZE TABLE document");
-}
-
-void optimize()
-{
-  garbage_collect();
 }
 
 
@@ -331,10 +295,11 @@ class Contains(string field, string word)
 
   mapping build_sql_components(mapping(string:int) ref)
   {
-    return (["from": ({sprintf("occurance_%s t%d",field,ref->ref)}),
+    return (["from": ({"field", sprintf("occurance t%d",ref->ref)}),
 	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
 			    ref->ref,ref->ref,ref->ref)*/}),
-	     "where":  sprintf("t%d.word='%s'",ref->ref++,hash_word(word)) ]);
+	     "where":  sprintf("t%d.field_id=field.id and field.name='%s' and t%d.word='%s'",
+			       ref->ref,db->quote(field),ref->ref++,hash_word(word)) ]);
   }
 }
 
@@ -342,9 +307,9 @@ class Phrase
 {
   inherit LeafNode;
 
-  string field;
+  string|array(string) field;
   array(string) words;
-  void create(string _field, string ... _words)
+  void create(string|array(string) _field, string ... _words)
   {
     field=_field;
     words=_words;
@@ -358,18 +323,29 @@ class Phrase
     
     array(string) from=({}), where=({}), ranking=({});
     int i=0;
+    
+    where+=({ sprintf("t%d.field_id=field.id",ref->ref) });
+    if(arrayp(field))
+      where+=({ sprintf("field.name in (%s)'",
+			map(field, lambda(string f)
+				   {
+				     return sprintf("'%s'",db->quote(f));
+				   }) * ", ") });
+    else
+      where+=({ sprintf("field.name='%s'", db->quote(field)) });
+    
     foreach(words, string word)
     {
 //       ranking+=({sprintf("sum((document.tf * t%d.idf * t%d.idf)/document.length)",
 // 			 ref->ref,ref->ref)});
-      from+=({ sprintf("occurance_%s t%d",field,ref->ref) });
+      from+=({ sprintf("occurance t%d",ref->ref) });
       where+= ({ sprintf("t%d.word='%s'",ref->ref,hash_word(word)) });
       if(i++<sizeof(words)-1)
 	where+=({ sprintf("t%d.offset-t%d.offset = "+real_window_size,
 			  ref->ref+1, ref->ref) });
       ref->ref++;
     }
-    return ([ "from": from,
+    return ([ "from": ({"field"})+from,
               "ranking":ranking,
 	      "where": "("+where*" and\n       "+")" ]);
   }
@@ -379,10 +355,10 @@ class Near
 {
   inherit LeafNode;
   
-  string field;
+  string|array(string) field;
   array(string) words;
   int window_size;
-  void create(string _field, int _window_size, string ... _words)
+  void create(string|array(string) _field, int _window_size, string ... _words)
   {
     window_size=_window_size,
     field=_field;
@@ -413,7 +389,7 @@ class Language(/*Linguistics.Language*/string language)
 
   mapping build_sql_components(mapping(string:int) ref)
   {
-    return ([ "where": "document.language ='"+(string)language+"'",
+    return ([ "where": "document.language_code ='"+(string)language+"'",
 	      "ranking": ({ }),
 	      "from": ({ }) ]);
   }
@@ -440,3 +416,4 @@ class DateOP(string field, string op, string date)
 //   write(And(Or(Contains("body","foo"), Contains("body","bar"),Phrase("title","tjo","hej")),
 // 	    Phrase("title","roxen","internet","software"))->build_sql());
 // }
+ 
