@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.118 2003/02/11 00:40:29 grendel Exp $
+|| $Id: builtin.cmod,v 1.119 2003/02/11 09:28:19 grubba Exp $
 */
 
 #include "global.h"
@@ -744,8 +744,6 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
- *! If @[map] is an object that does not contain the @[lfun::_m_delete()]
- *! implementation, an exception will be thrown.
  *!
  *! Otherwise if @[map] is a mapping the entry with index @[index]
  *! will be removed from @[map] destructively.
@@ -753,8 +751,7 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! If the mapping does not have an entry with index @[index], nothing is done.
  *!
  *! @returns
- *!   The value that was removed will be returned or an exception will be thrown
- *!   in case of an error.
+ *!   The value that was removed will be returned.
  *!
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
@@ -881,6 +878,15 @@ PIKEFUN string function_name(program|function func)
 		     func))
 	    REF_RETURN id->name;
 	}
+#ifdef PIKE_DEBUG
+	if (d_flag>5) {
+	  fprintf(stderr,
+		  "Failed to find symbol for program 0x%08p\n"
+		  "Parent program info:\n",
+		  func->u.program);
+	  dump_program_tables(func->u.program->parent, 0);
+	}
+#endif
       }
       break;
     }
