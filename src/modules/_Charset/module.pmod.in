@@ -681,7 +681,7 @@ Decoder decoder_from_mib(int mib) {
 
 //! Returns an encoder for the encoding schema denoted by MIB @[mib].
 Encoder encoder_from_mib(int mib,  string|void replacement,
-			 function(string:string)|void repcb)) {
+			 function(string:string)|void repcb) {
   Encoder e=MIBenum[mib] && encoder(MIBenum[mib], replacement, repcb);
   if(!e) error("Unknown mib %d.\n", mib);
   return e;
