@@ -484,6 +484,8 @@ static class ScopeStack {
 
   void addName(string sym) { scopeArr[-1]->idents[sym] = 1; }
 
+  void remName(string sym) { scopeArr[-1]->idents[sym] = 0; }
+
   mapping resolveRef(string ref) {
     array(string) idents = splitRef(ref);
     int not_param = has_suffix(ref, "()");
@@ -566,7 +568,7 @@ static void fixupRefs(ScopeStack scopes, Node node) {
         // Add them here if we decide that also references in e.g.
         // object types should be resolved.
 	string name = n->get_any_name();
-        if (name == "ref") {
+        if ((<"ref", "classname", "object">)[name]) {
           mapping m = n->get_attributes();
           if (m["resolved"])
             return;
@@ -620,13 +622,10 @@ static void resolveFun(ScopeStack scopes, Node node) {
           scopes->leave();
           break;
         case "docgroup":
-          scopes->enter("params");
           {
-            Node doc = 0;
-            foreach (child->get_children(), Node n)
-              if (n->get_any_name() == "doc")
-                doc = n;
-              else if (n->get_any_name() == "method") {
+            scopes->enter("params");
+            foreach (child->get_children(), Node n) {
+              if (n->get_any_name() == "method") {
                 foreach (filter(n->get_children(),
                                 lambda (Node n) {
                                   return n->get_any_name() == "arguments";
@@ -636,25 +635,49 @@ static void resolveFun(ScopeStack scopes, Node node) {
 		      continue;
                     scopes->addName(argnode->get_attributes()["name"]);
 		  }
-              }
-	    if(doc)
-	      fixupRefs(scopes, doc);
-	    else
+	      }
+	    }
+            Node doc = 0;
+	    foreach(child->get_children(), Node n) {
+	      if (n->get_any_name() == "doc") {
+		doc = n;
+		fixupRefs(scopes, n);
+	      }
+	    }
+	    if (!doc)
 	      werror("No doc element found\n%s\n\n", child->render_xml());
+	    scopes->leave();
+	    if ((child->get_attributes()["homogen-type"] == "inherit") &&
+		(child->get_attributes()["homogen-name"])) {
+	      // Avoid finding ourselves...
+	      scopes->remName(child->get_attributes()["homogen-name"]);
+	      foreach(child->get_children(), Node n) {
+		if (n->get_any_name() != "doc") {
+		  fixupRefs(scopes, n);
+		}
+	      }
+	      scopes->addName(child->get_attributes()["homogen-name"]);
+	    } else {
+	      foreach(child->get_children(), Node n) {
+		if (n->get_any_name() != "doc") {
+		  fixupRefs(scopes, n);
+		}
+	      }
+	    }
           }
-          scopes->leave();
           break;
         case "doc":  // doc for the <class>/<module> itself
           fixupRefs(scopes, child);
           break;
         case "inherit":
-	  break;
+	  child = child->get_first_element("classname");
           mapping m = child->get_attributes();
           if (m["resolved"])
-            return;
+            break;
           mapping resolved = scopes->resolveRef(child->value_of_node());
-          foreach (indices(resolved), string i)
-            m[i] = resolved[i];
+          foreach (resolved; string i; string v)
+	    m[i] = v;
+	  // werror("Inherit: m:%O\n", m);
 	  break;
         default:
           ; // do nothing
