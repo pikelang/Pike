@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.259 1999/01/07 13:41:51 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.260 1999/01/21 20:52:28 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -199,7 +199,7 @@ AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors 
 AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
 AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
-AC_ARG_WITH(compiler-trace,[  --with-security       enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
+AC_ARG_WITH(security,    [  --with-security       enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)
