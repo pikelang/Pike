@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.41 2002/07/22 16:15:40 bill Exp $
+// $Id: client.pike,v 1.42 2002/07/31 00:18:48 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -74,7 +74,9 @@
 
 #include "ldap_errors.h"
 
+#if constant(SSL.sslfile)
 import SSL.constants;
+#endif
 
 #ifdef LDAP_PROTOCOL_PROFILE
 int _prof_gtim;
@@ -358,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.41 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.42 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -366,7 +368,11 @@ int _prof_gtim;
     lauth = parse_url(url);
 
     if(!stringp(lauth->scheme) ||
-       ((lauth->scheme != "ldap") && (lauth->scheme != "ldaps"))) {
+       ((lauth->scheme != "ldap")
+#if constant(SSL.sslfile)
+	&& (lauth->scheme != "ldaps")
+#endif
+	)) {
       THROW(({"Unknown scheme in server URL.\n",backtrace()}));
     }
 
@@ -375,6 +381,7 @@ int _prof_gtim;
     if(!lauth->port)
       lauth += ([ "port" : lauth->scheme == "ldap" ? LDAP_DEFAULT_PORT : LDAPS_DEFAULT_PORT ]);
 
+#if constant(SSL.sslfile)
     if(lauth->scheme == "ldaps" && !context) {
       context = SSL.context();
       // Allow only strong crypto
@@ -385,6 +392,7 @@ int _prof_gtim;
 	SSL_rsa_with_3des_ede_cbc_sha,
       });
     }
+#endif
  
     if(!(::connect(lauth->host, lauth->port))) {
       //errno = ldapfd->errno();
@@ -398,13 +406,15 @@ int _prof_gtim;
       THROW(({"Failed to connect to LDAP server.\n",backtrace()}));
     }
 
+#ifdef constant(SSL.sslfile)
     if(lauth->scheme == "ldaps") {
       context->random = Crypto.randomness.reasonably_random()->read;
       ::create(SSL.sslfile(::_fd, context, 1,1));
       info->tls_version = ldapfd->version;
     } else
       ::create(::_fd);
- 
+#endif
+
     DWRITE("client.create: connected!\n");
 
     DWRITE(sprintf("client.create: remote = %s\n", query_address()));
