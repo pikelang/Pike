@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.69 2003/10/23 01:38:42 nilsson Exp $
+ * $Id: Sql.pike,v 1.70 2003/10/26 00:08:42 peterl Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -28,6 +28,27 @@ int(0..1) case_convert;
 
 //! @decl string quote(string s)
 //! Quote a string @[s] so that it can safely be put in a query.
+//!
+//! All input that is used in SQL-querys should be quoted to prevent
+//! SQL injections.
+//! 
+//! Consider this harmfull code:
+//! @code
+//!   string my_input = "rob' OR name!='rob";
+//!   string my_query = "DELETE FROM tblUsers WHERE name='"+my_input+"'";
+//!   my_db->query(my_query);
+//! @endcode
+//! 
+//! This type of problems can be avoided by quoting @tt{my_input@}.
+//! @tt{my_input@} would then probably read something like 
+//! @i{rob\' OR name!=\'rob@} 
+//!
+//! Usually this is done - not by calling quote explicitly - but through
+//! using a @[sprintf] like syntax
+//! @code
+//!   string my_input = "rob' OR name!='rob";
+//!   my_db->query("DELETE FROM tblUsers WHERE name=%s",my_input);
+//! @endcode
 
 function(string:string) quote = .sql_util.quote;
 
@@ -342,10 +363,7 @@ private array(string|mapping(string|int:mixed))
   return ({sprintf(query,@args), b});
 }
 
-//!   Send an SQL query to the underlying SQL-server. The result is returned
-//!   as an array of mappings indexed on the name of the columns.
-//!   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
-//!
+//!   Send an SQL query to the underlying SQL-server.
 //! @param q
 //!   Query to send to the SQL-server. This can either be a string with the
 //!   query, or a previously compiled query (see compile_query()).
@@ -361,8 +379,12 @@ private array(string|mapping(string|int:mixed))
 //!     the variable is used.
 //!
 //! @code
-//! query("select foo from bar where gazonk=:baz",
-//!   ([":baz":"value"])) )
+//! mixed err = catch {
+//!   query("SELECT foo FROM bar WHERE gazonk=:baz",
+//!     ([":baz":"value"]));
+//! };
+//! if(!intp(err)) 
+//!   werror("An error occured.");
 //! @endcode
 //!
 //!     Binary values (BLOBs) may need to be placed in multisets.
@@ -375,6 +397,21 @@ private array(string|mapping(string|int:mixed))
 //! query("select foo from bar where gazonk=%s","value") )
 //! @endcode
 //!   @endol
+//!
+//! @returns
+//!   Returns one of the following on success:
+//!   @mixed
+//!     @type array(mapping(string:string))
+//!       The result as an array of mappings indexed on the name
+//!       of the columns
+//!     @type zero
+//!       The value @expr{0@} (zero) if the query didn't return any
+//!       result (eg @tt{INSERT@} or similar).
+//!   @endmixed
+//!
+//! @throws
+//!   Throws an exception if the query fails.
+
 array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
