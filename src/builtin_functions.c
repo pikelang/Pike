@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.547 2004/05/01 15:25:29 mast Exp $
+|| $Id: builtin_functions.c,v 1.548 2004/05/01 15:32:01 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.547 2004/05/01 15:25:29 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.548 2004/05/01 15:32:01 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1248,19 +1248,20 @@ PMOD_EXPORT void f_add_constant(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl string combine_path(string path, string ... relative)
- *! @decl string combine_path_unix(string path, string ... relative)
- *! @decl string combine_path_nt(string path, string ... relative)
- *! @decl string combine_path_amigaos(string path, string ... relative)
+/*! @decl string combine_path(string path, string ... paths)
+ *! @decl string combine_path_unix(string path, string ... paths)
+ *! @decl string combine_path_nt(string path, string ... paths)
+ *! @decl string combine_path_amigaos(string path, string ... paths)
  *!
- *!   Concatenate a number of path components to a straightforward
- *!   path without any @expr{"//"@}, @expr{"/.."@} or @expr{"/."@}. If
- *!   @[path] is absolute then the result is absolute, otherwise it
- *!   might have leading @expr{".."@} components. If the last
- *!   component ends with @expr{"/"@} then the result ends with it
- *!   too. If all components in a relative path disappear due to
- *!   subsequent @expr{".."@} components then the result is
- *!   @expr{"."@}.
+ *!   Concatenate a number of paths to a straightforward path without
+ *!   any @expr{"//"@}, @expr{"/.."@} or @expr{"/."@}. If any path
+ *!   argument is absolute then the result is absolute and the
+ *!   preceding arguments are ignored. If the result is relative then
+ *!   it might have leading @expr{".."@} components. If the last
+ *!   nonempty argument ends with a directory separator then the
+ *!   result ends with that too. If all components in a relative path
+ *!   disappear due to subsequent @expr{".."@} components then the
+ *!   result is @expr{"."@}.
  *!
  *!   @[combine_path_unix()] concatenates in UNIX style, which also is
  *!   appropriate for e.g. URL:s ("/" separates path components and
