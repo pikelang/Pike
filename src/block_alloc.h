@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.57 2002/12/01 05:52:14 mast Exp $
+|| $Id: block_alloc.h,v 1.58 2002/12/02 11:08:22 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -20,6 +20,7 @@
 #undef PTR_HASH_ALLOC_FILL_PAGES
 #undef PTR_HASH_ALLOC_FIXED_FILL_PAGES
 
+/* Note: The block_alloc mutex is held while PRE_INIT_BLOCK runs. */
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
 #define EXIT_BLOCK(X)
@@ -187,7 +188,6 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   struct PIKE_CONCAT(DATA,_block) *blk;					\
 									\
   EXIT_BLOCK(d);							\
-  PRE_INIT_BLOCK(d);							\
 									\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
 									\
@@ -241,6 +241,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   }									\
 									\
   d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
+  PRE_INIT_BLOCK(d);							\
   /* Mark block as unavailable. */					\
   PIKE_MEM_NA(*d);							\
   blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
