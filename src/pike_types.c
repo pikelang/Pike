@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.164 2001/03/18 14:32:16 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.165 2001/03/18 19:46:52 per Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -417,7 +417,7 @@ void push_scope_type(int level)
 void push_assign_type(int marker)
 {
   marker -= '0';
-#ifdef PIKE_DEBUG */
+#ifdef PIKE_DEBUG 
   if ((marker < 0) || (marker > 9)) {
     fatal("Bad assign marker: %ld\n", marker);
   }
@@ -799,7 +799,31 @@ static void internal_parse_typeA(char **_s)
     case 'o':
       if(!strcmp(buf,"object"))
       {
-	push_object_type(0, 0);
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(') /* object({is,implements} id) */
+	{
+	  int is = 1, id;
+	  ++*s;
+	  if( **s != 'i' )
+	    goto bad_type;
+	  ++*s;
+	  if( **s == 'm' )
+	    is = 0;
+	  while( isidchar( **s ) ) ++*s;
+	  while( ISSPACE(**s) )      ++*s;
+	  if( !**s )
+	    goto bad_type;
+	  id = atoi( *s );	
+	  while( **s >= '0' && **s <= '9' )
+	    ++*s;
+	  while(ISSPACE(**s)) ++*s;
+	  if( !**s || **s != ')' )
+	    goto bad_type;
+	  ++*s;
+	  push_object_type(is, id);
+	}
+	else
+	  push_object_type(0, 0);
 	break;
       }
       goto bad_type;
@@ -4102,10 +4126,19 @@ static void low_type_to_string(struct pike_type *t)
     break;
 
   case T_OBJECT:
-    if (t->car || t->cdr) {
-      Pike_error("Not supported yet!\n");
-    } else {
-      my_strcat(tObj);
+    {
+      INT32 i;
+      my_putchar(T_OBJECT);
+      i = (INT32)(ptrdiff_t)t->car;
+      my_putchar( i );
+      i = (INT32)(ptrdiff_t)t->cdr;
+
+      if( i > 65535 )  i = 0; /* Not constant between recompilations */
+
+      my_putchar((i >> 24) & 0xff);
+      my_putchar((i >> 16) & 0xff);
+      my_putchar((i >> 8)  & 0xff);
+      my_putchar(i & 0xff);
     }
     break;
 
@@ -4558,11 +4591,34 @@ static void internal_parse_typeA(char **_s)
     case 'o':
       if(!strcmp(buf,"object"))
       {
-	push_object_type(0, 0);
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(') /* object({is,implements} id) */
+	{
+	  int is = 1, id;
+	  ++*s;
+	  if( **s != 'i' )
+	    goto bad_type;
+	  ++*s;
+	  if( **s == 'm' )
+	    is = 0;
+	  while( isidchar( **s ) ) ++*s;
+	  while( ISSPACE(**s) )      ++*s;
+	  if( !**s )
+	    goto bad_type;
+	  id = atoi( *s );	
+	  while( **s >= '0' && **s <= '9' )
+	    ++*s;
+	  while(ISSPACE(**s)) ++*s;
+	  if( !**s || **s != ')' )
+	    goto bad_type;
+	  ++*s;
+	  push_object_type(is, id);
+	}
+	else
+	  push_object_type(0, 0);
 	break;
       }
       goto bad_type;
-
 
     case 'p':
       if(!strcmp(buf,"program")) { push_type(T_PROGRAM); break; }
