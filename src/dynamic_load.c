@@ -7,7 +7,7 @@
 #  include "stralloc.h"
 #  include "pike_macros.h"
 
-RCSID("$Id: dynamic_load.c,v 1.29 1998/07/09 12:45:35 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.30 1998/07/09 21:55:16 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -139,11 +139,11 @@ static void dlinit(void)
 
 #include <dl.h>
 
-#if defined(TESTING) && defined(BIND_VERBOSE)
+#if defined(BIND_VERBOSE)
 #define RTLD_NOW	BIND_IMMEDIATE | BIND_VERBOSE
 #else
 #define RTLD_NOW	BIND_IMMEDIATE
-#endif /* TESTING && BIND_VERBOSE */
+#endif /* BIND_VERBOSE */
 
 extern int errno;
 
