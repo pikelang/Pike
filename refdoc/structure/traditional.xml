@@ -5,11 +5,11 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.12 2002/04/06 21:28:16 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.13 2002/05/10 12:27:31 manual Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
-  <file name="top.html">
+  <file name="index.html">
     <chapter title="Table of Contents" unnumbered="1">
       <contents/>
     </chapter>
