@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.9 2001/07/05 02:14:15 nilsson Exp $
+// $Id: Utils.pmod,v 1.10 2001/07/05 18:55:37 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -94,6 +94,7 @@ class Logger {
     101 : "Exiting %s due to signal",
     102 : "Connecting %s to %s",
     103 : "%s failed to set up pipe",
+    104 : "Fetched %s",
     404 : "File %s not found",
   ]);
 
@@ -101,7 +102,7 @@ class Logger {
 				int from, int to ) {
 
     string sql = "";
-#define SQLADD(X) do{sizeof(sql)?(sql=" WHERE "+(X)):(sql+=" AND "+(X));}while(0)
+#define SQLADD(X) do{sizeof(sql)?(sql+=" AND "+(X)):(sql=" WHERE "+(X));}while(0)
     if(profile)
       SQLADD("profile=" + profile);
     if(!sizeof(types))
