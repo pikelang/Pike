@@ -1,4 +1,4 @@
-// $Id: ext_to_media_type.pmod,v 1.5 2003/01/02 17:14:17 nilsson Exp $
+// $Id: ext_to_media_type.pmod,v 1.6 2003/12/03 10:22:52 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -699,6 +699,7 @@ static mapping ext2type = ([
   "po"      : "application/x-form",
   "pqf"     : "application/x-cprplayer",
   "pqi"     : "application/cprplayer",
+  "psd"     : "application/x-photoshop",
   "psr"     : "application/datawindow",
   "ptlk"    : "application/listenup",
   "qrt"     : "application/quest",
