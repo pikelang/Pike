@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.41 2004/02/26 15:24:50 grubba Exp $
+# $Id: configure.in,v 1.42 2004/09/26 12:55:54 marcus Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -165,7 +165,7 @@ int main()
    FILE *ver=fopen("config.gmpversion","w+");
    fprintf(ver,"%s\n",gmp_version);
    return 0;
-}],[],[],[])
+}],[],[],[:])
       if test -f config.gmpversion; then
          AC_MSG_RESULT(`cat config.gmpversion`)
          PIKE_FEATURE([Gmp (bignums)],[yes (version `cat config.gmpversion`, using lib$1)])
