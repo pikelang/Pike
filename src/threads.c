@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.97 1999/05/13 17:43:37 grubba Exp $");
+RCSID("$Id: threads.c,v 1.98 1999/06/03 06:10:03 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -622,9 +622,11 @@ void f_thread_create(INT32 args)
   arg->id=clone_object(thread_id_prog,0);
   OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
 
-  tmp=th_create(& OBJ2THREAD(arg->id)->id,
-		new_thread_func,
-		arg);
+  do {
+    tmp=th_create(& OBJ2THREAD(arg->id)->id,
+		  new_thread_func,
+		  arg);
+  } while( tmp == EINTR );
 
   if(!tmp)
   {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: signal_handler.h,v 1.8 1999/04/12 05:27:49 hubbe Exp $
+ * $Id: signal_handler.h,v 1.9 1999/06/03 06:10:01 hubbe Exp $
  */
 #ifndef SIGNAL_H
 #define SIGNAL_H
@@ -18,7 +18,7 @@ void my_signal(int sig, sigfunctype fun);
 void check_signals(struct callback *foo, void *bar, void *gazonk);
 void set_default_signal_handler(int signum, void (*func)(INT32));
 void process_started(pid_t pid);
-void process_done(pid_t pid);
+void process_done(pid_t pid, char *from);
 struct wait_data;
 struct pid_status;
 struct perishables;

@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.173 1999/06/02 18:59:38 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.174 1999/06/03 06:10:02 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3230,20 +3230,58 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
+  test_do([[
   for(int q=0;q<100;q++)
   {
-    Threads.Fifo fifo=Threads.Fifo();
+    array fnord=({});
+    Thread.Fifo fifo=Thread.Fifo();
 
     for(int e=0;e<10;e++)
     {
-      thread_create(lamba() {
+      fnord+=({ thread_create(lambda() {
         Process.create_process(({"/bin/cat","/dev/null"}));
         fifo->read();
-      });
+      }) });
     }
     for(int e=0;e<50;e++)  Stdio.Port()->bind(0);
     for(int e=0;e<10;e++) fifo->write(1);
+    fnord->wait();
   }
+  ]])
+]])
+
+cond([[ file_stat("/bin/sleep")  && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+[[
+test_any([[
+  class Fnord
+  {
+int gnapp(int t)
+{
+  int e;
+  for(e=0;e<7;e++)
+  {
+    for(int d=0;d<150;d++)
+    {
+      object o=Process.create_process(({"/bin/sleep","99999"}));
+      kill( o->pid(), 9 );
+      o->wait();
+    }
+//    werror("%d",t);
+  }
+  return -1;
+}
+
+array start()
+{
+  array a=({});
+  for(int e=0;e<10;e++)
+    a+=({thread_create(gnapp,e)});
+  return a;
+}
+};
+
+return Fnord()->start()->wait()-({ -1 });
+]],[[ ({}) ]])
 ]])
 
 

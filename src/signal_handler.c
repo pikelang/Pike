@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.134 1999/05/26 07:08:11 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.135 1999/06/03 06:10:00 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -110,6 +110,93 @@ RCSID("$Id: signal_handler.c,v 1.134 1999/05/26 07:08:11 hubbe Exp $");
 #undef USE_SIGCHILD
 #endif
 
+#if defined(USE_SIGCHILD) && defined(__linux__) && _REENTRANT
+#define NEED_SIGNAL_SAFE_FIFO
+#endif
+
+
+#ifndef NEED_SIGNAL_SAFE_FIFO
+
+#ifdef DEBUG
+#define SAFE_FIFO_DEBUG_BEGIN() do {\
+  static volatile int inside=0;	      \
+  if(inside) \
+    fatal("You need to define NEED_SIGNAL_SAFE_FIFO in signal_handler.c!\n"); \
+  inside=1;
+
+#define SAFE_FIFO_DEBUG_END() inside=0; }while(0)
+#endif
+
+#define DECLARE_FIFO(pre,TYPE) \
+  static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER]; \
+  static volatile int PIKE_CONCAT(pre,_first)=0,PIKE_CONCAT(pre,_last)=0
+
+#define BEGIN_FIFO_PUSH(pre,TYPE) do { \
+  int PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_first) + 1; \
+  if(PIKE_CONCAT(pre,_tmp_) > SIGNAL_BUFFER) PIKE_CONCAT(pre,_tmp_)=0
+
+#define FIFO_DATA(pre,TYPE) ( PIKE_CONCAT(pre,buf)[PIKE_CONCAT(pre,_tmp_)] )
+
+#define END_FIFO_PUSH(pre,TYPE) PIKE_CONCAT(pre,_first)=PIKE_CONCAT(pre,_tmp_); } while(0)
+
+
+#define QUICK_CHECK_FIFO(pre,TYPE) ( PIKE_CONCAT(pre,_first) != PIKE_CONCAT(pre,_last) )
+
+#define BEGIN_FIFO_LOOP(pre,TYPE) do {				\
+   int PIKE_CONCAT(pre,_tmp2_)=PIKE_CONCAT(pre,_first);		\
+   while(PIKE_CONCAT(pre,_last) != PIKE_CONCAT(pre,_tmp2_))	\
+   {								\
+     int PIKE_CONCAT(pre,_tmp_);				\
+     if( ++ PIKE_CONCAT(pre,_last) == SIGNAL_BUFFER)		\
+       PIKE_CONCAT(pre,_last)=0;				\
+     PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_last)
+
+#define END_FIFO_LOOP(pre,TYPE) } }while(0)
+     
+#define INIT_FIFO(pre,TYPE)
+
+#else
+
+#define DECLARE_FIFO(pre,TYPE) \
+  static int PIKE_CONCAT(pre,_fd)[2]; \
+  static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available)
+
+#define BEGIN_FIFO_PUSH(pre,TYPE) do { TYPE PIKE_CONCAT(pre,_tmp_)
+
+#define FIFO_DATA(pre,TYPE) PIKE_CONCAT(pre,_tmp_)
+
+#define END_FIFO_PUSH(pre,TYPE) \
+ while( write(PIKE_CONCAT(pre,_fd)[1],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_))) < 0 && errno==EINTR); \
+ PIKE_CONCAT(pre,_data_available)=1; \
+ } while(0)
+
+
+#define QUICK_CHECK_FIFO(pre,TYPE) PIKE_CONCAT(pre,_data_available)
+
+#define BEGIN_FIFO_LOOP(pre,TYPE) do {			      \
+   TYPE PIKE_CONCAT(pre,_tmp_);				      \
+   PIKE_CONCAT(pre,_data_available)=0;			      \
+   while(read(PIKE_CONCAT(pre,_fd)[0],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))==sizeof(PIKE_CONCAT(pre,_tmp_))) \
+   {
+
+#define END_FIFO_LOOP(pre,TYPE) } }while(0)
+
+#define INIT_FIFO(pre,TYPE) do {			\
+  if(pike_make_pipe(PIKE_CONCAT(pre,_fd)) <0)		\
+    fatal("Couldn't create buffer " #pre ".\n");	\
+							\
+  set_nonblocking(PIKE_CONCAT(pre,_fd)[0],1);		\
+  set_nonblocking(PIKE_CONCAT(pre,_fd)[1],1);		\
+  set_close_on_exec(PIKE_CONCAT(pre,_fd)[0], 1);	\
+  set_close_on_exec(PIKE_CONCAT(pre,_fd)[1], 1);	\
+}while(0)
+   
+#endif
+
+#ifndef SAFE_FIFO_DEBUG_END
+#define SAFE_FIFO_DEBUG_BEGIN() do {
+#define SAFE_FIFO_DEBUG_END()  }while(0)
+#endif
 
 /* Added so we are able to patch older versions of Pike. */
 #ifndef add_ref
@@ -122,9 +209,10 @@ static int set_priority( int pid, char *to );
 
 static struct svalue signal_callbacks[MAX_SIGNALS];
 static void (*default_signals[MAX_SIGNALS])(INT32);
-static unsigned char sigbuf[SIGNAL_BUFFER];
-static int firstsig, lastsig;
 static struct callback *signal_evaluator_callback =0;
+
+DECLARE_FIFO(sig,char);
+
 
 #ifdef USE_PID_MAPPING
 static void report_child(int pid,
@@ -135,14 +223,13 @@ static void report_child(int pid,
 #ifdef USE_SIGCHILD
 static RETSIGTYPE receive_sigchild(int signum);
 
-struct wait_data {
+typedef struct wait_data_s {
   pid_t pid;
   WAITSTATUSTYPE status;
-};
+} wait_data;
 
-static volatile struct wait_data wait_buf[WAIT_BUFFER];
-static volatile int firstwait=0;
-static volatile int lastwait=0;
+DECLARE_FIFO(wait,wait_data);
+
 #endif
 
 
@@ -362,21 +449,15 @@ static struct sigdesc signal_desc []={
 
 static void register_signal(int signum)
 {
-  int tmp;
-
-  tmp=firstsig+1;
-  if(tmp == SIGNAL_BUFFER) tmp=0;
-  if(tmp != lastsig)
-  {
-    sigbuf[tmp]=signum;
-    firstsig=tmp;
-  }
+  BEGIN_FIFO_PUSH(sig,char);
+  FIFO_DATA(sig,char)=signum;
+  END_FIFO_PUSH(sig,char);
   wake_up_backend();
-
 }
 
 static RETSIGTYPE receive_signal(int signum)
 {
+  SAFE_FIFO_DEBUG_BEGIN();
   if ((signum < 0) || (signum >= MAX_SIGNALS)) {
     /* Some OSs (Solaris 2.6) send a bad signum sometimes.
      * SIGCHLD is the safest signal to substitute.
@@ -390,6 +471,7 @@ static RETSIGTYPE receive_signal(int signum)
   }
 
   register_signal(signum);
+  SAFE_FIFO_DEBUG_END();
 #ifdef SIGNAL_ONESHOT
   my_signal(signum, receive_signal);
 #endif
@@ -450,43 +532,47 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
   if(d_flag>5) do_debug();
 #endif
 
-  if(firstsig != lastsig && !signalling)
+
+  if(QUICK_CHECK_FIFO(sig,char) && !signalling)
   {
-    int tmp=firstsig;
     signalling=1;
 
     SET_ONERROR(ebuf,unset_signalling,0);
 
-    while(lastsig != tmp)
-    {
-      if(++lastsig == SIGNAL_BUFFER) lastsig=0;
+    BEGIN_FIFO_LOOP(sig,char);
 
 #ifdef USE_SIGCHILD
-      if(sigbuf[lastsig]==SIGCHLD)
-      {
-	int tmp2 = firstwait;
-	while(lastwait != tmp2)
-	{
-	  if(++lastwait == WAIT_BUFFER) lastwait=0;
-	  report_child(wait_buf[lastwait].pid,
-		       wait_buf[lastwait].status);
-	}
-      }
+    if(FIFO_DATA(sig,char)==SIGCHLD)
+    {
+      BEGIN_FIFO_LOOP(wait,wait_data);
+
+      if(!FIFO_DATA(wait,wait_data).pid)
+	  fatal("FIFO_DATA(wait,wait_data).pid=0 NEED_SIGNAL_SAFE_FIFO is "
+#ifndef NEED_SIGNAL_SAFE_FIFO
+		"not "
+#endif
+		"defined.\n");
+	
+      process_done(FIFO_DATA(wait,wait_data).pid,"check_signals");
+      report_child(FIFO_DATA(wait,wait_data).pid,
+		   FIFO_DATA(wait,wait_data).status);
+      
+      END_FIFO_LOOP(wait,wait_data);
+    }
 #endif
 
-      if(IS_ZERO(signal_callbacks + sigbuf[lastsig]))
-      {
-	if(default_signals[sigbuf[lastsig]])
-	  default_signals[sigbuf[lastsig]](sigbuf[lastsig]);
-      }else{
-	push_int(sigbuf[lastsig]);
-	apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
-	pop_stack();
-      }
+    if(IS_ZERO(signal_callbacks + FIFO_DATA(sig,char)))
+    {
+      if(default_signals[FIFO_DATA(sig,char)])
+	default_signals[FIFO_DATA(sig,char)](FIFO_DATA(sig,char));
+    }else{
+      push_int(FIFO_DATA(sig,char));
+      apply_svalue(signal_callbacks + FIFO_DATA(sig,char), 1);
+      pop_stack();
     }
 
+    END_FIFO_LOOP(sig,char);
     UNSET_ONERROR(ebuf);
-
     signalling=0;
   }
 }
@@ -650,6 +736,8 @@ static void f_signame(int args)
 #if PIKE_DEBUG
 
 char process_info[65536];
+int last_pid_p;
+int last_pids[4096];
 
 #define P_NOT_STARTED 0
 #define P_RUNNING 1
@@ -657,10 +745,28 @@ char process_info[65536];
 #define P_RUNNING_AGAIN 3
 #define P_DONE_AGAIN 4
 
+void dump_process_history(pid_t pid)
+{
+  int e;
+  if(pid < 1 || pid > 65536)
+    fatal("Pid out of range: %ld\n",(long)pid);
+
+  fprintf(stderr,"Process history:");
+  for(e=MAXIMUM(-4095,-last_pid_p);e<0;e++)
+  {
+    fprintf(stderr," %d",last_pids[ (last_pid_p + e) & 4095]);
+  }
+
+  fprintf(stderr,"\nProblem pid = %d, status = %d\n",pid,process_info[pid]);
+}
+
+
 void process_started(pid_t pid)
 {
-  if(pid < 0 || pid > 65536)
+  if(pid < 1 || pid > 65536)
     fatal("Pid out of range: %ld\n",(long)pid);
+
+  last_pids[last_pid_p++ & 4095]=pid;
 
   switch(process_info[pid])
   {
@@ -671,16 +777,18 @@ void process_started(pid_t pid)
 
     case P_DONE_AGAIN:
       process_info[pid]=P_RUNNING_AGAIN;
+      break;
 
     default:
+      dump_process_history(pid);
       fatal("Process debug: Pid %ld started without stopping! (status=%d)\n",(long)pid,process_info[pid]);
   }
 }
 
-void process_done(pid_t pid)
+void process_done(pid_t pid, char *from)
 {
-  if(pid < 0 || pid > 65536)
-    fatal("Pid out of range: %ld\n",(long)pid);
+  if(pid < 1 || pid > 65536)
+    fatal("Pid out of range in %s: %ld\n",from,(long)pid);
   switch(process_info[pid])
   {
     case P_RUNNING:
@@ -689,14 +797,17 @@ void process_done(pid_t pid)
       break;
 
     default:
-      fatal("Process debug: Unknown child %ld! (status=%d)\n",(long)pid,process_info[pid]);
+      dump_process_history(pid);
+      fatal("Process debug: Unknown child %ld in %s! (status=%d)\n",(long)pid,from,process_info[pid]);
   }
 }
+
 
 #else
 
 #define process_started(PID)
-#define process_done(PID)
+#define process_done(PID,FROM)
+#define dump_process_history(PID)
 
 #endif
 
@@ -727,31 +838,34 @@ void process_done(pid_t pid)
 
 
 #ifdef USE_SIGCHILD
+
 static RETSIGTYPE receive_sigchild(int signum)
 {
   pid_t pid;
   WAITSTATUSTYPE status;
-  
+
+  SAFE_FIFO_DEBUG_BEGIN();
+
  try_reap_again:
   /* We carefully reap what we saw */
   pid=MY_WAIT_ANY(&status, WNOHANG);
   
   if(pid>0)
   {
-    int tmp2=firstwait+1;
-    if(tmp2 == WAIT_BUFFER) tmp2=0;
-    if(tmp2 != lastwait)
-    {
-      wait_buf[tmp2].pid=pid;
-      wait_buf[tmp2].status=status;
-      firstwait=tmp2;
-      goto try_reap_again;
-    }
+    BEGIN_FIFO_PUSH(wait,wait_data);
+    FIFO_DATA(wait,wait_data).pid=pid;
+    FIFO_DATA(wait,wait_data).status=status;
+    END_FIFO_PUSH(wait,wait_data);
+    goto try_reap_again;
   }
   register_signal(SIGCHLD);
+
+  SAFE_FIFO_DEBUG_END();
+
 #ifdef SIGNAL_ONESHOT
   my_signal(signum, receive_sigchild);
 #endif
+
 }
 #endif
 
@@ -814,9 +928,8 @@ static void report_child(int pid,
 {
 #ifdef PROC_DEBUG
   /* FIXME: This won't work if WAITSTATUSTYPE == union wait. */
-  fprintf(stderr, "report_child(%d, %d)\n", (int)pid, (int)status);
+  fprintf(stderr, "report_child(%d, %d)\n", (int)pid, *(int *) &status);
 #endif /* PROC_DEBUG */
-  process_done(pid);
   if(pid_mapping)
   {
     struct svalue *s, key;
@@ -933,6 +1046,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 #ifdef PROC_DEBUG
       fprintf(stderr, "wait thread: reporting the event!\n");
 #endif
+      process_done(pid,"wait_thread");
       report_child(pid, status);
       co_broadcast(& process_status_change);
 
@@ -1017,7 +1131,8 @@ static void f_pid_status_wait(INT32 args)
 	s=low_mapping_lookup(pid_mapping, &key);
 	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
-	  error("Operating system failure: "
+	  dump_process_history(pid);
+	  fatal("Operating system failure: "
 		"Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
 
 	}
@@ -1028,16 +1143,26 @@ static void f_pid_status_wait(INT32 args)
       THREADS_ALLOW();
       pid=WAITPID(pid,& status,0);
       THREADS_DISALLOW();
-      if(pid > -1)
+      if(pid > 0)
       {
+	process_done(pid,"->wait");
 	report_child(pid, status);
-      }else{
-	switch(errno)
+      }
+      else
+      {
+	
+	if(pid<0)
 	{
-	  case EINTR: break;
-
-	  default:
-	    err=errno;
+	  switch(errno)
+	  {
+	    case EINTR: break;
+	      
+	    default:
+	      err=errno;
+	  }
+	}else{
+	  /* This should not happen! */
+	  fatal("Pid = 0 in waitpid(%d)\n",pid);
 	}
       }
 	
@@ -2898,6 +3023,10 @@ void f_atexit(INT32 args)
 void init_signals(void)
 {
   int e;
+
+  INIT_FIFO(sig,char);
+  INIT_FIFO(wait,wait_data);
+
 #ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
 #endif
@@ -2939,8 +3068,6 @@ void init_signals(void)
 
   for(e=0;e<MAX_SIGNALS;e++)
     signal_callbacks[e].type=T_INT;
-
-  firstsig=lastsig=0;
 
   if(!signal_evaluator_callback)
   {
