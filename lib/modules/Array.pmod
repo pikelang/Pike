@@ -489,3 +489,23 @@ int dwim_sort_func(string a,string b)
    if (a2==b2) return 0;
    return sort_func(a2,b2);
 }
+
+// sort with no notice of contents in paranthesis,
+// no care of case either
+
+int lyskom_sort_func(string a,string b)
+{
+   string a0=a,b0=b;
+   a=replace(lower_case(a),"][\\}{|"/1,"ÅÄÖåäö"/1);
+   b=replace(lower_case(b),"][\\}{|"/1,"ÅÄÖåäö"/1);
+   
+   while (sscanf(a0=a,"%*[ \t](%*[^)])%*[ \t]%s",a)==4 && a0!=a);
+   while (sscanf(b0=b,"%*[ \t](%*[^)])%*[ \t]%s",b)==4 && b0!=b);
+   a0=b0="";
+   sscanf(a,"%[^ \t]%*[ \t](%*[^)])%*[ \t]%s",a,a0);
+   sscanf(b,"%[^ \t]%*[ \t](%*[^)])%*[ \t]%s",b,b0);
+   if (a>b) return 1;
+   if (a<b) return 0;
+   if (a0==b0) return 0;
+   return lyskom_sort_func(a0,b0);
+}
