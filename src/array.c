@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.174 2004/10/16 07:27:30 agehall Exp $
+|| $Id: array.c,v 1.175 2004/10/16 22:03:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
+/** The empty array. */
 PMOD_EXPORT struct array empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1), /* Never free */
@@ -41,6 +42,8 @@ PMOD_EXPORT struct array empty_array=
   {{0, 0, {0}}}, /* Only to avoid warnings. */
 #endif
 };
+
+/** The empty weak array. */
 PMOD_EXPORT struct array weak_empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1),
@@ -64,11 +67,18 @@ PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig)
 #endif
 
 
-/* Allocate an array, this might be changed in the future to
- * allocate linked lists or something
- * NOTE: the new array has zero references
+/**
+ * Allocate an array. This might be changed in the future to allocate
+ * linked lists or something. The new array has zero references.
+ *
+ * When building arrays, it is recommended that you push the values on
+ * the stack and call aggregate_array or f_aggregate instead of
+ * allocating and filling in the values 'by hand'.
+ *
+ * @param size The size of the new array, in elements.
+ * @param extra_space The number of extra elements space
+ * should be reserved for.
  */
-
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 					      ptrdiff_t extra_space)
 {
@@ -118,8 +128,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   return v;
 }
 
-/*
- * Free an array without freeing the values inside it
+/**
+ * Free an array without freeing the values inside it.
  */
 static void array_free_no_free(struct array *v)
 {
@@ -130,8 +140,8 @@ static void array_free_no_free(struct array *v)
   GC_FREE(v);
 }
 
-/*
- * Free an array, call this when the array has zero references
+/**
+ * Free an array. Call this when the array has zero references.
  */
 PMOD_EXPORT void really_free_array(struct array *v)
 {
@@ -182,8 +192,8 @@ PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
 }
 
 
-/*
- * Extract an svalue from an array
+/**
+ * Extract an svalue from an array.
  */
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
 {
@@ -291,8 +301,8 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
   }
 }
 
-/*
- * Extract an svalue from an array
+/**
+ * Extract an svalue from an array.
  */
 PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
 {
@@ -348,8 +358,8 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
   }
 }
 
-/*
- * Insert an svalue into an array, grow the array if nessesary
+/**
+ * Insert an svalue into an array and grow the array if nessesary.
  */
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
 {
@@ -394,7 +404,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   return v;
 }
 
-/*
+/**
  * Shrink an array destructively
  */
 PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
@@ -428,8 +438,8 @@ PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
   }
 }
 
-/*
- * resize array, resize an array destructively
+/**
+ * Resize an array destructively.
  */
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
 {
@@ -467,8 +477,8 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
   }
 }
 
-/*
- * Remove an index from an array and shrink the array
+/**
+ * Remove an index from an array and shrink the array.
  */
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 {
@@ -512,9 +522,9 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   }
 }
 
-/*
+/**
  * Search for in svalue in an array.
- * return the index if found, -1 otherwise
+ * @return the index if found, -1 otherwise
  */
 PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 				   ptrdiff_t start)
@@ -556,9 +566,9 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
   return -1;
 }
 
-/*
+/**
  * Slice a piece of an array (nondestructively)
- * return an array consisting of v[start..end-1]
+ * @return an array consisting of v[start..end-1]
  */
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 				      ptrdiff_t end)
@@ -604,9 +614,9 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
   return a;
 }
 
-/*
- * Slice a piece of an array (nondestructively)
- * return an array consisting of v[start..end-1]
+/**
+ * Slice a piece of an array (nondestructively).
+ * @return an array consisting of v[start..end-1]
  */
 PMOD_EXPORT struct array *friendly_slice_array(struct array *v,
 					       ptrdiff_t start,
@@ -629,8 +639,8 @@ PMOD_EXPORT struct array *friendly_slice_array(struct array *v,
   return a;
 }
 
-/*
- * Copy an array
+/**
+ * Copy an array.
  */
 PMOD_EXPORT struct array *copy_array(struct array *v)
 {
@@ -650,8 +660,8 @@ PMOD_EXPORT struct array *copy_array(struct array *v)
   return a;
 }
 
-/*
- * Clean an array from destructed objects
+/**
+ * Clean an array from destructed objects.
  */
 PMOD_EXPORT void check_array_for_destruct(struct array *v)
 {
@@ -685,10 +695,10 @@ PMOD_EXPORT void check_array_for_destruct(struct array *v)
   }
 }
 
-/*
- * This function finds the index of any destructed object in a set
- * it could be optimized to search out the object part with a binary 
- * search lookup if the array is mixed
+/**
+ * This function finds the index of any destructed object in a set.
+ * It could be optimized to search out the object part with a binary
+ * search lookup if the array is mixed.
  */
 PMOD_EXPORT INT32 array_find_destructed_object(struct array *v)
 {
@@ -1014,7 +1024,7 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 #undef TYPE
 #undef ID
 
-/* This sort is unstable. */
+/** This sort is unstable. */
 PMOD_EXPORT void sort_array_destructively(struct array *v)
 {
   if(!v->size) return;
@@ -1043,7 +1053,7 @@ PMOD_EXPORT void sort_array_destructively(struct array *v)
 #undef EXTRA_ARGS
 #undef XARGS
 
-/* This sort is stable. The return value is like the one from
+/** This sort is stable. The return value is like the one from
  * get_alpha_order. */
 PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v)
 {
@@ -1065,16 +1075,16 @@ PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v)
 }
 
 
-/*
- * return an 'order' suitable for making mappings and multisets
+/**
+ * Return an 'order' suitable for making mappings and multisets.
  */
 PMOD_EXPORT INT32 *get_set_order(struct array *a)
 {
   return get_order(a, set_svalue_cmpfun);
 }
 
-/*
- * return an 'order' suitable for switches.
+/**
+ * Return an 'order' suitable for switches.
  *
  * Note: This is used by encode_value_canonic(). It must keep the
  * sorting rules for all the types that function allows in multiset
@@ -1086,8 +1096,8 @@ PMOD_EXPORT INT32 *get_switch_order(struct array *a)
 }
 
 
-/*
- * return an 'order' suitable for sorting.
+/**
+ * Return an 'order' suitable for sorting.
  */
 PMOD_EXPORT INT32 *get_alpha_order(struct array *a)
 {
@@ -1162,8 +1172,8 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 }
 
 
-/*
- * reorganize an array in the order specified by 'order'
+/**
+ * Reorganize an array in the order specified by 'order'.
  */
 PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 {
@@ -1172,8 +1182,8 @@ PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 }
 
 
-/*
- * copy and reorganize an array
+/**
+ * Copy and reorganize an array.
  */
 PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order)
 {
@@ -1254,8 +1264,8 @@ void array_check_type_field(struct array *v)
 }
 #endif /* PIKE_DEBUG */
 
-/*
- * Get a pointer to the 'union anything' specified IF it is of the specified
+/**
+ * Get a pointer to the 'union anything' specified if it is of the specified
  * type. The 'union anything' may be changed, but not the type.
  */
 PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
@@ -1266,8 +1276,8 @@ PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
   return 0;
 }
 
-/*
- * Get a pointer to the 'union anything' specified IF it is of the specified
+/**
+ * Get a pointer to the 'union anything' specified if it is of the specified
  * type. The 'union anything' may be changed, but not the type.
  * The differance between this routine and the one above is that this takes
  * the index as an svalue.
@@ -1294,12 +1304,12 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
   return low_array_get_item_ptr(a,i,t);
 }
 
-/*
- * organize an array of INT32 to specify how to zip two arrays together
+/**
+ * Organize an array of INT32 to specify how to zip two arrays together
  * to maintain the order.
- * the first item in this array is the size of the result
+ * The first item in this array is the size of the result
  * the rest is n >= 0 for a[ n ]
- * or n < 0 for b[ ~n ]
+ * or n < 0 for b[ ~n ].
  */
 INT32 * merge(struct array *a,struct array *b,INT32 opcode)
 {
@@ -1368,9 +1378,9 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   return ret;
 }
 
-/*
+/**
  * This routine merges two arrays in the order specified by 'zipper'
- * zipper normally produced by merge() above
+ * zipper normally produced by merge() above.
  */
 PMOD_EXPORT struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
 {
@@ -1526,9 +1536,9 @@ typedef int(*mycmpfun)(INT32*,INT32*,INT32*,INT32*);
 
 
 
-/*
- * this is used to rearrange the zipper so that the order is retained
- * as it was before (check merge_array_with_order below)
+/**
+ * This is used to rearrange the zipper so that the order is retained
+ * as it was before (check merge_array_with_order below).
  */
 static int array_merge_fun(INT32 *a, INT32 *b,
 			   INT32 *ordera, INT32 *orderb)
@@ -1551,10 +1561,10 @@ static int array_merge_fun(INT32 *a, INT32 *b,
   }
 }
 
-/*
- * merge two arrays and retain their order, this is done by arranging them
+/**
+ * Merge two arrays and retain their order. This is done by arranging them
  * into ordered sets, merging them as sets and then rearranging the zipper
- * before zipping the sets together. 
+ * before zipping the sets together.
  */
 PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 						 struct array *b, INT32 op)
@@ -1981,6 +1991,10 @@ void describe_array(struct array *a,struct processing *p,int indent)
   my_strcat("})");
 }
 
+/**
+ * Pops a number of arguments off of the stack an puts them in an array.
+ * @argument args The number of arguments to aggregate.
+ */
 PMOD_EXPORT struct array *aggregate_array(INT32 args)
 {
   struct array *a;
