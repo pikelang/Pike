@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.57 2002/03/26 23:46:54 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.58 2002/04/02 14:10:40 jhs Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -998,7 +998,7 @@ class Evaluator {
 	else
 	  symbols[expr[p]] = 0;
 
-	// FIXME: comma-seperated list of variables.
+	// FIXME [bug 2941]: comma-seperated list of variables.
       }
 
       // Handle scopes
