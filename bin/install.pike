@@ -423,7 +423,11 @@ class ReadInteractive
 	insert("/", getcursorpos());
       break;
     default:
-      list_completions(files);
+      string pre = String.common_prefix(files)[sizeof(path[-1])..];
+      if(sizeof(pre))
+	insert(pre, pos);
+      else
+	list_completions(files);
       break;
     }
   }
