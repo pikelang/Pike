@@ -55,6 +55,17 @@ struct object *bignum_from_svalue(struct svalue *s)
   return  (--sp)->u.object;
 }
 
+struct pike_string *string_from_bignum(struct object *o, int base)
+{
+  push_int(base);
+  safe_apply(o, "digits", 1);
+  
+  if(sp[-1].type != T_STRING)
+    error("Gmp.mpz string conversion failed.\n");
+  
+  return (--sp)->u.string;
+}
+
 void convert_svalue_to_bignum(struct svalue *s)
 {
   push_svalue(s);

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.62 1999/10/09 23:29:01 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.63 1999/10/15 21:08:44 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -675,6 +675,14 @@ void o_subtract(void)
     return;
 
   case T_INT:
+#ifdef AUTO_BIGNUM
+    if(INT_TYPE_SUB_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+    {
+      convert_stack_top_to_bignum();
+      f_minus(2);
+      return;
+    }
+#endif /* AUTO_BIGNUM */
     sp--;
     sp[-1].u.integer -= sp[0].u.integer;
     return;
@@ -1116,6 +1124,11 @@ static int generate_xor(node *n)
 
 void o_lsh(void)
 {
+#ifdef AUTO_BIGNUM
+  if(INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+    convert_stack_top_to_bignum();
+#endif /* AUTO_BIGNUM */
+  
   if(sp[-1].type != T_INT || sp[-2].type != T_INT)
   {
     int args = 2;
@@ -1161,6 +1174,16 @@ void o_rsh(void)
       SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|object");
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int|object");
   }
+  
+#ifdef AUTO_BIGNUM
+  if(INT_TYPE_RSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+  {
+    sp--;
+    sp[-1].u.integer = 0;
+    return;
+  }
+#endif /* AUTO_BIGNUM */
+  
   sp--;
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
@@ -1832,6 +1855,7 @@ void o_negate(void)
   switch(sp[-1].type)
   {
   case T_OBJECT:
+  do_lfun_negate:
     CALL_OPERATOR(LFUN_SUBTRACT,1);
     break;
 
@@ -1840,6 +1864,13 @@ void o_negate(void)
     return;
     
   case T_INT:
+#ifdef AUTO_BIGNUM
+    if(INT_TYPE_NEG_OVERFLOW(sp[-1].u.integer))
+    {
+      convert_stack_top_to_bignum();
+      goto do_lfun_negate;
+    }
+#endif /* AUTO_BIGNUM */
     sp[-1].u.integer = - sp[-1].u.integer;
     return;
 
