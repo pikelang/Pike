@@ -1,9 +1,16 @@
 /*
- * $Id: sendfile.c,v 1.3 1999/04/17 13:51:30 grubba Exp $
+ * $Id: sendfile.c,v 1.4 1999/04/18 13:28:22 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
  * Henrik Grubbström 1999-04-02
+ */
+
+/*
+ * FIXME:
+ *	Support for NT.
+ *
+ *	Need to lock the fd's so that the user can't close them for us.
  */
 
 #include "global.h"
@@ -31,6 +38,20 @@
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#else /* !HAVE_SYS_MMAN_H */
+#ifdef HAVE_LINUX_MMAN_H
+#include <linux/mman.h>
+#else /* !HAVE_LINUX_MMAN_H */
+#ifdef HAVE_MMAP
+/* sys/mman.h is _probably_ there anyway. */
+#include <sys/mman.h>
+#endif /* HAVE_MMAP */
+#endif /* HAVE_LINUX_MMAN_H */
+#endif /* HAVE_SYS_MMAN_H */
+
+
 /* #define SF_DEBUG */
 
 #ifdef SF_DEBUG
@@ -39,7 +60,13 @@
 #define SF_DFPRINTF(X)
 #endif /* SF_DEBUG */
 
-#define BUF_SIZE 65536
+#define BUF_SIZE	0x00010000 /* 64K */
+
+#define MMAP_SIZE	0x00100000 /* 1M */
+
+#ifndef MAP_FAILED
+#define MAP_FAILED	((void *)-1)
+#endif /* MAP_FAILED */
 
 
 /*
@@ -337,6 +364,66 @@ void *worker(void *this_)
   normal:
 #endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE */
     SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
+
+#if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
+    {
+      struct stat st;
+
+      if (!fstat(this->from_fd, &st) &&
+	  S_ISREG(st.st_mode)) {
+	/* Regular file, try using mmap(). */
+
+	SF_DFPRINTF((stderr,
+		     "sendfile: from is a regular file - trying mmap().\n"));
+
+	while (this->len) {
+	  void *mem;
+	  int len = st.st_size - this->offset; /* To end of file */
+	  char *buf;
+	  int buflen;
+	  if ((len > this->len) && (this->len >= 0)) {
+	    len = this->len;
+	  }
+	  /* Try to limit memory space usage */
+	  if (len > MMAP_SIZE) {
+	    len = MMAP_SIZE;
+	  }
+	  mem = mmap(NULL, len, PROT_READ, MAP_FILE|MAP_SHARED,
+		     this->from_fd, this->offset);
+	  if (mem == MAP_FAILED) {
+	    /* Try using read & write instead. */
+	    goto use_read_write;
+	  }
+#ifdef HAVE_MADVISE
+	  madvise(mem, len, MADV_SEQUENTIAL);
+#endif /* HAVE_MADVISE */
+	  buf = mem;
+	  buflen = len;
+	  while (buflen) {
+	    int wrlen = write(this->to_fd, buf, buflen);
+
+	    if ((wrlen < 0) && (errno == EINTR)) {
+	      continue;
+	    } else if (wrlen <= 0) {
+	      munmap(mem, len);
+	      goto send_trailers;
+	    }
+	    buf += wrlen;
+	    buflen -= wrlen;
+	    this->sent += wrlen;
+	    this->offset += wrlen;
+	    if (this->len > 0) {
+	      this->len -= wrlen;
+	    }
+	  }
+	  munmap(mem, len);
+	}
+      }
+    }
+  use_read_write:
+#endif /* HAVE_MMAP && HAVE_MUNMAP */
+
+    SF_DFPRINTF((stderr, "sendfile: Using read() and write().\n"));
 
     lseek(this->from_fd, this->offset, SEEK_SET);
     {
