@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.1 2001/05/22 06:41:57 per Exp $");
+RCSID("$Id: resultset.c,v 1.2 2001/05/22 06:47:26 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -48,13 +48,19 @@ void wf_resultset_add( struct object *o, int document, int weight )
   T(o)->d.num_docs = ind+1;
 }
 
+void wf_resultset_clear( struct object *o )
+{
+  if( T(o)->allocated_size ) free( T(o)->d );
+  T(o)->allocated_size = 256;
+  T(o)->d = malloc( 4 + 8*256 );
+  T(o)->d->num_docs = 0;
+}
+
 struct object *wf_resultset_new( )
 {
   struct object *o;
   o = clone_object( resultset_program, 0 );
-  T(o)->alloocated_size = 256;
-  T(o)->d = malloc( 4 + 4*512 );
-  T(o)->d->num_docs = 0;
+  wf_resultset_clear( o );
   return o;
 }
 
@@ -85,6 +91,7 @@ static void f_resultset_test( INT32 args )
   int i, j;
   struct object *o = Pike_fp->current_object;
   j = Pike_sp[-1].u.integer;
+  wf_resultset_clear( o );
   for( i = 0; i<j; i++ )
     wf_resultset_add( o, i, i );
 }
