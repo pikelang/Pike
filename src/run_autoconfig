@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.39 2003/12/07 15:55:38 marcus Exp $
+# $Id: run_autoconfig,v 1.40 2003/12/18 15:40:07 grubba Exp $
 #
 # Bootstrap script
 
@@ -62,8 +62,14 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
     # NB: autoheader 2.53 is stupid, and has broken handling of warnings.
     #     1) The warning flags are not passed along to autoconf.
     #     2) The option --warnings is misspelled by missing the last 's'.
-    ac_args="-Wno-obsolete --prepend-include=$localdir"
-    ah_args="-Wno-obsolete --prepend-include=$localdir"
+    if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "53" ]; then
+      # autoconf 2.53 doesn't have --prepend-include.
+      ac_args="-Wno-obsolete --include=$localdir"
+      ah_args="-Wno-obsolete --include=$localdir"
+    else
+      ac_args="-Wno-obsolete --prepend-include=$localdir"
+      ah_args="-Wno-obsolete --prepend-include=$localdir"
+    fi
     # Attempt to kludge around Perl's stupid warnings about locale settings.
     LANGUAGE=C LC_CTYPE=C LANG=C export LANGUAGE LC_CTYPE LANG
     LC_MONETARY=C LC_NUMERIC=C export LC_MONETARY LC_NUMERIC
