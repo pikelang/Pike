@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.28 2001/08/20 19:52:54 js Exp $
+// $Id: Utils.pmod,v 1.29 2001/08/22 19:33:47 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -207,12 +207,12 @@ class ProfileCache (string db_name) {
   int(-1..1) up_to_datep(int profile_id) {
     //    werror("Called up-to-date...\n");
     array(mapping(string:string)) res;
-    res = get_db()->query("SELECT altered,type FROM wf_profile WHERE id=%d", profile_id);
+    res = get_db()->query("SELECT altered,type FROM profile WHERE id=%d", profile_id);
 
     // The profile is deleted. In such a rare event we take the
     // trouble to review all our cached values.
     if(!sizeof(res)) {
-      array(int) existing = (array(int))get_db()->query("SELECT id FROM wf_profile")->id;
+      array(int) existing = (array(int))get_db()->query("SELECT id FROM profile")->id;
 
       foreach(indices(value_cache), int id)
 	if(!has_value(existing, id))
@@ -266,7 +266,7 @@ class ProfileCache (string db_name) {
       return db_profile;
 
     array res = get_db()->
-      query("SELECT id FROM wf_profile WHERE name=%s AND type=2", name);
+      query("SELECT id FROM profile WHERE name=%s AND type=2", name);
     if(!sizeof(res))
       THROW("No database profile " + name + " found.\n");
 
@@ -281,7 +281,7 @@ class ProfileCache (string db_name) {
       return query_profile;
 
     array res = get_db()->
-      query("SELECT id FROM wf_profile WHERE name=%s AND type=1", name);
+      query("SELECT id FROM profile WHERE name=%s AND type=1", name);
     if(!sizeof(res))
       THROW("No query profile " + name + " found.\n");
 
@@ -294,7 +294,7 @@ class ProfileCache (string db_name) {
   array(string) list_db_profiles() {
     if (time(1) - last_db_prof_stat < 5*60)
       return indices(db_profile_names);
-    array res = get_db()->query("SELECT name, id FROM wf_profile WHERE type=2");
+    array res = get_db()->query("SELECT name, id FROM profile WHERE type=2");
     db_profile_names = mkmapping(
       res->name,
       map(res->id, lambda(string s) { return (int) s; } ));
@@ -309,7 +309,7 @@ class ProfileCache (string db_name) {
   array(string) list_query_profiles()
   {
     if (time(1) - last_query_prof_stat >= 5*60) {
-      array res = get_db()->query("SELECT name, id FROM wf_profile WHERE type=1");
+      array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
       query_profile_names = mkmapping( res->name, (array(int)) res->id );
       if(sizeof(query_profile_names))
 	last_query_prof_stat = time(1);
@@ -347,7 +347,7 @@ class ProfileCache (string db_name) {
       return val;
 
     array res = get_db()->
-      query("SELECT name,value FROM wf_value WHERE pid=%d", profile);
+      query("SELECT name,value FROM value WHERE pid=%d", profile);
 
     val = mkmapping( res->name, map(res->value, reacodec_decode) );
     value_cache[profile] = copy_value(val);
