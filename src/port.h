@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.60 2005/01/02 00:36:41 nilsson Exp $
+|| $Id: port.h,v 1.61 2005/03/28 19:41:18 nilsson Exp $
 */
 
 #ifndef PORT_H
@@ -228,28 +228,6 @@ PMOD_EXPORT char *STRCHR(char *s,int c);
 #  ifdef STRCHR_DECL_MISSING
 char *STRCHR(char *s,int c);
 #  endif
-#endif
-
-#ifndef HAVE_STRRCHR
-#  ifdef HAVE_RINDEX
-#    define STRRCHR(X,Y) ((char *)rindex(X,Y))
-#  else
-PMOD_EXPORT char *STRRCHR(char *s,int c);
-#  endif
-#else
-#  define STRRCHR strrchr
-#endif
-
-#ifndef HAVE_STRSTR
-PMOD_EXPORT char *STRSTR(char *s1,const char *s2);
-#else
-#  define STRSTR strstr
-#endif
-
-#ifndef HAVE_STRTOK
-PMOD_EXPORT char *STRTOK(char *s1,char *s2);
-#else
-#  define STRTOK strtok
 #endif
 
 #if !defined(HAVE_VFPRINTF) || !defined(HAVE_VSPRINTF) || !defined(HAVE_VSNPRINTF)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.82 2005/02/25 01:53:27 nilsson Exp $
+|| $Id: port.c,v 1.83 2005/03/28 19:41:18 nilsson Exp $
 */
 
 /*
@@ -434,52 +434,6 @@ PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
 PMOD_EXPORT char *STRCHR(char *s,int c)
 {
   for(;*s;s++) if(*s==c) return s;
-  return NULL;
-}
-#endif
-
-#if !defined(HAVE_RINDEX) && !defined(HAVE_STRRCHR)
-PMOD_EXPORT char *STRRCHR(char *s,int c)
-{
-  char *p;
-  for(p=NULL;*s;s++) if(*s==c) p=s;
-  return p;
-}
-#endif
-
-#ifndef HAVE_STRSTR
-PMOD_EXPORT char *STRSTR(char *s1,const char *s2)
-{
-  for(;*s1;s1++)
-  {
-    const char *p1,*p2;
-    for(p1=s1,p2=s2;*p2;p1++,p2++) if(*p2!=*p1) break;
-    if(!*p2) return s1;
-  }
-  return NULL;
-}
-#endif
-
-#ifndef HAVE_STRTOK
-static char *temporary_for_strtok;
-PMOD_EXPORT char *STRTOK(char *s1,char *s2)
-{
-  if(s1!=NULL) temporary_for_strtok=s1;
-  for(s1=temporary_for_strtok;*s1;s1++)
-  {
-    char *p1,*p2;
-    for(p1=s1,p2=s2;*p1==*p2;p1++,p2++)
-    {
-      if(!*(p2+1))
-      {
-        char *retval;
-        *s1=0;
-        retval=temporary_for_strtok;
-        temporary_for_strtok=p1+1;
-        return(retval);
-      }
-    }
-  }
   return NULL;
 }
 #endif
