@@ -4,7 +4,7 @@ Copyright © 1994-1996 Fredrik Hübinette
 Copyright © 1996-1997 Informationsvävarna AB
 Copyright © 1997-2000 Idonex AB
 Copyright © 2000-2002 Roxen Internet Software AB
-Copyright © 2002-2003 Department of Computer and Information Science,
+Copyright © 2002-2004 Department of Computer and Information Science,
                       Linköping University
 
 Parts of other copyrighted works are included in this Pike binary, in
