@@ -28,13 +28,15 @@ static void backend_callback(struct callback *_cb,
 {
   if( !post_select )
   {
-    next_timeout = current_time;
-    next_timeout.tv_usec += 20000;
-    if(next_timeout.tv_usec > 1000000)
+    struct timeval timeout = current_time;
+    timeout.tv_usec += 20000;
+    if(timeout.tv_usec > 1000000)
     {
-      next_timeout.tv_usec-=1000000;
-      next_timeout.tv_sec+=1;
+      timeout.tv_usec-=1000000;
+      timeout.tv_sec+=1;
     }
+    if (my_timercmp (&timeout, <, &next_timeout))
+      next_timeout = timeout;
   } else
     while(g_main_iteration( 0 ) );
 }
