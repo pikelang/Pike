@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.99 2002/10/21 17:06:26 marcus Exp $
+|| $Id: sprintf.c,v 1.100 2003/01/05 01:03:55 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.99 2002/10/21 17:06:26 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.100 2003/01/05 01:03:55 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1644,7 +1644,7 @@ dynbuf_string pike_sprintf(char *format,struct svalue *argp,int num_arg)
  */
 
 /* The efun */
-void f_sprintf(INT32 num_arg)
+void f_sprintf(INT32 args)
 {
   ONERROR err_string_builder, err_format_stack;
   struct pike_string *ret;
@@ -1653,7 +1653,7 @@ void f_sprintf(INT32 num_arg)
 
   struct format_stack fs;
 
-  argp=sp-num_arg;
+  argp=sp-args;
   
   fs.fsp = fs.format_info_stack-1;
 
@@ -1671,7 +1671,7 @@ void f_sprintf(INT32 num_arg)
       /* Clean up the stack. */
       pop_stack();
     } else {
-      Pike_error("Bad argument 1 to sprintf.\n");
+      SIMPLE_BAD_ARG_ERROR("sprintf", 1, "string|object");
     }
   }
 /*  fprintf(stderr,"SPRINTF: %s\n",argp->u.string->str); */
@@ -1684,13 +1684,13 @@ void f_sprintf(INT32 num_arg)
 		   MKPCHARP_STR(argp->u.string),
 		   argp->u.string->len,
 		   argp+1,
-		   num_arg-1,
+		   args-1,
 		   0);
   UNSET_ONERROR(err_string_builder);
   UNSET_ONERROR(err_format_stack);
   ret=finish_string_builder(&r);
 
-  pop_n_elems(num_arg);
+  pop_n_elems(args);
   push_string(ret);
 }
 

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.31 2002/11/24 22:47:06 mast Exp $
+|| $Id: backend.cmod,v 1.32 2003/01/05 00:53:30 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.31 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.32 2003/01/05 00:53:30 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1328,7 +1328,7 @@ PIKECLASS Backend
        }
 
        if(!(v=CALL(e)->args))
-	 Pike_fatal("No arguments to call\n");
+	 Pike_fatal("No arguments to call.\n");
 
        if(v->refs < 1)
 	 Pike_fatal("Array should have at least one reference.\n");
@@ -1623,10 +1623,10 @@ PIKECLASS Backend
        struct svalue tmp;
        struct array *v;
        if(args<2)
-	 Pike_error("Too few arguments to call_out.\n");
-       
+	 SIMPLE_TOO_FEW_ARGS_ERROR("call_out", 2);
+
        if(t->type != T_INT && t->type != T_FLOAT)
-	 Pike_error("Bad argument 2 to call_out.\n");
+	 SIMPLE_BAD_ARG_ERROR("call_out", 2, "int|float");
 
        /* Swap, for compatibility */
        tmp = Pike_sp[-args];

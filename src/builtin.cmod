@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.101 2002/12/01 18:58:20 mast Exp $
+|| $Id: builtin.cmod,v 1.102 2003/01/05 00:54:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -44,9 +44,8 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
   struct array *res;
   int i;
 
-  if (!(p = program_from_svalue(Pike_sp - args))) {
-    Pike_error("_describe_program(): Bad argument 1 (expected program).\n");
-  }
+  if (!(p = program_from_svalue(Pike_sp - args)))
+    SIMPLE_BAD_ARG_ERROR("_describe_program", 1, "program");
 
   for (i=0; i < (int)p->num_identifier_references;i++) {
     struct reference *ref = p->identifier_references + i;
@@ -158,7 +157,7 @@ PIKEFUN string int2char(int|object x)
     }
   }
   if(x->type != T_INT)
-    Pike_error("Bad argument 1 to int2char.\n");
+    SIMPLE_BAD_ARG_ERROR("int2char", 1, "int");
 
   c=x->u.integer;
 
@@ -211,7 +210,7 @@ PIKEFUN string int2hex(int|object x)
     }
   }
   if(x->type != T_INT)
-    Pike_error("Bad argument 1 to int2hex.\n");
+    SIMPLE_BAD_ARG_ERROR("int2hex", 1, "int");
 
   c=x->u.integer;
 
@@ -684,9 +683,7 @@ PIKEFUN string function_name(program|function func)
   switch(func->type)
   {
     default:
-      bad_arg_error("function_name", Pike_sp-args, args, 1,
-		    "function|program", Pike_sp-args,
-		    "Bad argument.\n");
+      SIMPLE_BAD_ARG_ERROR("function_name", 1, "function|program");
       return; /* NOTREACHED */
 	
     case PIKE_T_PROGRAM:

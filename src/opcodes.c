@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.128 2002/12/07 16:27:00 grubba Exp $
+|| $Id: opcodes.c,v 1.129 2003/01/05 00:58:37 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.128 2002/12/07 16:27:00 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.129 2003/01/05 00:58:37 nilsson Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1808,10 +1808,10 @@ void o_sscanf(INT32 args)
   struct svalue *save_sp=sp;
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to sscanf().\n");
+    SIMPLE_BAD_ARG_ERROR("sscanf", 1, "string");
 
   if(sp[1-args].type != T_STRING)
-    Pike_error("Bad argument 1 to sscanf().\n");
+    SIMPLE_BAD_ARG_ERROR("sscanf", 2, "string");
 
   switch(sp[-args].u.string->size_shift*3 + sp[1-args].u.string->size_shift) {
     /* input_shift : match_shift */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.113 2002/12/10 16:53:28 mast Exp $
+|| $Id: cpp.c,v 1.114 2003/01/05 00:56:13 nilsson Exp $
 */
 
 #include "global.h"
@@ -1627,10 +1627,10 @@ void f_cpp(INT32 args)
 #endif /* PIKE_DEBUG */
 
   if(args<1)
-    Pike_error("Too few arguments to cpp()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("cpp", 1);
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to cpp()\n");
+    SIMPLE_BAD_ARG_ERROR("cpp", 1, "string");
 
   data = sp[-args].u.string;
 
@@ -1644,13 +1644,13 @@ void f_cpp(INT32 args)
     if(args > 5)
     {
       if(sp[4-args].type != T_INT)
-	Pike_error("Bad argument 5 to cpp()\n");
+	SIMPLE_BAD_ARG_ERROR("cpp", 5, "int");
       if(sp[5-args].type != T_INT)
-	Pike_error("Bad argument 6 to cpp()\n");
+	SIMPLE_BAD_ARG_ERROR("cpp", 6, "int");
     }
     if(sp[1-args].type != T_STRING) {
       free_string(data);
-      Pike_error("Bad argument 2 to cpp()\n");
+      SIMPLE_BAD_ARG_ERROR("cpp", 2, "string");
     }
     copy_shared_string(this.current_file, sp[1-args].u.string);
 
@@ -1671,7 +1671,7 @@ void f_cpp(INT32 args)
 	auto_convert = sp[2-args].u.integer;
       } else {
 	free_string(data);
-	Pike_error("Bad argument 3 to cpp()\n");
+	SIMPLE_BAD_ARG_ERROR("cpp", 3, "string|int");
       }
       if (args > 3) {
 	if (sp[3-args].type == T_OBJECT) {
@@ -1681,7 +1681,7 @@ void f_cpp(INT32 args)
 	} else if (sp[3-args].type != T_INT) {
 	  free_string(data);
 	  free_string(this.current_file);
-	  Pike_error("Bad argument 4 to cpp()\n");
+	  SIMPLE_BAD_ARG_ERROR("cpp", 4, "object");
 	}
       }
     }
