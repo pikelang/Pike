@@ -276,7 +276,8 @@ static struct pike_string *empty_string;
 static void tag_name(struct parser_html_storage *this,
 		     struct piece *feed,int c);
 static void tag_args(struct parser_html_storage *this,
-		     struct piece *feed,int c,struct svalue *def);
+		     struct piece *feed,int c,struct svalue *def,
+		     int skip_name);
 
 static int quote_tag_lookup (struct parser_html_storage *this,
 			     struct piece *feed, int c,
@@ -2441,7 +2442,7 @@ static newstate tag_callback(struct parser_html_storage *this,
 
    args=3;
    ref_push_object(thisobj);
-   tag_args(this,this->start,this->cstart,NULL);
+   tag_args(this,this->start,this->cstart,NULL,1);
 
    if (v->type==T_ARRAY && v->u.array->size>1)
    {
@@ -2512,7 +2513,7 @@ static newstate container_callback(struct parser_html_storage *this,
 
    args=4;
    ref_push_object(thisobj);
-   tag_args(this,this->start,this->cstart,NULL);
+   tag_args(this,this->start,this->cstart,NULL,1);
    push_feed_range(startc,cstartc,endc,cendc);
 
    if (v->type==T_ARRAY && v->u.array->size>1)
@@ -3959,7 +3960,7 @@ static INLINE void tag_push_default_arg(struct svalue *def)
 }
 
 static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
-		     struct svalue *def)
+		     struct svalue *def, int skip_name)
 {
    struct piece *s1=NULL,*s2=NULL,*s3;
    int flags = this->flags;
@@ -3972,13 +3973,16 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
    p_wchar2 ch=index_shared_string(feed->s,c);
    if (ch==this->tag_start) c++;
 
-   /* scan past tag name */
-   if (flags & FLAG_WS_BEFORE_TAG_NAME)
-     scan_forward(feed,c,&s1,&c1,
-		  this->ws,-this->n_ws);
-   else
-     s1 = feed, c1 = c;
-   scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_ONLY,1,NULL);
+   if (skip_name) {
+     /* scan past tag name */
+     if (flags & FLAG_WS_BEFORE_TAG_NAME)
+       scan_forward(feed,c,&s1,&c1,
+		    this->ws,-this->n_ws);
+     else
+       s1 = feed, c1 = c;
+     scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_ONLY,1,NULL);
+   }
+   else s2 = feed, c2 = c;
 
    for (;;)
    {
@@ -4143,10 +4147,10 @@ static void html_tag_args(INT32 args)
      case TYPE_CONT:
        if (args)
        {
-	 tag_args(THIS,THIS->start,THIS->cstart,&def);
+	 tag_args(THIS,THIS->start,THIS->cstart,&def,1);
 	 free_svalue(&def);
        }
-       else tag_args(THIS,THIS->start,THIS->cstart,NULL);
+       else tag_args(THIS,THIS->start,THIS->cstart,NULL,1);
        break;
      default:
        push_int(0);
@@ -4262,7 +4266,7 @@ static void html_parse_tag_args(INT32 args)
    check_all_args("parse_tag_args",args,BIT_STRING,0);
    feed.s=sp[-args].u.string;
    feed.next=NULL;
-   tag_args(THIS,&feed,0,NULL);
+   tag_args(THIS,&feed,0,NULL,0);
    stack_pop_n_elems_keep_top(args);
 }
 
@@ -4464,7 +4468,10 @@ static void html_clone(INT32 args)
    add_ref(p->mapqtag=THIS->mapqtag);
 
    if (p->splice_arg) free_string(p->splice_arg);
-   add_ref(p->splice_arg=THIS->splice_arg);
+   if (THIS->splice_arg)
+     add_ref(p->splice_arg=THIS->splice_arg);
+   else
+     p->splice_arg=NULL;
 
    dmalloc_touch_svalue(&p->callback__tag);
    dmalloc_touch_svalue(&p->callback__data);
@@ -4972,7 +4979,7 @@ void init_parser_html(void)
    ADD_FUNCTION("parse_tag_name",html_parse_tag_name,
 		tFunc(tStr,tStr),0);
    ADD_FUNCTION("parse_tag_args",html_parse_tag_args,
-		tFunc(tStr,tStr),0);
+		tFunc(tStr,tMap(tStr,tStr)),0);
 }
 
 void exit_parser_html()
