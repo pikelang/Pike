@@ -295,8 +295,8 @@ array(array) find_all_options(array(string) argv,
   array(array) ret=({});
   foreach(argv; int e; string opt) {
 
-    if(!e) continue;
-    if(!opt || sizeof(opt)<2 || opt[0]!='-') {
+    if(!e || !opt) continue;
+    if(sizeof(opt)<2 || opt[0]!='-') {
       if(posix_me_harder) break;
       continue;
     }
