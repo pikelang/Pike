@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.50 2000/10/10 12:28:16 grubba Exp $
+// $Id: treeopt.in,v 1.51 2000/12/01 20:38:21 grubba Exp $
 //
 // The tree optimizer
 //
@@ -830,9 +830,17 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     if(inc)
     {
       if(oper == F_LE) {
-	ADD_NODE_REF2(*arg2,
-	  tmp3 = mkopernode("`+", *arg2, mkintnode(1));
-	);
+	static struct pike_string *plus_name;
+	node *n;
+	if ((!plus_name && !(plus_name = findstring("`+"))) ||
+	    !(n=find_module_identifier(plus_name, 0))) {
+	  my_yyerror("Internally used efun undefined: `+");
+	  tmp3 = mkintnode(0);
+        } else {
+	  ADD_NODE_REF2(*arg2,
+	    tmp3 = mkapplynode(n, mknode(F_ARG_LIST, *arg2, mkintnode(1)));
+	  );
+	}
       } else if(oper == F_LT) {
 	ADD_NODE_REF2(*arg2,
 	  tmp3 = *arg2;
@@ -841,9 +849,17 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	goto next_for_opt;
     }else{
       if(oper == F_GE) {
-	ADD_NODE_REF2(*arg2,
-	  tmp3 = mkopernode("`-", *arg2, mkintnode(1));
-	);
+	static struct pike_string *minus_name;
+	node *n;
+	if ((!minus_name && !(minus_name = findstring("`-"))) ||
+	    !(n=find_module_identifier(minus_name, 0))) {
+	  my_yyerror("Internally used efun undefined: `-");
+	  tmp3 = mkintnode(0);
+        } else {
+	  ADD_NODE_REF2(*arg2,
+	    tmp3 = mkapplynode(n, mknode(F_ARG_LIST, *arg2, mkintnode(1)));
+	  );
+	}
       } else if(oper == F_GT) {
 	ADD_NODE_REF2(*arg2,
 	  tmp3 = *arg2;
