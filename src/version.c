@@ -9,10 +9,10 @@
 #include "interpret.h"
 #include "stralloc.h"
 
-RCSID("$Id: version.c,v 1.102 1998/07/31 22:24:46 hubbe Exp $");
+RCSID("$Id: version.c,v 1.103 1998/07/31 22:26:05 hubbe Exp $");
 
 void f_version(INT32 args)
 {
   pop_n_elems(args);
-  push_text("Pike v0.6 release 85");
+  push_text("Pike v0.6 release 86");
 }
