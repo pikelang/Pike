@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.1 1999/02/24 03:18:08 mirar Exp $ */
+/* $Id: any.c,v 1.2 1999/02/24 03:33:34 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.1 1999/02/24 03:18:08 mirar Exp $
+**!	$Id: any.c,v 1.2 1999/02/24 03:33:34 mirar Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.1 1999/02/24 03:18:08 mirar Exp $");
+RCSID("$Id: any.c,v 1.2 1999/02/24 03:33:34 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -42,7 +42,7 @@ void image_any__decode(INT32 args)
    if (sp[-args].u.string->len<4)
       error("Image.ANY.decode: too short string\n");
 
-#define CHAR2(a,b) (((a)<<8)|(b))
+#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
    /* ok, try the heuristics */
    switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
    {
@@ -58,7 +58,7 @@ void image_any__decode(INT32 args)
 	 push_text("image/x-pnm");
 	 goto simple_image;
 
-      case CHAR2('J','F'):
+      case CHAR2(255,216):
 	 /* JFIF */
 	 push_text("Image");
 	 push_int(0);
@@ -69,6 +69,7 @@ void image_any__decode(INT32 args)
 	 f_index(2);
 	 stack_swap();
 	 f_call_function(2);
+	 push_text("image/jpeg");
 	 goto simple_image;
 
       case CHAR2('P','N'):
@@ -109,6 +110,7 @@ simple_image:
    push_text("image");
    push_text("type");
    f_aggregate(2);
+   stack_swap();
    f_mkmapping(2);
    return;
 }
