@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.70 2003/11/14 23:11:13 mast Exp $
+|| $Id: math.c,v 1.71 2003/11/15 23:42:16 mast Exp $
 */
 
 #include "global.h"
@@ -36,7 +36,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.70 2003/11/14 23:11:13 mast Exp $");
+RCSID("$Id: math.c,v 1.71 2003/11/15 23:42:16 mast Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -44,8 +44,8 @@ RCSID("$Id: math.c,v 1.70 2003/11/14 23:11:13 mast Exp $");
 
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
 
-/* Assume that if one l-suffixed function exists, they all do. */
-# ifdef HAVE_EXPL
+/* Assume that if these two l-suffixed functions exist, they all do. */
+# if defined (HAVE_EXPL) && defined (HAVE_FLOORL)
 #  define FL1(FN, ARG1) PIKE_CONCAT(FN,l) (ARG1)
 #  define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,l) (ARG1, ARG2)
 # else
@@ -62,8 +62,8 @@ RCSID("$Id: math.c,v 1.70 2003/11/14 23:11:13 mast Exp $");
 
 #else
 
-/* Assume that if one f-suffixed function exists, they all do. */
-# ifdef HAVE_EXPF
+/* Assume that if these two f-suffixed functions exist, they all do. */
+# if defined (HAVE_EXPF) && defined (HAVE_FLOORF)
 #  define FL1(FN, ARG1) PIKE_CONCAT(FN,f) (ARG1)
 #  define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,f) (ARG1, ARG2)
 # else

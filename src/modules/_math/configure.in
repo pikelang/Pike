@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.12 2003/11/14 23:11:13 mast Exp $
+# $Id: configure.in,v 1.13 2003/11/15 23:42:15 mast Exp $
 AC_INIT(math.c)
 
 AC_CONFIG_HEADER(config.h)
@@ -13,7 +13,7 @@ fi
 
 AC_CHECK_HEADERS(ieeefp.h fp_class.h floatingpoint.h)
 
-AC_CHECK_FUNCS(fpsetmask fpsetround fpsetfastmode expf expl)
+AC_CHECK_FUNCS(fpsetmask fpsetround fpsetfastmode expf expl floorf floorl)
 
 # fpsetmask() is Broken on OpenBSD 3.2/alpha
 if test "x$ac_cv_func_fpsetmask" = "xyes"; then
