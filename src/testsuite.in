@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.582 2003/02/25 15:52:45 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.583 2003/03/04 23:33:49 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1662,6 +1662,29 @@ test_any_equal([[
   Stdio.recursive_rm("testsuite_test_dir.pmod");
   return res;
 ]], (<>));
+
+test_do([[
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+  mkdir ("testsuite_test_dir.pmod");
+
+  Stdio.write_file ("testsuite_test_dir.pmod/A.pmod", #"\
+    string pof() {return testsuite_test_dir.A.bingo();}
+    string bingo () {return \"17\";}");
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  master()->add_module_path (getcwd());
+  mixed err = catch {
+      compile_string (#"\
+	string foo() {
+	  return testsuite_test_dir.A.pof();
+	}", "test");
+    };
+  replace_master (orig_master);
+  if (err) throw (err);
+
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+]])
 
 cond(0,[[
 test_do([[
