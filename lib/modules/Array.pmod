@@ -459,26 +459,63 @@ array(array(array)) diff3_old(array mid,array left,array right)
    return transpose(res);
 }
 
-//! sort with care of numerical sort:
-//!  @tt{"abc4def"@} before @tt{"abc30def"@}.
+//! Sort without 
 int dwim_sort_func(string a, string b)
 {
    if (a==b) return 0;
+   array aa=({}), bb=({});
+   int state, oi;
+   
+   for( int i = 0; i<sizeof(a); i++ )
+     if( (<'0','1','2','3','4','5','6','7','8','9'>)[a[i]] != state )
+     {
+       state = !state;
+       if( i )
+	 if( state ) 
+	   aa += ({ a[oi..i-1] });
+	 else
+	   aa += ({ (int)a[oi..i-1] });
+       oi = i;
+     }
+   if( state )
+     aa += ({ (int)a[oi..] });
+   else
+     aa += ({ a[oi..] });
 
-   string a2="",b2="";
-   int a1,b1;
-   sscanf(a, "%s%d%s", a, a1, a2);
-   sscanf(b, "%s%d%s", b, b1, b2);
-   if (a > b) return 1;
-   if (a < b) return 0;
-   if (a1>b1) return 1;
-   if (a1<b1) return 0;
-   if (a2==b2) return 0;
-   return dwim_sort_func(a2,b2);
+
+   oi = state = 0;
+   
+   for( int i = 0; i<sizeof(b); i++ )
+     if( (<'0','1','2','3','4','5','6','7','8','9'>)[b[i]] != state )
+     {
+       state = !state;
+       if( i )
+	 if( state ) 
+	   bb += ({ b[oi..i-1] });
+	 else
+	   bb += ({ (int)b[oi..i-1] });
+       oi = i;
+     }
+   if( state )
+     bb += ({ (int)b[oi..] });
+   else
+     bb += ({ b[oi..] });
+     
+   for( int i = 0; i<sizeof( aa ); i++ )
+   {
+     if( i >= sizeof( bb ) )  return 1; // a is definately bigger.
+
+     if( aa[i] < bb[i] )      return -1;
+     if( aa[i] > bb[i] )      return 1;
+   }
+
+   return 0;
 }
 
-//! sort with no notice of contents in paranthesis,
-//! no care of case either
+//! Sort comparison function that does not care about case, nor about
+//! the contents of any parts of the string enclosed with '()'
+//!
+//! Example: "Foo (bar)" is given the same weight as "foo (really!)"
 int lyskom_sort_func(string a,string b)
 {
    string a0=a,b0=b;
@@ -504,7 +541,7 @@ array flatten(array a)
   return ret;
 }
 
-//! Sum the elements of an array
+//! Sum the elements of an array using `+
 mixed sum(array a)
 {
 // 1000 is a safe stack limit
@@ -521,9 +558,10 @@ mixed sum(array a)
    }
 }
 
-//! Perform uniq on an array,
-//! aabbbcaababb -> abcabab
-
+//! Perform the same action as the Unix uniq command on an array, 
+//! aabbbcaababb -> abcabab.
+//!
+//! See also the @[uniq] function.
 array uniq2(array a)
 {
    array res;
@@ -546,7 +584,6 @@ array uniq2(array a)
 //! This is useful when something is either an array or
 //! a basic datatype, for instance in headers from the MIME
 //! module or Protocols.HTTP.Server.
-
 array arrayify(void|array|mixed z)
 {
    if (zero_type(z)) return ({});
