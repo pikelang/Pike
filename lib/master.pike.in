@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.349 2004/06/13 17:04:10 grubba Exp $
+// $Id: master.pike.in,v 1.350 2004/06/17 16:01:40 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -582,8 +582,8 @@ mapping (program:object|NoValue) objects=([
 mapping(string:object|NoValue) fc=([]);
 
 // Note: It's assumed that the mappings above never decrease in size
-// except in *_reverse_lookup(). no_value is used for entries that
-// should be considered removed.
+// unless the reverse mappings above also are updated. no_value should
+// otherwise be used for entries that should be considered removed.
 
 constant no_value = (<>);
 constant NoValue = typeof (no_value);
@@ -880,19 +880,34 @@ static program low_findprog(string pname,
 //
 void unregister(program p)
 {
-  if(string fname=search(programs,p)) {
+  if(string fname=rev_programs[p] || search(programs,p)) {
     resolv_debug("unregister %s\n", fname);
-    programs[fname] = no_value;
+    if (m_delete (rev_programs, p))
+      m_delete (programs, fname);
+    else
+      programs[fname] = no_value;
+
     fname = dirname (fname);
     object n;
     if ( fname!="" && objectp (n = fc[fname]) )
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
 	n->delete_value (p);
   }
-  if (objectp (objects[p])) objects[p] = no_value;
+
+  object o = objects[p];
+  if (objectp (o)) {
+    if (m_delete (rev_objects, o))
+      m_delete (objects, p);
+    else
+      objects[p] = no_value;
+  }
+
   foreach (fc; string name; mixed mod)
     if (objectp(mod) && object_program(mod) == p)
-      fc[name] = no_value;
+      if (m_delete (rev_fc, mod))
+	m_delete (fc, name);
+      else
+	fc[name] = no_value;
 }
 
 static program findprog(string pname,
