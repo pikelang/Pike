@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.17 2003/03/28 22:13:54 mast Exp $
+|| $Id: my_gmp.h,v 1.18 2003/03/29 03:02:44 mast Exp $
 */
 
 /*
@@ -100,6 +100,19 @@ extern struct program *bignum_program;
 #define INT_TYPE_BITS (SIZEOF_INT_TYPE * CHAR_BIT - 1)
 #ifdef INT64
 #define INT64_BITS (SIZEOF_INT64 * CHAR_BIT - 1)
+#endif
+
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+/* INT_TYPE is too big to feed directly to mpz_set_si etc. */
+#define BIG_PIKE_INT
+#endif
+
+#ifdef BIG_PIKE_INT
+#define FITS_LONG(VAL) ((VAL) >= LONG_MIN && (VAL) <= LONG_MAX)
+#define FITS_ULONG(VAL) ((VAL) >= 0 && (VAL) <= ULONG_MAX)
+#else
+#define FITS_LONG(VAL) 1
+#define FITS_ULONG(VAL) ((VAL) >= 0)
 #endif
 
 /* MPQ protos */
