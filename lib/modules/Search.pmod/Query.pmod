@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.18 2001/07/05 00:47:58 nilsson Exp $
+// $Id: Query.pmod,v 1.19 2001/08/07 14:33:33 norlin Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
@@ -81,19 +81,25 @@ Search.ResultSet do_query_phrase(Search.Database.Base db,
 array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                                               Search.Grammar.AbstractParser parser,
                                               string query,
-                                              Search.RankingProfile defaultRanking)
+                                              Search.RankingProfile defaultRanking,
+                                              array(string)|void stop_words)
 {
   Search.Grammar.ParseNode q = parser->parse(query);
-
+  if (stop_words && sizeof(stop_words)) {
+    werror ("Query BEFORE stop word removal:\n%O\n", q->print());
+    q = Search.Grammar.remove_stop_words(q, stop_words);
+    werror ("Query AFTER stop word removal:\n%O\n", q->print());
+  }
+  
   q = Search.Grammar.optimize(q);
-
+  
   if (!q)                                  // The query was a null query
     return ({ Search.ResultSet(), ({}) }); // so return an empty resultset
-
+  
   string error = Search.Grammar.validate(q);
   if (error)
     throw (error);
-
+  
   return class {
     static Search.RankingProfile defaultRanking;
     static Search.Database.Base db;

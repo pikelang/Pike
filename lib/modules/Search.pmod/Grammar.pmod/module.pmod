@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.9 2001/06/22 01:28:36 nilsson Exp $
+// $Id: module.pmod,v 1.10 2001/08/07 14:33:50 norlin Exp $
 
 class ParseNode {
   string op = "<node>";
@@ -205,4 +205,27 @@ string validate(ParseNode node) {
     else
       throw (err);
   return 0;
+}
+
+ParseNode remove_stop_words(ParseNode node, array(string) stop_words) {
+  if (!node)
+    return 0;
+  switch (node->op) {
+    case "or":
+    case "and":
+      node->children = filter(map(node->children, remove_stop_words, stop_words),
+                              lambda(ParseNode n) {
+                                return n != 0;
+                              });
+      return node;
+      
+    case "text":
+      node->plusWords  -= stop_words;
+      node->minusWords -= stop_words;
+      node->words      -= stop_words;
+      return node;
+
+    default:
+      return node;
+  }
 }
