@@ -80,6 +80,7 @@ testfont binary
 /src/modules/Image/encodings/gif.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.h foreign_ident
+/src/modules/Image/encodings/pnm.c foreign_ident
 /src/modules/Image/font.c foreign_ident
 /src/modules/Image/illustration.pike foreign_ident
 /src/modules/Image/image.c foreign_ident

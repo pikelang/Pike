@@ -1,0 +1,104 @@
+<title>Pike documentation: module Image.PNM</title>
+<h2>module Image.PNM</h2>
+
+
+<blockquote>
+This submodule keep the PNM encode/decode capabilities
+     of the <tt><a href=Image.html>Image</a></tt> module.
+
+<p>     PNM is a common image storage format on unix systems,
+     and is a very simple format.
+
+<p>     This format doesn't use any color palette.
+
+<p>     The format is divided into seven subformats;
+
+<p>     <pre>
+     P1(PBM) - ascii bitmap (only two colors)
+     P2(PGM) - ascii greymap (only grey levels)
+     P3(PPM) - ascii truecolor
+     P4(PBM) - binary bitmap 
+     P5(PGM) - binary greymap 
+     P6(PPM) - binary truecolor
+     </pre>
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.html>Image</a></tt>,
+     <tt><a href=Image.html>Image.image</a></tt>,
+     <tt><a href=Image.html>Image.GIF</a></tt>
+</blockquote>
+
+<hr>
+<a name=decode> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>decode</b>(string&nbsp;data)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Decodes PNM (PBM/PGM/PPM) data and creates an image object.
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the decoded image as an image object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+This function may throw errors upon illegal PNM data.
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.PNM.html#::encode>encode</a></tt>
+</blockquote>
+
+<hr>
+<a name=encode> </a>
+<a name=encode_P6> </a>
+<a name=encode_binary> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>string <b>encode</b>(object&nbsp;image)<br>
+string <b>encode_binary</b>(object&nbsp;image)<br>
+string <b>encode_P6</b>(object&nbsp;image)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Make a complete PNM file from an image.
+
+<p>     <tt><a href=Image.PNM.html#::encode_binary>encode_binary</a></tt>() and <tt><a href=Image.PNM.html#::encode_ascii>encode_ascii</a></tt>()
+     uses the most optimized encoding for this image (bitmap, grey
+     or truecolor) - P4, P5 or P6 respective P1, P2 or P3.
+
+<p>     <tt><a href=Image.PNM.html#::encode>encode</a></tt>() maps to <tt><a href=Image.PNM.html#::encode_binary>encode_binary</a></tt>().
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the encoded image as a string
+</blockquote>
+
+
+<h4>KNOWN BUGS</h4>
+<blockquote>
+Currently only supports type P5 (binary grey) and
+     P6 (binary truecolor).
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.PNM.html#::decode>decode</a></tt>
+</blockquote>

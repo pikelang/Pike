@@ -1,7 +1,8 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 GIF_OBJS = gif.o gif_lzw.o
-OBJS=gif.a
+PNM_OBJS = pnm.o 
+OBJS=gif.a pnm.a
 
 @SET_MAKE@
 
@@ -16,6 +17,10 @@ all: $(OBJS)
 gif.a : $(GIF_OBJS)
 	rm -f gif.a
 	ar cq gif.a $(GIF_OBJS)
+
+pnm.a : $(PNM_OBJS)
+	rm -f pnm.a
+	ar cq pnm.a $(PNM_OBJS)
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)

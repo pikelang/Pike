@@ -3,7 +3,7 @@ DOCFILES = doc-header \
    blit.c blit_layer_include.h colortable.c colortable.h dct.c font.c \
    image.c image.h lzw.c lzw.h matrix.c operator.c pattern.c pnm.c \
    polyfill.c quant.c togif.c x.c encodings/gif.c encodings/gif_lzw.c \
-   encodings/gif_lzw.h \
+   encodings/gif_lzw.h encodings/pnm.c \
    doc-footer
 
 pike=pike
