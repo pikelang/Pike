@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.58 2001/03/03 21:12:24 grubba Exp $
+ * $Id: pike_types.h,v 1.59 2001/03/03 21:20:09 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -21,13 +21,30 @@ struct pike_type
   INT32 refs;
   unsigned INT32 hash;
   struct pike_type *next;
-  unsigned INT32 type;
+  unsigned INT16 flags;
+  unsigned INT16 type;
   struct pike_type *car;
   struct pike_type *cdr;
 };
+
+/* pike_type flags: */
+#define PT_FLAG_MARKER	1	/* Type contains markers. */
+
 void free_type(struct pike_type *t);
 #define copy_type(D, S)	add_ref(D = (S))
+#define CONSTTYPE(X) make_pike_type(X)
+
+#ifdef PIKE_DEBUG
+void TYPE_STACK_DEBUG(const char *fun);
+#else /* !PIKE_DEBUG */
+#define TYPE_STACK_DEBUG(X)
+#endif /* PIKE_DEBUG */
+
+extern struct pike_type *type_stack[];
+extern struct pike_type **pike_type_mark_stack[];
+
 #else /* !USE_PIKE_TYPE */
+
 /*
  * The old type type.
  */
@@ -36,6 +53,12 @@ void free_type(struct pike_type *t);
  */
 #define free_type(T)	free_string(T)
 #define copy_type(D, S)	copy_shared_string(D, S)
+
+#define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
+
+extern unsigned char type_stack[];
+extern unsigned char *pike_type_mark_stack[];
+
 #endif /* USE_PIKE_TYPE */
 
 /* Also used in struct node_identifier */
@@ -104,9 +127,6 @@ typedef struct node_s node;
 
 #define PIKE_TYPE_STACK_SIZE 100000
 
-extern unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
-extern unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
-
 extern int max_correct_args;
 PMOD_EXPORT extern struct pike_type *string_type_string;
 PMOD_EXPORT extern struct pike_type *int_type_string;
@@ -170,6 +190,10 @@ extern struct pike_type_location *all_pike_type_locations;
 #define exit_type_stack pop_stack_mark
 #endif
 
+#ifdef USE_PIKE_TYPE
+void push_type(unsigned INT16 type);
+void push_reverse_type(unsigned INT16 type);
+#else /* !USE_PIKE_TYPE */
 /* Hmm, these will cause fatals if they fail... */
 #define push_type(X) do {				\
   if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))	\
@@ -185,6 +209,13 @@ extern struct pike_type_location *all_pike_type_locations;
   Pike_compiler->type_stackp++;					\
 } while(0)
 
+#define unsafe_type_stack_mark() do {				\
+  *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
+  Pike_compiler->pike_type_mark_stackp++;					\
+} while(0)
+
+#endif /* USE_PIKE_TYPE */
+
 #define type_stack_mark() do {				\
   if(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
     fatal("Type mark stack overflow.");		\
@@ -192,11 +223,7 @@ extern struct pike_type_location *all_pike_type_locations;
     *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
     Pike_compiler->pike_type_mark_stackp++;					\
   }							\
-} while(0)
-
-#define unsafe_type_stack_mark() do {				\
-  *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
-  Pike_compiler->pike_type_mark_stackp++;					\
+  TYPE_STACK_DEBUG("type_stack_mark");			\
 } while(0)
 
 #define reset_type_stack() do {			\
@@ -247,9 +274,9 @@ int check_indexing(struct pike_type *type,
 		   node *n);
 int count_arguments(struct pike_type *s);
 int minimum_arguments(struct pike_type *s);
-struct pike_string *check_call(struct pike_type *args,
-			       struct pike_type *type,
-			       int strict);
+struct pike_type *check_call(struct pike_type *args,
+			     struct pike_type *type,
+			     int strict);
 INT32 get_max_args(struct pike_type *type);
 struct pike_type *zzap_function_return(struct pike_type *t, INT32 id);
 struct pike_type *get_type_of_svalue(struct svalue *s);
@@ -264,6 +291,8 @@ struct pike_type *make_pike_type(const char *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
 /* Prototypes end here */
 
+/* FIXME: Not supported under USE_PIKE_TYPE yet. */
+#ifndef USE_PIKE_TYPE
 /* "Dynamic types" - use with ADD_FUNCTION_DTYPE */
 #define dtStore(TYPE) {int e; for (e=0; e<CONSTANT_STRLEN(TYPE); e++) unsafe_push_type((TYPE)[e]);}
 #define dtArr(VAL) {unsafe_push_type(PIKE_T_ARRAY); {VAL}}
@@ -318,6 +347,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
   type_stack_reverse();							\
   (TYPESTR)=pop_unfinished_type();					\
 } while (0)
+#endif /* !USE_PIKE_TYPE */
 
 #ifdef DEBUG_MALLOC
 #define pop_type() ((struct pike_type *)debug_malloc_pass(debug_pop_type()))
