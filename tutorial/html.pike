@@ -343,8 +343,9 @@ function do_search()
 
   top.display.document.write('<h2>Searching for '+text+'</h2>\\n');
   matches=0;
-  
+
   for(a in f) {
+    a+='';
     i=a.indexOf(text);
     if(i != -1 && (i==0 || a.charAt(i-1)=='.') && (i+text.length == a.length || a.charAt(i+text.length) == '.')) {
        found=f[a];
