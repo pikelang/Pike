@@ -811,7 +811,7 @@ static class DocParserClass {
           string s = declparser->peekToken();
           if (s != ";" && s != EOF)
             parseError("@decl: expected end of line, got %O", s);
-          int i = search(p->name, "::");
+          int i = search(p->name||"", "::");
           if (i >= 0) {
             string scope = p->name[0 .. i + 1];
             p->name = p->name[i + 2 ..];
