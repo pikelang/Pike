@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.97 1998/06/06 03:13:05 hubbe Exp $
+# $Id: Makefile.in,v 1.98 1998/07/04 23:12:20 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -71,7 +71,7 @@ CPP=@CPP@
 AR=@AR@
 
 LD=@LD@
-LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
+LDFLAGS=@LDFLAGS@ @LINKFORSHARED@
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 
