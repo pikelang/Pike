@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.11 1999/11/25 16:56:30 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.12 1999/12/08 05:30:03 per Exp $ */
 
 #define JUMPBACK 3
 
@@ -197,12 +197,12 @@ string treat(string expr)
 }
 
 /* Dump C co(d|r)e */
-void dump2(mixed *data,int ind)
+void dump2(array(mixed) data,int ind)
 {
   int e,i,max,maxe;
   mixed a,b,tmp;
   string test;
-  mapping(string:array(string)) d;
+  mapping(int:array(string))|mapping(string:array(string)) d;
   mapping(string:mapping(string:array(string))) foo;
   mixed cons, var;
 
