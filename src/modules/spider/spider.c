@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.71 1998/07/13 15:30:19 grubba Exp $");
+RCSID("$Id: spider.c,v 1.72 1998/07/16 18:15:43 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -665,7 +665,7 @@ void do_html_parse(struct pike_string *ss,
 	assign_svalue_no_free(sp++,&sval1);
 	free_svalue(&sval1);
 	(*strings)++;
-	find_endtag(sval2.u.string ,s+j, len-j, &l);
+	find_endtag(sval2.u.string, s+j, len-j, &l);	/* FIXME: Bug! */
 	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
@@ -675,7 +675,7 @@ void do_html_parse(struct pike_string *ss,
       {
 	/* Hopefully something callable ... */
 	assign_svalue_no_free(sp++,&sval2);
-	k=push_parsed_tag(s+j,len-j); 
+	k = push_parsed_tag(s+j,len-j); 
 	if (extra_args)
 	{
 	  add_ref(extra_args);
@@ -727,7 +727,7 @@ void do_html_parse(struct pike_string *ss,
 	assign_svalue_no_free(sp++,&sval1);
 	free_svalue(&sval1);
 	(*strings)++;
-	find_endtag(sval2.u.string,s+j,len-j,&l);
+	find_endtag(sval2.u.string,s+j,len-j,&l);	/* FIXME: Bug? */
 	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
@@ -735,11 +735,11 @@ void do_html_parse(struct pike_string *ss,
       }
       else if (sval1.type != T_INT)
       {
-	assign_svalue_no_free(sp++,&sval2);
-	m=push_parsed_tag(s+j,len-j) + j;
-	k=find_endtag(sval2.u.string,s+m,len-m,&l);
-	push_string(make_shared_binary_string(s+m,k));
-	m+=l;
+	assign_svalue_no_free(sp++, &sval2);
+	m = push_parsed_tag(s+j, len-j) + j;
+	k = find_endtag(sval2.u.string, s+m, len-m, &l);
+	push_string(make_shared_binary_string(s+m, k));
+	m += l;
         /* M == just after end tag, from s */
 
 	if (extra_args)
@@ -757,11 +757,11 @@ void do_html_parse(struct pike_string *ss,
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
-	  /* i == first '<' ? */
-	  /* last == end of last tag */
-	  if (last!=i-1)
+	  /* i == '<' + 1 */
+	  /* last == end of previous tags '>' + 1 */
+	  if (last < i-1)
 	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
+	    push_string(make_shared_binary_string(s+last, i-last-1)); 
 	    (*strings)++; 
 	  }
 	  i=last=j=m;
@@ -774,12 +774,12 @@ void do_html_parse(struct pike_string *ss,
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
-	  if (last!=i-1)
+	  if (last < i-1)
 	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
+	    push_string(make_shared_binary_string(s+last, i-last-1)); 
 	    (*strings)++; 
 	  }
-	  i=last=j+k;
+	  i=last=j=m;
 	  push_string(ss2);
 	  (*strings)++;
 	  continue;
@@ -972,10 +972,10 @@ void do_html_parse_lines(struct pike_string *ss,
 #ifdef DEBUG
 	sval2.type=99;
 #endif
-	m=push_parsed_tag(s+j,len-j) + j;
-	k=find_endtag(sval2.u.string,s+m,len-m,&l);
-	push_string(make_shared_binary_string(s+m,k));
-	m+=l;
+	m = push_parsed_tag(s+j, len-j) + j;
+	k = find_endtag(sval2.u.string, s+m, len-m, &l);
+	push_string(make_shared_binary_string(s+m, k));
+	m += l;
         /* M == just after end tag, from s */
 	push_int(line);
 	if (extra_args)
