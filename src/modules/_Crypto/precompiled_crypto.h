@@ -72,6 +72,7 @@ struct pike_pipe {
   struct object **objects;
   INT32 num_objs;
   INT32 block_size;
+  INT32 mode;
 };
 
 /*
