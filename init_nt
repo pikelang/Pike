@@ -93,8 +93,8 @@ PIKE_DEBUG=1
       MSVS='C:\Program Files\Microsoft Visual Studio'
       REMOTE_VARIABLES="
 path=c:\\windows\\system32;c:\\windows;c:\\windows\\system32\\wbem;$MSVS\\Common\\Tools\WinNT;$MSVS\\Common\\MSDev98\\Bin;$MSVS\\Common\\Tools;$MSVC\\bin;
-include=$MSVC\\atl\\include;$MSVC\\mfc\\include;$MSVC\\include;Y:\\home\peter\hack\xenofarm\client\win32-libs\include
-lib=$MSVC\\mfc\\lib;$MSVC\\lib;Y:\\home\peter\hack\xenofarm\client\win32-libs\lib
+include=$MSVC\\atl\\include;$MSVC\\mfc\\include;$MSVC\\include;Y:\\win32-pike\\libs\\include
+lib=$MSVC\\mfc\\lib;$MSVC\\lib;Y:\\home\peter\hack\xenofarm\client\win32-pike\\libs\\lib
 PIKE_DEBUG=1
 "       
       export NTLD_LIBRARY_PATH
