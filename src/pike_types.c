@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.61 1999/11/04 20:05:24 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.62 1999/11/20 21:58:02 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -989,8 +989,8 @@ static void medium_or_pike_types(struct pike_string *a,
   low_or_pike_types( a ? a->str : 0 , b ? b->str : 0 );
 }
 
-static struct pike_string *or_pike_types(struct pike_string *a,
-					 struct pike_string *b)
+struct pike_string *or_pike_types(struct pike_string *a,
+				  struct pike_string *b)
 {
   type_stack_mark();
   medium_or_pike_types(a,b);
