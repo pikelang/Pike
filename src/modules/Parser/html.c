@@ -280,8 +280,8 @@ static void tag_args(struct parser_html_storage *this,
 		     int skip_name, int to_tag_end);
 
 static int quote_tag_lookup (struct parser_html_storage *this,
-			     struct piece *feed, int c,
-			     struct piece **destp, int *d_p,
+			     struct piece *feed, ptrdiff_t c,
+			     struct piece **destp, ptrdiff_t *d_p,
 			     int finished, struct svalue **mapqentry);
 
 /****** debug helper ********************************/
@@ -1326,7 +1326,7 @@ static INLINE void push_feed_range(struct piece *head,
 
 #define FORWARD_CHAR(feed, c, dest, dp) do {				\
   (dest) = (struct piece *) (feed);					\
-  (dp) = (int) (c) + 1;							\
+  (dp) = (ptrdiff_t) (c) + 1;						\
   while ((dp) == (dest)->s->len && (dest)->next) {			\
     (dp) = 0;								\
     (dest) = (dest)->next;						\
@@ -1434,12 +1434,12 @@ static INLINE void skip_piece_range(struct location *loc,
 
 static void skip_feed_range(struct feed_stack *st,
 			    struct piece **headp,
-			    int *c_headp,
+			    ptrdiff_t *c_headp,
 			    struct piece *tail,
-			    int c_tail)
+			    ptrdiff_t c_tail)
 {
    struct piece *head=*headp;
-   int c_head=*c_headp;
+   ptrdiff_t c_head=*c_headp;
 
    if (!*headp)
    {
@@ -1739,9 +1739,9 @@ enum scan_arg_do {SCAN_ARG_ONLY, SCAN_ARG_PUSH, SCAN_ARG_ENT_BREAK};
 
 static int scan_forward_arg(struct parser_html_storage *this,
 			    struct piece *feed,
-			    int c,
+			    ptrdiff_t c,
 			    struct piece **destp,
-			    int *d_p,
+			    ptrdiff_t *d_p,
 			    enum scan_arg_do what,
 			    int finished,
 			    int *quote)
@@ -1926,7 +1926,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       struct piece *feed,
 			       int c,
 			       struct piece **destp,
-			       int *d_p,
+			       ptrdiff_t *d_p,
 			       int finished,
 			       int match_tag,
 			       int *got_fin)
@@ -2255,7 +2255,7 @@ static newstate handle_result(struct parser_html_storage *this,
 		  * tag starter and name and switch to CTX_TAG to
 		  * parse any entities in the tag. */
 		 struct piece *pos;
-		 int cpos;
+		 ptrdiff_t cpos;
 		 if (this->flags & FLAG_WS_BEFORE_TAG_NAME)
 		   scan_forward (*head, *c_head + 1, &pos, &cpos,
 				 this->ws, -this->n_ws);
@@ -2836,7 +2836,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
    p_wchar2 ch;
    int n;
    struct piece *dst = *feed;
-   int cdst = st->c;
+   ptrdiff_t cdst = st->c;
    newstate res;
    int flags = this->flags;
    enum contexts ctx = this->out_ctx;
@@ -3208,7 +3208,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
       case CTX_TAG: {
 	struct piece *s1 = dst, *s2, *s3;
-	int c1 = cdst, c2, c3;
+        ptrdiff_t c1 = cdst, c2, c3;
 	int pushed = 0;
 
 	/* NOTE: This somewhat duplicates tag_args(). */
@@ -4244,7 +4244,7 @@ static void html_tag_content(INT32 args)
   switch (THIS->type) {
     case TYPE_CONT: {
       struct piece *end, *dummy;
-      int cend, cdummy;
+      ptrdiff_t cend, cdummy;
       if (scan_forward_arg (THIS, beg, cbeg, &beg, &cbeg, SCAN_ARG_PUSH, 1, NULL)) {
 	if (scan_for_end_of_tag (THIS, beg, cbeg, &beg, &cbeg, 1,
 				 THIS->flags & FLAG_MATCH_TAG, NULL) &&
@@ -4267,7 +4267,7 @@ static void html_tag_content(INT32 args)
     case TYPE_QTAG: {
       struct svalue *v;
       struct piece *end;
-      int cend;
+      ptrdiff_t cend;
       if (quote_tag_lookup (THIS, beg, cbeg, &beg, &cbeg, 1, &v) &&
 	  scan_for_string (THIS, beg, cbeg, &end, &cend, v[2].u.string))
 	push_feed_range (beg, cbeg, end, cend);
@@ -4934,7 +4934,7 @@ static void html_debug_mode(INT32 args)
 
 void init_parser_html(void)
 {
-   SIZE_T offset;
+   size_t offset;
 
    empty_string = make_shared_binary_string("", 0);
 
