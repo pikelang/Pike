@@ -180,7 +180,7 @@ void f_get_dir(INT32 args)
   {
 #define FPR 1024
     char buffer[MAXPATHLEN * 4];
-    char ptrs[FPR];
+    char *ptrs[FPR];
     int lens[FPR];
     
     while(1)
@@ -200,16 +200,16 @@ void f_get_dir(INT32 args)
 	}
 	if(num_files >= FPR) break;
 	lens[num_files]=NAMLEN(d);
-	if(ptr+lens[num_files] >= buffer+sizeof(buffer)) break;
-	MEMCPY(ptr, d->d_name, lens[num_files]);
-	ptrs[num_files]=ptr;
-	ptr+=len;
+	if(bufptr+lens[num_files] >= buffer+sizeof(buffer)) break;
+	MEMCPY(bufptr, d->d_name, lens[num_files]);
+	ptrs[num_files]=bufptr;
+	bufptr+=lens[num_files];
 	num_files++;
       }
       THREADS_DISALLOW();
       for(e=0;e<num_files;e++)
       {
-	push_string(make_shared_string(ptrs[e],lens[e]));
+	push_string(make_shared_binary_string(ptrs[e],lens[e]));
       }
       if(d)
 	push_string(make_shared_binary_string(d->d_name,NAMLEN(d)));
