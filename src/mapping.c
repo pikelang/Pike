@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.168 2003/06/30 17:06:09 mast Exp $
+|| $Id: mapping.c,v 1.169 2003/08/20 12:04:51 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.168 2003/06/30 17:06:09 mast Exp $");
+RCSID("$Id: mapping.c,v 1.169 2003/08/20 12:04:51 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -615,9 +615,11 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
 PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
 {
   struct mapping_data *md = m->data;
-  if (md->refs > 1) {
+
+  if ((md->flags != flags) && (md->refs > 1)) {
     struct keypair *k = NULL, *prev = NULL;
     COPYMAP2();
+    md = m->data;
   }
 #ifdef PIKE_DEBUG
   if(flags & MAPPING_WEAK)
@@ -1337,7 +1339,6 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 #endif
 
   n=allocate_mapping(0);
-  if(!m_sizeof(m)) return n; /* done */
   debug_malloc_touch(n->data);
   free_mapping_data(n->data);
   n->data=m->data;
@@ -1566,6 +1567,10 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 #endif
 
   if(a==b) return 1;
+
+  if (a->data == b->data) return 1;
+
+  if (a->data->flags || b->data->flags) return 0;
 
   check_mapping_for_destruct(a);
   check_mapping_for_destruct(b);
