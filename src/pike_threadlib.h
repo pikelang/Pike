@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.17 2002/09/13 19:15:56 mast Exp $
+ * $Id: pike_threadlib.h,v 1.18 2002/09/14 00:57:27 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -440,6 +440,7 @@ static inline int threads_disabled_wait(void)
 #define th_yield() thr_yield()
 #else
 #define th_yield()
+#define HAVE_NO_YIELD
 #endif
 #endif
 
