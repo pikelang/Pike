@@ -491,9 +491,9 @@ void do_export()
 #define TRVAR(X) translate(combine_path(vars->X,"."), translator)
 
   array(string) env=({
-    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
-    "PIKE_PROGRAM_PATH=",
-    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
+//    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
+//    "PIKE_PROGRAM_PATH=",
+//    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
     });
 
 
@@ -505,6 +505,7 @@ void do_export()
   string cmd=
     replace(translate("pike.exe", translator),"/","\\")+
     " -m"+translate("master.pike", translator)+
+    " -DNOT_INSTALLED" +
     " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
     RELAY(TMP_LIBDIR)
     RELAY(LIBDIR_SRC)
@@ -587,12 +588,8 @@ done
 		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
-		   "PIKE_MODULE_PATH=build/lib/modules:lib/modules\n"
-		   "PIKE_PROGRAM_PATH=\n"
-		   "PIKE_INCLUDE_PATH=lib/include\n"
-		   "export PIKE_MODULE_PATH PIKE_INCLUDE_PATH PIKE_PROGRAM_PATH\n"
 		   "( cd '"+export_base_name+".dir'\n"
-		   "  eval \"build/pike -mbuild/master.pike "
+		   "  eval \"build/pike -mmaster.pike -DNOT_INSTALLED "
 		                "\\\"$INSTALL_SCRIPT\\\" \\\n"
 		   "  TMP_LIBDIR=\\\"build/lib\\\"\\\n"
 		   "  LIBDIR_SRC=\\\"lib\\\"\\\n"
@@ -1022,13 +1019,16 @@ int pre_install(array(string) argv)
 
 // Create a master.pike with the correct lib_prefix
 void make_master(string dest, string master, string lib_prefix,
-		 string include_prefix)
+		 string include_prefix, string|void share_prefix)
 {
   status("Finalizing",master);
   string master_data=Stdio.read_file(master);
-  master_data=replace(master_data,({"¤lib_prefix¤","¤include_prefix¤"}),
-		      ({replace(lib_prefix,"\\","\\\\"),
-			replace(include_prefix,"\\","\\\\")}));
+  master_data=replace(master_data,
+		      ({"¤lib_prefix¤","¤include_prefix¤","¤share_prefix¤"}),
+		      ({replace(lib_prefix, "\\", "\\\\"),
+			replace(include_prefix, "\\", "\\\\"),
+			replace(share_prefix||"¤share_prefix¤", "\\", "\\\\"),
+		      }));
   if((vars->PIKE_MODULE_RELOC||"") != "")
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
 			  "#define PIKE_MODULE_RELOC 1");
@@ -1246,8 +1246,11 @@ void do_install()
 
     if(export)
     {
+      make_master("master.pike", master, "build/lib", "build", "lib");
+
       to_export+=({master,
-		   combine_path(vars->TMP_BUILDDIR,"master.pike"),
+		   "master.pike",
+		   //combine_path(vars->TMP_BUILDDIR,"master.pike"),
 		   combine_path(vars->TMP_BUILDDIR,"specs"),
 		   combine_path(vars->TMP_BUILDDIR,
 				"modules/dynamic_module_makefile"),
