@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.223 2001/07/17 17:50:38 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.224 2001/07/17 20:32:36 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -849,6 +849,12 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #endif /* __GNUC__ */
 
+#ifdef sparc
+#define SET_PROG_COUNTER(X)	(PROG_COUNTER=((char *)X)-8)
+#else /* !sparc */
+#define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
+#endif /* sparc */
+
 #undef DONE
 #undef FETCH
 #undef INTER_RETURN
@@ -856,8 +862,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #define DONE return
 #define FETCH
-#define INTER_RETURN {PROG_COUNTER=do_inter_return_label;DONE;}
-#define INTER_ESCAPE_CATCH {PROG_COUNTER=do_escape_catch_label;DONE;}
+#define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);DONE;}
+#define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);DONE;}
 
 #include "interpret_functions_fixed.h"
 
