@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.23 1997/01/28 02:47:54 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.24 1997/01/29 00:06:23 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1396,6 +1396,8 @@ static void f_mktime (INT32 args)
     timezone=tz;
     retval=mktime(&date);
     timezone=save_timezone;
+  }else{
+    retval=mktime(&date);
   }
 #else
   retval=mktime(&date);
