@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.74 2003/06/02 17:57:28 mast Exp $
+|| $Id: socket.c,v 1.75 2003/06/02 22:02:01 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.74 2003/06/02 17:57:28 mast Exp $");
+RCSID("$Id: socket.c,v 1.75 2003/06/02 22:02:01 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -84,7 +84,6 @@ static void port_accept_callback(int fd,void *data);
 
 static void do_close(struct port *p, struct object *o)
 {
-  int do_free=0;
  retry:
   if(p->fd >= 0)
   {
