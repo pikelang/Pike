@@ -1,5 +1,6 @@
 #pike 7.5
 
+#if constant(Crypto.Proxy)
 inherit Crypto.Proxy;
 
 static class Wrapper(object a) {
@@ -38,3 +39,6 @@ string name() { return ::name(); }
 int query_key_length() { return key_size(); }
 int query_block_size() { return block_size(); }
 string crypt_block(string p) { return crypt(p); }
+#else
+inherit Crypto.crypto;
+#endif
