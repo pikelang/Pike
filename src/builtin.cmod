@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.31 2001/06/05 10:11:52 hubbe Exp $
+ * $Id: builtin.cmod,v 1.32 2001/06/06 08:12:10 hubbe Exp $
  */
 
 #include "global.h"
@@ -402,27 +402,22 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
  *! Returns the weak flag settings for @[m]. It's a combination of
  *! @[Pike.WEAK_INDICES] and @[Pike.WEAK_VALUES].
  */
-PIKEFUN int get_weak_flag(array|mapping|multiset m)
+PIKEFUN int get_weak_flag(array m)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
-  int flag = 0;
-  switch (m->type) {
-    case T_ARRAY:
-      flag = (m->u.array->flags & ARRAY_WEAK_FLAG) ? PIKE_WEAK_VALUES : 0;
-      break;
-    case T_MAPPING:
-      flag = mapping_get_flags(m->u.mapping) & MAPPING_WEAK;
-      break;
-    case T_MULTISET:
-      flag = (m->u.multiset->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK)) ?
+  RETURN (m->flags & ARRAY_WEAK_FLAG) ? PIKE_WEAK_VALUES : 0;
+}
+
+PIKEFUN int get_weak_flag(mapping m)
+{
+  RETURN  mapping_get_flags(m) & MAPPING_WEAK;
+}
+
+PIKEFUN int get_weak_flag(multiset m)
+{
+  RETURN (m->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK)) ?
 	PIKE_WEAK_INDICES : 0;
-      break;
-    default:
-      SIMPLE_BAD_ARG_ERROR("get_weak_flag",1,"array|mapping|multiset");
-  }
-  pop_n_elems(args);
-  push_int(flag);
 }
 
 PIKEFUN program __empty_program()
@@ -563,106 +558,82 @@ PIKEFUN object|program function_object(object|program|function func)
  *! @seealso
  *!   @[random_seed()]
  */
-PIKEFUN mixed random(mixed arg)
+
+
+PIKEFUN mixed random(object o)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
-  type function(int:int)|function(object:mixed)|function(array(1=mixed):1)|function(mapping(2=mixed:3=mixed):array(2|3))|function(multiset(4=mixed):4)|function(float:float);
 {
-  switch(arg->type)
-  {
-    case T_OBJECT:
-      pop_n_elems(args-1);
-      apply(Pike_sp[-1].u.object,"_random",0);
-      stack_swap();
-      pop_stack();
-      return;
-      
-    case T_INT:
-    {
-      INT_TYPE i=arg->u.integer;
-      pop_n_elems(args);
-      if(i <= 0)
-      {
-	push_int(0);
-      }else{
-	push_int( my_rand() % i);
-      }
-      return;
-    }
-
-    case T_FLOAT:
-    {
-      FLOAT_TYPE f=arg->u.float_number;
-      pop_n_elems(args);
-      if(f<=0.0)
-      {
-	push_float(0.0);
-      }else{
-#define N 1048576
-	push_float(f * (my_rand()%N/((float)N)) +
-		   f * (my_rand()%N/( ((float)N) * ((float)N) )));
-		   
-      }
-      return;
-    }
-
-    case T_ARRAY:
-    {
-      struct array *a=arg->u.array;
-      if(!a->size)
-	SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
-      push_svalue(a->item + (my_rand() % a->size));
-      stack_swap();
-      pop_stack();
-      return;
-    }
-
-    case T_MULTISET:
-    {
-      struct multiset *m=arg->u.multiset;
-      if(!m->ind->size)
-	SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
-      push_svalue(m->ind->item + (my_rand() % m->ind->size));
-      stack_swap();
-      pop_stack();
-      return;
-    }
-
-    case T_MAPPING:
-    {
-      struct mapping *m=arg->u.mapping;
-      struct mapping_data *md=m->data;
-      size_t bucket, count;
-      struct keypair *k;
-
-      if(!m_sizeof(m))
-	SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
-
-      /* Find a random, nonempty bucket */
-      bucket=my_rand() % md->hashsize;
-      while(! md->hash[bucket] )
-	if(++bucket > (size_t)md->hashsize)
-	  bucket=0;
-      
-      /* Count entries in bucket */
-      count=0;
-      for(k=md->hash[bucket];k;k=k->next) count++;
-
-      /* Select a random entry in this bucket */
-      count = my_rand() % count;
-      k=md->hash[bucket];
-      while(count-- > 0) k=k->next;
-
-      /* Push result and return */
-      push_svalue(&k->ind);
-      push_svalue(&k->val);
-      f_aggregate(2);
-      stack_swap();
-      pop_stack();
-      return;
-    }
-  }
+  apply(o,"_random",0);
+  stack_swap();
+  pop_stack();
 }
+
+PIKEFUN int random(int i)
+{
+  if(i <= 0) RETURN 0;
+  RETURN  my_rand() % i;
+}      
+
+PIKEFUN float random(float f)
+{
+  if(f<=0.0) RETURN 0.0;
+#define N 1048576
+  RETURN f * (my_rand()%N/((float)N)) +
+    f * (my_rand()%N/( ((float)N) * ((float)N) ));
+		   
+}
+
+PIKEFUN mixed random(array a)
+{
+  if(!a->size)
+    SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
+  push_svalue(a->item + (my_rand() % a->size));
+  stack_swap();
+  pop_stack();
+}
+
+PIKEFUN mixed random(multiset m)
+{
+  if(!m->ind->size)
+    SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
+  push_svalue(m->ind->item + (my_rand() % m->ind->size));
+  stack_swap();
+  pop_stack();
+}
+
+PIKEFUN mapping random(mapping m)
+{
+  struct mapping_data *md=m->data;
+  size_t bucket, count;
+  struct keypair *k;
+  
+  if(!m_sizeof(m))
+    SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
+  
+  /* Find a random, nonempty bucket */
+  bucket=my_rand() % md->hashsize;
+  while(! md->hash[bucket] )
+    if(++bucket > (size_t)md->hashsize)
+      bucket=0;
+  
+  /* Count entries in bucket */
+  count=0;
+  for(k=md->hash[bucket];k;k=k->next) count++;
+  
+  /* Select a random entry in this bucket */
+  count = my_rand() % count;
+  k=md->hash[bucket];
+  while(count-- > 0) k=k->next;
+  
+  /* Push result and return */
+  push_svalue(&k->ind);
+  push_svalue(&k->val);
+  f_aggregate(2);
+  stack_swap();
+  pop_stack();
+}
+
 
 
 void init_builtin(void)

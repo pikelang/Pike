@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+#define FUNC_OVERLOAD
+
 /*
  * This script is used to process *.cmod files into *.c files, it 
  * reads Pike style prototypes and converts them into C code.
@@ -147,7 +149,7 @@ string trim(string s)
 string cquote(string n)
 {
   string ret="";
-  while(sscanf(n,"%[a-zA-Z]%c%s",string safe, int c, n)==3)
+  while(sscanf(n,"%[a-zA-Z0-9]%c%s",string safe, int c, n)==3)
   {
     switch(c)
     {
@@ -158,7 +160,10 @@ string cquote(string n)
       case '=': ret+=sprintf("%s_eq",safe); break;
     }
   }
-  return ret+n;
+  ret+=n;
+  if(ret[0]=='_' || (ret[0]>='0' && ret[0]<='9'))
+    ret="cq_"+ret;
+  return ret;
 }
 
 
@@ -256,6 +261,60 @@ class PikeType
 	case "9": return "mixed";
 
 	default:  return ret;
+      }
+    }
+
+  /* Return an array of all possible basetypes for this type
+   */
+  array(string) basetypes()
+    {
+      string ret=(string)t;
+      switch(ret)
+      {
+	case "CTYPE":
+	  return args[1]->basetypes();
+
+	case "|":
+	  return `|(@args->basetypes());
+
+	case "=":
+	case "&":
+	  return args[-1]->basetypes();
+
+	case "!":
+	case "any":
+	case "0":
+	case "1":
+	case "2":
+	case "3":
+	case "4":
+	case "5":
+	case "6":
+	case "7":
+	case "8":
+	case "9":
+
+	case "mixed":
+	  return ({
+	    "int",
+	    "float",
+	    "string",
+	    "object",
+	    "program",
+	    "function",
+	    "array",
+	    "mapping",
+	    "multiset",
+	    "type",
+	  });
+	case "program":
+	  return ({
+	    "object",
+	    "program",
+	    "function",
+	  });
+
+	default:  return ({ ret });
       }
     }
 
@@ -818,26 +877,37 @@ string file;
 /*
  * Generate an #ifdef/#else/#endif
  */
-array IFDEF(string define,
+array IFDEF(string|array(string) define,
 	    array yes,
 	    void|array no)
 {
   array ret=({});
+  if(!arrayp(define)) define=({define});
   if(!yes || !sizeof(yes))
   {
     if(!no || !sizeof(no)) return ({"\n"});
-    ret+=({ sprintf("\n#ifndef %s\n",define) });
+    if(sizeof(define)==1)
+    {
+      ret+=({ sprintf("\n#ifndef %s\n",define[0]) });
+    }else{
+      ret+=({ sprintf("\n#if !defined(%s)\n",define*") && !defined(") });
+    }
   }else{
-    ret+=({ sprintf("\n#ifdef %s\n",define) });
+    if(sizeof(define)==1)
+    {
+      ret+=({ sprintf("\n#ifdef %s\n",define[0]) });
+    }else{
+      ret+=({ sprintf("\n#if defined(%s)\n",define*") || defined(") });
+    }
     ret+=yes;
     if(no && sizeof(no))
     {
-      ret+=({sprintf("\n#else /* %s */\n",define)});
+      ret+=({sprintf("\n#else /* %s */\n",define*", ")});
       ret+=no;
     }
   }
   ret+=no || ({});
-  ret+=({sprintf("\n#endif /* %s */\n",define)});
+  ret+=({sprintf("\n#endif /* %s */\n",define*", ")});
   return ret;
 }
 
@@ -854,6 +924,231 @@ array DEFINE(string define, void|string as)
     sprintf("#define %s%s\n",define, as?" "+as:"")
       });
 }
+
+
+#ifdef FUNC_OVERLOAD
+class FuncData
+{
+  string name;
+  string define;
+  PikeType type;
+  mapping attributes;
+  int max_args;
+  int min_args;
+  array(Argument) args;
+
+  string _sprintf()
+    {
+      return sprintf("FuncData(%s)",define);
+    }
+  
+  int `==(mixed q)
+    {
+      return objectp(q) && q->name == name;
+//      return 0;
+    }
+};
+
+
+int evaluate_method(mixed q)
+{
+  int val=0;
+  q=values(q) - ({ ({}) });
+//  werror("evaluate: %O\n",q);
+  for(int e=0;e<sizeof(q);e++)
+  {
+    if(q[e] && sizeof(q[e]))
+    {
+      val++;
+      for(int d=e+1;d<sizeof(q);d++)
+      {
+	if(!sizeof(q[e] ^ q[d])) /* equal is broken in some Pikes */
+	{
+//	  werror("EQ, %d %d\n",e,d);
+	  q[d]=0;
+	}
+      }
+    }
+  }
+  return val;
+}
+
+array generate_overload_func_for(array(FuncData) d,
+				 int indent,
+				 int min_possible_arg,
+				 int max_possible_arg,
+				 string name,
+				 mapping attributes)
+{
+  if(sizeof(d)==1)
+  {
+    return IFDEF(d[0]->define, ({
+      PC.Token(sprintf("%*n%s(args);\n",indent,mkname("f",d[0]->name))),
+	PC.Token(sprintf("%*nreturn;\n",indent)),
+	}))+
+      ({ PC.Token(sprintf("%*nbreak;\n",indent)) });
+  }
+
+  array out=({});
+
+  /* This part should be recursive */
+  array(array(FuncData)) x=allocate(256,({}));
+  int min_args=0x7fffffff;
+  int max_args=0;
+  foreach(d, FuncData q)
+    {
+      for(int a=q->min_args;a<min(q->max_args,256);a++)
+	x[a]+=({q});
+      min_args=min(min_args, q->min_args);
+      max_args=max(max_args, q->max_args);
+    }
+
+  min_args=max(min_args, min_possible_arg);
+  max_args=min(max_args, max_possible_arg);
+
+//  werror("MIN: %O\n",min_args);
+//  werror("MAX: %O\n",max_args);
+
+  string argbase="-args";
+
+  int best_method;
+  int best_method_value;
+
+  array(mapping(string:array(FuncData))) y;
+  if(min_args)
+  {
+    y=allocate(min(min_args,16), ([]));
+    for(int a=0;a<sizeof(y);a++)
+    {
+      foreach(d, FuncData q)
+	{
+//	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
+	  foreach(q->args[a]->type()->basetypes(), string t)
+	    {
+	      if(!y[a][t]) y[a][t]=({});
+	      y[a][t]+=({q});
+	    }
+	}
+    }
+
+    best_method=-1;
+    best_method_value=evaluate_method(x);
+//    werror("Value X: %d\n",best_method_value);
+    
+    for(int a=0;a<sizeof(y);a++)
+    {
+      int v=evaluate_method(y[a]);
+//      werror("Value %d: %d\n",a,v);
+      if(v>best_method_value)
+      {
+	best_method=a;
+	best_method_value=v;
+      }
+    }
+  }
+
+//  werror("Best method=%d\n",best_method);
+
+  if(best_method == -1)
+  {
+    /* Switch on number of arguments */
+    out+=({PC.Token(sprintf("%*nswitch(args) {\n",indent))});
+    for(int a=min_args;a<max_args;a++)
+    {
+      array tmp=x[a];
+      if(tmp && sizeof(tmp))
+      {
+	int d;
+	for(int d=a;d<sizeof(x);d++)
+	{
+	  if(equal(tmp, x[d]) && !sizeof(tmp ^ x[d]))
+	  {
+	    out+=({sprintf("%*n case %d:\n",indent,d) });
+	    x[d]=0;
+	  }else{
+	    break;
+	  }
+	}
+	out+=generate_overload_func_for(tmp,
+					indent+2,
+					a,
+					d,
+					name,
+					attributes);
+      }
+    }
+    out+=({
+      PC.Token(sprintf("%*n default:\n",indent)),
+	PC.Token(sprintf("%*n  wrong_number_of_args_error(%O,args,%d);\n",
+			 indent,
+			 name,
+			 min_args)),
+	PC.Token(sprintf("%*n}\n",indent)),
+	});
+  }else{
+    /* Switch on an argument */
+    /* First check that we have at least that many arguments (if needed) */
+
+    if(min_possible_arg < best_method+1)
+    {
+      out+=({
+	PC.Token(sprintf("%*nif(args < %d) wrong_number_of_args_error(%O,args,%d);\n",
+			 indent,
+			 best_method+1,
+			 name,
+			 min_args))
+	  });
+      min_possible_arg=best_method;
+    }
+
+    if(min_possible_arg == max_possible_arg)
+      argbase=(string) (-min_possible_arg);
+    
+    out+=({PC.Token(sprintf("%*nswitch(Pike_sp[%d%s].type) {\n",
+			    indent,
+			    best_method,argbase)) });
+
+    mapping m=y[best_method];
+    mapping m2=m+([]);
+    foreach(indices(m), string type)
+      {
+	array tmp=m[type];
+	if(tmp && sizeof(tmp))
+	{
+	  foreach(indices(m), string t2)
+	    {
+	      if(equal(tmp, m[t2]) && !sizeof(tmp ^ m[t2]))
+	      {
+		m_delete(m,t2);
+		out+=({PC.Token(sprintf("%*n case PIKE_T_%s:\n",
+					indent,
+					upper_case(t2)))});
+	      }
+	    }
+	  out+=generate_overload_func_for(tmp,
+					  indent+2,
+					  min_possible_arg,
+					  max_possible_arg,
+					  name,
+					  attributes);
+	}
+      }
+    out+=({
+      PC.Token(sprintf("%*n default:\n",indent)),
+	PC.Token(sprintf("%*n  SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
+			 indent,
+			 attributes->errname || name,
+			 best_method+1,
+			 indices(m2)*"|")),
+	PC.Token(sprintf("%*n}\n",indent)),
+	});
+  }
+  return out;
+}
+
+
+
+#endif
 
 /*
  * Parse a block of code
@@ -1078,6 +1373,25 @@ class ParseBlock
       x=ret/({"PIKEFUN"});
       ret=x[0];
 
+#ifdef FUNC_OVERLOAD
+      mapping(string:array(FuncData)) name_data=([]);
+      mapping(string:int) name_occurances=([]);
+
+      for(int f=1;f<sizeof(x);f++)
+      {
+	array func=x[f];
+	int p;
+	for(p=0;p<sizeof(func);p++)
+	  if(arrayp(func[p]) && func[p][0]=="{")
+	    break;
+
+	array proto=func[..p-1];
+	p=parse_type(proto,0);
+	string name=(string)proto[p];
+	name_occurances[name]++;
+      }
+#endif
+
       for(int f=1;f<sizeof(x);f++)
       {
 	array func=x[f];
@@ -1104,6 +1418,14 @@ class ParseBlock
 	array args_tmp=proto[p+1];
 
 	mapping attributes=parse_attributes(proto[p+2..]);
+#ifdef FUNC_OVERLOAD
+	string common_name=name;
+	if(!attributes->errname)
+	  attributes->errname=name;
+	if(name_occurances[common_name]>1)
+	  name+="_"+(++name_occurances[common_name+".cnt"]);
+#endif
+
 	args_tmp=args_tmp[1..sizeof(args_tmp)-2];
 	if(sizeof(args_tmp))
 	{
@@ -1123,7 +1445,7 @@ class ParseBlock
 
 	ret+=({
 	  sprintf("#define %s\n",define),
-	    sprintf("PMOD_EXPORT void %s(INT32 args) ",funcname),
+	    sprintf("void %s(INT32 args) ",funcname),
 	    "{","\n",
 	    });
 
@@ -1181,29 +1503,6 @@ class ParseBlock
 	      });
 
 
-	if (attributes->efun) {
-	  addfuncs+=
-	    IFDEF(define,({
-	      PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
-			       attributes->name || name,
-			       funcname,
-			       type->output_c_type(),
-			       (attributes->efun ? attributes->optflags : 
-				attributes->flags )|| "0" ,
-			       ),proto[0]->line),
-		}));
-	} else {
-	  addfuncs+=IFDEF(define, ({
-	    PC.Token(sprintf("  ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
-			     attributes->name || name,
-			     funcname,
-			     type->output_c_type(),
-			     attributes->flags || "0" ,
-			     attributes->optflags ||
-			     "OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT"
-	      ),proto[0]->line),
-	      }));
-	}
 	int argnum;
 
 	argnum=0;
@@ -1214,7 +1513,7 @@ class ParseBlock
 	  ret+=({
 	    PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
 			     sizeof(args),
-			     name,
+			     attributes->errname || name,
 			     sizeof(args)), proto[0]->line)
 	      });
 	  argbase=(string) (-sizeof(args));
@@ -1369,7 +1668,82 @@ class ParseBlock
 	  ret+=({body});
 	ret+=({ "}\n" });
 
+
+#ifdef FUNC_OVERLOAD
+	if(name_occurances[common_name] > 1)
+	{
+	  FuncData d=FuncData();
+	  d->name=name;
+	  d->define=define;
+	  d->type=type;
+	  d->attributes=attributes;
+	  d->max_args=max_args;
+	  d->min_args=min_args;
+	  d->args=args;
+	  name_data[common_name]=( name_data[common_name] || ({}) ) + ({d});
+
+	  if(name_occurances[common_name]!=name_occurances[common_name+".cnt"])
+	  {
+	    ret+=rest;
+	    continue;
+	  }
+	  array(FuncData) tmp=name_data[common_name];
+	  /* Generate real funcname here */
+	  name=common_name;
+	  funcname=mkname("f",base,common_name);
+	  define=mkname("f",base,common_name,"defined");
+	  array(string) defines=({});
+	  
+	  type=PikeType(PC.Token("|"), tmp->type);
+	  attributes=`|(@ tmp->attributes);
+
+	  array out=generate_overload_func_for(tmp,
+					       2,
+					       0,
+					       0x7fffffff,
+					       common_name,
+					       attributes);
+	  
+	  /* FIXME: This definition should be added
+	   * somewhere outside of all #ifdefs really!
+	   * -Hubbe
+	   */
+	  ret+=IFDEF(tmp->define, ({
+	    sprintf("#define %s\n",define),
+	      sprintf("void %s(INT32 args) ",funcname),
+	      "{\n",
+	      })+out+({
+		"}\n",
+		  }));
+	  
+	}
+#endif
 	ret+=rest;
+	
+
+	if (attributes->efun) {
+	  addfuncs+=
+	    IFDEF(define,({
+	      PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
+			       attributes->name || name,
+			       funcname,
+			       type->output_c_type(),
+			       (attributes->efun ? attributes->optflags : 
+				attributes->flags )|| "0" ,
+			       ),proto[0]->line),
+		}));
+	} else {
+	  addfuncs+=IFDEF(define, ({
+	    PC.Token(sprintf("  ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
+			     attributes->name || name,
+			     funcname,
+			     type->output_c_type(),
+			     attributes->flags || "0" ,
+			     attributes->optflags ||
+			     "OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT"
+	      ),proto[0]->line),
+	      }));
+	}
       }
 
 
