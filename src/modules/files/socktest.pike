@@ -1,7 +1,8 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.28 2004/04/04 15:47:02 grubba Exp $ */
+/* $Id: socktest.pike,v 1.29 2004/04/08 13:59:59 grubba Exp $ */
 
+// #define OOB_DEBUG
 
 import Stdio;
 import String;
@@ -189,8 +190,12 @@ int quiet;
 void got_callback()
 {
   counter++;
+#ifdef OOB_DEBUG
+  predef::write(sprintf("%c\b","|/-\\" [ counter & 3 ]));
+#else /* !OOB_DEBUG */
   if(!quiet && !(counter & 0xf))
     predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
+#endif /* OOB_DEBUG */
   remove_call_out(die);
   call_out(die,20);
 }
@@ -441,6 +446,12 @@ void finish()
 	socks = spair(0);
 	oob_originator = socks[0];
 	oob_loopback = socks[1];
+#ifdef OOB_DEBUG
+	werror("originator: %O\n"
+	       "loopback: %O\n",
+	       oob_originator,
+	       oob_loopback);
+#endif /* OOB_DEBUG */
       
 	socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
 	socks[1]->set_nonblocking(0,0,0,got_oob1,0);
@@ -517,6 +528,13 @@ int main()
   }
 
   sscanf(port2::query_address(),"%*s %d",portno2);
+
+#ifdef OOB_DEBUG
+  start();
+  _tests=49;
+  finish();
+  return -1;
+#endif /* OOB_DEBUG */
 
   werror("\nDoing simple tests. ");
   stdtest();
