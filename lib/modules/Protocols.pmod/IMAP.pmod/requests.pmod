@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.85 1999/08/12 00:44:16 marcus fake $
+ * $Id: requests.pmod,v 1.86 1999/12/31 18:27:51 grubba Exp $
  */
 
 import .types;
@@ -92,11 +92,13 @@ class request
       case "any":
 	/* A single atom or string or a list of atoms (with
 	 * options), lists. Used for fetch. */
-	return parser->get_any(arg_info[argc][1], 0, 1, append_arg);
+	return parser->get_any(((array(array(string)))arg_info)[argc][1],
+			       0, 1, append_arg);
 
       case "varargs":
 	/* Like any, but with an implicit list at top-level */
-	return parser->get_varargs(arg_info[argc][1], 0, 0, append_arg);
+	return parser->get_varargs(((array(array(string)))arg_info)[argc][1],
+				   0, 0, append_arg);
 
       default:
 	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
@@ -866,13 +868,13 @@ class search
 	return input[i]->atom ? string_to_number(input[i]->atom) : -1;
       }
 
-    int get_set()
-      {
-	if (i == sizeof(input))
-	  return 0;
-	i++;
-	return input[i]->atom && imap_set()->init(input[i]->atom);
-      }
+    object get_set()
+    {
+      if (i == sizeof(input))
+	return 0;
+      i++;
+      return input[i]->atom && imap_set()->init(input[i]->atom);
+    }
 	
     mapping parse_one()
       {
