@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.411 2001/11/08 23:34:27 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.412 2001/11/27 11:46:12 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3403,7 +3403,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
  *!
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
  *!   not called during sleep. Beware that this function uses busy-waiting
- *!   to achive the highest possible accuracy.
+ *!   to achieve the highest possible accuracy.
  *!   
  *! @seealso
  *!   @[signal()], @[sleep()]
@@ -3518,7 +3518,8 @@ PMOD_EXPORT void f_delay(INT32 args)
  *!
  *!   This function checks all the memory for cyclic structures such
  *!   as arrays containing themselves and frees them if appropriate.
- *!   It also frees up destructed objects. It then returns how many
+ *!   It also frees up destructed objects and things with only weak
+ *!   references. It then returns how many
  *!   arrays/objects/programs/etc. it managed to free by doing this.
  *!
  *!   Normally there is no need to call this function since Pike will
