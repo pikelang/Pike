@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.129 2001/07/03 23:55:06 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.130 2001/08/15 11:52:23 hubbe Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -488,17 +488,17 @@ static void stralloc_rehash(void)
 
 struct short_pike_string0 {
   PIKE_STRING_CONTENTS;
-  p_wchar0 str[SHORT_STRING_THRESHOLD];
+  p_wchar0 str[SHORT_STRING_THRESHOLD+1];
 };
 
 struct short_pike_string1 {
   PIKE_STRING_CONTENTS;
-  p_wchar1 str[SHORT_STRING_THRESHOLD];
+  p_wchar1 str[SHORT_STRING_THRESHOLD+1];
 };
 
 struct short_pike_string2 {
   PIKE_STRING_CONTENTS;
-  p_wchar2 str[SHORT_STRING_THRESHOLD];
+  p_wchar2 str[SHORT_STRING_THRESHOLD+1];
 };
 
 BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
