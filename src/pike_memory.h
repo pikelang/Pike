@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.17 2000/08/10 18:02:21 grubba Exp $
+ * $Id: pike_memory.h,v 1.18 2000/08/11 13:25:03 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -60,7 +60,7 @@ struct generic_mem_searcher
 #define MEMCHR0 MEMCHR
 
 /* Note to self: Prototypes must be updated manually /Hubbe */
-PMOD_EXPORT int pcharp_memcmp(PCHARP a, PCHARP b, int sz);
+PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz);
 PMOD_EXPORT long pcharp_strlen(PCHARP a);
 PMOD_EXPORT INLINE p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar1 c, ptrdiff_t e);
 PMOD_EXPORT INLINE p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e);

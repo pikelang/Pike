@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.97 2000/08/07 09:47:47 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.98 2000/08/11 13:20:44 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -43,7 +43,7 @@ static struct mapping *gc_mark_mapping_pos = 0;
    ( (struct keypair *)DO_ALIGN( (ptrdiff_t) (((struct mapping_data *)(MD))->hash + HSIZE), ALIGNOF(struct keypair)) )
 
 #define MAPPING_DATA_SIZE(HSIZE, KEYPAIRS) \
-   (long)( MD_KEYPAIRS(0, HSIZE) + KEYPAIRS )
+   (ptrdiff_t)( MD_KEYPAIRS(0, HSIZE) + KEYPAIRS )
    
    
 
@@ -120,7 +120,7 @@ static void init_mapping(struct mapping *m, INT32 size)
 {
   struct mapping_data *md;
   char *tmp;
-  INT32 e;
+  ptrdiff_t e;
   INT32 hashsize;
 
   debug_malloc_touch(m);
@@ -350,7 +350,8 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 
 struct mapping_data *copy_mapping_data(struct mapping_data *md)
 {
-  long off,size,e;
+  long e;
+  ptrdiff_t size, off;
   struct mapping_data *nmd;
   struct keypair *keypairs;
 
@@ -2101,7 +2102,7 @@ void debug_dump_mapping(struct mapping *m)
 {
   fprintf(stderr, "Refs=%d, flags=0x%x, next=%p, prev=%p",
 	  m->refs, m->flags, m->next, m->prev);
-  if (((int)m->data) & 3) {
+  if (((ptrdiff_t)m->data) & 3) {
     fprintf(stderr, ", data=%p (unaligned)\n", m->data);
   } else {
     fprintf(stderr, ", size=%d, hashsize=%d\n",

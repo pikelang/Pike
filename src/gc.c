@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.116 2000/08/11 13:08:02 grubba Exp $");
+RCSID("$Id: gc.c,v 1.117 2000/08/11 13:17:13 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -93,9 +93,19 @@ RCSID("$Id: gc.c,v 1.116 2000/08/11 13:08:02 grubba Exp $");
 #define GC_VERBOSE_DO(X)
 #endif
 
+/* Kludge to avoid some loss of precision warnings. */
+#ifdef __ECL
+static inline long CAST_TO_LONG(ptrdiff_t val)
+{
+  return DO_NOT_WARN((long)val);
+}
+#else /* !__ECL */
+#define CAST_TO_LONG(val)	((long)(val))
+#endif /* __ECL */
+
 INT32 num_objects = 1;		/* Account for empty_array. */
 INT32 num_allocs =0;
-INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
+ptrdiff_t alloc_threshold = MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
@@ -398,7 +408,8 @@ void describe_location(void *real_memblock,
 #define FOO(NTYP,TYP,NAME) \
     if(location == (void *)&p->NAME) fprintf(stderr,"%*s  **In p->" #NAME "\n",indent,""); \
     if(ptr >= (char *)p->NAME  && ptr<(char*)(p->NAME+p->PIKE_CONCAT(num_,NAME))) \
-      fprintf(stderr,"%*s  **In p->" #NAME "[%ld]\n",indent,"",((long)ptr - (long)(p->NAME)) / sizeof(TYP));
+      fprintf(stderr,"%*s  **In p->" #NAME "[%ld]\n",indent,"", \
+              CAST_TO_LONG(((char *)ptr - (char *)(p->NAME)) / sizeof(TYP)));
 #include "program_areas.h"
       
       break;
@@ -460,7 +471,8 @@ void describe_location(void *real_memblock,
     {
       struct array *a=(struct array *)memblock;
       struct svalue *s=(struct svalue *)location;
-      fprintf(stderr,"%*s  **In index %ld\n",indent,"",(long)(s-ITEM(a)));
+      fprintf(stderr,"%*s  **In index %ld\n",indent,"",
+	      DO_NOT_WARN((long)(s-ITEM(a))));
       break;
     }
   }
@@ -720,7 +732,8 @@ void low_describe_something(void *a,
     case T_STRING:
     {
       struct pike_string *s=(struct pike_string *)a;
-      fprintf(stderr,"%*s**String length is %d:\n",indent,"",s->len);
+      fprintf(stderr, "%*s**String length is %ld:\n", indent, "",
+	      DO_NOT_WARN((long)s->len));
       if(s->len>77)
       {
 	fprintf(stderr,"%*s** \"%60s ...\"\n",indent,"",s->str);
@@ -754,7 +767,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
 	    get_name_of_type(t));
   } else
 #endif /* DEBUG_MALLOC */
-  if (((int)a) & 3) {
+  if (((ptrdiff_t)a) & 3) {
     fprintf(stderr,"%*s**Location: %p  Type: %s  Misaligned address\n",indent,"",a,
 	    get_name_of_type(t));
   } else {
@@ -2134,7 +2147,7 @@ int do_gc(void)
   if(tmp > MAX_ALLOC_THRESHOLD)
     tmp = (double)MAX_ALLOC_THRESHOLD;
 
-  alloc_threshold = (int)tmp;
+  alloc_threshold = (ptrdiff_t)tmp;
   
   num_allocs=0;
 
@@ -2173,16 +2186,16 @@ void f__gc_status(INT32 args)
   push_int(num_allocs);
 
   push_constant_text("alloc_threshold");
-  push_int(alloc_threshold);
+  push_int32(alloc_threshold);
 
   push_constant_text("objects_alloced");
-  push_int(objects_alloced);
+  push_int32(objects_alloced);
 
   push_constant_text("objects_freed");
-  push_int(objects_freed);
+  push_int32(objects_freed);
 
   push_constant_text("last_gc");
-  push_int(last_gc);
+  push_int32(last_gc);
 
   push_constant_text("projected_garbage");
   push_float(objects_freed * (double) num_allocs / (double) alloc_threshold);
