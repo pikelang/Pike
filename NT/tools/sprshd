@@ -83,10 +83,15 @@ void my_proxy(Stdio.File from, Stdio.File to)
 }
 #endif
 
+string opt_path(string p1, string p2)
+{
+  return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
+}
+
 void handle_incoming_connection(object(Stdio.File) io)
 {
   object p;
-  mapping env=getenv();
+  mapping env=copy_value(getenv());
   sscanf(io->read(4),"%4c",int args);
   string *cmd=allocate(args);
   for(int e=0;e<args;e++)
@@ -108,7 +113,37 @@ void handle_incoming_connection(object(Stdio.File) io)
 
   while(sscanf(cmd[0],"%s=%s",string key, string val))
   {
-    env[key]=val;
+    // Magic
+    if(!env[key])
+    {
+      if(env[lower_case(key)])
+	key=lower_case(key);
+      else if(env[upper_case(key)])
+	key=upper_case(key);
+      else
+      {
+	foreach(indices(env), string x)
+	  {
+	    if(lower_case(x) == lower_case(key))
+	    {
+	      key=x;
+	      break;
+	    }
+	  }
+      }
+    }
+    if(val[0]==';')
+    {
+      env[key]=opt_path(env[key], val);
+    }
+    else if(val[-1]==';')
+    {
+      env[key]=opt_path(val, env[key]);
+    }
+    else
+    {
+      env[key]=val;
+    }
     cmd=cmd[1..];
   }
 
@@ -167,7 +202,15 @@ void handle_incoming_connection(object(Stdio.File) io)
     }
     case "getenv":
     {
-      string s=(env[cmd[1]] || "")+"\n";
+      string s;
+      if(sizeof(cmd)<2)
+      {
+	s="";
+	foreach(indices(env), string x)
+	  s+=sprintf("%s=%s\n",x,env[x]);
+      }else{
+	s=(env[cmd[1]] || "")+"\n";
+      }
       io->write(sprintf("%4c%s",strlen(s),s));
       io->write(sprintf("%4c",0));
       io->write(sprintf("%4c",0));
@@ -241,6 +284,7 @@ void handle_connections(string *hosts)
       sscanf(io->query_address(),"%s ",string ip);
       if(search(hosts, ip)==-1)
       {
+	werror("Connection from %s denied!!\n",ip);
 	destruct(io);
 	continue;
       }
