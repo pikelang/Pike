@@ -1,3 +1,6 @@
+// Bittorrent client - originally by Mirar 
+#pike __REAL_VERSION__
+
 Stdio.File fd=Stdio.File();
 .Torrent parent;
 
@@ -66,6 +69,21 @@ void create(.Torrent _parent,mapping m)
 
    warning=parent->warning;
    bitfield="\0"*strlen(parent->all_pieces_bits);
+
+   if (m->fd) 
+   {
+      fd=m->fd;
+
+      bandwidth_in_a=({});
+      bandwidth_out_a=({});
+
+      online=1;
+      fd->set_nonblocking(peer_read,0,peer_close);
+
+      parent->peers_ordered+=({this_object()});
+
+      _status("incoming");
+   }
 }
 
 private static inline void _status(string type,void|string|int data)
@@ -325,8 +343,21 @@ static private void peer_read(mixed dummy,string s)
 	  ip,strlen(s),s[..min(100,strlen(s))]);
 #endif
    readbuf+=s;
-   if (mode=="connected")
+   if (mode=="connected" || mode=="incoming")
    {
+      werror("%O\n",readbuf[..min(strlen(readbuf)-1,19)]);
+
+      if (readbuf[..min(strlen(readbuf)-1,19)] !=
+	  "\23BitTorrent protocol"[..min(strlen(readbuf)-1,19)])
+      {
+	 fd->close();
+	 online=0;
+	 _status("failed","not bittorrent");
+
+	 warning("got non-bittorrent connection from %O\n",ip);
+	 return;
+      }
+
       if (strlen(readbuf)<68) return; // wait for more data
       if (readbuf[..19]=="\23BitTorrent protocol")
       {
@@ -337,13 +368,21 @@ static private void peer_read(mixed dummy,string s)
 	    _status("failed","torrent metainfo mismatch");
 	    return;
 	 }
-	 if (readbuf[48..67]!=id)
+	 if (id=="?")
+	 {
+	    id=readbuf[48..67];
+	    parent->peers[id]=this_object();
+	 }
+	 else if (readbuf[48..67]!=id)
 	 {
 	    fd->close();
 	    online=0;
 	    _status("failed","peer id mismatch");
 	    return;
 	 }
+
+	 if (mode=="incoming")
+	    peer_connected(); // send handshake
 
 	 readbuf=readbuf[68..];
 	 call_out(keepalive,KEEPALIVE_DELAY);

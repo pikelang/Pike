@@ -1,3 +1,6 @@
+// Bittorrent client - originally by Mirar 
+#pike __REAL_VERSION__
+
 import .Bencoding;
 
 mapping(string:int|array|string|mapping) metainfo;
@@ -16,6 +19,7 @@ string my_peer_id=generate_peer_id();
 
 string my_ip;
 int my_port=7881;
+.Port listen_port;
 int uploaded=0;   // bytes
 int downloaded=0; // bytes
 
@@ -296,14 +300,14 @@ void verify_targets(void|function(int,int:void) progress_callback)
    }
    if (progress_callback) progress_callback(n,sizeof(want_sha1s));
 
-
-   file_got[random(sizeof(file_got))]=0;
-   file_got[random(sizeof(file_got))]=0;
-   file_got[random(sizeof(file_got))]=0;
-   file_got[random(sizeof(file_got))]=0;
-
    file_want=(multiset)filter(indices(file_got),
 			      lambda(int i) { return !file_got[i]; });
+}
+
+//! open the port we're listening on
+void open_port()
+{
+   listen_port=.Port(this_object());
 }
 
 // helper functions
@@ -404,10 +408,10 @@ void update_tracker(void|string event,void|int contact)
 	 {
 	    .Peer p;
 	    peers[m["peer id"]]=(p=peer_program(this_object(),m));
-	    if (sizeof(peers_ordered)<max_peers && contact) 
+	    if (0 && sizeof(peers_ordered)<max_peers && contact) 
 	    {
 	       peers_ordered+=({p});
-	       p->connect();
+ 	       p->connect();
 	    }
 	    else 
 	       peers_unused+=({p});
@@ -427,6 +431,8 @@ int last_increase=0;
 int min_time_between_increase=30;
 void increase_number_of_peers(void|int n)
 {
+   return;
+
    if (time(1)-last_increase<min_time_between_increase)
    {
       remove_call_out(increase_number_of_peers);

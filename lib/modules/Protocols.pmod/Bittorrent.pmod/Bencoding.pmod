@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! decodes a bittorrent bencoded data chunk
 //! returns ({data,remaining string})
 //! will return ({0,input string}) if no data could be decoded
