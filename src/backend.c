@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.17 1997/10/29 06:31:21 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.18 1997/11/01 21:56:36 grubba Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -84,6 +84,9 @@ void init_backend(void)
   set_nonblocking(wakeup_pipe[0],1);
   set_nonblocking(wakeup_pipe[1],1);
   set_read_callback(wakeup_pipe[0], wakeup_callback, 0); 
+  /* Don't keep these on exec! */
+  set_close_on_exec(wakeup_pipe[0], 1);
+  set_close_on_exec(wakeup_pipe[1], 1);
 }
 
 void set_read_callback(int fd,file_callback cb,void *data)
