@@ -36,7 +36,7 @@
 //! Represents a function call made to a XML-RPC server.
 //!
 //! @seealso
-//! @[XMLRPC.decode_call()]
+//! @[decode_call()]
 class Call(string method_name, array params)
 {
   //! @decl int method_name
@@ -58,7 +58,7 @@ class Call(string method_name, array params)
 //! from a XML-RPC function call.
 //!
 //! @seealso
-//! @[XMLRPC.decode_response()]
+//! @[decode_response()]
 class Fault(int fault_code, string fault_string)
 {
   //! @decl int fault_code
@@ -74,10 +74,10 @@ class Fault(int fault_code, string fault_string)
 }
 
 //! Decodes a XML-RPC representation of a function call and returns a
-//! @[XMLRPC.Call] object.
+//! @[Call] object.
 //!
 //! @seealso
-//! @[XMLRPC.Call]
+//! @[Call]
 Call decode_call(string xml_input)
 {
   array r = decode(xml_input, call_dtd);
@@ -88,7 +88,7 @@ Call decode_call(string xml_input)
 //! array containing response values, or a @[Fault] object.
 //!
 //! @seealso
-//! @[XMLRPC.Fault]
+//! @[Fault]
 array|Fault decode_response(string xml_input)
 {
   array|mapping r = decode(xml_input, response_dtd);
