@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.176 2001/02/20 14:00:54 grubba Exp $");
+RCSID("$Id: file.c,v 1.177 2001/09/06 22:52:17 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -925,7 +925,8 @@ static void file_write(INT32 args)
       o_multiply();
       sp--;
       dmalloc_touch_svalue(sp);
-      assign_svalue(sp-args, sp);
+      Pike_sp[-args] = *Pike_sp;
+      free_array(a);
 
 #ifdef PIKE_DEBUG
       if (sp[-args].type != T_STRING) {
