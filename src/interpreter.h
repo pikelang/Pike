@@ -146,6 +146,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #ifdef HAVE_COMPUTED_GOTO
     if (instr) 
       ADD_RUNNED(instr);
+    else
+      fatal("NULL Instruction!\n");
 #else /* !HAVE_COMPUTED_GOTO */
     if(instr + F_OFFSET < F_MAX_OPCODE) 
       ADD_RUNNED(instr + F_OFFSET);

@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.72 2001/07/09 11:37:20 grubba Exp $
+ * $Id: interpret_functions.h,v 1.73 2001/07/09 16:25:27 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -133,7 +133,7 @@ OPCODE0(F_FLOAT, "push float", {
   /* FIXME, this opcode uses 'pc' which is not allowed.. */
   Pike_sp->type=PIKE_T_FLOAT;
   MEMCPY((void *)&Pike_sp->u.float_number, pc, sizeof(FLOAT_TYPE));
-  pc+=sizeof(FLOAT_TYPE);
+  pc += DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(FLOAT_TYPE));
   Pike_sp++;
 });
 
@@ -1094,7 +1094,6 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", {
       }									\
       pop_stack();							\
     }									\
-    break;								\
   })
 
 LOOP(F_INC_LOOP, "++Loop", 1, <, is_lt);
@@ -1186,7 +1185,7 @@ OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
       CASE(F_RETURN_IF_TRUE);
       if(!IS_ZERO(Pike_sp-1)) goto do_return;
       pop_stack();
-      break;
+      DONE;
 
       CASE(F_RETURN_1);
       push_int(1);
@@ -1781,7 +1780,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
    */
   if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
-    pc += sizeof(INT32)/sizeof(PIKE_OPCODE_T);
+    pc += DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
     if(low_mega_apply(APPLY_LOW,
 		      DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		      Pike_fp->current_object,
@@ -1799,6 +1798,8 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
   /* Assume that the number of arguments is correct */
   /* FIXME: Use new recursion stuff */
   OPCODE0_TAILJUMP(F_RECUR, "recur", {
+    instr = 0;
+
     OPCODE0_TAILJUMP(F_RECUR_AND_POP, "recur & pop", {
       PIKE_OPCODE_T opcode = instr;
       PIKE_OPCODE_T *addr;
@@ -1821,13 +1822,19 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
       new_frame->save_mark_sp = Pike_mark_sp;
       new_frame->mark_sp_base = Pike_mark_sp;
 
-      addr=pc+GET_JUMP();
-      new_frame->num_locals=EXTRACT_UCHAR(addr-2);
+      addr = pc+GET_JUMP();
+      new_frame->num_locals =
+	DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-2],
+				 EXTRACT_UCHAR(addr-2));
 
       DO_IF_DEBUG({
-	if(new_frame->num_args != EXTRACT_UCHAR(addr-1))
+	if(new_frame->num_args !=
+	   DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
+				    EXTRACT_UCHAR(addr-1)))
 	  fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
-		new_frame->num_args, EXTRACT_UCHAR(addr-1));
+		new_frame->num_args,
+		DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
+					 EXTRACT_UCHAR(addr-1)));
 
 	if(t_flag > 3)
 	  fprintf(stderr,"-    Allocating %d extra locals.\n",
@@ -1842,13 +1849,14 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
       add_ref(new_frame->context.prog);
       if(new_frame->context.parent)
 	add_ref(new_frame->context.parent);
-      Pike_fp->pc=pc+sizeof(INT32);
+      Pike_fp->pc = pc + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
       Pike_fp=new_frame;
       pc=addr;
       new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
-      if (opcode == DO_IF_ELSE_COMPUTED_GOTO(&&LABEL_F_RECUR_AND_POP,
-					     F_RECUR_AND_POP-F_OFFSET))
+      if (opcode) {
+	/* F_RECUR_AND_POP */
 	new_frame->flags|=PIKE_FRAME_RETURN_POP;
+      }
     });
   });
 });
