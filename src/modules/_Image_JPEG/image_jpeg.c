@@ -185,7 +185,7 @@ static void my_skip_input_data(struct jpeg_decompress_struct *cinfo,
 {
    struct my_source_mgr *sm=(struct my_source_mgr *)cinfo->src;
  
-   if (num_bytes>sm->pub.bytes_in_buffer)
+   if (((unsigned long)num_bytes)>sm->pub.bytes_in_buffer)
       num_bytes=sm->pub.bytes_in_buffer;
 
    sm->pub.next_input_byte += (size_t) num_bytes;
