@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.10 1999/12/08 15:39:24 grubba Exp $
+ * $Id: udp.c,v 1.11 2000/10/24 12:27:49 leif Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.10 1999/12/08 15:39:24 grubba Exp $");
+RCSID("$Id: udp.c,v 1.11 2000/10/24 12:27:49 leif Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -310,6 +310,9 @@ void udp_read(INT32 args)
   struct sockaddr_in from;
   char buffer[UDP_BUFFSIZE];
   ACCEPT_SIZE_T fromlen = sizeof(struct sockaddr_in);
+
+  if(FD < 0)
+    error("UDP: not open\n");
   
   if(args)
   {
