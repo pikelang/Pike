@@ -1,5 +1,5 @@
 // Compatibility module
-// $Id: __default.pmod,v 1.9 2002/11/29 02:19:38 nilsson Exp $
+// $Id: __default.pmod,v 1.10 2002/11/29 02:21:48 nilsson Exp $
 
 #pike 7.3
 
@@ -87,6 +87,7 @@ function(string|program, mixed ... : object) clone = new;
 
 // spider
 #define SPIDER(X) constant X = spider.##X
+//! @ignore
 SPIDER(_low_program_name);
 SPIDER(set_start_quote);
 SPIDER(set_end_quote);
@@ -98,6 +99,7 @@ SPIDER(discdate);
 SPIDER(stardate);
 SPIDER(get_all_active_fd);
 SPIDER(fd_info);
+//! @endignore
 
 mapping(string:mixed) all_constants()
 {
