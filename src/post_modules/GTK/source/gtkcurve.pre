@@ -19,6 +19,6 @@ NAME_ARGS(num_points);
   f_aggregate(num_points);
   free(vector);
 }
-void set_vector( floatarray curve, int nelems );
+void set_vector( int nelems, floatarray curve );
 void set_curve_type( int type );
 // One of CONST(GTK_CURVE_TYPE);
