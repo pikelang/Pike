@@ -3,7 +3,7 @@
 
 //! German language locale by Tvns Böker.
 
-// $Id: deu.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
+// $Id: deu.pmod,v 1.1 2002/10/01 10:57:56 nilsson Exp $
 
 inherit "abstract";
 

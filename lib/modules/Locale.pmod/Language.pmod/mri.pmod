@@ -3,7 +3,7 @@
 
 //! Maaori (New Zealand) language locale by Jason Rumney
 
-// $Id: mri.pike,v 1.2 2002/03/20 16:39:56 nilsson Exp $
+// $Id: mri.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
 
 inherit "abstract";
 

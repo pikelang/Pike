@@ -5,7 +5,7 @@
 //! Czech language locale by Jan Petrous 16.10.1997,
 //! based on Slovenian language module by Iztok Umek.
 
-// $Id: ces.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
+// $Id: ces.pmod,v 1.1 2002/10/01 10:57:56 nilsson Exp $
 
 inherit "abstract";
 

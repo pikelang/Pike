@@ -3,7 +3,7 @@
 
 //! Italian language locale by Francesco Chemolli
 
-// $Id: ita.pike,v 1.2 2002/03/20 16:39:56 nilsson Exp $
+// $Id: ita.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
 
 inherit "abstract";
 

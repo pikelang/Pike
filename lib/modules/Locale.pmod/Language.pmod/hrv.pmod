@@ -3,7 +3,7 @@
 
 //! Croatian language locale by  Klara Makovac 1997/07/02
 
-// $Id: hrv.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
+// $Id: hrv.pmod,v 1.1 2002/10/01 10:57:56 nilsson Exp $
 
 inherit "abstract";
 

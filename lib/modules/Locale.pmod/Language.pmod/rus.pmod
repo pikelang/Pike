@@ -4,7 +4,7 @@
 
 //! Russian language locale
 
-// $Id: rus.pike,v 1.2 2002/03/20 16:39:57 nilsson Exp $
+// $Id: rus.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
 
 inherit "abstract";
 

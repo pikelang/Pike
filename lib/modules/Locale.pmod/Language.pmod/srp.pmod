@@ -3,7 +3,7 @@
 
 //! Serbian language locale by Goran Opacic 1996/12/11
 
-// $Id: srp.pike,v 1.2 2002/03/20 16:39:58 nilsson Exp $
+// $Id: srp.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
 
 inherit "abstract";
 

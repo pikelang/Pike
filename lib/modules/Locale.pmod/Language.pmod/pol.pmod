@@ -4,7 +4,7 @@
 
 //! Polish language locale by Piotr Klaban.
 
-// $Id: pol.pike,v 1.3 2002/04/18 13:45:22 nilsson Exp $
+// $Id: pol.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
 
 inherit "abstract";
 
