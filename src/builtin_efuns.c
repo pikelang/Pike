@@ -377,29 +377,11 @@ static char *combine_path(char *cwd,char *file)
   {
     cwd="/";
     file++;
-  }else{
-    
-    if(!cwd)
-    {
-#ifdef HAVE_GETWD
-
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 1000
-#endif
-
-      cwd=(char *)getwd(my_cwd=(char *)xalloc(MAXPATHLEN+1));
-      if(!cwd)
-	fatal("Couldn't fetch current path.\n");
-#else
-#ifdef HAVE_GETCWD
-      my_cwd=cwd=(char *)getcwd(0,1000); 
-#else
-      /* maybe autoconf was wrong.... if not, insert your method here */
-      my_cwd=cwd=(char *)getcwd(0,1000); 
-#endif
-#endif
-    }
   }
+#ifdef DEBUG    
+  if(!cwd)
+    fatal("No cwd in combine_path!\n");
+#endif
 
   if(cwd[strlen(cwd)-1]=='/')
   {
@@ -1088,7 +1070,8 @@ struct lpc_string * replace_many(struct lpc_string *str,
 	  b=c;
 	}
       }
-      if(a<from->size && !MEMCMP(v[a].ind->str,s,v[a].ind->len))
+      if(a<from->size &&
+	 !low_quick_binary_strcmp(v[a].ind->str,v[a].ind->len,s,length))
       {
 	c=v[a].ind->len;
 	if(!c) c=1;
