@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.30 2002/10/21 17:06:15 marcus Exp $
+|| $Id: tga.c,v 1.31 2002/10/25 14:10:30 nilsson Exp $
 */
 
 /*
@@ -80,11 +80,7 @@
 
 
 
-RCSID("$Id: tga.c,v 1.30 2002/10/21 17:06:15 marcus Exp $");
-
-#ifndef MIN
-# define MIN(X,Y) ((X)<(Y)?(X):(Y))
-#endif
+RCSID("$Id: tga.c,v 1.31 2002/10/25 14:10:30 nilsson Exp $");
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 
@@ -211,7 +207,7 @@ static struct image_alpha load_image(struct pike_string *str)
 static ptrdiff_t std_fread (unsigned char *buf,
 			    size_t datasize, size_t nelems, struct buffer *fp)
 {
-  size_t amnt = MIN((nelems*datasize), fp->len);
+  size_t amnt = MINIMUM((nelems*datasize), fp->len);
   MEMCPY(buf, fp->str, amnt);
   fp->len -= amnt;
   fp->str += amnt;
@@ -221,7 +217,7 @@ static ptrdiff_t std_fread (unsigned char *buf,
 static ptrdiff_t std_fwrite (unsigned char *buf,
 			     size_t datasize, size_t nelems, struct buffer *fp)
 {
-  size_t amnt = MIN((nelems*datasize), fp->len);
+  size_t amnt = MINIMUM((nelems*datasize), fp->len);
   MEMCPY(fp->str, buf, amnt);
   fp->len -= amnt;
   fp->str += amnt;
@@ -276,7 +272,7 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     if (laststate < statelen)
     {
       /* Copy bytes from our previously decoded buffer. */
-      bytes = MIN (buflen - j, statelen - laststate);
+      bytes = MINIMUM (buflen - j, statelen - laststate);
       MEMCPY (buf + j, statebuf + laststate, bytes);
       j += bytes;
       laststate += bytes;
@@ -504,7 +500,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   abpp = hdr->descriptor & TGA_DESC_ABITS;
   if (hdr->imageType == TGA_TYPE_COLOR ||
       hdr->imageType == TGA_TYPE_COLOR_RLE)
-    pbpp = MIN (bpp / 3, 8) * 3;
+    pbpp = MINIMUM (bpp / 3, 8) * 3;
   else if (abpp < bpp)
     pbpp = bpp - abpp;
   else
@@ -530,7 +526,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
      itype = INDEXED;
 
      /* Find the size of palette elements. */
-     pbpp = MIN (hdr->colorMapSize / 3, 8) * 3;
+     pbpp = MINIMUM (hdr->colorMapSize / 3, 8) * 3;
      if (pbpp < hdr->colorMapSize)
        abpp = hdr->colorMapSize - pbpp;
      else

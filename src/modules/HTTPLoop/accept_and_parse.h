@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.h,v 1.10 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: accept_and_parse.h,v 1.11 2002/10/25 14:09:44 nilsson Exp $
 */
 
 /* #define AAP_DEBUG 1 */
@@ -153,8 +153,6 @@ struct c_request_object
   struct mapping *misc_variables;
   int headers_parsed;
 };
-
-#define MY_MIN(a,b) ((a)<(b)?(a):(b))
 
 #define LOG(X,Y,Z) do { \
     if((Y)->cache) {\
