@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.111 2000/02/15 02:37:58 grubba Exp $");
+RCSID("$Id: threads.c,v 1.112 2000/03/17 05:12:30 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1359,7 +1359,7 @@ int th_num_idle_farmers(void)
 }
 
 static int _num_farmers;
-int th_num_farmers()
+int th_num_farmers(void)
 {
   return _num_farmers;
 }
