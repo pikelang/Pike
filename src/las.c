@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.152 1999/12/27 22:47:13 grubba Exp $");
+RCSID("$Id: las.c,v 1.153 1999/12/29 18:02:00 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2284,7 +2284,9 @@ void fix_type_field(node *n)
       push_type(T_FUNCTION);
       s = pop_type();
       f = CAR(n)->type?CAR(n)->type:mixed_type_string;
-      n->type = check_call(s,f);
+      n->type = check_call(s, f,
+			   (lex.pragmas & ID_STRICT_TYPES) &&
+			   !(n->node_info & OPT_WEAK_TYPE));
       args = count_arguments(s);
       max_args = count_arguments(f);
       if(max_args<0) max_args = 0x7fffffff;
