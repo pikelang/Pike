@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.49 2002/04/14 11:07:35 mikael%brandstrom.org Exp $ */
+/* $Id: export.pike,v 1.50 2002/04/21 01:41:07 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -111,6 +111,8 @@ array(string) build_file_list(string vpath, string list_file)
   array(string) ret=({ });
   foreach(Stdio.FILE(list_file)->line_iterator(1);; string line)
     {
+      if( !sizeof(line) || line[0]=='#' )
+	continue;
       werror("%O\n",line);
       string name=vpath+line;
       if(file_stat(name)->isdir)
