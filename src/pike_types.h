@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.46 2000/12/16 05:24:41 marcus Exp $
+ * $Id: pike_types.h,v 1.47 2001/02/09 17:30:23 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -201,6 +201,7 @@ void yyexplain_nonmatching_types(struct pike_string *type_a,
 				 struct pike_string *type_b,
 				 int flags);
 struct pike_string *make_pike_type(char *t);
+int pike_type_allow_premature_toss(char *type);
 /* Prototypes end here */
 
 /* "Dynamic types" - use with ADD_FUNCTION_DTYPE */

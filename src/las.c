@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.232 2001/01/18 02:18:27 hubbe Exp $");
+RCSID("$Id: las.c,v 1.233 2001/02/09 17:30:19 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -345,6 +345,19 @@ struct pike_string *find_return_type(node *n)
     return a;
   }
   return b;
+}
+
+int check_tailrecursion(void)
+{
+  int e;
+  if(debug_options & NO_TAILRECURSION) return 0;
+  for(e=0;e<Pike_compiler->compiler_frame->max_number_of_locals;e++)
+  {
+    if(!pike_type_allow_premature_toss(
+      Pike_compiler->compiler_frame->variable[e].type->str))
+      return 0;
+  }
+  return 1;
 }
 
 
