@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.101 2000/04/19 21:59:36 mast Exp $");
+RCSID("$Id: object.c,v 1.102 2000/04/19 23:47:55 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -593,6 +593,7 @@ void really_free_object(struct object *o)
     first_object=o->next;
 
   if(o->next) o->next->prev=o->prev;
+  if (Pike_in_gc) remove_marker(o);
 
   if(o->prog)
   {
