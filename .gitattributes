@@ -44,6 +44,7 @@ testfont binary
 /lib/modules/Cache.pmod/Storage.pmod/Base.pike foreign_ident
 /lib/modules/Cache.pmod/Storage.pmod/Gdbm.pike foreign_ident
 /lib/modules/Cache.pmod/Storage.pmod/Memory.pike foreign_ident
+/lib/modules/Cache.pmod/Storage.pmod/MySQL.pike foreign_ident
 /lib/modules/Cache.pmod/Storage.pmod/Yabu.pike foreign_ident
 /lib/modules/Cache.pmod/cache.pike foreign_ident
 /lib/modules/Calendar.pmod/mkrules.pike foreign_ident
