@@ -84,13 +84,6 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
 }
 
 
-struct object *pikeimage_from_gdkimage( GdkImage *img )
-{
-  return NULL;
-}
-
-
-
 GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 {
   GdkColormap *col = gdk_colormap_get_system();
@@ -110,7 +103,6 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
   {
     if((i->width != x) || (i->height != y))
     {
-/*    fprintf(stderr, "New %s%dx%d image\n", (fast?"fast ":""), x, y); */
       gdk_image_destroy((void *)i);
       i = NULL;
     }
@@ -216,11 +208,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       get_all_args("internal", 1, "%o", &pike_cmap);
       pike_cmap->refs+=100; /* lets keep this one.. :-) */
       push_int(8); push_int(8); push_int(8);
-#if (PIKE_MAJOR_VERSION > 0) || (PIKE_MINOR_VERSION > 6)
-      apply(pike_cmap, "rigid", 3);       pop_stack();
-#else
-      apply(pike_cmap, "cubicles", 3);    pop_stack();
-#endif
+      apply(pike_cmap, "rigid", 3);      pop_stack();
       apply(pike_cmap, "ordered", 0);    pop_stack();
       pop_stack();
     }
@@ -328,31 +316,13 @@ void *get_pgdkobject(struct object *from, struct program *type)
   return (void *)((struct object_wrapper *)f)->obj;
 }
 
-/* static void adjust_refs( GtkWidget *w, void *f, void *q) */
-/* { */
-/*   struct object *o; */
-/*   if( !(o=gtk_object_get_data(GTK_OBJECT(w), "pike_object")) ) */
-/*     return; */
-
-/*   if( w->parent ) */
-/*   { */
-/*     o->refs++; */
-/*   } */
-/*   else */
-/*   { */
-/*     free_object( o );  */
-/*   } */
-/* } */
-
 void my_destruct( struct object *o )
 {
-  struct object_wrapper *ow = get_storage( o, pgtk_object_program );
+  struct object_wrapper *ow =
+           (struct object_wrapper *)get_storage( o, pgtk_object_program );
   if( ow ) /* This should always be true. But let's add a check anyway. */
     ow->obj = NULL;
   if( o->refs > 1 )
-    /* There is no need at all to keep this object around, the corresponding
-     * GTK object has been destroyed. Lets destroy the Pike object as well
-     */
     destruct( o );
   free_object( o ); /* ref added in __init_object below. */
 }
@@ -837,6 +807,7 @@ void pgtk_free_str( gchar *s )
   g_free( s );
 }
 #endif
+
 void pgtk_default__sprintf( int args, int offset, int len )
 {
   my_pop_n_elems( args );
@@ -849,27 +820,32 @@ void pgtk_clear_obj_struct(struct object *o)
 }
 
 
-#ifdef AUTO_BIGNUM
-#ifdef INT64
-INT64 pgtk_get_int( struct svalue *s )
+LONGEST pgtk_get_int( struct svalue *s )
 {
   if( s->type == PIKE_T_INT )
     return s->u.integer;
+#ifdef AUTO_BIGNUM
   if( is_bignum_object_in_svalue( s ) )
   {
-    INT64 res;
+    LONGEST res;
     int64_from_bignum( &res, s->u.object );
     return res;
   }
+#endif
+  if( s->type == PIKE_T_FLOAT )
+    return (LONGEST)s->u.float_number;
   return 0;
 }
 
 int pgtk_is_int( struct svalue *s )
 {
-  return ((s->type ==PIKE_T_INT) || is_bignum_object_in_svalue( s ));
+  return ((s->type ==PIKE_T_INT) ||
+          (s->type ==PIKE_T_FLOAT) ||
+#ifdef AUTO_BIGNUM
+          is_bignum_object_in_svalue( s )
+#endif
+         );
 }
-#endif
-#endif
 
 /* double should be enough */
 double pgtk_get_float( struct svalue *s )
