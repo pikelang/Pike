@@ -1,9 +1,7 @@
 
-#if @JAVA_AVAILABLE@
-
 inherit @module@;
 
-object machine = jvm();
+object machine;
 
 static string make_sig(object o, mapping(string:mixed) info, object|void p)
 {
@@ -474,90 +472,158 @@ static class package {
     return p;
   }
 
+  static array(object|string) find_class(string name, mapping(string:mixed) i)
+  {
+    object cls = i->jvm->find_class(name);
+    object|string e = i->jvm->exception_occurred();
+    if(e) {
+      e = (string)e;
+      i->jvm->exception_clear();
+    }
+    if(e || !cls) {
+      array bt = backtrace();
+      throw(({"Java class "+name+" not available!\n"+(stringp(e)? e+"\n":""),
+	      bt[..sizeof(bt)-2]}));
+    }
+    return ({name, cls});
+  }
+
+  static object get_static_method(array(object|string) cls, string name,
+				  string type, mapping(string:mixed) i)
+  {
+    object m = cls[1]->get_static_method(name, type);
+    object|string e = i->jvm->exception_occurred();
+    if(e) {
+      e = (string)e;
+      i->jvm->exception_clear();
+    }
+    if(e || !m) {
+      array bt = backtrace();
+      throw(({"Java method "+name+" "+type+" not available in class "+
+	      cls[0]+"!\n"+(stringp(e)? e+"\n":""), bt[..sizeof(bt)-2]}));
+    }
+    return m;
+  }
+
+  static object get_method(array(object|string) cls, string name,
+			   string type, mapping(string:mixed) i)
+  {
+    object m = cls[1]->get_method(name, type);
+    object|string e = i->jvm->exception_occurred();
+    if(e) {
+      e = (string)e;
+      i->jvm->exception_clear();
+    }
+    if(e || !m) {
+      array bt = backtrace();
+      throw(({"Java method "+name+" "+type+" not available in class "+
+	      cls[0]+"!\n"+(stringp(e)? e+"\n":""), bt[..sizeof(bt)-2]}));
+    }
+    return m;
+  }
+
+  static object get_static_field(array(object|string) cls, string name,
+				 string type, mapping(string:mixed) i)
+  {
+    object f = cls[1]->get_static_field(name, type);
+    object|string e = i->jvm->exception_occurred();
+    if(e) {
+      e = (string)e;
+      i->jvm->exception_clear();
+    }
+    if(e || !f) {
+      array bt = backtrace();
+      throw(({"Java field "+name+" "+type+" not available in class "+
+	      cls[0]+"!\n"+(stringp(e)? e+"\n":""), bt[..sizeof(bt)-2]}));
+    }
+    return f;
+  }
+
   void create(string n, mapping(string:mixed) i)
   {
     name = n;
     info = i;
     if(!i->getpackage_method) {
-      object cls = i->jvm->find_class("java/lang/Package");
+      array(object|string) cls = find_class("java/lang/Package", i);
       i->getpackage_method =
-	cls->get_static_method("getPackage",
-			       "(Ljava/lang/String;)Ljava/lang/Package;");
+	get_static_method(cls, "getPackage",
+			  "(Ljava/lang/String;)Ljava/lang/Package;", i);
       object gap =
-	cls->get_static_method("getPackages",
-			       "()[Ljava/lang/Package;");
+	get_static_method(cls, "getPackages",
+			  "()[Ljava/lang/Package;", i);
       i->packages =
 	Array.map(values(gap()), lambda(object o, object nm) {
 				   return (string)nm(o);
 				 },
-		  cls->get_method("getName","()Ljava/lang/String;"));
+		  get_method(cls, "getName","()Ljava/lang/String;", i));
 
-      cls = i->jvm->find_class("java/lang/Object");
-      i->getclass_method = cls->get_method("getClass",
-					   "()Ljava/lang/Class;");
+      cls = find_class("java/lang/Object", i);
+      i->getclass_method = get_method(cls, "getClass",
+				      "()Ljava/lang/Class;", i);
 
-      cls = i->jvm->find_class("java/lang/Class");
-      i->getfields_method = cls->get_method("getFields",
-					    "()[Ljava/lang/reflect/Field;");
-      i->getmethods_method = cls->get_method("getMethods",
-					     "()[Ljava/lang/reflect/Method;");
+      cls = find_class("java/lang/Class", i);
+      i->getfields_method = get_method(cls, "getFields",
+				       "()[Ljava/lang/reflect/Field;", i);
+      i->getmethods_method = get_method(cls, "getMethods",
+					"()[Ljava/lang/reflect/Method;", i);
       i->getconstructors_method =
-	cls->get_method("getConstructors",
-			"()[Ljava/lang/reflect/Constructor;");
+	get_method(cls, "getConstructors",
+		   "()[Ljava/lang/reflect/Constructor;", i);
 
-      i->classisprimitive_method = cls->get_method("isPrimitive", "()Z");
-      i->classisarray_method = cls->get_method("isArray", "()Z");
-      i->classgetname_method = cls->get_method("getName",
-					       "()Ljava/lang/String;");
+      i->classisprimitive_method = get_method(cls, "isPrimitive", "()Z", i);
+      i->classisarray_method = get_method(cls, "isArray", "()Z", i);
+      i->classgetname_method = get_method(cls, "getName",
+					  "()Ljava/lang/String;", i);
 
-      cls = i->jvm->find_class("java/lang/reflect/Field");
-      i->fieldgetname_method = cls->get_method("getName",
-					       "()Ljava/lang/String;"); 
-      i->fieldgettype_method = cls->get_method("getType",
-					       "()Ljava/lang/Class;"); 
-      i->fieldgetmodifiers_method = cls->get_method("getModifiers", "()I");
+      cls = find_class("java/lang/reflect/Field", i);
+      i->fieldgetname_method = get_method(cls, "getName",
+					  "()Ljava/lang/String;", i); 
+      i->fieldgettype_method = get_method(cls, "getType",
+					  "()Ljava/lang/Class;", i);
+      i->fieldgetmodifiers_method = get_method(cls, "getModifiers", "()I", i);
 
-      cls = i->jvm->find_class("java/lang/reflect/Method");
-      i->methodgetname_method = cls->get_method("getName",
-						"()Ljava/lang/String;"); 
-      i->methodgetreturntype_method = cls->get_method("getReturnType",
-						      "()Ljava/lang/Class;"); 
+      cls = find_class("java/lang/reflect/Method", i);
+      i->methodgetname_method = get_method(cls, "getName",
+					   "()Ljava/lang/String;", i); 
+      i->methodgetreturntype_method = get_method(cls, "getReturnType",
+						 "()Ljava/lang/Class;", i); 
       i->methodgetparametertypes_method =
-	cls->get_method("getParameterTypes", "()[Ljava/lang/Class;"); 
-      i->methodgetmodifiers_method = cls->get_method("getModifiers", "()I");
+	get_method(cls, "getParameterTypes", "()[Ljava/lang/Class;", i); 
+      i->methodgetmodifiers_method = get_method(cls, "getModifiers", "()I", i);
 
-      cls = i->jvm->find_class("java/lang/reflect/Constructor");
+      cls = find_class("java/lang/reflect/Constructor", i);
       i->constructorgetparametertypes_method =
-	cls->get_method("getParameterTypes", "()[Ljava/lang/Class;");
+	get_method(cls, "getParameterTypes", "()[Ljava/lang/Class;", i);
 
-      cls = i->jvm->find_class("java/lang/reflect/Modifier");
-      object fld = cls->get_static_field("STATIC", "I");
+      cls = find_class("java/lang/reflect/Modifier", i);
+      object fld = get_static_field(cls, "STATIC", "I", i);
       i->modifier_static = fld->get();
 
       i->primitives =
 	mkmapping(Array.map(({"Byte", "Character", "Double", "Float",
 			      "Integer", "Long", "Short", "Boolean", "Void"}),
-			    lambda(string n, function(string:object) fc) {
-			      return fc("java/lang/"+n)->
-				get_static_field("TYPE", "Ljava/lang/Class;")->
-				get();
-			    }, i->jvm->find_class),
+			    lambda(string n) {
+			      return
+				get_static_field(find_class("java/lang/"+n, i),
+						 "TYPE", "Ljava/lang/Class;",
+						 i)->get();
+			    }),
 		  ({"B", "C", "D", "F", "I", "J", "S", "Z", "V"}));
 
       i->classes = ([]);
 
       i->voidtype = search(i->primitives, "V");
 
-      cls = i->stringwriter_class = i->jvm->find_class("java/io/StringWriter");
-      i->stringwriter_init = cls->get_method("<init>", "()V");
+      cls = i->stringwriter_class = find_class("java/io/StringWriter", i);
+      i->stringwriter_init = get_method(cls, "<init>", "()V", i);
 
-      cls = i->printwriter_class = i->jvm->find_class("java/io/PrintWriter");
-      i->printwriter_init = cls->get_method("<init>", "(Ljava/io/Writer;)V");
-      i->printwriter_flush = cls->get_method("flush", "()V");
+      cls = i->printwriter_class = find_class("java/io/PrintWriter", i);
+      i->printwriter_init = get_method(cls, "<init>", "(Ljava/io/Writer;)V",i);
+      i->printwriter_flush = get_method(cls, "flush", "()V", i);
 
-      cls = i->jvm->find_class("java/lang/Throwable");
+      cls = find_class("java/lang/Throwable", i);
       i->throwable_printstacktrace =
-	cls->get_method("printStackTrace", "(Ljava/io/PrintWriter;)V");
+	get_method(cls, "printStackTrace", "(Ljava/io/PrintWriter;)V", i);
 
     }
     pkg = i->getpackage_method(name);
@@ -573,6 +639,14 @@ static class package {
 
 };
 
-object pkg = package("", (["jvm":machine]));
+object pkg;
 
-#endif
+static void create()
+{
+  program jvm = this_object()->jvm;
+  if(jvm)
+    machine = jvm();
+  if(machine)
+    pkg = package("", (["jvm":machine]));
+}
+
