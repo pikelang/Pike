@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.33 2001/09/01 00:26:52 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.34 2001/09/01 07:20:29 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -36,30 +36,33 @@ static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
 static struct DATA *PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)-1;	\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 									\
-BA_STATIC struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)		\
+static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
+{                                                                       \
+  struct PIKE_CONCAT(DATA,_block) *n;					\
+  int e;								\
+  n=(struct PIKE_CONCAT(DATA,_block) *)					\
+     malloc(sizeof(struct PIKE_CONCAT(DATA,_block)));			\
+  if(!n)								\
+  {									\
+    fprintf(stderr,"Fatal: out of memory.\n");				\
+    exit(17);								\
+  }									\
+  n->next=PIKE_CONCAT(DATA,_blocks);					\
+  PIKE_CONCAT(DATA,_blocks)=n;						\
+									\
+  for(e=0;e<BSIZE;e++)							\
+  {									\
+    n->x[e].BLOCK_ALLOC_NEXT=(void *)PIKE_CONCAT3(free_,DATA,s);	\
+    PRE_INIT_BLOCK( (n->x+e) );						\
+    PIKE_CONCAT3(free_,DATA,s)=n->x+e;					\
+  }									\
+}									\
+									\
+BA_STATIC inline struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 {									\
   struct DATA *tmp;							\
   if(!PIKE_CONCAT3(free_,DATA,s))					\
-  {									\
-    struct PIKE_CONCAT(DATA,_block) *n;					\
-    int e;								\
-    n=(struct PIKE_CONCAT(DATA,_block) *)				\
-       malloc(sizeof(struct PIKE_CONCAT(DATA,_block)));			\
-    if(!n)								\
-    {									\
-      fprintf(stderr,"Fatal: out of memory.\n");			\
-      exit(17);								\
-    }									\
-    n->next=PIKE_CONCAT(DATA,_blocks);					\
-    PIKE_CONCAT(DATA,_blocks)=n;					\
-									\
-    for(e=0;e<BSIZE;e++)						\
-    {									\
-      n->x[e].BLOCK_ALLOC_NEXT=(void *)PIKE_CONCAT3(free_,DATA,s);	\
-      PRE_INIT_BLOCK( (n->x+e) );					\
-      PIKE_CONCAT3(free_,DATA,s)=n->x+e;				\
-    }									\
-  }									\
+    PIKE_CONCAT(alloc_more_,DATA)();					\
   DO_IF_DEBUG(								\
     else if (PIKE_CONCAT3(free_,DATA,s) == (struct DATA *)-1)		\
       fatal("Block alloc not initialized.\n");				\
@@ -73,7 +76,7 @@ BA_STATIC struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)		\
 }									\
 									\
 DO_IF_RUN_UNLOCKED(                                                     \
-struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
+inline struct DATA *PIKE_CONCAT(alloc_,DATA)(void)		        \
 {									\
   struct DATA *ret;  							\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
