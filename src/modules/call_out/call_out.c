@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.4 1996/12/05 00:47:43 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.5 1996/12/05 01:59:19 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -174,7 +174,7 @@ static void count_memory_in_call_outs(struct callback *foo,
 {
   push_text("num_call_outs");
   push_int(num_pending_calls);
-  push_text("call_out_memory");
+  push_text("call_out_bytes");
   push_int(call_buffer_size * sizeof(call_out **)+
 	   num_pending_calls * sizeof(call_out));
 }
