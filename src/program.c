@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.486 2003/03/14 15:50:46 grubba Exp $
+|| $Id: program.c,v 1.487 2003/03/14 17:45:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.486 2003/03/14 15:50:46 grubba Exp $");
+RCSID("$Id: program.c,v 1.487 2003/03/14 17:45:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3795,6 +3795,11 @@ int define_variable(struct pike_string *name,
 						  n)->storage_offset,
 				 ID_FROM_INT(Pike_compiler->new_program, n)->
 				 run_time_type);
+	/* Copy IDENTIFIER_NO_THIS_REF state from the old variable.
+	 */
+	ID_FROM_INT(Pike_compiler->new_program, n2)->identifier_flags |=
+	  ID_FROM_INT(Pike_compiler->new_program, n)->identifier_flags &
+	  IDENTIFIER_NO_THIS_REF;
 	/* Hide the old variable. */
 	Pike_compiler->new_program->identifier_references[n].id_flags |=
 	  ID_STATIC|ID_PRIVATE;
