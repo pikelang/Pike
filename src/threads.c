@@ -10,7 +10,7 @@ struct object *thread_id;
 
 #ifdef _REENTRANT
 
-MUTEX_T interpreter_lock;
+MUTEX_T interpreter_lock = PTHREAD_MUTEX_INITIALIZER;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 pthread_attr_t pattr;
@@ -26,9 +26,13 @@ void *new_thread_func(void * data)
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
   INT32 args;
+
   free((char *)data);
+
+  if(args=mt_lock( & interpreter_lock))
+    fatal("Failed to lock interpreter, errno %d\n",args);
+
   args=arg.args->size;
-  mt_lock( & interpreter_lock);
   init_interpreter();
 
   thread_id=arg.id;
@@ -44,13 +48,12 @@ void *new_thread_func(void * data)
   } else {
     push_array_items(arg.args);
     arg.args=0;
-    f_call_function(args);
-
   }
 
   UNSETJMP(back);
 
   destruct(thread_id);
+
   free_object(thread_id);
   thread_id=0;
 
@@ -60,10 +63,11 @@ void *new_thread_func(void * data)
   th_exit(0);
 }
 
+
 void f_thread_create(INT32 args)
 {
-  struct thread_starter *arg;
   pthread_t dummy;
+  struct thread_starter *arg;
   int tmp;
   arg=ALLOC_STRUCT(thread_starter);
   arg->args=aggregate_array(args);
@@ -122,7 +126,7 @@ struct key_storage
   int initialized;
 };
 
-static MUTEX_T mutex_kluge;
+static MUTEX_T mutex_kluge = PTHREAD_MUTEX_INITIALIZER;
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
