@@ -1,8 +1,9 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.14 1998/10/14 05:47:06 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.15 2000/03/09 09:07:15 hubbe Exp $ */
 
 #include <simulate.h>
+import Stdio;
 
 #if !efun(_verify_internals)
 #define _verify_internals()
@@ -90,7 +91,7 @@ int main(int argc, string *argv)
       for(e=start;e<sizeof(tests);e++)
       {
 	string test,condition;
-	int type;
+	string|int type;
 	object o;
 	mixed a,b;
 	
