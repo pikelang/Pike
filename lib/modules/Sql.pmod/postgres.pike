@@ -2,11 +2,11 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.10 2000/09/26 19:00:10 hubbe Exp $
+ * $Id: postgres.pike,v 1.11 2000/09/28 03:39:09 hubbe Exp $
  *
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(Postgres.postgres)
 

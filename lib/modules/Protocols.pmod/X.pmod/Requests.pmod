@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.27 2000/09/26 19:00:03 hubbe Exp $
+ * $Id: Requests.pmod,v 1.28 2000/09/28 03:39:05 hubbe Exp $
  */
 
 /*
@@ -28,7 +28,7 @@
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #include "error.h"
 

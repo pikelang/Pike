@@ -6,7 +6,7 @@
 
 /* ASN.1 structures:
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 CertificationRequestInfo ::= SEQUENCE {
   version Version,

@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define FLAG_SHIFT   1
 #define FLAG_CTRL    4

@@ -1,10 +1,10 @@
 /*
- * $Id: GLU.pmod,v 1.7 2000/09/26 18:59:04 hubbe Exp $
+ * $Id: GLU.pmod,v 1.8 2000/09/28 03:38:25 hubbe Exp $
  *
  * GL Utilities module.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(GL.glGet)
 import GL;

@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 static private int stage=0;
 static private int booted=0;

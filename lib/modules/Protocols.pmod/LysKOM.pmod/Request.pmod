@@ -1,6 +1,6 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.6 2000/09/26 19:00:01 hubbe Exp $
+//  $Id: Request.pmod,v 1.7 2000/09/28 03:39:04 hubbe Exp $
 //! module Protocols
 //! submodule LysKOM
 //! submodule Request

@@ -1,7 +1,7 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.11 2000/09/26 19:00:23 hubbe Exp $
+ * $Id: X509.pmod,v 1.12 2000/09/28 03:39:14 hubbe Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *

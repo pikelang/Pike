@@ -1,6 +1,6 @@
 
 //This is a testprogram that creates a simple graph.
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import ".";
 

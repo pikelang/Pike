@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define COLOR(C,R,G,B) constant C=({R,G,B})
 

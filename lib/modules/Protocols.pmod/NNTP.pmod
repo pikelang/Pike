@@ -1,6 +1,6 @@
 // Not finished - Fredrik Hubinette
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 class protocol
 {

@@ -1,6 +1,6 @@
 #!NOMODULE
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #include "graph.h"
 
@@ -12,7 +12,7 @@ inherit "polyline.pike";
 inherit "create_graph.pike";
 inherit "create_bars.pike";
 
-constant cvs_version = "$Id: create_pie.pike,v 1.3 2000/09/26 18:59:44 hubbe Exp $";
+constant cvs_version = "$Id: create_pie.pike,v 1.4 2000/09/28 03:38:43 hubbe Exp $";
 
 /*
  * name = "BG: Create pies";

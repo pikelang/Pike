@@ -3,10 +3,10 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Sized.pike,v 1.2 2000/09/26 18:59:11 hubbe Exp $
+ * $Id: Sized.pike,v 1.3 2000/09/28 03:38:30 hubbe Exp $
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 inherit Cache.Policy.Base;
 //watermarks

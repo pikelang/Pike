@@ -3,12 +3,12 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Base.pike,v 1.3 2000/09/26 18:59:12 hubbe Exp $
+ * $Id: Base.pike,v 1.4 2000/09/28 03:38:30 hubbe Exp $
  *
  * All storage managers must provide these methods.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define T() throw( ({"override this", backtrace()}))
 

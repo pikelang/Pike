@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.6 2000/09/26 18:59:59 hubbe Exp $
+//  $Id: Connection.pike,v 1.7 2000/09/28 03:39:03 hubbe Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -30,7 +30,7 @@
 //!	initialised <link to=Protocols.LysKOM.Request>request</link> object.
 //!
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import ".";
 

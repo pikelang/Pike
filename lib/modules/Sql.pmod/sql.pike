@@ -1,16 +1,16 @@
 /*
- * $Id: sql.pike,v 1.39 2000/09/26 19:00:11 hubbe Exp $
+ * $Id: sql.pike,v 1.40 2000/09/28 03:39:10 hubbe Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.39 2000/09/26 19:00:11 hubbe Exp $
+//. RCSID:	$Id: sql.pike,v 1.40 2000/09/28 03:39:10 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.

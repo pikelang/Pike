@@ -1,16 +1,16 @@
 /*
- * $Id: sql_result.pike,v 1.6 2000/09/26 19:00:12 hubbe Exp $
+ * $Id: sql_result.pike,v 1.7 2000/09/28 03:39:10 hubbe Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 //.
 //. File:	sql_result.pike
-//. RCSID:	$Id: sql_result.pike,v 1.6 2000/09/26 19:00:12 hubbe Exp $
+//. RCSID:	$Id: sql_result.pike,v 1.7 2000/09/28 03:39:10 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic result of the SQL-interface.

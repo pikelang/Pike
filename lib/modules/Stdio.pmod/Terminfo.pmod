@@ -1,5 +1,5 @@
-// $Id: Terminfo.pmod,v 1.10 2000/09/26 19:00:20 hubbe Exp $
-#pike __VERSION__
+// $Id: Terminfo.pmod,v 1.11 2000/09/28 03:39:13 hubbe Exp $
+#pike __REAL_VERSION__
 
 
 #if constant(thread_create)

@@ -25,7 +25,7 @@
 
 // the discordian calendar follows the gregorian years, very practical ;)
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import ".";
 inherit Gregorian:Gregorian;

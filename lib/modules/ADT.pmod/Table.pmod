@@ -1,7 +1,7 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.13 2000/09/26 18:59:09 hubbe Exp $
+// $Id: Table.pmod,v 1.14 2000/09/28 03:38:28 hubbe Exp $
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
 class table {

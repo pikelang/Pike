@@ -4,9 +4,9 @@
  * associated with a unique key.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.23 2000/09/26 19:00:25 hubbe Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.24 2000/09/28 03:39:15 hubbe Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))

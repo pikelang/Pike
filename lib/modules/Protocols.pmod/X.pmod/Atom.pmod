@@ -1,6 +1,6 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.6 2000/09/26 19:00:02 hubbe Exp $
+ * X Atoms $Id: Atom.pmod,v 1.7 2000/09/28 03:39:04 hubbe Exp $
  *
  */
 
@@ -29,7 +29,7 @@
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 class Atom
 {

@@ -3,7 +3,7 @@
  * Handles the server side of the protocol.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 inherit Protocols.Line.imap_style;
 

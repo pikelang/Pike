@@ -3,7 +3,7 @@
  * The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(Gmp.mpz)
 

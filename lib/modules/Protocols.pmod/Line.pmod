@@ -1,12 +1,12 @@
 /*
- * $Id: Line.pmod,v 1.10 2000/09/26 18:59:52 hubbe Exp $
+ * $Id: Line.pmod,v 1.11 2000/09/28 03:38:51 hubbe Exp $
  *
  * Line-buffered protocol handling.
  *
  * Henrik Grubbström 1998-05-27
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 class simple
 {

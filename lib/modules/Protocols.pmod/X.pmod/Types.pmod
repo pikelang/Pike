@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.33 2000/09/26 19:00:03 hubbe Exp $
+ * $Id: Types.pmod,v 1.34 2000/09/28 03:39:05 hubbe Exp $
  */
 
 /*
@@ -28,7 +28,7 @@
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #include "error.h"
 

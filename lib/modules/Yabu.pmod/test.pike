@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // Yabu test program
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define ERR(msg) throw(({ msg+"\n", backtrace() }));
 

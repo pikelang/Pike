@@ -9,7 +9,7 @@
 //! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>, 
 //! 	for instance).
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 //  #pragma strict_types
 

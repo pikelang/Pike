@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.133 2000/09/26 22:19:00 hubbe Exp $
+ * $Id: master.pike.in,v 1.134 2000/09/28 03:38:23 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -9,7 +9,7 @@
 
 // Some configurable parameters useful for debugging
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 #define PIKE_AUTORELOAD
 
 // Used by describe_backtrace() et al.

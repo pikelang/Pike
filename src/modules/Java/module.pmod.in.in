@@ -1,4 +1,4 @@
-
+#pike __REAL_VERSION__
 inherit @module@;
 
 object machine;

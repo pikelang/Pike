@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.12 2000/08/31 12:49:52 grubba Exp $
+ * $Id: stat.c,v 1.13 2000/09/28 03:39:18 hubbe Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.12 2000/08/31 12:49:52 grubba Exp $");
+RCSID("$Id: stat.c,v 1.13 2000/09/28 03:39:18 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -240,12 +240,15 @@ static void stat_create (INT32 args)
 	SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "stat array with 7 elements");
       for (i = 0; i < 7; i++) {
 	INT64 val;
-	if (ITEM(a)[i].type == T_INT) val = ITEM(a)[i].u.integer;
+	if (ITEM(a)[i].type == T_INT)
+	  val = ITEM(a)[i].u.integer;
+#ifdef AUTO_BIGNUM
 	else if (ITEM(a)[i].type == T_OBJECT &&
 		 is_bignum_object (ITEM(a)[i].u.object)) {
 	  if (!int64_from_bignum (&val, ITEM(a)[i].u.object))
 	    error ("Stat create: Too big integer in stat array.\n");
 	}
+#endif
 	else
 	  SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "array(int)");
 	stat_compat_set (i, val);
@@ -457,12 +460,15 @@ static void stat_index(INT32 args)
 	args = 2;
       }
 
+#if AUTO_BIGNUM
       if (sp[-2].type!=T_INT &&
 	  !(sp[-2].type == T_OBJECT && is_bignum_object (sp[-2].u.object)))
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
+
       if (sp[-1].type!=T_INT &&
 	  !(sp[-1].type == T_OBJECT && is_bignum_object (sp[-1].u.object)))
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
+#endif
 
       /* make in range 0..6 */
       push_int(6);
@@ -499,13 +505,18 @@ static void stat_index_set (INT32 args)
     args = 2;
   }
 
-  if (sp[-1].type == T_INT) int_val = sp[-1].u.integer, got_int_val = 1;
+  if (sp[-1].type == T_INT)
+    int_val = sp[-1].u.integer, got_int_val = 1;
+
+#if AUTO_BIGNUM
   else if (sp[-1].type == T_OBJECT && is_bignum_object (sp[-1].u.object)) {
     if (!int64_from_bignum (&int_val, sp[-1].u.object))
       error ("Stat `[]=: Too big integer as value.\n");
     else
       got_int_val = 1;
   }
+#endif
+  /* FIXME: shouldn't there be an else clause here ? */
 
   if (sp[-2].type == T_INT) {
     if (!got_int_val)

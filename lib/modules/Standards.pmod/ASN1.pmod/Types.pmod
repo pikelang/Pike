@@ -1,10 +1,10 @@
 /*
- * $Id: Types.pmod,v 1.15 2000/09/26 19:00:14 hubbe Exp $
+ * $Id: Types.pmod,v 1.16 2000/09/28 03:39:11 hubbe Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(Gmp.mpz)
 

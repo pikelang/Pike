@@ -7,7 +7,7 @@
 /* NOTE: Unlike the functions in RSA.pmod, this function returns
  * an object rather than a string. */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 
 #if constant(Gmp.mpz)

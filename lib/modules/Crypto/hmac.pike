@@ -3,7 +3,7 @@
  * HMAC, defined by RFC-2104
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 function H;  /* Constructor for hash object */
 

@@ -1,11 +1,12 @@
 /*
- * $Id: module.pmod.in,v 1.10 1999/08/25 17:56:31 grubba Exp $
+ * $Id: module.pmod.in,v 1.11 2000/09/28 03:39:17 hubbe Exp $
  *
  * YP (NIS) Functionality for Pike
  *
  * Per Hedbor & Henrik Grubbström 1996-1997
  */
 
+#pike __REAL_VERSION__
 inherit @module@;
 
 #if constant(@module@.Domain)

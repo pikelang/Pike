@@ -1,9 +1,9 @@
-/* $Id: rsa.pike,v 1.26 2000/09/26 18:59:32 hubbe Exp $
+/* $Id: rsa.pike,v 1.27 2000/09/28 03:38:39 hubbe Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(Gmp.mpz)
 

@@ -1,8 +1,8 @@
-/* $Id: idea_cbc.pike,v 1.3 2000/09/26 18:59:30 hubbe Exp $
+/* $Id: idea_cbc.pike,v 1.4 2000/09/28 03:38:38 hubbe Exp $
  *
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 inherit Crypto.cbc : cbc;
 

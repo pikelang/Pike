@@ -9,7 +9,7 @@
 //!	purposes. 
 //!
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import ".";
 inherit ISO:ISO;

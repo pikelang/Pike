@@ -2,7 +2,7 @@
  *
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 /* Construct a PKCS-1 digestinfo */
 string build_digestinfo(string msg, object hash)

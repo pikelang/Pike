@@ -1,6 +1,6 @@
 //! module Calendar
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define zero int(0..0)
 

@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 constant inherit_list = __builtin.inherit_list;
 constant inherits = __builtin.program_inherits;

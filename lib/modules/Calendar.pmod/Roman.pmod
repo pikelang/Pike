@@ -6,7 +6,7 @@
 //! ie, one with years, months, weeks and days
 //!
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 #pragma strict_types
 
 import ".";

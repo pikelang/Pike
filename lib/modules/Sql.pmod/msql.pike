@@ -1,6 +1,6 @@
 // Msql module support stuff, (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(Msql.msql)
 inherit Msql.msql;

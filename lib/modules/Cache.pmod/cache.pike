@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: cache.pike,v 1.3 2000/09/26 18:59:10 hubbe Exp $
+ * $Id: cache.pike,v 1.4 2000/09/28 03:38:29 hubbe Exp $
  *
  * This module serves as a front-end to different kinds of caching system
  * It uses two helper objects to actually store data, and to determine
@@ -11,7 +11,7 @@
  * will be added in time, or at least this is the plan.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(thread_create)
 #define do_possibly_threaded_call thread_create

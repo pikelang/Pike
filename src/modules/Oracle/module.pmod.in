@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 #if constant(@module@.oracle)
 
 inherit @module@ : M;

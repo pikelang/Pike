@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 //  startpid = (int)find_arg(argv, "s", ({ "start-script-pid" }),
 // 			     ({ "ROXEN_START_SCRIPT_PID"}));

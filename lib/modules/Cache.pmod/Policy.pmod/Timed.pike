@@ -3,10 +3,10 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Timed.pike,v 1.2 2000/09/26 18:59:12 hubbe Exp $
+ * $Id: Timed.pike,v 1.3 2000/09/28 03:38:30 hubbe Exp $
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 //TODO: use the preciousness somehow.
 // idea: expire if (now-atime)*cost < ktime

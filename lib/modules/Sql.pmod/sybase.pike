@@ -3,11 +3,11 @@
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  * (C) Roxen IS
  * 
- * $Id: sybase.pike,v 1.4 2000/09/26 19:00:12 hubbe Exp $
+ * $Id: sybase.pike,v 1.5 2000/09/28 03:39:10 hubbe Exp $
  *
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(sybase.sybase)
 

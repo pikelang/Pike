@@ -1,6 +1,6 @@
 // Remote SQL server interface
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define RSQL_PORT 3994
 #define RSQL_VERSION 1

@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import ".";
 constant TimeRange=TimeRanges.TimeRange;

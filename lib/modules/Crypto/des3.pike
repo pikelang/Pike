@@ -1,8 +1,8 @@
-/* $Id: des3.pike,v 1.5 2000/09/26 18:59:26 hubbe Exp $
+/* $Id: des3.pike,v 1.6 2000/09/28 03:38:38 hubbe Exp $
  *
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 inherit Crypto.pipe : pipe;
 

@@ -18,7 +18,7 @@
 //!	with the <ref>Gregorian</ref> calendar, which is odd.
 //! 	
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import ".";
 // inherit some rules from Gregorian, like week numbering

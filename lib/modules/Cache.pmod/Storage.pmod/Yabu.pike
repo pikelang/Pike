@@ -3,12 +3,12 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Yabu.pike,v 1.3 2000/09/26 18:59:13 hubbe Exp $
+ * $Id: Yabu.pike,v 1.4 2000/09/28 03:38:31 hubbe Exp $
  *
  * Settings will be added later.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define CLUTTERED 200
 

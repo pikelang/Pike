@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #if constant(Postgres.postgres_result)
 inherit Postgres.postgres_result;

@@ -1,6 +1,6 @@
 #!NOMODULE
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #include "graph.h"
 
@@ -11,7 +11,7 @@ import Stdio;
 inherit "polyline.pike";
 inherit "create_graph.pike";
 
-constant cvs_version = "$Id: create_bars.pike,v 1.2 2000/09/26 18:59:43 hubbe Exp $";
+constant cvs_version = "$Id: create_bars.pike,v 1.3 2000/09/28 03:38:42 hubbe Exp $";
 
 /*
  * name = "BG: Create bars";

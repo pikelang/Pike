@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.17 2000/09/26 18:59:31 hubbe Exp $
+/* $Id: randomness.pmod,v 1.18 2000/09/28 03:38:39 hubbe Exp $
  */
 
 //! module Crypto
@@ -10,7 +10,7 @@
  * will block if it can't provide enough random bits, while /dev/urandom
  * will degenerate into a reasonably strong pseudo random generator */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 static constant RANDOM_DEVICE = "/dev/random";
 static constant PRANDOM_DEVICE = "/dev/urandom";

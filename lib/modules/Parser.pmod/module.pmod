@@ -1,9 +1,9 @@
 /*
- * $Id: module.pmod,v 1.2 2000/09/26 18:59:50 hubbe Exp $
+ * $Id: module.pmod,v 1.3 2000/09/28 03:38:48 hubbe Exp $
  *
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 inherit Parser._parser;
 

@@ -4,9 +4,9 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.50 2000/09/26 18:59:51 hubbe Exp $
+//! $Id: DNS.pmod,v 1.51 2000/09/28 03:38:49 hubbe Exp $
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 constant NOERROR=0;
 constant FORMERR=1;

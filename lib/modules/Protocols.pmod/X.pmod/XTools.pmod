@@ -1,6 +1,6 @@
 /* XTools.pmod
  *
- * $Id: XTools.pmod,v 1.5 2000/09/26 19:00:04 hubbe Exp $
+ * $Id: XTools.pmod,v 1.6 2000/09/28 03:39:06 hubbe Exp $
  *
  * Various tools that are higher level than raw X, but are lower level
  * than widgets.
@@ -31,7 +31,7 @@
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 /* Steals and processes mousebutton events */
 class Button

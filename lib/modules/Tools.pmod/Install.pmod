@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 //
 // Common routines which are useful for various install scripts based on Pike.
 //

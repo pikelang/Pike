@@ -1,9 +1,9 @@
-/* $Id: Queue.pike,v 1.2 2000/09/26 18:59:09 hubbe Exp $
+/* $Id: Queue.pike,v 1.3 2000/09/28 03:38:28 hubbe Exp $
  *
  * A simple FIFO queue. 
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 #define QUEUE_SIZE 100
 
 array l;

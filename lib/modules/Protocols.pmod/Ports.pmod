@@ -1,12 +1,12 @@
 /*
- * $Id: Ports.pmod,v 1.6 2000/09/26 18:59:52 hubbe Exp $
+ * $Id: Ports.pmod,v 1.7 2000/09/28 03:38:52 hubbe Exp $
  *
  * IP port assignments
  *
  * Henrik Grubbström 1998-06-23
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 // Contains all UDP ports assigned for private use as of RFC 1700
 constant private_udp = ([

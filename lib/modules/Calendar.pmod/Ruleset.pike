@@ -3,7 +3,7 @@
 //!	This is the container class for rules.
 
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 class Timezone
 {

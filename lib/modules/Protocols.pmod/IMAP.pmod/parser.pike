@@ -3,7 +3,7 @@
  * Continuation based imap parser.
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 object line; /* Current line */
 

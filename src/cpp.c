@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.76 2000/09/26 00:17:45 hubbe Exp $
+ * $Id: cpp.c,v 1.77 2000/09/28 03:39:15 hubbe Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -921,6 +921,39 @@ static void insert_current_date_as_string(struct cpp *this,
   PUSH_STRING0((p_wchar0 *)buf+19, 5, tmp);
 }
 
+static void insert_current_version(struct cpp *this,
+				   struct define *def,
+				   struct define_argument *args,
+				   struct string_builder *tmp)
+{
+  char buf[50];
+  sprintf(buf," %d.%d ",this->compat_major, this->compat_minor);
+  string_builder_binary_strcat(tmp, buf, strlen(buf));
+}
+
+
+static void insert_current_minor(struct cpp *this,
+				 struct define *def,
+				 struct define_argument *args,
+				 struct string_builder *tmp)
+{
+  char buf[20];
+  sprintf(buf," %d ",this->compat_minor);
+  string_builder_binary_strcat(tmp, buf, strlen(buf));
+}
+
+
+static void insert_current_major(struct cpp *this,
+				 struct define *def,
+				 struct define_argument *args,
+				 struct string_builder *tmp)
+{
+  char buf[20];
+  sprintf(buf," %d ",this->compat_major);
+  string_builder_binary_strcat(tmp, buf, strlen(buf));
+}
+
+
 static void check_defined(struct cpp *this,
 			  struct define *def,
 			  struct define_argument *args,
@@ -1255,6 +1288,9 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
+  do_magic_define(&this,"__VERSION__",insert_current_version);
+  do_magic_define(&this,"__MAJOR__",insert_current_major);
+  do_magic_define(&this,"__MINOR__",insert_current_major);
 
   {
     struct define* def=alloc_empty_define(make_shared_string("__dumpdef"),0);
@@ -1268,14 +1304,16 @@ void f_cpp(INT32 args)
 
     simple_add_define(&this, "__PIKE__", " 1 ");
 
-    simple_add_define(&this, "__VERSION__",
+    simple_add_define(&this, "__REAL_VERSION__",
 		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) "."
 		      DEFINETOSTR(PIKE_MINOR_VERSION) " ");
-    simple_add_define(&this, "__MAJOR__",
+    simple_add_define(&this, "__REAL_MAJOR__",
 		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) " ");
-    simple_add_define(&this, "__MINOR__",
+    simple_add_define(&this, "__REAL_MINOR__",
 		      " " DEFINETOSTR(PIKE_MINOR_VERSION) " ");
     simple_add_define(&this, "__BUILD__",
+		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
+    simple_add_define(&this, "__REAL_BUILD__",
 		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
 #ifdef AUTO_BIGNUM
     simple_add_define(&this, "__AUTO_BIGNUM__", " 1 ");

@@ -1,9 +1,9 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.88 2000/09/26 18:59:56 hubbe Exp $
+ * $Id: requests.pmod,v 1.89 2000/09/28 03:38:58 hubbe Exp $
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 import .types;
 

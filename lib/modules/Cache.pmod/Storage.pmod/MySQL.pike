@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: MySQL.pike,v 1.2 2000/09/26 18:59:13 hubbe Exp $
+ * $Id: MySQL.pike,v 1.3 2000/09/28 03:38:31 hubbe Exp $
  *
  * This storage manager provides the means to save data to an SQL-based 
  * backend.
@@ -17,7 +17,7 @@
  * 
  */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define MAX_KEY_SIZE "255"
 #define CREATION_QUERY "create table cache ( \

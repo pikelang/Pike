@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.15 2000/09/26 19:00:04 hubbe Exp $
+ * $Id: XImage.pmod,v 1.16 2000/09/28 03:39:06 hubbe Exp $
  */
 
 /*
@@ -28,7 +28,7 @@
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
 
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #include "error.h"
 

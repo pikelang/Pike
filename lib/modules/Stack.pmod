@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 

@@ -1,4 +1,4 @@
-#pike __VERSION__
+#pike __REAL_VERSION__
 
 // This function will be easier to write in newer pikes, where there
 // will be a Image.ANY.decode function, but this will do for now. It
