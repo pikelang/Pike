@@ -2752,7 +2752,7 @@ cDay dwim_day(string day,void|TimeRange context)
       if ( (d=parse(dayformat+"%n",day,context)) ) 
 	 return d;
 
-   cDay t=Day();
+   cDay t=context?context->day():Day();
    if ( (d=parse("%e",day,context)) )
    {
       if (d>=t) return d;
