@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.12 1999/04/13 12:32:18 mirar Exp $ */
+/* $Id: dct.c,v 1.13 1999/04/22 12:40:29 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.12 1999/04/13 12:32:18 mirar Exp $
+**!	$Id: dct.c,v 1.13 1999/04/22 12:40:29 mirar Exp $
 **! class Image
 */
 
@@ -57,6 +57,10 @@ static const double pi=3.14159265358979323846;
 **! note
 **!	Do NOT use this function if you don't know what 
 **!     you're dealing with! Read some signal theory first...
+**!
+**!	It write's dots on stderr, to indicate some sort
+**!	of progress. It doesn't use any fct (compare: fft) 
+**!	algorithms.
 **! returns the new image object
 **! arg int newx
 **! arg int newy
