@@ -944,12 +944,8 @@ array convert(array x, string base)
 
 array(string) convert_comments(array(string) tokens)
 {
-  // Filter AutoDoc mk II, and convert other C++ comments to C-style.
-  return map(filter(tokens,
-		    lambda(string token) {
-		      return !(has_prefix(token, "//!") ||
-			       has_prefix(token, "/*!"));
-		    }),
+  // Convert C++ comments to C-style.
+  return map(tokens,
 	     lambda(string token) {
 	       if (has_prefix(token, "//")) {
 		 return ("/*" + token[2..] + " */");
