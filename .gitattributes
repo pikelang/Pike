@@ -162,6 +162,7 @@ testfont binary
 /lib/modules/Protocols.pmod/LysKOM.pmod/Request.pmod foreign_ident
 /lib/modules/Protocols.pmod/LysKOM.pmod/Session.pike foreign_ident
 /lib/modules/Protocols.pmod/Ports.pmod foreign_ident
+/lib/modules/Protocols.pmod/SMTP.pmod/module.pmod foreign_ident
 /lib/modules/Protocols.pmod/SNMP.pmod/protocol.pike foreign_ident
 /lib/modules/Protocols.pmod/SNMP.pmod/snmp_errors.h foreign_ident
 /lib/modules/Protocols.pmod/SNMP.pmod/snmp_globals.h foreign_ident

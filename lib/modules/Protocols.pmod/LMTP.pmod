@@ -1,22 +1,33 @@
 //
-// $Id: LMTP.pmod,v 1.7 2004/01/21 17:10:58 vida Exp $
+// $Id: LMTP.pmod,v 1.8 2004/02/22 13:24:10 vida Exp $
 //
 
 #pike __REAL_VERSION__
+class Configuration {
+  inherit .SMTP.Configuration;
+}
 
 class Connection {
   inherit .SMTP.Connection;
-  array(string) commands = ({ "lhlo", "mail", "rcpt", "data",
-			      "rset", "vrfy", "quit", "noop" });
+  // The commands this module supports
+  mapping(string:function) commands = ([
+         "lhlo": ehlo,
+	 "mail": mail, 
+	 "rcpt": rcpt,
+	 "data": data,
+	 "rset": rset,
+	 "vrfy": vrfy,
+	 "quit": quit,
+	 "noop": noop 
+  ]);
   constant protocol = "LMTP";
-
 
   // if we are in LMTP mode we call cb_data for each recipient
   // and with one recipient. This way we have one mime message per
   // recipient and one outcode to display to the client per recipient
   // (that is LMTP specific)
   void message(string content) {
-    if(sizeof(content) > maxsize)
+    if(sizeof(content) > cfg->maxsize)
     {
       outcode(552);
       return 0;
@@ -33,11 +44,11 @@ class Connection {
     foreach(mailto, string recipient)
     {
       int|array check;
-      if(givedata)
-	err = catch(check = cb_data(copy_value(message), mailfrom,
+      if(cfg->givedata)
+	err = catch(check = cfg->cb_data(copy_value(message), mailfrom,
 				    recipient, content));
       else
-	err = catch(check = cb_data(copy_value(message), mailfrom, recipient));
+	err = catch(check = cfg->cb_data(copy_value(message), mailfrom, recipient));
       if(err)
       {
 	outcode(554);
@@ -52,18 +63,15 @@ class Connection {
 //! A LMTP server. It has been fairly well tested against Postfix client.
 //! Actually this module is only an extention to the @[SMTP] server.
 class Server {
-   private object fdport;
-   private array(string) domains;
-   private function cb_mailfrom;
-   private function cb_rcptto;
-   private function cb_data;
-   
-   private void accept_callback()
+   static object fdport;
+   Configuration config;
+
+   static void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)
        error("Can't accept connections from socket\n");
-     Connection(fd, domains, cb_mailfrom, cb_rcptto, cb_data);
+     Connection(fd, config);
      destruct(fd);
    }
 
@@ -135,23 +143,21 @@ class Server {
    //! 
    //! int main(int argc, array(string) argv)
    //! {
-   //!   Protocols.SMTP.server(({ "ece.fr" }), 2500, "127.0.0.1", @
+   //!   Protocols.LMTP.Server(({ "ece.fr" }), 2500, "127.0.0.1", @
    //!      cb_mailfrom, cb_rcptto, cb_data);
    //!   return -1;
    //! }
-   void create(array(string) _domains, void|int port, void|string ip,
-	       function _cb_mailfrom, function _cb_rcptto, function _cb_data)
+   void create(array(string) _domains, void|int port, void|string ip, function _cb_mailfrom, function _cb_rcptto, function _cb_data)
    {
-     domains = _domains;
-     cb_mailfrom = _cb_mailfrom;
-     cb_rcptto = _cb_rcptto;
-     cb_data = _cb_data;
+     config = Configuration(_domains, _cb_mailfrom, _cb_rcptto, _cb_data);
+     random_seed(getpid() + time());
      if(!port)
-       port = 26;
+       port = 25;
      fdport = Stdio.Port(port, accept_callback, ip);
      if(!fdport)
      {
        error("Cannot bind to socket, already bound ?\n");
      }
    }
+
 }

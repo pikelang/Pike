@@ -1,3 +1,7 @@
+//
+// $Id: module.pmod,v 1.42 2004/02/22 13:24:10 vida Exp $
+//
+
 #pike __REAL_VERSION__
 
 //! A mapping(int:string) that maps SMTP return
@@ -292,6 +296,9 @@ class Connection {
   // whether you are in data mode or not...
   int datamode = 0;
 
+  // the features this module support (fetched from Configuration - get_features()
+   private array(string) features = ({ });
+
    static void handle_timeout(string cmd)
    {
      string errmsg = "421 Error: timeout exceeded after command " +
@@ -415,11 +422,6 @@ class Connection {
       outcode(501);
    }
 
-   void lhlo(string argument)
-   {
-     ehlo(argument);
-   }
- 
    // fetch the email address from the mail from: or rcpt to: commands
    // content: the input line like mail from:<toto@caudium.net>
    // what: the action either from or to
@@ -692,11 +694,7 @@ class Connection {
 #ifdef SMTP_DEBUG
             log("calling %O\n", _command);
 #endif
-#if constant(this)
-	    function fun = this[_command]; // XXX: This line probably needs a patch!
-#else
 	    function fun = commands[_command];
-#endif
 	    fun(command[1..] * " ");
          };
        }
