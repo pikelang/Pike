@@ -1,8 +1,8 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.1 1998/12/17 00:48:30 mirar Exp $");
+RCSID("$Id: termios.c,v 1.2 1998/12/17 02:06:50 mirar Exp $");
 #include "file_machine.h"
 
-#if defined(WITH_TERMIOS) && defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H)
 
 #include <termios.h>
 #include <unistd.h>

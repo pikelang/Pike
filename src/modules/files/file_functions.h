@@ -55,7 +55,7 @@
   FILE_FUNC("trylock",file_trylock,"function(void|int:object)")
 #endif
 
-#if defined(WITH_TERMIOS) && defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H)
    FILE_FUNC("tcgetattr",file_tcgetattr,"function(void:mapping)")
    FILE_FUNC("tcsetattr",file_tcsetattr,"function(mapping,void|string:int)")
 /*    FILE_FUNC("tcsendbreak",file_tcsendbreak,"function(int:int)") */

@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.130 1998/12/17 00:48:26 mirar Exp $");
+RCSID("$Id: file.c,v 1.131 1998/12/17 02:06:46 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2311,14 +2311,14 @@ void check_static_file_data(struct callback *a, void *b, void *c)
 }
 #endif
 
-#if defined(WITH_TERMIOS) && defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H)
 void file_tcgetattr(INT32 args);
 void file_tcsetattr(INT32 args);
-void file_tcsendbreak(INT32 args);
-void file_tcdrain(INT32 args);
-void file_tcflow(INT32 args);
-void file_tcgetpgrp(INT32 args);
-void file_tcsetpgrp(INT32 args);
+/* void file_tcsendbreak(INT32 args); */
+/* void file_tcdrain(INT32 args); */
+/* void file_tcflow(INT32 args); */
+/* void file_tcgetpgrp(INT32 args); */
+/* void file_tcsetpgrp(INT32 args); */
 #endif
 
 void pike_module_init(void)
