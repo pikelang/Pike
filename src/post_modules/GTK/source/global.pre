@@ -115,9 +115,9 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   gnome_is_setup = 1;
   pigtk_is_setup = 1;
   if( args == 4 )
-    get_all_args("setup_gtk", args, "%s%s%a%d", &id, &vers, &a, &flags);
+    get_all_args("gnome_init", args, "%s%s%a%d", &id, &vers, &a, &flags);
   else
-    get_all_args("setup_gtk", args, "%s%s%a", &id, &vers, &a);
+    get_all_args("gnome_init", args, "%s%s%a", &id, &vers, &a);
   data = malloc(sizeof(char *)*(a->size+1));
   for(argc=0; argc<a->size; argc++)
   {
@@ -132,32 +132,33 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   data[argc] = NULL;
 
   atexit( (void (*)(void))_exit );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
 
+  gtk_set_locale();
   if( args == 4 )
     applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
   else
     gnome_init( id, vers, argc, data );
 
-  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
   atexit( (void (*)(void))_exit );
 
   backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
@@ -250,28 +251,28 @@ NAME_ARGS(argv, do_not_parse_rc);
   data[argc] = NULL;
 
   atexit( (void (*)(void))_exit );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
   gtk_set_locale();
   gtk_init( &argc, &data );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
-  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
-  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
-  g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
+/*   g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
   atexit( (void (*)(void))_exit );
 
 #ifdef HAVE_SIGACTION
