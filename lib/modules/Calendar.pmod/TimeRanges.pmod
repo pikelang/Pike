@@ -1,5 +1,7 @@
 //! module Calendar
 
+// $Id: TimeRanges.pmod,v 1.10 2000/10/10 11:00:49 mirar Exp $
+
 #pike __REAL_VERSION__
 
 #define zero int(0..0)
