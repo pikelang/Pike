@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.252 2004/03/16 14:18:52 mast Exp $
+|| $Id: object.c,v 1.253 2004/04/03 18:24:24 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.252 2004/03/16 14:18:52 mast Exp $");
+RCSID("$Id: object.c,v 1.253 2004/04/03 18:24:24 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -966,9 +966,12 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 #ifdef PIKE_DEBUG
   if (o->refs) {
 #ifdef DEBUG_MALLOC
-    describe_something(o, T_OBJECT, 0,2,0, NULL);
+    if (o->refs > 0) {
+      fprintf (stderr, "Object got %d references in schedule_really_free_object():\n", o->refs);
+      describe_something(o, T_OBJECT, 0,2,0, NULL);
+    }
 #endif
-    Pike_fatal("Object still got %d references in schedule_really_free_object().\n", o->refs);
+    Pike_fatal("Object got %d references in schedule_really_free_object().\n", o->refs);
   }
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE && o->next != o)
     Pike_fatal("Freeing objects is not allowed inside the gc.\n");

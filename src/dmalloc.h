@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.48 2004/04/03 15:55:15 mast Exp $
+|| $Id: dmalloc.h,v 1.49 2004/04/03 18:24:24 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -35,6 +35,12 @@ extern size_t dmalloc_tracelogptr;
 
 #if defined (PIKE_DEBUG) && defined (DO_PIKE_CLEANUP)
 extern int verbose_debug_exit;
+#endif
+
+#ifdef DO_PIKE_CLEANUP
+#  define DO_IF_PIKE_CLEANUP(X) X
+#else
+#  define DO_IF_PIKE_CLEANUP(X)
 #endif
 
 typedef void describe_block_fn (void *);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.196 2004/03/17 19:29:56 mast Exp $
+|| $Id: main.c,v 1.197 2004/04/03 18:24:24 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.196 2004/03/17 19:29:56 mast Exp $");
+RCSID("$Id: main.c,v 1.197 2004/04/03 18:24:24 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -977,7 +977,7 @@ void low_exit_main(void)
   cleanup_pike_types();
 
   /* This zaps Pike_interpreter.thread_state among other things, so
-   * THREADS_ALLOW/DISALLOW don't work beyond this point. */
+   * THREADS_ALLOW/DISALLOW are NOPs beyond this point. */
   th_cleanup();
 
 #ifdef SHARED_NODES

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.52 2004/03/13 16:42:57 jonasw Exp $
+|| $Id: pike_threadlib.h,v 1.53 2004/04/03 18:24:24 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -733,6 +733,9 @@ extern dynamic_buffer pike_global_buffer;
 PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp = Pike_interpreter.thread_state; \
+     DO_IF_PIKE_CLEANUP (					\
+       /* Might get here after th_cleanup() when reporting leaks. */	\
+       if (_tmp) {)						\
      DEBUG_CHECK_THREAD();					\
      DO_IF_DEBUG({ \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
@@ -754,10 +757,12 @@ PMOD_EXPORT extern int Pike_in_gc;
        );								\
      }									\
      DO_IF_DEBUG(_tmp->debug_flags |= THREAD_DEBUG_LOOSE;)		\
+     DO_IF_PIKE_CLEANUP (})						\
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW() \
      REVEAL_GLOBAL_VARIABLES(); \
+     DO_IF_PIKE_CLEANUP (if (_tmp) {) \
      if(_tmp->swapped) { \
        low_mt_lock_interpreter(); \
        THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
@@ -768,10 +773,14 @@ PMOD_EXPORT extern int Pike_in_gc;
      } \
      DO_IF_DEBUG(_tmp->debug_flags &= ~THREAD_DEBUG_LOOSE;) \
      DEBUG_CHECK_THREAD(); \
+     DO_IF_PIKE_CLEANUP (}) \
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid = Pike_interpreter.thread_state; \
+     DO_IF_PIKE_CLEANUP (					\
+       /* Might get here after th_cleanup() when reporting leaks. */	\
+       if (_tmp_uid) {)						\
      DEBUG_CHECK_THREAD();					    \
      DO_IF_DEBUG({ \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
@@ -802,10 +811,12 @@ PMOD_EXPORT extern int Pike_in_gc;
        );								\
      }									\
      DO_IF_DEBUG(_tmp_uid->debug_flags |= THREAD_DEBUG_LOOSE;)		\
+     DO_IF_PIKE_CLEANUP (})						\
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW_UID() \
      REVEAL_GLOBAL_VARIABLES(); \
+     DO_IF_PIKE_CLEANUP (if (_tmp_uid) {) \
      if(_tmp_uid->swapped) { \
        low_mt_lock_interpreter(); \
        live_threads--; \
@@ -819,6 +830,7 @@ PMOD_EXPORT extern int Pike_in_gc;
      } \
      DO_IF_DEBUG(_tmp_uid->debug_flags &= ~THREAD_DEBUG_LOOSE;) \
      DEBUG_CHECK_THREAD(); \
+     DO_IF_PIKE_CLEANUP (}) \
    } while(0)
 
 #define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
