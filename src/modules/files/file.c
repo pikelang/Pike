@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.287 2003/09/05 16:08:23 nilsson Exp $
+|| $Id: file.c,v 1.288 2003/09/30 02:05:22 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.287 2003/09/05 16:08:23 nilsson Exp $");
+RCSID("$Id: file.c,v 1.288 2003/09/30 02:05:22 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1472,10 +1472,13 @@ static int do_close(int flags)
  *!  If this file has been created by calling @[openpt()], return the
  *!  filename of the associated pts-file. This function should only be
  *!  called once.
+ *!
+ *!  @note
+ *!    This function is only available on some platforms.
  */
+#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
 static void file_grantpt( INT32 args )
 {
-#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
   pop_n_elems(args);
 #if defined(USE_PT_CHMOD) || defined(USE_CHGPT)
   push_constant_text("Process.Process");
@@ -1521,14 +1524,13 @@ static void file_grantpt( INT32 args )
     Pike_error("grantpt failed: %s\n", strerror(errno));
 #endif /* USE_PT_CHMOD || USE_CHGPT */
   push_text( ptsname( FD ) );
-#if defined(HAVE_UNLOCKPT)
+#ifdef HAVE_UNLOCKPT
   if( unlockpt( FD ) )
     Pike_error("unlockpt failed: %s\n", strerror(errno));
 #endif
-#else
-  Pike_error("Not supported\n");
-#endif
 }
+#endif /* HAVE_GRANTPT || USE_PT_CHMOD || USE_CHGPT */
+
 /*! @decl int close()
  *! @decl int close(string direction)
  *!
