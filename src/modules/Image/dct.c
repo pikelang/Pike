@@ -1,4 +1,4 @@
-/* $Id: dct.c,v 1.1 1997/02/11 08:35:42 hubbe Exp $ */
+/* $Id: dct.c,v 1.2 1997/03/10 21:33:36 grubba Exp $ */
 
 #include "global.h"
 
@@ -41,9 +41,9 @@ void image_dct(INT32 args)
    
    if (!THIS->img) error("no image\n");
 
-   fprintf(stderr,"%d bytes, %d bytes\n",
-	   sizeof(rgbd_group)*THIS->xsize*THIS->ysize,
-	   sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+   fprintf(stderr,"%lu bytes, %lu bytes\n",
+	   (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
+	   (unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1));
     
    if (!(area=malloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1)))
       error("Out of memory\n");
