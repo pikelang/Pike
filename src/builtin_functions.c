@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.525 2004/01/30 16:17:57 grubba Exp $
+|| $Id: builtin_functions.c,v 1.526 2004/01/30 19:45:42 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.525 2004/01/30 16:17:57 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.526 2004/01/30 19:45:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4519,7 +4519,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
     date.tm_isdst = -1;
   }
 
-  date.tm_zone = NULL;
+  /* date.tm_zone = NULL; */
 
 #ifdef HAVE_GMTIME
   if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
