@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.7 2000/09/28 03:39:04 hubbe Exp $
+//  $Id: Request.pmod,v 1.8 2000/11/11 03:07:54 jhs Exp $
 //! module Protocols
 //! submodule LysKOM
 //! submodule Request
@@ -2056,9 +2056,7 @@ class Create_text
       return ({86,
                H(text),
                @A((array(string))misc_info),
-               @A(`+(@Array.map(aux_items,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(aux_items->encode())});
    }
 
    int reply(array what)
@@ -2083,9 +2081,7 @@ class Create_anonymous_text
       return ({87,
                H(text),
                @A((array(string))misc_info),
-               @A(`+(@Array.map(aux_items,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(aux_items->encode())});
    }
 
    int reply(array what)
@@ -2110,9 +2106,7 @@ class Create_conf
       return ({88,
                H(name),
                @B(@rows(type,extendedconftypenames)),
-               @A(`+(@Array.map(aux_items,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(aux_items->encode())});
    }
 
    int(0..65535) reply(array what)
@@ -2137,9 +2131,7 @@ class Create_person
       return ({89,
                H(name),
                H(passwd),
-               @A(`+(@Array.map(aux_items,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(aux_items->encode())});
    }
 
    int(0..65535) reply(array what)
@@ -2214,9 +2206,7 @@ class Modify_text_info
       return ({92,
                text,
                @A((array(string))delete),
-               @A(`+(@Array.map(add,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(add->encode())});
    }
 
    void reply(array what)
@@ -2240,9 +2230,7 @@ class Modify_conf_info
       return ({93,
                conf,
                @A((array(string))delete),
-               @A(`+(@Array.map(add,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(add->encode())});
    }
 
    void reply(array what)
@@ -2288,9 +2276,7 @@ class Modify_system_info
    {
       return ({95,
                @A((array(string))items_to_delete),
-               @A(`+(@Array.map(items_to_add,
-                               lambda(AuxItemInput z) 
-                                  { return z->encode(); })))});
+               @A(items_to_add->encode())});
    }
 
    void reply(array what)
