@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $ */
+/* $Id: ras.c,v 1.6 2000/07/03 13:30:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $
+**!	$Id: ras.c,v 1.6 2000/07/03 13:30:32 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: ras.c,v 1.6 2000/07/03 13:30:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -31,6 +31,8 @@ RCSID("$Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $");
 
 #include "image.h"
 #include "colortable.h"
+
+#include "encodings.h"
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -117,7 +119,7 @@ void img_ras_decode(INT32 args)
    unsigned char *src, *tmpdata=NULL;
    INT32 len, x, y;
    unsigned int numcolors = 0;
-   struct nct_flat_entry *entries;
+   struct nct_flat_entry *entries = NULL;
 
    get_all_args("Image.RAS.decode", args, "%S", &str);
 
@@ -191,7 +193,7 @@ void img_ras_decode(INT32 args)
 
    }
 
-   if(rs.ras_length)
+   if(rs.ras_length) {
      if(rs.ras_length > len) {
        /* Better to proceed and make a partly black image? */
        if(ctab != NULL)
@@ -199,9 +201,10 @@ void img_ras_decode(INT32 args)
        error("Image.RAS.decode: image data truncated\n");
      } else
        len = rs.ras_length;
+   }
 
    if(rs.ras_type == RT_BYTE_ENCODED) {
-     INT32 img_sz;
+     INT32 img_sz = 0;
      switch(rs.ras_depth) {
       case 1:
 	img_sz = ((rs.ras_width+15)>>4)*2*rs.ras_height;
@@ -282,7 +285,7 @@ void img_ras_decode(INT32 args)
 	break;
       case 1:
 	{
-	  int bits = 0, data;
+	  int bits = 0, data = 0;
 	  for(x=0; x<rs.ras_width; x++) {
 	    if(!bits) {
 	      if(len<2) {
@@ -405,7 +408,7 @@ static void image_ras_encode(INT32 args)
   struct rasterfile rs;
   struct nct_dither dith;
   rgb_group *rgb;
-  INT32 x, y, llen;
+  INT32 x, y, llen = 0;
   unsigned char *dst;
   void (*ctfunc)(rgb_group *, unsigned char *, int,
 		 struct neo_colortable *, struct nct_dither *, int) = NULL;

@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $ */
+/* $Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $
+**!	$Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $");
+RCSID("$Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -48,6 +48,8 @@ RCSID("$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $");
 #include "mapping.h"
 
 #include "gif_lzw.h"
+
+#include "encodings.h"
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -2638,7 +2640,7 @@ static void image_gif_lzw_decode(INT32 args)
 	 last=n;
 
 	 m++;
-	 if (m>=maxcode - earlychange) 
+	 if (m>=maxcode - earlychange) {
 	    if (m==MAX_GIF_CODE - earlychange)
 	    {
 #ifdef GIF_DEBUG
@@ -2660,6 +2662,7 @@ static void image_gif_lzw_decode(INT32 args)
 		  break; /* error! too much codes */
 	       }
 	    }
+	 }
       }
 
       if (reversebits)

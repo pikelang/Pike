@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $ */
+/* $Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $
+**!	$Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -39,6 +39,8 @@ RCSID("$Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $");
 #include "colortable.h"
 
 #include "builtin_functions.h"
+
+#include "encodings.h"
 
 extern void f_add(INT32 args);
 
@@ -189,7 +191,7 @@ void img_bmp_encode(INT32 args)
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"mapping|object|int\n");
 
-   if (bpp==0)
+   if (bpp==0) {
       if (!nct) 
 	 bpp=24;
       else if (image_colortable_size(nct)<=2 && !rle)
@@ -198,6 +200,7 @@ void img_bmp_encode(INT32 args)
 	 bpp=4; 
       else 
 	 bpp=8;
+   }
 
    switch (bpp)
    {
@@ -499,7 +502,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    if (sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"8 bit string");
 
-   if (args>1)
+   if (args>1) {
       if (sp[1-args].type!=T_MAPPING)
 	 SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",2,"mapping");
       else
@@ -508,6 +511,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 MAKE_CONSTANT_SHARED_STRING(qs,"quality");
 	 parameter_int(sp+1-args,qs,&quality);
       }
+   }
 
    os=s=(p_wchar0*)sp[-args].u.string->str;
    len=sp[-args].u.string->len;

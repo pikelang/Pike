@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $ */
+/* $Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $
+**!	$Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $");
+RCSID("$Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -38,6 +38,8 @@ RCSID("$Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $");
 
 #include "image.h"
 #include "builtin_functions.h"
+
+#include "encodings.h"
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.31 2000/05/07 00:04:58 per Exp $");
+RCSID("$Id: png.c,v 1.32 2000/07/03 13:30:32 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -375,7 +375,7 @@ static void image_png___decode(INT32 args)
 */
 
 static struct pike_string *_png_unfilter(unsigned char *data,
-					 INT32 len,
+					 size_t len,
 					 int xsize,int ysize,
 					 int filter,int type,
 					 int bpp,
@@ -416,7 +416,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 #if 0
       fprintf(stderr,
 	      "%05d 0x%08lx %02x %02x %02x > %02x < %02x %02x %02x "
-	      "len=%d xsize=%d sbb=%d next=0x%08lx d=0x%lx nd=0x%lx\n",
+	      "len=%ld xsize=%d sbb=%d next=0x%08lx d=0x%lx nd=0x%lx\n",
 	      ysize+1,(unsigned long)s,
 	      s[-3],s[-2],s[-1],s[0],s[1],s[2],s[3],
 	      len,xsize,sbb,
