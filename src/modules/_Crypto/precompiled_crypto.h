@@ -32,9 +32,8 @@
 struct pike_crypto {
   struct object *object;
   INT32 block_size;
-  INT32 overflow_len;
-  unsigned char *iv;
-  unsigned char *overflow;
+  INT32 backlog_len;
+  unsigned char *backlog;
 };
 
 struct pike_md2 {
@@ -50,8 +49,7 @@ struct pike_md5 {
 };
 
 struct pike_idea {
-  unsigned char key[8];
-  IDEA_KEY_SCHEDULE e_key, d_key;
+  IDEA_KEY_SCHEDULE key;
 };
 
 struct pike_des {
@@ -61,6 +59,13 @@ struct pike_des {
   des_cblock checksum;
   unsigned char overflow[8];
   unsigned overflow_len;
+};
+
+struct pike_cbc {
+  struct object *object;
+  unsigned char *iv;
+  INT32 block_size;
+  INT32 mode;
 };
 
 /*
@@ -75,6 +80,8 @@ struct pike_des {
 #define PIKE_IDEA	((struct pike_idea *)(fp->current_storage))
 #define PIKE_DES	((struct pike_des *)(fp->current_storage))
 
+#define PIKE_CBC	((struct pike_cbc *)(fp->current_storage))
+
 /*
  * Globals
  */
@@ -82,6 +89,8 @@ struct pike_des {
 /*
  * Prototypes
  */
+
+void assert_is_crypto_module(struct object *);
 
 /*
  * Module linkage
@@ -111,5 +120,10 @@ void exit_des(void);
 void init_invert_efuns(void);
 void init_invert_programs(void);
 void exit_invert(void);
+
+/* /precompiled/crypto/cbc */
+void init_cbc_efuns(void);
+void init_cbc_programs(void);
+void exit_cbc(void);
 
 #endif /* PRECOMPILED_X_H */

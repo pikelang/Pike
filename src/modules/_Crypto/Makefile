@@ -22,7 +22,7 @@ CFLAGS=-Wall -O -shared -fpic $(IFLAGS) $(CPPFLAGS) -pedantic -Wall
 LDFLAGS=-shared -fpic -R$(SSLROOT)/lib -L$(SSLROOT)/lib
 LOADLIBES=-lcrypto -lssl
 
-OBJS=crypto.o md5.o md2.o idea.o des.o invert.o
+OBJS=crypto.o md5.o md2.o idea.o des.o invert.o cbc.o
 
 # The actual rules
 
