@@ -204,7 +204,11 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
   {
     if(objectp(data))
     {
-      if(data->tag == "anchor" && !data->params->type)
+      if(data->tag == "anchor"
+#if 0 // Let's try to add these to the 
+	  && !data->params->type
+#endif
+	)
       {
 	if(string real_name=data->params->name)
 	{
@@ -739,7 +743,7 @@ SGML low_make_concrete_wmml(SGML data)
 	  break;
 
         case "execute":
-	  ret+=execute_contents(tag);    
+	  ret+=low_make_concrete_wmml(execute_contents(tag));
 	  continue;
 	  
 	case "class":
@@ -1053,8 +1057,9 @@ SGML unlink_unknown_links(SGML data, mapping known_links)
   return ret;
 }
 
+string output_format;
 
-
+object execute_cache=.Cache("execute_cache");
 
 array execute_contents(Tag tag)
 {
@@ -1062,6 +1067,11 @@ array execute_contents(Tag tag)
    string data=get_text(tag->data);
 
    data=replace(data,"\n<p>","\n");
+
+   
+   string key=output_format +":"+ data;
+   if(execute_cache[key])
+     return Sgml.decode(execute_cache[key]);
 
    add_constant("mktag",
 		lambda(string name,void|mapping arg,void|mixed cont)
@@ -1150,6 +1160,10 @@ array execute_contents(Tag tag)
       
       return ({"<!-- failed to execute wmml generator... -->"});
     }
+
+   verify(ret,"","generated");
+
+   execute_cache[key]=Sgml.encode(ret);
    return ret;
 }
 
