@@ -101,8 +101,8 @@ OBJ= \
  rusage.o \
  stralloc.o \
  stuff.o \
- svalue.o \
- @EXTRA_OBJS@
+ svalue.o @EXTRA_OBJS@
+
 #
 # User callable targets
 #
@@ -117,17 +117,17 @@ ulpc: $(OBJ) modules/linker_options
 # purify
 pure: $(OBJ) module_objects
 	-mv ulpc ulpc.old
-	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o ulpc
 
 # purecov
 cover: $(OBJ) module_objects
 	-mv ulpc ulpc.old
-	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o ulpc
 
 # quantify
 quant: $(OBJ) module_objects
 	-mv ulpc ulpc.old
-	quantify $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS) 
+	quantify $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o ulpc
 
 # install
 install:
@@ -146,8 +146,7 @@ tidy:
 
 # make clean
 clean: tidy
-	-for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
-	-for a in $(MODULES) ; do rm -f $$a/*.o ; done
+	-( cd modules; ${MAKE} $(MAKE_FLAGS) clean )
 	-rm -f TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 
