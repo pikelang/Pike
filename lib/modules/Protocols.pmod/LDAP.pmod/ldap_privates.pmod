@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.11 2004/10/14 00:16:17 bill Exp $
+// $Id: ldap_privates.pmod,v 1.12 2005/01/24 16:21:21 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -101,6 +101,26 @@ class asn1_application_octet_string
 
   void init(int tagid, string arg) {
     ::value = arg;
+    tagx = tagid;
+  }
+
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
+}
+
+class asn1_context_boolean
+{
+  inherit Standards.ASN1.Types.asn1_boolean;
+  constant cls = 2;
+  constant type_name = "CONTEXT BOOLEAN";
+  int tagx;
+
+  int get_tag() {return tagx;}
+
+  void init(int tagid, int arg) {
+    ::init(arg);
     tagx = tagid;
   }
 

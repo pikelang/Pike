@@ -11,6 +11,7 @@
 #define ASN1_APPLICATION_SEQUENCE	.ldap_privates.asn1_application_sequence
 #define ASN1_APPLICATION_OCTET_STRING	.ldap_privates.asn1_application_octet_string
 #define ASN1_CONTEXT_SEQUENCE		.ldap_privates.asn1_context_sequence
+#define ASN1_CONTEXT_BOOLEAN		.ldap_privates.asn1_context_boolean
 #define ASN1_CONTEXT_INTEGER		.ldap_privates.asn1_context_integer
 #define ASN1_CONTEXT_OCTET_STRING	.ldap_privates.asn1_context_octet_string
 #define ASN1_CONTEXT_SET		.ldap_privates.asn1_context_set
