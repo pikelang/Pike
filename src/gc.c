@@ -175,12 +175,12 @@ void describe_location(void *memblock, TYPE_T type, void *location)
     if(o->prog)
     {
       INT32 e,d;
-      for(e=0;e<o->prog->num_inherits;e++)
+      for(e=0;e<(INT32)o->prog->num_inherits;e++)
       {
 	struct inherit tmp=o->prog->inherits[e];
 	char *base=o->storage + tmp.storage_offset;
 
-	for(d=0;d<tmp.prog->num_identifiers;d++)
+	for(d=0;d<(INT32)tmp.prog->num_identifiers;d++)
 	{
 	  struct identifier *id=tmp.prog->identifiers+d;
 	  if(!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
