@@ -430,31 +430,27 @@ string translate_mode( int mode )
   }
 }
 
-mapping _decode( string|mapping what, mapping|void opts )
+array decode_layers( string|object|mapping what, mapping|void opts )
 {
-#ifdef DEBUG
-  mixed e = catch {
-#endif
   if(!opts) opts = ([]);
 
-  GimpImage data = __decode( what );
-  what = 0;
-  array layers = ({});
+  if(!objectp( what ) )
+    what = __decode( what );
   
   mapping lopts = ([ "tiled":1, ]);
   if( opts->background )
   {
     lopts->image = Image.Image( 32, 32, opts->background );
-    lopts->alpha = Image.Image( 32,32, Image.Color.white );
+    lopts->alpha = Image.Image( 32, 32, Image.Color.white );
     lopts->alpha_value = 1.0;
   } else {
     lopts->image = Image.Image( 32, 32, Image.Color.black );
-    lopts->alpha = Image.Image( 32,32, Image.Color.black );
+    lopts->alpha = Image.Image( 32, 32, Image.Color.black );
     lopts->alpha_value = 0.0;
   }
-  layers = ({ Image.Layer( lopts ) });
+  array layers = ({ Image.Layer( lopts ) });
 
-  foreach(data->layers, object l)
+  foreach(what->layers, object l)
   {
     if(l->flags->visible || opts->draw_all_layers)
     {
@@ -484,9 +480,18 @@ mapping _decode( string|mapping what, mapping|void opts )
       layers += ({ lay });
     }
   }
+  return layers;
+}
 
-  Image.Layer res = Image.lay( layers );
-  layers = 0;
+mapping _decode( string|mapping what, mapping|void opts )
+{
+  if(!opts) opts = ([]);
+
+  GimpImage data = __decode( what );
+  what = 0;
+  
+  Image.Layer res = Image.lay(decode_layers( data, opts ),
+                              0,0,data->width,data->height );
   Image.Image img = res->image();
   Image.Image alpha = res->alpha();
   res = 0;
@@ -586,19 +591,12 @@ mapping _decode( string|mapping what, mapping|void opts )
   }
 
   Array.map( data->layers, destruct );
-
   destruct( data );
-
   return 
   ([
     "image":img,
     "alpha":alpha,
   ]);
-#ifdef DEBUG
-  };
-  werror(describe_backtrace( e ) );
-  throw(e);
-#endif
 }
 
 

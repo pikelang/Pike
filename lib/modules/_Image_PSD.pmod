@@ -47,8 +47,10 @@ class Layer
   }
 }
 
+int foo;
 Layer decode_layer(mapping layer, mapping i)
 {
+  int stt = gethrtime();
   Layer l = Layer();
   int use_cmap;
   l->opacity = layer->opacity;
@@ -72,19 +74,50 @@ Layer decode_layer(mapping layer, mapping i)
   }
   array colors;
   int inverted;
+
   switch(i->mode)
   {
-   case Greyscale:
-     colors = ({
-       255,255,255
-     })*24;
-     break;
    case RGB:
-     colors = ({ ({255,0,0,}),
-                 ({0,255,0,}),
-                 ({0,0,255,}),
-               }) + ({ 255,255,255 }) * 24;
+     array lays = ({});
+     foreach( layer->channels, mapping c )
+     {
+       string mode;
+       switch( (int)c->id )
+       {
+        case 0:
+          mode = "red"; 
+          break;
+        case 1:
+          mode = "green"; 
+          break;
+        case 2:
+          mode = "blue"; 
+          break;
+       }
+       if( mode )
+       {
+         int st = gethrtime();
+         if( !sizeof(lays) )
+           lays += ({ 
+             Image.Layer(___decode_image_channel(l->width, l->height,
+                                                 c->data))
+           });
+         else
+           lays += (({ Image.Layer( ([
+             "image":___decode_image_channel(l->width, l->height, c->data),
+             "alpha_value":1.0,
+             "mode":mode, 
+           ]) )
+           }));
+         werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+         c->data = 0;
+       }
+     }
+     int st = gethrtime();
+     l->image = Image.lay( lays )->image();
+     werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
      break;
+
    case CMYK:
      inverted = 1;
      colors = ({ ({255,0,0,}),
@@ -93,23 +126,31 @@ Layer decode_layer(mapping layer, mapping i)
                }) + ({ 255,255,255 }) * 24;
      l->image = Image.image( l->width, l->height, 255, 255, 255);
      break;
+
    case Indexed:
      use_cmap = 1;
      break;
    default:
-     werror("Unsupported mode (for now), using greyscale\n");
-     colors = ({ 255,255,255 })*24;
+     werror("Unsupported layer format mode (for now), using greyscale\n");
+   case Greyscale:
+     colors = ({
+       255,255,255
+     })*24;
      break;
   }
+  int st = gethrtime();
   foreach(layer->channels, mapping c)
   {
     object tmp;
+
+    if( !colors && (c->id >= 0 ))
+      continue;
+
     if( c->id != -2)
       tmp = ___decode_image_channel(l->width, l->height, c->data);
     else
       tmp = ___decode_image_channel(l->mask_width,l->mask_height,c->data);
-
-    switch(c->id)
+    switch( c->id )
     {
      default:
        if(!use_cmap)
@@ -148,7 +189,10 @@ Layer decode_layer(mapping layer, mapping i)
          break;
        }
     }
+    c->data = 0;
   }
+  werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+  werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
   return l;
 }
 
@@ -162,95 +206,126 @@ mapping __decode( mapping|string what, mapping|void options )
   what=0;
   array rl = ({});
   foreach( data->layers, mapping l )
-    rl += ({ decode_layer( l,data ) });
+    rl += ({ decode_layer( l, data ) });
+
   data->layers = rl;
   return data;
 }
 
-#define PASTE_ALPHA(X,Y)                                                \
-        if(Y)                                                           \
-          img->paste_mask( X, Y, l->xoffset, l->yoffset );              \
-        else                                                            \
-          img->paste( X, l->xoffset, l->yoffset );                      \
-        if(Y&&alpha&&++alpha_used)                                      \
-          alpha->paste_alpha_color(Y,255,255,255,l->xoffset, l->yoffset ); \
-        else if(alpha)                                                 \
-         alpha->box(l->xoffset,l->yoffset,l->xoffset+l->width-1,l->yoffset+l->height-1,255,255,255)
-
-#define IMG_SLICE(l,h) img->copy(l->xoffset,l->yoffset,l->xoffset+h->width-1,l->yoffset+h->height-1)
-
 
 array(object) decode_background( mapping data, array bg )
 {
-  object img, alpha;
-  if( !bg )
-    alpha = Image.image(data->width, data->height);
+  object img;
   if( data->image_data )
     img = ___decode_image_data(data->width,       data->height, 
                                data->channels,    data->mode,
                                data->compression, data->image_data,
                                data->color_data);
-  else
-    img = Image.image( data->width, data->height,
-                       @((bg&&(array)bg)||({255,255,255})));
-  return ({ img, alpha });
+  return ({ img, 0 });
+}
+
+string translate_mode( string mode )
+{
+  switch( mode )
+  {
+   case "norm":      return "normal";
+   case "mul ":      return "multiply";
+   case "add ":      return "add";
+   case "diff":      return "difference";
+   case "sub ":      return "subtract";
+   case "diss":      return "dissolve";
+   case "scrn":      return "screen";
+   case "over":      return "overlay";
+
+
+   case "div ":      return "divide"; //?
+   case "idiv":      return "divide"; //?
+   case "dark":      return "min";
+   case "lite":      return "max";
+
+   case "hue ":      return "hue";
+   case "sat ":      return "saturation";
+   case "colr":      return "color";
+   case "lum ":      return "value";
+
+   case "smud":     
+     werror("WARNING: Unsupported mode (smudge). Skipping layer\n");
+     return 0;
+
+// WARNING: PSD: Unsupported mode: sLit
+// WARNING: PSD: Unsupported mode: hLit
+
+
+   default:
+     werror("WARNING: PSD: Unsupported mode: "+mode+"\n");
+     werror("Skipping layer\n");
+     return 0;
+  }
+}
+
+array decode_layers( string|mapping what, mapping|void opts )
+{
+
+  if(!opts) opts = ([]);
+
+  if(!mappingp( what ) )
+    what = __decode( what );
+  
+  mapping lopts = ([ "tiled":1, ]);
+  if( opts->background )
+  {
+    lopts->image = Image.Image( 32, 32, opts->background );
+    lopts->alpha = Image.Image( 32, 32, Image.Color.white );
+    lopts->alpha_value = 1.0;
+  } else {
+    lopts->image = Image.Image( 32, 32, Image.Color.black );
+    lopts->alpha = Image.Image( 32, 32, Image.Color.black );
+    lopts->alpha_value = 0.0;
+  }
+
+  [object img,object alpha] = decode_background( what, opts->background );
+  if( img )
+  {
+    lopts->image = img;
+    if( alpha )
+      lopts->alpha = alpha;
+    else
+      lopts->alpha = 0;
+    lopts->alpha_value = 1.0;
+  }
+  array layers = ({ Image.Layer( lopts ) });
+
+  foreach(reverse(what->layers), object l)
+  {
+    if( string m = translate_mode( l->mode ) )
+    {
+      Image.Layer lay = Image.Layer( l->image,
+                                   l->alpha,
+                                   m );
+      l->image = 0; l->alpha = 0;
+      lay->set_alpha_value( l->opacity / 255.0 );
+      lay->set_offset( l->xoffset, l->yoffset );
+      layers += ({ lay });
+    }
+  }
+  return layers;
 }
 
 mapping _decode( string|mapping what, mapping|void opts )
 {
+// mixed e = catch{
   mapping data;
-// mixed e =catch{
   if(!opts) opts = ([]);
   if(mappingp(what))
     data = what;
   else 
     data = __decode( what );
   what=0;
-  object alpha, img;
-  int alpha_used;
-  [img,alpha] = decode_background( data, opts->background );
 
-  foreach(reverse(data->layers), object l)
-  {
-//     if((l->flags & LAYER_FLAG_VISIBLE) || opts->draw_all_layers)
-    {
-      Layer h = l->get_opaqued( l->opacity );
-
-      switch( l->mode )
-      {
-      case "norm":
-        PASTE_ALPHA(h->image,h->alpha);
-        break;
-
-      case "mul ":
-        object oi = IMG_SLICE(l,h);
-        oi *= h->image;
-        PASTE_ALPHA(oi,h->alpha);
-        break;
-
-      case "add ":
-        object oi = IMG_SLICE(l,h);
-        oi += h->image;
-        PASTE_ALPHA(oi,h->alpha);
-        break;
-
-      case "diff":
-        object oi = IMG_SLICE(l,h);
-        oi -= h->image;
-        PASTE_ALPHA(oi,h->alpha);
-        break;
-       
-       default:
-        if(!opts->ignore_unknown_layer_modes)
-        {
-          werror("Layer mode "+l->mode+" not yet implemented,  "
-               " asuming 'norm'\n");
-          PASTE_ALPHA(h->image,h->alpha);
-        }
-        break;
-      }
-    }
-  }
+  Image.Layer res = Image.lay(decode_layers( data, opts ),
+                              0,0,data->width,data->height );
+  Image.Image img = res->image();
+  Image.Image alpha = res->alpha();
 
   return 
   ([
