@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.144 2003/11/14 10:26:43 mast Exp $
+|| $Id: builtin.cmod,v 1.145 2003/12/08 11:13:12 nilsson Exp $
 */
 
 #include "global.h"
@@ -1800,7 +1800,7 @@ PIKECLASS Buffer
 	shift |= a->size_shift;
       }
       if (sum < str->initial) {
-	sum = str->initial;
+	sum = str->initial * 2;
       }
       shift = shift & ~(shift >> 1);
       init_string_builder_alloc(&str->str, sum, shift);
@@ -1819,6 +1819,16 @@ PIKECLASS Buffer
     } else {
       RETURN 0;
     }
+  }
+
+  /*! @decl void putchar(int c)
+   *! Appends the character @[c] at the end of the string.
+   */
+  PIKEFUN void putchar(int c) {
+    struct Buffer_struct *str = THIS;
+    if(!str->str.s)
+      init_string_builder_alloc(&str->str, str->initial, 0);
+    string_builder_putchar(&str->str, c);
   }
 
   /*! @decl string get_copy()
