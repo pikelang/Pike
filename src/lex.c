@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.12 1997/01/19 09:08:01 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.13 1997/01/27 01:20:04 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1598,6 +1598,38 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       case '|': tmp="`|"; break;
       case '^': tmp="`^"; break;
       case '~': tmp="`~"; break;
+      case '<':
+	if(GOBBLE('<')) { tmp="`<<"; break; }
+	if(GOBBLE('=')) { tmp="`<="; break; }
+	tmp="`<";
+	break;
+
+      case '>':
+	if(GOBBLE('>')) { tmp="`>>"; break; }
+	if(GOBBLE('=')) { tmp="`>="; break; }
+	tmp="`>";
+	break;
+
+      case '!':
+	if(GOBBLE('=')) { tmp="`!="; break; }
+	tmp="`!";
+	break;
+
+      case '=':
+	if(GOBBLE('=')) { tmp="`=="; break; }
+	tmp="`=";
+	break;
+
+      case '(':
+	if(GOBBLE(')')) 
+	{
+	  tmp="`()";
+	  break;
+	}
+	yyerror("Illegal ` identifier.");
+	tmp="";
+	break;
+	
       case '-':
 	if(GOBBLE('>'))
 	{
@@ -1621,27 +1653,6 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	tmp="";
 	break;
 
-      case '<':
-	if(GOBBLE('<')) { tmp="`<<"; break; }
-	if(GOBBLE('=')) { tmp="`<="; break; }
-	tmp="`<";
-	break;
-
-      case '>':
-	if(GOBBLE('>')) { tmp="`>>"; break; }
-	if(GOBBLE('=')) { tmp="`>="; break; }
-	tmp="`>";
-	break;
-
-      case '!':
-	if(GOBBLE('=')) { tmp="`!="; break; }
-	tmp="`!";
-	break;
-
-      case '=':
-	if(GOBBLE('=')) { tmp="`=="; break; }
-	tmp="`=";
-	break;
       }
 
       if(literal)
@@ -1761,7 +1772,7 @@ static void low_lex()
 	}
 	s=findstring(buf);
 
-	if(s && lookup_efun(s))
+	if(s && low_mapping_string_lookup(get_builtin_constants(), s))
 	  UNGETSTR(" 1 ",3);
 	else
 	  UNGETSTR(" 0 ",3);
