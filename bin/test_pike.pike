@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.30 1999/10/29 00:13:38 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.31 1999/12/10 00:51:43 grubba Exp $ */
 
 import Stdio;
 
@@ -178,7 +178,7 @@ int main(int argc, string *argv)
 	  werror("%6d\r",e+1);
 
 	  string test,condition;
-	  int type;
+	  string|int type;
 	  object o;
 	  mixed a,b;
 	
@@ -228,7 +228,9 @@ int main(int argc, string *argv)
 	  string widener = ([ 0:"",
 			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
 			    2:"\nint \x10001=0;\n" ])[shift%3];
-	  
+
+	  widener += "#pragma strict_types\n";
+
 	  if(test[-1]!='\n') test+="\n";
 
 	  int computed_line=sizeof(test/"\n");
@@ -241,7 +243,7 @@ int main(int argc, string *argv)
 	      break;
 	    }
 	  }
-	  string linetester="int __cpp_line=__LINE__; int __rtl_line=backtrace()[-1][1];\n";
+	  string linetester="int __cpp_line=__LINE__; int __rtl_line=[int]backtrace()[-1][1];\n";
 
 	  string to_compile = test + linetester + widener;
 	  switch(type)
