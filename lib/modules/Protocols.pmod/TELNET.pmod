@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.6 1999/04/30 06:56:24 hubbe Exp $
+// $Id: TELNET.pmod,v 1.7 1999/06/05 04:20:03 hubbe Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -273,6 +273,10 @@ class protocol
   //.   Data queued to be sent.
   static string to_send = "";
 
+  //. + done
+  //.   Indicates that connection should be closed
+  static int done;
+
   //. + nonblocking_write
   //.   Tells if we have set the nonblocking write callback or not.
   static int nonblocking_write;
@@ -281,7 +285,7 @@ class protocol
   //.   Turns on the write callback if apropriate.
   static void enable_write()
   {
-    if (!nonblocking_write && (write_cb || sizeof(to_send))) {
+    if (!nonblocking_write && (write_cb || sizeof(to_send) || done)) {
       fd->set_nonblocking(got_data, send_data, close_cb, got_oob);
       nonblocking_write = 1;
     }
@@ -291,7 +295,7 @@ class protocol
   //.   Turns off the write callback if apropriate.
   static void disable_write()
   {
-    if (!write_cb && !sizeof(to_send) && nonblocking_write) {
+    if (!write_cb && !sizeof(to_send) && !done && nonblocking_write) {
       fd->set_nonblocking(got_data, 0, close_cb, got_oob);
       nonblocking_write = 0;
     }
@@ -307,12 +311,20 @@ class protocol
     enable_write();
   }
 
-  //. + write_raw
+  //. - write_raw
   //.   Queues raw data to be sent to the other end of the connection.
   //. > s - String with raw telnet data to send.
   void write_raw(string s)
   {
     to_send += s;
+    enable_write();
+  }
+
+  //. - close
+  //.  Closes the connetion neatly
+  void close()
+  {
+    done=1;
     enable_write();
   }
 
@@ -323,14 +335,16 @@ class protocol
   {
     if (!sizeof(to_send)) {
       if (write_cb) {
-	to_send = write_cb(id);
+	if(!(to_send = write_cb(id)))
+	{
+	  done=1;
+	  to_send="";
+	}
       }
     }
-    if (!to_send) {
-      // Support for delayed close.
-      fd->close();
-      fd = 0;
-    } else if (sizeof(to_send)) {
+
+    if (sizeof(to_send))
+    {
       if (to_send[0] == 242) {
 	// DataMark needs extra quoting... Stupid.
 	to_send = C2(IAC,NOP) + to_send;
@@ -339,6 +353,11 @@ class protocol
       int n = fd->write(to_send);
 
       to_send = to_send[n..];
+    } else if(done) {
+      fd->close();
+      fd=0;
+      nonblocking_write=0;
+      return;
     }
     disable_write();
   }
@@ -989,9 +1008,11 @@ class Readline
     }
   }
 
-  void destroy()
+  void close()
   {
-    if(readline) destruct(readline);
+    readline->set_blocking();
+    readline=0;
+    ::close();
   }
 }
 
