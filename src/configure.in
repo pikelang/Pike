@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.808 2004/03/09 18:46:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.809 2004/03/09 22:01:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1360,6 +1360,9 @@ AC_ARG_WITH(thread_c_stack,
 
 AC_ARG_WITH(epoll, MY_DESCR([--with-epoll],
 			    [enable support for /dev/epoll (EXPERIMENTAL)]))
+AC_ARG_WITH(devpoll, MY_DESCR([--without-devpoll],
+			      [disable support for /dev/poll]),
+	    [],[with_devpoll=yes])
 AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
 AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
 AC_ARG_WITH(zlib, MY_DESCR([--without-zlib],[disable gz compression support]),
@@ -2513,8 +2516,13 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
-		 mach/mach_init.h sys/devpoll.h sys/epoll.h syscall.h \
-		 sys/syscall.h)
+		 mach/mach_init.h sys/epoll.h syscall.h sys/syscall.h)
+
+# Make it possible to disable use of /dev/poll.
+# It seems buggy on Solaris 7/x86.
+if test "x$with_devpoll" = "xno"; then :; else
+  AC_CHECK_HEADERS(sys/devpoll.h)
+fi
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
