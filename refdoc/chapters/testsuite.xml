@@ -71,7 +71,7 @@ make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
   (i e if you added a test to one of them), cd to the top directory and run</p>
 
 <example>
-make METATARGET=module_testsuites
+make testsuites
 </example>
 
   <p>The testsuite files have now appeared in build/<i>arch</i> in locations
