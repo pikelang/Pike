@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.143 2002/01/08 17:49:19 grubba Exp $");
+RCSID("$Id: main.c,v 1.144 2002/01/08 17:59:11 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -575,7 +575,7 @@ int dbm_main(int argc, char **argv)
       Pike_interpreter.stack_top += lim.rlim_cur;
 #endif /* STACK_DIRECTION < 0 */
 
-#if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
+#if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H) && !defined(PPC)
       {
 	char ** bos_location;
 	void *handle;
@@ -608,7 +608,7 @@ int dbm_main(int argc, char **argv)
 	}
       }
 #endif /* HAVE_PTHREAD_INITIAL_THREAD_BOS */
-#endif /* __linux__ && HAVE_DLOPEN && HAVE_DLFCN_H */
+#endif /* __linux__ && HAVE_DLOPEN && HAVE_DLFCN_H && !PPC*/
 
 #if STACK_DIRECTION < 0
       Pike_interpreter.stack_top += 8192 * sizeof(char *);
