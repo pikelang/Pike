@@ -113,7 +113,7 @@ IFS="$OLDIFS"
 IPATH=.
 IPATHS=":.:"
 
-for a in $*
+for a in "$@"
 do
   case $IPATHS in
     *:$a:*) ;;
@@ -128,7 +128,7 @@ done
 ERRORFILE=TMP$$.err
 rm $ERRORFILE 2>/dev/null 1>/dev/null || :
 
-CFLAGS="$CFLAGS -zq -hw -fr$ERRORFILE"
+CFLAGS="$CFLAGS -bm -zq -hw -fr$ERRORFILE"
 
 if [ "x$OUTPUT" != x ]; then
   OFLAGS="$OFLAGS -fo$OUTPUT"

@@ -1,7 +1,7 @@
 CLEANUP=yes
-DEBUG=no
+NT_DEBUG=no
 
-if [ $DEBUG = yes ]; then
+if [ $NT_DEBUG = yes ]; then
   set -x
 fi
 
@@ -13,11 +13,16 @@ fixabspath() {
   echo "$*" | sed -e 's@/@\\@g'
 }
 
+getntenv() {
+  rsh $NTHOST set $1 | egrep "^$1=" | sed 's/^.*=//
+s///g'
+}
+
 silent_do_cmd() {
   BATFILE=TMP$$.bat
   PWD=`pwd`
   RPWD=`fixabspath $PWD`
-  if [ x$DEBUG != xyes ]; then
+  if [ x$NT_DEBUG != xyes ]; then
     echo >$BATFILE "@echo off"
   else
     echo >$BATFILE 
@@ -33,5 +38,5 @@ silent_do_cmd() {
 
 do_cmd() {
   echo "DOING $*"
-  silent_do_cmd "$*"
+  silent_do_cmd "$@"
 }

@@ -5,6 +5,7 @@
 *.gz binary
 *.ppm binary
 *.rs binary
+lib -text -crlf
 testfont binary
 
 # Handling of foreign (ie CVS) identifiers.

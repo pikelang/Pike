@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.57 1998/01/10 00:12:38 grubba Exp $
+/* $Id: master.pike,v 1.58 1998/01/13 22:27:44 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -17,6 +17,18 @@ string pike_library_path;
 string *pike_include_path=({});
 string *pike_module_path=({});
 string *pike_program_path=({});
+int want_warnings;
+
+program compile_string(string data, void|string name)
+{
+  return compile(cpp(data,name||"-"));
+}
+
+program compile_file(string file)
+{
+  return compile(cpp(_static_modules.files()->file(file,"r")->read(),file));
+}
+
 
 #ifdef GETCWD_CACHE
 string current_path;
@@ -251,7 +263,8 @@ object new(mixed prog, mixed ... args)
  */
 void create()
 {
-  /* make ourselves known */
+  add_constant("compile_string",compile_string);
+  add_constant("compile_file",compile_file);
   add_constant("add_include_path",add_include_path);
   add_constant("remove_include_path",remove_include_path);
   add_constant("add_module_path",add_module_path);
@@ -441,7 +454,7 @@ void _main(string *argv, string *env)
 
   _master_file_name=backtrace()[-1][0];
   q=_master_file_name/"/";
-  pike_library_path = combine_path(getcwd(), q[0..sizeof(q)-2] * "/");
+  pike_library_path = combine_path_with_cwd(q[0..sizeof(q)-2] * "/");
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
@@ -471,8 +484,10 @@ void _main(string *argv, string *env)
 	    ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
 	      ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
 		({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
-		  ({"ignore",tmp->HAS_ARG,"-ms"}),
-		    ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1);
+		  ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
+		    ({"ignore",tmp->HAS_ARG,"-ms"}),
+		      ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})
+			}), 1);
     
     /* Parse -M and -I backwards */
     for(i=sizeof(q)-1;i>=0;i--)
@@ -489,6 +504,10 @@ void _main(string *argv, string *env)
 	
       case "ppath":
 	add_program_path(q[i][1]);
+	break;
+
+	case "warnings":
+	want_warnings++;
 	break;
       }
     }
@@ -602,6 +621,22 @@ void compile_error(string file,int line,string err)
   }
 }
 
+/*
+ * This function is called whenever a compiling error occurs,
+ * Nothing strange about it.
+ * Note that previous_object cannot be trusted in ths function, because
+ * the compiler calls this function.
+ */
+void compile_warning(string file,int line,string err)
+{
+  if(!inhibit_compile_errors)
+  {
+    if(want_warnings)
+      werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
+  }
+}
+
+
 /* This function is called whenever an #include directive is encountered
  * it receives the argument for #include and should return the file name
  * of the file to include
@@ -651,6 +686,11 @@ string handle_include(string f,
   }
 
   return path;
+}
+
+string read_include(string f)
+{
+  return _static_modules->files()->file(f,"r")->read();
 }
 
 // FIXME
