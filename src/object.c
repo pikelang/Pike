@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.112 2001/01/19 14:52:46 mast Exp $");
+RCSID("$Id: object.c,v 1.113 2001/01/22 14:41:02 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -547,7 +547,6 @@ void destruct(struct object *o)
 
 static struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
-static struct object *in_destruct_objects_to_destruct = 0;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by really_free_object. It links the object back into the
@@ -555,27 +554,36 @@ static struct object *in_destruct_objects_to_destruct = 0;
  */
 void destruct_objects_to_destruct(void)
 {
-  struct object *o, *next, *end = in_destruct_objects_to_destruct;
+  struct object *o, *next;
 
-  /* Only process the list down to the first item that was on the
-   * already in an earlier call to destruct_objects_to_destruct. This
-   * way we avoid extensive recursion in this function and also avoid
-   * destructing the objects arbitrarily late. */
-  while((o=objects_to_destruct) != end)
-  {
-    /* Link object back to list of objects */
-    in_destruct_objects_to_destruct = objects_to_destruct = o->next;
+#ifdef PIKE_DEBUG
+  ONERROR uwp;
+  SET_ONERROR(uwp, fatal_on_error,
+	      "Shouldn't get an exception in destruct_objects_to_destruct.\n");
+#endif
+
+  /* We unlink the list from objects_to_destruct before processing it,
+   * to avoid that reentrant calls to this function go through all
+   * objects instead of just the newly added ones. This way we avoid
+   * extensive recursion in this function and also avoid destructing
+   * the objects arbitrarily late. */
+  while (objects_to_destruct) {
+    o = objects_to_destruct, objects_to_destruct = 0;
+    do {
+      next = o->next;
     
-    if(first_object)
-      first_object->prev=o;
+      /* Link object back to list of objects */
+      if(first_object)
+	first_object->prev=o;
 
-    o->next=first_object;
-    first_object=o;
-    o->prev=0;
+      o->next=first_object;
+      first_object=o;
+      o->prev=0;
 
-    add_ref(o);
-    destruct(o);
-    free_object(o);
+      add_ref(o);
+      destruct(o);
+      free_object(o);
+    } while ((o = next));
   }
 
   if(destruct_object_evaluator_callback)
@@ -583,6 +591,10 @@ void destruct_objects_to_destruct(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
   }
+
+#ifdef PIKE_DEBUG
+  UNSET_ONERROR(uwp);
+#endif
 }
 
 
