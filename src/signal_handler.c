@@ -24,7 +24,7 @@
 #include "security.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.121 1999/04/05 22:07:12 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.122 1999/04/09 04:48:43 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1662,7 +1662,7 @@ void f_create_process(INT32 args)
 	    struct array *i,*v;
 	    int ptr=0;
 	    i=mapping_indices(m);
-	    v=mapping_indices(m);
+	    v=mapping_values(m);
 
 	    for(e=0;e<i->size;e++)
 	    {
@@ -1670,7 +1670,7 @@ void f_create_process(INT32 args)
 	      {
 		check_stack(3);
 		ref_push_string(ITEM(i)[e].u.string);
-		push_string(make_shared_string("="));
+		push_constant_text("=");
 		ref_push_string(ITEM(v)[e].u.string);
 		f_add(3);
 		ptr++;
@@ -1680,7 +1680,7 @@ void f_create_process(INT32 args)
 	    free_array(v);
 	    push_string(make_shared_binary_string("\0\0",1));
 	    f_aggregate(ptr+1);
-	    push_string(make_shared_binary_string("\0\0",1));
+	    push_string(make_shared_binary_string("\0",1));
 	    o_multiply();
 	    env=(void *)sp[-1].u.string->str;
 	  }
