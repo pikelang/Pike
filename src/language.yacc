@@ -84,6 +84,7 @@
 %token TOK_STATIC
 %token TOK_STRING_ID
 %token TOK_SUB_EQ
+%token TOK_TYPEDEF
 %token TOK_TYPEOF
 %token TOK_VARIANT
 %token TOK_VOID_ID
@@ -111,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.238 2001/03/31 15:20:43 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.239 2001/04/01 13:58:53 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -276,7 +277,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch_arg
 %type <n> class
 %type <n> enum
-%type <n> enum_identifier
 %type <n> safe_comma_expr
 %type <n> comma_expr
 %type <n> comma_expr2
@@ -332,6 +332,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> local_function
 %type <n> local_function2
 %type <n> magic_identifier
+%type <n> simple_identifier
 %type <n> foreach_lvalues
 %type <n> foreach_optional_lvalue
 %%
@@ -878,6 +879,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   | constant {}
   | class { free_node($1); }
   | enum { free_node($1); }
+  | typedef {}
   | error TOK_LEX_EOF
   {
     reset_type_stack();
@@ -1012,6 +1014,7 @@ magic_identifiers2:
   | TOK_FLOAT_ID      { $$ = "float"; }
   | TOK_INT_ID        { $$ = "int"; }
   | TOK_ENUM	      { $$ = "enum"; }
+  | TOK_TYPEDEF       { $$ = "typedef"; }
   ;
 
 magic_identifiers3:
@@ -1079,6 +1082,16 @@ soft_cast: '[' type ']'
       free_type(s);
     }
     ;
+
+full_type: type8
+  | type8 '*'
+  {
+    if (Pike_compiler->compiler_pass == 2) {
+       yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
+    push_type(T_ARRAY);
+  }
+  ;
 
 type6: type | identifier_type ;
   
@@ -2374,7 +2387,7 @@ class: modifiers TOK_CLASS optional_identifier
   }
   ;
 
-enum_identifier: TOK_IDENTIFIER
+simple_identifier: TOK_IDENTIFIER
   | bad_identifier { $$ = 0; }
   ;
 
@@ -2420,7 +2433,7 @@ enum_value: /* EMPTY */
   ;
 
 enum_def: /* EMPTY */
-  | enum_identifier enum_value
+  | simple_identifier enum_value
   {
     if ($1) {
       add_constant($1->u.sval.u.string, Pike_sp-1,
@@ -2431,7 +2444,7 @@ enum_def: /* EMPTY */
     {
       struct pike_type *current = pop_unfinished_type();
       struct pike_type *new = get_type_of_svalue(Pike_sp-1);
-      struct pike_type *res = or_pike_types(current, new, 1);
+      struct pike_type *res = or_pike_types(new, current, 1);
       free_type(current);
       free_type(new);
       type_stack_mark();
@@ -2467,6 +2480,26 @@ enum: modifiers TOK_ENUM
       free_node($4);
     }
     $$ = mktypenode(t);
+    free_type(t);
+  }
+  ;
+
+typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
+  {
+    struct pike_type *t = compiler_pop_type();
+
+    if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
+	(Pike_compiler->compiler_pass == 1)) {
+      yywarning("Extern declared typedef.");
+    }
+
+    if ($4) {
+      ref_push_type_value(t);
+      add_constant($4->u.sval.u.string, Pike_sp-1,
+		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+      pop_stack();
+      free_node($4);
+    }
     free_type(t);
   }
   ;
@@ -3482,10 +3515,12 @@ string: TOK_STRING
 
 /* FIXME: Should probably set Pike_compiler->last_identifier. */
 bad_identifier: bad_expr_ident
-  | TOK_CLASS
-  { yyerror("class is a reserved word."); }
   | TOK_ARRAY_ID
   { yyerror("array is a reserved word."); }
+  | TOK_CLASS
+  { yyerror("class is a reserved word."); }
+  | TOK_ENUM
+  { yyerror("enum is a reserved word."); }
   | TOK_FLOAT_ID
   { yyerror("float is a reserved word.");}
   | TOK_FUNCTION_ID
@@ -3504,10 +3539,10 @@ bad_identifier: bad_expr_ident
   { yyerror("program is a reserved word."); }
   | TOK_STRING_ID
   { yyerror("string is a reserved word."); }
+  | TOK_TYPEDEF
+  { yyerror("typedef is a reserved word."); }
   | TOK_VOID_ID
   { yyerror("void is a reserved word."); }
-  | TOK_ENUM
-  { yyerror("enum is a reserved word."); }
   ;
 
 bad_expr_ident:

@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.30 2001/03/18 21:49:52 grubba Exp $
+ * $Id: lexer.h,v 1.31 2001/04/01 13:58:53 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -446,6 +446,7 @@ static int low_yylex(YYSTYPE *yylval)
 	  if(ISWORD("switch")) return TOK_SWITCH;
 	  break;
 	case TWO_CHAR('t','y'):
+	  if(ISWORD("typedef")) return TOK_TYPEDEF;
 	  if(ISWORD("typeof")) return TOK_TYPEOF;
 	  break;
 	case TWO_CHAR('v','a'):
