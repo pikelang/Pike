@@ -667,6 +667,27 @@ array(array(array)) greedy_diff(array from, array to)
   return low_greedy_diff(d1, d2);
 }
 
+//! @decl int count(array|multiset haystack, mixed needle)
+//! @decl mapping(mixed:int) count(array|multiset haystack)
+//!   Returns the number of occurrences of @[needle] in @[haystack].
+//!   If the optional @[needle] argument is omitted, @[count] instead
+//!   works similar to the unix command @tt{sort|uniq -c@}, returning
+//!   a mapping with the number of occurrences of each element in
+//!   @[haystack].
+//! @seealso
+//!   @[String.count], @[search], @[has_value]
+int|mapping count(array|multiset haystack, mixed|void needle)
+{
+  if(zero_type(needle))
+  {
+    mapping res = ([]);
+    foreach(haystack, mixed what)
+      res[what]++;
+    return res;
+  }
+  return sizeof(map((array)haystack, `==, needle) - ({ 0 }));
+}
+
 //! Returns a random element from the @[in] array.
 mixed random(array in) {
   return in[predef::random(sizeof(in))];
