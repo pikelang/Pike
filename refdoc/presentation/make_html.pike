@@ -335,8 +335,16 @@ string parse_text(Node n) {
       break;
 
     case "pre":
+      ret += "<font face='courier'><pre>" + parse_text(c) + "</pre></font>";
+      break;
+
     case "code":
-      ret += "<font face='courier'><"+name+">" + parse_text(c) + "</"+name+"></font>";
+      ret += "<font face='courier'><pre><code>" + parse_text(c) + "</code></pre></font>";
+      break;
+
+    case "expr":
+      ret += "<font face='courier'><code>" + replace(parse_text(c), " ", "&nbsp;") +
+	"</code></font>";
       break;
 
     case "ref":
@@ -661,7 +669,7 @@ string render_class_path(Node n) {
   if(sizeof(a) && a[0]->get_attributes()->name=="")
     a = a[1..];
   string ret = a->get_attributes()->name * ".";
-  if(!sizeof(ret))
+  if(!sizeof(ret) || ret[-1]==':')
     return ret;
   if(n->get_any_name()=="class" || n->get_any_name()=="module")
     return ret + ".";
