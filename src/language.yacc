@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.25 1997/02/18 05:13:34 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.26 1997/03/01 02:37:01 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1130,9 +1130,9 @@ idents: low_idents
   {
     $$=index_node($1, $3);
     free_node($1);
-    free_string($3);
-    free_string(last_identifier);
+    if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $3);
+    free_string($3);
   }
   ;
 

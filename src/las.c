@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.27 1997/02/27 11:23:22 hubbe Exp $");
+RCSID("$Id: las.c,v 1.28 1997/03/01 02:37:03 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -508,6 +508,8 @@ node *index_node(node *n, struct pike_string * id)
     case T_STRING:
     case T_ARRAY:
       yyerror("Failed to index module (Not a module?)");
+      pop_stack();
+      push_int(0);
       break;
 
     default:
