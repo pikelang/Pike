@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.196 2002/02/04 17:10:04 tomas Exp $");
+RCSID("$Id: signal_handler.c,v 1.197 2002/02/05 12:33:33 tomas Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1878,7 +1878,7 @@ static void internal_add_limit( struct perishables *storage,
 
 #ifdef __NT__
 DEFINE_IMUTEX(handle_protection_mutex);
-#endif /* __NT */
+#endif /* __NT__ */
 
 void f_create_process(INT32 args)
 {
@@ -3475,7 +3475,9 @@ void init_signals(void)
   INIT_FIFO(sig, unsigned char);
   INIT_FIFO(wait,wait_data);
 
+#ifdef __NT__
   init_interleave_mutex(&handle_protection_mutex);
+#endif /* __NT__ */
 
 #ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
