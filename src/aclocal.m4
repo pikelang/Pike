@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.71 2003/05/05 16:44:21 grubba Exp $
+dnl $Id: aclocal.m4,v 1.72 2003/05/06 09:46:43 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -320,7 +320,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.71 2003/05/05 16:44:21 grubba Exp $
+  # $Id: aclocal.m4,v 1.72 2003/05/06 09:46:43 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -377,20 +377,29 @@ define([AC_LOW_MODULE_INIT],
 dnl module_name
 define([AC_MODULE_INIT],
 [
+  # Initialize the MODULE_{NAME,PATH,DIR} variables
+  #
+  # MODULE_NAME	Name of module as available from Pike.
+  # MODULE_PATH	Module indexing path including the last '.'.
+  # MODULE_DIR	Directory where the module should be installed
+  #		including the last '/'.
   ifelse([$1], , [
     MODULE_NAME="`pwd|sed -e 's@.*/@@g'`"
-    MODULE_DIR="./"
+    MODULE_PATH=""
+    MODULE_DIR=""
   ], [
-    MODULE_NAME="`echo '$1'|sed -e 's@.*/@@'`"
-    MODULE_DIR="`echo '$1'|sed -e 's@[^/]*$@@'`"
+    MODULE_NAME="`echo '$1'|sed -e 's/.*\.//'`"
+    MODULE_PATH="`echo '$1'|sed -e 's/[^\.]*$//'`"
+    MODULE_DIR="`echo '$1'|sed -e 's/[^\.]*$//' -e 's@\.@.pmod/@g'`"
   ])
   AC_SUBST(MODULE_NAME)
+  AC_SUBST(MODULE_PATH)
   AC_SUBST(MODULE_DIR)
 
   echo
   echo '###################################################'
-  echo '##' "$MODULE_NAME"
-  echo '##' "$MODULE_DIR"
+  echo '## Configuring module: ' "$MODULE_PATH$MODULE_NAME"
+  echo '## Installation dir:   ' "$MODULE_DIR"
   echo
 
   AC_LOW_MODULE_INIT()
