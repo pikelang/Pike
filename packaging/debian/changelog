@@ -1,3 +1,9 @@
+pike7.5 (7.5.17-2) experimental; urgency=low
+
+  * Latest CVS snapshot.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 14 Jan 2004 19:53:42 +0100
+
 pike7.5 (7.5.17-1) experimental; urgency=low
 
   * The latest cvs snapshot.
