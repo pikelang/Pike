@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.26 2002/04/24 12:27:09 grubba Exp $
+ * $Id: builtin.cmod,v 1.27 2002/04/24 15:45:11 grubba Exp $
  */
 
 #include "global.h"
@@ -26,17 +26,7 @@
 #include "main.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "fd_control.h"
 
-//! Raw set_close_on_exec().
-//!
-//! @seealso
-//!   @[Stdio.File()->set_close_on_exec()
-PIKEFUN int set_close_on_exec(int fd, int which)
-{
-  int retval = set_close_on_exec(fd, which);
-  RETURN retval;
-}
 
 //! Extract a column from a two-dimensional array.
 //!
