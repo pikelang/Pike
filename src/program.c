@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.426 2002/05/09 14:59:18 mast Exp $");
+RCSID("$Id: program.c,v 1.427 2002/05/10 15:39:24 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -845,7 +845,6 @@ static void debug_add_to_identifiers (struct identifier id)
     int i;
     for (i = 0; i < Pike_compiler->new_program->num_identifiers; i++)
       if (Pike_compiler->new_program->identifiers[i].name == id.name) {
-	extern void dump_program_tables (struct program *p, int indent);
 	dump_program_tables (Pike_compiler->new_program, 0);
 	fatal ("Adding identifier twice, old at %d.\n", i);
       }
@@ -856,6 +855,11 @@ static void debug_add_to_identifiers (struct identifier id)
 #define debug_add_to_identifiers(ARG) add_to_identifiers(ARG)
 #endif
 
+void add_relocated_int_to_program(INT32 i)
+{
+  add_to_relocations(Pike_compiler->new_program->num_program);
+  ins_int(i, (void (*)(char))add_to_program);
+}
 
 void use_module(struct svalue *s)
 {
@@ -1406,7 +1410,7 @@ void fixate_program(void)
 	  e=really_low_find_shared_string_identifier(name, p,
 						     SEE_STATIC|SEE_PRIVATE);
 
-	if(e != i)
+	if((e != i) && (e != -1))
 	{
 	  if(name->len < 1024 && !name->size_shift)
 	    my_yyerror("Illegal to redefine final identifier %s",name->str);
@@ -1721,6 +1725,7 @@ void low_start_new_program(struct program *p,
     i.identifier_level=0;
     i.storage_offset=0;
     i.inherit_level=0;
+    i.identifier_ref_offset=0;
     i.parent=0;
     i.parent_identifier=-1;
     i.parent_offset=-18;
@@ -2255,6 +2260,12 @@ void check_program(struct program *p)
 #endif
 
 /* Note: This function is misnamed, since it's run after both passes. /mast */
+/* finish-states:
+ *
+ *   0: First pass.
+ *   1: Last pass.
+ *   2: Called from decode_value().
+ */
 struct program *end_first_pass(int finish)
 {
   int e;
@@ -2268,17 +2279,19 @@ struct program *end_first_pass(int finish)
 
 
   /* Collect references to inherited __INIT functions */
-  for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
-  {
-    int id;
-    if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-    id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
-    if(id!=-1)
+  if (!(Pike_compiler->new_program->flags & PROGRAM_AVOID_CHECK)) {
+    for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
     {
-      Pike_compiler->init_node=mknode(F_COMMA_EXPR,
-		       mkcastnode(void_type_string,
-				  mkapplynode(mkidentifiernode(id),0)),
-		       Pike_compiler->init_node);
+      int id;
+      if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
+      id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
+      if(id!=-1)
+      {
+	Pike_compiler->init_node=mknode(F_COMMA_EXPR,
+		         mkcastnode(void_type_string,
+				    mkapplynode(mkidentifiernode(id),0)),
+		         Pike_compiler->init_node);
+      }
     }
   }
 
@@ -2295,6 +2308,9 @@ struct program *end_first_pass(int finish)
 		function_type_string,
 		ID_STATIC);
     Pike_compiler->init_node=0;
+  } else if (finish == 2) {
+    /* Called from decode_value(). */
+    e = low_find_lfun(Pike_compiler->new_program, LFUN___INIT);
   }else{
     e=-1;
   }
@@ -3067,6 +3083,10 @@ void low_inherit(struct program *p,
     }
     add_to_inherits(inherit);
   }
+
+  /* This value is used by encode_value() to reverse the inherit operation. */
+  Pike_compiler->new_program->inherits[inherit_offset].identifier_ref_offset =
+    Pike_compiler->new_program->num_identifier_references;
 
   for (e=0; e < (int)p->num_identifier_references; e++)
   {
@@ -4486,29 +4506,30 @@ void program_index_no_free(struct svalue *to, struct program *p,
 int get_small_number(char **q)
 {
   /* This is a workaround for buggy cc & Tru64 */
-  int ret;
+  unsigned char *addr = (unsigned char *)*q;
+  int ret = *((signed char *)addr);
   ret=*(signed char *)*q;
-  (*q)++;
+  addr++;
   switch(ret)
   {
   case -127:
-    ret=EXTRACT_WORD((unsigned char*)*q);
-    *q+=2;
-    return ret;
+    ret = (((signed char *)addr)[0]<<8) | addr[1];
+    addr += 2;
+    break;
 
   case -128:
-    ret=EXTRACT_INT((unsigned char*)*q);
-    *q+=4;
-    return ret;
+    ret = (((signed char *)addr)[0]<<24) | (addr[1]<<16) |
+      (addr[2]<<8) | addr[3];
+    addr += 4;
+    break;
 
 #ifdef PIKE_DEBUG
   case 127:
     fatal("get_small_number used on filename entry\n");
 #endif
-
-  default:
-    return ret;
   }
+  *q = (char *)addr;
+  return ret;
 }
 
 void start_line_numbering(void)
@@ -4531,10 +4552,14 @@ static void insert_small_number(INT32 a)
     add_to_linenumbers(a);
   }else if(a>=-32768 && a<32768){
     add_to_linenumbers(-127);
-    ins_short(a, add_to_linenumbers);
+    add_to_linenumbers(a>>8);
+    add_to_linenumbers(a);
   }else{
     add_to_linenumbers(-128);
-    ins_int(a, add_to_linenumbers);
+    add_to_linenumbers(a>>24);
+    add_to_linenumbers(a>>16);
+    add_to_linenumbers(a>>8);
+    add_to_linenumbers(a);
   }
 #ifdef PIKE_DEBUG
   {
