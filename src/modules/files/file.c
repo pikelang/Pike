@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.135 1999/01/31 20:32:40 grubba Exp $");
+RCSID("$Id: file.c,v 1.136 1999/01/31 20:35:04 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1124,8 +1124,8 @@ static void file_open(INT32 args)
     ref_push_string(flag_str);
     push_int(access);
 
-    safe_apply_low(OBJ2CREDS(current_creds)->user,"valid_open",5);
-    switch(sp[-1].tupe)
+    safe_apply(OBJ2CREDS(current_creds)->user,"valid_open",5);
+    switch(sp[-1].type)
     {
       case T_INT:
 	switch(sp[-1].u.integer)
