@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.166 2001/03/19 00:41:20 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.167 2001/03/27 20:13:21 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1211,7 +1211,7 @@ void simple_describe_type(struct pike_type *s)
 	
       case PIKE_T_UNKNOWN: printf("unknown"); break;
       case PIKE_T_RING:
-	printf("ring(";
+	printf("ring(");
 	simple_describe_type(s->car);
 	printf("°");
 	simple_describe_type(s->cdr);
