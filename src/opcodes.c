@@ -74,14 +74,30 @@ void f_index()
   pop_stack();
 }
 
-void f_cast()
+void cast(struct lpc_string *s)
 {
   INT32 i;
   
-  i=compile_type_to_runtime_type(sp[-1].u.string);
-  pop_stack();
+  i=compile_type_to_runtime_type(s);
+
   if(i != sp[-1].type)
   {
+    if(i == T_MIXED) return;
+
+    if(sp[-2].type == T_OBJECT)
+    {
+      push_string(describe_type(s));
+      if(!sp[-2].u.object->prog)
+	error("Cast called on destructed object.\n");
+      if(sp[-2].u.object->prog->lfuns[LFUN_CAST] == -1)
+	error("No cast method in object.\n");
+      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
+      free_svalue(sp-2);
+      sp[-2]=sp[-1];
+      sp--;
+      return;
+    }
+
     switch(i)
     {
     case T_MIXED:
@@ -193,6 +209,154 @@ void f_cast()
     }
 
     }
+  }
+}
+
+void f_cast()
+{
+  INT32 i;
+  
+  i=compile_type_to_runtime_type(sp[-1].u.string);
+
+  if(i != sp[-2].type)
+  {
+    if(i == T_MIXED)
+    {
+      pop_stack();
+      return;
+    }
+
+    if(sp[-2].type == T_OBJECT)
+    {
+      struct lpc_string *s;
+      s=describe_type(sp[-1].u.string);
+      pop_stack();
+      push_string(s);
+      if(!sp[-2].u.object->prog)
+	error("Cast called on destructed object.\n");
+      if(sp[-2].u.object->prog->lfuns[LFUN_CAST] == -1)
+	error("No cast method in object.\n");
+      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
+      free_svalue(sp-2);
+      sp[-2]=sp[-1];
+      sp--;
+      return;
+    }
+
+    pop_stack();
+    switch(i)
+    {
+    case T_MIXED:
+      break;
+
+    case T_INT:
+      switch(sp[-1].type)
+      {
+      case T_FLOAT:
+	i=(int)(sp[-1].u.float_number);
+	break;
+
+      case T_STRING:
+	i=strtol(sp[-1].u.string->str,0,0);
+	free_string(sp[-1].u.string);
+	break;
+      
+      default:
+	error("Cannot cast to int.\n");
+      }
+      
+      sp[-1].type=T_INT;
+      sp[-1].u.integer=i;
+      break;
+
+    case T_FLOAT:
+    {
+      FLOAT_TYPE f;
+      switch(sp[-1].type)
+      {
+      case T_INT:
+	f=(FLOAT_TYPE)(sp[-1].u.integer);
+	break;
+
+      case T_STRING:
+	f=STRTOD(sp[-1].u.string->str,0);
+	free_string(sp[-1].u.string);
+	break;
+      
+      default:
+	error("Cannot cast to float.\n");
+	f=0.0;
+      }
+      
+      sp[-1].type=T_FLOAT;
+      sp[-1].u.float_number=f;
+      break;
+    }
+
+    case T_STRING:
+    {
+      char buf[200];
+      switch(sp[-1].type)
+      {
+      case T_INT:
+	sprintf(buf,"%ld",(long)sp[-1].u.integer);
+	break;
+
+      case T_FLOAT:
+	sprintf(buf,"%f",(double)sp[-1].u.float_number);
+	break;
+      
+      default:
+	error("Cannot cast to string.\n");
+      }
+      
+      sp[-1].type=T_STRING;
+      sp[-1].u.string=make_shared_string(buf);
+      break;
+    }
+
+    case T_OBJECT:
+      switch(sp[-1].type)
+      {
+      case T_STRING:
+	APPLY_MASTER("cast_to_object",1);
+	break;
+	
+      case T_FUNCTION:
+	sp[-1].type = T_OBJECT;
+	break;
+      }
+      break;
+
+    case T_PROGRAM:
+      APPLY_MASTER("cast_to_program",1);
+      break;
+
+    case T_FUNCTION:
+    {
+      INT32 i;
+      if(fp->current_object->prog)
+	error("Cast to function in destructed object.\n");
+      i=find_shared_string_identifier(sp[-1].u.string,fp->current_object->prog);
+      free_string(sp[-1].u.string);
+      /* FIXME, check that it is a indeed a function */
+      if(i==-1)
+      {
+	sp[-1].type=T_FUNCTION;
+	sp[-1].subtype=i;
+	sp[-1].u.object=fp->current_object;
+	fp->current_object->refs++;
+      }else{
+	sp[-1].type=T_INT;
+	sp[-1].subtype=NUMBER_UNDEFINED;
+	sp[-1].u.integer=0;
+      }
+      break;
+    }
+
+    }
+  }else{
+    pop_stack();
   }
 }
 
@@ -493,10 +657,10 @@ static INT32 low_sscanf(INT32 num_arg)
 
 	if(!contains_percent_percent)
 	{
-	  s=MEMMEM(end_str_start,
-		   end_str_end-end_str_start,
-		   input+eye,
-		   input_len-eye);
+	  s=my_memmem(end_str_start,
+		      end_str_end-end_str_start,
+		      input+eye,
+		      input_len-eye);
 	  if(!s) return matches;
 	  eye=s-input;
 	  new_eye=eye+end_str_end-end_str_start;

@@ -15,6 +15,7 @@
 #include "add_efun.h"
 #include "error.h"
 #include "dynamic_buffer.h"
+#include "interpret.h"
 
 /*
  * This routine frees a short svalue given a pointer to it and
@@ -330,6 +331,86 @@ void assign_short_svalue(union anything *to,
   }
 }
 
+unsigned INT32 hash_svalue(struct svalue *s)
+{
+  unsigned INT32 q;
+
+  check_type(s->type);
+  check_refs(s);
+
+  switch(s->type)
+  {
+  case T_OBJECT:
+    if(!s->u.object->prog)
+    {
+      q=0;
+      break;
+    }
+
+    if(s->u.object->prog->lfuns[LFUN___HASH] != -1)
+    {
+      safe_apply_low(s->u.object, s->u.object->prog->lfuns[LFUN___HASH], 0);
+      if(sp[-1].type == T_INT)
+      {
+	q=sp[-1].u.integer;
+      }else{
+	q=0;
+      }
+      pop_stack();
+      break;
+    }
+
+  default:      q=(unsigned INT32)s->u.refs >> 2;
+  case T_INT:   q=s->u.integer; break;
+  case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.0); break;
+  }
+  q+=q % 997;
+  q+=((q + s->type) * 9248339);
+  
+  return q;
+}
+
+int svalue_is_true(struct svalue *s)
+{
+  unsigned INT32 q;
+  check_type(s->type);
+  check_refs(s);
+
+  switch(s->type)
+  {
+  case T_INT:
+    if(s->u.integer) return 1;
+    return 0;
+
+  case T_FUNCTION:
+    check_destructed(s);
+    if(sp[-1].type==T_INT) return 0;
+    return 1;
+
+  case T_OBJECT:
+    check_destructed(s);
+    if(sp[-1].type==T_INT) return 0;
+    if(!s->u.object->prog) return 0;
+
+    if(s->u.object->prog->lfuns[LFUN_NOT]!=-1)
+    {
+      safe_apply_low(s->u.object,s->u.object->prog->lfuns[LFUN_NOT],0);
+      if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+      {
+	pop_stack();
+	return 1;
+      } else {
+	return 0;
+      }
+    }
+
+  default:
+    return 1;
+  }
+    
+}
+
+
 int is_eq(struct svalue *a, struct svalue *b)
 {
   check_type(a->type);
@@ -340,11 +421,58 @@ int is_eq(struct svalue *a, struct svalue *b)
   check_destructed(a);
   check_destructed(b);
 
-  if (a->type != b->type) return 0;
+  if (a->type != b->type)
+  {
+    if(a->type == T_OBJECT)
+    {
+      if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
+      {
+      a_is_obj:
+	assign_svalue_no_free(sp, b);
+	sp++;
+	apply_lfun(a->u.object, LFUN_EQ, 1);
+	if(IS_ZERO(sp-1))
+	{
+	  pop_stack();
+	  return 0;
+	}else{
+	  pop_stack();
+	  return 1;
+	}
+      }
+    }
+
+    if(b->type == T_OBJECT)
+    {
+      if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
+      {
+      b_is_obj:
+	assign_svalue_no_free(sp, a);
+	sp++;
+	apply_lfun(b->u.object, LFUN_EQ, 1);
+	if(IS_ZERO(sp-1))
+	{
+	  pop_stack();
+	  return 0;
+	}else{
+	  pop_stack();
+	  return 1;
+	}
+      }
+    }
+
+    return 0;
+  }
   switch(a->type)
   {
-  case T_LIST:
   case T_OBJECT:
+    if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
+      goto a_is_obj;
+
+    if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
+      goto b_is_obj;
+
+  case T_LIST:
   case T_PROGRAM:
   case T_ARRAY:
   case T_MAPPING:
@@ -444,7 +572,7 @@ int is_equal(struct svalue *a,struct svalue *b)
   return low_is_equal(a,b,0);
 }
 
-int is_lt(const struct svalue *a,const struct svalue *b)
+int is_lt(struct svalue *a,struct svalue *b)
 {
   check_type(a->type);
   check_type(b->type);
@@ -459,10 +587,52 @@ int is_lt(const struct svalue *a,const struct svalue *b)
     if(a->type == T_INT && b->type==T_FLOAT)
       return (FLOAT_TYPE)a->u.integer < b->u.float_number;
 
+    if(a->type == T_OBJECT)
+    {
+    a_is_object:
+      if(!a->u.object->prog)
+	error("Comparison on destructed object.\n");
+      if(a->u.object->prog->lfuns[LFUN_LT] == -1)
+	error("Object lacks '<\n");
+      assign_svalue_no_free(sp, b);
+      sp++;
+      apply_lfun(a->u.object, LFUN_LT, 1);
+      if(IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
+    }
+
+    if(b->type == T_OBJECT)
+    {
+      if(!b->u.object->prog)
+	error("Comparison on destructed object.\n");
+      if(b->u.object->prog->lfuns[LFUN_GT] == -1)
+	error("Object lacks '>\n");
+      assign_svalue_no_free(sp, a);
+      sp++;
+      apply_lfun(b->u.object, LFUN_GT, 1);
+      if(IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
+    }
+    
     error("Cannot compare different types.\n");
   }
   switch(a->type)
   {
+  case T_OBJECT:
+    goto a_is_object;
+
   default:
     error("Bad type to comparison.\n");
 

@@ -95,7 +95,7 @@ struct svalue
 #define NUMBER_DESTRUCTED 2
 
 #define is_gt(a,b) is_lt(b,a)
-#define IS_ZERO(X) ((X)->type==T_INT && (X)->u.integer==0)
+#define IS_ZERO(X) ((X)->type==T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
 
 #define check_destructed(S) \
 do{ \
@@ -162,6 +162,8 @@ void assign_short_svalue_no_free(union anything *to,
 void assign_short_svalue(union anything *to,
 			 union anything *from,
 			 TYPE_T type);
+unsigned INT32 hash_svalue(struct svalue *s);
+int svalue_is_true(struct svalue *s);
 int is_eq(struct svalue *a, struct svalue *b);
 int low_is_equal(struct svalue *a,
 		 struct svalue *b,
@@ -171,7 +173,7 @@ int low_short_is_equal(const union anything *a,
 		       TYPE_T type,
 		       struct processing *p);
 int is_equal(struct svalue *a,struct svalue *b);
-int is_lt(const struct svalue *a,const struct svalue *b);
+int is_lt(struct svalue *a,struct svalue *b);
 void describe_svalue(struct svalue *s,int indent,struct processing *p);
 void clear_svalues(struct svalue *s, INT32 num);
 void copy_svalues_recursively_no_free(struct svalue *to,
