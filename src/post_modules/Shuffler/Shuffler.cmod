@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.21 2002/11/24 16:32:03 agehall Exp $
+|| $Id: Shuffler.cmod,v 1.22 2002/11/26 21:15:21 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.21 2002/11/24 16:32:03 agehall Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.22 2002/11/26 21:15:21 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -372,7 +372,7 @@ PIKECLASS Shuffle
   PIKEFUN void set_request_arg( mixed arg )
    /*! @decl void set_request_arg( mixed arg )
     *!
-    *! Sets the extra argument sent to @[Thottler()->request()] and
+    *! Sets the extra argument sent to @[Throttler()->request()] and
     *! @[Throttler()->give_back].
     *! 
     */
@@ -829,7 +829,7 @@ PIKECLASS Shuffler
 /*! @endclass
  */
 
-/*! @decl constant INTIIAL;
+/*! @decl constant INITIAL;
  *! @decl constant RUNNING;
  *! @decl constant PAUSED;
  *! @decl constant DONE;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.39 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: udp.c,v 1.40 2002/11/26 21:12:22 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.39 2002/10/11 01:39:55 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.40 2002/11/26 21:12:22 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -666,22 +666,22 @@ static void udp_set_blocking(INT32 args)
 
 /*! @decl int(0..1) connect(string address, int port)
  *!
- *! Connect a socket to something.
+ *!   Establish an UDP connection.
  *!
- *! This function connects a socket previously created with @[open_socket()]
- *! to a remote socket. The argument is the IP name or number for the remote
- *! machine. 
+ *!   This function connects an UDP socket previously created with
+ *!   @[Stdio.UDP()] to a remote socket. The @[address] is the IP name or
+ *!   number for the remote machine. 
  *!
  *! @returns
- *! Returns @tt{1@} on success, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} on success, @tt{0@} (zero) otherwise.
  *!
  *! @note
- *! If the socket is in nonblocking mode, you have to wait
- *! for a write or close callback before you know if the connection
- *! failed or not.
+ *!   If the socket is in nonblocking mode, you have to wait
+ *!   for a write or close callback before you know if the connection
+ *!   failed or not.
  *!
  *! @seealso
- *!  @[query_address()]
+ *!   @[bind()], @[query_address()]
  */
 static void udp_connect(INT32 args)
 {
