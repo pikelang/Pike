@@ -45,7 +45,7 @@ object build_rsa_public_key(object rsa)
 {
   return asn1_sequence(
     asn1_sequence(
-      identifiers.rsa_id, asn1_null()),
+      Identifiers.rsa_id, asn1_null()),
     asn1_bitstring(asn1_sequence(
       asn1_integer(rsa->n), asn1_integer(rsa->e))->der()));
 }
