@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.215 1999/12/05 22:28:55 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.216 1999/12/06 16:02:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2462,15 +2462,16 @@ static void f_mktime (INT32 args)
   date.tm_mday=mday;
   date.tm_mon=mon;
   date.tm_year=year;
-  if(sp[6-args].subtype == NUMBER_NUMBER)
+
+  if ((args > 6) && (sp[6-args].subtype == NUMBER_NUMBER))
   {
     date.tm_isdst = sp[6-args].u.integer;
-  }else{
+  } else {
     date.tm_isdst = -1;
   }
 
 #if STRUCT_TM_HAS_GMTOFF
-  if(sp[7-args].subtype == NUMBER_NUMBER)
+  if((args > 7) && (sp[7-args].subtype == NUMBER_NUMBER))
   {
     date.tm_gmtoff=sp[7-args].u.intger;
   }else{
@@ -2480,7 +2481,7 @@ static void f_mktime (INT32 args)
   retval=mktime(&date);
 #else
 #ifdef HAVE_EXTERNAL_TIMEZONE
-  if(sp[7-args].subtype == NUMBER_NUMBER)
+  if((args > 7) && (sp[7-args].subtype == NUMBER_NUMBER))
   {
     retval=mktime(&date) + sp[7-args].u.integer - timezone;
   }else{
@@ -2493,8 +2494,8 @@ static void f_mktime (INT32 args)
 
   if (retval == -1)
     PIKE_ERROR("mktime", "Cannot convert.\n", sp, args);
-   pop_n_elems(args);
-   push_int(retval);
+  pop_n_elems(args);
+  push_int(retval);
 }
 
 #endif
