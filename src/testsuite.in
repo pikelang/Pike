@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.80 1998/03/23 17:40:38 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.81 1998/03/25 04:39:20 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1918,6 +1918,7 @@ test_true(LR.Grammar_parser)
 test_program([[ object(LR.parser) p=LR.Grammar_parser.make_parser("foo : bar;foo : foo bar;bar : \"a\";"); int pos; array(string) data="aaaaaaaaa"/""; string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; } int a() { return(p->parse(scan) == "a"); }]])
 
 // - Table.pmod
-test_true(Table.table)
-test_true(Table.ASCII)
-test_true(Table.table( ({ ({ "a", "b", 42 }), ({ "c", "b", 41 }), ({ "a", "a", 76 }) }), ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")->rename(0, "fOo")->sort("foO")->cast("array"), ({ ({ "a", 118 }), ({ "c", 41 }) }))
+dnl test_true(Table.table)
+dnl test_true(Table.ASCII)
+dnl test_true(Table.table( ({ ({ "a", "b", 42 }), ({ "c", "b", 41 }), ({ "a", "a", 76 }) }), ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")->rename(0, "fOo")->sort("foO")->cast("array"), ({ ({ "a", 118 }), ({ "c", 41 }) }))
+
