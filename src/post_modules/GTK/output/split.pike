@@ -159,21 +159,21 @@ array(string) output( mapping(string:Class) classes,
              (stringp(e)?e:describe_backtrace(e))+"\n" );
 
   array q = ({});
-  foreach( values(classes), object c )
+  foreach( classes;; object c )
     q |= indices(c->functions) | indices(c->members);
-  q = Array.uniq( q ); sort(map(q,sizeof),q);
+  q = Array.uniq2( sort(q) ); sort(map(q,sizeof),q);
   foreach( reverse(q), string w ) S(w);
   
   traverse_class_tree( classes, build_pike_fadds );
 
 
   mapping done = ([]);
-  foreach( values(classes), object c )
-    foreach( indices( c->signals) , string s )
-      if( !done[s] )
-        done[s] = c->signals[s];
+  foreach( classes;; object c )
+    foreach( c->signals; string n; object s )
+      if( !done[n] )
+        done[n] = s;
 
-  q = indices( done ); sort(map(q,sizeof),q);
+  q = sort(indices( done )); sort(map(q,sizeof),q);
   foreach( reverse(q), string w ) S("s_"+w,1);
 
   foreach( sort(indices( done )), string w )
