@@ -176,7 +176,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.92 1998/04/27 21:04:53 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.93 1998/04/28 15:46:27 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1054,11 +1054,11 @@ statement: unused2 ';'
   | switch
   | case
   | default
-  | return ';'
+  | return expected_semicolon
   | block
   | foreach
-  | break ';'
-  | continue ';'
+  | break expected_semicolon
+  | continue expected_semicolon
   | error ';' { reset_type_stack(); $$=0; yyerrok; }
   | error F_LEX_EOF
   {
@@ -1146,7 +1146,7 @@ lambda: F_LAMBDA
   }
   ;
 
-failsafe_program: '{' program '}'
+failsafe_program: '{' program end_block
                 | error { yyerrok; }
                 ;
 
