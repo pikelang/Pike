@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.94 2004/03/10 09:57:40 grubba Exp $
+dnl $Id: aclocal.m4,v 1.95 2004/03/18 15:14:42 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -355,7 +355,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.94 2004/03/10 09:57:40 grubba Exp $
+  # $Id: aclocal.m4,v 1.95 2004/03/18 15:14:42 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -625,6 +625,7 @@ define(MY_AC_CHECK_PRINTF_INT_TYPE, [
     AC_TRY_COMPILE([
 #define CONFIGURE_TEST
 #include "global.h"
+#include "pike_int_types.h"
     ], [
 $1 tmp;
     ], [
@@ -636,6 +637,7 @@ $1 tmp;
 
 #define CONFIGURE_TEST
 #include "global.h"
+#include "pike_int_types.h"
 
 int main() {
   char buf[50];
