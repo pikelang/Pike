@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.23 2004/03/17 19:29:56 mast Exp $
+.\" $Id: pike.1,v 1.24 2004/10/05 17:43:15 bill Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2004/03/17 19:29:56 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2004/03/17 19:29:56 $"
+.TH pike 1 "$Date: 2004/10/05 17:43:15 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2004/10/05 17:43:15 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2004/03/17 19:29:56 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2004/10/05 17:43:15 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
 .nr mn 5
@@ -129,6 +129,13 @@ Print help message and exit.
 Execute
 .I expr
 and exit.
+.TP
+.BI \-x toolname
+Execute internal tool
+.I toolname
+from Tools.Standalone. Omit
+.I toolname
+for a list of available tools.
 .TP
 .B \-E, \-\-preprocess
 Just run the preprocessor.
