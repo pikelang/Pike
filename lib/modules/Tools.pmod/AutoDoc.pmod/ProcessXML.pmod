@@ -1199,12 +1199,27 @@ class NScopeStack
       return (scopes->lookup(ref));
     }
     if (!sizeof(ref[0])) {
+      // .module
       if (pos) {
 	current = stack[--pos];
       } else {
 	current = top;
       }
       ref = ref[1..];
+    }
+    if (sizeof(ref) == 1) {
+      // Handle some special symbols.
+      switch(ref[0]) {
+      case "this":
+      case "this_program":
+	int tmp = pos;
+	while(tmp--) {
+	  if ((<"class", "module">)[stack[tmp]->type]) {
+	    return stack[tmp]->name;
+	  }
+	}
+	break;
+      }
     }
     while(pos--) {
       string res = current->lookup(ref);
@@ -1272,6 +1287,17 @@ void doResolveNode(NScopeStack scopestack, Node tree)
       if (n) {
 	scopestack->enter(n);
 	pop = 1;
+      } else {
+	array(Node) methods = tree->get_children();
+	methods = filter(methods, methods->get_attributes());
+	methods = filter(methods, methods->get_attributes()->name);
+	if (sizeof(methods)) {
+	  // Enter the first named method.
+	  scopestack->enter(methods[0]->get_attributes()->name);
+	  pop = 1;
+	} else {
+	  werror("No named methods in docgroup\n");
+	}
       }
     }
     break;
