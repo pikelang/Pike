@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.483 2001/08/21 09:38:00 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.484 2001/08/23 16:49:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -414,7 +414,7 @@ case "$UNAME" in
   Linux\ 2.*)
     AC_DEFINE(USE_Wl)
     ;;
-  UnixWare\ 7.*)
+  UnixWare\ 7.*|OpenUNIX\ 8.*)
     if test "$ac_cv_prog_gcc" = "yes"; then
       AC_DEFINE(USE_XLINKER_YP_)
     else
@@ -532,7 +532,7 @@ case "$pike_cv_sys_os" in
       *) LD="$BINDIR/smartlink shlicc";;
     esac
   ;;
-  UnixWare*)
+  UnixWare*|OpenUNIX*)
     case "$CFLAGS" in
       *-Kalloca*) ;;
       *)
@@ -843,7 +843,7 @@ AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin)
+    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin|UnixWare|OpenUNIX)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
     ;;
@@ -1294,7 +1294,7 @@ esac
     *-fast*) ;;
     *)
       case "$pike_cv_sys_os:$GCC" in
-        UnixWare*:no)
+        UnixWare*:no|OpenUNIX*:no)
 	  OPTIMIZE=""
 	;;
 	*)
@@ -1872,7 +1872,7 @@ else
       LIBS="${OLDLIBS}"
     ;;
 
-    xUnixWare*)
+    xUnixWare*|xOpenUNIX*)
       if test "$GCC" = yes ; then
         CFLAGS="${CFLAGS} -pthread"
       else
@@ -2224,7 +2224,7 @@ pthread_t gazonk;
 
     AC_MSG_CHECKING(unix threads)
     case "x$pike_cv_sys_os" in
-      xUnixWare*)
+      xUnixWare*|xOpenUNIX*)
   	if test "$GCC" = yes ; then
   	  CFLAGS="${CFLAGS} -pthread"
   	else
@@ -4770,7 +4770,7 @@ if test -z "$LDSHARED" ; then
     ;;
     SCO_SV*) LDSHARED="$CC -G -KPIC -Wl,-Bexport";;
     UNIX_SV*) LDSHARED="ld -G";;
-    UnixWare*)
+    UnixWare*|OpenUNIX*)
       if test "$GCC" = yes ; then
         LDSHARED="$CC -G -fPIC"
       else
@@ -4817,7 +4817,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-        UnixWare*) CCSHARED="-KPIC -dy -Bdynamic";;
+        UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;
 	Solaris*) CCSHARED="-KPIC -Bdynamic";;
 	Windows_NT*) CCSHARED="-shared" ;;
       esac
@@ -4867,7 +4867,7 @@ then
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare*) LINKFORSHARED="-fpic -Wl,-Bexport";;
+      UnixWare*|OpenUNIX*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
       FreeBSD*)
         AC_TRY_RUN([int main(){exit(
@@ -4895,7 +4895,7 @@ then
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+      UnixWare*|OpenUNIX*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
   fi
 fi
