@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.149 2000/12/05 21:08:23 per Exp $");
+RCSID("$Id: threads.c,v 1.150 2001/01/24 08:17:28 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -62,12 +62,12 @@ void th_atfork_child(void)
 
 #ifdef __NT__
 
-int low_nt_create_thread(unsigned stack_size,
+int low_nt_create_thread(unsigned Pike_stack_size,
 			 unsigned (TH_STDCALL *fun)(void *),
 			 void *arg,
 			 unsigned *id)
 {
-  HANDLE h = (HANDLE)_beginthreadex(NULL, stack_size, fun, arg, 0, id);
+  HANDLE h = (HANDLE)_beginthreadex(NULL, Pike_stack_size, fun, arg, 0, id);
   if(h)
   {
     CloseHandle(h);
@@ -1496,3 +1496,4 @@ void th_cleanup(void)
 }
 
 #endif
+

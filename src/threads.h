@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.110 2000/12/16 05:45:45 marcus Exp $
+ * $Id: threads.h,v 1.111 2001/01/24 08:17:28 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -716,3 +716,4 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 #include "interpret.h"
 
 #endif /* THREADS_H */
+

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.109 2000/12/01 20:21:25 grubba Exp $");
+RCSID("$Id: main.c,v 1.110 2001/01/24 08:17:28 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -272,10 +272,10 @@ int dbm_main(int argc, char **argv)
 	      break;
 	    }
 	  }
-	  stack_size=STRTOL(p,&p,0);
+	  Pike_stack_size=STRTOL(p,&p,0);
 	  p+=strlen(p);
 
-	  if(stack_size < 256)
+	  if(Pike_stack_size < 256)
 	  {
 	    fprintf(stderr,"Stack size must at least be 256.\n");
 	    exit(1);
@@ -754,4 +754,5 @@ void low_exit_main(void)
   free_all_object_blocks();
 #endif
 }
+
 

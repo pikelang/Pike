@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.75 2001/01/24 01:36:34 hubbe Exp $
+ * $Id: interpret.h,v 1.76 2001/01/24 08:17:27 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -338,5 +338,6 @@ PMOD_EXPORT extern struct Pike_interpreter Pike_interpreter;
 #define CURRENT_STORAGE (dmalloc_touch(struct pike_frame *,Pike_fp)->current_storage)
 
 #endif
+
 
 

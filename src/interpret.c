@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.182 2001/01/12 02:09:28 mast Exp $");
+RCSID("$Id: interpret.c,v 1.183 2001/01/24 08:17:27 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -82,7 +82,7 @@ static char trace_buffer[2000];
  * (much simpler than letting it point at the last used value.)
  */
 PMOD_EXPORT struct Pike_interpreter Pike_interpreter;
-PMOD_EXPORT int stack_size = EVALUATOR_STACK_SIZE;
+PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
 
 /* mark stack, used to store markers into the normal stack */
@@ -90,7 +90,7 @@ int mark_stack_malloced = 0;
 
 void push_sp_mark(void)
 {
-  if(Pike_mark_sp == Pike_interpreter.mark_stack + stack_size)
+  if(Pike_mark_sp == Pike_interpreter.mark_stack + Pike_stack_size)
     Pike_error("No more mark stack!\n");
   *Pike_mark_sp++=Pike_sp;
 }
@@ -165,8 +165,8 @@ PMOD_EXPORT void init_interpreter(void)
 
   Pike_interpreter.evaluator_stack_malloced=0;
   mark_stack_malloced=0;
-  Pike_interpreter.evaluator_stack=MMALLOC(stack_size,struct svalue);
-  Pike_interpreter.mark_stack=MMALLOC(stack_size, struct svalue *);
+  Pike_interpreter.evaluator_stack=MMALLOC(Pike_stack_size,struct svalue);
+  Pike_interpreter.mark_stack=MMALLOC(Pike_stack_size, struct svalue *);
   if((char *)MAP_FAILED == (char *)Pike_interpreter.evaluator_stack) Pike_interpreter.evaluator_stack=0;
   if((char *)MAP_FAILED == (char *)Pike_interpreter.mark_stack) Pike_interpreter.mark_stack=0;
 #else
@@ -177,13 +177,13 @@ PMOD_EXPORT void init_interpreter(void)
 use_malloc:
   if(!Pike_interpreter.evaluator_stack)
   {
-    Pike_interpreter.evaluator_stack=(struct svalue *)xalloc(stack_size*sizeof(struct svalue));
+    Pike_interpreter.evaluator_stack=(struct svalue *)xalloc(Pike_stack_size*sizeof(struct svalue));
     Pike_interpreter.evaluator_stack_malloced=1;
   }
 
   if(!Pike_interpreter.mark_stack)
   {
-    Pike_interpreter.mark_stack=(struct svalue **)xalloc(stack_size*sizeof(struct svalue *));
+    Pike_interpreter.mark_stack=(struct svalue **)xalloc(Pike_stack_size*sizeof(struct svalue *));
     mark_stack_malloced=1;
   }
 
@@ -1637,13 +1637,13 @@ void slow_check_stack(void)
 
   debug_check_stack();
 
-  if(Pike_sp > &(Pike_interpreter.evaluator_stack[stack_size]))
+  if(Pike_sp > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
     fatal("Svalue stack overflow. "
 	  "(%ld entries on stack, stack_size is %ld entries)\n",
 	  PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack),
-	  PTRDIFF_T_TO_LONG(stack_size));
+	  PTRDIFF_T_TO_LONG(Pike_stack_size));
 
-  if(Pike_mark_sp > &(Pike_interpreter.mark_stack[stack_size]))
+  if(Pike_mark_sp > &(Pike_interpreter.mark_stack[Pike_stack_size]))
     fatal("Mark stack overflow.\n");
 
   if(Pike_mark_sp < Pike_interpreter.mark_stack)
@@ -1660,7 +1660,7 @@ void slow_check_stack(void)
     s=*m;
   }
 
-  if(s > &(Pike_interpreter.evaluator_stack[stack_size]))
+  if(s > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
     fatal("Mark stack exceeds svalue stack\n");
 
   for(f=Pike_fp;f;f=f->next)
@@ -1668,10 +1668,10 @@ void slow_check_stack(void)
     if(f->locals)
     {
       if(f->locals < Pike_interpreter.evaluator_stack ||
-	f->locals > &(Pike_interpreter.evaluator_stack[stack_size]))
+	f->locals > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
       fatal("Local variable pointer points to Finspång.\n");
 
-      if(f->args < 0 || f->args > stack_size)
+      if(f->args < 0 || f->args > Pike_stack_size)
 	fatal("FEL FEL FEL! HELP!! (corrupted pike_frame)\n");
     }
   }
@@ -1711,12 +1711,12 @@ PMOD_EXPORT void cleanup_interpret(void)
 #ifdef USE_MMAP_FOR_STACK
   if(!Pike_interpreter.evaluator_stack_malloced)
   {
-    munmap((char *)Pike_interpreter.evaluator_stack, stack_size*sizeof(struct svalue));
+    munmap((char *)Pike_interpreter.evaluator_stack, Pike_stack_size*sizeof(struct svalue));
     Pike_interpreter.evaluator_stack=0;
   }
   if(!mark_stack_malloced)
   {
-    munmap((char *)Pike_interpreter.mark_stack, stack_size*sizeof(struct svalue *));
+    munmap((char *)Pike_interpreter.mark_stack, Pike_stack_size*sizeof(struct svalue *));
     Pike_interpreter.mark_stack=0;
   }
 #endif
@@ -1743,3 +1743,4 @@ void really_clean_up_interpret(void)
   free_all_pike_frame_blocks();
 #endif
 }
+
