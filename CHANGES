@@ -1,4 +1,23 @@
 
+Changes in Pike 7.4.XX:
+----------------------------------------------------------------------
+
+o Symbolic constants for status codes in Protocols.HTTP.
+o Don't crash when decoding broken maker specific data in
+  Standards.EXIF.
+o Fixed off-by-one bugs that could occur for the innermost line in
+  backtraces when machine code is used.
+o make.conf is now not used.
+o Fixed "Illegal program pointer." error.
+o Fixed spurious "Must return a value for a non-void function."
+  errors.
+o Fixed bug in argument checking that could cause segfaults when some
+  C level functions that expect arguments were called without any.
+o Renamed symbols that are keywords in C99.
+o Fix to compile with FreeType >= 2.1.6.
+o Added test to detect broken libtiff.
+o Bugfixed test to detect broken GTK.
+
 Changes in Pike 7.4.44:
 ----------------------------------------------------------------------
 
