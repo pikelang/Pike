@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.21 1997/04/16 03:09:18 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.22 1997/04/18 01:29:28 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -201,7 +201,7 @@ void f_mutex_trylock(INT32 args)
   THREADS_ALLOW();
   if(!m->key)
   {
-    OB2KEY(o)->mut=THIS_MUTEX;
+    OB2KEY(o)->mut=m;
     m->key=o;
     i=1;
   }
