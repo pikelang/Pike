@@ -1,15 +1,22 @@
-constant replace_from=("\240 \n\r\t!\"#$%&'()*+,-./0123456789:;<=>?@[\]^_`{|}~¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿×÷")/"";
-constant replace_to=({" "})*(sizeof(replace_from));
-
+array(string) tokenize_and_normalize( string what )
+//! This can be optimized quite significantly when compared to
+//! tokenize( normalize( x ) ) in the future, currently it's not all
+//! that much faster, but still faster.
+{
+  return Unicode.split_words_and_normalize( lower_case(what) );
+}
 
 array(string) tokenize(string in)
+//! Tokenize the input string (Note: You should first call normalize
+//! on it)
 {
-  return (in/" ") - ({ "" });
+  return Unicode.split_words( in );
 }
 
 
 string normalize(string in)
+//! Normalize the input string. Performs unicode NFKD normalization
+//! and then lowercases the whole string
 {
-  in=lower_case(in);
-  return replace(in, replace_from, replace_to);
+  return Unicode.normalize( lower_case(in), "KD" );
 }
