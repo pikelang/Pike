@@ -1264,11 +1264,11 @@ array generate_overload_func_for(array(FuncData) d,
 	     q, q->min_args, q->max_args);
 #endif /* PRECOMPILE_OVERLOAD_DEBUG */
       int low = max(min_possible_arg, q->min_args);
-      int hi = min(max_possible_arg, q->max_args);
-      for(int a=low; a <= min(hi, 255); a++)
+      int high = min(max_possible_arg, q->max_args);
+      for(int a = low; a <= min(high, 255); a++)
 	x[a]+=({q});
       min_args=min(min_args, low);
-      max_args=max(max_args, hi);
+      max_args=max(max_args, high);
     }
 
   min_args=max(min_args, min_possible_arg);
