@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.86 1998/09/05 15:19:46 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.87 1998/10/02 15:02:47 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -992,7 +992,8 @@ void f_create_process(INT32 args)
     wanted_gid=getgid();
 #endif
 #ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
+	    __FILE__, __LINE__, (int)wanted_gid);
 #endif /* PROC_DEBUG */
 
     SET_ONERROR(err, free_perishables, &storage);
@@ -1006,7 +1007,8 @@ void f_create_process(INT32 args)
 	  case T_INT:
 	    wanted_gid=tmp->u.integer;
 #ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+	    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
+		    __FILE__, __LINE__, (int)wanted_gid);
 #endif /* PROC_DEBUG */
 	    gid_request=1;
 	    break;
@@ -1023,7 +1025,8 @@ void f_create_process(INT32 args)
 	      error("Getgrnam failed!\n");
 	    wanted_gid = sp[-1].u.array->item[2].u.integer;
 #ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+	    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
+		    __FILE__, __LINE__, (int)wanted_gid);
 #endif /* PROC_DEBUG */
 	    pop_stack();
 	    gid_request=1;
@@ -1055,7 +1058,8 @@ void f_create_process(INT32 args)
 		  error("Getpwuid failed!\n");
 		wanted_gid = sp[-1].u.array->item[3].u.integer;
 #ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+		fprintf(stderr, "%s:%d: wanted_gid=%d\n",
+			__FILE__, __LINE__, (int)wanted_gid);
 #endif /* PROC_DEBUG */
 	      }
 	      pop_stack();
@@ -1078,7 +1082,8 @@ void f_create_process(INT32 args)
 	    if(!gid_request)
 	      wanted_gid=sp[-1].u.array->item[3].u.integer;
 #ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+	    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
+		    __FILE__, __LINE__, (int)wanted_gid);
 #endif /* PROC_DEBUG */
 	    pop_stack();
 	    break;
@@ -1219,10 +1224,18 @@ void f_create_process(INT32 args)
     
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: init_threads_disable()...\n", __FILE__, __LINE__);
+#endif /* PROC_DEBUG */
+
 #if 1
     init_threads_disable(NULL);
     storage.disabled = 1;
 #endif
+
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: fork()...\n", __FILE__, __LINE__);
+#endif /* PROC_DEBUG */
 
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
     pid=fork1();
@@ -1235,12 +1248,22 @@ void f_create_process(INT32 args)
     if(pid==-1) {
       free_perishables(&storage);
 
+#ifdef PROC_DEBUG
+      fprintf(stderr, "%s:%d: fork() failed, errno=%d\n",
+	      __FILE__, __LINE__, errno);
+#endif /* PROC_DEBUG */
+
       error("Failed to start process.\n"
 	    "errno:%d\n", errno);
     } else if(pid) {
       free_perishables(&storage);
 
       pop_n_elems(sp - stack_save);
+
+#ifdef PROC_DEBUG
+      fprintf(stderr, "%s:%d: fork() ok, pid=%d\n",
+	      __FILE__, __LINE__, (int)pid);
+#endif /* PROC_DEBUG */
 
       if(!signal_evaluator_callback)
       {
@@ -1295,9 +1318,15 @@ void f_create_process(INT32 args)
 	int fd;
 
 	if((tmp=low_mapping_string_lookup(optional, storage.cwd_s)))
-	  if(tmp->type == T_STRING)
-	    if(chdir(tmp->u.string->str))
+	  if((tmp->type == T_STRING) && (tmp->u.string->len))
+	    if(chdir(tmp->u.string->str)) {
+#ifdef PROC_DEBUG
+	      fprintf(stderr, "%s:%d: child: chdir(\"%s\") failed, errno=%d\n",
+		      __FILE__, __LINE__, tmp->u.string->str, errno);
+#endif /* PROC_DEBUG */
+
 	      exit(69);
+	    }
 
 #ifdef HAVE_NICE
 	if ((tmp=low_mapping_string_lookup(optional, storage.nice_s))) {
@@ -1327,6 +1356,12 @@ void f_create_process(INT32 args)
 	      {
 		if(dup2(toclose[fd]=f, fd) < 0)
 		{
+#ifdef PROC_DEBUG
+		  fprintf(stderr, "%s:%d: child: dup2(%d, %d) failed\n"
+			  "errno=%d\n",
+			  __FILE__, __LINE__, f, fd, errno);
+#endif /* PROC_DEBUG */
+
 		  exit(67);
 		}
 	      }
@@ -1358,14 +1393,22 @@ void f_create_process(INT32 args)
 #endif
       {
 #ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+	fprintf(stderr, "%s:%d: wanted_gid=%d\n",
+		__FILE__, __LINE__, (int)wanted_gid);
 #endif /* PROC_DEBUG */
 	if(setgid(wanted_gid))
 #ifdef _HPUX_SOURCE
           /* Kluge for HP-(S)UX */
 	  if(wanted_gid > 60000 && setgid(-2) && setgid(65534) && setgid(60001))
 #endif
+	  {
+#ifdef PROC_DEBUG
+	    fprintf(stderr, "%s:%d: child: setgid(%d) failed, errno=%d\n",
+		    __FILE__, __LINE__, (int)wanted_gid, errno);
+#endif /* PROC_DEBUG */
+
 	    exit(77);
+	  }
       }
 #endif
 
@@ -1456,6 +1499,12 @@ void f_create_process(INT32 args)
 #endif /* HAVE_BROKEN_F_SETFD */
 
       execvp(storage.argv[0],storage.argv);
+#ifdef PROC_DEBUG
+      fprintf(stderr,
+	      "execvp(\"%s\", ...) failed\n"
+	      "errno = %d\n",
+	      storage.argv[0], errno);
+#endif /* PROC_DEBUG */
       exit(69);
     }
   }
