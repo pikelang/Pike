@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.37 2004/02/27 23:48:43 mast Exp $
+|| $Id: rusage.c,v 1.38 2004/05/19 15:30:42 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.37 2004/02/27 23:48:43 mast Exp $");
+RCSID("$Id: rusage.c,v 1.38 2004/05/19 15:30:42 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -305,7 +305,10 @@ cpu_time_t get_cpu_time (void)
 
 cpu_time_t get_cpu_time (void)
 {
-  return gethrvtime() * (CPU_TIME_TICKS / 1000000000);
+  /* Faster than CONVERT_TIME(gethrvtime(), 1000000000, CPU_TIME_TICKS)
+   * It works under the assumtion that CPU_TIME_TICKS <= 1000000000
+   * and that 1000000000 % CPU_TIME_TICKS == 0. */
+  return gethrvtime() / (1000000000 / CPU_TIME_TICKS);
 }
 
 #elif defined (GETRUSAGE_THROUGH_PROCFS)
@@ -325,9 +328,9 @@ cpu_time_t get_cpu_time (void)
 
   return
     prs.pr_utime.tv_sec * CPU_TIME_TICKS +
-    prs.pr_utime.tv_nsec * (CPU_TIME_TICKS / 1000000000) +
+    prs.pr_utime.tv_nsec / (1000000000 / CPU_TIME_TICKS) +
     prs.pr_stime.tv_sec * CPU_TIME_TICKS +
-    prs.pr_stime.tv_nsec * (CPU_TIME_TICKS / 1000000000);
+    prs.pr_stime.tv_nsec / (1000000000 / CPU_TIME_TICKS);
 }
 
 #elif defined (HAVE_TIMES)
