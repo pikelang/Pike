@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.376 2004/01/10 18:10:30 grubba Exp $
+# $Id: Makefile.in,v 1.377 2004/01/12 17:59:46 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -266,12 +266,21 @@ pike: $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_o
 # gcov
 gcov: 
 	@for f in `cd "$(SRCDIR)" && find . -type f -name '*.c' -print`; do \
-	  for gf in `gcov $$f | sed -e 's/Creating \(.*\)\.gcov.*/\1.gcov/p' -ed`; do \
-	    echo "Generating $$f-$$gf."; \
-	    test -f "$$f-$$gf" && rm -f "$$f-$$gf"; \
-	    mv "$$gf" "$$f-$$gf"; \
-	  done; \
+	  if test -f `echo $$f | sed -e 's/\.$$/.bb/'`; then \
+	    for gf in `gcov $$f | sed -e 's/Creating \(.*\)\.gcov.*/\1.gcov/p' -ed`; do \
+	      echo "Generating $$f-$$gf."; \
+	      test -f "$$f-$$gf" && rm -f "$$f-$$gf"; \
+	      mv "$$gf" "$$f-$$gf"; \
+	    done; \
+	  else \
+	    :; \
+	  fi; \
 	done
+	@echo
+	@echo "Summary:"
+	@for f in `find . -name '*.gcov' -print`; do \
+	  grep -c '######' $f /dev/null | grep -v ':0'; \
+	done | sort -n -t: -k2
 
 # purify
 pure: $(OBJ) master-stamp module_objects
