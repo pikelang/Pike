@@ -35,7 +35,9 @@ the_image_module.html: Image.wmml the_image_module.wmml
 clean:
 	rm *.html *.md illustration_cache illustration*.gif 
 
-rebuild: Image.wmml Mysql.wmml all
+rebuild:
+	-rm Image.wmml Mysql.wmml
+	make pike="$(pike)" Image.wmml Mysql.wmml all
 
 export:
 	tar czvTf tutorial.files tutorial.tar.gz 

@@ -295,7 +295,7 @@ SGML index_to_wmml(INDEX data)
 
 #if 1
   int total_lines=count_index_lines(ret);
-  werror("\nTOTAL LINES: %d\n",total_lines);
+//  werror("\nTOTAL LINES: %d\n",total_lines);
   int lines,x;
   for(x=0;x<sizeof(ret);x+=2)
   {
