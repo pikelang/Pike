@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.51 2004/08/23 20:35:34 mast Exp $
+// $Id: client.pike,v 1.52 2004/09/14 10:40:07 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -368,7 +368,7 @@ import SSL.constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.51 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.52 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -533,11 +533,15 @@ import SSL.constants;
     return (1);
   }
 
+#if 0
   void destroy() {
 
     //send_unbind_op();
-    destruct(this_object());
+
+    // Hazard area: General confusion error. /mast
+    //destruct(this_object());
   }
+#endif
 
   //!
   //! Unbinds from the directory and close the connection.
