@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.338 2003/11/14 00:47:09 mast Exp $
+|| $Id: interpret.c,v 1.339 2003/11/22 13:57:48 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.338 2003/11/14 00:47:09 mast Exp $");
+RCSID("$Id: interpret.c,v 1.339 2003/11/22 13:57:48 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1908,9 +1908,15 @@ static int o_catch(PIKE_OPCODE_T *pc)
   }
 }
 
-/*! @decl mixed call_function(function fun, mixed ... args)
+/*! @decl mixed `()(function fun, mixed ... args)
+ *! @decl mixed call_function(function fun, mixed ... args)
  *!
  *! Call a function.
+ *!
+ *! Calls the function @[fun] with the arguments specified by @[args].
+ *!
+ *! @seealso
+ *!   @[lfun::`()()]
  */
 PMOD_EXPORT void f_call_function(INT32 args)
 {
