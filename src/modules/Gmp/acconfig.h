@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.2 2003/03/26 15:22:48 mast Exp $
+|| $Id: acconfig.h,v 1.3 2003/03/28 15:49:01 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -32,13 +32,19 @@
 /* Define this if you have mpz_xor */
 #undef HAVE_MPZ_XOR
 
-/* define this if INT_TYPE is bigger then signed long int */
-#undef BIG_PIKE_INT
+/* Define this if you have mpz_getlimbn */
+#undef HAVE_MPZ_GETLIMBN
+
+/* Define this if you have mpz_import */
+#undef HAVE_MPZ_IMPORT
 
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
 
 /* Define if your cpp supports K&R-style concatenation */
 #undef HAVE_KR_CONCAT
+
+/* Define to the size of mp_limb_t */
+#undef SIZEOF_MP_LIMB_T
 
 #endif
