@@ -9708,6 +9708,29 @@ contains an array that looks like this:
 </a>
 
 <HR NEWPAGE>
+<a name=_do_call_outs>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+	<tt>_do_call_outs</tt> - do all pending call_outs.
+
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+	<tt>void _do_call_out();</tt>
+
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+<dd>        This function runs all pending call_outs that should have been
+        run if pike returned to the backend.  It should not be used in
+        normal operation.
+<p>
+	As a side-effect, this function sets the value returned by
+	<tt>time(1)</tt> to the current time.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=call_out_call_out>call_out</a>, <a href=call_out_find_call_out>find_call_out</a> and <a href=call_out_remove_call_out>remove_call_out</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
 <a name=catch>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
