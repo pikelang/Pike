@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.30 2000/01/10 00:41:11 hubbe Exp $
+// $Id: Readline.pike,v 1.31 2000/04/05 20:45:43 leif Exp $
 
 class OutputController
 {
@@ -180,6 +180,14 @@ class OutputController
 
   static int width(string s)
   {
+#if 1
+    // FIXME: On Digital Unix, the terminal handler doesn't seem to
+    // like what Pike does in Readline, so it hangs. But it doesn't do
+    // that if we provoke output (even a null string output!) at this
+    // point. A less ugly fix than werror("") might be desirable in
+    // the future.
+    outfd->write("");
+#endif
     return strlen(s);
   }
 
