@@ -1,4 +1,4 @@
-/* rc4.c
+/* arcfour.c
  *
  * Written by Niels Möller
  */
@@ -14,39 +14,39 @@
 #include "error.h"
 #include "las.h"
 
-#include "rc4.h"
+#include "arcfour.h"
 
-RCSID("$Id: rc4.c,v 1.9 1999/02/10 21:51:40 hubbe Exp $");
+RCSID("$Id: arcfour.c,v 1.10 2000/03/28 12:16:08 grubba Exp $");
 
 #undef THIS
-#define THIS ((struct rc4_ctx *)(fp->current_storage))
+#define THIS ((struct arcfour_ctx *)(fp->current_storage))
 
-struct program *pike_rc4_program;
+struct program *pike_arcfour_program;
 
-void init_pike_rc4(struct object *o)
+void init_pike_arcfour(struct object *o)
 {
-  MEMSET(THIS, 0, sizeof(struct rc4_ctx));
+  MEMSET(THIS, 0, sizeof(struct arcfour_ctx));
 }
 
-void exit_pike_rc4(struct object *o)
+void exit_pike_arcfour(struct object *o)
 {
-  MEMSET(THIS, 0, sizeof(struct rc4_ctx));
+  MEMSET(THIS, 0, sizeof(struct arcfour_ctx));
 }
 
 /* string name(void) */
 static void f_name(INT32 args)
 {
   if (args) {
-    error("Too many arguments to rc4->name()\n");
+    error("Too many arguments to arcfour->name()\n");
   }
-  push_string(make_shared_string("RC4"));
+  push_string(make_shared_string("ARCFOUR"));
 }
 
 /* int query_key_length(void) */
 static void f_query_key_length(INT32 args)
 {
   if (args) {
-    error("Too many arguments to rc4->query_key_length()\n");
+    error("Too many arguments to arcfour->query_key_length()\n");
   }
   push_int(0);
 }
@@ -55,14 +55,14 @@ static void f_query_key_length(INT32 args)
 static void f_set_key(INT32 args)
 {
   if (args != 1) {
-    error("Wrong number of args to rc4->set_key()\n");
+    error("Wrong number of args to arcfour->set_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to rc4->set_key()\n");
+    error("Bad argument 1 to arcfour->set_key()\n");
   }
   if (!sp[-1].u.string->len)
-    error("Empty key to rc4_set_key()\n");
-  rc4_set_key(THIS, (unsigned INT8 *) sp[-1].u.string->str, sp[-1].u.string->len);
+    error("Empty key to arcfour_set_key()\n");
+  arcfour_set_key(THIS, (unsigned INT8 *) sp[-1].u.string->str, sp[-1].u.string->len);
 
   pop_n_elems(args);
   push_object(this_object());
@@ -75,16 +75,16 @@ static void f_crypt(INT32 args)
   struct pike_string *s;
   
   if (args != 1) {
-    error("Wrong number of arguments to rc4->crypt()\n");
+    error("Wrong number of arguments to arcfour->crypt()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to rc4->crypt()\n");
+    error("Bad argument 1 to arcfour->crypt()\n");
   }
 
   len = sp[-1].u.string->len;
 
   s = begin_shared_string(len);
-  rc4_crypt(THIS,
+  arcfour_crypt(THIS,
 	    (unsigned INT8 *) s->str,
 	    (unsigned INT8 *) sp[-1].u.string->str,
 	    len);
@@ -93,10 +93,10 @@ static void f_crypt(INT32 args)
   push_string(end_shared_string(s));
 }
 
-void pike_rc4_init(void)
+void pike_arcfour_init(void)
 {
   start_new_program();
-  ADD_STORAGE(struct rc4_ctx);
+  ADD_STORAGE(struct arcfour_ctx);
 
   /* function(void:string) */
   ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
@@ -109,12 +109,12 @@ void pike_rc4_init(void)
   /* function(string:string) */
   ADD_FUNCTION("crypt", f_crypt,tFunc(tStr,tStr), 0);
 
-  set_init_callback(init_pike_rc4);
-  set_exit_callback(exit_pike_rc4);
+  set_init_callback(init_pike_arcfour);
+  set_exit_callback(exit_pike_arcfour);
 
-  end_class("rc4", 0);
+  end_class("arcfour", 0);
 }
 
-void pike_rc4_exit(void)
+void pike_arcfour_exit(void)
 {
 }

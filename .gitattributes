@@ -355,6 +355,7 @@ testfont binary
 /src/modules/_Crypto/.exportable_files foreign_ident
 /src/modules/_Crypto/Makefile.in foreign_ident
 /src/modules/_Crypto/StdCrypt.pike foreign_ident
+/src/modules/_Crypto/arcfour.c foreign_ident
 /src/modules/_Crypto/cast.c foreign_ident
 /src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/configure.in foreign_ident
