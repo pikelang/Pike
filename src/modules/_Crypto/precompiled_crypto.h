@@ -12,9 +12,9 @@
 #define PRECOMPILED_CRYPTO_H
 
 #define MODULE_PREFIX ""
-#define MOD_INIT(x) pike_crypto_##x##_init
-#define MOD_EXIT(x) pike_crypto_##x##_exit
-#define MOD_INIT2(x) ignore_##x
+#define MOD_INIT(x) PIKE_CONCAT3(pike_crypto_,x,_init)
+#define MOD_EXIT(x) PIKE_CONCAT3(pike_crypto_,x,_exit)
+#define MOD_INIT2(x) PIKE_CONCAT(ignore_,x)
 
 #if 0
 struct pike_md2 {
