@@ -49,9 +49,9 @@ class Package
      "echo 'Package version unknown.'\n"
      "exit",
      ({ "-a", "--add-component" }):
-     "shift; ORIGINAL_WD=\"`pwd`\"\n"
+     "shift\n"
      "(cd `dirname \"$1\"` &&\n"
-     " tar rf \"$ORIGINAL_WD/$TARFILE\" `basename \"$1\"`)\n"
+     " tar rf \"$TARFILE\" `basename \"$1\"`)\n"
      "exit",
      ({ "-l", "--list" }):
      "echo \"$CONTENTS\"\n"
@@ -77,6 +77,14 @@ class Package
 		    "TARFILE=\"$1\"; shift; ARGS=''\n"
 		    "CONTENTS=`tar tf \"$TARFILE\" | sed -ne '/^"+
 		    replace(basename(install_filename), ".", "\\.")+"/,$p'`\n"
+		    // Convert $TARFILE to an absolute path
+		    "case \"$TARFILE\" in\n"
+		    "    /*)\n"
+		    "    ;;\n"
+		    "    *)\n"
+		    "      TARFILE=\"`pwd`/$TARFILE\"\n"
+		    "    ;;\n"
+		    "esac\n"
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
@@ -93,7 +101,7 @@ class Package
 		    // Commence installation.
 		    "mkdir "+unpack_directory+"\n"
 		    "(cd "+unpack_directory+"\n"
-		    " tar xf ../\"$TARFILE\" $CONTENTS\n"
+		    " tar xf \"$TARFILE\" $CONTENTS\n"
 		    " ./"+basename(pike_filename)+" "
 	                     "--script \"`pwd`\"/"+
 		                            basename(install_filename)+")\n"
