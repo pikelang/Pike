@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.318 2003/12/18 23:23:39 marcus Exp $
+// $Id: master.pike.in,v 1.319 2003/12/19 20:37:03 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -254,6 +254,7 @@ string dirname(string x)
   array(string) tmp=x/":";
   array(string) tmp2=tmp[-1]/"/";
   tmp[-1]=tmp2[..sizeof(tmp2)-2]*"/";
+  if(sizeof(tmp2) >= 2 && tmp2[-2]=="") tmp[-1]+="/";
   return tmp*":";
 #else
   array(string) tmp=EXPLODE_PATH(x);
