@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.201 2001/06/08 12:23:01 mast Exp $");
+RCSID("$Id: interpret.c,v 1.202 2001/06/08 16:25:48 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1203,9 +1203,10 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       function->num_calls++;
 #endif
   
-      if(function->func.offset == -1)
+      if(function->func.offset == -1) {
 	generic_error(NULL, Pike_sp, args,
 		      "Calling undefined function.\n");
+      }
       
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
@@ -1282,6 +1283,13 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	num_locals=EXTRACT_UCHAR(pc++);
 	num_args=EXTRACT_UCHAR(pc++);
 
+#ifdef PIKE_DEBUG
+	if(num_locals < num_args)
+	  fatal("Wrong number of arguments or locals in function def.\n"
+		"num_locals: %d < num_args: %d\n",
+		num_locals, num_args);
+#endif
+
 	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
 	  new_frame->expendible+=num_locals;
 	
@@ -1309,10 +1317,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	if(num_locals > args)
 	  clear_svalues(Pike_sp, num_locals - args);
 	Pike_sp += num_locals - args;
-#ifdef PIKE_DEBUG
-	if(num_locals < num_args)
-	  fatal("Wrong number of arguments or locals in function def.\n");
-#endif
+
 	new_frame->num_locals=num_locals;
 	new_frame->num_args=num_args;
 	new_frame->save_mark_sp=Pike_mark_sp;
@@ -1635,6 +1640,23 @@ PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
   if(!o->prog) fatal("Apply safe on destructed object.\n");
 #endif
   safe_apply_low(o, find_identifier(fun, o->prog), args);
+}
+
+PMOD_EXPORT void safe_apply_handler(const char *fun,
+				    struct object *handler,
+				    struct object *compat,
+				    INT32 args)
+{
+  int i;
+  if (handler &&
+      (i = find_identifier(fun, handler->prog)) != -1) {
+    safe_apply_low(handler, i, args);
+  } else if (compat &&
+      (i = find_identifier(fun, compat->prog)) != -1) {
+    safe_apply_low(compat, i, args);
+  } else {
+    SAFE_APPLY_MASTER(fun, args);
+  }
 }
 
 PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args)

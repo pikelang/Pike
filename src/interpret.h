@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.86 2001/05/24 23:07:23 grubba Exp $
+ * $Id: interpret.h,v 1.87 2001/06/08 16:25:48 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -306,6 +306,10 @@ PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
 PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args);
+PMOD_EXPORT void safe_apply_handler(const char *fun,
+				    struct object *handler,
+				    struct object *compat,
+				    INT32 args);
 PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args);
 PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,
