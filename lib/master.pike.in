@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.283 2003/05/31 11:03:16 mast Exp $
+// $Id: master.pike.in,v 1.284 2003/05/31 11:05:35 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -3158,7 +3158,7 @@ class Encoder
   static mapping(mixed:string) rev_constants = ([]);
   static mapping(mixed:string) rev_static_modules = ([]);
 
-  static array(string) find_index (object|program parent, mixed child)
+  static array find_index (object|program parent, mixed child)
   {
     array id;
 
@@ -3186,7 +3186,7 @@ class Encoder
     return id;
   }
 
-  string|array(string) nameof (mixed what)
+  string|array nameof (mixed what)
   {
     ENC_MSG ("nameof (%t %O)\n", what, what);
 
@@ -3225,7 +3225,7 @@ class Encoder
 
       if (function|program prog = object_program (what))
 	if (object|program parent = function_object (prog) || function_program (prog)) {
-	  string|array(string) parent_name = nameof (parent);
+	  string|array parent_name = nameof (parent);
 	  if (!parent_name) {
 	    ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	    return UNDEFINED;
@@ -3246,7 +3246,7 @@ class Encoder
 	    }
 
 	    CONVERT_PARENT_TO_OBJ (parent_name, parent);
-	    array(string) id = find_index (parent, what);
+	    array id = find_index (parent, what);
 	    ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
 	  }
 	}
@@ -3264,13 +3264,13 @@ class Encoder
       }
 
       if (object|program parent = function_object (what) || function_program (what)) {
-	string|array(string) parent_name = nameof (parent);
+	string|array parent_name = nameof (parent);
 	if (!parent_name) {
 	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	  return UNDEFINED;
 	}
 	else {
-	  string|array(string) id = function_name (what);
+	  string|array id = function_name (what);
 	  if (stringp (id)) id = ({id});
 	  else {
 	    CONVERT_PARENT_TO_OBJ (parent_name, parent);
@@ -3349,10 +3349,10 @@ class Decoder (void|string fname, void|int mkobj)
     DEC_RETURN (0);
   }
 
-  static mixed thingof (string|array(string) what)
+  static mixed thingof (string|array what)
   {
     mixed res;
-    array(string) sublist;
+    array sublist;
     if (arrayp (what)) sublist = what, what = sublist[0];
 
     switch (what[0]) {
@@ -3401,7 +3401,7 @@ class Decoder (void|string fname, void|int mkobj)
     return res;
   }
 
-  object objectof (string|array(string) what)
+  object objectof (string|array what)
   {
     DEC_MSG ("objectof (%O)\n", what);
     mixed res = thingof (what);
@@ -3409,7 +3409,7 @@ class Decoder (void|string fname, void|int mkobj)
     DEC_RETURN ([object] res);
   }
 
-  function functionof (string|array(string) what)
+  function functionof (string|array what)
   {
     DEC_MSG ("functionof (%O)\n", what);
     mixed res = thingof (what);
@@ -3417,7 +3417,7 @@ class Decoder (void|string fname, void|int mkobj)
     DEC_RETURN ([function] res);
   }
 
-  program programof (string|array(string) what)
+  program programof (string|array what)
   {
     DEC_MSG ("programof (%O)\n", what);
     mixed res = thingof (what);
