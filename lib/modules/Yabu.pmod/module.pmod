@@ -1,41 +1,154 @@
-// Yabu by Fredrik Noring
-// $Id: module.pmod,v 1.3 1998/12/12 01:06:50 noring Exp $
+/* Yabu. By Fredrik Noring, 1999.
+ *
+ * Yabu is an all purpose transaction database, used to store data records
+ * associated with a unique key.
+ */
 
-#if constant(thread_create)
-#define THREAD_SAFE
-#define LOCK() do { object key; catch(key=lock())
-#define UNLOCK() key=0; } while(0)
-#else
-#undef THREAD_SAFE
-#define LOCK() do {
-#define UNLOCK() } while(0)
-#endif
+constant cvs_id = "$Id: module.pmod,v 1.4 1999/02/14 16:19:47 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define WARN(msg) werror(msg)
 #define DEB(msg) /* werror(msg) */
 #define CHECKSUM(s) (hash(s) & 0xffffffff)
 
+#if constant(thread_create)
+#define THREAD_SAFE
+#define LOCK() do { object key___; catch(key___=lock())
+#define UNLOCK() key___=0; } while(0)
+#define INHERIT_MUTEX static inherit Thread.Mutex
+#else
+#undef  THREAD_SAFE
+#define LOCK() do {
+#define UNLOCK() } while(0)
+#undef  INHERIT_MUTEX
+#endif
+
+
+
+
+
+/*
+ * ProcessLock handles lock files with PID:s. It is
+ * not 100 % safe, but much better than nothing.
+ *
+ * ProcessLock will throw an error if the lock could not be obtained.
+ */
+static private class ProcessLock {
+  static private int write = 0;
+  static private string lock_file;
+
+  static private int get_locked_pid()
+  {
+    return (int) (Stdio.read_file(lock_file)||"0");
+  }
+
+  void destroy()
+  {
+    /* Release PID lock when the object is destroyed. */
+    if(write)
+      rm(lock_file);
+  }
+
+  void create(string _lock_file, string mode)
+  {
+    lock_file = _lock_file;
+
+    /* Check if a process has locked the lock. */
+    int pid = get_locked_pid();
+    if(pid && kill(pid, 0))
+      ERR(sprintf("Out-locked by PID %d", pid));
+
+    if(search(mode, "w")+1) {
+      /* Enable write mode. */
+      write = 1;
+
+      /* Remove old lock, since there does not seem to be
+       * any other process using it.
+       *
+       * Note: There may be race conditions here!
+       */
+      rm(lock_file);
+
+      /* Write our own lock file.
+       *
+       * Open with `x', which will make it a bit safer
+       * regarding race conditions.
+       */
+      object f = Stdio.File();
+      if(!f->open(lock_file, "cxw"))
+	ERR("PID lock error");
+      f->write(sprintf("%d", getpid()));
+      f->close();
+
+      /* The last protection against race conditions, make
+       * sure that the PID file stays the way it should.
+       */
+      if(search(mode, "P")+1)
+	sleep(1);
+      pid = get_locked_pid();
+      if(pid != getpid())
+	ERR(sprintf("Lock was overridden by PID %d", pid));
+    }
+  }
+}
+
+
+
+
+
+/*
+ * With logging enabled, nearly everything Yabu does will
+ * be put in a log file.
+ *
+ */
+class YabuLog {
+  int pid;
+  object f = Stdio.File();
+  
+  void log(string ... entries)
+  {
+    
+  }
+  
+  void create(string logfile)
+  {
+    pid = getpid();
+    if(!f->open(logfile, "caw"))
+      ERR("Cannot open log file.");
+  }
+}
+
+
+
+
+/*
+ * FileIO handles all basic file operations in Yabu.
+ *
+ */
 static private class FileIO {
+  INHERIT_MUTEX;
   static private inherit Stdio.File:file;
 
   static private void seek(int offset)
   {
     if(file::seek(offset) == -1)
-      ERR(sprintf("seek failed with errno %d\n",file::errno()));
+      ERR("seek failed");
   }
 
   string read_at(int offset, int|void size)
   {
+    LOCK();
     seek(offset);
     mixed s = size?file::read(size):file::read();
     if(!stringp(s))
       ERR("read failed");
     return s;
+    UNLOCK();
   }
 
   void write_at(int offset, string s)
   {
+    LOCK();
     seek(offset);
     while(sizeof(s)) {
       int n = file::write(s);
@@ -50,6 +163,7 @@ static private class FileIO {
 	WARN("disk seems to be full. (sleeping)");
       sleep(1);
     }
+    UNLOCK();
   }
 
   void create(string filename, string mode)
@@ -60,16 +174,30 @@ static private class FileIO {
   }
 }
 
+
+
+
+
+/*
+ * The Yabu chunk.
+ *
+ */
 class Chunk {
+  INHERIT_MUTEX;
   static private inherit FileIO:file;
 
   static private object parent;
   static private int magic, compress, write;
   static private string start_time, filename;
 
+  /* Point in file from which new chunks can be allocated. */
   static private int eof = 0;
+  
   static private mapping frees = ([]), keys = ([]);
 
+  /* Escape special characters used for synchronizing
+   * the contents of Yabu files.
+   */
   static private string escape(string s)
   {
     return replace(s, ({ "\n", "%" }), ({ "%n", "%p" }));
@@ -80,21 +208,30 @@ class Chunk {
     return replace(s, ({ "%n", "%p" }), ({ "\n", "%" }));
   }
 
+  /*
+   * Encode/decode Yabu numbers (8 digit hex numbers).
+   */
   static private string encode_num(int x)
   {
-    return sprintf("%08x", x);
+    string s = sprintf("%08x", x);
+    if(sizeof(s) != 8)
+      ERR("Encoded number way too large ("+s+")");
+    return s;
   }
 
   static private int decode_num(string s, int offset)
   {
     int x;
     if(sizeof(s) < offset+8)
-      ERR("cunk short");
+      ERR("chunk short");
     if(sscanf(s[offset..offset+7], "%x", x) != 1)
-      ERR("cunk number decode error");
+      ERR("chunk number decode error");
     return x;
   }
 
+  /*
+   * Encode/decode Yabu keys.
+   */
   static private string encode_key(int offset, int type)
   {
     return encode_num(offset)+":"+encode_num(type);
@@ -104,16 +241,24 @@ class Chunk {
     { if(sizeof(key) != 17 || sscanf(key, "%x:%x", offset, type) != 2) \
          ERR("Key not valid"); }
 
+  /* This magic string of characters surrounds all chunk in order to
+   * check if the same magic appears on both sides of the chunk contents.
+   */
   static private string next_magic()
   {
     return start_time + encode_num(magic++);
   }
 
+  /* The chunk block allocation policy. By using fixed chunk sizes, reuse
+   * of empty chunks is encouraged.
+   */
   static private int find_nearest_2x(int num)
   {
-    for(int b=4;b<32;b++) if((1<<b) >= num) return (1<<b);
+    for(int b=4;b<30;b++) if((1<<b) >= num) return (1<<b);
+    ERR("Chunk too large (max 1 gigabyte)");
   }
 
+  /* Generate the null chuck, which is the same as the empty chunk. */
   static private mapping null_chunk(int t)
   {
     string entry = "";
@@ -126,6 +271,9 @@ class Chunk {
 	      "entry":("\n"+magic+type+checksum+size+entry+"%m"+magic)]);
   }
 
+  /*
+   * Encode/decode chunks.
+   */
   static private mapping encode_chunk(mixed x)
   {
     string entry = encode_value(x);
@@ -133,7 +281,7 @@ class Chunk {
     if(compress)
       catch { entry = Gz.deflate()->deflate(entry); };
 #endif
-    string entry = escape(entry);
+    entry = escape(entry);
     string magic = next_magic();
     string checksum = encode_num(CHECKSUM(entry));
     string size = encode_num(sizeof(entry));
@@ -149,7 +297,7 @@ class Chunk {
   {
     mapping m = ([]);
 
-    if(chunk[0] != '\n')
+    if(!sizeof(chunk) || chunk[0] != '\n')
       ERR("No chunk start");
     chunk = chunk[1..];
     m->magic = chunk[0..15];
@@ -179,6 +327,7 @@ class Chunk {
     return m;
   }
 
+  /* Allocate chunks by reuse or from to the end of the file. */
   static private int allocate_chunk(int type, mapping m)
   {
     array f;
@@ -195,50 +344,69 @@ class Chunk {
   }
 
   /* Perform consistency check. Returns 0 for failure, otherwise success. */
-  int consistency()
+  static private int consistency()
   {
     multiset k = mkmultiset(indices(keys));
     foreach(indices(frees), int type)
       foreach(frees[type], int offset)
-        if(k[encode_key(offset, type)])
-          return 0;
+	if(k[encode_key(offset, type)])
+	  return 0;
     return 1;
   }
   
   array(string) list_keys()
   {
+    LOCK();
     return indices(keys);
+    UNLOCK();
   }
 
   string set(mixed x)
   {
+    LOCK();
+    if(!write)
+      ERR("Cannot set in read mode");
     mapping m = encode_chunk(x);
     int offset = allocate_chunk(m->type, m);
     string key = encode_key(offset, m->type);
     file::write_at(offset, m->entry);
     keys[key] = offset;
     return key;
+    UNLOCK();
   }
 
   mixed get(string key, void|int attributes)
   {
-    if(!attributes && zero_type(keys[key]))
-      ERR(sprintf("Unknown key '%O'", key));
+    LOCK();
+    if(!attributes && zero_type(keys[key])) {
+      if(attributes)
+	return 0;
+      else
+	ERR(sprintf("Unknown key '%O'", key));
+    }
 
     int offset, type;
     DECODE_KEY(key, offset, type);
     
     mapping m = decode_chunk(file::read_at(offset, type));
-    if(m->size == 0)
-      ERR(sprintf("Cannot decode free chunk! [consistency status: %s]",
-                  consistency()?"#OK":"#FAILURE"));
+    if(m->size == 0) {
+      if(attributes)
+	return 0;
+      else
+	ERR(sprintf("Cannot decode free chunk! [consistency status: %s]",
+		    consistency()?"#OK":"#FAILURE"));
+    }
     if(attributes)
       return m;
     return m->entry;
+    UNLOCK();
   }
 
   void free(string key)
   {
+    LOCK();
+    if(!write)
+      ERR("Cannot free in read mode");
     if(zero_type(keys[key]))
       ERR(sprintf("Unknown key '%O'", key));
 
@@ -248,32 +416,54 @@ class Chunk {
     m_delete(keys, key);
     file::write_at(offset, null_chunk(type)->entry);
     frees[type] = (frees[type]||({})) | ({ offset });
+    UNLOCK();
   }
 
   mapping state(array|void almost_free)
   {
+    LOCK();
     mapping m_frees = copy_value(frees);
     mapping m_keys = copy_value(keys);
     foreach(almost_free||({}), string key) {
+      if(zero_type(keys[key]))
+	ERR(sprintf("Unknown state key '%O'", key));
+
       int offset, type;
       DECODE_KEY(key, offset, type);
       m_frees[type] = (m_frees[type]||({})) | ({ offset });
       m_delete(m_keys, key);
     }
     return copy_value(([ "eof":eof, "keys":m_keys, "frees":m_frees ]));
+    UNLOCK();
   }
 
   void purge()
   {
+    LOCK();
     if(!write)
       ERR("Cannot purge in read mode");
     rm(filename);
-    destruct(this_object());
+    keys = 0;
+    frees = 0;
+    write = 0;
+    filename = 0;
+    UNLOCK();
   }
 
+  void move(string new_filename)
+  {
+    LOCK();
+    if(!write)
+      ERR("Cannot move in read mode");
+    if(!mv(filename, new_filename))
+      ERR("Move failed");
+    filename = new_filename;
+    UNLOCK();
+  }
+  
   void destroy()
   {
-    if(parent)
+    if(parent && write)
       destruct(parent);
   }
 
@@ -314,8 +504,8 @@ class Chunk {
 	int size = (i+1 < sizeof(offsets)?offsets[i+1]-offset:0);
 	string key = encode_key(offset, size);
 	if(!size || size == find_nearest_2x(size)) {
-	  mapping m;
-	  if(catch(m = get(key, 1))) {
+	  mapping m = get(key, 1);
+	  if(!m) {
 	    if(size) {
 	      frees[size] = (frees[size]||({})) + ({ offset });
 	      eof = offset+size;
@@ -330,6 +520,14 @@ class Chunk {
   }
 }
 
+
+
+
+
+/*
+ * The transaction table.
+ *
+ */
 class Transaction {
   static private int id;
   static private object table, keep_ref;
@@ -398,23 +596,35 @@ class Transaction {
   }
 }
 
+
+
+
+
+/*
+ * The basic Yabu table.
+ *
+ */
 class Table {
-#ifdef THREAD_SAFE
-  static inherit Thread.Mutex;
-#endif
+  INHERIT_MUTEX;
   static private object index, db;
 
-  static private string filename;
-  static private mapping handles, new, changes;
+  static private string mode, filename;
+  static private mapping handles, changes;
   static private mapping t_start, t_changes, t_handles, t_deleted;
   static private int sync_timeout, write, dirty, magic, id = 0x314159;
 
+  static private void modified()
+  {
+    dirty++;
+    if(sync_timeout && dirty >= sync_timeout)
+      sync();
+  }
+
   void sync()
   {
+    LOCK();
     if(!write || !dirty) return;
 
-    LOCK();
-    new = ([]);
     array almost_free = db->list_keys() - values(handles);
     string key = index->set(([ "db":db->state(almost_free),
 			       "handles":handles ]));
@@ -433,57 +643,83 @@ class Table {
     UNLOCK();
   }
 
+  int reorganize(float|void ratio)
+  {
+    LOCK();
+    if(!write) ERR("Cannot reorganize in read mode");
+
+    ratio = ratio || 0.70;
+
+    /* Check if the level of usage is above the given ratio. */
+    if(ratio < 1.0) {
+      mapping st = this_object()->statistics();
+      float usage = (float)st->used/(float)(st->size||1);
+      if(usage > ratio)
+	return 0;
+    }
+
+    /* Create new database. */
+    object opt = Chunk(filename+".opt", mode, this_object(), ([]));
+
+    /* Remap all ordinary handles. */
+    mapping new_handles = ([]);
+    foreach(indices(handles), string handle)
+      new_handles[handle] = opt->set(db->get(handles[handle]));
+    
+    /* Remap all transaction handles. */
+    mapping new_t_handles = ([]);
+    foreach(indices(t_handles), int id) {
+      new_t_handles[id] = ([]);
+      foreach(indices(t_handles[id]), string t_handle)
+	new_t_handles[id][t_handle] =
+	  opt->set(db->get(t_handles[id][t_handle]));
+    }
+
+    /* Switch databases. */
+    db->purge();
+    index->purge();
+    opt->move(filename+".chk");
+    handles = new_handles;
+    t_handles = new_t_handles;
+    db = opt;
+    index = Chunk(filename+".inx", mode, this_object());
+
+    /* Reconstruct db and index. */
+    modified();
+    sync();
+    
+    return 1;
+    UNLOCK();
+  }
+  
   static private int next_magic()
   {
     return magic++;
   }
 
-  static private void modified()
-  {
-    dirty++;
-    if(sync_timeout && dirty >= sync_timeout)
-      sync();
-  }
-
-  static private mixed _set(string handle, mixed x,
-			    mapping handles, mapping new)
+  static private mixed _set(string handle, mixed x, mapping handles)
   {
     if(!write) ERR("Cannot set in read mode");
 
-    string key = handles[handle];
-    if(key && new[key]) {
-      m_delete(new, key);
-      db->free(key);
-    }
-    handles[handle] = key = db->set(([ "handle":handle, "entry":x ]));
-    new[key] = 1;
-    modified();
+    handles[handle] = db->set(([ "handle":handle, "entry":x ]));
+    // modified();
     return x;
   }
 
   static private mixed _get(string handle, mapping handles)
   {
-    if(!handles[handle])
-      return 0;
-    return db->get(handles[handle])->entry;
+    return handles[handle]?db->get(handles[handle])->entry:0;
   }
 
   void delete(string handle)
   {
-    if(!write) ERR("Cannot delete in read mode");
-
     LOCK();
+    if(!write) ERR("Cannot delete in read mode");
     if(!handles[handle]) ERR(sprintf("Unknown handle '%O'", handle));
 
-    string key = handles[handle];
     m_delete(handles, handle);
     if(changes)
       changes[handle] = next_magic();
-    // m_delete(changes, handle);
-    if(new[key]) {
-      m_delete(new, key);
-      db->free(key);
-    }
     modified();
     UNLOCK();
   }
@@ -491,9 +727,11 @@ class Table {
   mixed set(string handle, mixed x)
   {
     LOCK();
+    if(!write) ERR("Cannot set in read mode");
     if(changes)
       changes[handle] = next_magic();
-    return _set(handle, x, handles, new);
+    modified();
+    return _set(handle, x, handles);
     UNLOCK();
   }
 
@@ -505,24 +743,24 @@ class Table {
   }
 
   //
-  // Transactions
+  // Transactions.
   //
   mixed t_set(int id, string handle, mixed x)
   {
+    LOCK();
+    if(!write) ERR("Cannot set in read mode");
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    LOCK();
     t_changes[id][handle] = t_start[id];
-    mapping t_new = mkmapping(values(t_handles[id]), indices(t_handles[id]));
-    return _set(handle, x, t_handles[id], t_new);
+    return _set(handle, x, t_handles[id]);
     UNLOCK();
   }
 
   mixed t_get(int id, string handle)
   {
+    LOCK();
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    LOCK();
     t_changes[id][handle] = t_start[id];
     if(t_deleted[id][handle])
       return 0;
@@ -532,80 +770,72 @@ class Table {
 
   void t_delete(int id, string handle)
   {
+    LOCK();
+    if(!write) ERR("Cannot delete in read mode");
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    LOCK();
     t_deleted[id][handle] = 1;
     t_changes[id][handle] = t_start[id];
-    if(t_handles[id][handle]) {
-      db->free(t_handles[id][handle]);
+    if(t_handles[id][handle])
       m_delete(t_handles[id], handle);
-    }
     UNLOCK();
   }
 
   void t_commit(int id)
   {
+    LOCK();
     if(!write) ERR("Cannot commit in read mode");
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    LOCK();
     foreach(indices(t_changes[id]), string handle)
       if(t_changes[id][handle] < changes[handle])
 	ERR("Transaction conflict");
+    
+    foreach(indices(t_handles[id]), string handle) {
+      changes[handle] = next_magic();
+      handles[handle] = t_handles[id][handle];
+    }
 
-    mapping tmp_t_changes = copy_value(t_changes);
-    mapping tmp_t_handles = copy_value(t_handles);
+    foreach(indices(t_deleted[id]), string handle) {
+      changes[handle] = next_magic();
+      m_delete(handles, handle);
+    }
+    
     t_start[id] = next_magic();
     t_changes[id] = ([]);
     t_handles[id] = ([]);
     t_deleted[id] = ([]);
-
-    array obsolete = ({});
-    foreach(indices(tmp_t_changes[id]), string handle) {
-      if(new[handles[handle]])
-	obsolete += ({ handles[handle] });
-      changes[handle] = next_magic();
-      handles[handle] = tmp_t_handles[id][handle];
-    }
-
-    foreach(obsolete, string key) {
-      m_delete(new, key);
-      db->free(key);
-    }
+    modified();
     UNLOCK();
   }
 
   void t_rollback(int id)
   {
+    LOCK();
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    LOCK();
-    array keys = values(t_handles[id]);
     t_start[id] = next_magic();
     t_changes[id] = ([]);
     t_handles[id] = ([]);
     t_deleted[id] = ([]);
-    foreach(keys, string key)
-      db->free(key);
     UNLOCK();
   }
 
   array t_list_keys(int id)
   {
+    LOCK();
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    LOCK();
-    return Array.uniq(indices(handles) + indices(t_handles[id]));
+    return (Array.uniq(indices(handles) + indices(t_handles[id])) -
+	    indices(t_deleted[id]));
     UNLOCK();
   }
 
   void t_destroy(int id)
   {
+    LOCK();
     if(!t_handles[id]) ERR("Unknown transaction id");
 
-    t_rollback(id);
-    LOCK();
     m_delete(t_start, id);
     m_delete(t_changes, id);
     m_delete(t_handles, id);
@@ -615,9 +845,9 @@ class Table {
 
   object transaction(object|void keep_ref)
   {
+    LOCK();
     if(!changes) ERR("Transactions are not enabled");
 
-    LOCK();
     id++;
     t_start[id] = next_magic();
     t_changes[id] = ([]);
@@ -638,11 +868,12 @@ class Table {
   }
 
   //
-  // Interface functions
+  // Interface functions.
   //
 
   void sync_schedule()
   {
+    remove_call_out(sync_schedule);
     sync();
     call_out(sync_schedule, 120);
   }
@@ -659,6 +890,7 @@ class Table {
 
   void destroy()
   {
+    remove_call_out(sync_schedule);
     sync();
   }
 
@@ -676,9 +908,9 @@ class Table {
 
   void purge()
   {
+    LOCK();
     if(!write) ERR("Cannot purge in read mode");
 
-    LOCK();
     write = 0;
     rm(filename+".inx");
     rm(filename+".chk");
@@ -690,48 +922,109 @@ class Table {
   {
     return list_keys();
   }
+
+  mapping(string:string|int) statistics()
+  {
+    LOCK();
+    mapping m = ([ "keys":sizeof(handles),
+		   "size":Stdio.file_size(filename+".inx")+
+		          Stdio.file_size(filename+".chk"),
+		   "used":`+(@Array.map((values(handles) |
+					 (t_handles && sizeof(t_handles)?
+					  `+(@Array.map(values(t_handles),
+							values)):({}))) +
+					index->list_keys(),
+					lambda(string s)
+					{ int x;
+					  sscanf(s, "%*x:%x", x);
+					  return x; })) ]);
+
+    m->size = max(m->size, m->used);
+    return m;
+    UNLOCK();
+  }
   
-  void create(string filename_in, string mode)
+  void create(string filename_in, string _mode)
   {
     filename = filename_in;
+    mode = _mode;
 
     if(search(mode, "w")+1)
       write = 1;
-    if(search(mode, "t")+1) {
+    if(search(mode, "t")+1)
       changes = ([]);
-      t_start = ([]);
-      t_changes = ([]);
-      t_handles = ([]);
-      t_deleted = ([]);
-    }
+    t_start = ([]);
+    t_changes = ([]);
+    t_handles = ([]);
+    t_deleted = ([]);
 
     index = Chunk(filename+".inx", mode, this_object());
     mapping m = ([]);
     if(sizeof(index->list_keys()))
       m = index->get(sort(index->list_keys())[-1]);
     handles = m->handles||([]);
-    new = ([]);
     db = Chunk(filename+".chk", mode, this_object(), m->db||([]));
 
-    if(write && search(mode, "s")+1) {
-      sync_timeout = 32;
-      sync_schedule();
+    if(write) {
+      sync_timeout = 128;
+      if(search(mode, "s")+1)
+	sync_schedule();
     }
   }
 }
 
-class _Table {
-  static string handle;
-  static object table, parent;
 
-  void sync() { table->sync(); }
-  void delete(string handle) { table->delete(handle); }
-  mixed set(string handle, mixed x) { return table->set(handle, x); }
-  mixed get(string handle) { return table->get(handle); }
-  array list_keys() { return table->list_keys(); }
-  object transaction() { return table->transaction(this_object()); }
-  void close() { destruct(this_object()); }
-  void purge() { table->purge(); }
+
+
+
+/*
+ * The shadow table.
+ *
+ */
+class _Table {
+  static object table;
+  static string handle;
+  static function table_destroyed;
+
+  void sync()
+  {
+    table->sync();
+  }
+  
+  void delete(string handle)
+  {
+    table->delete(handle);
+  }
+  
+  mixed set(string handle, mixed x)
+  {
+    return table->set(handle, x);
+  }
+  
+  mixed get(string handle)
+  {
+    return table->get(handle);
+  }
+  
+  array list_keys()
+  {
+    return table->list_keys();
+  }
+  
+  object transaction()
+  {
+    return table->transaction(this_object());
+  }
+  
+  void close()
+  {
+    destruct(this_object());
+  }
+  
+  void purge()
+  {
+    table->purge();
+  }
 
   mixed `[]=(string handle, mixed x)
   {
@@ -750,26 +1043,82 @@ class _Table {
   
   void destroy()
   {
-    if(parent)
-      parent->_table_destroyed(handle);
+    if(table_destroyed)
+      table_destroyed(handle);
+  }
+
+  int reorganize(float|void ratio)
+  {
+    return table->reorganize(ratio);
+  }
+    
+  /*
+   * Compile table statistics.
+   */
+  static private string st_keys(int size, mapping m)
+  {
+    return sprintf("%4d", size);
   }
   
-  void create(string _handle, object _table, object _parent)
+  static private string st_size(int size, mapping m)
+  {
+    return sprintf("%7.3f Mb", (float)size/(1024.0*1024.0));
+    
+    string r = (string)size;
+    int e = (int) (log((float)(size||1))/log(1024.0));
+    
+    if(`<=(1, e, 3))
+      r = sprintf("%7.2f",(float)size/(float)(((int)pow(1024.0,(float)e))||1));
+    return sprintf("%s %s", r, ([ 1:"Kb", 2:"Mb", 3:"Gb" ])[e]||"b ");
+  }
+
+  static private string st_used(int used, mapping m)
+  {
+    return sprintf("%3d %%", (int) (100.0*(float)used/(float)m->size));
+  }
+  
+  mapping(string:string|int) statistics()
+  {
+    return table->statistics();
+  }
+
+  string ascii_statistics()
+  {
+    mapping m = statistics();
+    return "["+Array.map(sort(indices(m)),
+			 lambda(string inx, mapping m)
+			 {
+			   mapping f = ([ "keys":st_keys,
+					  "size":st_size,
+					  "used":st_used ]);
+			   return sprintf("%s:%s", inx,f[inx]?f[inx](m[inx],m):
+					  (string)m[inx]);
+			 }, m)*"   "+"] \""+handle+"\"";
+  }
+
+  void create(string _handle, object _table, function _table_destroyed)
   {
     handle = _handle;
     table = _table;
-    parent = _parent;
+    table_destroyed = _table_destroyed;
   }
 }
 
+
+
+
+
+/*
+ * The Yabu database object itself.
+ *
+ */
 class db {
-#ifdef THREAD_SAFE
-  static inherit Thread.Mutex;
-#endif
+  INHERIT_MUTEX;
 
   static string dir, mode;
   static mapping tables = ([]), table_refs = ([]);
   static int write, id;
+  static object pid_lock;
 
   void sync()
   {
@@ -780,20 +1129,7 @@ class db {
     UNLOCK();
   }
   
-  object table(string handle)
-  {
-    LOCK();
-    if(!tables[handle])
-      tables[handle] = Table(dir+"/"+handle, mode);
-    table_refs[handle]++;
-    // DEB(sprintf("### refs[%s]++ = %d\n", handle, table_refs[handle]));
-    DEB(sprintf("# tables '%s': %d (%s)\n",
-		reverse(reverse(dir/"/")[0..1])*"/", sizeof(tables), handle));
-    return _Table(handle, tables[handle], this_object());
-    UNLOCK();
-  }
-
-  void _table_destroyed(string handle)
+  static void _table_destroyed(string handle)
   {
     LOCK();
     table_refs[handle]--;
@@ -806,6 +1142,19 @@ class db {
       m_delete(tables, handle);
       m_delete(table_refs, handle);
     }
+    UNLOCK();
+  }
+
+  object table(string handle)
+  {
+    LOCK();
+    if(!tables[handle])
+      tables[handle] = Table(dir+"/"+handle, mode);
+    table_refs[handle]++;
+    // DEB(sprintf("### refs[%s]++ = %d\n", handle, table_refs[handle]));
+    DEB(sprintf("# tables '%s': %d (%s)\n",
+		reverse(reverse(dir/"/")[0..1])*"/", sizeof(tables), handle));
+    return _Table(handle, tables[handle], _table_destroyed);
     UNLOCK();
   }
 
@@ -827,15 +1176,15 @@ class db {
     return list_tables();
   }
 
-  // Remove maximum one level of directories and files
+  /* Remove maximum one level of directories and files. */
   static private void level2_rm(string f)
   {
     if(sizeof(f) > 1 && f[-1] == '/')
-      f = f[0..sizeof(f)-2];  // remove /'s
-    if((file_stat(f)||({0,0}))[1] == -2)  // directory
+      f = f[0..sizeof(f)-2];  // Remove /'s.
+    if((file_stat(f)||({0,0}))[1] == -2)  // Directory.
       foreach(get_dir(f)||({}), string file)
-	rm(f+"/"+file);  // delete file
-    rm(f);  // delete file/directory
+	rm(f+"/"+file);  // Delete file.
+    rm(f);  // Delete file/directory.
   }
 
   void purge()
@@ -864,22 +1213,59 @@ class db {
     }
   }
 
+  void destroy()
+  {
+    sync();
+  }
+  
+  int reorganize(float|void ratio)
+  {
+    int r = 0;
+    foreach(list_tables(), string name)
+      r |= table(name)->reorganize(ratio);
+    return r;
+  }
+    
+  mapping(string:int) statistics()
+  {
+    mapping m = ([]);
+    foreach(list_tables(), string name)
+      m[name] = table(name)->statistics();
+    return m;
+  }
+    
+  string ascii_statistics()
+  {
+    string r = "";
+    foreach(list_tables(), string name)
+      r += table(name)->ascii_statistics()+"\n";
+    return r;
+  }
+    
   void create(string dir_in, string mode_in)
   {
     dir = dir_in;
     mode = mode_in;
-    
+
     if(search(mode, "w")+1) {
       write = 1;
-      mkdirhier(dir+"/");
+      if(search(mode, "c")+1)
+	mkdirhier(dir+"/");
     }
+    pid_lock = ProcessLock(dir+"/lock.pid", mode);
   }
 }
 
+
+
+
+/*
+ * Special extra bonus. This database is optimized for lots of very small
+ * data records.
+ */
 class LookupTable {
-#ifdef THREAD_SAFE
-  static inherit Thread.Mutex;
-#endif
+  INHERIT_MUTEX;
+  
   static private int minx;
   static private object table;
 
@@ -935,6 +1321,13 @@ class LookupTable {
   }
 }
 
+
+
+
+/*
+ * The lookup database.
+ *
+ */
 class lookup {
   inherit db;
   static private int minx;

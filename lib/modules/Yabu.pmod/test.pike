@@ -1,6 +1,20 @@
+#!/usr/local/bin/pike
 // Yabu test program
 
 #define ERR(msg) throw(({ msg+"\n", backtrace() }));
+
+void check_db(object db, mapping m)
+{
+  for(int i = 0; i < 10; i++) {
+    string s = (string)(i%3);
+    object t = db[s];
+    for(int j = 0; j < 100; j++) {
+      string q = (string)(j%43);
+      if(t[q] != m[s][q])
+	ERR("Table diff #10!");
+    }
+  }
+}
 
 int main(int argc, array argv)
 {
@@ -47,35 +61,39 @@ int main(int argc, array argv)
   if(transaction["Blixt"] != "Gordon")
     ERR("Table diff #8!");
   
-  transaction->commit();
-
-  if(table["Buck"] != "Rogers")
-    ERR("Table diff #9!");
-
   // Test multiple commands.
   mapping m = ([]);
   for(int i = 0; i < 10; i++) {
     string s = (string)(i%3);
     m[s] = m[s] || ([]);
     object t = db[s];
+    if((i%3 == 0))
+      table->reorganize(1.0);
     for(int j = 0; j < 100; j++) {
       string q = (string)(j%43);
       m[s][q] += 1;
       t[q] = t[q]+1;
     }
-    t->sync();
+    if(i == 7)
+      t->sync();
   }
 
-  for(int i = 0; i < 10; i++) {
-    string s = (string)(i%3);
-    object t = db[s];
-    for(int j = 0; j < 100; j++) {
-      string q = (string)(j%43);
-      if(t[q] != m[s][q])
-	ERR("Table diff #10!");
-    }
-  }
+  transaction->commit();
+  if(table["Buck"] != "Rogers")
+    ERR("Table diff #9!");
 
+  if(!catch {
+    object db2 = .module.db("test.db", "wct");
+  })
+    ERR("Table lock error!");
+
+  check_db(db, m);
+  destruct(db);
+  check_db(db = .module.db("test.db", "w"), m);
+  db->reorganize(1.0);
+  destruct(db);
+  check_db(db = .module.db("test.db", "wct"), m);
+  
   // Remove test database.
   db->purge();
 
