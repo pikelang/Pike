@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.34 2003/03/25 21:24:41 nilsson Exp $
+ * $Id: extract_autodoc.pike,v 1.35 2003/04/10 15:24:58 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -45,6 +45,10 @@ int main(int n, array(string) args) {
       verbosity = 0;
       break;
     case "help":
+      werror("Usage:\n"
+	     "\tpike -x extract_autodoc [-q] --srcdir=<srcdir> \n"
+	     "\t     [--imgsrcdir=<imgsrcdir>] [--builddir=<builddir>]\n"
+	     "\t     [--imgdir=<imgdir>]\n");
       return 0;
     }
 
