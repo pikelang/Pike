@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.501 2003/08/04 16:23:29 grubba Exp $
+|| $Id: builtin_functions.c,v 1.502 2003/08/05 19:11:00 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.501 2003/08/04 16:23:29 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.502 2003/08/05 19:11:00 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6561,7 +6561,7 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
  *! @belongs Debug
  *!
  *! @note
- *!   Only available when comiled with dmalloc.
+ *!   Only available when compiled with dmalloc.
  */
 PMOD_EXPORT void f__list_open_fds(INT32 args)
 {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.152 2003/06/02 20:47:10 nilsson Exp $
+|| $Id: system.c,v 1.153 2003/08/05 19:11:24 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.152 2003/06/02 20:47:10 nilsson Exp $");
+RCSID("$Id: system.c,v 1.153 2003/08/05 19:11:24 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -2648,7 +2648,7 @@ struct timeval
 };
 #endif
 
-/*! @decl array(int) gettimeoday()
+/*! @decl array(int) gettimeofday()
  *! Calls gettimeofday(); the result is an array of
  *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
  *! as given by the gettimeofday(2) system call 
