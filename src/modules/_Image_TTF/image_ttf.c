@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.28 2000/02/06 13:46:56 grubba Exp $
+ * $Id: image_ttf.c,v 1.29 2000/04/05 15:09:16 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.28 2000/02/06 13:46:56 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.29 2000/04/05 15:09:16 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -1240,6 +1240,23 @@ void pike_module_init(void)
 {
 #ifdef HAVE_LIBTTF
    unsigned char palette[5]={0,64,128,192,255};
+   TT_Error errcode;
+#endif /* HAVE_LIBTTF */
+
+   param_baseline=make_shared_string("baseline");
+   param_quality=make_shared_string("quality");
+
+#ifdef HAVE_LIBTTF
+   /* First check that we actually can initialize the FreeType library. */
+   if ((errcode = TT_Init_FreeType(&engine))) {
+#ifdef PIKE_DEBUG
+     fprintf(stderr, "TT_Init_FreeType() failed with code 0x%03x!\n", errcode);
+#endif /* PIKE_DEBUG */
+     return;
+   }
+
+   TT_Set_Raster_Gray_Palette(engine,(char*)palette);
+   TT_Init_Kerning_Extension( engine );
 
 #ifdef DYNAMIC_MODULE
    push_string(make_shared_string("Image"));
@@ -1301,12 +1318,5 @@ void pike_module_init(void)
       set_exit_callback(image_ttf_faceinstance_exit);
       image_ttf_faceinstance_program=end_program();
    }
-
-   TT_Init_FreeType(&engine);
-   TT_Set_Raster_Gray_Palette(engine,(char*)palette);
-   TT_Init_Kerning_Extension( engine );
 #endif /* HAVE_LIBTTF */
-
-   param_baseline=make_shared_string("baseline");
-   param_quality=make_shared_string("quality");
 }
