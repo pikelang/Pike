@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.373 2001/01/18 17:38:37 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.374 2001/01/18 21:40:29 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1992,15 +1992,21 @@ ifefun(gc,
   ]])
 
   test_do([[
-    class Foo
+    mixed eat_stack()
     {
-      object foo;
-      static void create(object o) {foo = o;}
+      mixed err;
+      if (!catch (err = eat_stack())) return err;
+      class Foo
+      {
+	object foo;
+	static void create(object o) {foo = o;}
+      };
+      Foo foo;
+      for(int i=0; i < 10000; i++)
+	foo = Foo(foo);
+      gc();
     };
-    Foo foo;
-    for(int i=0; i < 1000000; i++)
-      foo = Foo(foo);
-    gc();
+    if (mixed err = eat_stack()) throw (err);
   ]])
 
   test_any([[
