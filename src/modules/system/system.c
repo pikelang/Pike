@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.104 2003/05/12 09:05:58 tomas Exp $
+ * $Id: system.c,v 1.105 2003/10/17 15:39:50 mast Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.104 2003/05/12 09:05:58 tomas Exp $");
+RCSID("$Id: system.c,v 1.105 2003/10/17 15:39:50 mast Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1879,8 +1879,7 @@ static void f_get_netinfo_property(INT32 args)
   
   get_all_args("get_netinfo_property", args, "%s%s%s",
 	       &domain_str, &path_str, &prop_str);
-  pop_n_elems(args);
-  
+
   /* open domain */
   num_replies = 0;
   res = ni_open(NULL, domain_str, &dom);
@@ -1907,6 +1906,7 @@ static void f_get_netinfo_property(INT32 args)
     f_aggregate(num_replies);
   else
     push_int(0);
+  stack_pop_n_elems_keep_top (args);
 }
 #endif
 
