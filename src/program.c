@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.283 2000/12/01 08:09:53 hubbe Exp $");
+RCSID("$Id: program.c,v 1.284 2000/12/01 20:26:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -719,12 +719,12 @@ void low_start_new_program(struct program *p,
 #if 0
 #ifdef SHARED_NODES
   if (!node_hash.table) {
-    node_hash.table = malloc(sizeof(node *)*16411);
+    node_hash.table = malloc(sizeof(node *)*32831);
     if (!node_hash.table) {
       fatal("Out of memory!\n");
     }
-    MEMSET(node_hash.table, 0, sizeof(node *)*16411);
-    node_hash.size = 16411;
+    MEMSET(node_hash.table, 0, sizeof(node *)*32831);
+    node_hash.size = 32831;
   }
 #endif /* SHARED_NODES */
 #endif /* 0 */
@@ -3258,20 +3258,17 @@ PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
 
   while(cnt < prog->linenumbers + prog->num_linenumbers)
   {
-    int oline;
     if(*cnt == 127)
     {
       file=cnt+1;
       cnt=file+strlen(file)+1;
     }
     off+=get_small_number(&cnt);
-    oline=line;
-    line+=get_small_number(&cnt);
     if(off > offset)
     {
-      linep[0]=oline;
-      return file;
+      break;
     }
+    line+=get_small_number(&cnt);
   }
   linep[0]=line;
   return file;
