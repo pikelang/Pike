@@ -373,11 +373,11 @@ static class DocParserClass {
       parseError("@member: expected type, got %O", arg);
     //  werror("%%%%%% got type == %O\n", t->xml());
     parser->eat(EOF);
-    return xmltag("type", t->xml());
+    return t->xml();
   }
 
   static string valueArgHandler(string keyword, string arg) {
-    //  werror("This is the @type arg handler ");
+    //  werror("This is the @value arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
     string s = parser->parseLiteral() || parser->parseIdents();
@@ -394,7 +394,7 @@ static class DocParserClass {
         return xmltag("minvalue", xmlquote(s))
           + xmltag("maxvalue", xmlquote(s2));
       else
-        return xmltag(dots ? "minvalue" : "value", xmlquote(s));
+        return dots ? xmltag("minvalue", xmlquote(s)) : xmlquote(s);
     else
       if (s2)
         return xmltag("maxvalue", xmlquote(s2));
