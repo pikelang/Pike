@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.28 1998/10/14 05:51:20 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.29 1998/11/02 20:43:49 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -587,7 +587,8 @@ INLINE static int do_one(struct string_builder *r,
 #endif
 
       /* Find end of entry */
-      for(e=0;COMPARE_PCHARP(rest,<,end) && INDEX_PCHARP(rest,e)!='\n';e++);
+      for(e=0;COMPARE_PCHARP(ADD_PCHARP(rest, e),<,end) &&
+	    INDEX_PCHARP(rest,e)!='\n';e++);
 
       fix_field(r,rest,e,f->flags,f->column_width,
 		f->pad_string,f->pad_length,f->pos_pad);
