@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.25 1999/05/10 23:03:50 mirar Exp $
+ * $Id: image_jpeg.c,v 1.26 1999/05/12 04:47:20 hubbe Exp $
  */
 
 #include "global.h"
@@ -23,6 +23,9 @@
 #undef INT32
 #endif
 #endif /* 0 */
+
+#define XMD_H /* Avoid INT16 / INT32 being redefined */
+
 #include <jpeglib.h>
 #undef size_t
 #undef FILE
@@ -32,7 +35,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.25 1999/05/10 23:03:50 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.26 1999/05/12 04:47:20 hubbe Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
