@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.13 2003/05/07 10:46:20 grubba Exp $
+# $Id: make_variables.in,v 1.14 2003/05/28 16:45:46 grubba Exp $
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an
@@ -32,6 +32,7 @@ AR=@AR@
 SRCDIR=@srcdir@
 PMOD_TARGETS=@PMOD_TARGETS@
 make_variables_in=@make_variables_in@
+MODULE_PMOD_IN=@MODULE_PMOD_IN@
 
 MODNAME=@MODULE_NAME@
 MODPATH=@MODULE_PATH@
