@@ -7,7 +7,11 @@
 #include "gmp_machine.h"
 #include "types.h"
 
-#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
+#if !defined(HAVE_LIBGMP)
+#undef HAVE_GMP_H
+#endif
+
+#ifdef HAVE_GMP_H
 
 #include "interpret.h"
 #include "svalue.h"
