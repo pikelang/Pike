@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.18 1999/01/31 09:01:52 hubbe Exp $
+ * $Id: las.h,v 1.19 1999/03/04 06:05:03 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -76,6 +76,7 @@ node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
 node *mkintnode(int nr);
 node *mkfloatnode(FLOAT_TYPE foo);
+node *mkprgnode(struct program *p);
 node *mkapplynode(node *func,node *args);
 node *mkefuncallnode(char *function, node *args);
 node *mkopernode(char *oper_id, node *arg1, node *arg2);

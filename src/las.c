@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.75 1999/03/02 03:13:21 hubbe Exp $");
+RCSID("$Id: las.c,v 1.76 1999/03/04 06:05:01 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -473,6 +473,15 @@ node *mkfloatnode(FLOAT_TYPE foo)
 #endif
   res->u.sval.u.float_number = foo;
   return res;
+}
+
+
+node *mkprgnode(struct program *p)
+{
+  struct svalue s;
+  s.u.program=p;
+  s.type=T_PROGRAM;
+  return mkconstantsvaluenode(&s);
 }
 
 node *mkapplynode(node *func,node *args)

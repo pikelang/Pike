@@ -181,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.111 1999/03/02 03:13:19 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.112 1999/03/04 06:04:59 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1757,7 +1757,20 @@ low_idents: F_IDENTIFIER
     }
     if(!$$)
     {
-      $$=mkintnode(0);
+	if(ISCONSTSTR($2->u.sval.u.string,"`->") ||
+	   ISCONSTSTR($2->u.sval.u.string,"`[]") )
+	{
+	  $$=mkapplynode(mkprgnode(magic_index_program),mkintnode(0));
+	}
+	else if(ISCONSTSTR($2->u.sval.u.string,"`->=") ||
+		ISCONSTSTR($2->u.sval.u.string,"`[]=") )
+	{
+	  $$=mkapplynode(mkprgnode(magic_set_index_program),mkintnode(0));
+	}
+	else
+	{
+	  $$=mkintnode(0);
+	}
     }else{
       if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
     }

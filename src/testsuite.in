@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.152 1999/03/03 02:39:43 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.153 1999/03/04 06:05:14 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -169,10 +169,32 @@ test_eq([[ "\007" & "\023"]],"\003")
 test_eq([[ "\007" | "\023"]],"\027")
 test_eq([[ "\007" ^ "\023"]],"\024")
 
+
+test_any([[
+return class { int i=17; }()["i"]
+]],17)
+
+test_any([[
+return class { int i=17; mixed `[](string foo) { return i; }}()[""]
+]],17)
+
+test_any([[
+return class { int i=17; mixed `[](string foo) { return ::`[]("i"); }}()[""]
+]],17)
+
+test_any([[
+return class { int i=17; mixed `[](string foo) { return ::`[]; }}()[""]("i")
+]],17)
+
+test_any([[
+return class { int i=17; mixed `[](string foo) { return ::`[]; }}()[""]("y")
+]],0)
+
 test_compile_any([[
   class X { void hej() {} }
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
 ]])
+
 
 test_compile_any([[
   class X { static void hej() {} }

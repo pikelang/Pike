@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.33 1999/03/02 03:13:28 hubbe Exp $
+ * $Id: stralloc.h,v 1.34 1999/03/04 06:05:12 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -187,6 +187,7 @@ int low_quick_binary_strcmp(char *a,INT32 alen,
 			    char *b,INT32 blen);
 int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
 				const char *b,INT32 blen, int bsize);
+int c_compare_string(struct pike_string *s, char *foo, int len);
 int my_quick_strcmp(struct pike_string *a,struct pike_string *b);
 int my_strcmp(struct pike_string *a,struct pike_string *b);
 struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
@@ -238,6 +239,8 @@ p_wchar1 *require_wstring1(struct pike_string *s,
 p_wchar2 *require_wstring2(struct pike_string *s,
 			   char **to_free);
 /* Prototypes end here */
+
+#define ISCONSTSTR(X,Y) c_compare_string((X),Y,sizeof(Y)-sizeof(""))
 
 #ifdef DEBUG_MALLOC
 #define make_shared_string(X) \

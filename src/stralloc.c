@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.55 1999/03/01 05:32:35 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.56 1999/03/04 06:05:11 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -892,6 +892,7 @@ int low_quick_binary_strcmp(char *a,INT32 alen,
   }
 }
 
+
 /* does not take locale into account */
 int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
 				const char *b,INT32 blen, int bsize)
@@ -921,6 +922,11 @@ int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
     }
     return alen-blen;
   }
+}
+
+int c_compare_string(struct pike_string *s, char *foo, int len)
+{
+  return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
 }
 
 #ifndef HAVE_STRCOLL

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.112 1999/02/20 17:47:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.113 1999/03/04 06:05:09 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -479,7 +479,8 @@ void fixate_program(void)
 	sizeof(unsigned short),(fsortfun)program_function_index_compare);
   
   
-  for(i=0;i<NUM_LFUNS;i++)
+  /* Yes, it is supposed to start at 1  /Hubbe */
+  for(i=1;i<NUM_LFUNS;i++)
     new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
   
   new_program->flags |= PROGRAM_FIXED;
@@ -903,13 +904,16 @@ struct program *end_first_pass(int finish)
   if(init_node)
   {
     union idptr tmp;
-    dooptcode(s,
-	      mknode(F_ARG_LIST,
-		     init_node,mknode(F_RETURN,mkintnode(0),0)),
-	      function_type_string,
-	      0);
+    e=dooptcode(s,
+		mknode(F_ARG_LIST,
+		       init_node,mknode(F_RETURN,mkintnode(0),0)),
+		function_type_string,
+		ID_STATIC);
     init_node=0;
+  }else{
+    e=-1;
   }
+  new_program->lfuns[LFUN___INIT]=e;
 
   free_string(s);
 

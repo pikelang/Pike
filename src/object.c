@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.57 1999/02/10 21:46:45 hubbe Exp $");
+RCSID("$Id: object.c,v 1.58 1999/03/04 06:05:06 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -23,6 +23,7 @@ RCSID("$Id: object.c,v 1.57 1999/02/10 21:46:45 hubbe Exp $");
 #include "builtin_functions.h"
 #include "cyclic.h"
 #include "security.h"
+#include "module_support.h"
 
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
@@ -1164,4 +1165,140 @@ void count_memory_in_objects(INT32 *num_, INT32 *size_)
   }
   *num_=num;
   *size_=size;
+}
+
+struct magic_index_struct
+{
+  short inherit_no;
+  struct object *o;
+};
+
+#define MAGIC_THIS ((struct magic_index_struct *)(fp->current_storage))
+
+struct program *magic_index_program=0;
+struct program *magic_set_index_program=0;
+
+static void f_magic_index_create(INT32 args)
+{
+  struct object *o;
+  int inherit_no;
+
+  if(MAGIC_THIS->o)
+    error("Cannot call this function twice.\n");
+
+  get_all_args("create",args,"%i",&inherit_no);
+
+  o=fp->next->current_object;
+  if(!o) error("Illegal magic index call.\n");
+
+  add_ref(MAGIC_THIS->o=o);
+  MAGIC_THIS->inherit_no=inherit_no;
+}
+
+static void f_magic_index(INT32 args)
+{
+  int f,inherit_no;
+  struct pike_string *s;
+  struct object *o;
+  struct program *p;
+
+  get_all_args("::`->",args,"%S",&s);
+
+  if(!(o=MAGIC_THIS->o))
+    error("Magic index error\n");
+
+  if(!(p=o->prog))
+    error("Indexing a destructed object!\n");
+
+  inherit_no=MAGIC_THIS->inherit_no;
+
+  if(inherit_no >= p->num_inherits || inherit_no < 0)
+    error("Bad magic index (inherit_no=%d p->num_inherits=%d)!\n",inherit_no,p->num_inherits);
+
+  f=find_shared_string_identifier(s,p->inherits[inherit_no].prog);
+
+  if(f<0)
+  {
+    pop_n_elems(args);
+    push_int(0);
+    sp[-1].subtype=NUMBER_UNDEFINED;
+  }else{
+    struct svalue sval;
+    low_object_index_no_free(&sval,o,f+
+			     p->inherits[inherit_no].identifier_level);
+    pop_stack();
+    *sp=sval;
+    sp++;
+  }
+}
+
+static void f_magic_set_index(INT32 args)
+{
+  int f,inherit_no;
+  struct pike_string *s;
+  struct object *o;
+  struct program *p;
+  struct svalue *val;
+
+  get_all_args("::`->=",args,"%S%*",&s,&val);
+
+  if(!(o=MAGIC_THIS->o))
+    error("Magic index error\n");
+
+  if(!(p=o->prog))
+    error("Indexing a destructed object!\n");
+
+  inherit_no=MAGIC_THIS->inherit_no;
+
+  if(inherit_no >= p->num_inherits || inherit_no < 0)
+    error("Bad magic index!\n");
+
+  f=find_shared_string_identifier(s,p->inherits[inherit_no].prog);
+
+  if(f<0)
+  {
+    error("No such variable in object.\n");
+  }else{
+    object_low_set_index(o, f+
+			 p->inherits[inherit_no].identifier_level,
+			 val);
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
+
+void init_object(void)
+{
+  int offset;
+
+  start_new_program();
+  offset=ADD_STORAGE(struct magic_index_struct);
+  map_variable("__obj","object",ID_STATIC,
+	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  add_function("`()",f_magic_index,"function(string:mixed)",0);
+  add_function("create",f_magic_index_create,"function(int:void)",0);
+  magic_index_program=end_program();
+
+  start_new_program();
+  offset=ADD_STORAGE(struct magic_index_struct);
+  map_variable("__obj","object",ID_STATIC,
+	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  add_function("`()",f_magic_index,"function(string,mixed:void)",0);
+  add_function("create",f_magic_index_create,"function(int:void)",0);
+  magic_set_index_program=end_program();
+}
+
+void exit_object(void)
+{
+  if(magic_index_program)
+  {
+    free_program(magic_index_program);
+    magic_index_program=0;
+  }
+
+  if(magic_set_index_program)
+  {
+    free_program(magic_set_index_program);
+    magic_set_index_program=0;
+  }
 }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.23 1999/02/01 20:34:34 grubba Exp $
+ * $Id: object.h,v 1.24 1999/03/04 06:05:08 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -35,6 +35,8 @@ struct object
 extern struct object *first_object;
 extern struct object *master_object;
 extern struct program *master_program;
+extern struct program *magic_index_program;
+extern struct program *magic_set_index_program;
 
 #define free_object(O) do{ struct object *o_=(O); debug_malloc_touch(o_); if(!--o_->refs) really_free_object(o_); }while(0)
 
@@ -89,6 +91,9 @@ void gc_check_all_objects(void);
 void gc_mark_all_objects(void);
 void gc_free_all_unreferenced_objects(void);
 void count_memory_in_objects(INT32 *num_, INT32 *size_);
+struct magic_index_struct;
+void init_object(void);
+void exit_object(void);
 /* Prototypes end here */
 
 #ifdef MALLOC_DEBUG
