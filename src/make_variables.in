@@ -1,12 +1,13 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.5 2002/01/27 00:53:59 mast Exp $
+# $Id: make_variables.in,v 1.6 2002/01/27 01:48:43 mast Exp $
 #
 
 @SET_MAKE@
 prefix=@prefix@
 exec_prefix=$(prefix)/bin
 CC=@CC@
+CPP=@CPP@
 TMP_BUILDDIR=@BUILDDIR@
 TMP_BINDIR=@BINDIR@
 DEFINES=@CPPFLAGS@

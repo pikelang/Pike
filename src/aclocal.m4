@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.35 2002/01/27 00:53:59 mast Exp $
+dnl $Id: aclocal.m4,v 1.36 2002/01/27 01:48:42 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -65,10 +65,15 @@ define([MY_DESCR],
 
 define([MY_AC_PROG_CC],
 [
-  if test "x$enable_binary" != "xno"; then
-    define(ac_cv_prog_CC,pike_cv_prog_CC)
-    AC_PROG_CC
-    undefine([ac_cv_prog_CC])
+  define(ac_cv_prog_CC,pike_cv_prog_CC)
+  AC_PROG_CC
+  undefine([ac_cv_prog_CC])
+  AC_PROG_CPP
+  if test "x$enable_binary" = "no"; then
+    # Do the check above even when --disable-binary is used, since we
+    # need a real $CPP, and AC_PROG_CPP wants AC_PROG_CC to be called
+    # earlier.
+    CC="$BINDIR/nobinary_dummy cc"
   fi
 ])
 
@@ -229,7 +234,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.35 2002/01/27 00:53:59 mast Exp $
+# $Id: aclocal.m4,v 1.36 2002/01/27 01:48:42 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -276,8 +281,6 @@ fi
 AC_SUBST(CROSS)
 
 if test "x$enable_binary" = "xno"; then
-  CC="$BINDIR/nobinary_dummy cc"
-  CPP="$BINDIR/nobinary_dummy cpp"
   RUNPIKE="USE_PIKE"
   RUNTPIKE="USE_PIKE"
 elif test "x$ac_cv_prog_cc_cross" = "xyes"; then
@@ -336,6 +339,8 @@ pushdef([AC_OUTPUT],
   export exec_prefix
   AC_SUBST(CC)
   export CC
+  AC_SUBST(CPP)
+  export CPP
   AC_SUBST(BINDIR)
   export BINDIR
   AC_SUBST(BUILDDIR)
