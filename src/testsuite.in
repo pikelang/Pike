@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.543 2002/10/01 10:53:56 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.544 2002/10/03 21:49:18 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3304,6 +3304,10 @@ cond([[all_constants()->localtime && all_constants()->mktime]],
   test_any([[int x=time(); return mktime(localtime(x)) == x;]], 1)
   test_any([[int x=time(); for(int y=0;y<100;y++) if(mktime(localtime(x+y)) != x+y) return x+y; return 0;]], 0)
 ]])
+
+test_do([[catch(localtime(-1))]])
+test_do([[catch(gmtime(-1))]])
+test_do([[catch(ctime(-1))]])
 
 cond([[all_constants()->_verify_internals]],
 [[
