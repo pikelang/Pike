@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.71 2000/03/21 22:28:56 grubba Exp $
+# $Id: configure.in,v 1.72 2000/03/21 22:37:47 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -100,11 +100,11 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       # We're optimistic -- default to assuming it works.
       pike_cv_freebsd_sendfile_threadsafe="yes"
       if test -f /usr/lib/libc_r.so; then
-        if /usr/bin/nm /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
+        if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
 	  # Ok, looks like we can perform the test.
 	  # Assume we have a broken sendfile(2).
           pike_cv_freebsd_sendfile_threadsafe="yes"
-	  if /usr/bin/nm /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
+	  if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
 	    # Wee! They have actually added a wrapper for sendfile(2)!
 	    pike_cv_freebsd_sendfile_threadsafe="yes"
 	  else :; fi
