@@ -1,5 +1,5 @@
 ;;; pike.el -- Major mode for editing Pike and other LPC files.
-;;; $Id: pike.el,v 1.6 1999/08/15 13:32:52 mast Exp $
+;;; $Id: pike.el,v 1.7 1999/10/02 05:49:54 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -52,8 +52,6 @@ This adds highlighting of Java documentation tags, such as @see.")
 "function(.*)\\|"
 "array\\|"
 "array(.*)\\|"
-"function\\|"
-"function(.*)\\|"
 "mapping\\|"
 "mapping(.*)\\|"
 "multiset\\|"
@@ -101,7 +99,8 @@ The name is assumed to begin with a capital letter.")
   (defconst pike-operator-identifiers 
     (concat "``?\\(!=\\|->=?\\|<[<=]\\|==\\|>[=>]\\|\\[\\]=?\\|\(\)"
 	    "\\|[!%&+*/<>^|~-]\\)"))
-    ;; Basic font-lock support:
+
+  ;; Basic font-lock support:
   (setq pike-font-lock-keywords-1
 	(list
 	 ;; Keywords:
@@ -138,10 +137,9 @@ The name is assumed to begin with a capital letter.")
 		       pike-font-lock-identifier-regexp)
 	       (list 1 'font-lock-keyword-face)
 	       (list 2 'font-lock-function-name-face))
-        
-	 
+ 
 	 ;; Methods:
-	 (list (concat (concat "\\("
+	 (list (concat (concat "^\\s *\\("
 			       pike-font-lock-type-regexp
 			       "\\|"
 			       pike-font-lock-class-name-regexp
@@ -156,7 +154,6 @@ The name is assumed to begin with a capital letter.")
 		       "\\s *(")
 	       4
 	       'font-lock-function-name-face)
-
 	 ;; Case statements:
 	 ;; Any constant expression is allowed.
 	 '("\\<case\\>\\s *\\(.*\\):" 1 font-lock-reference-face)))
@@ -212,48 +209,30 @@ The name is assumed to begin with a capital letter.")
 		    (0 font-lock-variable-name-face)))
 
 	    ;; Declarations, class types and capitalized variables:
-	    ;;
-	    ;; Declarations are easy to recognize.  Capitalized words
-	    ;; followed by a closing parenthesis are treated as casts
-	    ;; if they also are followed by an expression.
-	    ;; Expressions beginning with a unary numerical operator,
-	    ;; e.g. +, can't be cast to an object type.
 	    (list (concat
-		   (concat "\\("
-			   pike-font-lock-class-name-regexp
+		   (concat "\\("	; 1
+			   pike-font-lock-class-name-regexp ; 2
 			   "\\|"
 			   (concat
 			    "object("
-			    "\\(\\sw+\\.\\)*"
-			    pike-font-lock-identifier-regexp
+			    "\\(\\sw+\\.\\)*" ; 3
+			    pike-font-lock-identifier-regexp ; 4
 			    ")")
 			   "\\)")
 		   ;;"\\s *\\(\\[\\s *\\]\\s *\\)*"
 		   (concat "\\("
-			   (concat
-			    (concat "\\("
-				    "\)*\\s *\\.\\.\\."
-				    "\\|"
-				    (concat
-				     "[,:|]"
-				     (concat "\\("
-					     "[" capital-letter "]"
-					     "\\|"
-					     pike-font-lock-type-regexp
-					     "\\)")
-				     "\\([,:|\(]\\|\\sw\\)*\)")
-				    "\\)?")
-			    "\\s *"
-			    "\\(`\\|\\<\\|$\\)")
+			   "[,:|\)]"
 			   "\\|"
 			   (concat
-			    "\)\\s *"
-			    "\\([\(\"]\\|\\<\\)")
-			   "\\|"
-			   "\\s *$"
+			    "\\(\\s *\\.\\.\\.\\)?"
+			    "\\(\\s \\|/\\*\\([^*]\\|\\*[^/]\\)*\\*/\\)*"
+			    "\\(`\\|\\<\\)")
 			   "\\)"))
-		  '(2 font-lock-type-face nil t)
-		  '(4 font-lock-type-face nil t)
+		  '(font-lock-match-pike-types
+		    (goto-char (or (match-beginning 2)
+				   (match-beginning 4)))
+		    (goto-char (match-end 1))
+		    (1 font-lock-type-face))
 		  (list (concat "\\=" pike-font-lock-identifier-regexp
 				"\\.")
 			'(progn
@@ -294,6 +273,35 @@ The name is assumed to begin with a capital letter.")
 (defvar pike-font-lock-keywords pike-font-lock-keywords-1
   "Additional expressions to highlight in Pike mode.")
 
+(defun font-lock-match-pike-types (limit)
+  "Match and skip over types."
+  (prog1
+      (and (looking-at pike-font-lock-identifier-regexp)
+	   (save-restriction
+	     (narrow-to-region (save-excursion
+				 (beginning-of-line)
+				 (point))
+			       limit)
+	     (save-match-data
+	       (let ((pos (point)))
+		 (while (and (condition-case nil
+				 (progn (up-list -1) t)
+			       (error nil))
+			     (eq (following-char) ?\()
+			     (save-excursion
+			       (skip-syntax-backward " ")
+			       (skip-syntax-backward "w")
+			       (looking-at pike-font-lock-type-regexp)))
+		   (setq pos (point)))
+		 (goto-char pos)))
+	     (condition-case nil
+		 (prog2
+		     (forward-sexp)
+		     (save-match-data
+		       (looking-at "\\s *\\(`\\|\\<\\|$\\)")))
+	       (error nil))))
+    (goto-char limit)))
+
 ;; Match and move over any declaration/definition item after
 ;; point.  Does not match items which look like a type declaration
 ;; (primitive types and class names, i.e. capitalized words.)
@@ -312,7 +320,7 @@ The name is assumed to begin with a capital letter.")
     (forward-char 1))
 ;  (if (looking-at "\\s *\\(\\[\\s *\\]\\s *\\)*")
 ;      (goto-char (match-end 0)))
-  (looking-at "\\s *\\(\\.\\.\\.\\s *\\)?")
+  (looking-at "\\(\\s *\\.\\.\\.\\)?\\(\\s \\|/\\*\\([^*]\\|\\*[^/]\\)*\\*/\\)*")
   (goto-char (match-end 0))
   (and
    (looking-at pike-font-lock-identifier-regexp)
@@ -326,7 +334,7 @@ The name is assumed to begin with a capital letter.")
        (not (looking-at
 	     (concat pike-font-lock-class-name-regexp
 		     ;;"\\s *\\(\\[\\s *\\]\\s *\\)*\\<")))))
-		     "\\s *\\<")))))
+		     "\\s *\\(\\<\\||\\)")))))
    (save-match-data
      (let ((start (match-end 0)))
        (condition-case nil
