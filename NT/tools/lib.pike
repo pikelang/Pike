@@ -12,6 +12,16 @@ void exece(string cmd, array(string) args)
 string fixpath(string s)
 {
   string mnt=getenv("NTMOUNT");
+  array st;
+
+  while ((st = file_stat(s, 1)) && (st[1] == -3)) {
+    string new_s = readlink(s);
+    if (new_s == s) {
+      werror(sprintf("%O is a symlink to itself!\n", s));
+      exit(1);
+    }
+    s = new_s;
+  }
   if(mnt && strlen(mnt)) s=replace(s,mnt,"");
   return replace(s,"/","\\");
 }
@@ -366,7 +376,6 @@ string getntenv(string var)
 
 int do_cmd(string *cmd, mixed|void filter)
 {
-  werror("DOING "+cmd*" "+"\n");
   return silent_do_cmd(cmd,filter);
 }
 
