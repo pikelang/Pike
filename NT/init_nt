@@ -1,8 +1,9 @@
 #!/bin/sh
 
 # Support local settings.
-if [ -f "$HOME/.init_ntrc" ]; then
-  . "$HOME/.init_ntrc"
+INIT_NTRC=${INIT_NTRC-"$HOME/.init_ntrc"}
+if [ -f "$INIT_NTRC" ]; then
+  . "$INIT_NTRC"
 fi
 
 #This can be 'sprsh', 'wine' or 'cygwin'
@@ -154,22 +155,27 @@ export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE
 export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
 export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE
 
-case /$SHELL-$TERM in
-   */bash-xterm)
-     PROMPT_COMMAND="echo -n ]2\; $REMOTE_METHOD NT compile ]1\; $CC"
-     export PROMPT_COMMAND
-   ;;
-esac
+if [ "$#" = "0" ]; then
+  case /$SHELL-$TERM in
+     */bash-xterm)
+       PROMPT_COMMAND="echo -n ]2\; $REMOTE_METHOD NT compile ]1\; $CC"
+       export PROMPT_COMMAND
+     ;;
+  esac
 
-case /$0 in
-  */init_nt)
-    case /$SHELL in
-      */bash)
-        exec $SHELL -rcfile $NT_TOOL_PATH/bash-fixup
-      ;;
-      *)
-        exec $SHELL
-      ;;
-    esac
-  ;;
-esac
+  case /$0 in
+    */init_nt)
+      case /$SHELL in
+        */bash)
+          exec $SHELL -rcfile $NT_TOOL_PATH/bash-fixup
+        ;;
+        *)
+          exec $SHELL
+        ;;
+      esac
+    ;;
+  esac
+else
+  exec "$@"
+fi
+
