@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.188 2001/06/13 13:17:57 grubba Exp $ */
+/* $Id: image.c,v 1.189 2001/06/13 13:41:13 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.188 2001/06/13 13:17:57 grubba Exp $
+**!	$Id: image.c,v 1.189 2001/06/13 13:41:13 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.188 2001/06/13 13:17:57 grubba Exp $");
+RCSID("$Id: image.c,v 1.189 2001/06/13 13:41:13 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -344,7 +344,7 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 	 {
 	    r += DO_NOT_WARN((int)(matrix[i+j*width].r*img->img[xp+yp*img->xsize].r));
 	    g += DO_NOT_WARN((int)(matrix[i+j*width].g*img->img[xp+yp*img->xsize].g));
-	    b += DO_NOT_WARN((int)(matrix[i+j*width].b*img->img[xp+yp*img->xsize].b);
+	    b += DO_NOT_WARN((int)(matrix[i+j*width].b*img->img[xp+yp*img->xsize].b));
 #ifdef MATRIX_DEBUG
 	    fprintf(stderr,"%d,%d %d,%d->%d,%d,%d\n",
 		    i,j,xp,yp,
