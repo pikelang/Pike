@@ -996,11 +996,6 @@ class NScope
 	  switch(subtype) {
 	  case "method":
 	    if (n) {
-	      if (!h_name) {
-		h_name = n;
-		child->get_attributes()["homogen-name"] = n;
-		h_scope = symbols[n];
-	      }
 	      if (!h_scope) {
 		h_scope = NScope(thing, path);
 	      } else {
