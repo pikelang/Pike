@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "interpret.h"
 
-RCSID("$Id: peep.c,v 1.58 2001/07/17 20:16:40 grubba Exp $");
+RCSID("$Id: peep.c,v 1.59 2001/07/17 22:03:33 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -140,10 +140,10 @@ void update_arg(int instr,INT32 arg)
 /* FIXME: Move this to pike_cpulib.h */
 #ifdef __GNUC__
 
+#ifdef __i386__
+
 #define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
-
-#ifdef __i386__
 
 /* This is ugly, but since the code may be moved we cannot use
  * relative addressing :(
@@ -182,38 +182,43 @@ void update_arg(int instr,INT32 arg)
     INT32 reg_ = REG;							\
     if ((-4096 <= val_) && (val_ <= 4095)) {				\
       /* or %g0, val_, reg */						\
-      PUSH_INT(0x80102000|(reg_<<25)|(val_ & 0x1fff));			\
+      add_to_program(0x80102000|(reg_<<25)|(val_ & 0x1fff));		\
     } else {								\
       /* sethi %hi(val_), reg */					\
-      PUSH_INT(0x01000000|(reg_<<25)|((val_ >> 10)&0x3fffff));		\
+      add_to_program(0x01000000|(reg_<<25)|((val_ >> 10)&0x3fffff));	\
       if (val_ & 0x3ff) {						\
 	/* or reg, %lo(val_), reg */					\
-	PUSH_INT(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x0fff));	\
+	add_to_program(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x0fff)); \
       }									\
       if (val_ < 0) {							\
 	/* sra reg, %g0, reg */						\
-	PUSH_INT(0x81380000|(reg_<<25)|(reg_<<14));			\
+	add_to_program(0x81380000|(reg_<<25)|(reg_<<14));		\
       }									\
     }									\
   } while(0)
 
-#define CALL_ABSOLUTE(X) do {				\
-    SET_REG(REG_O2, (INT32)(X));			\
-    /* jmpl %o2, %o7	*/				\
-    PUSH_INT(0x81c00000|(REG_O7<<25)|(REG_O2<<14));	\
-    /* noop		*/				\
-    PUSH_INT(0x01000000);				\
+#define CALL_ABSOLUTE(X) do {					\
+    SET_REG(REG_O2, (INT32)(X));				\
+    /* jmpl %o2, %o7	*/					\
+    add_to_program(0x81c00000|(REG_O7<<25)|(REG_O2<<14));	\
+    /* noop		*/					\
+    add_to_program(0x01000000);					\
   } while(0)
 
-#define UPDATE_PC() do {						     \
-    INT32 tmp = PC;							     \
-    SET_REG(REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	     \
-    /* lduw %o3, %o3 */							     \
-    PUSH_INT(0xc0000000|(REG_O3<<25)|(REG_O3<<14));			     \
-    SET_REG(REG_O4, tmp);						     \
-    /* stw %o4, yy(%o3) */						     \
-    PUSH_INT(0xc0202000|(REG_O4<<25)|(REG_O3<<14)|OFFSETOF(pike_frame, pc)); \
+#if 0
+#define UPDATE_PC() do {						\
+    INT32 tmp = PC;							\
+    SET_REG(REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
+    /* lduw %o3, %o3 */							\
+    add_to_program(0xc0000000|(REG_O3<<25)|(REG_O3<<14));		\
+    SET_REG(REG_O4, tmp);						\
+    /* stw %o4, yy(%o3) */						\
+    add_to_program(0xc0202000|(REG_O4<<25)|(REG_O3<<14)|		\
+		   OFFSETOF(pike_frame, pc));				\
   } while(0)
+#else
+#define UPDATE_PC()
+#endif
 #endif /* __i386__ || sparc */
 #endif /* __GNUC__ */
 
@@ -510,6 +515,8 @@ void assemble(void)
     case F_BYTE:
 #ifdef HAVE_COMPUTED_GOTO
       add_to_program((void *)(ptrdiff_t)(unsigned char)(c->arg));
+#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+      add_to_program(c->arg);
 #else /* !HAVE_COMPUTED_GOTO */
       add_to_program((unsigned char)(c->arg));
 #endif /* HAVE_COMPUTED_GOTO */
@@ -518,6 +525,8 @@ void assemble(void)
     case F_DATA:
 #ifdef HAVE_COMPUTED_GOTO
       add_to_program((void *)(ptrdiff_t)c->arg);
+#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+      add_to_program(c->arg);
 #else /* !HAVE_COMPUTED_GOTO */
       ins_int(c->arg, (void(*)(char))add_to_program);
 #endif /* HAVE_COMPUTED_GOTO */
@@ -553,6 +562,8 @@ void assemble(void)
 	tmp = DO_NOT_WARN((INT32)PC);
 #ifdef HAVE_COMPUTED_GOTO
 	add_to_program(jumps[c->arg]);
+#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+	add_to_program(jumps[c->arg]);
 #else /* !HAVE_COMPUTED_GOTO */
 	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
 #endif /* HAVE_COMPUTED_GOTO */
@@ -583,7 +594,7 @@ void assemble(void)
 
   for(e=0;e<=max_label;e++)
   {
-    int tmp2=labels[e];
+    INT32 tmp2=labels[e];
 
     while(jumps[e]!=-1)
     {
@@ -597,6 +608,10 @@ void assemble(void)
       Pike_compiler->new_program->program[jumps[e]] =
 	(PIKE_OPCODE_T)(ptrdiff_t)(tmp2 - jumps[e]);
       jumps[e] = tmp;
+#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+      tmp = Pike_compiler->new_program->program[jumps[e]];
+      Pike_compiler->new_program->program[jumps[e]] = tmp2 - jumps[e];
+      jumps[e] = tmp;      
 #else /* !HAVE_COMPUTED_GOTO */
       tmp=read_int(jumps[e]);
       upd_int(jumps[e], tmp2 - jumps[e]);

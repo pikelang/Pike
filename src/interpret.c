@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.224 2001/07/17 20:32:36 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.225 2001/07/17 22:03:33 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -805,6 +805,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   if (t_flag) {
     int i;
     fprintf(stderr, "Calling code at 0x%p:\n", pc);
+#ifdef sparc
+    if (((INT32)pc) & 0x03) {
+      fatal("Odd offset!\n");
+    }
+#endif /* sparc */
     for (i=0; i < 16; i+=4) {
       fprintf(stderr,
 	      "  0x%08x 0x%08x 0x%08x 0x%08x\n",
@@ -1410,6 +1415,9 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #ifdef HAVE_COMPUTED_GOTO
 	num_locals = (int)(ptrdiff_t)((pc++)[0]);
 	num_args = (int)(ptrdiff_t)((pc++)[0]);
+#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+	num_locals = (pc++)[0];
+	num_args = (pc++)[0];
 #else /* !HAVE_COMPUTED_GOTO */
 	num_locals = EXTRACT_UCHAR(pc++);
 	num_args = EXTRACT_UCHAR(pc++);

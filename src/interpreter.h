@@ -39,8 +39,13 @@
 #define FETCH
 
 #define LOW_GET_ARG()	((PROG_COUNTER++)[0])
+#if defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+#define LOW_GET_JUMP()	(PROG_COUNTER[0])
+#define LOW_SKIPJUMP()	(++PROG_COUNTER)
+#else /* !(PIKE_USE_MACHINE_CODE && sparc) */
 #define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
 #define LOW_SKIPJUMP()	(PROG_COUNTER += sizeof(INT32))
+#endif /* PIKE_USE_MACHINE_CODE && sparc */
 
 #ifdef PIKE_DEBUG
 
