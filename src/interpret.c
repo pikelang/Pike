@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.225 2001/07/17 22:03:33 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.226 2001/07/18 11:36:01 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -747,8 +747,13 @@ static int o_catch(PIKE_OPCODE_T *pc);
 
 #ifdef PIKE_USE_MACHINE_CODE
 
+#ifdef sparc
+#define LOW_GET_JUMP()	(PROG_COUNTER[0])
+#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
+#else /* !sparc */
 #define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
-#define LOW_SKIPJUMP()	(PROG_COUNTER += sizeof(INT32))
+#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + sizeof(INT32)))
+#endif /* sparc */
 
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
@@ -792,8 +797,9 @@ C }
 #ifdef __i386__
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
 #elif defined(sparc)
-#define PROG_COUNTER reg_pc
-register unsigned char *reg_pc __asm__ ("%i7");
+register unsigned INT32 *reg_pc __asm__ ("%i7");
+#define PROG_COUNTER		(reg_pc + 2)
+#define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)X)-2)
 #endif /* __i386__ || sparc */
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
@@ -854,11 +860,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #endif /* __GNUC__ */
 
-#ifdef sparc
-#define SET_PROG_COUNTER(X)	(PROG_COUNTER=((char *)X)-8)
-#else /* !sparc */
+#ifndef SET_PROG_COUNTER
 #define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
-#endif /* sparc */
+#endif /* SET_PROG_COUNTER */
 
 #undef DONE
 #undef FETCH
@@ -875,6 +879,10 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #else /* PIKE_USE_MACHINE_CODE */
 
+
+#ifndef SET_PROG_COUNTER
+#define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
+#endif /* SET_PROG_COUNTER */
 
 #ifdef HAVE_COMPUTED_GOTO
 int lookup_sort_fun(const void *a, const void *b)

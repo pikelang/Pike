@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.77 2001/07/17 17:50:38 grubba Exp $
+ * $Id: interpret_functions.h,v 1.78 2001/07/18 11:36:01 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -82,7 +82,7 @@
 #define DOJUMP() do { \
     INT32 tmp; \
     tmp = GET_JUMP(); \
-    PROG_COUNTER += tmp; \
+    SET_PROG_COUNTER(PROG_COUNTER + tmp); \
     FETCH; \
     if(tmp < 0) \
       fast_check_threads_etc(6); \
@@ -103,7 +103,7 @@
   {							\
     int f=Pike_fp->flags;				\
     low_return();					\
-    PROG_COUNTER=Pike_fp->pc;				\
+    SET_PROG_COUNTER(Pike_fp->pc);			\
     FETCH;						\
     if(f & PIKE_FRAME_RETURN_POP)			\
       pop_stack();					\
@@ -224,7 +224,8 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", {
 OPCODE0(F_FLOAT, "push float", {
   /* FIXME, this opcode uses 'PROG_COUNTER' which is not allowed.. */
   MEMCPY((void *)&Pike_sp->u.float_number, PROG_COUNTER, sizeof(FLOAT_TYPE));
-  PROG_COUNTER += DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(FLOAT_TYPE));
+  SET_PROG_COUNTER(PROG_COUNTER +
+		   DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(FLOAT_TYPE)));
   FETCH;
   Pike_sp->type=PIKE_T_FLOAT;
   Pike_sp++;
@@ -1094,10 +1095,10 @@ OPCODE0_JUMP(F_CATCH, "catch", {
     /* There was a return inside the evaluated code */
     DO_DUMB_RETURN;
   case 2:
-    PROG_COUNTER = Pike_fp->pc;
+    SET_PROG_COUNTER(Pike_fp->pc);
     break;
   default:
-    PROG_COUNTER += GET_JUMP();
+    SET_PROG_COUNTER(PROG_COUNTER + GET_JUMP());
   }
   FETCH;
 });
@@ -1114,14 +1115,14 @@ OPCODE0(F_THROW_ZERO, "throw(0)", {
 
 OPCODE1(F_SWITCH, "switch", {
   INT32 tmp;
+  PIKE_OPCODE_T *addr = PROG_COUNTER;
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
-  PROG_COUNTER = DO_IF_ELSE_COMPUTED_GOTO(PROG_COUNTER, (PIKE_OPCODE_T *)
-				DO_ALIGN(PROG_COUNTER,((ptrdiff_t)sizeof(INT32))));
-  PROG_COUNTER += (tmp>=0 ? 1+tmp*2 : 2*~tmp) *
-    DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
-  if(*(INT32*)PROG_COUNTER < 0) fast_check_threads_etc(7);
-  PROG_COUNTER += *(INT32*)PROG_COUNTER;
+  addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
+				  DO_ALIGN(addr,((ptrdiff_t)sizeof(INT32))));
+  addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
+  if(*(INT32*)addr < 0) fast_check_threads_etc(7);
+  SET_PROG_COUNTER(addr + *(INT32*)addr);
   FETCH;
   pop_stack();
 });
@@ -1129,31 +1130,31 @@ OPCODE1(F_SWITCH, "switch", {
 OPCODE1(F_SWITCH_ON_INDEX, "switch on index", {
   INT32 tmp;
   struct svalue s;
+  PIKE_OPCODE_T *addr = PROG_COUNTER;
   index_no_free(&s,Pike_sp-2,Pike_sp-1);
   Pike_sp++[0]=s;
 
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
   pop_n_elems(3);
-  PROG_COUNTER = DO_IF_ELSE_COMPUTED_GOTO(PROG_COUNTER, (PIKE_OPCODE_T *)
-				DO_ALIGN(PROG_COUNTER,((ptrdiff_t)sizeof(INT32))));
-  PROG_COUNTER += (tmp>=0 ? 1+tmp*2 : 2*~tmp) *
-    DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
-  if(*(INT32*)PROG_COUNTER < 0) fast_check_threads_etc(7);
-  PROG_COUNTER+=*(INT32*)PROG_COUNTER;
+  addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
+				  DO_ALIGN(addr,((ptrdiff_t)sizeof(INT32))));
+  addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
+  if(*(INT32*)addr < 0) fast_check_threads_etc(7);
+  SET_PROG_COUNTER(addr + *(INT32*)addr);
   FETCH;
 });
 
 OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", {
   INT32 tmp;
+  PIKE_OPCODE_T *addr = PROG_COUNTER;
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
-  PROG_COUNTER = DO_IF_ELSE_COMPUTED_GOTO(PROG_COUNTER, (PIKE_OPCODE_T *)
-				DO_ALIGN(PROG_COUNTER,((ptrdiff_t)sizeof(INT32))));
-  PROG_COUNTER += (tmp>=0 ? 1+tmp*2 : 2*~tmp) *
-    DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
-  if(*(INT32*)PROG_COUNTER < 0) fast_check_threads_etc(7);
-  PROG_COUNTER+=*(INT32*)PROG_COUNTER;
+  addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
+				  DO_ALIGN(addr,((ptrdiff_t)sizeof(INT32))));
+  addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
+  if(*(INT32*)addr < 0) fast_check_threads_etc(7);
+  SET_PROG_COUNTER(addr + *(INT32*)addr);
   FETCH;
 });
 
@@ -1695,8 +1696,8 @@ OP(PIKE_CONCAT(F_,OPCODE),NAME, {					   \
 if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),	   \
 		  ARG2, ARG3))						   \
 {									   \
-  Pike_fp->next->pc=PROG_COUNTER;							   \
-  PROG_COUNTER=Pike_fp->pc;							   \
+  Pike_fp->next->pc=PROG_COUNTER;					   \
+  SET_PROG_COUNTER(Pike_fp->pc);					   \
   FETCH;								   \
   Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
 }									   \
@@ -1707,7 +1708,7 @@ OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", {			   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->next->pc=PROG_COUNTER;					   \
-    PROG_COUNTER=Pike_fp->pc;						   \
+    SET_PROG_COUNTER(Pike_fp->pc);					   \
     FETCH;								   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
   }else{								   \
@@ -1720,7 +1721,7 @@ OP(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),NAME " & return", {		   \
 		    ARG2,ARG3))						   \
   {									   \
     DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
-    PROG_COUNTER=Pike_fp->pc;						   \
+    SET_PROG_COUNTER(Pike_fp->pc);					   \
     FETCH;								   \
     unlink_previous_frame();						   \
   }else{								   \
@@ -1733,7 +1734,7 @@ OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, {				   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->next->pc=PROG_COUNTER;					   \
-    PROG_COUNTER=Pike_fp->pc;						   \
+    SET_PROG_COUNTER(Pike_fp->pc);					   \
     FETCH;								   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;			   \
   }									   \
@@ -1743,8 +1744,8 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", {	   \
   if(low_mega_apply(TYPE, 0,						   \
 		    ARG2, ARG3))					   \
   {									   \
-    Pike_fp->next->pc=PROG_COUNTER;						   \
-    PROG_COUNTER=Pike_fp->pc;							   \
+    Pike_fp->next->pc=PROG_COUNTER;					   \
+    SET_PROG_COUNTER(Pike_fp->pc);					   \
     FETCH;								   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
   }else{								   \
@@ -1757,7 +1758,7 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),"mark, " NAME " & return", {   \
 		    ARG2,ARG3))						   \
   {									   \
     DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
-    PROG_COUNTER=Pike_fp->pc;						   \
+    SET_PROG_COUNTER(Pike_fp->pc);					   \
     FETCH;								   \
     unlink_previous_frame();						   \
   }else{								   \
@@ -1862,14 +1863,15 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
    */
   if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
-    PROG_COUNTER += DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
+    SET_PROG_COUNTER(PROG_COUNTER +
+		     DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32)));
     if(low_mega_apply(APPLY_LOW,
 		      DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		      Pike_fp->current_object,
 		      (void *)(arg1+Pike_fp->context.identifier_level)))
     {
       Pike_fp->next->pc=PROG_COUNTER;
-      PROG_COUNTER=Pike_fp->pc;
+      SET_PROG_COUNTER(Pike_fp->pc);
       FETCH;
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
     } else {
@@ -1923,7 +1925,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
     });
     
     Pike_fp->pc = PROG_COUNTER + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
-    PROG_COUNTER=addr;
+    SET_PROG_COUNTER(addr);
     FETCH;
     
     clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
@@ -1967,9 +1969,7 @@ OPCODE0_JUMP(F_RECUR_AND_POP, "recur & pop", {
 			     EXTRACT_UCHAR(addr-2));
   
   DO_IF_DEBUG({
-    if(new_frame->num_args !=
-       DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
-				EXTRACT_UCHAR(addr-1)))
+    if(new_frame->num_args != (ptrdiff_t)addr[-1])
       fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
 	    new_frame->num_args,
 	    DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
@@ -1980,8 +1980,8 @@ OPCODE0_JUMP(F_RECUR_AND_POP, "recur & pop", {
 	      new_frame->num_locals - new_frame->num_args);
   });
   
-  Pike_fp->pc = PROG_COUNTER + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
-  PROG_COUNTER=addr;
+  Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
+  SET_PROG_COUNTER(addr);
   FETCH;
   
   clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
@@ -2029,7 +2029,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", {
   }
 
   clear_svalues(Pike_sp, num_locals - args);
-  PROG_COUNTER=addr;
+  SET_PROG_COUNTER(addr);
   FETCH;
   Pike_sp += num_locals - args;
 
@@ -2041,7 +2041,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", {
 
 OPCODE0(F_BREAKPOINT, "breakpoint", {
   extern void o_breakpoint(void);
-  PROG_COUNTER--;
+  SET_PROG_COUNTER(PROG_COUNTER-1);
   FETCH;
   o_breakpoint();
 });
