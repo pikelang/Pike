@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.9 2002/05/13 13:18:35 grubba Exp $
+//  $Id: Connection.pike,v 1.10 2002/11/29 01:10:58 nilsson Exp $
 //!	This class contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or
@@ -122,8 +122,6 @@ class SyncRequest
       if (!m) return ret;
       else return m;
    }
-
-  string _sprintf(){ return "SyncRequest()"; }
 }
 
 class AsyncRequest
@@ -141,8 +139,6 @@ class AsyncRequest
       req->async(@args);
       return req;
    }
-
-  string _sprintf(){ return "AsyncRequest()"; }
 }
 
 class AsyncCBRequest
@@ -161,8 +157,6 @@ class AsyncCBRequest
       req->async(@args);
       return req;
    }
-
-  string _sprintf(){ return "AsyncCBRequest()"; }
 }
 
 mixed `->(string request)
@@ -181,5 +175,3 @@ mixed `->(string request)
 }
 
 mixed `[](string request) { return `->(request); }
-
-string _sprintf(){ return "Connection()"; }
