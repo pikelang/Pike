@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.9 1999/05/30 20:12:21 mirar Exp $");
+RCSID("$Id: xcf.c,v 1.10 1999/06/24 23:15:21 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -36,7 +36,6 @@ extern struct program *image_program;
 #define TILE_WIDTH 64
 #define TILE_HEIGHT 64
 
-#define MIN(X,Y) ((X)<(Y)?(X):(Y))
 #define STRING(X) static struct pike_string *s_##X;
 #include "xcf_constant_strings.h"
 #undef STRING
@@ -387,7 +386,7 @@ static struct level read_level( struct buffer *buff,
     else if(offset2)
       ob.len = offset2-offset;
     else
-      ob.len = MIN((TILE_WIDTH*TILE_HEIGHT*5),ob.len);
+      ob.len = MINIMUM((TILE_WIDTH*TILE_HEIGHT*5),ob.len);
     tile->data = ob;
     tile->next = NULL;
 /* fprintf(stderr, "tile, o=%d; o2=%d; l=%d\n", offset, offset2,ob.len); */
@@ -1134,8 +1133,8 @@ void image_xcf_f__decode_tiles( INT32 args )
     struct pike_string *tile = tiles->item[l].u.string;
     unsigned int eheight, ewidth;
     unsigned char *s;
-    ewidth = MIN(TILE_WIDTH, i->xsize-x);
-    eheight = MIN(TILE_HEIGHT, i->ysize-y);
+    ewidth = MINIMUM(TILE_WIDTH, i->xsize-x);
+    eheight = MINIMUM(TILE_HEIGHT, i->ysize-y);
     tile->refs++;
 
 /*     fprintf(stderr, "       tile %d/%d [%dx%d]  %dbpp      \n", */
