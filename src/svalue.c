@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.116 2001/08/15 03:31:55 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.117 2001/08/31 06:55:23 hubbe Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -519,8 +519,10 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
     q=DO_NOT_WARN((unsigned INT32)(s->u.float_number * 16843009.731757771173));
     break;
   }
+#if 0
   q+=q % 997;
   q+=((q + s->type) * 9248339);
+#endif
   
   return q;
 }
