@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.211 2000/09/13 12:13:57 grubba Exp $");
+RCSID("$Id: las.c,v 1.212 2000/09/13 12:28:18 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3398,17 +3398,47 @@ void fix_type_field(node *n)
 #endif /* PIKE_DEBUG */
 }
 
-/* FIXME: Ought to use parent pointer to avoid recursion. */
 static void zapp_try_optimize(node *n)
 {
+  node *parent;
+  node *orig_n = n;
+
   if(!n) return;
-  n->node_info &=~ OPT_TRY_OPTIMIZE;
-  n->tree_info &=~ OPT_TRY_OPTIMIZE;
 
-  fatal_check_c_stack(16384);
+  parent = n->parent;
+  n->parent = NULL;
 
-  if(car_is_node(n)) zapp_try_optimize(CAR(n));
-  if(cdr_is_node(n)) zapp_try_optimize(CDR(n));
+  while(1) {
+    n->node_info &= ~OPT_TRY_OPTIMIZE;
+    n->tree_info &= ~OPT_TRY_OPTIMIZE;
+
+    if (car_is_node(n)) {
+      CAR(n)->parent = n;
+      n = CAR(n);
+      continue;
+    }
+    if (cdr_is_node(n)) {
+      CDR(n)->parent = n;
+      n = CDR(n);
+      continue;
+    }
+    while (n->parent && 
+	   (!cdr_is_node(n->parent) || (CDR(n->parent) == n))) {
+      n = n->parent;
+    }
+    if (n->parent && cdr_is_node(n->parent)) {
+      CDR(n->parent)->parent = n->parent;
+      n = CDR(n->parent);
+      continue;
+    }
+    break;
+  }
+#ifdef PIKE_DEBUG
+  if (n != orig_n) {
+    fatal("zzap_try_optimize() lost track of parent.\n");
+  }
+#endif /* PIKE_DEBUG */
+  n->parent = parent;
 }
 
 #if defined(SHARED_NODES) && !defined(IN_TPIKE)
