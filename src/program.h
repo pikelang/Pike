@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.117 2002/04/18 09:21:58 grubba Exp $
+ * $Id: program.h,v 1.118 2002/04/18 09:33:38 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -331,6 +331,7 @@ extern int compilation_depth;
 /* Prototypes begin here */
 void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(INT16 i, void (*func)(char tmp));
+void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
 struct node_s *find_module_identifier(struct pike_string *ident,
