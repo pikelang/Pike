@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.160 2002/11/23 16:36:44 mast Exp $
+|| $Id: docode.c,v 1.161 2003/02/24 21:00:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.160 2002/11/23 16:36:44 mast Exp $");
+RCSID("$Id: docode.c,v 1.161 2003/02/24 21:00:44 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -694,8 +694,13 @@ static int do_docode2(node *n, INT16 flags)
 	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
 	  return 2;
 	}else{
-	  if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(state->new_program,n->u.integer.b)->identifier_flags))
+	  struct identifier *id = ID_FROM_INT(state->new_program,n->u.integer.b);
+	  if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
+	     id->identifier_flags & IDENTIFIER_HAS_BODY)
 	  {
+	    /* Only use this opcode when it's certain that the result
+	     * can't zero, i.e. when we know the function isn't just a
+	     * prototype. */
 	    emit1(F_LFUN, n->u.integer.b);
 	  }else{
 	    emit1(F_GLOBAL, n->u.integer.b);
@@ -2055,7 +2060,8 @@ static int do_docode2(node *n, INT16 flags)
       {
 	if(n->u.sval.u.object == Pike_compiler->fake_object)
 	{
-	  emit1(F_LFUN,n->u.sval.subtype);
+	  /* When does this occur? /mast */
+	  emit1(F_GLOBAL,n->u.sval.subtype);
 	  return 1;
 	}
 
@@ -2176,14 +2182,21 @@ static int do_docode2(node *n, INT16 flags)
       return 1;
     }
 
-  case F_IDENTIFIER:
-    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program, n->u.id.number)->identifier_flags))
+  case F_IDENTIFIER: {
+    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, n->u.id.number);
+    if(IDENTIFIER_IS_FUNCTION(id->identifier_flags))
     {
       if(flags & WANT_LVALUE)
       {
 	yyerror("Cannot assign functions.\n");
       }else{
-	emit1(F_LFUN,n->u.id.number);
+	if (id->identifier_flags & IDENTIFIER_HAS_BODY)
+	  /* Only use this opcode when it's certain that the result
+	   * can't zero, i.e. when we know the function isn't just a
+	   * prototype. */
+	  emit1(F_LFUN,n->u.id.number);
+	else
+	  emit1(F_GLOBAL,n->u.id.number);
       }
     }else{
       if(flags & WANT_LVALUE)
@@ -2195,6 +2208,7 @@ static int do_docode2(node *n, INT16 flags)
       }
     }
     return 1;
+  }
 
   case F_VAL_LVAL:
     return do_docode(CAR(n),flags) +
