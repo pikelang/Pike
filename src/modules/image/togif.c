@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.14 1996/11/23 04:26:16 law Exp $ */
+/* $Id: togif.c,v 1.15 1996/11/23 04:42:44 law Exp $ */
 /*
 
 togif 
@@ -182,24 +182,36 @@ struct pike_string *
    long i;
    rgb_group *rgb;
    struct lzw lzw;
+   int colors,bpp;
 
    buf.s.str=NULL;
    initialize_buf(&buf);
 
+   colors=4; bpp=2;
+   while (colors<ct->numcol) { colors<<=1; bpp++; }
+
    low_my_binary_strcat(transparent?"GIF89a":"GIF87a",6,&buf);
    buf_word((unsigned short)img->xsize,&buf);
    buf_word((unsigned short)img->ysize,&buf);
-   low_my_putchar( (char)(0xe0|7), &buf);
-   /* 7 is bpp - 1   e is global colormap + resolution (??!) */
+   low_my_putchar( (char)(0xf0|(bpp-1)), &buf);
+   /* | global colormap | 3 bits color res | sort | 3 bits bpp */
+   /* color res is'nt cared of */
 
    low_my_putchar( 0, &buf ); /* background color */
    low_my_putchar( 0, &buf ); /* just zero */
 
-   for (i=0; i<256; i++)
+   for (i=0; i<ct->numcol; i++)
    {
       low_my_putchar(ct->clut[i].r,&buf);
       low_my_putchar(ct->clut[i].g,&buf);
       low_my_putchar(ct->clut[i].b,&buf);
+   }
+
+   for (; i<colors; i++)
+   {
+      low_my_putchar(0,&buf);
+      low_my_putchar(0,&buf);
+      low_my_putchar(0,&buf);
    }
 
    if (transparent)
@@ -232,12 +244,12 @@ struct pike_string *
       /* not interlaced (interlaced == 0x40) */
       /* no local colormap ( == 0x80) */
 
-   low_my_putchar( 8, &buf ); /* bits per pixel , or min 2 */
+   low_my_putchar( bpp, &buf ); /* bits per pixel , or min 2 */
    
    i=img->xsize*img->ysize;
    rgb=img->img;
 
-   lzw_init(&lzw,8);
+   lzw_init(&lzw,bpp);
    if (!fs)
       while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
    else
