@@ -31,7 +31,7 @@ static mixed `[](string what)
 // bootstrap in the right order
       master()->resolv("Calendar")["Timezone"];
       master()->resolv("Calendar")["TimeRanges"];
-      master()->resolv("Calendar")["Time"];
+      object Time = master()->resolv("Calendar")["Time"];
       master()->resolv("Calendar")["YMD"];
       master()->resolv("Calendar")["Gregorian"];
 
@@ -40,6 +40,7 @@ static mixed `[](string what)
 // that is updated without all of the calendar module is updated
       iso_utc=master()->resolv("Calendar")["ISO"];
       iso_utc=iso_utc->set_timezone("UTC");
+      Time->Day = iso_utc->cDay;
       stage--;
       object tz=
 	 master()->resolv("Calendar")["Timezone"][default_timezone];
