@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.476 2001/02/13 15:51:00 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.477 2001/02/14 14:56:56 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5115,6 +5115,17 @@ AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_ma
 PIKE_VERSION="$(sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h)"
 PIKE_VERSION_LONG="Pike v$(sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h) release $(sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h)"
 
+
+cat >conftest.c <<EOF
+#include "global.h"
+--
+FLOAT_TYPE
+INT_TYPE
+EOF
+
+$CPP -I. -I$srcdir conftest.c -o conftest.cpp
+sed <conftest.cpp >conftypes.txt '1,/^--$/d'
+
 rm config.info 2>/dev/null
 
 echo "=========================================================" >>config.info
@@ -5135,10 +5146,55 @@ echo "cc............ $CC" >>config.info
 echo "ld............ $LD" >>config.info
 echo "pike.......... $PIKE" >>config.info
 echo "install....... $INSTALL" >>config.info
+echo "shared object. .$SO"
+echo "libs.......... $LIBS"
+echo "optimize...... $OPTIMIZE"
 
 echo >>config.info
 echo "features:" >>config.info
 echo "PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading" >>config.info
+
+AC_TRY_RUN([
+#include "global.h"
+#include "svalue.h"
+
+int main()
+{
+   FILE *fp,*out;
+   char float_type[80]="?";
+   char int_type[80]="?";
+   char *s;
+   struct svalue sval;
+
+   fp=fopen("conftypes.txt","r");
+   if (!fp) return 1;
+   out=fopen("config.info","a");
+   if (!out) return 1;
+   
+   fgets(float_type,79,fp);
+   fgets(int_type,79,fp);
+   s=float_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
+   s=int_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
+   
+   fprintf(out,"float type............%s (%d bytes)\n",
+	   float_type,sizeof(FLOAT_TYPE));
+   fprintf(out,"int type..............%s (%d bytes)\n",
+	   int_type,sizeof(INT_TYPE));
+   fprintf(out,"pointer size..........%d bytes\n",
+	   sizeof(void*));
+   fprintf(out,"svalue size...........%d bytes (%d+%d+%d)\n",
+	   sizeof(sval),
+	   sizeof(sval.type),
+	   sizeof(sval.subtype),
+	   sizeof(sval.u));
+
+   fclose(out);
+   fclose(fp);
+
+   return 0;
+}
+],[],[],[])
+rm conftypes.txt 2>/dev/null
 
 ls -1 pike_*.feature 2>/dev/null | xargs cat | sort >>config.info 
 ls -1 post_modules/*/pike_*.feature modules/*/pike_*.feature 2>/dev/null |  xargs cat | sort >>config.info
