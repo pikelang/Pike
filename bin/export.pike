@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.27 1999/09/06 11:01:45 hubbe Exp $ */
+/* $Id: export.pike,v 1.28 1999/09/08 20:14:54 hubbe Exp $ */
 
 #include <simulate.h>
 import Stdio;
@@ -14,7 +14,7 @@ string dirname(string dir)
   array tmp=dir/"/";
   if(tmp[-1]=="") tmp=tmp[..sizeof(tmp)-2];
   tmp=tmp[..sizeof(tmp)-2];
-  if(!sizeof(tmp)) return "/";
+  if(sizeof(tmp)<2) return "/";
   return tmp*"/";
 }
 
@@ -70,8 +70,15 @@ void fix_configure(string dir)
 
 string getversion()
 {
-//  werror("FNORD:%O\n",getcwd());
+//  werror("FNORD: %O  %O\n",getcwd(),pike_base_name+"/src/version.h");
   string s=Stdio.read_file(pike_base_name+"/src/version.h");
+
+  if(!s)
+  {
+    werror("Failed to read version.h\n");
+    werror("cwd=%s  version.h=%s\n",getcwd(),pike_base_name+"/src/version.h");
+    exit(1);
+  }
 
   int maj, min, build;
 
@@ -115,8 +122,8 @@ int main(int argc, string *argv)
 
 
   foreach(Getopt.find_all_options(argv,aggregate(
-    ({ "srcdir", "--srcdir", Getopt.HAS_ARG }),
-    ({ "rebuild","--rebuild", Getopt.NO_ARG }),
+    ({ "srcdir", Getopt.HAS_ARG, "--srcdir"  }),
+    ({ "rebuild",Getopt.NO_ARG,  "--rebuild" }),
     )),array opt)
     {
       switch(opt[0])
