@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.4 2000/01/31 20:09:00 grubba Exp $
+ * $Id: rsa.c,v 1.5 2000/02/01 23:16:56 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -28,19 +28,32 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.4 2000/01/31 20:09:00 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.5 2000/02/01 23:16:56 grubba Exp $");
 
 struct pike_rsa_data
 {
   B_ALGORITHM_OBJ cipher;
-  B_KEY_OBJ key;
+  B_KEY_OBJ public_key;
+  B_KEY_OBJ private_key;
   unsigned int flags;
   struct pike_string *n;	/* modulo */
   struct pike_string *e;	/* public exponent */
   struct pike_string *d;	/* private exponent (if known) */
 };
 
+/* Flags */
+#define P_RSA_PUBLIC_KEY_NOT_SET	1
+#define P_RSA_PRIVATE_KEY_NOT_SET	2
+#define P_RSA_KEY_NOT_SET	3
+
 #define THIS ((struct pike_rsa_data *)(fp->current_storage))
+
+static struct program *pike_rsa_program = NULL;
+
+static B_ALGORITHM_METHOD *rsa_chooser[] =
+{
+  &AM_RSA_ENCRYPT, &AM_RSA_DECRYPT, NULL
+};
 
 /*
  * RSA memory handling glue code.
@@ -91,11 +104,17 @@ static void init_pike_rsa(struct object *o)
 
   MEMSET(THIS, 0, sizeof(struct pike_rsa_data));
 
-  if ((code = B_CreateKeyObject(&(THIS->key)))) {
-    error("Crypto.rsa(): Failed to create key object.\n");
+  if ((code = B_CreateKeyObject(&(THIS->public_key)))) {
+    error("Crypto.rsa(): Failed to create public key object: %04x\n", code);
+  }
+  if ((code = B_CreateKeyObject(&(THIS->private_key)))) {
+    error("Crypto.rsa(): Failed to create private key object: %04x\n", code);
   }
   if ((code = B_CreateAlgorithmObject(&(THIS->cipher)))) {
-    error("Crypto.rsa(): Failed to create cipher object.\n");
+    error("Crypto.rsa(): Failed to create cipher object: %04x\n", code);
+  }
+  if ((code = B_SetAlgorithmInfo(THIS->cipher, AI_RSAPublic, NULL_PTR))) {
+    error("Crypto.rsa(): Failed to initialize RSA algorithm: %04x\n", code);
   }
 }
 
@@ -113,8 +132,11 @@ static void exit_pike_rsa(struct object *o)
   if (THIS->cipher) {
     B_DestroyAlgorithmObject(&(THIS->cipher));
   }
-  if (THIS->key) {
-    B_DestroyKeyObject(&(THIS->key));
+  if (THIS->private_key) {
+    B_DestroyKeyObject(&(THIS->private_key));
+  }
+  if (THIS->public_key) {
+    B_DestroyKeyObject(&(THIS->public_key));
   }
   MEMSET(THIS, 0, sizeof(struct pike_rsa_data));
 }
@@ -142,6 +164,8 @@ static void f_set_public_key(INT32 args)
     free_string(THIS->e);
     THIS->e = NULL;
   }
+
+  THIS->flags |= P_RSA_KEY_NOT_SET;
 
   push_int(256);
   apply(modulo, "digits", 1);
@@ -188,6 +212,8 @@ static void f_set_private_key(INT32 args)
     free_string(THIS->d);
     THIS->d = NULL;
   }
+
+  THIS->flags |= P_RSA_PRIVATE_KEY_NOT_SET;
 
   push_int(256);
   apply(priv, "digits", 1);
@@ -328,9 +354,74 @@ static void f_encrypt(INT32 args)
 /* string decrypt(string s) */
 static void f_decrypt(INT32 args)
 {
-  error("Not yet implemented.\n");
+  struct pike_string *s = NULL;
+  int err;
+  unsigned char *buffer;
+  unsigned int len;
+  unsigned int flen;
+  int i;
+
+  if ((!THIS->n) || (!THIS->d)) {
+    error("Public key has not been set.\n");
+  }
+
+  get_all_args("decrypt", args, "%S", &s);
+  
+  if (THIS->flags & P_RSA_PRIVATE_KEY_NOT_SET) {
+    A_RSA_KEY rsa_private_key = {
+      { THIS->n->str, THIS->n->len },
+      { THIS->d->str, THIS->d->len },
+    };
+    if ((err = B_SetKeyInfo(THIS->private_key, KI_RSAPublic,
+			    (POINTER)&rsa_private_key))) {
+      error("Failed to set private key: %04x\n", err);
+    }
+    THIS->flags &= P_RSA_PRIVATE_KEY_NOT_SET;
+  }
+
+  if ((err = B_DecryptInit(THIS->cipher, THIS->private_key, rsa_chooser,
+			   (A_SURRENDER_CTX *)NULL_PTR))) {
+    error("Failed to initialize decrypter: %04x\n", err);
+  }
+
+  buffer = xalloc(s->len+1);
+  buffer[s->len] = 0;	/* Ensure NUL-termination. */
+
+  len = 0;
+  if ((err = B_DecryptUpdate(THIS->cipher, buffer, &len, s->len,
+			     s->str, s->len, (B_ALGORITHM_OBJ)NULL_PTR,
+			     (A_SURRENDER_CTX *)NULL_PTR))) {
+    free(buffer);
+    error("decrypt failed: %04x\n", err);
+  }
+
+  fprintf(stderr, "RSA: Decrypt len: %d\n", len);
+
+  flen = 0;
+  if ((err = B_DecryptFinal(THIS->cipher, buffer + len, &flen, s->len - len,
+			    (B_ALGORITHM_OBJ)NULL_PTR,
+			    (A_SURRENDER_CTX *)NULL_PTR))) {
+    free(buffer);
+    error("Decrypt failed: %04x\n", err);
+  }
+
+  fprintf(stderr, "RSA: Decrypt flen: %d\n", flen);
+
+  len += flen;
+
+  /* Inlined rsa_unpad(s, 2). */
+
+  if (((i = strlen(buffer)) < 9) || (len != THIS->n->len - 1) ||
+      (buffer[0] != 2)) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
   pop_n_elems(args);
-  push_int(0);
+  push_string(make_shared_binary_string(buffer + i + 1, len - i - 1));
+
+  free(buffer);
 }
 
 /* object set_encrypt_key(array(bignum) key) */
@@ -371,7 +462,19 @@ static void f_rsa_size(INT32 args)
 /* int public_key_equal (object rsa) */
 static void f_public_key_equal(INT32 args)
 {
-  error("Not yet implemented.\n");
+  struct object *o = NULL;
+  struct pike_rsa_data *other = NULL;
+
+  get_all_args("public_key_equal", args, "%o", &o);
+
+  if ((other = (struct pike_rsa_data *)get_storage(o, pike_rsa_program))) {
+    if ((other->n == THIS->n) && (other->e == THIS->e)) {
+      pop_n_elems(args);
+      push_int(1);
+      return;
+    }
+  }
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -465,10 +568,14 @@ void pike_rsa_init(void)
   set_init_callback(init_pike_rsa);
   set_exit_callback(exit_pike_rsa);
   
-  end_class("rsa", 0);
+  pike_rsa_program = end_program();
+  add_program_constant("rsa", pike_rsa_program, 0);
 #endif /* HAVE_RSA_LIB */
 }
 
 void pike_rsa_exit(void)
 {
+#ifdef HAVE_RSA_LIB
+  free_program(pike_rsa_program);
+#endif /* HAVE_RSA_LIB */
 }
