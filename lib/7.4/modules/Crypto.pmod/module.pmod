@@ -9,6 +9,9 @@ string crypt_md5(string pw, void|string salt) {
 constant string_to_hex = __builtin.string2hex;
 constant hex_to_string = __builtin.hex2string;
 
+// FIXME: Only compatible when sizeof(parameter)==8.
+function(string:string) des_parity = ___Nettle.DES_Info()->fix_parity;
+
 // These haven't been modified.
 constant arcfour = Crypto.arcfour;
 constant cbc = Crypto.cbc;
@@ -24,4 +27,4 @@ constant idea_cbc = Crypto.idea_cbc;
 constant pipe = Crypto.pipe;
 constant randomness = Crypto.randomness;
 constant rsa = Crypto.rsa;
-  
+
