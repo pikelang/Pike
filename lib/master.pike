@@ -74,7 +74,8 @@ program cast_to_program(string pname)
       if(string path=getenv("PIKE_INCLUDE_PATH"))
       {
 	foreach(path/":", path)
-	  if(program ret=findprog(combine_path(path,pname)))
+	  if(program ret=findprog(combine_path(getcwd(),
+					       combine_path(path,pname))))
 	     return ret;
       }
     }
@@ -208,6 +209,13 @@ void set_inhibit_compile_errors(mixed f)
   inhibit_compile_errors=f;
 }
 
+string trim_file_name(string s)
+{
+  if(getenv("SHORT_PIKE_ERRORS"))
+    return (s/"/")[-1];
+  return s;
+}
+
 /*
  * This function is called whenever a compiling error occurs,
  * Nothing strange about it.
@@ -218,7 +226,7 @@ void compile_error(string file,int line,string err)
 {
   if(!inhibit_compile_errors)
   {
-    werror(sprintf("%s:%d:%s\n",file,line,err));
+    werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
   }
   else if(functionp(inhibit_compile_errors))
   {
@@ -321,7 +329,7 @@ string describe_backtrace(mixed *trace)
 
 	if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
 	{
-	  row+="line "+tmp[1]+" in "+tmp[0];
+	  row+="line "+tmp[1]+" in "+trim_file_name(tmp[0]);
 	}else{
 	  row+="Unknown program";
 	}
