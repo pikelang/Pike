@@ -1,3 +1,9 @@
+Mon May 13 22:20:24 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* -Wunused removed
+	* new module: gdbmmod
+	* svalue.c: bug in garbage collect fixed
+
 Fri May  3 13:50:05 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
 
 	* las.c: type-checking improved
