@@ -324,9 +324,11 @@ function get_function(object o, string a)
 
 string *regexp(string *s, string reg)
 {
+  
   regexp::create(reg);
-  return filter_array(s,match);
+  s=filter_array(s,match);
   regexp::create(); /* Free compiled regexp */
+  return s;
 }
 
 list mklist(mixed *a)
