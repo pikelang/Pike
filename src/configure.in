@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.500 2003/05/07 21:01:02 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.501 2003/09/22 09:46:37 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -847,7 +847,7 @@ AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin|UnixWare|OpenUNIX)
+    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
     ;;
@@ -1071,6 +1071,11 @@ if test "$cflags_is_set" = "no"; then
 
     # -flat_namespace only needed for linking with libMallocDebug
     # AC_SYS_COMPILER_FLAG(-flat_namespace, flat_namespace, LDFLAGS)
+
+    # OS X only runs on G3 or newer. Tuning for recent G4s should help them
+    # while being ok for older machines as well.
+    AC_SYS_COMPILER_FLAG(-mcpu=750,cpu750,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-mtune=7450,tune7450,OPTIMIZE)
   ])
 
 
