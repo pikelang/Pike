@@ -5,6 +5,8 @@
 
 object line; /* Current line */
 
+// FIXME: Propagete 0:s (errors) through the continuation functions
+
 void create(object l)
 {
   line = l;
@@ -56,6 +58,7 @@ mapping get_atom(function c)
 	    "handler" : line_handler(get_atom, c) ]);
 }
 
+// FIXME: This looks like the identity function to me.
 class get_string_handler
 {
   function c;
@@ -233,4 +236,9 @@ mapping get_any(int max_depth, int eol, function c)
   default:
     throw( ({ "IMAP: Internal error!\n", backtrace() }) );
   }
+}
+
+mapping get_varargs(int max_depth, function c)
+{
+  
 }
