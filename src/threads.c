@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.171 2003/12/13 20:37:52 jonasw Exp $");
+RCSID("$Id: threads.c,v 1.172 2003/12/13 21:13:08 jonasw Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -514,32 +514,6 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
   return s;
   /* NOTEZ BIEN:  Return value only guaranteed to remain valid as long
      as you have the interpreter lock, unless tid == th_self() */
-}
-
-struct thread_state *gdb_thread_state_for_id(THREAD_T tid)
-/* Should only be used from a debugger session. */
-{
-  unsigned INT32 h = thread_table_hash(&tid);
-  struct thread_state *s;
-  for (s = thread_table_chains[h]; s != NULL; s = s->hashlink)
-    if(th_equal(s->id, tid))
-      break;
-  return s;
-}
-
-INT32 gdb_next_thread_state(INT32 prev, struct thread_state **ts)
-/* Used by gdb_backtraces. */
-{
-  if (!*ts || !(*ts)->hashlink) {
-    if (!*ts) prev = -1;
-    while (++prev < THREAD_TABLE_SIZE)
-      if ((*ts = thread_table_chains[prev]))
-	return prev;
-    *ts = NULL;
-    return 0;
-  }
-  *ts = (*ts)->hashlink;
-  return prev;
 }
 
 PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
@@ -1254,13 +1228,6 @@ static void thread_was_checked(struct object *o)
     debug_gc_check(tmp->thread_local, T_OBJECT, o);
 
 #ifdef PIKE_DEBUG
-#if 0
-  if (tmp->swapped != 0 && tmp->swapped != 1) {
-    fprintf(stderr,
-	    "tmp->swapped: %d, id: %d, tmp: %x, thread_id_prog: %x\n",
-	    tmp->swapped, tmp->id, tmp, thread_id_prog);
-  }
-#endif
   if(tmp->swapped)
   {
     struct pike_frame *f;
