@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.280 2002/05/10 23:49:16 nilsson Exp $");
+RCSID("$Id: language.yacc,v 1.281 2002/05/11 01:23:43 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3397,10 +3397,15 @@ low_idents: TOK_IDENTIFIER
       if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
       copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
-      id = low_reference_inherited_identifier(inherit_state,
-					      $1,
-					      Pike_compiler->last_identifier,
-					      SEE_STATIC);
+      if ($1 > 0)
+	id = low_reference_inherited_identifier(inherit_state,
+						$1,
+						Pike_compiler->last_identifier,
+						SEE_STATIC);
+      else
+	id = really_low_find_shared_string_identifier(Pike_compiler->last_identifier,
+						      inherit_state->new_program,
+						      SEE_STATIC|SEE_PRIVATE);
 
       if (id != -1) {
 	if (inherit_depth >= 0) {
@@ -3423,14 +3428,18 @@ low_idents: TOK_IDENTIFIER
 	$$ = mknode(F_MAGIC_VALUES, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
       } else {
-	if (inherit_state->new_program->inherits[$1].name) {
-	  my_yyerror("Undefined identifier %s::%s.",
-		     inherit_state->new_program->inherits[$1].name->str,
-		     Pike_compiler->last_identifier->str);
-	} else {
-	  my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
+	if (Pike_compiler->compiler_pass == 2) {
+	  if (inherit_state->new_program->inherits[$1].name) {
+	    my_yyerror("Undefined identifier %s::%s.",
+		       inherit_state->new_program->inherits[$1].name->str,
+		       Pike_compiler->last_identifier->str);
+	  } else {
+	    my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
+	  }
+	  $$=0;
 	}
-	$$=0;
+	else
+	  $$=mknode(F_UNDEFINED,0,0);
       }
     } else {
       $$=0;

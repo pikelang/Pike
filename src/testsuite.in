@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.512 2002/05/10 22:20:57 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.513 2002/05/11 01:23:43 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2071,7 +2071,7 @@ test_compile_any([[
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
 ]])
 
-// Testing static resolving with ::
+// Testing hidden identifier lookup with ::
 
 test_program([[
   class X {
@@ -2160,6 +2160,56 @@ test_program([[
     mixed f (string s) {return s + X::s + A::s;}
   }
   int a() {return X()->f("L") == "LXA";}
+]])
+
+test_program([[
+  class A {
+    string f() {return "A";}
+    string g() {return A::f();}
+  }
+  class B {
+    inherit A;
+    string f() {return "B";}
+  }
+  int a() {return B()->g() == "B";}
+]])
+
+test_program([[
+  class A {
+    string g() {return A::f();}
+    string f() {return "A";}
+  }
+  class B {
+    inherit A;
+    string f() {return "B";}
+  }
+  int a() {return B()->g() == "B";}
+]])
+
+test_program([[
+  class A {
+    string f() {return "A";}
+    string g() {return A::f();}
+  }
+  class B {
+    string f() {return "B";}
+    inherit A;
+  }
+  int a() {return B()->g() == "B";}
+]])
+
+test_program([[
+  class A {
+    string f() {return "A";}
+    class I {
+      string g() {return A::f();}
+    }
+  }
+  class B {
+    inherit A;
+    string f() {return "B";}
+  }
+  int a() {return B()->I()->g() == "B";}
 ]])
 
 // Testing 'global::'
