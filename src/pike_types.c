@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.202 2002/11/28 19:11:43 mast Exp $
+|| $Id: pike_types.c,v 1.203 2003/01/07 20:11:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.202 2002/11/28 19:11:43 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.203 2003/01/07 20:11:56 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -315,8 +315,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 {
   unsigned INT32 hash = DO_NOT_WARN((unsigned INT32)
 				    ((ptrdiff_t)type*0x10204081)^
-				    (0x8003*(ptrdiff_t)car)^
-				    ~(0x10001*(ptrdiff_t)cdr));
+				    (0x8003*(((char *)car)-(char *)0))^
+				    ~(0x10001*(((char *)cdr)-(char *)0)));
   unsigned INT32 index = hash % pike_type_hash_size;
   struct pike_type *t;
 
@@ -788,7 +788,8 @@ void debug_push_finished_type_with_markers(struct pike_type *type,
   if (type->type == T_ASSIGN) {
     /* Strip assign */
 #if 0
-    fprintf(stderr, "Assign to marker %d.\n", ((ptrdiff_t)type->car));
+    fprintf(stderr, "Assign to marker %d.\n",
+	    ((char *)type->car)-(char *)0);
 #endif /* 0 */
     type = type->cdr;
     goto recurse;
@@ -1300,7 +1301,8 @@ void simple_describe_type(struct pike_type *s)
 	break;
 
       case T_SCOPE:
-	fprintf(stderr, "scope(%ld, ", (long)(ptrdiff_t)s->car);
+	fprintf(stderr, "scope(%ld, ",
+		(long)(((char *)s->car)-(char *)0));
 	simple_describe_type(s->cdr);
 	fprintf(stderr, ")");
 	break;
@@ -1312,13 +1314,14 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, ")");	
 	break;
       case T_ASSIGN:
-	fprintf(stderr, "%ld = ", (long)(ptrdiff_t)s->car);
+	fprintf(stderr, "%ld = ",
+		(long)(((char *)s->car)-(char *)0));
 	simple_describe_type(s->cdr);
 	break;
       case T_INT:
 	{
-	  INT32 min = (ptrdiff_t)s->car;
-	  INT32 max = (ptrdiff_t)s->cdr;
+	  INT32 min = ((char *)s->car)-(char *)0;
+	  INT32 max = ((char *)s->cdr)-(char *)0;
 	  fprintf(stderr, "int");
 	  if(min!=MIN_INT32 || max!=MAX_INT32)
 	    fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
@@ -1339,7 +1342,7 @@ void simple_describe_type(struct pike_type *s)
       case T_OBJECT:
 	fprintf(stderr, "object(%s %ld)",
 	       s->car?"is":"implements",
-	       (long)(ptrdiff_t)s->cdr);
+	       (long)(((char *)s->cdr)-(char *)0));
 	break;
       case T_FUNCTION:
       case T_MANY:
@@ -1450,7 +1453,7 @@ static void low_describe_type(struct pike_type *t)
       
     case T_ASSIGN:
       my_putchar('(');
-      my_putchar('0' + (ptrdiff_t)t->car);
+      my_putchar('0' + (((char *)t->car)-(char *)0));
       my_putchar('=');
       my_describe_type(t->cdr);
       my_putchar(')');
@@ -1458,7 +1461,7 @@ static void low_describe_type(struct pike_type *t)
 
     case T_SCOPE:
       my_putchar('{');
-      my_putchar((ptrdiff_t)t->car);
+      my_putchar(((char *)t->car)-(char *)0);
       my_putchar(',');
       my_describe_type(t->cdr);
       my_putchar('}');
@@ -1478,8 +1481,8 @@ static void low_describe_type(struct pike_type *t)
     case PIKE_T_UNKNOWN: my_strcat("unknown"); break;
     case T_INT:
     {
-      INT32 min=(ptrdiff_t)t->car;
-      INT32 max=(ptrdiff_t)t->cdr;
+      INT32 min=((char *)t->car)-(char *)0;
+      INT32 max=((char *)t->cdr)-(char *)0;
       my_strcat("int");
       
       if(min!=MIN_INT32 || max!=MAX_INT32)
@@ -1507,7 +1510,7 @@ static void low_describe_type(struct pike_type *t)
 	char buffer[100];
 	sprintf(buffer,"object(%s %ld)",
 		t->car?"is":"implements",
-		(long)(ptrdiff_t)t->cdr);
+		(long)(((char *)t->cdr)-(char *)0));
 	my_strcat(buffer);
       }else{
 	my_strcat("object");
@@ -1800,20 +1803,22 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if(t1->type == T_INT && t2->type == T_INT)
   {
-    INT32 min, max;
+    INT32 min1 = ((char *)t1->car)-(char *)0;
+    INT32 max1 = ((char *)t1->cdr)-(char *)0;
+    INT32 min2 = ((char *)t2->car)-(char *)0;
+    INT32 max2 = ((char *)t2->cdr)-(char *)0;
 
-    if ((((ptrdiff_t)t1->cdr) + 1 < (ptrdiff_t)t2->car) ||
-	(((ptrdiff_t)t2->cdr) + 1 < (ptrdiff_t)t1->car)) {
+    if ((max1 + 1 < min2) || (max2 + 1 < min1)) {
       /* No overlap. */
       push_finished_type(t1);
       push_finished_type(t2);
       push_type(T_OR);
     } else {
       /* Overlap */
-      min = MINIMUM((ptrdiff_t)t1->car, (ptrdiff_t)t2->car);
-      max = MAXIMUM((ptrdiff_t)t1->cdr, (ptrdiff_t)t2->cdr);
+      min1 = MINIMUM(min1, min2);
+      max1 = MAXIMUM(max1, max2);
 
-      push_int_type(min, max);
+      push_int_type(min1, max1);
     }
   }
   else if (t1->type == T_SCOPE)
@@ -1821,18 +1826,18 @@ static void low_or_pike_types(struct pike_type *t1,
     if (t2->type == T_SCOPE) {
       low_or_pike_types(t1->cdr, t2->cdr, zero_implied);
       if (t1->car > t2->car)
-	push_scope_type((ptrdiff_t)t1->car);
+	push_scope_type(((char *)t1->car)-(char *)0);
       else
-	push_scope_type((ptrdiff_t)t2->car);
+	push_scope_type(((char *)t2->car)-(char *)0);
     } else {
       low_or_pike_types(t1->cdr, t2, zero_implied);
-      push_scope_type((ptrdiff_t)t1->car);
+      push_scope_type(((char *)t1->car)-(char *)0);
     }
   }
   else if (t2->type == T_SCOPE)
   {
     low_or_pike_types(t1, t2->cdr, zero_implied);
-    push_scope_type((ptrdiff_t)t2->car);
+    push_scope_type(((char *)t2->car)-(char *)0);
     push_type(T_SCOPE);
   }
   else
@@ -1878,12 +1883,12 @@ static void even_lower_and_pike_types(struct pike_type *t1,
     if (t1->type == T_INT) {
       INT32 i1, i2;
       INT32 upper_bound, lower_bound;
-      i1 = (ptrdiff_t)t1->cdr;
-      i2 = (ptrdiff_t)t2->cdr;
+      i1 = ((char *)t1->cdr)-(char *)0;
+      i2 = ((char *)t2->cdr)-(char *)0;
       upper_bound = MINIMUM(i1,i2);
 
-      i1 = (ptrdiff_t)t1->car;
-      i2 = (ptrdiff_t)t2->car;
+      i1 = ((char *)t1->car)-(char *)0;
+      i2 = ((char *)t2->car)-(char *)0;
       lower_bound = MAXIMUM(i1,i2);
 
       if (upper_bound >= lower_bound) {
@@ -1979,12 +1984,12 @@ static void low_and_pike_types(struct pike_type *t1,
   {
     INT32 i1,i2;
     INT32 upper_bound, lower_bound;
-    i1 = (ptrdiff_t)t1->cdr;
-    i2 = (ptrdiff_t)t2->cdr;
+    i1 = ((char *)t1->cdr)-(char *)0;
+    i2 = ((char *)t2->cdr)-(char *)0;
     upper_bound = MINIMUM(i1,i2);
 
-    i1 = (ptrdiff_t)t1->car;
-    i2 = (ptrdiff_t)t2->car;
+    i1 = ((char *)t1->car)-(char *)0;
+    i2 = ((char *)t2->car)-(char *)0;
     lower_bound = MAXIMUM(i1,i2);
 
     if (upper_bound >= lower_bound) {
@@ -2000,18 +2005,18 @@ static void low_and_pike_types(struct pike_type *t1,
     if (t2->type == T_SCOPE) {
       low_and_pike_types(t1->cdr, t2->cdr);
       if (t1->car > t2->car)
-	push_scope_type((ptrdiff_t)t1->car);
+	push_scope_type(((char *)t1->car)-(char *)0);
       else
-	push_scope_type((ptrdiff_t)t2->car);
+	push_scope_type(((char *)t2->car)-(char *)0);
     } else {
       low_and_pike_types(t1->cdr, t2);
-      push_scope_type((ptrdiff_t)t1->car);
+      push_scope_type(((char *)t1->car)-(char *)0);
     }
   }
   else if (t2->type == T_SCOPE)
   {
     low_and_pike_types(t1, t2->cdr);
-    push_scope_type((ptrdiff_t)t2->car);
+    push_scope_type(((char *)t2->car)-(char *)0);
   }
   else if((t1->type == t2->type) &&
 	  ((t1->type == T_STRING) ||
@@ -2057,7 +2062,7 @@ static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
 {
   struct program *p;
   int i;
-  p = id_to_program((ptrdiff_t)t->cdr);
+  p = id_to_program(((char *)t->cdr)-(char *)0);
   if(!p) return 0;
   i=FIND_LFUN(p, lfun);
   if(i==-1) return 0;
@@ -2193,7 +2198,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a->cdr, b, flags);
       if(ret && (b->type != T_VOID))
       {
-	int m = (ptrdiff_t)a->car;
+	int m = ((char *)a->car)-(char *)0;
 	struct pike_type *tmp;
 
 #ifdef PIKE_DEBUG
@@ -2228,7 +2233,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	}
 #endif
 #ifdef PIKE_DEBUG
-	if((ptrdiff_t)a_markers[m]->type == m+'0')
+	if((((char *)a_markers[m]->type)-(char *)0) == m+'0')
 	  Pike_fatal("Cyclic type!\n");
 #endif
       }
@@ -2287,7 +2292,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a, b->cdr, flags);
       if(ret && (a->type != T_VOID))
       {
-	int m = (ptrdiff_t)b->car;
+	int m = ((char *)b->car)-(char *)0;
 	struct pike_type *tmp;
 	type_stack_mark();
 	push_finished_type_with_markers(a, a_markers);
@@ -2314,7 +2319,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	}
 #endif
 #ifdef PIKE_DEBUG
-	if((ptrdiff_t)b_markers[m]->type == m+'0')
+	if((((char *)b_markers[m]->type)-(char *)0) == m+'0')
 	  Pike_fatal("Cyclic type!\n");
 #endif
       }
@@ -2430,16 +2435,16 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   }
   case TWOT(T_INT, T_ZERO):
   {
-    if ((((ptrdiff_t)a->car) > 0) ||
-	(((ptrdiff_t)a->cdr) < 0)) {
+    if (((((char *)a->car)-(char *)0) > 0) ||
+	((((char *)a->cdr)-(char *)0) < 0)) {
       return 0;
     }
     return a;
   }
   case TWOT(T_ZERO, T_INT):
   {
-    if ((((ptrdiff_t)b->car) > 0) ||
-	(((ptrdiff_t)b->cdr) < 0)) {
+    if (((((char *)b->car)-(char *)0) > 0) ||
+	((((char *)b->cdr)-(char *)0) < 0)) {
       return 0;
     }
     return a;
@@ -2540,8 +2545,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	 * (got "Prototype doesn't match for function foo" even though
 	 * there was no other prototype for that function). /mast */
 	struct program *ap,*bp;
-	ap = id_to_program((ptrdiff_t)a->cdr);
-	bp = id_to_program((ptrdiff_t)b->cdr);
+	ap = id_to_program(((char *)a->cdr)-(char *)0);
+	bp = id_to_program(((char *)b->cdr)-(char *)0);
 	if (!is_compatible(ap, bp)) return 0;
 #endif
 	break;
@@ -2550,8 +2555,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
     {
       struct program *ap,*bp;
-      ap = id_to_program((ptrdiff_t)a->cdr);
-      bp = id_to_program((ptrdiff_t)b->cdr);
+      ap = id_to_program(((char *)a->cdr)-(char *)0);
+      bp = id_to_program(((char *)b->cdr)-(char *)0);
 
       if(!ap || !bp) break;
 
@@ -2577,11 +2582,11 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_INT:
   {
-    INT32 amin = (ptrdiff_t)a->car;
-    INT32 amax = (ptrdiff_t)a->cdr;
+    INT32 amin = ((char *)a->car)-(char *)0;
+    INT32 amax = ((char *)a->cdr)-(char *)0;
 
-    INT32 bmin = (ptrdiff_t)b->car;
-    INT32 bmax = (ptrdiff_t)b->cdr;
+    INT32 bmin = ((char *)b->car)-(char *)0;
+    INT32 bmax = ((char *)b->cdr)-(char *)0;
     
     if(amin > bmax || bmin > amax) return 0;
     break;
@@ -2744,7 +2749,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
     if(ret && (b->type != T_VOID))
     {
-      int m = (ptrdiff_t)a->car;
+      int m = ((char *)a->car)-(char *)0;
       struct pike_type *tmp;
       int i;
       type_stack_mark();
@@ -2828,7 +2833,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
     if(ret && (a->type != T_VOID))
     {
-      int m = (ptrdiff_t)b->car;
+      int m = ((char *)b->car)-(char *)0;
       struct pike_type *tmp;
       int i;
       type_stack_mark();
@@ -3097,8 +3102,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     }
 
     {
-      struct program *ap = id_to_program((ptrdiff_t)a->cdr);
-      struct program *bp = id_to_program((ptrdiff_t)b->cdr);
+      struct program *ap = id_to_program(((char *)a->cdr)-(char *)0);
+      struct program *bp = id_to_program(((char *)b->cdr)-(char *)0);
 
       if (!ap || !bp) {
 	/* Shouldn't happen... */
@@ -3113,11 +3118,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case T_INT:
   {
-    INT32 amin = (ptrdiff_t)a->car;
-    INT32 amax = (ptrdiff_t)a->cdr;
+    INT32 amin = ((char *)a->car)-(char *)0;
+    INT32 amax = ((char *)a->cdr)-(char *)0;
 
-    INT32 bmin = (ptrdiff_t)b->car;
-    INT32 bmax = (ptrdiff_t)b->cdr;
+    INT32 bmin = ((char *)b->car)-(char *)0;
+    INT32 bmax = ((char *)b->cdr)-(char *)0;
     
     if(amin < bmin || amax > bmax) return 0;
     break;
@@ -3317,7 +3322,7 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
   {
   case T_OBJECT:
   {
-    p = id_to_program((ptrdiff_t)t->cdr);
+    p = id_to_program(((char *)t->cdr)-(char *)0);
 
   comefrom_int_index:
     if(p && n)
@@ -3508,7 +3513,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   {
   case T_OBJECT:
   {
-    p = id_to_program((ptrdiff_t)t->cdr);
+    p = id_to_program(((char *)t->cdr)-(char *)0);
 
     if(p)
     {
@@ -3690,7 +3695,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
   {
   case T_OBJECT:
   {
-    struct program *p = id_to_program((ptrdiff_t)t->cdr);
+    struct program *p = id_to_program(((char *)t->cdr)-(char *)0);
     if(p && n)
     {
       if(n->token == F_ARROW)
@@ -3799,7 +3804,7 @@ static int low_check_indexing(struct pike_type *type,
 
   case T_OBJECT:
   {
-    struct program *p = id_to_program((ptrdiff_t)type->cdr);
+    struct program *p = id_to_program(((char *)type->cdr)-(char *)0);
     if(p)
     {
       if(n->token == F_ARROW)
@@ -4288,7 +4293,7 @@ static struct pike_type *low_object_type_to_program_type(struct pike_type *obj_t
   }
   sval.type = T_PROGRAM;
   if ((obj_t->type != T_OBJECT) ||
-      (!(id = (ptrdiff_t)obj_t->cdr)) ||
+      (!(id = ((char *)obj_t->cdr)-(char *)0)) ||
       (!(sval.u.program = id_to_program(id))) ||
       (!(sub = get_type_of_svalue(&sval)))) {
     if (res) {
@@ -4351,7 +4356,7 @@ int type_may_overload(struct pike_type *type, int lfun)
       
     case T_OBJECT:
     {
-      struct program *p = id_to_program((ptrdiff_t)type->cdr);
+      struct program *p = id_to_program(((char *)type->cdr)-(char *)0);
       if(!p) return 1;
       return FIND_LFUN(p, lfun)!=-1;
     }
@@ -4690,9 +4695,9 @@ static void low_type_to_string(struct pike_type *t)
     {
       INT32 i;
       my_putchar(T_OBJECT);
-      i = (INT32)(ptrdiff_t)t->car;
+      i = (INT32)(((char *)t->car)-(char *)0);
       my_putchar( i );
-      i = (INT32)(ptrdiff_t)t->cdr;
+      i = (INT32)(((char *)t->cdr)-(char *)0);
 
       if( i > 65535 )  i = 0; /* Not constant between recompilations */
 
@@ -4707,12 +4712,12 @@ static void low_type_to_string(struct pike_type *t)
     {
       INT32 i;
       my_putchar(T_INT);
-      i = (INT32)(ptrdiff_t)t->car;
+      i = (INT32)(((char *)t->car)-(char *)0);
       my_putchar((i >> 24) & 0xff);
       my_putchar((i >> 16) & 0xff);
       my_putchar((i >> 8) & 0xff);
       my_putchar(i & 0xff);
-      i = (INT32)(ptrdiff_t)t->cdr;
+      i = (INT32)(((char *)t->cdr)-(char *)0);
       my_putchar((i >> 24) & 0xff);
       my_putchar((i >> 16) & 0xff);
       my_putchar((i >> 8) & 0xff);
@@ -4735,7 +4740,7 @@ static void low_type_to_string(struct pike_type *t)
   case T_SCOPE:
   case T_ASSIGN:
     my_putchar(t->type);
-    my_putchar('0' + (ptrdiff_t)t->car);
+    my_putchar('0' + (((char *)t->car)-(char *)0));
     t = t->cdr;
     goto recurse;
 
