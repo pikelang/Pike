@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.165 1999/11/11 14:09:06 hubbe Exp $
+# $Id: Makefile.in,v 1.166 1999/11/11 17:50:59 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -453,7 +453,7 @@ las_t.o: las.c
 
 # make dependencies
 depend: $(SRCDIR)/language.c
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
 	$(SRCDIR)/configure @ac_configure_args@
 
