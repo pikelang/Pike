@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.29 2003/12/17 00:15:44 marcus Exp $
+|| $Id: iso2022.c,v 1.30 2003/12/17 23:56:23 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.29 2003/12/17 00:15:44 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.30 2003/12/17 23:56:23 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1203,6 +1203,8 @@ static void f_enc_clear(INT32 args)
     s->g[i].transl = NULL;
     s->g[i].mode = MODE_96;
     s->g[i].index = 0;
+    if(s->r[i].map)
+      free(s->r[i].map);
     s->r[i].map = NULL;
     s->r[i].lo = 0;
     s->r[i].hi = 0;
@@ -1312,6 +1314,12 @@ static void init_enc_stor(struct object *o)
 static void exit_enc_stor(struct object *o)
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+  int i;
+
+  for(i=0; i<2; i++) {
+    if(s->r[i].map)
+      free(s->r[i].map);
+  }
 
   if(s->replace != NULL) {
     free_string(s->replace);
