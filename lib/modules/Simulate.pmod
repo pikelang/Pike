@@ -51,21 +51,21 @@ string *map_regexp(string *s, string reg)
 }
 
 constant PI = 3.1415926535897932384626433832795080;
-constant all_efuns = all_constants;
-constant explode = `/;
-constant filter_array = filter;
-constant map_array = map;
-constant implode = `*;
-constant m_indices = indices;
-constant m_sizeof = sizeof;
-constant m_values = values;
-constant strstr = search;
-constant sum = `+;
-constant add_efun = add_constant;
-constant l_sizeof = sizeof;
-constant listp = multisetp;
-constant mklist = mkmultiset;
-constant aggregate_list = aggregate_multiset;
+function all_efuns = all_constants;
+function explode = `/;
+function filter_array = filter;
+function map_array = map;
+function implode = `*;
+function m_indices = indices;
+function m_sizeof = sizeof;
+function m_values = values;
+function strstr = search;
+function sum = `+;
+function add_efun = add_constant;
+function l_sizeof = sizeof;
+function listp = multisetp;
+function mklist = mkmultiset;
+function aggregate_list = aggregate_multiset;
 #if efun(gethostname)
-constant query_host_name=gethostname;
+function query_host_name=gethostname;
 #endif
