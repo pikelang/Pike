@@ -1,6 +1,6 @@
 // IS-8601, international standard
 
-inherit Calendar.Gregorian:Gregorian;
+inherit Calendar_I.Gregorian:Gregorian;
 
 class Year
 {

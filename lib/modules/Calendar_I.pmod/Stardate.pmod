@@ -7,7 +7,7 @@
 
 class TNGDate
 {
-   inherit Calendar._TimeUnit;
+   inherit Calendar_I._TimeUnit;
 
    // 40759.5  2363-10-05  2584405
    // 47391.2  2370-05-23  2586827
@@ -31,7 +31,7 @@ class TNGDate
    {
       float jd;
       if (!sizeof(day))
-	 day=({Calendar.Gregorian.Second()});
+	 day=({Calendar_I.Gregorian.Second()});
       else if (floatp(day[0]))
       {
 	 from_stardate(day[0]);

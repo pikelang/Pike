@@ -1,6 +1,6 @@
 // by Mirar 
 
-//! module Calendar
+//! module Calendar_I
 //! submodule Gregorian
 //!	time units:
 //!	<ref>Year</ref>, <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
@@ -20,7 +20,7 @@ mapping week_day_mapping,month_mapping;
 
 class _TimeUnit
 {
-   inherit Calendar._TimeUnit;
+   inherit Calendar_I._TimeUnit;
 
    program vYear=function_object(object_program(this_object()))->Year;
    program vDay=function_object(object_program(this_object()))->Day;
@@ -36,7 +36,7 @@ class _TimeUnit
 class Year
 {
 //! class Year
-//! 	A <ref>Calendar.time_unit</ref>. 
+//! 	A <ref>Calendar_I.time_unit</ref>.
 //!
 //!	Lesser units: <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
 //!	Greater units: none

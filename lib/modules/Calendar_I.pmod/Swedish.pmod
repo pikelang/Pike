@@ -1,6 +1,6 @@
 // by Mirar 
 
-inherit Calendar.ISO:ISO;
+inherit Calendar_I.ISO:ISO;
 
 void create()
 {

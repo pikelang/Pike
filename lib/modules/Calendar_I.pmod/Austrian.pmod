@@ -1,6 +1,6 @@
 // by Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
 
-inherit Calendar.ISO:ISO;
+inherit Calendar_I.ISO:ISO;
 
 void create()
 {

@@ -1,10 +1,10 @@
 // by Mirar 
 
-inherit Calendar.Gregorian : christ;
+inherit Calendar_I.Gregorian : christ;
 
 class Year
 {
-   inherit Calendar.Gregorian.Year;
+   inherit Calendar_I.Gregorian.Year;
 
    int leap() // tack, hubbe... :-)
    {

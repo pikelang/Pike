@@ -1,5 +1,5 @@
 
-//! module Calendar
+//! module Calendar_I
 //!    
 //!   This module implements calendar calculations, and base classes
 //!   for time units. 
@@ -82,7 +82,7 @@ string print_month(void|object month,void|mapping options)
    string res="";
 
    if (!month)  // resolv thing here is to avoid compile-time resolve
-      month=master()->resolv("Calendar")["Gregorian"]["Month"]();
+      month=master()->resolv("Calendar_I")["Gregorian"]["Month"]();
 
    options=(["mark_today":1,
 	     "week_space":3,
