@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.300 2003/09/18 17:00:10 grubba Exp $
+// $Id: master.pike.in,v 1.301 2003/09/18 22:52:00 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -518,6 +518,7 @@ string normalize_path( string path )
 //! @mapping
 //!    @member program filename
 //! @endmapping
+//! The filename path seperator is / on both NT and UNIX.
 //!
 //! @note
 //!   As a special case the current master program is available
@@ -767,9 +768,6 @@ void unregister(program p)
   if(string fname=search(programs,p)) {
     resolv_debug("unregister %s\n", fname);
     programs[fname] = no_value;
-    // FIXME: The following assumes that programs are always stored
-    // with '/' as path separators, even on NT. Haven't checked if
-    // that always is the case.
     fname = dirname (fname);
     object n;
     if ( fname!="" && objectp (n = fc[fname]) )
