@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.482 2002/01/31 16:55:27 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.483 2002/02/14 15:24:34 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -8271,6 +8271,7 @@ test_equal(mkmultiset(values(class{ constant a="a"; constant b="b";}())),
 // - zero_type
 test_eq(zero_type(0),0)
 test_eq(zero_type(([])[7]),1)
+test_eq(zero_type(UNDEFINED), 1)
 
 test_true([[lambda (int|void a) { return zero_type(a); }()]])
 test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
