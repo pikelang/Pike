@@ -62,7 +62,7 @@ LDFLAGS=$(CFLAGS)
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEBUGDEF=$(DEBUGDEF)" "TMP_LIBDIR=$(TMP_LIBDIR)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEBUGDEF=$(DEBUGDEF)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)"
 
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
