@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.113 2003/10/16 16:17:21 grubba Exp $
+|| $Id: sprintf.c,v 1.114 2003/11/07 17:41:53 mast Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.113 2003/10/16 16:17:21 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.114 2003/11/07 17:41:53 mast Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -297,18 +297,12 @@ RCSID("$Id: sprintf.c,v 1.113 2003/10/16 16:17:21 grubba Exp $");
 #include "opcodes.h"
 #include "cyclic.h"
 #include "module.h"
+#include "pike_float.h"
 #include <ctype.h>
 
 #include "config.h"
 
 #include <math.h>
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
-#ifdef HAVE_FP_CLASS_H
-#include <fp_class.h>
-#endif
-
 
 #define sp Pike_sp
 
@@ -458,11 +452,9 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
     e = maxexp;
   else
 #endif
-#ifdef HAVE_ISNAN
-  if(isnan(d)) {
+  if(PIKE_ISNAN(d)) {
     e = maxexp; f = maxf;
   } else
-#endif
 #ifdef HAVE_ISZERO
   if(iszero(d))
     e = 0;
