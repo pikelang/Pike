@@ -1873,7 +1873,6 @@ static void check_constant(struct cpp *this,
     pop_stack();
     push_svalue(sv);
     res=1;
-    low_my_binary_strcat(" 1 ", 3,tmp);
   }else if(get_master()) {
     ref_push_string(this->current_file);
     SAFE_APPLY_MASTER("resolv",2);
