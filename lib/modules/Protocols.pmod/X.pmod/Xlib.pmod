@@ -347,6 +347,7 @@ class Display
 		object r = Types.RootWindow(this_object(), wid);
 		int cm = struct->get_uint(4);
 		r->colormap = r->defaultColorMap = Types.Colormap(this_object(), cm, 0);
+		r->colormap->autofree=0;
 		r->whitePixel = struct->get_uint(4);
 		r->blackPixel = struct->get_uint(4);
 		r->currentInputMask = struct->get_uint(4);
@@ -376,6 +377,7 @@ class Display
 		      {
 			int visualID = struct->get_uint(4);
 			object v = Types.Visual(this_object(), visualID);
+
 			v->depth = depth;
 			v->c_class = struct->get_uint(1);
 			v->bitsPerRGB = struct->get_uint(1);

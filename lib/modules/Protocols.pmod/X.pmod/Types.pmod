@@ -8,6 +8,7 @@ class XResource
 {
   object display;
   int id;
+  int autofree = 1;
 
   void create(object d, int i)
   {
@@ -16,6 +17,20 @@ class XResource
 
     display->remember_id(id, this_object());
   }
+
+  void Free()
+  {
+    object req = this_object()->FreeRequest();
+    werror("free "+id+"\n");
+    req->id = id;
+    display->send_request( req );
+  }
+
+  void destroy()
+  {
+    if(autofree) Free();
+  }
+
 }
 
 class Font
@@ -66,6 +81,7 @@ class Font
 class Cursor
 {
   inherit XResource;
+  constant FreeRequest = Requests.FreeCursor;
 }
 
 class Visual
@@ -80,11 +96,18 @@ class Visual
   int redMask;
   int greenMask;
   int blueMask;
+
+  void create(mixed ... args)
+  {
+    ::create(@args);
+    autofree=0;
+  }
 }
 
 class GC
 {
   inherit XResource;
+  constant FreeRequest = Requests.FreeGC;
 
   mapping(string:mixed) values;
 
@@ -139,7 +162,7 @@ class Rectangle
 	error("Types.Rectangle(): To many arguments.\n");
       }
   }
-  
+
   string to_string()
   {
     return sprintf("%2c%2c%2c%2c", x, y, width, height);
@@ -176,7 +199,30 @@ class Colormap
 {
   inherit XResource;
   object visual;
+  constant FreeRequest = Requests.FreeColormap;
   mapping alloced = ([]);
+
+  object FreeColors_req(int pixel)
+  {
+    object req = Requests.FreeColors();
+    req->colormap = id;
+    req->plane_mask=0;
+    req->colors = ({ pixel });
+    return req;
+  }
+
+  void FreeColor( int pixel )
+  {
+    display->send_request( FreeColors_req( pixel ) );
+  }
+
+  void Free()
+  {
+    foreach(values(alloced), mapping f) FreeColor( f->pixel );
+    ::Free();
+  }
+
+    
 
   int AllocColor(int r, int g, int b)
   {
@@ -205,8 +251,8 @@ class Colormap
 class Drawable
 {
   inherit XResource;
-
-  object colormap;
+  int depth;
+  object colormap, parent, visual;
 
   object CreateGC_req()
   {
@@ -243,9 +289,10 @@ class Drawable
   object CreatePixmap(int width, int height, int depth)
   {
     object req = CreatePixmap_req(width, height, depth);
-    display->send_request(req);
-    
-    return Pixmap(display, req->pid, this_object(),colormap);
+    display->send_request( req );
+    object p = Pixmap(display, req->pid, this_object(), colormap );
+    p->depth = depth;
+    return p;
   }
 
   object FillPoly_req(int gc, int shape, int coordMode, array(object) p)
@@ -362,8 +409,7 @@ class Drawable
 class Pixmap
 {
   inherit Drawable;
-
-  object parent;
+  constant FreeRequest = Requests.FreePixmap;
 
   // Init function.
   void create(mixed ... args)
@@ -377,13 +423,14 @@ class Pixmap
 class Window
 {
   inherit Drawable;
-  object visual, parent;
   int currentInputMask;
-
+  constant FreeRequest = lambda(){}; // FIXME!!
   mapping(string:array(function)) event_callbacks = ([ ]);
 
   int alt_gr, num_lock, shift, control, caps_lock;
   int meta, alt, super, hyper;
+
+  mapping attributes;
 
 #include "keysyms.h"
 
@@ -565,11 +612,11 @@ class Window
 
   object CreateWindow(int x, int y, int width, int height,
 		      int border_width, mapping attributes,
-		      object|void visual, int|void depth,
+		      object|void visual, int|void d,
 		      int|void c_class)
   {
     object req = CreateWindow_req(x, y, width, height,
-				  border_width,depth,visual);
+				  border_width,d,visual);
     object c = colormap||parent->defaultColorMap;
 
     if (attributes)
@@ -581,8 +628,10 @@ class Window
     // object w = Window(display, req->wid);
     display->send_request(req);
     object w = new(display, req->wid, visual, this_object());
+    w->depth = d||depth||this_object()->rootDepth;
     w->colormap = c;
     w->currentInputMask = req->attributes->EventMask;
+    w->attributes = attributes;
     return w;
   }
     
@@ -614,6 +663,7 @@ class Window
 
   void ChangeAttributes(mapping m)
   {
+    attributes |= m;
     display->send_request(ChangeAttributes_req(m));
   }
 
@@ -645,20 +695,13 @@ class Window
     event_callbacks[type] = (event_callbacks[type] || ({ }) )
       + ({ f });
   }
-
-#if 0
-  function remove_event_callback(string type)
-  {
-    function f = event_callbacks[type];
-    m_delete(event_callbacks, type);
-  }
-#endif
   
   object SelectInput_req()
   {
     object req = Requests.ChangeWindowAttributes();
     req->window = id;
     req->attributes->EventMask = currentInputMask;
+    attributes->EventMask = currentInputMask;
     return req;
   }
 
@@ -896,6 +939,12 @@ class RootWindow
   int saveUnders;
   int rootDepth;
   mapping depths;
+
+  void create(mixed ... args)
+  {
+    ::create(@args);
+    autofree=0;
+  }
   
   object new(mixed ... args) /* Kludge */
   {

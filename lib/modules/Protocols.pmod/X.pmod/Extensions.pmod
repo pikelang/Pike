@@ -46,7 +46,6 @@ class Shape
 
   void post_init()
   {
-    werror("Shape extension initiated!\n");
   }
 
   void ShapeRectangles( object window, int xo, int yo,

@@ -53,6 +53,65 @@ class request
   }
 }
 
+class FreeRequest
+{
+  inherit request;
+  int id;
+  
+  string to_string()
+  {
+    return build_request(sprintf("%4c", id));
+  }
+}
+
+
+class CloseFont
+{
+  inherit FreeRequest;
+  constant reqType=46;
+}
+
+class FreePixmap
+{
+  inherit FreeRequest;
+  constant reqType=54;
+}
+
+class FreeGC
+{
+  inherit FreeRequest;
+  constant reqType=60;
+}
+
+class FreeColormap
+{
+  inherit FreeRequest;
+  constant reqType=79;
+}
+
+
+class FreeCursor
+{
+  inherit FreeRequest;
+  constant reqType=95;
+}
+
+class FreeColors
+{
+  inherit request;
+  constant reqType=79;
+  array colors;
+  int colormap;
+  int plane_mask;
+
+  string to_string()
+  {
+    return sprintf("%4c%4c%{%4c%}", colormap,plane_mask,colors);
+  }
+}
+
+
+
 class ResourceReq
 {
   inherit request;
@@ -487,12 +546,6 @@ class OpenFont
     return build_request(sprintf("%4c%2c\0\0%s",
 				 fid, sizeof(name), name));
   }
-}
-
-class CloseFont
-{
-  inherit ResourceReq;
-  constant reqType = 46;
 }
 
 class QueryTextExtents

@@ -326,3 +326,51 @@ class PixmapImage
     set_drawable( p );
   }
 }
+
+object MakeShapeMask(object in, object alpha)
+{
+  object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
+  mapping f;
+  foreach(in->display->formats, f) if(f->depth == 1) break;
+  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
+		   Image.X.encode_truecolor( alpha->invert(), 
+					     1, f->scanLinePad,
+					     !in->display->bitmapBitOrder, 
+					     1, 0, 0, 0, 0, 0), 0);
+  return shape;
+}
+
+void ShapedWindowImage(object in, object color, object alpha, int contour)
+{
+  object bgpm;
+  int width = color->xsize();
+  int height = color->ysize();
+
+  object bgpm = in->CreatePixmap(width, height, in->depth);
+  PixmapImage( bgpm )->set_image( color );
+  in->ChangeAttributes( (["BackPixmap":bgpm ]) );
+
+
+  mapping f;
+  object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
+  foreach(in->display->formats, f) if(f->depth == 1) break;
+  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
+		   Image.X.encode_truecolor( alpha->invert(), 
+					     1, f->scanLinePad,
+					     !in->display->bitmapBitOrder, 
+					     1, 0, 0, 0, 0, 0), 0);
+  in->ShapeMask("both", 0, 0, "set", shape);
+  if(contour)
+  {
+    in->ShapeMask("bounding", -1, -1, "union", shape);
+    in->ShapeMask("bounding", -1, 1, "union", shape);
+    in->ShapeMask("bounding", 1, -1, "union", shape);
+    in->ShapeMask("bounding", 1, 1, "union", shape);
+    
+    in->ShapeMask("bounding", 1, 0, "union", shape);
+    in->ShapeMask("bounding", 0, 1, "union", shape);
+    in->ShapeMask("bounding", -1, 0, "union", shape);
+    in->ShapeMask("bounding", 0, -1, "union", shape);
+  }
+}
+                      
