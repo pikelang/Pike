@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.42 2002/10/21 17:06:14 marcus Exp $
+|| $Id: polyfill.c,v 1.43 2003/11/03 14:30:49 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.42 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: polyfill.c,v 1.43 2003/11/03 14:30:49 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -646,19 +646,50 @@ static void polyfill_some(struct image *img,
 
       /* write this row */
       d=img->img+img->xsize*y;
-      for (i=0; i<img->xsize; i++)
+      if(THIS->alpha)
       {
+	for (i=0; i<img->xsize; i++)
+        {
 #ifdef POLYDEBUG
-	 fprintf(stderr,"%3.2f ",buf[i]);
+	  fprintf(stderr,"%3.2f ",buf[i]);
 #endif
-	 d->r = DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
-	 d->g = DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
-	 d->b = DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
-	 d++;
+
+#define apply_alpha(x,y,alpha) \
+   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
+
+	  d->r = apply_alpha( d->r,
+			      DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+
+						  (img->rgb.r*buf[i])),
+			      THIS->alpha );
+	  d->g = apply_alpha( d->g,
+			      DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+
+						  (img->rgb.g*buf[i])),
+			      THIS->alpha );
+	  d->b = apply_alpha( d->b,
+			      DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+
+						  (img->rgb.b*buf[i])),
+			      THIS->alpha );
+	  d++;
+	}
+#ifdef POLYDEBUG
+	fprintf(stderr,"\n");
+#endif
       }
+      else {
+	for (i=0; i<img->xsize; i++)
+        {
 #ifdef POLYDEBUG
-      fprintf(stderr,"\n");
+	  fprintf(stderr,"%3.2f ",buf[i]);
 #endif
+	  d->r = DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
+	  d->g = DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
+	  d->b = DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
+	  d++;
+	}
+#ifdef POLYDEBUG
+	fprintf(stderr,"\n");
+#endif
+      }
 
       y++;
    }
