@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.13 2002/11/29 20:56:46 jhs Exp $
+|| $Id: freetype.c,v 1.14 2003/01/15 16:57:03 marcus Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.13 2002/11/29 20:56:46 jhs Exp $");
+RCSID("$Id: freetype.c,v 1.14 2003/01/15 16:57:03 marcus Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -199,6 +199,8 @@ static void image_ft_face_info( INT32 args )
 static void image_ft_face_create( INT32 args )
 {
   int er;
+  FT_Encoding best_enc = ft_encoding_none;
+  int enc_no, enc_score, best_enc_score = -2;
   if( !args || sp[-args].type != T_STRING )
     Pike_error("Illegal argument 1 to FreeType.Face. Expected string.\n");
   er = FT_New_Face( library, sp[-args].u.string->str, 0, &TFACE );
@@ -206,6 +208,24 @@ static void image_ft_face_create( INT32 args )
     Pike_error( "Failed to parse the font file %s\n", sp[-args].u.string->str );
   else if( er )
     Pike_error( "Failed to open the font file %s\n", sp[-args].u.string->str );
+  for(enc_no=0; enc_no<TFACE->num_charmaps; enc_no++) {
+    enc_score = 0;
+    switch(TFACE->charmaps[enc_no]->encoding) {
+    case ft_encoding_symbol: enc_score = -1; break;
+    case ft_encoding_unicode: enc_score = 2; break;
+#if HAVE_DECL_FT_ENCODING_LATIN_1
+    case ft_encoding_latin_1: enc_score = 1; break;
+#endif
+    }
+    if(enc_score > best_enc_score) {
+      best_enc_score = enc_score;
+      best_enc = TFACE->charmaps[enc_no]->encoding;
+    }
+  }
+  er = FT_Select_Charmap(TFACE, best_enc);
+  if( er )
+    Pike_error( "Failed to set a character map for the font %s\n",
+		sp[-args].u.string->str );
   pop_n_elems( args );
   push_int( 0 );
 }

@@ -33,6 +33,7 @@ if test "x$with_freetype" = "xyes" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)
       PIKE_FEATURE_OK(Image.FreeType)
+      AC_CHECK_DECLS(ft_encoding_latin_1,,,[#include <freetype/freetype.h>])
     else
       AC_MSG_RESULT(no)
       CPPFLAGS="$OLDCPPFLAGS"
