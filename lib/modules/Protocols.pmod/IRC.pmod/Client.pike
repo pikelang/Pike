@@ -47,15 +47,15 @@ void create(string _server,void|mapping _options)
    cmd->nick(options->nick);
    cmd->user(options->user,options->host,options->server,options->realname);
 
-   call_out(da_ping,30);
+   call_out(da_ping,options->ping_interval || 60);
 }
 
 string expecting_pong;
 
 void da_ping()
 {
-   call_out(da_ping,30);
-   call_out(no_ping_reply,30); // timeout
+   call_out(da_ping,options->ping_interval || 60);
+   call_out(no_ping_reply,options->ping_timeout || 60); // timeout
    cmd->ping(expecting_pong=
 	     options->host+" "+Array.shuffle("pike""IRC""client"/"")*"");
 }
@@ -218,10 +218,10 @@ void got_notify(string from,string type,
 	 return;
 
       case "NICK":
-// 	 werror("%s is known as %s (aka %s)\n",
-// 		originator->nick,
-// 		to,
-// 		((array)originator->aka)*",");
+//  	 werror("%s is known as %s (aka %s)\n",
+//  		originator->nick,
+//  		to,
+//  		((array)originator->aka)*",");
 	 mixed err=0;
 	 originator->aka[originator->nick]=1;
 	 originator->aka[to]=1;
