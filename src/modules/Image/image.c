@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.61 1997/11/12 03:40:18 mirar Exp $ */
+/* $Id: image.c,v 1.62 1997/11/13 07:30:30 hedda Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.61 1997/11/12 03:40:18 mirar Exp $
+**!	$Id: image.c,v 1.62 1997/11/13 07:30:30 hedda Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -21,7 +21,7 @@
 **!	<ref>line</ref>,
 **!	<ref>setcolor</ref>,
 **!	<ref>setpixel</ref>, 
-**!	<ref>treshold</ref>,
+**!	<ref>threshold</ref>,
 **!	<ref>tuned_box</ref>,
 **!	<ref>polyfill</ref>
 **!
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.61 1997/11/12 03:40:18 mirar Exp $");
+RCSID("$Id: image.c,v 1.62 1997/11/13 07:30:30 hedda Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
