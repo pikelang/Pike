@@ -529,6 +529,7 @@ INT32 *get_order(struct array *v, cmpfun fun)
   current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
   for(e=0; e<v->size; e++) current_order[e]=e;
 
+  if(current_array_p) free((char *)current_array_p);
   current_array_p = ITEM(v);
   current_cmpfun = fun;
   fsort((char *)current_order,
@@ -536,6 +537,7 @@ INT32 *get_order(struct array *v, cmpfun fun)
 	sizeof(INT32),
 	(fsortfun)internal_cmpfun);
 
+  current_array_p=0;
   return current_order;
 }
 
@@ -592,31 +594,40 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
 
 static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
-  if(a->type != b->type) return a->type - b->type;
-  switch(a->type)
+  if(a->type == b->type)
   {
-  case T_INT:
-    if(a->u.integer < b->u.integer) return -1;
-    if(a->u.integer > b->u.integer) return  1;
-    return 0;
-
-  case T_FLOAT:
-    if(a->u.float_number < b->u.float_number) return -1;
-    if(a->u.float_number > b->u.float_number) return  1;
-    return 0;
-
-  case T_STRING:
-    return my_strcmp(a->u.string, b->u.string);
-
-  case T_ARRAY:
-    if(a==b) return 0;
-    if(!a->u.array->size) return -1;
-    if(!b->u.array->size) return  1;
-    return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
-    
-  default:
-    return set_svalue_cmpfun(a,b);
+    switch(a->type)
+    {
+      case T_INT:
+	if(a->u.integer < b->u.integer) return -1;
+	if(a->u.integer > b->u.integer) return  1;
+	return 0;
+	
+      case T_FLOAT:
+	if(a->u.float_number < b->u.float_number) return -1;
+	if(a->u.float_number > b->u.float_number) return  1;
+	return 0;
+	
+      case T_STRING:
+	return my_strcmp(a->u.string, b->u.string);
+	
+      case T_ARRAY:
+	if(a==b) return 0;
+	if(!a->u.array->size) return -1;
+	if(!b->u.array->size) return  1;
+	return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
+	
+      default:
+	return set_svalue_cmpfun(a,b);
+	
+      case T_OBJECT:
+	break;
+    }
+  }else{
+    if(a->type!=T_OBJECT && b->type!=T_OBJECT)
+      return a->type - b->type;
   }
+  return is_gt(a,b);
 }
 
 void sort_array_destructively(struct array *v)
