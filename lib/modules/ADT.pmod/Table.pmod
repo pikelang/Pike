@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.18 2001/01/05 21:12:19 grubba Exp $
+// $Id: Table.pmod,v 1.19 2001/04/25 12:19:21 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
@@ -434,12 +434,21 @@ object Separated = class {
   }
 }();
 
+//! @module ASCII
+
 object ASCII = class {
   object decode(string s, void|mapping options)
   {
     // Yet to be done.
     return 0;
   }
+
+  //! @decl string encode(object table, void|mapping options)
+  //!
+  //! This method returns a table represented in ASCII suitable for human eyes.
+  //! @[options] is an optional mapping. If the keyword @tt{"indent"@} is used
+  //! with a number, the table will be indented with that number of space
+  //! characters.
 
   string encode(object t, void|mapping options)
   {
@@ -475,6 +484,8 @@ object ASCII = class {
 		      indent)*"\n"+(sizeof(table)>1?"\n":"")+l+"\n");
   }
 }();
+
+//! @endmodule
 
 // Experimental
 object SQL = class {
