@@ -1,6 +1,6 @@
 inherit Search.Grammar.Base;
 
-private array build_tree(string query)
+static array build_tree(string query)
 {
   ADT.Queue stack=ADT.Queue();
 
@@ -25,13 +25,11 @@ private array build_tree(string query)
   return stack->get() || ({});
 }
 
-private mapping(string:Search.Document) evaluate_tree(Search.Database db, array tree)
+static array(mapping) evaluate_tree(Search.Database db, array tree)
 {
-  mixed first;
-  mapping(string:Search.Document) result = 0;
+  mapping(string:mapping) result = 0;
   string last_operator="+";
-  mapping(string:Search.Document) current_pages;
-  array(string) all_words;
+  array(mapping)|mapping(string:mapping) current_pages;
 
   foreach(tree, array|string node)
   {
@@ -41,8 +39,10 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
     {
       if((node=="|") || (node=="+") || (node=="^") || (node=="-"))
 	last_operator=node;
-      else
+      else {
 	current_pages = db->lookup_word(node);
+	current_pages = mkmapping(current_pages->uri, current_pages);
+      }
     }
 
     if(!result)
@@ -52,32 +52,33 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
     {
       switch (last_operator)
       {
-        case "+" :  // AND
-	  result=result&current_pages;
-	  break;
         case "-" :  // NOT
 	  result=result-current_pages;
 	  break;
+
         case "^" :  // NOT
 	  result=result^current_pages;
 	  break;
-        default :  // AND
+
+        // FIXME: hits and score should be merged.
+        case "+" :  // AND
+        default :
 	  result=result&current_pages;
 	  break;
       }
     }
   }
-  return result || ([]);
+  return values(result) || ([]);
 }
 
 
 // Plugin callbacks
 
-mapping do_query(Search.Database db, string query)
+array(mapping) do_query(Search.Database db, string query)
 {
   int t0=gethrtime();
   array tree=build_tree(string_to_utf8(lower_case(query)));
-  mapping tmp=evaluate_tree(db, tree);
+  array(mapping) tmp=evaluate_tree(db, tree);
   werror("Query took %.1f ms.\n",(gethrtime()-t0)/1000.0);
   return tmp;
 }
