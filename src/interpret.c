@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.294 2003/08/19 15:14:14 grubba Exp $
+|| $Id: interpret.c,v 1.295 2003/10/20 13:15:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.294 2003/08/19 15:14:14 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.295 2003/10/20 13:15:58 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2178,19 +2178,13 @@ void gdb_backtrace (
   for (of = 0; f; f = (of = f)->next)
     if (f->refs) {
       int args, i;
-      struct pike_string *file = NULL;
-      INT32 line;
 
       if (f->context.prog) {
-	if (f->pc)
-	  file = get_line (f->pc, f->context.prog, &line);
-	else
-	  file = get_program_line (f->context.prog, &line);
+	INT32 line;
+	char *file = debug_get_line (of ? f->pc - 1 : f->pc, f->context.prog, &line);
+	fprintf (stderr, "%s:%d: ", file, line);
       }
-      if (file) {
-	fprintf (stderr, "%s:%d: ", file->str, line);
-	free_string(file);
-      } else
+      else
 	fputs ("unknown program: ", stderr);
 
       if (f->current_object && f->current_object->prog) {
@@ -2303,9 +2297,9 @@ void gdb_backtrace (
 	  case T_OBJECT: {
 	    struct program *p = arg->u.object->prog;
 	    if (p && p->num_linenumbers) {
-	      file = get_program_line (p, &line);
-	      fprintf (stderr, "object(%s:%d)", file->str, line);
-	      free_string(file);
+	      INT32 line;
+	      char *file = debug_get_line (NULL, p, &line);
+	      fprintf (stderr, "object(%s:%d)", file, line);
 	    }
 	    else
 	      fputs ("object", stderr);
@@ -2315,9 +2309,9 @@ void gdb_backtrace (
 	  case T_PROGRAM: {
 	    struct program *p = arg->u.program;
 	    if (p->num_linenumbers) {
-	      file = get_program_line (p, &line);
-	      fprintf (stderr, "program(%s:%d)", file->str, line);
-	      free_string(file);
+	      INT32 line;
+	      char *file = debug_get_line (NULL, p, &line);
+	      fprintf (stderr, "program(%s:%d)", file, line);
 	    }
 	    else
 	      fputs ("program", stderr);
