@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.75 1998/04/14 17:02:04 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.76 1998/04/14 19:17:43 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -313,6 +313,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch
 %type <n> catch_arg
 %type <n> class
+%type <n> safe_comma_expr
 %type <n> comma_expr
 %type <n> comma_expr2
 %type <n> comma_expr_or_maxint
@@ -387,6 +388,7 @@ string_constant: string
 
 optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
   | ':' bad_identifier { $$=0; }
+  | ':' error { $$=0; }
   | { $$=0; }
   ;
 
@@ -481,6 +483,7 @@ constant_name: F_IDENTIFIER '=' expr0
     free_node($1);
   }
   | bad_identifier '=' expr0 { if ($3) free_node($3); }
+  | error '=' expr0 { if ($3) free_node($3); }
   ;
 
 constant_list: constant_name
@@ -611,7 +614,9 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   }
   | error '}'
   {
-    YYBACKUP('}', 0);
+    YYSTYPE foo;
+    foo.number = 0;
+    YYBACKUP('}', foo);
     reset_type_stack();
     yyerrok;
   }
@@ -1002,12 +1007,26 @@ statement: unused2 ';' { $$=$1; }
   | break ';'
   | continue ';'
   | error ';' { reset_type_stack(); $$=0; yyerrok; }
+  | error '}'
+  {
+    YYSTYPE foo;
+    foo.number = 0;
+    YYBACKUP('}', foo);
+    reset_type_stack();
+    yyerrok;
+  }
   | ';' { $$=0; } 
   ;
 
 
 break: F_BREAK { $$=mknode(F_BREAK,0,0); } ;
-default: F_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); } ;
+default: F_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); }
+  | F_DEFAULT
+  {
+    $$=mknode(F_DEFAULT,0,0); yyerror("Expected ':' after default.");
+  }
+  ;
+
 continue: F_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
 
 lambda: F_LAMBDA
@@ -1149,7 +1168,7 @@ cond: F_IF
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' comma_expr ')' statement optional_else_part
+  '(' safe_comma_expr ')' statement optional_else_part
   {
     $$=mknode('?',$4,mknode(':',$6,$7));
     $$->line_number=$1;
@@ -1175,7 +1194,7 @@ foreach: F_FOREACH
   }
   ;
 
-do: F_DO statement F_WHILE '(' comma_expr ')' ';'
+do: F_DO statement F_WHILE '(' safe_comma_expr ')' ';'
   {
     $$=mknode(F_DO,$2,$5);
     $$->line_number=$1;
@@ -1201,7 +1220,7 @@ while:  F_WHILE
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' comma_expr ')' statement
+  '(' safe_comma_expr ')' statement
   {
     int i=lex.current_line;
     lex.current_line=$1;
@@ -1212,14 +1231,14 @@ while:  F_WHILE
   ;
 
 for_expr: /* EMPTY */ { $$=mkintnode(1); }
-  | comma_expr
+  | safe_comma_expr
   ;
 
 switch:	F_SWITCH
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' comma_expr ')' statement
+  '(' safe_comma_expr ')' statement
   {
     $$=mknode(F_SWITCH,$4,$6);
     $$->line_number=$1;
@@ -1227,11 +1246,11 @@ switch:	F_SWITCH
   }
   ;
 
-case: F_CASE comma_expr ':'
+case: F_CASE safe_comma_expr ':'
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | F_CASE comma_expr F_DOT_DOT optional_comma_expr ':'
+  | F_CASE safe_comma_expr F_DOT_DOT optional_comma_expr ':'
   {
      $$=mknode(F_CASE,$4?$2:0,$4?$4:$2);
   }
@@ -1246,20 +1265,24 @@ return: F_RETURN
     }
     $$=mknode(F_RETURN,mkintnode(0),0);
   }
-  | F_RETURN comma_expr
+  | F_RETURN safe_comma_expr
   {
     $$=mknode(F_RETURN,$2,0);
   }
   ;
 	
 unused: { $$=0; }
-  | unused2
+  | safe_comma_expr { $$=mkcastnode(void_type_string,$1);  }
   ;
 
 unused2: comma_expr { $$=mkcastnode(void_type_string,$1);  } ;
 
 optional_comma_expr: { $$=0; }
-  | comma_expr
+  | safe_comma_expr
+  ;
+
+safe_comma_expr: comma_expr
+  | error { $$=mkintnode(0); }
   ;
 
 comma_expr: comma_expr2
@@ -1396,6 +1419,7 @@ expr4: string
     $$=mknode(F_ARROW,$1,$3);
   }
   | expr4 F_ARROW bad_identifier {}
+  | expr4 F_ARROW error {}
   ;
 
 idents: low_idents
@@ -1408,6 +1432,7 @@ idents: low_idents
     free_node($3);
   }
   | idents '.' bad_identifier {}
+  | idents '.' error {}
   ;
 
 low_idents: F_IDENTIFIER
@@ -1508,6 +1533,10 @@ low_idents: F_IDENTIFIER
   {
     $$=$1;
   }
+  | F_IDENTIFIER F_COLON_COLON error
+  {
+    $$=$1;
+  }
   | F_COLON_COLON F_IDENTIFIER
   {
     int e,i;
@@ -1540,11 +1569,11 @@ low_idents: F_IDENTIFIER
   ;
 
 comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
-  | comma_expr
+  | safe_comma_expr
   ;
 
 comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
-  | comma_expr
+  | safe_comma_expr
   ;
 
 gauge: F_GAUGE catch_arg
@@ -1577,7 +1606,9 @@ typeof: F_TYPEOF '(' expr0 ')'
     $$=mkstrnode(s);
     free_string(s);
     free_node(tmp);
-  } ;
+  } 
+  | F_TYPEOF '(' error ')' { $$=mkintnode(0); yyerrok; }
+  ;
  
 catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error ')' { $$=mkintnode(0); yyerrok; }
@@ -1592,12 +1623,27 @@ catch: F_CATCH
      {
        $$=mknode(F_CATCH,$3,NULL);
        catch_level--;
-      } ;
+     }
+     ;
 
 sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   {
     $$=mknode(F_SSCANF,mknode(F_ARG_LIST,$3,$5),$6);
   }
+  | F_SSCANF '(' expr0 ',' expr0 error ')'
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    free_node($5);
+    yyerrok;
+  }
+  | F_SSCANF '(' expr0 error ')'
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    yyerrok;
+  }
+  | F_SSCANF '(' error ')' { $$=mkintnode(0); yyerrok; }
   ;
 
 lvalue: expr4
@@ -1635,8 +1681,8 @@ string: F_STRING
  * Some error-handling
  */
 
-bad_identifier : bad_def_identifier
-  | F_INLINE
+bad_identifier:
+  F_INLINE
   { yyerror("inline is a reserved word."); }
   | F_LOCAL
   { yyerror("local is a reserved word."); }
@@ -1666,10 +1712,7 @@ bad_identifier : bad_def_identifier
   { yyerror("string is a reserved word."); }
   | F_VOID_ID
   { yyerror("void is a reserved word."); }
-  ;
-
-bad_def_identifier
-  : F_DO
+  | F_DO
   { yyerror("do is a reserved word."); }
   | F_ELSE
   { yyerror("else is a reserved word."); }
