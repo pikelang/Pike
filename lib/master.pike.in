@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.100 2000/02/13 16:24:13 grubba Exp $
+ * $Id: master.pike.in,v 1.101 2000/02/19 21:30:28 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -54,13 +54,13 @@ string *explode_path(string p)
 
 string dirname(string x)
 {
-  string *tmp=EXPLODE_PATH(x);
+  array(string) tmp=EXPLODE_PATH(x);
   return tmp[..sizeof(tmp)-2]*"/";
 }
 
 string basename(string x)
 {
-  string *tmp=EXPLODE_PATH(x);
+  array(string) tmp=EXPLODE_PATH(x);
   return tmp[-1];
 }
 #define DIRNAME dirname
@@ -72,12 +72,12 @@ string basename(string x)
 #define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
 
-string describe_backtrace(mixed *trace);
+string describe_backtrace(array trace);
 object low_cast_to_object(string oname, string current_file);
 
-string *pike_include_path=({});
-string *pike_module_path=({});
-string *pike_program_path=({});
+array(string) pike_include_path=({});
+array(string) pike_module_path=({});
+array(string) pike_program_path=({});
 int want_warnings;
 
 #ifdef PIKE_AUTORELOAD
@@ -151,7 +151,7 @@ string combine_path_with_cwd(string path)
 int invalidate_time;
 mapping(string:multiset(string)) dir_cache = ([]);
 
-mixed *master_file_stat(string x)
+array master_file_stat(string x)
 {
   string file, dir=combine_path_with_cwd(x);
 
@@ -166,7 +166,7 @@ mixed *master_file_stat(string x)
   }
   if(zero_type(d=dir_cache[dir]))
   {
-    if(string *tmp=get_dir(dir))
+    if(array(string) tmp=get_dir(dir))
     {
       d=dir_cache[dir]=aggregate_multiset(@tmp);
     }else{
@@ -753,14 +753,14 @@ mapping(string:mixed) fc=([]);
 
 object findmodule(string fullname)
 {
-  mixed *stat;
+  array stat;
   object o;
   if(!zero_type(o=fc[fullname]))
   {
     return o;
   }
 
-  if(mixed *stat=master_file_stat(fullname+".pmod"))
+  if(array stat=master_file_stat(fullname+".pmod"))
   {
     if(stat[1]==-2)
       return fc[fullname]=dirnode(fullname+".pmod");
@@ -779,7 +779,8 @@ object findmodule(string fullname)
 
 mixed handle_import(string what, string|void current_file, object|void handler)
 {
-  string *tmp,path;
+  array(string) tmp;
+  string path;
   if(current_file)
   {
     tmp=EXPLODE_PATH(current_file);
@@ -850,14 +851,14 @@ string _master_file_name;
  * and an array containing the environment variables on the same form as
  * a C program receives them.
  */
-void _main(string *orig_argv, string *env)
+void _main(array(string) orig_argv, array(string) env)
 {
-  string *argv=copy_value(orig_argv);
+  array(string) argv=copy_value(orig_argv);
   int i,debug,trace;
   object script;
   object tmp;
   string a,b;
-  mixed *q;
+  array q;
 
   _pike_file_name = orig_argv[0];
 
@@ -973,7 +974,7 @@ void _main(string *orig_argv, string *env)
       }
     }
     
-    foreach(q, mixed *opts)
+    foreach(q, array opts)
     {
       switch(opts[0])
       {
@@ -1218,7 +1219,8 @@ string handle_include(string f,
 		      string current_file,
 		      int local_include)
 {
-  string *tmp, path;
+  array(string) tmp;
+  string path;
 
   if(local_include)
   {
