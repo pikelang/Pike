@@ -653,12 +653,16 @@ class Mutex
 	if (locks) error ("Recursive mutex locks.\n");
 	break;
       case 1:
-	break;
-      case 2:
 	if (locks)
 	  // To be really accurate we should hang now, but somehow
 	  // that doesn't seem too useful.
 	  error ("Deadlock detected.\n");
+	break;
+      case 2:
+	if (locks) {
+	  locks++;
+	  return 0;
+	}
     }
     locks++;
     return MutexKey (dec_locks);
