@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.33 2003/06/17 12:37:08 grubba Exp $
+ * $Id: Tree.pmod,v 1.34 2003/08/27 15:16:38 grubba Exp $
  *
  */
 
@@ -117,7 +117,11 @@ class XMLNSParser {
     namespace_stack->push(([]));	// Sentinel.
   }
 
-  void Enter(mapping(string:string) attrs)
+  //! Check @[attrs] for namespaces.
+  //!
+  //! @returns
+  //!   Returns the namespace expanded version of @[attrs].
+  mapping(string:string) Enter(mapping(string:string) attrs)
   {
     mapping(string:string) namespaces = namespace_stack->top() + ([]);
     foreach(attrs; string attr; string val) {
@@ -128,6 +132,25 @@ class XMLNSParser {
       }
     }
     namespace_stack->push(namespaces);
+    // Now that we know what the namespaces are, we
+    // can expand the namespaces in the other attributes.
+    mapping(string:string) result = ([]);
+    foreach(attrs; string attr; string val) {
+      int i;
+      if (!has_prefix(attr, "xmlns:") &&
+	  (i = search(attr, ":")) >= 0) {
+	string key = attr[..i-1];
+	attr = attr[i+1..];
+	string prefix = namespaces[key];
+	if (!prefix) {
+	  error("Unknown namespace %O for attribute %O\n",
+		key, attr);
+	}
+	attr = prefix+attr;
+      }
+      result[attr] = val;
+    }
+    return result;
   }
 
   string Decode(string name)
@@ -855,6 +878,32 @@ class Node {
 	attrs["xmlns:NS"+i] = mNamespace;
       }
     }
+    // Then set the short namespaces for any attributes.
+    foreach(indices(attrs), string attr_name) {
+      int i, j;
+      if (!has_prefix(attr_name, "xmlns:")) {
+	int i = search(attr_name, ":");
+	int j = search(attr_name, "/");
+	if (j > i) {
+	  i = j;
+	}
+	if (i >= 0) {
+	  string ns = attr_name[..i-1];
+	  if (!(forward_lookup[ns])) {
+	    // We need to allocate a short namespace symbol.
+	    // FIXME: This is O(n²).
+	    int i;
+	    string prefix;
+	    while(backward_lookup[prefix = ("NS"+i+":")]) {
+	      i++;
+	    }
+	    backward_lookup[mShortNamespace] = ns;
+	    forward_lookup[mNamespace] = prefix;
+	    attrs["xmlns:NS"+i] = ns;
+	  }
+	}
+      }
+    }
     // And then do it for all the children.
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
@@ -1083,7 +1132,7 @@ private Node|int(0..0)
       //  Parse namespace information of available.
       if (extra[0]->xmlns) {
 	XMLNSParser xmlns = extra[0]->xmlns;
-	xmlns->Enter(attr);
+	attr = xmlns->Enter(attr);
 	name = xmlns->Decode(name);
 	xmlns->Leave();
       }
@@ -1146,7 +1195,7 @@ private Node|int(0..0)
     if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
 	extra[0]->xmlns) {
       XMLNSParser xmlns = extra[0]->xmlns;
-      xmlns->Enter(attr);
+      attr = xmlns->Enter(attr);
     }
   case "<!DOCTYPE":
   default:
