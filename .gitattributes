@@ -223,6 +223,7 @@ testfont binary
 /lib/modules/Standards.pmod/RDF.pike foreign_ident
 /lib/modules/Standards.pmod/URI.pike foreign_ident
 /lib/modules/Standards.pmod/UUID.pmod foreign_ident
+/lib/modules/Standards.pmod/XML.pmod/Wix.pmod foreign_ident
 /lib/modules/Standards.pmod/testsuite.in foreign_ident
 /lib/modules/Stdio.pmod foreign_ident
 /lib/modules/Stdio.pmod/FakeFile.pike foreign_ident
@@ -247,6 +248,7 @@ testfont binary
 /lib/modules/Tools.pmod/Standalone.pmod/extract_autodoc.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/extract_locale.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/join_autodoc.pike foreign_ident
+/lib/modules/Tools.pmod/Standalone.pmod/make_wxs.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/module.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/monger.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/rsif.pike foreign_ident
@@ -360,6 +362,7 @@ testfont binary
 /src/lexer.h foreign_ident
 /src/main.c foreign_ident
 /src/main.h foreign_ident
+/src/make_banner.pike foreign_ident
 /src/make_variables.in foreign_ident
 /src/mapping.c foreign_ident
 /src/mapping.h foreign_ident
