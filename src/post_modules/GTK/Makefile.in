@@ -28,13 +28,15 @@ override:  sources@WITH_GTK@
 
 sources1:
 	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
-	$(MAKE) CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g'`" "SOURCES=`cat sources`" doit
+	$(MAKE)  \
+         CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O"  \
+         SOURCES="`cat sources`" doit
 
 always_build_files_to_compile: $(SOURCES)
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)
 
 doit: always_build_files_to_compile
-	$(MAKE) CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g'`" "OBJS=`cat files_to_compile`" all
+	@$(MAKE) OBJS="`cat files_to_compile`" all
 
 sources0:
 	@echo "Pike-GTK disabled."
@@ -64,14 +66,22 @@ wmml1:
 
 wmml0:
 	@echo "Pike-GTK disabled."
+pgtk_globals.o: pgtk_globals.c	 Makefile
+	@echo Building pgtk_globals.o with optimization $(OPTIMIZE); \
+	if $(CC) $(CFLAGS) $(OPTIMIZE) -c $< -o $@ ; then : ;\
+	else \
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
+	fi
+
 
 #
 # Many machines have problems compiling this file with full optimization.
 #
-
-pgtk.o: pgtk.c
+pgtk.o: pgtk.c Makefile
 	@echo "Compiling $< with less optimization" ;\
-	if $(CC) $(NOOPT_CFLAGS) -O -c $< -o $@ ; then : ;\
+	if $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ;\
 	else \
 	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
 	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
