@@ -15,6 +15,7 @@ int main(int argc, array(string) argv)
     case "dll":
     case "o":
     case "obj":
+    case "so":
       argv[0]="dumpbin";
       exit(do_cmd( Array.map(argv,fixpath)));
 
