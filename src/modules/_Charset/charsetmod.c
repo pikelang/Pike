@@ -2,8 +2,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.35 2002/08/15 14:50:27 marcus Exp $");
+#include "global.h"
+RCSID("$Id: charsetmod.c,v 1.36 2002/09/09 11:42:35 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
