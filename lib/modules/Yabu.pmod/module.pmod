@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.26 2002/11/29 19:51:06 nilsson Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.27 2003/06/06 14:54:35 jhs Exp $";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
@@ -1233,12 +1233,12 @@ class db {
   /* Remove maximum one level of directories and files. */
   static private void level2_rm(string f)
   {
-    if(sizeof(f) > 1 && f[-1] == '/')
-      f = f[0..sizeof(f)-2];  // Remove /'s.
-    if((file_stat(f)||({0,0}))[1] == -2)  // Directory.
+    if(has_suffix(f, "/"))
+      f = f[..sizeof(f)-2];
+    if(Stdio.is_dir(f))
       foreach(get_dir(f)||({}), string file)
-	rm(f+"/"+file);  // Delete file.
-    rm(f);  // Delete file/directory.
+	rm(f+"/"+file);
+    rm(f);
   }
 
   void purge()
