@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.59 2001/04/27 13:38:40 grubba Exp $
+//! $Id: DNS.pmod,v 1.60 2001/09/17 21:36:45 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -512,13 +512,13 @@ class client
 	      system->get_netinfo_property(".",
 					   "/locations/resolver",
 					   "nameserver")) {
-	    nameservers = sizeof(nameservers) && map(nameservers, `-, "\n");
+	    nameservers = map(nameservers, `-, "\n");
 	  }
 	  
 	  if (domains = system->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
-	    domains = sizeof(domains) && map(domains, `-, "\n");
+	    domains = map(domains, `-, "\n");
 	  }
 	} else {
 	  /* FIXME: Is this a good idea?
