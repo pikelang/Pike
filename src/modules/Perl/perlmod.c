@@ -13,6 +13,8 @@
 #include <EXTERN.h>
 #include <perl.h>
 
+/* Do not redefine my malloc macro you stupid Perl! */
+#include "dmalloc.h"
 
 static int num_perl_interpreters=0;
 DEFINE_MUTEX(perl_running);
