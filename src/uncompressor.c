@@ -149,7 +149,9 @@ void my_uncompress(char *file,int argc, char **argv)
 	  for(e=0;e<argc;e++)
 	  {
 	    char *c;
+#ifdef DEBUG
 	    fprintf(stderr,"argv[%d]=%s\n",e,argv[e]);
+#endif
 
 	    *(ptr++)=' ';
 	    *(ptr++)='"';
