@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.38 2001/07/31 19:31:21 marcus Exp $
+ * $Id: port.h,v 1.39 2001/08/03 20:54:46 grubba Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -243,33 +243,33 @@ long long gethrtime(void);
 
 #ifdef DOUBLE_IS_IEEE_BIG
 #define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
-	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }, {} };
+	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
 #define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
-	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 }, {} };
+	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.d[-1])
 #define MAKE_NAN() (nan_.d[-1])
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
 #define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
-	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }, {} };
+	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }, { 0.0 } };
 #define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
-	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f }, {} };
+	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.d[-1])
 #define MAKE_NAN() (nan_.d[-1])
 #else
 #ifdef FLOAT_IS_IEEE_BIG
 #define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
-	inf_ = { { 0x7f, 0x80, 0, 0 }, {} };
+	inf_ = { { 0x7f, 0x80, 0, 0 }, { 0.0 } };
 #define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
-	nan_ = { { 0x7f, 0xc0, 0, 0 }, {} };
+	nan_ = { { 0x7f, 0xc0, 0, 0 }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.f[-1])
 #define MAKE_NAN() (nan_.f[-1])
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
 #define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
-	inf_ = { { 0, 0, 0x80, 0x7f }, {} };
+	inf_ = { { 0, 0, 0x80, 0x7f }, { 0.0 } };
 #define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
-	nan_ = { { 0, 0, 0xc0, 0x7f }, {} };
+	nan_ = { { 0, 0, 0xc0, 0x7f }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.f[-1])
 #define MAKE_NAN() (nan_.f[-1])
 #else
