@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.125 2001/08/24 16:33:38 mast Exp $
+// $Id: module.pmod,v 1.126 2001/10/28 17:58:57 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -195,6 +195,7 @@ class File
     }
   }
 
+  //  @decl int open(int fd, string mode)
   //! @decl int open(string filename, string mode)
   //! @decl int open(string filename, string mode, int mask)
   //!
