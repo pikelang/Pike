@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.165 2004/04/15 17:34:40 mast Exp $
+|| $Id: stralloc.c,v 1.166 2004/09/18 20:50:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -23,8 +23,6 @@
 #include <float.h>
 #include <ctype.h>
 #include <math.h>
-
-RCSID("$Id: stralloc.c,v 1.165 2004/04/15 17:34:40 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 

@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.54 2004/04/06 15:37:55 nilsson Exp $
+|| $Id: iterators.cmod,v 1.55 2004/09/18 20:50:50 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.54 2004/04/06 15:37:55 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"

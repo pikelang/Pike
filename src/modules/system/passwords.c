@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.43 2003/10/13 17:43:53 grubba Exp $
+|| $Id: passwords.c,v 1.44 2004/09/18 20:50:57 nilsson Exp $
 */
 
 /*
@@ -26,9 +26,6 @@
 
 #include "system_machine.h"
 #include "system.h"
-
-RCSID("$Id: passwords.c,v 1.43 2003/10/13 17:43:53 grubba Exp $");
-
 #include "module_support.h"
 #include "interpret.h"
 #include "stralloc.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.53 2004/05/18 10:01:48 vida Exp $
+|| $Id: constants.c,v 1.54 2004/09/18 20:50:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -17,8 +17,6 @@
 #include "pike_error.h"
 #include "pike_security.h"
 #include "block_alloc.h"
-
-RCSID("$Id: constants.c,v 1.53 2004/05/18 10:01:48 vida Exp $");
 
 struct mapping *builtin_constants = 0;
 

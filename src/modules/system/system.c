@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.170 2004/06/29 12:08:17 nilsson Exp $
+|| $Id: system.c,v 1.171 2004/09/18 20:50:57 nilsson Exp $
 */
 
 /*
@@ -19,8 +19,6 @@
 
 #include "system_machine.h"
 #include "system.h"
-
-RCSID("$Id: system.c,v 1.170 2004/06/29 12:08:17 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>

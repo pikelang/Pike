@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: version.c,v 1.141 2003/09/02 12:55:47 mast Exp $
+|| $Id: version.c,v 1.142 2004/09/18 20:50:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -10,8 +10,6 @@
 #include "interpret.h"
 #include "stralloc.h"
 #include "version.h"
-
-RCSID("$Id: version.c,v 1.141 2003/09/02 12:55:47 mast Exp $");
 
 /*! @decl string version()
  *!

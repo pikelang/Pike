@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.567 2004/09/18 20:16:15 per Exp $
+|| $Id: program.c,v 1.568 2004/09/18 20:50:53 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.567 2004/09/18 20:16:15 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.154 2004/09/02 11:19:29 grubba Exp $
+|| $Id: pike_memory.c,v 1.155 2004/09/18 20:50:53 nilsson Exp $
 */
 
 #include "global.h"
@@ -10,8 +10,6 @@
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "gc.h"
-
-RCSID("$Id: pike_memory.c,v 1.154 2004/09/02 11:19:29 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP

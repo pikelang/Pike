@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.196 2004/07/04 21:08:50 nilsson Exp $
+|| $Id: svalue.c,v 1.197 2004/09/18 20:50:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,8 +29,6 @@
 #include <math.h>
 
 #define sp Pike_sp
-
-RCSID("$Id: svalue.c,v 1.196 2004/07/04 21:08:50 nilsson Exp $");
 
 const struct svalue dest_ob_zero = {
   T_INT, 0,

@@ -2,15 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.65 2003/09/16 16:45:36 mast Exp $
+|| $Id: fdlib.c,v 1.66 2004/09/18 20:50:50 nilsson Exp $
 */
 
 #include "global.h"
 #include "fdlib.h"
 #include "pike_error.h"
 #include <math.h>
-
-RCSID("$Id: fdlib.c,v 1.65 2003/09/16 16:45:36 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 

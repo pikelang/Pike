@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.341 2004/08/25 14:25:15 grubba Exp $
+|| $Id: language.yacc,v 1.342 2004/09/18 20:50:51 nilsson Exp $
 */
 
 %pure_parser
@@ -113,7 +113,6 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.341 2004/08/25 14:25:15 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

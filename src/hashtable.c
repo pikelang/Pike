@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hashtable.c,v 1.14 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: hashtable.c,v 1.15 2004/09/18 20:50:50 nilsson Exp $
 */
 
 #include "global.h"
@@ -10,8 +10,6 @@
 #include "stralloc.h"
 #include "stuff.h"
 #include "pike_error.h"
-
-RCSID("$Id: hashtable.c,v 1.14 2002/10/11 01:39:31 nilsson Exp $");
 
 static size_t gobble(struct pike_string *s)
 {

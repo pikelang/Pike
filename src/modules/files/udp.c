@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.69 2004/09/18 15:26:06 marcus Exp $
+|| $Id: udp.c,v 1.70 2004/09/18 20:50:57 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,6 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.69 2004/09/18 15:26:06 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"

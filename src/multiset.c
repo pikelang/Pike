@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.87 2004/06/13 14:24:31 mast Exp $
+|| $Id: multiset.c,v 1.88 2004/09/18 20:50:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -23,8 +23,6 @@
 #include "pike_security.h"
 #include "svalue.h"
 #include "block_alloc.h"
-
-RCSID("$Id: multiset.c,v 1.87 2004/06/13 14:24:31 mast Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off

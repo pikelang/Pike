@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.27 2004/04/15 13:20:19 grubba Exp $
+|| $Id: module.c,v 1.28 2004/09/18 20:50:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -21,8 +21,6 @@
 
 #include "modules/modlist_headers.h"
 #include "post_modules/modlist_headers.h"
-
-RCSID("$Id: module.c,v 1.27 2004/04/15 13:20:19 grubba Exp $");
 
 /* Define this to trace the initialization and cleanup of static modules. */
 /* #define TRACE_MODULE */

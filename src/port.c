@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.77 2004/05/10 21:45:13 agehall Exp $
+|| $Id: port.c,v 1.78 2004/09/18 20:50:53 nilsson Exp $
 */
 
 /*
@@ -32,8 +32,6 @@
 #include <errno.h>
 #include <float.h>
 #include <string.h>
-
-RCSID("$Id: port.c,v 1.77 2004/05/10 21:45:13 agehall Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));

@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.178 2004/06/30 00:17:21 nilsson Exp $
+|| $Id: docode.c,v 1.179 2004/09/18 20:50:48 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.178 2004/06/30 00:17:21 nilsson Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
