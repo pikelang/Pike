@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.8 1998/04/21 21:28:57 grubba Exp $
+/* $Id: handshake.pike,v 1.8.2.1 1998/06/19 08:43:33 nisse Exp $
  *
  */
 
@@ -268,7 +268,7 @@ int handle_handshake(int type, string data, string raw)
 		 "extra data in hello message ignored\n");
       
 	if (version[1] > 0)
-	  werror(sprintf("SSL.connection->handle_handshake: "
+	  werror(sprintf("SSL.handshake->handle_handshake: "
 			 "Version %d.%d hello detected\n", @version));
 
 #ifdef SSL3_DEBUG
