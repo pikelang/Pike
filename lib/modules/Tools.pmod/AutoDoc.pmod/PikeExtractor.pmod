@@ -357,17 +357,16 @@ static private class Extractor {
       // Objects added by @decl replace the true objects:
       if (sizeof(docDecls)) {
         if (sizeof(decls)) {
-          if (sizeof(decls) == 1 && decls[0]->objtype == "method") {
-            string name = decls[0]->name;
-            foreach (docDecls, PikeObject p) {
-              if (p->objtype != "method")
-                extractorError("@decl can override only methods");
-              if (p->name != name)
-                extractorError("@decl and pike methods must have the same name");
-            }
-          }
-          else
-            extractorError("inconsistency between @decl and pike code");
+          if (sizeof(decls) != 1)
+            extractorError("only one pike declaration can be combined with @decl");
+          foreach(docDecls, PikeObject d)
+            if (decls[0]->objtype != d->objtype)
+              extractorError("@decl of %s mismatches %s in pike code",
+                            d->objtype, decls[0]->objtype);
+          foreach(docDecls, PikeObject d)
+            if (decls[0]->name != d->name)
+              extractorError("@decl'd %s %s mismatches %s %s in pike code",
+                             d->objtype, d->name, d->objtype, decls[0]->name);
         }
         decls = docDecls;
       }
@@ -406,9 +405,6 @@ static private class Extractor {
         switch (obj->objtype) {
           case "inherit":
             c->AddInherit(obj);
-            if (doc && sizeof(decls) > 1)
-              extractorError("inherit can not be documented together"
-                             " with other declarations");
             // fall through
           default:
             contexts[obj->objtype] = 1;
