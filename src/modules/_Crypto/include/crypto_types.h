@@ -6,7 +6,7 @@
 #define CRYPTO_TYPES_H_INCLUDED
 
 #ifdef PIKE
-#include <types.h>
+#include <pike_types.h>
 #include <global.h>
 #else /* !PIKE */
 #define INT32 long
