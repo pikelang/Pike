@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.38 1999/11/18 04:14:54 hubbe Exp $
+ * $Id: svalue.h,v 1.39 1999/11/23 22:41:05 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -89,8 +89,10 @@ struct svalue
 #define PIKE_T_FLOAT 7
 #define PIKE_T_INT 8
 
-#define T_VOID 16
-#define T_MANY 17
+#define PIKE_T_ZERO  14	/* Can return 0, but nothing else */
+#define T_UNFINISHED 15	/* Reserved for the garbage-collector */
+#define T_VOID       16	/* Can't return any value */
+#define T_MANY       17
 
 #define T_ASSIGN 245
 #define T_DELETED 246
@@ -135,6 +137,7 @@ struct svalue
 #define tIntPos "\010\000\000\000\000\177\377\377\377"
 #define tByte "\010\000\000\000\000\000\000\000\377"
 
+#define tZero "\016"
 #define tVoid "\020"
 #define tVar(X) #X
 #define tSetvar(X,Y) "\365" #X Y
@@ -164,14 +167,16 @@ struct svalue
 #define BIT_INT (1<<PIKE_T_INT)
 #define BIT_FLOAT (1<<PIKE_T_FLOAT)
 
+#define BIT_ZERO (1<<PIKE_T_ZERO)
+
 /* Used to signify that this array might not be finished yet */
 /* garbage collect uses this */
-#define BIT_UNFINISHED (1<<15)
+#define BIT_UNFINISHED (1 << T_UNFINISHED)
 
 /* This is only used in typechecking to signify that this 
  * argument may be omitted.
  */
-#define BIT_VOID (1<< T_VOID)
+#define BIT_VOID (1 << T_VOID)
 
 /* This is used in typechecking to signify that the rest of the
  * arguments has to be of this type.
@@ -335,6 +340,8 @@ INT32 pike_sizeof(struct svalue *s);
 #define T_STRING   PIKE_T_STRING
 #define T_FLOAT    PIKE_T_FLOAT
 #define T_INT      PIKE_T_INT
+
+#define T_ZERO	   PIKE_T_ZERO
 
 #endif
 
