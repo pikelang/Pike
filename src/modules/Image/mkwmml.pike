@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.7 1997/12/13 19:13:07 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.8 1998/03/07 01:11:46 neotron Exp $ */
 
 import Stdio;
 import Array;
@@ -315,8 +315,8 @@ void document(string enttype,
    {
       string rarg="";
       f->write("<man_arguments>\n");
-      
-      foreach (huh->args,mapping arg)
+      mapping arg;
+      foreach (huh->args, arg)
       {
 	 if (arg->desc)
 	 {

@@ -105,7 +105,7 @@ void add_target_to_links(SGML foo, string target)
     }
 }
 
-varargs SGML low_toc_to_wmml(SGML toc)
+SGML low_toc_to_wmml(SGML|void toc)
 {
   int app;
   SGML ret=({});
