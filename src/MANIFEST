@@ -215,8 +215,8 @@ Interpreter
   interpret.c
   interpret.h
     The core interpreter, i.e. apply and eval functions and runtime
-    scope handling. Also have tools to handle the pike stack, e.g.
-    pushing and popping various data types.
+    scope handling. Also has tools to handle the pike stack, e.g.
+    pushing and popping of various data types.
 
   interpret_functions.h
     Implements all the opcodes. Included by interpret.c and
@@ -461,4 +461,4 @@ Miscellaneous
   UnicodeData.txt
     The standard unicode database. Data from this is extracted to
     build tables for various functions, e.g. the Unicode module and
-    lower_case/upper_case.
+    case_info.h (lower_case/upper_case).
