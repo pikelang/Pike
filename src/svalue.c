@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.99 2001/07/02 20:32:55 mast Exp $");
+RCSID("$Id: svalue.c,v 1.100 2001/07/04 11:59:17 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -507,6 +507,7 @@ PMOD_EXPORT int svalue_is_true(struct svalue *s)
     return 0;
 
   case T_FUNCTION:
+    if (s->subtype == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
     return 1;
 
