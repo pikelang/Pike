@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.68 2000/08/17 18:50:32 grubba Exp $");
+RCSID("$Id: encode.c,v 1.69 2000/08/27 12:22:33 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1148,6 +1148,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_MULTISET:
     {
       struct multiset *m;
+      struct array *a;
       if(num<0)
 	error("Failed to decode string. (multiset size is negative)\n");
 
@@ -1155,21 +1156,25 @@ static void decode_value2(struct decode_data *data)
       if(data->ptr + num > data->len)
 	error("Failed to decode multiset. (not enough data)\n");
 
-      m=mkmultiset(low_allocate_array(0, num));
-      tmp.type=T_MULTISET;
-      tmp.u.multiset=m;
+      /* NOTE: This code knows stuff about the implementation of multisets...*/
+      a = low_allocate_array(num, 0);
+      m = allocate_multiset(a);
+      tmp.type = T_MULTISET;
+      tmp.u.multiset = m;
       mapping_insert(data->decoded, & data->counter, &tmp);
       data->counter.u.integer++;
-      m->refs--;
       debug_malloc_touch(m);
 
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
-	multiset_insert(m, Pike_sp-1);
-	pop_stack();
+	a->item[e] = sp[-1];
+	sp--;
+	dmalloc_touch_svalue(sp);
       }
-      ref_push_multiset(m);
+      array_fix_type_field(a);
+      order_multiset(m);
+      push_multiset(m);
       return;
     }
 
