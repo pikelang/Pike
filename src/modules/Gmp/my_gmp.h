@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.22 2003/05/19 19:41:02 mast Exp $
+|| $Id: my_gmp.h,v 1.23 2003/05/20 08:56:13 grubba Exp $
 */
 
 /*
@@ -84,7 +84,7 @@ static inline mp_limb_t MPZ_GETLIMBN (mpz_srcptr gmp_z, mp_size_t gmp_n)
  * -0xffffffff80000000 if the limb size is larger than the long size)...
  */
 #define PIKE_MPZ_SET_SI(MPZ_VAL, VALUE)	do {		\
-    mpz_t mpz_ = (MPZ_VAL);				\
+    MP_INT *mpz_ = (MPZ_VAL);				\
     long val_ = (VALUE);				\
     if (val_ < 0) {					\
       mpz_set_ui(mpz_, (unsigned long) -val_);		\
