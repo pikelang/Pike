@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.122 1999/04/07 14:37:42 per Exp $ */
+/* $Id: image.c,v 1.123 1999/04/11 22:37:26 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.122 1999/04/07 14:37:42 per Exp $
+**!	$Id: image.c,v 1.123 1999/04/11 22:37:26 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.122 1999/04/07 14:37:42 per Exp $");
+RCSID("$Id: image.c,v 1.123 1999/04/11 22:37:26 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3488,6 +3488,8 @@ extern void exit_image_xbm(void);
 extern void init_image_xbm(void);
 extern void exit_image_ilbm(void);
 extern void init_image_ilbm(void);
+extern void init_image_xcf(void);
+extern void exit_image_xcf(void);
 
 /* dynamic encoders (dependent on other modules, loaded dynamically) */
 
@@ -3498,6 +3500,7 @@ static struct pike_string
    *magic_JPEG, 
    *magic_XFace,
    *magic_XPM,
+   *magic_XCF,
    *magic_TIFF,
    *magic_PNG,
    *magic_TTF;
@@ -3531,6 +3534,14 @@ static void image_index_magic(INT32 args)
    {
       pop_stack();
       push_string(make_shared_string("_Image_XPM"));
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      return;
+   }
+   else if (sp[-1].u.string==magic_XCF)
+   {
+      pop_stack();
+      push_string(make_shared_string("_Image_XCF"));
       push_int(0);
       SAFE_APPLY_MASTER("resolv",2);
       return;
@@ -3574,6 +3585,7 @@ void pike_module_init(void)
    magic_PNG=make_shared_string("PNG");
    magic_XFace=make_shared_string("XFace");
    magic_XPM=make_shared_string("XPM");
+   magic_XCF=make_shared_string("XCF");
    magic_TIFF=make_shared_string("TIFF");
 
    image_noise_init();
@@ -3872,6 +3884,7 @@ void pike_module_init(void)
    init_image_xbm();
    init_image__xpm();
    init_image_ilbm();
+   init_image_xcf();
    init_image_x();
 }
 
@@ -3896,6 +3909,7 @@ void pike_module_exit(void)
    exit_image__xpm();
    exit_image_xbm();
    exit_image_ilbm();
+   exit_image_xcf();
    if (png_object) 
    {
       free_object(png_object);
@@ -3908,6 +3922,7 @@ void pike_module_exit(void)
    free_string(magic_JPEG);
    free_string(magic_XFace);
    free_string(magic_XPM);
+   free_string(magic_XCF);
    free_string(magic_TIFF);
    free_string(magic_TTF);
 }
