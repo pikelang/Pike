@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.6 2003/05/08 11:17:17 grubba Exp $");
+RCSID("$Id: hash.cmod,v 1.7 2003/07/29 03:44:39 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -169,7 +169,25 @@ PIKECLASS HashState
       meta->digest(THIS->ctx, length, digest->str);
       push_string(end_shared_string(digest));
     }
-  
+
+  /*! @decl string hash(string data)
+   *!
+   *!  Works as a shortcut for @expr{obj->update(data)->digest()@}.
+   *!
+   *! @note
+   *!  The hash buffer will not be cleared before @[data] is added
+   *!  to the buffer, so data added with calls to @[update] will be
+   *!  prepended to the @[data].
+   *!
+   *! @seealso
+   *!   @[update] and @[digest].
+   */
+  PIKEFUN string hash(string data) {
+    f_HashState_update(args);
+    pop_stack();
+    f_HashState_digest(0);
+  }
+
   INIT
     {
       werror("HashState->INIT\n");
@@ -207,10 +225,11 @@ PIKECLASS MD5_Info
       
       if (HashInfo && !HashInfo->meta)
 	HashInfo->meta = &nettle_md5;
-      else
+      else {
 	/* Can't call Pike_error here. 
 	 * Pike_error("Can't initialize this object.\n"); */
 	werror("MD5_Info->INIT failed\n");
+      }
     }
 }
 
@@ -258,10 +277,11 @@ PIKECLASS SHA1_Info
       
       if (HashInfo && !HashInfo->meta)
 	HashInfo->meta = &nettle_sha1;
-      else
+      else {
 	/* Can't call Pike_error here. 
 	 * Pike_error("Can't initialize this object.\n"); */
 	werror("SHA1_Info->INIT failed\n");
+      }
     }
 }
 
