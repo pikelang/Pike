@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.94 1999/12/13 23:49:08 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.95 1999/12/14 14:55:57 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1864,7 +1864,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 
       if(!ap || !bp) break;
 
-#if 1
+#if 0
       /* FIXME: Temporary kludge.
        * match_types() currently seems to need to be symetric.
        */
