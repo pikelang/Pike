@@ -6,7 +6,7 @@
 #
 
 PORTNAME=	pike74
-PORTVERSION=	7.4.10
+PORTVERSION=	7.4.13
 PORTREVISION=	1
 CATEGORIES=	lang
 MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${PORTVERSION}/ \
@@ -15,7 +15,7 @@ MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${PORTVERSION}/ \
 		ftp://ftp.oav.net/pike/7.4/export/ \
 		http://ftp.oav.net/pike/7.4/export/ \
 		http://grendel.firewall.com/caudium-pkg/ 
-DISTNAME=	Pike-v${PORTVERSION}
+DISTNAME=	pike-${PORTVERSION}
 
 MAINTAINER=	kiwi@caudium.net
 
@@ -30,7 +30,7 @@ LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
-BROKEN=		Configure script is broken.
+#BROKEN=		Configure script is broken.
 
 WANT_MESA=	yes
 WANT_GTK=	yes
