@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.49 2000/01/27 23:18:25 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.50 2000/01/28 00:46:26 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1440,49 +1440,68 @@ void mapping_search_no_free(struct svalue *to,
 			    struct svalue *look_for,
 			    struct svalue *key /* start */)
 {
-  unsigned INT32 h2,h=0;
-  struct keypair *k=0, **prev;
   struct mapping_data *md, *omd;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     fatal("Zero refs i mapping->data\n");
 #endif
-
-  if(key)
-  {
-    h2=hash_svalue(key);
-
-    FIND();
-  }
-    
-
   md=m->data;
+
   if(md->size)
   {
-    md->valrefs++;
-    add_ref(md);
+    unsigned INT32 h2,h=0;
+    struct keypair *k=md->hash[0], **prev;
 
-    while(h < (unsigned INT32)md->hashsize)
+    if(key)
     {
-      while(k)
+      h2=hash_svalue(key);
+      
+      FIND();
+      
+      if(!k)
       {
-	if(is_eq(look_for, &k->val))
-	{
-	  assign_svalue_no_free(to,&k->ind);
-
-	  md->valrefs--;
-	  free_mapping_data(md);
-	  return;
-	}
-	k=k->next;
+	to->type=T_INT;
+	to->subtype=NUMBER_UNDEFINED;
+	to->u.integer=0;
+	return;
       }
-      k=md->hash[++h];
     }
+    
+    
+    md=m->data;
+    if(md->size)
+    {
+      md->valrefs++;
+      add_ref(md);
+      
+      if(h < (unsigned INT32)md->hashsize)
+      {
+	while(1)
+	{
+	  while(k)
+	  {
+	    if(is_eq(look_for, &k->val))
+	    {
+	      assign_svalue_no_free(to,&k->ind);
+	      
+	      md->valrefs--;
+	      free_mapping_data(md);
+	      return;
+	    }
+	    k=k->next;
+	  }
+	  h++;
+	  if(h>= (unsigned INT32)md->hashsize)
+	    break;
+	  k=md->hash[h];
+	}
+      }
+    }
+    
+    md->valrefs--;
+    free_mapping_data(md);
   }
-
-  md->valrefs--;
-  free_mapping_data(md);
 
   to->type=T_INT;
   to->subtype=NUMBER_UNDEFINED;
