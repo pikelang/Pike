@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.98 2000/08/10 17:44:56 grubba Exp $");
+RCSID("$Id: operators.c,v 1.99 2000/08/15 11:18:46 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1797,7 +1797,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=0,e=0;e<size-1;e++)
 	  {
-	    pos=(INT32)((e+1)*len);
+	    pos = DO_NOT_WARN((ptrdiff_t)((e+1)*len));
 	    a->item[e].u.string=string_slice(sp[-2].u.string,
 					     last,
 					     pos-last);
