@@ -194,7 +194,7 @@ object big_query(string q)
 
     void seek(int skip)
     {
-      return do_request('S', ({qid,skip}));
+      do_request('S', ({qid,skip}));
     }
 
     void create(function(int,mixed:mixed) d_r, mixed i)
