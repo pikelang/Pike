@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.115 2001/07/20 16:21:31 grubba Exp $");
+RCSID("$Id: encode.c,v 1.116 2001/07/22 21:16:21 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -915,7 +915,22 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #include "program_areas.h"
 
 #ifdef ENCODE_PROGRAM
-	ENCODE_PROGRAM(p, &(data->buf));
+#ifdef PIKE_DEBUG
+	{
+	  ptrdiff_t bufpos = data->buf.s->len;
+#endif /* PIKE_DEBUG */
+	  ENCODE_PROGRAM(p, &(data->buf));
+#ifdef PIKE_DEBUG
+	  if (p->num_program * sizeof(p->program[0]) !=
+	      data->buf.s->len - bufpos) {
+	    fatal("ENCODE_PROGRAM() failed:\n"
+		  "Encoded data len: %ld\n"
+		  "Expected data len: %ld\n",
+		  DO_NOT_WARN((long)(p->num_program * sizeof(p->program[0]))),
+		  DO_NOT_WARN((long)(data->buf.s->len - bufpos)));
+	  }
+	}
+#endif /* PIKE_DEBUG */
 #else /* !ENCODE_PROGRAM */
 	adddata2(p->program, p->num_program);
 #endif /* ENCODE_PROGRAM */
