@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.476 2001/12/15 01:53:10 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.477 2001/12/16 01:36:12 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1174,6 +1174,42 @@ test_do([[
   if (err) throw (err);
 
   Stdio.recursive_rm ("testsuite_test_dir.pmod");
+]]);
+
+cond(0,[[
+test_do([[
+  // This is a case of cyclic references I think should work, but
+  // afaict it's not possible without changing the resolve methods
+  // thoroughly. /mast
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+  mkdir ("testsuite_test_dir.pmod");
+
+  Stdio.write_file ("testsuite_test_dir.pmod/A.pmod", #"\
+    .B.B b() {}
+    class A {}
+    class Ab {int ai() {return 4711;}}
+    class Ad {inherit .B.Bb; int ai() {return bi() + 1;}}");
+  Stdio.write_file ("testsuite_test_dir.pmod/B.pmod", #"\
+    .A.A a() {}
+    class B {}
+    class Bb {int bi() {return 17;}}
+    class Bd {inherit .A.Ab; int bi() {return ai() - 1;}}");
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  mixed err = catch {
+      compile_string (#"\
+	import \".\";
+	int foo() {
+	  testsuite_test_dir.A.Ad();
+	  testsuite_test_dir.B.Bd();
+	}", "test");
+    };
+  replace_master (orig_master);
+  if (err) throw (err);
+
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+]]);
 ]]);
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
