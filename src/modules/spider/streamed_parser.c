@@ -1,9 +1,14 @@
+/*
+ * $Id: streamed_parser.c,v 1.11 1998/07/04 17:04:49 grubba Exp $
+ */
+
+#include "global.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -19,7 +24,7 @@
 
 #include "streamed_parser.h"
 
-RCSID("$Id: streamed_parser.c,v 1.10 1998/04/20 18:54:01 grubba Exp $");
+RCSID("$Id: streamed_parser.c,v 1.11 1998/07/04 17:04:49 grubba Exp $");
 
 #ifdef ENABLE_STREAMED_PARSER
 

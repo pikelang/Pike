@@ -1,7 +1,12 @@
+/*
+ * $Id: accesseddb.c,v 1.16 1998/07/04 17:03:31 grubba Exp $
+ */
+
+#include "global.h"
+
 #include "config.h"
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "backend.h"
 #include "object.h"
@@ -13,7 +18,7 @@
 #include "error.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: accesseddb.c,v 1.15 1998/05/17 19:20:32 grubba Exp $");
+RCSID("$Id: accesseddb.c,v 1.16 1998/07/04 17:03:31 grubba Exp $");
 
 #include <stdio.h>
 

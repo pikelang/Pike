@@ -1,7 +1,12 @@
+/*
+ * $Id: stardate.c,v 1.8 1998/07/04 17:04:08 grubba Exp $
+ */
+
+#include "global.h"
+
 #include "config.h"
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -12,7 +17,7 @@
 #include "builtin_functions.h"
 #include "error.h"
 
-RCSID("$Id: stardate.c,v 1.7 1998/03/28 13:51:18 grubba Exp $");
+RCSID("$Id: stardate.c,v 1.8 1998/07/04 17:04:08 grubba Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>

@@ -1,7 +1,12 @@
-#include "config.h"
+/*
+ * $Id: dumudp.c,v 1.38 1998/07/04 17:05:22 grubba Exp $
+ */
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.37 1998/05/22 12:28:30 grubba Exp $");
+
+#include "config.h"
+
+RCSID("$Id: dumudp.c,v 1.38 1998/07/04 17:05:22 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
