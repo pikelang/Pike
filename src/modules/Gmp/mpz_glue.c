@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.141 2003/04/02 23:53:14 mast Exp $
+|| $Id: mpz_glue.c,v 1.142 2003/04/03 01:54:15 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.141 2003/04/02 23:53:14 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.142 2003/04/03 01:54:15 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -221,6 +221,9 @@ overflow:
  */
 
 /*! @class mpz
+ *! Gmp.mpz implementslarge, very large integers. In fact,
+ *! the only limitation on these integers is the available memory.
+ *! The mpz object implements all the normal integer operations.
  */
 
 void get_mpz_from_digits(MP_INT *tmp,
@@ -553,6 +556,13 @@ static void mpzmod_get_string(INT32 args)
   push_string(low_get_mpz_digits(THIS, 10));
 }
 
+/*! @decl string digits(void|int(2..36)|int(256..256) base)
+ *! This function converts an mpz to a string. If a @[base] is given the
+ *! number will be represented in that base. Valid bases are 2-36 and
+ *! 256. The default base is 10.
+ *! @seealso
+ *!   @[cast_to_string]
+ */
 static void mpzmod_digits(INT32 args)
 {
   INT32 base;
@@ -780,6 +790,10 @@ static void mpzmod__is_type(INT32 args)
   f_eq(2);
 }
 
+/*! @decl int size(void|int base)
+ *! This function returns how long the mpz would be represented in the
+ *! specified @[base]. The default base is 2.
+ */
 static void mpzmod_size(INT32 args)
 {
   int base;
@@ -804,6 +818,11 @@ static void mpzmod_size(INT32 args)
     push_int(DO_NOT_WARN((INT32)(mpz_sizeinbase(THIS, base))));
 }
 
+/*! @decl mixed cast(string type)
+ *! It is possible to cast an mpz to a string, int or float.
+ *! @seealso
+ *!   @[cast_to_int], @[cast_to_float], @[cast_to_string]
+ */
 static void mpzmod_cast(INT32 args)
 {
   struct pike_string *s;
@@ -1058,7 +1077,9 @@ BINFUN2(mpzmod_add, "+", mpz_add, +);
 #define STRINGCONV(X)
 BINFUN2(mpzmod_mul, "*", mpz_mul, *);
 
-
+/*! @decl Gmp.mpz gcd(object|int|float|string arg)
+ *! This function returns the greatest common divisor for @[arg] and mpz.
+ */
 static void mpzmod_gcd(INT32 args)
 {
   INT32 e;
@@ -1315,6 +1336,10 @@ CMPEQU(mpzmod_le, "Gmp.mpz->`<=", <=, RET_UNDEFINED);
 CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED);
 CMPEQU(mpzmod_nq, "Gmp.mpz->`!=", !=, i=1);
 
+/*! @decl int(0..1) probably_prime_p()
+ *! This function returns 1 if mpz is a prime, and 0 most of the time
+ *! if it is not.
+ */
 static void mpzmod_probably_prime_p(INT32 args)
 {
   INT_TYPE count;
@@ -1382,7 +1407,10 @@ static void mpzmod_sgn(INT32 args)
   push_int(mpz_sgn(THIS));
 }
 
-
+/*! @decl Gmp.mpz sqrt()
+ *! This function return the the truncated integer part of the square
+ *! root of the value of mpz.
+ */
 static void mpzmod_sqrt(INT32 args)
 {
   struct object *o = 0;   /* Make gcc happy. */
@@ -1545,6 +1573,10 @@ static void mpzmod_rrsh(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz powm(int|string|float|Gmp.mpz a,@
+ *!                    int|string|float|Gmp.mpz b)
+ *! This function returns @tt{( mpz ** a ) % b@}.
+ */
 static void mpzmod_powm(INT32 args)
 {
   struct object *res = NULL;
@@ -1804,7 +1836,7 @@ PIKE_MODULE_EXIT
   ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);	\
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
-	       tFunc(tNone,tInt),0);					\
+	       tFunc(tNone,tInt01),0);					\
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
