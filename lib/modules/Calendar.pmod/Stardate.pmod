@@ -2,6 +2,8 @@
 //! submodule Stardate
 //!	This implements TNG stardates. 
 
+#pike __VERSION__
+
 import ".";
 
 inherit TimeRanges;
@@ -20,7 +22,7 @@ class cTick
 
    constant is_stardate=1;
 
-   float tick;
+   float t;
    float len;
 
 //! method void create(mixed ...)
@@ -52,7 +54,7 @@ class cTick
 	    if (args[0]=="stardate")
 	    {
 	       rules=args[1];
-	       tick=args[2];
+	       t=args[2];
 	       len=args[3];
 	       return;
 	    }
@@ -61,7 +63,7 @@ class cTick
 	    if (intp(args[0]) || floatp(args[0]))
 	    {
 	       rules=default_rules;
-	       tick=(float)args[0];
+	       t=(float)args[0];
 	       len=0.0;
 	       return;
 	    }
@@ -77,20 +79,29 @@ class cTick
 
    static void create_unixtime(int unixtime,int seconds)
    {
-      tick=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
+      t=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
       len=seconds*TNGSTARPERSECOND;
    }
 
    static void create_unixtime_default(int unixtime)
    {
-      tick=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
+      t=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
       len=0.0;
    }
 
    static void create_julian_day(int|float jd)
    {
-      tick=(jd-TNG0JULIAN)*TNGSTARPERJULIAN;
+      t=(jd-TNG0JULIAN)*TNGSTARPERJULIAN;
       len=0.0;
+   }
+
+// method float tic()
+//	This gives back the start of the stardate period,
+//	as a float.
+
+   float tic()
+   {
+      return t;
    }
 
 //! method float tics()
@@ -120,12 +131,12 @@ class cTick
 
    int unix_time()
    {
-      return ((int)(tick/TNGSTARPERSECOND))+TNG0UNIX;
+      return ((int)(t/TNGSTARPERSECOND))+TNG0UNIX;
    }
 
    float julian_day()
    {
-      return ((int)(tick/TNGSTARPERJULIAN))+TNG0JULIAN;
+      return ((int)(t/TNGSTARPERJULIAN))+TNG0JULIAN;
    }
 
    TimeRange add(int n,void|this_program step)
@@ -142,7 +153,7 @@ class cTick
 
 
       if (n&&x)
-	 return Tick("stardate",rules,tick+x,len);
+	 return Tick("stardate",rules,t+x,len);
       return this_object();
    }
 
@@ -154,7 +165,7 @@ class cTick
 	 ::convert_from(other);
       if (other->is_stardate)
       {
-	 tick=other->tick;
+	 t=other->t;
 	 len=other->len;
       }
       else if (other->number_of_seconds)
@@ -169,7 +180,7 @@ class cTick
    {
       if (!x->is_stardate)
 	 error("distance: Incompatible type %O\n",x);
-      return Tick("stardate",rules,tick,x->len);
+      return Tick("stardate",rules,t,x->len);
    }
 
    TimeRange place(TimeRange what,void|int force)
@@ -182,7 +193,7 @@ class cTick
    {
       if (!n) return ({this_object()}); // foo
 
-      float z=tick;
+      float z=t;
       float l=len/n;
       array(TimeRange) res=({});
 
@@ -195,42 +206,42 @@ class cTick
    TimeRange beginning()
    {
       if (!len) return this_object();
-      return Tick("stardate",rules,tick,0.0);
+      return Tick("stardate",rules,t,0.0);
    }
 
    TimeRange end()
    {
       if (!len) return this_object();
-      return Tick("stardate",rules,tick+len,0.0);
+      return Tick("stardate",rules,t+len,0.0);
    }
 
    TimeRange distance(TimeRange to)
    {
       if (!to->is_stardate)
 	 error("distance: Incompatible type %O\n",to);
-      if (to->tick<tick)
+      if (to->t<t)
 	 error("negative distance\n");
-      return Tick("stardate",rules,tick,to->tick-tick);
+      return Tick("stardate",rules,t,to->t-t);
    }
 
    array _compare(TimeRange with)
    {
-      float b1=tick;
-      float e1=tick+len;
+      float b1=t;
+      float e1=t+len;
       float b2,e2;
       if (with->is_stardate)
-	 b2=with->tick,e2=b2+with->len;
+	 b2=with->t,e2=b2+with->len;
       else 
 	 ::_compare(with);
 #define CMP(A,B) ( ((A)<(B))?-1:((A)>(B))?1:0 )
       return ({ CMP(b1,b2),CMP(b1,e2),CMP(e1,b2),CMP(e1,e2) });
    }
 
-   int __hash() { return (int)tick; }
+   int __hash() { return (int)t; }
 
    cTick set_ruleset(Ruleset r)
    {
-      return Tick("stardate",r,tick,len);
+      return Tick("stardate",r,t,len);
    }
 
    string _sprintf(int t)
@@ -256,7 +267,7 @@ class cTick
 
    string nice_print()
    {
-      return sprintf("%.3f",tick);
+      return sprintf("%.3f",t);
    }
 
 //! string format_long()
@@ -271,17 +282,17 @@ class cTick
 
    string format_long()
    {
-      return sprintf("%.3f",tick);
+      return sprintf("%.3f",t);
    }
 
    string format_short()
    {
-      return sprintf("%.3f",tick-((int)tick/100000)*100000);
+      return sprintf("%.3f",t-((int)t/100000)*100000);
    }
 
    string format_vshort()
    {
-      return sprintf("%.3f",tick-((int)tick/10000)*10000);
+      return sprintf("%.3f",t-((int)t/10000)*10000);
    }
 }
 

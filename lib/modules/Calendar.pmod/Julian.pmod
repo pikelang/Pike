@@ -15,6 +15,8 @@
 //!	used in the Calendar module as a common unit for
 //!	absolute time.
 
+#pike __VERSION__
+
 import ".";
 inherit Gregorian:Gregorian;
 
