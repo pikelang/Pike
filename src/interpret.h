@@ -22,10 +22,8 @@ struct frame
   struct inherit context;
   char *current_storage;
   INT32 fun;
-#ifdef DEBUG
   INT16 num_locals;
   INT16 num_args;
-#endif
 };
 
 #ifdef DEBUG
