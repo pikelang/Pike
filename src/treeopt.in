@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.32 1999/11/27 01:04:38 grubba Exp $
+// $Id: treeopt.in,v 1.33 1999/12/10 22:57:10 grubba Exp $
 //
 // The tree optimizer
 //
@@ -114,6 +114,10 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 
 // This one is probably not needed, since it's handled by mkcastnode()
 0 = F_CAST(1 = F_CAST[$$->type == $0->type](*, *), *):
+  $1;
+
+// This one is probably not needed, since it's handled by mkcastnode()
+0 = F_CAST(1 = F_CONSTANT[$$->type == $0->type](*, *), *):
   $1;
 
 // Propagate casts towards the root instead.
