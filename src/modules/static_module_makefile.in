@@ -27,11 +27,11 @@ module.a: $(OBJS)
 
 clean:
 	-rm -f *.o *.a *.so module.so module.pmod
-	if test "$(MODULE_SUBDIRS)" != "" ; then for a in $(MODULE_SUBDIRS) ; do echo cleaing $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; done ; fi
+	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-	if test "$(MODULE_SUBDIRS)" != "" ; then for a in $(MODULE_SUBDIRS) ; do echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; done ; fi
+	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) depend ) ; fi ; done
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in
