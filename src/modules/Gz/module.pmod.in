@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.13 2003/04/15 13:53:16 marcus Exp $
+// $Id: module.pmod.in,v 1.14 2003/04/15 15:01:19 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -11,48 +11,61 @@ class _file {
   static private deflate def;
   static private int level, strategy;
   static private string read_buf;
-  static private int file_pos, crc, write_mode;
+  static private int file_pos, crc, write_mode, at_eof;
 
   constant SEEK_SET = 0;
   constant SEEK_CUR = 1;
   constant SEEK_END = 2;
 
-  static int check_header()
+  static int check_header(string|void buf)
   {
     int magic1, magic2, method, flags, len;
 
-    if(sscanf(f->read(4), "%1c%1c%1c%1c", magic1, magic2, method, flags)!=4 ||
+    if(!buf) buf="";
+    string buf_read(int n)
+    {
+      if(sizeof(buf)<n)
+	buf += f->read(min(n-sizeof(buf), 10));
+      string r = buf[..n-1];
+      buf = buf[n..];
+      return r;
+    };
+
+    if(sscanf(buf_read(4), "%1c%1c%1c%1c", magic1, magic2, method, flags)!=4 ||
        magic1 != 0x1f || magic2 != 0x8b)
       return 0;
 
     if(method != 8 || (flags & 0xe0))
       return 0;
 
-    if(sizeof(f->read(6)) != 6)
+    if(sizeof(buf_read(6)) != 6)
       return 0;
 
     if(flags & 4)
-      if(sscanf(f->read(2), "%-2c", len) != 1 ||
-	 sizeof(f->read(len)) != len)
+      if(sscanf(buf_read(2), "%-2c", len) != 1 ||
+	 sizeof(buf_read(len)) != len)
 	return 0;
 
     if(flags & 8)
       loop: for(;;)
-	switch(f->read(1)) {
-	case 0: case "": return 0;
+	switch(buf_read(1)) {
+	case "": return 0;
 	case "\0": break loop;
 	}
 
     if(flags & 16)
       loop: for(;;)
-	switch(f->read(1)) {
-	case 0: case "": return 0;
+	switch(buf_read(1)) {
+	case "": return 0;
 	case "\0": break loop;
 	}
 
     if(flags & 2)
-      if(sizeof(f->read(2)) != 2)
+      if(sizeof(buf_read(2)) != 2)
 	return 0;
+
+    if(sizeof(buf))
+      fill_read_buffer(buf);
     
     return 1;    
   }
@@ -95,7 +108,7 @@ class _file {
       if(write_mode)
 	mode += "c"+(has_value(mode, 'a')? "w":"t");
     }
-    file_pos = 0;
+    at_eof = file_pos = 0;
     crc = crc32("");
     if(objectp(file))
       f = file;
@@ -134,21 +147,51 @@ class _file {
     return !oldf || oldf->close();
   }
 
+  static int fill_read_buffer(string|void data)
+  {
+    if(at_eof)
+      return 0;
+    string r = data || f->read(16384);
+    if(!sizeof(r)) {
+      at_eof = 1;
+      return 0;
+    }
+    if(!inf) inf = inflate(-15);
+    string b = inf->inflate(r);
+    read_buf += b;
+    crc = crc32(b, crc);
+    if(b = inf->end_of_stream()) {
+      inf = 0;
+      if(sizeof(b)<8)
+	b += f->read(8-sizeof(b));
+      sscanf(b, "%-4c%-4c", int f_crc, int f_len);
+#ifdef GZ_FILE_DEBUG
+      werror("File: crc=%x size=%d   Internal: crc=%x size=%d\n",
+	     f_crc, f_len, crc&0xffffffff, file_pos+sizeof(read_buf));
+#endif
+      if(f_crc != (crc&0xffffffff)) {
+	// CRC error
+	at_eof = 1;
+	return 0;
+      } else {
+	crc = crc32("");
+	if(!check_header(b[8..]))
+	  at_eof = 1;
+      }
+    }
+    return sizeof(r);
+  }
+
   //! Reads len (uncompressed) bytes from the file.
   //! If read is unsuccessful, 0 is returned.
   int|string read(int len)  
   {
-    if(!inf) inf = inflate(-15);
-    while(sizeof(read_buf) < len) {
-      string r = f->read(16384);
-      if(!sizeof(r))
+    while(sizeof(read_buf) < len)
+      if(!fill_read_buffer())
 	break;
-      read_buf += inf->inflate(r);
-    }
     string res = read_buf[..len-1];
     read_buf = read_buf[len..];
     file_pos += sizeof(res);
-    crc = crc32(res, crc);
     return res;
   }
 
@@ -201,6 +244,7 @@ class _file {
       if(pos < file_pos) {
 	if(!f->seek || f->seek(0)<0)
 	  return -1;
+	at_eof = 0;
 	file_pos = 0;
 	read_buf = "";
 	crc = crc32("");
@@ -229,13 +273,11 @@ class _file {
   //!  1 if EOF has been reached.
   int(0..1) eof()
   {
-    if(def || sizeof(read_buf)) return 0;
-    if(!inf) inf = inflate(-15);
-    string r = f->read(16384);
-    if(!sizeof(r))
-      return 1;
-    read_buf = inf->inflate(r);
-    return !sizeof(read_buf);
+    if(at_eof) return 1;
+    if(def || write_mode || sizeof(read_buf)) return 0;
+    while(!sizeof(read_buf) && fill_read_buffer())
+      ;
+    return at_eof;
   }
 
   //! Sets the encoding level and strategy
