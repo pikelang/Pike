@@ -838,8 +838,11 @@ array IFDEF(string define,
  */
 array DEFINE(string define, void|string as)
 {
+  string tmp=define;
+  sscanf(tmp,"%s(",tmp);
+
   return ({
-    sprintf("\n#undef %s\n",define),
+    sprintf("\n#undef %s\n",tmp),
     sprintf("#define %s%s\n",define, as?" "+as:"")
       });
 }
