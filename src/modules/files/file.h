@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.28 2003/04/23 23:50:38 marcus Exp $
+|| $Id: file.h,v 1.29 2003/06/02 17:57:40 mast Exp $
 */
 
 #ifndef FILE_H
@@ -68,6 +68,7 @@ struct pike_sendfile
   struct object *from_file;
   struct object *to_file;
 
+  struct callback *backend_callback;
   struct svalue callback;
   struct array *args;
 
