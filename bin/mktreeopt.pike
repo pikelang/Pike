@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.8 1999/11/08 21:19:05 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.9 1999/11/08 23:51:51 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -35,8 +35,23 @@
  *     / \
  *    -   -
  *
- * in the table above.
+ * in the table above. ie:
  *
+ *      X        X                    X      X                       	 X
+ *     / \  ->  / \                  / \    / \                      	/ \
+ *    -   -    -   -                -   *  *   -                       *   *
+ *			            
+ *      X             	X             X                        	  X      X
+ *     / \  ->         / \           / \                       	 / \    / \
+ *    -   X           -   X         -   *                      	*   X  *   *
+ *	              
+ *      X                      X             X             X           	 X
+ *     / \  ->                / \           / \           / \          	/ \
+ *    X   -                  X   -         *   -         X   *         *   *
+ *	                     
+ *      X                                           X      X      X      X
+ *     / \  ->                                     / \    / \    / \    / \
+ *    X   X                                       X   X  X   *  *   X  *   *
  *
  * Pseudocode: (Real code needs fixing...)
  *
