@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.121 2004/04/18 02:19:38 mast Exp $
+|| $Id: error.c,v 1.122 2004/04/20 13:56:26 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.121 2004/04/18 02:19:38 mast Exp $");
+RCSID("$Id: error.c,v 1.122 2004/04/20 13:56:26 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -446,7 +446,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *!   description of an exception.
  *!
  *! @param exception
- *!   Something that was thrown. Usually an @[Error] object, or
+ *!   Something that was thrown. Usually an @[Error.Generic] object, or
  *!   an array with the following content:
  *!   @array
  *!     @elem string msg
@@ -469,7 +469,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
 /*! @endclass
  */
 
-/*! @class Error
+/*! @module Error
+ */
+
+/*! @class Generic
+ *! Class for exception objects for errors of unspecified type.
  */
 
 #define ERR_DECLARE
@@ -636,6 +640,9 @@ static void f_error_create(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 #ifdef ERROR_DEBUG
