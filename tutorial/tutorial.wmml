@@ -5838,6 +5838,83 @@ exec("/bin/echo","hello","world");<br>
 </man_example>
 </function>
 
+
+<class name=Process.Spawn 
+       title="spawn off another program with control structure">
+<man_syntax>
+object Process.Spawn(string program,
+                     void|array(string) args,
+		     void|mapping(string:string) env,
+		     void|string cwd);  <br>
+or
+object Process.Spawn(string program,
+                     void|array(string) args,
+		     void|mapping(string:string) env,
+		     void|string cwd,
+		     array(void|object(Stdio.file)) fds,
+		     void|array(void|object(Stdio.file)) fds_to_close);
+	
+</man_syntax>
+<man_description>
+Spawn off another program (<tt>program</tt>) and creates
+the control structure. This does not spawn off a shell to
+find the program, therefore must <tt>program</tt> be the full
+path the the program.<p>
+
+<tt>args</tt> is per default no argument(s),<p>
+
+<tt>env</tt> is reset to the given mapping, or kept if the
+argument is <tt>0</tt>.
+
+<tt>fds</tt> is your stdin, stdout and stderr. Default
+is local pipes (see <link to=stdin>stdin</link> et al).
+
+<tt>fds_to_close</tt> is file descriptors that are closed 
+in the forked branch when the program is executed (ie, the 
+other end of the pipes).
+</man_description>
+
+<variable name=stdin,stdout,stderr,fd title="pipes to the program">
+<man_syntax>
+object(Stdio.File) stdin;<br>
+object(Stdio.File) stdout;<br>
+object(Stdio.File) stderr;<br>
+array(void|object(Stdio.File)) fd;<br>
+</man_syntax>
+<man_description>
+Pipes to the spawned program (if set). fd[0]==stdin, etc.
+</man_description>
+</variable>
+
+<variable name=pid title="spawned program pid">
+<man_syntax>
+int pid;
+</man_syntax>
+<man_description>
+pid of the spawned program.
+</man_description>
+</variable>
+
+<method name=wait title="wait for the spawned program to finish">
+<man_syntax>
+void wait();
+</man_syntax>
+<man_description>
+Returns when the program has exited.
+</man_description>
+</method>
+
+<method name=kill title="send a signal to the program">
+<man_syntax>
+int kill(int signal);
+</man_syntax>
+<man_description>
+Sends a signal to the program.
+</man_description>
+</method>
+
+</class>
+
 </section>
 </module>
 
