@@ -137,9 +137,9 @@ class Encoder
   void set_replacement_callback(function(string:string) rc);
 }
 
-private class ascii {
+private class ASCIIDec {
   static private string s = "";
-  object(this_program) feed(string ss)
+  this_program feed(string ss)
   {
     s += ss;
     return this_object();
@@ -150,7 +150,7 @@ private class ascii {
     s = "";
     return ss;
   }
-  object(this_program) clear()
+  this_program clear()
   {
     s = "";
     return this_object();
@@ -158,7 +158,7 @@ private class ascii {
 }
 
 private class UTF16dec {
-  inherit ascii;
+  inherit ASCIIDec;
   static int check_bom=1, le=0;
   string drain() {
     string s = ::drain();
@@ -217,7 +217,7 @@ private string normalize(string in) {
 //!   various encodings as described by RFC1345.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-object(Decoder) decoder(string name)
+Decoder decoder(string name)
 {
   name = normalize(name);
   if(!name || (<
@@ -225,7 +225,7 @@ object(Decoder) decoder(string name)
     "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
     "isoir6", "us", "usascii", "ascii", "367", "819",
     "isolatin1">)[name])
-    return ascii();
+    return ASCIIDec();
 
   if(has_prefix(name, "iso2022"))
     return ISO2022Dec();
@@ -260,7 +260,7 @@ object(Decoder) decoder(string name)
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCDec("x0208");
 
-  object o = rfc1345(name);
+  Decoder o = rfc1345(name);
 
   if(o)
     return o;
@@ -268,7 +268,7 @@ object(Decoder) decoder(string name)
   error("Unknown character encoding "+name+"\n");
 }
 
-private class _encoder
+private class ASCIIEnc
 {
   static string s = "";
   static string|void replacement;
@@ -288,7 +288,7 @@ private class _encoder
 	  error("Character unsupported by encoding.\n");
     return s;
   }
-  object(this_program) feed(string ss)
+  this_program feed(string ss)
   {
     s += low_convert(ss, replacement, repcb);
     return this_object();
@@ -299,7 +299,7 @@ private class _encoder
     s = "";
     return ss;
   }
-  object(this_program) clear()
+  this_program clear()
   {
     s = "";
     return this_object();
@@ -316,7 +316,7 @@ private class _encoder
 }
 
 private class UTF16enc {
-  inherit _encoder;
+  inherit ASCIIEnc;
   static private string low_convert(string s, string|void r,
 				    function(string:string)|void rc)
   {
@@ -332,7 +332,7 @@ private class UTF16enc {
 	  error("Character unsupported by encoding.\n");
     return s;
   }
-  object(this_program) feed(string ss) {
+  this_program feed(string ss) {
     s += ss;
     return this_object();
   }
@@ -381,8 +381,8 @@ private class UTF16LEenc {
 //!
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-object(Encoder) encoder(string name, string|void replacement,
-			function(string:string)|void repcb)
+Encoder encoder(string name, string|void replacement,
+		function(string:string)|void repcb)
 {
   name = normalize(name);
   if(!name || (<
@@ -390,7 +390,7 @@ object(Encoder) encoder(string name, string|void replacement,
     "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
     "isoir6", "us", "usascii", "ascii", "367", "819",
     "isolatin1">)[name])
-    return _encoder(replacement, repcb);
+    return ASCIIEnc(replacement, repcb);
 
   if(has_prefix(name, "iso2022"))
     return ISO2022Enc(replacement, repcb);
@@ -425,7 +425,7 @@ object(Encoder) encoder(string name, string|void replacement,
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCEnc("x0208", replacement, repcb);
 
-  object o = rfc1345(name, 1, replacement, repcb);
+  Encoder o = rfc1345(name, 1, replacement, repcb);
 
   if(o)
     return o;
