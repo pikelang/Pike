@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.15 2000/09/14 17:44:14 grubba Exp $
+ * $Id: precompiled_odbc.h,v 1.16 2002/05/14 09:03:53 nilsson Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -112,8 +112,8 @@ struct precompiled_odbc_result {
  * Defines
  */
 
-#define PIKE_ODBC	((struct precompiled_odbc *)(fp->current_storage))
-#define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(fp->current_storage))
+#define PIKE_ODBC	((struct precompiled_odbc *)(Pike_fp->current_storage))
+#define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(Pike_fp->current_storage))
 
 /* Flags */
 #define PIKE_ODBC_CONNECTED	1
