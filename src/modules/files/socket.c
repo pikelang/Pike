@@ -333,7 +333,7 @@ static void port_accept(INT32 args)
   }
 
   my_set_close_on_exec(fd,1);
-  o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE);
+  o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE, SOCKET_CAPABILITIES);
   
   pop_n_elems(args);
   push_object(o);
@@ -408,6 +408,6 @@ void port_setup_program(void)
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
-  end_class("port",0);
+  end_class("Port",0);
 }
 

@@ -11,7 +11,7 @@ AC_HEADER_DIRENT
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 
-AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lstat)
+AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lstat socketpair)
 
 AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
 AC_CACHE_VAL(pike_cv_func_mkdir_args,[
@@ -465,7 +465,7 @@ int main()
 
 AC_MSG_RESULT($pike_cv_select_on_unix_sockets)
 if test x$pike_cv_select_on_unix_sockets = xyes ; then
-  AC_DEFINE(HAVE_SOCKETPAIR)
+  AC_DEFINE(UNIX_SOCKETS_WORKS_WITH_SHUTDOWN)
 fi
 
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.57 1998/01/27 20:02:15 hubbe Exp $");
+RCSID("$Id: program.c,v 1.58 1998/01/28 00:31:17 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -911,6 +911,12 @@ void low_inherit(struct program *p,
   if(!p)
   {
     yyerror("Illegal program pointer.");
+    return;
+  }
+
+  if(!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
+  {
+    yyerror("Cannot inherit program which is not fully compiled yet.");
     return;
   }
 
@@ -2154,6 +2160,16 @@ struct program *program_from_svalue(struct svalue *s)
 {
   switch(s->type)
   {
+    case T_OBJECT:
+    {
+      struct program *p;
+      push_svalue(s);
+      f_object_program(1);
+      p=program_from_svalue(sp-1);
+      pop_stack();
+      return p; /* We trust that there is a reference somewhere... */
+    }
+
   case T_FUNCTION:
     return program_from_function(s);
   case T_PROGRAM:

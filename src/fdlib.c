@@ -7,7 +7,7 @@ long da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
-#define FDDEBUG(X) X
+#define FDDEBUG(X)
 
 char *fd_info(int fd)
 {
@@ -22,7 +22,24 @@ char *fd_info(int fd)
     case FD_SOCKET: return "IS SOCKET";
     case FD_CONSOLE: return "IS CONSOLE";
     case FD_FILE: return "IS FILE";
+    case FD_PIPE: return "IS PIPE";
     default: return "NOT OPEN";
+  }
+}
+
+int fd_query_properties(int fd, int guess)
+{
+  switch(fd_type[fd])
+  {
+    case FD_SOCKET:
+      return fd_BUFFERED | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN;
+    case FD_FILE:
+    case FD_CONSOLE:
+      return fd_INTERPROCESSABLE;
+
+    case FD_PIPE:
+      return fd_INTERPROCESSABLE | fd_BUFFERED;
+    default: return 0;
   }
 }
 
@@ -137,7 +154,7 @@ FD fd_socket(int domain, int type, int proto)
     errno=EMFILE;
     return -1;
   }
-  s=WSASocket(domain, type, proto, 0, 0, 0);
+  s=socket(domain, type, proto);
   if(s==INVALID_SOCKET)
   {
     errno=WSAGetLastError();
@@ -154,10 +171,40 @@ FD fd_socket(int domain, int type, int proto)
   return fd;
 }
 
+int fd_pipe(int fds[2])
+{
+  HANDLE files[2];
+  if(first_free_handle == FD_NO_MORE_FREE)
+  {
+    errno=EMFILE;
+    return -1;
+  }
+  if(!CreatePipe(&files[0], &files[1], NULL, 0))
+  {
+    errno=GetLastError();
+    return -1;
+  }
+  
+  fds[0]=first_free_handle;
+  first_free_handle=fd_type[fds[0]];
+  fd_type[fds[0]]=FD_PIPE;
+  da_handle[fds[0]]=(long)files[0];
+
+  fds[1]=first_free_handle;
+  first_free_handle=fd_type[fds[1]];
+  fd_type[fds[1]]=FD_PIPE;
+  da_handle[fds[1]]=(long)files[1];
+
+  FDDEBUG(fprintf(stderr,"New pipe: %d (%d) -> %d (%d)\n",fds[0],files[0], fds[1], fds[1]));;
+
+  return 0;
+}
+
 FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
 {
   FD new_fd;
   SOCKET s;
+  FDDEBUG(fprintf(stderr,"Accept on %d (%d)..\n",fd,da_handle[fd]));
   if(first_free_handle == FD_NO_MORE_FREE)
   {
     errno=EMFILE;
@@ -168,10 +215,11 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
     errno=ENOTSUPP;
     return -1;
   }
-  s=WSAAccept((SOCKET)da_handle[fd], addr, addrlen, NULL, 0);
+  s=accept((SOCKET)da_handle[fd], addr, addrlen);
   if(s==INVALID_SOCKET)
   {
     errno=WSAGetLastError();
+    FDDEBUG(fprintf(stderr,"Accept failed with errno %d\n",errno));
     return -1;
   }
   
@@ -216,14 +264,13 @@ int PIKE_CONCAT(fd_,NAME) X1 { SOCKET ret; \
 
 
 SOCKFUN2(bind, struct sockaddr *, int)
-#if 1
 int fd_connect (FD fd, struct sockaddr *a, int len)
 {
   SOCKET ret;
-  FDDEBUG(fprintf(stderr, "connect on %d (%d)\n",fd,da_handle[fd])
-  for(ret=0;ret<len;ret++)
-    fprintf(stderr," %02x",((unsigned char *)a)[ret]);
-  fprintf(stderr,"\n");
+  FDDEBUG(fprintf(stderr, "connect on %d (%d)\n",fd,da_handle[fd]);
+	  for(ret=0;ret<len;ret++)
+	  fprintf(stderr," %02x",((unsigned char *)a)[ret]);
+	  fprintf(stderr,"\n");
   )
   if(fd_type[fd] != FD_SOCKET)
   {
@@ -235,9 +282,6 @@ int fd_connect (FD fd, struct sockaddr *a, int len)
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno)); 
   return (int)ret; 
 }
-#else
-SOCKFUN2(connect, struct sockaddr *, int)
-#endif
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN2(getsockname,struct sockaddr *,int *)
@@ -278,6 +322,7 @@ long fd_write(FD fd, void *buf, long len)
 
     case FD_CONSOLE:
     case FD_FILE:
+    case FD_PIPE:
       if(!WriteFile((HANDLE)da_handle[fd], buf, len, &ret,0) && !ret)
       {
 	errno=GetLastError();
@@ -309,6 +354,7 @@ long fd_read(FD fd, void *to, long len)
 
     case FD_CONSOLE:
     case FD_FILE:
+    case FD_PIPE:
       ret=0;
       if(!ReadFile((HANDLE)da_handle[fd], to, len, &ret,0) && !ret)
       {
@@ -418,7 +464,7 @@ int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 int fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
-  FDEBUG(fprintf("ioctl(%d (%d,%d,%p)\n",fd,da_handle[fd],cmd,data))
+  FDDEBUG(fprintf(stderr,"ioctl(%d (%d,%d,%p)\n",fd,da_handle[fd],cmd,data));
   switch(fd_type[fd])
   {
     case FD_SOCKET:
@@ -740,7 +786,7 @@ struct fd_waitor
  fd_FDZERO(&X->xcustomers); \
  } while(0)
 
-void fd_waitor_set_customer(fd_waitor *x, FD customer, int flags)
+void fd_waitor_set_customer(struct fd_waitor *x, FD customer, int flags)
 {
   if(flags & FD_EVENT_READ)
   {

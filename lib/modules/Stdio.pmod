@@ -1,8 +1,5 @@
 #include <string.h>
-import files;
-
-constant File=file;
-constant Port=port;
+inherit files;
 
 object stderr=File("stderr");
 object stdout=File("stdout");

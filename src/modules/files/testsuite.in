@@ -92,7 +92,6 @@ test_true(arrayp(get_dir(".")))
 // - cd
 // - getcwd
 test_true(stringp(getcwd()))
-test_eq('/',getcwd()[0])
 
 // strerror
 cond([[all_constants()->strerror]],

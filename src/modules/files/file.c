@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.69 1998/01/25 08:28:00 hubbe Exp $");
+RCSID("$Id: file.c,v 1.70 1998/01/28 00:33:15 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -559,6 +559,14 @@ static void file_close(INT32 args)
     flags=FILE_READ | FILE_WRITE;
   }
 
+  if((files[FD].open_mode & ~flags & (FILE_READ|FILE_WRITE)) && flags)
+  {
+    if(!(files[FD].open_mode & fd_CAN_SHUTDOWN))
+    {
+      error("Cannot close one direction on this file.\n");
+    }
+  }
+
   if(do_close(FD,flags))
     FD=-1;
   pop_n_elems(args);
@@ -618,7 +626,8 @@ static void file_open(INT32 args)
   }
   else
   {
-    init_fd(fd,flags);
+    
+    init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
     FD=fd;
     ERRNO = 0;
     set_close_on_exec(fd,1);
@@ -813,6 +822,9 @@ static void file_set_nonblocking(INT32 args)
 {
   if(FD < 0) error("File not open.\n");
 
+  if(!(files[FD].open_mode & fd_CAN_NONBLOCK))
+    error("That file does not support nonblocking operation.\n");
+
   switch(args)
   {
   default: pop_n_elems(args-3);
@@ -828,6 +840,9 @@ static void file_set_nonblocking(INT32 args)
 
 static void file_set_blocking(INT32 args)
 {
+  if(!(files[FD].open_mode & fd_CAN_NONBLOCK))
+    error("That file does not support nonblocking operation.\n");
+
   free_svalue(& THIS->read_callback);
   THIS->read_callback.type=T_INT;
   THIS->read_callback.u.integer=0;
@@ -921,11 +936,11 @@ static void file_query_close_callback(INT32 args)
   assign_svalue_no_free(sp++,& THIS->close_callback);
 }
 
-struct object *file_make_object_from_fd(int fd, int mode)
+struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
   struct object *o;
 
-  init_fd(fd, mode);
+  init_fd(fd, mode | fd_query_properties(fd, guess));
   o=clone_object(file_program,0);
   ((struct file_struct *)(o->storage))->fd=fd;
   ((struct file_struct *)(o->storage))->my_errno=0;
@@ -977,8 +992,6 @@ static void file_set_buffer(INT32 args)
 }
 
 
-#ifndef HAVE_SOCKETPAIR
-
 /* No socketpair() ?
  * No AF_UNIX sockets ?
  * No hope ?
@@ -994,7 +1007,6 @@ static void file_set_buffer(INT32 args)
  * collide with any libs or headers. Also useful when testing
  * this code on a system that _has_ socketpair...
  */
-#define socketpair socketpair_ultra
 
 /* Protected since errno may expand to a function call. */
 #ifndef errno
@@ -1005,7 +1017,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   static int fd=-1;
   static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
-  int len;
+  int len,retries=0;
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -1056,6 +1068,8 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
       return -1;
     }
 
+    set_nonblocking(fd,1);
+
     my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
   
@@ -1064,26 +1078,30 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
 /*  set_nonblocking(sv[1],1); */
 
+retry_connect:
+  retries++;
   if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
   {
-    int tmp2;
-    for(tmp2=0;tmp2<20;tmp2++)
+    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK);
+    if(errno != EWOULDBLOCK)
     {
-      int tmp;
-      len=sizeof(addr);
-      tmp=fd_accept(fd,(struct sockaddr *)&addr,&len);
-
-      if(tmp!=-1) fd_close(tmp);
-      if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr))>=0)
-	break;
+      int tmp2;
+      for(tmp2=0;tmp2<20;tmp2++)
+      {
+	int tmp;
+	len=sizeof(addr);
+	tmp=fd_accept(fd,(struct sockaddr *)&addr,&len);
+	
+	if(tmp!=-1)
+	  fd_close(tmp);
+	else
+	  break;
+      }
+      if(retries > 20) return -1;
+      goto retry_connect;
     }
-    if(tmp2>=20)
-      return -1;
   }
 
-
-  len=sizeof(addr);
-  if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
 
   /* Accept connection
    * Make sure this connection was our OWN connection,
@@ -1095,9 +1113,11 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   do
   {
     len=sizeof(addr);
+  retry_accept:
     sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len);
 
     if(sv[0] < 0) {
+      if(errno==EINTR) goto retry_accept;
       fd_close(sv[1]);
       return -1;
     }
@@ -1105,17 +1125,18 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     /* We do not trust accept */
     len=sizeof(addr);
     if(fd_getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+    len=sizeof(addr);
+    if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
   }while(len < (int)sizeof(addr) ||
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
 
-/*   set_nonblocking(sv[1],0); */
-
+/*  set_nonblocking(sv[1],0); */
 
   return 0;
 }
 
-int socketpair(int family, int type, int protocol, int sv[2])
+int socketpair_ultra(int family, int type, int protocol, int sv[2])
 {
   int retries=0;
 
@@ -1138,18 +1159,59 @@ int socketpair(int family, int type, int protocol, int sv[2])
   }
 }
 
-
+#ifndef HAVE_SOCKETPAIR
+#define socketpair socketpair_ultra
 #endif
 
 static void file_pipe(INT32 args)
 {
   int inout[2],i;
+
+  int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
+
+  check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
+  if(args) type = sp[-args].u.integer;;
+
   do_close(FD,FILE_READ | FILE_WRITE);
   FD=-1;
   pop_n_elems(args);
   ERRNO=0;
 
-  i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+  do
+  {
+#ifdef PIPE_CAPABILITIES
+    if(!(type & ~(PIPE_CAPABILITIES)))
+    {
+      i=fd_pipe(&inout[0]);
+      type=PIPE_CAPABILITIES;
+      break;
+    }
+#endif
+
+#ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
+#undef UNIX_SOCKET_CAPABILITIES
+#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+#endif
+
+#if defined(HAVE_SOCKETPAIR)
+    if(!(type & ~(UNIX_SOCKET_CAPABILITIES)))
+    {
+      i=fd_socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      type=UNIX_SOCKET_CAPABILITIES;
+      break;
+    }
+#endif
+    
+    if(!(type & ~(SOCKET_CAPABILITIES)))
+    {
+      i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      type=SOCKET_CAPABILITIES;
+      break;
+    }
+    
+    error("Cannot create a pipe patching those parameters.\n");
+  }while(0);
+    
   if(i<0)
   {
     ERRNO=errno;
@@ -1165,17 +1227,17 @@ static void file_pipe(INT32 args)
   }
   else
   {
-    init_fd(inout[0],FILE_READ | FILE_WRITE);
-
+    init_fd(inout[0],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
+	    fd_query_properties(inout[0], type));
+    
     my_set_close_on_exec(inout[0],1);
     my_set_close_on_exec(inout[1],1);
     FD=inout[0];
-
+    
     ERRNO=0;
-    push_object(file_make_object_from_fd(inout[1],FILE_READ | FILE_WRITE));
+    push_object(file_make_object_from_fd(inout[1], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
   }
 }
-
 
 static void init_file_struct(struct object *o)
 {
@@ -1365,7 +1427,7 @@ static void file_open_socket(INT32 args)
     }
   }
 
-  init_fd(fd, FILE_READ | FILE_WRITE);
+  init_fd(fd, FILE_READ | FILE_WRITE | fd_query_properties(fd, SOCKET_CAPABILITIES));
   my_set_close_on_exec(fd,1);
   FD = fd;
   ERRNO=0;
@@ -1604,9 +1666,9 @@ void pike_module_init(void)
     files[e].refs=0;
   }
 
-  init_fd(0, FILE_READ);
-  init_fd(1, FILE_WRITE);
-  init_fd(2, FILE_WRITE);
+  init_fd(0, FILE_READ | fd_query_properties(0,fd_CAN_NONBLOCK));
+  init_fd(1, FILE_WRITE | fd_query_properties(1,fd_CAN_NONBLOCK));
+  init_fd(2, FILE_WRITE | fd_query_properties(2,fd_CAN_NONBLOCK));
 
   init_files_efuns();
 #if 0
@@ -1660,9 +1722,15 @@ void pike_module_init(void)
   set_gc_mark_callback(gc_mark_file_struct);
 
   file_program=end_program();
-  add_program_constant("file",file_program,0);
+  add_program_constant("File",file_program,0);
 
   port_setup_program();
+
+  add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
+  add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
+  add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
+  add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
+  add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
   
   add_gc_callback(mark_ids, 0, 0);
 }

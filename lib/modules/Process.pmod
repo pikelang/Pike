@@ -112,7 +112,7 @@ string popen(string s)
 
   if (!f) error("Popen failed. (couldn't create pipe)\n");
 
-  p=f->pipe();
+  p=f->pipe(Stdio.PROP_IPC);
   if(!p) error("Popen failed. (couldn't create pipe)\n");
   spawn(s,0,p,0, destruct, f);
   p->close();

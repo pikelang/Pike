@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.153 1998/01/23 02:34:17 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.154 1998/01/28 00:31:14 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1732,7 +1732,7 @@ fi
 
 rm -f core
 
-#############################################################################
+##########################################################################
 
 # Set info about shared libraries.
 AC_SUBST(SO)

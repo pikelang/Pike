@@ -1,7 +1,7 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 
 /*
- * $Id: Grammar_parser.pmod,v 1.4 1997/04/22 00:09:28 grubba Exp $
+ * $Id: Grammar_parser.pmod,v 1.5 1998/01/28 00:30:05 hubbe Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	Grammar_parser.pmod
-//. RCSID:	$Id: Grammar_parser.pmod,v 1.4 1997/04/22 00:09:28 grubba Exp $
+//. RCSID:	$Id: Grammar_parser.pmod,v 1.5 1998/01/28 00:30:05 hubbe Exp $
 //. Author:	Henrik grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Generates an LR parser from a textual specification.
@@ -375,7 +375,7 @@ object(parser) make_parser(string str, object|void m)
 //. SEE ALSO: Grammar_parser.make_parser
 int|object(parser) make_parser_from_file(string fname, object|void m)
 {
-  object(files.file) f = files.file();
+  object(Stdio.File) f = Stdio.File();
   int|object(parser) g = 0;
   if (f->open(fname, "r")) {
     g = make_parser(f->read(0x7fffffff), m);

@@ -20,8 +20,19 @@
 #include <sys/stat.h>
 #endif
 
+
+#define fd_INTERPROCESSABLE   1
+#define fd_CAN_NONBLOCK       2
+#define fd_CAN_SHUTDOWN       4
+#define fd_BUFFERED           8
+#define fd_BIDIRECTIONAL     16
+
 #ifdef HAVE_WINSOCK2_H
 
+
+#define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
+#define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
+#define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
 #ifndef FD_SETSIZE
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
@@ -40,13 +51,15 @@ typedef int FD;
 
 /* Prototypes begin here */
 char *fd_info(int fd);
+int fd_query_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
 FD fd_open(char *file, int open_mode, int create_mode);
 FD fd_socket(int domain, int type, int proto);
+int fd_pipe(int fds[2]);
 FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen);
 SOCKFUN2(bind, struct sockaddr *, int)
-SOCKFUN2(connect, struct sockaddr *, int)
+int fd_connect (FD fd, struct sockaddr *a, int len);
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN2(getsockname,struct sockaddr *,int *)
@@ -65,6 +78,22 @@ int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
 int fd_ioctl(FD fd, int cmd, void *data);
 FD fd_dup(FD from);
 FD fd_dup2(FD from, FD to);
+struct fd_mapper;
+void init_fd_mapper(struct fd_mapper *x);
+void exit_fd_mapper(struct fd_mapper *x);
+void fd_mapper_set(struct fd_mapper *x, FD fd, void *data);
+void *fd_mapper_get(struct fd_mapper *x, FD fd);
+struct fd_mapper_data;
+struct fd_mapper;
+void init_fd_mapper(struct fd_mapper *x);
+void exit_fd_mapper(struct fd_mapper *x);
+void fd_mapper_set(struct fd_mapper *x, FD fd, void *data);
+void *fd_mapper_get(struct fd_mapper *x, FD fd);
+struct fd_data_hash;
+struct fd_data_hash_block;
+int get_fd_data_key(void);
+void store_fd_data(FD fd, int key, void *data);
+void *get_fd_data(FD fd, int key);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -101,6 +130,7 @@ FD fd_dup2(FD from, FD to);
 #define fd_shutdown_write SD_SEND
 #define fd_shutdown_both SD_BOTH
 
+#define FD_PIPE -5
 #define FD_SOCKET -4
 #define FD_CONSOLE -3
 #define FD_FILE -2
@@ -173,11 +203,13 @@ typedef int FD;
 #define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
 
+#define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 #define fd_open open
 #define fd_close close
 #define fd_read read
 #define fd_write write
 #define fd_ioctl ioctl
+#define fd_pipe pipe
 
 #define fd_socket socket
 #define fd_bind bind
@@ -198,6 +230,7 @@ typedef int FD;
 #define fd_listen listen
 
 #define fd_select select
+#define fd_socketpair socketpair
 
 #define fd_fd_set fd_set
 #define fd_FD_CLR FD_CLR
@@ -221,6 +254,11 @@ typedef struct my_fd_set_s
 
 #define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
    MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
+
+#define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
+#define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
+#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
+#define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
 #endif
 
