@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.35 2000/12/05 21:08:26 per Exp $ */
+/* $Id: operator.c,v 1.36 2000/12/11 10:59:38 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.35 2000/12/05 21:08:26 per Exp $
+**!	$Id: operator.c,v 1.36 2000/12/11 10:59:38 per Exp $
 **! class Image
 */
 
@@ -579,7 +579,6 @@ void image_operator_equal(INT32 args)
    if (s1==s2)
    {
       pop_n_elems(args);
-fprintf(stderr,"ok 1\n");
       push_int(1);
       return; /* same image is equal */
    }
