@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.6 2003/01/18 16:36:48 nilsson Exp $
+// $Id: cgrep.pike,v 1.7 2003/01/18 17:54:01 nilsson Exp $
 
 constant description = "Context aware grep.";
 
@@ -100,7 +100,15 @@ class PikeFile {
   }
 
   void grep(array(string) tokens) {
+    int old;
     foreach(tokens; int i; string token) {
+#if 0
+      if(line!=old) {
+        catch(write("\n%4d:%s\n", line+1, lines[line]));
+	old=line;
+      }
+      write("%O ", token);
+#endif
       if(in_token==1 && token==target) {
 	found();
 	line += String.count(token, "\n");
@@ -118,12 +126,12 @@ class PikeFile {
 	continue;
       }
       if(token[..1]=="/*") {
-	line--;
 	foreach(token[2..sizeof(token)-3]/"\n", string l) {
-	  line++;
 	  if(in_comment && has_value(l, target))
 	    found();
+	  line++;
 	}
+	line--;
 	continue;
       }
       if(token[0]=='#') {
@@ -260,7 +268,7 @@ int main(int num, array(string) args) {
 
   int matches;
   foreach(files, string fn)
-    if(recurse)
+    if(recurse && Stdio.is_dir(fn))
       foreach(Filesystem.Traversion(fn); string path; string fn)
 	matches += handle_file(path+fn, fn);
     else
@@ -298,7 +306,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.6 $
+constant version = #"cgrep $Revision: 1.7 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
