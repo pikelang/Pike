@@ -1,116 +1,6 @@
 #pike __REAL_VERSION__
 
-/*
-**! module Protocols
-**! submodule HTTP
-**! class Query
-**!
-**! 	Open and execute a HTTP query.
-**!
-**! method object thread_request(string server,int port,string query);
-**! method object thread_request(string server,int port,string query,mapping headers,void|string data);
-**!	Create a new query object and begin the query.
-**!
-**!	The query is executed in a background thread;
-**!	call '() in this object to wait for the request
-**!	to complete.
-**!
-**!	'query' is the first line sent to the HTTP server;
-**!	for instance "GET /index.html HTTP/1.1".
-**!
-**!	headers will be encoded and sent after the first line,
-**!	and data will be sent after the headers.
-**!
-**! returns the called object
-**!
-**! method object set_callbacks(function request_ok,function request_fail,mixed ...extra)
-**! method object async_request(string server,int port,string query);
-**! method object async_request(string server,int port,string query,mapping headers,void|string data);
-**!	Setup and run an asynchronous request,
-**!	otherwise similar to thread_request.
-**!
-**!	request_ok(object httpquery,...extra args)
-**!	will be called when connection is complete,
-**!	and headers are parsed.
-**!
-**!	request_fail(object httpquery,...extra args)
-**!	is called if the connection fails.
-**!
-**! returns the called object
-**!
-**! variable int ok
-**!	Tells if the connection is successfull.
-**! variable int errno
-**!	Errno copied from the connection.
-**!
-**! variable mapping headers
-**!	Headers as a mapping. All header names are in lower case,
-**!	for convinience.
-**!
-**! variable string protocol
-**!	Protocol string, ie "HTTP/1.0".
-**!
-**! variable int status
-**! variable string status_desc
-**!	Status number and description (ie, 200 and "ok").
-**!
-**! variable mapping hostname_cache
-**!	Set this to a global mapping if you want to use a cache,
-**!	prior of calling *request().
-**!
-**! variable mapping async_dns
-**!	Set this to an array of Protocols.DNS.async_clients,
-**!	if you wish to limit the number of outstanding DNS
-**!	requests. Example:
-**!	   async_dns=allocate(20,Protocols.DNS.async_client)();
-**!
-**! method int `()()
-**!	Wait for connection to complete.
-**! returns 1 on successfull connection, 0 if failed
-**!
-**! method array cast("array")
-**!	Gives back ({mapping headers,string data,
-**!		     string protocol,int status,string status_desc});
-**!
-**! method mapping cast("mapping")
-**!	Gives back
-**!	headers |
-**!	(["protocol":protocol,
-**!	  "status":status number,
-**!	  "status_desc":status description,
-**!	  "data":data]);
-**!
-**! method string cast("string")
-**!	Gives back the answer as a string.
-**!
-**! method string data()
-**!	Gives back the data as a string.
-**!
-**! method int downloaded_bytes()
-**!	Gives back the number of downloaded bytes.
-**!
-**! method int total_bytes()
-**!     Gives back the size of a file if a content-length header is present
-**!     and parsed at the time of evaluation. Otherwise returns -1.
-**!
-**! object(pseudofile) file()
-**! object(pseudofile) file(mapping newheaders,void|mapping removeheaders)
-**! object(pseudofile) datafile();
-**!	Gives back a pseudo-file object,
-**!	with the method read() and close().
-**!	This could be used to copy the file to disc at
-**!	a proper tempo.
-**!
-**!	datafile() doesn't give the complete request,
-**!	just the data.
-**!
-**!	newheaders, removeheaders is applied as:
-**!	<tt>(oldheaders|newheaders))-removeheaders</tt>
-**!	Make sure all new and remove-header indices are lower case.
-**!
-**! void async_fetch(function done_callback);
-**!	Fetch all data in background.
-*/
+//!	Open and execute an HTTP query.
 
 #define error(S) throw( ({(S),backtrace()}) )
 
@@ -118,12 +8,21 @@
 
 // open
 
+//!	Errno copied from the connection.
 int errno;
+
+//!	Tells if the connection is successfull.
 int ok;
 
+//!	Headers as a mapping. All header names are in lower case,
+//!	for convinience.
+//!
 mapping headers;
 
+//!	Protocol string, ie @tt{"HTTP/1.0"@}.
 string protocol;
+
+//!	Status number and description (eg @tt{200@} and @tt{"ok"@}).
 int status;
 string status_desc;
 
@@ -408,7 +307,16 @@ string headers_encode(mapping h)
 
 /****** helper methods *********************************************/
 
+//!	Set this to a global mapping if you want to use a cache,
+//!	prior of calling *request().
+//!
 mapping hostname_cache=([]);
+
+//!	Set this to an array of Protocols.DNS.async_clients,
+//!	if you wish to limit the number of outstanding DNS
+//!	requests. Example:
+//!	   @code{async_dns = allocate(20, Protocols.DNS.async_client)();@}
+//!
 array async_dns=0;
 
 void dns_lookup_callback(string name,string ip,function callback,
@@ -459,6 +367,28 @@ string dns_lookup(string hostname)
 
 /****** called methods *********************************************/
 
+//! @decl Protocols.HTTP.Query set_callbacks(function request_ok, @
+//!                                          function request_fail, @
+//!                                          mixed ... extra)
+//! @decl Protocols.HTTP.Query async_request(string server, int port, @
+//!                                          string query)
+//! @decl Protocols.HTTP.Query async_request(string server, int port, @
+//!                                          string query, mapping headers, @
+//!                                          string|void data)
+//!
+//!	Setup and run an asynchronous request,
+//!	otherwise similar to @[thread_request()].
+//!
+//!	@[request_ok](Protocols.HTTP.Query httpquery,...extra args)
+//!	will be called when connection is complete,
+//!	and headers are parsed.
+//!
+//!	@[request_fail](Protocols.HTTP.Query httpquery,...extra args)
+//!	is called if the connection fails.
+//!
+//! @returns
+//!	Returns the called object
+
 object set_callbacks(function(object,mixed...:mixed) _ok,
 		     function(object,mixed...:mixed) _fail,
 		     mixed ...extra)
@@ -471,8 +401,28 @@ object set_callbacks(function(object,mixed...:mixed) _ok,
 
 #if constant(thread_create)
 
-object thread_request(string server,int port,string query,
-		      void|mapping|string headers,void|string data)
+//! @decl Protocols.HTTP.Query thread_request(string server, int port, @
+//!                                           string query)
+//! @decl Protocols.HTTP.Query thread_request(string server, int port, @
+//!                                           string query, mapping headers, @
+//!                                           void|string data)
+//!
+//!	Create a new query object and begin the query.
+//!
+//!	The query is executed in a background thread;
+//!	call @['()] in the object to wait for the request
+//!	to complete.
+//!
+//!	@[query] is the first line sent to the HTTP server;
+//!	for instance @tt{"GET /index.html HTTP/1.1"@}.
+//!
+//!	@[headers] will be encoded and sent after the first line,
+//!	and @[data] will be sent after the headers.
+//!
+//! @returns
+//!     Returns the called object.
+this_program thread_request(string server, int port, string query,
+			    void|mapping|string headers, void|string data)
 {
    // start open the connection
 
@@ -602,6 +552,10 @@ object async_request(string server,int port,string query,
 
 #if constant(thread_create)
 
+//!	Wait for connection to complete.
+//! @returns
+//!	Returns @tt{1@} on successfull connection, @tt{0@} on failure.
+//!
 int `()()
 {
    // wait for completion
@@ -611,6 +565,7 @@ int `()()
 
 #endif
 
+//!	Gives back the data as a string.
 string data(int|void max_length)
 {
 #if constant(thread_create)
@@ -667,6 +622,7 @@ string incr_data(int max_length)
   return ret;
 }
 
+//!	Gives back the number of downloaded bytes.
 int downloaded_bytes()
 {
   if(datapos)
@@ -675,6 +631,8 @@ int downloaded_bytes()
     return 0;
 }
 
+//!     Gives back the size of a file if a content-length header is present
+//!     and parsed at the time of evaluation. Otherwise returns -1.
 int total_bytes()
 {
   if(!headers)
@@ -686,6 +644,20 @@ int total_bytes()
     return len;
 }
 
+//! @decl array cast("array")
+//!	Gives back @code{({mapping headers, string data,
+//!		           string protocol, int status, string status_desc});@}
+
+//! @decl mapping cast("mapping")
+//!	Gives back
+//!	@code{ headers |
+//!	(["protocol":protocol,
+//!	  "status":status number,
+//!	  "status_desc":status description,
+//!	  "data":data]); @}
+
+//! @decl string cast("string")
+//!	Gives back the answer as a string.
 array|mapping|string cast(string to)
 {
    switch (to)
@@ -742,8 +714,22 @@ class PseudoFile
    {
       con=0; // forget
    }
-};
+}
 
+//! @decl Protocols.HTTP.Query.PseudoFile file()
+//! @decl Protocols.HTTP.Query.PseudoFile file(mapping newheaders, @
+//!                                            void|mapping removeheaders)
+//!	Gives back a pseudo-file object,
+//!	with the methods @tt{read()@} and @tt{close()@}.
+//!	This could be used to copy the file to disc at
+//!	a proper tempo.
+//!
+//!	@[newheaders], @[removeheaders] is applied as:
+//!	@code{(oldheaders|newheaders))-removeheaders@}
+//!	Make sure all new and remove-header indices are lower case.
+//!
+//! @seealso
+//!     @[datafile()]
 object file(void|mapping newheader,void|mapping removeheader)
 {
 #if constant(thread_create)
@@ -772,6 +758,17 @@ object file(void|mapping newheader,void|mapping removeheader)
    return PseudoFile(con,buf,len);
 }
 
+//! @decl Protocols.HTTP.Query.PseudoFile datafile();
+//!	Gives back a pseudo-file object,
+//!	with the methods @tt{read()@} and @tt{close()@}.
+//!	This could be used to copy the file to disc at
+//!	a proper tempo.
+//!
+//!	@[datafile()] doesn't give the complete request,
+//!	just the data.
+//!
+//! @seealso
+//!     @[file()]
 object datafile()
 {
 #if constant(thread_create)
@@ -780,11 +777,12 @@ object datafile()
    return PseudoFile(con,buf[datapos..],(int)headers["content-length"]);
 }
 
-void destroy()
+static void destroy()
 {
    catch { con->close(); destruct(con); };
 }
 
+//!	Fetch all data in background.
 void async_fetch(function callback,mixed ... extra)
 {
    if (!con)
@@ -797,7 +795,7 @@ void async_fetch(function callback,mixed ... extra)
    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
 }
 
-string _sprintf()
+static string _sprintf()
 {
   return status ? sprintf("Query(%d %s)", status, status_desc)
 		: "Query()";
