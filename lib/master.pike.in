@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.288 2003/06/05 13:11:13 mast Exp $
+// $Id: master.pike.in,v 1.289 2003/06/05 14:18:21 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1051,7 +1051,7 @@ class dirnode
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
       INC_RESOLV_MSG_DEPTH();
-      if (catch {
+      if (mixed err = catch {
 	if(module=findmodule(dirname+"/module", handler))
 	{
 	  if(mixed tmp=module->_module_value)
@@ -1069,6 +1069,8 @@ class dirnode
 		      dirname, !module ? "doesn't exist" : "exists");
 	return !module;
       }) {
+	//werror ("findmodule error: " + describe_backtrace (err));
+
 	// findmodule() failed. This can occur due to circularities
 	// between encode_value()'ed programs.
 	// The error will then typically be:
@@ -1108,7 +1110,10 @@ class dirnode
 		      dirname, index, o);
 	return o;
       }
+      resolv_debug ("dirnode(%O)->ind(%O) => not found in module\n", dirname, index);
     }
+    else
+      resolv_debug ("dirnode(%O)->ind(%O) => no module\n", dirname, index);
 
     if(!files) get_files();
 
@@ -1291,7 +1296,10 @@ class joinnode
 	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
         {
 	  // Only join directorynodes (or joinnodes).
-	  res += ({ ret });
+	  if (ret->is_resolv_joinnode)
+	    res += ret->joined_modules;
+	  else
+	    res += ({ ret });
 	} else if ( !zero_type(ret) ) {
 	  DEC_RESOLV_MSG_DEPTH();
 	  resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
@@ -1398,6 +1406,12 @@ class joinnode
       else if (string name = mappingp (o) && search (o, val))
 	m_delete (o, name);
     }
+  }
+
+  int `== (mixed other)
+  {
+    return objectp (other) && other->is_resolv_joinnode &&
+      equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
   }
 
   array(object) _encode()
@@ -1674,7 +1688,10 @@ class CompatResolver
 	      if (mixed new_ret = ret->_module_value) {
 		ret = new_ret;
 	      }
-	      tmp += ({ ret });
+	      if (ret->is_resolv_joinnode)
+		tmp += ret->joined_modules;
+	      else
+		tmp += ({ ret });
 	    } else {
 	      if (mixed new_ret = ret->_module_value) {
 		ret = new_ret;
@@ -2661,8 +2678,8 @@ class Describer
 
 
 string program_path_to_name ( string path,
-			     void|string module_prefix, void|string module_suffix,
-			     void|string object_suffix )
+			      void|string module_prefix, void|string module_suffix,
+			      void|string object_suffix )
 //! Converts a module path on the form @expr{"Foo.pmod/Bar.pmod"@} or
 //! @expr{"/path/to/pike/lib/modules/Foo.pmod/Bar.pmod"@} to a module
 //! identifier on the form @expr{"Foo.Bar"@}.
@@ -3170,6 +3187,7 @@ class Encoder
 //!
 //! 'c'   Look up in all_constants().
 //! 's'   Look up in _static_modules.
+//! 'r'   Look up with resolv().
 //! 'p'   Look up in programs.
 //! 'o'   Look up in programs, then look up the result in objects.
 //! 'f'   Look up in fc.
@@ -3178,6 +3196,7 @@ class Encoder
 //! the rest specify a series of things to do with the result:
 //!
 //! A string   Look up this string in the result.
+//! 'm'        Get module object in dirnode.
 //! 'p'        Do object_program(result).
 //!
 //! All lowercase letters and the symbols ':', '/' and '.' are
@@ -3189,24 +3208,37 @@ class Encoder
   static mapping(mixed:string) rev_constants = ([]);
   static mapping(mixed:string) rev_static_modules = ([]);
 
-  static array find_index (object|program parent, mixed child)
+  static array find_index (object|program parent, mixed child,
+			   array(object) module_object)
   {
     array id;
 
   find_id: {
-      array vals = values (parent);
+      array inds = indices (parent), vals = values (parent);
       int i = search (vals, child);
-      if (i >= 0)
-	id = ({indices (parent)[i]});
+      if (i >= 0 && parent[inds[i]] == child) {
+	id = ({inds[i]});
+	ENC_MSG ("  found as parent value with index %O\n", id[0]);
+      }
+
       else {
 	// Try again with the programs of the objects in parent, since
 	// it's common that only objects and not their programs are
 	// accessible in modules.
 	foreach (vals; i; mixed val)
-	  if (objectp (val) && child == object_program (val)) {
-	    id = ({indices (parent)[i], 'p'});
+	  if (objectp (val) && child == object_program (val) &&
+	      val == parent[inds[i]]) {
+	    if (module_object) {
+	      module_object[0] = val;
+	      id = ({inds[i]});
+	    }
+	    else
+	      id = ({inds[i], 'p'});
+	    ENC_MSG ("  found as program of parent value object %O with index %O\n",
+		     val, id[0]);
 	    break find_id;
 	  }
+
 	error ("Cannot find %O in %O.\n", child, parent);
       }
     }
@@ -3217,7 +3249,83 @@ class Encoder
     return id;
   }
 
-  string|array nameof (mixed what)
+  static string|array compare_resolved (string name, mixed what,
+					mixed resolved, array(object) module_object)
+  {
+    array append;
+
+  compare: {
+      if (resolved == what) {
+	ENC_MSG ("  compare_resolved: %O is %O\n", what, resolved);
+	break compare;
+      }
+
+      if (objectp (resolved)) {
+	if (object_program (resolved) == what) {
+	  ENC_MSG ("  compare_resolved: %O is program of %O\n", what, resolved);
+	  append = ({'p'});
+	  break compare;
+	}
+
+	if (resolved->is_resolv_dirnode)
+	  if (resolved->module == what) {
+	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
+	    append = ({'m'});
+	    resolved = resolved->module;
+	    break compare;
+	  }
+	  else if (object_program (resolved->module) == what) {
+	    ENC_MSG ("  compare_resolved: %O is program of dirnode module of %O\n",
+		     what, resolved);
+	    append = ({'m', 'p'});
+	    break compare;
+	  }
+	  else
+	    ENC_MSG ("  compare_resolved: %O is different from dirnode module %O\n",
+		     what, resolved->module);
+
+#if 0
+	// This is only safe if the joinnode modules don't conflict,
+	// and we don't know that.
+	if (resolved->is_resolv_joinnode) {
+	  ENC_MSG ("  compare_resolved: searching for %O in joinnode %O\n",
+		   what, resolved);
+	  foreach (resolved->joined_modules, mixed part)
+	    if (string|array name = compare_resolved (name, what, part,
+						      module_object)) {
+	      if (module_object) module_object[0] = resolved;
+	      return name;
+	    }
+	}
+#endif
+      }
+
+      ENC_MSG ("  compare_resolved: %O is different from %O\n", what, resolved);
+      return 0;
+    }
+
+    name = "r" + name;
+    string|array res = has_value (name, ".") ? name / "." : name;
+
+    if (append)
+      if (module_object) {
+	// The caller is going to do subindexing. In both the 'p' and
+	// 'm' cases it's better to do that from the original
+	// object/dirnode, so just drop the suffixes.
+	module_object[0] = resolved;
+	return res;
+      }
+      else
+	return (arrayp (res) ? res : ({res})) + append;
+    else
+      return res;
+  }
+
+  string|array nameof (mixed what, void|array(object) module_object)
+  //! When @[module_object] is set and the name would end with an
+  //! @expr{object_program@} step (i.e. @expr{'p'@}), then drop that
+  //! step so that the name corresponds to the object instead.
+  //! @expr{@[module_object][0]@} will receive the found object.
   {
     ENC_MSG ("nameof (%t %O)\n", what, what);
 
@@ -3230,23 +3338,77 @@ class Encoder
     if (string id = rev_static_modules[what]) ENC_RETURN (id);
 
     if (objectp (what)) {
-      if (program prog = objects_reverse_lookup (what)) {
+
+      if (what->is_resolv_dirnode) {
+	ENC_MSG ("  is a dirnode\n");
+	string name = program_path_to_name (what->dirname);
+	if (string|array ref = compare_resolved (name, what, resolv (name),
+						 module_object))
+	  ENC_RETURN (ref);
+      }
+
+      else if (what->is_resolv_joinnode) {
+	ENC_MSG ("  is a joinnode\n");
+	object modules = _static_modules.Builtin.array_iterator (what->joined_modules);
+	object|mapping value;
+      check_dirnode:
+	if (modules && objectp (value = modules->value()) &&
+	    value->is_resolv_dirnode) {
+	  string name = program_path_to_name (value->dirname);
+	  modules += 1;
+	  foreach (modules;; value)
+	    if (!objectp (value) || !value->is_resolv_dirnode ||
+		program_path_to_name (value->dirname) != name)
+	      break check_dirnode;
+	  ENC_MSG ("  joinnode has consistent name %O\n", name);
+	  if (string|array ref = compare_resolved (name, what, resolv (name),
+						   module_object))
+	    ENC_RETURN (ref);
+	}
+      }
+
+      program prog;
+      if ((prog = objects_reverse_lookup (what)))
+	ENC_MSG ("  found program in objects: %O\n", prog);
+#if 0
+      else if ((prog = object_program (what)))
+	ENC_MSG ("  got program of object: %O\n", prog);
+#endif
+
+      if (prog) {
 	if (prog == encoded) ENC_RETURN ("o");
 	if (string path = programs_reverse_lookup (prog)) {
+	  ENC_MSG ("  found path in programs: %O\n", path);
+	  string name = program_path_to_name (path);
+	  if (string|array ref = compare_resolved (name,
+						   what->_module_value || what,
+						   resolv (name), module_object))
+	    ENC_RETURN (ref);
+	  else {
+	    ENC_MSG ("  Warning: Failed to resolve; encoding path\n");
 #ifdef PIKE_MODULE_RELOC
-	  ENC_RETURN ("o" + unrelocate_module (path));
+	    ENC_RETURN ("o" + unrelocate_module (path));
 #else
-	  ENC_RETURN ("o" + path);
+	    ENC_RETURN ("o" + path);
 #endif
+	  }
 	}
       }
 
       if (string path = fc_reverse_lookup (what)) {
+	ENC_MSG ("  found path in fc: %O\n", path);
+	string name = program_path_to_name (path);
+	if (string|array ref = compare_resolved (name, what, resolv (name),
+						 module_object))
+	  ENC_RETURN (ref);
+	else {
+	    ENC_MSG ("  Warning: Failed to resolve; encoding path\n");
 #ifdef PIKE_MODULE_RELOC
-	ENC_RETURN ("f" + unrelocate_module (path));
+	  ENC_RETURN ("f" + unrelocate_module (path));
 #else
-	ENC_RETURN ("f" + path);
+	  ENC_RETURN ("f" + path);
 #endif
+	}
       }
 
       if (what->_encode) {
@@ -3254,60 +3416,87 @@ class Encoder
 	return UNDEFINED;
       }
 
-      if (function|program prog = object_program (what))
+      if (function|program prog = object_program (what)) {
+	ENC_MSG ("  got program of object: %O\n", prog);
 	if (object|program parent = function_object (prog) || function_program (prog)) {
-	  string|array parent_name = nameof (parent);
+	  ENC_MSG ("  got parent of program: %O\n", parent);
+	  // We're going to subindex the parent so we ask for the
+	  // module object and not the program. That since we'll
+	  // always be able to do a better job if we base the indexing
+	  // on objects.
+	  array parent_object = ({0});
+	  string|array parent_name = nameof (parent, parent_object);
 	  if (!parent_name) {
 	    ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	    return UNDEFINED;
 	  }
 	  else {
-	    // If we did an object_program step in the recursive nameof to get
-	    // the parent then we'll always be able to do a better job if we
-	    // base the indexing on the corresponding object instead.
-
-#define CONVERT_PARENT_TO_OBJ(parent_name, parent)			\
-	    if (arrayp (parent_name) && parent_name[-1] == 'p') {	\
-	      object|program grandparent =				\
-		objectp (parent) ? object_program (parent) : parent;	\
-	      grandparent =						\
-		function_object (grandparent) || function_program (grandparent); \
-	      parent = grandparent[parent_name[-2]];			\
-	      parent_name = parent_name[..sizeof (parent_name) - 2];	\
-	    }
-
-	    CONVERT_PARENT_TO_OBJ (parent_name, parent);
-	    array id = find_index (parent, what);
-	    ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	    if (objectp (parent_object[0])) parent = parent_object[0];
+	    array id = find_index (parent, what, module_object);
+	    if (equal (id, ({"_module_value"})))
+	      ENC_RETURN (parent_name);
+	    else
+	      ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
 	  }
 	}
+      }
 
       error ("Failed to find name of unencodable object %O.\n", what);
     }
 
     if (programp (what) || functionp (what)) {
       if (string path = programs_reverse_lookup (what)) {
+	ENC_MSG ("  found path in programs: %O\n", path);
+	string name = program_path_to_name (path);
+	if (string|array ref = compare_resolved (name, what, resolv (name),
+						 module_object))
+	  ENC_RETURN (ref);
+	else {
+	    ENC_MSG ("  Warning: Failed to resolve; encoding path\n");
 #ifdef PIKE_MODULE_RELOC
-	ENC_RETURN ("p" + unrelocate_module (path));
+	  ENC_RETURN ("p" + unrelocate_module (path));
 #else
-	ENC_RETURN ("p" + path);
+	  ENC_RETURN ("p" + path);
 #endif
+	}
       }
 
       if (object|program parent = function_object (what) || function_program (what)) {
-	string|array parent_name = nameof (parent);
+	ENC_MSG ("  got parent: %O\n", parent);
+	if (!objectp (parent)) {
+	  object parent_obj = objects[parent];
+	  if (objectp (parent_obj)) {
+	    ENC_MSG ("  found object for parent program in objects: %O\n", parent_obj);
+	    parent = parent_obj;
+	  }
+	}
+
+	array parent_object = ({0});
+	string|array parent_name = nameof (parent, parent_object);
 	if (!parent_name) {
 	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	  return UNDEFINED;
 	}
+
 	else {
-	  string|array id = function_name (what);
-	  if (stringp (id)) id = ({id});
-	  else {
-	    CONVERT_PARENT_TO_OBJ (parent_name, parent);
-	    id = find_index (parent, what);
+	  if (objectp (parent_object[0])) parent = parent_object[0];
+	  if (parent["_module_value"] == what && objects_reverse_lookup (parent)) {
+	    ENC_MSG ("  found as _module_value of parent module\n");
+	    ENC_RETURN (parent_name);
 	  }
-	  ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	  else {
+	    string|array id = function_name (what);
+	    if (stringp (id) && parent[id] == what) {
+	      ENC_MSG ("  found function name in parent: %O\n", id);
+	      id = ({id});
+	    }
+	    else
+	      id = find_index (parent, what, module_object);
+	    if (equal (id, ({"_module_value"})))
+	      ENC_RETURN (parent_name);
+	    else
+	      ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	  }
 	}
       }
 
@@ -3395,6 +3584,10 @@ class Decoder (void|string fname, void|int mkobj)
 	if (zero_type (res = _static_modules[what[1..]]))
 	  error ("Cannot find %O in _static_modules.\n", what[1..]);
 	break;
+      case 'r':
+	if (zero_type (res = resolv (what[1..])))
+	  error ("Cannot resolve %O.\n", what[1..]);
+	break;
       case 'p':
 	if (!(res = low_cast_to_program (what[1..], fname, this)))
 	  error ("Cannot find program for %O.\n", what[1..]);
@@ -3409,6 +3602,8 @@ class Decoder (void|string fname, void|int mkobj)
 	break;
     }
 
+    DEC_MSG ("  got %O\n", res);
+
     if (sublist) {
       mixed subres = res;
       for (int i = 1; i < sizeof (sublist); i++) {
@@ -3420,11 +3615,45 @@ class Decoder (void|string fname, void|int mkobj)
 	  if (zero_type (subres = subres[op]))
 	    error ("Cannot find %O in %O%{[%O]%}.\n",
 		   op, res, sublist[1..i-1]);
+	  DEC_MSG ("  indexed with %O: %O\n", op, subres);
 	}
-	else if (op == 'p')
-	  subres = object_program (subres);
-	else
-	  error ("Unknown sublist operation %O in %O\n", op, what);
+	else switch (op) {
+	  case 'm':
+	    if (objectp (subres) && subres->is_resolv_joinnode) {
+	      dirnode found;
+	      foreach (subres->joined_modules, object|mapping part)
+		if (objectp (part) && part->is_resolv_dirnode && part->module) {
+		  if (found)
+		    error ("There are ambiguous module objects in %O.\n",
+			   subres);
+		  else
+		    found = part;
+		}
+	      if (found) subres = found;
+	    }
+
+	    if (objectp (subres) && subres->is_resolv_dirnode) {
+	      if (subres->module) {
+		subres = subres->module;
+		DEC_MSG ("  got dirnode module %O\n", subres);
+	      }
+	      else
+		error ("Cannot find module object in dirnode %O.\n", subres);
+	    }
+	    else
+	      error ("Cannot get module object in thing that isn't "
+		     "a dirnode or unambiguous joinnode: %O\n", subres);
+
+	    break;
+
+	  case 'p':
+	    subres = object_program (subres);
+	    DEC_MSG ("  got object_program %O\n", subres);
+	    break;
+
+	  default:
+	    error ("Unknown sublist operation %O in %O\n", op, what);
+	}
       }
       res = subres;
     }
@@ -3435,25 +3664,19 @@ class Decoder (void|string fname, void|int mkobj)
   object objectof (string|array what)
   {
     DEC_MSG ("objectof (%O)\n", what);
-    mixed res = thingof (what);
-    if (!objectp (res)) error ("Expected object for %O, got %O.\n", what, res);
-    DEC_RETURN ([object] res);
+    DEC_RETURN ([object] thingof (what));
   }
 
   function functionof (string|array what)
   {
     DEC_MSG ("functionof (%O)\n", what);
-    mixed res = thingof (what);
-    if (!functionp (res)) error ("Expected function for %O, got %O.\n", what, res);
-    DEC_RETURN ([function] res);
+    DEC_RETURN ([function] thingof (what));
   }
 
   program programof (string|array what)
   {
     DEC_MSG ("programof (%O)\n", what);
-    mixed res = thingof (what);
-    if (!programp (res)) error ("Expected program for %O, got %O.\n", what, res);
-    DEC_RETURN ([program] res);
+    DEC_RETURN ([program] thingof (what));
   }
 
   void decode_object(object o, mixed data)
@@ -3489,6 +3712,9 @@ class Codec
     Encoder::create (encoded);
   }
 }
+
+// The master acts as the default codec.
+inherit Codec;
 
 
 //! Contains version information about a Pike version.
