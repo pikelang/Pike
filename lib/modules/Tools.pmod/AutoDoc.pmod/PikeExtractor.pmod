@@ -368,7 +368,8 @@ static private class Extractor {
       } else
         foreach (decls, PikeObject obj)
           if (obj->objtype == "class" &&
-	      ([object(Class)]obj)->containsDoc())
+	      ([object(Class)]obj)->containsDoc() &&
+	      sizeof(filter(obj->docGroups->documentation, `==, EmptyDoc)))
             extractorError("undocumented class %O contains doc comments",
 			   obj->name);
 
