@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.3 1997/03/18 17:23:21 mirar Exp $ 
+$Id: togif.c,v 1.4 1997/03/18 17:30:54 mirar Exp $ 
 
 */
 
@@ -95,7 +95,7 @@ static int floyd_steinberg_add(rgbl_group *errl,
 	   rgb2.r*1.0, rgb2.g*1.0, rgb2.b*1.0);
 #endif
    if (closest)
-      c=colortable_rgb_closest(ct,rgb2);
+      c=colortable_rgb_nearest(ct,rgb2);
    else
       c=colortable_rgb(ct,rgb2);
    rgb3=ct->clut[c];
