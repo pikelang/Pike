@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.14 2001/07/12 23:23:59 nilsson Exp $
+// $Id: Utils.pmod,v 1.15 2001/07/20 22:30:22 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -29,16 +29,200 @@ public string normalize(string in)
 
 #define THROW(X) throw( ({ (X), backtrace() }) )
 
-class ProfileCache(string db_name) {
+class ProfileEntry {
 
+  private int last_stat;
+
+  private int database_profile_id;
+  private int search_profile_id;
+  private ProfileCache my_cache;
+
+  private mapping(string:mixed) database_values;
+  private mapping(string:mixed) search_values;
+
+  private Search.Database.MySQL db;
+  private Search.RankingProfile ranking;
+  private array(string) stop_words;
+
+  void create(int _database_profile_id,
+	      int _search_profile_id,
+	      ProfileCache _my_cache) {
+    database_profile_id = _database_profile_id;
+    search_profile_id = _search_profile_id;
+    my_cache = _my_cache;
+    int last_stat = time(1);
+  }
+
+  void refresh() {
+    if(time(1)-last_stat < 5*60) return;
+    int check = my_cache->up_to_datep(database_profile_id);
+    if(check == -1) destruct();
+    if(!check) {
+      database_values = 0;
+      ranking = 0;
+      db = 0;
+    }
+    check = my_cache->up_to_datep(search_profile_id);
+    if(check == -1) destruct();
+    if(!check) {
+      search_values = 0;
+      ranking = 0;
+      stop_words = 0;
+    }
+    last_stat = time(1);
+  }
+
+  mixed get_database_value(string index) {
+    if(!database_values)
+      database_values = my_cache->get_value_mapping(database_profile_id);
+    return database_values[index];
+  }
+
+  mixed get_search_value(string index) {
+    if(!search_values)
+      search_values = my_cache->get_value_mapping(search_profile_id);
+    return search_values[index];
+  }
+
+  Search.Database.MySQL get_database() {
+    if(!db) {
+      db = Search.Database.MySQL( DBManager.db_url( get_database_value("db_name"), 1) );
+      if(!db)
+	THROW("Could not aquire the database URL to database " +
+	      get_database_value("db_name") + ".\n");
+    }
+    return db;
+  }
+
+  Search.RankingProfile get_ranking() {
+    if(!ranking)
+      ranking = Search.RankingProfile(8,
+				      get_search_value("px_rank"),
+				      get_database(),
+				      get_search_value("fi_rank"));
+    return ranking;
+  }
+
+  class ADTSet {
+    private mapping vals = ([]);
+
+    ADTSet add (string|int|float in) {
+      vals[in] = 1;
+      return this_object();
+    }
+
+    ADTSet sub (string|int|float out) {
+      m_delete(vals, out);
+      return this_object();
+    }
+
+    ADTSet `+(mixed in) {
+      if(stringp(in)||intp(in)||floatp(in))
+	add(in);
+      else
+	map((array)in, add);
+      return this_object();
+    }
+
+    ADTSet `-(mixed out) {
+      if(stringp(out)||intp(out)||floatp(out))
+	sub(out);
+      else
+	map((array)out, sub);
+      return this_object();
+    }
+
+    mixed cast(string to) {
+      switch(to) {
+      case "object": return this_object();
+      case "array": return indices(vals);
+      case "multiset": return (multiset)indices(vals);
+      default:
+	THROW("Can not cast ADTSet to "+to+".\n");
+      }
+    }
+  }
+
+  array(string) get_stop_words() {
+    if(!stop_words) {
+      ADTSet words = ADTSet();
+      foreach(get_search_value("sw_lists"), string fn) {
+	string file = Stdio.read_file(fn);
+	if(!fn)
+	  report_error("Could not load %O.\n", fn);
+	else
+	  words + (Array.flatten(map(file/"\n",
+				     lambda(string in) {
+				       return in/" ";
+				     }))-({""}));
+      }
+      words + (Array.flatten(map(get_search_value("sw_words")/"\n",
+				 lambda(string in) {
+				   return in/" ";
+				 }))-({""}));
+      stop_words = (array)words;
+    }
+    return stop_words;
+  }
+}
+
+class ProfileCache (string db_name) {
+
+  private mapping(int:ProfileEntry) entry_cache = ([]);
   private mapping(int:mapping(string:mixed)) value_cache = ([]);
   private mapping(string:int) db_profile_names = ([]);
   private mapping(string:int) srh_profile_names = ([]);
+  private mapping(int:int) profile_stat = ([]);
 
   private Sql.Sql get_db() {
     Sql.Sql db = DBManager.cached_get(db_name);
     if(!db) THROW("Could not connect to database " + db_name + ".\n");
     return db;
+  }
+
+  int(-1..1) up_to_datep(int profile_id) {
+    array(mapping(string:string)) res;
+    res = get_db()->query("SELECT altered, parent FROM wf_profile WHERE id=%d", profile_id);
+
+    // The profile is deleted. In such a rare event we take the
+    // trouble to review all our cached values.
+    if(!sizeof(res)) {
+      array(int) existing = (array(int))get_db()->query("SELECT id FROM wf_profile")->id;
+
+      foreach(indices(value_cache), int id)
+	if(!has_value(existing, id))
+	  m_delete(value_cache, id);
+
+      foreach(indices(entry_cache), int id)
+	if(!has_value(existing, id))
+	  m_delete(entry_cache, id);
+
+      foreach(indices(db_profile_names), string name)
+	if(!has_value(existing, db_profile_names[name]))
+	  m_delete(db_profile_names, name);
+
+      foreach(indices(srh_profile_names), string name)
+	if(!has_value(existing, srh_profile_names[name]))
+	  m_delete(srh_profile_names, name);
+
+      return -1;
+    }
+
+    // Not altered
+    if((int)res[0]->altered == profile_stat[profile_id]) return 1;
+
+    // Search profile
+    if((int)res[0]->parent) {
+      m_delete(value_cache, profile_id);
+      m_delete(entry_cache, profile_id);
+      return 0;
+    }
+
+    m_delete(value_cache, profile_id);
+    foreach((array(int))get_db()->query("SELECT id FROM wf_profile WHERE parent=%d", profile_id)->id,
+	    int id)
+      m_delete(entry_cache, id);
+    return 0;
   }
 
   //! Return the profile number for the given database profile.
@@ -108,11 +292,16 @@ class ProfileCache(string db_name) {
     return val;
   }
 
-  //! Return the named database/search profile pair.
-  array(mapping(string:mixed)) get_profile_pair(string db_name, void|string srh_name) {
+  ProfileEntry get_profile_entry(string db_name, void|string srh_name) {
     int db = get_db_profile_number(db_name);
     int srh = get_srh_profile_number(srh_name||"Default", db);
-    return ({ get_value_mapping(db), get_value_mapping(srh) });
+
+    ProfileEntry entry;
+    if(entry=entry_cache[srh])
+      return entry;
+
+    entry = ProfileEntry( db, srh, this_object() );
+    return entry_cache[srh] = entry;
   }
 
   //! Flushes an entry from the profile cache.
