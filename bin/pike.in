@@ -23,7 +23,8 @@ if test "$BUILDDIR" = BUILDDIR; then
   exit 1
 fi
 
-for arg; do
+for arg
+do
   case "$arg" in
     --gdb*)
       gdb="$arg"
@@ -44,7 +45,8 @@ done
 
 if test "x$gdb" != "x"; then
   args="-DPRECOMPILED_SEARCH_MORE '-m$BUILDDIR/master.pike'"
-  for arg; do
+  for arg
+  do
     arg=`sed -e s/\'/\'\"\'\"\'/g <<EOF
 $arg
 EOF`
