@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.210 2004/11/29 19:17:16 grubba Exp $
+|| $Id: svalue.c,v 1.211 2004/11/30 15:41:58 grubba Exp $
 */
 
 #include "global.h"
@@ -1126,14 +1126,14 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
 	push_object_type(0, id);
 	b_type = pop_unfinished_type();
       } else {
-	free_pike_type(a_type);
+	free_type(a_type);
 	Pike_error("Bad argument to comparison.\n");
       }
     }
     
     res = pike_types_le(a_type, b_type);
-    free_pike_type(a_type);
-    free_pike_type(b_type);
+    free_type(a_type);
+    free_type(b_type);
     return res;
   }
   return is_lt (a, b) || is_eq (a, b);
