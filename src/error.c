@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.42 2000/03/20 21:00:04 hubbe Exp $");
+RCSID("$Id: error.c,v 1.43 2000/04/04 15:30:21 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -373,7 +373,7 @@ void f_error_backtrace(INT32 args)
   ERROR_STRUCT(STRUCT,o)->X=X
 
 #define ERROR_COPY_SVALUE(STRUCT,X) \
-  assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X)
+  (X?assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X):((ERROR_STRUCT(STRUCT, o)->X.type = T_INTEGER), (ERROR_STRUCT(STRUCT, o)->X.subtype = 0), (ERROR_STRUCT(STRUCT, o)->X.u.integer = 0)))
 
 
 #define ERROR_COPY_REF(STRUCT,X) \
