@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.36 2002/12/21 19:40:23 grendel Exp $
+# $Id: rules,v 1.37 2003/01/02 00:43:39 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -209,7 +209,7 @@ install: build
 
 	# an eye-candy
 	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)
-	uudecode -o $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)/pike.png $(CURDIR)/debian/pike.png.uu
+	install -m 644 -o root -g root $(CURDIR)/debian/pike.xpm $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)/pike.xpm 
 
 	# install the docs
 	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-manual refdoc/traditional_manual/* usr/share/doc/$(PIKE)-doc/html/manual

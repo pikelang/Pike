@@ -1,3 +1,10 @@
+pike7.4 (7.4.11-3) unstable; urgency=low
+
+  * Recompilation to match the new Postgresql library.
+  * pike.png replaced with pike.xpm in the menu entry.
+
+ -- Marek Habersack <grendel@debian.org>  Thu,  2 Jan 2003 01:40:04 +0100
+
 pike7.4 (7.4.11-2) unstable; urgency=low
 
   * Added short pike description to the meta packages' descriptions as
