@@ -607,3 +607,46 @@ int oid_sort_func(string a0,string b0)
     if (a2==b2) return 0;
     return oid_sort_func(a2,b2);
 }
+
+//! Like @[Array.diff], but tries to generate bigger continuous chunks of the
+//! differences, instead of maximizing the number of difference chunks. More
+//! specifically, @[chunky_diff] optimizes the cases where @[Array.diff] returns
+//! @code{({ ..., A, Z, B, ({}), C, ... })@}
+//! @code{({ ..., A, X, B,  Y+B, C, ... })@}
+//! into the somewhat shorter diff arrays
+//! @code{({ ..., A, Z,     B+C, ... })@}
+//! @code{({ ..., A, X+B+Y, B+C, ... })@}
+array(array) chunky_diff(array from, array to)
+{
+  array d1, d2, r1, r2, x, y, yb, b, c;
+  [d1, d2] = Array.diff(from, to);
+  r1 = r2 = ({});
+  int at, last, seen;
+  while(-1 != (at = search(d1, ({}), last)))
+  {
+    last = at + 1;
+    if(at < 2) continue;
+    b = d2[at-1]; yb = d2[at];
+    if(sizeof(yb) > sizeof(b) &&
+       equal(b, yb[sizeof(yb)-sizeof(b)..])) // has_suffix(yb, b)
+    {
+      x = d2[at-2];
+      y = yb[..sizeof(yb)-sizeof(b)-1];
+      if(at+1 <= sizeof(d1))
+      {
+	c = d2[at+1];
+	r1 += d1[seen..at-2] + ({ b+c });
+	r2 += d2[seen..at-3] + ({ x+b+y }) + ({ b+c });
+      }
+      else
+      {
+	r1 += d1[seen..at-2] + ({ b });
+	r2 += d2[seen..at-3] + ({ x+b+y }) + ({ b });
+      }
+      seen = at + 5;
+    }
+  }
+  if(!last)
+    return ({ d1, d2 });
+  return ({ r1 + d1[seen..], r2 + d2[seen..] });
+}
