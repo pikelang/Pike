@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! $Id: module.pmod,v 1.18 2001/04/27 13:41:35 grubba Exp $
+//! $Id: module.pmod,v 1.19 2001/06/03 08:03:40 mirar Exp $
 
 //! @decl Image.Layer load()
 //! @decl Image.Image load(object file)
@@ -207,3 +207,27 @@ object(Image.Image) load(object|string file)
 {
    return _load(file)->image;
 }
+
+//!
+//! @decl Image.Image filled_circle(int xd,void|int yd)
+//!	Generates a white filled circle on black background of the 
+//!	dimensions xd x yd (or xd x xd if yd isn't specified).
+
+Image.Image filled_circle(int xd,int yd)
+{
+   int n;
+   if (xd<10) n=25;
+   else if (xd<100) n=35;
+   else n=101;
+
+   array x=map(map(map(enumerate(n,2*Math.pi/n),sin),`*,xd/2.0),`+,xd/2.0);
+   array y=map(map(map(enumerate(n,2*Math.pi/n),cos),`*,yd/2.0),`+,yd/2.0);
+
+  return 
+     Image.Image(xd,yd,0,0,0)
+     ->setcolor(255,255,255)
+     ->polyfill( Array.splice( x,y ) );
+}
+
+
+
