@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.63 2000/06/08 00:40:51 hubbe Exp $
+ * $Id: cpp.c,v 1.64 2000/07/18 23:54:48 lange Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -206,6 +206,25 @@ static void simple_add_define(struct cpp *this,
    break;								\
   } } while(0)
 
+#define FIND_END_OF_STRING2() do {					\
+  while(1)								\
+  {									\
+    if(pos>=len)							\
+    {									\
+      cpp_error(this,"End of file in string.");				\
+      break;								\
+    }									\
+    switch(data[pos++])							\
+    {									\
+    case '\n':								\
+      this->current_line++;						\
+      continue;								\
+    case '"': break;							\
+    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    default: continue;							\
+    }									\
+   break;								\
+  } } while(0)
 
 #define FIND_END_OF_CHAR() do {					\
   int e=0;							\

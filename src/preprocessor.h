@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.23 2000/04/01 07:26:29 hubbe Exp $
+ * $Id: preprocessor.h,v 1.24 2000/07/18 23:54:39 lange Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -917,7 +917,11 @@ static INT32 lower_cpp(struct cpp *this,
 		default: continue;
 		  
 		case '"':
-		  FIND_END_OF_STRING();
+		  if(data[pos-2]!='#') {
+		    FIND_END_OF_STRING();
+		  }else{
+		    FIND_END_OF_STRING2();  /* Newlines allowed */
+		  }
 		  continue;
 		  
 		case '\'':
