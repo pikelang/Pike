@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.44 1999/10/18 19:15:42 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.45 1999/10/18 22:54:46 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1369,17 +1369,13 @@ void debug_malloc_copy_names(void *p, void *p2)
     struct memhdr *mh,*from;
     mt_lock(&debug_malloc_mutex);
 
-    if((from=my_find_memhdr(p2,0)))
+    if((from=my_find_memhdr(p2,0)) && (mh=my_find_memhdr(p,0)))
     {
       struct memloc *l;
       for(l=from->locations;l;l=l->next)
       {
-	struct fileloc *f;
 	if(l->locnum < 0)
-	{
-	  if((mh=my_find_memhdr(p,0)))
-	    add_location(mh, l->locnum);
-	}
+	  add_location(mh, l->locnum);
       }
     }
 

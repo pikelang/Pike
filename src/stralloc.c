@@ -23,7 +23,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.64 1999/09/16 23:01:14 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.65 1999/10/18 22:55:17 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -665,9 +665,7 @@ struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 void unlink_pike_string(struct pike_string *s)
 {
-  int h;
-
-  h=do_hash(s);
+  int h=s->hval % htable_size;
   propagate_shared_string(s,h);
   base_table[h]=s->next;
 #ifdef PIKE_DEBUG
