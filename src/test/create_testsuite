@@ -1404,6 +1404,7 @@ test_equal(indices("foo"),({0,1,2}))
 test_equal(indices(({'f','o','o'})),({0,1,2}))
 test_equal(sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
 test_equal(sort_array(indices((<7,8,99>))),({7,8,99}))
+test_equal(mklist(indices(this_object())),(<"a","b">))
 
 // - lower_case
 test_equal(lower_case("foo"),"foo")
@@ -1559,6 +1560,7 @@ test_equal(values("foo"),({'f','o','o'}))
 test_equal(values(({'f','o','o'})),({'f','o','o'}))
 test_equal(sort_array(values(([7:3,8:9,99:12]))),({3,9,12}))
 test_equal(values((<7,8,99>)),({1,1,1}))
+test_equal(mklist(values(this_object())),(<a,b>))
 
 // - zero_type
 test_eq(zero_type(0),0)
