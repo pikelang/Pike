@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.12 2003/04/02 21:07:09 mast Exp $
+|| $Id: timeout.c,v 1.13 2003/04/02 21:12:14 mast Exp $
 */
 
 #include "config.h"
@@ -12,8 +12,6 @@
 #include <stralloc.h>
 #include <signal.h>
 #include <fdlib.h>
-
-#define AAP_DEBUG
 
 #ifdef _REENTRANT
 #include <stdlib.h>
