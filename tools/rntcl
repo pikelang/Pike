@@ -114,7 +114,8 @@ int main(int argc, array(string) argv)
     ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
     ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
     ({"dynamic",Getopt.HAS_ARG, ({"-r"}) }),
-    ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
+    ({"ldpath",Getopt.HAS_ARG, ({"-L"}) }),
+    ({"ignore",Getopt.HAS_ARG, ({"-R"}) }),
     ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
     ({"define",Getopt.HAS_ARG, ({"-D"}) }),
     ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
@@ -273,6 +274,10 @@ int main(int argc, array(string) argv)
 	    case "X": cflags+=({"-WX"}); break;
 	    default: cflags+=({"-W3"}); break;
 	  }
+	  break;
+
+        case "ldpath":
+	  ldflags+=({"-LIBPATH:"+fixpath(option[1])});
 	  break;
 	  
 	case "define": cflags+=({"-D"+option[1]}); break;
