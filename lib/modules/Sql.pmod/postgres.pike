@@ -1,33 +1,34 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.20 2003/02/20 15:53:53 stensson Exp $
+ * $Id: postgres.pike,v 1.21 2003/12/01 17:09:17 nilsson Exp $
  *
  */
 
-//! This is an interface to the Postgres (Postgres95, pgsql) database server.
-//! This module may or may not be availible on your Pike, depending
-//! whether the appropriate include and library files 
-//! could be found at compile-time. Note that you @b{do not@}
-//! need to have a Postgres server running on your host to use this module:
-//! you can connect to the database over a TCP/IP socket.
+//! This is an interface to the Postgres (Postgres95, pgsql) database
+//! server. This module may or may not be availible on your Pike,
+//! depending whether the appropriate include and library files could
+//! be found at compile-time. Note that you @b{do not@} need to have a
+//! Postgres server running on your host to use this module: you can
+//! connect to the database over a TCP/IP socket.
 //!
 //! @note
-//! Also note that @b{this module uses blocking I/O@} I/O to connect to the server.
-//! Postgres is quite slow, and so you might want to consider this
-//! particular aspect. It is (at least should be) thread-safe, and so it can be used
-//! in a multithread environment.
+//! Also note that @b{this module uses blocking I/O@} I/O to connect
+//! to the server. Postgres is quite slow, and so you might want to
+//! consider this particular aspect. It is (at least should be)
+//! thread-safe, and so it can be used in a multithread environment.
 //!
-//! The behavior of the Postgres C API also depends on certain environment variables
-//! defined in the environment of the pike interpreter.
+//! The behavior of the Postgres C API also depends on certain
+//! environment variables defined in the environment of the Pike
+//! interpreter.
 //!
 //! @string
 //!   @value "PGHOST"
 //!     Sets the name of the default host to connect to. It defaults
-//! 	to "localhost"
+//! 	to @expr{"localhost"@}.
 //!   @value "PGOPTIONS"
 //!     Sets some extra flags for the frontend-backend connection.
-//!     DO NOT SET unless you're sure of what you're doing.
+//!     @b{do not set@} unless you're sure of what you're doing.
 //!   @value "PGPORT"
 //!     Sets the default port to connect to, otherwise it will use
 //!     compile-time defaults (that is: the time you compiled the postgres
@@ -45,7 +46,7 @@
 //! Refer to the Postgres documentation for further details.
 //!
 //! @seealso
-//!  Sql.Sql, Postgres.postgres, Sql.postgres_result
+//!  @[Sql.Sql], @[Postgres.postgres], @[Sql.postgres_result]
 
 #pike __REAL_VERSION__
 
@@ -59,24 +60,24 @@ private string has_relexpires = "unknown";
 
 //! @decl void select_db(string dbname)
 //!
-//! This function allows you to connect to a database. Due to restrictions
-//! of the Postgres frontend-backend protocol, you always have to be connected
-//! to a database, so in fact this function just allows you to connect
-//! to a different database on the same server.
+//! This function allows you to connect to a database. Due to
+//! restrictions of the Postgres frontend-backend protocol, you always
+//! have to be connected to a database, so in fact this function just
+//! allows you to connect to a different database on the same server.
 //!
 //! @note
-//! This function @b{can@} raise exceptions if something goes wrong (backend process
-//! not running, not enough permissions..)
+//! This function @b{can@} raise exceptions if something goes wrong
+//! (backend process not running, not enough permissions..)
 //!
 //! @seealso
 //!   create
 
 //! @decl string error()
 //!
-//! This function returns the textual description of the last server-related
-//! error. Returns 0 if no error has occurred yet. It is not cleared upon
-//! reading (can be invoked multiple times, will return the same result
-//! until a new error occurs).
+//! This function returns the textual description of the last
+//! server-related error. Returns @expr{0@} if no error has occurred
+//! yet. It is not cleared upon reading (can be invoked multiple
+//! times, will return the same result until a new error occurs).
 //!
 //! @seealso
 //!   big_query
@@ -113,40 +114,44 @@ static private int mkbool(string s) {
 }
 
 //! @decl void create()
-//! @decl void create(string host, void|string database, void|string user, void|string password)
+//! @decl void create(string host, void|string database, void|string user,@
+//!                   void|string password)
 //!
-//! With no arguments, this function initializes (reinitializes if a connection
-//! had been previously set up) a connection to the Postgres backend.
-//! Since Postgres requires a database to be selected, it will try
-//! to connect to the default database. The connection may fail however for a 
-//! variety of reasons, in this case the most likely of all is because
-//! you don't have enough authority to connect to that database.
-//! So use of this particular syntax is discouraged.
+//! With no arguments, this function initializes (reinitializes if a
+//! connection had been previously set up) a connection to the
+//! Postgres backend. Since Postgres requires a database to be
+//! selected, it will try to connect to the default database. The
+//! connection may fail however for a variety of reasons, in this case
+//! the most likely of all is because you don't have enough authority
+//! to connect to that database. So use of this particular syntax is
+//! discouraged.
 //!
-//! The host argument can have the syntax "hostname" or "hostname:portname".
-//! This allows to specify the TCP/IP port to connect to. If it is 0 or "", it
-//! will try to connect to localhost, default port.
+//! The host argument can have the syntax @expr{"hostname"@} or
+//! @expr{"hostname:portname"@}. This allows to specify the TCP/IP
+//! port to connect to. If it is @expr{0@} or @expr{""@}, it will try
+//! to connect to localhost, default port.
 //!
-//! The database argument specifies the database to connect to. If 0 or "", it
-//! will try to connect to the specified database.
+//! The database argument specifies the database to connect to. If
+//! @expr{0@} or @expr{""@}, it will try to connect to the specified
+//! database.
 //!
-//! The username and password arguments are silently ignored, since the Postgres
-//! C API doesn't allow to connect to the server as any user different than the
-//! user running the interface.
+//! The username and password arguments are silently ignored, since
+//! the Postgres C API doesn't allow to connect to the server as any
+//! user different than the user running the interface.
 //!
 //! @note
 //! You need to have a database selected before using the sql-object,
-//! otherwise you'll get exceptions when you try to query it.
-//! Also notice that this function @b{can@} raise exceptions if the db
-//! server doesn't respond, if the database doesn't exist or is not accessible
-//! by you.
+//! otherwise you'll get exceptions when you try to query it. Also
+//! notice that this function @b{can@} raise exceptions if the db
+//! server doesn't respond, if the database doesn't exist or is not
+//! accessible by you.
 //!
 //! You don't need bothering about syncronizing the connection to the database:
 //! it is automatically closed (and the database is sync-ed) when the
 //! object is destroyed.
 //!
 //! @seealso
-//!   Postgres.postgres, Sql.Sql, postgres->select_db
+//!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 void create(void|string host, void|string database, void|string user,
 		void|string pass) {
 	string real_host=host, real_db=database;
@@ -239,10 +244,10 @@ void drop_db(string db) {
 	big_query(sprintf("DROP database %s",db));
 }
 
-//! This function returns a string describing the server we are talking
-//! to. It has the form "servername/serverversion" (like the HTTP protocol
-//! description) and is most useful in conjunction with the generic SQL-server
-//! module.
+//! This function returns a string describing the server we are
+//! talking to. It has the form @expr{"servername/serverversion"@}
+//! (like the HTTP protocol description) and is most useful in
+//! conjunction with the generic SQL-server module.
 string server_info () {
   return "Postgres/unknown";
 }
@@ -353,19 +358,20 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 
 //! This is the only provided interface which allows you to query the
 //! database. If you wish to use the simpler "query" function, you need to
-//! use the Sql.sql generic sql-object.
+//! use the @[Sql.Sql] generic SQL-object.
 //!
-//! It returns a postgres_result object (which conforms to the Sql.sql_result
-//! standard interface for accessing data). I recommend using query() for
-//! simpler queries (because it is easier to handle, but stores all the result
-//! in memory), and big_query for queries you expect to return huge amounts
-//! of data (it's harder to handle, but fectches results on demand).
+//! It returns a postgres_result object (which conforms to the
+//! @[Sql.sql_result] standard interface for accessing data). I
+//! recommend using @[query()] for simpler queries (because it is
+//! easier to handle, but stores all the result in memory), and
+//! @[big_query()] for queries you expect to return huge amounts of
+//! data (it's harder to handle, but fectches results on demand).
 //!
 //! @note
 //! This function @b{can@} raise exceptions.
 //!
 //! @seealso
-//!   Sql.Sql, Sql.sql_result
+//!   @[Sql.Sql], @[Sql.sql_result]
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {  
   if (!bindings)
