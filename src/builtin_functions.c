@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.332 2001/01/11 18:22:42 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.333 2001/01/19 13:53:43 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7637,5 +7637,16 @@ void init_builtin_efuns(void)
   ADD_EFUN("_gc_status",f__gc_status,
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
+
+#ifdef WITH_DOUBLE_PRECISION_SVALUE
+  ADD_INT_CONSTANT("__DOUBLE_PRECISION_FLOAT__",1,0);
+#else 
+#ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
+  ADD_INT_CONSTANT("__LONG_DOUBLE_PRECISION_FLOAT__",1,0);
+#else
+  ADD_INT_CONSTANT("__FLOAT_PRECISION_FLOAT__",1,0);
+#endif
+#endif
+
 }
 
