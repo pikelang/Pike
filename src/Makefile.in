@@ -1,9 +1,12 @@
 #
-# $Id: Makefile.in,v 1.395 2004/12/04 16:44:46 grubba Exp $
+# $Id: Makefile.in,v 1.396 2004/12/29 12:00:33 grubba Exp $
 #
 
 # This line is needed on some machines.
 @SET_MAKE@
+
+# Pike embed target, either pike.so or pike.a.
+PIKE_LIB=@PIKE_LIB@
 
 # Don't change this line.  Define EXTRALIBS before this line if you
 # wish to add any libraries.
@@ -109,6 +112,7 @@ AR=@AR@
 
 LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
+LDSHARED=@LDSHARED@
 
 DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 USE_PIKE=pike $(PIKEOPTS)
@@ -150,7 +154,7 @@ OBJ= \
  signal_handler.o \
  pike_search.o \
  pike_types.o \
- main.o \
+ pike_embed.o \
  mapping.o \
  pike_memory.o \
  module_support.o \
@@ -259,11 +263,37 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-pike: $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
+pike.so: $(OBJ) modules/linker_options post_modules/linker_options
+	@echo "Linking pike.so";\
+	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o pike.@SO@ \
+	  $(OBJ) `cat modules/linker_options post_modules/linker_options` \
+	  $(LIBS); then \
+	  if test "@SO@" != so ; then mv "module.@SO@" module.so ; \
+	  else :; fi ;\
+	else \
+	  echo "Linking failed:" >&2; \
+	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o pike.@SO@ \
+	    $(OBJ) `cat modules/linker_options post_modules/linker_options` \
+	    $(LIBS) >&2 ;\
+	  exit 1; \
+	fi
+
+# FIXME: Static linked version; this doesn't work yet!
+#        Since we need to split linker_options into archives and options.
+pike.a: $(OBJ) modules/linker_options post_modules/linker_options
+	-rm -f pike.a
+	$(AR) cq pike.a $(OBJ)
+	-@RANLIB@ pike.a
+
+#pike: main.o $(PIKE_LIB) master-stamp pike.syms
+pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
+#	$(LD) $(LDFLAGS) main.o -R. -R$(prefix)/lib $(PIKE_LIB) -o pike
+	$(LD) $(LDFLAGS) main.o $(OBJ) \
+	  `cat modules/linker_options post_modules/linker_options` \
+	  $(LIBS) -o pike
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) stores absolute addresses to
 # global structs. That should probably be fixed in them so that dumped

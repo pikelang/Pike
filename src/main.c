@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.217 2004/12/29 09:11:44 agehall Exp $
+|| $Id: main.c,v 1.218 2004/12/29 12:00:33 grubba Exp $
 */
 
 #include "global.h"
@@ -41,6 +41,8 @@
 #include "bignum.h"
 #endif
 
+#include "pike_embed.h"
+
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
 #endif
@@ -64,15 +66,6 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef TRY_USE_MMX
-#ifdef HAVE_MMX_H
-#include <mmx.h>
-#else
-#include <asm/mmx.h>
-#endif
-int try_use_mmx;
-#endif
-
 /* Define this to trace the execution of main(). */
 /* #define TRACE_MAIN */
 
@@ -81,10 +74,6 @@ int try_use_mmx;
 #else /* !TRACE_MAIN */
 #define TRACE(X)
 #endif /* TRACE_MAIN */
-
-char *master_file;
-char **ARGV;
-JMP_BUF back;
 
 PMOD_EXPORT int debug_options=0;
 PMOD_EXPORT int runtime_options=0;
@@ -99,17 +88,6 @@ extern int yydebug;
 #endif /* YYDEBUG || PIKE_DEBUG */
 static long instructions_left;
 
-#define MASTER_COOKIE1 "(#*&)@(*&$"
-#define MASTER_COOKIE2 "Master Cookie:"
-
-#define MASTER_COOKIE MASTER_COOKIE1 MASTER_COOKIE2
-
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 32768
-#endif
-
-char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
-
 static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
 {
   if(instructions_left-- < 0)
@@ -118,36 +96,6 @@ static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
     f_exit(1);
   }
 }
-
-#ifdef PROFILING
-static unsigned int samples[8200];
-long record;
-
-static void sample_stack(struct callback *cb,void *tmp,void *ignored)
-{
-  long stack_size=( ((char *)&cb) - Pike_interpreter.stack_bottom) * STACK_DIRECTION;
-  stack_size>>=10;
-  stack_size++;
-  if(stack_size<0) stack_size=0;
-  if(stack_size >= (long)NELEM(samples)) stack_size=NELEM(samples)-1;
-  samples[stack_size]++;
-#ifdef PIKE_DEBUG
-  if(stack_size > record)
-  {
-    extern void gdb_break_on_stack_record(long);
-    gdb_break_on_stack_record(stack_size);
-    record=stack_size;
-  }
-#endif
-}
-
-#ifdef PIKE_DEBUG
-void gdb_break_on_stack_record(long stack_size)
-{
-  ;
-}
-#endif
-#endif
 
 static struct callback_list post_master_callbacks;
 
@@ -158,15 +106,6 @@ PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
   return add_to_callback(&post_master_callbacks, call, arg, free_func);
 }
 
-
-static struct callback_list exit_callbacks;
-
-PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
-				   void *arg,
-				   callback_func free_func)
-{
-  return add_to_callback(&exit_callbacks, call, arg, free_func);
-}
 
 #ifdef __NT__
 static void get_master_key(HKEY cat)
@@ -191,7 +130,9 @@ static void get_master_key(HKEY cat)
 		       buffer,
 		       &len)==ERROR_SUCCESS)
     {
-      dmalloc_accept_leak( master_file=strdup(buffer) );
+      char *leak = strdup(buffer)
+      dmalloc_accept_leak(leak);
+      pike_set_master_file(leak);
     }
     RegCloseKey(k);
   }
@@ -228,128 +169,23 @@ static struct Hook scan_amigaos_environment_hook = {
 #endif /* __amigsos4__ */
 
 
-void pike_main_setup(int argc, char **argv) {
-  int e;
+int dbm_main(int argc, char **argv)
+{
+  JMP_BUF back;
+  int e, num;
   char *p;
+  struct array *a;
 #ifdef DECLARE_ENVIRON
   extern char **environ;
 #endif
 
-  init_rusage();
+  TRACE((stderr, "dbm_main()\n"));
 
-  /* Attempt to make sure stderr is unbuffered. */
-#ifdef HAVE_SETVBUF
-  setvbuf(stderr, NULL, _IONBF, 0);
-#else /* !HAVE_SETVBUF */
-#ifdef HAVE_SETBUF
-  setbuf(stderr, NULL);
-#endif /* HAVE_SETBUF */
-#endif /* HAVE_SETVBUF */
-
-  TRACE((stderr, "Init CPU lib...\n"));
-  
-  init_pike_cpulib();
-
-#ifdef TRY_USE_MMX
-  TRACE((stderr, "Init MMX...\n"));
-  
-  try_use_mmx=mmx_ok();
-#endif
-#ifdef OWN_GETHRTIME
-/* initialize our own gethrtime conversion /Mirar */
-  TRACE((stderr, "Init gethrtime...\n"));
-  
-  own_gethrtime_init();
-#endif
-
-  ARGV=argv;
-
-  TRACE((stderr, "Main init...\n"));
-  
-  fd_init();
-  {
-    extern void init_mapping_blocks(void);
-    extern void init_callable_blocks(void);
-    extern void init_gc_frame_blocks(void);
-    extern void init_pike_frame_blocks(void);
-    extern void init_node_s_blocks(void);
-    extern void init_object_blocks(void);
-    extern void init_callback_blocks(void);
-
-    init_mapping_blocks();
-    init_callable_blocks();
-    init_gc_frame_blocks();
-    init_pike_frame_blocks();
-    init_node_s_blocks();
-    init_object_blocks();
-#if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)
-    /* This has already been done by initialize_dmalloc(). */
-    init_callback_blocks();
-#endif /* !DEBUG_MALLOC */
-    init_multiset();
-    init_builtin_constants();
-  }
-
-#ifdef SHARED_NODES
-  TRACE((stderr, "Init shared nodes...\n"));
-  
-  node_hash.table = malloc(sizeof(node *)*32831);
-  if (!node_hash.table) {
-    Pike_fatal("Out of memory!\n");
-  }
-  MEMSET(node_hash.table, 0, sizeof(node *)*32831);
-  node_hash.size = 32831;
-#endif /* SHARED_NODES */
-
-#ifdef HAVE_TZSET
-  tzset();
-#endif /* HAVE_TZSET */
-
-#ifdef HAVE_SETLOCALE
-#ifdef LC_NUMERIC
-  setlocale(LC_NUMERIC, "C");
-#endif
-#ifdef LC_CTYPE
-  setlocale(LC_CTYPE, "");
-#endif
-#ifdef LC_TIME
-  setlocale(LC_TIME, "C");
-#endif
-#ifdef LC_COLLATE
-  setlocale(LC_COLLATE, "");
-#endif
-#ifdef LC_MESSAGES
-  setlocale(LC_MESSAGES, "");
-#endif
-#endif  
+  init_pike(argv);
 
   TRACE((stderr, "Init master...\n"));
   
-  master_file = 0;
-
-#ifdef HAVE_GETENV
-  if(getenv("PIKE_MASTER"))
-    master_file = getenv("PIKE_MASTER");
-#endif
-
-  if(master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
-    master_file=master_location + CONSTANT_STRLEN(MASTER_COOKIE);
-
-#if defined(__NT__)
-  if(!master_file) get_master_key(HKEY_CURRENT_USER);
-  if(!master_file) get_master_key(HKEY_LOCAL_MACHINE);
-#endif
-
-  if(!master_file)
-  {
-    sprintf(master_location,DEFAULT_MASTER,
-	    PIKE_MAJOR_VERSION,
-	    PIKE_MINOR_VERSION,
-	    PIKE_BUILD_VERSION);
-    master_file=master_location;
-  }
-
-  TRACE((stderr, "Default master at \"%s\"...\n", master_file));
+  pike_set_default_master();
 
   for(e=1; e<argc; e++)
   {
@@ -369,7 +205,7 @@ void pike_main_setup(int argc, char **argv) {
 	case 'm':
 	  if(p[1])
 	  {
-	    master_file=p+1;
+	    pike_set_master_file(p+1);
 	    p+=strlen(p);
 	  }else{
 	    e++;
@@ -378,7 +214,7 @@ void pike_main_setup(int argc, char **argv) {
 	      fprintf(stderr,"Missing argument to -m\n");
 	      exit(1);
 	    }
-	    master_file=argv[e];
+	    pike_set_master_file(argv[e]);
 	    p+=strlen(p);
 	  }
 	  break;
@@ -547,12 +383,8 @@ void pike_main_setup(int argc, char **argv) {
 	case 'p':
 	  if(p[1]=='s')
 	  {
-#ifdef PROFILING
-	    add_to_callback(&evaluator_callbacks,
-			    sample_stack,
-			    0,0);
+	    pike_enable_stack_profiling();
 	    p+=strlen(p);
-#endif	    
 	  }else{
 	    if(p[1]>='0' && p[1]<='9')
 	      p_flag+=STRTOL(p+1,&p,10);
@@ -584,186 +416,11 @@ void pike_main_setup(int argc, char **argv) {
 #endif
   if (d_flag) debug_options |= ERRORCHECK_MUTEXES;
 
-#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
-#define RLIMIT_NOFILE RLIMIT_OFILE
-#endif
+  init_pike_runtime(exit);
 
-  TRACE((stderr, "Init C stack...\n"));
-  
-  Pike_interpreter.stack_top = (char *)&argv;
-
-  /* Adjust for anything already pushed on the stack.
-   * We align on a 64 KB boundary.
-   * Thus we at worst, lose 64 KB stack.
-   *
-   * We have to do it this way since some compilers don't like
-   * & and | on pointers, and casting to an integer type is
-   * too unsafe (consider 64-bit systems).
-   */
-#if STACK_DIRECTION < 0
-  /* Equvivalent with |= 0xffff */
-  Pike_interpreter.stack_top += ~(PTR_TO_INT(Pike_interpreter.stack_top)) & 0xffff;
-#else /* STACK_DIRECTION >= 0 */
-  /* Equvivalent with &= ~0xffff */
-  Pike_interpreter.stack_top -= PTR_TO_INT(Pike_interpreter.stack_top) & 0xffff;
-#endif /* STACK_DIRECTION < 0 */
-
-#ifdef PROFILING
-  Pike_interpreter.stack_bottom=Pike_interpreter.stack_top;
-#endif
-
-#if defined(HAVE_GETRLIMIT) && defined(RLIMIT_STACK)
+  if(SETJMP(back))
   {
-    struct rlimit lim;
-    if(!getrlimit(RLIMIT_STACK, &lim))
-    {
-#ifdef RLIM_INFINITY
-      if(lim.rlim_cur == RLIM_INFINITY)
-	lim.rlim_cur=1024*1024*32;
-#endif
-
-#ifdef Pike_INITIAL_STACK_SIZE
-      if(lim.rlim_cur > Pike_INITIAL_STACK_SIZE)
-	lim.rlim_cur=Pike_INITIAL_STACK_SIZE;
-#endif
-
-#if defined(__linux__) && defined(PIKE_THREADS)
-      /* This is a really really *stupid* limit in glibc 2.x
-       * which is not detectable since __pthread_initial_thread_bos
-       * went static. On a stupidity-scale from 1-10, this rates a
-       * solid 11. - Hubbe
-       */
-      if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
-#endif
-
-#if defined(_AIX) && defined(__ia64)
-      /* getrlimit() on AIX 5L/IA64 Beta 3 reports 32MB by default,
-       * even though the stack is just 8MB.
-       */
-      if (lim.rlim_cur > 8*1024*1024) {
-        lim.rlim_cur = 8*1024*1024;
-      }
-#endif /* _AIX && __ia64 */
-
-#if STACK_DIRECTION < 0
-      Pike_interpreter.stack_top -= lim.rlim_cur;
-#else /* STACK_DIRECTION >= 0 */
-      Pike_interpreter.stack_top += lim.rlim_cur;
-#endif /* STACK_DIRECTION < 0 */
-
-#if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H) && !defined(PPC)
-      {
-	char ** bos_location;
-	void *handle;
-	/* damn this is ugly -Hubbe */
-	if((handle=dlopen(0, RTLD_LAZY)))
-	{
-	  bos_location=dlsym(handle,"__pthread_initial_thread_bos");
-
-	  if(bos_location && *bos_location &&
-	     (*bos_location - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
-	  {
-	    Pike_interpreter.stack_top=*bos_location;
-	  }
-
-	  dlclose(handle);
-	}
-      }
-#else
-#ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
-      {
-	extern char * __pthread_initial_thread_bos;
-	/* Linux glibc threads are limited to a 4 Mb stack
-	 * __pthread_initial_thread_bos is the actual limit
-	 */
-	
-	if(__pthread_initial_thread_bos && 
-	   (__pthread_initial_thread_bos - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
-	{
-	  Pike_interpreter.stack_top=__pthread_initial_thread_bos;
-	}
-      }
-#endif /* HAVE_PTHREAD_INITIAL_THREAD_BOS */
-#endif /* __linux__ && HAVE_DLOPEN && HAVE_DLFCN_H && !PPC*/
-
-#if STACK_DIRECTION < 0
-      Pike_interpreter.stack_top += 8192 * sizeof(char *);
-#else /* STACK_DIRECTION >= 0 */
-      Pike_interpreter.stack_top -= 8192 * sizeof(char *);
-#endif /* STACK_DIRECTION < 0 */
-
-
-#ifdef STACK_DEBUG
-      fprintf(stderr, "1: C-stack: 0x%08p - 0x%08p, direction:%d\n",
-	      &argv, Pike_interpreter.stack_top, STACK_DIRECTION);
-#endif /* STACK_DEBUG */
-    }
-  }
-#else /* !HAVE_GETRLIMIT || !RLIMIT_STACK */
-  /* 128 MB seems a bit extreme, most OS's seem to have their limit at ~8MB */
-  Pike_interpreter.stack_top += STACK_DIRECTION * (1024*1024 * 8 - 8192 * sizeof(char *));
-#ifdef STACK_DEBUG
-  fprintf(stderr, "2: C-stack: 0x%08p - 0x%08p, direction:%d\n",
-	  &argv, Pike_interpreter.stack_top, STACK_DIRECTION);
-#endif /* STACK_DEBUG */
-#endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
-
-#if 0
-#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-  {
-    struct rlimit lim;
-    long tmp;
-    if(!getrlimit(RLIMIT_NOFILE, &lim))
-    {
-#ifdef RLIM_INFINITY
-      if(lim.rlim_max == RLIM_INFINITY)
-	lim.rlim_max=MAX_OPEN_FILEDESCRIPTORS;
-#endif
-      tmp=MINIMUM(lim.rlim_max, MAX_OPEN_FILEDESCRIPTORS);
-      lim.rlim_cur=tmp;
-      setrlimit(RLIMIT_NOFILE, &lim);
-    }
-  }
-#endif
-#endif
-  
-  TRACE((stderr, "Init time...\n"));
-  
-  GETTIMEOFDAY(&current_time);
-
-  TRACE((stderr, "Init threads...\n"));
-
-  low_th_init();
-
-  TRACE((stderr, "Init strings...\n"));
-  
-  init_shared_string_table();
-
-  TRACE((stderr, "Init interpreter...\n"));
-
-  init_interpreter();
-
-  TRACE((stderr, "Init types...\n"));
-
-  init_types();
-
-  TRACE((stderr, "Init opcodes...\n"));
-
-  init_opcodes();
-
-  TRACE((stderr, "Init programs...\n"));
-
-  init_program();
-
-  TRACE((stderr, "Init objects...\n"));
-
-  init_object();
-}
-
-
-int pike_handle_error_in_main() {
-  int num;
-  if(throw_severity == THROW_EXIT)
+    if(throw_severity == THROW_EXIT)
     {
       num=throw_value.u.integer;
     }else{
@@ -798,12 +455,15 @@ int pike_handle_error_in_main() {
 	call_handle_error();
       num=10;
     }
-  return num;
-}
+  }else{
+    back.severity=THROW_EXIT;
 
-int pike_run_master(int argc, char **argv) {
-  int num;
-  struct array *a;
+    TRACE((stderr, "Init master...\n"));
+
+    master();
+    call_callback(& post_master_callbacks, 0);
+    free_callback_list(& post_master_callbacks);
+
     TRACE((stderr, "Call master->_main()...\n"));
 
     a=allocate_array_no_init(argc,0);
@@ -841,123 +501,13 @@ int pike_run_master(int argc, char **argv) {
     apply(master(),"_main",2);
     pop_stack();
     num=0;
-    return num;
-}
-
-void pike_init_master() {
-    TRACE((stderr, "Init master cookie...\n"));
-
-    /* Avoid duplicate entries... */
-    push_constant_text(MASTER_COOKIE1);
-    push_constant_text(MASTER_COOKIE2);
-    f_add(2);
-    low_add_constant("__master_cookie", Pike_sp-1);
-    pop_stack();
-
-    TRACE((stderr, "Init modules...\n"));
-
-    init_modules();
-
-#ifdef TEST_MULTISET
-    /* A C-level testsuite for the low level stuff in multisets. */
-    test_multiset();
-#endif
-
-    TRACE((stderr, "Init master...\n"));
-
-    master();
-    call_callback(& post_master_callbacks, 0);
-    free_callback_list(& post_master_callbacks);
-}
-
-int dbm_main(int argc, char **argv)
-{
-  int num;
-  struct array *a;
-
-  TRACE((stderr, "dbm_main()\n"));
-
-  pike_main_setup(argc, argv);
-
-  if(SETJMP(back))
-  {
-    num=pike_handle_error_in_main();
-  }else{
-    back.severity=THROW_EXIT;
-    pike_init_master();
-    num=pike_run_master(argc, argv);
   }
   UNSETJMP(back);
 
   TRACE((stderr, "Exit %d...\n", num));
-  
+
   pike_do_exit(num);
   return num; /* avoid warning */
-}
-
-#undef ATTRIBUTE
-#define ATTRIBUTE(X)
-
-DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
-{
-  call_callback(&exit_callbacks, NULL);
-  free_callback_list(&exit_callbacks);
-
-  exit_modules();
-
-#ifdef DEBUG_MALLOC
-  cleanup_memhdrs();
-  cleanup_debug_malloc();
-#endif
-
-
-#ifdef PROFILING
-  {
-    int q;
-    for(q=0;q<(long)NELEM(samples);q++)
-      if(samples[q])
-	fprintf(stderr,"STACK WAS %4d Kb %12u times\n",q-1,samples[q]);
-  }
-#endif
-
-#ifdef PIKE_DEBUG
-  /* For profiling */
-  exit_opcodes();
-#endif
-
-#ifdef INTERNAL_PROFILING
-  fprintf (stderr, "Evaluator callback calls: %lu\n", evaluator_callback_calls);
-#ifdef PIKE_THREADS
-  fprintf (stderr, "Thread yields: %lu\n", thread_yields);
-#endif
-  fprintf (stderr, "Main thread summary:\n");
-  debug_print_rusage (stderr);
-#endif
-
-  exit(num);
-}
-
-
-void low_init_main(void)
-{
-  void init_iterators(void);
-  void init_facetgroup(void);
-
-  init_cpp();
-  init_backend();
-  init_iterators();
-  init_pike_searching();
-  init_error();
-  init_pike_security();
-  th_init();
-  init_operators();
-
-  init_builtin();
-
-  init_builtin_efuns();
-  init_signals();
-  init_dynamic_load();
-  init_facetgroup();
 }
 
 void exit_main(void)
@@ -993,200 +543,3 @@ void init_main(void)
 {
 }
 
-void low_exit_main(void)
-{
-#ifdef DO_PIKE_CLEANUP
-  void exit_iterators(void);
-  void exit_facetgroup(void);
-
-  /* Clear various global references. */
-
-#ifdef AUTO_BIGNUM
-  exit_auto_bignum();
-#endif
-  exit_pike_searching();
-  exit_object();
-  exit_signals();
-  exit_builtin();
-  exit_cpp();
-  cleanup_interpret();
-  exit_builtin_constants();
-  cleanup_module_support();
-  exit_operators();
-  exit_iterators();
-  exit_facetgroup();
-  cleanup_program();
-  cleanup_compiler();
-  cleanup_error();
-  exit_backend();
-  cleanup_gc();
-  cleanup_pike_types();
-
-  /* This zaps Pike_interpreter.thread_state among other things, so
-   * THREADS_ALLOW/DISALLOW are NOPs beyond this point. */
-  th_cleanup();
-
-#ifdef SHARED_NODES
-  free(node_hash.table);
-#endif /* SHARED_NODES */
-
-  exit_pike_security();
-  free_svalue(& throw_value);
-  throw_value.type=T_INT;
-
-  do_gc(NULL, 1);
-
-  if (exit_with_cleanup)
-  {
-    int leak_found = 0;
-
-#ifdef _REENTRANT
-    if(count_pike_threads()>1)
-    {
-      fprintf(stderr,"Byte counting aborted, because all threads have not exited properly.\n");
-      exit_with_cleanup = 0;
-      return;
-    }
-#endif
-
-#ifdef DEBUG_MALLOC
-    search_all_memheaders_for_references();
-#endif
-
-    /* The use of markers below only works after a gc run where it
-     * hasn't freed anything. Since we've destructed all objects in
-     * exit_main, nothing should be left after the run above, so only
-     * one more run is necessary. */
-    gc_keep_markers = 1;
-    do_gc (NULL, 1);
-
-#define STATIC_ARRAYS {&empty_array, &weak_empty_array}
-
-#define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
-      struct TYPE *x;							\
-      for (x = START; x; x = x->next) {					\
-	struct marker *m = find_marker (x);				\
-	if (!m) {							\
-	  DO_IF_DEBUG (							\
-	    fprintf (stderr, "Didn't find gc marker as expected for:\n"); \
-	    describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
-	  );								\
-	}								\
-	else {								\
-	  int is_static = 0;						\
-	  static const struct TYPE *statics[] = STATICS;		\
-	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
-	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
-	    if (x == statics[i])					\
-	      is_static = 1;						\
-	  if (x->refs != m->refs + is_static) {				\
-	    if (!leak_found) {						\
-	      fputs ("Leak(s) found at exit:\n", stderr);		\
-	      leak_found = 1;						\
-	    }								\
-	    fprintf (stderr, NAME " got %d unaccounted references: ",	\
-		     x->refs - (m->refs + is_static));			\
-	    print_short_svalue (stderr, (union anything *) &x, T_TYPE);	\
-	    fputc ('\n', stderr);					\
-	    DO_IF_DMALLOC (debug_malloc_dump_references (x, 0, 1, 0));	\
-	  }								\
-	}								\
-      }									\
-    } while (0)
-
-    REPORT_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS, T_ARRAY, "Array");
-    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, {}, T_MULTISET, "Multiset");
-    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, {}, T_MAPPING, "Mapping");
-    REPORT_LINKED_LIST_LEAKS (program, first_program, {}, T_PROGRAM, "Program");
-    REPORT_LINKED_LIST_LEAKS (object, first_object, {}, T_OBJECT, "Object");
-
-#undef REPORT_LINKED_LIST_LEAKS
-
-    /* Just remove the extra external refs reported above and do
-     * another gc so that we don't report the blocks again in the low
-     * level dmalloc reports. */
-
-#if 1
-    /* It can be a good idea to disable this to leave the blocks
-     * around to be reported by an external memchecker like valgrind.
-     * Ideally we should only free the svalues inside these things but
-     * leave the blocks themselves. */
-
-#define ZAP_LINKED_LIST_LEAKS(TYPE, START, STATICS) do {		\
-      struct TYPE *x, *next;						\
-      for (x = START; x; x = next) {					\
-	struct marker *m = find_marker (x);				\
-	next = x->next;							\
-	if (m) {							\
-	  int is_static = 0;						\
-	  static const struct TYPE *statics[] = STATICS;		\
-	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
-	  INT32 refs;							\
-	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
-	    if (x == statics[i])					\
-	      is_static = 1;						\
-	  refs = x->refs;						\
-	  while (refs > m->refs + is_static) {				\
-	    DO_IF_DEBUG (m->flags |= GC_CLEANUP_FREED);			\
-	    PIKE_CONCAT(free_, TYPE) (x);				\
-	    refs--;							\
-	  }								\
-	}								\
-      }									\
-    } while (0)
-
-    ZAP_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS);
-    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, {});
-    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, {});
-    ZAP_LINKED_LIST_LEAKS (program, first_program, {});
-    ZAP_LINKED_LIST_LEAKS (object, first_object, {});
-
-#undef ZAP_LINKED_LIST_LEAKS
-
-#ifdef PIKE_DEBUG
-    /* If we stumble on the real refs whose refcounts we've zapped
-     * above we should try to handle it gracefully. */
-    gc_external_refs_zapped = 1;
-#endif
-
-#endif
-
-    do_gc (NULL, 1);
-
-    gc_keep_markers = 0;
-    exit_gc();
-
-#ifdef DEBUG_MALLOC
-    {
-      INT32 num, size;
-      count_memory_in_pike_types(&num, &size);
-      if (num)
-	fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
-      describe_all_types();
-    }
-#endif
-  }
-
-  destruct_objects_to_destruct_cb();
-
-  /* Now there are no arrays/objects/programs/anything left. */
-
-  really_clean_up_interpret();
-
-  cleanup_callbacks();
-  free_all_callable_blocks();
-  exit_destroy_called_mark_hash();
-
-  cleanup_pike_type_table();
-  cleanup_shared_string_table();
-
-  free_dynamic_load();
-  first_mapping=0;
-  free_all_mapping_blocks();
-  first_object=0;
-  free_all_object_blocks();
-  first_program=0;
-  free_all_program_blocks();
-  exit_multiset();
-#endif
-}
