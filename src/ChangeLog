@@ -1,3 +1,11 @@
+Wed Mar 12 00:53:13 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* module_support.c (va_get_args): %f didn't work before.
+	* modules/Sql.pmod/*: Renamed to lowercase to follow the new
+	naming-conventions.
+	* *.c: Fixed typos in several error-messages.
+	* Makefile.in: Now remakes a bit less.
+
 Mon Mar 10 16:58:06 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* docode.c (do_cond_jump): optimized || and &&
