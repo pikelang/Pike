@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.34 1999/07/29 16:47:34 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.35 2000/08/28 22:12:07 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -934,7 +934,7 @@ static void pipe_output(INT32 args)
   else
     o->pos=THIS->pos;
 
-  ref_push_object(obj);
+  push_object(obj); /* Ok, David, this is probably correct, but I dare you to explain why :) */
   apply(o->obj,"set_id",1);
   pop_stack();
 
