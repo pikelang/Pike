@@ -1,6 +1,7 @@
-pike7.4 (7.4.117-1) unstable; urgency=low
+pike7.4 (7.4.117-1) unstable; urgency=medium
 
-  * Changed the libxpm build-dep from libxpm4-dev to libxpm-dev
+  * Changed the build-dep from libxpm4-dev to libxpm-dev
+  * Changed the build-dep from libtiff3g-dev to libtiff4-dev
   * The latest cvs snapshot
 
  -- Marek Habersack <grendel@debian.org>  Sun, 25 Jul 2004 02:20:34 +0200
