@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.151 2001/04/07 00:54:47 nilsson Exp $
+ * $Id: master.pike.in,v 1.152 2001/04/09 11:02:18 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -1995,10 +1995,20 @@ string describe_program(program p)
     return trim_file_name(s);
   }
 
-  if(functionp(p))
-    if(mixed tmp=function_object(p))
+  if(mixed tmp=function_object(p))
+  {
+    if(objectp(tmp))
+    {
       if(s=describe_program(object_program(tmp)))
 	return s+"."+function_name(p);
+    }
+    if(programp(tmp))
+    {
+      if(s=describe_program(tmp))
+	return s+"."+function_name(p);
+    }
+  }
+
 
   if(s=_static_modules.Builtin()->program_defined(p))
     return EXPLODE_PATH(s)[-1];
