@@ -24,7 +24,7 @@ void set( GDK.Image image, ?GDK.Bitmap mask );
 //! </p>
 
 mapping(string:object) get()
-//! returns ([ "image":GDK.Image img, "mask":GDK.Bitmap mask ])
+//! Returns ([ "image":GDK.Image img, "mask":GDK.Bitmap mask ])
 {
   GdkImage *v;
   GdkBitmap *m;
