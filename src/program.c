@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.145 1999/09/16 03:54:23 hubbe Exp $");
+RCSID("$Id: program.c,v 1.146 1999/09/16 04:23:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1600,7 +1600,7 @@ int low_define_variable(struct pike_string *name,
   copy_shared_string(dummy.type, type);
   dummy.identifier_flags = 0;
   dummy.run_time_type=run_time_type;
-  dummy.func.offset=offset;
+  dummy.func.offset=offset - new_program->inherits[0].storage_offset;
 #ifdef PROFILING
   dummy.self_time=0;
   dummy.num_calls=0;
