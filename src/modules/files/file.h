@@ -1,6 +1,17 @@
 #ifndef FILE_H
 #define FILE_H
 
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
+#ifdef HAVE_ARPA_INET_H
+#ifndef ARPA_INET_H
+#include <arpa/inet.h>
+#define ARPA_INET_H
+#endif
+#endif
+
 struct file
 {
   int fd;
@@ -13,7 +24,7 @@ struct file
 
 /* Prototypes begin here */
 struct object *file_make_object_from_fd(int fd, int mode);
-void file_setbuf(int fd, int bufcmd);
+void get_inet_addr(struct sockaddr_in *addr,char *name);
 void exit_files();
 void init_files_programs();
 /* Prototypes end here */

@@ -34,16 +34,12 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
+#endif
+
+#ifdef HAVE_NETDB_H
+#include "netdb.h"
 #endif
 
 #define THIS ((struct file *)(fp->current_storage))
@@ -844,7 +840,7 @@ static void file_dup2(INT32 args)
 
 static void file_open_socket(INT32 args)
 {
-  int fd, tmp;
+  int fd,tmp;
 
   do_close(THIS, FILE_READ | FILE_WRITE);
   fd=socket(AF_INET, SOCK_STREAM, 0);
@@ -890,20 +886,9 @@ static void file_connect(INT32 args)
   if(THIS->fd < 0)
     error("file->connect(): File not open for connect()\n");
 
-  addr.sin_family = AF_INET;
+
+  get_inet_addr(&addr, sp[-args].u.string->str);
   addr.sin_port = htons(((u_short)sp[1-args].u.integer));
-
-  if (inet_addr(sp[-args].u.string->str) == -1)
-     error("Malformed ip number.\n");
-  addr.sin_addr.s_addr = inet_addr(sp[-args].u.string->str);
-
-  if((long)addr.sin_addr.s_addr == -1)
-  {
-    THIS->errno=EINVAL;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
 
   if(connect(THIS->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
   {
@@ -916,6 +901,35 @@ static void file_connect(INT32 args)
     THIS->errno=0;
     pop_n_elems(args);
     push_int(1);
+  }
+}
+
+void get_inet_addr(struct sockaddr_in *addr,char *name)
+{
+  MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
+
+  addr->sin_family = AF_INET;
+  if(!strcmp(name,"*"))
+  {
+    addr->sin_addr.s_addr=htonl(INADDR_ANY);
+  }
+  else if(name[0]>='0' && name[0]<='9')
+  {
+    if (inet_addr(name) == -1)
+      error("Malformed ip number.\n");
+
+    addr->sin_addr.s_addr = inet_addr(name);
+  }
+  else
+  {
+    struct hostent *ret;
+    ret=gethostbyname(name);
+    if(!ret)
+      error("Invalid address '%s'\n",name);
+
+    MEMCPY((char *)&(addr->sin_addr),
+	   (char *)ret->h_addr_list[0],
+	   ret->h_length);
   }
 }
 

@@ -20,15 +20,6 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-
-#ifndef ARPA_INET_H
-#include <arpa/inet.h>
-#define ARPA_INET_H
-#endif
-
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
 #endif
@@ -172,30 +163,21 @@ static void port_bind(INT32 args)
     push_int(0);
     return;
   }
-
   set_close_on_exec(fd,1);
-
-
-  MEMSET((char *)&addr,0,sizeof(addr));
-
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
-
+  
   if(args > 2 && sp[2-args].type==T_STRING)
   {
-    if (inet_addr(sp[2-args].u.string->str) == -1)
-      error("Malformed ip number.\n");
-
-    addr.sin_addr.s_addr = inet_addr(sp[2-args].u.string->str);
+    get_inet_addr(&addr, sp[2-args].u.string->str);
   }else{
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
   }
-  
+
+  addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+
   if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
      listen(fd, 16384) < 0 )
   {
     THIS->errno=errno;
-    printf("Error opening socket: %s\n", strerror(errno));
     close(fd);
     pop_n_elems(args);
     push_int(0);
@@ -254,7 +236,7 @@ extern struct program *file_program;
 
 static void port_accept(INT32 args)
 {
-  int fd, tmp;
+  int fd,tmp;
   int len=0;
   struct object *o;
 
@@ -277,7 +259,7 @@ static void port_accept(INT32 args)
     close(fd);
     return;
   }
-  
+
   tmp=1;
   setsockopt(fd,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
 
