@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.163 2001/07/01 21:05:08 mast Exp $");
+RCSID("$Id: gc.c,v 1.164 2001/07/01 23:44:40 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1766,7 +1766,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 #ifdef PIKE_DEBUG
 	if (p == gc_rec_last && !nonstrong_ref) {
 	  fprintf(stderr, "Only strong links in cycle:\n");
-	  for (p = NEXT(m->frame);; p = NEXT(p)) {
+	  for (p = m->frame;; p = NEXT(p)) {
 	    describe(p->data);
 	    locate_references(p->data);
 	    if (p == gc_rec_last) break;
