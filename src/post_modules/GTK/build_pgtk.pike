@@ -222,6 +222,16 @@ void emit_program_block(mapping block, string cl)
      case "gt":
        emit_function_def("`>",cfun,block[f],1);
        break;
+     case "add":
+       emit_function_def("`+",cfun,block[f],1);
+       break;
+     case "_index":
+       emit_function_def("`->",cfun,block[f],1);
+       emit_function_def("`[]",cfun,block[f],1);
+       continue;
+//      case "index":
+//        emit_function_def("`[]",cfun,block[f],1);
+       break;
     }
     emit_function_def(f,cfun,block[f],0);
   }
@@ -1571,13 +1581,15 @@ int main(int argc, array argv)
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
 
-    default_sprintf +=
-                    "  if( fp->current_object->prog == pgtk_"+w+"_program )\n"
-                    "  {\n"
-                    "    push_string( make_shared_binary_string(_data+"+
-                    data_offset(classname(w))+", "+strlen(classname(w))+"));\n"
-                    "    return;\n"
-                    "  }\n\n";
+    if( q->_sprintf )
+      default_sprintf +=
+                     "  if( fp->current_object->prog == pgtk_"+w+"_program )\n"
+                     "  {\n"
+                     "    push_string( make_shared_binary_string(_data+"+
+                     data_offset(classname(w)+"()")+", "+
+                     strlen(classname(w)+"()")+"));\n"
+                     "    return;\n"
+                     "  }\n\n";
 
     string flop = replace(upper_case(w),
 			  ({ "GDK_", "GDK" }),
@@ -1600,7 +1612,8 @@ int main(int argc, array argv)
     "(((GtkTypeClass*) (type_class))->type == (otype)))\n";
 
   emit_nl( default_sprintf );
-  emit_nl( "  push_text( \"GTK.Object()\" );\n}\n\n" );
+  emit_nl( "  push_string( make_shared_binary_string(_data+"+
+           data_offset("GTK.Object()" )+", "+strlen("GTK.Object()")+") );\n}\n\n" );
 
   emit_nl("\nstruct program *pgtk_type_to_program(GtkWidget *widget)\n{\n");
   emit_nl(type_switch);

@@ -27,6 +27,7 @@ struct program *pgtk_type_to_program(GtkWidget *widget);
 void my_pop_n_elems( int n );
 void my_ref_push_object( struct object *o );
 void pgtk_return_this( int n );
+void push_atom( GdkAtom a );
 
 void pgtk_verify_setup();
 void pgtk_verify_inited();
