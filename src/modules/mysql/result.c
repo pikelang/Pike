@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.7 1997/01/08 15:26:22 grubba Exp $
+ * $Id: result.c,v 1.8 1997/01/08 15:36:05 grubba Exp $
  *
  * mysql query result
  *
@@ -62,7 +62,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.7 1997/01/08 15:26:22 grubba Exp $");
+RCSID("$Id: result.c,v 1.8 1997/01/08 15:36:05 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -297,25 +297,15 @@ static void f_seek(INT32 args)
 /* int|array(string|int) fetch_row() */
 static void f_fetch_row(INT32 args)
 {
-  /* Based on Mysql.xs
-   */
+  int num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
   MYSQL_ROW row = mysql_fetch_row(PIKE_MYSQL_RES->result);
 
   pop_n_elems(args);
 
-  if (row) {
-    int num_fields, i;
+  if ((num_fields > 0) && row) {
+    int i;
 
-    /* Mysql.xs does a mysql_field_seek(result, 0) here,
-     * but that seems to be a NOOP.
-     */
-    if ((num_fields = mysql_num_fields(PIKE_MYSQL_RES->result)) <= 0) {
-      num_fields = 1;
-    }
     for (i=0; i < num_fields; i++) {
-      /* Mysql.xs does a mysql_fetch_field(result) here,
-       * but throws away the result.
-       */
       if (row[i]) {
 	push_text(row[i]);
       } else {
