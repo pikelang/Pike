@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.78 2004/08/08 14:22:53 js Exp $
+// $Id: MySQL.pike,v 1.79 2004/08/19 11:35:21 noring Exp $
 
 inherit .Base;
 
@@ -565,7 +565,7 @@ void add_links(Standards.URI|string uri,
 	       void|string language,
 	       array(Standards.URI|string) links)
 {
-  if(!sizeof(links))
+  if(!links || !sizeof(links))
     return;
   
   int doc_id = get_document_id((string)uri, language);
