@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.577 2002/12/11 21:54:40 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.578 2002/12/18 20:45:38 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9274,6 +9274,15 @@ array start()
 
 return Fnord()->start()->wait()-({ -1 });
 ]],[[ ({}) ]])
+
+test_do([[
+  object proc = Process.create_process (({"/bin/sleep", "99999"}));
+  array threads = allocate (10, Thread.thread_create) (
+    lambda (object proc) {proc->wait();}, proc);
+  sleep (1);
+  proc->kill (9);
+  return threads->wait() - ({-1});
+]], ({}))
 ]])
 
 test_do([[
