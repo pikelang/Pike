@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.7 2002/11/25 14:52:40 grubba Exp $
+// $Id: module.pmod.in,v 1.8 2002/11/25 15:47:34 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -98,9 +98,8 @@ class File {
       return ::read(length);
 
     String.Buffer buf = String.Buffer();
+    string data;
     do {
-      string data;
-
       if (!(data = ::read(1024*64))) break;
       buf->add(data);
     } while (sizeof(data));
