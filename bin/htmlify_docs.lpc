@@ -231,6 +231,12 @@ string mkdocument(string s,string title)
 	  "</html>");
 }
 
+string short(string s)
+{
+  return short_descs[s] ? " - "+short_descs[s] : "";
+}
+
+
 inherit "/precompiled/regexp":is_example;
 
 list(string) indexes_done=(<>);
@@ -292,11 +298,11 @@ string mkindex(string topic, int head)
     }
 
     head="<a name="+topic+">";
-    head+="<b>"+capitalize(b)+"</a>";
-    head+=short(b);
+    head+="<b>"+capitalize(topic)+"</a>";
+    head+=short(topic);
     head+="</b>\n";
     ret="<ul>\n";
-    foreach(keywords[b],a)
+    foreach(keywords[topic],a)
     {
       a=html_quote(a);
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+ short(a) +"\n";
@@ -310,6 +316,8 @@ string mkindex(string topic, int head)
   return ret;
 }
 
+int writepages;
+
 /* Convert a page */
 string convert_page(string path, string fname)
 {
@@ -321,12 +329,17 @@ string convert_page(string path, string fname)
 
   cont=read_bytes(path);
 
+//  perror("foo: "+path[strlen(path)-5..]+".\n");
   if(sscanf(cont,"NAME\n\t%s - %s\n",name,short))
   {
     int partno;
 
     cont=html_quote(cont);
+    path=fippel_path(path);
+
     short_descs[html_quote(name)]=short;
+    pages[html_quote(name)]=path;
+
 
     string *parts=explode(cont,"============================================================================\n");
     for(partno=0;partno<sizeof(parts);partno++)
@@ -366,6 +379,11 @@ string convert_page(string path, string fname)
 	  if(sscanf(rest,"\t%s - %s",part_name,b)!=2)
 	    perror("Warning NAME section broken!\n");
 	  rest="\t<tt>"+part_name+"</tt> - "+b;
+
+	  if(partno)
+	  {
+	    subpages[fname+"-&gt;"+part_name]=path+"#"+part_name;
+	  }
 
 	case "DESCRIPTION":
 	case "NOTA BENE":
@@ -407,6 +425,7 @@ string convert_page(string path, string fname)
 	    }else if(subpages[fname+"-&gt;"+a]){
 	      b+=({ "<a href="+subpages[name+"-&gt;"+a]+">" + a + "</a>" });
 	    }else{
+	      if(writepages)
 	      perror("Warning, unlinked SEE ALSO: "+a+"\n");
 	      b+=({ tmp });
 	    }
@@ -424,6 +443,7 @@ string convert_page(string path, string fname)
 	case "DIRECTIVE":
 	case "PREPROCESSOR DIRECTIVES":
 	  rest="<tt>"+magic(rest,1)+"</tt>";
+	  break;
 
 	case "RELATED FUNCTIONS":
 	  a=name;
@@ -451,6 +471,8 @@ string convert_page(string path, string fname)
     string title;
     int section;
 
+    pages[(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
+
     cont=replace(cont,"$version",version());
     cont=html_quote(cont);
     sections=explode(cont,"\n\n");
@@ -459,9 +481,9 @@ string convert_page(string path, string fname)
     {
       string tmp,pre,a;
       tmp=sections[section];
-      sscanf(tmp,"%[\t ]",per);
+      sscanf(tmp,"%[\t ]",pre);
       
-      switch(space)
+      switch(pre)
       {
       case "":
 	tmp="<h1><center>"+tmp+"</center></h1>";
@@ -476,7 +498,7 @@ string convert_page(string path, string fname)
       case "  ":
 	sscanf(tmp,"  %s",tmp);
 	tmp=replace(tmp,"\n  ","\n");
-	tmp=more_magic(tmp);
+	tmp=more_magic(tmp,0);
 	break;
 	
       case "\t":
@@ -484,7 +506,9 @@ string convert_page(string path, string fname)
 	switch(pre)
 	{
 	case "KEYWORD_INDEX":
+	  sscanf(a,"%s\n",a);
 	  tmp=mkindex(a, 1);
+	  break;
 
 	default:
 	  perror("Unknown directive: "+pre+".\n");
@@ -498,6 +522,8 @@ string convert_page(string path, string fname)
   }
   else if(path[strlen(path)-5..]==".html")
   {
+    pages[(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
+
     if(sscanf(cont,"<title>%s</title>",part))
       short_descs[(path/"/")[-1]]=part;
     output=cont;
@@ -507,6 +533,8 @@ string convert_page(string path, string fname)
     /** Hmm, this looks like an example file to me... */
     string line,tmp;
     int pre,p;
+
+    pages[(path/"/")[-1]]=fippel_path(path);
 
     if(sscanf(cont,"%*[0-9.] %s\n",part)==2)
       short_descs[(path/"/")[-1]]=part;
@@ -546,33 +574,47 @@ string convert_page(string path, string fname)
     output=mkdocument(output,"uLPC: "+
 		      replace(explode(fname,"/")[-1],"_"," "));
   }
+  else
+  {
+    if(writepages)
+    {
+      string tmp;
+      int l, i;
+      
+      foreach(cont/"\n", tmp)
+      {
+	if(is_example::match(tmp+"\n"))
+	{
+	  l++;
+	}else{
+	  i++;
+	}
+      }
+      
+      if(l > i*2)
+      {
+	l=0;
+	foreach(cont/"\n", tmp)
+	{
+	  l++;
+	  if(!is_example::match(tmp+"\n"))
+	  {
+	    perror(path+":"+l+": not on example form.\n");
+	  }
+	}
+      }
+      perror("Warning: not converting "+path+".\n");
+    }
+    output="";
+  }
   return output;
 }
 
 
-string short(string s)
-{
-  return short_descs[s] ? " - "+short_descs[s] : "";
-}
-
-string convert_dot_bmml(string path, string fname)
-{
-  string output;
-  
-  output="";
-  
-  if(path[strlen(path)-5..]==".bmml")
-  {
-  }
-  return 0;
-}
-
-int writepages;
-
 void scanfiles(string path, string fname)
 {
   string nf,np;
-  nf=convert(path, fname);
+  nf=convert_page(path, fname);
 
   if(nf && strlen(nf) && writepages)
   {
@@ -583,71 +625,6 @@ void scanfiles(string path, string fname)
     write_file(np,nf);
   }
 }
-
-/*
- * Pre-read all files and sort out where to link it to
- */
-void scanlinks(string path, string fname)
-{
-  string cont,name;
-  cont=read_bytes(path);
-  cont=html_quote(cont);
-
-  if(sscanf(cont,"NAME\n\t%s -",name))
-  {
-    path=fippel_path(path);
-    pages[name]=path;
-
-    int e;
-    string *parts=explode(cont,"============================================================================\n");
-    for(e=1;e<sizeof(parts);e++)
-    {
-      string part_name;
-      if(sscanf(parts[e],"NAME\n\t%s -",part_name))
-      {
-	subpages[fname+"-&gt;"+part_name]=path+"#"+part_name;
-      }
-    }
-  }
-  else if(path[strlen(path)-5..]==".html")
-  {
-    pages[(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
-  }
-  else if(is_example::match(cont))
-  {
-    pages[(path/"/")[-1]]=fippel_path(path);
-  }
-  else
-  {
-    string tmp;
-    int l, i;
-
-    foreach(cont/"\n", tmp)
-    {
-      if(is_example::match(tmp+"\n"))
-      {
-	l++;
-      }else{
-	i++;
-      }
-    }
-
-    if(l > i*2)
-    {
-      l=0;
-      foreach(cont/"\n", tmp)
-      {
-	l++;
-	if(!is_example::match(tmp+"\n"))
-	{
-	  perror(path+":"+l+": not on example form.\n");
-	}
-      }
-    }
-    perror("Warning: not converting "+path+".\n");
-  }
-}
-
 
 /** Traverse directory **/
 void traversedir(string path,function fun)
@@ -686,16 +663,14 @@ int main(int argc, string *argv)
 
   is_example::create("^(" LINE ")+$");
 
-  write("Scanning links.\n");
   new_path=combine_path(getcwd(),argv[2]);
   cd(argv[1]);
-  traversedir(".",scanlinks);
 
-  write("Scanning pages.\n");
+  write("Scanning pages for links and keywords.\n");
   writepages=0;
   traversedir(".",scanfiles);
 
-  write("Writing html.\n");
+  write("Writing html files.\n");
   writepages=0;
   traversedir(".",scanfiles);
 
