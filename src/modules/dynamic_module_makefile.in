@@ -1,9 +1,12 @@
 PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" $(MODULE_MAKE_FLAGS)
 
-all: module.@SO@ dummy
+all: subdirs module.@SO@ dummy
+
+subdirs:
+	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; fi ; done
 
 dummy:	$(DUMMY) linker_options modlist_headers modlist_segment
 	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so
@@ -42,7 +45,7 @@ verbose_verify: module_testsuite
 
 gdb_verify: module_testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -DNOT_INSTALLED -M.. -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
+	@echo >>.gdbinit run -DNOT_INSTALLED -m ../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
 	gdb ../../pike
 	@rm .gdbinit
 

@@ -7,16 +7,8 @@ MODULE_SUBDIRS=lib
 @SET_MAKE@
 
 MODULE_CPPFLAGS= -I$(SRCDIR)/include -DPIKE
+MODULE_MAKE_FLAGS="EXTRA_CPP_FLAGS=-DPIKE -I$(SRCDIR)/../.. -I../../.."
 
 @dynamic_module_makefile@
-
-# Create library of algorithms
-lib/algorithms.a: FORCE
-	cd lib; $(MAKE) \
-		"CC=$(CC)" \
-                  "EXTRA_CPP_FLAGS=-DPIKE -g -I$(SRCDIR)/../.. -I../../.." \
-	          "EXTRA_CFLAGS= $(CFLAGS)" algorithms.a
-
-FORCE:
 
 @dependencies@
