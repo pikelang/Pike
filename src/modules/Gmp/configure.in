@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.42 2004/09/26 12:56:08 marcus Exp $
+# $Id: configure.in,v 1.43 2004/09/26 13:35:58 marcus Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -238,42 +238,13 @@ with the option --without-bignums instead.
   CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
   CHECK_GMP_FUNC(mpz_fits_ulong_p, [mpz_t a; mpz_fits_ulong_p (a)])
 
-  AC_MSG_CHECKING([size of mp_limb_t])
-  AC_CACHE_VAL([pike_cv_sizeof_mp_limb_t], [
-    rm -f confdefs.out.2 2>/dev/null
-    AC_TRY_RUN([
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
+  echo >>confdefs.h '
 #ifdef HAVE_GMP2_GMP_H
 #include <gmp2/gmp.h>
 #elif defined (HAVE_GMP_H)
 #include <gmp.h>
-#endif
-
-#include <stdio.h>
-
-int main()
-{
-  FILE *f = fopen ("confdefs.out.2", "w");
-  if (!f) return 1;
-  fprintf (f, "%d", sizeof (mp_limb_t));
-  fclose (f);
-  return 0;
-}],
-      [pike_cv_sizeof_mp_limb_t=`cat confdefs.out.2`
-       rm -f confdefs.out.2 2>/dev/null],
-      [pike_cv_sizeof_mp_limb_t=0],
-      [pike_cv_sizeof_mp_limb_t=0])
-  ])
-  AC_MSG_RESULT([$pike_cv_sizeof_mp_limb_t])
-  AC_DEFINE_UNQUOTED(SIZEOF_MP_LIMB_T, $pike_cv_sizeof_mp_limb_t)
+#endif'
+  AC_CHECK_SIZEOF(mp_limb_t, 0)
 
   AC_MSG_CHECKING([if mpz_getlimbn works])
   AC_CACHE_VAL([pike_cv_mpz_getlimbn_works], [
