@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.167 1998/03/20 22:32:37 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.168 1998/03/22 03:20:31 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -87,20 +87,22 @@ export REALCC SMARTLINK
 
 
 AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
-AC_ARG_WITH(gdbm,      [  --without-gdbm         no GNU database manager support ])
-AC_ARG_WITH(gmp,       [  --without-gmp          no Support bignums])
-AC_ARG_WITH(readline,  [  --without-readline     no support for command line editing])
-AC_ARG_WITH(debug,     [  --without-debug        disable run debugging],[],[with_debug=])
-AC_ARG_WITH(rtldebug,  [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
-AC_ARG_WITH(cdebug,    [  --without-cdebug       disable -g],[],[with_cdebug=])
-AC_ARG_WITH(threads,   [  --without-threads      no threads support],[],[with_threads=yes])
-AC_ARG_WITH(zlib,      [  --without-zlib         no gz compression support],[],[with_zlib=yes])
-AC_ARG_WITH(ssleay,    [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
-AC_ARG_WITH(mysql,     [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
-AC_ARG_WITH(dmalloc,   [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC)],[])
-AC_ARG_WITH(profiling, [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
-AC_ARG_WITH(poll,      [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
-AC_ARG_WITH(max-fd,    [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
+AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for inculude files.])
+AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
+AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
+AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
+AC_ARG_WITH(readline,    [  --without-readline     no support for command line editing])
+AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
+AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
+AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[with_cdebug=])
+AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_threads=yes])
+AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
+AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC)],[])
+AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
+AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
+AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
 
 #
 # Allow --with(out)-debug to toggle both cdebug and rtldebug, but
@@ -371,12 +373,12 @@ if test x$pike_cv_sys_os != xWindows_NT ; then
 
 echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
-  for d in `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"` /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+  for d in `echo ${with_include_path} | sed 's/:/ /g'` `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"`/include /usr/local/include /sw/local/include /usr/gnu/include /opt/gnu/include /sw/gnu/include /sw/include /usr/freeware/include
   do
-    AC_MSG_CHECKING($d/include)
-    if test -d "$d/include/." ; then
+    AC_MSG_CHECKING($d)
+    if test -d "$d/." ; then
       AC_MSG_RESULT(added)
-      CPPFLAGS="${CPPFLAGS} -I$d/include"
+      CPPFLAGS="${CPPFLAGS} -I$d"
     else
       AC_MSG_RESULT(no)
     fi
@@ -387,12 +389,12 @@ fi
 
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
-  for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+  for d in `echo ${with_lib_path} | sed 's/:/ /g'` `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` /usr/local/lib /sw/local/lib /usr/gnu/lib /opt/gnu/lib /sw/gnu/lib /sw/lib /usr/freeware/lib
   do
-    AC_MSG_CHECKING($d/lib)
-    if test -d "$d/lib/." ; then
+    AC_MSG_CHECKING($d)
+    if test -d "$d/." ; then
       AC_MSG_RESULT(added)
-      LDFLAGS="${LDFLAGS} -R$d/lib -L$d/lib"
+      LDFLAGS="${LDFLAGS} -R$d -L$d"
     else
       AC_MSG_RESULT(no)
     fi
@@ -654,8 +656,8 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
-sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h grp.h pwd.h \
-passwd.h group.h winsock2.h signal.h)
+sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h grp.h \
+pwd.h passwd.h group.h winsock2.h signal.h sys/file.h)
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)

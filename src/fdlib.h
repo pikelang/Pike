@@ -20,6 +20,10 @@
 #include <sys/stat.h>
 #endif
 
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
+#endif
+
 
 #define fd_INTERPROCESSABLE   1
 #define fd_CAN_NONBLOCK       2
