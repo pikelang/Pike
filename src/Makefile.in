@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.371 2003/11/11 10:33:33 grubba Exp $
+# $Id: Makefile.in,v 1.372 2003/11/13 00:25:49 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -419,40 +419,40 @@ install_interactive: pike tools autodoc.xml
 # tidy up a bit
 tidy:
 	-rm -f *.fail *.o *.obj *.pp *.protos core y.output y.tab.c y.tab.h
-	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite dynloadtest*
+	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ dynloadtest*
+	-rm testsuite testsuite.tmp testsuite_test.pike testsuite_test_dir.pmod
 	-find lib -type f -name \*.o | xargs rm -f
 
 # make clean
-clean: tidy
-	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
-	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) clean )
+clean_here: tidy doc_clean
 	-( cd tlib; find . -name testsuite | xargs rm )
-	-rm -rf test-install test-pike testsuite_test_dir.pmod
-	-rm testsuite_test.pike testsuite.tmp
-	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
-	-rm -f hilfe rsif master.pike compiler-warnings
+	-rm -f confdefs.h conftest.*
+	-rm -rf test-install test-pike
+	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
+	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
+	-rm -f interpreter_debug.h lexer?.h
 	-rm -f import-stamp modules-stamp master-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
+clean: clean_here
+	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
+	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) clean )
+
 # make _really_ clean
-spotless: clean
+spotless: clean_here
+	-( cd modules; $(MAKE) $(MAKE_FLAGS) spotless )
+	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) spotless )
 	-(cd $(SRCDIR); find . -type f -name '*.h.in' -print) | \
 	  sed -e 's/\.in$$//' | xargs rm -f
-	find . -type f '(' -name 'Makefile' -o -name '*~' -o -name '.*~' -o \
-	  -name core -o -name '.nfs*' -name '#*#' -o -name '.pure' -o \
-	  -name 'conftest.*' -o -name 'stamp-h' ')' -exec rm -f \{\} \;
-	-rm -f lexical.c mon.out *.ln config.status
-	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/\#*\#
-	-rm -f pike pike.old l.outa*
-	-rm -f modules/*/testsuite
-	-rm -f modules/static_module_makefile modules/dynamic_module_makefile
-	-rm -f precompile.sh precompile.sh-stamp
-	-rm -rf lib
+	-rm -f Makefile config.* make_variables specs pike.syms
+	-rm -f core core.* .pure stamp-h
+	-rm -f lexical.c mon.out *.ln
+	-rm -f pike pike.old l.outa* num_files_to_install
+	-rm -f precompile.sh precompile.sh-stamp smartlink
+	-rm -rf tlib lib precompile
 
 distclean: spotless
-	find . -type f '(' -name 'config.log' -o -name 'config.status' -o \
-	  -name 'config.cache' ')' -exec rm -f \{\} \;
 
 cvsclean: distclean
 	( for d in `cd $(SRCDIR) && find . -type d -print`; do \
@@ -671,6 +671,10 @@ doc_build/src/post_modules/GTK/refdoc/images: doc_build/src
 	  mkdir doc_build/src/post_modules/GTK/refdoc
 	@test -d doc_build/src/post_modules/GTK/refdoc/images || \
 	  mkdir doc_build/src/post_modules/GTK/refdoc/images
+
+doc_clean:
+	-rm -f onepage.xml traditional.xml modref.xml autodoc.xml resolution.log
+	-rm -rf doc_build
 
 
 pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(SRCDIR)/builtin_functions.c

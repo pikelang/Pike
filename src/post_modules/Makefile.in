@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 2003/05/09 15:45:39 grubba Exp $
+# $Id: Makefile.in,v 1.12 2003/11/13 00:25:49 mast Exp $
 
 @make_variables@
 
@@ -81,13 +81,24 @@ install:
 	  fi; \
 	done
 
-clean:
+clean_here:
+	-rm -f linker_options modlist.h modlist_headers.h
+
+clean: clean_here
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; \
 	  fi; \
 	done
-	-rm -f linker_options modlist.h modlist_headers.h
+
+spotless: clean_here
+	-rm -f config.cache config.log config.status Makefile make_variables conftest.*
+	-rm -f common_module_makefile dynamic_module_makefile static_module_makefile
+	@for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) spotless ) ; \
+	  fi; \
+	done
 
 verify:
 	@for a in $(MODULES) no ; do \
