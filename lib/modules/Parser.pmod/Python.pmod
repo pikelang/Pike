@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Python.pmod,v 1.1 2002/06/12 19:41:16 nilsson Exp $
+// $Id: Python.pmod,v 1.2 2002/07/26 22:59:14 nilsson Exp $
 
 //! Returns the provided string with Python code as
 //! an array with tokens.
@@ -100,20 +100,30 @@ array(string) split(string data) {
 
     case '\'':
       if( data[pos+1]=='\'' && data[pos+2]=='\'' ) {
-	while( data[++pos]!='\'' && data[pos+1]!='\'' && data[pos+2]!='\'' )
+	pos += 2;
+	while( !(data[++pos]=='\'' && data[pos+1]=='\'' && data[pos+2]=='\'') )
 	  if( data[pos]=='\\' ) pos++;
+	pos += 2;
       }
-      while( data[++pos]!='\'' )
-	if( data[pos]=='\\' ) pos++;
+      else
+	while( data[++pos]!='\'' )
+	  if( data[pos]=='\\' ) pos++;
+
+      pos++;
       break;
 
     case '"':
       if( data[pos+1]=='\"' && data[pos+2]=='\"' ) {
-	while( data[++pos]!='\"' && data[pos+1]!='\"' && data[pos+2]!='\"' )
+	pos += 2;
+	while( !(data[++pos]=='\"' && data[pos+1]=='\"' && data[pos+2]=='\"') )
 	  if( data[pos]=='\\' ) pos++;
+	pos += 2;
       }
-      while( data[++pos]!='\"' )
-	if( data[pos]=='\\' ) pos++;
+      else
+	while( data[++pos]!='\"' )
+	  if( data[pos]=='\\' ) pos++;
+
+      pos++;
       break;
 
     case '<': case '>':
