@@ -101,7 +101,7 @@ esac
 #
 
 case "$SCRIPT" in
-  /*)
+  /*|./*)
     if test -f "$SCRIPT"; then :; else
       echo Script "$SCRIPT" not found.
       exit 1
@@ -111,6 +111,7 @@ case "$SCRIPT" in
     if test -f ./$SCRIPT ; then
       :
     else
+      rm ./$SCRIPT 2>/dev/null
       if ln -s "$TMP_BINDIR/$SCRIPT" ./$SCRIPT; then :; else
     	# We might be on a filesystem that doesn't support symlinks (eg FAT).
     	echo "Trying copying instead..."
@@ -124,10 +125,22 @@ esac
 if test -f ./C.pmod ; then
   :
 else
+  rm C.pmod 2>/dev/null
   if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" ./C.pmod; then :; else
     # We might be on a filesystem that doesn't support symlinks (eg FAT).
     echo "Trying copying instead..."
     cp "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" ./C.pmod
+  fi
+fi
+
+if test -f ./Pike.pmod ; then
+  :
+else
+  rm Pike.pmod 2>/dev/null
+  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" ./Pike.pmod; then :; else
+    # We might be on a filesystem that doesn't support symlinks (eg FAT).
+    echo "Trying copying instead..."
+    cp "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" ./Pike.pmod
   fi
 fi
 
