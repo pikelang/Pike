@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.30 1999/06/08 15:47:58 mirar Exp $
+ * $Id: svalue.h,v 1.31 1999/06/09 20:51:44 mirar Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -242,6 +242,7 @@ do{ \
 
 #define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(--*(_s->u.refs) <=0) really_free_svalue(_s); } }while(0)
 #define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(--*(_s->refs) <= 0) really_free_short_svalue(_s,_t); }while(0)
+#define add_ref_svalue(X) do { struct svalue *_tmp=(X); check_type(_tmp->type); check_refs(_tmp); if(_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); _tmp->u.refs[0]++; } }while(0)
 #define assign_svalue_no_free(X,Y) do { struct svalue _tmp, *_to=(X), *_from=(Y); check_type(_from->type); check_refs(_from);  *_to=_tmp=*_from; if(_tmp.type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp.u.refs); _tmp.u.refs[0]++; } }while(0)
 #define assign_svalue(X,Y) do { struct svalue *_to2=(X), *_from2=(Y); free_svalue(_to2); assign_svalue_no_free(_to2, _from2);  }while(0)
 
