@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.74 2001/01/24 22:37:50 marcus Exp $
+ * $Id: acconfig.h,v 1.75 2001/01/30 23:37:17 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -20,6 +20,9 @@
 
 /* Define this if you want malloc debugging */
 #undef DEBUG_MALLOC
+
+/* Define this if you want checkpoints */
+#undef DMALLOC_TRACE
 
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY

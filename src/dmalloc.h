@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.28 2000/12/13 21:24:44 hubbe Exp $
+ * $Id: dmalloc.h,v 1.29 2001/01/30 23:37:17 hubbe Exp $
  */
 
 PMOD_EXPORT extern char *debug_xalloc(size_t);
@@ -9,6 +9,16 @@ PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
 PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 
 #define DMALLOC_LOCATION() ("S"  __FILE__ ":" DEFINETOSTR(__LINE__) )
+
+#ifdef DMALLOC_TRACE
+#define DMALLOC_TRACELOGSIZE 131072
+
+extern char *dmalloc_tracelog[DMALLOC_TRACELOGSIZE];
+extern size_t dmalloc_tracelogptr;
+
+#define DMALLOC_TRACE_LOG(X)  (dmalloc_tracelog[ dmalloc_tracelogptr = (dmalloc_tracelogptr +1 )%DMALLOC_TRACELOGSIZE ] = (X))
+
+#endif
 
 #ifdef DEBUG_MALLOC
 struct memhdr;
@@ -112,11 +122,6 @@ int dmalloc_is_invalid_memory_block(void *block);
 #endif
 #define dbm_main main
 #define DO_IF_DMALLOC(X)
-#define debug_malloc_update_location(X,Y) (X)
-#define debug_malloc_touch(X)
-#define debug_malloc_pass(X) (X)
-#define dmalloc_touch(TYPE,X) (X)
-#define dmalloc_touch_svalue(X)
 #define dmalloc_register(X,Y,Z)
 #define dmalloc_unregister(X,Y)
 #define debug_free(X,Y,Z) free((X))
@@ -124,4 +129,19 @@ int dmalloc_is_invalid_memory_block(void *block);
 #define debug_malloc_copy_names(p,p2) 0
 #define search_all_memheaders_for_references()
 #define dmalloc_find_name(X) "unknown (no dmalloc)"
+
+#ifdef DMALLOC_TRACE
+#define debug_malloc_update_location(X,Y) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
+#define dmalloc_touch_svalue(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
+#define debug_malloc_touch(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
+#define debug_malloc_pass(X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
+#define dmalloc_touch(TYPE,X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
+#else
+#define debug_malloc_update_location(X,Y) (X)
+#define dmalloc_touch_svalue(X)
+#define debug_malloc_touch(X)
+#define debug_malloc_pass(X) (X)
+#define dmalloc_touch(TYPE,X) (X)
+#endif
+
 #endif
