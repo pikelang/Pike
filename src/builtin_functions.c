@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.365 2002/10/15 13:59:12 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.366 2002/10/15 14:57:38 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4222,7 +4222,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
   }
-#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
   if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
       (Pike_sp[6-args].u.integer != -1) &&
@@ -4230,6 +4229,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
     /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
     retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
   }
+#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
   pop_n_elems(args);
   push_int(retval);
