@@ -18,7 +18,7 @@ private int needed_chars;
 int marginal_size;
 
 /* Circular dependence */
-program Alert = master()->resolv("SSL")->alert;
+program Alert = master()->resolv("SSL")["alert"];
 // #define Alert ((program) "alert")
 
 void create(void|int extra)
@@ -60,7 +60,7 @@ object|string recv(string data)
 	if (SUPPORT_V2)
 	{
 #ifdef SSL3_DEBUG
-//	  werror(sprintf("SSL.packet: Recieving SSL2 packet '%s'\n", buffer[..4]));
+//	  werror(sprintf("SSL.packet: Receiving SSL2 packet '%s'\n", buffer[..4]));
 #endif
 
 	  content_type = PACKET_V2;
@@ -88,7 +88,7 @@ object|string recv(string data)
 		     sprintf("SSL.packet->send: Version %d is not supported\n",
 			     protocol_version[0]), backtrace());
       if (protocol_version[1] > 0)
-	werror(sprintf("SSL.packet->recv: recieved version %d.%d packet\n",
+	werror(sprintf("SSL.packet->recv: received version %d.%d packet\n",
 		       @ protocol_version));
       
       needed_chars += length;
@@ -113,7 +113,7 @@ string send()
 		      protocol_version[0]), backtrace() }) );
   if (protocol_version[1] > 0)
 #ifdef SSL3_DEBUG
-    werror(sprintf("SSL.packet->send: recieved version %d.%d packet\n",
+    werror(sprintf("SSL.packet->send: received version %d.%d packet\n",
 		   @ protocol_version));
 #endif
   if (strlen(fragment) > (PACKET_MAX_SIZE + marginal_size))
