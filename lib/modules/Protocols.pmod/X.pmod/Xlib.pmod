@@ -254,12 +254,13 @@ class Display
     if (event->wid && (w = lookup_id(event->wid))
 	&& (a = (w->event_callbacks[event->type])))
       {
-	foreach(a, function f)
+	foreach(a, array pair)
 	  {
-	    if (!(event = f(event, this_object())))
+	    if (!(event = pair[1](event, this_object())))
 	      return;
 	  }
 	// FIXME: Should event be forwarded to parent or not?
+	// No, let the widget's signal() function handle that.
       }
     else
       if (misc_event_handler)
