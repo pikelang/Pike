@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.2 2002/10/04 15:07:59 grubba Exp $
+ * $Id: acconfig.h,v 1.3 2002/10/04 15:08:37 grubba Exp $
  */
 
 #ifndef GMP_MACHINE_H
@@ -7,7 +7,7 @@
 
 @TOP@
 
-/* Define if your <jerror.h> defines JERR_BAD_CROP_ERR */
+/* Define if your <jerror.h> defines JERR_BAD_CROP_SPEC */
 #undef HAVE_JERR_BAD_CROP_SPEC
 
 @BOTTOM@
