@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.173 1999/12/19 17:07:12 mast Exp $
+# $Id: Makefile.in,v 1.174 1999/12/29 18:02:59 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -576,3 +576,4 @@ testsuite: $(SRCDIR)/testsuite.in
 	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite -DSRCDIR="$(SRCDIR)"
 
 @dependencies@
+
