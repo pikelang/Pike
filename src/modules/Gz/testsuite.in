@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.15 2001/02/16 12:17:38 noring Exp $
+// $Id: testsuite.in,v 1.16 2002/11/24 22:14:55 agehall Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -23,6 +23,23 @@ define(dotest,[[
 
   test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
   test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
+
+  test_true(Gz.File)
+  test_any([[
+    string orig = "";
+    for(int x = 0; x<1024; x++)
+      for(int i = 0; i<256; i++)
+        orig += sprintf("%c", i);
+    object f = Gz.File("gz_test.gz", "wb");
+    f->write(orig);
+    f->close();
+    f = Gz.File("gz_test.gz", "rb");
+    rm("gz_test.gz");
+    string readback = f->read();
+    f->close();
+    return orig==readback;
+]], 1)
+
 ]])
 
 cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
