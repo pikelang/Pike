@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.11 1998/08/26 11:42:44 grubba Exp $
+/* $Id: handshake.pike,v 1.12 1999/03/03 14:15:24 nisse Exp $
  *
  */
 
@@ -218,6 +218,9 @@ string server_derive_master_secret(string data)
     throw( ({ "SSL.handshake: internal error\n", backtrace() }) );
   case 0:
     return 0;
+  case KE_dhe_dss:
+    throw( ({ "Not implemented.\n", backtrace() }) );
+    
   case KE_rsa:
    {
      /* Decrypt the pre_master_secret */
