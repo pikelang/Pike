@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.38 2003/12/03 09:27:04 nilsson Exp $
+# $Id: run_autoconfig,v 1.39 2003/12/07 15:55:38 marcus Exp $
 #
 # Bootstrap script
 
@@ -40,12 +40,12 @@ fi
 autoconf=autoconf
 autoheader=autoheader
 
-autoconf_version="`\"$autoconf\" --version|head -n 1|awk '{ print $NF }'`"
-
 ac_args="--localdir=$localdir"
 ah_args=""
 
 autom4te_polluted="no"
+
+autoconf_version="`\"$autoconf\" --version $ac_args|head -n 1|awk '{ print $NF }'`"
 
 if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
      "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "10" -o \
@@ -59,13 +59,11 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
     exit 1
   elif [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" = "2" -a \
          "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -ge "53" ]; then
-    echo "Warning: Autoconf 2.53 and later use parts written in Perl," >&2
-    echo "         and are notoriously broken." >&2
     # NB: autoheader 2.53 is stupid, and has broken handling of warnings.
     #     1) The warning flags are not passed along to autoconf.
     #     2) The option --warnings is misspelled by missing the last 's'.
     ac_args="-Wno-obsolete --prepend-include=$localdir"
-    ah_args="-Wno-obsolete"
+    ah_args="-Wno-obsolete --prepend-include=$localdir"
     # Attempt to kludge around Perl's stupid warnings about locale settings.
     LANGUAGE=C LC_CTYPE=C LANG=C export LANGUAGE LC_CTYPE LANG
     LC_MONETARY=C LC_NUMERIC=C export LC_MONETARY LC_NUMERIC
@@ -73,9 +71,11 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
     LC_TIME=C LC_ALL=C export LC_TIME LC_ALL
     autom4te_polluted=yes
   fi;
-else :; fi
+else
+  echo "Warning: Using autoconf < 2.50.  Don't do this if you want to make export." >&2
+fi
 
-autoheader_version="`\"$autoconf\" --version|head -n 1|awk '{ print $NF }'`"
+autoheader_version="`\"$autoheader\" --version $ah_args|head -n 1|awk '{ print $NF }'`"
 
 if [ "x$autoconf_version" != "x$autoheader_version" ]; then
   echo "$autoheader version ($autoheader_version) differs from $autoconf version ($autoconf_version)" >&2
@@ -86,6 +86,8 @@ else :; fi
 IFS=''
 ( find . -follow -type d -print $prune_flag || find . -type d -print $prune_flag ) |egrep -v '/(CVS)|(RCS)|(test-install)$'| while read dir; do
 
+  IFS=' 	
+  '
   if [ -f $dir/Makefile.am -a -f $dir/configure.in ]; then
     # aclocal needs to be run before autoconf
     echo "Running aclocal in $dir"
@@ -113,7 +115,7 @@ IFS=''
     need_to_make_depend=yes
   fi
 
-  if [ "autom4te_pollution" = "yes" ]; then
+  if [ "$autom4te_polluted" = "yes" ]; then
     # autoconf 2.53+ pullutes the source tree with cache-directories.
     for d in $dir/autom4te*.cache; do
       test -d "$d" && rm -rf "$d"
