@@ -6,6 +6,10 @@
 #undef USE_GTK
 #endif
 
+// #define GENERATE_WIX_UI
+// #define GENERATE_WIX_ACTIONS
+// #define WIX_DEBUG
+
 int last_len;
 int redump_all;
 string pike;
@@ -13,6 +17,10 @@ array(string) files_to_delete=({});
 array(string) files_to_not_delete=({});
 array(string) to_dump=({});
 array(string) to_export=({});
+Directory root = Directory("SourceDir",
+			   Standards.UUID.new(),//UUID(pike_upgrade_guid)->encode(),
+			   "PIKE_TARGETDIR");
+
 
 int export;
 int no_gui;
@@ -158,185 +166,10 @@ void status_clear(void|int all)
     status(0,"");
 }
 
-class WixNode
-{
-  inherit Parser.XML.Tree.SimpleElementNode;
+constant WixNode = Standards.XML.Wix.WixNode;
+constant Directory = Standards.XML.Wix.Directory;
 
-  static void create(string name, mapping(string:string) attrs,
-		     string|void text)
-  {
-    ::create("http://schemas.microsoft.com/wix/2003/01/wi" + name, attrs);
-    mTagName = name;
-    mNamespace = "http://schemas.microsoft.com/wix/2003/01/wi";
-    if (text) {
-      add_child(Parser.XML.Tree.SimpleTextNode(text));
-    }
-  }
-}
-
-class File
-{
-  string name;
-  string source;
-  string id;
-
-  static void create(string name, string source, string id)
-  {
-    File::name = name;
-    File::source = source;
-    File::id = id;
-  }
-
-  WixNode gen_xml()
-  {
-    mapping(string:string) attrs = ([
-      "Id":id,
-      "Name":id[1..8]+"."+id[9..11],
-      "LongName":name,
-      "Vital":"yes",
-      //      "KeyPath":"yes",
-      //      "DiskId":"1",
-    ]);
-    if (source) {
-      attrs->src = source;
-#if 0
-      if (search(attrs->src, "/") > 0) {
-	// light doesn't like relative paths.
-	attrs->src = combine_path(getcwd(), attrs->src);
-      }
-#endif
-      if (has_prefix(attrs->src, "/home/")) {
-	// KLUDGE
-	attrs->src = "H:" + attrs->src[5..];
-      }
-      attrs->src = replace(attrs->src, "/", "\\");
-    }
-    return WixNode("File", attrs);
-  }
-}
-
-class Directory
-{
-  string name;
-  string id;
-  Standards.UUID.UUID guid;
-  string source;
-  mapping(string:int) sub_sources = ([]);
-  mapping(string:File) files = ([]);
-  mapping(string:Directory) sub_dirs = ([]);
-
-  static void create(string name, string parent_guid, string|void id)
-  {
-    guid = Standards.UUID.make_version3(name, parent_guid);
-    if (!id) id = "_"+guid->str()-"-";
-    Directory::name = name;
-    Directory::id = id;
-  }
-
-  void add_path(string dest, string src)
-  {
-    if (search(dest, "/") == -1) {
-      files[dest] = File(dest, src,
-			 "_" +
-			 Standards.UUID.make_version3(dest, guid->encode())->
-			 str() - "-");
-      if (has_suffix(src, "/"+dest)) {
-	sub_sources[combine_path(src, "..")]++;
-      }
-    } else {
-      array(string) path = dest/"/";
-      string dname = path[0];
-      Directory d = sub_dirs[dname];
-      if (!d) {
-	d = sub_dirs[dname] = Directory(dname, guid->encode());
-      }
-      d->add_path(dest[sizeof(dname)+1..], src);
-    }
-  }
-
-  void set_sources()
-  {
-    foreach(sub_dirs; string dname; Directory d) {
-      d->set_sources();
-      if (d->source &&
-	  has_suffix(d->source, "/" + dname)) {
-	string sub_src = combine_path(d->source, "..");
-	sub_sources[sub_src] += d->sub_sources[d->source] + 1;
-      }
-    }
-    if (sizeof(sub_sources)) {
-      array(int) cnt = values(sub_sources);
-      array(string) srcs = indices(sub_sources);
-      sort(cnt, srcs);
-      source = srcs[-1];
-      foreach(sub_dirs; string dname; Directory d) {
-	if (d->source == source + "/" + dname) {
-	  d->source = 0;
-	}
-      }
-      foreach(files; string fname; File f) {
-	if (f->source == source + "/" + fname) {
-	  f->source = 0;
-	}
-      }
-    }
-  }
-
-  WixNode gen_xml(string|void parent)
-  {
-    if (!parent) parent = "";
-    parent += "/" + name;
-    
-    mapping(string:string) attrs = ([
-      "Id":id,
-    ]);
-    // Win32 stupidity...
-    if ((sizeof(name) > 11 ||
-	 sizeof(name/".") > 2 ||
-	 sizeof((name/".")[0]) > 8 ||
-	 (sizeof(name/".") == 2 && sizeof((name/".")[1]) > 3)) &&
-	(name != "SourceDir")) {
-      attrs->LongName = name;
-      attrs->Name = guid->str()[..7];
-    } else {
-      attrs->Name = name;
-    }
-    if (source) {
-      attrs->src = source+"/";
-#if 0
-      if (search(attrs->src, "/") > 0) {
-	// light doesn't like relative paths.
-	attrs->src = combine_path(getcwd(), attrs->src);
-      }
-#endif
-      if (has_prefix(attrs->src, "/home/")) {
-	// KLUDGE.
-	attrs->src = "H:"+attrs->src[5..];
-      }
-      attrs->src = replace(attrs->src, "/", "\\");
-    }
-    WixNode node = WixNode("Directory", attrs);
-    foreach(sub_dirs;; Directory d) {
-      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-      node->add_child(d->gen_xml(parent));
-    }
-    if (sizeof(files)) {
-      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-      WixNode component = WixNode("Component", ([
-				    "Id":"C_" + id,
-				    "Guid":guid->str(),
-				  ]));
-      foreach(files;; File f) {
-	component->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-	component->add_child(f->gen_xml());
-      }
-      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-      node->add_child(component);
-    }
-    node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-    return node;
-  }
-}
+#ifdef GENERATE_WIX_UI
 
 class Dialog
 {
@@ -410,6 +243,15 @@ class Dialog
       if (transparent) res->Transparent = "yes";
       return res;
     }
+  }
+
+  class BodyText
+  {
+    inherit TextLabel;
+    int y = 63;
+    int width = 342;
+    int height = 24;
+    string id = "BodyText";
   }
 
   class BannerText
@@ -625,6 +467,69 @@ class Dialog
   }
 }
 
+class ExitDialog
+{
+  inherit Dialog;
+
+  string id = "ExitDialog";
+  string banner = "Installation Interrupted";
+
+  class NextButton
+  {
+    inherit Dialog::NextButton;
+    string text = "&Close";
+    string id = "Close";
+
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ::get_attrs();
+      res->Cancel = "yes";
+      m_delete(res, "Disabled");
+      return res;
+    }
+
+    array(WixNode) get_children()
+    {
+      return ({
+	@::get_children(),
+	WixNode("Publish", ([
+		  "Event":"EndDialog",
+		  "Value":"Return",
+		]), "1"),
+      });
+    }
+  }
+  class CancelButton
+  {
+    inherit Dialog::CancelButton;
+    int disabled = 1;
+  }
+  class PrevButton
+  {
+    inherit Dialog::PrevButton;
+    int disabled = 1;
+  }
+  class BodyText
+  {
+    inherit Dialog::BodyText;
+    string text = "The installation was interrupted before [ProductName] "
+      "could be installed. You need to restart the installer to try again.";
+  }
+
+  static void create()
+  {
+    ::create();
+    controls += ({ BodyText() });
+  }
+}
+
+class FatalDialog
+{
+  inherit ExitDialog;
+  string id = "FatalDialog";
+  string banner = "Installation Incomplete";
+}
+
 class FolderDialog
 {
   inherit Dialog;
@@ -738,6 +643,8 @@ class ProgressDialog
 class UI
 {
   array(Dialog) dialogs = ({
+    ExitDialog(),
+    FatalDialog(),
     FolderDialog(),
     ProgressDialog(),
   });
@@ -777,6 +684,11 @@ class UI
 			     "Blue":"0",
 			   ])));
     res->add_child(WixNode("InstallUISequence", ([]))->
+		   add_child(WixNode("Show", ([
+				       "Dialog":"FatalDialog",
+				       "OnExit":"error",
+				     ]),
+				     "NOT HideFatalErrorForm"))->
 		   add_child(WixNode("Custom", ([
 				       "After":"ValidateProductID",
 				       "Action":"InitTarget",
@@ -793,6 +705,8 @@ class UI
     return res;
   }
 }
+
+#endif /* GENERATE_WIX_UI */
 
 mapping already_created=([]);
 int mkdirhier(string orig_dir)
@@ -856,14 +770,49 @@ int compare_to_file(string data,string a)
   return 0;
 }
 
+int low_install_regkey(string path, string root, string key,
+		       string name, string value, string id)
+{
+  if (export != 2) {
+    error("Only supported in wix mode.\n");
+  }
+  global::root->install_regkey(path, root, key, name, value, id);
+}
+
+void recurse_uninstall_file(Directory d, string pattern)
+{
+  if (export != 2) {
+    error("Only supported in wix mode.\n");
+  }
+  d->recurse_uninstall_file(pattern);
+}
+		       
+int low_uninstall_file(string path)
+{
+  if (export != 2) {
+    error("Only supported in wix mode.\n");
+  }
+  root->uninstall_file(path);
+}
+
 int low_install_file(string from,
 		     string to,
-		     void|int mode)
+		     void|int mode,
+		     void|string id)
 {
   installed_files++;
   if(export)
   {
-    to_export+=({ from });
+    if (export == 2) {
+      mapping translator = ([
+	"":"",
+	prefix:"",
+	getcwd():"",
+      ]);
+      root->install_file(translate(to, translator), from, id);
+    } else {
+      to_export+=({ from });
+    }
     return 1;
   }
 
@@ -898,6 +847,7 @@ int low_install_file(string from,
   }
   if(!mv(tmpfile,to))
     fail("mv(%s,%s)",tmpfile,to);
+  rm(to+".old"); // Ignore errors
 
   return 1;
 }
@@ -1084,56 +1034,21 @@ void do_export()
   if (export == 2) {
     status("Creating", /*export_base_name*/"Pike"+"_module.wxs");
 
-#define TRANSLATE(X,Y) combine_path(".",X) : Y
-    mapping translator = ([
-      TRANSLATE(vars->BASEDIR,""),
-      TRANSLATE(vars->LIBDIR_SRC,"lib"),
-      TRANSLATE(vars->SRCDIR,"src"),
-      TRANSLATE(vars->TMP_BINDIR,"bin"),
-      TRANSLATE(vars->MANDIR_SRC,"man"),
-      TRANSLATE(vars->DOCDIR_SRC,"doc"),
-      TRANSLATE(vars->TMP_LIBDIR,"lib"),
-      TRANSLATE(combine_path(vars->TMP_BUILDDIR, "doc_build"), "doc/src"),
-      "unpack_master.pike" : "build/master.pike",
-      "":"build",
-    ]);
-
-    Directory root = Directory("SourceDir",
-			       Standards.UUID.new(),//UUID(pike_upgrade_guid)->encode(),
-			       "PIKE_TARGETDIR");
-
-    foreach(sort(to_export), string src) {
-      root->add_path(translate(src, translator), src);
-    }
-
     // Minimize the number of src directives.
     root->set_sources();
 
+    // Clean up dumped files and modules on uninstall.
+    recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
+
     // Generate the XML directory tree.
-    WixNode xml_root = Parser.XML.Tree.SimpleRootNode()->
-      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
-						   "encoding":"utf-8"])))->
-      add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
-			]))->
-		add_child(WixNode("Module", ([
-				    "Id":"Pike",
-				    "Guid":Standards.UUID.new_string(),
-				    "Language":"1033",
-				    "Version":sprintf("%d.%d.%d",
+    WixNode xml_root =
+      Standards.XML.Wix.get_module_xml(root, "Pike",
+				       sprintf("%d.%d.%d",
 						      __REAL_MAJOR__,
 						      __REAL_MINOR__,
 						      __REAL_BUILD__),
-				  ]))->
-			  add_child(WixNode("Package", ([
-					      "Description":"Pike dist",
-					      "Comments":"Merge with this",
-					      "Id":Standards.UUID.new_string(),
-					      "Manufacturer":"IDA",
-					      "InstallerVersion":"200",
-					      "Compressed":"yes",
-					    ])))->
-			  add_child(root->gen_xml())));
+				       "IDA", "Pike dist",
+				       0, "Merge with this");
 
     Stdio.write_file(/*export_base_name*/"Pike"+"_module.wxs", xml_root->render_xml());
 
@@ -1152,6 +1067,7 @@ void do_export()
     
     Stdio.write_file("Pike_banner.bmp", Image.BMP.encode(banner));
 
+#ifdef GENERATE_WIX_UI
     // Generate the UserInterface
 
     status("Creating", /*export_base_name*/"Pike"+"_ui.wxs");
@@ -1174,16 +1090,18 @@ void do_export()
     Stdio.write_file(/*export_base_name*/"Pike"+"_ui.wxs",
 		     xml_root->render_xml());
 
+#endif /* GENERATE_WIX_UI */
+
+#ifdef GENERATE_WIX_ACTIONS
     // Generate the custom actions needed to install the master,
     // and finalize the pike binary.
 
     status("Creating", export_base_name+"_actions.wxs");
 
     string run_install =
-      translate("pike", translator) +
-      " -DNOT_INSTALLED" +
-      " -m" + translate("unpack_master.pike", translator) + " " +
-      translate(combine_path(vars->TMP_BINDIR,"install.pike"), translator);
+      "bin\\pike -DNOT_INSTALLED"
+      " -mbuild\\master.pike bin\\install.pike"
+      " BASEDIR=.";
     WixNode fragment_list =
       WixNode("Fragment", ([
 		"Id":"PikeActions",
@@ -1208,6 +1126,8 @@ void do_export()
 		add_child(fragment_list));
 
     Stdio.write_file(export_base_name+"_actions.wxs", xml_root->render_xml());
+
+#endif /* GENERATE_WIX_ACTIONS */
 
     // Generate the main wxs file.
 
@@ -1938,7 +1858,6 @@ int pre_install(array(string) argv)
 	vars->TMP_BUILDDIR="build";
       }
 #endif
-      to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
 
     case "":
     default:
@@ -1955,12 +1874,16 @@ int pre_install(array(string) argv)
       doc_prefix=combine_path(prefix,"doc");
       include_prefix=combine_path(prefix,"include","pike");
       man_prefix=combine_path(prefix,"man");
+      if (export) {
+	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
+			 combine_path(prefix, "bin/install.pike"));
+      }
       break;
   case "--finalize":
     prefix = getcwd();
     exec_prefix = combine_path(prefix, "bin");
     lib_prefix = combine_path(prefix, "lib");
-    vars->TMP_BUILDDIR = "build";
+    if (!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR="bin";
     finalize_pike();
     return 0;
   case "--install-master":
@@ -2139,17 +2062,28 @@ void dump_modules()
 void finalize_pike()
 {
   pike=combine_path(exec_prefix,"pike");
+
   // Ugly way to detect NT installation
   string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
+  string suffix = "";
   if(file_stat(pike_bin_file+".exe"))
   {
     pike_bin_file+=".exe";
     pike+=".exe";
+    suffix = ".exe";
   }
 
-  if(export)
-    to_export += ({ pike_bin_file });
-  else {
+  if(export) {
+    low_install_file(pike_bin_file, pike, 0, "BIN_PIKE");
+    if (export == 2) {
+      low_install_regkey("bin", "HKLM",
+			 "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\AuthorizedApplications\\List",
+			 "[#BIN_PIKE]",
+			 "[#BIN_PIKE]:*:Enabled:Pike",
+			 "RE__BIN_PIKE");
+      low_uninstall_file("bin/*.old");
+    }
+  } else {
     status("Finalizing",pike_bin_file);
     string pike_bin=Stdio.read_file(pike_bin_file);
 
@@ -2180,11 +2114,17 @@ void finalize_pike()
       f->write(combine_path(lib_prefix,"master.pike"));
       f->close();
       status("Finalizing",pike_bin_file,"done");
+      if(install_file(pike_bin_file,pike)) {
+	redump_all=1;
+      }
+      rm(pike_bin_file);
     }
-    else
+    else {
       werror("Warning! Failed to finalize master location!\n");
-
-    if(install_file(pike_bin_file,pike)) redump_all=1;
+      if(install_file(pike_bin_file,pike)) {
+	redump_all=1;
+      }
+    }
   }
 }
 
@@ -2243,25 +2183,31 @@ void do_install()
 #else
 	make_master(unpack_master, master_src, "build/lib", "build", "lib");
 #endif
+	low_install_file(unpack_master,
+			 combine_path(prefix, "build/master.pike"));
       } else {
 	unpack_master = "unpack_master.pike";
-	make_master(unpack_master, master_src, "build/lib", "build", "lib");
+	make_master(unpack_master, master_src, "lib", "include/pike");
+	low_install_file(unpack_master,
+			 combine_path(prefix, "lib/master.pike"));
       }
 
-      to_export+=({
-	unpack_master,
-	combine_path(vars->TMP_BUILDDIR,"specs"),
-	combine_path(vars->TMP_BUILDDIR,
-		     "modules/dynamic_module_makefile"),
-	combine_path(vars->SRCDIR,"install-welcome"),
-	combine_path(vars->SRCDIR,"dumpmaster.pike"),
-      });
+      low_install_file(combine_path(vars->TMP_BUILDDIR,"specs"),
+		       combine_path(include_prefix, "specs"));
+      low_install_file(combine_path(vars->TMP_BUILDDIR,
+				    "modules/dynamic_module_makefile"),
+		       combine_path(include_prefix,
+				    "dynamic_module_makefile"));
+      low_install_file(combine_path(vars->SRCDIR,"install-welcome"),
+		       combine_path(prefix, "build/install-welcome"));
+      low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
+		       combine_path(prefix, "build/dumpmaster.pike"));
 
       void basefile(string x) {
 	string from = combine_path(vars->BASEDIR,x);
 	if(!Stdio.cp(from, x))
 	  werror("Could not copy %s to %s.\n", from ,x);
-	to_export += ({ x });
+	low_install_file(x, combine_path(prefix, "build", x));
       };
 
       basefile("ANNOUNCE");
@@ -2345,7 +2291,10 @@ void do_install()
   catch {
     Stdio.write_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
 		     sprintf("%d\n",installed_files));
-    to_export+=({ combine_path(vars->TMP_BUILDDIR,"num_files_to_install") });
+    if (export) {
+      low_install_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
+		       combine_path(prefix, "build/num_files_to_install"));
+    }
   };
 
   files_to_install=0;
@@ -2400,7 +2349,7 @@ int main(int argc, array(string) argv)
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
     ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
     ({"--finalize",Getopt.NO_ARG,({"--finalize"})}),
-    ({"--make-master",Getopt.NO_ARG,({"--make-master"})}),
+    ({"--install-master",Getopt.NO_ARG,({"--install-master"})}),
     ({"no-autodoc",Getopt.NO_ARG,({"--no-autodoc","--no-refdoc"})}),
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
