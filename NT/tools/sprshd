@@ -282,8 +282,10 @@ void handle_connections(string *hosts)
   {
     if(object io=accept())
     {
+      int ok=0;
       sscanf(io->query_address(),"%s ",string ip);
-      if(search(hosts, ip)==-1)
+      foreach(hosts, string host) ok+=glob(host, ip);
+      if(!ok)
       {
 	werror("Connection from %s denied!!\n",ip);
 	destruct(io);
