@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.130 1998/10/14 15:21:59 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.131 1998/10/15 02:42:39 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -740,6 +740,251 @@ void f_unicode_to_string(INT32 args)
     }
   }
 #endif /* BYTEORDER == 4321 */
+  out = end_shared_string(out);
+  pop_n_elems(args);
+  push_string(out);
+}
+
+void f_string_to_utf8(INT32 args)
+{
+  int len;
+  struct pike_string *in;
+  struct pike_string *out;
+  int i,j;
+  int extended = 0;
+
+  get_all_args("string_to_utf8", args, "%W", &in);
+
+  if (args > 1) {
+    if (sp[1-args].type != T_INT) {
+      error("string_to_utf8(): Bad argument 2, expected int|void.\n");
+    }
+    extended = sp[1-args].u.integer;
+  }
+
+  len = in->len;
+
+  for(i=0; i < in->len; i++) {
+    unsigned INT32 c = index_shared_string(in, i);
+    if (c & ~0x7f) {
+      /* 8bit or more. */
+      len++;
+      if (c & ~0x7ff) {
+	/* 12bit or more. */
+	len++;
+	if (c & ~0xffff) {
+	  /* 17bit or more. */
+	  len++;
+	  if (c & ~0x1fffff) {
+	    /* 22bit or more. */
+	    if (!extended) {
+	      error("string_to_utf8(): "
+		    "Value 0x%08x (index %d) is larger than 21 bits.\n",
+		    c, i);
+	    }
+	    len++;
+	    if (c & ~0x3ffffff) {
+	      /* 27bit or more. */
+	      len++;
+	      if (c & ~0x7fffffff) {
+		/* 32bit or more. */
+		len++;
+		/* FIXME: Needs fixing when we get 64bit chars... */
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+  if (len == in->len) {
+    // 7bit string -- already valid utf8.
+    pop_n_elems(args - 1);
+    return;
+  }
+  out = begin_shared_string(len);
+
+  for(i=j=0; i < in->len; i++) {
+    unsigned INT32 c = index_shared_string(in, i);
+    if (!(c & ~0x7f)) {
+      /* 7bit */
+      out->str[j++] = c;
+    } else if (!(c & ~0x7ff)) {
+      /* 11bit */
+      out->str[j++] = 0xc0 | (c >> 6);
+      out->str[j++] = 0x80 | (c & 0x3f);
+    } else if (!(c & ~0xffff)) {
+      /* 16bit */
+      out->str[j++] = 0xe0 | (c >> 12);
+      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
+      out->str[j++] = 0x80 | (c & 0x3f);
+    } else if (!(c & ~0x1fffff)) {
+      /* 21bit */
+      out->str[j++] = 0xf0 | (c >> 18);
+      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
+      out->str[j++] = 0x80 | (c & 0x3f);
+    } else if (!(c & ~0x3ffffff)) {
+      /* This and onwards is extended UTF-8 encoding. */
+      /* 26bit */
+      out->str[j++] = 0xf8 | (c >> 24);
+      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
+      out->str[j++] = 0x80 | (c & 0x3f);
+    } else if (!(c & ~0x7fffffff)) {
+      /* 31bit */
+      out->str[j++] = 0xfc | (c >> 30);
+      out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
+      out->str[j++] = 0x80 | (c & 0x3f);
+    } else {
+      /* 32 - 36bit */
+      out->str[j++] = 0xfe;
+      out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
+      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
+      out->str[j++] = 0x80 | (c & 0x3f);
+    }
+  }
+#ifdef DEBUG
+  if (len != j) {
+    fatal("string_to_utf8(): Calculated and actual lengths differ: %d != %d\n",
+	  len, j);
+  }
+#endif /* DEBUG */
+  out = end_shared_string(out);
+  pop_n_elems(args);
+  push_string(out);
+}
+
+void f_utf8_to_string(INT32 args)
+{
+  struct pike_string *in;
+  struct pike_string *out;
+  int len = 0;
+  int shift = 0;
+  int i,j;
+
+  get_all_args("utf8_to_string", args, "%S", &in);
+
+  for(i=0; i < in->len; i++) {
+    unsigned int c = ((unsigned char *)in->str)[i];
+    len++;
+    if (c & 0x80) {
+      int cont = 0;
+      if ((c & 0xc0) == 0x80) {
+	error("utf8_to_string(): "
+	      "Unexpected continuation block 0x%02x at index %d.\n",
+	      c, i);
+      }
+      if ((c & 0xe0) == 0xc0) {
+	/* 11bit */
+	cont = 1;
+	if (c & 0x1c) {
+	  if (shift < 1) {
+	    shift = 1;
+	  }
+	}
+      } else if ((c & 0xf0) == 0xe0) {
+	/* 16bit */
+	cont = 2;
+	if (shift < 1) {
+	  shift = 1;
+	}
+      } else {
+	shift = 2;
+	if ((c & 0xf8) == 0xf0) {
+	  /* 21bit */
+	  cont = 3;
+	} else if ((c & 0xfc) == 0xf8) {
+	  /* 26bit */
+	  cont = 4;
+	} else if ((c & 0xfe) == 0xfc) {
+	  /* 31bit */
+	  cont = 5;
+	} else if (c == 0xfe) {
+	  /* 36bit */
+	  cont = 6;
+	} else {
+	  error("utf8_to_string(): "
+		"Unexpected character 0xff at index %d.\n",
+		i);
+	}
+      }
+      while(cont--) {
+	i++;
+	if (i >= in->len) {
+	  error("utf8_to_string(): Truncated UTF8 sequence.\n");
+	}
+	c = ((unsigned char *)(in->str))[i];
+	if ((c & 0xc0) != 0x80) {
+	  error("utf8_to_string(): "
+		"Expected continuation character at index %d (got 0x%02x).\n",
+		i, c);
+	}
+      }
+    }
+  }
+  if (len == in->len) {
+    /* 7bit in == 7bit out */
+    pop_n_elems(args-1);
+    return;
+  }
+
+  out = begin_wide_shared_string(len, shift);
+  
+  for(j=i=0; i < in->len; i++) {
+    unsigned int c = ((unsigned char *)in->str)[i];
+
+    if (c & 0x80) {
+      int cont = 0;
+
+      /* NOTE: The tests aren't as paranoid here, since we've
+       * already tested the string above.
+       */
+      if ((c & 0xe0) == 0xc0) {
+	/* 11bit */
+	cont = 1;
+	c &= 0x1f;
+      } else if ((c & 0xf0) == 0xe0) {
+	/* 16bit */
+	cont = 2;
+	c &= 0x0f;
+      } else if ((c & 0xf8) == 0xf0) {
+	/* 21bit */
+	cont = 3;
+	c &= 0x07;
+      } else if ((c & 0xfc) == 0xf8) {
+	/* 26bit */
+	cont = 4;
+	c &= 0x03;
+      } else if ((c & 0xfe) == 0xfc) {
+	/* 31bit */
+	cont = 5;
+	c &= 0x01;
+      } else {
+	/* 36bit */
+	cont = 6;
+	c = 0;
+      }
+      while(cont--) {
+	unsigned INT32 c2 = ((unsigned char *)(in->str))[++i] & 0x3f;
+	c = (c << 6) | c2;
+      }
+    }
+    low_set_index(out, j++, c);
+  }
+#ifdef DEBUG
+  if (j != len) {
+    fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
+	  len, j);
+  }
+#endif /* DEBUG */
   out = end_shared_string(out);
   pop_n_elems(args);
   push_string(out);
@@ -3283,6 +3528,8 @@ void init_builtin_efuns(void)
   /* Some Wide-string stuff */
   add_efun("string_to_unicode", f_string_to_unicode, "function(string:string)", OPT_TRY_OPTIMIZE);
   add_efun("unicode_to_string", f_unicode_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
+  add_efun("string_to_utf8", f_string_to_utf8, "function(string,int|void:string)", OPT_TRY_OPTIMIZE);
+  add_efun("utf8_to_string", f_utf8_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
