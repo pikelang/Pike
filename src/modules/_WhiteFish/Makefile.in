@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.4 2001/05/23 10:58:00 per Exp $
+# $Id: Makefile.in,v 1.5 2001/05/26 12:16:56 per Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=whitefish.o resultset.o blob.o buffer.o
+OBJS=whitefish.o resultset.o blob.o buffer.o blobs.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

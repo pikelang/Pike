@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.17 2001/05/25 20:24:59 per Exp $");
+RCSID("$Id: blob.c,v 1.18 2001/05/26 12:16:56 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -191,7 +191,7 @@ struct blob_data
   struct hash *hash[HSIZE];
 };
 
-static struct program *blob_program;
+struct program *blob_program;
 static struct hash *low_new_hash( int doc_id )
 {
   struct hash *res =  malloc( sizeof( struct hash ) );
@@ -336,16 +336,9 @@ static void f_blob_remove( INT32 args )
   push_int(0);
 }
 
-static void f_blob_add( INT32 args )
+void wf_low_blob_add( int docid, int field, int hash, int off )
 {
-  int docid = sp[-4].u.integer;
-  int field = sp[-3].u.integer;
-  int off = sp[-2].u.integer;
-  int hash = sp[-1].u.integer;
   unsigned short s;
-  if( args != 4 )
-    Pike_error( "Illegal number of arguments\n" );
-
   switch( field )
   {
     case 0:
@@ -359,7 +352,17 @@ static void f_blob_add( INT32 args )
       break;
   }
   _append_hit( THIS, docid, s );
+}
 
+static void f_blob_add( INT32 args )
+{
+  int docid = sp[-4].u.integer;
+  int field = sp[-3].u.integer;
+  int off = sp[-2].u.integer;
+  int hash = sp[-1].u.integer;
+  if( args != 4 )
+    Pike_error( "Illegal number of arguments\n" );
+  wf_low_blob_add( docid, field, hash, off );
   pop_n_elems( args );
   push_int( 0 );
 }
@@ -388,23 +391,29 @@ int cmp_hit( char *a, char *b )
   tmp = (X)[1];  (X)[1] = (Y)[1];  (Y)[1] = tmp;\
 } while(0)
 
-static void f_blob_memsize( INT32 args )
+int wf_blob_low_memsize( struct object *o )
 {
   int size = HSIZE*sizeof(void *);
-  int i;
   struct hash *h;
+  struct blob_data *tt = ((struct blob_data *)o->storage);
+  int i;
   
   for( i = 0; i<HSIZE; i++ )
   {
-    h = THIS->hash[i];
+    h = tt->hash[i];
     while( h )
     {
-      size += sizeof(struct hash) + h->data->allocated_size;
+      size+=sizeof(struct hash)+sizeof(struct buffer )+h->data->allocated_size;
       h = h->next;
     }
   }
+  return size;
+}
+
+static void f_blob_memsize( INT32 args )
+{
   pop_n_elems(args);
-  push_int( size );
+  push_int( wf_blob_low_memsize( Pike_fp->current_object ) );
 }
 
 static void f_blob__cast( INT32 args )

@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.18 2001/05/25 18:39:32 per Exp $");
+RCSID("$Id: whitefish.c,v 1.19 2001/05/26 12:16:56 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -18,6 +18,7 @@ RCSID("$Id: whitefish.c,v 1.18 2001/05/25 18:39:32 per Exp $");
 #include "whitefish.h"
 #include "resultset.h"
 #include "blob.h"
+#include "blobs.h"
 
 /* must be included last */
 #include "module_magic.h"
@@ -468,6 +469,7 @@ void pike_module_init(void)
 {
   init_resultset_program();
   init_blob_program();
+  init_blobs_program();
 
   add_function( "do_query_merge", f_do_query_merge,
 		"function(array(int),array(int),array(int)"
@@ -484,4 +486,5 @@ void pike_module_exit(void)
 {
   exit_resultset_program();
   exit_blob_program();
+  exit_blobs_program();
 }

@@ -11,6 +11,7 @@
 /src/modules/_WhiteFish/Makefile.in foreign_ident
 /src/modules/_WhiteFish/acconfig.h foreign_ident
 /src/modules/_WhiteFish/blob.c foreign_ident
+/src/modules/_WhiteFish/blobs.c foreign_ident
 /src/modules/_WhiteFish/buffer.c foreign_ident
 /src/modules/_WhiteFish/configure.in foreign_ident
 /src/modules/_WhiteFish/resultset.c foreign_ident
