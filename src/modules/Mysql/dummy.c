@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.8 2003/03/28 11:45:10 marcus Exp $
+|| $Id: dummy.c,v 1.9 2003/03/28 21:33:31 marcus Exp $
 */
 
 /*
@@ -23,9 +23,6 @@ typedef INT64 _ll_t;
 typedef unsigned INT64 _ull_t;
 
 static _ll_t mysql_dummy(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
-#ifdef HAVE_CREATESEMAPHOREA
-  CreateSemaphoreA(0, 0, 0, 0);
-#endif
   return(a%b+(c%d)+(c/d)+(a/b));
 }
 

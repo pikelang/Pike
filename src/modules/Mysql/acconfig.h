@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.10 2003/03/28 15:31:31 marcus Exp $
+|| $Id: acconfig.h,v 1.11 2003/03/28 21:33:31 marcus Exp $
 */
 
 /*
@@ -37,8 +37,5 @@
 
 /* Define if you have the mysql_unix_port variable. */
 #undef HAVE_MYSQL_UNIX_PORT
-
-/* Define if you have the `CreateSemaphoreA' function. */
-#undef HAVE_CREATESEMAPHOREA
 
 #endif /* PIKE_MYSQL_CONFIG_H */
