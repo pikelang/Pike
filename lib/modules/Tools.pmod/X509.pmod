@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.29 2004/02/05 19:47:27 nilsson Exp $
+ * $Id: X509.pmod,v 1.30 2004/02/07 15:53:55 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -155,7 +155,7 @@ Sequence make_tbs(object issuer, object algorithm,
 }
 
 //!
-string make_selfsigned_dsa_certificate(Crypto.dsa dsa, int ttl, array name,
+string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
 				       array|void extensions)
 {
   Integer serial = Integer(1); /* Hard coded serial number */

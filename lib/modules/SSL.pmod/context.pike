@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.29 2004/02/03 13:52:12 nilsson Exp $
+// $Id: context.pike,v 1.30 2004/02/07 15:54:13 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -99,7 +99,7 @@ Crypto.RSA long_rsa;
 Crypto.RSA short_rsa;
 
 //! Servers dsa key.
-Crypto.dsa dsa;
+Crypto.DSA dsa;
 
 //! Parameters for dh keyexchange.
 .Cipher.DHParameters dh_params;

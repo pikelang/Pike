@@ -1,5 +1,5 @@
 //
-// $Id: CSR.pmod,v 1.10 2004/02/03 13:50:10 nilsson Exp $
+// $Id: CSR.pmod,v 1.11 2004/02/07 15:54:32 nilsson Exp $
 
 //! Handling of Certifikate Signing Requests (PKCS-10)
 
@@ -34,7 +34,7 @@ Sequence build_csr(Crypto.RSA rsa, object name,
 }
 
 #if 0
-object build_csr_dsa(object dsa, object name)
+object build_csr_dsa(Crypto.DSA dsa, object name)
 {
   Sequence info = Sequence( ({ Integer }) );
 }
