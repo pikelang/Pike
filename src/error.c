@@ -21,19 +21,218 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.57 2000/08/10 09:51:51 per Exp $");
+RCSID("$Id: error.c,v 1.58 2000/08/15 11:04:52 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
+/*
+ * Backtrace handling.
+ */
+
+struct pike_backtrace
+{
+  struct pike_frame *trace;
+  struct pike_frame *iterator;
+  int iterator_index;
+};
+
+static struct program *frame_program = NULL;
+
+#define THIS_BT ((struct pike_backtrace *)Pike_fp->current_storage)
+
+static void init_backtrace(struct object *o)
+{
+  MEMSET(THIS_BT, 0, sizeof(struct pike_backtrace));
+}
+
+static void exit_backtrace(struct object *o)
+{
+  if (THIS_BT->trace) {
+    free_pike_frame(THIS_BT->trace);
+    THIS_BT->trace = NULL;
+    THIS_BT->iterator = NULL;
+  }
+}
+
+/* void create() */
+void f_bt_create(INT32 args)
+{
+  if (THIS_BT->trace) {
+    free_pike_frame(THIS_BT->trace);
+  }
+  add_ref(THIS_BT->trace = Pike_fp);
+  THIS_BT->iterator = THIS_BT->trace;
+  THIS_BT->iterator_index = 0;
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/* int _sizeof() */
+static void f_bt__sizeof(INT32 args)
+{
+  int size = 0;
+  struct pike_frame *f = THIS_BT->iterator;
+  size = THIS_BT->iterator_index;
+  while (f) {
+    size++;
+    f = f->next;
+  }
+  pop_n_elems(args);
+  push_int(size);
+}
+
+/* array(int) _indices() */
+static void f_bt__indices(INT32 args)
+{
+  /* Not really optimal, but who performs indices() on a backtrace? */
+  f_bt__sizeof(args);
+  f_allocate(1);
+  f_indices(1);
+}
+
+/* array _values() */
+static void f_bt__values(INT32 args)
+{
+  struct pike_frame *f = THIS_BT->trace;
+  struct array *a;
+  int i;
+  int sz;
+  f_bt__sizeof(args);
+  f_allocate(1);
+  for (i=0, a=Pike_sp[-1].u.array, sz=a->size; (i < sz) && f; i++, f=f->next) {
+    struct object *o = low_clone(frame_program);
+    call_c_initializers(o);
+    add_ref(*((struct pike_frame **)(o->storage)) = f);
+    push_object(o);
+    a->item[i] = Pike_sp[-1];
+    Pike_sp--;
+  }
+}
+
+/* object(frame) `[](int index) */
+static void f_bt__index(INT32 args)
+{
+  INT_TYPE index;
+  int i;
+  struct pike_frame *f;
+  struct object *o;
+
+  get_all_args("backtrace->`[]", args, "%i", &index);
+
+  if (index < 0) {
+    /* Indexing from end not supported. */
+    index_error("backtrace->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		"Indexing with negative value (%d).\n", index);
+  }
+
+  if (index < THIS_BT->iterator_index) {
+    THIS_BT->iterator = THIS_BT->trace;
+    THIS_BT->iterator_index = 0;
+  }
+
+  f = THIS_BT->iterator;
+  i = THIS_BT->iterator_index;
+
+  while (f && (i < index)) {
+    f = f->next;
+    i++;
+  }
+  if (!f) {
+    index_error("backtrace->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		"Index out of range [0..%d].\n", i-1);
+  }
+  THIS_BT->iterator = f;
+  THIS_BT->iterator_index = i;
+  o = low_clone(frame_program);
+  call_c_initializers(o);
+  add_ref(*((struct pike_frame **)(o->storage)) = f);
+  pop_n_elems(args);
+  push_object(o);
+}
+
+/*
+ * Frame handling.
+ */
+
+#define THIS_PF		((struct pike_frame **)Pike_fp->current_storage)
+
+static void init_pike_frame(struct object *o)
+{
+  THIS_PF[0] = NULL;
+}
+
+static void exit_pike_frame(struct object *o)
+{
+  if (THIS_PF[0]) {
+    free_pike_frame(THIS_PF[0]);
+    THIS_PF[0] = NULL;
+  }
+}
+
+/* mixed `[](int index) */
+static void f_pf__index(INT32 args)
+{
+  INT_TYPE index;
+  struct pike_frame *f;
+
+  get_all_args("pike_frame->`[]", args, "%i", &index);
+
+  f = THIS_PF[0];
+
+  if (!f) {
+    index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		"Indexing the empty array with %d.\n", index);
+  }
+  if (index < 0) {
+    index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		"Indexing with negative index (%d)\n", index);
+  }
+  if (!(f->current_object && f->context.prog)) {
+    index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		"Indexing the NULL value with %d.\n", index);
+  }
+  switch(index) {
+  case 0:	/* Filename */
+  case 1:	/* Linenumber */
+    break;
+  case 2:	/* Function */
+    if (f->current_object->prog) {
+      pop_n_elems(args);
+      ref_push_object(f->current_object);
+      Pike_sp[-1].subtype = f->fun;
+      Pike_sp[-1].type = PIKE_T_FUNCTION;
+    } else {
+      pop_n_elems(args);
+      push_int(0);
+      Pike_sp[-1].subtype = NUMBER_DESTRUCTED;
+    }
+    return;
+  default:	/* Arguments */
+    break;
+  }
+}
+
+/*
+ * Recoveries handling.
+ */
+
+JMP_BUF *recoveries=0;
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void check_recovery_context(void)
 {
   char foo;
 #define TESTILITEST ((((char *)Pike_interpreter.recoveries)-((char *)&foo))*STACK_DIRECTION)
-  if(Pike_interpreter.recoveries && TESTILITEST > 0)
-    fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",Pike_interpreter.recoveries, &foo,TESTILITEST);
+  if(Pike_interpreter.recoveries && TESTILITEST > 0) {
+    fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",
+	    Pike_interpreter.recoveries, &foo, TESTILITEST);
+    fprintf(stderr, "Last recovery was added at %s:%d\n",
+	    Pike_interpreter.recoveries->file,
+	    Pike_interpreter.recoveries->line);
+    fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",
+	  Pike_interpreter.recoveries, &foo, TESTILITEST);
+  }
 
   /* Add more stuff here when required */
 }
@@ -432,6 +631,10 @@ void generic_error_va(struct object *o,
 #endif /* HAVE_VSNPRINTF */
   in_error=buf;
 
+  if (1 || !master_program) {
+    fprintf(stderr, "ERROR: %s\n", buf);
+  }
+
   ERROR_STRUCT(generic,o)->desc=make_shared_string(buf);
   f_backtrace(0);
 
@@ -531,7 +734,7 @@ PMOD_EXPORT void resource_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *resource_type,
-  long howmuch,
+  size_t howmuch,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
   INIT_ERROR(resource);
