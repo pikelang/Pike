@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.12 2003/08/06 09:58:25 grubba Exp $");
+RCSID("$Id: nettle.cmod,v 1.13 2003/08/06 09:59:24 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -13,7 +13,7 @@ RCSID("$Id: nettle.cmod,v 1.12 2003/08/06 09:58:25 grubba Exp $");
 #ifdef HAVE_LIBNETTLE
 
 #include <nettle/yarrow.h>
-#include <nettle.h>
+#include "nettle.h"
 
 #include <assert.h>
 #include <stdio.h>
