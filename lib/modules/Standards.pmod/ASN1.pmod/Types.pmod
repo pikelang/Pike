@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.36 2004/04/14 20:18:57 nilsson Exp $
+// $Id: Types.pmod,v 1.37 2005/01/21 17:22:45 mast Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -1040,7 +1040,7 @@ class BrokenTeletexString
   constant type_name = "TeletexString";	// Alias: T61String
 }
 
-Regexp asn1_IA5_invalid_chars = Regexp ("([\180-\377])");
+Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
 
 //!
 int(0..1) asn1_IA5_valid (string s)
