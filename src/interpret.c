@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.49 1997/10/11 06:48:23 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.50 1997/10/14 03:10:10 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1369,6 +1369,8 @@ void apply_low(struct object *o, int fun, int args)
     return;
   }
 
+  o->refs++;
+
   fast_check_threads_etc(4);
   check_stack(256);
   check_mark_stack(256);
@@ -1403,7 +1405,7 @@ void apply_low(struct object *o, int fun, int args)
   new_frame.current_storage = o->storage+new_frame.context.storage_offset;
   new_frame.pc = 0;
 
-  new_frame.current_object->refs++;
+/* new_frame.current_object->refs++;  Moved to beginning of function / Hubbe */
   new_frame.context.prog->refs++;
 
 #ifdef DEBUG
