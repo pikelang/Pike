@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.19 2004/05/02 20:27:46 nilsson Exp $
+dnl $Id: testsuite.in,v 1.20 2004/05/28 00:37:46 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -235,7 +235,7 @@ test_eq(String.int2roman(2000),"MM")
 test_eval_error( return String.int2roman(100000); )
 test_eval_error( return String.int2roman(-1); )
 
-test_eval_error( return String.int2size(-1); )
+test_eq(String.int2size(-1),"-1 byte")
 test_eq(String.int2size(0),"0 bytes")
 test_eq(String.int2size(1),"1 byte")
 test_eq(String.int2size(2),"2 bytes")
