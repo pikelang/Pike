@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.289 2000/03/30 08:43:07 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.290 2000/03/30 09:54:18 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -24,6 +24,8 @@ test_eq(-2147483648*-1, -2147483648/-1);
 test_true([[1.0e-40]]);
 test_eq([[#"foo
 bar"]],[["foo\nbar"]]);
+test_eq([[#"foo\
+bar"]],[["foobar"]]);
 test_true([[stringp(#string "Makefile")]]);
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1);
 

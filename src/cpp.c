@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.61 2000/03/09 16:46:03 jhs Exp $
+ * $Id: cpp.c,v 1.62 2000/03/30 09:54:18 hubbe Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -416,11 +416,15 @@ while(1)					\
     if(data[pos+1]=='\n')			\
     {						\
       pos++;					\
+      this->current_line++;			\
+      PUTNL();                                  \
       continue;					\
     }						\
     if(data[pos+1]=='\r' && data[pos+2]=='\n')	\
     {						\
       pos+=2;					\
+      this->current_line++;			\
+      PUTNL();                                  \
       continue;					\
     }						\
     READCHAR(tmp);				\
