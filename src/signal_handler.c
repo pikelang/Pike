@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.192 2001/02/08 23:48:21 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.193 2001/03/29 11:55:01 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3257,7 +3257,7 @@ void Pike_f_fork(INT32 args)
 static void f_kill(INT32 args)
 {
   int signum;
-  int pid;
+  int pid = 0;
   int res;
 
 #ifdef PIKE_SECURITY
