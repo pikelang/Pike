@@ -1,0 +1,86 @@
+<appendix name="Pike BNF">
+<doc><pre>
+ program              ::=   definition+
+ definition           ::=   import | inheritance | function_declaration | function_definition | variables | constant | class_def
+ import               ::=   modifiers+ "import" ( constant_identifier | string ) ";" 
+ inheritance          ::=   modifiers+ "inherit" program_specifier ( ":" identifier )? ";" 
+ function_declaration ::=   modifiers+ type identifier "(" ( arguments | prot_arguments )? ")" ";"
+ function_definition  ::=   modifiers+ type identifier "(" arguments? ")" block 
+ variables            ::=   modifiers+ type variable_names ";"
+ variable_names       ::=   variable_name ( "," variable_name )*
+ variable_name        ::=   identifier ( "=" expression2 )?
+ constant             ::=   modifiers+ "constant" constant_names ";" 
+ constant_names       ::=   constant_name ( "," constant_name )*
+ constant_name        ::=   identifier "=" expression2
+ class_def            ::=   modifiers+ class ";"?
+// Is it arguments or arguments? in class?
+ class                ::=   "class" identifier? ( "(" arguments ")" )? "{" program "}"
+ modifiers            ::=   ( "extern" | "final" | "inline" | "local" | "nomask" | "optional" | "private" |
+                              "protected" | "public" | "static" | "variant" )
+ block                ::=   "{" statement* "}"
+ statement            ::=   expression ";" | cond | while | do_while | for | switch | return | block | foreach | ";" 
+ cond                 ::=   "if" statement ( "else" statement )?
+ while                ::=   "while" "(" expression ")" statement
+ do_while             ::=   "do" statement "while" "(" expression ")" ";" 
+ for                  ::=   "for" "(" expression? ";" expression? ";" expression? ")" statement
+ switch               ::=   "switch" "(" expression ")" block
+ case_block           ::=   "{" ( case | default | statement | break | continue )* "}"
+ case                 ::=   "case" expression [ ".." expression ] ":"
+ default              ::=   "default" ":"
+// It can't be expression6 here, since that would make foreach(x, "hello") valid
+ foreach              ::=   "foreach" "(" expression "," expression6 ")" statement
+// Labelled breaks
+ break                ::=   "break" ";"
+ continue             ::=   "continue" ";"
+ expression           ::=   expression2 ( "," expression2 )*
+ expression2          ::=   ( lvalue ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) )* expression3
+ expression3          ::=   expression4 '?' expression3 ":" expression3 
+ expression4          ::=   ( expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lt;" | "&gt;=" | "&lt;=" | "&lt;&lt;" |
+                            "&gt;&gt;" | "+" | "*" | "/" | "%" ) )* expression5
+ expression5          ::=   expression6 | "(" type ")" expression5 | "--" expression6 | "++" expression6 | expression6 "--" |
+                            expression6 "++" | "~" expression5 | "-" expression5 
+ expression6          ::=   string | int | float | catch | gauge | typeof | sscanf | lambda | class | constant_identifier | call |
+                            index | mapping | multiset | array | parenthesis | arrow 
+ int                  ::=   "-"? ( number | "'" character "'" )
+ number               ::=   "-"? ( "0"+ | ["1" - "9"] digit* | hex_number | bin_number | oct_number )
+ hex_number           ::=   "0" ( "x" | "X" ) ( digits | ["a" - "f"] | ["A" - "F"] )*
+ bin_number           ::=   "0" ( "b" | "B" ) ( "1" | "0" )*
+ oct_number           ::=   "0" ["0" - "7"]*
+ float                ::=   "-"? digit+ "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
+ catch                ::=   "catch" ( "(" expression ")" | block )
+ gauge                ::=   "gauge" ( "(" expression ")" | block )
+ sscanf               ::=   "sscanf" "(" expression2 "," expression2 ( "," lvalue )* ")" 
+ lvalue               ::=   expression6 | type identifier | "[" ( lvalue ( "," lvalue )* ","? )? "]"
+ lambda               ::=   "lambda" "(" arguments? ")" block
+ constant_identifier  ::=   "."? identifier ( "." identifier )*
+ call                 ::=   expression6 "(" expression_list ")" 
+ index                ::=   expression6 "[" ( expression | ".." expression | expression ".." | expresion ".." expresion ) "]"
+ array                ::=   "({" expression_list "})"
+ multiset             ::=   "(&lt;" expression_list "&gt;)"
+ mapping              ::=   "([" ( expression ":" expression ( "," expression ":" expression )* ","? )? "])"
+ arrow                ::=   expression6 "-&gt;" identifier
+ parenthesis          ::=   "(" expression ")"
+ expression_list      ::=   ( splice_expression ( "," splice_expression )* ","? )?
+ splice_expression    ::=   "@"? expression2
+ type                 ::=   int_type | "string" | "float" | "program" | object_type | program_specifier |
+                            mapping_type | array_type | multiset_type | function [ function_type ]
+ int_type             ::=   "int" ( "(" ( digit+ | ".." digit+ | digit+ ".." | digit+ ".." digit+ ) ")" )?
+ object_type          ::=   "object" ( "(" program_specifier ")" )?
+ mapping_type         ::=   "mapping" ( "(" type ":" type ")" )?
+ array_type           ::=   "array" ( "(" type ")" )?
+ multiset_type        ::=   "multiset" ( "(" type ")" )?
+ function_type        ::=   "function"  ( "(" type ( "," type )* "..."? ":" type ")" )?
+ arguments            ::=   ( argument ( "," argument )* varargs? | varargs ) ","?
+ argument             ::=   type identifier
+ varargs              ::=   type "..." identifier
+ prot_arguments       ::=   ( type ( "," type )* ( type "..." )? | ( type "..." ) ) ","?
+ program_specifier    ::=   string_constant | constant_identifier
+ string               ::=   ( "\"" string_literal* "\"" )+
+ string_literal       ::=   [0x0000 - 0xffff] | "\\" [0x00 - 0xff] | "\\" number
+ identifier           ::=   letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" |
+                            "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" |
+                            "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
+ letter               ::=   ["a"-"z"] | ["A"-"Z"] | "_"
+ digit                ::=   ["0"-"9"]
+</pre></doc>
+</appendix>
