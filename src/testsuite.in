@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.527 2002/08/02 03:07:18 jhs Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.528 2002/08/02 23:32:05 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9162,9 +9162,6 @@ test_program([[ Parser.LR.Parser p =
   string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; }
   int a() { return(p->parse(scan) == "a"); }]])
 
-// - ADT
-test_true(ADT.Table.table( ({ ({ "a", "b", 42 }), ({ "c", "b", 41 }), ({ "a", "a", 76 }) }), ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")->rename(0, "fOo")->sort("foO")->cast("array"), ({ ({ "a", 118 }), ({ "c", 41 }) }))
-
 // - Process
 test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("'test'")]],[[({"test"})]])
@@ -9270,34 +9267,6 @@ return Fnord()->start()->wait()-({ -1 });
 ]],[[ ({}) ]])
 ]])
 
-// - Array
-test_equal(Array.splice(({7,8,99}),({"h","h",99})),
-	({7,"h",8,"h",99,99}))
-test_equal(Array.splice(({7,8}),({"h","h",99})),
-	({7,"h",8,"h"}))
-test_equal(Array.splice(({7,8,99}),({"h","h",99}),({"g",({"fg"}),97})),
-	({7,"h","g",8,"h",({"fg"}),99,99,97}))
-test_equal(Array.splice(({7,"foo"})),
-	({7,"foo"}))
-test_equal(Array.splice(),
-	({}))
-test_equal(Array.splice(({})),
-	({}))
-
-test_equal(Array.everynth("0123456789"/""),
-  ({ "0", "2", "4", "6", "8"}))
-test_equal(Array.everynth("0123456789"/"",3),
-  ({ "0", "3", "6", "9"}))
-test_equal(Array.everynth("0123456789"/"",3,4),
-  ({ "4", "7"}))
-
-
-test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
-	({ ({1,4}), ({2,5}), ({3,6}) }))
-
-test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
-	   [[ ({ ({ "", 2 }) }) ]])
-
 // - Graphics
 test_true(!Graphics.Graph.test()->main(1,({"test"})))
 
@@ -9306,72 +9275,6 @@ test_true(!Yabu.test()->main(1,({"test"})))
 
 // - Protocols.XMLRPC
 test_true(!Protocols.XMLRPC.test()->main(1,({"test"})))
-
-// - Standards.ISO639_2
-test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
-test_equal(Standards.ISO639_2.get_language("xxx"),0)
-test_true(sizeof(Standards.ISO639_2.list_languages())>400)
-test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
-test_egual(Standards.ISO639_2.map_639_1("xx"),0)
-test_true(sizeof(Standards.ISO639_2.list_639_1())==158)
-
-// - Standards.URI
-test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
-test_equal((string)Standards.URI("g",             "http://a/b/c/d;p?q"), "http://a/b/c/g")
-test_equal((string)Standards.URI("./g",           "http://a/b/c/d;p?q"), "http://a/b/c/g")
-test_equal((string)Standards.URI("g/",            "http://a/b/c/d;p?q"), "http://a/b/c/g/")
-test_equal((string)Standards.URI("/g",            "http://a/b/c/d;p?q"), "http://a/g")
-test_equal((string)Standards.URI("//g",           "http://a/b/c/d;p?q"), "http://g")
-test_equal((string)Standards.URI("?y",            "http://a/b/c/d;p?q"), "http://a/b/c/?y")
-test_equal((string)Standards.URI("g?y",           "http://a/b/c/d;p?q"), "http://a/b/c/g?y")
-test_equal((string)Standards.URI("#s",            "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q#s")
-test_equal((string)Standards.URI("g#s",           "http://a/b/c/d;p?q"), "http://a/b/c/g#s")
-test_equal((string)Standards.URI("g?y#s",         "http://a/b/c/d;p?q"), "http://a/b/c/g?y#s")
-test_equal((string)Standards.URI(";x",            "http://a/b/c/d;p?q"), "http://a/b/c/;x")
-test_equal((string)Standards.URI("g;x",           "http://a/b/c/d;p?q"), "http://a/b/c/g;x")
-test_equal((string)Standards.URI("g;x?y#s",       "http://a/b/c/d;p?q"), "http://a/b/c/g;x?y#s")
-test_equal((string)Standards.URI(".",             "http://a/b/c/d;p?q"), "http://a/b/c/")
-test_equal((string)Standards.URI("./",            "http://a/b/c/d;p?q"), "http://a/b/c/")
-test_equal((string)Standards.URI("..",            "http://a/b/c/d;p?q"), "http://a/b/")
-test_equal((string)Standards.URI("../",           "http://a/b/c/d;p?q"), "http://a/b/")
-test_equal((string)Standards.URI("../g",          "http://a/b/c/d;p?q"), "http://a/b/g")
-test_equal((string)Standards.URI("../..",         "http://a/b/c/d;p?q"), "http://a/")
-test_equal((string)Standards.URI("../../",        "http://a/b/c/d;p?q"), "http://a/")
-test_equal((string)Standards.URI("../../g",       "http://a/b/c/d;p?q"), "http://a/g")
-test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/../g")
-test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/../../g")
-test_equal((string)Standards.URI("/./g",          "http://a/b/c/d;p?q"), "http://a/./g")
-test_equal((string)Standards.URI("/../g",         "http://a/b/c/d;p?q"), "http://a/../g")
-test_equal((string)Standards.URI("g.",            "http://a/b/c/d;p?q"), "http://a/b/c/g.")
-test_equal((string)Standards.URI(".g",            "http://a/b/c/d;p?q"), "http://a/b/c/.g")
-test_equal((string)Standards.URI("g..",           "http://a/b/c/d;p?q"), "http://a/b/c/g..")
-test_equal((string)Standards.URI("..g",           "http://a/b/c/d;p?q"), "http://a/b/c/..g")
-test_equal((string)Standards.URI("./../g",        "http://a/b/c/d;p?q"), "http://a/b/g")
-test_equal((string)Standards.URI("./g/.",         "http://a/b/c/d;p?q"), "http://a/b/c/g/")
-test_equal((string)Standards.URI("g/./h",         "http://a/b/c/d;p?q"), "http://a/b/c/g/h")
-test_equal((string)Standards.URI("g/../h",        "http://a/b/c/d;p?q"), "http://a/b/c/h")
-test_equal((string)Standards.URI("g;x=1/./y",     "http://a/b/c/d;p?q"), "http://a/b/c/g;x=1/y")
-test_equal((string)Standards.URI("g;x=1/../y",    "http://a/b/c/d;p?q"), "http://a/b/c/y")
-test_equal((string)Standards.URI("g?y/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g?y/./x")
-test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g?y/../x")
-test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
-test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
-test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
-
-
-// - Colors
-test_equal(Colors.parse_color("red"),({255,0,0}))
-test_equal(Colors.parse_color("RED"),({255,0,0}))
-test_equal(Colors.parse_color("lightred"),({255,61,61}))
-test_equal(Colors.parse_color("LIGHT RED"),({255,61,61}))
-test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
-test_equal(Colors.parse_color("ff0000"),({255,0,0}))
-test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
-test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
-test_equal(Colors.rgb_to_hsv(255,0,0),({0,255,255}))
-test_equal(Colors.hsv_to_rgb(0,255,255),({255,0,0}))
-test_equal(Colors.rgb_to_cmyk(255,0,0),({0,100,100,0}))
-test_equal(Colors.cmyk_to_rgb(0,100,100,0),({255,0,0}))
 
 test_do([[
   string s;
