@@ -1,6 +1,6 @@
 
 #include "global.h"
-RCSID("$Id: clf.c,v 1.1 1999/11/14 00:47:21 per Exp $");
+RCSID("$Id: clf.c,v 1.2 2000/03/27 00:04:48 grubba Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -106,8 +106,6 @@ static void f_read_clf( INT32 args )
   int bufsize=CLF_BLOCK_SIZE, bufpos=0;
 #endif
 
-  ONERROR unwind_protect;
-
   if(args>2 && sp[-1].type == T_INT) {
     offs0 = sp[-1].u.integer;
     pop_n_elems(1);
@@ -130,7 +128,7 @@ static void f_read_clf( INT32 args )
 	    file->u.string->size_shift == 0) {
     THREADS_ALLOW();
     do {
-      f=fd_open(STR0(file->u.string), fd_RDONLY, 0);
+      f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);
     } while(f < 0 && errno == EINTR);
     THREADS_DISALLOW();
     
