@@ -1,3 +1,6 @@
+test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
+test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
+
 test_true(encode_value(0))
 test_true(encode_value(0)[0]=='\266')
 define(test_encode, [[ test_equal($1, decode_value(encode_value($1))) ]])
@@ -40,7 +43,7 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.20 1997/02/13 02:12:32 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.21 1997/02/14 04:42:39 hubbe Exp $"]])
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
