@@ -38,6 +38,7 @@ core
 /build
 /build2
 /egcs-build
+/msbuild
 /mud
 /mud-0.1.tar.gz
 /mud-0.2.tar.gz
