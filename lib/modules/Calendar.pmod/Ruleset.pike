@@ -34,8 +34,9 @@ mapping(string:string) abbr2zone=
 this_program set_timezone(string|.Rule.Timezone t)
 {
    if (stringp(t)) {
+     string name = t;
       t=.Timezone[t];
-      if (!t) error("No timezone %O\n",t);
+      if (!t) error("No timezone %O\n",name);
    }
 
    if (!t->is_timezone)
