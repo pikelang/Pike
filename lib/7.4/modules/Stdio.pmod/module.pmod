@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.2 2004/04/11 16:18:13 grubba Exp $
+// $Id: module.pmod,v 1.3 2004/04/12 12:34:20 grubba Exp $
 #pike 7.5
 
 // Emulate the old life length of the Fd instance. In newer versions
@@ -76,10 +76,5 @@ class File
       return 1;
     }
     return 0;
-  }
-   
-  static void destroy()
-  {
-    register_close_file (open_file_id);
   }
 }
