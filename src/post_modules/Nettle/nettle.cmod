@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.3 2003/03/13 14:59:07 nisse Exp $");
+RCSID("$Id: nettle.cmod,v 1.4 2003/03/14 15:30:20 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -146,16 +146,21 @@ PIKECLASS aes
     }
 }
 
+#endif /* HAVE_LIBNETTLE */
+
 PIKE_MODULE_INIT
 {
   INIT;
+#ifdef HAVE_LIBNETTLE
   hash_init();
+#endif /* HAVE_LIBNETTLE */
 }
 
 PIKE_MODULE_EXIT
 {
+#ifdef HAVE_LIBNETTLE
   hash_exit();
+#endif /* HAVE_LIBNETTLE */
   EXIT;
 }
 
-#endif /* HAVE_LIBNETTLE */
