@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.227 2000/04/15 12:43:58 grubba Exp $");
+RCSID("$Id: program.c,v 1.228 2000/04/16 16:00:35 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -561,7 +561,7 @@ char *find_program_name(struct program *p, INT32 *line)
 	
   for(pos=0;pos<100;pos++)
   {
-    tmp=get_line(p->program+pos, p, line);
+    char *tmp=get_line(p->program+pos, p, line);
     if(tmp && *line) return tmp;
     if(pos+1>=(long)p->num_program) break;
   }
