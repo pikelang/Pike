@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.121 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: threads.h,v 1.122 2003/02/08 17:12:27 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -15,6 +15,8 @@
 #include "pike_threadlib.h"
 
 #ifdef PIKE_THREADS
+
+#include "pike_rusage.h"
 
 struct svalue;
 struct pike_frame;
@@ -40,6 +42,9 @@ struct thread_state {
   long time_base;
 #endif
 #endif /* PROFILING */
+#if CPU_TIME_IS_THREAD_LOCAL == YES
+  cpu_time_t auto_gc_time;
+#endif
 };
 
 

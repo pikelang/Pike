@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.468 2003/02/04 17:29:19 mast Exp $
+|| $Id: builtin_functions.c,v 1.469 2003/02/08 17:12:27 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.468 2003/02/04 17:29:19 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.469 2003/02/08 17:12:27 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5953,30 +5953,53 @@ PMOD_EXPORT void f_master(INT32 args)
 
 /*! @decl int gethrvtime (void|int nsec)
  *!
- *! Return the CPU time that has been consumed by this process. Zero
- *! is returned if the system couldn't determine it. The time is
- *! normally returned in microseconds, but if the optional @[nsec] is
- *! nonzero then it's returned in nanoseconds.
+ *! Return the CPU time that has been consumed by this process or
+ *! thread. Zero is returned if the system couldn't determine it. The
+ *! time is normally returned in microseconds, but if the optional
+ *! @[nsec] is nonzero then it's returned in nanoseconds.
  *!
  *! The CPU time includes both user and system time, i.e. it's
  *! approximately the same thing you would get by adding together the
  *! "utime" and "stime" fields returned by @[System.getrusage] (but
- *! perhaps with better accurancy).
+ *! perhaps with better accurancy). It's however system dependent
+ *! whether or not it's the time consumed in all threads or in the
+ *! current one only; @[System.CPU_TIME_IS_THREAD_LOCAL] tells which.
  *!
  *! @note
  *!   The actual accurancy on many systems is significantly less than
  *!   milliseconds or nanoseconds.
  *!
+ *! @note
+ *!   The garbage collector might run automatically at any time. The
+ *!   time it takes is not included in the figure returned by this
+ *!   function, so that normal measurements isn't randomly clobbered
+ *!   by it. Explicit calls to @[gc] are still included, though.
+ *!
+ *! @note
+ *!   The special function @[gauge] is implemented with this function.
+ *!
  *! @seealso
+ *!   @[System.CPU_TIME_IS_THREAD_LOCAL], @[gauge],
  *!   @[System.getrusage()], @[gethrtime()]
  */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
+  cpu_time_t time = get_cpu_time();
+
+  /* Don't subtract the gc time at all if we don't know whether it's
+   * thread local or not, since if we do it wrong we might end up
+   * returning a negative number. */
+#if CPU_TIME_IS_THREAD_LOCAL == YES
+  time -= OBJ2THREAD(Pike_interpreter.thread_id)->auto_gc_time;
+#elif CPU_TIME_IS_THREAD_LOCAL == NO
+  time -= auto_gc_time;
+#endif
+
   pop_n_elems(args);
   if (args)
-    push_int64(get_cpu_time());
+    push_int64(time);
   else
-    push_int64(get_cpu_time()/1000);
+    push_int64(time/1000);
 }
 
 /*! @decl int gethrtime (void|int nsec)
