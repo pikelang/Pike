@@ -78,7 +78,7 @@ string common_prefix(array(string) strs)
 }
 
 class String_buffer {
-  string *buffer=allocate(BEGIN);
+  array(string) buffer=allocate(BEGIN);
   int ptr=0;
   
   static void fix()

@@ -2,7 +2,7 @@
 
 class stack {
   int ptr;
-  mixed *arr;
+  array arr;
 
   void push(mixed val)
   {
