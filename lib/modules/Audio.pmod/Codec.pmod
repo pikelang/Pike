@@ -4,11 +4,11 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.3 2002/07/22 13:30:44 nilsson Exp $
+  $Id: Codec.pmod,v 1.4 2002/07/27 13:20:16 nilsson Exp $
 
  */
 
-#if constant(_Ffmpeg)
+#if constant(_Ffmpeg.ffmpeg)
 //! Decoder object.
 class decoder {
 
