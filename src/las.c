@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.174 2000/04/06 09:03:59 hubbe Exp $");
+RCSID("$Id: las.c,v 1.175 2001/05/21 22:25:10 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3954,7 +3954,7 @@ int dooptcode(struct pike_string *name,
 		      type,
 		      modifiers,
 		      IDENTIFIER_PIKE_FUNCTION | vargs,
-		      &tmp);
+		      Pike_compiler->num_parse_error?NULL:&tmp)
 
 
 #ifdef PIKE_DEBUG
