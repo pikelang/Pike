@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.221 2003/09/08 15:28:14 mast Exp $
+|| $Id: object.c,v 1.222 2005/03/18 14:47:57 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.221 2003/09/08 15:28:14 mast Exp $");
+RCSID("$Id: object.c,v 1.222 2005/03/18 14:47:57 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -877,7 +877,10 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
-  DOUBLEUNLINK(first_object,o);
+  if (o->next != o) {
+    /* Don't unlink fake objects... */
+    DOUBLEUNLINK(first_object,o);
+  }
 
   if(o->prog)
   {
