@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
-// $Id: rntecl,v 1.6 2000/08/17 20:17:53 grubba Exp $
+// $Id: rntecl,v 1.7 2000/08/20 12:37:56 grubba Exp $
 
 // RNTECL, a front-end to Intel ECL with options similar to GCC
 // Written by Fredrik Hubinette & Henrik Grubbström.
@@ -75,6 +75,7 @@ int main(int argc, string *argv)
     ({"verbose",Getopt.NO_ARG, ({"-v"}) }),	
     ({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
     ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
+    ({"inline", Getopt.MAY_HAVE_ARG, ({"-Q"}) }),
     ({"include",Getopt.HAS_ARG, ({"-I"}) }),
     ({"link",Getopt.HAS_ARG, ({"-l"}) }),
     ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
@@ -148,6 +149,12 @@ int main(int argc, string *argv)
 	      break;
 	  }
 	  break;
+
+        case "inline":
+	  if (option[1] == "ip") {
+	    cflags+=({"-Qip"});
+	  }
+	  break;
 	  
 	case "include":
 	  // Avoid searching 'local' include dirs.
@@ -191,7 +198,10 @@ int main(int argc, string *argv)
 	  // recognized should generate warning/error messages.
 	  switch(option[1])
 	  {
-	    case "all": cflags+=({"-W4"}); break;
+	  case "all": case "4":
+	    cflags+=({"-W4"}); break;
+	    // Not supported, but in the manual...
+	    // case "X": cflags+=({"-WX"}); break;
 	    default: cflags+=({"-W3"}); break;
 	  }
 	  break;
@@ -287,29 +297,46 @@ int main(int argc, string *argv)
 
 
   int ret;
-  if(verbose && target!="-")
-  { 
-    ret=do_cmd(cmd);
-  }else{
-    int first_line=1;
-    // ecl.exe echoes the file name of the file we are compiling
-    // first, we need to get rid of that to make configure behave 
-    ret=silent_do_cmd(cmd, lambda(string line) 
+  int first_line=1;
+  int prototype_error=0;
+  string trailer = "";
+  // ecl.exe echoes the file name of the file we are compiling
+  // first, we need to get rid of that to make configure behave.
+  // We also convert warning 147 into an error.
+  ret = silent_do_cmd(cmd,
+		      lambda(string output) 
 		      {
+			trailer += output;
+			array(string) lines = trailer/"\n";
+			if (sizeof(lines) < 2) return;
 			if(first_line)
 			{
-			  array x=line/"\n";
-			  if(sizeof(x)>1)
-			  {
-			    line=x[1..]*"\n";
-			    first_line=0;
-			  }else{
-			    return;
+			  if (verbose && (target != "-")) {
+			    write(lines[0]+"\n");
+			  }
+			  lines = lines[1..];
+			  first_line = 0;
+			}
+			trailer = lines[-1];
+			lines = lines[..sizeof(lines)-2];
+			for(int i; i < sizeof(lines); i++) {
+			  // Warning 147 is prototype mismatch.
+			  // for some reason this isn't an error.
+			  // We make it an error...
+			  if (search(lines[i], "warning #147:") != -1) {
+			    prototype_error = 1;
+			    lines[i] = replace(lines[i],
+					       "warning #147:",
+					       "error #147:");
 			  }
 			}
-			write(line);
-		      },1);
+			write(lines*"\n" + "\n");
+		      }, 1);
+  if (sizeof(trailer)) {
+    // Shouldn't happen, but...
+    write(trailer);
   }
+  ret = ret || prototype_error;
 
   if(ret)
   {
