@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.151 1999/12/26 18:54:57 grubba Exp $");
+RCSID("$Id: las.c,v 1.152 1999/12/27 22:47:13 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3345,6 +3345,10 @@ static void optimize(node *n)
 {
   node *tmp1, *tmp2, *tmp3;
   INT32 save_line = lex.current_line;
+#ifdef PIKE_DEBUG
+  struct pike_string *save_file = lex.current_file;
+#endif /* PIKE_DEBUG */
+
   do
   {
     if(car_is_node(n) &&
@@ -3387,7 +3391,9 @@ static void optimize(node *n)
 #endif /* SHARED_NODES && !IN_TPIKE */
 
     lex.current_line = n->line_number;
-
+#ifdef PIKE_DEBUG
+    lex.current_file = n->current_file;
+#endif /* PIKE_DEBUG */
 
     n->tree_info = n->node_info;
     if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
@@ -3523,7 +3529,11 @@ static void optimize(node *n)
     n->node_info |= OPT_OPTIMIZED;
     n=n->parent;
   }while(n);
+
   lex.current_line = save_line;
+#ifdef PIKE_DEBUG
+  lex.current_file = save_file;
+#endif /* PIKE_DEBUG */
 }
 
 struct timer_oflo
