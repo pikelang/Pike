@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.123 2003/09/08 20:05:21 mast Exp $
+|| $Id: svalue.h,v 1.124 2003/09/09 14:58:54 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -578,6 +578,7 @@ PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p);
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s);
+PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s);
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 				      const struct svalue *from,
 				      size_t num,

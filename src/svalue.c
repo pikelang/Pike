@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.173 2003/09/08 20:05:21 mast Exp $
+|| $Id: svalue.c,v 1.174 2003/09/09 14:58:53 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.173 2003/09/08 20:05:21 mast Exp $");
+RCSID("$Id: svalue.c,v 1.174 2003/09/09 14:58:53 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1616,6 +1616,33 @@ PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
   if (orig_str.str) init_buf_with_string (orig_str);
   fwrite (str.str, str.len, 1, out);
   free (str.str);
+}
+
+PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
+{
+  switch (s->type) {
+    case T_ARRAY:
+      fprintf (out, "array of size %d", s->u.array->size);
+      break;
+    case T_MAPPING:
+      fprintf (out, "mapping of size %d", m_sizeof (s->u.mapping));
+      break;
+    case T_MULTISET:
+      fprintf (out, "multiset of size %d", multiset_sizeof (s->u.multiset));
+      break;
+    case T_STRING:
+      if (s->u.string->len > 80) {
+	push_string (string_slice (s->u.string, 0, 80));
+	print_svalue (out, Pike_sp - 1);
+	pop_stack();
+	fprintf (out, "... (%d chars more)", s->u.string->len - 80);
+	break;
+      }
+      /* Fall through. */
+    default:
+      print_svalue (out, s);
+      break;
+  }
 }
 
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
