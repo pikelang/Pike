@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.162 2001/02/06 21:36:14 grubba Exp $");
+RCSID("$Id: object.c,v 1.163 2001/03/12 22:42:18 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -241,8 +241,8 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
       }
     }
 
-    if(pike_frame->context.prog->init)
-      pike_frame->context.prog->init(o);
+    if(pike_frame->context.prog->event_handler)
+      pike_frame->context.prog->event_handler(PROG_EVENT_INIT);
   }
 
   POP_FRAME();
@@ -582,8 +582,8 @@ void destruct(struct object *o)
 
     SET_FRAME_CONTEXT(p->inherits[e]);
 
-    if(pike_frame->context.prog->exit)
-      pike_frame->context.prog->exit(o);
+    if(pike_frame->context.prog->event_handler)
+      pike_frame->context.prog->event_handler(PROG_EVENT_EXIT);
 
 #if 0
     if(!do_free)
@@ -1274,8 +1274,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       
       LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-      if(pike_frame->context.prog->gc_recurse_func)
-	pike_frame->context.prog->gc_recurse_func(o);
+      if(pike_frame->context.prog->event_handler)
+	pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
 
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
@@ -1330,8 +1330,8 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       
 	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-	if(pike_frame->context.prog->gc_recurse_func)
-	  pike_frame->context.prog->gc_recurse_func(o);
+	if(pike_frame->context.prog->event_handler)
+	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
 
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
@@ -1394,8 +1394,8 @@ static inline void gc_check_object(struct object *o)
       int q;
       LOW_SET_FRAME_CONTEXT(p->inherits[e]);
       
-      if(pike_frame->context.prog->gc_check_func)
-	pike_frame->context.prog->gc_check_func(o);
+      if(pike_frame->context.prog->event_handler)
+	pike_frame->context.prog->event_handler(PROG_EVENT_GC_CHECK);
       
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.300 2001/03/03 00:24:40 grubba Exp $");
+RCSID("$Id: program.c,v 1.301 2001/03/12 22:42:19 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1877,6 +1877,28 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
   return (size_t) offset;
 }
 
+typedef void (*oldhandlertype)(struct object *);
+static void compat_event_handler(enum pike_program_event e)
+{
+  oldhandlertype handler;
+  handler=((oldhandlertype *)Pike_fp->context.prog->program)[e];
+  if(handler) handler(Pike_fp->current_object);
+}
+
+static void add_compat_event_handler(void)
+{
+  if(Pike_compiler->new_program->event_handler != compat_event_handler)
+  {
+    unsigned int e,d;
+    unsigned char *tmp=(unsigned char *)&Pike_compiler->new_program->event_handler;
+
+    for(d=0;d<NUM_PROG_EVENTS;d++)
+      for(e=0;e<sizeof(Pike_compiler->new_program->event_handler);e++)
+	add_to_program(tmp[e]);
+    
+    Pike_compiler->new_program->event_handler=compat_event_handler;
+  }
+}
 
 /*
  * set a callback used to initialize clones of this program
@@ -1884,7 +1906,8 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
  */
 PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 {
-  Pike_compiler->new_program->init=init;
+  add_compat_event_handler();
+  ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_INIT]=init;
 }
 
 /*
@@ -1893,7 +1916,8 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
  */
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 {
-  Pike_compiler->new_program->exit=exit;
+  add_compat_event_handler();
+  ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_EXIT]=exit;
 }
 
 /*
@@ -1910,7 +1934,8 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  */
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 {
-  Pike_compiler->new_program->gc_recurse_func=m;
+  add_compat_event_handler();
+  ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_RECURSE]=m;
 }
 
 /*
@@ -1926,7 +1951,8 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
  */
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
 {
-  Pike_compiler->new_program->gc_check_func=m;
+  add_compat_event_handler();
+  ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
 }
 
 int low_reference_inherited_identifier(struct program_state *q,

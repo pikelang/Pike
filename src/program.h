@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.117 2001/02/24 18:23:15 grubba Exp $
+ * $Id: program.h,v 1.118 2001/03/12 22:42:19 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -254,6 +254,14 @@ struct pike_trampoline
 /* Program is in an inconsistant state */
 #define PROGRAM_AVOID_CHECK 512
 
+enum pike_program_event
+{
+  PROG_EVENT_INIT =0,
+  PROG_EVENT_EXIT,
+  PROG_EVENT_GC_RECURSE,
+  PROG_EVENT_GC_CHECK,
+  NUM_PROG_EVENTS,
+};
 
 struct program
 {
@@ -275,10 +283,7 @@ struct program
   struct program *next;
   struct program *prev;
 
-  void (*init)(struct object *);
-  void (*exit)(struct object *);
-  void (*gc_recurse_func)(struct object *);
-  void (*gc_check_func)(struct object *);
+  void (*event_handler)(enum pike_program_event);
 #ifdef PIKE_DEBUG
   unsigned INT32 checksum;
 #endif
