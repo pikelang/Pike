@@ -326,6 +326,16 @@ class GetProperty
     
     sscanf(reply->rest, "%4c%4c%4c",
 	   m->type, m->bytesAfter, length);
+    
+    /* Match and Property errors (as in rfc-1013) are not used,
+     * according to the official specification. For non-existent
+     * properties, format == 0 is returned.
+     *
+     * If types doesn't match, format is non-zero, the actual type is
+     * returned, but the data is empty (length = 0). */
+     
+    if ( (!m->format) || (type && (type != m->type)))
+      return 0;
     switch(m->format)
       {
       case 8:
@@ -359,8 +369,6 @@ class GetProperty
      * unexpected type, or too short, return 0 */
     switch (reply->errorCode)
       {
-      case "Property":
-      case "Match":
       case "Value":
 	return 0;
       case "Atom":
