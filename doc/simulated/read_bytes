@@ -2,7 +2,7 @@ NAME
 	read_bytes - read a number of bytes into a string from a file
 
 SYNTAX
-	#include <simulate.h>
+	#include <stdio.h>
 
 	string read_bytes(string file,int start,int len);
 

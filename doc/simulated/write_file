@@ -2,7 +2,7 @@ NAME
 	write_file - append a string to a file
 
 SYNTAX
-	#include <simulate.h>
+	#include <stdio.h>
 
 	int write_file(string file, string str)
 
