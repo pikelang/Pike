@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.122 2001/02/08 18:21:11 grubba Exp $");
+RCSID("$Id: operators.c,v 1.123 2001/02/08 19:28:10 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3181,9 +3181,35 @@ PMOD_EXPORT void f_arrow(INT32 args)
   }
 }
 
-/*! @decl mixed `[]=(mixed arg1, mixed arg2, mixed arg3)
+/*! @decl mixed `[]=(object arg, mixed index, mixed val)
+ *! @decl mixed `[]=(object arg, string index, mixed val)
+ *! @decl mixed `[]=(array arg, int index, mixed val)
+ *! @decl mixed `[]=(mapping arg, mixed index, mixed val)
+ *! @decl int(0..1) `[]=(multiset arg, mixed index, int(0..1) val)
  *!
  *! Index assign operator.
+ *!
+ *! If @[arg] is an object that implements @[lfun::`[]=()], that function
+ *! will be called with @[index] and @[val] as the arguments.
+ *!
+ *! @mixed @[arg]
+ *!   @type object
+ *!     The non-static (ie public) variable named @[index] will be looked up
+ *!     in @[arg], and assigned @[val].
+ *!   @type array
+ *!   @type mapping
+ *!     Index @[index] in @[arg] will be assigned @[val].
+ *!   @type multiset
+ *!     If @[val] is @tt{0@} (zero), one occurrance of @[index] in
+ *!     @[arg] will be removed. Otherwise @[index] will be added
+ *!     to @[arg] if it is not already there.
+ *! @endmixed
+ *!
+ *! @returns
+ *!   @[val] will be returned.
+ *!
+ *! @seealso
+ *!   @[`->=()], @[lfun::`[]=()]
  */
 PMOD_EXPORT void f_index_assign(INT32 args)
 {
@@ -3204,9 +3230,36 @@ PMOD_EXPORT void f_index_assign(INT32 args)
   }
 }
 
-/*! @decl mixed `->=(mixed arg1, mixed arg2, mixed arg3)
+/*! @decl mixed `->=(object arg, string index, mixed val)
+ *! @decl mixed `->=(mapping arg, string index, mixed val)
+ *! @decl int(0..1) `->=(multiset arg, string index, int(0..1) val)
  *!
  *! Arrow assign operator.
+ *!
+ *! This function behaves much like @[`[]=()], just that the index is always
+ *! a string.
+ *!
+ *! If @[arg] is an object that implements @[lfun::`->=()], that function
+ *! will be called with @[index] and @[val] as the arguments.
+ *!
+ *! @mixed @[arg]
+ *!   @type object
+ *!     The non-static (ie public) variable named @[index] will be looked up
+ *!     in @[arg], and assigned @[val].
+ *!   @type array
+ *!   @type mapping
+ *!     Index @[index] in @[arg] will be assigned @[val].
+ *!   @type multiset
+ *!     If @[val] is @tt{0@} (zero), one occurrance of @[index] in
+ *!     @[arg] will be removed. Otherwise @[index] will be added
+ *!     to @[arg] if it is not already there.
+ *! @endmixed
+ *!
+ *! @returns
+ *!   @[val] will be returned.
+ *!
+ *! @seealso
+ *!   @[`[]=()], @[lfun::`->=()]
  */
 PMOD_EXPORT void f_arrow_assign(INT32 args)
 {
@@ -3227,9 +3280,31 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
   }
 }
 
-/*! @decl int sizeof(mixed arg)
- *!
+/*! @decl int sizeof(string arg)
+ *! @decl int sizeof(array arg)
+ *! @decl int sizeof(mapping arg)
+ *! @decl int sizeof(multiset arg)
+ *! @decl int sizeof(object arg)
+ *! 
  *! Sizeof operator.
+ *!
+ *! The result will be as follows:
+ *! @mixed @[arg]
+ *!   @type string
+ *!     The number of characters in @[arg] will be returned.
+ *!   @type array
+ *!   @type multiset
+ *!     The number of elements in @[arg] will be returned.
+ *!   @type mapping
+ *!     The number of key-value pairs in @[arg] will be returned.
+ *!   @type object
+ *!     If @[arg] implements @[lfun::_sizeof()], that function will
+ *!     be called. Otherwise the number of non-static (ie public)
+ *!     symbols in @[arg] will be returned.
+ *! @endmixed
+ *!
+ *! @seealso
+ *!   @[lfun::_sizeof()]
  */
 PMOD_EXPORT void f_sizeof(INT32 args)
 {
