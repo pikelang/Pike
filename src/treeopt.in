@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.77 2004/11/28 16:47:47 grubba Exp $
+// $Id: treeopt.in,v 1.78 2004/11/29 11:09:03 grubba Exp $
 //
 // The tree optimizer
 //
@@ -744,12 +744,10 @@ F_NOT(F_GE(0 [pike_types_le($$->type, int_type_string)],
 	   1 [pike_types_le($$->type, int_type_string)]), *):
   F_LT($0, $1);
 
-F_NOT(F_EQ(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_EQ(0, 1), *):
   F_NE($0, $1);
 
-F_NOT(F_NE(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_NE(0, 1), *):
   F_EQ($0, $1);
 
 
