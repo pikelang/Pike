@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.64 2003/04/07 17:17:31 nilsson Exp $
+ * $Id: Sql.pike,v 1.65 2003/04/22 18:02:30 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //! Implements those functions that need not be present in all SQL-modules.
 
-#define throw_error(X)	throw(({ (X), backtrace() }))
+#define ERROR(X ...)	predef::error(X)
 
 //! Object to use for the actual SQL-queries.
 object master_sql;
@@ -134,8 +134,8 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
     master_sql = host;
     if ((user && user != "") || (password && password != "") ||
 	(options && sizeof(options))) {
-      throw_error("Sql.sql(): Only the database argument is supported when "
-		  "first argument is an object\n");
+      ERROR("Only the database argument is supported when "
+	    "first argument is an object\n");
     }
     if (db && db != "") {
       master_sql->select_db(db);
@@ -202,13 +202,12 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
     }
 
     if (!program_name) {
-      throw_error("Sql.Sql(): No protocol specified.\n");
+      ERROR("No protocol specified.\n");
     }
     /* Don't call ourselves... */
     if ((sizeof(program_name / "_result") != 1) ||
 	(lower_case(program_name[..2]) == "sql")) {
-      throw_error(sprintf("Sql.Sql(): Unsupported protocol: %O\n",
-			  program_name));
+      ERROR("Unsupported protocol: %O\n", program_name);
     }
 
 
@@ -231,8 +230,7 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
 	master_sql = p();
       }
     } else {
-      throw_error(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
-			  program_name));
+      ERROR("Failed to index module Sql.%s\n", program_name);
     }
   }
 
@@ -325,7 +323,7 @@ private array(string|mapping(string|int:mixed)) handle_extraargs(string query, a
       b[args[j]] = s;
       continue;
     }
-    throw_error("Wrong type to query argument #"+(j+1)+"\n");
+    ERROR("Wrong type to query argument #"+(j+1)+"\n");
   }
   return ({sprintf(query,@args), b});
 }
@@ -444,7 +442,7 @@ void shutdown()
   if (functionp(master_sql->shutdown)) {
     master_sql->shutdown();
   } else {
-    throw_error("sql->shutdown(): Not supported by this database\n");
+    ERROR("Not supported by this database\n");
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.10 2001/12/04 14:42:42 nilsson Exp $
+ * $Id: sql_util.pmod,v 1.11 2003/04/22 18:02:53 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -23,7 +23,7 @@ string quote(string s)
 //! Throw an error in case an unimplemented function is called.
 void fallback()
 {
-  throw(({ "Function not supported in this database.", backtrace() }));
+  error( "Function not supported in this database." );
 }
 
 //! Build a raw SQL query, given the cooked query and the variable bindings

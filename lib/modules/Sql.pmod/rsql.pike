@@ -5,7 +5,6 @@
 #define RSQL_PORT 3994
 #define RSQL_VERSION 1
 
-
 #if constant(thread_create)
 #define LOCK object key=mutex->lock()
 #define UNLOCK destruct(key)
@@ -15,6 +14,7 @@ static private object(Thread.Mutex) mutex = Thread.Mutex();
 #define UNLOCK
 #endif
 
+#define ERROR(X ...) predef::error(X)
 
 static object(Stdio.File) sock;
 static int seqno = 0;
@@ -28,21 +28,19 @@ static void low_reconnect()
   if(sock)
     destruct(sock);
   if(!losock->connect(host, port|RSQL_PORT))
-    throw(({"Can't connect to "+host+(port? ":"+port:"")+": "+
-	    strerror(losock->errno())+"\n", backtrace()}));
-  if(8!=losock->write(sprintf("RSQL%4c", RSQL_VERSION)) ||
+    ERROR("Can't connect to "+host+(port? ":"+port:"")+": "+
+	  strerror(losock->errno())+"\n");
+  if(8!=losock->write("RSQL%4c", RSQL_VERSION) ||
      losock->read(4) != "SQL!") {
     destruct(losock);
-    throw(({"Initial handshake error on "+host+(port? ":"+port:"")+"\n",
-	    backtrace()}));    
+    ERROR("Initial handshake error on "+host+(port? ":"+port:"")+"\n");
   }
   sock = losock;
   if(!do_request('L', ({user,pw}), 1)) {
     sock = 0;
     if(losock)
       destruct(losock);
-    throw(({"Login refused on "+host+(port? ":"+port:"")+"\n",
-	    backtrace()}));        
+    ERROR("Login refused on "+host+(port? ":"+port:"")+"\n");
   }
 }
 
@@ -62,11 +60,11 @@ static mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
   if(!sock)
     if(noreconnect) {
       UNLOCK;
-      throw(({"No connection\n", backtrace()}));
+      ERROR("No connection\n");
     } else
       low_reconnect();
   arg = (arg? encode_value(arg) : "");
-  sock->write(sprintf("?<%c>%4c%4c%s", cmd, ++seqno, sizeof(arg), arg));
+  sock->write("?<%c>%4c%4c%s", cmd, ++seqno, sizeof(arg), arg);
   string res;
   int rlen;
   if((res = sock->read(12)) && sizeof(res)==12 &&
@@ -77,21 +75,21 @@ static mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
       destruct(sock);
       UNLOCK;
       if(noreconnect)
-	throw(({"RSQL Phase error, disconnected\n", backtrace()}));
+	ERROR("RSQL Phase error, disconnected\n");
       else return do_request(cmd, arg, 1);
     }
     UNLOCK;
     rdat = (sizeof(rdat)? decode_value(rdat):0);
     switch(res[0]) {
     case '.': return rdat;
-    case '!': throw(rdat);
+    case '!': ERROR(rdat);
     }
-    throw(({"Internal error\n", backtrace()}));    
+    ERROR("Internal error\n");
   } else {
     destruct(sock);
     UNLOCK;
     if(noreconnect)
-      throw(({"RSQL Phase error, disconnected\n", backtrace()}));
+      ERROR("RSQL Phase error, disconnected\n");
     else return do_request(cmd, arg, 1);
   }
 }
