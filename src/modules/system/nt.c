@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.11 1999/05/12 00:26:50 marcus Exp $
+ * $Id: nt.c,v 1.12 1999/05/12 23:07:19 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -320,15 +320,11 @@ static void encode_group_info(BYTE *u)
 
   tmp=(GROUP_INFO_2 *)u;
 
-  push_constant_text("name");
   SAFE_PUSH_WSTR(tmp->grpi2_name);
-  push_constant_text("comment");
   SAFE_PUSH_WSTR(tmp->grpi2_comment);
-  push_constant_text("group_id");
   push_int(tmp->grpi2_group_id);
-  push_constant_text("attributes");
   push_int(tmp->grpi2_attributes);
-  f_aggregate_mapping(8);
+  f_aggregate(4);
 }
 
 static void encode_localgroup_info(BYTE *u)
@@ -342,11 +338,9 @@ static void encode_localgroup_info(BYTE *u)
 
   tmp=(LOCALGROUP_INFO_1 *)u;
 
-  push_constant_text("name");
   SAFE_PUSH_WSTR(tmp->lgrpi1_name);
-  push_constant_text("comment");
   SAFE_PUSH_WSTR(tmp->lgrpi1_comment);
-  f_aggregate_mapping(4);
+  f_aggregate(2);
 }
 
 static void encode_group_name(BYTE *u)
@@ -923,28 +917,28 @@ void init_nt_system_calls(void)
       {
 	netgroupenum=(netgroupenumtype)proc;
 	
-  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void:array(mapping(string:string|int)))",0); 
+  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void,int|void:array(array(string|int)))",0); 
       }
 
       if(proc=GetProcAddress(netapilib, "NetLocalGroupEnum"))
       {
 	netlocalgroupenum=(netgroupenumtype)proc;
 	
-  	add_function("NetLocalGroupEnum",f_NetLocalGroupEnum,"function(string|int|void:array(mapping(string:string|int)))",0); 
+  	add_function("NetLocalGroupEnum",f_NetLocalGroupEnum,"function(string|int|void,int|void:array(array(string|int)))",0); 
       }
 
       if(proc=GetProcAddress(netapilib, "NetUserGetGroups"))
       {
 	netusergetgroups=(netusergetgroupstype)proc;
 	
- 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string:array(string))",0); 
+ 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string,int|void:array(string))",0); 
       }
 
       if(proc=GetProcAddress(netapilib, "NetUserGetLocalGroups"))
       {
 	netusergetlocalgroups=(netusergetlocalgroupstype)proc;
 	
- 	add_function("NetUserGetLocalGroups",f_NetUserGetLocalGroups,"function(string|int,string:array(string))",0); 
+ 	add_function("NetUserGetLocalGroups",f_NetUserGetLocalGroups,"function(string|int,string,int|void:array(string))",0); 
       }
     }
   }
