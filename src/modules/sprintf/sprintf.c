@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.54 1999/10/26 15:34:33 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.55 1999/10/26 15:55:51 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1127,7 +1127,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	      if((*p++ = '0'|(val&((1<<base)-1)))>'9')
 		p[-1] += (mode=='X'? 'A'-'9'-1 : 'a'-'9'-1);
 	      val = ((unsigned INT_TYPE)val) >> base;
-	    } while(--mask_size && val);
+	    } while(val);
 	    l = p-x-1;
 	  }
 	  *p = '\0';
