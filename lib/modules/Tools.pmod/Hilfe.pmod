@@ -83,6 +83,11 @@ import Getopt;
 	{
 	  c[1]=c[1][sizeof(backtrace())..];
 	  write(describe_backtrace(c));
+	}
+	else if(objectp(c) && c->is_generic_error)
+	{
+	  c->__backtrace=c->__backtrace[sizeof(backtrace())..];
+	  write(describe_backtrace(c));
 	}else{
 	  write(sprintf("Error in evalutation: %O\n",c));
 	}

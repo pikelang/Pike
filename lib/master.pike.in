@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.42 1999/03/17 21:44:52 hubbe Exp $
+/* $Id: master.pike.in,v 1.43 1999/03/19 11:14:27 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -1095,7 +1095,8 @@ string describe_backtrace(mixed *trace)
   int e;
   string ret;
 
-  if(arrayp(trace) && sizeof(trace)==2 && stringp(trace[0]))
+  if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
+     (objectp(trace) && trace->is_generic_error))
   {
     ret=trace[0];
     trace=trace[1];
