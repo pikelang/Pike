@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.351 2000/11/29 13:14:18 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.352 2000/12/13 15:14:24 noring Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5435,6 +5435,10 @@ test_eq(reverse("r\7777777v\7777777rs\7777777"),"\7777777sr\7777777v\7777777r")
 test_eq(reverse(""),"")
 test_eq(reverse("a"),"a")
 test_equal(reverse(({1,5,9})),({9,5,1}))
+test_equal(reverse(({})),({}))
+test_equal(reverse(({42})),({42}))
+test_equal(reverse(({42,4711})),({4711,42}))
+test_equal(reverse(({42,4711,76})),({76,4711,42}))
 test_equal(reverse(0x12345678),0x1e6a2c48)
 
 // - rusage
