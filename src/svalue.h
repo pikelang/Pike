@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.92 2001/06/04 23:59:10 mast Exp $
+ * $Id: svalue.h,v 1.93 2001/07/05 00:10:54 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -318,8 +318,8 @@ if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
 static inline struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
 {
   debug_malloc_update_location(s,l);
-#if 0
-  if(s->type <= MAX_REF_TYPE)
+#if 1
+  if(s && s->type <= MAX_REF_TYPE)
     debug_malloc_update_location(s->u.refs,l);
 #endif
   return s;
@@ -328,8 +328,8 @@ static inline struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
 static inline union anything *dmalloc_check_union(union anything *u,int type, char * l)
 {
   debug_malloc_update_location(u,l);
-#if 0
-  if(type <= MAX_REF_TYPE)
+#if 1
+  if(u && type <= MAX_REF_TYPE)
     debug_malloc_update_location(u->refs,l);
 #endif
   return u;
