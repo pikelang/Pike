@@ -1,6 +1,20 @@
-AC_REVISION("$Id: configure.in,v 1.590 2002/06/25 14:26:40 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.591 2002/06/25 16:54:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
+
+if test "AC_ACVERSION" -ge 2.50; then
+  AC_MSG_WARN([configure script has been generated with autoconf 2.50 or later.])
+  if test "x$cache_file" = "x/dev/null"; then
+    cache_file=./config.cache
+    if test -r "$cache_file"; then
+      echo "loading cache $cache_file"
+      . $cache_file
+    else
+      echo "creating cache $cache_file"
+      > $cache_file
+    fi
+  fi
+fi
 
 # We want an absolute path to the source-dir.
 case "$srcdir" in
