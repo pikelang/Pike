@@ -119,6 +119,12 @@ class MapWindow
   constant reqType = 8;
 }
 
+class UnmapWindow
+{
+  inherit ResourceReq;
+  constant reqType = 10;
+}
+
 class GetKeyboardMapping
 {
   inherit request;
@@ -468,6 +474,73 @@ class UnGrabButton
 }
 #endif
 
+class OpenFont
+{
+  inherit request;
+  constant reqType = 45;
+
+  int fid;
+  string name;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%2c\0\0%s",
+				 fid, sizeof(name), name));
+  }
+}
+
+class CloseFont
+{
+  inherit ResourceReq;
+  constant reqType = 46;
+}
+
+class QueryTextExtents
+{
+  inherit request;
+  constant reqType = 48;
+
+  int font;
+  string str;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%s",
+				 font, str), (sizeof(str)/2)&1);
+  }
+
+  mapping(string:int) handle_reply(mapping reply)
+  {
+    mapping(string:int) res = (["DrawDirection":reply->data1]);
+    sscanf(reply->rest, "%2c%2c%2c%2c%4c%4c%4c",
+	   res->FontAscent, res->FontDescent,
+	   res->OverallAscent, res->OverallDescent,
+	   res->OverallWidth, res->OverallLeft, res->OverallRight);
+    return res;
+  }
+}
+
+class CreatePixmap
+{
+  inherit request;
+  constant reqType = 53;
+
+  int depth;
+  
+  int pid;
+  int drawable;
+
+  int width, height;
+
+  string to_string()
+  {
+    return build_request
+      (sprintf("%4c%4c" "%2c%2c",
+		      pid, drawable,
+		      width, height), depth);
+  }
+}
+
 class CreateGC
 {
   inherit request;
@@ -617,6 +690,23 @@ class PutImage
   
 }
 
+class ImageText8
+{
+  inherit request;
+  constant reqType = 76;
+
+  int drawable;
+  int gc;
+  int x, y;
+  string str;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%2c%2c%s",
+				 drawable, gc, x, y, str), sizeof(str));
+  }
+}
+
 class CreateColormap
 {
   inherit request;
@@ -661,27 +751,6 @@ class AllocColor
   }
 }
 
-class CreatePixmap
-{
-  inherit request;
-  constant reqType = 53;
-
-  int depth;
-  
-  int pid;
-  int drawable;
-
-  int width, height;
-
-  string to_string()
-  {
-    return build_request
-      (sprintf("%4c%4c" "%2c%2c",
-		      pid, drawable,
-		      width, height), depth);
-  }
-}
-
 class QueryExtension
 {
   inherit request;
@@ -712,9 +781,6 @@ class QueryExtension
     return 0;
   }
 }
-
-
-
 
 class ExtensionRequest
 {
