@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.645 2003/05/27 15:31:41 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.646 2003/05/27 16:12:42 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9613,7 +9613,7 @@ test_any([[
   Process.TraceProcess proc =
     Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "sleep(99999)" }));
 
-  inst state;
+  int state;
   int code;
   while ((code = proc->wait()) == -2) {
     int sig = proc->last_signal();
