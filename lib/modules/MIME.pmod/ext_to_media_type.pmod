@@ -1,4 +1,4 @@
-// $Id: ext_to_media_type.pmod,v 1.2 2002/11/11 14:18:52 nilsson Exp $
+// $Id: ext_to_media_type.pmod,v 1.3 2002/11/11 21:10:33 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -831,6 +831,7 @@ static mapping ext2type = ([
 //! @belongs MIME
 //! Returns the MIME media type for the provided filename extension @[ext].
 //! Zero will be returned on unknown file extensions.
+
 string `()(string ext) {
   return small_ext2type[ext] || ext2type[ext];
 }
