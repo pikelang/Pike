@@ -34,15 +34,21 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
   {
     return pid;
   }else{
-    if(stdin)
+    if(stdin) {
       stdin->dup2(File("stdin"));
+      stdin->close();
+    }
 
-    if(stdout)
+    if(stdout) {
       stdout->dup2(File("stdout"));
+      stdout->close();
+    }
 
-    if(stderr)
+    if(stderr) {
       stderr->dup2(File("stderr"));
-    
+      stderr->close();
+    }
+    ::close();
     exec("/bin/sh","-c",s);
     exit(69);
   }
@@ -56,6 +62,7 @@ string popen(string s)
   p=file::pipe();
   if(!p) error("Popen failed. (couldn't create pipe)\n");
   spawn(s,0,p,0);
+  p->close();
   destruct(p);
 
   t=read(0x7fffffff);
