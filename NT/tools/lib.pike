@@ -74,6 +74,16 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       string mnt=getenv("NTMOUNT");
       if(mnt && strlen(mnt)) tmp=replace(tmp,mnt,"");
       cmd=({getenv("NTDRIVE")+replace(tmp,"/","\\")})+cmd;
+
+#if 1
+      /* Experimental */
+      if(mnt && strlen(mnt)>1)
+      {
+	for(int e=1;e<sizeof(cmd);e++)
+	  cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
+      }
+#endif
+
       if(!f->connect(getenv("NTHOST"),(int)getenv("NTPORT")))
       {
 	werror("Failed to connect "+strerror(errno())+".\n");
