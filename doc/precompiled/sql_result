@@ -1,5 +1,5 @@
 NAME
-	/precompiled/sql/sql_result - generic SQL result from a big_query (ALPHA)
+	/precompiled/sql_result - generic SQL result from a big_query (ALPHA)
 
 DESCRIPTION
 	/precompiled/sql_result is a precompiled Pike program. It usually
