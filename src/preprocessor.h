@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.61 2003/11/14 04:52:35 mast Exp $
+|| $Id: preprocessor.h,v 1.62 2004/02/07 02:49:20 nilsson Exp $
 */
 
 /*
@@ -2135,6 +2135,34 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    FIND_EOL();
 	  break;
 	}
+      }
+    case 'w': /* warning */
+      {
+	static WCHAR warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
+
+	if(WGOBBLE2(warning_))
+	{
+	  ptrdiff_t foo;
+
+          SKIPSPACE();
+          foo=pos;
+          FIND_EOL();
+	  if(OUTP())
+	  {
+#if (SHIFT == 0)
+	    push_string(make_shared_binary_string((char *)data+foo, pos-foo));
+#else /* SHIFT != 0 */
+#if (SHIFT == 1)
+	    push_string(make_shared_binary_string1(data+foo, pos-foo));
+#else /* SHIFT != 1 */
+	    push_string(make_shared_binary_string2(data+foo, pos-foo));
+#endif /* SHIFT == 1 */
+#endif /* SHIFT == 0 */
+	    cpp_warning(this, Pike_sp[-1].u.string->str);
+	  }
+	  break;
+	}
+	goto unknown_preprocessor_directive;
       }
     default:
     unknown_preprocessor_directive:

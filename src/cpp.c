@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.130 2003/12/06 10:09:17 nilsson Exp $
+|| $Id: cpp.c,v 1.131 2004/02/07 02:49:20 nilsson Exp $
 */
 
 #include "global.h"
@@ -179,6 +179,25 @@ void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
 
   pop_stack();
   free_svalue(&thrown);
+}
+
+static void cpp_warning(struct cpp *this, const char *err)
+{
+  if((this->handler && this->handler->prog) || get_master())
+  {
+    ref_push_string(this->current_file);
+    push_int(this->current_line);
+    push_text(err);
+    low_safe_apply_handler("compile_warning", this->handler,
+			   this->compat_handler, 3);
+    pop_stack();
+  }else{
+    (void)fprintf(stderr, "%s:%ld: %s\n",
+		  this->current_file->str,
+		  (long)this->current_line,
+		  err);
+    fflush(stderr);
+  }
 }
 
 /*! @class MasterObject
