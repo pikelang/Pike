@@ -1,14 +1,14 @@
 #! /bin/sh
-# postinst script for pike7.3
+# postinst script for pike7.4
 #
 # see: dh_installdeb(1)
 # 
-# $Id: postinst,v 1.5 2002/08/10 19:06:08 grendel Exp $
+# $Id: postinst,v 1.6 2002/12/06 04:07:23 grendel Exp $
 #
 
 set -e
 
-PIKE=7.3
+PIKE=7.4
 PIKEBIN=pike${PIKE}
 
 # summary of how this script can be called:

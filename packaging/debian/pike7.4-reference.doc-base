@@ -1,0 +1,10 @@
+Document: pike7.4-refdoc
+Title: Pike 7.4 Reference
+Author: The Pike Authors
+Abstract: This document contains the full reference of all
+ the Pike modules and functions.
+Section: Apps/Programming
+
+Format: HTML
+Index: /usr/share/doc/pike7.4-doc/html/reference/index.html
+Files: /usr/share/doc/pike7.4-doc/html/reference/*.html

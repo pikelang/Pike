@@ -1,0 +1,5 @@
+usr/lib/pike7.4/*/modules/GDK*
+usr/lib/pike7.4/*/modules/Gnome*
+usr/lib/pike7.4/*/modules/GTKSupport.pmod/*
+usr/lib/pike7.4/*/modules/*GTK*
+

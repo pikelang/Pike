@@ -1,0 +1,3 @@
+usr/lib/pike7.4/*/include/mysql.h
+usr/lib/pike7.4/*/modules/Mysql.so
+usr/lib/pike7.4/*/modules/Sql.pmod/mysql*
