@@ -240,3 +240,192 @@ string soundex(string word) {
   word+="000";
   return first + word[..2];
 }
+
+// ----------------------------------------------------------------
+
+static private class _Elite
+{
+// neccesary translation (in order)
+   array(array(string|array(string)))  elite_short=
+   ({
+      ({" you are"," your"}),
+      ({" you'r"," your"}),
+      ({" what the"," wt"}),
+      ({" wt fuck"," wtf"}),
+      ({" wtf?"," wtf!"}),
+      ({" download"," d/l"}),
+      ({" upload"," u/l"}),
+      ({"picture","pic"}),
+      ({" pornography"," pr0n"}),
+      ({" porn"," pr0n"}),
+      ({" cool"," kewl"}),
+   });
+
+// optional recursive translation (in order)
+   array(array(string|array(string))) elite_trans=
+   ({
+      ({"you",({"u","j00"})}),
+      ({" are "," r "}),
+      ({" ok "," k "}),
+      ({"dude","dood"}),
+      ({"newbie","noob"}),
+
+      ({"ff","ph"}),
+      ({"f","ph"}),
+      ({"cks",({"x","xx","xz"})}),
+      ({"cs ",({"kz ","cz "})}),
+      ({"ks",({"x","xz"})}),
+      ({"cs",({"x","xz"})}),
+      ({"ck",({"k","cc"})}),
+      ({"ers ",({"ors "})}),
+      ({"er ",({"or "})}),
+      ({"ed ",({"edz "})}),
+      ({"s ",({"z "})}),
+      ({"s!",({"z."})}),
+      ({"s.",({"z!"})}),
+      ({"s,",({"z,"})}),
+      ({"!","!!"}),
+      ({".","!"}),
+      ({"?","??"}),
+   });
+
+// optional one-time character translation
+   mapping(string:array(string)) elite_char=
+   ([
+      "a":({"4"}),
+      "b":({"8"}),
+      "c":({"("}),
+      "d":({"|)"}),
+      "e":({"3"}),
+      "f":({}),
+      "g":({"6"}),
+      "h":({}),
+      "i":({"1","|"}),
+      "j":({"_)"}),
+      "k":({"|<"}),
+      "l":({"1","|_"}),
+      "m":({"|V|","|\\/|"}),
+      "n":({"|\\|"}),
+      "o":({"0","()"}),
+      "p":({}),
+      "q":({}),
+      "r":({}),
+      "s":({"5"}),
+      "t":({"+","7"}),
+      "u":({}),
+      "v":({"\\/"}),
+      "w":({}),
+      "x":({"><"}),
+      "y":({}),
+      "z":({"z","Z"}),
+
+      "0":({"()"}),
+      "1":({"|","l"}),
+      "2":({}),
+      "3":({"E"}),
+      "4":({}),
+      "5":({"S"}),
+      "6":({"G"}),
+      "7":({}),
+      "8":({}),
+      "9":({}),
+      "0":({"()","O"}),
+   ]);
+
+// how do I mark up this correctly? It's String.Elite.foobar.
+
+// translates one word to 1337. The optional
+// argument leetp is the maximum percentage of 
+// leetness (100=max leet, 0=no leet).
+// elite_word only do character-based translation,
+// for instance from "k" to "|<", but no language
+// translation (no "cool" to "kewl").
+
+   string elite_word(string in,void|int leetp)
+   {
+      if (zero_type(leetp)) leetp=50; // aim for 50% leetness
+      else if (!leetp) return in;
+
+      array v=rows(elite_char,lower_case(in)/1);
+   
+      multiset leet=(<>);
+      multiset unleet=(<>);
+      foreach (v;int i;array(string) d)
+	 if (!d || !sizeof(d)) unleet[i]=1;
+	 else leet[i]=1;
+   
+// lower leet level to target leetness
+      while (100*sizeof(leet)/sizeof(in)>leetp)
+      {
+	 int z=((array)leet)[random(sizeof(leet))];
+	 leet[z]=0;
+	 unleet[z]=1;
+      }
+
+      string res="";
+      foreach (v;int i;array(string) d)
+	 if (leet[i])
+	 {
+	    res+=d[random(sizeof(d))];
+	 }
+	 else 
+	    res+=in[i..i];
+
+      return res;
+   }
+
+// translates a string to 1337. The optional
+// argument leetp is the maximum percentage of 
+// leetness (100=max leet, 0=no leet).
+//
+// The translation is performed in three steps,
+// first the neccesary elite translations (picture -> pic, 
+// cool->kewl etc), then optional translations
+// (ok->k, dude->dood, -ers -> -orz), then
+// calls elite_word on the resulting words.
+
+   string elite_string(string in,void|int leetp)
+   {
+      if (zero_type(leetp)) leetp=50; // aim for 50% leetness
+
+      in=" "+in+" ";
+      foreach (elite_short;;[string what,array(string)|string dest])
+      {
+	 string res="";
+	 int i;
+	 while ((i=search(lower_case(in),what))!=-1)
+	 {
+	    if (arrayp(dest)) dest=dest[random(sizeof(dest))];
+	    res+=in[..i-1]+dest;
+	    in=in[i+strlen(what)..];
+	 }
+	 in=res+in;
+      }
+
+      in=" "+in+" ";
+      foreach (elite_trans;;[string what,array(string)|string dest])
+      {
+	 string res="";
+	 int i;
+	 while ((i=search(lower_case(in),what))!=-1)
+	 {
+	    string r;
+	    if (dest && random(100)<leetp) 
+	    {
+	       if (!arrayp(dest)) r=dest;
+	       else r=dest[random(sizeof(dest))];
+	    }
+	    else
+	       r=what;
+	    res+=in[..i-1]+r;
+	    in=in[i+strlen(what)..];
+	 }
+	 in=res+in;
+      }
+   
+      in=map(in/" "-({""}),elite_word,leetp)*" ";
+
+      return in;
+   }
+};
+_Elite Elite=_Elite();
