@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.8 1996/11/14 01:36:30 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.9 1996/11/18 20:56:25 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -20,6 +20,7 @@ RCSID("$Id: pike_types.c,v 1.8 1996/11/14 01:36:30 hubbe Exp $");
 #include "error.h"
 
 static void internal_parse_type(char **s);
+static int type_length(char *t);
 
 /*
  * basic types are represented by just their value in a string
@@ -51,6 +52,19 @@ struct pike_string *mapping_type_string;
 struct pike_string *mixed_type_string;
 struct pike_string *void_type_string;
 struct pike_string *any_type_string;
+
+#ifdef DEBUG
+static void CHECK_TYPE(struct pike_string *s)
+{
+  if(debug_findstring(s) != s)
+    fatal("Type string not shared.\n");
+
+  if(type_length(s->str) != s->len)
+    fatal("Length of type is wrong.\n");
+}
+#else
+#define CHECK_TYPE(X)
+#endif
 
 void init_types()
 {
@@ -188,6 +202,7 @@ void push_unfinished_type(char *s)
 void push_finished_type(struct pike_string *type)
 {
   int e;
+  CHECK_TYPE(type);
   for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
 }
 
@@ -198,7 +213,9 @@ struct pike_string *pop_unfinished_type()
   len=type_stackp - pop_stack_mark();
   s=begin_shared_string(len);
   for(e=0;e<len;e++) s->str[e] = *--type_stackp;
-  return end_shared_string(s);
+  s=end_shared_string(s);
+  CHECK_TYPE(s);
+  return s;
 }
 
 struct pike_string *pop_type()
@@ -210,6 +227,7 @@ struct pike_string *pop_type()
   for(e=0;e<len;e++) s->str[e] = *--type_stackp;
   s=end_shared_string(s);
   reset_type_stack();
+  CHECK_TYPE(s);
   return s;
 }
 
@@ -858,6 +876,8 @@ static int low_get_return_type(char *a,char *b)
 
 int match_types(struct pike_string *a,struct pike_string *b)
 {
+  CHECK_TYPE(a);
+  CHECK_TYPE(b);
   return 0!=low_match_types(a->str, b->str,0);
 }
 
@@ -947,6 +967,9 @@ static int low_check_indexing(char *type, char *index_type)
 int check_indexing(struct pike_string *type,
 		   struct pike_string *index_type)
 {
+  CHECK_TYPE(type);
+  CHECK_TYPE(index_type);
+
   return low_check_indexing(type->str, index_type->str);
 }
 
@@ -958,6 +981,8 @@ int count_arguments(struct pike_string *s)
 {
   int num;
   char *q;
+
+  CHECK_TYPE(s);
 
   q=s->str;
   if(EXTRACT_UCHAR(q) != T_FUNCTION) return MAX_LOCAL;
@@ -976,6 +1001,8 @@ int count_arguments(struct pike_string *s)
 struct pike_string *check_call(struct pike_string *args,
 				 struct pike_string *type)
 {
+  CHECK_TYPE(args);
+  CHECK_TYPE(type);
   reset_type_stack();
   if(low_get_return_type(type->str,args->str))
   {
