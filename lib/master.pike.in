@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.295 2003/08/22 00:52:21 nilsson Exp $
+// $Id: master.pike.in,v 1.296 2003/09/08 12:57:33 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -745,6 +745,8 @@ static program low_findprog(string pname,
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
+    resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+
     return programs[fname]=ret;
   }
   resolv_debug ("low_findprog %s: file not found\n", fname);
@@ -759,6 +761,7 @@ static program low_findprog(string pname,
 void unregister(program p)
 {
   if(string fname=search(programs,p)) {
+    resolv_debug("unregister %s\n", fname);
     programs[fname] = no_value;
     // FIXME: The following assumes that programs are always stored
     // with '/' as path separators, even on NT. Haven't checked if
@@ -1431,14 +1434,14 @@ class joinnode
   }
 };
 
-object findmodule(string fullname, object|void handler)
+program|object findmodule(string fullname, object|void handler)
 {
-  object o;
+  program|object o;
 
   resolv_debug ("findmodule(%O)\n", fullname);
   if(!zero_type(o=fc[fullname]) && o != no_value)
   {
-    if (objectp(o) || o != 0) {
+    if (objectp(o) || programp(o) || o != 0) {
       resolv_debug ("findmodule(%O) => found %O (cached)\n", fullname, o);
       return o;
     }
@@ -1471,6 +1474,12 @@ object findmodule(string fullname, object|void handler)
     return o;
   }
 #endif
+
+  if (programp (o = cast_to_program(fullname, "/.", handler))) {
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("findmodule(%O) => got .pike program %O\n", fullname, o);
+    return fc[fullname] = o;
+  }
 
   DEC_RESOLV_MSG_DEPTH();
   resolv_debug ("findmodule(%O) => not found\n", fullname);
@@ -1542,6 +1551,12 @@ class CompatResolver
   array(string) pike_program_path=({});
   mapping(string:string) predefines = ([]);
   string ver;
+
+  //! If we fail to resolv, try our parent.
+  //!
+  //! Typical configuration:
+  //! @pre{0.6->7.0->7.2->7.4->master@}
+  CompatResolver parent_resolver;
 
   //! The CompatResolver is initialized with a value that can be
   //! casted into a "%d.%d" string, e.g. a version object.
@@ -1709,7 +1724,8 @@ class CompatResolver
 	{
 	  string file=combine_path(dir, path, identifier);
 	  mixed ret = findmodule(file, current_handler);
-	  if(objectp (ret)) {	// ret is either zero or an object here.
+	  if(objectp (ret) || programp(ret)) {
+	    // ret is either zero or an object or a program here.
 	    if (ret->is_resolv_dirnode || ret->is_resolv_joinnode) {
 	      if (mixed new_ret = ret->_module_value) {
 		ret = new_ret;
@@ -1738,6 +1754,10 @@ class CompatResolver
 	  return tmp[0];
 	}
 	return joinnode(tmp);
+      }
+      if (parent_resolver) {
+	return parent_resolver->resolv(identifier, current_file,
+				       current_handler);
       }
       return UNDEFINED;
     }
@@ -1802,29 +1822,27 @@ class CompatResolver
 			string current_file,
 			int local_include)
     {
-      array(string) tmp;
-      string path;
-      
       if(local_include)
       {
-	tmp=EXPLODE_PATH(current_file);
+	array(string) tmp=EXPLODE_PATH(current_file);
 	tmp[-1]=f;
-	path=combine_path_with_cwd(tmp*"/");
+	return combine_path_with_cwd(tmp*"/");
       }
       else
       {
-	foreach(pike_include_path, path)
-	  {
-	    path=combine_path(path,f);
-	    if(master_file_stat(fakeroot(path)))
-	      break;
-	    else
-	      path=0;
-	  }
-	
+	foreach(pike_include_path, string path)
+	{
+	  path=combine_path(path,f);
+	  if(master_file_stat(fakeroot(path)))
+	    return path;
+	}
+	if (parent_resolver) {
+	  return parent_resolver->handle_include(f, current_file,
+						 local_include);
+	}
       }
-      
-      return path;
+      // Failed.
+      return 0;
     }
 
   //!
@@ -3589,6 +3607,7 @@ class Decoder (void|string fname, void|int mkobj)
     if(unregistered && fname)
     {
       unregistered = 0;
+      resolv_debug("register %s\n", fname);
       programs[fname]=p;
       if (mkobj)
 	DEC_RETURN (objectp (objects[p]) ? objects[p] : (objects[p]=__null_program()));
@@ -3810,8 +3829,6 @@ mapping(Version:CompatResolver) compat_handler_cache=set_weak_flag( ([]), 1);
 
 CompatResolver get_compilation_handler(int major, int minor)
 {
-  CompatResolver ret;
-  
   Version v=Version(major,minor);
 
   if(v > currentversion)
@@ -3820,9 +3837,11 @@ CompatResolver get_compilation_handler(int major, int minor)
     return 0;
   }
   
+  CompatResolver ret;
+  
   if(!zero_type(ret=compat_handler_cache[v])) return ret;
 
-  array files;
+  array(string) files;
   array(Version) available=({});
 
 #if "¤share_prefix¤"[0]!='¤'
@@ -3880,35 +3899,42 @@ CompatResolver get_compilation_handler(int major, int minor)
     return compat_handler_cache[v]=ret;
 #endif
 
-  ret=CompatResolver(v);
-  /* Add default paths */
-  ret->pike_module_path=pike_module_path;
-  ret->pike_include_path=pike_include_path;
+  // The root resolver is this object.
+  ret = this_object();
 
   foreach(reverse(available), Version tmp)
     {
-      string base;
+      CompatResolver compat_handler = compat_handler_cache[tmp];
+      if (!compat_handler) {
+	compat_handler = CompatResolver(tmp);
+
+	// Fall back to the successor version.
+	compat_handler->parent_resolver = ret;
+
+	string base;
 #if "¤lib_prefix¤"[0]!='¤'
-      base=combine_path("¤lib_prefix¤",sprintf("%s",tmp));
-      ret->add_module_path(combine_path(base,"modules"));
-      ret->add_include_path(combine_path(base,"include"));
+	base=combine_path("¤lib_prefix¤",sprintf("%s",tmp));
+	compat_handler->add_module_path(combine_path(base,"modules"));
+	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
 
 #if "¤share_prefix¤"[0]!='¤'
-      base=combine_path("¤share_prefix¤",sprintf("%s",tmp));
-      ret->add_module_path(combine_path(base,"modules"));
-      ret->add_include_path(combine_path(base,"include"));
+	base=combine_path("¤share_prefix¤",sprintf("%s",tmp));
+	compat_handler->add_module_path(combine_path(base,"modules"));
+	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
-    }
 
-  if( v <= Version(0,6))
-    ret->pike_module_path+=({"."});
-
-  compat_handler_cache[v] = ret;
+	if( tmp <= Version(0,6))
+	  ret->pike_module_path+=({"."});
 
 #ifndef RESOLVER_HACK
-  compat_handler_cache[available[0]] = ret; /* may be equal to 'v' */
+	ret = compat_handler_cache[tmp] = compat_handler;
 #endif
+      }
+    }
+
+  // Note: May duplicate the assignment above.
+  compat_handler_cache[v] = ret;
 
   return ret;
 }
