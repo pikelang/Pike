@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.22 1997/11/07 06:06:17 mirar Exp $ 
+$Id: togif.c,v 1.23 1997/11/07 07:20:48 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.22 1997/11/07 06:06:17 mirar Exp $
+**!	$Id: togif.c,v 1.23 1997/11/07 07:20:48 mirar Exp $
 **! class image
 */
 
@@ -54,6 +54,14 @@ extern struct program *image_colortable_program;
 **! method string togif_fs(int trans_r,int trans_g,int trans_b)
 **! method string togif_fs(int num_colors,int trans_r,int trans_g,int trans_b)
 **! method string togif_fs(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**! method string gif_add()
+**! method string gif_add_fs()
+**! method string gif_add_nomap()
+**! method string gif_add_fs_nomap()
+**! method string gif_add*(int x,int y)
+**! method string gif_add*(int x,int y,int delay_cs)
+**! method string gif_add*(int x,int y,int num_colors,int delay_cs)
+**! method string gif_add*(int x,int y,array(array(int)) colors,int delay_cs)
 **!	old GIF API compatibility function. Don't use 
 **!	in any new code. 
 **!
@@ -64,10 +72,16 @@ extern struct program *image_colortable_program;
 **!	<tr><td>gif_netscape_loop</td><td><ref>Image.GIF.netscape_loop_block</ref></td></tr>
 **!	<tr><td>togif</td><td><ref>Image.GIF.encode</ref></td></tr>
 **!	<tr><td>togif_fs</td><td><ref>Image.GIF.encode</ref>¹</td></tr>
+**!	<tr><td>gif_add</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
+**!	<tr><td>gif_add_fs</td><td><ref>Image.GIF.render_block</ref>¹</td></tr>
+**!	<tr><td>gif_add_nomap</td><td><ref>Image.GIF.render_block</ref>²</td></tr>
+**!	<tr><td>gif_add_fs_nomap</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
 **!	</table>
 **!
 **!	¹ Use <ref>Image.colortable</ref> to get whatever dithering
 **!	you want.
+**!
+**!	² local map toggle is sent as an argument
 **!
 **! returns GIF data.
 */
@@ -119,76 +133,6 @@ void image_gif_netscape_loop(INT32 args)
 {
    image_gif_netscape_loop_block(args);
 }
-
-/*
-**! method string gif_add()
-**! method string gif_add(int x,int y)
-**! method string gif_add(int x,int y,int delay_cs)
-**! method string gif_add(int x,int y,float delay_s)
-**! method string gif_add(int x,int y,int num_colors,int delay_cs)
-**! method string gif_add(int x,int y,int num_colors,float delay_s)
-**! method string gif_add(int x,int y,array(array(int)) colors,int delay_cs)
-**! method string gif_add(int x,int y,array(array(int)) colors,float delay_s)
-**! method string gif_add_fs()
-**! method string gif_add_fs(int x,int y)
-**! method string gif_add_fs(int x,int y,int delay_cs)
-**! method string gif_add_fs(int x,int y,float delay_s)
-**! method string gif_add_fs(int x,int y,int num_colors,int delay_cs)
-**! method string gif_add_fs(int x,int y,int num_colors,float delay_s)
-**! method string gif_add_fs(int x,int y,array(array(int)) colors,int delay_cs)
-**! method string gif_add_fs(int x,int y,array(array(int)) colors,float delay_s)
-**! method string gif_add_nomap()
-**! method string gif_add_nomap(int x,int y)
-**! method string gif_add_nomap(int x,int y,int delay_cs)
-**! method string gif_add_nomap(int x,int y,float delay_s)
-**! method string gif_add_nomap(int x,int y,int num_colors,int delay_cs)
-**! method string gif_add_nomap(int x,int y,int num_colors,float delay_s)
-**! method string gif_add_nomap(int x,int y,array(array(int)) colors,int delay_cs)
-**! method string gif_add_nomap(int x,int y,array(array(int)) colors,float delay_s)
-**! method string gif_add_fs_nomap()
-**! method string gif_add_fs_nomap(int x,int y)
-**! method string gif_add_fs_nomap(int x,int y,int delay_cs)
-**! method string gif_add_fs_nomap(int x,int y,float delay_s)
-**! method string gif_add_fs_nomap(int x,int y,int num_colors,int delay_cs)
-**! method string gif_add_fs_nomap(int x,int y,int num_colors,float delay_s)
-**! method string gif_add_fs_nomap(int x,int y,array(array(int)) colors,int delay_cs)
-**! method string gif_add_fs_nomap(int x,int y,array(array(int)) colors,float delay_s,rgb_group *transparent)
-**!	Makes a GIF (sub)image data chunk, to be placed 
-**!	at the given position. 
-**!
-**!     The "fs" versions uses floyd-steinberg dithering, and the "nomap"
-**!     versions have no local colormap.
-**!
-**!	Example: 
-**!	<pre>
-**!	object img1 = Image(200,200); 
-**!	object img2 = Image(200,200); 
-**!     // load img1 and img2 with stuff
-**!     write(img1->gif_begin()+
-**!	      img1->gif_netscape_loop()+
-**!	      img1->gif_add(0,0,100)+
-**!	      img2->gif_add(0,0,100)+
-**!	      img1->gif_end());
-**!	// voila, a gif animation...
-**!     </pre>
-**!
-**! note
-**!	I (Mirar) recommend reading about the GIF file format before 
-**!	experementing with these. 
-**! returns the GIF data chunk as a string
-**!
-**! arg int x
-**! arg int y
-**!	the location of this subimage
-**! arg int delay_cs
-**!     frame delay in centiseconds 
-**! arg float delay_s
-**!     frame delay in seconds
-**! arg int num_colors
-**!	number of colors to quantize to (default is 256) 
-**! arg array array(array(int)) colors
-**!	colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
-**! see also: gif_add, gif_end, gif_netscape_loop, togif */
 
 static void img_gif_add(INT32 args,int fs,int lm,
 			rgb_group *transparent)
