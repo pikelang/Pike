@@ -35,7 +35,7 @@ string pkcs_digest(string s)
 
 //! @fixme
 //!   Document this function.
-class `()
+static class `()
 {
   string ikey; /* ipad XOR:ed with the key */
   string okey; /* opad XOR:ed with the key */
