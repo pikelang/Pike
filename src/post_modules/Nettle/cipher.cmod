@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.6 2003/05/08 13:17:13 grubba Exp $");
+RCSID("$Id: cipher.cmod,v 1.7 2003/05/08 13:50:45 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -214,7 +214,7 @@ PIKECLASS CipherState
 
   EXIT
     {
-      if (THIS->ctx && !Pike_fp->current_object->prog)
+      if (THIS->ctx && Pike_fp->current_object->prog)
       {
 	struct CipherInfo_struct *info = GET_INFO(this_object());
 	assert(info);
