@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.414 2002/04/17 17:03:57 grubba Exp $");
+RCSID("$Id: program.c,v 1.415 2002/04/25 10:47:40 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1878,7 +1878,7 @@ int sizeof_variable(int run_time_type)
     case T_MIXED: return sizeof(struct svalue);
     case T_FLOAT: return sizeof(FLOAT_TYPE);
     case T_INT: return sizeof(INT_TYPE);
-    default: return sizeof(char *);
+    default: return sizeof(void *);
   }
 }
 
@@ -1890,7 +1890,7 @@ static ptrdiff_t alignof_variable(int run_time_type)
     case T_MIXED: return ALIGNOF(struct svalue);
     case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
     case T_INT: return ALIGNOF(INT_TYPE);
-    default: return ALIGNOF(char *);
+    default: return ALIGNOF(void *);
   }
 }
 

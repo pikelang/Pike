@@ -63,7 +63,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.135 2002/03/07 11:43:58 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.136 2002/04/25 10:47:39 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -86,10 +86,11 @@ PMOD_EXPORT const char msg_ssval_obj_wo_refs[] =
  * its type.
  */
 
-PMOD_EXPORT void really_free_short_svalue(union anything *s, TYPE_T type)
+PMOD_EXPORT void really_free_short_svalue(void **s, TYPE_T type)
 {
-  union anything tmp=*s;
-  s->refs=0; /* Prevent cyclic calls */
+  union anything tmp;
+  tmp.program = *s;
+  *s = NULL; /* Prevent cyclic calls */
   switch(type)
   {
     case T_ARRAY:
