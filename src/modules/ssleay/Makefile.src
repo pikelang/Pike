@@ -12,6 +12,9 @@ ssleay.a: $(OBJS)
 	-@RANLIB@ ssleay.a
 	echo >linker_options "@LDFLAGS@ @LIBS@"
 
+verify:
+	echo No tests for the ssleay-module.
+
 clean:
 	-rm -f *.o *.a
 
