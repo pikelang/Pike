@@ -229,8 +229,6 @@ testfont binary
 /packaging/debian/prerm foreign_ident
 /packaging/debian/rules foreign_ident
 /refdoc/Makefile foreign_ident
-/refdoc/bin/extract.pike foreign_ident
-/refdoc/bin/join.pike foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/presentation/wiki.pike foreign_ident
 /refdoc/structure/modref.xml foreign_ident
