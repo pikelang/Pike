@@ -9,14 +9,17 @@ void create_tables()
   catch(db->query("drop table word"));
   catch(db->query("drop table occurance"));
   db->query(
-#"create table document (id int unsigned primary key auto_increment,
-                         uri varchar(255),
+#"create table document (id int unsigned primary key auto_increment not null,
+                         uri text not null,
+                         uri_md5 char(32) not null,
                          title varchar(255),
                          description text,
                          last_indexed timestamp,
                          last_changed int unsigned,
                          size int unsigned,
-                         mime_type smallint unsigned)"
+                         mime_type smallint unsigned,
+                         unique(uri_md5),
+                         key(id,uri_md5))"
 			 );
   //We're missing language...
   //domain could be tokenized
@@ -27,10 +30,11 @@ void create_tables()
 		     );
 
   db->query(
-#"create table occurance (word_id int unsigned,
-                          document_id int unsigned,
-                          word_position mediumint unsigned,
-                          ranking tinyint)"
+#"create table occurance (word_id int unsigned not null,
+                          document_id int unsigned not null,
+                          word_position mediumint unsigned not null,
+                          ranking tinyint not null,
+                          key(word_id,document_id))"
 			  );
 }
 
@@ -42,16 +46,30 @@ void create(string host)
   db=Sql.sql(host);
 }
 
+
+string to_md5(string url)
+{
+  object md5 = Crypto.md5();
+  md5->update(url);
+  string digest=md5->digest();
+  string res="";
+  foreach(values(digest), int c)
+    res+=sprintf("%02x",c);
+  return res;
+}
+
+
 // Useful information for crawlers
 mapping(string:int) page_stat(string uri)
 {
   array res=db->query("SELECT last_changed, last_indexed, size "
-		      "FROM document WHERE uri='%s'", db->quote(uri));
+		      "FROM document WHERE uri_md5='%s'", to_md5(uri));
   if(!sizeof(res)) return 0;
   return (mapping(string:int))res[0];
 }
 
-// Takes about 50 us
+
+// Takes about 50 us, i.e. not much. :)
 int hash_word(string word) {
   string hashed=Crypto.md5()->update(word[..254])->digest();
   return hashed[0]*16777216 +  // 2^24
@@ -62,6 +80,7 @@ int hash_word(string word) {
 
 int wc=0;
 
+
 // Insert or update a page in the database.
 // title and description is already in words.
 void insert_page(string uri, string title, string description, int last_changed,
@@ -70,7 +89,7 @@ void insert_page(string uri, string title, string description, int last_changed,
   // Find out our document id
   int doc_id;
   if( catch( doc_id=(int)db->query("SELECT id FROM document "
-				   "WHERE uri='%s'", uri)[0]->id ))
+				   "WHERE uri_md5='%s'", to_md5(uri))[0]->id ))
     doc_id=0;
 
 
@@ -78,9 +97,9 @@ void insert_page(string uri, string title, string description, int last_changed,
   if(!doc_id)
   {
     db->query("INSERT INTO document "
-	      "(uri, title, description, last_changed, size, mime_type)"
-	      " VALUES ('%s', '%s', '%s', %s, %s, %s)",
-	      uri, title, description, last_changed, size, mime_type);
+	      "(uri, uri_md5, title, description, last_changed, size, mime_type)"
+	      " VALUES ('%s', '%s', '%s', '%s', %s, %s, %s)",
+	      uri, to_md5(uri), title, description, last_changed, size, mime_type);
     werror("[%s] ",uri);
     doc_id = db->master_sql->insert_id();
     new=1;
@@ -89,8 +108,8 @@ void insert_page(string uri, string title, string description, int last_changed,
   {
     // Page was already indexed.
     db->query("UPDATE document SET title='%s', description='%s', "
-	      "last_changed='%s', size='%s', mime_type='%s'",
-	      title, description, last_changed, size, mime_type);
+	      "last_changed='%s', size='%s', mime_type='%s' WHERE id=%s",
+	      title, description, last_changed, size, mime_type, doc_id);
     db->query("DELETE FROM occurance WHERE document_id=%s", doc_id);
   }
 
@@ -125,8 +144,8 @@ void insert_page(string uri, string title, string description, int last_changed,
 void remove_page(string uri)
 {
   int doc_id;
-  mixed error=catch( doc_id=db->query("SELECT id FROM document WHERE uri='%s'",
-				      db->quote(uri))[0]->id );
+  mixed error=catch( doc_id=db->query("SELECT id FROM document WHERE uri_md5='%s'",
+				      to_md5(uri) )[0]->id );
   if(error) return;
   db->query("REMOVE FROM document WHERE id=%s", doc_id);
   db->query("REMOVE FROM occurence WHERE document_id=%s", doc_id);
@@ -143,10 +162,10 @@ void garbage_collect()
 
   foreach(ids, string id) {
     int existence = sizeof(db->query("SELECT id FROM occurance WHERE word_id="+id+" LIMIT 1"));
-    if(!existence) db->query("REMOVE FROM word WHERE word_id="+id);
+//     if(!existence) db->query("REMOVE FROM word WHERE word_id="+id);
   }
 
-  db->query("OPTIMIZE TABLE word");
+//   db->query("OPTIMIZE TABLE word");
   db->query("OPTIMIZE TABLE occurance");
   db->query("OPTIMIZE TABLE document");
 }
@@ -162,31 +181,34 @@ array lookup_word(string word) {
 }
 
 array lookup_words_or(array(string) words) {
-  string sql="SELECT * FROM occurence WHERE ";
+  string sql="SELECT * FROM occurance WHERE ";
   words=map(words, lambda(string in) {
 		   return "word_id="+hash_word(in);
 		 } );
   sql += words*" || ";
 
   array documents=db->query(sql);
-  if(sizeof(documents)) return 0;
+  if(!sizeof(documents)) return 0;
 
   //  sort(documents->ranking_type, documents);
 
   return documents;
 }
 
-array lookup_words_and(array(string) words) {
-
+array lookup_words_and(array(string) words)
+{
   array first_result=({});
   array rest_results=({});
+  
   first_result = lookup_word(words[0]);
-  foreach(words[1..], string word) {
+  foreach(words[1..], string word)
+  {
     rest_results += ({ lookup_word(word) });
     if(rest_results[-1]==({ 0 }))
       return 0;
     rest_results[-1]=(multiset)rest_results[-1]->uri;
   }
+  
   array results=({});
   foreach(first_result, mapping hit)
     if(!has_value(rest_results[hit->uri], 0))
