@@ -4,10 +4,11 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.1 2002/07/18 21:31:59 hop Exp $
+  $Id: Codec.pmod,v 1.2 2002/07/19 18:20:48 nilsson Exp $
 
  */
 
+#if constant(_Ffmpeg)
 class decoder {
 
   private object codec;
@@ -67,3 +68,4 @@ class decoder {
   }
 
 }
+#endif
