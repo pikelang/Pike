@@ -62,7 +62,10 @@
    strange results can arise from things like:
       sprintf("%+080#{%s\n%}",get_dir("/"))
 
-   Ideas yet to be implemented:
+ Callbacks:
+   string _sprintf(int operator, mapping modifiers);
+
+ Ideas yet to be implemented:
    Line-break with fill? Lower-case? Upper case? Capitalize?
    Replace? Justify on decimal point?
    Change european/american decimal notation?
@@ -70,7 +73,7 @@
    Print-optimize? (space to tab, strip trailing spaces)
    '>' Kill this field in all lines but the first one
 
-   examples:
+ Examples:
 
    A short 'people' function (without sort)
 
@@ -99,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.44 1999/10/21 14:55:07 mirar Exp $");
+RCSID("$Id: sprintf.c,v 1.45 1999/10/21 17:35:53 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -114,6 +117,7 @@ RCSID("$Id: sprintf.c,v 1.44 1999/10/21 14:55:07 mirar Exp $");
 #include "bignum.h"
 #include "mapping.h"
 #include "builtin_functions.h"
+#include "operators.h"
 #include <ctype.h>
 
 #ifdef PC
