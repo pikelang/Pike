@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2004/02/06 15:55:01 nisse Exp $
+# $Id: configure.in,v 1.11 2004/02/06 16:01:16 nisse Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -8,7 +8,7 @@ AC_MODULE_INIT()
 
 AC_CHECK_LIB(nettle, nettle_md5_init,,, -lgmp)
 
-if text x$ac_cv_lib_nettle_nettle_md5_init = xno ; then
+if test x$ac_cv_lib_nettle_nettle_md5_init = xno ; then
   AC_CHECK_LIB(nettle, md5_init,,, -lgmp)
 fi
 
