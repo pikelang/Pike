@@ -310,6 +310,10 @@ static void f_http_decode_string(INT32 args)
 }
 
 static void f_html_encode_string( INT32 args )
+/*! @decl string html_encode_string(mixed in)
+ *!
+ *! Encodes the @[in] data as an HTML safe string.
+ */
 {
   struct pike_string *str;
   int newlen;

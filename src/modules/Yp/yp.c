@@ -31,7 +31,7 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.22 2001/01/05 13:50:56 grubba Exp $");
+RCSID("$Id: yp.c,v 1.23 2001/12/08 01:52:34 nilsson Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
@@ -96,6 +96,7 @@ static void f_server(INT32 args)
 }
 
 /*! @decl void create(string|void domain)
+ *! @decl void bind(string domain)
  *!
  *! If @[domain] is not specified , the default domain will be used.
  *! (As returned by @[Yp.default_yp_domain()]).
