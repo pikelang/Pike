@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.170 2000/08/08 11:16:03 grubba Exp $ */
+/* $Id: image.c,v 1.171 2000/08/08 16:57:26 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.170 2000/08/08 11:16:03 grubba Exp $
+**!	$Id: image.c,v 1.171 2000/08/08 16:57:26 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.170 2000/08/08 11:16:03 grubba Exp $");
+RCSID("$Id: image.c,v 1.171 2000/08/08 16:57:26 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1599,7 +1599,7 @@ static INLINE int image_color_svalue_rgba(struct svalue *s,
 static INLINE void
    add_to_rgbda_sum_with_factor(rgbda_group *sum,
 				rgba_group rgba,
-				float factor)
+				double factor)
 {
   /* NOTE:
    *	This code MUST be MT-SAFE! (but also fast /per)
@@ -1615,7 +1615,7 @@ static INLINE void
 static INLINE void
    add_to_rgbd_sum_with_factor(rgbd_group *sum,
 			       rgba_group rgba,
-			       float factor)
+			       double factor)
 {
   /* NOTE:
    *	This code MUST be MT-SAFE! (but also fast /per)
@@ -1818,8 +1818,8 @@ static void image_tuned_box(INT32 args)
 	  goto ugly;
     } else {  
     ugly:
-      dxw = 1.0/(float)xw;
-      dyw = 1.0/(float)yw;
+      dxw = 1.0/(double)xw;
+      dyw = 1.0/(double)yw;
       ymax=MINIMUM(yw,this->ysize-y1-1);
       for (x=MAXIMUM(0,-x1); x<=xw && x+x1<this->xsize; x++)
 	{
@@ -1857,7 +1857,7 @@ static void image_tuned_box(INT32 args)
 	  else
 	    for (y=MAXIMUM(0,-y1); y<=ymax; y++)
 	      {
-		float tfy;
+		double tfy;
 		rgbd_group sum={0,0,0};
 
 		add_to_rgbd_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
@@ -2636,14 +2636,14 @@ void image_rgb_to_hsv(INT32 args)
       v = MAX3(r,g,b);
       delta = v - MIN3(r,g,b);
 
-      if(r==v)      h = DOUBLE_TO_INT(((g-b)/(float)delta)*(255.0/6.0));
-      else if(g==v) h = DOUBLE_TO_INT((2.0+(b-r)/(float)delta)*(255.0/6.0));
-      else h = DOUBLE_TO_INT((4.0+(r-g)/(float)delta)*(255.0/6.0));
+      if(r==v)      h = DOUBLE_TO_INT(((g-b)/(double)delta)*(255.0/6.0));
+      else if(g==v) h = DOUBLE_TO_INT((2.0+(b-r)/(double)delta)*(255.0/6.0));
+      else h = DOUBLE_TO_INT((4.0+(r-g)/(double)delta)*(255.0/6.0));
       if(h<0) h+=255;
 
       /*     printf("hsv={ %d,%d,%d }\n", h, (int)((delta/(float)v)*255), v);*/
       d->r = DOUBLE_TO_INT(h);
-      d->g = DOUBLE_TO_INT((delta/(float)v)*255.0);
+      d->g = DOUBLE_TO_INT((delta/(double)v)*255.0);
       d->b = v;
       s++; d++;
    }
@@ -3890,22 +3890,22 @@ void image_gamma(INT32 args)
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
    if (args==1) 
       if (sp[-args].type==T_INT) 
-	 gammar=gammab=gammag=(float)sp[-args].u.integer;
+	 gammar=gammab=gammag=(double)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT) 
 	 gammar=gammab=gammag=sp[-args].u.float_number;
       else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Image->gamma()\n");
    else if (args==3)
    {
-      if (sp[-args].type==T_INT) gammar=(float)sp[-args].u.integer;
+      if (sp[-args].type==T_INT) gammar=(double)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT) gammar=sp[-args].u.float_number;
       else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Image->gamma()\n");
-      if (sp[1-args].type==T_INT) gammag=(float)sp[1-args].u.integer;
+      if (sp[1-args].type==T_INT) gammag=(double)sp[1-args].u.integer;
       else if (sp[1-args].type==T_FLOAT) gammag=sp[1-args].u.float_number;
       else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Image->gamma()\n");
-      if (sp[2-args].type==T_INT) gammab=(float)sp[2-args].u.integer;
+      if (sp[2-args].type==T_INT) gammab=(double)sp[2-args].u.integer;
       else if (sp[2-args].type==T_FLOAT) gammab=sp[2-args].u.float_number;
       else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Image->gamma()\n");
