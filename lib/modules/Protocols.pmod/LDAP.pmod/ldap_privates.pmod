@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.8 2004/04/14 20:21:16 nilsson Exp $
+// $Id: ldap_privates.pmod,v 1.9 2004/06/19 10:16:41 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -85,6 +85,10 @@ class asn1_application_sequence
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_application_octet_string
@@ -101,6 +105,10 @@ class asn1_application_octet_string
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_integer
@@ -116,6 +124,11 @@ class asn1_context_integer
     ::init(arg);
     tagx = tagid;
   }
+
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_octet_string
@@ -130,6 +143,11 @@ class asn1_context_octet_string
   void init(int tagid, string arg) {
     ::init(arg);
     tagx = tagid;
+  }
+
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
 }
 
@@ -148,6 +166,10 @@ class asn1_context_sequence
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_set
@@ -164,27 +186,85 @@ class asn1_context_set
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
-#if 1
-object|mapping der_decode(object data, mapping types)
+class asn1_sequence
 {
+  inherit Standards.ASN1.Types.asn1_sequence;
+  constant type_name = "SEQUENCE";
+  constant cls = 2;
+  constant tag = 0;
+
+  void init(int tagid, array arg)
+  {
+    ::init(arg);
+  }
+
+#if 0
+  string encode_length(int|object len)
+  {
+    if (len < 0x80000000) {
+      // Microsofts ldap APIs use this encoding.
+      return sprintf("\204%4c", len);
+    }
+    return ::encode_length(len);
+  }
+#endif /* 0 */
+}
+
+// Low-level decoder.
+// NOTE: API may change!
+object|mapping der_decode(object data,
+			  mapping(int(0..3):mapping(int:program|function)) types)
+{
+  //werror("LDAP:der_decode(%O)...\n", data);
   int raw_tag = data->get_uint(1);
   int len;
   string contents;
 
-  if ( (raw_tag & 0x1f) == 0x1f)
-    error("ASN1.Decode: High tag numbers is not supported\n");
+  //werror("  raw_tag: 0b%08b\n", raw_tag);
+
+  // raw_tag is [cls:2][constr:1][tag:5].
+
+  int tag = raw_tag & 0x1f;
+  int cls = (raw_tag & 0xc0)>>6;
+
+  // werror("  tag: 0x%02x\n"
+  // 	 "  cls: %d\n", tag, cls);
+
+  if ( tag == 0x1f) {
+    // Tag encoded in big-endian, base 128
+    // msb signals continuation.
+    tag = 0;
+    int val;
+    do {
+      tag <<= 7;
+      tag |= (val = data->get_uint(1)) & 0x7f;
+    } while (val & 0x80);
+    //error("LDAP.Decode: High tag numbers is not supported (0x%02x)\n", raw_tag);
+    //werror("  Decoded high tag to 0x%08x\n", tag);
+  }
 
   len = data->get_uint(1);
-  if (len & 0x80)
+
+  //werror("  len: 0x%02x\n", len);
+
+  if (len & 0x80) {
     len = data->get_uint(len & 0x7f);
+    //werror("  len: 0x%08x\n", len);
+  }
 
   contents = data->get_fix_string(len);
 
-  int tag = raw_tag & 0xdf; // Class and tag bits
+  // werror("  contents: %O\n", contents);
 
-  program p = types[tag];
+  //int tag = raw_tag & 0xdf; // Class and tag bits
+
+  program p = types[cls][tag];
 
   if (raw_tag & 0x20)
   {
@@ -204,8 +284,8 @@ object|mapping der_decode(object data, mapping types)
     object res = p();
 
     // hop: For non-universal classes we provide tag number
-    if(tag & 0xC0)
-      res = p(tag & 0x1F, ({}));
+    if(cls)
+      res = p(tag, ({}));
 
     res->begin_decode_constructed(contents);
 
@@ -219,6 +299,7 @@ object|mapping der_decode(object data, mapping types)
         (i, der_decode(struct,
                        res->element_types(i, types)));
     }
+
     return res->end_decode_constructed(i);
   }
   else
@@ -228,31 +309,45 @@ object|mapping der_decode(object data, mapping types)
       : Standards.ASN1.Decode.primitive(tag, contents);
   }
 }
-#endif
 
-static mapping ldap_type_proc =
-                    ([ 1 : asn1_boolean,
-                       2 : Standards.ASN1.Types.asn1_integer,
-                       3 : Standards.ASN1.Types.asn1_bit_string,
-                       4 : Standards.ASN1.Types.asn1_octet_string,
-                       5 : Standards.ASN1.Types.asn1_null,
-                       6 : Standards.ASN1.Types.asn1_identifier,
-                       // 9 : asn1_real,
-                       10 : asn1_enumerated,
-                       16 : Standards.ASN1.Types.asn1_sequence,
-                       17 : Standards.ASN1.Types.asn1_set,
-                       19 : Standards.ASN1.Types.asn1_printable_string,
-                       20 : Standards.ASN1.Types.asn1_teletex_string,
-                       23 : Standards.ASN1.Types.asn1_utc,
-                       65 : asn1_application_sequence,
-                       68 : asn1_application_sequence,
-                       69 : asn1_application_sequence,
-                       71 : asn1_application_sequence,
-                       73 : asn1_application_sequence,
-                       75 : asn1_application_sequence,
-                       77 : asn1_application_sequence,
-                       79 : asn1_application_sequence
-                    ]);
+// Mapping from class to mapping from tag to program.
+// NOTE: Will probably change to the same layout as in
+//       Standards.ASN1.Decode.universal_types.
+static mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
+  0:([
+    1 : asn1_boolean,
+    2 : Standards.ASN1.Types.asn1_integer,
+    3 : Standards.ASN1.Types.asn1_bit_string,
+    4 : Standards.ASN1.Types.asn1_octet_string,
+    5 : Standards.ASN1.Types.asn1_null,
+    6 : Standards.ASN1.Types.asn1_identifier,
+    // 9 : asn1_real,
+    10 : asn1_enumerated,
+    16 : Standards.ASN1.Types.asn1_sequence,
+    17 : Standards.ASN1.Types.asn1_set,
+    19 : Standards.ASN1.Types.asn1_printable_string,
+    20 : Standards.ASN1.Types.asn1_teletex_string,
+    23 : Standards.ASN1.Types.asn1_utc,
+  ]),
+  1:([
+    1 : asn1_application_sequence,	// [1] BindResponse
+    2 : 0,				// [2] UnbindRequest
+    3 : asn1_application_sequence,	// [3] SearchRequest
+    4 : asn1_application_sequence,	// [4] SearchResultEntry
+    5 : asn1_application_sequence,	// [5] SearchResultDone
+    6 : asn1_application_sequence,	// [6] ModifyRequest
+    7 : asn1_application_sequence,	// [7] ModifyResponse
+    8 : asn1_application_sequence,	// [8] AddRequest
+    9 : asn1_application_sequence,	// [9] AddResponse
+    11 : asn1_application_sequence,	// [11] DelResponse
+    13 : asn1_application_sequence,	// [13] ModifyDNResponse
+    15 : asn1_application_sequence,	// [15] CompareResponse
+    19 : asn1_application_sequence,	// [19] SearchResultReference
+  ]),
+  2:([
+    0 : asn1_sequence,
+  ]),
+]);
 
 object|mapping ldap_der_decode(string data)
 {
