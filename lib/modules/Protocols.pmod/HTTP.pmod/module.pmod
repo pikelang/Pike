@@ -23,14 +23,16 @@ object get_url(string url)
       (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
       (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
       (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
-      (host=url,query="/");
+      (host=url,query="");
+
+   write("prot=%O host=%O port=%O query=%O\n",prot,host,port,query);
 
    if (prot!="http")
       error("Protocols.HTTP can't handle %O or any other protocol then HTTP\n",
 	    prot);
 
    con->sync_request(host,port,
-		     "GET "+query+" HTTP/1.0",
+		     "GET /"+query+" HTTP/1.0",
 		     (["user-agent":
 		       "Mozilla/4.0 compatible (Pike HTTP client)"]));
 
