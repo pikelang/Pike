@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.1 1997/05/17 01:56:29 marcus Exp $
+# $Id: Makefile.in,v 1.2 1999/04/23 21:37:07 grubba Exp $
 #
 
 SRCDIR=@srcdir@
@@ -7,6 +7,8 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=oracle.o
 MODULE_LDFLAGS=@LDFLAGS@ @ORACLE_LIBS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 @dependencies@

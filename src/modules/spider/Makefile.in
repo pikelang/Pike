@@ -1,9 +1,11 @@
-# $Id: Makefile.in,v 1.16 1999/03/25 02:25:16 per Exp $
+# $Id: Makefile.in,v 1.17 1999/04/23 21:45:42 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=spider.o discdate.o stardate.o dumudp.o xml.o
 MODULE_LDFLAGS=@LDFLAGS@
 #  streamed_parser.o
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 @dependencies@

@@ -1,8 +1,10 @@
-# $Id: Makefile.in,v 1.6 1998/03/28 13:49:00 grubba Exp $
+# $Id: Makefile.in,v 1.7 1999/04/23 21:46:08 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=sprintf.o
 MODULE_LDFLAGS=@LDFLAGS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @static_module_makefile@
 @dependencies@

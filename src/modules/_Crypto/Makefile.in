@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.17 1998/07/19 22:54:34 grubba Exp $
+# $Id: Makefile.in,v 1.18 1999/04/23 21:41:37 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
@@ -16,6 +16,8 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 MODULE_CPPFLAGS= -I$(SRCDIR)/include -DPIKE
 MODULE_MAKE_FLAGS="EXTRA_CPP_FLAGS=-DPIKE -I$(SRCDIR)/../.. -I../../.."
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 

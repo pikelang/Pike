@@ -1,8 +1,10 @@
-# $Id: Makefile.in,v 1.3 1998/03/28 14:33:24 grubba Exp $
+# $Id: Makefile.in,v 1.4 1999/04/23 21:40:12 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=yp.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 @dependencies@
