@@ -1,3 +1,5 @@
+test_true([["$Id: testsuite.in,v 1.23 1997/02/19 05:07:50 hubbe Exp $"]])
+test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
 test_true(time())
 test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
 test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
@@ -44,7 +46,6 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.22 1997/02/18 05:23:25 hubbe Exp $"]])
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
@@ -564,6 +565,7 @@ test_eq(3.0*4,12.0)
 test_eq(4.0*3,12.0)
 test_eq(2.0*2*2.0*2*2.0,32.0)
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
+test_equal( ({ ({1}), ({2}), ({3}) })*({8}), ({1,8,2,8,3}))
 
 // testing /
 test_eq(12/3,4)
@@ -583,6 +585,9 @@ test_eq(15.0/3,5.0)
 test_eval_error(return 15.0/0.0)
 test_equal("foo-bar-gazonk"/"-",({"foo","bar","gazonk"}))
 test_equal("foobargazonk"/"",({"f","o","o","b","a","r","g","a","z","o","n","k"}))
+test_equal(({1,0,1,2,1,2,2,2,1,1,1})/({2}),({ ({1,0,1}), ({1}), ({}), ({}), ({1,1,1}) }))
+test_equal(({1,2,3,4})/({}),({ ({1}), ({2}), ({3}), ({4}) }))
+test_equal(({1,0,1,2,1,2,2,2,1,1,1})/({2,1}),({ ({1,0,1}), ({2,2}), ({1,1}) }))
 
 // testing %
 test_eq(12%3,0)
