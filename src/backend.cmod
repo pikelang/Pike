@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.17 2001/09/05 01:42:47 hubbe Exp $");
+RCSID("$Id: backend.cmod,v 1.18 2001/09/06 19:05:39 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -29,6 +29,7 @@ RCSID("$Id: backend.cmod,v 1.17 2001/09/05 01:42:47 hubbe Exp $");
 #include "stuff.h"
 #include "bignum.h"
 #include "svalue.h"
+#include "gc.h"
 
 /*
  * Things to do
@@ -822,8 +823,7 @@ PIKECLASS Backend
       extern void check_all_objects(void);
       extern void verify_shared_strings_tables(void);
       extern void slow_check_stack(void);
-      extern int do_gc(void);
-      
+
       verify_shared_strings_tables();
       slow_check_stack();
       check_all_arrays();
@@ -1896,8 +1896,26 @@ PIKECLASS Backend
        RETURN backend_get_all_call_outs(THIS);
      }
 
-
   extern int pike_make_pipe(int *);
+
+#ifdef PIKE_DEBUG
+  GC_CHECK
+    {
+      struct Backend_struct *me =
+	(struct Backend_struct *) Pike_fp->current_storage;
+      int e;
+      PROTECT_CALL_OUTS();
+      for (e = 0; e < me->num_pending_calls; e++) {
+	if (CALL(e)->caller)
+	  gc_external_mark2(CALL(e)->caller, Pike_fp->current_object,
+			    " as caller for call out in backend object");
+	if (CALL(e)->args)
+	  gc_external_mark2(CALL(e)->args, Pike_fp->current_object,
+			    " as call out args in backend object");
+      }
+      UNPROTECT_CALL_OUTS();
+    }
+#endif
 
   INIT
     {
@@ -2108,7 +2126,6 @@ void do_debug(void)
   current_do_debug_cycle=0;
 }
 #endif /* PIKE_DEBUG */
-
 
 
 void init_backend(void)
