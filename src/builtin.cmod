@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.61 2001/07/26 15:21:08 nilsson Exp $
+ * $Id: builtin.cmod,v 1.62 2001/08/14 22:21:16 nilsson Exp $
  */
 
 #include "global.h"
@@ -747,6 +747,9 @@ PIKEFUN mapping random(mapping m)
  * Backtrace handling.
  */
 
+/*! @module Pike
+ */
+
 /*! @class BacktraceFrame
  */
 
@@ -1030,7 +1033,12 @@ PIKECLASS backtrace_frame
 /*! @endclass
  */
 
-/*! @decl array(array) backtrace()
+/*! @endmodule
+ */
+
+/*! @decl array(Pike.BacktraceFrame) backtrace()
+ *!
+ *!   FIXME: This documentation is not up to date!
  *!
  *!   Get a description of the current call stack.
  *!
