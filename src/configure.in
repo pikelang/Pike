@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.572 2002/04/06 15:26:22 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.573 2002/04/06 18:03:22 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1703,7 +1703,7 @@ fi
 
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
-  for d in `echo ${with_lib_path} | sed 's/:/ /g'` \
+  for dd in `echo ${with_lib_path} | sed 's/:/ /g'` \
     `echo "${with_site_prefixes}/lib"|sed -e 's/:/\/lib /g'` \
     `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$with_root$ac_default_prefix/lib@g"` \
     $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
@@ -1711,20 +1711,45 @@ if test $ldflags_is_set = no ; then
     $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
     `echo $with_root/usr/X11*/lib | sort -r`
   do
-    AC_MSG_CHECKING($d)
-    if test -d "$d/." ; then
-      case " $LDFLAGS " in
-        *\ -L$d\ -R$d\ * | *\ -R$d\ -L$d\ *)
-          AC_MSG_RESULT(already added)
-        ;;
-        *)
-          AC_MSG_RESULT(added)
-          LDFLAGS="${LDFLAGS} -R$d -L$d"
-        ;;
-      esac
-    else
-      AC_MSG_RESULT(no)
-    fi
+    for suff in '' 32 64; do
+      d="$dd$suff"
+      AC_MSG_CHECKING($d)
+      if test -d "$d/." ; then
+  	case " $LDFLAGS " in
+  	  *\ -L$d\ -R$d\ * | *\ -R$d\ -L$d\ *)
+  	    AC_MSG_RESULT(already added)
+  	  ;;
+  	  *)
+  	    OLD_LDFLAGS="${LDFLAGS}"
+  	    LDFLAGS="${LDFLAGS} -R$d -L$d -lm"
+  	    AC_TRY_RUN([
+#include <stdio.h>
+#include <math.h>
+int main(int argc, char **argv)
+{
+  double (*foo)(double) = ceil;
+  exit(0);
+}
+  	    ],[ LDFLAGS="$OLD_LDFLAGS -R$d -L$d"
+  		AC_MSG_RESULT(yes)
+  	    ],[ LDFLAGS="$OLD_LDFLAGS"
+  		AC_MSG_RESULT(no)
+  	    ],[AC_TRY_LINK([
+#include <stdio.h>
+#include <math.h>
+  	       ],[
+  		 double (*foo)(double) = ceil;
+  		 exit(0);
+  	       ],[ LDFLAGS="$OLD_LDFLAGS -R$d -L$d"
+  		   AC_MSG_RESULT(probably)
+  	       ],[ LDFLAGS="$OLD_LDFLAGS"
+  		   AC_MSG_RESULT(no)])])
+  	  ;;
+  	esac
+      else
+  	AC_MSG_RESULT(no)
+      fi
+    done
   done
 else
   :
