@@ -1,23 +1,8 @@
+/* $Id: buffer.c,v 1.9 2001/08/14 17:51:16 grubba Exp $
+ */
 #include "global.h"
-#include "stralloc.h"
-#include "global.h"
-RCSID("$Id: buffer.c,v 1.8 2001/05/31 14:39:52 per Exp $");
-#include "pike_macros.h"
-#include "interpret.h"
-#include "program.h"
-#include "program_id.h"
-#include "object.h"
-#include "operators.h"
 
 #include "config.h"
-
-#include "whitefish.h"
-#include "resultset.h"
-#include "blob.h"
-#include "buffer.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -28,6 +13,23 @@ RCSID("$Id: buffer.c,v 1.8 2001/05/31 14:39:52 per Exp $");
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
+
+#include "stralloc.h"
+RCSID("$Id: buffer.c,v 1.9 2001/08/14 17:51:16 grubba Exp $");
+#include "pike_macros.h"
+#include "interpret.h"
+#include "program.h"
+#include "program_id.h"
+#include "object.h"
+#include "operators.h"
+
+#include "whitefish.h"
+#include "resultset.h"
+#include "blob.h"
+#include "buffer.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 static INLINE int range( int n, int m )
 {
