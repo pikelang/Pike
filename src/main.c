@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.85 2000/03/30 04:39:17 hubbe Exp $");
+RCSID("$Id: main.c,v 1.86 2000/04/06 20:53:30 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -175,6 +175,7 @@ int dbm_main(int argc, char **argv)
   setlocale(LC_MESSAGES, "");
 #endif
 #endif  
+
   init_backend();
   master_file = 0;
 
