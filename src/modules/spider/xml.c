@@ -1426,6 +1426,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
       }
       if(!GOBBLE(")"))
 	XMLERROR("Expected \")\" at the end of #PCDATA");
+      f_aggregate(num);
       if(GOBBLE("*"))
       {
 	push_constant_text("*");
@@ -1433,7 +1434,6 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	f_aggregate(2);
       }
       
-      f_aggregate(num);
     }else{
       push_int(0); /* allocate a little room */
       num++;
@@ -2610,7 +2610,7 @@ static void define_entity(INT32 args)
   struct xmldata data;
   ONERROR e;
 
-  check_all_args("XML->define_entity",args,BIT_STRING, BIT_STRING | BIT_MIXED | BIT_MANY,0);
+  check_all_args("XML->define_entity",args,BIT_STRING, BIT_STRING, BIT_MIXED, BIT_MIXED | BIT_MANY,0);
   s=sp[1-args].u.string;
 
   data.input.datap=MKPCHARP_STR(s);
