@@ -163,6 +163,7 @@ testfont binary
 /src/modules/Image/acconfig.h foreign_ident
 /src/modules/Image/blit.c foreign_ident
 /src/modules/Image/blit_layer_include.h foreign_ident
+/src/modules/Image/colors.c foreign_ident
 /src/modules/Image/colortable.c foreign_ident
 /src/modules/Image/colortable.h foreign_ident
 /src/modules/Image/colortable_lookup.h foreign_ident
