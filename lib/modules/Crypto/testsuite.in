@@ -1,0 +1,22 @@
+
+test_do( add_constant("C", Crypto.substitution()) )
+
+dnl ROT
+test_do( C->set_rot_key() )
+test_eq( C->encode("Pelle"), "Cryyr" )
+test_eq( C->decode("Cryyr"), "Pelle" )
+dnl --- Jay Kominek ROT13 conformance test
+test_eq( C->encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), "NOPQRSTUVWXYZABCDEFGHIJKLM" )
+test_eq( C->encode("abcdefghijklmnopqrstuvwxyz"), "nopqrstuvwxyzabcdefghijklm" )
+test_eq( C->encode("0123456789-= "), "0123456789-= " )
+test_eq( C->encode("!@#$%^&*()_+"), "!@#$%^&*()_+" )
+test_eq( C->encode("[]{};':\",./<>?"),[[ "[]{};':\",./<>?" ]])
+dnl --- End of Jay Kominek ROT 13 conformance test
+test_do( C->set_rot_key(2) )
+test_eq( C->encode("Pelle"), "Rgnng" )
+test_eq( C->decode("Rgnng"), "Pelle" )
+test_do( C->set_rot_key(3, "ABCabcÂ‰ˆ"/1) )
+test_eq( C->encode("Abbas"), "a‰‰Âs" )
+test_eq( C->decode("a‰‰Âs"), "Abbas" )
+
+test_do( add_constant("C") )
