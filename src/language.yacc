@@ -157,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.54 1998/03/04 16:43:08 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.55 1998/04/20 19:27:05 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1199,7 +1199,7 @@ low_idents: F_IDENTIFIER
       $$=mkconstantsvaluenode(sp-1);
       pop_stack();
     }else{
-      $$=0;
+      $$ = 0;
       if(!num_parse_error)
       {
 	if( get_master() )
@@ -1213,19 +1213,22 @@ low_idents: F_IDENTIFIER
 	  if(throw_value.type == T_STRING)
 	  {
 	    my_yyerror("%s",throw_value.u.string->str);
+	    $$ = mkintnode(0);
 	  }
 	  else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
 	  {
 	    my_yyerror("'%s' undefined.", $1->str);
+	    $$ = mkintnode(0);
 	  }else{
-	    $$=mkconstantsvaluenode(sp-1);
+	    $$ = mkconstantsvaluenode(sp-1);
 	  }
 	  pop_stack();
 	}else{
 	  my_yyerror("'%s' undefined.", $1->str);
+	  $$ = mkintnode(0);
 	}
       } else {
-	$$=mkintnode(0);
+	$$ = mkintnode(0);
       }
     }
     free_string($1);
