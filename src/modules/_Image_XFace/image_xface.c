@@ -1,24 +1,16 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.12 2000/09/15 21:37:56 grubba Exp $");
+RCSID("$Id: image_xface.c,v 1.13 2000/11/14 19:26:43 marcus Exp $");
 
 #include "config.h"
 
-#if !defined(HAVE_LIBGMP)
-#undef HAVE_GMP_H
-#endif
 
-#ifdef HAVE_GMP_H
-
-#ifndef __MPN
-#define __MPN(x) PIKE_CONCAT(__mpn_,x)
-#endif
-
-#undef _PROTO
-#define _PROTO(x) x
-
-#include <gmp.h>
-
-#endif /* HAVE_GMP_H */
+#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
+#define USE_GMP2
+#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
+#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
+#define USE_GMP
+#endif /* HAVE_GMP_H && HAVE_LIBGMP */
+#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
 
 #include "pike_macros.h"
 #include "object.h"
@@ -34,9 +26,30 @@ RCSID("$Id: image_xface.c,v 1.12 2000/09/15 21:37:56 grubba Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
 
 #include "../Image/image.h"
+
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+
+#undef _PROTO
+#define _PROTO(x) x
+
+#ifdef USE_GMP2
+#include <gmp2/gmp.h>
+#else /* !USE_GMP2 */
+#include <gmp.h>
+#endif /* USE_GMP2 */
+
+#endif /* USE_GMP || USE_GMP2 */
+
 
 /* This must be included last! */
 #include "module_magic.h"
@@ -48,9 +61,8 @@ extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
-#endif /* HAVE_GMP_H */
 
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
 
 /*
 **! module Image
@@ -484,7 +496,8 @@ static void image_xface_decode_header(INT32 args)
 }
 
 
-#endif /* HAVE_GMP_H */
+#endif /* USE_GMP || USE_GMP2 */
+
 
 /*** module init & exit & stuff *****************************************/
 
@@ -494,7 +507,7 @@ void pike_module_exit(void)
 
 void pike_module_init(void)
 {
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
 #ifdef DYNAMIC_MODULE
    push_string(make_shared_string("Image"));
    push_int(0);
@@ -518,7 +531,7 @@ void pike_module_init(void)
   ADD_FUNCTION("encode",image_xface_encode,tFunc(tObj tOr(tVoid,tMap(tStr,tInt)),tStr),0);
    }
 
-#endif /* HAVE_GMP_H */
+#endif /* USE_GMP || USE_GMP2 */
 
 }
 
