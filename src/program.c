@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.492 2004/09/27 15:12:03 grubba Exp $
+|| $Id: program.c,v 1.493 2004/10/11 16:41:48 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.492 2004/09/27 15:12:03 grubba Exp $");
+RCSID("$Id: program.c,v 1.493 2004/10/11 16:41:48 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -946,7 +946,7 @@ static struct node_s *index_modules(struct pike_string *ident,
 
       push_svalue(&thrown);
       low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-      if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+      if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown, 0);
       pop_stack();
       free_svalue(&thrown);
     } else {
@@ -1102,7 +1102,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
 	    push_svalue(&thrown);
 	    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown, 0);
 	    pop_stack();
 	    free_svalue(&thrown);
 	  }
@@ -3427,7 +3427,7 @@ int call_handle_inherit(struct pike_string *s)
     my_yyerror("Error finding program");
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown, 0);
     pop_stack();
     free_svalue(&thrown);
   }
@@ -4575,7 +4575,7 @@ int store_constant(struct svalue *foo,
 
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown, 0);
     pop_stack();
     free_svalue(&thrown);
 
@@ -5222,7 +5222,7 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
   }
 }
 
-void yy_describe_exception(struct svalue *thrown)
+void yy_describe_exception(struct svalue *thrown, int warning)
 {
   /* FIXME: Doesn't handle wide string error messages. */
   struct pike_string *s = 0;
@@ -5245,7 +5245,10 @@ void yy_describe_exception(struct svalue *thrown)
     push_constant_text("\n");
     push_constant_text(" ");
     f_replace(3);
-    my_yyerror(sp[-1].u.string->str);
+    if (warning)
+      yywarning (sp[-1].u.string->str);
+    else
+      yyerror(sp[-1].u.string->str);
     pop_stack();
   }
 }
@@ -5860,7 +5863,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 	  throw_value.type = T_INT;
 	  push_svalue(&thrown);
 	  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	  if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	  if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown, 0);
 	  pop_stack();
 	  free_svalue(&thrown);
 	  zap_placeholder(c);

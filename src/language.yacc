@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.316 2004/03/15 15:24:29 grubba Exp $
+|| $Id: language.yacc,v 1.317 2004/10/11 16:41:48 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.316 2004/03/15 15:24:29 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.317 2004/10/11 16:41:48 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3980,7 +3980,7 @@ static void safe_inc_enum(void)
 
     push_svalue(&s);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&s);
+    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&s, 0);
     pop_stack();
     push_int(0);
     free_svalue(&s);
@@ -4022,7 +4022,7 @@ static int call_handle_import(struct pike_string *s)
     my_yyerror("Error finding module to import");
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown, 0);
     pop_stack();
     free_svalue(&thrown);
   }
