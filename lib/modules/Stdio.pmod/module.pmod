@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.68 1999/11/14 22:00:01 grubba Exp $
+// $Id: module.pmod,v 1.69 1999/11/22 23:17:31 noring Exp $
 
 import String;
 
@@ -679,6 +679,12 @@ int file_size(string s)
   stat=file_stat(s);
   if(!stat) return -1;
   return stat[1]; 
+}
+
+string append_path(string p, string ... v)
+{
+  return combine_path(p, @map(v, lambda(string s)
+				 { return combine_path("/", s)[1..]; }));
 }
 
 void perror(string s)
