@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.27 1997/01/14 17:24:58 law Exp $ */
+/* $Id: quant.c,v 1.28 1997/01/21 00:07:37 law Exp $ */
 
 /*
 
@@ -14,13 +14,15 @@ David Kågedal, kg@infovav.se
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#include "threads.h"
 #endif
 
 #include "types.h"
 #include "error.h"
 #include "global.h"
 #include "array.h"
+
+#include "threads.h"
+
 
 #include "image.h"
 
