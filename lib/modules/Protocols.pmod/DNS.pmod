@@ -485,8 +485,10 @@ class client
 
 #if __NT__
       domain=get_tcpip_param("Domain");
-      nameservers = get_tcpip_param("NameServer") / " ";
-      domains=get_tcpip_param("SearchList") / " "- ({""});
+      nameservers = replace(get_tcpip_param("NameServer"),","," ") / " ";
+      nameservers-=({""});
+      domains=rreplace(get_tcpip_param("SearchList"),","," ") / " ";
+      domains- =({""});
 #else
       string resolv_conf;
       foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}), string resolv_loc)
