@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.h,v 1.50 2002/10/11 01:39:42 nilsson Exp $
+|| $Id: image.h,v 1.51 2003/01/27 11:59:14 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -103,7 +103,7 @@ typedef struct
 struct image
 {
    rgb_group *img;
-   INT32 xsize,ysize;
+   INT_TYPE xsize,ysize;
    rgb_group rgb;
    unsigned char alpha;
 };

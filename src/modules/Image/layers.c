@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.83 2002/12/09 22:43:27 mirar Exp $
+|| $Id: layers.c,v 1.84 2003/01/27 11:59:14 mirar Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.83 2002/12/09 22:43:27 mirar Exp $");
+RCSID("$Id: layers.c,v 1.84 2003/01/27 11:59:14 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -3113,8 +3113,9 @@ static void image_layer_crop(INT32 args)
 	 Pike_error("No image returned from image->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from image->copy had "
-	       "unexpected size (%d,%d, expected %d,%d)\n",
-		img->xsize,img->ysize,(INT32)xz,(INT32)yz);
+	       "unexpected size (%"PRINTPIKEINT"d,%"PRINTPIKEINT"d,"
+		    " expected %"PRINTPIKEINT"d,%"PRINTPIKEINT"d)\n",
+		img->xsize,img->ysize,xz,yz);
 
       free_object(l->image);
       l->image=Pike_sp[-1].u.object;
@@ -3141,8 +3142,9 @@ static void image_layer_crop(INT32 args)
 	 Pike_error("No image returned from alpha->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from alpha->copy had "
-	       "unexpected size (%d,%d, expected %d,%d)\n",
-	       img->xsize,img->ysize,(INT32)xz,(INT32)yz);
+	       "unexpected size (%"PRINTPIKEINT"d,%"PRINTPIKEINT"d, "
+		    "expected %"PRINTPIKEINT"d,%"PRINTPIKEINT"d)\n",
+	       img->xsize,img->ysize,xz,yz);
       free_object(l->alpha);
       l->alpha=Pike_sp[-1].u.object;
       Pike_sp--;

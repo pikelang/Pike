@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pnm.c,v 1.29 2002/10/21 17:06:15 marcus Exp $
+|| $Id: pnm.c,v 1.30 2003/01/27 11:59:14 mirar Exp $
 */
 
 /*
@@ -52,7 +52,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.29 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: pnm.c,v 1.30 2003/01/27 11:59:14 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -292,7 +292,7 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
    if (!img->img)
       Pike_error("Image.PNM.encode_P1(): Given image is empty\n");
 
-   sprintf(buf,"P1\n%d %d\n",img->xsize,img->ysize);
+   sprintf(buf,"P1\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
 
    y=img->ysize;
@@ -338,7 +338,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    add_ref(o);
    pop_n_elems(args);
 
-   sprintf(buf,"P2\n%d %d\n255\n",img->xsize,img->ysize);
+   sprintf(buf,"P2\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
    push_string(make_shared_string(buf));
    n=1;
 
@@ -379,7 +379,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    add_ref(o);
    pop_n_elems(args);
 
-   sprintf(buf,"P3\n%d %d\n255\n",img->xsize,img->ysize);
+   sprintf(buf,"P3\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
    push_string(make_shared_string(buf));
    n=1;
 
@@ -417,7 +417,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
    if (!img->img)
       Pike_error("Image.PNM.encode_P4(): Given image is empty\n");
 
-   sprintf(buf,"P4\n%d %d\n",img->xsize,img->ysize);
+   sprintf(buf,"P4\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
 
    y=img->ysize;
@@ -463,7 +463,7 @@ void img_pnm_encode_P5(INT32 args) /* binary PGM */
    if (!img->img)
       Pike_error("Image.PNM.encode_P5(): Given image is empty\n");
 
-   sprintf(buf,"P5\n%d %d\n255\n",img->xsize,img->ysize);
+   sprintf(buf,"P5\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
 
    n=img->xsize*img->ysize;
@@ -495,7 +495,7 @@ void img_pnm_encode_P6(INT32 args)
    if (!img->img)
       Pike_error("Image.PNM.encode_P6(): Given image is empty\n");
 
-   sprintf(buf,"P6\n%d %d\n255\n",img->xsize,img->ysize);
+   sprintf(buf,"P6\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
    if (sizeof(rgb_group)==3)
       b=make_shared_binary_string((char*)img->img,

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.200 2002/10/21 17:06:14 marcus Exp $
+|| $Id: image.c,v 1.201 2003/01/27 11:59:14 mirar Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.200 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: image.c,v 1.201 2003/01/27 11:59:14 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -608,7 +608,8 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 		  "uninitialized image object\n",arg+1,name);
 	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize) 
 	    Pike_error("create_method: argument %d (%s channel): "
-		  "size is wrong, %dx%d; expected %dx%d\n",
+		  "size is wrong, %"PRINTPIKEINT"dx%"PRINTPIKEINT"d;"
+		       " expected %"PRINTPIKEINT"dx%"PRINTPIKEINT"d\n",
 		  arg+1,name,img->xsize,img->ysize,
 		  THIS->xsize,THIS->ysize);
 	 *s=(COLORTYPE*)img->img;
