@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.36.2.2 1997/06/27 06:55:13 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.36.2.3 1997/07/09 07:44:57 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -260,26 +260,6 @@ void f_search(INT32 args)
   }
 }
 
-void f_call_function(INT32 args)
-{
-  INT32 expected_stack=sp-args+2-evaluator_stack;
-
-  strict_apply_svalue(sp-args, args - 1);
-  if(sp < expected_stack + evaluator_stack)
-  {
-#ifdef DEBUG
-    if(sp+1 != expected_stack + evaluator_stack)
-      fatal("Stack underflow!\n");
-#endif
-
-    pop_stack();
-    push_int(0);
-  }else{
-    free_svalue(sp-2);
-    sp[-2]=sp[-1];
-    sp--;
-  }
-}
 
 void f_backtrace(INT32 args)
 {
@@ -1711,7 +1691,6 @@ void init_builtin_efuns()
   add_efun("allocate", f_allocate, "function(int, string|void:mixed *)", 0);
   add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
   add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
-  add_efun("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 
   add_efun("column",f_column,"function(array,mixed:array)",0);
   add_efun("combine_path",f_combine_path,"function(string,string:string)",0);

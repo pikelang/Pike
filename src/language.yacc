@@ -12,8 +12,9 @@
 %token F_PREFIX_256 F_PREFIX_512 F_PREFIX_768 F_PREFIX_1024
 %token F_PREFIX_CHARX256 F_PREFIX_WORDX256 F_PREFIX_24BITX256
 %token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2 F_LDA
-%token F_CALL_LFUN F_CALL_LFUN_AND_POP
+%token F_CALL_LFUN F_CALL_LFUN_AND_POP F_CALL_LFUN_AND_RETURN
 %token F_APPLY F_APPLY_AND_POP F_MARK_APPLY F_MARK_APPLY_POP
+%token F_APPLY_AND_RETURN
 
 %token F_BRANCH F_BRANCH_WHEN_ZERO F_BRANCH_WHEN_NON_ZERO
 %token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
@@ -65,6 +66,7 @@
 %token F_FOREACH
 
 %token F_SIZEOF F_SIZEOF_LOCAL
+%token F_CALL_FUNCTION F_CALL_FUNCTION_AND_RETURN
 
 /*
  * These are token values that needn't have an associated code for the
@@ -159,7 +161,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.42.2.3 1997/06/27 06:55:17 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.42.2.4 1997/07/09 07:45:00 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.14 1997/04/28 23:48:42 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.14.2.1 1997/07/09 07:45:01 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1339,6 +1339,21 @@ static int generate_sizeof(node *n)
   return 1;
 }
 
+void f_call_function(INT32 args)
+{
+  mega_apply(APPLY_STACK,args,0,0);
+}
+
+static int generate_call_function(node *n)
+{
+  node **arg;
+  emit2(F_MARK);
+  do_docode(CDR(n),DO_NOT_COPY);
+  emit2(F_CALL_FUNCTION);
+  return 1;
+}
+
+
 void init_operators()
 {
   add_efun2("`[]",f_index,
@@ -1383,4 +1398,11 @@ void init_operators()
 
   add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)|function(string:string)",OPT_TRY_OPTIMIZE,0,generate_compl);
   add_efun2("sizeof", f_sizeof, "function(string|multiset|array|mapping|object:int)",0,0,generate_sizeof);
+
+  add_efun2("`()",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
+
+  /* This one should be removed */
+  add_efun2("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
+  
 }
+

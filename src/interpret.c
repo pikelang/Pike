@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.42.2.2 1997/06/27 06:55:16 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.42.2.3 1997/07/09 07:44:59 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -163,7 +163,7 @@ void check_mark_stack(INT32 size)
 }
 
 
-static void eval_instruction(unsigned char *pc);
+static int eval_instruction(unsigned char *pc);
 
 
 /*
@@ -477,7 +477,7 @@ void dump_backlog(void)
 
 static int o_catch(unsigned char *pc);
 
-static void eval_instruction(unsigned char *pc)
+static int eval_instruction(unsigned char *pc)
 {
   unsigned INT32 accumulator=0, instr, prefix=0;
   while(1)
@@ -994,7 +994,7 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_CATCH);
       if(o_catch(pc+sizeof(INT32)))
-	return; /* There was a return inside the evaluated code */
+	return -1; /* There was a return inside the evaluated code */
       else
 	pc+=EXTRACT_INT(pc);
       break;
@@ -1041,22 +1041,48 @@ static void eval_instruction(unsigned char *pc)
 	break;
       }
 
+      CASE(F_APPLY_AND_RETURN);
+      {
+	INT32 args=sp - *--mark_sp;
+	if(fp->locals >= sp-args)
+	{
+	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
+	  sp++;
+	  sp[-args-1].type=T_INT;
+	}
+	/* We sabotage the stack here */
+	assign_svalue(sp-args-1,fp->context.prog->constants+GET_ARG());
+	return args+1;
+      }
+
+      CASE(F_CALL_LFUN_AND_RETURN);
+      {
+	INT32 args=sp - *--mark_sp;
+	if(fp->locals >= sp-args)
+	{
+	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
+	  sp++;
+	  sp[-args-1].type=T_INT;
+	}else{
+	  free_svalue(sp-args-1);
+	}
+	/* More stack sabotage */
+	sp[-args-1].u.object=fp->current_object;
+	sp[-args-1].subtype=GET_ARG()+fp->context.identifier_level;
+	sp[-args-1].type=T_FUNCTION;
+	fp->current_object->refs++;
+
+	return args+1;
+      }
+
       CASE(F_RETURN_1);
-      pop_n_elems(sp-fp->locals);
       push_int(1);
       goto do_return;
 
       CASE(F_RETURN_0);
-      pop_n_elems(sp-fp->locals);
       push_int(0);
-      goto do_return;
 
       CASE(F_RETURN);
-      if(fp->locals != sp-1)
-      {
-	assign_svalue(fp->locals, sp-1);
-	pop_n_elems(sp - fp->locals - 1);
-      }
 
     do_return:
 #if defined(DEBUG) && defined(GC2)
@@ -1067,7 +1093,7 @@ static void eval_instruction(unsigned char *pc)
       /* fall through */
 
       CASE(F_DUMB_RETURN);
-      return;
+      return -1;
 
       CASE(F_NEGATE); 
       if(sp[-1].type == T_INT)
@@ -1250,10 +1276,366 @@ static void eval_instruction(unsigned char *pc)
       pop_stack();
       break;
 
+    CASE(F_CALL_FUNCTION);
+    mega_apply(APPLY_STACK,sp - *--mark_sp,0,0);
+    break;
+
+    CASE(F_CALL_FUNCTION_AND_RETURN);
+    return sp - *--mark_sp;
+
     default:
       fatal("Strange instruction %ld\n",(long)instr);
     }
   }
+}
+
+
+void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+{
+  struct object *o;
+  int fun, tailrecurse=-1;
+  struct svalue *save_sp=sp-args;
+
+  switch(type)
+  {
+  case APPLY_STACK:
+  apply_stack:
+  if(!args)
+    error("Too few arguments to `()\n");
+    args--;
+    if(sp-save_sp-args > (args<<2) + 32)
+    {
+      /* The test above assures these two areas
+       * are not overlapping
+       */
+      assign_svalues(save_sp, sp-args-1, args+1, BIT_MIXED);
+      pop_n_elems(sp-save_sp-args-1);
+    }
+    arg1=(void *)(sp-args-1);
+
+  case APPLY_SVALUE:
+  apply_svalue:
+  {
+    struct svalue *s=(struct svalue *)arg1;
+    switch(s->type)
+    {
+    case T_INT:
+      if (!s->u.integer) {
+	error("Attempt to call the NULL-value\n");
+      } else {
+	error("Attempt to call the value %d\n", s->u.integer);
+      }
+
+    case T_STRING:
+      if (s->u.string->len > 20) {
+	error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
+      } else {
+	error("Attempt to call the string \"%s\"\n", s->u.string->str);
+      }
+    case T_MAPPING:
+      error("Attempt to call a mapping\n");
+    default:
+      error("Call to non-function value type:%d.\n", s->type);
+      
+    case T_FUNCTION:
+      if(s->subtype == FUNCTION_BUILTIN)
+      {
+	(*(s->u.efun->function))(args);
+	break;
+      }else{
+	o=s->u.object;
+	fun=s->subtype;
+	goto apply_low;
+      }
+      break;
+
+    case T_ARRAY:
+      apply_array(s->u.array,args);
+      break;
+
+    case T_PROGRAM:
+      push_object(clone_object(s->u.program,args));
+      break;
+
+    case T_OBJECT:
+      o=s->u.object;
+      fun=LFUN_CALL;
+      goto call_lfun;
+    }
+    break;
+  }
+
+  call_lfun:
+#ifdef DEBUG
+    if(fun < 0 || fun >= NUM_LFUNS)
+      fatal("Apply lfun on illegal value!\n");
+#endif
+    if(!o->prog)
+      error("Apply on destructed object.\n");
+    fun=FIND_LFUN(o->prog,fun);
+    goto apply_low;
+  
+
+  case APPLY_LOW:
+    o=(struct object *)arg1;
+    fun=(long)arg2;
+
+  apply_low:
+    {
+      struct program *p;
+      struct reference *ref;
+      struct frame new_frame;
+      struct identifier *function;
+      
+      if(fun<0)
+      {
+	pop_n_elems(args);
+	push_int(0);
+	return;
+      }
+      
+      check_threads_etc();
+      check_stack(256);
+      check_mark_stack(256);
+
+#ifdef DEBUG
+      if(d_flag>2) do_debug();
+#endif
+
+      p=o->prog;
+      if(!p)
+	error("Cannot call functions in destructed objects.\n");
+#ifdef DEBUG
+      if(fun>=(int)p->num_identifier_references)
+	fatal("Function index out of range.\n");
+#endif
+
+      ref = p->identifier_references + fun;
+#ifdef DEBUG
+      if(ref->inherit_offset>=p->num_inherits)
+	fatal("Inherit offset out of range in program.\n");
+#endif
+
+      /* init a new evaluation frame */
+      new_frame.parent_frame = fp;
+      new_frame.current_object = o;
+      new_frame.context = p->inherits[ ref->inherit_offset ];
+      if(!ref->inherit_offset) new_frame.context.parent=o->parent;
+
+      function = new_frame.context.prog->identifiers + ref->identifier_offset;
+  
+      new_frame.locals = sp - args;
+      new_frame.args = args;
+      new_frame.fun = fun;
+      new_frame.current_storage = o->storage+new_frame.context.storage_offset;
+      new_frame.pc = 0;
+      
+      new_frame.current_object->refs++;
+      new_frame.context.prog->refs++;
+      if(new_frame.context.parent) new_frame.context.parent->refs++;
+      
+#ifdef DEBUG
+      if(t_flag)
+      {
+	char *file, *f;
+	INT32 linep,e,nonblock;
+	char buf[50],*s;
+	
+	if((nonblock=query_nonblocking(2)))
+	  set_nonblocking(2,0);
+	
+	if(fp && fp->pc)
+	{
+	  file=get_line(fp->pc,fp->context.prog,&linep);
+	  while((f=STRCHR(file,'/'))) file=f+1;
+	}else{
+	  linep=0;
+	  file="-";
+	}
+	
+	init_buf();
+	sprintf(buf,"%lx->",(long)o);
+	my_strcat(buf);
+	my_strcat(function->name->str);
+	my_strcat("(");
+	for(e=0;e<args;e++)
+	{
+	  if(e) my_strcat(",");
+	  describe_svalue(sp-args+e,0,0);
+	}
+	my_strcat(")"); 
+	s=simple_free_buf();
+	if((long)strlen(s) > (long)TRACE_LEN)
+	{
+	  s[TRACE_LEN]=0;
+	  s[TRACE_LEN-1]='.';
+	  s[TRACE_LEN-2]='.';
+	  s[TRACE_LEN-2]='.';
+	}
+	fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
+	free(s);
+	
+	if(nonblock)
+	  set_nonblocking(2,1);
+      }
+#endif
+      
+      fp = &new_frame;
+      
+      if(function->func.offset == -1)
+	error("Calling undefined function '%s'.\n",function->name->str);
+      
+      switch(function->flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
+      {
+      case IDENTIFIER_C_FUNCTION:
+	fp->num_args=args;
+	new_frame.num_locals=args;
+	(*function->func.c_fun)(args);
+	break;
+	
+      case IDENTIFIER_CONSTANT:
+      {
+	struct svalue *s=fp->context.prog->constants+function->func.offset;
+	if(s->type == T_PROGRAM)
+	{
+	  struct object *tmp=parent_clone_object(s->u.program,
+						 o,
+						 fun,
+						 args);
+	  push_object(tmp);
+	  break;
+	}
+	/* Fall through */
+      }
+      
+      case 0:
+      {
+	if(sp-save_sp-args<=0)
+	{
+	  /* Create an extra svalue for tail recursion style call */
+	  sp++;
+	  MEMMOVE(sp-args,sp-args-1,sizeof(struct svalue)*args);
+	  sp[-args-1].type=T_INT;
+	}
+	low_object_index_no_free(sp-args-1,o,fun);
+	tailrecurse=args+1;
+	break;
+      }
+
+      case IDENTIFIER_PIKE_FUNCTION:
+      {
+	int num_args;
+	int num_locals;
+	unsigned char *pc;
+	pc=new_frame.context.prog->program + function->func.offset;
+	
+	num_locals=EXTRACT_UCHAR(pc++);
+	num_args=EXTRACT_UCHAR(pc++);
+	
+	/* adjust arguments on stack */
+	if(args < num_args) /* push zeros */
+	{
+	  clear_svalues(sp, num_args-args);
+	  sp += num_args-args;
+	  args += num_args-args;
+	}
+	
+	if(function->flags & IDENTIFIER_VARARGS)
+	{
+	  f_aggregate(args - num_args); /* make array */
+	  args = num_args+1;
+	}else{
+	  if(args > num_args)
+	  {
+	    /* pop excessive */
+	    pop_n_elems(args - num_args);
+	    args=num_args;
+	  }
+	}
+	
+	clear_svalues(sp, num_locals - args);
+	sp += num_locals - args;
+#ifdef DEBUG
+	if(num_locals < num_args)
+	  fatal("Wrong number of arguments or locals in function def.\n");
+#endif
+	new_frame.num_locals=num_locals;
+	new_frame.num_args=num_args;
+	tailrecurse=eval_instruction(pc);
+#ifdef DEBUG
+	if(sp<evaluator_stack)
+	  fatal("Stack error (also simple).\n");
+#endif
+	break;
+      }
+      
+      }
+
+#if 0
+      if(sp - new_frame.locals > 1)
+      {
+	pop_n_elems(sp - new_frame.locals -1);
+      }else if(sp - new_frame.locals < 1){
+#ifdef DEBUG
+	if(sp - new_frame.locals<0) fatal("Frame underflow.\n");
+#endif
+	sp->u.integer = 0;
+	sp->subtype=NUMBER_NUMBER;
+	sp->type = T_INT;
+	sp++;
+      }
+#endif
+      
+      if(new_frame.context.parent) free_object(new_frame.context.parent);
+      free_object(new_frame.current_object);
+      free_program(new_frame.context.prog);
+      
+      fp = new_frame.parent_frame;
+      
+      if(tailrecurse>=0)
+      {
+	args=tailrecurse;
+	goto apply_stack;
+      }
+
+#ifdef DEBUG
+      if(t_flag)
+      {
+	char *s;
+	int nonblock;
+	
+	if((nonblock=query_nonblocking(2)))
+	  set_nonblocking(2,0);
+	
+	init_buf();
+	my_strcat("Return: ");
+	describe_svalue(sp-1,0,0);
+	s=simple_free_buf();
+	if((long)strlen(s) > (long)TRACE_LEN)
+	{
+	  s[TRACE_LEN]=0;
+	  s[TRACE_LEN-1]='.';
+	  s[TRACE_LEN-2]='.';
+	  s[TRACE_LEN-2]='.';
+	}
+	fprintf(stderr,"%-*s%s\n",4,"-",s);
+	free(s);
+	
+	if(nonblock)
+	  set_nonblocking(2,1);
+      }
+#endif
+    }
+  }
+
+  if(save_sp+1 < sp)
+  {
+    assign_svalue(save_sp,sp-1);
+    pop_n_elems(sp-save_sp-1);
+  }
+
+  if(save_sp+1 > sp && type != APPLY_SVALUE)
+    push_int(0);
 }
 
 /* Put catch outside of eval_instruction, so
@@ -1271,12 +1653,12 @@ static int o_catch(unsigned char *pc)
     UNSETJMP(tmp);
     return 0;
   }else{
-    eval_instruction(pc);
+    int x=eval_instruction(pc);
+    if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);
     return 1;
   }
 }
-
 
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
@@ -1304,7 +1686,9 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   {
     ret=1;
   }else{
-    eval_instruction(o->prog->program + offset);
+    int tmp=eval_instruction(o->prog->program + offset);
+    if(tmp!=-1) mega_apply(APPLY_STACK, tmp, 0,0);
+    
 #ifdef DEBUG
     if(sp<evaluator_stack)
       fatal("Stack error (simple).\n");
@@ -1318,232 +1702,6 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 
   fp = new_frame.parent_frame;
   return ret;
-}
-
-void apply_low(struct object *o, int fun, int args)
-{
-  struct program *p;
-  struct reference *ref;
-  struct frame new_frame;
-  struct identifier *function;
-
-  if(fun<0)
-  {
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-
-  check_threads_etc();
-  check_stack(256);
-  check_mark_stack(256);
-
-#ifdef DEBUG
-  if(d_flag>2) do_debug();
-#endif
-
-  p=o->prog;
-  if(!p)
-    error("Cannot call functions in destructed objects.\n");
-#ifdef DEBUG
-  if(fun>=(int)p->num_identifier_references)
-    fatal("Function index out of range.\n");
-#endif
-
-  ref = p->identifier_references + fun;
-#ifdef DEBUG
-  if(ref->inherit_offset>=p->num_inherits)
-    fatal("Inherit offset out of range in program.\n");
-#endif
-
-  /* init a new evaluation frame */
-  new_frame.parent_frame = fp;
-  new_frame.current_object = o;
-  new_frame.context = p->inherits[ ref->inherit_offset ];
-  if(!ref->inherit_offset) new_frame.context.parent=o->parent;
-
-  function = new_frame.context.prog->identifiers + ref->identifier_offset;
-  
-  new_frame.locals = sp - args;
-  new_frame.args = args;
-  new_frame.fun = fun;
-  new_frame.current_storage = o->storage+new_frame.context.storage_offset;
-  new_frame.pc = 0;
-
-  new_frame.current_object->refs++;
-  new_frame.context.prog->refs++;
-  if(new_frame.context.parent) new_frame.context.parent->refs++;
-
-#ifdef DEBUG
-  if(t_flag)
-  {
-    char *file, *f;
-    INT32 linep,e,nonblock;
-    char buf[50],*s;
-
-    if((nonblock=query_nonblocking(2)))
-      set_nonblocking(2,0);
-
-    if(fp && fp->pc)
-    {
-      file=get_line(fp->pc,fp->context.prog,&linep);
-      while((f=STRCHR(file,'/'))) file=f+1;
-    }else{
-      linep=0;
-      file="-";
-    }
-
-    init_buf();
-    sprintf(buf,"%lx->",(long)o);
-    my_strcat(buf);
-    my_strcat(function->name->str);
-    my_strcat("(");
-    for(e=0;e<args;e++)
-    {
-      if(e) my_strcat(",");
-      describe_svalue(sp-args+e,0,0);
-    }
-    my_strcat(")"); 
-    s=simple_free_buf();
-    if((long)strlen(s) > (long)TRACE_LEN)
-    {
-      s[TRACE_LEN]=0;
-      s[TRACE_LEN-1]='.';
-      s[TRACE_LEN-2]='.';
-      s[TRACE_LEN-2]='.';
-    }
-    fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
-    free(s);
-
-    if(nonblock)
-      set_nonblocking(2,1);
-  }
-#endif
-
-  fp = &new_frame;
-
-  if(function->func.offset == -1)
-    error("Calling undefined function '%s'.\n",function->name->str);
-
-  switch(function->flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
-  {
-  case IDENTIFIER_C_FUNCTION:
-    fp->num_args=args;
-    new_frame.num_locals=args;
-    (*function->func.c_fun)(args);
-    break;
-
-  case IDENTIFIER_CONSTANT:
-  {
-    struct svalue *s=fp->context.prog->constants+function->func.offset;
-    if(s->type == T_PROGRAM)
-    {
-      struct object *tmp=parent_clone_object(s->u.program,
-					     o,
-					     fun,
-					     args);
-      push_object(tmp);
-    }else{
-      error("Calling strange value!\n");
-    }
-    break;
-  }
-
-  case IDENTIFIER_PIKE_FUNCTION:
-  {
-    int num_args;
-    int num_locals;
-    unsigned char *pc;
-    pc=new_frame.context.prog->program + function->func.offset;
-
-    num_locals=EXTRACT_UCHAR(pc++);
-    num_args=EXTRACT_UCHAR(pc++);
-
-    /* adjust arguments on stack */
-    if(args < num_args) /* push zeros */
-    {
-      clear_svalues(sp, num_args-args);
-      sp += num_args-args;
-      args += num_args-args;
-    }
-
-    if(function->flags & IDENTIFIER_VARARGS)
-    {
-      f_aggregate(args - num_args); /* make array */
-      args = num_args+1;
-    }else{
-      if(args > num_args)
-      {
-	/* pop excessive */
-	pop_n_elems(args - num_args);
-	args=num_args;
-      }
-    }
-
-    clear_svalues(sp, num_locals - args);
-    sp += num_locals - args;
-#ifdef DEBUG
-    if(num_locals < num_args)
-      fatal("Wrong number of arguments or locals in function def.\n");
-#endif
-    new_frame.num_locals=num_locals;
-    new_frame.num_args=num_args;
-    eval_instruction(pc);
-#ifdef DEBUG
-    if(sp<evaluator_stack)
-      fatal("Stack error (also simple).\n");
-#endif
-    break;
-  }
-
-  }
-
-  if(sp - new_frame.locals > 1)
-  {
-    pop_n_elems(sp - new_frame.locals -1);
-  }else if(sp - new_frame.locals < 1){
-#ifdef DEBUG
-    if(sp - new_frame.locals<0) fatal("Frame underflow.\n");
-#endif
-    sp->u.integer = 0;
-    sp->subtype=NUMBER_NUMBER;
-    sp->type = T_INT;
-    sp++;
-  }
-
-  if(new_frame.context.parent) free_object(new_frame.context.parent);
-  free_object(new_frame.current_object);
-  free_program(new_frame.context.prog);
-
-  fp = new_frame.parent_frame;
-
-#ifdef DEBUG
-  if(t_flag)
-  {
-    char *s;
-    int nonblock;
-
-    if((nonblock=query_nonblocking(2)))
-      set_nonblocking(2,0);
-
-    init_buf();
-    my_strcat("Return: ");
-    describe_svalue(sp-1,0,0);
-    s=simple_free_buf();
-    if((long)strlen(s) > (long)TRACE_LEN)
-    {
-      s[TRACE_LEN]=0;
-      s[TRACE_LEN-1]='.';
-      s[TRACE_LEN-2]='.';
-      s[TRACE_LEN-2]='.';
-    }
-    fprintf(stderr,"%-*s%s\n",4,"-",s);
-    free(s);
-
-    if(nonblock)
-      set_nonblocking(2,1);
-  }
-#endif
 }
 
 void safe_apply_low(struct object *o,int fun,int args)
@@ -1584,7 +1742,6 @@ void safe_apply_low(struct object *o,int fun,int args)
     }
   }
   UNSETJMP(recovery);
-
 }
 
 void safe_apply(struct object *o, char *fun ,INT32 args)
@@ -1617,134 +1774,6 @@ void apply_shared(struct object *o,
 void apply(struct object *o, char *fun, int args)
 {
   apply_low(o, find_identifier(fun, o->prog), args);
-}
-
-void strict_apply_svalue(struct svalue *s, INT32 args)
-{
-#ifdef DEBUG
-  struct svalue *save_sp;
-  save_sp=sp-args;
-  if(t_flag>1)
-  {
-    char *file, *f;
-    INT32 linep,e,nonblock;
-    char *st;
-
-    if((nonblock=query_nonblocking(2)))
-      set_nonblocking(2,0);
-
-    if(fp && fp->pc)
-    {
-      file=get_line(fp->pc,fp->context.prog,&linep);
-      while((f=STRCHR(file,'/'))) file=f+1;
-    }else{
-      linep=0;
-      file="-";
-    }
-
-    init_buf();
-    describe_svalue(s,0,0);
-    my_strcat("(");
-    for(e=0;e<args;e++)
-    {
-      if(e) my_strcat(",");
-      describe_svalue(sp-args+e,0,0);
-    }
-    my_strcat(")"); 
-    st=simple_free_buf();
-    if((long)strlen(st) > (long)TRACE_LEN)
-    {
-      st[TRACE_LEN]=0;
-      st[TRACE_LEN-1]='.';
-      st[TRACE_LEN-2]='.';
-      st[TRACE_LEN-2]='.';
-    }
-    fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,st);
-    free(st);
-
-    if(nonblock)
-      set_nonblocking(2,1);
-  }
-#endif
-
-  switch(s->type)
-  {
-  case T_FUNCTION:
-    if(s->subtype == FUNCTION_BUILTIN)
-    {
-      (*(s->u.efun->function))(args);
-    }else{
-      apply_low(s->u.object, s->subtype, args);
-    }
-    break;
-
-  case T_ARRAY:
-    apply_array(s->u.array,args);
-    break;
-
-  case T_PROGRAM:
-    {
-      struct object *o=clone_object(s->u.program,args);
-      push_object(o);
-    }
-    break;
-
-  case T_OBJECT:
-  {
-    if(!s->u.object->prog)
-      error("Calling a destructed object.\n");
-    
-    if(s->u.object->prog->lfuns[LFUN_CALL] == -1)
-      error("Calling object without `() operator\n");
-
-    apply_lfun(s->u.object, LFUN_CALL, args);
-    break;
-  }
-
-  case T_INT:
-    if (!s->u.integer) {
-      error("Attempt to call the NULL-value\n");
-    } else {
-      error("Attempt to call the value %d\n", s->u.integer);
-    }
-  case T_STRING:
-    if (s->u.string->len > 20) {
-      error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
-    } else {
-      error("Attempt to call the string \"%s\"\n", s->u.string->str);
-    }
-  case T_MAPPING:
-    error("Attempt to call a mapping\n");
-  default:
-    error("Call to non-function value type:%d.\n", s->type);
-  }
-
-#ifdef DEBUG
-  if(t_flag>1 && sp>save_sp)
-  {
-    char *s;
-    int nonblock;
-    if((nonblock=query_nonblocking(2)))
-      set_nonblocking(2,0);
-
-    init_buf();
-    my_strcat("Return: ");
-    describe_svalue(sp-1,0,0);
-    s=simple_free_buf();
-    if((long)strlen(s) > (long)TRACE_LEN)
-    {
-      s[TRACE_LEN]=0;
-      s[TRACE_LEN-1]='.';
-      s[TRACE_LEN-2]='.';
-      s[TRACE_LEN-2]='.';
-    }
-    fprintf(stderr,"%-*s%s\n",4,"-",s);
-    free(s);
-
-    if(nonblock)
-      set_nonblocking(2,1);
-  }
-#endif
 }
 
 void apply_svalue(struct svalue *s, INT32 args)

@@ -54,6 +54,19 @@ struct frame
 
 #define push_svalue(S) do { struct svalue *_=(S); assign_svalue_no_free(sp,_); sp++; }while(0)
 
+enum apply_type
+{
+  APPLY_STACK, /* The function is the first argument */
+  APPLY_SVALUE, /* arg1 points to an svalue containing the function */
+   APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
+};
+
+#define apply_low(O,FUN,ARGS) \
+  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(FUN))
+
+#define strict_apply_svalue(SVAL,ARGS) \
+  mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
+
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
   static int fun_,master_cnt=0; \
@@ -93,8 +106,8 @@ void check_threads_etc();
 void reset_evaluator();
 struct backlog;
 void dump_backlog(void);
+void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
-void apply_low(struct object *o, int fun, int args);
 void safe_apply_low(struct object *o,int fun,int args);
 void safe_apply(struct object *o, char *fun ,INT32 args);
 void apply_lfun(struct object *o, int fun, int args);
@@ -102,7 +115,6 @@ void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args);
 void apply(struct object *o, char *fun, int args);
-void strict_apply_svalue(struct svalue *s, INT32 args);
 void apply_svalue(struct svalue *s, INT32 args);
 void slow_check_stack();
 void cleanup_interpret();
