@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.162 2004/09/10 15:24:42 grubba Exp $
+|| $Id: builtin.cmod,v 1.163 2004/09/11 09:44:17 grubba Exp $
 */
 
 #include "global.h"
@@ -2927,6 +2927,12 @@ PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
 
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(NODE) do {				\
+    if ((NODE)->prev) {					\
+      free_list_node((NODE)->prev);			\
+    }							\
+    if ((NODE)->next) {					\
+      free_list_node((NODE)->next);			\
+    }							\
     free_svalue(&(NODE)->val);				\
   } while(0)
 
@@ -2949,13 +2955,59 @@ PMOD_EXPORT void unlink_list_node(struct list_node *n)
     Pike_fatal("Unlinking unlinked node.\n");
   }
 #endif /* PIKE_DEBUG */
-  n->prev->next = n->next;
-  n->next->prev = n->prev;
-  n->next = n->prev = NULL;
+  if (n->prev->next == n) {
+#ifdef PIKE_DEBUG
+    if (n->next->prev != n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    n->next = n->prev = NULL;
 
-  /* We've lost two references. */
-  free_list_node(n);
-  free_list_node(n);
+    /* We've lost two references. */
+    free_list_node(n);
+    free_list_node(n);
+  } else {
+#ifdef PIKE_DEBUG
+    if (n->next->prev == n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    /* The node is already detached. */
+    n->next = n->prev = NULL;
+  }
+}
+
+PMOD_EXPORT void detach_list_node(struct list_node *n)
+{
+#ifdef PIKE_DEBUG
+  if (!n) {
+    Pike_fatal("Detaching NULL node.\n");
+  }
+  if (!n->next || !n->prev) {
+    Pike_fatal("Detaching unlinked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  if (n->prev->next == n) {
+#ifdef PIKE_DEBUG
+    if (n->next->prev != n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    add_ref(n->next);
+    add_ref(n->prev);
+
+    /* We've lost two references. */
+    free_list_node(n);
+    free_list_node(n);
+#ifdef PIKE_DEBUG
+  } else if (n->next->prev == n) {
+    Pike_fatal("Partially detached node.\n");
+#endif /* PIKE_DEBUG */
+  }
 }
 
 PMOD_EXPORT void prepend_list_node(struct list_node *node,
@@ -3012,14 +3064,24 @@ PMOD_EXPORT void append_list_node(struct list_node *node,
  */
 PIKECLASS List
 {
-  CVAR struct list_node *head;		/* Doubles as head sentinel->next. */
+  CVAR struct list_node *head;
   CVAR INT32 head_sentinel_refs;
-  CVAR struct list_node *tail;		/* NULL. head s->prev & tail s->next */
+  CVAR struct list_node *tail;		/* Always NULL. */
   CVAR INT32 tail_sentinel_refs;
-  CVAR struct list_node *tail_pred;	/* Doubles as tail sentinel->prev. */
+  CVAR struct list_node *tail_pred;
 
 #define HEAD_SENTINEL(this)	((struct list_node *)(&this->head))
 #define TAIL_SENTINEL(this)	((struct list_node *)(&this->tail))
+
+  /* Sentinel overlap description:
+   *
+   * List			Head sentinel		Tail sentinel
+   *   head			  next
+   *   head_sentinel_refs	  refs
+   *   tail			  prev			  next
+   *   tail_sentinel_refs				  refs
+   *   tail_pred					  prev
+   */
 
   INIT
   {
@@ -3034,7 +3096,35 @@ PIKECLASS List
     struct list_node *node = THIS->head;
     struct list_node *next;
     while ((next = node->next)) {
+#ifdef PIKE_DEBUG
+      if (node->refs != 2) {
+	Pike_fatal("Unexpected number of references for node: %d\n",
+		   node->refs);
+      }
+#endif /* PIKE_DEBUG */
       unlink_list_node(node);
+      node = next;
+    }
+  }
+
+  /* Called at gc_check time. */
+  GC_CHECK
+  {
+    struct list_node *node = THIS->head;
+    struct list_node *next;
+    while ((next = node->next)) {
+      debug_gc_check_svalues(&node->val, 1, " as member of a list");
+      node = next;
+    }
+  }
+
+  /* Called at gc_mark time */
+  GC_RECURSE
+  {
+    struct list_node *node = THIS->head;
+    struct list_node *next;
+    while ((next = node->next)) {
+      gc_recurse_svalues(&node->val, 1);
       node = next;
     }
   }
@@ -3100,7 +3190,11 @@ PIKECLASS List
     flags ID_STATIC;
   {
     CVAR struct list_node *cur;
-    CVAR INT32 ind;
+    CVAR INT32 ind;		/* Not meaningful, but requred by the API. */
+
+    /* NOTE: cur may never refer to an unlinked node.
+     *       cur may however refer to a detached node, or to sentinels.
+     */
 
     INIT
     {
@@ -3124,6 +3218,51 @@ PIKECLASS List
 	free_list_node(THIS->cur);
 	THIS->cur = NULL;
       }
+    }
+
+    /* Called at gc_check time. */
+    GC_CHECK
+    {
+      if (!THIS->cur->next || !THIS->cur->prev) return;
+      if (THIS->cur->next->prev == THIS->cur) {
+#ifdef PIKE_DEBUG
+	if (THIS->cur->prev->next != THIS->cur) {
+	  Pike_fatal("Partially detached node.\n");
+	}
+#endif /* PIKE_DEBUG */
+	return;
+      }
+#ifdef PIKE_DEBUG
+      if (THIS->cur->prev->next == THIS->cur) {
+	Pike_fatal("Partially detached node.\n");
+      }
+#endif /* PIKE_DEBUG */
+      /* Detached node. */
+      debug_gc_check_svalues(&THIS->cur->val, 1,
+			     " as current position for a list iterator");
+      /* FIXME: The node can hold other detached nodes alive! */
+    }  
+
+    /* Called at gc_mark time */
+    GC_RECURSE
+    {
+      if (!THIS->cur->next || !THIS->cur->prev) return;
+      if (THIS->cur->next->prev == THIS->cur) {
+#ifdef PIKE_DEBUG
+	if (THIS->cur->prev->next != THIS->cur) {
+	  Pike_fatal("Partially detached node.\n");
+	}
+#endif /* PIKE_DEBUG */
+	return;
+      }
+#ifdef PIKE_DEBUG
+      if (THIS->cur->prev->next == THIS->cur) {
+	Pike_fatal("Partially detached node.\n");
+      }
+#endif /* PIKE_DEBUG */
+      /* Detached node. */
+      gc_recurse_svalues(&THIS->cur->val, 1);
+      /* FIXME: The node can hold other detached nodes alive! */
     }
 
     PIKEFUN int(0..1) `!()
@@ -3331,9 +3470,15 @@ PIKECLASS List
       if (!(next = THIS->cur->next) || !THIS->cur->prev) {
 	Pike_error("Attempt to delete a sentinel.\n");
       }
-      unlink_list_node(THIS->cur);
+      add_ref(next);
+      if (THIS->cur->refs == 3) {
+	unlink_list_node(THIS->cur);
+      } else {
+	/* There's some other iterator holding references to this node. */
+	detach_list_node(THIS->cur);
+      }
       free_list_node(THIS->cur);
-      add_ref(THIS->cur = next);
+      THIS->cur = next;
       pop_n_elems(args);
       push_int(0);
     }
