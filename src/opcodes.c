@@ -21,7 +21,7 @@
 #include "cyclic.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: opcodes.c,v 1.16 1998/03/28 15:08:54 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.17 1998/04/06 04:18:33 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -77,167 +77,6 @@ void o_index(void)
   pop_n_elems(2);
   *sp=s;
   sp++;
-}
-
-void cast(struct pike_string *s)
-{
-  INT32 i;
-  
-  i=compile_type_to_runtime_type(s);
-
-  if(i != sp[-1].type)
-  {
-    if(i == T_MIXED) return;
-
-    if(sp[-2].type == T_OBJECT)
-    {
-      push_string(describe_type(s));
-      if(!sp[-2].u.object->prog)
-	error("Cast called on destructed object.\n");
-      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
-	error("No cast method in object.\n");
-      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
-      free_svalue(sp-2);
-      sp[-2]=sp[-1];
-      sp--;
-      return;
-    }
-
-    switch(i)
-    {
-    case T_MIXED:
-      break;
-
-    case T_INT:
-      switch(sp[-1].type)
-      {
-      case T_FLOAT:
-	i=(int)(sp[-1].u.float_number);
-	break;
-
-      case T_STRING:
-	i=STRTOL(sp[-1].u.string->str,0,0);
-	free_string(sp[-1].u.string);
-	break;
-      
-      default:
-	error("Cannot cast to int.\n");
-      }
-      
-      sp[-1].type=T_INT;
-      sp[-1].u.integer=i;
-      break;
-
-    case T_FLOAT:
-    {
-      FLOAT_TYPE f;
-      switch(sp[-1].type)
-      {
-      case T_INT:
-	f=(FLOAT_TYPE)(sp[-1].u.integer);
-	break;
-
-      case T_STRING:
-	f=STRTOD(sp[-1].u.string->str,0);
-	free_string(sp[-1].u.string);
-	break;
-      
-      default:
-	error("Cannot cast to float.\n");
-	f=0.0;
-      }
-      
-      sp[-1].type=T_FLOAT;
-      sp[-1].u.float_number=f;
-      break;
-    }
-
-    case T_STRING:
-    {
-      char buf[200];
-      switch(sp[-1].type)
-      {
-      case T_INT:
-	sprintf(buf,"%ld",(long)sp[-1].u.integer);
-	break;
-
-      case T_FLOAT:
-	sprintf(buf,"%f",(double)sp[-1].u.float_number);
-	break;
-      
-      default:
-	error("Cannot cast to string.\n");
-      }
-      
-      sp[-1].type=T_STRING;
-      sp[-1].u.string=make_shared_string(buf);
-      break;
-    }
-
-    case T_OBJECT:
-    {
-      switch(sp[-1].type)
-      {
-      case T_STRING:
-	APPLY_MASTER("cast_to_object",1);
-	break;
-	
-      case T_FUNCTION:
-	sp[-1].type = T_OBJECT;
-	break;
-      }
-      break;
-    }
-
-    case T_PROGRAM:
-    {
-      switch(sp[-1].type)
-      {
-	case T_STRING:
-	  APPLY_MASTER("cast_to_program",1);
-	  break;
-	  
-	case T_FUNCTION:
-	{
-	  struct program *p=program_from_function(sp-1);
-	  if(p)
-	  {
-	    p->refs++;
-	    pop_stack();
-	    push_program(p);
-	  }else{
-	    pop_stack();
-	    push_int(0);
-	  }
-	}
-      }
-      return;
-    }
-
-    case T_FUNCTION:
-    {
-      INT32 i;
-      if(fp->current_object->prog)
-	error("Cast to function in destructed object.\n");
-      i=find_shared_string_identifier(sp[-1].u.string,fp->current_object->prog);
-      free_string(sp[-1].u.string);
-      /* FIXME, check that it is a indeed a function */
-      if(i==-1)
-      {
-	sp[-1].type=T_FUNCTION;
-	sp[-1].subtype=i;
-	sp[-1].u.object=fp->current_object;
-	fp->current_object->refs++;
-      }else{
-	sp[-1].type=T_INT;
-	sp[-1].subtype=NUMBER_UNDEFINED;
-	sp[-1].u.integer=0;
-      }
-      break;
-    }
-
-    }
-  }
 }
 
 void o_cast(struct pike_string *type, INT32 run_time_type)
@@ -385,15 +224,38 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	break;
 	
       case T_PROGRAM:
-	if(fp->pc)
+      switch(sp[-1].type)
+      {
+	case T_STRING:
+	  if(fp->pc)
+	  {
+	    INT32 lineno;
+	    push_text(get_line(fp->pc, fp->context.prog, &lineno));
+	  }else{
+	    push_int(0);
+	  }
+	  APPLY_MASTER("cast_to_program",2);
+	  return;
+	  
+	case T_FUNCTION:
 	{
-	  INT32 lineno;
-	  push_text(get_line(fp->pc, fp->context.prog, &lineno));
-	}else{
-	  push_int(0);
+	  struct program *p=program_from_function(sp-1);
+	  if(p)
+	  {
+	    p->refs++;
+	    pop_stack();
+	    push_program(p);
+	  }else{
+	    pop_stack();
+	    push_int(0);
+	  }
 	}
-	APPLY_MASTER("cast_to_program",2);
 	return;
+
+	default:
+	  error("Cannot cast that to a program.\n");
+      }
+
 	
       case T_FUNCTION:
       {
