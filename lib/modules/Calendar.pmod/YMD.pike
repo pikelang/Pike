@@ -776,8 +776,11 @@ class YMD
 
       array(TimeRange) res=days(m,m);
       if (sizeof(res)==1) return res[0];
-      error("not in range (Day 1..%d exist)\n",
-	    number_of_days());
+      if(number_of_days())
+	error("Not in range (Day 1..%d exist).\n",
+	      number_of_days());
+      else
+	error("No days in object.\n");
    }
 
 // --- months
@@ -2541,9 +2544,10 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    if (zonename[0]=='"') sscanf(zonename,"\"%s\"",zonename);
    sscanf(zonename,"%*[ \t]%s",zonename);
 
-   // Ugly fix for synonyms. This suppport should of course be
-   // added in a lower layer when the next refactoring occurs.
-   zonename = ([ "MEST":"CET", "MESZ":"CET" ])[zonename] || zonename;
+   if(sizeof(zonename)==4 && zonename[2]=='S')
+     zonename = zonename[0..1] + zonename[3..3];
+   else if(sizeof(zonename)>4 && has_suffix(zonename, "DST"))
+     zonename = zonename[..sizeof(zonename)-1-3];
 
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];
@@ -2930,12 +2934,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
    if (sizeof(what)>15 &&
        (t=parse(SPACED("%e %M %D %h:%m:%s %z %Y"),what,cx))) return t;
    if (sizeof(what)>19 &&
-       (t=parse(SPACED("%e %M %D %h:%m:%s %z DST %Y"),what,cx))) {
-     string tz = t->tzname();
-     t->set_timezone( tz[..sizeof(tz)-2] + "S" +
-		      tz[sizeof(tz)-1..sizeof(tz)-1] );
-     return t;
-   }
+       (t=parse(SPACED("%e %M %D %h:%m:%s %z DST %Y"),what,cx))) return t;
 
    foreach ( dwim_day_strings +
 	     ({""}),
