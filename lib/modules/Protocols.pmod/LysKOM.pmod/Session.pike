@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.12 1999/10/18 21:53:09 js Exp $
+//  $Id: Session.pike,v 1.13 1999/11/08 19:50:47 wellhard Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -895,3 +895,26 @@ object|void _create_text(string textstring,
    return text(res);
 }
 
+//! method object send_message(string message, mapping options)
+//! 	Sends a message.
+//!
+//!	options is a mapping that may contain:
+//!	<data_description type=mapping>
+//!	<elem name=recpt type="Conference">recipient conference</elem>
+//!	</data_description>
+
+object|void send_message(string textstring, mapping options)
+{
+  int|object res;
+  string call;
+  
+  if(!options) options = ([]);
+  
+  if(!options->recpt)
+    res = con["broadcast"](textstring);
+  else
+    res = con["send_message"](options->recpt->no, textstring);
+  
+  if (objectp(res)) return res;
+  return text(res);
+}
