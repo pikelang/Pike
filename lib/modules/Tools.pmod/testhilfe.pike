@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.4 2002/04/17 23:41:41 jhs Exp $
+// $Id: testhilfe.pike,v 1.5 2002/04/18 12:30:49 nilsson Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -81,6 +81,12 @@ int main(int num, array(string) args) {
   test("A();", "object");
   test("A a=A();", "");
   //  test("class A{}();", "object");
+  test("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})");
+  test("void nop(mixed m){};", "");
+  test("nop(({}));", "0");
+  test("int a;", "");
+  test("a++;", "0");
+  test("a;", "1");
 
   test("void foo(function f) { write(\"a\"); f(); write(\"b\"); }", "");
   //  test("foo() { write(\"-\"); }", "a-b");
@@ -91,7 +97,7 @@ int main(int num, array(string) args) {
   test("int b=2;", "");
   test("b=2.0;", "2.000000"); // We should get an error here.
   test("Image.Image i=Image.Image();", "");
-  test("i;", "Image.Image( 0 x 0 /* 0.0Kb */)");
+  test("i;", "Image.Image( 0 x 0 /""* 0.0Kb *""/)");
   test("constant z=`+(1,2),y=2;", "");
   test("z;", "3");
   test("y;", "2");
@@ -105,6 +111,12 @@ int main(int num, array(string) args) {
   test("void foo() { i++; }", "");
   test("foo();", "0");
   test("i;", "1");
+
+  test("int n=0;", "");
+  test("foreach(({1,2,3}), int m){n+=m;}", "Ok.\n");
+  test("n;","6");
+  test("foreach( ({ 1, 2, 3, }); int i; int m) { n+=m; }", "Ok.\n");
+  test("n;", "12");
 
   test("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n");
   test("j;", "Compiler Error: 1:'j' undefined.\n");
@@ -124,13 +136,6 @@ int main(int num, array(string) args) {
   test("_*_;", "16");
   test("_==__[-1];", "1");
   test("__[1]+__[2]+__[-1];", "7");
-
-  // Test for bug with undefined variable [bug 3023]
-  test("int n=0; foreach(({1,2,3}), int m){n+=m;}","Ok.\n");
-  test("n;","5");
-
-  // Test for parse error on function invocation with array literal [bug 3024]
-  test("void nop(mixed m){};nop(({}));", "");
 
   werror("Did %d tests, %d failed.\n", tests, fails);
 }
