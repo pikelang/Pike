@@ -2,9 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.3 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: acconfig.h,v 1.4 2003/01/15 19:31:40 grubba Exp $
 */
 
 #undef HAVE_LIBFT2
 @TOP@
 @BOTTOM@
+
+/* Define if you have a declaration of ft_encoding_latin_1 */
+#undef HAVE_DECL_FT_ENCODING_LATIN_1

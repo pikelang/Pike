@@ -33,7 +33,18 @@ if test "x$with_freetype" = "xyes" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)
       PIKE_FEATURE_OK(Image.FreeType)
-      AC_CHECK_DECLS(ft_encoding_latin_1,,,[#include <freetype/freetype.h>])
+      AC_MSG_CHECKING(for ft_encoding_latin_1 declaration)
+      AC_CACHE_VAL(pike_cv_decl_ft_encoding_latin_1, [
+        AC_TRY_COMPILE([
+#include <freetype/freetype.h>
+int q = ft_encoding_latin_1;
+        ], [], [pike_cv_decl_ft_encoding_latin_1=yes
+        ],[pike_cv_decl_ft_encoding_latin_1=no ])
+      ])
+      AC_MSG_RESULT($pike_cv_decl_ft_encoding_latin_1)
+      if test "x$pike_cv_decl_ft_encoding_latin_1" = "xyes"; then
+        AC_DEFINE(HAVE_DECL_FT_ENCODING_LATIN_1)
+      else :; fi
     else
       AC_MSG_RESULT(no)
       CPPFLAGS="$OLDCPPFLAGS"
