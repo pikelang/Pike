@@ -140,6 +140,23 @@ class easy_request
 	    return request_literal(send);
 	  argc++;
 	  break;
+	case "set": 
+	  if (!(args[argc] = line->get_set()))
+	  {
+	    send(tag, "BAD", "Invalid set");
+	    return "finished";
+	  }
+	  argc++;
+	  break;
+	case "simple_list":
+	  	  if (!(args[argc] = line->get_set()))
+	  {
+	    send(tag, "BAD", "Invalid set");
+	    return "finished";
+	  }
+	  argc++;
+	  break;
+	  
 	default:
 	  throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
 			    arg_info[argc]), backtrace() }) );
@@ -303,5 +320,132 @@ class select
 	send(tag, "NO");
 	return "login";
       }
+    }
+}
+
+class fetch
+{
+  inherit easy_request;
+
+  constant arg_info = ({ ({ "set" }), ({ "simple_list"}) });
+
+  string easy_process(object|mapping session, object server,
+		      function send,
+		      object message_set, mapping request)
+    {
+      array fetch_attrs = 0;
+      switch(request->type)
+      {
+      case "atom":
+	/* Short hands */
+	if (!request->options)
+	  /* No attributes except BODY and BODY.PEEK can take any options */
+	  switch(lower_case(request->atom))
+	  {
+	  case "all":
+	    fetch_attrs = ({ "flags", "internaldate",
+			     "rfc822.size", "envelope" });
+	    break;
+	  case "fast":
+	    fetch_attrs = ({ "flags", "internaldate", "rfc822.size" });
+	    break;
+	  case "full":
+	    fetch_attrs = ({ "flags", "internaldate",
+			     "rfc822.size", "envelope", "body" });
+	    break;
+	  default:
+	    /* Handled below */
+	  }
+	if (!fetch_attrs)
+	{
+	  mixed f = process_fetch_attr(request);
+	  if (!f)
+	  {
+	    send(tag, "BAD");
+	    return "finished";
+	  }
+	  fetch_attrs = ({ f });
+	}
+      case "list":
+	fetch_attrs = allocate(sizeof(request->list));
+
+	for(int i = 0; i<sizeof(fetch_attrs); i++)
+	{
+	  if (!(fetch_attrs[i] = process_fetch_attr(request->list[i])))
+	  {
+	    send(tag, "BAD");
+	    return "finished";
+	  }
+	}
+	break;
+      default:
+	throw( ({ "Internal error!\n", backtrace() }) );
+      }
+	
+      array info = server->select(session, message_set, fetch_attrs);
+      
+      if (info)
+      {
+	foreach(info, array a)
+	  send("*", @a);
+	send(tag, "OK");
+      } else 
+	send(tag, "NO");
+
+      return "finished";
+    }
+
+  string|mapping process_fetch_attr(mapping atom)
+    {
+      if (atom->type != atom)
+	return 0;
+
+      string wanted = lower_case(atom->atom);
+      switch(wanted)
+      {
+      case "body":
+      case "body.peek":
+	if (!atom->options)
+	  return wanted;
+
+	if (!sizeof(atom->options)
+	   || (atom->options[0]->type != atom)
+	   || (atom->options[0]->options))
+	  return 0;
+	
+	array path = atom->options[0]->atom / ".";
+
+	/* Extract numeric prefix */
+	array part_number = ({ });
+	int i;
+
+	for(i = 0; i<sizeof(path); i++)
+	{
+	  int n = string_to_number(path[i]);
+	  if (n<0)
+	    break;
+	  part_number += ({ n });
+	}
+	
+	return ([ "wanted" : wanted,
+		  "section" : path[i..],
+		  "part" : part_number,
+		  "options" : atom->options[1..],
+		  "partial" : atom->range ]);
+      default:
+	/* Handle below */
+      }
+      
+      /* No commands except BODY[.PEEK] accepts any options */
+      if (atom->options)
+	return 0;
+
+      return (< "envelope",
+		"flags",
+		"internaldate",
+		"rfc822.header", "rfc822.size", "rfc822.text",
+		"bodystructure",
+		"uid" >)[wanted]
+	&& wanted;
     }
 }
