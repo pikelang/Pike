@@ -11,8 +11,13 @@ DESCRIPTION
 	allocated and does not need to be declared as in C. The values in
 	the array can be set when creating the array as in the first
 	construction or anytime afterwards like this: arr[index]=data where
-	index is an integer greater or equal to 0 and smaller than the array
-	size. Note that arrays are shared and use reference counts to keep
+	index is an integer. Index is normally 0 <= index < sizeof(arr), and
+	refers to the corresponding element in the array. If index is less
+	than zero, it is the same as doing arr[sizeof(arr)+index]. This
+	means that negative index will index the array from the end rather
+	than from the beginning.
+
+	Note that arrays are shared and use reference counts to keep
 	track of their references. This will have the effect that you can
 	have two variables pointing to the same array, and when you change
 	an index in in it, both variables will show the change.
