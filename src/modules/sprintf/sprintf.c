@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.67 2000/08/08 19:20:51 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.68 2000/08/09 10:25:50 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1207,7 +1207,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
 	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
-	DO_NOT_WARN(GET_FLOAT(tf));
+	GET_FLOAT(DO_NOT_WARN(tf));
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
@@ -1255,7 +1255,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)alloca(l);
 	fs->fsp->b=MKPCHARP(x,0);
 	fs->fsp->len=l;
-	DO_NOT_WARN(GET_FLOAT(tf));
+	GET_FLOAT(DO_NOT_WARN(tf));
 	switch(l) {
 	case 4:
 #ifdef FLOAT_IS_IEEE_BIG
