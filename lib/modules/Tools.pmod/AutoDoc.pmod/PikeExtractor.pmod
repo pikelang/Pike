@@ -139,10 +139,11 @@ static private class Extractor {
           extractorError("expected enum constant");
 
         // read the optional doc comment
-        if (isDocComment(parser->peekToken(WITH_NL)))
+        if (isDocComment(parser->peekToken(WITH_NL))) {
           doc = readAdjacentDocLines();
-        if (isIdent(parser->peekToken()))
-          extractorError("constant + doc + constant not allowed");
+	  if (isIdent(parser->peekToken()))
+	    extractorError("constant + doc + constant not allowed");
+	}
       }
       else if (isDocComment(parser->peekToken())) {
         // The case with a doc comment, that must be followed by
