@@ -564,6 +564,14 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
   CHRONO("done");
 
   free(tbl);
+
+  for (i=0; i<QUANT_SELECT_CACHE; i++)
+     ct->cache[i].index=white;
+  j=colortable_rgb(ct,black); /* ^^ dont find it in the cache... */
+  for (i=0; i<QUANT_SELECT_CACHE; i++)
+     ct->cache[i].index=black,
+     ct->cache[i].value=j;
+
   CHRONO("really done");
   return ct;
 }
@@ -575,11 +583,18 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
 
 int colortable_rgb(struct colortable *ct,rgb_group rgb)
 {
-   struct map_entry *me,**eme;
-   int mindistance,best=0;
-   me=&(ct->map[QUANT_MAP_THIS(rgb.r)]
-	       [QUANT_MAP_THIS(rgb.g)]
-               [QUANT_MAP_THIS(rgb.b)]);
+   struct map_entry *me,**eme,**beme,*feme;
+   int mindistance,best=0,i;
+
+   if (ct->cache->index.r==rgb.r &&
+       ct->cache->index.g==rgb.g &&
+       ct->cache->index.b==rgb.b) 
+      return ct->cache->value;
+
+   feme=me=&(ct->map[QUANT_MAP_THIS(rgb.r)]
+	            [QUANT_MAP_THIS(rgb.g)]
+ 	            [QUANT_MAP_THIS(rgb.b)]);
+
 #ifdef QUANT_DEBUG_RGB
    fprintf(stderr,"%d,%d,%d -> %lu %lu %lu: ",rgb.r,rgb.g,rgb.b,
    QUANT_MAP_THIS(rgb.r),
@@ -596,9 +611,28 @@ int colortable_rgb(struct colortable *ct,rgb_group rgb)
 #endif
       return me->cl; 
    }
+   for (i=1; i<QUANT_SELECT_CACHE; i++)
+      if (ct->cache[i].index.r==rgb.r &&
+	  ct->cache[i].index.g==rgb.g &&
+	  ct->cache[i].index.b==rgb.b) 
+      {
+	 best=ct->cache[i].value;
+
+	 MEMMOVE(ct->cache+1,ct->cache,
+		 i*sizeof(struct rgb_cache));
+	 ct->cache[0].index=rgb;
+	 ct->cache[0].value=best;
+
+#ifdef QUANT_DEBUG_RGB
+fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+#endif
+	 return best;
+      }
+
    mindistance=DISTANCE(rgb,ct->clut[me->cl]);
    best=me->cl;
-   while ( (me=me->next) && mindistance)
+   me=me->next; eme=&(me->next); beme=NULL;
+   while ( me && mindistance )
    {
       int d;
 #ifdef QUANT_DEBUG_RGB
@@ -609,7 +643,27 @@ fprintf(stderr,"%lx %d,%d,%d ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut
       {
 	 mindistance=DISTANCE(rgb,ct->clut[me->cl]);
 	 best=me->cl;
+	 beme=eme;
       }
+      eme=&(me->next);
+      me=me->next;
+   }
+   if (!mindistance && beme) /* exact match, place first */
+   {
+      struct map_entry e;
+      e=*feme;
+      me=*beme;
+      *feme=*me;
+      *beme=me->next;
+      *me=e;
+      feme->next=me;
+   }
+   else /* place in cache */
+   {
+      MEMMOVE(ct->cache+1,ct->cache,
+	      (QUANT_SELECT_CACHE-1)*sizeof(struct rgb_cache));
+      ct->cache[0].index=rgb;
+      ct->cache[0].value=best;
    }
 #ifdef QUANT_DEBUG_RGB
 fprintf(stderr,"%lx ",me);

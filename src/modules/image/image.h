@@ -4,6 +4,7 @@
 #define QUANT_MAP_SKIP_BITS (8-(QUANT_MAP_BITS))
 #define QUANT_MAP_THIS(X) ((X)>>QUANT_MAP_SKIP_BITS)
 #define QUANT_MAP_REAL (1L<<QUANT_MAP_BITS)
+#define QUANT_SELECT_CACHE 5
 
 #define COLOURTYPE unsigned char
 
@@ -41,6 +42,11 @@ struct colortable
       unsigned char used; 
       struct map_entry *next;
    } map[QUANT_MAP_REAL][QUANT_MAP_REAL][QUANT_MAP_REAL];
+   struct rgb_cache
+   {
+      rgb_group index;
+      int value;
+   } cache[QUANT_SELECT_CACHE];
    rgb_group clut[1];
 };
 
