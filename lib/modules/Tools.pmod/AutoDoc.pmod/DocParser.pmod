@@ -192,9 +192,9 @@ static private class Token (
   string text,
   SourcePosition position,
 ) {
-  string _sprintf() {
-    return sprintf("Token(%d, %O, %O, %O, %O)", type, keyword,
-                   arg, text, position);
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%d, %O, %O, %O, %O)", this_program, type,
+			     keyword, arg, text, position);
   }
 }
 

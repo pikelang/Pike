@@ -460,8 +460,8 @@ static class Scope(string|void type, string|void name) {
   multiset(string) failures = (<>);
 
   string _sprintf(int t) {
-    if(t=='O') return sprintf("Scope(%O:%O:", type, name) +
-		 (sort(indices(idents))*",") + ")";
+    return t=='O' && sprintf("%O(%O:%O:%s)", this_program, type, name,
+			     (sort(indices(idents))*",") );
   }
 }
 

@@ -90,7 +90,8 @@ class SourcePosition {
     return SourcePosition(filename, firstline, lastline);
   }
 
-  string _sprintf() {
+  string _sprintf(int t) {
+    if(t!='O') return 0;
     string res = "SourcePosition(File: " + (filename ? filename : "?");
     if (firstline)
       if (lastline)
@@ -118,7 +119,8 @@ class AutoDocError {
     part = _part;
     message = _message;
   }
-  string _sprintf() {
-    return sprintf("AutoDocError(%O, %O, %O)", position, part, message);
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O, %O, %O)", this_program,
+			     position, part, message);
   }
 }

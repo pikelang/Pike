@@ -382,8 +382,10 @@ class _Class_or_Module {
 
   static string _sprintf(int c)
   {
-    if (c == 's') return xml();
-    return sprintf("_Class_or_Module(%O)", name);
+    switch(c) {
+    case 's': return xml();
+    case 'O': return sprintf("%O(%O)", this_program, name);
+    }
   }
 }
 
