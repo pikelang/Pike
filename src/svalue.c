@@ -369,6 +369,7 @@ int svalue_is_true(struct svalue *s)
     return 0;
 
   case T_FUNCTION:
+    if (s->subtype == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
     return 1;
 
