@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.63 2001/08/17 09:01:45 anders Exp $
+// $Id: MySQL.pike,v 1.64 2001/08/17 16:07:14 nilsson Exp $
 
 inherit .Base;
 
@@ -427,7 +427,7 @@ int get_num_deleted_documents()
 array(array) get_most_common_words(void|int count)
 {
   array a =
-    db->query("select word, sum(length(hits))/7 as c from word_hit "
+    db->query("select word, sum(length(hits))/5 as c from word_hit "
 	      "group by word order by c desc limit %d", count||10);
 
   if(!sizeof(a))
