@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.83 2003/12/12 17:41:37 nilsson Exp $
+|| $Id: socket.c,v 1.84 2004/04/03 22:47:06 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.83 2003/12/12 17:41:37 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.84 2004/04/03 22:47:06 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -321,6 +321,16 @@ static void port_bind(INT32 args)
   push_int(1);
 }
 
+/*! @decl void close()
+ *!
+ *! Closes the socket.
+ */
+static void port_close (INT32 args)
+{
+  pop_n_elems (args);
+  do_close (THIS, Pike_fp->current_object);
+}
+
 /* @decl void create("stdin", void|function accept_callback)
  * @decl void create(int|string port, void|function accept_callback, void|string ip)
  *
@@ -498,6 +508,7 @@ void port_setup_program(void)
   map_variable("_id","mixed",0,offset+OFFSETOF(port,id),PIKE_T_MIXED);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind",port_bind,tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt),0);
+  ADD_FUNCTION("close",port_close,tFunc(tNone,tVoid),0);
   /* function(int,void|mixed:int) */
   ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
   /* function(mixed:mixed) */
