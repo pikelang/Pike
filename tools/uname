@@ -89,12 +89,22 @@ if [ X$V = Xyes ]; then
   OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
 fi
 
-if [ X$M = Xyes ]; then
-  OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
-fi
+if [ $M$P = "" ]; then :; else
+  # Workaround for XP64 DWIMing PROCESSOR_ARCHITECTURE...
+  PROCESSOR_ARCHITECTURE="`getntenv PROCESSOR_IDENTIFIER|cut '-d ' -f1`"
 
-if [ X$P = Xyes ]; then
-  OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
+  # PROCESSOR_IDENTIFIER is typically something like:
+  #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
+  # or
+  #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
+
+  if [ $M = yes ]; then
+    OUTPUT="$OUTPUT $PROCESSOR_ARCHITECTURE"
+  fi
+  
+  if [ $P = yes ]; then
+    OUTPUT="$OUTPUT $PROCESSOR_ARCHITECTURE"
+  fi
 fi
 
 echo $OUTPUT
