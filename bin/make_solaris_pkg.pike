@@ -125,7 +125,7 @@ string make_pkginfo()
   pkginfo+="CATEGORY=application\n";
   pkginfo+="ARCH=" + arch + "\n";
   pkginfo+="VENDOR=The Pike Project\n";
-  pkginfo+="EMAIL=pike@roxen.com\n";
+  pkginfo+="EMAIL=pike@pike.ida.liu.se\n";
   pkginfo+="MAXINST=255\n";
   pkginfo+="VERSION=" + get_pike_version() + "\n";
 
