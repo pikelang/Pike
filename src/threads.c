@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.42 1997/09/22 01:01:19 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.43 1997/09/23 15:17:18 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -312,9 +312,7 @@ void exit_mutex_key_obj(struct object *o)
     }
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
-    THREADS_ALLOW();
     co_signal(& mut->condition);
-    THREADS_DISALLOW();
   }
 }
 
