@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.22 2004/04/29 12:23:17 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.23 2004/04/30 20:19:53 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
@@ -28,6 +28,7 @@ RCSID("$Id: hash.cmod,v 1.22 2004/04/29 12:23:17 nilsson Exp $");
 #include <stdio.h>
 #include <stdarg.h>
 #include "fdlib.h"
+
 #if 0
 static void
 werror(const char *format, ...)
@@ -132,16 +133,21 @@ PIKECLASS HashInfo
     push_string(end_shared_string(out));
   }
 
-  /*! @decl string hash(Stdio.File file)
+  /*! @decl string hash(Stdio.File file, void|int bytes)
    *!
    *!  Works as a (faster) shortcut for
    *!  @expr{obj->update(Stdio.read_file(file))->digest()@}.
+   *!
+   *! @param bytes
+   *!   The number of bytes of the file object @[file] that should be
+   *!   hashed. Negative numbers are ignored and the whole file is
+   *!   hashed.
    *!
    *! @seealso
    *!   @[Stdio.File], @[HashState()->update()] and
    *!   @[HashState()->digest()].
    */
-  PIKEFUN string hash(object in)
+  PIKEFUN string hash(object in, void|int bytes)
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
@@ -191,8 +197,18 @@ PIKECLASS HashInfo
 
     THREADS_ALLOW();
     meta->init(ctx);
-    while((len=fd_read(fd, read_buffer, 8192))>0)
-      meta->update(ctx, len, read_buffer);
+    if(args==2 && bytes->u.integer>-1) {
+      int bytes_left = bytes->u.integer;
+      int read_bytes = MINIMUM(8192, bytes_left);
+      while(read_bytes>0 && (len=fd_read(fd, read_buffer, read_bytes))>0) {
+	meta->update(ctx, len, read_buffer);
+	bytes_left -= read_bytes;
+	read_bytes = MINIMUM(8192, bytes_left);
+      }
+    }
+    else
+      while((len=fd_read(fd, read_buffer, 8192))>0)
+	meta->update(ctx, len, read_buffer);
 
     free(read_buffer);
 
