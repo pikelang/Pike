@@ -1,5 +1,5 @@
 /*
- * $Id: make_wxs.pike,v 1.6 2005/01/06 21:08:26 grubba Exp $
+ * $Id: make_wxs.pike,v 1.7 2005/01/07 11:29:21 nilsson Exp $
  *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.
@@ -9,7 +9,7 @@
 
 int main(int argc, array(string) argv)
 {
-  string base_guid = Standards.UUID.make_version(-1)->str();
+  string base_guid = Standards.UUID.make_version1(-1)->str();
   string version_str = "1.0";
   string id;
   string descr;
@@ -34,7 +34,7 @@ int main(int argc, array(string) argv)
       if (stringp(opt[1])) {
 	version_str = opt[1];
       } else {
-	write("$Revision: 1.6 $\n");
+	write("$Revision: 1.7 $\n");
 	exit(0);
       }
       break;
