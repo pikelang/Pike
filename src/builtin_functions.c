@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.552 2004/12/22 12:48:56 grubba Exp $
+|| $Id: builtin_functions.c,v 1.553 2005/02/10 01:37:31 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.552 2004/12/22 12:48:56 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.553 2005/02/10 01:37:31 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7270,6 +7270,8 @@ PMOD_EXPORT void f_map(INT32 args)
 		 types |= 1 << ITEM(d)[i].type;
 		 pop_n_elems(Pike_sp-spbase);
 	       }
+	       else
+		 types |= BIT_INT;
 	     }
 	   }else{
 	     for (i=0; i<n; i++)
@@ -7282,6 +7284,8 @@ PMOD_EXPORT void f_map(INT32 args)
 		 types |= 1 << ITEM(d)[i].type;
 		 pop_n_elems(Pike_sp-spbase);
 	       }
+	       else
+		 types |= BIT_INT;
 	     }
 	   }
 	 }else{
@@ -7325,6 +7329,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    f_arrow(2);
 	    if(UNSAFE_IS_ZERO(Pike_sp-1))
 	    {
+	      types |= BIT_INT;
 	      pop_stack();
 	      continue;
 	    }
@@ -7354,7 +7359,7 @@ PMOD_EXPORT void f_map(INT32 args)
       default:
 	 SIMPLE_BAD_ARG_ERROR("map",2,
 			      "function|program|object|"
-			      "string|int(0)|multiset");
+			      "string|int(0..0)|multiset");
    }      
 }
 
