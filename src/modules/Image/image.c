@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.24 1997/04/19 12:33:57 mirar Exp $ */
+/* $Id: image.c,v 1.25 1997/04/19 22:57:01 grubba Exp $ */
 
 /*
 **! module Image
@@ -88,6 +88,7 @@
 **!	<ref>tozbgr</ref>
 **!
 **! see also: Image, Image.font
+*/
 
 #include "global.h"
 
@@ -96,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.24 1997/04/19 12:33:57 mirar Exp $");
+RCSID("$Id: image.c,v 1.25 1997/04/19 22:57:01 grubba Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
