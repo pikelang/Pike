@@ -1,3 +1,10 @@
+Sat Mar  8 04:31:29 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* added new efuns `[] and `->
+	* type checking improved:
+	* function and program are now almost interchangeable.
+	* function and object are now almost interchangeable.
+
 Thu Mar  6 21:19:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* pike_types.c: recurseive compiling bugs fixed

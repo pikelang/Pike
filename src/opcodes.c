@@ -65,7 +65,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   }
 }
 
-void f_index()
+void o_index()
 {
   index_no_free(sp,sp-2,sp-1);
   sp++;

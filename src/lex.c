@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.15 1997/01/31 23:09:02 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.16 1997/03/08 12:54:06 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1832,7 +1832,7 @@ static void calcC()
   {
     low_lex();
     calc1();
-    f_index();
+    f_index(2);
     if(lookahead!=']')
       error("Missing ']'\n");
     else

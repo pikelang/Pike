@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.28 1997/03/07 05:21:45 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.29 1997/03/08 12:54:06 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1072,7 +1072,7 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_INDEX);
     do_index:
-      f_index();
+      o_index();
       print_return_value();
       break;
 

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.9 1997/02/19 05:04:19 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.10 1997/03/08 12:54:07 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1217,6 +1217,44 @@ void o_range()
   }
 }
 
+void f_index(INT32 args)
+{
+  switch(args)
+  {
+  case 0:
+  case 1:
+    error("Too few arguments to `[]\n");
+    break;
+  case 2:
+    if(sp[-1].type==T_STRING) sp[-1].subtype=0;
+    o_index();
+    break;
+  case 3:
+    o_range();
+    break;
+  default:
+    error("Too manu arguments to `[]\n");
+  }
+}
+
+void f_arrow(INT32 args)
+{
+  switch(args)
+  {
+  case 0:
+  case 1:
+    error("Too few arguments to `->\n");
+    break;
+  case 2:
+    if(sp[-1].type==T_STRING)
+      sp[-1].subtype=1;
+    o_index();
+    break;
+  default:
+    error("Too manu arguments to `->\n");
+  }
+}
+
 void f_sizeof(INT32 args)
 {
   INT32 tmp;
@@ -1241,6 +1279,12 @@ static int generate_sizeof(node *n)
 
 void init_operators()
 {
+  add_efun2("`[]",f_index,
+	    "function(string,int:int)|function(object,string:mixed)|function(array,int:mixed)|function(mapping,mixed:mixed)|function(multiset,mixed:int)|function(string,int,int:string)|function(array,int,int:array)",OPT_TRY_OPTIMIZE,0,0);
+
+  add_efun2("`->",f_arrow,
+	    "function(object|mapping|multiset,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
+
   add_efun2("`==",f_eq,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`!=",f_ne,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`!",f_not,"function(mixed:int)",OPT_TRY_OPTIMIZE,0,generate_not);

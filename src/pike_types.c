@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.17 1997/03/07 05:21:46 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.18 1997/03/08 12:54:08 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -25,6 +25,9 @@ int max_correct_args;
 
 static void internal_parse_type(char **s);
 static int type_length(char *t);
+
+#define TWOT(X,Y) (((X) << 8)+(Y))
+#define EXTRACT_TWOT(X,Y) TWOT(EXTRACT_UCHAR(X), EXTRACT_UCHAR(Y))
 
 /*
  * basic types are represented by just their value in a string
@@ -699,18 +702,13 @@ static char *low_match_types(char *a,char *b, int flags)
   if(EXTRACT_UCHAR(a) == T_MIXED && !(flags & A_EXACT)) return a;
   if(EXTRACT_UCHAR(b) == T_MIXED && !(flags & B_EXACT)) return a;
 
-  /* Special case (tm) */
-
-  /* Handle cloning with prog() */
-  if(EXTRACT_UCHAR(a) == T_PROGRAM &&
-     EXTRACT_UCHAR(b)==T_FUNCTION)
+  /* Special cases (tm) */
+  switch(EXTRACT_TWOT(a,b))
   {
+  case TWOT(T_PROGRAM, T_FUNCTION):
+  case TWOT(T_FUNCTION, T_PROGRAM):
     return a;
-  }
-
-  /* Handle the `() operator */
-  if(EXTRACT_UCHAR(a) == T_OBJECT &&
-     EXTRACT_UCHAR(b)==T_FUNCTION)
+  case TWOT(T_OBJECT, T_FUNCTION):
   {
     struct program *p;
     if(p=id_to_program(EXTRACT_INT(a+1)))
@@ -720,6 +718,19 @@ static char *low_match_types(char *a,char *b, int flags)
       return low_match_types(ID_FROM_INT(p, i)->type->str, b, flags);
     }
     return a;
+  }
+
+  case TWOT(T_FUNCTION, T_OBJECT):
+  {
+    struct program *p;
+    if(p=id_to_program(EXTRACT_INT(b+1)))
+    {
+      int i=p->lfuns[LFUN_CALL];
+      if(i == -1) return 0;
+      return low_match_types(a, ID_FROM_INT(p, i)->type->str, flags);
+    }
+    return a;
+  }
   }
 
   if(EXTRACT_UCHAR(a) != EXTRACT_UCHAR(b)) return 0;
@@ -1148,6 +1159,42 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     }
     reference_shared_string(ret);
     return ret;
+
+  case T_PROGRAM:
+  {
+    char *a;
+    int id=s->u.program->lfuns[LFUN_CREATE];
+    if(id>=0)
+    {
+      a=ID_FROM_INT(s->u.program, id)->type->str;
+    }else{
+      a=function_type_string->str;
+    }
+    if(EXTRACT_UCHAR(a)==T_FUNCTION)
+    {
+      type_stack_mark();
+      push_type_int(s->u.program->id);
+      push_type(T_OBJECT);
+      
+      type_stack_mark();
+      a++;
+      while(EXTRACT_UCHAR(a)!=T_MANY)
+      {
+	type_stack_mark();
+	push_unfinished_type(a);
+	type_stack_reverse();
+	a+=type_length(a);
+      }
+      a++;
+      push_type(T_MANY);
+      type_stack_mark();
+      push_unfinished_type(a);
+      type_stack_reverse();
+      type_stack_reverse();
+      push_type(T_FUNCTION);
+      return pop_unfinished_type();
+    }
+  }
 
   default:
     type_stack_mark();

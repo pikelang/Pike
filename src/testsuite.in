@@ -1,4 +1,5 @@
-test_true([["$Id: testsuite.in,v 1.32 1997/03/01 03:30:49 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.33 1997/03/08 12:54:09 hubbe Exp $"]])
+test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
 test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
