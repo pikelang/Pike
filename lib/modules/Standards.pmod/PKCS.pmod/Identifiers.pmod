@@ -99,8 +99,10 @@ object dh_id = asn1_identifier(1, 2, 840, 10046, 2, 1);
 
 /* Object Identifiers used in X509 distinguished names */
 
+object at_id = asn1_identifier(2, 5, 4);
+
 /* Kept for compatibility with older versions of this file. */
-object attributeType_id = asn1_identifier(2, 5, 4);
+object attributeType_id = at_id;
 
 mapping name_ids =
 ([  
@@ -131,7 +133,6 @@ mapping attribute_ids =
 
 /* From RFC 2459 */
 
-object at_id = attributeType_id;
 mapping at_ids =
 ([ /* All attribute values are a CHOICE of most string types,
     * including PrintableString, TeletexString (which in practice
