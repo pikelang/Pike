@@ -940,9 +940,11 @@ SGML low_make_concrete_wmml(SGML data)
 		 low_make_concrete_wmml(tag->data),
 		 tag->file)});
     }
+#if 0
     else if(!tag) {
       werror("Warning: NUL encountered in contents.\n");
     }
+#endif /* 0 */
     else 
        throw(({"Tag or contents has illegal type: "+sprintf("%O\n",tag),
 	       backtrace()}));
@@ -1112,15 +1114,24 @@ array execute_contents(Tag tag)
       object po;
       po=compile_string(sprintf("#%d %O\n\n", __LINE__, __FILE__) +
 			"array _res=({({})});\n"
-			"void write(mixed ...args) { _res[0]+=args; }\n"
+			"void write(mixed ...args) {\n"
+			"  if (search(args, 0) == -1)\n"
+			"    _res[0] += args;\n"
+			"  else\n"
+			"    error(\"write(): NUL data\\n\");\n"
+			"}\n"
 			"\n"
-			"void begin_tag(string name,void|mapping p) "
-			"{ _res=({({}),({name,p})})+_res; }\n"
-			"object end_tag() "
-			"{ if (sizeof(_res)<2) "
-			"error(\"end_tag w/o begin_tag\\n\");\n"
-			"object t=mktag(@_res[1],_res[0]); "
-			"_res=_res[2..]; return t;}\n"
+			"void begin_tag(string name,void|mapping p) {\n"
+			"  _res=({({}),({name,p})})+_res;\n"
+			"}\n"
+			"\n"
+			"object end_tag() {\n"
+			"  if (sizeof(_res)<2)\n"
+			"    error(\"end_tag w/o begin_tag\\n\");\n"
+			"  object t=mktag(@_res[1],_res[0]);\n"
+			"  _res=_res[2..];\n"
+			"  return t;\n"
+			"}\n"
 			"\n"
 			"#1 \"inline wmml generating code\"\n"
 			+data)();
