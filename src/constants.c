@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.43 2002/10/27 16:31:46 nilsson Exp $
+|| $Id: constants.c,v 1.44 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.43 2002/10/27 16:31:46 nilsson Exp $");
+RCSID("$Id: constants.c,v 1.44 2002/11/24 22:47:06 mast Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -67,7 +67,7 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   X->name=0;				\
   EXIT_PIKE_MEMOBJ(X);                  \
 }while(0)
-BLOCK_ALLOC(callable,128)
+BLOCK_ALLOC_FILL_PAGES(callable,2)
 
 int global_callable_flags=0;
 

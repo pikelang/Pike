@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.461 2002/11/24 21:47:05 grubba Exp $
+|| $Id: program.c,v 1.462 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.461 2002/11/24 21:47:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.462 2002/11/24 22:47:06 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -62,7 +62,7 @@ static size_t add_xstorage(size_t size,
   }						\
 }while(0)
 
-BLOCK_ALLOC(program, 104)
+BLOCK_ALLOC_FILL_PAGES(program, 4)
 
 
 /* #define COMPILER_DEBUG */

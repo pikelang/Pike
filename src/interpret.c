@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.282 2002/11/24 18:20:50 grubba Exp $
+|| $Id: interpret.c,v 1.283 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.282 2002/11/24 18:20:50 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.283 2002/11/24 22:47:06 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1158,7 +1158,7 @@ static void do_trace_call(INT32 args)
  )									\
 }while(0)
 
-BLOCK_ALLOC(pike_frame,128)
+BLOCK_ALLOC_FILL_PAGES(pike_frame, 4)
 
 
 void really_free_pike_scope(struct pike_frame *scope)

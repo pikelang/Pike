@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.30 2002/11/18 13:37:16 grubba Exp $
+|| $Id: backend.cmod,v 1.31 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.30 2002/11/18 13:37:16 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.31 2002/11/24 22:47:06 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -152,7 +152,7 @@ struct call_out_s
   if(X->next_fun) X->next_fun->prev_fun=X->prev_fun; \
   MESS_UP_BLOCK(X); \
   } while(0)
-BLOCK_ALLOC(call_out_s, 1022)
+BLOCK_ALLOC_FILL_PAGES(call_out_s, 2)
 
 typedef struct call_out_s call_out;
 

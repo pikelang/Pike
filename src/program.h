@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.168 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: program.h,v 1.169 2002/11/24 22:47:06 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -389,7 +389,7 @@ struct program
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!sub_ref(_)) really_free_program(_); }while(0)
 
-BLOCK_ALLOC(program, n/a)
+BLOCK_ALLOC_FILL_PAGES(program, n/a)
 
 
 extern struct object *error_handler;

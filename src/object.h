@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.74 2002/10/11 01:39:34 nilsson Exp $
+|| $Id: object.h,v 1.75 2002/11/24 22:47:06 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -54,7 +54,7 @@ extern struct program *magic_values_program;
 
 #include "block_alloc_h.h"
 /* Prototypes begin here */
-BLOCK_ALLOC(object, 511)
+BLOCK_ALLOC_FILL_PAGES(object, 2)
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
 void call_prog_event(struct object *o, int event);

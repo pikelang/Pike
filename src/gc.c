@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.188 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: gc.c,v 1.189 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.188 2002/10/11 01:39:31 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.189 2002/11/24 22:47:06 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -42,8 +42,7 @@ RCSID("$Id: gc.c,v 1.188 2002/10/11 01:39:31 nilsson Exp $");
 #define MIN_ALLOC_THRESHOLD 1000
 #define MAX_ALLOC_THRESHOLD 10000000
 #define MULTIPLIER 0.9
-#define MARKER_CHUNK_SIZE 1023
-#define GC_LINK_CHUNK_SIZE 63
+#define GC_LINK_CHUNK_SIZE 64
 
 /* The gc will free all things with no external references that isn't
  * referenced by undestructed objects with destroy() lfuns (known as
@@ -227,7 +226,7 @@ static void gc_cycle_pop(void *a);
 #define find_marker debug_find_marker
 #endif
 
-PTR_HASH_ALLOC_FIXED(marker,MARKER_CHUNK_SIZE)
+PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker,2)
 
 #ifdef PIKE_DEBUG
 

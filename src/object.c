@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.209 2002/11/23 20:05:14 mast Exp $
+|| $Id: object.c,v 1.210 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.209 2002/11/23 20:05:14 mast Exp $");
+RCSID("$Id: object.c,v 1.210 2002/11/24 22:47:06 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -92,7 +92,7 @@ static struct object *gc_mark_object_pos = 0;
     if(o->prog)					\
       size+=o->prog->storage_needed;		\
 }while(0)
-BLOCK_ALLOC(object, 511)
+BLOCK_ALLOC_FILL_PAGES(object, 2)
 
 PMOD_EXPORT struct object *low_clone(struct program *p)
 {

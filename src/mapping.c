@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.154 2002/10/28 13:03:16 nilsson Exp $
+|| $Id: mapping.c,v 1.155 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.154 2002/10/28 13:03:16 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.155 2002/11/24 22:47:06 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -76,7 +76,7 @@ DO_IF_DEBUG(								\
   size += (INT32) datasize;				\
 }while(0)
 
-BLOCK_ALLOC(mapping, 511)
+BLOCK_ALLOC_FILL_PAGES(mapping, 2)
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define FREE_KEYPAIR(md, k) do {	\

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.314 2002/11/24 21:57:16 grubba Exp $
+|| $Id: las.c,v 1.315 2002/11/24 22:47:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.314 2002/11/24 21:57:16 grubba Exp $");
+RCSID("$Id: las.c,v 1.315 2002/11/24 22:47:06 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -368,8 +368,6 @@ int check_tailrecursion(void)
 }
 
 
-#define NODES 128 /* 256 */
-
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT u.node.a
 
@@ -378,7 +376,9 @@ int check_tailrecursion(void)
     NODE->token = USHRT_MAX;						\
   } while (0)
 
-BLOCK_ALLOC(node_s, NODES)
+BLOCK_ALLOC_FILL_PAGES(node_s, 2)
+
+#define NODES (sizeof (((struct node_s_block *) NULL)->x) / sizeof (struct node_s))
 
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
@@ -565,7 +565,7 @@ void free_all_nodes(void)
   {
     node *tmp;
     struct node_s_block *tmp2;
-    int e=0;
+    size_t e=0;
 
 #ifndef PIKE_DEBUG
     if(cumulative_parse_error)
@@ -575,7 +575,7 @@ void free_all_nodes(void)
       for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next) e+=tmp2->used;
       if(e)
       {
-	int e2=e;
+        size_t e2=e;
 	struct node_s_block *nextblk;
 	for(tmp2=node_s_blocks;tmp2;tmp2=nextblk)
 	{
