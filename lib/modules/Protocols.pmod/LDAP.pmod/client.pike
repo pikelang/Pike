@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.81 2005/03/14 16:07:23 mast Exp $
+// $Id: client.pike,v 1.82 2005/03/14 16:19:10 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -350,6 +350,11 @@ static function(string:string) get_attr_encoder (string attr)
     //! @note
     //!  Don't be destructive on the returned mapping.
     //!
+    //! @note
+    //!  In Pike 7.6 and earlier, the special @expr{"dn"@} entry was
+    //!  incorrectly returned in UTF-8 encoded form for LDAPv3
+    //!  connections.
+    //!
     //! @seealso
     //!   @[fetch_all]
     int|mapping(string:array(string)) fetch(int|void idx) {
@@ -366,7 +371,11 @@ static function(string:string) get_attr_encoder (string attr)
     //!
     //! Returns distinguished name (DN) of the current entry
     //! in the result list. Notice that this is the same
-    //! as fetch()->dn[0].
+    //! as @expr{fetch()->dn[0]@}.
+    //!
+    //! @note
+    //!  In Pike 7.6 and earlier, this field was incorrectly returned
+    //!  in UTF-8 encoded form for LDAPv3 connections.
     string get_dn() { return fetch()["dn"][0]; }
 
     //!
@@ -482,7 +491,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.81 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.82 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
