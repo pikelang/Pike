@@ -1,0 +1,19 @@
+AC_INIT(yp.c)
+AC_CONFIG_HEADER(config.h)
+
+sinclude(../module_configure.in)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+
+AC_CHECK_LIB(nsl, gethostbyname)
+
+AC_HAVE_HEADERS(rpcsvc/ypclnt.h rpcsvc/yp_prot.h)
+
+AC_SUBST(RANLIB)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+AC_SUBST_FILE(module_makefile)
+module_makefile=$srcdir/../module_makefile
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
