@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.67 1999/11/04 20:05:22 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.68 1999/11/05 01:31:41 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -173,6 +173,12 @@ void f_add(INT32 args)
       size+=sp[e].u.string->len;
       if(sp[e].u.string->size_shift > max_shift)
 	max_shift=sp[e].u.string->size_shift;
+    }
+
+    if(size == sp[-args].u.string->len)
+    {
+      pop_n_elems(args-1);
+      return;
     }
     
     tmp=sp[-args].u.string->len;

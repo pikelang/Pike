@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.75 1999/10/31 21:59:13 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.76 1999/11/05 01:31:44 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -308,7 +308,8 @@ static struct pike_string *internal_findstring(const char *s,
     if (full_hash_value == curr->hval &&
 	len==curr->len &&
 	size_shift==curr->size_shift &&
-	!MEMCMP(curr->str, s,len<<size_shift)) /* found it */
+	( curr->str == s ||
+	  !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
     {
       *prev = curr->next;
       curr->next = *base;
