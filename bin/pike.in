@@ -1,18 +1,12 @@
 #!/bin/sh
 # Runs Pike directly from the build directory.
 
-if test "BASEDIR" = BASEDIR; then
+BUILDDIR="BUILDDIR"
+
+if test $BUILDDIR = BUILDDIR; then
   echo Run make in the parent directory to generate this script.
   exit 1
 fi
-
-OS=${OS:-`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`}
-BUILDDIR=${BUILDDIR:-"build/$OS"}
-
-case "$BUILDDIR" in
-  /*) :;;
-  *) BUILDDIR="BASEDIR"/"$BUILDDIR";;
-esac
 
 if test x"$1" = x--gdb; then
   shift
