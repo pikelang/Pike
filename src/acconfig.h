@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.135 2004/01/12 13:26:20 marcus Exp $
+|| $Id: acconfig.h,v 1.136 2004/02/04 14:16:10 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -473,6 +473,9 @@
 
 /* Use poll() instead of select() ? */
 #undef HAVE_AND_USE_POLL
+
+/* Enable use of /dev/epoll on Linux. */
+#undef WITH_EPOLL
 
 /* This works on Solaris or any UNIX where
  * waitpid can report ECHILD when running more than one at once
