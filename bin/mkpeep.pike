@@ -2,6 +2,8 @@
 
 #include <simulate.h>
 
+#define JUMPBACK 3
+
 string skipwhite(string s)
 {
 #if DEBUG > 9
@@ -280,6 +282,11 @@ void dump2(mixed *data,int ind)
       write(sprintf("%*n{\n",ind));
       ind+=2;
 
+      if(sizeof(d[1]))
+      {
+	write(sprintf("%*nstruct pike_string *cf;\n",ind));
+	write(sprintf("%*nINT32 cl=instr(0)->line;\n",ind));
+      }
 
       for(i=0;i<sizeof(d[1]);i++)
       {
@@ -294,8 +301,7 @@ void dump2(mixed *data,int ind)
 
       if(sizeof(d[1]))
       {
-	write(sprintf("%*ncopy_shared_string(current_file,instr(0)->file);\n",ind));
-	write(sprintf("%*ncurrent_line=instr(0)->line;\n",ind));
+	write(sprintf("%*ncopy_shared_string(cf,instr(0)->file);\n",ind));
       }
 
       write(sprintf("%*npop_n_opcodes(%d);\n",ind,d[2]));
@@ -306,18 +312,18 @@ void dump2(mixed *data,int ind)
       {
 	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
 	{
-	  write(sprintf("%*ninsert(%s,arg%d);\n",ind,d[1][i],i));
+	  write(sprintf("%*ninsert_opcode(%s,arg%d,cl,cf);\n",ind,d[1][i],i));
 	  i++;
 	}else{
-	  write(sprintf("%*ninsert2(%s);\n",ind,d[1][i]));
+	  write(sprintf("%*ninsert_opcode2(%s,cl,cf);\n",ind,d[1][i]));
 	}
 	q++;
       }
       if(sizeof(d[1]))
       {
 	if(q)
-	  write(sprintf("%*nfifo_len+=%d;\n",ind,q));
-	write(sprintf("%*nfree_string(current_file);\n",ind));
+	  write(sprintf("%*nfifo_len+=%d;\n",ind,q+JUMPBACK));
+	write(sprintf("%*nfree_string(cf);\n",ind));
 	write(sprintf("%*ndebug();\n",ind));
       }
       write(sprintf("%*ncontinue;\n",ind));

@@ -9,6 +9,7 @@
 #include "main.h"
 #include "error.h"
 #include "lex.h"
+#include "peep.h"
 
 struct p_instr_s
 {
@@ -19,6 +20,7 @@ struct p_instr_s
 };
 
 typedef struct p_instr_s p_instr;
+static void asm_opt(void);
 
 dynamic_buffer instrbuf;
 
@@ -135,28 +137,90 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
   ins_byte(b, A_PROGRAM);
 }
 
-void assemble()
+#define BRANCH_CASES \
+         F_BRANCH_WHEN_EQ: \
+    case F_BRANCH_WHEN_NE: \
+    case F_BRANCH_WHEN_LT: \
+    case F_BRANCH_WHEN_LE: \
+    case F_BRANCH_WHEN_GT: \
+    case F_BRANCH_WHEN_GE: \
+    case F_BRANCH_WHEN_ZERO: \
+    case F_BRANCH_WHEN_NON_ZERO: \
+    case F_BRANCH: \
+    case F_INC_LOOP: \
+    case F_DEC_LOOP: \
+    case F_INC_NEQ_LOOP: \
+    case F_DEC_NEQ_LOOP: \
+    case F_LAND: \
+    case F_LOR: \
+    case F_CATCH: \
+    case F_FOREACH
+
+
+void assemble(void)
 {
   INT32 e,d,length,max_label,tmp;
-  INT32 *labels, *jumps, *point;
+  INT32 *labels, *jumps, *uses;
   p_instr *c;
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
-  max_label=0;
+  max_label=-1;
   for(e=0;e<length;e++,c++)
     if(c->opcode == F_LABEL)
       if(c->arg > max_label)
 	max_label = c->arg;
 
 
+
   labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
   jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
-  point=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
+  uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
 
-  for(e=0;e<=max_label;e++) point[e]=labels[e]=jumps[e]=-1;
+  for(e=0;e<=max_label;e++)
+  {
+    labels[e]=jumps[e]=-1;
+    uses[e]=0;
+  }
 
+  c=(p_instr *)instrbuf.s.str;
+  for(e=0;e<length;e++)
+    if(c[e].opcode == F_LABEL)
+      labels[c[e].arg]=e;
+
+  for(e=0;e<length;e++)
+  {
+    int tmp;
+    switch(c[e].opcode)
+    {
+    case BRANCH_CASES:
+    case F_POINTER:
+      while(1)
+      {
+	tmp=labels[c[e].arg];
+	
+	while(c[tmp].opcode == F_LABEL ||
+	      c[tmp].opcode == F_NOP) tmp++;
+	
+	if(c[tmp].opcode!=F_BRANCH) break;
+	c[e].arg=c[tmp].arg;
+      }
+      uses[c[e].arg]++;
+    }
+  }
+
+  for(e=0;e<=max_label;e++)
+    if(!uses[e] && labels[e]>=0)
+      c[labels[e]].opcode=F_NOP;
+
+  asm_opt();
+
+  c=(p_instr *)instrbuf.s.str;
+  length=instrbuf.s.len / sizeof(p_instr);
+
+  for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
+  
   c=(p_instr *)instrbuf.s.str;
   for(e=0;e<length;e++)
   {
@@ -175,6 +239,7 @@ void assemble()
 
     switch(c->opcode)
     {
+    case F_NOP: break;
     case F_ALIGN:
       while(PC % c->arg) ins_byte(0, A_PROGRAM);
       break;
@@ -192,35 +257,9 @@ void assemble()
 	fatal("Duplicate label!\n");
 #endif
       labels[c->arg]=PC;
-
-      for(d=1;e+d<length;d++)
-      {
-	switch(c[d].opcode)
-	{
-	case F_LABEL: continue;
-	case F_BRANCH: point[c->arg]=c[d].arg;
-	}
-	break;
-      }
       break;
 
-    case F_BRANCH_WHEN_EQ:
-    case F_BRANCH_WHEN_NE:
-    case F_BRANCH_WHEN_LT:
-    case F_BRANCH_WHEN_LE:
-    case F_BRANCH_WHEN_GT:
-    case F_BRANCH_WHEN_GE:
-    case F_BRANCH_WHEN_ZERO:
-    case F_BRANCH_WHEN_NON_ZERO:
-    case F_BRANCH:
-    case F_INC_LOOP:
-    case F_DEC_LOOP:
-    case F_INC_NEQ_LOOP:
-    case F_DEC_NEQ_LOOP:
-    case F_LAND:
-    case F_LOR:
-    case F_CATCH:
-    case F_FOREACH:
+    case BRANCH_CASES:
       ins_f_byte(c->opcode);
 
     case F_POINTER:
@@ -245,10 +284,7 @@ void assemble()
 
   for(e=0;e<=max_label;e++)
   {
-    int tmp2;
-    tmp2=e;
-    while(point[tmp2]!=-1) tmp2=point[tmp2];
-    tmp2=labels[tmp2];
+    int tmp2=labels[e];
 
     while(jumps[e]!=-1)
     {
@@ -264,7 +300,8 @@ void assemble()
 
   free((char *)labels);
   free((char *)jumps);
-  free((char *)point);
+  free((char *)uses);
+
 
   exit_bytecode();
 }
@@ -274,27 +311,23 @@ void assemble()
 static int fifo_len, eye,len;
 static p_instr *instructions;
 
-#ifdef DEBUG
 static void debug()
 {
-  p_instr *p;
-
   if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
-    fatal("Fifo too long.\n");
-
+    fifo_len=(long)instrbuf.s.len / (long)sizeof(p_instr);
+#ifdef DEBUG
   if(eye < 0)
     fatal("Popped beyond start of code.\n");
 
   if(instrbuf.s.len)
   {
+    p_instr *p;
     p=(p_instr *)low_make_buf_space(0, &instrbuf);
     if(!p[-1].file)
       fatal("No file name on last instruction!\n");
   }
-}
-#else
-#define debug()
 #endif
+}
 
 
 static p_instr *instr(int offset)
@@ -355,30 +388,27 @@ static void advance()
 
 static void pop_n_opcodes(int n)
 {
-  while(n>0)
+  int e,d;
+  if(fifo_len)
   {
-    if(fifo_len)
-    {
-      p_instr *p;
+    p_instr *p;
 
+    d=fifo_len;
+    if(d>n) d=n;
 #ifdef DEBUG
-      if(instrbuf.s.len <= 0)
-	fatal("Popping out of opcodes.\n");
+    if((long)d > (long)instrbuf.s.len / (long)sizeof(p_instr))
+      fatal("Popping out of instructions.\n");
 #endif
-      low_make_buf_space(-((INT32)sizeof(p_instr)), &instrbuf);
-      p=(p_instr *)low_make_buf_space(0, &instrbuf);
-      
-      free_string(p->file);
-      fifo_len--;
-    }else{
-      eye++;
-    }
-    n--;
-  }
-}
 
-#define insert(X,Y) insert_opcode((X),(Y),current_line, current_file),dofix()
-#define insert2(X) insert_opcode2((X),current_line, current_file),dofix()
+    low_make_buf_space(-((INT32)sizeof(p_instr))*fifo_len, &instrbuf);
+    p=(p_instr *)low_make_buf_space(0, &instrbuf);
+    for(e=0;e<d;e++) free_string(p[e].file);
+    fifo_len-=d;
+    if(fifo_len) MEMMOVE(p,p+d,fifo_len*sizeof(p_instr));
+    n-=d;
+  }
+  eye+=n;
+}
 
 static void dofix()
 {
@@ -395,8 +425,7 @@ static void dofix()
   }
 }
 
-
-void asm_opt()
+static void asm_opt(void)
 {
 #ifdef DEBUG
   if(a_flag > 3)

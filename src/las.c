@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.28 1997/03/01 02:37:03 hubbe Exp $");
+RCSID("$Id: las.c,v 1.29 1997/03/05 05:22:55 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -311,6 +311,11 @@ node *mknode(short token,node *a,node *b)
   if(b) b->parent = res;
   if(!num_parse_error) optimize(res);
 
+#ifdef DEBUG
+  if(d_flag > 3)
+    verify_shared_strings_tables();
+#endif
+
   return res;
 }
 
@@ -390,6 +395,7 @@ node *mklocalnode(int var)
   res->token = F_LOCAL;
   copy_shared_string(res->type, local_variables->variable[var].type);
   res->node_info = OPT_NOT_CONST;
+  res->tree_info=res->node_info;
 #ifdef __CHECKER__
   CDR(res)=0;
 #endif
@@ -411,6 +417,7 @@ node *mkidentifiernode(int i)
   }else{
     res->node_info = OPT_NOT_CONST;
   }
+  res->tree_info=res->node_info;
 
 #ifdef __CHECKER__
   CDR(res)=0;
@@ -1368,12 +1375,13 @@ static void optimize(node *n)
     }
     current_line = n->line_number;
 
-    if(!n->parent) break;
-    
+
     n->tree_info = n->node_info;
     if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
     if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
 
+    if(!n->parent) break;
+    
     if(n->tree_info & (OPT_NOT_CONST|
 		       OPT_SIDE_EFFECT|
 		       OPT_EXTERNAL_DEPEND|
@@ -1409,9 +1417,9 @@ static void optimize(node *n)
     fix_type_field(n);
 
 #ifdef DEBUG
-    if(l_flag > 3)
+    if(l_flag > 3 && n)
     {
-      fprintf(stderr,"Optimizing: ");
+      fprintf(stderr,"Optimizing (tree info=%x):",n->tree_info);
       print_tree(n);
     }
 #endif    
@@ -1425,7 +1433,9 @@ static void optimize(node *n)
 	 CAR(n)->u.sval.u.efun->optimize)
       {
 	if(tmp1=CAR(n)->u.sval.u.efun->optimize(n))
+	{
 	  goto use_tmp1;
+	}
       }
       break;
 
@@ -1793,6 +1803,14 @@ int eval_low(node *n)
   struct svalue *save_sp = sp;
   int ret;
 
+#ifdef DEBUG
+  if(l_flag > 3 && n)
+  {
+    fprintf(stderr,"Evaluating (tree info=%x):",n->tree_info);
+    print_tree(n);
+  }
+#endif
+
   if(num_parse_error) return -1;
   setup_fake_program();
 
@@ -2046,4 +2064,5 @@ int dooptcode(struct pike_string *name,
 }
 
 INT32 get_opt_info() { return last_function_opt_info; }
+
 

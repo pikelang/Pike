@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.11 1997/02/14 04:45:57 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.12 1997/03/05 05:22:55 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -141,7 +141,8 @@ void do_pop(int x)
   default: emit(F_POP_N_ELEMS,x); break;
   }
 }
-#define DO_CODE_BLOCK(N) do_pop(do_docode(N,DO_NOT_COPY | DO_POP))
+
+#define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP));
 
 int do_docode(node *n,INT16 flags)
 {
@@ -1070,7 +1071,6 @@ void do_code_block(node *n)
   init_bytecode();
   label_no=0;
   DO_CODE_BLOCK(n);
-  asm_opt();
   assemble();
 }
 
@@ -1085,7 +1085,6 @@ int docode(node *n)
   init_bytecode();
 
   tmp=do_docode(n,0);
-  asm_opt();
   assemble();
 
   instrbuf=instrbuf_save;

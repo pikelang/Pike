@@ -15,8 +15,7 @@ int insert_opcode(unsigned int f,
 int insert_opcode2(int f,int current_line, struct pike_string *current_file);
 void update_arg(int instr,INT32 arg);
 void ins_f_byte(unsigned int b);
-void assemble();
-void asm_opt();
+void assemble(void);
 /* Prototypes end here */
 
 #endif
