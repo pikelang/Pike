@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.26 1999/09/10 16:17:59 noring Exp $
+// $Id: Readline.pike,v 1.27 1999/10/04 00:16:42 js Exp $
 
 class OutputController
 {
@@ -1013,6 +1013,11 @@ class History
   static private mapping(int:string) historykeep=([]);
   static private int minhistory, maxhistory, historynum;
 
+  array(string) encode()
+  {
+    return historylist;
+  }
+  
   int get_history_num()
   {
     return historynum;
@@ -1062,9 +1067,9 @@ class History
     maxhistory = maxhist;
   }
 
-  void create(int maxhist)
+  void create(int maxhist, void|array(string) hist)
   {
-    historylist = ({ "" });
+    historylist = hist || ({ "" });
     minhistory = historynum = 0;
     maxhistory = maxhist;
   }
@@ -1079,7 +1084,7 @@ static private string text="", readtext;
 static private function(string:void) newline_func;
 static private int cursorpos = 0;
 static private int mark = 0;
-static private object(History) historyobj = 0;
+/*static private */ object(History) historyobj = 0;
 static private int hide = 0;
 
 static private array(string) kill_ring=({});
@@ -1408,6 +1413,8 @@ string edit(string data, string|void local_prompt)
   output_controller->enable();
   insert(data, 0);
   int res = input_controller->run_blocking();
+
+
   set_nonblocking(oldnl);
   
   if(local_prompt)
@@ -1421,16 +1428,23 @@ string read(string|void prompt)
   return edit("", prompt);
 }
 
-void enable_history(object(History)|int hist)
+void enable_history(array(string)|object(History)|int hist)
 {
   if (objectp(hist))
     historyobj = hist;
+  else if(arrayp(hist))
+    historyobj = History(512,hist);
   else if(!hist)
     historyobj = 0;
   else if(historyobj)
     historyobj->set_max_history(hist);
   else
     historyobj = History(hist);
+}
+
+History get_history()
+{
+  return historyobj;
 }
 
 void destroy()

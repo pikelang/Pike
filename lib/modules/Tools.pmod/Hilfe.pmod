@@ -596,42 +596,74 @@ import Getopt;
 class StdinHilfe
 {
   inherit Evaluator;
-
-  void signal_trap(int s)
-    {
-      clean_buffer();
-      throw("**Break\n");
-    }
   
-  void create()
-    {
-      write=predef::write;
-      ::create();
+  object(Stdio.Readline) readline;
 
-      if(string home=getenv("HOME"))
+  void save_history()
+  {
+    catch {
+      if(string home=getenv("HOME")||getenv("USERPROFILE"))
       {
-	if(string s=Stdio.read_file(home+"/.hilferc"))
+	if(object f=Stdio.File(home+"/.hilfe_history","wc"))
 	{
-	  add_buffer(s);
+	  f->write(sprintf("array history=%O;",readline->get_history()->encode()));
+	  f->close();
 	}
       }
-	
-      object(Stdio.Readline) readline = Stdio.Readline();
-      readline->enable_history(512);
-
-      for(;;)
+    };
+  }
+  
+  void signal_trap(int s)
+  {
+    clean_buffer();
+    save_history();
+    exit(1);
+  }
+  
+  void create()
+  {
+    write=predef::write;
+    ::create();
+    
+    if(string home=getenv("HOME")||getenv("USERPROFILE"))
+    {
+      if(string s=Stdio.read_file(home+"/.hilferc"))
       {
-	readline->set_prompt(strlen(input) ? ">> " : "> ");
-	string s=readline->read();
-	if(!s)
-	  break;
-	signal(signum("SIGINT"),signal_trap);
-	add_input_line(s+"\n");
-	signal(signum("SIGINT"));
+	add_buffer(s);
       }
-      destruct(readline);
-      write("Terminal closed.\n");
     }
+    
+    readline = Stdio.Readline();
+    array(string) hist;
+    catch{
+      if(string home=getenv("HOME")||getenv("USERPROFILE"))
+      {
+	if(object f=Stdio.File(home+"/.hilfe_history","r"))
+	{
+	  string s=f->read();
+	  catch(hist=compile_string(s)()->history);
+	  readline->enable_history(hist);
+	}
+      }
+    };
+    if(!hist)
+      readline->enable_history(512);
+    signal(signum("SIGINT"),signal_trap);
+    
+    for(;;)
+    {
+      readline->set_prompt(strlen(input) ? ">> " : "> ");
+      string s=readline->read();
+      if(!s)
+	break;
+//       signal(signum("SIGINT"),signal_trap);
+      add_input_line(s+"\n");
+//       signal(signum("SIGINT"));
+    }
+    save_history();
+    destruct(readline);
+    write("Terminal closed.\n");
+  }
 }
 
 class GenericHilfe
