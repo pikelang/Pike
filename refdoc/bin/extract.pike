@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.6 2001/10/26 19:18:58 nilsson Exp $
+ * $Id: extract.pike,v 1.7 2001/10/26 21:39:41 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -92,7 +92,7 @@ int main(int n, array(string) args) {
       result = Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, parents);
     }
   };
-  if(result) {
+  if(result && sizeof(result)) {
     write( Tools.AutoDoc.ProcessXML.moveImages(result, ".", imgdest) );
   }
 
