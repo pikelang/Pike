@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.138 1999/12/13 23:52:41 grubba Exp $");
+RCSID("$Id: las.c,v 1.139 1999/12/14 00:23:42 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -903,6 +903,8 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
      match_types(object_type_string, type))
     res->node_info |= OPT_SIDE_EFFECT;
 
+  res->tree_info |= n->tree_info;
+
   _CAR(res) = n;
 #ifdef SHARED_NODES
   _CDR(res) = (node *)type;
@@ -954,6 +956,8 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
   res = mkemptynode();
   res->token = F_SOFT_CAST;
   copy_shared_string(res->type,type);
+
+  res->tree_info |= n->tree_info;
 
   _CAR(res) = n;
 #ifdef SHARED_NODES
