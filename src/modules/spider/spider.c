@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.123 2003/06/02 21:07:32 nilsson Exp $
+|| $Id: spider.c,v 1.124 2003/09/06 23:10:50 nilsson Exp $
 */
 
 #include "global.h"
@@ -49,8 +49,9 @@
 #include "backend.h"
 #include "threads.h"
 #include "operators.h"
+#include "security.h"
 
-RCSID("$Id: spider.c,v 1.123 2003/06/02 21:07:32 nilsson Exp $");
+RCSID("$Id: spider.c,v 1.124 2003/09/06 23:10:50 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1018,6 +1019,8 @@ void f_fd_info(INT32 args)
   int i;
   PIKE_STAT_T foo;
 
+  VALID_FILE_IO("spider.fd_info","status");
+
   if (args<1||
       sp[-args].type!=T_INT)
     Pike_error("Illegal argument to fd_info\n");
@@ -1073,6 +1076,9 @@ void f__dump_obj_table(INT32 args)
 {
   struct object *o;
   int n=0;
+
+  ASSERT_SECURITY_ROOT("spider._dump_obj_table");
+
   pop_n_elems(args);
   o=first_object;
   while(o)
