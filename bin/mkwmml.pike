@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.17 1999/07/02 19:23:48 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.18 1999/07/15 19:14:07 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -538,6 +538,12 @@ int main(int ac,string *files)
       {
 	 if (t=="") { f=0; continue; }
 	 t=f->read(8192);
+	 if (!t) 
+	 {
+	    werror("mkwmml: failed to read %O\n",currentfile);
+	    f=0;
+	    continue;
+	 }
 	 s=ss[0];
 	 ss=t/"\n";
 	 ss[0]=s+ss[0];
