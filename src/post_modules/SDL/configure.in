@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2003/03/24 17:41:27 marcus Exp $
+# $Id: configure.in,v 1.5 2003/03/25 11:04:46 marcus Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
@@ -62,6 +62,7 @@ dnl
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define _SDL_main_h 1
 #include "SDL.h"
 
 char*
@@ -175,6 +176,7 @@ int main (int argc, char *argv[])
           LIBS="$LIBS $SDL_LIBS"
           AC_TRY_LINK([
 #include <stdio.h>
+#define _SDL_main_h 1
 #include "SDL.h"
 
 int main(int argc, char *argv[])
