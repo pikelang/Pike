@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.8 1997/06/10 20:31:04 grubba Exp $
+ * $Id: module.pmod.in,v 1.9 1999/08/25 05:07:57 hubbe Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -7,6 +7,8 @@
  */
 
 inherit @module@;
+
+#if constant(@module@.Domain)
 
 // Usual nicknames
 constant nicknames = ([
@@ -93,3 +95,5 @@ class Map {
     }
   }
 };
+
+#endif
