@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.93 2005/01/23 01:50:41 nilsson Exp $
+|| $Id: socket.c,v 1.94 2005/02/01 18:43:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -108,6 +108,7 @@ static void assign_accept_cb (struct port *p, struct svalue *cb)
   if (UNSAFE_IS_ZERO (cb)) {
     if (p->box.backend)
       set_fd_callback_events (&p->box, 0);
+    set_nonblocking(p->box.fd,0);
   }
   else {
     if (!p->box.backend)
@@ -164,9 +165,9 @@ static void port_query_id(INT32 args)
 
 /*! @decl int errno()
  *!
- *! If the last call done on this port failed, errno will return an
- *! integer describing what went wrong. Refer to your unix manual for
- *! further information.
+ *! If the last call done on this port failed, this function will
+ *! return an integer describing what went wrong. Refer to your unix
+ *! manual for further information.
  */
 static void port_errno(INT32 args)
 {
@@ -176,9 +177,9 @@ static void port_errno(INT32 args)
 
 /*! @decl int listen_fd(int fd, void|function accept_callback)
  *!
- *! This function does the same as port->bind, except that instead
- *! of creating a new socket and bind it to a port, it expects that
- *! the filedescriptor 'fd' is an already open port.
+ *! This function does the same as @[bind], except that instead of
+ *! creating a new socket and bind it to a port, it expects the file
+ *! descriptor @[fd] to be an already open port.
  *!
  *! @note
  *!  This function is only for the advanced user, and is generally used
@@ -194,7 +195,7 @@ static void port_listen_fd(INT32 args)
   int fd;
   do_close(p);
 
-  get_all_args("Port->bind_fd", args, "%d.%*", &fd, &cb);
+  get_all_args("Port->listen_fd", args, "%d.%*", &fd, &cb);
 
   if(fd<0)
   {
@@ -222,17 +223,22 @@ static void port_listen_fd(INT32 args)
 /*! @decl int bind(int|string port, void|function accept_callback, @
  *!                void|string ip)
  *!
- *! Bind opens a socket and binds it to port number on the local machine.
- *! If the second argument is present, the socket is set to nonblocking
- *! and the callback funcition is called whenever something connects to
- *! it. The callback will receive the id for this port as argument.
- *! Bind returns 1 on success, and zero on failiure.
- *! 
- *! If the optional argument 'ip' is given, bind will try to bind to
- *! this ip name or number.
+ *! Opens a socket and binds it to port number on the local machine.
+ *! If the second argument is present, the socket is set to
+ *! nonblocking and the callback funcition is called whenever
+ *! something connects to it. The callback will receive the id for
+ *! this port as argument and should typically call @[accept] to
+ *! establish a connection.
+ *!
+ *! If the optional argument @[ip] is given, @[bind] will try to bind
+ *! to an interface with that host name or IP number.
+ *!
+ *! @returns
+ *!   1 is returned on success, zero on failure. @[errno] provides
+ *!   further details about the error in the latter case.
  *!
  *! @seealso
- *!   @[accept]
+ *!   @[accept], @[set_id]
  */
 static void port_bind(INT32 args)
 {
@@ -310,20 +316,23 @@ static void port_bind(INT32 args)
 
 /*! @decl int bind_unix(string path, void|function accept_callback)
  *!
- *! Bind opens a Unix domain socket at the filesystem location path.
- *! If the second argument is present, the socket is set to nonblocking
- *! and the callback funcition is called whenever something connects to
- *! it. The callback will receive the id for this port as argument.
+ *! Opens a Unix domain socket at the given path in the file system.
+ *! If the second argument is present, the socket is set to
+ *! nonblocking and the callback funcition is called whenever
+ *! something connects to it. The callback will receive the id for
+ *! this port as argument and should typically call @[accept] to
+ *! establish a connection.
  *!
  *! @returns
- *!    1 on success, and zero on failiure.
+ *!   1 is returned on success, zero on failure. @[errno] provides
+ *!   further details about the error in the latter case.
  *!
  *! @note
- *!   this function is only available on systems that support Unix domain
+ *!   This function is only available on systems that support Unix domain
  *!   sockets.
  *!
  *! @seealso
- *!   @[accept]
+ *!   @[accept], @[set_id]
  */
 static void unix_bind(INT32 args)
 {
@@ -409,15 +418,20 @@ static void port_close (INT32 args)
   do_close (THIS);
 }
 
-/* @decl void create("stdin", void|function accept_callback)
- * @decl void create(int|string port, void|function accept_callback, @
- *                   void|string ip)
- *
- * When create is called with 'stdin' as argument, a socket is created
- * out of the file descriptor 0. This is only useful if that actually
- * IS a socket to begin with. When create is called with an int or any
- * other string as first argument, it does the same as bind() would do
- * with the same arguments.
+/*! @decl void create(int|string port, void|function accept_callback, @
+ *!                   void|string ip)
+ *! @decl void create("stdin", void|function accept_callback)
+ *!
+ *! When called with an int or any string except @expr{"stdin"@} as
+ *! first argument, this function does the same as @[bind()] would do
+ *! with the same arguments.
+ *!
+ *! When called with @expr{"stdin"@} as argument, a socket is created
+ *! out of the file descriptor 0. This is only useful if that actually
+ *! IS a socket to begin with.
+ *!
+ *! @seealso
+ *!   @[bind], @[listen_fd]
  */
 static void port_create(INT32 args)
 {
@@ -425,7 +439,8 @@ static void port_create(INT32 args)
   {
     if(Pike_sp[-args].type == PIKE_T_INT ||
        (Pike_sp[-args].type == PIKE_T_STRING &&
-	strcmp("stdin",Pike_sp[-args].u.string->str)))
+	(Pike_sp[-args].u.string->len != 5 ||
+	 strcmp("stdin",Pike_sp[-args].u.string->str))))
     {
       port_bind(args); /* pops stack */
       return;
@@ -434,9 +449,6 @@ static void port_create(INT32 args)
 
       if(Pike_sp[-args].type != PIKE_T_STRING)
 	SIMPLE_TOO_FEW_ARGS_ERROR("Port->create", 1);
-
-      if(strcmp("stdin",Pike_sp[-args].u.string->str))
-	Pike_error("port->create() called with string other than 'stdin'\n");
 
       do_close(p);
       change_fd_for_box (&p->box, 0);
@@ -455,6 +467,13 @@ static void port_create(INT32 args)
 extern struct program *file_program;
 
 /*! @decl Stdio.File accept()
+ *!
+ *! Get the first connection request waiting for this port and return
+ *! it as a connected socket.
+ *!
+ *! If no connection request is waiting and the port is in nonblocking
+ *! mode (i.e. an accept callback is installed) then zero is returned.
+ *! Otherwise this function waits until a connection has arrived.
  */
 
 static void port_accept(INT32 args)
