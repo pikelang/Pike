@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.265 1999/05/12 05:24:42 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.266 1999/05/26 02:51:27 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2232,6 +2232,10 @@ if test "$pike_cv_sys_signal_oneshot" = yes; then
   AC_DEFINE(SIGNAL_ONESHOT)
 else
   AC_MSG_RESULT(no)
+fi
+
+if test "$ac_cv_func___priocntl" = yes; then
+  AC_TYPE_CHECK(pri_t, short)
 fi
 
 ########################################################################
