@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.202 2003/11/25 16:46:03 grubba Exp $
+|| $Id: encode.c,v 1.203 2003/11/25 21:11:55 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.202 2003/11/25 16:46:03 grubba Exp $");
+RCSID("$Id: encode.c,v 1.203 2003/11/25 21:11:55 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3590,15 +3590,19 @@ static void decode_value2(struct decode_data *data)
 	  data->depth+=2;
 #endif
 	  while (entry_type == ID_ENTRY_EFUN_CONSTANT) {
+	    INT32 efun_no;
 	    struct program_constant *constant;
-	    decode_number(e, data);
-	    if ((e < 0) || (e >= local_num_constants)) {
+	    decode_number(efun_no, data);
+	    EDB(2,
+		fprintf(stderr, "%*sDecoding efun constant #%d.\n",
+			data->depth, "", efun_no));
+	    if ((efun_no < 0) || (efun_no >= local_num_constants)) {
 	      ref_push_program (p);
 	      decode_error(Pike_sp - 1, NULL,
 			   "Bad efun number: %d (expected 0 - %d).\n",
-			   e, local_num_constants-1);	      
+			   efun_no, local_num_constants-1);	      
 	    }
-	    constant = p->constants+e;
+	    constant = p->constants+efun_no;
 	    /* value */
 	    decode_value2(data);
 	    if ((Pike_sp[-2].type != T_FUNCTION) ||
@@ -3743,6 +3747,9 @@ static void decode_value2(struct decode_data *data)
 		decode_number(func.offset, data);
 		if (bytecode_method == PIKE_BYTECODE_PORTABLE &&
 		    func.offset != -1) {
+		  EDB(2,
+		      fprintf(stderr, "%*sDecoding portable bytecode.\n",
+			      data->depth, ""));
 		  func.offset = decode_portable_bytecode(func.offset);
 		}
 
@@ -4571,7 +4578,7 @@ void f_decode_value(INT32 args)
   switch (args) {
     default:
 #ifdef ENCODE_DEBUG
-      debug = Pike_sp[4-args].u.integer;
+      debug = Pike_sp[2-args].u.integer;
       /* Fall through. */
     case 2:
 #endif
