@@ -224,7 +224,7 @@ class Token
       return predef::`+(@s,text);
     }
 
-  mixed _cast(string to)
+  mixed cast(string to)
     {
       if(to=="string") return text;
     }
@@ -296,9 +296,9 @@ string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 	   (tok->file && tok->file != file))
 	{
 	  if(strlen(ret) && ret[-1]!='\n') ret+="\n";
-	  ret+=sprintf("#line %d %O\n",tok->line,tok->file);
 	  line=tok->line;
-	  file=tok->file;
+	  if(tok->file) file=tok->file;
+	  ret+=sprintf("#line %d %O\n",line,file);
 	}
 	tok=tok->text;
       }

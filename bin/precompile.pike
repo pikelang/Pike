@@ -29,12 +29,18 @@
  *   optflags; OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
  *   type;     tInt, tMix etc. use this type instead of automatically
  *             generating type from the prototype
+ *   errname;  The name used when throwing errors.
+ *   name;     The name used when doing add_function.
  *
  *
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
  *  o Not all Pike types are supported yet
  *  o No support for class variables yet
+ *  o No support for set_init/exit/gc_mark/gc_check_callback
+ *  o Does not generate pike_module_init/exit automatically yet
+ *  o No support for 'char *', 'double'  etc.
+ *    
  */
 
 #define PC Parser.C
@@ -77,6 +83,17 @@ array(PC.Token) strip(array(PC.Token) t)
 	  case '\n':
 	  case '\r':
 	    continue;
+
+	  case '/':
+	    if(strlen(x->text)>1)
+	    {
+	      switch(x->text[1])
+	      {
+		case '/':
+		case '*':
+		  continue;
+	      }
+	    }
 	}
       }else{
 	x=strip(x);
@@ -157,6 +174,7 @@ mapping(string:string) parse_arg(array x)
     ret->basetype="mixed";
   ret->ctype=cname(ret->basetype);
   ret->typename=merge(recursive(strip_type_assignments,ret->type));
+  ret->line=ret->name->line;
   return ret;
 }
 
@@ -196,7 +214,7 @@ string convert_type(array s)
       return "tObj";
 
     case "program": 
-      return "tProg";
+      return "tProgram";
     case "function": 
       return "tFunc";
     case "mixed": 
@@ -366,55 +384,73 @@ array convert(array x)
 
     foreach(args, mapping arg)
       ret+=({
-	sprintf("%s %s;\n",arg->ctype, arg->name)
+	PC.Token(sprintf("%s %s;\n",arg->ctype, arg->name),arg->line),
       });
 
 
     addfuncs+=({
-      sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
-	      attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
-	      name,
-	      name,
-	      attributes->type ? attributes->type :
-	      Array.map(args->type,convert_type)*" ",
-	      convert_type(rettype),
-	      (attributes->efun ? attributes->optflags : 
-	        attributes->flags )|| "0" ,
-	      )
+      PC.Token(sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
+		       attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
+		       attributes->name || name,
+		       name,
+		       attributes->type ? attributes->type :
+		       Array.map(args->type,convert_type)*" ",
+		       convert_type(rettype),
+		       (attributes->efun ? attributes->optflags : 
+			attributes->flags )|| "0" ,
+		       ),proto[0]->line),
     });
 
     int argnum;
 
     argnum=0;
     ret+=({
-      sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
-	      sizeof(args),
-	      name,
-	      sizeof(args))
+      PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
+		       sizeof(args),
+		       name,
+		       sizeof(args)), proto[0]->line)
     });
 
     int sp=-sizeof(args);
     foreach(args, mapping arg)
       {
-	if(arg->basetype != "mixed")
+	switch((string)arg->basetype)
 	{
-	  ret+=({
-	    sprintf("if(sp[%d].type != PIKE_T_%s)\n",
-		    sp,upper_case(arg->basetype->text)),
-	    sprintf("  SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
-		    name,
-		    argnum+1,
-		    arg->typename),
-	  });
+	  default:
+	    ret+=({
+	      PC.Token(sprintf("if(sp[%d].type != PIKE_T_%s)\n",
+			       sp,upper_case(arg->basetype->text)),arg->line)
+	    });
+	    break;
+
+	  case "program":
+	    ret+=({
+	      PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d)))\n",
+			       arg->name,sp),arg->line)
+	    });
+	    break;
+
+	  case "mixed":
+	}
+
+	switch((string)arg->basetype)
+	{
+	  default:
+	    ret+=({
+	      PC.Token(sprintf("  SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
+			       attributes->errname || attributes->name || name,
+			       argnum+1,
+			       arg->typename),arg->line),
+	    });
+
+	  case "mixed":
 	}
 
 	switch(objectp(arg->basetype) ? arg->basetype->text : arg->basetype )
 	{
 	  case "int":
 	    ret+=({
-	      sprintf("%s=sp[%d].u.integer;\n",
-		      arg->name,
-		      sp)
+	      sprintf("%s=sp[%d].u.integer;\n",arg->name,sp)
 	    });
 	    break;
 
@@ -426,22 +462,24 @@ array convert(array x)
 	    });
 	    break;
 
+
 	  case "mixed":
 	    ret+=({
-	      sprintf("%s=sp%+d;\n",
-		      arg->name,
-		      sp)
+	      PC.Token(sprintf("%s=sp%+d; dmalloc_touch_svalue(sp%+d);\n",
+			       arg->name,
+			       sp,sp),arg->line),
 	    });
 	    break;
 
 	  default:
 	    ret+=({
-	      sprintf("%s=sp[%d].u.%s;\n",
-		      arg->name,
-		      sp,
-		      arg->basetype)
+	      PC.Token(sprintf("debug_malloc_pass(%s=sp[%d].u.%s);\n",
+			       arg->name,
+			       sp,
+			       arg->basetype),arg->line)
 	    });
-	  
+
+	  case "program":
 	}
         argnum++;
 	sp++;
