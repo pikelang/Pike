@@ -13,7 +13,7 @@
 
 #pragma all_inline
 
-/* #define DEBUG  */
+/* #define DEBUG */
 
 mapping variables=([]);
 string *functions=({});
@@ -169,6 +169,13 @@ void cut_buffer(int where)
 #endif
 }
 
+void print_version()
+{
+  write(version()+
+	" Running Hilfe v1.4 (Hubbe's Incremental LPC FrontEnd)\n");
+}
+
+
 int do_parse()
 {
   string tmp;
@@ -201,7 +208,7 @@ int do_parse()
 	case ".":
 	  clean_buffer();
 	  write("Input buffer flushed.\n");
-	  break;
+	  continue;
 
 	case "new":
 	  this_object()->__INIT();
@@ -216,6 +223,22 @@ int do_parse()
 		     m_values(variables));
 	  cut_buffer(4);
 	  continue;
+
+	case "help":
+	  print_version();
+	  write("Hilfe is a tool to evaluate uLPC interactively and incrementally.\n"
+		"Any uLPC function, expression or variable declaration can be intered\n"
+		"at the command line. There are also a few extra commands:\n"
+		" help       - show this text\n"
+		" quit       - exit this program\n"
+		" .          - abort current input batch\n"
+		" dump       - dump variables\n"
+		" new        - clear all function and variables\n"
+		"See the uLPC reference manual for more information.\n"
+		);
+	  cut_buffer(4);
+	  continue;
+	  
 	}
       }
     }
@@ -465,7 +488,7 @@ void stdin(string s)
   object foo;
 
 #ifdef DEBUG
-  write("input: "+code_value(s,1)+"\n");
+  write("input: '"+code_value(s,1)+"'\n");
 #endif
   s=skipwhite(s);
 
@@ -476,34 +499,12 @@ void stdin(string s)
     s=s[2..strlen(s)-1];
   }
   add_buffer(s);
-  if(!strlen(input))
-    write("> ");
+//  if(!strlen(input))  write("> ");
 }
 
 void my_write(mixed x)
 {
   write(sprintf("%O",x));
-}
-
-void read_input()
-{
-  string a,b;
-  object stdin_object;
-
-  stdin_object=clone((program)"/precompiled/file","stdin");
-  stdin_object->set_blocking();
-  while(stdin_object)
-  {
-    a=stdin_object->read(1);
-    if(!stringp(a)) continue;
-    stdin_object->set_nonblocking(0,0,0);
-    b=stdin_object->read(100000);
-    if(stringp(b)) a+=b;
-    stdin_object->set_blocking();
-    stdin(a);
-  }
-
-  write("Terminal closed.\n");
 }
 
 void signal_trap(int s)
@@ -514,14 +515,17 @@ void signal_trap(int s)
 
 void main(int argc,string *argv)
 {
+  string s;
   add_efun("write",my_write);
-  signal(signum("SIGINT"),signal_trap);
 
-  write(version()+
-	" Running Hilfe v1.3 (Hubbe's Incremental LPC FrontEnd)\n");
-  write("> ");
-
-  read_input();
+  print_version();
+  while(s=readline(strlen(input) ? ">> " : "> "))
+  {
+    signal(signum("SIGINT"),signal_trap);
+    stdin(s+"\n");
+    signal(signum("SIGINT"));
+  }
+  write("Terminal closed.\n");
   return 0;
 }
 
