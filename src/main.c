@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.193 2004/03/16 14:10:05 mast Exp $
+|| $Id: main.c,v 1.194 2004/03/16 14:27:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.193 2004/03/16 14:10:05 mast Exp $");
+RCSID("$Id: main.c,v 1.194 2004/03/16 14:27:34 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -1039,7 +1039,6 @@ void low_exit_main(void)
 	  while (x->refs > m->refs + is_static)				\
 	    PIKE_CONCAT(free_, TYPE) (x);				\
 	}								\
-      PIKE_CONCAT (zap_next_, TYPE):;					\
       }									\
     } while (0)
 
