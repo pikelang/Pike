@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.190 2001/01/31 17:11:46 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.191 2001/01/31 19:30:24 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3168,53 +3168,70 @@ void Pike_f_fork(INT32 args)
  *!   @value SIGABRT
  *!     Aborts process, can be caught, used by Pike whenever something
  *!     goes seriously wrong.
- *!   @value SIGBUS
- *!     Bus error.
+ *!   @value SIGEMT
+ *!     Emulation trap.
  *!   @value SIGFPE
  *!     Floating point error (such as division by zero).
  *!   @value SIGKILL
  *!     Really kill a process, cannot be caught.
- *!   @value SIGUSR1
- *!     Signal reserved for whatever you want to use it for.
- *!     Note that some OSs reserve this signal for the thread library.
+ *!   @value SIGBUS
+ *!     Bus error.
  *!   @value SIGSEGV
  *!     Segmentation fault, caused by accessing memory where you
  *!     shouldn't. Should never happen to Pike.
- *!   @value SIGUSR2
- *!     Signal reserved for whatever you want to use it for.
- *!     Note that some OSs reserve this signal for the thread library.
+ *!   @value SIGSYS
+ *!     Bad system call. Should never happen to Pike.
+ *!   @value SIGPIPE
+ *!     Broken pipe.
  *!   @value SIGALRM
  *!     Signal used for timer interrupts.
  *!   @value SIGTERM
  *!     Termination signal.
- *!   @value SIGSTKFLT
- *!     Stack fault
+ *!   @value SIGUSR1
+ *!     Signal reserved for whatever you want to use it for.
+ *!     Note that some OSs reserve this signal for the thread library.
+ *!   @value SIGUSR2
+ *!     Signal reserved for whatever you want to use it for.
+ *!     Note that some OSs reserve this signal for the thread library.
  *!   @value SIGCHLD
  *!     Child process died. This signal is reserved for internal use
  *!     by the Pike run-time.
- *!   @value SIGCONT
- *!     Continue suspended.
+ *!   @value SIGPWR
+ *!     Power failure or restart.
+ *!   @value SIGWINCH
+ *!     Window change signal.
+ *!   @value SIGURG
+ *!     Urgent socket data.
+ *!   @value SIGIO
+ *!     Pollable event.
  *!   @value SIGSTOP
  *!     Stop (suspend) process.
- *!   @value SIGSTP
- *!     Stop (suspend) process.
+ *!   @value SIGTSTP
+ *!     Stop (suspend) process. Sent by ctrl-z.
+ *!   @value SIGCONT
+ *!     Continue suspended.
  *!   @value SIGTTIN
  *!     TTY input for background process.
  *!   @value SIGTTOU
  *!     TTY output for background process.
+ *!   @value SIGVTALRM
+ *!     Virtual timer expired.
+ *!   @value SIGPROF
+ *!     Profiling trap.
  *!   @value SIGXCPU
  *!     Out of CPU.
  *!   @value SIGXFSZ
  *!     File size limit exceeded.
- *!   @value SIGPROF
- *!     Profiling trap.
- *!   @value SIGWINCH
- *!     Window change signal.
+ *!   @value SIGSTKFLT
+ *!     Stack fault
  *! @endint
  *!
  *! @note
  *!   Note that you have to use signame to translate the name of a signal
  *!   to its number.
+ *!
+ *!   Note that all signals are not available on all platforms, and that
+ *!   some platforms may have signals not listed here.
  *!
  *! @seealso
  *!   @[signal()], @[signum()], @[signame()], @[fork()]
