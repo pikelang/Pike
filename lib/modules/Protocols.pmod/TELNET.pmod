@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.2 1998/04/05 19:05:44 grubba Exp $
+// $Id: TELNET.pmod,v 1.3 1998/04/23 21:24:50 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -11,6 +11,13 @@
 #else
 #define DWRITE(X)
 #endif /* TELNET_DEBUG */
+
+//. Implements TELNET as described by RFC 764 and RFC 854
+//.
+//. Also implements the Q method of TELNET option negotiation
+//. as specified by RFC 1143.
+
+
 
 //. o protocol
 //.   Implementation of the TELNET protocol.
@@ -66,6 +73,19 @@ class protocol
     254:"DON'T",	// Demand/confirmation of stop of option
     255:"IAC",		// Interpret As Command
   ]);
+
+  //. + option_states
+  //.   Negotiation state of all WILL/WON'T options.
+  static private array(int) option_states = allocate(256);
+
+  // See RFC 1143 for the use and meaning of these.
+  constant option_us_yes	= 0x0001;
+  constant option_us_want	= 0x0002;
+  constant option_us_opposite	= 0x0010;
+
+  constant option_him_yes	= 0x0100;
+  constant option_him_want	= 0x0200;
+  constant option_him_opposite	= 0x1000;
 
   //. + to_send
   //.   Data queued to be sent.
@@ -146,6 +166,76 @@ class protocol
     }
   }
 
+  //. - enable_option
+  //.   Starts negotiation to enable a TELNET option.
+  //. > option - The option to enable.
+  void enable_option(int option)
+  {
+    if ((option < 0) || (option > 255)) {
+      throw(({ sprintf("Bad TELNET option #%d\n", option), backtrace() }));
+    }
+    switch(option_states[option] & 0xff00) {
+    case 0x0000: /* NO */
+    case 0x1000: /* NO OPPOSITE */
+      option_states[option] &= ~option_him_opposite;
+      option_states[option] |= option_him_want | option_him_yes;
+      to_send += sprintf("\377\375%c", option); // DO option
+      break;
+    case 0x0100: /* YES */
+    case 0x1100: /* YES OPPOSITE */
+      /* Error: Already enabled */
+      break;
+    case 0x0200: /* WANTNO EMPTY */
+      /* Error: Cannot initiate new request in the middle of negotiation. */
+      /* FIXME: **********************/
+      break;
+    case 0x1200: /* WANTNO OPPOSITE */
+      /* Error: Already queued an enable request */
+      break;
+    case 0x1300: /* WANTYES OPPOSITE */
+      /* Error: Already negotiating for enable */
+      break;
+    case 0x0300: /* WANTYES EMPTY */
+      option_states[option] &= ~option_him_opposite;
+      break;
+    }
+  }
+
+  //. - disable_option
+  //.   Starts negotiation to disable a TELNET option.
+  //. > option - The option to disable.
+  void disable_option(int option)
+  {
+    if ((option < 0) || (option > 255)) {
+      throw(({ sprintf("Bad TELNET option #%d\n", option), backtrace() }));
+    }
+    switch(option_states[option] & 0xff00) {
+    case 0x0000: /* NO */
+    case 0x1000: /* NO OPPOSITE */
+      /* Error: Already disabled */
+      break;
+    case 0x0100: /* YES */
+    case 0x1100: /* YES OPPOSITE */
+      option_states[option] &= ~(option_him_opposite | option_him_yes);
+      option_states[option] |= option_him_want;
+      to_send += sprintf("\377\376%c", option); // DON'T option
+      break;
+    case 0x0200: /* WANTNO EMPTY */
+      /* Error: Already negotiating for disable */
+      break;
+    case 0x1200: /* WANTNO OPPOSITE */
+      option_states[option] &= ~option_him_opposite;
+      break;
+    case 0x1300: /* WANTYES OPPOSITE */
+      /* Error: Cannot initiate new request in the middle of negotiation. */
+      /* FIXME: **********************/
+      break;
+    case 0x0300: /* WANTYES EMPTY */
+      /* Error: Already queued an disable request */
+      break;
+    }
+  }
+
   //. + synch
   //.   Indicates wether we are in synch-mode or not.
   static private int synch = 0;
@@ -180,7 +270,7 @@ class protocol
       DWRITE("TELNET: Data Mark\n");
       // Data Mark handing.
       s = s[1..];
-      sync = 0;
+      synch = 0;
     }
 
     // A single read() can contain multiple or partial commands
@@ -239,22 +329,188 @@ class protocol
 	      a[i] = a[i][1..];
 	      break;
 	    case "WILL":
-	    case "WON'T":
-	    case "DO":
-	    case "DON'T":
-	      if (fun = (cb[name] || default_cb[name])) {
-		fun(a[i][1]);
-	      }
+	      int option = a[i][1];
+	      int state = option_states[option];
 	      a[i] = a[i][2..];
+
+	      DWRITE(sprintf("WILL %d, state 0x%04x\n", option, state));
+
+	      switch(state & 0xff00) {
+	      case 0x0000: /* NO */
+	      case 0x1000: /* NO OPPOSITE */
+		if ((fun = (cb["WILL"] || default_cb["WILL"])) &&
+		    fun(option)) {
+		  /* Agree about enabling */
+		  option_states[option] |= option_him_yes;
+		  to_send += sprintf("\377\375%c", option); // DO option
+		} else {
+		  to_send += sprintf("\377\376%c", option); // DON'T option
+		}
+		break;
+	      case 0x0100: /* YES */
+	      case 0x1100: /* YES OPPOSITE */
+		/* Ignore */
+		break;
+	      case 0x0200: /* WANTNO EMPTY */
+		state &= ~option_him_want;
+		if ((fun = (cb["Enable_Option"] ||
+			    default_cb["Enable_Option"]))) {
+		  fun(option);
+		}
+		break;
+	      case 0x1200: /* WANTNO OPPOSITE */
+		state &= ~(option_him_yes|option_him_opposite);
+		to_send += sprintf("\377\376%c", option); // DON'T option
+		break;
+	      case 0x0300: /* WANTYES EMPTY */
+	      case 0x1300: /* WANTYES OPPOSITE */
+		  // Error: DON'T answered by WILL
+		  option_states[option] &= ~0x1200;
+		  option_states[option] |= option_him_yes;
+		  if ((fun = (cb["Enable_Option"] ||
+			      default_cb["Enable_Option"]))) {
+		    fun(option);
+		  }
+		break;
+	      }
+
+	      state = option_states[option];
+	      DWRITE(sprintf("=> WILL %d, state 0x%04x\n", option, state));
+
+	      break;
+	    case "WON'T":
+	      int option = a[i][1];
+	      int state = option_states[option];
+	      a[i] = a[i][2..];
+
+	      DWRITE(sprintf("WON'T %d, state 0x%04x\n", option, state));
+
+	      switch(state & 0xff00) {
+	      case 0x0000: /* NO */
+	      case 0x1000: /* NO OPPOSITE */
+		/* Ignore */
+		break;
+	      case 0x0100: /* YES */
+	      case 0x1100: /* YES OPPOSITE */
+		option_states[option] &= ~0xff00;
+		to_send += sprintf("\377\376%c", option); // DON'T option
+		if ((fun = (cb["Disable_Option"] ||
+			    default_cb["Disable_Option"]))) {
+		  fun(option);
+		}
+		break;
+	      case 0x0200: /* WANTNO EMPTY */
+	      case 0x0300: /* WANTYES EMPTY */
+	      case 0x1300: /* WANTYES OPPOSITE */
+		option_states[option] &= ~0xff00;
+		break;
+	      case 0x1200: /* WANTNO OPPOSITE */
+		option_states[option] &= ~option_him_opposite;
+		option_states[option] |= option_him_yes;
+		to_send += sprintf("\377\375%c", option); // DO option
+		break;
+	      }
+
+	      state = option_states[option];
+	      DWRITE(sprintf("=> WON'T %d, state 0x%04x\n", option, state));
+
+	      break;
+	    case "DO":
+	      int option = a[i][1];
+	      int state = option_states[option];
+	      a[i] = a[i][2..];
+
+	      DWRITE(sprintf("DO %d, state 0x%04x\n", option, state));
+
+	      switch(state & 0xff) {
+	      case 0x00: /* NO */
+	      case 0x10: /* NO OPPOSITE */
+		if ((fun = (cb["DO"] || default_cb["DO"])) &&
+		    fun(option)) {
+		  /* Agree about enabling */
+		  DWRITE("AGREE\n");
+		  option_states[option] |= option_us_yes;
+		  to_send += sprintf("\377\373%c", option); // WILL option
+		} else {
+		  DWRITE("DISAGREE\n");
+		  to_send += sprintf("\377\374%c", option); // WON'T option
+		}
+		break;
+	      case 0x01: /* YES */
+	      case 0x11: /* YES OPPOSITE */
+		/* Ignore */
+		break;
+	      case 0x02: /* WANTNO EMPTY */
+		state &= ~option_us_want;
+		if ((fun = (cb["Enable_Option"] ||
+			    default_cb["Enable_Option"]))) {
+		  fun(option);
+		}
+		break;
+	      case 0x12: /* WANTNO OPPOSITE */
+		state &= ~(option_us_yes|option_us_opposite);
+		to_send += sprintf("\377\374%c", option); // WON'T option
+		break;
+	      case 0x03: /* WANTYES EMPTY */
+	      case 0x13: /* WANTYES OPPOSITE */
+		  option_states[option] &= ~0x12;
+		  option_states[option] |= option_us_yes;
+		  if ((fun = (cb["Enable_Option"] ||
+			      default_cb["Enable_Option"]))) {
+		    fun(option);
+		  }
+		break;
+	      }
+
+	      state = option_states[option];
+	      DWRITE(sprintf("=> DO %d, state 0x%04x\n", option, state));
+
+	      break;
+	    case "DON'T":
+	      int option = a[i][1];
+	      int state = option_states[option];
+	      a[i] = a[i][2..];
+
+	      DWRITE(sprintf("DON'T %d, state 0x%04x\n", option, state));
+
+	      switch(state & 0xff) {
+	      case 0x00: /* NO */
+	      case 0x10: /* NO OPPOSITE */
+		/* Ignore */
+		break;
+	      case 0x01: /* YES */
+	      case 0x11: /* YES OPPOSITE */
+		option_states[option] &= ~0xff;
+		to_send += sprintf("\377\374%c", option); // WON'T option
+		if ((fun = (cb["Disable_Option"] ||
+			    default_cb["Disable_Option"]))) {
+		  fun(option);
+		}
+		break;
+	      case 0x02: /* WANTNO EMPTY */
+	      case 0x03: /* WANTYES EMPTY */
+	      case 0x13: /* WANTYES OPPOSITE */
+		option_states[option] &= ~0xff;
+		break;
+	      case 0x12: /* WANTNO OPPOSITE */
+		option_states[option] &= ~option_us_opposite;
+		option_states[option] |= option_us_yes;
+		to_send += sprintf("\377\373%c", option); // WILL option
+		break;
+	      }
+
+	      state = option_states[option];
+	      DWRITE(sprintf("=> DON'T %d, state 0x%04x\n", option, state));
+
 	      break;
 	    case "DM":	// Data Mark
-	      if (sync) {
+	      if (synch) {
 		for (j=0; j < i; j++) {
 		  a[j] = "";
 		}
 	      }
 	      a[i] = a[i][1..];
-	      sync = 0;
+	      synch = 0;
 	      break;
 	    }
 	  } else {
@@ -268,7 +524,7 @@ class protocol
 	line = rest + line;
       }
       if (lineno < (sizeof(lines)-1)) {
-	if ((!sync) && read_cb) {
+	if ((!synch) && read_cb) {
 	  DWRITE(sprintf("TELNET: Calling read_callback(X, \"%s\")\n",
 			       line));
 	  read_cb(id, line);
