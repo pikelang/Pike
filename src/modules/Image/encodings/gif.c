@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.11 1997/11/05 18:34:24 mirar Exp $ */
+/* $Id: gif.c,v 1.12 1997/11/06 21:12:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.11 1997/11/05 18:34:24 mirar Exp $
+**!	$Id: gif.c,v 1.12 1997/11/06 21:12:50 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.11 1997/11/05 18:34:24 mirar Exp $");
+RCSID("$Id: gif.c,v 1.12 1997/11/06 21:12:50 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -518,7 +518,6 @@ static void image_gif__render_block(INT32 args)
 
 /*
 **! method string render_block(object img,object colortable,int x,int y,int localpalette);
-**! method string render_block(object img,object colortable,int x,int y,int localpalette,int transp_index);
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,object alpha);
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,object alpha,int r,int g,int b);
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,int delay,int transp_index,int interlace,int user_input,int disposal);
