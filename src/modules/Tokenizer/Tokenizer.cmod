@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.16 2003/12/21 17:17:29 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.17 2003/12/28 15:51:22 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -975,26 +975,22 @@ PIKECLASS TokenizingCompiler
      *!     @member int(0..) "pike_minor"
      *!       Major and minor version of Pike to be emulated.
      *!
-     *!     @member int(-1..1) "pragma_*"
-     *!       State of pragma @tt{*@}.
-     *!       @int
-     *!         @value -1
-     *!           Disabled.
-     *!         @value 0
-     *!           Default.
-     *!         @value 1
-     *!           Enabled.
-     *!       @endint
+     *!     @member string "pragma_*"
+     *!       State of pragma @tt{*@}. Only present if a corresponding
+     *!       @tt{#pragma@} statement is active.
      *!   @endmapping
      *!
      *! @note
      *!   As noted before: Do NOT perform destructive changes on this
      *!   mapping.
+     *!
+     *! @seealso
+     *!   @[get_context()], @[set_context()]
      */
 
     PIKEVAR object(Token) current_token;
 
-    PIKEVAR mapping(string:Token) token_lookup;
+    PIKEVAR mapping(string:program(Token)) token_lookup;
 
     PIKEFUN void yyerror(string msg, mixed ... extras)
       flags ID_STATIC;
@@ -1016,28 +1012,13 @@ PIKECLASS TokenizingCompiler
     PIKEFUN void handle_pragma(string pragma, string rest)
       flags ID_STATIC;
     {
-      /* FIXME: Not implemented yet.
-       * Pragmas are to be stored in @[context].
-       * NOTE: Pike code below.
-       */
-#if 0
-      switch(pragma) {
-      case "all_inline":
-      case "all_nomask":
-      case "strict_types":
-      case "save_parent":
-      case "dont_save_parent":
-	if (sizeof(args)) {
-	  yyerror("#pragma %s does not support options.", pragma);
-	}
-	context->pragmas[pragma] = 1;
-	break;
-
-      default:
-	// Unknown pragmas are silently ignored.
-	break;
-      }
-#endif /* 0 */
+      /* Store pragmas in context prefixed with "pragma_" */
+      ref_push_string(MK_STRING("pragma_"));
+      ref_push_string(pragma);
+      f_add(2);
+      ref_push_string(rest);
+      APPLY_SELF(tc_pt_inh_set_context, 2);
+      pop_n_elems(2);	/* Keep one element on the stack. */
     }
 
     PIKEFUN string parse_string(string raw)
