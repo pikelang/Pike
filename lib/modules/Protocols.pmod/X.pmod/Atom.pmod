@@ -104,9 +104,19 @@ class atom_manager
 
     object req = Requests.InternAtom();
     req->name = name;
-    send_async_request(req, pending_intern(this_object(), atom,
-					   callback)->handle_reply);
-    return 0;
+    if (callback)
+      {
+	send_async_request(req, pending_intern(this_object(), atom,
+					       callback)->handle_reply);
+	return 0;
+      } else {
+	array a = blocking_request(req);
+	if (!a[0])
+	  return 0;
+	atom->id = a[1];
+	remember_atom(atom);
+	return atom;
+      }
   }
 
   object GetAtomName_req(object atom)
@@ -138,5 +148,14 @@ class atom_manager
       }
   }
 
-  void create() { }
+  void create()
+  {
+    for(int i = 1; i<sizeof(_Xlib.predefined_atoms); i++)
+      {
+	object atom = Atom(this_object());
+	atom->id = i;
+	atom->name = _Xlib.predefined_atoms[i];
+	remember_atom(atom);
+      }
+  }
 }
