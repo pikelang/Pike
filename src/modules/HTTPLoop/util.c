@@ -1,4 +1,7 @@
 #include <global.h>
+
+#include "config.h"
+
 #include <threads.h>
 #include <fdlib.h>
 
