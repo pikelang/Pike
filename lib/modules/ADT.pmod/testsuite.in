@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.6 2003/01/03 23:20:14 nilsson Exp $
+dnl $Id: testsuite.in,v 1.7 2003/03/08 19:39:43 nilsson Exp $
 
 dnl - ADT.History
 
@@ -250,3 +250,48 @@ test_true(ADT.Table.table(
  ->rename(0, "fOo")->sort("foO")->cast("array"),
  ({ ({ "a", 118 }),
     ({ "c", 41 }) }))
+
+
+dnl  - ADT.struct
+
+define(test_put,[[
+test_any([[
+  object s=ADT.struct();
+  s->$1;
+  return s->pop_data()+"\7777"+s->pop_data();
+]],$2"\7777")
+test_any_equal([[
+  object s=ADT.struct($2);
+  return s->$3;
+]], $4)
+]])
+
+test_put(add_data("hej"), "hej", get_fix_string(3), "hej")
+test_put(put_uint(17,1), "\21", get_uint(1), 17)
+test_put(put_uint(17,2), "\0\21", get_uint(2), 17)
+test_put(put_var_string("hej",1), "\3hej", get_var_string(1), "hej")
+cond([[ master()->resolv("Gmp")->mpz ]],[[
+  test_put(put_bignum(Gmp.mpz(123456789)), "\0\4\7[\315\25", get_bignum(),
+    Gmp.mpz(123456789))
+]])
+test_put(put_fix_string("hej"), "hej", get_fix_string(3), "hej")
+test_put(put_fix_uint_array(({1,2,3,4}), 1), "\1\2\3\4", get_fix_uint_array(1,4),
+  ({1,2,3,4}))
+test_put(put_var_uint_array(({1,2,3,4}),1,1), "\4\1\2\3\4", get_var_uint_array(1,1),
+  ({1,2,3,4}))
+
+test_any([[
+  object s=ADT.struct("abcdefghijk");
+  return s->get_fix_string(3)+" "+s->contents()+" "+s->get_fix_string(3);
+]],  "abc defghijk def")
+
+test_any([[
+  object s=ADT.struct("abcdefghijk");
+  return s->get_fix_string(3)+" "+s->get_rest();
+]], "abc defghijk")
+
+test_eval_error([[
+  object s=ADT.struct("abc");
+  s->get_rest();
+  s->get_fix_string(1);
+]])
