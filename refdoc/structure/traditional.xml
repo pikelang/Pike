@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.4 2001/10/27 20:06:18 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.5 2001/10/28 14:35:03 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -21,6 +21,11 @@
   </file>
   <file>
     <chapter-ref file="not_extracted/data_types.xml"/>
+  </file>
+  <file>
+    <chapter title="LFUN">
+      <insert-move entity="lfun::"/>
+    </chapter>
   </file>
   <file>
     <chapter title="I/O">
