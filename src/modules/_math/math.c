@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.76 2004/03/19 15:47:06 grubba Exp $
+|| $Id: math.c,v 1.77 2004/03/20 17:20:59 grubba Exp $
 */
 
 #include "global.h"
@@ -37,7 +37,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.76 2004/03/19 15:47:06 grubba Exp $");
+RCSID("$Id: math.c,v 1.77 2004/03/20 17:20:59 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -462,24 +462,45 @@ void f_pow(INT32 args)
 
   switch(Pike_sp[-2].type * 16 + Pike_sp[-1].type)
   {
-    case T_INT * 17:
     case T_INT * 16 + T_OBJECT:
 #ifndef AUTO_BIGNUM
-      ref_push_type_value(float_type_string);
-      stack_swap();
-      f_cast();
-      stack_swap();
-
-      ref_push_type_value(float_type_string);
-      stack_swap();
-      f_cast();
-
-      stack_swap();
-      f_pow(2);
-
       o_cast_to_int();
-      return;
-#endif
+      if (Pike_sp[-1].type != T_INT) {
+	math_error("pow", Pike_sp-2, 2, 0,
+		   "Failed to cast exponent to int.\n");
+      }
+      /* FALL_THROUGH */
+#endif /* !AUTO_BIGNUM */
+    case T_INT * 17:
+#ifndef AUTO_BIGNUM
+      {
+	INT_TYPE res = 1;
+	INT_TYPE square = Pike_sp[-2].u.integer;
+	INT_TYPE exponent = Pike_sp[-1].u.integer;
+
+	if (exponent < 0) {
+	  /* Negative exponent. */
+	  if (square) {
+	    if ((square == 1) || (square == -1)) {
+	      res = square;
+	    } else {
+	      res = 0;
+	    }
+	  } else {
+	    math_error("pow", Pike_sp-2, 1, 0, "Division by zero.\n");
+	  }
+	} else {
+	  while (exponent) {
+	    if (exponent & 1) res *= square;
+	    exponent >>= 1;
+	    square *= square;
+	  }
+	}
+	pop_n_elems(args);
+	push_int(res);
+	return;
+      }
+#endif /* !AUTO_BIGNUM */
     case T_OBJECT * 17:
     case T_OBJECT * 16 + T_INT:
     case T_OBJECT * 16 + T_FLOAT:
