@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.65 2004/01/14 22:34:37 bill Exp $
+/* $Id: sslfile.pike,v 1.66 2004/01/14 22:36:49 bill Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -343,13 +343,13 @@ static void create (Stdio.File stream, SSL.context ctx,
   } LEAVE;
 }
 
-//!
+//! returns the client certificate chain, if any.
 array get_client_certificates()
 {
   return conn->session->client_certificate_chain;
 }
 
-//!
+//! returns the server certificate chain, if any.
 array get_server_certificates()
 {
   return conn->session->server_certificate_chain;
