@@ -35,7 +35,7 @@ constant replycodes =
 class Protocol
 {
   // Maybe this should be the other way around?
-  inherit .NNTP.protocol;
+  inherit Protocols.NNTP.protocol;
 }
 
 //!
