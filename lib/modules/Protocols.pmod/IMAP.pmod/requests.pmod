@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.59 1999/03/03 17:32:02 grubba Exp $
+ * $Id: requests.pmod,v 1.60 1999/03/03 17:37:03 grubba Exp $
  */
 
 import .types;
@@ -622,6 +622,10 @@ class fetch
 	if (n<0)
 	  break;
 	part_number += ({ n });
+      }
+
+      if (sizeof(part_number) < sizeof(path)) {
+	break;
       }
 
       res->raw_options = atom->options;
