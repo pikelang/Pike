@@ -1,4 +1,4 @@
-#include <config.h>
+#include "config.h"
 #include "machine.h"
 
 #include <sys/types.h>
@@ -22,8 +22,9 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.11 1997/08/30 18:36:11 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.12 1997/10/05 03:31:09 per Exp $");
 
+#include "threads.h"
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -56,7 +57,7 @@ RCSID("$Id: pipe.c,v 1.11 1997/08/30 18:36:11 grubba Exp $");
 #  define MAP_FILE 0
 #endif
 
-#define READ_BUFFER_SIZE 32768
+#define READ_BUFFER_SIZE 65536
 #define MAX_BYTES_IN_BUFFER 65536
 
 /*
@@ -143,8 +144,6 @@ static int offset_input_close_callback;
 static int offset_output_write_callback;
 static int offset_output_close_callback;
 static int mmapped, nobjects, nstrings, noutputs, ninputs, nbuffers, sbuffers;
-
-static char static_buffer[READ_BUFFER_SIZE];
 
 void close_and_free_everything(struct object *o,struct pipe *);
 static INLINE void output_finish(struct object *obj);
@@ -375,38 +374,44 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 {
    struct buffer *b;
    long len;
-
+   struct pipe * this = THIS;
    /* We have a file cache, read from it */
-   if (THIS->fd!=-1)
+   if (this->fd!=-1)
    {
-      if (THIS->pos<=pos) return NULL; /* no data */
-      len=THIS->pos-pos;
+     char buffer[READ_BUFFER_SIZE];
+
+      if (this->pos<=pos) return NULL; /* no data */
+      len=this->pos-pos;
       if (len>READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
-      lseek(THIS->fd,pos,0); /* SEEK_SET */
+      THREADS_ALLOW();
+      lseek(this->fd,pos,0); /* SEEK_SET */
+      THREADS_DISALLOW();
       do {
-	len = read(THIS->fd,static_buffer,len);
+	THREADS_ALLOW();
+	len = read(this->fd,buffer,len);
+	THREADS_DISALLOW();
 	if (len < 0) {
 	  if (errno != EINTR) {
 	    return(NULL);
 	  }
 	}
       } while(len < 0);
-      return make_shared_binary_string(static_buffer,len);
+      return make_shared_binary_string(buffer,len);
    }
 
-   if (pos<THIS->pos)
+   if (pos<this->pos)
      return make_shared_string("buffer underflow"); /* shit */
 
    /* We want something in the next buffer */
-   while (THIS->firstbuffer && pos>=THIS->pos+THIS->firstbuffer->s->len) 
+   while (this->firstbuffer && pos>=this->pos+this->firstbuffer->s->len) 
    {
      /* Free the first buffer, and update THIS->pos */
-      b=THIS->firstbuffer;
-      THIS->pos+=b->s->len;
-      THIS->bytes_in_buffer-=b->s->len;
-      THIS->firstbuffer=b->next;
+      b=this->firstbuffer;
+      this->pos+=b->s->len;
+      this->bytes_in_buffer-=b->s->len;
+      this->firstbuffer=b->next;
       if (!b->next)
-	THIS->lastbuffer=NULL;
+	this->lastbuffer=NULL;
       sbuffers-=b->s->len;
       nbuffers--;
       free_string(b->s);
@@ -415,41 +420,46 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
       /* Wake up first input if it was sleeping and we
        * have room for more in the buffer.
        */
-      if (THIS->sleeping &&
-	  THIS->firstinput &&
-	  THIS->bytes_in_buffer<MAX_BYTES_IN_BUFFER)
+      if (this->sleeping &&
+	  this->firstinput &&
+	  this->bytes_in_buffer<MAX_BYTES_IN_BUFFER)
       {
-	THIS->sleeping=0;
+	this->sleeping=0;
 	push_callback(offset_input_read_callback);
 	push_int(0);
 	push_callback(offset_input_close_callback);
-	apply(THIS->firstinput->u.obj, "set_nonblocking", 3);
+	apply(this->firstinput->u.obj, "set_nonblocking", 3);
 	pop_stack();
       }
    }
 
-   while (!THIS->firstbuffer)
+   while (!this->firstbuffer)
    {
-     if (THIS->firstinput)
+     if (this->firstinput)
      {
+       struct pike_string *tmp;
+
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
-       if (THIS->firstinput->type==I_MMAP)
+       if (this->firstinput->type==I_MMAP)
        {
-	 if (pos >= THIS->firstinput->len + THIS->pos) /* end of mmap */
+	 if (pos >= this->firstinput->len + this->pos) /* end of mmap */
 	 {
-	   THIS->pos+=THIS->firstinput->len;
+	   this->pos+=this->firstinput->len;
 	   input_finish();
 	   continue;
 	 }
-	 len=THIS->firstinput->len+THIS->pos-pos;
-	 if (len>READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
-	 return make_shared_binary_string(THIS->firstinput->u.mmap+
-					  pos-THIS->pos,
-					  len);
+	 len=this->firstinput->len+this->pos-pos;
+	 if (len > READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
+	 tmp = begin_shared_string( len );
+/* This thread_allow/deny is at the cost of one extra memory copy */
+	 THREADS_ALLOW();
+	 MEMCPY(tmp->str, this->firstinput->u.mmap+pos-this->pos, len);
+	 THREADS_DISALLOW();
+	 return end_shared_string(tmp);
        }
        else
 #endif
-       if (THIS->firstinput->type!=I_OBJ)
+       if (this->firstinput->type!=I_OBJ)
        {
 	 input_finish();       /* shouldn't be anything else ... maybe a finished object */
        }
@@ -457,15 +467,15 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
      return NULL;		/* no data */
    } 
 
-   if (pos==THIS->pos)
+   if (pos==this->pos)
    {
-      THIS->firstbuffer->s->refs++;
-      return THIS->firstbuffer->s;
+      this->firstbuffer->s->refs++;
+      return this->firstbuffer->s;
    }
-   return make_shared_binary_string(THIS->firstbuffer->s->str+
-				    pos-THIS->pos,
-				    THIS->firstbuffer->s->len-
-				    pos+THIS->pos);
+   return make_shared_binary_string(this->firstbuffer->s->str+
+				    pos-this->pos,
+				    this->firstbuffer->s->len-
+				    pos+this->pos);
 }
 
 
@@ -607,12 +617,24 @@ static void pipe_input(INT32 args)
 	  && ((long)(m=(char *)mmap(0,s.st_size - filep,PROT_READ,
 				    MAP_FILE|MAP_SHARED,fd,filep))!=-1))
        {
+#ifdef HAVE_GETEUID
+	 int ou = 0;
+#endif
 	 mmapped += s.st_size;
 
 	 i->type=I_MMAP;
 	 i->len=s.st_size;
 	 i->u.mmap=m;
-       
+#ifdef HAVE_MADVISE
+	 /* Mark the pages as sequential read only access... */
+#ifdef HAVE_GETEUID
+	 if((ou=geteuid()) && !getuid()) seteuid(0);
+#endif
+	 madvise(m, s.st_size, MADV_SEQUENTIAL);
+#ifdef HAVE_GETEUID
+	 if(ou) seteuid(ou);
+#endif
+#endif
 	 pop_n_elems(args);
 	 push_int(0);
 	 return;
