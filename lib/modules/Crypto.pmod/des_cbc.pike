@@ -1,4 +1,4 @@
-/* $Id: des_cbc.pike,v 1.1 2003/03/19 17:46:30 nilsson Exp $
+/* $Id: des_cbc.pike,v 1.2 2003/11/30 17:09:05 nilsson Exp $
  *
  */
 
@@ -9,9 +9,17 @@
 //! @seealso
 //!   @[cbc], @[des]
 
-inherit Crypto.cbc : cbc;
+#if constant(Nettle.CBC)
 
-void create()
-{
-  cbc::create(Crypto.des);
-}
+inherit .CBC;
+void create() { ::create(.DES()); }
+string crypt_block(string data) { return crypt(data); }
+int query_key_length() { return key_size(); }
+int query_block_size() { return block_size(); }
+
+#else
+
+inherit .cbc;
+void create() { ::create(.des3); }
+
+#endif
