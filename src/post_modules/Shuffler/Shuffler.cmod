@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.32 2004/06/27 19:16:03 srb Exp $
+|| $Id: Shuffler.cmod,v 1.33 2004/06/28 22:55:30 srb Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.32 2004/06/27 19:16:03 srb Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.33 2004/06/28 22:55:30 srb Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -104,6 +104,7 @@ PIKECLASS Shuffle
   CVAR struct source *last_source;
   CVAR struct object *file_obj; 
   CVAR int callback;
+  CVAR int write_callback;
   
   CVAR int sent;
   CVAR ShuffleState state;
@@ -115,8 +116,16 @@ PIKECLASS Shuffle
   static void __set_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG2("__set_calllbacks(%s)\n", t,(t->box.fd>0?"C":"Pike") );
-    if( t->box.fd >= 0 || t->file_obj && t->file_obj->prog )
+    if( t->box.fd >= 0 )
       set_fd_callback_events(&t->box, PIKE_BIT_FD_WRITE);
+    else if( t->file_obj && t->file_obj->prog )
+    {
+      ref_push_object( t->box.ref_obj );
+      Pike_sp[-1].type = PIKE_T_FUNCTION;
+      Pike_sp[-1].subtype = t->write_callback;
+      safe_apply( t->file_obj, "set_write_callback", 1 );
+      pop_stack();
+    }
     else
       SHUFFLE_DEBUG1("EEP: No destination! Cannot set callbacks\n",t);
   }
@@ -124,8 +133,14 @@ PIKECLASS Shuffle
   static void __remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t, (t->box.fd>=0?"C":"Pike") );
-    if( t->box.fd >= 0 || t->file_obj && t->file_obj->prog )
+    if( t->box.fd >= 0 )
       set_fd_callback_events(&t->box, 0);
+    else if( t->file_obj && t->file_obj->prog )
+    {
+      push_int(0);
+      safe_apply( t->file_obj, "set_write_callback", 1 );
+      pop_stack();
+    }
     else
       SHUFFLE_DEBUG1("EEP: No destination! Cannot remove callbacks\n",t);
   }
@@ -200,6 +215,9 @@ PIKECLASS Shuffle
     THIS->state = INITIAL;
     THIS->callback = 
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
+
+    THIS->write_callback = 
+      find_identifier("write_callback",Pike_fp->current_object->prog);
     THIS->box.backend = NULL;
     THIS->box.ref_obj = Pike_fp->current_object;
     THIS->box.fd = -1;
@@ -526,6 +544,15 @@ PIKECLASS Shuffle
     }
     else
       _give_back( THIS, amount );
+  }
+
+  /*! @decl void write_callback( mixed|void x )
+   */
+  PIKEFUN void write_callback( mixed|void x )
+    optflags OPT_SIDE_EFFECT;
+  {
+    SHUFFLE_DEBUG1("write_callback()\n", THIS );
+    _send_more( THIS );
   }
 
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
