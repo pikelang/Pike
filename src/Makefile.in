@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.174 1999/12/29 18:02:59 grubba Exp $
+# $Id: Makefile.in,v 1.175 2000/01/01 00:42:23 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -292,6 +292,7 @@ tidy:
 # make clean
 clean: tidy
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
+	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) clean )
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
@@ -561,6 +562,7 @@ $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
 	  rm $(SRCDIR)/stamp-h.in; $(MAKE) $(SRCDIR)/stamp-h.in; \
 	fi
+
 $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 	cd $(SRCDIR) && autoheader
 	echo foo > $(SRCDIR)/stamp-h.in
@@ -569,6 +571,7 @@ machine.h: stamp-h
 	@if test -f machine.h; then :; else \
 	  rm stamp-h; $(MAKE) stamp-h; \
 	fi
+
 stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status
 
