@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.68 2004/11/05 15:27:36 grubba Exp $
+|| $Id: las.h,v 1.69 2004/12/07 21:19:19 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -11,6 +11,7 @@
 #include "global.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
+#include "block_alloc_h.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
 typedef void (*c_fun)(INT32);
@@ -179,6 +180,8 @@ extern struct node_hash_table node_hash;
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
+
+BLOCK_ALLOC_FILL_PAGES(node_s, 2)
 
 /* Prototypes begin here */
 int car_is_node(node *n);
