@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.51 2003/11/14 11:15:14 mast Exp $
+|| $Id: mapping.h,v 1.52 2004/02/10 22:20:29 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -60,6 +60,7 @@ extern struct mapping *gc_internal_mapping;
 #define m_ind_types(m) ((m)->data->ind_types)
 #define m_val_types(m) ((m)->data->val_types)
 #define mapping_get_flags(m) ((m)->data->flags)
+#define mapping_data_is_shared(m) ((m)->data->refs > 1)
 
 #define MD_KEYPAIRS(MD, HSIZE) \
    ( (struct keypair *)							\
