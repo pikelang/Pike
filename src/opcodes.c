@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.23 1998/05/15 01:29:28 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.24 1998/05/16 10:58:31 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -299,7 +299,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
       struct pike_string *itype;
       INT32 run_time_itype;
 
-      push_string(itype=index_type(sp[-2].u.string,0));
+      push_string(itype=index_type(type,0));
       run_time_itype=compile_type_to_runtime_type(itype);
 
       if(run_time_itype != T_MIXED)
@@ -314,6 +314,9 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	}else{
 	  INT32 e,i;
 	  struct pike_string *s;
+#ifdef DEBUG
+	  struct svalue *save_sp=sp+1;
+#endif
 	  push_array(a=allocate_array(tmp->size));
 	  SET_CYCLIC_RET(a);
 	  
@@ -324,6 +327,10 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    array_set_index(a,e,sp-1);
 	    pop_stack();
 	  }
+#ifdef DEBUG
+	  if(save_sp!=sp)
+	    fatal("o_cast left stack droppings.\n");
+#endif
 	  END_CYCLIC();
 	}
 	assign_svalue(sp-3,sp-1);
