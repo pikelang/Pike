@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.36 1998/06/24 04:55:28 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.37 1998/09/18 21:31:41 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -126,6 +126,11 @@ void really_free_svalue(struct svalue *s)
     fatal("Bad type in free_svalue.\n");
 #endif
   }
+}
+
+void do_free_svalue(struct svalue *s)
+{
+  free_svalue(s);
 }
 
 /* Free a bunch of normal svalues.

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.17 1998/04/24 00:10:45 hubbe Exp $
+ * $Id: svalue.h,v 1.18 1998/09/18 21:31:42 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -214,6 +214,7 @@ extern struct svalue dest_ob_zero;
 /* Prototypes begin here */
 void really_free_short_svalue(union anything *s, TYPE_T type);
 void really_free_svalue(struct svalue *s);
+void do_free_svalue(struct svalue *s);
 void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS);
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
@@ -230,8 +231,8 @@ void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
 				    struct svalue *s);
 void assign_from_short_svalue_no_free(struct svalue *s,
-					     union anything *u,
-					     TYPE_T type);
+				      union anything *u,
+				      TYPE_T type);
 void assign_short_svalue_no_free(union anything *to,
 				 union anything *from,
 				 TYPE_T type);
@@ -256,7 +257,7 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
 				      INT32 num,
 				      struct processing *p);
-void check_short_svalue(union anything *u,TYPE_T type);
+void check_short_svalue(union anything *u, TYPE_T type);
 void check_svalue(struct svalue *s);
 TYPE_FIELD gc_check_svalues(struct svalue *s, int num);
 void gc_xmark_svalues(struct svalue *s, int num);
