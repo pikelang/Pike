@@ -148,7 +148,7 @@ static void ponder_answer()
       if (i<0) i=0;
       j=search(buf,"\r\n\r\n",i); if (j==-1) j=10000000;
       i=search(buf,"\n\n",i);     if (i==-1) i=10000000;
-      if ((j=min(i,j))!=10000000)  break;
+      if ((i=min(i,j))!=10000000)  break;
 
       s=con->read(8192,1);
       if (s=="") { i=strlen(buf); break; }
@@ -157,16 +157,21 @@ static void ponder_answer()
       buf+=s;
    }
 
-   headerbuf=buf[..i-1];
+   headerbuf=buf[..i-1]-"\n";
 
    if (buf[i..i+1]=="\n\n") datapos=i+2;
    else datapos=i+4;
 
+#ifdef HTTP_QUERY_DEBUG
+   werror("** %d bytes of header; %d bytes left in buffer (pos=%d)\n",
+	  sizeof(headerbuf),sizeof(buf)-datapos,datapos);
+#endif
+
    // split headers
 
    headers=([]);
-   sscanf(headerbuf,"%s%*[ ]%d%*[ ]%s%*[\r\n]",protocol,status,status_desc);
-   foreach ((headerbuf/"\r\n")[1..],string s)
+   sscanf(headerbuf,"%s%*[ ]%d%*[ ]%s%*[\r]",protocol,status,status_desc);
+   foreach ((headerbuf/"\r")[1..],string s)
    {
       string n,d;
       sscanf(s,"%[!-9;-~]%*[ \t]:%*[ \t]%s",n,d);
@@ -213,11 +218,11 @@ static void async_close()
 static void async_read(mixed dummy,string s)
 {
 #ifdef HTTP_QUERY_DEBUG
-   werror("-> %O\n",s);
+   werror("-> %d bytes of data\n",strlen(s));
 #endif
    
    buf+=s;
-   if (-1!=search(buf,"\r\n\r\n")) 
+   if (-1!=search(buf,"\r\n\r\n") || -1!=search(buf,"\n\n")) 
    {
       con->set_blocking();
       ponder_answer();
@@ -253,6 +258,9 @@ static void async_failed()
 
 static void async_timeout()
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("** TIMEOUT\n");
+#endif
    errno=110; // timeout
    if (con)
    {
@@ -298,13 +306,16 @@ void async_got_host(string server,int port)
 void async_fetch_read(mixed dummy,string data)
 {
 #ifdef HTTP_QUERY_DEBUG
-   werror("-> %O\n",data);
+   werror("-> %d bytes of data\n",strlen(data));
 #endif
    buf+=data;
 }
 
 void async_fetch_close()
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("-> close\n");
+#endif
    con->set_blocking();
    destruct(con);
    con=0;
@@ -554,10 +565,13 @@ class PseudoFile
    {
       string s;
       
-      if (p+n>len) n=len-p;
+      if (len && p+n>len) n=len-p;
 
       if (strlen(buf)<n && con)
-	 buf+=con->read(n-strlen(buf));
+      {
+	 string s=con->read(n-strlen(buf));
+	 buf+=s;
+      }
 
       s=buf[..n-1];
       buf=buf[n..];
@@ -567,7 +581,6 @@ class PseudoFile
 
    void close()
    {
-      catch { con->close(); destruct(con); };
       con=0; // forget
    }
 };
