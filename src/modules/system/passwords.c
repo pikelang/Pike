@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.25 1999/03/08 05:42:26 mast Exp $
+ * $Id: passwords.c,v 1.26 1999/05/26 17:39:27 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.25 1999/03/08 05:42:26 mast Exp $");
+RCSID("$Id: passwords.c,v 1.26 1999/05/26 17:39:27 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -111,6 +111,10 @@ struct group *getgrnam(char *name)
 #define SAFE_PUSH_TEXT(X) do { char *text_ = (X); if(text_) push_text(text_); else push_constant_text(""); }while(0);
 void push_pwent(struct passwd *ent)
 {
+  /* NOTE: password_protection_mutex is always locked
+   *       when this function is called.
+   */
+
   if(!ent)
   {
     push_int(0);
@@ -118,13 +122,28 @@ void push_pwent(struct passwd *ent)
   }
   SAFE_PUSH_TEXT(ent->pw_name);
 
-#ifdef HAVE_GETSPNAM
+#if defined(HAVE_GETSPNAM) || defined(HAVE_GETSPNAM_R)
   if(!strcmp(ent->pw_passwd, "x"))
   {
     struct spwd *foo;
-    THREADS_ALLOW();
+#ifdef HAVE_GETSPNAM_R
+    struct spwd bar;
+    /* NOTE: buffer can be static since this function is
+     *       monitored by the password_protection_mutex mutex.
+     *   /grubba 1999-05-26
+     */
+    static char buffer[2048];
+    THREADS_ALLOW_UID();
+    foo = getspnam_r(ent->pw_name, &bar, buffer, sizeof(buffer));
+    THREADS_DISALLOW_UID();
+#else /* !HAVE_GETSPNAM_R */
+    /* getspnam() is MT-unsafe!
+     * /grubba 1999-05-26
+     */
+    /* THREADS_ALLOW_UID(); */
     foo = getspnam(ent->pw_name);
-    THREADS_DISALLOW();
+    /* THREADS_DISALLOW_UID(); */
+#endif /* HAVE_GETSPNAM_R */
     if(foo)
       push_text(foo->sp_pwdp);
     else
