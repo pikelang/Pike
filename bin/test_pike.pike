@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.23 1999/04/08 22:19:01 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.24 1999/05/12 04:38:05 hubbe Exp $ */
 
 import Stdio;
 
@@ -242,8 +242,11 @@ int main(int argc, string *argv)
 		if(check > 1) _verify_internals();
 	      }) {
 		werror(fname + " failed.\n");
-		werror(test + "\n");
+		bzot(test);
 		if (arrayp(err) && sizeof(err) && stringp(err[0])) {
+		  werror("Error: " + err[0]);
+		}
+		if (objectp(err)) {
 		  werror("Error: " + err[0]);
 		}
 		errors++;
