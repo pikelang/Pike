@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.31 2002/03/06 01:01:26 mast Exp $
+# $Id: Makefile.in,v 1.32 2002/04/06 15:55:53 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -14,7 +14,7 @@ VPATH=@srcdir@:@srcdir@/../include
 CRYPTO_INCLUDES=$(SRCDIR)/../include
 
 # Additional C preprocessor flags
-PREFLAGS=$(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR) $(DEFINES)
+PREFLAGS=-I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR) $(EXTRA_CPP_FLAGS) $(DEFINES)
 
 # The flags to generate a shared library
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(EXTRA_CFLAGS)
