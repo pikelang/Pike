@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.11 1998/04/20 18:53:54 grubba Exp $
+ * $Id: cbc.c,v 1.12 1998/08/26 16:33:48 nisse Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -124,18 +124,35 @@ static void f_create(INT32 args)
   if (args < 1) {
     error("Too few arguments to cbc->create()\n");
   }
-  if ((sp[-args].type != T_PROGRAM) &&
-      (sp[-args].type != T_OBJECT)) {
-    error("Bad argument 1 to cbc->create()\n");
-  }
-  if (sp[-args].type == T_PROGRAM) {
+#if 0
+  fprintf(stderr, "cbc->create: type = %d\n",
+	  sp[-args].type);
+#endif
+  switch(sp[-args].type)
+  {
+  case T_PROGRAM:
+    /* FIXME: Is this type obsoleted? */
     THIS->object = clone_object(sp[-args].u.program, args-1);
-  } else {
+    break;
+  case T_FUNCTION:
+    apply_svalue(sp - args, args-1);
+
+    /* Check return value */
+    if (sp[-1].type != T_OBJECT)
+      error("cbc->create(): Returned value is not an object\n");
+    
+    add_ref(THIS->object = sp[-1].u.object);
+    break;
+  case T_OBJECT:
     if (args != 1) {
       error("Too many arguments to cbc->create()\n");
     }
-    add_ref(THIS->object = sp[-args].u.object);
+    add_ref(THIS->object = sp[-1].u.object);
+    break;
+  default:
+    error("Bad argument 1 to cbc->create()\n");
   }
+
   pop_stack(); /* Just one element left on the stack in both cases */
 
   assert_is_crypto_module(THIS->object);
