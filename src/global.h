@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.20 1998/03/28 15:15:13 grubba Exp $
+ * $Id: global.h,v 1.21 1998/05/12 07:33:11 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -41,6 +41,11 @@ struct array;
 struct svalue;
 
 #include "machine.h"
+
+/*
+ * Ugga, bugga, hope the gods of select() listen to us!
+ */
+#define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 
 /*
  * Max number of local variables in a function.
