@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.480 2001/06/29 13:41:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.481 2001/06/29 13:50:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -142,6 +142,10 @@ fi
 ])
 
 #############################################################################
+
+if test "x$GCC" = "x"; then
+  GCC=no
+else :; fi
 
 if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
   #
