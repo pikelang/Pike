@@ -72,9 +72,11 @@ static program low_findprog(string pname, string ext)
 	throw(e);
       }
       break;
+#if efun(load_module)
     case ".so":
       ret=load_module(fname);
     }
+#endif /* load_module */
     return programs[fname]=ret;
   }else{
     return UNDEFINED;
