@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.107 2004/04/03 19:41:22 grubba Exp $
+|| $Id: backend.cmod,v 1.108 2004/04/03 19:52:16 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.107 2004/04/03 19:41:22 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.108 2004/04/03 19:52:16 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -407,10 +407,6 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 
 #define MY_POLL(PFD, TIMEOUT)				\
   epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
-
-#ifndef PIKE_POLL_DEVICE
-#define PIKE_POLL_DEVICE	"/dev/epoll"
-#endif /* !PIKE_POLL_DEVICE */
 
 int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 {
