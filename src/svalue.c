@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.35 1998/06/02 16:16:10 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.36 1998/06/24 04:55:28 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -742,10 +742,12 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
     case T_STRING:
       {
 	int i;
+#if 0
 	if (s->subtype) {
 	  sprintf(buf,"/* subtype:%ld */ ",(long)s->subtype);
 	  my_strcat(buf);
 	}
+#endif
         my_putchar('"');
 	for(i=0; i < s->u.string->len; i++)
         {
