@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.25 2002/11/01 16:58:38 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.26 2003/01/13 17:44:08 nilsson Exp $ */
 
 #define JUMPBACK 3
 
@@ -337,7 +337,7 @@ void dump2(array(array(array(string))) data,int ind)
     mapping(string:array(array(array(string)))) d = values(foo)[maxe];
     array(string) a = indices(d);
     array(array(array(array(string)))) b = values(d);
-
+    sort(a,b);
 
     /* foo: variable
      * a[x] : condition
