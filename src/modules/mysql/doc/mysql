@@ -9,7 +9,7 @@ DESCRIPTION
 	Mysql is available from	http://www.tcx.se/ .
 
 KEYWORDS
-	sql, database, mysql
+	sql, database
 
 
 ============================================================================
@@ -31,7 +31,7 @@ DESCRIPTION
 	To access the Mysql database, you must first connect to it. This is
 	done with the function Mysql().
 
-	If you give no argument, or "" as hostname it will connect with
+	If you give no argument, or give "" as hostname it will connect with
 	a UNIX-domain socket, which is a big performance gain.
 
 
@@ -45,6 +45,7 @@ SYNTAX
 	int mysql->affected_rows();
 
 DESCRIPTION
+	Returns the number of affected rows.
 
 
 ============================================================================
@@ -57,6 +58,7 @@ SYNTAX
 	int mysql->insert_id();
 
 DESCRIPTION
+	Returns the insert id.
 
 
 ============================================================================
