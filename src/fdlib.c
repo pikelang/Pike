@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.63 2003/06/30 17:06:08 mast Exp $
+|| $Id: fdlib.c,v 1.64 2003/08/20 11:58:53 grubba Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.63 2003/06/30 17:06:08 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.64 2003/08/20 11:58:53 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -967,9 +967,21 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 static long convert_filetime_to_time_t(FILETIME tmp)
 {
   double t;
+  /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
+   *
+   * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
+   */
+  if (tmp.dwLowDateTime < 0xd53e8000UL) {
+    tmp.dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
+    tmp.dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
+  } else {
+    tmp.dwHighDateTime -= 0x019db1deUL;
+    tmp.dwLowDateTime -= 0xd53e8000UL;
+  }
   t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
+
+  /* 1s == 10000000 * 100ns. */
   t/=10000000.0;
-  t-=11644473600.0;
   return DO_NOT_WARN((long)floor(t));
 }
 
