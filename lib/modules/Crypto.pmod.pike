@@ -2,10 +2,11 @@
  *
  */
 
-inherit _Crypto;
+//inherit _Crypto;
 
 mixed `[](string name)
 {
-  return (::`[](name) || ((program) "Crypto/" + name));
+//  return (::`[](name) || ((program) ("Crypto/" + name)));
+    return (_Crypto[name] || ((program) ("Crypto/" + name)));
 }
 
