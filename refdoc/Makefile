@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.37 2001/11/26 22:26:46 nilsson Exp $
+# $Id: Makefile,v 1.38 2002/02/14 21:22:59 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -23,6 +23,14 @@ modref: build/modref.xml
 	@for file in pike_logo.gif next.gif prev.gif unit.gif \
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
 	  cp src_images/$$file modref/images/ ; done
+
+wiki: build/modref.xml
+	rm -rf wiki || /bin/true
+	@mkdir wiki
+	@$(PIKE) presentation/wiki.pike \
+	  build/modref.xml structure/wiki.html wiki
+	@mkdir wiki/images
+	cp build/images/* wiki/images
 
 one_page: onepage build/onepage.xml
 	cp build/images/* onepage/
@@ -115,6 +123,11 @@ touch-mirardoc:
 	  uniq`
 	@touch `grep -r "//\! module" ../lib/modules/* | cut -d: -f1 | \
 	  uniq`
+
+nilsson:
+	@$(PIKE) presentation/tree-split-autodoc.pike \
+	  build/modref.xml structure/modref.html modref
+
 
 # Cleanup
 
