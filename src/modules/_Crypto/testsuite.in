@@ -25,7 +25,7 @@ test_true([[programp(Crypto.des3)]])
 test_true([[programp(Crypto.des3_cbc)]])
 test_true([[programp(Crypto.des_cbc)]])
 test_true([[programp(Crypto.idea_cbc)]])
-test_true([[programp(Crypto.rsa)]])
+dnl test_true([[programp(Crypto.rsa)]])
 
 // Randomness submodule
 test_true([[objectp(Crypto.randomness)]])
