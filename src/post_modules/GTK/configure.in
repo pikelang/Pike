@@ -272,7 +272,7 @@ AC_ARG_WITH(GTK, [  --with-GTK2             Use GTK 2.0 if found],[],[with_GTK2=
 
 AC_CHECK_FUNCS( gethrtime signal sigaction )
 
-dnl Force prototypes from X's headerfiles.
+# Force prototypes from X's headerfiles.
 AC_DEFINE(FUNCPROTO)
 
 AC_HEADER_STDC
@@ -353,7 +353,7 @@ AC_SUBST(have_gtk_120)
    CFLAGS="$CFLAGS $GTK_CFLAGS"
    LIBS="$MODULE_LDFLAGS $LIBS"
 
-dnl Not yet available with GTK 2.0 (Wait for gnome 2.0 etc.)
+# Not yet available with GTK 2.0 (Wait for gnome 2.0 etc.)
    pgtk_has_libglade=nolibglade
    pgtk_has_gnome=nognome
    pgtk_has_docklets=nodocklets
@@ -455,6 +455,17 @@ if test "x$WITH_GTK" = x1 ; then
 
  oCFLAG="$CFLAGS"
  CFLAGS="$GNOME_CFLAGS"
+
+ # Who came up with the XXX-config stupidity?
+ if echo X "$GNOME_LIBS" | grep lpng10 >/dev/null 2>&1; then
+   # Check if we actually have -lpng10...
+   AC_CHECK_LIB(png10, png_read_png)
+   AC_CHECK_LIB(png, png_read_png)
+   if test "x$ac_cv_lib_png10_png_read_png$ac_cv_lib_png_png_read_png" = "xnoyes"; then
+     AC_MSG_WARN([Adjusting LIBS to use -lpng instead of -lpng10.])
+     GNOME_LIBS=`echo "$GNOME_LIBS"|sed -e 's/-lpng10/-lpng/g'`
+   else :; fi
+ fi
 
  if test "x$pgtk_has_gnome" = xgnome ; then
     # Try adding gnome-1.0 to the include path (FreeBSD uses that for gnome-1.0
