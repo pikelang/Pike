@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.37 1997/01/11 23:03:59 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.38 1997/01/11 23:04:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -158,7 +158,7 @@ AC_CACHE_VAL(pike_cv_ld_accepts_r,
 ])
 AC_MSG_RESULT($pike_cv_ld_accepts_r)
 
-if test x$pike_cv_ld_accepts_r ; then
+if test x$pike_cv_ld_accepts_r = xyes ; then
   SET_RUN_PATH='`cat modules/lib_dirs`'
 else
   :
