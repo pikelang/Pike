@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.21 2004/01/11 00:40:49 nilsson Exp $
+ * $Id: X509.pmod,v 1.22 2004/01/24 23:29:58 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -211,22 +211,30 @@ string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
 				 )) }) )->get_der();
 }
 
+class Verifier {
+  constant type = "none";
+  int(0..1) verify(object,string,string);
+  this_program init(string key);
+
+  optional Crypto.rsa rsa; // Ugly
+}
+
 //!
 class rsa_verifier
 {
-  object rsa;
+  inherit Verifier;
+  Crypto.rsa rsa;
 
   constant type = "rsa";
 
   //!
-  object init(string key)
-  {
+  this_program init(string key) {
     rsa = RSA.parse_public_key(key);
     return rsa && this;
   }
 
   //!
-  int verify(object algorithm, string msg, string signature)
+  int(0..1) verify(object algorithm, string msg, string signature)
   {
     if (algorithm->get_der() == rsa_md5_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md5_id,
@@ -261,6 +269,7 @@ class rsa_verifier
  * sometimes taken from the CA, and not present in the keyinfo. */
 class dsa_verifier
 {
+  inherit Verifier;
   object dsa;
 
   constant type = "dsa";
@@ -272,7 +281,7 @@ class dsa_verifier
 #endif
 
 //!
-rsa_verifier make_verifier(object keyinfo)
+Verifier make_verifier(object keyinfo)
 {
   if ( (keyinfo->type_name != "SEQUENCE")
        || (sizeof(keyinfo->elements) != 2)
@@ -314,7 +323,7 @@ class TBSCertificate
   mapping not_before;
 
   object subject;
-  object public_key;
+  Verifier public_key;
 
   /* Optional */
   object issuer_id;
