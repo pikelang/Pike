@@ -102,7 +102,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *nam
    rgb->b=sp[2-args+args_start].u.integer;
 }
 
-static INLINE void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
+static void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
 {
    while (size--) *(dest++)=rgb;
 }
@@ -147,8 +147,9 @@ static void img_crop(struct image *dest,
        img->xsize-1==x2 && img->ysize-1==y2)
    {
       *dest=*img;
-      new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) );
-      if (!new) return; /* out of memory? */
+      new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
+      if (!new) 
+	error("Out of memory.\n");
       memcpy(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       dest->img=new;
       return;
@@ -157,8 +158,9 @@ static void img_crop(struct image *dest,
    if (x1>x2) mirrx=1,x1^=x2,x2^=x1,x1^=x2; else mirrx=0;
    if (y1>y2) mirry=1,y1^=y2,y2^=y1,y1^=y2; else mirry=0;
 
-   new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) );
-   if (!new) return; /* out of memory? */
+   new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) +1);
+   if (!new)
+     error("Out of memory.\n");
 
    img_clear(new,THIS->rgb,(x2-x1+1)*(y2-y1+1));
 
@@ -180,8 +182,8 @@ static void img_crop(struct image *dest,
 static INLINE void img_clone(struct image *newimg,struct image *img)
 {
    if (newimg->img) free(newimg->img);
-   newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize);
-   if (!newimg->img) return; /* out of memory? */
+   newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+   if (!newimg->img) error("Out of memory!\n");
    memcpy(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    newimg->xsize=img->xsize;
    newimg->ysize=img->ysize;
@@ -287,8 +289,8 @@ static void img_scale(struct image *dest,
    if (dest->img) { free(dest->img); dest->img=NULL; }
 
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
-   new=malloc(newx*newy*sizeof(rgb_group));
-   if (!new) return; /* out of memory */
+   new=malloc(newx*newy*sizeof(rgb_group) +1);
+   if (!new) error("Out of memory!\n");
 
    memset(new,0,newx*newy*sizeof(rgb_group));
    
@@ -328,8 +330,8 @@ static void img_scale2(struct image *dest, struct image *source)
    
    if (dest->img) { free(dest->img); dest->img=NULL; }
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
-   new=malloc(newx*newy*sizeof(rgb_group));
-   if (!new) return; /* out of memory */
+   new=malloc(newx*newy*sizeof(rgb_group) +1);
+   if (!new) error("Out of memory\n");
    memset(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
@@ -413,12 +415,22 @@ static char* img_frompnm(struct pike_string *s)
    if (new.xsize<=0||new.ysize<=0) return "illegal size"; /* illegal size */
    if (type=='3'||type=='2'||type=='6'||type=='5')
       maxval=getnextnum(s,&pos);
-   new.img=malloc(new.xsize*new.ysize*sizeof(rgb_group));
-   if (!new.img) return "out of memory"; /* out of memory */
-   if (type=='1'||type=='2'||type=='3') skipwhite(s,&pos);
-   else { skip_to_eol(s,&pos); pos++; }
+   new.img=malloc(new.xsize*new.ysize*sizeof(rgb_group)+1);
+   if (!new.img) error("Out of memory.\n");
+
+   if (type=='1'||type=='2'||type=='3')
+   {
+     skipwhite(s,&pos);
+   }
+   else
+   {
+     skip_to_eol(s,&pos);
+     pos++;
+   }
    for (y=0; y<new.ysize; y++)
+   {
       for (i=0,x=0; x<new.xsize; x++)
+      {
          switch (type)
 	 {
 	    case '1':
@@ -454,6 +466,8 @@ static char* img_frompnm(struct pike_string *s)
 	       pixel(&new,x,y).b=(unsigned char)((getnext(s,&pos)*255L)/maxval);
 	       break;
 	 }
+      }
+   }
    if (THIS->img) free(THIS->img);
    THIS->xsize=new.xsize;
    THIS->ysize=new.ysize;
@@ -537,9 +551,12 @@ static void img_apply_matrix(struct image *dest,
    ex=width-bx;
    ey=height-by;
    
-   d=malloc(sizeof(rgb_group)*img->xsize*img->ysize);
+   d=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+
+   if(!d) error("Out of memory.\n");
    
    for (x=bx; x<img->xsize-ex; x++)
+   {
       for (y=by; y<img->ysize-ey; y++)
       {
 	 long r=0,g=0,b=0;
@@ -564,6 +581,7 @@ static void img_apply_matrix(struct image *dest,
 	 d[x+y*img->xsize].g=testrange(default_rgb.g+g/sumg);
 	 d[x+y*img->xsize].b=testrange(default_rgb.b+b/sumb);
       }
+   }
 
 
    for (y=0; y<img->ysize; y++)
@@ -609,6 +627,10 @@ void image_new(INT32 args)
        sp[1-args].type!=T_INT)
       error("Illegal arguments to image->new()\n");
 
+   if(sp[-args].u.integer < 0 ||
+      sp[1-args].u.integer < 0)
+     error("Illegal size to image->new()\n");
+
    getrgb(THIS,2,args,"image->new()"); 
 
    o=clone(image_program,0);
@@ -616,11 +638,15 @@ void image_new(INT32 args)
 
    img->xsize=sp[-args].u.integer;
    img->ysize=sp[1-args].u.integer;
-   if (img->xsize<=0) img->xsize=1;
-   if (img->ysize<=0) img->ysize=1;
+   if (img->xsize<0) img->xsize=0;
+   if (img->ysize<0) img->ysize=0;
 
-   img->img=malloc(3*sp[-args].u.integer*sp[1-args].u.integer);
-   if (!img->img) { free_object(o); error("out of memory\n"); }
+   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+   if (!img->img)
+   {
+     free_object(o);
+     error("out of memory\n");
+   }
 
    img_clear(img->img,img->rgb,img->xsize*img->ysize);
    pop_n_elems(args);
@@ -634,7 +660,7 @@ void image_toppm(INT32 args)
    
    pop_n_elems(args);
    if (!THIS->img) { error("no image\n");  return; }
-   sprintf(buf,"P6\n# generated by...\n%d %d\n255\n",THIS->xsize,THIS->ysize);
+   sprintf(buf,"P6\n%d %d\n255\n",THIS->xsize,THIS->ysize);
    a=make_shared_string(buf);
    b=make_shared_binary_string((char*)THIS->img,
 			       THIS->xsize*THIS->ysize*3);
@@ -1272,7 +1298,7 @@ void image_gray(INT32 args)
    o=clone(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       error("Out of memory\n");
@@ -1315,7 +1341,7 @@ void image_color(INT32 args)
    o=clone(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       error("Out of memory\n");
@@ -1349,7 +1375,7 @@ void image_invert(INT32 args)
    o=clone(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       error("Out of memory\n");
@@ -1386,7 +1412,7 @@ void image_threshold(INT32 args)
    o=clone(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       error("Out of memory\n");
@@ -1468,7 +1494,7 @@ void image_apply_matrix(INT32 args)
    }
    if (width==-1) width=0;
 
-   matrix=malloc(sizeof(rgbl_group)*width*height);
+   matrix=malloc(sizeof(rgbl_group)*width*height+1);
    if (!matrix) error("Out of memory");
    
    for (i=0; i<height; i++)
@@ -1535,7 +1561,7 @@ void image_modify_by_intensity(INT32 args)
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
-   s=malloc(sizeof(rgb_group)*(args-3));
+   s=malloc(sizeof(rgb_group)*(args-3)+1);
    if (!s) error("Out of memory\n");
 
    for (x=0; x<args-3; x++)
@@ -1560,7 +1586,7 @@ void image_modify_by_intensity(INT32 args)
       else s[x].r=s[x].g=s[x].b=0;
    }
 
-   list=malloc(sizeof(rgb_group)*256);
+   list=malloc(sizeof(rgb_group)*256+1);
    if (!list) 
    {
       free(s);
@@ -1585,7 +1611,7 @@ void image_modify_by_intensity(INT32 args)
    o=clone(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       error("Out of memory\n");
