@@ -1,7 +1,9 @@
 %{
 #ifndef __NT__
+#include <gdk/gdkprivate.h>
 #include <gdk/gdkx.h>
 #else
+#include <gdk/gdkprivate.h>
 #include <gdk/win32/gdkwin32.h>
 #endif
 /* The main stuff.. */

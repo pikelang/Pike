@@ -662,9 +662,28 @@ if test "x$WITH_GTK" = x1 ; then
  fi
   AC_CHECK_LIB(X11,XSetScreenSaver,[have_x11=x11],[have_x11=nox11])
   if test "x$have_x11" = "xx11" ; then
+   oCFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS $GTK_CFLAGS"
+   AC_MSG_CHECKING([X11 in GDK using gdkx.h])
+   AC_TRY_COMPILE([
+#include <gdk/gdk.h> 
+#include <gdk/gdkx.h> 
+#include <gdk/gdkprivate.h>
+ ], 
+ [
+     GdkWindowPrivate *w = (GdkWindowPrivate *)0;
+     &w->xwindow;
+ ], 
+ [have_x11=x11],
+ [have_x11=nox11])
+  if test "x$have_x11" = "xx11" ; then
+   AC_MSG_RESULT(yes)
+  else
+   AC_MSG_RESULT(no)
+  fi
+  if test "x$have_x11" = "xx11" ; then
+  
    AC_MSG_CHECKING([X11 DPMS extension])
- oCFLAGS="$CFLAGS"
- CFLAGS="$CFLAGS $GTK_CFLAGS"
 
    AC_TRY_COMPILE([
 #include <gdk/gdk.h> 
@@ -680,12 +699,12 @@ if test "x$WITH_GTK" = x1 ; then
  [_res=0])
 
  if test "x$_res" = "x1" ; then
-   AC_MSG_RESULT([available])
+   AC_MSG_RESULT([yes])
    AC_DEFINE(HAVE_DPMS)
  else
-   AC_MSG_RESULT([missing])
+   AC_MSG_RESULT([no])
  fi
-
+ fi
   CFLAGS="$oCFLAGS"
 
   fi
