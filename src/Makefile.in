@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.129 1999/03/06 06:00:21 hubbe Exp $
+# $Id: Makefile.in,v 1.130 1999/03/12 00:43:42 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -134,6 +134,11 @@ OBJ= \
 
 all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) pike
+	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
+	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
+	    echo "Warning: No peep_engine." >&2; \
+	  else :; fi; \
+	  rm -f dummy_engine >/dev/null 2>&1
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
