@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.17 2003/11/07 17:27:24 nilsson Exp $
+// $Id: __default.pmod,v 1.18 2003/11/16 16:03:39 grubba Exp $
 
 #pike 7.3
 
@@ -49,7 +49,7 @@ void sleep(float|int t, void|int abort)
 //! @deprecated Yp.default_domain
 //!
 //! @seealso
-//!   @[YP.default_domain()]
+//!   @[Yp.default_domain()]
 string default_yp_domain() {
   return Yp.default_domain();
 }
