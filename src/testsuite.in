@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.429 2001/06/27 21:11:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.430 2001/06/29 17:04:19 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6241,6 +6241,8 @@ test_eq([[combine_path("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 test_eq([[combine_path_nt("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 test_eq([[combine_path_unix("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 test_eq([[combine_path_nt("a:/","/fo\1111/bar/gazonk/../../")]],"a:/fo\1111/")
+test_eq([[combine_path_nt("a:/", "/foo","bar")+combine_path_nt("/foo","bar")]],
+	  "a:/foo/bar/foo/bar")
 
 // - Stdio.append_path
 test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
