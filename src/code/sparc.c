@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.19 2002/11/06 16:41:49 grubba Exp $
+|| $Id: sparc.c,v 1.20 2002/11/07 14:24:24 grubba Exp $
 */
 
 /*
@@ -73,10 +73,15 @@
 #define SPARC_OP3_ADDcc		0x10
 #define SPARC_OP3_ADDC		0x08
 #define SPARC_OP3_ADDCcc	0x18
+#define SPARC_OP3_SUB		0x04
+#define SPARC_OP3_SUBcc		0x14
+#define SPARC_OP3_SUBC		0x0c
+#define SPARC_OP3_SUBCcc	0x1c
+#define SPARC_OP3_SAVE		0x3c
 
 #define SPARC_ALU_OP(OP3, D, S1, S2, I)	\
     add_to_program(0x80000000|((D)<<25)|((OP3)<<19)|((S1)<<14)|((I)<<13)| \
-		   ((S2)&((I)?0x1fff:0x1f)))
+		   ((S2)&0x1fff))
 
 #define SPARC_OR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_OR, D, S1, S2, I)
 
@@ -143,7 +148,6 @@
  */
 
 #define SPARC_REG_PIKE_FP	SPARC_REG_L0
-#define SPARC_REG_PIKE_PC	SPARC_REG_L1
 #define SPARC_REG_SP		SPARC_REG_O6
 #define SPARC_REG_PC		SPARC_REG_O7
 
@@ -180,33 +184,15 @@ void sparc_ins_entry(void)
 /* Update Pike_fp->pc */
 void sparc_update_pc(void)
 {
-  int tmp = PIKE_PC;
-  if (sparc_codegen_state & SPARC_CODEGEN_PC_IS_SET) {
-    INT32 diff = (tmp - sparc_last_pc) * sizeof(PIKE_OPCODE_T);
-    if (diff) {
-      if ((-4096 <= diff) && (diff < 4096)) {
-	SPARC_ADD(SPARC_REG_PIKE_PC, SPARC_REG_PIKE_PC, diff, 1);
-      } else {
-	SET_REG(SPARC_REG_O3, diff);
-	SPARC_ADD(SPARC_REG_PIKE_PC, SPARC_REG_PIKE_PC, SPARC_REG_O3, 0);
-      }
-    }
-  } else {
-    /* call .+8 */
-    add_to_program(0x40000002);
-    /* NOTE: No need to fill the delay slot with a nop, since %o7 is updated
-     *       immediately. (Sparc Architecture Manual V9 p149.)
-     */
-    /* or %o7, %g0, %pike_pc */
-    SPARC_OR(SPARC_REG_PIKE_PC, SPARC_REG_PC, SPARC_REG_G0, 0);
-  }
-  sparc_last_pc = tmp;
-  sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;
-
   LOAD_PIKE_FP();
 
+  /* call .+8 */
+  add_to_program(0x40000002);
+  /* NOTE: No need to fill the delay slot with a nop, since %o7 is updated
+   *       immediately. (Sparc Architecture Manual V9 p149.)
+   */
   /* stw %pike_pc, [ %pike_fp + pc ] */
-  add_to_program(0xc0202000|(SPARC_REG_PIKE_PC<<25)|(SPARC_REG_PIKE_FP<<14)|
+  add_to_program(0xc0202000|(SPARC_REG_PC<<25)|(SPARC_REG_PIKE_FP<<14)|
 		 OFFSETOF(pike_frame, pc));
 }
 
@@ -227,19 +213,6 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     Pike_error("Instruction too big %d\n",b);
 #endif
     
-  {
-    static int last_prog_id=-1;
-    static size_t last_num_linenumbers=(size_t)~0;
-    if(last_prog_id != Pike_compiler->new_program->id ||
-       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
-    {
-      last_prog_id=Pike_compiler->new_program->id;
-      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
-      UPDATE_PC();
-      delay_ok = 1;
-    }
-  }
-
   addr = instrs[b].address;
 
 #ifdef PIKE_DEBUG
@@ -261,6 +234,28 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     delay_ok = 1;
     addr = (void *)f_add;
     break;
+  }
+
+  {
+    static int last_prog_id=-1;
+    static size_t last_num_linenumbers=(size_t)~0;
+    if(last_prog_id != Pike_compiler->new_program->id ||
+       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
+    {
+      last_prog_id=Pike_compiler->new_program->id;
+      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
+
+      LOAD_PIKE_FP();
+
+      /* NOTE: We fill the delay slot with the following opcode.
+       *       This works since the new %o7 is available immediately.
+       *       (Sparc Architecture Manual V9 p149.)
+       */
+      /* st %pc, [ %pike_fp, %offset(pike_frame, pc) ] */
+      add_to_program(0xc0202000|(SPARC_REG_PC<<25)|(SPARC_REG_PIKE_FP<<14)|
+		     OFFSETOF(pike_frame, pc));
+      delay_ok = 1;
+    }
   }
 
   ADD_CALL(addr, delay_ok);
@@ -369,3 +364,147 @@ const unsigned INT32 sparc_flush_instruction_cache[] = {
   /* 1000 0000 0001 0000 0000 0000 0000 0000 */
   0x80100000|(SPARC_REG_O0<<25),
 };
+
+static void sparc_disass_reg(int reg_no)
+{
+  fprintf(stderr, "%%%c%1x", "goli"[(reg_no>>3)&3], reg_no & 7);
+}
+
+void sparc_disassemble_code(void *addr, size_t bytes)
+{
+  unsigned INT32 *code = addr;
+  size_t len = (bytes+3)>>2;
+
+  while(len--) {
+    unsigned INT32 opcode = *code;
+    fprintf(stderr, "%p  %08x      ", code, opcode);
+    switch(opcode & 0xc0000000) {
+    case 0x00000000:
+      {
+	/* Sethi etc. */
+	int op2 = (opcode >> 22) & 0x7;
+	switch(op2) {
+	case 4:
+	  fprintf(stderr, "sethi %%hi(0x%08x), ", opcode << 10);
+	  break;
+	}
+	sparc_disass_reg(opcode>>25);
+	fprintf(stderr, "\n");
+      }
+      break;
+    case 0x40000000:
+      /* Call */
+      fprintf(stderr, "call 0x%p\n", ((char *)code) + (opcode << 2));
+      break;
+    case 0x80000000:
+      {
+	/* ALU operation. */
+	int op3 = (opcode >> 19) & 0x3f;
+	char buf[16];
+	char *mnemonic = NULL;
+	if (!(op3 & 0x20)) {
+	  switch(op3 & 0xf) {
+	  case SPARC_OP3_ADD:	mnemonic = "add"; break;	/* 0 */
+	  case SPARC_OP3_AND:	mnemonic = "and"; break;	/* 1 */
+	  case SPARC_OP3_OR:	mnemonic = "or"; break;		/* 2 */
+	  case SPARC_OP3_XOR:	mnemonic = "xor"; break;	/* 3 */
+	  case SPARC_OP3_SUB:	mnemonic = "sub"; break;	/* 4 */
+	  case SPARC_OP3_ANDN:	mnemonic = "andn"; break;	/* 5 */
+	  case SPARC_OP3_ORN:	mnemonic = "orn"; break;	/* 6 */
+	  case SPARC_OP3_XNOR:	mnemonic = "xnor"; break;	/* 7 */
+	  case SPARC_OP3_ADDC:	mnemonic = "addc"; break;	/* 8 */
+
+	  case SPARC_OP3_SUBC:	mnemonic = "subc"; break;	/* c */
+	  default:
+	    sprintf(buf, "op3(0x%02x)", op3 & 0xf);
+	    mnemonic = buf;
+	    break;
+	  }
+	  if (op3 & 0x10) {
+	    fprintf(stderr, "%scc ", mnemonic);
+	  } else {
+	    fprintf(stderr, "%s ", mnemonic);
+	  }
+	} else {
+	  switch(op3) {
+	  case SPARC_OP3_SLL:	mnemonic = "sll"; break;
+	  case SPARC_OP3_SRL:	mnemonic = "srl"; break;
+	  case SPARC_OP3_SRA:	mnemonic = "sra"; break;
+	  case SPARC_OP3_SAVE:	mnemonic = "save"; break;
+	  default:
+	    sprintf(buf, "op3(0x%02x)", op3);
+	    mnemonic = buf;
+	    break;
+	  }
+	  fprintf(stderr, "%s ", mnemonic);
+	}
+	sparc_disass_reg(opcode>>14);
+	fprintf(stderr, ", ");
+	if (opcode & 0x00002000) {
+	  fprintf(stderr, "0x%04x, ", opcode & 0x1fff);
+	} else {
+	  sparc_disass_reg(opcode);
+	  fprintf(stderr, ", ");
+	}
+	sparc_disass_reg(opcode >> 25);
+	fprintf(stderr, "\n");
+      }
+      break;
+    case 0xc0000000:
+      {
+	/* Memory operations. */
+	int op3 = (opcode >> 19) & 0x3f;
+	char buf[16];
+	char *mnemonic = NULL;
+	switch(op3) {
+	case 0x00:	mnemonic="lduw"; break;
+	case 0x01:	mnemonic="ldub"; break;
+	case 0x02:	mnemonic="lduh"; break;
+	case 0x03:	mnemonic="ldd"; break;
+	case 0x04:	mnemonic="stw"; break;
+	case 0x05:	mnemonic="stb"; break;
+	case 0x06:	mnemonic="sth"; break;
+	case 0x07:	mnemonic="std"; break;
+	case 0x08:	mnemonic="ldsw"; break;
+	case 0x09:	mnemonic="ldsb"; break;
+	case 0x0a:	mnemonic="ldsh"; break;
+	case 0x0b:	mnemonic="ldx"; break;
+	case 0x0e:	mnemonic="stx"; break;
+	default:
+	  sprintf(buf, "op3(0x%02x)", op3);
+	  mnemonic = buf;
+	  break;
+	}
+	if (op3 & 0x04) {
+	  /* Store */
+	  fprintf(stderr, "%s ", mnemonic);
+	  sparc_disass_reg(opcode >> 25);
+	  fprintf(stderr, ", [");
+	  sparc_disass_reg(opcode >> 14);
+	  if (opcode & 0x00002000) {
+	    fprintf(stderr, ", 0x%04x", opcode & 0x1fff);
+	  } else {
+	    fprintf(stderr, ", ");
+	    sparc_disass_reg(opcode);
+	  }
+	  fprintf(stderr, "]\n");
+	} else {
+	  /* Load */
+	  fprintf(stderr, "%s [", mnemonic);
+	  sparc_disass_reg(opcode >> 14);
+	  if (opcode & 0x00002000) {
+	    fprintf(stderr, ", 0x%04x", opcode & 0x1fff);
+	  } else {
+	    fprintf(stderr, ", ");
+	    sparc_disass_reg(opcode);
+	  }
+	  fprintf(stderr, "], ");
+	  sparc_disass_reg(opcode >> 25);
+	  fprintf(stderr, "\n");
+	}
+      }
+      break;
+    }
+    code++;
+  }
+}

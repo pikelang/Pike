@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.17 2002/11/06 16:19:19 grubba Exp $
+|| $Id: sparc.h,v 1.18 2002/11/07 14:24:24 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -84,3 +84,6 @@ void sparc_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	sparc_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	sparc_decode_program(p)
+
+void sparc_disassemble_code(void *addr, size_t bytes);
+#define DISASSEMBLE_CODE(ADDR, BYTES)	sparc_disassemble_code(ADDR, BYTES)
