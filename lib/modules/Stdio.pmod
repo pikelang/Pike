@@ -137,6 +137,10 @@ class File
 
   static void my_read_callback()
   {
+#if defined(__STDIO_DEBUG) && !defined(__NT__)
+    if(!::peek())
+      throw( ({"Read callback with no data to read!\n",backtrace()}) );
+#endif
     string s=::read(8192,1);
     if(s && strlen(s))
     {
