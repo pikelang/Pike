@@ -7,6 +7,7 @@ configure
 dependencies
 libbzip2mod.c
 libbzip2mod.cmod.compiled
+libbzip2mod_config.h.in
 linker_options
 make_variables
 modlist_headers
