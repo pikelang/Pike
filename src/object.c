@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.221 2003/02/15 14:27:18 grubba Exp $
+|| $Id: object.c,v 1.222 2003/02/15 14:59:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.221 2003/02/15 14:27:18 grubba Exp $");
+RCSID("$Id: object.c,v 1.222 2003/02/15 14:59:05 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1095,8 +1095,8 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 #define ARROW_INDEX_P(X) ((X)->type==T_STRING && (X)->subtype)
 
 PMOD_EXPORT void object_index_no_free(struct svalue *to,
-			   struct object *o,
-			   struct svalue *index)
+				      struct object *o,
+				      struct svalue *index)
 {
   struct program *p = NULL;
   int lfun,l;
@@ -1106,35 +1106,39 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
     Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
-  lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
+  if (index->type != T_LVALUE) {
+    lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
 
-  if(p->flags & PROGRAM_FIXED)
-  {
-    l=p->lfuns[lfun];
-  }else{
-    if(!(p->flags & PROGRAM_PASS_1_DONE))
+    if(p->flags & PROGRAM_FIXED)
     {
-      if(report_compiler_dependency(p))
+      l=p->lfuns[lfun];
+    }else{
+      if(!(p->flags & PROGRAM_PASS_1_DONE))
       {
+	if(report_compiler_dependency(p))
+	{
 #if 0
-	fprintf(stderr,"Placeholder deployed for %p\n", p);
+	  fprintf(stderr,"Placeholder deployed for %p\n", p);
 #endif
-	add_ref(to->u.object=placeholder_object);
-	to->type=T_OBJECT;
-	return;
+	  add_ref(to->u.object=placeholder_object);
+	  to->type=T_OBJECT;
+	  return;
+	}
       }
+      l=low_find_lfun(p, lfun);
     }
-    l=low_find_lfun(p, lfun);
-  }
-  if(l != -1)
-  {
-    push_svalue(index);
-    apply_lfun(o,lfun,1);
-    *to=sp[-1];
-    sp--;
-    dmalloc_touch_svalue(sp);
+    if(l != -1)
+    {
+      push_svalue(index);
+      apply_lfun(o, lfun, 1);
+      *to=sp[-1];
+      sp--;
+      dmalloc_touch_svalue(sp);
+    } else {
+      object_index_no_free2(to, o, index);
+    }
   } else {
-    object_index_no_free2(to,o,index);
+    low_object_index_no_free(to, o, index->u.integer);
   }
 }
 
@@ -1309,7 +1313,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
   i=ID_FROM_INT(p, f);
 
 #ifdef PIKE_DEBUG
-  if (type == T_OBJECT || type == T_FUNCTION)
+  if (type == T_OBJECT || type == T_FUNCTION || type == T_LVALUE)
     Pike_fatal ("Dangerous with the refcount-less this-pointers.\n");
 #endif
 
