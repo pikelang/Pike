@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.89 2000/12/05 21:08:17 per Exp $");
+RCSID("$Id: docode.c,v 1.90 2001/01/10 20:00:23 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -29,8 +29,41 @@ RCSID("$Id: docode.c,v 1.89 2000/12/05 21:08:17 per Exp $");
 
 static int do_docode2(node *n, INT16 flags);
 
-INT32 current_break=-1;
-INT32 current_continue=-1;
+struct statement_label_name
+{
+  struct statement_label_name *next;
+  struct pike_string *str;
+  unsigned INT16 line_number;
+};
+
+struct statement_label
+{
+  struct statement_label *prev;
+  struct statement_label_name *name;
+  INT16 emit_break_label;
+  INT32 break_label, continue_label;
+  unsigned catch_depth;
+};
+static struct statement_label *current_label = 0;
+
+static unsigned catch_depth = 0;
+
+#define PUSH_STATEMENT_LABEL do {					\
+  struct statement_label new_label__;					\
+  new_label__.prev = current_label;					\
+  if (!current_label || current_label->break_label != -2) {		\
+    /* Only cover the current label if it's in use by a statement. */	\
+    new_label__.name = 0;						\
+    new_label__.break_label = new_label__.continue_label = -1;		\
+    new_label__.catch_depth = catch_depth;				\
+    current_label = &new_label__;					\
+  }									\
+  do
+
+#define POP_STATEMENT_LABEL						\
+  while (0);								\
+  current_label = new_label__.prev;					\
+} while (0)
 
 static INT32 current_switch_case;
 static INT32 current_switch_default;
@@ -67,7 +100,7 @@ int do_jump(int token,INT32 lbl)
 
 static int lbl_cache[LBLCACHESIZE];
 
-int do_branch(INT32 lbl)
+int do_branch(INT32 lbl, int catch_escapes)
 {
   if(lbl==-1)
   {
@@ -94,6 +127,8 @@ int do_branch(INT32 lbl)
     }
 
   }
+  while (catch_escapes--)
+    emit0(F_ESCAPE_CATCH);
   emit1(F_BRANCH, lbl);
   return lbl;
 }
@@ -166,7 +201,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
     f=!!node_is_false(n);
     if(t || f)
     {
-      if(t == iftrue) do_branch( label);
+      if(t == iftrue) do_branch( label, 0);
       return;
     }
   }
@@ -433,7 +468,7 @@ static int do_docode2(node *n, INT16 flags)
     tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
-    tmp2=do_branch(-1);
+    tmp2=do_branch(-1, 0);
     low_insert_label( DO_NOT_WARN((INT32)tmp1));
 
     bdroppings=do_docode(CDDR(n), flags);
@@ -668,29 +703,27 @@ static int do_docode2(node *n, INT16 flags)
   case F_FOR:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    INT32 break_save = current_break;
-    INT32 continue_save = current_continue;
-    
+    PUSH_STATEMENT_LABEL {
+
     current_switch_jumptable=0;
-    current_break=alloc_label();
-    current_continue=alloc_label();
+    current_label->break_label=alloc_label();
+    current_label->continue_label=alloc_label();
 
     if(CDR(n))
     {
-      do_jump_when_zero(CAR(n),current_break);
+      do_jump_when_zero(CAR(n),current_label->break_label);
       tmp2=ins_label(-1);
       DO_CODE_BLOCK(CADR(n));
-      ins_label(current_continue);
+      ins_label(current_label->continue_label);
       DO_CODE_BLOCK(CDDR(n));
     }else{
       tmp2=ins_label(-1);
     }
     do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp2));
-    ins_label(current_break);
+    ins_label(current_label->break_label);
 
     current_switch_jumptable = prev_switch_jumptable;
-    current_break=break_save;
-    current_continue=continue_save;
+    } POP_STATEMENT_LABEL;
     return 0;
   }
 
@@ -701,12 +734,11 @@ static int do_docode2(node *n, INT16 flags)
   {
     node *arr;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    INT32 break_save = current_break;
-    INT32 continue_save = current_continue;
+    PUSH_STATEMENT_LABEL {
 
     current_switch_jumptable=0;
-    current_break=alloc_label();
-    current_continue=alloc_label();
+    current_label->break_label=alloc_label();
+    current_label->continue_label=alloc_label();
 
     arr=CAR(n);
     
@@ -736,13 +768,13 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
-    tmp3=do_branch(-1);
+    tmp3=do_branch(-1, 0);
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
-    ins_label(current_continue);
+    ins_label(current_label->continue_label);
     low_insert_label( DO_NOT_WARN((INT32)tmp3));
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
-    ins_label(current_break);
+    ins_label(current_label->break_label);
 
 #ifdef PIKE_DEBUG
     if(d_flag)
@@ -750,8 +782,7 @@ static int do_docode2(node *n, INT16 flags)
 #endif
 
     current_switch_jumptable = prev_switch_jumptable;
-    current_break=break_save;
-    current_continue=continue_save;
+    } POP_STATEMENT_LABEL;
     do_pop(4);
     return 0;
   }
@@ -762,12 +793,11 @@ static int do_docode2(node *n, INT16 flags)
   case F_DEC_LOOP:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    INT32 break_save = current_break;
-    INT32 continue_save = current_continue;
+    PUSH_STATEMENT_LABEL {
 
     current_switch_jumptable=0;
-    current_break=alloc_label();
-    current_continue=alloc_label();
+    current_label->break_label=alloc_label();
+    current_label->continue_label=alloc_label();
 
     tmp2=do_docode(CAR(n),0);
 #ifdef PIKE_DEBUG
@@ -778,22 +808,21 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
-    tmp3=do_branch(-1);
+    tmp3=do_branch(-1, 0);
     tmp1=ins_label(-1);
 
     DO_CODE_BLOCK(CDR(n));
-    ins_label(current_continue);
+    ins_label(current_label->continue_label);
     low_insert_label( DO_NOT_WARN((INT32)tmp3));
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
-    ins_label(current_break);
+    ins_label(current_label->break_label);
 #ifdef PIKE_DEBUG
     if(d_flag)
       emit0(F_POP_MARK);
 #endif
 
     current_switch_jumptable = prev_switch_jumptable;
-    current_break=break_save;
-    current_continue=continue_save;
+    } POP_STATEMENT_LABEL;
     do_pop(3);
     return 0;
   }
@@ -801,22 +830,20 @@ static int do_docode2(node *n, INT16 flags)
   case F_DO:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    INT32 break_save = current_break;
-    INT32 continue_save = current_continue;
+    PUSH_STATEMENT_LABEL {
 
     current_switch_jumptable=0;
-    current_break=alloc_label();
-    current_continue=alloc_label();
+    current_label->break_label=alloc_label();
+    current_label->continue_label=alloc_label();
 
     tmp2=ins_label(-1);
     DO_CODE_BLOCK(CAR(n));
-    ins_label(current_continue);
+    ins_label(current_label->continue_label);
     do_jump_when_non_zero(CDR(n), DO_NOT_WARN((INT32)tmp2));
-    ins_label(current_break);
+    ins_label(current_label->break_label);
 
     current_switch_jumptable = prev_switch_jumptable;
-    current_break=break_save;
-    current_continue=continue_save;
+    } POP_STATEMENT_LABEL;
     return 0;
   }
 
@@ -965,11 +992,11 @@ static int do_docode2(node *n, INT16 flags)
     INT32 prev_switch_case = current_switch_case;
     INT32 prev_switch_default = current_switch_default;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    INT32 break_save = current_break;
     struct pike_string *prev_switch_type = current_switch_type;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
 #endif
+    PUSH_STATEMENT_LABEL {
 
     if(do_docode(CAR(n),0)!=1)
       fatal("Internal compiler error, time to panic\n");
@@ -978,7 +1005,7 @@ static int do_docode2(node *n, INT16 flags)
       current_switch_type = mixed_type_string;
     }
 
-    current_break=alloc_label();
+    current_label->break_label=alloc_label();
 
     cases=count_cases(CDR(n));
 
@@ -1060,9 +1087,9 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_values_on_stack = prev_switch_values_on_stack;
     current_switch_type = prev_switch_type;
 
-    low_insert_label( current_break);
+    low_insert_label( current_label->break_label);
 
-    current_break=break_save;
+    } POP_STATEMENT_LABEL;
 #ifdef PIKE_DEBUG
     if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
       fatal("Stack error after F_SWITCH (underflow)\n");
@@ -1166,22 +1193,96 @@ static int do_docode2(node *n, INT16 flags)
     return 0;
 
   case F_BREAK:
-    if(current_break == -1)
-    {
-      yyerror("Break outside loop or switch.");
-    }else{
-      do_branch( current_break);
+  case F_CONTINUE:
+    if (CAR(n)) {
+      struct pike_string *name = CAR(n)->u.sval.u.string;
+      struct statement_label *label;
+      struct statement_label_name *lbl_name;
+      for (label = current_label; label; label = label->prev)
+	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
+	  if (lbl_name->str == name)
+	    goto label_found;
+      my_yyerror("No surrounding statement labeled '%s'.", name->str);
+      return 0;
+
+    label_found:
+      if (n->token == F_BREAK) {
+	if (label->break_label < 0) label->emit_break_label = 1;
+	label->break_label =
+	  do_branch(label->break_label, catch_depth - label->catch_depth);
+      }
+      else {
+	if (label->continue_label < 0)
+	  my_yyerror("Cannot continue the non-loop statement on line %d.",
+		     lbl_name->line_number);
+	else
+	  do_branch(label->continue_label, catch_depth - label->catch_depth);
+      }
     }
+
+    else
+      if (n->token == F_BREAK) {
+	if(!current_label || current_label->break_label < 0)
+	{
+	  yyerror("Break outside loop or switch.");
+	}else{
+	  do_branch( current_label->break_label,
+		     catch_depth - current_label->catch_depth);
+	}
+      }
+      else {
+	struct statement_label *label;
+	for (label = current_label; label; label = label->prev)
+	  if (label->continue_label >= 0) {
+	    do_branch( label->continue_label,
+		       catch_depth - label->catch_depth);
+	    return 0;
+	  }
+	yyerror("Continue outside loop.");
+      }
     return 0;
 
-  case F_CONTINUE:
-    if(current_continue == -1)
-    {
-      yyerror("continue outside loop or switch.");
-    }else{
-      do_branch( current_continue);
-    }
+  case F_NORMAL_STMT_LABEL:
+  case F_CUSTOM_STMT_LABEL:
+  {
+    PUSH_STATEMENT_LABEL {
+      struct statement_label *label;
+      struct statement_label_name name;
+      name.str = CAR(n)->u.sval.u.string;
+      name.line_number = n->line_number;
+
+      for (label = current_label; label; label = label->prev) {
+	struct statement_label_name *lbl_name;
+	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
+	  if (lbl_name->str == name.str) {
+	    INT32 save_line = lex.current_line;
+	    lex.current_line = name.line_number;
+	    my_yyerror("Duplicate nested labels, previous one on line %d.",
+		       lbl_name->line_number);
+	    lex.current_line = save_line;
+	    break;
+	  }
+      }
+
+      name.next = current_label->name;
+      current_label->name = &name;
+
+      if (!name.next) {
+	current_label->emit_break_label = 0;
+	if (n->token == F_CUSTOM_STMT_LABEL)
+	  /* The statement we precede has custom label handling; leave
+	   * the statement_label "open" so the statement will use it
+	   * instead of covering it. */
+	  current_label->break_label = -2;
+	else
+	  current_label->break_label = -1;
+      }
+      DO_CODE_BLOCK(CDR(n));
+      if (!name.next && current_label->emit_break_label)
+	low_insert_label(current_label->break_label);
+    } POP_STATEMENT_LABEL;
     return 0;
+  }
 
   case F_RETURN:
     do_docode(CAR(n),0);
@@ -1196,25 +1297,27 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_CATCH:
   {
-    /* FIXME: Pike 7.0 compatibility? */
-    INT32 break_save = current_break;
-    INT32 continue_save = current_continue;
+    PUSH_STATEMENT_LABEL {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
 
     current_switch_jumptable=0;
-    current_break=alloc_label();
-    current_continue=alloc_label();
+    current_label->break_label=alloc_label();
+    if (TEST_COMPAT(7,0))
+      current_label->continue_label=alloc_label();
 
+    catch_depth++;
     tmp1=do_jump(F_CATCH,-1);
     DO_CODE_BLOCK(CAR(n));
-    ins_label(current_continue);
-    ins_label(current_break);
+    catch_depth--;
+
+    if (TEST_COMPAT(7,0))
+      ins_label(current_label->continue_label);
+    ins_label(current_label->break_label);
     emit0(F_THROW_ZERO);
     ins_label(DO_NOT_WARN((INT32)tmp1));
 
-    current_break=break_save;
-    current_continue=continue_save;
     current_switch_jumptable = prev_switch_jumptable;
+    } POP_STATEMENT_LABEL;
     return 1;
   }
 
