@@ -258,14 +258,11 @@ array(array(array)) diff3 (array a, array b, array c)
   ca[sizeof (c)] = cb[sizeof (c)] = eoa;
 
   for (int i = 0, j = 0; j < sizeof (seq_ab); i++)
-    if (equal (a[i], b[seq_ab[j]]))
-      a[i] = b[seq_ab[j]], ab[i] = seq_ab[j], ba[seq_ab[j]] = i, j++;
+    if (a[i] == b[seq_ab[j]]) ab[i] = seq_ab[j], ba[seq_ab[j]] = i, j++;
   for (int i = 0, j = 0; j < sizeof (seq_bc); i++)
-    if (equal (b[i], c[seq_bc[j]]))
-      b[i] = c[seq_bc[j]], bc[i] = seq_bc[j], cb[seq_bc[j]] = i, j++;
+    if (b[i] == c[seq_bc[j]]) bc[i] = seq_bc[j], cb[seq_bc[j]] = i, j++;
   for (int i = 0, j = 0; j < sizeof (seq_ca); i++)
-    if (equal (c[i], a[seq_ca[j]]))
-      c[i] = a[seq_ca[j]], ca[i] = seq_ca[j], ac[seq_ca[j]] = i, j++;
+    if (c[i] == a[seq_ca[j]]) ca[i] = seq_ca[j], ac[seq_ca[j]] = i, j++;
 
   array(array) ares = ({}), bres = ({}), cres = ({});
   int ai = 0, bi = 0, ci = 0;
@@ -276,6 +273,11 @@ array(array(array)) diff3 (array a, array b, array c)
     int bpart = (ba[bi] == -1 && 2) | (bc[bi] == -1 && 4);
     int cpart = (cb[ci] == -1 && 4) | (ca[ci] == -1 && 1);
     int newpart = apart | bpart | cpart;
+
+    //werror ("a %3d %3d %3d %3d\n", ai, ac[ai], ab[ai], apart);
+    //werror ("b %3d %3d %3d %3d\n", bi, ba[bi], bc[bi], bpart);
+    //werror ("c %3d %3d %3d %3d\n", ci, cb[ci], ca[ci], cpart);
+    //werror ("part %d %d\n", part, newpart);
 
     if ((apart ^ bpart ^ cpart) == 7 && !(apart & bpart & cpart) &&
 	apart && bpart && cpart) {
@@ -289,30 +291,28 @@ array(array(array)) diff3 (array a, array b, array c)
     if ((part & newpart) == newpart) {
       // If the previous block had the same equivalence partition or
       // was a three-part conflict, we should tack any singleton
-      // equivalences we have onto it and mark them so they aren't
-      // used again below.
-      if (apart == 3) ares[-1] += ({a[ai++]}), apart = 8;
-      if (bpart == 6) bres[-1] += ({b[bi++]}), bpart = 8;
-      if (cpart == 5) cres[-1] += ({c[ci++]}), cpart = 8;
+      // equivalences we have onto it.
+      if (apart == 3) ares[-1] += ({a[ai++]});
+      if (bpart == 6) bres[-1] += ({b[bi++]});
+      if (cpart == 5) cres[-1] += ({c[ci++]});
     }
 
-    if (newpart == part) {
-      // The previous block had exactly the same equivalence
-      // partition, so tack anything else onto it too, but mask
-      // singleton equivalences this time.
-      if ((part & 3) == apart && apart != 3) ares[-1] += ({a[ai++]});
-      if ((part & 6) == bpart && bpart != 6) bres[-1] += ({b[bi++]});
-      if ((part & 5) == cpart && cpart != 5) cres[-1] += ({c[ci++]});
-    }
-    else {
-      // Start a new block. Wait with singleton equivalences (this may
-      // cause an extra iteration, but the necessary conditions to
-      // prevent that are tricky).
+    if (newpart != part) {
+      // Start a new block if the equivalence partition doesn't match
+      // the previous block.
       part = newpart;
-      ares += ({(part & 3) == apart && apart != 3 ? ({a[ai++]}) : ({})});
-      bres += ({(part & 6) == bpart && bpart != 6 ? ({b[bi++]}) : ({})});
-      cres += ({(part & 5) == cpart && cpart != 5 ? ({c[ci++]}) : ({})});
+      ares += ({({})}), bres += ({({})}), cres += ({({})});
     }
+
+    // Add any composite equivalences. Wait with the singletons (this
+    // may cause an extra iteration, but the necessary conditions to
+    // prevent that are tricky).
+    if (!part) ares[-1] = bres[-1] = cres[-1] += ({a[ai++]}), bi++, ci++;
+    else if (part == 3 && bpart && cpart) bres[-1] = cres[-1] += ({b[bi++]}), ci++;
+    else if (part == 6 && cpart && apart) cres[-1] = ares[-1] += ({c[ci++]}), ai++;
+    else if (part == 5 && apart && bpart) ares[-1] = bres[-1] += ({a[ai++]}), bi++;
+
+    //werror ("%O\n", ({ares[-1], bres[-1], cres[-1]}));
   }
 
   return ({ares, bres, cres});
