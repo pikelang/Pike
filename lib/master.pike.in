@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.208 2002/07/09 11:28:30 nilsson Exp $
+// $Id: master.pike.in,v 1.209 2002/07/16 18:47:20 hop Exp $
 
 #pike __REAL_VERSION__
 
@@ -1826,7 +1826,7 @@ void _main(array(string) orig_argv, array(string) env)
 	function w=_static_modules.files()->_stdout->write;
 	w("Software......Pike\n"
 	  "Version......."+version()+"\n"
-	  "WWW...........http://pike.roxen.com/\n"
+	  "WWW...........http://pike.ida.liu.se/\n"
 	  "\n");
 
 	w("pike binary..."+_pike_file_name+"\n");
