@@ -6,6 +6,7 @@ struct streamed_parser
   unsigned char *last_buffer;
   int last_buffer_size;
   struct mapping *start_tags; /* ([ tag : function_ptr ]) */
+  struct mapping *content_tags; /* ([ tag : function_ptr ]) */
   struct mapping *end_tags; /* ([ tag : function_ptr ]) */
   struct svalue *digest;
 };

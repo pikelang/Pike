@@ -20,13 +20,17 @@ notag		<	tag_start
 	notag
 
 tag_start	/	tag_end
-		WS	tag_start	(error) 
+		WS	tag_start
 		>	notag
 	tag_name
 
 tag_end		WS	skip		(pop-tag-stack)
-		>	notag		(pop-tag-stack)
+		>	notag	(error)	(pop-tag-stack)
 	tag_end
+
+tag_end_name	WS	tag_end_name
+		>	notag
+	tag_end_name
 	
 skip		>	notag
 		"	skip_fnutt_fnutt
@@ -40,25 +44,26 @@ skip_fnutt	'	skip
 	skip_fnut
 
 tag_name	WS	skip (or) tag_ws
-		>	notag
+		>	notag (or) content
 	tag_name
 
 tag_ws		WS	tag_ws
-		>	notag (check if something changed)
+		>	notag (check if something changed) (or) content
 	tag_arg_name
 
 tag_arg_name	WS	tag_post_arg_name
 		=	tag_pre_arg_name
-		>	notag (check if something changed)
+		>	notag (check if something changed) (or) content
 	tag_arg_name
 
 tag_post_arg_name	WS	tag_post_arg_name
 			=	tag_pre_arg_value
-			>	notag (check if something changed)
+			>	notag (check if something changed) (or) content
 	tag_arg_name
 
 tag_pre_arg_value	WS	tag_pre_arg_value
 			>	notag (error) (check if something changed)
+				  (or) content
 			"	tag_arg_value_fnutt_fnutt
 			'	tag_arg_value_fnutt
 	tag_arg_value
@@ -70,8 +75,33 @@ tag_arg_value_fnutt	'	tag_ws
 	tag_arg_value_fnutt
 
 tag_arg_value	WS	tag_ws
-		>	notag (check if something changed)
+		>	notag (check if something changed) (or) content
 	tag_arg_value
+
+content		<	content_tag_start
+       content
+
+content_tag_start	/	content_tag_end
+	content_skip
+
+content_tag_end		WS	content_tag_end
+			>	(error) content
+	content_tag_end_name
+
+content_tag_end_name	WS	content_tag_end_name
+			>	content (or) notag
+	content_tag_end_name
+
+content_skip	>	content
+		"	content_skip_fnutt_fnutt
+		'	content_skip_fnutt
+	content_skip
+
+content_skip_fnutt_fnutt	"	content_skip
+	content_skip_fnutt_fnutt
+
+content_skip_fnutt		'	content_skip
+	content_skip_fnutt
 
 */
 
@@ -90,6 +120,13 @@ tag_arg_value	WS	tag_ws
 #define TAG_ARG_VALUE_FNUTT_FNUTT	12
 #define TAG_ARG_VALUE_FNUTT		13
 #define TAG_ARG_VALUE			14
+#define CONTENT				15
+#define CONTENT_TAG_START		16
+#define CONTENT_TAG_END			17
+#define CONTENT_TAG_END_NAME		18
+#define CONTENT_SKIP			19
+#define CONTENT_SKIP_FNUTT_FNUTT	20
+#define CONTENT_SKIP_FNUTT		21
 
 #define ARG_TYPE_NONE			 0
 #define ARG_TYPE_IN			 1
@@ -104,6 +141,7 @@ void streamed_parser_init()
   DATA->last_buffer = 0;
   DATA->last_buffer_size = 0;
   DATA->start_tags = 0;
+  DATA->content_tags = 0;
   DATA->end_tags = 0;
 }
 
@@ -121,6 +159,10 @@ void streamed_parser_set_data( INT32 args )
 {
   DATA->end_tags = sp[-1].u.mapping;
   sp--;
+  
+  DATA->content_tags = sp[-1].u.mapping;
+  sp--;
+  
   DATA->start_tags = sp[-1].u.mapping;
   sp--;
 }
@@ -138,6 +180,23 @@ static int handle_tag( struct svalue *data_arg )
   sp++;
   lookup = set_lookup( DATA->start_tags->ind, sp-3 );
   apply_svalue( ITEM( DATA->start_tags->val ) + lookup, 3 );
+  if (sp[-1].type == T_STRING)
+    return 1;
+  else
+  {
+    pop_stack();
+    return 0;
+  }
+}
+
+static int handle_content_tag( struct svalue *data_arg )
+{
+  int lookup;
+
+  assign_svalue_no_free( sp, data_arg );
+  sp++;
+  lookup = set_lookup( DATA->content_tags->ind, sp-4 );
+  apply_svalue( ITEM( DATA->content_tags->val ) + lookup, 4 );
   if (sp[-1].type == T_STRING)
     return 1;
   else
@@ -178,7 +237,7 @@ static void add_arg()
 
 void streamed_parser_parse( INT32 args )
 {
-  int c, length, state, begin, last, ind, ind2;
+  int c, length, state, begin, last, ind, ind2, ind3, ind4, ind5, content_tag;
   char *str;
   struct svalue *sp_save;
   struct svalue *sp_tag_save;
@@ -226,11 +285,10 @@ void streamed_parser_parse( INT32 args )
       switch (str[c])
       {
        case '/':
-	ind = c;
 	state = TAG_END;
 	break;
        case WS:
-	state = TAG_START; /* error... */
+	state = TAG_START;
 	break;
        case '>':
 	last = c;
@@ -247,13 +305,13 @@ void streamed_parser_parse( INT32 args )
       switch (str[c])
       {
        case WS:
-	ind = c;
 	break;
-       case '>':
+       case '>': /* error */
 	last = c;
 	state = NOTAG;
 	break;
        default:
+	ind = c;
 	ind2 = -1;
 	state = TAG_END_NAME;
 	break;
@@ -264,7 +322,8 @@ void streamed_parser_parse( INT32 args )
       switch (str[c])
       {
        case WS:
-	ind2 = c-1;
+	if (ind2 == -1)
+	  ind2 = c-1;
 	break;
        case '>':
 	if (ind2 == -1)
@@ -338,6 +397,14 @@ void streamed_parser_parse( INT32 args )
 	  f_aggregate_mapping( 0 );
 	  state = TAG_WS;
 	  sp_tag_save = sp-1;
+	  content_tag = 0;
+	}
+	else if (list_member( DATA->content_tags, sp-1 ))
+	{
+	  f_aggregate_mapping( 0 );
+	  state = TAG_WS;
+	  sp_tag_save = sp-1;
+	  content_tag = 1;
 	}
 	else
 	{
@@ -363,6 +430,13 @@ void streamed_parser_parse( INT32 args )
 	  else
 	    ;
 	}
+	else if (list_member( DATA->content_tags, sp-1 ))
+	{
+	  f_aggregate_mapping( 0 );
+	  ind2 = c+1;
+	  state = CONTENT;
+	  break;
+	}
 	else
 	  pop_stack();
 	last = c;
@@ -378,6 +452,12 @@ void streamed_parser_parse( INT32 args )
        case WS:
 	break;
        case '>':
+	if (content_tag)
+	{
+	  ind2 = c+1;
+	  state = CONTENT;
+	  break;
+	}
 	if (handle_tag( data_arg ))
 	{
 	  if (last >= begin)
@@ -418,6 +498,12 @@ void streamed_parser_parse( INT32 args )
 	f_lower_case( 1 );
 	push_text( "" );
 	add_arg();
+	if (content_tag)
+	{
+	  ind2 = c+1;
+	  state = CONTENT;
+	  break;
+	}
 	if (handle_tag( data_arg ))
 	{
 	  if (last >= begin)
@@ -447,6 +533,12 @@ void streamed_parser_parse( INT32 args )
        case '>':
 	push_text( "" );
 	add_arg();
+	if (content_tag)
+	{
+	  ind2 = c+1;
+	  state = CONTENT;
+	  break;
+	}
 	if (handle_tag( data_arg ))
 	{
 	  if (last >= begin)
@@ -479,6 +571,12 @@ void streamed_parser_parse( INT32 args )
        case '>':
 	push_text( "" );
 	add_arg();
+	if (content_tag)
+	{
+	  ind2 = c+1;
+	  state = CONTENT;
+	  break;
+	}
 	if (handle_tag( data_arg ))
 	{
 	  if (last >= begin)
@@ -542,6 +640,12 @@ void streamed_parser_parse( INT32 args )
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
 	add_arg();
 	state = TAG_WS;
+	if (content_tag)
+	{
+	  ind2 = c+1;
+	  state = CONTENT;
+	  break;
+	}
 	if (handle_tag( data_arg ))
 	{
 	  if (last >= begin)
@@ -559,7 +663,125 @@ void streamed_parser_parse( INT32 args )
 	break;
       }
       break;
-     default:      
+
+     case CONTENT:
+      switch (str[c])
+      {
+       case '<':
+	state = CONTENT_TAG_START;
+	ind3 = c-1;
+	break;
+      }
+      break;
+
+     case CONTENT_TAG_START:
+      switch (str[c])
+      {
+       case '/':
+	state = CONTENT_TAG_END;
+	break;
+       default:
+	state = CONTENT_SKIP;
+	break;
+      }
+      break;
+      
+     case CONTENT_TAG_END:
+      switch (str[c])
+      {
+       case WS:
+	state = CONTENT_TAG_END;
+	break;
+       case '>': /* error */
+	state = CONTENT;
+	break;
+       default:
+	ind4 = c;
+	ind5 = -1;
+	state = CONTENT_TAG_END_NAME;
+	break;
+      }
+      break;
+      
+     case CONTENT_TAG_END_NAME:
+      switch (str[c])
+      {
+       case WS:
+	if (ind5 == -1)
+	  ind5 = c-1;
+	break;
+       case '>':
+	if (ind5 == -1)
+	  ind5 = c-1;
+	push_string( make_shared_binary_string( str + ind4, ind5 - ind4 ) );
+	f_lower_case( 1 );
+	if (is_same_string( sp[-1].u.string, sp[-3].u.string ))
+	{
+	  pop_stack();
+	  push_string( make_shared_binary_string( str + ind2, ind2 - ind3 ) );
+	  if (handle_content_tag( data_arg ))
+	  {
+	    if (last >= begin)
+	    {
+	      push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
+	      SWAP;
+	    }
+	    begin = c+1;
+	  }
+	  else
+	    ;
+	  
+	  last = c;
+	  sp_tag_save = 0;
+	  state = NOTAG;
+	  break;
+	}
+	else
+	{
+	  pop_stack();
+	  state = CONTENT;
+	}
+	break;
+       default:
+	break;
+      }
+      break;
+      
+     case CONTENT_SKIP:
+      switch (str[c])
+      {
+       case '>':
+	last = c;
+	state = CONTENT;
+	break;
+       case '"':
+	state = CONTENT_SKIP_FNUTT_FNUTT;
+	break;
+       case '\'':
+	state = CONTENT_SKIP_FNUTT;
+	break;
+      }
+      break;
+
+     case CONTENT_SKIP_FNUTT_FNUTT:
+      switch (str[c])
+      {
+       case '"':
+	state = CONTENT_SKIP;
+	break;
+      }
+      break;
+
+     case CONTENT_SKIP_FNUTT:
+      switch (str[c])
+      {
+       case '\'':
+	state = CONTENT_SKIP;
+	break;
+      }
+      break;
+      
+     default:
     }
   if (sp_tag_save)
     while (sp_tag_save <= sp)
@@ -587,6 +809,7 @@ void streamed_parser_finish( INT32 args )
   push_string( make_shared_binary_string( DATA->last_buffer, DATA->last_buffer_size ) );
   if (DATA->last_buffer)
     free( DATA->last_buffer );
-  DATA->last_buffer = DATA->last_buffer_size = 0;
+  DATA->last_buffer = 0;
+  DATA->last_buffer_size = 0;
 }
 
