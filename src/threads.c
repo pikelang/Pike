@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.175 2001/11/12 15:59:11 mast Exp $");
+RCSID("$Id: threads.c,v 1.176 2001/11/26 14:58:54 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -767,6 +767,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
+  /* FIXME: What about threads_disable? */
   mt_unlock_interpreter();
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
@@ -1392,6 +1393,10 @@ void f_thread_id_id_number(INT32 args)
 static void f_thread_id_result(INT32 args)
 {
   struct thread_state *th=THIS_THREAD;
+
+  if (threads_disabled) {
+    Pike_error("Cannot wait for threads when threads are disabled!\n");
+  }
 
   SWAP_OUT_CURRENT_THREAD();
 
