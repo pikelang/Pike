@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.484 2002/02/26 18:18:15 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.485 2002/02/28 12:22:03 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -35,6 +35,14 @@ test_eq(8, 0b1000);
 test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
+
+test_do([[
+  int x;
+  if (time())
+    x = 1;
+  else
+    foo: break foo;
+]])
 
 test_any([[
   int f (int i) {i = 0; return i;};
