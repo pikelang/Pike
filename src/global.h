@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.80 2003/02/11 19:25:59 mast Exp $
+|| $Id: global.h,v 1.81 2003/03/12 14:29:56 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -25,6 +25,11 @@
 #ifndef _PROTOTYPES
 #  define _PROTOTYPES
 #endif /* !_PROTOTYPES */
+
+/* And Linux wants this one... */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif /* !_GNU_SOURCE */
 
 /*
  * We want to use __builtin functions.
