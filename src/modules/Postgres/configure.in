@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.1.1.1 1997/10/14 22:07:21 grubba Exp $
+dnl $Id: configure.in,v 1.2 1997/11/07 19:34:34 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@comedia.it>
 
 AC_INIT(postgres.c)
@@ -16,7 +16,7 @@ ac_pike_postgres_skip=no
 dnl set up "reasonable" search paths
 pike_postgres_reasonable_prefixes="/usr/local /usr /opt"
 pike_postgres_reasonable_directories="postgres95 postgres pgsql /"
-pike_postgres_extra_include_directories="$HOME/include"
+pike_postgres_extra_include_directories="$HOME/include /usr/include/postgres95 /usr/include/postgres"
 pike_postgres_extra_lib_directories="$HOME/lib"
 
 for a in $pike_postgres_reasonable_prefixes
