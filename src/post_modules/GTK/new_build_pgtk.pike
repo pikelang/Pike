@@ -101,12 +101,117 @@ class Function(Class parent,
     return sprintf("Function( %O, %O )",name, return_type );
   }
 
+  static string prefix( Class c )
+  {
+    if( c->c_name() == "" )
+      return "pgtk";
+    return "p"+c->c_name();
+    
+  }
+
   string c_name( )
   {
     string base = parent->c_name();
+    if( parent->c_name() == "" )
+      return "gtk_"+name;
     if( name == "create" )
       return base+"_new";
     return base+"_"+name;
+  }
+
+  string c_prototype()
+  {
+    return "void p"+c_name()+"( INT32 args );\n";
+  }
+
+  string c_defenition()
+  {
+    string res = "";
+    void emit( string what )
+    {
+      res += what;
+    };
+    emit( "void p"+c_name()+"( INT32 args )\n" );
+    if( body  && body != ";" )
+    {
+      emit( COMPOSE( body ) );
+    } else {
+      emit( sprintf("#line %d %O\n", line, file ) );
+      emit("{\n");
+      int a = 0;
+      foreach( arg_types, Type t )
+      {
+        if( t->c_declare( a ) )
+          emit( t->c_declare( a ) );
+        a += t->c_stack_consumed( a );
+      }
+
+      a = 0;
+      int required;
+      foreach( arg_types, Type t )
+      {
+        a += t->c_stack_consumed( a );
+        if( !t->opt ) required = a;
+      }
+      if( required )
+        emit( "  if( args < "+required+" )\n"
+              "    Pike_error("+S("Too few arguments, %d required, got %d\n",
+                                  1,1,16)+",\n"
+              "               "+required+", args);\n");
+
+      a = 0;
+      foreach( arg_types, Type t )
+      {
+        if( t->c_fetch_from_stack( a ) )
+          emit( t->c_fetch_from_stack( a ) );
+        a += t->c_stack_consumed( a );
+      }
+
+
+      /* Arguments now fetched. Time to call the function. :-) */
+      int rv = a;
+      if( return_type->name != "void" )
+      {
+        emit("  {\n");
+        emit("  "+return_type->c_declare( rv = a+1 ));
+        emit("    a"+rv+" = ");
+      }
+
+      emit( "  "+c_name() + "( " );
+      if( name != "create" )
+        emit( parent->c_cast( "THIS->obj" ) );
+      a = 0;
+      array args = ({});
+
+      foreach( arg_types, Type t )
+      {
+        if( t->c_pass_to_function( a ) )
+          args += ({  t->c_pass_to_function( a ) });
+        a += t->c_stack_consumed( a );
+      }
+      if( sizeof( args ) )
+        emit( (name=="create"?"":", ")+(args*", ") );
+      emit( " );\n");
+      if( return_type->name != "void" )
+      {
+        emit("    my_pop_n_elems(args);\n");
+        emit("  "+return_type->push( "a"+rv )+"\n");
+        emit("  }\n");
+      }
+      else
+      {
+        emit("  RETURN_THIS();\n");
+      }
+      a = 0;
+      foreach( arg_types, Type t )
+      {
+        if( t->c_free( a ) )
+          emit( t->c_free( a ) );
+        a += t->c_stack_consumed( a );
+      }
+      emit("}\n\n");
+    }
+    return res;
   }
 }
 
@@ -120,9 +225,34 @@ class Signal( string name )
   }
 }
   
-class Member( string name, Type type, int set )
+class Member( string name, Type type, int set,
+              string file, int line, Class parent )
 {
   string doc = "";
+
+  string c_name( )
+  {
+    if( parent->c_name() == "" )
+      return "gtk_"+name;
+    return parent->c_name()+"_get_"+name;
+  }
+
+  string c_prototype()
+  {
+    return "void p"+c_name()+"( INT32 args );\n";
+  }
+
+  string c_defenition()
+  {
+    return
+      "void p"+c_name()+#"( INT32 args )\n"
+      "{\n"
+      "  if( args )\n"
+      "    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
+      +type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
+      "}\n\n";
+  }
+
   static string _sprintf()
   {
     return sprintf("Member( %O /* %O */ )",name,type );
@@ -132,12 +262,14 @@ class Member( string name, Type type, int set )
 
 class Type
 {
-  int star, amp, opt;
+  int star, amp, opt, copy, ref;
   array(Type) subtypes;
-
+  Type array_type;
+  
   string name;
   string modifiers;
   
+  array _s_modifiers;
   void create( string n )
   {
     array q = n/"|";
@@ -162,29 +294,37 @@ class Type
       amp = sscanf( n, "&%s", n );
       star = sscanf( n, "*%s", n );
       opt = sscanf(n, "?%s", n );
-      switch( n )
-      {
-       case "floatarray":  name = "array(float)"; break;
-       case "intarray":    name = "array(int)"; break;
-       case "doublearray": name = "array(double)"; break;
-       case "stringarray": name = "array(string)"; break;
-      }
       name = n;
       if( sscanf( name, "%[^(](%s", name, modifiers ) == 2 )
         modifiers = modifiers[..sizeof(modifiers)-2];
+      foreach( get_modifiers(), string modifier )
+      {
+        switch( modifier )
+        {
+         case "ref":
+           ref = 1;
+           _s_modifiers -= ({ "ref" });
+           break;
+
+         case "copy":
+           copy = 1;
+           _s_modifiers -= ({ "copy" });
+           break;
+        }
+      }
     }
   }
 
-  static string debug_describe()
+  string _sprintf()
   {
     if( subtypes )
-      return subtypes->debug_describe()*" | ";
-    if( opt )
-      return modifiers ? "void|"+name+"("+modifiers+")" : "void|"+name;
-    return modifiers ? name+" ( "+modifiers+" ) " : name;
+      return subtypes->_sprintf()*" | ";
+    array q = get_modifiers();
+    if( q == ({}) )
+      return name;
+    return (opt?"void|":"") + name+"( "+q*","+" )";
   }
 
-  array _s_modifiers;
   array get_modifiers()
   {
     if( _s_modifiers )
@@ -197,39 +337,83 @@ class Type
     return _s_modifiers;
   }
   
-  string _sprintf( )
-  {
-    return "Type("+debug_describe()+")";
-  }
-
   static string declare, fetch, pass, free, _push;
   static int consumed = 1;
   static int c_inited;
+  static string array_size;
+  static string _dpush;
+  string direct_push( string vv )
+  {
+    if(!c_inited) c_init();
+    if( amp )  vv = "&("+vv+")";
+    if( star ) vv = "*("+vv+")";
 
+    switch( name )
+    {
+     case "array":
+       if( !array_size )   throw("Cannot push array of unknown size");
+       if( !array_type )   throw("Cannot push array(mixed)"); 
+       return
+         "  {\n"
+         "    int i;\n"
+         "    for( i = 0; i<"+array_size+"; i++ )\n"
+         "    "+array_type->direct_push( "("+vv+"[i])" )+"\n"
+         "    f_aggregate( i );\n"
+         " }\n";
+
+     default:
+       if( !copy && !ref )
+         return push( vv );
+
+       string res ="  {\n  "+c_declare(256);
+       if( copy )
+         res += "    a256 = xalloc( sizeof( a256[0] ) );\n"
+                "    *a256=*("+vv+");\n";
+       else
+         res += "    a256 = ("+vv+");\n";
+
+       if( ref )
+       {
+         Class c;
+         if( !(c = classes[ name ]) )
+           throw(sprintf("Cannot reference %O, it's not a class type!\n",
+                         array_type));
+         if( c->is_gtkobject() )
+           res+="    gtk_object_ref( GTK_OBJECT( a256 ) );\n";
+         else
+           res+="    "+c->c_name()+"_ref( a256 );\n";
+       }
+       res += "    "+push("a256")+"\n  }\n";
+       return res;
+    }
+  }
+  
   string push( string vv )
   {
     if( _push )
-      return _push;
+      return sprintf( _push, vv );
+
     switch( name )
     {
      case "string":
-       _push = "  PGTK_PUSH_GCHAR( "+vv+" );";
+       _push = "  PGTK_PUSH_GCHAR( %s );";
        if( search( get_modifiers(), "free"  ) != -1 )
-         _push += "\n  g_free( "+vv+" );";
-       return _push;
+         _push += "\n  g_free( %[0]s );";
+       return sprintf( _push, vv );
 
      case "int":
      case "uint":
-       return "  PGTK_PUSH_INT( "+vv+" );";
+       return sprintf( (_push = "  PGTK_PUSH_INT( %s );"), vv );
 
      case "float":
      case "double":
-       return "  push_float( (FLOAT_TYPE)"+vv+" );";
+       return sprintf( (_push="  push_float( (FLOAT_TYPE)%s );"), vv );
 
      default:
        if( classes[name] )
          return classes[name]->push( vv );
-       throw("Cannot push "+name+"\n");
+       throw(sprintf("Cannot push %O, %s is not a class", this_object(),
+                     name));
     }
   }
 
@@ -316,6 +500,7 @@ class Type
            switch( opt )
            {
             case "string":
+              array_type = parse_type( SPLIT("string","type") );
               sub = "gchar **a%[0]d;";
               check = "PGTK_ISSTR(&_a%[0]d->item[_i%[0]d])";
               process = "PGTK_GETSTR(&_a%[0]d->item[_i%[0]d])";
@@ -323,24 +508,28 @@ class Type
               lfree = "  PGTK_FREESTR(a%[0]d[i%[0]d])";
               break;
             case "int":
+              array_type = parse_type( SPLIT("int","type") );
               sub = "gint **a%[0]d;";
               pt = 0;
               check = "PGTK_ISINT(&_a%[0]d->item[_i%[0]d])";
               process = "(gint)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "uint":
+              array_type = parse_type( SPLIT("uint","type") );
               sub = "guint **a%[0]d;";
               pt = 0;
               check = "PGTK_ISINT(&_a%[0]d->item[_i%[0]d])";
               process = "(guint)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "float":
+              array_type = parse_type( SPLIT("float","type") );
               sub = "gfloat **a%[0]d;";
               pt = 0;
               check = "PGTK_ISFLT(&_a%[0]d->item[_i%[0]d])";
               process = "(gfloat)PGTK_GETFLT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "double":
+              array_type = parse_type( SPLIT("double","type") );
               sub = "gfloat **a%[0]d;";
               pt = 0;
               check = "PGTK_ISFLT(&_a%[0]d->item[_i%[0]d])";
@@ -354,24 +543,26 @@ class Type
               nofree = 1;
               break;
             default:
-              if( sscanf( opt, "size=%s", check_size ) )
+              if( sscanf( opt, "size=%s", array_size ) )
               {
                 check_size =
-                     "  if( _a%[0]d->size != "+check_size+" )\n"
+                     "  if( _a%[0]d->size != "+array_size+" )\n"
                      "    Pike_error("+S("Illegal array size, wanted %d, "
-                                         "got %d\n", 1, 0, 16)+",\n                "+
-                           check_size+", _a%[0]d->size );\n";
+                                         "got %d\n", 1, 0, 16)+", "+
+                           array_size+", _a%[0]d->size );\n";
               }
               else
               {
-                throw("Illegal array option: '"+opt+"'\n");
+                if( array_type ||
+                    !(array_type = parse_type( SPLIT( opt, "type" ) ) ) )
+                  throw( sprintf("Unknown array option %O\n", opt) );
               }
               break;
            }
          }
-         if(!sub)
+         if(!sub && !array_type)
          {
-           throw( sprintf("Cannot push %O\n", this_object()) );
+           throw( sprintf("Cannot push %O", this_object()) );
          }
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
                  sub+"\n";
@@ -470,10 +661,21 @@ class Class( string name, string file, int line )
   string _cname;
   string _cdcl;
 
+
+  int is_gtkobject()
+  {
+    if( name == "GTK.Object" )
+      return 1;
+    if( inherits )
+      return inherits->is_gtkobject();
+    return 0;
+  }
+
   string c_name( )
   {
     if( _cname )
       return _cname;
+    if( name == "_global" )  return "";
     string mn = (name/".")[0];
     string cn = (name/".")[-1];
     if( mn == cn )
@@ -537,19 +739,33 @@ class Class( string name, string file, int line )
   {
     return upper_case(c_name())+"("+x+")";
   }
-  
+
+  string _push;
   string push( string vv )
   {
+    if( _push ) return sprintf( _push, vv );
     string mn = (name/".")[0];
     string nn = (name/".")[-1];
     switch( mn )
     {
      case "GDK":
-       return "  push_gdkobject( "+vv+", "+nn+" );";
+       _push="  push_gdkobject( %s, "+nn+" );";
+       break;
      case "GTK":
-       return "  push_gtkobjectclass( "+vv+", p"+c_name()+"_program );";
+     case "Gnome":
+       _push="  push_gtkobjectclass( %s, p"+c_name()+"_program );";
+       break;
     }
+    return sprintf( _push, vv );
   }
+
+  string direct_push( string x, int amp, int star )
+  {
+    if( amp )  x = "&("+x+")";
+    if( star)  x = "*("+x+")";
+    return push( x );
+  }
+  
 
   static string _sprintf()
   {
@@ -807,7 +1023,8 @@ string parse_pre_file( string file )
          IDENTIFIER("member"); name = tk;
          SEMICOLON("member");
          current_class->add_member( current_scope =
-                                    Member( name->text, type, 0 ) );
+                                    Member( name->text, type, 0,
+                                            file, tk->line, current_class) );
          break;
        case "setmember":
          NEED_CLASS("member");
@@ -815,7 +1032,8 @@ string parse_pre_file( string file )
          IDENTIFIER("member"); name = tk;
          SEMICOLON("setmember");
          current_class->add_member( current_scope =
-                                    Member( name->text,type, 1 ) );
+                                    Member( name->text,type, 1,
+                                            file, tk->line, current_class) );
          break;
 
        case "signal":
@@ -1032,7 +1250,11 @@ void main(int argc, array argv)
     exit(1);
   werror("Outputting result files...\n");
   int t2 = gauge {
-    output_plugin->output( classes, constants, global_pre );
+    array files =
+          output_plugin->output( classes, constants, global_pre );
+    if( files )
+      Stdio.write_file( destination_dir+"/files_to_compile",
+                        replace(files*"\n",".c",".o") );
   };
   werror("Total time spent...        %4.1fs\n",t1+t2);
 }
