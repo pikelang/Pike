@@ -25,12 +25,12 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.95 2002/04/18 09:37:32 grubba Exp $");
+RCSID("$Id: encode.c,v 1.96 2002/04/25 13:35:05 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
 /* Use the old encoding method for programs. */
-#define OLD_PIKE_ENCODE_PROGRAM
+/* #define OLD_PIKE_ENCODE_PROGRAM */
   
 #ifdef ENCODE_DEBUG
 /* Pass a nonzero integer as the third arg to encode_value,
