@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.180 2000/03/07 08:15:03 hubbe Exp $
+# $Id: Makefile.in,v 1.181 2000/03/22 00:55:36 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -39,11 +39,10 @@ TESTARGS = -a
 YACC=@YACC@
 YFLAGS=-d -v
 
-# If you don't have 'strchr', then add next flag to CFLAGS.
-# -Dstrchr=index -Dstrrchr=rindex
 #
-PROFIL=
-#PROFIL=-pg
+# This may be -pg
+#
+PROFIL=@PROFIL@
 
 #
 # OS dependant flags
@@ -596,6 +595,66 @@ uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
 	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o uncompress_header -lz -DSEEK_TO=`wc -c header_uncompress|sed 's/[^0-9]//g'`
 	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
 
+HFILES=						\
+  operators.h					\
+  array.h					\
+  fd_control.h					\
+  peep.h					\
+  backend.h					\
+  fdlib.h					\
+  pike_macros.h					\
+  bignum.h					\
+  fsort.h					\
+  pike_memory.h					\
+  block_alloc.h					\
+  pike_types.h					\
+  block_alloc_h.h				\
+  gc.h						\
+  port.h					\
+  builtin_functions.h				\
+  global.h					\
+  callback.h					\
+  hashtable.h					\
+  program.h					\
+  interpret.h					\
+  program_id.h					\
+  constants.h					\
+  language.h					\
+  queue.h					\
+  cpp.h						\
+  las.h						\
+  rusage.h					\
+  cyclic.h					\
+  lex.h						\
+  security.h					\
+  dmalloc.h					\
+  signal_handler.h				\
+  docode.h					\
+  main.h					\
+  stralloc.h					\
+  mapping.h					\
+  stuff.h					\
+  dynamic_buffer.h				\
+  module.h					\
+  svalue.h					\
+  dynamic_load.h				\
+  module_support.h				\
+  threads.h					\
+  efun.h					\
+  multiset.h					\
+  time_stuff.h					\
+  encode.h					\
+  object.h					\
+  error.h					\
+  opcodes.h					\
+  version.h
+
+
+export_functions.c: $(HFILES)
+	$(TMP_BINDIR)/fake_dynamic_load.pike --cpp='$(CPP)' $(HFILES) 
+
+import_functions.h: export_functions.h
+	@touch import_functions.h
 
 @dependencies@
 

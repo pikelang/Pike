@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.349 2000/03/12 14:57:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.350 2000/03/22 00:55:36 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -503,6 +503,17 @@ AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing inste
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
+AC_ARG_WITH(c_profiling, [  --with-pg              Use the gcc -pg option],
+[
+  if "x$with_c_profiling" = xyes; then
+    PROFIL=-pg
+  else
+    PROFIL=
+  fi
+],
+[
+ PROFIL=
+])
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
@@ -3405,6 +3416,7 @@ echo "CCSHARED:      $CCSHARED"
 echo "LINKFORSHARED: $LINKFORSHARED"
 echo "LIBGCC:        $LIBGCC"
 echo "WARN:          $WARN"
+echo "PROFIL:        $PROFIL"
 echo "OPTIMIZE:      $OPTIMIZE"
 echo "LDFLAGS:       $LDFLAGS"
 echo "LIBS:          $LIBS"
@@ -3428,6 +3440,7 @@ dependencies=$srcdir/dependencies
 AC_SUBST(YACC)
 AC_SUBST(INSTALL)
 AC_SUBST(WARN)
+AC_SUBST(PROFIL)
 AC_SUBST(OPTIMIZE)
 AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
