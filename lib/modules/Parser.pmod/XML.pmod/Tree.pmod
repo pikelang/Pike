@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.53 2004/11/17 17:09:09 mast Exp $
+ * $Id: Tree.pmod,v 1.54 2004/11/17 17:10:26 mast Exp $
  *
  */
 
@@ -757,9 +757,15 @@ static class VirtualNode {
   static void create(int type, string name, mapping attr, string text)
   {
     if (name) {
-      sscanf(reverse(name), "%[^/:]", mTagName);
-      mTagName=reverse(mTagName);
-      mNamespace=name[..sizeof(name)-(1+sizeof(mTagName))];
+      if (sscanf (name, "%*[^/:]%*c") == 2) {
+	sscanf(reverse(name), "%[^/:]", mTagName);
+	mTagName=reverse(mTagName);
+	mNamespace=name[..sizeof(name)-(1+sizeof(mTagName))];
+      }
+      else {
+	mTagName = name;
+	mNamespace = "";
+      }
     }
     mNodeType = type;
 //     mTagCode = kTagMapping[name] || kUnsupportedTagMapping[name];
