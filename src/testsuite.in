@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.199 1999/10/03 21:44:19 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.200 1999/10/04 20:47:53 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -94,6 +94,12 @@ cond([[all_constants()->_debug]],
 ]])
 test_do(_static_modules())
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
+
+dnl
+dnl Undocumented but important behaviour...
+dnl
+test_eq([[Stdio._stdin]],[[Stdio.stdin->_fd]])
+
 test_compile_any([[
 class Bar
 {
