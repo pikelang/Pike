@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.57 1997/10/08 15:39:36 grubba Exp $");
+RCSID("$Id: file.c,v 1.58 1997/10/17 02:32:33 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -978,7 +978,7 @@ static void file_set_buffer(INT32 args)
 #ifndef errno
 extern int errno;
 #endif /* !errno */
-int socketpair(int family, int type, int protocol, int sv[2])
+int my_socketpair(int family, int type, int protocol, int sv[2])
 {
   static int fd=-1;
   static struct sockaddr_in my_addr;
@@ -1081,6 +1081,30 @@ int socketpair(int family, int type, int protocol, int sv[2])
 
   return 0;
 }
+
+int socketpair(int family, int type, int protocol, int sv[2])
+{
+  int retries=0;
+
+  while(1)
+  {
+    int ret=my_socketpair(family, type, protocol, sv);
+    if(ret>=0) return ret;
+    
+    switch(errno)
+    {
+      case EAGAIN: break;
+
+      case EADDRINUSE:
+	if(retries++ > 10) return ret;
+	break;
+
+      default:
+	return ret;
+    }
+  }
+}
+
 
 #endif
 
@@ -1537,6 +1561,8 @@ void pike_module_init(void)
 {
   extern void port_setup_program(void);
   int e;
+
+
   for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
   {
     init_fd(e, 0);
@@ -1548,6 +1574,11 @@ void pike_module_init(void)
   init_fd(2, FILE_WRITE);
 
   init_files_efuns();
+#if 0
+  start_new_program();
+  add_storage(sizeof(struct my_file));
+  low_file_program=end_program();
+#endif
 
   start_new_program();
   add_storage(sizeof(struct file_struct));
