@@ -1,4 +1,5 @@
 AC_INIT(spider.c)
+AC_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
 AC_PROG_RANLIB
@@ -11,7 +12,9 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
         shadow.h sync.h sys/sockio.h sys/conf.h stropts.h\
 	sys/uio.h linux/mman.h)
 
-AC_HAVE_FUNCS(syslog perror strdup getpwnam getspnam mmap sendmsg getpwent setpwent endpwent)
+AC_FUNC_MMAP
+
+AC_HAVE_FUNCS(syslog perror strdup getpwnam getspnam sendmsg getpwent setpwent endpwent)
 
 AC_CHECK_TYPE(time_t, long)
 
