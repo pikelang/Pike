@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.50 2002/08/15 14:49:23 marcus Exp $");
+RCSID("$Id: multiset.c,v 1.51 2002/09/01 19:02:35 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -613,7 +613,7 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
  * blocks. Therefore all the copy-on-write functions tries to shrink
  * them. */
 
-int prepare_for_change (struct multiset *l, int verbatim)
+static int prepare_for_change (struct multiset *l, int verbatim)
 {
   struct multiset_data *msd = l->msd;
   int msd_changed = 0;
@@ -646,7 +646,7 @@ int prepare_for_change (struct multiset *l, int verbatim)
   return msd_changed;
 }
 
-int prepare_for_add (struct multiset *l, int verbatim)
+static int prepare_for_add (struct multiset *l, int verbatim)
 {
   struct multiset_data *msd = l->msd;
   int msd_changed = 0;
@@ -684,7 +684,7 @@ int prepare_for_add (struct multiset *l, int verbatim)
   return msd_changed;
 }
 
-int prepare_for_value_change (struct multiset *l, int verbatim)
+static int prepare_for_value_change (struct multiset *l, int verbatim)
 {
   struct multiset_data *msd = l->msd;
   int msd_changed = 0;
@@ -1064,6 +1064,7 @@ again:
 
     do {
       low_use_multiset_index (new.list, ind);
+      /* FIXME: Handle destructed object in ind. */
       next = low_multiset_next (new.list);
 
       /* Note: Similar code in mkmultiset_2. */
@@ -1153,6 +1154,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
 	INODE (NODE_AT (new.msd, msnode_ind, pos));
       if (values) assign_svalue_no_free (&new.node->iv.val, &ITEM (values)[pos]);
       assign_svalue_no_free (&new.node->i.ind, &ITEM (indices)[pos]);
+      /* FIXME: Handle destructed objects in new.node->i.ind. */
 
       /* Note: Similar code in multiset_set_cmp_less. */
 
@@ -1228,6 +1230,8 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
   struct multiset_data *msd = l->msd;
   struct rb_node_hdr *node;
   ONERROR uwp;
+
+  /* FIXME: Handle destructed object in key? */
 
   /* Note: Similar code in low_multiset_track_eq. */
 
@@ -1327,7 +1331,7 @@ static enum find_types low_multiset_find_le_gt (
 	    *found = RBNODE (node);
 	    return FIND_DESTRUCTED;
 	  }
-	  /* FIXME: Use special variant of set_svalue_cmpfun so we
+	  /* TODO: Use special variant of set_svalue_cmpfun so we
 	   * don't have to copy the index svalues. */
 	  INTERNAL_CMP (key, &tmp, cmp_res);
 	  cmp_res = cmp_res >= 0 ? 1 : -1;
@@ -1381,7 +1385,7 @@ static enum find_types low_multiset_find_lt_ge (
 	    *found = RBNODE (node);
 	    return FIND_DESTRUCTED;
 	  }
-	  /* FIXME: Use special variant of set_svalue_cmpfun so we
+	  /* TODO: Use special variant of set_svalue_cmpfun so we
 	   * don't have to copy the index svalues. */
 	  INTERNAL_CMP (key, &tmp, cmp_res);
 	  cmp_res = cmp_res <= 0 ? -1 : 1;
@@ -1423,6 +1427,8 @@ PMOD_EXPORT ptrdiff_t multiset_find_lt (struct multiset *l, struct svalue *key)
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
   check_svalue (key);
+
+  /* FIXME: Handle destructed object in key? */
 
   add_ref (msd);
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
@@ -1466,6 +1472,8 @@ PMOD_EXPORT ptrdiff_t multiset_find_ge (struct multiset *l, struct svalue *key)
   debug_malloc_touch (msd);
   check_svalue (key);
 
+  /* FIXME: Handle destructed object in key? */
+
   add_ref (msd);
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
 
@@ -1508,6 +1516,8 @@ PMOD_EXPORT ptrdiff_t multiset_find_le (struct multiset *l, struct svalue *key)
   debug_malloc_touch (msd);
   check_svalue (key);
 
+  /* FIXME: Handle destructed object in key? */
+
   add_ref (msd);
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
 
@@ -1549,6 +1559,8 @@ PMOD_EXPORT ptrdiff_t multiset_find_gt (struct multiset *l, struct svalue *key)
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
   check_svalue (key);
+
+  /* FIXME: Handle destructed object in key? */
 
   add_ref (msd);
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
@@ -1743,7 +1755,7 @@ static enum find_types low_multiset_track_eq (
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
-	/* FIXME: Use special variant of set_svalue_cmpfun so we don't
+	/* TODO: Use special variant of set_svalue_cmpfun so we don't
 	 * have to copy the index svalues. */
 	INTERNAL_CMP (key, &tmp, cmp_res);
       },
@@ -1829,7 +1841,7 @@ static enum find_types low_multiset_track_le_gt (
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
-	/* FIXME: Use special variant of set_svalue_cmpfun so we don't
+	/* TODO: Use special variant of set_svalue_cmpfun so we don't
 	 * have to copy the index svalues. */
 	INTERNAL_CMP (key, low_use_multiset_index (RBNODE (node), tmp), cmp_res);
 	cmp_res = cmp_res >= 0 ? 1 : -1;
@@ -1957,7 +1969,7 @@ PMOD_EXPORT void multiset_insert (struct multiset *l,
 	MSD->root = NEW;						\
 	low_rb_init_root (HDR (NEW));					\
 	break;								\
-      default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));		\
+      default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));	\
     }									\
   } while (0)
 
@@ -1986,6 +1998,8 @@ PMOD_EXPORT ptrdiff_t multiset_insert_2 (struct multiset *l,
   check_svalue (ind);
   if (val) check_svalue (val);
 #endif
+
+  /* FIXME: Handle destructed object in ind. */
 
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
 
@@ -2097,6 +2111,8 @@ PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
   check_svalue (ind);
   if (val) check_svalue (val);
 #endif
+
+  /* FIXME: Handle destructed object in ind. */
 
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
 
@@ -2210,6 +2226,8 @@ PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
   if (nodepos >= 0) check_msnode (l, nodepos, 1);
 #endif
 
+  /* FIXME: Handle destructed object in ind. */
+
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
 
   while (1) {
@@ -2230,6 +2248,7 @@ PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
 
       LOW_RB_TRACK_FIRST (rbstack, node);
       low_use_multiset_index (RBNODE (node), tmp);
+      /* FIXME: Handle destructed object in tmp. */
       TEST_LESS (msd, &tmp, ind, cmp_res);
 
       if (l->msd != msd) {
@@ -2274,6 +2293,7 @@ PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
 	union msnode *next = low_multiset_next (existing);
 	if (next) {
 	  low_use_multiset_index (next, tmp);
+	  /* FIXME: Handle destructed object in tmp. */
 	  TEST_LESS (msd, &tmp, ind, cmp_res);
 	  if (l->msd != msd) {
 	    if (!sub_ref (msd)) free_multiset_data (msd);
@@ -2305,6 +2325,7 @@ PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
       cmp_res = 0;
       while (RBNODE (node) != existing) {
 	low_use_multiset_index (RBNODE (node), tmp);
+	/* FIXME: Handle destructed object in tmp. */
 	TEST_LESS (msd, &tmp, ind, cmp_res);
 	if (cmp_res < 0) break;
 	LOW_RB_TRACK_PREV (rbstack, node);
@@ -2377,6 +2398,9 @@ PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
   check_svalue (ind);
+
+  /* FIXME: Handle destructed object in ind. */
+
   SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
 
   while (1) {
@@ -2478,6 +2502,7 @@ PMOD_EXPORT void multiset_delete_node (struct multiset *l,
       return;
     }
     low_use_multiset_index (existing, ind);
+    /* FIXME: Handle destructed object in ind. */
 
     add_ref (msd);
     find_type = low_multiset_track_le_gt (msd, &ind, &rbstack);
@@ -3160,7 +3185,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
     struct multiset_data *res_msd = m.res->msd;
     struct svalue a_ind, b_ind;
 
-    Pike_fatal ("FIXME: Merge of multisets with external sort function "
+    Pike_fatal ("TODO: Merge of multisets with external sort function "
 	   "not yet implemented.\n");
 
     LOW_RB_MERGE (
@@ -3193,7 +3218,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 	     * we must do an array-like merge between them in that
 	     * case. Knowledge that LOW_RB_MERGE traverses the trees
 	     * backwards is used here. */
-	    /* FIXME */
+	    /* TODO */
 	  }
 	}
       },
@@ -3299,7 +3324,7 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
   SET_ONERROR (uwp, do_free_multiset, res);
 
   for (; idx < count; idx++)
-    /* FIXME: This is inefficient as long as merge_multisets
+    /* TODO: This is inefficient as long as merge_multisets
      * always is linear. */
     merge_multisets (res, vect[idx].u.multiset,
 		     PIKE_MERGE_DESTR_A | PIKE_ARRAY_OP_ADD);
@@ -3309,9 +3334,10 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
 }
 
 /* Differences in the weak flags are ignored, but not the order
- * function and whether there are values or not. The order is always
- * significant, even in the parts of the multisets where the order
- * function doesn't define it. */
+ * function and whether there are values or not. Since the order
+ * always is well defined - even in the parts of the multisets where
+ * the order function doesn't define it - it's also always
+ * significant. */
 PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
 				  struct processing *p)
 {
@@ -3546,17 +3572,17 @@ node *make_node_from_multiset (struct multiset *l)
   }
 }
 
-/*! @decl multiset aggregate_multiset(mixed ... elems)
- *!
- *! Construct a multiset with the arguments as indices. The multiset
- *! will not contain any values. This method is most useful when
- *! constructing multisets with @[map] or similar; generally, the
- *! multiset literal syntax is handier: @code{(<elem1, elem2, ...>)@}
- *! With it, it's also possible to construct a multiset with values:
- *! @code{(<index1: value1, index2: value2, ...>)@}
- *!
- *! @seealso
- *!   @[sizeof()], @[multisetp()], @[mkmultiset()]
+/* @decl multiset aggregate_multiset(mixed ... elems)
+ *
+ * Construct a multiset with the arguments as indices. The multiset
+ * will not contain any values. This method is most useful when
+ * constructing multisets with @[map] or similar; generally, the
+ * multiset literal syntax is handier: @code{(<elem1, elem2, ...>)@}
+ * With it, it's also possible to construct a multiset with values:
+ * @code{(<index1: value1, index2: value2, ...>)@}
+ *
+ * @seealso
+ *   @[sizeof()], @[multisetp()], @[mkmultiset()]
  */
 PMOD_EXPORT void f_aggregate_multiset (INT32 args)
 {
@@ -4370,6 +4396,7 @@ void check_multiset (struct multiset *l)
 #endif
 
 	    nextpos = MSNODE2OFF (msd, next);
+	    /* FIXME: Handle destructed index in node. */
 	    INTERNAL_CMP (low_use_multiset_index (node, tmp1), &tmp2, cmp_res);
 	    if (cmp_res > 0)
 	      Pike_fatal ("Order failure in multiset data with internal order.\n");
@@ -4396,6 +4423,7 @@ void check_multiset (struct multiset *l)
 	    if (indval) check_svalue (&node->iv.val);
 #endif
 	    low_push_multiset_index (node);
+	    /* FIXME: Handle destructed index in node. */
 
 	    nextpos = MSNODE2OFF (msd, next);
 	    EXTERNAL_CMP (&msd->cmp_less);
@@ -5212,7 +5240,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.50 2002/08/15 14:49:23 marcus Exp $");
+RCSID("$Id: multiset.c,v 1.51 2002/09/01 19:02:35 mast Exp $");
 
 struct multiset *first_multiset;
 
