@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.31 1999/06/27 21:36:39 grubba Exp $
+ * $Id: sql.pike,v 1.32 1999/07/01 02:16:00 per Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.31 1999/06/27 21:36:39 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.32 1999/07/01 02:16:00 per Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -271,32 +271,30 @@ void create(void|string|object host, void|string db,
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
-  if (res_obj) {
+  if (res_obj) 
+  {
     /* Not very efficient, but sufficient */
     array(mapping(string:mixed)) res = ({});
     array(string) fieldnames;
     array(mixed) row;
-
     array(mapping) fields = res_obj->fetch_fields();
 
-    fieldnames = Array.map(res_obj->fetch_fields(),
-			   lambda (mapping(string:mixed) m) {
-			     return((m->table||"") + "." + m->name);
-			   } ) +
-      fields->name;
+    fieldnames = (Array.map(fields,
+                            lambda (mapping(string:mixed) m) {
+                              return((m->table||"") + "." + m->name);
+                            }) +
+                  fields->name);
 
-    if (case_convert) {
+    if (case_convert)
       fieldnames = Array.map(fieldnames, lower_case);
-    }
 
-    while (row = res_obj->fetch_row()) {
+
+    while (row = res_obj->fetch_row())
       res += ({ mkmapping(fieldnames, row + row) });
-    }
 
     return(res);
-  } else {
-    return(0);
   }
+  return 0;
 }
 
 //. - error
