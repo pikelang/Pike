@@ -387,7 +387,6 @@ testfont binary
 /src/modules/HTTPLoop/timeout.h foreign_ident
 /src/modules/HTTPLoop/util.c foreign_ident
 /src/modules/HTTPLoop/util.h foreign_ident
-/src/modules/Image/Makefile foreign_ident
 /src/modules/Image/Makefile.in foreign_ident
 /src/modules/Image/acconfig.h foreign_ident
 /src/modules/Image/assembly.h foreign_ident
@@ -445,7 +444,7 @@ testfont binary
 /src/modules/Image/poly.c foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
 /src/modules/Image/search.c foreign_ident
-/src/modules/Image/testsuite.in.in foreign_ident
+/src/modules/Image/testsuite.in foreign_ident
 /src/modules/Java/Makefile.in foreign_ident
 /src/modules/Java/acconfig.h foreign_ident
 /src/modules/Java/jvm.c foreign_ident

@@ -1,0 +1,509 @@
+dnl $Id: testsuite.in,v 1.14 2002/12/12 16:40:41 nilsson Exp $
+
+test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
+  "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
+Image.PNM.decode("P4\n5 5\nx¸Øèð") )
+
+test_eq([[ Image.GIF.decode(MIME.decode_base64(
+  "R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs=")) ]],
+Image.PNM.decode("P4\n5 5\nx\00èØèð") )
+
+test_true( objectp(Image.Image()) )
+test_false( Image.Image()->xsize() )
+test_false( Image.Image()->ysize() )
+
+test_true( objectp(Image.Image(100,100)) )
+test_eq( Image.Image(100,100)->xsize(), 100)
+test_eq( Image.Image(100,100)->ysize(), 100)
+test_false( Image.Image(100,100)!=0 )
+
+define(test_too_big,[[
+test_true( $1>0 )
+test_eval_error([[
+  // This should work if you have $1*2*4 bytes of memory
+  Image.Image($1,2)
+]])
+test_eval_error( Image.Image($1/32768,65537) )
+test_eval_error( Image.Image($1/(32768*3),65537) )
+]])
+
+test_too_big(0x7fffffff)
+test_too_big(0x7ffffffff)
+test_too_big(0x7fffffffff)
+test_too_big(0x7ffffffffff)
+
+test_true( objectp(Image.Image(1000,1000,17,42,96)) )
+test_eq( Image.Image(1000,1000,17,42,96)->xsize(), 1000)
+test_eq( Image.Image(1000,1000,17,42,96)->ysize(), 1000)
+test_false( Image.Image(1000,1000,17,42,96)!=({17,42,96}) )
+
+define(test_cx,[[
+test_do( add_constant("cx", c1) )
+$1
+test_do( add_constant("cx", c2) )
+$1
+test_do( add_constant("cx", c3) )
+$1
+test_do( add_constant("cx") )
+]])
+
+define(test_color,[[
+test_do( add_constant("c1", Image.Color($1)) )
+test_do( add_constant("c2", Image.Color($2, $3, $4)) )
+test_do( add_constant("c3", Image.Color.rgb($2, $3, $4)) )
+test_eq( c1, c2 )
+test_eq( c2, c3 )
+test_eq( c3, c1 )
+test_cx([[ test_eq( c1->r, $2 ) ]])
+test_cx([[ test_eq( c1->g, $3 ) ]])
+test_cx([[ test_eq( c1->b, $4 ) ]])
+test_cx([[ test_equal( c1->rgb(), ({ $2, $3, $4 }) ) ]])
+test_cx([[ test_equal( cx->hsv(), ({ $5, $6, $7 }) ) ]])
+test_cx([[ test_eq( cx->hex(), sprintf("#%02x%02x%02x", $2, $3, $4) ) ]])
+test_cx([[ test_eq( cx->greylevel(), $8 ) ]])
+test_cx([[ test_eq( cx->grey()->r, $8 ) ]])
+test_cx([[ test_eq( sprintf("%t", cx->cmyk()[*])*"", "float"*4) ]])
+test_cx([[ test_eq( sprintf("%t", cx->hsvf()[*])*"", "float"*3) ]])
+test_cx([[ test_eq( sprintf("%t", cx->rgbf()[*])*"", "float"*3) ]])
+test_cx([[ test_do( cx->light() ) ]])
+test_cx([[ test_do( cx->dark() ) ]])
+test_cx([[ test_do( cx->neon() ) ]])
+test_cx([[ test_do( cx->dull() ) ]])
+test_cx([[ test_do( cx->bright() ) ]])
+test_cx([[ test_eq( cx->name(), $1) ]])
+test_cx([[ test_eq( (string)cx, $1) ]])
+test_cx([[ test_equal( (array)cx, ({ $2, $3, $4 }) ) ]])
+test_do( add_constant("c1") )
+test_do( add_constant("c2") )
+test_do( add_constant("c3") )
+]])
+
+test_color( "black",   0,   0,   0,   0,   0,   0,   0 )
+test_color( "blue",    0,   0,   255, 170, 255, 255, 41 )
+test_color( "cyan",    0,   255, 255, 127, 255, 255, 168 )
+test_color( "green",   0,   255, 0,   85,  255, 255, 127 )
+test_color( "magenta", 255, 0,   255, 212, 255, 255, 128 )
+test_color( "red",     255, 0,   0,   0,   255, 255, 87 )
+test_color( "white",   255, 255, 255, 0,   0,   255, 255 )
+test_color( "yellow",  255, 255, 0,   42,  255, 255, 214 )
+
+test_true( arrayp(indices(Image.Color)) )
+test_true( stringp(indices(Image.Color)[0]) )
+test_true( sizeof(indices(Image.Color))>8 )
+
+test_true( arrayp(values(Image.Color)) )
+test_true( objectp(values(Image.Color)[0]) )
+test_eq( sizeof(indices(Image.Color)), sizeof(values(Image.Color)) )
+
+define(test_img,[[
+test_do([[
+  object img = Image.Image(100,100)->test(42);
+  img->setpixel(2,2,0,255,0);
+  add_constant("img", img);
+]])
+$1
+test_do( add_constant("img") )
+]])
+
+test_img([[ test_false( equal(img->max(),({0,0,0})) ) ]])
+test_img([[ test_true( objectp( img->setpixel(3,3,0,255,0) ) ) ]])
+test_img([[ test_false( img==img->invert() ) ]])
+test_img([[ test_eq( img->invert(), img->invert() ) ]])
+
+test_img([[ test_eq( img->copy(), img ) ]])
+test_img([[ test_eq( img->copy(25,25,75,75), img->copy(25,25,75,75) ) ]])
+test_img([[ test_false( img==img->copy(25,25,75,75) ) ]])
+test_img([[ test_false( img->copy()==img->invert()->copy() ) ]])
+
+test_img([[ test_false( img==img->clear() ) ]])
+test_img([[ test_eq( img->clear(0,0,0), 0 ) ]])
+test_img([[ test_eq( img->clear(1,255,0), ({1,255,0}) ) ]])
+
+test_img([[ test_eq( img, img->clone() ) ]])
+test_img([[ test_fales( img->clone()==img->invert()->clone() ) ]])
+
+test_do([[
+  object img = Image.Image(20,20);
+  img->box(4,4,8,8,Image.Color.red);
+  img->box(8,8,12,12,Image.Color.green);
+  img->box(12,4,16,8,Image.Color.blue);
+  img->setcolor(255,255,255);
+  add_constant("img", img);
+]])
+test_equal( img->find_autocrop(), ({ 4, 4, 16, 12 }) )
+test_equal( img->find_autocrop(5), ({ -1, -1, 21, 17 }) )
+test_equal( img->find_autocrop(-2), ({ 6, 6, 14, 10 }) )
+test_equal( img->find_autocrop(0,1,0,0,0), ({ 4, 0, 19, 19 }) )
+test_equal( img->find_autocrop(0,0,1,0,0), ({ 0, 0, 16, 19 }) )
+test_equal( img->find_autocrop(0,0,0,1,0), ({ 0, 4, 19, 19 }) )
+test_equal( img->find_autocrop(0,0,0,0,1), ({ 0, 0, 19, 12 }) )
+test_eq( img->autocrop(),[[
+ Image.GIF.decode(MIME.decode_base64(
+   "R0lGODlhDQAJAJEAAAAAAP8AAAAA/wD/ACwAAAAADQAJAAECIkwcACD"
+   "Sck5azkE5mb1yaYsNg7gJ\r\nHjCOw3mqI+u5K4y6ZwEAOw==")) ]])
+test_eq( img->autocrop(0,1,0,0,0),[[
+ Image.GIF.decode(MIME.decode_base64(
+   "R0lGODlhEAAUAJEAAAAAAP8AAAAA/wD/ACwAAAAAEAAUAAECOQR8l6r"
+   "c/SCUc54QcFBCdKFk2XZ4\r\nHniNJHB6ocq1bzYMdYtCtj1YDW/zKY"
+   "A9IYBoNCaVSmaz+YQ2CgA7")) ]])
+test_eq( img->autocrop(0,0,1,0,0),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhEQAUAJEAAAAAAP8AAAAA/wD/ACwAAAAAEQAUAAECOgR8l6"
+    "rc/SCUc1YVQg5KCC80msYd\r\n3xdiZAmgn7h2LqwNg+2m030PFtS7"
+    "/RpB3/BQPB6Vy2XT6YRGfwUAOw==")) ]])
+test_eq( img->autocrop(0,0,0,1,0),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhFAAQAJEAAAAAAP8AAAAA/wD/ACwAAAAAFAAQAAECMwQckX"
+    "Eg8kRrQCl2IJT0XNVsUOd9\r\noUhW1zCwIpcebTvEKd3aJF7rFO/z"
+    "BYVCYrF4RCJjBQA7")) ]])
+test_eq( img->autocrop(0,0,0,0,1),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhFAANAJEAAAAAAP8AAAAA/wD/ACwAAAAAFAANAAECNQR8l6"
+    "rc/SCUc1ZrQQg7KCGAgsVx\r\n3hGG42Ryn7pC7QnAcdMOg25nyr4b"
+    "+CbB3RBSFB5/RUsBADs=")) ]])
+test_eq( img->autocrop(5),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhFwATAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAA"
+    "AAFwATAAIDVkiku+0OOgBo\r\nrRdjPPf2H9CFYTiWJbdsQdAGmCDI"
+    "gkqwrhvPs43nO54Pk9NVeL3KqTgYNJE15arkdA5Kp43ViZ2G\r\ntl"
+    "eT9wPu3lKpYTqdXX/abnX8TUgAADs=")) ]])
+test_eq( img->autocrop(5,0,0,0,1),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhHgAXAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAA"
+    "AAHgAXAAIDbUiku+0Oxjgp\r\ntfdmrXnvHwiKIwEAJ4qq67qOrhvL"
+    "KEzTt43jrg4EAWBgJRAUBS+QKxgcooxGZE25agaJUSnAZ3UC\r\nsl"
+    "puczAgg5MdXrk8wPlc7LKbSou3ae+VfZ7m8dAaf39TfYM8eYaAF4mH"
+    "EQkAOw==")) ]])
+test_eq( img->autocrop(5,0,0,1,0),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhHgAaAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAA"
+    "AAHgAaAAIDdEiku+0OxjgJ\r\nABdjvfemlOeJIwZGZZkCp6OqZbt4"
+    "QVAHmyDowifTNltut/O1gMEh0XhCCjHEoum3CQYGA2y0Nz2q\r\nst"
+    "mBSmb5hsUxaumMHpFh7LEaBmPN63IvHvbe8+9+TCCBeU2EbmRkiYqK"
+    "jI2Nj5CQko0JADs=")) ]])
+test_eq( img->autocrop(5,0,1,0,0),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhGwAeAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAA"
+    "AAGwAeAAIDfEiku+0Oxjgp\r\ntfdmrXnvHwheAFCaJpqmqcayL2y6"
+    "slzTts3iQBD4gZRAMBS0SKnfL2giEo0zpGn5Ez6hAB6VCbhi\r\ntc"
+    "vBQOw9UnTj8cDGY6nHbCnsvZa1U/T4WaczR/p9UXuBOneEfg6HhXKK"
+    "iAuNdiMjkpOTlZaWmJmZ\r\nHQkAOw==")) ]])
+test_eq( img->autocrop(5,1,0,0,0),[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhGgAeAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAA"
+    "AAGgAeAAIDekiku+0Oxjgp\r\ntfdmrXnvH3gBAFmWJ4qi47q6L9DG"
+    "cTzXNUutQdAHKIFAKNBFeD5fcDg0OpDJJdO5gCpLzGbplgwM\r\nBt"
+    "9scburgcGD2m2FBqvLsXbaBn/J38dcjkrY78l5fzlrgiuEhYBPiHSB"
+    "i3wiIpCRkZOUlJaXlwQJ\r\nADs=")) ]])
+test_do( add_constant("img") )
+
+test_equal( Image.Image(10,10,0,0,0)->max(), ({0,0,0}) )
+test_equal( Image.Image(10,10,17,42,36)->max(), ({17,42,36}) )
+test_equal( Image.Image(10,10,0,0,0)->setpixel(5,5,17,42,36)->max(),
+  ({17,42,36}) )
+test_equal( Image.Image(10,10,0,0,0)
+  ->setpixel(2,2,1,2,3)
+  ->setpixel(3,3,17,42,36)
+  ->setpixel(4,4,3,2,1)
+  ->max(), ({17,42,36}) )
+test_equal( Image.Image(10,10,0,0,0)
+  ->setpixel(2,2,17,2,3)
+  ->setpixel(3,3,2,42,5)
+  ->setpixel(4,4,3,2,36)
+  ->max(), ({17,42,36}) )
+
+test_any_equal([[
+  object img=Image.Image(10,10,255,0,0);
+  return img->getpixel(5,5); ]], ({255,0,0}) )
+test_any_equal([[
+  object img=Image.Image(10,10,255,0,0);
+  img->setpixel(5,5,1,2,3);
+  return img->getpixel(5,5); ]], ({1,2,3}) )
+
+test_any_equal([[
+  object img=Image.Image(10,10,255,0,0);
+  img->setpixel(5,5,0,255,0,127);
+  return img->getpixel(5,5); ]], ({127,128,0}) )
+
+test_any([[
+  object img=Image.Image(100,100,0,0,0);
+  foreach (({40,50,60}),int z)
+  { 
+     img->line(50-z,0,50,50,255,255,255);
+     img->line(50-z,100,50,50,255,255,255);
+     img->line(100,50+z,50,50,255,255,255);
+     img->line(100,50-z,50,50,255,255,255);
+  }
+  return img;
+]],[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhZABkAIAAAAAAAP///ywAAAAAZABkAAAC/wxwiGC7/l6UktZ6Mdatdr9toSiSZQmCjPihqPu+MdLST23Lsr7vGF7DrXw+YhEF3AiFx2NTFiwtnU5qMYpUVqvbrAT7/XG5Y3HYfD6TyWsw+vZms68qaTw3n/tazE/AvcCkpwcH95OkFkhIaGdYdwfIyDikePeIVzk5yacFdUmpOcfpIUiaiBnK5Wfp6YiaerT6SecKCrtX++o0mnnb+vrHyKvr+xgpKttbbDxLmGy77Hi86VoK28FnrfesTY3a7VwdjTc8HowJToZ9Ok6unLoemA6fOR+L3u5Fab/T8JzfaR89UPyKnYsnjFzBaP6IVWnoEGAjiKLcSXyYY6EihP8Xd2VkY8Cfxo7BKN4z2RHkCn4hI6Y8CS0LypcVW/ZbOZImCJsvSuq85hMJz5/wzrEYSrRonz85kwoFYtSpwagMqEr1xfRG06u4aGzliusrWFpjASIta1Ae2qnYrK51RjXr201u5c5FttTt3X561YqVmtVa0L2ezooxTDgM4sNVE2tZ/Njl25Ysh/zNF7SgzcsMP6qzzPkWxJEUQ4caHU4gWtQJVXM9+E7lPtOq6g38RxNhaJO0u7oeSFCn7mUc+07t1ft3zLTI23Fcfk0cZmXJg8cmTp02N5K5OEctN/3d33LVWXT3Rv0nbuM3a5XvmQv6r2+A47ME/35+zHmR8rdPj82eeM2ox45k/a1WoHwHrgWeLlYhwmCC31ni32cJWkYhYdM4yAqCEmboGDTdTBGiiPB1eNeGy1UIXHwrljjLNCxi9UYfMAZkiI034hhIAQA7"))
+]])
+
+test_do( add_constant("img", Image.Image(100,100,0,0,0)) )
+test_do( img->line(40,0,0,40) )
+test_equal( img->max(), ({ 0, 0, 0 }) )
+test_do( img->line(10,10,20,20,128,13,42) )
+test_equal( img->max(), ({ 128, 13, 42 }) )
+test_do( img->setcolor(200,19,99) )
+test_do( img->line(30,20,20,30) )
+test_equal( img->max(), ({ 200, 19, 99 }) )
+test_do( add_constant("img") )
+
+test_any([[
+  object img=Image.Image(100,100,0,0,0);
+  foreach (({40,60,50}),int z)
+  { 
+     img->box(z,0,50,50,255,z,255);
+     img->box(z,100,50,50,255,z,0);
+     img->box(100,z,50,50,0,z,255);
+     img->box(0,z,50,50,0,z,0);
+  }
+  return img;
+]],[[
+  Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhZABkALMAAAAAAAAyAAA8AAAoAP8oAP8yAAAo/wAy/wA8//88AP8o//8y//88/wAAAAAAAAAAACwAAAAAZABkAAME/xAAOWe1Fue8OVAKGIbhwjAniqKe17ouHMcznZEkbq7rats/IFA4nORypV6PVSw2nU4bErlb+qJRbDY7zVWtjO1WPKZ1SV9rubxmf86K9NLtpkfhcfC1XudL4XI9fX2DZoB6TISEijeHiIuLkBZ4gXuRkYSUiGGYmJmOep6efZqPo6NspaGoqGOqYK2tW69qsrJOtHO3t0O5gry8f2eVicHBHr6Wx8eToLDMzI3Dm9HRzdOm1tHJxdrB3Jzex+DizOTl38616Lfn7LLu76jx8p709ZH3+J/Yq/uY+v65CSiwDMGCs9TpYjZgQEOHDiFGjDiRIkWLFy9mJMbAgAGPH/8/hhQpkmTJkidRatS4kiVLly8HcESJkmbNmjdLxoy5kydPhzNx4hQ6dOjPn0eRUgxatGjTokqVRuXJ1KlTqyqlStWqserVq18NbN06dukmsGDRfiRLlq3Ms2nTgm3blqxXuXJr1q0r9W7evCIDBBA8eHBhw4YRJ068mDFjxwEOHJA8eXJly5YxZ868mTNnzgIEhBYtmnTp0qdRo1a9enXrAggQxJYtm3bt2rdx49a9e/du166BBw8+nLgA2L59J1eunLly48ahR48uGnnz5texY8dNnXp376itb98+njx38ODRGxdv3nz75unTxw/O3r17++fly9df/f59/77tt5/lgMf995+BtQ044H71HXggeQsumF6DDz7YnDYEEJChhhpqWEACCYAYYoghIrRIhx2i+CGJJJJoIiEppuhhiy2W+GIdMsq4Yo0u3uhGjinuyGMCPv4I5IxD2ljkGEcimeSSZTRJgJA8Qslkk1TWaOUWUmbZ4pZZdJmkkmAOIeaYZTpx5pNpmonlmES2CcSaQ8o555to2kkDnVXqGQOfWvrpAqBfCuoBoT0amgGiZCoKAKNxOjoBpJJaQGmlj+LJZqWXcqppnZh2KqmojpKqqKmGoiqoqn6yqqerdsIqp6xt0pqmrYtEAAA7"))
+]])
+
+test_do( add_constant("img", Image.Image(100,100,0,0,0)) )
+test_do( img->box(40,0,0,40) )
+test_equal( img->max(), ({ 0, 0, 0 }) )
+test_do( img->box(10,10,20,20,128,13,42) )
+test_equal( img->max(), ({ 128, 13, 42 }) )
+test_do( img->setcolor(200,19,99) )
+test_do( img->box(30,20,20,30) )
+test_equal( img->max(), ({ 200, 19, 99 }) )
+test_do( add_constant("img") )
+
+test_define(test_polygone,[[
+test_any_equal([[
+ object img=Image.Image(100,100,0,0,0);
+ float x=0,y=0.2;
+ img->setcolor(255,254,253);
+ img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
+		 ({20+x,15+y,25+x,15+y,20+x,10+y}),
+		 ({10+x,20+y,15+x,20+y,15+x,25+y}),
+		 ({20+x,25+y,25+x,20+y,20+x,20+y}),
+		 
+		 ({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
+		 ({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
+		 ({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
+		 ({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
+		 
+		 ({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
+		 ({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
+		 ({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
+		 ({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
+   object img1=Image.GIF.decode(MIME.decode_base64(
+      "R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));
+  return $1;
+]],[[$2]])
+]])
+
+test_polygone(img-img1<16, 1)
+test_polygone(img->max(), ({255,254,253}) )
+
+define(test_polyfill,[[
+test_any_equal([[
+  object img=Image.Image(100,100,0,0,0);
+  float x=0,y=0.2;
+  img->setcolor(255,254,253);
+  img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
+		 ({20+x,15+y,25+x,15+y,20+x,10+y}),
+		 ({10+x,20+y,15+x,20+y,15+x,25+y}),
+		 ({20+x,25+y,25+x,20+y,20+x,20+y}),
+		 
+		 ({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
+		 ({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
+		 ({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
+		 ({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
+		 
+		 ({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
+		 ({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
+		 ({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
+		 ({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
+
+  object img1=Image.GIF.decode(MIME.decode_base64(
+    "R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));
+  return $1;
+]],[[$2]])
+]])
+
+test_polyfill(img-img1<16, 1)
+test_polyfill(img->max(), ({255,254,253}) )
+
+test_true( objectp(Image.Font()) )
+test_eq( Image.Font()->write("hej"),
+  Image.PNM.decode(MIME.decode_base64("UDQKMTkgMTEK///gv/7gv//grzjglt7gth7gtv7gtv7gtx7g//7g//Hg")) )
+test_eq( Image.Font()->write("h","o"),
+  Image.PNM.decode(MIME.decode_base64("UDQKNyAyMwr+vr6ulra2trb+/v7+/s62tra2zv7+/g==")) )
+
+define(test_blackwhite,[[
+  test_equal_any($1,[[ (< Image.Color.white, Image.Color.black >) ]])
+]])
+test_blackwhite([[
+ return (multiset)(array)Image.Colortable(
+   ({Image.Color.white,Image.Color.black}))
+]])
+test_blackwhite([[
+  object img=Image.Image(100,100)->test(43);
+  object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+  img=c*img;
+  return (multiset)(array)Image.Colortable(img);
+]])
+test_blackwhite([[
+  object img=Image.Image(100,100)->test(43);
+  object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+  c->floyd_steinberg();
+  img=c*img;
+  return (multiset)(array)Image.Colortable(img);
+]])
+test_blackwhite([[
+  object img=Image.Image(100,100)->test(43);
+  object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+  c->ordered();
+  img=c*img;
+  return (multiset)(array)Image.Colortable(img);
+]])
+
+define(test_coltab,[[
+  test_do([[
+    object img=Image.Image(200,200)->test(42);
+    img->tuned_box(50,50,150,150,
+      ({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+    add_constant("img", img);
+  ]])
+  $1
+  test_do( add_constant("img") )
+]])
+
+test_coltab([[
+  test_do([[
+    add_constant("c", Image.Colortable(img,1000)->cubicles(16,16,16,4) )
+  ]])
+  test_true( sizeof(c)>=200 )
+  test_true( img-(c*img)<50 )
+  test_do( add_constant("c") )
+]])
+
+test_coltab([[
+  test_do([[
+    add_constant("c", Image.Colortable(32,32,32)->floyd_steinberg() )
+  ]])
+  test_true( img-(c*img)<50 )
+  test_do( add_constant("c") )
+]])
+
+test_coltab([[
+  test_do([[
+    add_constant("c", Image.Colortable(32,32,32)->ordered())
+  ]])
+  test_true( img-(c*img)<32 )
+  test_do( add_constant("c") )
+]])
+
+
+define(test_encoding,[[
+  cond( master()->resolv("Image.$1")->encode,[[
+    test_any([[
+      object img=Image.Image(100,100)->test(40);
+      $2
+      object img1=Image.$1.decode(Image.$1.encode(img$3));
+      return img==img1;
+    ]],1)
+  ]])
+]])
+
+test_encoding(PNM,,)
+test_encoding(GIF,[[
+  img = Image.Colortable(img,250)->cubicles(10,10,10,1)->
+    floyd_steinberg()*img;
+]],)
+test_encoding(GIF,[[
+  object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
+  img=c*img;
+]],[[,c]])
+
+test_any([[
+   object img=Image.Image(100,100)->test(43);
+   object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
+   img=c*img;
+   object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+   return img-img1<50;
+]],1)
+
+test_encoding(AVS,,)
+test_encoding(BMP,,)
+test_encoding(BMP,[[
+  img=Image.Colortable(img,256)*img;
+]],[[,(["bpp":8])]])
+test_encoding(BMP,[[
+  img=Image.Colortable(img,16)*img;
+]],[[,(["bpp":4])]])
+test_encoding(BMP,[[
+  img=Image.Colortable(img,2)->floyd_steinberg()*img;
+]],[[,(["bpp":1])]])
+
+define(test_bmp_rle,[[
+  test_any([[
+    object img=Image.Image(400,100,Image.Color.red);
+    img->line(0,0,0,99,Image.Color.green);
+    img->line(399,0,399,99,Image.Color.blue);
+    object c=Image.Colortable(img,pow(2,$1));
+    img=c*img;
+    return Image.BMP.decode(Image.BMP.encode(img,(["bpp":$1,"rle":1])))==img;
+  ]],1)
+]])
+test_bmp_rle(8)
+test_bmp_rle(4)
+
+test_encoding(BMP,[[
+  img=img->scale(400,100);
+  object c=Image.Colortable(img,256);
+  img=c*img;
+]],[[,(["bpp":8,"rle":1])]])
+test_encoding(BMP,[[
+  img=img->scale(400,100);
+  object c=Image.Colortable(img,16);
+  img=c*img;
+]],[[,(["bpp":4,"rle":1])]])
+
+test_any([[
+  object img=Image.Image(256,240)->test(43);
+  img=Image.Colortable( ({"white","black","red","green"}) )*img;
+  return Image.HRZ.decode(Image.HRZ.encode(img))==img;
+]],1)
+
+test_encoding(ILBM,[[
+  img=Image.Colortable(img,16)*img;
+]],)
+test_encoding(PCX,,)
+test_encoding(PNM,,)
+test_encoding(TGA,,)
+test_encoding(XBM,[[
+  object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+  img=c*img;
+]],)
+test_encoding(XPM,[[
+  object c=Image.Colortable(16,16,16);	
+  img=c*img;
+]],[[,(["colortable":c]) ]])
+test_encoding(TIFF,,)
+
+cond( master()->resolv("Image.XFace")->encode,[[
+  test_any([[
+    object img=Image.Image(48,48)->test(43);
+    object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+    c->floyd_steinberg();
+    img=c*img;
+    return Image.XFace.decode(Image.XFace.encode(img))==img;
+  ]],1)
+]])
+
+cond( master()->resolv("Image.JPEG")->encode,[[
+  test_any([[
+    object img=Image.Image(100,100)->test(43);
+    object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
+    return img-img1<10;
+  ]],1)
+]])
