@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.17 2002/09/04 15:33:12 grubba Exp $
+ * $Id: ppc32.c,v 1.18 2002/09/05 13:05:40 grubba Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -551,7 +551,22 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
 {
   INT32 a;
 
-#ifndef _POWER
+#ifdef _POWER
+#ifdef _AIX
+  __asm__(".machine \"pwr\"");
+#endif
+  /* Method as described in
+   *
+   * http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixassem/alangref/clf.htm
+   */
+  len >>= 2;
+  for(a = (INT32)addr; len>0; --len) {
+    __asm__("clf 0,%0" : : "r" (a));
+    a += 4;
+  }
+  __asm__("dcs");
+  __asm__("ics");
+#else /* !_POWER */
 #ifdef _AIX
   __asm__(".machine \"ppc\"");
 #endif
@@ -563,7 +578,7 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
   }
   __asm__("sync");
   __asm__("isync");
-#endif /* !_POWER */
+#endif /* _POWER */
 }
 
 #if 0
