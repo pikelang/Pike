@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.83 2003/11/07 21:05:56 mast Exp $
+dnl $Id: aclocal.m4,v 1.84 2003/12/03 09:27:03 nilsson Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -71,7 +71,7 @@ pushdef([AC_PROG_CC],
 
   AC_MSG_CHECKING([if we are using TCC])
   AC_CACHE_VAL(pike_cv_prog_tcc, [
-    case "`$CC -V 2>&1|head -1`" in
+    case "`$CC -V 2>&1|head -n 1`" in
       tcc*)
         pike_cv_prog_tcc="yes"
       ;;
@@ -198,7 +198,7 @@ char size_info[[]] = {
 EOF
       if AC_TRY_EVAL(ac_compile); then
         if test -f "conftest.$ac_objext"; then
-	  AC_CV_NAME=`strings "conftest.$ac_objext" | sed -e '/^SiZe_InFo_[[0-9]]$/s/SiZe_InFo_//p' -ed | head -1`
+	  AC_CV_NAME=`strings "conftest.$ac_objext" | sed -e '/^SiZe_InFo_[[0-9]]$/s/SiZe_InFo_//p' -ed | head -n 1`
           if test "x$AC_CV_NAME" = "x"; then
 	    AC_MSG_WARN([Magic cookie not found.])
 	    AC_CV_NAME=ifelse([$2], , 0, [$2])
@@ -351,7 +351,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.83 2003/11/07 21:05:56 mast Exp $
+  # $Id: aclocal.m4,v 1.84 2003/12/03 09:27:03 nilsson Exp $
 
   MY_AC_PROG_CC
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.37 2003/02/20 11:56:09 grubba Exp $
+# $Id: run_autoconfig,v 1.38 2003/12/03 09:27:04 nilsson Exp $
 #
 # Bootstrap script
 
@@ -40,7 +40,7 @@ fi
 autoconf=autoconf
 autoheader=autoheader
 
-autoconf_version="`\"$autoconf\" --version|head -1|awk '{ print $NF }'`"
+autoconf_version="`\"$autoconf\" --version|head -n 1|awk '{ print $NF }'`"
 
 ac_args="--localdir=$localdir"
 ah_args=""
@@ -75,7 +75,7 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
   fi;
 else :; fi
 
-autoheader_version="`\"$autoconf\" --version|head -1|awk '{ print $NF }'`"
+autoheader_version="`\"$autoconf\" --version|head -n 1|awk '{ print $NF }'`"
 
 if [ "x$autoconf_version" != "x$autoheader_version" ]; then
   echo "$autoheader version ($autoheader_version) differs from $autoconf version ($autoconf_version)" >&2

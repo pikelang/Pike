@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.748 2003/11/25 17:51:54 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.749 2003/12/03 09:27:04 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -35,7 +35,7 @@ esac
 sleep 1
 if touch "$srcdir/configure~"; then
   # Check that the system time is reasonably correct.
-  if test `cd "$srcdir" && ls -1t configure configure~ | head -1` = "configure"; then
+  if test `cd "$srcdir" && ls -1t configure configure~ | head -n 1` = "configure"; then
     AC_MSG_ERROR([
 $srcdir/configure has modification time in the future.
 Check and set your system time.
@@ -776,7 +776,7 @@ esac
 SMARTLINK="$BUILDDIR/smartlink"
 
 AC_MSG_CHECKING(if $SMARTLINK exists is up to date and works)
-if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | head -1 | grep "smartlink.$ac_ext" >/dev/null 2>&5 && "$SMARTLINK" -v >/dev/null 2>&5; then
+if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | head -n 1 | grep "smartlink.$ac_ext" >/dev/null 2>&5 && "$SMARTLINK" -v >/dev/null 2>&5; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
@@ -1665,7 +1665,7 @@ if test "$cflags_is_set" = "no"; then
   AC_MSG_CHECKING(for machine dependant library directory)
   AC_CACHE_VAL(pike_cv_tcc_lib_path,
   [
-    pike_cv_tcc_lib_path="`${CC-cc} -dry conftest.c -i 2>&1 | sed -e '/tdfc/s/bin\/tdfc.*/lib\/sys/p' -ed| head -1`"
+    pike_cv_tcc_lib_path="`${CC-cc} -dry conftest.c -i 2>&1 | sed -e '/tdfc/s/bin\/tdfc.*/lib\/sys/p' -ed| head -n 1`"
     if test -d "$pike_cv_tcc_lib_path/." ; then :; else
       # Failed.
       pike_cv_tcc_lib_path="no"

@@ -71,7 +71,7 @@ if [ $CACHE_OUTPUT = yes ]; then
   TMPOUTPUT="${INPUT}.compiled"
 
   if [ -f "$TMPOUTPUT" ]; then
-    if [ "`ls -1Lt $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -1`" = "`ls -1Lt $TMPOUTPUT`" ]; then
+    if [ "`ls -1Lt $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -n 1`" = "`ls -1Lt $TMPOUTPUT`" ]; then
       cat "$TMPOUTPUT" >&5
       exit 0
     fi
