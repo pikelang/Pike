@@ -54,7 +54,7 @@ mapping select_commands =
 
 class connection
 {
-  inherit .server;
+  object io;  // Protocol object 
 
   object db; /* Mail backend */
 
@@ -63,6 +63,36 @@ class connection
 
   object current_request;
 
+  class get_line
+  {
+    function handler;
+
+    void create(function h)
+      {
+	handler = h;
+      }
+
+    void `()(object line)
+      {
+	next_action(handler(line));
+      }
+  }
+
+  class get_literal
+  {
+    function handler;
+
+    void create(function h)
+      {
+	handler = h;
+      }
+
+    void `()(string s)
+      {
+	next_action(handler(s));
+      }
+  }
+  
 #if 0
   void imap_close(int|void hard)
     {
@@ -84,19 +114,27 @@ class connection
       {
       case "close":
 	/* Close connection */
-	break;
+	io->close_imap();
+      case "bad":
+	io->send_bad_response(action->msg || "Invalid request");
+	/* Fall through */
       case "finished":
 	/* Finished processing this request. Remain in the same state. */
 	get_request();
 	break;
       case "expect_line":
 	/* Callback for next line recieved */
-	get_line(action->handler);
+	io->get_line(get_line(action->handler));
 	break;
       case "expect_literal":
 	/* Callback for recieving a literal */
-	get_literal(action->length, action->handler);
+	io->send_imap("+", action->msg || "Ready");
+	io->get_literal(action->length, get_literal(action->handler));
 	break;
+#if 0
+      case "none":
+	break;
+#endif
       case "logged_in_state":
 	use_commands(auth_commands);
 	break;
@@ -114,21 +152,20 @@ class connection
       mapping action;
       
       mixed e;
-      if (e = catch(action = req->process(session, db, this_object())))
+      if (e = catch(action = req->process(session, db, io)))
 	{
 	  show_backtrace(e);
-	  send_bad_response(current_request->tag, "Internal error");
+	  io->send_bad_response(req->tag, "Internal error");
 	  return;
 	}
       next_action(action);
     }
 
-  void create(object f, int timeout, object server, mapping preauth, int|void debug)
+  void create(object f, int timeout, object backend,
+	      mapping preauth, int|void debug)
     {
-      fd = f;
-      db = server;
-
-      ::create(f, timeout);
+      io = .server(f, timeout);
+      db = backend;
 
       if (preauth)
       {
