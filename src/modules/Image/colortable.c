@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.81 2000/08/06 18:08:11 grubba Exp $ */
+/* $Id: colortable.c,v 1.82 2000/08/07 13:49:58 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.81 2000/08/06 18:08:11 grubba Exp $
+**!	$Id: colortable.c,v 1.82 2000/08/07 13:49:58 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.81 2000/08/06 18:08:11 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.82 2000/08/07 13:49:58 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -920,7 +920,7 @@ static struct nct_flat _img_get_flat_from_string(struct pike_string *str)
    struct nct_flat flat;
    int i;
 
-   flat.numentries=str->len/3;
+   flat.numentries = str->len/3;
    if (flat.numentries<1) 
       error("Can't make a colortable with less then one (1) color.\n");
 
@@ -1623,11 +1623,11 @@ static rgbl_group dither_floyd_steinberg_encode(struct nct_dither *dith,
    if (err->r>255) err->r=255; else if (err->r<-255) err->r=-255;
    if (err->g>255) err->g=255; else if (err->g<-255) err->g=-255;
    if (err->b>255) err->b=255; else if (err->b<-255) err->b=-255;
-   i=(int)((int)s.r-err->r+0.5); 
+   i = DOUBLE_TO_INT((int)s.r-err->r+0.5); 
    rgb.r=i<0?0:(i>255?255:i);
-   i=(int)((int)s.g-err->g+0.5); 
+   i = DOUBLE_TO_INT((int)s.g-err->g+0.5); 
    rgb.g=i<0?0:(i>255?255:i);
-   i=(int)((int)s.b-err->b+0.5); 
+   i = DOUBLE_TO_INT((int)s.b-err->b+0.5); 
    rgb.b=i<0?0:(i>255?255:i);
    return rgb;
 }
@@ -1643,9 +1643,9 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
    rgbd_group *er=dith->u.floyd_steinberg.errors;
    rgbd_group err;
 
-   err.r = (float)(DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r))+er[rowpos].r+0.5;
-   err.g = (float)(DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g))+er[rowpos].g+0.5;
-   err.b = (float)(DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b))+er[rowpos].b+0.5;
+   err.r = DO_NOT_WARN((float)(DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r))+er[rowpos].r+0.5);
+   err.g = DO_NOT_WARN((float)(DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g))+er[rowpos].g+0.5);
+   err.b = DO_NOT_WARN((float)(DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b))+er[rowpos].b+0.5);
  
    ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
    ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
@@ -1745,9 +1745,9 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
    er=dith->u.floyd_steinberg.errors;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r=(my_rand()&65535)*(1.0/65536)-0.49999; 
-      er[i].g=(my_rand()&65535)*(1.0/65536)-0.49999; 
-      er[i].b=(my_rand()&65535)*(1.0/65536)-0.49999; 
+      er[i].r = DO_NOT_WARN((my_rand()&65535)*(1.0/65536)-0.49999);
+      er[i].g = DO_NOT_WARN((my_rand()&65535)*(1.0/65536)-0.49999);
+      er[i].b = DO_NOT_WARN((my_rand()&65535)*(1.0/65536)-0.49999);
    }
 
    er=dith->u.floyd_steinberg.nexterrors;
