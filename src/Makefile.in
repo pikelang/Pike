@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.334 2002/11/23 15:30:46 mast Exp $
+# $Id: Makefile.in,v 1.335 2002/11/23 16:29:40 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -491,7 +491,7 @@ module_testsuites:
 just_verify: module_testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
-	$(VALGRIND) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
+	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
 # Testsuite for dynamic loading debugging
 test_dlopen: dynloadtest.sh
@@ -519,9 +519,9 @@ verify: module_testsuites testsuite tinstall
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  $(VALGRIND) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
 	else \
-	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
 	fi
 
 verify_installed: module_testsuites testsuite master-stamp
@@ -559,7 +559,7 @@ gdb_verify: module_testsuites testsuite master-stamp
 fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
-	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
+	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
 # run hilfe, for interactive testing
 run_hilfe:
