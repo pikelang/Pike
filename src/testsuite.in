@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.328 2000/09/10 09:17:05 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.329 2000/09/15 00:31:43 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2003,6 +2003,46 @@ ifefun(gc,
     gc(); return a;
   }]], ({4711, 0x54325827a124*0x12348795482485425}))
 
+  test_any_equal([[{
+    object o = class Live {
+      object o;
+      array a = ({17});
+      void create() {o = this_object();}
+      void destroy() {all_constants()->kablutt = a;}
+    }();
+    o = 0;
+    gc();
+    return all_constants()->kablutt;
+  }]], ({17}));
+  test_any([[{
+    object o = class Live {
+      object o;
+      array a = set_weak_flag (({({17})}), 1);
+      void create() {o = this_object();}
+      void destroy() {
+	if (!equal (a, ({({17})})))
+	  error ("Contents in weak array zapped: %O.\n", a);
+      }
+    }();
+    o = 0;
+    return gc() >= 3;
+  }]], 1);
+  test_any_equal([[{
+    object o = class Live {
+      object o;
+      array a = set_weak_flag (({({17})}), 1);
+      void create() {o = this_object();}
+      void destroy() {all_constants()->blatinka = a;}
+    }();
+    o = 0;
+    gc();
+    if (!equal (all_constants()->blatinka, ({({17})})))
+      error ("Contents in saved weak array zapped: %O.\n",
+	     all_constants()->blatinka);
+    gc();
+    return all_constants()->blatinka;
+  }]], ({0}));
+
   test_any([[{
     class Dead {object o;};
     object o = Dead(); o->o = Dead();
@@ -2168,6 +2208,10 @@ ifefun(gc,
     foreach (indices (a), mixed o) if (objectp (o)) destruct (o);
     gc();
     return sizeof (a) == 1 && sizeof (b) == 1;
+  }]], 1);
+  test_any([[{
+    mapping a = set_weak_flag (([17: set_weak_flag (({({17})}), 1)]), 1);
+    return gc() >= 2 && !sizeof (a);
   }]], 1);
 
   test_do([[{
@@ -4672,6 +4716,9 @@ do_test_copy_value( ({1}) )
 do_test_copy_value( ([]) )
 do_test_copy_value( (<>) )
 do_test_copy_value( (< ([]), ({1}) ,"" , 1.0 >) )
+test_true(get_weak_flag(copy_value(set_weak_flag(({17}), 1))))
+test_true(get_weak_flag(copy_value(set_weak_flag(([17:17]), 1))))
+test_true(get_weak_flag(copy_value(set_weak_flag((<17>), 1))))
 
 // - crypt
 test_true(stringp(crypt("hej")))
