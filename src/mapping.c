@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.63 2000/02/09 07:29:36 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.64 2000/02/09 18:50:19 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -160,7 +160,7 @@ static void init_mapping(struct mapping *m, INT32 size)
   add_ref(md);
   m->data=md;
 #ifdef PIKE_DEBUG
-  m->size = md->size;
+  m->debug_size = md->size;
 #endif
 }
 
@@ -323,7 +323,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(m->data->size != tmp)
     fatal("Rehash failed, size not same any more.\n");
 
-  m->size = m->data->size;
+  m->debug_size = m->data->size;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -623,7 +623,7 @@ void low_mapping_insert(struct mapping *m,
   k->hval = h2;
   md->size++;
 #ifdef PIKE_DEBUG
-  m->size++;
+  m->debug_size++;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -733,7 +733,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   md->val_types |= BIT_INT;
   md->size++;
 #ifdef PIKE_DEBUG
-  m->size++;
+  m->debug_size++;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -808,7 +808,7 @@ void map_delete_no_free(struct mapping *m,
   md->free_list=k;
   md->size--;
 #ifdef PIKE_DEBUG
-  m->size--;
+  m->debug_size--;
 #endif
   
   if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
@@ -862,7 +862,7 @@ void check_mapping_for_destruct(struct mapping *m)
 	  md->free_list=k;
 	  md->size--;
 #ifdef PIKE_DEBUG
-	  m->size++;
+	  m->debug_size++;
 #endif
 	}else{
 	  val_types |= 1 << k->val.type;
@@ -1573,7 +1573,10 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
     }
   }
 
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
+#endif
+
   if(!((m->data->val_types | m->data->ind_types) & BIT_COMPLEX))
     return copy_mapping(m);
 
@@ -1699,7 +1702,7 @@ void check_mapping(struct mapping *m)
   if(m->next && m->next->prev != m)
     fatal("Mapping ->next->prev != mapping.\n");
 
-  if(m->size != md->size)
+  if(m->debug_size != md->size)
     fatal("Mapping zapping detected!\n");
 
   if(m->prev)
@@ -1905,7 +1908,7 @@ void gc_free_all_unreferenced_mappings(void)
 	    md->free_list=k;
 	    md->size--;
 #ifdef PIKE_DEBUG
-	    m->size++;
+	    m->debug_size++;
 #endif
 	  }else{
 	    prev=&k->next;
@@ -1988,7 +1991,7 @@ void zap_all_mappings(void)
     }
     md->size=0;
 #ifdef PIKE_DEBUG
-    m->size=0;
+    m->debug_size=0;
 #endif
     
     next=m->next;
