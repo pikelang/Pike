@@ -1,12 +1,12 @@
 /*
- * $Id: item.pike,v 1.1 2002/05/09 17:49:23 nilsson Exp $
+ * $Id: item.pike,v 1.2 2002/12/04 14:00:12 grubba Exp $
  *
  * An LR(0) item
  *
  * Henrik Grubbström 1996-11-27
  */
 
-#pike __REAL_VERSION__
+#pike 7.2
 
 //!
 //! An LR(0) item, a partially parsed rule.
