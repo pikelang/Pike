@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.113 2002/11/25 02:45:43 mast Exp $
+|| $Id: svalue.h,v 1.114 2002/12/01 00:00:31 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -308,7 +308,7 @@ do{ \
 #else
 #define IF_LOCAL_MUTEX(X)
 #define add_ref(X) (void)((X)->refs++)
-#define sub_ref(X) (--(X)->refs)
+#define sub_ref(X) (--(X)->refs > 0)
 #define pike_lock_data(X) (void)(X)
 #define pike_unlock_data(X) (void)(X)
 #endif
@@ -364,7 +364,7 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 #define sub_ref(X) pike_atomic_dec_and_test32((INT32 *)debug_malloc_pass( &((X)->refs)))
 #else
 #define add_ref(X) (((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++)
-#define sub_ref(X) (--((INT32 *)debug_malloc_pass( &((X)->refs)))[0])
+#define sub_ref(X) (--((INT32 *)debug_malloc_pass( &((X)->refs)))[0] > 0)
 #endif
 
 
