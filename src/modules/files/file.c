@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.216 2002/12/09 13:16:05 grubba Exp $");
+RCSID("$Id: file.c,v 1.217 2003/09/30 20:43:18 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -249,14 +249,15 @@ static void close_fd_quietly(void)
   FD=-1;
   while(1)
   {
-    int i;
+    int i, e;
     THREADS_ALLOW_UID();
     i=fd_close(fd);
+    e=errno;
     THREADS_DISALLOW_UID();
 
     if(i < 0)
     {
-      switch(errno)
+      switch(e)
       {
 	default:
 	{
@@ -298,19 +299,20 @@ static void just_close_fd(void)
   FD=-1;
   while(1)
   {
-    int i;
+    int i, e;
     THREADS_ALLOW_UID();
     i=fd_close(fd);
+    e=errno;
     THREADS_DISALLOW_UID();
 
     if(i < 0)
     {
-      switch(errno)
+      switch(e)
       {
 	default:
-	  ERRNO=errno;
+	  ERRNO=errno=e;
 	  FD=fd;
-	  push_int(errno);
+	  push_int(e);
 	  f_strerror(1);
 	  Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
 	  break;
@@ -354,7 +356,8 @@ void do_set_close_on_exec(void)
 {
 }
 
-/* Parse "rw" to internal flags */
+/* Parse "rw" to internal flags. Stdio.pmod counts on that unknown
+ * characters are ignored. */
 static int parse(char *a)
 {
   int ret;
@@ -443,9 +446,9 @@ static struct pike_string *do_read(int fd,
       int e;
       THREADS_ALLOW();
       i = fd_read(fd, str->str+bytes_read, r);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno;  /* check signals may affect errno */
       check_signals(0,0,0);
 
       if(i>0)
@@ -507,9 +510,9 @@ static struct pike_string *do_read(int fd,
 
       THREADS_ALLOW();
       i = fd_read(fd, buf, try_read);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno; /* check signals may effect errno */
       check_signals(0,0,0);
 
       if(i==try_read)
@@ -584,9 +587,9 @@ static struct pike_string *do_read_oob(int fd,
       int fd=FD;
       THREADS_ALLOW();
       i=fd_recv(fd, str->str+bytes_read, r, MSG_OOB);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno;
       check_signals(0,0,0);
 
       if(i>0)
@@ -648,9 +651,9 @@ static struct pike_string *do_read_oob(int fd,
 
       THREADS_ALLOW();
       i=fd_recv(fd, buf, try_read, MSG_OOB);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno;
       check_signals(0,0,0);
 
       if(i==try_read)
@@ -1099,9 +1102,9 @@ static void file_write(INT32 args)
     int e;
     THREADS_ALLOW();
     i=fd_write(fd, str->str + written, str->len - written);
+    e=errno;
     THREADS_DISALLOW();
 
-    e=errno;
     check_signals(0,0,0);
 
 #ifdef _REENTRANT
@@ -1172,8 +1175,10 @@ static void file_write_oob(INT32 args)
   while(written < str->len)
   {
     int fd=FD;
+    int e;
     THREADS_ALLOW();
     i = fd_send(fd, str->str + written, str->len - written, MSG_OOB);
+    e=errno;
     THREADS_DISALLOW();
 
 #ifdef _REENTRANT
@@ -1182,10 +1187,10 @@ static void file_write_oob(INT32 args)
 
     if(i<0)
     {
-      switch(errno)
+      switch(e)
       {
       default:
-	ERRNO=errno;
+	ERRNO=e;
 	pop_n_elems(args);
 	if (!written) {
 	  push_int(-1);
@@ -1310,6 +1315,7 @@ static void file_open(INT32 args)
 {
   int flags,fd;
   int access;
+  int err;
   struct pike_string *str, *flag_str;
   close_fd();
 
@@ -1408,10 +1414,11 @@ static void file_open(INT32 args)
      do {
        THREADS_ALLOW_UID();
        fd=fd_open(str->str,map(flags), access);
+       err = errno;
        THREADS_DISALLOW_UID();
-       if ((fd < 0) && (errno == EINTR))
+       if ((fd < 0) && (err == EINTR))
 	 check_threads_etc();
-     } while(fd < 0 && errno == EINTR);
+     } while(fd < 0 && err == EINTR);
 
      if(!Pike_fp->current_object->prog)
      {
@@ -1425,13 +1432,13 @@ static void file_open(INT32 args)
        }
 #endif
        if (fd >= 0)
-	 fd_close(fd);
+	 while (fd_close(fd) && errno == EINTR) {}
        Pike_error("Object destructed in file->open()\n");
      }
 
      if(fd < 0)
      {
-	ERRNO=errno;
+	ERRNO=err;
      }
      else
      {
@@ -1816,7 +1823,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     {
       SP_DEBUG((stderr, "my_socketpair:fd_bind() failed, errno:%d\n",
 		errno));
-      fd_close(socketpair_fd);
+      while (fd_close(socketpair_fd) && errno == EINTR) {}
       socketpair_fd=-1;
       return -1;
     }
@@ -1827,7 +1834,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     {
       SP_DEBUG((stderr, "my_socketpair:fd_getsockname() failed, errno:%d\n",
 		errno));
-      fd_close(socketpair_fd);
+      while (fd_close(socketpair_fd) && errno == EINTR) {}
       socketpair_fd=-1;
       return -1;
     }
@@ -1837,7 +1844,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     {
       SP_DEBUG((stderr, "my_socketpair:fd_listen() failed, errno:%d\n",
 		errno));
-      fd_close(socketpair_fd);
+      while (fd_close(socketpair_fd) && errno == EINTR) {}
       socketpair_fd=-1;
       return -1;
     }
@@ -1879,7 +1886,7 @@ retry_connect:
 	if(tmp!=-1) {
 	  SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d\n",
 		    errno));
-	  fd_close(tmp);
+	  while (fd_close(tmp) && errno == EINTR) {}
 	}
 	else
 	  break;
@@ -1909,7 +1916,7 @@ retry_connect:
       SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d (2)\n",
 		errno));
       if(errno==EINTR) goto retry_accept;
-      fd_close(sv[1]);
+      while (fd_close(sv[1]) && errno == EINTR) {}
       return -1;
     }
 
@@ -2028,11 +2035,12 @@ static void file_pipe(INT32 args)
   {
     ERRNO=errno;
     if (inout[0] >= 0) {
-      fd_close(inout[0]);
+      while (fd_close(inout[0]) && errno == EINTR) {}
     }
     if (inout[1] >= 0) {
-      fd_close(inout[1]);
+      while (fd_close(inout[1]) && errno == EINTR) {}
     }
+    errno=ERRNO;
     push_int(0);
   }
   else
@@ -2221,12 +2229,12 @@ static void file_open_socket(INT32 args)
     int o;
 
     if (Pike_sp[-args].type != PIKE_T_INT) {
-      fd_close(fd);
+      while (fd_close(fd) && errno == EINTR) {}
       Pike_error("Bad argument 1 to open_socket(), expected int\n");
     }
     if (args > 1) {
       if (Pike_sp[1-args].type != PIKE_T_STRING) {
-	fd_close(fd);
+	while (fd_close(fd) && errno == EINTR) {}
 	Pike_error("Bad argument 2 to open_socket(), expected string\n");
       }
       get_inet_addr(&addr, Pike_sp[1-args].u.string->str);
@@ -2239,14 +2247,16 @@ static void file_open_socket(INT32 args)
     o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
       ERRNO=errno;
-      fd_close(fd);
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
       pop_n_elems(args);
       push_int(0);
       return;
     }
     if (fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
       ERRNO=errno;
-      fd_close(fd);
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
       pop_n_elems(args);
       push_int(0);
       return;
@@ -2487,8 +2497,8 @@ static TH_RETURN_TYPE proxy_thread(void * data)
 
 /*  fprintf(stderr,"Closing %d and %d\n",p->to,p->from); */
 
-  fd_close(p->to);
-  fd_close(p->from);
+  while (fd_close(p->to) && errno == EINTR) {}
+  while (fd_close(p->from) && errno == EINTR) {}
   mt_lock_interpreter();
   num_threads--;
   mt_unlock_interpreter();
@@ -2519,7 +2529,8 @@ void file_proxy(INT32 args)
   if(from<0)
   {
     ERRNO=errno;
-    fd_close(from);
+    while (fd_close(from) && errno == EINTR) {}
+    errno = ERRNO;
     Pike_error("Failed to dup proxy fd.\n");
   }
 
@@ -2762,7 +2773,7 @@ void pike_module_exit(void)
   }
   exit_file_locking();
   if (socketpair_fd >= 0) {
-    fd_close(socketpair_fd);
+    while (fd_close(socketpair_fd) && errno == EINTR) {}
     socketpair_fd = -1;
   }
   port_exit_program();
