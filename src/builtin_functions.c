@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.194 1999/10/26 00:18:04 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.195 1999/10/26 14:14:43 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -336,7 +336,8 @@ void f_upper_case(INT32 args)
 void f_random(INT32 args)
 {
   INT_TYPE i;
-  if(sp[-args].type == T_OBJECT)
+
+  if(args && (sp[-args].type == T_OBJECT))
   {
     pop_n_elems(args-1);
     apply(sp[-1].u.object,"_random",0);
