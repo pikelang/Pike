@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.64 2002/10/30 14:45:29 grubba Exp $
+|| $Id: dlopen.c,v 1.65 2002/10/31 01:23:34 nilsson Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.64 2002/10/30 14:45:29 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.65 2002/10/31 01:23:34 nilsson Exp $");
 
 #endif
 
@@ -2278,7 +2278,6 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 
 static void init_dlopen(void)
 {
-  int tmp;
   extern char ** ARGV;
   INT32 offset;
   struct DLObjectTempData objtmp;
