@@ -302,8 +302,8 @@ string parse_type(Node n, void|string debug) {
     // min/max ...
     break;
 
-  case "static":
-    // Not implemented yet.
+  case "static": // Not in XSLT
+    ret += "static";
     break;
 
   default:
@@ -373,9 +373,12 @@ string parse_not_doc(Node n) {
 
     case "variable":
       if(variable++) ret += "<br />\n";
-      ret += "<tt>" + parse_type(get_first_element(get_first_element(c)), "variable") + " ";
-      ret += render_class_path(c);
-      ret += "<b><font color='#F000F0'>" + c->get_attributes()->name + "</font></b></tt>";
+      ret += "<tt>";
+      cc = get_tag(c, "modifiers");
+      if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+      ret += parse_type(get_first_element(get_tag(c, "type")), "variable") + " " +
+	render_class_path(c) + "<b><font color='#F000F0'>" + c->get_attributes()->name +
+	"</font></b></tt>";
       break;
 
     case "constant":
