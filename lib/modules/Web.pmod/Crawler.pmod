@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.7 2001/05/28 22:01:00 per Exp $
+// $Id: Crawler.pmod,v 1.8 2001/06/07 14:45:23 per Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -286,7 +286,8 @@ class MySQLQueue
     if( sizeof( possible ) <= p_c )
     {
       p_c = 0;
-      possible = db->query( "select uri from "+table+" where done=0" )->uri;
+      possible=db->query("select uri from "+table+" where done=0 limit 20")
+	->uri;
     }
 
     if( sizeof( possible ) > p_c )
