@@ -1,8 +1,8 @@
 #include "machine.h"
 
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
