@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.122 2000/08/16 10:35:48 grubba Exp $");
+RCSID("$Id: gc.c,v 1.123 2000/08/16 22:03:40 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -76,8 +76,9 @@ RCSID("$Id: gc.c,v 1.122 2000/08/16 10:35:48 grubba Exp $");
  * references at the start of the gc pass will be destructed
  * regardless of added references.
  *
- * Things that have only weak references at the start of the gc pass
- * will be freed. That's done before the live object destruct pass.
+ * Things that have only weak external references at the start of the
+ * gc pass will be freed. That's done before the live object destruct
+ * pass. Internal weak references are however still intact.
  */
 
 /* #define GC_VERBOSE */
@@ -878,13 +879,13 @@ void debug_gc_touch(void *a)
 		 "got missed by gc_do_free().\n");
       else if (m->flags & GC_GOT_EXTRA_REF)
 	gc_fatal(a, 2, "A thing still got an extra ref.\n");
-      else if (m->weak_refs == -1)
-	gc_fatal(a, 3, "A thing which had only weak references is "
-		 "still around after gc.\n");
       else if (!(m->flags & GC_LIVE)) {
 	if (m->weak_refs > 0)
 	  gc_fatal(a, 3, "A thing to garb is still around. "
 		   "It's probably one with only external weak refs.\n");
+	else if (m->weak_refs < 0)
+	  gc_fatal(a, 3, "A thing which had only weak references is "
+		   "still around after gc.\n");
 	else
 	  gc_fatal(a, 3, "A thing to garb is still around.\n");
       }
@@ -952,7 +953,7 @@ INT32 real_gc_check_weak(void *a)
 
 #ifdef PIKE_DEBUG
   if (!(m = gc_check_debug(a, 1))) return 0;
-  if (m->weak_refs == -1)
+  if (m->weak_refs < 0)
     gc_fatal(a, 1, "Thing has already reached threshold for weak free.\n");
   if (m->weak_refs >= *(INT32 *) a)
     gc_fatal(a, 1, "Thing has gotten more weak refs than refs.\n");
@@ -1180,7 +1181,7 @@ int gc_do_weak_free(void *a)
 #endif
 
   if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
-    if (m->weak_refs == -1) {
+    if (m->weak_refs < 0) {
       gc_ext_weak_refs--;
       return 1;
     }
@@ -1209,7 +1210,7 @@ int gc_mark(void *a)
     fatal("gc mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
-  if (m->weak_refs == -1)
+  if (m->weak_refs < 0)
     gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
   if (Pike_in_gc == GC_PASS_ZAP_WEAK && !(m->flags & GC_MARKED))
     gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
@@ -1509,9 +1510,12 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 
   if (weak > 0) {
 #ifdef PIKE_DEBUG
-    if (m->weak_refs <= 0)
+    if (m->weak_refs == 0)
       gc_fatal(x, 0, "Followed weak ref to thing that should have none left.\n");
-    m->weak_refs--;
+    /* We only keep m->weak_refs accurate in debug mode for the sake
+     * of the checks in debug_gc_touch(); nothing else should trust it
+     * to be valid after the mark pass. */
+    m->weak_refs--;		/* Might already be negative. */
 #endif
     gc_ext_weak_refs--;
   }
@@ -2072,6 +2076,8 @@ int do_gc(void)
 #ifdef PIKE_DEBUG
   if(fatal_after_gc) fatal(fatal_after_gc);
 #endif
+
+  /* Pike code may run again now. */
 
   Pike_in_gc=GC_PASS_KILL;
   /* Destruct the live objects in cycles, but first warn about any bad

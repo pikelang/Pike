@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.319 2000/08/14 13:56:46 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.320 2000/08/16 22:03:41 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2006,6 +2006,51 @@ ifefun(gc,
     int res = all_constants()->beltbent_oblivion;
     add_constant("beltbent_oblivion");
     return res;
+  }]], 1);
+
+  test_any([[{
+    array x = set_weak_flag (({0}), 1);
+    x[0] = x;
+    multiset b = set_weak_flag ((<x>), 1);
+    array a = ({17});
+    b[a] = 1;
+    x = 0;
+    return gc() + gc() >= 1;
+  }]], 1);
+
+  test_any([[{
+    array a = set_weak_flag (({0, this_object()}), 1);
+    a[0] = a;
+    a = 0;
+    return gc() + gc() >= 1;
+  }]], 1);
+
+  test_any([[{
+    array y = set_weak_flag (({0}), 1), z = set_weak_flag (({y}), 1);
+    y[0] = z;
+    y = z = 0;
+    return gc() + gc() >= 2;
+  }]], 1);
+
+  test_any([[{
+    class Live {
+      array a;
+      object o = this_object();
+      void create()
+      {
+	a = set_weak_flag (({0}), 1);
+	array b = set_weak_flag (({a}), 1);
+	a[0] = b;
+      }
+      void destroy()
+      {
+	if (!arrayp(a) || !arrayp(a[0]) || a[0][0] != a)
+	  error ("GC garbed weak things too early.\n");
+      }
+    };
+    object o = Live();
+    o = 0;
+    return gc() + gc() >= 3;
   }]], 1);
 
   test_do([[{

@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.86 2000/08/14 20:08:29 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.87 2000/08/16 22:03:41 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1549,7 +1549,7 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DO_CYCLE_CHECK_WEAK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, GC_DO_CYCLE_CHECK_WEAK,
 		      DO_CYCLE_CHECK_STRING);
@@ -1573,7 +1573,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
 {
   int freed = 0;
   debug_malloc_touch(u);
-  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
+  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
 		    GC_DO_CYCLE_CHECK_WEAK, {if (!u->refs) return 0;},
 		    DO_FUNC_SHORT_SVALUE, GC_DO_CYCLE_CHECK_WEAK,
 		    DO_CYCLE_CHECK_STRING);

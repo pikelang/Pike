@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.61 2000/08/11 15:41:34 grubba Exp $
+ * $Id: gc.h,v 1.62 2000/08/16 22:03:40 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -69,13 +69,16 @@ struct marker
   struct gc_frame *frame;	/* Pointer into the cycle check stack. */
   void *data;
   INT32 refs;			/* Internal references. */
-  INT32 weak_refs;		/* Weak (implying internal) references. */
+  INT32 weak_refs;		/* Weak (implying internal) references.
+				 * Negative if only weak refs are left. */
 #ifdef PIKE_DEBUG
   INT32 xrefs;			/* Known external references. */
   INT32 saved_refs;		/* Object refcount during check pass. */
 #endif
   unsigned INT16 flags;
 };
+/* Note: The weak_refs variable is only kept accurate during the check
+ * and mark passes when running without PIKE_DEBUG. */
 
 #define GC_MARKED		0x0001
 #define GC_NOT_REFERENCED	0x0002
