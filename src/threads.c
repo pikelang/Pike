@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.189 2002/10/28 21:48:09 mast Exp $
+|| $Id: threads.c,v 1.190 2002/10/28 21:53:45 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.189 2002/10/28 21:48:09 mast Exp $");
+RCSID("$Id: threads.c,v 1.190 2002/10/28 21:53:45 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -966,8 +966,8 @@ struct key_storage
  *! This function attempts to lock the mutex. If the mutex is already
  *! locked by a different thread the current thread will sleep until the
  *! mutex is unlocked. The value returned is the 'key' to the lock. When
- *! the key is destructed or has no more references the lock will
- *! automatically be unlocked. The key will also be destructed if the lock
+ *! the key is destructed or has no more references the mutex will
+ *! automatically be unlocked. The key will also be destructed if the mutex
  *! is destructed.
  *!
  *! The @[type] argument specifies what @[lock()] should do if the
