@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.9 1996/11/18 20:43:26 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.10 1996/11/25 21:30:39 hubbe Exp $"]])
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
@@ -12,6 +12,10 @@ test_program(inherit "/test"; inherit TEST; )
 test_compile_error(class { object(File) foo; object(Regexp) bar=foo; })
 test_do(class { object foo; object(Regexp) bar=foo; })
 test_do(class { object(File) foo; object bar=foo; })
+test_any(if(int i=1) return i; return 0;,1)
+test_compile(for(int i=0;i<100;i++) return 0;)
+test_compile(foreach(({}),mixed i){})
+test_compile(sscanf("","",mixed foo))
 
 // ++
 test_any([[int e; e++; return e;]],1)
