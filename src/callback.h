@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: callback.h,v 1.13 2001/08/30 22:35:21 hubbe Exp $
+ * $Id: callback.h,v 1.14 2001/08/31 06:56:30 hubbe Exp $
  */
 #ifndef CALLBACK_H
 #define CALLBACK_H
@@ -41,10 +41,14 @@ void cleanup_callbacks(void);
 #define add_to_callback(LST,CALL,ARG,FF) \
   dmalloc_touch(struct callback *,debug_add_to_callback((LST),(CALL),(ARG),(FF)))
 
+#if 1
 #define call_callback(LST, ARG) do {			\
   struct callback_list *lst_=(LST);			\
   void *arg_=(ARG);					\
   if(lst_->callbacks) low_call_callback(lst_, arg_);	\
 }while(0)
+#else
+#define call_callback(LST, ARG) low_call_callback((LST), (ARG))
+#endif
 
 #endif
