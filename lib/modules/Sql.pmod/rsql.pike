@@ -197,7 +197,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 
     void seek(int skip)
     {
-      return do_request('S', ({qid,skip}));
+      do_request('S', ({qid,skip}));
     }
 
     void create(function(int,mixed:mixed) d_r, mixed i)
