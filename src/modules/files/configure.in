@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.75 2001/06/08 12:03:47 grubba Exp $
+# $Id: configure.in,v 1.76 2001/06/11 13:05:20 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1044,6 +1044,9 @@ AC_TRY_RUN([
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif /* HAVE_DIRECT_H */
 #include <signal.h>
 
 #ifndef __NT__
