@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.343 2004/10/22 14:42:16 grubba Exp $
+|| $Id: language.yacc,v 1.344 2004/10/22 23:23:20 nilsson Exp $
 */
 
 %pure_parser
@@ -60,6 +60,7 @@
 %token TOK_IF
 %token TOK_IMPORT
 %token TOK_INHERIT
+%token TOK_FACET
 %token TOK_INLINE
 %token TOK_LOCAL_ID
 %token TOK_FINAL_ID
@@ -208,6 +209,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> TOK_DEFAULT
 %type <number> TOK_DO
 %type <number> TOK_ELSE
+%type <number> TOK_FACET
 %type <number> TOK_FLOAT_ID
 %type <number> TOK_FOR
 %type <number> TOK_FOREACH
@@ -429,6 +431,41 @@ program_ref: low_program_ref
   }
   ;
 
+facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
+  {
+    struct object *o;
+    if (Pike_compiler->compiler_pass == 1) {
+      if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
+	yyerror("A class can only belong to one facet");
+      }
+      else {
+	resolv_constant($4);
+	if (Pike_sp[-1].type == T_OBJECT) {
+	  o = Pike_sp[-1].u.object;
+	  push_string($2->u.sval.u.string);
+	  push_int(Pike_compiler->new_program->id);
+	  push_int(Pike_compiler->new_program->facet_class);
+	  safe_apply_low3(o, find_identifier("add_facet_class",o->prog), 3,
+			  "Failed to add facet class to system");
+	  if (Pike_sp[-1].type == T_INT &&
+	      Pike_sp[-1].u.integer >= 0) {
+	    Pike_compiler->new_program->facet_class = PROGRAM_IS_FACET_CLASS;
+	    Pike_compiler->new_program->facet_index = Pike_sp[-1].u.integer;
+	    add_ref(Pike_compiler->new_program->facet_group = o);
+	  }
+	  else
+	    yyerror("Could not add facet class to system.");
+	  pop_n_elems(2);
+	}
+	else
+	  yyerror("Illegal facet group specifier.");
+	free_node($4);
+      }
+    }
+  }
+  ;
+
+
 inherit_ref:
   {
     SET_FORCE_RESOLVE($<number>$);
@@ -451,6 +488,28 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
       if($4) s=$4->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
+
+    /* If this is a product class, check that all product classes in its
+     * facet-group inherits from all facets */
+    if($3 && Pike_compiler->compiler_pass == 2) {
+      if (Pike_compiler->new_program->facet_class==PROGRAM_IS_PRODUCT_CLASS){
+	if (!Pike_compiler->new_program->facet_group)
+	  yyerror("Invalid facet group.");
+	apply(Pike_compiler->new_program->facet_group,
+	      "product_classes_checked", 0);
+	if (Pike_sp[-1].type == T_INT &&
+	    Pike_sp[-1].u.integer == 0) {
+	  pop_stack();
+	  safe_apply_low3(Pike_compiler->new_program->facet_group,
+			  find_identifier
+			  ("check_product_classes",
+			   Pike_compiler->new_program->facet_group->prog),
+			  0,
+			  "Error in some product classes");
+	}
+      }
+    }
+
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);
@@ -928,6 +987,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
+  | facet {}
   | import {}
   | constant {}
   | class { free_node($1); }
@@ -1081,6 +1141,7 @@ magic_identifiers3:
   | TOK_CONSTANT   { $$ = "constant"; }
   | TOK_CONTINUE   { $$ = "continue"; }
   | TOK_DEFAULT    { $$ = "default"; }
+  | TOK_FACET      { $$ = "facet"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
@@ -3860,6 +3921,8 @@ bad_expr_ident:
   { yyerror("return is a reserved word."); }
   | TOK_IMPORT
   { yyerror("import is a reserved word."); }
+  | TOK_FACET
+  { yyerror("facet is a reserved word."); }
   | TOK_INHERIT
   { yyerror("inherit is a reserved word."); }
   | TOK_CATCH

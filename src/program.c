@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.571 2004/10/22 20:18:03 grubba Exp $
+|| $Id: program.c,v 1.572 2004/10/22 23:24:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -2052,6 +2052,12 @@ void low_start_new_program(struct program *p,
   int id=0;
   struct svalue tmp;
 
+  if(Pike_compiler->compiler_pass == 1 && p) {
+    p->facet_class = 0;
+    p->facet_index = -1;
+    p->facet_group = NULL;
+  }
+
 #if 0
 #ifdef SHARED_NODES
   if (!node_hash.table) {
@@ -3587,6 +3593,53 @@ static int find_depth(struct program_state *state,
 }
 #endif
 
+void check_for_facet_inherit(struct program *p)
+{
+  int fid;
+  /* If the inherit statement comes before the facet keyword in the
+   * class declaration the class will be temporarily marked as a
+   * product-class, but this will be taken care of when the facet
+   * keyword is found. */
+  if (p && Pike_compiler->new_program->facet_group &&
+      p->facet_group != Pike_compiler->new_program->facet_group)
+    yyerror("A class can not belong to two facet-groups\n");
+  if (p && p->facet_class == PROGRAM_IS_FACET_CLASS) {
+    if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
+      if(Pike_compiler->new_program->facet_index != p->facet_index)
+	yyerror("Facet class can't inherit from class in different facet.");
+    }
+    /* Otherwise this is a product class */
+    else {
+      int line = 0;
+      Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
+      Pike_compiler->new_program->facet_group = p->facet_group;
+      push_int(Pike_compiler->new_program->id);
+      push_int(p->facet_index);
+      push_int(p->id);
+      safe_apply_low3(p->facet_group,
+		      find_identifier("add_product_class",
+				      p->facet_group->prog),
+		      3,
+		      "Unable to add product class");
+    }
+  }
+  /* The inherited class is not a facet class */
+  else if (p && p->facet_class == PROGRAM_IS_PRODUCT_CLASS) {
+    if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
+      yyerror("Facet class can't inherit from product class.");
+    }
+    else if(Pike_compiler->new_program->facet_class==PROGRAM_IS_PRODUCT_CLASS){
+      yyerror("Product class can't inherit from other prodcut class.");
+    }
+    /* A class that inherits from a product class is also a product class */
+    else if(Pike_compiler->new_program->facet_class!=PROGRAM_IS_FACET_CLASS) {
+      Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
+      Pike_compiler->new_program->facet_group = p->facet_group;
+    }
+  }
+}
+
+
 /*
  * make this program inherit another program
  */
@@ -3620,6 +3673,9 @@ void low_inherit(struct program *p,
     yyerror("Illegal program pointer.");
     return;
   }
+
+  /* Check if inherit is a facet inherit. */
+  check_for_facet_inherit(p);
 
   if (p == placeholder_program) {
     yyerror("Trying to inherit placeholder program (resolver problem).");

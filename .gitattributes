@@ -338,6 +338,7 @@ testfont binary
 /src/error.c foreign_ident
 /src/errors.h foreign_ident
 /src/export_list foreign_ident
+/src/facetgroup.cmod foreign_ident
 /src/fd_control.c foreign_ident
 /src/fd_control.h foreign_ident
 /src/fdlib.c foreign_ident

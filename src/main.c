@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.214 2004/10/14 11:07:44 grubba Exp $
+|| $Id: main.c,v 1.215 2004/10/22 23:24:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -918,6 +918,7 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 void low_init_main(void)
 {
   void init_iterators(void);
+  void init_facetgroup(void);
 
   init_cpp();
   init_backend();
@@ -933,6 +934,7 @@ void low_init_main(void)
   init_builtin_efuns();
   init_signals();
   init_dynamic_load();
+  init_facetgroup();
 }
 
 void exit_main(void)
@@ -972,6 +974,7 @@ void low_exit_main(void)
 {
 #ifdef DO_PIKE_CLEANUP
   void exit_iterators(void);
+  void exit_facetgroup(void);
 
   /* Clear various global references. */
 
@@ -988,6 +991,7 @@ void low_exit_main(void)
   cleanup_module_support();
   exit_operators();
   exit_iterators();
+  exit_facetgroup();
   cleanup_program();
   cleanup_compiler();
   cleanup_error();

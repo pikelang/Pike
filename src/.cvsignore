@@ -15,6 +15,7 @@ conftest.c
 conftest.h
 dependencies
 dumpmodule.log
+facetgroup.c
 hilfe
 hsort_template.h
 interpret_functions_fixed.h

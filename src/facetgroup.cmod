@@ -1,0 +1,291 @@
+/* -*- c -*- 
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: facetgroup.cmod,v 1.1 2004/10/22 23:20:35 nilsson Exp $
+*/
+
+#include "global.h"
+#include "fdlib.h"
+#include "main.h"
+#include "object.h"
+#include "mapping.h"
+#include "multiset.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "pike_error.h"
+#include "pike_memory.h"
+#include "dynamic_buffer.h"
+#include "interpret.h"
+#include "las.h"
+#include "gc.h"
+#include "stralloc.h"
+#include "opcodes.h"
+#include "pike_error.h"
+#include "program.h"
+#include "operators.h"
+#include "builtin_functions.h"
+#include "constants.h"
+#include "program.h"
+#include "block_alloc.h"
+
+DECLARATIONS
+
+/*! @class facetgroup
+ *! 
+ *! This class is used to handle facets in the system. All facets 
+ *! in the system have to belong to a facet group. The facet 
+ *! group is a pike module that inherits from this class. For 
+ *! example you can create a file MyFacetgroup.pmod with the following
+ *! content:
+ *!
+ *! @tt{inherit facetgroup;
+ *! int main() { ; } @}
+ *!
+ *! You can then use the facet group MyFacetGroup in a facet-class 
+ *! like this:
+ *!
+ *! @tt{class A
+ *! {
+ *!   facet NameOfMyFacet : .MyFacetGroup; 
+ *!   // Rest of class A 
+ *! } @}
+ *!
+ */
+
+/* Linked list of facet-classes */
+struct facet_class_struct { 
+  int id;
+  struct facet_class_struct *next;
+};
+
+/* Linked list of facets with their facet-classes */
+struct facet_node_struct {
+  struct pike_string *name;
+  struct facet_class_struct *classes;
+  struct facet_node_struct *next;
+};
+
+/* Linked list of facets a product class is inheriting from */
+struct facet_list_struct {
+  int facet_index;
+  int facet_class;
+  struct facet_list_struct *next;
+};
+
+/* Linked list of product classes with lists of what facets they use */
+struct product_class_struct {
+  int id;
+  struct facet_list_struct *facets;
+  int num_used_facets;
+  struct product_class_struct *next;
+};
+
+BLOCK_ALLOC_FILL_PAGES(facet_class_struct, 2)
+BLOCK_ALLOC_FILL_PAGES(facet_node_struct, 2)
+BLOCK_ALLOC_FILL_PAGES(product_class_struct, 2)
+BLOCK_ALLOC_FILL_PAGES(facet_list_struct, 2)
+
+
+/* The actual facet_group class */
+PIKECLASS facet_group
+{
+  CVAR struct facet_node_struct *facets;
+  CVAR struct product_class_struct *pclasses;
+  CVAR int num_facets;
+  CVAR int checked_product_classes;
+
+  /* Retruns 1 if product classes in this facet group have been checked,
+   * 0 otherwise */
+  PIKEFUN int product_classes_checked() {
+    RETURN THIS->checked_product_classes; 
+  }
+
+  /* Function to check that all product-classes inherits from all facet */
+  PIKEFUN void check_product_classes() {
+    struct facet_list_struct *fl;
+    struct product_class_struct *pc;
+    int error = 0;
+    for(pc=THIS->pclasses; pc; pc = pc->next) {
+      if (pc->num_used_facets < THIS->num_facets) {
+	throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			   "Product class does not inherit from all facets.\n");
+      }
+      else if (pc->num_used_facets > THIS->num_facets) {
+	/* It should be impossible to get here */
+	throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			   "Product class inherits more than once from some facet.\n");
+      }
+    }
+    THIS->checked_product_classes = 1;
+    pop_n_elems(args);
+  }
+
+  /* Add info that the class "class" inherits from the facet "facet_index" */
+  PIKEFUN void add_product_class(int class, int facet_index, int facet_class) {
+    struct facet_list_struct *fl, *fltmp;
+    struct product_class_struct *pc, *pctmp;
+    /* Set checked_product_classes to 0 to indicate that not all
+     * product classes have been checked */
+    THIS->checked_product_classes = 0;
+    /* Check whether the product class is allready in our list of
+     * product classes */
+    for (pc=THIS->pclasses; pc; pc = pc->next) {
+      if (class == pc->id)
+	break;
+    }
+
+    if (!pc) { /* New product class */
+      pctmp = alloc_product_class_struct();
+      pctmp->id = class;
+      pctmp->facets = NULL;
+      pctmp->num_used_facets = 0;
+      pctmp->next = THIS->pclasses;
+      THIS->pclasses = pctmp;
+      pc = pctmp;
+    }
+
+    /* pc now points to the product class to modify */
+    for(fl=pc->facets; fl; fl = fl->next) {
+      if (fl->facet_index == facet_index)
+	break;
+    }
+    if (!fl) {
+      //Add facet "facet_index" to product class "class"'s inherits
+      fltmp = alloc_facet_list_struct();
+      fltmp->facet_index = facet_index;
+      fltmp->facet_class = facet_class;
+      pc->num_used_facets++;
+      fltmp->next = pc->facets;
+      pc->facets = fltmp;
+    }
+    else  /* The product class already inherits from this facet */
+      if (fl->facet_class != facet_class)
+	throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			   "Product class can only inherit from one class in every facet.\n");
+    pop_n_elems(args);
+  }
+  
+  /* Add a facet class in the facet group */
+  PIKEFUN int add_facet_class(string facet, int class, int product_class) {
+    struct facet_class_struct *c, *ctmp;
+    struct facet_node_struct *f, *prevf, *ftmp;
+    struct product_class_struct *pc, *prevpc;
+    struct object *o;
+    int facet_index = 0;
+    if (facet == NULL)
+      throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			 "Invalid facet name.\n");
+
+    // Check if it is a new facet or not.
+    prevf = NULL;
+    for(f=THIS->facets; f; f=f->next, facet_index++) {
+      if (f->name == facet)
+	break;
+      prevf=f;
+    }
+    if (product_class) {
+      // This occurs if the inherit statement comes before the facet
+      // statement in the class
+      for (prevpc=pc=THIS->pclasses; pc; pc = pc->next) {
+	if (pc->id == class)
+	  break;
+	prevpc = pc;
+      }
+      if (!pc)
+	throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			   "Program marked as product class but not found in list of product classes.\n");
+      else {
+	if (pc->num_used_facets > 1 ||
+	    facet_index != pc->facets->facet_index)
+	  throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			     "Facet class can not inherit from a class in another facet.");
+	else {
+	  if (prevpc->id == pc->id)
+	    THIS->pclasses = pc->next;
+	  else
+	    prevpc->next = pc->next;
+	  really_free_product_class_struct(pc);
+	}
+      }
+    }
+    if (!f) { /* A new facet */
+      THIS->num_facets++;
+      f = alloc_facet_node_struct();
+      add_ref(f->name = facet);
+      f->next = NULL;
+      if (!prevf)
+	THIS->facets = f;
+      else
+	prevf->next = f;
+      f->classes = NULL;
+    }
+    // f now points to the facet 'facet' in 'facets'
+    // Check whether the class 'class' is already in the facet
+    for (c=f->classes; c; c = c->next) {
+      if (class == c->id)
+	break;
+    }
+    if (c) {
+      throw_error_object(low_clone(compile_callback_error_program),0,0,0,
+			 "Redundant facet statement.\n");
+    }
+    else {
+      ctmp = alloc_facet_class_struct();
+      ctmp->id = class;
+      ctmp->next = f->classes;
+      f->classes = ctmp;
+    }
+    RETURN facet_index;
+  }
+
+  INIT {
+    THIS->facets = NULL;
+    THIS->pclasses = NULL;
+    THIS->num_facets = 0;
+    THIS->checked_product_classes = 0;
+  }
+
+  EXIT {
+    struct facet_node_struct *f, *fnext;
+    struct facet_class_struct *fc, *fcnext;
+    struct product_class_struct *p, *pnext;
+    struct facet_list_struct *fl, *flnext;
+    for (fnext=f=THIS->facets; fnext; f=fnext) {
+      fnext = f->next;
+      for (fcnext=fc=f->classes; fcnext; fc=fcnext) {
+	fcnext = fc->next;
+	really_free_facet_class_struct(fc);
+      }
+      really_free_string(f->name);
+      really_free_facet_node_struct(f);
+    }
+    for (pnext=p=THIS->pclasses; pnext; p=pnext) {
+      pnext = p->next;
+      for (flnext=fl=p->facets; flnext; fl=flnext) {
+	flnext = fl->next;
+	really_free_facet_list_struct(fl);
+      }
+      really_free_product_class_struct(p);
+    }
+  }
+};
+
+void init_facetgroup(void)
+{
+  init_facet_class_struct_blocks();
+  init_facet_node_struct_blocks();
+  init_facet_list_struct_blocks();
+  init_product_class_struct_blocks();
+  INIT;
+  add_global_program("FacetGroup", facet_group_program);
+}
+
+void exit_facetgroup(void)
+{
+  EXIT
+}
+/*! @endclass 
+ */

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.386 2004/10/20 18:59:38 grubba Exp $
+# $Id: Makefile.in,v 1.387 2004/10/22 23:22:57 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -169,6 +169,7 @@ OBJ= \
  queue.o \
  builtin.o \
  iterators.o \
+ facetgroup.o \
  svalue.o \
  las.o \
  builtin_functions.o \
@@ -983,6 +984,8 @@ builtin.o: $(SRCDIR)/builtin.c
 
 iterators.o: $(SRCDIR)/iterators.c
 
+facetgroup.o: $(SRCDIR)/facetgroup.c
+
 backend.o: $(SRCDIR)/backend.c
 
 # Internal testing target
@@ -1142,6 +1145,7 @@ HFILES=						\
   version.protos                                    \
   builtin.protos					\
   iterators.protos				\
+  facetgroup.protos				\
   rbtree.protos
 
 $(HFILES): precompile.sh-stamp
