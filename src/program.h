@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.77 1999/12/31 15:40:14 grubba Exp $
+ * $Id: program.h,v 1.78 2000/01/02 23:41:06 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -323,8 +323,7 @@ int program_function_index_compare(const void *a,const void *b);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
-			   struct pike_string *name,
-			   int flags);
+			   struct pike_string *name);
 void debug_start_new_program(PROGRAM_LINE_ARGS);
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
