@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.18 2002/11/06 16:36:02 grubba Exp $
+|| $Id: sparc.c,v 1.19 2002/11/06 16:41:49 grubba Exp $
 */
 
 /*
@@ -174,6 +174,7 @@ void sparc_ins_entry(void)
   /* save	%sp, -112, %sp */
   add_to_program(0x81e02000|(SPARC_REG_SP<<25)|
 		 (SPARC_REG_SP<<14)|((-112)&0x1fff));
+  FLUSH_CODE_GENERATOR_STATE();
 }
 
 /* Update Pike_fp->pc */
