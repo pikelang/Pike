@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.11 2005/01/06 00:48:29 nilsson Exp $
+// $Id: Binary.pike,v 1.12 2005/01/14 10:00:20 nilsson Exp $
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__
@@ -123,9 +123,6 @@ mixed `<=(object rel)
 
 int(0..1) `==(mixed rel)
 {
-  if (predef::`==(rel, this))
-    return 1; // equal because of being identical
-
   if (!objectp(rel) || !rel->is_binary_relation)
     return 0; // different because of having different types
 
