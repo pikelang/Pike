@@ -8,6 +8,48 @@ class client
 {
   inherit protocol;
 
+  constant reply_codes =
+  ([ 211:"System status, or system help reply",
+     214:"Help message",
+     220:"<host> Service ready",
+     221:"<host> Service closing transmission channel",
+     250:"Requested mail action okay, completed",
+     251:"User not local; will forward to <forward-path>",
+     354:"Start mail input; end with <CRLF>.<CRLF>",
+     421:"<host> Service not available, closing transmission channel "
+         "[This may be a reply to any command if the service knows it "
+         "must shut down]",
+     450:"Requested mail action not taken: mailbox unavailable "
+         "[E.g., mailbox busy]",
+     451:"Requested action aborted: local error in processing",
+     452:"Requested action not taken: insufficient system storage",
+     500:"Syntax error, command unrecognized "
+         "[This may include errors such as command line too long]",
+     501:"Syntax error in parameters or arguments",
+     502:"Command not implemented",
+     503:"Bad sequence of commands",
+     504:"Command parameter not implemented",
+     550:"Requested action not taken: mailbox unavailable "
+         "[E.g., mailbox not found, no access]",
+     551:"User not local; please try <forward-path>",
+     552:"Requested mail action aborted: exceeded storage allocation",
+     553:"Requested action not taken: mailbox name not allowed "
+         "[E.g., mailbox syntax incorrect]",
+     554:"Transaction failed" ]);
+
+  static private int cmd(string c, string|void comment)
+  {
+    int r = command(c);
+    switch(r) {
+    case 200..399:
+      break;
+    default:
+      throw(({"SMTP: "+c+"\n"+(comment?"SMTP: "+comment+"\n":"")+
+	      "SMTP: "+reply_codes[r]+"\n", backtrace()}));
+    }
+    return r;
+  }
+
   void create(void|string server)
   {
     if(!server)
@@ -25,13 +67,29 @@ class client
     if(readreturncode()/100 != 2)
       throw(({"Connection refused by SMTP server.\n",backtrace()}));
 
-    if(command("EHLO "+gethostname())/100 !=2)
-      if(command("HELO "+gethostname())/100 != 2)
-	throw(({"SMTP: greeting failed.\n",backtrace()}));
+    if(catch(cmd("EHLO "+gethostname())))
+      cmd("HELO "+gethostname(), "greeting failed.");
+  }
+  
+  void send_message(string from, string *to, string body)
+  {
+    cmd("MAIL FROM:"+from);
+    foreach(to, string t)
+      cmd("RCPT TO:"+t);
+    cmd("DATA");
+    cmd(body+"\r\n.");
+    cmd("QUIT");
   }
 
-  void send_message(string *to, string body)
+  void simple_mail(string to, string subject, string from, string msg)
   {
-    // Not yet done
+    send_message(from, ({ to }),
+		 (string)MIME.Message(0, (["mime-version":"1.0",
+					   "subject":subject,
+					   "from":from,
+					   "to":to]),
+	    ({ MIME.Message(msg,
+			    (["content-type":"text/plain;charset=iso-8859-1",
+			      "content-transfer-encoding":"8bit"])) })));
   }
 }
