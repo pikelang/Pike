@@ -864,7 +864,7 @@ class Day
    {
       int n;
       object ye=this->year();
-      n=(-({-1,-2,-3,3,2,1,0})[this->year()->julian_day(0)%7]+d)/7+1;
+      n=(-({-1,-2,-3,-4,2,1,0})[this->year()->julian_day(0)%7]+d)/7+1;
       if (n>ye->number_of_weeks())
 	 return ye->next()->week(1);
       else if (n<=0)
