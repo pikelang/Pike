@@ -1,10 +1,10 @@
-$Id: README-CVS.txt,v 1.16 2002/04/11 01:24:48 mast Exp $
+$Id: README-CVS.txt,v 1.17 2002/04/11 06:12:08 jhs Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
 
 If you like to live at the bleeding edge you can download pike from CVS
-whith all the latest additions from the developers.  There are two
+with all the latest additions from the developers.  There are two
 major branches in the archive, the latest stable branch and latest
 development branch.  Stable versions have an even minor version number,
 i.e. 7.0.x, 7.2.x, 7.4.x, whereas the development branches have an odd
@@ -138,8 +138,8 @@ Instructions if you want to do the build more manually:
    This updates all the Makefile.in files in the source dir to contain
    the correct dependencies.
 
-5. If needed, edit config.h and Makefile to suit your purposes.  I've
-   tried to make it so that you don't have to change config.h or
+5. If needed, edit config.h and Makefile to suit your purposes.  We
+   have tried to make it so that you don't have to change config.h or
    Makefile at all.  If you need to do what you consider 'unnecessary
    changes' then mail us and we'll try to fit it into configure.  If
    possible, use gnu make, gcc, gnu sed and bison.
