@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.24 2004/09/07 15:43:55 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.25 2004/10/29 15:51:39 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1531,6 +1531,132 @@ PIKECLASS TokenizingCompiler
   }
   /*! @endclass
    */
+}
+/*! @endclass
+ */
+
+/*! @class Group
+ */
+PIKECLASS Group
+{
+  CVAR struct object *contents;		/* ADT.List of tokens. */
+  CVAR struct object *start_token;	/* Token */
+  CVAR struct object *end_token;	/* Token */
+  CVAR struct pike_string *terminator;
+
+  PIKEVAR mapping(string:string) group_symbols;
+
+  INIT
+  {
+    extern struct program *List_program;
+    THIS->contents = clone_object(List_program, 0);
+
+    push_constant_text("{");
+    push_constant_text("}");
+    push_constant_text("(");
+    push_constant_text(")");
+    push_constant_text("[");
+    push_constant_text("]");
+    f_aggregate_mapping(6);
+    THIS->group_symbols = Pike_sp[-1].u.mapping;
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
+  }
+
+  EXIT
+  {
+    if (THIS->terminator) {
+      free_string(THIS->terminator);
+      THIS->terminator = NULL;
+    }
+    if (THIS->end_token) {
+      free_object(THIS->end_token);
+      THIS->end_token = NULL;
+    }
+    if (THIS->start_token) {
+      free_object(THIS->start_token);
+      THIS->start_token = NULL;
+    }
+    if (THIS->contents) {
+      free_object(THIS->contents);
+      THIS->contents = NULL;
+    }
+  }
+
+  /*! @decl void create(Token|void token)
+   *!
+   *!   Create a group grouped with the start token @[token].
+   */
+  PIKEFUN void create(Token|void token)
+    flags ID_STATIC;
+  {
+    if (token) {
+      push_constant_text("symbol");
+      Pike_sp[-1].subtype = 1;	/* Magic */
+      object_index_no_free(Pike_sp, token, Pike_sp-1);
+      Pike_sp++;
+      if (Pike_sp[-1].type != T_STRING) {
+	SIMPLE_BAD_ARG_ERROR("Tokenizer.Group()", 1, "Token|void");
+      }
+      if (!THIS->group_symbols) {
+	Pike_error("Tokenizer.Group(). Symbol grouping mapping missing.");
+      }
+      mapping_index_no_free(Pike_sp, THIS->group_symbols, Pike_sp-1);
+      Pike_sp++;
+      if (Pike_sp[-1].type != T_STRING) {
+	SIMPLE_ARG_ERROR("Tokenizer.Group()", 1, "Unsupported symbol");
+      }
+      if (THIS->start_token) {
+	free_object(THIS->start_token);
+      }
+      add_ref(THIS->start_token = token);
+      if (THIS->terminator) {
+	free_string(THIS->terminator);
+      }
+      copy_shared_string(THIS->terminator, Pike_sp[-1].u.string);
+    }
+  }
+
+  /*! @decl string _sprintf(int c, mapping(string:mixed)|void attr)
+   *!
+   *!   Describe a token group.
+   */
+  PIKEFUN string _sprintf(int c, mapping(string:mixed)|void attr)
+    flags ID_STATIC;
+  {
+    int cnt = 0;
+    push_constant_text("Tokenizer.Group(/* ");
+    if (!THIS->group_symbols) {
+      push_constant_text("No grouping symbols. ");
+      cnt++;
+    }
+    if (!THIS->start_token) {
+      push_constant_text("Not initialized. ");
+      cnt++;
+    } else {
+      if (!THIS->end_token) {
+	push_constant_text("End token %O not found yet. ");
+	ref_push_string(THIS->terminator);
+	f_sprintf(2);
+	cnt++;
+      } else {
+	push_constant_text("End token found. ");
+	cnt++;
+      }
+    }
+    /* FIXME: Start/End token? */
+    push_constant_text("*/\n");
+    if (c == 'O') {
+      push_constant_text("%O");
+    } else {
+      push_constant_text("%s");
+    }
+    ref_push_object(THIS->contents);
+    f_sprintf(2);
+    push_constant_text(")");
+    f_add(cnt+4);
+    stack_pop_n_elems_keep_top(args);
+  }
 }
 /*! @endclass
  */
