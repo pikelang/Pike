@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.349 2001/03/03 17:50:17 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.350 2001/03/07 21:00:38 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7353,7 +7353,7 @@ static void f_buf_get( INT32 args )
 }
 
 
-static void f_buf_init()
+static void f_buf_init(struct object *o)
 {
   struct buffer_str *str = THB;
   str->data = 0;
@@ -7362,7 +7362,7 @@ static void f_buf_init()
   str->shift = 0;
 }
 
-static void f_buf_free()
+static void f_buf_free(struct object *o)
 {
   struct buffer_str *str = THB;
   if( str->data ) xfree( str->data );
