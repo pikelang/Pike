@@ -1,5 +1,5 @@
 /*
- * $Id: make_ci.pike,v 1.8 2003/02/08 15:18:56 grubba Exp $
+ * $Id: make_ci.pike,v 1.9 2003/02/10 12:27:16 mast Exp $
  *
  * Creates the file case_info.h
  *
@@ -91,7 +91,8 @@ int main(int argc, array(string) argv)
 
   array(string) table = allocate(sizeof(ci));
 
-  foreach(ci; int i; array(int) info) {
+  for (int i = 0; i < sizeof (ci); i++) {
+    array(int) info = ci[i];
     if ((info[2] <= -0x8000) || (info[2] > 0x7fff)) {
       error("Case information out of range for shorts: %d\n", info[2]);
     }
@@ -109,7 +110,7 @@ int main(int argc, array(string) argv)
   outfile->
     write(sprintf("/*\n"
 		  " * Created by\n"
-		  " * $Id: make_ci.pike,v 1.8 2003/02/08 15:18:56 grubba Exp $\n"
+		  " * $Id: make_ci.pike,v 1.9 2003/02/10 12:27:16 mast Exp $\n"
 		  " * on %s"
 		  " *\n"
 		  " * Table used for looking up the case of\n"
