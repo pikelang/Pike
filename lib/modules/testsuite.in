@@ -1,0 +1,85 @@
+test_true([["$Id: testsuite.in,v 1.1 2002/08/02 23:22:36 nilsson Exp $"]]);
+
+// - Array
+
+// Array.diff
+// Array.diff_longest_sequence
+// Array.diff_compare_table
+// Array.longest_ordered_sequence
+// Array.interleave_array
+
+test_equal(Array.splice(({7,8,99}),({"h","h",99})),
+	({7,"h",8,"h",99,99}))
+test_equal(Array.splice(({7,8}),({"h","h",99})),
+	({7,"h",8,"h"}))
+test_equal(Array.splice(({7,8,99}),({"h","h",99}),({"g",({"fg"}),97})),
+	({7,"h","g",8,"h",({"fg"}),99,99,97}))
+test_equal(Array.splice(({7,"foo"})),
+	({7,"foo"}))
+test_equal(Array.splice(),
+	({}))
+test_equal(Array.splice(({})),
+	({}))
+
+test_equal(Array.everynth("0123456789"/""),
+  ({ "0", "2", "4", "6", "8"}))
+test_equal(Array.everynth("0123456789"/"",3),
+  ({ "0", "3", "6", "9"}))
+test_equal(Array.everynth("0123456789"/"",3,4),
+  ({ "4", "7"}))
+
+test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
+	({ ({1,4}), ({2,5}), ({3,6}) }))
+
+test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
+	   [[ ({ ({ "", 2 }) }) ]])
+
+test_equal(Array.uniq( ({ 1,1,2,2,3,3,4,1,2,3,3,2,1,2,1 }) ),
+	({1,2,3,4}))
+test_equal(Array.uniq( ({ "a",5,1.0,5,"b","a" }) ),
+	({"a",5,1.0,"b"}))
+
+test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return 0; } ),
+	({}))
+test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return 1; } ),
+	({1,2,3,4,5,6}))
+test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return i%2; } ),
+	({1,3,5}))
+
+test_equal(Array.permute( ({ 1,2 }), 0 ),
+	({ 1,2 }))
+test_equal(Array.permute( ({ 1,2 }), 1 ),
+	({ 2,1 }))
+test_equal(Array.permute( ({ 1,2,3,4,5,6,7,8,9,10 }), 3628800),
+	({ 1,2,3,4,5,6,7,8,9,10 }))
+
+test_equal(Array.enumerate(5), ({ 0,1,2,3,4 }))
+test_equal(Array.enumerate(5,2), ({ 0,2,4,6,8 }))
+test_equal(Array.enumerate(5,2,7), ({ 7,9,11,13,15 }))
+test_equal(Array.enumerate(5,2,7,`-), ({ 7,5,3,1,-1 }))
+
+test_any([[
+  random_seed(4711);
+  array b = Array.shuffle(Array.enumerate(1000));
+  random_seed(4711);
+  // There is a chance in 1000! (aprox. 4E2568) that this fails of
+  // natural causes.
+  return equal(b, Array.shuffle(Array.enumerate(1000))) &&
+               !equal(Array.enumerate(1000),b);
+]], 1);
+test_true( equal(Array.enumerate(1000),sort(Array.shuffle(Array.enumerate(1000)))) )
+
+
+// - Colors
+test_equal(Colors.parse_color("red"),({255,0,0}))
+test_equal(Colors.parse_color("RED"),({255,0,0}))
+test_equal(Colors.parse_color("lightred"),({255,61,61}))
+test_equal(Colors.parse_color("LIGHT RED"),({255,61,61}))
+test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
+test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
+test_equal(Colors.rgb_to_hsv(255,0,0),({0,255,255}))
+test_equal(Colors.hsv_to_rgb(0,255,255),({255,0,0}))
+test_equal(Colors.rgb_to_cmyk(255,0,0),({0,100,100,0}))
+test_equal(Colors.cmyk_to_rgb(0,100,100,0),({255,0,0}))
