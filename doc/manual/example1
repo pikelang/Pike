@@ -82,7 +82,7 @@
 
 	int main(int argc, string *argv)
 	{
-	  if(argc > 2 && argv[1]=="--traditional")
+	  if(argc > 1 && argv[1]=="--traditional")
 	  {
 	    write("hello world\n"); // old stype
 	  }else{
@@ -114,7 +114,7 @@
   the command line (including the command itself) and argv is an array formed
   by these words.
 
-	  if(argc > 2 && argv[1] == "--traditional")
+	  if(argc > 1 && argv[1] == "--traditional")
 	  {
 	    write("hello world\n"); // old stype
 	  }else{

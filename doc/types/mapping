@@ -35,7 +35,7 @@ DESCRIPTION
 	! a	boolean not, returns 0
 	a[c]	indexing, returns the value associated with the value c
 		in the mapping a. If there is no index c in the mapping
-		zero will be returned. (With zero type = 1)
+		zero will be returned. (With zero_type = 1)
 	a[c]=d	setting, this associates d with c in the mapping, the index
 		c will be added to the mapping automatically if it isn't
 		already there.
@@ -44,4 +44,5 @@ KEYWORDS
 	types
 
 SEE ALSO
-	array, list, builtin/sizeof, builtin/indices, builtin/values
+	array, list, builtin/sizeof, builtin/indices, builtin/values,
+	builtin/zero_type
