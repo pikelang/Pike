@@ -26,6 +26,7 @@ class File
 
   int open(string file, string mode, void|int bits)
   {
+    if(query_num_arg()<3) bits=0666;
     return __open(file, mode, bits);
   }
 
