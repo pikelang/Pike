@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.124 1998/10/11 11:18:53 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.125 1998/10/12 22:57:13 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2513,8 +2513,8 @@ test_do([[
 ]])
 
 test_any([[string s="foo"; s[2]='t'; s[0]--; return s;]],"eot")
-test_any([[string s="foo"; s[2]=0777; s[0]--; return s;]],"eo\777")
-test_any([[string s="foo"; s[2]=07777777; s[0]--; return s;]],"eo\7777777")
+test_any([[string s="foo"; s[2]=0777; s[1]--; return s;]],"fn\777")
+test_any([[string s="foo"; s[2]=07777777; s[1]--; return s;]],"fn\7777777")
 
 cond([[all_constants()->_verify_internals]],
 [[
