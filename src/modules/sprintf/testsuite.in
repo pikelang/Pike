@@ -26,6 +26,7 @@ test_eq([[ sprintf("%010x", -15) ]], "-00000000f")
 test_eq([[ sprintf("%08x", -1) ]], "-0000001")
 test_eq([[ sprintf("%016x", -15) ]], "-00000000000000f")
 test_eq([[ sprintf("%x", 65535) ]], "ffff")
+test_eq([[ sprintf("%x", -0x80000000) ]], "-80000000")
 
 test_eq("f", [[ sprintf("%.1x", -1) ]])
 test_eq("ff", [[ sprintf("%.2x", -1) ]])
@@ -50,6 +51,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 ]])
 
 dnl FIXME: Octal numbers.
+test_eq("77777777760000000000", [[ sprintf("%.20o", -0x80000000) ]])
 
 test_true(stringp(sprintf("")))
 test_true(sprintf("--real %1.20f --imaginary %1.20f --scale %1.20f\n",-0.9,-0.9,-0.9))
