@@ -1005,3 +1005,9 @@ test_any([[{
 }]], "<? ? >");
 test_equal(Parser.HTML()->parse_tag_args("<"), ([]));
 test_equal(Parser.HTML()->parse_tag_args(">"), ([]));
+test_any([[{
+  object p = Parser.HTML();
+  p->_set_tag_callback (lambda () {return "T";});
+  p->add_quote_tag ("?", "X", "?");
+  return p->finish ("<")->read();
+}]], "T");
