@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.161 1999/11/07 01:40:48 per Exp $
+# $Id: Makefile.in,v 1.162 1999/11/08 20:51:12 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -83,6 +83,7 @@ LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+RUNTPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 
 MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "NOOPTFLAGS=$(NOOPTFLAGS)" "AR=$(AR)" "CC=$(CC)" "MAKE=$(MAKE)"
 MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)"
@@ -100,7 +101,6 @@ OBJ= \
  cyclic.o \
  array.o \
  backend.o \
- builtin_functions.o \
  callback.o \
  encode.o \
  docode.o \
@@ -111,7 +111,6 @@ OBJ= \
  fsort.o \
  gc.o \
  hashtable.o \
- las.o \
  lex.o \
  multiset.o \
  signal_handler.o \
@@ -124,7 +123,6 @@ OBJ= \
  object.o \
  opcodes.o \
  operators.o \
- peep.o \
  port.o \
  program.o \
  rusage.o \
@@ -134,6 +132,13 @@ OBJ= \
  version.o \
  queue.o \
  svalue.o @EXTRA_OBJS@
+
+#
+# The following objectfiles differ between tpike & pike:
+#
+
+TOBJ = las_t.o builtin_functions_t.o peep_t.o
+POBJ = las.o builtin_functions.o peep.o
 
 #
 # User callable targets
@@ -186,26 +191,32 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-pike: $(OBJ) modules/linker_options
+tpike: $(OBJ) $(TOBJ) modules/linker_options
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) $(TOBJ) `cat modules/linker_options` $(LIBS) -o tpike
+
+pike: $(OBJ) $(POBJ) modules/linker_options
+	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
+	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
+	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
+	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
-pure: $(OBJ) module_objects
+pure: $(OBJ) $(POBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) module_objects
+cover: $(OBJ) $(POBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) module_objects
+quant: $(OBJ) $(POBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 atom: pike
 	atom pike -tool atom -env threads -g -v `find lib/modules -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
@@ -320,11 +331,11 @@ tinstall: aclocal master.pike
 
 verify: module_testsuites testsuite tinstall
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
-	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike $$args ; fi
+	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
 verify_installed: module_testsuites testsuite master.pike
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
-	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike $$args
+	$(exec_prefix)/pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args
 
 check: verify
 
@@ -415,17 +426,26 @@ new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
-$(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
-	echo "" >$(SRCDIR)/peep_engine.c
-	-$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
+$(SRCDIR)/peep_engine.c: tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
+	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
 peep.o: $(SRCDIR)/peep_engine.c
 
-$(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	if $(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt; \
-	then :; else echo '#include "dummy_ci.h"'; fi >$(SRCDIR)/case_info.h
+peep_t.o: peep.c
+
+$(SRCDIR)/case_info.h: tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
+	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 builtin_functions.o: $(SRCDIR)/case_info.h
+
+builtin_functions_t.o: builtin_functions.c
+
+$(SRCDIR)/treeopt.h: tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
+	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in
+
+las.o: $(SRCDIR)/treeopt.h
+
+las_t.o: las.c
 
 # make dependencies
 depend: $(SRCDIR)/language.c
