@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.236 2000/02/22 17:02:56 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.237 2000/02/29 03:16:20 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -670,8 +670,25 @@ void f_add_constant(INT32 args)
 #define IS_SEP(X) ( (X)=='/' )
 #define IS_ABS(X) (IS_SEP((X)[0])?1:0)
 #else   
+
 #define IS_SEP(X) ( (X) == '/' || (X) == '\\' )
-#define IS_ABS(X) ((isalpha((X)[0]) && (X)[1]==':' && IS_SEP((X)[2]))?3:0)
+
+static int find_absolute(char *s)
+{
+  if(isalpha(s[0]) && s[1]==':' && IS_SEP(s[2]))
+    return 3;
+
+  if(IS_SEP(s[0]) && IS_SEP(s[1]))
+  {
+    int l;
+    for(l=2;isalpha(s[l]);l++);
+    return l;
+  }
+
+  return 0;
+}
+#define IS_ABS(X) find_absolute((X))
+
 #define IS_ROOT(X) (IS_SEP((X)[0])?1:0)
 #endif
 
@@ -682,24 +699,25 @@ static char *combine_path(char *cwd,char *file)
   register char *from,*to;
   char *my_cwd;
   char cwdbuf[10];
-  my_cwd=0;
-  
+  int tmp;
 
-  if(IS_ABS(file))
+  my_cwd=0; 
+
+  if(tmp=IS_ABS(file))
   {
-    MEMCPY(cwdbuf,file,IS_ABS(file));
-    cwdbuf[IS_ABS(file)]=0;
+    MEMCPY(cwdbuf,file,tmp);
+    cwdbuf[tmp]=0;
     cwd=cwdbuf;
-    file+=IS_ABS(file);
+    file+=tmp;
   }
 
 #ifdef IS_ROOT
   else if(IS_ROOT(file))
   {
-    if(IS_ABS(cwd))
+    if(tmp=IS_ABS(cwd))
     {
-      MEMCPY(cwdbuf,cwd,IS_ABS(cwd));
-      cwdbuf[IS_ABS(cwd)]=0;
+      MEMCPY(cwdbuf,cwd,tmp);
+      cwdbuf[tmp]=0;
       cwd=cwdbuf;
       file+=IS_ROOT(file);
     }else{
@@ -730,8 +748,15 @@ static char *combine_path(char *cwd,char *file)
 
   from=to=ret;
 
+
+#ifdef __NT__
+  if(IS_SEP(from[0]) && IS_SEP(from[1]))
+    *(to++)=*(from++);
+  else
+#endif
+
   /* Skip all leading "./" */
-  while(from[0]=='.' && IS_SEP(from[1])) from+=2;
+   while(from[0]=='.' && IS_SEP(from[1])) from+=2;
   
   while(( *to = *from ))
   {
