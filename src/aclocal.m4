@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.40 2002/03/06 20:16:43 mast Exp $
+dnl $Id: aclocal.m4,v 1.41 2002/04/07 21:33:17 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -208,7 +208,7 @@ define(PIKE_FEATURE_RAW,[
 [$2]
 EOF])
 
-define([PAD_FEATURE],[substr([$1][................................],0,17) ])
+define([PAD_FEATURE],[substr([$1][................................],0,20) ])
 
 define(PIKE_FEATURE_3,[
   cat >pike_[$1].feature <<EOF
@@ -234,7 +234,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.40 2002/03/06 20:16:43 mast Exp $
+# $Id: aclocal.m4,v 1.41 2002/04/07 21:33:17 mast Exp $
 
 MY_AC_PROG_CC
 
