@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.54 2002/10/04 17:49:28 grubba Exp $
+dnl $Id: aclocal.m4,v 1.55 2002/12/19 15:29:42 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -262,7 +262,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.54 2002/10/04 17:49:28 grubba Exp $
+# $Id: aclocal.m4,v 1.55 2002/12/19 15:29:42 marcus Exp $
 
 MY_AC_PROG_CC
 
@@ -417,7 +417,7 @@ pushdef([AC_OUTPUT],
 
   # Autoconf 2.50 and later stupidity...
   if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
-    AC_MSG_WARN(cleaning the environment from autoconf 2.5x pollution)
+    dnl AC_MSG_WARN(cleaning the environment from autoconf 2.5x pollution)
   
     unset ac_cv_env_build_alias_set
     unset ac_cv_env_build_alias_value
