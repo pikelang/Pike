@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.52 2002/10/27 15:20:23 grubba Exp $
+|| $Id: dlopen.c,v 1.53 2002/10/27 15:54:07 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.52 2002/10/27 15:20:23 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.53 2002/10/27 15:54:07 grubba Exp $");
 
 #endif
 
@@ -650,9 +650,9 @@ struct COFFSymbol
 #define COFFReloc_IA64_imm64 3		/* X2 */
 #define COFFReloc_IA64_dir32 4
 #define COFFReloc_IA64_dir64 5
-#define COFFReloc_IA64_pcrel21b 6	/* B1 */
-#define COFFReloc_IA64_pcrel21m 7	/* M37 */
-#define COFFReloc_IA64_pcrel21f 8	/* F15 */
+#define COFFReloc_IA64_pcrel21b 6	/* M22, M23, B1, B2, B3, B6 */
+#define COFFReloc_IA64_pcrel21m 7	/* I20, M20, M21  */
+#define COFFReloc_IA64_pcrel21f 8	/* I19, M37, B9, F14, F15 */
 #define COFFReloc_IA64_gprel22 9	/* A5 */
 #define COFFReloc_IA64_ltoff22 10	/* A5 */
 #define COFFReloc_IA64_sect 11		/* */
@@ -1587,8 +1587,13 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif /* DL_VERBOSE */
 
 #ifdef _M_IA64
+	  /* FIXME: Probably ought to break the switch into two cases;
+	   *        data and instruction relocation. Sub-instruction
+	   *        parsing and rewriting could then be broken out from
+	   *        the individual switch cases.
+	   */
 
-	  /* IA64 instruction format:
+	  /* IA64 bundle format:
 	   *
 	   * 128bit little-endian.
 	   *
@@ -1596,6 +1601,15 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	   * 22222222 21111111 11111111 11111111
 	   * 11111111 11111111 11000000 00000000
 	   * 00000000 00000000 00000000 000ttttt
+	   *
+	   * Bundles are 16 byte aligned.
+	   */
+
+	  /* Instruction relocation pointers are
+	   * stored as a pointer to the bundle in
+	   * the upper bits, and sub-instruction
+	   * number in the least significant four
+	   * bits.
 	   */
 
 	  /* We will need to support more types here */
@@ -1613,7 +1627,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 	case COFFReloc_IA64_pcrel21b:
 	  {
-	    /* Instruction format B1
+	    /* Instruction format M22, M23, B1, B2, B3, B6
 	     *
 	     * 43333333333222222222211111111110000000000
 	     * 09876543210987654321098765432109876543210
