@@ -41,7 +41,6 @@ typedef struct JMP_BUF
 
 extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
-extern char *automatic_fatal, *exit_on_error;
 
 #define SETJMP(X) setjmp((init_recovery(&X)->recovery))
 #define UNSETJMP(X) recoveries=X.previous;
@@ -60,6 +59,8 @@ extern char *automatic_fatal, *exit_on_error;
 JMP_BUF *init_recovery(JMP_BUF *r);
 void throw() ATTRIBUTE((noreturn));
 void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
+void exit_on_error(void *msg);
+void fatal_on_error(void *msg);
 void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 void fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 /* Prototypes end here */

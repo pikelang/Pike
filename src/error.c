@@ -15,7 +15,6 @@
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
-char *automatic_fatal, *exit_on_error;
 JMP_BUF *recoveries=0;
 
 JMP_BUF *init_recovery(JMP_BUF *r)
@@ -80,22 +79,13 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
 
   VSPRINTF(buf, fmt, args);
 
-  if(automatic_fatal)
+  if(!recoveries)
   {
-    fprintf(stderr,"%s %s",automatic_fatal,buf);
-    abort();
-  }
-
-  if(exit_on_error || !recoveries)
-  {
-    if(!exit_on_error)
-      exit_on_error="No error recovery context: ";
-
 #ifdef DEBUG
     dump_backlog();
 #endif
 
-    fprintf(stderr,"%s %s",exit_on_error,buf);
+    fprintf(stderr,"No error recovery context!\n%s",buf);
     exit(99);
   }
 
@@ -111,6 +101,24 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
 
   in_error=0;
   throw();  /* Hope someone is catching, or we will be out of balls. */
+}
+
+void exit_on_error(void *msg)
+{
+#ifdef DEBUG
+  dump_backlog();
+#endif
+  fprintf(stderr,"%s\n",(char *)msg);
+  exit(1);
+}
+
+void fatal_on_error(void *msg)
+{
+#ifdef DEBUG
+  dump_backlog();
+#endif
+  fprintf(stderr,"%s\n",(char *)msg);
+  abort();
 }
 
 void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))

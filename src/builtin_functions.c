@@ -617,6 +617,7 @@ struct callback *add_exit_callback(callback_func call,
 
 void f_exit(INT32 args)
 {
+  ONERROR tmp;
   int i;
   if(args < 1)
     error("Too few arguments to exit.\n");
@@ -624,7 +625,7 @@ void f_exit(INT32 args)
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to exit.\n");
 
-  exit_on_error="Pike is exiting: ";
+  SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
 
   call_callback(&exit_callbacks, (void *)0);
   free_callback(&exit_callbacks);
@@ -634,6 +635,7 @@ void f_exit(INT32 args)
   exit_modules();
 #endif
 
+  UNSET_ONERROR(tmp);
   exit(i);
 }
 

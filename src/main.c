@@ -225,11 +225,13 @@ void main(int argc, char **argv, char **env)
 
   if(SETJMP(back))
   {
-    exit_on_error="Error in handle_error, previous error (in _main): ";
+    ONERROR tmp;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     assign_svalue_no_free(sp, & throw_value);
     sp++;
     APPLY_MASTER("handle_error", 1);
     pop_stack();
+    UNSET_ONERROR(tmp);
     exit(10);
   }
 

@@ -184,11 +184,12 @@ void backend()
 
   if(SETJMP(back))
   {
-    exit_on_error="Error in handle_error in master object!\nPrevious error:";
+    ONERROR tmp;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     assign_svalue_no_free(sp++, & throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
-    automatic_fatal=0;
+    UNSET_ONERROR(tmp);
   }
 
   while(first_object)
