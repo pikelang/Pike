@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.26 2004/11/25 16:30:42 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.27 2004/11/26 19:19:20 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -719,11 +719,7 @@ PIKECLASS Token
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("token");
-    add_constant(MK_STRING("token"), &tmp, 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("token"), 0);
   }
 
   PIKEFUN void create(string symbol, mapping(string:string|int)|void context)
@@ -782,11 +778,7 @@ PIKECLASS IdentifierToken
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("identifier");
-    simple_add_constant("token", &tmp, 0);
+    simple_add_constant("token", MK_STRING_SVALUE("identifier"), 0);
     add_integer_constant("is_identifier", 1, 0);
   }
 }
@@ -801,11 +793,7 @@ PIKECLASS OperatorToken
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("operator");
-    simple_add_constant("token", &tmp, 0);
+    simple_add_constant("token", MK_STRING_SVALUE("operator"), 0);
     add_integer_constant("is_operator", 1, 0);
   }
 }
@@ -831,11 +819,7 @@ PIKECLASS LiteralToken
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("literal");
-    simple_add_constant("token", &tmp, 0);
+    simple_add_constant("token", MK_STRING_SVALUE("literal"), 0);
     add_integer_constant("is_literal", 1, 0);
     /* We want to access the inherited create(). */
     literal_token_inherited_create =
@@ -863,11 +847,7 @@ PIKECLASS StringToken
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("string_constant");
-    simple_add_constant("token", &tmp, 0);
+    simple_add_constant("token", MK_STRING_SVALUE("string_constant"), 0);
     add_integer_constant("is_string", 1, 0);
 
     /* Modify the type of "value". */
@@ -886,11 +866,7 @@ PIKECLASS IntegerToken
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("int_constant");
-    simple_add_constant("token", &tmp, 0);
+    simple_add_constant("token", MK_STRING_SVALUE("int_constant"), 0);
     add_integer_constant("is_int", 1, 0);
 
     /* Modify the type of "value". */
@@ -909,11 +885,7 @@ PIKECLASS FloatToken
 
   EXTRA
   {
-    struct svalue tmp = {
-      PIKE_T_STRING, 0, { 0 },
-    };
-    tmp.u.string = MK_STRING("float_constant");
-    simple_add_constant("token", &tmp, 0);
+    simple_add_constant("token", MK_STRING_SVALUE("float_constant"), 0);
     add_integer_constant("is_float", 1, 0);
 
     /* Modify the type of "value". */
@@ -1539,11 +1511,22 @@ PIKECLASS TokenizingCompiler
  */
 
 /*! @class Group
+ *!
+ *! Used to detect the start of a group. Also contains
+ *! the contents of the group.
+ *!
+ *! Currently one of @expr{"("@}, @expr{"["@} or @expr{"{"@}.
+ *!
+ *! @seealso
+ *!   @[EndGroup]
  */
 PIKECLASS Group
 {
+  INHERIT Token;
+
+  static int group_token_inherited_create;
+
   CVAR struct object *contents;		/* ADT.List of tokens. */
-  CVAR struct object *start_token;	/* Token */
   CVAR struct object *end_token;	/* Token */
   CVAR struct pike_string *terminator;
 
@@ -1575,14 +1558,20 @@ PIKECLASS Group
       free_object(THIS->end_token);
       THIS->end_token = NULL;
     }
-    if (THIS->start_token) {
-      free_object(THIS->start_token);
-      THIS->start_token = NULL;
-    }
     if (THIS->contents) {
       free_object(THIS->contents);
       THIS->contents = NULL;
     }
+  }
+
+  EXTRA
+  {
+    simple_add_constant("token", MK_STRING_SVALUE("group"), 0);
+    add_integer_constant("is_group", 1, 0);
+    /* We want to access the inherited create(). */
+    group_token_inherited_create =
+      really_low_reference_inherited_identifier(NULL, 1,
+						f_Token_create_fun_num);
   }
 
   PIKEFUN void set_end_token(object(Token) token)
@@ -1593,42 +1582,109 @@ PIKECLASS Group
     add_ref(THIS->end_token = token);
   }
 
-  PIKEFUN void append(object(Token)|object(Group) token)
+  /*! @decl Group append(Token token)
+   *!
+   *!   Add @[token] to the group as appropriate.
+   *!
+   *! @returns
+   *!   Returns @[UNDEFINED] if @[token] was the @[EndGroup] token
+   *!   corresponding to this group.
+   *!
+   *!   Returns @[token] if @[token] is a @[Group].
+   *!
+   *!   Returns @expr{0@} (zero) otherwise.
+   */
+  PIKEFUN void append(object(Token) token)
   {
-    apply_low(THIS->contents, f_List_append_fun_num, 1);
+    /* FIXME: Should check the value of the constants,
+     *        and not just the existence.
+     */
+    if (find_shared_string_identifier(MK_STRING("is_end_group"),
+				      token->prog) != -1) {
+      /* Group end marker. */
+      object_index_no_free(Pike_sp, token, MK_STRING_SVALUE("symbol"));
+      Pike_sp++;
+      if ((Pike_sp[-1].type == T_STRING) &&
+	  (Pike_sp[-1].u.string == THIS->terminator)) {
+	/* Group completed. */
+	if (THIS->end_token) {
+	  free_object(THIS->end_token);
+	}
+	add_ref(THIS->end_token = token);
+	pop_n_elems(args + 1);
+	push_undefined();
+      } else {
+	/* End of group with missing start. */
+#if 0
+	/* FIXME: Where can we find report()? */
+	push_int(2);
+	object_index_no_free(Pike_sp, token, MK_STRING_SVALUE("context"));
+	Pike_sp++;
+	ref_push_string(MK_STRING("grouping"));
+	if (THIS->terminator) {
+	  ref_push_string(MK_STRING("Unexpected %O (expected %O)."));
+	  push_svalue(Pike_sp-5);
+	  ref_push_string(terminator);
+	  apply_current(groupingcompiler_inh_report, 6);
+	} else {
+	  ref_push_string(MK_STRING("Unexpected %O."));
+	  push_svalue(Pike_sp-5);
+	  apply_current(groupingcompiler_inh_report, 5);
+	}
+
+	pop_n_elems(args + 2);	/* Token + sym + returnval */
+#else /* !0 */
+	pop_n_elems(args + 1);	/* Token + sym */
+#endif /* 0 */
+
+	push_int(0);		/* Ignore the token. */
+      }
+    } else if (find_shared_string_identifier(MK_STRING("is_group"),
+					     token->prog) != -1) {
+      /* Contained group. */
+      ref_push_object(token);
+      apply_low(THIS->contents, f_List_append_fun_num, 1);
+      pop_stack();
+      /* Leave the group token on the stack. */
+    } else {
+      /* Default */
+      apply_low(THIS->contents, f_List_append_fun_num, 1);
+      pop_stack();
+      push_int(0);
+    }
   }
 
-  /*! @decl void create(Token|void token)
+  /*! @decl void create(string symbol, mapping(string:string|int)|void context)
    *!
-   *!   Create a group grouped with the start token @[token].
+   *!   Create a group grouped with the start symbol @[symbol].
+   *!
+   *! @note
+   *!   Will be called without arguments for the file level group.
    */
-  PIKEFUN void create(Token|void token)
+  PIKEFUN void create(string|void symbol,
+		      mapping(string:string|int)|void context)
     flags ID_STATIC;
   {
-    if (token) {
-      push_constant_text("symbol");
-      Pike_sp[-1].subtype = 1;	/* Magic */
-      object_index_no_free(Pike_sp, token, Pike_sp-1);
-      Pike_sp++;
-      if (Pike_sp[-1].type != T_STRING) {
-	SIMPLE_BAD_ARG_ERROR("Tokenizer.Group()", 1, "Token|void");
-      }
+    if (symbol) {
       if (!THIS->group_symbols) {
 	Pike_error("Tokenizer.Group(). Symbol grouping mapping missing.");
       }
-      mapping_index_no_free(Pike_sp, THIS->group_symbols, Pike_sp-1);
+      mapping_index_no_free(Pike_sp, THIS->group_symbols, Pike_sp-args);
       Pike_sp++;
       if (Pike_sp[-1].type != T_STRING) {
 	SIMPLE_ARG_ERROR("Tokenizer.Group()", 1, "Unsupported symbol");
       }
-      if (THIS->start_token) {
-	free_object(THIS->start_token);
-      }
-      add_ref(THIS->start_token = token);
       if (THIS->terminator) {
 	free_string(THIS->terminator);
       }
-      copy_shared_string(THIS->terminator, Pike_sp[-1].u.string);
+      /* FIXME: The terminator should be fixated at token table creation time.
+       */
+      THIS->terminator = Pike_sp[-1].u.string;
+      Pike_sp--;
+
+      apply_current(group_token_inherited_create, args);
+    } else {
+      pop_n_elems(args);
     }
   }
 
@@ -1645,7 +1701,7 @@ PIKECLASS Group
       push_constant_text("No grouping symbols. ");
       cnt++;
     }
-    if (!THIS->start_token) {
+    if (!THIS->terminator) {
       push_constant_text("Not initialized. ");
       cnt++;
     } else {
@@ -1676,6 +1732,27 @@ PIKECLASS Group
 /*! @endclass
  */
 
+/*! @class EndGroup
+ *!
+ *! Used to detect the end of a group.
+ *!
+ *! Currently one of @expr{"}"@}, @expr{"]"@} or @expr{")"@}.
+ *!
+ *! @seealso
+ *!   @[Group]
+ */
+PIKECLASS EndGroup
+{
+  INHERIT Token;
+  EXTRA
+  {
+    simple_add_constant("token", MK_STRING_SVALUE("end_group"), 0);
+    add_integer_constant("is_end_group", 1, 0);
+  }
+}
+/*! @endclass
+ */
+
 /*! @class GroupingCompiler
  */
 PIKECLASS GroupingCompiler
@@ -1693,14 +1770,17 @@ PIKECLASS GroupingCompiler
 						f_compiler_basic_tokenizer_report_fun_num);
   }
 
-  PIKEFUN Group group(TokenizingCompiler.pike_tokenizer tokenizer)
+  PIKEFUN List group(TokenizingCompiler.pike_tokenizer tokenizer)
   {
     int not_first = 0;
     struct svalue *orig_sp;
     struct pike_string *terminator = NULL;	/* NOTE: Does not hold any
 						 *       reference.
 						 */
-    push_object(clone_object(Group_program, 0));
+    struct object *root_group = clone_object(Group_program, 0);
+
+    ref_push_object(OBJ2_GROUP(root_group)->contents);
+    push_object(root_group);
     orig_sp = Pike_sp;
     while (1) {
       push_int(0);	/* Target svalue. */
@@ -1720,75 +1800,55 @@ PIKECLASS GroupingCompiler
       }
       not_first = 1;
       pop_n_elems(4);	/* Get rid of the lvalues. */
-      /* Pike_sp[-1] should now be a Token. */
-      index_no_free(Pike_sp, Pike_sp-1, MK_STRING_SVALUE("symbol"));
-      Pike_sp++;
+
       /* Stack is now:
        *
-       *   Group()
-       *   Group(token)
+       *   pike_tokenizer()		tokenizer
+       *   List()			root_group->contents
+       *   Group()			root_group
+       *   Group(token)	<- orig_sp
        *   ...
        *   Group(token)
        *   Token
-       *   token["symbol"]
        */
-      if (Pike_sp[-1].type == T_STRING) {
-	struct pike_string *sym;
-	if ((sym = Pike_sp[-1].u.string) == terminator) {
-	  /* End of group. */
 
-	  pop_stack();	/* Throw away the string. */
+      /* Append the token to the group.
+       *
+       * There are three cases:
+       *
+       *   o The new token was a group. It will then be left on the stack.
+       *
+       *   o The new token was an end marker. UNDEFINED will then be on
+       *     the stack.
+       *
+       *   o The new token was successfully appended. A plain 0 (zero) will
+       *     then be on the stack.
+       */
+      apply_shared(Pike_sp[-2].u.object, MK_STRING("append"), 1);
 
-	  /* Add the token to the group.
-	   *
-	   * This is safe, since we created the Group object ourselves.
-	   */
-	  apply_low(Pike_sp[-2].u.object, f_Group_set_end_token_fun_num, 1);
-	  /* Update the terminator.
-	   *
-	   * This is safe, since the toplevel group as a NULL terminator.
-	   */
-	  terminator = OBJ2_GROUP(Pike_sp[-3].u.object)->terminator;
-
-	  /* Let the default code below add our newly completed group
-	   * to the group above.
-	   */
-	} else if (sym == MK_STRING("(") ||
-		   sym == MK_STRING("{") ||
-		   sym == MK_STRING("[")) {
-	  /* Start of new group. */
-	  pop_stack();
-	  push_object(clone_object(Group_program, 1));
-	  terminator = OBJ2_GROUP(Pike_sp[-1].u.object)->terminator;
-	  continue;	  
-	} else if (sym == MK_STRING("]") ||
-		   sym == MK_STRING("}") ||
-		   sym == MK_STRING(")")) {
-	  /* End of group with missing start. */
-	  push_int(2);
-	  ref_push_string(MK_STRING("context"));
-	  Pike_sp[-1].subtype = 1;
-	  index_no_free(Pike_sp, Pike_sp-4, Pike_sp-1);
-	  free_svalue(Pike_sp-1);
-	  move_svalue(Pike_sp-1, Pike_sp);
-	  ref_push_string(MK_STRING("grouping"));
-	  if (terminator) {
-	    ref_push_string(MK_STRING("Unexpected %O (expected %O)."));
-	    ref_push_string(sym);
-	    ref_push_string(terminator);
-	    apply_current(groupingcompiler_inh_report, 6);
-	  } else {
-	    ref_push_string(MK_STRING("Unexpected %O."));
-	    ref_push_string(sym);
-	    apply_current(groupingcompiler_inh_report, 5);
-	  }
-	  pop_n_elems(2+1);	/* Token + sym + returnval */
-	  continue;
-	}
+      if (Pike_sp[-1].type == PIKE_T_OBJECT) {
+	/* New group.
+	 *
+	 * Don't do a thing.
+	 */
+	continue;
       }
-      /* Default case; just add to the group. */
-      pop_stack();
-      apply_low(Pike_sp[-2].u.object, f_Group_append_fun_num, 1);
+      if ((Pike_sp[-1].type != T_INT) || (Pike_sp[-1].u.integer)) {
+	Pike_error("Unexpected return value from Group()->append(): %O.\n",
+		   Pike_sp-1);
+      }
+      if (Pike_sp[-1].subtype) {
+	/* UNDEFINED. End marker.
+	 *
+	 * Pop the UNDEFINED, and the group we've just completed.
+	 */
+	pop_n_elems(2);
+	continue;
+      }
+      /* 0: Token successfully added.
+       *
+       * Pop the zero.
+       */
       pop_stack();
     }
     while (Pike_sp != orig_sp) {
@@ -1796,14 +1856,25 @@ PIKECLASS GroupingCompiler
       push_undefined();
       ref_push_string(MK_STRING("grouping"));
       ref_push_string(MK_STRING("Missing %O at end of file."));
-      ref_push_string(OBJ2_GROUP(Pike_sp[-5].u.object)->terminator);
+      object_index_no_free(Pike_sp, Pike_sp[-5].u.object,
+			   MK_STRING_SVALUE("terminator"));
+      Pike_sp++;
       apply_current(groupingcompiler_inh_report, 5);
-      pop_stack();
-
-      /* Hook in the group. */
-      apply_low(Pike_sp[-2].u.object, f_Group_append_fun_num, 1);
-      pop_stack();
+      pop_n_elems(2);
     }
+
+#ifdef PIKE_DEBUG
+    if (Pike_sp[-1].u.object != root_group) {
+      Pike_fatal("GroupingCompiler()->group(): Unexpected value on stack.\n");
+    }
+#endif /* PIKE_DEBUG */
+
+    /* Drop the root group */
+    pop_stack();
+
+    /* Left on the stack now is root_group->contents,
+     * and our arguments.
+     */
 
     /* Done for real. */
     stack_pop_n_elems_keep_top(args);
