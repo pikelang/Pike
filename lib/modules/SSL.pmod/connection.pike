@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.34 2004/02/29 02:56:04 nilsson Exp $
+// $Id: connection.pike,v 1.35 2004/04/19 23:01:03 agehall Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -25,7 +25,7 @@ function(object,int|object,string:void) alert_callback;
 
 import .Constants;
 
-inherit "handshake";
+inherit .handshake;
 
 constant PRI_alert = 1;
 constant PRI_urgent = 2;

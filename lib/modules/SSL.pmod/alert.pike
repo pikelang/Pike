@@ -1,12 +1,12 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-// $Id: alert.pike,v 1.10 2003/03/08 22:23:17 nilsson Exp $
+// $Id: alert.pike,v 1.11 2004/04/19 23:01:03 agehall Exp $
 
 //! Alert package.
 
 import .Constants;
-inherit "packet" : packet;
+inherit .packet : packet;
 
 int level;
 int description;
