@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.150 2001/02/25 13:37:50 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.151 2001/02/25 15:03:18 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1071,7 +1071,7 @@ struct pike_string *describe_type(struct pike_type *type)
   check_type_string(type);
   if(!type) return make_shared_string("mixed");
   init_buf();
-  my_describe_type(type->str);
+  my_describe_type(type);
   return free_buf();
 }
 
