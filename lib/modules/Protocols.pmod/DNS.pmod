@@ -413,7 +413,14 @@ class async_client
     {
       callback(domain,0,@args);
     }else{
-      callback(domain,answer->an[0][field],@args);
+      foreach(answer->an, array an)
+	if(an[field])
+	{
+	  callback(domain,an[field],@args);
+	  return;
+	}
+      callback(domain,0,@args);
+      return;
     }
   }
 
