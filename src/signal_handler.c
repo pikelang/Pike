@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.136 1999/06/08 21:07:54 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.137 1999/06/10 07:16:13 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -162,7 +162,8 @@ RCSID("$Id: signal_handler.c,v 1.136 1999/06/08 21:07:54 hubbe Exp $");
   static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available)
 
 #define BEGIN_FIFO_PUSH(pre,TYPE) do { \
-  TYPE PIKE_CONCAT(pre,_tmp_) ; int PIKE_CONCAT(pre,_tmp3_)
+  TYPE PIKE_CONCAT(pre,_tmp_) ; int PIKE_CONCAT(pre,_tmp3_) ; \
+  int PIKE_CONCAT(pre,_errno_save)=errno
 
 #define FIFO_DATA(pre,TYPE) PIKE_CONCAT(pre,_tmp_)
 
@@ -170,7 +171,8 @@ RCSID("$Id: signal_handler.c,v 1.136 1999/06/08 21:07:54 hubbe Exp $");
  while( (PIKE_CONCAT(pre,_tmp3_)=write(PIKE_CONCAT(pre,_fd)[1],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))) < 0 && errno==EINTR); \
  DO_IF_DEBUG(if( PIKE_CONCAT(pre,_tmp3_) != sizeof( PIKE_CONCAT(pre,_tmp_))) \
 		  fatal("Atomic pipe write failed!!\n"); ) \
- PIKE_CONCAT(pre,_data_available)=1; \
+  errno=PIKE_CONCAT(pre,_errno_save);\
+  PIKE_CONCAT(pre,_data_available)=1; \
  } while(0)
 
 
@@ -182,7 +184,7 @@ RCSID("$Id: signal_handler.c,v 1.136 1999/06/08 21:07:54 hubbe Exp $");
    while(read(PIKE_CONCAT(pre,_fd)[0],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))==sizeof(PIKE_CONCAT(pre,_tmp_))) \
    {
 
-#define END_FIFO_LOOP(pre,TYPE) } }while(0)
+#define END_FIFO_LOOP(pre,TYPE) }}while(0)
 
 #define INIT_FIFO(pre,TYPE) do {			\
   if(pike_make_pipe(PIKE_CONCAT(pre,_fd)) <0)		\

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.156 1999/05/19 14:23:28 mirar Exp $");
+RCSID("$Id: file.c,v 1.157 1999/06/10 07:16:20 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -389,10 +389,12 @@ static struct pike_string *do_read(int fd,
 
     do{
       int fd=FD;
+      int e;
       THREADS_ALLOW();
       i=fd_read(fd, str->str+bytes_read, r);
       THREADS_DISALLOW();
 
+      e=errno;  /* check signals may affect errno */
       check_signals(0,0,0);
 
       if(i>0)
@@ -405,9 +407,9 @@ static struct pike_string *do_read(int fd,
       {
 	break;
       }
-      else if(errno != EINTR)
+      else if(e != EINTR)
       {
-	*err=errno;
+	*err=e;
 	if(!bytes_read)
 	{
 	  free((char *)str);
@@ -445,6 +447,7 @@ static struct pike_string *do_read(int fd,
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
+      int e;
       char *buf;
       try_read=MINIMUM(CHUNK,r);
       
@@ -454,6 +457,7 @@ static struct pike_string *do_read(int fd,
       i=fd_read(fd, buf, try_read);
       THREADS_DISALLOW();
 
+      e=errno; /* check signals may effect errno */
       check_signals(0,0,0);
       
       if(i==try_read)
@@ -477,9 +481,9 @@ static struct pike_string *do_read(int fd,
       else
       {
 	low_make_buf_space(-try_read, &b);
-	if(errno != EINTR)
+	if(e != EINTR)
 	{
-	  *err=errno;
+	  *err=e;
 	  if(!bytes_read)
 	  {
 	    free(b.s.str);
@@ -524,11 +528,13 @@ static struct pike_string *do_read_oob(int fd,
     SET_ONERROR(ebuf, call_free, str);
 
     do{
+      int e;
       int fd=FD;
       THREADS_ALLOW();
       i=fd_recv(fd, str->str+bytes_read, r, MSG_OOB);
       THREADS_DISALLOW();
 
+      e=errno;
       check_signals(0,0,0);
 
       if(i>0)
@@ -541,9 +547,9 @@ static struct pike_string *do_read_oob(int fd,
       {
 	break;
       }
-      else if(errno != EINTR)
+      else if(e != EINTR)
       {
-	*err=errno;
+	*err=e;
 	if(!bytes_read)
 	{
 	  free((char *)str);
@@ -581,6 +587,7 @@ static struct pike_string *do_read_oob(int fd,
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
+      int e;
       char *buf;
       try_read=MINIMUM(CHUNK,r);
       
@@ -590,6 +597,7 @@ static struct pike_string *do_read_oob(int fd,
       i=fd_recv(fd, buf, try_read, MSG_OOB);
       THREADS_DISALLOW();
 
+      e=errno;
       check_signals(0,0,0);
       
       if(i==try_read)
@@ -613,9 +621,9 @@ static struct pike_string *do_read_oob(int fd,
       else
       {
 	low_make_buf_space(-try_read, &b);
-	if(errno != EINTR)
+	if(e != EINTR)
 	{
-	  *err=errno;
+	  *err=e;
 	  if(!bytes_read)
 	  {
 	    free(b.s.str);
