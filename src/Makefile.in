@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.134 1999/03/20 03:10:33 grubba Exp $
+# $Id: Makefile.in,v 1.135 1999/03/23 16:53:23 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -492,6 +492,7 @@ bin_export:
 
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
+	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt
 
 $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 	echo "" >$(SRCDIR)/peep_engine.c
@@ -500,7 +501,7 @@ $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 peep.o: $(SRCDIR)/peep_engine.c
 
 $(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	@if $(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt; \
+	if $(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt; \
 	then :; else echo '#include "dummy_ci.h"'; fi >$(SRCDIR)/case_info.h
 
 builtin_functions.o: $(SRCDIR)/case_info.h
