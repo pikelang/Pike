@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.234 2002/01/02 12:48:34 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.235 2002/10/19 10:14:14 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1586,7 +1586,7 @@ block:'{'
   {
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  } 
+  } empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -1600,8 +1600,8 @@ block:'{'
   {
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
-    $$=$4;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    $$=$5;
   }
   ;
 
@@ -2468,7 +2468,7 @@ typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
 cond: TOK_IF
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
+  } empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2476,12 +2476,12 @@ cond: TOK_IF
   }
   '(' safe_comma_expr end_cond statement optional_else_part
   {
-    $$=mknode('?',$5,mknode(':',$7,$8));
+    $$=mknode('?',$6,mknode(':',$8,$9));
     $$->line_number=$1;
     $$=mkcastnode(void_type_string,$$);
     $$->line_number=$1;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
   ;
 
@@ -2510,7 +2510,7 @@ safe_expr0: expr0
 foreach: TOK_FOREACH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
+  } empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2518,16 +2518,16 @@ foreach: TOK_FOREACH
   }
   '(' expr0 ',' safe_lvalue end_cond statement
   {
-    if ($7) {
-      $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$5,$7),$9);
+    if ($8) {
+      $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$6,$8),$10);
       $$->line_number=$1;
     } else {
       /* Error in lvalue */
-      free_node($5);
-      $$=$9;
+      free_node($6);
+      $$=$10;
     }
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -2563,7 +2563,7 @@ expected_semicolon: ';'
 for: TOK_FOR
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
+  } empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2574,11 +2574,11 @@ for: TOK_FOR
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string,$5),
-	      mknode(F_FOR,$7,mknode(':',$11,$9)));
+    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string,$6),
+	      mknode(F_FOR,$8,mknode(':',$12,$10)));
     lex.current_line=i;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -2587,7 +2587,7 @@ for: TOK_FOR
 while:  TOK_WHILE
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
+  } empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2597,10 +2597,10 @@ while:  TOK_WHILE
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_FOR,$5,mknode(':',$7,NULL));
+    $$=mknode(F_FOR,$6,mknode(':',$8,NULL));
     lex.current_line=i;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -2612,7 +2612,7 @@ for_expr: /* EMPTY */ { $$=mkintnode(1); }
 switch:	TOK_SWITCH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
+  } empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2620,10 +2620,10 @@ switch:	TOK_SWITCH
   }
   '(' safe_comma_expr end_cond statement
   {
-    $$=mknode(F_SWITCH,$5,$7);
+    $$=mknode(F_SWITCH,$6,$8);
     $$->line_number=$1;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
   ;
 
@@ -2853,7 +2853,7 @@ optional_block: /* EMPTY */ { $$=0; }
 
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
-    $<number>3=Pike_compiler->compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   statements end_block
   {
@@ -3551,7 +3551,8 @@ bad_expr_ident:
   { yyerror("if is a reserved word."); }
   ;
 
-
+/* Kludge for bison 1.50. */
+empty: /* empty */ ;
 
 %%
 
