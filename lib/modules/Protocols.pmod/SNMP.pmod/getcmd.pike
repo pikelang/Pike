@@ -12,7 +12,7 @@ void rc(mapping rdata, int idx) {
 
   o->set_blocking();
   o->to_pool(rdata);
-  rv = o->get_response(idx);
+  rv = o->read_response(idx);
 
   write(sprintf("Returned object: %O\n", rv));
  
@@ -33,7 +33,7 @@ int main(int argc, array(string) argv) {
   mapping m;
   string host = sizeof(argv) > 1 ? argv[1] : "localhost";
   
-  o = Protocols.SNMP.protocol(161,host);
+  o = Protocols.SNMP.protocol();
   // o->snmp_community = "public";
   int idx = o->get_request(({
     "1.3.6.1.2.1.1.1.0",	// system.sysDescr  -> String
@@ -49,7 +49,7 @@ write("Index: "+(string)idx+"\n");
   co = call_out(tt, 2);
   return(-13);
 #else
-  rv = o->get_response(idx);
+  rv = o->read_response(idx);
   write(sprintf("Returned object: %O\n", rv));
 #endif
 

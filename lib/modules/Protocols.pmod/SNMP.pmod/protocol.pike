@@ -4,13 +4,15 @@
 //:
 //: RFC:
 //:  implemented (yet):
-//:      1157 - v1 (only `TRAP' PDU is missing)
+//:      1155-7 : v1
+//:      1901-4 : v2/community (Bulk ops aren't implemented!)
 //:  planned:
-//:      1901 - v2/community
-//:      2570 - v3 description
+//	 2742   : agentX
+//:      2570   : v3 description
 //:
 
-//: For debuging use -DDEBUG_PIKE_PROTOCOL_SNMP=1
+// $Id: protocol.pike,v 1.2 2001/03/30 09:26:34 hop Exp $
+
 
 #include "snmp_globals.h"
 #include "snmp_errors.h"
@@ -65,6 +67,7 @@ object|mapping der_decode(object data, mapping types)
   contents = data->get_fix_string(len);
 
   int tag = raw_tag & 0xdf; // Class and tag bits
+//werror(sprintf("DEBx: tag=%O\n",tag));
 
   program p = types[tag];
 
@@ -84,7 +87,6 @@ object|mapping der_decode(object data, mapping types)
     }
 
     object res = p();
-
     // hop: For non-universal classes we provide tag number
     if(tag & 0xC0)
       res = p(tag & 0x1F, ({}));
@@ -125,12 +127,22 @@ static mapping snmp_type_proc =
                        19 : Standards.ASN1.Types.asn1_printable_string,
                        20 : Standards.ASN1.Types.asn1_teletex_string,
                        23 : Standards.ASN1.Types.asn1_utc,
-				// from RFC-1065 :
+
+		 	    // from RFC-1065 :
 		       64 : asn1_application_octet_string, // ipaddress
 		       65 : asn1_application_integer,      // counter
 		       66 : asn1_application_integer,      // gauge
 		       67 : asn1_application_integer,      // timeticks
-		       68 : asn1_application_octet_string  // opaque
+		       68 : asn1_application_octet_string,  // opaque
+
+			// v2
+		       70 : asn1_application_integer,	   // counter64
+
+			// context PDU
+                       128 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
+                       129 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
+                       130 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
+                       131 : Protocols.LDAP.ldap_privates.asn1_context_sequence
                     ]);
 
 object|mapping snmp_der_decode(string data)
@@ -206,20 +218,12 @@ mapping readmsg() {
   //: returns the whole SNMP message in raw format
   mapping rv;
 
-#if 1
   rv = read();
-#else
-  if(catch { rv = read(); }) {
-        //seterr or _READ_ERROR ?
-        THROW(({"SNMP.protocol: read error.\n",backtrace()}));
-  }
-#endif
-
   return(rv);
 }
 
-void to_pool(mapping rawd) {
-  //: decode ASN1 data and put it into pool, if garbaged ignore it
+mapping decode_asn1_msg(mapping rawd) {
+  //: decode ASN1 data, if garbaged ignore it
 
   object xdec = snmp_der_decode(rawd->data);
   string msgid = (string)xdec->elements[2]->elements[0]->value;
@@ -229,11 +233,20 @@ void to_pool(mapping rawd) {
 		   "error-status":errno,
 		   "error-string":snmp_errlist[errno],
 		   "error-index":xdec->elements[2]->elements[2]->value,
+		   "version":xdec->elements[0]->value,
+		   "community":xdec->elements[1]->value,
+		   "op":xdec->elements[2]->get_tag(),
 		   "attribute":Array.map(xdec->elements[2]->elements[3]->elements, lambda(object duo) { return(([(array(string))(duo->elements[0]->id)*".":duo->elements[1]->value])); } )
   ]);
 
-  // to the queue
-  msgpool += ([msgid:msg]);
+  return(([msgid:msg]));
+}
+
+
+void to_pool(mapping rawd) {
+  //: put decoded msg to the pool
+
+  msgpool += decode_asn1_msg(rawd);
 
 }
 
@@ -300,9 +313,9 @@ int get_req_id() {
 }
 
 //:
-//: get_response
+//: read_response
 //:
-array(mapping)|int get_response(int msgid) {
+array(mapping)|int read_response(int msgid) {
   //: GetResponse-PDU low call
   mapping rawpdu = readmsg_from_pool(msgid);
 
@@ -340,6 +353,88 @@ int get_request(array(string) varlist, string|void rem_addr,
 
 }
 
+object mk_asn1_val(string type, int|string val) {
+// returns appropriate ASN.1 value
+
+  object rv;
+
+  switch(type) {
+    case "oid":		// OID
+	rv = Standards.ASN1.Types.asn1_identifier(
+		@Array.map(val/".", lambda(string el){ return((int)el);}));
+	break;
+
+    case "int":		// INTEGER
+	rv = Standards.ASN1.Types.asn1_integer(val);
+	break;
+
+    case "str":		// STRING
+	rv = Standards.ASN1.Types.asn1_octet_string(val);
+	break;
+
+    case "ipaddr":	// ipAddress
+	rv = asn1_application_octet_string(0,val[..3]);
+	break;
+
+    case "count":	// COUNTER
+	rv = asn1_application_integer(1,val);
+	break;
+
+    case "gauge":	// GAUGE
+	rv = asn1_application_integer(2,val);
+	break;
+
+    case "tick":	// TICK
+	rv = asn1_application_integer(3,val);
+	break;
+
+    case "opaque":	// OPAQUE
+	rv = asn1_application_octet_string(4,val);
+	break;
+
+    case "count64":	// COUNTER64 - v2 object
+	rv = asn1_application_integer(6,val);
+	break;
+
+    default:		// bad type!
+	return 0;
+  }
+
+  return rv;
+}
+
+//:
+//: get_response
+//:
+int get_response(mapping varlist, mapping origdata, int|void errcode, int|void erridx) {
+  //: GetResponse-PDU low call
+  object pdu;
+  int id = indices(origdata)[0], flg;
+  array vararr = ({});
+
+  foreach(indices(varlist), string varname)
+    if(arrayp(varlist[varname]) || sizeof(varlist[varname]) > 1) {
+      vararr += ({Standards.ASN1.Types.asn1_sequence(
+		 ({Standards.ASN1.Types.asn1_identifier(
+		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		   mk_asn1_val(varlist[varname][0], varlist[varname][1])})
+	      )});
+    }
+
+  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(2,
+							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
+								 Standards.ASN1.Types.asn1_integer(errcode), // error-status
+								 Standards.ASN1.Types.asn1_integer(erridx), // error-index
+								 Standards.ASN1.Types.asn1_sequence(vararr)})
+							       );
+
+  // now we have PDU ...
+  flg = writemsg(origdata[id]->ip||remote_host, origdata[id]->port||port, pdu);
+
+  return id;
+
+}
+
 
 //:
 //: get_nextrequest
@@ -371,22 +466,6 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
 
 }
 
-object mktype(array(mixed) varval) {
-
-  if(sizeof(varval) != 2) // error!
-    return 0;
-
-  switch(varval[0]) {
-	case "i": // integer
-	  return Standards.ASN1.Types.asn1_integer(varval[1]);
-
-	case "s": // string
-	  return Standards.ASN1.Types.asn1_octet_string(varval[1]);
-  }
-
-  return 0;
-}
-
 //:
 //: set_request
 //:
@@ -399,11 +478,42 @@ int set_request(mapping varlist, string|void rem_addr,
 
   foreach(indices(varlist), string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
-	      ({Standards.ASN1.Types.asn1_identifier(@Array.map(varname/".", lambda(string el){ return((int)el);})),
-		mktype(varlist[varname])})
+	        ({Standards.ASN1.Types.asn1_identifier(
+		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(3,
+							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
+								 Standards.ASN1.Types.asn1_integer(0), // error-status
+								 Standards.ASN1.Types.asn1_integer(0), // error-index
+								 Standards.ASN1.Types.asn1_sequence(vararr)})
+							       );
+
+  // now we have PDU ...
+  flg = writemsg(rem_addr||remote_host, rem_port || port, pdu);
+
+  return id;
+}
+
+//:
+//: trap
+//:
+int trap(mapping varlist, string|void rem_addr,
+                         int|void rem_port) {
+  //: Trap-PDU low call
+  object pdu;
+  int id = get_req_id(), flg;
+  array vararr = ({});
+
+  foreach(indices(varlist), string varname)
+    vararr += ({Standards.ASN1.Types.asn1_sequence(
+	        ({Standards.ASN1.Types.asn1_identifier(
+		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
+	      )});
+
+  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(4,
 							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
 								 Standards.ASN1.Types.asn1_integer(0), // error-status
 								 Standards.ASN1.Types.asn1_integer(0), // error-index
