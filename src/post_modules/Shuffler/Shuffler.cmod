@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.20 2002/11/05 19:47:40 grendel Exp $
+|| $Id: Shuffler.cmod,v 1.21 2002/11/24 16:32:03 agehall Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.20 2002/11/05 19:47:40 grendel Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.21 2002/11/24 16:32:03 agehall Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -290,25 +290,8 @@ PIKECLASS Shuffle
   static void _all_done( struct Shuffle_struct *t, int reason )
   {
     SHUFFLE_DEBUG2("_all_done(%d)\n", t,reason );
-    _remove_callbacks( t );
-    
-    debug_malloc_touch( t->this_obj );
-    ref_push_object( t->this_obj );
-    /* It might have been destroyed. */
-    if( t->shuffler && t->shuffler->prog )
-    {
-      debug_malloc_touch( t->shuffler );
-      safe_apply( t->shuffler, "___remove_shuffle", 1 );
-    }
-    pop_stack();
 
-    if( t->file_obj )
-    {
-      debug_malloc_touch( t->file_obj );
-      free_object( t->file_obj );
-      t->file_obj = 0;
-    }
-
+    /* We should set the reason for being done first of all */
     switch( reason )
     {
       case 0: t->state = DONE; break;
@@ -317,21 +300,9 @@ PIKECLASS Shuffle
       case 3: t->state = READ_ERROR; break;
     }
 
-    while( t->current_source )
-    {
-      struct source *n = t->current_source->next;
-      debug_malloc_touch( t->current_source );
-      free_source( t->current_source );
-      t->current_source = n;
-    }
-    if( t->leftovers.data && t->leftovers.do_free )
-    {
-      debug_malloc_touch( t->leftovers.data );
-      free( t->leftovers.data );
-    }
-
-    t->leftovers.data = 0;
-
+    /* If a callback exists, we call it before destroying
+     * source and destination
+     */
     if( t->done_callback.type != PIKE_T_INT )
     {
       SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
@@ -345,6 +316,46 @@ PIKECLASS Shuffle
       pop_stack();
       pop_stack();
     }
+
+    /* Remove our callbacks. */
+    _remove_callbacks( t );
+    
+    debug_malloc_touch( t->this_obj );
+    ref_push_object( t->this_obj );
+
+    /* It might have been destroyed. */
+    if( t->shuffler && t->shuffler->prog )
+    {
+      debug_malloc_touch( t->shuffler );
+      safe_apply( t->shuffler, "___remove_shuffle", 1 );
+    }
+    pop_stack();
+
+    /* Destroy file_obj if any. */
+    if( t->file_obj )
+    {
+      debug_malloc_touch( t->file_obj );
+      free_object( t->file_obj );
+      t->file_obj = 0;
+    }
+
+    /* Destroy all our sources. */
+    while( t->current_source )
+    {
+      struct source *n = t->current_source->next;
+      debug_malloc_touch( t->current_source );
+      free_source( t->current_source );
+      t->current_source = n;
+    }
+
+    /* Free any data left in pipe. */
+    if( t->leftovers.data && t->leftovers.do_free )
+    {
+      debug_malloc_touch( t->leftovers.data );
+      free( t->leftovers.data );
+    }
+
+    t->leftovers.data = 0;
   }
 
   PIKEFUN void set_done_callback( mixed cb )
