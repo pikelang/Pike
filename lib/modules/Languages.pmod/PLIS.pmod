@@ -902,7 +902,7 @@ Parser(
 //! Creates a new environment on which
 //! it runs init_functions, init_specials
 //! and the following boot code.
-//! @pre{@code{
+//! @code{
 //! (begin
 //!   (defmacro (cddr x)
 //!     (list (quote cdr) (list (quote cdr) x)))
@@ -926,7 +926,7 @@ Parser(
 //!     (cons (cons (quote lambda)
 //! 		(cons (map car decl) body))
 //! 	  (map cadr decl))))
-//! @}@}
+//! @}
 Environment default_environment()
 {
   Environment env = Environment();
@@ -939,7 +939,7 @@ Environment default_environment()
 //! Instantiates a copy of the default environment and
 //! starts an interactive main loop that connects to
 //! standard I/O. The main loop is as follows:
-//! @pre{@code{
+//! @code{
 //! (begin
 //!    (define (loop)
 //!      (let ((line (read-line \"PLIS: \")))
@@ -949,7 +949,7 @@ Environment default_environment()
 //!                 (display res)
 //!                (loop)))))
 //!    (loop))
-//! @}@}
+//! @}
 void main()
 {
   Environment e = default_environment();
