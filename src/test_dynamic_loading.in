@@ -139,8 +139,12 @@ char **ARGV;
 int main(int argc, char **argv)
 {
   void *module,*fun;
+  FILE *tmpfp;
   ARGV=argv;
   dlinit();
+  /* touch file to avoid pesky NFS races on NT... */
+  if((tmpfp = fopen("./dynloadtestmod.so", "a")))
+    fclose(tmpfp);
   module=dlopen("./dynloadtestmod.so",RTLD_NOW | RTLD_GLOBAL);
   if(!module)
   {
