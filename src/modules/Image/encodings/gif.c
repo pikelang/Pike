@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.38 1998/04/16 00:39:00 mirar Exp $ */
+/* $Id: gif.c,v 1.39 1998/04/16 22:54:03 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.38 1998/04/16 00:39:00 mirar Exp $
+**!	$Id: gif.c,v 1.39 1998/04/16 22:54:03 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.38 1998/04/16 00:39:00 mirar Exp $");
+RCSID("$Id: gif.c,v 1.39 1998/04/16 22:54:03 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2011,7 +2011,7 @@ void image_gif_decode(INT32 args)
    {
       pop_n_elems(args-1);
       if (sp[-args].u.array->size<4)
-	 error("Image.GIF._decode: illegal argument\n");
+	 error("Image.GIF.decode: illegal argument\n");
       if (sp[-args].u.array->item[3].type!=T_ARRAY)
 	 image_gif__decode(1);
    }
@@ -2019,14 +2019,13 @@ void image_gif_decode(INT32 args)
       image_gif__decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      error("Image.GIF._decode: internal error: "
+      error("Image.GIF.decode: internal error: "
 	    "illegal result from _decode\n");
 
-   (a=sp[-1].u.array)->refs++;
+   a=sp[-1].u.array;
    if (a->size<4)
-      error("Image.GIF._decode: given (__decode'd) array "
+      error("Image.GIF.decode: given (_decode'd) array "
 	    "is too small\n");
-   pop_n_elems(1);
 
    push_svalue(a->item+0);
    push_svalue(a->item+1);
@@ -2066,7 +2065,10 @@ void image_gif_decode(INT32 args)
 	    pop_n_elems(1);
 	 }
       }
+
    push_object(o);
+   stack_swap();
+   pop_stack();
 }
 
 /*
@@ -2093,10 +2095,11 @@ void image_gif__encode_render(INT32 args)
 
    localp=sp[1-args].u.integer;
    (a=sp[-args].u.array)->refs++;
-   pop_n_elems(args);
 
    if (a->size<11)
       error("Image.GIF._encode_render: Illegal size of array\n");
+
+   pop_n_elems(args);
 
    push_svalue(a->item+3); /* img */
    push_svalue(a->item+5); /* colortable */
@@ -2112,10 +2115,16 @@ void image_gif__encode_render(INT32 args)
       nct=(struct neo_colortable*)
 	 get_storage(a->item[4].u.object,image_colortable_program);
       if (!nct)
+      {
+	 free_array(a);
 	 error("Image.GIF._encode_render: Passed object is not colortable\n");
+      }
       
       if (nct->type!=NCT_FLAT)
+      {
+	 free_array(a);
 	 error("Image.GIF._encode_render: Passed colortable is not flat (sorry9\n");
+      }
       push_svalue(a->item+4);
       if (a->item[7].type==T_INT 
 	  && a->item[7].u.integer>=0 
@@ -2233,7 +2242,10 @@ void image_gif__encode(INT32 args)
 
    if (a->item[3].type!=T_ARRAY 
       || a->item[3].u.array->size<3)
+   {
+      free_array(a);
       error("Image.GIF._encode: Illegal type on array index 3 (expected array)\n");
+   }
 
    push_svalue(a->item[3].u.array->item+2); /* bkgi */
    push_int(0); /* GIF87a-flag */
@@ -2247,12 +2259,18 @@ void image_gif__encode(INT32 args)
    while (pos<a->size)
    {
       if (a->item[pos].type!=T_ARRAY)
+      {
+	 free_array(a);
 	 error("Image.GIF._encode: Illegal type on array index %d (expected array)\n",pos);
+      }
       b=a->item[pos].u.array;
 
       if (b->size<1
 	  || b->item[0].type!=T_INT)
+      {
+	 free_array(a);
 	 error("Image.GIF._encode: Illegal array on array index %d\n",pos);
+      }
       
       if (b->item[0].u.integer==GIF_RENDER)
       {
