@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.15 2001/05/06 16:04:22 grubba Exp $
+ * $Id: autodoc.pike,v 1.16 2001/07/19 21:15:09 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -131,7 +131,7 @@ int main(int argc, array(string) argv)
       }
     };
     if (err) {
-      if (_typeof(err) <= Tools.AutoDoc.AutoDocError)
+      if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
         werror("%O\n", err);
       else
 	throw(err);
