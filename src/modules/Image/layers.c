@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.27 1999/07/03 09:10:49 mirar Exp $
+**!	$Id: layers.c,v 1.28 1999/07/21 02:59:07 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -18,7 +18,7 @@
 **!    begin_tag("tr");
 **!    write(mktag("td",(["align":"right","valign":"center"]),
 **!          mktag("b",0,desc)));
-**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img)));
+**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0]))));
 **!    write(end_tag());
 **! }
 **! 
@@ -195,7 +195,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.27 1999/07/03 09:10:49 mirar Exp $");
+RCSID("$Id: layers.c,v 1.28 1999/07/21 02:59:07 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -2630,9 +2630,9 @@ void init_image_layers(void)
    ADD_FUNCTION("crop",image_layer_crop,
 		tFunc(tInt tInt tInt tInt,tObj),0);
    ADD_FUNCTION("autocrop",image_layer_autocrop,
-		tFuncV(,tOr(tVoid,tInt),tObj),0);
+		tFuncV(tNone,tOr(tVoid,tInt),tObj),0);
    ADD_FUNCTION("find_autocrop",image_layer_find_autocrop,
-		tFuncV(,tOr(tVoid,tInt),tObj),0);
+		tFuncV(tNone,tOr(tVoid,tInt),tObj),0);
 
    /*
    ADD_FUNCTION("rotate",image_layer_rotate,tFunc(tOr(tInt,tFloat),tObj),0);
