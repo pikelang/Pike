@@ -1,32 +1,180 @@
-(to browse bug crunch tickets noted at the end of these notes, either
-visit http://community.roxen.com/crunch/ - or append the ticket id to
-"http://bugs.roxen.com/" for a address directly to the ticket itself)
-
-
-Changes since xxxx-yy-zz / Pike u.v.w   (released                   ):
+Changes since Pike 7.2:
 ----------------------------------------------------------------------
 
+New functionality:
+------------------
 
-Changes since before then; Pike 7.4
-----------------------------------------------------------------------
+o New Hilfe
 
-Compatibility changes:
-----------------------
+o pike -x
+    rsif
+    pv
 
-Protocols.LDAP.client - return code from all methods was changed
- to follow Pike's loggic better. Now 1 is returned on success,
- 0 otherwise. Compatibility code for Pike 7.2 was added.
+o unbug
 
-Changes since before then; Pike 7.2
-----------------------------------------------------------------------
+
+New concepts:
+-------------
+
+o Automap
+
+o Implicit lambda.
+
+o global::
+    Added new keyword global to be able to access identifiers on the
+    top level of the compilation unit using global::foo. (Deactivated
+    in 7.2 compatibility mode, of course.)
+
+    It's now possible to use e.g: global::this_program. 
+
+    Added an optional level argument to this_object(). *FIXME: Do we
+    really want this documented?*
+    
+
+o this
+    Added a magic identifier "this" that can be used instead of
+    this_object(). Like this_program, it only exists when there's no
+    other identifier with that name. The object of a surrounding class
+    can be adressed with Foo::this.
+
+o Local
+
+o Iterators  (Mapping.pmod Multiset.pmod)
+
+o for(X; Y; Z)
+
+o enum reserved
+
+o enum and typedef have implicit local binding
+
+o ::_indices ::_values
+
+o Sooo.... This would be what?
+    Include the names of the surrounding classes themselves in the lookup for
+    Foo::, to make it possible to adress hidden variables in the scopes of
+    surrounding classes, e.g:
+
+       class X {
+         int i;
+         void create (int i) {X::i = i;}
+       }
+    
+    Since this change is mostly but not completely compatible with the earlier
+    lookup rule, it's disabled in 7.2 compatibility mode.
+
+o 
+
+Other:
+------
+
+sp -> Pike_sp
+fp -> Pike_fp
+fatal -> Pike_fatal
+empty_string -> empty_pike_string
+
+--with-internal-profiling
+--with-new-multisets
+
+
 
 New modules / classes / methods added:
 --------------------------------------
 
-Compatibility changes:
-----------------------
+o ADT.History
+    Alfons Åberg.
 
+o ADT.Relation.Binary
+    Handles binary relations.
+   
+o Audio.Codec and Audio.Codec
+    Contains decoders and encoders for audio. Currently WAV and MP3.
+
+o Calendar.verify
+
+o Debug.Tracer
+
+o Locale.Language
+
+o Parser.Python
+
+o Parser.RCS
+    
+
+o XML.NSTree
+
+o HTTP.Server
+
+o X.KeySums
+
+o Standards.CIFF
+
+o Standards.FIPS10_4
+
+o Standards.ID3
+
+o Standards.RDF
+
+o Stdio.FakeFile
+
+o Stdio.GZipFile
+
+o Tools.PV
+    Convenience tool that sets up a canvas with GTK, presents a
+    picture on it and delivers a number of image inspection and
+    manipulation options. 
+
+    Also accessable via "pike -x pv"
+    
+o Image.Dims
+    Can extract the dimensions of an image withóut loading the entire
+    image.
+
+o Image.Fonts
+    High level API for font handling. Should be used instead of
+    accessing the Freetype, TTF and *FIXME* modules directly.
+
+o Image.DWG
+    AutoCAD thumbnail images.
+
+o Gmp.mpq and Gmp.mpf
+    Multi precision fractions.    
+   
 Optimizations:
 --------------
 
-Improvement and bug tickets closed: 1499
+o Improvement and bug tickets closed: 1499
+
+
+Compatibility changes:
+----------------------
+
+Bugfixes and API-fixes that break compatibility. The old behaviour is
+emulated in the compatibility layer that is activated by adding the
+preprocessor directive "#pike 7.2" to your program or by precifying
+the "-V7.2" argument to the pike executable.
+
+o Protocols.LDAP.client
+    The return code from all methods was changed to follow Pike's
+    logic better. 0 is now a failure. The old behaviour is emulated in
+    compatibility layer
+
+o dirname
+    Now correctly returns a directory instead of just stripping the
+    part after nearest directory seprator.
+
+o LR
+    LR has been moved to Parser.LR and the API has been chnged.
+    FIXME: More about this?
+
+
+Bugs fixed:
+-----------
+
+o Reworked trampolines to cause less circular references. (solves 1937)
+
+
+(to browse bug tickets, either visit
+ http://community.roxen.com/crunch/ - or append the ticket id to
+ "http://bugs.roxen.com/" for a address directly to the ticket itself)
+
+
