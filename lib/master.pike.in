@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.97 2000/02/04 11:27:21 grubba Exp $
+ * $Id: master.pike.in,v 1.98 2000/02/04 16:35:46 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -611,18 +611,21 @@ class dirnode
     if( !files )
       files = get_dir(dirname);
     foreach(files, string fname) {
-      catch {
+      mixed err = catch {
 	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
 	    !zero_type(`[](fname[..sizeof(fname)-6]))) {
 	  continue;
-	}
-      };
-      catch {
-	if ((fname[sizeof(fname)-3..] == ".so") &&
+	} else if ((fname[sizeof(fname)-3..] == ".so") &&
 	    !zero_type(`[](fname[..sizeof(fname)-4]))) {
 	  continue;
 	}
       };
+      if (err) {
+	compile_warning(dirname+"."+fname, 0,
+			sprintf("Compilation failed:\n"
+				"%s\n",
+				describe_backtrace(err)));
+      }
     }
     _cache_full = 1;
   }
