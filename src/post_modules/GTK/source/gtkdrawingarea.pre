@@ -9,6 +9,8 @@ void create();
 void size( int width, int height );
 //! This function is OBSOLETE
 %{
+#undef TWIN
+#undef _GC
 #define TWIN GTK_WIDGET(THIS->obj)->window
 #define GC(X) ((GdkGC*)get_gdkobject(X,gc))
 %}

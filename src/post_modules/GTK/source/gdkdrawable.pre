@@ -23,6 +23,8 @@ class GDK.Drawable;
 //! shape for a GDK.Window or a W(Widget)
 //! </p>
 %{
+#undef TWIN
+#undef GC
 #define TWIN ((GdkWindow *)THIS->obj)
 #define GC(X) (get_gdkobject(X, gc))
 %}

@@ -6,6 +6,8 @@ inherit GTK.Object;
 #else
 #include <gdk/win32/gdkwin32.h>
 #endif
+#undef TWIN
+#undef _GC
 #define TWIN  (GTK_WIDGET(THIS->obj)->window)
 #define _GC(X) ((GdkGC*)get_gdkobject(X,gc))
 %}
