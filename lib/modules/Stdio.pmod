@@ -512,10 +512,10 @@ int cp(string from, string to)
 {
   string data;
   object tmp=File();
-  if(tmp->open(from,"r")) return 0;
+  if(!tmp->open(from,"r")) return 0;
   function r=tmp->read;
   tmp=File();
-  if(tmp->open(to,"wct")) return 0;
+  if(!tmp->open(to,"wct")) return 0;
   function w=tmp->write;
   do
   {
