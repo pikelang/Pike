@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.15 2002/12/12 18:22:15 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.16 2002/12/12 20:42:18 grubba Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -786,24 +786,24 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
       namespace = namespace[..sizeof(namespace)-3];
    }
 
-   object f = class (string namespace) {
+   object f = class {
       string doc = "";
       int write(string in) {
 	 doc += in;
 	 return sizeof(in);
       }
       string read() {
-	 return "<autodoc>\n"
-	    "<namespace name='" + namespace + "'>\n" +
-	    doc +
-	    "</namespace>"
-	    "</autodoc>";
+	 return "<autodoc>\n" + doc + "</autodoc>";
       }
-   }(namespace);
+   }();
 
+   // Module documentation exists in a namespace...
+   f->write("<namespace name='" + namespace + "'>\n");
    foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
       document("module",parse[module],module,module+".", f);
+   f->write("</namespace>\n");
 
+   // But appendices do not.
    if(appendixM)
       foreach(parse[" appendix"]->_order, string title)
          document("appendix",parse[" appendix"][title],title,"", f);
