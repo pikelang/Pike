@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.506 2003/09/05 11:56:24 grubba Exp $
+|| $Id: builtin_functions.c,v 1.507 2003/09/05 12:36:22 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.506 2003/09/05 11:56:24 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.507 2003/09/05 12:36:22 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -436,13 +436,14 @@ static struct case_info *find_ci_shift0(INT32 c)
  *!
  *! @note
  *!   Assumes the string or character to be coded according to
- *!   ISO-10646 (aka Unicode).
+ *!   ISO-10646 (aka Unicode). If they are not, @[Locale.Charset.decoder]
+ *!   can do the initial conversion for you.
  *!
  *! @note
  *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
- *!   @[upper_case()]
+ *!   @[upper_case()], @[Locale.Charset.decoder]
  */
 PMOD_EXPORT void f_lower_case(INT32 args)
 {
@@ -505,13 +506,14 @@ PMOD_EXPORT void f_lower_case(INT32 args)
  *!
  *! @note
  *!   Assumes the string or character to be coded according to
- *!   ISO-10646 (aka Unicode).
+ *!   ISO-10646 (aka Unicode). If they are not, @[Locale.Charset.decoder]
+ *!   can do the initial conversion for you.
  *!
  *! @note
  *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
- *!   @[lower_case()]
+ *!   @[lower_case()], @[Locale.Charset.decoder]
  */
 PMOD_EXPORT void f_upper_case(INT32 args)
 {
@@ -6434,6 +6436,8 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!   Elements are compared with @[`==]. They are also hashed (see
  *!   @[lfun::__hash] for further details if the array contains
  *!   objects).
+ *! @seealso
+ *!   @[group_by]
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
