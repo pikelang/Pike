@@ -9,7 +9,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 all: modules
 
 modules:
-	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a) ; done
+	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a ) ; done
 	$(MAKE) linker_options modlist.h modlist_headers.h
 
 modlist.h: $(MODULE_SEGMENTS)
