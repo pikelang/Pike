@@ -7,6 +7,15 @@
  * with Gmp-2.1 .
  */
 
+#include "gmp_machine.h"
+
+#if !defined(HAVE_LIBGMP)
+#undef HAVE_GMP_H
+#endif
+
+
+#ifdef HAVE_GMP_H
+
 #include <limits.h>
 #include <gmp.h>
 
@@ -195,3 +204,5 @@ mpz_next_prime(mpz_t p, mpz_t n, int count, int prime_limit)
     }
   mpz_clear(tmp);
 }
+
+#endif
