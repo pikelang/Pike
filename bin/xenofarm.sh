@@ -14,7 +14,6 @@ log_start() {
 
 log_end() {
   LAST=$?
-  export LAST
   if [ "$LAST"="0" ] ; then
     log "PASS"
   else
@@ -27,18 +26,18 @@ xenofarm_low() {
   log_start build
   $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
   log_end
-  if [ ! "$LAST"="0" ] ; then return; fi
+  if [ \! X$LAST = X0 ] ; then return; fi
 
   log_start verify
   $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
     build/xenofarm/verifylog.txt 2>&1
   log_end
-  if [ ! "$LAST"="0" ] ; then return; fi
+  if [ \! X$LAST = X0 ] ; then return; fi
 
   log_start export
   $MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
   log_end
-  if [ ! "$LAST"="0" ] ; then return; fi
+  if [ \! X$LAST = X0 ] ; then return; fi
 }
 
 
