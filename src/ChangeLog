@@ -1,3 +1,7 @@
+Wed Dec  4 05:01:00 1996  Niels Möller  <nisse@skuld.infovav.se>
+
+	* modules/ssleay/ssleay.c (init_context): Increment reference count.
+
 Wed Dec  4 09:15:42 1996  Per Hedbor  <per@skuld.infovav.se>
 
 	* modules/files/file.c (do_read): Fixed memory corrupton error.
