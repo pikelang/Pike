@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.72 1999/11/24 21:44:02 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.73 1999/11/25 00:09:56 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1680,6 +1680,11 @@ static char *low_match_types2(char *a,char *b, int flags)
  *                 zero
  *
  *                 void
+ *
+ * Note that non-destructive operations are assumed.
+ * ie it's assumed that calling a function(mapping(string|int:string|int):void)
+ * with a mapping(int:int) won't change the type of the mapping after the
+ * operation.
  */
 static int low_pike_types_le(char *a,char *b)
 {
@@ -1874,6 +1879,9 @@ static int low_pike_types_le(char *a,char *b)
   switch(EXTRACT_UCHAR(a))
   {
   case T_FUNCTION:
+    /*
+     * function(A...:B) <= function(C...:D)	iff C <= A && B <= D
+     */
     a++;
     b++;
     while(EXTRACT_UCHAR(a)!=T_MANY || EXTRACT_UCHAR(b)!=T_MANY)
@@ -1895,27 +1903,29 @@ static int low_pike_types_le(char *a,char *b)
 	b+=type_length(b);
       }
 
-      if(!low_pike_types_le(a_tmp, b_tmp)) return 0;
+      if(!low_pike_types_le(b_tmp, a_tmp)) return 0;
     }
     /* check the 'many' type */
     a++;
     b++;
-    if (!low_pike_types_le(a, b))
+    if (!low_pike_types_le(b, a))
       return 0;
 
     a+=type_length(a);
     b+=type_length(b);
 
     /* check the returntype */
-    /* NOTE: The order between a & b is switched. */
-    if(!low_pike_types_le(b,a)) return 0;
+    if(!low_pike_types_le(a,b)) return 0;
     break;
 
   case T_MAPPING:
     /*
-     *  mapping(A:B) <= mapping(C:D)   iff C <= A && B <= D.
+     *  mapping(A:B) <= mapping(C:D)   iff ((C <= A) || (A <= C)) && B <= D.
+     *
+     *  The reason for the weak index type test, is that it's not an error
+     *  to index a mapping with a nonexistant key.
      */
-    if(!low_pike_types_le(++b,++a)) return 0;
+    if(!low_pike_types_le(++b,++a) && !low_pike_types_le(b, a)) return 0;
     return low_pike_types_le(a+type_length(a),b+type_length(b));
 
   case T_OBJECT:
@@ -1984,6 +1994,11 @@ static int low_pike_types_le(char *a,char *b)
     
 
   case T_MULTISET:
+    /* It's not an error to index a multiset with a nonexistant key. */
+    if(!low_pike_types_le(++a,++b) &&
+       !low_pike_types_le(b, a)) return 0;
+    break;
+
   case T_ARRAY:
     if(!low_pike_types_le(++a,++b)) return 0;
 
