@@ -1,44 +1,46 @@
-#!/usr/local/bin/pike
+#!/home/lange/pike71
+//#!/usr/local/bin/pike 
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.3 2000/07/14 11:49:04 lange Exp $
+// $Id: extract.pike,v 1.4 2000/07/17 16:55:35 lange Exp $
 //
 
 
 // The arguments given to the program
-mapping args=([]);
+mapping args = ([]);
 // All the files to gather strings from
-array(string) files=({});
+array(string) files = ({});
 // All ids used, id:text
-mapping(string:string) ids=([]);
+mapping(string:string) ids = ([]);
 // Reversed id mapping, text:id
-mapping(string:string) r_ids=([]);
+mapping(string:string) r_ids = ([]);
 // Keep track of every id's origin, id:array(filenames)
 // (id_origin[id]==0 => from _eng.xml)
 mapping(string:array) id_origin = ([]);
 // Order of the ids in the _eng.xml file
-array(string) id_xml_order=({});
+array(string) id_xml_order = ({});
 // Code to add to _eng.xml, id:code  
-mapping(string:string) add=([]);
+mapping(string:string) add = ([]);
 // List of ids already in the _eng.xml
-multiset(string) added=(<>);
+multiset(string) added = (<>);
 // The highest int with all lower ids set; see make_id_string()
-int high_int_id=0;
+int high_int_id = 0;
 
 
 constant id_characters = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ0123456789";
 string make_id_string(int int_id) {
   // Make a string (as short as possible) based on id_characters and int_id
-  string ret="";
+  string ret = "";
   int rest = int_id - 1;
   int val;
-  for(int pos=1+(int)floor(log((float)int_id)/log(1.0+sizeof(id_characters))); 
+  for(int pos = 1 + (int)floor(log( (float)int_id ) /
+			       log( 1.0+sizeof(id_characters) )); 
       pos; pos--) {
     if (pos < 2) 
       val = rest;
     else {
-      int div = (int)pow(sizeof(id_characters)+1,(pos-1)) - 1;
+      int div = (int)pow(sizeof(id_characters)+1, (pos-1)) - 1;
       val = rest / div;
       rest -= val * div;
       val--;
@@ -54,8 +56,8 @@ string make_id() {
   // Returns the next unused unique id
   string ret;
   do {
-    ret = make_id_string(++high_int_id);
-  } while (has_value(id_xml_order,ret));
+    ret = make_id_string( ++high_int_id );
+  } while ( has_value(id_xml_order, ret) );
   return ret;
 }
 
@@ -63,9 +65,9 @@ string make_id() {
 string get_first_string(string in) {
   // Merges parts, compiles and returns the first string in a line from cpp
   // ie '"a\\n"  "b: " "%s!", string' --> "a\nb: %s!"
-  string ret="";
-  int instr=0;
-  for(int i=0; i<sizeof(in); i++) {
+  string ret = "";
+  int instr = 0;
+  for(int i = 0; i<sizeof(in); i++) {
     if(in[i]=='\"')
       if(!(i>0 && in[i-1]=='\\')) {
 	instr= instr? 0 : 1;
@@ -82,37 +84,37 @@ string get_first_string(string in) {
 string quotemeta(string in) {
   // Takes a string from cpp and quotes it so it will be
   // regexp-safe and match the string in the source-file
-  string ret="";
-  int instr=0;
-  for(int i=0; i<sizeof(in); i++) {
+  string ret = "";
+  int instr = 0;
+  for(int i = 0; i<sizeof(in); i++) {
     switch (in[i]) 
       {
       case '\"':
 	if(!(i>0 && in[i-1]=='\\')) {
 	  instr = instr? 0 : 1;
 	  if(instr && i>0)
-	    ret+=".*";
+	    ret += ".*";
 	}
-	ret+="\"";
+	ret += "\"";
 	break;
 
       case '\\':
 	if((i+1)<sizeof(in) && in[i+1]=='n') {
 	  if(instr) { 
-	    ret+="[\n|\\\\]n*"; // Must handle both "\\n" and '\n'
+	    ret += "[\n|\\\\]n*"; // Must handle both "\\n" and '\n'
 	    i++;
 	  }
 	  break;
 	}
 
-      case '.':  case '+':  case '*':
-      case '^':  case '(':  case ')':
-      case '$':  case '[':  case ']':
-      case '|':
-	if(instr) ret+="\\";
+      case '.': case '+': case '*':
+      case '^': case '(': case ')':
+      case '$': case '[': case ']':
+      case '|': 
+	if(instr) ret += "\\";
 
       default:
-	if(instr) ret+=in[i..i];	
+	if(instr) ret += in[i..i];	
       }
   }
   return ret;
@@ -123,7 +125,7 @@ function get_encoder(string encoding) {
   // If needed, returns a function which encodes a string
   if(!encoding || encoding=="")
     return 0;
-  switch(lower_case(encoding)) 
+  switch( lower_case(encoding) ) 
     {
     case "iso-8859-1":
       // The normal, no decode needed
@@ -142,7 +144,7 @@ function get_encoder(string encoding) {
       
     default:
       object enc;
-      if(catch(enc = Locale.Charset.encoder( encoding ))) {
+      if(catch( enc = Locale.Charset.encoder( encoding ) )) {
 	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }
@@ -157,7 +159,7 @@ function get_decoder(string encoding) {
   // If needed, returns a function which decodes a string
   if(!encoding || encoding=="")
     return 0;
-  switch(lower_case(encoding)) 
+  switch( lower_case(encoding) ) 
     {
     case "iso-8859-1":
       // The normal, no decode needed
@@ -176,7 +178,7 @@ function get_decoder(string encoding) {
       
     default:
       object dec;
-      if(catch(dec = Locale.Charset.decoder( encoding ))) {
+      if(catch( dec = Locale.Charset.decoder( encoding ) )) {
 	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }
@@ -191,7 +193,7 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
   // Reads a language-xml (like project_eng.xml)
   // Marks used ids in ids([]), also adds r_ids([text]) from id-comment
   // Returns file, with markers instead of <--! [id] ""-->\n<t></t>
-  // write_xml_file uses the returned data and id_xml_order to build a new one
+  // write_xml_file uses the returned data+id_xml_order to build a new one
   // Set parameter wipe_pass=1 to remove ids not in ids[] from file
   if(!filename || filename=="")
     return "";
@@ -232,13 +234,13 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 
   // Comment id mapping - text from <!-- [id] "text" -->, id:text
   // text inserted into ids[id] in the t_tag function
-  mapping c_ids=([]); 
+  mapping c_ids = ([]); 
 
   Parser.HTML xml_parser = Parser.HTML();
   function t_tag =  
     lambda(object foo, mapping m, string c) {
-      if(!m->id||m->id=="") {
-	werror("\n* Warning: String %O has no id.",c);
+      if(!m->id || m->id=="") {
+	werror("\n* Warning: String %O has no id.", c);
 	return 0;
       }
       if(wipe_pass) {
@@ -250,13 +252,13 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
       } else {
 	// Normal pass, update all structures
 	if(has_value(id_xml_order, m->id)) {
-	  werror("\n* Error: Id %O used more than once.\n",m->id);
+	  werror("\n* Error: Id %O used more than once.\n", m->id);
 	  exit(1);
 	}
 	id_xml_order += ({m->id});
 	c = c_ids[m->id];
 	if(!args->wipe)   // Check if there will be a wipe pass later
-	  ids[m->id]=c;
+	  ids[m->id] = c;
 	if(c != "")
 	  r_ids[c] = m->id;
       }
@@ -275,7 +277,7 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		  lambda(object foo, mapping m, string c) {
 		    array n = m->version/".";
 		    if(n[0]!="1") {
-		      werror("\n* Unknown locale version %O!\n",m->version);
+		      werror("\n* Unknown locale version %O!\n", m->version);
 		      exit(1);
 		    }
 		    return "\b"+c;
@@ -287,17 +289,17 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		    c = String.trim_whites(c);
 		    if(args->project && args->project!=c) {
 		      werror("\n* xml data is for project %O, not %O!\n",
-			     c,args->project);
+			     c, args->project);
 		      exit(1);
 		    } else
-		      args->project=c;
+		      args->project = c;
 		    return "\b";
 		  });
   xml_parser->add_tag("added",
 		      // Make sure <add>-tags don't get added more than once
 		      lambda(object foo, mapping m) {
-			m_delete(add,m->id);
-			added[m->id]=1;
+			m_delete(add, m->id);
+			added[m->id] = 1;
 			return "\b";
 		      });
   xml_parser->
@@ -305,7 +307,7 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		  // Might be a normal comment or a <!-- [id] "text" -->
 		  lambda(object foo, string c) {
 		    string id;
-		    sscanf(c," [%s]%s",id,c);		    
+		    sscanf(c," [%s]%s", id, c);		    
 		    if(id == 0) {
 		      return 0;  // Normal comment tag
 		    }
@@ -313,12 +315,12 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		    object RE = Regexp("^[^\"]*\"(.*)\"[^\"]*$");
 		    array hits = RE->split(c);
 		    if(hits)
-		      c = get_first_string(sprintf("%O",hits[0]));
+		      c = get_first_string(sprintf("%O", hits[0]));
 		    // Replace encoded entities
 		    c = replace(c,({"&lt;","&gt;","&amp;"}),({"<",">","&"}));
 		    if(id!="" && c!="")
 		      // Save text for use in the t_tag function
-		      c_ids[id]=c;
+		      c_ids[id] = c;
 		    return "\b";
 		  }, "--");
   // These tags will always be rewritten anyway, so remove them.
@@ -329,7 +331,7 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
   xml_parser->feed(indata)->finish();
 
   // Remove markers and lines from removed tags
-  string ret="";
+  string ret = "";
   object RE = Regexp("^[\b \t\n]+$");
   foreach(xml_parser->read()/"\n", string line) {
     if(!RE->match(line))
@@ -340,7 +342,7 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
   array hits = RE->split(ret);
   if(hits) ret = hits[0]; 
   
-  write("\n");
+  write("\n\n");
   return ret;
 }
 
@@ -358,10 +360,10 @@ void write_xml_file(string out_name, string outdata) {
     exit(1);
   }
 
-  write("Writing %s...",out_name);
+  write("\nWriting %s... (%d ids)", out_name, sizeof(id_xml_order));
 
   // Dump some headers
-  string newfile="";
+  string newfile = "";
   newfile += "<locale version=\"1.0\">\n";
   newfile += "<project>"+args->project+"</project>\n";
   newfile += "<language>English</language>\n";
@@ -375,26 +377,26 @@ void write_xml_file(string out_name, string outdata) {
   foreach(indices(added)+indices(add), string blockname)
     newfile += "<added id=\""+blockname+"\"/>\n";
 
-  string tag="t";
-  string info="";
+  string tag = "t";
+  string info = "";
   if(args->verbose) {
-    tag="translate";
-    info="Original: ";
+    tag = "translate";
+    info = "Original: ";
   }
     
   // Reuse structure of old xml
-  int i=0;
+  int i = 0;
   if(outdata) {
     string marker = "\7\7\7\7";    // Magic Marker from parse_xml_file()
-    while(int n=search(outdata, marker)) {  
+    while( int n=search(outdata, marker) ) {  
       if(n<0) break;
       if(i==sizeof(id_xml_order)) {
 	// Shrinking file?
-	outdata=replace(outdata,marker,"");
+	outdata = replace(outdata, marker, "");
 	continue;
       }
-      string id=id_xml_order[i];
-      string str=ids[id];
+      string id = id_xml_order[i];
+      string str = ids[id];
       // Make parser-safe
       str = replace(str, ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
       outdata = (outdata[0..n-1] +
@@ -407,9 +409,9 @@ void write_xml_file(string out_name, string outdata) {
   }
 
   // Dump new strings
-  while(i<sizeof(id_xml_order)) {
-    string id=id_xml_order[i];
-    string str=ids[id];
+  while( i<sizeof(id_xml_order) ) {
+    string id = id_xml_order[i];
+    string str = ids[id];
     // Make parser-safe
     str = replace(str, ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
     newfile += sprintf("\n<!-- [%s] %s\"%s\" -->\n<%s id=\"%s\"></%s>\n",
@@ -442,47 +444,48 @@ void write_xml_file(string out_name, string outdata) {
   out->write( newfile );
   out->truncate( out->tell() );
   out->close();
-  write("\n");
-
+  write("\n\n");
 }
+
 
 array(string) get_tokens(string in, mapping args, string filename) {
   // Picks out tokens from <locale-token>-tag in pikesource
   // The order between // blocks and /* */ blocks is not important
   // for our purposes.
-  string comments="";
+  string comments = "";
   foreach(in/"//", string line) {
     sscanf(line, "%s\n", line);
-    comments+=line+"\n";
+    comments += line+"\n";
   }
   foreach(in/"/\052", string block) {
-    string c="";
+    string c = "";
     sscanf(block, "%s\052/", c);
-    comments+=c+"\n";
+    comments += c+"\n";
   }
 
-  array(string) tokens=({});
+  array(string) tokens = ({});
   Parser.HTML()->      
     add_container("locale-token",
 		  lambda(object foo, mapping m, string c) {
 		    if(args->project && m->project!=args->project) 
 		      return 0;
-		    if(has_value(tokens,c))
+		    c = String.trim_whites(c);
+		    if(has_value(tokens, c))
 		      werror("\n* Warning: Token \"%s\" already found\n", c);
-		    tokens+=({c});
+		    tokens += ({c});
 		    if (m->project)
-		      args->project=m->project;
+		      args->project = m->project;
 		    else
-		      args->project="";
+		      args->project = "";
 		    return 0;
 		  })
     ->feed(comments)->finish();
   if(!sizeof(tokens)) {
     if(args->project)
-      werror("\n* Warning: No token for project %O in %s\n",args->project,filename);
+      werror("\n* Warning: No token for project %O in %s\n", 
+	     args->project, filename);
     else
-      werror("\n* Warning: No token found in file %s\n",filename);
-    exit(1);
+      werror("\n* Warning: No token found in file %s\n", filename);
   }
   return tokens;
 }
@@ -492,23 +495,26 @@ void update_pike_sourcefiles(array filelist) {
   // Updates ids, r_ids, id_xml_order with ids and strings
   // If new ids, updates the sourcefile or a copy
   foreach(filelist, string filename) {
-    Stdio.File file=Stdio.File();
+    Stdio.File file = Stdio.File();
     if(!file->open(filename, "r")) {
       werror("* Error: Could not open sourcefile %s.\n", filename);
       exit(1);
     }
-    write("Reading %s",filename);
-    string indata=file->read();
+    write("Reading %s", filename);
+    string indata = file->read();
     file->close();
 
     // Get locale tokens, tokenize pike file
     write(", parsing...");
-    array tokens=get_tokens(indata, args, filename);
+    array tokens = get_tokens(indata, args, filename);
+    if(!sizeof(tokens))
+      continue;
     mixed pdata = Parser.Pike.split(indata);
     pdata = Parser.Pike.tokenize(pdata);
     pdata = Parser.Pike.hide_whitespaces(pdata);
 
-    array id_pike_order=({});
+    array id_pike_order = ({});
+    int no_of_ids = 0;
     string id, fstr, token;
     for(int i=0; i<sizeof(pdata); i++) {
       //// Search for tokens
@@ -520,23 +526,24 @@ void update_pike_sourcefiles(array filelist) {
       //// Get id
       id = (string)pdata[++i];      
       if(id=="\"\"") 
-	id="";
+	id = "";
       else 
 	id = get_first_string(id);
 
       //// Get string
-      string instr="";
+      string instr = "";
       i++;      // Skip ","
-      while(++i<sizeof(pdata) && pdata[i]!=")")
+      while( ++i<sizeof(pdata) && pdata[i]!=")" )
 	instr += (string)pdata[i];
       if(fstr=="\"\"") {
 	if(id=="")
 	  continue;  // Neither string nor id, skip!
-	fstr="";     // Empty string with id, need to save id as used
+	fstr = "";   // Empty string with id, need to save id as used
       } else
 	fstr = get_first_string(instr);
 
       //// Check and store id and string
+      no_of_ids++;
       if(id == "") {
 	if (r_ids[fstr])
 	  id = r_ids[fstr];   // Re-use old id with identical string
@@ -552,10 +559,10 @@ void update_pike_sourcefiles(array filelist) {
 	} else {
 	  if(ids[id] && ids[id] != fstr) {
 	    werror("\n* Error: inconsistant use of id.\n");
-	    werror("    In file:%{ %s%}\n",id_origin[id]);
-	    werror("     id %O -> string %O\n",id,ids[id]);
-	    werror("    In file: %s\n",filename);
-	    werror("     id %O -> string %O\n",id,fstr);
+	    werror("    In file:%{ %s%}\n", id_origin[id]);
+	    werror("     id %O -> string %O\n", id, ids[id]);
+	    werror("    In file: %s\n", filename);
+	    werror("     id %O -> string %O\n", id, fstr);
 	    exit(1);
 	  }
 	}
@@ -572,13 +579,13 @@ void update_pike_sourcefiles(array filelist) {
     }
 
     // Done parsing, rebuild sourcefile if needed
+    write(" (%d id%s)\n", no_of_ids, no_of_ids==1?"":"s");  
     if(!sizeof(id_pike_order)) {
-      write("\n");  
       continue;
     }
     if(!args->nocopy) 
-      filename+=".new"; // Create new file instead of overwriting
-    write("\n-> Writing %s with new ids: %d",filename,sizeof(id_pike_order));  
+      filename += ".new"; // Create new file instead of overwriting
+    write("-> Writing %s (%d new)", filename, sizeof(id_pike_order));  
     if(!file->open(filename, "cw")) {
       werror("\n* Error: Could not open %s for writing\n", filename);
       exit(1);
@@ -599,7 +606,7 @@ void update_pike_sourcefiles(array filelist) {
     }
     write("\n");
 
-    file->write(indata);
+    file->write( indata );
     file->truncate( file->tell() );
     file->close();
   } 
@@ -611,12 +618,12 @@ void update_xml_sourcefiles(array filelist) {
   // Updates ids, r_ids, id_xml_order with ids and strings
   // If new ids, updates the sourcefile or a copy
   foreach(filelist, string filename) {
-    Stdio.File file=Stdio.FILE();
+    Stdio.File file = Stdio.FILE();
     if(!file->open(filename, "r")) {
       werror("* Error: Could not open sourcefile %s.\n", filename);
       exit(1);
     }
-    write("Reading %s",filename);
+    write("Reading %s", filename);
     string line = file->gets();
     string data = file->read();
     file->close();
@@ -641,7 +648,8 @@ void update_xml_sourcefiles(array filelist) {
 
     write(", parsing...");
     int new = 0;
-    int ignoretag=0;
+    int ignoretag = 0;
+    int no_of_ids = 0;
     Parser.HTML xml_parser = Parser.HTML();
     xml_parser->case_insensitive_tag(1);  
     xml_parser->
@@ -654,9 +662,9 @@ void update_xml_sourcefiles(array filelist) {
 		  exit(1);
 		}
 		if(args->project && m->project!=args->project)
-		  ignoretag=1; // Warning, tags might be from another project
+		  ignoretag = 1; // Tags might be from another project
 		else
-		  ignoretag=0;
+		  ignoretag = 0;
 		if(!args->project)
 		  args->project = m->project;
 		return 0;
@@ -675,8 +683,9 @@ void update_xml_sourcefiles(array filelist) {
 		      string id = m->id||"";
 		      string fstr = c;
 		      int updated = 0;
-		      if (fstr=="")
+		      if (String.trim_whites(fstr)=="")
 			return 0;         // No need to store empty strings
+		      no_of_ids++;
 		      if(id == "") {
 			if (r_ids[fstr])
 			  id = r_ids[fstr];   // Re-use old id with same string
@@ -692,10 +701,10 @@ void update_xml_sourcefiles(array filelist) {
 			} else {
 			  if(ids[id] && ids[id] != fstr) {
 			    werror("\n* Error: inconsistant use of id.\n");
-			    werror("    In file:%{ %s%}\n",id_origin[id]);
-			    werror("     id %O -> string %O\n",id,ids[id]);
-			    werror("    In file: %s\n",filename);
-			    werror("     id %O -> string %O\n",id,fstr);
+			    werror("    In file:%{ %s%}\n", id_origin[id]);
+			    werror("     id %O -> string %O\n", id, ids[id]);
+			    werror("    In file: %s\n", filename);
+			    werror("     id %O -> string %O\n", id, fstr);
 			    exit(1);
 			  }
 			}
@@ -705,7 +714,7 @@ void update_xml_sourcefiles(array filelist) {
 				 "id %O in %s", fstr, r_ids[fstr],
 				 id_origin[r_ids[fstr]], id, filename);
 		      }
-		      if(!has_value(id_xml_order,id))
+		      if(!has_value(id_xml_order, id))
 			// Id not in xml-structure, add to list
 			id_xml_order += ({id});
 		      id_origin[id] += ({filename}); // Remember origin
@@ -722,9 +731,9 @@ void update_xml_sourcefiles(array filelist) {
 		    });
     xml_parser->feed(data)->finish();
 
-    // Rebuild sourcefile if needed
+    // Done parsing, rebuild sourcefile if needed
+    write(" (%d id%s)\n", no_of_ids, no_of_ids==1?"":"s");  
     if(!new) {
-      write("\n");  
       continue;
     }
     data = xml_parser->read();
@@ -737,8 +746,8 @@ void update_xml_sourcefiles(array filelist) {
     } 
 
     if(!args->nocopy) 
-      filename+=".new"; // Create new file instead of overwriting
-    write("\n-> Writing %s with new ids: %d", filename, new);  
+      filename += ".new"; // Create new file instead of overwriting
+    write("-> Writing %s (%d new)", filename, new);  
     if(!file->open(filename, "cw")) {
       werror("\n* Error: Could not open %s for writing\n", filename);
       exit(1);
@@ -850,25 +859,25 @@ string parse_config(string filename) {
 		      werror("\n* Missing id in <add> in %s!\n", filename);
 		      exit(1);
 		    }
-		    add[m->id]=c;
+		    add[m->id] = c;
 		    return 0;
 		  });
   xml_parser->add_tag("nocopy", 
 		      // Update the infile instead of creating infile.new
 		      lambda(object foo, mapping m) {
-			args->nocopy=1;
+			args->nocopy = 1;
 			return 0;
 		      });
   xml_parser->add_tag("verbose", 
 		      // More informative text in xml
 		      lambda(object foo, mapping m) {
-			args->verbose=1;
+			args->verbose = 1;
 			return 0;
 		      });
   xml_parser->add_tag("wipe", 
 		      // Remove all id:strings not used in xml anymore
 		      lambda(object foo, mapping m) {
-			args->wipe=1;
+			args->wipe = 1;
 			return 0;
 		      });
   xml_parser->feed(indata)->finish();
@@ -890,13 +899,13 @@ int main(int argc, array(string) argv) {
       files += ({argv[i]});
       continue;
     }
-    string key,val="";
+    string key, val = "";
     if(sscanf(argv[i], "--%s", key)) {
       sscanf(key, "%s=%s", key, val);
-      args[key]=val;
+      args[key] = val;
       continue;
     }
-    args[argv[i][1..]]=1;
+    args[argv[i][1..]] = 1;
   }
 
   // Get name of outfile (something like project_eng.xml)
@@ -911,7 +920,7 @@ int main(int argc, array(string) argv) {
     xml_name = filename;
 
   if(!sizeof(files) || args->help) {
-    sscanf("$Revision: 1.3 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.4 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
@@ -926,14 +935,14 @@ int main(int argc, array(string) argv) {
   }
 
   // Try to read and parse xml-file
-  string xml_data="";
+  string xml_data = "";
   xml_data = parse_xml_file(xml_name);
 
   // Read, parse and (if necessary) update the sourcefiles
-  object R = Regexp("(\.xml|\.html)$");
-  array xmlfiles = Array.filter(files, R->match);
-  update_pike_sourcefiles(files-xmlfiles);
-  update_xml_sourcefiles(xmlfiles);
+  object R = Regexp("(\.pike|\.pmod)$");
+  array pikefiles = Array.filter(files, R->match);
+  update_pike_sourcefiles( pikefiles );
+  update_xml_sourcefiles( files-pikefiles );
   
   // If requested, remove ids not used anymore from the xml
   if(args->wipe)
