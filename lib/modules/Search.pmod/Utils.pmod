@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.7 2001/07/04 19:00:48 nilsson Exp $
+// $Id: Utils.pmod,v 1.8 2001/07/04 20:42:20 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -113,7 +113,7 @@ class Logger {
     Sql.Sql db = get_db();
     if(!db) return ({});
 
-    return map(db->query("SELECT unix_timstamp(at) as at,profile,code,type,extra FROM eventlog"+sql),
+    return map(db->query("SELECT unix_timestamp(at) as at,profile,code,type,extra FROM eventlog"+sql),
 	       lambda(mapping in) {
 		 return ({ (int)in->at, (int)in->profile, in->type,
 			   in->extra?sprintf(codes[(int)in->code], in->extra):codes[(int)in->code] });

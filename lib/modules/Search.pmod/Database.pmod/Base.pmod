@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.7 2001/07/02 13:06:52 js Exp $
+// $Id: Base.pmod,v 1.8 2001/07/04 20:42:20 nilsson Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -51,7 +51,7 @@ mapping get_uri_and_language(int doc_id);
 //! @param field
 //!   The field name for the words being indexed.
 //! @param words
-//!   The words being indexed. Possibly in wide-string format.
+//!   The words being indexed. Possibly in wide-string format. (Not UTF8 encoded.)
 void insert_words(Standards.URI|string uri,
 		  void|string language,
 		  string field,
@@ -100,11 +100,11 @@ void set_sync_callback(function f);
 
 //! Retrieves a blob from the database.
 //! @param word
-//!   The wanted word. Possibly in wide-string format.
+//!   The wanted word. Possibly in wide-string format. (Not UTF-8 encoded.)
 //! @returns
 //!   The blob requested, or 0 if there's no more blobs.
 // FIXME
-string get_blob(int word_id, int num);
+string get_blob(string word, int num);
 
 //! Allocate a field id.
 //! @param field

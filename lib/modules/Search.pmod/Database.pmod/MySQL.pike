@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.46 2001/07/02 13:06:53 js Exp $
+// $Id: MySQL.pike,v 1.47 2001/07/04 20:42:21 nilsson Exp $
 
 inherit .Base;
 
@@ -30,10 +30,10 @@ void init_tables()
   db->query("create table if not exists deleted_document (doc_id int unsigned not null)");
 
   db->query(
-#"create table if not exists word_hit (word_id        int not null,
+#"create table if not exists word_hit (word        varchar(64),
                          first_doc_id   int not null,
             	         hits           mediumblob not null,
-                         unique(word_id,first_doc_id))");
+                         unique(word(8),first_doc_id))");
 
   db->query(
 #"create table if not exists metadata (doc_id        int not null,
@@ -203,7 +203,7 @@ void insert_words(Standards.URI|string uri, void|string language,
   int doc_id   = get_document_id((string)uri, language);
   int field_id = get_field_id(field);
 
-  blobs->add_words_hash( doc_id, words, field_id, 0 );
+  blobs->add_words( doc_id, words, field_id, 0 );
 
   if(blobs->memsize() > MAXMEM)
     sync();
@@ -311,7 +311,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
   werror("----------- sync() %4d docs --------------\n", docs);
   do
   {
-    [int i, _WhiteFish.Blob b] = blobs->read();
+    [string word, _WhiteFish.Blob b] = blobs->read();
     if( !b )
       break;
     q++;
@@ -319,7 +319,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
     int w;
     sscanf( d, "%4c", w );
     mixed err=catch(db->query("insert into word_hit (word_id,first_doc_id,hits) "
-			      "values (%d,%d,%s)", i, w, d ));
+			      "values (%s,%d,%s)", string_to_utf8(word), w, d ));
     if(err)
       werror("%O\n",describe_backtrace(err));
   } while( 1 );
@@ -343,11 +343,11 @@ void sync()
   docs = 0;
 }
 
-string get_blob(int word_id, int num)
+string get_blob(string word, int num)
 {
-  array a=db->query("select hits,first_doc_id from word_hit where word_id=%d "
+  array a=db->query("select hits,first_doc_id from word_hit where word=%s "
 		    "limit %d,1",
-		    word_id, num);
+		    string_to_utf8(word), num);
 
   if(!sizeof(a))
     return 0;
