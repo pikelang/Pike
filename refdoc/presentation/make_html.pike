@@ -369,6 +369,9 @@ string parse_text(Node n, void|String.Buffer ret) {
       continue;
     }
 
+    if(c->get_node_type()==XML_COMMENT)
+      continue;
+
 #ifdef DEBUG
     if(c->get_node_type()!=XML_ELEMENT) {
       error( "Forbidden node type " + c->get_node_type() + " in doc node.\n" );
@@ -411,13 +414,13 @@ string parse_text(Node n, void|String.Buffer ret) {
 
     case "ref":
       if(resolve_reference) {
-	ret->add(resolve_reference(parse_text(c), c->get_attributes()));
+	ret->add(resolve_reference(parse_text(c), c->get_attributes()), " ");
 	break;
       }
       string ref;
       ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
-      ret->add("<font face='courier'>", ref, "</font>");
+      ret->add("<font face='courier'>", ref, "</font> ");
       break;
 
     case "dl":
