@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.268 2003/05/17 11:35:29 grubba Exp $
+|| $Id: signal_handler.c,v 1.269 2003/05/17 11:43:23 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.268 2003/05/17 11:35:29 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.269 2003/05/17 11:43:23 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1306,7 +1306,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
     (defined(SIGPROF) || \
      defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED))
       if (WIFSTOPPED(status) &&
-#ifdef SIGPROF
+#if !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
 	  (WSTOPSIG(status) == SIGPROF)
 #else
 	  ((status & 0xff) != 0x7f)
