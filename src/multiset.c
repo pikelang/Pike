@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $
+|| $Id: multiset.c,v 1.61 2002/12/16 22:39:53 grubba Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: multiset.c,v 1.61 2002/12/16 22:39:53 grubba Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -4462,6 +4462,7 @@ void check_multiset (struct multiset *l, int safe)
 	}
 
     order_check_done:
+      ;
     }
 
     UNSETJMP (recovery);
@@ -5252,7 +5253,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: multiset.c,v 1.61 2002/12/16 22:39:53 grubba Exp $");
 
 struct multiset *first_multiset;
 
