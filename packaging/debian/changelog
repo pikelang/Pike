@@ -1,3 +1,15 @@
+pike7.4 (7.4.7-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * src/modules/spider/xml.c: Fixed a memory leak.
+        * lib/modules/Stdio.pmod/module.pmod: Stdio.expand_symlinks() never
+          worked for relative paths, and broke for absolute paths too a while
+          ago; use System.resolvepath() where available instead, or
+          System.realpath() once the patch in http://bugs.roxen.com/3317 has
+          been applied.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 18 Dec 2002 01:46:02 +0100
+
 pike7.4 (7.4.5-1) unstable; urgency=low
 
   * Latest upstream version.
