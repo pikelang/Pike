@@ -4,7 +4,7 @@
 
 inherit Stdio.Port : socket;
 inherit "context";
-inherit ADT.queue : accept_queue;
+inherit ADT.Queue : accept_queue;
 
 constant sslfile = SSL.sslfile;
 
