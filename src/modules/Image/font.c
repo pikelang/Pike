@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.57 1999/11/23 07:07:39 hubbe Exp $ */
+/* $Id: font.c,v 1.58 2000/03/25 23:34:32 hubbe Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.57 1999/11/23 07:07:39 hubbe Exp $
+**!	$Id: font.c,v 1.58 2000/03/25 23:34:32 hubbe Exp $
 **! class Font
 **!
 **! note
@@ -388,7 +388,7 @@ void font_load(INT32 args)
 	 new_font->mem = 
 	    mmap(0,size,PROT_READ,MAP_SHARED,fd,0);
 #ifdef MAP_FAILED
-	 if (new_font->mem==MAP_FAILED)
+	 if ((char *)new_font->mem == (char *)MAP_FAILED)
 #else
 	 if (new_font->mem==(void*)-1)
 #endif
