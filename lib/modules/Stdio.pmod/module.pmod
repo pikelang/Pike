@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.84 2000/08/28 21:08:28 hubbe Exp $
+// $Id: module.pmod,v 1.85 2000/09/10 13:27:33 per Exp $
 
 import String;
 
@@ -9,6 +9,17 @@ class Stream
   string read(int nbytes);
   int write(string data);
   void close();
+
+  static string _sprintf( int type )
+  {
+    switch( type )
+    {
+     case 'O':
+       return sprintf("%t()", this_object());
+     case 't':
+       return "Stdio.Stream";
+    }
+  }
 }
 
 class NonblockingStream
@@ -33,6 +44,15 @@ class NonblockingStream
   void set_nonblocking( function a, function b, function c,
                         function|void d, function|void e);
   void set_blocking();
+
+  static string _sprintf( int type )
+  {
+    switch( type )
+    {
+     case 't': return "Stdio.NonblockingStream";
+    }
+    return ::_sprintf( type );
+  }
 }
 
 class BlockFile
@@ -40,6 +60,14 @@ class BlockFile
   inherit Stream;
   int seek(int to);
   int tell();
+  static string _sprintf( int type )
+  {
+    switch( type )
+    {
+     case 't': return "Stdio.BlockFile";
+    }
+    return ::_sprintf( type );
+  }
 }
 
 class File
@@ -77,6 +105,38 @@ class File
     return _fd && ::errno();
   }
 
+  static string debug_file;
+  static string debug_mode;
+  static int debug_bits;
+
+  void setup_debug( string f, string m, int|void b )
+  {
+    debug_file = f;
+    debug_mode = m;
+    debug_bits = b;
+  }
+
+  static string _sprintf( int type, mapping flags )
+  {
+    int do_query_fd( )
+    {
+      int fd = -1;
+      catch{ fd = query_fd(); };
+      return fd;
+    };
+    switch( type )
+    {
+     case 'O':
+       return sprintf("%t(%O, %O, %o /* fd=%d */)", 
+                      this_object(), 
+                      debug_file, debug_mode,
+                      debug_bits||0777,
+                      do_query_fd() );
+     case 't':
+       return "Stdio.File";
+    }
+  }
+
   int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
@@ -84,6 +144,8 @@ class File
     __closed_backtrace=0;
 #endif
     if(query_num_arg()<3) bits=0666;
+    debug_file = file;  debug_mode = mode;
+    debug_bits = bits;
     return ::open(file,mode,bits);
   }
 
@@ -93,6 +155,8 @@ class File
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
+    debug_file="socket";
+    debug_mode=0; debug_bits=0;
     switch(query_num_arg()) {
     case 0:
       return ::open_socket();
@@ -109,6 +173,9 @@ class File
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
+    debug_file="socket";
+    debug_mode=host+":"+port; 
+    debug_bits=0;
     return ::connect(host,port);
   }
 
@@ -158,7 +225,7 @@ class File
     return(1);	// OK so far. (Or rather the callback will be used).
   }
 
-  object(File) pipe(void|int how)
+  File pipe(void|int how)
   {
     _fd=Fd();
 #ifdef __STDIO_DEBUG
@@ -166,10 +233,11 @@ class File
 #endif
     if(query_num_arg()==0)
       how=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
-    if(object(Fd) fd=[object(Fd)]::pipe(how))
+    if(Fd fd=[object(Fd)]::pipe(how))
     {
-      object(File) o=File();
+      File o=File();
       o->_fd=fd;
+      o->_setup_debug( "pipe", 0 );
       return o;
     }else{
       return 0;
@@ -179,6 +247,9 @@ class File
   void create(int|string|void file,void|string mode,void|int bits)
   {
     if (zero_type(file)) return;
+    debug_file = file;  
+    debug_mode = mode;
+    debug_bits = bits;
     switch(file)
     {
       case "stdin":
@@ -223,13 +294,13 @@ class File
     }
   }
 
-  int assign(object(File)|object(Fd) o)
+  int assign(File|Fd o)
   {
     if((program)Fd == (program)object_program(o))
     {
       _fd = o->dup();
     }else{
-      object(File) _o = [object(File)]o;
+      File _o = [object(File)]o;
       _fd = _o->_fd;
       if(___read_callback = _o->___read_callback)
 	_fd->_read_callback=__stdio_read_callback;
@@ -251,9 +322,9 @@ class File
     return 0;
   }
 
-  object(File) dup()
+  File dup()
   {
-    object(File) to = File();
+    File to = File();
     to->_fd = _fd;
     if(to->___read_callback = ___read_callback)
       _fd->_read_callback=to->__stdio_read_callback;
@@ -269,6 +340,7 @@ class File
     if(to->___write_oob_callback = ___write_oob_callback)
       _fd->_write_oob_callback=to->__stdio_write_oob_callback;
 #endif
+    to->_setup_debug( debug_file, debug_mode, debug_bits );
     to->___id = ___id;
     return to;
   }
@@ -443,12 +515,44 @@ class File
 class Port
 {
   inherit _port;
-  object(File) accept()
+
+  static int|string debug_port;
+  static string debug_ip;
+
+  static string _sprintf( int f )
+  {
+    switch( f )
+    {
+     case 't':
+       return "Stdio.Port";
+     case 'O':
+       return sprintf( "%t(%s:%O)", this_object(), debug_ip, debug_port );
+    }
+  }
+
+  void create( string|int|void p,
+               void|mixed cb,
+               string|void ip )
+  {
+    debug_ip = (ip||"ANY");
+    debug_port = p;
+
+    if( cb )
+      if( ip )
+        ::create( p, cb, ip );
+      else
+        ::create( p, cb );
+    else
+      ::create( p );
+  }
+
+  File accept()
   {
     if(object x=::accept())
     {
-      object(File) y=File();
+      File y=File();
       y->_fd=x;
+      y->_setup_debug( "socket", x->query_address() );
       return y;
     }
     return 0;
@@ -468,6 +572,13 @@ class FILE {
 
     private string b="";
     private int bpos=0;
+
+    static string _sprintf( int type, mapping flags )
+    {
+      if( type == 't' )
+         return "Stdio.FILE";
+      return ::_sprintf( type, flags );
+    }
 
     inline private static nomask int get_data()
     {
@@ -557,9 +668,9 @@ class FILE {
       return ::assign(foo);
     }
 
-  object(FILE) dup()
+  FILE dup()
   {
-    object(FILE) o=FILE();
+    FILE o=FILE();
     o->assign(this_object());
     return o;
   }
@@ -616,11 +727,11 @@ class FILE {
     }
   };
 
-object(FILE) stdin=FILE("stdin");
+FILE stdin=FILE("stdin");
 
 string read_file(string filename,void|int start,void|int len)
 {
-  object(FILE) f;
+  FILE f;
   string ret, tmp;
   f=FILE();
   if(!f->open(filename,"r")) return 0;
@@ -661,7 +772,7 @@ string read_file(string filename,void|int start,void|int len)
 string read_bytes(string filename,void|int start,void|int len)
 {
   string ret;
-  object(File) f = File();
+  File f = File();
 
   if(!f->open(filename,"r"))
     return 0;
@@ -692,7 +803,7 @@ string read_bytes(string filename,void|int start,void|int len)
 int write_file(string filename, string what, int|void access)
 {
   int ret;
-  object(File) f = File();
+  File f = File();
 
   if (query_num_arg() < 3) {
     access = 0666;
@@ -709,7 +820,7 @@ int write_file(string filename, string what, int|void access)
 int append_file(string filename, string what, int|void access)
 {
   int ret;
-  object(File) f = File();
+  File f = File();
 
   if (query_num_arg() < 3) {
     access = 0666;
@@ -795,7 +906,7 @@ constant cp=system.cp;
 int cp(string from, string to)
 {
   string data;
-  object(File) f=File(), t;
+  File f=File(), t;
   if(!f->open(from,"r")) return 0;
   function(int,int|void:string) r=f->read;
   t=File();
@@ -877,10 +988,10 @@ int recursive_rm (string path)
 // FIXME: Support for timeouts?
 static class nb_sendfile
 {
-  static object(File) from;
+  static File from;
   static int len;
   static array(string) trailers;
-  static object(File) to;
+  static File to;
   static function(int, mixed ...:void) callback;
   static array(mixed) args;
 
@@ -896,6 +1007,17 @@ static class nb_sendfile
   static int blocking_from;
 
   /* Reader */
+
+  static string _sprintf( int f )
+  {
+    switch( f )
+    {
+     case 't':
+       return "Stdio.Sendfile";
+     case 'O':
+       return sprintf( "%t()", this_object() );
+    }
+  }
 
   static void reader_done()
   {
@@ -1159,9 +1281,9 @@ static class nb_sendfile
   /* Starter */
 
   void create(array(string) hd,
-	      object(File) f, int off, int l,
+	      File f, int off, int l,
 	      array(string) tr,
-	      object(File) t,
+	      File t,
 	      function(int, mixed ...:void)|void cb,
 	      mixed ... a)
   {
@@ -1297,6 +1419,17 @@ class UDP
 
    private static array extra=0;
    private static function callback=0;
+
+   static string _sprintf( int f )
+   {
+     switch( f )
+     {
+      case 't':
+        return "Stdio.UDP";
+      case 'O':
+        return sprintf("%t()", this_object() );
+     }
+   }
 
    object set_nonblocking(mixed ...stuff)
    {
