@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.183 1999/12/14 12:59:32 hubbe Exp $");
+RCSID("$Id: program.c,v 1.184 1999/12/14 13:06:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2499,6 +2499,7 @@ int store_constant(struct svalue *foo,
     zero.subtype = NUMBER_NUMBER;
     zero.u.integer=0;
 
+    UNSETJMP(tmp2);
     return store_constant(&zero, equal, constant_name);
   }else{
     for(e=0;e<new_program->num_constants;e++)
