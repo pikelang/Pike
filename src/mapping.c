@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.143 2001/11/25 02:02:26 mast Exp $");
+RCSID("$Id: mapping.c,v 1.144 2001/12/01 23:50:04 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2044,16 +2044,16 @@ void check_all_mappings(void)
 #define DO_IF_MAPPING_SIZE_DEBUG(x)
 #endif
 
-#define GC_RECURSE_MD_IN_USE(md, recurse_fn, ind_types, val_types) do {	\
+#define GC_RECURSE_MD_IN_USE(MD, RECURSE_FN, IND_TYPES, VAL_TYPES) do {	\
   INT32 e;								\
   struct keypair *k;							\
-  ind_types = md->ind_types;						\
-  NEW_MAPPING_LOOP(md) {						\
-    if (!IS_DESTRUCTED(&k->ind) && recurse_fn(&k->ind, 1)) {		\
+  IND_TYPES = MD->ind_types;						\
+  NEW_MAPPING_LOOP(MD) {						\
+    if (!IS_DESTRUCTED(&k->ind) && RECURSE_FN(&k->ind, 1)) {		\
       DO_IF_DEBUG(fatal("Didn't expect an svalue zapping now.\n"));	\
     }									\
-    recurse_fn(&k->val, 1);						\
-    val_types |= 1 << k->val.type;					\
+    RECURSE_FN(&k->val, 1);						\
+    VAL_TYPES |= 1 << k->val.type;					\
   }									\
 } while (0)
 
