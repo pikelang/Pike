@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.13 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: my_gmp.h,v 1.14 2002/10/16 13:19:01 marcus Exp $
 */
 
 /*
@@ -30,6 +30,10 @@
 #else /* !USE_GMP2 */
 #include <gmp.h>
 #endif /* USE_GMP2 */
+
+#ifndef mpz_odd_p
+#define mpz_odd_p(z)   ((int) ((z)->_mp_size != 0) & (int) (z)->_mp_d[0])
+#endif
 
 struct pike_string;
 
