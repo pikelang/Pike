@@ -148,7 +148,7 @@ static string make_function_doc( Function f, Class c )
   if( c->name == "_global" )
     vtype = "void";
   else
-    vtype = c->pike_name(); // "this_program";
+    vtype = c->doc_name(); // "this_program";
     
   
   string res = "\n";
@@ -197,7 +197,7 @@ static void output_class( Class cls, int lvl )
   result =  make_pike_refdoc( cls->doc, cls->signals );
 
   if( cls->inherits )
-    result += "\ninherit "+cls->inherits->pike_name()+";\n\n";
+    result += "\ninherit "+cls->inherits->doc_name()+";\n\n";
   else
     result += "\n";
 
