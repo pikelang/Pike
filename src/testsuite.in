@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.295 2000/08/28 19:37:41 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.296 2001/01/17 17:33:05 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1770,6 +1770,18 @@ ifefun(gc,
     m[o] = 0;
     gc();
     return !sizeof (m);
+  ]])
+
+  test_do([[
+    class Foo
+    {
+      object foo;
+      static void create(object o) {foo = o;}
+    };
+    Foo foo;
+    for(int i=0; i < 1000000; i++)
+      foo = Foo(foo);
+    gc();
   ]])
 
   test_any([[
