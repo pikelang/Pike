@@ -26,27 +26,32 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.121 2001/03/30 09:09:09 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.122 2001/03/30 12:23:16 hubbe Exp $");
 
 #if PIKE_RUN_UNLOCKED
+/* Make this bigger when we get lightweight threads */
+#define BUCKET_LOCKS 2048
 static PIKE_MUTEX_T *bucket_locks;
 
-#define LOCK_BUCKET(HVAL) do { 					\
-  size_t hval__=(HVAL);						\
-  PIKE_MUTEX_T *bucket_lock;					\
-  while(1)							\
-  {								\
-    bucket_lock=bucket_locks + (hval__ % htable_size);		\
-    mt_lock(bucket_lock);					\
-    if(bucket_lock == bucket_locks + (hval__ % htable_size))	\
-      break;							\
-    mt_unlock(bucket_lock);					\
-  }								\
+#define BUCKETLOCK(HVAL) \
+ (bucket_locks + ((hval__ % htable_size) & (BUCKET_LOCKS-1)))
+
+#define LOCK_BUCKET(HVAL) do {						    \
+  size_t hval__=(HVAL);							    \
+  PIKE_MUTEX_T *bucket_lock;						    \
+  while(1)								    \
+  {									    \
+    bucket_lock=BUCKETLOCK(hval__);                                         \
+    mt_lock(bucket_lock);						    \
+    if(bucket_lock == BUCKETLOCK(hval__))                                   \
+      break;								    \
+    mt_unlock(bucket_lock);						    \
+  }									    \
 }while(0)
 
 #define UNLOCK_BUCKET(HVAL) do {			\
   size_t hval__=(HVAL);					\
-  mt_unlock(bucket_locks + ( hval__ % htable_size ));	\
+  mt_unlock(BUCKETLOCK(hval__));                        \
 }while(0)
 
 #else
@@ -431,44 +436,26 @@ static void stralloc_rehash(void)
   int h,old;
   struct pike_string **old_base;
 
-#ifdef PIKE_RUN_UNLOCKED
-  int new_htable_size;
-  PIKE_MUTEX_T *old_locks;
-  PIKE_MUTEX_T *new_locks;
-
   old=htable_size;
   old_base=base_table;
 
-  LOCK_BUCKET(0);
+#ifdef PIKE_RUN_UNLOCKED
+  mt_lock(bucket_locks);
   if(old != htable_size)
   {
     /* Someone got here before us */
-    UNLOCK_BUCKET(0);
+    mt_lock(bucket_locks);
     return;
   }
-
-  new_htable_size=hashprimes[++hashprimes_entry];
 
   /* Now that we have bucket zero, the hash table
    * cannot change, go ahead and lock ALL buckets.
    * NOTE: bucket zero is already locked
    */
-  for(h=1;h<old;h++) LOCK_BUCKET(h);
-  new_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*new_htable_size);
-  for(h=0;h<new_htable_size;h++)
-  {
-    mt_init(new_locks + h);
-    mt_lock(new_locks + h);
-  }
-  old_locks=bucket_locks;
-  bucket_locks=new_locks;
-  htable_size=new_htable_size;
-#else
-  old=htable_size;
-  old_base=base_table;
+  for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
+#endif
 
   htable_size=hashprimes[++hashprimes_entry];
-#endif
 
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
@@ -480,21 +467,7 @@ static void stralloc_rehash(void)
     free((char *)old_base);
 
 #ifdef PIKE_RUN_UNLOCKED
-  for(h=0;h<old;h++) mt_unlock(old_locks + h);
-  for(h=0;h<htable_size;h++) mt_unlock(new_locks + h);
-
-
-  /* This loop tries to make sure that nobody is still waiting
-   * for the old locks. I'm not sure if it actually works 100% of
-   * the time though... /Hubbe
-   */
-  for(h=0;h<old;h++)
-  {
-    mt_lock(old_locks + h);
-    mt_unlock(old_locks + h);
-    mt_destroy(old_locks+h);
-  }
-  free((char *)old_locks);
+  for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
 #endif
 }
 
@@ -599,6 +572,17 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     /* /Hubbe
      */
 
+#ifdef PIKE_RUN_UNLOCKED
+    mt_lock(bucket_locks);
+    if(need_more_hash_prefix <= ( htable_size >> 4))
+    {
+      /* Someone got here before us */
+      mt_lock(bucket_locks);
+      return;
+    }
+    for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
+#endif
+
     need_more_hash_prefix=0;
     HASH_PREFIX=HASH_PREFIX*2;
 /*    fprintf(stderr,"Doubling HASH_PREFIX to %d and rehashing\n",HASH_PREFIX); */
@@ -620,6 +604,9 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	base_table[h2]=tmp2;
       }
     }
+#ifdef PIKE_RUN_UNLOCKED
+    for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
+#endif
   }
 #endif
 }
@@ -1770,8 +1757,8 @@ void init_shared_string_table(void)
 #ifdef PIKE_RUN_UNLOCKED
   {
     int h;
-    bucket_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*htable_size);
-    for(h=0;h<htable_size;h++) mt_init(bucket_locks + h);
+    bucket_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*BUCKET_LOCKS);
+    for(h=0;h<BUCKET_LOCKS;h++) mt_init(bucket_locks + h);
   }
 #endif
 }
