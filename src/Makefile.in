@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.217 2000/11/27 00:03:00 grubba Exp $
+# $Id: Makefile.in,v 1.218 2000/11/29 21:32:17 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -758,6 +758,7 @@ HFILES=						\
   lex.protos						\
   security.protos					\
   signal_handler.protos				\
+  pike_search.protos				\
   docode.protos					\
   main.protos					\
   stralloc.protos					\
