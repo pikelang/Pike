@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.121 2001/08/09 18:54:15 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.122 2001/08/10 21:43:22 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -896,6 +896,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
 
     case T_FUNCTION:
+      /* FIXME: Ought to have special treatment of trampolines. */
       if (data->canonic)
 	Pike_error("Canonical encoding of functions not supported.\n");
       check_stack(1);
