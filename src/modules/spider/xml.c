@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.60 2002/12/16 18:17:11 nilsson Exp $
+|| $Id: xml.c,v 1.61 2003/01/26 16:11:27 mirar Exp $
 */
 
 #include "global.h"
@@ -65,7 +65,7 @@ struct xmlobj
   struct mapping *entities;
   struct mapping *attributes;
   struct mapping *is_cdata;
-  int rxml_mode;
+  INT_TYPE rxml_mode;
 };
 
 
