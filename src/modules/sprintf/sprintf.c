@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.64 2000/07/18 14:57:33 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.65 2000/07/18 15:09:32 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -119,6 +119,7 @@ RCSID("$Id: sprintf.c,v 1.64 2000/07/18 14:57:33 grubba Exp $");
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "operators.h"
+#include "opcodes.h"
 #include <ctype.h>
 
 #ifdef PC
@@ -1437,8 +1438,10 @@ void f_sprintf(INT32 num_arg)
 
   if(argp[0].type != T_STRING) {
     if (argp[0].type == T_OBJECT) {
-      /* Try checking if we can cast it into a string... */
-      PUSH_CONSTANT_STRING("string");
+      /* Try checking if we can cast it to a string... */
+      struct pike_string *string_string;
+      MAKE_CONSTANT_SHARED_STRING(string_string, "string");
+      push_string(string_string);
       ref_push_object(argp[0].u.object);
       o_cast(sp[-2].u.string, PIKE_T_STRING);
       if (sp[-1].type != T_STRING) {
