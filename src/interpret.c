@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.245 2001/08/30 18:30:41 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.246 2001/08/30 22:36:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1234,8 +1234,8 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
       assign_svalue(save_sp,Pike_sp-1);
       pop_n_elems(Pike_sp-save_sp-1);
-      
       low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+      
     }
     if(t_flag>1) trace_return_value();
   }
@@ -1281,18 +1281,18 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 void low_return(void)
 {
   basic_low_return();
-  if(save_sp+1 < Pike_sp)
-  {
-    assign_svalue(save_sp,Pike_sp-1);
-    pop_n_elems(Pike_sp-save_sp-1);
-
-    /* consider using a flag for immediate destruct instead... */
-    destruct_objects_to_destruct();
-  }
-  else if(save_sp+1 > Pike_sp)
+  if(save_sp+1 > Pike_sp)
   {
     push_int(0);
   }else{
+    if(save_sp+1 < Pike_sp)
+    {
+      assign_svalue(save_sp,Pike_sp-1);
+      pop_n_elems(Pike_sp-save_sp-1);
+      
+      /* consider using a flag for immediate destruct instead... */
+      destruct_objects_to_destruct();
+    }
     if(t_flag>1) trace_return_value();
   }
 }
