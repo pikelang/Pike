@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.53 1997/09/16 06:03:21 hubbe Exp $");
+RCSID("$Id: file.c,v 1.54 1997/09/16 07:32:42 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -977,8 +977,10 @@ static void file_set_buffer(INT32 args)
 extern int errno;
 int socketpair(int family, int type, int protocol, int sv[2])
 {
+  static int fd=-1;
+  static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
-  int len, fd;
+  int len;
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -988,39 +990,69 @@ int socketpair(int family, int type, int protocol, int sv[2])
     errno=EINVAL;
     return -1; 
   }
+
+  if(fd==-1)
+  {
+    if((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
+    
+    /* I wonder what is most common a loopback on ip# 127.0.0.1 or
+     * a loopback with the name "localhost"?
+     * Let's hope those few people who doesn't have socketpair has
+     * a loopback on 127.0.0.1
+     */
+    my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+    my_addr.sin_port=htons(0);
+    
+    /* Bind our sockets on any port */
+    if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+      close(fd);
+      fd=-1;
+      return -1;
+    }
+
+    /* Check what ports we got.. */
+    len=sizeof(my_addr);
+    if(getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
+    {
+      close(fd);
+      fd=-1;
+      return -1;
+    }
+
+    /* Listen to connections on our new socket */
+    if(listen(fd, 5) < 0)
+    {
+      close(fd);
+      fd=-1;
+      return -1;
+    }
+  }
   
-  if((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
   if((sv[1]=socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
-
-
-  /* I wonder what is most common a loopback on ip# 127.0.0.1 or
-   * a loopback with the name "localhost"?
-   * Let's hope those few people who doesn't have socketpair has
-   * a loopback on 127.0.0.1
-   */
-  addr.sin_addr.s_addr=htonl(INADDR_ANY);
-  addr.sin_port=htons(0);
-
-  /* Bind our sockets on any port */
-  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
-
-  /* Check what ports we got.. */
-  len=sizeof(addr);
-  if(getsockname(fd,(struct sockaddr *)&addr,&len) < 0) return -1;
 
   addr.sin_addr.s_addr=inet_addr("127.0.0.1");
 
-  /* Listen to connections on our new socket */
-  if(listen(fd, 3) < 0 ) return -1;
-
 /*  set_nonblocking(sv[1],1); */
   
-  /* Connect */
-  if(connect(sv[1], (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
+  if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
+  {
+    int tmp2;
+    for(tmp2=0;tmp2<20;tmp2++)
+    {
+      int tmp;
+      len=sizeof(addr);
+      tmp=accept(fd,(struct sockaddr *)&addr,&len);
+      if(tmp!=-1) close(tmp);
+      if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr))>=0)
+	break;
+    }
+    if(tmp2>=20)
+      return -1;
+  }
 
   len=sizeof(addr);
   if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
-  
 
   /* Accept connection
    * Make sure this connection was our OWN connection,
@@ -1041,8 +1073,6 @@ int socketpair(int family, int type, int protocol, int sv[2])
   }while(len < (int)sizeof(addr) ||
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
-
-  if(close(fd) <0) return -1;
 
 /*   set_nonblocking(sv[1],0); */
 
