@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.22 1998/04/09 02:00:48 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.23 1998/04/09 02:01:18 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.22 1998/04/09 02:00:48 mirar Exp $
+**!	$Id: polyfill.c,v 1.23 1998/04/09 02:01:18 mirar Exp $
 **! class image
 */
 
@@ -85,7 +85,6 @@ struct vertex *vertex_new(float x,float y,struct vertex **top)
        (*top)->x==x && (*top)->y==y) return *top; /* found one */
 
    c=malloc(sizeof(struct vertex));
-fprintf(stderr,"alloc %lx\n",c);
    if (!c) return NULL;
    c->x=x;
    c->y=y;
@@ -106,7 +105,6 @@ static void vertex_connect(struct vertex *above,
    if (below==above) return;
 
    c = malloc(sizeof(struct line_list));
-fprintf(stderr,"alloc con: %lx %lx<->%lx\n",c,above,below);
    if (!c) return;
    c->above = above; c->below = below;
    c->next = above->below;
@@ -123,7 +121,6 @@ fprintf(stderr,"alloc con: %lx %lx<->%lx\n",c,above,below);
    above->below = c;
 
    d = malloc(sizeof(struct line_list));
-fprintf(stderr,"alloc con: %lx %lx<->%lx\n",d,above,below);
    d->above = above; d->below = below;
    d->next = below->above;
    d->dx = c->dx;
@@ -256,7 +253,6 @@ static void add_vertices(struct line_list **first,
 
 
       c=malloc(sizeof(struct line_list));
-fprintf(stderr,"alloc %lx %lx<->%lx\n",c,what->above,what->below);
       *c=*what;
       c->next=*ins;
       *ins=c;
@@ -697,15 +693,9 @@ void image_polyfill(INT32 args)
       pop_stack();
    }
 
-fprintf(stderr,"foo\n");
-
    if (!v) return; /* no vertices */
 
-fprintf(stderr,"bar\n");
-
    polyfill_some(THIS,v,buf);
-
-fprintf(stderr,"gazonk\n");
    
    polyfill_free(v);
    
