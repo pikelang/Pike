@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.153 2004/03/09 15:48:51 nilsson Exp $
+|| $Id: array.c,v 1.154 2004/03/15 22:23:14 mast Exp $
 */
 
 #include "global.h"
@@ -26,13 +26,13 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.153 2004/03/09 15:48:51 nilsson Exp $");
+RCSID("$Id: array.c,v 1.154 2004/03/15 22:23:14 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1), /* Never free */
   &weak_empty_array,     /* Next */
-  &weak_shrink_empty_array, /* previous (circular) */
+  0,			 /* previous */
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
@@ -54,14 +54,15 @@ PMOD_EXPORT struct array weak_empty_array=
 PMOD_EXPORT struct array weak_shrink_empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1),
-  &empty_array, &weak_empty_array, 0, 0, 0, ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK,
+  0, &weak_empty_array, 0, 0, 0, ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK,
   weak_shrink_empty_array.real_item,
 #ifdef HAVE_UNION_INIT
   {{0, 0, {0}}}, /* Only to avoid warnings. */
 #endif
 };
 
-struct array *gc_internal_array = &empty_array;
+struct array *first_array = &empty_array;
+struct array *gc_internal_array = 0;
 static struct array *gc_mark_array_pos = 0;
 
 #ifdef TRACE_UNFINISHED_TYPE_FIELDS
@@ -108,7 +109,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
   v->item=v->real_item;
   v->size = DO_NOT_WARN((INT32)size);
   INIT_PIKE_MEMOBJ(v);
-  LINK_ARRAY(v);
+  DOUBLELINK (first_array, v);
 
   for(e=0;e<v->size;e++)
   {
@@ -125,7 +126,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
  */
 static void array_free_no_free(struct array *v)
 {
-  UNLINK_ARRAY(v);
+  DOUBLEUNLINK (first_array, v);
 
   free((char *)v);
 
@@ -2216,8 +2217,17 @@ PMOD_EXPORT void check_array(struct array *a)
 {
   INT32 e;
 
-  if(a->next->prev != a)
-    Pike_fatal("Array check: a->next->prev != a\n");
+  if(a->next && a->next->prev != a)
+    Pike_fatal("array->next->prev != array.\n");
+
+  if(a->prev)
+  {
+    if(a->prev->next != a)
+      Pike_fatal("array->prev->next != array.\n");
+  }else{
+    if(first_array != a)
+      Pike_fatal("array->prev == 0 but first_array != array.\n");
+  }
 
   if(a->size > a->malloced_size)
     Pike_fatal("Array is larger than malloced block!\n");
@@ -2252,16 +2262,8 @@ PMOD_EXPORT void check_array(struct array *a)
 void check_all_arrays(void)
 {
   struct array *a;
-
-  a=&empty_array;
-  do
-  {
+  for (a = first_array; a; a = a->next)
     check_array(a);
-
-    a=a->next;
-    if(!a)
-      Pike_fatal("Null pointer in array list.\n");
-  } while (a != & empty_array);
 }
 #endif /* PIKE_DEBUG */
 
@@ -2285,18 +2287,13 @@ void gc_mark_array_as_referenced(struct array *a)
 {
   if(gc_mark(a))
     GC_ENTER (a, T_ARRAY) {
-#ifdef PIKE_DEBUG
-      if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
-	Pike_fatal("Trying to gc mark some *_empty_array.\n");
-#endif
-
       if (a == gc_mark_array_pos)
 	gc_mark_array_pos = a->next;
       if (a == gc_internal_array)
 	gc_internal_array = a->next;
       else {
-	UNLINK_ARRAY(a);
-	LINK_ARRAY(a);		/* Linked in first. */
+	DOUBLEUNLINK (first_array, a);
+	DOUBLELINK (first_array, a); /* Linked in first. */
       }
 
       if (a->type_field & BIT_COMPLEX)
@@ -2383,43 +2380,35 @@ void real_gc_cycle_check_array(struct array *a, int weak)
 unsigned gc_touch_all_arrays(void)
 {
   unsigned n = 0;
-  struct array *a = &empty_array;
-  do {
+  struct array *a;
+  if (!first_array || first_array->prev)
+    Pike_fatal ("error in array link list.\n");
+  for (a = first_array; a; a = a->next) {
     debug_gc_touch(a);
     n++;
-    if (!a->next || a->next->prev != a)
+    if (a->next && a->next->prev != a)
       Pike_fatal("Error in array link list.\n");
-    a=a->next;
-  } while (a != &empty_array);
+  }
   return n;
 }
 
 void gc_check_all_arrays(void)
 {
   struct array *a;
-  a=&empty_array;
-  do
-  {
+  for (a = first_array; a; a = a->next) {
 #ifdef PIKE_DEBUG
     if(d_flag > 1)  array_check_type_field(a);
 #endif
     gc_check_array(a);
-    a=a->next;
-  } while (a != & empty_array);
+  }
 }
 
 
 void gc_mark_all_arrays(void)
 {
   gc_mark_array_pos = gc_internal_array;
-  gc_mark(&empty_array);
-  gc_mark(&weak_empty_array);
-  gc_mark(&weak_shrink_empty_array);
-  while (gc_mark_array_pos != &empty_array) {
+  while (gc_mark_array_pos) {
     struct array *a = gc_mark_array_pos;
-#ifdef PIKE_DEBUG
-    if (!a) Pike_fatal("Null pointer in array list.\n");
-#endif
     gc_mark_array_pos = a->next;
     if(gc_is_referenced(a))
       gc_mark_array_as_referenced(a);
@@ -2429,7 +2418,7 @@ void gc_mark_all_arrays(void)
 void gc_cycle_check_all_arrays(void)
 {
   struct array *a;
-  for (a = gc_internal_array; a != &empty_array; a = a->next) {
+  for (a = gc_internal_array; a; a = a->next) {
     real_gc_cycle_check_array(a, 0);
     gc_cycle_run_queue();
   }
@@ -2437,7 +2426,7 @@ void gc_cycle_check_all_arrays(void)
 
 void gc_zap_ext_weak_refs_in_arrays(void)
 {
-  gc_mark_array_pos = empty_array.next;
+  gc_mark_array_pos = first_array;
   while (gc_mark_array_pos != gc_internal_array && gc_ext_weak_refs) {
     struct array *a = gc_mark_array_pos;
     gc_mark_array_pos = a->next;
@@ -2451,7 +2440,7 @@ size_t gc_free_all_unreferenced_arrays(void)
   struct array *a,*next;
   size_t unreferenced = 0;
 
-  for (a = gc_internal_array; a != &weak_empty_array; a = next)
+  for (a = gc_internal_array; a; a = next)
   {
 #ifdef PIKE_DEBUG
     if (!a)
@@ -2518,7 +2507,7 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_)
 {
   INT32 num=0, size=0;
   struct array *m;
-  for(m=empty_array.next;m!=&weak_empty_array;m=m->next)
+  for(m=first_array;m;m=m->next)
   {
     num++;
     size+=sizeof(struct array)+

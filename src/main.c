@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.190 2004/03/10 09:40:00 grubba Exp $
+|| $Id: main.c,v 1.191 2004/03/15 22:23:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.190 2004/03/10 09:40:00 grubba Exp $");
+RCSID("$Id: main.c,v 1.191 2004/03/15 22:23:14 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -984,10 +984,10 @@ void low_exit_main(void)
 
     search_all_memheaders_for_references();
 
-#define REPORT_LINKED_LIST_LEAKS(TYPE, START, END, T_TYPE, NAME) do {	\
+#define REPORT_LINKED_LIST_LEAKS(TYPE, START, T_TYPE, NAME) do {	\
       size_t num = 0;							\
       struct TYPE *x;							\
-      for (x = START; x != END; x = x->next) {				\
+      for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
 	num++;								\
 	if (!m) {							\
@@ -1004,11 +1004,11 @@ void low_exit_main(void)
 	fprintf (stderr, NAME "s left: %"PRINTSIZET"d\n", num);		\
     } while (0)
 
-    REPORT_LINKED_LIST_LEAKS (array, empty_array.next, &weak_empty_array, T_ARRAY, "Array");
-    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, NULL, T_MULTISET, "Multiset");
-    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NULL, T_MAPPING, "Mapping");
-    REPORT_LINKED_LIST_LEAKS (program, first_program, NULL, T_PROGRAM, "Program");
-    REPORT_LINKED_LIST_LEAKS (object, first_object, NULL, T_OBJECT, "Object");
+    REPORT_LINKED_LIST_LEAKS (array, first_array, T_ARRAY, "Array");
+    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, T_MULTISET, "Multiset");
+    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, T_MAPPING, "Mapping");
+    REPORT_LINKED_LIST_LEAKS (program, first_program, T_PROGRAM, "Program");
+    REPORT_LINKED_LIST_LEAKS (object, first_object, T_OBJECT, "Object");
 
 #undef REPORT_LINKED_LIST_LEAKS
 
@@ -1016,9 +1016,9 @@ void low_exit_main(void)
      * another gc so that we don't report the blocks again in the low
      * level dmalloc reports. */
 
-#define ZAP_LINKED_LIST_LEAKS(TYPE, START, END) do {			\
+#define ZAP_LINKED_LIST_LEAKS(TYPE, START) do {				\
       struct TYPE *x;							\
-      for (x = START; x != END; x = x->next) {				\
+      for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
 	if (m)								\
 	  while (x->refs > m->refs)					\
@@ -1026,11 +1026,11 @@ void low_exit_main(void)
       }									\
     } while (0)
 
-    ZAP_LINKED_LIST_LEAKS (array, empty_array.next, &weak_empty_array);
-    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, NULL);
-    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, NULL);
-    ZAP_LINKED_LIST_LEAKS (program, first_program, NULL);
-    ZAP_LINKED_LIST_LEAKS (object, first_object, NULL);
+    ZAP_LINKED_LIST_LEAKS (array, first_array);
+    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset);
+    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping);
+    ZAP_LINKED_LIST_LEAKS (program, first_program);
+    ZAP_LINKED_LIST_LEAKS (object, first_object);
 
 #undef ZAP_LINKED_LIST_LEAKS
 

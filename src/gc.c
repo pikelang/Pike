@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.240 2004/03/15 19:03:48 mast Exp $
+|| $Id: gc.c,v 1.241 2004/03/15 22:23:14 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.240 2004/03/15 19:03:48 mast Exp $");
+RCSID("$Id: gc.c,v 1.241 2004/03/15 22:23:14 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -284,12 +284,9 @@ int attempt_to_identify(void *something, void **inblock)
 
   if (inblock) *inblock = 0;
 
-  a=&empty_array;
-  do
-  {
+  for (a = first_array; a; a = a->next) {
     if(a==(struct array *)something) return T_ARRAY;
-    a=a->next;
-  }while(a!=&empty_array);
+  }
 
   for(o=first_object;o;o=o->next) {
     if(o==(struct object *)something)
@@ -2196,7 +2193,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     struct program *p;
     struct mapping *m;
     struct multiset *l;
-    for(a = gc_internal_array; a != &empty_array; a = a->next)
+    for(a = gc_internal_array; a; a = a->next)
       if(a == (struct array *) x) goto on_gc_internal_lists;
     for(o = gc_internal_object; o; o = o->next)
       if(o == (struct object *) x) goto on_gc_internal_lists;
@@ -2794,7 +2791,7 @@ size_t do_gc(void *ignored, int explicit_call)
   /* Anything after and including gc_internal_* in the linked lists
    * are considered to lack external references. The mark pass move
    * externally referenced things in front of these pointers. */
-  gc_internal_array = empty_array.next;
+  gc_internal_array = first_array;
   gc_internal_multiset = first_multiset;
   gc_internal_mapping = first_mapping;
   gc_internal_program = first_program;
@@ -2946,7 +2943,7 @@ size_t do_gc(void *ignored, int explicit_call)
    * added above are removed just before the calls so we'll get the
    * correct relative positions in them. */
   unreferenced = 0;
-  if (gc_internal_array != &weak_empty_array)
+  if (gc_internal_array)
     unreferenced += gc_free_all_unreferenced_arrays();
   if (gc_internal_multiset)
     unreferenced += gc_free_all_unreferenced_multisets();

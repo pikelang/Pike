@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.54 2004/03/09 15:49:04 nilsson Exp $
+|| $Id: array.h,v 1.55 2004/03/15 22:23:14 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -39,6 +39,7 @@ struct array
 #define ARRAY_WEAK_SHRINK 8
 
 PMOD_EXPORT extern struct array empty_array, weak_empty_array, weak_shrink_empty_array;
+extern struct array *first_array;
 extern struct array *gc_internal_array;
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
@@ -46,19 +47,6 @@ extern struct array *gc_internal_array;
 #else
 #define ITEM(X) ((X)->item)
 #endif
-
-#define LINK_ARRAY(a) do {						\
-  (a)->prev = &empty_array;						\
-  (a)->next = empty_array.next;						\
-  empty_array.next = (a);						\
-  (a)->next->prev = (a);						\
-} while (0)
-
-#define UNLINK_ARRAY(a) do {						\
-  struct array *next = (a)->next, *prev = (a)->prev;			\
-  prev->next = next;							\
-  next->prev = prev;							\
-} while (0)
 
 /* These are arguments for the function 'merge' which merges two sorted
  * set stored in arrays in the way you specify
