@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.385 2001/02/19 09:11:29 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.386 2001/02/21 16:28:27 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -134,6 +134,88 @@ test_any([[mapping(string:int) foo;
 	  array(string) bar;
 	  return sprintf("%O", typeof(rows(foo, bar))); ]],
 	 "array(int)")
+
+// type checks
+
+define(test_type_error, [[
+   test_compile_error([[ $1 x; x=$3; ]])
+   test_compile_error_low([[ class ErrBa { $1 x() { return $3; } } ]])
+   test_compile_error_low([[ class ErrBa { $1 x() { $2 a=$3; return a; } } ]])
+]])
+
+test_type_error(int,float,17.23)
+test_type_error(int,array,({1,2,3}))
+test_type_error(int,mapping,([1:2,3:4]))
+test_type_error(int,multiset,(<1,2,3>))
+test_type_error(int,function,lambda() { return 17; })
+test_type_error(int,program,object_program(this_object()))
+test_type_error(int,object,this_object())
+
+test_type_error(float,int,17)
+test_type_error(float,array,({1,2,3}))
+test_type_error(float,mapping,([1:2,3:4]))
+test_type_error(float,multiset,(<1,2,3>))
+test_type_error(float,function,lambda() { return 17; })
+test_type_error(float,program,object_program(this_object()))
+test_type_error(float,object,this_object())
+
+test_type_error(array,int,17)
+test_type_error(array,float,17.23)
+test_type_error(array,mapping,([1:2,3:4]))
+test_type_error(array,multiset,(<1,2,3>))
+test_type_error(array,function,lambda() { return 17; })
+test_type_error(array,program,object_program(this_object()))
+test_type_error(array,object,this_object())
+
+test_type_error(mapping,int,17)
+test_type_error(mapping,float,17.23)
+test_type_error(mapping,array,({1,2,3}))
+test_type_error(mapping,multiset,(<1,2,3>))
+test_type_error(mapping,function,lambda() { return 17; })
+test_type_error(mapping,program,object_program(this_object()))
+test_type_error(mapping,object,this_object())
+
+test_type_error(multiset,int,17)
+test_type_error(multiset,float,17.23)
+test_type_error(multiset,array,({1,2,3}))
+test_type_error(multiset,mapping,([1:2,3:4]))
+test_type_error(multiset,function,lambda() { return 17; })
+test_type_error(multiset,program,object_program(this_object()))
+test_type_error(multiset,object,this_object())
+
+test_type_error(function,int,17)
+test_type_error(function,float,17.23)
+test_type_error(function,array,({1,2,3}))
+test_type_error(function,mapping,([1:2,3:4]))
+test_type_error(function,multiset,(<1,2,3>))
+
+test_type_error(program,int,17)
+test_type_error(program,float,17.23)
+test_type_error(program,array,({1,2,3}))
+test_type_error(program,mapping,([1:2,3:4]))
+test_type_error(program,multiset,(<1,2,3>))
+
+test_type_error(object,int,17)
+test_type_error(object,float,17.23)
+test_type_error(object,array,({1,2,3}))
+test_type_error(object,mapping,([1:2,3:4]))
+test_type_error(object,multiset,(<1,2,3>))
+
+test_compile_error([[ string a="abcb"; a=a/"b"; ]])
+test_compile_error([[ string a="abcb"; a/="b"; ]])
+test_compile_error([[ string a="abcb"; string b="b"; a=a/b; ]])
+test_compile_error([[ string a="abcb"; string b="b"; a/=b; ]])
+test_compile_error([[ string a="x"; int b; b="x"*17; ]])
+test_compile_error([[ string a="x"; array b; b="x"*17; ]])
+test_compile_error([[ int b=17; string a; a=b*42; ]])
+test_compile_error([[ int b=17; float c=42.0; b=b/c; ]])
+test_compile_error([[ int b=17; float c=42.0; b/=c; ]])
+test_compile_error([[ int b=17; float c=42.0; b=b*c; ]])
+test_compile_error([[ int b=17; float c=42.0; b*=c; ]])
+test_compile_error([[ float b=17.0; string a; a=b*42; ]])
+test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
+
+//
 
 test_any([[
   class Foo {
@@ -1555,7 +1637,6 @@ test_equal(encode_value_canonic ((<"en","sv","de">)),
            encode_value_canonic ((<"de","sv","en">)))
 test_equal(encode_value_canonic ((<"en","sv","de">)),
            encode_value_canonic ((<"sv","en","de">)))
-
 
 test_any([[mixed s="foo"; return s++;]],"foo")
 test_any([[mixed s="foo"; s++; return s;]],"foo1")
