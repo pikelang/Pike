@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.155 1999/03/06 03:14:09 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.156 1999/03/06 03:15:04 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -189,25 +189,25 @@ test_any([[
 
 test_any([[
   class A {
-    constant gurka = 2;
+    constant gurka = 1;
     int foo = gurka;
   };
   class B {
-    constant banan = 4;
+    constant banan = 2;
     int foo = banan;
   };
   class C {
     static inherit A;
     static inherit B;
-    constant gurka = 1;
-    constant banan = 5;
+    constant gurka = 3;
+    constant banan = 4;
     int bar;
-    int baz = 3;
+    int baz = 5;
 
     void create() { bar = baz + A::foo + B::foo; }
   };
   return B()->bar;
-]], 8)
+]], 12)
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
