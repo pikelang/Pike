@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.139 1999/01/21 09:15:18 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.140 1999/01/24 12:00:41 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2791,7 +2791,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
 [[
-  test_any([[return equal(allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait(),allocate(10,-1)) ]],1)
+  test_any([[return allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait() - ({-1})]],({}))
 ]])
 
 
@@ -2842,3 +2842,28 @@ cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
+
+test_program([[
+void test_dir(string dir)
+{
+  foreach(get_dir(dir), string s)
+  {
+    string file=combine_path(dir,s);
+    mixed stat=file_stat(file);
+    if(!stat) continue;
+    if(stat[1]==-2)
+    {
+      test_dir(file);
+    }else if(stat[1]>=0){
+      if(glob(file,"*.pike") || glob(file,"*.pmod"))
+        (program)file;
+    }
+  }
+}
+int a()
+{
+  Array.map(master()->pike_module_path,test_dir);
+  return 1;
+}
+]])
+
