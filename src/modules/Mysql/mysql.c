@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $
+ * $Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $");
 
 /*
 **! module Mysql
@@ -85,7 +85,7 @@ RCSID("$Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $
+**!	$Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
@@ -99,8 +99,13 @@ RCSID("$Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
+#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
 #ifdef HAVE_MYSQL_PORT
 extern unsigned int mysql_port;
+#endif /* HAVE_MYSQL_PORT */
+#ifdef HAVE_MYSQL_UNIX_PORT
+extern char *mysql_unix_port;
+#endif /* HAVE_MYSQL_UNIX_PORT */
 #ifdef _REENTRANT
 static MUTEX_T stupid_port_lock;
 #define STUPID_PORT_INIT()	mt_init(&stupid_port_lock)
@@ -191,19 +196,24 @@ static void pike_mysql_reconnect(void)
   char *database = NULL;
   char *user = NULL;
   char *password = NULL;
+  char *hostptr = NULL;
   char *portptr = NULL;
+  char *saved_unix_port = NULL;
   unsigned int port = 0;
   unsigned int saved_port = 0;
 
   if (PIKE_MYSQL->host) {
-    host = strdup(PIKE_MYSQL->host->str);
-    if (!host) {
+    hostptr = strdup(PIKE_MYSQL->host->str);
+    if (!hostptr) {
       error("Mysql.mysql(): Out of memory!\n");
     }
-    if ((portptr = strchr(host, ':')) && (*portptr == ':')) {
+    if ((portptr = strchr(hostptr, ':')) && (*portptr == ':')) {
       *portptr = 0;
       portptr++;
       port = (unsigned int) atoi(portptr);
+    }
+    if (*hostptr) {
+      host = hostptr;
     }
   }
   if (PIKE_MYSQL->database) {
@@ -221,9 +231,9 @@ static void pike_mysql_reconnect(void)
 
   MYSQL_ALLOW();
 
-#ifdef HAVE_MYSQL_PORT
+#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
   STUPID_PORT_LOCK();
-#endif /* HAVE_MYSQL_PORT */
+#endif /* HAVE_MYSQL_PORT || HAVE_MYSQL_UNIX_PORT */
 
   if (socket) {
     /* Disconnect the old connection */
@@ -236,6 +246,12 @@ static void pike_mysql_reconnect(void)
     mysql_port = port;
   }
 #endif /* HAVE_MYSQL_PORT */
+#ifdef HAVE_MYSQL_UNIX_PORT
+  if (portptr) {
+    saved_unix_port = mysql_unix_port;
+    mysql_unix_port = portptr;
+  }
+#endif /* HAVE_MYSQL_UNIX_PORT */
 
   socket = mysql_connect(mysql, host, user, password);
 
@@ -243,15 +259,21 @@ static void pike_mysql_reconnect(void)
   if (port) {
     mysql_port = saved_port;
   }
-
-  STUPID_PORT_UNLOCK();
 #endif /* HAVE_MYSQL_PORT */
+#ifdef HAVE_MYSQL_UNIX_PORT
+  if (portptr) {
+    mysql_unix_port = saved_unix_port;
+  }
+#endif /* HAVE_MYSQL_UNIX_PORT */
+#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
+  STUPID_PORT_UNLOCK();
+#endif /* HAVE_MYSQL_PORT || MAVE_MYSQL_UNIX_PORT*/
 
   MYSQL_DISALLOW();
 
-  if (host) {
+  if (hostptr) {
     /* No longer needed */
-    free(host);
+    free(hostptr);
   }
   
   if (!(PIKE_MYSQL->socket = socket)) {
