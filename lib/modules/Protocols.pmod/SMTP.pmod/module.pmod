@@ -432,6 +432,11 @@ class Connection {
       parts[1] = String.trim_all_whites(parts[1]);
       if(!sscanf(parts[1], "<%s>", validating_mail))
         sscanf(parts[1], "%s", validating_mail);
+
+      // Since we relay, we must accept mail for <postmaster> according to RFC 2821.
+      // If we get mail for postmaster, we rewrite the address to postmaster@mydomain.
+      if (validating_mail == "postmaster")
+	validating_mail += "@" + cfg->domains[0];
       if(validating_mail == "")
         validating_mail = "MAILER-DAEMON@" + cfg->domains[0];
       array emailparts = validating_mail / "@";
@@ -536,7 +541,9 @@ class Connection {
      else
      {
        int|array check;
-       err = catch(check = cfg->cb_rcptto(email));
+       // Mail directed to postmaster must be accepted according to RFC 2821.
+       if (!((email/"@")[0]=="postmaster"))
+	 err = catch(check = cfg->cb_rcptto(email));
        if(err)
        {
          outcode(451);
