@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.166 2000/03/03 01:31:13 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.167 2000/03/07 08:13:18 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -218,7 +218,9 @@ RCSID("$Id: language.yacc,v 1.166 2000/03/03 01:31:13 hubbe Exp $");
 #endif
 
 
-void add_local_name(struct pike_string *,struct pike_string *,node *);
+int add_local_name(struct pike_string *,struct pike_string *,node *);
+int low_add_local_name(struct compiler_frame *,
+		       struct pike_string *,struct pike_string *,node *);
 static node *lexical_islocal(struct pike_string *);
 
 static int varargs;
@@ -1078,13 +1080,14 @@ identifier_type: idents
 	  push_int(0);
 	  yyerror("Destructed object used as program identifier.");
 	}else{
+	  extern void f_object_program(INT32);
 	  f_object_program(1);
 	}
       }
 
       switch(sp[-1].type) {
       case T_FUNCTION:
-	if(p = program_from_function(sp-1))
+	if((p = program_from_function(sp-1)))
 	  break;
       
       default:
@@ -1587,21 +1590,65 @@ lambda: F_LAMBDA push_compiler_frame1
 
 local_function: F_IDENTIFIER push_compiler_frame1
   {
+    char buf[40];
+    struct pike_string *name,*type;
+    int id;
+    node *n;
+    struct identifier *i=0;
+
     debug_malloc_touch(compiler_frame->current_return_type);
     if(compiler_frame->current_return_type)
       free_string(compiler_frame->current_return_type);
     copy_shared_string(compiler_frame->current_return_type,
 		       $<n>0->u.sval.u.string);
+
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)new_program->id,
+	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+
+    name=make_shared_string(buf);
+
+    if(compiler_pass > 1 &&
+       (id=isidentifier(name)) &&
+       (i=ID_FROM_INT(new_program, id)))
+    {
+      if(i->identifier_flags & IDENTIFIER_SCOPED)
+      {
+	n = mktrampolinenode(id);
+      }else{
+	n = mkidentifiernode(id);
+      }
+      copy_shared_string(type,i->type);
+    }
+    else
+    {
+      id=define_function(name,
+			 check_node_hash($<n>0)->u.sval.u.string,
+			 0,
+			 IDENTIFIER_PIKE_FUNCTION,
+			 0);
+      n = mktrampolinenode(id);
+      copy_shared_string(type, function_type_string);
+    }
+
+    low_add_local_name(compiler_frame->previous,
+		       $1->u.sval.u.string, type, n);
+    $<number>$=id;
+    free_string(name);
   }
   func_args failsafe_block
   {
-    struct pike_string *type;
-    char buf[40];
-    int f,e;
-    struct pike_string *name;
-    
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
+    int e;
+    struct pike_string *type,*name;
+    struct identifier *i=ID_FROM_INT(new_program, $<number>3);
+    name=i->name;
 
+    /***/
     push_finished_type(compiler_frame->current_return_type);
     
     e=$4-1;
@@ -1621,41 +1668,41 @@ local_function: F_IDENTIFIER push_compiler_frame1
     push_type(T_FUNCTION);
     
     type=compiler_pop_type();
+    /***/
 
-    sprintf(buf,"__lambda_%ld_%ld",
-	    (long)new_program->id,
-	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
-    name=make_shared_string(buf);
+    
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
-#ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
-#endif /* LAMBDA_DEBUG */
     debug_malloc_touch($5);
-    f=dooptcode(name,
-		$5,
-		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE);
+    dooptcode(name,
+	      $5,
+	      type,
+	      ID_STATIC | ID_PRIVATE | ID_INLINE);
 
-    if(compiler_frame->lexical_scope == 2) {
-      $$ = mktrampolinenode(f);
-    } else {
-      $$ = mkidentifiernode(f);
-    }
-    debug_malloc_touch($$);
     pop_compiler_frame();
-    add_local_name($1->u.sval.u.string, type, copy_node( $$ ));
     free_node($1);
-    free_string(name);
+    free_string(type);
+
+    /* WARNING: If the local function adds more variables we are screwed */
+    $$=copy_node(compiler_frame->variable[
+      compiler_frame->current_number_of_locals-1].def
+      );
   }
   | F_IDENTIFIER push_compiler_frame1 error
   {
     pop_compiler_frame();
+    $$=mkintnode(0);
   }
   ;
 
 local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
   {
+    char buf[40];
+    struct pike_string *name,*type;
+    int id;
+    node *n;
+    struct identifier *i=0;
+
     debug_malloc_touch(compiler_frame->current_return_type);
     
     push_finished_type($<n>0->u.sval.u.string);
@@ -1667,17 +1714,58 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
     if(compiler_frame->current_return_type)
       free_string(compiler_frame->current_return_type);
     compiler_frame->current_return_type=compiler_pop_type();
+
+
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)new_program->id,
+	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+
+    name=make_shared_string(buf);
+
+    if(compiler_pass > 1 &&
+       (id=isidentifier(name)) &&
+       (i=ID_FROM_INT(new_program, id)))
+    {
+      if(i->identifier_flags & IDENTIFIER_SCOPED)
+      {
+	n = mktrampolinenode(id);
+      }else{
+	n = mkidentifiernode(id);
+      }
+      copy_shared_string(type,i->type);
+    }
+    else
+    {
+      id=define_function(name,
+			 check_node_hash($<n>0)->u.sval.u.string,
+			 0,
+			 IDENTIFIER_PIKE_FUNCTION,
+			 0);
+      n = mktrampolinenode(id);
+      copy_shared_string(type, function_type_string);
+    }
+
+    low_add_local_name(compiler_frame->previous,
+		       $2->u.sval.u.string, type, n);
+    $<number>$=id;
+    free_string(name);
   }
   func_args failsafe_block
   {
-    struct pike_string *type;
-    char buf[40];
-    int f,e;
-    struct pike_string *name;
+    int e;
+    struct pike_string *type, *name;
+    struct identifier *i=ID_FROM_INT(new_program, $<number>4);
+    name=i->name;
 
     debug_malloc_touch($6);
     $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
 
+    /***/
     push_finished_type(compiler_frame->current_return_type);
     
     e=$5-1;
@@ -1697,38 +1785,27 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
     push_type(T_FUNCTION);
     
     type=compiler_pop_type();
+    /***/
 
-    sprintf(buf,"__lambda_%ld_%ld",
-	    (long)new_program->id,
-	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
-    name=make_shared_string(buf);
-
-#ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
-#endif /* LAMBDA_DEBUG */
-    
     debug_malloc_touch($6);
-    f=dooptcode(name,
-		$6,
-		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE);
+    dooptcode(name,
+	      $6,
+	      type,
+	      ID_STATIC | ID_PRIVATE | ID_INLINE);
 
-    if(compiler_frame->lexical_scope == 2) {
-      $$ = mktrampolinenode(f);
-    } else {
-      $$ = mkidentifiernode(f);
-    }
-    debug_malloc_touch($$);
     pop_compiler_frame();
-    add_local_name($2->u.sval.u.string, type, copy_node( $$ ));
     free_node($2);
-    free_string(name);
+    /* WARNING: If the local function adds more variables we are screwed */
+    $$=copy_node(compiler_frame->variable[
+      compiler_frame->current_number_of_locals-1].def
+      );
+    free_string(type);
   }
   | optional_stars F_IDENTIFIER push_compiler_frame1 error
   {
     pop_compiler_frame();
     free_node($2);
+    $$=mkintnode(0);
   }
   ;
 
@@ -2718,20 +2795,20 @@ void yyerror(char *str)
   }
 }
 
-/* argument must be a shared string */
-/* Note that this function eats a reference to 'type' */
-/* If def is nonzero, it also eats a ref to def */
-void add_local_name(struct pike_string *str,
-		    struct pike_string *type,
-		    node *def)
+
+int low_add_local_name(struct compiler_frame *frame,
+			struct pike_string *str,
+			struct pike_string *type,
+			node *def)
 {
   debug_malloc_touch(def);
   debug_malloc_touch(type);
   debug_malloc_touch(str);
   reference_shared_string(str);
-  if (compiler_frame->current_number_of_locals == MAX_LOCAL)
+  if (frame->current_number_of_locals == MAX_LOCAL)
   {
     yyerror("Too many local variables.");
+    return 0;
   }else {
 #ifdef PIKE_DEBUG
     check_type_string(type);
@@ -2744,17 +2821,33 @@ void add_local_name(struct pike_string *str,
       free_string(type);
       copy_shared_string(type, zero_type_string);
     }
-    compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
-    compiler_frame->variable[compiler_frame->current_number_of_locals].name = str;
-    compiler_frame->variable[compiler_frame->current_number_of_locals].def = def;
-    compiler_frame->current_number_of_locals++;
-    if(compiler_frame->current_number_of_locals > 
-       compiler_frame->max_number_of_locals)
+    frame->variable[frame->current_number_of_locals].type = type;
+    frame->variable[frame->current_number_of_locals].name = str;
+    frame->variable[frame->current_number_of_locals].def = def;
+    frame->current_number_of_locals++;
+    if(frame->current_number_of_locals > 
+       frame->max_number_of_locals)
     {
-      compiler_frame->max_number_of_locals=
-	compiler_frame->current_number_of_locals;
+      frame->max_number_of_locals=
+	frame->current_number_of_locals;
     }
+
+    return frame->current_number_of_locals-1;
   }
+}
+
+
+/* argument must be a shared string */
+/* Note that this function eats a reference to 'type' */
+/* If def is nonzero, it also eats a ref to def */
+int add_local_name(struct pike_string *str,
+		   struct pike_string *type,
+		   node *def)
+{
+  return low_add_local_name(compiler_frame,
+			    str,
+			    type,
+			    def);
 }
 
 /* argument must be a shared string */

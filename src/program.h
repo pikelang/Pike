@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.80 2000/02/15 23:41:03 grubba Exp $
+ * $Id: program.h,v 1.81 2000/03/07 08:13:18 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -123,11 +123,14 @@ union idptr
 #define IDENTIFIER_CONSTANT 4
 #define IDENTIFIER_VARARGS 8
 #define IDENTIFIER_PROTOTYPED 16
+#define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_PIKE_FUNCTION(X) ((X) & IDENTIFIER_PIKE_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
 #define IDENTIFIER_IS_VARIABLE(X) (!((X) & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
+
+#define IDENTIFIER_MASK 63
 
 struct identifier
 {
