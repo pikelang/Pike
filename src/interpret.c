@@ -26,6 +26,8 @@
 #include "gc.h"
 #include "threads.h"
 
+#include <fcntl.h>
+
 #ifdef HAVE_MMAP
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -61,7 +63,7 @@ struct frame *fp; /* frame pointer */
 void init_interpreter()
 {
 #ifdef USE_MMAP_FOR_STACK
-  int fd;
+  static int fd = -1;
 
 #ifndef MAP_VARIABLE
 #define MAP_VARIABLE 0
@@ -75,12 +77,13 @@ void init_interpreter()
 #define MAP_FAILED -1
 #endif
 
-#ifdef MAP_ANONYMOUS
-  fd=-1;
-#else
+#ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS 0
-  fd=open("/dev/zero");
-  if(fd < 0) fatal("Failed to open /dev/zero.\n");
+  if(fd == -1)
+  {
+    fd=open("/dev/zero",O_RDONLY);
+    if(fd < 0) fatal("Failed to open /dev/zero.\n");
+  }
 #endif
 
 #define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
@@ -89,10 +92,7 @@ void init_interpreter()
   mark_stack_malloced=0;
   evaluator_stack=MMALLOC(stack_size,struct svalue);
   mark_stack=MMALLOC(stack_size, struct svalue *);
-
-  if(fd != -1) close(fd);
-
-  if((char *)MAP_FAILED == (char *)evaluator_stack)  evaluator_stack=0;
+  if((char *)MAP_FAILED == (char *)evaluator_stack) evaluator_stack=0;
   if((char *)MAP_FAILED == (char *)mark_stack) mark_stack=0;
 #else
   evaluator_stack=0;
@@ -1341,11 +1341,12 @@ void safe_apply_low(struct object *o,int fun,int args)
   sp-=args;
   if(SETJMP(recovery))
   {
-    automatic_fatal="Error in handle_error in master object!\nPrevious error:";
+    ONERROR tmp;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     assign_svalue_no_free(sp++, & throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
-    automatic_fatal=0;
+    UNSET_ONERROR(tmp);
 
     sp->u.integer = 0;
     sp->subtype=NUMBER_NUMBER;
