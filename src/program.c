@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.108 1999/04/03 01:34:17 hubbe Exp $");
+RCSID("$Id: program.c,v 1.109 1999/07/01 22:15:31 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2263,7 +2263,7 @@ struct program *compile(struct pike_string *prog)
   struct program *p;
   struct lex save_lex;
   int save_depth=compilation_depth;
-  int saved_threads_disabled = threads_disabled;
+  int saved_threads_disabled;
   dynamic_buffer used_modules_save = used_modules;
   INT32 num_used_modules_save = num_used_modules;
   void yyparse(void);
@@ -2272,6 +2272,9 @@ struct program *compile(struct pike_string *prog)
   if(SETJMP(tmp))
     fatal("Compiler exited with longjump!\n");
 #endif
+
+  low_init_threads_disable();
+  saved_threads_disabled = threads_disabled;
 
   num_used_modules=0;
   initialize_buf(&used_modules);
@@ -2316,12 +2319,11 @@ struct program *compile(struct pike_string *prog)
   }
 
 #ifdef PIKE_DEBUG
-  if (threads_disabled < saved_threads_disabled) {
+  if (threads_disabled != saved_threads_disabled) {
     fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
 	  threads_disabled, saved_threads_disabled);
   }
 #endif /* PIKE_DEBUG */
-  threads_disabled = saved_threads_disabled + 1;
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
 
   exit_threads_disable(NULL);
