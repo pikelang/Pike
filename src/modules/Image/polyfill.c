@@ -28,7 +28,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.7 1997/10/12 18:11:04 noring Exp $<br>
+**!	$Id: polyfill.c,v 1.8 1997/10/12 21:12:08 mirar Exp $<br>
 **! class image
 */
 
@@ -176,12 +176,12 @@ static void add_vertices(struct vertex_list **first,
 
       while (*ins)
       {
-	 if ((*ins)->dy==0 || what->dy==0) xi=xw;
+	 if (fabs((*ins)->dy)<1e-10 || fabs(what->dy)<1e-10) xi=xw;
 	 else xi = (*ins)->above->x + (*ins)->dx*(yw-(*ins)->above->y);
 	 yi=yw;
 
-	 if (xw<xi && what->dx<0) break;
-	 if (xw>xi && what->dx>0) break;
+	 if (xw<xi && what->dx<0.0) break;
+	 if (xw>xi && what->dx>0.0) break;
 
 	 if (xw==xi && 
 /*	     ((*ins)->below->x>xw || (*ins)->above->x>xw) &&*/
@@ -483,8 +483,7 @@ static void polygone_row(struct image *img,
 static void polygone_some(struct image *img,
 			  struct vertex *top)
 {
-   struct vertex *tn;
-   struct vertex_list *vertices,*v,*vn,*v1;
+   struct vertex_list *vertices;
    struct vertex *next,*nextb;
    float yp;
    int i;
