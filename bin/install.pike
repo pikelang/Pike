@@ -1059,8 +1059,8 @@ void fix_smartlink(string src, string dest, string include_prefix)
     status("Finalizing",dest,"Already finalized");
     return;
   }
-  Stdio.write_file(dest,data);
-  status("Finalizing",dest,"done");
+  Stdio.write_file(fakeroot(dest),data);
+  status("Finalizing",fakeroot(dest),"done");
 }
 
 // dump modules (and master)
