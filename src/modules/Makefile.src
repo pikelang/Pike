@@ -23,7 +23,7 @@ clean:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
 
 verify:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) verify ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) verify ) ; done
 
 verbose_verify:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) verbose_verify ) ; done
