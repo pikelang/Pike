@@ -130,7 +130,8 @@ if test x$# != x0 ; then
    ;;
    *)
     LD_LIBRARY_PATH="$RPATH"
-    export LD_LIBRARY_PATH
+    LD_RUN_PATH="$RPATH"
+    export LD_LIBRARY_PATH LD_RUN_PATH
    ;;
   esac
 fi
