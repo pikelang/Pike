@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.307 2003/10/30 17:24:35 bill Exp $
+// $Id: master.pike.in,v 1.308 2003/10/30 22:19:26 bill Exp $
 
 #pike __REAL_VERSION__
 
@@ -1724,6 +1724,7 @@ class CompatResolver
   //! Lookup from handler module to corresponding root_module.
   mapping(object:joinnode) handler_root_modules = ([]);
 
+  //! The pike system module path, not including any set by the user.
   array(string) system_module_path=({});
 
   //! The complete module search path
