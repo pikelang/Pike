@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.267 2000/02/04 20:16:18 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.268 2000/02/05 04:02:59 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3891,6 +3891,14 @@ test_do([[
   search(m, 4711);
 ]])
 
+test_any_equal([[
+  mapping m = (["foo": "bar", "bar": "gnu", "gnu": "bar"]);
+  array a = ({});
+  a += ({search (m, "bar")});
+  a += ({search (m, "bar", a[-1])});
+  a += ({search (m, "bar", a[-1])});
+  return sort (a);
+]], ({0, "foo", "gnu"}))
 
 // test large searches (find string, size, pattern)
 define(test_search,[[
