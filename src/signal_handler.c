@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.116 1999/03/10 00:33:04 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.117 1999/03/11 03:14:34 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -674,7 +674,7 @@ void process_done(pid_t pid)
 #endif
 
 
-#ifndef USE_SIGCHILD
+#ifdef USE_SIGCHILD
 
 struct wait_data {
   pid_t pid;
