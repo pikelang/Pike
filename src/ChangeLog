@@ -1,5 +1,8 @@
 Wed Oct  9 04:02:29 1996  Fredrik Hubinette  <hubbe@nuala.infovav.se>
 
+	* /precompiled/string_buffer added
+	* /precompiled/queue added
+	* configure script improved with --with-xxx options
 	* mmapped stacks should now work
 	* catch() should now work in handle_error
 
