@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.95 2002/05/13 19:03:07 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.96 2002/07/26 16:22:11 grubba Exp $
 #
 
 
@@ -127,12 +127,7 @@ clean:
 
 depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
 	-@echo Fixing dependencies for $(SRCDIR)/\*.c
-	@gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
-	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
-	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
-	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
-	|sed -e "s@$(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@\1@g" \
-	>$(SRCDIR)/dependencies
+	@gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)"
 	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@for a in '' $(MODULE_SUBDIRS) ; do \
 	  if test "x$$a" = "x"; then :; else \
