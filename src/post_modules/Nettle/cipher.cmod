@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.25 2003/12/06 16:17:17 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.26 2003/12/14 00:08:33 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -121,7 +121,7 @@ PIKECLASS CipherInfo
   /*! @decl string block_size(void)
    *!
    *! @returns
-   *!   The block size of the cipher (or 0 for stream ciphers).
+   *!   The block size of the cipher (1 for stream ciphers).
    */
   PIKEFUN int block_size()
     {
@@ -171,6 +171,9 @@ PIKECLASS CipherState
   /*! @decl CipherState set_encrypt_key(string key, void|int force)
    *!
    *! Initializes the object for encryption.
+   *!
+   *! @seealso
+   *!   @[set_decrypt_key], @[crypt]
    */
   PIKEFUN object set_encrypt_key(string key, void|int force)
     {
@@ -193,6 +196,9 @@ PIKECLASS CipherState
   /*! @decl CipherState set_decrypt_key(string key, void|int force)
    *!
    *! Initializes the object for decryption.
+   *!
+   *! @seealso
+   *!   @[set_encrypt_key], @[crypt]
    */
   PIKEFUN object set_decrypt_key(string key, void|int force)
     {
@@ -211,6 +217,17 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
+  /*! @decl string make_key()
+   *!
+   *! Generate a key by calling @[Crypto.Random.random_string] and
+   *! initialize this object for encryption with that key.
+   *!
+   *! @returns
+   *!   The generated key.
+   *!
+   *! @seealso
+   *!   @[set_encrypt_key]
+   */
   PIKEFUN string make_key()
   {
     struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);

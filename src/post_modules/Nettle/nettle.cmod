@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.24 2003/12/12 21:53:42 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.25 2003/12/14 00:08:57 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -157,6 +157,10 @@ PIKECLASS Yarrow
     RETURN yarrow256_update(&THIS->ctx, source, entropy, data->len, data->str);
   }
 
+  /*! @decl int(0..) needed_sources()
+   *! The number of sources that must reach the threshold before a
+   *! slow reseed will happen.
+   */
   PIKEFUN int(0..) needed_sources()
   {
     RETURN yarrow256_needed_sources(&THIS->ctx);
@@ -281,7 +285,8 @@ static struct object *make_cipher_object(INT32 args) {
 
 
 /*! @class CBC
- *! Implementation of the cipher block chaining mode (CBC).
+ *! Implementation of the cipher block chaining mode (CBC). Works as
+ *! a wrapper for the cipher algorithm put in create.
  */
 PIKECLASS CBC
 {
@@ -361,6 +366,11 @@ PIKECLASS CBC
   }
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
+   *! Initialize the CBC wrapper with a cipher algorithm. If it is a
+   *! program, an object will be instantiated with @[args] as arguments.
+   *! If it is an object that doesn't conform to the cipher API, but has
+   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
+   *! that function will be called with @[args] as arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more) {
     THIS->object = make_cipher_object(args);
@@ -382,41 +392,50 @@ PIKECLASS CBC
   }
 
   /*! @decl string name()
+   *! Returns the string @expr{"CBC"@}.
    */
   PIKEFUN string name() {
     push_constant_text("CBC");
   }
 
   /*! @decl int block_size()
+   *! Reurns the block size of the encapsulated cipher.
    */
   PIKEFUN int block_size() {
     RETURN THIS->block_size;
   }
 
   /*! @decl int key_size()
+   *! Returns the key size of the encapsulated cipher.
    */
   PIKEFUN int key_size() {
     safe_apply(THIS->object, "key_size", args);
   }
 
-  /*! @decl void set_encrypt_key(string key)
+  /*! @decl this_program set_encrypt_key(string key)
+   *! Prepare the cipher and the wrapper for encrypting
+   *! with the given @[key].
    */
   PIKEFUN object set_encrypt_key(string key) {
     assert(THIS->block_size);
-    NO_WIDE_STRING(key);
     THIS->mode = 0;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
     RETURN this_object();
   }
 
-  /*! @decl void set_decrypt_key(string key)
+  /*! @decl this_program set_decrypt_key(string key)
+   *! Prepare the cipher and the wrapper for decrypting
+   *! with the given @[key].
    */
   PIKEFUN object set_decrypt_key(string key) {
     f_CBC_set_encrypt_key(args);
     THIS->mode = 1;
   }
 
+  /*! @decl this_program set_iv(string iv)
+   *! Set the initialization vector to @[iv].
+   */
   PIKEFUN object set_iv(string iv) {
     assert(THIS->iv);
     NO_WIDE_STRING(iv);
@@ -426,6 +445,10 @@ PIKECLASS CBC
     RETURN this_object();
   }
 
+  /*! @decl string crypt(string data)
+   *! Encrypt/decrypt @[data] and return the result. @[data] must
+   *! be an integral number of blocks.
+   */
   PIKEFUN string crypt(string data) {
     unsigned INT8 *result;
     INT32 offset = 0;
