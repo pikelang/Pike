@@ -319,8 +319,6 @@ else
   fi
 fi
 
-fi
-
 AC_CHECK_HEADERS( X11/xpm.h )
 AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
 
@@ -342,6 +340,9 @@ else
 AC_CHECK_HEADERS(gtkextra/gtkextra.h)
   CFLAGS=$save_CFLAGS
   pgtk_has_gtkextra=gtkextra
+fi
+
+# End of gnome dependent stuff.
 fi
 
 
