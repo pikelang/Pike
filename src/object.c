@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.213 2003/02/01 15:37:23 mast Exp $
+|| $Id: object.c,v 1.214 2003/02/24 19:56:28 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.213 2003/02/01 15:37:23 mast Exp $");
+RCSID("$Id: object.c,v 1.214 2003/02/24 19:56:28 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -932,14 +932,14 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   switch(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
   {
   case IDENTIFIER_PIKE_FUNCTION:
-#if 0
-    if (i->func.offset == -1) {	/* prototype */
+    if (i->func.offset == -1 && p->flags & PROGRAM_PASS_1_DONE) {
+      /* Prototype. In the first pass we must be able to get a
+       * function anyway. */
       to->type=T_INT;
       to->subtype=NUMBER_UNDEFINED;
       to->u.integer=0;
       break;
     }
-#endif
   case IDENTIFIER_FUNCTION:
   case IDENTIFIER_C_FUNCTION:
     to->type=T_FUNCTION;
