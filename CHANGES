@@ -261,6 +261,34 @@ o Float
 o Protocols.Bittorrent
 o Protocols.LMTP
 o Web.RDF/RDFS/OWL/RSS
+
+    Pike now has support for the W3C semantic web formats OWL, RDF
+    and RDFS, which are used for expressing structure and metadata
+    information. There is also some support for the syndication
+    format RSS (which happens to be a simple application of RDF).
+
+    This sample program reads an OWL file, parses the dataset
+    contained in it, and then lists the data classes in that
+    dataset:
+
+      int main(int argc, array argv)
+      {
+        object owlset = Web.OWL();
+        string input = Stdio.read_file(argv[1]);
+        owlset->parse_owl(input);
+
+        write("Classes:\n");
+
+        foreach(owlset->find_statements(0,
+                                        owlset->rdf_type,
+                                        owlset->owl_Class);
+                               array statement)
+          write("- %O\n", statement[0]);
+
+       return 0;
+     }  
+ 
+
 o Parser.RCS
 
 Optimizations:
