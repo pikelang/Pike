@@ -1,5 +1,9 @@
 #! /usr/bin/env pike
 
+// Pike installer and exporter.
+//
+// $Id: install.pike,v 1.147 2004/11/08 16:00:09 grubba Exp $
+
 #define USE_GTK
 
 #if !constant(GTK.parse_rc)
