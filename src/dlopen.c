@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.37 2002/10/22 20:15:30 grubba Exp $
+|| $Id: dlopen.c,v 1.38 2002/10/24 14:53:45 marcus Exp $
 */
 
 #include <global.h>
@@ -189,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.37 2002/10/22 20:15:30 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.38 2002/10/24 14:53:45 marcus Exp $");
 
 #endif
 
@@ -628,11 +628,30 @@ struct COFFSymbol
 };
 
 
-#define COFFReloc_type_dir32 6
-#define COFFReloc_type_dir32nb 7
-#define COFFReloc_type_sect 10
-#define COFFReloc_type_sectrel 11 
-#define COFFReloc_type_rel32 20
+#define COFFReloc_I386_dir32 6
+#define COFFReloc_I386_dir32nb 7
+#define COFFReloc_I386_sect 10
+#define COFFReloc_I386_sectrel 11 
+#define COFFReloc_I386_rel32 20
+
+#define COFFReloc_IA64_imm14 1
+#define COFFReloc_IA64_imm22 2
+#define COFFReloc_IA64_imm64 3
+#define COFFReloc_IA64_dir32 4
+#define COFFReloc_IA64_dir64 5
+#define COFFReloc_IA64_pcrel21b 6
+#define COFFReloc_IA64_pcrel21m 7
+#define COFFReloc_IA64_pcrel21f 8
+#define COFFReloc_IA64_gprel22 9
+#define COFFReloc_IA64_ltoff22 10
+#define COFFReloc_IA64_sect 11
+#define COFFReloc_IA64_secrel22 12
+#define COFFReloc_IA64_secrel64i 13
+#define COFFReloc_IA64_secrel32 14
+#define COFFReloc_IA64_ltoff64 15
+#define COFFReloc_IA64_dir32nb 16
+#define COFFReloc_IA64_addend 31
+
 
 /* This structure is correct, but should not be used because of
  * portability issues
@@ -644,40 +663,77 @@ struct COFFReloc
   INT16 type;
 };
 
-struct PEAOUT {
+union PEAOUT {
   struct {
-    INT16 magic;
-    INT16 version;
-    INT32 text_size;
-    INT32 data_size;
-    INT32 bss_size;
-    INT32 entry;
-    INT32 text_start;
-    INT32 data_start;
-  } aout;
-  INT32 image_base;
-  INT32 section_alignment;
-  INT32 file_alignment;
-  INT16 major_os_version;
-  INT16 minor_os_version;
-  INT16 major_image_version;
-  INT16 minor_image_version;
-  INT16 major_subsys_version;
-  INT16 minor_subsys_version;
-  INT32 reserved1;
-  INT32 size_of_image;
-  INT32 size_of_headers;
-  INT32 checksum;
-  INT16 subsys;
-  INT16 dll_flags;
-  INT32 size_of_stack_reserve;
-  INT32 size_of_stack_commit;
-  INT32 size_of_heap_reserve;
-  INT32 size_of_heap_commit;
-  INT32 loader_flags;
-  INT32 number_of_rva_and_sizes;
-  INT32 data_directory[16][2];
+    struct {
+      INT16 magic;
+      INT16 version;
+      INT32 text_size;
+      INT32 data_size;
+      INT32 bss_size;
+      INT32 entry;
+      INT32 text_start;
+      INT32 data_start;
+    } aout;
+    INT32 image_base;
+    INT32 section_alignment;
+    INT32 file_alignment;
+    INT16 major_os_version;
+    INT16 minor_os_version;
+    INT16 major_image_version;
+    INT16 minor_image_version;
+    INT16 major_subsys_version;
+    INT16 minor_subsys_version;
+    INT32 reserved1;
+    INT32 size_of_image;
+    INT32 size_of_headers;
+    INT32 checksum;
+    INT16 subsys;
+    INT16 dll_flags;
+    INT32 size_of_stack_reserve;
+    INT32 size_of_stack_commit;
+    INT32 size_of_heap_reserve;
+    INT32 size_of_heap_commit;
+    INT32 loader_flags;
+    INT32 number_of_rva_and_sizes;
+    INT32 data_directory[16][2];
+  } pe32;
+  struct {
+    struct {
+      INT16 magic;
+      INT16 version;
+      INT32 text_size;
+      INT32 data_size;
+      INT32 bss_size;
+      INT32 entry;
+      INT32 text_start;
+    } aout;
+    INT64 image_base;
+    INT32 section_alignment;
+    INT32 file_alignment;
+    INT16 major_os_version;
+    INT16 minor_os_version;
+    INT16 major_image_version;
+    INT16 minor_image_version;
+    INT16 major_subsys_version;
+    INT16 minor_subsys_version;
+    INT32 reserved1;
+    INT32 size_of_image;
+    INT32 size_of_headers;
+    INT32 checksum;
+    INT16 subsys;
+    INT16 dll_flags;
+    INT64 size_of_stack_reserve;
+    INT64 size_of_stack_commit;
+    INT64 size_of_heap_reserve;
+    INT64 size_of_heap_commit;
+    INT32 loader_flags;
+    INT32 number_of_rva_and_sizes;
+    INT32 data_directory[16][2];
+  } pe32plus;
 };
+#define PEAOUT_GET(p,e) ((p).pe32.magic==0x20b? (p).pe32plus.e : (p).pe32.e)
+
 
 struct DLTempData
 {
@@ -1445,8 +1501,14 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    return -1;
 	  }
 
+
+#ifdef _WIN64
+
+
+#else
+
 	    /* We may need to support more types here */
-	  case COFFReloc_type_dir32:
+	  case COFFReloc_I386_dir32:
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
@@ -1454,7 +1516,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    break;
 
 #if 0
-	  case COFFReloc_type_dir32nb:
+	  case COFFReloc_I386_dir32nb:
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute nb: loc %p = %p\n", loc,ptr);
 #endif
@@ -1462,7 +1524,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    break;	   
 #endif
 
-          case COFFReloc_type_rel32:
+          case COFFReloc_I386_rel32:
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc relative: loc %p = %p = %d\n",
 		    loc,
@@ -1471,6 +1533,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 	    ((INT32*)loc)[0]+=ptr - (loc+sizeof(INT32));
 	    break;
+
+#endif
 	}
       }
 
@@ -1804,7 +1868,7 @@ static void init_dlopen(void)
 
       data->peaout=(struct PEAOUT *)(data->coff + 1);
 
-      global_imagebase = data->peaout->image_base;
+      global_imagebase = PEAOUT_GET(*data->peaout, image_base);
 
     } else
 
