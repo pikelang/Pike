@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 2002/12/06 21:15:21 mirar Exp $
+# $Id: Makefile.in,v 1.5 2002/12/07 12:38:42 mirar Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=ffmpeg.o
@@ -11,7 +11,7 @@ DUMMY=codecs_auto.h
 
 codecs_auto.h: codecs_auto.c Makefile
 	@echo making codecs_auto.h...
-	$(CPP) -I. $(SRCDIR)/codecs_auto.c | sed -n -e 's/^.*\(CODEC_ID_[A-Z_0-9]*\),.*$$/  add_integer_constant("\1",\1,0);/p' >codecs_auto.h 2>/dev/null || true
-	@echo $$(wc -l <codecs_auto.h) codecs found
+	@$(CPP) -I. $(SRCDIR)/codecs_auto.c | sed -n -e 's/^.*\(CODEC_ID_[A-Z_0-9]*\),.*$$/  add_integer_constant("\1",\1,0);/p' >codecs_auto.h 2>/dev/null || true
+	@echo `wc -l <codecs_auto.h` codecs found
 
 @dependencies@
