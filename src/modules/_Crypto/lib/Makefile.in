@@ -137,7 +137,11 @@ desQuickCore.c:
 
 ### End of rules for desCore
 
-OBJS = idea.o sha.o md5.o rc4.o cast.o $(O)
+# BEGIN NATIONAL SECURITY
+MASS_DESTRUCTION_OBJS = idea.o rc4.o cast.o $(O)
+# END NATIONAL SECURITY
+
+OBJS = $(MASS_DESTRUCTION_OBJS) sha.o md5.o
 
 algorithms.a: $(OBJS)
 	rm -f algorithms.a

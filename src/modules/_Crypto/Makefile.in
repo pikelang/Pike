@@ -1,6 +1,12 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=crypto.o idea.o des.o cast.o rc4.o invert.o sha.o md5.o pipe.o cbc.o
+
+# BEGIN NATIONAL SECURITY
+MASS_DESTRUCTION_OBJS = idea.o des.o cast.o rc4.o 
+# END NATIONAL SECURITY
+
+OBJS= $(MASS_DESTRUCTION_OBJS) crypto.o invert.o sha.o md5.o pipe.o cbc.o
+
 MODULE_ARCHIVES=lib/algorithms.a
 MODULE_SUBDIRS=lib
 MODULE_LDFLAGS=@LDFLAGS@
