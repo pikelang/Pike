@@ -39,6 +39,7 @@ o Extended random()
 o delay()/sleep()
     sleep() no longer busywaits, which it previously did for small
     values. The old behavior is available from the delay() function.
+    (This has change been made in later 7.2 releases too.)
 
 o search(string, int) / has_value(string, int)
     Both of these methods now handle both looking for strings and
@@ -211,7 +212,7 @@ o The program type can be specialized
     It's possible to specialize a program variable by adding a program
     identifier, much like an object variable can be specialized. E.g:
 
-       program(Stdio.File) fd = Stdio.File;
+       program(Stdio.File) fd_prog = Stdio.File;
 
 o ::_indices(), ::_values().
     There are now two "magic" functions ::_indices() and ::_values()
@@ -277,7 +278,6 @@ o ADT.Relation.Binary
 o Audio.Codec and Audio.Codec
     Contains decoders and encoders for audio. Currently WAV and MP3.
     Note: The API remains marked "unstable".
-
 
 o Crypto.md4
     Hash used for NT Lanmanager passwords.
@@ -538,7 +538,12 @@ o Identifier lookup
       |
       +-A---foo
 
-o Thread.Condition()->wait
+o Thread.Condition()->wait()
+    This function takes a mutex lock to unlock while it waits on the
+    condition. That argument was previously optional, but not any
+    more. The reason is that any code that leaves it out will always
+    contain a race; it doesn't work to e.g. rely on the internal
+    interpreter lock in this case.
 
 o Protocols.HTTP
     All methods in Protocols.HTTP that take a header mapping can now
@@ -568,15 +573,14 @@ o .build_lobotomize_crypto removed
 Compatibility changes without backward compatibility:
 -----------------------------------------------------
 
-The folloing changes were considered bugs and have no backwards
+The following changes were considered bugs and have no backwards
 compatibility layer.
-
 
 o enum and typedef have implicit local binding
     enums and typedefs now always have static binding. In 7.2 they
     could sometimes be dynamically bound.
 
-o Image.Layer modes modified.
+o Image.Layer modes modified
     Alpha channel handling for modes add, subtract, multiply, divide,
     modulo, invsubtract, invdivide, invmodulo, difference, max, min,
     bitwise_and, bitwise_or, bitwise_xor, screen and overlay modified so
