@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.67 2003/02/07 13:33:41 grubba Exp $
+|| $Id: mysql.c,v 1.68 2003/02/07 13:52:43 nilsson Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.67 2003/02/07 13:33:41 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.68 2003/02/07 13:52:43 nilsson Exp $");
 
 /*! @module Mysql
  *!
@@ -222,12 +222,12 @@ void pike_mysql_set_ssl(struct mapping *options) {
     char *ssl_cipher = NULL;
     struct svalue *val = NULL;
 
-    if ((val = simple_mapping_string_lookup(options, "ssl-key")) &&
+    if ((val = simple_mapping_string_lookup(options, "ssl_key")) &&
 	(val->type == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_key = val->u.string->str;
 
-    if ((val = simple_mapping_string_lookup(options, "ssl-cert")) &&
+    if ((val = simple_mapping_string_lookup(options, "ssl_cert")) &&
 	(val->type == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_cert = val->u.string->str;
@@ -237,12 +237,12 @@ void pike_mysql_set_ssl(struct mapping *options) {
 	(!val->u.string->size_shift))
       ssl_ca = val->u.string->str;
 
-    if ((val = simple_mapping_string_lookup(options, "ssl-capath")) &&
+    if ((val = simple_mapping_string_lookup(options, "ssl_capath")) &&
 	(val->type == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_capath = val->u.string->str;
 
-    if ((val = simple_mapping_string_lookup(options, "ssl-cipher")) &&
+    if ((val = simple_mapping_string_lookup(options, "ssl_cipher")) &&
 	(val->type == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_cipher = val->u.string->str;
@@ -524,17 +524,20 @@ static void pike_mysql_reconnect(void)
  *!     @member string "mysql_charset_name"
  *!       Change charset name.
  *!
- *!     @member string "ssl-key"
+ *!     @member string "ssl_key"
  *!       Path to SSL-key for use in SSL-communication.
  *!
- *!     @member string "ssl-cert"
+ *!     @member string "ssl_cert"
  *!       Path to SSL-cert for use in SSL-communication.
  *!
- *!     @member string "ssl-ca"
+ *!     @member string "ssl_ca"
  *!       Path to SSL-CA for use in SSL-communication.
  *!
- *!     @member string "ssl-capath"
+ *!     @member string "ssl_capath"
  *!       Path to SSL-CAPATH for use in SSL-communication.
+ *!
+ *!     @member string "ssl_cipher"
+ *!       FIXME
  *!
  *!     @member int "connect_options"
  *!       Options used when connecting to the server. See mysql documentation
