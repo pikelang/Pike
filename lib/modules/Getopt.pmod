@@ -167,7 +167,7 @@ array find_all_options(array(string) argv, array options,
 
 	string arg;
 	sscanf(opt,"%s=%s",opt, arg);
-	if(mixed *option=quick[opt])
+	if(array option=quick[opt])
 	{
 	  argv[e]=0;
 	  if(!arg && option[TYPE]==HAS_ARG)
