@@ -67,6 +67,11 @@
  *   types. This program will select the proper function whenever
  *   possible.
  *
+ * AUTOMATIC ALLOCATION AND DEALLOCATION OF CONSTANT STRINGS
+ *   You can use the syntax MK_STRING("my string") to refer to
+ *   a struct pike_string with the content "my string". Note
+ *   that this syntax can not be used in macros.
+ *
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
  *  o Not all Pike types are supported yet.
@@ -81,6 +86,92 @@
  */
 
 #define PC Parser.Pike
+
+/* Strings declared with MK_STRING. */
+mapping(string:string) strings = ([
+  // From stralloc.h:
+  "":"empty_pike_string",
+
+  // From program.h:
+  "this_program":"this_program_string",
+  // lfuns:
+  "__INIT":"lfun_strings[LFUN___INIT]",
+  "create":"lfun_strings[LFUN_CREATE]",
+  "destroy":"lfun_strings[LFUN_DESTROY]",
+  "`+":"lfun_strings[LFUN_ADD]",
+  "`-":"lfun_strings[LFUN_SUBTRACT]",
+  "`&":"lfun_strings[LFUN_AND]",
+  "`|":"lfun_strings[LFUN_OR]",
+  "`^":"lfun_strings[LFUN_XOR]",
+  "`<<":"lfun_strings[LFUN_LSH]",
+  "`>>":"lfun_strings[LFUN_RSH]",
+  "`*":"lfun_strings[LFUN_MULTIPLY]",
+  "`/":"lfun_strings[LFUN_DIVIDE]",
+  "`%":"lfun_strings[LFUN_MOD]",
+  "`~":"lfun_strings[LFUN_COMPL]",
+  "`==":"lfun_strings[LFUN_EQ]",
+  "`<":"lfun_strings[LFUN_LT]",
+  "`>":"lfun_strings[FLUN_GT]",
+  "__hash":"lfun_strings[LFUN___HASH]",
+  "cast":"lfun_strings[LFUN_CAST]",
+  "`!":"lfun_strings[LFUN_NOT]",
+  "`[]":"lfun_strings[LFUN_INDEX]",
+  "`[]=":"lfun_strings[LFUN_ASSIGN_INDEX]",
+  "`->":"lfun_strings[LFUN_ARROW]",
+  "`->=":"lfun_strings[LFUN_ASSIGN_ARROW]",
+  "_sizeof":"lfun_strings[LFUN__SIZEOF]",
+  "_indices":"lfun_strings[LFUN__INDICES]",
+  "_values":"lfun_strings[LFUN__VALUES]",
+  "`()":"lfun_strings[LFUN_CALL]",
+  "``+":"lfun_strings[LFUN_RADD]",
+  "``-":"lfun_strings[LFUN_RSUBTRACT]",
+  "``&":"lfun_strings[LFUN_RAND]",
+  "``|":"lfun_strings[LFUN_ROR]",
+  "``^":"lfun_strings[LFUN_RXOR]",
+  "``<<":"lfun_strings[LFUN_RLSH]",
+  "``>>":"lfun_strings[LFUN_RRSH]",
+  "``*":"lfun_strings[LFUN_RMULTIPLY]",
+  "``/":"lfun_strings[LFUN_RDIVIDE]",
+  "``%":"lfun_strings[LFUN_RMOD]",
+  "`+=":"lfun_strings[LFUN_ADD_EQ]",
+  "_is_type":"lfun_strings[LFUN__IS_TYPE]",
+  "_sprintf":"lfun_strings[LFUN__SPRINTF]",
+  "_equal":"lfun_strings[LFUN__EQUAL]",
+  "_m_delete":"lfun_strings[LFUN__M_DELETE]",
+  "_get_iterator":"lfun_strings[LFUN__GET_ITERATOR]",
+  "_search":"lfun_strings[LFUN__SEARCH]",
+]);
+int last_str_id = 0;
+array(string) stradd = ({});
+
+string parse_string(string str)
+{
+  if (search(str, "\\") == -1) {
+    return str[1..sizeof(str)-2];
+  }
+  error("String escapes not supported yet.\n");
+}
+
+string allocate_string(string orig_str)
+{
+  string str = parse_string(orig_str);
+  string str_sym = strings[str];
+  if (str_sym) return str_sym;
+
+  if (String.width(str)>8) {
+    error("Automatic allocation of wide strings with MK_STRING() not supported yet.\n");
+  }
+  int str_id = last_str_id++;
+  stradd += ({
+    sprintf("module_strings[%d] = \n"
+	    "  make_shared_binary_string(%s,\n"
+	    "                            CONSTANT_STRLEN(%s));\n",
+	    str_id,
+	    orig_str, orig_str),
+  });
+  str_sym = strings[str] = sprintf("module_strings[%d]", str_id);
+  return str_sym;
+}
 
 /*
  * This function takes an array of tokens containing a type
@@ -2010,6 +2101,20 @@ array(PC.Token) convert_comments(array(PC.Token) tokens)
   return new;
 }
 
+array(PC.Token) allocate_strings(array(PC.Token) tokens)
+{
+  int i = -1;
+
+  while ((i = search(tokens, PC.Token("MK_STRING"), i+1)) != -1) {
+    // werror("MK_STRING found: %O\n", tokens[i..i+10]);
+    if (arrayp(tokens[i+1]) && (sizeof(tokens[i+1]) == 3)) {
+      tokens[i] = PC.Token(allocate_string((string)tokens[i+1][1]));
+      tokens = tokens[..i] + tokens[i+2..];
+    }
+  }
+  return tokens;
+}
+
 int main(int argc, array(string) argv)
 {
   mixed x;
@@ -2024,7 +2129,30 @@ int main(int argc, array(string) argv)
 
 //  werror("%O\n",x);
 
+  x = recursive(allocate_strings, x);
+
   ParseBlock tmp=ParseBlock(x,"");
+
+  if (last_str_id) {
+    // Add code for allocation and deallocation of the strings.
+    tmp->addfuncs = stradd + tmp->addfuncs;
+    tmp->exitfuncs += ({
+      sprintf("{\n"
+	      "  int i;\n"
+	      "  for(i=0; i < %d; i++) {\n"
+	      "    if (module_strings[i]) free_string(module_strings[i]);\n"
+	      "    module_strings[i] = NULL;\n"
+	      "  }\n"
+	      "}\n",
+	      last_str_id),
+    });
+    tmp->declarations = ({
+      sprintf("static struct pike_string *module_strings[%d] = {\n"
+	      "%s};\n",
+	      last_str_id, "  NULL,\n"*last_str_id),
+    });
+  }
+
   x=tmp->code;
   x=recursive(replace,x,PC.Token("INIT",0),tmp->addfuncs);
   int need_init;
