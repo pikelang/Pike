@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.382 2000/06/29 19:53:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.383 2000/06/29 20:23:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1323,7 +1323,8 @@ __int64 foo;
 fi
 AC_CHECK_SIZEOF(__int64,0)
 
-AC_MY_CHECK_TYPE(size_t,long)
+AC_MY_CHECK_TYPE(size_t,unsigned long)
+AC_MY_CHECK_TYPE(ptrdiff_t,long)
 AC_MY_CHECK_TYPE(off_t,long)
 AC_MY_CHECK_TYPE(pid_t,int)
 AC_MY_CHECK_TYPE(uid_t,int)
