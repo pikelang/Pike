@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.43 2001/01/01 22:38:56 kinkie Exp $
+ * $Id: sql.pike,v 1.44 2001/01/08 18:30:24 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.43 2001/01/01 22:38:56 kinkie Exp $
+//. RCSID:	$Id: sql.pike,v 1.44 2001/01/08 18:30:24 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -22,79 +22,80 @@
 
 #define throw_error(X)	throw(({ (X), backtrace() }))
 
-//. + master_sql
-//.   Object to use for the actual SQL-queries.
+//! Object to use for the actual SQL-queries.
 object master_sql;
 
-//. + case_convert
-//.   Convert all field names in mappings to lower_case.
-//.   Only relevant to databases which only implement big_query(),
-//.   and use upper/mixed-case fieldnames (eg Oracle).
-//.   0 - No (default)
-//.   1 - Yes
+//! Convert all field names in mappings to lower_case.
+//! Only relevant to databases which only implement big_query(),
+//! and use upper/mixed-case fieldnames (eg Oracle).
+//! @int
+//! @value 0
+//!   No (default)
+//! @value 1
+//!   Yes
+//! @endint
 int case_convert;
 
-//. - quote
-//.   Quote a string so that it can safely be put in a query.
-//. > s - String to quote.
+//! @decl string quote(string s)
+//! Quote a string @[s] so that it can safely be put in a query.
 function(string:string) quote = .sql_util.quote;
 
-//. - encode_time
-//.   Converts a system time value to an appropriately formatted time
-//.   spec for the database.
-//. > arg 1 - Time to encode.
-//. > arg 2 - If nonzero then time is taken as a "full" unix time spec
-//.   (where the date part is ignored), otherwise it's converted as a
-//.   seconds-since-midnight value.
+//! @decl string encode_time(int t, int|void is_utc)
+//! Converts a system time value to an appropriately formatted time
+//! spec for the database.
+//! @[t] Time to encode.
+//! @[is_utc] If nonzero then time is taken as a "full" unix time spec
+//! (where the date part is ignored), otherwise it's converted as a
+//! seconds-since-midnight value.
 function(int,void|int:string) encode_time;
 
-//. - decode_time
-//.   Converts a database time spec to a system time value.
-//. > arg 1 - Time spec to decode.
-//. > arg 2 - Take the date part from this system time value. If zero, a
-//.   seconds-since-midnight value is returned.
+//! @decl int decode_time(string t, int|void want_utc)
+//! Converts a database time spec to a system time value.
+//! @[t] Time spec to decode.
+//! @[want_utc] Take the date part from this system time value. If zero, a
+//! seconds-since-midnight value is returned.
 function(string,void|int:int) decode_time;
 
-//. - encode_date
-//.   Converts a system time value to an appropriately formatted
-//.   date-only spec for the database.
-//. > arg 1 - Time to encode.
+//! @decl string encode_date(int t)
+//! Converts a system time value to an appropriately formatted
+//! date-only spec for the database.
+//! @[t] Time to encode.
 function(int:string) encode_date;
 
-//. - decode_date
-//.   Converts a database date-only spec to a system time value.
-//. > arg 1 - Date spec to decode.
+//! @decl int decode_date(string d)
+//! Converts a database date-only spec to a system time value.
+//! @[d] Date spec to decode.
 function(string:int) decode_date;
 
-//. - encode_datetime
-//.   Converts a system time value to an appropriately formatted
-//.   date and time spec for the database.
-//. > arg 1 - Time to encode.
+//! @decl string encode_datetime(int t)
+//! Converts a system time value to an appropriately formatted
+//! date and time spec for the database.
+//! @[t] Time to encode.
 function(int:string) encode_datetime;
 
-//. - decode_datetime
-//.   Converts a database date and time spec to a system time value.
-//. > arg 1 - Date and time spec to decode.
+//! @decl int decode_datetime(string datetime)
+//! Converts a database date and time spec to a system time value.
+//! @[datetime] Date and time spec to decode.
 function(string:int) decode_datetime;
 
-//. - create
-//.   Create a new generic SQL object.
-//. > host
-//.   object - Use this object to access the SQL-database.
-//.   string - Connect to the server specified.
-//.            The string should be on the format:
-//.              [dbtype://][user[:password]@]hostname[:port][/database]
-//.            If dbtype isn't specified, use any available database server
-//.            on the specified host.
-//.            If the hostname is "", access through a UNIX-domain socket or
-//.            similar.
-//.   zero   - Access through a UNIX-domain socket or similar.
-//. > database
-//.   Select this database.
-//. > user
-//.   User name to access the database as.
-//. > password
-//.   Password to access the database.
+//! - create
+//!   Create a new generic SQL object.
+//! > host
+//!   object - Use this object to access the SQL-database.
+//!   string - Connect to the server specified.
+//!            The string should be on the format:
+//!              [dbtype://][user[:password]@]hostname[:port][/database]
+//!            If dbtype isn't specified, use any available database server
+//!            on the specified host.
+//!            If the hostname is "", access through a UNIX-domain socket or
+//!            similar.
+//!   zero   - Access through a UNIX-domain socket or similar.
+//! > database
+//!   Select this database.
+//! > user
+//!   User name to access the database as.
+//! > password
+//!   Password to access the database.
 void create(void|string|object host, void|string db,
 	    void|string user, void|string password)
 {
@@ -295,8 +296,8 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
   return 0;
 }
 
-//. - error
-//.   Return last error message.  
+//! - error
+//!   Return last error message.  
 int|string error()
 {
   if (functionp (master_sql->error))
@@ -304,19 +305,19 @@ int|string error()
   return "Unknown error";
 }
 
-//. - select_db
-//.   Select database to access.
+//! - select_db
+//!   Select database to access.
 void select_db(string db)
 {
   master_sql->select_db(db);
 }
 
-//. - compile_query
-//.   Compiles the query (if possible). Otherwise returns it as is.
-//.   The resulting object can be used multiple times in query() and
-//.   big_query().
-//. > q
-//.   SQL-query to compile.
+//! - compile_query
+//!   Compiles the query (if possible). Otherwise returns it as is.
+//!   The resulting object can be used multiple times in query() and
+//!   big_query().
+//! > q
+//!   SQL-query to compile.
 string|object compile_query(string q)
 {
   if (functionp(master_sql->compile_query)) {
@@ -325,8 +326,8 @@ string|object compile_query(string q)
   return(q);
 }
 
-//. - handle_extraargs
-//.   Handle sprintf-based quoted arguments
+//! - handle_extraargs
+//!   Handle sprintf-based quoted arguments
 private string handle_extraargs(string query, array(mixed) extraargs) {
   array(mixed) args=allocate(sizeof(extraargs));
   mixed s;
@@ -391,12 +392,12 @@ array(mapping(string:mixed)) query(object|string q,
   }
 }
 
-//. - big_query
-//.   Send an SQL query to the underlying SQL-server. The result is returned
-//.   as a Sql.sql_result object. This allows for having results larger than
-//.   the available memory, and returning some more info about the result.
-//.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
-//.   For the other arguments, they are the same as the query() function.
+//! - big_query
+//!   Send an SQL query to the underlying SQL-server. The result is returned
+//!   as a Sql.sql_result object. This allows for having results larger than
+//!   the available memory, and returning some more info about the result.
+//!   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
+//!   For the other arguments, they are the same as the query() function.
 int|object big_query(object|string q, mixed ... extraargs)
 {
   object|array(mapping) pre_res;
@@ -424,26 +425,26 @@ int|object big_query(object|string q, mixed ... extraargs)
   return(pre_res && Sql.sql_result(pre_res));
 }
 
-//. - create_db
-//.   Create a new database.
-//. > db
-//.   Name of database to create.
+//! - create_db
+//!   Create a new database.
+//! > db
+//!   Name of database to create.
 void create_db(string db)
 {
   master_sql->create_db(db);
 }
 
-//. - drop_db
-//.   Drop database
-//. > db
-//.   Name of database to drop.
+//! - drop_db
+//!   Drop database
+//! > db
+//!   Name of database to drop.
 void drop_db(string db)
 {
   master_sql->drop_db(db);
 }
 
-//. - shutdown
-//.   Shutdown a database server.
+//! - shutdown
+//!   Shutdown a database server.
 void shutdown()
 {
   if (functionp(master_sql->shutdown)) {
@@ -453,8 +454,8 @@ void shutdown()
   }
 }
 
-//. - reload
-//.   Reload the tables.
+//! - reload
+//!   Reload the tables.
 void reload()
 {
   if (functionp(master_sql->reload)) {
@@ -464,8 +465,8 @@ void reload()
   }
 }
 
-//. - server_info
-//.   Return info about the current SQL-server.
+//! - server_info
+//!   Return info about the current SQL-server.
 string server_info()
 {
   if (functionp(master_sql->server_info)) {
@@ -474,8 +475,8 @@ string server_info()
   return("Unknown SQL-server");
 }
 
-//. - host_info
-//.   Return info about the connection to the SQL-server.
+//! - host_info
+//!   Return info about the connection to the SQL-server.
 string host_info()
 {
   if (functionp(master_sql->host_info)) {
@@ -484,10 +485,10 @@ string host_info()
   return("Unknown connection to host");
 }
 
-//. - list_dbs
-//.   List available databases on this SQL-server.
-//. > wild
-//.   Optional wildcard to match against.
+//! - list_dbs
+//!   List available databases on this SQL-server.
+//! > wild
+//!   Optional wildcard to match against.
 array(string) list_dbs(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
@@ -505,16 +506,16 @@ array(string) list_dbs(string|void wild)
     } );
   }
   if (wild) {
-    res = Simulate.map_regexp(res,
-			      replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
+    res = filter(res,
+		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."}))->match);
   }
   return(res);
 }
 
-//. - list_tables
-//.   List tables available in the current database.
-//. > wild
-//.   Optional wildcard to match against.
+//! - list_tables
+//!   List tables available in the current database.
+//! > wild
+//!   Optional wildcard to match against.
 array(string) list_tables(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
@@ -532,18 +533,18 @@ array(string) list_tables(string|void wild)
     } );
   }
   if (wild) {
-    res = Simulate.map_regexp(res,
-			      replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
+    res = filter(res,
+		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."}))->match);
   }
   return(res);
 }
 
-//. - list_fields
-//.   List fields available in the specified table
-//. > table
-//.   Table to list the fields of.
-//. > wild
-//.   Optional wildcard to match against.
+//! - list_fields
+//!   List fields available in the specified table
+//! > table
+//!   Table to list the fields of.
+//! > wild
+//!   Optional wildcard to match against.
 array(mapping(string:mixed)) list_fields(string table, string|void wild)
 {
   array(mapping(string:mixed))|object res;
@@ -553,10 +554,8 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
       res = res_obj_to_array(res);
     }
     if (wild) {
-      /* Not very efficient, but... */
-      res = Array.filter(res, lambda (mapping m, string re) {
-	return(sizeof(Simulate.map_regexp( ({ m->name }), re)));
-      }, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ) );
+      res = filter(res, 
+		   Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
     }
     return(res);
   }
