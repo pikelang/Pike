@@ -351,7 +351,7 @@ static void assert_image_program()
     push_text( "Image.Image" );
     APPLY_MASTER( "resolv", 1 );
     image_program = program_from_svalue( sp - 1  );
-    pop_stack();
+    sp--;/* Do not free image program.. */
   }
 }
 
@@ -362,6 +362,8 @@ static void f_scanner_simple_scan( INT32 args )
   struct object *o;
   rgb_group *r;
 
+
+  assert_image_program();
 
   pop_n_elems( args );
   if( sane_start( THIS->h ) )   error("Start failed\n");
@@ -525,6 +527,8 @@ void pike_module_exit()
 {
   if( sane_is_inited )
     sane_exit();
+  if( image_program )
+    free_program( image_program );
 }
 
 #else
