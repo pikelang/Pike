@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.56 1997/10/03 02:25:37 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.57 1997/10/03 03:42:15 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -960,13 +960,15 @@ test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4.
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)
 
 // testing preprocessor
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
-test_any([[
-#include "conftest.h"
-]],17)
-dnltest_any([[
-dnl#include <conftest.h>
-dnl]],17)
+test_program([[
+#include <simulate.h>
+mixed a() { return explode ; }
+]])
+test_program([[
+#include "lib/include/simulate.h"
+mixed a() { return implode; }
+]])
+
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
