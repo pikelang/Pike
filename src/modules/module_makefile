@@ -9,7 +9,7 @@ depend:
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in
-	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR) 
 
 verify: module_testsuite
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
