@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.184 2003/06/05 21:53:18 mast Exp $
+|| $Id: encode.c,v 1.185 2003/06/10 23:27:04 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.184 2003/06/05 21:53:18 mast Exp $");
+RCSID("$Id: encode.c,v 1.185 2003/06/10 23:27:04 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -100,7 +100,7 @@ RCSID("$Id: encode.c,v 1.184 2003/06/05 21:53:18 mast Exp $");
 #define TAG_SMALL 32
 #define SIZE_SHIFT 6
 #define MAX_SMALL (1<<(8-SIZE_SHIFT))
-#define COUNTER_START 1
+#define COUNTER_START -4
 
 /* Entries used to encode the identifier_references table. */
 #define ID_ENTRY_RAW		-2
@@ -117,14 +117,18 @@ struct encode_data
   struct svalue counter;
   struct mapping *encoded;
   /* The encoded mapping maps encoded things to their entry IDs. A
-   * negative value means that it's a forward reference to a thing not
-   * yet encoded. */
+   * value less than COUNTER_START means that it's a forward reference
+   * to a thing not yet encoded. */
   struct array *delayed;
   dynamic_buffer buf;
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
 };
+
+/* Convert to/from forward reference ID. Ugly because of the
+ * hysterical historical COUNTER_START value. */
+#define CONVERT_ENTRY_ID(ID) (-((ID) + COUNTER_START) - (COUNTER_START + 1))
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
@@ -488,8 +492,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
     entry_id = *tmp;		/* It's always a small integer. */
-    if (entry_id.u.integer < 0) entry_id.u.integer = -entry_id.u.integer;
-    if (force_encode && tmp->u.integer < 0) {
+    if (entry_id.u.integer < COUNTER_START)
+      entry_id.u.integer = CONVERT_ENTRY_ID (entry_id.u.integer);
+    if (force_encode && tmp->u.integer < COUNTER_START) {
       EDB(1,
 	  fprintf(stderr, "%*sEncoding delayed thing to <%d>: ",
 		  data->depth, "", entry_id.u.integer);
@@ -1149,7 +1154,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_entry (TAG_PROGRAM, 5, data);
 	  data->delayed = append_array (data->delayed, val);
 	  tmp = low_mapping_lookup (data->encoded, val);
-	  tmp->u.integer = -tmp->u.integer;
+	  tmp->u.integer = CONVERT_ENTRY_ID (tmp->u.integer);
 	  goto encode_done;
 	}
 
