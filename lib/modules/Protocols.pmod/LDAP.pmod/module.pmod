@@ -1,6 +1,8 @@
-// $Id: module.pmod,v 1.13 2005/04/02 19:11:58 nilsson Exp $
+// $Id: module.pmod,v 1.14 2005/04/06 14:55:59 mast Exp $
 
 #include "ldap_globals.h"
+
+import ".";
 
 //! LDAP result codes.
 //!
@@ -1112,4 +1114,218 @@ static void create()
   };
   foreach (incomplete, mapping(string:mixed) descr)
     complete (descr);
+}
+
+static constant supported_extensions = (<"bindname">);
+
+//! Parses an LDAP URL and returns its fields in a mapping.
+//!
+//! @returns
+//!   The returned mapping contains these fields:
+//!
+//!   @mapping
+//!   @member string scheme
+//!     The URL scheme, either @expr{"ldap"@} or @expr{"ldaps"@}.
+//!   @member string host
+//!   @member int port
+//!   @member string basedn
+//!     Self-explanatory.
+//!   @member array(string) attributes
+//!     Array containing the attributes. Undefined if none was
+//!     specified.
+//!   @member int scope
+//!     The scope as one of the @expr{SEARCH_*@} constants.
+//!     Undefined if none was specified.
+//!   @member string filter
+//!     The search filter. Undefined if none was specified.
+//!   @member mapping(string:string|int(1..1)) ext
+//!     The extensions. Undefined if none was specified. The mapping
+//!     values are @expr{1@} for extensions without values. Critical
+//!     extensions are checked and the leading @expr{"!"@} do not
+//!     remain in the mapping indices.
+//!   @member string url
+//!     The original unparsed URL.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[get_parsed_url]
+mapping(string:mixed) parse_ldap_url (string ldap_url)
+{
+  array ar;
+  mapping(string:mixed) res = (["url": ldap_url]);
+
+  if (sscanf (ldap_url, "%[^:]://%s", res->scheme, ldap_url) != 2)
+    ERROR ("Failed to parse scheme from ldap url.\n");
+
+  sscanf (ldap_url, "%[^/]/%s", string hostport, ldap_url);
+  sscanf (hostport, "%[^:]:%s", res->host, string port);
+  if (port)
+    if (sscanf (port, "%d%*c", res->port) != 1)
+      ERROR ("Failed to parse port number from %O.\n", port);
+
+  ar = ldap_url / "?";
+
+  switch (sizeof(ar)) {
+    case 5: if (sizeof(ar[4])) {
+      mapping extensions = ([]);
+      foreach(ar[4] / ",", string ext) {
+	sscanf (ext, "%[^=]=%s", string extype, string exvalue);
+	extype = _Roxen.http_decode_string (extype);
+	if (has_prefix (extype, "!")) {
+	  extype = extype[1..];
+	  if (!supported_extensions[extype[1..]])
+	    ERROR ("Critical extension %s is not supported.\n", extype);
+	}
+	if (extype == "")
+	  ERROR ("Failed to parse extension type from %O.\n", ext);
+	extensions[extype] =
+	  exvalue ? _Roxen.http_decode_string (exvalue) : 1;
+      }
+      res->ext = extensions;
+    }
+    case 4: res->filter = _Roxen.http_decode_string (ar[3]);
+    case 3: res->scope = (["base": SCOPE_BASE,
+			   "one": SCOPE_ONE,
+			   "sub": SCOPE_SUB])[ar[2]];
+    case 2: if (sizeof(ar[1])) res->attributes =
+				 map (ar[1] / ",", _Roxen.http_decode_string);
+    case 1: res->basedn = _Roxen.http_decode_string (ar[0]);
+      break;
+    default: res->basedn = "";
+  }
+
+  return res;
+}
+
+// Client connection pool
+
+constant connection_idle_timeout = 30;
+// This better be shorter than the server side timeout.
+
+constant connection_rebind_threshold = 4;
+// Let there be a couple of differently bound connections before
+// starting to rebind the same ones.
+
+static mapping(string:array(client)) idle_conns = ([]);
+static Thread.Mutex idle_conns_mutex = Thread.Mutex();
+
+client get_connection (string ldap_url, void|string binddn, void|string password)
+//! Returns a client connection to the specified LDAP URL. If a bind
+//! DN is specified (either through a @expr{"bindname"@} extension in
+//! @[ldap_url] or, if there isn't one, through @[binddn]) then the
+//! connection will be bound using that DN and the optional password.
+//! If no bind DN is given then any connection is be returned,
+//! regardless of the bind DN it is using.
+//!
+//! As opposed to creating an @[Protocols.LDAP.client] instance
+//! directly, this function can return an already established
+//! connection for the same URL, provided connections are given back
+//! using @[return_connection] when they aren't used anymore.
+//!
+//! A client object with an error condition is returned if there's a
+//! bind error, e.g. invalid password.
+{
+  string pass = password;
+  password = "CENSORED";
+  client conn;
+
+  mapping(string:mixed) parsed_url = parse_ldap_url (ldap_url);
+  if (string url_bindname = parsed_url->ext && parsed_url->ext->bindname)
+    binddn = url_bindname;
+
+  // Could achieve a bit better caching here by removing the bindname
+  // extension that ldap_url might contain, but it's probably not
+  // worth the bother.
+
+find_connection:
+  if (idle_conns[ldap_url]) {
+    Thread.MutexKey lock = idle_conns_mutex->lock();
+    if (array(client) conns = idle_conns[ldap_url]) {
+
+      int now = time();
+      client rebind_conn;
+      for (int i = 0; i < sizeof (conns);) {
+	conn = conns[i];
+	int last_use = conn->get_last_io_time();
+	if (last_use <= now - connection_idle_timeout) {
+	  DWRITE ("Dropping old connection which has been idle for %d s.\n",
+		  now - last_use);
+	  idle_conns[ldap_url] = conns = conns[..i-1] + conns[i+1..];
+	}
+	else {
+	  if (!binddn || conn->get_bound_dn() == binddn) {
+	    DWRITE ("Reusing connection which has been idle for %d s.\n",
+		    now - last_use);
+	    idle_conns[ldap_url] = conns[..i-1] + conns[i+1..];
+	    lock = 0;
+	    break find_connection;
+	  }
+	  else if (!rebind_conn && conn->get_protocol_version() >= 3) {
+	    DWRITE ("Found differently bound connection "
+		    "which has been idle for %d s.\n", now - last_use);
+	    rebind_conn = conn;
+	  }
+	  i++;
+	}
+      }
+
+      if (rebind_conn && sizeof (conns) >= connection_rebind_threshold) {
+	conn = rebind_conn;
+	idle_conns[ldap_url] -= ({rebind_conn});
+	DWRITE ("Reusing differently bound connection.\n");
+      }
+      else
+	conn = 0;
+    }
+    lock = 0;
+  }
+
+  if (conn)
+    conn->reset_options();
+  else {
+    DWRITE("Connecting to %O.\n", ldap_url);
+
+    conn = client (parsed_url);
+  }
+
+  if (!binddn)
+    DWRITE ("Bound connection not requested.\n");
+  else {
+    if (binddn == "")
+      DWRITE ("Not binding - no bind DN set.\n");
+    else if (conn->get_bound_dn() == binddn)
+      DWRITE ("Not binding - already bound to %O.\n", binddn);
+    else {
+      conn->bind (binddn, pass);
+      if (conn->error_number() && conn->ldap_version == 3)
+	conn->bind (binddn, pass, 2);
+#ifdef DEBUG_PIKE_PROTOCOL_LDAP
+      if (conn->error_number())
+	DWRITE ("Binding to %O resulted in error: %s\n", binddn, conn->error_string());
+      else
+	DWRITE ("Binding to %O successful.\n", binddn);
+#endif
+    }
+  }
+
+  return conn;
+}
+
+void return_connection (client conn)
+//! Use this to return a connection to the connection pool after
+//! you've finished using it. The connection is assumed to be working.
+//!
+//! @note
+//!   Ensure that persistent connection settings such as the scope and
+//!   the base DN are restored to the defaults
+{
+  Thread.MutexKey lock = idle_conns_mutex->lock();
+  idle_conns[conn->get_parsed_url()->url] += ({conn});
+}
+
+int num_connections (string ldap_url)
+//! Returns the number of currently stored connections for the given
+//! LDAP URL.
+{
+  return sizeof (idle_conns[ldap_url] || ({}));
 }

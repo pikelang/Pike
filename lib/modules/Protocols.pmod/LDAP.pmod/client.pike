@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.90 2005/04/02 19:12:19 nilsson Exp $
+// $Id: client.pike,v 1.91 2005/04/06 14:55:59 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -79,7 +79,7 @@
 import SSL.Constants;
 #endif
 
-import Protocols.LDAP;
+import ".";
 
 // ------------------------
 
@@ -105,17 +105,15 @@ import Protocols.LDAP;
   inherit .protocol;
 
   private {
-    int binded = 0;	// flag for v2 operations
-    string ldap_basedn = "";	// baseDN
-    int ldap_scope = 0;		// SCOPE_*
-    int ldap_deref = 0;		// 0: ...
-    int ldap_sizelimit = 0;
-    int ldap_timelimit = 0;
+    string bound_dn;		// When actually bound, set to the bind DN.
+    string ldap_basedn;		// baseDN
+    int ldap_scope;		// SCOPE_*
+    int ldap_deref;		// 0: ...
+    int ldap_sizelimit;
+    int ldap_timelimit;
     mapping lauth = ([]);
-    object last_rv = 0; // last returned value
+    object last_rv;		// last returned value
   }
-
-static constant supported_extensions = (<"bindname">);
 
 //! @ignore
 static function(string:string) get_attr_decoder (string attr,
@@ -356,7 +354,9 @@ static function(string:string) get_attr_encoder (string attr)
     //!  entries.
     //!
     //! @note
-    //!  Don't be destructive on the returned mapping.
+    //!  It's undefined whether or not destructive operations on the
+    //!  returned mapping will affect future @[fetch] calls for the
+    //!  same entry.
     //!
     //! @note
     //!  In Pike 7.6 and earlier, the special @expr{"dn"@} entry was
@@ -450,13 +450,19 @@ static function(string:string) get_attr_encoder (string attr)
   private int chk_binded() {
   // For version 2: we must be 'binded' first !!!
 
-    if ((ldap_version == 2) && !binded) {
-      seterr (LDAP_PROTOCOL_ERROR);
-      THROW(({"LDAP: Must binded first.\n",backtrace()}));
-      return -ldap_errno;
+    switch (ldap_version) {
+      case 2:
+	if (!bound_dn) {
+	  seterr (LDAP_PROTOCOL_ERROR);
+	  THROW(({"LDAP: Must bind first.\n",backtrace()}));
+	  return -ldap_errno;
+	}
+	break;
+      case 3:
+	if (!bound_dn)
+	  bind();
+	break;
     }
-    if ((ldap_version == 3) && !binded)
-      bind();
     return 0;
   }
 
@@ -487,22 +493,26 @@ static function(string:string) get_attr_encoder (string attr)
   //! @param url
   //!  LDAP server URL on the form
   //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See RFC
-  //!  2255.
+  //!  2255. It can also be a mapping as returned by
+  //!  @[Protocol.LDAP.parse_ldap_url].
   //!
   //! @param context
   //!  TLS context of connection
   //!
   //! @seealso
   //!  @[LDAP.client.bind], @[LDAP.client.search]
-  void create(string|void url, object|void context)
+  void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.90 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.91 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
 
-    lauth = parse_url(url);
+    if (mappingp (url))
+      lauth = url;
+    else
+      lauth = parse_ldap_url(url);
 
     if(!stringp(lauth->scheme) ||
        ((lauth->scheme != "ldap")
@@ -562,14 +572,22 @@ static function(string:string) get_attr_encoder (string attr)
     DWRITE(sprintf("client.create: remote = %s\n", low_fd->query_address()));
     DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
-    binded = 0;
-
-    if(lauth->scope)
-      set_scope(lauth->scope);
-    set_basedn(lauth->basedn);
-
+    reset_options();
   } // create
 #endif
+
+void reset_options()
+//! Resets all connection options, such as the scope and the base DN,
+//! to the defaults determined from the LDAP URL when the connection
+//! was created.
+{
+  set_scope (lauth->scope || SCOPE_BASE);
+  set_basedn (lauth->basedn);
+  ldap_deref = 0;
+  ldap_sizelimit = 0;
+  ldap_timelimit = 0;
+  last_rv = 0;
+}
 
   private mixed send_bind_op(string name, string password) {
   // Simple BIND operation
@@ -695,6 +713,12 @@ static function(string:string) get_attr_encoder (string attr)
       version = LDAP_DEFAULT_VERSION;
     if (chk_ver())
       return 0;
+
+    if (bound_dn && ldap_version <= 2) {
+      ERROR ("Can't bind a connection more than once in LDAPv2.\n");
+      return 0;
+    }
+
     if (!stringp(dn))
       dn = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
     if (!stringp(pass))
@@ -706,16 +730,16 @@ static function(string:string) get_attr_encoder (string attr)
     }
     if(intp(raw = send_bind_op(dn, pass))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return -ldap_errno;
+      return 0;
     }
 
-   binded = 0;
+   bound_dn = 0;
    last_rv = result(({raw}),1);
    if (!last_rv->error_number())
-     binded = 1;
+     bound_dn = dn;
    DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
    seterr (last_rv->error_number());
-   return binded;
+   return !!bound_dn;
 
   } // bind
 
@@ -748,7 +772,7 @@ static function(string:string) get_attr_encoder (string attr)
       THROW(({error_string()+"\n",backtrace()}));
       return -ldap_errno;
     }
-    binded = 0;
+    bound_dn = 0;
     DWRITE_HI("client.UNBIND: OK\n");
 
   } // unbind
@@ -1677,6 +1701,12 @@ int get_protocol_version() {return ldap_version;}
 //! schema queries using @[get_attr_type_descr].
 string get_basedn() {return utf8_to_string (ldap_basedn);}
 
+//! Returns the bind DN currently in use for the connection. Zero is
+//! returned if the connection isn't bound. The empty string is
+//! returned if the connection is in use but no bind DN has been given
+//! explicitly to @[bind].
+string get_bound_dn() {return bound_dn;}
+
   //!
   //! Sets value of scope for search operation.
   //!
@@ -1768,8 +1798,8 @@ string get_scope()
 mapping(string:mixed) get_parsed_url() {return lauth;}
 //! Returns a mapping containing the data parsed from the LDAP URL
 //! passed to @[create]. The mapping has the same format as the return
-//! value from @[parse_url]. Don't be destructive on the returned
-//! value.
+//! value from @[Protocols.LDAP.parse_ldap_url]. Don't be destructive
+//! on the returned value.
 
   private int|string send_modify_op(string dn,
 				    mapping(string:array(mixed)) attropval) {
@@ -1965,86 +1995,11 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     return 0;
   }
 
-  //! Parses an LDAP URL and returns its fields in a mapping.
-  //!
-  //! @returns
-  //!   The returned mapping contains these fields:
-  //!
-  //!   @mapping
-  //!   @member string scheme
-  //!     The URL scheme, either @expr{"ldap"@} or @expr{"ldaps"@}.
-  //!   @member string host
-  //!   @member int port
-  //!   @member string basedn
-  //!     Self-explanatory.
-  //!   @member array(string) attributes
-  //!     Array containing the attributes. Undefined if none was
-  //!     specified.
-  //!   @member int scope
-  //!     The scope as one of the @expr{SEARCH_*@} constants.
-  //!     Undefined if none was specified.
-  //!   @member string filter
-  //!     The search filter. Undefined if none was specified.
-  //!   @member mapping(string:string|int(1..1)) ext
-  //!     The extensions. Undefined if none was specified. The mapping
-  //!     values are @expr{1@} for extensions without values. Critical
-  //!     extensions are checked and the leading @expr{"!"@} do not
-  //!     remain in the mapping indices.
-  //!   @endmapping
-  //!
-  //! @seealso
-  //!   @[get_parsed_url]
-  mapping(string:mixed) parse_url (string ldapuri) {
-
-  // ldap://machine.at.home.cz:123/c=cz?attr1,attr2,attr3?sub?(uid=*)?!bindname=uid=hop,dc=unibase,dc=cz"
-
-  string url=ldapuri;
-  array ar;
-    mapping(string:mixed) res = ([]);
-
-    if (sscanf (url, "%[^:]://%s", res->scheme, url) != 2)
-      ERROR ("Failed to parse scheme from ldap url.\n");
-
-    sscanf (url, "%[^/]/%s", string hostport, url);
-    sscanf (hostport, "%[^:]:%s", res->host, string port);
-    if (port)
-      if (sscanf (port, "%d%*c", res->port) != 1)
-	ERROR ("Failed to parse port number from %O.\n", port);
-
-    ar = url / "?";
-
-    switch (sizeof(ar)) {
-      case 5: if (sizeof(ar[4])) {
-		mapping extensions = ([]);
-		foreach(ar[4] / ",", string ext) {
-		  sscanf (ext, "%[^=]=%s", string extype, string exvalue);
-		  extype = _Roxen.http_decode_string (extype);
-		  if (has_prefix (extype, "!")) {
-		    extype = extype[1..];
-		    if (!supported_extensions[extype[1..]])
-		      ERROR ("Critical extension %s is not supported.\n", extype);
-		  }
-		  if (extype == "")
-		    ERROR ("Failed to parse extension type from %O.\n", ext);
-		  extensions[extype] =
-		    exvalue ? _Roxen.http_decode_string (exvalue) : 1;
-		}
-		res->ext = extensions;
-	      }
-      case 4: res->filter = _Roxen.http_decode_string (ar[3]);
-      case 3: res->scope = (["base": SCOPE_BASE,
-			     "one": SCOPE_ONE,
-			     "sub": SCOPE_SUB])[ar[2]];
-      case 2: if (sizeof(ar[1])) res->attributes =
-				   map (ar[1] / ",", _Roxen.http_decode_string);
-      case 1: res->basedn = _Roxen.http_decode_string (ar[0]);
-	break;
-      default: res->basedn = "";
-    }
-
-    return res;
-
-  } //parse_uri
+  //! Compatibility alias for @[Protocols.LDAP.parse_ldap_url].
+  mapping(string:mixed) parse_url (string ldapuri)
+  {
+    return parse_ldap_url (ldapuri);
+  }
 
 
 // Schema handling.
