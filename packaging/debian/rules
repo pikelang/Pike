@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.45 2003/11/11 17:32:04 grendel Exp $
+# $Id: rules,v 1.46 2003/12/09 16:04:12 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -65,7 +65,7 @@ CFARGS=--without-rtldebug \
        --with-perl \
        --without-ffmpeg \
        --without-libpdf \
-       --without-libpanda $(MACHINE_OPTS)
+       --without-libpanda --without-machine-code
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
 RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/master.pike

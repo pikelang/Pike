@@ -1,3 +1,11 @@
+pike7.5 (7.5.17-1) experimental; urgency=low
+
+  * The latest cvs snapshot.
+  * Disabled using the machine code in the pike bytecode. It poses a
+    security risk and breaks under kernels with exec-shield or PAX.
+
+ -- Marek Habersack <grendel@debian.org>  Tue,  9 Dec 2003 17:01:16 +0100
+
 pike7.5 (7.5.12-2) experimental; urgency=low
 
   * Added libnettle to the build dependencies.
