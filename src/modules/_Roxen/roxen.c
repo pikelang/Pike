@@ -48,10 +48,20 @@ struct  header_buf
   int slash_n, spc;
 };
 
+static void f_hp_init( struct object *o )
+{
+  THP->headers = NULL;
+  THP->pnt = NULL;
+  THP->hsize = 0;
+}
+
 static void f_hp_exit( struct object *o )
 {
   if( THP->headers )
     free( THP->headers );
+  THP->headers = NULL;
+  THP->pnt = NULL;
+  THP->hsize = 0;
 }
 
 static void f_hp_feed( INT32 args )
@@ -210,7 +220,11 @@ static void f_hp_create( INT32 args )
 /*! @decl void create(void)
  */
 {
-  THP->headers = malloc( 8192 );
+  if (THP->headers) {
+    free(THP->headers);
+    THP->headers = NULL;
+  }
+  THP->headers = xalloc( 8192 );
   THP->pnt = THP->headers;
   THP->hsize = 8192;
   THP->left = 8192;
@@ -476,6 +490,7 @@ void pike_module_init()
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );
+  set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
   pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
