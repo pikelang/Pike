@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.220 2005/03/15 20:56:28 per Exp $
+|| $Id: image.c,v 1.221 2005/03/18 15:35:05 grubba Exp $
 */
 
 /*
@@ -4718,13 +4718,14 @@ void image__encode( INT32 args )
 void image__decode( INT32 args )
 {
     struct array *a;
+    int w, h;
     if( Pike_sp[-1].type != PIKE_T_ARRAY ||
 	Pike_sp[-1].u.array->size != 3 ||
 	(a=Pike_sp[-1].u.array)->item[2].type != PIKE_T_STRING )
 	Pike_error( "Illegal arguments to decode\n");
 
-    int w = a->item[0].u.integer;
-    int h = a->item[1].u.integer;
+    w = a->item[0].u.integer;
+    h = a->item[1].u.integer;
 
     if( w*h*sizeof(rgb_group) != a->item[2].u.string->len )
 	Pike_error("Illegal image data\n");
