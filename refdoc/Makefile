@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.38 2002/02/14 21:22:59 nilsson Exp $
+# $Id: Makefile,v 1.39 2002/02/24 23:22:28 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -13,6 +13,9 @@ all: modref traditional one_page
 # These are the actual build targets for making manuals...
 
 modref: build/modref.xml
+	@$(MAKE) PIKE="$(PIKE)" low_modref
+
+low_modref:
 	rm -rf modref || /bin/true
 	@mkdir modref
 	@cp structure/modref.css modref/style.css
@@ -25,6 +28,9 @@ modref: build/modref.xml
 	  cp src_images/$$file modref/images/ ; done
 
 wiki: build/modref.xml
+	@$(MAKE) PIKE="$(PIKE)" low_wiki
+
+low_wiki:
 	rm -rf wiki || /bin/true
 	@mkdir wiki
 	@$(PIKE) presentation/wiki.pike \
@@ -33,26 +39,32 @@ wiki: build/modref.xml
 	cp build/images/* wiki/images
 
 one_page: onepage build/onepage.xml
+	@$(MAKE) PIKE="$(PIKE)" low_one_page
+
+low_one_page:
 	cp build/images/* onepage/
 	@$(PIKE) presentation/make_html.pike --img= build/onepage.xml
 
 traditional: traditional_manual build/traditional.xml
+	@$(MAKE) PIKE="$(PIKE)" low_traditional
+
+low_traditional:
 	cp build/images/* traditional_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ build/traditional.xml
 
 # Sub targets used by the above targets.
 
-build/autodoc.xml: recursive_join
-	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml`" \
-	  autodoc.xml
+build/autodoc.xml: recursive_join build/src/sub_manual.xml build/lib/sub_manual.xml bin/join.pike
+	@$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/sub_manual.xml \
+	  build/lib/sub_manual.xml
 
-recursive_join: extract
-	@(cd build/src && $(MAKE) PIKE="$(PIKE)" join)
-	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" join)
+recursive_join: extract bin/join.pike
+	@$(PIKE) bin/join.pike build/src/sub_manual.xml build/src/
+	@$(PIKE) bin/join.pike build/lib/sub_manual.xml build/lib/
 
-extract: build/src/Makefile build/lib/Makefile build/images images
-	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
-	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
+extract: build/lib build/src build/images images bin/extract.pike bin/mirardoc.pike
+	@$(PIKE) bin/extract.pike ../src/ build/src/ build/images/
+	@$(PIKE) bin/extract.pike ../lib/ build/lib/ build/images/
 
 images: build/src/post_modules/GTK/refdoc/images
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
@@ -69,21 +81,6 @@ build/traditional.xml: build/autodoc.xml structure/traditional.xml bin/assembler
 build/modref.xml: build/autodoc.xml structure/modref.xml bin/assembler.pike
 	@$(PIKE) bin/assembler.pike structure/modref.xml build/autodoc.xml \
 	  > build/modref.xml
-
-autodoc.xml: $(XMLFILES) bin/join.pike
-	@$(PIKE) bin/join.pike --post-process build/autodoc.xml $(XMLFILES)
-
-build/src/Makefile: Makefile.in build/src
-	@sed -e "s#@SRCDIR@#`pwd`/../src#" \
-	     -e "s#@ROOT@#`pwd`#" \
-	     -e "s#@BUILDROOT@#..#" \
-	  <Makefile.in >build/src/Makefile
-
-build/lib/Makefile: Makefile.in build/lib
-	@sed -e "s#@SRCDIR@#`pwd`/../lib#" \
-	     -e "s#@ROOT@#`pwd`#" \
-	     -e "s#@BUILDROOT@#..#" \
-	  <Makefile.in >build/lib/Makefile
 
 # Directories
 
@@ -135,7 +132,6 @@ clean:
 	@rm -rf build || /bin/true
 
 spotless: clean
-	@rm -f manual.xml || /bin/true
 	@rm -rf onepage || /bin/true
 	@rm -rf modref || /bin/true
 	@rm -rf traditional_manual || /bin/true

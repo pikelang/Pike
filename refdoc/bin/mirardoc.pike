@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.7 2002/01/18 05:32:48 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.8 2002/02/24 23:22:06 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -771,9 +771,12 @@ void document(string enttype,
    }
 }
 
-void make_doc_files(string imgdest)
+string make_doc_files(string builddir, string imgdest)
 {
-   Stdio.stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
+  string here = getcwd();
+  cd(builddir);
+
+  Stdio.stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
 
    object f = class {
        string doc = "";
@@ -793,8 +796,8 @@ void make_doc_files(string imgdest)
      foreach(parse[" appendix"]->_order, string title)
        document("appendix",parse[" appendix"][title],title,"", f);
 
-   werror("%O\n", getcwd());
-   write( Tools.AutoDoc.ProcessXML.moveImages(f->read(), ".", imgdest) );
+   cd(here);
+   return Tools.AutoDoc.ProcessXML.moveImages(f->read(), builddir, imgdest);
 }
 
 void process_line(string s,string currentfile,int line)

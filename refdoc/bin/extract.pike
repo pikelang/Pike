@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.9 2002/02/05 23:01:52 nilsson Exp $
+ * $Id: extract.pike,v 1.10 2002/02/24 23:22:06 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -21,29 +21,59 @@ array(string) find_root(string path) {
     ({ (parts[-1]/".")[0] });
 }
 
-int main(int n, array(string) args) {
-  args = args[1..];
+string imgdir;
 
-  int rootless;
-  if(has_value(args, "--rootless")) {
-    rootless = 1;
-    args -= ({ "--rootless" });
+int main(int n, array(string) args) {
+
+  if(n!=4) {
+    write("%s <srcdir> <builddir> <imgdir>\n", args[0]);
+    exit(1);
   }
 
-  if(!sizeof(args))
-    error("No source file argument given.\n");
-  string filename = args[0];
-
-  if(sizeof(args)<2)
-    error("Not enough arguments to 'extract' (No imgdest).\n");
-  string imgdest = args[1];
-
-  extract(filename, imgdest, rootless) || exit(1);
+  string srcdir = args[1];
+  string builddir = args[2];
+  imgdir = args[3];
+  if(srcdir[-1]!='/') srcdir += "/";
+  if(builddir[-1]!='/') builddir += "/";
+  if(imgdir[-1]!='/') imgdir += "/";
+  recurse(srcdir, builddir);
 }
 
-int(0..1) extract(string filename, string imgdest, int(0..1) rootless) {
+void recurse(string srcdir, string builddir) {
+  werror("Extracting from %s\n", srcdir);
+  foreach(get_dir(srcdir), string fn) {
+    if(fn=="CVS") continue;
+    if(fn[0]=='.') continue;
+    if(fn[-1]=='~') continue;
+    if(fn[0]=='#' && fn[-1]=='#') continue;
 
-  werror("Extracting file %O...\n", filename);
+    Stdio.Stat stat = file_stat(srcdir+fn);
+
+    if(stat->isdir) {
+      if(!file_stat(builddir+fn)) mkdir(builddir+fn);
+      recurse(srcdir+fn+"/", builddir+fn+"/");
+      continue;
+    }
+
+    if(stat->size<1) continue;
+
+    if(!has_suffix(fn, ".pike") && !has_suffix(fn, ".pike.in") &&
+       !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
+       !has_suffix(fn, ".c")) continue;
+
+    Stdio.Stat dstat = file_stat(builddir+fn+".xml");
+
+    if(!dstat || dstat->mtime < stat->mtime) {
+      string res = extract( srcdir+fn, imgdir, 0, builddir);
+      if(!res) exit(1);
+      Stdio.write_file(builddir+fn+".xml", res);
+    }
+  }
+}
+
+string extract(string filename, string imgdest, int(0..1) rootless, string builddir) {
+
+  werror("Extracting file %O...", filename);
   string file = Stdio.read_file(filename);
 
   int i;
@@ -56,8 +86,7 @@ int(0..1) extract(string filename, string imgdest, int(0..1) rootless) {
     foreach(file/"\n", string line) {
       mirar_parser->process_line(line, filename, lineno++);
     }
-    mirar_parser->make_doc_files( imgdest );
-    return 1;
+    return mirar_parser->make_doc_files( builddir, imgdest );
   }
 
   string suffix;
@@ -97,9 +126,6 @@ int(0..1) extract(string filename, string imgdest, int(0..1) rootless) {
       result = Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, parents);
     }
   };
-  if(result && sizeof(result)) {
-    write( Tools.AutoDoc.ProcessXML.moveImages(result, ".", imgdest) );
-  }
 
   if (err) {
     if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
@@ -111,5 +137,9 @@ int(0..1) extract(string filename, string imgdest, int(0..1) rootless) {
 
     return 0;
   }
-  return 1;
+
+  if(result && sizeof(result))
+    return Tools.AutoDoc.ProcessXML.moveImages(result, builddir, imgdest);
+
+  return "";
 }
