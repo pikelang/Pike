@@ -38,7 +38,6 @@ testfont binary
 /lib/modules/LR.pmod/rule.pike foreign_ident
 /lib/modules/LR.pmod/scanner.pike foreign_ident
 /lib/modules/MIME.pmod foreign_ident
-/lib/modules/PDB.pmod foreign_ident
 /lib/modules/Protocols.pmod/TELNET.pmod foreign_ident
 /lib/modules/SSL.pmod/alert.pike foreign_ident
 /lib/modules/SSL.pmod/cipher.pike foreign_ident
