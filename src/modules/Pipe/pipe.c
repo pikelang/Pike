@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.31 1999/03/05 01:49:27 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.32 1999/03/05 16:17:19 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -328,7 +328,7 @@ static void low_start(void)
   add_ref(THISOBJ);		/* dont kill yourself now */
   for(obj=THIS->firstoutput;obj;obj=next)
   {
-    /* add_ref(obj);           /* Hang on PLEASE!! /hubbe */
+    /* add_ref(obj); */		/* Hang on PLEASE!! /hubbe */
     o=(struct output *)(obj->storage);
     next=o->next;
     if (o->obj && o->mode==O_SLEEP)
@@ -344,7 +344,7 @@ static void low_start(void)
 	push_callback(offset_output_close_callback);
 	apply_low(o->obj,o->set_nonblocking_offset,3);
 	/* output_try_write_some(obj); */
-	/* o->mode=O_RUN;		/* Hubbe */
+	/* o->mode=O_RUN; */		/* Hubbe */
       }
     }
     /* next=o->next; */
@@ -605,7 +605,7 @@ static INLINE void output_finish(struct object *obj)
 
     finished_p(); /* Moved by per, one line down.. :) */
 
-    /* free_object(THISOBJ);		/* What? /Hubbe */
+    /* free_object(THISOBJ); */		/* What? /Hubbe */
   }
 }
 
@@ -897,7 +897,7 @@ static void pipe_output(INT32 args)
   } 
 
   THIS->living_outputs++;
-  /* add_ref(THISOBJ);		/* Weird */
+  /* add_ref(THISOBJ); */	/* Weird */
 
   /* Allocate a new struct output */
   obj=clone_object(output_program,0);
@@ -1271,7 +1271,7 @@ void pike_module_init(void)
    /* function(object:void) */
   ADD_FUNCTION("input",pipe_input,tFunc(tObj,tVoid),0);
    /* function(object,void|int:void) */
-  ADD_FUNCTION("output",pipe_output,tFunc(tObj tOr(tVoid|tInt),tVoid),0);
+  ADD_FUNCTION("output",pipe_output,tFunc(tObj tOr(tVoid,tInt),tVoid),0);
    /* function(string:void) */
   ADD_FUNCTION("write",pipe_write,tFunc(tStr,tVoid),0);
 
