@@ -225,7 +225,7 @@ html_docs: docs
 module_objects:
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
-language.o: language.c config.h object.h interpret.h program.h
+language.o: $(SRCDIR)/language.c config.h object.h interpret.h program.h
 
 $(SRCDIR)/language.h: language.yacc
 	@echo "Expect 1 shift/reduce conflict."
