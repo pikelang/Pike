@@ -971,6 +971,10 @@ static int eval_instruction(unsigned char *pc)
 	/* More stack sabotage */
 	sp[-args-1].u.object=fp->current_object;
 	sp[-args-1].subtype=GET_ARG()+fp->context.identifier_level;
+#ifdef PIKE_DEBUG
+	if(t_flag > 9)
+	  fprintf(stderr,"-    IDENTIFIER_LEVEL: %d\n",fp->context.identifier_level);
+#endif
 	sp[-args-1].type=T_FUNCTION;
 	add_ref(fp->current_object);
 

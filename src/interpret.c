@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.116 1999/03/02 03:13:16 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.117 1999/03/17 21:51:30 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -817,6 +817,30 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
       function = new_frame->context.prog->identifiers + ref->identifier_offset;
 
+#ifdef PIKE_DEBUG
+	if(t_flag > 9)
+	{
+	  fprintf(stderr,"-- ref: inoff=%d idoff=%d flags=%d\n",
+		  ref->inherit_offset,
+		  ref->identifier_offset,
+		  ref->id_flags);
+
+	  fprintf(stderr,"-- context: prog->id=%d inlev=%d idlev=%d pi=%d po=%d so=%d name=%s\n",
+		  new_frame->context.prog->id,
+		  new_frame->context.inherit_level,
+		  new_frame->context.identifier_level,
+		  new_frame->context.parent_identifier,
+		  new_frame->context.parent_offset,
+		  new_frame->context.storage_offset,
+		  new_frame->context.name ? new_frame->context.name->str  : "NULL");
+	  if(t_flag>19)
+	  {
+	    describe(new_frame->context.prog);
+	  }
+	}
+#endif
+
+
 #ifdef PIKE_SECURITY
       CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL, ("Function call permission denied.\n"));
 
@@ -845,6 +869,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if(t_flag)
       {
 	char buf[50];
+
 	init_buf();
 	sprintf(buf,"%lx->",(long)o);
 	my_strcat(buf);
