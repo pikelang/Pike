@@ -136,9 +136,9 @@ static int eval_instruction(unsigned char *pc)
 #define OPCODE1(OP,DESC) CASE(OP); { \
   INT32 arg1=GET_ARG();
 
-#define OPCODE1ACK(OP,DESC) CASE(OP); { \
+#define OPCODE1ACC(OP,DESC) CASE(OP); { \
   INT32 arg1=GET_ARG(); \
-  INT32 ack=accumulator;
+  INT32 acc=accumulator;
 
 #define OPCODE2(OP,DESC) CASE(OP); { \
   INT32 arg1=GET_ARG(); \
@@ -146,7 +146,7 @@ static int eval_instruction(unsigned char *pc)
 
 #define OPCODE0_TAIL(OP,DESC) CASE(OP);
 #define OPCODE1_TAIL(OP,DESC) CASE(OP);
-#define OPCODE1ACK_TAIL(OP,DESC) CASE(OP);
+#define OPCODE1ACC_TAIL(OP,DESC) CASE(OP);
 #define OPCODE2_TAIL(OP,DESC) CASE(OP);
 
 
