@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.3 1998/03/26 03:12:01 hubbe Exp $ */
+/* $Id: xwd.c,v 1.4 1998/03/31 21:58:36 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.3 1998/03/26 03:12:01 hubbe Exp $
+**!	$Id: xwd.c,v 1.4 1998/03/31 21:58:36 hubbe Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.3 1998/03/26 03:12:01 hubbe Exp $");
+RCSID("$Id: xwd.c,v 1.4 1998/03/31 21:58:36 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -341,6 +341,7 @@ struct program *image_xwd_module_program=NULL;
 
 void init_image_xwd(void)
 {
+  struct program *p;
    start_new_program();
    
    add_function("_decode",image_xwd__decode,
@@ -348,12 +349,9 @@ void init_image_xwd(void)
    add_function("decode",image_xwd_decode,
 		"function(string:object)",0);
 
-   push_object(clone_object(end_program(),0));
-   {
-     struct pike_string *s=make_shared_string("XWD");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
+   push_object(clone_object(p=end_program(),0));
+   simple_add_constant("XWD",sp-1,0);
+   free_program(p);
    pop_stack();
 }
 
