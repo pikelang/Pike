@@ -1,9 +1,8 @@
-# $Id: Makefile.in,v 1.6 2003/05/04 13:32:20 mast Exp $
+# $Id: Makefile.in,v 1.7 2004/04/17 15:33:35 marcus Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=mime.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-INSTALL_NAME=___MIME
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

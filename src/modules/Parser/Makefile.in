@@ -1,9 +1,8 @@
-# $Id: Makefile.in,v 1.6 2004/02/23 17:40:40 per Exp $
+# $Id: Makefile.in,v 1.7 2004/04/17 15:33:35 marcus Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=parser.o html.o rcs.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-INSTALL_NAME=Parser.pmod/_parser
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

@@ -1,9 +1,8 @@
-# $Id: Makefile.in,v 1.13 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.14 2004/04/17 15:33:35 marcus Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=system.o syslog.o passwords.o nt.o memory.o
 MODULE_LDFLAGS=@LIBS@
-INSTALL_NAME=_system
 SRC_TARGETS=$(SRCDIR)/add-errnos.h
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
