@@ -18,6 +18,8 @@ CONFIG_HEADERS=config.h
 #   override -> sources0 -> all
 #
 
+MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
+
 override:  sources@WITH_GTK@
 	@:
 
@@ -32,11 +34,15 @@ sources0:
 	echo Pike-GTK disabled.
 	$(MAKE) $(MAKE_FLAGS) all
 
-quick_docs:
-	-$(RUNPIKE) $(SRCDIR)/dump_cursors.pike docs/cursor_
-	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) docs
+docs: docs@WITH_GTK@
+	@:
 
-docs: install
-	$(MAKE) quick_docs
+docs1:
+	-@mkdir docs
+	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike docs/cursor_
+	$(MYRUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) docs
 
+
+docs0:
+	echo Pike-GTK disabled.
 

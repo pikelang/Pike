@@ -497,23 +497,7 @@ string PIKE;
 
 void find_pike()
 {
-  string m = Stdio.read_bytes("config.cache");
-  if(!m) 
-  {
-    werror("Cannot find config.cache!\n");
-    exit(0);
-  }
-  foreach(m/"\n", string l) {
-    if(!sscanf(l, "ac_cv_path_PIKE=${ac_cv_path_PIKE='%s'}", PIKE))
-      sscanf(l, "ac_cv_path_PIKE=${ac_cv_path_PIKE=%s}", PIKE);
-    if(PIKE)
-      break;
-  }
-  if(!PIKE)
-  {
-    werror("Cannot find pike program cache variable in config.cache file.\n");
-    exit(0);
-  }
+  PIKE="../../pike -DNOT_INSTALLED -m../../master.pike";
 }
 
 
@@ -1338,23 +1322,26 @@ int main(int argc, array argv)
 
   string to_free="";
 
-  array functions = ({});
-  foreach( indices( struct ), mapping q )
-    foreach( indices( struct[q] ) , string f )
-      if( f != "inherit"  && f)
-        functions |= ({ f, function_type(struct[q][f]) });
-  mapping q = ([]);
-  // Do a stable sort, to avoid rebuilding pgtk.c all the time.
+  if(!do_docs)
+  {
+    array functions = ({});
+    foreach( indices( struct ), mapping q )
+      foreach( indices( struct[q] ) , string f )
+        if( f != "inherit"  && f)
+          functions |= ({ f, function_type(struct[q][f]) });
+    mapping q = ([]);
+    // Do a stable sort, to avoid rebuilding pgtk.c all the time.
   
-  foreach( functions, function f )
-    q[strlen(f)] = (q[strlen(f)]||({})) | ({ f });
+    foreach( functions, function f )
+      q[strlen(f)] = (q[strlen(f)]||({})) | ({ f });
 
-  functions = ({});
-  foreach(sort(indices( q )), int i)
-    functions += sort(q[i]);
+    functions = ({});
+    foreach(sort(indices( q )), int i)
+      functions += sort(q[i]);
 
-  foreach(reverse(functions), string q ) // Evil me. Sort for best compression
-    data_offset( q );
+    foreach(reverse(functions), string q ) // Evil me. Sort for best compression
+      data_offset( q );
+  }
 
   foreach(sort_dependencies(indices(struct),struct), string w)
   {
