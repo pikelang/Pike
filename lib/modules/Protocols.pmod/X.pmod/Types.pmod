@@ -589,6 +589,25 @@ class Window
     return a;
   }
 
+  object ChangeProperty_req(object property, object type,
+			    int format, array(int)|string data)
+  {
+    object req = Requests.ChangeProperty();
+    req->window = id;
+    req->property = property->id;
+    req->type = type->id;
+    req->format = format;
+    req->data = data;
+
+    return req;
+  }
+
+  void ChangeProperty(object property, object type,
+		      int format, array(int)|string data)
+  {
+    display->send_request(ChangeProperty_req(property, type, format, data));
+  }
+  
   object GetProperty_req(object property, object|void type)
   {
     object req = Requests.GetProperty();
