@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.32 1999/07/01 02:16:00 per Exp $
+ * $Id: sql.pike,v 1.33 1999/07/01 20:13:40 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.32 1999/07/01 02:16:00 per Exp $
+//. RCSID:	$Id: sql.pike,v 1.33 1999/07/01 20:13:40 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -35,11 +35,7 @@ int case_convert;
 //. - quote
 //.   Quote a string so that it can safely be put in a query.
 //. > s - String to quote.
-function(string:string) quote = lambda (string s)
-{
-  // This lambda is overridden from master_sql in create().
-  return(replace(s, "\'", "\'\'"));
-};
+function(string:string) quote = .sql_util.quote;
 
 //. - encode_time
 //.   Converts a system time value to an appropriately formatted time
@@ -258,15 +254,13 @@ void create(void|string|object host, void|string db,
       }
   }
 
-  function fallback =
-    lambda () {throw_error ("Function not supported in this database.");};
   if (master_sql->quote) quote = master_sql->quote;
-  encode_time = master_sql->encode_time || fallback;
-  decode_time = master_sql->decode_time || fallback;
-  encode_date = master_sql->encode_date || fallback;
-  decode_date = master_sql->decode_date || fallback;
-  encode_datetime = master_sql->encode_datetime || fallback;
-  decode_datetime = master_sql->decode_datetime || fallback;
+  encode_time = master_sql->encode_time || .sql_util.fallback;
+  decode_time = master_sql->decode_time || .sql_util.fallback;
+  encode_date = master_sql->encode_date || .sql_util.fallback;
+  decode_date = master_sql->decode_date || .sql_util.fallback;
+  encode_datetime = master_sql->encode_datetime || .sql_util.fallback;
+  decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
