@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.255 2004/09/28 16:56:00 mast Exp $
+|| $Id: gc.c,v 1.256 2004/09/30 12:12:10 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.255 2004/09/28 16:56:00 mast Exp $");
+RCSID("$Id: gc.c,v 1.256 2004/09/30 12:12:10 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -2435,7 +2435,7 @@ live_recurse:
     /* A thing previously popped as dead is now being marked live.
      * Have to remove the extra ref added by gc_cycle_pop(). */
     gc_free_extra_ref(x);
-    if (!--*(INT32 *) x) {
+    if (!sub_ref ((struct ref_dummy *) x)) {
 #ifdef PIKE_DEBUG
       gc_fatal(x, 0, "Thing got zero refs after removing the dead gc ref.\n");
 #endif
@@ -2602,7 +2602,7 @@ int gc_do_free(void *a)
 	return 1;
       else {
 	gc_free_extra_ref (a);
-	--*(INT32 *) a;
+	sub_ref ((struct ref_dummy *) a);
       }
     }
     return 0;
