@@ -1,6 +1,8 @@
 #!/usr/local/bin/pike
 
-int quiet=0;
+int quiet = 1, report_failed = 0, recursive = 0, update = 0;
+string target_dir = 0;
+
 program p; /* program being dumped */
 
 #ifdef PIKE_FAKEROOT
@@ -116,21 +118,59 @@ class Codec
   }
 }
 
-Stdio.File logfile;
+Stdio.File logfile = Stdio.stderr;
+int padline = 0;
 
-class Handler
+class Handler (string file)
 {
-  void compile_error(string file,int line,string err)
-    {
-      if(logfile)
-	logfile->write("%s:%d:%s\n",file,line,err);
+  int file_logged = 0;
+
+  void logstart (int one_line)
+  {
+    if (padline) logfile->write ("\n");
+    if (one_line) {
+      logfile->write("#### %s: ",file);
+      padline = 0;
     }
+    else {
+      logfile->write("#### %s:\n",file);
+      padline = 1;
+    }
+    file_logged = 1;
+  }
+
+  void logmsg (mixed... args)
+  {
+    if(logfile) {
+      if (!file_logged) logstart (1);
+      if (args) logfile->write (@args);
+    }
+  }
+
+  void logmsg_long (mixed... args)
+  {
+    if(logfile) {
+      if (!file_logged) logstart (0);
+      if (args) logfile->write (@args);
+    }
+  }
+
+  void compile_error(string file,int line,string err)
+  {
+    logmsg_long("%s:%d:%s\n",file,line,err);
+  }
 
   void compile_warning(string file,int line,string err)
-    {
-      if(logfile)
-	logfile->write("%s:%d:%s\n",file,line,err);
-    }
+  {
+    logmsg_long("%s:%d:%s\n",file,line,err);
+  }
+
+  int compile_exception (array|object trace)
+  {
+    if (!objectp (trace) || !trace->is_cpp_error && !trace->is_compilation_error)
+      logmsg_long (describe_backtrace (trace));
+    return 1;
+  }
 }
 
 program compile_file(string file, object|void handler)
@@ -144,62 +184,161 @@ program compile_file(string file, object|void handler)
 
 void dumpit(string file)
 {
-  if(logfile)
-    logfile->write("\n##%s##\n",file);
+  int ok = 0;
+  Handler handler = Handler (file);
 
   mixed err=catch {
-    rm(file+".o"); // Make sure no old files are left
-    if(mixed s=file_stat(fakeroot(file)))
+    string outfile = (target_dir ? combine_path (target_dir, file) : file) + ".o";
+
+    if(Stdio.Stat s=file_stat(fakeroot(file)))
     {
-      if(s[1]<=0)
+      if (update) {
+	if (Stdio.Stat o = file_stat (outfile))
+	  if (o->mtime >= s->mtime) {
+	    if (!quiet) handler->logmsg ("Up-to-date.\n");
+	    ok = 1;
+	    break;
+	  }
+      }
+      rm(outfile); // Make sure no old files are left
+
+      if (s->isdir && recursive) {
+	if (array(string) dirlist = get_dir (fakeroot (file))) {
+	  if (!quiet) handler->logmsg ("Is a directory (dumping recursively).\n");
+	  foreach (dirlist, string subfile)
+	    if (subfile != "CVS" &&
+		(has_suffix (subfile, ".pike") || has_suffix (subfile, ".pmod") ||
+		 Stdio.is_dir (file + "/" + subfile)))
+	      dumpit (file + "/" + subfile);
+	  ok = 1;
+	  break;
+	}
+	else {
+	  handler->logmsg ("Is an unreadable directory (not dumped recursively): %s.\n",
+			   strerror (errno()));
+	  break;
+	}
+      }
+      else if (!s->isreg)
       {
-	if(logfile) logfile->write("is a directory or special file (not dumped).\n");
+	handler->logmsg("Is a directory or special file (not dumped).\n");
 	break;
       }
     }else{
-      if(!quiet && logfile)
-	logfile->write("does not exist (not dumped).\n");
+      if(!quiet) handler->logmsg("Does not exist (not dumped).\n");
       break;
     }
-    if(programp(p=compile_file(file, Handler())))
+
+    if(programp(p=compile_file(file, handler)))
     {
       if(!p->dont_dump_module && !p->dont_dump_program)
       {
 	string s=encode_value(p, Codec());
 	p=decode_value(s,master()->Codec());
+
 	if(programp(p))
 	{
-	  Stdio.File(fakeroot(file) + ".o","wct")->write(s);
-	  if(!quiet && logfile) logfile->write("dumped.\n");
+	  if (target_dir) {
+	    string dir = combine_path (outfile, "..");
+	    if (!Stdio.is_dir (dir))
+	      if (!Stdio.mkdirhier (dir)) {
+		handler->logmsg ("Failed to create target directory %O: %s.\n",
+				 dir, strerror (errno()));
+		break;
+	      }
+	  }
+
+	  Stdio.File(fakeroot(outfile),"wct")->write(s);
+	  ok = 1;
+	  if(!quiet) handler->logmsg("Dumped.\n");
 	}
-	else if(!quiet && logfile)
-	  logfile->write("Decode of %O failed (not dumped).\n", file);
+	else if(!quiet)
+	  handler->logmsg("Decode of %O failed (not dumped).\n", file);
+
       }
-      else if(!quiet && logfile)
-	logfile->write("Not dumping %O (not dumped).\n", file);
+      else if(!quiet)
+	handler->logmsg("Not dumping %O (not dumped).\n", file);
     }
-    else if(!quiet && logfile)
-      logfile->write("Compilation of %O failed (not dumped).\n", file); // This should never happen.
+    else if(!quiet)
+      handler->logmsg("Compilation of %O failed (not dumped).\n", file); // This should never happen.
   };
 
-  if(err)
-  {
-    if(quiet)
-    {
-      if(quiet<2)
-	werror("X");
-      if(logfile)
-	  logfile->write(master()->describe_backtrace(err));
-    }
-    else
-	werror(master()->describe_backtrace(err));
-  }
+  if(err) handler->logmsg_long(describe_backtrace(err));
+
+  if (report_failed && !ok)
+    write ("Dumping failed for %s\n", file);
 }
 
 int main(int argc, array(string) argv)
 {
-  /* Redirect all debug and error messages to a logfile. */
-  Stdio.File("dumpmodule.log", "caw")->dup2(Stdio.stderr);
+  string update_stamp = 0;
+
+  foreach (Getopt.find_all_options (argv, ({
+    ({"log-file", Getopt.MAY_HAVE_ARG, ({"-l", "--log-file"})}),
+    ({"verbose", Getopt.NO_ARG, ({"-v", "--verbose"})}),
+    ({"quiet", Getopt.NO_ARG, ({"-q", "--quiet"})}), // The default.
+    ({"distquiet", Getopt.NO_ARG, ({"--distquiet"})}),
+    ({"progress-bar", Getopt.HAS_ARG, ({"--progress-bar"})}),
+    ({"report-failed", Getopt.NO_ARG, ({"--report-failed"})}),
+    ({"recursive", Getopt.NO_ARG, ({"-r", "--recursive"})}),
+    ({"target-dir", Getopt.HAS_ARG, ({"-t", "--target-dir"})}),
+    ({"update-only", Getopt.MAY_HAVE_ARG, ({"-u", "--update-only"})}),
+  })), array opt)
+    switch (opt[0]) {
+
+      case "log-file":
+	logfile = Stdio.File(stringp (opt[1]) && opt[1] || "dumpmodule.log","caw");
+	/* Redirect all debug and error messages to the logfile. */
+	logfile->dup2(Stdio.stderr);
+	break;
+
+      case "verbose":
+	quiet = 0;
+	break;
+
+      case "quiet":
+	quiet=1;
+	break;
+
+      case "distquiet":
+	quiet=1;
+	logfile=0;
+	break;
+
+      case "progress-bar":
+	quiet = 1;
+
+	progress_bar = Tools.Install.ProgressBar("Precompiling",
+						 @array_sscanf(opt[1], "%d,%d"),
+						 0.2, 0.8);
+	break;
+
+      case "report-failed":
+	report_failed = 1;
+	break;
+
+      case "recursive":
+	recursive = 1;
+	break;
+
+      case "target-dir":
+	target_dir = opt[1];
+	break;
+
+      case "update-only":
+	if (stringp (opt[1])) {
+	  update_stamp = opt[1];
+	  update = Stdio.read_file (update_stamp) == version();
+	}
+	else
+	  update = 1;
+	break;
+    }
+
+  // Remove the name of the program.
+  argv = argv[1..];
+
+  argv=Getopt.get_args(argv);
 
   foreach( (array)all_constants(), [string name, mixed func])
     function_names[func]="efun:"+name;
@@ -217,39 +356,6 @@ int main(int argc, array(string) argv)
   // Hack to get Calendar files to compile in correct order.
   object tmp = Calendar;
 
-  // Remove the name of the program.
-  argv = argv[1..];
-  
-  if(argv[0]=="--quiet")
-  {
-    quiet=1;
-    argv=argv[1..];
-
-    // FIXME: Make this a command line option..
-    // It should not be done when running a binary dist
-    // installation...
-    logfile=Stdio.File("dumpmodule.log","caw");
-  }
-
-  if(argv[0]=="--distquiet")
-  {
-    quiet=2;
-    argv=argv[1..];
-    logfile=0;
-  }
-
-  if(argv[0] == "--progress-bar")
-  {
-      quiet = 2;
-      logfile = Stdio.File("dumpmodule.log","caw");
-      
-      progress_bar = Tools.Install.ProgressBar("Precompiling",
-					       @array_sscanf(argv[1], "%d,%d"),
-					       0.2, 0.8);
-      
-      argv = argv[2..];
-  }
-
   foreach(argv, string file)
   {
     if(progress_bar)
@@ -258,6 +364,6 @@ int main(int argc, array(string) argv)
     dumpit(file);
   }
 
-  if(quiet==1)
-    werror("\n");
+  if (update_stamp)
+    Stdio.write_file (update_stamp, version());
 }
