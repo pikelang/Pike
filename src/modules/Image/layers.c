@@ -1,15 +1,158 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.20 1999/06/21 18:03:19 mirar Exp $
+**!	$Id: layers.c,v 1.21 1999/06/22 19:26:00 mirar Exp $
 **! class Layer
+**! see also: layers
+**!
+
+**!
+**!
+**! <add_appendix name="layers" title="Image.Layer modes"><execute>
+**! import Image;
+**! 
+**! void write_image(string desc,
+**! 		     string filename,
+**! 		     Image img)
+**! {
+**!    begin_tag("tr");
+**!    write(mktag("td",(["align":"right","valign":"center"]),
+**!          mktag("b",0,desc)));
+**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img)));
+**!    write(end_tag());
+**! }
+**! 
+**! int main()
+**! {
+**!    object ltrans=Layer((["image":
+**! 			     Image(32,32,160,160,160)->
+**! 			     box(0,0,15,15,96,96,96)->
+**! 			     box(16,16,31,31,96,96,96)->scale(0.5),
+**! 			     "tiled":1,
+**! 			     "mode":"normal"]));
+**! 
+**!    object circle=
+**! 	  PNM.decode(
+**! 	     Stdio.read_bytes("/home/mirar/pike7/tutorial/circle50.pnm"));
+**! 
+**!    object image_test=
+**! 	  PNM.decode(
+**! 	     Stdio.read_bytes("/home/mirar/pike7/tutorial/image_ill.pnm"));
+**! 
+**!    mapping ryoki=
+**! 	  (mapping)
+**! 	  PNG._decode(
+**! 	     Stdio.read_bytes("/home/mirar/pike7/tutorial/ryoki_carrot.png"));
+**! 
+**!    object lc1=
+**! 	  Layer((["image":circle->clear(255,0,0),
+**! 		  "alpha":circle,
+**! 		  "xoffset":5,
+**! 		  "yoffset":5]));
+**!    object lc2=
+**! 	  Layer((["image":circle->clear(0,0,255),
+**! 		  "alpha":circle,
+**! 		  "xoffset":25,
+**! 		  "yoffset":25]));
+**!    object lc2b=
+**! 	  Layer((["image":circle,
+**! 		  "alpha":circle*({0,0,255}),
+**! 		  "xoffset":25,
+**! 		  "yoffset":25]));
+**! 
+**!    object lr1=
+**! 	  Layer((["image":circle->test(63)->scale(1.25),
+**! 		  "alpha":circle->scale(1.25),
+**! 		  "xoffset":10,
+**! 		  "yoffset":5]));
+**!    object lr2=
+**! 	  Layer((["image":ryoki->image,
+**! 		  "alpha":ryoki->alpha,
+**! 		  "xoffset":5,
+**! 		  "yoffset":20]));
+**! 
+**!    object li1=
+**! 	  Layer((["image":image_test->scale(80,0),
+**! 		  "mode":"normal",
+**! 		  "xoffset":0,
+**! 		  "yoffset":0]));
+**! 
+**!    object li2=
+**! 	  lay(
+**! 	     ({
+**! 	     (["image":circle->clear(255,0,0),"alpha":circle,
+**! 	       "xoffset":5,"yoffset":0,"mode":"add"]),
+**! 	     (["image":circle->clear(0,255,0),"alpha":circle,
+**! 	       "xoffset":25,"yoffset":0,"mode":"add"]),
+**! 	     (["image":circle->clear(0,0,255),"alpha":circle,
+**! 	       "xoffset":15,"yoffset":20,"mode":"add"]),
+**! 	     (["image":circle->clear(0,0,0)->scale(0.5),
+**! 	       "alpha":circle->scale(0.5),
+**! 	       "xoffset":0,"yoffset":55]),
+**! 	     (["image":circle->clear(255,255,255)->scale(0.5),
+**! 	       "alpha":circle->scale(0.5),
+**! 	       "xoffset":55,"yoffset":55])
+**! 	     }));
+**! 
+**!    Layer li2b=Layer(li2->image()->clear(255,255,255),li2->image());
+**! 
+**!    object a=
+**! 	  lay( ({ lay(({lc1}),0,0,80,80),
+**! 		  lay(({lc1}),0,0,80,80)->set_offset(80,0),
+**! 		  lay(({li1}),0,0,80,80)->set_offset(160,0),
+**! 		  lay(({li1}),0,0,80,80)->set_offset(240,0),
+**! 		  lay(({lr1}),0,0,80,80)->set_offset(320,0) }),
+**! 	       0,0,400,80);
+**! 
+**!    object b=
+**! 	  lay( ({ lay(({lc2}),0,0,80,80),
+**! 		  lay(({lc2b}),0,0,80,80)->set_offset(80,0),
+**! 		  lay(({li2}),0,0,80,80)->set_offset(160,0),
+**! 		  lay(({li2b}),0,0,80,80)->set_offset(240,0),
+**! 		  lay(({lr2}),0,0,80,80)->set_offset(320,0) }),
+**! 	       0,0,400,80);
+**! 
+**!    begin_tag("table",(["cellspacing":"0","cellpadding":"1"]));
+**! 
+**! //    write_image("top layer image","bi",b->image());
+**! //    write_image("top layer alpha","ba",b->alpha());
+**! 
+**! //    write_image("bottom layer image","ai",a->image());
+**! //    write_image("bottom layer alpha","aa",b->alpha());
+**! 
+**!    write_image("top layer","b",lay(({ltrans,b}))->image());
+**!    write_image("bottom layer","a",lay(({ltrans,a}))->image());
+**! 
+**!    write(mktag("tr",0,mktag("td",0,"<hr>")));
+**! 
+**!    foreach (Layer()->available_modes(),string mode)
+**!    {
+**! 	  ({lc2,lc2b,li2,li2b,lr2})->set_mode(mode);
+**! 
+**! 	  object r=
+**! 	     lay( ({ lay(({lc1,lc2}),0,0,80,80),
+**! 		     lay(({lc1,lc2b}),0,0,80,80)->set_offset(80,0),
+**! 		     lay(({li1,li2}),0,0,80,80)->set_offset(160,0),
+**! 		     lay(({li1,li2b}),0,0,80,80)->set_offset(240,0),
+**! 		     lay(({lr1,lr2}),0,0,80,80)->set_offset(320,0) }),
+**! 		  0,0,400,80);
+**! 
+**! 	  write_image(mode,mode,lay(({ltrans,r}))->image());
+**!    }
+**! 
+**!    write(end_tag());
+**!    return 0;
+**! }
+**!
+**! </execute>
+**! </add_appendix>
 */
 
 #include "global.h"
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.20 1999/06/21 18:03:19 mirar Exp $");
+RCSID("$Id: layers.c,v 1.21 1999/06/22 19:26:00 mirar Exp $");
 
 #include "image_machine.h"
 

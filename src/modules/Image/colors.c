@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.23 1999/06/19 20:24:42 hubbe Exp $
+**!	$Id: colors.c,v 1.24 1999/06/22 19:25:57 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -70,59 +70,58 @@
 **! 
 **! constant modifiers=({"neon","light","dark","bright","dull"});
 **! 
-**! mixed color_info(object c)
+**! object F=Font();
+**!
+**! mixed color_info(array(object) ac)
 **! {
-**!    begin_tag("tr");
-**! 
-**!    begin_tag("td",(["valign":"center"]));
-**!    begin_tag("tt",(["valign":"center","align":"left"]));
-**!    write(c->name());
-**!    write(end_tag());
-**!    write(end_tag());
 **! 
 **! #define YZ 14
+**! #define YZz (YZ+1)
 **! #define MODX 32
-**! #define CXZ 32
+**! #define CXZ 64
 **! #define CSP 8
 **! #define MSP 4
 **! #define LSP 4
-**! #define XZ (MODX+CSP+(MSP+MODX)*sizeof(modifiers)-MSP)
+**! #define XTEXT 100
+**! #define XSP 4
+**! #define cPOS (XTEXT+XSP)
+**! #define tPOS 0
+**! #define txPOS(t) (XSP*2)
+**! #define XZ (CXZ+CSP+(MSP+MODX)*sizeof(modifiers)-MSP)
 **! 
-**!    object i=Image(XZ,YZ,Color.black);
-**!    object a=Image(XZ,YZ,Color.black);
-**!    i->box(0,0,CXZ-1,YZ,c);
-**!    i->box(CXZ,YZ-LSP,XZ,YZ,c);
-**!    a->box(0,0,CXZ-1,YZ,Color.white);
-**!    a->box(CXZ,YZ-LSP,XZ,YZ,Color.white);
-**! 
-**!    int x=CXZ+CSP;
-**!    foreach (modifiers,string mod)
+**!    object i=Image(XZ+XTEXT,YZz*sizeof(ac),Color.black);
+**!    object a=Image(XZ+XTEXT,YZz*sizeof(ac),Color.black);
+**!
+**!    int y=0;
+**!    foreach (ac,object c)
 **!    {
-**! 	  i->box(x,0,x+MODX-1,YZ-LSP-1,c[mod]());
-**! 	  a->box(x,0,x+MODX-1,YZ-LSP-1,Color.white);
-**! 	  x+=MSP+MODX;
+**!       i->box(cPOS+0,  y,       cPOS+CXZ-1,y+YZ-1,c);
+**!       i->box(cPOS+CXZ,y+YZ-LSP,cPOS+XZ,   y+YZ-1,c);
+**!       a->box(cPOS+0,  y,       cPOS+CXZ-1,y+YZ-1,Color.white);
+**!       a->box(cPOS+CXZ,y+YZ-LSP,cPOS+XZ,   y+YZ-1,Color.white);
+**!       
+**!       int x=CXZ+CSP+cPOS;
+**!       foreach (modifiers,string mod)
+**!       {
+**!          i->box(x,y,x+MODX-1,y+YZ-LSP-1,c[mod]());
+**!          a->box(x,y,x+MODX-1,y+YZ-LSP-1,Color.white);
+**!          x+=MSP+MODX;
+**!       }
+**!       i->box(tPOS,y,tPOS+XTEXT-XSP-1,y+YZ-1,
+**!              c->neon()->dark()->dark()->dark());
+**!       a->box(tPOS,y,tPOS+XTEXT-XSP-1,y+YZ-1,Color.white);
+**!       i->paste_alpha_color(F->write(c->name()), Color.white, 
+**!                            txPOS(c->name()),y+1);
+**!       y+=YZz;
 **!    }
 **! 
-**!    begin_tag("td",(["valign":"center"]));
 **!    write(illustration(i,a));
-**!    write(end_tag());
-**! 
-**!    begin_tag("td",(["valign":"center","align":"left"]));
-**!    begin_tag("tt",(["valign":"center","align":"left"]));
-**!    write(replace("  "+c->hex(2) +
-**! 		     sprintf("    %4.2f %4.2f %4.2f   ",@c->rgbf()) +
-**! 		     sprintf("%3g° %4.2f %4.2f",@c->hsvf()),
-**! 		     " ","&nbsp;"));
-**!    write(end_tag());
-**!    write(end_tag());
-**! 
-**!    return end_tag();
+**!    write(mktag("br"));
 **! }
 **! 
 **! void main()
 **! {
 **!    array cs=values(Color);
-**!    begin_tag("table",(["cellspacing":1,"cellpadding":0,"border":0]));
 **!    
 **!    array orig=({Color.black,Color.red,Color.green,Color.yellow,
 **! 		    Color.blue,Color.violet,Color.cyan,Color.white});
@@ -137,13 +136,11 @@
 **! 				 return (c->h*50-c->s)*10+c->v;
 **! 			      }),colored);
 **! 
-**!    write(@Array.map(orig,color_info));
-**!    write(mktag("tr",0,mktag("td",(["colspan":2]),"&nbsp;")));
-**!    write(@Array.map(grey,color_info));
-**!    write(mktag("tr",0,mktag("td",(["colspan":2]),"&nbsp;")));
-**!    write(@Array.map(colored,color_info));
-**! 
-**!    write(end_tag());
+**!    Array.map(({orig}),color_info);
+**!    write(mktag("hr"));
+**!    Array.map(({grey}),color_info);
+**!    write(mktag("hr"));
+**!    Array.map(colored/8.0,color_info);
 **! }
 **! 
 **! </execute>
@@ -182,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.23 1999/06/19 20:24:42 hubbe Exp $");
+RCSID("$Id: colors.c,v 1.24 1999/06/22 19:25:57 mirar Exp $");
 
 #include "image_machine.h"
 
