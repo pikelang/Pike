@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.455 2001/01/19 14:28:48 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.456 2001/01/19 19:45:00 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1811,7 +1811,38 @@ int main()
   pthread_join(gazonk,&sune);
   exit(0);
 }
-    ],pike_cv_posix_threads=yes,pike_cv_posix_threads=no,pike_cv_posix_threads=no)
+    ], [ pike_cv_posix_threads=yes ], [ pike_cv_posix_threads=no ], [
+      AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#define _MIT_POSIX_THREADS 1
+
+#include <pthread.h>
+
+void *foo(void *bar) { pthread_exit(0); return 0; }
+pthread_mutexattr_t attr;
+pthread_mutex_t tmp;
+pthread_t gazonk;
+
+      ], [
+{
+  void *sune;
+#ifdef HAVE_PTHREAD_INIT
+  pthread_init();
+#endif /* HAVE_PTHREAD_INIT */
+#ifdef HAVE_PTHREAD_MUTEXATTR_INIT
+  pthread_mutexattr_init(&attr);
+#else
+  memset(&attr, 0, sizeof(attr));
+#endif /* HAVE_PTHREAD_MUTEXATTR_INIT */
+  pthread_mutex_init(&tmp, &attr);
+  pthread_mutex_lock(&tmp);
+  pthread_create(&gazonk,0,foo,0);
+  pthread_join(gazonk,&sune);
+  exit(0);
+}
+      ], [ pike_cv_posix_threads=yes ], [ pike_cv_posix_threads=no ])
+    ])
   ])
 
   if test $pike_cv_posix_threads = yes ; then
@@ -2390,7 +2421,7 @@ else :; fi
 AC_MSG_CHECKING(if gettimeofday takes two arguments)
 AC_CACHE_VAL(pike_cv_func_gettimeofday_has_two_args,
 [
-AC_TRY_RUN([
+  AC_TRY_RUN([
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>
@@ -2417,10 +2448,39 @@ int main() {
   gettimeofday(&tv,(void *)0);
   exit(0);
 }
-],
-pike_cv_func_gettimeofday_has_two_args=yes,
-pike_cv_func_gettimeofday_has_two_args=no,
-pike_cv_func_gettimeofday_has_two_args=no)])
+  ], [ pike_cv_func_gettimeofday_has_two_args=yes
+  ], [ pike_cv_func_gettimeofday_has_two_args=no
+  ], [
+    AC_TRY_LINK([
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  if HAVE_TIME_H
+#   include <time.h>
+#  endif
+# endif
+#endif
+
+#ifndef HAVE_STRUCT_TIMEVAL
+struct timeval
+{
+  long tv_sec;
+  long tv_usec;
+};
+#endif
+    ], [
+{
+  struct timeval tv;
+  gettimeofday(&tv,(void *)0);
+  exit(0);
+}
+    ], [ pike_cv_func_gettimeofday_has_two_args=yes ], [pike_cv_func_gettimeofday_has_two_args=no])
+  ])
+])
 
 if test $pike_cv_func_gettimeofday_has_two_args = yes; then
   AC_DEFINE(GETTIMEOFDAY_TAKES_TWO_ARGS)
@@ -2604,7 +2664,7 @@ fi
 AC_MSG_CHECKING(stack direction)
 AC_CACHE_VAL(pike_cv_hardware_stack_direction,
 [
-AC_TRY_RUN([
+  AC_TRY_RUN([
 #include <stdio.h>
 static int find_stack_direction(void *foo)
 {
@@ -2616,7 +2676,12 @@ static int find_stack_direction(void *foo)
 }
 
 int main() { void *bar; exit( find_stack_direction(&bar) > 0); }
-],pike_cv_hardware_stack_direction=down,pike_cv_hardware_stack_direction=up)
+  ], [ pike_cv_hardware_stack_direction=down
+  ], [ pike_cv_hardware_stack_direction=up
+  ], [
+    AC_MSG_WARN([defaulting to down.])
+    pike_cv_hardware_stack_direction=down
+  ])
 ])
 
 AC_MSG_RESULT($pike_cv_hardware_stack_direction)
