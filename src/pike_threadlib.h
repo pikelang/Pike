@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.1 2001/04/07 07:38:25 hubbe Exp $
+ * $Id: pike_threadlib.h,v 1.2 2001/08/30 22:39:42 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -50,6 +50,11 @@
 
 #ifdef _MIT_POSIX_THREADS
 #define POSIX_THREADS
+
+/* Makes gcc include more POSIX declarations, notably
+ * pthread_mutexattr_settype. */
+#define _XOPEN_SOURCE 500
+
 #include <pthread.h>
 
 /* AIX is *STUPID* - Hubbe */
