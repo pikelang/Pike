@@ -455,47 +455,109 @@ COLOR(yellow4,139,139,0);
 COLOR(yellowgreen,154,205,50);
 
 
-array(int) rgb_to_hsv(array(int)|int ri, int|void gi, int|void bi)
+//! @decl array(int(0..255)) rgb_to_hsv(array(int(0..255)) rgb)
+//! @decl array(int(0..255)) rgb_to_hsv(int(0..255) r, int(0..255) g, int(0..255) b)
+//!
+//! This function returns the HSV value of the color
+//! described by the provided RGB value. It is essentially
+//! calling Image.Color.rgb(r,g,b)->hsv().
+//!
+//! @seealso
+//! @[Colors.hsv_to_rgb()]
+//! @[Image.Color.Color.hsv()]
+//!
+array(int(0..255)) rgb_to_hsv(array(int(0..255))|int(0..255) r,
+			      int(0..255)|void g, int(0..255)|void b)
 {
-  if(arrayp(ri)) return Image.Color(@ri)->hsv();
-  return Image.Color(ri,gi,bi)->hsv();
+  if(arrayp(r)) return Image.Color.rgb(@r)->hsv();
+  return Image.Color.rgb(r,g,b)->hsv();
 }
 
-array(int) hsv_to_rgb(array(int)|int hv, int|void sv, int|void vv)
+//! @decl array(int(0..255)) hsv_to_rgb(array(int(0..255)) hsv)
+//! @decl array(int(0..255)) hsv_to_rgb(int(0..255) h, int(0..255) s, int(0..255) v)
+//!
+//! This function returns the RGB value of the color
+//! described by the provided HSV value. It is essentially
+//! calling Image.Color.hsv(h,s,v)->rgb().
+//!
+//! @seealso
+//! @[Colors.rgb_to_hsv()]
+//! @[Image.Color.hsv()]
+//!
+array(int(0..255)) hsv_to_rgb(array(int(0..255))|int(0..255) h,
+			      int(0..255)|void s, int(0..255)|void v)
 {
-  if(arrayp(hv)) return Image.Color(sprintf("@%d,%d,%d", @hv))->rgb();
-  return Image.Color(sprintf("@%d,%d,%d", hv,sv,vv))->rgb();
+  if(arrayp(h)) return Image.Color.hsv(@h)->rgb();
+  return Image.Color.hsv(h,s,v)->rgb();
 }
 
-array(int) rgb_to_cmyk(array(int)|int ri, int|void gi, int|void bi)
+//! @decl array(int(0..100)) rgb_to_cmyk(array(int(0..255)) rgb)
+//! @decl array(int(0..100)) rgb_to_cmyk(int(0..255) r, int(0..255) g, int(0..255) b)
+//!
+//! This function returns the CMYK value of the color
+//! described by the provided RGB value. It is essentially
+//! calling Image.Color.rgb(r,g,b)->cmyk().
+//!
+//! @seealso
+//! @[Colors.cmyk_to_rgb()]
+//! @[Image.Color.Color.cmyk()]
+//!
+array(int(0..100)) rgb_to_cmyk(array(int(0..255))|int(0..255) r,
+			       int(0..255)|void g, int(0..255)|void b)
 {
-  if(arrayp(ri)) return Image.Color(@ri)->cmyk();
-  return Image.Color(ri,gi,bi)->cmyk();
+  array(float) cmyk;
+  if(arrayp(r))
+    cmyk = Image.Color.rgb(@r)->cmyk();
+  else
+    cmyk = Image.Color.rgb(r,g,b)->cmyk();
+  return (array(int))map(cmyk, round);
 }
 
+//! @decl array(int(0..255)) cmyk_to_rgb(array(int(0..100)) cmyk)
+//! @decl array(int(0..255)) cmyk_to_rgb(int(0..100) c, int(0..100) m, int(0..100) y, int(0..100) k)
+//!
+//! This function return the RGB value of the color
+//! describe by the provided CMYK value. It is essentially
+//! calling Image.Color.cmyk(c,m,y,k)->rgb()
+//!
+//! @seealso
+//! @[Colors.rgb_ro_cmyk()]
+//! @[Image.Color.cmyk()]
+//!
 array(int) cmyk_to_rgb(array(int)|int c, int|void m, int|void y, int|void k)
 {
-  if(arrayp(c)) return Image.Color(sprintf("%%%d,%d,%d,%d", @c))->rgb();
-  return Image.Color(sprintf("%%%d,%d,%d,%d", c,m,y,k))->rgb();
+  if(arrayp(c)) return Image.Color.cmyk(@c)->rgb();
+  return Image.Color.cmyk(c,m,y,k)->rgb();
 }
 
-array(int) parse_color(string from)
+//! This function returns the RGB values that corresponds to the
+//! color that is provided by name to the function. It is
+//! essentially calling @[Image.Color.guess()], but returns the
+//! value for black if it failes.
+//!
+array(int(0..255)) parse_color(string name)
 {
-  object color;
-  if(!from || !strlen(from)) return ({ 0,0,0 }); // Odd color...
+  Image.Color.Color color;
+  if(!name || !strlen(name)) return ({ 0,0,0 }); // Odd color...
 
-  if(color=Image.Color.guess(from)) return color->rgb();
+  if(color=Image.Color.guess(name)) return color->rgb();
 
-  from = replace(lower_case(from), "gray", "grey");
-  if(color=Image.Color.guess(from)) return color->rgb();
+  name = replace(lower_case(name), "gray", "grey");
+  if(color=Image.Color.guess(name)) return color->rgb();
 
   // Lets call it black and be happy..... :-)
   return ({ 0,0,0 });
 }
 
-// Mostly used for debug. Not really all that perfect..
-string color_name(array (int) from)
+//! Tries to find a name to color described by  the provided RGB
+//! values. Partially an inverse function to @[Colors.parse_color()],
+//! although it can not find all the names that @[Colors.parse_color()]
+//! can find RGB values for. Returns "-" upon failure.
+//!
+string color_name(array(int(0..255)) rgb)
 {
-  if(!arrayp(from) || sizeof(from)!=3) return "-";
-  return Image.Color(@from)->name();
+  if(!arrayp(rgb) || sizeof(rgb)!=3) return "-";
+  string name = Image.Color(@rgb)->name();
+  if(name[0]=='#') return "-";
+  return name;
 }
