@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.4 2002/04/17 07:26:04 hop%unibase.cz Exp $
+//  $Id: ID3.pmod,v 1.5 2002/09/06 12:38:10 hop Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -103,7 +103,7 @@ class TagHeader {
       error( "Header has wrong identifier. Expected \"ID3\", got %O.\n", data[..2] );
 
     array bytes = (array(int))data[3..];
-    if( (< 2, 3, 4 >)[bytes[0]] )
+    if( ! (< 2, 3, 4 >)[bytes[0]] )
       error( "Can only handle ID3v2.{2,3,4}.x. Got ID3v2."+bytes[0]+"."+bytes[1]+"\n" );
 
     minor_version = bytes[0];
