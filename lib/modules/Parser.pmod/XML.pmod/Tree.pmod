@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.13 2001/09/09 00:41:23 nilsson Exp $
+ * $Id: Tree.pmod,v 1.14 2001/10/18 18:54:19 nilsson Exp $
  *
  */
 
@@ -94,6 +94,17 @@ class AbstractNode {
   //! Returns the number of children of the node.
   int count_children()           { return (sizeof(mChildren)); }
  
+  //! Returns the corresponding node in a clone of the tree.
+  AbstractNode clone(void|int(-1..1) direction) {
+    AbstractNode n = AbstractNode();
+    if(mParent && direction!=1)
+      n->set_parent( mParent->clone(-1) );
+    if(direction!=-1)
+      foreach(mChildren, AbstractNode child)
+	n->add_child( child->clone(1) );
+    return n;
+  }
+
 
   //! Follows all parent pointers and returns the root node.
   AbstractNode get_root()
@@ -409,6 +420,23 @@ class Node {
   private array(Node) mAttrNodes;   //  created on demand
   private string         mText;
   private int            mDocOrder;
+
+  Node clone(void|int(-1..1) direction) {
+    Node n = Node(get_node_type(), get_tag_name(),
+		  get_attributes(), get_text());
+
+    if(direction!=1) {
+      Node p = get_parent();
+      if(p)
+	n->set_parent( p->clone(-1) );
+    }
+
+    if(direction!=-1)
+      foreach(get_children(), Node child)
+	n->add_child( child->clone(1) );
+
+    return n;
+  }
 
   //  This can be accessed directly by various methods to cache parsing
   //  info for faster processing. Some use it for storing flags and others
