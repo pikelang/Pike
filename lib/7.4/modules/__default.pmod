@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.14 2004/06/13 11:27:26 grubba Exp $
+// $Id: __default.pmod,v 1.15 2005/01/08 19:57:16 grubba Exp $
 
 #pike 7.5
 
@@ -8,7 +8,7 @@
 //! The symbols in this namespace will appear in
 //! programs that use @tt{#pike 7.4@} or lower.
 
-//! @decl inherit predef::
+//! @decl inherit 7.6::
 
 //!   Return resource usage. An error is thrown if it isn't supported
 //!   or if the system fails to return any information.
