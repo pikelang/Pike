@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.5 2005/01/03 13:17:07 agehall Exp $
+ * $Id: pike_embed.h,v 1.6 2005/01/03 13:41:13 agehall Exp $
  *
  * Pike embedding API.
  *
@@ -64,7 +64,5 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn));
 
 void pike_push_argv(int argc, char **argv);
 void pike_push_env(void);
-
-extern char libpike_name[];
 
 #endif /* PIKE_EMBED_H */
