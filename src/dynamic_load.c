@@ -17,7 +17,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.60 2002/03/10 03:14:46 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.61 2002/04/30 22:55:31 mast Exp $");
 
 #else /* TESTING */
 
@@ -408,6 +408,7 @@ void f_load_module(INT32 args)
     struct module_list *mp;
     for (mp = dynamic_module_list; mp; mp = mp->next)
       if (mp->module == module && mp->module_prog) {
+	pop_n_elems(args);
 	ref_push_program(mp->module_prog);
 	return;
       }
