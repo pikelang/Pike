@@ -320,9 +320,15 @@ INLINE static int do_one(struct format_info *f)
     rest=f->b;
     for(d=0;rest[d] && e;d++)
     {
+#if 0
+      if(rest != f->b)
+	fix_field(" ",1,0,1," ",1,0);
+#endif
+
       while(rest[d] && rest[d]!='\n') d++;
       fix_field(rest,d,f->flags,f->column_width,f->pad_string,
 		f->pad_length,f->pos_pad);
+
       e--;
       rest+=d;
       d=-1;
@@ -340,6 +346,11 @@ INLINE static int do_one(struct format_info *f)
     rest=f->b;
     for(d=0;*rest && d<col;d++)
     {
+#if 0
+      if(rest != f->b)
+	fix_field(" ",1,0,1," ",1,0);
+#endif
+
       for(e=0;rest[e] && rest[e]!='\n';e++);
       fix_field(rest,e,f->flags,f->column_width,
 		f->pad_string,f->pad_length,f->pos_pad);
@@ -718,11 +729,13 @@ static string low_pike_sprintf(char *format,
   for(f=fsp;f>start;f--)
   {
     if(f->flags & WIDTH_OF_DATA) f->width=f->len;
+
     if(((f->flags & INVERSE_COLUMN_MODE) && !f->column_width) ||
        (f->flags & COLUMN_MODE))
     {
       int max_len,nr,columns;
-      for(max_len=nr=tmp=e=0;e<f->len;e++)
+      tmp=1;
+      for(max_len=nr=e=0;e<f->len;e++)
       {
 	if(f->b[e]=='\n')
 	{
