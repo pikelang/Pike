@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.148 1999/08/27 21:49:35 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.149 1999/08/28 00:39:01 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -460,7 +460,9 @@ static struct sigdesc signal_desc []={
 
 #ifdef PIKE_DEBUG
 
-char process_info[65536];
+#define MY_MAX_PID 65536
+
+char process_info[MY_MAX_PID];
 int last_pid_p;
 int last_pids[4096];
 
@@ -473,7 +475,7 @@ int last_pids[4096];
 void dump_process_history(pid_t pid)
 {
   int e;
-  if(pid < 1 || pid > 65536)
+  if(pid < 1)
     fatal("Pid out of range: %ld\n",(long)pid);
 
   fprintf(stderr,"Process history:");
@@ -482,17 +484,21 @@ void dump_process_history(pid_t pid)
     fprintf(stderr," %d",last_pids[ (last_pid_p + e) & 4095]);
   }
 
-  fprintf(stderr,"\nProblem pid = %d, status = %d\n",
-	  (int)pid, process_info[pid]);
+  if(pid<MY_MAX_PID)
+    fprintf(stderr,"\nProblem pid = %d, status = %d\n",
+	    (int)pid, process_info[pid]);
 }
 
 
 void process_started(pid_t pid)
 {
-  if(pid < 1 || pid > 65536)
+  if(pid < 1)
     fatal("Pid out of range: %ld\n",(long)pid);
 
   last_pids[last_pid_p++ & 4095]=pid;
+
+  if(pid<MY_MAX_PID)
+    return;
 
   switch(process_info[pid])
   {
@@ -513,8 +519,12 @@ void process_started(pid_t pid)
 
 void process_done(pid_t pid, char *from)
 {
-  if(pid < 1 || pid > 65536)
+  if(pid < 1)
     fatal("Pid out of range in %s: %ld\n",from,(long)pid);
+
+  if(pid<MY_MAX_PID)
+    return;
+
   switch(process_info[pid])
   {
     case P_RUNNING:
