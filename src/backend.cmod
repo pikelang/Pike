@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.160 2005/01/19 19:32:59 grubba Exp $
+ * $Id: backend.cmod,v 1.161 2005/01/20 14:17:51 grubba Exp $
  *
  * Backend object.
  */
@@ -2711,6 +2711,8 @@ PIKECLASS Backend
 	{
 	  int fd = GET_FD(ACTIVE_POLLSET[i]);
 	  struct fd_callback_box *box;
+	  ONERROR uwp;
+	  struct object *ref_obj;
 
 	  if (!(box = SAFE_GET_ACTIVE_BOX (me, fd))) {
 	    /* The box is no longer active. */
@@ -2720,7 +2722,10 @@ PIKECLASS Backend
 	  check_box (box, fd);
 
 	  /* Make sure we don't lose the box during some callback. */
-	  if (box->ref_obj) add_ref(box->ref_obj);
+	  if ((ref_obj = box->ref_obj)) {
+	    add_ref(ref_obj);
+	    SET_ONERROR(uwp, do_free_object, ref_obj);
+	  }
 
 	  if (box->revents & PIKE_BIT_FD_ERROR) {
 	    /* Error */
@@ -2752,7 +2757,7 @@ PIKECLASS Backend
 			    "[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
 			    getpid(), me->id, i, box->ref_obj));
 	      if (box->callback (box, PIKE_FD_ERROR) == -1) {
-		if (box->ref_obj) free_object(box->ref_obj);
+		if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 		goto backend_round_done;
 	      }
 	    }
@@ -2762,7 +2767,7 @@ PIKECLASS Backend
 			    "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
 			    getpid(), me->id, fd, box->ref_obj, errno));
 	      if (box->callback (box, PIKE_FD_READ) == -1) {
-		if (box->ref_obj) free_object(box->ref_obj);
+		if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 		goto backend_round_done;
 	      }
 	    } else if (old_events & PIKE_BIT_FD_WRITE) {
@@ -2770,19 +2775,19 @@ PIKECLASS Backend
 			    "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
 			    getpid(), me->id, fd, box->ref_obj, errno));
 	      if (box->callback (box, PIKE_FD_WRITE) == -1) {
-		if (box->ref_obj) free_object(box->ref_obj);
+		if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 		goto backend_round_done;
 	      }
 	    }
 	    /* Don't call any other callbacks for this fd.
 	     */
 
-	    if (box->ref_obj) free_object(box->ref_obj);
+	    if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	    continue;
 	  }
 
 	  if (!(box->events & box->revents)) {
-	    if (box->ref_obj) free_object(box->ref_obj);
+	    if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	    continue;
 	  }
 
@@ -2797,7 +2802,7 @@ PIKECLASS Backend
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
 	    if (box->callback (box, PIKE_FD_READ_OOB) == -1) {
-	      if (box->ref_obj) free_object(box->ref_obj);
+	      if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	      goto backend_round_done;
 	    }
 	  }
@@ -2810,7 +2815,7 @@ PIKECLASS Backend
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
 	    if (box->callback (box, PIKE_FD_READ) == -1) {
-	      if (box->ref_obj) free_object(box->ref_obj);
+	      if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	      goto backend_round_done;
 	    }
 	  }
@@ -2820,7 +2825,7 @@ PIKECLASS Backend
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
 	    if (box->callback (box, PIKE_FD_WRITE_OOB) == -1) {
-	      if (box->ref_obj) free_object(box->ref_obj);
+	      if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	      goto backend_round_done;
 	    }
 	  }
@@ -2833,12 +2838,12 @@ PIKECLASS Backend
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
 	    if (box->callback (box, PIKE_FD_WRITE) == -1) {
-	      if (box->ref_obj) free_object(box->ref_obj);
+	      if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	      goto backend_round_done;
 	    }
 	  }
 
-	  if (box->ref_obj) free_object(box->ref_obj);
+	  if (ref_obj) CALL_AND_UNSET_ONERROR(uwp);
 	}
 
 #endif	/* USE_SELECT */
