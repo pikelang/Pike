@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.192 2002/07/23 13:23:04 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.193 2002/08/14 16:27:01 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -29,7 +29,7 @@ RCSID("$Id: pike_types.c,v 1.192 2002/07/23 13:23:04 mast Exp $");
 #include "block_alloc.h"
 
 #ifdef PIKE_DEBUG
-/* #define PIKE_TYPE_DEBUG */
+#define PIKE_TYPE_DEBUG
 #endif /* PIKE_DEBUG */
 
 /*
@@ -949,22 +949,39 @@ static void internal_parse_typeA(char **_s)
       if(!strcmp(buf,"object"))
       {
 	while(ISSPACE(**s)) ++*s;
-	if(**s == '(') /* object({is,implements} id) */
+	if(**s == '(') /* object({,is,implements} {id,this_program}) */
 	{
-	  int is = 1, id;
+	  int is = 0, id;
 	  ++*s;
+	  while(ISSPACE(**s)) ++*s;
 	  if( **s != 'i' )
-	    goto bad_type;
+	    goto no_is_implements;
 	  ++*s;
-	  if( **s == 'm' )
-	    is = 0;
-	  while( isidchar( **s ) ) ++*s;
-	  while( ISSPACE(**s) )      ++*s;
+	  if( **s == 's' ) {
+	    ++*s;
+	    if (**s != ' ') {
+	      goto bad_type;
+	    }
+	    is = 1;
+	    ++*s;
+	  } else {
+	    if (strncmp(*s, "mplements ", 10)) {
+	      goto bad_type;
+	    }
+	    *s += 10;
+	  }
+	  while(ISSPACE(**s)) ++*s;
+	no_is_implements:
 	  if( !**s )
 	    goto bad_type;
-	  id = atoi( *s );	
-	  while( **s >= '0' && **s <= '9' )
-	    ++*s;
+	  if (!strncmp(*s, "this_program", 12)) {
+	    id = Pike_compiler->new_program->id;
+	    *s += 12;
+	  } else {
+	    id = atoi( *s );	
+	    while( **s >= '0' && **s <= '9' )
+	      ++*s;
+	  }
 	  while(ISSPACE(**s)) ++*s;
 	  if( !**s || **s != ')' )
 	    goto bad_type;
