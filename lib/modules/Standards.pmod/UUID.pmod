@@ -2,14 +2,14 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.3 2004/10/04 21:57:17 nilsson Exp $
+// $Id: UUID.pmod,v 1.4 2004/10/05 00:47:35 nilsson Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
 
 // Specifications:
 //
-// draft-leach-uuids-guids-01.txt (Expired internet draft, Microsoft)
+// draft-mealling-uuid-urn-03.txt (I-D; Microsoft, Verisign, DataPower)
 // CDE 1.1: Remote Procedure Call: Universal Unique Identifier (Open Group)
 
 // UUID format:
@@ -59,7 +59,7 @@
     distance(Calendar.ISO.Second("unix",0))->how_many(Calendar.Second)
     * 10000000;
 #else
-  constant clk_offset = 0x01b21dd213814000 * 10000000;
+  constant clk_offset = 0x01b21dd213814000;
 #endif
 
 
@@ -120,8 +120,7 @@ class UUID {
     if( version<0 || version>15 )
       error("Version %O out of range.\n", version);
 
-    int seq_limit = 15;
-    if( (< 3, 4 >)[version] ) seq_limit = 14;
+    int seq_limit = ([ 0:15, 4:14, 6:13, 7:13 ])[var];
     if(clk_seq>=pow(2,seq_limit) || clk_seq<0)
       error("Clock sequence %O out of range.\n", clk_seq);
 
@@ -174,7 +173,8 @@ class UUID {
   string str() {
     string ret = String.string2hex(encode());
     while( sizeof(ret)<32 ) ret = "0"+ret;
-    return ret[..7]+"-"+ret[8..11]+"-"+ret[12..15]+"-"+ret[16..19]+"-"+ret[20..];
+    return ret[..7] + "-" + ret[8..11] + "-" + ret[12..15]  +"-" +
+      ret[16..19] + "-" + ret[20..];
   }
 
   //! Creates a URN representation of the UUID.
@@ -233,6 +233,8 @@ class UUID {
 
 }
 
+// Internal clock class. Only works for variant 4, but all others are
+// reserved, so it shouldn't be a problem in practice.
 static class ClkSeq {
   int clk_seq = random(pow(2,14));
   int last_time;
@@ -300,7 +302,7 @@ UUID make_version1(int node) {
   [ u->timestamp, u->clk_seq ] = clk_seq->get();
   u->version = 1;
   if(node<0)
-    u->node = random(pow(2,48)) & 1<<47;
+    u->node = random(pow(2,48)) | 1<<47;
   else
     u->node = node;
   return u;
@@ -370,77 +372,28 @@ UUID make_version4() {
 
 // Grubbas implementation:
 
-static int last_hrtime = gethrtime(1)/100;
-static int clock_sequence = random(0x4000);
-static string mac_address =
-  Crypto.Random.random_string(6)|"\1\0\0\0\0\0"; // Multicast bit.
-
 //! Return a new binary UUID.
 string new()
 {
-  int now = gethrtime(1)/100;
-  if (now != last_hrtime) {
-    clock_sequence = random(0x4000);
-    last_hrtime = now;
-  }
-  int seq = clock_sequence++;
-  // FIXME: Check if clock_sequence has wrapped during this @[now].
-
-  // Adjust @[now] with the number of 100ns intervals between
-  // 1582-10-15 00:00:00.00 GMT and 1970-01-01 00:00:00.00 GMT.
-#if 0
-  now -= Calendar.parse("%Y-%M-%D %h:%m:%s.%f %z",
-			"1582-10-15 00:00:00.00 GMT")->unix_time() * 10000000;
-#else /* !0 */
-  now += 0x01b21dd213814000;	// Same as above.
-#endif /* 0 */
-  now &= 0x0fffffffffffffff;
-  now |= 0x1000000000000000;	// DCE version 1.
-  clock_sequence &= 0x3fff;
-  clock_sequence |= 0x8000;	// DCE variant of UUIDs.
-
-  return sprintf("%4c%2c%2c%2c%6s",
-		 now & 0xffffffff,
-		 (now >> 32) & 0xffff,
-		 (now >> 48) & 0xffff,
-		 clock_sequence,
-		 mac_address);
+  return make_version1(-1)->encode();
 }
 
 //! Returns the string representation of the binary UUID @[uuid].
 string format_uuid(string uuid)
 {
-  if (sizeof(uuid) != 16) {
-    error("Bad binary UUID: %O\n", uuid);
-  }
-  return sprintf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-"
-		 "%02x%02x%02x%02x%02x%02x", @values(uuid));
+  return UUID(uuid)->str();
 }
 
 //! Returns the binary representation of the UUID @[uuid].
 string parse_uuid(string uuid)
 {
-  int time_low, time_mid, time_hi_and_version;
-  int clock_seq_hi_and_reserved, clock_seq_low;
-  int node;
-  array(string) segs = uuid/"-";
-  if ((sizeof(uuid) != 36) ||
-      (sscanf(uuid, "%8x-%4x-%4x-%4x-%12x",
-	      time_low, time_mid, time_hi_and_version,
-	      clock_seq_hi_and_reserved, clock_seq_low,
-	      node) != 6)) {
-    error("Bad UID string: %O\n", uuid);
-  }
-  return sprintf("%4c%2c%2c%2c%6c",
-		 time_low, time_mid, time_hi_and_version,
-		 clock_seq_hi_and_reserved, clock_seq_low,
-		 node);
+  return UUID(uuid)->encode();
 }
 
 //! Return a new UUID string.
 string new_string()
 {
-  return format_uuid(new());
+  return make_version1(-1)->str();
 }
 
 // Some UUIDs:
