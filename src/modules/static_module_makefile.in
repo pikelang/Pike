@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.22 1997/12/01 20:21:07 grubba Exp $
+# $Id: static_module_makefile.in,v 1.23 1998/02/11 00:42:13 hubbe Exp $
 #
 
 
@@ -15,7 +15,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 all: subdirs dummy
 
 subdirs:
-	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a && $(MAKE) $(MAKE_FLAGS) ) || exit $$? ; else :; fi ; done
+	@for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a && $(MAKE) $(MAKE_FLAGS) ) || exit $$? ; else :; fi ; done
 
 dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	tmp="$(INSTALL_NAME)" ;\
@@ -34,6 +34,7 @@ modlist_segment: Makefile
 
 Makefile: ../static_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	touch remake
 	@echo "Run make again"
 	@exit 1
 

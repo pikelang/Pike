@@ -13,9 +13,14 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 
 all: modules
 
-modules:
-	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a ) || exit $$? ; done
+modules: $(MODULES)
 	$(MAKE) linker_options modlist.h modlist_headers.h
+
+force:
+
+$(MODULES) : force
+	@echo Making $@ 
+	@( cd $@ ; rm remake >/dev/null 2>&1 || : ; $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) ) || exit $$?
 
 modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
