@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.612 2003/03/01 16:33:34 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.613 2003/03/02 17:01:28 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7812,23 +7812,54 @@ test_eq(hash("foo"),2091538203)
 test_eq(hash("foo",10),3)
 test_eq(hash("bar"),2091518428)
 test_eq(hash("bar",10),8)
-test_eq(hash("b\666arqwerty1234"),1858424874)
+test_eq(hash("b\666arqwerty1234"),1829582221)
 test_eq(hash(""),0)
 
+// - hash_7_4
+define(test_hash_7_4, [[
+  test_any([[
+    int i = hash_7_4($1);
+    return ]]dnl
+ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
+[[i;
+  ]], $2)
+  test_any([[
+#pike 7.4
+    int i = hash($1);
+    return ]]dnl
+ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
+[[i;
+  ]], $2)
+]])
+test_hash_7_4("foo",2091538203)
+test_hash_7_4([["foo",10]],3)
+test_hash_7_4("bar",2091518428)
+test_hash_7_4([["bar",10]],8)
+test_hash_7_4("b\666arqwerty1234", 2142487018, 1858424874)
+test_hash_7_4("",0)
+
 // - hash_7_0
-define(test_hash,[[
-  test_eq(hash_7_0($1),$2)
+define(test_hash_7_0, [[
+  test_any([[
+    int i = hash_7_0($1);
+    return ]]dnl
+ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
+[[i;
+  ]], $2)
   test_any([[
 #pike 7.0
-return hash($1);
-]],$2)
+    int i = hash($1);
+    return ]]dnl
+ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
+[[i;
+  ]], $2)
 ]])
-test_hash("foo",27734)
-test_hash([["foo",10]],4)
-test_hash("bar",26689)
-test_hash([["bar",10]],9)
-test_hash("b\666arqwerty1234",1858424874)
-test_hash("",0)
+test_hash_7_0("foo",27734)
+test_hash_7_0([["foo",10]],4)
+test_hash_7_0("bar",26689)
+test_hash_7_0([["bar",10]],9)
+test_hash_7_0("b\666arqwerty1234", 2142487018, 1858424874)
+test_hash_7_0("",0)
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
