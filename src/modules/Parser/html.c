@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.135 2004/02/10 22:46:45 mast Exp $ */
+/* $Id: html.c,v 1.136 2004/03/22 14:50:08 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3929,7 +3929,8 @@ static void html_read(INT32 args)
 	 {
 	    f_aggregate(32);
 	    m = 0;
-	    if (got_arr) f_add(2), got_arr = 1;
+	    if (got_arr) f_add(2);
+	    else got_arr = 1;
 	 }
 	 THIS->out = THIS->out->next;
 	 really_free_out_piece (z);
@@ -3940,7 +3941,8 @@ static void html_read(INT32 args)
 	 if (got_arr) f_add(2);
       }
       else
-	ref_push_array(&empty_array);
+	if (!got_arr)
+	  ref_push_array(&empty_array);
    }
    else
    {
