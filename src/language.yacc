@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.76 1998/04/14 19:17:43 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.77 1998/04/15 00:54:18 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -322,6 +322,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> continue
 %type <n> default
 %type <n> do
+%type <n> safe_expr0
 %type <n> expr00
 %type <n> expr01
 %type <n> expr1
@@ -339,6 +340,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> local_name_list
 %type <n> local_name_list2
 %type <n> low_idents
+%type <n> safe_lvalue
 %type <n> lvalue
 %type <n> lvalue_list
 %type <n> low_lvalue_list
@@ -453,7 +455,7 @@ import: modifiers F_IMPORT idents ';'
   | modifiers F_IMPORT error ';' { yyerrok; }
   ;
 
-constant_name: F_IDENTIFIER '=' expr0
+constant_name: F_IDENTIFIER '=' safe_expr0
   {
     int tmp;
     /* This can be made more lenient in the future */
@@ -482,8 +484,8 @@ constant_name: F_IDENTIFIER '=' expr0
     if($3) free_node($3);
     free_node($1);
   }
-  | bad_identifier '=' expr0 { if ($3) free_node($3); }
-  | error '=' expr0 { if ($3) free_node($3); }
+  | bad_identifier '=' safe_expr0 { if ($3) free_node($3); }
+  | error '=' safe_expr0 { if ($3) free_node($3); }
   ;
 
 constant_list: constant_name
@@ -616,9 +618,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   {
     YYSTYPE foo;
     foo.number = 0;
-    YYBACKUP('}', foo);
     reset_type_stack();
-    yyerrok;
+    YYBACKUP('}', foo);
   }
   ;
 
@@ -944,21 +945,13 @@ new_local_name2: F_IDENTIFIER
     free_node($1);
   }
   | bad_identifier { $$=mkintnode(0); }
-  | F_IDENTIFIER '=' expr0
+  | F_IDENTIFIER '=' safe_expr0
   {
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
     $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string)));
     free_node($1);
   }
-  | bad_identifier '=' expr0 { $$=$3; }
-  | F_IDENTIFIER '=' error
-  {
-    /* Just ignore the assignment */
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string)));
-    free_node($1);
-    yyerrok;
-  }
+  | bad_identifier '=' safe_expr0 { $$=$3; }
   ;
 
 
@@ -1011,9 +1004,9 @@ statement: unused2 ';' { $$=$1; }
   {
     YYSTYPE foo;
     foo.number = 0;
-    YYBACKUP('}', foo);
     reset_type_stack();
-    yyerrok;
+    yyerror("Missing ';'.");
+    YYBACKUP('}', foo);
   }
   | ';' { $$=0; } 
   ;
@@ -1182,14 +1175,28 @@ optional_else_part: { $$=0; }
   | F_ELSE statement { $$=$2; }
   ;      
 
+safe_lvalue: lvalue
+  | error { $$=0 }
+  ;
+
+safe_expr0: expr0
+  | error { $$=mkintnode(0); }
+  ;
+
 foreach: F_FOREACH
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' expr0 ',' lvalue ')' statement
+  '(' safe_expr0 ',' safe_lvalue ')' statement
   {
-    $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$4,$6),$8);
-    $$->line_number=$1;
+    if ($6) {
+      $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$4,$6),$8);
+      $$->line_number=$1;
+    } else {
+      /* Error in lvalue */
+      free_node($4);
+      $$=$8;
+    }
     pop_local_variables($<number>2);
   }
   ;
@@ -1344,10 +1351,24 @@ m_expr_list: { $$=0; }
   ;
 
 m_expr_list2: assoc_pair
-  | m_expr_list2 ',' assoc_pair { $$=mknode(F_ARG_LIST,$1,$3); }
+  | m_expr_list2 ',' assoc_pair
+  {
+    if ($3) {
+      $$=mknode(F_ARG_LIST,$1,$3);
+    } else {
+      /* Error in assoc_pair */
+      $$=$1;
+    }
+  }
+  | m_expr_list2 ',' error
+  {
+    $$=$1;
+  }
   ;
 
-assoc_pair:  expr0 ':' expr1 { $$=mknode(F_ARG_LIST,$1,$3); } ;
+assoc_pair:  expr0 ':' expr1 { $$=mknode(F_ARG_LIST,$1,$3); }
+  | expr0 ':' error { free_node($1); $$=0; }
+  ;
 
 expr1: expr2
   | expr1 F_LOR expr1  { $$=mknode(F_LOR,$1,$3); }
@@ -1368,6 +1389,24 @@ expr1: expr2
   | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
   | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
   | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
+  | expr1 F_LOR error  { $$=$1; }
+  | expr1 F_LAND error { $$=$1; }
+  | expr1 '|' error    { $$=$1; }
+  | expr1 '^' error    { $$=$1; }
+  | expr1 '&' error    { $$=$1; }
+  | expr1 F_EQ error   { $$=$1; }
+  | expr1 F_NE error   { $$=$1; }
+  | expr1 '>' error    { $$=$1; }
+  | expr1 F_GE error   { $$=$1; }
+  | expr1 '<' error    { $$=$1; }
+  | expr1 F_LE error   { $$=$1; }
+  | expr1 F_LSH error  { $$=$1; }
+  | expr1 F_RSH error  { $$=$1; }
+  | expr1 '+' error    { $$=$1; }
+  | expr1 '-' error    { $$=$1; }
+  | expr1 '*' error    { $$=$1; }
+  | expr1 '%' error    { $$=$1; }
+  | expr1 '/' error    { $$=$1; }
   ;
 
 expr2: expr3
@@ -1682,7 +1721,7 @@ string: F_STRING
  */
 
 bad_identifier:
-  F_INLINE
+    F_INLINE
   { yyerror("inline is a reserved word."); }
   | F_LOCAL
   { yyerror("local is a reserved word."); }
