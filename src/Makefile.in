@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.370 2003/11/08 19:26:00 grubba Exp $
+# $Id: Makefile.in,v 1.371 2003/11/11 10:33:33 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -707,7 +707,7 @@ bin_export:
 	@rm -f *.burk
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike --export $no_autodoc \
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike --export $$no_autodoc \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
