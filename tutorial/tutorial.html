@@ -3883,7 +3883,7 @@ a string containing one character.
 
 <a name=Stdio.stdin>
 <a name=Stdio.stdout>
-<a name=Stdio.stderr.>
+<a name=Stdio.stderr>
 <h2>Standard streams</h2>
 Any UNIX program has three files open from the beginning. These are called
 standard input, standard output and standard error stream. These streams
@@ -7562,7 +7562,7 @@ This function decodes data encoded using the <tt>base64</tt> transfer encoding.
 </a>
 
 <hr newpage>
-<a name=#MIME.decode_qp>
+<a name=MIME.decode_qp>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>MIME.decode_qp</tt> - Decode <tt>quoted-printable</tt> transfer encoding
@@ -7602,7 +7602,7 @@ It can also be used to decode generic UUEncoded files.
 </a>
 
 <hr newpage>
-<a name=#MIME.decode_word>
+<a name=MIME.decode_word>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>MIME.decode_word</tt> - Descramble RFC1522 encoding
@@ -9366,6 +9366,70 @@ add_constant("add_constant");<br>
 </a>
 
 <HR NEWPAGE>
+<a name=add_include_path>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>add_include_path</tt> - add a directory to search for include files
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void add_include_path(string <I>path</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function adds another directory to the search for include files.
+This is the same as the command line option <tt>-I</tt>. Note that
+the added directory will only be searched when using &lt;&nbsp;&gt; to
+quote the included file.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#remove_include_path>remove_include_path</a> and <a href=#include>#include</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
+<a name=add_module_path>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>add_module_path</tt> - add a directory to search for modules
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void add_module_path(string <I>path</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function adds another directory to the search for modules.
+This is the same as the command line option <tt>-M</tt>. For more
+more information about modules, see chapter XXXXX. <!--- FIXME --->
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#remove_module_path>remove_module_path</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
+<a name=add_program_path>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>add_program_path</tt> - add a directory to search for modules
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void add_program_path(string <I>path</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function adds another directory to the search for programs.
+This is the same as the command line option <tt>-P</tt>. For more
+more information about modules, see chapter XXXXX. <!--- FIXME --->
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#remove_program_path>remove_program_path</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
 <a name=aggregate>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -9804,16 +9868,19 @@ Note that ceil() does _not_ return an int, merely an integral value.
 
 <HR NEWPAGE>
 <a name=clone>
+<a name=new>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>clone</tt> - clone an object from a program
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>object clone(program <I>p</I>,mixed ... <I>args</I>);<br>
+<tt>object clone(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
+or<br>
+<tt>object new(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-clone() creates an object from the program p. Or in C++ terms:
+new() or clone() creates an object from the program p. Or in C++ terms:
 It creates an instance of the class p. This clone will first have
 all global variables initalized, and then create() will be called
 with args as arguments.
@@ -9825,6 +9892,7 @@ with args as arguments.
 <a href=#destruct>destruct</a>, <a href=#compile_string>compile_string</a> and <a href=#compile_file>compile_file</a>
 <p>
 </dl>
+</a>
 </a>
 
 <HR NEWPAGE>
@@ -10937,7 +11005,7 @@ Master is added by the master object to make it easier to access it.
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Create a directory, return zero if it fails and nonzero if it fails.
+Create a directory, return zero if it fails and nonzero if it successful.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
 <a href=index#file>file</a>
@@ -11334,7 +11402,6 @@ Result: 94<br>
 </dl>
 </a>
 
-
 <HR NEWPAGE>
 <a name=remove_call_out>
 <dl>
@@ -11356,6 +11423,68 @@ returned by call_out)
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=call_out_call_out_info>call_out_info</a>, <a href=call_out_call_out>call_out</a> and <a href=call_out_find_call_out>find_call_out</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
+<a name=remove_include_path>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>remove_include_path</tt> - remove a directory to search for include files
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void remove_include_path(string <I>path</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function removes a directory from the list of directories to search
+for include files. It is the opposite of add_include_path.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#add_include_path>add_include_path</a> and <a href=#include>#include</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
+<a name=remove_module_path>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>remove_module_path</tt> - remove a directory to search for modules
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void remove_module_path(string <I>path</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function removes a directory from the list of directories to search
+for modules. It is the opposite of add_module_path. For more information
+about modules, see chapter XXXXXX. <!--- FIXME --->
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#add_module_path>add_module_path</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
+<a name=remove_program_path>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>remove_program_path</tt> - remove a directory to search for modules
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void remove_program_path(string <I>path</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function removes a directory from the list of directories to search
+for program. It is the opposite of add_program_path. For more information
+about modules, see chapter XXXXXX. <!--- FIXME --->
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#add_program_path>add_program_path</a>
 <p>
 </dl>
 </a>
@@ -12383,10 +12512,10 @@ the Pike executable. The Pike executable cannot function without a master
 object to take care of these things. Here is a list of the methods needed
 in the <b>master object</b>:
 <dl>
-<dt> <tt>program cast_to_program(string <i>program_name<i>, string <i>current_file</i>)</tt>
+<dt> <tt>program cast_to_program(string <i>program_name</i>, string <i>current_file</i>)</tt>
 <dd> This function s called whenever somoene performs a cast from a string
      to a program.
-<dt> <tt>program handle_inherit(string <i>program_name<i>, string <i>current_file</i>)</tt>
+<dt> <tt>program handle_inherit(string <i>program_name</i>, string <i>current_file</i>)</tt>
 <dd> This is called whenever a pike program which uses inherit with a string
      argument is called. It is expected to return the program to inherit.
 <dt> <tt>void handle_error(mixed *<i>trace</i>)</tt>
@@ -12394,7 +12523,7 @@ in the <b>master object</b>:
      run time error occurs. The argument is on the form
      <tt>({"<i>error_description</i>", backtrace() })</tt>. If any error
      occurs in this routine Pike will dump core.
-<dt> <tt>program cast_to_program(string <i>program_name<i>, string <i>current_file</i>)</tt>
+<dt> <tt>program cast_to_program(string <i>program_name</i>, string <i>current_file</i>)</tt>
 <dd> This function is called whenever someone performas a cast from a string
      to an object.
 <dt> <tt>mixed resolv(string <i>identifier</i>, string <i>current_file</i>)</tt>
@@ -12407,7 +12536,7 @@ in the <b>master object</b>:
      the command line arguments in the first array. And all environment
      variables on the form <tt>"<i>var</i>=<i>value</i>"</tt>.
      _main is called as soon as all modules and setup is done.
-<dt> <tt>void compile_error(string <i>file</i>, int <i>line</i>, string <i>err</i>)</t>
+<dt> <tt>void compile_error(string <i>file</i>, int <i>line</i>, string <i>err</i>)</tt>
 <dd> This function is called whenever a compile error is encountered. Normally
      it just writes a message to stderr.
 <dt> <tt>string handle_include(string <i>file</i>, string <i>current_file</i>, int <i>local_include</i>)</tt>
@@ -12424,7 +12553,6 @@ scripts. The current master add the following global functions:
 	add_include_path, remove_include_path, add_module_path,
 	remove_module_path, master, describe_backtrace, mkmultiset,
 	strlen, new, clone, UNDEFINED, write, getenv and putenv.
-	<!-- FIXME, make sure these functions are documented!! -->
 </dl>
 <p>
 There are at least two ways to change the behaviour of the master object.
@@ -12852,8 +12980,1366 @@ earlier.
 You are now ready to use Pike.
 <HR NEWPAGE>
 <h1> Index </h1>
-<table cellpadding=0>
-<tr><td>true</td></tr>
-<tr><td>false</td></tr>
-</table>
-
+<dl>
+<dt><font size=+2>A</font>
+<dd>
+<dl>
+<dt>accept
+<dd>
+<dl>
+<dt><a href=#Stdio.Port.accept>Stdio.Port.accept</a>
+</dl>
+<dt><a href=#acos>acos</a>
+<dt><a href=#add_constant>add_constant</a>
+<dt>add_efun
+<dd>
+<dl>
+<dt><a href=#Simulate.add_efun>Simulate.add_efun</a>
+</dl>
+<dt><a href=#add_include_path>add_include_path</a>
+<dt><a href=#add_module_path>add_module_path</a>
+<dt><a href=#add_program_path>add_program_path</a>
+<dt>aggregage_list
+<dd>
+<dl>
+<dt><a href=#Simulate.aggregage_list>Simulate.aggregage_list</a>
+</dl>
+<dt><a href=#aggregate>aggregate</a>
+<dt><a href=#aggregate_mapping>aggregate_mapping</a>
+<dt><a href=#aggregate_multiset>aggregate_multiset</a>
+<dt><a href=#alarm>alarm</a>
+<dt>all
+<dd>
+<dl>
+<dt><a href=#Yp.YpDomain.all>Yp.YpDomain.all</a>
+<dt><a href=#Yp.YpMap.all>Yp.YpMap.all</a>
+</dl>
+<dt><a href=#all_constants>all_constants</a>
+<dt>all_efuns
+<dd>
+<dl>
+<dt><a href=#Simulate.all_efuns>Simulate.all_efuns</a>
+</dl>
+<dt><a href=#allocate>allocate</a>
+<dt>Array
+<dd>
+<dl>
+<dt><a href=#Array.filter>Array.filter</a>
+<dt><a href=#Array.map>Array.map</a>
+<dt><a href=#Array.search_array>Array.search_array</a>
+<dt><a href=#Array.sort_array>Array.sort_array</a>
+<dt><a href=#Array.sum_arrays>Array.sum_arrays</a>
+<dt><a href=#Array.uniq>Array.uniq</a>
+</dl>
+<dt><a href=#arrayp>arrayp</a>
+<dt><a href=#asin>asin</a>
+<dt>assign
+<dd>
+<dl>
+<dt><a href=#Stdio.File.assign>Stdio.File.assign</a>
+</dl>
+<dt><a href=#atan>atan</a>
+</dl>
+<dt><font size=+2>B</font>
+<dd>
+<dl>
+<dt><a href=#backtrace>backtrace</a>
+<dt>bind
+<dd>
+<dl>
+<dt><a href=#Stdio.Port.bind>Stdio.Port.bind</a>
+<dt><a href=#Yp.YpDomain.bind>Yp.YpDomain.bind</a>
+</dl>
+<dt>body_parts
+<dd>
+<dl>
+<dt><a href=#MIME.Message.body_parts>MIME.Message.body_parts</a>
+</dl>
+<dt>boundary
+<dd>
+<dl>
+<dt><a href=#MIME.Message.boundary>MIME.Message.boundary</a>
+</dl>
+<dt>broadcast
+<dd>
+<dl>
+<dt><a href=#Thread.Mutex.broadcast>Thread.Mutex.broadcast</a>
+</dl>
+</dl>
+<dt><font size=+2>C</font>
+<dd>
+<dl>
+<dt><a href=#call_function>call_function</a>
+<dt><a href=#call_out>call_out</a>
+<dt><a href=#call_out_info>call_out_info</a>
+<dt>capitalize
+<dd>
+<dl>
+<dt><a href=#String.capitalize>String.capitalize</a>
+</dl>
+<dt>cast
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.cast>Gmp.mpz.cast</a>
+<dt><a href=#MIME.Message.cast>MIME.Message.cast</a>
+</dl>
+<dt><a href=#catch>catch</a>
+<dt><a href=#cd>cd</a>
+<dt><a href=#ceil>ceil</a>
+<dt>charset
+<dd>
+<dl>
+<dt><a href=#MIME.Message.charset>MIME.Message.charset</a>
+</dl>
+<dt><a href=#chroot>chroot</a>
+<dt><a href=#clone>clone</a>
+<dt>close
+<dd>
+<dl>
+<dt><a href=#Gdbm.close>Gdbm.close</a>
+<dt><a href=#Stdio.File.close>Stdio.File.close</a>
+</dl>
+<dt><a href=#column>column</a>
+<dt><a href=#combine_path>combine_path</a>
+<dt><a href=#compile_file>compile_file</a>
+<dt><a href=#compile_string>compile_string</a>
+<dt>Condition
+<dd>
+<dl>
+<dt><a href=#Thread.Condition>Thread.Condition</a>
+</dl>
+<dt>connect
+<dd>
+<dl>
+<dt><a href=#Stdio.File.connect>Stdio.File.connect</a>
+</dl>
+<dt><a href=#copy_value>copy_value</a>
+<dt><a href=#cos>cos</a>
+<dt>create
+<dd>
+<dl>
+<dt><a href=#Gdbm.create>Gdbm.create</a>
+<dt><a href=#Gmp.mpz.create>Gmp.mpz.create</a>
+<dt><a href=#Gz.deflate.create>Gz.deflate.create</a>
+<dt><a href=#Gz.inflate.create>Gz.inflate.create</a>
+<dt><a href=#MIME.Message.create>MIME.Message.create</a>
+<dt><a href=#Regexp.create>Regexp.create</a>
+<dt><a href=#Stdio.File.create>Stdio.File.create</a>
+<dt><a href=#Stdio.Port.create>Stdio.Port.create</a>
+<dt><a href=#Thread.Fifo.create>Thread.Fifo.create</a>
+</dl>
+<dt><a href=#crypt>crypt</a>
+<dt><a href=#ctime>ctime</a>
+</dl>
+<dt><font size=+2>D</font>
+<dd>
+<dl>
+<dt><a href=#_do_call_outs>_do_call_outs</a>
+<dt>decode
+<dd>
+<dl>
+<dt><a href=#MIME.decode>MIME.decode</a>
+</dl>
+<dt>decode_base64
+<dd>
+<dl>
+<dt><a href=#MIME.decode_base64>MIME.decode_base64</a>
+</dl>
+<dt>decode_qp
+<dd>
+<dl>
+<dt><a href=#MIME.decode_qp>MIME.decode_qp</a>
+</dl>
+<dt>decode_uue
+<dd>
+<dl>
+<dt><a href=#MIME.decode_uue>MIME.decode_uue</a>
+</dl>
+<dt><a href=#decode_value>decode_value</a>
+<dt>decode_word
+<dd>
+<dl>
+<dt><a href=#MIME.decode_word>MIME.decode_word</a>
+</dl>
+<dt>default_yp_domain
+<dd>
+<dl>
+<dt><a href=#Yp.default_yp_domain>Yp.default_yp_domain</a>
+</dl>
+<dt><a href=#define>define</a>
+<dt>deflate
+<dd>
+<dl>
+<dt><a href=#Gz.deflate>Gz.deflate</a>
+<dt><a href=#Gz.deflate.deflate>Gz.deflate.deflate</a>
+</dl>
+<dt>delete
+<dd>
+<dl>
+<dt><a href=#Gdbm.delete>Gdbm.delete</a>
+</dl>
+<dt><a href=#describe_backtrace>describe_backtrace</a>
+<dt><a href=#destruct>destruct</a>
+<dt>digits
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.digits>Gmp.mpz.digits</a>
+</dl>
+<dt>disp_params
+<dd>
+<dl>
+<dt><a href=#MIME.Message.disp_params>MIME.Message.disp_params</a>
+</dl>
+<dt>disposition
+<dd>
+<dl>
+<dt><a href=#MIME.Message.disposition>MIME.Message.disposition</a>
+</dl>
+<dt>dup
+<dd>
+<dl>
+<dt><a href=#Stdio.File.dup>Stdio.File.dup</a>
+</dl>
+<dt>dup2
+<dd>
+<dl>
+<dt><a href=#Stdio.File.dup2>Stdio.File.dup2</a>
+</dl>
+</dl>
+<dt><font size=+2>E</font>
+<dd>
+<dl>
+<dt><a href=#else>else</a>
+<dt><a href=#elseif>elseif</a>
+<dt>encode
+<dd>
+<dl>
+<dt><a href=#MIME.encode>MIME.encode</a>
+</dl>
+<dt>encode_base64
+<dd>
+<dl>
+<dt><a href=#MIME.encode_base64>MIME.encode_base64</a>
+</dl>
+<dt>encode_qp
+<dd>
+<dl>
+<dt><a href=#MIME.encode_qp>MIME.encode_qp</a>
+</dl>
+<dt>encode_uue
+<dd>
+<dl>
+<dt><a href=#MIME.encode_uue>MIME.encode_uue</a>
+</dl>
+<dt><a href=#encode_value>encode_value</a>
+<dt>encode_word
+<dd>
+<dl>
+<dt><a href=#MIME.encode_word>MIME.encode_word</a>
+</dl>
+<dt><a href=#endif>endif</a>
+<dt><a href=#equal>equal</a>
+<dt>errno
+<dd>
+<dl>
+<dt><a href=#errno>errno</a>
+<dt><a href=#Stdio.File.errno>Stdio.File.errno</a>
+<dt><a href=#Stdio.Port.errno>Stdio.Port.errno</a>
+</dl>
+<dt><a href=#error>error</a>
+<dt><a href=#exceptions>exceptions</a>
+<dt>exec
+<dd>
+<dl>
+<dt><a href=#Process.exec>Process.exec</a>
+</dl>
+<dt><a href=#exece>exece</a>
+<dt><a href=#exit>exit</a>
+<dt><a href=#exp>exp</a>
+</dl>
+<dt><font size=+2>F</font>
+<dd>
+<dl>
+<dt>fetch
+<dd>
+<dl>
+<dt><a href=#Gdbm.fetch>Gdbm.fetch</a>
+</dl>
+<dt>Fifo
+<dd>
+<dl>
+<dt><a href=#Thread.Fifo>Thread.Fifo</a>
+</dl>
+<dt>FILE
+<dd>
+<dl>
+<dt><a href=#Stdio.FILE>Stdio.FILE</a>
+</dl>
+<dt>File
+<dd>
+<dl>
+<dt><a href=#Stdio.File>Stdio.File</a>
+</dl>
+<dt>file_size
+<dd>
+<dl>
+<dt><a href=#Stdio.file_size>Stdio.file_size</a>
+</dl>
+<dt><a href=#file_stat>file_stat</a>
+<dt>filter
+<dd>
+<dl>
+<dt><a href=#Array.filter>Array.filter</a>
+</dl>
+<dt>filter_array
+<dd>
+<dl>
+<dt><a href=#Simulate.filter_array>Simulate.filter_array</a>
+</dl>
+<dt>find_all_options
+<dd>
+<dl>
+<dt><a href=#Getopt.find_all_options>Getopt.find_all_options</a>
+</dl>
+<dt><a href=#find_call_out>find_call_out</a>
+<dt>find_option
+<dd>
+<dl>
+<dt><a href=#Getopt.find_option>Getopt.find_option</a>
+</dl>
+<dt>firstkey
+<dd>
+<dl>
+<dt><a href=#Gdbm.firstkey>Gdbm.firstkey</a>
+</dl>
+<dt><a href=#floatp>floatp</a>
+<dt><a href=#floor>floor</a>
+<dt><a href=#fork>fork</a>
+<dt><a href=#function_name>function_name</a>
+<dt><a href=#function_object>function_object</a>
+<dt><a href=#functionp>functionp</a>
+</dl>
+<dt><font size=+2>G</font>
+<dd>
+<dl>
+<dt><a href=#gauge>gauge</a>
+<dt><a href=#gc>gc</a>
+<dt>gcd
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.gcd>Gmp.mpz.gcd</a>
+</dl>
+<dt>Gdbm
+<dd>
+<dl>
+<dt><a href=#Gdbm>Gdbm</a>
+<dt><a href=#Gdbm.close>Gdbm.close</a>
+<dt><a href=#Gdbm.create>Gdbm.create</a>
+<dt><a href=#Gdbm.delete>Gdbm.delete</a>
+<dt><a href=#Gdbm.fetch>Gdbm.fetch</a>
+<dt><a href=#Gdbm.firstkey>Gdbm.firstkey</a>
+<dt><a href=#Gdbm.nextkey>Gdbm.nextkey</a>
+<dt><a href=#Gdbm.reorganize>Gdbm.reorganize</a>
+<dt><a href=#Gdbm.store>Gdbm.store</a>
+<dt><a href=#Gdbm.sync>Gdbm.sync</a>
+</dl>
+<dt>generate_boundary
+<dd>
+<dl>
+<dt><a href=#MIME.generate_boundary>MIME.generate_boundary</a>
+</dl>
+<dt>get_args
+<dd>
+<dl>
+<dt><a href=#Getopt.get_args>Getopt.get_args</a>
+</dl>
+<dt><a href=#get_dir>get_dir</a>
+<dt>get_filename
+<dd>
+<dl>
+<dt><a href=#MIME.Message.get_filename>MIME.Message.get_filename</a>
+</dl>
+<dt>get_function
+<dd>
+<dl>
+<dt><a href=#Simulate.get_function>Simulate.get_function</a>
+</dl>
+<dt>getchar
+<dd>
+<dl>
+<dt><a href=#Stdio.FILE.getchar>Stdio.FILE.getchar</a>
+</dl>
+<dt><a href=#getcwd>getcwd</a>
+<dt>getdata
+<dd>
+<dl>
+<dt><a href=#MIME.Message.getdata>MIME.Message.getdata</a>
+</dl>
+<dt><a href=#getegid>getegid</a>
+<dt>getencoded
+<dd>
+<dl>
+<dt><a href=#MIME.Message.getencoded>MIME.Message.getencoded</a>
+</dl>
+<dt><a href=#getenv>getenv</a>
+<dt><a href=#geteuid>geteuid</a>
+<dt><a href=#getgid>getgid</a>
+<dt><a href=#gethostbyaddr>gethostbyaddr</a>
+<dt><a href=#gethostbyname>gethostbyname</a>
+<dt><a href=#gethostname>gethostname</a>
+<dt>Getopt
+<dd>
+<dl>
+<dt><a href=#Getopt.find_all_options>Getopt.find_all_options</a>
+<dt><a href=#Getopt.find_option>Getopt.find_option</a>
+<dt><a href=#Getopt.get_args>Getopt.get_args</a>
+</dl>
+<dt><a href=#getpgrp>getpgrp</a>
+<dt><a href=#getpid>getpid</a>
+<dt><a href=#getppid>getppid</a>
+<dt>gets
+<dd>
+<dl>
+<dt><a href=#Stdio.FILE.gets>Stdio.FILE.gets</a>
+</dl>
+<dt><a href=#getuid>getuid</a>
+<dt><a href=#glob>glob</a>
+<dt>Gmp
+<dd>
+<dl>
+<dt><a href=#Gmp>Gmp</a>
+<dt>Gmp.mpz
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz>Gmp.mpz</a>
+<dt><a href=#Gmp.mpz.cast>Gmp.mpz.cast</a>
+<dt><a href=#Gmp.mpz.create>Gmp.mpz.create</a>
+<dt><a href=#Gmp.mpz.digits>Gmp.mpz.digits</a>
+<dt><a href=#Gmp.mpz.gcd>Gmp.mpz.gcd</a>
+<dt><a href=#Gmp.mpz.powm>Gmp.mpz.powm</a>
+<dt><a href=#Gmp.mpz.probably_prime_p>Gmp.mpz.probably_prime_p</a>
+<dt><a href=#Gmp.mpz.size>Gmp.mpz.size</a>
+<dt><a href=#Gmp.mpz.sqrt>Gmp.mpz.sqrt</a>
+</dl>
+</dl>
+<dt>guess_subtype
+<dd>
+<dl>
+<dt><a href=#MIME.guess_subtype>MIME.guess_subtype</a>
+</dl>
+<dt>Gz
+<dd>
+<dl>
+<dt>Gz.deflate
+<dd>
+<dl>
+<dt><a href=#Gz.deflate>Gz.deflate</a>
+<dt><a href=#Gz.deflate.create>Gz.deflate.create</a>
+<dt><a href=#Gz.deflate.deflate>Gz.deflate.deflate</a>
+</dl>
+<dt>Gz.inflate
+<dd>
+<dl>
+<dt><a href=#Gz.inflate>Gz.inflate</a>
+<dt><a href=#Gz.inflate.create>Gz.inflate.create</a>
+<dt><a href=#Gz.inflate.inflate>Gz.inflate.inflate</a>
+</dl>
+</dl>
+</dl>
+<dt><font size=+2>H</font>
+<dd>
+<dl>
+<dt><a href=#hardlink>hardlink</a>
+<dt><a href=#hash>hash</a>
+<dt>headers
+<dd>
+<dl>
+<dt><a href=#MIME.Message.headers>MIME.Message.headers</a>
+</dl>
+</dl>
+<dt><font size=+2>I</font>
+<dd>
+<dl>
+<dt>_indices
+<dd>
+<dl>
+<dt><a href=#Yp.YpMap._indices>Yp.YpMap._indices</a>
+</dl>
+<dt><a href=#if>if</a>
+<dt>implode
+<dd>
+<dl>
+<dt><a href=#Simulate.implode>Simulate.implode</a>
+</dl>
+<dt>implode_nicely
+<dd>
+<dl>
+<dt><a href=#String.implode_nicely>String.implode_nicely</a>
+</dl>
+<dt><a href=#include>include</a>
+<dt><a href=#indices>indices</a>
+<dt>inflate
+<dd>
+<dl>
+<dt><a href=#Gz.inflate>Gz.inflate</a>
+<dt><a href=#Gz.inflate.inflate>Gz.inflate.inflate</a>
+</dl>
+<dt><a href=#initgroups>initgroups</a>
+<dt><a href=#intp>intp</a>
+</dl>
+<dt><font size=+2>K</font>
+<dd>
+<dl>
+<dt><a href=#kill>kill</a>
+</dl>
+<dt><font size=+2>L</font>
+<dd>
+<dl>
+<dt>l_sizeof
+<dd>
+<dl>
+<dt><a href=#Simulate.l_sizeof>Simulate.l_sizeof</a>
+</dl>
+<dt><a href=#line>line</a>
+<dt>listen_fd
+<dd>
+<dl>
+<dt><a href=#Stdio.Port.listen_fd>Stdio.Port.listen_fd</a>
+</dl>
+<dt>listp
+<dd>
+<dl>
+<dt><a href=#Simulate.listp>Simulate.listp</a>
+</dl>
+<dt><a href=#load_module>load_module</a>
+<dt><a href=#localtime>localtime</a>
+<dt>lock
+<dd>
+<dl>
+<dt><a href=#Thread.Mutex.lock>Thread.Mutex.lock</a>
+</dl>
+<dt><a href=#log>log</a>
+<dt><a href=#lower_case>lower_case</a>
+</dl>
+<dt><font size=+2>M</font>
+<dd>
+<dl>
+<dt><a href=#_memory_usage>_memory_usage</a>
+<dt><a href=#m_delete>m_delete</a>
+<dt>m_indices
+<dd>
+<dl>
+<dt><a href=#Simulate.m_indices>Simulate.m_indices</a>
+</dl>
+<dt>m_sizeof
+<dd>
+<dl>
+<dt><a href=#Simulate.m_sizeof>Simulate.m_sizeof</a>
+</dl>
+<dt>m_values
+<dd>
+<dl>
+<dt><a href=#Simulate.m_values>Simulate.m_values</a>
+</dl>
+<dt>map
+<dd>
+<dl>
+<dt><a href=#Array.map>Array.map</a>
+<dt><a href=#Yp.YpDomain.map>Yp.YpDomain.map</a>
+<dt><a href=#Yp.YpMap.map>Yp.YpMap.map</a>
+</dl>
+<dt>map_array
+<dd>
+<dl>
+<dt><a href=#Simulate.map_array>Simulate.map_array</a>
+</dl>
+<dt>map_regexp
+<dd>
+<dl>
+<dt><a href=#Simulate.map_regexp>Simulate.map_regexp</a>
+</dl>
+<dt><a href=#mappingp>mappingp</a>
+<dt><a href=#master>master</a>
+<dt>match
+<dd>
+<dl>
+<dt><a href=#Regexp.match>Regexp.match</a>
+<dt><a href=#Yp.YpDomain.match>Yp.YpDomain.match</a>
+<dt><a href=#Yp.YpMap.match>Yp.YpMap.match</a>
+</dl>
+<dt>member_array
+<dd>
+<dl>
+<dt><a href=#Simulate.member_array>Simulate.member_array</a>
+</dl>
+<dt>Message
+<dd>
+<dl>
+<dt><a href=#MIME.Message>MIME.Message</a>
+</dl>
+<dt>MIME
+<dd>
+<dl>
+<dt><a href=#MIME.decode>MIME.decode</a>
+<dt><a href=#MIME.decode_base64>MIME.decode_base64</a>
+<dt><a href=#MIME.decode_qp>MIME.decode_qp</a>
+<dt><a href=#MIME.decode_uue>MIME.decode_uue</a>
+<dt><a href=#MIME.decode_word>MIME.decode_word</a>
+<dt><a href=#MIME.encode>MIME.encode</a>
+<dt><a href=#MIME.encode_base64>MIME.encode_base64</a>
+<dt><a href=#MIME.encode_qp>MIME.encode_qp</a>
+<dt><a href=#MIME.encode_uue>MIME.encode_uue</a>
+<dt><a href=#MIME.encode_word>MIME.encode_word</a>
+<dt><a href=#MIME.generate_boundary>MIME.generate_boundary</a>
+<dt><a href=#MIME.guess_subtype>MIME.guess_subtype</a>
+<dt>MIME.Message
+<dd>
+<dl>
+<dt><a href=#MIME.Message.body_parts>MIME.Message.body_parts</a>
+<dt><a href=#MIME.Message.boundary>MIME.Message.boundary</a>
+<dt><a href=#MIME.Message.cast>MIME.Message.cast</a>
+<dt><a href=#MIME.Message.charset>MIME.Message.charset</a>
+<dt><a href=#MIME.Message.create>MIME.Message.create</a>
+<dt><a href=#MIME.Message.disp_params>MIME.Message.disp_params</a>
+<dt><a href=#MIME.Message.disposition>MIME.Message.disposition</a>
+<dt><a href=#MIME.Message.get_filename>MIME.Message.get_filename</a>
+<dt><a href=#MIME.Message.getdata>MIME.Message.getdata</a>
+<dt><a href=#MIME.Message.getencoded>MIME.Message.getencoded</a>
+<dt><a href=#MIME.Message.headers>MIME.Message.headers</a>
+<dt><a href=#MIME.Message.params>MIME.Message.params</a>
+<dt><a href=#MIME.Message.setboundary>MIME.Message.setboundary</a>
+<dt><a href=#MIME.Message.setcharset>MIME.Message.setcharset</a>
+<dt><a href=#MIME.Message.setdata>MIME.Message.setdata</a>
+<dt><a href=#MIME.Message.setdisp_param>MIME.Message.setdisp_param</a>
+<dt><a href=#MIME.Message.setencoding>MIME.Message.setencoding</a>
+<dt><a href=#MIME.Message.setparam>MIME.Message.setparam</a>
+<dt><a href=#MIME.Message.subtype>MIME.Message.subtype</a>
+<dt><a href=#MIME.Message.transfer_encoding>MIME.Message.transfer_encoding</a>
+<dt><a href=#MIME.Message.type>MIME.Message.type</a>
+</dl>
+<dt><a href=#MIME.quote>MIME.quote</a>
+<dt><a href=#MIME.tokenize>MIME.tokenize</a>
+</dl>
+<dt><a href=#mkdir>mkdir</a>
+<dt>mklist
+<dd>
+<dl>
+<dt><a href=#Simulate.mklist>Simulate.mklist</a>
+</dl>
+<dt><a href=#mkmapping>mkmapping</a>
+<dt><a href=#mkmultiset>mkmultiset</a>
+<dt><a href=#mktime>mktime</a>
+<dt>mpz
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz>Gmp.mpz</a>
+</dl>
+<dt><a href=#multisetp>multisetp</a>
+<dt>Mutex
+<dd>
+<dl>
+<dt><a href=#Thread.Mutex>Thread.Mutex</a>
+</dl>
+<dt><a href=#mv>mv</a>
+</dl>
+<dt><font size=+2>N</font>
+<dd>
+<dl>
+<dt><a href=#_next>_next</a>
+<dt><a href=#new>new</a>
+<dt><a href=#next_object>next_object</a>
+<dt>nextkey
+<dd>
+<dl>
+<dt><a href=#Gdbm.nextkey>Gdbm.nextkey</a>
+</dl>
+</dl>
+<dt><font size=+2>O</font>
+<dd>
+<dl>
+<dt><a href=#object_program>object_program</a>
+<dt><a href=#objectp>objectp</a>
+<dt>open
+<dd>
+<dl>
+<dt><a href=#Stdio.File.open>Stdio.File.open</a>
+</dl>
+<dt>open_socket
+<dd>
+<dl>
+<dt><a href=#Stdio.File.open_socket>Stdio.File.open_socket</a>
+</dl>
+<dt><a href=#openlog>openlog</a>
+<dt>order
+<dd>
+<dl>
+<dt><a href=#Yp.YpDomain.order>Yp.YpDomain.order</a>
+<dt><a href=#Yp.YpMap.order>Yp.YpMap.order</a>
+</dl>
+</dl>
+<dt><font size=+2>P</font>
+<dd>
+<dl>
+<dt><a href=#_prev>_prev</a>
+<dt>params
+<dd>
+<dl>
+<dt><a href=#MIME.Message.params>MIME.Message.params</a>
+</dl>
+<dt>perror
+<dd>
+<dl>
+<dt><a href=#Stdio.perror>Stdio.perror</a>
+</dl>
+<dt>PI
+<dd>
+<dl>
+<dt><a href=#Simulate.PI>Simulate.PI</a>
+</dl>
+<dt>pipe
+<dd>
+<dl>
+<dt><a href=#Stdio.File.pipe>Stdio.File.pipe</a>
+</dl>
+<dt>popen
+<dd>
+<dl>
+<dt><a href=#Process.popen>Process.popen</a>
+</dl>
+<dt>Port
+<dd>
+<dl>
+<dt><a href=#Stdio.Port>Stdio.Port</a>
+</dl>
+<dt><a href=#pow>pow</a>
+<dt>powm
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.powm>Gmp.mpz.powm</a>
+</dl>
+<dt><a href=#pragma>pragma</a>
+<dt><a href=#preprocessor>preprocessor</a>
+<dt>previous_object
+<dd>
+<dl>
+<dt><a href=#Simulate.previous_object>Simulate.previous_object</a>
+</dl>
+<dt>printf
+<dd>
+<dl>
+<dt><a href=#Stdio.FILE.printf>Stdio.FILE.printf</a>
+</dl>
+<dt>probably_prime_p
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.probably_prime_p>Gmp.mpz.probably_prime_p</a>
+</dl>
+<dt>Process
+<dd>
+<dl>
+<dt><a href=#Process.exec>Process.exec</a>
+<dt><a href=#Process.popen>Process.popen</a>
+<dt><a href=#Process.spawn>Process.spawn</a>
+<dt><a href=#Process.system>Process.system</a>
+</dl>
+<dt><a href=#programp>programp</a>
+<dt><a href=#putenv>putenv</a>
+</dl>
+<dt><font size=+2>Q</font>
+<dd>
+<dl>
+<dt>query_address
+<dd>
+<dl>
+<dt><a href=#Stdio.File.query_address>Stdio.File.query_address</a>
+</dl>
+<dt>query_close_callback
+<dd>
+<dl>
+<dt><a href=#Stdio.File.query_close_callback>Stdio.File.query_close_callback</a>
+</dl>
+<dt>query_host_name
+<dd>
+<dl>
+<dt><a href=#query_host_name>query_host_name</a>
+<dt><a href=#Simulate.query_host_name>Simulate.query_host_name</a>
+</dl>
+<dt>query_id
+<dd>
+<dl>
+<dt><a href=#Stdio.File.query_id>Stdio.File.query_id</a>
+<dt><a href=#Stdio.Port.query_id>Stdio.Port.query_id</a>
+</dl>
+<dt><a href=#query_num_arg>query_num_arg</a>
+<dt>query_read_callback
+<dd>
+<dl>
+<dt><a href=#Stdio.File.query_read_callback>Stdio.File.query_read_callback</a>
+</dl>
+<dt>query_write_callback
+<dd>
+<dl>
+<dt><a href=#Stdio.File.query_write_callback>Stdio.File.query_write_callback</a>
+</dl>
+<dt>Queue
+<dd>
+<dl>
+<dt><a href=#Thread.Queue>Thread.Queue</a>
+</dl>
+<dt>quote
+<dd>
+<dl>
+<dt><a href=#MIME.quote>MIME.quote</a>
+</dl>
+</dl>
+<dt><font size=+2>R</font>
+<dd>
+<dl>
+<dt><a href=#_refs>_refs</a>
+<dt><a href=#random>random</a>
+<dt><a href=#random_seed>random_seed</a>
+<dt>read
+<dd>
+<dl>
+<dt><a href=#Stdio.File.read>Stdio.File.read</a>
+<dt><a href=#Thread.Fifo.read>Thread.Fifo.read</a>
+<dt><a href=#Thread.Queue.read>Thread.Queue.read</a>
+</dl>
+<dt>read_bytes
+<dd>
+<dl>
+<dt><a href=#Stdio.read_bytes>Stdio.read_bytes</a>
+</dl>
+<dt>read_file
+<dd>
+<dl>
+<dt><a href=#Stdio.read_file>Stdio.read_file</a>
+</dl>
+<dt>readline
+<dd>
+<dl>
+<dt><a href=#Stdio.readline>Stdio.readline</a>
+</dl>
+<dt><a href=#readlink>readlink</a>
+<dt>Regexp
+<dd>
+<dl>
+<dt><a href=#Regexp>Regexp</a>
+<dt><a href=#Regexp.create>Regexp.create</a>
+<dt><a href=#Regexp.match>Regexp.match</a>
+</dl>
+<dt><a href=#remove_call_out>remove_call_out</a>
+<dt><a href=#remove_include_path>remove_include_path</a>
+<dt><a href=#remove_module_path>remove_module_path</a>
+<dt><a href=#remove_program_path>remove_program_path</a>
+<dt>reorganize
+<dd>
+<dl>
+<dt><a href=#Gdbm.reorganize>Gdbm.reorganize</a>
+</dl>
+<dt><a href=#replace>replace</a>
+<dt><a href=#replace_master>replace_master</a>
+<dt><a href=#reverse>reverse</a>
+<dt><a href=#rm>rm</a>
+<dt><a href=#rows>rows</a>
+<dt><a href=#rusage>rusage</a>
+</dl>
+<dt><font size=+2>S</font>
+<dd>
+<dl>
+<dt>_sizeof
+<dd>
+<dl>
+<dt><a href=#Yp.YpMap._sizeof>Yp.YpMap._sizeof</a>
+</dl>
+<dt><a href=#search>search</a>
+<dt>search_array
+<dd>
+<dl>
+<dt><a href=#Array.search_array>Array.search_array</a>
+</dl>
+<dt>seek
+<dd>
+<dl>
+<dt><a href=#Stdio.File.seek>Stdio.File.seek</a>
+</dl>
+<dt>server
+<dd>
+<dl>
+<dt><a href=#Yp.YpDomain.server>Yp.YpDomain.server</a>
+<dt><a href=#Yp.YpMap.server>Yp.YpMap.server</a>
+</dl>
+<dt>set_blocking
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_blocking>Stdio.File.set_blocking</a>
+</dl>
+<dt>set_buffer
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_buffer>Stdio.File.set_buffer</a>
+</dl>
+<dt>set_close_callback
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_close_callback>Stdio.File.set_close_callback</a>
+</dl>
+<dt>set_close_on_exec
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_close_on_exec>Stdio.File.set_close_on_exec</a>
+</dl>
+<dt>set_id
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_id>Stdio.File.set_id</a>
+<dt><a href=#Stdio.Port.set_id>Stdio.Port.set_id</a>
+</dl>
+<dt>set_nonblocking
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_nonblocking>Stdio.File.set_nonblocking</a>
+</dl>
+<dt>set_read_callback
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_read_callback>Stdio.File.set_read_callback</a>
+</dl>
+<dt>set_write_callback
+<dd>
+<dl>
+<dt><a href=#Stdio.File.set_write_callback>Stdio.File.set_write_callback</a>
+</dl>
+<dt>setboundary
+<dd>
+<dl>
+<dt><a href=#MIME.Message.setboundary>MIME.Message.setboundary</a>
+</dl>
+<dt>setcharset
+<dd>
+<dl>
+<dt><a href=#MIME.Message.setcharset>MIME.Message.setcharset</a>
+</dl>
+<dt>setdata
+<dd>
+<dl>
+<dt><a href=#MIME.Message.setdata>MIME.Message.setdata</a>
+</dl>
+<dt>setdisp_param
+<dd>
+<dl>
+<dt><a href=#MIME.Message.setdisp_param>MIME.Message.setdisp_param</a>
+</dl>
+<dt><a href=#setegid>setegid</a>
+<dt>setencoding
+<dd>
+<dl>
+<dt><a href=#MIME.Message.setencoding>MIME.Message.setencoding</a>
+</dl>
+<dt><a href=#seteuid>seteuid</a>
+<dt><a href=#setgid>setgid</a>
+<dt>setparam
+<dd>
+<dl>
+<dt><a href=#MIME.Message.setparam>MIME.Message.setparam</a>
+</dl>
+<dt><a href=#setuid>setuid</a>
+<dt>signal
+<dd>
+<dl>
+<dt><a href=#signal>signal</a>
+<dt><a href=#Thread.Mutex.signal>Thread.Mutex.signal</a>
+</dl>
+<dt><a href=#signame>signame</a>
+<dt><a href=#signum>signum</a>
+<dt>Simulate
+<dd>
+<dl>
+<dt><a href=#Simulate.add_efun>Simulate.add_efun</a>
+<dt><a href=#Simulate.aggregage_list>Simulate.aggregage_list</a>
+<dt><a href=#Simulate.all_efuns>Simulate.all_efuns</a>
+<dt><a href=#Simulate.filter_array>Simulate.filter_array</a>
+<dt><a href=#Simulate.get_function>Simulate.get_function</a>
+<dt><a href=#Simulate.implode>Simulate.implode</a>
+<dt><a href=#Simulate.l_sizeof>Simulate.l_sizeof</a>
+<dt><a href=#Simulate.listp>Simulate.listp</a>
+<dt><a href=#Simulate.m_indices>Simulate.m_indices</a>
+<dt><a href=#Simulate.m_sizeof>Simulate.m_sizeof</a>
+<dt><a href=#Simulate.m_values>Simulate.m_values</a>
+<dt><a href=#Simulate.map_array>Simulate.map_array</a>
+<dt><a href=#Simulate.map_regexp>Simulate.map_regexp</a>
+<dt><a href=#Simulate.member_array>Simulate.member_array</a>
+<dt><a href=#Simulate.mklist>Simulate.mklist</a>
+<dt><a href=#Simulate.PI>Simulate.PI</a>
+<dt><a href=#Simulate.previous_object>Simulate.previous_object</a>
+<dt><a href=#Simulate.query_host_name>Simulate.query_host_name</a>
+<dt><a href=#Simulate.strstr>Simulate.strstr</a>
+<dt><a href=#Simulate.sum>Simulate.sum</a>
+<dt><a href=#Simulate.this_function>Simulate.this_function</a>
+</dl>
+<dt><a href=#sin>sin</a>
+<dt>size
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.size>Gmp.mpz.size</a>
+<dt><a href=#Thread.Fifo.size>Thread.Fifo.size</a>
+<dt><a href=#Thread.Queue.size>Thread.Queue.size</a>
+</dl>
+<dt><a href=#sizeof>sizeof</a>
+<dt><a href=#sleep>sleep</a>
+<dt><a href=#sort>sort</a>
+<dt>sort_array
+<dd>
+<dl>
+<dt><a href=#Array.sort_array>Array.sort_array</a>
+</dl>
+<dt>spawn
+<dd>
+<dl>
+<dt><a href=#Process.spawn>Process.spawn</a>
+</dl>
+<dt><a href=#split>split</a>
+<dt><a href=#sprintf>sprintf</a>
+<dt>sqrt
+<dd>
+<dl>
+<dt><a href=#Gmp.mpz.sqrt>Gmp.mpz.sqrt</a>
+<dt><a href=#sqrt>sqrt</a>
+</dl>
+<dt><a href=#sscanf>sscanf</a>
+<dt>stat
+<dd>
+<dl>
+<dt><a href=#Stdio.File.stat>Stdio.File.stat</a>
+</dl>
+<dt>stderr
+<dd>
+<dl>
+<dt><a href=#Stdio.stderr>Stdio.stderr</a>
+</dl>
+<dt>stdin
+<dd>
+<dl>
+<dt><a href=#Stdio.stdin>Stdio.stdin</a>
+</dl>
+<dt>Stdio
+<dd>
+<dl>
+<dt>Stdio.File
+<dd>
+<dl>
+<dt><a href=#Stdio.File>Stdio.File</a>
+<dt><a href=#Stdio.File.assign>Stdio.File.assign</a>
+<dt><a href=#Stdio.File.close>Stdio.File.close</a>
+<dt><a href=#Stdio.File.connect>Stdio.File.connect</a>
+<dt><a href=#Stdio.File.create>Stdio.File.create</a>
+<dt><a href=#Stdio.File.dup>Stdio.File.dup</a>
+<dt><a href=#Stdio.File.dup2>Stdio.File.dup2</a>
+<dt><a href=#Stdio.File.errno>Stdio.File.errno</a>
+<dt><a href=#Stdio.File.open>Stdio.File.open</a>
+<dt><a href=#Stdio.File.open_socket>Stdio.File.open_socket</a>
+<dt><a href=#Stdio.File.pipe>Stdio.File.pipe</a>
+<dt><a href=#Stdio.File.query_address>Stdio.File.query_address</a>
+<dt><a href=#Stdio.File.query_close_callback>Stdio.File.query_close_callback</a>
+<dt><a href=#Stdio.File.query_id>Stdio.File.query_id</a>
+<dt><a href=#Stdio.File.query_read_callback>Stdio.File.query_read_callback</a>
+<dt><a href=#Stdio.File.query_write_callback>Stdio.File.query_write_callback</a>
+<dt><a href=#Stdio.File.read>Stdio.File.read</a>
+<dt><a href=#Stdio.File.seek>Stdio.File.seek</a>
+<dt><a href=#Stdio.File.set_blocking>Stdio.File.set_blocking</a>
+<dt><a href=#Stdio.File.set_buffer>Stdio.File.set_buffer</a>
+<dt><a href=#Stdio.File.set_close_callback>Stdio.File.set_close_callback</a>
+<dt><a href=#Stdio.File.set_close_on_exec>Stdio.File.set_close_on_exec</a>
+<dt><a href=#Stdio.File.set_id>Stdio.File.set_id</a>
+<dt><a href=#Stdio.File.set_nonblocking>Stdio.File.set_nonblocking</a>
+<dt><a href=#Stdio.File.set_read_callback>Stdio.File.set_read_callback</a>
+<dt><a href=#Stdio.File.set_write_callback>Stdio.File.set_write_callback</a>
+<dt><a href=#Stdio.File.stat>Stdio.File.stat</a>
+<dt><a href=#Stdio.File.tell>Stdio.File.tell</a>
+<dt><a href=#Stdio.File.write>Stdio.File.write</a>
+</dl>
+<dt>Stdio.FILE
+<dd>
+<dl>
+<dt><a href=#Stdio.FILE>Stdio.FILE</a>
+<dt><a href=#Stdio.FILE.getchar>Stdio.FILE.getchar</a>
+<dt><a href=#Stdio.FILE.gets>Stdio.FILE.gets</a>
+<dt><a href=#Stdio.FILE.printf>Stdio.FILE.printf</a>
+<dt><a href=#Stdio.FILE.ungets>Stdio.FILE.ungets</a>
+</dl>
+<dt><a href=#Stdio.file_size>Stdio.file_size</a>
+<dt><a href=#Stdio.perror>Stdio.perror</a>
+<dt>Stdio.Port
+<dd>
+<dl>
+<dt><a href=#Stdio.Port>Stdio.Port</a>
+<dt><a href=#Stdio.Port.accept>Stdio.Port.accept</a>
+<dt><a href=#Stdio.Port.bind>Stdio.Port.bind</a>
+<dt><a href=#Stdio.Port.create>Stdio.Port.create</a>
+<dt><a href=#Stdio.Port.errno>Stdio.Port.errno</a>
+<dt><a href=#Stdio.Port.listen_fd>Stdio.Port.listen_fd</a>
+<dt><a href=#Stdio.Port.query_id>Stdio.Port.query_id</a>
+<dt><a href=#Stdio.Port.set_id>Stdio.Port.set_id</a>
+</dl>
+<dt><a href=#Stdio.read_bytes>Stdio.read_bytes</a>
+<dt><a href=#Stdio.read_file>Stdio.read_file</a>
+<dt><a href=#Stdio.readline>Stdio.readline</a>
+<dt><a href=#Stdio.stderr>Stdio.stderr</a>
+<dt><a href=#Stdio.stdin>Stdio.stdin</a>
+<dt><a href=#Stdio.stdout>Stdio.stdout</a>
+<dt><a href=#Stdio.werror>Stdio.werror</a>
+<dt><a href=#Stdio.write_file>Stdio.write_file</a>
+</dl>
+<dt>stdout
+<dd>
+<dl>
+<dt><a href=#Stdio.stdout>Stdio.stdout</a>
+</dl>
+<dt>store
+<dd>
+<dl>
+<dt><a href=#Gdbm.store>Gdbm.store</a>
+</dl>
+<dt><a href=#strerror>strerror</a>
+<dt>String
+<dd>
+<dl>
+<dt><a href=#String.capitalize>String.capitalize</a>
+<dt><a href=#String.implode_nicely>String.implode_nicely</a>
+<dt><a href=#String.strmult>String.strmult</a>
+</dl>
+<dt><a href=#stringp>stringp</a>
+<dt><a href=#strlen>strlen</a>
+<dt>strmult
+<dd>
+<dl>
+<dt><a href=#String.strmult>String.strmult</a>
+</dl>
+<dt>strstr
+<dd>
+<dl>
+<dt><a href=#Simulate.strstr>Simulate.strstr</a>
+</dl>
+<dt>subtype
+<dd>
+<dl>
+<dt><a href=#MIME.Message.subtype>MIME.Message.subtype</a>
+</dl>
+<dt>sum
+<dd>
+<dl>
+<dt><a href=#Simulate.sum>Simulate.sum</a>
+</dl>
+<dt>sum_arrays
+<dd>
+<dl>
+<dt><a href=#Array.sum_arrays>Array.sum_arrays</a>
+</dl>
+<dt><a href=#symlink>symlink</a>
+<dt>sync
+<dd>
+<dl>
+<dt><a href=#Gdbm.sync>Gdbm.sync</a>
+</dl>
+<dt>system
+<dd>
+<dl>
+<dt><a href=#Process.system>Process.system</a>
+</dl>
+</dl>
+<dt><font size=+2>T</font>
+<dd>
+<dl>
+<dt><a href=#tan>tan</a>
+<dt>tell
+<dd>
+<dl>
+<dt><a href=#Stdio.File.tell>Stdio.File.tell</a>
+</dl>
+<dt>this_function
+<dd>
+<dl>
+<dt><a href=#Simulate.this_function>Simulate.this_function</a>
+</dl>
+<dt><a href=#this_object>this_object</a>
+<dt>this_thread
+<dd>
+<dl>
+<dt><a href=#Thread.this_thread>Thread.this_thread</a>
+</dl>
+<dt>Thread
+<dd>
+<dl>
+<dt>Thread.Condition
+<dd>
+<dl>
+<dt><a href=#Thread.Condition>Thread.Condition</a>
+<dt><a href=#Thread.Condition.wait>Thread.Condition.wait</a>
+</dl>
+<dt>Thread.Fifo
+<dd>
+<dl>
+<dt><a href=#Thread.Fifo>Thread.Fifo</a>
+<dt><a href=#Thread.Fifo.create>Thread.Fifo.create</a>
+<dt><a href=#Thread.Fifo.read>Thread.Fifo.read</a>
+<dt><a href=#Thread.Fifo.size>Thread.Fifo.size</a>
+<dt><a href=#Thread.Fifo.write>Thread.Fifo.write</a>
+</dl>
+<dt>Thread.Mutex
+<dd>
+<dl>
+<dt><a href=#Thread.Mutex>Thread.Mutex</a>
+<dt><a href=#Thread.Mutex.broadcast>Thread.Mutex.broadcast</a>
+<dt><a href=#Thread.Mutex.lock>Thread.Mutex.lock</a>
+<dt><a href=#Thread.Mutex.signal>Thread.Mutex.signal</a>
+<dt><a href=#Thread.Mutex.trylock>Thread.Mutex.trylock</a>
+</dl>
+<dt>Thread.Queue
+<dd>
+<dl>
+<dt><a href=#Thread.Queue>Thread.Queue</a>
+<dt><a href=#Thread.Queue.read>Thread.Queue.read</a>
+<dt><a href=#Thread.Queue.size>Thread.Queue.size</a>
+<dt><a href=#Thread.Queue.write>Thread.Queue.write</a>
+</dl>
+<dt><a href=#Thread.this_thread>Thread.this_thread</a>
+<dt><a href=#Thread.thread_create>Thread.thread_create</a>
+</dl>
+<dt>thread_create
+<dd>
+<dl>
+<dt><a href=#Thread.thread_create>Thread.thread_create</a>
+</dl>
+<dt><a href=#threads>threads</a>
+<dt><a href=#throw>throw</a>
+<dt><a href=#time>time</a>
+<dt>tokenize
+<dd>
+<dl>
+<dt><a href=#MIME.tokenize>MIME.tokenize</a>
+</dl>
+<dt><a href=#trace>trace</a>
+<dt>transfer_encoding
+<dd>
+<dl>
+<dt><a href=#MIME.Message.transfer_encoding>MIME.Message.transfer_encoding</a>
+</dl>
+<dt>trylock
+<dd>
+<dl>
+<dt><a href=#Thread.Mutex.trylock>Thread.Mutex.trylock</a>
+</dl>
+<dt>type
+<dd>
+<dl>
+<dt><a href=#MIME.Message.type>MIME.Message.type</a>
+</dl>
+<dt><a href=#typeof>typeof</a>
+</dl>
+<dt><font size=+2>U</font>
+<dd>
+<dl>
+<dt><a href=#ualarm>ualarm</a>
+<dt><a href=#uname>uname</a>
+<dt><a href=#undef>undef</a>
+<dt>ungets
+<dd>
+<dl>
+<dt><a href=#Stdio.FILE.ungets>Stdio.FILE.ungets</a>
+</dl>
+<dt>uniq
+<dd>
+<dl>
+<dt><a href=#Array.uniq>Array.uniq</a>
+</dl>
+<dt><a href=#upper_case>upper_case</a>
+</dl>
+<dt><font size=+2>V</font>
+<dd>
+<dl>
+<dt>_values
+<dd>
+<dl>
+<dt><a href=#Yp.YpMap._values>Yp.YpMap._values</a>
+</dl>
+<dt><a href=#_verify_internals>_verify_internals</a>
+<dt><a href=#values>values</a>
+<dt><a href=#version>version</a>
+</dl>
+<dt><font size=+2>W</font>
+<dd>
+<dl>
+<dt>wait
+<dd>
+<dl>
+<dt><a href=#Thread.Condition.wait>Thread.Condition.wait</a>
+</dl>
+<dt>werror
+<dd>
+<dl>
+<dt><a href=#Stdio.werror>Stdio.werror</a>
+</dl>
+<dt>write
+<dd>
+<dl>
+<dt><a href=#Stdio.File.write>Stdio.File.write</a>
+<dt><a href=#Thread.Fifo.write>Thread.Fifo.write</a>
+<dt><a href=#Thread.Queue.write>Thread.Queue.write</a>
+<dt><a href=#write>write</a>
+</dl>
+<dt>write_file
+<dd>
+<dl>
+<dt><a href=#Stdio.write_file>Stdio.write_file</a>
+</dl>
+</dl>
+<dt><font size=+2>Y</font>
+<dd>
+<dl>
+<dt>Yp
+<dd>
+<dl>
+<dt><a href=#Yp>Yp</a>
+<dt><a href=#Yp.default_yp_domain>Yp.default_yp_domain</a>
+<dt>Yp.YpDomain
+<dd>
+<dl>
+<dt><a href=#Yp.YpDomain>Yp.YpDomain</a>
+<dt><a href=#Yp.YpDomain.all>Yp.YpDomain.all</a>
+<dt><a href=#Yp.YpDomain.bind>Yp.YpDomain.bind</a>
+<dt><a href=#Yp.YpDomain.map>Yp.YpDomain.map</a>
+<dt><a href=#Yp.YpDomain.match>Yp.YpDomain.match</a>
+<dt><a href=#Yp.YpDomain.order>Yp.YpDomain.order</a>
+<dt><a href=#Yp.YpDomain.server>Yp.YpDomain.server</a>
+</dl>
+<dt>Yp.YpMap
+<dd>
+<dl>
+<dt><a href=#Yp.YpMap>Yp.YpMap</a>
+<dt><a href=#Yp.YpMap._indices>Yp.YpMap._indices</a>
+<dt><a href=#Yp.YpMap._sizeof>Yp.YpMap._sizeof</a>
+<dt><a href=#Yp.YpMap._values>Yp.YpMap._values</a>
+<dt><a href=#Yp.YpMap.all>Yp.YpMap.all</a>
+<dt><a href=#Yp.YpMap.map>Yp.YpMap.map</a>
+<dt><a href=#Yp.YpMap.match>Yp.YpMap.match</a>
+<dt><a href=#Yp.YpMap.order>Yp.YpMap.order</a>
+<dt><a href=#Yp.YpMap.server>Yp.YpMap.server</a>
+</dl>
+</dl>
+<dt>YpDomain
+<dd>
+<dl>
+<dt><a href=#Yp.YpDomain>Yp.YpDomain</a>
+</dl>
+<dt>YpMap
+<dd>
+<dl>
+<dt><a href=#Yp.YpMap>Yp.YpMap</a>
+</dl>
+</dl>
+<dt><font size=+2>Z</font>
+<dd>
+<dl>
+<dt><a href=#zero_type>zero_type</a>
+</dl>
+</dl>
