@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.22 2002/06/26 13:29:03 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.23 2002/06/27 11:54:08 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1491,7 +1491,7 @@ PIKEFUN object Iterator(object|array|mapping|multiset|string data)
 
       if(FIND_LFUN(data->u.object->prog, LFUN__GET_ITERATOR) != -1)
       {
-	apply_lfun(data->u.object, LFUN__GET_ITERATOR, 1);
+	apply_lfun(data->u.object, LFUN__GET_ITERATOR, 0);
 	stack_unlink(1);
 	return;
       }
