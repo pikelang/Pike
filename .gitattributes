@@ -62,6 +62,10 @@ testfont binary
 /lib/7.4/modules/SSL.pmod/constants.pike foreign_ident
 /lib/7.4/modules/Stdio.pmod/module.pmod foreign_ident
 /lib/7.4/modules/__default.pmod foreign_ident
+/lib/7.6/modules/Mysql.pmod/mysql.pike foreign_ident
+/lib/7.6/modules/Mysql.pmod/mysql_result.pike foreign_ident
+/lib/7.6/modules/Sql.pmod/Sql.pike foreign_ident
+/lib/7.6/modules/Sql.pmod/mysql.pike foreign_ident
 /lib/include/profiling.h foreign_ident
 /lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/BitBuffer.pike foreign_ident
