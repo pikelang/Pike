@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.79 1999/12/13 01:21:10 grubba Exp $");
+RCSID("$Id: main.c,v 1.80 1999/12/13 04:58:53 per Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -327,19 +327,21 @@ int dbm_main(int argc, char **argv)
 	  break;
 
 	case 'r':
-	more_w_flags:
-	  switch(p[1]) {
+	more_r_flags:
+	  switch(p[1]) 
+          {
 	  case 't':
 	    runtime_options |= RUNTIME_CHECK_TYPES;
 	    p++;
-	    goto more_w_flags;
+	    goto more_r_flags;
 
 	  case 'T':
 	    runtime_options |= RUNTIME_STRICT_TYPES;
 	    p++;
-	    goto more_w_flags;
+	    goto more_r_flags;
 
-	  default:
+         default:
+            p++;
 	    break;
 	  }
 	  break;
