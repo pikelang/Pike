@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.149 2001/04/14 09:44:19 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.150 2001/04/18 17:34:19 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -533,6 +533,7 @@ static void describe_marker(struct marker *m)
 
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 {
+  int orig_gc_pass = Pike_in_gc;
   va_list args;
 
   va_start(args, fmt);
@@ -540,8 +541,12 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
   fprintf(stderr, "**");
   (void) VFPRINTF(stderr, fmt, args);
 
+  /* Temporarily jumping out of gc to avoid being catched in debug
+   * checks in describe(). */
+  Pike_in_gc = 0;
   describe(a);
   if (flags & 1) locate_references(a);
+  Pike_in_gc = orig_gc_pass;
   if (flags & 2)
     fatal_after_gc = "Fatal in garbage collector.\n";
   else
@@ -2165,7 +2170,9 @@ int do_gc(void)
 	fprintf(stderr, "Describing marker location(s):\n");
 	debug_malloc_dump_references(m, 2, 1, 0);
 	fprintf(stderr, "Describing thing for marker:\n");
+	Pike_in_gc = 0;
 	describe(m->data);
+	Pike_in_gc = GC_PASS_MIDDLETOUCH;
 	fatal("Fatal in garbage collector.\n");
       }
 #endif
