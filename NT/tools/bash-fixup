@@ -1,3 +1,4 @@
+
 if [ -f $HOME/.bashrc ]; then
   . $HOME/.bashrc
 fi
@@ -24,7 +25,7 @@ case $TERM in
 esac
 
 case :$PATH: in
-   *:$NT_TOOL_PATH:*) ;;
+   :$NT_TOOL_PATH:*) ;;
    *) PATH=$NT_TOOL_PATH:$PATH ;;
 esac
 
