@@ -392,6 +392,11 @@ class Module {
   static void create() { ::create("module"); }
 }
 
+class Modifier {
+  inherit _Class_or_Module;
+  static void create() { ::create("modifier"); }
+}
+
 class Method {
   inherit PikeObject;
   array(string) argnames;

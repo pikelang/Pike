@@ -538,6 +538,12 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     }
     return c;
   }
+  else if (s == "{") {
+    Modifier m = Modifier();
+    m->position = position;
+    m->modifiers = modifiers;
+    return m;
+  }
   else if (s == "constant") {
     Constant c = Constant();
     c->position = position;

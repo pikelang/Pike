@@ -171,7 +171,7 @@ static private class Extractor {
   }
 
   // parseAdjacentDecls consumes the "\n" that may follow the last decl
-  static array(PikeObject) parseAdjacentDecls() {
+  static array(PikeObject) parseAdjacentDecls(Class|Module c) {
     array(PikeObject) res = ({ });
     for (;;) {
       // To get the correct line# :
@@ -196,6 +196,12 @@ static private class Extractor {
         parser->eat("{");
         parseClassBody([object(Class)] p);
         parser->eat("}");
+      }
+      else if (objectp(p) && p->objtype == "modifier" &&
+	       parser->peekToken() == "{") {
+	parser->eat("{");
+	parseClassBody(c);
+	parser->eat("}");
       }
       else if (objectp(p) && p->objtype == "enum") {
         parser->eat("{"); // after ("enum" opt_id) must come "{"
@@ -270,14 +276,14 @@ static private class Extractor {
 	}
         s = parser->peekToken(WITH_NL);
         if (!isDelimiter(s)) {           // and decls that may follow
-          decls = parseAdjacentDecls();
+          decls = parseAdjacentDecls(c);
           s = parser->peekToken(WITH_NL);
           if (isDocComment(s))
             extractorError("doc + decl + doc  is forbidden!");
         }
       }
       else {
-        decls = parseAdjacentDecls();
+        decls = parseAdjacentDecls(c);
         s = parser->peekToken(WITH_NL);
         if (isDocComment(s))
           doc = readAdjacentDocLines();
