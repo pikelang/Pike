@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.41 2003/04/07 17:21:36 nilsson Exp $
+|| $Id: passwords.c,v 1.42 2003/06/02 20:46:29 nilsson Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.41 2003/04/07 17:21:36 nilsson Exp $");
+RCSID("$Id: passwords.c,v 1.42 2003/06/02 20:46:29 nilsson Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -557,7 +557,6 @@ void f_get_all_users(INT32 args)
   while(1)
   {
     struct passwd *pw;
-    struct pike_pwent *nppwent;
 
     THREADS_ALLOW_UID();
     pw=getpwent();
