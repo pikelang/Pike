@@ -129,6 +129,7 @@ class File
     {
       ___read_callback(___id, s);
     }else{
+      ::set_read_callback(0);
       ___close_callback(___id);
     }
   }
