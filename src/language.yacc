@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.173 2000/03/30 19:01:38 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.174 2000/03/30 19:39:12 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1239,13 +1239,18 @@ opt_function_type: '('
   {
     if ($4)
     {
-      if (!$3) {
-	/* FIXME: Should this be a syntax error or not? */
-	push_type(T_MIXED);
+      if ($3) {
+	push_type(T_MANY);
+	type_stack_reverse();
+      } else {
+	/* function_type_list ends with a comma, or is empty.
+	 * FIXME: Should this be a syntax error or not?
+	 */
 	yywarning("Implicit mixed type.");
+	type_stack_reverse();
+	push_type(T_MANY);
+	push_type(T_MIXED);
       }
-      push_type(T_MANY);
-      type_stack_reverse();
     }else{
       type_stack_reverse();
       push_type(T_MANY);
