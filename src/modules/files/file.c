@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.123 1998/09/01 17:02:28 hubbe Exp $");
+RCSID("$Id: file.c,v 1.124 1998/09/20 17:53:08 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -668,8 +668,16 @@ static void file_read(INT32 args)
 }
 
 #ifdef HAVE_AND_USE_POLL
+#ifdef HAVE_POLL_H
 #include <poll.h>
-#else
+#else /* !HAVE_POLL_H */
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#else /* !HAVE_SYS_POLL_H */
+#undef HAVE_AND_USE_POLL
+#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H */
+#else /* HAVE_AND_USE_POLL */
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
