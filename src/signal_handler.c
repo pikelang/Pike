@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.67 1998/06/06 03:11:48 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.68 1998/06/08 12:48:28 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1418,6 +1418,10 @@ void f_create_process(INT32 args)
       set_close_on_exec(1,0);
       set_close_on_exec(2,0);
       
+#ifdef HAVE_BROKEN_F_SETFD
+      do_close_on_exec();
+#endif /* HAVE_BROKEN_F_SETFD */
+
       execvp(storage.argv[0],storage.argv);
       exit(69);
     }

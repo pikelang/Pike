@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: fd_control.h,v 1.3 1998/03/28 15:30:13 grubba Exp $
+ * $Id: fd_control.h,v 1.4 1998/06/08 12:48:26 grubba Exp $
  */
 #ifndef FD_CONTROL_H
 #define FD_CONTROL_H
@@ -14,6 +14,10 @@
 int set_nonblocking(int fd,int which);
 int query_nonblocking(int fd);
 int set_close_on_exec(int fd, int which);
+
+#ifdef HAVE_BROKEN_F_SETFD
+void do_close_on_exec(void);
+#endif /* HAVE_BROKEN_F_SETFD */
 /* Prototypes end here */
 
 #endif

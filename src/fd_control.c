@@ -9,7 +9,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.17 1998/03/28 15:30:41 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.18 1998/06/08 12:48:24 grubba Exp $");
 
 #else
 #define _FILE_OFFSET_BITS 64
@@ -103,13 +103,52 @@ int query_nonblocking(int fd)
 #endif
 }
 
+#ifndef FD_CLOEXEC
+#define FD_CLOEXEC 1
+#endif /* FD_CLOEXEC */
+
+#ifdef HAVE_BROKEN_F_SETFD
+static int fds_to_close[MAX_OPEN_FILEDESCRIPTORS];
+static int num_fds_to_close = 0;
+
+void do_close_on_exec(void)
+{
+  int i;
+  for(i=0; i < num_fds_to_close; i++) {
+    close(fds_to_close[i]);
+  }
+  num_fds_to_close = 0;
+}
+#endif /* HAVE_BROKEN_F_SETFD */
+
 int set_close_on_exec(int fd, int which)
 {
-#ifdef F_SETFD
-  return fcntl(fd, F_SETFD, !!which);
-#else
+#ifndef HAVE_BROKEN_F_SETFD
+  if (which) {
+    return fcntl(fd, F_SETFD, FD_CLOEXEC);
+  } else {
+    return fcntl(fd, F_SETFD, 0);
+  }
+#else /* HAVE_BROKEN_F_SETFD */
+  int i;
+  if (which) {
+    for(i = 0; i < num_fds_to_close; i++) {
+      if (fds_to_close[i] == fd) {
+	return(0);	/* Already marked */
+      }
+    }
+    fds_to_close[num_fds_to_close++] = fd;
+    return(0);
+  } else {
+    for(i = 0; i < num_fds_to_close; i++) {
+      while (fds_to_close[i] == fd && (i < num_fds_to_close)) {
+	fds_to_close[i] = fds_to_close[--num_fds_to_close];
+      }
+    }
+    return(0);
+  }
   return 0;
-#endif
+#endif /* !HAVE_BROKEN_F_SETFD */
 }
 
 #ifdef TESTING

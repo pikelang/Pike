@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.49 1998/05/17 21:06:48 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.50 1998/06/08 12:48:30 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -680,6 +680,11 @@ void f_exece(INT32 args)
 #else
 #define DOCAST(X) (X)
 #endif
+
+#ifdef HAVE_BROKEN_F_SETFD
+  do_close_on_exec();
+#endif /* HAVE_BROKEN_F_SETFD */
+
   execve(argv[0],DOCAST(argv),DOCAST(env));
 
   free((char *)argv);

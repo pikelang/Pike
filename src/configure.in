@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.201 1998/06/07 20:40:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.202 1998/06/08 12:48:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -983,6 +983,7 @@ AC_CHECK_FUNCS( \
  memcpy \
  memset \
  mktime \
+ perror \
  rindex \
  setlocale \
  setrlimit \
@@ -1056,6 +1057,49 @@ if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
 
 fi
 
+
+#############################################################################
+
+# FreeBSD 3.0 has broken F_SETFD when running with threads.
+
+AC_MSG_CHECKING(whether F_SETFD exists and works)
+
+AC_CACHE_VAL(pike_cv_broken_f_setfd, [
+  AC_TRY_RUN([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#include <sys/stat.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+#include <stdio.h>
+#ifndef FD_CLOEXEC
+#define FD_CLOEXEC 1
+#endif /* FD_CLOEXEC */
+int main(int argc, char **argv)
+{
+  int fd = 0;
+  if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0) {
+    exit(1);
+  }
+  if (fcntl(fd, F_GETFD) != FD_CLOEXEC) {
+    exit(1);
+  }
+  exit(0);
+}
+], pike_cv_broken_f_setfd=no, pike_cv_broken_f_setfd=yes,
+   pike_cv_broken_f_setfd=no)
+])
+
+if test "x$pike_cv_broken_f_setfd" = "xyes"; then
+  AC_MSG_RESULT(no)
+  AC_DEFINE(HAVE_BROKEN_F_SETFD)
+else
+  AC_MSG_RESULT(yes)
+fi
+
+#############################################################################
 
 AC_STRUCT_TM
 
