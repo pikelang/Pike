@@ -17,6 +17,8 @@ export SGI_API
 
 #set -x
 
+SET_N32=""
+
 while test "$#" != 0; do
   case $1 in
     -R*)
@@ -28,11 +30,16 @@ while test "$#" != 0; do
      fi
      RPATH="$RPATH:$tmp"
     ;;
+    -n32)
+     SET_N32="-n32"
+    ;;
     *)
     LDOPTS="$LDOPTS $1"
   esac
   shift
 done
+
+LDOPTS="$SET_N32 $LDOPTS"
 
 RPATH="$RPATH:${LD_LIBRARY_PATH-}"
 
