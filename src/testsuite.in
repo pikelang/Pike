@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.619 2003/03/13 00:02:49 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.620 2003/03/16 17:04:27 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9065,53 +9065,53 @@ test_do([[
 
   int code = proc->wait();
   if (code != -2) {
-    proc->kill(9);
+    proc->kill(signum("KILL"));
     return sprintf("Bad returncode from wait():%d (expected -2)", code);
   }
   int sig = proc->last_signal();
-  if (sig != 5) {
-    proc->kill(9);
-    return sprintf("Unexpected signal:%d (expected 5)", sig);
+  if (sig != signum("TRAP")) {
+    proc->kill(signum("KILL"));
+    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("TRAP"));
   }
   proc->cont();
 
   // Check that we can block deadly signals.
-  proc->kill(15);	// SIGTERM
+  proc->kill(signum("TERM"));
   code = proc->wait();
   if (code != -2) {
-    proc->kill(9);
+    proc->kill(signum("KILL"));
     return sprintf("Bad second returncode from wait():%d (expected -2)", code);
   }
   sig = proc->last_signal();
-  if (sig != 15) {
-    proc->kill(9);
-    return sprintf("Unexpected signal:%d (expected 15)", sig);
+  if (sig != signum("TERM")) {
+    proc->kill(signum("KILL"));
+    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("TERM"));
   }
   proc->cont();
 
   // Check that we can make harmless signals deadly.
-  proc->kill(18);	// SIGCONT
+  proc->kill(signum("CONT"));	// SIGCONT
   code = proc->wait();
   if (code != -2) {
-    proc->kill(9);
+    proc->kill(signum("KILL"));
     return sprintf("Bad third returncode from wait():%d (expected -2)", code);
   }
   sig = proc->last_signal();
-  if (sig != 18) {
+  if (sig != signum("CONT")) {
     proc->kill(9);
-    return sprintf("Unexpected signal:%d (expected 18)", sig);
+    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("CONT"));
   }
   proc->cont(9);	// Make it a SIGKILL
 
   code = proc->wait();
   if (code != -1) {
-    proc->kill(9);
+    proc->kill(signum("KILL"));
     return sprintf("Bad fourth returncode from wait():%d (expected -1)", code);
   }
   sig = proc->last_signal();
-  if (sig != 9) {
-    proc->kill(9);
-    return sprintf("Unexpected signal:%d (expected 9)", sig);
+  if (sig != signum("KILL")) {
+    proc->kill(signum("KILL"));
+    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("KILL"));
   }
   // Test ok.
   return 0; ]], 0)
