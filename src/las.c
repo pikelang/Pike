@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.244 2001/03/11 14:19:49 grubba Exp $");
+RCSID("$Id: las.c,v 1.245 2001/03/13 13:24:11 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3231,7 +3231,7 @@ void fix_type_field(node *n)
   case F_MOD_EQ:
   case F_DIV_EQ:
     if (CAR(n)) {
-      struct pike_string *op_string;
+      struct pike_string *op_string = NULL;
       struct pike_type *call_type;
       node *op_node;
 
