@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.83 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_types.h,v 1.84 2003/12/03 09:35:24 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -31,6 +31,9 @@ struct pike_type
   struct pike_type *car;
   struct pike_type *cdr;
 };
+
+#define CAR_TO_INT(TYPE) ((char *) (TYPE)->car - (char *) 0)
+#define CDR_TO_INT(TYPE) ((char *) (TYPE)->cdr - (char *) 0)
 
 #include "block_alloc_h.h"
 BLOCK_ALLOC(pike_type, n/a)
@@ -100,9 +103,7 @@ struct node_s
   size_t hash;
   struct node_s *next;
 #endif /* SHARED_NODES */
-#ifdef PIKE_DEBUG
   struct pike_string *current_file;
-#endif
   struct pike_type *type;
   struct pike_string *name;
   struct node_s *parent;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.311 2003/02/26 14:56:17 grubba Exp $
+|| $Id: language.yacc,v 1.312 2003/12/03 09:35:24 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.311 2003/02/26 14:56:17 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.312 2003/12/03 09:35:24 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -791,10 +791,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       int save_line = lex.current_line;
       int num_required_args = 0;
       struct identifier *i;
-#ifdef PIKE_DEBUG
       struct pike_string *save_file = lex.current_file;
       lex.current_file = $4->current_file;
-#endif
       lex.current_line = $4->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
@@ -870,17 +868,13 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 
       {
 	int l = $10->line_number;
-#ifdef PIKE_DEBUG
 	struct pike_string *f = $10->current_file;
-#endif
 	if (check_args) {
 	  /* Prepend the arg checking code. */
 	  $10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
 	}
 	lex.current_line = l;
-#ifdef PIKE_DEBUG
 	lex.current_file = f;
-#endif
       }
 
       f=dooptcode(check_node_hash($4)->u.sval.u.string,
@@ -912,9 +906,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif
 
       lex.current_line = save_line;
-#ifdef PIKE_DEBUG
       lex.current_file = save_file;
-#endif
     }
     pop_compiler_frame();
     free_node($4);
@@ -2036,10 +2028,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     int localid;
     struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
     int save_line = lex.current_line;
-#ifdef PIKE_DEBUG
     struct pike_string *save_file = lex.current_file;
     lex.current_file = $1->current_file;
-#endif
     lex.current_line = $1->line_number;
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
@@ -2053,9 +2043,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
     lex.current_line = save_line;
-#ifdef PIKE_DEBUG
     lex.current_file = save_file;
-#endif
     pop_compiler_frame();
     free_node($1);
 
@@ -2175,10 +2163,8 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     int localid;
     struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>5);
     int save_line = lex.current_line;
-#ifdef PIKE_DEBUG
     struct pike_string *save_file = lex.current_file;
     lex.current_file = $2->current_file;
-#endif
     lex.current_line = $2->line_number;
 
     debug_malloc_touch($6);
@@ -2194,9 +2180,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
     lex.current_line = save_line;
-#ifdef PIKE_DEBUG
     lex.current_file = save_file;
-#endif
     pop_compiler_frame();
     free_node($2);
 
