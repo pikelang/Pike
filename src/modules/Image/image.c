@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.12 1997/03/20 02:23:58 mirar Exp $ */
+/* $Id: image.c,v 1.13 1997/03/20 03:26:06 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.12 1997/03/20 02:23:58 mirar Exp $");
+RCSID("$Id: image.c,v 1.13 1997/03/20 03:26:06 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1792,7 +1792,7 @@ void image_to8bit_rgbcube(INT32 args)
   unsigned char *d;
   unsigned char *map=NULL;
 
-  int red,green,blue,redgreen,redgreenblue;
+  int red,green,blue,redgreen,redgreenblue,hred,hgreen,hblue;
   
   if(!res) error("Out of memory\n");
 
@@ -1807,13 +1807,13 @@ void image_to8bit_rgbcube(INT32 args)
       || sp[2-args].type!=T_INT) 
      error("Illegal argument(s) to image->to8bit_rgbcube()\n");
 
-  red=sp[-args].u.integer; 
-  green=sp[1-args].u.integer;
-  blue=sp[2-args].u.integer; 
+  red=sp[-args].u.integer; 	hred=red/2;
+  green=sp[1-args].u.integer;	hgreen=green/2;
+  blue=sp[2-args].u.integer; 	hblue=blue/2;
   redgreen=red*green;
   redgreenblue=red*green*blue;
 
-  if (args==3)
+  if (args>3)
      if (sp[3-args].type!=T_STRING)
 	error("Illegal argument 4 to image->to8bit_rgbcube()"
 	      " (expected string or no argument)\n");
@@ -1830,19 +1830,31 @@ void image_to8bit_rgbcube(INT32 args)
   if (!map)
      while (i--)
      {
+// 	fprintf(stderr,"%02x%02x%02x -> %x,%x,%x -> %d,%d,%d -> %d\n",
+// 		s->r,s->g,s->b,
+// 		s->r*red+hred,
+// 		s->g*green+hgreen,
+// 		s->b*blue+hblue,
+// 		((s->r*red+hred)>>8),
+// 		((s->g*green+hgreen)>>8),
+// 		((s->b*blue+hblue)>>8),
+// 		((s->r*red+hred)>>8)+
+// 		((s->g*green+hgreen)>>8)*red+
+// 		((s->b*blue+hblue)>>8)*redgreen);
+		
 	*(d++)=
-	   (unsigned char)((s->r*red+
-			    s->g*redgreen+
-			    s->b*redgreenblue)>>8);
+	   (unsigned char)( ((s->r*red+hred)>>8)+
+			    ((s->g*green+hgreen)>>8)*red+
+			    ((s->b*blue+hblue)>>8)*redgreen );
 	s++;
      }
   else
      while (i--)
      {
 	*(d++)=
-	   map[(s->r*red+
-		s->g*redgreen+
-		s->b*redgreenblue)>>8];
+	   map[ ((s->r*red+hred)>>8)+
+	        ((s->g*green+hgreen)>>8)*red+
+	        ((s->b*blue+hblue)>>8)*redgreen ];
 	s++;
      }
   THREADS_DISALLOW();
