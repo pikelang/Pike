@@ -28,6 +28,13 @@ void describe_class_tree( Class c )
   rec_describe_tree( c, 1, ({c}) );
 }
 
+int is_close_enough( string a, string b )
+{
+  array q = (a/"\n"-({""}));
+  array w = (b/"\n"-({""}));
+  return equal( sort(q),sort(w) );
+}
+
 // Like Stdio.write_file, but does not overwrite with identical data, 
 // thus avoiding unessesary recompilations.
 void write_file( string file, string data )
@@ -39,7 +46,7 @@ void write_file( string file, string data )
   Stdio.File f = Stdio.File();
 
   if( f->open( file, "r" ) )
-    if( f->read() != data )
+    if( !is_close_enough(f->read(),data) )
       werror("  Updating "+trim(file)+"\n");
     else
       return;

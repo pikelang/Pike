@@ -152,31 +152,26 @@ array(string) output( mapping(string:Class) classes,
       werror(constants[c]->file+":"+constants[c]->line+": Error: "+
              (stringp(e)?e:describe_backtrace(e))+"\n" );
 
-
-
   array q = ({});
   foreach( values(classes), object c )
     q |= indices(c->functions) | indices(c->members);
   q = Array.uniq( q ); sort(map(q,strlen),q);
   foreach( reverse(q), string w ) S(w);
   
-  q = Array.uniq(indices(classes)|indices(constants));
-  sort(map(q,strlen),q);
-  foreach( reverse(q), string w ) S(w,1);
-
   traverse_class_tree( classes, build_pike_fadds );
 
-  foreach( reverse(q), string w ) S(w);
 
   mapping done = ([]);
   foreach( values(classes), object c )
     foreach( indices( c->signals) , string s )
       if( !done[s] )
         done[s] = c->signals[s];
+
   q = indices( done ); sort(map(q,strlen),q);
   foreach( reverse(q), string w ) S("s_"+w,1);
-  foreach( values( done ), object t )
-    initfun += t->pike_add();
+
+  foreach( sort(indices( done )), string w )
+    initfun += done[w]->pike_add();
   pre += get_string_data()+"\n\n";
   files = ({ "pgtk.c" }) + files;
 
