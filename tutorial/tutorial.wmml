@@ -6039,7 +6039,7 @@ string implode_nicely(array(string|float|int) words, string|void separator);
 <man_description>
 This function implodes a list of words to a readable string.
 If the separator is omitted, the default is <tt>"and"</tt>.
-If the words are numbers they are converet to strings first.
+If the words are numbers they are converted to strings first.
 </man_description>
 <man_example>
 &gt; implode_nicely(({"green"}));<br>
