@@ -255,7 +255,7 @@ struct thread_state {
 #endif
 
 #ifndef th_equal
-#define th_equal(X,Y) (!MEMCPY(&(X),&(Y),sizeof(THREAD_T)))
+#define th_equal(X,Y) (!MEMCMP(&(X),&(Y),sizeof(THREAD_T)))
 #endif
 
 #ifndef th_hash
