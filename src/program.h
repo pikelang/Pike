@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.204 2004/09/27 21:37:13 mast Exp $
+|| $Id: program.h,v 1.205 2004/09/28 23:58:35 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -569,9 +569,9 @@ static inline int CHECK_IDREF_RANGE (int x, const struct program *p)
     struct program *_=(p);						\
     debug_malloc_touch(_);						\
     DO_IF_DEBUG (							\
-      if (gc_external_refs_zapped)					\
-	gc_check_zapped (_, PIKE_T_PROGRAM, __FILE__, __LINE__);	\
-    );									\
+      DO_IF_PIKE_CLEANUP (						\
+	if (gc_external_refs_zapped)					\
+	  gc_check_zapped (_, PIKE_T_PROGRAM, __FILE__, __LINE__)));	\
     if(!sub_ref(_))							\
       really_free_program(_);						\
   }while(0)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.86 2004/09/27 21:37:13 mast Exp $
+|| $Id: object.h,v 1.87 2004/09/28 23:58:35 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -44,9 +44,9 @@ extern struct program *magic_values_program;
     debug_malloc_touch(o_);						\
     debug_malloc_touch(o_->storage);					\
     DO_IF_DEBUG (							\
-      if (gc_external_refs_zapped)					\
-	gc_check_zapped (o_, PIKE_T_OBJECT, __FILE__, __LINE__);	\
-    );									\
+      DO_IF_PIKE_CLEANUP (						\
+	if (gc_external_refs_zapped)					\
+	  gc_check_zapped (o_, PIKE_T_OBJECT, __FILE__, __LINE__)));	\
     if(!sub_ref(o_))							\
       schedule_really_free_object(o_);					\
   }while(0)
