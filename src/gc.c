@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.238 2004/01/13 09:24:18 grubba Exp $
+|| $Id: gc.c,v 1.239 2004/03/15 14:07:39 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.238 2004/01/13 09:24:18 grubba Exp $");
+RCSID("$Id: gc.c,v 1.239 2004/03/15 14:07:39 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -83,6 +83,8 @@ double gc_average_slowness = 0.9;
  * Things that have only weak external references at the start of the
  * gc pass will be freed. That's done before the live object destruct
  * pass. Internal weak references are however still intact.
+ *
+ * Note: Keep the doc for lfun::destroy up-to-date with the above.
  */
 
 /* #define GC_VERBOSE */
@@ -614,6 +616,8 @@ void describe_location(void *real_memblock,
 	  else
 	    fprintf (stderr, "%*s  **At position %"PRINTPTRDIFFT"d among locals\n",
 		     indent, "", pos - f->num_args);
+	  /* Don't describe current_object for the frame. */
+	  flags |= DESCRIBE_SHORT;
 	}
       }
       break;
@@ -717,10 +721,11 @@ static void gdb_gc_stop_here(void *a, int weak)
 	  gc_found_place ? gc_found_place : "");
   if (gc_found_in) {
     if (gc_svalue_location)
-      describe_location(gc_found_in , gc_found_in_type, gc_svalue_location,0,1,0);
+      describe_location(gc_found_in , gc_found_in_type, gc_svalue_location,0,1,
+			DESCRIBE_SHORT);
     else {
       fputc('\n', stderr);
-      describe_something(gc_found_in, gc_found_in_type, 0, 0, 0, 0);
+      describe_something(gc_found_in, gc_found_in_type, 0, 0, DESCRIBE_SHORT, 0);
     }
   }
   else
@@ -1104,8 +1109,10 @@ again:
 	      fprintf(stderr, "%*s**Function %s at unknown location.\n",
 		      indent, "", id->name->str);
 	  }
-	  fprintf(stderr, "%*s**Describing the current object:\n", indent, "");
-	  describe_something(f->current_object, T_OBJECT, indent+2, depth, flags, 0);
+	  if (!(flags & DESCRIBE_SHORT)) {
+	    fprintf(stderr, "%*s**Describing the current object:\n", indent, "");
+	    describe_something(f->current_object, T_OBJECT, indent+2, depth, flags, 0);
+	  }
 	}
 	else
 	  fprintf(stderr, "%*s**No current object.\n", indent, "");
