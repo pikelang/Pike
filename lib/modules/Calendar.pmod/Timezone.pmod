@@ -687,7 +687,6 @@ class Runtime_timezone_compiler
 
 	 res+=
 	    ({TZrules_init+
-	      "import __Calendar_mkzone;\n"
 	      "   inherit TZRules;\n"
 	      "   array(array(string|int)) jd_year_periods(int jd)\n"
 	      "   {\n"
@@ -941,8 +940,6 @@ class Runtime_timezone_compiler
 
 	 if (!sizeof(rules))
 	    error("no rules for %O\n",id);
-	       
-	 res+=({"import __Calendar_mkzone;\n"});
 
 	 if (sizeof(rules)==1) // simple zone
 	 {
@@ -1051,12 +1048,20 @@ class Runtime_timezone_compiler
       mixed `[](string s) { return f(s); }
    }
 
-   mapping mkzonemod=
-   (["TZrules":Dummymodule(find_rule),
-     "TZRules":TZRules,
-     "TZHistory":TZHistory,
-     "Ruleset":Ruleset,
-     "ZEROSHIFT":({0,0,0,""})]);
+  object compile_handler = class {
+    mapping(string:mixed) get_default_module() {
+      return constants;
+    }
+
+    mapping constants = all_constants() +
+    (["TZrules":Dummymodule(find_rule),
+      "TZRules":TZRules,
+      "TZHistory":TZHistory,
+      "Ruleset":Ruleset,
+      "ZEROSHIFT":({0,0,0,""})
+    ]);
+
+  }();
 
 //  #define RTTZC_DEBUG
 //  #define RTTZC_TIMING
@@ -1129,12 +1134,10 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_DEBUG
       werror("%s\n",c);
 #endif
-      
-      add_constant("__Calendar_mkzone",mkzonemod);
+
       program p;
-      mixed err=catch { p=compile_string(c); };
-      add_constant("__Calendar_mkzone");
-      if (err) 
+      mixed err=catch { p=compile_string(c, 0, compile_handler); };
+      if (err)
       {
 	 int i=0; 
 	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
@@ -1216,10 +1219,8 @@ class Runtime_timezone_compiler
       werror("find %O: %O\n",s,t2-t1);
       float t2=time(t);
 #endif
-      
-      add_constant("__Calendar_mkzone",mkzonemod);
 
-      program p=compile_string(c);
+      program p=compile_string(c, 0, compile_handler);
 
 #ifdef RTTZC_TIMING
       float t3=time(t);
