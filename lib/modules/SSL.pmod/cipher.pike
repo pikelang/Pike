@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: cipher.pike,v 1.22 2003/01/27 01:41:16 nilsson Exp $
+/* $Id: cipher.pike,v 1.23 2003/01/27 19:10:25 nilsson Exp $
  *
  */
 
@@ -11,7 +11,7 @@
 
 //! Encryption and MAC algorithms used in SSL.
 
-inherit "constants";
+inherit .Constants;
 
 class CipherSpec {
   program bulk_cipher_algorithm;
