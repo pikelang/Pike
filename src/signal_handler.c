@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.41 1998/03/28 15:03:31 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.42 1998/04/06 20:38:52 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -67,6 +67,8 @@ RCSID("$Id: signal_handler.c,v 1.41 1998/03/28 15:03:31 grubba Exp $");
 
 #define SIGNAL_BUFFER 16384
 #define WAIT_BUFFER 4096
+
+extern int fd_from_object(struct object *o);
 
 static struct svalue signal_callbacks[MAX_SIGNALS];
 
@@ -578,20 +580,25 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
   {
     if(tmp->type == T_OBJECT)
     {
-      apply(tmp->u.object,"query_fd",0);
-      if(sp[-1].type == T_INT)
-      {
-	if(!(fd_query_properties(sp[-1].u.integer, 0) & fd_INTERPROCESSABLE))
-	{
-	  void create_proxy_pipe(struct object *o, int for_reading);
+      INT32 fd=fd_from_object(tmp->u.object);
 
-	  create_proxy_pipe(tmp->u.object, for_reading);
-	  apply(sp[-1].u.object, "query_fd", 0);
-	}
+      if(fd == -1)
+	error("File for %s is not open.\n",name);
+
+      if(!(fd_query_properties(fd, 0) & fd_INTERPROCESSABLE))
+      {
+	void create_proxy_pipe(struct object *o, int for_reading);
 	
-	  
-	if(!DuplicateHandle(GetCurrentProcess(),
-			    (HANDLE)da_handle[sp[-1].u.integer],
+	create_proxy_pipe(tmp->u.object, for_reading);
+	fd=fd_from_object(sp[-1].u.object);
+	
+	if(fd == -1)
+	  error("Proxy thread creation failed for %s.\n",name);
+      }
+      
+      
+      if(!DuplicateHandle(GetCurrentProcess(),
+			    (HANDLE)da_handle[fd],
 			    GetCurrentProcess(),
 			    &ret,
 			    NULL,
@@ -599,7 +606,6 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 			    DUPLICATE_SAME_ACCESS))
 	  /* This could cause handle-leaks */
 	  error("Failed to duplicate handle %d.\n",GetLastError());
-      }
     }
   }
   pop_n_elems(sp-save_stack);
@@ -607,57 +613,46 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 }
 #endif
 
-#ifdef HAVE_GETPWENT
-#ifndef HAVE_GETPWNAM
-struct passwd *getpwnam(char *name)
+#ifndef __NT__
+
+struct perishables
 {
-  struct passwd *pw;
-  THREADS_ALLOW_UID();
-  setpwent();
-  while(pw=getpwent())
-    if(strcmp(pw->pw_name,name))
-      break;
-  endpwent();
-  THREADS_DISALLOW_UID();
-  return pw;
-}
-#define HAVE_GETPWNAM
+  char **env;
+  char **argv;
+  struct pike_string *nice_s;
+  struct pike_string *cwd_s;
+  struct pike_string *stdin_s;
+  struct pike_string *stdout_s;
+  struct pike_string *stderr_s;
+#ifdef HAVE_SETGROUPS
+  gid_t *wanted_gids;
+  struct array *wanted_gids_array;
+  int num_wanted_gids;
+#endif
+};
+
+static void free_perishables(struct perishables *storage)
+{
+  if(storage->env) free((char *)storage->env);
+
+  if(storage->argv) free((char *)storage->argv);
+  if(storage->nice_s) free_string(storage->nice_s);
+  if(storage->cwd_s) free_string(storage->cwd_s);
+  if(storage->stdin_s) free_string(storage->stdin_s);
+  if(storage->stdout_s) free_string(storage->stdout_s);
+  if(storage->stderr_s) free_string(storage->stderr_s);
+
+#ifdef HAVE_SETGROUPS
+  if(storage->wanted_gids) free((char *)storage->wanted_gids);
+
+  if(storage->wanted_gids_array) free_array(storage->wanted_gids_array);
+  
 #endif
 
-#ifndef HAVE_GETPWUID
-struct passwd *getpwiod(int uid)
-{
-  struct passwd *pw;
-  THREADS_ALLOW_UID();
-  setpwent();
-  while(pw=getpwent())
-    if(pw->pw_uid == uid)
-      break;
-  endpwent();
-  THREADS_DISALLOW_UID();
-  return 0;
 }
-#define HAVE_GETPWUID
-#endif
+
 #endif
 
-#ifdef HAVE_GETGRENT
-#ifndef HAVE_GETGRNAM
-struct group *getgrnam(char *name)
-{
-  struct group *gr;
-  THREADS_ALLOW_UID();
-  setgrent();
-  while(pw=getgrent())
-    if(strcmp(gr->gr_name,name))
-      break;
-  endgrent();
-  THREADS_DISALLOW_UID();
-  return gr;
-}
-#define HAVE_GETGRNAM
-#endif
-#endif
 
 /*
  * create_process(string *arguments, mapping optional_data);
@@ -828,60 +823,30 @@ void f_create_process(INT32 args)
   }
 #else /* __NT__ */
   {
+    struct svalue *stack_save=sp-args;
+    ONERROR err;
+    struct passwd *pw=0;
+    struct perishables storage;
+    int do_initgroups=1;
+    int wanted_uid;
+    int wanted_gid;
+    int gid_request=0;
     pid_t pid;
-    THREADS_ALLOW_UID();
-#if defined(HAVE_FORK1) && defined(_REENTRANT)
-    pid=fork1();
-#else
-    pid=fork();
-#endif
-    THREADS_DISALLOW_UID();
-    if(pid==-1) error("Failed to start process.\n");
-    if(pid)
-    {
-      if(!signal_evaluator_callback)
-      {
-	signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
-						  check_signals,
-						  0,0);
-      }
-      THIS->pid=pid;
-      THIS->state=PROCESS_RUNNING;
-      ref_push_object(fp->current_object);
-      push_int(pid);
-      mapping_insert(pid_mapping,sp-1, sp-2);
-      pop_n_elems(2);
-    }else{
-      int wanted_uid;
-      int wanted_gid;
-      int gid_request=0;
-      int do_initgroups=1;
-      struct passwd *pw=0;
-      ONERROR oe;
 
-      char **argv;
-#ifdef DECLARE_ENVIRON
-      extern char **environ;
-#endif
-      char **env;
-      extern void my_set_close_on_exec(int,int);
-      extern void do_set_close_on_exec(void);
+    storage.env=0;
+    storage.argv=0;
+    MAKE_CONSTANT_SHARED_STRING(storage.nice_s, "nice");
+    MAKE_CONSTANT_SHARED_STRING(storage.cwd_s, "cwd");
+    MAKE_CONSTANT_SHARED_STRING(storage.stdin_s, "stdin");
+    MAKE_CONSTANT_SHARED_STRING(storage.stdout_s, "stdout");
+    MAKE_CONSTANT_SHARED_STRING(storage.stderr_s, "stderr");
 
-      SET_ONERROR(oe, exit_on_error, "Error in create_process() child.");
-
-#ifdef _REENTRANT
-      /* forked copy. there is now only one thread running, this one. */
-      num_threads=1;
+#ifdef HAVE_SETGROUPS
+    storage.wanted_gids=0;
+    storage.wanted_gids_array=0;
 #endif
-      call_callback(&fork_child_callback, 0);
-      
-      
-      argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
-      
-      for(e=0;e<cmd->size;e++)
-	argv[e]=ITEM(cmd)[e].u.string->str;
-      
-      argv[e]=0;
+
+    SET_ONERROR(err, free_perishables, &storage);
 
 #ifdef HAVE_GETEUID
       wanted_uid=geteuid();
@@ -894,6 +859,246 @@ void f_create_process(INT32 args)
 #else
       wanted_gid=getgid();
 #endif
+
+    if(optional)
+    {
+      if((tmp=simple_mapping_string_lookup(optional, "gid")))
+      {
+	switch(tmp->type)
+	{
+	  case T_INT:
+	    wanted_gid=tmp->u.integer;
+	    gid_request=1;
+	    break;
+	    
+#if defined(HAVE_GETGRNAM) || defined(HAVE_GETGRENT)
+	  case T_STRING:
+	  {
+	    extern void f_getgrnam(INT32);
+	    push_svalue(tmp);
+	    f_getgrnam(1);
+	    if(!sp[-1].type!=T_ARRAY)
+	      error("No such group.\n");
+	    if(sp[-1].u.array->item[2].type!=T_INT)
+	      error("Getpwuid failed!\n");
+	    wanted_gid=sp[-1].u.array->item[2].u.integer;
+	    pop_stack();
+	    gid_request=1;
+	  }
+#endif
+	  
+	  default:
+	    error("Invalid argument for gid.\n");
+	}
+      }
+      
+      if((tmp=simple_mapping_string_lookup(optional, "uid")))
+      {
+	switch(tmp->type)
+	{
+	  case T_INT:
+	    wanted_uid=tmp->u.integer;
+#if defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
+	    if(!gid_request)
+	    {
+	      extern void f_getpwent(INT32);
+	      push_int(gid_request);
+	      f_getpwent(1);
+
+	      if(sp[-1].type==T_ARRAY)
+	      {
+		if(sp[-1].u.array->item[3].type!=T_INT)
+		  error("Getpwuid failed!\n");
+		wanted_gid=sp[-1].u.array->item[3].u.integer;
+	      }
+	      pop_stack();
+	    }
+#endif
+	    break;
+	    
+#if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWENT)
+	  case T_STRING:
+	  {
+	    extern void f_getpwnam(INT32);
+	    push_svalue(tmp);
+	    f_getpwnam(1);
+	    if(sp[-1].type != T_ARRAY)
+	      error("No such user.\n");
+	    if(sp[-1].u.array->item[2].type!=T_INT ||
+	       sp[-1].u.array->item[3].type!=T_INT)
+	      error("Getpwnam failed!\n");
+	    wanted_uid=sp[-1].u.array->item[2].u.integer;
+	    if(!gid_request)
+	      wanted_gid=sp[-1].u.array->item[3].u.integer;
+	    pop_stack();
+	    break;
+	  }
+#endif
+	    
+	  default:
+	    error("Invalid argument for uid.\n");
+	}
+      }
+
+      if((tmp=simple_mapping_string_lookup(optional, "setgroups")))
+      {
+#ifdef HAVE_SETGROUPS
+	if(tmp->type != T_ARRAY)
+	{
+	  storage.wanted_gids_array=tmp->u.array;
+	  for(e=0;e<storage.wanted_gids_array->size;e++)
+	    if(storage.wanted_gids_array->item[e].type != T_INT)
+	      error("Invalid type for setgroups.\n");
+	  storage.wanted_gids_array->refs++;
+	  do_initgroups=0;
+	}else{
+	  error("Invalid type for setgroups.\n");
+	}
+#else
+	error("Setgroups is not available.\n");
+#endif
+      }
+
+
+      if((tmp=simple_mapping_string_lookup(optional, "env")))
+      {
+	if(tmp->type == T_MAPPING)
+	{
+	  struct mapping *m=tmp->u.mapping;
+	  struct array *i,*v;
+	  int ptr=0;
+	  i=mapping_indices(m);
+	  v=mapping_values(m);
+	  
+	  storage.env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
+	  for(e=0;e<i->size;e++)
+	  {
+	    if(ITEM(i)[e].type == T_STRING &&
+	       ITEM(v)[e].type == T_STRING)
+	    {
+	      check_stack(3);
+	      push_string(ITEM(i)[e].u.string);
+	      push_string(make_shared_string("="));
+	      push_string(ITEM(v)[e].u.string);
+	      f_add(3);
+	      storage.env[ptr++]=sp[-1].u.string->str;
+	    }
+	  }
+	  storage.env[ptr++]=0;
+	  free_array(i);
+	  free_array(v);
+	  }
+	}
+
+      if((tmp=simple_mapping_string_lookup(optional, "noinitgroups")))
+	if(!IS_ZERO(tmp))
+	  do_initgroups=0;
+    }
+
+#ifdef HAVE_SETGROUPS
+
+#ifdef HAVE_GETGRENT
+    if(wanted_uid != getuid() && do_initgroups)
+    {
+      extern void f_get_groups_for_user(INT32);
+      push_int(wanted_uid);
+      f_get_groups_for_user(1);
+      if(sp[-1].type == T_ARRAY)
+      {
+	storage.wanted_gids_array=sp[-1].u.array;
+	sp--;
+      }
+    }
+#endif
+
+    if(storage.wanted_gids_array)
+    {
+      int e;
+      storage.wanted_gids=(gid_t *)xalloc(sizeof(gid_t) * storage.wanted_gids_array->size);
+      for(e=0;e<storage.wanted_gids_array->size;e++)
+      {
+	switch(storage.wanted_gids_array->item[e].type)
+	{
+	  case T_INT:
+	    storage.wanted_gids[e]=storage.wanted_gids_array->item[e].u.integer;
+	    break;
+
+#if defined(HAVE_GETGRENT) || defined(HAVE_GETGRNAM)
+	  case T_STRING:
+	  {
+	    extern void f_getgrnam(INT32);
+	    ref_push_string(storage.wanted_gids_array->item[e].u.string);
+	    f_getgrnam(2);
+	    if(sp[-1].type != T_ARRAY)
+	      error("No such group.\n");
+
+	    storage.wanted_gids[e]=sp[-1].u.array->item[2].u.integer;
+	    pop_stack();
+	    break;
+	  }
+#endif
+
+	  default:
+	    error("Gids must be integers or strings only.\n");
+	}
+      }
+      storage.num_wanted_gids=storage.wanted_gids_array->size;
+      free_array(storage.wanted_gids_array);
+      storage.wanted_gids_array=0;
+      do_initgroups=0;
+    }
+#endif /* HAVE_SETGROUPS */
+    
+    storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
+
+    THREADS_ALLOW_UID();
+#if defined(HAVE_FORK1) && defined(_REENTRANT)
+    pid=fork1();
+#else
+    pid=fork();
+#endif
+    THREADS_DISALLOW_UID();
+    if(pid==-1) error("Failed to start process.\n");
+    if(pid)
+    {
+      UNSET_ONERROR(err);
+      free_perishables(&storage);
+      pop_n_elems(sp - stack_save);
+
+      if(!signal_evaluator_callback)
+      {
+	signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
+						  check_signals,
+						  0,0);
+      }
+      THIS->pid=pid;
+      THIS->state=PROCESS_RUNNING;
+      ref_push_object(fp->current_object);
+      push_int(pid);
+      mapping_insert(pid_mapping,sp-1, sp-2);
+      pop_n_elems(2);
+      push_int(0);
+    }else{
+      ONERROR oe;
+
+#ifdef DECLARE_ENVIRON
+      extern char **environ;
+#endif
+      extern void my_set_close_on_exec(int,int);
+      extern void do_set_close_on_exec(void);
+
+      SET_ONERROR(oe, exit_on_error, "Error in create_process() child.");
+
+#ifdef _REENTRANT
+      /* forked copy. there is now only one thread running, this one. */
+      num_threads=1;
+#endif
+      call_callback(&fork_child_callback, 0);
+
+      for(e=0;e<cmd->size;e++) storage.argv[e]=ITEM(cmd)[e].u.string->str;
+      storage.argv[e]=0;
+
+      if(storage.env) environ=storage.env;
 
 #ifdef HAVE_SETEUID
       seteuid(0);
@@ -908,95 +1113,13 @@ void f_create_process(INT32 args)
 	int toclose[3];
 	int fd;
 
-	if((tmp=simple_mapping_string_lookup(optional, "gid")))
-	{
-	  switch(tmp->type)
-	  {
-	    case T_INT:
-	      wanted_gid=tmp->u.integer;
-	      gid_request=1;
-	      break;
-
-#ifdef HAVE_GETGRNAM
-	    case T_STRING:
-	    {
-	      struct group *gr=getgrnam(tmp->u.string->str);
-	      if(!gr) exit(77);
-	      wanted_gid=tmp->u.integer;
-	      gid_request=1;
-	    }
-#endif
-
-	    default:
-	      exit(64);
-	  }
-	}
-
-	if((tmp=simple_mapping_string_lookup(optional, "uid")))
-	{
-	  switch(tmp->type)
-	  {
-	    case T_INT:
-	      wanted_uid=tmp->u.integer;
-#ifdef HAVE_GETPWUID
-	      if(!gid_request)
-	      {
-		pw=getpwuid(wanted_uid);
-		if(pw) wanted_gid=pw->pw_gid;
-	      }
-#endif
-	      break;
-
-#ifdef HAVE_GETPWNAM
-	    case T_STRING:
-	      pw=getpwnam(tmp->u.string->str);
-	      if(!pw) exit(77);
-	      wanted_uid=pw->pw_uid;
-	      if(!gid_request) 
-		wanted_gid=pw->pw_gid;  
-	      break;
-#endif
-
-	    default:
-	      exit(64);
-	  }
-	}
-
-	if((tmp=simple_mapping_string_lookup(optional, "noinitgroups")))
-	  if(!IS_ZERO(tmp))
-	    do_initgroups=0;
-
-	if((tmp=simple_mapping_string_lookup(optional, "setgroups")))
-	{
-#ifdef HAVE_SETGROUPS
-	  if(tmp->type != T_ARRAY)
-	  {
-	    int e;
-	    gid_t *g=(gid_t *)xalloc(sizeof(gid_t) * tmp->u.array->size);
-	    for(e=0;e<tmp->u.array->size;e++)
-	    {
-	      if(tmp->u.array->item[e].type != T_INT) exit(64);
-	      g[e]=tmp->u.array->item[e].u.integer;
-	    }
-	    if(!setgroups(tmp->u.array->size, g))  exit(77);
-	    do_initgroups=0;
-	  }else{
-	    exit(64);
-	  }
-#else
-	  exit(69);
-#endif
-	}
-
-
-	if((tmp=simple_mapping_string_lookup(optional, "cwd")))
+	if((tmp=low_mapping_string_lookup(optional, storage.cwd_s)))
 	  if(tmp->type == T_STRING)
 	    if(chdir(tmp->u.string->str))
 	      exit(69);
 
-
 #ifdef HAVE_NICE
-	if ((tmp=simple_mapping_string_lookup(optional, "nice"))) {
+	if ((tmp=low_mapping_string_lookup(optional, storage.nice_s))) {
 	  if (tmp->type == T_INT) {
 	    int n = nice(0);
 	    int nn = tmp->u.integer;
@@ -1010,61 +1133,23 @@ void f_create_process(INT32 args)
 	}
 #endif /* HAVE_NICE */
 
-
-	if((tmp=simple_mapping_string_lookup(optional, "env")))
-	{
-	  if(tmp->type == T_MAPPING)
-	  {
-	    struct mapping *m=tmp->u.mapping;
-	    struct array *i,*v;
-	    int ptr=0;
-	    i=mapping_indices(m);
-	    v=mapping_values(m);
-
-	    env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
-	    for(e=0;e<i->size;e++)
-	    {
-	      if(ITEM(i)[e].type == T_STRING &&
-		 ITEM(v)[e].type == T_STRING)
-	      {
-		check_stack(3);
-		push_string(ITEM(i)[e].u.string);
-		push_string(make_shared_string("="));
-		push_string(ITEM(v)[e].u.string);
-		f_add(3);
-		env[ptr++]=sp[-1].u.string->str;
-	      }
-	    }
-	    env[ptr++]=0;
-	    free_array(i);
-	    free_array(v);
-	    environ=env;
-	  }
-	}
-
 	for(fd=0;fd<3;fd++)
 	{
-	  char *fdname;
+	  struct pike_string *fdname;
 	  switch(fd)
 	  {
-	    case 0: fdname="stdin"; break;
-	    case 1: fdname="stdout"; break;
-	    default: fdname="stderr"; break;
+	    case 0: fdname=storage.stdin_s; break;
+	    case 1: fdname=storage.stdout_s; break;
+	    default: fdname=storage.stderr_s; break;
 	  }
 	  
-	  if((tmp=simple_mapping_string_lookup(optional, fdname)))
+	  if((tmp=low_mapping_string_lookup(optional, fdname)))
 	  {
 	    if(tmp->type == T_OBJECT)
 	    {
-	      apply(tmp->u.object,"query_fd",0);
-	      if(sp[-1].type == T_INT)
-	      {
-		if(sp[-1].u.integer != fd)
-		{
-		  dup2(toclose[fd]=sp[-1].u.integer, fd);
-		}
-	      }
-	      pop_stack();
+	      INT32 f=fd_from_object(tmp->u.object);
+	      if(f != -1 && fd!=f)
+		dup2(toclose[fd]=f, fd);
 	    }
 	  }
 	}
@@ -1096,6 +1181,16 @@ void f_create_process(INT32 args)
 	  if(wanted_gid > 60000 && setgid(-2) && setgid(65534) && setgid(60001))
 #endif
 	    exit(77);
+      }
+#endif
+
+#ifdef HAVE_SETGROUPS
+      if(storage.wanted_gids)
+      {
+	if(setgroups(storage.num_wanted_gids, storage.wanted_gids))
+	{
+	  exit(77);
+	}
       }
 #endif
 
@@ -1147,15 +1242,12 @@ void f_create_process(INT32 args)
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
 	
-      my_set_close_on_exec(0,0);
-      my_set_close_on_exec(1,0);
-      my_set_close_on_exec(2,0);
       do_set_close_on_exec();
       set_close_on_exec(0,0);
       set_close_on_exec(1,0);
       set_close_on_exec(2,0);
       
-      execvp(argv[0],argv);
+      execvp(storage.argv[0],storage.argv);
       exit(69);
     }
   }
@@ -1170,6 +1262,11 @@ void f_fork(INT32 args)
   struct object *o;
   pid_t pid;
   pop_n_elems(args);
+
+#ifdef _REENTRANT
+  if(num_threads >1)
+    error("You cannot use fork in a multithreaded application.\n");
+#endif
 
   THREADS_ALLOW_UID();
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
