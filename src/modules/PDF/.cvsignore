@@ -10,6 +10,7 @@ modlist_headers
 modlist_segment
 module.pmod
 module_testsuite
-stamp-h
 pdf_machine.h
 pdf_machine.h.in
+remake
+stamp-h
