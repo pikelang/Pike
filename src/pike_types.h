@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.88 2003/06/30 17:00:14 mast Exp $
+|| $Id: pike_types.h,v 1.89 2003/08/20 16:41:23 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -31,6 +31,9 @@ struct pike_type
   struct pike_type *car;
   struct pike_type *cdr;
 };
+
+extern struct pike_type **pike_type_hash;
+extern size_t pike_type_hash_size;
 
 #define CAR_TO_INT(TYPE) ((char *) (TYPE)->car - (char *) 0)
 #define CDR_TO_INT(TYPE) ((char *) (TYPE)->cdr - (char *) 0)

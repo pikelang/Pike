@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.220 2003/08/04 16:46:37 mast Exp $
+|| $Id: pike_types.c,v 1.221 2003/08/20 16:41:23 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.220 2003/08/04 16:46:37 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.221 2003/08/20 16:41:23 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -158,6 +158,7 @@ char *get_name_of_type(int t)
     case T_MAPPING_DATA: return "mapping_data";
     case T_PIKE_FRAME: return "pike_frame";
     case T_MULTISET_DATA: return "multiset_data";
+    case T_STRUCT_CALLABLE: return "callable";
     default: return "unknown";
   }
 }
@@ -214,8 +215,8 @@ static void internal_parse_type(const char **s);
 #define PIKE_TYPE_CHUNK	128
 BLOCK_ALLOC(pike_type, PIKE_TYPE_CHUNK)
 
-static struct pike_type **pike_type_hash = NULL;
-static size_t pike_type_hash_size = 0;
+struct pike_type **pike_type_hash = NULL;
+size_t pike_type_hash_size = 0;
 
 void debug_free_type(struct pike_type *t)
 {
