@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.31 2003/11/14 10:26:43 mast Exp $
+|| $Id: _xpm.c,v 1.32 2003/12/01 18:10:36 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.31 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: _xpm.c,v 1.32 2003/12/01 18:10:36 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -108,13 +108,8 @@ static rgba_group decode_color( struct buffer *s )
   }
   if(!parse_color)
   {
-    push_text("Image");
-    push_int(0);
-    SAFE_APPLY_MASTER( "resolv", 2 );
-    if(UNSAFE_IS_ZERO(sp-1)) Pike_error("Internal error: No Image module!\n");
-    push_text("Color");
-    f_index(2);
-    if(UNSAFE_IS_ZERO(sp-1)) Pike_error("Internal error: No Image[] function!\n");
+    push_text("Image.Color");
+    SAFE_APPLY_MASTER( "resolv_or_error", 1 );
     _parse_color = sp[-1];
     parse_color = &_parse_color;
     sp--;

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.18 2003/10/13 17:40:53 grubba Exp $
+|| $Id: freetype.c,v 1.19 2003/12/01 18:14:23 nilsson Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.18 2003/10/13 17:40:53 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.19 2003/12/01 18:14:23 nilsson Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -326,15 +326,10 @@ PIKE_MODULE_INIT
   if( !FT_Init_FreeType( &library ) )
   {
 #ifdef DYNAMIC_MODULE
-    push_string(make_shared_string("Image"));
-    push_int(0);
-    SAFE_APPLY_MASTER("resolv",2);
-    if (sp[-1].type==T_OBJECT)
-    {
-      push_string(make_shared_string("Image"));
-      f_index(2);
+    push_text("Image.Image");
+    SAFE_APPLY_MASTER("resolv",1);
+    if (sp[-1].type==T_PROGRAM)
       image_program=program_from_svalue(sp-1);
-    }
     pop_n_elems(1);
 #endif /* DYNAMIC_MODULE */
 

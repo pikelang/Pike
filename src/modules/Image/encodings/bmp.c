@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bmp.c,v 1.41 2003/09/26 10:37:23 mirar Exp $
+|| $Id: bmp.c,v 1.42 2003/12/01 18:10:23 nilsson Exp $
 */
 
 /*
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.41 2003/09/26 10:37:23 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.42 2003/12/01 18:10:23 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -705,25 +705,16 @@ void i_img_bmp__decode(INT32 args,int header_only)
       if (olen-i<0)
 	 Pike_error("Image.BMP.decode: unexpected EOF in JFIF data\n");
 
-      push_text("Image");
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      push_text("JPEG");
-      f_index(2);
-      push_text("decode");
-      f_index(2);
+      push_text("Image.JPEG.decode");
+      SAFE_APPLY_MASTER("resolv_or_error",1);
 
       push_string(make_shared_binary_string((char *)os+i,olen-i));
 
       push_text("quant_tables");
 
-      push_text("Image");
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      push_text("JPEG");
-      f_index(2);
-      push_text("quant_tables");
-      f_index(2);
+      push_text("Image.JPEG.quant_tables");
+      SAFE_APPLY_MASTER("resolv_or_error",1);
+
       push_int(quality);
       f_call_function(2);
 
