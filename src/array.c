@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.58 1999/11/23 10:38:15 mast Exp $");
+RCSID("$Id: array.c,v 1.59 1999/12/10 22:38:26 grubba Exp $");
 
 struct array empty_array=
 {
@@ -191,6 +191,7 @@ void simple_array_index_no_free(struct svalue *s,
       f_column(2);
       s[0]=sp[-1];
       sp--;
+      dmalloc_touch_svalue(sp);
       break;
     }
 	
@@ -1531,6 +1532,7 @@ struct array *aggregate_array(INT32 args)
   MEMCPY((char *)ITEM(a),(char *)(sp-args),args*sizeof(struct svalue));
   a->type_field=BIT_MIXED;
   sp-=args;
+  DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(sp + args));
   return a;
 }
 

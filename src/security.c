@@ -125,6 +125,7 @@ static void f_call_with_creds(INT32 args)
   free_svalue(sp-2);
   sp[-2]=sp[-1];
   sp--;
+  dmalloc_touch_svalue(sp);
 }
 
 /*: <pikedoc type=txt>
