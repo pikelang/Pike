@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.160 1999/03/20 03:00:03 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.161 1999/03/20 16:23:27 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -159,8 +159,8 @@ struct case_info {
 };
 
 #define CIM_NONE	0	/* Case-less */
-#define CIM_UPPER	1	/* Upper-case, lower-case in data */
-#define CIM_LOWER	2	/* Lower-case, upper-case in data */
+#define CIM_UPPERDELTA	1	/* Upper-case, delta to lower-case in data */
+#define CIM_LOWERDELTA	2	/* Lower-case, -delta to upper-case in data */
 #define CIM_CASEBIT	3	/* Some case, case mask in data */
 #define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
 
@@ -203,9 +203,9 @@ static struct case_info *find_ci(int c)
     struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
-      case CIM_NONE: case CIM_LOWER: break; \
-      case CIM_UPPER: C = ci->data; break; \
-      case CIM_CASEBIT: C |= ci->data; break; \
+      case CIM_NONE: case CIM_LOWERDELTA: break; \
+      case CIM_UPPERDELTA: C = c + ci->data; break; \
+      case CIM_CASEBIT: C = c | ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
       default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
@@ -217,9 +217,9 @@ static struct case_info *find_ci(int c)
     struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
-      case CIM_NONE: case CIM_UPPER: break; \
-      case CIM_LOWER: C = ci->data; break; \
-      case CIM_CASEBIT: C &= ~ci->data; break; \
+      case CIM_NONE: case CIM_UPPERDELTA: break; \
+      case CIM_LOWERDELTA: C = c - ci->data; break; \
+      case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
       default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
@@ -274,7 +274,7 @@ void f_upper_case(INT32 args)
   get_all_args("upper_case",args,"%W",&orig);
 
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
-  MEMCPY(ret->str, orig->str, orig->len);
+  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 

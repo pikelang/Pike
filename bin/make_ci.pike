@@ -1,5 +1,5 @@
 /*
- * $Id: make_ci.pike,v 1.2 1999/03/20 02:56:34 grubba Exp $
+ * $Id: make_ci.pike,v 1.3 1999/03/20 16:23:26 grubba Exp $
  *
  * Creates the file case_info.h
  *
@@ -7,8 +7,8 @@
  */
 
 #define CIM_NONE	0	/* Case-less */
-#define CIM_UPPER	1	/* Upper-case, lower-case in data */
-#define CIM_LOWER	2	/* Lower-case, upper-case in data */
+#define CIM_UPPERDELTA	1	/* Upper-case, delta to lower-case in data */
+#define CIM_LOWERDELTA	2	/* Lower-case, -delta to upper-case in data */
 #define CIM_CASEBIT	3	/* Some case, case bit in data */
 #define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
 
@@ -38,7 +38,7 @@ int main(int argc, array(string) argv)
     int d;
     if (sizeof(info[13])) {
       // Upper-case char
-      mode = CIM_UPPER;
+      mode = CIM_UPPERDELTA;
       sscanf(info[13], "%04x", d);
       int delta = d - char;
       if (!(delta & (delta - 1)) && (delta > 0)) {
@@ -47,11 +47,11 @@ int main(int argc, array(string) argv)
 	} else {
 	  mode = CIM_CASEBITOFF;
 	}
-	d = delta;
       }
+      d = delta;
     } else if (sizeof(info[14])) {
       // Lower-case char
-      mode = CIM_LOWER;
+      mode = CIM_LOWERDELTA;
       sscanf(info[14], "%04x", d);
       int delta = char - d;
       if (!(delta & (delta - 1)) && (delta > 0)) {
@@ -60,8 +60,8 @@ int main(int argc, array(string) argv)
 	} else {
 	  mode = CIM_CASEBITOFF;
 	}
-	d = delta;
       }
+      d = delta;
     }
 
     if ((ci[-1][1] != mode) || (ci[-1][2] != d)) {
@@ -71,7 +71,9 @@ int main(int argc, array(string) argv)
   }
 
   write(sprintf("/*\n"
-		" * Created by $Id: make_ci.pike,v 1.2 1999/03/20 02:56:34 grubba Exp $ on %s"
+		" * Created by\n"
+		" * $Id: make_ci.pike,v 1.3 1999/03/20 16:23:26 grubba Exp $\n"
+		" * on %s"
 		" *\n"
 		" * Table used for looking up the case of\n"
 		" * Unicode characters.\n"
@@ -80,11 +82,12 @@ int main(int argc, array(string) argv)
 		" */\n\n", ctime(time())));
 
   foreach(ci, array(int) info) {
-    write(sprintf("{ 0x%04x, %s, 0x%04x, },\n",
+    write(sprintf("{ 0x%04x, %s, %s0x%04x, },\n",
 		  info[0],
-		  ({ "CIM_NONE", "CIM_UPPER", "CIM_LOWER",
+		  ({ "CIM_NONE", "CIM_UPPERDELTA", "CIM_LOWERDELTA",
 		     "CIM_CASEBIT", "CIM_CASEBITOFF" })[info[1]],
-		  info[2]));
+		  (info[2]<0)?"-":"",
+		  (info[2]<0)?-info[2]:info[2]));
   }
 
   exit(0);

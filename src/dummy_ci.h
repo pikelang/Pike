@@ -1,5 +1,5 @@
 /*
- * $Id: dummy_ci.h,v 1.1 1999/03/20 02:30:37 grubba Exp $
+ * $Id: dummy_ci.h,v 1.2 1999/03/20 16:23:29 grubba Exp $
  *
  * Fallback case_info file.
  * Only ISO-8859-1 in this one.
@@ -18,4 +18,4 @@
 { 0x00e0, CIM_CASEBIT, 0x0020, },
 { 0x00f7, CIM_NONE, 0x0000, },
 { 0x00f8, CIM_CASEBIT, 0x0020, },
-{ 0x00ff, CIM_LOWER, 0x0178, },
+{ 0x00ff, CIM_LOWERDELTA, -0x0079, },
