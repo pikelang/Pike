@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.113 1997/09/11 22:14:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.114 1997/09/15 22:47:10 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -481,7 +481,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h)
+thread.h dlfcn.h dld.h sys/times.h sched.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -507,6 +507,29 @@ if test "${pike_cv_sys_os}" = "Linux"; then
   if test "${ac_cv_lib_m_floor}" = "no"; then
     AC_MSG_WARN(I will compensate for this by adding -lc -lm)
     LIBS="${LIBS} -lc -lm"
+  fi
+
+  if test "$ac_cv_header_sched_h" = "yes"; then
+    AC_MSG_CHECKING(if sched.h has a typo)
+    AC_CACHE_VAL(pike_cv_broken_sched_h, [
+      AC_TRY_COMPILE([
+#include <sched.h>
+      ],[ ],[ pike_cv_broken_shed_h=no ], [
+        OLDCPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CPPFLAGS -D_P=__P"
+	AC_TRY_COMPILE([
+#include <sched.h>
+        ],[ ],[ pike_cv_broken_sched_h=yes ],[
+          pike_cv_broken_sched_h="very broken"
+        ])
+	CPPFLAGS="$OLDCPPFLAGS"
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_broken_sched_h)
+    if test "$pike_cv_broken_sched_h" = "yes"; then
+      AC_MSG_WARN(Applying workaround)
+      CPPFLAGS="$CPPFLAGS -D_P=__P"
+    fi
   fi
 fi
 
