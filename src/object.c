@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.253 2004/04/03 18:24:24 mast Exp $
+|| $Id: object.c,v 1.254 2004/04/04 21:23:19 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.253 2004/04/03 18:24:24 mast Exp $");
+RCSID("$Id: object.c,v 1.254 2004/04/04 21:23:19 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1739,9 +1739,6 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       
 	  LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-	  if(pike_frame->context.prog->event_handler)
-	    pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
-
 	  for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	  {
 	    int d=pike_frame->context.prog->variable_index[q];
@@ -1770,6 +1767,10 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 		gc_mark_short_svalue(u, rtt);
 	    }
 	  }
+
+	  if(pike_frame->context.prog->event_handler)
+	    pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
+
 	  LOW_UNSET_FRAME_CONTEXT();
 	}
 
@@ -1802,9 +1803,6 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       
 	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-	if(pike_frame->context.prog->event_handler)
-	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
-
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
 	  int d=pike_frame->context.prog->variable_index[q];
@@ -1833,6 +1831,10 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	      gc_cycle_check_short_svalue(u, rtt);
 	  }
 	}
+
+	if(pike_frame->context.prog->event_handler)
+	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
+
 	LOW_UNSET_FRAME_CONTEXT();
       }
     
@@ -1872,9 +1874,6 @@ static inline void gc_check_object(struct object *o)
       {
 	int q;
 	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
-      
-	if(pike_frame->context.prog->event_handler)
-	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_CHECK);
 
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
@@ -1904,8 +1903,11 @@ static inline void gc_check_object(struct object *o)
 	      gc_check_short_svalue(u, rtt);
 	  }
 	}
-	LOW_UNSET_FRAME_CONTEXT();
+      
+	if(pike_frame->context.prog->event_handler)
+	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_CHECK);
 
+	LOW_UNSET_FRAME_CONTEXT();
       }
       LOW_POP_FRAME();
     }

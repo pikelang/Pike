@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.559 2004/03/14 05:45:00 nilsson Exp $
+|| $Id: program.c,v 1.560 2004/04/04 21:23:18 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.559 2004/03/14 05:45:00 nilsson Exp $");
+RCSID("$Id: program.c,v 1.560 2004/04/04 21:23:18 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3262,6 +3262,9 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * The callback might be called more than once for the same instance
  * during a gc pass. The gc assumes that the references are enumerated
  * in the same order in that case.
+ *
+ * The callback is called after any mapped variables on the object
+ * have been recursed (and possibly freed).
  *
  * This function is obsolete, use pike_set_prog_event_callback instead.
  */
