@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.144 2001/07/12 14:04:22 grubba Exp $ */
+/* $Id: html.c,v 1.145 2001/07/17 03:30:03 nilsson Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -862,57 +862,58 @@ static void html__set_entity_callback(INT32 args)
 **!	occurrence of the end string immediately before a tag end.
 **!
 **!	<tt>to_do</tt> can be:
+**!
 **!	<ul>
 **!
-**!	<p><li><b>a function</b> to be called. The function is on the form
+**!	<li><b>a function</b> to be called. The function is on the form
 **!	<pre>
 **!     mixed tag_callback(Parser.HTML parser,mapping args,mixed ...extra)
 **!	mixed container_callback(Parser.HTML parser,mapping args,string content,mixed ...extra)
 **!	mixed entity_callback(Parser.HTML parser,mixed ...extra)
 **!	mixed quote_tag_callback(Parser.HTML parser,string content,mixed ...extra)
 **!	</pre>
-**!	depending on what realm the function is called by.
+**!	depending on what realm the function is called by.</li>
 **!
-**!	<p><li><b>a string</b>. This tag/container/entity is then replaced
+**!	<li><b>a string</b>. This tag/container/entity is then replaced
 **!	by the string. The string is normally not reparsed, i.e. it's
 **!	equivalent to writing a function that returns the string in an
 **!	array (but a lot faster). If <ref>reparse_strings</ref> is
-**!	set the string will be reparsed, though.
+**!	set the string will be reparsed, though.</li>
 **!
-**!	<p><li><b>an array</b>. The first element is a function as above.
+**!	<li><b>an array</b>. The first element is a function as above.
 **!	It will receive the rest of the array as extra arguments. If
 **!	extra arguments are given by <ref>set_extra</ref>(), they will
-**!	appear after the ones in this array.
+**!	appear after the ones in this array.</li>
 **!
-**!	<p><li><b>zero</b>. If there is a tag/container/entity with the
-**!	given name in the parser, it's removed.
+**!	<li><b>zero</b>. If there is a tag/container/entity with the
+**!	given name in the parser, it's removed.</li>
 **!
 **!	</ul>
 **!
-**!     <p>The callback function can return:
+**!     The callback function can return:
+**!
 **!	<ul>
 **!
-**!	<p><li><b>a string</b>; this string will be pushed on the parser
+**!	<li><b>a string</b>; this string will be pushed on the parser
 **!	stack and be parsed. Be careful not to return anything
-**!	in this way that could lead to a infinite recursion.
+**!	in this way that could lead to a infinite recursion.</li>
 **!
-**!	<p><li><b>an array</b>; the element(s) of the array is the result
+**!	<li><b>an array</b>; the element(s) of the array is the result
 **!	of the function. This will not be parsed. This is useful for
 **!	avoiding infinite recursion. The array can be of any size,
 **!	this means the empty array is the most effective to return if
 **!	you don't care about the result. If the parser is operating in
 **!	<ref>mixed_mode</ref>, the array can contain anything.
-**!	Otherwise only strings are allowed.
+**!	Otherwise only strings are allowed.</li>
 **!
-**!	<p><li><b>zero</b>; this means "don't do anything", ie the
+**!	<li><b>zero</b>; this means "don't do anything", ie the
 **!	item that generated the callback is left as it is, and
-**!	the parser continues.
+**!	the parser continues.</li>
 **!
-**!	<p><li><b>one</b>; reparse the last item again. This is useful to
+**!	<li><b>one</b>; reparse the last item again. This is useful to
 **!	parse a tag as a container, or vice versa: just add or remove
 **!	callbacks for the tag and return this to jump to the right
-**!	callback.
-**!
+**!	callback.</li>
 **!	</ul>
 **!
 **! returns the called object
@@ -4449,17 +4450,18 @@ static void html_tag(INT32 args)
 /*
 **! method string context()
 **!	Returns the current output context as a string:
+**!
 **!	<ul>
 **!
-**!	<p><li><b>"data"</b>: In top level data. This is always returned
-**!	when called from tag or container callbacks.
+**!	<li><b>"data"</b>: In top level data. This is always returned
+**!	when called from tag or container callbacks.</li>
 **!
-**!	<p><li><b>"arg"</b>: In an unquoted argument.
+**!	<li><b>"arg"</b>: In an unquoted argument.</li>
 **!
-**!	<p><li><b>A single character string</b>: In a quoted argument.
-**!	The string contains the starting quote character.
+**!	<li><b>A single character string</b>: In a quoted argument.
+**!	The string contains the starting quote character.</li>
 **!
-**!	<p><li><b>"splice_arg"</b>: In a splice argument.
+**!	<li><b>"splice_arg"</b>: In a splice argument.</li>
 **!
 **!	</ul>
 **!
@@ -4852,55 +4854,56 @@ static void html_splice_arg (INT32 args)
 **!	to the value if any is given and returns the old value.
 **!
 **!	<p>The flags are:
+**!
 **!	<ul>
 **!
-**!	<p><li><b>case_insensitive_tag</b>: All tags and containers
+**!	<li><b>case_insensitive_tag</b>: All tags and containers
 **!	are matched case insensitively, and argument names are
 **!	converted to lowercase. Tags added with
 **!	<ref>add_quote_tag</ref>() are not affected, though. Switching
 **!	to case insensitive mode and back won't preserve the case of
-**!	registered tags and containers.
+**!	registered tags and containers.</li>
 **!
-**!	<p><li><b>ignore_tags</b>: Do not look for tags at all.
+**!	<li><b>ignore_tags</b>: Do not look for tags at all.
 **!	Normally tags are matched even when there's no callbacks for
 **!	them at all. When this is set, the tag delimiters '&lt;' and
-**!	'&gt;' will be treated as any normal character.
+**!	'&gt;' will be treated as any normal character.</li>
 **!
-**!	<p><li><b>ignore_unknown</b>: Treat unknown tags and entities
+**!	<li><b>ignore_unknown</b>: Treat unknown tags and entities
 **!	as text data, continuing parsing for tags and entities inside
-**!	them.
+**!	them.</li>
 **!
-**!	<p><li><b>lazy_argument_end</b>: A '&gt;' in a tag argument
+**!	<li><b>lazy_argument_end</b>: A '&gt;' in a tag argument
 **!	closes both the argument and the tag, even if the argument is
-**!	quoted.
+**!	quoted.</li>
 **!
-**!	<p><li><b>lazy_entity_end</b>: Normally, the parser search
+**!	<li><b>lazy_entity_end</b>: Normally, the parser search
 **!	indefinitely for the entity end character (i.e. ';'). When
 **!	this flag is set, the characters '&', '&lt;', '&gt;', '"',
 **!	''', and any whitespace breaks the search for the entity end,
-**!	and the entity text is then ignored, i.e. treated as data.
+**!	and the entity text is then ignored, i.e. treated as data.</li>
 **!
-**!	<p><li><b>match_tag</b>: Unquoted nested tag starters and
+**!	<li><b>match_tag</b>: Unquoted nested tag starters and
 **!	enders will be balanced when parsing tags. This is the
-**!	default.
+**!	default.</li>
 **!
-**!	<p><li><b>max_stack_depth</b>: Maximum recursion depth during
+**!	<li><b>max_stack_depth</b>: Maximum recursion depth during
 **!	parsing. Recursion occurs when a tag/container/entity/quote
 **!	tag callback function returns a string to be reparsed. The
-**!	default value is 10.
+**!	default value is 10.</li>
 **!
-**!	<p><li><b>mixed_mode</b>: Allow callbacks to return arbitrary
-**!	data in the arrays, which will be concatenated in the output.
+**!	<li><b>mixed_mode</b>: Allow callbacks to return arbitrary
+**!	data in the arrays, which will be concatenated in the output.</li>
 **!
-**!	<p><li><b>reparse_strings</b>: When a plain string is used as
+**!	<li><b>reparse_strings</b>: When a plain string is used as
 **!	a tag/container/entity/quote tag callback, it's not reparsed
 **!	if this flag is unset. Setting it causes all such strings to
-**!	be reparsed.
+**!	be reparsed.</li>
 **!
-**!	<p><li><b>ws_before_tag_name</b>: Allow whitespace between the
-**!	tag start character and the tag name.
+**!	<li><b>ws_before_tag_name</b>: Allow whitespace between the
+**!	tag start character and the tag name.</li>
 **!
-**!	<p><li><b>xml_tag_syntax</b>: Whether or not to use XML syntax
+**!	<li><b>xml_tag_syntax</b>: Whether or not to use XML syntax
 **!	to tell empty tags and container tags apart:<br>
 **!
 **!	<b>0</b>: Use HTML syntax only. If there's a '/' last in a
@@ -4921,7 +4924,7 @@ static void html_splice_arg (INT32 args)
 **!	only a container callback exists, it gets the empty string as
 **!	content when there's none to be parsed. If only a
 **!	non-container callback exists, it will be called (without the
-**!	content argument) for both kinds of tags.
+**!	content argument) for both kinds of tags.</li>
 **!
 **!     </ul>
 **!
