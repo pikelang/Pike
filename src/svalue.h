@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.88 2001/04/15 16:13:18 mast Exp $
+ * $Id: svalue.h,v 1.89 2001/04/28 19:32:55 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -76,6 +76,7 @@ union anything
 #ifndef STRUCT_SVALUE_DECLARED
 #define STRUCT_SVALUE_DECLARED
 #endif
+
 struct svalue
 {
   unsigned INT16 type;
@@ -405,14 +406,16 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 }while(0)
 
 #define assign_svalue_no_free_unlocked(X,Y) do {	\
-  struct svalue _tmp, *_to=(X), *_from=(Y);		\
+  struct svalue _tmp, *_to=(X);				\
+  const struct svalue *_from=(Y);			\
   check_type(_from->type); check_refs(_from);		\
   *_to=_tmp=*_from;					\
   if(_tmp.type <= MAX_REF_TYPE) add_ref(_tmp.u.dummy);	\
 }while(0)
 
 #define assign_svalue_unlocked(X,Y) do {	\
-  struct svalue *_to2=(X), *_from2=(Y);		\
+  struct svalue *_to2=(X);			\
+  const struct svalue *_from2=(Y);		\
   if (_to2 != _from2) {				\
     free_svalue(_to2);				\
      assign_svalue_no_free(_to2, _from2);	\
@@ -433,56 +436,56 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s);
 PMOD_EXPORT void do_free_svalue(struct svalue *s);
 PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
 PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
-			    struct svalue *from,
+			    const struct svalue *from,
 			    size_t num,
-			    INT32 type_hint);
+			    TYPE_FIELD type_hint);
 PMOD_EXPORT void assign_svalues(struct svalue *to,
-		    struct svalue *from,
+		    const struct svalue *from,
 		    size_t num,
 		    TYPE_FIELD types);
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
-			    struct svalue *s);
+			    const struct svalue *s);
 PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
-				    struct svalue *s);
+				    const struct svalue *s);
 PMOD_EXPORT void assign_from_short_svalue_no_free(struct svalue *s,
-				      union anything *u,
+				      const union anything *u,
 				      TYPE_T type);
 PMOD_EXPORT void assign_short_svalue_no_free(union anything *to,
-				 union anything *from,
+				 const union anything *from,
 				 TYPE_T type);
 PMOD_EXPORT void assign_short_svalue(union anything *to,
-			 union anything *from,
+			 const union anything *from,
 			 TYPE_T type);
-PMOD_EXPORT unsigned INT32 hash_svalue(struct svalue *s);
-PMOD_EXPORT int svalue_is_true(struct svalue *s);
-PMOD_EXPORT int is_identical(struct svalue *a, struct svalue *b);
-PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b);
-PMOD_EXPORT int low_is_equal(struct svalue *a,
-		 struct svalue *b,
+PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s);
+PMOD_EXPORT int svalue_is_true(const struct svalue *s);
+PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b);
+PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b);
+PMOD_EXPORT int low_is_equal(const struct svalue *a,
+		 const struct svalue *b,
 		 struct processing *p);
 PMOD_EXPORT int low_short_is_equal(const union anything *a,
 		       const union anything *b,
 		       TYPE_T type,
 		       struct processing *p);
-PMOD_EXPORT int is_equal(struct svalue *a,struct svalue *b);
-PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b);
-PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *p);
-PMOD_EXPORT void print_svalue (FILE *out, struct svalue *s);
+PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b);
+PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b);
+PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p);
+PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s);
 PMOD_EXPORT void clear_svalues(struct svalue *s, ptrdiff_t num);
 PMOD_EXPORT void clear_svalues_undefined(struct svalue *s, ptrdiff_t num);
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
-				      struct svalue *from,
+				      const struct svalue *from,
 				      size_t num,
 				      struct processing *p);
-void check_short_svalue(union anything *u, TYPE_T type);
-void debug_check_svalue(struct svalue *s);
-PMOD_EXPORT void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num);
-PMOD_EXPORT void real_gc_check_svalues(struct svalue *s, size_t num);
-void gc_check_weak_svalues(struct svalue *s, size_t num);
-PMOD_EXPORT void real_gc_check_short_svalue(union anything *u, TYPE_T type);
-void gc_check_weak_short_svalue(union anything *u, TYPE_T type);
+void check_short_svalue(const union anything *u, TYPE_T type);
+void debug_check_svalue(const struct svalue *s);
+PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num);
+PMOD_EXPORT void real_gc_check_svalues(const struct svalue *s, size_t num);
+void gc_check_weak_svalues(const struct svalue *s, size_t num);
+PMOD_EXPORT void real_gc_check_short_svalue(const union anything *u, TYPE_T type);
+void gc_check_weak_short_svalue(const union anything *u, TYPE_T type);
 PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num);
 TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num);
 int real_gc_mark_short_svalue(union anything *u, TYPE_T type);
@@ -493,7 +496,7 @@ PMOD_EXPORT int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
 void real_gc_free_svalue(struct svalue *s);
 void real_gc_free_short_svalue(union anything *u, TYPE_T type);
-PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
+PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s);
 /* Prototypes end here */
 
 #define gc_xmark_svalues(S,N) real_gc_xmark_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
@@ -584,7 +587,7 @@ static inline void add_ref_svalue(struct svalue *s)
 #endif
 
 #ifndef assign_svalue_no_free
-void assign_svalue_no_free(struct svalue *to, struct svalue *from)
+void assign_svalue_no_free(struct svalue *to, const struct svalue *from)
 {
   INT64 tmp, sv;
   sv=pike_atomic_get64((INT64 *)from);
@@ -611,7 +614,7 @@ void assign_svalue_no_free(struct svalue *to, struct svalue *from)
 #endif
 
 #ifndef assign_svalue
-static inline void assign_svalue(struct svalue *to, struct svalue *from)
+static inline void assign_svalue(struct svalue *to, const struct svalue *from)
 {
   INT64 tmp, sv;
   if(to != from)

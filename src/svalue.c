@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.100 2001/03/29 19:37:53 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.101 2001/04/28 19:32:55 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -266,9 +266,9 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 }
 
 PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
-			    struct svalue *from,
+			    const struct svalue *from,
 			    size_t num,
-			    INT32 type_hint)
+			    TYPE_FIELD type_hint)
 {
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -303,7 +303,7 @@ PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
 }
 
 PMOD_EXPORT void assign_svalues(struct svalue *to,
-		    struct svalue *from,
+		    const struct svalue *from,
 		    size_t num,
 		    TYPE_FIELD types)
 {
@@ -313,7 +313,7 @@ PMOD_EXPORT void assign_svalues(struct svalue *to,
 
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
-			    struct svalue *s)
+			    const struct svalue *s)
 {
   check_type(s->type);
   check_refs(s);
@@ -342,7 +342,7 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 
 PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
-				    struct svalue *s)
+				    const struct svalue *s)
 {
   check_type(s->type);
   check_refs(s);
@@ -369,7 +369,7 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 
 
 PMOD_EXPORT void assign_from_short_svalue_no_free(struct svalue *s,
-				      union anything *u,
+				      const union anything *u,
 				      TYPE_T type)
 {
   check_type(type);
@@ -395,7 +395,7 @@ PMOD_EXPORT void assign_from_short_svalue_no_free(struct svalue *s,
 }
 
 PMOD_EXPORT void assign_short_svalue_no_free(union anything *to,
-				 union anything *from,
+				 const union anything *from,
 				 TYPE_T type)
 {
   INT32 *tmp;
@@ -413,7 +413,7 @@ PMOD_EXPORT void assign_short_svalue_no_free(union anything *to,
 }
 
 PMOD_EXPORT void assign_short_svalue(union anything *to,
-			 union anything *from,
+			 const union anything *from,
 			 TYPE_T type)
 {
   INT32 *tmp;
@@ -431,7 +431,7 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
   }
 }
 
-PMOD_EXPORT unsigned INT32 hash_svalue(struct svalue *s)
+PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 {
   unsigned INT32 q;
 
@@ -474,7 +474,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(struct svalue *s)
   return q;
 }
 
-PMOD_EXPORT int svalue_is_true(struct svalue *s)
+PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 {
   unsigned INT32 q;
   check_type(s->type);
@@ -514,7 +514,7 @@ PMOD_EXPORT int svalue_is_true(struct svalue *s)
 
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
 
-PMOD_EXPORT int is_identical(struct svalue *a, struct svalue *b)
+PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 {
   if(a->type != b->type) return 0;
   switch(a->type)
@@ -544,7 +544,7 @@ PMOD_EXPORT int is_identical(struct svalue *a, struct svalue *b)
 
 }
 
-PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b)
+PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 {
   check_type(a->type);
   check_type(b->type);
@@ -654,8 +654,8 @@ PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b)
   }
 }
 
-PMOD_EXPORT int low_is_equal(struct svalue *a,
-		 struct svalue *b,
+PMOD_EXPORT int low_is_equal(const struct svalue *a,
+		 const struct svalue *b,
 		 struct processing *p)
 {
   check_type(a->type);
@@ -767,12 +767,12 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
   return low_is_equal(&sa,&sb,p);
 }
 
-PMOD_EXPORT int is_equal(struct svalue *a,struct svalue *b)
+PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b)
 {
   return low_is_equal(a,b,0);
 }
 
-PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
+PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 {
   check_type(a->type);
   check_type(b->type);
@@ -909,7 +909,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
   }
 }
 
-PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *p)
+PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p)
 {
   char buf[50];
 
@@ -1129,7 +1129,7 @@ PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *
   }
 }
 
-PMOD_EXPORT void print_svalue (FILE *out, struct svalue *s)
+PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 {
   string orig_str;
   string str;
@@ -1165,7 +1165,7 @@ PMOD_EXPORT void clear_svalues_undefined(struct svalue *s, ptrdiff_t num)
 }
 
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
-				      struct svalue *from,
+				      const struct svalue *from,
 				      size_t num,
 				      struct processing *p)
 {
@@ -1202,7 +1202,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 }
 
 #ifdef PIKE_DEBUG
-static void low_check_short_svalue(union anything *u, TYPE_T type)
+static void low_check_short_svalue(const union anything *u, TYPE_T type)
 {
   static int inside=0;
 
@@ -1235,7 +1235,7 @@ static void low_check_short_svalue(union anything *u, TYPE_T type)
   }
 }
 
-void check_short_svalue(union anything *u, TYPE_T type)
+void check_short_svalue(const union anything *u, TYPE_T type)
 {
   if(type<=MAX_REF_TYPE &&
      ((PIKE_INT32_ALIGNMENT-1) & (ptrdiff_t)(u->refs)))
@@ -1245,7 +1245,7 @@ void check_short_svalue(union anything *u, TYPE_T type)
   low_check_short_svalue(u,type);
 }
 
-void debug_check_svalue(struct svalue *s)
+void debug_check_svalue(const struct svalue *s)
 {
   check_type(s->type);
   if(s->type<=MAX_REF_TYPE &&
@@ -1260,7 +1260,7 @@ void debug_check_svalue(struct svalue *s)
 
 #ifdef PIKE_DEBUG
 /* NOTE: Must handle num being negative. */
-PMOD_EXPORT void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
+PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num)
 {
   ptrdiff_t e;
 
@@ -1270,7 +1270,7 @@ PMOD_EXPORT void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
 
   for(e=0;e<num;e++,s++)
   {
-    check_svalue(s);
+    check_svalue((struct svalue *) s);
     
     gc_svalue_location=(void *)s;
 
@@ -1334,7 +1334,7 @@ PMOD_EXPORT void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
 
 #define SET_SUB_SHORT_SVALUE(V)
 
-PMOD_EXPORT void real_gc_check_svalues(struct svalue *s, size_t num)
+PMOD_EXPORT void real_gc_check_svalues(const struct svalue *s, size_t num)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
@@ -1342,7 +1342,7 @@ PMOD_EXPORT void real_gc_check_svalues(struct svalue *s, size_t num)
   size_t e;
   for(e=0;e<num;e++,s++)
   {
-    check_svalue(s);
+    check_svalue((struct svalue *) s);
 #ifdef PIKE_DEBUG
     gc_svalue_location=(void *)s;
 #endif
@@ -1355,7 +1355,7 @@ PMOD_EXPORT void real_gc_check_svalues(struct svalue *s, size_t num)
 #endif
 }
 
-void gc_check_weak_svalues(struct svalue *s, size_t num)
+void gc_check_weak_svalues(const struct svalue *s, size_t num)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
@@ -1363,7 +1363,7 @@ void gc_check_weak_svalues(struct svalue *s, size_t num)
   size_t e;
   for(e=0;e<num;e++,s++)
   {
-    check_svalue(s);
+    check_svalue((struct svalue *) s);
 #ifdef PIKE_DEBUG
     gc_svalue_location=(void *)s;
 #endif
@@ -1376,13 +1376,13 @@ void gc_check_weak_svalues(struct svalue *s, size_t num)
 #endif
 }
 
-PMOD_EXPORT void real_gc_check_short_svalue(union anything *u, TYPE_T type)
+PMOD_EXPORT void real_gc_check_short_svalue(const union anything *u, TYPE_T type)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
   gc_svalue_location=(void *)u;
 #endif
-  debug_malloc_touch(u);
+  debug_malloc_touch((void *) u);
   GC_CHECK_SWITCH((*u), type, NEVER_ZAP, gc_check,
 		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
 		  DO_CHECK_OBJ);
@@ -1391,13 +1391,13 @@ PMOD_EXPORT void real_gc_check_short_svalue(union anything *u, TYPE_T type)
 #endif
 }
 
-void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
+void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
   gc_svalue_location=(void *)u;
 #endif
-  debug_malloc_touch(u);
+  debug_malloc_touch((void *) u);
   GC_CHECK_SWITCH((*u), type, NEVER_ZAP, gc_check_weak,
 		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
 		  DO_CHECK_OBJ_WEAK);
@@ -1636,7 +1636,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
   free_short_svalue(u, type);
 }
 
-PMOD_EXPORT INT32 pike_sizeof(struct svalue *s)
+PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
 {
   switch(s->type)
   {

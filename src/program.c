@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.315 2001/04/24 15:05:04 leif Exp $");
+RCSID("$Id: program.c,v 1.316 2001/04/28 19:32:55 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -198,7 +198,7 @@ static char *raw_lfun_types[] = {
   tFuncV(tStr,tVoid,tInt),	/* "_is_type", */
   tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
   tFuncV(tMix,tVoid,tInt),	/* "_equal", */
-  tFuncV(tMix,tVoid,tMix),	/* "_m_delete", */
+  tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
 };
 
@@ -4763,7 +4763,7 @@ struct program *low_program_from_function(struct program *p,
   return f->u.program;
 }
 
-PMOD_EXPORT struct program *program_from_function(struct svalue *f)
+PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
 {
   struct identifier *id;
   if(f->type != T_FUNCTION) return 0;
@@ -4772,7 +4772,7 @@ PMOD_EXPORT struct program *program_from_function(struct svalue *f)
   return low_program_from_function(f->u.object->prog, f->subtype);
 }
 
-PMOD_EXPORT struct program *program_from_svalue(struct svalue *s)
+PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 {
   switch(s->type)
   {

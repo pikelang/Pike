@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.125 2001/04/14 09:44:21 hubbe Exp $
+ * $Id: program.h,v 1.126 2001/04/28 19:32:56 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -526,8 +526,8 @@ ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
 struct program *low_program_from_function(struct program *p,
 					  INT32 i);
-PMOD_EXPORT struct program *program_from_function(struct svalue *f);
-PMOD_EXPORT struct program *program_from_svalue(struct svalue *s);
+PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
+PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
