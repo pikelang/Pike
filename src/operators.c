@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.177 2003/04/28 00:32:43 mast Exp $
+|| $Id: operators.c,v 1.178 2003/05/15 15:10:56 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.177 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: operators.c,v 1.178 2003/05/15 15:10:56 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3533,14 +3533,14 @@ struct program *string_assignment_program;
  */
 static void f_string_assignment_index(INT32 args)
 {
-  INT_TYPE i;
-  get_all_args("string[]",args,"%i",&i);
-  if(i<0) i+=THIS->s->len;
-  if(i<0)
-    i+=THIS->s->len;
-  if(i<0 || i>=THIS->s->len)
-    Pike_error("Index %"PRINTPIKEINT"d is out of range 0 - %ld.\n",
-	       i, PTRDIFF_T_TO_LONG(THIS->s->len - 1));
+  ptrdiff_t len = THIS->s->len;
+  INT_TYPE i, p;
+  get_all_args("string[]",args,"%i",&p);
+  i = p < 0 ? p + len : p;
+  if(i<0 || i>=len)
+    Pike_error("String index %"PRINTPIKEINT"d is out of range "
+	       "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+	       p, -len, len - 1);
   else
     i=index_shared_string(THIS->s,i);
   pop_n_elems(args);
@@ -3553,29 +3553,41 @@ static void f_string_assignment_index(INT32 args)
  */
 static void f_string_assignment_assign_index(INT32 args)
 {
-  INT_TYPE i,j;
+  INT_TYPE p, i, j;
   union anything *u;
-  get_all_args("string[]=",args,"%i%i",&i,&j);
+  ptrdiff_t len;
+
+  get_all_args("string[]=",args,"%i%i",&p,&j);
+
   if((u=get_pointer_if_this_type(THIS->lval, T_STRING)))
   {
+    len = u->string->len;
+    i = p < 0 ? p + len : p;
+    if(i<0 || i>=len)
+      Pike_error("String index %"PRINTPIKEINT"d is out of range "
+		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+		 p, -len, len - 1);
     free_string(THIS->s);
-    if(i<0) i+=u->string->len;
-    if(i<0 || i>=u->string->len)
-      Pike_error("String index out of range %ld\n",(long)i);
     u->string=modify_shared_string(u->string,i,j);
     copy_shared_string(THIS->s, u->string);
-  }else{
+  }
+
+  else{
     lvalue_to_svalue_no_free(sp,THIS->lval);
     sp++;
     dmalloc_touch_svalue(Pike_sp-1);
     if(sp[-1].type != T_STRING) Pike_error("string[]= failed.\n");
-    if(i<0) i+=sp[-1].u.string->len;
-    if(i<0 || i>=sp[-1].u.string->len)
-      Pike_error("String index out of range %ld\n",(long)i);
+    len = sp[-1].u.string->len;
+    i = p < 0 ? p + len : p;
+    if(i<0 || i>=len)
+      Pike_error("String index %"PRINTPIKEINT"d is out of range "
+		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+		 p, -len, len - 1);
     sp[-1].u.string=modify_shared_string(sp[-1].u.string,i,j);
     assign_lvalue(THIS->lval, sp-1);
     pop_stack();
   }
+
   pop_n_elems(args);
   push_int(j);
 }
