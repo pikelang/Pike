@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.520 2003/08/21 15:56:36 grubba Exp $
+|| $Id: program.c,v 1.521 2003/08/21 22:09:30 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.520 2003/08/21 15:56:36 grubba Exp $");
+RCSID("$Id: program.c,v 1.521 2003/08/21 22:09:30 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1017,10 +1017,6 @@ static void debug_add_to_identifiers (struct identifier id)
 	dump_program_tables (Pike_compiler->new_program, 0);
 	Pike_fatal ("Adding identifier twice, old at %d.\n", i);
       }
-    if (Pike_compiler->new_program->id == 65600) {
-      fprintf(stderr, "Adding \"%s\"\n",
-	      id.name?id.name->str:"NULL");
-    }
   }
   add_to_identifiers (id);
 }
@@ -4052,70 +4048,67 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
   n = isidentifier(name);
 
-  do {
-    if(
+  if(
 #if 1
-       c &&
+    c &&
 #endif
-       c->type == T_FUNCTION &&
-       c->subtype != FUNCTION_BUILTIN &&
-       c->u.object->prog)
-    {
-      struct reference *idref = PTR_FROM_INT(c->u.object->prog, c->subtype);
-      struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
-      struct identifier *id = p->identifiers + idref->identifier_offset;
-      if(c->u.object->prog == Pike_compiler->new_program) {
-	/* Alias for a symbol in the current program.
-	 */
-	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
-	   id->func.offset != -1) {
-	  c=& p->constants[id->func.offset].sval;
+    c->type == T_FUNCTION &&
+    c->subtype != FUNCTION_BUILTIN &&
+    c->u.object->prog)
+  {
+    struct reference *idref = PTR_FROM_INT(c->u.object->prog, c->subtype);
+    struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
+    struct identifier *id = p->identifiers + idref->identifier_offset;
+    if(c->u.object->prog == Pike_compiler->new_program) {
+      /* Alias for a symbol in the current program.
+       */
+      if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
+	 id->func.offset != -1) {
+	c=& p->constants[id->func.offset].sval;
+      }
+      else if (IDENTIFIER_IS_FUNCTION(id->identifier_flags)) {
+	if (!idref->inherit_offset) {
+	  /* Alias for a function defined in this program. */
+	  /* FIXME: Does this work for forward references? */
+	  return define_function(name,
+				 id->type,
+				 flags,
+				 id->identifier_flags | IDENTIFIER_ALIAS,
+				 & id->func,
+				 id->opt_flags);
+	} else if (Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) {
+	  /* Alias for a function defined in an inherited program. */
+	  yyerror("Aliasing of inherited functions not supported yet.");
+	  return define_function(name,
+				 id->type,
+				 flags,
+				 id->identifier_flags | IDENTIFIER_ALIAS,
+				 NULL,
+				 id->opt_flags);	    
+	} else {
+	  /* First pass.
+	   * Make a prototype for now.
+	   */
+	  return define_function(name,
+				 id->type,
+				 flags,
+				 id->identifier_flags | IDENTIFIER_ALIAS,
+				 NULL,
+				 id->opt_flags);
 	}
-	else if (IDENTIFIER_IS_FUNCTION(id->identifier_flags) {
-	  if (!idref->inherit_offset) {
-	    /* Alias for a function defined in this program. */
-	    /* FIXME: Does this work for forward references? */
-	    return define_function(name,
-				   id->type,
-				   flags,
-				   id->identifier_flags | IDENTIFIER_ALIAS,
-				   & id->func,
-				   id->opt_flags);
-	  } else if (Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) {
-	    /* Alias for a function defined in an inherited program. */
-	    yyerror("Aliasing of inherited functions not supported yet.");
-	    return define_function(name,
-				   id->type,
-				   flags,
-				   id->identifier_flags | IDENTIFIER_ALIAS,
-				   NULL,
-				   id->opt_flags);	    
-	  } else {
-	    /* First pass.
-	     * Make a prototype for now.
-	     */
-	    return define_function(name,
-				   id->type,
-				   flags,
-				   id->identifier_flags | IDENTIFIER_ALIAS,
-				   NULL,
-				   id->opt_flags);
-	  }
-	} else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
-	  yyerror("Attempt to make a constant of a variable.");
-	  c = NULL;
-	}
+      } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+	yyerror("Attempt to make a constant of a variable.");
+	c = NULL;
       }
     }
+  }
     
-    if(
+  if(
 #if 1
-       c &&
+    c &&
 #endif
-       !svalues_are_constant(c,1,BIT_MIXED,0))
-      yyerror("Constant values may not have references to this.");
-    
-  }while(0);
+    !svalues_are_constant(c,1,BIT_MIXED,0))
+    yyerror("Constant values may not have references to this.");
 
   if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
