@@ -191,11 +191,7 @@ void backend()
   while(first_object)
   {
     next_timeout.tv_usec = 0;
-#if 0
     next_timeout.tv_sec = 7 * 24 * 60 * 60;  /* See you in a week */
-#else
-    next_timeout.tv_sec = 15; /* See you in a week */
-#endif
     my_add_timeval(&next_timeout, &current_time);
 
     call_callback(& backend_callbacks, (void *)0);
@@ -207,10 +203,11 @@ void backend()
 #endif
 
     GETTIMEOFDAY(&current_time);
-    my_subtract_timeval(&next_timeout, &current_time);
 
-    if(next_timeout.tv_sec < 0)
+    if(my_timercmp(&next_timeout, > , &current_time))
     {
+      my_subtract_timeval(&next_timeout, &current_time);
+    }else{
       next_timeout.tv_usec = 0;
       next_timeout.tv_sec = 0;
     }
