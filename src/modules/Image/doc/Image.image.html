@@ -1,82 +1,99 @@
 <title>Pike documentation: Image.image</title>
 <h2>Image.image</h2>
 
-<hr>
-   <i><tt><tt><a href=#>`&</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>`*</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>`+</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>`-</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>`|</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>add_layers</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>apply_matrix</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>autocrop</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>box</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>cast</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>ccw</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>change_color</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>circle</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>clear</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>clone</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>color</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>copy</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>create</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>cw</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>dct</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>distancesq</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>fromgif</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>frompnm</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>fromppm</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>getpixel</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_add</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_add_fs</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_add_fs_nomap</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_add_nomap</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_begin</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_end</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>gif_netscape_loop</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>grey</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>invert</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>line</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>map_closest</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>map_fast</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>mirrorx</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>modify_by_intensity</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>paste</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>paste_alpha</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>paste_alpha_color</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>paste_mask</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>rotate</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>rotate_expand</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>scale</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>select_from</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>setcolor</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>setpixel</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>skewx</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>skewx_expand</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>skewy</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>skewy_expand</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>to8bit</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>to8bit_closest</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>to8bit_fs</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>to8bit_rgbcube</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>to8bit_rgbcube_rdither</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>tobitmap</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>togif</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>togif_fs</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>toppm</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>tozbgr</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>treshold</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>tuned_box</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>xsize</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>ysize</a></tt></tt></i><br>
+
+<blockquote>
+The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
+     is used as drawing area, mask or result of operations.
+
+<p>     init: <tt><a href=Image.image.html#clear>clear</a></tt>,
+     <tt><a href=Image.image.html#clone>clone</a></tt>,
+     <tt><a href=Image.image.html#create>create</a></tt>, 
+     <tt><a href=Image.image.html#xsize>xsize</a></tt>,
+     <tt><a href=Image.image.html#ysize>ysize</a></tt>
+
+<p>     plain drawing: <tt><a href=Image.image.html#box>box</a></tt>,
+     <tt><a href=Image.image.html#circle>circle</a></tt>,
+     <tt><a href=Image.image.html#getpixel>getpixel</a></tt>, 
+     <tt><a href=Image.image.html#line>line</a></tt>,
+     <tt><a href=Image.image.html#setcolor>setcolor</a></tt>,
+     <tt><a href=Image.image.html#setpixel>setpixel</a></tt>, 
+     <tt><a href=Image.image.html#treshold>treshold</a></tt>,
+     <tt><a href=Image.image.html#tuned_box>tuned_box</a></tt>
+
+<p>     operators: <tt><a href=Image.image.html#%60%26>`&amp;</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#%60+>`+</a></tt>,
+     <tt><a href=Image.image.html#%60->`-</a></tt>,
+     <tt><a href=Image.image.html#%60|>`|</a></tt>
+
+<p>     pasting images, layers: <tt><a href=Image.image.html#add_layers>add_layers</a></tt>, 
+     <tt><a href=Image.image.html#paste>paste</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha>paste_alpha</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>,
+     <tt><a href=Image.image.html#paste_mask>paste_mask</a></tt>
+
+<p>     getting subimages, scaling, rotating: <tt><a href=Image.image.html#autocrop>autocrop</a></tt>, 
+     <tt><a href=Image.image.html#ccw>ccw</a></tt>,
+     <tt><a href=Image.image.html#cw>cw</a></tt>,
+     <tt><a href=Image.image.html#clone>clone</a></tt>,
+     <tt><a href=Image.image.html#copy>copy</a></tt>, 
+     <tt><a href=Image.image.html#dct>dct</a></tt>,
+     <tt><a href=Image.image.html#mirrorx>mirrorx</a></tt>, 
+     <tt><a href=Image.image.html#rotate>rotate</a></tt>,
+     <tt><a href=Image.image.html#rotate_expand>rotate_expand</a></tt>, 
+     <tt><a href=Image.image.html#scale>scale</a></tt>, 
+     <tt><a href=Image.image.html#skewx>skewx</a></tt>,
+     <tt><a href=Image.image.html#skewx_expand>skewx_expand</a></tt>,
+     <tt><a href=Image.image.html#skewy>skewy</a></tt>,
+     <tt><a href=Image.image.html#skewy_expand>skewy_expand</a></tt>
+
+<p>     calculation by pixels: <tt><a href=Image.image.html#apply_matrix>apply_matrix</a></tt>, 
+     <tt><a href=Image.image.html#change_color>change_color</a></tt>,
+     <tt><a href=Image.image.html#color>color</a></tt>,
+     <tt><a href=Image.image.html#distancesq>distancesq</a></tt>, 
+     <tt><a href=Image.image.html#grey>grey</a></tt>,
+     <tt><a href=Image.image.html#invert>invert</a></tt>, 
+     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
+     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>, 
+     <tt><a href=Image.image.html#modify_by_intensity>modify_by_intensity</a></tt>,
+     <tt><a href=Image.image.html#select_from>select_from</a></tt> 
+
+<p>     converting to other datatypes: <tt><a href=Image.image.html#cast>cast</a></tt>,
+     <tt><a href=Image.image.html#fromgif>fromgif</a></tt>, 
+     <tt><a href=Image.image.html#frompnm>frompnm</a></tt>/<tt><a href=Image.image.html#fromppm>fromppm</a></tt>, 
+     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
+     <tt><a href=Image.image.html#gif_add_fs>gif_add_fs</a></tt>,
+     <tt><a href=Image.image.html#gif_add_fs_nomap>gif_add_fs_nomap</a></tt>,
+     <tt><a href=Image.image.html#gif_add_nomap>gif_add_nomap</a></tt>,
+     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
+     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
+     <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>,
+     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
+     <tt><a href=Image.image.html#to8bit_closest>to8bit_closest</a></tt>, 
+     <tt><a href=Image.image.html#to8bit_fs>to8bit_fs</a></tt>,
+     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>, 
+     <tt><a href=Image.image.html#to8bit_rgbcube_rdither>to8bit_rgbcube_rdither</a></tt>,
+     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>, 
+     <tt><a href=Image.image.html#togif>togif</a></tt>,
+     <tt><a href=Image.image.html#togif_fs>togif_fs</a></tt>, 
+     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
+     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>
+</blockquote>
 
 
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.html>Image</a></tt>,
+     <tt><a href=Image.font.html>Image.font</a></tt>
+</blockquote>
+
 <hr>
+<a name=%60%26> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>`&</b>(object&nbspoperand)<br>
-object <b>`&</b>(array(int)&nbspcolor)<br>
-object <b>`&</b>(int&nbspvalue)</tt>
+<tt>object <b>`&amp;</b>(object&nbsp;operand)<br>
+object <b>`&amp;</b>(array(int)&nbsp;color)<br>
+object <b>`&amp;</b>(int&nbsp;value)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -104,19 +121,20 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>`-</a></tt>,
-     <tt><a href=#>`+</a></tt>,
-     <tt><a href=#>`|</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>add_layers</a></tt>
+<blockquote>     <tt><a href=Image.image.html#%60->`-</a></tt>,
+     <tt><a href=Image.image.html#%60+>`+</a></tt>,
+     <tt><a href=Image.image.html#%60|>`|</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#add_layers>add_layers</a></tt>
 </blockquote>
 
 <hr>
+<a name=%60*> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>`*</b>(object&nbspoperand)<br>
-object <b>`*</b>(array(int)&nbspcolor)<br>
-object <b>`*</b>(int&nbspvalue)</tt>
+<tt>object <b>`*</b>(object&nbsp;operand)<br>
+object <b>`*</b>(array(int)&nbsp;color)<br>
+object <b>`*</b>(int&nbsp;value)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -148,19 +166,20 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>`-</a></tt>,
-     <tt><a href=#>`+</a></tt>,
-     <tt><a href=#>`|</a></tt>,
-     <tt><a href=#>`&</a></tt>,
-     <tt><a href=#>add_layers</a></tt>
+<blockquote>     <tt><a href=Image.image.html#%60->`-</a></tt>,
+     <tt><a href=Image.image.html#%60+>`+</a></tt>,
+     <tt><a href=Image.image.html#%60|>`|</a></tt>,
+     <tt><a href=Image.image.html#%60%26>`&</a></tt>,
+     <tt><a href=Image.image.html#add_layers>add_layers</a></tt>
 </blockquote>
 
 <hr>
+<a name=%60+> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>`+</b>(object&nbspoperand)<br>
-object <b>`+</b>(array(int)&nbspcolor)<br>
-object <b>`+</b>(int&nbspvalue)</tt>
+<tt>object <b>`+</b>(object&nbsp;operand)<br>
+object <b>`+</b>(array(int)&nbsp;color)<br>
+object <b>`+</b>(int&nbsp;value)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -186,19 +205,20 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>`-</a></tt>,
-     <tt><a href=#>`|</a></tt>,
-     <tt><a href=#>`&</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>add_layers</a></tt>
+<blockquote>     <tt><a href=Image.image.html#%60->`-</a></tt>,
+     <tt><a href=Image.image.html#%60|>`|</a></tt>,
+     <tt><a href=Image.image.html#%60%26>`&</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#add_layers>add_layers</a></tt>
 </blockquote>
 
 <hr>
+<a name=%60-> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>`-</b>(object&nbspoperand)<br>
-object <b>`-</b>(array(int)&nbspcolor)<br>
-object <b>`-</b>(int&nbspvalue)</tt>
+<tt>object <b>`-</b>(object&nbsp;operand)<br>
+object <b>`-</b>(array(int)&nbsp;color)<br>
+object <b>`-</b>(int&nbsp;value)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -225,19 +245,20 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>`+</a></tt>,
-     <tt><a href=#>`|</a></tt>,
-     <tt><a href=#>`&</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>add_layers</a></tt>
+<blockquote>     <tt><a href=Image.image.html#%60+>`+</a></tt>,
+     <tt><a href=Image.image.html#%60|>`|</a></tt>,
+     <tt><a href=Image.image.html#%60%26>`&</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#add_layers>add_layers</a></tt>
 </blockquote>
 
 <hr>
+<a name=%60|> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>`|</b>(object&nbspoperand)<br>
-object <b>`|</b>(array(int)&nbspcolor)<br>
-object <b>`|</b>(int&nbspvalue)</tt>
+<tt>object <b>`|</b>(object&nbsp;operand)<br>
+object <b>`|</b>(array(int)&nbsp;color)<br>
+object <b>`|</b>(int&nbsp;value)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -265,18 +286,19 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>`-</a></tt>,
-     <tt><a href=#>`+</a></tt>,
-     <tt><a href=#>`&</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>add_layers</a></tt>
+<blockquote>     <tt><a href=Image.image.html#%60->`-</a></tt>,
+     <tt><a href=Image.image.html#%60+>`+</a></tt>,
+     <tt><a href=Image.image.html#%60%26>`&</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#add_layers>add_layers</a></tt>
 </blockquote>
 
 <hr>
+<a name=add_layers> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>add_layers</b>(array(int|object))&nbsplayer0, ...)<br>
-object <b>add_layers</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, array(int|object))&nbsplayer0, ...)</tt>
+<tt>object <b>add_layers</b>(array(int|object))&nbsp;layer0, ...)<br>
+object <b>add_layers</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, array(int|object))&nbsp;layer0, ...)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -303,7 +325,7 @@ Using the called object as base, adds layers using masks,
      <pre>
      0  no operation (just paste with mask, default)
      1  maximum  (`|)
-     2  minimum  (`&)
+     2  minimum  (`&amp;)
      3  multiply (`*)
      4  add      (`+)
      5  diff     (`-)
@@ -317,12 +339,12 @@ Using the called object as base, adds layers using masks,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>array(int|object) layer0</tt>
-  <dd>image to paste
 <dt><tt>int x1</tt>
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-  <dd>rectangle for cropping
+  <dd>image to paste
+     rectangle for cropping
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -333,22 +355,23 @@ a new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>paste_mask</a></tt>,
-     <tt><a href=#>paste_alpha</a></tt>,
-     <tt><a href=#>paste_alpha_color</a></tt>,
-     <tt><a href=#>`|</a></tt>,
-     <tt><a href=#>`&</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>`+</a></tt>,
-     <tt><a href=#>`-</a></tt>
+<blockquote>     <tt><a href=Image.image.html#paste_mask>paste_mask</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha>paste_alpha</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>,
+     <tt><a href=Image.image.html#%60|>`|</a></tt>,
+     <tt><a href=Image.image.html#%60%26>`&</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#%60+>`+</a></tt>,
+     <tt><a href=Image.image.html#%60->`-</a></tt>
 </blockquote>
 
 <hr>
+<a name=apply_matrix> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>apply_matrix</b>(array(array(int|array(int)))&nbspmatrix)<br>
-object <b>apply_matrix</b>(array(array(int|array(int)))&nbspmatrix, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>apply_matrix</b>(array(array(int|array(int)))&nbspmatrix, int&nbspr, int&nbspg, int&nbspb, int|float&nbspdiv)</tt>
+<tt>object <b>apply_matrix</b>(array(array(int|array(int)))&nbsp;matrix)<br>
+object <b>apply_matrix</b>(array(array(int|array(int)))&nbsp;matrix, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>apply_matrix</b>(array(array(int|array(int)))&nbsp;matrix, int&nbsp;r, int&nbsp;g, int&nbsp;b, int|float&nbsp;div)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -394,7 +417,7 @@ Applies a pixel-transform matrix, or filter, to the image.
        ({0, 0,0})})
      </pre>
 
-<p>     emboss (might prefer to begin with a <tt><a href=#>grey</a></tt> image):
+<p>     emboss (might prefer to begin with a <tt><a href=Image.image.html#grey>grey</a></tt> image):
      <pre>
      ({({2, 1, 0})
        ({1, 0,-1}),
@@ -407,14 +430,14 @@ Applies a pixel-transform matrix, or filter, to the image.
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>array(array(int|array(int)))</tt>
-  <dd>the matrix; innermost is a value or an array with red, green, blue
-     values for red, green, blue separation.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>base level of result, default is zero
 <dt><tt>int|float div</tt>
-  <dd>division factor, default is 1.0.
+  <dd>the matrix; innermost is a value or an array with red, green, blue
+     values for red, green, blue separation.
+     base level of result, default is zero
+     division factor, default is 1.0.
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -424,13 +447,14 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=autocrop> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>autocrop</b>()<br>
-object <b>autocrop</b>(int&nbspborder)<br>
-object <b>autocrop</b>(int&nbspborder, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>autocrop</b>(int&nbspborder, int&nbspleft, int&nbspright, int&nbsptop, int&nbspbottom)<br>
-object <b>autocrop</b>(int&nbspborder, int&nbspleft, int&nbspright, int&nbsptop, int&nbspbottom, int&nbspr, int&nbspg, int&nbspb)</tt>
+object <b>autocrop</b>(int&nbsp;border)<br>
+object <b>autocrop</b>(int&nbsp;border, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>autocrop</b>(int&nbsp;border, int&nbsp;left, int&nbsp;right, int&nbsp;top, int&nbsp;bottom)<br>
+object <b>autocrop</b>(int&nbsp;border, int&nbsp;left, int&nbsp;right, int&nbsp;top, int&nbsp;bottom, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -446,16 +470,16 @@ Removes "unneccesary" borders around the image, adds one of
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int border</tt>
-  <dd>added border size in pixels
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color of the new border
 <dt><tt>int left</tt>
 <dt><tt>int right</tt>
 <dt><tt>int top</tt>
 <dt><tt>int bottom</tt>
-  <dd>which borders to scan and cut the image; 
+  <dd>added border size in pixels
+     color of the new border
+     which borders to scan and cut the image; 
      a typical example is removing the top and bottom unneccesary
      pixels:
      <pre>img=img->autocrop(0, 0,0,1,1);</pre>
@@ -469,15 +493,16 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>copy</a></tt>
+<blockquote>     <tt><a href=Image.image.html#copy>copy</a></tt>
 </blockquote>
 
 <hr>
+<a name=box> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>box</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2)<br>
-object <b>box</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>box</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+<tt>object <b>box</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2)<br>
+object <b>box</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>box</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -492,13 +517,13 @@ Draws a filled rectangle on the image.
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-  <dd>box corners
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color of the box
 <dt><tt>int alpha</tt>
-  <dd>alpha value
+  <dd>box corners
+     color of the box
+     alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -508,9 +533,10 @@ the object called
 </blockquote>
 
 <hr>
+<a name=cast> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>string <b>cast</b>(string&nbsptype)</tt>
+<tt>string <b>cast</b>(string&nbsp;type)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -528,14 +554,15 @@ the image data as a string ("rgbrgbrgb...")
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>toppm</a></tt>,
-     <tt><a href=#>togif</a></tt>,
-     <tt><a href=#>tozbgr</a></tt>,
-     <tt><a href=#>to8bit</a></tt>,
-     <tt><a href=#>to8bit_rgbcube</a></tt>
+<blockquote>     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
+     <tt><a href=Image.image.html#togif>togif</a></tt>,
+     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
+     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
+     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>
 </blockquote>
 
 <hr>
+<a name=ccw> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>ccw</b>()</tt>
@@ -555,10 +582,11 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=change_color> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>change_color</b>(int&nbsptor, int&nbsptog, int&nbsptob)<br>
-object <b>change_color</b>(int&nbspfromr, int&nbspfromg, int&nbspfromb, &nbspint&nbsptor, int&nbsptog, int&nbsptob)</tt>
+<tt>object <b>change_color</b>(int&nbsp;tor, int&nbsp;tog, int&nbsp;tob)<br>
+object <b>change_color</b>(int&nbsp;fromr, int&nbsp;fromg, int&nbsp;fromb, &nbsp;int&nbsp;tor, int&nbsp;tog, int&nbsp;tob)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -566,19 +594,19 @@ object <b>change_color</b>(int&nbspfromr, int&nbspfromg, int&nbspfromb, &nbspint
 
 <blockquote>
 Changes one color (exakt match) to another.
-     If non-exakt-match is preferred, check <tt><a href=#>distancesq</a></tt>
-     and <tt><a href=#>paste_alpha_color</a></tt>.
+     If non-exakt-match is preferred, check <tt><a href=Image.image.html#distancesq>distancesq</a></tt>
+     and <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>.
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int tor</tt>
 <dt><tt>int tog</tt>
 <dt><tt>int tob</tt>
-  <dd>destination color and next current color
 <dt><tt>int fromr</tt>
 <dt><tt>int fromg</tt>
 <dt><tt>int fromb</tt>
-  <dd>source color, default is current color
+  <dd>destination color and next current color
+     source color, default is current color
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -588,11 +616,12 @@ a new (the destination) image object
 </blockquote>
 
 <hr>
+<a name=circle> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>circle</b>(int&nbspx, int&nbspy, int&nbsprx, int&nbspry)<br>
-object <b>circle</b>(int&nbspx, int&nbspy, int&nbsprx, int&nbspry, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>circle</b>(int&nbspx, int&nbspy, int&nbsprx, int&nbspry, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+<tt>object <b>circle</b>(int&nbsp;x, int&nbsp;y, int&nbsp;rx, int&nbsp;ry)<br>
+object <b>circle</b>(int&nbsp;x, int&nbsp;y, int&nbsp;rx, int&nbsp;ry, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>circle</b>(int&nbsp;x, int&nbsp;y, int&nbsp;rx, int&nbsp;ry, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -605,16 +634,16 @@ Draws a line on the image. The line is <i>not</i> antialiased.
 <blockquote><dl>
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>circle center
 <dt><tt>int rx</tt>
 <dt><tt>int ry</tt>
-  <dd>circle radius in pixels
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color
 <dt><tt>int alpha</tt>
-  <dd>alpha value
+  <dd>circle center
+     circle radius in pixels
+     color
+     alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -624,11 +653,12 @@ the object called
 </blockquote>
 
 <hr>
+<a name=clear> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>void <b>clear</b>()<br>
-void <b>clear</b>(int&nbspr, int&nbspg, int&nbspb)<br>
-void <b>clear</b>(int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+void <b>clear</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+void <b>clear</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -642,24 +672,25 @@ gives a new, cleared image with the same size of drawing area
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color of the new image
 <dt><tt>int alpha</tt>
-  <dd>new default alpha channel value
+  <dd>color of the new image
+     new default alpha channel value
 </dl></blockquote>
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>copy</a></tt>,
-     <tt><a href=#>clone</a></tt>
+<blockquote>     <tt><a href=Image.image.html#copy>copy</a></tt>,
+     <tt><a href=Image.image.html#clone>clone</a></tt>
 </blockquote>
 
 <hr>
+<a name=clone> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>clone</b>()<br>
-object <b>clone</b>(int&nbspxsize, int&nbspysize)<br>
-object <b>clone</b>(int&nbspxsize, int&nbspysize, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>clone</b>(int&nbspxsize, int&nbspysize, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+object <b>clone</b>(int&nbsp;xsize, int&nbsp;ysize)<br>
+object <b>clone</b>(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>clone</b>(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -672,17 +703,17 @@ Copies to or initialize a new image object.
 <blockquote><dl>
 <dt><tt>int xsize</tt>
 <dt><tt>int ysize</tt>
-  <dd>size of (new) image in pixels, called image
-     is cropped to that size
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>current color of the new image, 
+<dt><tt>int alpha</tt>
+  <dd>size of (new) image in pixels, called image
+     is cropped to that size
+     current color of the new image, 
      default is black. 
      Will also be the background color if the cloned image
      is empty (no drawing area made).
-<dt><tt>int alpha</tt>
-  <dd>new default alpha channel value
+     new default alpha channel value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -693,16 +724,17 @@ the new object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>copy</a></tt>,
-     <tt><a href=#>create</a></tt>
+<blockquote>     <tt><a href=Image.image.html#copy>copy</a></tt>,
+     <tt><a href=Image.image.html#create>create</a></tt>
 </blockquote>
 
 <hr>
+<a name=color> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>color</b>()<br>
-object <b>color</b>(int&nbspvalue)<br>
-object <b>color</b>(int&nbspr, int&nbspg, int&nbspb)</tt>
+object <b>color</b>(int&nbsp;value)<br>
+object <b>color</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -723,9 +755,9 @@ Colorize an image.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>red, green, blue factors
 <dt><tt>int value</tt>
-  <dd>factor
+  <dd>red, green, blue factors
+     factor
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -736,18 +768,19 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>grey</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>modify_by_intensity</a></tt>
+<blockquote>     <tt><a href=Image.image.html#grey>grey</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#modify_by_intensity>modify_by_intensity</a></tt>
 </blockquote>
 
 <hr>
+<a name=copy> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>copy</b>()<br>
-object <b>copy</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2)<br>
-object <b>copy</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>copy</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+object <b>copy</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2)<br>
+object <b>copy</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>copy</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -764,13 +797,13 @@ Copies this part of the image. The requested area can
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-  <dd>The requested new area. Default is the old image size.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color of the new image
 <dt><tt>int alpha</tt>
-  <dd>new default alpha channel value
+  <dd>The requested new area. Default is the old image size.
+     color of the new image
+     new default alpha channel value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -791,17 +824,18 @@ a new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>clone</a></tt>,
-     <tt><a href=#>autocrop</a></tt>
+<blockquote>     <tt><a href=Image.image.html#clone>clone</a></tt>,
+     <tt><a href=Image.image.html#autocrop>autocrop</a></tt>
 </blockquote>
 
 <hr>
+<a name=create> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>void <b>create</b>()<br>
-void <b>create</b>(int&nbspxsize, int&nbspysize)<br>
-void <b>create</b>(int&nbspxsize, int&nbspysize, int&nbspr, int&nbspg, int&nbspb)<br>
-void <b>create</b>(int&nbspxsize, int&nbspysize, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+void <b>create</b>(int&nbsp;xsize, int&nbsp;ysize)<br>
+void <b>create</b>(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+void <b>create</b>(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -814,24 +848,25 @@ Initializes a new image object.
 <blockquote><dl>
 <dt><tt>int xsize</tt>
 <dt><tt>int ysize</tt>
-  <dd>size of (new) image in pixels
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>background color (will also be current color),
-     default color is black
 <dt><tt>int alpha</tt>
-  <dd>default alpha channel value
+  <dd>size of (new) image in pixels
+     background color (will also be current color),
+     default color is black
+     default alpha channel value
 </dl></blockquote>
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>copy</a></tt>,
-     <tt><a href=#>clone</a></tt>,
-     <tt><a href=#>Image.image</a></tt>
+<blockquote>     <tt><a href=Image.image.html#copy>copy</a></tt>,
+     <tt><a href=Image.image.html#clone>clone</a></tt>,
+     <tt><a href=Image.image.html>Image.image</a></tt>
 </blockquote>
 
 <hr>
+<a name=cw> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>cw</b>()</tt>
@@ -851,9 +886,10 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=dct> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>dct</b>(int&nbspnewx, int&nbspnewy)</tt>
+<tt>object <b>dct</b>(int&nbsp;newx, int&nbsp;newy)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -890,10 +926,11 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=distancesq> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>distancesq</b>()<br>
-object <b>distancesq</b>(int&nbspr, int&nbspg, int&nbspb)</tt>
+object <b>distancesq</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -931,13 +968,14 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>select_from</a></tt>
+<blockquote>     <tt><a href=Image.image.html#select_from>select_from</a></tt>
 </blockquote>
 
 <hr>
+<a name=fromgif> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>fromgif</b>(string&nbspgif)</tt>
+<tt>object <b>fromgif</b>(string&nbsp;gif)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -948,12 +986,12 @@ Reads GIF data to the called image object.
 
 <p>     GIF animation delay or loops are ignored,
      and the resulting image is the written result.
- known bugs: yes, it does -- it may even do segment overrides...
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>string pnm</tt>
   <dd>pnm data, as a string
+ known bugs: yes, it does -- it may even do segment overrides...
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -964,15 +1002,17 @@ the called object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>togif</a></tt>,
-     <tt><a href=#>frompnm</a></tt>
+<blockquote>     <tt><a href=Image.image.html#togif>togif</a></tt>,
+     <tt><a href=Image.image.html#frompnm>frompnm</a></tt>
 </blockquote>
 
 <hr>
+<a name=frompnm> </a>
+<a name=fromppm> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object|string <b>frompnm</b>(string&nbsppnm)<br>
-object|string <b>fromppm</b>(string&nbsppnm)</tt>
+<tt>object|string <b>frompnm</b>(string&nbsp;pnm)<br>
+object|string <b>fromppm</b>(string&nbsp;pnm)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1000,14 +1040,15 @@ the called object or a hint of what wronged.
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>toppm</a></tt>,
-     <tt><a href=#>fromgif</a></tt>
+<blockquote>     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
+     <tt><a href=Image.image.html#fromgif>fromgif</a></tt>
 </blockquote>
 
 <hr>
+<a name=getpixel> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>array(int) <b>getpixel</b>(int&nbspx, int&nbspy)</tt>
+<tt>array(int) <b>getpixel</b>(int&nbsp;x, int&nbsp;y)</tt>
 </blockquote>
 
 <h4>ARGUMENTS</h4>
@@ -1024,40 +1065,44 @@ color of the requested pixel -- ({int red,int green,int blue})
 </blockquote>
 
 <hr>
+<a name=gif_add> </a>
+<a name=gif_add_fs> </a>
+<a name=gif_add_fs_nomap> </a>
+<a name=gif_add_nomap> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>gif_add</b>()<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy)<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy, int&nbspdelay_cs)<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy, float&nbspdelay_s)<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy, int&nbspnum_colors, int&nbspdelay_cs)<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy, int&nbspnum_colors, float&nbspdelay_s)<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, int&nbspdelay_cs)<br>
-string <b>gif_add</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, float&nbspdelay_s)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
 string <b>gif_add_fs</b>()<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy)<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy, int&nbspdelay_cs)<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy, float&nbspdelay_s)<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy, int&nbspnum_colors, int&nbspdelay_cs)<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy, int&nbspnum_colors, float&nbspdelay_s)<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, int&nbspdelay_cs)<br>
-string <b>gif_add_fs</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, float&nbspdelay_s)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
 string <b>gif_add_nomap</b>()<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy)<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy, int&nbspdelay_cs)<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy, float&nbspdelay_s)<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy, int&nbspnum_colors, int&nbspdelay_cs)<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy, int&nbspnum_colors, float&nbspdelay_s)<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, int&nbspdelay_cs)<br>
-string <b>gif_add_nomap</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, float&nbspdelay_s)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
 string <b>gif_add_fs_nomap</b>()<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy)<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy, int&nbspdelay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy, float&nbspdelay_s)<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy, int&nbspnum_colors, int&nbspdelay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy, int&nbspnum_colors, float&nbspdelay_s)<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, int&nbspdelay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbspx, int&nbspy, array(array(int))&nbspcolors, float&nbspdelay_s)</tt>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y)<br>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1073,15 +1118,15 @@ Makes a GIF (sub)image data chunk, to be placed
 <blockquote><dl>
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>the location of this subimage
 <dt><tt>int delay_cs</tt>
-  <dd>frame delay in centiseconds
 <dt><tt>float delay_s</tt>
-  <dd>frame delay in seconds
 <dt><tt>int num_colors</tt>
-  <dd>number of colors to quantize to (default is 256)
 <dt><tt>array array(array(int)) colors</tt>
-  <dd>colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
+  <dd>the location of this subimage
+     frame delay in centiseconds 
+     frame delay in seconds
+     number of colors to quantize to (default is 256) 
+     colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1092,18 +1137,19 @@ the GIF data
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>gif_add</a></tt>,
-     <tt><a href=#>gif_end</a></tt>,
-     <tt><a href=#>gif_netscape_loop</a></tt>,
-     <tt><a href=#>togif</a></tt>
+<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
+     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
+     <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>,
+     <tt><a href=Image.image.html#togif>togif</a></tt>
 </blockquote>
 
 <hr>
+<a name=gif_begin> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>gif_begin</b>()<br>
-string <b>gif_begin</b>(int&nbspnum_colors)<br>
-string <b>gif_begin</b>(array(array(int))&nbspcolors)</tt>
+string <b>gif_begin</b>(int&nbsp;num_colors)<br>
+string <b>gif_begin</b>(array(array(int))&nbsp;colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1129,13 +1175,14 @@ the GIF data
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>gif_add</a></tt>,
-     <tt><a href=#>gif_end</a></tt>,
-     <tt><a href=#>togif</a></tt>,
-     <tt><a href=#>gif_netscape_loop</a></tt>
+<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
+     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
+     <tt><a href=Image.image.html#togif>togif</a></tt>,
+     <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>
 </blockquote>
 
 <hr>
+<a name=gif_end> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>gif_end</b>()</tt>
@@ -1156,14 +1203,15 @@ the GIF data.
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>gif_begin</a></tt>
+<blockquote>     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>
 </blockquote>
 
 <hr>
+<a name=gif_netscape_loop> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>gif_netscape_loop</b>()<br>
-string <b>gif_netscape_loop</b>(int&nbsploops)</tt>
+string <b>gif_netscape_loop</b>(int&nbsp;loops)</tt>
 </blockquote>
 
 <h4>ARGUMENTS</h4>
@@ -1180,16 +1228,17 @@ a gif chunk that defines that the GIF animation should loop
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>gif_add</a></tt>,
-     <tt><a href=#>gif_begin</a></tt>,
-     <tt><a href=#>gif_end</a></tt>
+<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
+     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
+     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>
 </blockquote>
 
 <hr>
+<a name=grey> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>grey</b>()<br>
-object <b>grey</b>(int&nbspr, int&nbspg, int&nbspb)</tt>
+object <b>grey</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1215,12 +1264,13 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>color</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>modify_by_intensity</a></tt>
+<blockquote>     <tt><a href=Image.image.html#color>color</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#modify_by_intensity>modify_by_intensity</a></tt>
 </blockquote>
 
 <hr>
+<a name=invert> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>invert</b>()</tt>
@@ -1241,11 +1291,12 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=line> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>line</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2)<br>
-object <b>line</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>line</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+<tt>object <b>line</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2)<br>
+object <b>line</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>line</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1260,13 +1311,13 @@ Draws a line on the image. The line is <i>not</i> antialiased.
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-  <dd>line endpoints
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color
 <dt><tt>int alpha</tt>
-  <dd>alpha value
+  <dd>line endpoints
+     color
+     alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1276,9 +1327,10 @@ the object called
 </blockquote>
 
 <hr>
+<a name=map_closest> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>map_closest</b>(array(array(int))&nbspcolors)</tt>
+<tt>object <b>map_closest</b>(array(array(int))&nbsp;colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1305,15 +1357,16 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>map_fast</a></tt>,
-     <tt><a href=#>select_colors</a></tt>,
-     <tt><a href=#>map_fs</a></tt>
+<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
+     <tt><a href=Image.image.html#map_fs>map_fs</a></tt>
 </blockquote>
 
 <hr>
+<a name=map_closest> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>map_closest</b>(array(array(int))&nbspcolors)</tt>
+<tt>object <b>map_closest</b>(array(array(int))&nbsp;colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1343,15 +1396,16 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>map_fast</a></tt>,
-     <tt><a href=#>select_colors</a></tt>,
-     <tt><a href=#>map_closest</a></tt>
+<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
+     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>
 </blockquote>
 
 <hr>
+<a name=map_closest> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>array(array(int)) <b>map_closest</b>(int&nbspnum_colors)</tt>
+<tt>array(array(int)) <b>map_closest</b>(int&nbsp;num_colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1374,14 +1428,15 @@ an array of colors
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>map_fast</a></tt>,
-     <tt><a href=#>select_colors</a></tt>
+<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
 </blockquote>
 
 <hr>
+<a name=map_fast> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>map_fast</b>(array(array(int))&nbspcolors)</tt>
+<tt>object <b>map_fast</b>(array(array(int))&nbsp;colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1410,11 +1465,12 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>map_fast</a></tt>,
-     <tt><a href=#>select_colors</a></tt>
+<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
 </blockquote>
 
 <hr>
+<a name=mirrorx> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>mirrorx</b>()</tt>
@@ -1440,6 +1496,7 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=mirrorx> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>mirrorx</b>()</tt>
@@ -1459,9 +1516,10 @@ mirrors an image:
 </blockquote>
 
 <hr>
+<a name=modify_by_intensity> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>modify_by_intensity</b>(int&nbspr, int&nbspg, int&nbspb, int|array(int)&nbspv1, ..., int|array(int)&nbspvn)</tt>
+<tt>object <b>modify_by_intensity</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, int|array(int)&nbsp;v1, ..., int|array(int)&nbsp;vn)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1471,7 +1529,7 @@ mirrors an image:
 Recolor an image from intensity values.
 
 <p>    For each color an intensity is calculated, from r, g and b factors
-    (see <tt><a href=#>grey</a></tt>), this gives a value between 0 and max.
+    (see <tt><a href=Image.image.html#grey>grey</a></tt>), this gives a value between 0 and max.
 
 <p>    The color is then calculated from the values given, v1 representing
     the intensity value of 0, vn representing max, and colors between
@@ -1482,10 +1540,10 @@ Recolor an image from intensity values.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>red, green, blue intensity factors
 <dt><tt>int|array(int) v1</tt>
 <dt><tt>int|array(int) vn</tt>
-  <dd>destination color
+  <dd>red, green, blue intensity factors
+     destination color
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1496,16 +1554,17 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>grey</a></tt>,
-     <tt><a href=#>`*</a></tt>,
-     <tt><a href=#>color</a></tt>
+<blockquote>     <tt><a href=Image.image.html#grey>grey</a></tt>,
+     <tt><a href=Image.image.html#%60*>`*</a></tt>,
+     <tt><a href=Image.image.html#color>color</a></tt>
 </blockquote>
 
 <hr>
+<a name=paste> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>paste</b>(object&nbspimage)<br>
-object <b>paste</b>(object&nbspimage, int&nbspx, int&nbspy)</tt>
+<tt>object <b>paste</b>(object&nbsp;image)<br>
+object <b>paste</b>(object&nbsp;image, int&nbsp;x, int&nbsp;y)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1517,10 +1576,10 @@ Pastes a given image over the current image.
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
-  <dd>image to paste
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>where to paste the image; default is 0,0
+  <dd>image to paste
+     where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1531,16 +1590,17 @@ the object called
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>paste_mask</a></tt>,
-     <tt><a href=#>paste_alpha</a></tt>,
-     <tt><a href=#>paste_alpha_color</a></tt>
+<blockquote>     <tt><a href=Image.image.html#paste_mask>paste_mask</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha>paste_alpha</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>
 </blockquote>
 
 <hr>
+<a name=paste_alpha> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>paste_alpha</b>(object&nbspimage, int&nbspalpha)<br>
-object <b>paste_alpha</b>(object&nbspimage, int&nbspalpha, int&nbspx, int&nbspy)</tt>
+<tt>object <b>paste_alpha</b>(object&nbsp;image, int&nbsp;alpha)<br>
+object <b>paste_alpha</b>(object&nbsp;image, int&nbsp;alpha, int&nbsp;x, int&nbsp;y)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1557,12 +1617,12 @@ Pastes a given image over the current image, with
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
-  <dd>image to paste
 <dt><tt>int alpha</tt>
-  <dd>alpha channel value
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>where to paste the image; default is 0,0
+  <dd>image to paste
+     alpha channel value
+     where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1573,18 +1633,19 @@ the object called
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>paste_mask</a></tt>,
-     <tt><a href=#>paste</a></tt>,
-     <tt><a href=#>paste_alpha_color</a></tt>
+<blockquote>     <tt><a href=Image.image.html#paste_mask>paste_mask</a></tt>,
+     <tt><a href=Image.image.html#paste>paste</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>
 </blockquote>
 
 <hr>
+<a name=paste_alpha_color> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>paste_alpha_color</b>(object&nbspmask)<br>
-object <b>paste_alpha_color</b>(object&nbspmask, int&nbspx, int&nbspy)<br>
-object <b>paste_alpha_color</b>(object&nbspmask, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>paste_alpha_color</b>(object&nbspmask, int&nbspr, int&nbspg, int&nbspb, int&nbspx, int&nbspy)</tt>
+<tt>object <b>paste_alpha_color</b>(object&nbsp;mask)<br>
+object <b>paste_alpha_color</b>(object&nbsp;mask, int&nbsp;x, int&nbsp;y)<br>
+object <b>paste_alpha_color</b>(object&nbsp;mask, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>paste_alpha_color</b>(object&nbsp;mask, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;x, int&nbsp;y)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1603,14 +1664,14 @@ Pastes a given color over the current image,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object mask</tt>
-  <dd>mask image
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>what color to paint with; default is current
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>where to paste the image; default is 0,0
+  <dd>mask image
+     what color to paint with; default is current
+     where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1621,16 +1682,17 @@ the object called
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>paste_mask</a></tt>,
-     <tt><a href=#>paste_alpha</a></tt>,
-     <tt><a href=#>paste_alpha_color</a></tt>
+<blockquote>     <tt><a href=Image.image.html#paste_mask>paste_mask</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha>paste_alpha</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>
 </blockquote>
 
 <hr>
+<a name=paste_mask> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>paste_mask</b>(object&nbspimage, object&nbspmask)<br>
-object <b>paste_mask</b>(object&nbspimage, object&nbspmask, int&nbspx, int&nbspy)</tt>
+<tt>object <b>paste_mask</b>(object&nbsp;image, object&nbsp;mask)<br>
+object <b>paste_mask</b>(object&nbsp;image, object&nbsp;mask, int&nbsp;x, int&nbsp;y)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1648,12 +1710,12 @@ Pastes a given image over the current image,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
-  <dd>image to paste
 <dt><tt>object mask</tt>
-  <dd>mask image
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>where to paste the image; default is 0,0
+  <dd>image to paste
+     mask image
+     where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1664,18 +1726,20 @@ the object called
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>paste</a></tt>,
-     <tt><a href=#>paste_alpha</a></tt>,
-     <tt><a href=#>paste_alpha_color</a></tt>
+<blockquote>     <tt><a href=Image.image.html#paste>paste</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha>paste_alpha</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>
 </blockquote>
 
 <hr>
+<a name=rotate> </a>
+<a name=rotate_expand> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>rotate</b>(int|float&nbspangle)<br>
-object <b>rotate</b>(int|float&nbspangle, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>rotate_expand</b>(int|float&nbspangle)<br>
-object <b>rotate_expand</b>(int|float&nbspangle, int&nbspr, int&nbspg, int&nbspb)</tt>
+<tt>object <b>rotate</b>(int|float&nbsp;angle)<br>
+object <b>rotate</b>(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>rotate_expand</b>(int|float&nbsp;angle)<br>
+object <b>rotate_expand</b>(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1700,11 +1764,11 @@ Rotates an image a certain amount of degrees (360° is
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int|float angle</tt>
-  <dd>the number of degrees to rotate
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color to fill with; default is current
+  <dd>the number of degrees to rotate
+    color to fill with; default is current
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1714,11 +1778,12 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=scale> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>scale</b>(float&nbspfactor)<br>
+<tt>object <b>scale</b>(float&nbsp;factor)<br>
 object <b>scale</b>(0.5)<br>
-object <b>scale</b>(float&nbspxfactor, float&nbspyfactor)</tt>
+object <b>scale</b>(float&nbsp;xfactor, float&nbsp;yfactor)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1731,10 +1796,10 @@ scales the image with a factor,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>float factor</tt>
-  <dd>factor to use for both x and y
 <dt><tt>float xfactor</tt>
 <dt><tt>float yfactor</tt>
-  <dd>separate factors for x and y
+  <dd>factor to use for both x and y
+     separate factors for x and y
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1744,11 +1809,12 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=scale> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>scale</b>(int&nbspnewxsize, int&nbspnewysize)<br>
-object <b>scale</b>(0, int&nbspnewysize)<br>
-object <b>scale</b>(int&nbspnewxsize, 0)</tt>
+<tt>object <b>scale</b>(int&nbsp;newxsize, int&nbsp;newysize)<br>
+object <b>scale</b>(0, int&nbsp;newysize)<br>
+object <b>scale</b>(int&nbsp;newxsize, 0)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1773,10 +1839,11 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=select_from> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>select_from</b>(int&nbspx, int&nbspy)<br>
-object <b>select_from</b>(int&nbspx, int&nbspy, int&nbspedge_value)</tt>
+<tt>object <b>select_from</b>(int&nbsp;x, int&nbsp;y)<br>
+object <b>select_from</b>(int&nbsp;x, int&nbsp;y, int&nbsp;edge_value)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1790,7 +1857,7 @@ Makes an grey-scale image, for alpha-channel use.
     The image is scanned from the given pixel,
     filled with 255 if the color is the same,
     or 255 minus distance in the colorcube, squared, rightshifted
-    8 steps (see <tt><a href=#>distancesq</a></tt>).
+    8 steps (see <tt><a href=Image.image.html#distancesq>distancesq</a></tt>).
 
 <p>    When the edge distance is reached, the scan is stopped.
     Default edge value is 30.
@@ -1812,14 +1879,15 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>distancesq</a></tt>
+<blockquote>     <tt><a href=Image.image.html#distancesq>distancesq</a></tt>
 </blockquote>
 
 <hr>
+<a name=setcolor> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>setcolor</b>(int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>setcolor</b>(int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+<tt>object <b>setcolor</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>setcolor</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1833,9 +1901,9 @@ set the current color
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>new color
 <dt><tt>int alpha</tt>
-  <dd>new alpha value
+  <dd>new color
+     new alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1845,24 +1913,25 @@ the object called
 </blockquote>
 
 <hr>
+<a name=setpixel> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>setpixel</b>(int&nbspx, int&nbspy)<br>
-object <b>setpixel</b>(int&nbspx, int&nbspy, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>setpixel</b>(int&nbspx, int&nbspy, int&nbspr, int&nbspg, int&nbspb, int&nbspalpha)</tt>
+<tt>object <b>setpixel</b>(int&nbsp;x, int&nbsp;y)<br>
+object <b>setpixel</b>(int&nbsp;x, int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>setpixel</b>(int&nbsp;x, int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
 </blockquote>
 
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>position of the pixel
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color
 <dt><tt>int alpha</tt>
-  <dd>alpha value
+  <dd>position of the pixel
+     color
+     alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1872,16 +1941,18 @@ the object called
 </blockquote>
 
 <hr>
+<a name=skewx> </a>
+<a name=skewx_expand> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>skewx</b>(int&nbspx)<br>
-object <b>skewx</b>(int&nbspyfactor)<br>
-object <b>skewx</b>(int&nbspx, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>skewx</b>(int&nbspyfactor, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>skewx_expand</b>(int&nbspx)<br>
-object <b>skewx_expand</b>(int&nbspyfactor)<br>
-object <b>skewx_expand</b>(int&nbspx, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>skewx_expand</b>(int&nbspyfactor, int&nbspr, int&nbspg, int&nbspb)</tt>
+<tt>object <b>skewx</b>(int&nbsp;x)<br>
+object <b>skewx</b>(int&nbsp;yfactor)<br>
+object <b>skewx</b>(int&nbsp;x, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>skewx</b>(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>skewx_expand</b>(int&nbsp;x)<br>
+object <b>skewx_expand</b>(int&nbsp;yfactor)<br>
+object <b>skewx_expand</b>(int&nbsp;x, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>skewx_expand</b>(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1900,16 +1971,16 @@ Skews an image an amount of pixels or a factor;
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int x</tt>
+<dt><tt>float yfactor</tt>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
   <dd>the number of pixels
      The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
      the given or current color.
-<dt><tt>float yfactor</tt>
-  <dd>best described as: x=yfactor*this->ysize()
-<dt><tt>int r</tt>
-<dt><tt>int g</tt>
-<dt><tt>int b</tt>
-  <dd>color to fill with; default is current
+    best described as: x=yfactor*this->ysize()
+    color to fill with; default is current
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1919,16 +1990,18 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=skewy> </a>
+<a name=skewy_expand> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>skewy</b>(int&nbspy)<br>
-object <b>skewy</b>(int&nbspxfactor)<br>
-object <b>skewy</b>(int&nbspy, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>skewy</b>(int&nbspxfactor, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>skewy_expand</b>(int&nbspy)<br>
-object <b>skewy_expand</b>(int&nbspxfactor)<br>
-object <b>skewy_expand</b>(int&nbspy, int&nbspr, int&nbspg, int&nbspb)<br>
-object <b>skewy_expand</b>(int&nbspxfactor, int&nbspr, int&nbspg, int&nbspb)</tt>
+<tt>object <b>skewy</b>(int&nbsp;y)<br>
+object <b>skewy</b>(int&nbsp;xfactor)<br>
+object <b>skewy</b>(int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>skewy</b>(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>skewy_expand</b>(int&nbsp;y)<br>
+object <b>skewy_expand</b>(int&nbsp;xfactor)<br>
+object <b>skewy_expand</b>(int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>skewy_expand</b>(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1953,13 +2026,13 @@ Skews an image an amount of pixels or a factor;
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int y</tt>
-  <dd>the number of pixels
 <dt><tt>float xfactor</tt>
-  <dd>best described as: t=xfactor*this->xsize()
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>color to fill with; default is current
+  <dd>the number of pixels
+    best described as: t=xfactor*this->xsize()
+    color to fill with; default is current
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1969,11 +2042,14 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=to8bit> </a>
+<a name=to8bit_closest> </a>
+<a name=to8bit_fs> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>string <b>to8bit</b>(array(array(int))&nbspcolors)<br>
-string <b>to8bit_fs</b>(array(array(int))&nbspcolors)<br>
-string <b>to8bit_closest</b>(array(array(int))&nbspcolors)</tt>
+<tt>string <b>to8bit</b>(array(array(int))&nbsp;colors)<br>
+string <b>to8bit_fs</b>(array(array(int))&nbsp;colors)<br>
+string <b>to8bit_closest</b>(array(array(int))&nbsp;colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1994,22 +2070,25 @@ the calculated string
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>to8bit_rgbcube</a></tt>,
-     <tt><a href=#>tozbgr</a></tt>,
-     <tt><a href=#>map_fast</a></tt>,
-     <tt><a href=#>map_closest</a></tt>,
-     <tt><a href=#>select_colors</a></tt>,
-     <tt><a href=#>tobitmap</a></tt>
+<blockquote>     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>,
+     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
+     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
+     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
 </blockquote>
 
 <hr>
+<a name=to8bit_rgbcube> </a>
+<a name=to8bit_rgbcube_rdither> </a>
+<a name=tozbgr> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>string <b>tozbgr</b>(array(array(int))&nbspcolors)<br>
-string <b>to8bit_rgbcube</b>(int&nbspred, int&nbspgreen, int&nbspblue)<br>
-string <b>to8bit_rgbcube</b>(int&nbspred, int&nbspgreen, int&nbspblue, string&nbspmap)<br>
-string <b>to8bit_rgbcube_rdither</b>(int&nbspred, int&nbspgreen, int&nbspblue)<br>
-string <b>to8bit_rgbcube_rdither</b>(int&nbspred, int&nbspgreen, int&nbspblue, string&nbspmap)</tt>
+<tt>string <b>tozbgr</b>(array(array(int))&nbsp;colors)<br>
+string <b>to8bit_rgbcube</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
+string <b>to8bit_rgbcube</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)<br>
+string <b>to8bit_rgbcube_rdither</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
+string <b>to8bit_rgbcube_rdither</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -2026,9 +2105,9 @@ Maps the image into a colorcube with the given
 <dt><tt>int red</tt>
 <dt><tt>int green</tt>
 <dt><tt>int blue</tt>
-  <dd>The sides of the colorcube. Not the number of bits!
 <dt><tt>string map</tt>
-  <dd>Map this position in the colorcube to another value,
+  <dd>The sides of the colorcube. Not the number of bits!
+     Map this position in the colorcube to another value,
      ie: say we have position red=1,green=2,blue=3 in a colorcube of
      6×6×6, we have the index 1+2*6+3*6*6=121. If the 
      map-string contains 'å' in position 121, the resulting
@@ -2043,12 +2122,13 @@ the calculated string
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>tozbgr</a></tt>,
-     <tt><a href=#>to8bit</a></tt>,
-     <tt><a href=#>tobitmap</a></tt>
+<blockquote>     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
+     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
+     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
 </blockquote>
 
 <hr>
+<a name=tobitmap> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>tobitmap</b>();</tt>
@@ -2074,27 +2154,29 @@ the calculated string
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>tozbgr</a></tt>,
-     <tt><a href=#>to8bit</a></tt>,
-     <tt><a href=#>to8bit_rgbcube</a></tt>,
-     <tt><a href=#>cast</a></tt>
+<blockquote>     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
+     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
+     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>,
+     <tt><a href=Image.image.html#cast>cast</a></tt>
 </blockquote>
 
 <hr>
+<a name=togif> </a>
+<a name=togif_fs> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>togif</b>()<br>
-string <b>togif</b>(int&nbspnum_colors)<br>
-string <b>togif</b>(array(array(int))&nbspcolors)<br>
-string <b>togif</b>(int&nbsptrans_r, int&nbsptrans_g, int&nbsptrans_b)<br>
-string <b>togif</b>(int&nbspnum_colors, int&nbsptrans_r, int&nbsptrans_g, int&nbsptrans_b)<br>
-string <b>togif</b>(array(array(int))&nbspcolors, int&nbsptrans_r, int&nbsptrans_g, int&nbsptrans_b)<br>
+string <b>togif</b>(int&nbsp;num_colors)<br>
+string <b>togif</b>(array(array(int))&nbsp;colors)<br>
+string <b>togif</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
 string <b>togif_fs</b>()<br>
-string <b>togif_fs</b>(int&nbspnum_colors)<br>
-string <b>togif_fs</b>(array(array(int))&nbspcolors)<br>
-string <b>togif_fs</b>(int&nbsptrans_r, int&nbsptrans_g, int&nbsptrans_b)<br>
-string <b>togif_fs</b>(int&nbspnum_colors, int&nbsptrans_r, int&nbsptrans_g, int&nbsptrans_b)<br>
-string <b>togif_fs</b>(array(array(int))&nbspcolors, int&nbsptrans_r, int&nbsptrans_g, int&nbsptrans_b)</tt>
+string <b>togif_fs</b>(int&nbsp;num_colors)<br>
+string <b>togif_fs</b>(array(array(int))&nbsp;colors)<br>
+string <b>togif_fs</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif_fs</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif_fs</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -2107,13 +2189,13 @@ Makes GIF data. The togif_fs variant uses floyd-steinberg
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int num_colors</tt>
-  <dd>number of colors to quantize to (default is 256) 
- array array(array(int)) colors
-     colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
 <dt><tt>int trans_r</tt>
 <dt><tt>int trans_g</tt>
 <dt><tt>int trans_b</tt>
-  <dd>one color, that is to be transparent.
+  <dd>number of colors to quantize to (default is 256) 
+ array array(array(int)) colors
+     colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
+     one color, that is to be transparent.
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -2124,14 +2206,15 @@ the GIF data
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>togif_begin</a></tt>,
-     <tt><a href=#>togif_add</a></tt>,
-     <tt><a href=#>togif_end</a></tt>,
-     <tt><a href=#>toppm</a></tt>,
-     <tt><a href=#>fromgif</a></tt>
+<blockquote>     <tt><a href=Image.image.html#togif_begin>togif_begin</a></tt>,
+     <tt><a href=Image.image.html#togif_add>togif_add</a></tt>,
+     <tt><a href=Image.image.html#togif_end>togif_end</a></tt>,
+     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
+     <tt><a href=Image.image.html#fromgif>fromgif</a></tt>
 </blockquote>
 
 <hr>
+<a name=toppm> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>toppm</b>()</tt>
@@ -2153,15 +2236,16 @@ PPM data
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>frompnm</a></tt>,
-     <tt><a href=#>fromgif</a></tt>
+<blockquote>     <tt><a href=Image.image.html#frompnm>frompnm</a></tt>,
+     <tt><a href=Image.image.html#fromgif>fromgif</a></tt>
 </blockquote>
 
 <hr>
+<a name=treshold> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>treshold</b>()<br>
-object <b>treshold</b>(int&nbspr, int&nbspg, int&nbspb)</tt>
+object <b>treshold</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -2195,13 +2279,14 @@ the new image object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>grey</a></tt>
+<blockquote>     <tt><a href=Image.image.html#grey>grey</a></tt>
 </blockquote>
 
 <hr>
+<a name=tuned_box> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>tuned_box</b>(int&nbspx1, int&nbspy1, int&nbspx2, int&nbspy2, array(array(int))&nbspcorner_color)</tt>
+<tt>object <b>tuned_box</b>(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, array(array(int))&nbsp;corner_color)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -2221,9 +2306,9 @@ Draws a filled rectangle with colors (and alpha values) tuned
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-  <dd>rectangle corners
 <dt><tt>array(array(int)) corner_color</tt>
-  <dd>colors of the corners:
+  <dd>rectangle corners
+     colors of the corners:
      <pre>
      ({x1y1,x2y1,x1y2,x2y2})
      </pre>
@@ -2241,6 +2326,7 @@ the object called
 </blockquote>
 
 <hr>
+<a name=xsize> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>int <b>xsize</b>()</tt>
@@ -2254,6 +2340,7 @@ the width of the image
 </blockquote>
 
 <hr>
+<a name=ysize> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>int <b>ysize</b>()</tt>

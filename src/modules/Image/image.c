@@ -1,9 +1,93 @@
-/* $Id: image.c,v 1.23 1997/04/18 06:47:26 mirar Exp $ */
+/* $Id: image.c,v 1.24 1997/04/19 12:33:57 mirar Exp $ */
 
 /*
 **! module Image
+**!
+**!     This module adds image-drawing and -manipulating
+**!	capabilities to pike. 
+**!
+**! see also: Image.font, Image.image
+**!
 **! class image
-*/
+**!
+**!	The main object of the <ref>Image</ref> module, this object
+**!	is used as drawing area, mask or result of operations.
+**!
+**!	init: <ref>clear</ref>,
+**!	<ref>clone</ref>,
+**!	<ref>create</ref>, 
+**!	<ref>xsize</ref>,
+**!	<ref>ysize</ref>
+**!
+**!	plain drawing: <ref>box</ref>,
+**!	<ref>circle</ref>,
+**!	<ref>getpixel</ref>, 
+**!	<ref>line</ref>,
+**!	<ref>setcolor</ref>,
+**!	<ref>setpixel</ref>, 
+**!	<ref>treshold</ref>,
+**!	<ref>tuned_box</ref>
+**!
+**!	operators: <ref>`&</ref>,
+**!	<ref>`*</ref>,
+**!	<ref>`+</ref>,
+**!	<ref>`-</ref>,
+**!	<ref>`|</ref>
+**!
+**!	pasting images, layers: <ref>add_layers</ref>, 
+**!	<ref>paste</ref>,
+**!	<ref>paste_alpha</ref>,
+**!	<ref>paste_alpha_color</ref>,
+**!	<ref>paste_mask</ref>
+**!
+**!	getting subimages, scaling, rotating: <ref>autocrop</ref>, 
+**!	<ref>ccw</ref>,
+**!	<ref>cw</ref>,
+**!	<ref>clone</ref>,
+**!	<ref>copy</ref>, 
+**!	<ref>dct</ref>,
+**!	<ref>mirrorx</ref>, 
+**!	<ref>rotate</ref>,
+**!	<ref>rotate_expand</ref>, 
+**!	<ref>scale</ref>, 
+**!	<ref>skewx</ref>,
+**!	<ref>skewx_expand</ref>,
+**!	<ref>skewy</ref>,
+**!	<ref>skewy_expand</ref>
+**!
+**!	calculation by pixels: <ref>apply_matrix</ref>, 
+**!	<ref>change_color</ref>,
+**!	<ref>color</ref>,
+**!	<ref>distancesq</ref>, 
+**!	<ref>grey</ref>,
+**!	<ref>invert</ref>, 
+**!	<ref>map_closest</ref>,
+**!	<ref>map_fast</ref>, 
+**!	<ref>modify_by_intensity</ref>,
+**!	<ref>select_from</ref> 
+**!
+**!	converting to other datatypes: <ref>cast</ref>,
+**!	<ref>fromgif</ref>, 
+**!	<ref>frompnm</ref>/<ref>fromppm</ref>, 
+**!	<ref>gif_add</ref>,
+**!	<ref>gif_add_fs</ref>,
+**!	<ref>gif_add_fs_nomap</ref>,
+**!	<ref>gif_add_nomap</ref>,
+**!	<ref>gif_begin</ref>,
+**!	<ref>gif_end</ref>,
+**!	<ref>gif_netscape_loop</ref>,
+**!	<ref>to8bit</ref>,
+**!	<ref>to8bit_closest</ref>, 
+**!	<ref>to8bit_fs</ref>,
+**!	<ref>to8bit_rgbcube</ref>, 
+**!	<ref>to8bit_rgbcube_rdither</ref>,
+**!	<ref>tobitmap</ref>, 
+**!	<ref>togif</ref>,
+**!	<ref>togif_fs</ref>, 
+**!	<ref>toppm</ref>,
+**!	<ref>tozbgr</ref>
+**!
+**! see also: Image, Image.font
 
 #include "global.h"
 
@@ -12,7 +96,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.23 1997/04/18 06:47:26 mirar Exp $");
+RCSID("$Id: image.c,v 1.24 1997/04/19 12:33:57 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"

@@ -56,31 +56,31 @@ mapping lower_nowM()
 
 mapping keywords=
 (["module":lambda(string arg,int line) 
-	  { nowM=moduleM=focM(parse,stripws(arg),line); classM=methodM=0; 
+	  { descM=nowM=moduleM=focM(parse,stripws(arg),line); classM=methodM=0; 
 	    if (!nowM->classes) nowM->classes=([]); },
   "class":lambda(string arg,int line) 
 	  { if (!moduleM) return complain("class w/o module");
-	    nowM=classM=focM(moduleM->classes,stripws(arg),line); 
+	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line); 
 	    methodM=0; },
   "method":lambda(string arg,int line)
 	  { if (!classM) return complain("method w/o class");
-	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args) 
+	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM) 
 	    { if (!classM->methods) classM->methods=({});
 	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":line])}); }
-	    methodM->decl+=({stripws(arg)}); },
+	    methodM->decl+=({stripws(arg)}); descM=0; },
   "arg":lambda(string arg,int line)
 	  {
 	     if (!methodM) return complain("arg w/o method");
 	     if (nowM!=argM || !argM)
 	     { if (!methodM->args) methodM->args=({});
 	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])}); }
-	     argM->args+=({arg});
+	     argM->args+=({arg}); descM=argM;
 	  },
   "note":lambda(string arg,int line)
 	  {
 	     if (!lower_nowM()) 
 	        return complain("note w/o method, class or module");
-	     nowM=nowM->note||(nowM->note=(["_line":line]));
+	     descM=nowM->note||(nowM->note=(["_line":line]));
 	  },
   "see":lambda(string arg,int line)
 	  {
@@ -94,8 +94,8 @@ mapping keywords=
 	  {
 	     if (!methodM) 
 	        return complain("returns w/o method");
-	     nowM=0;
 	     methodM->returns=stripws(arg);
+	     descM=0; nowM=0;
 	  }
 ]);
 
@@ -117,9 +117,32 @@ string addprefix(string suffix,string prefix)
    return prefix+suffix;
 }
 
+#define urlify(S) (replace((S),({"%","&","'","\"","`"}), \
+			   ({"%25","%26","%27","%22","%60"})))
+#define htmlify(S) (replace((S),({"&","\240"}),({"&amp;","&nbsp;"})))
+
 string make_nice_reference(string refto,string my_prefix)
 {
-   return "<tt><a href=#>"+refto+"</a></tt>";
+   string my_module,my_class,link,s,t;
+
+   if (sscanf(my_prefix,"%s.%s",my_module,my_class)==1)
+      my_class=0;
+
+   switch ((search(refto,"::")!=-1)+(search(refto,".")!=-1)*2)
+   {
+      case 0: if (refto!=my_module) link=my_prefix+"::"+refto; 
+              else link=refto; 
+              break;
+      case 1: link=my_module+"."+refto; break;
+      case 2: 
+      case 3: link=refto; break;
+   }
+
+   if (search(link,"::")!=-1)
+      link=replace(link,"::",".html#");
+   else 
+      link+=".html";
+   return "<tt><a href="+urlify(link)+">"+refto+"</a></tt>";
 }
 
 object(File) make_file(string filename)
@@ -151,7 +174,7 @@ string fixdesc(string s,string prefix)
       t=v;
    }
    s+=t;
-   return replace(s,"\n\n","\n\n<p>");
+   return htmlify(replace(s,"\n\n","\n\n<p>"));
 }
 
 string standard_doc(mapping info,string myprefix)
@@ -159,11 +182,12 @@ string standard_doc(mapping info,string myprefix)
    string res="";
 
    if (info->desc && stripws(info->desc)!="")
-      res+="\n\n<blockquote>\n"+info->desc+"\n</blockquote>\n";
+      res+="\n\n<blockquote>\n"+fixdesc(info->desc,myprefix)+
+	 "\n</blockquote>\n";
    
    if (info->note)
       res+="\n\n<h4>NOTE</h4>\n<blockquote>\n"+
-	 fixdesc(info->desc,myprefix)+"\n</blockquote>\n";
+	 fixdesc(info->note->desc,myprefix)+"\n</blockquote>\n";
    
    if (info["see also"])
    {
@@ -188,10 +212,10 @@ void make_an_index(string title,
 	    standard_doc(info,prefix));
    if (sizeof(refs))
    {
-      f->write("<h3>More documentation:</h3>\n <i><tt>" +
+      f->write("<h3>More documentation:</h3>\n <i>" +
 	       map(map(refs,addprefix,prefix),
 		   make_nice_reference,prefix)*"</tt></i><br>\n <i><tt>" +
-	       "</tt></i>\n\n");
+	       "</i>\n\n");
    }
    f->close();
 }
@@ -216,22 +240,27 @@ string synopsis_to_html(string s)
 
    return 
       type+" <b>"+name+"</b>("+
-      replace(arg,({","," "}),({", ","&nbsp"}));
+      replace(arg,({","," "}),({", ","\240"}));
 }
 
 void document_method(object(File) f,
 		     mapping method,
 		     string prefix)
 {
+   string s;
+
    stdout->write("documenting "+prefix+" methods "+
 		 sort(indices(method->names))*", "+"...\n");
    
-   f->write("\n<hr>\n"
-	    // anchors goes here
-	    "<h4>SYNOPSIS</h4>\n"
+   f->write("\n<hr>\n");
+
+   foreach (sort(indices(method->names)),s)
+      f->write("<a name="+urlify(s)+"> </a>\n");
+
+   f->write("<h4>SYNOPSIS</h4>\n"
 	    "<blockquote>\n"
-	    "<tt>"+map(method->decl,synopsis_to_html)*
-	              "<br>\n"+
+	    "<tt>"+htmlify(map(method->decl,synopsis_to_html)*
+			   "<br>\n")+
 	    "</tt>\n</blockquote>\n\n");
 
    if (method->desc && stripws(method->desc)!="")
@@ -300,9 +329,9 @@ void document_class(string title,
 
    method_names_arr=sort(indices(method_names));
 
-   f->write("\n<hr>\n   <i><tt>"+
-	    map(method_names_arr,make_nice_reference,prefix)*
-	       "</tt></i><br>\n   <i><tt>"+"</tt></i><br>\n\n");
+/*   f->write("\n<hr>\n   <i><tt>"+*/
+/*	    map(method_names_arr,make_nice_reference,prefix)**/
+/*	       "</tt></i><br>\n   <i><tt>"+"</tt></i><br>\n\n");*/
    // alphabetically
 
    foreach (method_names_arr,method_name)
@@ -377,16 +406,16 @@ int main()
 	 }
 	 else 
 	 {
-	    if (!nowM && !(nowM=descM) )
+	    if (!descM) descM=methodM;
+	    if (!descM)
 	    {
 	       stderr->write("Error on line "+line+": illegal description position\n");
 	       return 1;
 	    }
-	    if (!nowM->desc) nowM->desc="";
-	    else nowM->desc+="\n";
+	    if (!descM->desc) descM->desc="";
+	    else descM->desc+="\n";
 	    s=getridoftabs(s);
-	    nowM->desc+=s[search(s,"**!")+3..];
-	    descM=nowM; nowM=0;
+	    descM->desc+=s[search(s,"**!")+3..];
 	 }
       }
    }

@@ -3,8 +3,23 @@
 
 
 <blockquote>
+This object adds the text-drawing and -creation
+     capabilities of the <tt><a href=Image.html>Image</a></tt> module.
 
-     Short technical documentation on a font file:
+<p>     For simple usage, see
+     <tt><a href=Image.font.html#write>write</a></tt> and <tt><a href=Image.font.html#load>load</a></tt>.
+
+<p>     other methods: <tt><a href=Image.font.html#baseline>baseline</a></tt>,
+     <tt><a href=Image.font.html#height>height</a></tt>,
+     <tt><a href=Image.font.html#set_xspacing_scale>set_xspacing_scale</a></tt>,
+     <tt><a href=Image.font.html#set_yspacing_scale>set_yspacing_scale</a></tt>,
+     <tt><a href=Image.font.html#text_extents>text_extents</a></tt>
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+Short technical documentation on a font file:
      <pre>
             struct file_head 
             {
@@ -22,20 +37,16 @@
                unsigned char data[1];   - pixmap data (1byte/pixel)
             } *ch;
      </pre>
+</blockquote>
 
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.html>Image</a></tt>,
+     <tt><a href=Image.image.html>Image.image</a></tt>
 </blockquote>
 
 <hr>
-   <i><tt><tt><a href=#>baseline</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>height</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>load</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>set_xspacing_scale</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>set_yspacing_scale</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>text_extents</a></tt></tt></i><br>
-   <i><tt><tt><a href=#>write</a></tt></tt></i><br>
-
-
-<hr>
+<a name=baseline> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>int <b>baseline</b>()</tt>
@@ -50,15 +61,17 @@ font baseline (pixels from top)
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>height</a></tt>,
-     <tt><a href=#>text_extents</a></tt>
+<blockquote>     <tt><a href=Image.font.html#height>height</a></tt>,
+     <tt><a href=Image.font.html#text_extents>text_extents</a></tt>
 </blockquote>
 
 <hr>
+<a name=height> </a>
+<a name=text_extents> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>int <b>height</b>()<br>
-array(int) <b>text_extents</b>(string&nbsptext, ...)</tt>
+array(int) <b>text_extents</b>(string&nbsp;text, ...)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -66,7 +79,7 @@ array(int) <b>text_extents</b>(string&nbsptext, ...)</tt>
 
 <blockquote>
 Calculate extents of a text-image,
-     that would be created by calling <tt><a href=#>write</a></tt>
+     that would be created by calling <tt><a href=Image.font.html#write>write</a></tt>
      with the same arguments.
 </blockquote>
 <h4>ARGUMENTS</h4>
@@ -83,15 +96,16 @@ an array of width and height
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>write</a></tt>,
-     <tt><a href=#>height</a></tt>,
-     <tt><a href=#>baseline</a></tt>
+<blockquote>     <tt><a href=Image.font.html#write>write</a></tt>,
+     <tt><a href=Image.font.html#height>height</a></tt>,
+     <tt><a href=Image.font.html#baseline>baseline</a></tt>
 </blockquote>
 
 <hr>
+<a name=load> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object|int <b>load</b>(string&nbspfilename)</tt>
+<tt>object|int <b>load</b>(string&nbsp;filename)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -114,14 +128,16 @@ zero upon failure, font object upon success
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>write</a></tt>
+<blockquote>     <tt><a href=Image.font.html#write>write</a></tt>
 </blockquote>
 
 <hr>
+<a name=set_xspacing_scale> </a>
+<a name=set_yspacing_scale> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>void <b>set_xspacing_scale</b>(float&nbspscale)<br>
-void <b>set_yspacing_scale</b>(float&nbspscale)</tt>
+<tt>void <b>set_xspacing_scale</b>(float&nbsp;scale)<br>
+void <b>set_yspacing_scale</b>(float&nbsp;scale)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -139,9 +155,10 @@ Set spacing scale to write characters closer
 </dl></blockquote>
 
 <hr>
+<a name=write> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>write</b>(string&nbsptext, ...)</tt>
+<tt>object <b>write</b>(string&nbsp;text, ...)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -165,8 +182,8 @@ an <ref>Image::image</ref> object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=#>text_extents</a></tt>,
-     <tt><a href=#>load</a></tt>,
-     <tt><a href=#>image::paste_mask</a></tt>,
-     <tt><a href=#>image::paste_alpha_color</a></tt>
+<blockquote>     <tt><a href=Image.font.html#text_extents>text_extents</a></tt>,
+     <tt><a href=Image.font.html#load>load</a></tt>,
+     <tt><a href=Image.image.html#paste_mask>image::paste_mask</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>image::paste_alpha_color</a></tt>
 </blockquote>
