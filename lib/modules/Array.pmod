@@ -543,7 +543,7 @@ int lyskom_sort_func(string a,string b)
 //! @note
 //!   Prior to Pike 7.5.7 it was not safe to call this function
 //!   with cyclic data-structures.
-array flatten(array a, mapping|void state)
+array flatten(array a, mapping(array:array)|void state)
 {
   if (state && state[a]) return state[a];
   if (!state) state = ([a:({})]);
