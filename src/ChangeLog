@@ -1,3 +1,22 @@
+Sun Oct 29 04:02:03 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+        * v1.0E-13 released
+
+	* modified uhttpd.lpc to use class {}
+	* file.c: when several file objects were point at one fd, the
+          callbacks would be removed even if the callbacks were not to
+          that object.
+	* program.c: fixed so that checking types against prototypes is
+          only done when the prototype isn't inherited
+	* language.y: fixed a core-dumping bug when doing foo::bar on an
+          unknown identifier
+        * compile.h: new file that handles pusing/popping of compile related
+          state information
+        * program.c: moved state pusing/popping to compile.h
+        * lex.c: added keyword class and cleaned up a little
+	* language.y: Added class {} and fixed a scope bug 
+        * Started using CVS
+
 Tue Oct 24 00:13:18 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* everything; fixed implicit casts to explicits in < > <= >=
