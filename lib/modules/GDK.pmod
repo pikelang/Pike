@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+#if constant(GTK)
+
 #define INDEX(x) GTK[x]
 
 object Atom = class
@@ -46,3 +48,13 @@ mixed `[](string what)
   return ([])[0];
 //   return  GDKSupport[what];
 }
+
+#else /* !constant(GTK) */
+
+static void create()
+{
+  /* Destroy ourselves. */
+  destruct();
+}
+
+#endif /* constant(GTK) */
