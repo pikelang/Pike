@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.494 2002/11/04 13:32:46 tomas Exp $")
+AC_REVISION("$Id: configure.in,v 1.495 2002/11/04 13:46:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1281,8 +1281,7 @@ if test "$cflags_is_set" = "no"; then
       fi
     else :; fi
 
-    # Only do this explicitly for now
-    if test x$with_dynamic_modules = xyes ; then
+    if test x$with_dynamic_modules = xno ; then
       AC_MSG_WARN([Enabling dynamic modules for Win32])
 #      EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
       EXTRA_OBJS="${EXTRA_OBJS} dlopen.o"
