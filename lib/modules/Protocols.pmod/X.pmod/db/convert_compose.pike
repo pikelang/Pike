@@ -30,7 +30,8 @@ void main()
       to = repl[to];
       string p = "";
       int res = (int)to;
-      for(int i=0;i<sizeof(from)-1; i++)
+      int i;
+      for(i=0;i<sizeof(from)-1; i++)
       {
 	p+=sprintf("%4c", (int)from[i]);
 	patterns[p]=({}); // continue..

@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.45 1998/10/28 22:54:08 marcus Exp $
+# $Id: dynamic_module_makefile.in,v 1.46 1999/03/03 02:39:26 hubbe Exp $
 #
 
 
@@ -26,7 +26,7 @@ subdirs:
 dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	@tmp="$(INSTALL_NAME)" ; \
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
-	$(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so ;\
+	$(TMP_BINDIR)/install_module module.so $(TMP_LIBDIR)/modules/$$tmp.so ;\
 	if [ -f $(SRCDIR)/module.pmod.in ]; then sed -e "s/@module@/\"$$tmp\"/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; else if [ -f ./module.pmod.in ]; then sed -e "s/@module@/\"$$tmp\"/" <./module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod; else :; fi; fi
 
 linker_options: Makefile
@@ -90,5 +90,5 @@ gdb_verify: module_testsuite
 
 
 install: $(MODULE_INSTALL)
-	$(INSTALL) module.so @prefix@/lib/pike/modules/$(MODNAME).so
+	$(TMP_BINDIR)/install_module module.so @prefix@/lib/pike/modules/$(MODNAME).so
 
