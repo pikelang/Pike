@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.138 2002/12/09 22:21:46 mast Exp $
+|| $Id: pike_memory.c,v 1.139 2003/03/17 13:47:20 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.138 2002/12/09 22:21:46 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.139 2003/03/17 13:47:20 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2241,7 +2241,7 @@ static void low_search_all_memheaders_for_references(void)
 	  __try {
 #endif
 	    for(e=0;e<m->size/sizeof(void *);e++)
-	      if((tmp=find_memhdr(p[e])))
+	      if((tmp=just_find_memhdr(p[e])))
 		tmp->flags |= MEM_REFERENCED;
 #ifdef __NT__
 	  }
