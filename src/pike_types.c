@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.62 1999/11/20 21:58:02 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.63 1999/11/20 22:12:31 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -994,6 +994,81 @@ struct pike_string *or_pike_types(struct pike_string *a,
 {
   type_stack_mark();
   medium_or_pike_types(a,b);
+  return pop_unfinished_type();
+}
+
+static void very_low_and_pike_types(char *to_push, char *not_push)
+{
+  while(EXTRACT_UCHAR(to_push)==T_AND)
+  {
+    to_push++;
+    very_low_and_pike_types(to_push, not_push);
+    to_push+=type_length(to_push);
+  }
+  if(!low_find_exact_type_match(to_push, not_push))
+  {
+    push_unfinished_type(to_push);
+    push_type(T_AND);
+  }
+}
+
+static void low_and_pike_types(char *t1, char *t2)
+{
+  if(!t1)
+  {
+    if(!t2)
+      push_type(T_VOID);
+    else
+      push_unfinished_type(t2);
+  }
+  else if(!t2)
+  {
+    push_unfinished_type(t1);
+  }
+  else if(EXTRACT_UCHAR(t1)==T_MIXED || EXTRACT_UCHAR(t2)==T_MIXED)
+  {
+    push_type(T_MIXED);
+  }
+  else if(EXTRACT_UCHAR(t1)==T_INT && EXTRACT_UCHAR(t2)==T_INT)
+  {
+    INT32 i1,i2;
+    INT32 upper_bound,lower_bound;
+    i1=extract_type_int(t1+1+sizeof(INT32));
+    i2=extract_type_int(t2+1+sizeof(INT32));
+    upper_bound = MINIMUM(i1,i2);
+
+    i1=extract_type_int(t1+1);
+    i2=extract_type_int(t2+1);
+    lower_bound = MAXIMUM(i1,i2);
+
+    if (upper_bound >= lower_bound) {
+      push_type_int(upper_bound);
+      push_type_int(lower_bound);
+      push_type(T_INT);
+    } else {
+      /* No overlap! */
+      /* FIXME: Warn? */
+      push_type(T_VOID);
+    }
+  }
+  else
+  {
+    push_unfinished_type(t1);
+    very_low_and_pike_types(t2,t1);
+  }
+}
+
+static void medium_and_pike_types(struct pike_string *a,
+				  struct pike_string *b)
+{
+  low_and_pike_types( a ? a->str : 0 , b ? b->str : 0 );
+}
+
+struct pike_string *and_pike_types(struct pike_string *a,
+				   struct pike_string *b)
+{
+  type_stack_mark();
+  medium_and_pike_types(a,b);
   return pop_unfinished_type();
 }
 
