@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.87 2002/07/08 13:49:51 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.88 2002/07/13 08:45:35 mikael Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -593,7 +593,7 @@ private class SubSysLogger {
 
   constant startdoc = "logging [<filename>]\n"
   "\tLogs all input and output to a log file. If no file name is \n"
-  "\tspecified logging will be prepended to hilfe.log in the current\n"
+  "\tspecified logging will be appended to hilfe.log in the current\n"
   "\twork directory.\n";
 
   constant stopdoc = "logging\n\tTurns off logging to file.\n";
