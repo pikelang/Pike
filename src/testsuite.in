@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.411 2001/05/17 17:48:10 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.412 2001/05/17 23:49:07 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5738,6 +5738,28 @@ test_compile_any([[
 test_compile_error([[
 #error Gurgel
 ]])
+
+define(do_test_cpp_string,[[
+test_eq([[ (({""}) + (string)indices("."*256)/"" + ({""})) * $1]],
+	[[ Stdio.write_file("testsuite.tmp",a()),compile_string("string s=#string \"testsuite.tmp\";")()->s ]])
+]])
+
+do_test_cpp_string([["0"]])
+do_test_cpp_string([["1"]])
+do_test_cpp_string([["2"]])
+do_test_cpp_string([["3"]])
+do_test_cpp_string([["4"]])
+do_test_cpp_string([["5"]])
+do_test_cpp_string([["6"]])
+do_test_cpp_string([["7"]])
+do_test_cpp_string([["8"]])
+do_test_cpp_string([["9"]])
+do_test_cpp_string([["a"]])
+do_test_cpp_string([["A"]])
+do_test_cpp_string([["\\"]])
+do_test_cpp_string([["\\\\"]])
+do_test_cpp_string([["\\\\\\"]])
+do_test_cpp_string([["\""]])
 
 // foop
 define(do_test_foop,[[

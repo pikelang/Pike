@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.38 2001/05/14 03:30:50 hubbe Exp $
+ * $Id: preprocessor.h,v 1.39 2001/05/17 23:49:07 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -264,7 +264,7 @@ static void PUSH_STRING(WCHAR *str,
 	  string_builder_putchar(buf, ((c>>6)&7)+'0');
 	  string_builder_putchar(buf, ((c>>3)&7)+'0');
 	  string_builder_putchar(buf, (c&7)+'0');
-	  if((str[p2+1] >= '0') && (str[p2+1] <= '7'))
+	  if((str[p2+1] >= '0') && (str[p2+1] <= '9'))
 	  {
 	    string_builder_putchar(buf, '"');
 	    string_builder_putchar(buf, '"');
