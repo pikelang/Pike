@@ -435,7 +435,7 @@ void f_set_start_quote(INT32 args)
 
 #define SKIP_SPACE()  while (i<len && ISSPACE(s[i])) i++
 #define STARTQUOTE(C) do{PUSH();j=i+1;inquote = 1;endquote=(C);}while(0)
-#define ENDQUOTE() do{PUSH();inquote=0;endquote=0;}while(0)       
+#define ENDQUOTE() do{PUSH();j++;inquote=0;endquote=0;}while(0)       
 
 int extract_word(char *s, int i, int len)
 {
@@ -488,7 +488,7 @@ int extract_word(char *s, int i, int len)
     }
   }
 done:
-  if(!strs || i-j > 2) PUSH();
+  if(!strs || i-j > 0) PUSH();
   if(strs > 1)
     f_add(strs);
   else if(!strs)
@@ -517,8 +517,13 @@ int push_parsed_tag(char *s,int len)
     if (i+1 >= len || (s[i] != '='))
     {
       /* No 'Y' part here. Assign to 'X' */
-      assign_svalue_no_free(sp,sp-1);
-      sp++;
+      if (sp[-1].u.string->len) {
+	assign_svalue_no_free(sp,sp-1);
+	sp++;
+      } else {
+	/* Empty string -- throw away */
+	pop_stack();
+      }
     } else {
       i = extract_word(s, i+1, len);
     }
@@ -617,6 +622,10 @@ void do_html_parse(struct pike_string *ss,
       /* skip all spaces */
       i++;
       for (n=i;n<len && ISSPACE(s[n]); n++);
+      /* Find tag name
+       *
+       * Ought to handle the <"tag"> and <'tag'> cases too.
+       */
       for (j=n; j<len && s[j]!='>' && !ISSPACE(s[j]); j++);
 
       if (j==len) break; /* end of string */
@@ -645,6 +654,7 @@ void do_html_parse(struct pike_string *ss,
       }
       else if (sval1.type!=T_INT)
       {
+	/* Hopefully something callable ... */
 	assign_svalue_no_free(sp++,&sval2);
 	k=push_parsed_tag(s+j,len-j); 
 	if (extra_args)
