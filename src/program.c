@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.288 2000/12/16 18:59:48 mast Exp $");
+RCSID("$Id: program.c,v 1.289 2000/12/16 19:05:54 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3924,10 +3924,10 @@ void gc_free_all_unreferenced_programs(void)
 #endif
     }else{
       next=p->next;
-    }
 #ifdef PIKE_DEBUG
-    first = 0;
+      first = 0;
 #endif
+    }
   }
 
 #ifdef PIKE_DEBUG
