@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.24 1999/06/30 21:54:19 mirar Exp $
+**!	$Id: layers.c,v 1.25 1999/07/01 02:16:55 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -152,7 +152,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.24 1999/06/30 21:54:19 mirar Exp $");
+RCSID("$Id: layers.c,v 1.25 1999/07/01 02:16:55 per Exp $");
 
 #include "image_machine.h"
 
@@ -1133,7 +1133,7 @@ static void image_layer_cast(INT32 args)
 	 push_text("xsize");        push_int(THIS->xsize);         n++;
 	 push_text("ysize");        push_int(THIS->ysize);         n++;
 	 push_text("image");        image_layer_image(0);          n++;
-	 push_text("alpha");        image_layer_image(0);          n++;
+	 push_text("alpha");        image_layer_alpha(0);          n++;
 	 push_text("xoffset");      push_int(THIS->xoffs);         n++;
 	 push_text("yoffset");      push_int(THIS->yoffs);         n++;
 	 push_text("alpha_value");  push_float(THIS->alpha_value); n++;
