@@ -112,7 +112,7 @@ OBJ= \
 all: module_objects
 	$(MAKE) $(MAKE_FLAGS) pike
 
-pike: $(OBJ) modules/linker_options modules/lib_dirs
+pike: $(OBJ) modules/linker_options
 	-mv pike pike.old
 	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 

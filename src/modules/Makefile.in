@@ -10,7 +10,7 @@ all: modules
 
 modules:
 	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a) ; done
-	$(MAKE) linker_options modlist.h modlist_headers.h module_list
+	$(MAKE) linker_options modlist.h modlist_headers.h
 
 modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
