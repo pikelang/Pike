@@ -1,3 +1,10 @@
+Fri Jun 27 19:30:52 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/Sql/sql.pike (create): The host argument can now use the
+ 	following syntax:
+ 	  [dbtype://][user[:password]@]hostname[:port][/database]
+	Thanks to Francesco Chemolli for the suggestion.
+
 Wed Jun 25 03:21:41 1997  Niels Möller  <nisse@infovav.se>
 
 	* modules/files/file.c (file_open): Added optional third argument
