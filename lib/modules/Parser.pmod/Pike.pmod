@@ -41,7 +41,8 @@ array(string) split(string data, void|mapping state)
 	state->remains += data[..sizeof(data)-2];
 	return ({});
       }
-      ret += ({ m_delete(state, "remains") + data[..pos] });
+      ret += ({ state->remains + data[..pos] });
+      m_delete(state, "remains");
       pos+=2;
       break;
 
@@ -66,7 +67,8 @@ array(string) split(string data, void|mapping state)
 
 	pos=s+1;
       }
-      ret += ({ m_delete(state, "remains") + data[..pos-1] });
+      ret += ({ state->remains + data[..pos-1] });
+      m_delete(state, "remains");
       break;
     }
     state->in_token = 0;
