@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.7 1996/11/14 01:24:12 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.8 1996/11/28 03:07:14 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1404,7 +1404,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	  return 0;
 
 	case '\n':
-	  yyerror("Newline in string.\n");
+	  yyerror("Newline in string.");
 	  free(simple_free_buf());
 	  return 0;
 
