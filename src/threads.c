@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.241 2004/12/30 13:50:35 grubba Exp $
+|| $Id: threads.c,v 1.242 2005/01/25 18:58:02 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -830,7 +830,6 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   arg.thread_state->swapped = 0;
   Pike_interpreter = arg.thread_state->state;
-  init_interpreter();
 
 #ifdef PROFILING
   Pike_interpreter.stack_bottom=((char *)&data);
@@ -888,7 +887,12 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   /* This thread is now officially dead. */
 
-  cleanup_interpret();
+  while(Pike_fp)
+    POP_PIKE_FRAME();
+
+  reset_evaluator();
+
+  low_cleanup_interpret(&thread_state->state);
 
   thread_table_delete(thread_state);
   EXIT_THREAD_STATE(thread_state);
@@ -965,6 +969,11 @@ void f_thread_create(INT32 args)
   arg.args = aggregate_array(args);
   arg.thread_state = thread_state;
 
+  if (low_init_interpreter(&thread_state->state)) {
+    free_array(arg.args);
+    Pike_error("Out of memory allocating stack.\n");
+  }
+
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
   arg.euid = geteuid();
   arg.egid = getegid();
@@ -1005,6 +1014,7 @@ void f_thread_create(INT32 args)
     }
     SWAP_IN_CURRENT_THREAD();
   } else {
+    low_cleanup_interpret(&thread_state->state);
     free_array(arg.args);
     Pike_error("Failed to create thread (errno = %d).\n", tmp);
   }
@@ -1488,7 +1498,7 @@ void exit_mutex_key_obj(struct object *o)
 
 /*! @decl void wait(Thread.MutexKey mutex_key)
  *!
- *! Wait for contition.
+ *! Wait for condition.
  *!
  *! This function makes the current thread sleep until the condition
  *! variable is signalled. The argument should be a @[Thread.MutexKey]
