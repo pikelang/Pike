@@ -19,16 +19,16 @@ test_true(rm("conftest"))
 test_eq(file_stat("conftest"),0)
 
 // - file->write
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -3; e=o->write("sune"); if(!o->close()) return -2; return e,4)
+test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return "open"+o->errno(); e=o->write("sune"); if(!o->close()) return "close"+o->errno(); return e,4)
 
 // - file->read
-test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return -1; s=o->read(4); if(!o->close()) return -1; return s,"sune")
+test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(4); if(!o->close()) return "close"+o->errno(); return s,"sune")
 
-test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return -1; s=o->read(999999); if(!o->close()) return -1; return s,"sune")
+test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(999999); if(!o->close()) return "close"+o->errno(); return s,"sune")
 
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -1; e=o->write(sprintf("%'+-*'100000s","")); if(!o->close()) return -1; return e,100000)
+test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return "open"+o->errno(); e=o->write(sprintf("%'+-*'100000s","")); if(!o->close()) return "close"+o->errno(); return e,100000)
 
-test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return -1; s=o->read(9999999); if(!o->close()) return -1; return s,sprintf("%'+-*'100000s",""))
+test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(9999999); if(!o->close()) return "close"+o->errno(); return s,sprintf("%'+-*'100000s",""))
 
 // - file->seek
 // - file->tell

@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.9 1998/04/06 04:34:05 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.10 1998/04/14 18:56:23 hubbe Exp $ */
 
 import Stdio;
 import String;
@@ -311,14 +311,14 @@ int main()
 {
   if(!port1::bind(0, accept_callback))
   {
-    werror("Bind failed.\n");
+    werror("Bind failed. (%d)\n",port1::errno());
     exit(1);
   }
   sscanf(port1::query_address(),"%*s %d",portno1);
 
   if(!port2::bind(0))
   {
-    werror("Bind failed.\n");
+    werror("Bind failed. (%d)\n",port2::errno());
     exit(1);
   }
 
