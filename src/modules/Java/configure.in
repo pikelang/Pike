@@ -242,6 +242,7 @@ if test "x$with_java" = xyes; then
     AC_DEFINE_UNQUOTED(JAVA_LIBPATH, "${JAVA_LIBPATH}")
   fi
 
+  true
 else
   :
 fi
