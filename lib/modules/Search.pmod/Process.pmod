@@ -110,7 +110,7 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
     mapping env = getenv();
     if( !sv )
     {
-      sv = Remote.Server( 0,0 );
+      sv = Remote.Server( 0,0, 3 );
       sv->provide( remote_id, RemoteAPI() );
     }
 
