@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.10 2003/08/24 21:00:35 nilsson Exp $
+// $Id: cgrep.pike,v 1.11 2003/11/08 01:26:03 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -96,7 +96,14 @@ class PikeFile {
   array(string) split(string data, mapping state) {
     // For some reason the Pike parser leaves parts of its
     // end sentinel in the output data.
-    array(string) ret = Parser.Pike.split(data, state);
+    array(string) ret;
+    array err = catch {
+      ret = Parser.Pike.split(data, state);
+    };
+    if(err) {
+      werror("%s (%s)\n", err[0][..sizeof(err[0])-2], fn);
+      return ({});
+    }
     if(state->in_token) return ret;
     if(ret[-1]=="\n") return ret[..sizeof(ret)-2];
     ret[-1] = ret[-1][..sizeof(ret[-1])-2];
@@ -318,7 +325,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.10 $
+constant version = #"cgrep $Revision: 1.11 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
