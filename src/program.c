@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.270 2000/09/05 02:18:13 hubbe Exp $");
+RCSID("$Id: program.c,v 1.271 2000/09/05 20:24:42 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -267,9 +267,6 @@ static struct node_s *index_modules(struct pike_string *ident,
 				    int num_used_modules,
 				    struct svalue *modules)
 {
-  struct node_s *ret;
-  JMP_BUF tmp;
-
   if(*module_index_cache)
   {
     struct svalue *tmp=low_mapping_string_lookup(*module_index_cache,ident);
@@ -283,39 +280,46 @@ static struct node_s *index_modules(struct pike_string *ident,
 
 /*  fprintf(stderr,"index_module: %s\n",ident->str); */
 
-
-  if(SETJMP(tmp))
   {
-    ONERROR tmp;
-    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(Pike_sp++, & throw_value);
-    APPLY_MASTER("handle_error", 1);
-    pop_stack();
-    UNSET_ONERROR(tmp);
-    yyerror("Couldn't index module.");
-  }else{
-    int e=num_used_modules;
-    modules-=num_used_modules;
-    while(--e>=0)
-    {
-      push_svalue(modules+e);
-      ref_push_string(ident);
-      f_index(2);
+    JMP_BUF tmp;
 
-      if(!IS_UNDEFINED(Pike_sp-1))
-      {
-	UNSETJMP(tmp);
-	if(!*module_index_cache)
-	  *module_index_cache=allocate_mapping(10);
-	mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
-	ret=mksvaluenode(Pike_sp-1);
-	pop_stack();
-	return ret;
-      }
+    if(SETJMP(tmp))
+    {
+      ONERROR tmp2;
+      SET_ONERROR(tmp2, exit_on_error,
+		  "Error in handle_error in master object!");
+      assign_svalue_no_free(Pike_sp++, &throw_value);
+      APPLY_MASTER("handle_error", 1);
       pop_stack();
+      UNSET_ONERROR(tmp2);
+      yyerror("Couldn't index module.");
+    } else {
+      int e = num_used_modules;
+      struct svalue *m = modules - num_used_modules;
+
+      while(--e>=0)
+      {
+	push_svalue(m+e);
+	ref_push_string(ident);
+	f_index(2);
+
+	if(!IS_UNDEFINED(Pike_sp-1))
+	{
+	  struct node_s *ret;
+
+	  UNSETJMP(tmp);
+	  if(!*module_index_cache)
+	    *module_index_cache = allocate_mapping(10);
+	  mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
+	  ret = mksvaluenode(Pike_sp-1);
+	  pop_stack();
+	  return ret;
+	}
+	pop_stack();
+      }
     }
+    UNSETJMP(tmp);
   }
-  UNSETJMP(tmp);
 
 /*  fprintf(stderr,"***Undefined.\n"); */
 
