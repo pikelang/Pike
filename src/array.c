@@ -21,7 +21,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.49 1999/04/17 14:03:05 grubba Exp $");
+RCSID("$Id: array.c,v 1.50 1999/08/17 01:04:20 mast Exp $");
 
 struct array empty_array=
 {
@@ -235,18 +235,38 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
 void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
   INT32 i;
-  if(ind->type != T_INT)
-    error("Index is not an integer.\n");
-  i=ind->u.integer;
-  if(i<0) i+=a->size;
-  if(i<0 || i>=a->size) {
-    if (a->size) {
-      error("Index %d is out of range 0 - %d.\n", i, a->size-1);
-    } else {
-      error("Attempt to index the empty array with %d.\n", i);
-    }
+  switch (ind->type) {
+    case T_INT:
+      if(ind->type != T_INT)
+	error("Index is not an integer.\n");
+      i=ind->u.integer;
+      if(i<0) i+=a->size;
+      if(i<0 || i>=a->size) {
+	if (a->size) {
+	  error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+	} else {
+	  error("Attempt to index the empty array with %d.\n", i);
+	}
+      }
+      array_set_index(a,i,s);
+      break;
+
+    case T_STRING:
+      if (ind->subtype == 1) {
+	INT32 i, n;
+	sp++->type = T_VOID;
+	push_svalue(ind);
+	for (i = 0, n = a->size; i < n; i++) {
+	  assign_svalue(sp-2, &a->item[i]);
+	  assign_lvalue(sp-2, s);
+	}
+	pop_n_elems(2);
+	break;
+      }
+
+    default:
+      error("Index is not an integer.\n");
   }
-  array_set_index(a,i,s);
 }
 
 /*
