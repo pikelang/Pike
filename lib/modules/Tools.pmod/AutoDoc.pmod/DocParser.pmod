@@ -59,6 +59,7 @@ mapping(string : int) keywordtype =
   "throws" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
+  "fixme" : DELIMITERKEYWORD,
 
   "section" : CONTAINERKEYWORD,
 
@@ -72,7 +73,8 @@ mapping(string : int) keywordtype =
   "mixed" : CONTAINERKEYWORD, "type" : DELIMITERKEYWORD,
 
   "dl" : CONTAINERKEYWORD, "item" : DELIMITERKEYWORD,
-  "list" : CONTAINERKEYWORD,
+  "ol" : CONTAINERKEYWORD,
+  "ul" : CONTAINERKEYWORD,
 ]);
 
 mapping(string : array(string)) attributenames =
@@ -89,7 +91,7 @@ mapping(string : array(string)) attributenames =
 ]);
 
 static constant standard = (<
-  "note", "bugs", "example", "seealso", "deprecated"
+  "note", "bugs", "example", "seealso", "deprecated", "fixme"
 >);
 
 mapping(string : multiset(string)) allowedChildren =
@@ -108,7 +110,8 @@ mapping(string : multiset(string)) allowedChildren =
   "string"  : (< "value" >),
   "mixed"   : (< "type" >),
   "dl"      : (< "item" >),
-  "list"    : (< "item" >),
+  "ol"      : (< "item" >),
+  "ul"      : (< "item" >),
 ]);
 
 mapping(string : multiset(string)) allowGrouping =
