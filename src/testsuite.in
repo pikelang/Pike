@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.663 2003/08/03 01:03:06 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.664 2003/08/05 12:59:21 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8371,7 +8371,7 @@ cond([[all_constants()->localtime && all_constants()->mktime]],[[
 // - hardlink
 
 // - has_index
-define(test_has_index,[[test_true([[mixed foo=$1; return has_index(foo,$2)==$3;]])]])
+define(test_has_index,[[test_any([[mixed foo=$1; return has_index(foo,$2)==$3;]], 1)]])
 test_has_index([[ ({}) ]],0,0)
 test_has_index([[ ({}) ]],"foo",0)
 test_has_index([[ ({ "a" }) ]],-1,0)
@@ -8384,6 +8384,11 @@ test_has_index([[ ([ "a":"A" ]) ]],"a",1)
 test_has_index([[ ([ "a":"A" ]) ]],"A",0)
 test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",1)
 test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",0)
+test_has_index([[ (< "a" >) ]],4711,0)
+test_has_index([[ (< "a" >) ]],"a",1)
+test_has_index([[ (< "a" >) ]],"A",0)
+test_has_index([[ (< "a", "b", "c" >) ]],"b",1)
+test_has_index([[ (< "a", "b", "c" >) ]],"B",0)
 test_has_index([[ class {}() ]],"foo",0)
 test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
 
