@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.102 2000/09/22 12:25:59 grubba Exp $");
+RCSID("$Id: operators.c,v 1.103 2000/09/22 20:41:46 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -207,6 +207,41 @@ PMOD_EXPORT void f_add(INT32 args)
     PCHARP buf;
     char buffer[50];
     int max_shift=0;
+
+    if ((sp[-args].type != T_STRING) && (sp[1-args].type != T_STRING)) {
+      struct svalue *save_sp = sp;
+      /* We need to perform a normal addition first.
+       */
+      for (e=-args; e < 0; e++) {
+	if (save_sp[e].type == T_STRING)
+	  break;
+	*(sp++) = save_sp[e];
+      }
+      /* Perform the addition. */
+      f_add(args+e);
+      save_sp[--e] = *(--sp);
+#ifdef PIKE_DEBUG
+      if (sp != save_sp) {
+	fatal("f_add(): Lost track of stack %p != %p\n", sp, save_sp);
+      }
+#endif /* PIKE_DEBUG */
+      /* Perform the rest of the addition. */
+      f_add(-e);
+#ifdef PIKE_DEBUG
+      if (sp != save_sp + 1 + e) {
+	fatal("f_add(): Lost track of stack (2) %p != %p\n",
+	      sp, save_sp + 1 + e);
+      }
+#endif /* PIKE_DEBUG */
+      /* Adjust the stack. */
+      save_sp[-args] = sp[-1];
+      sp = save_sp + 1 - args;
+      return;
+    } else {
+      e = -args;
+    }
+      
+
     size=0;
     for(e=-args;e<0;e++)
     {
