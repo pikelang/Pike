@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.121 2001/07/19 18:52:35 david%hedbor.org Exp $
+// $Id: module.pmod,v 1.122 2001/08/20 16:06:37 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -348,7 +348,7 @@ class File
   }
 
 
-  //! FIXME:
+  //! @fixme
   //!   Document this function.
   //!
   //! @note
@@ -382,7 +382,7 @@ class File
   //! called in was open to begin with, it will be closed before the pipe
   //! is created.
   //!
-  //! FIXME:
+  //! @fixme
   //! Document the @tt{PROP_@} properties.
   //!
   //! @seealso
@@ -763,22 +763,22 @@ class File
 
   //! @decl void set_read_oob_callback(function(mixed, string:void) read_oob_cb)
   //!
-  //! FIXME:
+  //! @fixme
   //!   Document this function.
 
   //! @decl function(mixed, string:void) query_read_oob_callback()
   //!
-  //! FIXME:
+  //! @fixme
   //!   Document this function.
 
   //! @decl void set_write_oob_callback(function(mixed:void) write_oob_cb)
   //!
-  //! FIXME:
+  //! @fixme
   //!   Document this function.
 
   //! @decl function(mixed:void) query_write_oob_callback()
   //!
-  //! FIXME:
+  //! @fixme
   //!   Document this function.
 
 #if constant(files.__HAVE_OOB__)
