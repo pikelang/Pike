@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.22 1997/02/19 05:07:18 hubbe Exp $");
+RCSID("$Id: program.c,v 1.23 1997/03/01 01:41:05 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1088,6 +1088,8 @@ int end_class(char *name, INT32 flags)
   tmp.type=T_PROGRAM;
   tmp.subtype=0;
   tmp.u.program=end_program();
+  if(!tmp.u.program)
+    fatal("Failed to initialize class '%s'\n",name);
   ret=simple_add_constant(name, &tmp, flags);
   free_svalue(&tmp);
   return ret;

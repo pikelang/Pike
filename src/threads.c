@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.17 1997/02/11 13:27:11 grubba Exp $");
+RCSID("$Id: threads.c,v 1.18 1997/03/01 01:41:06 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -348,6 +348,8 @@ void th_init()
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_program();
+  if(!mutex_key)
+    fatal("Failed to initialize mutex_key program!\n");
 
   start_new_program();
   add_storage(sizeof(COND_T));
@@ -360,6 +362,8 @@ void th_init()
 
   start_new_program();
   thread_id_prog=end_program();
+  if(!mutex_key)
+    fatal("Failed to initialize thread program!\n");
 
   thread_id=clone(thread_id_prog,0);
 }
