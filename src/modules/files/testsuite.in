@@ -205,7 +205,7 @@ test_true(stringp(strerror(2)||""))
 ]])
 
 
-test_do(object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -1; o->write(String.strmult("foo\n",100)); o->close();)
+test_do(object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -1; o->write("foo\n" * 100); o->close();)
 
 // /precompiled/FILE
 test_any([[object o=clone(Stdio.FILE); o->open("conftest","r"); return o->gets()]],"foo")
@@ -216,8 +216,8 @@ test_true(Stdio.stdin)
 test_true(Stdio.stdout)
 test_true(Stdio.stderr)
 
-test_eq(Stdio.read_file("conftest",0,5),String.strmult("foo\n",5))
-test_eq(Stdio.read_file("conftest",1,5),String.strmult("foo\n",5))
+test_eq(Stdio.read_file("conftest",0,5), "foo\n"*5)
+test_eq(Stdio.read_file("conftest",1,5), "foo\n"*5))
 test_eq(Stdio.read_file("conftest",100,5),"")
 
 // locking
