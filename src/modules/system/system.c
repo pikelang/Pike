@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.66 1999/04/15 00:42:03 grubba Exp $
+ * $Id: system.c,v 1.67 1999/04/15 04:15:10 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.66 1999/04/15 00:42:03 grubba Exp $");
+RCSID("$Id: system.c,v 1.67 1999/04/15 04:15:10 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -536,6 +536,7 @@ void f_setuid(INT32 args)
 #ifdef HAVE_SETGID
 void f_setgid(INT32 args)
 {
+  int err;
   INT_TYPE id;
 
 #ifdef PIKE_SECURITY
@@ -551,9 +552,9 @@ void f_setgid(INT32 args)
     id = sp[-args].u.integer;
   }
 
-  /* FIXME: Check return-code */
-  setgid(id);
-  pop_n_elems(args-1);
+  err=setgid(id);
+  pop_n_elems(args);
+  push_int(err);
 }
 #endif
 
@@ -1085,7 +1086,7 @@ void pike_module_init(void)
 #ifdef HAVE_SETGID
   
 /* function(int:void) */
-  ADD_EFUN("setgid", f_setgid,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
+  ADD_EFUN("setgid", f_setgid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
 #endif
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
   
