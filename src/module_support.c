@@ -7,8 +7,9 @@
 #include "pike_error.h"
 #include "mapping.h"
 #include "object.h"
+#include "opcodes.h"
 
-RCSID("$Id: module_support.c,v 1.39 2000/12/13 21:35:05 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.40 2001/02/20 13:02:11 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -145,7 +146,6 @@ int va_get_args(struct svalue *s,
 		va_list ap)
 {
   int ret=0;
-  extern void f_cast();
 
   while(*fmt)
   {
@@ -177,7 +177,7 @@ int va_get_args(struct svalue *s,
 	  DO_NOT_WARN((int)s->u.float_number);
       else 
       {
-        push_text( "int" );
+        ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
 	if(sp[-1].type == T_INT)
@@ -197,7 +197,7 @@ int va_get_args(struct svalue *s,
         *va_arg(ap, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
       else 
       {
-        push_text( "int" );
+        ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
 	if(sp[-1].type == T_INT)
@@ -247,7 +247,7 @@ int va_get_args(struct svalue *s,
 	 *va_arg(ap, FLOAT_TYPE *)=(float)s->u.integer;
       else 
       {
-        push_text( "float" );
+        ref_push_type_value(float_type_string);
         push_svalue( s );
         f_cast( );
         *va_arg(ap, FLOAT_TYPE *)=sp[-1].u.float_number;

@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.211 2001/02/15 18:48:24 grubba Exp $");
+RCSID("$Id: file.c,v 1.212 2001/02/20 13:02:12 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2658,7 +2658,7 @@ static void file_lsh(INT32 args)
 
   if(Pike_sp[-1].type != PIKE_T_STRING)
   {
-    ref_push_string(string_type_string);
+    ref_push_type_value(string_type_string);
     stack_swap();
     f_cast();
   }

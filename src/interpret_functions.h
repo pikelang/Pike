@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.46 2001/02/20 00:01:00 grubba Exp $
+ * $Id: interpret_functions.h,v 1.47 2001/02/20 13:02:11 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1395,9 +1395,8 @@ BREAK;
 OPCODE0(F_SOFT_CAST, "soft cast")
   /* Stack: type_string, value */
 #ifdef PIKE_DEBUG
-  if (Pike_sp[-2].type != T_STRING) {
-    /* FIXME: The type should really be T_TYPE... */
-    fatal("Argument 1 to soft_cast isn't a string!\n");
+  if (Pike_sp[-2].type != T_TYPE) {
+    fatal("Argument 1 to soft_cast isn't a type!\n");
   }
 #endif /* PIKE_DEBUG */
   if (runtime_options & RUNTIME_CHECK_TYPES) {

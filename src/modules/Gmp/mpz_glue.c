@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.87 2001/02/04 11:40:35 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.88 2001/02/20 13:02:12 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1228,7 +1228,7 @@ static void mpzmod_lsh(INT32 args)
   struct object *res = NULL;
   if (args != 1)
     Pike_error("Wrong number of arguments to Gmp.mpz->`<<.\n");
-  ref_push_string(int_type_string);
+  ref_push_type_value(int_type_string);
   stack_swap();
   f_cast();
   if(sp[-1].u.integer < 0)
@@ -1244,7 +1244,7 @@ static void mpzmod_rsh(INT32 args)
   struct object *res = NULL;
   if (args != 1)
     Pike_error("Wrong number of arguments to Gmp.mpz->`>>.\n");
-  ref_push_string(int_type_string);
+  ref_push_type_value(int_type_string);
   stack_swap();
   f_cast();
   if (sp[-1].u.integer < 0)
