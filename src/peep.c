@@ -16,8 +16,9 @@
 #include "opcodes.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "interpret.h"
 
-RCSID("$Id: peep.c,v 1.55 2001/07/17 06:50:35 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.56 2001/07/17 08:33:23 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -151,14 +152,23 @@ void update_arg(int instr,INT32 arg)
   add_to_program(0xd0);				\
 }while(0)
 
-#define RET() add_to_program(0xc3);
-#define POP(X) \
-  add_to_program(0x83),  /* Addl.b 0x4, %esp */ \
-  add_to_program(0xc4), \
-  add_to_program(-X)
+#define UPDATE_PC() do {						\
+    INT32 tmp=PC;							\
+    add_to_program(0xa1 /* mov $xxxxx, %eax */);			\
+    ins_int((INT32)(&Pike_interpreter.frame_pointer), add_to_program);	\
+									\
+    add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */			\
+    add_to_program(0x40);						\
+    add_to_program(OFFSETOF(pike_frame, pc));				\
+    ins_int((INT32)tmp, add_to_program);				\
+}while(0)
 
 #endif
 
+#ifndef PIKE_USE_MACHINE_CODE
+#undef UPDATE_PC
+#define UPDATE_PC()
+#endif
 
 void ins_f_byte(unsigned int b)
 {
@@ -172,12 +182,22 @@ void ins_f_byte(unsigned int b)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
-
+    
 #ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) && defined(__GNUC__)
+  do{
+    static int last_prog_id=-1;
+    static int last_num_linenumbers=-1;
+    if(last_prog_id != Pike_compiler->new_program->id ||
+       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
+    {
+      last_prog_id=Pike_compiler->new_program->id;
+      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
+      UPDATE_PC();
+    }
+  }while(0);
+  
   CALL_ABSOLUTE(instrs[b].address);
   return;
-#endif
 #endif
 
 #ifdef HAVE_COMPUTED_GOTO
@@ -235,13 +255,17 @@ static void ins_f_byte_with_2_args(unsigned int a,
 {
 #ifdef PIKE_USE_MACHINE_CODE
 #if defined(__i386__) && defined(__GNUC__)
+  add_to_program(0xc7);  /* movl $xxxx, (%esp) */
+  add_to_program(0x04); 
+  add_to_program(0x24); 
+  PUSH_INT(c);
   add_to_program(0xc7);  /* movl $xxxx, 4(%esp) */
   add_to_program(0x44);
   add_to_program(0x24);
   add_to_program(0x04);
-  PUSH_INT(c);
-  ins_f_byte_with_arg(a,b);
-  return
+  PUSH_INT(b);
+  ins_f_byte(a);
+  return;
 #endif
 #endif
 
@@ -394,6 +418,7 @@ void assemble(void)
 #endif
   for(e=0;e<length;e++)
   {
+    int linenumbers_stored=0;
 #ifdef PIKE_DEBUG
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
@@ -447,6 +472,7 @@ void assemble(void)
 	fatal("Duplicate label!\n");
 #endif
       labels[c->arg] = DO_NOT_WARN((INT32)PC);
+      UPDATE_PC();
       break;
 
     case F_VOLATILE_RETURN:

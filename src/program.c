@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.354 2001/07/16 19:48:59 hubbe Exp $");
+RCSID("$Id: program.c,v 1.355 2001/07/17 08:33:23 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4000,20 +4000,6 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   if(Pike_compiler->last_line != current_line ||
      Pike_compiler->last_file != current_file)
   {
-#ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) && defined(__GNUC__)
-    /* We need to update Pike_interpreter.frame_pointer->pc */
-    INT32 tmp=PC;
-    add_to_program(0x4c /* mov $xxxxx, %eax */);
-    ins_int((INT32)(&Pike_interpreter.frame_pointer), add_to_program);
-
-    add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */
-    add_to_program(0x40);
-    add_to_program(OFFSETOF(pike_frame, pc));
-    ins_int((INT32)tmp, add_to_program);
-#endif
-#endif
-
     if((Pike_compiler->last_file != current_file) ||
        (DO_NOT_WARN((INT32)(PC - Pike_compiler->last_pc)) == 127))
     {
@@ -4101,7 +4087,11 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
     MAKE_CONSTANT_SHARED_STRING(unknown_program, "Unknown program");
     return unknown_program;
   }
+#ifdef PIKE_USE_MACHINE_CODE
+  offset = (long) pc;
+#else
   offset = pc - prog->program;
+#endif
 
   if(prog == Pike_compiler->new_program)
   {
