@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.94 2004/04/22 14:15:23 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.95 2004/04/23 15:17:22 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -214,7 +214,7 @@ int main(int argc, array(string) argv)
   array(string) tests;
   program testprogram;
   int start, fail, mem;
-  int loop=1;
+  int forked, loop=1;
   int end=0x7fffffff;
   string extra_info="";
   int shift;
@@ -266,6 +266,7 @@ int main(int argc, array(string) argv)
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
     ({"end",Getopt.HAS_ARG,({"-e","--end-after"})}),
     ({"fail",Getopt.NO_ARG,({"-f","--fail"})}),
+    ({"forked",Getopt.NO_ARG,({"-F","--forked"})}),
     ({"loop",Getopt.HAS_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
@@ -304,6 +305,7 @@ int main(int argc, array(string) argv)
 	case "start": start=foo(opt[1]); start--; break;
 	case "end": end=foo(opt[1]); break;
 	case "fail": fail=1; break;
+        case "forked": forked=1; break;
 	case "loop": loop=foo(opt[1]); break;
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
@@ -348,12 +350,12 @@ int main(int argc, array(string) argv)
 
   add_constant("_verbose", verbose);
   if(verbose)
-    werror("Begin tests at "+ctime(time()));
+    write("Begin tests at "+ctime(time()));
 
 #ifdef WATCHDOG
   int watchdog_time=time();
 
-  if(use_watchdog)
+  if(use_watchdog && !forked)
   {
 #ifdef WATCHDOG_PIPE
     object watchdog_tmp=Stdio.File();
@@ -395,6 +397,52 @@ int main(int argc, array(string) argv)
   while(loop--)
   {
     successes=errors=0;
+    if (forked) {
+      array(string) args = ({ argv[0] });
+      if (!use_watchdog) args += ({ "--no-watchdog" });
+      if (!maybe_tty) args += ({ "--notty" });
+      if (verbose) args += ({ "--verbose=" + verbose });
+      if (prompt) args += ({ "--prompt=" + prompt });
+      if (start) args += ({ "--start-test=" + (start+1) });
+      if (end != 0x7fffffff) args += ({ "--end-after=" + end });
+      if (fail) args += ({ "--fail" });
+      // forked is handled here.
+      // loop is handled here.
+      if (t) args += ({ "--trace=" + t });
+      if (check) args += ({ "--check=" + check });
+      if (asmdebug) args += ({ "--asm=" + asmdebug });
+      if (mem) args += ({ "--memory" });
+      // auto already handled.
+      if (all_constants()->regression) args += ({ "--regression" });
+      // debug port not propagated.
+      werror("args:%O\n", args);
+      foreach(testsuites, string testsuite) {
+	Stdio.File p = Stdio.File();
+	object pid =
+	  Process.create_process(args + ({ testsuite }),
+				 ([ "stdout":p->pipe(Stdio.PROP_IPC) ]));
+	string raw_results;
+	string results = lower_case(raw_results = p->read());
+	int err = pid->wait();
+	int total = 0;
+	int failed = 0;
+	int skip = 0;
+	if (((sscanf(results, "%*sfailed tests:%d", failed) != 2) +
+	     (sscanf(results, "%*stotal tests:%d", total) != 2) +
+	     (sscanf(results, "%*s(%d tests skipped)", skip) != 2)) == 3) {
+	  // Failed to parse the result totally.
+	  werror("Failed to parse subresult for testsuite %O (exitcode:%d):\n"
+		 "%s", testsuite, err, raw_results);
+	  errors++;
+	} else {
+	  werror("Subresult: %d tests, %d failed, %d skipped\n",
+		 total, failed, skip);
+	  errors += failed;
+	  successes += total - failed;
+	  skipped += skip;
+	}
+      }
+    } else {
   testloop:
     foreach(testsuites, string testsuite)
     {
@@ -895,37 +943,37 @@ int main(int argc, array(string) argv)
 	werror("\n");
       }
     }
-
+    }
     if(mem)
     {
       int total;
       tests=0;
       gc();
       mapping tmp=_memory_usage();
-      write(sprintf("%-10s: %6s %10s\n","Category","num","bytes"));
+      werror(sprintf("%-10s: %6s %10s\n","Category","num","bytes"));
       foreach(sort(indices(tmp)),string foo)
       {
 	if(sscanf(foo,"%s_bytes",foo))
 	{
-	  write(sprintf("%-10s: %6d %10d\n",
+	  werror(sprintf("%-10s: %6d %10d\n",
 			foo+"s",
 			tmp["num_"+foo+"s"],
 			tmp[foo+"_bytes"]));
 	  total+=tmp[foo+"_bytes"];
 	}
       }
-      write( "%-10s: %6s %10d\n",
+      werror( "%-10s: %6s %10d\n",
 	     "Total", "", total );
     }
   }
   if(errors || verbose>1)
   {
-    werror("Failed tests: "+errors+".\n");
+    write("Failed tests: "+errors+".\n");
   }
 
-  werror("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
+  write("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
   if(verbose)
-    werror("Finished tests at "+ctime(time()));
+    write("Finished tests at "+ctime(time()));
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
