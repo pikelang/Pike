@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.22 1999/05/13 07:25:42 hubbe Exp $
+ * $Id: fdlib.h,v 1.23 1999/05/13 17:48:26 grubba Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -303,7 +303,7 @@ typedef int FD;
 #define fd_LOCK_UN F_ULOCK
 #define fd_LOCK_NB F_TLOCK
 
-#define fd_flock(fd,mode) lockf(dmalloc_touch_fd(fd),mode,0)
+#define fd_lockf(fd,mode) lockf(dmalloc_touch_fd(fd),mode,0)
 #endif
 #endif
 
