@@ -1,0 +1,239 @@
+                 +----------------------------------+
+                 | Pike autodoc markup - the syntax |
+                 +----------------------------------+
+
+======================================================================
+a) Line orientation
+----------------------------------------------------------------------
+
+The markup is line oriented. If you need to write a line which is very
+long, it can be broken into several lines. A trailing @ on the line
+indicates that it continues on the next line. The @ and the newline
+character will be discarded, and the lines merged. Thus:
+
+  //. @variable thisVariableNameIsSoLong@
+  //.YouJustCantBelieveIt
+
+will appear to the parser as:
+
+  //. @variable thisVariableNameIsSoLongYouJustCantBelieveIt
+
+This is sometimes necessary because keywords that take parameters
+expect all the parameters to appear on the same line and treat the end
+of the line as the end of the parameter list.
+
+The character '\r' is also discarded. The same applies to all other
+non-printable and control characters except for '\n' and '\t'.
+
+In text (see the nonterminal 'text' in the grammar at the end of this
+file), a blank line with surrounding non-blank lines will give a
+paragraph break. Thus:
+
+  //. - I love you, said Danny.
+  //.
+  //. - You have no right to come here after what you did to
+  //. my little dog, screamed Penny in despair.
+
+will generate the following XML:
+
+  <p> - I love you, said Danny.</p>
+  <p> - You have no right to come here after what you did to
+    my little dog, screamed Penny in despair.</p>
+
+
+======================================================================
+b) Keywords
+----------------------------------------------------------------------
+
+Keywords always begin with an at-sign: @. A @ is quoted by writing two
+of them: @@. There are four types of keywords (the keywords in []'s
+are examples of keywords of the different types):
+
+1) Meta keywords [@decl, @class, @endclass, @module and @endmodule]
+ Must stand alone on one line, preceded only by whitespace. These are
+ not really part of the markup. They must come before any text or
+ other keywords in the doc block. They provide information about what
+ is being documented etc. and do not result in any text in the
+ documentation. Meta keywords have keyword specific parameter
+ syntaxes.
+
+2) Delimiter keywords [@param, @member, @item, @note, ...]
+ Must stand alone on one line, preceded only by whitespace. These are
+ keywords that begin a section inside their block. They have no end
+ marker, but rather the section ends when the next delimiter keyword
+ on the same level is found. Can have parameters.
+
+3) Block/endblock keywords [@dl - @enddl, @mapping - @endmapping, ...]
+ Must stand alone on one line, preceded only by whitespace. These open
+ or close a block. If a block is started with @foo, it must end with a
+ matching @endfoo. The lines inside the block can be divided into
+ sections by using delimiter keywords. The start keyword can have
+ parameters, but the corresponding end keyword can not.
+
+NOTA BENE: Delimiter keywords (2) and block keywords (3) must stand
+alone (with their parameters, if any) on one line.
+
+4) Short markup keywords [@ref{..@}, @i{..@}, ...]
+ These are used in the text to perform cosmetic tasks, for example
+ changing text to italic (@i), teletype(@tt) or marking a word as a
+ reference to a pike entity (@ref). They can be nested, but a short
+ markup keyword can not contain a keyword of types 1-3. They begin
+ with @keyword{ and end with @}.
+
+4b) The magic keyword @xml{ ... @}
+ This is a special keyword that provides an escape to XML. All ordinary
+ text inside it is passed unquoted to the output. However, the short
+ markup keywords are still valid and may be used inside it, and thus
+ @ must still be quoted with @@. < and > must also be quoted unless
+ the intention really is to write XML. For example:
+
+   //. He is so @xml{<i>italic</i> and @b{bold@}!@}!!
+
+ will generate the following XML:
+
+   He is so <i>italic</i> and <b>bold</b>!!!
+
+
+======================================================================
+b1) Delimiter keyword grouping
+----------------------------------------------------------------------
+
+Delimiter keywords that indicate a new section inside the block can be
+grouped together in the interest of not writing the same docstring for
+multiple parameters etc. Delimiters are grouped if they appear on
+consecutive lines. For example, when documenting a method:
+
+  //. @decl int dist(int x, int y)
+  //.   Calculates the distance.
+  //. @param x
+  //. @param y
+  //.   The coordinates of the vector.
+
+Above, the two @param's x and y are grouped together and share the
+same docstring: "The coordinates of the vector.". It is an error to
+try to group together different keywords:
+
+  //.   Error, can't group @note and @param:
+  //. @param x
+  //. @note
+  //.   Don't use this function. At all. Ever.
+
+
+======================================================================
+c) Keyword parameters
+----------------------------------------------------------------------
+
+After the leading @keyword (that may be preceded only by whitespace)
+on the line, the rest of the line is interpreted as a parameter list.
+The syntax of this parameter list can be different depending on the
+keyword:
+
+1) Special keyword parameter list syntax
+ Here the parameters can be parsed according to Pike syntax or in
+ some other way. Examples of keywords that use these kinds of special
+ syntaxes are all the meta keywords, @member and @elem.
+
+2) Default parameter list syntax
+ The meaning of parameters is determined by the order in which they
+ appear, much like the arguments in a unix shell command line - hence
+ they are not named as in HTML or XML. Parameters are separated by
+ whitespace. If you wish to have a parameter string with whitespace in
+ it, you must surround the string with a pair of ' or ". When the
+ quoting character itself is in the string, a duplication is used to
+ quote it:
+
+   //. @question "He is a ""swapper""?!"
+
+ However, if your parameter contains only one of ' and ", then it is
+ smarter to choose the other one as the quouting character:
+
+   //. @question 'He is a "swapper"?!'
+
+ It is an error not to end a quote before the end of the line:
+
+   //. @wrong "Aww, come on now, this worked fine in C64 basic!
+
+ If a quoted parameter is too long to fit in one line, use the @ at
+ the end of the line to merge it with the following:
+
+   //. @right "Oh, joy! Now I can make my parameters just as@
+   //. long as I want them!"
+
+ The parameters are not parsed so you can not have markup inside
+ them. Pike style quoting is not used either, which means that if
+ you write:
+
+   //. @look "\n"
+
+ The parameter will be a string with two characters, a backslash
+ followed by the letter n.
+
+
+======================================================================
+d) Grammar
+----------------------------------------------------------------------
+
+Here comes a BNF-ish grammar for documentation blocks. Note that
+before the parsing of the block, all lines ending with a @ will be
+merged with the next line (see (a) above)
+
+docblock:
+  metaline*, blockbody
+
+metaline:
+  start_of_line, white_space*, metakeyword, any_char_but_newline,
+  end_of_line
+
+blockbody:
+  section?, (delimiter+, section)*, delimiter?
+
+delimiter:
+  start_of_line, white_space*, delimiterkeyword, parameterlist,
+  end_of_line
+
+section:
+  (text|block)+
+
+block:
+  blockbegin, blockbody, blockend
+
+blockbegin:
+  start_of_line, white_space*, blockkeyword, parameterlist,
+  end_of_line
+
+blockend:
+  start_of_line, white_space*, blockkeyword, white_space*, end_of_line
+
+parameterlist:
+  white_space*, (parameter, white_space+)*
+
+parameter:
+  qoutedparameter | any_char_but_white_space+
+
+quotedparameter:
+  ('"', (any_char_but_new_line_or_" | '""'), '"')
+  | ('\'', (any_char_but_new_line_or_' | '\'\''), '\'')
+
+text:
+  (character|shortmarkup|xmlescape)+
+
+xmlescape:
+  '@xml{', any_char_sequence_not_containing_@}, '@}'
+
+character:
+  any_char_but_@ | '@@'
+
+shortmarkup:
+  shortmarkupkeyword, '{', text, '@}'
+
+metakeyword, blockkeyword, delimiterkeyword, shortmarkupkeyword:
+  keyword
+
+keyword:
+  '@', alpha_char+
+
+endblockkeyword:
+  '@end', alpha_char+
+
+white_space:
+  ' ' | '\t'
