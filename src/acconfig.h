@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.71 2000/12/27 10:38:16 mirar Exp $
+ * $Id: acconfig.h,v 1.72 2001/01/20 01:15:44 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -360,6 +360,9 @@
 
 /* Enable tracing of the compiler */
 #undef YYDEBUG
+
+/* The type of the last argument to __yy_memcpy (usually unsigned int). */
+#define YY_COUNT_TYPE unsigned int
 
 /* Define if your compiler has a symbol __func__ */
 #undef HAVE_WORKING___FUNC__

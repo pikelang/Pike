@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.222 2001/01/16 09:36:30 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.223 2001/01/20 01:15:44 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -154,7 +154,7 @@ static struct program_state *inherit_state = NULL;
  */
 #ifndef __GNUC__
 #ifndef __cplusplus
-static void __yy_memcpy(char *to, char *from, unsigned int count);
+static void __yy_memcpy(char *to, char *from, YY_COUNT_TYPE count);
 #endif /* !__cplusplus */
 #endif /* !__GNUC__ */
 
