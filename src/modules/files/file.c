@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.75 1998/02/11 00:54:35 hubbe Exp $");
+RCSID("$Id: file.c,v 1.76 1998/02/20 01:08:58 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -448,6 +448,13 @@ static void file_write(INT32 args)
 
   if(args<1 || sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
+
+  if(args > 1)
+  {
+    extern void f_sprintf(INT32);
+    f_sprintf(args);
+    args=1;
+  }
 
   if(FD < 0)
     error("File not open for write.\n");
@@ -1562,8 +1569,8 @@ static void file_lsh(INT32 args)
 
   if(sp[-1].type != T_STRING)
   {
-    push_string(string_type_string);
-    string_type_string->refs++;
+    ref_push_string(string_type_string);
+    stack_swap();
     f_cast();
   }
 
@@ -1791,7 +1798,7 @@ void pike_module_init(void)
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:int)",0);
   add_function("read",file_read,"function(int|void,int|void:int|string)",0);
-  add_function("write",file_write,"function(string:int)",0);
+  add_function("write",file_write,"function(string,void|mixed...:int)",0);
 
   add_function("seek",file_seek,"function(int:int)",0);
   add_function("tell",file_tell,"function(:int)",0);

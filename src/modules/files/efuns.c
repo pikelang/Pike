@@ -293,9 +293,16 @@ void f_filesystem_stat(INT32 args)
 void f_werror(INT32 args)
 {
   if(!args)
-    error("Too few arguments to perror.\n");
+    error("Too few arguments to werror.\n");
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to perror().\n");
+    error("Bad argument 1 to werror().\n");
+
+  if(args> 1)
+  {
+    extern void f_sprintf(INT32);
+    f_sprintf(args);
+    args=1;
+  }
 
   write_to_stderr(sp[-args].u.string->str, sp[-args].u.string->len);
   pop_n_elems(args);
@@ -720,7 +727,7 @@ void init_files_efuns(void)
 	   "function(string:mapping(string:string|int))", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_STATVFS || HAVE_STATFS */
   add_efun("errno",f_errno,"function(:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("werror",f_werror,"function(string:void)",OPT_SIDE_EFFECT);
+  add_efun("werror",f_werror,"function(string,void|mixed...:void)",OPT_SIDE_EFFECT);
   add_efun("rm",f_rm,"function(string:int)",OPT_SIDE_EFFECT);
   add_efun("mkdir",f_mkdir,"function(string,void|int:int)",OPT_SIDE_EFFECT);
   add_efun("mv", f_mv, "function(string,string:int)", OPT_SIDE_EFFECT);
