@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.82 2002/10/21 17:06:14 marcus Exp $
+|| $Id: layers.c,v 1.83 2002/12/09 22:43:27 mirar Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.82 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: layers.c,v 1.83 2002/12/09 22:43:27 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1584,9 +1584,9 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 
 #if defined(__ECL) && 0
-#define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) (double d) { return (char)d; }
+#define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) (double d) { return (char)d; };
 #else /* !__ECL */
-#define WARN_TRACE(X)
+#define WARN_TRACE(X) 
 #endif /* __ECL */
 
 /* operators from template */
@@ -1597,7 +1597,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+(int)(B))
 #define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
-WARN_TRACE(1);
+WARN_TRACE(1)
 #include "layer_oper.h"
 #undef L_MMX_OPER
 #undef LM_FUNC
@@ -1608,7 +1608,7 @@ WARN_TRACE(1);
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+(int)(B))
 #define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
-WARN_TRACE(1);
+WARN_TRACE(1)
 #include "layer_oper.h"
 #undef L_MMX_OPER
 #undef LM_FUNC
@@ -1619,7 +1619,7 @@ WARN_TRACE(1);
 #define L_TRUNC(X) MAXIMUM(0,(X))
 #define L_OPER(A,B) ((A)-(int)(B))
 #define L_MMX_OPER(A,MMXR) psubusb_m2r(A,MMXR)
-WARN_TRACE(2);
+WARN_TRACE(2)
 #include "layer_oper.h"
 #undef L_MMX_OPER
 #undef LM_FUNC
@@ -1629,7 +1629,7 @@ WARN_TRACE(2);
 #define LM_FUNC lm_multiply
 #define L_TRUNC(X) (X)
 #define L_OPER(A,B) CCUT((A)*(int)(B))
-WARN_TRACE(3);
+WARN_TRACE(3)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1638,7 +1638,7 @@ WARN_TRACE(3);
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((A)/C2F(1+(int)(B))), COLORMAX)
-WARN_TRACE(4);
+WARN_TRACE(4)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1647,7 +1647,7 @@ WARN_TRACE(4);
 #define LM_FUNC lm_negdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) 1.0-MINIMUM( DOUBLE_TO_INT((A)/C2F(1+(int)(B))), COLORMAX)
-WARN_TRACE(4);
+WARN_TRACE(4)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1656,7 +1656,7 @@ WARN_TRACE(4);
 #define LM_FUNC lm_modulo
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)%((B)?(B):1))
-WARN_TRACE(5);
+WARN_TRACE(5)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1667,7 +1667,7 @@ WARN_TRACE(5);
 #define LM_FUNC lm_invsubtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
 #define L_OPER(A,B) ((B)-(int)(A))
-WARN_TRACE(6);
+WARN_TRACE(6)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1676,7 +1676,7 @@ WARN_TRACE(6);
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((B)/C2F(1+(int)(A))), COLORMAX)
-WARN_TRACE(7);
+WARN_TRACE(7)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1685,7 +1685,7 @@ WARN_TRACE(7);
 #define LM_FUNC lm_invmodulo
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((B)%((A)?(A):1))
-WARN_TRACE(8);
+WARN_TRACE(8)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1694,7 +1694,7 @@ WARN_TRACE(8);
 #define LM_FUNC lm_idivide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((A)/C2F(COLORMAX+1-(int)(B))), COLORMAX)
-WARN_TRACE(4);
+WARN_TRACE(4)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1703,7 +1703,7 @@ WARN_TRACE(4);
 #define LM_FUNC lm_imultiply
 #define L_TRUNC(X) (X)
 #define L_OPER(A,B) CCUT((A)*(COLORMAX-(int)(B)))
-WARN_TRACE(3);
+WARN_TRACE(3)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1712,7 +1712,7 @@ WARN_TRACE(3);
 #define LM_FUNC lm_invidivide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((B)/C2F(COLORMAX+1-(int)(A))), COLORMAX)
-WARN_TRACE(7);
+WARN_TRACE(7)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1723,7 +1723,7 @@ WARN_TRACE(7);
 #define LM_FUNC lm_difference
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) abs((A)-(B))
-WARN_TRACE(9);
+WARN_TRACE(9)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1732,7 +1732,7 @@ WARN_TRACE(9);
 #define LM_FUNC lm_max
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) MAXIMUM((A),(B))
-WARN_TRACE(10);
+WARN_TRACE(10)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1741,7 +1741,7 @@ WARN_TRACE(10);
 #define LM_FUNC lm_min
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) MINIMUM((A),(B))
-WARN_TRACE(11);
+WARN_TRACE(11)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1750,7 +1750,7 @@ WARN_TRACE(11);
 #define LM_FUNC lm_bitwise_and
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)&(B))
-WARN_TRACE(12);
+WARN_TRACE(12)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1759,7 +1759,7 @@ WARN_TRACE(12);
 #define LM_FUNC lm_bitwise_or
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)|(B))
-WARN_TRACE(13);
+WARN_TRACE(13)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1768,7 +1768,7 @@ WARN_TRACE(13);
 #define LM_FUNC lm_bitwise_xor
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)^(B))
-WARN_TRACE(14);
+WARN_TRACE(14)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1779,7 +1779,7 @@ WARN_TRACE(14);
 #define LM_FUNC lm_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)==(B))?COLORMAX:0)
-WARN_TRACE(15);
+WARN_TRACE(15)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1788,7 +1788,7 @@ WARN_TRACE(15);
 #define LM_FUNC lm_not_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)!=(B))?COLORMAX:0)
-WARN_TRACE(16);
+WARN_TRACE(16)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1797,7 +1797,7 @@ WARN_TRACE(16);
 #define LM_FUNC lm_less
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)>(B))?COLORMAX:0)
-WARN_TRACE(17);
+WARN_TRACE(17)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1806,7 +1806,7 @@ WARN_TRACE(17);
 #define LM_FUNC lm_more
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)<(B))?COLORMAX:0)
-WARN_TRACE(18);
+WARN_TRACE(18)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1815,7 +1815,7 @@ WARN_TRACE(18);
 #define LM_FUNC lm_less_or_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)>=(B))?COLORMAX:0)
-WARN_TRACE(19);
+WARN_TRACE(19)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1824,7 +1824,7 @@ WARN_TRACE(19);
 #define LM_FUNC lm_more_or_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)<=(B))?COLORMAX:0)
-WARN_TRACE(20);
+WARN_TRACE(20)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1836,7 +1836,7 @@ WARN_TRACE(20);
 #define LM_FUNC lm_logic_equal
 #define L_OPER(A,B) ((A)==(B))
 #define L_TRANS white
-WARN_TRACE(21);
+WARN_TRACE(21)
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1847,7 +1847,7 @@ WARN_TRACE(21);
 #define LM_FUNC lm_logic_not_equal
 #define L_OPER(A,B) ((A)!=(B))
 #define L_TRANS black
-WARN_TRACE(22);
+WARN_TRACE(22)
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1858,7 +1858,7 @@ WARN_TRACE(22);
 #define LM_FUNC lm_logic_strict_less
 #define L_OPER(A,B) ((A)>(B))
 #define L_TRANS white
-WARN_TRACE(23);
+WARN_TRACE(23)
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1869,7 +1869,7 @@ WARN_TRACE(23);
 #define LM_FUNC lm_logic_strict_more
 #define L_OPER(A,B) ((A)<(B))
 #define L_TRANS white
-WARN_TRACE(24);
+WARN_TRACE(24)
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1880,7 +1880,7 @@ WARN_TRACE(24);
 #define LM_FUNC lm_logic_strict_less_or_equal
 #define L_OPER(A,B) ((A)>=(B))
 #define L_TRANS white
-WARN_TRACE(25);
+WARN_TRACE(25)
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1891,7 +1891,7 @@ WARN_TRACE(25);
 #define LM_FUNC lm_logic_strict_more_or_equal
 #define L_OPER(A,B) ((A)<=(B))
 #define L_TRANS white
-WARN_TRACE(26);
+WARN_TRACE(26)
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
