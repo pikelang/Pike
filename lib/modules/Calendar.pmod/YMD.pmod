@@ -2150,40 +2150,34 @@ class cDay
    {
       if (what->is_timeofday)
       {
-	 if (what->is_timeofday_f)
-	 {
-	    Second z=
-	       second(what->hour_no(),
-		      what->minute_no(),
-		      what->second_no());
-	    return
-	       Fraction("timeofday_f",rules,
-			z->unix_time(),what->ns,what->s_len,what->ns_len)
-	       ->autopromote();
-	 }
-	    
-	 return second(what->hour_no(),
-		       what->minute_no(),
-		       what->second_no())
-	    ->set_size_seconds(what->len);
-
-#if 0
 	 int lux=
 	    what->ux-
 	    Day("unix_r",what->unix_time(),what->ruleset())
 	    ->unix_time();
-
-	 werror("%O\n",lux);
+	 TimeRange res;
 
 	 if (what->is_timeofday_f)
-	    return 
+	    res=
 	       Fraction("timeofday_f",rules,
-			lux+unix_time(),what->ns,what->s_len,what->ns_len)
-	       ->autopromote();
+			lux+unix_time(),what->ns,what->s_len,what->ns_len);
+	 else
+	    res=Second("timeofday",rules,unix_time()+lux,what->len);
 
-	 return Second("timeofday",rules,unix_time()+lux,what->len)
-	    ->autopromote();
-#endif
+	 if (what->rules->timezone->is_dst_timezone ||
+	     rules->timezone->is_dst_timezone)
+	 {
+	    int u0=what->utc_offset()-what->day()->utc_offset();
+	    int u1=res->utc_offset()-utc_offset();
+//  	    werror("%O %O\n",u0,u1);
+	    if (u1-u0) 
+	       res=res->add(u1-u0,Second);
+	    else
+	       res=res->autopromote();
+	 }
+	 else
+	    res=res->autopromote();
+
+	 return res;
       }
 
       if (what->is_year) 
