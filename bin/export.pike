@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.63 2004/03/28 18:45:56 nilsson Exp $ */
+/* $Id: export.pike,v 1.64 2004/04/02 20:23:14 grubba Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -89,7 +89,7 @@ array(int) getversion()
   return ({ maj, min, build });
 }
 
-void bump_version()
+void bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
   Process.create_process( ({ "cvs", "update", "version.h" }),
@@ -104,6 +104,33 @@ void bump_version()
 			     "release number bumped to "+rel+" by export.pike",
 			     "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
+
+  s = Stdio.read_file(pike_base_name+"/packaging/debian/changelog");
+  if (s) {
+    werror("Bumping Debian changelog.\n");
+    array(int) version = getversion();
+    s = sprintf("pike%d.%d (%d.%d.%d-1) experimental; urgency=low\n"
+		"\n" +
+		"  * %s\n"
+		"\n"
+		" -- Pike build system <pike-devel@lists.lysator.liu.se>  %s\n"
+		"\n"
+		"%s",
+		version[0], version[1],
+		version[0], version[1], version[2],
+		is_release?
+		"Release number bumped by export.pike.\n":
+		"The latest cvs snapshot\n",
+		Calendar.Second()->format_smtp(),
+		s);
+    Stdio.write_file(pike_base_name+"/packaging/debian/changelog", s);
+    Process.create_process( ({ "cvs", "commit", "-m",
+			       "release number bumped to "+rel+" by export.pike",
+			       "changelog" }),
+			     ([ "cwd":pike_base_name+"/packaging/debian" ])
+			     )->wait();
+
+  }
 }
 
 array(string) build_file_list(string vpath, string list_file)
@@ -239,7 +266,7 @@ int main(int argc, array(string) argv)
 
   if(tag && file_stat(pike_base_name+"/CVS"))
   {
-    bump_version();
+    bump_version(1);
 
     array(int) version = getversion();
     vpath = sprintf("Pike-v%d.%d.%d", @version);
