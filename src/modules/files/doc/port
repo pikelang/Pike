@@ -6,7 +6,7 @@ DESCRIPTION
 	sockets. Whenever you need a bound socket that is open and listens
 	for connections you should use this program.
 
-	Here follows the diescriptionsof the functions in /precompiled/port:
+	Here follow the diescriptionsof the functions in /precompiled/port:
 
 ============================================================================
 NAME
@@ -44,7 +44,7 @@ SYNTAX
 DESCRIPTION
 	This function does the same as port->bind, except that instead
 	of creating a new socket and bind it to a port, it expects that
-	the filedescriptor 'fd' is an alread open port.
+	the filedescriptor 'fd' is an already open port.
 
 NOTA BENE
 	This function is only for the advanced user, and is generally used
@@ -71,7 +71,7 @@ SYNTAX
 
 DESCRIPTION
 	When create is called with 'stdin' as argument, a socket is created
-	out of the file descriptor 0, this is only useful if that actually
+	out of the file descriptor 0. This is only useful if that actually
 	IS a socket to begin with. When create is called with an int as first
 	argument, it does the same as bind() would do with the same arguments.
 

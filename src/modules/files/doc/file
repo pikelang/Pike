@@ -3,7 +3,7 @@ NAME
 
 DESCRIPTION
 	/precompiled/file is a pre-compiled Pike program, written in C.
-	It contains the functions need to handle files, sockets, streams
+	It contains the functions needed to handle files, sockets, streams
 	and pipes from within Pike. /precompiled/file is a part of the files
 	module.
 
@@ -20,7 +20,7 @@ SYNTAX
 
 DESCRIPTION
 	When cloning a file, you can specify that you want to clone
-	stdin, stdout or stderr, by giving "stdin", "stdou" or "stderr" to
+	stdin, stdout or stderr, by giving "stdin", "stdout" or "stderr" to
 	clone as a second argument. If no second argument is given,
 	an unitialized file will be cloned.
 
@@ -35,7 +35,7 @@ SYNTAX
 	int file->open(string filename, string how);
 
 DESCRIPTION
-	Open a file for read write or append. The variable how should
+	Open a file for read, write or append. The variable how should
 	contain one or more of the following letters:
 
 	'r'	open file for reading
@@ -383,7 +383,7 @@ SYNTAX
 
 DESCRIPTION
 	This function returns the remote or local address of a socket on the
-	form "x.x.x.x port". Without argument, the remot address is returned,
+	form "x.x.x.x port". Without argument, the remote address is returned,
 	with argument the local address is returned. If this file is not a
 	socket, not connected or some other error occurs, zero is returned.
 
