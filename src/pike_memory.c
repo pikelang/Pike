@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.99 2001/11/14 15:09:09 jonasw Exp $");
+RCSID("$Id: pike_memory.c,v 1.100 2003/03/17 13:55:38 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1788,7 +1788,7 @@ static void low_search_all_memheaders_for_references(void)
 	if(m->size > 0)
 	{
 	  for(e=0;e<m->size/sizeof(void *);e++)
-	    if((tmp=find_memhdr(p[e])))
+	    if((tmp=just_find_memhdr(p[e])))
 	      tmp->flags |= MEM_REFERENCED;
 	}
       }
