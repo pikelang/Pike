@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.83 2002/11/07 15:28:26 grubba Exp $
+|| $Id: peep.c,v 1.84 2002/11/12 11:40:08 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.83 2002/11/07 15:28:26 grubba Exp $");
+RCSID("$Id: peep.c,v 1.84 2002/11/12 11:40:08 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -343,7 +343,14 @@ void assemble(void)
 #endif
       FLUSH_CODE_GENERATOR_STATE();
       labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
-      UPDATE_PC();
+      if ((e+1 < length) &&
+	  (c[1].opcode != F_LABEL) &&
+	  (c[1].opcode != F_BYTE) &&
+	  (c[1].opcode != F_DATA)) {
+	/* Don't add redundant code before labels or raw data. */
+	UPDATE_PC();
+      }
+
       break;
 
     case F_VOLATILE_RETURN:
