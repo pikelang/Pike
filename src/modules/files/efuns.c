@@ -190,18 +190,15 @@ void f_get_dir(INT32 args)
     int lens[FPR];
     struct dirent *tmp;
     
-    tmp = alloca(sizeof(struct dirent) + 
+    if (!(tmp = alloca(sizeof(struct dirent) + 
 #ifdef HAVE_SOLARIS_READDIR_R
-		 pathconf(path, _PC_NAME_MAX)
+		       pathconf(path, _PC_NAME_MAX)
 #else
-		 NAME_MAX
+		       NAME_MAX
 #endif /* HAVE_SOLARIS_READDIR_R */
-		 + 1);
-
-    if(!tmp)
-    {
+		       + 1))) {
       closedir(dir);
-      error("Out of memory.\n");
+      error("get_dir(): Out of memory\n");
     }
 
     while(1)
