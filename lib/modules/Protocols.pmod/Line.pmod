@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.18 2002/09/21 15:08:31 mast Exp $
+ * $Id: Line.pmod,v 1.19 2002/11/26 21:28:11 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -28,7 +28,7 @@ class simple
   //! accumulated data.
   //!
   //! @seealso
-  //! @[handle_command()]
+  //!   @[handle_command()]
   //!
   function(string:void) handle_data;
 
@@ -144,7 +144,7 @@ class simple
   //! The returned line will not contain the line separator.
   //!
   //! @seealso
-  //! @[handle_command()], @[line_separator]
+  //!   @[handle_command()], @[line_separator]
   //!
   static string read_line()
   {
@@ -166,7 +166,7 @@ class simple
   //! Calls the handle callbacks repeatedly until no more lines are available.
   //!
   //! @seealso
-  //! @[handle_data()], @[handle_command()], @[read_line()]
+  //!   @[handle_data()], @[handle_command()], @[read_line()]
   //!
   static void read_callback(mixed ignored, string data)
   {
@@ -369,13 +369,14 @@ class imap_style
   //! This function will be called once for every line that is received.
   //!
   //! @note
-  //! This API is provided for backward compatibility; overload
-  //! @[handle_command()] instead.
+  //!   This API is provided for backward compatibility; overload
+  //!   @[handle_command()] instead.
   //!
   //! @seealso
-  //! @[handle_command()]
+  //!   @[Protocols.Line.simple()->handle_command()]
   function(string:void) handle_line;
 
+  //! Function called once for every received line.
   void handle_command(string line)
   {
     handle_line(line);

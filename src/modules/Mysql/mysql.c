@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.62 2002/11/18 12:29:15 nilsson Exp $
+|| $Id: mysql.c,v 1.63 2002/11/26 21:31:14 grubba Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.62 2002/11/18 12:29:15 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.63 2002/11/26 21:31:14 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -116,7 +116,7 @@ RCSID("$Id: mysql.c,v 1.62 2002/11/18 12:29:15 nilsson Exp $");
  *! Mysql is available from @url{http://www.mysql.com@}.
  *!
  *! @seealso
- *!   @[Mysql.result], @[Sql.Sql]
+ *!   @[Mysql.mysql_result], @[Sql.Sql]
  */
 
 struct program *mysql_program = NULL;
@@ -1197,7 +1197,7 @@ static void f_protocol_info(INT32 args)
  *!
  *! @seealso
  *!   @[list_tables()], @[list_fields()], @[list_processes()],
- *!   @[mysql_result]
+ *!   @[Mysql.mysql_result]
  */
 static void f_list_dbs(INT32 args)
 {
@@ -1285,7 +1285,7 @@ static void f_list_dbs(INT32 args)
  *!
  *! @seealso
  *!   @[list_dbs()], @[list_fields()], @[list_processes()],
- *!   @[mysql_result]
+ *!   @[Mysql.mysql_result]
  */
 static void f_list_tables(INT32 args)
 {
@@ -1413,7 +1413,8 @@ static void f_list_tables(INT32 args)
  *!   @tt{show fields in 'table' like "wild"@}.
  *!
  *! @seealso
- *!   @[list_dbs()], @[list_tables()], @[list_processes()], @[mysql_result.fetch_field()]
+ *!   @[list_dbs()], @[list_tables()], @[list_processes()],
+ *!   @[Mysql.mysql_result.fetch_field()]
  */
 static void f_list_fields(INT32 args)
 {

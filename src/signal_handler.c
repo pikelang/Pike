@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.234 2002/10/31 17:33:16 grubba Exp $
+|| $Id: signal_handler.c,v 1.235 2002/11/26 21:25:06 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.234 2002/10/31 17:33:16 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.235 2002/11/26 21:25:06 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2013,9 +2013,11 @@ static void internal_add_limit( struct perishables *storage,
  *!                        (["env" : getenv() + (["TERM":"vt100"]) ]));
  *!
  *! @example
- *! //! Spawn a new process with the args @[args] and optionally a standard input
- *! //! if you provide such a Stdio.File object. Returns that process and a pipe
- *! //! from which you can read its output.
+ *! //! Spawn a new process with the args @@[args] and optionally a
+ *! //! standard input if you provide such a @@[Stdio.File] object.
+ *! //! @@returns
+ *! //!   Returns the new process and a pipe from which you can read
+ *! //!   its output.
  *! array(Process.Process|Stdio.File) spawn(Stdio.File|void stdin, string ... args)
  *! {
  *!   Stdio.File stdout = Stdio.File();
@@ -2026,12 +2028,13 @@ static void internal_add_limit( struct perishables *storage,
  *! }
  *!
  *! @note
- *! All parameters that accept both string or int input can be
- *! noticeably slower using a string instead of an integer; if maximum
- *! performance is an issue, please use integers.
+ *!   All parameters that accept both string or int input can be
+ *!   noticeably slower using a string instead of an integer; if maximum
+ *!   performance is an issue, please use integers.
  *!
- *! The "fds", "uid", "gid", "nice", "noinitgroups", "setgroups",
- *! "keep_signals" and "rlimit" modifiers only exist on unix.
+ *!   The modifiers @tt{"fds"@}, @tt{"uid"@}, @tt{"gid"@}, @tt{"nice"@},
+ *!   @tt{"noinitgroups"@}, @tt{"setgroups"@}, @tt{"keep_signals"@}
+ *!   and @tt{"rlimit"@} only exist on unix.
  */
 
 /*! @endclass */
