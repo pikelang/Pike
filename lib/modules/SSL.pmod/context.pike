@@ -1,4 +1,4 @@
-/* $Id: context.pike,v 1.4 1997/05/31 22:03:54 grubba Exp $
+/* $Id: context.pike,v 1.5 1998/06/23 13:46:39 grubba Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -72,7 +72,8 @@ object lookup_session(string id)
 object new_session()
 {
   object s = Session();
-  s->identity = (use_cache) ? sprintf("%4c%4c", time(), session_number++) : "";
+  s->identity = (use_cache) ? sprintf("%4cPikeSSL3%4c",
+				      time(), session_number++) : "";
   return s;
 }
 
