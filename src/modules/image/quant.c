@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.21 1997/01/07 00:41:45 law Exp $ */
+/* $Id: quant.c,v 1.22 1997/01/14 15:23:52 law Exp $ */
 
 /*
 
@@ -61,7 +61,9 @@ static void chrono(char *x)
 
 #define sq(x) ((x)*(x))
 #define DISTANCE(A,B) \
-   (sq((A).r-(B).r)+sq((A).g-(B).g)+sq((A).b-(B).b))
+   (sq(((int)(A).r)-((int)(B).r)) \
+    +sq(((int)(A).g)-((int)(B).g)) \
+    +sq(((int)(A).b)-((int)(B).b)))
 
 
 typedef struct
