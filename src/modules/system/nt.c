@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.37 2001/08/15 11:43:00 grubba Exp $
+ * $Id: nt.c,v 1.38 2001/08/29 18:17:13 mast Exp $
  *
  * NT system calls for Pike
  *
@@ -99,6 +99,10 @@ static void throw_nt_error(char *funcname, int err)
 
     case ERROR_BAD_NETPATH:
       msg = "Network path not found.";
+      break;
+
+    case ERROR_BAD_NET_NAME:
+      msg = "The network name cannot be found.";
       break;
 
     case ERROR_NO_TRUST_LSA_SECRET:
@@ -1972,10 +1976,24 @@ static void f_normalize_path(INT32 args)
   struct pike_string *str;
   struct string_builder res;
   DWORD ret;
+  char *file;
+  ptrdiff_t l;
 
   get_all_args("nt_normalize_path", args, "%S", &str);
 
   init_string_builder(&res, 0);
+
+  file = str->str;
+  if (file[str->len - 1] == '/' || file[str->len - 1] == '\\') {
+    /* Add a '.' if the path ends with slash(es). This works just as
+     * well as removing all trailing slashes (even for files), but it
+     * has the benefit that we don't get the cwd when the input is
+     * e.g. "c:\\". */
+    file = xalloc(str->len + 1);
+    MEMCPY(file, str->str, str->len);
+    file[str->len] = '.';
+    file[str->len + 1] = 0;
+  }
 
   ret = str->len;    /* Guess that the result will have the same length... */
   do{
@@ -1983,13 +2001,23 @@ static void f_normalize_path(INT32 args)
     /* NOTE: Use the emulated GetLongPathName(), since it normalizes all
      * components of the path.
      */
-    ret = Emulate_GetLongPathName(str->str, res.s->str, res.malloced);
+    ret = Emulate_GetLongPathName(file, res.s->str, res.malloced);
     if (!ret) {
       free_string_builder(&res);
+      if (file != str->str) xfree(file);
       throw_nt_error("normalize_path", errno = GetLastError());
     }
   } while (ret > res.malloced);
-  res.s->len = ret;
+  if (file != str->str) xfree(file);
+
+  l = ret - 1;
+  if(l >= 0 && (res.s->str[l]=='/' || res.s->str[l]=='\\'))
+  {
+    do l--;
+    while(l && ( res.s->str[l]=='/' || res.s->str[l]=='\\' ));
+    res.s->str[l + 1]=0;
+  }
+  res.s->len = l + 1;
 
   pop_n_elems(args);
   push_string(finish_string_builder(&res));
