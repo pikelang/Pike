@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.55 2000/03/26 01:55:11 mast Exp $");
+RCSID("$Id: encode.c,v 1.56 2000/03/26 20:55:32 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1331,6 +1331,7 @@ static void decode_value2(struct decode_data *data)
 
 	  decode_number(p->flags,data);
 	  p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED);
+	  p->flags |= PROGRAM_AVOID_CHECK;
 	  decode_number(p->storage_needed,data);
 	  decode_number(p->alignment_needed,data);
 	  decode_number(p->timestamp.tv_sec,data);
@@ -1514,6 +1515,7 @@ static void decode_value2(struct decode_data *data)
 		  sizeof(unsigned short),(fsortfun)program_function_index_compare);
 	    new_program=new_program_save;
 	  }
+	  p->flags &=~ PROGRAM_AVOID_CHECK;
 	  p->flags |= PROGRAM_FINISHED;
 	  ref_push_program(p);
 

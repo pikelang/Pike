@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.83 2000/03/17 05:13:17 hubbe Exp $
+ * $Id: program.h,v 1.84 2000/03/26 20:55:32 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -235,6 +235,10 @@ struct pike_trampoline
 
 /* Objects should not be destructed by f_destruct(). */
 #define PROGRAM_NO_EXPLICIT_DESTRUCT 512
+
+/* Program is in an inconsistant state */
+#define PROGRAM_AVOID_CHECK 512
+
 
 struct program
 {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.216 2000/03/25 21:34:31 hubbe Exp $");
+RCSID("$Id: program.c,v 1.217 2000/03/26 20:55:32 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1013,6 +1013,8 @@ void check_program(struct program *p)
   INT32 size;
   unsigned INT32 checksum, e;
   int variable_positions[1024];
+
+  if(p->flags & PROGRAM_AVOID_CHECK) return;
 
   for(e=0;e<NELEM(variable_positions);e++)
     variable_positions[e]=-1;
