@@ -843,10 +843,10 @@ int pre_install(string *argv)
     case "--interactive":
 
 #if constant(GTK.parse_rc) && defined(USE_GTK)
-//      catch  {
+      catch  {
 	begin_wizard(argv);
 	return -1; 
-//      };
+      };
 #endif
 
 	// FIXME: 
