@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.118 2001/06/16 17:18:30 per Exp $
+// $Id: module.pmod,v 1.119 2001/06/16 17:25:34 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -1029,8 +1029,8 @@ class Port
   }
 }
 
-File stderr=File("stderr");
-File stdout=File("stdout");
+File stderr=FILE("stderr");
+File stdout=FILE("stdout");
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
@@ -1096,7 +1096,7 @@ class FILE
     if( charset != "iso-8859-1" &&
 	charset != "ascii")
     {
-      object in = master()->resolv("Locale.Charset.decoder")( charset );
+      object in =  master()->resolv("Locale.Charset.decoder")( charset );
       object out = master()->resolv("Locale.Charset.encoder")( charset );
 
       input_conversion =
@@ -1234,7 +1234,7 @@ class FILE
     error("Cannot use nonblocking IO with buffered files.\n");
   }
 
-  int write( array(string)|string what, mixed .. fmt  )
+  int write( array(string)|string what, mixed ... fmt  )
   {
     if( output_conversion )
     {
