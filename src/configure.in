@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.339 2000/01/16 00:31:19 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.340 2000/01/19 15:55:27 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -333,9 +333,11 @@ if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" && test "`uname -p`" = "
   # NOTE: M4 uses [] as quotes.
   gcc_ld_path="`$CC -v 2>&1 | sed -e '1,1s/[[^\/]]*\(\/.*\/\)[[^\/]]*$/\1/p;d' | sed -e '/lib\/gcc-lib\//s/lib\/gcc-lib\///;s/\/[[0-9]]*\.[[0-9]]*\.[[0-9]]*\/$/\/bin/'`"
   if test "x$gcc_ld_path" = "x"; then :; else
-    if "$gcc_ld_path/ld" -v 2>&1 | grep -i GNU >/dev/null; then
-      AC_MSG_WARN([GNU ld found on Solaris sparc system ($gcc_ld_path/ld).])
-      AC_MSG_WARN([This may cause the dynamic module support to fail.])
+    if test -d "$gcc_ld_path/."; then
+      if "$gcc_ld_path/ld" -v 2>&1 | grep -i GNU >/dev/null; then
+        AC_MSG_WARN([GNU ld found on Solaris sparc system ($gcc_ld_path/ld).])
+        AC_MSG_WARN([This may cause the dynamic module support to fail.])
+      else :; fi
     else :; fi
   fi
   unset gcc_ld_path
