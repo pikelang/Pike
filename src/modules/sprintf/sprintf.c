@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.110 2003/06/11 16:29:57 jhs Exp $
+|| $Id: sprintf.c,v 1.111 2003/06/12 15:55:10 jhs Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -178,7 +178,7 @@
  *! Pike v7.4 release 13 running Hilfe v3.5 (Incremental Pike Frontend)
  *! > sprintf("The unicode character %c has character code %04X.", 'A', 'A');
  *! (1) Result: "The unicode character A has character code 0041."
- *! > sprintf("#%@02X is the HTML code for purple.", Image.Color.purple->rgb());
+ *! > sprintf("#%@@02X is the HTML code for purple.", Image.Color.purple->rgb());
  *! (2) Result: "#A020F0 is the HTML code for purple."
  *! > int n=4711;
  *! > sprintf("%d = hexadecimal %x = octal %o = %b binary", n, n, n, n);
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.110 2003/06/11 16:29:57 jhs Exp $");
+RCSID("$Id: sprintf.c,v 1.111 2003/06/12 15:55:10 jhs Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
