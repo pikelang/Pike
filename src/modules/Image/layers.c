@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.94 2003/12/12 17:43:54 nilsson Exp $
+|| $Id: layers.c,v 1.95 2004/02/03 17:34:38 grubba Exp $
 */
 
 /*
@@ -15,7 +15,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.94 2003/12/12 17:43:54 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.95 2004/02/03 17:34:38 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -2867,12 +2867,13 @@ void img_lay(struct layer **layer,
 
 void image_lay(INT32 args)
 {
-   int layers,i;
+   int layers,i,j;
    struct layer **l;
    struct object *o;
    struct layer *dest;
    struct array *a;
    INT_TYPE xoffset=0,yoffset=0,xsize=0,ysize=0;
+   ONERROR err;
 
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.lay",1);
@@ -2902,11 +2903,13 @@ void image_lay(INT32 args)
 
    l=(struct layer**)xalloc(sizeof(struct layer)*layers);
 
-   for (i=0; i<layers; i++)
+   SET_ONERROR(err, free, l);
+
+   for (i=j=0; i<layers; i++)
    {
       if (a->item[i].type==T_OBJECT)
       {
-	 if (!(l[i]=(struct layer*)get_storage(a->item[i].u.object,
+	 if (!(l[j]=(struct layer*)get_storage(a->item[i].u.object,
 					       image_layer_program)))
 	    SIMPLE_BAD_ARG_ERROR("Image.lay",1,
 				 "array(Image.Layer|mapping)");
@@ -2916,11 +2919,21 @@ void image_lay(INT32 args)
 	 push_svalue(a->item+i);
 	 push_object(o=clone_object(image_layer_program,1));
 	 args++;
-	 l[i]=(struct layer*)get_storage(o,image_layer_program);
+	 l[j]=(struct layer*)get_storage(o,image_layer_program);
       }
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.lay",1,
 			      "array(Image.Layer|mapping)");
+      if (l[j]->xsize && l[j]->ysize)
+	 j++;
+   }
+
+   if (!(layers = j))	/* dummy return empty layer */
+   {
+      CALL_AND_UNSET_ONERROR(err);
+      pop_n_elems(args);
+      push_object(clone_object(image_layer_program,0));
+      return;
    }
 
    if (xsize==0) /* figure offset and size */
@@ -2969,7 +2982,7 @@ void image_lay(INT32 args)
    /* ok, do it! */
    img_lay(l,layers,dest);
 
-   free(l);
+   CALL_AND_UNSET_ONERROR(err);
 
    Pike_sp--;
    pop_n_elems(args);
