@@ -27,7 +27,7 @@ Write an appendix about old functions, behaviors and keywords.
   ("How to convert from old versions of Pike")
 
 
-predef::m_delete-behavior is missing. 
+predef::m_delete-behavior is missing. - Fixed by hubbe
 
 Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
@@ -1841,8 +1841,9 @@ The following operators and functions are important:
 <dt><tt>array indices(mapping <i>m</i>)</tt>
 <dd><tt>Indices</tt> returns an array containing all the indices in the mapping <i>m</i>.
 
-<dt><tt>void m_delete(mapping <i>m</i>, mixed <i>ind</i>)</tt>
+<dt><tt>mixed m_delete(mapping <i>m</i>, mixed <i>ind</i>)</tt>
 <dd>This function removes the index-value pair with the index <i>ind</i> from the mapping <i>m</i>.
+    It will return the value that was removed.
 
 <dt><tt>int mappingp(mixed <i>m</i>)</tt>
 <dd>This function returns 1 if <i>m</i> is a mapping, 0 otherwise.
@@ -6692,6 +6693,7 @@ the pike programmer to use some of the protocols used on the internet.
 </chapter>
 </anchor>
 
+
 <chapter title="Other modules">
 
 Pike also include a number of smaller modules. These modules implement support
@@ -10744,6 +10746,8 @@ prints.
 <include file=Math.wmml>
 </section title=Math>
 
+<include file=Modules.wmml>
+
 </chapter>
 
 <chapter title="The preprocessor">
@@ -12781,14 +12785,17 @@ non-callables. </man_note>
 
 <function name=m_delete title="remove an index from a mapping">
 <man_syntax>
-mapping m_delete(mapping <I>map</I>, mixed <I>index</I>);
+mixed m_delete(mapping <I>map</I>, mixed <I>index</I>);
 </man_syntax>
 <man_description>
 Removes the entry with index <i>index</i> from mapping <i>map</i> destructively.
-Returns the changed mapping. If the mapping does not have an
+If the mapping does not have an
 entry with index <i>index</i>, nothing is done.
 Note that m_delete changes map destructively and only returns
 the mapping for compatibility reasons.
+<p>
+This function returns the value from the key-value pair that was
+removed from the mapping.
 </man_description>
 <man_see>
 mappingp
