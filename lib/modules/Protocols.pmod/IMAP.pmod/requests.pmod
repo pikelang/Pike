@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.55 1999/02/22 17:01:16 grubba Exp $
+ * $Id: requests.pmod,v 1.56 1999/02/26 18:59:56 grubba Exp $
  */
 
 import .types;
@@ -480,9 +480,7 @@ class fetch
 	case "full":
 	  fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
 			   ATTR_SECTION("rfc822", ({ "size" })),
-			   ATTR("envelope"),
-			   ([ "wanted" : "bodystructure",
-			      "no_extention_data" : 1 ]) });
+			   ATTR("envelope"), ATTR("body") });
 	  break;
 #undef ATTR
 #undef ATTR_SECTION
