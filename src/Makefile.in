@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.309 2002/05/04 14:27:30 mast Exp $
+# $Id: Makefile.in,v 1.310 2002/05/04 15:19:33 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -841,7 +841,7 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	touch stamp-h
 	-@rm cfl.$@
 
-testsuite: $(SRCDIR)/testsuite.in
+testsuite: $(SRCDIR)/testsuite.in $(TMP_BINDIR)/mktestsuite
 	if test "$$PIKE_PATH_TRANSLATE" = ""; then \
 	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
 	    -DSRCDIR="$(SRCDIR)"; \
