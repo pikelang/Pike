@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.30 2000/08/29 13:40:14 mirar Exp $
+ * $Id: port.h,v 1.31 2000/10/26 01:32:41 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -222,9 +222,9 @@ unsigned long my_rand(void);
 void my_srand(long seed);
 
 #ifdef OWN_GETHRTIME
-void own_gethrtime_init();
+void own_gethrtime_init(void);
 void own_gethrtime_update(struct timeval *ptr);
-long long gethrtime();
+long long gethrtime(void);
 
 #define hrtime_t long long
 #endif
