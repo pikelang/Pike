@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.199 1999/11/01 13:39:18 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.200 1999/11/04 15:42:51 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1881,7 +1881,16 @@ void f_compile(INT32 args)
   if(sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("compile", 1, "string");
 
-  p=compile(sp[-args].u.string);
+  if ((args > 1) && (sp[1-args].type != T_OBJECT) &&
+      (sp[1-args].type != T_INT)) {
+    SIMPLE_BAD_ARG_ERROR("compile", 2, "object");
+  }
+
+  if ((args > 1) && (sp[1-args].type == T_OBJECT)) {
+    p = compile(sp[-args].u.string, sp[1-args].u.object);
+  } else {
+    p = compile(sp[-args].u.string, master_object);
+  }
   pop_n_elems(args);
   push_program(p);
 }
@@ -2452,6 +2461,131 @@ static void f_mktime (INT32 args)
 }
 
 #endif
+
+/* Parse a sprintf/sscanf-style format string */
+static int low_parse_format(p_wchar0 *s, int slen)
+{
+  int i;
+  int offset = 0;
+  int num_percent_percent = 0;
+  struct svalue *old_sp = sp;
+
+  for (i=offset; i < slen; i++) {
+    if (s[i] == '%') {
+      int j;
+      if (i != offset) {
+	push_string(make_shared_binary_string0(s + offset, i));
+	if ((sp != old_sp+1) && (sp[-2].type == T_STRING)) {
+	  /* Concat. */
+	  f_add(2);
+	}
+      }
+
+      for (j = i+1;j<slen;j++) {
+	int c = s[j];
+
+	switch(c) {
+	  /* Flags */
+	case '!':
+	case '#':
+	case '$':
+	case '-':
+	case '/':
+	case '0':
+	case '=':
+	case '>':
+	case '@':
+	case '^':
+	case '_':
+	case '|':
+	  continue;
+	  /* Padding */
+	case ' ':
+	case '\'':
+	case '+':
+	case '~':
+	  break;
+	  /* Attributes */
+	case '.':
+	case ':':
+	case ';':
+	  continue;
+	  /* Attribute value */
+	case '1': case '2': case '3': case '4': case '5':
+	case '6': case '7': case '8': case '9':
+	  continue;
+	  /* Specials */
+	case '%':
+	  push_constant_text("%");
+	  if ((sp != old_sp+1) && (sp[-2].type == T_STRING)) {
+	    /* Concat. */
+	    f_add(2);
+	  }
+	  break;
+	case '{':
+	  i = j + 1 + low_parse_format(s + j + 1, slen - (j+1));
+	  f_aggregate(1);
+	  if ((i + 2 >= slen) || (s[i] != '%') || (s[i+1] != '}')) {
+	    error("parse_format(): Expected %%}.\n");
+	  }
+	  i += 2;
+	  break;
+	case '}':
+	  f_aggregate(sp - old_sp);
+	  return i;
+	  /* Set */
+	case '[':
+	  
+	  break;
+	  /* Argument */
+	default:
+	  break;
+	}
+	break;
+      }
+      if (j == slen) {
+	error("parse_format(): Unterminated %%-expression.\n");
+      }
+      offset = i = j;
+    }
+  }
+
+  if (i != offset) {
+    push_string(make_shared_binary_string0(s + offset, i));
+    if ((sp != old_sp+1) && (sp[-2].type == T_STRING)) {
+      /* Concat. */
+      f_add(2);
+    }
+  }
+
+  f_aggregate(sp - old_sp);
+  return i;
+}
+
+static void f_parse_format(INT32 args)
+{
+  struct pike_string *s = NULL;
+  struct array *a;
+  int len;
+
+  get_all_args("parse_format", args, "%W", &s);
+
+  len = low_parse_format(STR0(s), s->len);
+  if (len != s->len) {
+    error("parse_format(): Unexpected %%} in format string at offset %d\n",
+	  len);
+  }
+#ifdef PIKE_DEBUG
+  if (sp[-1].type != T_ARRAY) {
+    fatal("parse_format(): Unexpected result from low_parse_format()\n");
+  }
+#endif /* PIKE_DEBUG */
+  a = (--sp)->u.array;
+  debug_malloc_touch(a);
+
+  pop_n_elems(args);
+  push_array(a);
+}
 
 
 /* Check if the string s[0..len[ matches the glob m[0..mlen[ */
@@ -5023,8 +5157,9 @@ void init_builtin_efuns(void)
 /* function(string...:string) */
   ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
   
-/* function(string,mixed...:program) */
-  ADD_EFUN("compile",f_compile,tFuncV(tStr,tMix,tPrg),OPT_EXTERNAL_DEPEND);
+/* function(string,object|void,mixed...:program) */
+  ADD_EFUN("compile", f_compile, tFuncV(tStr tOr(tObj, tVoid),tMix,tPrg),
+	   OPT_EXTERNAL_DEPEND);
   
 /* function(1=mixed:1) */
   ADD_EFUN("copy_value",f_copy_value,tFunc(tSetvar(1,tMix),tVar(1)),0);
