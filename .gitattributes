@@ -39,6 +39,10 @@ testfont binary
 /lib/modules/LR.pmod/scanner.pike foreign_ident
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Protocols.pmod/Ident.pmod foreign_ident
+/lib/modules/Protocols.pmod/LDAP.pmod/client.pike foreign_ident
+/lib/modules/Protocols.pmod/LDAP.pmod/ldap_errors.h foreign_ident
+/lib/modules/Protocols.pmod/LDAP.pmod/ldap_privates.pmod foreign_ident
+/lib/modules/Protocols.pmod/LDAP.pmod/protocol.pike foreign_ident
 /lib/modules/Protocols.pmod/LPD.pmod foreign_ident
 /lib/modules/Protocols.pmod/Line.pmod foreign_ident
 /lib/modules/Protocols.pmod/Ports.pmod foreign_ident
