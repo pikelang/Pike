@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.64 2004/04/02 20:23:14 grubba Exp $ */
+/* $Id: export.pike,v 1.65 2004/04/26 13:10:08 grubba Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -119,8 +119,8 @@ void bump_version(int|void is_release)
 		version[0], version[1],
 		version[0], version[1], version[2],
 		is_release?
-		"Release number bumped by export.pike.\n":
-		"The latest cvs snapshot\n",
+		"Release number bumped by export.pike.":
+		"The latest cvs snapshot",
 		Calendar.Second()->format_smtp(),
 		s);
     Stdio.write_file(pike_base_name+"/packaging/debian/changelog", s);
