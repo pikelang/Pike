@@ -1161,9 +1161,29 @@ int main(int num, array args) {
   // module container.
   werror("Parsing %O...\n", args[-1]);
   Node n = Parser.XML.Tree.parse_input(file);
-  werror("Layouting...\n");
-  n = n->get_first_element("manual");
+
+  Node n2 = n->get_first_element("manual");
+  if(!n2) {
+    n2 = n->get_first_element("autodoc");
+    if(!n2) {
+      werror("Not an autodoc XML file.\n");
+      return 0;
+    }
+
+    Node chap = Node(XML_ELEMENT, "chapter", (["title":"Documentation"]), 0);
+    chap->add_child( n2 );
+    Node file = Node(XML_ELEMENT, "file", (["name":"index.html"]), 0);
+    file->add_child( chap );
+    Node top = Node(XML_ELEMENT, "manual", (["manual":"something"]), 0);
+    top->add_child( file );
+    n = top;
+  }
+  else
+    n = n2;
+
   mapping m = n->get_attributes();
+
+  werror("Layouting...\n");
   manual_title = m->title || (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
   layout_toploop(n);
   werror("Took %d seconds.\n\n", time()-t);
