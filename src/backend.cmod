@@ -22,7 +22,7 @@
 #include "main.h"
 #include "callback.h"
 #include "threads.h"
-#include "fdlib.h"
+#include "array.h"
 #include <math.h>
 #include "interpret.h"
 #include "stuff.h"
