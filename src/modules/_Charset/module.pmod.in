@@ -6,94 +6,92 @@ static private inherit @module@;
 //! @endignore
 
 //! @appears Locale.Charset
-//! The Charset module supports a wide variety of different character sets, and it is
-//! flexible in regard of the names of character sets it accepts. The character case
-//! is ignored, as are the most common non-alaphanumeric characters appearing in character set
-//! names. E.g. @tt{"iso-8859-1"@} works just as good as @tt{"ISO_8859_1"@}.
+//! The Charset module supports a wide variety of different character sets, and
+//! it is flexible in regard of the names of character sets it accepts. The
+//! character case is ignored, as are the most common non-alaphanumeric
+//! characters appearing in character set names. E.g. @tt{"iso-8859-1"@} works
+//! just as well as @tt{"ISO_8859_1"@}. All encodings specified in RFC 1345 are
+//! supported4
 //!
-//! First of all the Charset module is capable of handling the following encodings of
-//! Unicode.
-//! @xml{
-//! <matrix>
-//! <r><c>utf7</c></r>
-//! <r><c>utf8</c></r>
-//! <r><c>utf16</c></r>
-//! <r><c>utf16be</c></r>
-//! <r><c>utf16le</c></r>
-//! <r><c>utf75</c></r>
-//! <r><c>utf7½</c></r>
-//! </matrix>
-//! @}
+//! First of all the Charset module is capable of handling the following
+//! encodings of Unicode:
 //!
-//! @xml{
-//! <matrix>
-//! <r><c>shifjis</c></r>
-//! <r><c>euc-kr</c></r>
-//! <r><c>euc-cn</c></r>
-//! <r><c>euc-jp</c></r>
-//! </matrix>
-//! @}
+//! @ul
+//!   @item utf7
+//!   @item utf8
+//!   @item utf16
+//!   @item utf16be
+//!   @item utf16le
+//!   @item utf75
+//!   @item utf7½
+//!     UTF encodings
+//!   @item shifjis
+//!   @item euc-kr
+//!   @item euc-cn
+//!   @item euc-jp
+//! @endul
 //!
-//! Most, if not all, of the relevant code pages are represented, as the following list
-//! shows. These may be prefixed with @tt{"cp"@} or @tt{"ibm"@}. Code pages from 1250 and
-//! up may be prefixed with @tt{"windows"@}.
-//! @xml{
-//! <matrix>
-//! <r><c>037</c></r>
-//! <r><c>038</c></r>
-//! <r><c>273</c></r>
-//! <r><c>274</c></r>
-//! <r><c>275</c></r>
-//! <r><c>277</c></r>
-//! <r><c>278</c></r>
-//! <r><c>280</c></r>
-//! <r><c>281</c></r>
-//! <r><c>284</c></r>
-//! <r><c>285</c></r>
-//! <r><c>290</c></r>
-//! <r><c>297</c></r>
-//! <r><c>367</c></r>
-//! <r><c>420</c></r>
-//! <r><c>423</c></r>
-//! <r><c>424</c></r>
-//! <r><c>437</c></r>
-//! <r><c>500</c></r>
-//! <r><c>819</c></r>
-//! <r><c>850</c></r>
-//! <r><c>851</c></r>
-//! <r><c>852</c></r>
-//! <r><c>855</c></r>
-//! <r><c>857</c></r>
-//! <r><c>860</c></r>
-//! <r><c>861</c></r>
-//! <r><c>862</c></r>
-//! <r><c>863</c></r>
-//! <r><c>864</c></r>
-//! <r><c>865</c></r>
-//! <r><c>866</c></r>
-//! <r><c>868</c></r>
-//! <r><c>869</c></r>
-//! <r><c>870</c></r>
-//! <r><c>871</c></r>
-//! <r><c>880</c></r>
-//! <r><c>891</c></r>
-//! <r><c>903</c></r>
-//! <r><c>904</c></r>
-//! <r><c>905</c></r>
-//! <r><c>918</c></r>
-//! <r><c>950</c></r>
-//! <r><c>1026</c></r>
-//! <r><c>1250</c></r>
-//! <r><c>1251</c></r>
-//! <r><c>1252</c></r>
-//! <r><c>1253</c></r>
-//! <r><c>1254</c></r>
-//! <r><c>1255</c></r>
-//! <r><c>1256</c></r>
-//! <r><c>1257</c></r>
-//! <r><c>1258</c></r>
-//! </matrix>
-//! @}
+//! Most, if not all, of the relevant code pages are represented, as the
+//! following list shows. Prefix the numbers as noted in the list to get
+//! the wanted codec:
+//!
+//! @ul
+//!   @item 037
+//!   @item 038
+//!   @item 273
+//!   @item 274
+//!   @item 275
+//!   @item 277
+//!   @item 278
+//!   @item 280
+//!   @item 281
+//!   @item 284
+//!   @item 285
+//!   @item 290
+//!   @item 297
+//!   @item 367
+//!   @item 420
+//!   @item 423
+//!   @item 424
+//!   @item 437
+//!   @item 500
+//!   @item 819
+//!   @item 850
+//!   @item 851
+//!   @item 852
+//!   @item 855
+//!   @item 857
+//!   @item 860
+//!   @item 861
+//!   @item 862
+//!   @item 863
+//!   @item 864
+//!   @item 865
+//!   @item 866
+//!   @item 868
+//!   @item 869
+//!   @item 870
+//!   @item 871
+//!   @item 880
+//!   @item 891
+//!   @item 903
+//!   @item 904
+//!   @item 905
+//!   @item 918
+//!   @item 950
+//!   @item 1026
+//!     These may be prefixed with @tt{"cp"@} or @tt{"ibm"@}.
+//!   @item 1250
+//!   @item 1251
+//!   @item 1252
+//!   @item 1253
+//!   @item 1254
+//!   @item 1255
+//!   @item 1256
+//!   @item 1257
+//!   @item 1258
+//!     These may be prefixed with @tt{"cp"@}, @tt{"ibm"@} or @tt{"windows"@}.
+//! @endul
 //!
 //! +359 more.
 
