@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.29 2001/02/06 16:17:33 grubba Exp $
+ * $Id: mime.c,v 1.30 2001/02/13 23:14:57 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.29 2001/02/06 16:17:33 grubba Exp $");
+RCSID("$Id: mime.c,v 1.30 2001/02/13 23:14:57 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -675,49 +675,6 @@ static void f_encode_uue( INT32 args )
 }
 
 
-/*! @decl array(string|int) tokenize(string header)
- *!
- *! A structured header field, as specified by RFC822, is constructed from
- *! a sequence of lexical elements.
- *!
- *! These are:
- *! @dl
- *!   @item
- *!     individual special characters
- *!   @item
- *!     quoted-strings
- *!   @item
- *!     domain-literals
- *!   @item
- *!     comments
- *!   @item
- *!     atoms
- *! @enddl
- *!
- *! This function will analyze a string containing the header value,
- *! and produce an array containing the lexical elements.
- *!
- *! Individual special characters will be returned as characters (i.e.
- *! @tt{int@}s).
- *!
- *! Quoted-strings, domain-literals and atoms will be decoded and returned
- *! as strings.
- *!
- *! Comments are not returned in the array at all.
- *!
- *! @note
- *! As domain-literals are returned as strings, there is no way to tell the
- *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
- *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
- *! Domain-literals are used seldom, if at all, anyway...
- *! 
- *! The set of special-characters is the one specified in RFC1521
- *! (i.e. @tt{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
- *! and not the set specified in RFC822.
- *!
- *! @seealso
- *! @[MIME.quote()]
- */
 static void low_tokenize( INT32 args, int mode )
 {
 
@@ -922,6 +879,49 @@ static void low_tokenize( INT32 args, int mode )
   push_array( arr );
 }
 
+/*! @decl array(string|int) tokenize(string header)
+ *!
+ *! A structured header field, as specified by RFC822, is constructed from
+ *! a sequence of lexical elements.
+ *!
+ *! These are:
+ *! @dl
+ *!   @item
+ *!     individual special characters
+ *!   @item
+ *!     quoted-strings
+ *!   @item
+ *!     domain-literals
+ *!   @item
+ *!     comments
+ *!   @item
+ *!     atoms
+ *! @enddl
+ *!
+ *! This function will analyze a string containing the header value,
+ *! and produce an array containing the lexical elements.
+ *!
+ *! Individual special characters will be returned as characters (i.e.
+ *! @tt{int@}s).
+ *!
+ *! Quoted-strings, domain-literals and atoms will be decoded and returned
+ *! as strings.
+ *!
+ *! Comments are not returned in the array at all.
+ *!
+ *! @note
+ *! As domain-literals are returned as strings, there is no way to tell the
+ *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
+ *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
+ *! Domain-literals are used seldom, if at all, anyway...
+ *! 
+ *! The set of special-characters is the one specified in RFC1521
+ *! (i.e. @tt{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
+ *! and not the set specified in RFC822.
+ *!
+ *! @seealso
+ *!   @[MIME.quote()], @[tokenize_labled()]
+ */
 static void f_tokenize( INT32 args )
 {
   if (args != 1)
@@ -936,6 +936,30 @@ static void f_tokenize( INT32 args )
   low_tokenize( args, 0 );
 }
 
+/*! @decl array(array(string|int)) tokenize_labled(string header)
+ *!
+ *! Similar to @[tokenize()], but lables the contents, by making
+ *! arrays with two elements; the first a label, and the second
+ *! the value that @[tokenize()] would have put there, except
+ *! for that comments are kept.
+ *!
+ *! The following lables exist:
+ *! @string
+ *!   @value "encoded-word"
+ *!     Word encoded according to =?...
+ *!   @value "special"
+ *!     Special character.
+ *!   @value "word"
+ *!     Word.
+ *!   @value "domain-literal"
+ *!     Domain literal.
+ *!   @value "comment"
+ *!     Comment.
+ *! @endstring
+ *!
+ *! @seealso
+ *!   @[MIME.quote()], @[tokenize()]
+ */
 static void f_tokenize_labled( INT32 args )
 {
   if (args != 1)
@@ -1008,11 +1032,11 @@ static int check_encword( unsigned char *str, ptrdiff_t len )
  *! they contain any special characters.
  *!
  *! @note
- *! There is no way to construct a domain-literal using this function.
- *! Neither can it be used to produce comments.
+ *!   There is no way to construct a domain-literal using this function.
+ *!   Neither can it be used to produce comments.
  *!
  *! @seealso
- *! @[MIME.tokenize()]
+ *!   @[MIME.tokenize()]
  */
 static void f_quote( INT32 args )
 {
@@ -1094,6 +1118,13 @@ static void f_quote( INT32 args )
   push_string( finish_string_builder( &buf ) );
 }
 
+/*! @decl string quote_labled(array(array(string|int)) tokens)
+ *!
+ *! This function performs the reverse operation of @[tokenize_labled()].
+ *!
+ *! @seealso
+ *!   @[MIME.quote()], @[MIME.tokenize_labled()]
+ */
 static void f_quote_labled( INT32 args )
 {
   struct svalue *item;
