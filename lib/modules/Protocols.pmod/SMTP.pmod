@@ -102,6 +102,8 @@ class client
 
   void simple_mail(string to, string subject, string from, string msg)
   {
+    if (search(msg,"\r\n")==-1)
+      msg=replace(msg,"\n","\r\n"); // *simple* mail /Mirar
     send_message(parse_addr(from), ({ parse_addr(to) }),
 		 (string)MIME.Message(msg, (["mime-version":"1.0",
 					     "subject":subject,
