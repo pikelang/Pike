@@ -1,8 +1,9 @@
 /*
- * $Id: pdflib_glue.c,v 1.3 2001/01/14 08:59:02 mirar Exp $
+ * $Id: pdflib_glue.c,v 1.4 2001/01/14 08:59:39 mirar Exp $
  */
 
 #include "global.h"
+RCSID("$Id: pdflib_glue.c,v 1.4 2001/01/14 08:59:39 mirar Exp $");
 
 #include "pdf_machine.h"
 
