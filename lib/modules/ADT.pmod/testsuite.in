@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.5 2002/10/19 14:21:35 nilsson Exp $
+dnl $Id: testsuite.in,v 1.6 2003/01/03 23:20:14 nilsson Exp $
 
 dnl - ADT.History
 
@@ -145,6 +145,99 @@ test_any([[
   t->push("5");
   return values(s+t)*"";
 ]], "12345")
+
+
+dnl - ADT.Struct
+
+test_do([[
+  class Test {
+    inherit ADT.Struct;
+    Item one = Byte();
+    Item two = Word(2);
+    Item three = Chars(3);
+  };
+  add_constant("Test", Test);
+]])
+test_equal( sizeof(Test()), 6 )
+test_equal( indices(Test()), ({ "one", "two", "three" }) )
+test_equal( values(Test()), ({ 0, 2, "\0\0\0" }) )
+test_eq( (string)Test("123456"), "123456" )
+test_eq( (string)Test("1234567"), "123456" )
+test_equal( (array)Test("123456"), ({ "1", "23", "456" }) )
+test_any([[
+  Test test=Test();
+  test->one=1;
+  test->two=3;
+  test->three="klm";
+  return (string)test;
+]], "\1\0\3klm")
+test_any([[
+  Test test=Test();
+  test["one"]=1;
+  test["two"]=3;
+  test["three"]="klm";
+  return (string)test;
+]], "\1\0\3klm")
+test_any([[
+  Test test=Test();
+  return sprintf("%O%O%O", test->one, test->two, test->three);
+]], "02\"\\0\\0\\0\"")
+test_any([[
+  Test test=Test();
+  return sprintf("%O%O%O", test["one"], test["two"], test["three"]);
+]], "02\"\\0\\0\\0\"")
+test_any([[
+  Test test=Test();
+  test->decode("123456");
+  return test->encode();
+]], "123456")
+test_eval_error([[
+  Test test=Test();
+  test->one=-1;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->one=256;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->two=-1;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->two=65536;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->three="";
+]])
+test_eval_error([[
+  Test test=Test();
+  test->three="xx\0777";
+]])
+test_do( add_constant("Test") )
+test_do([[
+  class Test {
+    inherit ADT.Struct;
+  };
+  add_constant( "Test", Test );
+]])
+test_equal( sizeof(Test()), 0 )
+test_equal( indices(Test()), ({}) )
+test_equal( values(Test()), ({}) )
+test_equal( (string)Test(), "" )
+test_do( Test()->decode("123") )
+test_do( Test()->decode("") )
+test_do( add_constant("Test") )
+test_any([[
+  class Test {
+    inherit ADT.Struct;
+    Item one = Byte(1);
+    Item two = Word();
+    Item three = Chars(3, "klm");
+  };
+  return (string)Test();
+]], "\1\0\0klm")
 
 
 dnl - ADT.Table
