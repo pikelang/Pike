@@ -296,6 +296,8 @@ static void f_signal(int args)
   int signum;
   sigfunctype func;
 
+  check_signals(0,0,0);
+
   if(args < 1)
     error("Too few arguments to signal()\n");
 
