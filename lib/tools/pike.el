@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.32 2001/05/20 05:16:59 mast Exp $
+;;; $Id: pike.el,v 1.33 2001/05/20 23:42:06 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -581,7 +581,7 @@ reposition the cursor to fontify more identifiers."
     ;; Labels in statements:
     (,(concat "\\<\\(break\\|continue\\)\\s *"
 	      pike-font-lock-identifier-regexp)
-     2 font-lock-constant-face)))
+     2 ,font-lock-constant-face)))
 
 (defconst pike-font-lock-more
   (append `(("^#!.*$" 0 font-lock-comment-face)
@@ -613,11 +613,11 @@ reposition the cursor to fontify more identifiers."
 	    ("^[ \t]*#[ \t]*\\(el\\)?if\\>"
 	     ("\\<\\(defined\\|efun\\|constant\\)\\>[ \t]*(?\\(\\w+\\)?"
 	      nil nil
-	      (1 font-lock-preprocessor-face)
+	      (1 ,font-lock-preprocessor-face)
 	      (2 font-lock-variable-name-face nil t)))
 
 	    ("^[ \t]*\\(#[ \t]*[a-z]+\\)\\>[ \t]*\\([^0-9\n\r]*\\)?"
-	     (1 font-lock-preprocessor-face)
+	     (1 ,font-lock-preprocessor-face)
 	     (2 font-lock-variable-name-face nil t)))
 
 	  pike-font-lock-some
@@ -626,7 +626,7 @@ reposition the cursor to fontify more identifiers."
 	    (,(concat "\\<case\\>\\s *\\("
 		      pike-font-lock-qualified-identifier
 		      "\\):")
-	     1 font-lock-constant-face)
+	     1 ,font-lock-constant-face)
 
 	    ;; Scope references.
 	    (,(function
@@ -640,7 +640,7 @@ reposition the cursor to fontify more identifiers."
 		   ;; Must back up the last bit since it can be the next
 		   ;; identifier to match.
 		   (goto-char (match-beginning 3)))))
-	     1 font-lock-constant-face)
+	     1 ,font-lock-constant-face)
 
 	    ;; Inherits.
 	    (,(concat "\\<inherit\\s +"
@@ -649,7 +649,7 @@ reposition the cursor to fontify more identifiers."
 		      pike-font-lock-semantic-whitespace ; 6-8
 		      pike-font-lock-identifier-regexp ; 9
 		      "\\)?")
-	     (9 font-lock-constant-face nil t)
+	     (9 ,font-lock-constant-face nil t)
 	     (,(function
 		(lambda (limit)
 		  (when (looking-at (pike-font-lock-concat-const
@@ -676,7 +676,7 @@ reposition the cursor to fontify more identifiers."
     ;; Labels. Do this after the type font locking to avoid
     ;; highlighting "int" in "mapping(int:string)" as a label.
     (pike-font-lock-find-label
-     1 font-lock-constant-face)))
+     1 ,font-lock-constant-face)))
 
 (defconst pike-font-lock-keywords-1
   (append pike-font-lock-some
@@ -726,7 +726,7 @@ types are recognized.")
 	    (pike-font-lock-find-autodoc
 	     (1 pike-font-lock-refdoc-init2-face prepend)
 	     (2 pike-font-lock-refdoc-init-face prepend)
-	     (3 font-lock-builtin-face t t)
+	     (3 ,font-lock-builtin-face t t)
 	     (3 pike-font-lock-refdoc-keyword-face prepend t)
 	     (10 pike-font-lock-refdoc-face prepend t)
 
@@ -770,7 +770,7 @@ types are recognized.")
 	      (progn (goto-char (or (match-end 5) pike-font-lock-real-limit))
 		     nil)
 	      nil
-	      (4 font-lock-builtin-face)
+	      (4 ,font-lock-builtin-face)
 	      (6 font-lock-function-name-face nil t)
 	      (7 font-lock-variable-name-face nil t))
 
@@ -785,9 +785,9 @@ types are recognized.")
 	      (progn (goto-char (or (match-end 5) (match-end 2)))
 		     nil)
 	      nil
-	      (1 font-lock-builtin-face t t)
+	      (1 ,font-lock-builtin-face t t)
 	      (1 pike-font-lock-refdoc-keyword-face prepend t)
-	      (4 pike-font-lock-refdoc-error-face t t))
+	      (4 ,pike-font-lock-refdoc-error-face t t))
 
 	     ;; Markup line continuations. Uses match 8 or 15 in
 	     ;; pike-font-lock-autodoc-comment to decide whether
