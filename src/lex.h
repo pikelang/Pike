@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.25 2002/11/02 13:39:28 grubba Exp $
+|| $Id: lex.h,v 1.26 2002/11/02 15:21:01 grubba Exp $
 */
 
 #ifndef LEX_H
@@ -36,6 +36,7 @@ struct keyword
 #define I_HASARG2	16	/* Instruction has a second parameter. */
 #define I_HASPOINTER	32	/* Instruction is followed by a F_POINTER. */
 #define I_PC_AT_NEXT	64	/* Opcode needs PC to be updated. */
+#define I_BRANCH	128	/* Opcode is a clean branch instruction. */
 
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
 #define I_DATA		(I_HASARG | I__DATA)
@@ -43,6 +44,9 @@ struct keyword
 #define I_ISJUMP	(I_HASARG | I_POINTER | I_JUMP)
 #define I_ISJUMPARG	(I_HASARG | I_HASPOINTER | I_JUMP)
 #define I_ISJUMPARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP)
+#define I_ISBRANCH	(I_HASARG | I_POINTER | I_JUMP | I_BRANCH)
+#define I_ISBRANCHARG	(I_HASARG | I_HASPOINTER | I_JUMP | I_BRANCH)
+#define I_ISBRANCHARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP | I_BRANCH)
 #define I_IS_MASK	(I_TWO_ARGS | I_POINTER | I_HASPOINTER | I_JUMP)
 
 /* Valid masked flags:
