@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.113 2003/02/01 15:43:50 mast Exp $
+|| $Id: builtin.cmod,v 1.114 2003/02/01 16:00:25 mast Exp $
 */
 
 #include "global.h"
@@ -336,13 +336,13 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *!   trace levels, when @[facility] isn't specified, are:
  *!
  *!   @int
- *!   @item 1
+ *!   @value 1
  *!  	Trace calls to Pike functions and garbage collector runs.
- *!   @item 2
+ *!   @value 2
  *!  	Trace calls to builtin functions.
- *!   @item 3
+ *!   @value 3
  *!  	Trace every interpreted opcode.
- *!   @item 4
+ *!   @value 4
  *!  	Also trace the opcode arguments.
  *!   @endint
  *!
@@ -350,7 +350,7 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *!   Valid facilities are:
  *!
  *!   @string
- *!   @item "gc"
+ *!   @value "gc"
  *!     Trace the start and end of each run of the garbage collector.
  *!     The setting is never thread local.
  *!   @endstring
