@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.55 2004/02/26 21:51:17 agehall Exp $
+// $Id: Readline.pike,v 1.56 2004/11/02 20:01:53 grubba Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -683,7 +683,11 @@ class InputController
   {
     if (k[..1]=="\\!")
       k = term->tgetstr(k[2..]);
-    else for(int i=0; i<sizeof(k); i++)
+    else if (k[..3]=="^[\\!") {
+      // Kludge for symbolic meta in bind table.
+      if (k = term->tgetstr(k[4..]))
+	k = "\033" + k;
+    } else for(int i=0; i<sizeof(k); i++)
       switch(k[i])
       {
       case '\\':
@@ -831,6 +835,14 @@ class DefaultEditKeys
   {
     int p = _readline->getcursorpos();
     _readline->delete(p-1,p);
+  }
+
+  //!
+  void delete_char()
+  {
+    int p = _readline->getcursorpos();
+    if (p<sizeof(_readline->gettext()))
+      _readline->delete(p,p+1);
   }
 
   //!
@@ -1072,11 +1084,29 @@ class DefaultEditKeys
     ({ "^W", kill_region }),
     ({ "^Y", yank }),
     ({ "^?", backward_delete_char }),
+    ({ "^X^X", swap_mark_and_point }),
+    // Termcap-style
     ({ "\\!ku", up_history }),
     ({ "\\!kd", down_history }),
     ({ "\\!kr", forward_char }),
     ({ "\\!kl", backward_char }),
-    ({ "^X^X", swap_mark_and_point }),
+    ({ "\\!kD", delete_char }),
+    ({ "\\!kb", backward_delete_char }),
+    ({ "^[\\!kD", kill_word }),
+    ({ "^[\\!kb", backward_kill_word }),
+    ({ "\\!kh", beginning_of_line }),
+    // Terminfo-style
+    ({ "\\!kcuu1", up_history }),
+    ({ "\\!kcud1", down_history }),
+    ({ "\\!kcuf1", forward_char }),
+    ({ "\\!kcub1", backward_char }),
+    ({ "\\!kdch1", delete_char }),
+    ({ "\\!kbs", backward_delete_char }),
+    ({ "^[\\!kdch1", kill_word }),
+    ({ "^[\\!kbs", backward_kill_word }),
+    ({ "\\!khome", beginning_of_line }),
+    ({ "\\!kend", end_of_line }),
+    ({ "\\!kent", newline }),
   });
 
   //!
