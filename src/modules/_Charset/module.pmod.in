@@ -26,9 +26,31 @@ class ascii {
 
 private class UTF16dec {
   inherit ascii;
+  static int check_bom=1, le=0;
   string drain() {
-    return unicode_to_string(::drain());
+    string s = ::drain();
+    if(sizeof(s)&1) {
+      feed(s[sizeof(s)-1..]);
+      s = s[..sizeof(s)-2];
+    }
+    if(check_bom && sizeof(s))
+      switch(s[..1]) {
+       case "\xfe\xff":
+       case "\xff\xfe":
+	 le=(s[0]==0xff);
+	 s=s[2..];
+       default:
+	 check_bom=0;
+      }
+    if(le)
+      s = map(s/2, reverse)*"";
+    return unicode_to_string(s);
   }
+}
+
+private class UTF16LEdec {
+  inherit UTF16dec;
+  static void create() { le=1; }
 }
 
 //! @belongs Locale.Charset
@@ -59,6 +81,8 @@ object(ascii) decoder(string name)
     "utf-7": UTF7dec,
     "utf-8": UTF8dec,
     "utf-16": UTF16dec,
+    "utf-16be": UTF16dec,
+    "utf-16le": UTF16LEdec,
     "utf-7.5": UTF7_5dec,
     "utf-7½": UTF7_5dec,
     "shift_jis": ShiftJisDec,
@@ -165,6 +189,13 @@ private class UTF16enc {
   }
 }
 
+private class UTF16LEenc {
+  inherit UTF16enc;
+  string drain() {
+    return map(::drain()/2, reverse)*"";
+  }
+}
+
 //! @belongs Locale.Charset
 //! Returns a charset encoder object.
 //! @param name
@@ -194,6 +225,8 @@ object(_encoder) encoder(string name, string|void replacement,
     "utf-7": UTF7enc,
     "utf-8": UTF8enc,
     "utf-16": UTF16enc,
+    "utf-16be": UTF16enc,
+    "utf-16le": UTF16LEenc,
     "utf-7.5": UTF7_5enc,
     "utf-7½": UTF7_5enc,
     "shift_jis": ShiftJisEnc,
