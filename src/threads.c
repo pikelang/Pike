@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.67 1998/04/09 02:48:40 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.68 1998/04/13 14:31:59 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -159,12 +159,14 @@ struct thread_starter
 void exit_threads_disable(struct object *o)
 {
   if(threads_disabled) threads_disabled--;
+  /* fprintf(stderr, "exit_threads_disable(): threads_disabled:%d\n", threads_disabled); */
   co_broadcast(&threads_disabled_change);
 }
 
 void init_threads_disable(struct object *o)
 {
   threads_disabled++;
+  /* fprintf(stderr, "init_threads_disable(): threads_disabled:%d\n", threads_disabled); */
   while (live_threads) {
     THREADS_FPRINTF((stderr,
 		     "_disable_threads(): Waiting for %d threads to finish\n",
@@ -312,6 +314,11 @@ void *new_thread_func(void * data)
   thread_id=arg.id;
   SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
   ((struct thread_state *)thread_id->storage)->swapped=0;
+#ifdef THREAD_TRACE
+  {
+    t_flag = default_t_flag;
+  }
+#endif /* THREAD_TRACE */
 
   THREADS_FPRINTF((stderr,"THREAD %08x INITED\n",(unsigned int)thread_id));
   if(SETJMP(back))

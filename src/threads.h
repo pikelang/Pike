@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.40 1998/03/28 14:58:31 grubba Exp $
+ * $Id: threads.h,v 1.41 1998/04/13 14:32:35 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -250,6 +250,9 @@ struct thread_state {
   int mark_stack_malloced;
   JMP_BUF *recoveries;
   struct object * thread_id;
+#ifdef THREAD_TRACE
+  int t_flag;
+#endif /* THREAD_TRACE */
 };
 
 #ifndef th_destroy
@@ -277,6 +280,14 @@ struct thread_state {
 #define THREADS_FPRINTF(X)	fprintf X
 #endif /* VERBOSE_THREADS_DEBUG */
 
+#ifdef THREAD_TRACE
+#define SWAP_OUT_TRACE(_tmp)	do { extern int t_flag; (_tmp)->t_flag = t_flag; } while(0)
+#define SWAP_IN_TRACE(_tmp)	do { extern int t_flag; t_flag = (_tmp)->t_flag; } while(0)
+#else /* !THREAD_TRACE */
+#define SWAP_OUT_TRACE(_tmp)
+#define SWAP_IN_TRACE(_tmp)
+#endif /* THREAD_TRACE */
+
 #define SWAP_OUT_THREAD(_tmp) do { \
        (_tmp)->swapped=1; \
        (_tmp)->evaluator_stack=evaluator_stack;\
@@ -288,6 +299,7 @@ struct thread_state {
        (_tmp)->recoveries=recoveries;\
        (_tmp)->sp=sp; \
        (_tmp)->thread_id=thread_id;\
+       SWAP_OUT_TRACE(_tmp); \
       } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {\
@@ -301,6 +313,7 @@ struct thread_state {
        recoveries=(_tmp)->recoveries;\
        sp=(_tmp)->sp;\
        thread_id=(_tmp)->thread_id;\
+       SWAP_IN_TRACE(_tmp); \
      } while(0)
 
 #define SWAP_OUT_CURRENT_THREAD() \
