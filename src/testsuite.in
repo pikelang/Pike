@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.249 1999/12/08 11:31:43 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.250 1999/12/08 16:27:20 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -107,6 +107,11 @@ test_any([[class Foo { array(string) _values() {return ({""});} };
 	  object(Foo) foo;
 	  return typeof(values(foo)); ]],
 	 "array(string)")
+
+test_any([[mapping(string:int) foo;
+	  array(string) bar;
+	  return typeof(rows(foo, bar)); ]],
+	 "array(int)")
 
 test_compile_any([[
   constant FOO = 0;
@@ -2568,6 +2573,10 @@ test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
 test_true(stringp(__TIME__))
+test_true(floatp(__VERSION__))
+test_true(intp(__MAJOR__))
+test_true(intp(__MINOR__))
+test_true(intp(__BUILD__))
 
 // #define
 test_any([[
