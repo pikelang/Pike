@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.96 2001/12/16 02:49:38 mast Exp $
+ * $Id: cpp.c,v 1.97 2001/12/19 23:51:19 mast Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -60,7 +60,9 @@ struct pike_predef_s
   char *value;
 };
 
-static struct pike_predef_s *pike_predefs=0;
+static int use_initial_predefs;
+static struct pike_predef_s *first_predef = NULL, *last_predef = NULL;
+
 struct define_part
 {
   int argument;
@@ -211,6 +213,22 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   this->compat_minor=minor;
 }
 
+static struct mapping *initial_predefs_mapping()
+{
+  struct pike_predef_s *def;
+  struct mapping *map = allocate_mapping (0);
+#ifdef PIKE_DEBUG
+  if (!use_initial_predefs) fatal ("Initial predefs has been taken over.\n");
+#endif
+  for (def = first_predef; def; def = def->next) {
+    push_string (make_shared_string (def->name));
+    push_string (make_shared_string (def->value));
+    mapping_insert (map, sp - 2, sp - 1);
+    pop_n_elems (2);
+  }
+  return map;
+}
+
 /* devours one reference to 'name'! */
 static struct define *alloc_empty_define(struct pike_string *name,
 					 ptrdiff_t parts)
@@ -260,6 +278,17 @@ static void do_magic_define(struct cpp *this,
 {
   struct define* def=alloc_empty_define(make_shared_string(name),0);
   def->magic=fun;
+  this->defines=hash_insert(this->defines, & def->link);
+}
+
+static void add_define(struct cpp *this,
+		       struct pike_string *name,
+		       struct pike_string *what)
+{
+  struct define* def;
+  add_ref (name);
+  def=alloc_empty_define(name,0);
+  add_ref (def->first = what);
   this->defines=hash_insert(this->defines, & def->link);
 }
 
@@ -1464,7 +1493,7 @@ static int do_safe_index_call(struct pike_string *s)
 void f_cpp(INT32 args)
 {
   struct pike_string *data;
-  struct pike_predef_s *tmpf;
+  struct mapping *predefs = NULL;
   struct svalue *save_sp = sp - args;
   struct cpp this;
   int auto_convert = 0;
@@ -1537,6 +1566,67 @@ void f_cpp(INT32 args)
     this.current_file=make_shared_string("-");
   }
 
+  this.compat_major=PIKE_MAJOR_VERSION;
+  this.compat_minor=PIKE_MINOR_VERSION;
+  if(args > 5)
+  {
+    cpp_change_compat(&this, sp[4-args].u.integer, sp[5-args].u.integer);
+  }
+
+  if (use_initial_predefs)
+    /* Typically compiling the master here. */
+    predefs = initial_predefs_mapping();
+  else {
+    low_unsafe_apply_handler ("get_predefines", this.handler, this.compat_handler, 0);
+    if (!UNSAFE_IS_ZERO (sp - 1)) {
+      struct keypair *k;
+      int e, sprintf_args = 0;
+      if (sp[-1].type != T_MAPPING) {
+	push_constant_text ("Invalid return value from get_predefines\n");
+	push_constant_text ("Invalid return value from get_predefines, got %O\n");
+	push_svalue (sp - 3);
+	sprintf_args = 2;
+      }
+      else {
+	predefs = copy_mapping (sp[-1].u.mapping);
+	NEW_MAPPING_LOOP (predefs->data) {
+	  if (k->ind.type != T_STRING || !k->ind.u.string->len) {
+	    push_constant_text ("Expected nonempty string as predefine name\n");
+	    push_constant_text ("Expected nonempty string as predefine name, got %O\n");
+	    push_svalue (&k->ind);
+	    sprintf_args = 2;
+	    free_mapping (predefs);
+	    predefs = NULL;
+	    goto predef_map_error;
+	  }
+	  if (k->val.type != T_STRING &&
+	      (k->val.type != T_INT || k->val.u.integer)) {
+	    push_constant_text ("Expected zero or string value for predefine\n");
+	    push_constant_text ("Expected zero or string value for predefine %O\n");
+	    push_svalue (&k->ind);
+	    sprintf_args = 2;
+	    free_mapping (predefs);
+	    predefs = NULL;
+	    goto predef_map_error;
+	  }
+	}
+      }
+      if (!predefs) {
+      predef_map_error:
+	free_string (data);
+	free_string (this.current_file);
+	if (this.handler) free_object (this.handler);
+	if (this.compat_handler) free_object (this.compat_handler);
+	f_sprintf (sprintf_args);
+	if (!sp[-1].u.string->size_shift)
+	  Pike_error ("%s", sp[-1].u.string->str);
+	else
+	  Pike_error ("%s", sp[-2].u.string->str);
+      }
+    }
+    pop_stack();
+  }
+
   if (auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
     struct pike_string *new_data = recode_string(data);
@@ -1554,8 +1644,6 @@ void f_cpp(INT32 args)
   this.current_line=1;
   this.compile_errors=0;
   this.defines=0;
-  this.compat_major=PIKE_MAJOR_VERSION;
-  this.compat_minor=PIKE_MINOR_VERSION;
 
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
@@ -1597,8 +1685,17 @@ void f_cpp(INT32 args)
 #endif
   }
 
-  for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)
-    simple_add_define(&this, tmpf->name, tmpf->value);
+  if (predefs) {
+    struct keypair *k;
+    int e;
+    NEW_MAPPING_LOOP (predefs->data) {
+      if (k->val.type == T_STRING)
+	add_define (&this, k->ind.u.string, k->val.u.string);
+      else
+	add_define (&this, k->ind.u.string, empty_string);
+    }
+    free_mapping (predefs);
+  }
 
   string_builder_binary_strcat(&this.buf, "# 1 ", 4);
   PUSH_STRING_SHIFT(this.current_file->str, this.current_file->len,
@@ -1608,11 +1705,6 @@ void f_cpp(INT32 args)
 #ifdef PIKE_DEBUG
   SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
 #endif /* PIKE_DEBUG */
-
-  if(args > 5)
-  {
-    cpp_change_compat(&this, sp[4-args].u.integer, sp[5-args].u.integer);
-  }
 
 
   low_cpp(&this, data->str, data->len, data->size_shift,
@@ -1652,8 +1744,30 @@ void f_cpp(INT32 args)
   }
 }
 
+void f__take_over_initial_predefines (INT32 args)
+{
+  pop_n_elems (args);
+  if (use_initial_predefs) {
+    struct pike_predef_s *tmp;
+    push_mapping (initial_predefs_mapping());
+    use_initial_predefs = 0;
+
+    while((tmp=first_predef))
+    {
+      free(tmp->name);
+      free(tmp->value);
+      first_predef=tmp->next;
+      free((char *)tmp);
+    }
+    last_predef = 0;
+  }
+  else Pike_error ("Initial predefines already taken over.\n");
+}
+
 void init_cpp()
 {
+  struct svalue s;
+
   defined_macro=alloc_empty_define(make_shared_string("defined"),0);
   defined_macro->magic=check_defined;
   defined_macro->args=1;
@@ -1662,14 +1776,27 @@ void init_cpp()
   constant_macro->magic=check_constant;
   constant_macro->args=1;
 
-  
+  use_initial_predefs = 1;
+
 /* function(string, string|void, int|string|void, object|void, int|void, int|void:string) */
   ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid)
 			       tOr(tInt,tOr(tStr,tVoid))
 			       tOr(tObj,tVoid)
 			       tOr(tInt,tVoid)
 			       tOr(tInt,tVoid)
-			       , tStr), OPT_EXTERNAL_DEPEND);
+			       , tStr),
+	   /* OPT_SIDE_EFFECT since we might instantiate modules etc. */
+	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  /* Somewhat tricky to add a _constant_ function in _static_modules.Builtin. */
+  s.type = T_FUNCTION;
+  s.subtype = FUNCTION_BUILTIN;
+  s.u.efun = make_callable (f__take_over_initial_predefines,
+			    "_take_over_initial_predefines",
+			    "function(void:mapping(string:string))",
+			    OPT_SIDE_EFFECT, NULL, NULL);
+  simple_add_constant ("_take_over_initial_predefines", &s, 0);
+  free_svalue (&s);
 }
 
 
@@ -1692,19 +1819,23 @@ void add_predefine(char *s)
     tmp->value=(char *)xalloc(4);
     MEMCPY(tmp->value," 1 ",4);
   }
-  tmp->next=pike_predefs;
-  pike_predefs=tmp;
+  tmp->next = NULL;
+  if (first_predef) {
+    last_predef->next = tmp;
+    last_predef = tmp;
+  }
+  else first_predef = last_predef = tmp;
 }
 
 void exit_cpp(void)
 {
 #ifdef DO_PIKE_CLEANUP
   struct pike_predef_s *tmp;
-  while((tmp=pike_predefs))
+  while((tmp=first_predef))
   {
     free(tmp->name);
     free(tmp->value);
-    pike_predefs=tmp->next;
+    first_predef=tmp->next;
     free((char *)tmp);
   }
   free_string(defined_macro->link.s);

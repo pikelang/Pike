@@ -1,5 +1,5 @@
 /*
- * $Id: cpp.h,v 1.4 1998/03/28 15:00:07 grubba Exp $
+ * $Id: cpp.h,v 1.5 2001/12/19 23:51:19 mast Exp $
  */
 #ifndef CPP_H
 #define CPP_H
@@ -10,7 +10,6 @@ struct hash_entry;
 #endif
 
 /* Prototypes begin here */
-struct pike_predef_s;
 struct define_part;
 struct define_argument;
 struct define;
