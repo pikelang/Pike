@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.471 2001/11/10 19:33:15 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.472 2001/11/27 20:41:32 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -995,6 +995,13 @@ class Gnu
 }
 
 ]])
+
+test_any([[
+  int var;
+  void x() {var++;};
+  lambda () {x();}();
+  return var;
+]], 1);
 
 test_any([[
  Stdio.write_file("testsuite_test.pmod",
