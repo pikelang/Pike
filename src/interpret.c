@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.322 2003/08/07 23:11:22 mast Exp $
+|| $Id: interpret.c,v 1.323 2003/08/08 10:28:48 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.322 2003/08/07 23:11:22 mast Exp $");
+RCSID("$Id: interpret.c,v 1.323 2003/08/08 10:28:48 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1673,18 +1673,19 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 
 
-#define basic_low_return() 				\
-  struct svalue *save_sp=Pike_fp->save_sp;		\
-  DO_IF_DEBUG(						\
-    if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
-      Pike_fatal("Popped below save_mark_sp!\n");		\
-    if(Pike_sp<Pike_interpreter.evaluator_stack)	\
-      Pike_fatal("Stack error (also simple).\n");		\
+#define basic_low_return() do {				\
+    struct svalue *save_sp=Pike_fp->save_sp;		\
+    DO_IF_DEBUG(					\
+      if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
+        Pike_fatal("Popped below save_mark_sp!\n");	\
+      if(Pike_sp<Pike_interpreter.evaluator_stack)	\
+        Pike_fatal("Stack error (also simple).\n");	\
     )							\
 							\
     Pike_mark_sp=Pike_fp->save_mark_sp;			\
 							\
-  POP_PIKE_FRAME()
+    POP_PIKE_FRAME();					\
+  } while(0)
 
 
 void low_return(void)
