@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.603 2003/02/13 18:21:56 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.604 2003/02/19 00:52:33 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5388,6 +5388,10 @@ test_equal([[ array_sscanf("\51726\30212\66610\30131", "%*[ \t]%s")[0] ]],
 test_equal([[ array_sscanf("hej","%s") ]], [[ ({ "hej" }) ]])
 test_equal([[ array_sscanf("hej","%s%n") ]], [[ ({ "hej", 3 }) ]])
 test_eval_error([[ function f=array_sscanf; f("hej","%s% ") ]])
+
+test_equal([[ array_sscanf("\x304b\x3066\x3044\x308a\x3087\x3046\x308a", "%[^\x3042\x3044\x3046\x3048\x304a]") ]],
+    [[ "\x304b\x3066" ]])
+
 	
 test_any([[
 class Bar {
