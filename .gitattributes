@@ -45,7 +45,6 @@ testfont binary
 /src/modules/Image/blit_layer_include.h foreign_ident
 /src/modules/Image/colortable.c foreign_ident
 /src/modules/Image/dct.c foreign_ident
-/src/modules/Image/font.c foreign_ident
 /src/modules/Image/image.c foreign_ident
 /src/modules/Image/image.h foreign_ident
 /src/modules/Image/lzw.c foreign_ident
