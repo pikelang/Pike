@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.756 2003/12/17 22:04:50 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.757 2003/12/17 22:47:18 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -477,7 +477,11 @@ if test "x$enable_binary" = "xno"; then
   CC="$BINDIR/nobinary_dummy cc"
   RUNPIKE="USE_PIKE"
 else
-  RUNPIKE="DEFAULT_RUNPIKE"
+  if test "x$cross_compiling" = "xyes"; then
+    RUNPIKE="USE_PIKE"
+  else
+    RUNPIKE="DEFAULT_RUNPIKE"
+  fi
 fi
 AC_SUBST(RUNPIKE)
 
