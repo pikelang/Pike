@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.5 1998/04/20 18:53:38 grubba Exp $ */
+/* $Id: xwd.c,v 1.6 1998/05/09 14:18:13 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.5 1998/04/20 18:53:38 grubba Exp $
+**!	$Id: xwd.c,v 1.6 1998/05/09 14:18:13 mirar Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.5 1998/04/20 18:53:38 grubba Exp $");
+RCSID("$Id: xwd.c,v 1.6 1998/05/09 14:18:13 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -50,8 +50,19 @@ void f_index(INT32 args);
 /*
 **! method mapping _decode(string data)
 **!	Decodes XWD data and returns the result.
-**! 	
-**! see also: encode
+**!
+**!	Supported XWD visual classes and encoding formats are
+**!		TrueColor / ZPixmap
+**!		DirectColor / ZPixmap¹
+**!		PseudoColor / ZPixmap
+**!
+**!	¹supported, but wierd, since I didn't find any directcolor
+**!	tables in the file - currently decoded as truecolor.
+**!
+**!	If someone sends me files of other formats, these formats
+**!	may be implemented. <tt>:)</tt> /<tt>mirar@idonex.se</tt>
+**!
+**! see also: decode
 **!
 **! note
 **!	This function may throw errors upon illegal or unknown XWD data.
@@ -142,7 +153,6 @@ static void image_xwd__decode(INT32 args)
 
    if (header.file_version!=7)
       error("Image.XWD._decode: don't understand any other file format then 7\n");
-
    header.pixmap_format=CARD32n(s,2);    
    header.pixmap_depth=CARD32n(s,3);     
    header.pixmap_width=CARD32n(s,4);     
@@ -224,7 +234,10 @@ static void image_xwd__decode(INT32 args)
 
    /* the size of the header is 100 bytes, name is null-terminated */
    push_string(make_shared_string("windowname"));
-   push_string(make_shared_binary_string(s->str+100,header.header_size-100-1));
+   if (header.header_size>100)
+      push_string(make_shared_binary_string(s->str+100,header.header_size-100-1));
+   else 
+      push_int(0);
 
    /* header.ncolors XWDColor structs */
 
@@ -283,6 +296,8 @@ static void image_xwd__decode(INT32 args)
 	 s->str+(header.header_size+header.ncolors*12),
 	 s->len-(header.header_size+header.ncolors*12)));
 
+   fprintf(stderr,"f %d %d\n",header.visual_class,header.pixmap_format);
+
    switch (header.visual_class*100+header.pixmap_format)
    {
       /*
@@ -304,6 +319,17 @@ static void image_xwd__decode(INT32 args)
 	 push_int(header.blue_mask);
 	 image_x_decode_truecolor_masks(9);
 	 break;
+      case 502: /* DirectColor / ZPixmap */
+	 push_int(header.pixmap_width);
+	 push_int(header.pixmap_height);
+	 push_int(header.bits_per_pixel);
+	 push_int(header.bitmap_pad);
+	 push_int(header.byte_order==1);
+	 push_int(header.red_mask);
+	 push_int(header.green_mask);
+	 push_int(header.blue_mask);
+	 image_x_decode_truecolor_masks(9);
+	 break;
       case 302: /* PseudoColor / ZPixmap */
 	 push_int(header.pixmap_width);
 	 push_int(header.pixmap_height);
@@ -314,7 +340,7 @@ static void image_xwd__decode(INT32 args)
 	 image_x_decode_pseudocolor(7);
 	 break;
       default:
-	 pop_n_elems(1);
+	 pop_stack();
 	 push_int(0);
    }
 
