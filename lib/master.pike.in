@@ -1,3 +1,4 @@
+// -*- Pike -*-
 //
 // Master Control Program for Pike.
 //
@@ -5,7 +6,7 @@
 // Pike is distributed as GPL (General Public License)
 // See the files COPYING and DISCLAIMER for more information.
 //
-// $Id: master.pike.in,v 1.196 2002/04/30 15:59:20 nilsson Exp $
+// $Id: master.pike.in,v 1.197 2002/05/01 00:30:38 mast Exp $
 
 #pike __REAL_VERSION__
 
