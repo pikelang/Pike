@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.62 2003/03/31 14:26:42 per Exp $
+|| $Id: zlibmod.c,v 1.63 2003/04/14 17:10:57 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.62 2003/03/31 14:26:42 per Exp $");
+RCSID("$Id: zlibmod.c,v 1.63 2003/04/14 17:10:57 marcus Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -39,7 +39,6 @@ struct zipper
   int  level;
   int  state;
   struct z_stream_s gz;
-  gzFile gzfile;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
 #endif /* _REENTRANT */
@@ -84,9 +83,9 @@ struct zipper
  *! @[Gz.inflate()]
  */
 
-/*! @decl void create(int(0..9)|void X)
+/*! @decl void create(int(0..9)|void level, int|void strategy)
  *!
- *! If given, @[X] should be a number from 0 to 9 indicating the
+ *! If given, @[level] should be a number from 0 to 9 indicating the
  *! packing / CPU ratio. Zero means no packing, 2-3 is considered 'fast',
  *! 6 is default and higher is considered 'slow' but gives better packing.
  *!
@@ -96,10 +95,14 @@ struct zipper
  *! If the argument is negative, no headers will be emitted. This is
  *! needed to produce ZIP-files, as an example. The negative value is
  *! then negated, and handled as a positive value.
+ *!
+ *! @[strategy], if given, should be one of DEFAULT_STRATEGY, FILTERED or
+ *! HUFFMAN_ONLY.
  */
 static void gz_deflate_create(INT32 args)
 {
   int tmp, wbits = 15;
+  int strategy = Z_DEFAULT_STRATEGY;
   THIS->level=Z_DEFAULT_COMPRESSION;
 
   if(THIS->gz.state)
@@ -126,13 +129,25 @@ static void gz_deflate_create(INT32 args)
     }
   }
 
+  if(args>1)
+  {
+    if(sp[1-args].type != T_INT)
+      Pike_error("Bad argument 2 to gz->create()\n");
+    strategy=sp[1-args].u.integer;
+    if(strategy != Z_DEFAULT_STRATEGY && strategy != Z_FILTERED &&
+       strategy != Z_HUFFMAN_ONLY)
+    {
+      Pike_error("Invalid compression strategy for gz_deflate->create()\n");
+    }
+  }
+
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
 
   pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
-  tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, Z_DEFAULT_STRATEGY );
+  tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, strategy );
 /*   mt_unlock(& THIS->lock); */
   switch(tmp)
   {
@@ -560,312 +575,6 @@ static void gz_crc32(INT32 args)
    push_int((INT32)crc);
 }
 
-/*! @class _file
- *! Low-level implementation of read/write support for GZip files
- */
-
-/*! @decl int open(string|int file, void|string mode)
- *!   Opens a file for I/O.
- *! @param file
- *!   The filename or an open filedescriptor for the GZip file to use.
- *! @param mode
- *!   Mode for the fileoperations. Defaults to read only.
- *!
- *! @note
- *!   If the object already has been opened, it will first be closed.
- */
-void gz_file_open(INT32 args)
-{
-  char *mode = "rb";
-
-  if (THIS->gzfile!=NULL) {
-    gzclose(THIS->gzfile);
-    THIS->gzfile = NULL;
-  }
-
-  if (args<1 || args>2) {
-    Pike_error("Bad number of arguments to file->open()\n"
-	       "Got %d, expected 1 or 2.\n", args);
-  }
-
-  if (sp[-args].type != PIKE_T_STRING &&
-      sp[-args].type != PIKE_T_INT) {
-    Pike_error("Bad parameter 1 to file->open()\n");
-  }
-
-  if (args == 2 && sp[1-args].type != PIKE_T_STRING) {
-    Pike_error("Bad parameter 2 to file->open()\n");
-  } else if (args == 2) {
-    mode = STR0(sp[1-args].u.string);
-  }
-
-  if (sp[-args].type == PIKE_T_INT) {
-    /* FIXME: This is not likely to work on NT. */
-    THIS->gzfile = gzdopen(sp[-args].u.integer, mode);
-  } else {
-    THIS->gzfile = gzopen(STR0(sp[-args].u.string), mode);
-  }
-
-  pop_n_elems(args);
-  push_int(THIS->gzfile != NULL);
-}
-
-/*! @decl void create(void|string gzFile, void|string mode)
- *!   Opens a gzip file for reading.
- */
-void gz_file_create(INT32 args)
-{
-  THIS->gzfile = NULL;
-  if (args) {
-    gz_file_open(args);
-    if (sp[-1].u.integer == 0) {
-      Pike_error("Failed to open file.\n");
-    }
-    pop_stack();
-  }
-}
-
-/*! @decl int close()
- *! closes the file
- *! @returns 
- *!  1 if successful
- */
-void gz_file_close(INT32 args)
-{
-  if (args!=0) {
-    Pike_error("Bad number of arguments to file->close()\n"
-	       "Got %d, expected 0.\n", args);
-  }
-
-  if (THIS->gzfile!=NULL) {
-    gzclose(THIS->gzfile);
-    THIS->gzfile = NULL;
-  }
-
-  push_int(1);
-}
-
-/*! @decl int|string read(int len)
- *! Reads len (uncompressed) bytes from the file.
- *! If read is unsuccessful, 0 is returned.
- */
-void gz_file_read(INT32 args)
-{
-  struct pike_string *buf;
-  int len;
-  int res;
-
-  if (args!=1) {
-    Pike_error("Bad number of arguments to gz_file->read()\n"
-	       "Got %d, expected 1.\n", args);
-  }
-
-  if (sp[-args].type != PIKE_T_INT) {
-    Pike_error("Bad argument 1 to gz_file->read()\n");
-  }
-
-  if (THIS->gzfile == NULL) {
-    Pike_error("File not open!\n");
-  }
-
-  len = sp[-args].u.integer;
-
-  buf = begin_shared_string(len);
-
-  pop_n_elems(args);
-
-  res = gzread(THIS->gzfile, STR0(buf), len);
-
-  /* Check to make sure read went well */
-  if (res<0) {
-    push_int(0);
-    free_string(end_shared_string(buf));
-    return;
-  }
-
-  /* Make sure the returned string is the same length as
-   * the data read.
-   */
-  push_string(end_and_resize_shared_string(buf, res));
-}
-
-/*! @decl int write(string data)
- *! Writes the data to the file.
- *! @returns 
- *!  the number of bytes written to the file.
- */
-void gz_file_write(INT32 args)
-{
-  int res = 0;
-
-  if (args!=1) {
-    Pike_error("Bad number of arguments to gz_file->write()\n"
-	       "Got %d, expected 1.\n", args);
-  }
-
-  if (sp[-args].type != PIKE_T_STRING) {
-    Pike_error("Bad argument 1 to gz_file->write()\n");
-  }
-
-  if (THIS->gzfile == NULL) {
-    Pike_error("File not open!\n");
-  }
-
-  res = gzwrite(THIS->gzfile,
-		sp[-args].u.string->str,
-		(unsigned INT32)sp[-args].u.string->len);
-
-  pop_n_elems(args);
-  push_int(res);
-}
-
-#ifdef HAVE_GZSEEK
-/*! @decl int seek(int pos, void|int type)
- *!   Seeks within the file.
- *! @param pos
- *!   Position relative to the searchtype.
- *! @param type
- *!   SEEK_SET = set current position in file to pos
- *!   SEEK_CUR = new position is current+pos
- *!   SEEK_END is not supported.
- *! @returns 
- *!   New position or negative number if seek failed.
- *!
- *! @note
- *!   Not supported on all operating systems.
- */
-void gz_file_seek(INT32 args)
-{
-  int res, newpos;
-  int type = SEEK_SET;
-
-  if (args>2) {
-    Pike_error("Bad number of arguments to file->seek()\n"
-	       "Got %d, expected 1 or 2.\n", args);
-  }
-
-  if (sp[-args].type != PIKE_T_INT) {
-    Pike_error("Bad argument 1 to file->seek()\n");
-  }
-
-  if (args == 2 && sp[1-args].type != PIKE_T_INT) {
-    Pike_error("Bad argument 2 to file->seek()\n");
-  }
-  else if (args == 2) {
-    type = sp[1-args].u.integer;
-  }
-
-  if (THIS->gzfile == NULL) {
-    Pike_error("File not open!\n");
-  }
-
-  newpos = sp[-args].u.integer;
-
-  pop_n_elems(args);
-
-  res = gzseek(THIS->gzfile, newpos, type);
-
-  push_int(res);
-}
-#endif /* HAVE_GZSEEK */
-
-#ifdef HAVE_GZTELL
-/*! @decl int tell()
- *! @returns 
- *!  the current position within the file.
- *!
- *! @note
- *!   Not supported on all operating systems.
- */
-void gz_file_tell(INT32 args)
-{
-  if (args!=0) {
-    Pike_error("Bad number of arguments to file->tell()\n"
-	       "Got %d, expected 0.\n", args);
-  }
-
-  if (THIS->gzfile == NULL) {
-    Pike_error("File not open!\n");
-  }
-
-  push_int(gztell(THIS->gzfile));
-
-}
-#endif /* HAVE_GZTELL */
-
-#ifdef HAVE_GZEOF
-/*! @decl int(0..1) eof()
- *! @returns 
- *!  1 if EOF has been reached.
- *!
- *! @note
- *!   Not supported on all operating systems.
- */
-void gz_file_eof(INT32 args)
-{
-  if (args!=0) {
-    Pike_error("Bad number of arguments to file->eof()\n"
-	       "Got %d, expected 0.\n", args);
-  }
-
-  push_int(gzeof(THIS->gzfile));
-}
-#endif /* HAVE_GZEOF */
-
-#ifdef HAVE_GZSETPARAMS
-/*! @decl int setparams(int level, int strategy)
- *!   Sets the encoding level and strategy
- *! @param level
- *!   Level of the compression.
- *!   0 is the least compression, 9 is max. 8 is default.
- *! @param strategy
- *!   Set strategy for encoding to one of the following:
- *!   Z_DEFAULT_STRATEGY
- *!   Z_FILTERED
- *!   Z_HUFFMAN_ONLY
- *!
- *! @note
- *!   Not supported on all operating systems.
- */
-void gz_file_setparams(INT32 args)
-{
-  int res;
-  if (args!=2) {
-    Pike_error("Bad number of arguments to file->setparams()\n"
-	       "Got %d, expected 2.\n", args);
-  }
-
-  if (sp[-args].type != PIKE_T_INT ||
-      sp[1-args].type != PIKE_T_INT) {
-    Pike_error("Bad type in argument\n");
-  }
-
-  res = gzsetparams(THIS->gzfile,
-		    sp[-args].u.integer,
-		    sp[1-args].u.integer);
-
-  pop_n_elems(args);
-  push_int(res == Z_OK);
-}
-#endif /* HAVE_GZSETPARAMS */
-
-static void init_gz_file(struct object *o)
-{
-  mt_init(& THIS->lock);
-  THIS->gzfile = NULL;
-}
-
-static void exit_gz_file(struct object *o)
-{
-  if (THIS->gzfile != NULL)
-    gzclose(THIS->gzfile);
-
-  mt_destroy( & THIS->lock );
-}
-
-/*! @endclass
- */
-
 /*! @endmodule
  */
 #endif
@@ -878,8 +587,8 @@ PIKE_MODULE_INIT
   start_new_program();
   ADD_STORAGE(struct zipper);
   
-  /* function(int|void:void) */
-  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
+  /* function(int|void,int|void:void) */
+  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid),0);
   /* function(string,int|void:string) */
   ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr tOr(tInt,tVoid),tStr),0);
 
@@ -887,6 +596,9 @@ PIKE_MODULE_INIT
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
   add_integer_constant("SYNC_FLUSH",Z_SYNC_FLUSH,0);
   add_integer_constant("FINISH",Z_FINISH,0);
+  add_integer_constant("DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
+  add_integer_constant("FILTERED", Z_FILTERED,0);
+  add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
 
   set_init_callback(init_gz_deflate);
   set_exit_callback(exit_gz_deflate);
@@ -911,40 +623,13 @@ PIKE_MODULE_INIT
 
   end_class("inflate",0);
 
-  start_new_program();
-  ADD_STORAGE(struct zipper);
-
-  ADD_FUNCTION("create", gz_file_create, tFunc(tOr(tVoid, tString) tOr(tVoid, tString), tVoid), 0);
-  ADD_FUNCTION("open", gz_file_open, tFunc(tString tOr(tVoid, tString), tInt), 0);
-  ADD_FUNCTION("close", gz_file_close, tFunc(tVoid, tInt), 0);
-  ADD_FUNCTION("read", gz_file_read, tFunc(tInt,tOr(tString,tInt)), 0);
-  ADD_FUNCTION("write", gz_file_write, tFunc(tString,tInt), 0);
-#ifdef HAVE_GZSEEK
-  ADD_FUNCTION("seek", gz_file_seek, tFunc(tInt tOr(tVoid,tInt), tInt), 0);
-#endif /* HAVE_GZSEEK */
-#ifdef HAVE_GZTELL
-  ADD_FUNCTION("tell", gz_file_tell, tFunc(tVoid, tInt), 0);
-#endif /* HAVE_GZTELL */
-#ifdef HAVE_GZEOF
-  ADD_FUNCTION("eof", gz_file_eof, tFunc(tVoid, tInt), 0);
-#endif /* HAVE_GZEOF */
-#ifdef HAVE_GZSETPARAMS
-  ADD_FUNCTION("setparams", gz_file_setparams, tFunc(tInt tInt, tInt), 0);
-#endif /* HAVE_GZSETPARAMS */
-
-  add_integer_constant("SEEK_SET", SEEK_SET, 0);
-  add_integer_constant("SEEK_CUR", SEEK_CUR, 0);
-  add_integer_constant("Z_DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
-  add_integer_constant("Z_FILTERED", Z_FILTERED,0);
-  add_integer_constant("Z_HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
-  set_init_callback(init_gz_file);
-  set_exit_callback(exit_gz_file);
-  end_class("_file", 0);
-
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
   add_integer_constant("SYNC_FLUSH",Z_SYNC_FLUSH,0);
   add_integer_constant("FINISH",Z_FINISH,0);
+  add_integer_constant("DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
+  add_integer_constant("FILTERED", Z_FILTERED,0);
+  add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
 
   /* function(string,void|int:int) */
   ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),

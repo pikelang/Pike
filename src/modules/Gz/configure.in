@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.24 2002/09/10 14:31:26 grubba Exp $
+# $Id: configure.in,v 1.25 2003/04/14 17:10:57 marcus Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
@@ -68,9 +68,6 @@ int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
 
       AC_CHECK_GZ(z,[AC_CHECK_GZ(gz,[ ac_cv_lib_z_main=no ] ) ])
 
-      if test "x$done" = "xyes"; then
-        AC_HAVE_FUNCS(gzseek gztell gzeof gzsetparams)
-      fi
     fi
   fi
 fi

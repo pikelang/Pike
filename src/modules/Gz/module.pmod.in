@@ -1,9 +1,262 @@
-// $Id: module.pmod.in,v 1.8 2002/11/25 15:47:34 grubba Exp $
+// $Id: module.pmod.in,v 1.9 2003/04/14 17:10:57 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
 
-#if constant(@module@._file)
+//! Low-level implementation of read/write support for GZip files
+class _file {
+
+  static private Stdio.Stream f;
+  static private inflate inf;
+  static private deflate def;
+  static private int level, strategy;
+  static private string read_buf;
+  static private int file_pos, crc, write_mode;
+
+  constant SEEK_SET = 0;
+  constant SEEK_CUR = 1;
+  constant SEEK_END = 2;
+
+  static int check_header()
+  {
+    int magic1, magic2, method, flags, len;
+
+    if(sscanf(f->read(4), "%1c%1c%1c%1c", magic1, magic2, method, flags)!=4 ||
+       magic1 != 0x1f || magic2 != 0x8b)
+      return 0;
+
+    if(method != 8 || (flags & 0xe0))
+      return 0;
+
+    if(sizeof(f->read(6)) != 6)
+      return 0;
+
+    if(flags & 4)
+      if(sscanf(f->read(2), "%-2c", len) != 1 ||
+	 sizeof(f->read(len)) != len)
+	return 0;
+
+    if(flags & 8)
+      loop: for(;;)
+	switch(f->read(1)) {
+	case 0: case "": return 0;
+	case "\0": break loop;
+	}
+
+    if(flags & 16)
+      loop: for(;;)
+	switch(f->read(1)) {
+	case 0: case "": return 0;
+	case "\0": break loop;
+	}
+
+    if(flags & 2)
+      if(sizeof(f->read(2)) != 2)
+	return 0;
+    
+    return 1;    
+  }
+
+  static int make_header()
+  {
+    return f->write(sprintf("%1c%1c%1c%1c%4c%1c%1c",
+			    0x1f, 0x8b, 8, 0, 0, 0, 3)) == 10;
+  }
+
+  //! Opens a file for I/O.
+  //!
+  //! @param file
+  //!   The filename or an open filedescriptor or Stream for the GZip
+  //!   file to use.
+  //! @param mode
+  //!   Mode for the fileoperations. Defaults to read only.
+  //!
+  //! @note
+  //!   If the object already has been opened, it will first be closed.
+  int open(string|int|Stdio.Stream file, void|string mode)
+  {
+    close();
+    write_mode = 0;
+    level = 6;
+    strategy = DEFAULT_STRATEGY;
+    if(mode) {
+      mode = filter(mode, lambda(int n) {
+			    if(n == 'w' || n == 'a')
+			      write_mode = 1;
+			    if(n >= '0' && n <= '9')
+			      level = n - '0';
+			    else if(n == 'f')
+			      strategy = FILTERED;
+			    else if(n == 'h')
+			      strategy = HUFFMAN_ONLY;
+			    else
+			      return 1;
+			  });
+      if(write_mode) {
+	if(!has_value(mode, 'a'))
+	  mode += "t";
+	mode += "c";
+      }
+    }
+    file_pos = 0;
+    if(objectp(file))
+      f = file;
+    else {
+      f = Stdio.File();
+      if(!f->open(file, mode||"rb"))
+	return 0;
+    }
+    return write_mode? make_header() : check_header();
+  }  
+
+  //! Opens a gzip file for reading.
+  static void create(void|string|Stdio.Stream gzFile, void|string mode)
+  {
+    if(!zero_type(gzFile) && !open(gzFile, mode))
+      error("Failed to open file.\n");
+  }
+
+  //! closes the file
+  //! @returns 
+  //!  1 if successful
+  int close()
+  {
+    if(def) {
+      string s = def->deflate("", FINISH);
+      if(sizeof(s) && f->write(s) != sizeof(s))
+	return 0;
+      if(f->write(sprintf("%-4c%-4c", crc, file_pos)) != 8)
+	return 0;
+    }
+    inf = 0;
+    def = 0;
+    read_buf = "";
+    Stdio.File oldf = f;
+    f = 0;
+    return !oldf || oldf->close();
+  }
+
+  //! Reads len (uncompressed) bytes from the file.
+  //! If read is unsuccessful, 0 is returned.
+  int|string read(int len)  
+  {
+    if(!inf) inf = inflate(-15);
+    while(sizeof(read_buf) < len) {
+      string r = f->read(16384);
+      if(!sizeof(r))
+	break;
+      read_buf += inf->inflate(r);
+    }
+    string res = read_buf[..len-1];
+    read_buf = read_buf[len..];
+    file_pos += sizeof(res);
+    return res;
+  }
+
+  //! Writes the data to the file.
+  //! @returns 
+  //!  the number of bytes written to the file.
+  int write(string data)
+  {
+    if(!def) { def = deflate(-level, strategy); crc = crc32(""); }
+    string comp = def->deflate(data, NO_FLUSH);
+    if(f->write(comp) != sizeof(comp))
+      return 0;
+    else {
+      file_pos += sizeof(data);
+      crc = crc32(data, crc);
+      return sizeof(data);
+    }
+  }
+
+  //! Seeks within the file.
+  //! @param pos
+  //!   Position relative to the searchtype.
+  //! @param type
+  //!   SEEK_SET = set current position in file to pos
+  //!   SEEK_CUR = new position is current+pos
+  //!   SEEK_END is not supported.
+  //! @returns 
+  //!   New position or negative number if seek failed.
+  int seek(int pos, void|int type)
+  {
+    if(type != SEEK_SET && type != SEEK_CUR)
+      return -1;
+    if(write_mode) {
+      if(type == SEEK_SET)
+	pos -= file_pos;
+      if(pos < 0)
+	return -1;
+      while(pos > 0) {
+	int n = write("\0"*(pos>16384? 16384:pos));
+	if(!n)
+	  return -1;
+	pos -= n;
+      }
+      return file_pos;
+    } else {
+      if(type == SEEK_CUR)
+	pos += file_pos;
+      if(pos < 0)
+	return -1;
+      if(!f->seek || f->seek(0)<0)
+	return -1;
+      file_pos = 0;
+      read_buf = "";
+      while(pos > 0) {
+	string r = read(pos>16384? 16384:pos);
+	if(!sizeof(r))
+	  return -1;
+	pos -= sizeof(r);
+      }
+      return file_pos;
+    }
+  }
+
+  //! @returns 
+  //!  the current position within the file.
+  int tell()
+  {
+    return file_pos;
+  }
+
+  //! @returns 
+  //!  1 if EOF has been reached.
+  int(0..1) eof()
+  {
+    if(def || sizeof(read_buf)) return 0;
+    if(!inf) inf = inflate(-15);
+    string r = f->read(16384);
+    if(!sizeof(r))
+      return 1;
+    read_buf = inf->inflate(r);
+    return !sizeof(read_buf);
+  }
+
+  //! Sets the encoding level and strategy
+  //! @param level
+  //!   Level of the compression.
+  //!   0 is the least compression, 9 is max. 8 is default.
+  //! @param strategy
+  //!   Set strategy for encoding to one of the following:
+  //!   DEFAULT_STRATEGY
+  //!   FILTERED
+  //!   HUFFMAN_ONLY
+  int setparams(int level, int strategy)
+  {
+    if(def) {
+      string s = def->deflate("", FINISH);
+      if(sizeof(s) && f->write(s) != sizeof(s))
+	return 0;
+      def = 0;
+    }
+    _file::level = level;
+    _file::strategy = strategy;
+    return 1;
+  }
+
+}
+
 
 //! Allows the user to open a Gzip archive and read and write
 //! it's contents in an uncompressed form, emulating the @[Stdio.File]
@@ -19,9 +272,10 @@ class File {
 
   private int is_open = 0;
 
-  //! @decl void create(void|string|int file, void|string mode)
+  //! @decl void create(void|string|int|Stdio.Stream file, void|string mode)
   //! @param file
-  //! Filename or filedescriptor of the gzip file to open.
+  //! Filename or filedescriptor of the gzip file to open, or an already
+  //! open Stream.
   //! @param mode
   //! mode for the file. Defaults to "rb".
   //! @seealso
@@ -57,7 +311,8 @@ class File {
   }
 
   //! @param file
-  //! Filename or filedescriptor of the gzip file to open.
+  //! Filename or filedescriptor of the gzip file to open, or an already
+  //! open Stream.
   //! @param mode
   //! mode for the file. Defaults to "rb".
   //! May be one of the following:
@@ -73,7 +328,7 @@ class File {
   //! be specified. Please se zlib manual for more info.
   //! @returns 
   //!  non-zero if successful.
-  int open(string|int file, void|string mode) {
+  int open(string|int|Stdio.Stream file, void|string mode) {
     string open_mode="rb";
     if (is_open) {
       ::close();
@@ -107,4 +362,3 @@ class File {
   }
 }
 
-#endif /* constant(@module@._file) */
