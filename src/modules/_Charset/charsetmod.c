@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.5 1998/11/16 21:39:34 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.6 1998/11/16 22:44:45 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -26,7 +26,7 @@ static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
-static struct program *std_8bit_program = NULL;
+static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -48,6 +48,12 @@ struct utf7_stor {
   int shift, datbit;
 };
 static SIZE_T utf7_stor_offs = 0;
+
+struct std8e_stor {
+  p_wchar0 *revtab;
+  unsigned int lowtrans, lo, hi;
+};
+static SIZE_T std8e_stor_offs = 0;
 
 static SIGNED char rev64t['z'-'+'+1];
 static char fwd64t[64]=
@@ -312,6 +318,24 @@ static void f_feed_utf7(INT32 args)
   f_std_feed(args, feed_utf7);
 }
 
+static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
+{
+  struct std8e_stor *s8;
+  push_object(clone_object(std_8bite_program, args));
+  if((allargs-=args)>0) {
+    struct object *o = sp[-1].u.object;
+    add_ref(o);
+    pop_n_elems(allargs+1);
+    push_object(o);
+  }
+  s8 = (struct std8e_stor *)(sp[-1].u.object->storage+std8e_stor_offs);
+  memset((s8->revtab = xalloc((hi-lo)*sizeof(p_wchar0))), 0,
+	 (hi-lo)*sizeof(p_wchar0));
+  s8->lo = lo;
+  s8->hi = hi;
+  s8->lowtrans = 0;
+  return s8;
+}
 
 static void f_rfc1345(INT32 args)
 {
@@ -334,8 +358,36 @@ static void f_rfc1345(INT32 args)
     if((c = strcmp(STR0(str), charset_map[mid].name))==0) {
       struct program *p;
 
-      if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0)
-	error("No '%s' encoding today, sorry.\n", STR0(str));
+      if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
+	struct std8e_stor *s8;
+	int lowtrans, i;
+	unsigned int c;
+
+	switch(charset_map[mid].mode) {
+	case MODE_94: lowtrans=lo=33; hi=126; break;
+	case MODE_96: lowtrans=128; lo=160; hi=255; break;
+	case MODE_9494:
+	case MODE_9696:
+	  error("No '%s' encoding today, sorry.\n", STR0(str));
+	default:
+	  fatal("Internal error in rfc1345\n");
+	}
+	
+	s8 = push_std_8bite((args>2 && sp[2-args].type == T_STRING? args-2:0),
+			    args, lowtrans, 65536);
+
+	s8->lowtrans = lowtrans;
+	s8->lo = lowtrans;
+	s8->hi = lowtrans;
+
+	for(i=lo; i<=hi; i++)
+	  if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
+	    s8->revtab[c-lo]=i;
+	    if(c>=s8->hi)
+	      s8->hi = c+1;
+	  }
+	return;
+      }
 
       pop_n_elems(args);
       switch(charset_map[mid].mode) {
@@ -360,8 +412,24 @@ static void f_rfc1345(INT32 args)
   if(str->size_shift==0 &&
      (tabl = misc_charset_lookup(STR0(str), &lo, &hi))!=NULL) {
 
-    if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0)
-      error("No '%s' encoding today, sorry.\n", STR0(str));
+    if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
+      struct std8e_stor *s8;
+      int i;
+      unsigned int c;
+
+      s8 = push_std_8bite((args>2 && sp[2-args].type == T_STRING? args-2:0),
+			  args, lo, 65536);
+      s8->lowtrans = lo;
+      s8->lo = lo;
+      s8->hi = lo;
+      for(i=lo; i<=hi; i++)
+	if((c=tabl[i-lo])!=0xfffd && c>=s8->lo) {
+	  s8->revtab[c-lo]=i;
+	  if(c>=s8->hi)
+	    s8->hi = c+1;
+	}
+      return;
+    }
 
     pop_n_elems(args);
     push_object(clone_object(std_8bit_program, 0));
@@ -717,6 +785,8 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	}
     }
     break;
+  default:
+    fatal("Illegal shift size!\n");
   }
 
   u7->dat = dat;
@@ -755,6 +825,98 @@ static void f_drain_utf7e(INT32 args)
   }
   f_drain(args);
 }
+
+static void std_8bite_init_stor(struct object *o)
+{
+  struct std8e_stor *s8 =
+    (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
+
+  s8->revtab = NULL;
+  s8->lowtrans = 32;
+  s8->lo = 0;
+  s8->hi = 0;
+}
+
+static void std_8bite_exit_stor(struct object *o)
+{
+  struct std8e_stor *s8 =
+    (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
+
+  if(s8->revtab != NULL)
+    free(s8->revtab);
+}
+
+static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
+		       struct pike_string *str, struct pike_string *rep)
+{
+  INT32 l = str->len;
+  p_wchar0 *tab = s8->revtab;
+  unsigned int lowtrans = s8->lowtrans, lo = s8->lo, hi = s8->hi;
+  p_wchar0 ch;
+
+  switch(str->size_shift) {
+  case 0:
+    {
+      p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((c=*p++)<lowtrans)
+	  string_builder_putchar(sb, c);
+	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
+	  string_builder_putchar(sb, ch);
+	else if(rep != NULL)
+	  feed_std8e(s8, sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)<lowtrans)
+	  string_builder_putchar(sb, c);
+	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
+	  string_builder_putchar(sb, ch);
+	else if(rep != NULL)
+	  feed_std8e(s8, sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  case 2:
+    {
+      p_wchar2 c, *p = STR2(str);
+      while(l--)
+	if((c=*p++)<lowtrans)
+	  string_builder_putchar(sb, c);
+	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
+	  string_builder_putchar(sb, ch);
+	else if(rep != NULL)
+	  feed_std8e(s8, sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  default:
+    fatal("Illegal shift size!\n");
+  }
+}
+
+static void f_feed_std8e(INT32 args)
+{
+  struct pike_string *str;
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+
+  get_all_args("feed()", args, "%W", &str);
+
+  feed_std8e((struct std8e_stor *)(((char*)fp->current_storage)+
+				   std8e_stor_offs),
+	     &cs->strbuild, str, cs->replace);
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
 
 void pike_module_init(void)
 {
@@ -807,6 +969,14 @@ void pike_module_init(void)
   do_inherit(&prog, 0, NULL);
   add_function("feed", f_feed_utf8e, "function(string:object)", 0);
   add_program_constant("UTF8enc", utf8e_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  std8e_stor_offs = add_storage(sizeof(struct std8e_stor));
+  add_function("feed", f_feed_std8e, "function(string:object)", 0);
+  set_init_callback(std_8bite_init_stor);
+  set_exit_callback(std_8bite_exit_stor);
+  std_8bite_program = end_program();
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -875,6 +1045,9 @@ void pike_module_exit(void)
 
   if(std_8bit_program != NULL)
     free_program(std_8bit_program);
+
+  if(std_8bite_program != NULL)
+    free_program(std_8bite_program);
 
   if(std_rfc_program != NULL)
     free_program(std_rfc_program);
