@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.579 2002/04/08 03:04:58 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.580 2002/04/11 18:56:56 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1631,7 +1631,7 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
     $with_root/usr/gnu/include $with_root/opt/gnu/include \
     $with_root/sw/gnu/include $with_root/sw/include \
     $with_root/usr/freeware/include $with_root/usr/pkg/include \
-    `echo $with_root/usr/X11*/include | sort -r` $srcdir `pwd`
+    `echo $with_root/usr/X11*/include | sort -r`
   do
     AC_MSG_CHECKING($d)
     case x$d in
@@ -4642,7 +4642,7 @@ else :; fi
 #############################################################################
 
 if test "$with_machine_code" = "yes" ; then
-  AC_DEFINE_UNQUOTED(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_`echo $pike_cv_machine_code_arch | tr a-z A-Z`)
+  AC_DEFINE_UNQUOTED(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_`echo $pike_cv_machine_code_arch | tr '[a-z]' '[A-Z]'`)
   byte_code_format=$pike_cv_machine_code_arch
 elif test "x$pike_cv_gcc_computed_goto" = "xyes"; then
   AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_GOTO)
