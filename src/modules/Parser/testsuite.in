@@ -23,7 +23,7 @@ test_any([[
   if (catch {
     return p->finish("<t>")->read();
   }) return 1;
-]], 1)
+]], "<t>")
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "t");
@@ -80,7 +80,7 @@ test_any([[
   if (catch {
     return p->finish("&e;")->read();
   }) return 1;
-]], 1)
+]], "&e;")
 
 // Argument quoting
 test_any([[
