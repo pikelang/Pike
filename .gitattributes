@@ -39,6 +39,7 @@ testfont binary
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Protocols.pmod/Ident.pmod foreign_ident
 /lib/modules/Protocols.pmod/Line.pmod foreign_ident
+/lib/modules/Protocols.pmod/Ports.pmod foreign_ident
 /lib/modules/Protocols.pmod/TELNET.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Atom.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Auth.pmod foreign_ident
