@@ -40,14 +40,14 @@ class Class in the module Module. The XML skeleton of the file
 would then be:
 
   <module name="">
-    <module name="Module">
-      <class name="Class">
-          ... perhaps some info on inherits, members &c ...
-        <doc>
-           ... the documentation of the class Module.Class ...
-        </doc>
-      </class>
-    </module>
+      <module name="Module">
+          <class name="Class">
+              ... perhaps some info on inherits, members &c ...
+              <doc>
+                  ... the documentation of the class Module.Class ...
+              </doc>
+          </class>
+      </module>
   </module>
 
 The <module name=""> refers to the top module. That element, and its 
@@ -100,10 +100,10 @@ has two member variables, a and b, that are documented as a group:
     </module>
   </module>
 
-If all the children of a <docgroup> are of the same type, e.g. all are <method> 
-elements, then the <docgroup> has the attribute homogen-type (="method" in the 
-example). If all the children have identical name="..." attributes, then the 
-<docgroup> gets a homogen-name="..." attribute aswell.
+If all the children of a <docgroup> are of the same type, e.g. all are 
+<method> elements, then the <docgroup> has the attribute homogen-type 
+(="method" in the example). If all the children have identical name="..." 
+attributes, then the <docgroup> gets a homogen-name="..." attribute aswell.
 
 The <docgroup> has a <doc> child containing the docmentation for the other 
 children of the <docgroup>. An entity that cannot be grouped (class, module,
@@ -115,7 +115,8 @@ d) Pike entities
 
 Pike entities - classes, modules, methods, variables, constants, &c, have some
 things in common, and many parts of the xml format are the same for all of
-these entities. All entities are represented with an XML element, namely one of:
+these entities. All entities are represented with an XML element, namely one 
+of:
 
   <class>
   <constant>
@@ -202,7 +203,38 @@ entities:
    Only has a name. The element is empty (or has a <source-position> child.)
 
 <enum>
-   Works as a container ... ???
+   Works as a container. Has a <doc> child element with the documentation of
+   the enum itself, and <docgroup> elements with a <constant> for each enum
+   constant. So:
+
+     enum E
+     //! enum E
+     {
+       //! Three constants:
+       a, b, c,
+     
+       //! One more:
+       d
+     }
+
+   becomes:
+
+     <enum name="E">
+         <doc><text><p>enum E</p></text></doc>
+         <docgroup homogen-type="constant">
+             <doc><text><p>Three constants:</p></text></doc>
+             <constant name="a"/>
+             <constant name="b"/>
+             <constant name="c"/>
+         </docgroup>
+         <docgroup homogen-name="d" homogen-type="constant">
+             <doc><text><p>One more:</p></text></doc>
+             <constant name="d"/>
+         </docgroup>
+     </enum>
+     
+   Both the <enum> element and the <constant> elements could have 
+   <source-position> children, of course.
 
 <inherit> 
    The name="..." attribute gives the name after the colon, if any. The name
@@ -422,9 +454,9 @@ the document order place as a sibling of the <p> that contain the text:
 
 Inside the <p> elements, there may also be some more "layout-ish" tags like 
 <b>, <code>, <tt>, <i>, needed to make the text more readable. Those tags are
-expressed as @i{ ... @} in the doc markup. However there are no <br>. A paragraph
-break is done by ending the <p> and beginning a new. A </p><p> is inserted for
-each sequence of blank lines in the doc markup:
+expressed as @i{ ... @} in the doc markup. However there are no <br>. A 
+paragraph break is done by ending the <p> and beginning a new. A </p><p> is 
+inserted for each sequence of blank lines in the doc markup:
 
   //! First paragraph.
   //! 
@@ -436,6 +468,68 @@ each sequence of blank lines in the doc markup:
 
   <p>First paragraph.</p><p>Second paragraph.</p>
 
-Note that the text is trimmed from whitespaces in the end and in the beginning.
-And there are never any empty <p> elements.
+Note that the text is trimmed from leading and ending whitespaces, and there 
+are never any empty <p> elements.
 
+In the example above the keyword `@mapping' translated into <mapping>, whereas
+the keyword `@member string "zip-code"' translated into:
+  <member><type><string/></type><index>"zip-code"</index></member>
+
+The translation of keyword->XML is done differently for each keyword. How it
+is done can be seen in lib/modules/Tools.pmod/AutoDoc.pmod/DocParser.pmod. Most
+keywords just interpret the arguments as a space-separated list, and put their
+values in attributes to the element. In some cases (such as @member) though, 
+some more intricate parsing must be done, and the arguments may be complex 
+(like Pike types) and are represented as child elements of the element. 
+
+======================================================================
+g) Top level sections of different Pike entities.
+----------------------------------------------------------------------
+
+In every doc comment there is an implicit "top container", and subsections can
+be opened in it. E.g.:
+
+  //! A method.
+  //! @param x
+  //!   The horizontal coordinate.
+  //! @param y 
+  //!   The vertical coordinate.
+  //! @returns
+  //!   Nothing :)
+  void foo(int x, int y)
+
+becomes:
+
+  <docgroup homogen-name="foo" homogen-type="method">
+      <doc>
+          <text><p>A method.</p></text>
+          <group>
+              <param name="x"/>
+              <text><p>The horizontal coordinate.</p></text>
+          </group>
+          <group>
+              <param name="y"/>
+              <text><p>The vertical coordinate.</p></text>
+          </group>
+          <group>
+              <returns/>
+              <text><p>Nothing :)</p></text>
+          </group>
+      </doc>
+      <method name="foo">
+         ......
+      </method>
+  </docgroup>
+  
+Which "top container" subsections are allowed depends on what type of entity is
+documented:
+
+ALL      -  <bugs/>
+            <deprecated> ... </deprecated>
+            <example/>
+            <note/>
+            <seealso/>
+
+<method> -  <param name="..."/>
+            <returns/>
+            <throws/>
