@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.203 2003/02/10 10:53:25 grubba Exp $
+|| $Id: gc.c,v 1.204 2003/02/10 12:27:35 grubba Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.203 2003/02/10 10:53:25 grubba Exp $");
+RCSID("$Id: gc.c,v 1.204 2003/02/10 12:27:35 grubba Exp $");
 
 int gc_enabled = 1;
 
@@ -197,7 +197,7 @@ static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
 static double gc_time = 0.0, non_gc_time = 0.0;
 static cpu_time_t last_gc_end_time = 0;
-#if CPU_TIME_IS_THREAD_LOCAL == NO
+#if !defined(PIKE_THREADS) || (CPU_TIME_IS_THREAD_LOCAL == NO)
 cpu_time_t auto_gc_time = 0;
 #endif
 
