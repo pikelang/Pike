@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.31 2000/09/03 23:16:22 mast Exp $
+ * $Id: mapping.h,v 1.32 2000/12/14 07:23:04 mast Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -37,8 +37,7 @@ struct mapping_data
 };
 
 #undef MAPPING_SIZE_DEBUG
-/* This debug doesn't work with stealth_check_mapping_for_destruct and
- * gc_recurse_weak_mapping. */
+/* This debug doesn't work with weak mappings in the gc. */
 
 struct mapping
 {
