@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.50 2003/12/17 21:27:17 marcus Exp $
+|| $Id: fdlib.h,v 1.51 2004/05/01 20:18:02 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -423,6 +423,14 @@ typedef struct my_fd_set_s my_fd_set;
 #endif
 
 #endif /* Don't HAVE_WINSOCK */
+
+#ifndef S_ISREG
+#ifdef S_IFREG
+#define S_ISREG(mode)   (((mode) & (S_IFMT)) == (S_IFREG))
+#else /* !S_IFREG */
+#define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
+#endif /* S_IFREG */
+#endif /* !S_ISREG */
 
 PMOD_PROTO extern int pike_make_pipe(int *fds);
 PMOD_PROTO extern int fd_from_object(struct object *o);
