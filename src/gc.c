@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.103 2000/07/06 23:30:40 mast Exp $");
+RCSID("$Id: gc.c,v 1.104 2000/07/07 15:33:29 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1562,12 +1562,12 @@ int gc_do_free(void *a)
 static void warn_bad_cycles()
 {
   JMP_BUF uwp;
+  struct array *obj_arr = 0;
+
   if (!SETJMP(uwp)) {
     struct marker *p;
     unsigned cycle = 0;
-    ONERROR err;
-    struct array *obj_arr = allocate_array(0);
-    SET_ONERROR(err, do_free_array, obj_arr);
+    obj_arr = allocate_array(0);
 
     for (p = kill_list; p;) {
       if ((cycle = p->cycle)) {
@@ -1589,10 +1589,10 @@ static void warn_bad_cycles()
       }
       if (!p) break;
     }
-
-    CALL_AND_UNSET_ONERROR(err);
   }
+
   UNSETJMP(uwp);
+  if (obj_arr) free_array(obj_arr);
 }
 
 int do_gc(void)
