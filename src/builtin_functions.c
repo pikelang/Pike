@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.74 1998/02/27 08:39:13 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.75 1998/02/27 19:22:34 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -215,8 +215,13 @@ void f_search(INT32 args)
 	error("Bad argument 3 to search()\n");
 
       start=sp[2-args].u.integer;
+      if(start<0)
+	error("Start must be greater or equal to zero.\n");
     }
     len=sp[-args].u.string->len - start;
+
+    if(len<0)
+      error("Start must not be greater than the length of the string.\n");
 
     if(len>0 && (ptr=my_memmem(sp[1-args].u.string->str,
 			       sp[1-args].u.string->len,
