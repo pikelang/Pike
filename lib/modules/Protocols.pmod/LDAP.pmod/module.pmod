@@ -1,6 +1,73 @@
-// $Id: module.pmod,v 1.5 2005/03/11 15:33:38 mast Exp $
+// $Id: module.pmod,v 1.6 2005/03/11 16:49:57 mast Exp $
 
 #include "ldap_globals.h"
+
+//! LDAP result codes.
+//!
+//! @seealso
+//!   @[Protocols.LDAP.client.error_number],
+//!   @[Protocols.LDAP.client.result.error_number]
+constant LDAP_SUCCESS                    = 0x00;    /* 0 */
+constant LDAP_OPERATIONS_ERROR           = 0x01;    /* 1 */
+constant LDAP_PROTOCOL_ERROR             = 0x02;    /* 2 */
+constant LDAP_TIMELIMIT_EXCEEDED         = 0x03;    /* 3 */
+constant LDAP_SIZELIMIT_EXCEEDED         = 0x04;    /* 4 */
+constant LDAP_COMPARE_FALSE              = 0x05;    /* 5 */
+constant LDAP_COMPARE_TRUE               = 0x06;    /* 6 */
+constant LDAP_AUTH_METHOD_NOT_SUPPORTED  = 0x07;    /* 7 */
+constant LDAP_STRONG_AUTH_NOT_SUPPORTED  = LDAP_AUTH_METHOD_NOT_SUPPORTED;
+constant LDAP_STRONG_AUTH_REQUIRED       = 0x08;    /* 8 */
+constant LDAP_PARTIAL_RESULTS            = 0x09;    /* 9 (UMich LDAPv2 extn) */
+constant LDAP_REFERRAL                   = 0x0a;    /* 10 - LDAPv3 */
+constant LDAP_ADMINLIMIT_EXCEEDED        = 0x0b;    /* 11 - LDAPv3 */
+constant LDAP_UNAVAILABLE_CRITICAL_EXTENSION = 0x0c; /* 12 - LDAPv3 */
+constant LDAP_CONFIDENTIALITY_REQUIRED   = 0x0d;    /* 13 */
+constant LDAP_SASL_BIND_IN_PROGRESS      = 0x0e;    /* 14 - LDAPv3 */
+constant LDAP_NO_SUCH_ATTRIBUTE          = 0x10;    /* 16 */
+constant LDAP_UNDEFINED_TYPE             = 0x11;    /* 17 */
+constant LDAP_INAPPROPRIATE_MATCHING     = 0x12;    /* 18 */
+constant LDAP_CONSTRAINT_VIOLATION       = 0x13;    /* 19 */
+constant LDAP_TYPE_OR_VALUE_EXISTS       = 0x14;    /* 20 */
+constant LDAP_INVALID_SYNTAX             = 0x15;    /* 21 */
+constant LDAP_NO_SUCH_OBJECT             = 0x20;    /* 32 */
+constant LDAP_ALIAS_PROBLEM              = 0x21;    /* 33 */
+constant LDAP_INVALID_DN_SYNTAX          = 0x22;    /* 34 */
+constant LDAP_IS_LEAF                    = 0x23;    /* 35 (not used in LDAPv3) */
+constant LDAP_ALIAS_DEREF_PROBLEM        = 0x24;    /* 36 */
+constant LDAP_INAPPROPRIATE_AUTH         = 0x30;    /* 48 */
+constant LDAP_INVALID_CREDENTIALS        = 0x31;    /* 49 */
+constant LDAP_INSUFFICIENT_ACCESS        = 0x32;    /* 50 */
+constant LDAP_BUSY                       = 0x33;    /* 51 */
+constant LDAP_UNAVAILABLE                = 0x34;    /* 52 */
+constant LDAP_UNWILLING_TO_PERFORM       = 0x35;    /* 53 */
+constant LDAP_LOOP_DETECT                = 0x36;    /* 54 */
+constant LDAP_SORT_CONTROL_MISSING       = 0x3C;    /* 60 */
+constant LDAP_NAMING_VIOLATION           = 0x40;    /* 64 */
+constant LDAP_OBJECT_CLASS_VIOLATION     = 0x41;    /* 65 */
+constant LDAP_NOT_ALLOWED_ON_NONLEAF     = 0x42;    /* 66 */
+constant LDAP_NOT_ALLOWED_ON_RDN         = 0x43;    /* 67 */
+constant LDAP_ALREADY_EXISTS             = 0x44;    /* 68 */
+constant LDAP_NO_OBJECT_CLASS_MODS       = 0x45;    /* 69 */
+constant LDAP_RESULTS_TOO_LARGE          = 0x46;    /* 70 - CLDAP */
+constant LDAP_AFFECTS_MULTIPLE_DSAS      = 0x47;    /* 71 */
+constant LDAP_OTHER                      = 0x50;    /* 80 */
+constant LDAP_SERVER_DOWN                = 0x51;    /* 81 */
+constant LDAP_LOCAL_ERROR                = 0x52;    /* 82 */
+constant LDAP_ENCODING_ERROR             = 0x53;    /* 83 */
+constant LDAP_DECODING_ERROR             = 0x54;    /* 84 */
+constant LDAP_TIMEOUT                    = 0x55;    /* 85 */
+constant LDAP_AUTH_UNKNOWN               = 0x56;    /* 86 */
+constant LDAP_FILTER_ERROR               = 0x57;    /* 87 */
+constant LDAP_USER_CANCELLED             = 0x58;    /* 88 */
+constant LDAP_PARAM_ERROR                = 0x59;    /* 89 */
+constant LDAP_NO_MEMORY                  = 0x5a;    /* 90 */
+constant LDAP_CONNECT_ERROR              = 0x5b;    /* 91 */
+constant LDAP_NOT_SUPPORTED              = 0x5c;    /* 92 - LDAPv3 */
+constant LDAP_CONTROL_NOT_FOUND          = 0x5d;    /* 93 - LDAPv3 */
+constant LDAP_NO_RESULTS_RETURNED        = 0x5e;    /* 94 - LDAPv3 */
+constant LDAP_MORE_RESULTS_TO_RETURN     = 0x5f;    /* 95 - LDAPv3 */
+constant LDAP_CLIENT_LOOP                = 0x60;    /* 96 - LDAPv3 */
+constant LDAP_REFERRAL_LIMIT_EXCEEDED    = 0x61;    /* 97 - LDAPv3 */
 
 constant SEARCH_LOWER_ATTRS = 1;
 //! Bitfield flags given to @[Protocols.LDAP.client.search]:

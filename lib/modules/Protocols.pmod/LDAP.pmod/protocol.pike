@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.15 2004/10/14 00:20:48 bill Exp $
+// $Id: protocol.pike,v 1.16 2005/03/11 16:49:57 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -23,6 +23,8 @@
 
 #if constant(Standards.ASN1.Types)
 
+import Protocols.LDAP;
+
 #include "ldap_globals.h"
 
 #include "ldap_errors.h"
@@ -30,7 +32,7 @@
   // private variables 
   int next_id = 1;				// message id counter
   int ldap_version = LDAP_DEFAULT_VERSION;	// actually used protocol vers.
-  string ldap_rem_errstr = LDAP_SUCCESS_STR;	// last remote error description
+  string ldap_rem_errstr = ldap_errlist[LDAP_SUCCESS]; // last remote error description
   int ldap_errno = LDAP_SUCCESS;		// last error code
 
   /*private*/ string readbuf="";		// read buffer

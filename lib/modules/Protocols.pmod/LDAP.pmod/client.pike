@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.78 2005/03/11 15:33:38 mast Exp $
+// $Id: client.pike,v 1.79 2005/03/11 16:49:57 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -79,6 +79,8 @@
 import SSL.Constants;
 #endif
 
+import Protocols.LDAP;
+
 // ------------------------
 
 // ASN.1 decode macros
@@ -120,10 +122,10 @@ static function(string:string) get_attr_decoder (string attr,
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
     if (function(string:string) decoder =
-	Protocols.LDAP.syntax_decode_fns[attr_descr->syntax_oid])
+	syntax_decode_fns[attr_descr->syntax_oid])
       return decoder;
 #ifdef DEBUG
-    else if (!Protocols.LDAP.get_constant_name (attr_descr->syntax_oid))
+    else if (!get_constant_name (attr_descr->syntax_oid))
       werror ("Warning: Unknown syntax %O for attribute %O - "
 	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
 #endif
@@ -140,10 +142,10 @@ static function(string:string) get_attr_encoder (string attr)
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
     if (function(string:string) encoder =
-	Protocols.LDAP.syntax_encode_fns[attr_descr->syntax_oid])
+	syntax_encode_fns[attr_descr->syntax_oid])
       return encoder;
 #ifdef DEBUG
-    else if (!Protocols.LDAP.get_constant_name (attr_descr->syntax_oid))
+    else if (!get_constant_name (attr_descr->syntax_oid))
       werror ("Warning: Unknown syntax %O for attribute %O - "
 	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
 #endif
@@ -189,7 +191,7 @@ static function(string:string) get_attr_encoder (string attr)
 
       if (ldap_version < 3) {
 	// Use the values raw.
-	if (flags & Protocols.LDAP.SEARCH_LOWER_ATTRS)
+	if (flags & SEARCH_LOWER_ATTRS)
 	  DECODE_ENTRIES ({
 	    attrs[lower_case (ASN1_GET_ATTR_NAME (derattr))] =
 	      ASN1_GET_ATTR_VALUES (derattr);
@@ -206,7 +208,7 @@ static function(string:string) get_attr_encoder (string attr)
 	// schema. Note that attributes with the ";binary" option
 	// won't be matched by get_attr_type_descr and are therefore
 	// left untouched.
-	if (flags & Protocols.LDAP.SEARCH_LOWER_ATTRS)
+	if (flags & SEARCH_LOWER_ATTRS)
 	  DECODE_ENTRIES ({
 	    string attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
 	    if (function(string:string) decoder = get_attr_decoder (attr))
@@ -480,7 +482,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.78 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.79 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1395,10 +1397,10 @@ multiset(string) get_supported_controls()
     // Microsoft AD stuff that previously was added by default. There
     // doesn't appear to be a good reason for it. It's now possible
     // for the caller to do it, anyway. /mast
-    if (get_supported_controls()[Protocols.LDAP.LDAP_SERVER_DOMAIN_SCOPE_OID]) {
+    if (get_supported_controls()[LDAP_SERVER_DOMAIN_SCOPE_OID]) {
       // LDAP_SERVER_DOMAIN_SCOPE_OID
       // "Tells server not to generate referrals" (NtLdap.h)
-      common_controls += ({make_control (Protocols.LDAP.LDAP_SERVER_DOMAIN_SCOPE_OID)});
+      common_controls += ({make_control (LDAP_SERVER_DOMAIN_SCOPE_OID)});
     }
 #endif
 
@@ -1412,11 +1414,11 @@ multiset(string) get_supported_controls()
       PROFILE("send_search_op", {
 	  array ctrls = common_controls;
 	  IF_ELSE_PAGED_SEARCH (
-	    if (supported_controls[Protocols.LDAP.LDAP_PAGED_RESULT_OID_STRING]) {
+	    if (supported_controls[LDAP_PAGED_RESULT_OID_STRING]) {
 	      // LDAP Control Extension for Simple Paged Results Manipulation
 	      // RFC 2696.
 	      ctrls += ({make_control (
-			   Protocols.LDAP.LDAP_PAGED_RESULT_OID_STRING,
+			   LDAP_PAGED_RESULT_OID_STRING,
 			   Standards.ASN1.Types.asn1_sequence(
 			     ({
 			       // size
@@ -1463,7 +1465,7 @@ multiset(string) get_supported_controls()
 		continue;
 	      }
 	      if (control->elements[0]->value !=
-		  Protocols.LDAP.LDAP_PAGED_RESULT_OID_STRING) {
+		  LDAP_PAGED_RESULT_OID_STRING) {
 		//werror("Unknown control %O\n", control->elements[0]->value);
 		// FIXME: Should look at criticallity flag.
 		continue;
@@ -2015,7 +2017,7 @@ static mapping(string:mixed) parse_schema_terms (
 	  if (catch (qstr = utf8_to_string (qstr)))
 	    ERROR ("%sMalformed UTF-8 in %s after term %O at pos %d: %O\n",
 		   term_id, what, sizeof (orig_str) - pos, orig_str);
-	  return Protocols.LDAP.ldap_decode_string (qstr);
+	  return ldap_decode_string (qstr);
 	};
 	res[term_id] = parse_qdstring ("quoted string");
 	break;
@@ -2193,7 +2195,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
     attr = lower_case (attr);
 
   if (mapping(string:mixed) descr = standard_attrs != 1 &&
-      Protocols.LDAP._standard_attr_type_descrs[attr])
+      _standard_attr_type_descrs[attr])
     return descr;
   if (standard_attrs == 2)
     return 0;
@@ -2236,7 +2238,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 	  string sup = lower_case (descr->SUP);
 	  mapping(string:mixed) sup_descr =
 	    attr_type_descrs[sup] ||
-	    (standard_attrs != 1 && Protocols.LDAP._standard_attr_type_descrs[sup]);
+	    (standard_attrs != 1 && _standard_attr_type_descrs[sup]);
 	  if (!sup_descr)
 	    ERROR ("Inconsistency in schema: "
 		   "Got SUP reference to unknown attribute: %O\n", descr);
@@ -2319,7 +2321,7 @@ int main (int argc, array(string) argv)
 		     map (val, lambda (string s) {return sprintf ("%O", s);}) * ", ");
 	    else {
 	      if (string sym = (<"oid", "syntax_oid">)[term] &&
-		  Protocols.LDAP.get_constant_name (val))
+		  get_constant_name (val))
 		write ("  %O: %s,\n", term, sym);
 	      else
 		write ("  %O: %O,\n", term, val);

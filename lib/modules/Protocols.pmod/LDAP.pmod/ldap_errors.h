@@ -1,6 +1,6 @@
-// LDAP client protocol implementation for Pike.
+// LDAP client protocol implementation for -*- Pike -*-.
 //
-// $Id: ldap_errors.h,v 1.2 1999/08/12 00:44:16 marcus fake $
+// $Id: ldap_errors.h,v 1.3 2005/03/11 16:49:57 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -17,210 +17,73 @@
 //			 compare, search), only V2 operations,
 //
 
-
-
-
-/* 
- * possible error codes we can return
- */
-
-#define LDAP_SUCCESS                    0x00    /* 0 */
-#define LDAP_SUCCESS_STR		"Success"
-#define LDAP_OPERATIONS_ERROR           0x01    /* 1 */
-#define LDAP_OPERATIONS_ERROR_STR	"Operations error"
-#define LDAP_PROTOCOL_ERROR             0x02    /* 2 */
-#define LDAP_PROTOCOL_ERROR_STR		"Protocol error"
-#define LDAP_TIMELIMIT_EXCEEDED         0x03    /* 3 */
-#define LDAP_TIMELIMIT_EXCEEDED_STR	"Timelimit exceeded"
-#define LDAP_SIZELIMIT_EXCEEDED         0x04    /* 4 */
-#define LDAP_SIZELIMIT_EXCEEDED_STR	"Sizelimit exceeded"
-#define LDAP_COMPARE_FALSE              0x05    /* 5 */
-#define LDAP_COMPARE_FALSE_STR		"Compare false"
-#define LDAP_COMPARE_TRUE               0x06    /* 6 */
-#define LDAP_COMPARE_TRUE_STR		"Compare true"
-#define LDAP_AUTH_METHOD_NOT_SUPPORTED  0x07    /* 7 */
-#define LDAP_AUTH_METHOD_NOT_SUPPORTED_STR	"Auth method not supported"
-#define LDAP_STRONG_AUTH_NOT_SUPPORTED  LDAP_AUTH_METHOD_NOT_SUPPORTED
-#define LDAP_STRONG_AUTH_REQUIRED       0x08    /* 8 */
-#define LDAP_STRONG_AUTH_REQUIRED_STR	"Strong auth required"
-#define LDAP_PARTIAL_RESULTS            0x09    /* 9 (UMich LDAPv2 extn) */
-#define LDAP_PARTIAL_RESULTS_STR	"Partial results"
-#define LDAP_REFERRAL                   0x0a    /* 10 - LDAPv3 */
-#define LDAP_REFERRAL_STR		"Referral"
-#define LDAP_ADMINLIMIT_EXCEEDED        0x0b    /* 11 - LDAPv3 */
-#define LDAP_ADMINLIMIT_EXCEEDED_STR	"Adminlimit exceeded"
-#define LDAP_UNAVAILABLE_CRITICAL_EXTENSION  0x0c /* 12 - LDAPv3 */
-#define LDAP_UNAVAILABLE_CRITICAL_EXTENSION_STR	"Unavailable critical extension"
-#define LDAP_CONFIDENTIALITY_REQUIRED   0x0d    /* 13 */
-#define LDAP_CONFIDENTIALITY_REQUIRED_STR	"Confidentiality required"
-#define LDAP_SASL_BIND_IN_PROGRESS      0x0e    /* 14 - LDAPv3 */
-#define LDAP_SASL_BIND_IN_PROGRESS_STR	"SASL bind in progress"
-
-#define LDAP_NO_SUCH_ATTRIBUTE          0x10    /* 16 */
-#define LDAP_NO_SUCH_ATTRIBUTE_STR	"No such attribute"
-#define LDAP_UNDEFINED_TYPE             0x11    /* 17 */
-#define LDAP_UNDEFINED_TYPE_STR		"Undefined type"
-#define LDAP_INAPPROPRIATE_MATCHING     0x12    /* 18 */
-#define LDAP_INAPPROPRIATE_MATCHING_STR	"Inappropriate matching"
-#define LDAP_CONSTRAINT_VIOLATION       0x13    /* 19 */
-#define LDAP_CONSTRAINT_VIOLATION_STR	"Constraint violation"
-#define LDAP_TYPE_OR_VALUE_EXISTS       0x14    /* 20 */
-#define LDAP_TYPE_OR_VALUE_EXISTS_STR	"Type or value exists"
-#define LDAP_INVALID_SYNTAX             0x15    /* 21 */
-#define LDAP_INVALID_SYNTAX_STR		"Invalid syntax"
-
-#define LDAP_NO_SUCH_OBJECT             0x20    /* 32 */
-#define LDAP_NO_SUCH_OBJECT_STR		"No such object"
-#define LDAP_ALIAS_PROBLEM              0x21    /* 33 */
-#define LDAP_ALIAS_PROBLEM_STR		"Alias problem"
-#define LDAP_INVALID_DN_SYNTAX          0x22    /* 34 */
-#define LDAP_INVALID_DN_SYNTAX_STR	"Invalid DN syntax"
-#define LDAP_IS_LEAF                    0x23    /* 35 (not used in LDAPv3) */
-#define LDAP_IS_LEAF_STR		"Is leaf"
-#define LDAP_ALIAS_DEREF_PROBLEM        0x24    /* 36 */
-#define LDAP_ALIAS_DEREF_PROBLEM_STR	"Alias deref problem"
-
-//#define NAME_ERROR(n)   ((n & 0xf0) == 0x20)
-
-#define LDAP_INAPPROPRIATE_AUTH         0x30    /* 48 */
-#define LDAP_INAPPROPRIATE_AUTH_STR	"Inappropriate auth"
-#define LDAP_INVALID_CREDENTIALS        0x31    /* 49 */
-#define LDAP_INVALID_CREDENTIALS_STR	"Invalid credentials"
-#define LDAP_INSUFFICIENT_ACCESS        0x32    /* 50 */
-#define LDAP_INSUFFICIENT_ACCESS_STR	"Insufficient access"
-#define LDAP_BUSY                       0x33    /* 51 */
-#define LDAP_BUSY_STR			"Busy"
-#define LDAP_UNAVAILABLE                0x34    /* 52 */
-#define LDAP_UNAVAILABLE_STR		"Unavailable"
-#define LDAP_UNWILLING_TO_PERFORM       0x35    /* 53 */
-#define LDAP_UNWILLING_TO_PERFORM_STR	"Unwilling to perform"
-#define LDAP_LOOP_DETECT                0x36    /* 54 */
-#define LDAP_LOOP_DETECT_STR		"Loop detect"
-
-#define LDAP_SORT_CONTROL_MISSING       0x3C    /* 60 */
-#define LDAP_SORT_CONTROL_MISSING_STR	"Sort control missing"
-
-#define LDAP_NAMING_VIOLATION           0x40    /* 64 */
-#define LDAP_NAMING_VIOLATION_STR	"Naming violation"
-#define LDAP_OBJECT_CLASS_VIOLATION     0x41    /* 65 */
-#define LDAP_OBJECT_CLASS_VIOLATION_STR	"Object class violation"
-#define LDAP_NOT_ALLOWED_ON_NONLEAF     0x42    /* 66 */
-#define LDAP_NOT_ALLOWED_ON_NONLEAF_STR	"Not allowed on nonleaf"
-#define LDAP_NOT_ALLOWED_ON_RDN         0x43    /* 67 */
-#define LDAP_NOT_ALLOWED_ON_RDN_STR	"Not allowed on RDN"
-#define LDAP_ALREADY_EXISTS             0x44    /* 68 */
-#define LDAP_ALREADY_EXISTS_STR		"Already exists"
-#define LDAP_NO_OBJECT_CLASS_MODS       0x45    /* 69 */
-#define LDAP_NO_OBJECT_CLASS_MODS_STR	"No object class mods"
-#define LDAP_RESULTS_TOO_LARGE          0x46    /* 70 - CLDAP */
-#define LDAP_RESULTS_TOO_LARGE_STR	"Results too large"
-#define LDAP_AFFECTS_MULTIPLE_DSAS      0x47    /* 71 */
-#define LDAP_AFFECTS_MULTIPLE_DSAS_STR	"Affects multiple DSAS"
-
-#define LDAP_OTHER                      0x50    /* 80 */
-#define LDAP_OTHER_STR			"Other str"
-#define LDAP_SERVER_DOWN                0x51    /* 81 */
-#define LDAP_SERVER_DOWN_STR		"Server is down"
-#define LDAP_LOCAL_ERROR                0x52    /* 82 */
-#define LDAP_LOCAL_ERROR_STR            "Internal/local error"
-#define LDAP_ENCODING_ERROR             0x53    /* 83 */
-#define LDAP_ENCODING_ERROR_STR		"Encoding error"
-#define LDAP_DECODING_ERROR             0x54    /* 84 */
-#define LDAP_DECODING_ERROR_STR		"Decoding error"
-#define LDAP_TIMEOUT                    0x55    /* 85 */
-#define LDAP_TIMEOUT_STR		"Timeout"
-#define LDAP_AUTH_UNKNOWN               0x56    /* 86 */
-#define LDAP_AUTH_UNKNOWN_STR		"Auth unknown"
-#define LDAP_FILTER_ERROR               0x57    /* 87 */
-#define LDAP_FILTER_ERROR_STR		"Filter error"
-#define LDAP_USER_CANCELLED             0x58    /* 88 */
-#define LDAP_USER_CANCELLED_STR		"User cancelled"
-#define LDAP_PARAM_ERROR                0x59    /* 89 */
-#define LDAP_PARAM_ERROR_STR		"Param error"
-#define LDAP_NO_MEMORY                  0x5a    /* 90 */
-#define LDAP_NO_MEMORY_STR		"No memory"
-#define LDAP_CONNECT_ERROR              0x5b    /* 91 */
-#define LDAP_CONNECT_ERROR_STR		"Connect error"
-#define LDAP_NOT_SUPPORTED              0x5c    /* 92 - LDAPv3 */
-#define LDAP_NOT_SUPPORTED_STR		"Not supported"
-#define LDAP_CONTROL_NOT_FOUND          0x5d    /* 93 - LDAPv3 */
-#define LDAP_CONTROL_NOT_FOUND_STR	"Control not found"
-#define LDAP_NO_RESULTS_RETURNED        0x5e    /* 94 - LDAPv3 */
-#define LDAP_NO_RESULTS_RETURNED_STR	"No results returned"
-#define LDAP_MORE_RESULTS_TO_RETURN     0x5f    /* 95 - LDAPv3 */
-#define LDAP_MORE_RESULTS_TO_RETURN_STR	"More results to return"
-#define LDAP_CLIENT_LOOP                0x60    /* 96 - LDAPv3 */
-#define LDAP_CLIENT_LOOP_STR		"Client loop"
-#define LDAP_REFERRAL_LIMIT_EXCEEDED    0x61    /* 97 - LDAPv3 */
-#define LDAP_REFERRAL_LIMIT_EXCEEDED_STR	"Referral limit exceeded"
+import Protocols.LDAP;
 
 /*static* mapping(int:string)*/ constant ldap_errlist = ([
-	LDAP_SUCCESS			: LDAP_SUCCESS_STR,
-	LDAP_OPERATIONS_ERROR		: LDAP_OPERATIONS_ERROR_STR,
-	LDAP_PROTOCOL_ERROR		: LDAP_PROTOCOL_ERROR_STR,
-	LDAP_TIMELIMIT_EXCEEDED		: LDAP_TIMELIMIT_EXCEEDED_STR,
-	LDAP_SIZELIMIT_EXCEEDED		: LDAP_SIZELIMIT_EXCEEDED_STR,
-	LDAP_COMPARE_FALSE		: LDAP_COMPARE_FALSE_STR,
-	LDAP_COMPARE_TRUE		: LDAP_COMPARE_TRUE_STR,
-	LDAP_AUTH_METHOD_NOT_SUPPORTED	: LDAP_AUTH_METHOD_NOT_SUPPORTED_STR,
-	LDAP_STRONG_AUTH_REQUIRED	: LDAP_STRONG_AUTH_REQUIRED_STR,
-	LDAP_PARTIAL_RESULTS		: LDAP_PARTIAL_RESULTS_STR,
-	LDAP_REFERRAL			: LDAP_REFERRAL_STR,
-	LDAP_ADMINLIMIT_EXCEEDED	: LDAP_ADMINLIMIT_EXCEEDED_STR,
-	LDAP_UNAVAILABLE_CRITICAL_EXTENSION: LDAP_UNAVAILABLE_CRITICAL_EXTENSION_STR,
-	LDAP_CONFIDENTIALITY_REQUIRED	: LDAP_CONFIDENTIALITY_REQUIRED_STR,
-	LDAP_SASL_BIND_IN_PROGRESS	: LDAP_SASL_BIND_IN_PROGRESS_STR,
-
-	LDAP_NO_SUCH_ATTRIBUTE		: LDAP_NO_SUCH_ATTRIBUTE_STR,
-	LDAP_UNDEFINED_TYPE		: LDAP_UNDEFINED_TYPE_STR,
-	LDAP_INAPPROPRIATE_MATCHING	: LDAP_INAPPROPRIATE_MATCHING_STR,
-	LDAP_CONSTRAINT_VIOLATION	: LDAP_CONSTRAINT_VIOLATION_STR,
-	LDAP_TYPE_OR_VALUE_EXISTS	: LDAP_TYPE_OR_VALUE_EXISTS_STR,
-	LDAP_INVALID_SYNTAX		: LDAP_INVALID_SYNTAX_STR,
-
-	LDAP_NO_SUCH_OBJECT		: LDAP_NO_SUCH_OBJECT_STR,
-	LDAP_ALIAS_PROBLEM		: LDAP_ALIAS_PROBLEM_STR,
-	LDAP_INVALID_DN_SYNTAX		: LDAP_INVALID_DN_SYNTAX_STR,
-	LDAP_IS_LEAF			: LDAP_IS_LEAF_STR,
-	LDAP_ALIAS_DEREF_PROBLEM	: LDAP_ALIAS_DEREF_PROBLEM_STR,
-
-	LDAP_INAPPROPRIATE_AUTH		: LDAP_INAPPROPRIATE_AUTH_STR,
-	LDAP_INVALID_CREDENTIALS	: LDAP_INVALID_CREDENTIALS_STR,
-	LDAP_INSUFFICIENT_ACCESS	: LDAP_INSUFFICIENT_ACCESS_STR,
-	LDAP_BUSY			: LDAP_BUSY_STR,
-	LDAP_UNAVAILABLE		: LDAP_UNAVAILABLE_STR,
-	LDAP_UNWILLING_TO_PERFORM	: LDAP_UNWILLING_TO_PERFORM_STR,
-	LDAP_LOOP_DETECT		: LDAP_LOOP_DETECT_STR,
-
-	LDAP_SORT_CONTROL_MISSING	: LDAP_SORT_CONTROL_MISSING_STR,
-
-	LDAP_NAMING_VIOLATION		: LDAP_NAMING_VIOLATION_STR,
-	LDAP_OBJECT_CLASS_VIOLATION	: LDAP_OBJECT_CLASS_VIOLATION_STR,
-	LDAP_NOT_ALLOWED_ON_NONLEAF	: LDAP_NOT_ALLOWED_ON_NONLEAF_STR,
-	LDAP_NOT_ALLOWED_ON_RDN		: LDAP_NOT_ALLOWED_ON_RDN_STR,
-	LDAP_ALREADY_EXISTS		: LDAP_ALREADY_EXISTS_STR,
-	LDAP_NO_OBJECT_CLASS_MODS	: LDAP_NO_OBJECT_CLASS_MODS_STR,
-	LDAP_ALREADY_EXISTS		: LDAP_ALREADY_EXISTS_STR,
-	LDAP_NO_OBJECT_CLASS_MODS	: LDAP_NO_OBJECT_CLASS_MODS_STR,
-	LDAP_RESULTS_TOO_LARGE		: LDAP_RESULTS_TOO_LARGE_STR,
-	LDAP_AFFECTS_MULTIPLE_DSAS	: LDAP_AFFECTS_MULTIPLE_DSAS_STR,
-
-	LDAP_OTHER			: LDAP_OTHER_STR,
-	LDAP_SERVER_DOWN		: LDAP_SERVER_DOWN_STR,
-	LDAP_LOCAL_ERROR		: LDAP_LOCAL_ERROR_STR,
-	LDAP_ENCODING_ERROR		: LDAP_ENCODING_ERROR_STR,
-	LDAP_DECODING_ERROR		: LDAP_DECODING_ERROR_STR,
-	LDAP_TIMEOUT			: LDAP_TIMEOUT_STR,
-	LDAP_AUTH_UNKNOWN		: LDAP_AUTH_UNKNOWN_STR,
-	LDAP_FILTER_ERROR		: LDAP_FILTER_ERROR_STR,
-	LDAP_USER_CANCELLED		: LDAP_USER_CANCELLED_STR,
-	LDAP_PARAM_ERROR		: LDAP_PARAM_ERROR_STR,
-	LDAP_NO_MEMORY			: LDAP_NO_MEMORY_STR,
-	LDAP_CONNECT_ERROR		: LDAP_CONNECT_ERROR_STR,
-	LDAP_NOT_SUPPORTED		: LDAP_NOT_SUPPORTED_STR,
-	LDAP_CONTROL_NOT_FOUND		: LDAP_CONTROL_NOT_FOUND_STR,
-	LDAP_NO_RESULTS_RETURNED	: LDAP_NO_RESULTS_RETURNED_STR,
-	LDAP_MORE_RESULTS_TO_RETURN	: LDAP_MORE_RESULTS_TO_RETURN_STR,
-	LDAP_CLIENT_LOOP		: LDAP_CLIENT_LOOP_STR,
-	LDAP_REFERRAL_LIMIT_EXCEEDED	: LDAP_REFERRAL_LIMIT_EXCEEDED_STR]);
-/**/
+  LDAP_SUCCESS:			"Success",
+  LDAP_OPERATIONS_ERROR:	"Operations error",
+  LDAP_PROTOCOL_ERROR:		"Protocol error",
+  LDAP_TIMELIMIT_EXCEEDED:	"Timelimit exceeded",
+  LDAP_SIZELIMIT_EXCEEDED:	"Sizelimit exceeded",
+  LDAP_COMPARE_FALSE:		"Compare false",
+  LDAP_COMPARE_TRUE:		"Compare true",
+  LDAP_AUTH_METHOD_NOT_SUPPORTED: "Auth method not supported",
+  LDAP_STRONG_AUTH_REQUIRED:	"Strong auth required",
+  LDAP_PARTIAL_RESULTS:		"Partial results",
+  LDAP_REFERRAL:		"Referral",
+  LDAP_ADMINLIMIT_EXCEEDED:	"Adminlimit exceeded",
+  LDAP_UNAVAILABLE_CRITICAL_EXTENSION: "Unavailable critical extension",
+  LDAP_CONFIDENTIALITY_REQUIRED: "Confidentiality required",
+  LDAP_SASL_BIND_IN_PROGRESS:	"SASL bind in progress",
+  
+  LDAP_NO_SUCH_ATTRIBUTE:	"No such attribute",
+  LDAP_UNDEFINED_TYPE:		"Undefined type",
+  LDAP_INAPPROPRIATE_MATCHING:	"Inappropriate matching",
+  LDAP_CONSTRAINT_VIOLATION:	"Constraint violation",
+  LDAP_TYPE_OR_VALUE_EXISTS:	"Type or value exists",
+  LDAP_INVALID_SYNTAX:		"Invalid syntax",
+  
+  LDAP_NO_SUCH_OBJECT:		"No such object",
+  LDAP_ALIAS_PROBLEM:		"Alias problem",
+  LDAP_INVALID_DN_SYNTAX:	"Invalid DN syntax",
+  LDAP_IS_LEAF:			"Is leaf",
+  LDAP_ALIAS_DEREF_PROBLEM:	"Alias deref problem",
+  
+  LDAP_INAPPROPRIATE_AUTH:	"Inappropriate auth",
+  LDAP_INVALID_CREDENTIALS:	"Invalid credentials",
+  LDAP_INSUFFICIENT_ACCESS:	"Insufficient access",
+  LDAP_BUSY:			"Busy",
+  LDAP_UNAVAILABLE:		"Unavailable",
+  LDAP_UNWILLING_TO_PERFORM:	"Unwilling to perform",
+  LDAP_LOOP_DETECT:		"Loop detect",
+  
+  LDAP_SORT_CONTROL_MISSING:	"Sort control missing",
+  
+  LDAP_NAMING_VIOLATION:	"Naming violation",
+  LDAP_OBJECT_CLASS_VIOLATION:	"Object class violation",
+  LDAP_NOT_ALLOWED_ON_NONLEAF:	"Not allowed on nonleaf",
+  LDAP_NOT_ALLOWED_ON_RDN:	"Not allowed on RDN",
+  LDAP_ALREADY_EXISTS:		"Already exists",
+  LDAP_NO_OBJECT_CLASS_MODS:	"No object class mods",
+  LDAP_RESULTS_TOO_LARGE:	"Results too large",
+  LDAP_AFFECTS_MULTIPLE_DSAS:	"Affects multiple DSAS",
+  
+  LDAP_OTHER:			"Other str",
+  LDAP_SERVER_DOWN:		"Server is down",
+  LDAP_LOCAL_ERROR:		"Internal/local error",
+  LDAP_ENCODING_ERROR:		"Encoding error",
+  LDAP_DECODING_ERROR:		"Decoding error",
+  LDAP_TIMEOUT:			"Timeout",
+  LDAP_AUTH_UNKNOWN:		"Auth unknown",
+  LDAP_FILTER_ERROR:		"Filter error",
+  LDAP_USER_CANCELLED:		"User cancelled",
+  LDAP_PARAM_ERROR:		"Param error",
+  LDAP_NO_MEMORY:		"No memory",
+  LDAP_CONNECT_ERROR:		"Connect error",
+  LDAP_NOT_SUPPORTED:		"Not supported",
+  LDAP_CONTROL_NOT_FOUND:	"Control not found",
+  LDAP_NO_RESULTS_RETURNED:	"No results returned",
+  LDAP_MORE_RESULTS_TO_RETURN:	"More results to return",
+  LDAP_CLIENT_LOOP:		"Client loop",
+  LDAP_REFERRAL_LIMIT_EXCEEDED:	"Referral limit exceeded",
+]);
