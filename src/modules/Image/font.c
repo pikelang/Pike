@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.55 1999/09/25 19:54:48 grubba Exp $ */
+/* $Id: font.c,v 1.56 1999/10/16 09:40:00 mirar Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.55 1999/09/25 19:54:48 grubba Exp $
+**!	$Id: font.c,v 1.56 1999/10/16 09:40:00 mirar Exp $
 **! class Font
 **!
 **! note
@@ -174,6 +174,9 @@ Kerningtable types:
 #include "builtin_functions.h"
 
 #include "image.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #endif
@@ -283,7 +286,7 @@ static INLINE off_t file_size(int fd)
 {
   struct stat tmp;
   if((!fd_fstat(fd, &tmp)) &&
-     (tmp.st_mode & S_IFREG)) 
+     S_ISREG(tmp.st_mode))
      return (off_t)tmp.st_size;
   return -1;
 }
@@ -384,7 +387,17 @@ void font_load(INT32 args)
 #ifdef HAVE_MMAP
 	 new_font->mem = 
 	    mmap(0,size,PROT_READ,MAP_SHARED,fd,0);
-	 new_font->mmaped_size=size;
+#ifdef MAP_FAILED
+	 if (new_font->mem==MAP_FAILED)
+#else
+	 if (new_font->mem==(void*)-1)
+#endif
+	 {
+	    new_font->mem=0;
+	    new_font->mmaped_size=0;
+	 }
+	 else
+	    new_font->mmaped_size=size;
 #else
 	 new_font->mem = malloc(size);
 #ifdef FONT_DEBUG
