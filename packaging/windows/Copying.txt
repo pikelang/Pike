@@ -1,3 +1,32 @@
-Pike    		(c) 2004 IDA, Linköping University
+Pike is distributed under GPL, MPL and LGPL. Pick one.
 
-GPL, LGPL or MPL. Choose one.
+Copyright © 1994-1996 Fredrik Hübinette
+Copyright © 1996-1997 Informationsvävarna AB
+Copyright © 1997-2000 Idonex AB
+Copyright © 2000-2002 Roxen Internet Software AB
+Copyright © 2002-2003 Department of Computer and Information Science,
+                      Linköping University
+
+Parts of other copyrighted works are included in this Pike binary, in
+accordance with their respective conditions for distribution.
+
+IDEA encryption and decryption code
+Copyright © Xuejia Lai
+
+JPEG transform code
+Copyright © 1991-1998, Thomas G. Lane, Independent JPEG Group
+
+MD5 password hash code
+Copyright © Poul-Henning Kamp
+
+Regular expression matching code
+Copyright © 1986 by University of Toronto.
+
+TrueVision Targa code
+Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit
+
+Unicode Character Database
+Copyright © 1991-2004 Unicode, Inc.
+
+For copyright information about any bundled dynamic library, see the
+copyright resource in respective file.
