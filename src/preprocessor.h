@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.65 2004/06/23 14:37:23 grubba Exp $
+|| $Id: preprocessor.h,v 1.66 2004/06/30 17:56:27 grubba Exp $
 */
 
 /*
@@ -955,8 +955,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		SKIPWHITE();
 		if(data[pos]==')')
 		{
-		  if(d->varargs && arg + 1 == d->args)
-		  {
+		  if((d->varargs && arg + 1 == d->args) ||
+		     (!arg && (d->args == 1))) {
 		    arguments[arg].arg = MKPCHARP(data + pos, SHIFT);
 		    arguments[arg].len=0;
 		    continue;
