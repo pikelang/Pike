@@ -107,9 +107,9 @@ Layer decode_layer(mapping layer, mapping i)
          else
            lays += (({ Image.Layer( ([
              "image":___decode_image_channel(l->width, l->height, c->data),
-             "alpha_value":1.0,
+//             "alpha_value":1.0,
              "mode":mode, 
-           ]) )
+	   ]) )
            }));
 //          werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
          c->data = 0;
@@ -310,7 +310,8 @@ array decode_layers( string|mapping what, mapping|void opts )
     {
       Image.Layer lay = Image.Layer( l->image, l->alpha, m );
       l->image = 0; l->alpha = 0;
-      lay->set_alpha_value( l->opacity / 255.0 );
+      if( l->opacity != 255 )
+	lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
       lay->set_offset( l->xoffset, l->yoffset );
       layers += ({ lay });
     }
