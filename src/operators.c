@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.13 1997/04/16 03:09:15 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.14 1997/04/28 23:48:42 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -991,11 +991,19 @@ void o_divide()
     return;
 
   case T_INT:
+  {
+    INT32 tmp;
     if (sp[-1].u.integer == 0)
       error("Division by zero\n");
     sp--;
-    sp[-1].u.integer /= sp[0].u.integer;
+
+    tmp=sp[-1].u.integer / sp[0].u.integer;
+    if(tmp<0)
+      if(tmp * sp[0].u.integer > sp[-1].u.integer)
+	tmp--;
+    sp[-1].u.integer=tmp;
     return;
+  }
     
   default:
     error("Bad argument 1 to divide.\n");
@@ -1047,7 +1055,22 @@ void o_mod()
   case T_INT:
     if (sp[-1].u.integer == 0) error("Modulo by zero.\n");
     sp--;
-    sp[-1].u.integer %= sp[0].u.integer;
+    if(sp[-1].u.integer>=0)
+    {
+      if(sp[0].u.integer>=0)
+      {
+	sp[-1].u.integer %= sp[0].u.integer;
+      }else{
+	sp[-1].u.integer=sp[0].u.integer+(sp[-1].u.integer % -sp[0].u.integer);
+      }
+    }else{
+      if(sp[0].u.integer>=0)
+      {
+	sp[-1].u.integer=sp[0].u.integer-(-sp[-1].u.integer % sp[0].u.integer);
+      }else{
+	sp[-1].u.integer=-(-sp[-1].u.integer % -sp[0].u.integer);
+      }
+    }
     return;
 
   default:

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.15 1997/04/26 01:12:31 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.16 1997/04/28 23:49:11 hubbe Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -177,7 +177,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
     while(i--)
     {
       s->str[i] = mpz_get_ui(tmp) & 0xff;
-      mpz_tdiv_q_2exp(tmp, tmp, 8);
+      mpz_fdiv_q_2exp(tmp, tmp, 8);
     }
     mpz_clear(tmp);
     s = end_shared_string(s);
@@ -406,7 +406,7 @@ static void mpzmod_div(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
-    mpz_tdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+    mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
 
   pop_n_elems(args);
   push_object(res);
@@ -424,7 +424,7 @@ static void mpzmod_mod(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
-    mpz_tdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+    mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
 
   pop_n_elems(args);
   push_object(res);
@@ -650,7 +650,7 @@ static void mpzmod_rsh(INT32 args)
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->rsh: Shift count must be positive.\n");
   res = clone_object(mpzmod_program, 0);
-  mpz_tdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   push_object(res);
 }
