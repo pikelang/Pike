@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.3 2003/01/22 20:26:28 grubba Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.4 2003/01/23 18:23:00 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -44,6 +44,22 @@ RCSID("$Id: libbzip2mod.cmod,v 1.3 2003/01/22 20:26:28 grubba Exp $");
    as for deflate/inflate when memory is needed */
 #define DEFL_BUF_SIZE 500000
 #define INFL_BUF_SIZE 500000
+
+/* Why use double prefixes? */
+#ifdef HAVE_BZ2_BZCOMPRESSINIT
+#define bzCompressInit		BZ2_bzCompressInit
+#define bzCompress		BZ2_bzCompress
+#define bzCompressEnd		BZ2_bzCompressEnd
+#define bzDecompressInit	BZ2_bzDecompressInit
+#define bzDecompress		BZ2_bzDecompress
+#define bzDecompressEnd		BZ2_bzDecompressEnd
+#define bzReadOpen		BZ2_bzReadOpen
+#define bzReadClose		BZ2_bzReadClose
+#define bzRead			BZ2_bzRead
+#define bzWriteOpen		BZ2_bzWriteOpen
+#define bzWrite			BZ2_bzWrite
+#define bzWriteClose		BZ2_bzWriteClose
+#endif /* HAVE_BZ2_BZCOMPRESSINIT */
 
 /*! @module Bz2
  *!

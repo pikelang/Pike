@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 2003/01/22 20:26:28 grubba Exp $
+# $Id: configure.in,v 1.3 2003/01/23 18:23:00 grubba Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(libbzip2mod,     [  --without-libbzip2mod       Disable libbzip2mod],[],[with_libbzip2mod=yes])
@@ -8,7 +8,10 @@ AC_MODULE_INIT()
 PIKE_FEATURE_WITHOUT(libbzip2mod)
 
 if test x$with_libbzip2mod = xyes ; then
+  # NB: bzCompressInit always exists in bz2.
   AC_CHECK_LIB(bz2, bzCompressInit)
+  # Though if BZ2_bzCompressInit exists, it should be used instead.
+  AC_CHECK_FUNCS(BZ2_bzCompressInit)
   AC_CHECK_HEADERS(bzlib.h string.h strings.h)
   PIKE_FEATURE_NODEP(libbzip2mod)
 fi
