@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.30 1997/03/01 03:29:46 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.31 1997/03/11 03:56:25 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -282,7 +282,7 @@ void f_call_function(INT32 args)
 void f_backtrace(INT32 args)
 {
   INT32 frames;
-  struct frame *f;
+  struct frame *f,*of;
   struct array *a,*i;
 
   frames=0;
@@ -293,7 +293,8 @@ void f_backtrace(INT32 args)
   sp->u.array=a=allocate_array_no_init(frames,0);
   sp++;
 
-  for(f=fp;f;f=f->parent_frame)
+  of=0;
+  for(f=fp;f;f=(of=f)->parent_frame)
   {
     char *program_name;
 
@@ -301,9 +302,16 @@ void f_backtrace(INT32 args)
 
     if(f->current_object && f->current_object->prog)
     {
-      ITEM(a)[frames].u.array=i=allocate_array_no_init(3+f->num_args,0);
+      INT32 args;
+      args=f->num_args;
+      args=MINIMUM(f->num_args, sp - f->locals);
+      if(of)
+	args=MINIMUM(f->num_args, of->locals - f->locals);
+      args=MAXIMUM(args,0);
+
+      ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
       ITEM(a)[frames].type=T_ARRAY;
-      assign_svalues_no_free(ITEM(i)+3, f->locals, f->num_args, BIT_MIXED);
+      assign_svalues_no_free(ITEM(i)+3, args, f->num_args, BIT_MIXED);
       ITEM(i)[2].type=T_FUNCTION;
       ITEM(i)[2].subtype=f->fun;
       ITEM(i)[2].u.object=f->current_object;
