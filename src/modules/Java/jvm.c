@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.66 2004/01/22 23:12:20 nilsson Exp $
+|| $Id: jvm.c,v 1.67 2004/03/10 16:32:00 nilsson Exp $
 */
 
 /*
@@ -22,12 +22,11 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.66 2004/01/22 23:12:20 nilsson Exp $");
+RCSID("$Id: jvm.c,v 1.67 2004/03/10 16:32:00 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
 #include "object.h"
-#include "mapping.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
 #include "module_support.h"

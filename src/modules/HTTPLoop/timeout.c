@@ -2,16 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.16 2003/09/19 12:28:24 jonasw Exp $
+|| $Id: timeout.c,v 1.17 2004/03/10 16:31:41 nilsson Exp $
 */
 
 #include "config.h"
 #ifndef __NT__
 #include <global.h>
 #include <threads.h>
-#include <stralloc.h>
 #include <signal.h>
-#include <fdlib.h>
 
 #ifdef _REENTRANT
 #include <stdlib.h>

@@ -2,14 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cache.c,v 1.21 2003/04/23 15:31:19 marcus Exp $
+|| $Id: cache.c,v 1.22 2004/03/10 16:31:41 nilsson Exp $
 */
 
 #include "config.h"
 #include <global.h>
 #include <threads.h>
 #include <stralloc.h>
-#include <fdlib.h>
 
 #ifdef _REENTRANT
 #include <stdlib.h>

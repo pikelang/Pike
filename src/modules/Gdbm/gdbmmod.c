@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.25 2003/05/25 02:58:06 nilsson Exp $
+|| $Id: gdbmmod.c,v 1.26 2004/03/10 16:31:24 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.25 2003/05/25 02:58:06 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.26 2004/03/10 16:31:24 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -15,9 +15,6 @@ RCSID("$Id: gdbmmod.c,v 1.25 2003/05/25 02:58:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
-#include "array.h"
-#include "object.h"
-#include "pike_macros.h"
 #include "module.h"
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)

@@ -2,24 +2,16 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.c,v 1.16 2003/04/23 15:31:19 marcus Exp $
+|| $Id: log.c,v 1.17 2004/03/10 16:31:41 nilsson Exp $
 */
 
 #include "config.h"
 #include "global.h"
 	  
-#include "array.h"
-#include "backend.h"
 #include "machine.h"
-#include "mapping.h"
 #include "module_support.h"
-#include "multiset.h"
 #include "object.h"
-#include "operators.h"
-#include "pike_memory.h"
-#include "program.h"
 #include "stralloc.h"
-#include "svalue.h"
 #include "threads.h"
 #include "fdlib.h"
 #include "builtin_functions.h"

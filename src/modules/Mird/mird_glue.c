@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mird_glue.c,v 1.21 2003/01/20 18:17:44 nilsson Exp $
+|| $Id: mird_glue.c,v 1.22 2004/03/10 16:32:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -13,7 +13,6 @@
 #include "interpret.h"
 #include "stralloc.h"
 #include "mapping.h"
-#include "array.h"
 #include "builtin_functions.h"
 #include "operators.h"
 #include "object.h"

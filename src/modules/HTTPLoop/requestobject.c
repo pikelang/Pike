@@ -2,14 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.28 2003/10/13 17:39:44 grubba Exp $
+|| $Id: requestobject.c,v 1.29 2004/03/10 16:31:41 nilsson Exp $
 */
 
 #include "global.h"
 #include "config.h"
 	  
-#include "array.h"
-#include "backend.h"
 #include "machine.h"
 #include "mapping.h"
 #include "module_support.h"
@@ -17,7 +15,6 @@
 #include "object.h"
 #include "operators.h"
 #include "pike_memory.h"
-#include "program.h"
 #include "constants.h"
 #include "stralloc.h"
 #include "svalue.h"
