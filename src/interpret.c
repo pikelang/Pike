@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.57 1998/01/13 22:56:43 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.58 1998/01/14 07:53:52 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1531,7 +1531,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       
       if(fun<0)
       {
-	pop_n_elems(args);
+	pop_n_elems(sp-save_sp);
 	push_int(0);
 	return;
       }

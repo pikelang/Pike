@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.48 1998/01/13 22:56:49 hubbe Exp $");
+RCSID("$Id: program.c,v 1.49 1998/01/14 07:53:52 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -697,12 +697,33 @@ if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Progra
 
 struct program *end_first_pass(int finish)
 {
+  int e;
   struct program *prog;
+  struct pike_string *s;
+
+  MAKE_CONSTANT_SHARED_STRING(s,"__INIT");
+
+
+  /* Collect references to inherited __INIT functions */
+  for(e=1;e<new_program->num_inherits;e++)
+  {
+    int id;
+    if(new_program->inherits[e].inherit_level!=1) continue;
+    id=low_reference_inherited_identifier(e, s);
+    if(id!=-1)
+    {
+      init_node=mknode(F_ARG_LIST,
+		       init_node,
+		       mkcastnode(void_type_string,
+				  mkapplynode(mkidentifiernode(id),0)));
+    }
+  }
 
   /*
    * Define the __INIT function, but only if there was any code
    * to initialize.
    */
+
   if(init_node)
   {
     union idptr tmp;
@@ -964,20 +985,6 @@ void do_inherit(struct svalue *prog,
 
     fun.id_flags |= ID_INHERITED;
     add_to_identifier_references(fun);
-  }
-
-  /* Ska det h{r vara s} h{r? */
-  s=findstring("__INIT");
-  if(s)
-  {
-    if(-1 != find_shared_string_identifier(s,p))
-    {
-      e=reference_inherited_identifier(0, s);
-      init_node=mknode(F_ARG_LIST,
-		       init_node,
-		       mkcastnode(void_type_string,
-				  mkapplynode(mkidentifiernode(e),0)));
-    }
   }
 }
 
