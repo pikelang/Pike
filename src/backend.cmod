@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.169 2005/01/27 18:26:55 mast Exp $
+ * $Id: backend.cmod,v 1.170 2005/01/28 18:21:26 grubba Exp $
  *
  * Backend object.
  */
@@ -279,7 +279,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 
 #define TIMEOUT_IS_MILLISECONDS
 
-#if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
+#ifdef BACKEND_USES_DEVPOLL
 /*
  * Backend using /dev/poll-style poll device.
  *
@@ -290,8 +290,6 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
  */
 #include <sys/devpoll.h>
 
-#define USE_POLL_DEVICE
-#define USE_DEVPOLL
 #define POLL_EVENT	struct pollfd
 #define OPEN_POLL_DEVICE()	open(PIKE_POLL_DEVICE, O_RDWR)
 #define CHILD_NEEDS_TO_REOPEN
@@ -344,7 +342,7 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
   return e;
 }
 	
-#elif defined(HAVE_SYS_EPOLL_H) && defined(PIKE_POLL_DEVICE)
+#elif defined(BACKEND_USES_DEVEPOLL)
 /*
  * Backend using /dev/epoll-style poll device.
  *
@@ -402,8 +400,6 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 #endif /* _syscall1 && _syscall4 */
 #endif /* __stub_epoll_{create, ctl, wait} */
 
-#define USE_POLL_DEVICE
-#define USE_DEVEPOLL
 #define POLL_EVENT	struct epoll_event
 #define GET_FD(EVENT)		EVENT.data.fd
 #define GET_EVENTS(EVENT)	EVENT.events
@@ -459,7 +455,7 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
   return e;
 }
 
-#else /* !USE_POLL_DEVICE */
+#elif defined(BACKEND_USES_POLL)
 
 /*
  * Backend using poll(2).
@@ -575,6 +571,8 @@ static void copy_selectors(struct active_selectors *to,
   to->num_in_poll=from->num_in_poll;
 }
 
+#else /* !BACKEND_USES_POLL_DEVICE && !BACKEND_USES_POLL */
+#error "HAVE_POLL but not BACKEND_USES_POLL"
 #endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
 
 #ifndef GET_FD
@@ -584,7 +582,7 @@ static void copy_selectors(struct active_selectors *to,
 #define GET_EVENTS(EVENT)	EVENT.revents
 #endif
 
-#ifdef USE_POLL_DEVICE
+#ifdef BACKEND_USES_POLL_DEVICE
 
 /* NOTE: With poll devices the poll set is recalculated each time it's
  *       potentially changed, so MY_FD_{SET,CLR}() are not used.
@@ -592,9 +590,9 @@ static void copy_selectors(struct active_selectors *to,
 
 #define copy_selectors(TO, FROM)
 
-#endif /* USE_POLL_DEVICE */
+#endif /* BACKEND_USES_POLL_DEVICE */
 
-#elif defined(HAVE_SYS_EVENT_H) && defined(HAVE_KQUEUE) /* && !HAVE_POLL */
+#elif defined(BACKEND_USES_KQUEUE)
 /*
  * Backend using kqueue-style poll device.
  *
@@ -608,7 +606,6 @@ static void copy_selectors(struct active_selectors *to,
 
 #include <sys/event.h>
 
-#define USE_KQUEUE
 #define POLL_EVENT	struct kevent
 #define OPEN_POLL_DEVICE()	kqueue()
 #define CHILD_NEEDS_TO_REOPEN
@@ -679,15 +676,13 @@ int MY_FD_SET(int *pfd, int fd, int filter)
 
 #define copy_selectors(TO, FROM)
 
-#else  /* !HAVE_POLL && !HAVE_KQUEUE */
-
+#elif defined(BACKEND_USES_SELECT)
 /*
  * Backend using select(2)
  *
  * This is used on most older BSD-style systems, and WIN32.
  */
 
-#define USE_SELECT
 #define TIMEOUT_IS_TIMEVAL
 
 struct selectors
@@ -752,7 +747,9 @@ static void copy_selectors(struct active_selectors *to,
   to->max_fd=from->max_fd;
 }
 
-#endif	/* HAVE_POLL || USE_KQUEUE */
+#else  /* !HAVE_POLL && !BACKEND_USES_KQUEUE && !BACKEND_USES_SELECT */
+#error "No backend method selected."
+#endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
 
 #ifndef POLL_SET_SIZE
 #define POLL_SET_SIZE		32
@@ -835,10 +832,10 @@ PIKECLASS Backend
 #ifdef OPEN_POLL_DEVICE
   CVAR int set;
 #define active_set set
-#else /* !USE_POLL_DEVICE */
+#else /* !BACKEND_USES_POLL_DEVICE */
   CVAR struct selectors set;
   CVAR struct active_selectors active_set;
-#endif /* USE_POLL_DEVUCE */
+#endif /* BACKEND_USES_POLL_DEVUCE */
 
   /*
    * CALL OUT variables
@@ -1932,7 +1929,7 @@ PIKECLASS Backend
    * FD set handling
    */
 
-#ifdef USE_POLL_DEVICE
+#ifdef BACKEND_USES_POLL_DEVICE
   void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd, int wanted_events)
   {
     INT32 events = 0;
@@ -1954,7 +1951,7 @@ PIKECLASS Backend
 		  me->set, fd, events));
     POLL_DEVICE_SET_EVENTS(me->set, fd, events);
   }
-#elif defined(USE_KQUEUE)
+#elif defined(BACKEND_USES_KQUEUE)
   /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
   void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd, int wanted_events)
   {
@@ -1973,7 +1970,7 @@ PIKECLASS Backend
     if (nev)
       kevent(me->set, ev, nev, NULL, 0, NULL);
   }
-#endif /* USE_POLL_DEVICE */
+#endif /* BACKEND_USES_POLL_DEVICE */
 
 #ifdef CHILD_NEEDS_TO_REOPEN
   /* This is called in the child process to restore
@@ -2069,11 +2066,11 @@ PIKECLASS Backend
 
     if (changed_events) {
 
-#ifdef USE_POLL_DEVICE
+#ifdef BACKEND_USES_POLL_DEVICE
 
       UPDATE_BLACK_BOX(me, fd, new_events);
 
-#else  /* !USE_POLL_DEVICE */
+#else  /* !BACKEND_USES_POLL_DEVICE */
 
       if (changed_events & PIKE_BIT_FD_READ) {
 	if (new_events & PIKE_BIT_FD_READ) {
@@ -2152,7 +2149,7 @@ PIKECLASS Backend
 	}
       }
 
-#endif	/* !USE_POLL_DEVICE */
+#endif	/* !BACKEND_USES_POLL_DEVICE */
 
       if (new_events & ~old_events)
 	/* New events were added. */
@@ -2170,7 +2167,7 @@ PIKECLASS Backend
       backend_verify_call_outs(me);
       
       /* FIXME: OOB? */
-#ifdef USE_SELECT
+#ifdef BACKEND_USES_SELECT
       for(e=0;e<=me->set.max_fd;e++)
       {
 	if(my_FD_ISSET(e, &me->set.read)
@@ -2202,8 +2199,8 @@ PIKECLASS Backend
 	  }
 	}
       }
-#else  /* !USE_SELECT */
-#if defined(HAVE_POLL) && !defined(USE_POLL_DEVICE)
+#else  /* !BACKEND_USES_SELECT */
+#if defined(HAVE_POLL) && !defined(BACKEND_USES_POLL_DEVICE)
       for(e=0;e<me->set.num_in_poll;e++)
       {
 	int ret;
@@ -2232,7 +2229,7 @@ PIKECLASS Backend
 	}
       }
 #endif /* HAVE_POLL && !HAVE_SYS_DEVPOLL_H */
-#endif	/* USE_SELECT */
+#endif	/* BACKEND_USES_SELECT */
 
       {FOR_EACH_ACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
       {FOR_EACH_INACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
@@ -2427,7 +2424,7 @@ PIKECLASS Backend
 
 	IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
 		       THR_NO, me->id));
-#if defined(HAVE_POLL) && defined(POLL_DEBUG) && !defined(USE_POLL_DEVICE)
+#if defined(HAVE_POLL) && defined(POLL_DEBUG) && !defined(BACKEND_USES_POLL_DEVICE)
 	{
 	  int i;
 	  for (i = 0; i < me->active_set.num_in_poll; i++) {
@@ -2446,7 +2443,7 @@ PIKECLASS Backend
 		me->active_set.poll_fds,
 		me->active_set.num_in_poll,
 		poll_timeout);
-#endif /* HAVE_POLL && POLL_DEBUG && !USE_POLL_DEVICE */
+#endif /* HAVE_POLL && POLL_DEBUG && !BACKEND_USES_POLL_DEVICE */
 
 	THREADS_ALLOW();
 
@@ -2479,7 +2476,7 @@ PIKECLASS Backend
 
 	done_something = 1;
 
-#ifdef USE_SELECT
+#ifdef BACKEND_USES_SELECT
 
 	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
@@ -2533,7 +2530,7 @@ PIKECLASS Backend
 	  }
 	}
 
-#else  /* !USE_SELECT */
+#else  /* !BACKEND_USES_SELECT */
 
 	/* First clear revents for all the fds.
 	 *
@@ -2543,7 +2540,7 @@ PIKECLASS Backend
 	 * Note: this needs to be a separate loop, since kqueue sends
 	 *       read and write in two separate events.
 	 */
-#if defined(USE_POLL_DEVICE) || defined(USE_KQUEUE)
+#if defined(BACKEND_USES_POLL_DEVICE) || defined(BACKEND_USES_KQUEUE)
 	while(i--)
 #define ACTIVE_POLLSET poll_fds
 #else
@@ -2561,7 +2558,7 @@ PIKECLASS Backend
 
 	/* Then flag the active events.
 	 */
-#if defined(USE_POLL_DEVICE) || defined(USE_KQUEUE)
+#if defined(BACKEND_USES_POLL_DEVICE) || defined(BACKEND_USES_KQUEUE)
 	i = num_active;
 	while(i--)
 #else
@@ -2571,7 +2568,7 @@ PIKECLASS Backend
 	  int fd = GET_FD(ACTIVE_POLLSET[i]);
 
 #ifdef POLL_DEBUG
-#ifdef USE_KQUEUE
+#ifdef BACKEND_USES_KQUEUE
 	  fprintf(stderr, "[%d]BACKEND[%d]: fd:%d filter:%d flags:0x%08x",
 		  THR_NO, me->id,
 		  GET_FD(ACTIVE_POLLSET[i]),
@@ -2591,7 +2588,7 @@ PIKECLASS Backend
 	    fprintf(stderr, "[EOF]");
 	  }
 	  fprintf(stderr, "(%d)\n", ACTIVE_POLLSET[i].data);
-#else /* !USE_KQUEUE */
+#else /* !BACKEND_USES_KQUEUE */
 	  fprintf(stderr, "[%d]BACKEND[%d]: fd:%d events:0x%04x",
 		  THR_NO, me->id,
 		  GET_FD(ACTIVE_POLLSET[i]),
@@ -2618,7 +2615,7 @@ PIKECLASS Backend
 	    fprintf(stderr, "  POLLOUT");
 	  }
 	  fprintf(stderr, "\n");
-#endif /* USE_KQUEUE */
+#endif /* BACKEND_USES_KQUEUE */
 #endif /* POLL_DEBUG */
 
 	  if (!(box = SAFE_GET_ACTIVE_BOX (me, fd))) {
@@ -2662,7 +2659,7 @@ PIKECLASS Backend
 	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLERR on %d\n",
 			    THR_NO, me->id, fd));
 	      box->revents |= PIKE_BIT_FD_ERROR;
-#ifdef USE_KQUEUE
+#ifdef BACKEND_USES_KQUEUE
 	      /* kqueue signals errors as read or write events but
 	       * with an additional error flag, so we must take care
 	       * to not set any read/write bits if it's a sole error
@@ -2726,7 +2723,7 @@ PIKECLASS Backend
 	  }
 	}
 
-#endif	/* USE_SELECT */
+#endif	/* BACKEND_USES_SELECT */
 
 	/* Common code for all variants.
 	 *
@@ -2913,7 +2910,7 @@ PIKECLASS Backend
 #endif
 	  case EBADF:
 	    /* TODO: Fix poll version! */
-#ifdef USE_SELECT
+#ifdef BACKEND_USES_SELECT
 
 	    copy_selectors(& me->active_set, &me->set);
 
@@ -2981,7 +2978,7 @@ PIKECLASS Backend
 	      Pike_fatal("Bad filedescriptor to select().\n");
 #endif /* _REENTRANT */
 	    }
-#endif	/* USE_SELECT */
+#endif	/* BACKEND_USES_SELECT */
 	    break;
 	    
 	}
@@ -3330,7 +3327,7 @@ PIKECLASS Backend
       }
 
 #ifdef HAVE_POLL
-#ifdef USE_POLL_DEVICE
+#ifdef BACKEND_USES_POLL_DEVICE
       unregister_backend(me);
       fd_close(THIS->set);
 #else
@@ -3698,7 +3695,7 @@ void init_backend(void)
     default_backend=OBJ2_BACKEND(o);
     add_object_constant("__backend",o,0);
   }
-#ifndef USE_SELECT
+#ifndef BACKEND_USES_SELECT
   IF_PD(fprintf(stderr,
 		"MY_POLLIN:       0x%04x\n"
 		"MY_POLLOUT:      0x%04x\n"
@@ -3709,7 +3706,7 @@ void init_backend(void)
 		MY_POLLIN, MY_POLLOUT,
 		MY_POLLEXCEPT, MY_POLLRDBAND,
 		MY_POLLWREXCEPT, MY_POLLWRBAND));
-#endif /* !USE_SELECT */
+#endif /* !BACKEND_USES_SELECT */
 #ifdef CHILD_NEEDS_TO_REOPEN
   /* /dev/poll and kqueue fds get invalidated at fork. */
   dmalloc_accept_leak(add_to_callback(&fork_child_callback,

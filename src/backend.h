@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.32 2005/01/20 19:00:01 mast Exp $
+|| $Id: backend.h,v 1.33 2005/01/28 18:21:13 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -11,6 +11,68 @@
 #include "global.h"
 #include "time_stuff.h"
 #include "callback.h"
+
+/*
+ * POLL/SELECT selection
+ */
+
+#if defined(HAVE_POLL) && defined(HAVE_AND_USE_POLL)
+/* We have poll(2), and it isn't simulated. */
+#if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
+/*
+ * Backend using /dev/poll-style poll device.
+ *
+ * Used on:
+ *   Solaris 7 + patches and above.
+ *   OSF/1 + patches and above.
+ *   IRIX 5.6.15m and above.
+ */
+#define BACKEND_USES_POLL_DEVICE
+#define BACKEND_USES_DEVPOLL
+#elif defined(HAVE_SYS_EPOLL_H) && defined(PIKE_POLL_DEVICE)
+/*
+ * Backend using /dev/epoll-style poll device.
+ *
+ * Used on:
+ *   Linux 2.6 and above.
+ * Note:
+ *   Some libc's are missing wrappers for the system calls, so
+ *   we include the appropriate wrappers below.
+ */
+#define BACKEND_USES_POLL_DEVICE
+#define BACKEND_USES_DEVEPOLL
+#else /* !BACKEND_USES_POLL_DEVICE */
+/*
+ * Backend using poll(2).
+ *
+ * This is used on most older SVR4- or POSIX-style systems.
+ */
+#define BACKEND_USES_POLL
+#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
+#elif defined(HAVE_SYS_EVENT_H) && defined(HAVE_KQUEUE) /* && !HAVE_POLL */
+/*
+ * Backend using kqueue-style poll device.
+ *
+ * FIXME: Not fully implemented yet! Out of band data handling is missing.
+ *
+ * Used on
+ *   FreeBSD 4.1 and above.
+ *   MacOS X/Darwin 7.x and above.
+ *   Various other BSDs.
+ */
+#define BACKEND_USES_KQUEUE
+/* Currently kqueue doesn't differentiate between in-band and out-of-band
+ * data.
+ */
+#define BACKEND_OOB_IS_SIMULATED
+#else  /* !HAVE_POLL && !HAVE_KQUEUE */
+/*
+ * Backend using select(2)
+ *
+ * This is used on most older BSD-style systems, and WIN32.
+ */
+#define BACKEND_USES_SELECT
+#endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
 
 struct Backend_struct;
 struct selectors;
@@ -39,7 +101,9 @@ PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 							void *arg,
 							callback_func free_func);
 
-/* New style callback interface. */
+/*
+ * New style callback interface.
+ */
 
 struct fd_callback_box;
 
