@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.44 2002/03/19 20:06:38 jhs Exp $
+// $Id: Hilfe.pmod,v 1.45 2002/03/19 22:09:28 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -749,7 +749,7 @@ class Evaluator {
   //!
   void create()
   {
-    print_version();
+    if(write) print_version();
     commands->set = command_set;
     commands->exit = command_exit;
     commands->quit = command_exit;
