@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.4 2004/02/06 14:38:20 nilsson Exp $
+// $Id: Random.pmod,v 1.5 2004/03/06 01:07:34 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -29,10 +29,15 @@ static class RND {
 				 Crypto.NT.CRYPT_VERIFYCONTEXT );
     seed( ctx->CryptGenRandom(min_seed_size()*2) );
 #else
-    if(no_block)
-      f = Stdio.File("/dev/urandom", "r");
-    else
+    if(no_block) {
+      if(file_stat("/dev/urandom"))
+	f = Stdio.File("/dev/urandom", "r");
+      if(!f && file_stat("/dev/random"))
+	f = Stdio.File("/dev/random", "r");
+    }
+    else {
       f = Stdio.File("/dev/random", "r");
+    }
     if(!f)
       error("No entropy source found.\n");
     seed( f->read(min_seed_size()*2) );
