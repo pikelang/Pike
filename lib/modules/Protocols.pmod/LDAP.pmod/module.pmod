@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.11 2005/03/29 17:57:19 mast Exp $
+// $Id: module.pmod,v 1.12 2005/03/29 17:58:30 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -174,7 +174,7 @@ string canonicalize_dn (string dn, void|int strict)
 //! RFC 2253.
 //!
 //! If @[strict] is set then errors will be thrown if the given DN is
-//! syntactically invalid. Otherwise the invalid parts remains
+//! syntactically invalid. Otherwise the invalid parts remain
 //! untouched in the result.
 //!
 //! @note
