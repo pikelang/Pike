@@ -26,6 +26,8 @@
 #include <netinet/in.h>
 #endif
 
+#include <math.h>
+
 struct encode_data
 {
   struct svalue counter;
@@ -39,8 +41,8 @@ struct encode_data
 /* Current encoding: ¶ik0 */
 #define T_AGAIN 15
 #define T_MASK 15
-#define T_NEG 32
-#define T_SMALL 64
+#define T_NEG 16
+#define T_SMALL 32
 #define SIZE_SHIFT 6
 #define MAX_SMALL (1<<(8-SIZE_SHIFT))
 #define COUNTER_START -MAX_SMALL
@@ -116,7 +118,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       code_entry(T_FLOAT,0,data);
     }else{
       INT32 x,y;
-      y=(int)ceil(log(val->u.float_number)/log(2.0))-31;
+      y=(int)ceil(log(val->u.float_number)/log(2.0))-30;
       x=(int)((val->u.float_number)*pow(2.0,(float)-y));
       while(x && y && !(x&1))
       {
@@ -126,6 +128,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       code_entry(T_FLOAT,x,data);
       code_entry(T_FLOAT,y,data);
     }
+    break;
   }
 
   case T_ARRAY:
@@ -212,7 +215,7 @@ struct decode_data
 
 static int my_extract_char(struct decode_data *data)
 {
-  if(data->len >= data->ptr)
+  if(data->ptr >= data->len)
     error("Format error, not enough data in string.\n");
   return data->data [ data->ptr++ ];
 }
@@ -263,7 +266,7 @@ static void decode_value2(struct decode_data *data)
   case T_STRING:
     tmp=data->counter;
     data->counter.u.integer++;
-    if(data->ptr + num >= data->len)
+    if(data->ptr + num > data->len)
       error("Failed to decode string. (string range error)\n");
     push_string(make_shared_binary_string(data->data + data->ptr, num));
     data->ptr+=num;
@@ -280,6 +283,7 @@ static void decode_value2(struct decode_data *data)
     push_float(num2 * pow(2.0, (double) num));
     break;
   }
+
   case T_ARRAY:
   {
     struct array *a=allocate_array(num);
@@ -386,7 +390,7 @@ static INT32 my_decode(struct pike_string *tmp)
   data->len=tmp->len;
   data->ptr=0;
 
-  
+  if(data->len < 5) return 0;
   if(GETC() != 182 ||
      GETC() != 'k' ||
      GETC() != 'e' ||
