@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.4 2001/09/26 23:26:28 nilsson Exp $
+ * $Id: extract.pike,v 1.5 2001/10/18 18:30:52 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -14,8 +14,6 @@ class MirarDoc
 array(string) find_root(string path) {
   if(file_stat(path+"/.autodoc"))
     return reverse((Stdio.read_file(path+"/.autodoc")/"\n")[0]/" ") - ({""});
-  if(!has_suffix(path, ".pmod"))
-    error("No root found.\n");
   array(string) parts = path/"/";
   string name = parts[-1];
   sscanf(name, "%s.pmod", name);
@@ -81,6 +79,12 @@ int main(int n, array(string) args) {
       else
 	foreach( ({ "pike", "pike.in", "pmod", "pmod.in" }), string ext)
 	  sscanf(name, "%s."+ext, name);
+      if(name == "module") {
+	if(!sizeof(parents))
+	  error("Unknown module parent name.\n");
+	name = parents[-1];
+	parents = parents[..sizeof(parents)-2];
+      }
 
       write( Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, parents) );
     }
