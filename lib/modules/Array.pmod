@@ -471,11 +471,10 @@ int dwim_sort_func(string a, string b)
      if( (<'0','1','2','3','4','5','6','7','8','9'>)[a[i]] != state )
      {
        state = !state;
-       if( i )
-	 if( state )
-	   aa += ({ a[oi..i-1] });
-	 else
-	   aa += ({ (int)a[oi..i-1] });
+       if( state )
+	 aa += ({ a[oi..i-1] });
+       else
+	 aa += ({ (int)a[oi..i-1] });
        oi = i;
      }
    if( state )
@@ -490,11 +489,10 @@ int dwim_sort_func(string a, string b)
      if( (<'0','1','2','3','4','5','6','7','8','9'>)[b[i]] != state )
      {
        state = !state;
-       if( i )
-	 if( state )
-	   bb += ({ b[oi..i-1] });
-	 else
-	   bb += ({ (int)b[oi..i-1] });
+       if( state )
+	 bb += ({ b[oi..i-1] });
+       else
+	 bb += ({ (int)b[oi..i-1] });
        oi = i;
      }
    if( state )
@@ -510,7 +508,9 @@ int dwim_sort_func(string a, string b)
      if( aa[i] > bb[i] )      return 1;
    }
 
-   return 0;
+   // Either equal, or bb is longer.
+
+   return -(sizeof(aa)<sizeof(bb));
 }
 
 //! Sort comparison function that does not care about case, nor about
