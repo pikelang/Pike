@@ -382,7 +382,10 @@ static void pmird_fetch(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",2);
 
-   if (!this->db) return pmird_no_transaction();
+   if (!this->db) {
+     pmird_no_transaction();
+     return;
+   }
 
    if (sp[1-args].type==T_INT)
    {
@@ -441,7 +444,10 @@ static void pmird_first_unused_key(INT32 args)
    else
       get_all_args("first_unused_key",args,"%i",&table_id);
 
-   if (!this->db) return pmird_no_transaction();
+   if (!this->db) {
+     pmird_no_transaction();
+     return;
+   }
 
 LOCK(this);
    TRY(mird_find_first_unused(this->db,(mird_key_t)table_id,
@@ -461,7 +467,10 @@ static void pmird_first_unused_table(INT32 args)
    if (args)
       get_all_args("first_unused_table",args,"%i",&table_id);
 
-   if (!this->db) return pmird_no_transaction();
+   if (!this->db) {
+     pmird_no_transaction();
+     return;
+   }
 
 LOCK(this);
    TRY(mird_find_first_unused_table(this->db,(mird_key_t)table_id,
@@ -625,8 +634,14 @@ static void pmtr_close(INT32 args)
 
    pop_n_elems(args);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("close");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("close");
+     return;
+   }
 
    mtr=this->mtr;
 LOCK(this->parent);
@@ -649,8 +664,14 @@ static void pmtr_cancel(INT32 args)
 
    pop_n_elems(args);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("cancel");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("cancel");
+     return;
+   }
 
 LOCK(this->parent);
    TRY(mird_transaction_cancel(this->mtr));
@@ -697,8 +718,14 @@ static void pmtr_resolve(INT32 args)
 
    pop_n_elems(args);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("resolve");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("resolve");
+     return;
+   }
 
 LOCK(this->parent);
    TRY(mird_tr_resolve(this->mtr));
@@ -723,8 +750,14 @@ static void pmtr_store(INT32 args)
    if (args<3)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",3);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database("store");
+   if (!THIS->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!THIS->mtr->db) {
+     pmird_tr_no_database("store");
+     return;
+   }
 
    if (sp[1-args].type==T_INT)
    {
@@ -769,8 +802,14 @@ static void pmtr_delete(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",2);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("delete");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("delete");
+     return;
+   }
 
    if (sp[1-args].type==T_INT)
    {
@@ -816,8 +855,14 @@ static void pmtr_fetch(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",2);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("fetch");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("fetch");
+     return;
+   }
 
    if (sp[1-args].type==T_INT)
    {
@@ -871,8 +916,14 @@ static void pmtr_new_hashkey_table(INT32 args)
 
    get_all_args("new_hashkey_table",args,"%i",&table_id);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("new_hashkey_table");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("new_hashkey_table");
+     return;
+   }
 
 LOCK(this->parent);
    TRY(mird_key_new_table(this->mtr,(mird_key_t)table_id));
@@ -890,8 +941,14 @@ static void pmtr_new_stringkey_table(INT32 args)
 
    get_all_args("new_hashkey_table",args,"%i",&table_id);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("new_stringkey_table");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("new_stringkey_table");
+     return;
+   }
 
 LOCK(this->parent);
    TRY(mird_s_key_new_table(this->mtr,(mird_key_t)table_id));
@@ -917,8 +974,14 @@ static void pmtr_delete_table(INT32 args)
 
    get_all_args("delete_table",args,"%i",&table_id);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("delete_table");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("delete_table");
+     return;
+   }
   
    LOCK(this->parent);
    TRY(mird_delete_table(this->mtr,(mird_key_t)table_id));
@@ -937,8 +1000,14 @@ static void pmtr_depend_table(INT32 args)
 
    get_all_args("depend_table",args,"%i",&table_id);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("depend_table");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("depend_table");
+     return;
+   }
   
    LOCK(this->parent);
    TRY(mird_depend_table(this->mtr,(mird_key_t)table_id));
@@ -964,8 +1033,14 @@ static void pmtr_first_unused_key(INT32 args)
    else
       get_all_args("first_unused_key",args,"%i",&table_id);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("first_unused_key");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("first_unused_key");
+     return;
+   }
 
 LOCK(this->parent);
    TRY(mird_transaction_find_first_unused(this->mtr,(mird_key_t)table_id,
@@ -985,8 +1060,14 @@ static void pmtr_first_unused_table(INT32 args)
    if (args)
       get_all_args("first_unused_table",args,"%i",&table_id);
 
-   if (!this->mtr) return pmird_no_transaction();
-   if (!this->mtr->db) return pmird_tr_no_database("first_unused_table");
+   if (!this->mtr) {
+     pmird_no_transaction();
+     return;
+   }
+   if (!this->mtr->db) {
+     pmird_tr_no_database("first_unused_table");
+     return;
+   }
 
 LOCK(this->parent);
    TRY(mird_transaction_find_first_unused_table(this->mtr,(mird_key_t)table_id,
