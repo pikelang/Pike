@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.16 2001/08/20 11:54:46 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.17 2001/08/27 20:51:49 nilsson Exp $
  *
  */
 
@@ -325,9 +325,11 @@ class Node
       res += "<tr><td><br /><b>Classes</b></td></tr>\n" +
 	make_navbar_really_low(root->class_children);
 
-    if(root->appendix_children && sizeof(root->appendix_children))
-      res += "<tr><td><br /><b>Appendices</b></td></tr>\n"+
-	make_navbar_really_low(root->appendix_children);
+    if(root->appendix_children) {
+      if(sizeof(root->appendix_children))
+	res += "<tr><td><br /><b>Appendices</b></td></tr>\n"+
+	  make_navbar_really_low(root->appendix_children);
+    }
     else
       res += make_navbar_really_low(root->method_children);
 
@@ -543,6 +545,8 @@ int main(int argc, array(string) argv)
   foreach(sort(indices(profiling)), string f)
     werror("%s: %.1f\n", f, profiling[f]/1000000.0);
   werror("%d unresolved references.\n", unresolved);
+  werror("%d documented functions/classes/modules.\n", sizeof(refs));
+  werror("%d documented constants/variables.\n", sizeof(consts));
 
   return 0;
 }
