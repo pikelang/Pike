@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.26 2004/02/06 12:55:54 nilsson Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.27 2004/02/21 02:11:42 per Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -474,7 +474,7 @@ void update_tracker(void|string event,void|int contact)
 	"downloaded":(string)downloaded,
 	"left":(string)bytes_left(),
 	"port":(string)my_port,
-	"numwant":max(max_peers-sizeof(peers_ordered),100),
+	"numwant":(string)max(max_peers-sizeof(peers_ordered),100),
       ]);
    if (my_ip) req->ip=my_ip;
    if (event) req->event=event;
