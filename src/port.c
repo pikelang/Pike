@@ -184,8 +184,11 @@ void MEMMOVE(void *b,const void *aa,int s)
 {
   char *t=(char *)b;
   char *a=(char *)aa;
-  if(a>b) for(;s;s--) *(t++)=*(a++);
-  if(a<b) for(t+=s,a+=s;s;s--) *(--t)=*(--a);
+  if(a>t)
+    for(;s;s--) *(t++)=*(a++);
+  else
+    if(a<t)
+      for(t+=s,a+=s;s;s--) *(--t)=*(--a);
 }
 #endif
 
