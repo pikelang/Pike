@@ -105,6 +105,12 @@ mixed a() { [[\$1]];})]])
 define(test_compile_error_any,[[DOTEST(COMPILE_ERROR,dnl
 [[\$1]])]])
 
+define(test_compile_warning,[[DOTEST(COMPILE_WARNING,dnl
+mixed a() { [[\$1]];})]])
+
+define(test_compile_warning_any,[[DOTEST(COMPILE_WARNING,dnl
+[[\$1]])]])
+
 define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
 mixed a() { [[\$1]]; })]])
 
@@ -125,7 +131,10 @@ define([[CONDITION]],[[COND \$1
 \$2
 define([[CONDITION]],[[]])
 ]])
+
 define(ifefun,[[cond([[all_constants()->\$1]],[[\$2]])]])
+
+define(nonregression,cond([[!all_constants()->regression]],[[\$1]]))
 
 define(TESTNO,0)
 
