@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.353 2003/06/02 19:00:39 mast Exp $
+# $Id: Makefile.in,v 1.354 2003/06/03 01:07:11 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -300,11 +300,11 @@ rsif: $(TMP_BINDIR)/rsif Makefile
 	( sed -e 's!pike!$(exec_prefix)/pike!' <$(TMP_BINDIR)/rsif \
 	  >./rsif && chmod 755 ./rsif) || exit 1 ;
 
-dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
+dump_modules: pike master-stamp
 	-rm dumpmodule.log
 	args="$(DUMPARGS)"; \
 	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
-	$(RUNPIKE) $(SRCDIR)/dumpmodule.pike $$args \
+	$(RUNPIKE) -x dump $$args \
 	--recursive --target-dir=lib "$(LIBDIR_SRC)/modules"
 
 force_dump_modules:
