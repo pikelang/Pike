@@ -1,7 +1,8 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.2 2002/12/05 19:51:03 nilsson Exp $
+// -*- pike -*- $Id: rsif.pike,v 1.3 2002/12/14 04:34:15 nilsson Exp $
 
-string version = ("$Revision: 1.2 $"/" ")[1];
+constant version = ("$Revision: 1.3 $"/" ")[1];
+constant description = "Replaces strings in files.";
 int(0..1) verbosity = 1; // more output
 int(0..1) overwrite = 1; // no backups
 int(0..1) recursive = 0; // not recursive

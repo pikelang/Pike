@@ -1,5 +1,6 @@
-// $Id: benchmark.pike,v 1.1 2002/12/06 20:00:50 nilsson Exp $
+// $Id: benchmark.pike,v 1.2 2002/12/14 04:34:15 nilsson Exp $
 
+constant description = "Runs some built in Pike benchmarks.";
 constant help = #"
 Benchmarks Pike with %d built in benchmark tests.
 Arguments:

@@ -1,4 +1,6 @@
-// $Id: assemble_autodoc.pike,v 1.23 2002/12/13 12:40:11 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.24 2002/12/14 04:34:15 nilsson Exp $
+
+constant description = "Assembles AutoDoc output file.";
 
 // AutoDoc mk II assembler
 

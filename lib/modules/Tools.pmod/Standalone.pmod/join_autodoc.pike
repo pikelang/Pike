@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.9 2002/12/05 16:42:50 grubba Exp $
+ * $Id: join_autodoc.pike,v 1.10 2002/12/14 04:34:15 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -7,6 +7,7 @@
  * Usage: pike -x join_autodoc --post-process dest.xml files_to_join.xml [...]
  */
 
+constant description = "Joins AutoDoc extracttions.";
 mapping sub_cache = ([]);
 
 int main(int n, array(string) args) {

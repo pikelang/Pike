@@ -1,6 +1,8 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.5 2002/09/13 23:12:42 marcus Exp $
+// $Id: module.pike,v 1.6 2002/12/14 04:34:15 nilsson Exp $
+
+constant description = "Pike module installer.";
 
 // Source directory
 string srcdir;
