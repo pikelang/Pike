@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.25 1999/08/17 18:57:37 grubba Exp $
+ * $Id: sendfile.c,v 1.26 1999/08/27 23:44:13 hubbe Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -454,7 +454,7 @@ void worker(void *this_)
 	  }
 	  mem = mmap(NULL, len, PROT_READ, MAP_FILE|MAP_SHARED,
 		     this->from_fd, this->offset);
-	  if (mem == MAP_FAILED) {
+	  if (((long)mem) == ((long)MAP_FAILED)) {
 	    /* Try using read & write instead. */
 	    goto use_read_write;
 	  }
