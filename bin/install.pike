@@ -1114,6 +1114,7 @@ void do_export()
 
 #endif /* GENERATE_WIX_ACTIONS */
 
+#if 0
     // Generate the main wxs file.
 
     status("Creating", export_base_name+".wxs");
@@ -1257,6 +1258,7 @@ void do_export()
 			]))->add_child(product_node));
 
     Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
+#endif /* 0 */
   } else {
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
