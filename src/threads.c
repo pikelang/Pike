@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.161 2002/01/24 16:42:20 grubba Exp $");
+RCSID("$Id: threads.c,v 1.162 2002/06/17 15:44:13 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -527,7 +527,9 @@ PMOD_EXPORT void f_all_threads(INT32 args)
   for(x=0; x<THREAD_TABLE_SIZE; x++)
     for(s=thread_table_chains[x]; s; s=s->hashlink) {
       struct object *o = THREADSTATE2OBJ(s);
-      ref_push_object(o);
+      if (o) {
+	ref_push_object(o);
+      }
     }
   mt_unlock( & thread_table_lock );
   f_aggregate(DO_NOT_WARN(Pike_sp - oldsp));
