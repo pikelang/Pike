@@ -12,6 +12,7 @@
 #include "config.h"
 #include "program.h"
 
+#ifdef DEBUG
 extern void dump_stralloc_strings(void);
 void f__dump_string_table(INT32 args)
 {
@@ -25,7 +26,7 @@ void f__string_debug(INT32 args)
   pop_n_elems(args);
   push_string(add_string_status(args));
 }
-
+#endif
 static char *program_name(struct program *p)
 {
   char *f;

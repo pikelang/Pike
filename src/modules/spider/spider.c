@@ -1857,12 +1857,13 @@ void init_spider_efuns(void)
   add_efun("parse_accessed_database", f_parse_accessed_database,
 	   "function(string:array)", OPT_TRY_OPTIMIZE);
 
+#if DEBUG
   add_efun("_string_debug", f__string_debug, "function(void|mixed:string)", 
 	   OPT_EXTERNAL_DEPEND);
 
   add_efun("_dump_string_table", f__dump_string_table, 
 	   "function(:array(array))",  OPT_EXTERNAL_DEPEND);
-
+#endif
   add_efun("_num_dest_objects", f__num_dest_objects, "function(:int)", 
 	   OPT_EXTERNAL_DEPEND);
 

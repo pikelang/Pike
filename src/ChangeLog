@@ -1,3 +1,8 @@
+Sun Dec  8 21:54:37 1996  David Hedbor  <neotron@mouser.hedbor.org.>
+
+	* port.h (EXTRACT_UWORD): *_*WORD was defined as *_*WARD_ when
+ 	compiling without debug.
+
 Sat Dec  7 18:10:34 1996  David Hedbor  <neotron@mouser.hedbor.org.>
 
 	* port.h: Fixed declaraion for MEMCMP.

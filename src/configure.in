@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.32 1996/12/07 23:31:45 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.33 1996/12/09 05:59:28 neotron Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -31,9 +31,9 @@ AC_ARG_WITH(threads, [  --without-threads      no threads support],[],[with_thre
 AC_ARG_WITH(zlib,    [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 
-if test x$with_debug = xyes ; then
-  AC_DEFINE(DEBUG)
-fi
+# if test x$with_debug = xyes ; then
+#   AC_DEFINE(DEBUG)
+# fi
 
 #############################################################################
 
