@@ -1770,18 +1770,29 @@ class ParseBlock
 array(PC.Token) convert_comments(array(PC.Token) tokens)
 {
   // Filter AutoDoc mk II, and convert other C++ comments to C-style.
-  return map(filter(tokens,
-		    lambda(PC.Token token) {
-		      return !(has_prefix((string)token, "//!") ||
-			       has_prefix((string)token, "/*!"));
-		    }),
-	     lambda(PC.Token token) {
-	       if (has_prefix((string)token, "//")) {
-		 return PC.Token("/*" + ((string)token)[2..] + " */");
-	       } else {
-		 return token;
-	       }
-	     });
+  array new = ({});
+  array autodoc;
+
+  foreach(tokens, PC.Token token) {
+    if(has_prefix((string)token, "//!") ||
+       has_prefix((string)token, "/*!")) {
+      if(!autodoc)
+	autodoc = ({});
+      autodoc += ({ ((string)token)[3..] });
+    }
+    else {
+      if(autodoc) {
+	new += ({ PC.Token("/*!" + autodoc*"\n *!" ) });
+	autodoc = 0;
+      }
+      if(has_prefix((string)token, "//"))
+	new += ({ PC.Token("/*" + ((string)token)[2..] + " */") });
+      else
+	new += ({ token });
+    }
+  }
+
+  return new;
 }
 
 int main(int argc, array(string) argv)
