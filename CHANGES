@@ -1,4 +1,4 @@
-Changes since Pike 7.4.28:
+Changes in Pike 7.4.LATER:
 ----------------------------------------------------------------------
 
 o Added Memory.shmat on Windows.
@@ -20,7 +20,7 @@ o Robustness fixes in the backend.
 o The normal bunch of unspecified core fixes for rare problems
   discovered since the last release.
 
-Changes since Pike 7.4.20:
+Changes in Pike 7.4.28:
 ----------------------------------------------------------------------
 
 o Generation of LDSHARED bugfixed so that building of 3:rd party
@@ -78,9 +78,10 @@ o Stdio.File()->grantpt() fixed to work with SysV systems.
 o New function Stdio.File()->openpt() to portably get a pty master for
   use with grantpt().
 o Raised the maximum allocation limit for the garbage collector. This
-  fixes a problem with too frequent gc runs for busy processes.
+  fixes a problem with too frequent gc runs for large and busy
+  processes.
 
-Changes since Pike 7.4.10:
+Changes in Pike 7.4.20:
 ----------------------------------------------------------------------
 
 o Bugfix in Parser.C. "!=" is now considered one token instead of two.
@@ -198,7 +199,7 @@ o Added more consistency checks to detect thread problems. This is
   enabled with the new -dT argument (--with-rtldebug is not necessary).
 o Fixed bug in foreach range optimization.
 
-Changes since Pike 7.2.30:
+Changes in Pike 7.4.10 since 7.2.30:
 ----------------------------------------------------------------------
 
 New/improved functionality:
