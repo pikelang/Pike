@@ -9,17 +9,17 @@ inherit window;
 // Once you have created one instance of this widget, you would add
 // your main application view information to this window by using
 // set_contents() routine.
-// <p>
+// </p><p>
 // The GnomeApp has support for including a menubar, one or more
 // toolbars and a statusbar for your application. It also takes care
 // of intalling the accelerators for you when used in conjuction with
 // the gnome-app-helper routines. The toolbars are inserted into
 // Gnome.Dock widgets.
-// <p>
+// </p><p>
 // The gnome-app-helper module provides various helper routines to
 // simplify the configuration of your menus and toolbars, but you can
 // create those yourself and use the set_menus(), add_toolbar(),
-// set_toolbar(), add_dock_item() and add_docked().
+// set_toolbar(), add_dock_item() and add_docked().</p>
 
 void create( string appname, ?string title );
 // Create a new (empty) application window. You must specify the
@@ -45,14 +45,14 @@ void add_toolbar( toolbar toolbar, string name, int behavior, int placement, int
 // overridden by the saved configuration, if any.
 // <p>
 //
-// toolbar : Toolbar to be added to app's dock<br>
-// name : Name for the dock item that will contain toolbar<br>
+// toolbar : Toolbar to be added to app's dock<br />
+// name : Name for the dock item that will contain toolbar<br />
 // behavior : Behavior for the new dock item. One or more of CONST(GNOME_DOCK_ITEM_BEH)
-// placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br>
-// band_num : Number of the band where the dock item should be placed
-// band_position : Position of the new dock item in band band_num
+// placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br />
+// band_num : Number of the band where the dock item should be placed<br />
+// band_position : Position of the new dock item in band band_num<br />
 // offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
-
+// </p>
 void add_docked( widget widget, string name, int behavior, int placement, int band_num, int band_position, ?int offset );
 // Create a new Gnome.DockItem widget containing widget, and add it
 // to app's dock with the specified layout information. Notice that,
@@ -60,14 +60,14 @@ void add_docked( widget widget, string name, int behavior, int placement, int ba
 // overridden by the saved configuration, if any.
 // <p>
 //
-// widget : Widget to be added to app's dock<br>
-// name : Name for the dock item that will contain toolbar<br>
+// widget : Widget to be added to app's dock<br />
+// name : Name for the dock item that will contain toolbar<br />
 // behavior : Behavior for the new dock item. One of CONST(GNOME_DOCK_ITEM_BEH)
-// placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br>
-// band_num : Number of the band where the dock item should be placed
-// band_position : Position of the new dock item in band band_num
+// placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br />
+// band_num : Number of the band where the dock item should be placed <br />
+// band_position : Position of the new dock item in band band_num <br />
 // offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
-
+// </p>
 void add_dock_item( gnome_dock_item item, int placement, int band_num, int band_position, ?int offset );
 // Create a new Gnome.DockItem widget containing widget, and add it
 // to app's dock with the specified layout information. Notice that,
@@ -75,12 +75,12 @@ void add_dock_item( gnome_dock_item item, int placement, int band_num, int band_
 // overridden by the saved configuration, if any.
 // <p>
 //
-// item : Item to be added to app's dock<br>
-// placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br>
-// band_num : Number of the band where the dock item should be placed
-// band_position : Position of the new dock item in band band_num
+// item : Item to be added to app's dock<br />
+// placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br />
+// band_num : Number of the band where the dock item should be placed <br />
+// band_position : Position of the new dock item in band band_num<br />
 // offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
-
+// </p>
 void enable_layout_config( int enable );
 // Specify whether the the dock's layout configuration should be
 // automatically saved via gnome-config whenever it changes, or not.

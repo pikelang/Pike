@@ -23,6 +23,7 @@ NAME_ARGS(title, buttons);
 // starting with 0. So the first button in the arglist is button 0,
 // then button 1, etc. These numbers are used throughout the
 // Gnome.Dialog API.
+// </p>
 {
   char *title;
   char **buttons;
@@ -72,10 +73,11 @@ int  run( );
 // which by default destroys the dialog. If your button clicks do not
 // destroy the dialog, you don't know whether the dialog is destroyed
 // when run() returns. This is bad.
-// <p>
+// </p><p>
 // So you should either close the dialog on button clicks as well, or
 // change the close() behavior to hide instead of destroy. You can do
 // this with close_hides().
+// </p>
 
 int run_and_close( );
 // See run(). The only difference is that this function calls close()
@@ -100,7 +102,7 @@ void close();
 // <p>
 // Using close() in place of hide() or destroy() allows you to easily
 // catch all sources of dialog closure, including delete_event and
-// button clicks, and handle them in a central location.
+// button clicks, and handle them in a central location. </p>
 
 void set_close( int click_closes );
 // This is a convenience function so you don't have to connect

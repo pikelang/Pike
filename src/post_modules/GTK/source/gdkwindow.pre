@@ -59,7 +59,7 @@ FUNCTION(is_visible, "function(void:int)");
 }
 
 FUNCTION(set_cursor, "function(int:object)");
-// Change the window cursor.<table border=0 cellpadding=3 cellspacing=0>
+// Change the window cursor.<table border="0" cellpadding="3" cellspacing="0">
 // CURS(GDK.Arrow)
 // CURS(GDK.BasedArrowDown)
 // CURS(GDK.BasedArrowUp)
@@ -384,21 +384,21 @@ NAME_ARGS(property, offset, delete_when_done);
 // Returns the value (as a string) of the specified property.
 // The arguments are:
 // <p>
-// property: The property atom, as an example GDK.Atom.__SWM_VROOT<br>
-// offset (optional): The starting offset, in elements<br>
+// property: The property atom, as an example GDK.Atom.__SWM_VROOT<br />
+// offset (optional): The starting offset, in elements<br />
 // delete_when_done (optional): If set, the property will be deleted when it has
-// been fetched.<br>
-// <p>
+// been fetched.<br />
+// </p><p>
 // Example usage: Find the 'virtual' root window (many window managers
 // put large windows over the screen)
-// <p>
+// </p><p>
 // <pre>
 // &nbsp; GDK.Window root = GTK.root_window();
 // &nbsp; array maybe=root->children()->
 // &nbsp;             get_property(GDK.Atom.__SWM_VROOT)-({0});
 // &nbsp; if(sizeof(maybe))
 // &nbsp;   root=GDK.Window( maybe[0]->data[0] );
-// </pre>
+// </pre></p>
 {
   guchar *retdata;
   GdkAtom actual_property_type;

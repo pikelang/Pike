@@ -16,11 +16,11 @@ inherit bin;
 // clipping on it's contents. Although the name EventBox emphasizes
 // the event-handling function, the widget can also be used for
 // clipping.
-//<p>
+// </p><p>
 // The primary use for this widget is when you want to receive events
 // for a widget without a window. Examples of such widgets are labels
 // and images.
-//
+// </p>
 // IMG: GTK.EventBox()->set_usize(100,100)
 void create();
 // Create a new event box widget

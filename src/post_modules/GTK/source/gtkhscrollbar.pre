@@ -3,7 +3,7 @@ inherit scrollbar;
 // A horizontal scrollbar.<p>
 // General documentation: See W(Scrollbar)
 // IMG: GTK.Hscrollbar(GTK.Adjustment())->set_usize(300,15)
-//
+//</p>
 void create( ?adjustment adjustment );
 // Used to create a new vscale widget.
 // The adjustment argument can either be an existing W(Adjustment), or

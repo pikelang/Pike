@@ -187,7 +187,7 @@ NAME_ARGS(argv, do_not_parse_rc);
 // The second argument, if supplied, indicates that pike specific *rc files
 // should <b>not</b> be parsed.
 // <p>
-// The most common usage is GTK.setup_gtk(argv);
+// The most common usage is GTK.setup_gtk(argv);</p>
 {
   char **data;
   int argc;
@@ -336,8 +336,8 @@ NAME_ARGS(argc,no_pgtkrc);
 
 
 FUNCTION(main, "function(void:void)");
-// Start GTK in blocking mode.<br>
-// Doing this disables asynchronous I/O in pike.<br>
+// Start GTK in blocking mode.<br />
+// Doing this disables asynchronous I/O in pike.<br />
 // You can return -1 from main in pike to run GTK (and the rest of
 // pike) in asynchrounous mode.
 {

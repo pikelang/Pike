@@ -20,12 +20,12 @@ void set_justify( int justify );
 void set_line_wrap( int wrapp );
 // Should the label autolinewrap?
 void set_pattern( string pattern_string );
-// A string with either spaces or underscores.<br>
+// A string with either spaces or underscores.<br />
 // It should be of the same length as the text.
 // <p>
 // When a character in the text has a matching _ in the pattern, the
 // character in the label will be underlined.
-// <p>
+// </p>
 int parse_uline( string uline_string );
 // Convenience function to set the text and pattern by parsing
 // a string with embedded underscores, returns the appropriate

@@ -7,16 +7,16 @@ inherit menu_shell;
 // A GTK.Menu is most commonly dropped down by activating a W(MenuItem)
 // in a W(MenuBar) or popped up by activating a W(MenuItem) in another
 // GTK.Menu.
-// <p>
+// </p><p>
 // A GTK.Menu can also be popped up by activating a
 // W(OptionMenu). Other composite widgets such as the W(Notebook) can
 // pop up a GTK.Menu as well.
-// <p>
+// </p><p>
 // Applications can display a GTK.Menu as a popup menu by calling the
 // popup() function. The example below shows how an application can
 // pop up a menu when the 3rd mouse button is pressed.
-// <p>
-// <pre><font size=-1>
+// </p><p>
+// <pre><font size="-1">
 // &nbsp; GTK.Menu menu = create_menu();
 // &nbsp; GTK.Window window = create_window();
 // &nbsp; window->signal_connect( "button_press_event", lambda(GTK.Menu m,
@@ -25,7 +25,7 @@ inherit menu_shell;
 // &nbsp;           if( e->button == 3 )
 // &nbsp;            menu->popup();
 // &nbsp;        }, menu );
-// <font size=-1></pre>
+// </font></pre></p>
 FUNCTION(popup, "function(int|void:object)")
 RETURNS(GTK.Menu);
 NAME_ARGS(button_pressed_to_show_menu);
@@ -66,7 +66,7 @@ void set_title( string new_title );
 // Sets the title string for the menu. The title is displayed when the
 // menu is shown as a tearoff menu.
 widget get_active();
-// Returns the selected menu item from the menu.<br>
+// Returns the selected menu item from the menu.<br />
 //  This is used by the W(OptionMenu).
 widget get_attach_widget();
 // Returns the W(Widget) that the menu is attached to.

@@ -1,11 +1,12 @@
 class tree;
 inherit container;
 // A 'tree' with subnodes etc.  Do not have a tree with more than 100
-// or so entries. It will be very slow.<br>
+// or so entries. It will be very slow.<br />
 // Whenever possible, use W(Ctree) instead, it's way faster.
 // <p>
 // IMG: lambda() { object t = GTK.Tree();  object i, t2;  t->add(i = GTK.Tree_item("Sub node 1"));  i->set_subtree( GTK.Tree() );  t->add(i = GTK.Tree_item("Sub node 2"));  i->set_subtree( t2=GTK.Tree() );  call_out(i->expand, 0);  t2->add( GTK.Tree_item("Sub sub 1") );  t2->add( GTK.Tree_item("Sub sub 2") );  t->add(i = GTK.Tree_item("Sub node 3"));  i->set_subtree( GTK.Tree() );  return t;}()
 // IMG: lambda() { object t = GTK.Tree();  object i, t2;  t->add(i = GTK.Tree_item("Sub node 1"));  i->set_subtree( GTK.Tree() );  t->add(i = GTK.Tree_item("Sub node 2"));  i->set_subtree( t2=GTK.Tree() );  call_out(i->expand, 0);  t2->add( GTK.Tree_item("Sub sub 1") );  t2->add( GTK.Tree_item("Sub sub 2") );  t->add(i = GTK.Tree_item("Sub node 3"));  i->set_subtree( GTK.Tree() );  return t;}()->set_view_lines(0)
+// </p>
 signal selection_changed;
 signal select_child;
 signal unselect_child;

@@ -10,9 +10,10 @@ inherit hbox;
 // message on top of the stack is the one displayed, no matter what
 // context it is in. Messages are stacked in last-in-first-out order,
 // not context identifier order.
-//  <p>
+//  </p><p>
 // IMG: lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()
 // IMG: lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()
+// </p>
 signal text_pushed;
 signal text_poped;
 void create();

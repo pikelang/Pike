@@ -1,10 +1,10 @@
 require libglade;
 class GladeXML;
 
-// <a href=http://glade.pn.org/>Glade</a> is a free GUI builder for
+// <a href="http://glade.pn.org/">Glade</a> is a free GUI builder for
 // GTK+ and Gnome. It's normally used to create C-code, but can also
 // produce code for other languages. <a
-// href=http://www.daa.com.au/~james/gnome/>Libglade</a> is a utility
+// href="http://www.daa.com.au/~james/gnome/">Libglade</a> is a utility
 // library that builds the GUI from the Glade XML save files. This
 // module uses libglade and allows you to easily make GUI designs to
 // be used with your Pike applications. Since PiGTK doesn't
@@ -15,7 +15,7 @@ class GladeXML;
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.8 2000/10/13 06:35:42 per Exp $");
+RCSID("$Id: gladexml.pre,v 1.9 2000/10/17 17:41:07 per Exp $");
 
 %{
 /* This function is used by signal_autoconnect to handle signal
@@ -326,4 +326,4 @@ RETURNS(void);
   pop_n_elems(args);
 }
 
-// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.8 2000/10/13 06:35:42 per Exp $</i></font>
+// <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.9 2000/10/17 17:41:07 per Exp $</i></font></p>

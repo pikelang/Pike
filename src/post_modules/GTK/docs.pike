@@ -32,7 +32,7 @@ string make_tag(string s, mapping(string:string) in)
 string make_container(string s, mapping(string:string) in, string contents)
 {
   if(in["/"]) m_delete(in, "/");
-  return make_tag(s,in)+contents+"</"+s+">";
+  return make_tag(s,in)+replace(contents, "&nbsp;", "&#160;")+"</"+s+">";
 }
 
 
@@ -140,6 +140,7 @@ void print_function_defs( string f, int|void global )
     global = 1;
 
   object fd = Stdio.File("xmldocs/"+class_file_name( f ), "wct");
+  fd->write("<?xml version=\"1.0\"?>\n");
 
   if( struct[f]->create )
   {
@@ -150,7 +151,8 @@ void print_function_defs( string f, int|void global )
   } else
     fd->write( make_tag( "class", (["name":classname( f ), "nocreate":""]) ) );
 
-  fd->write( make_container( "doc", ([]), docs[f]||"" ) );
+  fd->write( make_container( "doc", ([]), docs[f]||""));
+  
 
   if(!global)
   {
@@ -242,7 +244,7 @@ void print_rec_tree(array plane, mapping t, int ind, object to)
 {
   foreach(sort(plane), string n)
   {
-    print_function_defs( n );
+    //    print_function_defs( n );
 //  werror(" "*ind + n+"\n");
     to->write("<li><a href="+class_file_name(n)+">"+classname(n)+"</a>");
     if(t[n])
@@ -300,10 +302,13 @@ array (string) sort_dependencies( array bunch, mapping extra )
     }
     fd->write("<h1>All classes in alphabetical order</h1>\n");
     fd->write("<ul>");
-    foreach(Array.sort_array(indices(struct), fnamesfun), string s)
-      if(s != "global")
+    foreach(Array.sort_array(indices(struct), fnamesfun), string s) {
+      if(s != "global") {
         fd->write("<li> <a href="+class_file_name(s)+">"+
                   classname(s)+"</a>\n");
+	print_function_defs( s );
+      }
+    }
     fd->write("</ul>\n");
 //     fd->write("<h1>All constants in alphabetical order</h1>\n");
 //     fd->write("<ul>");
@@ -418,16 +423,16 @@ string build_cursor( string a )
   sscanf( a, "GDK.%s", a );
   num = master()->resolv("GDK")[a];
 
-  return "<tr bgcolor="+(odd++%2?"#f6e0d0":"#faebd7")+
-         "><td><font color=black>GDK."+a+"</font></td>"
-         "<td><img src=cursor_"+num+".gif></td>"
-         "<td><img src=cursor_"+num+"_inv.gif></td>"
-         "<td><img src=cursor_"+num+"_red.gif></td>"
-         "<td><img src=cursor_"+num+"_red_inv.gif></td>"
-         "<td><img src=cursor_"+num+"_green.gif></td>"
-         "<td><img src=cursor_"+num+"_green_inv.gif></td>"
-         "<td><img src=cursor_"+num+"_blue.gif></td>"
-         "<td><img src=cursor_"+num+"_blue_inv.gif></td>"
+  return "<tr bgcolor=\""+(odd++%2?"#f6e0d0":"#faebd7")+
+         "\"><td><font color=\"black\">GDK."+a+"</font></td>"
+         "<td><img src=\"cursor_"+num+".gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_inv.gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_red.gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_red_inv.gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_green.gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_green_inv.gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_blue.gif\" /></td>"
+         "<td><img src=\"cursor_"+num+"_blue_inv.gif\" /></td>"
          "</tr>";
 }
 

@@ -6,15 +6,16 @@ inherit container;
 // <p>
 // IMG: GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0"), 0, 1, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,0"), 1, 2, 0, 1)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)
 // IMG: GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0-1,0"), 0, 2, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)
+// </p>
 void create( int width, int height, int homogeneousp );
 // Used to create a new table widget. An initial size must be given by
 // specifying how many rows and columns the table should have,
 // although this can be changed later with resize().
 // <p>
 // There can never be more than 65535 colums nor more than 65535 rows.
-// <p>
+// </p><p>
 // setting homogeneousp to 1 forces the all tablecells to be exactly
-// the same size.
+// the same size.</p>
 void resize( int rows, int columns );
 // If you need to change a table's size after it has been created,
 // this function allows you to do so.
@@ -30,24 +31,25 @@ void attach( widget subwidget, int left, int right, int top, int bottom, int xop
 // table, you'd use left_attach = 0, right_attach = 2, top_attach = 0,
 // bottom_attach = 1.
 // </p>
-// The xoptions and yoptions are used to specify packing options and
-// may be OR'ed together to allow multiple options.
+// <p>The xoptions and yoptions are used to specify packing options and
+// may be OR'ed together to allow multiple options.</p>
 // <p>
 // These options are:
 // <ul>
 // <li> GTK.Fill - If the table box is larger than the widget, and
 // GTK_FILL is specified, the widget will expand to use all the room
-// available.
+// available.</li>
 // <li> GTK.Shrink - If the table widget was allocated less space then
 // was requested (usually by the user resizing the window), then the
 // widgets would normally just be pushed off the bottom of the window
 // and disappear. If GTK_SHRINK is specified, the widgets will shrink
-// with the table.
+// with the table.</li>
 // <li> GTK.Expand - This will cause the table cell to expand to use
-// up any remaining space in the window.  </ul>
-// <p>
+// up any remaining space in the window.</li>
+//  </ul>
+// </p><p>
 // Padding is just like in boxes, creating a clear area around the
-// widget specified in pixels
+// widget specified in pixels</p>
 void attach_defaults( widget subwidget, int left, int right, int top, int bottom );
 // As there are many options associated with attach(), this
 // convenience function provides the programmer with a means to add
@@ -55,7 +57,7 @@ void attach_defaults( widget subwidget, int left, int right, int top, int bottom
 // <p>
 // xoptions, yoptions, xpadding and ypadding are all set the their
 // default values. For the options that is GTK.Fill|GTK.Expand. For
-// the padding it is 0.
+// the padding it is 0.</p>
 void set_col_spacing( int x, int spacing );
 // alters the amount of space between a given table column and the
 // adjacent columns.

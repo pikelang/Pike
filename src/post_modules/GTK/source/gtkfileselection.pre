@@ -10,17 +10,18 @@ inherit window;
 // <p>
 // The default filename can be set using set_filename() and the
 // selected filename retrieved using get_filename().
-// <p>
+// </p><p>
 // Use complete() to display files that match a given pattern. This
 // can be used for example, to show only *.txt files, or only files
 // beginning with gtk*.
-// <p>
+// </p><p>
 // Simple file operations; create directory, delete file, and rename
 // file, are available from buttons at the top of the dialog. These
 // can be hidden using hide_fileop_buttons() and shown again using
 // show_fileop_buttons().
-// <p>
+// </p><p>
 // TIMG: GTK.FileSelection("File selector")
+// </p>
 
 subwidget button ok_button;
 // The ok button

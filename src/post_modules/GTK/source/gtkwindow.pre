@@ -31,7 +31,7 @@ void set_transient_for( window parent );
 // Most window managers renders transient windows differently (different
 // borders, sometimes no resize widgets etc)
 // <p>
-// Useful for short lived dialogs.
+// Useful for short lived dialogs.</p>
 void set_default_size( int width, int height );
 // The following differs from set_usize, in that
 // set_usize() overrides the requisition, and thus sets a minimum

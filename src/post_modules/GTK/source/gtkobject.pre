@@ -74,6 +74,7 @@ NAME_ARGS(signal_name,callback_function,callback_arg);
 // The return value of this function can be used to remove a signal
 // with signal_disconnect, and block and unblock the signal will
 // signal_block and signal_unblock.
+// </p>
 {
   char *a;
   int id;

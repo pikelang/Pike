@@ -13,7 +13,7 @@ inherit container;
 // dragging functionality: every GnomeDockItem has a handle that users
 // can use to move them within the dock, or even move them outside it,
 // so that they become "floating items".
-// <p>
+// </p><p>
 // Every "dock area" is implemented by means of zero or more "dock
 // bands": a dock band is a horizontal or vertical stripe containing
 // one or more dock items, and is implemented by the GnomeDockBand
@@ -22,13 +22,14 @@ inherit container;
 // is given an offset value that defines the distance, in pixels, from
 // the previous item in the same band; if the item is first in the
 // band, the offset defines the distance from the start of the band.
-// <p>
+// </p><p>
 // As a consequence, the position of an item in the dock can be
 // specified by means of the following values: a "placement"
 // specifying what area is being used (top, bottom, left, right), a
 // "band number" specifying the number of the band within the
 // specified area, a "position" within the band and a "offset" from
 // the previous item in the same band.
+// </p>
 
 signal layout_changed;
 

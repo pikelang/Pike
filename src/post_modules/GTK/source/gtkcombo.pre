@@ -9,7 +9,7 @@ inherit hbox;
 // <p>
 // The combo box has two principal parts that you as the programmer
 // really care about: The W(entry) and the W(list).
-// <p>
+// </p>
 // IMG: GTK.Combo()
 void create();
 // Create a new combo box

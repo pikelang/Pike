@@ -12,7 +12,7 @@ inherit object;
 // the whole window pops up at once rather than seeing the individual
 // widgets come up on the screen as they're formed. The children of a
 // widget (a window is a widget too) will not be displayed until the
-// window itself is shown using the show() function.
+// window itself is shown using the show() function.</p>
 signal show;
 // Called when the widget is shown
 signal hide;
@@ -141,7 +141,7 @@ FUNCTION(set_background, "function(object:object)");
 NAME_ARGS(background);
 // Set the background color or image.
 // The argument is either a GDK.Pixmap or a GDK.Color object.
-// <br>NOTE: The widget must be realized before this function can be used
+// <br />NOTE: The widget must be realized before this function can be used
 {
   struct object *o;
   get_all_args("set_background", args, "%o", &o);
@@ -161,7 +161,7 @@ NAME_ARGS(gc,xdest,ydest,source,xsource,ysource,width,height);
 // Copies the rectangle defined by xsource,ysource and width,height
 // from the source widget, and places the results at xdest,ydest in
 // the widget in which this function is called.
-// <br>NOTE: The widget must be realized before this function can be used
+// <br />NOTE: The widget must be realized before this function can be used
 {
   struct object *gc, *source;
   GdkWindow *win;
@@ -204,7 +204,7 @@ NAME_ARGS(shape, xoffset,yoffset);
 // the supplied bitmap. Notice how the window behind the example
 // window can be seen because of the rather odd shape the example window has.
 // TIMG: GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)
-// <br>NOTE: The widget must be realized before this function can be used
+// <br />NOTE: The widget must be realized before this function can be used
 {
   struct object *m;
   INT_TYPE x, y;
@@ -260,25 +260,25 @@ void add_accelerator( string signal, accel_group group, int key, int modifiers, 
 // Add an accelerator (keyboard shortcut).
 // <p>
 // Flag is one of CONST(GTK_ACCE)
-// <br>
+// <br />
 // The signal is the signal to invoke when the accelerator key is pressed.
-// <br>
+// <br />
 // The modifiers is a bitwise or of one or more of GDK.ShiftMask,
 // GDK.LockMask, GDK.ControlMask, CONST(GDK_MOD).
-// <br>
+// <br />
 // The group is the accelerator group in which the accelerator should be added.
-// <br>
-// The key is the unicode code for the key to bind.
+// <br />
+// The key is the unicode code for the key to bind.</p>
 
 void remove_accelerator( accel_group group, int key, int modifiers );
 // Remove an accelerator (keyboard shortcut).
 // <p>
 // The modifiers is a bitwise or of one or more of GDK.ShiftMask,
 // GDK.LockMask, GDK.ControlMask, CONST(GDK_MOD).
-// <br>
+// <br />
 // The group is the accelerator group in which the accelerator should be added.
-// <br>
-// The key is the unicode code for the key to bind.
+// <br />
+// The key is the unicode code for the key to bind.</p>
 
 void set_usize( int xsize, int ysize );
 // Set the absolute size of the widget. It might resize itself anyway,
@@ -293,8 +293,8 @@ void set_uposition( int xpos, int ypos );
 void set_name( string name );
 // Set the name of the widget. The name is used when the rc-file is
 // parsed, you can also parse your own resources by calling
-// GTK.parse_rc() with a resource string. <br>Example: <p>
-// TODO
+// GTK.parse_rc() with a resource string. <br />Example: <p>
+// TODO</p>
 void set_state( int state );
 // One of CONST(GTK_STATE).
 // This function should normaly not be used directly.
@@ -313,10 +313,10 @@ string get_name();
 FUNCTION(set_cursor, "function(int,void|object,void|object:object)");
 ARGS(int|void,void|GDK.Color,void|GDK.Color);
 NAME_ARGS(cursor_type, fg, bg);
-// Change the widget cursor.<br>
-// If no arguments are passed, restore the default cursor.<br>
-// Both fg and bg must be specified if either one is.<br>
-// <table border=0 cellpadding=3 cellspacing=0>
+// Change the widget cursor.<br />
+// If no arguments are passed, restore the default cursor.<br />
+// Both fg and bg must be specified if either one is.<br />
+// <table border="0" cellpadding="3" cellspacing="0">
 // CURS(GDK.Arrow)
 // CURS(GDK.BasedArrowDown)
 // CURS(GDK.BasedArrowUp)
@@ -678,12 +678,12 @@ RETURNS(GTK.Widget);
 
 FUNCTION(drag_dest_set, "function(int,array(array(int|string)),int:object)");
 NAME_ARGS(flags,targets,actions);
-//     Register a drop site, and possibly add default behaviors.<br>
-//   arguments:<br>
-//     flags:     Which types of default drag behavior to use (one of CONST(GTK_DEST_DEFAULT))<br>
+//     Register a drop site, and possibly add default behaviors.<br />
+//   arguments:<br />
+//     flags:     Which types of default drag behavior to use (one of CONST(GTK_DEST_DEFAULT))<br />
 //     targets:   Table of targets that can be accepted
 //            ({ ({ content_type(string), flags(int(try 0)), id(int) }), ...})
-//       The id will be received in the signal handlers.<br>
+//       The id will be received in the signal handlers.<br />
 //     actions:   one of CONST(GDK_ACTION_)
 //   results:
 RETURNS(GTK.Widget);
@@ -720,12 +720,12 @@ RETURNS(GTK.Widget);
 
 FUNCTION(drag_source_set, "function(int,array(array(int|string)),int:object)");
 NAME_ARGS(flags,targets,actions);
-//     Register a drop site, and possibly add default behaviors.<br>
-//   arguments:<br>
-//     buttons:     Which mouse buttons can be used to start the drag<br>
+//     Register a drop site, and possibly add default behaviors.<br />
+//   arguments:<br />
+//     buttons:     Which mouse buttons can be used to start the drag<br />
 //     targets:   Table of targets that can be accepted
 //            ({ ({ content_type(string), flags(int(try 0)), id(int) }), ...})
-//       The id will be received in the signal handlers.<br>
+//       The id will be received in the signal handlers.<br />
 //     actions:   one of CONST(GDK_ACTION_)
 //   results:
 RETURNS(GTK.Widget);
@@ -798,10 +798,10 @@ NAME_ARGS(image,mask);
 FUNCTION(drag_get_data, "function(object,int:object)");
 // Get the data from a context and an integer timestamp, requesting
 // it from the dropping client. This will probably never be used
-// directly.<p>
+// directly.
 //
-// Use the selection argument passed to the drag_data_received signal
-// instead.
+//<p>Use the selection argument passed to the drag_data_received signal
+// instead.</p>
 RETURNS(GTK.Widget);
 ARGS(GDK.DragContext,int);
 NAME_ARGS(context,time);

@@ -7,7 +7,8 @@ inherit paned;
 // makes a horizontal division
 // <p>
 // See W(Paned) for details.
-// <p>
+// </p><p>
 // IMG: GTK.Hpaned()->add1(GTK.Label("Left\nSide\nOf\nPane"))->add2(GTK.Label("Right\nSide\nOf\nPane"))->set_usize(100,100)
+//</p>
 void create();
 

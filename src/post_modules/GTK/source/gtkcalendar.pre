@@ -33,7 +33,7 @@ void display_options( int options );
 // Bitwise or of one or more of CONST(GTK_CALENDAR).
 
 FUNCTION(get_date, "function(void:mapping)");
-// returns a mapping:<br>
+// returns a mapping:<br />
 // ([ "year":year, "month":month, "day":day ])
 {
   guint y, m, d;

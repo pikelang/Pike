@@ -4,10 +4,10 @@ inherit menu_item;
 // IMG: GTK.RadioMenuItem("Menu item")
 FUNCTION(create, "function(string|void,object|void:void)")
 NAME_ARGS(title,groupmember);
-// object GTK.RadioMenuItem(string title) - First button (with label)<br>
-// object GTK.RadioMenuItem()->add(widget) - First button (with widget)<br>
-// object GTK.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br>
-// object GTK.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br>
+// object GTK.RadioMenuItem(string title) - First button (with label)<br />
+// object GTK.RadioMenuItem()->add(widget) - First button (with widget)<br />
+// object GTK.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br />
+// object GTK.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
 {
   GSList *mylist = NULL;
   gchar *label=NULL;

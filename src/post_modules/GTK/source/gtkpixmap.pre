@@ -6,15 +6,16 @@ inherit misc;
 // <p>
 // To use pixmaps in GTK, you must first build a GDK.Pixmap object
 // using GDK.Pixmap.
-// <p>
+// </p><p>
 // The pixels in a GTK.Pixmap cannot be manipulated by the application
 // after creation, since under the X Window system the pixel data is
 // stored on the X server and so is not available to the client
 // application. If you want to create graphical images which can be
 // manipulated by the application, look at W(Image).
-// <p>
+// </p><p>
 // IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )
 // IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
+// </p>
 
 void create( GdkPixmap pixmap, ?GdkBitmap mask );
 // Create a new pixmap object, and sets the image and the mask.
@@ -26,11 +27,11 @@ ARGS(GDK.Pixmap,GDK.Bitmap|void);
 member int build_insensitive;
 
 FUNCTION(get, "function(void:mapping)");
-// Returns ([ <br>
-//            "pixmap":pixmap, <br>
-//            "mask":mask,  <br>
-//            "pixmap_insensitive":insensitive version of the pixmap <br>
-//          ]) <br>
+// Returns ([ <br />
+//            "pixmap":pixmap, <br />
+//            "mask":mask,  <br />
+//            "pixmap_insensitive":insensitive version of the pixmap <br />
+//          ]) <br />
 {
   my_pop_n_elems( args );
 

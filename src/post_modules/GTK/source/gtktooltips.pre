@@ -8,18 +8,18 @@ inherit data;
 // An individual tooltip belongs to a group of tooltips. A group is
 // created with a call to GTK.Tooltips(). Every tooltip in the
 // group can then be turned off with a call to disable()
-// and enabled with enable().
+// and enabled with enable().</p>
 // <p>
 // The length of time the user must keep the mouse over a widget
 // before the tip is shown, can be altered with set_delay(). This is
-// set on a 'per group of tooltips' basis.
+// set on a 'per group of tooltips' basis.</p>
 // <p>
-// To assign a tip to a particular W(Widget), set_tip() is used.
+// To assign a tip to a particular W(Widget), set_tip() is used.</p>
 // <p>
 // The default appearance of all tooltips in a program is determined
 // by the current gtk theme that the user has selected. To change the
 // tooltip appearance manually, use set_colors(). Again, this is per
-// group of tooltips.
+// group of tooltips.</p>
 void create();
 // Creates an empty group of tooltips. This function initialises a
 // GTK.Tooltips structure. Without at least one such structure, you

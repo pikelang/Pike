@@ -12,12 +12,12 @@ inherit widget;
 // the slider towards the location of the click, either completely, or
 // by a designated amount, depending on which mouse button is used.
 // <p>
-// As mentioned in the W(Adjustments) page, all range widgets are
+// As mentioned in the W(Adjustment) page, all range widgets are
 // associated with an adjustment object, from which they calculate the
 // length of the slider and its position within the trough. When the
 // user manipulates the slider, the range widget will change the value
 // of the adjustment.
-// <p>
+// </p><p>
 // All of the GTK range widgets react to mouse clicks in more or less
 // the same way. Clicking button-1 in the trough will cause its
 // adjustment's page_increment to be added or subtracted from its
@@ -26,15 +26,15 @@ inherit widget;
 // the button was clicked. Clicking any button on a scrollbar's arrows
 // will cause its adjustment's value to change step_increment at a
 // time.
-// <p>
+// </p><p>
 // It may take a little while to get used to, but by default,
 // scrollbars as well as scale widgets can take the keyboard focus in
 // GTK. If you think your users will find this too confusing, you can
 // always disable this by unsetting the GTK.CanFocus flag on the
 // scrollbar, like this:
-// <p>
+// </p><p>
 // <tt>scrollbar->unset_flag( GTK.CanFocus );</tt>
-// <p>
+// </p><p>
 // The key bindings (which are, of course, only active when the widget
 // has focus) are slightly different between horizontal and vertical
 // range widgets, for obvious reasons. They are also not quite the
@@ -42,25 +42,25 @@ inherit widget;
 // less obvious reasons (possibly to avoid confusion between the keys
 // for horizontal and vertical scrollbars in scrolled windows, where
 // both operate on the same area).
-// <p>
+// </p>
 void set_update_policy( int when );
 // The "update policy" of a range widget defines at what points during
 // user interaction it will change the value field of its Adjustment
 // and emit the "value_changed" signal on this Adjustment. The update
 // policies are:
-// <dl>
-// <dt>GTK.UpdatePolicyContinuous
+// <p><dl>
+// <dt>GTK.UpdatePolicyContinuous</dt>
 // <dd>This is the default. The "value_changed" signal is emitted
 // continuously, i.e., whenever the slider is moved by even the
-// tiniest amount.
-// <dt>GTK.UpdatePolicyDiscontinuous
+// tiniest amount.</dd>
+// <dt>GTK.UpdatePolicyDiscontinuous</dt>
 // <dd> The "value_changed" signal is only emitted once the slider has
-// stopped moving and the user has released the mouse button.
-// <dt>GTK.UpdatePolicyDelayed
+// stopped moving and the user has released the mouse button.</dd>
+// <dt>GTK.UpdatePolicyDelayed</dt>
 // <dd>The "value_changed" signal is emitted when the user releases
 // the mouse button, or if the slider stops moving for a short period
-// of time.
-// </dl>
+// of time.</dd>
+// </dl></p>
 void set_adjustment( adjustment pos );
 // set_adjustment() does absolutely nothing if you pass it the
 // adjustment that range is already using, regardless of whether you

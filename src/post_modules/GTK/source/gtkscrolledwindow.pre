@@ -9,6 +9,7 @@ inherit window;
 // IMG: GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(70,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)
 // IMG: GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(80,80)
 // IMG: GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)
+// </p>
 void create( ?adjustment hadjustment, ?adjustment vadjustments );
 // The two adjustments are most commonly set to 0.
 void set_hadjustment( adjustment hadjustment );
@@ -32,6 +33,7 @@ NAME_ARGS(victim);
 // <p>
 // What this means in practice is that you do not have to care about
 // this at all, it's all handled automatically.
+// </p>
 {
   GtkWidget *victim;
   struct object *o;

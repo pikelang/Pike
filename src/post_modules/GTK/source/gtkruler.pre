@@ -6,8 +6,8 @@ inherit widget;
 // the height. A small triangular indicator on the ruler shows the
 // exact location of the pointer relative to the ruler.
 void set_metric( int unit );
-// Either GTK.Pixels, GTK.Centimers or GTK.Inches<p>
-// The default measure is GTK.Pixels
+// Either GTK.Pixels, GTK.Centimers or GTK.Inches.
+// <p>The default measure is GTK.Pixels.</p>
 void set_range( float lower, float upper, float position, float max_size );
 // The lower and upper arguments define the extent of the ruler, and
 // max_size is the largest possible number that will be displayed.

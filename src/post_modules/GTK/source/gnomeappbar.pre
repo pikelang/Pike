@@ -29,6 +29,7 @@ void create( int has_progress, int has_status, int interactivity );
 // Gnome.PREFERENCES_USER. Otherwise, use the setting you
 // support. Please note that "interactive" mode is not functional now;
 // GtkEntry is inadequate and so a custom widget will be written eventually.
+// </p>
 
 void set_status( string status );
 // Sets the status label without changing widget state; next set or

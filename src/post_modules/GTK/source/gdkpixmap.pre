@@ -4,7 +4,7 @@ inherit GdkDrawable;
 // Image.image object (or a numeric ID, see your X-manual for XIDs).
 // <p> The GDK.Pixmap object can be used in a lot
 // of different GTK widgets.  The most notable is the W(Pixmap)
-// widget.
+// widget.</p>
 //
 // NOIMG
 %{

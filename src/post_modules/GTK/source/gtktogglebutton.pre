@@ -8,6 +8,7 @@ inherit button;
 // <p>
 // IMG: GTK.ToggleButton("Toggle button")
 // IMG: GTK.ToggleButton("Toggle button")->set_active( 1 )
+// </p>
 signal toggled;
 FUNCTION(create, "function(string|void:void)");
 NAME_ARGS(label);

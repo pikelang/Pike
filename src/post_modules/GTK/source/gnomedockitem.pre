@@ -16,12 +16,12 @@ signal dock_detatch;
 
 void create( string name, int behavior );
 // Create a new GnomeDockItem named name, with the specified behavior.<p>
-//  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. <p>
-//  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. <p>
-//  Gnome.DockItemBehNeverVertical specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.<p>
-//  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.<p>
-//  Gnome.DockItemBehLocked specifies that users cannot drag the item around.<p>
-
+//  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. </p><p>
+//  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. </p><p>
+//  Gnome.DockItemBehNeverVertical specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
+//  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
+//  Gnome.DockItemBehLocked specifies that users cannot drag the item around.
+// </p>
 widget get_child( );
 // Retrieve the child of the item.
 

@@ -9,10 +9,12 @@ inherit editable;
 // The text widget supports full cut-and-paste facilities, including
 // the use of double- and triple-click to select a word and a whole
 // line, respectively.
+// </p>
 // <p>
 // Bugs:<ul>
-//      <li> You cannot add text to the widget before it is realized.
+//      <li> You cannot add text to the widget before it is realized.</li>
 //     </ul>
+// </p>
 // IMG: GTK.Text(GTK.Adjustment(),GTK.Adjustment())
 // IMG: function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->set_text, 0, "Some text")[0])
 // IMG: function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->insert, 0, "Some text", 0, GDK.Color(255,255,0), GDK.Color(0,0,0))[0])
@@ -52,14 +54,14 @@ ARGS(string,GDK.Font,GDK.Color,GDK.Color);
 RETURNS(GTK.Text);
 NAME_ARGS(string,font,bg,fg);
 // syntax:<p>
-// object insert(string what); OR<br>
-// object insert(string what, GDK.Font font, GDK.Color fg, GDK.Color bg); OR<br>
-// object insert(string what, 0, GDK.Color fg, GDK.Color bg); OR<br>
-// object insert(string what, 0, GDK.Color fg); OR<br>
-// object insert(string what, 0, 0, GDK.Color bg);<br>
-// <p>
+// object insert(string what); OR<br />
+// object insert(string what, GDK.Font font, GDK.Color fg, GDK.Color bg); OR<br />
+// object insert(string what, 0, GDK.Color fg, GDK.Color bg); OR<br />
+// object insert(string what, 0, GDK.Color fg); OR<br />
+// object insert(string what, 0, 0, GDK.Color bg);<br />
+// </p><p>
 //
-// Insert new text, optionally with colors.
+// Insert new text, optionally with colors.</p>
 {
   struct svalue *a, *b, *c;
   struct pike_string *s;

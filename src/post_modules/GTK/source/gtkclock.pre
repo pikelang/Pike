@@ -11,9 +11,9 @@ inherit label;
 // displays the current time, count-up/increasing - which counts up
 // from an initial value (like a stopwatch), and count-down/decreasing
 // - which counts down from an initial value.
-// <p>
+// </p><p>
 // Note, however, that the accuracy of the gtkclock widget is limited
-// to 1 second.
+// to 1 second.</p>
 // IMG: GTK.Clock( GTK.ClockRealtime );
 // IMG: GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();
 

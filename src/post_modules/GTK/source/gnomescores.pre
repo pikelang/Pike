@@ -5,7 +5,7 @@ inherit gnome_dialog;
 // loading/saving systemwide high scores in a secure way.
 // <p>
 // TIMG: Gnome.Scores( 17, ({ "per" })*17, map((array(float))indices(allocate(17)),`*,42), map(indices(allocate(17)), `*, 10 ), 1 )
-
+// </p>
 void create(int n_scores,stringarray names,floatarray scores,intarray times,int clear);
 void set_logo_pixmap( string logofile );
 void set_logo_widget( widget widget );

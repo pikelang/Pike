@@ -9,12 +9,12 @@ inherit bin;
 // values can range from 0 (meaning the child doesn't expand at all)
 // to 1 (meaning the child expands to fill all of the available
 // space).
-// <p>
+// </p><p>
 // The align settings are used to place the child widget within the
 // available area. The values range from 0 (top or left) to 1 (bottom
 // or right). Of course, if the scale settings are both set to 1, the
 // alignment settings have no effect.
-//
+// </p>
 // NOIMG
 
 void create( float xalign, float yalign, float xscale, float yscale);

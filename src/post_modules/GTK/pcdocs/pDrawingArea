@@ -6,4 +6,5 @@ INHERIT(drawing_area);
 // <p>
 // It also use quite a significant amount of memory if the backing
 // pixmap has many bitplanes, and the drawing area is large.
+// </p>
 

@@ -9,12 +9,12 @@ inherit data;
 // The GtkAdjustment object does not update the value itself. Instead
 // it is left up to the owner of the GtkAdjustment to control the
 // value.
-// <p>
+// </p><p>
 // The owner of the GtkAdjustment typically calls the value_changed()
 // and changed() functions after changing the value or its
 // bounds. This results in the emission of the "value_changed" or
 // "changed" signal respectively.
-// <p>
+// </p>
 signal changed;
 // The adjustment changed in some way
 

@@ -8,7 +8,7 @@ inherit gnome_dialog;
 // displayed.
 // <p>
 // TIMG: Gnome.About( "Example", "1.0", "(c) Roxen IS 2000", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );
-
+// </p>
 void create( string title, string version, string copyright, nullstringarray authors, string comment, ?string logo );
 // Creates a new GNOME About dialog. title, version, copyright, and
 // authors are displayed first, in that order. comments is typically

@@ -10,6 +10,7 @@ inherit vbox;
 // IMG: Gnome.Less()->show_string("Example string\nshown in this\nwidget")
 // IMG: Gnome.Less()->show_file("/usr/dict/words" );
 // IMG: Gnome.Less()->show_command( "psrinfo -v" )
+// </p>
 void create();
 // Creates a new GnomeLess widget.
 void clear();
@@ -57,7 +58,7 @@ void set_font( GDK.Font font );
 // gl to font.<p>
 // Note: This will not affect text already being displayed. If you use
 // this function after adding text to the widget, you must show it
-// again by using reshow or one of the show commands.
+// again by using reshow or one of the show commands.</p>
 void set_fixed_font( int fixed );
 // Specifies whether or not new text should be displayed using a fixed
 // font. Pass TRUE in fixed to use a fixed font, or FALSE to revert to
@@ -66,7 +67,7 @@ void set_fixed_font( int fixed );
 // Note: This will not affect text already being displayed. If you use
 // this function after adding text to the widget, you must show it
 // again by using gnome_less_reshow or one of the gnome_less_show
-// commands.
+// commands.</p>
 void reshow();
 // Re-displays all of the text in the GnomeLess widget gl. If the font
 // has changed since the last show/reshow of text, it will update the

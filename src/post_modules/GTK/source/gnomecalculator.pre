@@ -8,6 +8,7 @@ inherit vbox;
 // standard arithmetic functions as well as trigonometric
 // capabilities, exponents, factorials, nested equations, and others.
 // IMG: Gnome.Calculator()
+// </p>
 
 signal result_changed;
 // This signal is emited by the widget when the result has been changed.

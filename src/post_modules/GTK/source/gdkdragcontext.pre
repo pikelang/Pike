@@ -3,6 +3,7 @@ class GdkDragContext;
 // connected to the signal to which it is an argument.
 // <p>
 // NOIMG
+// </p>
 #define GTK_GDKDRAGCONTEXT(X) ((GdkDragContext *)X)
 
 FUNCTION(get_source_widget, "function(void:object)");
@@ -95,7 +96,7 @@ FUNCTION(drag_set_icon_pixmap, "function(object,object|void,int,int:object)");
 RETURNS(GTK.Widget);
 ARGS(GTK.Pixmap,GTK.Bitmap,int,int);
 NAME_ARGS(image,mask,hot_x,hot_y);
-// Set the drag pixmap, and optionally mask.<br>
+// Set the drag pixmap, and optionally mask.<br />
 // The hot_x and hot_y coordinates will be the location of the mouse pointer,
 // relative to the upper left corner of the pixmap.
 {

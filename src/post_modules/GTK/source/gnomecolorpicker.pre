@@ -13,7 +13,7 @@ inherit button;
 // integers in the range 0 to 65,535, or integers in the range 0 to
 // 255, depending on your needs.
 // IMG: Gnome.ColorPicker();
-
+// </p>
 signal color_set;
 // This signal is emitted when the user changes the color on the color
 // selector. The values passed to this signal are the red, green, blue

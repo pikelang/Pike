@@ -17,17 +17,17 @@ void set_update_policy( int when );
 // and emit the "value_changed" signal on this Adjustment. The update
 // policies are:
 // <dl>
-// <dt>GTK.UpdatePolicyContinuous
+// <dt>GTK.UpdatePolicyContinuous</dt>
 // <dd>This is the default. The "value_changed" signal is emitted
 // continuously, i.e., whenever the slider is moved by even the
-// tiniest amount.
-// <dt>GTK.UpdatePolicyDiscontinuous
+// tiniest amount.</dd>
+// <dt>GTK.UpdatePolicyDiscontinuous</dt>
 // <dd> The "value_changed" signal is only emitted once the slider has
-// stopped moving and the user has released the mouse button.
-// <dt>GTK.UpdatePolicyDelayed
+// stopped moving and the user has released the mouse button.</dd>
+// <dt>GTK.UpdatePolicyDelayed</dt>
 // <dd>The "value_changed" signal is emitted when the user releases
 // the mouse button, or if the slider stops moving for a short period
-// of time.
+// of time.</dd>
 // </dl>
 
 void set_adjustment( adjustment pos );

@@ -6,6 +6,7 @@ inherit button;
 // <p>
 // IMG: Gnome.Href( "http://www.gnome.org", "GNOME Web Site" )
 // IMG: Gnome.Href( "http://www.gnome.org" )
+// </p>
 void create( string url, ?string label );
 // Created a GNOME href object, a label widget with a clickable action
 // and an associated URL. If label is set to 0, url is used as the

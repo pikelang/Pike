@@ -7,6 +7,7 @@ inherit container;
 // list which can be navigated, selected, and activated by the user to
 // perform application functions. A W(MenuItem) can have a submenu
 // associated with it, allowing for nested hierarchical menus.
+// </p>
 
 signal deactivate;
 // This signal is emitted when a menu shell is deactivated.

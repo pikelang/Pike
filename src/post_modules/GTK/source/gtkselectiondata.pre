@@ -31,7 +31,7 @@ FUNCTION(data, "function(void:string)");
   }
 }
 FUNCTION(format, "function(void:int)");
-// Returns the selction format.<br>
+// Returns the selction format.<br />
 // The format is the number of bits per character.
 {
   my_pop_n_elems( args );
@@ -41,7 +41,8 @@ FUNCTION(length, "function(void:int)");
 // Return the size of the selection data, in bytes.
 // <p>
 // The size of the data in characters (as returned by data()) is not
-// nessasarily the same.
+// necessarily the same.
+// </p>
 {
   my_pop_n_elems( args );
   push_int( ((GtkSelectionData *)THIS->obj)->length );

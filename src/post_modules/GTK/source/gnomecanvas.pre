@@ -6,6 +6,7 @@
 /* // applications. */
 /* // <p> */
 /* // It is, however, not yet wrapped in Pike GTK. */
+/* // </p> */
 /* FUNCTION(create, "function(int|void:void)"); */
 /* NAME_ARGS(anti_alias); */
 /* { */

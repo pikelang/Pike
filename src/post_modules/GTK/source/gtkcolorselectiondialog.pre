@@ -5,6 +5,7 @@ inherit window;
 // different subwidgets directly.
 // <p>
 // TIMG: GTK.ColorSelectionDialog("Select color")
+// </p>
 signal color_changed;
 // Called when the color is changed
 void create( string title );

@@ -7,7 +7,7 @@ inherit widget;
 // for the icons. This parameters is configured when you create the
 // icon list widget.
 // <p> You can control the type of selection mode you desire by using
-// the set_selection_mode() function.
+// the set_selection_mode() function.</p>
 
 signal select_icon;
 signal unselect_icon;
@@ -30,7 +30,7 @@ NAME_ARGS(icon_width,flags);
 // If flags has the Gnome.IconListIsEditable flag set, then the
 // user will be able to edit the text in the icon captions, and the
 // "text_changed" signal will be emitted when an icon's text is
-// changed.
+// changed.</p>
 {
   INT_TYPE a, b;
   get_all_args( "create", args, "%d%d", &a, &b );
@@ -58,7 +58,7 @@ void freeze();
 // <p>
 // You can call this function multiple times, but it must be balanced
 // with the same number of calls to thaw() before the changes will
-// take effect.
+// take effect.</p>
 void thaw();
 // Unfreeze the icon list
 void insert( int pos, string icon_filename, string text );
@@ -126,7 +126,7 @@ NAME_ARGS(icon,data);
 // This data can be used to find icons, and when an icon is selected it
 // can be easily retrieved using get_icon_data.
 // <p>
-// <b>You can only use objects as icon data right now</b>
+// <b>You can only use objects as icon data right now</b></p>
 {
   INT_TYPE row;
   struct object *obj;

@@ -21,7 +21,7 @@ void apply_default_background( GdkWindow window, int set_bgp, int state_type, ?G
 // specified by state_type.
 // <p>
 // If set_bgp is true, the background of the widget will be set,
-// otherwise it will only be drawn into the window.
+// otherwise it will only be drawn into the window.</p>
 COPY array GDK.Color &fg[5];
 COPY array GDK.Color &bg[5];
 COPY array GDK.Color &light[5];

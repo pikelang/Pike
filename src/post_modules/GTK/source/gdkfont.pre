@@ -9,9 +9,9 @@ class GdkFont;
 // information about XLFD's see the X reference documentation. A X
 // Logical Font Description (XLFD) consists of a sequence of fields
 // separated (and surrounded by) '-' characters. For example, Adobe
-// Helvetica Bold 12 pt, has the full description: <br>
+// Helvetica Bold 12 pt, has the full description: <br />
 // <i> "-adobe-helvetica-bold-r-normal--12-120-75-75-p-70-iso8859-1"</i>
-// <p>
+// </p><p>
 
 
 //The fields in the XLFD are:
@@ -45,15 +45,16 @@ class GdkFont;
 // <tr><td>Charset Encoding</td>
 // <td>An identifier for the particular character set encoding.</td></tr>
 // </table>
-// <p>
+// </p><p>
 // When specifying a font via a X logical Font Description, '*' can be
 // used as a wildcard to match any portion of the XLFD. For instance,
 // the above example could also be specified as
 // <i>"-*-helvetica-bold-r-normal--*-120-*-*-*-*-iso8859-1"</i>
-// <p>
+// </p><p>
 // It is generally a good idea to use wildcards for any portion of the
 // XLFD that your program does not care about specifically, since that
 // will improve the chances of finding a matching font.
+// </p>
 FUNCTION(create, "function(string|void:void)");
 NAME_ARGS(font_name);
 // Create a new font object. The string is the font XLFD.

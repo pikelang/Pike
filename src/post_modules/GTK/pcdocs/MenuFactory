@@ -6,11 +6,11 @@ NAME_ARGS(callback);
 // the new mapping as the argument.<p>
 //  <b>NOTE</b>: This function is only used when the menubar
 //  is created, once you are done with the menubar creation, the
-//  callbacks for that menubar will be fixed.
+//  callbacks for that menubar will be fixed.</p>
 
 FUNCTION(get_menubar_mapping, "function(void:mapping)");
 //  Returns a (flat) mapping ([ path:GTK.MenuItem ]).<p>
-// <b>NOTE:</b> This function can only be called <i>after</i> the menubar is created.
+// <b>NOTE:</b> This function can only be called <i>after</i> the menubar is created.</p>
 
 FUNCTION(MenyFactory, "function(array(object):void)");
 NAME_ARGS(items);
@@ -19,7 +19,7 @@ ARGS(array(MenuDef));
 // <p>
 // This is the function that actually builds the menubar.
 // A short example:
-// <p><pre>
+// </p><p><pre>
 // import GTK.MenuFactory;
 // [GTK.MenuBar bar, GTK.AcceleratorTable map] = 
 //  MenuFactory( 
@@ -30,8 +30,8 @@ ARGS(array(MenuDef));
 //    MenuDef( "File/Quit", _exit, 0, "A-Q" ), 
 //  );
 // </pre>
+// </p><p>A single menu entry.</p>
 
-// A single menu entry.
 FUNCTION(MenuDef, "function(string,function(mixed:mixed),mixed,string,int:object)");
 NAME_ARGS(path,callback,callbackargument,shortcut,flags);
 RETURNS(MenuDef);
@@ -49,18 +49,18 @@ RETURNS(MenuDef);
 // make an array with the array in.  The callback function will be
 // called like callback( arg, widget ), or if arg is an array,
 // callback( arg[0], arg[1], ..., widget )
-// <p>
+// </p><p>
 // The fourth argument, shortcut, is the shortcut to bind to this menu
 // item. The shortcut can be changed later on by calling
 // assign_shortcut, or by the user by pressing the desired
 // keycombination over the menu item.
-// <p>The shortcut syntax is:
+// </p><p>The shortcut syntax is:
 // m[m[..]]-key, where m is one or more modifier character, and key is
 // the desired key (<b>NOTE</b>: Key must be in the range 0-255
 // currently, this will hopefully be fixed by the GTK people in the
 // future)
-// <p>
-// The modifiers are:<p><pre>
+// </p><p>
+// The modifiers are:</p><p><pre>
 // s: Shift
 // c: Control
 // a: Modifier 1 (called alt by the GTK people, that's not true, though)
@@ -73,9 +73,9 @@ RETURNS(MenuDef);
 // 4: Modifier 4
 // u: Modifier 5 (not mapped by the GTK people, super on _my_ keyboard)
 // 5: Modifier 5
-// </pre>
+// </pre></p>
 // <p>
-// The last argument (flags) is currently ignored.
+// The last argument (flags) is currently ignored.</p>
 
 FUNCTION(assign_shortcut, "function(string:void)");
 NAME_ARGS(new_shortcut);
@@ -87,8 +87,8 @@ NAME_ARGS(new_shortcut);
 // the desired key (<b>NOTE</b>: Key must be in the range 0-255
 // currently, this will hopefully be fixed by the GTK people in the
 // future)
-// <p>
-// The modifiers are:<p><pre>
+// </p><p>
+// The modifiers are:</p><p><pre>
 // s: Shift
 // c: Control
 // a: Modifier 1 (called alt by the GTK people, that's not true, though)
@@ -101,4 +101,4 @@ NAME_ARGS(new_shortcut);
 // 4: Modifier 4
 // u: Modifier 5 (not mapped by the GTK people, super on _my_ keyboard)
 // 5: Modifier 5
-// </pre>
+// </pre></p>

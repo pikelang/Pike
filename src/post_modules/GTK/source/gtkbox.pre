@@ -30,12 +30,12 @@ void set_child_packing(widget child_widget,int expandp,int fillp,int padding,int
 // space. Padding is the amount of padding to use, and pack_type is
 // one of CONST(GTK_PACK).
 // <p>
-// You can emulate pack_start and pack_end with add and set_child_packing.
+// You can emulate pack_start and pack_end with add and set_child_packing.</p>
 FUNCTION(query_child_packing, "function(object:mapping)");
 ARGS(GTK.Widget);
 NAME_ARGS(child);
 RETURNS("mapping(string:int)");
-// Return a mapping:<br>
+// Return a mapping:<br />
 // ([ "expand":expandp, "fill":fillp, "padding":paddingp, "type":type ])
 {
   struct object *o;

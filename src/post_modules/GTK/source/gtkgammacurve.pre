@@ -7,7 +7,7 @@ class gamma_curve;
 // for input and output. You can set the initial vector as well. You
 // are guaranteed that every input value will have a (not necessarily
 // unique) output value specified.
-//
+// </p>
 // IMG: GTK.GammaCurve()->set_usize(210,130)
 inherit vbox;
 void create();

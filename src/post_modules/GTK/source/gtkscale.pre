@@ -3,7 +3,7 @@ class scale;
 // the subclasses GTK.Hscale and GTK.Vscale.
 // <p>
 // See W(Range) for generic range documentation
-// <p>
+// </p>
 inherit range;
 void set_digits( int precision );
 // Sets the number of decimal places that are displayed in the value.

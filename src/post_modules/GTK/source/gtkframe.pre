@@ -6,17 +6,18 @@ inherit container;
 // label can be controlled with set_label_align().
 // <p>
 // Used to visually group objects.
-// <p>
+// </p><p>
 // IMG: GTK.Frame("Title")->add(GTK.Label("Contents"))
 // IMG: GTK.Frame()->add(GTK.Label("Contents"))
 // IMG: GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)
+// </p>
 void create( ?string label_text );
 // Create a new W(Frame) widget.
 void set_label( ?string label_text );
 // Set the text of the label.
 void set_label_align( float xalign, float yalign );
 // Arguments are xalignment and yalignment.
-// 0.0 is left or topmost, 1.0 is right or bottommost.<br>
+// 0.0 is left or topmost, 1.0 is right or bottommost.<br />
 // The default value for a newly created Frame is 0.0.
 void set_shadow_type( int shadow_type );
 // Set the shadow type for the Frame widget. The type is one of

@@ -5,6 +5,7 @@ inherit container;
 // <p>
 //  Example:
 // IMG: GTK.Fixed()->put(GTK.Label("100,100"), 100, 100)->put(GTK.Label("0,0"), 0, 0)->set_usize(150,115)
+// </p>
 void create();
 // Create a new fixed widget
 void put( widget widget, int x, int y );

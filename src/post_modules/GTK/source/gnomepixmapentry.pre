@@ -6,7 +6,7 @@ inherit vbox;
 // 1:1. This is perfect for selection of backgrounds and such. It also
 // allows DND to be performed on the preview box. It also provides all
 // the GnomeEntry functionality as well.
-// IMG: Gnome.PixmapEntry("","browse...","");
+// IMG: Gnome.PixmapEntry("","browse...",1);
 void create(string history_id, string browse_dialog_title, int do_preview );
 // Creates a new pixmap entry widget, if do_preview is false, the
 // preview is hidden but the files are still loaded so that it's easy

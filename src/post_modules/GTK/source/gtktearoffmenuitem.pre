@@ -7,12 +7,13 @@ inherit menu_item;
 // as a dotted line indicating that the menu can be torn
 // off. Activating it causes its menu to be torn off and displayed in
 // its own window as a tearoff menu.
-// <p>
+// </p><p>
 // When its menu is shown as a tearoff menu, the GTK.TearoffMenuItem
 // is drawn as a dotted line which has a left pointing arrow graphic
 // indicating that the tearoff menu can be reattached. Activating it
 // will erase the tearoff menu window.
-// <p> IMG: GTK.TearoffMenuItem()->set_usize( 100,0 )
+// </p><p> IMG: GTK.TearoffMenuItem()->set_usize( 100,0 )
+// </p>
 void create();
 // Create a new tear of menu item
 member int torn_off;

@@ -3,8 +3,8 @@ class GdkDrawable;
 #include <gdk/gdkx.h>
 #endif
 // The GDK.Bitmap, GDK.Window and GDK.Pixmap classes are all GDK drawables.
-// <br>
-// This means that you can use the same set of functions to draw in them.<br>
+// <br />
+// This means that you can use the same set of functions to draw in them.<br />
 // <p>
 // Pixmaps are offscreen drawables. They can be drawn upon with the
 // standard drawing primitives, then copied to another drawable (such
@@ -14,10 +14,10 @@ class GdkDrawable;
 // bits per pixels. Bitmaps are simply pixmaps with a depth of
 // 1. (That is, they are monochrome bitmaps - each pixel can be either
 // on or off).
-// <p>
+// </p><p>
 // Bitmaps are mostly used as masks when drawing pixmaps, or as a
 // shape for a GDK.Window or a W(Widget)
-// <p>
+// </p>
 #define TWIN ((GdkWindow *)THIS->obj)
 #define GC(X) (get_gdkobject(X, GC))
 
@@ -139,7 +139,7 @@ NAME_ARGS(gc,filledp,x1,y1,x2,y2,angle1,angle2);
 FUNCTION(draw_text, "function(object,object,int,int,string,int|void:object)");
 ARGS(GDK.GC,GDK.Font,int,int,string,int|void);
 NAME_ARGS(gc,font,x,y,text,forcewide);
-// y is used as the baseline for the text.<br>
+// y is used as the baseline for the text.<br />
 // If forcewide is true, the string will be expanded to a wide string
 // even if it is not already one. This is useful when writing text
 // using either unicode or some other 16 bit font.
@@ -178,7 +178,7 @@ NAME_ARGS(gc,pixmap,xsrc,ysrc,xdest,ydest,width,height);
 FUNCTION(draw_bitmap, "function(object,object,int,int,int,int,int,int:object)");
 ARGS(GDK.GC,GDK.Bitmap,int,int,int,int,int,int);
 NAME_ARGS(gc,bitmap,xsrc,ysrc,xdest,ydest,width,height);
-// Draw a GDK(Bitmap) in this drawable.<br>
+// Draw a GDK(Bitmap) in this drawable.<br />
 // <b>NOTE:</b> This drawable must be a bitmap as well. This will be
 // fixed in GTK 1.3
 {
@@ -229,7 +229,7 @@ FUNCTION(ysize, "function(void:int)");
 
 FUNCTION(get_geometry, "function(void:mapping(string:int))");
 // Get width, height position and depth of the drawable as a mapping.
-// <br>
+// <br />
 // ([ "x":xpos, "y":ypos, "width":xsize, "height":ysize,
 //    "depth":bits_per_pixel ])
 {

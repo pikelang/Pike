@@ -14,7 +14,7 @@ inherit container;
 // gutter). Often, it is useful to put each child inside a W(Frame)
 // with the shadow type set to GTK.ShadowIn so that the gutter
 // appears as a ridge.
-// <p>
+// </p><p>
 // Each child has two options that can be set, resize and shrink. If
 // resize is true, then when the GTK.Paned is resized, that child will
 // expand or shrink along with the paned widget. If shrink is true,
@@ -22,14 +22,15 @@ inherit container;
 // the user. Setting shrink to 0 allows the application to set a
 // minimum size. If resize is false for both children, then this is
 // treated as if resize is true for both children.
-// <p>
+// </p><p>
 // The application can set the position of the slider as if it were
 // set by the user, by calling set_position().
+// </p>
 void add1( widget left_or_top );
-// Set the left or topmost item.<br>
+// Set the left or topmost item.<br />
 // This is equivalent to pack1(left_or_top,0,1)
 void add2( widget right_or_bottom );
-// Set the right or bottommost item<br>
+// Set the right or bottommost item<br />
 // This is equivalent to pack2(left_or_top,0,1)
 void set_handle_size( int hsize );
 // The size of the handle in pixels

@@ -7,7 +7,7 @@ inherit dialog;
 // procedure manages an InputDialog widget. It creates the dialog if
 // it isn't present, and shows it otherwise.
 // <p>
-// <pre><font size=-1>
+// <pre><font size="-1">
 // GTK.InputDialog inputd;
 // void&nbsp;create_input_dialog&nbsp;()
 // {
@@ -21,7 +21,7 @@ inherit dialog;
 // &nbsp;&nbsp;else
 // &nbsp;&nbsp;&nbsp;&nbsp;inputd-&gt;show();
 // }
-// </font></pre>
+// </font></pre></p>
 // TIMG: GTK.InputDialog()
 signal enable_device;
 // This signal is emitted when the user changes the mode of a device from GDK_MODE_DISABLED to a GDK_MODE_SCREEN or GDK_MODE_WINDOW.

@@ -8,8 +8,8 @@ inherit progress;
 // IMG: GTK.ProgressBar()->update(1.0)
 void create();
 // Create a new progress bar.
-// The default values are:<br>
-// Min 0.0, max 1.0, current 0.0<br>
+// The default values are:<br />
+// Min 0.0, max 1.0, current 0.0<br />
 void update( float fraction );
 // 0.0 is the minimum value, 1.0 is the maximum value.
 void set_bar_style( int style );

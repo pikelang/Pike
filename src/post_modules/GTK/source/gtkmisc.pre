@@ -6,12 +6,13 @@ inherit widget;
 // <p>
 // The horizontal and vertical padding attributes allows extra space
 // to be added around the widget.
-// <p>
+// </p><p>
 // The horizontal and vertical alignment attributes enable the widget
 // to be positioned within its allocated area. Note that if the widget
 // is added to a container in such a way that it expands automatically
 // to fill its allocated area, the alignment settings will not alter
 // the widgets position.
+// </p>
 //
 // IMG: GTK.Vbox(0,0)->add(GTK.Label("Label"))->set_usize(100,20)
 // IMG: GTK.Vbox(0,0)->add(GTK.Label("Label")->set_alignment(1.0,0.0))->set_usize(100,20)

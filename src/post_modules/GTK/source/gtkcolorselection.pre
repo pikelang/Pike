@@ -12,7 +12,7 @@ inherit vbox;
 // "color_changed", which is emitted whenever the current color in the
 // widget changes, either when the user changes it or if it's set
 // explicitly through set_color().
-// <p>
+// </p>
 // IMG: GTK.ColorSelection()
 void create();
 // Create a new color selection.
@@ -23,7 +23,7 @@ void set_update_policy( int policy );
 // current color is updated continuously when the user drags the
 // sliders or presses the mouse and drags in the hue-saturation wheel
 // or value bar. If you experience performance problems, you may want
-// to set the policy to GTK.UpdateDiscontinuous or GTK.UpdateDelayed.
+// to set the policy to GTK.UpdateDiscontinuous or GTK.UpdateDelayed.</p>
 void set_opacity( int opacity );
 // The color selection widget supports adjusting the opacity of a
 // color (also known as the alpha channel). This is disabled by

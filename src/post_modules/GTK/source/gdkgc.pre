@@ -2,7 +2,7 @@ class GdkGC;
 // A GC, or Graphics Context, is used for most low-level drawing operation.
 // <p>
 // As an example, the foreground color, background color and drawing
-// function is stored in the GC.
+// function is stored in the GC.</p>
 //
 // NOIMG
 FUNCTION(create, "function(object:void)");

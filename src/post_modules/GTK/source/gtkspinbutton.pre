@@ -12,25 +12,25 @@ inherit entry;
 // steps. The action of holding down one of the buttons optionally
 // results in an acceleration of change in the value according to how
 // long it is depressed.
-// <p>
+// </p><p>
 // The Spin Button uses an W(Adjustment) object to hold information about
 // the range of values that the spin button can take.
-// <p>
+// </p><p>
 // The attributes of an W(Adjustment) are used by the Spin Button in the
 // following way:
-// <ul><li>value: initial value for the Spin Button
-//     <li>lower: lower range value
-//     <li>upper: upper range value
-//     <li>step_increment: value to increment/decrement when pressing mouse button 1 on a button
-//     <li>page_increment: value to increment/decrement when pressing mouse button 2 on a button
-//     <li>page_size: unused
+// <ul><li>value: initial value for the Spin Button</li>
+//     <li>lower: lower range value</li>
+//     <li>upper: upper range value</li>
+//     <li>step_increment: value to increment/decrement when pressing mouse button 1 on a button</li>
+//     <li>page_increment: value to increment/decrement when pressing mouse button 2 on a button</li>
+//     <li>page_size: unused</li>
 // </ul>
-// <p>
-// The argument order for the W(Adjustment) constructor is:<br>
-// value, lower, upper, step_increment, page_increment, page_size<br>
+// </p><p>
+// The argument order for the W(Adjustment) constructor is:<br />
+// value, lower, upper, step_increment, page_increment, page_size<br />
 //
 // IMG: GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)
-// <p>
+// </p>
 void create( adjustment range, float climb_rate, int precision );
 //  The climb_rate argument take a value between 0.0 and 1.0 and
 //  indicates the amount of acceleration that the Spin Button has. The
@@ -55,14 +55,14 @@ void set_update_policy( int policy );
 // These policies affect the behavior of a Spin Button when parsing
 // inserted text and syncing its value with the values of the
 // Adjustment.
-// <p>
+// </p><p>
 // In the case of GTK.UpdateIfValid the Spin Button value only gets
 // changed if the text input is a numeric value that is within the
 // range specified by the Adjustment. Otherwise the text is reset
 // to the current value.
-// <p>
+// </p><p>
 // In case of GTK.UpdateAlways errors are ignored while converting text
-// into a numeric value.
+// into a numeric value.</p>
 void set_numeric( int numericp );
 // If true, it is a numeric value.  This prevents a user from typing
 // anything other than numeric values into the text box of a Spin
@@ -72,23 +72,23 @@ void spin( int direction, float increment );
 // current value, then this ffunction can be used.
 // <p>
 // The direction paramenter is one of CONST(GTK_SPIN)
-// <p>
+// </p><p>
 //  GTK.SpinStepForward and GTK.SpinStepBackward change the value
 //  of the Spin Button by the amount specified by increment, unless
 //  increment is equal to 0, in which case the value is changed by the
 //  value of step_increment in theAdjustment.
-// <p>
+// </p><p>
 // GTK.SpinPageForward and GTK.SpinPageBackward simply alter the
 // value of the Spin Button by increment.
-// <p>
+// </p><p>
 // GTK.SpinHome sets the value of the Spin Button to the bottom of the
 // Adjustments range.
-// <p>
+// </p><p>
 // GTK.SpinEnd sets the value of the Spin Button to the top of the
 // Adjustments range.
-// <p>
+// </p><p>
 // GTK.SpinUserDefined simply alters the value of the Spin Button by
-// the specified amount.
+// the specified amount.</p>
 void set_wrap( int wrapp );
 // If true, the spin button will wrap from the lowest to the highest
 // value, and the highest to the lowest.

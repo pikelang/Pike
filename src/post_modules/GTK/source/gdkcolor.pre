@@ -72,13 +72,13 @@ FUNCTION(blue, "function(void:int)")
 }
 
 FUNCTION(pixel, "function(void:int)")
-// Returns the pixel value of the color. See <a href=GdkImage.html#set_pixel>GDK.Image->set_pixel</a>.
+// Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK.Image->set_pixel</a>.
 {
   push_int(((GdkColor *)THIS->obj)->pixel);
 }
 
 FUNCTION(image_color_object, "function(void:object)");
-// Return a Image.Color.Color instance.<br>
+// Return a Image.Color.Color instance.<br />
 // This gives better precision than the rgb function.
 {
   unsigned char colorname[4+4+4+2];

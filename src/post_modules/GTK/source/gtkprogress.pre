@@ -3,25 +3,27 @@ inherit widget;
 void set_show_text( int textp );
 // If true, write a text in the progress bar.
 void set_text_alignment( float xalign, float yalign );
-// The location for the text in the progress bar.<br>
-// xalign is between 0.0 (leftmost) and 1.0 (rightmost)<br>
-// yalign is between 0.0 (topmost) and 1.0 (bottommost)<br>
+// The location for the text in the progress bar.<br />
+// xalign is between 0.0 (leftmost) and 1.0 (rightmost)<br />
+// yalign is between 0.0 (topmost) and 1.0 (bottommost)<br />
 // <p>
 // Default is xalign == yalign == 0.5
+// </p>
 void set_format_string( string format );
 //
 // More or less like sprintf.<p>
-// %[field width][character]<p>
-// 0&lt;=width&gt;=2<p>
+// %[field width][character]</p><p>
+// 0&lt;=width&gt;=2</p><p>
 // Supported characters:
-// <dl><dt><dd><pre>
-// %: Insert a %<br>
+// <blockquote><pre>
+// %: Insert a %<br />
 // p or P: The percentage completed, with 'digits' number of decimals
 // v or V: The actual value, with digits decimals.
 // l or L: The lower value (from the adjustment)
 // u or U: The higer value (from the adjustment)
 // %: Insert a %
-// </pre></dl>The default format is '%P%%'
+// </pre></blockquote>The default format is '%P%%'
+// </p>
 void set_adjustment( Adjustment adjustment );
 // Sets the adjustment to use. See the adjustment documentation for more info
 void configure( float value, float min, float max );
@@ -34,9 +36,10 @@ void set_activity_mode( int modep );
 // progress bar may be set to just indicate that there is some
 // activity. This can be useful in situations where progress cannot be
 // measured against a value range.<p>
-// Mode is:<br>
-// 1: active<br>
-// 0: inactive<br>
+// Mode is:<br />
+// 1: active<br />
+// 0: inactive<br />
+// </p>
 void set_value( float value );
 // Set the value.
 float get_value();

@@ -5,7 +5,7 @@ inherit misc;
 // See GDK.Image and GDK.Pixmap.
 //<p>
 // IMG: GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );
-
+//</p>
 void create( GdkImage image, ?GdkBitmap mask );
 // You can skip the mask. The mask is used to mask the drawing of the image
 // on it's background. It will not make the container transparent, though.
@@ -21,6 +21,7 @@ void set( GdkImage image, ?GdkBitmap mask );
 // you have modified the image. You must, however, use -&gt;queue_draw()
 // to redraw the image. Otherwise the old contens will be shown until
 // an refresh of the widget is done for any other reason.
+// </p>
 
 FUNCTION(get, "function(void:mapping)");
 // returns ([ "image":GDK.Image img, "mask":GDK.Bitmap mask ])

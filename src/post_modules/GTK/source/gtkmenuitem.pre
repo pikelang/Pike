@@ -1,7 +1,6 @@
 class menu_item;
 inherit item;
 // Menu items, to be added to menues.
-// <p>
 FUNCTION(create, "function(string|void:void)")
 NAME_ARGS(label);
 // If a string is supplied, a W(Label) widget is created using that

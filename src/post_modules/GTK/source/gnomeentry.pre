@@ -8,7 +8,7 @@ inherit combo;
 // load and save the history of the text.
 //<p>
 // IMG: Gnome.Entry( "history" )
-
+//</p>
 void create( ?string history_id );
 // Creates a new GnomeEntry widget. If history_id is not 0, then
 // the history list will be saved and restored between uses under the

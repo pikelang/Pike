@@ -129,7 +129,7 @@ ARGS(GDK.Region);
 RETURNS(GDK.Region);
 NAME_ARGS(with);
 // Computes the intersection of the given region and the region.
-// Also available as region & region
+// Also available as region &amp; region
 {
   struct object *o;
   void *v;

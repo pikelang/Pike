@@ -16,8 +16,8 @@ NAME_ARGS(fast_mode,image);
 
 // A 'fast' image will automatically revert back to 'slow' mode if no
 // shared memory is available.
-// <p>
-// If the second argument is specified, it is the actual image data.
+// </p><p>
+// If the second argument is specified, it is the actual image data.</p>
 {
   void pgtk_GdkImage_set( int );
   pgtk_verify_setup();

@@ -5,16 +5,16 @@ inherit clist;
 // <p>
 // The tree is internally represented as a set of GtkCTreeNode
 // structures.
-// <p>
+// </p><p>
 // The interface has much in common with the GtkCList widget: rows
 // (nodes) can be selected by the user etc.
-// <p>
+// </p><p>
 // Positions in the tree are often indicated by two arguments, a
 // parent and a sibling, both GtkCTreeNode pointers. If the parent is
 // NULL, the position is at the root of the tree and if the sibling is
 // NULL, it will be the last child of parent, otherwise it will be
 // inserted just before the sibling.
-
+// </p>
 #define GtkCtreerow GtkCTreeRow
 #define GtkCtree GtkCTree
 
@@ -65,7 +65,7 @@ RETURNS(GTK.CTreeNode);
 // If the parent and sibling is 0, the position is at the root of the
 // tree, if the sibling is NULL, it will be the last child of parent,
 // otherwise it will be inserted just before the sibling.
-// <p>
+// </p>
 {
   GtkCTreeNode *parent = NULL, *sibling = NULL;
   struct array *text = NULL;
@@ -116,7 +116,7 @@ void remove_node( ?CTreeNode node );
 int is_viewable( ?CTreeNode node );
 // Returns 1 if a certain node can be viewed (with or without
 // scrolling of the tree).<p>
-// Returns 0 if the node is in a folded part of the tree.
+// Returns 0 if the node is in a folded part of the tree.</p>
 CTreeNode last( ?CTreeNode node );
 // Returns the last child of the last child of the last child... of
 // the given node.
@@ -127,7 +127,7 @@ CTreeNode node_nth( int row );
 // Return the node that is currently visible on the specified row.
 int find( CTreeNode node, ?CTreeNode start );
 // Returns true if the node is a child of the start node.
-// <br>If you omit the starting node, the tree will be searched from
+// <br />If you omit the starting node, the tree will be searched from
 // the root.
 int is_ancestor( CTreeNode node, CTreeNode child );
 // Returns true if <b>node</b> is an ancestor of <b>child</b>
@@ -246,7 +246,7 @@ NAME_ARGS(node, column);
 
 FUNCTION(node_get_pixmap, "function(object,int:mapping)");
 NAME_ARGS(row, column);
-// Returns the pixmap and mask of this node in a mapping:<br>
+// Returns the pixmap and mask of this node in a mapping:<br />
 // ([ "pixmap":the_pixmap, "mask":the_bitmap ])
 {
   struct object *x;
@@ -282,7 +282,7 @@ NAME_ARGS(row, column);
 
 FUNCTION(node_get_pixtext, "function(object,int:mapping)");
 NAME_ARGS(row, column);
-// Returns the pixmap, mask and text of this node in a mapping:<br>
+// Returns the pixmap, mask and text of this node in a mapping:<br />
 // ([ "pixmap":the_pixmap, "mask":the_bitmap, "text":the_text ])
 {
   struct object *x;
@@ -352,7 +352,7 @@ NAME_ARGS(node,data);
 // This data can be used to find nodes, and when a node is selected it
 // can be easily retrieved using node_get_row_data.
 // <p>
-// <b>You can only use objects as row data right now</b>
+// <b>You can only use objects as row data right now</b></p>
 {
   struct object *row;
   struct object *obj;
@@ -412,12 +412,12 @@ void sort_recursive( ?CTreeNode node );
 // Sort the specified node and it's children.
 
 class CTreeNode;
-// This is one of the nodes (branch or leaf) of the CTree.<br>
+// This is one of the nodes (branch or leaf) of the CTree.<br />
 // They are the equivalent of row numbers in a normal CList.
 #define GTK_CTREENODE(X) ((GtkCTreeNode *)X)
 FUNCTION(row, "function(void:object)");
 RETURNS(GTK.CTreeRow);
-// Returns the CTreeRow associated with this CTreeNode.<br>
+// Returns the CTreeRow associated with this CTreeNode.<br />
 // <b>DEPRECATED</b>, all CTreeRow functions are also available
 // directly in this object.
 {

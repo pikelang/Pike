@@ -17,18 +17,19 @@ inherit container;
 // created. Violating this rule will cause unpredictable
 // consequences, the most likely consequence being that the plug will
 // appear as a separate toplevel window.
-// <p>
+// </p><p>
 //  A socket can also be used to swallow arbitrary pre-existing
 //  top-level windows using steal(), though the integration when this
 //  is done will not be as close as between a W(Plug) and a
-//  GTK.Socket
+//  GTK.Socket.
+// </p>
 void create();
 void steal( int window_id );
 // Reparents a pre-existing toplevel window (not nessesarily a GTK
 // window) into a socket.
 FUNCTION(id, "function(void:int)");
 // Returns the window id, to be sent to the application providing the plug.
-// <br>You must realize this widget before calling this function.
+// <br />You must realize this widget before calling this function.
 {
   if( !GTK_WIDGET( THIS->obj )->window )
     error("You must realize this widget before calling this function.\n");

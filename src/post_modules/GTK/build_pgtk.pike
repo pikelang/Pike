@@ -1205,6 +1205,7 @@ void do_default_sprintf( int args, int offset, int len )
   {
     foreach(get_dir(dir+"/pcdocs"), string d)
     {
+      if(d[-1] == '~') continue;
       string last_function, progname, a, b;
       int ln;
       if(Stdio.file_size(dir+"/pcdocs/"+d) < 1)

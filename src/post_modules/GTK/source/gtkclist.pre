@@ -33,10 +33,9 @@ signal abort_column_resize;
 void create( int columns );
 // Create a new empty clist, columns columns wide.
 // <p>
-// Not all
-// columns have to be visible, some can be used to store data that is
+// Not all columns have to be visible, some can be used to store data that is
 // related to a certain cell in the list.
-
+//</p>
 void set_hadjustment( adjustment adjustment );
 // Set the W(Adjustment) object used for horizontal scrolling
 void set_vadjustment( adjustment adjustment );
@@ -52,14 +51,14 @@ void set_shadow_type( int shadowtype );
 // One of CONST(GTK_SHADOW)
 
 void set_selection_mode( int mode );
-// One of CONST(GTK_SELECTION)<br>
+// One of CONST(GTK_SELECTION)<br />
 
 void set_reorderable( int reorderablep );
 // If true, the user can drag around the rows in the list.
 void set_use_drag_icons( int dragiconsp );
 // If true, hard coded drag icons will be used.
 void set_button_actions( int button, int action );
-// Action is a bitwise or of CONST(GTK_BUTTON)<br>
+// Action is a bitwise or of CONST(GTK_BUTTON)<br />
 // Button is the mouse button (normally 1-3, 4 and 5 sometimes beeing
 // scroll wheel up and scroll wheel down)
 
@@ -129,7 +128,7 @@ void set_row_height( int pixels );
 void moveto( int row, int column, float xpos, float ypos );
 // Make the specified row and column visible, and place it relative to
 // xpos and ypos in the area the Clist occupies.  <p> xpos and ypos
-// are relative, 0.0 == top, 1.0 == bottom
+// are relative, 0.0 == top, 1.0 == bottom</p>
 
 int get_cell_type( int row, int column );
 // Return value is one of CONST(GTK_CELL)
@@ -234,7 +233,7 @@ NAME_ARGS(row,column,text,spacing,image,mask);
 
 FUNCTION(get_pixtext, "function(int,int:mapping)");
 NAME_ARGS(row, column);
-// Return the pixmap and text for the specified cell as a mapping:<br>
+// Return the pixmap and text for the specified cell as a mapping:<br />
 // ([ "spacing":spacing, "text":text, "pixmap":pixmap ])
 {
   INT_TYPE x, y, s;
@@ -319,6 +318,7 @@ void set_shift( int row, int column, int yshift, int xshift );
 // <p>
 // This can be useful to generate a tree-like layout when you do not
 // want to make a W(Ctree)
+// </p>
 void set_selectable( int row, int selectablep );
 // If true, the row can be selected by the user, otherwise it cannot
 // be selected, only focused.
@@ -329,14 +329,14 @@ int append( stringarray/GTK_CLIST{THIS->obj}->columns columns );
 //  added.
 // <p>
 // 'columns' are the texts we want to put in the columns. The size of
-// the array should equal the number of columns in the list.
+// the array should equal the number of columns in the list.</p>
 
 int prepend( stringarray/GTK_CLIST{THIS->obj}->columns columns );
 //  The return value of indicates the index of the row that was just
 //  added.
 // <p>
 // 'columns' are the texts we want to put in the columns. The size of
-// the array should equal the number of columns in the list.
+// the array should equal the number of columns in the list.</p>
 
 int insert( int row, stringarray/GTK_CLIST{THIS->obj}->columns columns );
 // Insert a row after a specified row.<p>
@@ -344,9 +344,9 @@ int insert( int row, stringarray/GTK_CLIST{THIS->obj}->columns columns );
 //  added, please note that this is not nessasarily the same row as
 //  the specified one, if autosort is activated, the row will be
 //  inserted so that the list is sill sorted.
-// <p>
+// </p><p>
 // 'columns' are the texts we want to put in the columns. The size of
-// the array should equal the number of columns in the list.
+// the array should equal the number of columns in the list.</p>
 
 void remove( int row );
 // Delete a specified row. If you want to remove all rows in a Clist,
@@ -365,7 +365,7 @@ NAME_ARGS(row,data);
 // This data can be used to find rows, and when a row is selected it
 // can be easily retrieved using node_get_row_data.
 // <p>
-// <b>You can only use objects as row data right now</b>
+// <b>You can only use objects as row data right now</b></p>
 {
   INT_TYPE row;
   struct object *obj;
@@ -595,7 +595,7 @@ static void my_free_svalue( struct svalue *s )
 FUNCTION(set_compare_func, "function(function|void:object)");
 NAME_ARGS(cmpfun);
 // Set the compare function. The function will be called with a
-// mapping as it's only argument, like this:<br><pre>
+// mapping as it's only argument, like this:<br /><pre>
 // &nbsp; ([
 // &nbsp;    "clist":the clist widget,
 // &nbsp;    "sort_column":the column to sort on,
@@ -603,12 +603,12 @@ NAME_ARGS(cmpfun);
 // &nbsp;    "row2_data":The user data pointer for the second row,
 // &nbsp;    "row1_text":The text in the sort cell in the first row
 // &nbsp;    "row2_text":The text in the sort cell in the second row
-// &nbsp: ])
+// &nbsp; ])
 // </pre>
 // The return value is one of:<p>
-//   1: Row 1 is more than row 2<br>
-//   0: The rows are equal<br>
-//  -1: Row 1 is lesser than row 2<br>
+//   1: Row 1 is more than row 2<br />
+//   0: The rows are equal<br />
+//  -1: Row 1 is lesser than row 2</p>
 {
   if(IS_ZERO(Pike_sp-1))
   {
