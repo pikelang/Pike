@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.8 1998/07/19 01:25:29 grubba Exp $
+// $Id: testsuite.in,v 1.9 1998/07/22 07:47:23 hubbe Exp $
 
 
 // system.c:
@@ -110,8 +110,8 @@ ifefun(getgrgid, [[
   ]], 0)
 ]])
 // getgrnam		HAVE_GETGRNAM
-cond([[ all_constants()->getgrgid && all_constants()->getgrnam && getgrgid(0) ]], [[
-  test_equal([[ getgrnam(getgrgid(0)[0]) ]], [[ getgrgid(0) ]])
+cond([[ all_constants()->getgrgid && all_constants()->getgrnam ]], [[
+  test_equal([[ getgrgid(0) && getgrnam(getgrgid(0)[0]) ]], [[ getgrgid(0) ]])
 ]])
 // getpwent		HAVE_GETPWENT
 // getpwnam		HAVE_GETPWNAM
@@ -131,8 +131,8 @@ ifefun(getpwuid, [[
     return 0;
   ]], 0)
 ]])
-cond([[ all_constants()->getpwuid && all_constants()->getpwnam && getpwuid(0) ]], [[
-  test_equal([[ getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
+cond([[ all_constants()->getpwuid && all_constants()->getpwnam ]], [[
+  test_equal([[ getpwuid(0) && getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
 ]])
 // setgrent		HAVE_SETGRENT
 // setpwent		HAVE_SETPWENT
