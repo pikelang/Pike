@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.18 2002/12/12 19:59:46 grubba Exp $ -->
+<!-- $Id: traditional.xml,v 1.19 2003/02/04 23:56:50 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -25,6 +25,9 @@
   </file>
   <file>
     <chapter-ref file="chapters/operators.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/preprocessor.xml"/>
   </file>
   <file>
     <chapter-ref file="chapters/special_functions.xml"/>
