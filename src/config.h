@@ -26,7 +26,7 @@
 /*
  * Define the size of the shared string hash table.
  */
-#define	HTABLE_SIZE 4711
+#define	HTABLE_SIZE 9997
 
 /*
  * Define the size of the cache that is used for method lookup.
