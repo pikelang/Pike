@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.110 2000/10/15 12:24:14 grubba Exp $");
+RCSID("$Id: operators.c,v 1.111 2000/10/15 14:19:24 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1660,7 +1660,7 @@ PMOD_EXPORT void o_multiply(void)
 	asize = (ptrdiff_t)floor(delta * sp[-1].u.float_number + 0.5);
 	ret = allocate_array(asize);
 	pos = ret->item;
-	if (asize >= delta) {
+	if (asize > delta) {
 	  ret->type_field = src->type_field;
 	  assign_svalues_no_free(pos,
 				 src->item,
@@ -1668,7 +1668,7 @@ PMOD_EXPORT void o_multiply(void)
 				 src->type_field);
 	  pos += delta;
 	  asize -= delta;
-	  while (asize >= delta) {
+	  while (asize > delta) {
 	    assign_svalues_no_free(pos, ret->item, delta, ret->type_field);
 	    pos += delta;
 	    asize -= delta;
@@ -1705,11 +1705,11 @@ PMOD_EXPORT void o_multiply(void)
 	delta = src->len << src->size_shift;
 	pos = ret->str;
 
-	if (len >= delta) {
+	if (len > delta) {
 	  MEMCPY(pos, src->str, delta);
 	  pos += delta;
 	  len -= delta;
-	  while (len >= delta) {
+	  while (len > delta) {
 	    MEMCPY(pos, ret->str, delta);
 	    pos += delta;
 	    len -= delta;
