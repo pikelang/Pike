@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.9 2000/08/29 16:27:41 mast Exp $
+ * $Id: stat.c,v 1.10 2000/08/29 17:04:02 grubba Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.9 2000/08/29 16:27:41 mast Exp $");
+RCSID("$Id: stat.c,v 1.10 2000/08/29 17:04:02 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -120,11 +120,11 @@ static void stat_index_set (INT32 args);
 static int stat_compat_set (size_t pos, INT64 val)
 {
   switch (pos) {
-    case 0: THIS_STAT->s.st_mode = (mode_t) val; break;
+    case 0: THIS_STAT->s.st_mode = val; break;
     case 1:
       if (val >= 0) {
 	THIS_STAT->s.st_mode = (THIS_STAT->s.st_mode & ~S_IFMT) | S_IFREG;
-	THIS_STAT->s.st_size = (off_t) val;
+	THIS_STAT->s.st_size = val;
       }
       else {
 	THIS_STAT->s.st_size = 0;
@@ -136,11 +136,11 @@ static int stat_compat_set (size_t pos, INT64 val)
 	  THIS_STAT->s.st_mode = THIS_STAT->s.st_mode & ~S_IFMT;
       }
       break;
-    case 2: THIS_STAT->s.st_atime = (time_t) val; break;
-    case 3: THIS_STAT->s.st_mtime = (time_t) val; break;
-    case 4: THIS_STAT->s.st_ctime = (time_t) val; break;
-    case 5: THIS_STAT->s.st_uid = (uid_t) val; break;
-    case 6: THIS_STAT->s.st_gid = (gid_t) val; break;
+    case 2: THIS_STAT->s.st_atime = val; break;
+    case 3: THIS_STAT->s.st_mtime = val; break;
+    case 4: THIS_STAT->s.st_ctime = val; break;
+    case 5: THIS_STAT->s.st_uid = val; break;
+    case 6: THIS_STAT->s.st_gid = val; break;
     default: return 0;
   }
   return 1;
@@ -292,8 +292,10 @@ static void stat_index(INT32 args)
 	    case STAT_GID: push_int(THIS_STAT->s.st_gid); break;
 	    case STAT_RDEV: push_int(THIS_STAT->s.st_rdev); break;
 	    case STAT_SIZE: push_int(THIS_STAT->s.st_size); break;
+#if 0
 	    case STAT_BLKSIZE: push_int(THIS_STAT->s.st_blksize); break;
 	    case STAT_BLOCKS: push_int(THIS_STAT->s.st_blocks); break;
+#endif /* 0 */
 	    case STAT_ATIME: push_int64(THIS_STAT->s.st_atime); break;
 	    case STAT_MTIME: push_int64(THIS_STAT->s.st_mtime); break;
 	    case STAT_CTIME: push_int64(THIS_STAT->s.st_ctime); break;
@@ -641,19 +643,21 @@ static void stat_index_set (INT32 args)
 	  SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2, "integer");
 
 	switch (code) {
-	  case STAT_DEV: THIS_STAT->s.st_dev = (dev_t) int_val; break;
-	  case STAT_INO: THIS_STAT->s.st_ino = (ino_t) int_val; break;
-	  case STAT_MODE: THIS_STAT->s.st_mode = (mode_t) int_val; break;
-	  case STAT_NLINK: THIS_STAT->s.st_nlink = (nlink_t) int_val; break;
-	  case STAT_UID: THIS_STAT->s.st_uid = (uid_t) int_val; break;
-	  case STAT_GID: THIS_STAT->s.st_gid = (gid_t) int_val; break;
-	  case STAT_RDEV: THIS_STAT->s.st_rdev = (dev_t) int_val; break;
-	  case STAT_SIZE: THIS_STAT->s.st_size = (off_t) int_val; break;
-	  case STAT_BLKSIZE: THIS_STAT->s.st_blksize = (long) int_val; break;
-	  case STAT_BLOCKS: THIS_STAT->s.st_blocks = (blkcnt_t) int_val; break;
-	  case STAT_ATIME: THIS_STAT->s.st_atime = (time_t) int_val; break;
-	  case STAT_MTIME: THIS_STAT->s.st_mtime = (time_t) int_val; break;
-	  case STAT_CTIME: THIS_STAT->s.st_ctime = (time_t) int_val; break;
+	  case STAT_DEV: THIS_STAT->s.st_dev = int_val; break;
+	  case STAT_INO: THIS_STAT->s.st_ino =  int_val; break;
+	  case STAT_MODE: THIS_STAT->s.st_mode = int_val; break;
+	  case STAT_NLINK: THIS_STAT->s.st_nlink = int_val; break;
+	  case STAT_UID: THIS_STAT->s.st_uid = int_val; break;
+	  case STAT_GID: THIS_STAT->s.st_gid = int_val; break;
+	  case STAT_RDEV: THIS_STAT->s.st_rdev = int_val; break;
+	  case STAT_SIZE: THIS_STAT->s.st_size = int_val; break;
+#if 0
+	  case STAT_BLKSIZE: THIS_STAT->s.st_blksize = int_val; break;
+	  case STAT_BLOCKS: THIS_STAT->s.st_blocks = int_val; break;
+#endif /* 0 */
+	  case STAT_ATIME: THIS_STAT->s.st_atime = int_val; break;
+	  case STAT_MTIME: THIS_STAT->s.st_mtime = int_val; break;
+	  case STAT_CTIME: THIS_STAT->s.st_ctime = int_val; break;
 
 	  default:
 	    fatal ("stat_index_set is not kept up-to-date with stat_map.\n");
