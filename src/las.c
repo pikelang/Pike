@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.304 2002/10/16 15:20:53 grubba Exp $
+|| $Id: las.c,v 1.305 2002/10/21 09:13:17 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.304 2002/10/16 15:20:53 grubba Exp $");
+RCSID("$Id: las.c,v 1.305 2002/10/21 09:13:17 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1710,6 +1710,11 @@ void resolv_program(node *n)
 node *recursive_add_call_arg(node *n, node *arg)
 {
   node *tmp;
+
+  if (!n) {
+    /* Earlier parse error. */
+    return NULL;
+  }
 
   switch(n->token)
   {
