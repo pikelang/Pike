@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: neo.c,v 1.8 2003/12/13 23:37:44 nilsson Exp $
+|| $Id: neo.c,v 1.9 2003/12/14 23:22:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -23,13 +23,17 @@ extern struct program *image_program;
  */
 
 /*! @module NEO
+ *! Decodes images from the Atari image editor Neochrome.
  */
 
 /*! @decl mapping _decode(string data)
+ *! Low level decoding of the NEO file contents in @[data].
  *! @returns
  *!   @mapping
  *!     @member Image.Image "image"
  *!       The decoded bitmap
+ *!     @member array(Image.Image) "images"
+ *!       Coler cycled images.
  *!     @member string "filename"
  *!       The filename stored into the file.
  *!     @member int(0..15) "right_limit"
@@ -84,27 +88,20 @@ void image_neo_f__decode(INT32 args)
   size += 2;
 
   img = decode_atari_screendump(q+128, res, pal);
-  if(pal)
-  {
-    free(pal->colors);
-    free(pal);
-  }
 
   push_constant_text("image");
   push_object(img);
   size += 2;
 
-  fn = make_shared_binary_string((const char *)q+36, 12);
-
-  push_constant_text("filename");
-  push_string(fn);
-  size += 2;
-
   if(q[48]&128) {
+    int rl, ll, i;
+    rl = q[49]&0xf;
+    ll = (q[49]&0xf0)>>4;
+
     push_constant_text("right_limit");
-    push_int( q[49]&0xf );
+    push_int( rl );
     push_constant_text("left_limit");
-    push_int( (q[49]&0xf0)>>4 );
+    push_int( ll );
     push_constant_text("speed");
     push_int( q[51] );
     push_constant_text("direction");
@@ -112,8 +109,32 @@ void image_neo_f__decode(INT32 args)
       push_constant_text("right");
     else
       push_constant_text("left");
-    size += 8;
+
+    push_constant_text("images");
+    for(i=0; i<rl-ll+1; i++) {
+      if( q[50]&128 )
+	rotate_atari_palette(pal, ll, rl);
+      else
+	rotate_atari_palette(pal, rl, ll);
+      img = decode_atari_screendump(q+128, res, pal);
+      push_object(img);
+    }
+    f_aggregate(rl-ll+1);
+
+    size += 10;
   }
+
+  if(pal)
+  {
+    free(pal->colors);
+    free(pal);
+  }
+
+  fn = make_shared_binary_string((const char *)q+36, 12);
+
+  push_constant_text("filename");
+  push_string(fn);
+  size += 2;
 
   free_string(s);
   f_aggregate_mapping(size);
