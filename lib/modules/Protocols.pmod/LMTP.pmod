@@ -1,8 +1,42 @@
+//
+// $Id: LMTP.pmod,v 1.4 2003/10/17 17:19:53 nilsson Exp $
+//
+
+#pike __REAL_VERSION__
+
 class Connection {
   inherit .SMTP.Connection;
   array(string) commands = ({ "lhlo", "mail", "rcpt", "data",
 			      "rset", "vrfy", "quit", "noop" });
-  int lmtp_mode = 1;
+  constant protocol = "LMTP";
+
+
+  // if we are in LMTP mode we call cb_data for each recipient
+  // and with one recipient. This way we have one mime message per
+  // recipient and one outcode to display to the client per recipient
+  // (that is LMTP specific)
+  void message(string content) {
+    MIME.Message message = low_message(content);
+    if(!message) return;
+
+    mixed err;
+    foreach(mailto, string recipient)
+    {
+      int check;
+      if(givedata)
+	err = catch(check = cb_data(copy_value(message), mailfrom,
+				    recipient, content));
+      else
+	err = catch(check = cb_data(copy_value(message), mailfrom, recipient));
+      if(err || !check)
+      {
+	outcode(554);
+	log(describe_backtrace(err));
+	continue;
+      }
+      outcode(check);
+    }
+  }
 }
 
 //! A LMTP server. It has been fairly well tested against Postfix client.

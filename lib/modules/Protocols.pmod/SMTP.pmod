@@ -230,8 +230,7 @@ class Connection {
   // The commands this module supports
   array(string) commands = ({ "ehlo", "helo", "mail", "rcpt", "data",
 			      "rset", "vrfy", "quit", "noop" });
-  // do we speak LMTP ?
-  int lmtp_mode = 0;
+  constant protocol = "ESMTP";
 
   // the fd of the socket
   static object fd = Stdio.File();
@@ -302,12 +301,10 @@ class Connection {
         Protocols.DNS.client()->gethostbyaddr(remoteaddr)[0]
      	|| remoteaddr;
      string rec;
-     string mode = lmtp_mode ? "LMTP": "ESMTP";
-     rec=sprintf("from %s (%s [%s]) "
-      "by %s (Pike %s server) with %s id %d ; %s",
+     rec=sprintf("from %s (%s [%s]) by %s (Pike "+protocol+
+		 " server) with "+protocol+" id %d ; %s",
        ident, remotehost, remoteaddr,
-       gethostname(), mode, mode, messageid,
-       Calendar.now()->format_smtp());
+       gethostname(), messageid, Calendar.now()->format_smtp());
      return rec;
    }
    
@@ -525,22 +522,22 @@ class Connection {
      return message;
    }
    
-   void message(string content)
+   MIME.Message low_message(string content)
    {
      datamode = 0;
      if(sizeof(content) > maxsize)
      {
        outcode(552);
-       return;
+       return 0;
      }
-     object message;
+     MIME.Message message;
      mixed err = catch (message = MIME.Message(content));
      if(err)
      {
        outcode(554);
        log(describe_backtrace(err));
        log("content is %O\n", content);
-       return;
+       return 0;
      }
      err = catch {
        message = format_headers(message);
@@ -549,50 +546,32 @@ class Connection {
      {
        outcode(554);
        log(describe_backtrace(err));
-       return;
+       return 0;
      }
-     // if we are in LMTP mode we call cb_data for each recipient
-     // and with one recipient. This way we have one mime message per
-     // recipient and one outcode to display to the client per recipient
-     // (that is LMTP specific)
-     if(lmtp_mode)
-     {
-       foreach(mailto, string recipient)
-       {
-         int check;
-         if(givedata)
-           err = catch(check = cb_data(copy_value(message), mailfrom, 
-              recipient, content));
-         else
-           err = catch(check = cb_data(copy_value(message), mailfrom, recipient));
-         if(err || !check)
-         {
-           outcode(554);
-           log(describe_backtrace(err));
-           continue;
-         }
-         outcode(check);
-       }
-     }
-     // SMTP mode, cb_data is called one time with an array of recipients
-     // and the same MIME object
-     else
-     {
-       int check;
-       if(givedata)
-         err = catch(check = cb_data(message, mailfrom, mailto, content));
-       else
-         err = catch(check = cb_data(message, mailfrom, mailto));
-       if(err || !check)
-       {
-         outcode(554);
-         log(describe_backtrace(err));
-         return;
-       }
-       outcode(check);
-     }
+     return message;
    }
-   
+
+  void message(string content) {
+    MIME.Message message = low_message(content);
+    if(!message) return;
+
+    // SMTP mode, cb_data is called one time with an array of recipients
+    // and the same MIME object
+    int check;
+    mixed err;
+    if(givedata)
+      err = catch(check = cb_data(message, mailfrom, mailto, content));
+    else
+      err = catch(check = cb_data(message, mailfrom, mailto));
+    if(err || !check)
+    {
+      outcode(554);
+      log(describe_backtrace(err));
+      return;
+    }
+    outcode(check);
+  }
+
    void noop()
    {
      remove_call_out(handle_timeout);
