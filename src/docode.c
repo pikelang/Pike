@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.7 1997/01/16 05:00:43 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.8 1997/01/27 01:12:53 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -348,7 +348,8 @@ static int do_docode2(node *n,int flags)
       fatal("HELP! FATAL INTERNAL COMPILER ERROR\n");
 #endif
 
-    if(CAR(n)->type->str[0] == T_ARRAY)
+    if(match_types(CAR(n)->type,array_type_string) ||
+       match_types(CAR(n)->type,string_type_string))
     {
       if(do_docode(CDR(n), 0)!=1)
 	fatal("Internal compiler error, shit happens\n");
@@ -399,7 +400,8 @@ static int do_docode2(node *n,int flags)
       if(node_is_eq(CDR(n),CAAR(n)))
       {
 	tmp1=do_docode(CDR(n),DO_LVALUE);
-	if(match_types(CDR(n)->type,array_type_string))
+	if(match_types(CDR(n)->type,array_type_string) ||
+	   match_types(CDR(n)->type,string_type_string))
 	{
 	  if(do_docode(CDAR(n),DO_NOT_COPY)!=1)
 	    fatal("Infernal compiler error (dumpar core |ver hela mattan).\n");
@@ -695,18 +697,22 @@ static int do_docode2(node *n,int flags)
     {
       struct pike_string *tmp;
       struct efun *fun;
+      node *foo;
 
       emit2(F_MARK);
-      tmp=make_shared_string("call_function");
-      if(!tmp) yyerror("No call_function efun.");
-      fun=lookup_efun(tmp);
-      if(!fun) yyerror("No call_function efun.");
-      free_string(tmp);
-
       do_docode(CAR(n),0);
       do_docode(CDR(n),0);
-      tmp1=store_constant(& fun->function, 1);
-      emit(F_APPLY, tmp1);
+
+      tmp=findstring("call_function");
+      if(!tmp) yyerror("No call_function efun.");
+      if(!find_module_identifier(tmp))
+      {
+	yyerror("No call_function efun.");
+      }else{
+	tmp1=store_constant(sp-1, 1);
+	pop_stack();
+	emit(F_APPLY, tmp1);
+      }
       return 1;
     }
 
