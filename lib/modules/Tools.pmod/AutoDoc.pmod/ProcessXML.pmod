@@ -127,6 +127,10 @@ string moveImages(string docXMLFile,
             }
             counter = 0;
             break;
+  	  case "appendix":
+	    if(attr->name != "")
+	      parents += ({ CONCAT_CHAR + "APPENDIX" + hash(attr->name) });
+	    break;
           case "class":
           case "module":
             if (attr["name"] != "")
