@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.40 2001/06/13 12:48:03 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.41 2001/07/05 01:47:20 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -34,6 +34,8 @@ RCSID("$Id: zlibmod.c,v 1.40 2001/06/13 12:48:03 grubba Exp $");
 
 struct zipper
 {
+  char level;
+  char state;
   struct z_stream_s gz;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
@@ -83,7 +85,8 @@ struct zipper
  */
 static void gz_deflate_create(INT32 args)
 {
-  int level=Z_DEFAULT_COMPRESSION;
+  int tmp;
+  THIS->level=Z_DEFAULT_COMPRESSION;
 
   if(THIS->gz.state)
   {
@@ -96,9 +99,9 @@ static void gz_deflate_create(INT32 args)
   {
     if(sp[-args].type != T_INT)
       Pike_error("Bad argument 1 to gz->create()\n");
-    level=sp[-args].u.integer;
-    if(level < Z_NO_COMPRESSION ||
-       level > Z_BEST_COMPRESSION)
+    THIS->level=sp[-args].u.integer;
+    if(THIS->level < Z_NO_COMPRESSION ||
+       THIS->level > Z_BEST_COMPRESSION)
     {
       Pike_error("Compression level out of range for gz_deflate->create()\n");
     }
@@ -110,9 +113,9 @@ static void gz_deflate_create(INT32 args)
 
   pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
-  level=deflateInit(&THIS->gz, level);
+  tmp=deflateInit(&THIS->gz, THIS->level);
 /*   mt_unlock(& THIS->lock); */
-  switch(level)
+  switch(tmp)
   {
   case Z_OK:
     return;
@@ -195,6 +198,13 @@ static void gz_deflate(INT32 args)
   dynamic_buffer buf;
   ONERROR err;
 
+  if(THIS->state == 1)
+  {
+    deflateEnd(& THIS->gz);
+    deflateInit(& THIS->gz, THIS->level);
+    THIS->state=0;
+  }
+
   if(!THIS->gz.state)
     Pike_error("gz_deflate not initialized or destructed\n");
 
@@ -236,7 +246,7 @@ static void gz_deflate(INT32 args)
   SET_ONERROR(err,toss_buffer,&buf);
   fail=do_deflate(&buf,this,flush);
   UNSET_ONERROR(err);
-
+  
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
     toss_buffer(&buf);
@@ -245,6 +255,10 @@ static void gz_deflate(INT32 args)
     else
       Pike_error("Error in gz_deflate->deflate(): %d\n",fail);
   }
+
+  if(fail == Z_STREAM_END)
+    THIS->state=1;
+
   pop_n_elems(args);
 
   push_string(low_free_buf(&buf));
@@ -258,7 +272,8 @@ static void init_gz_deflate(struct object *o)
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  deflateInit(& THIS->gz, Z_DEFAULT_COMPRESSION);
+  THIS->state=0;
+  deflateInit(& THIS->gz, THIS->level = Z_DEFAULT_COMPRESSION);
 }
 
 static void exit_gz_deflate(struct object *o)
@@ -419,6 +434,7 @@ static void gz_inflate(INT32 args)
     else
       Pike_error("Error in gz_inflate->inflate(): %d\n",fail);
   }
+
   pop_n_elems(args);
 
   push_string(low_free_buf(&buf));
@@ -435,7 +451,7 @@ static void init_gz_inflate(struct object *o)
   MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
-  THIS->gz.opaque=0;
+  THIS->gz.opaque=(void *)THIS;
   inflateInit(&THIS->gz);
   inflateEnd(&THIS->gz);
 }
