@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.113 1999/11/18 17:37:46 grubba Exp $");
+RCSID("$Id: las.c,v 1.114 1999/11/18 22:15:33 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1971,6 +1971,11 @@ void fix_type_field(node *n)
   {
   case F_LAND:
   case F_LOR:
+    if (!CAR(n) || CAR(n)->type == void_type_string ||
+	!CDR(n) || CDR(n)->type == void_type_string) {
+      yyerror("Conditional contains void expression.\n");
+      copy_shared_string(n->type, mixed_type_string);
+    }
     if(!match_types(CAR(n)->type,mixed_type_string))
       yyerror("Bad conditional expression.\n");
 
@@ -1981,31 +1986,47 @@ void fix_type_field(node *n)
     {
       copy_shared_string(n->type,CAR(n)->type);
     }else{
+      /* FIXME: Shouldn't it be an or? */
       copy_shared_string(n->type,mixed_type_string);
     }
     break;
 
   case F_ASSIGN:
-    if(CAR(n) && CDR(n) &&
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      my_yyerror("Assigning a void expression.");
+      copy_shared_string(n->type, void_type_string);
+      break;
+    } else if(CAR(n) && CDR(n) &&
        /* a["b"]=c and a->b=c can be valid when a is an array */
-       CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
-       !match_types(CDR(n)->type,CAR(n)->type))
+	      CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
+	      !match_types(CDR(n)->type,CAR(n)->type)) {
       my_yyerror("Bad type in assignment.");
+    }
     copy_shared_string(n->type, CAR(n)->type);
     break;
 
   case F_INDEX:
   case F_ARROW:
-    type_a=CAR(n)->type;
-    type_b=CDR(n)->type;
-    if(!check_indexing(type_a, type_b, n))
-      if(!catch_level)
-        my_yyerror("Indexing on illegal type.");
-    n->type=index_type(type_a,n);
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      my_yyerror("Indexing a void expression.");
+      /* The optimizer converts this to an expression returning 0. */
+      copy_shared_string(n->type, mixed_type_string);
+    } else {
+      type_a=CAR(n)->type;
+      type_b=CDR(n)->type;
+      if(!check_indexing(type_a, type_b, n))
+	if(!catch_level)
+	  my_yyerror("Indexing on illegal type.");
+      n->type=index_type(type_a,n);
+    }
     break;
 
   case F_APPLY:
-  {
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      my_yyerror("Calling a void expression.");
+      /* The optimizer converts this to an expression returning 0. */
+      copy_shared_string(n->type, mixed_type_string);
+    } else {
     struct pike_string *s;
     struct pike_string *f;
     INT32 max_args,args;
@@ -2083,7 +2104,9 @@ void fix_type_field(node *n)
   }
 
   case '?':
-    if(!match_types(CAR(n)->type,mixed_type_string))
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      yyerror("Conditional expression is void.\n");
+    } else if(!match_types(CAR(n)->type,mixed_type_string))
       yyerror("Bad conditional expression.\n");
 
     if(!CADR(n) || !CDDR(n))
@@ -2102,21 +2125,19 @@ void fix_type_field(node *n)
     break;
 
   case F_RETURN:
-    if(CAR(n)->type == void_type_string)
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      yyerror("Returning a void expression.\n");
+    } else if(compiler_frame &&
+	      compiler_frame->current_return_type &&
+	      !match_types(compiler_frame->current_return_type,CAR(n)->type) &&
+	      !(
+		compiler_frame->current_return_type==void_type_string &&
+		CAR(n)->token == F_CONSTANT &&
+		IS_ZERO(& CAR(n)->u.sval)
+		)
+	      )
     {
-      yyerror("You cannot return a void expression");
-    }
-    if(compiler_frame &&
-       compiler_frame->current_return_type &&
-       !match_types(compiler_frame->current_return_type,CAR(n)->type) &&
-       !(
-	 compiler_frame->current_return_type==void_type_string &&
-	 CAR(n)->token == F_CONSTANT &&
-	 IS_ZERO(& CAR(n)->u.sval)
-	 )
-       )
-    {
-      yyerror("Wrong return type.");
+      yyerror("Wrong return type.\n");
     }
 
     /* Fall through */
@@ -2128,23 +2149,30 @@ void fix_type_field(node *n)
   case F_CASE:
   case F_CONTINUE:
   case F_BREAK:
+  case F_DEFAULT:
     copy_shared_string(n->type,void_type_string);
     break;
 
   case F_DO:
-    if(!match_types(CDR(n)->type,mixed_type_string))
+    if (!CDR(n) || (CDR(n)->type == void_type_string)) {
+      yyerror("do - while(): Conditional expression is void.\n");
+    } else if(!match_types(CDR(n)->type,mixed_type_string))
       yyerror("Bad conditional expression do - while().\n");
     copy_shared_string(n->type,void_type_string);
     break;
     
   case F_FOR:
-    if(!match_types(CAR(n)->type,mixed_type_string))
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      yyerror("for(): Conditional expression is void.\n");
+    } else if(!match_types(CAR(n)->type,mixed_type_string))
       yyerror("Bad conditional expression for().\n");
     copy_shared_string(n->type,void_type_string);
     break;
 
   case F_SWITCH:
-    if(!match_types(CAR(n)->type,mixed_type_string))
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      yyerror("switch(): Conditional expression is void.\n");
+    } else if(!match_types(CAR(n)->type,mixed_type_string))
       yyerror("Bad switch expression.\n");
     copy_shared_string(n->type,void_type_string);
     break;
