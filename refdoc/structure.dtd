@@ -1,17 +1,46 @@
 
+<!ELEMENT manual (dir*)>
+<!ATTLIST manual
+  version    CDATA    #REQUIRED
+  time-stamp CDATA    #REQUIRED
+  >
+
 <!ELEMENT dir (file|dir)*>
 <!ATTLIST dir
   name   %String;   #REQUIRED
   >
 
-<!ELEMENT file target+>
+<!ELEMENT file (chapter|appendix)*>
 <!ATTLIST file
-  name   CDATA      #REQUIRED
+  name   CDATA      #IMPLIED
   >
 
-<!ELEMENT target EMPTY>
-<!ATTLIST target
-  module CDATA      #REQUIRED
-  class  CDATA      #IMPLIED
-  entity CDATA      #IMPLIED
+<!ELEMENT chapter (insert-move|section)*>
+<!ATTLIST chapter
+  title  %String;   #REQUIRED
   >
+
+<!ELEMENT chapter-ref EMPTY>
+<!ATTLIST chapter-ref
+  file   %String;   #REQUIRED
+  >
+
+<!ELEMENT section (subsection)*>
+
+<!ELEMENT subsection foo*>
+
+<!ELEMENT appendix foo*>
+
+<!-- One of file and name has to be set -->
+<!ELEMENT appendix-ref >
+<!ATTLIST appendix-ref
+  file   %String;   #IMPLIED
+  name   %String;   #IMPLIED
+  >
+
+<!-- level %Int; -->
+<!ELEMENT insert-move EMPTY>
+<!ATTLIST insert-move
+  entity %String;   #REQUIRED
+  >
+
