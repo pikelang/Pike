@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.55 2001/09/24 12:36:47 grubba Exp $");
+RCSID("$Id: socket.c,v 1.56 2001/09/24 14:02:01 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -208,13 +208,15 @@ static void port_bind(INT32 args)
   }
 
 #ifndef __NT__
-  o=1;
-  if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
-    THIS->my_errno=errno;
-    close(fd);
-    push_int(0);
-    return;
+    int o=1;
+    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+    {
+      THIS->my_errno=errno;
+      close(fd);
+      push_int(0);
+      return;
+    }
   }
 #endif
 
