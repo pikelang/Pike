@@ -33,7 +33,7 @@
 
 #ifdef HAVE_POSTGRES_FE_H
 #include <postgres_fe.h>
-#else /* !HAVE_POSTGRES_FE_H */
+#elif defined(HAVE_POSTGRES_H) /* !HAVE_POSTGRES_FE_H */
 #include <postgres.h>
 #endif /* HAVE_POSTGRES_FE_H */
 #include <libpq-fe.h>
@@ -73,7 +73,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.25 2002/01/16 03:08:23 nilsson Exp $");
+RCSID("$Id: postgres.c,v 1.26 2002/08/02 21:23:38 grendel Exp $");
 
 static void set_error (char * newerror)
 {
