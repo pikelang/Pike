@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.83 2000/04/28 05:40:59 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.84 2000/05/01 16:54:04 noring Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -1095,18 +1095,17 @@ void do_gc(void)
 
   tmp=(double)num_objects;
   tmp=tmp * GC_CONST/100.0 * (objects_alloced+1.0) / (objects_freed+1.0);
-  
-  if((int)tmp < alloc_threshold + num_allocs)
-  {
-    alloc_threshold=(int)tmp;
-  }else{
-    alloc_threshold+=num_allocs;
-  }
 
-  if(alloc_threshold < MIN_ALLOC_THRESHOLD)
-    alloc_threshold = MIN_ALLOC_THRESHOLD;
-  if(alloc_threshold > MAX_ALLOC_THRESHOLD)
-    alloc_threshold = MAX_ALLOC_THRESHOLD;
+  if(alloc_threshold + num_allocs <= tmp)
+    tmp = (double)(alloc_threshold + num_allocs);
+
+  if(tmp < MIN_ALLOC_THRESHOLD)
+    tmp = (double)MIN_ALLOC_THRESHOLD;
+  if(tmp > MAX_ALLOC_THRESHOLD)
+    tmp = (double)MAX_ALLOC_THRESHOLD;
+
+  alloc_threshold = (int)tmp;
+  
   num_allocs=0;
 
 #ifdef PIKE_DEBUG
