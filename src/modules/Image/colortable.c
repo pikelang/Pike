@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.118 2004/01/22 23:10:52 nilsson Exp $
+|| $Id: colortable.c,v 1.119 2004/03/05 23:04:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.118 2004/01/22 23:10:52 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.119 2004/03/05 23:04:02 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -33,12 +33,9 @@ RCSID("$Id: colortable.c,v 1.118 2004/01/22 23:10:52 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "mapping.h"
-#include "threads.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
 #include "module_support.h"

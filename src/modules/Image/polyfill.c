@@ -2,16 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.44 2003/11/03 16:23:20 nilsson Exp $
+|| $Id: polyfill.c,v 1.45 2004/03/05 23:04:03 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.44 2003/11/03 16:23:20 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.45 2004/03/05 23:04:03 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
-
-#include "global.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -21,15 +19,9 @@ extern double floor(double);
 
 #include "image_machine.h"
 
-#include "stralloc.h"
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "threads.h"
-#include "builtin_functions.h"
 
 #include "image.h"
 

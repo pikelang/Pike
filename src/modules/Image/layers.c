@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.95 2004/02/03 17:34:38 grubba Exp $
+|| $Id: layers.c,v 1.96 2004/03/05 23:04:03 nilsson Exp $
 */
 
 /*
@@ -15,14 +15,13 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.95 2004/02/03 17:34:38 grubba Exp $");
+RCSID("$Id: layers.c,v 1.96 2004/03/05 23:04:03 nilsson Exp $");
 
 #include "image_machine.h"
 
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"

@@ -2,10 +2,8 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: default_font.c,v 1.7 2003/02/21 12:01:07 grubba Exp $
+|| $Id: default_font.c,v 1.8 2004/03/05 23:04:02 nilsson Exp $
 */
-
-#include "global.h"
 
 /* Use cpp to RLE-encode... */
 #define Z4	0,0,0,0

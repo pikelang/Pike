@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dct.c,v 1.24 2003/08/20 22:26:32 nilsson Exp $
+|| $Id: dct.c,v 1.25 2004/03/05 23:04:02 nilsson Exp $
 */
 
 /*
@@ -15,14 +15,11 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
 #include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "pike_error.h"
 
 #include "image.h"

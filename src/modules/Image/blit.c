@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blit.c,v 1.55 2003/03/31 14:40:57 grubba Exp $
+|| $Id: blit.c,v 1.56 2004/03/05 23:04:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -15,24 +15,15 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
 #include "global.h"
 #include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "pike_error.h"
 #include "threads.h"
 
 #include "image.h"
 #include "image_machine.h"
-
-#ifdef ASSEMBLY_OK
-#include "assembly.h"
-#endif
-
 
 #define sp Pike_sp
 

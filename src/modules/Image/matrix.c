@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.47 2003/08/13 09:10:09 grubba Exp $
+|| $Id: matrix.c,v 1.48 2004/03/05 23:04:03 nilsson Exp $
 */
 
 /*
@@ -15,14 +15,10 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "threads.h"
 #include "pike_error.h"
 

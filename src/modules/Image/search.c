@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: search.c,v 1.26 2002/10/21 17:06:14 marcus Exp $
+|| $Id: search.c,v 1.27 2004/03/05 23:04:03 nilsson Exp $
 */
 
 /*
@@ -18,17 +18,12 @@
 #include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "pike_error.h"
-#include "builtin_functions.h"
 
 #include "image.h"
-
-#include <builtin_functions.h>
 
 
 #define sp Pike_sp

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: orient.c,v 1.24 2003/03/14 15:57:48 grubba Exp $
+|| $Id: orient.c,v 1.25 2004/03/05 23:04:03 nilsson Exp $
 */
 
 /*
@@ -15,15 +15,11 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 
 #include "image.h"

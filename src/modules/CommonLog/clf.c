@@ -2,16 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.14 2003/11/20 16:04:38 nilsson Exp $
+|| $Id: clf.c,v 1.15 2004/03/05 23:03:26 nilsson Exp $
 */
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.14 2003/11/20 16:04:38 nilsson Exp $");
+RCSID("$Id: clf.c,v 1.15 2004/03/05 23:03:26 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
-#include "pike_macros.h"
-#include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
