@@ -60,3 +60,10 @@ void ENCODE_PROGRAM(struct program *p, struct dynamic_buffer_s *buf);
 void DECODE_PROGRAM(struct program *p)
 	Decode 'p'->program as encoded by ENCODE_PROGRAM().
 	NOTE: 'p'->relocations is valid at this point.
+
+void FLUSH_CODE_GENERATOR_STATE()
+        Called at labels and beginning of functions to notify
+	the code generator that registers and other states
+	must be updated at this point.
+
+        
