@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.39 2003/12/03 10:22:29 nilsson Exp $
+// $Id: module.pmod,v 1.40 2004/04/14 20:18:33 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -51,7 +51,7 @@ mapping _decode( string data )
   }
 
   // Use the low-level decode function to get the alpha channel.
-#if constant(Image.GIF.RENDER)
+#if constant(Image.GIF)
   catch
   {
     array chunks = Image.GIF->_decode( data );
@@ -127,7 +127,7 @@ array(Image.Layer) decode_layers( string data, mapping|void opt )
   if(!data)
     return 0;
 
-#if constant(Image.GIF) && constant(Image.GIF.RENDER)
+#if constant(Image.GIF)
   catch( i = Image["GIF"]->decode_layers( data ) );
 #endif
 

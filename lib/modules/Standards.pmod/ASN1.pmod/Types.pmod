@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.35 2004/02/29 02:58:54 nilsson Exp $
+// $Id: Types.pmod,v 1.36 2004/04/14 20:18:57 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -9,7 +9,7 @@
 #pragma strict_types
 #define COMPATIBILITY
 
-#if constant(Gmp.mpz)
+#if constant(Gmp) && constant(Gmp.mpz)
 
 #if 0
 #define WERROR werror
@@ -1227,4 +1227,6 @@ constant asn1_universal_string = UniversalString;
 constant asn1_bmp_string = BMPString;
 #endif
 
+#else
+constant this_program_does_not_exist=1;
 #endif /* Gmp.mpz */

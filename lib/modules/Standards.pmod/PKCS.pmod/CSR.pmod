@@ -1,12 +1,12 @@
 //
-// $Id: CSR.pmod,v 1.11 2004/02/07 15:54:32 nilsson Exp $
+// $Id: CSR.pmod,v 1.12 2004/04/14 20:19:26 nilsson Exp $
 
 //! Handling of Certifikate Signing Requests (PKCS-10)
 
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if constant(Standards.ASN1.Types.Identifier)
+#if constant(Standards.ASN1.Types)
 
 import Standards.ASN1.Types;
 
@@ -40,4 +40,6 @@ object build_csr_dsa(Crypto.DSA dsa, object name)
 }
 #endif
 
+#else
+constant this_program_does_not_exist=1;
 #endif

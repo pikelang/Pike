@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.17 2004/01/30 01:02:14 bill Exp $
+// $Id: Certificate.pmod,v 1.18 2004/04/14 20:19:26 nilsson Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -124,7 +124,7 @@ Version ::= INTEGER
 
 */
 
-#if constant(Standards.ASN1.Types.Sequence)
+#if constant(Standards.ASN1.Types)
 
 import Standards.ASN1.Types;
 import .Identifiers;
@@ -279,4 +279,6 @@ class Attributes
   }
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

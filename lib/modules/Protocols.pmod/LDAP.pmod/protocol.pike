@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.11 2004/01/11 00:49:03 nilsson Exp $
+// $Id: protocol.pike,v 1.12 2004/04/14 20:21:16 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -21,8 +21,7 @@
 //			 - added core for async operation
 //
 
-#if constant(Standards.ASN1.Types.asn1_integer)
-
+#if constant(Standards.ASN1.Types)
 
 #include "ldap_globals.h"
 
@@ -311,5 +310,6 @@
     return msgnum;
   }
 
-
+#else
+constant this_program_does_not_exist=1;
 #endif

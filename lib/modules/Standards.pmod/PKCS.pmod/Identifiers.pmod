@@ -1,5 +1,5 @@
 //
-// $Id: Identifiers.pmod,v 1.14 2004/01/30 01:02:14 bill Exp $
+// $Id: Identifiers.pmod,v 1.15 2004/04/14 20:19:26 nilsson Exp $
 // Object identifiers
 
 #pike __REAL_VERSION__
@@ -67,7 +67,7 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-#if constant(Standards.ASN1.Types.Identifier)
+#if constant(Standards.ASN1.Types)
 
 import Standards.ASN1.Types;
 
@@ -221,4 +221,6 @@ Identifier ad_id = pkix_id->append(48);
 mapping(string:Identifier) ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
 
+#else
+constant this_program_does_not_exist=1;
 #endif

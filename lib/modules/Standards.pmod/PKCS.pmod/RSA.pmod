@@ -1,4 +1,4 @@
-// $Id: RSA.pmod,v 1.19 2004/02/03 13:50:22 nilsson Exp $
+// $Id: RSA.pmod,v 1.20 2004/04/14 20:19:26 nilsson Exp $
 
 //! RSA operations and types as described in PKCS-1.
 
@@ -11,7 +11,7 @@
 #define WERROR(x)
 #endif
 
-#if constant(Standards.ASN1.Decode.simple_der_decode)
+#if constant(Standards.ASN1.Decode) && constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
 
@@ -101,4 +101,6 @@ Sequence build_rsa_public_key(object rsa)
       ({ Integer(rsa->get_n()), Integer(rsa->get_e()) }) )->get_der()) }) );
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

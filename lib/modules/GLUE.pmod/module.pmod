@@ -1,8 +1,8 @@
 //
-// $Id: module.pmod,v 1.4 2004/02/03 12:18:08 jhs Exp $
+// $Id: module.pmod,v 1.5 2004/04/14 20:20:02 nilsson Exp $
 
 #pike __REAL_VERSION__
-#if constant(GL.GL_FLOAT)
+#if constant(GL)
 
 //! GL Universal Environment
 
@@ -2099,4 +2099,6 @@ mapping(string:mixed) debug_stuff() {
   ]);
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.54 2004/03/18 18:06:12 mast Exp $
+// $Id: client.pike,v 1.55 2004/04/14 20:21:16 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -68,7 +68,7 @@
 //	RFC 2307   (LDAP as network information services; draft?)
 
 
-#if constant(.ldap_privates.ldap_der_decode)
+#if constant(.ldap_privates)
 
 #include "ldap_globals.h"
 
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.54 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.55 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1360,4 +1360,6 @@ int _prof_gtim;
 
   } //parse_uri
 
+#else
+constant this_program_does_not_exist=1;
 #endif

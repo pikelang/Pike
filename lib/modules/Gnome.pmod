@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#if constant(GTK.Widget)
+#if constant(GTK) && constant(GTK.Widget)
 
 //! @decl import GTK
 
@@ -15,4 +15,6 @@ array _indices()
   return glob( "GNOME_*", indices(GTK) ) + glob( "Gnome_*", indices(GTK) );
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif /* constant(GTK.Widget) */

@@ -2,13 +2,13 @@
  * Sybase driver for the Pike programming language.
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  *
- * $Id: sybase.pike,v 1.8 2003/12/31 00:10:26 nilsson Exp $
+ * $Id: sybase.pike,v 1.9 2004/04/14 20:20:35 nilsson Exp $
  *
  */
 
 #pike __REAL_VERSION__
 
-#if constant(sybase.sybase)
+#if constant(sybase)
 
 inherit sybase.sybase:mo;
 #define THROW(X) throw(({X+"\n",backtrace()}))
@@ -104,4 +104,6 @@ int|object big_query(string q, mapping(string|int:mixed)|void bindings) {
   return ::big_query(.sql_util.emulate_bindings(q,bindings,this));
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#if constant(Crypto.Random.random_string)
+#if constant(Crypto.Random)
 
 import ".";
 
@@ -537,4 +537,6 @@ void forget_person(object p)
    m_delete(nick2person,p->nick);
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif // constant(Crypto.Random.random_string)

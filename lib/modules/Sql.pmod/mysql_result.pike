@@ -1,17 +1,14 @@
 /*
- * $Id: mysql_result.pike,v 1.4 2000/09/28 03:39:08 hubbe Exp $
+ * $Id: mysql_result.pike,v 1.5 2004/04/14 20:20:35 nilsson Exp $
  *
  * Glue for the Mysql-module
  */
 
 #pike __REAL_VERSION__
 
-#if constant(Mysql.mysql_result)
+#if constant(Mysql)
 inherit Mysql.mysql_result;
-#else /* !constant(Mysql.mysql_result) */
-void create()
-{
-  destruct();
-}
-#endif /* constant(Mysql.mysql_result) */
+#else /* !constant(Mysql) */
+constant this_program_does_not_exist=1;
+#endif /* constant(Mysql) */
 
