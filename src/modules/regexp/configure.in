@@ -1,8 +1,0 @@
-AC_INIT(regexp.c)
-
-sinclude(../module_configure.in)
-
-
-AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-
