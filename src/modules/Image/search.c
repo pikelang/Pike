@@ -208,11 +208,8 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 #define NAME "match_phase"
 #define INAME image_match_phase
 #define PIXEL_VALUE_DISTANCE(CO)  \
-       (((h=haystacki[j].CO)> \
-	   (n=needlei[ny*nxs+nx].CO))? \
-	 MINIMUM((h-n),(255-h+n))\
-       : \
-	 MINIMUM((n-h),(255-n+h)))
+       ((h=haystacki[j].CO),(n=needlei[ny*nxs+nx].CO), \
+        ((h>n)? MINIMUM((h-n),(255-h+n)) : MINIMUM((n-h),(255-n+h))))
 #include "match.h"
 
 #define NAME "match_norm"
