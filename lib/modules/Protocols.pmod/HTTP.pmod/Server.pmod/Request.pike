@@ -176,6 +176,7 @@ static void read_cb_post(mixed dummy,string s)
 static void close_cb()
 {
 // closed by peer before request read
+   if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
 }
 
 string _sprintf(int t)
@@ -192,10 +193,19 @@ string make_response_header(mapping m)
    {
       case 0:
       case 200: 
-	 res+=({"HTTP/1.0 200 OK"}); // HTTP/1.1 when supported
+	 if (zero_type(m->start))
+	    res+=({"HTTP/1.0 200 OK"}); // HTTP/1.1 when supported
+	 else
+	 {
+	    res+=({"HTTP/1.0 206 Partial content"});
+	    m->error=206;
+	 }
 	 break;
       case 302:
 	 res+=({"HTTP/1.0 302 TEMPORARY REDIRECT"}); 
+	 break;
+      case 304:
+	 res+=({"HTTP/1.0 304 Not Modified"}); 
 	 break;
       default:
    // better error names?
@@ -239,7 +249,21 @@ string make_response_header(mapping m)
 	 m->size=-1;
 
    if (m->size!=-1)
+   {
       res+=({"Content-Length: "+m->size});
+      if (!zero_type(m->start) && m->error==206)
+      {
+	 if (m->stop==-1) m->stop=m->size-1;
+	 if (m->start>=m->size ||
+	     m->stop>=m->size ||
+	     m->stop<m->size ||
+	     m->size<0)
+	    res[0]="HTTP/1.0 416 Requested range not satisfiable";
+
+	 res+=({"Content-Range: bytes "+
+		m->start+"-"+m->stop+"/"+m->size});
+      }
+   }
 
    return res*"\r\n"+"\r\n\r\n";
 }
@@ -272,7 +296,38 @@ void response_and_finish(mapping m, function|void _log_cb)
 // insert HTTP 1.1 stuff here
    log_cb = _log_cb;
 
+   if (request_headers->range && !m->start && zero_type(m->error))
+   {
+      int a,b;
+      if (sscanf(request_headers->range,"bytes %d-%d",a,b)==2)
+	 m->start=a,m->stop=b;
+      else if (sscanf(request_headers->range,"bytes -%d",b))
+	 m->start=0,m->stop=b;
+      else if (sscanf(request_headers->range,"bytes %d-",a))
+	 m->start=a,m->stop=-1;
+   }
+
+   if (request_headers["if-modified-since"])
+   {
+      int t=http_decode_date(request_headers["if-modified-since"]);
+
+      if (t)
+      {
+	 if (!m->stat && m->file)
+	    m->stat=m->file->stat();
+	 if (m->stat->mtime<=t)
+	 {
+	    m_delete(m,"file");
+	    m->data="";
+	    m->error=304;
+	 }
+      }
+   }
+
    string header=make_response_header(m);
+
+   if (m->stop) m->size=1+m->stop-m->start;
+   if (m->file && m->start) m->file->seek(m->start);
 
    if (m->file && 
        m->size!=-1 && 
@@ -289,7 +344,12 @@ void response_and_finish(mapping m, function|void _log_cb)
       if (m->file) m->file->close(),m->file=0;
    }
    else if (m->data)
-      send_buf=header+m->data;
+   {
+      if (m->stop)
+	 send_buf=header+m->data[..m->size-1];
+      else
+	 send_buf=header+m->data;
+   }
    else
       send_buf=header;
 
@@ -305,6 +365,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    send_pos=0;
    my_fd->set_nonblocking(0,send_write,send_close);
+   send_stop=strlen(header)+m->size;
 
    if (m->file)
    {
@@ -313,26 +374,31 @@ void response_and_finish(mapping m, function|void _log_cb)
    }
    else
       send_fd=0;
+
+   if (strlen(send_buf)>=send_stop)
+      send_buf=send_buf[..send_stop-1];
 }
 
 void finish()
 {
    if( log_cb )
      log_cb(this);
-   if (my_fd) my_fd->close();
+   if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
 }
 
 int sent;
 string send_buf="";
 int send_pos;
 Stdio.File send_fd=0;
+int send_stop;
 
 void send_write()
 {
    if (sizeof(send_buf)-send_pos<8192 &&
        send_fd)
    {
-      string q=send_fd->read(131072);
+      string q;
+      send_fd->read(131072);
       if (!q || q=="")
       {
 	 send_fd->close();
@@ -342,6 +408,9 @@ void send_write()
       {
 	 send_buf=send_buf[send_pos..]+q;
 	 send_pos=0;
+
+	 if (strlen(send_buf)+sent>=send_stop)
+	    send_buf=send_buf[..send_stop-1-sent];
       }
    }
    else if (send_pos==sizeof(send_buf) && !send_fd)

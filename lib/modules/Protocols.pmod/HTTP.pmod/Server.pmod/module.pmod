@@ -67,6 +67,17 @@ string http_date(int time)
    return Calendar.ISO_UTC.Second(time)->format_http();
 }
 
+//! method int http_decode_date(string date)
+//! 	Decode a HTTP date to seconds since 1970 (UTC)
+//! @returns
+//!	zero (UNDEFINED) if the given string isn't a HTTP date
+int http_decode_date(string data)
+{
+   Calendar.ISO_UTC.Second s=
+      Calendar.ISO_UTC.parse("%e, %D %M %Y %h:%m:%s GMT",data);
+   if (!s) return UNDEFINED;
+   return s->unix_time();
+}
 
 // server id prefab
 
