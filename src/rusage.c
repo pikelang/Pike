@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.38 2004/05/19 15:30:42 mast Exp $
+|| $Id: rusage.c,v 1.39 2004/05/19 20:56:30 grubba Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.38 2004/05/19 15:30:42 mast Exp $");
+RCSID("$Id: rusage.c,v 1.39 2004/05/19 20:56:30 grubba Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -252,7 +252,11 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 }
 
 #else /*HAVE_TIMES */
-#if defined(HAVE_CLOCK) && defined(CLOCKS_PER_SEC)
+#if defined(HAVE_CLOCK)
+
+#ifndef CLOCKS_PER_SEC
+#define CLOCKS_PER_SEC	1000000
+#endif /* !CLOCKS_PER_SEC */
 
 int pike_get_rusage(pike_rusage_t rusage_values)
 {
@@ -301,6 +305,22 @@ cpu_time_t get_cpu_time (void)
     return (cpu_time_t) -1;
 }
 
+cpu_time_t get_real_time (void)
+{
+  union {
+    unsigned __int64 ft_scalar;
+    FILETIME ft_struct;
+  } creationTime, exitTime, kernelTime, userTime;
+  if (GetThreadTimes(GetCurrentThread(),
+		     &creationTime.ft_struct,
+		     &exitTime.ft_struct,
+		     &kernelTime.ft_struct,
+		     &userTime.ft_struct))
+    return exitTime.ft_scalar * 100;
+  else
+    return (cpu_time_t) -1;
+}
+
 #elif defined (HAVE_WORKING_GETHRVTIME)
 
 cpu_time_t get_cpu_time (void)
@@ -311,7 +331,14 @@ cpu_time_t get_cpu_time (void)
   return gethrvtime() / (1000000000 / CPU_TIME_TICKS);
 }
 
-#elif defined (GETRUSAGE_THROUGH_PROCFS)
+cpu_time_t get_real_time (void)
+{
+  return gethrtime() * (CPU_TIME_TICKS / 1000000000);
+}
+
+#else
+
+#if defined (GETRUSAGE_THROUGH_PROCFS)
 
 cpu_time_t get_cpu_time (void)
 {
@@ -368,11 +395,19 @@ cpu_time_t get_cpu_time (void)
 {
   struct rusage rus;
   if (getrusage(RUSAGE_SELF, &rus) < 0) return (cpu_time_t) -1;
-  return
-    rus.ru_utime.tv_sec * CPU_TIME_TICKS +
-    rus.ru_utime.tv_usec * (CPU_TIME_TICKS / 1000) +
-    rus.ru_stime.tv_sec * CPU_TIME_TICKS +
-    rus.ru_stime.tv_usec * (CPU_TIME_TICKS / 1000);
+  if (CPU_TIME_TICKS > 1000000) {
+    return
+      rus.ru_utime.tv_sec * CPU_TIME_TICKS +
+      rus.ru_utime.tv_usec * (CPU_TIME_TICKS / 1000000) +
+      rus.ru_stime.tv_sec * CPU_TIME_TICKS +
+      rus.ru_stime.tv_usec * (CPU_TIME_TICKS / 1000000);
+  } else {
+    return
+      rus.ru_utime.tv_sec * CPU_TIME_TICKS +
+      rus.ru_utime.tv_usec / (1000000 / CPU_TIME_TICKS) +
+      rus.ru_stime.tv_sec * CPU_TIME_TICKS +
+      rus.ru_stime.tv_usec * (1000000 / CPU_TIME_TICKS);
+  }
 }
 
 #else
@@ -382,6 +417,21 @@ cpu_time_t get_cpu_time (void)
   return (cpu_time_t) -1;
 }
 
+#endif
+
+cpu_time_t get_real_time(void)
+{
+  struct timeval tv;
+
+  if (GETTIMEOFDAY(&tv) < 0) return -1;
+  if (CPU_TIME_TICKS > 1000000) {
+    return tv.tv_sec * CPU_TIME_TICKS +
+      tv.tv_usec * (CPU_TIME_TICKS / 1000000);
+  } else {
+    return tv.tv_sec * CPU_TIME_TICKS +
+      tv.tv_usec / (1000000 / CPU_TIME_TICKS);
+  }
+}
 #endif
 
 long *low_rusage(void)
