@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.29 1997/12/22 23:26:44 hubbe Exp $ */
+/* $Id: colortable.c,v 1.30 1998/01/08 16:57:04 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.29 1997/12/22 23:26:44 hubbe Exp $
+**!	$Id: colortable.c,v 1.30 1998/01/08 16:57:04 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.29 1997/12/22 23:26:44 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.30 1998/01/08 16:57:04 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2909,6 +2909,44 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #undef NCTLU_CUBE_FAST_WRITE
 #undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
 
+/* instantiate 16bit functions */
+
+#define NCTLU_DESTINATION unsigned short
+#define NCTLU_CACHE_HIT_WRITE *d=((unsigned short)(lc->index))
+#define NCTLU_DITHER_GOT lc->dest
+#define NCTLU_FLAT_CUBICLES_NAME _img_nct_index_16bit_flat_cubicles
+#define NCTLU_FLAT_FULL_NAME _img_nct_index_16bit_flat_full
+#define NCTLU_CUBE_NAME _img_nct_index_16bit_cube
+#define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,&d,NULL,&cd)
+
+#define NCTLU_CUBE_FAST_WRITE(SRC) \
+   *d=(unsigned short) \
+      ((int)((SRC)->r*red+hred)>>8)+ \
+      (((int)((SRC)->g*green+hgreen)>>8)+ \
+       ((int)((SRC)->b*blue+hblue)>>8)*green)*red;
+
+#define NCTLU_CUBE_FAST_WRITE_DITHER_GOT(SRC) \
+   do \
+   { \
+      rgb_group tmp; \
+      tmp.r=((int)((((SRC)->r*red+hred)>>8)*redf)); \
+      tmp.g=((int)((((SRC)->g*green+hgreen)>>8)*greenf)); \
+      tmp.b=((int)((((SRC)->b*blue+hblue)>>8)*bluef)); \
+      dither_got(dith,rowpos,*s,tmp); \
+   } while (0)
+
+#include "colortable_lookup.h"
+
+#undef NCTLU_DESTINATION
+#undef NCTLU_CACHE_HIT_WRITE
+#undef NCTLU_DITHER_GOT
+#undef NCTLU_FLAT_CUBICLES_NAME
+#undef NCTLU_FLAT_FULL_NAME 
+#undef NCTLU_CUBE_NAME 
+#undef NCTLU_LINE_ARGS 
+#undef NCTLU_CUBE_FAST_WRITE
+#undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
+
 /* done instantiating from colortable_lookup.h */
 
 
@@ -2934,6 +2972,39 @@ int image_colortable_index_8bit_image(struct neo_colortable *nct,
 	       break;
 	    case NCT_CUBICLES:
   	       _img_nct_index_8bit_flat_cubicles(s,d,len,nct,&dith,rowlen);
+	       break;
+	 }
+	 break;
+      default:
+         image_colortable_free_dither(&dith);
+	 return 0;
+   }
+   image_colortable_free_dither(&dith);
+   return 1;
+}
+
+int image_colortable_index_16bit_image(struct neo_colortable *nct,
+				      rgb_group *s,
+				      unsigned short *d,
+				      int len,
+				      int rowlen)
+{
+   struct nct_dither dith;
+   image_colortable_initiate_dither(nct,&dith,rowlen);
+
+   switch (nct->type)
+   {
+      case NCT_CUBE:
+	 _img_nct_index_16bit_cube(s,d,len,nct,&dith,rowlen);
+	 break;
+      case NCT_FLAT:
+         switch (nct->lookup_mode)
+	 {
+	    case NCT_FULL:
+  	       _img_nct_index_16bit_flat_full(s,d,len,nct,&dith,rowlen);
+	       break;
+	    case NCT_CUBICLES:
+  	       _img_nct_index_16bit_flat_cubicles(s,d,len,nct,&dith,rowlen);
 	       break;
 	 }
 	 break;
@@ -2984,13 +3055,13 @@ void image_colortable_index_8bit(INT32 args)
    struct pike_string *ps;
 
    if (args<1)
-      error("too few arguments to colortable->map()\n");
+      error("too few arguments to colortable->index_8bit()\n");
    if (sp[-args].type!=T_OBJECT ||
        ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("illegal argument 1 to colortable->map(), expecting image object\n");
+      error("illegal argument 1 to colortable->index_8bit(), expecting image object\n");
 
    if (!src->img) 
-      error("colortable->map(): source image is empty\n");
+      error("colortable->index_8bit(): source image is empty\n");
 
    ps=begin_shared_string(src->xsize*src->ysize);
 
@@ -2998,7 +3069,36 @@ void image_colortable_index_8bit(INT32 args)
 					  (unsigned char *)ps->str,
 					  src->xsize*src->ysize,src->xsize))
    {
+      free_string(end_shared_string(ps));
       error("colortable->index_8bit(): called colortable is not initiated\n");
+   }
+
+   pop_n_elems(args);
+   push_string(ps);
+}
+
+void image_colortable_index_16bit(INT32 args)
+{
+   struct image *src;
+   struct pike_string *ps;
+
+   if (args<1)
+      error("too few arguments to colortable->index_16bit()\n");
+   if (sp[-args].type!=T_OBJECT ||
+       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("illegal argument 1 to colortable->index_16bit(), expecting image object\n");
+
+   if (!src->img) 
+      error("colortable->index_16bit(): source image is empty\n");
+
+   ps=begin_shared_string(src->xsize*src->ysize);
+
+   if (!image_colortable_index_16bit_image(THIS,src->img,
+					  (unsigned char *)ps->str,
+					  src->xsize*src->ysize,src->xsize))
+   {
+      free_string(end_shared_string(ps));
+      error("colortable->index_16bit(): called colortable is not initiated\n");
    }
 
    pop_n_elems(args);
@@ -3697,6 +3797,11 @@ void init_colortable_programs(void)
    add_function("`*",image_colortable_map,
 		"function(object:object)",0);
    add_function("``*",image_colortable_map,
+		"function(object:object)",0);
+
+   add_function("index_8bit",image_colortable_index_8bit,
+		"function(object:object)",0);
+   add_function("index_16bit",image_colortable_index_16bit,
 		"function(object:object)",0);
 
    /* dither */

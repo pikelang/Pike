@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.10 1997/11/11 22:17:47 mirar Exp $
+**!	$Id: colortable.h,v 1.11 1998/01/08 16:57:05 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -196,6 +196,12 @@ void image_colortable_free_dither(struct nct_dither *dith);
 int image_colortable_index_8bit_image(struct neo_colortable *nct,
 				      rgb_group *s,
 				      unsigned char *d,
+				      int len,
+				      int rowlen);
+
+int image_colortable_index_16bit_image(struct neo_colortable *nct,
+				      rgb_group *s,
+				      unsigned short *d,
 				      int len,
 				      int rowlen);
 
