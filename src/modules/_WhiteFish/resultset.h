@@ -6,7 +6,6 @@ typedef struct result_set
     INT32 ranking;
   } hits[1];
 } ResultSet;
-struct result_set_p {  int allocated_size; ResultSet *d; };
 #ifdef PIKE_DEBUG
 extern struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o );

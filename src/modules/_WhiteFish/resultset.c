@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.15 2001/05/25 16:17:59 per Exp $");
+RCSID("$Id: resultset.c,v 1.16 2001/05/31 14:21:43 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -31,6 +31,7 @@ RCSID("$Id: resultset.c,v 1.15 2001/05/25 16:17:59 per Exp $");
 
 /* The resultset class abstractions. */
 
+struct result_set_p {  int allocated_size; ResultSet *d; };
 struct program *resultset_program;
 
 #define THIS ((struct result_set_p*)Pike_fp->current_object->storage)
@@ -406,8 +407,8 @@ static void f_resultset_or( INT32 args )
 
 static void f_resultset_intersect( INT32 args )
 /*
- *! @decl intersect( ResultSet a )
- *! @decl `&( ResultSet a )
+ *! @decl ResultSet intersect( ResultSet a )
+ *! @decl ResultSet `&( ResultSet a )
  *!
  *!
  *! Return a new resultset with all entries that are present in _both_
@@ -492,11 +493,94 @@ static void f_resultset_intersect( INT32 args )
   push_object( res );
 }
 
+static void f_resultset_add_ranking( INT32 args )
+/*
+ *! @decl ResultSet add_ranking( ResultSet a )
+ *!
+ *! Return a new resultset. All entries are the same as in this set, 
+ *! but if an entry exists in @[a], the ranking from @[a] is added to
+ *! the ranking of the entry
+ */
+{
+  struct object *res = wf_resultset_new();
+  struct object *left = Pike_fp->current_object;
+  struct object *right;
+  int lp=-1, rp=-1;
+
+  int left_used=1, right_used=1;
+  int left_left=1, right_left=1;
+  int right_size, left_size;
+
+  int left_doc=0, left_rank=0, right_rank=0, right_doc=0, last=-1;
+  ResultSet *set_r, *set_l = T(left)->d;
+
+  get_all_args( "sub", args, "%o", &right );
+
+  right = WF_RESULTSET( right );
+  set_r = T(right)->d;
+  left_size = set_l->num_docs;
+  right_size = set_r->num_docs;
+  
+  while( left_left )
+  {
+    if( left_left && left_used ) /* New from left */
+    {
+      if( ++lp == left_size )
+      {
+	left_left = 0;
+	continue;
+      }
+      else
+      {
+	left_doc = set_l->hits[lp].doc_id;
+	left_rank = set_l->hits[lp].ranking;
+	left_used = 0;
+      }
+    }
+
+    if( right_left && right_used ) /* New from right */
+    {
+      if( ++rp == right_size )
+      {
+	right_left = 0;
+	if( !left_left )
+	  continue;
+      }
+      else
+      {
+	right_doc = set_r->hits[rp].doc_id;
+	right_rank = set_r->hits[rp].ranking;
+	right_used = 0;
+      }
+    }
+
+
+    if(!right_left || (left_doc <= right_doc))
+    {
+      if( left_doc != right_doc )
+      {	
+	if( left_doc > last )
+	  wf_resultset_add( res, (last = left_doc), left_rank );
+      } else
+	wf_resultset_add( res, (last = left_doc), left_rank+right_rank );
+
+      left_used=1;
+    }
+
+    if( right_doc <= left_doc )
+      right_used=1;
+  }
+  if( !left_used )
+    if(left_doc!=last)
+      wf_resultset_add( res, (last = left_doc), left_rank );
+  pop_n_elems( args );
+  push_object( res );
+}
+
 static void f_resultset_sub( INT32 args )
 /*
- *! @decl sub( ResultSet a )
- *! @decl `-( ResultSet a )
- *!
+ *! @decl ResultSet sub( ResultSet a )
+ *! @decl ResultSet `-( ResultSet a )
  *!
  *! Return a new resultset with all entries in a removed from the
  *! current ResultSet.
@@ -590,11 +674,13 @@ void init_resultset_program(void)
     add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
     add_function("create",f_resultset_create,
 		 "function(void|array(int):void)",0);
-    add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
+
     add_function("sort",f_resultset_sort,"function(void:object)",0);
     add_function("sort_docid",f_resultset_sort_docid,
 		 "function(void:object)",0);
+
     add_function("dup",f_resultset_dup,"function(void:object)",0);
+
     add_function("slice",f_resultset_slice,
 		 "function(int,int:array(array(int)))",0);
 
@@ -605,6 +691,9 @@ void init_resultset_program(void)
     add_function( "sub", f_resultset_sub, "function(object:object)", 0 );
     add_function( "`-", f_resultset_sub, "function(object:object)", 0 );
 
+    add_function( "add_ranking", f_resultset_add_ranking,
+		  "function(object:object)", 0 );
+
     add_function( "intersect", f_resultset_intersect,
 		  "function(object:object)", 0 );
     add_function( "`&", f_resultset_intersect, "function(object:object)", 0 );
@@ -612,9 +701,11 @@ void init_resultset_program(void)
     add_function("_sizeof",f_resultset__sizeof,"function(void:int)", 0 );
     add_function("size",f_resultset__sizeof,"function(void:int)", 0 );
 
-    /* debug related stuff */
+    /* debug related functions */
     add_function("memsize",f_resultset_memsize,"function(void:int)", 0 );
     add_function("overhead",f_resultset_overhead,"function(void:int)", 0 );
+    add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
+
     set_init_callback( init_rs );
     set_exit_callback( free_rs );
   }
