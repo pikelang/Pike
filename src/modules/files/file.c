@@ -1214,7 +1214,7 @@ void init_files_programs()
 
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:void)",0);
-  add_function("read",file_read,"function(int:string|int)",0);
+  add_function("read",file_read,"function(int,int|void:int|string)",0);
   add_function("write",file_write,"function(string:int)",0);
 
   add_function("seek",file_seek,"function(int:int)",0);
