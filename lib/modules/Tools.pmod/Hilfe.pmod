@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.60 2002/04/02 21:36:52 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.61 2002/04/06 19:41:22 mikael%unix.pp.se Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -28,23 +28,24 @@ class Command {
 
   //! Returns a one line description of the command. This help should
   //! be shorter than 54 characters.
-  string help();
+  string help(string what);
 
   //! A more elaborate documentation of the command. This should be
   //! less than 68 characters per line.
-  string doc(string with) { return help(); }
+  string doc(string what, string with) { return help(what); }
 
   //! The actual command callback. Messages to the user should be
   //! written out by using the write method in the @[Evaluator] object.
   void exec(Evaluator e, string line, array(string) words, array(string) tokens);
+
 }
 
 //! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.CommandReset();
 //! in your .hilferc to have this command defined when you open Hilfe.
 class CommandReset {
   inherit Command;
-  string help() { return "Undefines the given symbol."; }
-  string doc() {
+  string help(string what) { return "Undefines the given symbol."; }
+  string doc(string what, string with) {
     return "Undefines any variable, constant, function or program, specified by\n"
       "name. Example: \"reset tmp\"\n";
   }
@@ -85,8 +86,8 @@ string format_hr_time(int i) {
 private class CommandSet {
   inherit Command;
 
-  string help() { return "Change Hilfe settings."; }
-  string doc(string with) {
+  string help(string what) { return "Change Hilfe settings."; }
+  string doc(string what, string with) {
     if(with=="format")
       return documentation_set_format;
     return documentation_set;
@@ -224,8 +225,9 @@ private class CommandSet {
 
 private class CommandExit {
   inherit Command;
-  string help() { return "Exit Hilfe."; }
+  string help(string what) { return "Exit Hilfe."; }
 
+  string doc(string what, string with) { return "Exit Hilfe.\n"; }
   void exec(Evaluator e) {
     e->write("Exiting.\n");
     destruct(e);
@@ -235,7 +237,7 @@ private class CommandExit {
 
 private class CommandHelp {
   inherit Command;
-  string help() { return "Show help text."; }
+  string help(string what) { return "Show help text."; }
 
   void exec(Evaluator e, string line, array(string) words) {
     line = words[1..]*" ";
@@ -252,7 +254,7 @@ private class CommandHelp {
     }
 
     if(sizeof(words)>1 && e->commands[words[1]]) {
-      string ret = e->commands[words[1]]->doc(words[2..]*"");
+      string ret = e->commands[words[1]]->doc(words[1], words[2..]*"");
       if(ret) write(ret);
       return;
     }
@@ -269,7 +271,7 @@ commands:
     array err = ({});
     foreach(sort(indices(e->commands)), string cmd) {
       string ret;
-      err += ({ catch( ret = e->commands[cmd]->help() ) });
+      err += ({ catch( ret = e->commands[cmd]->help(cmd) ) });
       if(ret)
 	write(" %-10s - %s\n", cmd, ret);
     }
@@ -286,7 +288,7 @@ Enter \"help me more\" for further Hilfe help.
 
 private class CommandDot {
   inherit Command;
-  string help() { return 0; }
+  string help(string what ) { return 0; }
 
   private constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32,
@@ -338,8 +340,8 @@ class CommandDump {
 
   private function write;
 
-  string help() { return "Dump variables and other info."; }
-  string doc() { return documentation_dump; }
+  string help(string what) { return "Dump variables and other info."; }
+  string doc(string what, string with) { return documentation_dump; }
 
   private void wrapper(Evaluator e) {
     if(!e->last_compiled_expr) {
@@ -413,13 +415,13 @@ class CommandDump {
       return;
     }
     write("Unknown dump specifier.\n");
-    write(doc()+"\n");
+    write(doc(0,0)+"\n");
   }
 }
 
 private class CommandHej {
   inherit Command;
-  string help() { return 0; }
+  string help(string what) { return 0; }
   void exec(Evaluator e, string line) {
     if(line[0]=='.') e->write( (string)({ 84,106,97,98,97,33,10 }) );
   }
@@ -427,8 +429,8 @@ private class CommandHej {
 
 private class CommandNew {
   inherit Command;
-  string help() { return "Clears the Hilfe state."; }
-  string doc() { return documentation_new; }
+  string help(string what) { return "Clears the Hilfe state."; }
+  string doc(string what, string with) { return documentation_new; }
 
  void exec(Evaluator e, string line, array(string) words) {
 
@@ -465,6 +467,109 @@ private class CommandNew {
  }
 }
 
+//
+// Backend subsystem
+//
+private class SubSysBackend {
+  int(0..1) is_running;
+
+  void create(){
+    is_running=0;
+  }
+
+  void start(Evaluator e, array(string) words){
+    add_constant("backend_thread",thread_create(backend_loop));
+  }
+
+  void stop(Evaluator e, array(string) words){
+    call_out(throw,0,0);
+  }
+
+  int(0..1) runningp(){ return is_running; }
+
+  private void backend_loop(){
+    is_running=1;
+    catch{
+      while(1)
+	Pike.DefaultBackend(3600.0);
+    };
+    is_running=0;
+  }
+
+}
+
+
+// 
+// General subsystem handler object.
+//
+private class SubSystems {
+  mapping subsystems;
+
+  void create (){
+    // Register the subsystems here.
+    subsystems=([
+      "backend":SubSysBackend()
+    ]);
+  }
+
+
+
+  void start(Evaluator e, string what, array(string) words){
+    if(subsystems[what]){
+      if(!subsystems[what]->runningp()){
+	subsystems[what]->start(e,words);
+      }else{
+	e->write(sprintf("%s is already running.\n",what));
+      }
+    }else{
+      e->write("No such subsystem.\n");
+    }
+  }
+
+  void stop(Evaluator e, string what, array(string) words){
+    if(subsystems[what]){
+      if(subsystems[what]->runningp()){
+	subsystems[what]->stop(e,words);
+      }else{
+	e->write(sprintf("%s is not running.\n",what));
+      }
+    }else{
+      e->write("No such subsystem.\n");
+    }
+  }
+}
+
+private class CommandStartStop {
+  inherit Command;
+  SubSystems subsystems;
+
+  void create(){
+    subsystems=SubSystems();
+  }
+  
+  string help(string what) { 
+    switch(what){
+    case "start": return "Start a subsystem."; 
+    case "stop":  return "Stop a subsystem.";
+    }
+  }
+  
+  string doc(string what, string with) { 
+    switch(what){
+    case "start": return "start backend\n\tstart the backend thread.\n"; 
+    case "stop":  return "stop backend\n\tstop the backend thread.\n"; 
+    }
+  }
+      
+  void exec(Evaluator e, string line, array(string) words) {
+    if(sizeof(words)>=2){
+      switch(words[0]){
+      case "start": subsystems->start(e,words[1],words[1..]); break;
+      case "stop":  subsystems->stop(e,words[1],words[1..]); break;
+      }
+    }
+  }
+}
 
 //
 // Support stuff..
@@ -789,6 +894,8 @@ class Evaluator {
     commands->new = CommandNew();
     commands->hej = CommandHej();
     commands->look = CommandDot();
+    commands->start = CommandStartStop();
+    commands->stop = commands->start;
     reset_evaluator();
   }
 
