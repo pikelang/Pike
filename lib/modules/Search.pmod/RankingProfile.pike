@@ -2,7 +2,7 @@ array(int) field_ranking;
 array(int) proximity_ranking;
 int cutoff;
 
-void create(Search.Database.Base db, void|mapping _field_ranking)
+void create(Search.Database.Base db, void|mapping(string:int) _field_ranking)
 {
   field_ranking=allocate(66);
   field_ranking[0]=17;
