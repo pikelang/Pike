@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.11 1997/10/12 21:10:53 mirar Exp $ */
+/* $Id: x.c,v 1.12 1997/10/21 13:36:07 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.11 1997/10/12 21:10:53 mirar Exp $");
+RCSID("$Id: x.c,v 1.12 1997/10/21 13:36:07 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -164,7 +164,7 @@ void image_to8bit_fs(INT32 args)
    while (i--)
    {
       image_floyd_steinberg(s,xs,errb,w=!w,res,ct,1);
-      for (j=0; j<THIS->xsize; j++)
+      for (j=0; j<xs; j++)
 	 *(d++)=ct->index[res[j]];
       s+=xs;
    }

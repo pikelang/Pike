@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.42 1997/10/15 00:40:09 mirar Exp $ */
+/* $Id: image.c,v 1.43 1997/10/21 13:32:13 mirar Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.42 1997/10/15 00:40:09 mirar Exp $<br>
+**!	$Id: image.c,v 1.43 1997/10/21 13:32:13 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.42 1997/10/15 00:40:09 mirar Exp $");
+RCSID("$Id: image.c,v 1.43 1997/10/21 13:32:13 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2624,7 +2624,7 @@ static void image_map_fs(INT32 args)
    while (i--)
    {
       image_floyd_steinberg(s,xs,errb,w=!w,res,ct,1);
-      for (j=0; j<THIS->xsize; j++)
+      for (j=0; j<xs; j++)
 	 *(d++)=ct->clut[res[j]];
       s+=xs;
    }
