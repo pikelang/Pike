@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.87 2001/09/13 13:42:10 grubba Exp $
+ * $Id: cpp.c,v 1.88 2003/09/30 16:40:00 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -239,9 +239,20 @@ static void simple_add_define(struct cpp *this,
     case '\n':								\
       cpp_error(this,"Newline in string.");				\
       this->current_line++;						\
+      PUTNL();								\
       break;								\
     case '"': break;							\
-    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    case '\\':								\
+      if(data[pos]=='\n') {						\
+	this->current_line++;						\
+	PUTNL();							\
+      }									\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
+	this->current_line++;						\
+	pos++;								\
+	PUTNL();							\
+      }									\
+      pos++;								\
     default: continue;							\
     }									\
    break;								\
@@ -259,9 +270,20 @@ static void simple_add_define(struct cpp *this,
     {									\
     case '\n':								\
       this->current_line++;						\
+      PUTNL();								\
       continue;								\
     case '"': break;							\
-    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    case '\\':								\
+      if(data[pos]=='\n') {						\
+	this->current_line++;						\
+	PUTNL();							\
+      }									\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
+	this->current_line++;						\
+	pos++;								\
+	PUTNL();							\
+      }									\
+      pos++;								\
     default: continue;							\
     }									\
    break;								\
@@ -288,9 +310,20 @@ static void simple_add_define(struct cpp *this,
     case '\n':							\
       cpp_error(this,"Newline in char.");			\
       this->current_line++;					\
+      PUTNL();							\
       break;							\
     case '\'': break;						\
-    case '\\': if(data[++pos]=='\n') this->current_line++;	\
+    case '\\':							\
+      if(data[pos]=='\n') {					\
+	this->current_line++;					\
+	PUTNL();						\
+      }								\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {	\
+	this->current_line++;					\
+	pos++;							\
+	PUTNL();						\
+      }								\
+      pos++;							\
     default: continue;						\
     }								\
     break;							\
@@ -308,14 +341,47 @@ static void simple_add_define(struct cpp *this,
   } while(0)
 
 #define SKIPWHITE() do {					\
-    if(!WC_ISSPACE(data[pos])) break;				\
+    if(!WC_ISSPACE(data[pos])) {				\
+      if (data[pos] == '\\') {					\
+	if (data[pos+1] == '\n') {				\
+	  pos += 2;						\
+	  PUTNL();						\
+	  this->current_line++;					\
+	  continue;						\
+	} else if ((data[pos+1] == '\r') &&			\
+		   (data[pos+2] == '\n')) {			\
+	  pos += 3;						\
+	  PUTNL();						\
+	  this->current_line++;					\
+	  continue;						\
+	}							\
+      }								\
+      break;							\
+    }								\
     if(data[pos]=='\n') { PUTNL(); this->current_line++; }	\
     pos++;							\
   } while(1)
 
-#define SKIPSPACE() \
-  do { while(WC_ISSPACE(data[pos]) && data[pos]!='\n') pos++; \
-  } while (0)
+#define SKIPSPACE()						\
+  do {								\
+    while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {		\
+      pos++;							\
+    }								\
+    if (data[pos] == '\\') {					\
+      if (data[pos+1] == '\n') {				\
+	pos+=2;                                                 \
+      } else if ((data[pos+1] == '\r') &&			\
+		 (data[pos+2] == '\n')) {                       \
+	pos+=3;							\
+      } else {							\
+	break;							\
+      }								\
+    } else {							\
+      break;							\
+    }								\
+    PUTNL();							\
+    this->current_line++;					\
+  } while (1)
 
 #define SKIPCOMMENT()	do{				\
   	pos++;						\
