@@ -677,6 +677,7 @@ SGML low_make_concrete_wmml(SGML data)
 	case "include":
 	{
 	  string filename=tag->params->file;
+	  werror("Reading %s...\n",filename);
 	  string file=Stdio.read_file(filename);
 	  if (file) {
 	    SGML tmp=group(lex(file,filename));
@@ -787,7 +788,12 @@ SGML low_make_concrete_wmml(SGML data)
 	    {
 	      title="see also";
 	      SGML tmp=({});
-	      foreach(replace(get_text(args),({" ","\n"}),({"",""}))/",",string name)
+	      string *tmp=(replace(get_text(args),
+				   ({" ","\n"}),({"",""}))/",")-({""});
+	      if(!sizeof(tmp))
+		continue;
+		
+	      foreach(tmp,string name)
 		{
 		  tmp+=({
 		    Tag("link",(["to":
@@ -1029,7 +1035,7 @@ SGML unlink_unknown_links(SGML data, mapping known_links)
 	    }
 	    if(!known_links[t->params->to])
 	    {
-	      werror("<ref to=> broken link at %s\n",t->location());
+	      werror("<ref to=%s> broken link at %s\n",t->params->to,t->location());
 	      continue;
 	    }
 	    break;
@@ -1043,7 +1049,7 @@ SGML unlink_unknown_links(SGML data, mapping known_links)
 	    }
 	    if(!known_links[t->params->to])
 	    {
-	      werror("<ref to=> broken link at %s\n",t->location());
+	      werror("<ref to=%s> broken link at %s\n",t->params->to,t->location());
 	      ret+=unlink_unknown_links(t->data || ({}),known_links);
 	      continue;
 	    }
