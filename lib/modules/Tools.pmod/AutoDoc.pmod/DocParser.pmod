@@ -82,6 +82,8 @@ static constant standard = (< "note", "example", "seealso", "deprecated" >);
 mapping(string : multiset(string)) allowedChildren =
 (["_general" : standard,
   "_method" : (< "param", "returns" >) + standard,
+  "_variable": standard,
+  "_inherit" : standard,
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
