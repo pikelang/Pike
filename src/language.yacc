@@ -301,6 +301,7 @@ void fix_comp_stack(int sp)
 %type <n> gauge
 %type <n> lambda
 %type <n> local_name_list
+%type <n> lvalue
 %type <n> lvalue_list
 %type <n> m_expr_list
 %type <n> m_expr_list2
@@ -1140,8 +1141,15 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   }
   ;
 
+lvalue: expr4
+  | type F_IDENTIFIER
+  {
+    add_local_name($2,pop_type());
+    $$=mklocalnode(islocal($2));
+  }
+
 lvalue_list: /* empty */ { $$ = 0; }
-  | ',' expr4 lvalue_list { $$ = mknode(F_LVALUE_LIST,$2,$3); }
+  | ',' lvalue lvalue_list { $$ = mknode(F_LVALUE_LIST,$2,$3); }
   ;
 
 low_string: F_STRING 
