@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.413 2002/04/12 23:18:47 mast Exp $");
+RCSID("$Id: program.c,v 1.414 2002/04/17 17:03:57 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1317,13 +1317,15 @@ void fixate_program(void)
     for(i=0;i<(int)p->num_identifier_references;i++)
     {
       struct identifier *id;
-      if(p->identifier_references[i].id_flags & ID_NOMASK)
+      if((p->identifier_references[i].id_flags & (ID_NOMASK|ID_HIDDEN)) ==
+	 ID_NOMASK)
       {
 	struct pike_string *name=ID_FROM_INT(p, i)->name;
 
 	e=find_shared_string_identifier(name,p);
 	if(e == -1)
-	  e=really_low_find_shared_string_identifier(name,p,SEE_STATIC);
+	  e=really_low_find_shared_string_identifier(name, p,
+						     SEE_STATIC|SEE_PRIVATE);
 
 	if(e != i)
 	{
