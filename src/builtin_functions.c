@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.131 1998/10/15 02:42:39 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.132 1998/10/15 13:55:50 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -614,7 +614,7 @@ void f_string_to_unicode(INT32 args)
     out = begin_shared_string(len);
     MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
     for(i = in->len; i--;) {
-      out->str[i * 2] = in->str[i];
+      out->str[i * 2 + 1] = in->str[i];
     }
     out = end_shared_string(out);
     break;
