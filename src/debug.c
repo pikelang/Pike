@@ -83,7 +83,7 @@ INT32 checked(void *a,INT32 delta)
       {
 	next=m->next;
 	m->next=new_hash[((long)m->marked)%new_hashsize];
-	new_hash[((int)m->marked)%new_hashsize]=m;
+	new_hash[((long)m->marked)%new_hashsize]=m;
       }
     }
 
