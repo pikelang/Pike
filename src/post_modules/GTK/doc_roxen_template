@@ -1,0 +1,81 @@
+<define container='doc'>
+ <blockquote>
+    <contents/>
+ </blockquote>
+</define>
+
+<define container='class'>
+  <set variable='var.classname' value='&_.name;'/>
+  <h1>&_.name;</h1>
+  <contents/>
+</define>
+
+<define tag='inherited'>
+  <b>Inherited by <a href='&_.href;'>&_.class;</a></b><br />
+</define>
+
+<define container='inherited-methods'>
+<h2>Inherited</h2>
+<blockquote><contents/></blockquote>
+</define>
+
+<define container='inherited-signals'>
+<h2>Inherited</h2>
+<blockquote><contents/></blockquote>
+</define>
+
+<define tag='inherits'>
+  <b>Inherits by <a href='&_.href;'>&_.class;</a></b><br />
+</define>
+
+<define container='box'>
+<table bgcolor='#eeeeee'><tr><td><contents/></td></tr></table>
+</define>
+
+<define container='example'>
+  <pre><contents/></pre>
+</define>
+
+<define container='signals'>
+   <define container='signal'>
+	<b>&_.name;</b><br />
+        <contents/>
+   </define>
+   <define container='doc'>
+     <blockquote><contents/></blockquote>
+   </define>
+  <h1>Signals</h1><blockquote>
+  <contents/></blockquote>
+</define>
+
+<define container='method' scope='m'>
+     <set variable='var.args' value=''/>
+   <define container='arg'>
+     <append variable='var.args' value='&_.type; &_.name;, '/>
+   </define>
+  <set variable='var.methodname' value='&_.name;'/>
+
+   <define container='doc'>
+      <b>&m.returns:none; &m.name;(&var.args:none;)</b>
+      <blockquote>
+        <contents/>
+      </blockquote>
+   </define>
+  <contents/>
+</define>
+
+<define container='constructor'>
+<h2>Constructor</h2>
+<blockquote><contents/></blockquote>
+</define>
+
+<define container='methods'>
+<h2>Methods</h2>
+<blockquote><contents/></blockquote>
+</define>
+
+<define container='tmpl'>
+  <body bgcolor='white' text='black'>
+    <contents/>
+   </body>
+</define>
