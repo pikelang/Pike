@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
-#pragma strict_types
+// #pragma strict_types
 
-// $Id: state.pike,v 1.20 2004/01/27 22:11:34 nilsson Exp $
+// $Id: state.pike,v 1.21 2004/01/29 21:40:24 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -10,14 +10,14 @@
 
 import .Constants;
 
-void create(.session s)
+void create(object/*(.session)*/ s)
 {
   session = s;
   seq_num = Gmp.mpz(0);
 }
 
 //! Information about the used algorithms.
-.session session;
+object/*(.session)*/ session;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;
