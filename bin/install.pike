@@ -1052,21 +1052,6 @@ void do_export()
 
     Stdio.write_file(/*export_base_name*/"Pike"+"_module.wxs", xml_root->render_xml());
 
-    // Generate the banner image.
-    status("Creating", "Pike_banner.bmp");
-
-    mapping(string:Image.Image) logo =
-      Image._decode(Stdio.read_bytes(combine_path(vars->BASEDIR,
-						  "refdoc/src_images/pike_logo.gif")));
-
-    Image.Image banner = Image.Image(500, 70, 255,255,255);
-
-    banner->paste_mask(logo->img, logo->alpha,
-		       490-logo->img->xsize(),
-		       (70 - logo->img->ysize())/2);
-    
-    Stdio.write_file("Pike_banner.bmp", Image.BMP.encode(banner));
-
 #ifdef GENERATE_WIX_UI
     // Generate the UserInterface
 
