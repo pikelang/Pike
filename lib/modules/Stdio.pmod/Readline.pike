@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.41 2002/07/14 21:05:59 nilsson Exp $
+// $Id: Readline.pike,v 1.42 2002/10/29 20:09:33 bill Exp $
 #pike __REAL_VERSION__
 
 class OutputController
@@ -1095,29 +1095,33 @@ static private int hide = 0;
 static private array(string) kill_ring=({});
 static private int kill_ring_size=30;
 
-//! @fixme
-//!   Document this function
+//!  get current output control object
+//!  @returns
+//!    Terminal output controller object
 object(OutputController) get_output_controller()
 {
   return output_controller;
 }
 
-//! @fixme
-//!   Document this function
+//!  get current input control object
+//!  @returns
+//!    Terminal input controller object
 object(InputController) get_input_controller()
 {
   return input_controller;
 }
 
-//! @fixme
-//!   Document this function
+//!   Return the current prompt string.
 string get_prompt()
 {
   return prompt;
 }
 
-//! @fixme
-//!   Document this function
+//!   Set the prompt string.
+//! @param newp
+//!   New prompt string
+//! @param newattrs
+//!   Terminal attributes
 string set_prompt(string newp, array(string)|void newattrs)
 {
 //  werror("READLINE: Set prompt: %O\n",newp);
@@ -1132,8 +1136,9 @@ string set_prompt(string newp, array(string)|void newattrs)
   return oldp;
 }
 
-//! @fixme
-//!   Document this function
+//!   Set text echo on or off.
+//! @param onoff
+//! 1 for echo, 0 for no echo.
 void set_echo(int onoff)
 {
   hide=!onoff;
@@ -1374,8 +1379,7 @@ void eof()
     newline_func(0);    
 }
 
-//! @fixme
-//!   Document this function
+//! Print a message to the output device
 void message(string msg)
 {
   int p = cursorpos;
