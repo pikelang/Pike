@@ -1,15 +1,15 @@
-//  $Id: Connection.pike,v 1.8 2001/04/27 13:38:41 grubba Exp $
+//  $Id: Connection.pike,v 1.9 2002/05/13 13:18:35 grubba Exp $
 //!	This class contains nice abstraction for calls into the
-//!	server. They are named "<i>call</i>",
-//!	"<tt>async_</tt><i>call</i>" or
-//!	"<tt>async_cb_</tt><i>call</i>", depending on
+//!	server. They are named "@tt{@i{call@}@}",
+//!	"@tt{async_@i{call@}@}" or
+//!	"@tt{async_cb_@i{call@}@}", depending on
 //!	how you want the call to be done.
 
 //! @decl mixed XXX(mixed ...args)
 //! @decl object async_XXX(mixed ...args)
 //! @decl object async_cb_XXX(function callback,mixed ...args)
 //!	Do a call to the server. This really
-//!	clones a <link to=Protocols.LysKOM.Request>request</link> object,
+//!	clones a @[Protocols.LysKOM.Request] object,
 //!	and initialises it. @tt{XXX@} is to be read as
 //!	one of the calls in the lyskom protocol. ('-' is replaced
 //!	with '_'.) (ie, logout, async_login or async_cb_get_conf_stat.)
