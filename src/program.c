@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.406 2002/03/01 02:32:14 mast Exp $");
+RCSID("$Id: program.c,v 1.407 2002/03/04 21:48:50 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3361,6 +3361,14 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   int n;
   struct identifier dummy;
   struct reference ref;
+  struct svalue zero;
+
+  if (!c) {
+    zero.type = T_INT;
+    zero.subtype = 0;
+    zero.u.integer = 0;
+    c = &zero;
+  }
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
