@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.8 1999/06/14 14:26:45 marcus Exp $
+ * $Id: jvm.c,v 1.9 1999/12/17 21:20:13 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.8 1999/06/14 14:26:45 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.9 1999/12/17 21:20:13 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -756,48 +756,66 @@ static void f_call_static(INT32 args)
 
   switch(m->rettype) {
   case 'Z':
+    THREADS_ALLOW();
     jji = (*env)->CallStaticBooleanMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'B':
+    THREADS_ALLOW();
     jji = (*env)->CallStaticByteMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'C':
+    THREADS_ALLOW();
     jji = (*env)->CallStaticCharMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'S':
+    THREADS_ALLOW();
     jji = (*env)->CallStaticShortMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'I':
+    THREADS_ALLOW();
     jji = (*env)->CallStaticIntMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'J':
+    THREADS_ALLOW();
     jji = (*env)->CallStaticLongMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'F':
+    THREADS_ALLOW();
     jjf = (*env)->CallStaticFloatMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_float(jjf);
     break;
   case 'D':
+    THREADS_ALLOW();
     jjf = (*env)->CallStaticDoubleMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_float(jjf);
     break;
   case 'L':
   case '[':
+    THREADS_ALLOW();
     jjo = (*env)->CallStaticObjectMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     if(m->rettype=='[')
       push_java_array(jjo, co->jvm, env, m->subtype);
@@ -806,7 +824,9 @@ static void f_call_static(INT32 args)
     break;
   case 'V':
   default:
+    THREADS_ALLOW();
     (*env)->CallStaticVoidMethodA(env, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(0);
     break;
@@ -846,48 +866,66 @@ static void f_call_virtual(INT32 args)
 
   switch(m->rettype) {
   case 'Z':
+    THREADS_ALLOW();
     jji = (*env)->CallBooleanMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'B':
+    THREADS_ALLOW();
     jji = (*env)->CallByteMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'C':
+    THREADS_ALLOW();
     jji = (*env)->CallCharMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'S':
+    THREADS_ALLOW();
     jji = (*env)->CallShortMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'I':
+    THREADS_ALLOW();
     jji = (*env)->CallIntMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'J':
+    THREADS_ALLOW();
     jji = (*env)->CallLongMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'F':
+    THREADS_ALLOW();
     jjf = (*env)->CallFloatMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_float(jjf);
     break;
   case 'D':
+    THREADS_ALLOW();
     jjf = (*env)->CallDoubleMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_float(jjf);
     break;
   case 'L':
   case '[':
+    THREADS_ALLOW();
     jjo = (*env)->CallObjectMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     if(m->rettype=='[')
       push_java_array(jjo, co->jvm, env, m->subtype);
@@ -896,7 +934,9 @@ static void f_call_virtual(INT32 args)
     break;
   case 'V':
   default:
+    THREADS_ALLOW();
     (*env)->CallVoidMethodA(env, jo->jobj, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(0);
     break;
@@ -936,48 +976,66 @@ static void f_call_nonvirtual(INT32 args)
 
   switch(m->rettype) {
   case 'Z':
+    THREADS_ALLOW();
     jji = (*env)->CallNonvirtualBooleanMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'B':
+    THREADS_ALLOW();
     jji = (*env)->CallNonvirtualByteMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'C':
+    THREADS_ALLOW();
     jji = (*env)->CallNonvirtualCharMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'S':
+    THREADS_ALLOW();
     jji = (*env)->CallNonvirtualShortMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'I':
+    THREADS_ALLOW();
     jji = (*env)->CallNonvirtualIntMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'J':
+    THREADS_ALLOW();
     jji = (*env)->CallNonvirtualLongMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(jji);
     break;
   case 'F':
+    THREADS_ALLOW();
     jjf = (*env)->CallNonvirtualFloatMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_float(jjf);
     break;
   case 'D':
+    THREADS_ALLOW();
     jjf = (*env)->CallNonvirtualDoubleMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_float(jjf);
     break;
   case 'L':
   case '[':
+    THREADS_ALLOW();
     jjo = (*env)->CallNonvirtualObjectMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     if(m->rettype=='[')
       push_java_array(jjo, co->jvm, env, m->subtype);
@@ -986,7 +1044,9 @@ static void f_call_nonvirtual(INT32 args)
     break;
   case 'V':
   default:
+    THREADS_ALLOW();
     (*env)->CallNonvirtualVoidMethodA(env, jo->jobj, class, m->method, jargs);
+    THREADS_DISALLOW();
     pop_n_elems(args);
     push_int(0);
     break;
@@ -1600,7 +1660,10 @@ static void native_dispatch(struct native_method_context *ctx,
     /* Not a pike thread.  Create a temporary thread_id... */
     mt_lock(&interpreter_lock);
     init_interpreter();
-    thread_id=clone_object(thread_id_prog,0);
+    stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+    recoveries = NULL;
+    thread_id = low_clone(thread_id_prog);
+    call_c_initializers(thread_id);
     SWAP_OUT_THREAD((struct thread_state *)thread_id->storage);
     ((struct thread_state *)thread_id->storage)->swapped=0;
     ((struct thread_state *)thread_id->storage)->id=th_self();
