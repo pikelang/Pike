@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.21 1998/04/09 02:00:23 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.22 1998/04/09 02:00:48 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -27,12 +27,12 @@ extern double floor(double);
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-#define POLYDEBUG
+#undef POLYDEBUG
 
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.21 1998/04/09 02:00:23 mirar Exp $
+**!	$Id: polyfill.c,v 1.22 1998/04/09 02:00:48 mirar Exp $
 **! class image
 */
 
