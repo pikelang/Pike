@@ -1,5 +1,5 @@
 //
-// $Id: SDL.pike,v 1.4 2004/04/08 21:52:50 nilsson Exp $
+// $Id: SDL.pike,v 1.5 2004/04/21 08:55:49 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -314,6 +314,8 @@ static int X_sym( SDL.Keysym sym )
     SDL.K_QUOTEDBL:'"', SDL.K_RIGHTBRACKET:']',
     SDL.K_RIGHTPAREN:')', SDL.K_SEMICOLON:';',
     SDL.K_SLASH:'/', SDL.K_SPACE:' ', SDL.K_UNDERSCORE:'_',
+
+    SDL.K_KP_PLUS:'+', SDL.K_KP_MINUS:'-',
 
     // CARET CLEAR COMPOSE EURO FIRST HELP KP* LMETA LSUPER
     // MODE POWER RMETA RSUPER
