@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.22 2000/10/08 19:05:01 grubba Exp $
+ * $Id: lexer.h,v 1.23 2000/11/25 16:49:49 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -14,15 +14,18 @@
 /*
  * Definitions
  */
+
+/* Generic */
+#define GOBBLE(c) (LOOK()==c?(SKIP(),1):0)
+#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
+#define SKIPWHITE() do { while(ISSPACE(LOOK())) SKIP(); }while(0)
+#define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) SKIP(); }while(0)
+
 #if (SHIFT == 0)
 
 #define LOOK() EXTRACT_UCHAR(lex.pos)
 #define GETC() EXTRACT_UCHAR(lex.pos++)
 #define SKIP() lex.pos++
-#define GOBBLE(c) (LOOK()==c?(lex.pos++,1):0)
-#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') lex.pos++; }while(0)
-#define SKIPWHITE() do { while(ISSPACE(LOOK())) lex.pos++; }while(0)
-#define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) lex.pos++; }while(0)
 
 #define READBUF(X) do {				\
   register int C;				\
@@ -49,18 +52,14 @@
 #else /* SHIFT != 0 */
 
 #define LOOK() INDEX_CHARP(lex.pos,0,SHIFT)
-#define GETC() ((lex.pos+=(1<<SHIFT)),INDEX_CHARP(lex.pos-(1<<SHIFT),0,SHIFT))
 #define SKIP() (lex.pos += (1<<SHIFT))
-#define GOBBLE(c) (LOOK()==c?((lex.pos+=(1<<SHIFT)),1):0)
-#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') lex.pos += (1<<SHIFT); }while(0)
-#define SKIPWHITE() do { while(ISSPACE(LOOK())) lex.pos += (1<<SHIFT); }while(0)
-#define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) lex.pos += (1<<SHIFT); }while(0)
+#define GETC() (SKIP(),INDEX_CHARP(lex.pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\
   register int C;				\
   buf = lex.pos;				\
   while((C = LOOK()) && (X))			\
-    lex.pos += (1<<SHIFT);			\
+    SKIP();					\
   len = (size_t)((lex.pos - buf) >> SHIFT);	\
 } while(0)
 
@@ -216,10 +215,20 @@ static struct pike_string *readstring(void)
 {
   int c;
   struct string_builder tmp;
+  PCHARP bufptr = { NULL, SHIFT };
+
   init_string_builder(&tmp,0);
   
   while(1)
   {
+    char *buf;
+    size_t len;
+
+    READBUF((C != '"') && (C != '\\') && (C != '\n'));
+    if (len) {
+      bufptr.ptr = buf;
+      string_builder_append(&tmp, bufptr, len);
+    }
     switch(c=GETC())
     {
     case 0:
@@ -240,8 +249,7 @@ static struct pike_string *readstring(void)
       break;
       
     default:
-      string_builder_putchar(&tmp,c);
-      continue;
+      fatal("Default case in readstring() reached. c:%d\n", c);
     }
     break;
   }
@@ -285,7 +293,159 @@ static int low_yylex(YYSTYPE *yylval)
 
   while(1)
   {
-    switch(c = GETC())
+    c = GETC();
+
+    if(lex_isidchar(c) && (c >'9'))
+    {
+      struct pike_string *s;
+      lex.pos -= (1<<SHIFT);
+      READBUF(lex_isidchar(C));
+
+      yylval->number=lex.current_line;
+
+      if(len>1 && len<10)
+      {
+	/* NOTE: TWO_CHAR() will generate false positives with wide strings,
+	 * but that doesn't matter, since ISWORD() will fix it.
+	 */
+	switch(TWO_CHAR(INDEX_CHARP(buf, 0, SHIFT),
+			INDEX_CHARP(buf, 1, SHIFT)))
+	{
+	case TWO_CHAR('a','r'):
+	  if(ISWORD("array")) return TOK_ARRAY_ID;
+	  break;
+	case TWO_CHAR('b','r'):
+	  if(ISWORD("break")) return TOK_BREAK;
+	  break;
+	case TWO_CHAR('c','a'):
+	  if(ISWORD("case")) return TOK_CASE;
+	  if(ISWORD("catch")) return TOK_CATCH;
+	  break;
+	case TWO_CHAR('c','l'):
+	  if(ISWORD("class")) return TOK_CLASS;
+	  break;
+	case TWO_CHAR('c','o'):
+	  if(ISWORD("constant")) return TOK_CONSTANT;
+	  if(ISWORD("continue")) return TOK_CONTINUE;
+	  break;
+	case TWO_CHAR('d','e'):
+	  if(ISWORD("default")) return TOK_DEFAULT;
+	  break;
+	case TWO_CHAR('d','o'):
+	  if(ISWORD("do")) return TOK_DO;
+	  break;
+	case TWO_CHAR('e','l'):
+	  if(ISWORD("else")) return TOK_ELSE;
+	  break;
+	case TWO_CHAR('e','x'):
+	  if(ISWORD("extern")) return TOK_EXTERN;
+	  break;
+	case TWO_CHAR('f','i'):
+	  if(ISWORD("final")) return TOK_FINAL_ID;
+	  break;
+	case TWO_CHAR('f','l'):
+	  if(ISWORD("float")) return TOK_FLOAT_ID;
+	  break;
+	case TWO_CHAR('f','o'):
+	  if(ISWORD("for")) return TOK_FOR;
+	  if(ISWORD("foreach")) return TOK_FOREACH;
+	  break;
+	case TWO_CHAR('f','u'):
+	  if(ISWORD("function")) return TOK_FUNCTION_ID;
+	  break;
+	case TWO_CHAR('g','a'):
+	  if(ISWORD("gauge")) return TOK_GAUGE;
+	  break;
+	case TWO_CHAR('i','f'):
+	  if(ISWORD("if")) return TOK_IF;
+	  break;
+	case TWO_CHAR('i','m'):
+	  if(ISWORD("import")) return TOK_IMPORT;
+	  break;
+	case TWO_CHAR('i','n'):
+	  if(ISWORD("int")) return TOK_INT_ID;
+	  if(ISWORD("inherit")) return TOK_INHERIT;
+	  if(ISWORD("inline")) return TOK_INLINE;
+	  break;
+	case TWO_CHAR('l','a'):
+	  if(ISWORD("lambda")) return TOK_LAMBDA;
+	  break;
+	case TWO_CHAR('l','o'):
+	  if(ISWORD("local")) return TOK_LOCAL_ID;
+	  break;
+	case TWO_CHAR('m','a'):
+	  if(ISWORD("mapping")) return TOK_MAPPING_ID;
+	  break;
+	case TWO_CHAR('m','i'):
+	  if(ISWORD("mixed")) return TOK_MIXED_ID;
+	  break;
+	case TWO_CHAR('m','u'):
+	  if(ISWORD("multiset")) return TOK_MULTISET_ID;
+	  break;
+	case TWO_CHAR('n','o'):
+	  if(ISWORD("nomask")) return TOK_NO_MASK;
+	  break;
+	case TWO_CHAR('o','b'):
+	  if(ISWORD("object")) return TOK_OBJECT_ID;
+	  break;
+	case TWO_CHAR('o','p'):
+	  if(ISWORD("optional")) return TOK_OPTIONAL;
+	  break;
+	case TWO_CHAR('p','r'):
+	  if(ISWORD("program")) return TOK_PROGRAM_ID;
+	  if(ISWORD("predef")) return TOK_PREDEF;
+	  if(ISWORD("private")) return TOK_PRIVATE;
+	  if(ISWORD("protected")) return TOK_PROTECTED;
+	  break;
+	case TWO_CHAR('p','u'):
+	  if(ISWORD("public")) return TOK_PUBLIC;
+	  break;
+	case TWO_CHAR('r','e'):
+	  if(ISWORD("return")) return TOK_RETURN;
+	  break;
+	case TWO_CHAR('s','s'):
+	  if(ISWORD("sscanf")) return TOK_SSCANF;
+	  break;
+	case TWO_CHAR('s','t'):
+	  if(ISWORD("string")) return TOK_STRING_ID;
+	  if(ISWORD("static")) return TOK_STATIC;
+	  break;
+	case TWO_CHAR('s','w'):
+	  if(ISWORD("switch")) return TOK_SWITCH;
+	  break;
+	case TWO_CHAR('t','y'):
+	  if(ISWORD("typeof")) return TOK_TYPEOF;
+	  break;
+	case TWO_CHAR('v','a'):
+	  if(ISWORD("variant")) return TOK_VARIANT;
+	  break;
+	case TWO_CHAR('v','o'):
+	  if(ISWORD("void")) return TOK_VOID_ID;
+	  break;
+	case TWO_CHAR('w','h'):
+	  if(ISWORD("while")) return TOK_WHILE;
+	  break;
+	}
+      }
+      {
+#if (SHIFT == 0)
+	struct pike_string *tmp = make_shared_binary_string(buf, len);
+#else /* SHIFT != 0 */
+#if (SHIFT == 1)
+	struct pike_string *tmp = make_shared_binary_string1((p_wchar1 *)buf,
+							       len);
+#else /* SHIFT != 1 */
+	struct pike_string *tmp = make_shared_binary_string2((p_wchar2 *)buf,
+							       len);
+#endif /* SHIFT == 1 */
+#endif /* SHIFT == 0 */
+	yylval->n=mkstrnode(tmp);
+	free_string(tmp);
+	return TOK_IDENTIFIER;
+      }
+    }
+
+    switch(c)
     {
     case 0:
       lex.pos -= (1<<SHIFT);
@@ -318,7 +478,7 @@ static int low_yylex(YYSTYPE *yylval)
 
     case '#':
       SKIPSPACE();
-      READBUF(C!=' ' && C!='\t' && C!='\n');
+      READBUF(C!='\n' && C!=' ' && C!='\t');
 
       switch(len>0?INDEX_CHARP(buf, 0, SHIFT):0)
       {
@@ -326,7 +486,9 @@ static int low_yylex(YYSTYPE *yylval)
 	
       case 'l':
 	if(!ISWORD("line")) goto badhash;
+	SKIPSPACE();
 	READBUF(C!=' ' && C!='\t' && C!='\n');
+	/* FIXME: Check that buf is a number? */
 	
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
@@ -345,13 +507,18 @@ static int low_yylex(YYSTYPE *yylval)
 	{
 	  SKIPSPACE();
 	  READBUF(C!='\n');
+	  /* FIXME: Does the following actually work?
+	   * Where does the NUL-termination come from?
+	   * Suspicion: #error is usually handled by cpp().
+	   * What about wide-strings?
+	   * /grubba 2000-11-19 (in Versailles)
+	   */
 	  yyerror(buf);
 	  break;
 	}
 	goto badhash;
 
       case 'p':
-	/* FIXME: Support #pike */
 	if(ISWORD("pragma"))
 	{
 	  SKIPSPACE();
@@ -375,7 +542,7 @@ static int low_yylex(YYSTYPE *yylval)
 	  int minor;
 	  int major;
 	  SKIPSPACE();
-	  READBUF(C!='\n' && C!='.');
+	  READBUF(C!='.' && C!='\n');
 	  major=lex_atoi(buf);
 	  if(!GOBBLE('.'))
 	  {
@@ -397,11 +564,38 @@ static int low_yylex(YYSTYPE *yylval)
 	/* FIXME: This doesn't look all that safe...
 	 * buf isn't NUL-terminated, and it won't work on wide strings.
 	 * /grubba 1999-02-20
+	 * It also modified a shared string... ie. this code was not
+	 * good at all. Fixed.
+	 * /grubba 2000-11-19 (in Versailles)
 	 */
-	if (strlen(buf) >= 256) {
-	  buf[256]=0;
+	if (len < 256) {
+#if (SHIFT == 0)
+	  struct pike_string *dir =
+	    make_shared_binary_string(buf, len);
+#else /* SHIFT != 0 */
+#if (SHIFT == 1)
+	  struct pike_string *dir =
+	    make_shared_binary_string1((p_wchar1 *)buf, len);
+#else /* SHIFT != 1 */
+#if (SHIFT == 2)
+	  struct pike_string *dir =
+	    make_shared_binary_string2((p_wchar2 *)buf, len);
+#else /* SHIFT != 2 */
+#error Unsupported SHIFT.
+#endif /* SHIFT == 2 */
+#endif /* SHIFT == 1 */
+	  if (!dir->size_shift) {
+#endif /* SHIFT == 0 */
+	    my_yyerror("Unknown preprocessor directive #%s.", dir->str);
+#if (SHIFT != 0)
+	  } else {
+	    my_yyerror("Unknown preprocessor directive.");
+	  }
+#endif /* SHIFT != 0 */
+	  free_string(dir);
+	} else {
+	  my_yyerror("Unknown preprocessor directive.");
 	}
-	my_yyerror("Unknown preprocessor directive #%s.",buf);
 	SKIPUPTO('\n');
 	continue;
       }
@@ -524,7 +718,8 @@ static int low_yylex(YYSTYPE *yylval)
 	lex.pos=p2;
 	return TOK_NUMBER;
       }
-  
+    }
+
     case '-':
       if(GOBBLE('=')) return TOK_SUB_EQ;
       if(GOBBLE('>')) return TOK_ARROW;
@@ -608,8 +803,12 @@ static int low_yylex(YYSTYPE *yylval)
     {
       char *tmp;
       int offset=2;
-      if(GOBBLE('`')) offset--;
-      if(GOBBLE('`')) offset--;
+      if(GOBBLE('`')) {
+	offset--;
+	if(GOBBLE('`')) {
+	  offset--;
+	}
+      }
       
       switch(GETC())
       {
@@ -647,13 +846,12 @@ static int low_yylex(YYSTYPE *yylval)
 	break;
 
       case '(':
+	tmp="```()";
 	if(GOBBLE(')')) 
 	{
-	  tmp="```()";
 	  break;
 	}
-	yyerror("Illegal ` identifier.");
-	tmp="``";
+	yyerror("Illegal ` identifier. Expected `().");
 	break;
 	
       case '-':
@@ -667,17 +865,19 @@ static int low_yylex(YYSTYPE *yylval)
 	break;
 
       case '[':
+	tmp="```[]";
 	if(GOBBLE(']'))
 	{
-	  tmp="```[]";
 	  if(GOBBLE('=')) tmp="```[]=";
 	  break;
 	}
+	yyerror("Illegal ` identifier. Expected `[].");
+	break;
 
       default:
 	yyerror("Illegal ` identifier.");
 	lex.pos -= (1<<SHIFT);
-	tmp="``";
+	tmp="```";
 	break;
       }
 
@@ -691,172 +891,14 @@ static int low_yylex(YYSTYPE *yylval)
 
   
     default:
-      if(lex_isidchar(c))
       {
-	struct pike_string *s;
-	lex.pos -= (1<<SHIFT);
-	READBUF(lex_isidchar(C));
-
-	yylval->number=lex.current_line;
-
-	if(len>1 && len<10)
-	{
-	  /* NOTE: TWO_CHAR() will generate false positives with wide strings,
-	   * but that doesn't matter, since ISWORD() will fix it.
-	   */
-	  switch(TWO_CHAR(INDEX_CHARP(buf, 0, SHIFT),
-			  INDEX_CHARP(buf, 1, SHIFT)))
-	  {
-	  case TWO_CHAR('a','r'):
-	    if(ISWORD("array")) return TOK_ARRAY_ID;
-	  break;
-	  case TWO_CHAR('b','r'):
-	    if(ISWORD("break")) return TOK_BREAK;
-	  break;
-	  case TWO_CHAR('c','a'):
-	    if(ISWORD("case")) return TOK_CASE;
-	    if(ISWORD("catch")) return TOK_CATCH;
-	  break;
-	  case TWO_CHAR('c','l'):
-	    if(ISWORD("class")) return TOK_CLASS;
-	  break;
-	  case TWO_CHAR('c','o'):
-	    if(ISWORD("constant")) return TOK_CONSTANT;
-	    if(ISWORD("continue")) return TOK_CONTINUE;
-	  break;
-	  case TWO_CHAR('d','e'):
-	    if(ISWORD("default")) return TOK_DEFAULT;
-	  break;
-	  case TWO_CHAR('d','o'):
-	    if(ISWORD("do")) return TOK_DO;
-	  break;
-	  case TWO_CHAR('e','l'):
-	    if(ISWORD("else")) return TOK_ELSE;
-	  break;
-	  case TWO_CHAR('e','x'):
-	    if(ISWORD("extern")) return TOK_EXTERN;
-	  break;
-	  case TWO_CHAR('f','i'):
-	    if(ISWORD("final")) return TOK_FINAL_ID;
-	  break;
-	  case TWO_CHAR('f','l'):
-	    if(ISWORD("float")) return TOK_FLOAT_ID;
-	  break;
-	  case TWO_CHAR('f','o'):
-	    if(ISWORD("for")) return TOK_FOR;
-	    if(ISWORD("foreach")) return TOK_FOREACH;
-	  break;
-	  case TWO_CHAR('f','u'):
-	    if(ISWORD("function")) return TOK_FUNCTION_ID;
-	  break;
-	  case TWO_CHAR('g','a'):
-	    if(ISWORD("gauge")) return TOK_GAUGE;
-	  break;
-	  case TWO_CHAR('i','f'):
-	    if(ISWORD("if")) return TOK_IF;
-	  break;
-	  case TWO_CHAR('i','m'):
-	    if(ISWORD("import")) return TOK_IMPORT;
-	  break;
-	  case TWO_CHAR('i','n'):
-	    if(ISWORD("int")) return TOK_INT_ID;
-	    if(ISWORD("inherit")) return TOK_INHERIT;
-	    if(ISWORD("inline")) return TOK_INLINE;
-	  break;
-	  case TWO_CHAR('l','a'):
-	    if(ISWORD("lambda")) return TOK_LAMBDA;
-	  break;
-	  case TWO_CHAR('l','o'):
-	    if(ISWORD("local")) return TOK_LOCAL_ID;
-	  break;
-	  case TWO_CHAR('m','a'):
-	    if(ISWORD("mapping")) return TOK_MAPPING_ID;
-	  break;
-	  case TWO_CHAR('m','i'):
-	    if(ISWORD("mixed")) return TOK_MIXED_ID;
-	  break;
-	  case TWO_CHAR('m','u'):
-	    if(ISWORD("multiset")) return TOK_MULTISET_ID;
-	  break;
-	  case TWO_CHAR('n','o'):
-	    if(ISWORD("nomask")) return TOK_NO_MASK;
-	  break;
-	  case TWO_CHAR('o','b'):
-	    if(ISWORD("object")) return TOK_OBJECT_ID;
-	  break;
-	  case TWO_CHAR('o','p'):
-	    if(ISWORD("optional")) return TOK_OPTIONAL;
-	  break;
-	  case TWO_CHAR('p','r'):
-	    if(ISWORD("program")) return TOK_PROGRAM_ID;
-	    if(ISWORD("predef")) return TOK_PREDEF;
-	    if(ISWORD("private")) return TOK_PRIVATE;
-	    if(ISWORD("protected")) return TOK_PROTECTED;
-	    break;
-	  break;
-	  case TWO_CHAR('p','u'):
-	    if(ISWORD("public")) return TOK_PUBLIC;
-	  break;
-	  case TWO_CHAR('r','e'):
-	    if(ISWORD("return")) return TOK_RETURN;
-	  break;
-	  case TWO_CHAR('s','s'):
-	    if(ISWORD("sscanf")) return TOK_SSCANF;
-	  break;
-	  case TWO_CHAR('s','t'):
-	    if(ISWORD("string")) return TOK_STRING_ID;
-	    if(ISWORD("static")) return TOK_STATIC;
-	  break;
-	  case TWO_CHAR('s','w'):
-	    if(ISWORD("switch")) return TOK_SWITCH;
-	  break;
-	  case TWO_CHAR('t','y'):
-	    if(ISWORD("typeof")) return TOK_TYPEOF;
-	  break;
-	  case TWO_CHAR('v','a'):
-	    if(ISWORD("variant")) return TOK_VARIANT;
-	  break;
-	  case TWO_CHAR('v','o'):
-	    if(ISWORD("void")) return TOK_VOID_ID;
-	  break;
-	  case TWO_CHAR('w','h'):
-	    if(ISWORD("while")) return TOK_WHILE;
-	  break;
-	  }
-	}
-	{
-#if (SHIFT == 0)
-	  struct pike_string *tmp = make_shared_binary_string(buf, len);
-#else /* SHIFT != 0 */
-#if (SHIFT == 1)
-	  struct pike_string *tmp = make_shared_binary_string1((p_wchar1 *)buf,
-							       len);
-#else /* SHIFT != 1 */
-	  struct pike_string *tmp = make_shared_binary_string2((p_wchar2 *)buf,
-							       len);
-#endif /* SHIFT == 1 */
-#endif /* SHIFT == 0 */
-	  yylval->n=mkstrnode(tmp);
-	  free_string(tmp);
-	  return TOK_IDENTIFIER;
-	}
-#if 0
-      }else if (c == (c & 0x9f)) {
-	/* Control character in one of the ranges \000-\037 or \200-\237 */
-	/* FIXME: Warning here? */
-	/* Ignore */
-#endif /* 0 */
-      }else{
-	char buff[100];
-	if ((c > 31) && (c < 256)) {
-	  sprintf(buff, "Illegal character (hex %02x) '%c'", c, c);
+	if (c > 31) {
+	  my_yyerror("Illegal character (hex %02x) '%c'", c, c);
 	} else {
-	  sprintf(buff, "Illegal character (hex %02x)", c);
+	  my_yyerror("Illegal character (hex %02x)", c);
 	}
-	yyerror(buff);
 	return ' ';
       }
-    }
     }
   }
 }
