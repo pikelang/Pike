@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.30 2003/04/01 17:46:41 nilsson Exp $
+ * $Id: Tree.pmod,v 1.31 2003/05/14 16:07:12 grubba Exp $
  *
  */
 
@@ -602,8 +602,8 @@ class Node {
   }
   
   //!
-  void create(int type, string name, mapping attr, string text,
-	      string|void full_name)
+  static void create(int type, string name, mapping attr, string text,
+		     string|void full_name)
   {
     mNodeType = type;
     mTagName = name;
@@ -886,6 +886,52 @@ class Node {
   }
 };
 
+class TextNode
+{
+  inherit Node;
+  static void create(string text)
+  {
+    ::create(XML_TEXT, "", 0, text);
+  }
+}
+
+class CommentNode
+{
+  inherit Node;
+  static void create(string text)
+  {
+    ::create(XML_COMMENT, "", 0, text);
+  }
+}
+
+class HeaderNode
+{
+  inherit Node;
+  static void create(mapping(string:string) attrs)
+  {
+    ::create(XML_HEADER, "", attrs, "");
+  }
+}
+
+class PINode
+{
+  inherit Node;
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(XML_PI, name, attrs, contents);
+  }
+}
+
+class ElementNode
+{
+  inherit Node;
+  static void create(string name, mapping(string:string) attrs,
+		     string full_name)
+  {
+    ::create(XML_ELEMENT, name, attrs, "", full_name);
+  }
+}
 
 private Node|int(0..0)
   parse_xml_callback(string type, string name,
