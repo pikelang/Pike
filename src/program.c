@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.382 2001/10/06 12:04:23 hubbe Exp $");
+RCSID("$Id: program.c,v 1.383 2001/10/28 18:02:02 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -202,6 +202,11 @@ static char *raw_lfun_types[] = {
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
 };
+
+/*! @module lfun::
+ *!
+ *! @endmodule
+ */
 
 /*! @decl void lfun::__INIT()
  *!
