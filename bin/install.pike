@@ -342,7 +342,9 @@ int main(int argc, string *argv)
 	exit(1);
       }
     }
-    mkdirhier(old_exec_prefix);
+    if (old_exec_prefix) {
+      mkdirhier(old_exec_prefix);
+    }
     symlink(pike,lnk);
   }
 #endif
