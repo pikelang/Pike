@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.34 1999/02/13 15:57:59 grubba Exp $
+ * $Id: requests.pmod,v 1.35 1999/02/13 16:02:23 grubba Exp $
  */
 
 import .types;
@@ -766,3 +766,8 @@ constant subscribe = unimplemented;
 constant unsubscribe = unimplemented;
 constant status = unimplemented;
 constant append = unimplemented;
+constant check = unimplemented;
+constant close = unimplemented;
+constant expunge = unimplemented;
+constant store = unimplemented;
+constant copy = unimplemented;
