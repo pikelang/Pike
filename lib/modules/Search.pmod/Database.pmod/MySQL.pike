@@ -1,8 +1,8 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.38 2001/06/22 23:55:40 js Exp $
-
+// $Id: MySQL.pike,v 1.39 2001/06/23 00:25:50 js Exp $
+b
 inherit .Base;
 
 // Creates the SQL tables we need.
@@ -54,11 +54,24 @@ void recreate_tables()
                             auto_increment not null,
                       name  varchar(127) not null,
                       INDEX index_name (name))");
+
 }
 
 // This is the database object that all queries will be made to.
 static object db;
 static string host;
+
+static int init_done = 0;
+
+static void init_fields()
+{
+  if(init_done)
+    return;
+
+  foreach(Search.filter_get_fields(), string field)
+    catch(allocate_field_id(field));
+  init_done=1;
+}
 
 void create(string _host)
 {
@@ -133,13 +146,16 @@ mapping(string:int) list_fields()
 {
   if(list_fields_cache)
     return list_fields_cache;
-  array a=db->query("select name,id from fields");
-
+  init_fields();
+  array a=db->query("select name,id from fields") + ({"body", 0});
   return list_fields_cache=mkmapping(a->name, (array(int))a->id);
 }
 
 int allocate_field_id(string field)
 {
+  init_fields();
+  if(field=="body")
+    return 0;
   db->query("lock tables field read");
   for(int i=1; i++; i<64)
   {
@@ -164,6 +180,7 @@ int get_field_id(string field, void|int do_not_create)
   if(field=="body")      return 0;
   if(field_cache[field]) return field_cache[field];
   
+  init_fields();
   string s=sprintf("select id from field where name='%s'",db->quote(field));
   array a=db->query(s);
   if(sizeof(a))
@@ -180,6 +197,7 @@ int get_field_id(string field, void|int do_not_create)
 
 void remove_field_id(string field)
 {
+  init_fields();
   m_delete(field_cache, field);
   list_fields_cache=0;
   db->query("delete from field where name=%s", field);
@@ -194,6 +212,7 @@ void insert_words(Standards.URI|string uri, void|string language,
 		  string field, array(string) words, void|int link_hash)
 {
   if(!sizeof(words))  return;
+  init_fields();
 
   int doc_id   = get_document_id((string)uri, language);
   int field_id = get_field_id(field);
@@ -210,6 +229,8 @@ void set_metadata(Standards.URI|string uri, void|string language,
   int doc_id;
   if(!intp(uri))
     doc_id = get_document_id((string)uri, language);
+
+  init_fields();
 
   // Still our one, single special case
   if(md->body)
