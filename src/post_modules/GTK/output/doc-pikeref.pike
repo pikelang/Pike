@@ -169,7 +169,7 @@ static string make_function_doc( Function f, Class c )
       }
     }
   if( j ) res += " ";
-  res += ")";
+  res += ");";
   res += "\n";
   imgfile=imgfilename(c->name+"_"+f->name);
   if( !f->doc || !strlen( f->doc ) )
@@ -195,8 +195,11 @@ static void output_class( Class cls, int lvl )
 	   +cls->name+" not documented\n" );
 
   result =  make_pike_refdoc( cls->doc, cls->signals );
+
   if( cls->inherits )
-    result += "inherit "+cls->inherits->pike_name()+";\n\n";
+    result += "\ninherit "+cls->inherits->pike_name()+";\n\n";
+  else
+    result += "\n";
 
   foreach( indices( cls->functions ), string fun )
     functions += ({({ cls->functions[ fun ]->pike_name(),
