@@ -3,17 +3,18 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "dynamic_buffer.h"
 #include "stralloc.h"
 #include "error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.10 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.11 2000/08/04 10:59:22 grubba Exp $");
 
 static dynamic_buffer buff;
 
-PMOD_EXPORT char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
+PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
 {
   char *ret;
 #ifdef PIKE_DEBUG
@@ -46,14 +47,15 @@ PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf)
   low_make_buf_space(1,buf)[0]=b;
 }
 
-PMOD_EXPORT void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
+PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
+				      dynamic_buffer *buf)
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
     fatal("Error in internal buffering.\n");
 #endif
 
-  MEMCPY(low_make_buf_space(l,buf),b,l);
+  MEMCPY(low_make_buf_space(l, buf),b, l);
 }
 
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: dynamic_buffer.h,v 1.8 2000/03/26 14:18:12 grubba Exp $
+ * $Id: dynamic_buffer.h,v 1.9 2000/08/04 10:59:22 grubba Exp $
  */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
@@ -29,9 +29,9 @@ struct dynamic_buffer_s
 typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* Prototypes begin here */
-char *low_make_buf_space(INT32 space, dynamic_buffer *buf);
+char *low_make_buf_space(size_t space, dynamic_buffer *buf);
 void low_my_putchar(char b,dynamic_buffer *buf);
-void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf);
+void low_my_binary_strcat(const char *b, size_t l, dynamic_buffer *buf);
 void debug_initialize_buf(dynamic_buffer *buf);
 void low_reinit_buf(dynamic_buffer *buf);
 void low_init_buf_with_string(string s, dynamic_buffer *buf);
