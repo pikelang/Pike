@@ -161,7 +161,7 @@ struct b8_t_s { B4_T x,y; };
 #endif
 
 #if defined(B8_T)
-struct b16_t { B8_T x,y; };
+struct b16_t_s { B8_T x,y; };
 #define B16_T struct b16_t_s
 #endif
 
