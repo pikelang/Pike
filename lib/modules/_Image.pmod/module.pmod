@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.18 2001/08/15 18:03:58 per Exp $
+//! $Id: module.pmod,v 1.19 2001/09/05 17:18:31 marcus Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -71,7 +71,7 @@ mapping _decode( string data, mixed|void tocolor )
 #endif
 
   if(!i)
-    foreach( ({ "GIF", "JPEG", "XWD", "PNM", "RAS" }), string fmt )
+    foreach( ({ "JPEG", "XWD", "PNM", "RAS" }), string fmt )
     {
       catch {
 	if( mappingp( opts ) )
@@ -118,12 +118,21 @@ array(Image.Layer) decode_layers( string data, mixed|void tocolor )
   if(!data)
     return 0;
 
-  foreach( ({ "GIF", "JPEG", "XWD", "PNM",
-              "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
-              "XBM", "XPM", "TIFF", "ILBM", "PS",
-  }), string fmt )
-    if( (f=Image[fmt]["decode_layers"]) && !catch(i = f( data,tocolor )) && i )
-      break;
+#if constant(Image.GIF) && constant(Image.GIF.RENDER)
+  catch
+  {
+    i = Image["GIF"]->decode_layers( data, tocolor );
+  };
+#endif
+
+  if(!i)
+    foreach( ({ "JPEG", "XWD", "PNM",
+		"XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
+		"XBM", "XPM", "TIFF", "ILBM", "PS",
+    }), string fmt )
+      if( (f=Image[fmt]["decode_layers"]) &&
+	  !catch(i = f( data,tocolor )) && i )
+	break;
 
   if(!i) // No image could be decoded at all.
     catch
