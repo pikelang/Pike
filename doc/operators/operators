@@ -1,0 +1,105 @@
+NAME
+	operators - arethmics and other stuff
+
+DESCRIPTION
+	uLPC has the following operators:
+
+	a(args)	function call
+	a[b..c]	range
+	a[b]	index
+	--a	pre decrement
+	a--	post decrement
+	++a	pre increment
+	a++	post increment
+	(type)a	cast
+	~a	complement
+	!a	not
+	-a	negate
+	a/b	divide
+	a%b	modulo
+	a*b	multiply
+	a-b	subtract
+	a+b	add
+	>>	shift right
+	<<	shift left
+	a>b	greater than?
+	a<b	lesser than?
+	a>=b	greater or equal than?
+	a<=b	lesser or equal than?
+	a!=b	not equal to?
+	a==b	equal to?
+	a&b	intersection
+	a^b	xor (symmetric differance)
+	a|b	union
+	a&&b	logical and
+	a||b	logical or
+	a?b:c	condition
+	a=b	assignment
+
+	The ones at the top of the list are parsed before operators lower
+	down on the list. This means that a|b&c means a|(b&c) not (a|b)&c.
+	Look at the individual pages for fuller explanations of what they do.
+
+	Then there is also the @ "splice" operator which can only be used in
+	argument lists.
+
+	Arguments to operators are always computed from left to right.
+
+	Many (but not all) of these operators can also be used as by prepending
+	with a ` sign. For instance `+(a,b) is the same as a+b. These functions
+	are called "operator functions" and the following are currently
+	available:
+
+	`== `!= `! `< `<= `> `>= `+ `- `& `| `^ `<< `>> `* `/ `% `~
+
+	These operator functions are basically efuns, but beware, if you
+	re-define the `+ function a+b will also be redefined.
+
+	On top of all this, many operators can also be overloaded. Overloading
+	an operator lets you specify how operators works on your objects.
+	To overload an operator you simply put the corresponding operator
+	function as a method in your object. An example:
+
+	> program nine=class {
+	  int `+(int arg) { return arg+9; }
+	};
+	Result: program
+	> clone(nine)+1;
+	Result: 10
+	>
+
+	This little example defines a program that works almost like the number
+	nine. As you can see, clone(nine)+1 is the same as clone(nine)->`+(1)
+	in this case, and that is the whole point of operator overloading.
+	Note however that it would not have worked to write 1+clone(nine)
+	because operator overloading only works if the first argument is the
+	object with the overloaded function. Well, almost anyway, the operators
+	<, >, <=, >= can check both sides. In fact, the methods `<= and `>=
+	will never be called since uLPC will translate a<=b to !(a>b).
+
+	These are the operators you can overload:
+
+	`==	also overloads `!=
+	`!	This is also used by if-statements to find out if the object
+		in question is 'true' or not.
+	`<	also overloads `>=
+	`>	also overloads `<=
+	`+	
+	`-	
+	`&	
+	`|	
+	`^	
+	`<<	
+	`>>	
+	`*	
+	`/	
+	`%	
+	`~	
+
+	If you also define a function __hash to return an integer, which
+	must be equal for all objects where `== is true you can index mappings
+	on the contents of your objects rather than on the object itself.
+	More details about this will come later.
+
+SEE ALSO
+	/precompiled/mpz
