@@ -295,49 +295,49 @@ object get_object(string project, string lang) {
     data = line+data;
 
   string|int id;
-  function str_tag = lambda(string t, mapping m, string c) {
-		       id = 0;
-		       if(m->id && m->id!="" && c!="") {
-			 if((int)m->id) m->id = (int)m->id;
-			 id = m->id;
-			 return c;
-		       }
-		       return 0;
-		     };
-  function t_tag = lambda(string t, mapping m, string c) {
-		     if(!id) {
-		       if(!m->id)
-			 return 0;
-		       else {
-			 if((int)m->id) 
-			   id = (int)m->id;
-			 else
-			   id = m->id;
-		       }
-		     }
-		     if(String.trim_whites(c)=="")
-		       return 0;
-		     // Replace encoded entities
-		     c = replace(c, ({"&lt;","&gt;","&amp;"}),
-				 ({ "<",   ">",    "&"  }));
-		     bindings[id]=c;
-		     return 0;
-		   };
-  function pike_tag = lambda(string t, mapping m, string c) {
-			// Replace encoded entities
-			c = replace(c, ({"&lt;","&gt;","&amp;"}),
-				       ({ "<",   ">",    "&"  }));
-			object gazonk;
-			if(catch( gazonk=compile_string("class gazonk {"+
-							c+"}")->gazonk() )) {
-			  werror("\n* Warning: could not compile code in "
-				 "<pike> in %O\n", filename);
-			  return 0;
-			}
-			foreach(indices(gazonk), string name)
-			  functions[name]=gazonk[name];
-			return 0;
-		      };
+  string str_tag(string t, mapping m, string c) {
+    id = 0;
+    if(m->id && m->id!="" && c!="") {
+      if((int)m->id) m->id = (int)m->id;
+      id = m->id;
+      return c;
+    }
+    return 0;
+  };
+  string t_tag(string t, mapping m, string c) {
+    if(!id) {
+      if(!m->id)
+	return 0;
+      else {
+	if((int)m->id) 
+	  id = (int)m->id;
+	else
+	  id = m->id;
+      }
+    }
+    if(String.trim_whites(c)=="")
+      return 0;
+    // Replace encoded entities
+    c = replace(c, ({"&lt;","&gt;","&amp;"}),
+		({ "<",   ">",    "&"  }));
+    bindings[id]=c;
+    return 0;
+  };
+  string pike_tag(string t, mapping m, string c) {
+    // Replace encoded entities
+    c = replace(c, ({"&lt;","&gt;","&amp;"}),
+		({ "<",   ">",    "&"  }));
+    object gazonk;
+    if(catch( gazonk=compile_string("class gazonk {"+
+				    c+"}")->gazonk() )) {
+      werror("\n* Warning: could not compile code in "
+	     "<pike> in %O\n", filename);
+      return 0;
+    }
+    foreach(indices(gazonk), string name)
+      functions[name]=gazonk[name];
+    return 0;
+  };
 
   Parser.HTML xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);
