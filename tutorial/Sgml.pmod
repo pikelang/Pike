@@ -22,6 +22,19 @@ class Tag
       if(f->open(file,"r"))
       {
 	string *x=f->read(pos-1)/"\n";
+	string f;
+	int i=0,l;
+	
+	foreach (reverse(x),string s)
+	   if (sscanf(s,"<!-- %s line %d -->",f,l))
+	      return
+		 sprintf("line %d col %d in file %s "
+			 "/ generated from %s line %d (start line %d)",
+			 sizeof(x)+1,strlen(x[-1])+1,file,
+			 f,l+i,l);
+	   else
+	      if (i++ > 50) break;
+
 	return sprintf("line %d col %d in file %s",sizeof(x)+1,strlen(x[-1])+1,file);
       }
     }
