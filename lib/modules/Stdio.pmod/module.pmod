@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.167 2003/10/22 20:28:05 mast Exp $
+// $Id: module.pmod,v 1.168 2003/10/24 18:09:38 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -995,8 +995,8 @@ class File
   //! All callbacks will have the @tt{id@} of file as first argument when called
   //! (see @[set_id()]).
   //!
-  //! If no arguments are given, the callbacks will not be changed. The
-  //! stream will just be set to nonblocking mode.
+  //! @note
+  //!   If no arguments are given, the callbacks will be cleared.
   //!
   //! @note
   //! Out-of-band data will note be supported if Pike was compiled with the
@@ -1085,7 +1085,7 @@ class File
      ::set_nonblocking();
      ::_enable_callbacks();
   }
-   
+
   static void destroy()
   {
     if(_fd)
