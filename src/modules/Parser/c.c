@@ -91,7 +91,7 @@ static void do_free_arrayptr( struct array **x )
 static void f_tokenize( INT32 args )
 {
   struct array *res = allocate_array_no_init( 0, 128 );
-  struct pike_string *left_s = 0; // Make gcc happy.
+  struct pike_string *left_s = 0; /* Make gcc happy. */
   int left;
   ONERROR tmp;
 
