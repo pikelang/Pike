@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.79 2003/11/09 01:10:14 mast Exp $
+|| $Id: multiset.c,v 1.80 2003/11/09 02:31:28 mast Exp $
 */
 
 #include "global.h"
@@ -14,8 +14,6 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.79 2003/11/09 01:10:14 mast Exp $");
-
 #include "builtin_functions.h"
 #include "gc.h"
 #include "interpret.h"
@@ -26,8 +24,13 @@ RCSID("$Id: multiset.c,v 1.79 2003/11/09 01:10:14 mast Exp $");
 #include "rbtree_low.h"
 #include "security.h"
 #include "svalue.h"
-
 #include "block_alloc.h"
+
+RCSID("$Id: multiset.c,v 1.80 2003/11/09 02:31:28 mast Exp $");
+
+/* FIXME: Optimize finds and searches on type fields? (But not when
+ * objects are involved!) Well.. Although cheap I suspect it pays off
+ * so extremely seldom that it isn't worth it. /mast */
 
 #include <assert.h>
 
@@ -5303,7 +5306,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.79 2003/11/09 01:10:14 mast Exp $");
+RCSID("$Id: multiset.c,v 1.80 2003/11/09 02:31:28 mast Exp $");
 
 struct multiset *first_multiset;
 
