@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.125 2001/02/20 15:59:49 grubba Exp $");
+RCSID("$Id: operators.c,v 1.126 2001/02/21 18:25:25 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1093,7 +1093,7 @@ PMOD_EXPORT void o_and(void)
 	   type_stack_mark();
 	   push_object_type(0, p->id);
 	   free_svalue(sp - 2);
-	   sp[-2].u.string = pop_unfinished_type();
+	   sp[-2].u.type = pop_unfinished_type();
 	   sp[-2].type = T_TYPE;
 	}
 	if (sp[-1].type != T_TYPE) 
@@ -1107,7 +1107,7 @@ PMOD_EXPORT void o_and(void)
 	   type_stack_mark();
 	   push_object_type(0, p->id);
 	   free_svalue(sp - 1);
-	   sp[-1].u.string = pop_unfinished_type();
+	   sp[-1].u.type = pop_unfinished_type();
 	   sp[-1].type = T_TYPE;
 	}
      } 
@@ -1184,11 +1184,10 @@ PMOD_EXPORT void o_and(void)
 
   case T_TYPE:
   {
-    struct pike_string *t;
-    t = and_pike_types(sp[-2].u.string, sp[-1].u.string);
+    struct pike_type *t;
+    t = and_pike_types(sp[-2].u.type, sp[-1].u.type);
     pop_n_elems(2);
-    push_string(t);
-    sp[-1].type = T_TYPE;
+    push_type_value(t);
     return;
   }
 
@@ -1196,9 +1195,9 @@ PMOD_EXPORT void o_and(void)
   case T_PROGRAM:
   {
     struct program *p;
-    struct pike_string *a;
-    struct pike_string *b;
-    struct pike_string *t;
+    struct pike_type *a;
+    struct pike_type *b;
+    struct pike_type *t;
 
     p = program_from_svalue(sp - 2);
     if (!p) {
@@ -1221,10 +1220,9 @@ PMOD_EXPORT void o_and(void)
     t = and_pike_types(a, b);
 
     pop_n_elems(2);
-    push_string(t);
-    sp[-1].type = T_TYPE;
-    free_string(a);
-    free_string(b);
+    push_type_value(t);
+    free_type(a);
+    free_type(b);
     return;
   }
 
@@ -1432,7 +1430,7 @@ PMOD_EXPORT void o_or(void)
 	type_stack_mark();
 	push_object_type(0, p->id);
 	free_svalue(sp - 2);
-	sp[-2].u.string = pop_unfinished_type();
+	sp[-2].u.type = pop_unfinished_type();
 	sp[-2].type = T_TYPE;
       }
       if (sp[-1].type != T_TYPE) {
@@ -1444,7 +1442,7 @@ PMOD_EXPORT void o_or(void)
 	type_stack_mark();
 	push_object_type(0, p->id);
 	free_svalue(sp - 1);
-	sp[-1].u.string = pop_unfinished_type();
+	sp[-1].u.type = pop_unfinished_type();
 	sp[-1].type = T_TYPE;
       }
     } else {
@@ -1493,11 +1491,10 @@ PMOD_EXPORT void o_or(void)
 
   case T_TYPE:
   {
-    struct pike_string *t;
-    t = or_pike_types(sp[-2].u.string, sp[-1].u.string, 0);
+    struct pike_type *t;
+    t = or_pike_types(sp[-2].u.type, sp[-1].u.type, 0);
     pop_n_elems(2);
-    push_string(t);
-    sp[-1].type = T_TYPE;
+    push_type_value(t);
     return;
   }
 
@@ -1505,9 +1502,9 @@ PMOD_EXPORT void o_or(void)
   case T_PROGRAM:
   {
     struct program *p;
-    struct pike_string *a;
-    struct pike_string *b;
-    struct pike_string *t;
+    struct pike_type *a;
+    struct pike_type *b;
+    struct pike_type *t;
 
     p = program_from_svalue(sp - 2);
     if (!p) {
@@ -1530,10 +1527,9 @@ PMOD_EXPORT void o_or(void)
     t = or_pike_types(a, b, 0);
 
     pop_n_elems(2);
-    push_string(t);
-    sp[-1].type = T_TYPE;
-    free_string(a);
-    free_string(b);
+    push_type_value(t);
+    free_type(a);
+    free_type(b);
     return;
   }
 
@@ -1642,7 +1638,7 @@ PMOD_EXPORT void o_xor(void)
 	type_stack_mark();
 	push_object_type(0, p->id);
 	free_svalue(sp - 2);
-	sp[-2].u.string = pop_unfinished_type();
+	sp[-2].u.type = pop_unfinished_type();
 	sp[-2].type = T_TYPE;
       }
       if (sp[-1].type != T_TYPE) {
@@ -1654,7 +1650,7 @@ PMOD_EXPORT void o_xor(void)
 	type_stack_mark();
 	push_object_type(0, p->id);
 	free_svalue(sp - 1);
-	sp[-1].u.string = pop_unfinished_type();
+	sp[-1].u.type = pop_unfinished_type();
 	sp[-1].type = T_TYPE;
       }
     } else {
@@ -1714,8 +1710,7 @@ PMOD_EXPORT void o_xor(void)
     type_stack_mark();
     push_object_type(0, p->id);
     pop_stack();
-    push_string(pop_unfinished_type());
-    sp[-1].type = T_TYPE;
+    push_type_value(pop_unfinished_type());
 
     stack_swap();
 
@@ -1728,24 +1723,21 @@ PMOD_EXPORT void o_xor(void)
     type_stack_mark();
     push_object_type(0, p->id);
     pop_stack();
-    push_string(pop_unfinished_type());
-    sp[-1].type = T_TYPE;
+    push_type_value(pop_unfinished_type());
   }
   /* FALL_THROUGH */
   case T_TYPE:
   {
     /* a ^ b  ==  (a&~b)|(~a&b) */
-    struct pike_string *a;
-    struct pike_string *b;
-    copy_shared_string(a, sp[-2].u.string);
-    copy_shared_string(b, sp[-1].u.string);
+    struct pike_type *a;
+    struct pike_type *b;
+    copy_type(a, sp[-2].u.type);
+    copy_type(b, sp[-1].u.type);
     o_compl();		/* ~b */
     o_and();		/* a&~b */
-    push_string(a);
-    sp[-1].type = T_TYPE;
+    push_type_value(a);
     o_compl();		/* ~a */
-    push_string(b);
-    sp[-1].type = T_TYPE;
+    push_type_value(b);
     o_and();		/* ~a&b */
     o_or();		/* (a&~b)|(~a&b) */
     return;
@@ -2835,8 +2827,7 @@ PMOD_EXPORT void o_compl(void)
       push_type(T_NOT);
     }
     pop_stack();
-    push_string(pop_unfinished_type());
-    sp[-1].type = T_TYPE;
+    push_type_value(pop_unfinished_type());
     break;
 
   case T_FUNCTION:
@@ -2851,8 +2842,7 @@ PMOD_EXPORT void o_compl(void)
       push_object_type(0, p->id);
       push_type(T_NOT);
       pop_stack();
-      push_string(pop_unfinished_type());
-      sp[-1].type = T_TYPE;
+      push_type_value(pop_unfinished_type());
     }
     break;
 

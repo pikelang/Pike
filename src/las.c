@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.234 2001/02/19 23:50:00 grubba Exp $");
+RCSID("$Id: las.c,v 1.235 2001/02/21 18:25:24 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -478,12 +478,12 @@ static node *freeze_node(node *orig)
 	if (n->type) {
 	  /* Use the new type if it's stricter. */
 	  if (pike_types_le(orig->type, n->type)) {
-	    free_string(n->type);
-	    copy_shared_string(n->type, orig->type);
+	    free_type(n->type);
+	    copy_type(n->type, orig->type);
 	  }
 	} else {
 	  /* This probably doesn't happen, but... */
-	  copy_shared_string(n->type, orig->type);
+	  copy_type(n->type, orig->type);
 	}
       }
       if (!found) {
@@ -733,7 +733,7 @@ void debug_free_node(node *n)
 
       n = n->parent;
 
-      if(dead->type) free_string(dead->type);
+      if(dead->type) free_type(dead->type);
       if(dead->name) free_string(dead->name);
 #ifdef PIKE_DEBUG
       if(dead->current_file) free_string(dead->current_file);
@@ -752,7 +752,7 @@ void debug_free_node(node *n)
 #endif /* SHARED_NODES && PIKE_DEBUG */
 
       n = n->parent;
-      if(dead->type) free_string(dead->type);
+      if(dead->type) free_type(dead->type);
       if(dead->name) free_string(dead->name);
 #ifdef PIKE_DEBUG
       if(dead->current_file) free_string(dead->current_file);
@@ -783,7 +783,7 @@ void debug_free_node(node *n)
     }
 #endif /* SHARE_NODES && PIKE_DEBUG */
 
-    if(n->type) free_string(n->type);
+    if(n->type) free_type(n->type);
     if(n->name) free_string(n->name);
 #ifdef PIKE_DEBUG
     if(n->current_file) free_string(n->current_file);
@@ -1258,7 +1258,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 #ifdef PIKE_DEBUG
   if(d_flag)
   {
-    check_string(id->type);
+    check_type_string(id->type);
     check_string(id->name);
   }
 #endif
@@ -1832,9 +1832,9 @@ node *copy_node(node *n)
   case F_IDENTIFIER:
   case F_TRAMPOLINE:
     b=mknewintnode(0);
-    if(b->type) free_string(b->type);
+    if(b->type) free_type(b->type);
     *b=*n;
-    copy_shared_string(b->type, n->type);
+    copy_type(b->type, n->type);
     return b;
 
   default:
@@ -3426,7 +3426,7 @@ void fix_type_field(node *n)
     break;
 
   case F_UNDEFINED:
-    MAKE_CONSTANT_SHARED_STRING(n->type, tZero);
+    copy_type(n->type, zero_type_string);
     break;
 
   case F_ARG_LIST:
@@ -4623,8 +4623,8 @@ static node *eval(node *n)
       if (n->type && (!new->type || ((n->type != new->type) &&
 				     pike_types_le(n->type,new->type)))) {
 	if (new->type)
-	  free_string(new->type);
-	copy_shared_string(new->type,n->type);
+	  free_type(new->type);
+	copy_type(new->type, n->type);
       }
     }
     free_node(n);

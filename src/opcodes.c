@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.100 2001/02/20 13:02:11 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.101 2001/02/21 18:25:25 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -648,7 +648,7 @@ PMOD_EXPORT void f_cast(void)
 	  sp[-2].type);
 #endif
   o_cast(sp[-2].u.type,
-	 compile_type_to_runtime_type(sp[-2].u.string));
+	 compile_type_to_runtime_type(sp[-2].u.type));
 #ifdef PIKE_DEBUG
   if(save_sp != sp)
     fatal("Internal error: o_cast() left droppings on stack.\n");

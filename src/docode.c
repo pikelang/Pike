@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.104 2001/02/19 23:49:59 grubba Exp $");
+RCSID("$Id: docode.c,v 1.105 2001/02/21 18:25:24 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1162,7 +1162,7 @@ static int do_docode2(node *n, INT16 flags)
     INT32 prev_switch_case = current_switch_case;
     INT32 prev_switch_default = current_switch_default;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    struct pike_string *prev_switch_type = current_switch_type;
+    struct pike_type *prev_switch_type = current_switch_type;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
 #endif
