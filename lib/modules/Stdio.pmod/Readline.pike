@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.38 2000/10/08 19:02:15 grubba Exp $
+// $Id: Readline.pike,v 1.39 2000/10/10 19:58:24 hubbe Exp $
 #pike __REAL_VERSION__
 class OutputController
 {
@@ -1111,25 +1111,14 @@ string get_prompt()
 
 string set_prompt(string newp, array(string)|void newattrs)
 {
+//  werror("READLINE: Set prompt: %O\n",newp);
   string oldp = prompt;
   if(newp!=prompt || !equal(prompt_attrs, newattrs))
   {
-    if(newline_func)
-    {
-//      werror("\nNew prompt!!! %O\n",newline_func);
-      int p=cursorpos;
-      setcursorpos(0);
-      output_controller->bol();
-      output_controller->clear(1);
-      prompt = newp;
-      prompt_attrs = newattrs && copy_value(newattrs);
-      cursorpos=strlen(text);
-      redisplay(0, 1);
-      cursorpos=p;
-    }else{
-      prompt = newp;
-      prompt_attrs = newattrs && copy_value(newattrs);
-    }
+    prompt = newp;
+    prompt_attrs = newattrs && copy_value(newattrs);
+    if(newline_func) redisplay(0);
+
   }
   return oldp;
 }
@@ -1295,7 +1284,7 @@ void redisplay(int clear, int|void nobackup)
   output_controller->check_columns();
 
   if(!input_controller->dumb) {
-    if(newline_func == read_newline) {
+    if(newline_func) {
       if(prompt_attrs)
 	output_controller->turn_on(@prompt_attrs);
       output_controller->write(prompt);
@@ -1389,10 +1378,21 @@ static private void read_newline(string s)
 
 void set_nonblocking(function f)
 {
+  int p=cursorpos;
   if (newline_func = f) {
     output_controller->enable();
     input_controller->enable();
+
+    output_controller->bol();
+    output_controller->clear(1);
+    cursorpos=p;
+    redisplay(0,1);
   } else {
+    setcursorpos(0);
+    output_controller->bol();
+    output_controller->clear(1);
+    cursorpos=p;
+
     input_controller->disable();
     output_controller->disable();
   }
