@@ -106,6 +106,7 @@ void add_efun(char *name, c_fun fun, char *type, INT16 flags)
 static void push_efun_entry(struct hash_entry *h)
 {
   struct efun *f;
+  check_stack(1);
   f=BASEOF(h, efun, link);
   push_string(f->link.s);
   f->link.s->refs++;
