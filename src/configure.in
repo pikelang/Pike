@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.670 2003/01/02 17:05:49 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.671 2003/01/04 15:04:36 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2469,6 +2469,9 @@ fi
 AC_TYPE_SIGNAL
 
 dnl AC_CHECK_LIB(PW, alloca)
+
+dnl Checking if poll() call is in libpoll (in general in Darwin or BSD/OS)
+AC_CHECK_LIB(poll, poll)
 
 AC_CHECK_LIB(m, floor)
 
