@@ -3,6 +3,7 @@
 *.db binary
 *.gif binary
 *.gz binary
+*.pnm binary
 *.rs binary
 init_nt -text -crlf
 lib -text -crlf
