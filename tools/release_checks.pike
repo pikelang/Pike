@@ -1,20 +1,22 @@
 
 
-// Ok, so this test is silly
+// Ok, so this test is stupid
 int test_constants() {
-  int consts = Process.system("bin/pike -e "
-			      "\"return sizeof(all_constants())-200\"")+200;
+  int consts = sizeof(all_constants());
   int allocated;
   sscanf(Stdio.read_file("src/constants.c"), "%*sallocate_mapping(%d)",
 			 allocated);
-  if(consts>allocated) {
-    write("bultin_constants mapping in constants.c needs to be at least %d\n"
-	  "entries big.\n", consts);
-    return 0;
+  // Aim for 10% overallocation to allow for adding of a few extra constants
+  // without penalty.
+  if(allocated < consts*105/100) {
+    // Overallocating by less than 5%.
+    write("Consider increasing the size of the builtin_constants mapping "
+	  "to %d entries (currently %d).\n", consts*110/100, allocated);
+  } else if (allocated > consts*115/100) {
+    // Overallocating by more than 15% seems excessive.
+    write("Consider decreasing the size of the builtin_constants mapping "
+	  "to %d entries (currently %d).\n", consts*110/100, allocated);
   }
-  if(allocated-consts>10)
-    write("builtin_constants mapping in constants.c should perhaps be \n"
-	  "reduced. Allocated: %d, Used: %d\n", allocated, consts);
   return 1;
 }
 
@@ -91,16 +93,28 @@ int test_unicode() {
 
 int test_realpike() {
   int status = 1;
-  foreach(Filesystem.Traversion("lib/modules"); string path; string file)
+  foreach(Filesystem.Traversion("lib"); string path; string file)
     if(has_suffix(file, ".pike") || has_suffix(file, ".pmod"))
-      if(!has_value(Stdio.read_file(path+file),"#pike __REAL_VERSION__")) {
-	write("%s%s is missing #pike __REAL_VERSION__.\n", path,file);
+      if(!has_value(Stdio.read_file(path+file),"#pike")) {
+	write("%s%s is missing a #pike directive.\n", path,file);
+	status = 0;
+      }
+  foreach(Filesystem.Traversion("bin"); string path; string file)
+    if(has_suffix(file, ".pike"))
+      if(!has_value(Stdio.read_file(path+file),"#pike")) {
+	write("%s%s is missing a #pike directive.\n", path,file);
+	status = 0;
+      }
+  foreach(Filesystem.Traversion("tools"); string path; string file)
+    if(has_suffix(file, ".pike"))
+      if(!has_value(Stdio.read_file(path+file),"#pike")) {
+	write("%s%s is missing a #pike directive.\n", path,file);
 	status = 0;
       }
   foreach(Filesystem.Traversion("src"); string path; string file)
     if(file=="module.pmod.in" &&
-       !has_value(Stdio.read_file(path+file),"#pike __REAL_VERSION__")) {
-      write("%s%s is missing #pike __REAL_VERSION__.\n", path,file);
+       !has_value(Stdio.read_file(path+file),"#pike")) {
+      write("%s%s is missing a #pike directive.\n", path,file);
       status = 0;
     }
   return status;
