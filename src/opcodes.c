@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.103 2001/03/04 19:27:18 mirar Exp $");
+RCSID("$Id: opcodes.c,v 1.104 2001/03/31 15:36:03 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -423,7 +423,11 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	    return;
 	    
 	  case T_FUNCTION:
-	    sp[-1].type = T_OBJECT;
+	    if (Pike_sp[-1].subtype == FUNCTION_BUILTIN) {
+	      Pike_error("Cannot cast builtin functions to object.\n");
+	    } else {
+	      sp[-1].type = T_OBJECT;
+	    }
 	    break;
 
 	  default:
