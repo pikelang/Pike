@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.36 2004/05/25 07:57:34 grubba Exp $
+|| $Id: ppc32.c,v 1.37 2004/05/25 09:11:20 grubba Exp $
 */
 
 /*
@@ -203,7 +203,7 @@ void ppc32_push_constant(INT32 arg)
       offs -= 65536;
   }
 
-  ppc32_push_svalue(PPC_REG_ARG1, offs, 1);
+  ppc32_push_svalue(PPC_REG_ARG1, offs, (sval->type <= MAX_REF_TYPE));
 }
 
 void ppc32_push_local(INT32 arg)
