@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.144 1999/06/10 00:12:08 hubbe Exp $
+# $Id: Makefile.in,v 1.145 1999/06/19 19:52:34 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -159,6 +159,8 @@ compiler-warnings : clean
 	@echo '--------------'
 
 pike: $(OBJ) modules/linker_options
+	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
+	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
 	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
@@ -400,21 +402,17 @@ module_testsuites:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
 
 just_verify: module_testsuites testsuite master.pike
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike -a
 
 tinstall: aclocal
-	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
-	pike_name="test-pike" lib_prefix="$(lib_prefix)" \
-	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)"
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)"
 
 
 verify: module_testsuites testsuite tinstall
-	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite ; else sprsh `pwd`/test-install/pike/*/pike.exe -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite ; fi
+	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike -a ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike -a ; fi
 
 verify_installed: module_testsuites testsuite master.pike
-	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
+	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike -a
 
 check: verify
 
@@ -422,14 +420,14 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: module_testsuites testsuite master.pike
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose modules/*/module_testsuite testsuite 
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose -a
 
 # verify & debug VERBOSE
 gdb_verify: module_testsuites testsuite master.pike
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
-	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike -v -v -f modules/*/module_testsuite testsuite
+	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike -v -v -f -a
 	gdb ./pike
 	@rm .gdbinit
 
