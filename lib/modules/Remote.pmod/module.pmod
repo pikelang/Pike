@@ -1,6 +1,7 @@
 #pike __REAL_VERSION__
 #include "remote.h"
 
+//!
 class Call {
  constant is_remote_call = 1;
 
@@ -10,6 +11,7 @@ class Call {
   object ctx;
   int _async;
 
+  //!
   mixed `() (mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args,
@@ -21,34 +23,41 @@ class Call {
     return 0;
   }
 
+  //!
   mixed sync(mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_SYNC);
     return con->call_sync(data);
   }
 
+  //!
   void async(mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_ASYNC);
     con->call_async(data);
   }
 
+  //!
   int exists()
   {
     mixed data = ctx->encode_call(objectid, name, ({}), CTX_EXISTS);
     return con->call_sync(data);
   }
 
+  //!
   int is_async()
   {
     return _async;
   }
 
+  //!
   void set_async(int a)
   {
     _async = a;
   }
 
+  //! @decl void create(string objectid, string name, object connection,@
+  //!                   object context, int async)
   void create(string oid, string n, object cn, object ct, int a)
   {
     objectid = oid;
@@ -74,6 +83,9 @@ class Connection {
 
   int nice; // don't throw from call_sync
 
+  //! @decl void create(void|int nice, void|int max_call_threads)
+  //! @param nice
+  //!   If set, no errors will be thrown.
   void create(void|int _nice, void|int _max_call_threads)
   {
     nice=_nice;
@@ -621,6 +633,7 @@ class Connection {
   }
 }
 
+//!
 class Context {
   object server_context;
   object con;
@@ -633,6 +646,7 @@ class Context {
   mapping other  = ([ ]);
   mapping val2other = ([ ]);
 
+  //!
   string id_for(mixed thing)
   {
     string id;
@@ -657,6 +671,7 @@ class Context {
     return id;
   }
 
+  //!
   object object_for(string id)
   {
     object o = id2val[id];
@@ -684,6 +699,7 @@ class Context {
     return other[id] = o;
   }
 
+  //!
   object function_for(string id)
   {
     object o = id2val[id];
@@ -714,6 +730,7 @@ class Context {
   //  mapping    -> ({ CTX_MAPPING, m })
   //
 
+  //!
   array encode(mixed val)
   {
     if (intp(val) || floatp(val))
@@ -750,6 +767,7 @@ class Context {
     return ({ CTX_RETURN, id, encode(val) });
   }
 
+  //!
   mixed decode(array a)
   {
     // werror(sprintf("decode(%O)\n", a));
@@ -772,6 +790,7 @@ class Context {
     }
   }
 
+  //!
   array encode_call(object|string o, string|function f, array args, int type)
   {
     if(objectp(o))
@@ -795,6 +814,7 @@ class Context {
     error("Error in arguments.\n");
   }
 
+  //!
   function|object decode_call(array data)
   {
     if((data[0] != CTX_CALL_SYNC) && (data[0] != CTX_CALL_ASYNC))
@@ -828,6 +848,7 @@ class Context {
     }
   }
 
+  //!
   int decode_existp(array data)
   {
     if(data[0] != CTX_EXISTS)
@@ -858,6 +879,7 @@ class Context {
     }
   }
 
+  //!
   void add(object o, string id)
   {
     DEBUGMSG(id + " added locally\n");
@@ -865,6 +887,7 @@ class Context {
     val2id[o]  = id;
   }
 
+  //!
   string describe(array data)
   {
     switch(data[0]) {
@@ -897,12 +920,14 @@ class Context {
     return "<unknown "+data[0]+">";
   }
 
+  //!
   void set_server_context(object ctx, object cn)
   {
     server_context = ctx;
     con = cn;
   }
 
+  //!
   void create(string b, object|void cn)
   {
     con = cn;
@@ -911,6 +936,7 @@ class Context {
   }
 }
 
+//!
 class Obj {
   constant is_remote_obj = 1;
 
@@ -920,6 +946,7 @@ class Obj {
 
   mapping calls = ([ ]);
 
+  //!
   mixed get_function(string f)
   {
     object call = calls[f];
@@ -928,22 +955,26 @@ class Obj {
     return call;
   }
 
+  //!
   mixed `[] (string f)
   {
     return get_function(f);
   }
 
+  //!
   mixed `-> (string f)
   {
     return get_function(f);
   }
 
+  //!
   int exists()
   {
     mixed data = ctx->encode_call(id, 0, ({}), CTX_EXISTS);
     return con->call_sync(data);
   }
 
+  //! @decl void create(string id, object connection, object context)
   void create(string i, object cn, object ct)
   {
     id  = i;
