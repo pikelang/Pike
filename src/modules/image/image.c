@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.34 1996/12/10 01:42:44 law Exp $ */
+/* $Id: image.c,v 1.35 1996/12/13 03:22:08 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.34 1996/12/10 01:42:44 law Exp $");
+RCSID("$Id: image.c,v 1.35 1996/12/13 03:22:08 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -166,13 +166,14 @@ static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 					    int x,int y,
 					    int width,int height,
-					    rgbl_group *matrix,
+					    rgbd_group *matrix,
 					    rgb_group default_rgb,
 					    INT32 div)
 {
    rgb_group res;
    int i,j,bx,by,xp,yp;
    int sumr,sumg,sumb,r,g,b;
+   float qdiv=1.0/div;
 
    sumr=sumg=sumb=0;
    r=g=b=0;
@@ -199,11 +200,11 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 	    sumb+=matrix[i+j*width].b;
 	 }
    if (sumr) res.r=testrange(default_rgb.r+r/(sumr*div)); 
-   else res.r=testrange(r/div+default_rgb.r);
+   else res.r=testrange(r*qdiv+default_rgb.r);
    if (sumg) res.g=testrange(default_rgb.g+g/(sumg*div)); 
-   else res.g=testrange(g/div+default_rgb.g);
+   else res.g=testrange(g*qdiv+default_rgb.g);
    if (sumb) res.b=testrange(default_rgb.g+b/(sumb*div)); 
-   else res.b=testrange(b/div+default_rgb.b);
+   else res.b=testrange(b*qdiv+default_rgb.b);
 #ifdef MATRIX_DEBUG
    fprintf(stderr,"->%d,%d,%d\n",res.r,res.g,res.b);
 #endif
@@ -214,7 +215,7 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 void img_apply_matrix(struct image *dest,
 		      struct image *img,
 		      int width,int height,
-		      rgbl_group *matrix,
+		      rgbd_group *matrix,
 		      rgb_group default_rgb,
 		      INT32 div)
 {
@@ -1198,7 +1199,7 @@ void image_select_from(INT32 args)
 void image_apply_matrix(INT32 args)
 {
    int width,height,i,j;
-   rgbl_group *matrix;
+   rgbd_group *matrix;
    rgb_group default_rgb;
    struct object *o;
    INT32 div;
@@ -1250,7 +1251,7 @@ void image_apply_matrix(INT32 args)
    }
    if (width==-1) width=0;
 
-   matrix=malloc(sizeof(rgbl_group)*width*height+1);
+   matrix=malloc(sizeof(rgbd_group)*width*height+1);
    if (!matrix) error("Out of memory");
    
    for (i=0; i<height; i++)
