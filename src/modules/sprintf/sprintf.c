@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.115 2003/11/09 01:10:15 mast Exp $
+|| $Id: sprintf.c,v 1.116 2004/03/07 01:46:01 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -30,7 +30,7 @@
 
    A short 'people' function (without sort)
 
-   sprintf("%{%-14s %2d %-30s %s\n%}\n",map_array(users(),lambda(object x)
+   sprintf("%{%-14s %2d %-30s %s\n%}\n",map(users(),lambda(object x)
        {
            return ({x->query_real_name(),
 		x->query_level(),
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.115 2003/11/09 01:10:15 mast Exp $");
+RCSID("$Id: sprintf.c,v 1.116 2004/03/07 01:46:01 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
