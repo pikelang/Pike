@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.9 1999/12/08 15:33:59 grubba Exp $
+ * $Id: udp.c,v 1.10 1999/12/08 15:39:24 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.9 1999/12/08 15:33:59 grubba Exp $");
+RCSID("$Id: udp.c,v 1.10 1999/12/08 15:39:24 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -479,12 +479,14 @@ void zero_udp(struct object *ignored)
 
 void exit_udp(struct object *ignored)
 {
-  if(FD != -1)
+  int fd = FD;
+
+  if(fd != -1)
   {
-    set_read_callback( FD, 0, 0 );
+    set_read_callback( fd, 0, 0 );
 
     THREADS_ALLOW();
-    fd_close(FD);
+    fd_close(fd);
     THREADS_DISALLOW();
   }
   free_svalue(& THIS->read_callback );
