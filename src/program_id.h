@@ -39,6 +39,28 @@
 #define tObjImpl_STDIO_STAT                   "\003\000\000\000\000\012"
 #define   tObjIs_STDIO_STAT                   "\003\001\000\000\000\012"
 
+#define     PROG_GMP_MPZ_ID                                         21
+
+/* 100 - 300 reserverd for Image.Image */
+
+
+/* 100-119: Classes */
+#define PROG_IMAGE_CLASS_START          100
+
+#define PROG_IMAGE_IMAGE_ID             100
+#define PROG_IMAGE_COLORTABLE_ID        101
+#define PROG_IMAGE_LAYER_ID             102
+#define PROG_IMAGE_FONT_ID              103
+#define PROG_IMAGE_POLY_ID              104
+
+/* 120 - 159: Submodules */
+#define PROG_IMAGE_SUBMODULE_START      120
+
+/* 160 - : Submagic */
+#define PROG_IMAGE_SUBMAGIC_START       160
+
+/* 200 - 300: Submodule programs */
+#define PROG_IMAGE_COLOR_COLOR_ID       200
 
 /* 1000 - 2000 reserved for GTK. */
 

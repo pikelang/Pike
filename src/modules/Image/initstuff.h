@@ -5,6 +5,10 @@
 #define IMAGE_FUNCTION(a,name,c,d) void name(INT32 args);
 #endif
 
+/* Do not change the order here unless you also change
+ * things in program_id.h  
+ */
+
 IMAGE_CLASS("Image",      init_image_image,      exit_image_image, 
 	    image_program )
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.121 2001/03/23 03:14:41 hubbe Exp $
+ * $Id: program.h,v 1.122 2001/03/29 02:54:10 per Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -16,7 +16,7 @@
 #include "pike_macros.h"
 #include "svalue.h"
 #include "time_stuff.h"
-
+#include "program_id.h"
 
 #define STRUCT
 #include "compilation.h"

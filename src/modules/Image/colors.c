@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.47 2001/03/17 20:42:46 grubba Exp $
+**!	$Id: colors.c,v 1.48 2001/03/29 02:54:11 per Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.47 2001/03/17 20:42:46 grubba Exp $");
+RCSID("$Id: colors.c,v 1.48 2001/03/29 02:54:11 per Exp $");
 
 #include "image_machine.h"
 
@@ -199,6 +199,7 @@ RCSID("$Id: colors.c,v 1.47 2001/03/17 20:42:46 grubba Exp $");
 #include "operators.h"
 #include "module_support.h"
 #include "opcodes.h"
+#include "program_id.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -1757,6 +1758,8 @@ void init_image_colors(void)
    ADD_FUNCTION("_indices",image_colors_indices,tFunc(tNone,tArr(tStr)),0);
    ADD_FUNCTION("_values",image_colors_values,tFunc(tNone,tArr(tObj)),0);
 
+   image_color_program->id = PROG_IMAGE_COLOR_COLOR_ID;
+   
    add_program_constant("Color",image_color_program,0);
 }
 

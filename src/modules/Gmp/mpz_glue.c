@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.91 2001/03/04 19:52:15 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.92 2001/03/29 02:54:11 per Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1617,7 +1617,9 @@ void pike_module_init(void)
 	       MPZ_ARG_TYPE ":object)", 0);
 #endif
 
-  add_program_constant("mpz", mpzmod_program=end_program(), 0);
+  mpzmod_program=end_program();
+  mpzmod_program->id = PROG_GMP_MPZ_ID;
+  add_program_constant("mpz", mpzmod_program, 0);
 
   /* function(int, int:object) */
   ADD_FUNCTION("pow", gmp_pow,tFunc(tInt tInt,tObj), 0);

@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.94 2001/03/28 15:07:39 grubba Exp $");
+RCSID("$Id: encode.c,v 1.95 2001/03/29 02:54:10 per Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -364,13 +364,18 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
       if(t->cdr)
       {
-	struct program *p=id_to_program((ptrdiff_t)t->cdr);
-	if(p)
+	int id = (int)(ptrdiff_t)t->cdr;
+	if( id >= 65536 )
 	{
-	  ref_push_program(p);
-	}else{
-	  push_int(0);
-	}
+	  struct program *p=id_to_program((ptrdiff_t)t->cdr);
+	  if(p)
+	  {
+	    ref_push_program(p);
+	  }else{
+	    push_int(0);
+	  }
+	} else
+	  push_int( id );
       }else{
 	push_int(0);
       }
@@ -452,7 +457,7 @@ one_more_type:
       addchar(EXTRACT_UCHAR(t++));
       x=EXTRACT_INT(t);
       t+=sizeof(INT32);
-      if(x)
+      if(x >= 65536)
       {
 	struct program *p=id_to_program(x);
 	if(p)
@@ -462,7 +467,7 @@ one_more_type:
 	  push_int(0);
 	}
       }else{
-	push_int(0);
+	push_int(x);
       }
       encode_value2(Pike_sp-1, data);
       pop_stack();
@@ -756,7 +761,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	INT32 e;
 	struct program *p=val->u.program;
-	if(p->event_handler || (p->flags & PROGRAM_HAS_C_METHODS))
+	if( p->event_handler )
+	  Pike_error("Cannot encode programs with event handlers.\n");
+	if( (p->flags & PROGRAM_HAS_C_METHODS) )
 	  Pike_error("Cannot encode C programs.\n");
 	code_entry(type_to_tag(val->type), 1,data);
 	f_version(0);
@@ -1276,7 +1283,7 @@ one_more_type:
       switch(Pike_sp[-1].type)
       {
 	case T_INT:
-	  push_object_type_backwards(flag, 0);
+	  push_object_type_backwards(flag, Pike_sp[-1].u.integer );
 	  break;
 
 	case T_PROGRAM:

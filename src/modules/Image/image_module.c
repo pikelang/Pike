@@ -1,10 +1,11 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.10 2001/03/28 15:07:40 grubba Exp $");
+RCSID("$Id: image_module.c,v 1.11 2001/03/29 02:54:12 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
+#include "program_id.h"
 #include "object.h"
 #include "operators.h"
 
@@ -130,6 +131,7 @@ static void image_magic_index(INT32 args)
 	    (submagic[i].init)();
 	    IMAGE_CHECK_STACK(submagic[i].name);
 	    p=end_program();
+	    p->id = PROG_IMAGE_SUBMAGIC_START+i;
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
@@ -260,6 +262,7 @@ void pike_module_init(void)
       (initclass[i].init)();
       IMAGE_CHECK_STACK(initclass[i].name);
       initclass[i].dest[0]=end_program();
+      initclass[i].dest[0]->id = i+PROG_IMAGE_CLASS_START;
       add_program_constant(initclass[i].name,initclass[i].dest[0],0);
    }
 
@@ -277,6 +280,7 @@ void pike_module_init(void)
       (initsubmodule[i].init)();
       IMAGE_CHECK_STACK(initsubmodule[i].name);
       p=end_program();
+      p->id = i+PROG_IMAGE_SUBMODULE_START;
       push_object(clone_object(p,0));
       s=make_shared_string(initsubmodule[i].name);
       add_constant(s,sp-1,0);
