@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.29 2001/03/30 09:08:36 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.30 2001/07/01 19:59:48 mast Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -53,6 +53,10 @@ static struct DATA *PIKE_CONCAT3(alloc_,DATA,_unlocked)(void)		\
       PIKE_CONCAT3(free_,DATA,s)=n->x+e;				\
     }									\
   }									\
+  DO_IF_DEBUG(								\
+    else if (PIKE_CONCAT3(free_,DATA,s) == (struct DATA *)-1)		\
+      fatal("Block alloc not initialized.\n");				\
+  )									\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
   PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)tmp->BLOCK_ALLOC_NEXT;	\
