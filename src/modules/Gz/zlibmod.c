@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.61 2003/03/30 20:45:35 nilsson Exp $
+|| $Id: zlibmod.c,v 1.62 2003/03/31 14:26:42 per Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.61 2003/03/30 20:45:35 nilsson Exp $");
+RCSID("$Id: zlibmod.c,v 1.62 2003/03/31 14:26:42 per Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -92,10 +92,14 @@ struct zipper
  *!
  *! This function can also be used to re-initialize a Gz.deflate object
  *! so it can be re-used.
+ *!
+ *! If the argument is negative, no headers will be emitted. This is
+ *! needed to produce ZIP-files, as an example. The negative value is
+ *! then negated, and handled as a positive value.
  */
 static void gz_deflate_create(INT32 args)
 {
-  int tmp;
+  int tmp, wbits = 15;
   THIS->level=Z_DEFAULT_COMPRESSION;
 
   if(THIS->gz.state)
@@ -110,6 +114,11 @@ static void gz_deflate_create(INT32 args)
     if(sp[-args].type != T_INT)
       Pike_error("Bad argument 1 to gz->create()\n");
     THIS->level=sp[-args].u.integer;
+    if( THIS->level < 0 )
+    {
+      wbits = -wbits;
+      THIS->level = -THIS->level;
+    }
     if(THIS->level < Z_NO_COMPRESSION ||
        THIS->level > Z_BEST_COMPRESSION)
     {
@@ -123,7 +132,7 @@ static void gz_deflate_create(INT32 args)
 
   pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
-  tmp=deflateInit(&THIS->gz, THIS->level);
+  tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, Z_DEFAULT_STRATEGY );
 /*   mt_unlock(& THIS->lock); */
   switch(tmp)
   {
@@ -312,13 +321,28 @@ static void exit_gz_deflate(struct object *o)
  *!   @[deflate]
  */
 
-/*! @decl void create(int|void magic)
+/*! @decl void create(int|void window_size)
  *! @param magic
- *! The magic value is passed down to inflateInit2 in zlib. Specifically,
- *! if you want to uncompress PKZIP-compressed data, you have to specify
- *! -15 as the argument. What negative arguments does is undocumented as
- *! far as we know. Positive arguments set the maximum dictionary size
- *! though.
+ *! The window_size value is passed down to inflateInit2 in zlib.
+ *!
+ *! If the argument is negative, no header checks are done, and no
+ *! verification of the data will be done either. This is needed for
+ *! uncompressing ZIP-files, as an example. The negative value is then
+ *! negated, and handled as a positive value.
+ *!
+ *! Positive arguments set the maximum dictionary size to an exponent
+ *! of 2, such that 8 (the minimum) will cause the window size to be
+ *! 256, and 15 (the maximum, and default value) will cause it to be
+ *! 32Kb. Setting this to anything except 15 is rather pointless in
+ *! Pike.
+ *!
+ *! It can be used to limit the amount of memory that is used to
+ *! uncompress files, but 32Kb is not all that much in the great
+ *! scheme of things.
+ *!
+ *! To decompress files compressed with level 9 compression, a 32Kb
+ *! window size is needed. level 1 compression only requires a 256
+ *! byte window.
  */
 static void gz_inflate_create(INT32 args)
 {
