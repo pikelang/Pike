@@ -616,6 +616,14 @@ array (string) sort_dependencies( array bunch, mapping extra )
       if(r != "global")
         print_rec_tree( inheriting[r], inheriting, 1, fd);
     fd->write("</ul>");
+    foreach( sort(indices(requires)), string req )
+    {
+      fd->write("<h1>All classes requiring "+req+"</h1>\n" );
+      fd->write("<ul>");
+      foreach(Array.sort_array(requires[req], fnamesfun), string s)
+        fd->write("<li> <a href="+s+".html>"+classname(s)+"</a>\n");
+      fd->write("</ul>\n");
+    }
     fd->write("<h1>All classes in alphabetical order</h1>\n");
     fd->write("<ul>");
     foreach(Array.sort_array(indices(struct), fnamesfun), string s)
@@ -714,7 +722,7 @@ string handle_img(string line)
   return "";
 }
 array constants_name = ({});
-string find_constants(string prefix)
+string find_constants(string prefix, string where)
 {
   array res = ({});
   sscanf(prefix, "GTK_%s", prefix );
@@ -724,7 +732,7 @@ string find_constants(string prefix)
 
   if(!sizeof(res))
   {
-    werror("Fatal error: CONST("+prefix+") in doc string: No consts found\n");
+    werror("Fatal error: "+where+": CONST("+prefix+") in doc string: No consts found\n");
     exit(1);
   }
   return String.implode_nicely( res );
@@ -800,6 +808,20 @@ string build_cursor( string a )
 
 string dir;
 int mkwmml;
+mapping requires = ([]);
+
+string unsillycaps(string what)
+{
+  sscanf( what, "Gtk%s", what );
+  string res=upper_case(what[0..0]);
+  foreach(what[1..]/"", string q)
+    if(lower_case(q)==q)
+      res += q;
+    else
+      res += "_"+lower_case(q);
+  return replace(res,"__","_");
+}
+
 int main(int argc, array argv)
 {
   string progname = "global", extra_cpp="";
@@ -815,7 +837,7 @@ void do_default_sprintf( int args, int offset, int len )
   push_string( make_shared_binary_string( _data+offset, len ) );
 }
 ";
-  string signal_doc;
+  string signal_doc, current_require;
 
   do_docs = argc > 2;
 
@@ -854,6 +876,7 @@ void do_default_sprintf( int args, int offset, int len )
     if((String.trim_whites(line)-";") == "endrequire")
     {
       skip_mode=0;
+      current_require = 0;
       continue;
     }
 
@@ -879,6 +902,9 @@ void do_default_sprintf( int args, int offset, int len )
     if(sscanf(line, "require %s;", line))
     {
       line = String.trim_whites( line );
+      current_require = line;
+      if(!requires[current_require])
+        requires[current_require] = ({});
       if(!has_cond_widget(line))
         skip_mode=1;
     }
@@ -891,6 +917,8 @@ void do_default_sprintf( int args, int offset, int len )
       signal_doc = 0;
       line = String.trim_whites( line );
       end_last_program();
+      if( current_require )
+        requires[current_require] += ({ line });
       begin_new_program( line );
       last_function="";
       NUMBER_FUNCTION();
@@ -964,13 +992,16 @@ void do_default_sprintf( int args, int offset, int len )
 	else
         {
 	  while(sscanf(line, "%sCONST(%s)%s", a, b, line)==3)
-	    line = a+find_constants(b)+line;
+	    line = a+find_constants(b,lines[progname+last_function]||progname)
+                 +line;
 	  while(sscanf(line, "%sCURS(%s)%s", a, b, line)==3)
 	    line = a+build_cursor(b)+line;
 	  while(sscanf(line, "%sW(%s)%s", a, b, line)==3)
-	    line = a+"<a href="+lower_case( b )+".html>GTK."+b+"</a>"+line;
+	    line = a+"<a href="+lower_case( unsillycaps(b) )+".html>"+
+                 classname(b)+"</a>"+line;
 	  while(sscanf(line, "%sGDK(%s)%s", a, b, line)==3)
-	    line = a+"<a href=Gdk"+b+".html>GDK."+b+"</a>"+line;
+	    line = a+"<a href="+replace("Gdk"+b,"GdkAtom","Gdk_Atom")+
+                 ".html>GDK."+b+"</a>"+line;
         }
         if( signal_doc )
           signals[progname][signal_doc] += line;
@@ -1173,6 +1204,27 @@ void do_default_sprintf( int args, int offset, int len )
 		    "      error(\"Wrong type array argument. Expected float\\n\");\n"
 		    "    }\n"
 		    "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.float_number;\n"
+		    "  }\n");
+	   break;
+	 case "doublearray":
+           if(!i_added++)
+             args += "  int _i;\n";
+	   fundef += ",array(float)";
+	   argument_list += ", array(float)";
+	   format_string += "%a";
+	   args += "  struct array *_arg"+na+";\n";
+	   args += "  gdouble *arg"+na+";\n";
+	   fin += " free(arg"+na+");\n";
+	   sargs += (",&_arg"+na);
+	   post += ("  arg"+na+"=malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
+		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
+		    "  {\n"
+		    "    if(_arg"+na+"->item[_i].type != T_FLOAT)\n"
+		    "    {\n"
+		    "      free(arg"+na+");\n"
+		    "      error(\"Wrong type array argument. Expected float\\n\");\n"
+		    "    }\n"
+		    "    arg"+na+"[_i] = (gdouble)_arg"+na+"->item[_i].u.float_number;\n"
 		    "  }\n");
 	   break;
 	 case "intarray":
@@ -1561,7 +1613,7 @@ void do_default_sprintf( int args, int offset, int len )
           }
           else
             while(sscanf(line, "%sCONST(%s)%s", a, b, line)==3)
-              line = a+find_constants(b)+line;
+              line = a+find_constants(b,lines[progname+last_function]||progname)+line;
           if(!docs[progname+last_function])
             docs[progname+last_function] = line;
           else
