@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.9 1998/04/06 02:37:00 mirar Exp $");
+RCSID("$Id: png.c,v 1.10 1998/04/06 04:37:31 hubbe Exp $");
 
 #include "config.h"
 
@@ -1523,49 +1523,50 @@ void exit_image_png(void)
    free_string(param_bpp);
    free_string(param_background);
    free_string(param_type);
+   free_svalue(&gz_crc32);
+
+   if(gz_inflate)
+     free_program(gz_inflate);
+
+   if(gz_deflate)
+     free_program(gz_deflate);
 }
 
 struct object *init_image_png(void)
 {
    start_new_program();
 
-   push_string(make_shared_string("Gz"));
+   push_text("Gz");
    push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
    if (sp[-1].type==T_OBJECT) 
    {
-      push_string(make_shared_string("deflate"));
-      f_index(2);
-      gz_deflate=program_from_svalue(sp-1);
-   }
-   pop_n_elems(1);
+     stack_dup();
+     push_text("inflate");
+     f_index(2);
+     gz_inflate=program_from_svalue(sp-1);
+     gz_inflate->refs++;
+     pop_stack();
 
-   push_string(make_shared_string("Gz"));
-   push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT) 
-   {
-      push_string(make_shared_string("inflate"));
-      f_index(2);
-      gz_inflate=program_from_svalue(sp-1);
-   }
-   pop_n_elems(1);
+     stack_dup();
+     push_text("deflate");
+     f_index(2);
+     gz_deflate=program_from_svalue(sp-1);
+     gz_deflate->refs++;
+     pop_stack();
 
-   push_string(make_shared_string("Gz"));
-   push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT) 
-   {
-      push_string(make_shared_string("crc32"));
-      f_index(2);
-      gz_crc32=sp[-1];
-      sp--;
+     stack_dup();
+     push_text("crc32");
+     f_index(2);
+     gz_crc32=sp[-1];
+     sp--;
+   }else{
+     gz_crc32.type=T_INT;
    }
-   else gz_crc32.type=T_INT;
-   pop_n_elems(1);
+   pop_stack();
 
-   if (gz_deflate && gz_inflate &&
-       gz_crc32.type!=T_INT)
+
+   if (gz_deflate && gz_inflate && gz_crc32.type!=T_INT)
    {
       add_function("_chunk",image_png__chunk,
 		   "function(string,string:string)",
