@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.127 2000/06/24 00:48:13 hubbe Exp $");
+RCSID("$Id: object.c,v 1.128 2000/07/02 02:27:20 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -671,7 +671,8 @@ void schedule_really_free_object(struct object *o)
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE &&
+      o->next != o) {
     /* It's easier for the gc if we just leave the object around for
      * it to find and handle. */
 #ifdef GC_VERBOSE
@@ -729,6 +730,12 @@ void schedule_really_free_object(struct object *o)
       fprintf(stderr, "|   Freeing storage for %p.\n", o);
 #endif
 
+    if (o->next == o)
+      /* It's a fake object which isn't counted by the gc, so
+       * counteract the num_objects-- done by GC_FREE. */
+      num_objects++;
+    GC_FREE();
+
     FREE_PROT(o);
 
     if(o->storage)
@@ -737,8 +744,6 @@ void schedule_really_free_object(struct object *o)
       o->storage=0;
     }
     really_free_object(o);
-
-    GC_FREE();
   }
 }
 
@@ -1276,6 +1281,10 @@ static void low_gc_cycle_check_object(struct object *o)
     if (!o2) fatal("Object not on gc_internal_object list.\n");
 #endif
 
+    /* This must be first. */
+    if(o->parent)
+      gc_cycle_check_object_strong(o->parent);
+
     LOW_PUSH_FRAME(o);
 
     for(e=p->num_inherits-1; e>=0; e--)
@@ -1313,10 +1322,6 @@ static void low_gc_cycle_check_object(struct object *o)
     }
     
     LOW_POP_FRAME();
-
-    /* This must be last. */
-    if(o->parent)
-      gc_cycle_check_object_strong(o->parent);
   }
 }
 
