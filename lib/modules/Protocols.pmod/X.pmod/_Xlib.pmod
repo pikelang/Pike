@@ -162,3 +162,13 @@ array(string) error_codes =
   "Length",		/* Request length incorrect */
   "Implementation"	/* server is defective */
 });
+
+array(string) visual_classes =
+({
+  "StaticGray",
+  "GrayScale",
+  "StaticColor",
+  "PseudoColor",
+  "TrueColor",
+  "DirectColor",
+});

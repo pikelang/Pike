@@ -51,11 +51,13 @@ class Shape
 
   void ShapeRectangles( object window, int xo, int yo,
 			string kind, string operation,
-			array (object) rectangles )
+			object(Types.Rectangle)|
+			array(object(Types.Rectangle)) rectangles )
   {
     int k = shape_kind[kind];
     int o = shape_op[operation];
-    string rects = (rectangles->to_string())*"";
+    string rects = (objectp(rectangles)?rectangles->to_string():
+		    (rectangles->to_string())*"");
 
     object req = Requests.ExtensionRequest( major, 0, 0 );
     req->code = 1;

@@ -22,6 +22,8 @@ class Visual
 {
   inherit XResource;
 
+  int depth;
+
   int c_class;
   int bitsPerRGB;
   int colorMapEntries;
@@ -121,9 +123,9 @@ class Colormap
     req->blue = b;
 
     array a = display->blocking_request( req );
-    return a[0] && (alloced[sprintf("%2c%2c%2c", r, g, b)]=
-		    a[1]);
+    return a[0] && (alloced[sprintf("%2c%2c%2c", r, g, b)]=a[1]);
   }
+
 
   void create(object disp, int i, object vis)
   {
@@ -583,6 +585,12 @@ class Window
   void ShapeMask( string kind, int xo, int yo, string operation,
 		  object (Pixmap) mask )
   {
+    if(kind == "both")
+    {
+      ShapeMask( "clip", xo, yo, operation, mask);
+      ShapeMask( "bounding", xo, yo, operation, mask);
+      return;
+    }
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
     display->extensions["SHAPE"]->
@@ -591,6 +599,12 @@ class Window
 
   void ShapeOffset( string kind, int xo, int yo )
   {
+    if(kind == "both")
+    {
+      ShapeOffset( "clip", xo, yo );
+      ShapeOffset( "bounding", xo, yo );
+      return;
+    }
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
     display->extensions["SHAPE"]->ShapeOffset( this_object(), kind, xo, yo );

@@ -113,6 +113,11 @@ class Display
   inherit id_manager;
   inherit Atom.atom_manager;
   
+
+  
+  void close_callback(mixed id);
+  void read_callback(mixed id, string data);
+
   // FIXME! Should use some sort of (global) db.
   mapping compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
   
@@ -211,9 +216,7 @@ class Display
   /* This function leaves the socket in blocking mode */
   int flush()
   { /* FIXME: Not thread-safe */
-    //     trace(5);
     set_blocking();
-
     int written = write(buffer);
     if (written < strlen(buffer))
       return 0;
@@ -234,7 +237,7 @@ class Display
     int wid;
     object w;
 
-    werror(sprintf("Event: %s\n", event->type));
+//     werror(sprintf("Event: %s\n", event->type));
     if (event->wid && (w = lookup_id(event->wid))
 	&& ((w->event_callbacks["_"+event->type])
 	    ||(w->event_callbacks[event->type])))
@@ -359,6 +362,7 @@ class Display
 		      {
 			int visualID = struct->get_uint(4);
 			object v = Types.Visual(this_object(), visualID);
+			v->depth = depth;
 			v->c_class = struct->get_uint(1);
 			v->bitsPerRGB = struct->get_uint(1);
 			v->colorMapEntries = struct->get_uint(2);
@@ -620,7 +624,6 @@ class Display
 	break;
       }
   }
-  
   void read_callback(mixed id, string data)
   {
     // werror(sprintf("Xlib: received '%s'\n", data));
@@ -650,7 +653,7 @@ class Display
       handle_action(a);
     set_nonblocking(read_callback, write_callback, close_callback);
   }
-
+	  
   int open(string|void display)
   {
     int async = !!connect_handler;
@@ -712,6 +715,7 @@ class Display
 	if (!connect(host, port))
 	  return 0;
       }
+
     set_buffer( 65536 );
 
     screen_number = (int) fields[2];
@@ -756,7 +760,6 @@ class Display
 	      get_keyboard_mapping();
 	      set_nonblocking(read_callback, write_callback, close_callback);
 	      return 1;
-	      break;
 	    case ACTION_CONNECT_FAILED:
 	      werror("Connection failed: "+a[1]+"\n");
 	      return 0;
@@ -813,10 +816,12 @@ class Display
 	    pending_actions->put(a);
 	  }
       }
+
     if (!pending_actions->is_empty())
       call_out(process_pending_actions, 0);
     else
       set_nonblocking(read_callback,write_callback,close_callback);
+
     return ({ success, result });
   }
   
