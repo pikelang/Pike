@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.55 2001/07/02 11:21:09 grubba Exp $
+ * $Id: builtin.cmod,v 1.56 2001/07/02 11:38:01 grubba Exp $
  */
 
 #include "global.h"
@@ -55,7 +55,7 @@ PIKEFUN string basetype(mixed x)
 	pop_stack();
 	return;
       } else if (IS_ZERO(Pike_sp-1)) {
-	pop_stack();
+	pop_n_elems(2);
 	push_constant_text("object");
 	return;
       } else {
