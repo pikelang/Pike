@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.85 2002/08/14 19:45:29 nilsson Exp $
+# $Id: Makefile,v 1.86 2002/08/16 18:24:46 bill Exp $
 #
 # Meta Makefile
 #
@@ -239,6 +239,18 @@ bin_export:
 feature_list:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
 
+solaris_pkg_configure:
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--prefix=/opt $(CONFIGUREARGS)" \
+	  "METATARGET=configure"
+
+solaris_pkg: solaris_pkg_configure bin/pike
+	@test -d "${BUILDDIR}/solaris_pkg_build" || mkdir "${BUILDDIR}/solaris_pkg_build"
+	@cd "${BUILDDIR}" && $(MAKE) \
+		"buildroot=solaris_pkg_build/" \
+		install
+	@bin/pike bin/make_solaris_pkg.pike --prefix="/opt" --installroot="`pwd`/${BUILDDIR}/solaris_pkg_build"  --pkgdest="`pwd`"
+	@test -d "${BUILDDIR}/solaris_pkg_build" && rm -rf "${BUILDDIR}/solaris_pkg_build"
+	@ls -l *pkg
 xenofarm:
 	test -d build || mkdir build
 	-rm -rf build/xenofarm
