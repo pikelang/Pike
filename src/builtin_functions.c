@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.19 1997/01/17 19:08:25 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.20 1997/01/18 21:34:32 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -28,6 +28,7 @@ RCSID("$Id: builtin_functions.c,v 1.19 1997/01/17 19:08:25 hubbe Exp $");
 #include "memory.h"
 #include "threads.h"
 #include "time_stuff.h"
+#include "version.h"
 #include <math.h>
 #include <ctype.h>
 
@@ -1569,10 +1570,44 @@ void f__prev(INT32 args)
   }
 }
 
+void f__refs(INT32 args)
+{
+  INT32 i;
+  if(!args) error("Too few arguments to _refs()\n");
+  if(sp[-args].type > MAX_REF_TYPE)
+    error("Bad argument 1 to _refs()\n");
+
+  i=sp[-args].u.refs[0];
+  pop_n_elems(args);
+  push_int(i);
+}
+
+void f_replace_master(INT32 args)
+{
+  if(!args)
+    error("Too few arguments to replace_master()\n");
+  if(sp[-args].type != T_OBJECT)
+    error("Bad argument 1 to replace_master()\n"); 
+ if(!sp[-args].u.object->prog)
+    error("replace_master() called with destructed object.\n");
+    
+  free_object(master_object);
+  master_object=sp[-args].u.object;
+  master_object->refs++;
+
+  free_program(master_program);
+  master_program=master_object->prog;
+  master_program->refs++;
+
+  pop_n_elems(args);
+}
+
 void init_builtin_efuns()
 {
   init_operators();
   
+  add_efun("_refs",f__refs,"function(string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
   add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
   add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
   add_efun("aggregate_multiset",f_aggregate_multiset,"function(mixed ...:multiset)",OPT_TRY_OPTIMIZE);
@@ -1644,5 +1679,6 @@ void init_builtin_efuns()
 #ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
 #endif
+  add_efun("version", f_version, "function(:string)", 0);
 }
 

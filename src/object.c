@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.9 1997/01/18 04:44:40 hubbe Exp $");
+RCSID("$Id: object.c,v 1.10 1997/01/18 21:34:33 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -21,6 +21,7 @@ RCSID("$Id: object.c,v 1.9 1997/01/18 04:44:40 hubbe Exp $");
 #include "callback.h"
 
 struct object *master_object = 0;
+struct program *master_program =0;
 struct object *first_object;
 
 struct object fake_object = { 1 }; /* start with one reference */
@@ -32,7 +33,7 @@ void setup_fake_object()
   fake_object.refs=0xffffff;
 }
 
-struct object *clone(struct program *p, int args)
+static struct object *low_clone(struct program *p)
 {
   int e;
   struct object *o;
@@ -99,25 +100,23 @@ struct object *clone(struct program *p, int args)
   free_object(frame.current_object);
   fp = frame.parent_frame;
 
-  if(!master_object) 
-  {
-    master_object=o;
-    o->refs++;
-  }
+  return o;
+}
+
+struct object *clone(struct program *p, int args)
+{
+  struct object *o=low_clone(p);
 
   apply_lfun(o,LFUN___INIT,0);
   pop_stack();
   apply_lfun(o,LFUN_CREATE,args);
   pop_stack();
-
   return o;
 }
-
 
 struct object *get_master()
 {
   extern char *master_file;
-  struct program *master_prog;
   struct pike_string *master_name;
   static int inside=0;
 
@@ -133,12 +132,21 @@ struct object *get_master()
   }
 
   inside = 1;
-  master_name=make_shared_string(master_file);
-  master_prog=compile_file(master_name);
-  free_string(master_name);
-  if(!master_prog) return 0;
-  free_object(clone(master_prog,0));
-  free_program(master_prog);
+
+  if(!master_program)
+  {
+    master_name=make_shared_string(master_file);
+    master_program=compile_file(master_name);
+    free_string(master_name);
+    if(!master_program) return 0;
+  }
+  master_object=clone(master_program,0);
+
+  apply_lfun(master_object,LFUN___INIT,0);
+  pop_stack();
+  apply_lfun(master_object,LFUN_CREATE,0);
+  pop_stack();
+  
   inside = 0;
   return master_object;
 }
@@ -690,6 +698,8 @@ void cleanup_objects()
 
   free_object(master_object);
   master_object=0;
+  free_program(master_program);
+  master_program=0;
 }
 
 struct array *object_indices(struct object *o)
