@@ -53,7 +53,7 @@ class protocol
 
   int command(string cmd)
   {
-    news::write(cmd+"\n");
+    news::write(cmd+"\r\n");
     return readreturncode();
   }
 
