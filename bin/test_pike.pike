@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.105 2004/08/31 15:54:22 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.106 2004/10/22 13:10:01 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -474,8 +474,15 @@ int main(int argc, array(string) argv)
 	     (sscanf(results, "%*stotal tests:%d", total) != 2) +
 	     (sscanf(results, "%*s(%d tests skipped)", skip) != 2)) == 3) {
 	  // Failed to parse the result totally.
-	  werror("Failed to parse subresult for testsuite %O (exitcode:%d):\n"
-		 "%O", testsuite, err, raw_results);
+	  if (err == -1) {
+	    werror("Failed to parse subresult for testsuite %O "
+		   "(died of signal %d).\n"
+		   "%O", testsuite, pid->last_signal(), raw_results);
+	  } else {
+	    werror("Failed to parse subresult for testsuite %O "
+		   "(exitcode:%d):\n"
+		   "%O", testsuite, err, raw_results);
+	  }
 	  errors++;
 	} else {
 	  werror("Subresult: %d tests, %d failed, %d skipped\n",
@@ -483,6 +490,8 @@ int main(int argc, array(string) argv)
 	  errors += failed;
 	  successes += total - failed;
 	  skipped += skip;
+	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
+		 successes + errors, errors, skipped);
 	}
 	if (fail && errors) {
 	  exit(1);
