@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.123 2001/10/03 22:22:20 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.124 2001/11/12 15:37:31 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -937,14 +937,15 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
       }
     }
 
+    md->val_types = val_types;
+    md->ind_types = ind_types;
+
     if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
     {
       debug_malloc_touch(m);
       rehash(m, MAP_SLOTS(md->size));
     }
 
-    md->val_types = val_types;
-    md->ind_types = ind_types;
 #ifdef PIKE_DEBUG
     if(d_flag>1)  check_mapping(m);
 #endif
