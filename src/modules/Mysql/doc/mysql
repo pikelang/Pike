@@ -102,7 +102,7 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	int|object(Mysql_result) mysql->query(string q);
+	int|object(Mysql.mysql_result) mysql->query(string q);
 
 DESCRIPTION
 	This function sends an SQL query to the Mysql-server. The result
@@ -196,7 +196,7 @@ EXAMPLE
 
 	int main()
 	{
-	  write(Mysql()->statistics());
+	  write(mysql()->statistics());
 	  return(0);
 	}
 
