@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.112 1999/03/07 17:46:36 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.113 1999/03/07 17:54:27 neotron Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2624,7 +2624,7 @@ static RETSIGTYPE fatal_signal(int signum)
 void init_signals(void)
 {
   int e;
-
+  THREAD_T dummy;
 #ifdef USE_SIGCHLD
   my_signal(SIGCHLD, receive_sigchild);
 #endif
@@ -2632,7 +2632,7 @@ void init_signals(void)
 #ifdef USE_WAIT_THREAD
   co_init(& process_status_change);
   co_init(& start_wait_thread);
-  th_create_small(0,wait_thread,0);
+  th_create_small(&dummy,wait_thread,0);
 #endif
 
 #ifdef SIGPIPE
