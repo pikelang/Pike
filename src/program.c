@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.290 2001/02/05 11:47:47 per Exp $");
+RCSID("$Id: program.c,v 1.291 2001/02/05 14:37:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -123,7 +123,7 @@ char *lfun_names[] = {
   "_is_type",
   "_sprintf",
   "_equal",
-  "_m_delte",
+  "_m_delete",
 };
 
 /* mapping(string:type) */
