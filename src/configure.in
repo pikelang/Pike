@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.47 1997/01/26 23:46:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.48 1997/01/27 01:10:29 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -21,7 +21,6 @@ else
 fi
 
 AC_PROG_CC
-AC_C_CROSS
 
 AC_ARG_WITH(gdbm,    [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,     [  --without-gmp          no Support bignums])
@@ -73,7 +72,7 @@ if test $cflags_is_set = no; then
   AC_CACHE_VAL(pike_cv_option_fast,
   [
     CFLAGS="$OLD_CFLAGS -fast"
-    AC_TRY_LINK([],[ exit(0); ],pike_cv_option_fast=yes,pike_cv_option_fast=no)
+    AC_TRY_COMPILE([],[],pike_cv_option_fast=yes,pike_cv_option_fast=no)
   ])
   
   CFLAGS="$OLD_CFLAGS"
@@ -91,7 +90,7 @@ if test $cflags_is_set = no; then
         AC_CACHE_VAL(pike_cv_option_opt,
         [
           CFLAGS="$OLD_CFLAGS -O"
-          AC_TRY_LINK([],[ exit(0); ],pike_cv_option_opt=yes,pike_cv_option_opt=no)
+          AC_TRY_COMPILE([],[],pike_cv_option_opt=yes,pike_cv_option_opt=no)
         ])
       
         if test "$pike_cv_option_opt" = "yes" ; then
@@ -118,7 +117,7 @@ if test "$GCC" = "yes"; then
     CFLAGS="$CFLAGS -pipe"
     AC_CACHE_VAL(pike_cv_option_pipe,
     [
-      AC_TRY_LINK([],[ exit(0); ],pike_cv_option_pipe=yes,pike_cv_option_pipe=no)
+      AC_TRY_COMPILE([],[],pike_cv_option_pipe=yes,pike_cv_option_pipe=no)
     ])
 
     if test "$pike_cv_option_pipe" = "yes" ; then
@@ -133,14 +132,14 @@ else
 # Special hack for HP-UX stupid cc
 #
   if test "$pike_cv_sys_os" = "HP-UX"; then
-    AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],
+    AC_TRY_COMPILE([int foo(int bar);],[],[],
     [
       OLD_CC="${CC-cc}"
       if test "$CC" = "cc" -a -x /usr/bin/cc ; then
         CC=/usr/bin/cc
       fi
       CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
-      AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
+      AC_TRY_COMPILE([int foo(int bar);],[],[],[CC="$OLD_CC"])
     ])
   fi
 fi
@@ -152,19 +151,19 @@ AC_CACHE_VAL(pike_cv_ld_accepts_r,
   pike_cv_ld_accepts_r=yes
   
   for test_path in . .. /lib /usr/lib .:.. /lib:/usr/lib; do
-    if test x$ac_cv_prog_gcc ; then
+    if test x${GCC-} = xyes ; then
       #
       # On Linux -R apparently causes gcc to warn, but it doesn't fail,
       # so we force the -R option to the linker.
       #
       LDFLAGS="$OLD_LDFLAGS -Xlinker -R$test_path"
-      AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no; break ])
+      AC_TRY_COMPILE([],[],[],[ pike_cv_ld_accepts_r=no; break ])
     else
       :
     fi
 
     LDFLAGS="$OLD_LDFLAGS -R$test_path"
-    AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no; break ])
+    AC_TRY_COMPILE([],[],[],[ pike_cv_ld_accepts_r=no; break ])
   done
   LDFLAGS="$OLD_LDFLAGS"
 ])
@@ -219,7 +218,7 @@ fi
 AC_MSG_CHECKING(ansi prototype capability)
 AC_CACHE_VAL(pike_cv_sys_ansi_prototypes,
 [
-  AC_TRY_LINK([int foo(int bar);],[ exit(0); ],
+  AC_TRY_COMPILE([int foo(int bar);],[],
   [pike_cv_sys_ansi_prototypes=yes],
   [pike_cv_sys_ansi_prototypes=no])
 ])
@@ -405,7 +404,6 @@ fi
 ########################################################################
 
 if test x$with_threads = xyes ; then
-
   OLDLIBS="$LIBS"
 
   AC_MSG_CHECKING(unix threads)
@@ -420,7 +418,6 @@ if test x$with_threads = xyes ; then
 #define _REENTRANT
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS
-
 #include <thread.h>
 
 void *foo(void *bar) { return ; }
@@ -672,7 +669,7 @@ AC_MSG_RESULT($pike_cv_func_gettimeofday_has_two_args)
 AC_MSG_CHECKING(if struct tm has tm_gmtoff)
 
 AC_CACHE_VAL(pike_cv_struct_tm_has_gmtoff,[
-AC_TRY_LINK([
+AC_TRY_COMPILE([
 #ifdef TM_IN_SYS_TIME
 #include <sys/time.h>
 #endif
@@ -735,7 +732,7 @@ MY_CHECK_HEADERS(gethostname,unistd.h)
 
 AC_MSG_CHECKING(return type of free)
 AC_CACHE_VAL(pike_cv_sys_free_return,
-[AC_TRY_LINK([
+[AC_TRY_COMPILE([
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -768,7 +765,7 @@ fi
 AC_MSG_CHECKING([void* or char* from malloc])
 AC_CACHE_VAL(pike_cv_sys_malloc_return,
 [
-AC_TRY_LINK([
+AC_TRY_COMPILE([
 #include <sys/types.h>
 
 #ifdef HAVE_STDLIB_H
@@ -811,7 +808,7 @@ case "$LIBOBJS" in
     AC_MSG_CHECKING(no of arguments to ualarm)
     AC_CACHE_VAL(pike_cv_ualarm_takes_two_args,
     [
-      AC_TRY_LINK([
+      AC_TRY_COMPILE([
       #include <unistd.h>
       ],[
       ualarm(0,0);
@@ -1139,7 +1136,7 @@ fi
 AC_MSG_CHECKING(getrusage() through procfs)
 AC_CACHE_VAL(pike_cv_getrusage_procfs,
 [
-AC_TRY_LINK([
+AC_TRY_COMPILE([
 #include <sys/procfs.h>
 #include <sys/fcntl.h>
 int proc_fd;
@@ -1188,7 +1185,7 @@ fi
 AC_MSG_CHECKING(checking for volatile)
 AC_CACHE_VAL(pike_cv_volatile,
 [
- AC_TRY_LINK([],[ volatile int foo=1;], pike_cv_volatile=yes,pike_cv_volatile=no)
+ AC_TRY_COMPILE([],[ volatile int foo=1;], pike_cv_volatile=yes,pike_cv_volatile=no)
 ])
 
 if test "$pike_cv_volatile" = yes; then
