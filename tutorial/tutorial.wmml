@@ -3887,7 +3887,7 @@ int seek(int <I>pos</I>);<br>
 <man_description>
 Seek to a position in a file, if pos is less than zero, seek to
 position pos relative end of file. Returns -1 for failure, or
-the old position in the file when successful.
+the new position in the file when successful.
 </man_description>
 <man_see>Stdio.File-&gt;tell</man_see>
 </method>
