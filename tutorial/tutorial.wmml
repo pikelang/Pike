@@ -4984,7 +4984,7 @@ Append the string <i>str</i> onto the file <i>file</i>. Returns number of bytes 
 
 </section>
 
-<section title="Simple example">
+<section title="A simple example">
 
 Here is a simple example of how to use the Stdio-functions.
 <p>
