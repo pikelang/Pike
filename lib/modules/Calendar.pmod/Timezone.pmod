@@ -641,7 +641,7 @@ class Runtime_timezone_compiler
 
 	 array sr=({});
 
-	 int mn=min(@indices(rules-(<NUL_YEAR>)));
+	 int mn=min(@indices(rules)-({NUL_YEAR}));
 	 int firstyear=99999,lastyear=0;
 
 	 for (y=INF_YEAR;sizeof(r2);y--)
