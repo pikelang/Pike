@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.76 1998/04/10 22:24:21 hubbe Exp $");
+RCSID("$Id: program.c,v 1.77 1998/04/13 14:28:24 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -393,6 +393,24 @@ void fixate_program(void)
 }
 
 /*
+ * Error handler.
+ *
+ * This function should not normally be called,
+ * but is here for safety reasons.
+ */
+void restore_threads_disabled(void *arg)
+{
+  fprintf(stderr, "restore_threads_disabled(): threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth);
+#ifdef DEBUG
+  fatal("restore_threads_disabled() called\n");
+#endif /* DEBUG */
+
+  if (threads_disabled)
+    threads_disabled--;
+  co_signal(&threads_disabled_change);
+}
+
+/*
  * Start building a new program
  */
 void low_start_new_program(struct program *p,
@@ -403,6 +421,8 @@ void low_start_new_program(struct program *p,
 
   threads_disabled++;
   compilation_depth++;
+
+  /* fprintf(stderr, "low_start_new_program(): compilation_depth:%d\n", compilation_depth); */
 
   if(!p)
   {
@@ -510,6 +530,7 @@ void low_start_new_program(struct program *p,
 
 void start_new_program(void)
 {
+  /* fprintf(stderr, "start_new_program(): threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
   low_start_new_program(0,0,0);
 }
 
@@ -837,6 +858,9 @@ struct program *end_first_pass(int finish)
   compilation_depth--;
   threads_disabled--;
   co_signal(&threads_disabled_change);
+
+  /* fprintf(stderr, "end_first_pass(): compilation_depth:%d\n", compilation_depth); */
+
   free_all_nodes();
   return prog;
 }
@@ -1889,10 +1913,10 @@ static int get_small_number(char **q)
 void start_line_numbering(void)
 {
   if(last_file)
-    {
-      free_string(last_file);
-      last_file=0;
-    }
+  {
+    free_string(last_file);
+    last_file=0;
+  }
   last_pc=last_line=0;
 }
 
@@ -2004,6 +2028,7 @@ struct program *compile(struct pike_string *prog)
   struct lex save_lex;
   int save_depth=compilation_depth;
   void yyparse(void);
+  ONERROR just_in_case;
 
   save_lex=lex;
 
@@ -2011,6 +2036,11 @@ struct program *compile(struct pike_string *prog)
   lex.current_line=1;
   lex.current_file=make_shared_string("-");
   lex.pragmas=0;
+
+  threads_disabled++;
+  SET_ONERROR(just_in_case, restore_threads_disabled, NULL);
+
+  /* fprintf(stderr, "compile() Enter: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
 
   start_new_program();
   compilation_depth=0;
@@ -2034,6 +2064,11 @@ struct program *compile(struct pike_string *prog)
     p=end_program();
   }
 
+  threads_disabled--;
+  fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth);
+  co_signal(&threads_disabled_change);
+
+  UNSET_ONERROR(just_in_case);
 
   free_string(lex.current_file);
   lex=save_lex;
