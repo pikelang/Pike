@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.39 1997/08/26 23:24:45 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.40 1997/08/27 02:39:17 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -410,6 +410,9 @@ static char *combine_path(char *cwd,char *file)
   }
 
   from=to=ret;
+
+  /* Skip all leading "./" */
+  while(from[0]=='.' && from[1]=='/') from+=2;
   
   while(( *to = *from ))
   {
@@ -423,22 +426,26 @@ static char *combine_path(char *cwd,char *file)
 	case '.':
 	  if(from[3] == '/' || from[3] == 0)
 	  {
+	    char *tmp=to;
+	    while(--tmp>=ret)
+	      if(*tmp == '/')
+		break;
+
+	    if(tmp[1]=='.' && tmp[2]=='.' && (tmp[3]=='/' || !tmp[3]))
+	      break;
+	    
 	    from+=3;
-	    if(to != ret)
+	    to=tmp;
+	    if(to<ret)
 	    {
-	      for(--to;*to!='/' && to>ret;to--);
+	      to++;
+	      if(*from) from++;
 	    }
-	    if(!*from && to==ret && *to=='/') to++;
 	    continue;
 	  }
 	  break;
 
 	case 0:
-	  if (to == ret) {
-	    /* Special case, so we don't get an empty string */
-	    to++;
-	  }
-	  /* FALL_THROUGH */
 	case '/':
 	  from+=2;
 	  continue;
@@ -447,6 +454,17 @@ static char *combine_path(char *cwd,char *file)
     }
     from++;
     to++;
+  }
+  if(!*ret)
+  {
+    if(*cwd=='/')
+    {
+      ret[0]='/';
+      ret[1]=0;
+    }else{
+      ret[0]='.';
+      ret[1]=0;
+    }
   }
 
   if(my_cwd) free(my_cwd);
