@@ -8,11 +8,27 @@ AC_SUBST_FILE(dynamic_module_makefile)
 if test -f ../dynamic_module_makefile; then
   dynamic_module_makefile=../dynamic_module_makefile
 else
-  dynamic_module_makefile=$srcdir/dynamic_module_makefile
+  if test -f ../../dynamic_module_makefile; then
+    dynamic_module_makefile=../../dynamic_module_makefile
+  else
+    if test -f $srcdir/../dynamic_module_makefile; then
+      dynamic_module_makefile=$srcdir/../dynamic_module_makefile
+    else
+      dynamic_module_makefile=$srcdir/dynamic_module_makefile
+    fi
+  fi
 fi
 AC_SUBST_FILE(static_module_makefile)
 if test -f ../static_module_makefile; then
   static_module_makefile=../static_module_makefile
 else
-  static_module_makefile=$srcdir/static_module_makefile
+  if test -f ../../static_module_makefile; then
+    static_module_makefile=../../static_module_makefile
+  else
+    if test -f $srcdir/../static_module_makefile; then
+      static_module_makefile=$srcdir/../static_module_makefile
+    else
+      static_module_makefile=$srcdir/static_module_makefile
+    fi
+  fi
 fi
