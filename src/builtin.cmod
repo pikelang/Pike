@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.165 2004/09/14 15:09:46 grubba Exp $
+|| $Id: builtin.cmod,v 1.166 2004/09/14 15:26:08 grubba Exp $
 */
 
 #include "global.h"
@@ -3256,10 +3256,21 @@ PIKECLASS List
 
     EXIT
     {
+      struct external_variable_context loc;
+      struct List_struct *parent;
       if (THIS->cur) {
 	free_list_node(THIS->cur);
 	THIS->cur = NULL;
       }
+
+      /* Find our parent. */
+      loc.o = Pike_fp->current_object;
+      loc.parent_identifier = Pike_fp->fun;
+      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+      find_external_context(&loc, 1);
+      parent = (struct List_struct *)(loc.o->storage +
+				      loc.inherit->storage_offset);
+      parent->num_iterators--;
     }
 
     /* Called at gc_check time. */
