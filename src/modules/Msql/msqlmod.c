@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.26 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: msqlmod.c,v 1.27 2005/03/22 10:56:48 grubba Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -959,113 +959,116 @@ static void do_list_index (INT32 args)
 
 PIKE_MODULE_INIT
 {
-	start_new_program();
-	ADD_STORAGE(struct msql_my_data);
+  start_new_program();
+  ADD_STORAGE(struct msql_my_data);
 
-	set_init_callback (msql_object_created);
-	set_exit_callback (msql_object_destroyed);
+  set_init_callback (msql_object_created);
+  set_exit_callback (msql_object_destroyed);
 
-	/* function(void|string,void|string,void|string,void|string:void) */
-  ADD_FUNCTION("create",msql_mod_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid),
-			OPT_EXTERNAL_DEPEND);
-	/* 1st arg: hostname or "localhost", 2nd arg: dbname or nothing 
-	 * CAN raise exception if there is no server listening, or no database
-	 * To connect using the UNIX socket instead of a localfunction use the
-	 * hostname "localhost", or use no argument. It will use UNIX sockets.
-	 * Third and fourth argument are currently ignored, since mSQL doesn't
-	 * support user/passwd authorization. The user will be the owner of
-	 * the current process.
-	 * The first argument can have the format "hostname:port". Since mSQL
-	 * doesn't support nonstandard ports, that portion is silently ignored,
-	 * and is provided only for generic-interface compliancy
-	 */
+  /* function(void|string,void|string,void|string,void|string:void) */
+  ADD_FUNCTION("create", msql_mod_create,
+	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr)
+		     tOr(tVoid,tStr),tVoid), 0);
 
-	/* function(string:void) */
-  ADD_FUNCTION("select_db",select_db,tFunc(tStr,tVoid),
-		OPT_EXTERNAL_DEPEND);
-	/* if no db was selected by connect, does it now.
-	 * CAN raise an exception if there's no such database or we haven't selected
-	 * an host.
-	 */
+  /* 1st arg: hostname or "localhost", 2nd arg: dbname or nothing 
+   * CAN raise exception if there is no server listening, or no database
+   * To connect using the UNIX socket instead of a localfunction use the
+   * hostname "localhost", or use no argument. It will use UNIX sockets.
+   * Third and fourth argument are currently ignored, since mSQL doesn't
+   * support user/passwd authorization. The user will be the owner of
+   * the current process.
+   * The first argument can have the format "hostname:port". Since mSQL
+   * doesn't support nonstandard ports, that portion is silently ignored,
+   * and is provided only for generic-interface compliancy
+   */
 
-	/* function(string:array(mapping(string:mixed))) */
-  ADD_FUNCTION("query",do_query,tFunc(tStr,tArr(tMap(tStr,tMix))),
-			OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* Gets an SQL query, and returns an array of the results, one element
-	 * for each result line, each row is a mapping with the column name as
-	 * index and the data as value.
-	 * CAN raise excaptions if there's no active database.
-	 */
+  /* function(string:void) */
+  ADD_FUNCTION("select_db", select_db, tFunc(tStr,tVoid), 0);
 
-	/* function(void|string:array(string)) */
-  ADD_FUNCTION("list_dbs",do_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)),
-		OPT_ASSIGNMENT|OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* Lists the tables contained in the selected database. */
+  /* if no db was selected by connect, does it now.
+   * CAN raise an exception if there's no such database or we haven't selected
+   * an host.
+   */
 
-	/* function(void:array(string)) */
-  ADD_FUNCTION("list_tables",do_list_tables,tFunc(tVoid,tArr(tStr)),
-		OPT_ASSIGNMENT|OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* Lists the tables contained in the selected database. */
+  /* function(string:array(mapping(string:mixed))) */
+  ADD_FUNCTION("query", do_query, tFunc(tStr,tArr(tMap(tStr,tMix))), 0);
 
-	/* function(string:mapping(string:array(mixed))) */
-  ADD_FUNCTION("list_fields", do_list_fields,tFunc(tStr,tArr(tMap(tStr,tMix))),
-		OPT_RETURN|OPT_EXTERNAL_DEPEND);
-	/* Returns information on the the fields of the given table of the current
-	  database */
+  /* Gets an SQL query, and returns an array of the results, one element
+   * for each result line, each row is a mapping with the column name as
+   * index and the data as value.
+   * CAN raise excaptions if there's no active database.
+   */
 
-	/* function(void:void|string) */
-  ADD_FUNCTION("error",do_error,tFunc(tVoid,tOr(tVoid,tStr)),
-		OPT_RETURN|OPT_EXTERNAL_DEPEND);
-	/* return the last error reported by the server. */
+  /* function(void|string:array(string)) */
+  ADD_FUNCTION("list_dbs", do_list_dbs, tFunc(tOr(tVoid,tStr),tArr(tStr)), 0);
 
-	/* function(void:string) */
-  ADD_FUNCTION("server_info", do_info,tFunc(tVoid,tStr),
-		OPT_RETURN|OPT_EXTERNAL_DEPEND);
-	/* Returns "msql/<server_version>" */
+  /* Lists the tables contained in the selected database. */
 
-	/* function(void:string) */
-  ADD_FUNCTION("host_info", do_host_info,tFunc(tVoid,tStr),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* Returns information on the connection type and such */
+  /* function(void:array(string)) */
+  ADD_FUNCTION("list_tables", do_list_tables, tFunc(tVoid,tArr(tStr)), 0);
 
-	/* function(string:void) */
-  ADD_FUNCTION("create_db", do_create_db,tFunc(tStr,tVoid),
-		OPT_EXTERNAL_DEPEND);
-	/* creates a new database with the name as argument */
+  /* Lists the tables contained in the selected database. */
 
-	/* function(string:void) */
-  ADD_FUNCTION("drop_db", do_drop_db,tFunc(tStr,tVoid),
-		OPT_EXTERNAL_DEPEND);
-	/* destroys a database and its contents */
+  /* function(string:mapping(string:array(mixed))) */
+  ADD_FUNCTION("list_fields", do_list_fields,
+	       tFunc(tStr,tArr(tMap(tStr,tMix))), 0);
 
-	/* function(void:void) */
-  ADD_FUNCTION("shutdown", do_shutdown,tFunc(tVoid,tVoid),
-			OPT_EXTERNAL_DEPEND);
-	/* Shuts the server down */
+  /* Returns information on the the fields of the given table of the current
+     database */
 
-	/* function(void:void) */
-  ADD_FUNCTION("reload_acl", do_reload_acl,tFunc(tVoid,tVoid),
-			OPT_EXTERNAL_DEPEND);
-	/* Reloads the ACL for the DBserver */
+  /* function(void:void|string) */
+  ADD_FUNCTION("error", do_error, tFunc(tVoid,tOr(tVoid,tStr)), 0);
+
+  /* return the last error reported by the server. */
+
+  /* function(void:string) */
+  ADD_FUNCTION("server_info", do_info, tFunc(tVoid,tStr), 0);
+
+  /* Returns "msql/<server_version>" */
+
+  /* function(void:string) */
+  ADD_FUNCTION("host_info", do_host_info, tFunc(tVoid,tStr), 0);
+
+  /* Returns information on the connection type and such */
+
+  /* function(string:void) */
+  ADD_FUNCTION("create_db", do_create_db, tFunc(tStr,tVoid), 0);
+
+  /* creates a new database with the name as argument */
+
+  /* function(string:void) */
+  ADD_FUNCTION("drop_db", do_drop_db, tFunc(tStr,tVoid), 0);
+
+  /* destroys a database and its contents */
+
+  /* function(void:void) */
+  ADD_FUNCTION("shutdown", do_shutdown, tFunc(tVoid,tVoid), 0);
+
+  /* Shuts the server down */
+
+  /* function(void:void) */
+  ADD_FUNCTION("reload_acl", do_reload_acl, tFunc(tVoid,tVoid), 0);
+
+  /* Reloads the ACL for the DBserver */
 
 #ifdef MSQL_VERSION_2
-	/* function(void:int) */
-  ADD_FUNCTION("affected_rows", do_affected_rows,tFunc(tVoid,tInt),
-		OPT_RETURN|OPT_EXTERNAL_DEPEND);
-	/* Returns the number of rows 'touched' by last query */
+  /* function(void:int) */
+  ADD_FUNCTION("affected_rows", do_affected_rows, tFunc(tVoid,tInt), 0);
 
-	/* function(string,string:array) */
-  ADD_FUNCTION("list_index", do_list_index,tFunc(tStr tStr,tArray),
-			OPT_EXTERNAL_DEPEND);
-	/* Returns the index structure on the specified table */
+  /* Returns the number of rows 'touched' by last query */
+
+  /* function(string,string:array) */
+  ADD_FUNCTION("list_index", do_list_index, tFunc(tStr tStr,tArray), 0);
+
+  /* Returns the index structure on the specified table */
 #endif
 
-	end_class("msql",0);
+  end_class("msql",0);
 
-	/* Versioning information, to be obtained as "Msql.version". Mainly a
-	 * convenience for RCS
-	 */
-	add_string_constant("version",MSQLMOD_VERSION,0);
+  /* Versioning information, to be obtained as "Msql.version". Mainly a
+   * convenience for RCS
+   */
+  add_string_constant("version",MSQLMOD_VERSION,0);
 }
 
 #else /*HAVE_MSQL*/
