@@ -2,16 +2,18 @@ Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
 o Stdio.*
-  Stdio.cp can now works recursively in a directory tree
-  Stdio.cp now keep permissions when copying
-  Added Stdio.recursive_mv which work on every OS and when destination isn't 
-  on the same filesystem as the source
+  Stdio.cp can now work recursively in a directory tree.
+  Stdio.cp now keeps permissions when copying.
+  Added Stdio.recursive_mv which works on every OS and also when the
+  destination isn't on the same filesystem as the source.
 
 o Process.popen
    Process.popen is now able to run in nonblocking mode. If a second
-   argument is provided a file object will be opened witht that mode
-   and return, enabling for two way communication with the new
-   process.
+   argument is provided a file object will be opened with that mode
+   and return, enabling two way communication with the new process.
+
+o bin/precompile.pike
+   Voidable pointer types are no longer promoted to mixed.
 
 o PIKE_PORTABLE_BYTECODE
    --with-portable-bytecode is now the default. Pike programs that have
