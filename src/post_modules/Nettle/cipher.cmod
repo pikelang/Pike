@@ -1,9 +1,10 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.21 2003/11/28 01:17:32 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.22 2003/11/29 00:11:08 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
+#include "array.h"
 
 /* For this_object() */
 #include "object.h"
@@ -101,7 +102,7 @@ PIKECLASS CipherInfo
       if (!THIS->meta)
 	Pike_error("CipherInfo not properly initialized.\n");
 
-      push_string(make_shared_string(THIS->meta->name));
+      push_text(THIS->meta->name);
     }
 
   /*! @decl string key_size(void)
@@ -691,7 +692,6 @@ PIKECLASS DES3_Info
 	CipherInfo->meta = &pike_des3;
     }
 
-#ifdef WORK_IN_PROGRESS
   /*! @decl string fix_parity(string key)
    *! Sets the last bit in every byte in @[key] to reflect the parity.
    *! If a 21 byte key is used, it will be expanded into 24
@@ -700,7 +700,7 @@ PIKECLASS DES3_Info
    */
   PIKEFUN string fix_parity(string key)
   {
-    int i;
+    INT32 i;
     struct array *arr;
     struct svalue *s;
 
@@ -719,16 +719,15 @@ PIKECLASS DES3_Info
 
     /* fix_parity for every subkey */
     for(i=0; i<3; i++) {
-      array_index(s, arr, i);
-      push_svalue(s);
+      push_int(0);
+      array_index(&Pike_sp[-1], arr, i);
       f_DES_Info_fix_parity(1);
     }
-    free(arr);
+    free_array(arr);
 
     /* Join the subkeys */
     f_add(3);
   }
-#endif
 }
 
 /*! @endclass DES3_Info */
@@ -753,7 +752,6 @@ PIKECLASS DES3_State
       state->ctx = &THIS->des3;
     }
 
-#ifdef WORK_IN_PROGRESS
   PIKEFUN string make_key()
   {
     struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
@@ -773,7 +771,6 @@ PIKECLASS DES3_State
     state->crypt = info->meta->encrypt;
     state->key_size = Pike_sp[-1].u.string->len;
   }
-#endif
 }
 /*! @endclass DES3_State */
 
