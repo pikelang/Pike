@@ -61,6 +61,7 @@ static private int verify_any(SGML data, string in)
 	case "man_syntax":
 	case "man_bugs":
 	case "man_example":
+	case "man_title":
 
       case "ex_identifier":
       case "ex_keyword":
@@ -361,43 +362,173 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
   return Sgml.Tag("example",([]),pos,ret);
 }
 
-SGML handle_include(SGML data)
+string classbase;
+
+string name_to_link(string x)
+{
+  return replace(x,({"->","-&gt;"}),({".","."}));
+}
+
+SGML make_concrete_wmml(SGML data)
 {
   if(!data) return 0;
-  for(int e=0;e<sizeof(data);e++)
+  SGML ret=({});
+
+  foreach(data, TAG tag)
   {
-    if(!stringp(data[e]))
+    if(stringp(tag))
     {
-      switch(data[e]->tag)
+      ret+=({tag});
+    }else{
+      switch(tag->tag)
       {
-      case "include":
-	data=
-	  data[..e-1]+
-	  Sgml.group(Sgml.lex(Stdio.read_file(data[e]->params->file)))+
-	  data[e+1..];
-	e--;
-	continue;
+	case "include":
+	  ret+=make_concrete_wmml(Sgml.group(Sgml.lex(Stdio.read_file(tag->params->file),tag->params->file)));
+	  continue;
+	  
+	case "chapter":
+	case "preface":
+	case "introduction":
+	case "section":
+	case "table":
+	case "appendix":
+	case "image":
+	case "illustration":
+	  if(tag->params->name)
+	  {
+	    TAG t=Sgml.Tag(tag->tag,
+			   tag->params,
+			   tag->pos,
+			   tag->data=make_concrete_wmml(tag->data),
+			   tag->file);
+	    ret+=({
+	      Sgml.Tag("anchor",
+		       (["name":tag->params->name,"type":tag->tag]),
+		       tag->pos,
+		       ({
+			 t
+			   }))
+		});
+	    continue;
+	  }
+	  break;
 
-      case "example":
-	switch(data[e]->params->language)
+	case "class":
 	{
-	case "pike":
-	  data[e]=parse_pike_code(data[e]->data[0],
-				  data[e]->pos,
-				  reserved_pike);
-	  break;
-
-	case "c":
-	  data[e]=parse_pike_code(data[e]->data[0],
-				  data[e]->pos,
-				  reserved_c);
-	  break;
+	  string tmp=classbase;
+	  if(!classbase || classbase=="")
+	  {
+	    classbase=tag->params->name;
+	  }else{
+	    classbase+="."+tag->params->name;
+	  }
+	  ret+=({
+	    Sgml.Tag("anchor",(["name":classbase,"type":"class"]),tag->pos,
+		make_concrete_wmml(tag->data))
+	  });
+	  classbase=tmp;
+	  continue;
 	}
+
+	case "man_syntax":
+	case "man_example":
+	case "man_nb":
+	case "man_bugs":
+	case "man_description":
+	case "man_see":
+	{
+	  string title=tag->tag;
+	  SGML args=tag->data;
+	  sscanf(title,"man_%s",title);
+	  switch(title)
+	  {
+	    case "nb": title="nota bene"; break;
+	    case "syntax":
+	    case "example":
+	      args=({Sgml.Tag("tt",([]),tag->pos,tag->data)});
+	      break;
+
+	    case "see":
+	    {
+	      title="see also";
+	      SGML tmp=({});
+	      foreach(replace(Sgml.get_text(args),({" ","\n"}),({"",""}))/",",string name)
+		{
+		  tmp+=({
+		    Sgml.Tag("link",(["to":name_to_link(name)]),tag->pos,
+			     ({
+			       Sgml.Tag("tt",([]),tag->pos,({name})),
+				 })),
+		      ", "
+			});
+		}
+	      
+	      tmp[-1]="";
+	      if(sizeof(tmp)>3) tmp[-3]=" and ";
+	      
+	      args=tmp;
+	      break;
+	    }
+	  }
+	  title=upper_case(title);
+	  ret+=make_concrete_wmml(
+	    ({
+	    Sgml.Tag("man_title",(["title":title]),tag->pos,args),
+	      }));
+	  continue;
+	}
+
+	case "method":
+	{
+	  string fullname=classbase+"->"+tag->params->name;
+	  ret+=make_concrete_wmml(({
+	    Sgml.Tag("anchor",(["name":name_to_link(fullname),
+	    "type":"method",]),tag->pos,
+		     ({
+		       Sgml.Tag("dl",([]),tag->pos,
+				  ({
+				    Sgml.Tag("man_title",(["title":"METHOD"]),tag->pos,
+					     ({
+					       Sgml.Tag("tt",([]),tag->pos,({fullname})),
+						 " - ",
+						   tag->params->title,
+						   })
+					     )
+				  })
+				  +
+				  tag->data
+			 )
+		     })),
+	      "\n",
+	      Sgml.Tag("hr"),
+	  }));
+	  continue;
+	}
+	  
+	case "example":
+	  switch(tag->params->language)
+	  {
+	    case "pike":
+	      ret+=({parse_pike_code(tag->data[0],
+				     tag->pos,
+				     reserved_pike)});
+	      continue;
+	      
+	    case "c":
+	      ret+=({parse_pike_code(tag->data[0],
+				      tag->pos,
+				      reserved_c)});
+	      continue;
+	  }
       }
-      data[e]->data=handle_include(data[e]->data);
+      ret+=({Sgml.Tag(tag->tag,
+		      tag->params,
+		      tag->pos,
+		      make_concrete_wmml(tag->data),
+		      tag->file)});
     }
   }
-  return data;
+  return ret;
 }
 
 void save_image_cache();

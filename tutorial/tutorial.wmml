@@ -4952,7 +4952,7 @@ void write(mixed v)
 </example>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Tread.Mutex>Thread.Mutex</link>
+<link to=Thread.Mutex>Thread.Mutex</link>
 <p>
 </dl>
 
@@ -5336,7 +5336,7 @@ Result: green, blue or white<br>
 </tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=multiplication>`*</link>
+<link to=%60*>`*</link>
 </dl>
 </anchor>
 
@@ -5467,7 +5467,7 @@ first call that returned true instead or returning an array of the
 returned values. If no call returns true, -1 is returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.sum_arrays.html>Array.sum_arrays</link> and <link to=Array.filter_array>Array.filter_array</link>
+<link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.filter_array>Array.filter_array</link>
 <p>
 </dl>
 </anchor>
@@ -12722,7 +12722,7 @@ pid of the child. Refer to your Unix manual for further details.
 This function cause endless bugs if used without proper care.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Simulate.exec>Simulate.exec</link> and <link to=Stdio.File.pipe>Stdio.File-&gt;pipe</link>
+<link to=Process.exec>Process.exec</link> and <link to=Stdio.File.pipe>Stdio.File-&gt;pipe</link>
 <p>
 </dl>
 </anchor>

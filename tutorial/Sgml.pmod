@@ -11,17 +11,22 @@ class Tag
   mapping(string:mixed) params=([]);
 //  array(Tag) data;
   array(object) data;
+  string file;
 
-  varargs void create(string t, mapping p, int po, array(object) d)
+  varargs void create(string t, mapping p, int po, array(object) d, string f)
   {
-    tag=t; pos=po; params=p||([]); data=d;
+    tag=t;
+    pos=po;
+    params=p||([]);
+    data=d;
+    file=f;
   }
 };
 
 #define TAG object(Tag)|string
 #define SGML array(TAG)
 
-SGML lex(string data)
+SGML lex(string data, string file)
 {
   mixed foo=data/"<";
   SGML ret=({ unquote(foo[0]) });
@@ -46,7 +51,7 @@ SGML lex(string data)
     }
     
     if(sscanf(s,"%[^ \t\n\r>]%s",tag,s)!=2)
-      werror(sprintf("Missing end > (around pos %d)\n",pos));
+      werror(sprintf("Missing end > (around pos %d in %s)\n",pos,file));
 
     tag=lower_case(tag);
     mapping params=([]);
@@ -56,7 +61,7 @@ SGML lex(string data)
       sscanf(s,"%*[ \t\r\n]%s",s);
       if(!strlen(s))
       {
-	write(sprintf("Missing end > (around pos %d)\n",pos));
+	write(sprintf("Missing end > (around pos %d in %s)\n",pos,file));
 	break;
       }
       if(s[0]=='>')
@@ -104,7 +109,7 @@ SGML lex(string data)
       }
     }
 
-    ret+=({ Tag(tag,params,pos), unquote(s) });
+    ret+=({ Tag(tag,params,pos,0,file), unquote(s) });
     pos+=sizeof(foo[e]);
   }
 
@@ -175,7 +180,31 @@ SGML copy(SGML data)
       {
 	ret+=({t});
       }else{
-	ret+=({Tag(t->tag,t->params+([]),t->pos,copy(t->data))});
+	ret+=({Tag(t->tag,t->params+([]),t->pos,copy(t->data),t->file)});
+      }
+    }
+  return ret;
+}
+
+string get_text(SGML data)
+{
+  string ret="";
+  foreach(data,TAG t)
+    {
+      if(stringp(t))
+      {
+	ret+=t;
+      }else{
+	ret+="<"+t->tag;
+	foreach(indices(t->params), string name)
+	  ret+=" "+name+"="+t->params[name];
+
+	ret+=">";
+	if(t->data)
+	{
+	  ret+=get_text(t->data);
+	  ret+="</"+t->tag+">";
+	}
       }
     }
   return ret;

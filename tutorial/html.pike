@@ -230,8 +230,6 @@ string name_to_link(string x)
 
 int cpos;
 
-string classbase;
-
 SGML wmml_to_html(SGML data);
 
 /* Partially destructive! */
@@ -255,115 +253,17 @@ SGML convert(SGML data)
 	data->params->size="1";
 	break;
 
-	case "class":
-	{
-	  string tmp=classbase;
-	  if(!classbase || classbase=="")
-	  {
-	    classbase=data->params->name;
-	  }else{
-	    classbase+="."+data->params->name;
-	  }
-	  ret+=convert(data->data);
-	  classbase=tmp;
-	  continue;
-	}
 
 	case "man_title":
 	  ret+=convert(({
 	    Sgml.Tag("p"),
 	    "\n",
 	    Sgml.Tag("dt"),
-	      Sgml.Tag("encaps",([]),data->pos, data->data),
-	      Sgml.Tag("dd"),
-	      "\n"
-	      }));
-	  continue;
-
-	case "method":
-	{
-	  string fullname=classbase+"->"+data->params->name;
-	  ret+=convert(({
-	    Sgml.Tag("anchor",(["name":name_to_link(fullname)]),data->pos,
-		     ({
-		       Sgml.Tag("dl",([]),data->pos,
-				  ({
-				    Sgml.Tag("man_title",([]),data->pos,({"METHOD"})),
-				    Sgml.Tag("tt",([]),data->pos,({fullname})),
-				    " - ",
-				    data->params->title,
-				    "\n",
-				  })
-				  +
-				  data->data
-			 )
-		     })),
+	      Sgml.Tag("encaps",([]),data->pos, ({data->params->title})),
 	      "\n",
-	      Sgml.Tag("hr"),
-	  }));
+	      Sgml.Tag("dd"),
+	      })+data->data+ ({ "\n" }));
 	  continue;
-	}
-	case "man_syntax":
-	  ret+=convert(
-	    ({
-	    Sgml.Tag("man_title",([]),data->pos,({"SYNTAX"})),
-	      Sgml.Tag("tt",([]),data->pos,data->data)
-		}));
-	  continue;
-
-	case "man_example":
-	  ret+=convert(
-	    ({
-	    Sgml.Tag("man_title",([]),data->pos,({"EXAMPLE"})),
-	      Sgml.Tag("tt",([]),data->pos,data->data)
-		}));
-	  continue;
-		    
-	case "man_nb":
-	  ret+=convert(
-	    ({
-	    Sgml.Tag("man_title",([]),data->pos,({"NOTA BENE"})),
-	      })+data->data);
-	  continue;
-
-	case "man_bugs":
-	  ret+=convert(
-	    ({
-	    Sgml.Tag("man_title",([]),data->pos,({"BUGS"})),
-	      })+data->data);
-	  continue;
-	
-	case "man_description":
-	  ret+=convert(
-	    ({
-	    Sgml.Tag("man_title",([]),data->pos,({"DESCRIPTION"})),
-	      })+data->data);
-	  continue;
-
-	case "man_see":
-	{
-	  ret+=convert( ({
-	    Sgml.Tag("man_title",([]),data->pos,({"SEE ALSO"}))
-	      }));
-	  
-	  SGML tmp=({});
-	  foreach(replace(data->data[0],({" ","\n"}),({"",""}))/",",string name)
-	    {
-	      tmp+=({
-		Sgml.Tag("link",(["to":name_to_link(name)]),data->pos,
-			 ({
-			   Sgml.Tag("tt",([]),data->pos,({name})),
-			     })),
-		  ", "
-		    });
-	    }
-
-	  tmp[-1]="";
-	  if(sizeof(tmp)>3) tmp[-3]=" and ";
-
-	  ret+=convert(tmp);
-	  continue;
-	}
 
 	case "link":
 	{
@@ -384,9 +284,12 @@ SGML convert(SGML data)
 	  TAG t2=link_to_data[to];
 	  if(!t2)
 	  {
-	    werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	    werror("Warning: Cannot find ref "+to+" (near pos "+data->pos+")\n");
 	  }
-	  data->data=({t2->tag+" "+t2->params->number});
+	  if(t2)
+	    data->data=({t2->tag+" "+t2->params->number});
+	  else
+	    data->data=({"unknown"});
 	  data->tag="a";
 	  data->params->href=mkfilename(link_to_page[to])+"#"+to;
 	  break;
