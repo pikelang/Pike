@@ -453,7 +453,6 @@ testfont binary
 /src/modules/Image/orient.c foreign_ident
 /src/modules/Image/pattern.c foreign_ident
 /src/modules/Image/phase.h foreign_ident
-/src/modules/Image/poly.c foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
 /src/modules/Image/search.c foreign_ident
 /src/modules/Image/testsuite.in foreign_ident
