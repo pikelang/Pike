@@ -5,7 +5,7 @@ struct buffer
   int rpos;
   int read_only;
 
-  unsigned char *data;
+  char *data;
   struct pike_string *str;
 };
 
@@ -15,7 +15,7 @@ void wf_buffer_wbyte( struct buffer *b,  unsigned char s );
 void wf_buffer_wshort( struct buffer *b, unsigned short s );
 void wf_buffer_wint( struct buffer *b,   unsigned int s );
 
-int wf_buffer_rbyte( struct buffer *b );
+unsigned int wf_buffer_rbyte( struct buffer *b );
 int wf_buffer_rint( struct buffer *b );
 int wf_buffer_rshort( struct buffer *b );
 int wf_buffer_eof( struct buffer *b );
