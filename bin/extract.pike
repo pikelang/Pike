@@ -2,7 +2,7 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.5 2000/08/04 04:18:21 lange Exp $
+// $Id: extract.pike,v 1.6 2000/08/11 19:48:42 lange Exp $
 //
 
 
@@ -96,10 +96,6 @@ function get_encoder(string encoding) {
     return 0;
   switch( lower_case(encoding) ) 
     {
-    case "iso-8859-1":
-      // The normal, no decode needed
-      return 0;
-      
     case "utf-8": case "utf8":
       return lambda(string s) { 
 	       return string_to_utf8(s);
@@ -158,7 +154,7 @@ function get_decoder(string encoding) {
 }
 
 
-array(string) languagefiles(string searchpath, void|string skiplang) {
+array(mapping) languagefiles(string searchpath, void|string skiplang) {
   // Based on the searchpath, returns list of files - skiplang-file
   string pattern = replace(searchpath, "%%", "%");
   string dirbase = (pattern/"%L")[0];
@@ -183,42 +179,44 @@ array(string) languagefiles(string searchpath, void|string skiplang) {
     if(lang==skiplang) continue;
     string file = replace(pattern, "%L", lang);
     if(!file_stat(file)) continue;
-    list += ({ file });
+    list += ({ (["name":file, "lang":lang]) });
   }
   return list;
 }
 
 
-string parse_xml_file(string filename) {
+mapping parse_xml_file(string filename, string language) {
   // Reads a language-xml (like project_eng.xml)
   // Marks used ids in ids([]), also adds r_ids([text]) 
-  // Returns file, with markers instead of <str>-blocks
+  // Returns mapping, 
+  //   'encoding' = file encoding,
+  //   'data'= file with markers instead of <str>-blocks
   // write_xml_file uses the returned data+id_xml_order to build a new one
   added = (<>);
   id_xml_order = ({});
 
   if(!filename || filename=="")
-    return "";
+    return ([]);
   Stdio.File in=Stdio.FILE();
   if(!in->open(filename, "r"))
-    return "";
-  write("Reading %s", filename);
+    return ([]);
+  write("Reading %s%s", 	
+	language ? "["+language+"] " : "",
+	(filename/"/")[-1]);
   string line = in->gets();
   string indata = in->read();
   in->close();
   if(!indata) {
     write("\n");
-    return "";
+    return ([]);
   } 
 
   // Check encoding
+  string encoding;
   if(!line)
     line = indata;
-  sscanf(line, "%*sencoding=\"%s\"", string encoding);
+  sscanf(line, "%*sencoding=\"%s\"", encoding);
   if(encoding && encoding!="") {
-    if(!args->encoding)
-      // Keep encoding if not overrideed
-      args->encoding = encoding;
     function decode = get_decoder(encoding);
     if(decode && catch( indata = decode(indata) )) {
       werror("\n* Error: unable to decode from %O in %O\n",
@@ -289,6 +287,7 @@ string parse_xml_file(string filename) {
   // "\b" is used as a marker for lines to remove from returned data
   Parser.HTML xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);  
+  xml_parser->add_quote_tag("!--", lambda() {return 0;}, "--");
   xml_parser->
     add_container("str", 
 		  lambda(object foo, mapping m, string c) {
@@ -363,14 +362,15 @@ string parse_xml_file(string filename) {
   ret = replace(ret, "\n\n\n\n", "\n\n");
 
   write("\n");
-  return ret;
+  return ([ "encoding":encoding, "data":ret ]);
 }
 
 
-void write_xml_file(string out_name, string outdata, void|mapping old_ids)
-  // Updates/creates a project_%L.xml-file with id:text-info
+void write_xml_file(string filename, string language, string encoding,
+		    string outdata, void|mapping old_ids)
+  // Updates/creates a language xml-file with id:text-info
   // Reuses a present structure if fead with it in outdata
-  // Some headers is always rewritten.
+  // Some headers are always rewritten.
   // The old_ids mapping is supplied when the file is updated in comparison
   // with a base xml file.
 {
@@ -378,18 +378,24 @@ void write_xml_file(string out_name, string outdata, void|mapping old_ids)
     // No ids changed or read with parse_xml_file()
     return;
   Stdio.File out=Stdio.File();
-  if(!out->open(out_name, "cw")) {
-    werror("* Error: Could not open %s for writing\n", out_name);
+  if(!out->open(filename, "cw")) {
+    werror("* Error: Could not open %s for writing\n", filename);
     exit(1);
   }
 
-  write("Writing %s... (%d ids)", out_name, sizeof(id_xml_order));
+  write("Writing %s%s... (%d ids) ", 
+	language ? "["+language+"] " : "",
+	(filename/"/")[-1], sizeof(id_xml_order));
 
   // Dump some headers
   string newfile = "";
   newfile += "<locale version=\"1.0\"/>\n";
   newfile += "<project>"+args->project+"</project>\n";
-  newfile += "<language>English</language>\n"; // FIXME Get Lang from ISO-mod.
+  newfile += "<language>" +
+#ifdef constant(Standards.ISO639_2)
+    Standards.ISO639_2.get_language(language) ||
+#endif
+    language + "</language>\n";
   newfile += "<dumped>"+time()+"</dumped>\n";
 
   // List files included in the project
@@ -407,20 +413,28 @@ void write_xml_file(string out_name, string outdata, void|mapping old_ids)
     t_tag = "translate";
   }
 
+  mapping stats = ([]);
   function gen_tag = 
     lambda(mixed id) {
+      stats->written++;
       string diff = ((old_ids && old_ids[id] && old_ids[id]->changetag) ? 
 		     old_ids[id]->changetag : "");
-      if(old_ids && diff=="") {
-	if(!old_ids[id] || !old_ids[id]->text || 
-	   String.trim_whites(old_ids[id]->text)=="" )
-	  diff = "<changed/>\n";
+      if(old_ids) {
+	if(diff!="")
+	  stats->changed++;	  
+	else if(!old_ids[id] || !old_ids[id]->text || 
+	   String.trim_whites(old_ids[id]->text)=="" ) {
+	  diff = "<new/>\n";
+	  stats->new++;
+	}
 	else if(old_ids[id] && old_ids[id]->original != ids[id]->original) {
 	  diff = replace(old_ids[id]->original||"",  
 			 ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
 	  diff = "<changed from=\""+ diff +"\"/>\n";
-
+	  stats->changed++;
 	}
+	else
+	  stats->ok++;
       }
       // Make parser-safe
       string original = 
@@ -470,30 +484,40 @@ void write_xml_file(string out_name, string outdata, void|mapping old_ids)
     newfile += "\n"+add[blockname];
 
   // Determine encoding
-  if(!args->encoding || args->encoding=="") {
+  if(!encoding || encoding=="") {
     int width = String.width( newfile );
     if(width==16)
-      args->encoding = "UTF-8";
+      encoding = "utf-8";
     else if(width==32)
-      args->encoding = "UTF-16";
+      encoding = "utf-16";
     else
-      args->encoding = "ISO-8859-1";
+      encoding = "iso-8859-1";
   }
-  function encode = get_encoder( args->encoding );
-  if(encode)
-    newfile = encode( newfile );
-  newfile = "<?xml version=\"1.0\" encoding=\""+args->encoding+"\"?>\n"+newfile;
+  function encode = get_encoder( encoding );
+  if(encode && catch( newfile = encode(newfile) )) {
+    werror("\n* Error: unable to encode file %O in %O\n", 
+	   filename, args->encoding);
+    exit(1);
+  }
+  newfile = "<?xml version=\"1.0\" encoding=\""+ encoding +"\"?>\n"+ newfile;
 
   out->write( newfile );
   out->truncate( out->tell() );
   out->close();
 
-  if(args->wipe) {
-    int no = 0;
-    foreach(id_xml_order, mixed id)
-      if(ids[id]->origin) no++;
-    if(no < sizeof(id_xml_order))
-       write(" (wiped to %d)", no);
+  // Dump some statistics
+  if(args->wipe && stats->written!=sizeof(id_xml_order))
+    write("(wiped to %d) ", stats->written);
+  if(old_ids) {
+    if(stats->written==stats->ok)
+      write("all translated");
+    else {
+      array ret= ({});
+      if(stats->ok) ret += ({ sprintf("%d translated", stats->ok) });
+      if(stats->new) ret += ({ sprintf("%d new", stats->new) });
+      if(stats->changed) ret += ({ sprintf("%d changed", stats->changed) });
+      write(String.implode_nicely( ret ));
+    }
   }
   write("\n");
 }
@@ -712,6 +736,7 @@ void update_xml_sourcefiles(array filelist) {
     int no_of_ids = 0;
     Parser.HTML xml_parser = Parser.HTML();
     xml_parser->case_insensitive_tag(1);  
+    xml_parser->add_quote_tag("!--", lambda() {return 0;}, "--");
     xml_parser->
       add_tag("trans-reg",
 	      // Check the registertag for the right project
@@ -737,9 +762,9 @@ void update_xml_sourcefiles(array filelist) {
 			if(m->project!=args->project)
 			  return 0; // Tag belongs to another project
 			// else correct project, proceed
-		      } else
+		      } else // No proj specified
 			if(ignoretag) 
-			  return 0; // No proj specified, bail out if ignoretag
+			  return 0; // Check if last proj was another
 		      string|int id = m->id;
 		      if((int)id) id = (int)id;
 		      string fstr = c;
@@ -859,6 +884,7 @@ string parse_config(string filename) {
   string xml_name="";
   Parser.HTML xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);
+  xml_parser->add_quote_tag("!--", lambda() {return 0;}, "--");
   xml_parser->
     add_container("project", 
 		  // Only read config for the right project, or the
@@ -909,12 +935,12 @@ string parse_config(string filename) {
 		    return 0;
 		  });
   xml_parser->
-    add_container("path", 
+    add_container("xmlpath", 
 		  // Project file path
 		  lambda(object foo, mapping m, string c) {
-		    if(!args->path) {
+		    if(!args->xmlpath) {
 		      c = String.trim_whites(c);
-		      args->path = c;
+		      args->xmlpath = c;
 		    }
 		    return 0;
 		  });
@@ -961,8 +987,8 @@ string parse_config(string filename) {
 
   if(xml_name=="")
     // Try to crate name of outfile
-    if(args->path && args->baselang)
-      xml_name = replace(args->path, "%L", args->baselang);
+    if(args->xmlpath && args->baselang)
+      xml_name = replace(args->xmlpath, "%L", args->baselang);
     else if( args->project)
       xml_name = args->project+"_eng.xml";
   return xml_name;
@@ -1000,12 +1026,12 @@ int main(int argc, array(string) argv) {
   if(!xml_name || xml_name=="") 
     if(filename!="")
       xml_name = filename;
-    else if(args->path && args->baselang)
-      xml_name = replace(args->path, "%L", args->baselang);
+    else if(args->xmlpath && args->baselang)
+      xml_name = replace(args->xmlpath, "%L", args->baselang);
 
-  if( (!(xml_name && args->sync && args->path && args->baselang)) && 
+  if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) && 
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.5 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.6 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
@@ -1020,8 +1046,8 @@ int main(int argc, array(string) argv) {
   }
 
   // Try to read and parse xml-file
-  string xml_data = "";
-  xml_data = parse_xml_file(xml_name);
+  mapping xml_data;
+  xml_data = parse_xml_file(xml_name, args->baselang);
   write("\n");
 
   // Read, parse and (if necessary) update the sourcefiles
@@ -1032,10 +1058,6 @@ int main(int argc, array(string) argv) {
     else
       update_xml_sourcefiles( ({ filename }) );
   
-  // If requested, remove ids not used anymore from the xml
-  //  if(args->wipe)
-  //   xml_data = parse_xml_file(xml_name, args->wipe);
-
   // Save all strings to outfile xml
   if(!xml_name)
     if(args->project && args->project!="")
@@ -1046,20 +1068,22 @@ int main(int argc, array(string) argv) {
       xml_name += "_eng.xml";
     }
   write("\n");
-  write_xml_file(xml_name, xml_data);
+  write_xml_file( xml_name, args->baselang, 
+		  args->encoding || xml_data->encoding, xml_data->data);
 
   // Synchronize xmls in other languages
   if (args->sync) {
     write("\n");
     mapping base_ids = ids;
     array base_order = id_xml_order;
-    foreach(languagefiles(args->path, args->baselang), string file) {
+    foreach(languagefiles(args->xmlpath, args->baselang), mapping file) {
       ids = ([]);
-      parse_xml_file(file);
+      string enc = parse_xml_file(file->name, file->lang)->encoding;
       id_xml_order = base_order;
       mapping old_ids = ids;
       ids = base_ids;        
-      write_xml_file(file, xml_data, old_ids);
+      write_xml_file(file->name, file->lang, 
+		     args->encoding || enc, xml_data->data, old_ids);
     }
   }
 
