@@ -1200,6 +1200,9 @@ void do_install()
 	if (!istty()) {
 	  werror("Finalizing of %O failed!\n", pike_bin_file);
 	  werror("Not found in %s.\n%O\n", getcwd(), get_dir("."));
+	  werror("BUILDDIR: %O\nsize: %O\nexe-stat: %O\n",
+		 vars->TMP_BUILDDIR, Stdio.file_size(pike_bin_file),
+		 file_stat(pike_bin_file+".exe"));
 	}
 	exit(1);
       }
@@ -1399,10 +1402,14 @@ int main(int argc, array(string) argv)
     if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"man";
     if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
   }
-  else {
+  else if(vars->SRCDIR) {
     // Do some guessing...
     array split = vars->SRCDIR/"/";
     vars->BASEDIR = split[..sizeof(split)-2]*"/"+"/";
+  }
+  else {
+    werror("No BASEDIR.\n");
+    exit(1);
   }
 
   // Some magic for the fakeroot stuff
