@@ -1247,9 +1247,12 @@ void f_name_process(INT32 args)
 }
 #endif
 
+#ifdef ENABLE_STREAMED_PARSER
 #include "streamed_parser.h"
 
 static struct program *streamed_parser;
+
+#endif /* ENABLE_STREAMED_PARSER */
 
 extern void init_udp(void);
 
@@ -1318,7 +1321,7 @@ void pike_module_init(void)
   init_udp();
   init_accessdb_program(); /* Accessed database */
 
-  /*
+#ifdef ENABLE_STREAMED_PARSER
   start_new_program();
   add_storage( sizeof (struct streamed_parser) );
   add_function( "init", streamed_parser_set_data,
@@ -1330,7 +1333,7 @@ void pike_module_init(void)
    
   streamed_parser = end_program();
   add_program_constant("streamed_parser", streamed_parser,0);
-  */
+#endif /* ENABLE_STREAMED_PARSER */
 }
 
 
