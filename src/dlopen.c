@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.74 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: dlopen.c,v 1.75 2004/12/30 13:24:37 grubba Exp $
 */
 
 #include <global.h>
@@ -55,7 +55,8 @@ static char *dlerr=0;
 #define DLDEBUG 1
 #endif /* _WIN64 */
 
-#define DL_VERBOSE 1
+/* #define DL_VERBOSE 1 */
+/* #define DLDEBUG */
 
 /*
  * This define makes dlopen create a logfile which maps
@@ -303,9 +304,15 @@ static struct Sym *htable_get_low(struct Htable *h,
 /* fprintf(stderr,"Looking %s/%d =? %s/%d\n",name,len, tmp->name,tmp->len); */
     if(tmp->len == len && !memcmp(name, tmp->name, len))
     {
+#ifdef DLDEBUG
+      fprintf(stderr, "  ==> Found at 0x%08p\n", tmp);
+#endif
       return tmp;
     }
   }
+#ifdef DLDEBUG
+  fprintf(stderr, "Not found.\n");
+#endif
   return 0;
 }
 
@@ -347,7 +354,7 @@ static void htable_put(struct Htable *h, char *name, size_t l, void *ptr,
   }
 #endif
 
-  /* FIXME: Should be duplicate symbols be overloaded or what? */
+  /* FIXME: Should duplicate symbols be overloaded or what? */
   if((tmp=htable_get_low(h, name, l, hval)))
   {
     if(replace)
@@ -368,6 +375,11 @@ static void htable_put(struct Htable *h, char *name, size_t l, void *ptr,
   tmp->sym=ptr;
   h->symbols[hval]=tmp;
   h->entries++;
+#ifdef DLDEBUG
+  if (tmp != htable_get_low(h, name, l, hval)) {
+    fprintf(stderr, "DL: Failed to put!\n");
+  }
+#endif
 }
 
 static void htable_free(struct Htable *h, void(*hfree)(void *))
