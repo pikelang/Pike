@@ -1,3 +1,6 @@
+#include <config.h>
+
+
 #include "machine.h"
 
 #include <sys/types.h>
@@ -76,11 +79,13 @@ void do_html_parse(struct pike_string *ss,
 		   struct mapping *cont,struct mapping *single,
 		   int *strings,int recurse_left,
 		   struct array *extra_args);
+#if 0
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
 			 struct array *extra_args,
 			 int line);
+#endif
 
 extern void f_parse_tree(INT32 argc);
 
@@ -333,6 +338,7 @@ void f_parse_html(INT32 args)
     push_text("");
 }
 
+#if 0
 void f_parse_html_lines(INT32 args)
 {
   struct pike_string *ss;
@@ -381,6 +387,7 @@ void f_parse_html_lines(INT32 args)
   free_mapping(single);
   f_add(strings);
 }
+#endif
 
 char start_quote_character = '\000';
 char end_quote_character = '\000';
@@ -418,7 +425,9 @@ int extract_word(char *s, int i, int len)
   SKIP_SPACE();
   j=i;
 
-  /* Should we allow "foo"bar'gazonk' ? We don't now. */
+  /* Should we allow "foo"bar'gazonk' ? We don't now.
+   To allow it, allow 'goto done' at strategic places.
+   */
   
   for(;i<len; i++)
   {
@@ -788,6 +797,7 @@ void do_html_parse(struct pike_string *ss,
   }
 }
 
+#if 0
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -1004,6 +1014,7 @@ void do_html_parse_lines(struct pike_string *ss,
     free_string(ss);
   }
 }
+#endif
 
 static int does_match(char *s,int len,char *m,int mlen)
 {
@@ -1486,25 +1497,6 @@ void init_spider_efuns(void)
   add_efun("parse_accessed_database", f_parse_accessed_database,
 	   "function(string:array)", OPT_TRY_OPTIMIZE);
 
-#if DEBUG
-  add_efun("_string_debug", f__string_debug, "function(void|mixed:string)", 
-	   OPT_EXTERNAL_DEPEND);
-
-  add_efun("_dump_string_table", f__dump_string_table, 
-	   "function(:array(array))",  OPT_EXTERNAL_DEPEND);
-#endif
-  add_efun("_num_dest_objects", f__num_dest_objects, "function(:int)", 
-	   OPT_EXTERNAL_DEPEND);
-
-  add_efun("_num_arrays", f__num_arrays, "function(:int)", 
-	   OPT_EXTERNAL_DEPEND);
-
-  add_efun("_num_objects", f__num_objects, "function(:int)", 
-	   OPT_EXTERNAL_DEPEND);
-
-  add_efun("_num_mappings", f__num_mappings, "function(:int)", 
-	   OPT_EXTERNAL_DEPEND);
-
   add_efun("_dump_obj_table", f__dump_obj_table, "function(:array(array))", 
 	   OPT_EXTERNAL_DEPEND);
 
@@ -1512,10 +1504,12 @@ void init_spider_efuns(void)
 	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
 	   0);
 
+#if 0
   add_efun("parse_html_lines",f_parse_html_lines,
 	   "function(string,mapping(string:function(string,mapping(string:string),int,mixed ...:string)),mapping(string:function(string,mapping(string:string),string,int,mixed ...:string)),mixed ...:string)",
 	   0);
-
+#endif
+  
 #ifdef HAVE_PERROR
   add_efun("real_perror",f_real_perror, "function(:void)",OPT_EXTERNAL_DEPEND);
 #endif
@@ -1529,8 +1523,6 @@ void init_spider_efuns(void)
   add_efun("discdate", f_discdate, "function(int:array)", 0);
   add_efun("stardate", f_stardate, "function(int,void|int:int)", 0);
 
-  add_efun("parse_tree", f_parse_tree, "function(string:array(string))", 0);
-
   add_efun("timezone",f_timezone,"function(:int)",0);
   add_efun("get_all_active_fd",f_get_all_active_fd,"function(:array(int))",0);
   add_efun("fd_info",f_fd_info,"function(int:string)",0);
@@ -1538,10 +1530,8 @@ void init_spider_efuns(void)
 
   /* timezone() needs */
   { 
-    time_t foo;
+    time_t foo = (time_t)0;
     struct tm *g;
-    /* Purify wants */
-    foo=(time_t)0; 
 
     g=localtime(&foo);
 #if !HAVE_INT_TIMEZONE
@@ -1554,12 +1544,13 @@ void init_spider_efuns(void)
 
 static struct program *streamed_parser;
 
-extern void init_parse_program();
 extern void init_udp();
 
 void init_spider_programs()
 {
   init_udp();
+  init_accessdb_program(); /* Accessed database */
+
   start_new_program();
   add_storage( sizeof (struct streamed_parser) );
   add_function( "init", streamed_parser_set_data,
@@ -1571,16 +1562,11 @@ void init_spider_programs()
    
    streamed_parser = end_c_program( "/precompiled/streamed_parser" );
    streamed_parser->refs++;
-
-   init_parse_program(); /* HTTP parser */
-   init_accessdb_program(); /* Accessed database */
 }
 
 void exit_spider(void)
 {
   int i;
-
-  exit_parse_program();
 
   if(streamed_parser)
   {
