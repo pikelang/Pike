@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.51 2003/01/04 13:38:53 grubba Exp $
+|| $Id: jvm.c,v 1.52 2003/01/04 15:38:22 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.51 2003/01/04 13:38:53 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.52 2003/01/04 15:38:22 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1623,7 +1623,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 /* NB: Assumes that pointers are 64bit! */
 
 struct cpu_context {
-  unsigned void *code[6];
+  void *code[6];
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
