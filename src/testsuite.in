@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.749 2004/12/15 02:44:41 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.750 2004/12/19 16:25:36 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1708,10 +1708,28 @@ test_program([[
 test_compile_error_any([[
   class A {}
   class B {
-    inherit A;
+    inherit A:C;
     mixed f() {return A::this_program;}
   }
 ]])
+
+test_compile_error_any([[
+#pike 7.6
+  class A {}
+  class B {
+    inherit A:C;
+    mixed f() {return C::this_program;}
+  }
+]])
+
+test_any([[
+  class A {};
+  class B {
+    inherit A:C;
+    mixed f() {return C::this_program;}
+  };
+  return B()->f() == A;
+]], 1)
 
 dnl test_compile_error(0())
 test_compile_error(1())
