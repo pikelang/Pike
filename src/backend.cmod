@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.113 2004/04/04 13:22:30 grubba Exp $
+|| $Id: backend.cmod,v 1.114 2004/04/04 13:33:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.113 2004/04/04 13:22:30 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.114 2004/04/04 13:33:09 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2166,6 +2166,9 @@ PIKECLASS Backend
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
 
+	  /* FIMXE: kqueue wants to look at
+	   *	    ACTIVE_POLLSET[i].flags & EV_ERROR
+	   */
 #ifdef MY_POLLNVAL
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL))
 	  {
@@ -2283,6 +2286,9 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
+	  /* FIMXE: kqueue wants to look at
+	   *	    ACTIVE_POLLSET[i].flags & (EV_ERROR|EV_EOF)
+	   */
 #ifndef USE_KQUEUE
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], POLLHUP|POLLERR))
 	  {
