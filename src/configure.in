@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.119 1997/09/17 21:10:39 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.120 1997/09/19 20:46:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -294,6 +294,10 @@ fi
 
 #############################################################################
 
+## At this point we have at last initialized the compiler!
+
+#############################################################################
+
 if test ! -f confdefs.h ; then
   AC_MSG_WARN([Warning, lost confdefs.h, testing will be flawed!!
 You might need to use bash instead of /bin/sh to get correct results.
@@ -450,6 +454,14 @@ if test "x$YACC" = "xNone" ; then
 else
   AC_MSG_RESULT($YACC)
 fi
+
+#############################################################################
+
+## At this point we have found all binaries we are going to use.
+
+#############################################################################
+
+AC_C_CONST
 
 #############################################################################
 
