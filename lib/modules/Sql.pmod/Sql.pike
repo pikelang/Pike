@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.50 2001/10/03 08:52:14 grubba Exp $
+ * $Id: Sql.pike,v 1.51 2001/11/08 15:30:16 anders Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: Sql.pike,v 1.50 2001/10/03 08:52:14 grubba Exp $
+//. RCSID:	$Id: Sql.pike,v 1.51 2001/11/08 15:30:16 anders Exp $
 //. Author:	Henrik Grubbström (grubba@roxen.com)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -90,7 +90,7 @@ function(string:int) decode_datetime;
 //!            If the hostname is "", access through a UNIX-domain socket or
 //!            similar.
 //!   zero   - Access through a UNIX-domain socket or similar.
-//! > database
+//! > db
 //!   Select this database.
 //! > user
 //!   User name to access the database as.
