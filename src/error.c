@@ -16,7 +16,7 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.17 1998/04/13 14:19:40 grubba Exp $");
+RCSID("$Id: error.c,v 1.18 1998/04/16 21:30:50 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -64,6 +64,8 @@ void pike_throw(void) ATTRIBUTE((noreturn))
 #endif
     free_object(fp->current_object);
     free_program(fp->context.prog);
+    if(fp->context.parent)
+      free_object(fp->context.parent);
     
     fp = fp->parent_frame;
   }
