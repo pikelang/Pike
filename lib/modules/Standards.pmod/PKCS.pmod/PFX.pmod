@@ -1,3 +1,5 @@
+#if 0 // Doesn't load, uncommented by hubbe
+
 /* PFX.pmod
  *
  * M$ Personal Exchange Syntax and Protocol Standard, aka PKCS#12
@@ -427,3 +429,5 @@ object simple_make_pfx(array bags, string passwd)
 				      asn1_string(safes->get_der())));
   pfx->set_passwd(passwd);
 }
+
+#endif
