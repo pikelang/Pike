@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.590 2003/08/20 19:41:07 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.591 2003/09/09 16:58:30 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5230,6 +5230,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("13934998268672547360069539025",
           [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
+  // sprintf (and the describe stuff in the master)
+  test_do([[sprintf ("%O", 10->pow);]])
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
