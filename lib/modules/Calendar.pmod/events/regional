@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.18 2004/10/30 17:12:48 mirar Exp $
+### $Id: regional,v 1.19 2005/01/06 09:51:16 mirar Exp $
 
 ### =====================================================================
 ###
@@ -1188,34 +1188,36 @@ Region "cz"
 # Denmark
 #--------------------------------------------------------------
 Region "dk"
+  Add   "sunday"                      h # "Sun"                            Weekday ---
   Add   "new year"                    h # "New Year's Day"                 (1-Jan 2000)
-  Event "dk/3 king"                   h   "3 King's Day"                   Fixed Jan  6
-  Event "dk/fjortende februar"        -   "Fjortende Februar"              Fixed Feb 14
-  Event "dk/"                         h   "(similar to Hallowe'en)"        Fixed Mar  5
+# Event "dk/birthday of queen"        -   "Birthday of Queen Margrethe II" Fixed Apr 16
+
+  Event "dk/fastelavn"		      -   "Carnival"                       Easter -50
   Add   "c/palm sunday"               h # "Palm Sunday"                    (14-Apr 2000)
-  Event "dk/birthday of queen"        -   "Birthday of Queen Margrethe II" Fixed Apr 16
   Add   "c/holy thursday"             h # "Holy Thursday"                  (20-Apr 2000)
   Add   "c/good friday"               h # "Good Friday "                   (21-Apr 2000)
   Add   "c/easter"                    h # "Easter Sunday"                  (23-Apr 2000)
   Add   "c/easter monday"             h # "Easter Monday"                  (24-Apr 2000)
-  Add   "mothers"                     h # "Mother's Day"                   (14-May 2000)
-  Event "dk/great prayer"             h   "Great Prayer Day"               Easter +26
-  Event "dk/liberation"               -   "Liberation Day"                 Fixed May  5
-  Event "dk/prince fredriks birthday" h   "Prince Fredrik's Birthday"      Fixed May 26
+# Add   "mothers"                     h # "Mother's Day"                   (14-May 2000)
+  Event "dk/bededag"                  h   "Great Prayer Day"               Easter +26
+# Event "dk/liberation"               -   "Liberation Day"                 Fixed May  5
+  Event "dk/prince fredriks birthday" -   "Prince Fredrik's Birthday"      Fixed May 26
   Add   "c/ascension"                 h # "Ascension Thursday"             (11-Jun 2000)
+  Add   "c/pentecost"                 h # "Pentecost"                      (11-Jun 2000)
+  Add   "c/pentecost monday"          h # "Pentecost Monday"               (12-Jun 2000)
+
+  Add   "labor"                       - # "Labor Day"                    Fixed May  1
 # celebrating the constitution 1849, 1915 and 1953
   Event "dk/constitution"             h   "Constitution Day"               Fixed Jun  5
 # Denmark Father's Day Fars Dag 5-Jun
-  Add   "c/pentecost"                 h # "Pentecost"                      (11-Jun 2000)
-  Add   "c/pentecost monday"          h # "Pentecost Monday"               (12-Jun 2000)
-  Event "dk/valdemar"                 h   "Valdemars Day"                  Fixed Jun 15
-  Add   "c/trinity"                   h # "Trinity"                        (18-Jun 2000)
-  Event "dk/midsummer party"          h   "Midsummer Party"                Fixed Jun 23
-  Event "dk/morten"                   h   "Mortens Day"                    Fixed Nov 11
-  Add   "c/christmas eve"             h # "Christmas Eve"                  (24-Dec 2000)
+# Event "dk/valdemar"                 h   "Valdemars Day"                  Fixed Jun 15
+# Add   "c/trinity"                   h # "Trinity"                        (18-Jun 2000)
+# Event "dk/midsummer party"          -   "Midsummer Party"                Fixed Jun 23
+# Event "dk/morten"                   h   "Mortens Day"                    Fixed Nov 11
+  Add   "c/christmas eve"             - # "Christmas Eve"                  (24-Dec 2000)
   Add   "c/christmas"                 h # "Christmas"                      (25-Dec 2000)
   Event "dk/2nd of christmas"         h   "2nd day of Christmas"           Fixed Dec 26
-  Add   "new years eve"               h # "New Year's Eve"                 (31-Dec 2000)
+  Add   "new years eve"               - # "New Year's Eve"                 (31-Dec 2000)
 
 
 #--------------------------------------------------------------
