@@ -132,8 +132,8 @@ void convert_svalue_to_bignum(struct svalue *s)
 #ifdef INT64
 /* These routines can be made much more optimized. */
 
-#define BIGNUM_INT64_MASK  0xffff
-#define BIGNUM_INT64_SHIFT 16
+#define BIGNUM_INT64_MASK  0x0fffffff
+#define BIGNUM_INT64_SHIFT 28
 
 void push_int64(INT64 i)
 {
@@ -143,41 +143,30 @@ void push_int64(INT64 i)
   }
   else
   {
-    int neg, pos, lshfun, orfun;
+    int neg, j;
 
     neg = (i < 0);
 
     if(neg)
       i = ~i;
 
-    push_int(i & BIGNUM_INT64_MASK);
-    i >>= BIGNUM_INT64_SHIFT;
-    convert_stack_top_to_bignum();
-    
-    lshfun = FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
-    orfun = FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
-    
-    for(pos = BIGNUM_INT64_SHIFT; i; pos += BIGNUM_INT64_SHIFT)
-    {
+    for(j=0; i; i >>= BIGNUM_INT64_SHIFT, j++) {
       push_int(i & BIGNUM_INT64_MASK);
-      i >>= BIGNUM_INT64_SHIFT;
-      convert_stack_top_to_bignum();
-      
-      push_int(pos);
-      apply_low(sp[-2].u.object, lshfun, 1);
-      stack_swap();
-      pop_stack();
-      
-      apply_low(sp[-2].u.object, orfun, 1);
-      stack_swap();
-      pop_stack();
-
-      if(sp[-1].type == T_INT)
-	convert_stack_top_to_bignum();
     }
-    
-    if(neg)
-      apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
+
+    /* j should always be at least 1 here. */
+#ifdef PIKE_DEBUG
+    if (!j) fatal("Internal error in push_int64().\n");
+#endif /* PIKE_DEBUG */
+
+    while(--j) {
+      push_int(BIGNUM_INT64_SHIFT);
+      o_lsh();
+      o_or();
+    }
+
+    if (neg)
+      o_compl();
   }
 }
 
