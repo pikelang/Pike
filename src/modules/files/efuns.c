@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.116 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: efuns.c,v 1.117 2002/11/28 18:53:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.116 2002/10/11 01:39:54 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.117 2002/11/28 18:53:07 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1475,10 +1475,11 @@ void init_files_efuns(void)
   }
 #endif
 
-/* function(string,int|void:int *) */
+/* function(string,int|void:object) */
   ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tObj), OPT_EXTERNAL_DEPEND);
 
-  ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),0);
+  /* function(string,int:int(0..1)) */
+  ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
