@@ -8,7 +8,6 @@ This is what you need to do to install Pike:
                             default is /usr/local.
   --without-gdbm            compile without gdbm support
   --without-gmp             compile without gmp support
-  --without-readline        compile without readline support
   --without-debug           compile without runtime debugging
   --without-threads         compile without threads support
   --without-zlib            compile without gzip compression libary support
@@ -26,9 +25,9 @@ This is what you need to do to install Pike:
               and -R/usr/gnu/lib
 
    Use the above flags to make sure the configure script finds the
-   gdbm, gmp and readline libraries and include files if you need or
-   want those modules. If the configure script doesn't find them, Pike
-   will still compile, but without those modules.
+   gdbm and gmp libraries and include files if you need or want those
+   modules. If the configure script doesn't find them, Pike will still
+   compile, but without those modules.
 
 2) If needed, edit config.h and Makefile to suit your purposes.
    I've tried to make it so that you don't have to change config.h or
@@ -65,7 +64,7 @@ What to do when it doesn't work:
 4) configure might have done something wrong, check machine.h and report
    any errors back to me.
 
-5) Your gmp/readline/gdbm libraries might not be working or incorrectly 
+5) Your gmp/gdbm libraries might not be working or incorrectly 
    installed, start over by running configure with the approperiate
    --without-xxx arguments. Also note that threads might give problems
    with I/O and signals. If so you need to run configure --without-threads.
