@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.57 1998/08/10 23:33:30 hubbe Exp $");
+RCSID("$Id: main.c,v 1.58 1998/09/02 01:05:45 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -323,6 +323,24 @@ int dbm_main(int argc, char **argv)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
 
+  stack_top = (char *)&argv;
+
+  /* Adjust for anything already pushed on the stack.
+   * We align on a 64 KB boundary.
+   * Thus we at worst, lose 64 KB stack.
+   *
+   * We have to do it this way since some compilers don't like
+   * & and | on pointers, and casting to an integer type is
+   * too unsafe (consider 64-bit systems).
+   */
+#if STACK_DIRECTION < 0
+  /* Equvivalent with |= 0xffff */
+  stack_top += (~((unsigned long)stack_top)) & 0xffff;
+#else /* STACK_DIRECTION >= 0 */
+  /* Equvivalent with &= ~0xffff */
+  stack_top -= ( ((unsigned long)stack_top)) & 0xffff;
+#endif /* STACK_DIRECTION < 0 */
+
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_STACK)
   {
     struct rlimit lim;
@@ -332,14 +350,22 @@ int dbm_main(int argc, char **argv)
       if(lim.rlim_cur == RLIM_INFINITY)
 	lim.rlim_cur=1024*1024*128;
 #endif
-      stack_top= ((char *) &argv) + 
-	STACK_DIRECTION * (lim.rlim_cur - 8192 * sizeof(char *));
+      stack_top += STACK_DIRECTION * (lim.rlim_cur - 8192 * sizeof(char *));
+
+#ifdef STACK_DEBUG
+      fprintf(stderr, "1: C-stack: 0x%08p - 0x%08p, direction:%d\n",
+	      &argv, stack_top, STACK_DIRECTION);
+#endif /* STACK_DEBUG */
     }
   }
-#else
-  stack_top= ((char *) &argv) + 
-    STACK_DIRECTION * (1024*1024 * 128 - 8192 * sizeof(char *));
-#endif
+#else /* !HAVE_GETRLIMIT || !RLIMIT_STACK */
+  /* 128 MB seems a bit extreme, most OS's seem to have their limit at ~8MB */
+  stack_top += STACK_DIRECTION * (1024*1024 * 128 - 8192 * sizeof(char *));
+#ifdef STACK_DEBUG
+  fprintf(stderr, "2: C-stack: 0x%08p - 0x%08p, direction:%d\n",
+	  &argv, stack_top, STACK_DIRECTION);
+#endif /* STACK_DEBUG */
+#endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   {
