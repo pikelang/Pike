@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.89 2001/06/26 21:03:49 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.90 2001/06/29 18:19:30 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -40,7 +40,79 @@ RCSID("$Id: lex.c,v 1.89 2001/06/26 21:03:49 hubbe Exp $");
 #define LEXDEBUG 0
 
 #ifdef INSTR_PROFILING
-int last_instruction=0;
+
+/*
+ * If you have a 64 bit machine and 15+ Gb memory, this
+ * routine should handle -p4 nicely. -Hubbe
+ * (-p3 only requires ~38Mb on a 32bit machine)
+ */
+
+struct instr_counter
+{
+  long runned;
+  struct instr_counter* next[256];
+};
+
+int last_instruction[256];
+struct instr_counter *instr_counter_storage;
+
+struct instr_counter *init_instr_storage_pointers(int depth)
+{
+  int e;
+  struct instr_counter *d;
+  if(!depth) return 0;
+  d=ALLOC_STRUCT(instr_counter);
+  if(!d)
+  {
+    fprintf(stderr,"-p%d: out of memory.\n",p_flag);
+    exit(2);
+  }
+  dmalloc_accept_leak(d);
+  d->runned=0;
+  for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
+    d->next[e]=init_instr_storage_pointers(depth-1);
+  return d;
+}
+
+void add_runned(int instr)
+{
+  int e;
+  struct instr_counter **tmp=&instr_counter_storage;
+
+  for(e=0;e<p_flag;e++)
+  {
+    tmp[0]->runned++;
+    tmp=tmp[0]->next + last_instruction[e];
+    last_instruction[e]=last_instruction[e+1];
+  }
+  ((char **)(tmp))[0]++;
+  last_instruction[e]=instr;
+}
+
+void present_runned(struct instr_counter *d, int depth, int maxdepth)
+{
+  int e;
+  if(depth == maxdepth)
+  {
+    long runned = depth < p_flag ? d->runned : (long)d;
+    if(!runned) return;
+    fprintf(stderr,"%010ld @%d@: ",runned,maxdepth);
+    for(e=0;e<depth;e++)
+    {
+      if(e) fprintf(stderr," :: ");
+      fprintf(stderr,"%s",
+	      low_get_f_name(last_instruction[e] + F_OFFSET,0));
+    }
+    fprintf(stderr,"\n");
+  }else{
+    for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
+    {
+      last_instruction[depth]=e;
+      present_runned(d->next[e],depth+1, maxdepth);
+    }
+  }
+}
+
 #endif
 
 void exit_lex(void)
@@ -49,29 +121,22 @@ void exit_lex(void)
   if(p_flag)
   {
     int e;
-    fprintf(stderr,"Opcode usage: (opcode, runned, compiled)\n");
+    fprintf(stderr,"Opcode compiles: (opcode, compiled)\n");
     for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
     {
-      fprintf(stderr,":: %-30s %8ld %8ld\n",
-	      low_get_f_name(e+F_OFFSET,0),
-	      (long)instrs[e].runs,
-	      (long)instrs[e].compiles);
+      fprintf(stderr,"%08ld;;%-30s\n",
+	      (long)instrs[e].compiles,
+	      low_get_f_name(e+F_OFFSET,0));
     }
 
 #ifdef INSTR_PROFILING
-    if(p_flag>1)
+    for(e=0;e<=p_flag;e++)
     {
-      fprintf(stderr,"Opcode sequences: (runned, opcode, opcode)\n");
-      for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
-      {
-	int d;
-	for(d=0;d<256;d++)
-	  if(instrs[e].reruns[d])
-	    fprintf(stderr,"%010ld::%s - %s\n",instrs[e].reruns[d],low_get_f_name(e+F_OFFSET,0),low_get_f_name(d+F_OFFSET,0));
-      }
+      fprintf(stderr,"Opcode x %d usage:\n",e);
+      present_runned(instr_counter_storage, 0, e);
     }
-#endif
   }
+#endif
 #endif
 }
 
@@ -191,6 +256,9 @@ void init_lex()
   unsigned int i;
 #ifdef PIKE_DEBUG
   int fatal_later=0;
+#ifdef INSTR_PROFILING
+  instr_counter_storage=init_instr_storage_pointers(p_flag);
+#endif
 #endif
 
   for(i=0; i<NELEM(instr_names);i++)
