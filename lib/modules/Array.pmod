@@ -534,3 +534,22 @@ array uniq2(array a)
       if (v!=last) last=v,res+=({v});
    return res;
 }
+
+//! make an array of the argument, if it isn't already;
+//! a zero_type argument makes the empty array:
+//!
+// mark this with the right stuff, someone: /Mirar
+//! zero_type(x): arrayify(x) => ({})
+//! arrayp(x)     arrayify(x) => x
+//! else          arrayify(x) => ({x})
+//!
+//! This is useful when something is either an array or
+//! a basic datatype, for instance in headers from the MIME
+//! module or Protocols.HTTP.Server.
+
+array arrayify(void|array|mixed z)
+{
+   if (zero_type(z)) return ({});
+   if (arrayp(z)) return z;
+   return ({z});
+}
