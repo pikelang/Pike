@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.3 2001/09/18 06:21:30 nilsson Exp $
+ * $Id: extract.pike,v 1.4 2001/09/26 23:26:28 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -14,7 +14,7 @@ class MirarDoc
 array(string) find_root(string path) {
   if(file_stat(path+"/.autodoc"))
     return reverse((Stdio.read_file(path+"/.autodoc")/"\n")[0]/" ") - ({""});
-  if(!has_suffix(path, ".pmod")||sscanf(path, "%*s/%*d.%*d")==3)
+  if(!has_suffix(path, ".pmod"))
     error("No root found.\n");
   array(string) parts = path/"/";
   string name = parts[-1];
