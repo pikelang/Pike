@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.46 1998/04/06 04:27:06 hubbe Exp $");
+RCSID("$Id: main.c,v 1.47 1998/04/06 17:28:18 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -403,6 +403,7 @@ void low_exit_main(void)
   void cleanup_pike_types(void);
   void cleanup_program(void);
   void cleanup_compiler(void);
+  void cleanup_backend(void);
 
   th_cleanup();
   exit_dynamic_load();
@@ -414,6 +415,7 @@ void low_exit_main(void)
   cleanup_pike_types();
   cleanup_program();
   cleanup_compiler();
+  cleanup_backend();
 
   do_gc();
   free_svalue(& throw_value);
