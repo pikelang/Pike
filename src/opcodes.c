@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.59 1999/10/31 22:12:54 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.60 1999/10/31 22:14:51 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -804,7 +804,7 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 #else
 #define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)				\
 	    /* FIXME! */						\
-	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 4);
+	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 4)
 #endif
 #endif
 
@@ -840,7 +840,7 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 #else
 #define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
 	    /* FIXME! */						\
-	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 8);
+	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 8)
 #endif
 #endif
 
