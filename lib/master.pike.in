@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.159 2001/07/02 17:07:18 grubba Exp $
+ * $Id: master.pike.in,v 1.160 2001/07/27 14:42:19 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -50,7 +50,7 @@ string fakeroot(string s)
 #endif
 
 
-//! @global
+//! @appears is_absolute_path
 //! Check if a path @[p] is fully qualified (ie not relative).
 //!
 //! @returns
@@ -68,7 +68,7 @@ int is_absolute_path(string p)
   return p[0]=='/';
 }
 
-//! @global
+//! @appears explode_path
 //! Split a path @[p] into its components.
 //!
 //! This function divides a path into its components. This might seem like
@@ -86,7 +86,7 @@ array(string) explode_path(string p)
   return p/"/";
 }
 
-//! @global
+//! @appears dirname
 //! Returns all but the last segment of a path.
 //!
 //! @seealso
@@ -97,7 +97,7 @@ string dirname(string x)
   return tmp[..sizeof(tmp)-2]*"/";
 }
 
-//! @global
+//! @appears basename
 //! Returns the last segment of a path.
 //!
 //! @seealso
@@ -153,7 +153,7 @@ mapping(string:int) load_time=([]);
 int compat_major=-1;
 int compat_minor=-1;
 
-//! @global
+//! @appears compile_string
 //! Compile the Pike code in the string @[data] into a program.
 //! If @[filename] is not specified, it will default to @tt{"-"@}.
 //!
@@ -249,9 +249,9 @@ mapping (string:string) environment=([]);
 
 
 
-//! @global
 //! @decl string getenv(string varname)
 //! @decl mapping(string:string) getenv()
+//! @appears getenv
 //!
 //! When called with no arguments, a mapping with all current envrionment
 //! variables will be returned.
@@ -267,7 +267,7 @@ string|mapping(string:string) getenv(string|void s)
 }
 
 
-//! @global
+//! @appears compile_file
 //! Compile the Pike code contained in the file @[filename] into a program.
 //!
 //! This function will compile the file @[filename] to a Pike program that can
@@ -315,7 +315,7 @@ function(:mapping(string:string))|function(string:string) getenv(s)
   return environment[s];
 }
 
-mapping(string:string) getenv() |
+// mapping(string:string) getenv() |
 string getenv(string s)
 {
   if(!s) return environment + ([]);
@@ -323,7 +323,7 @@ string getenv(string s)
 }
 #endif /* 0 */
 
-//! @global
+//! @appears putenv
 //! Sets the environment variable @[varname] to @[value].
 //!
 //! @seealso
@@ -334,7 +334,7 @@ void putenv(string varname, string value)
   environment[varname] = value;
 }
 
-//! @global
+//! @appears normalize_path
 string normalize_path( string X )
 {
 #ifndef __NT__
@@ -593,9 +593,8 @@ void handle_error(array(mixed)|object trace)
   }
 }
 
-//! @global
 //! @decl object new(string|program prog, mixed ... args)
-//! @decl object clone(string|program prog, mixed ... args)
+//! @appears new
 //!
 //! Instantiate a program.
 //!
@@ -622,6 +621,12 @@ object new(string|program prog, mixed ... args)
   }
   return prog(@args);
 }
+
+//! @decl object clone(string|program prog, mixed ... args)
+//! @appears clone
+//!
+//! @seealso
+//! @[new()]
 
 function clone = new;
 
@@ -1018,6 +1023,8 @@ mixed handle_import(string what, string|void current_file, object|void handler)
 
 
 multiset no_resolv = (<>);
+
+//!
 class CompatResolver
 {
   array(string) pike_include_path=({});
@@ -1031,7 +1038,7 @@ class CompatResolver
       ver=(string)v;
     }
 
-  //! @global
+  //! @appears add_include_path
   //! Add a directory to search for include files.
   //!
   //! This is the same as the command line option @tt{-I@}.
@@ -1050,7 +1057,7 @@ class CompatResolver
       pike_include_path=({tmp})+pike_include_path;
     }
 
-  //! @global
+  //! @appears remove_include_path
   //! Remove a directory to search for include files.
   //!
   //! This function performs the reverse operation of @[add_include_path()].
@@ -1064,7 +1071,7 @@ class CompatResolver
       pike_include_path-=({tmp});
     }
   
-  //! @global
+  //! @appears add_module_path
   //! Add a directory to search for modules.
   //!
   //! This is the same as the command line option @tt{-M@}.
@@ -1080,7 +1087,7 @@ class CompatResolver
     }
   
   
-  //! @global
+  //! @appears remove_module_path
   //! Remove a directory to search for modules.
   //!
   //! This function performs the reverse operation of @[add_module_path()].
@@ -1095,7 +1102,7 @@ class CompatResolver
     }
   
   
-  //! @global
+  //! @appears add_program_path
   //! Add a directory to search for programs.
   //!
   //! This is the same as the command line option @tt{-P@}.
@@ -1111,7 +1118,7 @@ class CompatResolver
     }
   
   
-  //! @global
+  //! @appears remove_program_path
   //! Remove a directory to search for programs.
   //!
   //! This function performs the reverse operation of @[add_program_path()].
@@ -2100,7 +2107,7 @@ string describe_function (function f)
  * readable message.
  */
 
-//! @global
+//! @appears describe_backtrace
 //! Returns a string containing a readable message that describes where
 //! the backtrace was made.
 //!
@@ -2284,7 +2291,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
   return ret || "No backtrace!\n";;
 }
 
-//! @global
+//! @appears describe_error
 //! Returns only the error message from a backtrace.
 //!
 //! If there is no error message in the backtrace, a fallback message
