@@ -55,6 +55,7 @@
 %token TOK_FOR
 %token TOK_FUNCTION_ID
 %token TOK_GAUGE
+%token TOK_GLOBAL
 %token TOK_IDENTIFIER
 %token TOK_IF
 %token TOK_IMPORT
@@ -112,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.275 2002/05/05 00:28:30 mast Exp $");
+RCSID("$Id: language.yacc,v 1.276 2002/05/05 13:03:42 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3291,6 +3292,13 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
     }
     free_node($1);
     $$ = e;
+  }
+  | TOK_GLOBAL TOK_COLON_COLON
+  {
+    inherit_state = Pike_compiler;
+    for (inherit_depth = 0; inherit_depth < compilation_depth;
+	 inherit_depth++, inherit_state = inherit_state->previous) {}
+    $$ = 0;
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {

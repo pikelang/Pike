@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.508 2002/05/05 00:28:30 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.509 2002/05/05 13:03:42 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2064,6 +2064,8 @@ test_compile_any([[
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
 ]])
 
+// Testing static resolving with ::
+
 test_program([[
   class X {
     int i = 17;
@@ -2140,6 +2142,40 @@ test_program([[
   }
   int a() {return X()->Y()->f() == "XAYBB";}
 ]])
+
+// Testing global::
+
+test_equal([[
+  compile_string (#"
+    string p = \"g\";
+    mixed f (string p) {return ({global::p, p});}")()->f ("l");
+]], ({"g", "l"}))
+
+test_eval_error([[
+  compile_string (#"
+    string pp = \"g\";
+    mixed f (string p) {return global::p;}");
+]])
+
+test_eval_error([[
+  compile_string (#"
+    #pike 7.2
+    string p = \"g\";
+    mixed f (string p) {return global::p;}");
+]])
+
+test_equal([[
+  compile_string (#"
+    int x = 23;
+    class A {
+      constant x = 24;
+    }
+    inherit A;
+    class X {
+      int x = 32;
+      mixed f (int x) {return ({global::x, global::A::x, X::x, x});}
+    }")()->X()->f (33);
+]], ({23, 24, 32, 33}))
 
 // testing virtual overloading
 test_any([[

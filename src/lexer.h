@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.35 2001/10/02 09:29:48 hubbe Exp $
+ * $Id: lexer.h,v 1.36 2002/05/05 13:03:42 mast Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -386,6 +386,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('g','a'):
 	  if(ISWORD("gauge")) return TOK_GAUGE;
+	  break;
+	case TWO_CHAR('g','l'):
+	  if (ISWORD("global") && !TEST_COMPAT(7,2)) return TOK_GLOBAL;
 	  break;
 	case TWO_CHAR('i','f'):
 	  if(ISWORD("if")) return TOK_IF;
