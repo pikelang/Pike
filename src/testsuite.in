@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.675 2003/09/09 16:58:30 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.676 2003/09/10 09:44:16 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6048,6 +6048,10 @@ test_true([[array_sscanf("(02323) 23455 344","%{%*[^0-9]%[0-9]%}")]])
 
 test_eq([[ array_sscanf(sprintf("%4c",16909060),"%4c")[0] ]],16909060)
 test_eq([[ array_sscanf(sprintf("%-4c",16909060),"%-4c")[0] ]],16909060)
+test_eq([[ array_sscanf(sprintf("%4c",16909060),"%+4c")[0] ]],16909060)
+test_eq([[ array_sscanf(sprintf("%-4c",16909060),"%+-4c")[0] ]],16909060)
+test_eq([[ array_sscanf(sprintf("%4c",-16909060),"%+4c")[0] ]],-16909060)
+test_eq([[ array_sscanf(sprintf("%-4c",-16909060),"%+-4c")[0] ]],-16909060)
 
 test_equal([[array_sscanf("\1000\1001\2000","%[\1000-\1111]%s")]],
 	[[ ({ "\1000\1001", "\2000" }) ]])
