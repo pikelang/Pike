@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.69 1999/11/11 15:20:56 grubba Exp $");
+RCSID("$Id: operators.c,v 1.70 1999/11/11 16:07:05 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -447,7 +447,7 @@ static node *optimize_eq(node *n)
   if(count_args(CDR(n))==2)
   {
     first_arg=my_get_arg(&_CDR(n), 0);
-    second_arg=my_get_arg(&_CAR(n), 1);
+    second_arg=my_get_arg(&_CDR(n), 1);
 
 #ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
