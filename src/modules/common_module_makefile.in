@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.14 2003/11/04 22:24:39 bill Exp $
+# $Id: common_module_makefile.in,v 1.15 2003/11/07 22:47:48 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -108,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.14 2003/11/04 22:24:39 bill Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.15 2003/11/07 22:47:48 bill Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
@@ -155,6 +155,13 @@ depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
 pike_external_module: plib/modules
 	@$(MAKE) $(MAKE_FLAGS) LOCAL_MODULE_PATH="./plib/modules" local_install
 
+
+plib/doc_build/images: plib/doc_build
+	@test -d plib/doc_build/images || mkdir plib/doc_build/images
+
+plib/doc_build: plib
+	@test -d plib/doc_build || mkdir plib/doc_build
+
 plib/modules: plib
 	@test -d plib/modules || mkdir plib/modules
 
@@ -192,11 +199,15 @@ gdb_verify: testsuite $(PIKE_EXTERNAL_MODULE)
 	gdb $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 
-extract_autodoc: $(PIKE_EXTERNAL_MODULE) plib/refdoc
+extract_autodoc: $(PIKE_EXTERNAL_MODULE) plib/refdoc plib/doc_build/images
 	$(RUNPIKE) -x extract_autodoc --builddir=plib/refdoc --srcdir=plib/modules
 
 join_autodoc: extract_autodoc
 	$(RUNPIKE) -x join_autodoc --quiet --post-process  "plib/autodoc.xml" "$(CORE_AUTODOC_PATH)" "plib/refdoc"
 
-refdoc:	join_autodoc
-	cd $(SYSTEM_DOC_PATH)/src && $(MAKE) $(MAKE_FLAGS) DESTDIR="$(SYSTEM_DOC_PATH)" modref
+refdoc:	join_autodoc modref.xml
+	cd $(SYSTEM_DOC_PATH)/src && $(MAKE) $(MAKE_FLAGS) BUILDDIR="$(FULL_SRCDIR)/plib" DESTDIR="$(SYSTEM_DOC_PATH)" modref
+
+modref.xml: plib/autodoc.xml $(SYSTEM_DOC_PATH)/src/structure/modref.xml
+	  $(RUNPIKE) -x assemble_autodoc $(SYSTEM_DOC_PATH)/src/structure/modref.xml \
+	  plib/autodoc.xml >plib/modref.xml
