@@ -20,7 +20,7 @@
 #include "pike_macros.h"
 #include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.24 1998/04/06 17:05:10 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.25 1998/04/08 02:47:28 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -29,49 +29,41 @@ struct svalue dest_ob_zero = { T_INT, 0 };
  * This routine frees a short svalue given a pointer to it and
  * its type.
  */
-void free_short_svalue(union anything *s,TYPE_T type)
+
+void really_free_short_svalue(union anything *s, TYPE_T type)
 {
-  check_type(type);
-  check_refs2(s,type);
-
-  if(type <= MAX_REF_TYPE && s->refs)
+  union anything tmp=*s;
+  s->refs=0;
+  switch(type)
   {
-    if(--*(s->refs) <= 0)
-    {
-      union anything tmp=*s;
-      s->refs=0;
-      switch(type)
-      {
-      case T_ARRAY:
-	really_free_array(tmp.array);
-	break;
-
-      case T_MAPPING:
-	really_free_mapping(tmp.mapping);
-	break;
-
-      case T_MULTISET:
-	really_free_multiset(tmp.multiset);
-	break;
-
-      case T_OBJECT:
-	really_free_object(tmp.object);
-	break;
-
-      case T_PROGRAM:
-	really_free_program(tmp.program);
-	break;
-
-      case T_STRING:
-	really_free_string(tmp.string);
-	break;
-
+    case T_ARRAY:
+      really_free_array(tmp.array);
+      break;
+      
+    case T_MAPPING:
+      really_free_mapping(tmp.mapping);
+      break;
+      
+    case T_MULTISET:
+      really_free_multiset(tmp.multiset);
+      break;
+      
+    case T_OBJECT:
+      really_free_object(tmp.object);
+      break;
+      
+    case T_PROGRAM:
+      really_free_program(tmp.program);
+      break;
+      
+    case T_STRING:
+      really_free_string(tmp.string);
+      break;
+      
 #ifdef DEBUG
-      default:
+    default:
 	fatal("Bad type in free_short_svalue.\n");
 #endif
-      }
-    }
   }
 }
 
@@ -278,23 +270,24 @@ void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    struct svalue *s)
 {
-  union anything tmp;
   check_type(s->type);
   check_refs(s);
 
   if(s->type == type)
   {
-    if(type<=MAX_REF_TYPE)
+    INT32 *tmp;
+    switch(type)
     {
-      free_short_svalue(u,type);
-      *u = tmp = s->u;
-      tmp.refs[0]++;
-    }else{
-      *u = s->u;
+      case T_INT: u->integer=s->u.integer; break;
+      case T_FLOAT: u->float_number=s->u.float_number; break;
+      default:
+	if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
+	u->refs = tmp = s->u.refs;
+	tmp[0]++;
     }
-  }else if(IS_ZERO(s)){
-    free_short_svalue(u,type);
-    MEMSET((char *)u,0,sizeof(union anything));
+  }else if(type<=MAX_REF_TYPE && IS_ZERO(s)){
+    if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
+    u->refs=0;
   }else{
     error("Wrong type in assignment.\n");
   }
@@ -304,16 +297,22 @@ void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
 				    struct svalue *s)
 {
-  union anything tmp;
   check_type(s->type);
   check_refs(s);
 
   if(s->type == type)
   {
-    *u = tmp = s->u;
-    if(type <= MAX_REF_TYPE) tmp.refs[0]++;
-  }else if(IS_ZERO(s)){
-    MEMSET((char *)u,0,sizeof(union anything));
+    INT32 *tmp;
+    switch(type)
+    {
+      case T_INT: u->integer=s->u.integer; break;
+      case T_FLOAT: u->float_number=s->u.float_number; break;
+      default:
+	u->refs = tmp = s->u.refs;
+	tmp[0]++;
+    }
+  }else if(type<=MAX_REF_TYPE && IS_ZERO(s)){
+    u->refs=0;
   }else{
     error("Wrong type in assignment.\n");
   }
@@ -327,20 +326,20 @@ void assign_from_short_svalue_no_free(struct svalue *s,
   check_type(type);
   check_refs2(u,type);
 
-  if(type <= MAX_REF_TYPE)
+  switch(type)
   {
-    s->u=*u;
-    if(u->refs)
-    {
-      u->refs[0]++;
-      s->type=type;
-    }else{
-      s->type=T_INT;
-      s->subtype=NUMBER_NUMBER;
-    }
-  }else{
-    s->type=type;
-    s->u=*u;
+    case T_FLOAT: s->type=T_FLOAT; s->u.float_number=u->float_number; break;
+    case T_INT: s->type=T_INT; s->u.integer=u->integer; break;
+    default:
+      if((s->u.refs=u->refs))
+      {
+	u->refs[0]++;
+	s->type=type;
+      }else{
+	s->type=T_INT;
+	s->subtype=NUMBER_NUMBER;
+	s->u.integer=0;
+      }
   }
 }
 
@@ -348,29 +347,36 @@ void assign_short_svalue_no_free(union anything *to,
 				 union anything *from,
 				 TYPE_T type)
 {
-  union anything tmp;
+  INT32 *tmp;
   check_type(type);
   check_refs2(from,type);
 
-  *to = tmp = *from;
-  if(tmp.refs && type <= MAX_REF_TYPE) tmp.refs[0]++;
+  switch(type)
+  {
+    case T_INT: to->integer=from->integer; break;
+    case T_FLOAT: to->float_number=from->float_number; break;
+    default:
+      to->refs = tmp = from->refs;
+      if(tmp) tmp[0]++;
+  }
 }
 
 void assign_short_svalue(union anything *to,
 			 union anything *from,
 			 TYPE_T type)
 {
+  INT32 *tmp;
   check_type(type);
   check_refs2(from,type);
 
-  if(type <= MAX_REF_TYPE)
+  switch(type)
   {
-    union anything tmp;
-    free_short_svalue(to,type);
-    *to = tmp = *from;
-    if(tmp.refs) tmp.refs[0]++;
-  }else{
-    *to = *from;
+    case T_INT: to->integer=from->integer; break;
+    case T_FLOAT: to->float_number=from->float_number; break;
+    default:
+      if(to->refs && --*(to->refs) <= 0) really_free_short_svalue(to,type);
+      to->refs = tmp = from->refs;
+      if(tmp) tmp[0]++;
   }
 }
 
@@ -612,21 +618,28 @@ int low_short_is_equal(const union anything *a,
   check_refs2(a,type);
   check_refs2(b,type);
 
-  sa.u=*a;
-  if(!sa.u.refs)
+  switch(type)
   {
-    if( (sa.type=type) != T_FLOAT)  sa.type=T_INT;
-  }else{
-    sa.type=type;
+    case T_INT: return a->integer == b->integer;
+    case T_FLOAT: return a->float_number == b->float_number;
   }
 
-  sb.u=*b;
-  if(!sb.u.refs)
+  if((sa.u.refs=a->refs))
   {
-    if( (sb.type=type) != T_FLOAT)  sb.type=T_INT;
+    sa.type=type;
   }else{
-    sb.type=type;
+    sa.type=T_INT;
+    sa.u.integer=0;
   }
+
+  if((sb.u.refs=a->refs))
+  {
+    sb.type=type;
+  }else{
+    sb.type=T_INT;
+    sa.u.integer=0;
+  }
+
   return low_is_equal(&sa,&sb,p);
 }
 
