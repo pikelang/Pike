@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.130 2004/11/08 18:18:20 grubba Exp $
+// $Id: install.pike,v 1.131 2004/11/09 12:36:26 grubba Exp $
 
 #define USE_GTK
 
@@ -1221,8 +1221,15 @@ void make_wix()
 			     "TARGETDIR");
   root->merge_module(".", "Pike_module.msm", "Pike", "PIKE_TARGETDIR");
 
-  string title = sprintf("Pike v%d.%d release %d",
-			 __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);
+  string title = 
+#if 1
+    "Pike"
+#else /* !1 */
+    sprintf("Pike v%d.%d release %d",
+	    __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__)
+#endif /* 1 */
+    ;
+
   WixNode feature_node =
     WixNode("Feature", ([
 	      "ConfigurableDirectory":"TARGETDIR",
