@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.226 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: program.c,v 1.227 2000/04/15 12:43:58 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3474,6 +3474,15 @@ void gc_mark_program_as_referenced(struct program *p)
 {
   debug_malloc_touch(p);
 
+  if (p->flags & PROGRAM_AVOID_CHECK) {
+    /* Program is in an inconsistant state.
+     * don't look closer at it.
+     */
+    debug_malloc_touch(p);
+    gc_mark(p);
+    return;
+  }
+  
   if(gc_mark(p))
   {
     int e;
@@ -3498,6 +3507,14 @@ static void gc_check_program(struct program *p)
   extern void * check_for;
   
   debug_malloc_touch(p);
+
+  if (p->flags & PROGRAM_AVOID_CHECK) {
+    /* Program is in an inconsistant state.
+     * don't look closer at it.
+     */
+    debug_malloc_touch(p);
+    return;
+  }
   
   for(e=0;e<p->num_constants;e++) {
     debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
@@ -3516,21 +3533,21 @@ static void gc_check_program(struct program *p)
       debug_gc_check(p->inherits[e].parent, T_PROGRAM, p);
 #endif
     }
-    
+
     if(d_flag && p->inherits[e].name && check_for != (void *)1)
       debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
-    
+
     if(e && p->inherits[e].prog)
       debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);
   }
-  
+
 #ifdef PIKE_DEBUG
   if(d_flag && check_for != (void *)1)
   {
     int e;
     for(e=0;e<(int)p->num_strings;e++)
       debug_gc_check(p->strings[e], T_PROGRAM, p);
-    
+
     for(e=0;e<(int)p->num_identifiers;e++)
     {
       debug_gc_check(p->identifiers[e].name, T_PROGRAM, p);
