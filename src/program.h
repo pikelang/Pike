@@ -170,7 +170,7 @@ int find_identifier(char *name,struct program *prog);
 int store_prog_string(struct lpc_string *str);
 int store_constant(struct svalue *foo, int equal);
 void start_line_numbering(void);
-void store_linenumber(void);
+void store_linenumber(INT32 current_line, struct lpc_string *current_string);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...);
 void compile();

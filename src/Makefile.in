@@ -67,7 +67,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFL
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
 #
-OBJ=language.o add_efun.o array.o builtin_efuns.o backend.o \
+OBJ=language.o peep.o add_efun.o array.o builtin_efuns.o backend.o \
     call_out.o docode.o dynamic_buffer.o error.o fd_control.o \
     fsort.o hashtable.o interpret.o lex.o las.o list.o \
     lpc_types.o main.o mapping.o memory.o module.o object.o \
@@ -167,6 +167,10 @@ run_hilfe:
 export: $(SRCDIR)/test/testsuite
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNULPC) $(TMP_BINDIR)/export.lpc
+
+peep_engine.c: peep.in
+	echo "" >$(SRCDIR)/peep_engine.c
+	-$(RUNULPC) $(TMP_BINDIR)/mkpeep.lpc $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
 # make dependencies (requires compiled uLPC)
 depend: language.c
@@ -268,6 +272,22 @@ array.o: array.c \
   fsort.h \
   builtin_efuns.h \
   gc.h
+backend.o: backend.c \
+  global.h machine.h \
+  config.h \
+  port.h \
+  backend.h \
+  interpret.h \
+  program.h \
+  object.h \
+  svalue.h \
+  error.h \
+  call_out.h \
+  fd_control.h \
+  main.h \
+  callback.h \
+  array.h las.h \
+  dynamic_buffer.h
 builtin_efuns.o: builtin_efuns.c \
   global.h machine.h \
   config.h \
@@ -316,23 +336,6 @@ callback.o: callback.c \
   svalue.h \
   dynamic_buffer.h \
   program.h
-docode.o: docode.c \
-  global.h machine.h \
-  config.h \
-  port.h las.h \
-  svalue.h \
-  dynamic_buffer.h \
-  program.h language.h \
-  lpc_types.h \
-  stralloc.h \
-  interpret.h \
-  add_efun.h \
-  hashtable.h \
-  array.h \
-  macros.h \
-  error.h \
-  main.h lex.h \
-  builtin_efuns.h
 dynamic_buffer.o: dynamic_buffer.c \
   global.h machine.h \
   config.h \
@@ -368,7 +371,14 @@ fsort.o: fsort.c \
 gc.o: gc.c \
   global.h machine.h \
   config.h \
-  port.h gc.h \
+  port.h \
+  array.h las.h \
+  svalue.h \
+  dynamic_buffer.h \
+  program.h \
+  list.h \
+  mapping.h \
+  object.h gc.h \
   main.h
 hashtable.o: hashtable.c \
   global.h machine.h \
@@ -455,7 +465,8 @@ list.o: list.c \
   macros.h \
   error.h \
   interpret.h \
-  builtin_efuns.h
+  builtin_efuns.h \
+  gc.h
 lpc_signal.o: lpc_signal.c \
   global.h machine.h \
   config.h \
@@ -520,7 +531,8 @@ mapping.o: mapping.c \
   array.h \
   macros.h language.h \
   error.h \
-  interpret.h
+  interpret.h \
+  gc.h
 memory.o: memory.c \
   global.h machine.h \
   config.h \
@@ -583,6 +595,12 @@ operators.o: operators.c \
   docode.h \
   add_efun.h \
   hashtable.h
+peep.o: peep.c \
+  global.h machine.h \
+  config.h \
+  port.h \
+  peep_engine.c
+peep_engine.o: peep_engine.c
 port.o: port.c \
   global.h machine.h \
   config.h \
