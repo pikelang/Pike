@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.150 2001/01/24 08:17:28 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.151 2001/02/01 19:58:56 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -289,6 +289,17 @@ void low_init_threads_disable(void)
 		   threads_disabled));
 }
 
+/*! @decl object(_disable_threads) _disable_threads()
+ *!
+ *! This function first posts a notice to all threads that it is time to stop.
+ *! It then waits until all threads actually *have* stopped, and then then 
+ *! returns an object. All other threads will be blocked from running until
+ *! that object has been freed/destroyed.
+ *!
+ *! @note
+ *! This function can completely block Pike if used incorrectly.
+ *! Use with extreme caution.
+ */
 void init_threads_disable(struct object *o)
 {
   low_init_threads_disable();
@@ -510,7 +521,16 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
      by incrementing refcount though. */
 }
 
+/*! @module Thread
+ */
 
+/*! @decl array(Thread.Thread) all_threads()
+ *!
+ *! This function returns an array with the thread ids of all threads.
+ *!
+ *! @seealso
+ *!   @[Thread.Thread()]
+ */
 PMOD_EXPORT void f_all_threads(INT32 args)
 {
   /* Return an unordered array containing all threads that was running
@@ -679,6 +699,31 @@ TH_RETURN_TYPE new_thread_func(void * data)
 int num_lwps = 1;
 #endif
 
+/*! @class Thread
+ */
+
+/* @decl void create(function(mixed...:void) f, mixed ... args)
+ *!
+ *! This function creates a new thread which will run simultaneously
+ *! to the rest of the program. The new thread will call the function
+ *! @[f] with the arguments @[args]. When @[f] returns the thread will cease
+ *! to exist.
+ *!
+ *! All Pike functions are 'thread safe' meaning that running
+ *! a function at the same time from different threads will not corrupt
+ *! any internal data in the Pike process.
+ *!
+ *! @returns
+ *!   The returned value will be the same as the return value of
+ *!   @[Thread.this_thread()] for the new thread.
+ *!
+ *! @note
+ *!   This function is only available on systems with POSIX or UNIX or WIN32
+ *!   threads support.
+ *!
+ *! @seealso
+ *!   @[Mutex], @[Condition], @[this_thread()]
+ */
 void f_thread_create(INT32 args)
 {
   THREAD_T dummy;
@@ -722,7 +767,12 @@ void f_thread_create(INT32 args)
   }
 }
 
+/*! @endclass
+ */
+
 #ifdef UNIX_THREADS
+/*! @decl void thread_set_concurrency(int concurrency)
+ */
 void f_thread_set_concurrency(INT32 args)
 {
   int c=1;
@@ -734,6 +784,13 @@ void f_thread_set_concurrency(INT32 args)
 }
 #endif
 
+/*! @decl Thread.Thread this_thread()
+ *!
+ *! This function returns the object that identifies this thread.
+ *!
+ *! @seealso
+ *! @[Thread.Thread()]
+ */
 PMOD_EXPORT void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
@@ -764,6 +821,50 @@ struct key_storage
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
+/*! @class Mutex
+ *!
+ *! @[Thread.Mutex] is a class that implements mutual exclusion locks.
+ *! Mutex locks are used to prevent multiple threads from simultaneously
+ *! execute sections of code which access or change shared data. The basic
+ *! operations for a mutex is locking and unlocking. If a thread attempts
+ *! to lock an already locked mutex the thread will sleep until the mutex
+ *! is unlocked.
+ *!
+ *! @note
+ *!   This class is simulated when Pike is compiled without thread support,
+ *!   so it's always available.
+ *!
+ *! In POSIX threads, mutex locks can only be unlocked by the same thread
+ *! that locked them. In Pike any thread can unlock a locked mutex.
+ */
+
+/*! @decl MutexKey lock()
+ *! @decl MutexKey lock(int type)
+ *!
+ *! This function attempts to lock the mutex. If the mutex is already
+ *! locked by a different thread the current thread will sleep until the
+ *! mutex is unlocked. The value returned is the 'key' to the lock. When
+ *! the key is destructed or has no more references the lock will
+ *! automatically be unlocked. The key will also be destructed if the lock
+ *! is destructed.
+ *!
+ *! The @[type] argument specifies what @[lock()] should do if the
+ *! mutex is already locked by this thread:
+ *! @int
+ *!   @value 0 (default)
+ *!     Throw an error.
+ *!   @value 1
+ *!     Sleep until the mutex is unlocked. Useful if some
+ *!     other thread will unlock it.
+ *!   @value 2
+ *!     Return zero. This allows recursion within a locked region of
+ *!     code, but in conjunction with other locks it easily leads
+ *!     to unspecified locking order and therefore a risk for deadlocks.
+ *! @endint
+ *!
+ *! @seealso
+ *!   @[trylock()]
+ */
 void f_mutex_lock(INT32 args)
 {
   struct mutex_storage  *m;
@@ -842,6 +943,16 @@ void f_mutex_lock(INT32 args)
   push_object(o);
 }
 
+/*! @decl MutexKey trylock()
+ *! @decl MutexKey trylock(int type)
+ *!
+ *! This function performs the same operation as @[lock()], but if the mutex
+ *! is already locked, it will return zero instead of sleeping until it's
+ *! unlocked.
+ *!
+ *! @seealso
+ *!   @[lock()]
+ */
 void f_mutex_trylock(INT32 args)
 {
   struct mutex_storage  *m;
@@ -912,6 +1023,9 @@ void exit_mutex_obj(struct object *o)
   co_destroy(& THIS_MUTEX->condition);
 }
 
+/*! @endclass
+ */
+
 #define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
 void init_mutex_key_obj(struct object *o)
 {
@@ -949,6 +1063,37 @@ void exit_mutex_key_obj(struct object *o)
 }
 
 #define THIS_COND ((COND_T *)(CURRENT_STORAGE))
+
+/*! @class Condition
+ *!
+ *! Implementation of condition variables.
+ *!
+ *! Condition variables are used by threaded programs
+ *! to wait for events happening in other threads.
+ *!
+ *! @note
+ *!   Condition variables are only available on systems with thread
+ *!   support. The Condition class is not simulated otherwise, since that
+ *!   can't be done accurately without continuations.
+ *!
+ *! @seealso
+ *!   @[Thread.Mutex]
+ */
+
+/*! @decl void wait()
+ *! @decl void wait(Thread.MutexKey mutex_key)
+ *!
+ *! Wait for contition.
+ *!
+ *! This function makes the current thread sleep until the condition
+ *! variable is signalled. The optional argument should be the 'key'
+ *! to a mutex lock. If present the mutex lock will be unlocked before
+ *! waiting for the condition in one atomic operation. After waiting
+ *! for the condition the mutex referenced by mutex_key will be re-locked.
+ *!
+ *! @seealso
+ *!   @[Thread.Mutex->lock()]
+ */
 void f_cond_wait(INT32 args)
 {
   COND_T *c;
@@ -1010,12 +1155,48 @@ void f_cond_wait(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl void signal()
+ *!
+ *! @[signal()] wakes up one of the threads currently waiting for the
+ *! condition.
+ *!
+ *! @bugs
+ *!   Sometimes more than one thread is woken up.
+ *!
+ *! @seealso
+ *!   @[broadcast()]
+ */
 void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
+
+/*! @decl void broadcast()
+ *!
+ *! @[broadcast()] wakes up all threads currently waiting for this condition.
+ *!
+ *! @seealso
+ *!   @[signal()]
+ */
 void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); }
+
 void init_cond_obj(struct object *o) { co_init(THIS_COND); }
 void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
+/*! @endclass
+ */
+
+/*! @class Thread
+ */
+
 /* FIXME:  -Hubbe */
+/*! @decl array(mixed) backtrace()
+ *!
+ *! Returns the current call stack for the thread.
+ *!
+ *! @returns
+ *!   The result has the same format as for @[predef::backtrace()].
+ *!
+ *! @seealso
+ *!   @[predef::backtrace()]
+ */
 void f_thread_backtrace(INT32 args)
 {
   struct thread_state *foo = THIS_THREAD;
@@ -1039,12 +1220,18 @@ void f_thread_backtrace(INT32 args)
   }
 }
 
+/*! @decl int status()
+ */
 void f_thread_id_status(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS_THREAD->status);
 }
 
+/*! @decl static string _sprintf(int c)
+ *!
+ *! Returns a string identifing the thread.
+ */
 void f_thread_id__sprintf (INT32 args)
 {
   pop_n_elems (args);
@@ -1054,6 +1241,11 @@ void f_thread_id__sprintf (INT32 args)
   f_add (3);
 }
 
+/*! @decl mixed result()
+ *!
+ *! Waits for the thread to complete, and then returns
+ *! the value returned from the thread function.
+ */
 static void f_thread_id_result(INT32 args)
 {
   struct thread_state *th=THIS_THREAD;
@@ -1090,6 +1282,9 @@ void exit_thread_obj(struct object *o)
   th_destroy(& THIS_THREAD->id);
 }
 
+/*! @end class
+ */
+
 static void thread_was_recursed(struct object *o)
 {
   struct thread_state *tmp=THIS_THREAD;
@@ -1124,6 +1319,21 @@ static void thread_was_checked(struct object *o)
 #endif
 }
 
+/*! @class Local
+ *!
+ *! Thread local variable storage.
+ *!
+ *! This class allows you to have variables which are separate for each
+ *! thread that uses it. It has two methods: @[get()] and @[set()]. A value
+ *! stored in an instance of @[Thread.Local] can only be retrieved by that
+ *! same thread.
+ *!
+ *! @note
+ *!   This class is simulated when Pike is compiled without thread support,
+ *!   so it's always available.
+ */
+
+/* FIXME: Why not use an init-callback? */
 PMOD_EXPORT void f_thread_local(INT32 args)
 {
   static INT32 thread_local_id = 0;
@@ -1134,6 +1344,16 @@ PMOD_EXPORT void f_thread_local(INT32 args)
   push_object(loc);
 }
 
+/*! @decl mixed get()
+ *!
+ *! Get the thread local value.
+ *!
+ *! This returns the value prevoiusly stored in the @[Thread.Local] object by
+ *! the @[set()] method by this thread.
+ *!
+ *! @seealso
+ *!   @[set()]
+ */
 void f_thread_local_get(INT32 args)
 {
   struct svalue key;
@@ -1151,6 +1371,25 @@ void f_thread_local_get(INT32 args)
   }
 }
 
+/*! @decl mixed set(mixed value)
+ *!
+ *! Set the thread local value.
+ *!
+ *! This sets the value returned by the @[get] method.
+ *!
+ *! Calling this method does not affect the value returned by @[get()] when
+ *! it's called by another thread (ie multiple values can be stored at the
+ *! same time, but only one value per thread).
+ *!
+ *! @returns
+ *!   This function returns its argument.
+ *!
+ *! @note
+ *!   Note that the value set can only be retreived by the same thread.
+ *!
+ *! @seealso
+ *!   @[get()]
+ */
 void f_thread_local_set(INT32 args)
 {
   struct svalue key;
@@ -1172,6 +1411,9 @@ void f_thread_local_set(INT32 args)
 
   mapping_insert(m, &key, &Pike_sp[-1]);
 }
+
+/*! @endclass
+ */
 
 /* Thread farm code by Per
  * 
@@ -1349,7 +1591,7 @@ void th_init(void)
   START_NEW_PROGRAM_ID(THREAD_MUTEX_KEY);
   mutex_key_offset = ADD_STORAGE(struct key_storage);
   /* This is needed to allow the gc to find the possible circular reference.
-   * It also allows a process to take over ownership of a key.
+   * It also allows a thread to take over ownership of a key.
    */
   map_variable("_owner", "object", 0,
 	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
