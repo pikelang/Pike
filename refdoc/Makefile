@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.42 2002/03/11 21:23:45 nilsson Exp $
+# $Id: Makefile,v 1.43 2002/03/17 11:34:34 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -60,15 +60,15 @@ build/autodoc.xml: build/src/sub_manual.xml build/lib/sub_manual.xml bin/join.pi
 	$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/sub_manual.xml \
 	  build/lib/sub_manual.xml
 
-build/src/sub_manual.xml: build/src build/images bin/extract.pike \
-			  bin/mirardoc.pike bin/join.pike
+build/src/sub_manual.xml: build/src build/images always
 	$(PIKE) bin/extract.pike ../src/ build/src/ build/images/
 	$(PIKE) bin/join.pike build/src/sub_manual.xml build/src/
 
-build/lib/sub_manual.xml: build/lib build/images images bin/extract.pike \
-			  bin/mirardoc.pike bin/join.pike
+build/lib/sub_manual.xml: build/lib build/images images always
 	$(PIKE) bin/extract.pike ../lib/ build/lib/ build/images/
 	$(PIKE) bin/join.pike build/lib/sub_manual.xml build/lib/
+
+always:
 
 images: build/src/post_modules/GTK/refdoc/images
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
