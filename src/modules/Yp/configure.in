@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 1998/09/20 08:32:45 hubbe Exp $
+# $Id: configure.in,v 1.9 2000/08/17 18:28:57 grubba Exp $
 AC_INIT(yp.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -111,5 +111,7 @@ int yp_order(const char *, const char *, long *);
 ])
 AC_DEFINE_UNQUOTED(YP_ORDER_TYPE, $pike_cv_yp_order_type)
 AC_MSG_RESULT($pike_cv_yp_order_type)
+
+AC_CHECK_FUNCS(yperr_string)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
