@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.249 2000/04/06 20:17:05 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.250 2000/04/07 19:07:55 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5738,7 +5738,8 @@ void init_builtin_efuns(void)
   ADD_EFUN("lower_case",f_lower_case,tFunc(tStr,tStr),OPT_TRY_OPTIMIZE);
   
 /* function(0=mapping,mixed:0) */
-  ADD_EFUN("m_delete",f_m_delete,tFunc(tSetvar(0,tMapping) tMix,tVar(0)),0);
+  ADD_EFUN("m_delete",f_m_delete,tFunc(tSetvar(0,tMapping) tMix,tVar(0)),
+	   OPT_SIDE_EFFECT);
   
 /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
