@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.28 2002/02/21 19:47:57 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.29 2002/02/21 20:24:37 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -24,7 +24,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Remove tokens_to_code kludge, either by fixing Parser.Pike so
   that it returns the correct tokens, or by fixing Pike so that
   \"( < > )\" is a valid statement.
-- Fix so that objects with 'broken' `== can be adde to variables.
 - Shorten backtraces that are outputted in hilfe.
 - Add some better multiline edit support.
 - Tab completion of variable and module names.
@@ -239,8 +238,21 @@ Enter \"help me more\" for further Hilfe help.
     write(describe_backtrace(err)+"\n\n");
 }
 
+private constant usr_vector_a = ({
+  89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32,
+  72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108, 115, 32,
+  103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111, 117, 32, 115, 101, 101, 32 });
+private constant usr_vector_b = ({
+  32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97, 110, 121,
+  32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114, 111, 109, 32, 104,
+  101, 114, 101, 46 });
+private constant usr_vector_c = ({
+  32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110, 103, 32 });
+private constant usr_vector_d = usr_vector_c[..8] + ({
+  101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
+
 private void|string command_look(Evaluator e, string line, array(string) tokens) {
-  string ret = "You are inside a Hilfe. It smells good here. You see ";
+  string ret = (string)usr_vector_a;
 
   array(string) thing(mixed thing, string what, void|string a, void|string b) {
     if(!sizeof(thing)) return ({});
@@ -262,11 +274,11 @@ private void|string command_look(Evaluator e, string line, array(string) tokens)
   tmp += thing(e->functions, "function");
   tmp += thing(e->programs, "program");
   if(sizeof(tmp))
-    ret += " You are carrying " + String.implode_nicely(tmp) + ".";
+    ret += (string)usr_vector_c + String.implode_nicely(tmp) + ".";
   else
-    ret += " You are empty handed.";
+    ret += (string)usr_vector_d;
 
-  ret += " You can go in any direction from here.";
+  ret += (string)usr_vector_b;
   e->write("%-=67s\n", ret);
 }
 
@@ -552,90 +564,6 @@ private class ParserState {
 //! In every Hilfe object (@[Evaluator]) there is a HilfeHistory
 //! object that manages the result history. That history object is
 //! accessible both from __ and ___Hilfe->history in Hilfe expressions.
-private class _HilfeHistory {
-
-  private int size=10;
-  private int last_entry_num;
-  private array history = ({});
-
-  //! Returns the absolute sequence number of the last
-  //! result inserted into the history.
-  int get_last_entry_num() {
-    return last_entry_num;
-  }
-
-  //! Returns the absolute sequence number of the
-  //! oldest result still in the history.
-  int get_first_entry_num() {
-    return last_entry_num - sizeof(history) +1;
-  }
-
-  //! Returns the maximum number of entries that can be
-  //! stored in the history simultaneous.
-  int get_maxsize() { return size; }
-
-  //! Set the maximume number of entries that can be
-  //! stored in the history simultaneous.
-  void set_maxsize(int _size) {
-    size = _size;
-    if(sizeof(history)>size)
-      history = history[sizeof(history)-size..];
-  }
-
-  //! Returns the number of entries currently in the history.
-  int _sizeof() {
-    return sizeof(history);
-  }
-
-  //! Empty the history.
-  void flush() {
-    last_entry_num = 0;
-    history = ({});
-  }
-
-  //! Add a result to the history.
-  void add(mixed value) {
-    last_entry_num++;
-    history += ({ value });
-    if(sizeof(history) == size+1)
-      history = history[1..];
-  }
-
-  //! Get a value from the history as if it was an array, e.g.
-  //! both positive and negative numbers may be used.
-  mixed `[](int i) {
-    if(i<0) {
-      if(i<-sizeof(history))
-	error("Hilfe History Error: Only %d entries in history.\n",
-	      sizeof(history));
-      return history[i];
-    }
-    if(i>last_entry_num)
-      error("Hilfe History Error: Only %d entrues in history.\n",
-	    sizeof(history));
-    if(i-get_first_entry_num() < 0)
-      error("Hilfe History Error: The oldest history entry is %d.\n",
-	    get_first_entry_num());
-    return history[i-get_first_entry_num()];
-  }
-
-  //! Returns the history status.
-  string status() {
-    string ret = "";
-    int abs_num = get_first_entry_num();
-    int rel_num = -sizeof(history);
-    foreach(history, mixed value)
-      ret += sprintf(" %2d (%2d) : %s\n", abs_num++, rel_num++,
-		     replace(sprintf("%O",value), "\n", "\n           "));
-    ret += sprintf("%d out of %d possible entries used.\n", sizeof(history), size);
-    return ret;
-  }
-
-  string _sprintf(int type) {
-    if(type=='O' || type=='t') return "HilfeHistory";
-  }
-}
-
 private class HilfeHistory {
 
   inherit ADT.History;
@@ -859,9 +787,10 @@ class Evaluator {
       old_value = m_delete(variables, tokens[0]);
       existed = 1;
     }
-    if(object o=hilfe_compile(type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
-			      tokens[0] + "; }\n", tokens[0])) {
-      variables[tokens[0]] = o->___HilfeWrapper();
+    if(object o=hilfe_compile("class ___HilfeWrapper {\n" +
+			      type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
+			      tokens[0] + "; }\n}\n", tokens[0])) {
+      variables[tokens[0]] = o->___HilfeWrapper()->___HilfeWrapper();
       types[tokens[0]] = type;
     }
     else if(existed)
@@ -1139,7 +1068,7 @@ class Evaluator {
 
        map(indices(variables),
 	   lambda(string f) {
-	     return sprintf("%s %s=___hilfe.%s;", types[f], f, f);
+	     return sprintf("%s %s;", types[f], f);
 	   }) * "\n" + "\n" +
 
        "\nmapping query_variables() { return ([\n"+
@@ -1176,6 +1105,10 @@ class Evaluator {
       write(describe_backtrace(err));
       return 0;
     }
+
+    // Populate variables
+    foreach(variables; string name; mixed value)
+      o[name] = value;
 
     return o;
   }
