@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.466 2002/12/08 15:57:07 grubba Exp $
+|| $Id: program.c,v 1.467 2002/12/10 16:53:28 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.466 2002/12/08 15:57:07 grubba Exp $");
+RCSID("$Id: program.c,v 1.467 2002/12/10 16:53:28 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -996,9 +996,9 @@ static struct node_s *index_modules(struct pike_string *ident,
       throw_value.type = T_INT;
 
       if (!ident->size_shift) {
-	my_yyerror("Couldn't index module '%s'.", ident->str);
+	my_yyerror("Couldn't index a module with '%s'.", ident->str);
       } else {
-	yyerror("Couldn't index module.");
+	yyerror("Couldn't index a module.");
       }
 
       push_svalue(&thrown);
@@ -1019,12 +1019,28 @@ static struct node_s *index_modules(struct pike_string *ident,
 	if(!IS_UNDEFINED(Pike_sp-1))
 	{
 	  struct node_s *ret;
-
 	  UNSETJMP(tmp);
-	  if(!*module_index_cache)
-	    *module_index_cache = allocate_mapping(10);
-	  mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
-	  ret = mksvaluenode(Pike_sp-1);
+
+	  if (Pike_compiler->compiler_pass == 2 &&
+	      ((Pike_sp[-1].type == T_OBJECT &&
+		Pike_sp[-1].u.object == placeholder_object) ||
+	       (Pike_sp[-1].type == T_PROGRAM &&
+		Pike_sp[-1].u.program == placeholder_program))) {
+	    if (!ident->size_shift)
+	      my_yyerror("Got placeholder %s (resolver problem) "
+			 "when indexing a module with '%s'.",
+			 get_name_of_type (Pike_sp[-1].type), ident->str);
+	    else
+	      my_yyerror("Got placeholder %s (resolver problem).",
+			 get_name_of_type (Pike_sp[-1].type));
+	    ret = 0;
+	  }
+	  else {
+	    if(!*module_index_cache)
+	      *module_index_cache = allocate_mapping(10);
+	    mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
+	    ret = mksvaluenode(Pike_sp-1);
+	  }
 	  pop_stack();
 	  return ret;
 	}
@@ -1131,13 +1147,28 @@ struct node_s *resolve_identifier(struct pike_string *ident)
       }
 
       if (safe_apply_handler("resolv", error_handler, compat_handler, 3, 0)) {
-	if(!resolve_cache)
-	  resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
-	mapping_string_insert(resolve_cache,ident,Pike_sp-1);
+	if (Pike_compiler->compiler_pass == 2 &&
+	    ((Pike_sp[-1].type == T_OBJECT &&
+	      Pike_sp[-1].u.object == placeholder_object) ||
+	     (Pike_sp[-1].type == T_PROGRAM &&
+	      Pike_sp[-1].u.program == placeholder_program))) {
+	  if (!ident->size_shift)
+	    my_yyerror("Got placeholder %s (resolver problem) "
+		       "when resolving '%s'.",
+		       get_name_of_type (Pike_sp[-1].type), ident->str);
+	  else
+	    my_yyerror("Got placeholder %s (resolver problem).",
+		       get_name_of_type (Pike_sp[-1].type));
+	}
+	else {
+	  if(!resolve_cache)
+	    resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
+	  mapping_string_insert(resolve_cache,ident,Pike_sp-1);
 
-	if(!(SAFE_IS_ZERO(Pike_sp-1) && Pike_sp[-1].subtype==1))
-	{
-	  ret=mkconstantsvaluenode(Pike_sp-1);
+	  if(!(SAFE_IS_ZERO(Pike_sp-1) && Pike_sp[-1].subtype==1))
+	  {
+	    ret=mkconstantsvaluenode(Pike_sp-1);
+	  }
 	}
 	pop_stack();
       }
@@ -3095,10 +3126,10 @@ void low_inherit(struct program *p,
     return;
   }
 
-#ifdef PIKE_DEBUG
-  if (p == placeholder_program)
-    Pike_fatal("Trying to inherit placeholder_program.\n");
-#endif
+  if (p == placeholder_program) {
+    yyerror("Trying to inherit placeholder program (resolver problem).");
+    return;
+  }
 
   if(p->flags & PROGRAM_NEEDS_PARENT)
   {
