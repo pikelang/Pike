@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.16 2002/12/12 20:42:18 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.17 2002/12/19 15:16:55 grubba Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -9,6 +9,8 @@ string execute;
 
 mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
+
+int verbosity = 1;
 
 /*
 
@@ -82,7 +84,8 @@ mapping lower_nowM()
 
 void report(string s)
 {
-   werror("mkxml:   "+s+"\n");
+  if (verbosity > 0)
+    werror("mkxml:   "+s+"\n");
 }
 
 #define complain(X) (X)
@@ -874,7 +877,9 @@ array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
 		    p->tag_name()) });
 }
 
-void create(string IMAGE_DIR) {
+void create(string IMAGE_DIR, int|void quiet)
+{
+  verbosity = !quiet;
 
   parser = Parser.HTML();
 
@@ -1044,8 +1049,9 @@ void create(string IMAGE_DIR) {
     object|string o=render();
     if(objectp(o))
       o=Image.PNG.encode(o);
-    Stdio.write_file(fn, o);
-    werror(\"Wrote %s.\\n\", fn);
+    Stdio.write_file(fn, o);" +
+    ((verbosity > 1)?#"
+    werror(\"Wrote %s.\\n\", fn);":"") + #"
 #endif
     return \"<image>\"+fn+\"</image>\";
   }
@@ -1078,8 +1084,9 @@ void create(string IMAGE_DIR) {
 #if constant(Image.PNG.encode)
     if(!stringp(img))
       img = Image.PNG.encode(img);
-    Stdio.write_file(fn, img);
-    werror(\"Wrote %s from execute.\\n\", fn);
+    Stdio.write_file(fn, img);"+
+    ((verbosity > 1)?#"
+    werror(\"Wrote %s from execute.\\n\", fn);":"") + #"
 #endif
     return \"<image>\"+fn+\"</image>\";
   }
