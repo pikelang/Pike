@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.58 2003/03/04 17:10:21 grubba Exp $
+|| $Id: jvm.c,v 1.59 2003/03/13 22:06:01 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.58 2003/03/04 17:10:21 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.59 2003/03/13 22:06:01 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -37,6 +37,8 @@ RCSID("$Id: jvm.c,v 1.58 2003/03/04 17:10:21 grubba Exp $");
 #include "operators.h"
 
 #ifdef HAVE_JAVA
+
+#include <stdarg.h>
 
 #ifdef HAVE_JNI_H
 #include <jni.h>
@@ -1567,6 +1569,99 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 #else
 #ifdef HAVE_PPC_CPU
 
+#ifdef __linux
+
+/* SVR4 ABI */
+
+#define VARARG_NATIVE_DISPATCH
+
+#define NUM_FP_SAVE 8
+#define REG_SAVE_AREA_SIZE (8*NUM_FP_SAVE+4*8+8)
+#define STACK_FRAME_SIZE (8+REG_SAVE_AREA_SIZE+12+4)
+#define VAOFFS0 (8+REG_SAVE_AREA_SIZE)
+#define VAOFFS(x) ((((char*)&((*(va_list*)NULL))[0].x)-(char*)NULL)+VAOFFS0)
+
+struct cpu_context {
+  unsigned INT32 code[32+NUM_FP_SAVE];
+};
+
+static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
+			   void (*dispatch)(), int args,
+			   int flt_args, int dbl_args)
+{
+  unsigned INT32 *p = ctx->code;
+  int i;
+
+  *p++ = 0x7c0802a6;  /* mflr r0         */
+  *p++ = 0x90010004;  /* stw r0,4(r1)    */
+  *p++ = 0x94210000|(0xffff&-STACK_FRAME_SIZE);
+		      /* stwu r1,-STACK_FRAME_SIZE(r1) */
+  if(!statc)
+    *p++ = 0x9081000c;  /* stw r4,12(r1)   */
+  *p++ = 0x90a10010;  /* stw r5,16(r1)   */
+  *p++ = 0x90c10014;  /* stw r6,20(r1)   */
+  *p++ = 0x90e10018;  /* stw r7,24(r1)   */
+  *p++ = 0x9101001c;  /* stw r8,28(r1)   */
+  *p++ = 0x91210020;  /* stw r9,32(r1)   */
+  *p++ = 0x91410024;  /* stw r10,36(r1)  */
+
+  *p++ = 0x40a60000|(4*NUM_FP_SAVE+4);
+		      /* bne+ cr1,.nofpsave */
+  for(i=0; i<NUM_FP_SAVE; i++)
+    *p++ = 0xd8010000|((i+1)<<21)|(8+4*8+8*i);
+		      /* stfd fN,M(r1)   */
+
+		      /* .nofpsave:      */
+  if(statc) {
+    *p++ = 0x7c852378;  /* mr r5,r4        */
+    *p++ = 0x38000002;  /* li r0,2	   */
+  } else {
+    *p++ = 0x38a00000;  /* li r5,0         */
+    *p++ = 0x38000001;  /* li r0,1	   */
+  }
+  
+  *p++ = 0x7c641b78;  /* mr r4,r3        */
+  *p++ = 0x98010000|VAOFFS(gpr);
+		      /* stb r0,gpr      */
+  *p++ = 0x38000000;  /* li r0,0         */
+  *p++ = 0x98010000|VAOFFS(fpr);
+		      /* stb r0,fpr      */
+  *p++ = 0x38010000|(STACK_FRAME_SIZE+8);
+		      /* addi r0,r1,STACK_FRAME_SIZE+8   */
+  *p++ = 0x90010000|VAOFFS(overflow_arg_area);
+		      /* stw r0,overflow_arg_area        */
+  *p++ = 0x38010008;  /* addi r0,r1,8                    */
+  *p++ = 0x90010000|VAOFFS(reg_save_area);
+		      /* stw r0,reg_save_area            */
+
+  *p++ = 0x38c10000|VAOFFS0;
+		      /* addi r6,r1,va_list              */
+
+  *p++ = 0x3c600000|(((unsigned INT32)(void *)data)>>16);
+                      /* lis r3,hi16(data)          */
+  *p++ = 0x60630000|(((unsigned INT32)(void *)data)&0xffff);
+                      /* ori r3,r3,lo16(data)       */
+ 
+  *p++ = 0x3d800000|(((unsigned INT32)(void *)dispatch)>>16);
+                      /* lis r12,hi16(dispatch)     */
+  *p++ = 0x618c0000|(((unsigned INT32)(void *)dispatch)&0xffff);
+                      /* ori r12,r12,lo16(dispatch) */
+
+  *p++ = 0x7d8803a6;  /* mtlr r12        */
+  *p++ = 0x4e800021;  /* blrl            */
+
+  *p++ = 0x80210000;  /* lwz r1,0(r1)    */
+  *p++ = 0x80010004;  /* lwz r0,4(r1)    */
+  *p++ = 0x7c0803a6;  /* mtlr r0         */
+  *p++ = 0x4e800020;  /* blr             */
+
+  return ctx->code;
+}
+
+#else /* __linux */
+
+/* PowerOpen ABI */
+
 struct cpu_context {
   unsigned INT32 code[23];
 };
@@ -1619,6 +1714,8 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 
   return ctx->code;
 }
+
+#endif /* __linux */
 
 #else
 #ifdef HAVE_ALPHA_CPU
@@ -1761,8 +1858,26 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
   }
 }
 
+#ifdef VARARG_NATIVE_DISPATCH
+
+#define ARGS_TYPE va_list*
+#define GET_NATIVE_ARG(ty) va_arg(*args,ty)
+#define NATIVE_ARG_JFLOAT_TYPE jdouble
+
+#else
+
+#ifndef ARGS_TYPE
+#define ARGS_TYPE void*
+#endif
+
 #ifndef GET_NATIVE_ARG
 #define GET_NATIVE_ARG(ty) (((args)=((ty *)(args))+1),(((ty *)(args))[-1]))
+#endif
+
+#ifndef NATIVE_ARG_JFLOAT_TYPE
+#define NATIVE_ARG_JFLOAT_TYPE jfloat
+#endif
+
 #endif
 
 static void do_native_dispatch(struct native_method_context *ctx,
@@ -1784,7 +1899,7 @@ static void do_native_dispatch(struct native_method_context *ctx,
 
   {
     int nargs = 0;
-    void *args = args_;
+    ARGS_TYPE args = args_;
 
     if(!cls) {
       push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
@@ -1812,7 +1927,7 @@ static void do_native_dispatch(struct native_method_context *ctx,
 	break;
       
       case 'F':
-	push_float(GET_NATIVE_ARG(jfloat));
+	push_float(GET_NATIVE_ARG(NATIVE_ARG_JFLOAT_TYPE));
 	break;
       
       case 'D':
