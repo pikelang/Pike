@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: internal.h,v 1.2 2001/03/26 16:46:16 mirar Exp $
+** $Id: internal.h,v 1.3 2001/12/18 19:14:02 mast Exp $
 **
 */ 
 /* #define MASSIVE_DEBUG */
@@ -14,6 +14,10 @@
 
 #include "mird.h"
 #include "config.h"
+
+#ifdef MIRD_WONT_WORK
+#error configure failed to find settings that would work on this system
+#endif
 
 /* what's UINT32? */
 

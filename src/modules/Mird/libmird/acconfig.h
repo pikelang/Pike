@@ -53,3 +53,5 @@
 /* set if you have/need the O_BINARY to open() */
 #undef HAVE_O_BINARY
 
+/* define this if libmird won't work on this system ;) */
+#undef MIRD_WONT_WORK
