@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.285 2002/12/07 16:36:41 grubba Exp $
+|| $Id: interpret.c,v 1.286 2003/01/05 19:54:04 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.285 2002/12/07 16:36:41 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.286 2003/01/05 19:54:04 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1365,7 +1365,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	o=scope->current_object;
 	goto apply_low_with_scope;
       }
-    fun = (ptrdiff_t)arg2;
+    fun = ((char *)arg2) - (char *)0;
 
   apply_low:
 #undef SCOPE
