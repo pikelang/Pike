@@ -93,6 +93,9 @@ static private int verify_any(SGML data,
 	 case "illustration":
 	 case "link":
 
+         case "sup":
+         case "sub":
+
 	 case "add_appendix":
 
 	 case "exercises":
@@ -160,6 +163,7 @@ static private int verify_any(SGML data,
 	 case "li":
 	 case "ref":
 	 case "br":
+         case "hr":
 	 case "img":
 	      
 	 case "table-of-contents":
@@ -936,6 +940,9 @@ SGML low_make_concrete_wmml(SGML data)
 		 low_make_concrete_wmml(tag->data),
 		 tag->file)});
     }
+    else if(!tag) {
+      werror("Warning: NUL encountered in contents.\n");
+    }
     else 
        throw(({"Tag or contents has illegal type: "+sprintf("%O\n",tag),
 	       backtrace()}));
@@ -1103,7 +1110,7 @@ array execute_contents(Tag tag)
    mixed err=catch
    {
       object po;
-      po=compile_string("#10000 \"static stuff\"\n"
+      po=compile_string(sprintf("#%d %O\n\n", __LINE__, __FILE__) +
 			"array _res=({({})});\n"
 			"void write(mixed ...args) { _res[0]+=args; }\n"
 			"\n"
