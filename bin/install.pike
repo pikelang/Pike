@@ -29,6 +29,8 @@ string status(string doing, string file, string|void msg)
 
 int mkdirhier(string dir)
 {
+  int tomove;
+
   status("creating",dir);
   mixed s=file_stat(dir);
   if(s)
@@ -36,9 +38,16 @@ int mkdirhier(string dir)
     if(s[1]<0)
       return 1;
 
-    werror("Warning: Directory '%s' already exists as a file.\n",dir);
-    if(!mv(dir,dir+".old"))
-      fail("mv(%s,%s)",tmpfile,to);
+    if(glob("*.pmod",to))
+    {
+      if(!mv(dir,dir+".tmp"))
+	fail("mv(%s,%s)",dir,dir+".tmp");
+      tomove=1;
+    }else{
+      werror("Warning: Directory '%s' already exists as a file.\n",dir);
+      if(!mv(dir,dir+".old"))
+	fail("mv(%s,%s)",dir,dir+".old");
+    }
   }
 
   mkdirhier(dirname(dir));
@@ -46,6 +55,10 @@ int mkdirhier(string dir)
     fail("mkdir(%s)",dir);
 
   chmod(dir,0755);
+
+  if(tomove)
+    if(!mv(dir+".tmp",dir+"/module.pmod"))
+      fail("mv(%s,%s)",dir+".tmp",dir+"/module.pmod");
 
   return 1;
 }

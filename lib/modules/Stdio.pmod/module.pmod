@@ -1,6 +1,6 @@
-// $Id: module.pmod,v 1.37 1999/03/11 22:31:05 hubbe fake $
+// $Id: module.pmod,v 1.38 1999/03/12 01:11:57 hubbe Exp $
 
-#include <string.h>
+import String;
 
 inherit files;
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.26 1999/03/06 06:00:23 hubbe Exp $
+# $Id: Makefile.in,v 1.27 1999/03/12 01:12:04 hubbe Exp $
 
 @SET_MAKE@
 
@@ -11,7 +11,7 @@ MODULES=@subdirs@
 MODULE_SEGMENTS=@MODULE_SEGMENTS@
 MODULE_LINKOPTS=@MODULE_LINKOPTS@
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "DEFINES=$(DEFINES)" "INSTALL=$(INSTALL)" "AR=$(AR)" LDFLAGS="$(LDFLAGS)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "DEFINES=$(DEFINES)" "INSTALL=$(INSTALL)" "AR=$(AR)" LDFLAGS="$(LDFLAGS)" "CC=$(CC)" "MAKE=$(MAKE)"
 
 all: linker_options modlist.h modlist_headers.h
 

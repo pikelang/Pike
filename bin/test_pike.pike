@@ -1,8 +1,8 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.21 1999/03/06 06:32:10 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.22 1999/03/12 01:11:55 hubbe Exp $ */
 
-#include <simulate.h>
+import Stdio;
 
 #if !efun(_verify_internals)
 #define _verify_internals()

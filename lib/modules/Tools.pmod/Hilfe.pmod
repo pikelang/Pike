@@ -2,11 +2,10 @@ class Evaluator
 {
 /* Incremental Pike evaluator */
 
-#include <simulate.h>
-#include <stdio.h>
+import Stdio;
 import Array;
-#include <string.h>
-#include <getopt.h>
+import String;
+import Getopt;
 
 /* todo:
  *  return (void)1; will give me problems.
@@ -400,7 +399,7 @@ import Array;
 	c=c[1];
 	
 	int i;
-	if((i=member_array(name,function_names))!=-1)
+	if((i=search(function_names,name))!=-1)
 	{
 	  b=functions[i];
 	  functions[i]=fun;
