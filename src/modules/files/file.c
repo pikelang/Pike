@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.321 2004/07/02 02:32:53 srb Exp $
+|| $Id: file.c,v 1.322 2004/07/02 02:34:22 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.321 2004/07/02 02:32:53 srb Exp $");
+RCSID("$Id: file.c,v 1.322 2004/07/02 02:34:22 srb Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2366,6 +2366,7 @@ static void file_set_buffer(INT32 args)
   }else{
     flags=FILE_READ | FILE_WRITE;
   }
+  pop_n_elems(args);
 
 #ifdef SOCKET_BUFFER_MAX
 #if SOCKET_BUFFER_MAX
