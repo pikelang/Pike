@@ -664,6 +664,12 @@ SGML low_make_concrete_wmml(SGML data)
 	case "module":
 	{
 	   string name=tag->params->name;
+	   if (!name)
+	   {
+	      werror("module or class w/o name\n"+
+		     tag->location()+"\n");
+	      name="(unknown)";
+	   }
 	   sscanf(name,classbase->query()+"%*[.->]%s",name);
 	   ret+=fix_class(tag, name);
 	   continue;
