@@ -262,9 +262,9 @@ class Traversion {
   constant is_traversion = 1;
 
   //! @decl void create(string path, void|int(0..1) symlink)
-  //! @param _path
+  //! @param path
   //! The root path from which to traverse.
-  //! @param _symlink
+  //! @param symlink
   //! Don't traverse symlink directories.
   void create(string _path, void|int(0..1) _symlink) {
     path = _path;
