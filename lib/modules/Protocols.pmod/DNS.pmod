@@ -36,14 +36,11 @@ class protocol
     return sprintf("%c%s",strlen(s),s);
   }
 
-  // This will have to be generalized for
-  // the server part...
-  string mkquery(string dname,
-		 int cl,
-		 int type)
+  string low_mkquery(int id,
+		    string dname,
+		    int cl,
+		    int type)
   {
-    int id=random(65536); // make spoofing harder
-    
     return sprintf("%2c%c%c%2c%2c%2c%2c%s\000%2c%2c",
 		   id,
 		   1,0,
@@ -54,6 +51,15 @@ class protocol
 		   Array.map(dname/".",mklabel)*"",
 		   type,cl);
 
+  }
+
+  // This will have to be generalized for
+  // the server part...
+  string mkquery(string dname,
+		 int cl,
+		 int type)
+  {
+    return low_mkquery(random(65536),dname,cl,type);
   }
 
   string decode_domain(string msg, int *n)
@@ -319,9 +325,82 @@ class client {
 class async_client
 {
   inherit client;
+  inherit spider.dumUDP;
+  int id;
 
-  mapping requests=([]);
-  class request
+  class Request
   {
+    string req;
+    function success;
+    function fail;
+    int retries;
+    mixed *args;
   };
+
+  static private mapping requests=([]);
+
+
+  static private void remove(object(Request) r)
+  {
+    if(!r) return;
+    sscanf(r->req,"%2c",int id);
+    function f=r->fail;
+    mixed *args=r->args;
+    m_delete(requests,id);
+    destruct(r);
+    f(@args);
+  }
+
+  void retry(object(Request) r)
+  {
+    if(!r) return;
+    if(r->retries > 6)
+    {
+      call_out(remove,120,r);
+    }else{
+      send(nameserver,53,r->req);
+    }
+  }
+
+  void do_query(string domain, int cl, int type,
+		function callback,
+		function fail_callback,
+		mixed ... args)
+  {
+    id++;
+    id&=65535;
+    string req=low_mkquery(id,domain,cl,type);
+
+    if(requests[id])
+      throw(({"Cannot find an empty request slot.\n",backtrace()}));
+
+    object r=Request();
+    r->req=req;
+    r->success=callback;
+    r->fail=fail_callback;
+    requests[id]=r;
+    call_out(retry,5,r);
+    send(nameserver,53,r->req);
+  }
+
+  static private void rec_data()
+  {
+    mapping m=read();
+    if(m->port != 53 || m->ip != nameserver) return;
+    sscanf(m->data,"%2c",int id);
+    object r=requests[id];
+    if(!r) return;
+    function f=r->success;
+    mixed *args=r->args;
+    m_delete(requests,id);
+    destruct(r);
+    f(decode_res(m->data),@args);
+  }
+  
+  void creat(string server)
+  {
+    bind(0);
+    set_read_callback(rec_data);
+    ::create(server);
+  }
 };
