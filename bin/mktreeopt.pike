@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.15 1999/11/09 19:41:49 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.16 1999/11/09 22:46:10 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.15 1999/11/09 19:41:49 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.16 1999/11/09 22:46:10 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -209,39 +209,48 @@ class node
 
   object(node) car, cdr;	// 0 == Ignored.
 
-  object(node) follow;
+  object(node) real_car, real_cdr;
+
+  object(node) parent;
 
   string action;
 
   int node_id = node_cnt++;
 
-  object _copy()
+  object(node) _copy()
   {
     object(node) n = node();
 
     // werror(sprintf("Copy called on node %s\n", this_object()));
 
     n->tag = tag;
+    n->tpos = tpos;
     n->token = token;
     n->extras = extras;
-    if (car) {
-      n->car = car->_copy();
+    if (real_car) {
+      n->real_car = real_car->_copy();
+      n->real_car->parent = n;
+      n->car = car && n->real_car;
     }
-    if (cdr) {
-      n->cdr = cdr->_copy();
+    if (real_cdr) {
+      n->real_cdr = real_cdr->_copy();
+      n->real_cdr->parent = n;
+      n->cdr = cdr && n->real_cdr;
     }
     n->action = action;
 
     return n;
   }
 
-  object copy()
+  object(node) copy()
   {
-    object n = _copy();
-
-    generate_follow(n, follow, tpos);
-    
-    return n;
+    if (parent) {
+      if (parent->real_car == this_object()) {
+	return parent->copy()->real_car;
+      }
+      return parent->copy()->real_cdr;
+    }
+    return _copy();
   }
 
   string _sprintf()
@@ -255,16 +264,16 @@ class node
       s += "[" + e + "]";
     }
     if (!(< "*", "-" >)[token]) {
-      if (car || cdr) {
+      if (real_car || real_cdr) {
 	s += "(";
-	if (car) {
-	  s += car->_sprintf();
+	if (real_car) {
+	  s += real_car->_sprintf();
 	} else {
 	  s += "*";
 	}
 	s += ", ";
-	if (cdr) {
-	  s += cdr->_sprintf();
+	if (real_cdr) {
+	  s += real_cdr->_sprintf();
 	} else {
 	  s += "*";
 	}
@@ -418,13 +427,13 @@ object read_node()
 	     fname, line);
 	eat_whitespace();
       } else {
-	res->car = read_node();
+	res->car = res->real_car = read_node();
       }
 
       expect(',');
 
       tpos = "D"+otpos;
-      res->cdr = read_node();
+      res->cdr = res->real_cdr = read_node();
 
       tpos = otpos;
       expect(')');
@@ -663,9 +672,6 @@ void parse_data()
       action = "";
     }
 
-    while(n->cdr && (n->cdr->token != "-")) {
-      n = n->cdr;
-    }
     n->action = action;
 
     eat_whitespace();
@@ -772,58 +778,71 @@ string generate_match(array(object(node)) rule_set, string indent)
     }
   }
 
+  if (debug) {
+    werror(do_indent(sprintf("node_classes: %O\n", node_classes), indent));
+  }
+
   string tpos = rule_set[0]->tpos;
 
   string label;
   int any_cdr_last;
 
   int last_was_if = 0;
-  if (sizeof(node_classes[NULL_CAR])) {
+  if (sizeof(node_classes[NULL_CAR]) ||
+      sizeof(node_classes[MATCH_CAR]) ||
+      sizeof(node_classes[NOT_NULL_CAR])) {
     res += indent + sprintf("if (!CA%sR(n)) {\n", tpos);
-    zap_car(node_classes[NULL_CAR]);
+
+    if (sizeof(node_classes[NULL_CAR])) {
+      zap_car(node_classes[NULL_CAR]);
 
 #if 0
-    if (sizeof(node_classes[ANY_CAR]) < sizeof(node_classes[ANY_CDR])) {
+      if (sizeof(node_classes[ANY_CAR]) < sizeof(node_classes[ANY_CDR])) {
 #endif /* 0 */
-      res += generate_match(node_classes[NULL_CAR] +
-			    node_classes[ANY_CAR], indent + "  ");
+	res += generate_match(node_classes[NULL_CAR] +
+			      node_classes[ANY_CAR], indent + "  ");
 #if 0
-    } else {
-      res += generate_match(node_classes[NULL_CAR], indent + "  ");
-      if (sizeof(node_classes[ANY_CAR])) {
-	label = sprintf("any_car_%d", label_cnt++);
-	res += indent + "  goto " + label + ";\n";
+      } else {
+	res += generate_match(node_classes[NULL_CAR], indent + "  ");
+	if (sizeof(node_classes[ANY_CAR])) {
+	  label = sprintf("any_car_%d", label_cnt++);
+	  res += indent + "  goto " + label + ";\n";
+	}
       }
-    }
 #endif /* 0 */
+    }
     res += indent + "}";
     last_was_if = 1;
-  }
+  } else
 
-  if (sizeof(node_classes[NULL_CDR])) {
+  if (sizeof(node_classes[NULL_CDR]) ||
+      sizeof(node_classes[MATCH_CDR]) ||
+      sizeof(node_classes[NOT_NULL_CDR])) {
     if (last_was_if) {
       res += " else ";
     } else {
       res += indent;
     }
     res += sprintf("if (!CD%sR(n)) {\n", tpos);
-    zap_cdr(node_classes[NULL_CDR]);
+    if (sizeof(node_classes[NULL_CDR])) {
+      zap_cdr(node_classes[NULL_CDR]);
 #if 0
-    if (label) {
+      if (label) {
 #endif /* 0 */
-      res += generate_match(node_classes[NULL_CDR] +
-			    node_classes[ANY_CDR], indent + "  ");
+	res += generate_match(node_classes[NULL_CDR] +
+			      node_classes[ANY_CDR], indent + "  ");
 #if 0
-    } else {
-      // We can use goto to handle ANY_CDR.
-      res += generate_match(node_classes[NULL_CDR], indent + "  ");
-      if (sizeof(node_classes[ANY_CDR])) {
-	label = sprintf("any_cdr_%d", label_cnt++);
-	res += indent + "  goto " + label + ";\n";
-	any_cdr_last = 1;
-      }      
+      } else {
+	// We can use goto to handle ANY_CDR.
+	res += generate_match(node_classes[NULL_CDR], indent + "  ");
+	if (sizeof(node_classes[ANY_CDR])) {
+	  label = sprintf("any_cdr_%d", label_cnt++);
+	  res += indent + "  goto " + label + ";\n";
+	  any_cdr_last = 1;
+	}      
+      }
+#endif /* 0 */
     }
-#endif /* 0 */
     res += indent + "}";
     last_was_if = 1;
   }
@@ -841,7 +860,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       }
       zap_car(node_classes[MATCH_CAR]);
       int last_was_if2;
-      foreach(indices(token_groups), string token) {
+      foreach(sort(indices(token_groups)), string token) {
 	if (last_was_if2) {
 	  res += " else ";
 	} else {
@@ -861,7 +880,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       }
       zap_cdr(node_classes[MATCH_CDR]);
       int last_was_if2;
-      foreach(indices(token_groups), string token) {
+      foreach(sort(indices(token_groups)), string token) {
 	if (last_was_if2) {
 	  res += " else ";
 	} else {
@@ -897,7 +916,7 @@ string generate_match(array(object(node)) rule_set, string indent)
     res += "\n";
   }
   if (sizeof(node_classes[ANY])) {
-    array(object(node)) follow_set = ({});
+    array(object(node)) parent_set = ({});
     array(object(node)) car_set = ({});
     array(object(node)) cdr_set = ({});
     foreach(node_classes[ANY], object(node) n) {
@@ -907,17 +926,18 @@ string generate_match(array(object(node)) rule_set, string indent)
       } else if (n->cdr) {
 	cdr_set += ({ n->cdr });
 	n->cdr = 0;
-      } else if (n->follow) {
-	follow_set += ({ n->follow });
+      } else if (n->parent) {
+	parent_set += ({ n->parent });
       } else {
 	res += do_indent(n->action, indent) + "\n";
+	n->action = 0;
       }
     }
     if (sizeof(car_set) || sizeof(cdr_set)) {
       res += generate_extras_match(car_set + cdr_set, indent);
     }
-    if (sizeof(follow_set)) {
-      res += generate_match(follow_set, indent);
+    if (sizeof(parent_set)) {
+      res += generate_match(parent_set, indent);
     }
   }
   // werror(res + "\n");
@@ -930,29 +950,29 @@ string generate_extras_match(array(object(node)) rule_set, string indent)
 
   mapping(string:array(object(node))) extra_set = ([]);
 
+  array(object(node)) no_extras = ({});
+
   foreach(rule_set, object(node) n) {
     string t = 0;
     if (n->extras && sizeof(n->extras)) {
-      t = n->extras * (") &&\n" +
-		       indent + "    (");
+      extra_set[n->extras * (") &&\n" +
+			     indent + "    (")] += ({ n });
+      continue;
     }
-    extra_set[t] += ({ n });
+    no_extras += ({ n });
   }
 
   if (debug) {
     werror(do_indent(sprintf("extra_set: %O\n", extra_set), indent));
   }
 
-  array(object(node)) no_extras = extra_set[0];
-  m_delete(extra_set, 0);
-
-  foreach(indices(extra_set), string code) {
+  foreach(sort(indices(extra_set)), string code) {
     res += indent + sprintf("if ((%s)) {\n", code);
     res += generate_match(extra_set[code], indent + "  ");
     res += indent + "}\n";
   }
 
-  if (no_extras) {
+  if (sizeof(no_extras)) {
     res += generate_match(no_extras, indent);
   }
 
@@ -972,15 +992,15 @@ string generate_code()
   return res;
 }
 
-void generate_follow(object(node) n, object(node) follow, string tpos)
+void generate_parent(object(node) n, object(node) parent, string tpos)
 {
   n->tpos = tpos;
-  n->follow = follow;
+  n->parent = parent;
   if (n->car) {
-    generate_follow(n->car, n, "A"+tpos);
+    generate_parent(n->car, n, "A"+tpos);
   }
   if (n->cdr) {
-    generate_follow(n->cdr, follow, "D"+tpos);
+    generate_parent(n->cdr, n, "D"+tpos);
   }
 }
 
@@ -1002,7 +1022,7 @@ int main(int argc, array(string) argv)
 
   foreach(values(rules), array(object(node)) nodes) {
     foreach(nodes, object(node) n) {
-      generate_follow(n , 0, "");
+      generate_parent(n , 0, "");
     }
   }
 
