@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.7 1999/04/25 20:49:39 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.8 1999/04/25 20:52:23 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -304,10 +304,13 @@ void low_image_tiff_decode( struct buffer *buf,
   uint32 *raster,  *s;
   rgb_group *di, *da=NULL;
   tif = TIFFClientOpen( "memoryfile", "r", buf,
-                        (void*)read_buffer, (void*)write_buffer,
-                        (void*)seek_buffer, (void*)close_buffer,
-                        (void*)size_buffer, (void*)map_buffer,
-                        (void*)unmap_buffer );
+                        (TIFFReadWriteProc)read_buffer,
+			(TIFFReadWriteProc)write_buffer,
+                        (TIFFSeekProc)seek_buffer,
+			(TIFFCloseProc)close_buffer,
+                        (TIFFSizeProc)size_buffer,
+			(TIFFMapFileProc)map_buffer,
+                        (TIFFUnmapFileProc)unmap_buffer );
   if(!tif)
     error("Failed to 'open' tiff image.\n");
 
@@ -781,9 +784,9 @@ void pike_module_init(void)
    }
 #endif /* DYNAMIC_MODULE */
 
-   TIFFSetWarningHandler( (void *)my_tiff_warning_handler );
+   TIFFSetWarningHandler( (TIFFErrorHandler)my_tiff_warning_handler );
 #if 1
-   TIFFSetErrorHandler( (void *)my_tiff_error_handler );
+   TIFFSetErrorHandler( (TIFFErrorHandler)my_tiff_error_handler );
 #endif
 
    if (image_program)
