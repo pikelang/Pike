@@ -54,6 +54,7 @@
  *   efun;          makes this function a global constant (no value)
  *   flags;         ID_STATIC | ID_NOMASK etc.
  *   optflags;      OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
+ *   optfunc;       Optimization function.
  *   type;          Override the pike type in the prototype with this type.
  *                  FIXME: this doesn't quite work
  *   rawtype;       Override the pike type in the prototype with this C-code
@@ -1016,6 +1017,7 @@ constant valid_attributes = (<
   "efun",
   "flags",
   "optflags",
+  "optfunc",
   "type",
   "rawtype",
   "errname",
@@ -1073,6 +1075,12 @@ mapping parse_attributes(array attr, void|string location)
 	exit(1);
       }
     }
+
+  if(attributes->optfunc && !attributes->efun) {
+    werror("Only efuns may have an optfunc.\n");
+    exit(1);
+  }
+
   return attributes;
 }
 
@@ -2077,14 +2085,25 @@ class ParseBlock
 	
 
 	if (attributes->efun) {
-	  addfuncs+=IFDEF(define,({
-	    PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
-			     attributes->name || name,
-			     funcname,
-			     type->output_c_type(),
-			     (attributes->optflags)|| "0" ,
-			     ),proto[0]->line),
-	  }));
+	  if(attributes->optfunc)
+	    addfuncs+=IFDEF(define,({
+	      PC.Token(sprintf("  ADD_EFUN2(%O, %s, %s, %s, %s, 0);\n",
+			       attributes->name || name,
+			       funcname,
+			       type->output_c_type(),
+			       (attributes->optflags)|| "0",
+			       attributes->optfunc
+			       ), proto[0]->line),
+	    }));
+	  else
+	    addfuncs+=IFDEF(define,({
+	      PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
+			       attributes->name || name,
+			       funcname,
+			       type->output_c_type(),
+			       (attributes->optflags)|| "0"
+			       ), proto[0]->line),
+	    }));
 	} else {
 	  addfuncs+=IFDEF(define, ({
 	    PC.Token(sprintf("  %s =\n"
