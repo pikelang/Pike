@@ -1,3 +1,8 @@
+Wed Jun 25 03:21:41 1997  Niels Möller  <nisse@infovav.se>
+
+	* modules/files/file.c (file_open): Added optional third argument
+ 	to open, specifying access permissions of created files.
+
 Tue Jun 24 21:23:36 1997  Niels Möller  <nisse@infovav.se>
 
 	* modules/files/file.c (file_write): Fixed non-terminated string
