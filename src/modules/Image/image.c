@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.150 1999/07/02 21:19:51 mirar Exp $ */
+/* $Id: image.c,v 1.151 1999/07/04 12:38:11 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.150 1999/07/02 21:19:51 mirar Exp $
+**!	$Id: image.c,v 1.151 1999/07/04 12:38:11 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.150 1999/07/02 21:19:51 mirar Exp $");
+RCSID("$Id: image.c,v 1.151 1999/07/04 12:38:11 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2060,7 +2060,7 @@ void image_threshold(INT32 args)
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    if (args==1)
-      get_all_args("threshold","%i",&level),level*=3;
+      get_all_args("threshold",args,"%i",&level),level*=3;
    else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
       rgb.r=rgb.g=rgb.b=0;
    else
@@ -3734,7 +3734,7 @@ void init_image_image(void)
    ADD_FUNCTION("invert",image_invert,
 		tFunc(tRGB,tObj),0);
    ADD_FUNCTION("threshold",image_threshold,
-		tFunc(tRGB,tObj),0);
+		tFunc(tOr(tInt,tRGB),tObj),0);
    ADD_FUNCTION("distancesq",image_distancesq,
 		tFunc(tRGB,tObj),0);
 
