@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.145 2001/10/05 01:30:14 hubbe Exp $
+ * $Id: program.h,v 1.146 2001/10/05 22:58:38 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -148,6 +148,10 @@ union idptr
 
 #define IDENTIFIER_MASK 255
 
+/*
+ * Every constant, class, function and variable
+ * get's exactly one of these.
+ */
 struct identifier
 {
   struct pike_string *name;
@@ -163,6 +167,11 @@ struct identifier
   union idptr func;
 };
 
+/*
+ * This is used to store constants, both
+ * inline constants and those defined explicitly with 
+ * the constant keyword.
+ */
 struct program_constant
 {
   struct svalue sval;
@@ -194,6 +203,14 @@ struct program_constant
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 #define ID_SAVE_PARENT 0x10000 /* pragma save_parent */
 
+
+/*
+ * All identifiers in this program
+ * and all identifiers in inherited programs
+ * needs to have a 'struct reference' in this
+ * program. When we overload a function, we simply
+ * change the reference to point to the new 'struct identifier'.
+ */
 struct reference
 {
   unsigned INT16 inherit_offset;
@@ -201,6 +218,15 @@ struct reference
   INT16 id_flags; /* static, private etc.. */
 };
 
+/*
+ * Each program has an array of these,
+ * the first entry points to itself, the
+ * rest are from inherited programs.
+ * Note that when a program is inherited,
+ * all 'struct inherit' from that program is
+ * copied, so the whole tree of inherits is
+ * represented.
+ */
 struct inherit
 {
   INT16 inherit_level;
@@ -213,6 +239,11 @@ struct inherit
   struct pike_string *name;
 };
 
+
+/*
+ * Storage struct for a trampoline object
+ * (not a part of the program type)
+ */
 struct pike_trampoline
 {
   struct pike_frame *frame;
@@ -278,6 +309,14 @@ struct pike_trampoline
 #define LOW_PARENT_INFO(O,P) ((struct parent_info *)(PIKE_OBJ_STORAGE((O)) + (P)->parent_info_storage))
 #define PARENT_INFO(O) LOW_PARENT_INFO( (O), (O)->prog)
 
+/*
+ * Objects which needs to access their parent
+ * have to allocate one of these structs in
+ * the object data area.
+ * The parent_info_storage member of the program
+ * struct tells us where in the object to find this
+ * data.
+ */
 struct parent_info
 {
   struct object *parent;
