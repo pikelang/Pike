@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.33 2004/03/19 22:39:30 nilsson Exp $
+ * $Id: X509.pmod,v 1.34 2004/03/22 22:22:18 bill Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -39,6 +39,9 @@ constant CERT_ROOT_UNTRUSTED = 5;
 
 //!
 constant CERT_BAD_SIGNATURE = 6;
+
+//!
+constant CERT_UNAUTHORIZED_CA = 7;
 
 //! Creates a @[Standards.ASN1.Types.UTC] object from the posix
 //! time @[t].
@@ -326,23 +329,48 @@ Verifier make_verifier(Object _keyinfo)
 //!
 class TBSCertificate
 {
+  //!
   string der;
-  
+
+  //!  
   int version;
+
+  //!
   Gmp.mpz serial;
+  
+  //!
   Sequence algorithm;  /* Algorithm Identifier */
+
+  //!
   Sequence issuer;
+
+  //!
   mapping not_after;
+
+  //!
   mapping not_before;
 
+  //!
   Sequence subject;
+
+  //!
   Verifier public_key;
 
   /* Optional */
+
+  //! @note
+  //! optional
   BitString issuer_id;
+  
+  //! @note
+  //! optional
   BitString subject_id;
+
+  //! @note
+  //! optional
   object extensions;
 
+  //!
   this_program init(Object asn1)
   {
     der = asn1->get_der();
@@ -528,8 +556,8 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //!   @member int "error_code"
 //!     Error describing type of verification failure, if verification failed.
 //!     May be one of the following: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
-//!       @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
-//!       or @[CERT_CHAIN_BROKEN]
+//!       @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID],
+//!       @[CERT_UNAUTHORIZED_CA] or @[CERT_CHAIN_BROKEN]
 //!   @member int "error_cert"
 //!     Index number of the certificate that caused the verification failure.
 //!   @member int(0..1) "self_signed"
@@ -545,10 +573,11 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //! @endmapping
 //!
 //! @param cert_chain
-//!   An array of certificates, with the relative-root last.
+//!   An array of certificates, with the relative-root last. Each certificate should
+//!   be a DER-encoded certificate.
 //! @param authorities
 //!   A mapping from (DER-encoded) names to verifiers.
-//! @param forbid_selfsigned
+//! @param require_trust
 //!   Require that the certificate be traced to an authority, even if
 //!   it is self signed.
 //!
@@ -581,6 +610,39 @@ mapping verify_certificate_chain(array(string) cert_chain,
   {
     object v;
 
+    // if we are a CA certificate (we don't care about the end cert)
+    // make sure the CA constraint is set.
+    // 
+    // should we be considering self signed certificates?
+    if(idx != (sizeof(chain_obj)-1))
+    {
+        int caok = 0;
+
+        if(tbs->extensions && sizeof(tbs->extensions))
+        {
+            foreach(tbs->extensions->elements[0]->elements, Sequence c)        
+            {
+               if(c->elements[0] == Identifiers.ce_id->append(19))
+               {
+                 foreach(c->elements[1..], Sequence v)
+                 {
+                   werror("checking for boolean: " + v->type_name + " " + v->value + "\n");
+                   if(v->type_name == "BOOLEAN" && v->value == 1)
+                     caok = 1;
+                 }
+               }
+            }
+        }
+        
+        if(! caok)
+        {
+          X509_WERR("a CA certificate does not have the CA basic constraint.\n");
+          m->error_code = CERT_UNAUTHORIZED_CA;
+          m->error_cert = idx;
+          return m;
+        }
+    }
+    
     if(idx == 0) // The root cert
     {
       v = authorities[tbs->issuer->get_der()];
