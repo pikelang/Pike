@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: syslog.c,v 1.19 2003/05/20 15:12:40 mast Exp $
+|| $Id: syslog.c,v 1.20 2004/05/19 11:29:30 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.19 2003/05/20 15:12:40 mast Exp $");
+RCSID("$Id: syslog.c,v 1.20 2004/05/19 11:29:30 grubba Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -253,7 +253,7 @@ void f_syslog(INT32 args)
   if(i & (1<<4)) pri |= LOG_WARNING;
   if(i & (1<<5)) pri |= LOG_NOTICE;
   if(i & (1<<6)) pri |= LOG_INFO;
-  if(i & (1<<6)) pri |= LOG_DEBUG;
+  if(i & (1<<7)) pri |= LOG_DEBUG;
 
 #ifndef MIGHT_HAVE_SYSLOG_RACES
   /* glibc/linuxthreads has a race in syslog(2) that can make write,
