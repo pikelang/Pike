@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.c,v 1.7 2001/07/24 12:19:31 grubba Exp $
+ * $Id: sparc.c,v 1.8 2001/07/24 12:23:14 grubba Exp $
  *
  * Machine code generator for sparc.
  *
@@ -30,7 +30,7 @@
 
 static void low_ins_f_byte(unsigned int b, int delay_ok)
 {
-  void *addr = instrs[b].address;
+  void *addr;
 
 #ifdef PIKE_DEBUG
   if(store_linenumbers && b<F_MAX_OPCODE)
@@ -55,6 +55,8 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
       delay_ok = 1;
     }
   }
+
+  addr = instrs[b].address;
 
 #ifndef PIKE_DEBUG
   /* This is not very pretty */
@@ -91,7 +93,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   }
 #endif
   
-  ADD_CALL(instrs[b].address, delay_ok);
+  ADD_CALL(addr, delay_ok);
 }
 
 void ins_f_byte(unsigned int opcode)
