@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.16 2002/01/17 20:50:50 nilsson Exp $
+ * $Id: mysql.pike,v 1.17 2002/11/27 15:40:34 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -196,6 +196,4 @@ int(0..1) is_keyword( string name )
   >)[ lower_case(name) ];
 }
 
-#else /* !constant(Mysql.mysql) */
-#error "Mysql support not available.\n"
 #endif /* constant(Mysql.mysql) */

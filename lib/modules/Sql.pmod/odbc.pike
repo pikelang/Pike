@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.pike,v 1.10 2002/06/11 08:45:56 grubba Exp $
+ * $Id: odbc.pike,v 1.11 2002/11/27 15:40:34 mast Exp $
  *
  * Glue for the ODBC-module
  */
@@ -18,6 +18,4 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 
 constant list_dbs = Odbc.list_dbs;
 
-#else /* !constant(Odbc.odbc) */
-#error "ODBC support not available.\n"
 #endif /* constant(Odbc.odbc) */

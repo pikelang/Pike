@@ -14,6 +14,4 @@ array(mapping(string:mixed)) query(string q,
   return ::query(.sql_util.emulate_bindings(q,bindings),this_object());
 }
 
-#else /* !constant(Msql.msql) */
-#error "mSQL support not available.\n"
 #endif /* constant(Msql.msql) */

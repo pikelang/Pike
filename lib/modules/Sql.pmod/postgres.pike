@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.17 2002/06/11 08:45:56 grubba Exp $
+ * $Id: postgres.pike,v 1.18 2002/11/27 15:40:34 mast Exp $
  *
  */
 
@@ -352,6 +352,4 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
   return ::big_query(.sql_util.emulate_bindings(q, bindings, this_object()));
 }
 
-#else /* !constant(Postgres.postgres) */
-#error "Postgres support not available.\n"
 #endif /* constant(Postgres.postgres) */
