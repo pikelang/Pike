@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.30 2001/02/28 04:25:30 hubbe Exp $
+ * $Id: dmalloc.h,v 1.31 2001/06/28 10:24:21 hubbe Exp $
  */
 
 PMOD_EXPORT extern char *debug_xalloc(size_t);
@@ -46,6 +46,7 @@ extern int debug_malloc_register_fd(int,  char *);
 extern int debug_malloc_close_fd(int,  char *);
 
 void *debug_malloc_update_location(void *, char *);
+void *debug_malloc_update_location_ptr(void *, ptrdiff_t, char *);
 void search_all_memheaders_for_references(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
@@ -67,6 +68,8 @@ char *dmalloc_find_name(void *p);
 #define DO_IF_DMALLOC(X) X
 #define debug_malloc_touch(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
 #define debug_malloc_pass(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
+#define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) ((TYPE)debug_malloc_update_location_ptr((X), ((ptrdiff_t)& (((TYPE)0)->MEMBER)), DMALLOC_LOCATION()))
+
 #define xalloc(X) ((char *)debug_malloc_pass(debug_xalloc(X)))
 #define xfree(X) debug_xfree(debug_malloc_pass((X)))
 void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
@@ -129,6 +132,7 @@ int dmalloc_is_invalid_memory_block(void *block);
 #define debug_malloc_copy_names(p,p2) 0
 #define search_all_memheaders_for_references()
 #define dmalloc_find_name(X) "unknown (no dmalloc)"
+#define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) (X)
 
 #ifdef DMALLOC_TRACE
 #define debug_malloc_update_location(X,Y) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))

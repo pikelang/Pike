@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.105 2001/06/26 21:03:50 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.106 2001/06/28 10:24:22 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2122,6 +2122,16 @@ void * debug_malloc_update_location(void *p,LOCATION location)
   }
   return p;
 }
+
+void * debug_malloc_update_location_ptr(void *p,
+					ptrdiff_t offset,
+					LOCATION location)
+{
+  if(p)
+    debug_malloc_update_location(*(void **)(((char *)p)+offset), location);
+  return p;
+}
+
 
 /* another shared-string table... */
 struct dmalloc_string

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.383 2001/06/27 17:33:42 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.384 2001/06/28 10:24:21 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2197,6 +2197,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
   if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
     Pike_error("Destruct permission denied.\n");
 #endif
+  debug_malloc_touch(o);
   destruct(o);
   pop_n_elems(args);
   destruct_objects_to_destruct();

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.333 2001/06/23 21:52:10 hubbe Exp $");
+RCSID("$Id: program.c,v 1.334 2001/06/28 10:24:22 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4054,6 +4054,7 @@ struct program *compile(struct pike_string *prog,
 	/* fprintf(stderr, "Placeholder already has storage!\n"
 	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
 	   placeholder, placeholder->storage, placeholder->prog, p); */
+	debug_malloc_touch(placeholder);
 	destruct(placeholder);
       } else {
 	/* FIXME: Is this correct? */
@@ -4164,6 +4165,7 @@ struct program *compile(struct pike_string *prog,
 	/* fprintf(stderr, "Placeholder already has storage!\n"
 	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
 	   placeholder, placeholder->storage, placeholder->prog, p); */
+	debug_malloc_touch(placeholder);
 	destruct(placeholder);
       } else {
 	/* FIXME: Is this correct? */

@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.155 2001/06/27 02:06:41 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.156 2001/06/28 10:24:21 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -690,8 +690,9 @@ void low_describe_something(void *a,
 	  low_describe_something(p, T_PROGRAM, indent, depth, flags);
       }
 
-      if(p && (p->flags & PROGRAM_USES_PARENT) && 
-	 PARENT_INFO(((struct object *)a))->parent)
+      if(p && 
+	 (p->flags & PROGRAM_USES_PARENT) && 
+	 LOW_PARENT_INFO(((struct object *)a),p)->parent)
       {
 	fprintf(stderr,"%*s**Describing object's parent:\n",indent,"");
 	describe_something( PARENT_INFO((struct object *)a)->parent, t, indent+2,depth-1,

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.171 2001/06/23 21:52:10 hubbe Exp $");
+RCSID("$Id: object.c,v 1.172 2001/06/28 10:24:22 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -492,6 +492,7 @@ PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct objec
 static void call_destroy(struct object *o, int foo)
 {
   int e;
+  debug_malloc_touch(o);
   if(!o || !o->prog) {
 #ifdef GC_VERBOSE
     if (Pike_in_gc > GC_PASS_PREPARE)
@@ -630,6 +631,7 @@ void destruct(struct object *o)
   {
     if(LOW_PARENT_INFO(o,p)->parent)
     {
+      debug_malloc_touch(o);
       /* fprintf(stderr, "destruct(): Zapping parent.\n"); */
       free_object(LOW_PARENT_INFO(o,p)->parent);
       LOW_PARENT_INFO(o,p)->parent=0;
@@ -678,6 +680,8 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
 #endif
 
       next = o->next;
+      debug_malloc_touch(o);
+      debug_malloc_touch(next);
 
       /* Link object back to list of objects */
       DOUBLELINK(first_object,o);
@@ -1528,6 +1532,7 @@ void gc_free_all_unreferenced_objects(void)
 	  !find_destroy_called_mark(o))
 	gc_fatal(o,0,"Can't free a live object in gc_free_all_unreferenced_objects().\n");
 #endif
+      debug_malloc_touch(o);
       destruct(o);
 
       gc_free_extra_ref(o);
