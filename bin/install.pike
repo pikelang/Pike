@@ -238,6 +238,21 @@ int mklink(string from, string to)
   return 0;
 }
 
+string helptext=#"Usage: $TARFILE [options] [variables]
+	  
+Options:
+
+  -h, --help            Display this help and exit.
+  -v, --version         Display version information and exit.
+  --interactive         Interactive installation  (default)
+  --new-style           Install in <prefix>/pike/<ver>/{lib,include,bin}
+  --traditional         Install in <prefix>/{lib/pike,include/pike,bin}
+
+Variables:
+  prefix=<path>         Install pike files here  (/usr/local)
+  pike_name=<path>      Create a symlink to pike here. (<prefix>/bin/pike)
+";
+
 void do_export()
 {
   export=0;
@@ -265,17 +280,7 @@ COPYING and DISCLAIMER in the Pike distribution for more details.\";
                   exit 0 ;;
 
               -h|\\
-          --help) echo \"Usage: $TARFILE [options]
-	  
-Options:
-
-  --export
-  -h, --help              Display this help and exit.
-  --interactive
-  --new-style
-  --traditional
-  -v, --version           Display version information and exit.\"
-        
+          --help) echo \" + helptext + \"
                   exit 0 ;;
     esac
     shift
@@ -355,6 +360,7 @@ done
 
 string make_absolute_path(string path)
 {
+#if constant(getpwnam)
   if(sizeof(path) && path[0] == '~')
   {
     string user, newpath;
@@ -369,6 +375,7 @@ string make_absolute_path(string path)
     
     return combine_path(getenv("HOME"), path[2..]);
   }
+#endif
   
   if(!sizeof(path) || path[0] != '/')
     return combine_path(getcwd(), "../", path);
@@ -453,18 +460,39 @@ int main(int argc, string *argv)
   string old_exec_prefix;
   object interactive;
 
+
+  string install_type="--interactive";
+
+  foreach(Getopt.find_all_options(argv,aggregate(
+    ({"help",Getopt.NO_ARG,({"-h","--help"})}),
+    ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
+    ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
+    ({"--export",Getopt.NO_ARG,({"--export"})}),
+    ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
+    )),array opt)
+    {
+      switch(opt[0])
+      {
+	case "help":
+	  werror(helptext);
+	  exit(0);
+
+	default:
+	  install_type=opt[0];
+      }
+    }
+
+  argv=Getopt.get_args(argv);
+      
+
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
 
   prefix=vars->prefix || "/usr/local";
 
-  string install_type="";
-  if(argc > 1) install_type=argv[1];
-
   if(!vars->TMP_BINDIR)
     vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
-
 
   if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=".";
 
@@ -689,7 +717,9 @@ int main(int argc, string *argv)
     if(sizeof(to_dump))
     {
       foreach(to_dump, string mod) rm(mod+".o");
-      Process.create_process( ({pike,combine_path(vars->SRCDIR,"dumpmodule.pike")}) + to_dump)->wait();
+      Process.create_process( ({pike,
+				  combine_path(vars->SRCDIR,"dumpmodule.pike"),
+				  "--quiet"}) + to_dump)->wait();
     }
     
 #if constant(symlink)
