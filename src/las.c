@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.297 2002/08/15 14:49:22 marcus Exp $");
+RCSID("$Id: las.c,v 1.298 2002/09/15 18:47:32 marcus Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1759,8 +1759,6 @@ node *recursive_add_call_arg(node *n, node *arg)
     case F_ARG_LIST:
     case F_LOR:
     case F_LAND:
-    case F_CAST:
-    case F_SOFT_CAST:
       tmp=recursive_add_call_arg(CDR(n), arg);
 #ifdef SHARED_NODES
       {
@@ -1770,6 +1768,20 @@ node *recursive_add_call_arg(node *n, node *arg)
       }
 #else
       _CDR(n)=tmp;
+#endif
+      break;
+
+    case F_CAST:
+    case F_SOFT_CAST:
+      tmp=recursive_add_call_arg(CAR(n), arg);
+#ifdef SHARED_NODES
+      {
+	n=defrost_node(n);
+	_CAR(n)=tmp;
+	n=freeze_node(n);
+      }
+#else
+      _CAR(n)=tmp;
 #endif
       break;
       
