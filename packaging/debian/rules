@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.49 2003/12/09 15:58:03 grendel Exp $
+# $Id: rules,v 1.50 2004/05/04 13:14:02 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -206,7 +206,7 @@ install: build
 	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/ -name ".autodoc" -type f -print`
 	-@for f in `cat $(CURDIR)/debian/toremove.txt | sed -e 's/@PIKE@/$(PIKE)/g;s/@VERSION@/$(VERSION)/g'`; do \
 	    echo Removing $(CURDIR)/debian/$(PIKE)-core/$$f ; \
-	    rm -f $(CURDIR)/debian/$(PIKE)-core/$$f ; \
+	    rm $(CURDIR)/debian/$(PIKE)-core/$$f &> /dev/null || echo "  FAILED"; \
 	done
 
 	# an eye-candy
