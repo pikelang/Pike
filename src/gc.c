@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.250 2004/04/04 21:54:04 mast Exp $
+|| $Id: gc.c,v 1.251 2004/04/06 15:37:55 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.250 2004/04/04 21:54:04 mast Exp $");
+RCSID("$Id: gc.c,v 1.251 2004/04/06 15:37:55 nilsson Exp $");
 
 int gc_enabled = 1;
 
@@ -315,10 +315,8 @@ int attempt_to_identify(void *something, void **inblock)
   for(mu=first_multiset;mu;mu=mu->next)
     if(mu==(struct multiset *)something)
       return T_MULTISET;
-#ifdef PIKE_NEW_MULTISETS
     else if (mu->msd == (struct multiset_data *) something)
       return T_MULTISET_DATA;
-#endif
 
   if(safe_debug_findstring((struct pike_string *)something))
     return T_STRING;
@@ -531,7 +529,6 @@ void describe_location(void *real_memblock,
       fprintf(stderr, "%*s  **In storage of object\n", indent, "");
       break;
 
-#ifdef PIKE_NEW_MULTISETS
     case T_MULTISET:
       descblock = ((struct multiset *) memblock)->msd;
       /* FALL THROUGH */
@@ -557,12 +554,6 @@ void describe_location(void *real_memblock,
       }
       break;
     }
-
-#else  /* PIKE_NEW_MULTISETS */
-    case T_MULTISET:
-      descblock = ((struct multiset *) memblock)->ind;
-      /* FALL THROUGH */
-#endif
 
     case T_ARRAY:
     {
@@ -1013,7 +1004,6 @@ again:
       break;
     }
 
-#ifdef PIKE_NEW_MULTISETS
     case T_MULTISET_DATA: {
       int found = 0;
       struct multiset *l;
@@ -1033,14 +1023,6 @@ again:
     case T_MULTISET:
       debug_dump_multiset((struct multiset *) a);
       break;
-
-#else  /* PIKE_NEW_MULTISETS */
-    case T_MULTISET:
-      fprintf(stderr,"%*s**Describing array %p of multiset:\n",
-	      indent,"", ((struct multiset *)a)->ind);
-      debug_dump_array(((struct multiset *)a)->ind);
-      break;
-#endif
 
     case T_ARRAY:
       debug_dump_array((struct array *)a);
@@ -2904,11 +2886,7 @@ size_t do_gc(void *ignored, int explicit_call)
      * things. */
     gc_zap_ext_weak_refs_in_mappings();
     gc_zap_ext_weak_refs_in_arrays();
-#ifdef PIKE_NEW_MULTISETS
     gc_zap_ext_weak_refs_in_multisets();
-#else
-    /* Multisets handled as arrays. */
-#endif
     gc_zap_ext_weak_refs_in_objects();
     gc_zap_ext_weak_refs_in_programs();
     GC_VERBOSE_DO(

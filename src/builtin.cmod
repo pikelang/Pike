@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.151 2004/03/17 12:58:41 mast Exp $
+|| $Id: builtin.cmod,v 1.152 2004/04/06 15:37:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -846,12 +846,7 @@ PIKEFUN int get_weak_flag(mapping m)
 
 PIKEFUN int get_weak_flag(multiset m)
 {
-#ifdef PIKE_NEW_MULTISETS
   RETURN multiset_get_flags(m) & MULTISET_WEAK;
-#else
-  RETURN (m->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK)) ?
-	PIKE_WEAK_INDICES : 0;
-#endif
 }
 
 /*! @decl program __empty_program(int|void line, string|void file)
@@ -1117,7 +1112,6 @@ PIKEFUN mixed random(multiset m)
 {
   if(multiset_is_empty (m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
-#ifdef PIKE_NEW_MULTISETS
   if (multiset_indval (m)) {
     ptrdiff_t nodepos = multiset_get_nth (m, my_rand() % multiset_sizeof (m));
     push_multiset_index (m, nodepos);
@@ -1126,12 +1120,10 @@ PIKEFUN mixed random(multiset m)
     f_aggregate (2);
   }
   else {
-    push_multiset_index (m, multiset_get_nth (m, my_rand() % multiset_sizeof (m)));
+    push_multiset_index (m, multiset_get_nth (m, my_rand() %
+					      multiset_sizeof (m)));
     sub_msnode_ref (m);
   }
-#else
-  push_svalue(m->ind->item + (my_rand() % m->ind->size));
-#endif
   stack_swap();
   pop_stack();
 }

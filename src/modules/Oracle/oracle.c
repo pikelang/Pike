@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.80 2003/11/14 10:26:43 mast Exp $
+|| $Id: oracle.c,v 1.81 2004/04/06 15:37:56 nilsson Exp $
 */
 
 /*
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.80 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: oracle.c,v 1.81 2004/04/06 15:37:56 nilsson Exp $");
 
 
 /* User-changable defines: */
@@ -1867,7 +1867,6 @@ static void f_big_typed_query_create(INT32 args)
 	  case T_MULTISET:
 	    if(multiset_sizeof(value->u.multiset) == 1) {
 	      struct pike_string *s;
-#ifdef PIKE_NEW_MULTISETS
 	      {
 		struct svalue tmp;
 		if (use_multiset_index (value->u.multiset,
@@ -1877,12 +1876,6 @@ static void f_big_typed_query_create(INT32 args)
 		else
 		  s = NULL;
 	      }
-#else
-	      if (ITEM(value->u.multiset->ind)[0].type == T_STRING)
-		s = ITEM(value->u.multiset->ind)[0].u.string;
-	      else
-		s = NULL;
-#endif
 	      if (s) {
 		addr = (ub1 *)s->str;
 		len = s->len;

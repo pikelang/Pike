@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.187 2004/04/06 13:00:45 nilsson Exp $
+|| $Id: operators.c,v 1.188 2004/04/06 15:37:55 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.187 2004/04/06 13:00:45 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.188 2004/04/06 15:37:55 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -755,11 +755,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
       if(run_time_itype != T_MIXED)
       {
 	struct multiset *m;
-#ifdef PIKE_NEW_MULTISETS
 	struct multiset *tmp=sp[-2].u.multiset;
-#else
-	struct array *tmp=sp[-2].u.multiset->ind;
-#endif
 	DECLARE_CYCLIC();
 	
 	if((m=(struct multiset *)BEGIN_CYCLIC(tmp,0)))
@@ -770,7 +766,6 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	  struct svalue *save_sp=sp+1;
 #endif
 
-#ifdef PIKE_NEW_MULTISETS
 	  ptrdiff_t nodepos;
 	  if (multiset_indval (tmp))
 	    Pike_error ("FIXME: Casting not implemented for multisets with values.\n");
@@ -792,25 +787,6 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	    UNSET_ONERROR (uwp);
 	    sub_msnode_ref (tmp);
 	  }
-
-#else  /* PIKE_NEW_MULTISETS */
-	  INT32 e;
-	  struct array *a;
-	  TYPE_FIELD types = 0;
-	  push_multiset(m=allocate_multiset(a=allocate_array(tmp->size)));
-	  
-	  SET_CYCLIC_RET(m);
-	  
-	  for(e=0;e<a->size;e++)
-	  {
-	    push_svalue(tmp->item+e);
-	    o_cast(itype, run_time_itype);
-	    stack_pop_to_no_free (ITEM(a) + e);
-	    types |= 1 << ITEM(a)[e].type;
-	  }
-	  a->type_field = types;
-	  order_multiset(m);
-#endif
 
 #ifdef PIKE_DEBUG
 	  if(save_sp!=sp)
@@ -1866,7 +1842,6 @@ PMOD_EXPORT void o_subtract(void)
 	  {
 	     struct mapping *m;
 
-#ifdef PIKE_NEW_MULTISETS
 	     int got_cmp_less = !!multiset_get_cmp_less (sp[-1].u.multiset);
 	     struct array *ind = multiset_indices (sp[-1].u.multiset);
 	     pop_stack();
@@ -1879,12 +1854,6 @@ PMOD_EXPORT void o_subtract(void)
 	       m=merge_mapping_array_ordered(sp[-2].u.mapping,
 					     sp[-1].u.array,
 					     PIKE_ARRAY_OP_SUB);
-#else
-	     m=merge_mapping_array_ordered(sp[-2].u.mapping,
-					   sp[-1].u.multiset->ind,
-					   PIKE_ARRAY_OP_SUB);
-#endif
-
 	     pop_n_elems(2);
 	     push_mapping(m);
 	     return;
@@ -2132,7 +2101,6 @@ PMOD_EXPORT void o_and(void)
 	   {
 	      struct mapping *m;
 
-#ifdef PIKE_NEW_MULTISETS
 	     int got_cmp_less = !!multiset_get_cmp_less (sp[-1].u.multiset);
 	     struct array *ind = multiset_indices (sp[-1].u.multiset);
 	     pop_stack();
@@ -2145,12 +2113,6 @@ PMOD_EXPORT void o_and(void)
 	       m=merge_mapping_array_ordered(sp[-2].u.mapping,
 					     sp[-1].u.array,
 					     PIKE_ARRAY_OP_AND);
-#else
-	      m=merge_mapping_array_ordered(sp[-2].u.mapping,
-					    sp[-1].u.multiset->ind,
-					    PIKE_ARRAY_OP_AND);
-#endif
-
 	      pop_n_elems(2);
 	      push_mapping(m);
 	      return;
@@ -2317,30 +2279,6 @@ static void speedup(INT32 args, void (*func)(void))
 {
   switch(sp[-args].type)
   {
-    /* This method can be used for types where a op b === b op a */
-    case T_MULTISET:
-#ifndef PIKE_NEW_MULTISETS
-    {
-      int e=-1;
-      while(args > 1)
-      {
-	struct svalue tmp;
-	func();
-	args--;
-	e++;
-	if(e - args >= -1)
-	{
-	  e=0;
-	}else{
-	  tmp=sp[e-args];
-	  sp[e-args]=sp[-1];
-	  sp[-1]=tmp;
-	}
-      }
-      return;
-    }
-#endif
-    
     /* Binary balanced tree method for types where
      * a op b may or may not be equal to b op a
      */

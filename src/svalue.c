@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.191 2004/04/05 00:02:27 mast Exp $
+|| $Id: svalue.c,v 1.192 2004/04/06 15:37:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.191 2004/04/05 00:02:27 mast Exp $");
+RCSID("$Id: svalue.c,v 1.192 2004/04/06 15:37:56 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1734,9 +1734,7 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type)
     case T_ARRAY: check_array(u->array); break;
     case T_PROGRAM: check_program(u->program); break;
     case T_OBJECT: check_object(u->object); break;
-#ifdef PIKE_NEW_MULTISETS
     case T_MULTISET: check_multiset(u->multiset, 0); break;
-#endif
   }
 
   if (thoroughly_checking != &checking)

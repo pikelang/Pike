@@ -2,13 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.32 2003/11/14 11:15:14 mast Exp $
+|| $Id: multiset.h,v 1.33 2004/04/06 15:37:55 nilsson Exp $
 */
 
 #ifndef MULTISET_H
 #define MULTISET_H
-
-#ifdef PIKE_NEW_MULTISETS
 
 /* Multisets using rbtree.
  *
@@ -434,69 +432,5 @@ void count_memory_in_multisets (INT32 *num, INT32 *size);
 void init_multiset (void);
 void exit_multiset (void);
 void test_multiset (void);
-
-#else  /* PIKE_NEW_MULTISETS */
-
-#include "svalue.h"
-
-struct multiset
-{
-  PIKE_MEMORY_OBJECT_MEMBERS;  /* Must be first */
-
-  struct multiset *next,*prev;
-  struct array *ind;
-};
-
-extern struct multiset *first_multiset;
-extern struct multiset *gc_internal_multiset;
-
-#define free_multiset(L) do{ struct multiset *l_=(L); debug_malloc_touch(l_); if(!sub_ref(l_)) really_free_multiset(l_); }while(0)
-
-#define l_sizeof(L) ((L)->ind->size)
-#define multiset_sizeof(L) l_sizeof (L)
-#define multiset_is_empty(L) (!multiset_sizeof (L))
-#define multiset_ind_types(L) ((L)->ind->type_field)
-#define multiset_get_flags(L) ((L)->ind->flags)
-#define multiset_fix_type_field(L) array_fix_type_field ((L)->ind)
-
-/* Prototypes begin here */
-PMOD_EXPORT int multiset_member(struct multiset *l, struct svalue *ind);
-PMOD_EXPORT struct multiset *allocate_multiset(struct array *ind);
-PMOD_EXPORT void really_free_multiset(struct multiset *l);
-PMOD_EXPORT void do_free_multiset(struct multiset *l);
-PMOD_EXPORT void order_multiset(struct multiset *l);
-PMOD_EXPORT struct multiset *mkmultiset(struct array *ind);
-PMOD_EXPORT void multiset_insert(struct multiset *l,
-				 struct svalue *v);
-struct array *multiset_indices(struct multiset *l);
-PMOD_EXPORT void multiset_delete(struct multiset *l,struct svalue *v);
-PMOD_EXPORT void check_multiset_for_destruct(struct multiset *l);
-PMOD_EXPORT struct multiset *copy_multiset(struct multiset *tmp);
-PMOD_EXPORT struct multiset *merge_multisets(struct multiset *a,
-			  struct multiset *b,
-			  INT32 operator);
-PMOD_EXPORT struct multiset *add_multisets(struct svalue *argp,INT32 args);
-int multiset_equal_p(struct multiset *a, struct multiset *b, struct processing *p);
-void describe_multiset(struct multiset *l,struct processing *p,int indent);
-node * make_node_from_multiset(struct multiset *l);
-PMOD_EXPORT void f_aggregate_multiset(INT32 args);
-struct multiset *copy_multiset_recursively(struct multiset *l,
-				   struct processing *p);
-void gc_mark_multiset_as_referenced(struct multiset *l);
-void real_gc_cycle_check_multiset(struct multiset *l, int weak);
-unsigned gc_touch_all_multisets(void);
-void gc_check_all_multisets(void);
-void gc_mark_all_multisets(void);
-void gc_cycle_check_all_multisets(void);
-size_t gc_free_all_unreferenced_multisets(void);
-void count_memory_in_multisets(INT32 *num_, INT32 *size_);
-int multiset_is_constant(struct multiset *m,
-			 struct processing *p);
-/* Prototypes end here */
-
-#define gc_cycle_check_multiset(X, WEAK) \
-  gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_multiset, (X), (WEAK))
-
-#endif /* PIKE_NEW_MULTISETS */
 
 #endif /* MULTISET_H */

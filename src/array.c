@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.157 2004/04/06 13:00:40 nilsson Exp $
+|| $Id: array.c,v 1.158 2004/04/06 15:37:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.157 2004/04/06 13:00:40 nilsson Exp $");
+RCSID("$Id: array.c,v 1.158 2004/04/06 15:37:54 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -960,7 +960,6 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
       case T_MULTISET:
 	if (a == b) return 0;
-#ifdef PIKE_NEW_MULTISETS
 	{
 	  ptrdiff_t a_pos = multiset_first (a->u.multiset);
 	  ptrdiff_t b_pos = multiset_first (b->u.multiset);
@@ -980,17 +979,6 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	  sub_msnode_ref (b->u.multiset);
 	  return res;
 	}
-#else
-	if (multiset_is_empty (a->u.multiset))
-	  if (multiset_is_empty (b->u.multiset))
-	    return 0;
-	  else
-	    return -1;
-	else
-	  if (multiset_is_empty (b->u.multiset))
-	    return 1;
-	return alpha_svalue_cmpfun (ITEM (a->u.multiset->ind), ITEM (b->u.multiset->ind));
-#endif
 
       case T_OBJECT:
 	if(a->u.object == b->u.object) return 0;

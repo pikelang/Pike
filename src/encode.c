@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.210 2004/03/14 05:45:44 nilsson Exp $
+|| $Id: encode.c,v 1.211 2004/04/06 15:37:55 nilsson Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.210 2004/03/14 05:45:44 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.211 2004/04/06 15:37:55 nilsson Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -787,14 +787,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_MULTISET: {
       struct multiset *l = val->u.multiset;
 
-#ifdef PIKE_NEW_MULTISETS
       if (multiset_indval (l) || multiset_get_cmp_less (l)->type != T_INT)
 	Pike_error ("FIXME: Encoding of multisets with values and/or "
 		    "custom sort function not yet implemented.\n");
       else {
 	/* Encode valueless multisets without compare functions in a
 	 * compatible way. */
-#endif
 	code_entry(TAG_MULTISET, multiset_sizeof (l), data);
 	if (data->canonic) {
 	  INT32 *order;
@@ -807,11 +805,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      Pike_error("Canonical encoding requires basic types in indices.\n");
 	  }
 	  check_stack(1);
-#ifdef PIKE_NEW_MULTISETS
 	  push_array(multiset_indices(l));
-#else
-	  push_array(copy_array(l->ind));
-#endif
 	  order = get_switch_order(Pike_sp[-1].u.array);
 	  order_array(Pike_sp[-1].u.array, order);
 	  free((char *) order);
@@ -820,19 +814,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  pop_stack();
 	}
 	else {
-#ifdef PIKE_NEW_MULTISETS
 	  struct svalue ind;
 	  union msnode *node = low_multiset_first (l->msd);
 	  for (; node; node = low_multiset_next (node))
 	    encode_value2 (low_use_multiset_index (node, ind), data, 0);
-#else
-	  for(i=0; i<l->ind->size; i++)
-	    encode_value2(ITEM(l->ind)+i, data, 0);
-#endif
 	}
-#ifdef PIKE_NEW_MULTISETS
       }
-#endif
       break;
     }
 
@@ -2519,16 +2506,10 @@ static void decode_value2(struct decode_data *data)
 
       EDB(2,fprintf(stderr, "%*sDecoding multiset of size %d to <%d>\n",
 		  data->depth, "", num, entry_id.u.integer));
-#ifdef PIKE_NEW_MULTISETS
       SETUP_DECODE_MEMOBJ (T_MULTISET, multiset, m,
 			   allocate_multiset (0, 0, NULL), ;);
       /* FIXME: This array could be avoided by building the multiset directly. */
       a = low_allocate_array (num, 0);
-#else
-      SETUP_DECODE_MEMOBJ(T_MULTISET, multiset, m,
-			  allocate_multiset(low_allocate_array(num, 0)), ;);
-      a=m->ind;
-#endif
 
       types = 0;
       for(e=0;e<num;e++)
@@ -2538,7 +2519,6 @@ static void decode_value2(struct decode_data *data)
 	types |= 1 << ITEM(a)[e].type;
       }
       a->type_field = types;
-#ifdef PIKE_NEW_MULTISETS
       {
 	struct multiset *l = mkmultiset (a);
 	free_array (a);
@@ -2546,9 +2526,6 @@ static void decode_value2(struct decode_data *data)
 	merge_multisets (m, l, PIKE_MERGE_DESTR_A | PIKE_ARRAY_OP_ADD);
 	free_multiset (l);
       }
-#else
-      order_multiset(m);
-#endif
       ref_push_multiset(m);
       goto decode_done;
     }

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.53 2004/04/06 13:00:42 nilsson Exp $
+|| $Id: iterators.cmod,v 1.54 2004/04/06 15:37:55 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.53 2004/04/06 13:00:42 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.54 2004/04/06 15:37:55 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -549,8 +549,6 @@ PIKECLASS array_iterator
  *! @seealso
  *!   @[get_iterator]
  */
-#ifdef PIKE_NEW_MULTISETS
-
 PIKECLASS multiset_iterator
 {
   CVAR struct multiset *l;
@@ -738,106 +736,6 @@ PIKECLASS multiset_iterator
     }
 };
 
-#else  /* PIKE_NEW_MULTISETS */
-
-PIKECLASS multiset_iterator
-{
-  CVAR int pos;
-  CVAR struct array *a;
-  
-  PIKEFUN int value()
-    {
-      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
-      {
-	push_undefined();
-      }else{
-	push_int(1);
-      }
-    }
-
-  PIKEFUN mixed index()
-    {
-      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
-      {
-	push_undefined();
-      }else{
-	push_svalue(THIS->a->item + THIS->pos);
-      }
-    }
-
-  PIKEFUN object `+(int steps)
-    {
-      struct object *o=low_clone(multiset_iterator_program);
-      OBJ2_MULTISET_ITERATOR(o)[0]=*THIS;
-      add_ref(THIS->a);
-      OBJ2_MULTISET_ITERATOR(o)->pos+=steps;
-      RETURN o;
-    }
-
-  PIKEFUN object `+=(int steps)
-  {
-    THIS->pos+=steps;
-    REF_RETURN Pike_fp->current_object;
-  }
-
-  PIKEFUN object `-(int steps)
-  {
-    struct object *o=low_clone(multiset_iterator_program);
-    OBJ2_MULTISET_ITERATOR(o)[0]=*THIS;
-    add_ref(THIS->a);
-    OBJ2_MULTISET_ITERATOR(o)->pos-=steps;
-    RETURN o;
-  }
-
-  PIKEFUN int first()
-    {
-      THIS->pos=0;
-      RETURN THIS->a && THIS->pos < THIS->a->size;
-    }
-
-  /* Hubbe: Should this really be destructive ?? */
-  PIKEFUN object _random()
-    {
-      if(THIS->a->size)
-	THIS->pos=my_rand() % THIS->a->size;
-      else
-	THIS->pos=0;
-      REF_RETURN Pike_fp->current_object;
-    }
-
-  PIKEFUN int next()
-    {
-      THIS->pos++;
-      RETURN THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size;
-    }
-
-  PIKEFUN int `!()
-    {
-      RETURN !(THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size);
-    }
-
-  PIKEFUN void create(multiset m)
-    {
-      if(THIS->a)
-	Pike_error("Multiset iterators cannot be reused.\n");
-      
-      add_ref(THIS->a=m->ind);
-    }
-  
-  INIT 
-    {
-      THIS->a=0;
-      THIS->pos=0;
-    }
-
-  EXIT
-    {
-      free_array(THIS->a);
-    }
-    
-};
-
-#endif	/* PIKE_NEW_MULTISETS */
 /*! @endclass
  */
 /*! @endmodule
@@ -1608,12 +1506,8 @@ PIKECLASS string_split_iterator
 	if (split_set->type == T_ARRAY) {
 	  a = split_set->u.array;
 	} else if (split_set->type == T_MULTISET) {
-#ifdef PIKE_NEW_MULTISETS
 	  a = multiset_indices (split_set->u.multiset);
 	  push_array (a);
-#else
-	  a = split_set->u.multiset->ind;
-#endif
 	} else {
 	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
 			       "int|array(int)|multiset(int)");
@@ -1633,9 +1527,7 @@ PIKECLASS string_split_iterator
 	  THIS->split_set[i] = a->item[i].u.integer;
 	}
 	THIS->split_set_size = a->size;
-#ifdef PIKE_NEW_MULTISETS
 	if (split_set->type == T_MULTISET) pop_stack();
-#endif
       }
       add_ref(THIS->buffer = buffer);
       if (args > 2) {
@@ -2045,7 +1937,6 @@ int foreach_iterate(struct object *o, int do_step)
     {
       struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
 
-#ifdef PIKE_NEW_MULTISETS
       struct svalue ind;
 
       if (i->nodepos < 0) return 0;
@@ -2063,25 +1954,6 @@ int foreach_iterate(struct object *o, int do_step)
 	assign_lvalue (Pike_sp - 2, get_multiset_value (i->l, i->nodepos));
 
       return 1;
-
-#else  /* PIKE_NEW_MULTISETS */
-      if (i->pos < 0 || i->pos >= i->a->size) return 0;
-      if (do_step)
-	if (++i->pos == i->a->size) return 0;
-
-      if(Pike_sp[-4].type != T_INT)
-	assign_lvalue(Pike_sp-4, i->a->item + i->pos);
-
-      if(Pike_sp[-2].type != T_INT)
-      {
-	push_int(1);
-	assign_lvalue(Pike_sp-3, Pike_sp-1);
-	pop_stack();
-      }
-
-      return 1;
-
-#endif	/* PIKE_NEW_MULTISETS */
     }
 
     else if(prog == string_iterator_program)

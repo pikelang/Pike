@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.536 2004/04/06 13:00:40 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.537 2004/04/06 15:37:54 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.536 2004/04/06 13:00:40 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.537 2004/04/06 15:37:54 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2393,11 +2393,7 @@ PMOD_EXPORT void f_indices(INT32 args)
     break;
 
   case T_MULTISET:
-#ifdef PIKE_NEW_MULTISETS
     a = multiset_indices (Pike_sp[-args].u.multiset);
-#else
-    a=copy_array(Pike_sp[-args].u.multiset->ind);
-#endif
     break;
 
   case T_OBJECT:
@@ -2692,18 +2688,7 @@ PMOD_EXPORT void f_values(INT32 args)
     break;
 
   case T_MULTISET:
-#ifdef PIKE_NEW_MULTISETS
     a = multiset_values (Pike_sp[-args].u.multiset);
-#else
-    size=Pike_sp[-args].u.multiset->ind->size;
-    a=allocate_array_no_init(size,0);
-    while(--size>=0)
-    {
-      /* Elements are already integers. */
-      ITEM(a)[size].u.integer=1;
-    }
-    a->type_field = BIT_INT;
-#endif
     break;
 
   case T_OBJECT:
@@ -3439,15 +3424,9 @@ void f_set_weak_flag(INT32 args)
       mapping_set_flags(s->u.mapping, flags);
       break;
     case T_MULTISET:
-#ifdef PIKE_NEW_MULTISETS
       flags = multiset_get_flags (s->u.multiset);
       flags = (flags & ~PIKE_WEAK_BOTH) | (ret & PIKE_WEAK_BOTH);
       multiset_set_flags (s->u.multiset, flags);
-#else
-      flags = array_get_flags(s->u.multiset->ind);
-      SETFLAG(flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK), ret & PIKE_WEAK_INDICES);
-      s->u.multiset->ind = array_set_flags(s->u.multiset->ind, flags);
-#endif
       break;
     default:
       SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");
@@ -7003,19 +6982,13 @@ PMOD_EXPORT void f_map(INT32 args)
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_map(args);               
-#ifdef PIKE_NEW_MULTISETS
+
 	 /* FIXME: Handle multisets with values like mappings. */
 	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
 	 free_array (Pike_sp[-2].u.array);
 	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp[-2] = Pike_sp[-1];
 	 Pike_sp--;
-#else
-	 Pike_sp--;                      /* allocate_multiset is destructive */
-	 dmalloc_touch_svalue(Pike_sp);
-	 push_multiset(allocate_multiset(Pike_sp->u.array));
-	 order_multiset(Pike_sp[-1].u.multiset);
-#endif
 	 return;
 
       case T_STRING:
@@ -7444,19 +7417,13 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_filter(args);
-#ifdef PIKE_NEW_MULTISETS
+
 	 /* FIXME: Handle multisets with values like mappings. */
 	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
 	 free_array (Pike_sp[-2].u.array);
 	 Pike_sp[-2] = Pike_sp[-1];
 	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp--;
-#else
-	 Pike_sp--;                      /* allocate_multiset is destructive */
-	 dmalloc_touch_svalue(Pike_sp);
-	 push_multiset(allocate_multiset(Pike_sp->u.array));
-	 order_multiset(Pike_sp[-1].u.multiset);
-#endif
 	 return;
 
       case T_STRING:

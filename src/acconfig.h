@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.139 2004/03/16 14:43:02 mast Exp $
+|| $Id: acconfig.h,v 1.140 2004/04/06 15:37:54 nilsson Exp $
 */
 
 #ifndef MACHINE_H
@@ -64,9 +64,6 @@
 
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
-
-/* Define this to use the new multiset implementation. */
-#undef PIKE_NEW_MULTISETS
 
 /* Define this to get portable dumped bytecode. */
 #undef PIKE_PORTABLE_BYTECODE
