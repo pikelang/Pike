@@ -774,9 +774,9 @@ int socketpair(int family, int type, int protocol, int sv[2])
     len=sizeof(addr2);
     sv[0]=accept(fd,(struct sockaddr_in *)&addr2,&len);
     if(sv[0] < 0) return -1;
-  }while(len < sizeof(addr2) ||
-       addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
-       addr2.sin_port != addr.sin_port)
+  } while(len < sizeof(addr2) ||
+	  addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
+	  addr2.sin_port != addr.sin_port);
 
   if(close(fd) <0) return -1;
 
