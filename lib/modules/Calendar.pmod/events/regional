@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.19 2005/01/06 09:51:16 mirar Exp $
+### $Id: regional,v 1.20 2005/01/06 15:25:50 mirar Exp $
 
 ### =====================================================================
 ###
@@ -1190,7 +1190,7 @@ Region "cz"
 Region "dk"
   Add   "sunday"                      h # "Sun"                            Weekday ---
   Add   "new year"                    h # "New Year's Day"                 (1-Jan 2000)
-# Event "dk/birthday of queen"        -   "Birthday of Queen Margrethe II" Fixed Apr 16
+  Event "dk/birthday of queen"        -   "Birthday of Queen Margrethe II" Fixed Apr 16
 
   Event "dk/fastelavn"		      -   "Carnival"                       Easter -50
   Add   "c/palm sunday"               h # "Palm Sunday"                    (14-Apr 2000)
@@ -1941,10 +1941,30 @@ Region "hn"
 
 # hong kong
 Region "hk"
+  Add   "sunday"                    h # "Sun"                            Weekday ---
   Event "hk/birthday of pak tai"    - "Birthday of Pak Tai"    Fixed Apr  3
   Event "hk/half-year"              - "Half-Year Day"          Fixed Jul  1
   Event "hk/liberation"             - "Liberation Day"         WDRel Aug Mon last
   Event "hk/birthday of confucious" - "Birthday of Confucious" Fixed Sep 22
+
+  Add	"new year"		  h # "New Year's Day"          Fixed Jan  1
+  Add   "c/good friday"           h # "Good Friday"             Easter -2
+  Add   "c/easter eve"            h # "Easter Eve"              Easter -1
+  Add   "c/easter"                h # "Easter"                  Easter +0
+  Add   "c/easter monday"         h # "Easter Monday"           Easter +1
+# buddhas birthday might be according to chinese calendar?
+  Event "hk/buddha"               h "Buddha's Birthday"         Fixed May 22 
+# ching ming
+# tuen ng festival
+  Event "hk/july 1"               h "July 1st"                  Fixed Jul  1
+# day after mid autumn festival
+  Event "hk/national"             h "National day"              Fixed Oct  1
+# chung yeung festival   
+  Add   "c/christmas"             h # "Christmas Day"           Fixed Dec 25
+  Add   "c/boxing"                h # "Boxing Day"             (26-Dec 2000)
+
+# new year's, the first three days of the lunar new year, good friday, the day after, easter monday, ching ming, may 1st, buddha's birthday, tuen ng festival (no idea), july 1st, the day after mid autumn festival, national day (1st oct), chung yeung festival, boxing day, christmas
+# <RedWaltz> I think it's genrally after Easter Sunday (I've no clue how that's calculated, either.)
 
 # ----------------------------------------------------------------
 # Hungary
