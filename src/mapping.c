@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.39 1999/02/05 01:03:53 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.40 1999/09/06 10:48:07 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
