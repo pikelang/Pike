@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.38 1997/08/06 18:41:55 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.39 1997/08/26 23:24:45 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -433,8 +433,13 @@ static char *combine_path(char *cwd,char *file)
 	  }
 	  break;
 
-	case '/':
 	case 0:
+	  if (to == ret) {
+	    /* Special case, so we don't get an empty string */
+	    to++;
+	  }
+	  /* FALL_THROUGH */
+	case '/':
 	  from+=2;
 	  continue;
 	}
@@ -1683,6 +1688,44 @@ void f_gethrtime(INT32 args)
 }
 #endif
 
+#ifdef PROFILING
+static void f_get_prof_info(INT32 args)
+{
+  struct program *prog;
+  int num_functions;
+  int i;
+
+  if (!args) {
+    error("get_profiling_info(): Too few arguments\n");
+  }
+  if (sp[-args].type != T_PROGRAM) {
+    error("get_profiling_info(): Bad argument 1\n");
+  }
+
+  prog = sp[-args].u.program;
+  prog->refs++;
+
+  pop_n_elems(args);
+
+  /* ({ num_clones, ([ "fun_name":({ num_calls }) ]) }) */
+
+  push_int(prog->num_clones);
+
+  for(num_functions=i=0; i<prog->num_identifiers; i++) {
+    if (IDENTIFIER_IS_FUNCTION(prog->identifiers[i].flags)) {
+      num_functions++;
+      prog->identifiers[i].name->refs++;
+      push_string(prog->identifiers[i].name);
+
+      push_int(prog->identifiers[i].num_calls);
+      f_aggregate(1);
+    }
+  }
+  f_aggregate_mapping(num_functions * 2);
+  f_aggregate(2);
+}
+#endif /* PROFILING */
+
 void init_builtin_efuns()
 {
   init_operators();
@@ -1692,6 +1735,11 @@ void init_builtin_efuns()
   add_efun("gethrtime", f_gethrtime,"function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
   
+#ifdef PROFILING
+  add_efun("get_profiling_info", f_get_prof_info,
+	   "function(program:array)", OPT_EXTERNAL_DEPEND);
+#endif /* PROFILING */
+
   add_efun("_refs",f__refs,"function(function|string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
   add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
   add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
