@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.469 2001/01/30 09:48:24 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.470 2001/01/30 23:36:55 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -781,6 +781,7 @@ AC_ARG_WITH(long-double-precision,  [  --with-long-double-precision          use
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[with_debug="yes" AC_DEFINE(DEBUG_MALLOC,10)],[])
+AC_ARG_WITH(dmalloc-trace,[  --with-dmalloc-trace   enable tracepoints],[with_dmalloc_trace="yes" AC_DEFINE(DMALLOC_TRACE,10)],[])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --with-rtldebug        enable run time self tests],[],[with_rtldebug=])
 AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
@@ -4550,7 +4551,7 @@ void testfunc2(void) { exit(0); }
 AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 
 
-if test "x$with_dynamic_modules" = "x" ; then
+if test "x$with_dynamic_modules" != "xno" ; then
   if test x$pike_cv_sys_dynamic_loading = xno ; then
     with_dynamic_modules=no
   else
