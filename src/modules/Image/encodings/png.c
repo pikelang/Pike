@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.52 2003/01/18 01:20:03 nilsson Exp $
+|| $Id: png.c,v 1.53 2003/01/28 08:26:50 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.52 2003/01/18 01:20:03 nilsson Exp $");
+RCSID("$Id: png.c,v 1.53 2003/01/28 08:26:50 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -522,7 +522,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	    
 	    break;
 	 default:
-	    Pike_error("Unsupported subfilter %d\n", s[-1]);
+	    Pike_error("Unsupported subfilter %d (filter %d)\n", s[-1],type);
       }
    }
 }
@@ -1548,10 +1548,10 @@ static void image_png_encode(INT32 args)
       bpp=8;
 
    sprintf(buf,"%c%c%c%c%c%c%c%c%c%c%c%c%c",
-	   (img->xsize>>24)&255,(img->xsize>>16)&255,
-	   (img->xsize>>8)&255,(img->xsize)&255,
-	   (img->ysize>>24)&255,(img->ysize>>16)&255,
-	   (img->ysize>>8)&255,(img->ysize)&255,
+	   (char)((img->xsize>>24)&255),(char)((img->xsize>>16)&255),
+	   (char)((img->xsize>>8)&255), (char)((img->xsize)&255),
+	   (char)((img->ysize>>24)&255),(char)((img->ysize>>16)&255),
+	   (char)((img->ysize>>8)&255), (char)((img->ysize)&255),
 	   bpp /* bpp */,
 	   ct?3:(alpha?6:2) /* type (P/(RGBA/RGB)) */,
 	   0 /* compression */,
