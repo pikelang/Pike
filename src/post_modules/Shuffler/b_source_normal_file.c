@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.10 2003/12/13 22:54:29 nilsson Exp $
+|| $Id: b_source_normal_file.c,v 1.11 2004/04/04 01:02:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -102,6 +102,9 @@ struct source *source_normal_file_make( struct svalue *s,
   }
 
   if (!get_storage( s->u.object, Fd_ref_program ) )
+    return 0;
+
+  if (find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
   res = malloc( sizeof( struct fd_source ) );
