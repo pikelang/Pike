@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.100 1998/04/17 05:08:01 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.101 1998/04/24 00:32:08 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1406,8 +1406,7 @@ void f_column(INT32 args)
 #ifdef DEBUG
 void f__verify_internals(INT32 args)
 {
-  INT32 tmp;
-  tmp=d_flag;
+  INT32 tmp=d_flag;
   d_flag=0x7fffffff;
   do_debug();
   d_flag=tmp;
@@ -2775,8 +2774,8 @@ void init_builtin_efuns(void)
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
   add_efun("version", f_version, "function(:string)", OPT_TRY_OPTIMIZE);
 
-  add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);
-  add_efun("decode_value", f_decode_value, "function(string:mixed)", OPT_TRY_OPTIMIZE);
+  add_efun("encode_value", f_encode_value, "function(mixed,void|object:string)", OPT_TRY_OPTIMIZE);
+  add_efun("decode_value", f_decode_value, "function(string,void|object:mixed)", OPT_TRY_OPTIMIZE);
   add_efun("object_variablep", f_object_variablep, "function(object,string:int)", OPT_EXTERNAL_DEPEND);
 
   add_function("diff",f_diff,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);

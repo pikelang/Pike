@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.40 1998/04/14 22:10:50 hubbe Exp $
+ * $Id: program.h,v 1.41 1998/04/24 00:32:09 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -14,6 +14,7 @@
 #include "global.h"
 #include "pike_types.h"
 #include "svalue.h"
+#include "time_stuff.h"
 
 #define LFUN___INIT 0
 #define LFUN_CREATE 1
@@ -180,12 +181,15 @@ struct inherit
 /* Program will be destructed as soon at it runs out of references. */
 #define PROGRAM_DESTRUCT_IMMEDIATE 16
 
+#define PROGRAM_HAS_C_METHODS 32
+
 struct program
 {
   INT32 refs;
   INT32 id;             /* used to identify program in caches */
   INT32 flags;
   INT32 storage_needed; /* storage needed in the object struct */
+  struct timeval timestamp;
 
   struct program *next;
   struct program *prev;
@@ -230,6 +234,7 @@ extern struct program *first_program;
 extern int compiler_pass;
 extern long local_class_counter;
 extern int catch_level;
+extern INT32 num_used_modules;
 
 #define COMPILER_IN_CATCH 1
 
@@ -240,11 +245,14 @@ extern int catch_level;
 void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(INT16 i, void (*func)(char tmp));
 void use_module(struct svalue *s);
+void unuse_modules(INT32 howmany);
 struct node_s *find_module_identifier(struct pike_string *ident);
 struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
+int program_function_index_compare(const void *a,const void *b);
 void fixate_program(void);
+struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags);
@@ -362,6 +370,7 @@ int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 struct implements_cache_s;
 int implements(struct program *a, struct program *b);
+void f_encode_program(INT32 args);
 /* Prototypes end here */
 
 

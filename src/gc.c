@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.35 1998/04/20 18:53:16 grubba Exp $");
+RCSID("$Id: gc.c,v 1.36 1998/04/24 00:32:08 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -337,7 +337,7 @@ void describe_something(void *a, int t, int dm)
       INT32 line,pos;
 
       fprintf(stderr,"**Program id: %ld\n",(long)(p->id));
-      if(!p->num_linenumbers)
+      if(p->flags & PROGRAM_HAS_C_METHODS)
       {
 	int e;
 	fprintf(stderr,"**The program was written in C.\n");

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.47 1998/04/17 16:55:48 hubbe Exp $");
+RCSID("$Id: object.c,v 1.48 1998/04/24 00:32:09 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -59,7 +59,7 @@ struct object *low_clone(struct program *p)
   return o;
 }
 
-static void call_c_initializers(struct object *o)
+void call_c_initializers(struct object *o)
 {
   int e;
   struct frame frame;
@@ -77,17 +77,15 @@ static void call_c_initializers(struct object *o)
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
-    int d;
+    int q;
 
     frame.context=p->inherits[e];
     add_ref(frame.context.prog);
     frame.current_storage=o->storage+frame.context.storage_offset;
 
-    for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
+    for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
     {
-      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags))
-	continue;
-      
+      int d=frame.context.prog->variable_index[q];
       if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
       {
 	struct svalue *s;
@@ -162,6 +160,23 @@ struct object *parent_clone_object(struct program *p,
   return o;
 }
 
+static struct pike_string *low_read_file(char *file)
+{
+  struct pike_string *s;
+  INT32 len;
+  FILE *f=fopen(file,"r");
+  if(f)
+  {
+    fseek(f,0,SEEK_END);
+    len=ftell(f);
+    fseek(f,0,SEEK_SET);
+    s=begin_shared_string(len);
+    fread(s->str,1,len,f);
+    fclose(f);
+    return end_shared_string(s);
+  }
+  return 0;
+}
 
 struct object *get_master(void)
 {
@@ -184,24 +199,43 @@ struct object *get_master(void)
 
   if(!master_program)
   {
-    INT32 len;
-    struct pike_string *s;
-
-
-    FILE *f=fopen(master_file,"r");
-    if(f)
+    extern struct timeval TM;
+    struct pike_string *s,*s2;
+    char *tmp=xalloc(strlen(master_file)+3);
+    MEMCPY(tmp, master_file, strlen(master_file)+1);
+    strcat(tmp,".o");
+    s=low_read_file(tmp);
+    free(tmp);
+    if(s)
     {
-      fseek(f,0,SEEK_END);
-      len=ftell(f);
-      fseek(f,0,SEEK_SET);
-      s=begin_shared_string(len);
-      fread(s->str,1,len,f);
-      fclose(f);
-      push_string(end_shared_string(s));
+      JMP_BUF tmp;
+      if(SETJMP(tmp))
+      {
+	/* do nothing */
+	UNSETJMP(tmp);
+      }else{
+	extern f_decode_value(INT32);
+
+	push_string(s);
+	push_int(0);
+	f_decode_value(2);
+
+	if(sp[-1].type == T_PROGRAM)
+	  goto compiled;
+
+	pop_stack();
+	  
+      }
+    }
+    s2=low_read_file(master_file);
+    if(s2)
+    {
+      push_string(s2);
       push_text(master_file);
       f_cpp(2);
       f_compile(1);
-      
+
+    compiled:
       if(sp[-1].type != T_PROGRAM)
       {
 	pop_stack();
@@ -284,7 +318,7 @@ void destruct(struct object *o)
   /* free globals and call C de-initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
-    int d;
+    int q;
 
     frame.context=p->inherits[e];
     add_ref(frame.context.prog);
@@ -293,10 +327,9 @@ void destruct(struct object *o)
     if(frame.context.prog->exit)
       frame.context.prog->exit(o);
 
-    for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
+    for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
     {
-      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags)) 
-	continue;
+      int d=frame.context.prog->variable_index[q];
       
       if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
       {
@@ -931,7 +964,7 @@ void gc_mark_object_as_referenced(struct object *o)
 
     for(e=p->num_inherits-1; e>=0; e--)
     {
-      int d;
+      int q;
       
       frame.context=p->inherits[e];
       add_ref(frame.context.prog);
@@ -940,10 +973,9 @@ void gc_mark_object_as_referenced(struct object *o)
       if(frame.context.prog->gc_marked)
 	frame.context.prog->gc_marked(o);
 
-      for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
+      for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
       {
-	if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags)) 
-	  continue;
+	int d=frame.context.prog->variable_index[q];
 	
 	if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
 	{
@@ -996,7 +1028,7 @@ void gc_check_all_objects(void)
       
       for(e=p->num_inherits-1; e>=0; e--)
       {
-	int d;
+	int q;
 	
 	frame.context=p->inherits[e];
 	add_ref(frame.context.prog);
@@ -1004,11 +1036,10 @@ void gc_check_all_objects(void)
 	
 	if(frame.context.prog->gc_check)
 	  frame.context.prog->gc_check(o);
-	
-	for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
+
+	for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
 	{
-	  if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags)) 
-	    continue;
+	  int d=frame.context.prog->variable_index[q];
 	  
 	  if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
 	  {

@@ -17,8 +17,10 @@
 #include "error.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "module_support.h"
+#include "fsort.h"
 
-RCSID("$Id: encode.c,v 1.19 1998/04/20 18:53:15 grubba Exp $");
+RCSID("$Id: encode.c,v 1.20 1998/04/24 00:32:08 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -51,16 +53,31 @@ double LDEXP(double x, int exp)
 }
 #endif
 
+#ifdef DEBUG
+#define encode_value2 encode_value2_
+#define decode_value2 decode_value2_
+#endif
+
+
 
 struct encode_data
 {
+  struct object *codec;
   struct svalue counter;
   struct mapping *encoded;
   dynamic_buffer buf;
 };
 
+static void encode_value2(struct svalue *val, struct encode_data *data);
+
 #define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
 #define addchar(t)   low_my_putchar((t),&(data->buf))
+#define adddata(S) do { \
+  code_entry(T_STRING, (S)->len, data); \
+  addstr((char *)((S)->str),(S)->len); \
+}while(0)
+
+#define adddata2(s,l) addstr((char *)(s),(l) * sizeof(s[0]));
 
 /* Current encoding: ¶ik0 */
 #define T_AGAIN 15
@@ -110,9 +127,89 @@ static void code_entry(int type, INT32 num, struct encode_data *data)
   }
 }
 
-#ifdef DEBUG
-#define encode_value2 encode_value2_
-#endif
+
+static void code_number(INT32 num, struct encode_data *data)
+{
+  code_entry(num & 15, num >> 4, data);
+}
+
+static int encode_type(char *t, struct encode_data *data)
+{
+  char *q=t;
+one_more_type:
+  addchar(EXTRACT_UCHAR(t));
+  switch(EXTRACT_UCHAR(t++))
+  {
+    default:
+      fatal("error in type string.\n");
+      /*NOTREACHED*/
+      
+      break;
+      
+    case T_ASSIGN:
+      addchar(EXTRACT_UCHAR(t++));
+      goto one_more_type;
+      
+    case T_FUNCTION:
+      while(EXTRACT_UCHAR(t)!=T_MANY)
+	t+=encode_type(t, data);
+      addchar(EXTRACT_UCHAR(t++));
+      
+    case T_MAPPING:
+    case T_OR:
+    case T_AND:
+      t+=encode_type(t, data);
+      
+    case T_ARRAY:
+    case T_MULTISET:
+    case T_NOT:
+      goto one_more_type;
+      
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case T_INT:
+    case T_FLOAT:
+    case T_STRING:
+    case T_PROGRAM:
+    case T_MIXED:
+    case T_VOID:
+    case T_UNKNOWN:
+      break;
+      
+    case T_OBJECT:
+    {
+      INT32 x;
+      addchar(EXTRACT_UCHAR(t++));
+      x=EXTRACT_INT(t);
+      t+=sizeof(INT32);
+      if(x)
+      {
+	struct program *p=id_to_program(x);
+	if(p)
+	{
+	  ref_push_program(p);
+	}else{
+	  push_int(0);
+	}
+      }else{
+	push_int(0);
+      }
+      encode_value2(sp-1, data);
+      pop_stack();
+      break;
+    }
+  }
+  return t-q;
+}
+
 
 static void encode_value2(struct svalue *val, struct encode_data *data)
 
@@ -126,7 +223,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   INT32 i;
   struct svalue *tmp;
   
-  if((val->type == T_OBJECT || val->type==T_FUNCTION) && !val->u.object->prog)
+  if((val->type == T_OBJECT || (val->type==T_FUNCTION && \
+				val->subtype!=FUNCTION_BUILTIN)) && !val->u.object->prog)
     val=&dested;
   
   if((tmp=low_mapping_lookup(data->encoded, val)))
@@ -209,22 +307,22 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     case T_OBJECT:
       check_stack(1);
       push_svalue(val);
-      APPLY_MASTER("nameof", 1);
+      apply(data->codec, "nameof", 1);
       switch(sp[-1].type)
       {
 	case T_INT:
 	  if(sp[-1].subtype == NUMBER_UNDEFINED) 
 	  {
-	    struct svalue s;
-	    s.type = T_PROGRAM;
-	    s.u.program=val->u.object->prog;
-	    
 	    pop_stack();
+	    push_svalue(val);
+	    f_object_program(1);
+	    
 	    code_entry(val->type, 1,data);
-	    encode_value2(&s, data);
+	    encode_value2(sp-1, data);
+	    pop_stack();
 	    
 	    push_svalue(val);
-	    APPLY_MASTER("encode_object",1);
+	    apply(data->codec,"encode_object",1);
 	    break;
 	  }
 	  /* FALL THROUGH */
@@ -241,7 +339,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     case T_FUNCTION:
       check_stack(1);
       push_svalue(val);
-      APPLY_MASTER("nameof", 1);
+      apply(data->codec,"nameof", 1);
       if(sp[-1].type == T_INT && sp[-1].subtype==NUMBER_UNDEFINED)
       {
 	if(val->subtype != FUNCTION_BUILTIN)
@@ -282,15 +380,92 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       
       
     case T_PROGRAM:
+    {
+      int d;
       check_stack(1);
       push_svalue(val);
-      APPLY_MASTER("nameof", 1);
+      apply(data->codec,"nameof", 1);
       if(sp[-1].type == val->type)
 	error("Error in master()->nameof(), same type returned.\n");
-      code_entry(val->type, 0,data);
-      encode_value2(sp-1, data);
+      if(sp[-1].type == T_INT && sp[-1].subtype == NUMBER_UNDEFINED)
+      {
+	INT32 e;
+	struct program *p=val->u.program;
+	if(p->init || p->exit || p->gc_marked || p->gc_check ||
+	   (p->flags & PROGRAM_HAS_C_METHODS))
+	  error("Cannot encode C programs.\n");
+	code_entry(val->type, 1,data);
+	code_number(p->flags,data);
+	code_number(p->storage_needed,data);
+	code_number(p->timestamp.tv_sec,data);
+	code_number(p->timestamp.tv_usec,data);
+
+#define FOO(X,Y,Z) \
+	code_number( p->num_##Z, data);
+#include "program_areas.h"
+
+	adddata2(p->program, p->num_program);
+	adddata2(p->linenumbers, p->num_linenumbers);
+
+	for(d=0;d<p->num_identifier_index;d++)
+	  code_number(p->identifier_index[d],data);
+
+	for(d=0;d<p->num_variable_index;d++)
+	  code_number(p->variable_index[d],data);
+
+	for(d=0;d<p->num_identifier_references;d++)
+	{
+	  code_number(p->identifier_references[d].inherit_offset,data);
+	  code_number(p->identifier_references[d].identifier_offset,data);
+	  code_number(p->identifier_references[d].id_flags,data);
+	}
+	  
+	for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
+
+	for(d=1;d<p->num_inherits;d++)
+	{
+	  code_number(p->inherits[d].inherit_level,data);
+	  code_number(p->inherits[d].identifier_level,data);
+	  code_number(p->inherits[d].parent_offset,data);
+	  code_number(p->inherits[d].storage_offset,data);
+
+	  if(p->inherits[d].parent)
+	  {
+	    ref_push_object(p->inherits[d].parent);
+	    sp[-1].subtype=p->inherits[d].parent_identifier;
+	    sp[-1].type=T_FUNCTION;
+	  }else if(p->inherits[d].prog){
+	    ref_push_program(p->inherits[d].prog);
+	  }else{
+	    push_int(0);
+	  }
+	  encode_value2(sp-1,data);
+	  pop_stack();
+
+	  adddata(p->inherits[d].name);
+	}
+
+	for(d=0;d<p->num_identifiers;d++)
+	{
+	  adddata(p->identifiers[d].name);
+	  encode_type(p->identifiers[d].type->str, data);
+	  code_number(p->identifiers[d].identifier_flags,data);
+	  code_number(p->identifiers[d].run_time_type,data);
+	  code_number(p->identifiers[d].func.offset,data);
+	}
+
+	for(d=0;d<p->num_constants;d++)
+	  encode_value2(p->constants+d, data);
+
+	for(d=0;d<NUM_LFUNS;d++)
+	  code_number(p->lfuns[d], data);
+      }else{
+	code_entry(val->type, 0,data);
+	encode_value2(sp-1, data);
+      }
       pop_stack();
       break;
+      }
   }
 }
 
@@ -305,11 +480,19 @@ void f_encode_value(INT32 args)
   ONERROR tmp;
   struct encode_data d, *data;
   data=&d;
+  
+  check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
 
   initialize_buf(&data->buf);
   data->encoded=allocate_mapping(128);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
+  if(args > 1)
+  {
+    data->codec=sp[1-args].u.object;
+  }else{
+    data->codec=get_master();
+  }
 
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
@@ -317,6 +500,7 @@ void f_encode_value(INT32 args)
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
+
   pop_n_elems(args);
   push_string(low_free_buf(&data->buf));
 }
@@ -328,7 +512,11 @@ struct decode_data
   INT32 ptr;
   struct mapping *decoded;
   struct svalue counter;
+  struct object *codec;
+  int pickyness;
 };
+
+static void decode_value2(struct decode_data *data);
 
 static int my_extract_char(struct decode_data *data)
 {
@@ -351,9 +539,124 @@ static int my_extract_char(struct decode_data *data)
   } \
   if(what & T_NEG) num=~num
 
-#ifdef DEBUG
-#define decode_value2 decode_value2_
-#endif
+
+#define decode_entry(X,Y,Z)					\
+  do {								\
+    INT32 what, e, num;                                         \
+    DECODE();							\
+    if((what & T_MASK) != (X)) error("Failed to decode, wrong bits (%d).\n", what & T_MASK);\
+    (Y)=num;							\
+  } while(0);
+
+#define getdata2(S,L) do {						\
+      if(data->ptr + (long)(sizeof(S[0])*(L)) > data->len)		\
+	error("Failed to decode string. (string range error)\n");	\
+      MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
+      data->ptr+=sizeof(S[0])*(L);					\
+  }while(0)
+
+#define getdata(X) do {							     \
+   long length;								     \
+      decode_entry(T_STRING, length,data);				     \
+      if(data->ptr + length > data->len || length <0)			     \
+	error("Failed to decode string. (string range error)\n");	     \
+      X=make_shared_binary_string((char *)(data->data + data->ptr), length); \
+      data->ptr+=length;						     \
+  }while(0)
+
+#define decode_number(X,data) do {	\
+   int what, e, num;				\
+   DECODE();					\
+   X=(what & T_MASK) | (num<<4);		\
+  }while(0)					\
+
+
+static void low_decode_type(struct decode_data *data)
+{
+  int tmp;
+one_more_type:
+  push_type(tmp=GETC());
+  switch(tmp)
+  {
+    default:
+      fatal("error in type string.\n");
+      /*NOTREACHED*/
+      break;
+      
+    case T_ASSIGN:
+      push_type(GETC());
+      goto one_more_type;
+      
+    case T_FUNCTION:
+      while(GETC()!=T_MANY)
+      {
+	data->ptr--;
+	low_decode_type(data);
+      }
+      push_type(T_MANY);
+      
+    case T_MAPPING:
+    case T_OR:
+    case T_AND:
+      low_decode_type(data);
+
+    case T_ARRAY:
+    case T_MULTISET:
+    case T_NOT:
+      goto one_more_type;
+      
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case T_INT:
+    case T_FLOAT:
+    case T_STRING:
+    case T_PROGRAM:
+    case T_MIXED:
+    case T_VOID:
+    case T_UNKNOWN:
+      break;
+      
+    case T_OBJECT:
+    {
+      INT32 x;
+      push_type(GETC());
+      decode_value2(data);
+      type_stack_mark();
+      switch(sp[-1].type)
+      {
+	case T_INT:
+	  push_type_int(0);
+	  break;
+
+	case T_PROGRAM:
+	  push_type_int(sp[-1].u.program->id);
+	  break;
+	  
+	default:
+	  error("Failed to decode type.\n");
+      }
+      pop_stack();
+      type_stack_reverse();
+    }
+  }
+}
+
+/* This really needs to disable threads.... */
+#define decode_type(X,data)  do {		\
+  type_stack_mark();				\
+  type_stack_mark();				\
+  low_decode_type(data);			\
+  type_stack_reverse();				\
+  (X)=pop_unfinished_type();			\
+} while(0)
 
 static void decode_value2(struct decode_data *data)
 
@@ -488,7 +791,14 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  APPLY_MASTER("objectof", 1);
+	  if(data->codec)
+	  {
+	    apply(data->codec,"objectof", 1);
+	  }else{
+	    ref_push_mapping(get_builtin_constants());
+	    stack_swap();
+	    f_index(2);
+	  }
 	  break;
 	  
 	case 1:
@@ -502,15 +812,21 @@ static void decode_value2(struct decode_data *data)
 	    mapping_insert(data->decoded, &tmp, sp-1);
 	    push_svalue(sp-1);
 	    decode_value2(data);
-	    APPLY_MASTER("decode_object",2);
+	    if(!data->codec)
+	      error("Failed to decode (no codec)\n");
+	    apply(data->codec,"decode_object",2);
 	    pop_stack();
 	  }
+	  if(data->pickyness && sp[-1].type != T_OBJECT)
+	    error("Failed to decode object.\n");
 	  return;
 	  
 	default:
 	  error("Object coding not compatible.\n");
 	  break;
       }
+      if(data->pickyness && sp[-1].type != T_OBJECT)
+	error("Failed to decode.\n");
       break;
       
     case T_FUNCTION:
@@ -521,7 +837,14 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  APPLY_MASTER("objectof", 1);
+	  if(data->codec)
+	  {
+	    apply(data->codec,"functionof", 1);
+	  }else{
+	    ref_push_mapping(get_builtin_constants());
+	    stack_swap();
+	    f_index(2);
+	  }
 	  break;
 	  
 	case 1:
@@ -533,14 +856,201 @@ static void decode_value2(struct decode_data *data)
 	  error("Function coding not compatible.\n");
 	  break;
       }
+      if(data->pickyness && sp[-1].type != T_FUNCTION)
+	error("Failed to decode function.\n");
       break;
       
       
     case T_PROGRAM:
-      tmp=data->counter;
-      data->counter.u.integer++;
-      decode_value2(data);
-      APPLY_MASTER("programof", 1);
+      switch(num)
+      {
+	case 0:
+	  tmp=data->counter;
+	  data->counter.u.integer++;
+	  decode_value2(data);
+	  if(data->codec)
+	  {
+	    apply(data->codec,"programof", 1);
+	  }else{
+	    ref_push_mapping(get_builtin_constants());
+	    stack_swap();
+	    f_index(2);
+	  }
+	  if(data->pickyness && sp[-1].type != T_PROGRAM)
+	    error("Failed to decode program.\n");
+	  break;
+
+	case 1:
+	{
+	  int d;
+	  SIZE_T size=0;
+	  char *dat;
+	  struct program *p;
+
+	  p=low_allocate_program();
+	  debug_malloc_touch(p);
+	  tmp.type=T_PROGRAM;
+	  tmp.u.program=p;
+	  mapping_insert(data->decoded, & data->counter, &tmp);
+	  data->counter.u.integer++;
+	  p->refs--;
+	  
+	  decode_number(p->flags,data);
+	  p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED);
+	  decode_number(p->storage_needed,data);
+	  decode_number(p->timestamp.tv_sec,data);
+	  decode_number(p->timestamp.tv_usec,data);
+
+#define FOO(X,Y,Z) \
+	  decode_number( p->num_##Z, data);
+#include "program_areas.h"
+	  
+#define FOO(NUMTYPE,TYPE,NAME) \
+          size=DO_ALIGN(size, ALIGNOF(TYPE)); \
+          size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
+#include "program_areas.h"
+
+	  dat=xalloc(size);
+	  debug_malloc_touch(dat);
+	  MEMSET(dat,0,size);
+	  size=0;
+#define FOO(NUMTYPE,TYPE,NAME) \
+	  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
+          p->NAME=(TYPE *)(dat+size); \
+          size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
+#include "program_areas.h"
+
+	  for(e=0;e<p->num_constants;e++)
+	    p->constants[e].type=T_INT;
+
+	  debug_malloc_touch(dat);
+
+	  p->total_size=size + sizeof(struct program);
+
+	  p->flags |= PROGRAM_OPTIMIZED;
+
+	  getdata2(p->program, p->num_program);
+	  getdata2(p->linenumbers, p->num_linenumbers);
+
+	  for(d=0;d<p->num_identifier_index;d++)
+	  {
+	    decode_number(p->identifier_index[d],data);
+	    if(p->identifier_index[d] > p->num_identifier_references)
+	    {
+	      p->identifier_index[d]=0;
+	      error("Malformed program in decode.\n");
+	    }
+	  }
+	  
+	  for(d=0;d<p->num_variable_index;d++)
+	  {
+	    decode_number(p->variable_index[d],data);
+	    if(p->variable_index[d] > p->num_identifiers)
+	    {
+	      p->variable_index[d]=0;
+	      error("Malformed program in decode.\n");
+	    }
+	  }
+	  
+	  for(d=0;d<p->num_identifier_references;d++)
+	  {
+	    decode_number(p->identifier_references[d].inherit_offset,data);
+	    if(p->identifier_references[d].inherit_offset > p->num_inherits)
+	    {
+	      p->identifier_references[d].inherit_offset=0;
+	      error("Malformed program in decode.\n");
+	    }
+	    decode_number(p->identifier_references[d].identifier_offset,data);
+	    decode_number(p->identifier_references[d].id_flags,data);
+	  }
+	  
+	  for(d=0;d<p->num_strings;d++)
+	    getdata(p->strings[d]);
+
+	  debug_malloc_touch(dat);
+
+	  data->pickyness++;
+	  p->inherits[0].prog=p;
+	  p->inherits[0].parent_offset=1;
+
+	  for(d=1;d<p->num_inherits;d++)
+	  {
+	    decode_number(p->inherits[d].inherit_level,data);
+	    decode_number(p->inherits[d].identifier_level,data);
+	    decode_number(p->inherits[d].parent_offset,data);
+	    decode_number(p->inherits[d].storage_offset,data);
+	    
+	    decode_value2(data);
+	    switch(sp[-1].type)
+	    {
+	      case T_FUNCTION:
+		if(sp[-1].subtype == FUNCTION_BUILTIN)
+		  error("Failed to decode parent.\n");
+		
+		p->inherits[d].parent_identifier=sp[-1].subtype;
+		p->inherits[d].prog=program_from_svalue(sp-1);
+		if(!p->inherits[d].prog)
+		  error("Failed to decode parent.\n");
+		add_ref(p->inherits[d].prog);
+		p->inherits[d].parent=sp[-1].u.object;
+		sp--;
+		break;
+
+	      case T_PROGRAM:
+		p->inherits[d].parent_identifier=0;
+		p->inherits[d].prog=sp[-1].u.program;
+		sp--;
+		break;
+	      default:
+		error("Failed to decode inheritance.\n");
+	    }
+	    
+	    getdata(p->inherits[d].name);
+	  }
+	  
+	  debug_malloc_touch(dat);
+
+	  for(d=0;d<p->num_identifiers;d++)
+	  {
+	    getdata(p->identifiers[d].name);
+	    decode_type(p->identifiers[d].type,data);
+	    decode_number(p->identifiers[d].identifier_flags,data);
+	    decode_number(p->identifiers[d].run_time_type,data);
+	    decode_number(p->identifiers[d].func.offset,data);
+	  }
+
+	  debug_malloc_touch(dat);
+	  
+	  for(d=0;d<p->num_constants;d++)
+	  {
+	    decode_value2(data);
+	    p->constants[d]=*--sp;
+	  }
+	  data->pickyness--;
+
+	  debug_malloc_touch(dat);
+
+	  for(d=0;d<NUM_LFUNS;d++)
+	    decode_number(p->lfuns[d],data);
+
+	  debug_malloc_touch(dat);
+	  
+	  {
+	    struct program *new_program_save=new_program;
+	    new_program=p;
+	    fsort((void *)p->identifier_index,
+		  p->num_identifier_index,
+		  sizeof(unsigned short),(fsortfun)program_function_index_compare);
+	    new_program=new_program_save;
+	  }
+	  p->flags |= PROGRAM_FINISHED;
+	  ref_push_program(p);
+	  return;
+	}
+
+	default:
+	  error("Cannot decode program encoding type %d\n",num);
+      }
       break;
 
   default:
@@ -556,7 +1066,8 @@ static void free_decode_data(struct decode_data *data)
   free_mapping(data->decoded);
 }
 
-static INT32 my_decode(struct pike_string *tmp)
+static INT32 my_decode(struct pike_string *tmp,
+		       struct object *codec)
 {
   ONERROR err;
   struct decode_data d, *data;
@@ -566,6 +1077,8 @@ static INT32 my_decode(struct pike_string *tmp)
   data->data=(unsigned char *)tmp->str;
   data->len=tmp->len;
   data->ptr=0;
+  data->codec=codec;
+  data->pickyness=0;
 
   if(data->len < 5) return 0;
   if(GETC() != 182 ||
@@ -689,12 +1202,25 @@ static void rec_restore_value(char **v, INT32 *l)
 void f_decode_value(INT32 args)
 {
   struct pike_string *s;
+  struct object *codec;
 
-  if(args != 1 || (sp[-1].type != T_STRING))
-    error("Illegal argument to decode_value()\n");
+  check_all_args("decode_value",args, BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, 0);
 
-  s = sp[-1].u.string;
-  if(!my_decode(s))
+  s = sp[-args].u.string;
+  if(args<2)
+  {
+    codec=get_master();
+  }
+  else if(sp[1-args].type == T_OBJECT)
+  {
+    codec=sp[1-args].u.object;
+  }
+  else
+  {
+    codec=0;
+  }
+
+  if(!my_decode(s, codec))
   {
     char *v=s->str;
     INT32 l=s->len;
@@ -703,4 +1229,5 @@ void f_decode_value(INT32 args)
   assign_svalue(sp-args-1, sp-1);
   pop_n_elems(args);
 }
+
 

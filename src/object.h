@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.18 1998/04/20 18:53:20 grubba Exp $
+ * $Id: object.h,v 1.19 1998/04/24 00:32:09 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -42,8 +42,9 @@ extern struct program *master_program;
 #define this_object() (add_ref(fp->current_object), fp->current_object)
 
 /* Prototypes begin here */
-void setup_fake_object(void);
 struct object *low_clone(struct program *p);
+void call_c_initializers(struct object *o);
+void do_free_object(struct object *o);
 struct object *debug_clone_object(struct program *p, int args);
 struct object *parent_clone_object(struct program *p,
 				   struct object *parent,

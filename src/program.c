@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.86 1998/04/19 03:14:15 per Exp $");
+RCSID("$Id: program.c,v 1.87 1998/04/24 00:32:09 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -26,6 +26,8 @@ RCSID("$Id: program.c,v 1.86 1998/04/19 03:14:15 per Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 #include "stuff.h"
+#include "mapping.h"
+#include "cyclic.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -105,6 +107,9 @@ static INT32 last_line = 0;
 static INT32 last_pc = 0;
 static struct pike_string *last_file = 0;
 dynamic_buffer used_modules;
+INT32 num_used_modules;
+static struct mapping *resolve_cache=0;
+static struct mapping *module_index_cache=0;
 
 /* So what if we don't have templates? / Hubbe */
 
@@ -174,25 +179,60 @@ void use_module(struct svalue *s)
 {
   if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT))
   {
+    num_used_modules++;
     assign_svalue_no_free((struct svalue *)
 			  low_make_buf_space(sizeof(struct svalue),
 					     &used_modules), s);
+    if(module_index_cache)
+    {
+      free_mapping(module_index_cache);
+      module_index_cache=0;
+    }
   }else{
     yyerror("Module is neither mapping nor object");
   }
 }
 
-
+void unuse_modules(INT32 howmany)
+{
+  if(!howmany) return;
+#ifdef DEBUG
+  if(howmany *sizeof(struct svalue) > used_modules.s.len)
+    fatal("Unusing too many modules.\n");
+#endif
+  num_used_modules-=howmany;
+  low_make_buf_space(-sizeof(struct svalue)*howmany, &used_modules);
+  free_svalues((struct svalue *)low_make_buf_space(0, &used_modules),
+	       howmany,
+	       BIT_MAPPING | BIT_OBJECT);
+  if(module_index_cache)
+  {
+    free_mapping(module_index_cache);
+    module_index_cache=0;
+  }
+}
 
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
 
 
 
-struct node_s *find_module_identifier(struct pike_string *ident)
+static struct node_s *index_modules(struct pike_string *ident)
 {
+  struct node_s *ret;
   JMP_BUF tmp;
-  node *ret;
+
+  if(module_index_cache)
+  {
+    struct svalue *tmp=low_mapping_string_lookup(module_index_cache,ident);
+    if(tmp)
+    {
+      if(!(IS_ZERO(tmp) && tmp->subtype==1))
+	return mksvaluenode(tmp);
+      return 0;
+    }
+  }
+
 
   if(SETJMP(tmp))
   {
@@ -215,8 +255,10 @@ struct node_s *find_module_identifier(struct pike_string *ident)
       
       if(!IS_UNDEFINED(sp-1))
       {
-/*	fprintf(stderr,"MOD: %s, %d %d\n",ident->str, current_line, sp[-1].type); */
 	UNSETJMP(tmp);
+	if(!module_index_cache)
+	  module_index_cache=allocate_mapping(10);
+	mapping_string_insert(module_index_cache, ident, sp-1);
 	ret=mksvaluenode(sp-1);
 	pop_stack();
 	return ret;
@@ -226,6 +268,16 @@ struct node_s *find_module_identifier(struct pike_string *ident)
   }
   UNSETJMP(tmp);
 
+  return 0;
+}
+
+struct node_s *find_module_identifier(struct pike_string *ident)
+{
+  struct node_s *ret;
+
+  if((ret=index_modules(ident))) return ret;
+
+     
   {
     struct program_state *p=previous_program_state;
     int n;
@@ -236,23 +288,61 @@ struct node_s *find_module_identifier(struct pike_string *ident)
       {
 	struct identifier *id;
 	id=ID_FROM_INT(p->new_program, i);
-#if 0
-	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
-	{
-	  struct svalue *s=PROG_FROM_INT(p->new_program, i)->constants+
-			   id->func.offset;
-	  if(s->type != T_PROGRAM)
-	  {
-	    ret=mksvaluenode(s);
-	    return ret;
-	  }
-	}
-#endif
-
 	return mkexternalnode(n, i, id);
       }
     }
   }
+
+
+  if(resolve_cache)
+  {
+    struct svalue *tmp=low_mapping_string_lookup(resolve_cache,ident);
+    if(tmp)
+    {
+      if(!(IS_ZERO(tmp) && tmp->subtype==1))
+	return mkconstantsvaluenode(tmp);
+
+      return 0;
+    }
+  }
+
+  if(!num_parse_error && get_master())
+  {	
+    DECLARE_CYCLIC();
+    node *ret=0;
+    if(BEGIN_CYCLIC(ident, lex.current_file))
+    {
+      my_yyerror("Recursive module dependency in %s.",
+		 ident->str);
+    }else{
+      SET_CYCLIC_RET(1);
+
+      ref_push_string(ident);
+      ref_push_string(lex.current_file);
+      SAFE_APPLY_MASTER("resolv", 2);
+
+      if(throw_value.type == T_STRING)
+      {
+	if(compiler_pass==2)
+	  my_yyerror("%s",throw_value.u.string->str);
+      }
+      else
+      {
+	if(!resolve_cache)
+	  resolve_cache=allocate_mapping(10);
+	mapping_string_insert(resolve_cache,ident,sp-1);
+	
+	if(!(IS_ZERO(sp-1) && sp[-1].subtype==1))
+	{
+	  ret=mkconstantsvaluenode(sp-1);
+	}
+      }
+      pop_stack();
+      END_CYCLIC();
+    }
+    if(ret) return ret;
+  }
+  
   return 0;
 }
 
@@ -336,7 +426,7 @@ void optimize_program(struct program *p)
 }
 
 /* internal function to make the index-table */
-static int funcmp(const void *a,const void *b)
+int program_function_index_compare(const void *a,const void *b)
 {
   return
     my_order_strcmp(ID_FROM_INT(new_program, *(unsigned short *)a)->name,
@@ -383,13 +473,29 @@ void fixate_program(void)
   }
   fsort((void *)new_program->identifier_index,
 	new_program->num_identifier_index,
-	sizeof(unsigned short),(fsortfun)funcmp);
+	sizeof(unsigned short),(fsortfun)program_function_index_compare);
   
   
   for(i=0;i<NUM_LFUNS;i++)
     new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
   
   new_program->flags |= PROGRAM_FIXED;
+}
+
+struct program *low_allocate_program(void)
+{
+  struct program *p;
+  p=ALLOC_STRUCT(program);
+  MEMSET(p, 0, sizeof(struct program));
+  
+  GC_ALLOC();
+  p->refs=1;
+  p->id=++current_program_id;
+  
+  if((p->next=first_program)) first_program->prev=p;
+  first_program=p;
+  GETTIMEOFDAY(& p->timestamp);
+  return p;
 }
 
 /*
@@ -408,14 +514,7 @@ void low_start_new_program(struct program *p,
 
   if(!p)
   {
-    p=ALLOC_STRUCT(program);
-    MEMSET(p, 0, sizeof(struct program));
-    
-    p->refs=1;
-    p->id=++current_program_id;
-    
-    if((p->next=first_program)) first_program->prev=p;
-    first_program=p;
+    p=low_allocate_program();
   }else{
     add_ref(p);
   }
@@ -431,9 +530,9 @@ void low_start_new_program(struct program *p,
 #define PUSH
 #include "compilation.h"
 
+  num_used_modules=0;
   init_type_stack();
 
-  low_reinit_buf(& used_modules);
 
   if(p && (p->flags & PROGRAM_FINISHED))
   {
@@ -494,20 +593,13 @@ void low_start_new_program(struct program *p,
     add_to_inherits(i);
   }
 
-  {
-    struct svalue tmp;
-    tmp.type=T_MAPPING;
-#ifdef __CHECKER__
-    tmp.subtype=0;
-#endif /* __CHECKER__ */
-    tmp.u.mapping=get_builtin_constants();
-    use_module(& tmp);
-  }
 
   init_node=0;
   num_parse_error=0;
 
   push_compiler_frame();
+  if(lex.current_file)
+    store_linenumber(lex.current_line, lex.current_file);
 }
 
 void start_new_program(void)
@@ -524,52 +616,61 @@ void really_free_program(struct program *p)
   if(id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]==p)
     id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]=0;
 
-  for(e=0; e<p->num_strings; e++)
-    free_string(p->strings[e]);
+  if(p->strings)
+    for(e=0; e<p->num_strings; e++)
+      if(p->strings[e])
+	free_string(p->strings[e]);
 
-  for(e=0; e<p->num_identifiers; e++)
+  if(p->identifiers)
   {
-    free_string(p->identifiers[e].name);
-    free_string(p->identifiers[e].type);
-  }
-
-  for(e=0; e<p->num_constants; e++)
-    free_svalue(p->constants+e);
-
-  for(e=0; e<p->num_inherits; e++)
-  {
-    if(p->inherits[e].name)
-      free_string(p->inherits[e].name);
-    if(e)
+    for(e=0; e<p->num_identifiers; e++)
     {
-      free_program(p->inherits[e].prog);
+      if(p->identifiers[e].name)
+	free_string(p->identifiers[e].name);
+      if(p->identifiers[e].type)
+	free_string(p->identifiers[e].type);
     }
-    if(p->inherits[e].parent)
-      free_object(p->inherits[e].parent);
   }
+
+  if(p->constants)
+    free_svalues(p->constants, p->num_constants, BIT_MIXED);
+
+  if(p->inherits)
+    for(e=0; e<p->num_inherits; e++)
+    {
+      if(p->inherits[e].name)
+	free_string(p->inherits[e].name);
+      if(e)
+      {
+	if(p->inherits[e].prog)
+	  free_program(p->inherits[e].prog);
+      }
+      if(p->inherits[e].parent)
+	free_object(p->inherits[e].parent);
+    }
 
   if(p->prev)
     p->prev->next=p->next;
   else
     first_program=p->next;
-
+  
   if(p->next)
     p->next->prev=p->prev;
-
+  
   if(p->flags & PROGRAM_OPTIMIZED)
-    {
-      if(p->program)
-	  free(p->program);
+  {
+    if(p->program)
+      free(p->program);
 #define FOO(NUMTYPE,TYPE,NAME) p->NAME=0;
 #include "program_areas.h"
-    }else{
+  }else{
 #define FOO(NUMTYPE,TYPE,NAME) \
-  if(p->NAME) { free((char *)p->NAME); p->NAME=0; }
+    if(p->NAME) { free((char *)p->NAME); p->NAME=0; }
 #include "program_areas.h"
-    }
-
+  }
+  
   free((char *)p);
-
+  
   GC_FREE();
 }
 
@@ -625,6 +726,12 @@ static void toss_compilation_resources(void)
       free((char *)malloc_size_program);
       malloc_size_program=0;
     }
+
+  if(module_index_cache)
+  {
+    free_mapping(module_index_cache);
+    module_index_cache=0;
+  }
   
   while(compiler_frame)
     pop_compiler_frame();
@@ -634,17 +741,8 @@ static void toss_compilation_resources(void)
     free_string(last_file);
     last_file=0;
   }
-  
-  {
-    struct svalue *modules=(struct svalue *)used_modules.s.str;
-    INT32 e;
 
-    for(e=0;e<(long)(used_modules.s.len / sizeof(struct svalue));e++)
-      free_svalue(modules+e);
-
-    toss_buffer(&used_modules);
-  }
-  
+  unuse_modules(num_used_modules);
 }
 
 int sizeof_variable(int run_time_type)
@@ -836,20 +934,25 @@ struct program *end_first_pass(int finish)
       new_program->flags |= PROGRAM_FINISHED;
     }
 
-    GC_ALLOC();
   }
   toss_compilation_resources();
 
 #define POP
 #include "compilation.h"
 
+
   compilation_depth--;
-  threads_disabled--;
-  co_signal(&threads_disabled_change);
+  if(!--threads_disabled)
+    co_signal(&threads_disabled_change);
 
   /* fprintf(stderr, "end_first_pass(): compilation_depth:%d\n", compilation_depth); */
 
   free_all_nodes();
+  if(!compiler_frame && compiler_pass==2 && resolve_cache)
+  {
+    free_mapping(resolve_cache);
+    resolve_cache=0;
+  }
   return prog;
 }
 
@@ -1308,12 +1411,14 @@ int low_define_variable(struct pike_string *name,
   ref.id_flags=flags;
   ref.identifier_offset=new_program->num_identifiers;
   ref.inherit_offset=0;
+
+  add_to_variable_index(ref.identifier_offset);
   
   add_to_identifiers(dummy);
   
   n=new_program->num_identifier_references;
   add_to_identifier_references(ref);
-  
+
   return n;
 }
 
@@ -1676,6 +1781,8 @@ INT32 define_function(struct pike_string *name,
 	fun.run_time_type=T_FUNCTION;
 	
 	fun.identifier_flags=function_flags;
+	if(function_flags & IDENTIFIER_C_FUNCTION)
+	  new_program->flags |= PROGRAM_HAS_C_METHODS;
 	
 	if(func)
 	  fun.func = *func;
@@ -1704,6 +1811,8 @@ INT32 define_function(struct pike_string *name,
   copy_shared_string(fun.type, type);
   
   fun.identifier_flags=function_flags;
+  if(function_flags & IDENTIFIER_C_FUNCTION)
+    new_program->flags |= PROGRAM_HAS_C_METHODS;
   
   fun.run_time_type=T_FUNCTION;
   
@@ -2019,12 +2128,26 @@ struct program *compile(struct pike_string *prog)
   struct lex save_lex;
   int save_depth=compilation_depth;
   int saved_threads_disabled = threads_disabled;
+  dynamic_buffer used_modules_save = used_modules;
+  INT32 num_used_modules_save = num_used_modules;
   void yyparse(void);
 
 #ifdef DEBUG
   if(SETJMP(tmp))
     fatal("Compiler exited with longjump!\n");
 #endif
+
+  num_used_modules=0;
+  initialize_buf(&used_modules);
+  {
+    struct svalue tmp;
+    tmp.type=T_MAPPING;
+#ifdef __CHECKER__
+    tmp.subtype=0;
+#endif /* __CHECKER__ */
+    tmp.u.mapping=get_builtin_constants();
+    use_module(& tmp);
+  }
 
   save_lex=lex;
 
@@ -2064,12 +2187,22 @@ struct program *compile(struct pike_string *prog)
 #endif /* DEBUG */
   threads_disabled = saved_threads_disabled;
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
-  co_signal(&threads_disabled_change);
+  if(!threads_disabled)
+    co_signal(&threads_disabled_change);
 
   free_string(lex.current_file);
   lex=save_lex;
 
+  unuse_modules(1);
+#ifdef DEBUG
+  if(num_used_modules)
+    fatal("Failed to pop modules properly.\n");
+#endif
+
+  toss_buffer(&used_modules);
   compilation_depth=save_depth;
+  used_modules = used_modules_save;
+  num_used_modules = num_used_modules_save ;
 
 #ifdef DEBUG
   UNSETJMP(tmp);
@@ -2149,7 +2282,11 @@ void cleanup_program(void)
     }
   }
 #endif
-
+  if(resolve_cache)
+  {
+    free_mapping(resolve_cache);
+    resolve_cache=0;
+  }
 }
 
 #ifdef GC2
@@ -2508,3 +2645,42 @@ int implements(struct program *a, struct program *b)
   implements_cache[hval].ret=low_implements(a,b);
   return implements_cache[hval].ret;
 }
+
+#if 0
+void f_encode_program(INT32 args)
+{
+  check_stack(20);
+  f_version();
+  push_int(p->flags);
+  push_int(p->storage_needed);
+  if(p->init || p->exit || p->gc_marked || p->gc_check)
+    error("Cannot encode C programs.\n");
+  push_int(total_size);
+  push_string(make_shared_binary_string(p->program, p->num_program));
+  push_string(make_shared_binary_string(p->linenumbers, p->num_linenumbers));
+  push_string(make_shared_binary_string((char *)p->identifier_index, p->num_identifier_index * sizeof(unsigned short*)));
+  push_string(make_shared_binary_string((char *)p->variable_index, p->num_variable_index * sizeof(unsigned short*)));
+  push_string(make_shared_binary_string((char *)p->identifier_references, p->num_identifier_references * sizeof(struct reference)));
+  check_stack(p->num_strings);
+  for(e=0;e<p->num_strings;e++) ref_push_string(p->strings[e]);
+  f_aggregate(p->num_strings);
+
+  check_stack(p->num_inherits * 2);
+  for(e=1;e<p->num_strings;e++)
+  {
+    ref_push_string(p->inherits[e].name);
+  }
+
+  f_aggregate(p->num_inherits);
+  
+  check_stack(NUM_LFUNS);
+  for(e=0;e<NUM_LFUNS;e++) push_int(p->lfuns[e]);
+  
+  UNSET_ONERROR(tmp);
+
+  free_mapping(data->encoded);
+  pop_n_elems(args);
+  push_string(low_free_buf(&data->buf));
+}
+
+#endif
