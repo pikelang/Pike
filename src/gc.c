@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.193 2003/01/11 01:30:21 mast Exp $
+|| $Id: gc.c,v 1.194 2003/01/11 03:06:54 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.193 2003/01/11 01:30:21 mast Exp $");
+RCSID("$Id: gc.c,v 1.194 2003/01/11 03:06:54 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2438,7 +2438,7 @@ static void warn_bad_cycles()
 size_t do_gc(void)
 {
   double tmp;
-  size_t num_objs, allocs, freed;
+  size_t num_objs, allocs, unreferenced;
   ptrdiff_t objs, pre_kill_objs;
   double multiplier;
 #ifdef PIKE_DEBUG
@@ -2691,15 +2691,6 @@ size_t do_gc(void)
   }
 #endif
 
-  /* Add an extra reference to the stuff gc_internal_* point to, so we
-   * know they're still around when gc_free_all_unreferenced_* are
-   * about to be called. */
-  if (gc_internal_array != &weak_empty_array) add_ref(gc_internal_array);
-  if (gc_internal_multiset) add_ref(gc_internal_multiset);
-  if (gc_internal_mapping) add_ref(gc_internal_mapping);
-  if (gc_internal_program) add_ref(gc_internal_program);
-  if (gc_internal_object) add_ref(gc_internal_object);
-
   /* Thread switches, object alloc/free and reference changes are
    * allowed again now. */
 
@@ -2712,27 +2703,17 @@ size_t do_gc(void)
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the
    * correct relative positions in them. */
-  freed = 0;
-  if (gc_internal_array != &weak_empty_array) {
-    FREE_AND_GET_REFERENCED(gc_internal_array, struct array, free_array);
-    freed += 1 + gc_free_all_unreferenced_arrays();
-  }
-  if (gc_internal_multiset) {
-    FREE_AND_GET_REFERENCED(gc_internal_multiset, struct multiset, free_multiset);
-    freed += 1 + gc_free_all_unreferenced_multisets();
-  }
-  if (gc_internal_mapping) {
-    FREE_AND_GET_REFERENCED(gc_internal_mapping, struct mapping, free_mapping);
-    freed += 1 + gc_free_all_unreferenced_mappings();
-  }
-  if (gc_internal_program) {
-    FREE_AND_GET_REFERENCED(gc_internal_program, struct program, free_program);
-    freed += 1 + gc_free_all_unreferenced_programs();
-  }
-  if (gc_internal_object) {
-    FREE_AND_GET_REFERENCED(gc_internal_object, struct object, free_object);
-    freed += 1 + gc_free_all_unreferenced_objects();
-  }
+  unreferenced = 0;
+  if (gc_internal_array != &weak_empty_array)
+    unreferenced += gc_free_all_unreferenced_arrays();
+  if (gc_internal_multiset)
+    unreferenced += gc_free_all_unreferenced_multisets();
+  if (gc_internal_mapping)
+    unreferenced += gc_free_all_unreferenced_mappings();
+  if (gc_internal_program)
+    unreferenced += gc_free_all_unreferenced_programs();
+  if (gc_internal_object)
+    unreferenced += gc_free_all_unreferenced_objects();
 
   /* We might occasionally get things to gc_delayed_free that the free
    * calls above won't find. They're tracked in this list. */
@@ -2746,8 +2727,9 @@ size_t do_gc(void)
     free_extra_list = next;
   }
 
-  GC_VERBOSE_DO(fprintf(stderr, "| free: %d really freed, %u left with live references\n",
-			obj_count - num_objects, live_ref));
+  GC_VERBOSE_DO(fprintf(stderr, "| free: %d unreferenced, %d really freed, "
+			"%u left with live references\n",
+			unreferenced, obj_count - num_objects, live_ref));
 
 #ifdef PIKE_DEBUG
   gc_internal_array = (struct array *) (ptrdiff_t) -1;
@@ -2797,7 +2779,6 @@ size_t do_gc(void)
     destruct(o);
     free_object(o);
     gc_free_extra_ref(o);
-    freed++;
 #ifdef PIKE_DEBUG
     destroy_count++;
 #endif
@@ -2837,14 +2818,15 @@ size_t do_gc(void)
   Pike_in_gc=0;
   exit_gc();
 
-  /* At this point, freed contains the number of things that were
-   * without external references during the check and mark passes. In
-   * the process of freeing them, destroy functions might have been
-   * called which means anything might have happened. Therefore we use
-   * that figure instead of the difference between the number of
-   * allocated things to measure the amount of garbage. */
+  /* At this point, unreferenced contains the number of things that
+   * were without external references during the check and mark
+   * passes. In the process of freeing them, destroy functions might
+   * have been called which means anything might have happened.
+   * Therefore we use that figure instead of the difference between
+   * the number of allocated things to measure the amount of
+   * garbage. */
 
-  objects_freed = objects_freed * multiplier + freed * (1.0 - multiplier);
+  objects_freed = objects_freed * multiplier + unreferenced * (1.0 - multiplier);
 
   /* Calculate the new threshold by adjusting the average threshold
    * (objects_alloced) with the ratio between the wanted garbage at
@@ -2876,12 +2858,12 @@ size_t do_gc(void)
   {
 #ifdef HAVE_GETHRTIME
     fprintf(stderr,
-	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things), %ld ms.\n",
-	    freed, num_objs, (long)((gethrtime() - gcstarttime)/1000000));
+	    "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d was unreferenced), %ld ms.\n",
+	    unreferenced, num_objs, (long)((gethrtime() - gcstarttime)/1000000));
 #else
     fprintf(stderr,
-	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things)\n",
-	    freed, num_objs);
+	    "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d was unreferenced)\n",
+	    unreferenced, num_objs);
 #endif
   }
   if (max_gc_frames > max_tot_gc_frames) max_tot_gc_frames = max_gc_frames;
@@ -2895,7 +2877,7 @@ size_t do_gc(void)
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
 
-  return freed;
+  return unreferenced;
 }
 
 /*! @decl mapping(string:int|float) gc_status()

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.472 2003/01/11 00:01:20 mast Exp $
+|| $Id: program.c,v 1.473 2003/01/11 03:06:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.472 2003/01/11 00:01:20 mast Exp $");
+RCSID("$Id: program.c,v 1.473 2003/01/11 03:06:54 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6571,7 +6571,7 @@ void gc_zap_ext_weak_refs_in_programs(void)
 size_t gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
-  size_t freed = 0;
+  size_t unreferenced = 0;
 #ifdef PIKE_DEBUG
   int first = 1;
 #endif
@@ -6611,7 +6611,6 @@ size_t gc_free_all_unreferenced_programs(void)
 
       gc_free_extra_ref(p);
       SET_NEXT_AND_FREE(p, free_program);
-      freed++;
 #ifdef PIKE_DEBUG
       if (first) gc_internal_program = next;
 #endif
@@ -6621,6 +6620,7 @@ size_t gc_free_all_unreferenced_programs(void)
       first = 0;
 #endif
     }
+    unreferenced++;
   }
 
 #ifdef PIKE_DEBUG
@@ -6639,7 +6639,7 @@ size_t gc_free_all_unreferenced_programs(void)
     }
 #endif
 
-  return freed;
+  return unreferenced;
 }
 
 #endif /* GC2 */
