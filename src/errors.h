@@ -2,15 +2,22 @@
 
 #ifdef ERR_DECLARE
 #define DECLARE_ERROR(NAME, INHERIT, DECL) \
-static struct program *PIKE_CONCAT(NAME,_error_program); \
-static int PIKE_CONCAT(NAME,_error_offset); \
+struct program *PIKE_CONCAT(NAME,_error_program); \
+int PIKE_CONCAT(NAME,_error_offset); 
+
+#define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;
+#endif
+
+#ifdef ERR_EXT_DECLARE
+#define DECLARE_ERROR(NAME, INHERIT, DECL) \
+extern struct program *PIKE_CONCAT(NAME,_error_program); \
+extern int PIKE_CONCAT(NAME,_error_offset); \
 struct PIKE_CONCAT(NAME,_error_struct) { \
   DECL \
 };
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;
-#endif
-
+#endif /* ERR_EXT_DECLARE */
 
 #ifdef ERR_SETUP
 #define DECLARE_ERROR(NAME, INHERIT, DECL) do{ \
@@ -104,5 +111,6 @@ DECLARE_ERROR(permission,
 #undef ERR_FUNC
 
 #undef ERR_DECLARE
+#undef ERR_EXT_DECLARE
 #undef ERR_SETUP
 #undef ERR_CLEANUP
