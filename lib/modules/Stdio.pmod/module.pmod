@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.188 2003/12/01 20:08:55 nilsson Exp $
+// $Id: module.pmod,v 1.189 2003/12/08 17:26:18 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2267,6 +2267,10 @@ static class nb_sendfile
     if( sizeof( to_write ) > 2)
       return;
     string more_data = from->read(65536, 1);
+    if (!more_data) {
+      SF_WERR(sprintf("Blocking read failed with errno: %d\n", from->errno()));
+      more_data = "";
+    }
     if (more_data == "") {
       // EOF.
       SF_WERR("Blocking read got EOF.");
@@ -2324,7 +2328,7 @@ static class nb_sendfile
     SF_WERR("Starting the reader.");
     if (!reader_awake) {
       reader_awake = 1;
-      from->set_nonblocking(read_cb, 0, close_cb);
+      from->set_nonblocking(read_cb, from->query_write_callback(), close_cb);
     }
   }
 
@@ -2336,12 +2340,13 @@ static class nb_sendfile
 
     // Disable any reader.
     if (from && from->set_nonblocking) {
-      from->set_nonblocking(0,0,0);
+      from->set_nonblocking(0, from->query_write_callback(), 0);
     }
 
     // Disable any writer.
     if (to && to->set_nonblocking) {
-      to->set_nonblocking(0,0,0);
+      to->set_nonblocking(to->query_read_callback(), 0,
+			  to->query_close_callback());
     }
 
     // Make sure we get rid of any references...
@@ -2365,6 +2370,7 @@ static class nb_sendfile
     int bytes = sizeof(to_write) && to->write(to_write);
 
     if (bytes >= 0) {
+      SF_WERR(sprintf("Wrote %d bytes.", bytes));
       sent += bytes;
 
       int n;
@@ -2406,7 +2412,8 @@ static class nb_sendfile
 	  } else {
 	    if (!sizeof(to_write)) {
 	      // Go to sleep.
-	      to->set_nonblocking(0,0,0);
+	      to->set_nonblocking(to->query_read_callback(),0,
+				  to->query_close_callback());
 	      writer_awake = 0;
 	    }
 	    start_reader();
@@ -2428,7 +2435,8 @@ static class nb_sendfile
 
     if (!writer_awake) {
       writer_awake = 1;
-      to->set_nonblocking(0, write_cb, 0);
+      to->set_nonblocking(to->query_read_callback(), write_cb,
+			  to->query_write_callback());
     }
   }
 
@@ -2600,7 +2608,7 @@ object sendfile(array(string) headers,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)
 {
-#if constant(files.sendfile)
+#if !defined(DISABLE_FILES_SENDFILE) && constant(files.sendfile)
   // Try using files.sendfile().
   
   mixed err = catch {
@@ -2613,7 +2621,7 @@ object sendfile(array(string) headers,
 		 describe_backtrace(err)));
 #endif /* SENDFILE_DEBUG */
 
-#endif /* files.sendfile */
+#endif /* !DISABLE_FILES_SENDFILE && files.sendfile */
 
   // Use nb_sendfile instead.
   return nb_sendfile(headers, from, offset, len, trailers, to, cb, @args);
