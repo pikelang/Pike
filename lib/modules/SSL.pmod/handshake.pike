@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.38 2004/01/23 18:08:08 bill Exp $
+/* $Id: handshake.pike,v 1.39 2004/01/23 20:09:31 bill Exp $
  *
  */
 
@@ -301,6 +301,10 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   }
   if (context->auth_level >= AUTHLEVEL_ask)
   {
+    // if we have no authorities, this is all rather pointless. throw an error.
+    if(!context->authorities || !sizeof(context->authorities))
+      error("No certificate authorities provided.\n");
+ 
     /* Send a CertificateRequest message */
     object struct = Struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
@@ -530,6 +534,33 @@ string describe_type(int i)
 }
 #endif
 
+int verify_certificate_chain(array certs)
+{
+  werror("verify_certificate_chain()\n");
+  int root_trusted = 0;
+
+  // verify that the root certificate is trusted.
+
+  // step one: get the issuer of the root certificate.
+  string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])->get_der();
+    werror(" R: " + sizeof(r) + "\n");
+
+  // step two: see if the issuer of the root certificate is trusted.
+  foreach(context->authorities, string c)
+  {
+    if((r == c)) // we have a trusted issuer
+    {
+      werror("root is trusted: subject of authority is issuer of certificate.\n");
+      root_trusted = 1;
+      break;
+    }
+  }
+
+  if(!root_trusted) return 0;
+  
+
+  return 1;
+}
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
@@ -841,7 +872,21 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	 array certs = ({ });
 	 while(!input->is_empty())
 	   certs += ({ input->get_var_string(3) });
-	 session->client_certificate_chain = certs;
+
+	  // we have the certificate chain in hand, now we must verify them.
+          if(!verify_certificate_chain(certs))
+          {
+	werror("bad certificate received.\n");
+	     send_packet(Alert(ALERT_fatal, ALERT_bad_certificate, version[1],
+			       "SSL.session->handle_handshake: bad certificate\n",
+			       backtrace()));
+  	     return -1;
+          }
+          else
+          {
+	werror("good certificate received.\n");
+           session->client_certificate_chain = certs;
+          }
        } || !input->is_empty())
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -849,6 +894,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   backtrace()));
 	 return -1;
        }	
+
        certificate_state = CERT_received;
        break;
      }

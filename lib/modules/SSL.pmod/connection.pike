@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.31 2004/01/11 00:43:46 nilsson Exp $
+// $Id: connection.pike,v 1.32 2004/01/23 20:09:31 bill Exp $
 
 #pike __REAL_VERSION__
 
@@ -222,7 +222,7 @@ int handle_alert(string s)
     werror("SSL.connection: No certificate  alert %d\n", description);
 #endif
 
-    if ((certificate_state == CERT_requested) && (auth_level == AUTHLEVEL_ask))
+    if ((certificate_state == CERT_requested) && (context->auth_level == AUTHLEVEL_ask))
     {
       certificate_state = CERT_no_certificate;
       return 0;
