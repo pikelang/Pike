@@ -31,9 +31,20 @@ struct instr
 #define ADD_RUNNED(X)
 #endif
 
+#ifndef STRUCT_HASH_ENTRY_DECLARED
+#define STRUCT_HASH_ENTRY_DECLARED
 struct hash_entry;
+#endif
+
+#ifndef STRUCT_INPUTSTATE_DECLARED
+#define STRUCT_INPUTSTATE_DECLARED
 struct inputstate;
+#endif
+
+#ifndef STRUCT_HASH_TABLE_DECLARED
+#define STRUCT_HASH_TABLE_DECLARED
 struct hash_table;
+#endif
 
 extern struct instr instrs[];
 extern struct hash_table *defines;

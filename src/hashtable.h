@@ -11,12 +11,18 @@
 #define AVERAGE_HASH_LENGTH 16
 #define NEW_HASHTABLE_SIZE 4
 
+#ifndef STRUCT_HASH_ENTRY_DECLARED
+#define STRUCT_HASH_ENTRY_DECLARED
+#endif
 struct hash_entry
 {
   struct hash_entry *next;
   struct pike_string *s;
 };
 
+#ifndef STRUCT_HASH_TABLE_DECLARED
+#define STRUCT_HASH_TABLE_DECLARED
+#endif
 struct hash_table
 {
   INT32 mask;

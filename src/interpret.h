@@ -9,6 +9,9 @@
 #include "program.h"
 #include "config.h"
 
+#ifndef STRUCT_FRAME_DECLARED
+#define STRUCT_FRAME_DECLARED
+#endif
 struct frame
 {
   unsigned char *pc;

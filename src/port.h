@@ -8,7 +8,10 @@
 
 #include "types.h"
 
+#ifndef STRUCT_TIMEVAL_DECLARED
+#define STRUCT_TIMEVAL_DECLARED
 struct timeval;
+#endif
 #ifdef HAVE_ISSPACE
 #define ISSPACE(X) isspace(X)
 #else

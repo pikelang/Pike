@@ -38,9 +38,20 @@
 
 extern char *lfun_names[];
 
+#ifndef STRUCT_SVALUE_DECLARED
+#define STRUCT_SVALUE_DECLARED
 struct svalue;
+#endif
+
+#ifndef STRUCT_MODULE_DECLARED
+#define STRUCT_MODULE_DECLARED
 struct module;
+#endif
+
+#ifndef STRUCT_OBJECT_DECLARED
+#define STRUCT_OBJECT_DECLARED
 struct object;
+#endif
 
 /* I need:
  * a) one type that can point to a callable function.

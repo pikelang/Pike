@@ -20,7 +20,10 @@
 
 typedef void (*error_call)(void *);
 
+#ifndef STRUCT_FRAME_DECLARED
+#define STRUCT_FRAME_DECLARED
 struct frame;
+#endif
 
 typedef struct ONERROR
 {
