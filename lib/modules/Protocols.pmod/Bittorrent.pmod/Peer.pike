@@ -7,6 +7,7 @@ Stdio.File fd=Stdio.File();
 string ip;
 int port;
 string id;
+string client_version="unknown";
 
 string mode;
 int online=0;
@@ -64,6 +65,8 @@ void create(.Torrent _parent,mapping m)
    ip=m->ip;
    port=m->port;
    id=m["peer id"];
+   if (id!="?") 
+      client_version=.PeerID.identify_peer(id);
 
    _status("created");
 
@@ -392,8 +395,9 @@ static private void peer_read(mixed dummy,string s)
 	 online=0;
 	 _status("failed","not bittorrent");
 
-	 warning("got non-bittorrent connection from %O: %O\n",
-		 ip,readbuf[..40]);
+	 warning("got non-bittorrent connection from %O (%s): %O\n",
+		 ip,mode=="connected"?"outgoing":"incoming",
+		 readbuf[..40]);
 	 return;
       }
 
@@ -411,6 +415,7 @@ static private void peer_read(mixed dummy,string s)
 	 if (id=="?")
 	 {
 	    id=readbuf[48..67];
+	    client_version=.PeerID.identify_peer(id);
 
 	    if (parent->peers[id]) // no cheating by reconnecting :)
 	    {

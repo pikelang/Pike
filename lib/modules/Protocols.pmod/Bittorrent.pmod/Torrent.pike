@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.17 2003/12/17 18:14:17 mirar Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.18 2003/12/17 19:02:26 mirar Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -403,10 +403,12 @@ static inline string SHA1(string what)
 
 private static inline string generate_peer_id()
 {
-   int i=(random(2->pow(64))->next_prime()*random(2->pow(64))->next_prime());
-   string s="Pike"+i->digits(256);
-   while (strlen(s)<20) s="\0"+s;
-   return s[..19];
+   array v=array_sscanf(cvsid,"%*s %*s %d.%d %d/%d/%d");
+   int day=Calendar.Day(@v[2..4])->julian_day()-2452991;
+   string s=sprintf("Pi%c%c%2c%s",
+		    v[0],v[1],day,
+		    Crypto.randomness.pike_random()->read(14));
+   return s;
 };
 
 //! Calculate the bytes successfully downloaded (full pieces).
@@ -500,7 +502,8 @@ void update_tracker(void|string event,void|int contact)
 	 if (m->peers)
 	 {
 	    foreach (m->peers;;mapping m)
-	       if (!peers[m["peer id"]])
+	       if (!peers[m["peer id"]] && 
+		   m["peer id"]!=my_peer_id)
 	       {
 		  .Peer p;
 		  if (peers[m["peer id"]]) continue;
