@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.220 1999/12/08 21:19:21 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.221 1999/12/09 01:53:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2238,6 +2238,8 @@ void f_sleep(INT32 args)
 
    pop_n_elems(args);
 
+   THREADS_ALLOW();
+
    if (delay>POLL_SLEEP_LIMIT)
       for (;;)
       {
@@ -2262,6 +2264,8 @@ void f_sleep(INT32 args)
    if (do_microsleep)
       while (delay>TIME_ELAPSED) 
 	 GET_TIME_ELAPSED;
+
+   THREADS_DISALLOW();
 }
 
 void f_gc(INT32 args)
