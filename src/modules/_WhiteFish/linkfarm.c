@@ -1,9 +1,9 @@
-/* $Id: linkfarm.c,v 1.5 2004/10/26 20:39:45 grubba Exp $
+/* $Id: linkfarm.c,v 1.6 2004/11/02 16:06:49 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.5 2004/10/26 20:39:45 grubba Exp $");
+RCSID("$Id: linkfarm.c,v 1.6 2004/11/02 16:06:49 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -212,7 +212,7 @@ static void exit_linkfarm_struct(struct object *o)
 /*   if( THIS->buffer ) */
 /*     wf_buffer_free( THIS->buffer ); */
 
-  init_linkfarm_struct();
+  init_linkfarm_struct(o);
 }
 
 

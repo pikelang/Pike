@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.12 2004/10/26 20:39:10 grubba Exp $");
+RCSID("$Id: blobs.c,v 1.13 2004/11/02 16:06:02 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -202,7 +202,7 @@ static void exit_blobs_struct(struct object *o)
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  init_blobs_struct();
+  init_blobs_struct(o);
 }
 
 static struct program *blobs_program;
