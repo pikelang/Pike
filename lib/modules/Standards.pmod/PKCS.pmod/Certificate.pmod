@@ -128,12 +128,12 @@ Version ::= INTEGER
 import ".";
 #endif /* __VERSION__ >= 0.6 */
 
-import Standards.ASN1.Encode;
+import Standards.ASN1.Types;
 import Identifiers;
 
 class AttributeValueAssertion
 {
-  import Standards.ASN1.Encode;
+  import Standards.ASN1.Types;
   inherit asn1_sequence;
   void create(mapping(string:object) types,
 	      string type,
@@ -143,39 +143,39 @@ class AttributeValueAssertion
 	throw( ({ sprintf("AttributeValueAssertion: "
 			  "Unknown attribute type '%s'\n",
 			  type), backtrace() }) );
-      ::create(types[type], value);
+      ::create( ({ types[type], value }) );
     }
 }
 
 /* RelativeDistinguishedName */
 class attribute_set
 {
-  import Standards.ASN1.Encode;
+  import Standards.ASN1.Types;
   inherit asn1_set;
 
   void create(mapping(string:object) types, mapping(string:object) pairs)
     {
-      ::create(@ Array.map(indices(pairs),
+      ::create(Array.map(indices(pairs),
 			 lambda(string s, mapping m, mapping t)
 			 {
 			   return AttributeValueAssertion(t, s, m[s]);
 			 },
-			 pairs, types));
+			   pairs, types));
     }
 }
 
 object build_distinguished_name(mapping(string:object) ... args)
 {
-  return asn1_sequence(@Array.map(args, lambda(mapping rdn)
-					{
-					  return attribute_set(
-					    Identifiers.name_ids, rdn);
-					} ));
+  return asn1_sequence(Array.map(args, lambda(mapping rdn)
+				 {
+				   return attribute_set(
+				     Identifiers.name_ids, rdn);
+				 } ));
 }
 
 class Attribute
 {
-  import Standards.ASN1.Encode;
+  import Standards.ASN1.Types;
   inherit asn1_sequence;
 
   void create(mapping(string:object) types, string type,
@@ -185,7 +185,7 @@ class Attribute
 	throw( ({ sprintf("Attribute: "
 			  "Unknown attribute type '%s'\n",
 			  type), backtrace() }) );
-      ::create(types[type], asn1_set(@ v));
+      ::create( ({ types[type], asn1_set(v) }) );
     }
 }
 
@@ -196,11 +196,11 @@ class Attributes
 
   void create(mapping(string:object) types, mapping(string:array(object)) m)
     {
-      ::create(@ Array.map(indices(m),
-			   lambda(string field, mapping m, mapping t)
-			   {
-			     return Attribute(t, field, m[field]);
-			   }, m, types));
+      ::create(Array.map(indices(m),
+			 lambda(string field, mapping m, mapping t)
+			 {
+			   return Attribute(t, field, m[field]);
+			 }, m, types));
     }
 }
       
