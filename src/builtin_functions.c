@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.253 2000/04/08 15:02:19 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.254 2000/04/08 19:27:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5237,7 +5237,7 @@ static node *fix_map_node_info(node *n)
   int node_info = OPT_SIDE_EFFECT;	/* Assume worst case. */
 
   /* Note: argument 2 has argno 1. */
-  for (argno = 1; cb_ = my_get_arg(&_CDR(n), argno); argno++) {
+  for (argno = 1; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
     node *cb = *cb_;
 
     if ((cb->token == F_CONSTANT) &&
