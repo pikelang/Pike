@@ -1,0 +1,17 @@
+NAME
+	modifier - modify function / variable definitions
+
+DESCRIPTION
+	Modifiers makes it possible to give functions and gobal variables
+	certain characteristics. A list of modifiers follows:
+
+	static	make this identifier unavailable by indexing
+	inline	allow inlining this function
+	private	hide this identifier to inheriting programs
+	nomask	don't allow this identifier to be re-defined
+
+KEYWORDS
+	lpc
+
+SEE ALSO
+	functions, variables

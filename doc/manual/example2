@@ -1,11 +1,11 @@
-  Now we will look at a slightly more useful example:
+2. Now we will look at a slightly more useful example:
 
 	#!/usr/local/bin/ulpc
 
 	int main(int argc,string *argv)
 	{
 	  int i;
-	  string file;
+	  string file_contents;
 	
 	  if(argc<4)
 	  {
@@ -15,16 +15,16 @@
 	
 	  for(i=3; i<argc; i++)
 	  {
-	    if(file=read_bytes(argv[i]))
+	    if(file_contents=read_bytes(argv[i]))
 	    {
-	      if(-1!=strstr(file,argv[1]))
+	      if(-1!=strstr(file_contents,argv[1]))
 	      {
 		write("Processing "+argv[i]+".\n");
-		file=replace(file,argv[1],argv[2]);
+		file_contents=replace(file_contents,argv[1],argv[2]);
 	
 		if( mv(argv[i],argv[i]+"~") )
 		{
-		  write_file(argv[i],file);
+		  write_file(argv[i],file_contents);
 		}else{
 		  write("Failed to create backup file.\n");
 		}
@@ -43,7 +43,13 @@
 
 	#!/usr/local/bin/ulpc
 
-  Make UNIX run ulpc to interpret this program.
+  Make UNIX run ulpc to interpret this program. Interpret in this case
+  means to read the program, convert it to an internal representation and
+  then run the instructions in this internal representation. Note that uLPC
+  does not use the same low-level representation as for example C does,
+  instead it uses a simple and compact representation which are parsed by
+  a C program which actually implements the instructions in that
+  representation.
 
 	int main(int argc,string *argv)
 	{
@@ -52,10 +58,10 @@
   arguments into the parameters argc and argv.
 
 	  int i;
-	  string file;
+	  string file_contents;
 
   Declare two temporary variables to use later. The first one 'i' is an
-  integer, and the second one 'file' is a string.
+  integer, and the second one 'file_contents' is a string.
 	
 	  if(argc<4)
 	  {
@@ -65,20 +71,21 @@
 
   If argc is lesser than four it means that the program received less than
   three arguments. Since rsif needs at least three arguments we write how
-  to use rsif to stderr using the function perror and then exit this function
-  with the return value 1. Nothing after the return will be executed if
-  argc is lesser than 4.
+  to use rsif to stderr (Standard error channel) using the function perror
+  and then exit this function with the return value 1. Nothing after the
+  return will be executed if argc is lesser than 4.
   
 	
 	  for(i=3; i<argc; i++)
 	  {
 
-  This statement starts a loop. It will first set i to three, then execute
-  everything within the brackets for as long as i is lesser than argc. After
-  each time the block between the brackets the final statement, i++, will
-  be executed. ++ is the increment operator, it will increase i by one.
+  This statement starts a loop. (Loop means code repetition) It will first
+  set i to three, then execute everything within the brackets for as long as
+  i is lesser than argc. After each time the block between the brackets the
+  final statement, i++, will be executed. ++ is the increment operator, it
+  will increase i by one.
 
-	    if(file=read_bytes(argv[i]))
+	    if(file_contents=read_bytes(argv[i]))
 	    {
 
   Look closely, the experssion in this if-statement is not a comparison, it
@@ -90,7 +97,7 @@
   variable file. If there is no file with that name, zero will be returned
   and then the block within the brackets will not be executed.
 
-	      if(-1!=strstr(file,argv[1]))
+	      if(-1!=strstr(file_contents,argv[1]))
 	      {
 
   The function strstr searches for a string in in a string and returns the
@@ -101,22 +108,25 @@
 
 		write("Processing "+argv[i]+".\n");
 
-  Write that we are processing this file to stdout.
+  Write that we are processing this file to stdout. Stdout means
+  "Standard output channel" and is normally your screen unless you 'redirect'
+  it to somewhere else.
 
-		file=replace(file,argv[1],argv[2]);
+		file_contents=replace(file_contents,argv[1],argv[2]);
 
   Call the builtin function replace and replace oall occurances of the 'from'
-  string with the 'to' string and assign the new result to the variable 'file'.
+  string with the 'to' string and assign the new result to the variable
+  'file_contents'.
 
 		if( mv(argv[i],argv[i]+"~") )
 		{
   Try moving the file argv[i] to a backup file by adding a tilde to the end
   of the name. Then choose action depending on weather it worked or not.
 
-		  write_file(argv[i],file);
+		  write_file(argv[i],file_contents);
 
-  If it worked we re-create the file argv[i] by writing the string 'file' to
-  it.
+  If it worked we re-create the file argv[i] by writing the string
+  'file_contents' to it.
 
 		}else{
 		  write("Failed to create backup file.\n");

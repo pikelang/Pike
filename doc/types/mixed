@@ -1,0 +1,15 @@
+NAME
+	mixed - any type
+
+DESCRIPTION
+	This is not really a type. But this keyword can be used to specify
+	that a variable, argument or return type can be of any type.
+
+EXAMPLES
+	mixed i=1;
+	mixed j="foo";
+	mixed foo() { return "bar"; }
+	mixed bar() { return ({}); }
+
+KEYWORDS
+	types

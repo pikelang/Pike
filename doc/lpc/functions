@@ -8,6 +8,10 @@ SYNTAX
 	}
 
 DESCRIPTION
+	A function is basically a piece of code which takes some data
+	does some things, and hands some data back. Data sent to a
+	a function is called an 'argument'.
+
 	This defines a function called 'function_name' returning the type
 	'type'. The argument_specification is a comma separated list of
 	arguments. Each argument is specified with a type, whitespace and

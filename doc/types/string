@@ -5,14 +5,27 @@ SYNTAX EXAMPLE
 	"foo"
 
 DESCRIPTION
-	This type can contain a string, or list of characters, strings can
-	contain any character, even null characters. Strings are a basic
+	This type can contan text. ie. a word, a sentence, or a book. Note
+	that this is not simply the letters A to Z, special characters,
+	null characters, newlines can all be stored in a string. Any 8-bit
+	character in fact. Strings are a basic
 	type in LPC, as opposed to C where strings are represented by an
 	array of char. This means that you cannot set individual characters
 	in a string with the index operator for instance. In fact, there are
 	no functions that alters strings destructively. Also, all strings
 	are 'shared', that means that if the same string is used in several
 	places, only one will be stored in memory.
+
+	When writing a string in a program, you enclose it in doublequotes.
+	To write special characters you need to use one of the following
+	syntaxes:
+
+	\n	newline
+	\r	charriage return
+	\t	tab
+	\b	backspace
+	\"	"
+	\\	\
 
 	A list of operators that applies to strings follow:
 	In this list a and b is used to represent a string expression:
