@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.41 2000/02/03 19:02:22 grubba Exp $
+**!	$Id: layers.c,v 1.42 2000/02/08 03:38:56 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -21,7 +21,7 @@
 **! <i>All channels are calculated separately, if nothing else is specified.</i>
 **! <execute>
 **! import Image;
-**! 
+**!
 **! void write_image(string desc,
 **! 		     string filename,
 **! 		     Image img,
@@ -37,7 +37,7 @@
 **            "<wbr>")/1*({mktag("wbr")}) ) );
 **!    write(end_tag());
 **! }
-**! 
+**!
 **! int main()
 **! {
 **!    object ltrans=Layer((["image":
@@ -46,11 +46,11 @@
 **! 			     box(16,16,31,31,96,96,96)->scale(0.5),
 **! 			     "tiled":1,
 **! 			     "mode":"normal"]));
-**! 
+**!
 **!    object circle=load("circle50.pnm");
 **!    object image_test=load("image_ill.pnm");
 **!    object ryoki=load_layer("ryoki_carrot.png");
-**! 
+**!
 **!    object lc1=
 **! 	     Layer((["image":circle->clear(255,0,0),
 **! 		     "alpha":circle,
@@ -67,7 +67,7 @@
 **! 		  "alpha":circle*({0,0,255}),
 **! 		  "xoffset":25,
 **! 		  "yoffset":25]));
-**! 
+**!
 **!    object lr1=
 **! 	  Layer((["image":circle->test(63)->scale(1.25),
 **! 		  "alpha":circle->scale(1.25),
@@ -78,13 +78,13 @@
 **! 		  "alpha":ryoki->alpha(),
 **! 		  "xoffset":5,
 **! 		  "yoffset":20]));
-**! 
+**!
 **!    object li1=
 **! 	  Layer((["image":image_test->scale(80,0),
 **! 		  "mode":"normal",
 **! 		  "xoffset":0,
 **! 		  "yoffset":0]));
-**! 
+**!
 **!    object li2=
 **! 	  lay(
 **! 	     ({
@@ -101,11 +101,11 @@
 **! 	       "alpha":circle->scale(0.5),
 **! 	       "xoffset":55,"yoffset":55])
 **! 	     }));
-**! 
+**!
 **!    Layer li2b=Layer(li2->image()->clear(255,255,255),li2->image());
-**! 
+**!
 **!    object lzo0=
-**! 	  lay( ({ 
+**! 	  lay( ({
 **! 	     Layer(Image(4,10)
 **! 		   ->tuned_box(0,0,3,8,({({255,255,255}),({255,255,255}),
 **! 					 ({0,0,0}),({0,0,0})}))
@@ -120,13 +120,13 @@
 **! 					  ({0,0,255}),({0,255,0})})))
 **! 	     ->set_offset(80,0),
 **! 	  }) );
-**!    
+**!
 **!    object scale=
 **! 	  Image(4,80)
 **! 	  ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
 **! 				  ({0,0,0}),({0,0,0})}));
 **!    object lzo1=
-**! 	  lay( ({ 
+**! 	  lay( ({
 **! 	     Layer(scale)->set_offset(2,0),
 **! 	     Layer(scale->invert())->set_offset(6,0),
 **! 	     Layer(Image(26,80)->test())->set_offset(12,0),
@@ -141,7 +141,7 @@
 **! 	     Layer(Image(26,80,"white"),
 **! 		   Image(26,80)->test())->set_offset(132,0),
 **! 	  }));
-**! 
+**!
 **!    object lca1;
 **!
 **!    object a=
@@ -153,7 +153,7 @@
 **! 		  lay(({lr1}),0,0,80,80)->set_offset(320,0),
 **! 		  lzo0->set_offset(400,0)}),
 **! 	       0,0,560,80);
-**! 
+**!
 **!    object b=
 **! 	  lay( ({ lay(({lc2}),0,0,80,80),
 **! 		  lay(({lc2b}),0,0,80,80)->set_offset(80,0),
@@ -164,22 +164,22 @@
 **! 	       0,0,560,80);
 **!
 **    xv(a); xv(b);
-**! 
+**!
 **!    begin_tag("table",(["cellspacing":"0","cellpadding":"1"]));
-**! 
+**!
 **! //    write_image("top layer image","bi",b->image());
 **! //    write_image("top layer alpha","ba",b->alpha());
-**! 
+**!
 **! //    write_image("bottom layer image","ai",a->image());
 **! //    write_image("bottom layer alpha","aa",b->alpha());
-**! 
+**!
 **!    write_image("top layer","b",lay(({ltrans,b}))->image(),
 **!		   "");
 **!    write_image("bottom layer","a",lay(({ltrans,a}))->image(),
 **!                "");
-**! 
+**!
 **!    write(mktag("tr",0,mktag("td",0,"\240")));
-**! 
+**!
 **!    foreach (Array.transpose(({Layer()->available_modes(),
 **!                               Layer()->descriptions()})),
 **!             [string mode,string desc])
@@ -189,7 +189,7 @@
 **!          write(mktag("tr",0,mktag("td",0,"\240")));
 **!
 **! 	  ({lc2,lc2b,li2,li2b,lr2,lzo1})->set_mode(mode);
-**! 
+**!
 **! 	  object r=
 **! 	     lay( ({ lay(({lca1,lc2}),0,0,80,80),
 **! 		     lay(({lc1,lc2b}),0,0,80,80)->set_offset(80,0),
@@ -199,10 +199,10 @@
 **! 		     lay(({lzo0,lzo1}),400,0,160,80) }),
 **! 		  0,0,560,80);
 **       xv(r);
-**! 
+**!
 **! 	  write_image(mode,mode,lay(({ltrans,r}))->image(),desc);
 **!    }
-**! 
+**!
 **!    write(end_tag());
 **!    return 0;
 **! }
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.41 2000/02/03 19:02:22 grubba Exp $");
+RCSID("$Id: layers.c,v 1.42 2000/02/08 03:38:56 per Exp $");
 
 #include "image_machine.h"
 
@@ -260,15 +260,15 @@ typedef void lm_row_func(rgb_group *s,
 			 rgb_group *da,
 			 int len,
 			 double alpha);
-                    
+
 
 #define SNUMPIXS 64 /* pixels in short-stroke buffer */
 
 struct layer
 {
    int xsize;            /* underlaying image size */
-   int ysize;	         
-		         
+   int ysize;
+
    int xoffs,yoffs;      /* clip offset */
 
    struct object *image; /* image object */
@@ -280,16 +280,19 @@ struct layer
    double alpha_value;    /* overall alpha value (1.0=opaque) */
 
    rgb_group fill;       /* fill color ("outside" the layer) */
-   rgb_group fill_alpha; /* fill alpha */ 
+   rgb_group fill_alpha; /* fill alpha */
 
    rgb_group sfill[SNUMPIXS];       /* pre-calculated rows */
-   rgb_group sfill_alpha[SNUMPIXS]; 
+   rgb_group sfill_alpha[SNUMPIXS];
 
    int tiled;            /* true if tiled */
 
    lm_row_func *row_func;/* layer mode */
    int optimize_alpha;
    int really_optimize_alpha;
+
+   struct mapping     *misc; /* Misc associated data. Added by per,
+                                rather useful for some things... */
 };
 
 #undef THIS
@@ -327,7 +330,7 @@ LMFUNC(lm_replace_hsv);
 LMFUNC(lm_hue);
 LMFUNC(lm_saturation);
 LMFUNC(lm_value);
-LMFUNC(lm_color); 
+LMFUNC(lm_color);
 
 LMFUNC(lm_darken);
 LMFUNC(lm_lighten);
@@ -373,33 +376,33 @@ struct layer_mode_desc
    {"normal",        lm_normal,        1, NULL,
     "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), aD=(aL+(1-aL)*aS)"},
    {"add",           lm_add,           1, NULL,
-    "D=L+S, apply alpha as \"normal\" mode"}, 
+    "D=L+S, apply alpha as \"normal\" mode"},
    {"subtract",      lm_subtract,      1, NULL,
-    "D=L-S, apply alpha as \"normal\" mode"}, 
+    "D=L-S, apply alpha as \"normal\" mode"},
    {"multiply",      lm_multiply,      1, NULL,
-    "D=L*S, apply alpha as \"normal\" mode"}, 
+    "D=L*S, apply alpha as \"normal\" mode"},
    {"divide",        lm_divide,        1, NULL,
-    "D=L/S, apply alpha as \"normal\" mode"}, 
+    "D=L/S, apply alpha as \"normal\" mode"},
    {"modulo",        lm_modulo,        1, NULL,
-    "D=L%S, apply alpha as \"normal\" mode"}, 
+    "D=L%S, apply alpha as \"normal\" mode"},
    {"invsubtract",   lm_invsubtract,   1, NULL,
-    "D=S-L, apply alpha as \"normal\" mode"}, 
+    "D=S-L, apply alpha as \"normal\" mode"},
    {"invdivide",     lm_invdivide,     1, NULL,
-    "D=S/L, apply alpha as \"normal\" mode"}, 
+    "D=S/L, apply alpha as \"normal\" mode"},
    {"invmodulo",     lm_invmodulo,     1, NULL,
-    "D=S%L, apply alpha as \"normal\" mode"}, 
+    "D=S%L, apply alpha as \"normal\" mode"},
    {"difference",    lm_difference,    1, NULL,
-    "D=abs(L-S), apply alpha as \"normal\" mode"}, 
+    "D=abs(L-S), apply alpha as \"normal\" mode"},
    {"max",           lm_max,           1, NULL,
-    "D=max(L,S), apply alpha as \"normal\" mode"}, 
+    "D=max(L,S), apply alpha as \"normal\" mode"},
    {"min",           lm_min,           1, NULL,
-    "D=min(L,S), apply alpha as \"normal\" mode"}, 
+    "D=min(L,S), apply alpha as \"normal\" mode"},
    {"bitwise_and",   lm_bitwise_and,   1, NULL,
-    "D=L&S, apply alpha as \"normal\" mode"}, 
+    "D=L&S, apply alpha as \"normal\" mode"},
    {"bitwise_or",    lm_bitwise_or,    1, NULL,
-    "D=L|S, apply alpha as \"normal\" mode"}, 
+    "D=L|S, apply alpha as \"normal\" mode"},
    {"bitwise_xor",   lm_bitwise_xor,   1, NULL,
-    "D=L^S, apply alpha as \"normal\" mode"}, 
+    "D=L^S, apply alpha as \"normal\" mode"},
 
    {"replace",       lm_replace,       1, NULL,
     "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), aD=aS"},
@@ -431,15 +434,15 @@ struct layer_mode_desc
     "Ds=min(Ls,Ss), Dhv=Lhv, aD=aS"},
 
    {"dissolve",      lm_dissolve,      1, NULL,
-    "i=random 0 or 1, D=i?L:S, aD=i+aS"}, 
+    "i=random 0 or 1, D=i?L:S, aD=i+aS"},
    {"behind",        lm_behind,        1, NULL,
     "D=(S*aS+L*(1-aS)*aL) / (aS+(1-aS)*aL), aD=(aS+(1-aS)*aL); "
     "simply swap S and L"},
    {"erase",         lm_erase,         1, NULL,
-    "D=S, aD=aS*(1-aL)"}, 
+    "D=S, aD=aS*(1-aL)"},
 
    {"screen",        lm_screen,        1, NULL,
-    "1-(1-S)*(1-L), apply alpha as \"normal\""}, 
+    "1-(1-S)*(1-L), apply alpha as \"normal\""},
    {"overlay",       lm_overlay,       1, NULL,
     "(1-(1-a)*(1-b)-a*b)*a+a*b, apply alpha as \"normal\""},
    {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
@@ -510,7 +513,7 @@ struct layer_mode_desc
 #define COMBINE_ALPHA_V(S,L,aS,aL,V) \
     COMBINE_ALPHA(S,(int)((L)*(V)),aS,aL)
 
-#else 
+#else
 #ifdef COMBINE_METHOD_FLOAT
 
 #define COMBINE_ALPHA(S,L,aS,aL) \
@@ -529,7 +532,7 @@ struct layer_mode_desc
 #error unknown COMBINE_METHOD
 #endif /* COMBINE_METHOD_FLOAT  */
 
-#endif 
+#endif
 
 #define COMBINE(P,A) CCUT(((int)(P))*(A))
 #define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
@@ -571,7 +574,7 @@ struct layer_mode_desc
 		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,(LA)->C,V); \
 		  (DA)->C=COMBINE_ALPHA_SUM_V((LA)->C,(SA)->C,V);	   \
 	       }							   \
-	    } while (0) 
+	    } while (0)
 
 
 static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
@@ -629,7 +632,7 @@ static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 #define V F2C(v)
    switch((int)i)
    {
-      case 6: 
+      case 6:
       case 0: 	colorp->r = V;	colorp->g = t;	colorp->b = p;	 break;
       case 7:
       case 1: 	colorp->r = q;	colorp->g = V;	colorp->b = p;	 break;
@@ -651,7 +654,7 @@ static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 
 static int really_optimize_p(struct layer *l)
 {
-   return 
+   return
       l->optimize_alpha &&
       l->fill_alpha.r==0 &&
       l->fill_alpha.g==0 &&
@@ -680,6 +683,7 @@ static void init_layer(struct object *dummy)
    THIS->row_func=lm_normal;
    THIS->optimize_alpha=1;
    THIS->really_optimize_alpha=1;
+   THIS->misc=0;
 
    smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
@@ -689,6 +693,7 @@ static void free_layer(struct layer *l)
 {
    if (THIS->image) free_object(THIS->image);
    if (THIS->alpha) free_object(THIS->alpha);
+   if (THIS->misc)  free_mapping(THIS->misc);
    THIS->image=NULL;
    THIS->alpha=NULL;
    THIS->img=NULL;
@@ -706,7 +711,7 @@ static void exit_layer(struct object *dummy)
 **! method object|int(0) image()
 **! method object|int(0) alpha()
 **!	Set/change/get image and alpha channel for the layer.
-**!	You could also cancel the channels giving 0 
+**!	You could also cancel the channels giving 0
 **!	instead of an image object.
 **! note:
 **!	image and alpha channel must be of the same size,
@@ -730,7 +735,7 @@ static void image_layer_set_image(INT32 args)
    if (args>=1)
       if ( sp[-args].type!=T_OBJECT )
       {
-	 if (sp[-args].type!=T_INT || 
+	 if (sp[-args].type!=T_INT ||
 	     sp[-args].u.integer!=0)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
 				 "object(Image)|int(0)");
@@ -751,7 +756,7 @@ static void image_layer_set_image(INT32 args)
    if (args>=2)
       if ( sp[1-args].type!=T_OBJECT )
       {
-	 if (sp[1-args].type!=T_INT || 
+	 if (sp[1-args].type!=T_INT ||
 	     sp[1-args].u.integer!=0)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
 				 "object(Image)|int(0)");
@@ -779,6 +784,41 @@ static void image_layer_set_image(INT32 args)
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
+}
+
+static void image_layer_get_misc_value( INT32 args )
+{
+  if( args != 1 )
+    error("Wrong number of arguments to get_misc_value\n");
+  if( THIS->misc )
+  {
+    ref_push_mapping( THIS->misc );
+    stack_swap();
+    f_index( 2 );
+  }  else {
+    pop_n_elems( args );
+    push_int( 0 );
+  }
+}
+
+/*
+**! method mixed set_misc_value( mixed what, mixed to )
+**! method mixed get_misc_value( mixed what )
+**!   Set or query misc. attributes for the layer.
+**!
+**!   As an example, the XCF and PSD image decoders set the 'name' attribute
+**!   to the name the layer had in the source file.
+*/
+static void image_layer_set_misc_value( INT32 args )
+{
+  if( args != 2 )
+    error("Wrong number of arguments to set_misc_value\n");
+  if( !THIS->misc )
+    THIS->misc = allocate_mapping( 4 );
+
+  mapping_insert( THIS->misc, sp-2, sp-1 );
+  stack_swap();
+  pop_stack();
 }
 
 static void image_layer_image(INT32 args)
@@ -829,43 +869,43 @@ static void image_layer_alpha_value(INT32 args)
 **! method object set_mode(string mode)
 **! method string mode()
 **! method array(string) available_modes()
-**!	Set/get layer mode. Mode is one of these: 
+**!	Set/get layer mode. Mode is one of these:
 **!
-**!  	"normal",        
-**!  	"add",            
-**!  	"subtract",       
-**!  	"multiply",       
-**!  	"divide",         
-**!  	"modulo",         
-**!  	"invsubtract",    
-**!  	"invdivide",      
-**!  	"invmodulo",      
-**!  	"difference",     
-**!  	"max",            
-**!  	"min",            
-**!  	"bitwise_and",    
-**!  	"bitwise_or",     
-**!  	"bitwise_xor",    
-**!  			 
-**!  	"replace",       
-**!  	"red",           
-**!  	"green",         
-**!  	"blue",          
-**!  			 
-**!  	"replace_hsv",   
-**!  	"hue",           
-**!  	"saturation",    
-**!  	"value",         
-**!  	"color",         
-**!  			 
-**!  	"darken",         
-**!  	"lighten",        
-**!  			 
-**!  	"dissolve",       
-**!  	"behind",         
-**!  	"erase",          
+**!  	"normal",
+**!  	"add",
+**!  	"subtract",
+**!  	"multiply",
+**!  	"divide",
+**!  	"modulo",
+**!  	"invsubtract",
+**!  	"invdivide",
+**!  	"invmodulo",
+**!  	"difference",
+**!  	"max",
+**!  	"min",
+**!  	"bitwise_and",
+**!  	"bitwise_or",
+**!  	"bitwise_xor",
 **!
-**!	<ref>available_modes</ref>() simply gives an array 
+**!  	"replace",
+**!  	"red",
+**!  	"green",
+**!  	"blue",
+**!
+**!  	"replace_hsv",
+**!  	"hue",
+**!  	"saturation",
+**!  	"value",
+**!  	"color",
+**!
+**!  	"darken",
+**!  	"lighten",
+**!
+**!  	"dissolve",
+**!  	"behind",
+**!  	"erase",
+**!
+**!	<ref>available_modes</ref>() simply gives an array
 **!	containing the names of these modes.
 **!
 **! note:
@@ -880,14 +920,14 @@ static void image_layer_set_mode(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_mode",1);
    if (sp[-args].type!=T_STRING)
       SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"string");
-      
+
    for (i=0; i<LAYER_MODES; i++)
       if (sp[-args].u.string==layer_mode[i].ps)
       {
 	 THIS->row_func=layer_mode[i].func;
 	 THIS->optimize_alpha=layer_mode[i].optimize_alpha;
 	 THIS->really_optimize_alpha=really_optimize_p(THIS);
-	    
+
 	 pop_n_elems(args);
 	 ref_push_object(THISOBJ);
 	 return;
@@ -900,7 +940,7 @@ static void image_layer_mode(INT32 args)
 {
    int i;
    pop_n_elems(args);
-      
+
    for (i=0; i<LAYER_MODES; i++)
       if (THIS->row_func==layer_mode[i].func)
       {
@@ -915,7 +955,7 @@ static void image_layer_available_modes(INT32 args)
 {
    int i;
    pop_n_elems(args);
-      
+
    for (i=0; i<LAYER_MODES; i++)
       ref_push_string(layer_mode[i].ps);
 
@@ -926,7 +966,7 @@ static void image_layer_descriptions(INT32 args)
 {
    int i;
    pop_n_elems(args);
-      
+
    for (i=0; i<LAYER_MODES; i++)
      push_string(make_shared_string(layer_mode[i].desc));
 
@@ -938,7 +978,7 @@ static void image_layer_descriptions(INT32 args)
 **! method object set_fill(Color color,Color alpha)
 **! method object fill()
 **! method object fill_alpha()
-**!	Set/query fill color and alpha, ie the color used "outside" the 
+**!	Set/query fill color and alpha, ie the color used "outside" the
 **!	image. This is mostly useful if you want to "frame"
 **!	a layer.
 */
@@ -1079,10 +1119,10 @@ static void image_layer_tiled(INT32 args)
 **!	the image object, alpha channel and mode, or
 **!	a mapping with optional elements:
 **!	<pre>
-**!	"image":image,            
+**!	"image":image,
 **!		// default: black
 **!
-**!	"alpha":alpha,            
+**!	"alpha":alpha,
 **!		// alpha channel object
 **!		// default: full opaque
 **!
@@ -1099,7 +1139,7 @@ static void image_layer_tiled(INT32 args)
 **!	"yoffset":int,
 **!		// offset of this layer
 **!
-**!	"fill":Color,		  
+**!	"fill":Color,
 **!	"fill_alpha":Color,
 **!		// fill color, ie what color is used
 **!		// "outside" the image. default: black
@@ -1108,7 +1148,7 @@ static void image_layer_tiled(INT32 args)
 **!	"tiled":int(0|1),
 **!		// select tiling; if 1, the image
 **!		// will be tiled. deafult: 0, off
-**!	</pre>	
+**!	</pre>
 **!	The layer can also be created "empty",
 **!	either giving a size and color -
 **!	this will give a filled opaque square,
@@ -1120,7 +1160,7 @@ static void image_layer_tiled(INT32 args)
 **!
 **! note:
 **!	image and alpha channel must be of the same size.
-**!	
+**!
 */
 
 static INLINE void try_parameter(char *a,void (*f)(INT32))
@@ -1150,7 +1190,7 @@ static INLINE void try_parameter_pair(char *a,char *b,void (*f)(INT32))
       f(2);
       pop_stack();
    }
-   else 
+   else
       pop_n_elems(2);
 }
 
@@ -1172,7 +1212,7 @@ static void image_layer_create(INT32 args)
       pop_stack();
       return;
    }
-   else if (sp[-args].type==T_INT && args>1 
+   else if (sp[-args].type==T_INT && args>1
 	    && sp[1-args].type==T_INT)
    {
       rgb_group col=black,alpha=white;
@@ -1181,11 +1221,11 @@ static void image_layer_create(INT32 args)
       if (args>2)
 	 if (!image_color_arg(2-args,&col))
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer",3,"Image.Color");
-	    
+
       if (args>3)
 	 if (!image_color_arg(3-args,&alpha))
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer",4,"Image.Color");
-      
+
       push_int(THIS->xsize);
       push_int(THIS->ysize);
       push_int(col.r);
@@ -1199,7 +1239,7 @@ static void image_layer_create(INT32 args)
       push_int(alpha.g);
       push_int(alpha.b);
       push_object(clone_object(image_program,5));
-      
+
       image_layer_set_image(2);
 
       pop_n_elems(args);
@@ -1231,7 +1271,7 @@ static void image_layer_cast(INT32 args)
       {
 	 int n=0;
 	 pop_n_elems(args);
-	 
+
 	 push_text("xsize");        push_int(THIS->xsize);         n++;
 	 push_text("ysize");        push_int(THIS->ysize);         n++;
 	 push_text("image");        image_layer_image(0);          n++;
@@ -1268,7 +1308,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
 #endif
-      return; 
+      return;
    }
    else if (alpha==1.0)
    {
@@ -1296,7 +1336,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 		  MEMCPY(da,sa,n*sizeof(rgb_group));
 		  l+=n; s+=n; sa+=n; d+=n; da+=n;
 	       }
-	       else 
+	       else
 		  *(d++)=*(s++),*(da++)=*(sa++),l++;
 	       continue;
 #else
@@ -1826,7 +1866,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
 #endif
-      return; 
+      return;
    }
    else if (alpha==1.0)
    {
@@ -1838,10 +1878,10 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    if ((my_rand()%(255*255)) < 
-		(unsigned)(la->r*87 + la->g*127 + la->b*41)) 
+	    if ((my_rand()%(255*255)) <
+		(unsigned)(la->r*87 + la->g*127 + la->b*41))
 	       *d=*l,*da=white;
-	    else 
+	    else
 	       *d=*s,*da=*sa;
 	    l++; s++; la++; sa++; da++; d++;
 	 }
@@ -1852,9 +1892,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
-	    if ((my_rand()&255) < (unsigned)v) 
+	    if ((my_rand()&255) < (unsigned)v)
 	       *d=*l,*da=white;
-	    else 
+	    else
 	       *d=*s,*da=*sa;
 	    l++; s++; sa++; da++; d++;
 	 }
@@ -1862,10 +1902,10 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       {
 	 while (len--)
 	 {
-	    if ((my_rand()%(255*255)) < 
+	    if ((my_rand()%(255*255)) <
 		(unsigned)((la->r*87 + la->g*127 + la->b*41)>>8)*v)
 	       *d=*l,*da=white;
-	    else 
+	    else
 	       *d=*s,*da=*sa;
 	    l++; s++; la++; sa++; da++; d++;
 	 }
@@ -1885,7 +1925,7 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
 #endif
-      return; 
+      return;
    }
    else if (alpha==1.0)
       while (len--)
@@ -1906,14 +1946,14 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
 	    ALPHA_ADD(l,s,d,la,sa,da,g);
 	    ALPHA_ADD(l,s,d,la,sa,da,b);
 	 }
-	 else 
+	 else
 	 {
 	    ALPHA_ADD(l,s,d,(&white),sa,da,r);
 	    ALPHA_ADD(l,s,d,(&white),sa,da,g);
 	    ALPHA_ADD(l,s,d,(&white),sa,da,b);
 	 }
 	 l++; s++; sa++; d++; da++;
-	 if (la) la++; 
+	 if (la) la++;
       }
    else
       while (len--)
@@ -1934,14 +1974,14 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
 	    ALPHA_ADD_V(l,s,d,la,sa,da,alpha,g);
 	    ALPHA_ADD_V(l,s,d,la,sa,da,alpha,b);
 	 }
-	 else 
+	 else
 	 {
 	    ALPHA_ADD_V(l,s,d,(&white),sa,da,alpha,r);
 	    ALPHA_ADD_V(l,s,d,(&white),sa,da,alpha,g);
 	    ALPHA_ADD_V(l,s,d,(&white),sa,da,alpha,b);
 	 }
 	 l++; s++; sa++; d++; da++;
-	 if (la) la++; 
+	 if (la) la++;
       }
 }
 
@@ -1990,12 +2030,12 @@ static void lm_spec_burn_alpha(struct layer *ly,
 			       rgb_group *s, rgb_group *sa,
 			       rgb_group *d, rgb_group *da,
 			       int len)
-			       
+
 {
    /* special optimized */
-   if (!la) 
+   if (!la)
    {
-#ifdef LAYERS_DUAL      
+#ifdef LAYERS_DUAL
       MEMCPY(d,s,len*sizeof(rgb_group));
       MEMCPY(da,sa,len*sizeof(rgb_group));
 #endif
@@ -2030,7 +2070,7 @@ static void lm_spec_burn_alpha(struct layer *ly,
 	       da->r=MINIMUM(sa->r+la->r,COLORMAX);
 	       da->g=MINIMUM(sa->g+la->g,COLORMAX);
 	       da->b=MINIMUM(sa->b+la->b,COLORMAX);
-	       da++; sa++; la++; 
+	       da++; sa++; la++;
 	    }
 	 }
       else
@@ -2042,7 +2082,7 @@ static void lm_spec_burn_alpha(struct layer *ly,
 	    {
 	       *d=*s;
 	    }
-	    else 
+	    else
 	    {
 	       d->r=MINIMUM(s->r+l->r,COLORMAX);
 	       d->g=MINIMUM(s->g+l->g,COLORMAX);
@@ -2109,8 +2149,8 @@ static INLINE void img_lay_first_line(struct layer *l,
       if (l->img) s=l->img->img+y*l->xsize; else s=NULL;
       if (l->alp) sa=l->alp->img+y*l->xsize; else sa=NULL;
       len=l->xsize;
-      
-      if (l->xoffs>xoffs) 
+
+      if (l->xoffs>xoffs)
       {
 	 /* fill to the left */
 	 smear_color(d,l->fill,l->xoffs-xoffs);
@@ -2128,9 +2168,9 @@ static INLINE void img_lay_first_line(struct layer *l,
       }
       if (len<xsize) /* copy bit, fill right */
       {
-	 if (s) MEMCPY(d,s,len*sizeof(rgb_group)); 
+	 if (s) MEMCPY(d,s,len*sizeof(rgb_group));
 	 else smear_color(d,l->fill,len);
-	 if (sa) MEMCPY(da,sa,len*sizeof(rgb_group)); 
+	 if (sa) MEMCPY(da,sa,len*sizeof(rgb_group));
 	 else smear_color(da,white,len);
 
 	 smear_color(d+len,l->fill,xsize-len);
@@ -2138,9 +2178,9 @@ static INLINE void img_lay_first_line(struct layer *l,
       }
       else /* copy rest */
       {
-	 if (s) MEMCPY(d,s,xsize*sizeof(rgb_group)); 
+	 if (s) MEMCPY(d,s,xsize*sizeof(rgb_group));
 	 else smear_color(d,l->fill,xsize);
-	 if (sa) MEMCPY(da,sa,xsize*sizeof(rgb_group)); 
+	 if (sa) MEMCPY(da,sa,xsize*sizeof(rgb_group));
 	 else smear_color(da,white,xsize);
       }
       return;
@@ -2152,10 +2192,10 @@ static INLINE void img_lay_first_line(struct layer *l,
       y%=l->ysize;
       if (y<0) y+=l->ysize;
 
-      if (l->img) s=l->img->img+y*l->xsize; 
+      if (l->img) s=l->img->img+y*l->xsize;
       else smear_color(d,l->fill,xsize),s=NULL;
 
-      if (l->alp) sa=l->alp->img+y*l->xsize; 
+      if (l->alp) sa=l->alp->img+y*l->xsize;
       else smear_color(da,white,xsize),sa=NULL;
 
       xoffs-=l->xoffs; /* position in source */
@@ -2199,7 +2239,7 @@ static INLINE void img_lay_stroke(struct layer *ly,
       return;
    }
 
-   if (l) 
+   if (l)
    {
       (ly->row_func)(s,l,d,sa,la,da,len,ly->alpha_value);
       return;
@@ -2207,16 +2247,16 @@ static INLINE void img_lay_stroke(struct layer *ly,
    if (!la && ly->really_optimize_alpha)
    {
 /*       fprintf(stderr,"fast skip ly->yoffs=%d\n",ly->yoffs); */
-#ifdef LAYERS_DUAL      
+#ifdef LAYERS_DUAL
       MEMCPY(d,s,len*sizeof(rgb_group));
       MEMCPY(da,sa,len*sizeof(rgb_group));
 #endif
       return;
    }
 
-   if (!la && 
-       ly->fill_alpha.r==COLORMAX && 
-       ly->fill_alpha.g==COLORMAX && 
+   if (!la &&
+       ly->fill_alpha.r==COLORMAX &&
+       ly->fill_alpha.g==COLORMAX &&
        ly->fill_alpha.b==COLORMAX)
    {
       while (len>SNUMPIXS)
@@ -2225,7 +2265,7 @@ static INLINE void img_lay_stroke(struct layer *ly,
 			SNUMPIXS,ly->alpha_value);
 	 s+=SNUMPIXS; d+=SNUMPIXS;
 	 sa+=SNUMPIXS;da+=SNUMPIXS;
-	 if (l) l+=SNUMPIXS; 
+	 if (l) l+=SNUMPIXS;
 	 len-=SNUMPIXS;
       }
       if (len)
@@ -2243,8 +2283,8 @@ static INLINE void img_lay_stroke(struct layer *ly,
 			SNUMPIXS,ly->alpha_value);
 	 s+=SNUMPIXS; d+=SNUMPIXS;
 	 sa+=SNUMPIXS; da+=SNUMPIXS;
-	 if (l) l+=SNUMPIXS; 
-	 if (la) la+=SNUMPIXS; 
+	 if (l) l+=SNUMPIXS;
+	 if (la) la+=SNUMPIXS;
 	 len-=SNUMPIXS;
       }
       if (len)
@@ -2276,8 +2316,8 @@ static INLINE void img_lay_line(struct layer *ly,
       if (ly->img) l=ly->img->img+y*ly->xsize; else l=NULL;
       if (ly->alp) la=ly->alp->img+y*ly->xsize; else la=NULL;
       len=ly->xsize;
-      
-      if (ly->xoffs>xoffs) 
+
+      if (ly->xoffs>xoffs)
       {
 	 /* fill to the left */
 	 img_lay_stroke(ly,NULL,NULL,s,sa,d,da,ly->xoffs-xoffs);
@@ -2415,11 +2455,11 @@ void img_lay(struct layer **layer,
 	 /* loop over the rest of the layers, except the last */
 	 for (; z<layers-1; z++)
 	    if (!layer[z]->really_optimize_alpha ||
-		(layer[z]->yoffs<=y+dest->yoffs && 
+		(layer[z]->yoffs<=y+dest->yoffs &&
 		 y+dest->yoffs<layer[z]->yoffs+layer[z]->ysize))
 	    {
 	       rgb_group *tmp;
-	       
+
 /* 	       if (!layer[z]->really_optimize_alpha) */
 /* 		  fprintf(stderr,"huh %d\n",z); */
 /* 	       if (!(layer[z]->yoffs>=y+dest->yoffs &&  */
@@ -2463,7 +2503,7 @@ void img_lay(struct layer **layer,
 		      xoffs,xsize,y+dest->yoffs-layer[layers-1]->yoffs,
 		      d,da);
       }
-      else 
+      else
       {
 	 /* make the layer to destination*/
 	 img_lay_first_line(layer[0],xoffs,xsize,
@@ -2485,7 +2525,7 @@ void img_lay(struct layer **layer,
 **! module Image
 **! method Image.Layer lay(array(Image.Layer|mapping))
 **! method Image.Layer lay(array(Image.Layer|mapping),int xoffset,int yoffset,int xsize,int ysize)
-**!	Combine layers. 
+**!	Combine layers.
 **! returns a new layer object.
 **!
 **! see also: Image.Layer
@@ -2503,7 +2543,7 @@ void image_lay(INT32 args)
 
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.lay",1);
-      
+
    if (sp[-args].type!=T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("Image.lay",1,
 			   "array(Image.Layer|mapping)");
@@ -2517,7 +2557,7 @@ void image_lay(INT32 args)
       if (ysize<1)
 	 SIMPLE_BAD_ARG_ERROR("Image.lay",5,"int(1..)");
    }
-   
+
    layers=(a=sp[-args].u.array)->size;
 
    if (!layers) /* dummy return empty layer */
@@ -2526,7 +2566,7 @@ void image_lay(INT32 args)
       push_object(clone_object(image_layer_program,0));
       return;
    }
-      
+
    l=(struct layer**)xalloc(sizeof(struct layer)*layers);
 
    for (i=0; i<layers; i++)
@@ -2573,9 +2613,9 @@ void image_lay(INT32 args)
 	 if (!l[i]->tiled)
 	 {
 	    int t;
-	    if (l[i]->xoffs<xoffset) 
+	    if (l[i]->xoffs<xoffset)
 	       t=xoffset-l[i]->xoffs,xoffset-=t,xsize+=t;
-	    if (l[i]->yoffs<yoffset) 
+	    if (l[i]->yoffs<yoffset)
 	       t=yoffset-l[i]->yoffs,yoffset-=t,ysize+=t;
 	    if (l[i]->xsize+l[i]->xoffs-xoffset>xsize)
 	       xsize=l[i]->xsize+l[i]->xoffs-xoffset;
@@ -2597,7 +2637,7 @@ void image_lay(INT32 args)
    img_lay(l,layers,dest);
 
    free(l);
-   
+
    sp--;
    pop_n_elems(args);
    push_object(o);
@@ -2703,7 +2743,7 @@ static void image_layer_crop(INT32 args)
       if (sp[-1].type!=T_OBJECT ||
 	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
 	 error("No image returned from image->copy\n");
-      if (img->xsize!=xz || img->ysize!=yz) 
+      if (img->xsize!=xz || img->ysize!=yz)
 	 error("Image returned from image->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
 	       img->xsize,img->ysize,xz,yz);
@@ -2731,7 +2771,7 @@ static void image_layer_crop(INT32 args)
       if (sp[-1].type!=T_OBJECT ||
 	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
 	 error("No image returned from alpha->copy\n");
-      if (img->xsize!=xz || img->ysize!=yz) 
+      if (img->xsize!=xz || img->ysize!=yz)
 	 error("Image returned from alpha->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
 	       img->xsize,img->ysize,xz,yz);
@@ -2758,8 +2798,8 @@ static void image_layer_crop(INT32 args)
 **!	This crops (of finds) a suitable crop, non-destructive crop.
 **!	The layer alpha channel is checked, and edges that is
 **!	transparent is removed.
-**!	
-**!	(What really happens is that the image and alpha channel is checked, 
+**!
+**!	(What really happens is that the image and alpha channel is checked,
 **!	and edges equal the fill setup is cropped away.)
 **!
 **!	<ref>find_autocrop</ref>() returns an array of xoff,yoff,xsize,ysize,
@@ -2844,11 +2884,12 @@ void init_image_layers(void)
    set_init_callback(init_layer);
    set_exit_callback(exit_layer);
 
+
    ADD_FUNCTION("create",image_layer_create,
 		tOr4(tFunc(tNone,tVoid),
 		     tFunc(tObj tOr(tObj,tVoid) tOr(tString,tVoid),tVoid),
 		     tFunc(tLayerMap,tVoid),
-		     tFunc(tInt tInt 
+		     tFunc(tInt tInt
 			   tOr(tColor,tVoid) tOr(tColor,tVoid),tVoid)),0);
 
    ADD_FUNCTION("cast",image_layer_cast,
@@ -2869,6 +2910,10 @@ void init_image_layers(void)
    ADD_FUNCTION("set_alpha_value",image_layer_set_alpha_value,
                 tFunc(tFloat,tObj),0);
    ADD_FUNCTION("set_tiled",image_layer_set_tiled,tFunc(tInt,tObj),0);
+
+   ADD_FUNCTION("set_misc_value", image_layer_set_misc_value,
+                tFunc(tMixed tMixed, tMixed),0 );
+
 
    /* query */
 
@@ -2893,6 +2938,9 @@ void init_image_layers(void)
 
    ADD_FUNCTION("tiled",image_layer_tiled,tFunc(tNone,tInt01),0);
 
+   ADD_FUNCTION("get_misc_value", image_layer_get_misc_value,
+                tFunc(tMixed, tMixed),0 );
+
    /* image-object operations */
 
    ADD_FUNCTION("crop",image_layer_crop,
@@ -2915,7 +2963,7 @@ void init_image_layers(void)
 void exit_image_layers(void)
 {
    int i;
-   
+
    for (i=0; i<LAYER_MODES; i++)
       free_string(layer_mode[i].ps);
 }
