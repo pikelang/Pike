@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.259 2003/03/12 09:58:18 agehall Exp $
+|| $Id: file.c,v 1.260 2003/03/12 14:30:39 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.259 2003/03/12 09:58:18 agehall Exp $");
+RCSID("$Id: file.c,v 1.260 2003/03/12 14:30:39 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -41,12 +41,6 @@ RCSID("$Id: file.c,v 1.259 2003/03/12 09:58:18 agehall Exp $");
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
 #include <errno.h>
-
-#ifdef HAVE_NOTIFICATIONS
-#ifdef __linux__
-#define _GNU_SOURCE
-#endif
-#endif
 
 #include <fcntl.h>
 #include <signal.h>
@@ -3657,6 +3651,8 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
   add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
+
+  add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
 
 #ifdef DN_ACCESS
   /*! @decl constant DN_ACCESS
