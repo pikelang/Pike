@@ -1037,13 +1037,13 @@ class Runtime_timezone_compiler
 
    string get_all_rules()
    {
-      return
-	 map(files,
-	     lambda(string fn)
-	     {
-		return master()->master_read_file(base_path+fn) ||
-		   (error("Failed to open file %O\n",base_path+fn), "");
-	     })*"\n";
+     return
+       map(files,
+	   lambda(string fn)
+	   {
+	     return (master()->master_read_file(base_path+fn) ||
+		     (error("Failed to open file %O\n",base_path+fn), "")) - "\r";
+	   })*"\n";
    }
 
    class Dummymodule
