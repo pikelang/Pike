@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.2 2002/11/24 21:58:24 agehall Exp $
+// $Id: module.pmod.in,v 1.3 2002/11/24 22:14:39 agehall Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -17,7 +17,7 @@ inherit @module@;
 class File {
   inherit @module@._file;
 
-  private int is_open;
+  private int is_open = 0;
 
   //! @decl void create(void|string|int file, void|string mode)
   //! @param file
@@ -29,13 +29,21 @@ class File {
   void create(mixed ... args) {
     ::create();
 
-    if(sizeof(args))
+    if(sizeof(args)) {
       open(@args);
+    }
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Gz.File(/*%s open */)", is_open ? "" : " not");
+    switch(t) {
+    case 'O':
+      return sprintf("Gz.File(/*%s open */)", is_open ? "" : " not");
+    case 't':
+      return "Gz.File";
+    default:
+      return "";
+    }
   }
 
   int close()
@@ -67,9 +75,9 @@ class File {
   //!  non-zero if successful.
   int open(string|int file, void|string mode) {
     string open_mode="rb";
-
-    if (is_open)
+    if (is_open) {
       ::close();
+    }
 
     if (stringp(mode)) {
       open_mode = lower_case(mode);
@@ -84,8 +92,9 @@ class File {
   int|string read(void|int length) {
     string ret = "";
 
-    if (!is_open)
+    if (!is_open) {
       return 0;
+    }
 
     if (!zero_type(length))
       return ::read(length);
