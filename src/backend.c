@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.7 1996/12/03 21:41:15 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.8 1997/01/26 22:47:03 per Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -246,7 +246,7 @@ void backend()
 	break;
 
       case EBADF:
-	fatal("Bad filedescriptor to select().\n");
+/*	fatal("Bad filedescriptor to select().\n");  Ignore */
 	break;
 
       }
