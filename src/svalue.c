@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.203 2004/11/05 16:21:38 grubba Exp $
+|| $Id: svalue.c,v 1.204 2004/11/14 23:50:48 mast Exp $
 */
 
 #include "global.h"
@@ -1207,26 +1207,37 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      break;
 
             default:
-	      if(j>0 && j<256 && isprint(j))
-	      {
-		my_putchar(j);
-		break;
+	      if(j>=0 && j<256) {
+		if (isprint(j))
+		  my_putchar(j);
+
+		else {
+		  /* Use octal escapes for eight bit chars since
+		   * they're more compact than unicode escapes. */
+		  int char_after = index_shared_string(s->u.string,i+1);
+		  sprintf(buf,"\\%o",j);
+		  my_strcat(buf);
+		  if (char_after >= '0' && char_after <= '9') {
+		    /* Strictly speaking we don't need to do this if
+		     * char_after is '8' or '9', but I guess it
+		     * improves the readability a bit. */
+		    my_putchar('"');
+		    my_putchar('"');
+		  }
+		}
 	      }
 
-	      my_putchar('\\');
-	      sprintf(buf,"%o",j);
-	      my_strcat(buf);
-
-	      switch(index_shared_string(s->u.string,i+1))
-	      {
-		case '0': case '1': case '2': case '3':
-		case '4': case '5': case '6': case '7':
-		case '8': case '9':
-		  my_putchar('"');
-		  my_putchar('"');
+	      else {
+		/* Use unicode escapes for wide chars to avoid the
+		 * double quote trickery. Also, hex is easier to read
+		 * than octal. */
+		if (j < 0 || j > 0xffff)
+		  sprintf (buf, "\\U%08x", (unsigned) j);
+		else
+		  sprintf (buf, "\\u%04x", j);
+		my_strcat (buf);
 	      }
-	      break;
-          } 
+	  }
         }
         my_putchar('"');
       }
