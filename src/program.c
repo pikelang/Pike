@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.274 2000/10/01 08:51:54 hubbe Exp $");
+RCSID("$Id: program.c,v 1.275 2000/10/04 05:12:13 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3593,7 +3593,7 @@ static void exit_trampoline(struct object *o)
 static void gc_check_frame(struct pike_frame *f)
 {
   if(!f) return;
-  if(!debug_gc_check(f,T_UNKNOWN,f) && f->malloced_locals)
+  if(!debug_gc_check(f,PIKE_T_UNKNOWN,f) && f->malloced_locals)
   {
     if(f->current_object) gc_check(f->current_object);
     if(f->context.prog)   gc_check(f->context.prog);

@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.88 2000/09/11 18:47:02 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.89 2000/10/04 05:12:13 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1634,7 +1634,7 @@ static void find_references_to(void *block, int indent, int depth, int flags)
 	    if(p[e] == block)
 	    {
 /*	      fprintf(stderr,"  <from %p word %d>\n",p,e); */
-	      describe_location(p,T_UNKNOWN,p+e, indent,depth,flags);
+	      describe_location(p,PIKE_T_UNKNOWN,p+e, indent,depth,flags);
 
 /*	      low_dmalloc_describe_location(m, e * sizeof(void *), indent); */
 

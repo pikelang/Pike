@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.139 2000/09/30 19:21:44 mast Exp $");
+RCSID("$Id: gc.c,v 1.140 2000/10/04 05:12:12 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -285,7 +285,7 @@ TYPE_T attempt_to_identify(void *something)
   if(safe_debug_findstring((struct pike_string *)something))
     return T_STRING;
 
-  return T_UNKNOWN;
+  return PIKE_T_UNKNOWN;
 }
 
 void *check_for =0;
@@ -327,7 +327,7 @@ void describe_location(void *real_memblock,
   }
 #endif
 
-  if(type==T_UNKNOWN)
+  if(type==PIKE_T_UNKNOWN)
     type=attempt_to_identify(memblock);
 
   if(memblock)
@@ -348,7 +348,7 @@ void describe_location(void *real_memblock,
  again:
   switch(type)
   {
-    case T_UNKNOWN:
+    case PIKE_T_UNKNOWN:
       for(p=first_program;p;p=p->next)
       {
 	if(memblock == (void *)p->program)
@@ -552,7 +552,7 @@ void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere)
   found_in=(void *)fromwhere;
   found_in_type=-1;
   gc_xmark_svalues(s,num);
-  found_in_type=T_UNKNOWN;
+  found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
@@ -561,7 +561,7 @@ void debug_gc_check_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *dat
   found_in=data;
   found_in_type=t;
   gc_check_svalues(s,num);
-  found_in_type=T_UNKNOWN;
+  found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
@@ -570,7 +570,7 @@ void debug_gc_check_weak_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void
   found_in=data;
   found_in_type=t;
   gc_check_weak_svalues(s,num);
-  found_in_type=T_UNKNOWN;
+  found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
@@ -579,7 +579,7 @@ void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void 
   found_in=data;
   found_in_type=t;
   gc_check_short_svalue(u,type);
-  found_in_type=T_UNKNOWN;
+  found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
@@ -588,7 +588,7 @@ void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, 
   found_in=data;
   found_in_type=t;
   gc_check_weak_short_svalue(u,type);
-  found_in_type=T_UNKNOWN;
+  found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
@@ -598,7 +598,7 @@ int debug_low_gc_check(void *x, TYPE_T t, void *data)
   found_in=data;
   found_in_type=t;
   ret=gc_check(x);
-  found_in_type=T_UNKNOWN;
+  found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
   return ret;
 }

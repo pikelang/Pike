@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.75 2000/10/02 21:59:20 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.76 2000/10/04 05:12:12 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -324,7 +324,7 @@ one_more_type:
     case T_MIXED:
     case T_ZERO:
     case T_VOID:
-    case T_UNKNOWN:
+    case PIKE_T_UNKNOWN:
       break;
 
     case T_OBJECT:
@@ -1017,7 +1017,7 @@ one_more_type:
     case T_MIXED:
     case T_ZERO:
     case T_VOID:
-    case T_UNKNOWN:
+    case PIKE_T_UNKNOWN:
       break;
 
     case T_OBJECT:

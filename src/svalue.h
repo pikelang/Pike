@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.69 2000/09/26 02:42:41 hedda Exp $
+ * $Id: svalue.h,v 1.70 2000/10/04 05:12:14 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -100,7 +100,7 @@ struct svalue
 #define PIKE_T_TUPLE 244	/* Not supported yet */
 #define T_ASSIGN 245
 #define T_DELETED 246
-#define T_UNKNOWN 247
+#define PIKE_T_UNKNOWN 247
 #define T_SHORT_LVALUE 248
 #define T_LVALUE 249
 #define T_ARRAY_LVALUE 250

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.140 2000/09/10 17:24:00 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.141 2000/10/04 05:12:13 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -55,7 +55,7 @@ static int low_check_indexing(char *type, char *index_type, node *n);
  * T_FUNCTION <arg type> <arg type> ... <arg type> T_MANY <arg type> <return type>
  * note that the type after T_MANY can be T_VOID
  * T_MIXED matches anything except T_VOID
- * T_UNKNOWN only matches T_MIXED and T_UNKNOWN
+ * PIKE_T_UNKNOWN only matches T_MIXED and PIKE_T_UNKNOWN
  * objects are coded thus:
  * T_OBJECT <0/1> <program_id>
  *           ^
@@ -190,7 +190,7 @@ one_more_type:
     case T_MIXED:
     case T_VOID:
     case T_ZERO:
-    case T_UNKNOWN:
+    case PIKE_T_UNKNOWN:
       break;
 
     case T_INT:
@@ -595,7 +595,7 @@ static void internal_parse_typeA(char **_s)
       goto bad_type;
 
     case 'u':
-      if(!strcmp(buf,"unknown")) { push_type(T_UNKNOWN); break; }
+      if(!strcmp(buf,"unknown")) { push_type(PIKE_T_UNKNOWN); break; }
       goto bad_type;
 
     case 'a':
@@ -796,7 +796,7 @@ void stupid_describe_type(char *a, ptrdiff_t len)
       case T_MAPPING: printf("mapping"); break;
       case T_MULTISET: printf("multiset"); break;
 	
-      case T_UNKNOWN: printf("unknown"); break;
+      case PIKE_T_UNKNOWN: printf("unknown"); break;
       case T_MANY: printf("many"); break;
       case T_OR: printf("or"); break;
       case T_AND: printf("and"); break;
@@ -853,7 +853,7 @@ char *low_describe_type(char *t)
     case T_VOID: my_strcat("void"); break;
     case T_ZERO: my_strcat("zero"); break;
     case T_MIXED: my_strcat("mixed"); break;
-    case T_UNKNOWN: my_strcat("unknown"); break;
+    case PIKE_T_UNKNOWN: my_strcat("unknown"); break;
     case T_INT:
     {
       INT32 min=extract_type_int(t);
