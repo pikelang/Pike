@@ -8,7 +8,7 @@
 #define USE_DLD
 #endif
 
-#if 0
+#if 1
 
 #if defined(HAVE_DLOPEN) || defined(USE_DLD)
 #include "interpret.h"
@@ -26,20 +26,21 @@
 #include <dld.h>
 #endif
 
+typedef void (*modfun)(void);
+
 struct module_list
 {
   struct module_list * next;
   void *module;
-  struct module mod;
+  modfun init, exit;
 };
 
 struct module_list *dynamic_module_list = 0;
 
 void f_load_module(INT32 args)
 {
-#ifdef HAVE_DLOPEN
   void *module;
-#endif
+  modfun init, exit;
   struct module_list *new_module;
   const char *module_name;
 
@@ -68,16 +69,13 @@ void f_load_module(INT32 args)
   module=strdup(module_name);
 #endif /* HAVE_DLOPEN */
 
-  struct module *tmp;
-  fun init, init2, exit;
-  
 #ifdef HAVE_DLOPEN
-  init=(fun)dlsym(module, "pike_module_init");
-  exit=(fun)dlsym(module, "pike_module_exit");
+  init=(modfun)dlsym(module, "pike_module_init");
+  exit=(modfun)dlsym(module, "pike_module_exit");
 
 #elif defined(USE_DLD)
-  init = (fun)dld_get_func("pike_module_init");
-  exit = (fun)dld_get_func("pike_module_exit");
+  init = (modfun)dld_get_func("pike_module_init");
+  exit = (modfun)dld_get_func("pike_module_exit");
 #endif /* HAVE_DLOPEN */
   
   if(!init || !exit)
@@ -96,20 +94,14 @@ void f_load_module(INT32 args)
   new_module->next=dynamic_module_list;
   dynamic_module_list=new_module;
   new_module->module=module;
-  new_module->mod.init_efuns=init;
-  new_module->mod.init_programs=init2;
-  new_module->mod.exit=exit;
-  new_module->mod.refs=0;
-  
-  tmp=current_module;
-  current_module = & new_module->mod;
-
-  current_module=tmp;
+  new_module->init=init;
+  new_module->exit=exit;
 
   pop_n_elems(args);
   start_new_program();
-  (*(fun)init)();
-  push_program(end_c_program());
+  (*(modfun)init)();
+
+  push_program(end_program());
 }
 
 
@@ -134,7 +126,7 @@ void exit_dynamic_load()
   {
     struct module_list *tmp=dynamic_module_list;
     dynamic_module_list=tmp->next;
-    (*tmp->mod.exit)();
+    (*tmp->exit)();
 #ifdef HAVE_DLOPEN
     dlclose(tmp->module);
 #elif defined(USE_DLD)
