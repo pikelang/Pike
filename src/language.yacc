@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.304 2002/10/29 14:02:27 nilsson Exp $
+|| $Id: language.yacc,v 1.305 2002/11/22 15:45:04 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.304 2002/10/29 14:02:27 nilsson Exp $");
+RCSID("$Id: language.yacc,v 1.305 2002/11/22 15:45:04 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -678,7 +678,6 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      Pike_compiler->varargs=0;
       pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
@@ -769,9 +768,12 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	define_function(check_node_hash($4)->u.sval.u.string,
 			check_node_hash($<n>$)->u.sval.u.type,
 			$1 & (~ID_EXTERN),
-			IDENTIFIER_PIKE_FUNCTION,
+			IDENTIFIER_PIKE_FUNCTION |
+			(Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			0,
 			OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+      Pike_compiler->varargs=0;
 
       if ($1 & ID_VARIANT) {
 	fprintf(stderr, "Function number: %d\n",
@@ -1974,7 +1976,6 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      Pike_compiler->varargs=0;
       pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
@@ -2007,10 +2008,12 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
       id=define_function(name,
 			 type,
 			 ID_INLINE,
-			 IDENTIFIER_PIKE_FUNCTION,
+			 IDENTIFIER_PIKE_FUNCTION |
+			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			 0,
 			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     }
+    Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
     n=0;
     if(Pike_compiler->compiler_pass > 1 &&
@@ -2112,7 +2115,6 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      Pike_compiler->varargs=0;
       pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
@@ -2146,10 +2148,12 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
       id=define_function(name,
 			 type,
 			 ID_INLINE,
-			 IDENTIFIER_PIKE_FUNCTION,
+			 IDENTIFIER_PIKE_FUNCTION|
+			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			 0,
 			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     }
+    Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
     n=0;
     if(Pike_compiler->compiler_pass > 1 &&
@@ -2295,7 +2299,6 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       /* Varargs */
       push_finished_type(Pike_compiler->compiler_frame->variable[e--].type);
       pop_type_stack(T_ARRAY); /* Pop one level of array. */
-      Pike_compiler->varargs = 0;
     } else {
       /* Not varargs. */
       push_type(T_VOID);
@@ -2312,8 +2315,13 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 
     Pike_compiler->compiler_frame->current_function_number=
       define_function(create_string, type,
-		      ID_INLINE | ID_STATIC, IDENTIFIER_PIKE_FUNCTION, 0,
+		      ID_INLINE | ID_STATIC,
+		      IDENTIFIER_PIKE_FUNCTION |
+		      (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
+		      0,
 		      OPT_SIDE_EFFECT);
+
+    Pike_compiler->varargs = 0;
 
     /* Third: Generate the initialization code.
      *
