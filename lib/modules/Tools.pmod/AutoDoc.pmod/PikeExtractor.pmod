@@ -405,7 +405,8 @@ static private class Extractor {
           // as documentation for the class or module (foo.pike or bar.pmod)
 	  // _itself_.
           doc->xml = parse->doc((["class" : "_class",
-                                  "module" : "_module"])[c->objtype]);
+                                  "module" : "_module",
+				  "namespace" : "_namespace"])[c->objtype]);
           filedoc = doc;
           // The @appears and @belongs directives regarded _this_file_
           c->appears = appears;
