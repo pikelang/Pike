@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.7 1998/01/29 23:52:27 grubba Exp $
+ * $Id: acconfig.h,v 1.8 1998/05/17 21:07:33 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -19,6 +19,12 @@
 
 /* Define if you have the struct fs_data */
 #undef HAVE_STRUCT_FS_DATA
+
+/* Define if you have the struct statvfs */
+#undef HAVE_STRUCT_STATVFS
+
+/* Define if your statvfs struct has the member f_basetype */
+#undef HAVE_STATVFS_F_BASETYPE
 
 /* Define if your readdir_r is POSIX compatible. */
 #undef HAVE_POSIX_READDIR_R
