@@ -60,10 +60,10 @@ program cast_to_program(string pname)
     {
       ret=compile_file(pname+".pike");
     }
-#if efun(ldopen)
+#if efun(load_module)
     else if(file_stat(pname+".so"))
     {
-      ldopen(pname);
+      load_module(pname+".so");
       ret=programs[pname];
     }
 #endif
