@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 2003/06/12 20:54:56 mast Exp $
+# $Id: Makefile.in,v 1.6 2003/11/13 00:37:56 mast Exp $
 # by Francesco Chemolli <kinkie@roxen.com>
 
 @make_variables@
@@ -11,7 +11,3 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 @dependencies@
-
-spotless: clean
-	-rm config.* pgres_config.h
-
