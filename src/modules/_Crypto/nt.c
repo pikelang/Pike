@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.13 2003/01/10 14:05:28 grubba Exp $
+|| $Id: nt.c,v 1.14 2003/01/10 14:25:13 grubba Exp $
 */
 
 /*
@@ -32,16 +32,21 @@
 
 #define sp Pike_sp
 
-static struct program *cryptcontext_program = NULL;
+/*! @module Crypto
+ */
+
+/*! @class nt
+ */
+
+/*! @class CryptoContext
+ */
 
 struct cryptcontext_storage {
   HCRYPTPROV handle;
 };
 
-#define THIS_CRYPTCONTEXT ((struct cryptcontext_storage *)(Pike_fp->current_storage))
-
-/*! @module Crypto
- */
+#define THIS_CRYPTCONTEXT \
+	((struct cryptcontext_storage *)(Pike_fp->current_storage))
 
 static void init_cryptcontext_struct(struct object *o)
 {
@@ -57,12 +62,6 @@ static void exit_cryptcontext_struct(struct object *o)
   if(c->handle)
     CryptReleaseContext(c->handle, 0);
 }
-
-/*! @class nt
- */
-
-/*! @class CryptoContext
- */
 
 /*! @decl string CryptGenRandom(int size, string|void init)
  */
@@ -90,19 +89,15 @@ static void f_CryptGenRandom(INT32 args)
   }
 }
 
-/*! @endclass
- */
-
-/*! @decl CryptoContext CryptAcquireContext(string|zero str1, @
- *!					    string|zero str2, @
- *!                                         int typ, int flags)
+/*! @decl void create(string|zero str1, string|zero str2, @
+ *!                   int typ, int flags)
  */
 static void f_CryptAcquireContext(INT32 args)
 {
   char *str1=NULL, *str2=NULL;
   INT_TYPE typ, flags, zero1, zero2;
   int nullflag=0;
-  HCRYPTPROV prov;
+  HCRYPTPROV *prov = &THIS_CRYPTCONTEXT->handle;
 
   if(args>0 && sp[-args].type == T_INT && sp[-args].u.integer == 0)
     nullflag |= 1;
@@ -111,39 +106,44 @@ static void f_CryptAcquireContext(INT32 args)
 
   switch(nullflag) {
   case 0:
-    get_all_args("Crypto.nt.CryptAcquireContext()", args, "%s%s%i%i",
+    get_all_args("CryptAcquireContext->create", args, "%s%s%i%i",
 		 &str1, &str2, &typ, &flags);
     break;
   case 1:
-    get_all_args("Crypto.nt.CryptAcquireContext()", args, "%i%s%i%i",
+    get_all_args("CryptAcquireContext->create", args, "%i%s%i%i",
 		 &zero1, &str2, &typ, &flags);
     break;
   case 2:
-    get_all_args("Crypto.nt.CryptAcquireContext()", args, "%s%i%i%i",
+    get_all_args("CryptAcquireContext->create", args, "%s%i%i%i",
 		 &str1, &zero2, &typ, &flags);
     break;
   case 3:
-    get_all_args("Crypto.nt.CryptAcquireContext()", args, "%i%i%i%i",
+    get_all_args("CryptAcquireContext->create", args, "%i%i%i%i",
 		 &zero1, &zero2, &typ, &flags);
     break;
   }
 
-  if(!CryptAcquireContext(&prov, str1, str2, typ, flags)) {
+  if(*prov) {
+    CryptReleaseContext(*prov, 0);
+    *prov = 0;
+  }
+  
+  if(!CryptAcquireContext(prov, str1, str2, typ, flags)) {
     INT32 errcode = GetLastError();
     if (errcode == 0x80090016) {
-      Pike_error("CryptAcquireContext(): No default key container.\n");
+      Pike_error("CryptAcquireContext->create(): No default key container.\n");
     } else {
-      Pike_error("CryptAcquireContext(): Failed with code 0x%08x.\n",
+      Pike_error("CryptAcquireContext->create(): Failed with code 0x%08x.\n",
 		 errcode);
     }
   }
   
   pop_n_elems(args);
-  push_object(clone_object(cryptcontext_program, 0));
-  ((struct cryptcontext_storage *)get_storage(sp[-1].u.object,
-					      cryptcontext_program))->handle =
-    prov;
+  push_int(0);
 }
+
+/*! @endclass
+ */
 
 /*! @endclass
  */
@@ -180,19 +180,19 @@ void pike_nt_init(void)
   SIMPCONST(CRYPT_SILENT);
 #endif
 
-  add_function_constant("CryptAcquireContext",f_CryptAcquireContext,
-			"function(string,string,int,int:object)", 0);
-
-  end_class("nt", 0);
-
   start_new_program();
   ADD_STORAGE(struct cryptcontext_storage);
+  set_init_callback(init_cryptcontext_struct);
+  set_exit_callback(exit_cryptcontext_struct);
+  ADD_FUNCTION("create",f_CryptAcquireContext,
+	       tFunc(tStr tStr tInt tInt, tVoid), ID_STATIC);
   /* function(int,string|void:string) */
   ADD_FUNCTION("CryptGenRandom", f_CryptGenRandom,
 	       tFunc(tInt tOr(tString,tVoid),tString), 0);
-  set_init_callback(init_cryptcontext_struct);
-  set_exit_callback(exit_cryptcontext_struct);
-  cryptcontext_program = end_program();
+  end_class("CryptAcquireContext", 0);
+
+  end_class("nt", 0);
+
 
 #endif /* __NT__ */
 }
