@@ -1,3 +1,10 @@
+dnl $Id: aclocal.m4,v 1.33 2001/10/06 20:07:41 grubba Exp $
+
+dnl Some compatibility with Autoconf 2.50+. Not complete.
+dnl newer autoconf call substr m4_substr
+ifdef([substr], ,m4_copy(m4_substr,substr))
+
+
 pushdef([AC_PROG_CC_WORKS],
 [
   popdef([AC_PROG_CC_WORKS])
@@ -51,6 +58,9 @@ define([MY_AC_ARG_WITH], [
     fi
   ], [$5])
 ])
+
+dnl flag, descr
+define([MY_DESCR],[  substr([$1][                                  ],0,33) $2])
 
 define([MY_AC_PROG_CC],
 [
@@ -190,9 +200,6 @@ define(PIKE_FEATURE_RAW,[
 [$2]
 EOF])
 
-dnl newer autoconf call substr m4_substr
-ifdef([substr], ,m4_copy(m4_substr,substr))
-
 define([PAD_FEATURE],[substr([$1][................................],0,17) ])
 
 define(PIKE_FEATURE_3,[
@@ -219,7 +226,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.32 2001/10/05 16:55:31 grubba Exp $
+# $Id: aclocal.m4,v 1.33 2001/10/06 20:07:41 grubba Exp $
 
 MY_AC_PROG_CC
 
