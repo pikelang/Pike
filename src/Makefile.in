@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.67 1998/04/02 16:38:34 grubba Exp $
+# $Id: Makefile.in,v 1.68 1998/04/08 08:13:21 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -448,6 +448,6 @@ stamp-h: $(SRCDIR)/machine.h.in config.status
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status
 
 testsuite: $(SRCDIR)/testsuite.in
-	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite -DSRCDIR="$(SRCDIR)" -DRUNPIKE="$(RUNPIKE)"
 
 @dependencies@
