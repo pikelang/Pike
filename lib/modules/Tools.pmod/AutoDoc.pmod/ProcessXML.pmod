@@ -29,19 +29,27 @@ static object makeWrapper(array(string) modules, object|void child)
   return child;
 }
 
-// filename       The file to extract from.
-// pikeMode       Non-zero if it is a Pike file. If the file contains
-//                  C-style doc comments, C-mode is used despite
-//                  pikeMode != 0.
-//   The following parameters used only when pikeMode != 0:
-// type           "class" or "module".
-// name           The name of the class/module.
-// parentModules  The ancestors of the class/module.
-//
-// EXAMPLE: To extract doc for Foo.Bar.Ippa:
-//   string xml = extractXML("lib/modules/Foo.pmod/Bar.pmod/Ippa.pike", 1,
-//     "class", "Ippa", ({ "Foo", "Bar" }));
-//
+//! This function extracts documentation from a file. The parameters
+//! @[type], @[name], and @[parentModules] are used only when
+//! @[pikeMode] != 0 and no C-style doc comments are present.
+//!
+//! @param filename
+//!   The file to extract from.
+//! @param pikeMode
+//!   Non-zero if it is a Pike file. If the file contains
+//!   style doc comments, C-mode is used despite pikeMode != 0.
+//! @param type
+//!   "class" or "module".
+//! @param name
+//!   The name of the class/module.
+//! @param parentModules
+//!   The ancestors of the class/module.
+//!
+//! @example
+//!   // To extract doc for Foo.Bar.Ippa:
+//!   string xml = extractXML("lib/modules/Foo.pmod/Bar.pmod/Ippa.pike", 1,
+//!     "class", "Ippa", ({ "Foo", "Bar" }));
+//!
 string extractXML(string filename, int|void pikeMode, string|void type,
                   string|void name, array(string)|void parentModules)
 {
@@ -89,7 +97,9 @@ string extractXML(string filename, int|void pikeMode, string|void type,
 
 //!   Copy all images to canonical files in a flat directory.
 //! @param docXMLFile
-//!   The contents of the XML file.
+//!   The contents of the XML file. The XML file is the result of extraction
+//!   from a single C or Pike file, for example the result of calling
+//!   @[extractXML].
 //! @param imageSourceDir
 //!   The directory that is the base of the relative paths to images. This
 //!   should be the directory of the source file that was the input to
@@ -196,12 +206,19 @@ static int isDoc(Node node) { return node->get_any_name() == "doc"; }
 
 static string getName(Node node) { return node->get_attributes()["name"]; }
 
-// dest and source are two <module> or <class> nodes.
-// Puts all children of source into the tree dest, in their right
-// place hierarchically.
-// Used when we have several root nodes, which occurs when there
-// are several lib root dirs, and when C files are involved (each
-// C extraction generates a separate module tree with a root)
+//!   Puts all children of @[source] into the tree @[dest], in their right
+//!   place module-hierarchically.
+//!   Used to merge the results of extractions of different Pike and C files.
+//! @param source
+//! @param dest
+//!   The nodes @[source] and @[dest] are @tt{<class>@} or @tt{<module>@}
+//!   nodes that are identical in the sense that they represent the same
+//!   module or class. Typically they both represent the top module.
+//! @note
+//!   After calling this method, any @tt{<class>@} or @tt{<module>@} nodes
+//!   that have been marked with @@appears or @@belongs, are still in their
+//!   wrong place in the tree, so @[handleAppears] must be called on the
+//!   whole documentation tree has been merged.
 void mergeTrees(Node dest, Node source) {
   mapping(string : Node) dest_children = ([]);
   int dest_has_doc = 0;
