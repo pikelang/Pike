@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.54 2000/12/08 12:15:17 grubba Exp $
+//! $Id: DNS.pmod,v 1.55 2001/02/05 12:56:06 tomas Exp $
 
 #pike __REAL_VERSION__
 
@@ -424,12 +424,12 @@ class client
 
 #if constant(RegGetKeyNames)
     foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
-			   "SYSTEM\\CurrentControlSet\\Tcpip\\"
+			   "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 			   "Parameters\\Interfaces"), string key)
       {
 	catch {
 	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
-				"SYSTEM\\CurrentControlSet\\Tcpip\\"
+				"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
