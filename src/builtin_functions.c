@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.306 2000/08/29 13:40:13 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.307 2000/08/31 14:40:19 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5795,9 +5795,9 @@ void init_builtin_efuns(void)
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt),OPT_TRY_OPTIMIZE);
 
   /* function(array(0=mixed),int|void,int|void:array(0)) */
-  ADD_FUNCTION("everynth",f_everynth,
-	       tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),
-		     tArr(tVar(0))), 0);
+  ADD_FUNCTION2("everynth",f_everynth,
+		tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),
+		      tArr(tVar(0))), 0, OPT_TRY_OPTIMIZE);
   
 /* function(int:void) */
   ADD_EFUN("exit",f_exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
@@ -5969,12 +5969,14 @@ void init_builtin_efuns(void)
 	   tFuncV(tArr(tSetvar(0,tMix)),tArr(tMix),tArr(tVar(0))),
 	   OPT_SIDE_EFFECT);
   /* function(array(0=mixed)...:array(0)) */
-  ADD_FUNCTION("splice",f_splice,
-	       tFuncV(tNone,tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
+  ADD_FUNCTION2("splice",f_splice,
+		tFuncV(tNone,tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0,
+		OPT_TRY_OPTIMIZE);
 
   /* function(array:array) */
-  ADD_FUNCTION("uniq_array", f_uniq_array,
-	       tFunc(tArr(tSetvar(0,tMix)), tArr(tVar(0))), 0);
+  ADD_FUNCTION2("uniq_array", f_uniq_array,
+		tFunc(tArr(tSetvar(0,tMix)), tArr(tVar(0))), 0,
+		OPT_TRY_OPTIMIZE);
   
 /* function(mixed:int) */
   ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);
@@ -5993,8 +5995,9 @@ void init_builtin_efuns(void)
 	   OPT_EXTERNAL_DEPEND);
   
   /* function(array(0=mixed):array(0)) */
-  ADD_FUNCTION("transpose",f_transpose,
-	       tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
+  ADD_FUNCTION2("transpose",f_transpose,
+		tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0,
+		OPT_TRY_OPTIMIZE);
   
 /* function(string:string) */
   ADD_EFUN("upper_case",f_upper_case,tFunc(tStr,tStr),0);
@@ -6106,34 +6109,35 @@ void init_builtin_efuns(void)
 	   tFunc(tObj tStr,tInt), OPT_EXTERNAL_DEPEND);
 
   /* function(array(mapping(int:mixed)):array(int)) */
-  ADD_FUNCTION("interleave_array",f_interleave_array,
-	       tFunc(tArr(tMap(tInt,tMix)),tArr(tInt)),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("interleave_array", f_interleave_array,
+		tFunc(tArr(tMap(tInt, tMix)), tArr(tInt)), 0,
+		OPT_TRY_OPTIMIZE);
   /* function(array(0=mixed),array(1=mixed):array(array(array(0)|array(1))) */
-  ADD_FUNCTION("diff",f_diff,
-	       tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
-		     tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))),
-	       OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("diff", f_diff,
+		tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
+		      tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))), 0,
+		OPT_TRY_OPTIMIZE);
 
   /* Generate the n:th permutation of the array given as the first argument */
-  ADD_FUNCTION("permute", f_permute, tFunc(tArray tInt,tArray), 
-               OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("permute", f_permute, tFunc(tArray tInt,tArray), 0,
+		OPT_TRY_OPTIMIZE);
 
   /* function(array,array:array(int)) */
-  ADD_FUNCTION("diff_longest_sequence",f_diff_longest_sequence,
-	       tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("diff_longest_sequence", f_diff_longest_sequence,
+		tFunc(tArray tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
   /* function(array,array:array(int)) */
-  ADD_FUNCTION("diff_dyn_longest_sequence",f_diff_dyn_longest_sequence,
-	       tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("diff_dyn_longest_sequence", f_diff_dyn_longest_sequence,
+		tFunc(tArray tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
   /* function(array,array:array(array)) */
-  ADD_FUNCTION("diff_compare_table",f_diff_compare_table,
-	       tFunc(tArray tArray,tArr(tArr(tInt))),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("diff_compare_table", f_diff_compare_table,
+		tFunc(tArray tArray, tArr(tArr(tInt))), 0, OPT_TRY_OPTIMIZE);
   /* function(array:array(int)) */
-  ADD_FUNCTION("longest_ordered_sequence",f_longest_ordered_sequence,
-	       tFunc(tArray,tArr(tInt)),0);
+  ADD_FUNCTION2("longest_ordered_sequence", f_longest_ordered_sequence,
+		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
   /* function(array(0=mixed),array(mixed)...:array(0)) */
-  ADD_FUNCTION("sort",f_sort,
-	       tFuncV(tArr(tSetvar(0, tMix)),tArr(tMix),tArr(tVar(0))),
-	       OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("sort", f_sort,
+		tFuncV(tArr(tSetvar(0, tMix)), tArr(tMix), tArr(tVar(0))),
+		0, OPT_SIDE_EFFECT);
 
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
   tOr7( tFuncV(IN tFuncV(SUB,tMix,tSetvar(2,tAny)),tMix,OUTFUN), \
@@ -6212,9 +6216,10 @@ void init_builtin_efuns(void)
 		      tFuncV(tNone,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
 		
-  ADD_FUNCTION("inherit_list",f_inherit_list,tFunc(tProgram,tArr(tProgram)),0);
-  ADD_FUNCTION("function_defined",f_function_defined,
-	       tFunc(tFunction,tString),0);
+  ADD_FUNCTION2("inherit_list", f_inherit_list,
+		tFunc(tProgram,tArr(tProgram)), 0, OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("function_defined", f_function_defined,
+	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 
 #ifdef DEBUG_MALLOC
   
