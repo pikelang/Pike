@@ -1,6 +1,6 @@
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.5 2002/05/30 03:56:04 per Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.6 2002/06/24 17:20:25 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -31,9 +31,37 @@ static void free_source( struct source *s )
 
 extern struct program *Shuffler_program;
 
+/*! @module Shuffler
+ */
+
+/*! @class Throttler
+ *!
+ *! @note{
+ *!  This is an interface that all @[Throttler]s must implement.
+ *!  It's not an actual class in this module.
+ *! @}
+ *!
+ *! @decl void request( @[Shuffle] shuffle, int amount, @
+ *!                     function(int:void) callback )
+ *! This function is called when the @[Shuffle] wants to send some
+ *! data to a client.
+ *!
+ *! When data can be sent, the @[callback] function should be called
+ *! with the amount of data that can be sent as the argument.
+ *!
+ *! @decl void give_back( @[Shuffle] shuffle, int amount ) 
+ *! This function will be called by the @[Shuffle] object to report
+ *! that some data assigned to it by this throttler was unusued, and
+ *! can be given to another @[Shuffle] object instead.
+ *!
+ *! @endclass
+ */
+
 /*! @class Shuffle
- *! This class contains the state for one ongoing data shuffling
- *! operation.
+ *! This class contains the state for one ongoing data
+ *! shuffling operation. To create a @[Shuffle] instance, use the
+ *! @[Shuffler()->shuffle] method.
+ *! 
  */
 
 PIKECLASS Shuffle
@@ -41,11 +69,13 @@ PIKECLASS Shuffle
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
    *! The @[Shuffler] that owns this @[Shuffle] object
+   *! 
   */
   PIKEVAR object throttler;
   /*! @decl Throttler throttler;
    *! The @[Throttler] that is associated with this @[Shuffle] object,
    *! if any.
+   *! 
   */
 
   PIKEVAR mixed done_callback;
@@ -93,8 +123,8 @@ PIKECLASS Shuffle
 
   PIKEFUN void set_throttler( object t )
   /*! @decl void set_throttler(Throttler t)
-   *!
    *! Calling this function overrides the @[Shuffler] global throttler.
+   *! 
   */
   {
     if( THIS->throttler )
@@ -106,8 +136,8 @@ PIKECLASS Shuffle
 
   PIKEFUN int sent_data()
   /*! @decl int sent_data()
-   *!
    *! Returns the amount of data that has been sent so far.
+   *! 
   */
   {
     RETURN THIS->sent;
@@ -115,16 +145,16 @@ PIKECLASS Shuffle
 
   PIKEFUN int state()
   /*! @decl int state()
-   *!
    *! Returns the current state of the shuffler.
    *! This is one of the following:
-   *!   @[INITIAL]
-   *!   @[RUNNING]
-   *!   @[PAUSED]
-   *!   @[DONE]
-   *!   @[WRITE_ERROR]
-   *!   @[READ_ERROR]
+   *!   @[INITIAL], 
+   *!   @[RUNNING], 
+   *!   @[PAUSED], 
+   *!   @[DONE], 
+   *!   @[WRITE_ERROR], 
+   *!   @[READ_ERROR] and
    *!   @[USER_ABORT]
+   *!   
   */
   {
     RETURN THIS->state;
@@ -257,6 +287,7 @@ PIKECLASS Shuffle
    /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
     *! Sets the done callback. This function will be called when all
     *! sources have been processed, or if an error occurs.
+    *! 
     */
   {
     assign_svalue( &THIS->done_callback,cb);
@@ -424,6 +455,7 @@ PIKECLASS Shuffle
   PIKEFUN void start()
    /*! @decl void start();
     *! Start sending data from the sources.
+    *! 
     */
   {
     THIS->state = RUNNING;
@@ -433,6 +465,7 @@ PIKECLASS Shuffle
   PIKEFUN void pause()
    /*! @decl void pause();
     *! Temporarily pause all data transmission
+    *! 
     */
   {
     THIS->state = PAUSED;
@@ -442,6 +475,7 @@ PIKECLASS Shuffle
   PIKEFUN void stop()
    /*! @decl void stop();
     *! Stop all data transmission, and then call the done callback
+    *! 
     */
   {
     _all_done( THIS, 2 );
@@ -449,13 +483,13 @@ PIKECLASS Shuffle
 
   PIKEFUN void add_source( mixed source, mixed|void start, mixed|void length )
    /*! @decl void add_source( mixed source, int|void start, int|void length );
-    *!
     *! Add a new source to the list of data sources.
     *! The data from the sources will be sent in order.
     *!
     *! If start and length are not specified, the whole source will be
     *! sent, if start but not length is specified, the whole source,
     *! excluding the first @[start] bytes will be sent.
+    *! 
     */
   {
     INT64 rstart=0, rlength=-1;
@@ -491,6 +525,7 @@ PIKECLASS Shuffle
     push_int(0);
   }
 }
+
 /*! @endclass
  */
 
@@ -499,6 +534,7 @@ PIKECLASS Shuffle
  *! A data shuffler. An instance of this class handles a list of
  *! @[Shuffle] objects. Each @[Shuffle] object can send data from one
  *! or more sources to a destination in the background.
+ *! 
  */
 
 PIKECLASS Shuffler
@@ -523,9 +559,9 @@ PIKECLASS Shuffler
 
   PIKEFUN void set_backend( object b )
     /*! @decl void set_backend( Backend b );
-     *!
      *! Set the backend that will be used by all @[Shuffle] objects created
      *! from this shuffler.
+     *! 
      */
   {
     if( THIS->backend )
@@ -537,10 +573,10 @@ PIKECLASS Shuffler
 
   PIKEFUN void set_throttler( object t )
     /*! @decl void set_throttler( Throttler t );
-     *!
      *! Set the throttler that will be used in all @[Shuffle] objects
      *! created from this shuffler, unless overridden in the
      *! @[Shuffle] objects.
+     *! 
      */
   {
     if( THIS->throttler )
@@ -552,8 +588,8 @@ PIKECLASS Shuffler
 
   PIKEFUN void pause()
     /*! @decl void pause();
-     *!
      *! Pause all @[Shuffle] objects associated with this @[Shuffler]
+     *! 
      */
   {
     int i;
@@ -569,8 +605,8 @@ PIKECLASS Shuffler
 
   PIKEFUN void start()
     /*! @decl void start();
-     *!
      *! Unpause all @[Shuffle] objects associated with this @[Shuffler]
+     *! 
      */
   {
     int i;
@@ -597,8 +633,8 @@ PIKECLASS Shuffler
 
   PIKEFUN object shuffle( object destination )
     /*! @decl Shuffle shuffle( Stdio.File destination );
-     *!
-     *! Create a new @[Shuffle] object
+     *! Create a new @[Shuffle] object.
+     *! 
      */
   {
     ref_push_object( Pike_fp->current_object ); /* shuffler */
@@ -628,6 +664,18 @@ PIKECLASS Shuffler
 }
 
 /*! @endclass
+ */
+
+/*! @decl constant INTIIAL;
+ *! @decl constant RUNNING;
+ *! @decl constant PAUSED;
+ *! @decl constant DONE;
+ *! @decl constant WRITE_ERROR;
+ *! @decl constant READ_ERROR;
+ *! @decl constant USER_ABORT;
+ */
+
+/*! @endmodule
  */
 
 void pike_module_init()
