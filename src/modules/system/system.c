@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.78 1999/10/28 21:07:25 grubba Exp $
+ * $Id: system.c,v 1.79 1999/11/12 01:45:47 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.78 1999/10/28 21:07:25 grubba Exp $");
+RCSID("$Id: system.c,v 1.79 1999/11/12 01:45:47 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -799,6 +799,7 @@ static struct {
 #ifdef SI_SRPC_DOMAIN
   { "srpc domain", SI_SRPC_DOMAIN },
 #endif /* SI_SRPC_DOMAIN */
+  { "TERMINATOR", 0 }
 };
 
 /* Recomended is >257 */
@@ -814,7 +815,7 @@ void f_uname(INT32 args)
 
   old_sp = sp;
 
-  for(i=0; i < NELEM(si_fields); i++) {
+  for(i=0; i < NELEM(si_fields)-1; i++) {
     long res;
     res = sysinfo(si_fields[i].command, buffer, PIKE_SI_BUFLEN);
 
