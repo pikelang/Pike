@@ -808,6 +808,7 @@ testfont binary
 /src/post_modules/Shuffler/c_source_stream.c foreign_ident
 /src/post_modules/Shuffler/configure.in foreign_ident
 /src/post_modules/Shuffler/d_source_pikestream.c foreign_ident
+/src/post_modules/Shuffler/e_source_block_pikestream.c foreign_ident
 /src/post_modules/Shuffler/shuffler.h foreign_ident
 /src/post_modules/Unicode/Makefile.in foreign_ident
 /src/post_modules/Unicode/acconfig.h foreign_ident
