@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.35 2001/08/13 15:35:50 grubba Exp $
+ * $Id: nt.c,v 1.36 2001/08/13 16:08:21 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -1948,6 +1948,10 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!     @item
  *!       Short filenames are expanded to their corresponding long
  *!       variants.
+ *!     @item
+ *!       Forward slashes ('/') are converted to backward slashes ('\').
+ *!     @item
+ *!       Current- and parent-directory paths are removed ("." and "..").
  *!     @item
  *!       Case-information is restored.
  *!   @enddl
