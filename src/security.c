@@ -27,24 +27,6 @@
  *!   @item
  *!     @tt{data_bits@} -- Data access permissions.
  *! @enddl
- *!
- *! The following security bits are currently defined:
- *! @int
- *!   @value BIT_INDEX
- *!     Allow indexing.
- *!   @value BIT_SET_INDEX
- *!     Allow setting of indices.
- *!   @value BIT_CALL
- *!     Allow calling of functions.
- *!   @value BIT_SECURITY
- *!     Allow usage of security related functions.
- *!   @value BIT_NOT_SETUID
- *!     Don't change active credentials on function call.
- *!   @value BIT_CONDITIONAL_IO
- *!     ??
- *!   @value BIT_DESTRUCT
- *!     Allow use of @[destruct()].
- *! @endint
  */
 
 #ifdef PIKE_SECURITY
@@ -377,6 +359,35 @@ static void exit_creds_object(struct object *o)
     THIS->default_creds=0;
   }
 }
+
+/*! @decl constant BIT_INDEX
+ *!   Allow indexing.
+ */
+
+/*! @decl constant BIT_SET_INDEX
+ *!   Allow setting of indices.
+ */
+
+/*! @decl constant BIT_CALL
+ *!   Allow calling of functions.
+ */
+
+/*! @decl constant BIT_SECURITY
+ *!   Allow usage of security related functions.
+ */
+
+/*! @decl constant BIT_NOT_SETUID
+ *!   Don't change active credentials on function call.
+ */
+
+/*! @decl constant BIT_CONDITIONAL_IO
+ *! @fixme
+ *!   Document this constant.
+ */
+
+/*! @decl constant BIT_DESTRUCT
+ *!   Allow use of @[destruct].
+ */
 
 /*! @endmodule
  */
