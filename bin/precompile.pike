@@ -978,11 +978,14 @@ class ParseBlock
       ret=(ret/({"EXIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("exit")});
       ret=(ret/({"GC_RECURSE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("mark")});
       ret=(ret/({"GC_CHECK"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("mark")});
+      ret=(ret/({"OPTIMIZE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("optimize")});
 
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
       
       string ev_handler_define=mkname(base,"event","handler","defined");
+      string opt_callback_define=mkname(base,"optimize","callback","defined");
+      int opt_callback;
       array ev_handler=({});
       for(int f=1;f<sizeof(x);f++)
       {
@@ -999,15 +1002,22 @@ class ParseBlock
 	string funcname=mkname(name,base,"struct");
 	string define=mkname("internal",name,base,"defined");
 	ret+=DEFINE(define);
-	ret+=DEFINE(ev_handler_define);
-	ret+=({ PC.Token(sprintf("static void %s()\n",funcname)) });
+	if (name == "optimize") {
+	  opt_callback = 1;
+	  ret += DEFINE(opt_callback_define);
+	  ret += ({ PC.Token(sprintf("static node *%s(node *n)\n",
+				     funcname)) });
+	} else {
+	  ret+=DEFINE(ev_handler_define);
+	  ret+=({ PC.Token(sprintf("static void %s(void)\n",funcname)) });
+	  ev_handler+=IFDEF(define,({
+	    sprintf("  case PROG_EVENT_%s: %s(); break;\n",
+		    upper_case(name),
+		    funcname)
+	  }));
+	}
 	ret+=body;
 	ret+=rest;
-	ev_handler+=IFDEF(define,({
-	  sprintf("  case PROG_EVENT_%s: %s(); break;\n",
-		  upper_case(name),
-		  funcname)
-	}));
       }
       if(sizeof(ev_handler))
       {
@@ -1024,7 +1034,12 @@ class ParseBlock
 	addfuncs+=IFDEF(ev_handler_define,
 			({ PC.Token(sprintf("  pike_set_prog_event_callback(%s);\n",funcname)) }));
       }
-
+      if (opt_callback) {
+	addfuncs +=
+	  IFDEF(opt_callback_define,
+		({ PC.Token(sprintf("  pike_set_prog_optimize_callback(%s);\n",
+				    mkname("optimize",base,"struct"))) }));
+      }
 
       if(sizeof(thestruct))
       {
@@ -1397,6 +1412,7 @@ int main(int argc, array(string) argv)
   x=tmp->code;
   x=recursive(replace,x,PC.Token("INIT",0),tmp->addfuncs);
   x=recursive(replace,x,PC.Token("EXIT",0),tmp->exitfuncs);
+  x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
   x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp->declarations);
 
   if(equal(x,tmp->code))
