@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.228 2001/07/19 19:06:48 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.229 2001/07/20 15:48:59 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -33,6 +33,7 @@ RCSID("$Id: interpret.c,v 1.228 2001/07/19 19:06:48 grubba Exp $");
 #include "block_alloc.h"
 #include "bignum.h"
 #include "pike_types.h"
+#include "pikecode.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -1430,16 +1431,8 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	debug_malloc_touch(Pike_fp);
 	pc=new_frame->context.prog->program + function->func.offset;
 
-#ifdef HAVE_COMPUTED_GOTO
-	num_locals = (int)(ptrdiff_t)((pc++)[0]);
-	num_args = (int)(ptrdiff_t)((pc++)[0]);
-#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
-	num_locals = (pc++)[0];
-	num_args = (pc++)[0];
-#else /* !HAVE_COMPUTED_GOTO */
-	num_locals = EXTRACT_UCHAR(pc++);
-	num_args = EXTRACT_UCHAR(pc++);
-#endif /* HAVE_COMPUTED_GOTO */
+	num_locals = READ_INCR_BYTE(pc);
+	num_args = READ_INCR_BYTE(pc);
 
 #ifdef PIKE_DEBUG
 	if(num_locals < num_args)

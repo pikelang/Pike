@@ -35,3 +35,16 @@ void ins_f_byte_with_2_args(unsigned int op,
 
 void UPDATE_PC(void)
 	Insert code to update the runtime linenumber information.
+
+INT32 READ_INCR_BYTE(PIKE_OPCODE_T *pc);
+	Return the byte stored at 'pc' by ins_byte(), and increment
+	'pc' to the next legal position.
+
+Optional macros:
+
+void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
+	Relocate the copy of 'p'->program at 'new' to be able
+	to execute at the new position.
+
+void FLUSH_INSTRUCTION_CACHE(void *addr, size_t len);
+	Flush the memory at 'addr' from the instruction cache.

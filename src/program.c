@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.358 2001/07/19 19:06:04 grubba Exp $");
+RCSID("$Id: program.c,v 1.359 2001/07/20 15:49:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -34,6 +34,7 @@ RCSID("$Id: program.c,v 1.358 2001/07/19 19:06:04 grubba Exp $");
 #include "opcodes.h"
 #include "version.h"
 #include "block_alloc.h"
+#include "pikecode.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -635,33 +636,9 @@ int get_small_number(char **q);
 #define CHECK_FOO(NUMTYPE,TYPE,NAME)
 #endif
 
-#ifdef PIKE_USE_MACHINE_CODE
-#ifdef sparc
-#define RELOCATE_program(P, NEW)	do {			\
-    PIKE_OPCODE_T *op_ = NEW;					\
-    struct program *p_ = P;					\
-    size_t rel_ = p_->num_relocations;				\
-    INT32 delta_ = p_->program - op_;				\
-    while (rel_--) {						\
-      DO_IF_DEBUG(						\
-        if ((op_[p_->relocations[rel_]] & 0xc0000000) !=	\
-	    0x40000000) {					\
-          fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
-		rel_, p_->relocations[rel_],			\
-		op_[p_->relocations[rel_]]);			\
-	}							\
-      );							\
-      op_[p_->relocations[rel_]] = 0x40000000|			\
-	(((op_[p_->relocations[rel_]] & 0x3fffffff) +		\
-	  delta_) & 0x3fffffff);				\
-    }								\
-  } while(0)
-#else /* !sparc */
-#define RELOCATE_program(ORIG,NEW)
-#endif /* sparc */
-#else /* !PIKE_USE_MACHINE_CODE */
-#define RELOCATE_program(ORIG,NEW)
-#endif /* PIKE_USE_MACHINE_CODE */
+#ifndef RELOCATE_program
+#define RELOCATE_program(ORIG, NEW)
+#endif /* !RELOCATE_program */
 #define RELOCATE_linenumbers(ORIG,NEW)
 #define RELOCATE_identifier_index(ORIG,NEW)
 #define RELOCATE_variable_index(ORIG,NEW)
@@ -5621,20 +5598,9 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 void make_program_executable(struct program *p)
 {
   mprotect(p->program, p->num_program, PROT_EXEC | PROT_READ | PROT_WRITE);
-#ifdef sparc
-  {
-    register INT32 cnt = 0;
-    register INT32 max = (p->num_program+1)*sizeof(INT32);
-    register void *program = p->program;
-
-    do {
-      __asm__ __volatile__ ("	flush %0+%1"
-			    :
-			    : "r" (program), "r" (cnt)
-			    : "memory");
-      cnt += 8;
-    } while (cnt < max);
-  }
-#endif /* sparc */
+#ifdef FLUSH_INSTRUCTION_CACHE
+  FLUSH_INSTRUCTION_CACHE(p->program,
+			  p->num_program*sizeof(p->program[0]));
+#endif /* FLUSH_INSTRUCTION_CACHE */
 }
 #endif

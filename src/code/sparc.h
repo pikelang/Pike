@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.2 2001/07/20 13:16:50 grubba Exp $
+ * $Id: sparc.h,v 1.3 2001/07/20 15:49:00 grubba Exp $
  */
 
 #define REG_O0	8
@@ -48,3 +48,39 @@
 #define ins_align(ALIGN)
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))
 #define ins_data(VAL)	  add_to_program((INT32)(VAL))
+
+#define READ_INCR_BYTE(PC)	(((PC)++)[0])
+
+#define RELOCATE_program(P, NEW)	do {			\
+    PIKE_OPCODE_T *op_ = NEW;					\
+    struct program *p_ = P;					\
+    size_t rel_ = p_->num_relocations;				\
+    INT32 delta_ = p_->program - op_;				\
+    while (rel_--) {						\
+      DO_IF_DEBUG(						\
+        if ((op_[p_->relocations[rel_]] & 0xc0000000) !=	\
+	    0x40000000) {					\
+          fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
+		rel_, p_->relocations[rel_],			\
+		op_[p_->relocations[rel_]]);			\
+	}							\
+      );							\
+      op_[p_->relocations[rel_]] = 0x40000000|			\
+	(((op_[p_->relocations[rel_]] & 0x3fffffff) + delta_) &	\
+	 0x3fffffff);						\
+    }								\
+  } while(0)
+
+#define FLUSH_INSTRUCTION_CACHE(ADDR, LEN) do {		\
+    register INT32 cnt_ = 0;				\
+    register INT32 max_ = (LEN)+sizeof(INT32);		\
+    register void *addr_ = ADDR;			\
+							\
+    do {						\
+      __asm__ __volatile__ ("	flush %0+%1"		\
+			    :				\
+			    : "r" (addr_), "r" (cnt_)	\
+			    : "memory");		\
+      cnt_ += 8;					\
+    } while (cnt_ < max_);				\
+  } while(0)
