@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.13 1999/04/21 20:44:23 grubba Exp $
+ * $Id: sendfile.c,v 1.14 1999/04/22 14:27:00 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -615,7 +615,7 @@ static void sf_create(INT32 args)
     }
 #endif /* PIKE_DEBUG */
     sf.to_file = *ob;
-    free_object(sp[5-arg].u.object);
+    free_object(sp[5-args].u.object);
     sp[5-args].u.object = sf.to_file;
   }
   if ((sf.to->flags & FILE_LOCK_FD) ||
