@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.13 1998/09/25 18:06:34 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.14 1998/10/10 00:30:54 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -123,8 +123,9 @@ void check_all_args(const char *fnname, int args, ... )
  * usage: get_args(sp-args, args, "%i",&an_int)
  * format specifiers:
  *   %i: INT32
- *   %s: char *
- *   %S: struct pike_string *
+ *   %s: char *				Only 8bit strings
+ *   %S: struct pike_string *		Only 8bit strings
+ *   %W: struct pike_string *		Allow wide strings
  *   %a: struct array *
  *   %f: float
  *   %m: struct mapping *
@@ -159,9 +160,15 @@ int va_get_args(struct svalue *s,
       break;
     case 's':
       if(s->type != T_STRING) return ret;
+      if(s->size_shift) return ret;
       *va_arg(ap, char **)=s->u.string->str;
       break;
     case 'S':
+      if(s->type != T_STRING) return ret;
+      if(s->size_shift) return ret;
+      *va_arg(ap, struct pike_string **)=s->u.string;
+      break;
+    case 'W':
       if(s->type != T_STRING) return ret;
       *va_arg(ap, struct pike_string **)=s->u.string;
       break;
@@ -226,7 +233,8 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     char *expected_type;
     switch(format[ret*2+1]) {
     case 'd': case 'i': expected_type = "int"; break;
-    case 's': case 'S': expected_type = "string"; break;
+    case 's': case 'S': expected_type = "string (8bit)"; break;
+    case "W": expected_type = "string"; break;
     case 'a': expected_type = "array"; break;
     case 'f': expected_type = "float"; break;
     case 'm': expected_type = "mapping"; break;
