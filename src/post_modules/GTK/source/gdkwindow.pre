@@ -2,6 +2,8 @@ class GdkWindow;
 inherit GdkDrawable;
 #ifndef __NT__
 #include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
 #endif
 // a GDK.Window object.
 //
@@ -413,10 +415,13 @@ NAME_ARGS(property, offset, delete_when_done);
   else
     get_all_args( "get_property", args, "%o", &o);
 
-
   if(gdk_property_get( (GdkWindow *)THIS->obj,
                        get_gdkatom(o),
+#ifdef AnyPropertyType
                        AnyPropertyType,
+#else
+		       None,
+#endif
                        offset,
                        1024*1024*1024,
                        delete_when_done,
@@ -446,11 +451,7 @@ NAME_ARGS(property, offset, delete_when_done);
        push_Xpseudo32bitstring( retdata, actual_length );
        break;
     }
-#ifndef __NT__
-    XFree( retdata );
-#else
-    gfree( retdata );
-#endif
+    g_free( retdata );
     f_aggregate_mapping( 6 );
     return;
   }

@@ -309,6 +309,8 @@ string get_name();
 
 #ifndef __NT__
 #include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
 #endif
 FUNCTION(set_cursor, "function(int,void|object,void|object:object)");
 ARGS(int|void,void|GDK.Color,void|GDK.Color);

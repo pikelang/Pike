@@ -48,8 +48,8 @@ void pack2( widget widget, int resize, int shrink );
 
 member int handle_size;
 // The size of the handle, in pixels
-member int gutter_size;
-// The size of the gutter, in pixels
+/* member int gutter_size;
+ * // The size of the gutter, in pixels */
 member int handle_xpos;
 // The xpos of the handle, in pixels
 member int handle_ypos;

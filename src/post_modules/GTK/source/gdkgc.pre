@@ -58,7 +58,11 @@ RETURNS(mapping(string:mixed));
   if( v.clip_mask ) gdk_pixmap_ref( v.clip_mask );
 
   push_text( "fill" ); push_int( v.fill );
+#ifdef __NT__
+  push_text( "tile" ); push_gdkobject( v.tile, Pixmap );
+#else
   push_text( "tile" ); push_int( v.tile );
+#endif
   push_text( "function" ); push_int( v.function );
   {
     GdkColor *f = malloc( sizeof( GdkColor ) );

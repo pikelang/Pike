@@ -1,5 +1,7 @@
 #ifndef __NT__
 #include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
 #endif
 require gnome;
 #include <applet-widget.h>
@@ -24,7 +26,7 @@ int IS_OBJECT_PROGRAM(struct program *X)
             || ((X) == pgtk_selection_data_program));
 }
 
-static void backend_callback()
+static void backend_callback(struct callback *_cb,void *_x,void *_y)
 {
   next_timeout = current_time;
 #ifndef __NT__
@@ -70,8 +72,13 @@ RETURNS(GDK.Window);
   pgtk_root_window = low_clone( pgtk_GdkWindow_program );
   call_c_initializers( pgtk_root_window );
   /* ugly...*/
+#ifdef GDK_ROOT_PARENT
+  ((struct object_wrapper *)pgtk_root_window->storage)->obj=
+    (void *)GDK_ROOT_PARENT();
+#else
   ((struct object_wrapper *)pgtk_root_window->storage)->obj=
     (void *)&gdk_root_parent;
+#endif
 
  add_ref(pgtk_root_window);
   ref_push_object( pgtk_root_window );
@@ -214,7 +221,7 @@ NAME_ARGS(argv, do_not_parse_rc);
   typedef RETSIGTYPE (*sigtype)(int);
   sigtype save_sigs[NSIG];
   for(sig=1;sig<NSIG;sig++)
-    signal(e,save_sigs[e]=signal(e,SIG_IGN));
+    signal(sig,save_sigs[sig]=signal(sig,SIG_IGN));
 
 #endif /* HAVE_SIGNAL */
 #endif /* ! HAVE_SIGACTION */
@@ -280,7 +287,7 @@ NAME_ARGS(argv, do_not_parse_rc);
 #else /* HAVE_SIGACTION */
 #if HAVE_SIGNAL
   for(sig=1;sig<NSIG;sig++)
-    signal(e,save_sigs[e]);
+    signal(sig,save_sigs[sig]);
 #endif /* HAVE_SIGNAL */
 #endif /* HAVE_SIGACTION */
   backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
@@ -320,7 +327,9 @@ FUNCTION(flush, "function(void:void)")
 FUNCTION(low_flush, "function(void:void)")
 // Flush X. Not normally needed.
 {
+#ifndef __NT__
   XFlush( GDK_DISPLAY() );
+#endif
   my_pop_n_elems( args );
   push_int( 0 );
 }

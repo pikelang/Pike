@@ -1,6 +1,8 @@
 class GdkDrawable;
 #ifndef __NT__
 #include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
 #endif
 // The GDK.Bitmap, GDK.Window and GDK.Pixmap classes are all GDK drawables.
 // <br />
@@ -194,7 +196,7 @@ NAME_ARGS(gc,bitmap,xsrc,ysrc,xdest,ydest,width,height);
 FUNCTION(xid, "function(void:int)" )
 {
   pop_n_elems( args );
-  push_int(GDK_WINDOW_XWINDOW( (GdkWindow *)THIS->obj ));
+  push_int((INT_TYPE)GDK_WINDOW_XWINDOW( (GdkWindow *)THIS->obj ));
 }
 
 FUNCTION(draw_image, "function(object,object,int,int,int,int,int,int:object)");
@@ -205,7 +207,7 @@ NAME_ARGS(gc,image,xsrc,ysrc,xdest,ydest,width,height);
 {
   struct object *g, *p;
   INT_TYPE xs, ys, xd, yd, w, h;
-  get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
+  get_all_args("draw_image",args,"%o%o%d%d%d%d%d%d",
 	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
   gdk_draw_image(TWIN,GC(g),get_gdkobject(p,Image),xs,ys,xd,yd,w,h);
   RETURN_THIS();

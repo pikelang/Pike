@@ -236,7 +236,8 @@ NAME_ARGS(row, column);
 // Return the pixmap and text for the specified cell as a mapping:<br />
 // ([ "spacing":spacing, "text":text, "pixmap":pixmap ])
 {
-  INT_TYPE x, y, s;
+  INT_TYPE x, y;
+  guint8 s;
   gchar *t = NULL;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;

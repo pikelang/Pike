@@ -2,6 +2,8 @@ class socket;
 inherit container;
 #ifndef __NT__
 #include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
 #endif
 // Together with W(Plug), GTK.Socket provides the ability to embed
 // widgets from one process into another process in a fashion that is
@@ -34,7 +36,7 @@ FUNCTION(id, "function(void:int)");
   if( !GTK_WIDGET( THIS->obj )->window )
     error("You must realize this widget before calling this function.\n");
   my_pop_n_elems( args );
-  push_int(GDK_WINDOW_XWINDOW( GTK_WIDGET( THIS->obj )->window ));
+  push_int((INT_TYPE)GDK_WINDOW_XWINDOW( GTK_WIDGET( THIS->obj )->window ));
 }
 
 FUNCTION(has_plug, "function(void:int)");
