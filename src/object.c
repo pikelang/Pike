@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.183 2001/09/05 01:41:07 hubbe Exp $");
+RCSID("$Id: object.c,v 1.184 2001/09/06 08:06:01 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -945,20 +945,47 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     }
 
   case 0:
-    if(i->run_time_type == T_MIXED)
+  {
+    void *ptr=LOW_GET_GLOBAL(o,f,i);
+    switch(i->run_time_type)
     {
-      struct svalue *s;
-      s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
-      check_destructed(s);
-      assign_svalue_no_free(to, s);
+      case T_MIXED:
+      {
+	struct svalue *s=(struct svalue *)ptr;
+	check_destructed(s);
+	assign_svalue_no_free(to, s);
+	break;
+      }
+
+      case T_FLOAT:
+	to->type=T_FLOAT;
+	to->subtype=0;
+	to->u.float_number=*(FLOAT_TYPE *)ptr;
+	break;
+
+      case T_INT:
+	to->type=T_INT;
+	to->subtype=0;
+	to->u.integer=*(INT_TYPE *)ptr;
+	break;
+
+      default:
+      {
+	struct ref_dummy *dummy;
+
+	to->subtype=0;
+	if((dummy=*(struct ref_dummy  **)ptr))
+	{
+	  add_ref(to->u.dummy=dummy);
+	  to->type=i->run_time_type;
+	}else{
+	  to->type=T_INT;
+	  to->u.integer=0;
+	}
+	break;
+      }
     }
-    else
-    {
-      union anything *u;
-      u=(union anything *)LOW_GET_GLOBAL(o,f,i);
-      check_short_destructed(u,i->run_time_type);
-      assign_from_short_svalue_no_free(to, u, i->run_time_type);
-    }
+  }
   }
 }
 
