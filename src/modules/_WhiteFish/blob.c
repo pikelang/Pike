@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.21 2001/05/28 20:44:25 per Exp $");
+RCSID("$Id: blob.c,v 1.22 2001/05/29 23:58:09 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -87,6 +87,17 @@ int wf_blob_nhits( Blob *b )
 {
   if( b->eof ) return 0;
   return ((unsigned char *)b->b->data)[b->b->rpos+4];
+}
+
+int wf_blob_hit_raw( Blob *b, int n )
+{
+  if( b->eof )
+    return 0;
+  else
+  {
+    int off = b->b->rpos + 5 + n*2;
+    return (b->b->data[ off ]<<8) | b->b->data[ off + 1 ];
+  }
 }
 
 Hit wf_blob_hit( Blob *b, int n )
@@ -379,11 +390,10 @@ int cmp_zipp( void *a, void *b )
   return ai < bi ? -1 : ai == bi ? 0 : 1 ;
 }
 
-int cmp_hit( char *a, char *b )
+int cmp_hit( unsigned char *a, unsigned char *b )
 {
   /* a and b in NBO, and not aligned */
-  unsigned short ai = a[0]<<8 | a[1],
-                 bi = b[0]<<8 | b[1];
+  unsigned short ai = (a[0]<<8) | a[1], bi = (b[0]<<8) | b[1];
   return ai < bi ? -1 : ai == bi ? 0 : 1 ;
 }
 

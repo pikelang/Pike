@@ -57,6 +57,7 @@ int wf_blob_nhits( Blob *b );
 /* Return the number of hits for the current document in the blob */
 
 Hit wf_blob_hit( Blob *b, int n );
+int wf_blob_hit_raw( Blob *b, int n );
 /* Return the given hit. n must be smaller than the value returned by
  * nhits.
  */
