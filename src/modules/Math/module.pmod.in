@@ -278,7 +278,7 @@ class Angle {
 
   //!
   int __hash() {
-    return (int)(rad()*1000000);
+    return array_sscanf(sprintf("%8F", rad()),"%8c")[0];
   }
 
   //!
