@@ -1,6 +1,7 @@
 Mon Jul  8 23:52:48 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
 
 	* uLPC v1.0E-6 released
+	* hilfe.lpc now uses readline (line editing! history!)
 	* bug in true/false values fixed
 	* readline module added
 
