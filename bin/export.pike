@@ -3,6 +3,7 @@
 #include <simulate.h>
 
 multiset except_modules  =(<>);
+string vpath;
 
 string *get_files(string path)
 {
@@ -16,7 +17,7 @@ string *get_files(string path)
     if(tmp[0]=='#' && tmp[-1]=='#') continue;
     if(tmp[0]=='.' && tmp[1]=='#') continue;
 
-    if(path=="pike/src/modules" && except_modules[tmp])
+    if(path==vpath+"/src/modules" && except_modules[tmp])
       continue;
 
     tmp=path+"/"+tmp;
@@ -52,7 +53,7 @@ int main(int argc, string *argv)
   mixed tmp;
   int e;
   string *files;
-  string s=replace(version()," ","-");
+  vpath=replace(version()," ","-");
 
   tmp=reverse(argv[0]/"/");
   except_modules=mklist(argv[1..]);
@@ -73,17 +74,17 @@ int main(int argc, string *argv)
     if(file_size("pike/src/modules/"+tmp) == -2)
       fix_configure("modules/"+tmp);
 
-  system("ln -s pike "+s);
+  system("ln -s pike "+vpath);
 
-  files=sum(({ s+"/README" }),
-	    get_files(s+"/src"),
-	    get_files(s+"/doc"),
-	    get_files(s+"/lib"),
-	    get_files(s+"/bin"));
+  files=sum(({ vpath+"/README" }),
+	    get_files(vpath+"/src"),
+	    get_files(vpath+"/doc"),
+	    get_files(vpath+"/lib"),
+	    get_files(vpath+"/bin"));
 
-  perror("Creating "+s+".tar.gz:\n");
-  system("tar cvzf pike/"+s+".tar.gz "+files*" ");
-  rm(s);
+  perror("Creating "+vpath+".tar.gz:\n");
+  system("tar cvzf pike/"+vpath+".tar.gz "+files*" ");
+  rm(vpath);
   perror("Done.\n");
   return 0;
 }
