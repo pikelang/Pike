@@ -316,22 +316,28 @@ SGML convert(SGML data)
 	    })+data->data+ ({ "\n" }));
 	    continue;
 
-	case "link":
-	{
-	  data->tag="a";
-	  string to=data->params->to;
-	  m_delete(data->params,"to");
-	  if(!link_to_page[to])
-	  {
-	    werror("Warning: Cannot find link "+to+" (near "+data->location()+")\n");
-	    ret+=data->data;
-	    continue;
-	  }else{
+	 case "link":
+	 {
+	    data->tag="a";
+	    string to=data->params->to;
+	    m_delete(data->params,"to");
+	    if(!link_to_page[to])
+	    {
+	       string s=(to/".")[-1];
+	       if (link_to_page[s]) 
+		  to=s;
+	       else
+	       {
+		  werror("Warning: Cannot find link "+to
+			 +" (near "+data->location()+")\n");
+		  data->tag="anchor";
+		  break;
+	       }
+	    }
 	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
 	    break;
-	  }
-	}
-
+	 }
+	
 	 case "arguments":
 	    ret+=convert(({
 	       Sgml.Tag(
@@ -360,28 +366,6 @@ SGML convert(SGML data)
 			   Sgml.Tag("br")}));
 	    continue;
 
-	 case "link":
-	 {
-	    data->tag="a";
-	    string to=data->params->to;
-	    m_delete(data->params,"to");
-	    if(!link_to_page[to])
-	    {
-	       string s=(to/".")[-1];
-	       if (link_to_page[s]) 
-		  to=s;
-	       else
-	       {
-		  werror("Warning: Cannot find link "+to
-			 +" (near "+data->location()+")\n");
-		  data->tag="anchor";
-		  break;
-	       }
-	    }
-	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
-	    break;
-	 }
-	
 	 case "ref":
 	 {
 	    string to=data->params->to;
