@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.44 2004/09/18 20:50:57 nilsson Exp $
+|| $Id: passwords.c,v 1.45 2004/09/26 15:31:05 marcus Exp $
 */
 
 /*
@@ -106,13 +106,14 @@ struct group *getgrnam(char *name)
 #endif
 
 
+#define SAFE_PUSH_TEXT(X) do { char *text_ = (X); if(text_) push_text(text_); else push_constant_text(""); }while(0);
+
 /*
  * Functions
  */
 
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
 
-#define SAFE_PUSH_TEXT(X) do { char *text_ = (X); if(text_) push_text(text_); else push_constant_text(""); }while(0);
 void push_pwent(struct passwd *ent)
 {
   /* NOTE: password_protection_mutex is always locked
