@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.35 1999/05/02 08:11:39 hubbe Exp $");
+RCSID("$Id: error.c,v 1.36 1999/07/27 21:40:43 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -397,6 +397,7 @@ void generic_error_va(struct object *o,
   free_svalue(& throw_value);
   throw_value.type=T_OBJECT;
   throw_value.u.object=o;
+  throw_severity = THROW_ERROR;
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
