@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.11 2003/04/27 15:44:01 grubba Exp $
+// $Id: module.pmod.in,v 1.12 2003/05/30 14:42:34 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -1037,6 +1037,53 @@ class PikeCompiler
 
   // Start of metaprograms.
 
+  class Definition
+  {
+    // FIXME!
+  }
+
+  class ConstantDefinition(Modifiers modifiers, Token name, Expression value)
+  {
+    inherit Definition;
+    // FIXME!
+  }
+
+  class VariableDefinition(Modifiers modifiers, Token name, Expression type)
+  {
+    inherit Definition;
+    // FIXME!
+  }
+
+  class FunctionDefinition(Modifiers modifiers, Token name,
+			   Expression definition)
+  {
+    inherit Definition;
+    // FIXME!
+  }
+
+  class Scope
+  {
+    mapping(string:Definition) identifiers = ([]);
+
+    void add_constant(Modifiers modifiers, Token name, Expression value)
+    {
+      werror("Defining constant %O with modifiers %O and value %O\n",
+	     name, modifiers, value);
+      identifiers[name->symbol] = ConstantDefinition(modifiers, name, value);
+    }
+
+    void add_variable(Modifiers modifiers, Token name, Expression type)
+    {
+      identifiers[name->symbol] = VariableDefinition(modifiers, name, type);
+    }
+
+    void add_function(Modifiers modifiers, Token name, Expression definition)
+    {
+      identifiers[name->symbol] =
+	FunctionDefinition(modifiers, name, definition);
+    }
+  }
+
   class BlockStatement
   {
     inherit Scope;
@@ -1046,10 +1093,14 @@ class PikeCompiler
     void parse_meta_program(Scope scope, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
-      while(tokens_left, Token token) {
+      while(tokens_left) {
 	parse_statement(this, tokens_left, current_modifiers);
       }
     }
+  }
+
+  class ExpressionStatement(Expression expr)
+  {
   }
 
   class Lambda
@@ -1059,7 +1110,39 @@ class PikeCompiler
 
     Expression return_type;
     array(string) parameter_names = ({});
-    StatementBlock function_body;
+    BlockStatement function_body;
+
+    void add_parameter(Expression type, Token name)
+    {
+      // FIXME!
+      // Should modify the function type by adding one parameter at a time.
+      add_variable(0, type, name);
+    }
+
+    // Parse list of parameters.
+    static void parse_param_list(TokenList tokens)
+    {
+      Iterator tokens_left = Iterator(tokens);
+
+      while(tokens_left) {
+	Expression type = parse_expression(tokens_left);
+	Token token;
+	if (!tokens_left ||
+	    !(token = tokens_left->value())->is_identifier) {
+	  SYNTAX_ERROR("Expected an identifier.");
+	  return;
+	}
+	tokens_left->`+=(1);
+	add_parameter(type, token);
+	if (tokens_left) {
+	  if ((token = tokens_left->value())->symbol != ",") {
+	    SYNTAX_ERROR("Expected a ','.");
+	    return;
+	  }
+	  tokens_left->`+=(1);
+	}
+      }
+    }
 
     // Called at
     //   lambda · '(' arguments ')' '{' class_body '}'
@@ -1073,17 +1156,17 @@ class PikeCompiler
       if (!tokens_left ||
 	  !((token = tokens_left->value())->group_start) ||
 	  (token->group_start->symbol != "(")) {
-	SYNTAX_ERROR("Expected argument list.");
+	SYNTAX_ERROR("Expected list of parameters.");
 	return;
       }
-      parse_arg_list(token->contents);
+      parse_param_list(token->contents);
       tokens_left->`+=(1);
       if (!tokens_left ||
 	  !((token = tokens_left->value())->group_start) ||
 	  (token->group_start->symbol != "{")) {
 	return;
       }
-      function_body = StatementBlock();
+      function_body = BlockStatement();
       function_body->parse_meta_program(this, get_iterator(token->contents),
 					0);
       tokens_left->`+=(1);
@@ -1093,8 +1176,7 @@ class PikeCompiler
   class Class
   {
     inherit IdentifierToken;
-
-    mapping(string:Definition) identifiers = ([]);
+    inherit Scope;
 
     // Called at
     //   class name '{' · class_body '}'
@@ -1151,10 +1233,10 @@ class PikeCompiler
 	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
 	return;
       }
-      string name;
+      Token name;
       Token token = tokens_left->value();
       if (!token->group_start) {
-	name = token->symbol;
+	name = token;
 	tokens_left->`+=(1);
 	token = tokens_left->value();
       }
@@ -1179,25 +1261,6 @@ class PikeCompiler
       tokens_left->`+=(1);
       current_class->add_constant(current_modifiers, name,
 				  LiteralExpression(this));
-    }
-
-    void add_constant(Modifiers modifiers, string name, Expression value)
-    {
-      werror("Defining constant %O with modifiers %O and value %O\n",
-	     name, modifiers, value);
-      identifiers[name] = ConstantDefinition(modifiers, name, value);
-    }
-
-    void add_variable(Modifiers modifiers, string name, Expression type)
-    {
-      identifiers[name] = VariableDefinition(modifiers, name, type);
-    }
-
-    void add_function(Modifiers modifiers, string name, Expression type,
-		      Expression definition)
-    {
-      identifiers[name] = FunctionDefinition(modifiers, name,
-					     type, definition);
     }
   }
 
