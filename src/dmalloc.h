@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.22 2000/03/26 14:17:30 grubba Exp $
+ * $Id: dmalloc.h,v 1.23 2000/03/27 06:34:05 hubbe Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -76,12 +76,12 @@ void dmalloc_accept_leak(void *);
 #define xalloc debug_xalloc
 #define dbm_main main
 #define DO_IF_DMALLOC(X)
-#define debug_malloc_update_location(X,Y,Z) (X)
+#define debug_malloc_update_location(X,Y) (X)
 #define debug_malloc_touch(X)
 #define debug_malloc_pass(X) (X)
 #define dmalloc_touch(TYPE,X) (X)
 #define dmalloc_touch_svalue(X)
-#define dmalloc_register(X,Y,Z,W)
+#define dmalloc_register(X,Y,Z)
 #define dmalloc_unregister(X,Y)
 #define debug_free(X,Y,Z) free((X))
 #define debug_malloc_name(P,FN,LINE)
