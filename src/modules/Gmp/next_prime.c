@@ -1,4 +1,4 @@
-/* $Id: next_prime.c,v 1.9 1999/03/11 15:39:13 nisse Exp $
+/* $Id: next_prime.c,v 1.10 1999/12/02 01:06:22 hubbe Exp $
  *
  * Prime number test using trial division for small primes and then
  * Miller-Rabin, as suggested in Schneier's Applied Cryptography.
@@ -9,7 +9,7 @@
 
 #include "global.h"
 
-RCSID("$Id: next_prime.c,v 1.9 1999/03/11 15:39:13 nisse Exp $");
+RCSID("$Id: next_prime.c,v 1.10 1999/12/02 01:06:22 hubbe Exp $");
 
 #include "gmp_machine.h"
 
@@ -25,11 +25,6 @@ RCSID("$Id: next_prime.c,v 1.9 1999/03/11 15:39:13 nisse Exp $");
 
 #include <limits.h>
 
-#ifdef USE_GMP2
-#include <gmp2/gmp.h>
-#else /* !USE_GMP2 */
-#include <gmp.h>
-#endif /* USE_GMP2 */
 
 #include "my_gmp.h"
 

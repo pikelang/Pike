@@ -5,10 +5,14 @@
 \*/
 
 /*
- * $Id: global.h,v 1.26 1998/11/22 11:02:50 hubbe Exp $
+ * $Id: global.h,v 1.27 1999/12/02 01:06:07 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
+
+#if defined(__WINNT__) && !defined(__NT__)
+#define __NT__
+#endif
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
@@ -98,6 +102,11 @@ char *alloca ();
 #undef HAVE_STDLIB_H
 #endif
 
+#ifdef HAVE_STDDEF_H
+#include <stddef.h>
+#undef HAVE_STDDEF_H
+#endif
+
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #undef HAVE_MALLOC_H
@@ -128,6 +137,10 @@ char *alloca ();
 #undef HAVE_MEMORY_H
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#undef HAVE_WINDOWS_H
+#endif
 
 /* we here define a few types with more defined values */
 

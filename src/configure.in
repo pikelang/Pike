@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.272 1999/11/28 22:58:09 peter Exp $")
+AC_REVISION("$Id: configure.in,v 1.273 1999/12/02 01:06:03 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -822,7 +822,8 @@ locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
-socket.h ieeefp.h fp_class.h floatingpoint.h sys/priocntl.h sched.h )
+socket.h ieeefp.h fp_class.h floatingpoint.h sys/priocntl.h sched.h \
+windows.h stddef.h sys/stat.h errno.h)
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -844,7 +845,7 @@ AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(socket, socket)
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
-  LIBS="-lkernel32  $LIBS"
+  LIBS="-lkernel32  -lws2_32 -ladvapi32 $LIBS"
 fi
 
 AC_CHECK_LIB(nsl, gethostbyname)

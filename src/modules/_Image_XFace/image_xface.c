@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.5 1998/06/19 15:12:45 mirar Exp $");
+RCSID("$Id: image_xface.c,v 1.6 1999/12/02 01:06:49 hubbe Exp $");
 
 #include "config.h"
 
@@ -8,6 +8,13 @@ RCSID("$Id: image_xface.c,v 1.5 1998/06/19 15:12:45 mirar Exp $");
 #endif
 
 #ifdef HAVE_GMP_H
+
+#ifndef __MPN
+#define __MPN(x) PIKE_CONCAT(__mpn_,x)
+#endif
+
+#undef _PROTO
+#define _PROTO(x) x
 
 #include <gmp.h>
 

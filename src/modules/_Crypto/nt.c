@@ -1,8 +1,13 @@
 /*
- * $Id: nt.c,v 1.1 1999/08/13 16:40:34 marcus Exp $
+ * $Id: nt.c,v 1.2 1999/12/02 01:07:42 hubbe Exp $
  *
  * NT crypto stuff for Pike
  */
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0400
+#endif
+
 
 #include "global.h"
 #include "stralloc.h"
@@ -16,9 +21,6 @@
 #ifdef __NT__
 
 
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0400
-#endif
 #include <wincrypt.h>
 
 
