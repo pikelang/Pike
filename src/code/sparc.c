@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.15 2002/11/05 19:29:38 grubba Exp $
+|| $Id: sparc.c,v 1.16 2002/11/05 19:35:52 grubba Exp $
 */
 
 /*
@@ -86,7 +86,7 @@
     INT32 reg_ = REG;							\
     if ((-4096 <= val_) && (val_ <= 4095)) {				\
       /* or %g0, val_, reg */						\
-      SPARC_OR(SPARC_REG_G0, reg_, val_, 1);				\
+      SPARC_OR(reg_, SPARC_REG_G0, val_, 1);				\
     } else {								\
       /* sethi %hi(val_), reg */					\
       SPARC_SETHI(reg_, val_);						\
