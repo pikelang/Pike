@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.11 1999/12/21 12:06:47 noring Exp $
+// $Id: Table.pmod,v 1.12 1999/12/21 20:12:43 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -222,15 +222,17 @@ class table {
     return copy(t, fields, types);
   }
 
-  object sort(int|string ... cs)
+  static private object _sort(int is_reversed, int|string ... cs)
   {
     if(!sizeof(cs))
       return this_object();
     int c;
     array t = copy_value(table);
-    if(!catch(c = remap(cs[-1]))) {
+    if(!catch(c = remap(cs[-1])))
+    {
       mapping m = ([]);
-      for(int r = 0; r < sizeof(t); r++) {
+      for(int r = 0; r < sizeof(t); r++)
+      {
 	mixed d;
 	if(!m[d = t[r][c]])
 	  m[d] = ({ t[r] });
@@ -239,14 +241,21 @@ class table {
       }
       array i = indices(m), v = values(m);
       predef::sort(i, v);
-      t = v*({});
+      t = (is_reversed ? predef::reverse(v) : v)*({});
     }
-    return copy(t, fields, types)->sort(@cs[0..(sizeof(cs)-2)]);
+    return is_reversed ?
+      copy(t, fields, types)->rsort(@cs[0..(sizeof(cs)-2)]) :
+      copy(t, fields, types)->sort(@cs[0..(sizeof(cs)-2)]);
   }
 
+  object sort(int|string ... cs)
+  {
+    return _sort(0, @cs);
+  }
+  
   object rsort(int|string ... cs)
   {
-    return sort(@cs)->reverse();
+    return _sort(1, @cs);
   }
   
   object limit(int n)
