@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.306 1999/08/10 12:35:19 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.307 1999/08/11 22:13:19 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1093,7 +1093,7 @@ thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
 socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sched.h \
-windows.h errno.h stddef.h)
+windows.h errno.h stddef.h mmx.h)
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -2233,6 +2233,28 @@ if test "$pike_cv_method_extract_char" = by_cast; then
   AC_DEFINE(EXTRACT_CHAR_BY_CAST)
 else
   AC_MSG_RESULT(not by cast)
+fi
+
+#############################################################################
+AC_MSG_CHECKING(Working MMX)
+
+AC_CACHE_VAL(pike_cv_sys_has_working_mmx,
+[
+AC_TRY_LINK([
+#include <mmx.h>
+],[
+{
+  mmx_t a;
+  mmx_t b;
+  paddw(a,b);
+}
+], pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
+])
+
+AC_MSG_RESULT($pike_cv_sys_has_working_mmx)
+
+if test "x$pike_cv_sys_has_working_mmx" = xyes ; then
+  AC_DEFINE(TRY_USE_MMX)
 fi
 
 #############################################################################

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.46 1999/08/10 00:18:58 mast Exp $
+ * $Id: acconfig.h,v 1.47 1999/08/11 22:13:18 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -294,6 +294,9 @@
 
 /* The last argument to accept() is an ACCEPT_SIZE_T * */
 #define ACCEPT_SIZE_T	int
+
+/* Can we compile in MMX support? */
+#undef TRY_USE_MMX
 
 @BOTTOM@
 

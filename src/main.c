@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.73 1999/06/02 21:21:38 marcus Exp $");
+RCSID("$Id: main.c,v 1.74 1999/08/11 22:13:21 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -42,6 +42,11 @@ RCSID("$Id: main.c,v 1.73 1999/06/02 21:21:38 marcus Exp $");
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
+#endif
+
+#ifdef TRY_USE_MMX
+#include <mmx.h>
+int try_use_mmx;
 #endif
 
 
@@ -130,6 +135,10 @@ int dbm_main(int argc, char **argv)
   struct array *a;
 #ifdef DECLARE_ENVIRON
   extern char **environ;
+#endif
+
+#ifdef TRY_USE_MMX
+  try_use_mmx=mmx_ok();
 #endif
 
   ARGV=argv;

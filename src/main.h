@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: main.h,v 1.9 1998/04/13 14:30:52 grubba Exp $
+ * $Id: main.h,v 1.10 1999/08/11 22:13:22 hubbe Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
@@ -14,6 +14,10 @@
 
 extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag, debug_options;
 extern int default_t_flag;
+
+#ifdef TRY_USE_MMX
+extern int try_use_mmx;
+#endif
 
 #define DEBUG_SIGNALS 1
 #define NO_TAILRECURSION 2

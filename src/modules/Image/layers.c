@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.33 1999/08/10 12:57:36 mirar Exp $
+**!	$Id: layers.c,v 1.34 1999/08/11 22:13:30 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -203,7 +203,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.33 1999/08/10 12:57:36 mirar Exp $");
+RCSID("$Id: layers.c,v 1.34 1999/08/11 22:13:30 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -1397,6 +1397,8 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 /* operators from template */
 
+#if 0
+
 #define LM_FUNC lm_add
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+(int)(B))
@@ -1404,6 +1406,152 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
+
+#else
+
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) ((A)+(int)(B))
+
+#ifdef TRY_USE_MMX
+#include <mmx.h>
+#endif
+
+static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
+		   rgb_group *sa,rgb_group *la,rgb_group *da,
+		   int len,double alpha)
+{
+   if (alpha==0.0)
+   {
+      MEMCPY(d,s,sizeof(rgb_group)*len);
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      return; 
+   }
+   else if (alpha==1.0)
+   {
+      if (!la)  /* no layer alpha => full opaque */
+      {
+#ifdef TRY_USE_MMX
+	extern int try_use_mmx;
+	if(try_use_mmx)
+	{
+	  /* Strangely enough, this doesn't seem to make things
+	   * any faster. Guess I should take a look at the generated
+	   * assembler code...
+	   * /Hubbe
+	   */
+
+	  int num=sizeof(rgb_group) * len;
+	  unsigned char *source=(char *)s;
+	  unsigned char *dest=(char *)d;
+	  unsigned char *sourcel=(char *)l;
+	  
+	  while (num-->0 && (7&(int)dest))
+	  {
+	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
+	    source++;
+	    sourcel++;
+	    dest++;
+	  }
+	  
+	  
+	  while(num > 16)
+	  {
+	    movq_m2r(*source, mm0);
+	    source+=8;
+	    movq_m2r(*source, mm1);
+	    source+=8;
+	    paddusb_m2r(*sourcel, mm0);
+	    sourcel+=8;
+	    paddusb_m2r(*sourcel, mm1);
+	    sourcel+=8;
+	    movq_r2m(mm0,*dest);
+	    dest+=8;
+	    movq_r2m(mm1,*dest);
+	    dest+=8;
+	    num-=16;
+	  }
+	  emms();
+	  while (num-->0)
+	  {
+	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
+	    source++;
+	    sourcel++;
+	    dest++;
+	  }
+	}
+	else
+#endif
+	{
+	  while (len--)
+	  {
+	    d->r=L_TRUNC(L_OPER(s->r,l->r));
+	    d->g=L_TRUNC(L_OPER(s->g,l->g));
+	    d->b=L_TRUNC(L_OPER(s->b,l->b));
+	    *da=white;
+	    l++; s++; sa++; da++; d++;
+	  }
+	}
+      }
+      else
+	 while (len--)
+	 {
+	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
+	    {
+	       d->r=L_TRUNC(L_OPER(s->r,l->r));
+	       d->g=L_TRUNC(L_OPER(s->g,l->g));
+	       d->b=L_TRUNC(L_OPER(s->b,l->b));
+	       *da=white;
+	    }
+	    else if (la->r==0 && la->g==0 && la->b==0)
+	    {
+	       *d=*s;
+	       *da=*sa;
+	    }
+	    else
+	    {
+	       d->r=L_TRUNC(L_OPER(s->r,l->r));
+	       ALPHA_ADD(s,d,d,sa,la,da,r);
+	       d->g=L_TRUNC(L_OPER(s->g,l->g));
+	       ALPHA_ADD(s,d,d,sa,la,da,g);
+	       d->b=L_TRUNC(L_OPER(s->b,l->b));
+	       ALPHA_ADD(s,d,d,sa,la,da,b);
+	    }
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+   else
+   {
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--)
+	 {
+	    d->r=L_TRUNC(L_OPER(s->r,l->r));
+	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,r);
+	    d->g=L_TRUNC(L_OPER(s->g,l->g));
+	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,g);
+	    d->b=L_TRUNC(L_OPER(s->b,l->b));
+	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,b);
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+	 while (len--)
+	 {
+	    d->r=L_TRUNC(L_OPER(s->r,l->r));
+	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,r);
+	    d->g=L_TRUNC(L_OPER(s->g,l->g));
+	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,g);
+	    d->b=L_TRUNC(L_OPER(s->b,l->b));
+	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,b);
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+}
+
+#undef L_TRUNC
+#undef L_OPER
+
+#endif
+
+
 
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
@@ -2872,7 +3020,7 @@ void init_image_layers(void)
    char buf[100];
    char buf2[sizeof(INT32)];
    int i;
-   
+
    for (i=0; i<LAYER_MODES; i++)
       layer_mode[i].ps=make_shared_string(layer_mode[i].name);
 
