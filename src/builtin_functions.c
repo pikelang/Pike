@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.338 2001/02/06 14:23:41 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.339 2001/02/06 15:07:14 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3855,25 +3855,25 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *! @returns
  *! This function returns a mapping with the following components:
  *! @mapping
- *!   @elem int(0..60) "sec"
+ *!   @member int(0..60) "sec"
  *!     Seconds over the minute.
- *!   @elem int(0..59) "min"
+ *!   @member int(0..59) "min"
  *!     Minutes over the hour.
- *!   @elem int(0..23) "hour"
+ *!   @member int(0..23) "hour"
  *!     Hour of the day.
- *!   @elem int(1..31) "mday"
+ *!   @member int(1..31) "mday"
  *!     Day of the month.
- *!   @elem int(0..11) "mon"
+ *!   @member int(0..11) "mon"
  *!     Month of the year.
- *!   @elem int(0..) "year"
+ *!   @member int(0..) "year"
  *!     Year since 1900.
- *!   @elem int(0..6) "wday"
+ *!   @member int(0..6) "wday"
  *!     Day of week (0 = Sunday).
- *!   @elem int(0..365) "yday"
+ *!   @member int(0..365) "yday"
  *!     Day of the year.
- *!   @elem int(0..1) "isdst"
+ *!   @member int(0..1) "isdst"
  *!     Is daylight savings time.
- *!   @elem int "timezone"
+ *!   @member int "timezone"
  *!     Offset from UTC.
  *! @endmapping
  *!
@@ -3914,7 +3914,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
 
 #ifdef HAVE_MKTIME
 /*! @decl int mktime(mapping(string:int) tm)
- *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year,
+ *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int isdst, int tz)
  *!
  *! This function converts information about date and time into an integer
@@ -3923,21 +3923,21 @@ PMOD_EXPORT void f_localtime(INT32 args)
  *! You can either call this function with a mapping containing the
  *! following elements:
  *! @mapping
- *!   @elem int(0..60) "sec"
+ *!   @member int(0..60) "sec"
  *!     Seconds over the minute.
- *!   @elem int(0..59) "min"
+ *!   @member int(0..59) "min"
  *!     Minutes over the hour.
- *!   @elem int(0..23) "hour"
+ *!   @member int(0..23) "hour"
  *!     Hour of the day.
- *!   @elem int(1..31) "mday"
+ *!   @member int(1..31) "mday"
  *!     Day of the month.
- *!   @elem int(0..11) "mon"
+ *!   @member int(0..11) "mon"
  *!     Month of the year.
- *!   @elem int(0..) "year"
+ *!   @member int(0..) "year"
  *!     Year since 1900.
- *!   @elem int(0..1) "isdst"
+ *!   @member int(0..1) "isdst"
  *!     Is daylight savings time.
- *!   @elem int(-12..12) "timezone"
+ *!   @member int(-12..12) "timezone"
  *!     The timezone offset from UTC in hours.
  *! @endmapping
  *!
@@ -5598,7 +5598,7 @@ PMOD_EXPORT void f__prev(INT32 args)
  *! Note that the number of references will always be at least one since
  *! the value is located on the stack when this function is executed.
  *!
- *! @seelaso
+ *! @seealso
  *! @[_next()], @[_prev()]
  */
 PMOD_EXPORT void f__refs(INT32 args)
@@ -5665,13 +5665,11 @@ PMOD_EXPORT void f__typeof(INT32 args)
  *! Replace the master object with @[o].
  *!
  *! This will let you control many aspects of how Pike works, but beware that
- *! @tt{master.pike} may be required to fill certain functions, so it is
+ *! @tt{master.pike@} may be required to fill certain functions, so it is
  *! probably a good idea to have your master inherit the original master and
  *! only re-define certain functions.
  *!
- *! @comment
  *! FIXME: Tell how to inherit the master.
- *! @endcomment
  *!
  *! @seealso
  *! @[master()]
@@ -5759,7 +5757,8 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 #endif /* HAVE_GETHRTIME */
 
 #ifdef PROFILING
-/*! @decl array(int|mapping(string:array(int))) get_profiling_info(program prog)
+/*! @decl array(int|mapping(string:array(int))) @
+ *!           get_profiling_info(program prog)
  *!
  *! Get profiling information.
  *!
@@ -5787,7 +5786,7 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
  *!
  *! @note
  *! This function is only available if the runtime was compiled with
- *! the option @tt{--with-profiling}.
+ *! the option @tt{--with-profiling@}.
  */
 static void f_get_prof_info(INT32 args)
 {
@@ -5903,8 +5902,8 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   push_array(b);
 }
 
-/*! @decl array(mixed) Array.splice(array(mixed) arr1, array(mixed) arr2,
- *!                                 array(mixed) ...);
+/*! @decl array(mixed) Array.splice(array(mixed) arr1, array(mixed) arr2, @
+ *!                                 array(mixed) ... more_arrays)
  *!
  *! Splice two or more arrays.
  *!
@@ -5913,7 +5912,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
  *! for all arrays. Then the second elements are added, etc.
  *!
  *! @seealso
- *! @[`/()], @[`*()], @[`+()], @[`-()], @[everynth()]
+ *!   @[`/()], @[`*()], @[`+()], @[`-()], @[everynth()]
  */
 PMOD_EXPORT void f_splice(INT32 args)
 {
@@ -5951,7 +5950,7 @@ PMOD_EXPORT void f_splice(INT32 args)
   return;
 }
 
-/*! @decl array(mixed) Array.everynth(array(mixed) a, void|int n,
+/*! @decl array(mixed) Array.everynth(array(mixed) a, void|int n, @
  *!                                   void|int start)
  *!
  *! Return an array with every @[n]:th element of the array @[a].
@@ -6155,16 +6154,16 @@ PMOD_EXPORT void f__describe(INT32 args)
 
 /*! @decl array map_array(array arr, function fun, mixed ... args)
  *! @decl array map_array(array(object) arr, string fun, mixed ... args)
- *! @decl array map_array(array(function) arr, int(-1..-1) minus_one,
+ *! @decl array map_array(array(function) arr, int(-1..-1) minus_one, @
  *!                       mixed ... args)
  *!
  *! This function is similar to @[map()].
  *!
  *! @note
- *! This function has been deprecated in favour of @[map()].
+ *!   This function has been deprecated in favour of @[map()].
  *!
  *! @see_also
- *! @[map()]
+ *!   @[map()]
  */
 PMOD_EXPORT void f_map_array(INT32 args)
 {
