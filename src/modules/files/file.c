@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.196 2000/08/27 18:29:27 mirar Exp $");
+RCSID("$Id: file.c,v 1.197 2000/08/27 19:22:30 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2470,6 +2470,11 @@ static void low_file_lock(INT32 args, int flags)
       )
     {
       if (flags & fd_LOCK_NB) {
+#ifdef EWOULDBLOCK
+	ERRNO = EWOULDBLOCK;
+#else /* !EWOULDBLOCK */
+	ERRNO = EAGAIN;
+#endif /* EWOULDBLOCK */
 	pop_n_elems(args);
 	push_int(0);
 	return;
@@ -2496,8 +2501,9 @@ static void low_file_lock(INT32 args, int flags)
     pop_n_elems(args);
     push_int(0);
   }else{
-    THIS->key=o;
+    THIS->key = o;
     OB2KEY(o)->f=THIS;
+    add_ref(OB2KEY(o)->file = Pike_fp->current_object);
     pop_n_elems(args);
     push_object(o);
   }
@@ -2505,7 +2511,7 @@ static void low_file_lock(INT32 args, int flags)
 
 static void file_lock(INT32 args)
 {
-  low_file_lock(args,fd_LOCK_EX);
+  low_file_lock(args, fd_LOCK_EX);
 }
 
 /* If (fd_LOCK_EX | fd_LOCK_NB) is used with lockf, the result will be
@@ -2514,7 +2520,7 @@ static void file_lock(INT32 args)
 #ifdef HAVE_FD_FLOCK
 static void file_trylock(INT32 args)
 {
-  low_file_lock(args,fd_LOCK_EX | fd_LOCK_NB);
+  low_file_lock(args, fd_LOCK_EX | fd_LOCK_NB);
 }
 #else
 static void file_trylock(INT32 args)
@@ -2565,8 +2571,10 @@ static void exit_file_lock_key(struct object *o)
       THIS_KEY->owner=0;
     }
 #endif
-    THIS_KEY->f->key=0;
-    THIS_KEY->f=0;
+    THIS_KEY->f->key = 0;
+    THIS_KEY->f = 0;
+    free_object(THIS_KEY->file);
+    THIS_KEY->file = NULL;
   }
 }
 
