@@ -34,7 +34,7 @@ INLINE HCHAR *NameNH(memchr_search)(void *data,
 				    HCHAR *haystack,
 				    ptrdiff_t haystacklen)
 {
-  return NameNH(MEMCHR)(haystack, (NCHAR)(long)data, haystacklen);
+  return NameNH(MEMCHR)(haystack, (NCHAR)(ptrdiff_t)data, haystacklen);
 }
 
 

@@ -33,6 +33,7 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
     INTERCASE(NAME,2);				\
   }                                             \
   fatal("Illegal shift\n");                     \
+  return NULL;	/* NOT_REACHED */		\
 }						\
 						\
 static struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
