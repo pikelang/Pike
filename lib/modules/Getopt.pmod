@@ -52,7 +52,8 @@ static void my_error(string err, int throw_errors) {
 //!   This argument has two functions: It specifies if the option takes an
 //!   argument or not, and it informs @[find_option()] what to return if the
 //!   option is not present. If @[def] is given and the option does not have an
-//!   argument @[find_option()] will fail.
+//!   argument @[find_option()] will fail. @[def] can be specified as
+//!   @[UNDEFINED] or left out if the option does not take an argument.
 //!
 //! @param throw_errors
 //!   If @[throw_errors] has been specified @[find_option()] will throw
@@ -67,22 +68,27 @@ static void my_error(string err, int throw_errors) {
 //!   will be returned.
 //!
 //!   Otherwise if any of the environment variables specified in @[envvars] has
-//!   been set, that value will be return.
+//!   been set, that value will be returned.
 //!
 //!   If all else fails, @[def] will be returned.
 //!
 //! @throws
-//!   If an option that requires an argument misses the argument and
+//!   If an option that requires an argument lacks an argument and
 //!   @[throw_errors] is set an error will be thrown.
 //!
 //! @note
-//!   @[find_option()] modifies @[argv].
+//!   @[find_option()] modifies @[argv]. Parsed options will be removed
+//!   from @[argv]. Elements of @[argv] that have been removed entirely will
+//!   be replaced with zeroes.
 //!
 //!   This function reads options even if they are written after the first
 //!   non-option on the line.
 //!
 //!   Index @tt{0@} (zero) of @[argv] is not scanned for options, since it
 //!   is reserved for the program name.
+//!
+//!   Only the first ocurrance of an option will be parsed. To parse
+//!   multiple ocurrances, call @[find_option()] multiple times.
 //!
 //! @seealso
 //!   @[Getopt.get_args()]
