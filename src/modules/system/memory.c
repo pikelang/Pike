@@ -1,20 +1,22 @@
 /*
- * $Id: memory.c,v 1.9 2001/03/29 11:54:05 grubba Exp $
+ * $Id: memory.c,v 1.10 2001/04/15 13:59:09 grubba Exp $
  */
 
-//! module system
-//! class Memory
-//!	A popular demand is a class representing a raw piece
-//!	of memory or a <tt>mmap</tt>ed file. This is usually not the most
-//!	effective way of solving a problem, but it might help in
-//!	rare situations.
-//!
-//!	Using <tt>mmap</tt> can lead to segmentation fault in some cases.
-//!	Beware, and read about <tt>mmap</tt> before you try anything.
-//!	Don't blame Pike if you shoot your foot off.
+/*! @module system
+ */
 
+/*! @class Memory
+ *!	A popular demand is a class representing a raw piece
+ *!	of memory or a @tt{mmap@}'ed file. This is usually not the most
+ *!	effective way of solving a problem, but it might help in
+ *!	rare situations.
+ *!
+ *!	Using @tt{mmap@} can lead to segmentation faults in some cases.
+ *!	Beware, and read about @tt{mmap@} before you try anything.
+ *!	Don't blame Pike if you shoot your foot off.
+ */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.9 2001/03/29 11:54:05 grubba Exp $");
+RCSID("$Id: memory.c,v 1.10 2001/04/15 13:59:09 grubba Exp $");
 
 #include "system_machine.h"
 
@@ -130,14 +132,15 @@ static void exit_memory(struct object *o)
    MEMORY_FREE(THIS);
 }
 
-//! method void create()
-//! method void create(string|Stdio.File filename_to_mmap)
-//! method void create(int bytes_to_allocate)
-//!	Will call <ref>mmap</ref>() or <ref>allocate</ref>()
-//!	depending on argument, either <tt>mmap</tt>ing a file
-//!	(in shared mode, writeable if possible) or allocating
-//!	a chunk of memory.
-
+/*! @decl void create()
+ *! @decl void create(string|Stdio.File filename_to_mmap)
+ *! @decl void create(int bytes_to_allocate)
+ *!
+ *!	Will call @[mmap()] or @[allocate()]
+ *!	depending on argument, either @tt{mmap@}'ing a file
+ *!	(in shared mode, writeable if possible) or allocating
+ *!	a chunk of memory.
+ */
 static void memory_create(INT32 args)
 {
    if (args)
@@ -157,14 +160,15 @@ static void memory_create(INT32 args)
    }
 }
 
-//! method int mmap(string|Stdio.File file);
-//! method int mmap(string|Stdio.File file,int offset,int size);
-//! method int mmap_private(string|Stdio.File file);
-//! method int mmap_private(string|Stdio.File file,int offset,int size);
-//!	<tt>mmap</tt> a file. This will always try to mmap the file in
-//!	PROT_READ|PROT_WRITE, readable and writable, but if it fails
-//!	it will try once more in PROT_READ only.
-
+/*! @decl int mmap(string|Stdio.File file)
+ *! @decl int mmap(string|Stdio.File file,int offset,int size)
+ *! @decl int mmap_private(string|Stdio.File file)
+ *! @decl int mmap_private(string|Stdio.File file,int offset,int size)
+ *!
+ *!	@tt{mmap@} a file. This will always try to mmap the file in
+ *!	PROT_READ|PROT_WRITE, readable and writable, but if it fails
+ *!	it will try once more in PROT_READ only.
+ */
 static INLINE off_t file_size(int fd)
 {
   struct stat tmp;
@@ -342,9 +346,9 @@ static void memory_mmap_private(INT32 args)
 
 #endif
 
-//! method void allocate(int bytes);
-//! method void allocate(int bytes,int(0..255) fill);
-
+/*! @decl void allocate(int bytes)
+ *! @decl void allocate(int bytes,int(0..255) fill)
+ */
 static void memory_allocate(INT32 args)
 {
    INT_TYPE c=0;
@@ -381,9 +385,10 @@ static void memory_allocate(INT32 args)
 }
 
 
-//! method void free()
-//!	Free the allocated or <tt>mmap</tt>ed memory.
-
+/*! @decl void free()
+ *!
+ *!	Free the allocated or <tt>mmap</tt>ed memory.
+ */
 static void memory_free(INT32 args)
 {
    pop_n_elems(args);
@@ -393,10 +398,11 @@ static void memory_free(INT32 args)
 
 
 
-//! method int _sizeof()
-//! returns the size of the memory (bytes).
-//! note: throws if not allocated
-
+/*! @decl int _sizeof()
+ *!
+ *! returns the size of the memory (bytes).
+ *! note: throws if not allocated
+ */
 static void memory__sizeof(INT32 args)
 {
    MEMORY_VALID(THIS,"Memory._sizeof");
@@ -404,27 +410,33 @@ static void memory__sizeof(INT32 args)
    push_int64(THIS->size);
 }
 
-//! method int(0..1) valid()
-//! returns 1 if the memory is valid, 0 if not allocated
-
+/*! @decl int(0..1) valid()
+ *!
+ *! returns 1 if the memory is valid, 0 if not allocated
+ */
 static void memory_valid(INT32 args)
 {
    pop_n_elems(args);
    push_int(!!(THIS->p));
 }
-//! method int(0..1) writeable()
-//! returns 1 if the memory is writeable, 0 if not
 
+/*! @decl int(0..1) writeable()
+ *!
+ *! returns 1 if the memory is writeable, 0 if not
+ */
 static void memory_writeable(INT32 args)
 {
    pop_n_elems(args);
    push_int(!!(THIS->flags&MEM_WRITE));
 }
 
-//! method string|array cast(string to)
-//!	Cast to string or array.
-//! note: throws if not allocated
-
+/*! @decl string|array cast(string to)
+ *!
+ *!	Cast to string or array.
+ *!
+ *! @note
+ *!   Throws if not allocated.
+ */
 static void memory_cast(INT32 args)
 {
    char *s;
@@ -463,18 +475,19 @@ static void memory_cast(INT32 args)
    }
 }
 
-//! method string pread(int(0..) pos,int(0..) len)
-//! method string pread16(int(0..) pos,int(0..) len)
-//! method string pread32(int(0..) pos,int(0..) len)
-//! method string pread16i(int(0..) pos,int(0..) len)
-//! method string pread32i(int(0..) pos,int(0..) len)
-//!	Read a string from the memory. The 16 and 32 variants
-//!	reads widestrings, 16 or 32 bits (2 or 4 bytes) wide,
-//!	the i variants in intel byteorder, the normal in network byteorder.
-//!
-//!	<i>len</i> is the number of characters, wide or not. <i>pos</i>
-//!	is the byte position (!).
-
+/*! @decl string pread(int(0..) pos,int(0..) len)
+ *! @decl string pread16(int(0..) pos,int(0..) len)
+ *! @decl string pread32(int(0..) pos,int(0..) len)
+ *! @decl string pread16i(int(0..) pos,int(0..) len)
+ *! @decl string pread32i(int(0..) pos,int(0..) len)
+ *!
+ *!	Read a string from the memory. The 16 and 32 variants
+ *!	reads widestrings, 16 or 32 bits (2 or 4 bytes) wide,
+ *!	the i variants in intel byteorder, the normal in network byteorder.
+ *!
+ *!	@[len] is the number of characters, wide or not. @[pos]
+ *!	is the byte position (!).
+ */
 #define MEMORY_PREADN(FUNC,NAME,N,MAKER)				\
    static void FUNC(INT32 args)						\
    {									\
@@ -590,18 +603,19 @@ MEMORY_PREADN(memory_pread16i,"Memory.pread16i",2,make_reverse_order_string1)
 MEMORY_PREADN(memory_pread32i,"Memory.pread32i",4,make_reverse_order_string2)
 #endif
 
-//! method int pwrite(int(0..) pos,string data)
-//! method int pwrite16(int(0..) pos,string data)
-//! method int pwrite32(int(0..) pos,string data)
-//! method int pwrite16i(int(0..) pos,string data)
-//! method int pwrite32i(int(0..) pos,string data)
-//!	Write a string to the memory (and to the file, if it's mmap()ed). 
-//!	The 16 and 32 variants writes widestrings, 
-//!	16 or 32 bits (2 or 4 bytes) wide,
-//!	the 'i' variants in intel byteorder, the other in network byteorder.
-//!
-//! returns the number of bytes (not characters) written
- 
+/*! @decl int pwrite(int(0..) pos,string data)
+ *! @decl int pwrite16(int(0..) pos,string data)
+ *! @decl int pwrite32(int(0..) pos,string data)
+ *! @decl int pwrite16i(int(0..) pos,string data)
+ *! @decl int pwrite32i(int(0..) pos,string data)
+ *!
+ *!	Write a string to the memory (and to the file, if it's mmap()ed). 
+ *!	The 16 and 32 variants writes widestrings, 
+ *!	16 or 32 bits (2 or 4 bytes) wide,
+ *!	the 'i' variants in intel byteorder, the other in network byteorder.
+ *!
+ *! returns the number of bytes (not characters) written
+ */
 static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 {
    INT_TYPE pos;
@@ -684,9 +698,9 @@ PWRITEN(memory_pwrite16i,"pwrite16i",1,1)
 PWRITEN(memory_pwrite32i,"pwrite32i",2,1)
 #endif
 
-//! method int `[](int pos)
-//! method string `[](int pos1,int pos2)
-
+/*! @decl int `[](int pos)
+ *! @decl string `[](int pos1,int pos2)
+ */
 static void memory_index(INT32 args)
 {
    MEMORY_VALID(THIS,"Memory.`[]");
@@ -735,9 +749,9 @@ static void memory_index(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-//! method int `[]=(int pos,int char)
-//! method string `[]=(int pos1,int pos2,string str)
-
+/*! @decl int `[]=(int pos,int char)
+ *! @decl string `[]=(int pos1,int pos2,string str)
+ */
 static void memory_index_write(INT32 args)
 {
    MEMORY_VALID(THIS,"Memory.`[]=");
@@ -795,6 +809,12 @@ static void memory_index_write(INT32 args)
    }
    stack_pop_n_elems_keep_top(args);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
   
 /*** module init & exit & stuff *****************************************/
 
