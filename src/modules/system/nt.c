@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.66 2004/11/08 21:23:16 nilsson Exp $
+|| $Id: nt.c,v 1.67 2004/11/14 18:02:39 nilsson Exp $
 */
 
 /*
@@ -3108,7 +3108,7 @@ static void f_nt_uname(INT32 args)
 
     case VER_PLATFORM_WIN32_WINDOWS:
       push_text("Win32");
-      switch(osversion.dwMajorVersion)
+      switch(osversion.dwMinorVersion)
       {
       case 0:
 	version = "95";
