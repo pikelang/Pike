@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.6 1997/01/08 01:49:27 grubba Exp $
+ * $Id: result.c,v 1.7 1997/01/08 15:26:22 grubba Exp $
  *
  * mysql query result
  *
@@ -52,14 +52,17 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include <memory.h>
 #endif
 
-/* Define this to get support for field->default. */
+/* Define this to get support for field->default. NOT SUPPORTED */
 #undef SUPPORT_DEFAULT
+
+/* Define this to get field_seek() and fetch_field() */
+/* #define SUPPORT_FIELD_SEEK */
 
 /*
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.6 1997/01/08 01:49:27 grubba Exp $");
+RCSID("$Id: result.c,v 1.7 1997/01/08 15:26:22 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -212,6 +215,8 @@ static void f_num_fields(INT32 args)
   push_int(mysql_num_fields(PIKE_MYSQL_RES->result));
 }
 
+#ifdef SUPPORT_FIELD_SEEK
+
 /* void field_seek(int fieldno) */
 static void f_field_seek(INT32 args)
 {
@@ -225,12 +230,16 @@ static void f_field_seek(INT32 args)
   pop_n_elems(args);
 }
 
+#endif /* SUPPORT_FIELD_SEEK */
+
 /* int eof() */
 static void f_eof(INT32 args)
 {
   pop_n_elems(args);
   push_int(mysql_eof(PIKE_MYSQL_RES->result));
 }
+
+#ifdef SUPPORT_FIELD_SEEK
 
 /* int|mapping(string:mixed) fetch_field() */
 static void f_fetch_field(INT32 args)
@@ -248,6 +257,8 @@ static void f_fetch_field(INT32 args)
 
   parse_field(field);
 }
+
+#endif /* SUPPORT_FIELD_SEEK */
 
 /* array(int|mapping(string:mixed)) fetch_fields() */
 static void f_fetch_fields(INT32 args)
@@ -350,9 +361,13 @@ void init_mysql_res_programs(void)
   add_function("create", f_create, "function(object:void)", OPT_SIDE_EFFECT);
   add_function("num_rows", f_num_rows, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("num_fields", f_num_fields, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#ifdef SUPPORT_FIELD_SEEK
   add_function("field_seek", f_field_seek, "function(int:void)", OPT_SIDE_EFFECT);
+#endif /* SUPPORT_FIELD_SEEK */
   add_function("eof", f_eof, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#ifdef SUPPORT_FIELD_SEEK
   add_function("fetch_field", f_fetch_field, "function(void:int|mapping(string:mixed))", OPT_EXTERNAL_DEPEND);
+#endif /* SUPPORT_FIELD_SEEK */
   add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
   add_function("seek", f_seek, "function(int:void)", OPT_SIDE_EFFECT);
   add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
