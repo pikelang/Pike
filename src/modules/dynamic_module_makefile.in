@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.69 2001/01/26 02:31:13 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.70 2001/03/04 15:21:42 mirar Exp $
 #
 
 
@@ -115,6 +115,7 @@ depend:
 	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
 	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
 	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
+	|sed -e "s@$(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@\1@g" \
 	>$(SRCDIR)/dependencies
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@for a in '' $(MODULE_SUBDIRS) ; do \
