@@ -12,6 +12,11 @@ Running Pike on NT
 
 Hedda-notes: 
 
+Reference-part about functions.
+Separate the referece-part from the tutorial?
+Tutorial about how the compiling of Pike-programs and
+ interpretation.
+
 Fix chapter 3 to be one reference-part and one tutorial-part.
 Make sure that all global functions and modules are described.
 Write an appendix about old functions, behaviors and keywords.
