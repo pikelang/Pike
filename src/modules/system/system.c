@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.158 2003/09/30 18:31:14 nilsson Exp $
+|| $Id: system.c,v 1.159 2003/09/30 22:57:03 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.158 2003/09/30 18:31:14 nilsson Exp $");
+RCSID("$Id: system.c,v 1.159 2003/09/30 22:57:03 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -656,9 +656,6 @@ void f_setgroups(INT32 args)
 
   for (i=0; i < size; i++) {
     if (arr->item[i].type != T_INT) {
-      /* Only reached if arr->size > 0
-       * so we always have an allocated gids here.
-       */
       Pike_error("setgroups(): Bad element %d in array (expected int)\n", i);
     }
     gids[i] = arr->item[i].u.integer;
@@ -718,11 +715,16 @@ void f_getgroups(INT32 args)
 #endif /* HAVE_GETGROUPS */
 
 #ifdef HAVE_INNETGR
-/*! @decl int innetgr(string netgroup, string|void machine, @
+/*! @decl int(0..1) innetgr(string netgroup, string|void machine, @
  *!                   string|void user, string|void domain)
  *!
- *! @fixme
- *!   Document this function.
+ *! Searches for matching entries in the netgroup database (usually
+ *! @tt{/etc/netgroup@}). If any of the @[machine], @[user] or @[domain]
+ *! arguments are zero or missing, those fields will match any
+ *! value in the selected @[netgroup].
+ *!
+ *! @note
+ *!  This function isn't available on all platforms.
  */
 void f_innetgr(INT32 args)
 {
@@ -754,9 +756,15 @@ void f_innetgr(INT32 args)
 #endif /* HAVE_INNETGR */
 
 #ifdef HAVE_SETUID 
-/*! @decl void setuid(int uid)
+/*! @decl int setuid(int uid)
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
+ *!
+ *! @returns
+ *!   Returns the current errno.
+ *!
+ *! @note
+ *!   This function isn't available on all platforms.
  *!
  *! @seealso
  *!   @[getuid()], @[setgid()], @[getgid()], @[seteuid()], @[geteuid()],
@@ -788,9 +796,19 @@ void f_setuid(INT32 args)
 #endif
 
 #ifdef HAVE_SETGID
-/*! @decl void setgid(int gid)
+/*! @decl int setgid(int gid)
  *!
  *! Sets the real group ID, effective group ID and saved group ID to @[gid].
+ *! If @[gid] is @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @throws
+ *! Throws an error if no "nobody" user when @[gid] is @expr{-1@}.
+ *!
+ *! @returns
+ *!   Returns the current errno.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
  *!
  *! @seealso
  *!   @[getuid()], @[setuid()], @[getgid()], @[seteuid()], @[geteuid()],
@@ -809,6 +827,8 @@ void f_setgid(INT32 args)
  
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_gid;
   } else {
     id = sp[-args].u.integer;
@@ -826,9 +846,15 @@ void f_setgid(INT32 args)
  *! Set the effective user ID to @[euid]. If @[euid] is
  *! @expr{-1@} the uid for "nobody" will be used.
  *!
+ *! @returns
+ *! Returns the current errno.
+ *!
  *! @throws
- *! Throws an error if seteuid fails, or if there is no
+ *! Throws an error if there is no
  *! "nobody" user when @[euid] is @expr{-1@}.
+ *!
+ *! @note
+ *! This function isn't available on all platforms.
  */
 void f_seteuid(INT32 args)
 {
@@ -865,7 +891,18 @@ void f_seteuid(INT32 args)
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
 /*! @decl int setegid(int egid)
  *!
- *! Set the effective group ID to @[egid].
+ *! Set the effective group ID to @[egid]. If @[egid] is
+ *! @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @returns
+ *! Returns the current errno.
+ *!
+ *! @throws
+ *! Throws an error if there is no "nobody" user when
+ *! @[egid] is @expr{-1@}.
+ *!
+ *! @note
+ *! This function isn't available on all platforms.
  */
 void f_setegid(INT32 args)
 {
@@ -882,6 +919,8 @@ void f_setegid(INT32 args)
   if(id == -1)
   {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_gid;
   } else {
     id = sp[-args].u.integer;
@@ -974,6 +1013,10 @@ void f_setpgrp(INT32 args)
  *!   Get the process session ID for the given process. If pid is
  *!   not specified, the session ID for the current process will
  *!   be returned.
+ *! @note
+ *!   This function is not available on all platforms.
+ *! @throws
+ *!   Throws an error if the system call fails.
  *! @seealso
  *!   @[getpid], @[getpgrp], @[setsid]
  */
@@ -995,6 +1038,10 @@ void f_getsid(INT32 args)
 #if defined(HAVE_SETSID)
 /*! @decl int setsid()
  *!   Set a new process session ID for the current process, and return it.
+ *! @note
+ *!   This function isn't available on all platforms.
+ *! @throws
+ *!   Throws an error if the system call fails.
  *! @seealso
  *!   @[getpid], @[setpgrp], @[getsid]
  */
@@ -1058,8 +1105,11 @@ void f_dumpable(INT32 args)
 #ifdef HAVE_SETRESUID
 /*! @decl int setresuid(int ruid, int euid, int suid)
  *!
- *! @fixme
- *!   Document this function.
+ *! Sets the real, effective and saved set-user-ID to @[ruid],
+ *! @[euid] and @[suid] respectively.
+ *!
+ *! @returns
+ *! Returns zero on success and errno on failure.
  */
 void f_setresuid(INT32 args)
 {
@@ -1082,8 +1132,11 @@ void f_setresuid(INT32 args)
 #ifdef HAVE_SETRESGID
 /*! @decl int setresgid(int rgid, int egid, int sgid)
  *!
- *! @fixme
- *!   Document this function.
+ *! Sets the real, effective and saved group ID to @[rgid],
+ *! @[egid] and @[sgid] respectively.
+ *!
+ *! @returns
+ *! Returns zero on success and errno on failure.
  */
 void f_setresgid(INT32 args)
 {
@@ -2913,7 +2966,7 @@ PIKE_MODULE_INIT
 #ifdef HAVE_INNETGR
 /* function(string, string|void, string|void, string|void:int) */
   ADD_EFUN("innetgr", f_innetgr,
-	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
+	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt01),
 	   OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("innetgr", f_innetgr,
 	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
@@ -2921,13 +2974,13 @@ PIKE_MODULE_INIT
 #endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
   
-/* function(int:void) */
+/* function(int:int) */
   ADD_EFUN("setuid", f_setuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setuid", f_setuid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETGID
   
-/* function(int:void) */
+/* function(int:int) */
   ADD_EFUN("setgid", f_setgid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setgid", f_setgid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
