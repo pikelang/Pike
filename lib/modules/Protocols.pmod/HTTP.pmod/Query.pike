@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.40 2002/03/08 14:10:50 grubba Exp $
+// $Id: Query.pike,v 1.41 2002/06/03 20:52:23 mast Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -95,7 +95,13 @@ static void ponder_answer()
 	    headers[n]=(headers[n]||({}))+({d});
 	    break;
 	 default:
-	    headers[n]=d;
+	   if (headers[n])
+	     if (arrayp (headers[n]))
+	       headers[n] += ({d});
+	     else
+	       headers[n] = ({headers[n], d});
+	   else
+	     headers[n]=d;
       }
    }
 
@@ -122,7 +128,9 @@ static void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
      werror("<- (connect error)\n");
 #endif
-     destruct(con);
+     catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+     catch (con->close());
+     //destruct(con);
      con = 0;
      ok = 0;
      return;
@@ -229,8 +237,9 @@ static void async_timeout()
    errno=110; // timeout
    if (con)
    {
+      catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
       catch { con->close(); };
-      destruct(con);
+      //destruct(con);
    }
    con=0;
    async_failed();
@@ -241,7 +250,9 @@ void async_got_host(string server,int port)
    if (!server)
    {
       async_failed();
-      catch { destruct(con); }; //  we may be destructed here
+      catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+      catch (con->close());	//  we may be destructed here
+      //catch { destruct(con); };
       return;
    }
 
@@ -295,7 +306,8 @@ void async_fetch_close()
    werror("-> close\n");
 #endif
    con->set_blocking();
-   destruct(con);
+   catch (con->close());
+   //destruct(con);
    con=0;
    if (request_ok) (request_ok)(@extra_args);
 }
@@ -794,7 +806,9 @@ object datafile()
 
 static void destroy()
 {
-   catch { con->close(); destruct(con); };
+   catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+   catch { con->close(); };
+   //catch { destruct(con); };
 }
 
 //!	Fetch all data in background.
