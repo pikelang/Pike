@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.14 2001/06/14 13:48:48 noy Exp $
+/* $Id: session.pike,v 1.15 2001/06/25 12:21:31 noy Exp $
  *
  */
 
@@ -73,7 +73,7 @@ string generate_key_block(string client_random, string server_random,array(int) 
 
   }
 #ifdef SSL3_DEBUG
-//  werror(sprintf("key_block: %O\n", key));
+  werror(sprintf("key_block: %O\n", key));
 #endif
   return key;
 }
@@ -112,50 +112,67 @@ array generate_keys(string client_random, string server_random,array(int) versio
   if (cipher_spec->is_exportable)
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
+    if(version[1]==0) {
+      //SSL3.0
+      object md5 = mac_md5()->hash_raw;
+      
+      keys[2] = md5(key_data->get_fix_string(5) +
+		    client_random + server_random)
+	[..cipher_spec->key_material-1];
+      keys[3] = md5(key_data->get_fix_string(5) +
+		    server_random + client_random)
+	[..cipher_spec->key_material-1];
+      if (cipher_spec->iv_size)
+	{
+	  keys[4] = md5(client_random + server_random)[..cipher_spec->iv_size-1];
+	  keys[5] = md5(server_random + client_random)[..cipher_spec->iv_size-1];
+	}
 
-    //Needs to be fixed for TLS!!!!!!
-        object md5 = mac_md5()->hash_raw;
-    
-    keys[2] = md5(key_data->get_fix_string(5) +
-		 client_random + server_random)
-      [..cipher_spec->key_material-1];
-    keys[3] = md5(key_data->get_fix_string(5) +
-		 server_random + client_random)
-      [..cipher_spec->key_material-1];
-    if (cipher_spec->iv_size)
-    {
-      keys[4] = md5(client_random + server_random)[..cipher_spec->iv_size-1];
-      keys[5] = md5(server_random + client_random)[..cipher_spec->iv_size-1];
+    } if(version[1]==1) {
+      //TLS1.0
+      string client_wkey= key_data->get_fix_string(5);
+      string server_wkey= key_data->get_fix_string(5);
+      werror("APAPAPAPAPAPAPAPAPPAPAPAPAPAPAP!!!!\n");
+      keys[2] = prf(client_wkey,"client write key",client_random+server_random,cipher_spec->key_material);
+      keys[3] = prf(server_wkey,"server write key",client_random+server_random,cipher_spec->key_material);
+      if(cipher_spec->iv_size) {
+	string iv_block=prf("","IV block",client_random+server_random,2*cipher_spec->iv_size);
+	keys[4]=iv_block[..cipher_spec->iv_size-1];
+	keys[5]=iv_block[cipher_spec->iv_size..];
+	werror("strlen(keys[4]):"+strlen(keys[4])+"   strlen(keys[5]):"+strlen(keys[4])+"\n");
+      }
+      
     }
+    
   }
-
+  
 #ifndef WEAK_CRYPTO_40BIT
   else {
     keys[2] = key_data->get_fix_string(cipher_spec->key_material);
     keys[3] = key_data->get_fix_string(cipher_spec->key_material);
     if (cipher_spec->iv_size)
-    {
-      keys[4] = key_data->get_fix_string(cipher_spec->iv_size);
-      keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
-    }
+      {
+	keys[4] = key_data->get_fix_string(cipher_spec->iv_size);
+	keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
+      }
   }
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
-#ifdef SSL3_BEBUG
+#ifdef SSL3_DEBUG
   printKey( "client_write_MAC_secret",keys[0]);
   printKey( "server_write_MAC_secret",keys[1]);
   printKey( "keys[2]",keys[2]);
   printKey( "keys[3]",keys[3]);
-
+  
   if(cipher_spec->iv_size) {
     printKey( "keys[4]",keys[4]);
     printKey( "keys[5]",keys[5]);
-      
+    
   } else {
     werror("No IVs!!\n");
   }
 #endif
-
+  
   return keys;
 }
 

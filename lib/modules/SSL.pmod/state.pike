@@ -1,7 +1,10 @@
-/* $Id: state.pike,v 1.8 2001/06/14 13:48:49 noy Exp $
+/* $Id: state.pike,v 1.9 2001/06/25 12:21:31 noy Exp $
  *
  */
 
+
+#define SSL3_DEBUG
+#define SSL3_DEBUG_CRYPT
 inherit "constants";
 
 object session;
@@ -26,6 +29,7 @@ void create(object s)
 
 string tls_pad(string data,int blocksize  ) {
 
+  werror("Blocksize:"+blocksize+"\n");
   int plen=(blocksize-(strlen(data)+1)%blocksize)%blocksize;
   string res=data + sprintf("%c",plen)*plen+sprintf("%c",plen);
   return res;
@@ -34,7 +38,6 @@ string tls_pad(string data,int blocksize  ) {
 string tls_unpad(string data ) {
 
   int plen=data[-1];
-
   string res=reverse(reverse(data)[plen+1..]);
   string padding=reverse(data)[..plen];
   int tmp;
@@ -42,11 +45,11 @@ string tls_unpad(string data ) {
   /* Checks that the padding is correctly done */
   foreach(values(padding),tmp)
     {
-      if(tmp!=plen)
-	werror("Incorrect padding detected!!!");
+      if(tmp!=plen) {
+	werror("Incorrect padding detected!!!\n");
 	throw(0);
+      }
     }
-  
   return res;
 }
 
@@ -63,8 +66,12 @@ object decrypt_packet(object packet,int version)
     string msg;
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying decrypt..\n");
+    //    werror("SSL.state: The encrypted packet is:"+sprintf("%O\n",packet->fragment));
+    werror("strlen of the encrypted packet is:"+strlen(packet->fragment)+"\n");
 #endif
-    msg = crypt->crypt(packet->fragment); 
+    msg=packet->fragment;
+        
+    msg = crypt->crypt(msg); 
     if (! msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message);
     if (session->cipher_spec->cipher_type == CIPHER_block)
@@ -77,7 +84,7 @@ object decrypt_packet(object packet,int version)
       }
     packet->fragment = msg;
   }
-
+  
 #ifdef SSL3_DEBUG_CRYPT
   werror(sprintf("SSL.state: Decrypted_packet %O\n", packet->fragment));
 #endif
@@ -90,11 +97,28 @@ object decrypt_packet(object packet,int version)
     int length = strlen(packet->fragment) - session->cipher_spec->hash_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
+    
+    werror("strlen(digest)="+strlen(digest)+"     hash_size="+session->cipher_spec->hash_size+"\n");
+    if(strlen(digest) != session->cipher_spec->hash_size) {
+      
+      
+      werror("FETT MED FEL!!!!!! state.pike:100\n");
+    }
+    
+    werror("When decrypting packet, digest in packet was:\""+digest+"\" and\n");
+    if(digest != "") {
+      werror(sprintf("Beg of digest:%x%x%x%x%x%x%x%x",digest[0],digest[1],digest[2],digest[3],digest[4],digest[5],digest[6],digest[7]));
+    }
 
-
+    werror("strlen of the decrypted packet is:"+strlen(packet->fragment)+"\n");
+    werror("mac of the packet was:\""+mac->hash(packet, seq_num)+"\".\n");
     if (digest != mac->hash(packet, seq_num))
-      return Alert(ALERT_fatal, ALERT_bad_record_mac);
-
+      {
+#ifdef SSL3_DEBUG
+	werror("Failed MAC-verification!!\n");
+#endif
+	return Alert(ALERT_fatal, ALERT_bad_record_mac);
+      }
     seq_num += 1;
   }
 
@@ -127,7 +151,12 @@ object encrypt_packet(object packet,int version)
   else
     digest = "";
   seq_num += 1;
-  
+  werror("When encrypting packet, digest was was:\""+digest+"\"\n");
+  if(digest!="") {
+    werror(sprintf("Beg of digest:%x%x%x%x%x%x%x%x",digest[0],digest[1],digest[2],digest[3],digest[4],digest[5],digest[6],digest[7]));
+  }
+
+  werror("strlen of the unencrypted packet is:"+strlen(packet->fragment)+"\n");
   if (crypt)
   {
     if (session->cipher_spec->cipher_type == CIPHER_block)
@@ -145,6 +174,9 @@ object encrypt_packet(object packet,int version)
   }
   else
     packet->fragment += digest;
+  
+  //  werror("SSL.state: The encrypted packet is:"+sprintf("%O\n",packet->fragment));
+  werror("strlen of the encrypted packet is:"+strlen(packet->fragment)+"\n");
   return packet->check_size(2048) || packet;
 }
 
