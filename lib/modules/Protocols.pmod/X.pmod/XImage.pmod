@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.13 2000/01/10 02:03:39 per Exp $
+ * $Id: XImage.pmod,v 1.14 2000/05/01 19:30:56 grubba Exp $
  */
 
 /*
@@ -42,16 +42,15 @@ class Image_wrapper
   class funcall
   {
     function f;
-    object parent;
     
     mixed `()( mixed ... args )
     {
       mixed q = f( @args );
-      if(objectp(q)) parent->set_image( q );
+      if(objectp(q)) set_image( q );
       return q;
     }
     
-    void create(function q, object p) { f = q;parent=p; }
+    void create(function q) { f = q; }
   }
   
   object image; // The real image.
@@ -98,7 +97,7 @@ class Image_wrapper
     mixed x;
     if((x = `[](this_object(),ind)))
       return x;
-    return funcall(image[ind], this_object() );
+    return funcall(image[ind]);
   }
   
 }
@@ -155,6 +154,7 @@ class XImage
 
     Array.map(((array)wanted+({({255,255,255}),({0,0,0})})),
 	    lambda(array o){
+	      if (objectp(o)) o = o->rgb();
 	      return colormap->AllocColor(o[0]*257,o[1]*257,o[2]*257);
 	    });
 
