@@ -193,7 +193,7 @@ void chapter_ref_expansion(Node n, string dir) {
 
     case "section":
       c->get_attributes()->number = (string)++section;
-      toc[chapter] += ({ c->get_attributes()->title });
+      toc[chapter-1] += ({ c->get_attributes()->title });
       section_ref_expansion(c);
       break;
 
@@ -366,7 +366,15 @@ int(0..1) main(int num, array(string) args) {
   n->get_attributes()["time-stamp"] =
     sprintf("%4d-%02d-%02d", t->year+1900, t->mon+1, t->mday);
   werror("Executing reference expansion and queueing node insertions.\n");
-  ref_expansion(n, ".");
+  mixed err = catch {
+    ref_expansion(n, ".");
+  };
+  if (err) {
+    werror("ref_expansion() failed:\n"
+	   "  ch:%d app:%d toc:%O\n",
+	   chapter, appendix, toc);
+    throw(err);
+  }
 
   werror("Parsing autodoc file %O.\n", args[2]);
   Node m = parse_file(args[2]);
