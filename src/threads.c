@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.77 1998/07/17 12:57:15 grubba Exp $");
+RCSID("$Id: threads.c,v 1.78 1998/07/17 13:28:25 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -158,12 +158,13 @@ struct thread_starter
 
 static volatile IMUTEX_T *interleave_list = NULL;
 
-void init_threads_disable(struct object *o)
+void low_init_threads_disable(void)
 {
   /* Serious black magic to avoid dead-locks */
 
   if (!threads_disabled) {
-    THREADS_FPRINTF(0, (stderr, "init_threads_disable(): Locking IM's...\n"));
+    THREADS_FPRINTF(0,
+		    (stderr, "low_init_threads_disable(): Locking IM's...\n"));
 
     if (thread_id) {
       IMUTEX_T *im;
@@ -197,36 +198,33 @@ void init_threads_disable(struct object *o)
       }
     }
 
-    THREADS_FPRINTF(0,
-		    (stderr, "init_threads_disable(): Disabling threads.\n"));
+    THREADS_FPRINTF(0, (stderr,
+			"low_init_threads_disable(): Disabling threads.\n"));
 
     threads_disabled = 1;
   } else {
     threads_disabled++;
   }
 
-  THREADS_FPRINTF(0, (stderr, "init_threads_disable(): threads_disabled:%d\n",
-		      threads_disabled));
+  THREADS_FPRINTF(0,
+		  (stderr, "low_init_threads_disable(): threads_disabled:%d\n",
+		   threads_disabled));
+}
 
-  if (o) {
-    /* The compiler desn't want to change thread, but doesn't mind
-     * other threads running in system calls etc.
-     *
-     * So we only wait here if we are called with non-NULL.
-     *
-     * /grubba 1998-07-17
-     */
-    if(live_threads) {
-      SWAP_OUT_CURRENT_THREAD();
-      while (live_threads) {
-	THREADS_FPRINTF(0,
-			(stderr,
-			 "_disable_threads(): Waiting for %d threads to finish\n",
-			 live_threads));
-	co_wait(&live_threads_change, &interpreter_lock);
-      }
-      SWAP_IN_CURRENT_THREAD();
+void init_threads_disable(struct object *o)
+{
+  low_init_threads_disable();
+
+  if(live_threads) {
+    SWAP_OUT_CURRENT_THREAD();
+    while (live_threads) {
+      THREADS_FPRINTF(0,
+		      (stderr,
+		       "_disable_threads(): Waiting for %d threads to finish\n",
+		       live_threads));
+      co_wait(&live_threads_change, &interpreter_lock);
     }
+    SWAP_IN_CURRENT_THREAD();
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.45 1998/07/10 15:52:08 grubba Exp $
+ * $Id: threads.h,v 1.46 1998/07/17 13:29:16 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -477,6 +477,7 @@ struct thread_state *thread_state_for_id(THREAD_T tid);
 struct object *thread_for_id(THREAD_T tid);
 void f_all_threads(INT32 args);
 
+void low_init_threads_disable(void);
 void init_threads_disable(struct object *o);
 void exit_threads_disable(struct object *o);
 
@@ -510,6 +511,7 @@ void exit_interleave_mutex(IMUTEX_T *im);
 #define co_signal(X)
 #define co_broadcast(X)
 
+#define low_init_threads_disable()
 #define init_threads_disable(X)
 #define exit_threads_disable(X)
 
