@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.12 2002/10/21 17:06:24 marcus Exp $
+|| $Id: ffmpeg.c,v 1.13 2002/12/04 05:53:41 hop Exp $
 */
 
 /*
@@ -606,7 +606,6 @@ PIKE_MODULE_EXIT {
 
 PIKE_MODULE_INIT {
 
-  add_integer_constant("libffmpeg/libavcodec IS MISSING", 0, 0);
 }
 
 PIKE_MODULE_EXIT {
