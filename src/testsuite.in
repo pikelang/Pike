@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.213 1999/10/29 03:37:42 mast Exp $"]])
+test_true([["$Id: testsuite.in,v 1.214 1999/10/30 13:18:50 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -20,6 +20,7 @@ test_eq(0x80000000-0x80000000, 0)
 test_eq(0xf0000000-0xf0000000, 0)
 test_eq(0x80000001-0x80000000, 1)
 test_eq(0x80000000-0x80000001,-1)
+test_eq(-2147483648*-1, -2147483648/-1)
 test_true([[1.0e-40]])
 test_eq([[#"foo
 bar"]],[["foo\nbar"]])
@@ -1514,6 +1515,9 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
+  test_eq(2147483648, -2147483648/-1)
+  test_eq(2147483648, -2147483648*-1)
+
   test_true([[ random(0x7fffffff)+1 ]])
   test_true([[ random(0x7ffffffff)+1 ]])
   test_true([[   sqrt(0x7fffffff)+1 ]])

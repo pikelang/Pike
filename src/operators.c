@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.65 1999/10/29 08:21:50 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.66 1999/10/30 13:18:49 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1538,6 +1538,7 @@ void o_divide(void)
   switch(sp[-2].type)
   {
   case T_OBJECT:
+  do_lfun_division:
     CALL_OPERATOR(LFUN_DIVIDE,2);
     break;
 
@@ -1571,16 +1572,31 @@ void o_divide(void)
   case T_INT:
   {
     INT32 tmp;
+    
     if (sp[-1].u.integer == 0)
       OP_DIVISION_BY_ZERO_ERROR("`/");
+
+    if(INT_TYPE_DIV_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+    {
+#ifdef AUTO_BIGNUM
+      stack_swap();
+      convert_stack_top_to_bignum();
+      stack_swap();
+      goto do_lfun_division;
+#else
+      /* It's not possible to do MININT/-1 (it gives FPU exception on
+	 some CPU:s), thus we return what MININT*-1 returns: MININT. */
+      tmp = sp[-2].u.integer;
+#endif /* AUTO_BIGNUM */
+    }
+    else
+      tmp = sp[-2].u.integer/sp[-1].u.integer;
     sp--;
 
-    tmp=sp[-1].u.integer/sp[0].u.integer;
-
+    /* What is this trying to solve? /Noring */
     if((sp[-1].u.integer<0) != (sp[0].u.integer<0))
       if(tmp*sp[0].u.integer!=sp[-1].u.integer)
 	tmp--;
-
     sp[-1].u.integer=tmp;
     return;
   }
