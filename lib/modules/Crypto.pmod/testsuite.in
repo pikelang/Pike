@@ -1,6 +1,11 @@
-dnl $Id: testsuite.in,v 1.28 2004/02/05 19:21:15 nilsson Exp $
+// $Id: testsuite.in,v 1.29 2004/02/06 20:55:21 nilsson Exp $
 
-dnl Nettle.Yarrow
+// Nettle.Yarrow
+
+test_compile_error( H )
+test_compile_error( S )
+test_do( add_constant( "H", String.hex2string ) )
+test_do( add_constant( "S", String.string2hex ) )
 
 cond_resolv( Nettle.CBC, [[
   test_true( programp(Crypto.CBC) )
@@ -28,33 +33,33 @@ cond_resolv( Nettle.Proxy, [[
 cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
   test_eval_error( Nettle.Yarrow()->get_seed() )
-  test_eq( Nettle.Yarrow()->seed("\0"*32)->get_seed(),
-    String.hex2string("200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507") )
+  test_eq( S(Nettle.Yarrow()->seed("\0"*32)->get_seed()),
+    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_eq( Nettle.Yarrow()->is_seeded(), 0)
   test_eq( Nettle.Yarrow()->seed("\0"*32)->is_seeded(), 1)
   test_do( Nettle.Yarrow()->seed("\0"*32)->force_reseed() )
   test_do( Nettle.Yarrow()->needed_sources(), 2 )
   test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(0), "")
   test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(1), "\26")
-  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(32),
-    String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
-  test_eq( Nettle.Yarrow(7)->seed("\0"*32)->random_string(32),
-    String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
-  test_eq( Nettle.Yarrow()->seed((string)enumerate(33))->random_string(32),
-    String.hex2string("2c6465cdc71b348074f7f76c484b67802b24b62d3c2191a6f89f1a9f80e8c520") )
+  test_eq( S(Nettle.Yarrow()->seed("\0"*32)->random_string(32)),
+    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+  test_eq( S(Nettle.Yarrow(7)->seed("\0"*32)->random_string(32)),
+    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+  test_eq( S(Nettle.Yarrow()->seed((string)enumerate(33))->random_string(32)),
+    "2c6465cdc71b348074f7f76c484b67802b24b62d3c2191a6f89f1a9f80e8c520" )
   test_any([[
     object r=Nettle.Yarrow(1)->seed("\0"*32);
     r->update("\0"*32,0,0);
-    return r->random_string(32)
-  ]], String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
+    return S(r->random_string(32));
+  ]], "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
   test_any([[
     object r=Nettle.Yarrow(1)->seed("\0"*32);
     r->update("\0"*32,0,256);
-    return r->random_string(32)
-  ]], String.hex2string("62bf8e8dcc9ec262ebc57a00005d3b98bf4336004c015c3eb97361e95e5b814d") )
+    return S(r->random_string(32));
+  ]], "62bf8e8dcc9ec262ebc57a00005d3b98bf4336004c015c3eb97361e95e5b814d" )
 ]])  
 
-dnl Crypto.Random
+// Crypto.Random
 cond_resolv( Nettle.Yarrow, [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
@@ -63,126 +68,99 @@ cond_resolv( Nettle.Yarrow, [[
   test_do( Crypto.Random.add_entropy("xy", 16) )
 ]])
 
-dnl Crypto.randomness
-
-test_true(
-#pike 7.4
- stringp(Crypto.randomness.some_entropy()) )
-test_true(
-#pike 7.4
- stringp(Crypto.randomness.RandomSource()->read(1)) )
-test_any([[
-#pike 7.4
- return stringp(Crypto.randomness.pike_random()->read(1));
-]], 1)
-test_true(
-#pike 7.4
- stringp(Crypto.randomness.arcfour_random("hej")->read(1)) )
-test_true(
-#pike 7.4
- stringp(Crypto.randomness.reasonably_random()->read(1)) )
-test_true(
-#pike 7.4
- functionp(Crypto.randomness.really_random) )
-
-
-dnl Crypto.MD5
+// Crypto.MD5
 cond_resolv( Nettle.MD5_Info, [[
-  test_eq(Crypto.MD5()->update("")->digest(),
-          String.hex2string("d41d8cd98f00b204e9800998ecf8427e"))
-  test_eq(Crypto.MD5()->update("a")->digest(),
-          String.hex2string("0cc175b9c0f1b6a831c399e269772661"))
-  test_eq(Crypto.MD5()->update("abc")->digest(),
-          String.hex2string("900150983cd24fb0d6963f7d28e17f72"))
-  test_eq(Crypto.MD5()->update("message digest")->digest(),
-          String.hex2string("f96b697d7cb7938d525a2f31aaf161d0"))
-  test_eq(Crypto.MD5()->update("abcdefghijklmnopqrstuvwxyz")->digest(),
-          String.hex2string("c3fcd3d76192e4007dfb496cca67e13b"))
-  test_eq(Crypto.MD5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz0123456789")->digest(),
-          String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f"))
-  test_eq(Crypto.MD5()->update("1234567890123456789012345678901234567890"
-            "1234567890123456789012345678901234567890")->digest(),
-          String.hex2string("57edf4a22be3c955ac49da2e2107b67a"))
-  test_eq(Crypto.MD5.hash("foo"),
-	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
-  test_eq(Crypto.MD5()->update("f")->update("oo")->digest(),
-	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
+  test_eq(S(Crypto.MD5()->update("")->digest()),
+          "d41d8cd98f00b204e9800998ecf8427e")
+  test_eq(S(Crypto.MD5()->update("a")->digest()),
+          "0cc175b9c0f1b6a831c399e269772661")
+  test_eq(S(Crypto.MD5()->update("abc")->digest()),
+          "900150983cd24fb0d6963f7d28e17f72")
+  test_eq(S(Crypto.MD5()->update("message digest")->digest()),
+          "f96b697d7cb7938d525a2f31aaf161d0")
+  test_eq(S(Crypto.MD5()->update("abcdefghijklmnopqrstuvwxyz")->digest()),
+          "c3fcd3d76192e4007dfb496cca67e13b")
+  test_eq(S(Crypto.MD5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz0123456789")->digest()),
+          "d174ab98d277d9f5a5611c2c9f419d9f")
+  test_eq(S(Crypto.MD5()->update("1234567890123456789012345678901234567890"
+            "1234567890123456789012345678901234567890")->digest()),
+          "57edf4a22be3c955ac49da2e2107b67a")
+  test_eq(S(Crypto.MD5.hash("foo")),
+	  "acbd18db4cc2f85cedef654fccc4a4d8")
+  test_eq(S(Crypto.MD5()->update("f")->update("oo")->digest()),
+	  "acbd18db4cc2f85cedef654fccc4a4d8")
 ]])
 
 
-dnl Crypto.MD4
+// Crypto.MD4
 cond_resolv( Nettle.MD4_Info, [[
-  test_eq(Crypto.MD4()->update("")->digest(),
-          String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0"))
-  test_eq(Crypto.MD4()->update("a")->digest(),
-          String.hex2string("bde52cb31de33e46245e05fbdbd6fb24"))
-  test_eq(Crypto.MD4()->update("abc")->digest(),
-          String.hex2string("a448017aaf21d8525fc10ae87aa6729d"))
-  test_eq(Crypto.MD4()->update("message digest")->digest(),
-          String.hex2string("d9130a8164549fe818874806e1c7014b"))
-  test_eq(Crypto.MD4()->update("abcdefghijklmnopqrstuvwxyz")->digest(),
-          String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9"))
-  test_eq(Crypto.MD4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz0123456789")->digest(),
-          String.hex2string("043f8582f241db351ce627e153e7f0e4"))
-  test_eq(Crypto.MD4()->update("12345678901234567890123456789"
-            "012345678901234567890123456789012345678901234567890")->digest(),
-          String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536"))
-  test_eq(Crypto.MD4.hash("foo"),
-	  String.hex2string("0ac6700c491d70fb8650940b1ca1e4b2"))
-  test_eq(Crypto.MD4()->update("f")->update("oo")->digest(),
-	  String.hex2string("0ac6700c491d70fb8650940b1ca1e4b2"))
+  test_eq(S(Crypto.MD4()->update("")->digest()),
+          "31d6cfe0d16ae931b73c59d7e0c089c0")
+  test_eq(S(Crypto.MD4()->update("a")->digest()),
+          "bde52cb31de33e46245e05fbdbd6fb24")
+  test_eq(S(Crypto.MD4()->update("abc")->digest()),
+          "a448017aaf21d8525fc10ae87aa6729d")
+  test_eq(S(Crypto.MD4()->update("message digest")->digest()),
+          "d9130a8164549fe818874806e1c7014b")
+  test_eq(S(Crypto.MD4()->update("abcdefghijklmnopqrstuvwxyz")->digest()),
+          "d79e1c308aa5bbcdeea8ed63df412da9")
+  test_eq(S(Crypto.MD4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz0123456789")->digest()),
+          "043f8582f241db351ce627e153e7f0e4")
+  test_eq(S(Crypto.MD4()->update("12345678901234567890123456789"
+            "012345678901234567890123456789012345678901234567890")->digest()),
+          "e33b4ddc9c38f2199c3e7b164fcc0536")
+  test_eq(S(Crypto.MD4.hash("foo")),
+	  "0ac6700c491d70fb8650940b1ca1e4b2")
+  test_eq(S(Crypto.MD4()->update("f")->update("oo")->digest()),
+	  "0ac6700c491d70fb8650940b1ca1e4b2")
 ]])
 
 
-dnl Crypto.SHA1
+// Crypto.SHA1
 cond_resolv( Nettle.SHA1_Info, [[
-  test_eq(Crypto.SHA1()->update("")->digest(),
-          String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709"))
-  test_eq(Crypto.SHA1()->update("abc")->digest(),
-          String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d"))
-  test_eq(String.string2hex(Crypto.SHA1()->update("x"*63)->digest()),
+  test_eq(S(Crypto.SHA1()->update("")->digest()),
+          "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+  test_eq(S(Crypto.SHA1()->update("abc")->digest()),
+          "a9993e364706816aba3e25717850c26c9cd0d89d")
+  test_eq(S(Crypto.SHA1()->update("x"*63)->digest()),
           "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
-  test_eq(String.string2hex(Crypto.SHA1()->update("x"*64)->digest()),
+  test_eq(S(Crypto.SHA1()->update("x"*64)->digest()),
           "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
-  test_eq(String.string2hex(Crypto.SHA1()->update("x"*65)->digest()),
+  test_eq(S(Crypto.SHA1()->update("x"*65)->digest()),
           "78c741ddc482e4cdf8c474a0876347a0905b6233")
-  test_eq(String.string2hex(Crypto.SHA1()->update("x"*257)->digest()),
+  test_eq(S(Crypto.SHA1()->update("x"*257)->digest()),
           "0796067748b6b0c2af864656a399f7722ef9283a")
-  test_eq(Crypto.SHA1.hash("foo"),
-	  String.hex2string("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"))
-  test_eq(Crypto.SHA1()->update("f")->update("oo")->digest(),
-	  String.hex2string("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"))
+  test_eq(S(Crypto.SHA1.hash("foo")),
+	  "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
+  test_eq(S(Crypto.SHA1()->update("f")->update("oo")->digest()),
+	  "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
 ]])
 
 
-dnl Crypto.SHA256
+// Crypto.SHA256
 cond_resolv( Nettle.SHA256_Info, [[
-  test_eq(Crypto.SHA256()->update("")->digest(),
-          String.hex2string("e3b0c44298fc1c149afbf4c8996fb92427"
-            "ae41e4649b934ca495991b7852b855"))
-  test_eq(Crypto.SHA256()->update("abc")->digest(),
-          String.hex2string("ba7816bf8f01cfea414140de5dae2223b0"
-            "0361a396177a9cb410ff61f20015ad"))
-  test_eq(String.string2hex(Crypto.SHA256()->update("x"*63)->digest()),
+  test_eq(S(Crypto.SHA256()->update("")->digest()),
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+  test_eq(S(Crypto.SHA256()->update("abc")->digest()),
+          "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+  test_eq(S(Crypto.SHA256()->update("x"*63)->digest()),
           "75220b47218278e656f2013bb8f0c455a25eaf01e86c64924e9d48d89776d6f2")
-  test_eq(String.string2hex(Crypto.SHA256()->update("x"*64)->digest()),
+  test_eq(S(Crypto.SHA256()->update("x"*64)->digest()),
           "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c")
-  test_eq(String.string2hex(Crypto.SHA256()->update("x"*65)->digest()),
+  test_eq(S(Crypto.SHA256()->update("x"*65)->digest()),
           "9537c5fdf120482f7d58d25e9ed583f52c02b4e304ea814db1633ad565aed7e9")
-  test_eq(String.string2hex(Crypto.SHA256()->update("x"*257)->digest()),
+  test_eq(S(Crypto.SHA256()->update("x"*257)->digest()),
           "15eb95a462ee20bd91a415ae2d4aed341288186ddaa2b37908f7d592f0c3f85f")
-  test_eq(Crypto.SHA256.hash("foo"),
-	  String.hex2string("2c26b46b68ffc68ff99b453c1d3041341342"
-            "2d706483bfa0f98a5e886266e7ae"))
-  test_eq(Crypto.SHA256()->update("f")->update("oo")->digest(),
-	  String.hex2string("2c26b46b68ffc68ff99b453c1d3041341342"
-            "2d706483bfa0f98a5e886266e7ae"))
+  test_eq(S(Crypto.SHA256.hash("foo")),
+	  "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+  test_eq(S(Crypto.SHA256()->update("f")->update("oo")->digest()),
+	  "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
 ]])
 
 
-dnl Crypto.DES
+// Crypto.DES
 cond_resolv( Nettle.DES_Info, [[
   test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("\xff"*9), "\xfe"*8 )
@@ -191,25 +169,9 @@ cond_resolv( Nettle.DES_Info, [[
   test_eq( Crypto.DES.fix_parity("\1"*7), "\1\200\100\40\20\10\4\2")
   test_eval_error( Crypto.DES.fix_parity("123456") )
 ]])
-test_eq([[
-#pike 7.4
-  Crypto.des_parity("\xff"*8);
-]], "\xfe"*8 )
-test_eq([[
-#pike 7.4
-  Crypto.des_parity("12345678");
-]], "12244778" )
-test_eq([[
-#pike 7.4
-  Crypto.des_parity("\xff"*7);
-]], "\xfe"*7 )
-test_eq([[
-#pike 7.4
-  Crypto.des_parity("\1"*7);
-]], "\1"*7)
 
 
-dnl Crypto.DES3
+// Crypto.DES3
 cond_resolv( Nettle.DES3_Info, [[
   test_eq( Crypto.DES3.fix_parity("\xff"*8*3), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("\xff"*(8*3+1)), "\xfe"*8*3 )
@@ -268,9 +230,8 @@ test_cipher(Serpent,serpent)
 test_cipher(Twofish,twofish)
 
 
-dnl Crypto.rsa
-
-test_do( add_constant("RSA", Crypto.rsa()) )
+// Crypto.RSA
+test_do( add_constant("RSA", Crypto.RSA()) )
 test_do( RSA->generate_key(1024) )
 test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
 test_true( RSA->raw_verify("tjo", RSA->raw_sign("tjo")) )
@@ -289,18 +250,14 @@ test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
 test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
 test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
 test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
-test_do( add_constant("RSB", Crypto.rsa()) )
+test_do( add_constant("RSB", Crypto.RSA()) )
 test_do( RSB->set_private_key(RSA->get_d(),
          ({ RSA->get_p(), RSA->get_q() }) ) )
 test_equal( RSA->get_d(), RSB->get_d() )
 test_equal( RSA->get_p(), RSB->get_p() )
 test_equal( RSA->get_q(), RSB->get_q() )
-test_true([[
-#pike 7.4
-RSA->verify("hej", Crypto.md5, RSB->sign("hej", Crypto.md5)) ]])
-test_false([[
-#pike 7.4
-RSA->verify("hoj", Crypto.md5, RSB->sign("hej", Crypto.md5)) ]])
+test_true([[ RSA->verify("hej", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
+test_false([[ RSA->verify("hoj", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
 test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
 test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
 test_true( RSA->md5_verify("hej", RSB->md5_sign("hej")) )
@@ -308,7 +265,7 @@ test_false( RSA->md5_verify("hoj", RSB->md5_sign("hej")) )
 test_do( add_constant("RSA") )
 test_do( add_constant("RSB") )
 
-test_do( add_constant("RSA", Crypto.rsa()) )
+test_do( add_constant("RSA", Crypto.RSA()) )
 test_true( RSA->set_public_key(
   0x838b848334d4f2151d25971e655eed8a0905cb5b81ba9047db2bf3b56765b058fa9af2ad89a2726233fc8917e52e8966db4bae5d426207f98ab50e1467accb2d,
   65537) )
@@ -322,7 +279,7 @@ test_false( RSA->raw_verify("flärpzputt",RSA->raw_sign("flärpzprutt")) )
 test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
 test_eq( RSA->rsa_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
-test_false( RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
+test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
 test_do( add_constant("RSA") )
 
 
@@ -358,244 +315,125 @@ dnl
 dnl  _Crypto tests
 dnl
 
-// Crypto
-test_true([[objectp(Crypto)]])
-
-// C-programs
-test_true([[
-#pike 7.4
-programp(Crypto.cbc)]])
-test_true([[
-#pike 7.4
-programp(Crypto.crypto)]])
-test_true([[
-#pike 7.4
-programp(Crypto.invert)]])
-test_true([[
-#pike 7.4
-programp(Crypto.md2)]])
-test_true([[
-#pike 7.4
-programp(Crypto.md4)]])
-test_true([[
-#pike 7.4
-programp(Crypto.md5)]])
-test_true([[
-#pike 7.4
-programp(Crypto.pipe)]])
-test_true([[programp(
-#pike 7.4
-Crypto.sha)]])
-
-test_true([[
-#pike 7.4
-programp(Crypto.rijndael)]])
-test_true([[
-#pike 7.4
-programp(Crypto.des)]])
-test_true([[
-#pike 7.4
-programp(Crypto.idea)]])
-test_true([[
-#pike 7.4
-programp(Crypto.cast)]])
-test_true([[
-#pike 7.4
-programp(Crypto.arcfour)]])
-
-// Functions
-test_eq(
-#pike 7.4
-Crypto.des_parity("\xff"*8), "\xfe"*8)
-test_eq(
-#pike 7.4
-Crypto.des_parity("12345678"), "12244778")
-test_true([[
-#pike 7.4
-functionp(Crypto.hex_to_string)]])
-test_true([[
-#pike 7.4
-functionp(Crypto.string_to_hex)]])
-
 // Pike programs
-test_true([[
-#pike 7.4
-programp(Crypto.des3)]])
 test_true([[programp(Crypto.des3_cbc)]])
 test_true([[programp(Crypto.des_cbc)]])
 test_true([[programp(Crypto.idea_cbc)]])
 test_true([[programp(Crypto.rsa)]])
 
-// invert
-test_eq([[
-#pike 7.4
-Crypto.invert()->crypt_block("")]],[[""]])
-test_eq([[
-#pike 7.4
-Crypto.invert()->crypt_block("\0\xffpqrstx")]],
-         [["\xff\0\x8f\x8e\x8d\x8c\x8b\x87"]])
-
 // DES
-test_true([[
-#pike 7.4
-objectp(Crypto.des())]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0101010101010180"))
-		->crypt_block(Crypto.hex_to_string("0000000000000000")))]],
-	[["9cc62df43b6eed74"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("8001010101010101"))
-		->crypt_block(Crypto.hex_to_string("0000000000000040")))]],
-	[["a380e02a6be54696"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("08192a3b4c5d6e7f"))
-		->crypt_block(Crypto.hex_to_string("0000000000000000")))]],
-	[["25ddac3e96176467"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt_block("Now is t"))]],
-	[["3fa40e8a984d4815"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt_block(Crypto.hex_to_string("0123456789abcde7")))]],
-	[["c95744256a5ed31d"]])
-
-test_eq([[
-#pike 7.4
-Crypto.des()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
-	[["Now is t"]])
+test_eq(
+  S(Crypto.DES()->set_encrypt_key(H("0101010101010180"))
+		->crypt(H("0000000000000000"))),
+ "9cc62df43b6eed74")
+test_eq(
+  S(Crypto.DES()->set_encrypt_key(H("8001010101010101"))
+		->crypt(H("0000000000000040"))),
+  "a380e02a6be54696")
+test_eq(
+  S(Crypto.DES()->set_encrypt_key(H("08192a3b4c5d6e7f"))
+		->crypt(H("0000000000000000"))),
+  "25ddac3e96176467")
+test_eq(
+  S(Crypto.DES()->set_encrypt_key(H("0123456789abcdef"))
+		->crypt("Now is t")),
+  "3fa40e8a984d4815")
+test_eq(
+  S(Crypto.DES()->set_encrypt_key(H("0123456789abcdef"))
+		->crypt(H("0123456789abcde7"))),
+  "c95744256a5ed31d")
+test_eq(
+  Crypto.DES()->set_decrypt_key(H("0123456789abcdef"))
+		->crypt(H("3fa40e8a984d4815")),
+  "Now is t")
 
 // DES3 (EDE with AAA key == DES)
-test_true([[
-#pike 7.4
-objectp(Crypto.des())]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des3()->set_encrypt_key(Crypto.hex_to_string("0101010101010180")*3)
-		->crypt_block(Crypto.hex_to_string("0000000000000000")))]],
-	[["9cc62df43b6eed74"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des3()->set_encrypt_key(Crypto.hex_to_string("8001010101010101")*3)
-		->crypt_block(Crypto.hex_to_string("0000000000000040")))]],
-	[["a380e02a6be54696"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des3()->set_encrypt_key(Crypto.hex_to_string("08192a3b4c5d6e7f")*3)
-		->crypt_block(Crypto.hex_to_string("0000000000000000")))]],
-	[["25ddac3e96176467"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des3()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef")*3)
-		->crypt_block("Now is t"))]],
-	[["3fa40e8a984d4815"]])
-test_eq([[
-#pike 7.4
-Crypto.string_to_hex(Crypto.des3()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef")*3)
-		->crypt_block(Crypto.hex_to_string("0123456789abcde7")))]],
-	[["c95744256a5ed31d"]])
-
-test_eq([[
-#pike 7.4
-Crypto.des3()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef")*3)
-		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
-	[["Now is t"]])
+test_eq(
+  S(Crypto.DES3()->set_encrypt_key(H("0101010101010180")*3)
+		->crypt(H("0000000000000000"))),
+  "9cc62df43b6eed74")
+test_eq(
+  S(Crypto.DES3()->set_encrypt_key(H("8001010101010101")*3)
+		->crypt(H("0000000000000040"))),
+  "a380e02a6be54696")
+test_eq(
+  S(Crypto.DES3()->set_encrypt_key(H("08192a3b4c5d6e7f")*3)
+		->crypt(H("0000000000000000"))),
+  "25ddac3e96176467")
+test_eq(
+  S(Crypto.DES3()->set_encrypt_key(H("0123456789abcdef")*3)
+		->crypt("Now is t")),
+  "3fa40e8a984d4815")
+test_eq(
+  S(Crypto.DES3()->set_encrypt_key(H("0123456789abcdef")*3)
+		->crypt(H("0123456789abcde7"))),
+  "c95744256a5ed31d")
+test_eq(
+  Crypto.DES3()->set_decrypt_key(H("0123456789abcdef")*3)
+		->crypt(H("3fa40e8a984d4815")),
+  "Now is t")
 
 // IDEA
-test_true([[
-#pike 7.4
-objectp(Crypto.idea())]])
-test_eq([[
-#pike 7.4
-Crypto.idea()
-          ->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"
-					         "0123456789abcdef"))
-	  ->crypt_block(Crypto.hex_to_string("0123456789abcde7"))]],
-	[[String.hex2string("2011aacef6f4bc7f")]])
+test_eq(
+  S(Crypto.IDEA()
+          ->set_encrypt_key(H("0123456789abcdef0123456789abcdef"))
+	  ->crypt(H("0123456789abcde7"))),
+  "2011aacef6f4bc7f")
 
 // CAST
-test_true([[
-#pike 7.4
-objectp(Crypto.cast())]])
-// encryption
-test_eq([[
-#pike 7.4
-Crypto.cast()
-          ->set_encrypt_key(Crypto.hex_to_string("0123456712345678"
-						 "234567893456789A"))
-	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
-	[[String.hex2string("238B4FE5847E44B2")]])
-test_eq([[
-#pike 7.4
-Crypto.cast()
-          ->set_encrypt_key(Crypto.hex_to_string("0123456712345678"
-						 "2345"))
-	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
-	[[String.hex2string("EB6A711A2C02271B")]])
-test_eq([[
-#pike 7.4
-Crypto.cast()
-          ->set_encrypt_key(Crypto.hex_to_string("0123456712"))
-	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
-	[[String.hex2string("7AC816D16E9B302E")]])
-// decryption
-test_eq([[
-#pike 7.4
-Crypto.cast()
-          ->set_decrypt_key(Crypto.hex_to_string("0123456712345678"
-						 "234567893456789A"))
-	  ->crypt_block(Crypto.hex_to_string("238B4FE5847E44B2"))]],
-	[[String.hex2string("0123456789ABCDEF")]])
-test_eq([[
-#pike 7.4
-Crypto.cast()
-          ->set_decrypt_key(Crypto.hex_to_string("0123456712345678"
-						 "2345"))
-	  ->crypt_block(Crypto.hex_to_string("EB6A711A2C02271B"))]],
-	[[String.hex2string("0123456789ABCDEF")]])
-test_eq([[
-#pike 7.4
-Crypto.cast()
-          ->set_decrypt_key(Crypto.hex_to_string("0123456712"))
-	  ->crypt_block(Crypto.hex_to_string("7AC816D16E9B302E"))]],
-	[[String.hex2string("0123456789ABCDEF")]])
+test_eq(
+  S(Crypto.CAST()
+          ->set_encrypt_key(H("0123456712345678234567893456789A"))
+	  ->crypt(H("0123456789ABCDEF"))),
+  "238b4fe5847e44b2")
+test_eq(
+  S(Crypto.CAST()
+          ->set_encrypt_key(H("01234567123456782345"))
+	  ->crypt(H("0123456789ABCDEF"))),
+  "eb6a711a2c02271b")
+test_eq(
+  S(Crypto.CAST()
+          ->set_encrypt_key(H("0123456712"))
+	  ->crypt(H("0123456789ABCDEF"))),
+  "7ac816d16e9b302e")
+test_eq(
+  S(Crypto.CAST()
+          ->set_decrypt_key(H("0123456712345678234567893456789A"))
+	  ->crypt(H("238B4FE5847E44B2"))),
+  "0123456789abcdef")
+test_eq(
+  S(Crypto.CAST()
+          ->set_decrypt_key(H("01234567123456782345"))
+	  ->crypt(H("EB6A711A2C02271B"))),
+  "0123456789abcdef")
+test_eq(
+  S(Crypto.CAST()
+          ->set_decrypt_key(H("0123456712"))
+	  ->crypt(H("7AC816D16E9B302E"))),
+  "0123456789abcdef")
 
 // ARCFOUR
-test_true([[
-#pike 7.4
-objectp(Crypto.arcfour())]])
-test_eq([[
-#pike 7.4
-Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt(Crypto.hex_to_string("0123456789abcdef"))]],
-	[[String.hex2string("75b7878099e0c596")]])
-test_eq([[
-#pike 7.4
-Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt(Crypto.hex_to_string("0000000000000000"))]],
-	[[String.hex2string("7494c2e7104b0879")]])
-test_eq([[
-#pike 7.4
-Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0000000000000000"))
-		->crypt(Crypto.hex_to_string("0000000000000000"))]],
-	[[String.hex2string("de188941a3375d3a")]])
-test_eq([[
-#pike 7.4
-Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("ef012345"))
-		->crypt(Crypto.hex_to_string("00000000000000000000"))]],
-	[[String.hex2string("d6a141a7ec3c38dfbd61")]])
+test_eq(
+  S(Crypto.Arcfour()->set_encrypt_key(H("0123456789abcdef"))
+		->crypt(H("0123456789abcdef"))),
+  "75b7878099e0c596")
+test_eq(
+  S(Crypto.Arcfour()->set_encrypt_key(H("0123456789abcdef"))
+		->crypt(H("0000000000000000"))),
+  "7494c2e7104b0879")
+test_eq(
+  S(Crypto.Arcfour()->set_encrypt_key(H("0000000000000000"))
+		->crypt(H("0000000000000000"))),
+  "de188941a3375d3a")
+test_eq(
+  S(Crypto.Arcfour()->set_encrypt_key(H("ef012345"))
+		->crypt(H("00000000000000000000"))),
+  "d6a141a7ec3c38dfbd61")
 
-test_eq([[
-#pike 7.4
-Crypto.arcfour()
-  ->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-  ->crypt(Crypto.hex_to_string(
+test_eq(
+  S(Crypto.Arcfour()
+    ->set_encrypt_key(H("0123456789abcdef"))
+    ->crypt(H(
 	"0101010101010101010101010101010101010101010101010101010101010101"
 	"0101010101010101010101010101010101010101010101010101010101010101"
 	"0101010101010101010101010101010101010101010101010101010101010101"
@@ -611,8 +449,8 @@ Crypto.arcfour()
 	"0101010101010101010101010101010101010101010101010101010101010101"
 	"0101010101010101010101010101010101010101010101010101010101010101"
 	"0101010101010101010101010101010101010101010101010101010101010101"
-	"0101010101010101010101010101010101010101010101010101010101010101"))]],
-	[[String.hex2string(
+	"0101010101010101010101010101010101010101010101010101010101010101"))),
+
 	  "7595c3e6114a09780c4ad452338e1ffd9a1be9498f813d76533449b6778dcad8"
 	  "c78a8d2ba9ac66085d0e53d59c26c2d1c490c1ebbe0ce66d1b6b1b13b6b919b8"
 	  "47c25a91447a95e75e4ef16779cde8bf0a95850e32af9689444fd377108f98fd"
@@ -628,189 +466,36 @@ Crypto.arcfour()
 	  "c40de0558157c822d4b8c569d849aed59d4e0fd7f379586b4b7ff684ed6a189f"
 	  "7486d49b9c4bad9ba24b96abf924372c8a8fffb10d55354900a77a3db5f205e1"
 	  "b99fcd8660863a159ad4abe40fa48934163ddde542a6585540fd683cbfd8c00f"
-	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")]])
-  
-// MD5
-test_true([[
-#pike 7.4
-objectp(Crypto.md5())]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("")->digest()]],
-	[[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("a")->digest()]],
-	[[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("abc")->digest()]],
-	[[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("message digest")->digest()]],
-	[[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-	[[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-			       "abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
-test_eq([[
-#pike 7.4
-Crypto.md5()->update("1234567890123456789012345678901234567890"
-			       "1234567890123456789012345678901234567890")->digest()]],
-	[[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
-
-// MD4
-test_true([[
-#pike 7.4
-objectp(Crypto.md4())]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("")->digest()]],
-	[[String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0")]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("a")->digest()]],
-	[[String.hex2string("bde52cb31de33e46245e05fbdbd6fb24")]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("abc")->digest()]],
-	[[String.hex2string("a448017aaf21d8525fc10ae87aa6729d")]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("message digest")->digest()]],
-	[[String.hex2string("d9130a8164549fe818874806e1c7014b")]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-	[[String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9")]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("043f8582f241db351ce627e153e7f0e4")]])
-test_eq([[
-#pike 7.4
-Crypto.md4()->update("12345678901234567890123456789012345678901234567890123456789012345678901234567890")->digest()]],
-	[[String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
-
-// MD2
-test_true([[
-#pike 7.4
-objectp(Crypto.md2())]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("")->digest()]],
-	[[String.hex2string("8350e5a3e24c153df2275c9f80692773")]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("a")->digest()]],
-	[[String.hex2string("32ec01ec4a6dac72c0ab96fb34c0b5d1")]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("abc")->digest()]],
-	[[String.hex2string("da853b0d3f88d99b30283a69e6ded6bb")]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("message digest")->digest()]],
-	[[String.hex2string("ab4f496bfb2a530b219ff33031fe06b0")]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-	[[String.hex2string("4e8ddff3650292ab5a4108c3aa47940b")]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("da33def2a42df13975352846c30338cd")]])
-test_eq([[
-#pike 7.4
-Crypto.md2()->update("1234567890123456789012345678901234567890"
-				"1234567890123456789012345678901234567890")->digest()]],
-	[[String.hex2string("d5976f79d83d3a0dc9806c3c66f3efd8")]])
-
-// SHA
-test_true([[
-#pike 7.4
-objectp(Crypto.sha())]])
-test_eq([[
-#pike 7.4
-Crypto.sha()->update("")->digest()]],
-	[[String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
-test_eq([[
-#pike 7.4
-Crypto.sha()->update("abc")->digest()]],
-	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
-test_eq(
-#pike 7.4
-Crypto.string_to_hex(Crypto.sha()->update("x"*63)->digest()),
-        "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
-test_eq(
-#pike 7.4
-Crypto.string_to_hex(Crypto.sha()->update("x"*64)->digest()),
-        "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
-test_eq(
-#pike 7.4
-Crypto.string_to_hex(Crypto.sha()->update("x"*65)->digest()),
-        "78c741ddc482e4cdf8c474a0876347a0905b6233")
-test_eq(
-#pike 7.4
-Crypto.string_to_hex(Crypto.sha()->update("x"*257)->digest()),
-        "0796067748b6b0c2af864656a399f7722ef9283a")
+	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")
 
 // HMAC
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.md5)("")("")]],
-        [[String.hex2string("74e6f7298a9c2d168935f58c001bad88")]])
+S(Crypto.HMAC(Crypto.MD5)("")(""))]],
+        "74e6f7298a9c2d168935f58c001bad88")
 // Test vectors for md5 from RFC-2104
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.md5)("\013" * 16)("Hi There")]],
-	[[String.hex2string("9294727a3638bb1c13f48ef8158bfc9d")]])
+S(Crypto.HMAC(Crypto.MD5)("\013" * 16)("Hi There"))]],
+	"9294727a3638bb1c13f48ef8158bfc9d")
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.md5)("Jefe")("what do ya want for nothing?")]],
-	[[String.hex2string("750c783e6ab0b503eaa86e310a5db738")]])
+S(Crypto.HMAC(Crypto.MD5)("Jefe")("what do ya want for nothing?"))]],
+	"750c783e6ab0b503eaa86e310a5db738")
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.md5)("\252" * 16)("\335" * 50)]],
-	[[String.hex2string("56be34521d144c88dbb8c733f0e8b3f6")]])
-
-test_eq([[
-Crypto.HMAC(Crypto.MD5)("")("")]],
-        [[String.hex2string("74e6f7298a9c2d168935f58c001bad88")]])
-// Test vectors for md5 from RFC-2104
-test_eq([[
-Crypto.HMAC(Crypto.MD5)("\013" * 16)("Hi There")]],
-	[[String.hex2string("9294727a3638bb1c13f48ef8158bfc9d")]])
-test_eq([[
-Crypto.HMAC(Crypto.MD5)("Jefe")("what do ya want for nothing?")]],
-	[[String.hex2string("750c783e6ab0b503eaa86e310a5db738")]])
-test_eq([[
-Crypto.HMAC(Crypto.MD5)("\252" * 16)("\335" * 50)]],
-	[[String.hex2string("56be34521d144c88dbb8c733f0e8b3f6")]])
+S(Crypto.HMAC(Crypto.MD5)("\252" * 16)("\335" * 50))]],
+	"56be34521d144c88dbb8c733f0e8b3f6")
 
 // Similar test vectors for sha; not verified with other implementations
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.sha)("")("")]],
-        [[String.hex2string("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")]])
+S(Crypto.HMAC(Crypto.SHA1)("")(""))]],
+        "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.sha)("\013" * 16)("Hi There")]],
-	[[String.hex2string("675b0b3a1b4ddf4e124872da6c2f632bfed957e9")]])
+S(Crypto.HMAC(Crypto.SHA1)("\013" * 16)("Hi There"))]],
+	"675b0b3a1b4ddf4e124872da6c2f632bfed957e9")
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.sha)("Jefe")("what do ya want for nothing?")]],
-	[[String.hex2string("effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")]])
+S(Crypto.HMAC(Crypto.SHA1)("Jefe")("what do ya want for nothing?"))]],
+	"effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")
 test_eq([[
-#pike 7.4
-Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
-	[[String.hex2string("d730594d167e35d5956fd8003d0db3d3f46dc7bb")]])
+S(Crypto.HMAC(Crypto.SHA1)("\252" * 16)("\335" * 50))]],
+	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
 
 // CRYPT_MD5
 test_true([[stringp(Crypto.crypt_md5(""))]])
@@ -826,96 +511,6 @@ cond([[ Nettle["crypt_md5"] ]],[[
   test_eq([[Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	  [[0]])
 ]])
-test_eq([[
-#pike 7.4
-Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
-	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
-test_eq([[
-#pike 7.4
-Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
-	[["$1$sl5hO7j4$3cyvb8g68rK8.kH9Eayvk."]])
-
-// ->name
-test_eq(
-#pike 7.4
-Crypto.invert()->name(),"INVERT")
-test_eq(
-#pike 7.4
-Crypto.des()->name(),"DES")
-test_eq(
-#pike 7.4
-Crypto.rijndael()->name(),"RIJNDAEL")
-test_eq(
-#pike 7.4
-Crypto.aes()->name(),"AES")
-test_eq(
-#pike 7.4
-Crypto.idea()->name(),"IDEA")
-test_eq(
-#pike 7.4
-Crypto.cast()->name(),"CAST")
-test_eq(
-#pike 7.4
-Crypto.arcfour()->name(),"ARCFOUR")
-test_eq(
-#pike 7.4
-Crypto.md5()->name(),"MD5")
-test_eq(
-#pike 7.4
-Crypto.md4()->name(),"MD4")
-test_eq(
-#pike 7.4
-Crypto.md2()->name(),"MD2")
-test_eq(
-#pike 7.4
-Crypto.sha()->name(),"SHA")
-
-// ->query_key_length
-test_eq(
-#pike 7.4
-Crypto.invert()->query_key_length(),0)
-test_eq(
-#pike 7.4
-Crypto.des()->query_key_length(),8)
-test_eq(
-#pike 7.4
-Crypto.aes()->query_key_length(),32)
-cond_resolv( Crypto.AES.key_size,[[
-  test_eq(Crypto.AES.key_size(),32)
-  test_eq(Crypto.AES()->key_size(),0)
-]])
-test_eq(
-#pike 7.4
-Crypto.idea()->query_key_length(),16)
-test_eq(
-#pike 7.4
-Crypto.cast()->query_key_length(),16)
-test_eq(
-#pike 7.4
-Crypto.arcfour()->query_key_length(),1)
-
-// ->query_block_size
-test_eq(
-#pike 7.4
-Crypto.invert()->query_block_size(),8)
-test_eq(
-#pike 7.4
-Crypto.des()->query_block_size(),8)
-test_eq(
-#pike 7.4
-Crypto.aes()->query_block_size(),16)
-cond_resolv( Crypto.AES.name,[[
-  test_eq(Crypto.AES()->block_size(),16)
-]])
-test_eq(
-#pike 7.4
-Crypto.idea()->query_block_size(),8)
-test_eq(
-#pike 7.4
-Crypto.cast()->query_block_size(),8)
-test_eq(
-#pike 7.4
-Crypto.arcfour()->query_block_size,0)
 
 // pipe
 test_eq(
@@ -973,3 +568,6 @@ test_any([[
   }
   return ct;
 ]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
+
+test_do( add_constant( "H" ) )
+test_do( add_constant( "S" ) )
