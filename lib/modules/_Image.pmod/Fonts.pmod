@@ -246,9 +246,14 @@ class Font( static string file,
 {
   object font;
   static object codec;
-  
+
   static int fake_bold;
   static int fake_italic;
+
+  string _sprintf()
+  {
+    return sprintf("Font(%O, %d)", file, size);
+  }
 
   static void open_font( )
   {
