@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.39 2000/12/11 23:16:28 per Exp $
+ * $Id: image_ttf.c,v 1.40 2001/05/24 22:28:16 david%hedbor.org Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.39 2000/12/11 23:16:28 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.40 2001/05/24 22:28:16 david%hedbor.org Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -271,14 +271,17 @@ static void image_ttf_make(INT32 args)
 
 static void image_ttf_face_exit(struct object *o)
 {
-   TT_Close_Face(THISf->face);
+  if(THISf)
+    TT_Close_Face(THISf->face);
 }
 
 static void image_ttf_faceinstance_exit(struct object *o)
 {
-   if (THISi->faceobj->prog)
+  if (THISi) {
+    if(THISi->faceobj->prog)
       TT_Done_Instance(THISi->instance);
-   free_object(THISi->faceobj);
+    free_object(THISi->faceobj);
+  }
 }
 
 #ifdef TTF_DEBUG_INFO
