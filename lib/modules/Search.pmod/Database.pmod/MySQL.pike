@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.49 2001/07/04 22:30:07 nilsson Exp $
+// $Id: MySQL.pike,v 1.50 2001/07/16 14:49:15 js Exp $
 
 inherit .Base;
 
@@ -355,6 +355,13 @@ string get_blob(string word, int num)
 
   return a[0]->hits;
 }
+
+array(int) get_deleted_documents()
+{
+  return (array(int))db->query("select doc_id from deleted_document "
+			       "order by doc_id")->doc_id;
+}
+
 
 void clear()
 {

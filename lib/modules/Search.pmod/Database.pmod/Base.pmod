@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.8 2001/07/04 20:42:20 nilsson Exp $
+// $Id: Base.pmod,v 1.9 2001/07/16 14:49:14 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -106,6 +106,11 @@ void set_sync_callback(function f);
 // FIXME
 string get_blob(string word, int num);
 
+//! Retrieves a list of deleted document ids
+//! @returns
+//!   An array containing deleted document ids.
+array(int) get_deleted_documents();
+  
 //! Allocate a field id.
 //! @param field
 //!   The (possibly wide string) field name wanted.
