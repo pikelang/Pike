@@ -1,6 +1,23 @@
 #pike __REAL_VERSION__
 
+// $Id: Session.pike,v 1.2 2003/02/15 08:59:39 mirar Exp $
+
 import Protocols.HTTP;
+
+//!	The number of redirects to follow, if any.
+//!	This is the default to the created Request objects.
+//!
+//!	A redirect automatically turns into a GET request,
+//!	and all header, query, post or put information is dropped.
+//!
+//!	Default is 20 redirects. A negative number will mean infinity.
+//! @bugs
+//!	Loops will currently not be detected, only the limit
+//!	works to stop loops.
+//! @seealso
+//!	@[Request.follow_redirects]
+
+int follow_redirects=20;
 
 class Request
 {
@@ -11,18 +28,19 @@ class Request
 //!	This will update according to followed redirects.
    Standards.URI url_requested;
 
-//!	flags to follow redirects; if set,
+//!	Number of redirects to follow;
 //!	the request will perform another request if the 
 //!	HTTP answer is a 3xx redirect.
-//!	Default is to follow 50 redirects.
+//!	Default from the parent @[Session.follow_redirects].
 //!
 //!	A redirect automatically turns into a GET request,
 //!	and all header, query, post or put information is dropped.
-//! @known_bugs
+//! @bugs
 //!	Loops will currently not be detected, only the limit
 //!	works to stop loops.
 
-   int follow_redirects=50;
+   int follow_redirects= // parent
+      function_object(object_program(this_object()))->follow_redirects;
 
 //!	Cookie callback. When a request is performed,
 //!	the result is checked for cookie changes and
@@ -239,7 +257,7 @@ class Request
 	  con->headers->location && follow_redirects)
       {
 	 Standards.URI loc=
-	    Standards.URI(url_requested,con->headers->location);
+	    Standards.URI(con->headers->location,url_requested);
 
 	 if(loc->scheme=="http" || loc->scheme=="https")
 	 {
@@ -286,6 +304,16 @@ class Request
    int(0..1) ok()
    {
       return con->ok;
+   }
+
+   int(0..999) status()
+   {
+      return con->status;
+   }
+
+   string status_desc()
+   {
+      return con->status_desc;
    }
 
 // ----------------
@@ -544,10 +572,59 @@ Request do_method(string method,
    return p;
 }
 
-//! @decl Request get_url(string|Standards.URI url)
+// Request|array(string) generic_do_method(
+//    string method,
+//    string mode,
+//    string|Standards.URI url,
+//    string|mapping|function ...misc)
+// {
+//    array args;
+//    mapping query_variables=0;
+//    mapping extra_headers=0;
+//    string data=0;
+// 
+//    misc+=({0,0,0,0});
+// 
+//    switch (lower_case(method))
+//    {
+//       case "get":
+//       case "delete":
+// 	 query_variables=misc[0];
+// 	 misc=misc[1..];
+// 	 break;
+//       case "put":
+// 	 query_variables=misc[0];
+// 	 data=misc[1];
+// 	 if (data && !stringp(data))
+// 	    error("Bad argument 5 to Session.put*, expected string\n");
+// 	 misc=misc[2..];
+// 	 break;
+//       case "post":
+// 	 if (!mappingp(misc[0]))
+// 	    error("Bad argument 4 to Session.put*, expected mapping\n");
+// 	 data=http_encode_query(misc[0]);
+// 	 extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
+// 	 break;
+//       default:
+// 	 error("unknown HTTP method %O (expected get, post, put or delete)\n");
+//    }
+//    if (query_variables && !mappingp(query_variables))
+//       error("Bad argument 4 to Session."+method+"*, "
+// 	    "expected mapping or void\n");
+// 
+//    args=p->prepare_method(upper_case(method),url,query_variables,
+// 			  extra_headers,data);
+// }
+
 //! @decl Request get_url(string|Standards.URI url, @
-//!                       mapping query_variables)
-//! 	Sends a HTTP GET request to the server in the URL
+//!                       void|mapping query_variables)
+//! @decl Request post_url(string|Standards.URI url, @
+//!                        mapping query_variables)
+//! @decl Request put_url(string|Standards.URI url,string file, @
+//!                       void|mapping query_variables)
+//! @decl Request delete_url(string|Standards.URI url, @
+//!                          void|mapping query_variables)
+//! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in the URL
 //!	and returns the created and initialized @[Request] object.
 //!	0 is returned upon failure. 
 //!
@@ -557,13 +634,6 @@ Request get_url(string|Standards.URI url,
    return do_method("GET", url, query_variables);
 }
 
-//! @decl Request put_url(string|Standards.URI url)
-//! @decl Request put_url(string|Standards.URI url,string file)
-//! @decl Request put_url(string|Standards.URI url,string file, @
-//!                       mapping query_variables)
-//! 	Sends a HTTP PUT request to the server in the URL
-//!	and returns the created and initialized @[Request] object.
-//!	0 is returned upon failure. 
 Request put_url(string|Standards.URI url,
 		void|string file,
 		void|mapping query_variables)
@@ -571,28 +641,36 @@ Request put_url(string|Standards.URI url,
    return do_method("PUT", url, query_variables, file);
 }
 
-//! @decl Request delete_url(string|Standards.URI url)
-//! @decl Request delete_url(string|Standards.URI url, @
-//!                          mapping query_variables)
-//! 	Sends a HTTP DELETE request to the server in the URL
-//!	and returns the created and initialized @[Request] object.
-//!	0 is returned upon failure. 
 Request delete_url(string|Standards.URI url,
-		   void|mapping query_variables,
-		   void|mapping request_headers,
-		   void|Request con)
+		   void|mapping query_variables)
 {
    return do_method("DELETE", url, query_variables);
 }
+
+Request post_url(string|Standards.URI url,
+		 mapping query_variables)
+{
+   return do_method("POST", url, 0,
+		    http_encode_query(query_variables));
+}
+
 
 //! @decl array(string) get_url_nice(string|Standards.URI url, @
 //!                                  mapping query_variables)
 //! @decl string get_url_data(string|Standards.URI url, @
 //!                           mapping query_variables)
+//! @decl array(string) post_url_nice(string|Standards.URI url, @
+//!                                   mapping query_variables)
+//! @decl string post_url_data(string|Standards.URI url, @
+//!                            mapping query_variables)
 //!	Returns an array of @tt{({content_type,data})@} and just the data
 //!	string respective, 
 //!	after calling the requested server for the information.
 //!	0 is returned upon failure.
+//!
+//! 	post* is similar to the @[get_url()] class of functions,
+//!	except that the query variables is sent as a POST request instead
+//!	of as a GET.
 //!
 
 array(string) get_url_nice(string|Standards.URI url,
@@ -603,30 +681,12 @@ array(string) get_url_nice(string|Standards.URI url,
 }
 
 string get_url_data(string|Standards.URI url,
-		    void|mapping query_variables,
-		    void|mapping request_headers,
-		    void|Request con)
+		    void|mapping query_variables)
 {
-   Request z = get_url(url, query_variables, request_headers, con);
+   Request z = get_url(url, query_variables);
    return z && z->data();
 }
 
-//! @decl array(string) post_url_nice(string|Standards.URI url, @
-//!                                   mapping query_variables)
-//! @decl string post_url_data(string|Standards.URI url, @
-//!                            mapping query_variables)
-//! @decl object(Request) post_url(string|Standards.URI url, @
-//!                                             mapping query_variables)
-//! 	Similar to the @[get_url()] class of functions, except that the
-//!	query variables is sent as a POST request instead of as a GET.
-//!
-
-Request post_url(string|Standards.URI url,
-		 mapping query_variables)
-{
-   return do_method("POST", url, 0,
-		    http_encode_query(query_variables));
-}
 
 array(string) post_url_nice(string|Standards.URI url,
 			    mapping query_variables)
@@ -642,3 +702,122 @@ string post_url_data(string|Standards.URI url,
    return z && z->data();
 }
 
+// ================================================================
+// async operation
+
+Request async_do_method(string method,
+			string url,
+			void|mapping query_variables,
+			void|string data,
+			function callback_headers_ok,
+			function callback_data_ok,
+			function callback_fail,
+			array callback_arguments)
+{
+   mapping extra_headers=0;
+   if (method=="POST")
+      extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
+   
+   Request p=Request();
+   p->set_callbacks(callback_headers_ok,
+		    callback_data_ok,
+		    callback_fail,
+		    p,@callback_arguments);
+   p->do_async(p->prepare_method(method,url,query_variables,
+				 extra_headers,data));
+   return p;
+}
+
+
+//! @decl Request async_get_url(string|Standards.URI url,
+//! 			    void|mapping query_variables,
+//! 			    function callback_headers_ok,
+//! 			    function callback_data_ok,
+//! 			    function callback_fail,
+//! 			    mixed... callback_arguments);
+//! @decl Request async_put_url(string|Standards.URI url,
+//! 			    void|string file,
+//! 			    void|mapping query_variables,
+//! 			    function callback_headers_ok,
+//! 			    function callback_data_ok,
+//! 			    function callback_fail,
+//! 			    mixed... callback_arguments);
+//! @decl Request async_delete_url(string|Standards.URI url,
+//! 			       void|mapping query_variables,
+//! 			       function callback_headers_ok,
+//! 			       function callback_data_ok,
+//! 			       function callback_fail,
+//! 			       mixed... callback_arguments);
+//! @decl Request async_post_url(string|Standards.URI url,
+//! 			     mapping query_variables,
+//! 			     function callback_headers_ok,
+//! 			     function callback_data_ok,
+//! 			     function callback_fail,
+//! 			     mixed... callback_arguments);
+//!
+//! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in
+//!     the URL asynchroneously, and call the corresponding callbacks
+//!	when result arrives (or not). The callbacks will receive 
+//!	the created Request object as first argument, then 
+//!	the given @[callback_arguments], if any.
+//!	
+//!	@[callback_headers_ok] is called when the HTTP request has received
+//!	headers. 
+//!
+//!	@[callback_data_ok] is called when the HTTP request has been 
+//!	received completely, data and all.
+//!
+//!	@[callback_fail] is called when the HTTP request has failed,
+//!	on a TCP/IP or DNS level, or has recieved a forced timeout.
+//!
+//!	The created Request object is returned.
+
+Request async_get_url(string|Standards.URI url,
+		      void|mapping query_variables,
+		      function callback_headers_ok,
+		      function callback_data_ok,
+		      function callback_fail,
+		      mixed ...callback_arguments)
+{
+   return async_do_method("GET", url, query_variables,0,
+			  callback_headers_ok,callback_data_ok,
+			  callback_fail,callback_arguments);
+}
+
+Request async_put_url(string|Standards.URI url,
+		      void|string file,
+		      void|mapping query_variables,
+		      function callback_headers_ok,
+		      function callback_data_ok,
+		      function callback_fail,
+		      mixed ...callback_arguments)
+{
+   return async_do_method("PUT", url, query_variables, file,
+			  callback_headers_ok,callback_data_ok,
+			  callback_fail,callback_arguments);
+}
+
+Request async_delete_url(string|Standards.URI url,
+			 void|mapping query_variables,
+			 function callback_headers_ok,
+			 function callback_data_ok,
+			 function callback_fail,
+			 mixed ...callback_arguments)
+{
+   return async_do_method("DELETE", url, query_variables, 0,
+			  callback_headers_ok,callback_data_ok,
+			  callback_fail,callback_arguments);
+}
+
+Request async_post_url(string|Standards.URI url,
+		       mapping query_variables,
+		       function callback_headers_ok,
+		       function callback_data_ok,
+		       function callback_fail,
+		       mixed ...callback_arguments)
+{
+   return async_do_method("POST", url, 0,
+			  http_encode_query(query_variables),
+			  callback_headers_ok,callback_data_ok,
+			  callback_fail,callback_arguments);
+}
