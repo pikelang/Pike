@@ -5,10 +5,10 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.34 1999/02/20 17:42:32 grubba Exp $
+ * $Id: cpp.c,v 1.35 1999/02/22 00:25:42 grubba Exp $
  */
 #include "global.h"
-#include "dynamic_buffer.h"
+/* #include "dynamic_buffer.h" */
 #include "language.h"
 #include "lex.h"
 #include "stralloc.h"
@@ -39,20 +39,20 @@
 #define CPP_NO_EXPAND 64
 
 #define OUTP() (!(flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)))
-#define PUTNL() low_my_putchar('\n', &this->buf)
+#define PUTNL() string_builder_putchar(&this->buf, '\n')
 #define GOBBLE(X) (data[pos]==(X)?++pos,1:0)
 #define PUTC(C) do { \
- int c_=(C); if(OUTP() || c_=='\n') low_my_putchar(c_, &this->buf); }while(0)
+ int c_=(C); if(OUTP() || c_=='\n') string_builder_putchar(&this->buf, c_); }while(0)
 
 #define STRCAT(STR,LEN) do {				\
   INT32 x_,len_=(LEN);					\
   char *str_=(STR);					\
   if(OUTP())						\
-    low_my_binary_strcat(str_,len_, &this->buf);	\
+    string_builder_binary_strcat(&this->buf, str_,len_);	\
   else							\
     for(x_=0;x_<len_;x_++)				\
       if(str_[x_]=='\n')				\
-        low_my_putchar('\n',&this->buf);		\
+        string_builder_putchar(&this->buf, '\n');		\
 }while(0)
 
 #define CHECKWORD(X) \
@@ -93,7 +93,7 @@ struct define;
 typedef void (*magic_define_fun)(struct cpp *,
 				 struct define *,
 				 struct define_argument *,
-				 dynamic_buffer *);
+				 struct string_builder *);
 
 
 struct define
@@ -116,7 +116,7 @@ struct cpp
   INT32 current_line;
   INT32 compile_errors;
   struct pike_string *current_file;
-  dynamic_buffer buf;
+  struct string_builder buf;
 };
 
 struct define *defined_macro =0;
@@ -324,7 +324,7 @@ static void simple_add_define(struct cpp *this,
     break;					\
     						\
   default:					\
-    C=data[pos];				\
+    C=((unsigned char *)data)[pos];		\
   }						\
 }while (0)
 
@@ -357,12 +357,12 @@ while(1)					\
       continue;					\
     }						\
     READCHAR(tmp);				\
-    low_my_putchar(tmp, &nf);			\
+    string_builder_putchar(&nf, tmp);		\
     continue;					\
   }						\
 						\
   default:					\
-    low_my_putchar(data[pos], &nf);		\
+    string_builder_putchar(&nf, ((unsigned char *)data)[pos]);	\
     continue;					\
   }						\
   pos++;					\
@@ -374,7 +374,7 @@ while(1)					\
  */
 #define FIXSTRING(nf,outp)	do {			\
 int trailing_newlines=0;				\
-if(outp) low_my_putchar('"', &nf);			\
+if(outp) string_builder_putchar(&nf, '"');		\
 while(1)						\
 {							\
   if(pos>=len)						\
@@ -398,16 +398,16 @@ while(1)						\
       this->current_line++;				\
       continue;						\
     }							\
-    if(outp) low_my_putchar('\\', &nf);		        \
+    if(outp) string_builder_putchar(&nf, '\\');	        \
     pos++;                                              \
 							\
   default:						\
-    if(outp) low_my_putchar(data[pos-1], &nf);		\
+    if(outp) string_builder_putchar(&nf, ((unsigned char *)data)[pos-1]);	\
     continue;						\
   }							\
   break;						\
 }							\
-if(outp) low_my_putchar('"', &nf);			\
+if(outp) string_builder_putchar(&nf, '"');		\
 while(trailing_newlines--) PUTNL();			\
 }while(0)
 
@@ -433,7 +433,7 @@ while(1)					\
       continue;					\
     }						\
     READCHAR(tmp);				\
-    low_my_putchar(tmp, &nf);			\
+    string_builder_putchar(&nf, tmp);		\
     continue;					\
   }						\
 						\
@@ -441,7 +441,7 @@ while(1)					\
     PUTNL();					\
     this->current_line++;			\
   default:					\
-    low_my_putchar(data[pos], &nf);		\
+    string_builder_putchar(&nf, ((unsigned char *)data)[pos]);	\
     continue;					\
   }						\
   pos++;					\
@@ -450,62 +450,62 @@ while(1)					\
 
 void PUSH_STRING(char *str,
 		 INT32 len,
-		 dynamic_buffer *buf)
+		 struct string_builder *buf)
 {
   INT32 p2;
-  low_my_putchar('"', buf);
+  string_builder_putchar(buf, '"');
   for(p2=0;p2<len;p2++)
   {
     switch(str[p2])
     {
     case '\n':
-      low_my_putchar('\\', buf);
-      low_my_putchar('n', buf);
+      string_builder_putchar(buf, '\\');
+      string_builder_putchar(buf, 'n');
       break;
       
     case '\t':
-      low_my_putchar('\\', buf);
-      low_my_putchar('t', buf);
+      string_builder_putchar(buf, '\\');
+      string_builder_putchar(buf, 't');
       break;
       
     case '\r':
-      low_my_putchar('\\', buf);
-      low_my_putchar('r', buf);
+      string_builder_putchar(buf, '\\');
+      string_builder_putchar(buf, 'r');
       break;
       
     case '\b':
-      low_my_putchar('\\', buf);
-      low_my_putchar('b', buf);
+      string_builder_putchar(buf, '\\');
+      string_builder_putchar(buf, 'b');
       break;
       
     case '\\':
     case '"':
-      low_my_putchar('\\', buf);
-      low_my_putchar(str[p2], buf);
+      string_builder_putchar(buf, '\\');
+      string_builder_putchar(buf, ((unsigned char *)str)[p2]);
       break;
       
     default:
       if(isprint(EXTRACT_UCHAR(str+p2)))
       {
-	low_my_putchar(str[p2], buf);
+	string_builder_putchar(buf, ((unsigned char *)str)[p2]);
       }
       else
       {
 	int c=EXTRACT_UCHAR(str+p2);
-	low_my_putchar('\\', buf);
-	low_my_putchar(((c>>6)&7)+'0', buf);
-	low_my_putchar(((c>>3)&7)+'0', buf);
-	low_my_putchar((c&7)+'0', buf);
+	string_builder_putchar(buf, '\\');
+	string_builder_putchar(buf, ((c>>6)&7)+'0');
+	string_builder_putchar(buf, ((c>>3)&7)+'0');
+	string_builder_putchar(buf, (c&7)+'0');
 	if(EXTRACT_UCHAR(str+p2+1)>='0' && EXTRACT_UCHAR(str+p2+1)<='7')
 	{
-	  low_my_putchar('"',buf);
-	  low_my_putchar('"',buf);
+	  string_builder_putchar(buf, '"');
+	  string_builder_putchar(buf, '"');
 	}
       }
       break;
     }
   }
-  low_my_putchar('"', buf);
+  string_builder_putchar(buf, '"');
 }
 
 #define FINDTOK() 				\
@@ -614,7 +614,7 @@ static INT32 low_cpp(struct cpp *this,
       case '{': case '}': case ':': case '?': case '`': case ';':
       case '>': case ',': case '.': case '~': case '[':
       case ']': case '|':
-	PUTC(data[pos-1]);
+	PUTC(((unsigned char *)data)[pos-1]);
       break;
       
     default:
@@ -651,7 +651,7 @@ static INT32 low_cpp(struct cpp *this,
 	if(d && !d->inside)
 	{
 	  int arg=0;
-	  dynamic_buffer tmp;
+	  struct string_builder tmp;
 	  struct define_argument arguments [MAX_ARGS];
 	  
 	  if(s) add_ref(s);
@@ -728,12 +728,12 @@ static INT32 low_cpp(struct cpp *this,
 	  if(d->args >= 0 && arg != d->args)
 	    cpp_error(this,"Wrong number of arguments to macro.");
 	  
-	  initialize_buf(&tmp);
+	  init_string_builder(&tmp, 0);
 	  if(d->magic)
 	  {
 	    d->magic(this, d, arguments, &tmp);
 	  }else{
-	    low_my_binary_strcat(d->first->str, d->first->len, &tmp);
+	    string_builder_binary_strcat(&tmp, d->first->str, d->first->len);
 	    for(e=0;e<d->num_parts;e++)
 	    {
 	      char *a;
@@ -750,7 +750,7 @@ static INT32 low_cpp(struct cpp *this,
 	      l=arguments[d->parts[e].argument&DEF_ARG_MASK].len;
 	      
 	      if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
-		low_my_putchar(' ', &tmp);
+		string_builder_putchar(&tmp, ' ');
 	      
 	      if(d->parts[e].argument & DEF_ARG_STRINGIFY)
 	      {
@@ -767,9 +767,9 @@ static INT32 low_cpp(struct cpp *this,
 		if(d->parts[e].argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
 		{
 		  
-		  low_my_binary_strcat(a, l, &tmp);
+		  string_builder_binary_strcat(&tmp, a, l);
 		}else{
-		  dynamic_buffer save;
+		  struct string_builder save;
 		  INT32 line=this->current_line;
 		  save=this->buf;
 		  this->buf=tmp;
@@ -782,25 +782,24 @@ static INT32 low_cpp(struct cpp *this,
 	      }
 	      
 	      if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
-		low_my_putchar(' ', &tmp);
+		string_builder_putchar(&tmp, ' ');
 	      
-	      low_my_binary_strcat(d->parts[e].postfix->str,
-				   d->parts[e].postfix->len,
-				   &tmp);
+	      string_builder_binary_strcat(&tmp, d->parts[e].postfix->str,
+					   d->parts[e].postfix->len);
 	    }
 	  }
 	  
 	  /* FIXME */
-	  for(e=0;e<(long)tmp.s.len;e++)
-	    if(tmp.s.str[e]=='\n')
-	      tmp.s.str[e]=' ';
+	  for(e=0;e<(long)tmp.s->len;e++)
+	    if(tmp.s->str[e]=='\n')
+	      tmp.s->str[e]=' ';
 
 	  if(s) d->inside=1;
 	  
-	  low_my_putchar(0, &tmp);
-	  tmp.s.len--;
+	  string_builder_putchar(&tmp, 0);
+	  tmp.s->len--;
 	  
-	  low_cpp(this, tmp.s.str, tmp.s.len, 
+	  low_cpp(this, tmp.s->str, tmp.s->len, 
 		  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
 	  
 	  if(s)
@@ -811,7 +810,7 @@ static INT32 low_cpp(struct cpp *this,
 	    free_string(s);
 	  }
 
-	  toss_buffer(&tmp);
+	  free_string_builder(&tmp);
 	  break;
 	}else{
 	  if(flags & CPP_DO_IF)
@@ -822,13 +821,13 @@ static INT32 low_cpp(struct cpp *this,
 	  }
 	}
       }else{
-	PUTC(data[pos-1]);
+	PUTC(((unsigned char *)data)[pos-1]);
       }
       break;
       
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-      PUTC(data[pos-1]);
+      PUTC(((unsigned char *)data)[pos-1]);
       while(data[pos]>='0' && data[pos]<='9') PUTC(data[pos++]);
       break;
 
@@ -856,7 +855,7 @@ static INT32 low_cpp(struct cpp *this,
 	break;
       }
 
-      PUTC(data[pos-1]);
+      PUTC(((unsigned char *)data)[pos-1]);
       break;
 
   case '#':
@@ -883,22 +882,22 @@ static INT32 low_cpp(struct cpp *this,
     {
       char *foo=data+pos;
       this->current_line=STRTOL(foo, &foo, 10)-1;
-      low_my_putchar('#',&this->buf);
-      low_my_binary_strcat(data+pos, foo-(data+pos), &this->buf);
+      string_builder_putchar(&this->buf, '#');
+      string_builder_binary_strcat(&this->buf, data+pos, foo-(data+pos));
       pos=foo-data;
       SKIPSPACE();
       
       if(data[pos]=='"')
       {
-	dynamic_buffer nf;
-	initialize_buf(&nf);
+	struct string_builder nf;
+	init_string_builder(&nf, 0);
 	
 	READSTRING(nf);
 
 	free_string(this->current_file);
-	this->current_file=low_free_buf(&nf);
+	this->current_file = finish_string_builder(&nf);
 
-	low_my_putchar(' ',&this->buf);
+	string_builder_putchar(&this->buf, ' ');
 	PUSH_STRING(this->current_file->str,this->current_file->len,&this->buf);
       }
       
@@ -908,17 +907,17 @@ static INT32 low_cpp(struct cpp *this,
 
       case '"':
       {
-	dynamic_buffer nf;
-	initialize_buf(&nf);
+	struct string_builder nf;
+	init_string_builder(&nf, 0);
 	
 	READSTRING2(nf);
 	if(OUTP())
 	{
-	  PUSH_STRING(nf.s.str,
-		      nf.s.len,
+	  PUSH_STRING(nf.s->str,
+		      nf.s->len,
 		      &this->buf);
 	}
-	toss_buffer(&nf);
+	free_string_builder(&nf);
 	break;
       }
 
@@ -946,11 +945,11 @@ static INT32 low_cpp(struct cpp *this,
 	  {
 	    case '"':
 	      {
-		dynamic_buffer nf;
-		initialize_buf(&nf);
+		struct string_builder nf;
+		init_string_builder(&nf, 0);
 		pos--;
 		READSTRING(nf);
-		push_string(low_free_buf(&nf));
+		push_string(finish_string_builder(&nf));
 		ref_push_string(this->current_file);
 		push_int(1);
 		break;
@@ -1020,9 +1019,9 @@ static INT32 low_cpp(struct cpp *this,
 	      copy_shared_string(this->current_file,new_file);
 	      this->current_line=1;
 	      
-	      low_my_binary_strcat("# 1 ",4,&this->buf);
+	      string_builder_binary_strcat(&this->buf, "# 1 ", 4);
 	      PUSH_STRING(new_file->str,new_file->len, & this->buf);
-	      low_my_putchar('\n',&this->buf);
+	      string_builder_putchar(&this->buf, '\n');
 	      if(tmp2)
 	      {
 		PUSH_STRING(sp[-1].u.string->str,
@@ -1040,9 +1039,9 @@ static INT32 low_cpp(struct cpp *this,
 	      this->current_line=save_current_line;
 	      
 	      sprintf(buffer,"# %d ",this->current_line);
-	      low_my_binary_strcat(buffer,strlen(buffer),&this->buf);
+	      string_builder_binary_strcat(&this->buf, buffer, strlen(buffer));
 	      PUSH_STRING(this->current_file->str,this->current_file->len,& this->buf);
-	      low_my_putchar('\n',&this->buf);
+	      string_builder_putchar(&this->buf, '\n');
 	    }
 	  }
 
@@ -1054,23 +1053,23 @@ static INT32 low_cpp(struct cpp *this,
 
       if(WGOBBLE("if"))
       {
-	dynamic_buffer save,tmp;
+	struct string_builder save,tmp;
 	INT32 nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
 	
 	if(!OUTP())
 	  nflags|=CPP_REALLY_NO_OUTPUT;
 	
 	save=this->buf;
-	initialize_buf(& this->buf);
+	init_string_builder(&this->buf, 0);
 	pos+=low_cpp(this,data+pos,len-pos,CPP_END_AT_NEWLINE|CPP_DO_IF);
 	tmp=this->buf;
 	this->buf=save;
 	
-	low_my_putchar(0, &tmp);
-	tmp.s.len--;
+	string_builder_putchar(&tmp, 0);
+	tmp.s->len--;
 	
-	calc(this,tmp.s.str,tmp.s.len,0);
-	toss_buffer(&tmp);
+	calc(this,tmp.s->str,tmp.s->len,0);
+	free_string_builder(&tmp);
 	if(IS_ZERO(sp-1)) nflags|=CPP_NO_OUTPUT;
 	pop_stack();
 	pos+=low_cpp(this,data+pos,len-pos,nflags);
@@ -1161,18 +1160,18 @@ static INT32 low_cpp(struct cpp *this,
 	
 	if(flags & CPP_NO_OUTPUT)
 	{
-	  dynamic_buffer save,tmp;
+	  struct string_builder save,tmp;
 	  save=this->buf;
-	  initialize_buf(& this->buf);
+	  init_string_builder(&this->buf, 0);
 	  pos+=low_cpp(this,data+pos,len-pos,CPP_END_AT_NEWLINE|CPP_DO_IF);
 	  tmp=this->buf;
 	  this->buf=save;
 	  
-	  low_my_putchar(0, &tmp);
-	  tmp.s.len--;
+	  string_builder_putchar(&tmp, 0);
+	  tmp.s->len--;
 	  
-	  calc(this,tmp.s.str,tmp.s.len,0);
-	  toss_buffer(&tmp);
+	  calc(this,tmp.s->str,tmp.s->len,0);
+	  free_string_builder(&tmp);
 	  if(!IS_ZERO(sp-1)) flags&=~CPP_NO_OUTPUT;
 	  pop_stack();
 	}else{
@@ -1202,7 +1201,7 @@ static INT32 low_cpp(struct cpp *this,
     case 'd': /* define */
       if(WGOBBLE("define"))
 	{
-	  dynamic_buffer str;
+	  struct string_builder str;
 	  INT32 namestart, tmp3, nameend, argno=-1;
 	  struct define *def;
 	  struct svalue *partbase,*argbase=sp;
@@ -1259,7 +1258,7 @@ static INT32 low_cpp(struct cpp *this,
 	  SKIPSPACE();
 
 	  partbase=sp;
-	  initialize_buf(&str);
+	  init_string_builder(&str, 0);
 	  
 	  while(1)
 	  {
@@ -1273,7 +1272,7 @@ static INT32 low_cpp(struct cpp *this,
 	    case '/':
 	      if(data[pos]=='/')
 	      {
-		low_my_putchar(' ',&str);
+		string_builder_putchar(&str, ' ');
 		FIND_EOL();
 		continue;
 	      }
@@ -1285,23 +1284,23 @@ static INT32 low_cpp(struct cpp *this,
 		continue;
 	      }
 	      
-	      low_my_putchar('/',&str);
+	      string_builder_putchar(&str, '/');
 	      continue;
 	      
 	    case '0': case '1': case '2': case '3':	case '4':
 	    case '5': case '6': case '7': case '8':	case '9':
-	      low_my_putchar(data[pos-1],&str);
+	      string_builder_putchar(&str, ((unsigned char *)data)[pos-1]);
 	      while(data[pos]>='0' && data[pos]<='9')
-		low_my_putchar(data[pos++],&str);
+		string_builder_putchar(&str, ((unsigned char *)data)[pos++]);
 	      continue;
 	      
 	    case '#':
 	      if(GOBBLE('#'))
 	      {
 		extra=DEF_ARG_NOPRESPACE;
-		while(str.s.len && isspace(((unsigned char *)str.s.str)[str.s.len-1]))
-		  str.s.len--;
-		if(!str.s.len && sp-partbase>1)
+		while(str.s->len && isspace(((unsigned char *)str.s->str)[str.s->len-1]))
+		  str.s->len--;
+		if(!str.s->len && sp-partbase>1)
 		{
 #ifdef PIKE_DEBUG
 		  if(sp[-1].type != T_INT)
@@ -1331,8 +1330,8 @@ static INT32 low_cpp(struct cpp *this,
 		      if(argbase[e].u.string == s)
 		      {
 			check_stack(2);
-			push_string(low_free_buf(&str));
-			initialize_buf(&str);
+			push_string(finish_string_builder(&str));
+			init_string_builder(&str, 0);
 			push_int(e | extra);
 			extra=0;
 			break;
@@ -1341,9 +1340,9 @@ static INT32 low_cpp(struct cpp *this,
 		    if(e!=argno) continue;
 		  }
 		}
-		low_my_binary_strcat(data+tmp3,pos-tmp3, &str);
+		string_builder_binary_strcat(&str, data+tmp3, pos-tmp3);
 	      }else{
-		low_my_putchar(data[pos-1],&str);
+		string_builder_putchar(&str, ((unsigned char *)data)[pos-1]);
 	      }
 	      extra=0;
 	      continue;
@@ -1355,7 +1354,7 @@ static INT32 low_cpp(struct cpp *this,
 	    case '\'':
 	      tmp3=pos-1;
 	      FIND_END_OF_CHAR();
-	      low_my_binary_strcat(data+tmp3, pos-tmp3, &str);
+	      string_builder_binary_strcat(&str, data+tmp3, pos-tmp3);
 	      continue;
 	      
 	    case '\\':
@@ -1372,7 +1371,7 @@ static INT32 low_cpp(struct cpp *this,
 	    case 0:
 		break;
 	    }
-	    push_string(low_free_buf(&str));
+	    push_string(finish_string_builder(&str));
 	    break;
 	  }
 
@@ -1534,10 +1533,10 @@ static INT32 calcC(struct cpp *this,char *data,INT32 len,INT32 pos)
 
   case '"':
   {
-    dynamic_buffer s;
-    initialize_buf(&s);
+    struct string_builder s;
+    init_string_builder(&s, 0);
     READSTRING(s);
-    push_string(low_free_buf(&s));
+    push_string(finish_string_builder(&s));
     break;
   }
   
@@ -1888,17 +1887,17 @@ void free_one_define(struct hash_entry *h)
 static void insert_current_line(struct cpp *this,
 				struct define *def,
 				struct define_argument *args,
-				dynamic_buffer *tmp)
+				struct string_builder *tmp)
 {
   char buf[20];
   sprintf(buf," %ld ",(long)this->current_line);
-  low_my_binary_strcat(buf, strlen(buf),tmp);
+  string_builder_binary_strcat(tmp, buf, strlen(buf));
 }
 
 static void insert_current_file_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
-					  dynamic_buffer *tmp)
+					  struct string_builder *tmp)
 {
   PUSH_STRING(this->current_file->str, this->current_file->len, tmp);
 }
@@ -1906,7 +1905,7 @@ static void insert_current_file_as_string(struct cpp *this,
 static void insert_current_time_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
-					  dynamic_buffer *tmp)
+					  struct string_builder *tmp)
 {
   time_t tmp2;
   char *buf;
@@ -1919,7 +1918,7 @@ static void insert_current_time_as_string(struct cpp *this,
 static void insert_current_date_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
-					  dynamic_buffer *tmp)
+					  struct string_builder *tmp)
 {
   time_t tmp2;
   char *buf;
@@ -1933,22 +1932,22 @@ static void insert_current_date_as_string(struct cpp *this,
 static void check_defined(struct cpp *this,
 			  struct define *def,
 			  struct define_argument *args,
-			  dynamic_buffer *tmp)
+			  struct string_builder *tmp)
 {
   struct pike_string *s;
   s=binary_findstring(args[0].arg, args[0].len);
   if(s && find_define(s))
   {
-    low_my_binary_strcat(" 1 ", 3,tmp);
+    string_builder_binary_strcat(tmp, " 1 ", 3);
   }else{
-    low_my_binary_strcat(" 0 ", 3,tmp);
+    string_builder_binary_strcat(tmp, " 0 ", 3);
   }
 }
 
 static void dumpdef(struct cpp *this,
 		    struct define *def,
 		    struct define_argument *args,
-		    dynamic_buffer *tmp)
+		    struct string_builder *tmp)
 {
   struct pike_string *s;
   struct define *d;
@@ -1960,31 +1959,31 @@ static void dumpdef(struct cpp *this,
     PUSH_STRING(d->link.s->str,d->link.s->len, tmp);
     if(d->magic)
     {
-      low_my_binary_strcat(" defined magically ",19, tmp);
+      string_builder_binary_strcat(tmp, " defined magically ", 19);
     }else{
-      low_my_binary_strcat(" defined as ",12, tmp);
+      string_builder_binary_strcat(tmp, " defined as ", 12);
       
       if(d->first)
 	PUSH_STRING(d->first->str, d->first->len, tmp);
       for(e=0;e<d->num_parts;e++)
       {
 	if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
-	  low_my_putchar(' ',tmp);
+	  string_builder_putchar(tmp, ' ');
 	
 	if(d->parts[e].argument & DEF_ARG_STRINGIFY)
-	  low_my_putchar('#',tmp);
+	  string_builder_putchar(tmp, '#');
 	
 	sprintf(buffer,"%ld",(long)(d->parts[e].argument & DEF_ARG_MASK));
-	low_my_binary_strcat(buffer,strlen(buffer), tmp);
+	string_builder_binary_strcat(tmp, buffer, strlen(buffer));
 	
 	if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
-	  low_my_putchar(' ',tmp);
+	  string_builder_putchar(tmp, ' ');
 	
 	PUSH_STRING(d->parts[e].postfix->str, d->parts[e].postfix->len, tmp);
       } 
     }
   }else{
-    low_my_binary_strcat(" 0 ",3, tmp);
+    string_builder_binary_strcat(tmp, " 0 ", 3);
   }
 }
 
@@ -1993,7 +1992,7 @@ static int do_safe_index_call(struct pike_string *s);
 static void check_constant(struct cpp *this,
 			  struct define *def,
 			  struct define_argument *args,
-			  dynamic_buffer *tmp)
+			  struct string_builder *tmp)
 {
   struct svalue *save_stack=sp;
   struct svalue *sv;
@@ -2059,7 +2058,7 @@ static void check_constant(struct cpp *this,
 
   pop_n_elems(sp-save_stack);
 
-  low_my_binary_strcat(res?" 1 ":" 0 ", 3,tmp);
+  string_builder_binary_strcat(tmp, res?" 1 ":" 0 ", 3);
 }
 
 
@@ -2101,7 +2100,7 @@ void f_cpp(INT32 args)
     this.current_file=make_shared_string("-");
   }
   
-  initialize_buf(&this.buf);
+  init_string_builder(&this.buf, 0);
   this.current_line=1;
   this.compile_errors=0;
   this.defines=0;
@@ -2129,11 +2128,11 @@ void f_cpp(INT32 args)
   for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)
     simple_add_define(&this, tmpf->name, tmpf->value);
 
-  low_my_binary_strcat("# 1 ",4,&this.buf);
-  PUSH_STRING(this.current_file->str,this.current_file->len,&this.buf);
-  low_my_putchar('\n',&this.buf);
+  string_builder_binary_strcat(&this.buf, "# 1 ", 4);
+  PUSH_STRING(this.current_file->str, this.current_file->len, &this.buf);
+  string_builder_putchar(&this.buf, '\n');
 
-  low_cpp(&this, sp[-args].u.string->str, sp[-args].u.string->len,0);
+  low_cpp(&this, sp[-args].u.string->str, sp[-args].u.string->len, 0);
   if(this.defines)
     free_hashtable(this.defines, free_one_define);
 
@@ -2141,11 +2140,11 @@ void f_cpp(INT32 args)
 
   if(this.compile_errors)
   {
-    toss_buffer(&this.buf);
+    free_string_builder(&this.buf);
     error("Cpp() failed\n");
   }else{
     pop_n_elems(args);
-    push_string(low_free_buf(&this.buf));
+    push_string(finish_string_builder(&this.buf));
   }
 }
 
