@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.30 1999/11/16 16:42:10 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.31 1999/12/05 16:34:54 mirar Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -160,6 +160,11 @@ int va_get_args(struct svalue *s,
       break;
     case 'i':
       if(s->type != T_INT) return ret;
+      *va_arg(ap, INT_TYPE *)=s->u.integer;
+      break;
+    case '+':
+      if(s->type != T_INT) return ret;
+      if(s->u.integer<0) return ret;
       *va_arg(ap, INT_TYPE *)=s->u.integer;
       break;
     case 'D':
@@ -321,6 +326,7 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     case 'o': expected_type = "object"; break;
     case 'O': expected_type = "object or zero"; break;
     case 'p': expected_type = "program"; break;
+    case '+': expected_type = "int(0..)"; break;
     case '*': expected_type = "mixed"; break;
     default: expected_type = "Unknown"; break;
     }
