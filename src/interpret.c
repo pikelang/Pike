@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.281 2002/11/23 15:11:04 mast Exp $
+|| $Id: interpret.c,v 1.282 2002/11/24 18:20:50 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.281 2002/11/23 15:11:04 mast Exp $");
+RCSID("$Id: interpret.c,v 1.282 2002/11/24 18:20:50 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -925,23 +925,15 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 /* Define the program counter if necessary. */
 DEF_PROG_COUNTER;
 
-static int eval_instruction(PIKE_OPCODE_T *pc)
-{
-  if(pc == NULL) {
-
-    if(do_inter_return_label != NULL)
-      Pike_fatal("eval_instruction called with NULL (twice).\n");
-
-    do_inter_return_label = && inter_return_label;
-    do_escape_catch_label = && inter_escape_catch_label;
-
-    /* Trick optimizer */
-    if(!dummy_label)
-      return 0;
-  }
-
 #ifdef PIKE_DEBUG
-  if (t_flag) {
+/* Note: The debug code is extracted, to keep the frame size constant. */
+static int eval_instruction_low(PIKE_OPCODE_T *pc);
+#endif /* PIKE_DEBUG */
+
+static int eval_instruction(PIKE_OPCODE_T *pc)
+#ifdef PIKE_DEBUG
+{
+  if (t_flag && pc) {
     int i;
     fprintf(stderr, "Calling code at %p:\n", pc);
 #ifdef PIKE_OPCODE_ALIGN
@@ -958,7 +950,24 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	      ((int *)pc)[i+3]);
     }
   }
+  return eval_instruction_low(pc);
+}
+
+static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #endif /* PIKE_DEBUG */
+{
+  if(pc == NULL) {
+
+    if(do_inter_return_label != NULL)
+      Pike_fatal("eval_instruction called with NULL (twice).\n");
+
+    do_inter_return_label = && inter_return_label;
+    do_escape_catch_label = && inter_escape_catch_label;
+
+    /* Trick optimizer */
+    if(!dummy_label)
+      return 0;
+  }
 
   CALL_MACHINE_CODE(pc);
 
