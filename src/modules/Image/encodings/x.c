@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.24 1999/07/16 11:44:22 mirar Exp $ */
+/* $Id: x.c,v 1.25 1999/10/19 16:07:34 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.24 1999/07/16 11:44:22 mirar Exp $
+**!	$Id: x.c,v 1.25 1999/10/19 16:07:34 marcus Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.24 1999/07/16 11:44:22 mirar Exp $");
+RCSID("$Id: x.c,v 1.25 1999/10/19 16:07:34 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1016,7 +1016,7 @@ void image_x_decode_pseudocolor(INT32 args)
    unsigned long len;
    INT32 width,height,bpp,alignbits,swapbytes;
    int i;
-   INT32 n;
+   INT32 n, m;
    rgb_group *d;
    struct neo_colortable *nct;
    struct object *ncto;
@@ -1075,6 +1075,43 @@ void image_x_decode_pseudocolor(INT32 args)
 	 s++;
       }
       
+      free_string(ps);
+      free_object(ncto);
+      push_object(o);      
+   }
+   else if (bpp<8)
+   {
+      struct object *o;
+      struct image *img;
+
+      push_int(width);
+      push_int(height);
+      o=clone_object(image_program,2);
+      img=(struct image*)get_storage(o,image_program);
+
+      d=img->img;
+      m=height;
+      while (m--)
+      {
+	int bits=0, x=0, p;
+	n=width;
+	while (n--)
+	{
+	  if(bits<bpp && len>0)
+	  {
+	    x = (x<<8)|(*s++);
+	    len--;
+	    bits += 8;
+	  }
+	  p = (x>>(bits-bpp))&((1<<bpp)-1);
+	  bits -= bpp;
+	  if (p>=nct->u.flat.numentries)
+	    *d=nct->u.flat.entries[0].color;
+	  else
+	    *d=nct->u.flat.entries[p].color;
+	  d++;
+	}
+      }
       free_string(ps);
       free_object(ncto);
       push_object(o);
@@ -1155,6 +1192,15 @@ void init_image_x(void)
 
    add_function("examine_mask",image_x_call_examine_mask,
 		"function(int:array(int))",0);
+
+   add_function("decode_truecolor",image_x_decode_truecolor,
+		"function(string,int,int,int,int,int,int,int,int,int,int,int:object)",0);
+
+   add_function("decode_truecolor_masks",image_x_decode_truecolor_masks,
+		"function(string,int,int,int,int,int,int,int,int:object)",0);
+
+   add_function("decode_pseudocolor",image_x_decode_pseudocolor,
+		"function(string,int,int,int,int,int,object:object)",0);
 }
 
 void exit_image_x(void)
