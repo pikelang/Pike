@@ -4,7 +4,7 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id: module.pmod,v 1.1 2002/09/13 13:37:53 hop Exp $
+// $Id: module.pmod,v 1.2 2002/09/13 13:50:01 hop Exp $
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
@@ -13,6 +13,7 @@
 #define DEBUG(X, Y ...)
 #endif
 
+//! Audio data format handling
 
 class ANY {
 
@@ -23,19 +24,28 @@ class ANY {
 
   void create() { }
 
+  //! Reads data from file
   //!
+  //! @seealso
+  //!   @[read_streamed]
   object read_file(string filename, int|void nocheck) {
     real_read(Stdio.File(filename), nocheck);
     return this_object();
   }
 
+  //! Reads data from stream
   //!
+  //! Ie. for packetized data source the beggining
+  //! of data is searched.
+  //!
+  //! @seealso
+  //!  @[read_file]
   object read_streamed(string filename, int|void nocheck) {
     streamed = 1;
     return read_file(filename, nocheck);
   }
 
-  //!
+  //! Reads data from string
   object read_string(string data, int|void nocheck) {
     real_read(Stdio.FakeFile(data), nocheck);
     return this_object();
@@ -43,7 +53,7 @@ class ANY {
 
   void real_read(Stdio.File|Stdio.FakeFile file, int|void nocheck);
 
-  //!
+  //! Returns frame for current position and moves cursor forward.
   //!
   //! @note
   //!  The operation is destructive. Ie. current data cursor is moved over.
@@ -52,16 +62,16 @@ class ANY {
   //!  @[get_data], @[get_sample]
   string get_frame();
 
-  //!
+  //! Returns sample for current position and moves cursor forward.
   //!
   //! @note
   //!  The operation is destructive. Ie. current data cursor is moved over.
   //!
   //! @seealso
   //!  @[get_frame], @[get_data]
-  string get_sample();
+  mapping get_sample();
 
-  //!
+  //! Returns data only.
   //!
   //! @note
   //!  The operation is destructive. Ie. current data cursor is moved over.
@@ -70,7 +80,7 @@ class ANY {
   //!  @[get_frame], @[get_sample]
   string get_data();
 
-  //!
+  //! Check if data are correctly formated.
   int check_format() {
     return 0;
   }
