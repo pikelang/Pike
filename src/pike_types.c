@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.227 2003/11/18 11:19:41 grubba Exp $
+|| $Id: pike_types.c,v 1.228 2003/11/24 14:45:15 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.227 2003/11/18 11:19:41 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.228 2003/11/24 14:45:15 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -544,6 +544,13 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 	       min,max);
 #endif
 #endif
+
+#ifdef PIKE_DEBUG
+  if (min > max)
+    Pike_fatal("push_int_type(): Bad integer range:"
+	       " min:%"PRINTPIKEINT"d, max:%"PRINTPIKEINT"d.\n",
+	       min, max);
+#endif /* PIKE_DEBUG */
   
   *(++Pike_compiler->type_stackp) = mk_type(T_INT,
 					    (void *)(ptrdiff_t)min,
