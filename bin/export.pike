@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.37 2001/11/08 13:57:38 grubba Exp $ */
+/* $Id: export.pike,v 1.38 2001/11/08 18:59:57 nilsson Exp $ */
 
 import Stdio;
 
@@ -206,22 +206,22 @@ int main(int argc, string *argv)
 	   get_files(vpath+"/lib"),
 	   get_files(vpath+"/bin"),
 	   get_files(vpath+"/man"),
-	   get_files(vpath+"/autodoc/bin"),
-	   get_files(vpath+"/autodoc/not_extracted"),
-	   get_files(vpath+"/autodoc/presentation"),
-	   get_files(vpath+"/autodoc/src_images"),
-	   get_files(vpath+"/autodoc/structure"),
-	   ({ vpath+"/autodoc/Makefile",
-	      vpath+"/autodoc/Makefile.in",
-	      vpath+"/autodoc/inlining.txt",
-	      vpath+"/autodoc/keywords.txt",
-	      vpath+"/autodoc/syntax.txt",
-	      vpath+"/autodoc/tags.txt",
-	      vpath+"/autodoc/template.xsl",	      
-	      vpath+"/autodoc/tree-split-style.css",
-	      vpath+"/autodoc/tree-split-template.html",
-	      vpath+"/autodoc/xml.txt",
-	      vpath+"/autodoc/.cvsignore",
+	   get_files(vpath+"/refdoc/bin"),
+	   get_files(vpath+"/refdoc/not_extracted"),
+	   get_files(vpath+"/refdoc/presentation"),
+	   get_files(vpath+"/refdoc/src_images"),
+	   get_files(vpath+"/refdoc/structure"),
+	   ({ vpath+"/refdoc/Makefile",
+	      vpath+"/refdoc/Makefile.in",
+	      vpath+"/refdoc/inlining.txt",
+	      vpath+"/refdoc/keywords.txt",
+	      vpath+"/refdoc/syntax.txt",
+	      vpath+"/refdoc/tags.txt",
+	      vpath+"/refdoc/template.xsl",	      
+	      vpath+"/refdoc/tree-split-style.css",
+	      vpath+"/refdoc/tree-split-template.html",
+	      vpath+"/refdoc/xml.txt",
+	      vpath+"/refdoc/.cvsignore",
 	   }));
 
   werror("Creating "+vpath+".tar.gz:\n");
