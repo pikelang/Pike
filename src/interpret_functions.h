@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.99 2001/12/16 22:48:08 mast Exp $
+ * $Id: interpret_functions.h,v 1.100 2002/04/08 03:05:53 marcus Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -2112,9 +2112,11 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", {
   if(new_frame->context.parent)						   \
     add_ref(new_frame->context.parent);					   \
   Pike_fp=new_frame;							   \
+  SET_PROG_COUNTER(addr);						   \
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
 									   \
-  DO_JUMP_TO(addr);							   \
+  FETCH;								   \
+  DONE;									   \
 }while(0)
 
 
