@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.328 2002/09/24 17:36:44 grubba Exp $
+# $Id: Makefile.in,v 1.329 2002/10/02 12:53:26 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -198,7 +198,7 @@ POBJ = las.o builtin_functions.o peep.o module.o
 # to make sure they are linked in.
 all: module_objects tools
 	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) dump_modules; else :; fi
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_module_objects
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@if [ "`find . -name '*.fail' -print`" = "" ]; then :; else \
 	  echo; \
@@ -212,7 +212,10 @@ all: module_objects tools
 documentation: pike dump_modules
 	cd $(SRCDIR)/../refdoc && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" $(DOCTARGET)
 
-post_modules: pike
+# Backward compat.
+post_modules: post_module_objects
+
+post_module_objects: pike
 	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
