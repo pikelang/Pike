@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.289 2000/07/07 02:07:57 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.290 2000/07/19 13:09:53 lange Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -149,7 +149,7 @@ struct case_info {
 #define CIM_CASEBIT	3	/* Some case, case mask in data */
 #define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
 
-static struct case_info case_info[] = {
+static const struct case_info case_info[] = {
 #ifdef IN_TPIKE
 #include "dummy_ci.h"
 #else /* !IN_TPIKE */
@@ -183,7 +183,6 @@ static struct case_info *find_ci(int c)
       hi = mid;
     }
   }
-
   return(cache = case_info + lo);
 }
 
@@ -271,7 +270,7 @@ void f_upper_case(INT32 args)
     p_wchar0 *str = STR0(ret);
 
     while(i--) {
-      if (str[i] != 0xff) {
+      if(str[i]!=0xff && str[i]!=0xb5) {
 	DO_UPPER_CASE(str[i]);
       } else {
 	widen = 1;
@@ -297,15 +296,16 @@ void f_upper_case(INT32 args)
   push_string(end_shared_string(ret));
 
   if (widen) {
-    /* Widen the string, and replace any 0xff's with 0x178's. */
+    /* Widen the string, and replace any 0xb5's or 0xff's. */
     orig = Pike_sp[-1].u.string;
     ret = begin_wide_shared_string(orig->len, 1);
 
     i = orig->len;
 
     while(i--) {
-      if ((STR1(ret)[i] = STR0(orig)[i]) == 0xff) {
-	STR1(ret)[i] = 0x178;
+      switch(STR1(ret)[i] = STR0(orig)[i]) {
+      case 0xff: STR1(ret)[i] = 0x178; break;
+      case 0xb5: STR1(ret)[i] = 0x39c; break;
       }
     }
     free_string(Pike_sp[-1].u.string);
