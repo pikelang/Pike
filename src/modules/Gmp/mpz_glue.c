@@ -2,13 +2,16 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.127 2003/03/26 15:23:39 mast Exp $
+|| $Id: mpz_glue.c,v 1.128 2003/03/28 15:51:40 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.127 2003/03/26 15:23:39 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.128 2003/03/28 15:51:40 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
+
+/* Disable this for now to check that the fallbacks work correctly. */
+#undef HAVE_MPZ_IMPORT
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
 #define USE_GMP2
@@ -40,10 +43,6 @@ RCSID("$Id: mpz_glue.c,v 1.127 2003/03/26 15:23:39 mast Exp $");
 
 #include <limits.h>
 
-#if SIZEOF_INT_TYPE > SIZEOF_LONG
-#define BIG_PIKE_INT
-#endif
-
 #define sp Pike_sp
 #define fp Pike_fp
 
@@ -68,53 +67,49 @@ struct program *bignum_program;
 #endif
 
 #ifdef AUTO_BIGNUM
+static mpz_t mpz_int_type_min;
+
 void mpzmod_reduce(struct object *o)
 {
-  INT_TYPE i;
+  MP_INT *mpz = OBTOMPZ (o);
+  int neg = mpz_sgn (mpz) < 0;
+  INT_TYPE res = 0;
 
-  i = mpz_get_si(OBTOMPZ(o));
-  if(mpz_cmp_si(OBTOMPZ(o), i) == 0)
-  {
-     free_object(o);
-     push_int(i);
+  /* Get the index of the highest limb that have bits within the range
+   * of the INT64. */
+  size_t pos = (INT_TYPE_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
+
+  if (mpz_size (mpz) <= pos + 1) {
+#if INT_TYPE_BITS == GMP_NUMB_BITS
+    res = mpz_getlimbn (mpz, 0);
+#elif INT_TYPE_BITS < GMP_NUMB_BITS
+    mp_limb_t val = mpz_getlimbn (mpz, 0);
+    if (val >= (mp_limb_t) 1 << INT_TYPE_BITS) goto overflow;
+    res = val;
+#else
+    for (;; pos--) {
+      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
+      if (pos == 0) break;
+      if (res >= (INT_TYPE) 1 << (INT_TYPE_BITS - GMP_NUMB_BITS)) goto overflow;
+      res <<= GMP_NUMB_BITS;
+    }
+#endif
+
+    if (neg) res = -res;
+    free_object (o);
+    push_int (res);
+    return;
+  }
+
+overflow:
+  if (neg && !mpz_cmp (mpz, mpz_int_type_min)) {
+    /* No overflow afterall; it's MIN_INT_TYPE, the only valid integer
+     * whose absolute value is INT_TYPE_BITS long. */
+    free_object (o);
+    push_int (MIN_INT_TYPE);
   }
   else
-  {
-#ifdef BIG_PIKE_INT
-#define SHIFT  16 /* suggested: CHAR_BIT*sizeof(unsigned long int) */
-#define FILTER ((1<<SHIFT)-1)
-     int pos=0;
-     unsigned long int a;
-     INT_TYPE res=0;
-     mpz_t t,u;
-
-     mpz_init_set(t,OBTOMPZ(o));
-     mpz_init(u);
-     while (pos<(int)sizeof(INT_TYPE)*CHAR_BIT)
-     {
-        a=mpz_get_ui(t)&FILTER;
-        if (!a && mpz_cmp_si(t,0)==0) 
-        {
-           if (mpz_get_si(OBTOMPZ(o))<0) res=-res;
-	   mpz_clear(t);
-	   mpz_clear(u);
-           free_object(o);
-           push_int(res);
-           return;
-        }
-        res|=((INT_TYPE)a)<<pos;
-        if ((res>>pos) != a) break; 
-        mpz_fdiv_q_2exp(u,t,SHIFT);
-	mpz_set(t,u);
-	pos+=SHIFT;
-     }
-     mpz_clear(t);
-     mpz_clear(u);
-#undef SHIFT
-#undef FILTER
-#endif
-     push_object(o);
-  }
+    push_object (o);
 }
 #define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
    if(THIS_PROGRAM == bignum_program)				\
@@ -122,6 +117,94 @@ void mpzmod_reduce(struct object *o)
    else								\
      push_object(reducetmp__);					\
 }while(0)
+
+#ifdef INT64
+
+static void gmp_push_int64 (INT64 i)
+{
+  if(i == DO_NOT_WARN((INT_TYPE)i))
+  {
+    push_int(DO_NOT_WARN((INT_TYPE)i));
+  }
+  else
+  {
+    MP_INT *mpz;
+    int neg = i < 0;
+    if (neg) i = -i;
+
+    push_object (fast_clone_object (bignum_program));
+    mpz = OBTOMPZ (sp[-1].u.object);
+
+#ifdef HAVE_MPZ_IMPORT
+    mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
+#else
+    {
+      size_t n =
+	((SIZEOF_INT64 + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
+	/* The above is the position of the top unsigned long in the INT64. */
+	* ULONG_BITS;
+      mpz_set_ui (mpz, (i >> n) & ULONG_MAX);
+      while (n) {
+	n -= ULONG_BITS;
+	mpz_mul_2exp (mpz, mpz, ULONG_BITS);
+	mpz_add_ui (mpz, mpz, (i >> n) & ULONG_MAX);
+      }
+    }
+#endif
+
+    if (neg) mpz_neg (mpz, mpz);
+  }
+}
+
+static mpz_t mpz_int64_min;
+
+static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
+{
+  MP_INT *mpz = OBTOMPZ (bignum);
+  int neg = mpz_sgn (mpz) < 0;
+  INT64 res = 0;
+
+  /* Get the index of the highest limb that have bits within the range
+   * of the INT64. */
+  size_t pos = (INT64_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
+
+#ifdef PIKE_DEBUG
+  if (bignum->prog != bignum_program) Pike_fatal ("Not a Gmp.bignum.\n");
+#endif
+
+  if (mpz_size (mpz) <= pos + 1) {
+#if INT64_BITS == GMP_NUMB_BITS
+    res = mpz_getlimbn (mpz, 0);
+#elif INT64_BITS < GMP_NUMB_BITS
+    mp_limb_t val = mpz_getlimbn (mpz, 0);
+    if (val >= (mp_limb_t) 1 << INT64_BITS) goto overflow;
+    res = val;
+#else
+    for (;; pos--) {
+      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
+      if (pos == 0) break;
+      if (res >= (INT64) 1 << (INT64_BITS - GMP_NUMB_BITS)) goto overflow;
+      res <<= GMP_NUMB_BITS;
+    }
+#endif
+
+    if (neg) res = -res;
+    *i = res;
+    return 1;
+  }
+
+overflow:
+  if (neg && !mpz_cmp (mpz, mpz_int64_min)) {
+    /* No overflow afterall; it's MIN_INT64, the only valid integer
+     * whose absolute value is INT64_BITS long. */
+    *i = MIN_INT64;
+    return 1;
+  }
+  *i = neg ? MIN_INT64 : MAX_INT64;
+  return 0;
+}
+
+#endif /* INT64 */
 
 #else
 #define PUSH_REDUCED(o) push_object(o)
@@ -174,19 +257,28 @@ void get_mpz_from_digits(MP_INT *tmp,
   }
   else if(base == 256)
   {
-    int i;
-    mpz_t digit;
-    
-    mpz_init(digit);
-    mpz_set_ui(tmp, 0);
-    for (i = 0; i < digits->len; i++)
+    if (digits->size_shift)
+      Pike_error("Invalid digits, cannot convert to Gmp.mpz.\n");
+
+#ifdef HAVE_MPZ_IMPORT
+    mpz_import (tmp, digits->len, 1, 1, 0, 0, digits->str);
+#else
     {
-      mpz_set_ui(digit, EXTRACT_UCHAR(digits->str + i));
-      mpz_mul_2exp(digit, digit,
-		   DO_NOT_WARN((unsigned long)(digits->len - i - 1) * 8));
-      mpz_ior(tmp, tmp, digit);
+      int i;
+      mpz_t digit;
+    
+      mpz_init(digit);
+      mpz_set_ui(tmp, 0);
+      for (i = 0; i < digits->len; i++)
+      {
+	mpz_set_ui(digit, EXTRACT_UCHAR(digits->str + i));
+	mpz_mul_2exp(digit, digit,
+		     DO_NOT_WARN((unsigned long)(digits->len - i - 1) * 8));
+	mpz_ior(tmp, tmp, digit);
+      }
+      mpz_clear(digit);
     }
-    mpz_clear(digit);
+#endif
   }
   else
   {
@@ -199,40 +291,23 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
   switch(s->type)
   {
   case T_INT:
-#ifdef BIG_PIKE_INT
-/*  INT_TYPE is bigger then long int  */
-  {
-     INT_TYPE x=s->u.integer;
-#define SHIFT  24
-#define FILTER ((1<<SHIFT)-1)
-     int neg=0;
-     int pos=SHIFT;
-     if (x<0) neg=1,x=-x;
-     mpz_set_ui(tmp,(unsigned long int)(x&FILTER));
-     while ( (x>>=SHIFT) )
-     {
-        mpz_t t2,t1;
-        mpz_init_set_ui(t2,(unsigned long int)(x&FILTER)); 
-        mpz_init(t1);
-        mpz_mul_2exp(t1,t2,pos);
-        mpz_add(t2,tmp,t1);
-        mpz_set(tmp,t2);
-        mpz_clear(t1);
-        mpz_clear(t2);
-	pos+=SHIFT;
-     }
-     if (neg)
-     {
-        mpz_t t1;
-        mpz_init_set(t1,tmp);
-        mpz_neg(tmp,t1);
-        mpz_clear(t1);
-     }
-  }
-#undef SHIFT
-#undef FILTER
-#else
+#if SIZEOF_INT_TYPE <= SIZEOF_LONG
     mpz_set_si(tmp, (signed long int) s->u.integer);
+#elif defined (HAVE_MPZ_IMPORT)
+    mpz_import (tmp, 1, 1, SIZEOF_INT_TYPE, 0, 0, &s->u.integer);
+#else
+    {
+      size_t n =
+	((SIZEOF_INT_TYPE + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
+	/* The above is the position of the top unsigned long in the INT64. */
+	* ULONG_BITS;
+      mpz_set_ui (mpz, (s->u.integer >> n) & ULONG_MAX);
+      while (n) {
+	n -= ULONG_BITS;
+	mpz_mul_2exp (mpz, mpz, ULONG_BITS);
+	mpz_add_ui (mpz, mpz, (s->u.integer >> n) & ULONG_MAX);
+      }
+    }
 #endif
     break;
     
@@ -379,33 +454,18 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   else if (base == 256)
   {
     size_t i;
-#if 0
-    mpz_t tmp;
-#endif
 
     if (mpz_sgn(mpz) < 0)
       Pike_error("Only non-negative numbers can be converted to base 256.\n");
-#if 0
-    len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
-    s = begin_shared_string(len);
-    mpz_init_set(tmp, mpz);
-    i = len;
-    while(i--)
-    {
-      s->str[i] = mpz_get_ui(tmp) & 0xff;
-      mpz_fdiv_q_2exp(tmp, tmp, 8);
-    }
-    mpz_clear(tmp);
-#endif
 
     /* lets optimize this /Mirar & Per */
 
-    /* len = mpz->_mp_size*sizeof(mp_limb_t); */
+    /* len = mpz_size(mpz)*sizeof(mp_limb_t); */
     /* This function should not return any leading zeros. /Nisse */
     len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
 
-    if (!mpz->_mp_size)
+    if (!mpz_size (mpz))
     {
       /* Zero is a special case. There are no limbs at all, but
        * the size is still 1 bit, and one digit should be produced. */
@@ -413,12 +473,15 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 	Pike_fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
       s->str[0] = 0;
     } else {
-      mp_limb_t *src = mpz->_mp_d;
+#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
+#error Cannot cope with GMP using nail bits.
+#endif
+      size_t pos = 0;
       unsigned char *dst = (unsigned char *)s->str+s->len;
 
       while (len > 0)
       {
-	mp_limb_t x=*(src++);
+	mp_limb_t x = mpz_getlimbn (mpz, pos++);
 	for (i=0; i<sizeof(mp_limb_t); i++)
 	{
 	  *(--dst) = DO_NOT_WARN((unsigned char)(x & 0xff));
@@ -557,12 +620,12 @@ static void mpzmod__sprintf(INT32 args)
   {
     INT_TYPE length, neg = 0;
     unsigned char *dst;
-    mp_limb_t *src;
+    size_t pos;
     mpz_t tmp;
     MP_INT *n;
     INT_TYPE i;
 
-    length = THIS->_mp_size;
+    length = mpz_size (THIS);
 
     if(width_undecided)
     {
@@ -577,7 +640,7 @@ static void mpzmod__sprintf(INT32 args)
     {
       mpz_init_set(tmp, THIS);
       mpz_add_ui(tmp, tmp, 1);
-      length = -tmp->_mp_size;
+      length = -mpz_size (tmp);
       n = tmp;
       neg = 1;
     }
@@ -593,12 +656,15 @@ static void mpzmod__sprintf(INT32 args)
        dst = (unsigned char *)STR0(s) + width;
     else
        dst = (unsigned char *)STR0(s);
-       
-    src = n->_mp_d;
 
+    pos = 0;
     while(width > 0)
     {
-      mp_limb_t x = (length-->0? *(src++) : 0);
+#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
+#error Cannot cope with GMP using nail bits.
+#endif
+
+      mp_limb_t x = (length-->0? mpz_getlimbn(n, pos++) : 0);
 
       if (!flag_left)
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
@@ -1575,7 +1641,9 @@ static void mpzmod_popcount(INT32 args)
 #endif
     break;
   default:
+#ifdef PIKE_DEBUG
     Pike_fatal("Gmp.mpz->popcount: Unexpected sign!\n");
+#endif
   }
 #endif
 }
@@ -1644,6 +1712,10 @@ PIKE_MODULE_EXIT
     free_program(bignum_program);
     bignum_program=0;
   }
+  mpz_clear (mpz_int_type_min);
+#ifdef INT64
+  mpz_clear (mpz_int64_min);
+#endif
 #endif
 #endif
 }
@@ -1788,11 +1860,23 @@ PIKE_MODULE_INIT
       PROGRAM_NO_WEAK_FREE |
       PROGRAM_NO_EXPLICIT_DESTRUCT |
       PROGRAM_CONSTANT ;
+
+    mpz_init (mpz_int_type_min);
+    mpz_setbit (mpz_int_type_min, INT_TYPE_BITS);
+    mpz_neg (mpz_int_type_min, mpz_int_type_min);
     
     /* Magic hook in... */
     free_svalue(&auto_bignum_program);
     add_ref(auto_bignum_program.u.program = bignum_program);
     auto_bignum_program.type = PIKE_T_PROGRAM;
+
+#ifdef INT64
+    mpz_init (mpz_int64_min);
+    mpz_setbit (mpz_int64_min, INT64_BITS);
+    mpz_neg (mpz_int64_min, mpz_int64_min);
+    push_int64 = gmp_push_int64;
+    int64_from_bignum = gmp_int64_from_bignum;
+#endif
 
 #if 0
     /* magic /Hubbe
