@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.98 1997/05/20 02:02:53 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.99 1997/06/03 22:46:56 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -116,8 +116,18 @@ fi
 ])
 AC_MSG_RESULT($pike_cv_sys_os)
 
-#############################################################################
+case "$pike_cv_sys_os" in
+  SCO*)
+     case "$CC" in
+       *-belf*) ;;
+       *)
+          CC="$CC -belf"
+       ;;
+     esac
+  ;;
+esac
 
+#############################################################################
 
 
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
@@ -681,8 +691,6 @@ AC_CHECK_FUNCS(
  wait4 \
  waitpid \
  munmap \
- dlopen \
- dlsym \
  dld_link \
  dld_get_func \
  pipe \
@@ -966,6 +974,16 @@ AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
 fi])
 
 ########################################################################
+
+MY_CHECK_FUNCTION(dlopen,
+[
+#include <dlfcn.h>
+int main()
+{
+  dlopen(0, 0);
+  exit(0);
+}])
+
 
 MY_CHECK_FUNCTION(ldexp,
 [
@@ -1423,7 +1441,7 @@ then
 	Linux*) LDSHARED="gcc -shared";;
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
-	SCO_SV*) LDSHARED="cc -G -KPIC -Ki486 -belf -Wl,-Bexport";;
+	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
 	*) LDSHARED="ld";;
 	esac
 fi
@@ -1458,7 +1476,7 @@ then
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
-	SCO_SV*) LINKFORSHARED="-fpic -belf -dy";;
+	SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
     esac
   else
     case $pike_cv_sys_os in

@@ -62,6 +62,9 @@
 /* Define if you have memmem.  */
 #undef HAVE_MEMMEM
 
+/* Define this if you have dlopen */
+#undef HAVE_DLOPEN
+
 /* Define if you have ldexp.  */
 #undef HAVE_LDEXP
 

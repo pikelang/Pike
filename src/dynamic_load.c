@@ -8,10 +8,6 @@
 #  include "pike_macros.h"
 #endif
 
-#if !defined(HAVE_DLSYM) || !defined(HAVE_DLOPEN)
-#undef HAVE_DLOPEN
-#endif
-
 #if !defined(HAVE_DLOPEN) && defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
 #define USE_DLD
 #endif
@@ -72,6 +68,7 @@ static void dlinit(void)
 #ifndef RTLD_NOW
 #define RTLD_NOW 0
 #endif
+
 
 #endif /* HAVE_DLOPEN || USE_DLD */
 
