@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.39 2002/10/21 17:06:23 marcus Exp $
+|| $Id: charsetmod.c,v 1.40 2003/09/23 17:47:28 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.39 2002/10/21 17:06:23 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.40 2003/09/23 17:47:28 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -131,14 +131,16 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
   return 0;
 }
 
-#define REPLACE_CHAR(ch, func, ctx) \
+#define REPLACE_CHAR(ch, func, ctx, pos)	       \
           if(repcb != NULL && call_repcb(repcb, ch)) { \
 	    func(ctx, sb, sp[-1].u.string, rep, NULL); \
             pop_stack(); \
 	  } else if(rep != NULL) \
             func(ctx, sb, rep, NULL, NULL); \
 	  else \
-	    Pike_error("Character unsupported by encoding.\n");
+	    Pike_error("Character %lu at position %"PRINTPTRDIFFT"d "	\
+		       "unsupported by encoding.\n",			\
+		       (unsigned long) ch, (pos));
 
 #define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
 
@@ -1007,7 +1009,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
 	} else
-	  REPLACE_CHAR(c, feed_utf8e, cs);
+	  REPLACE_CHAR(c, feed_utf8e, cs, p - STR2(str) - 1);
     }
     break;
   default:
@@ -1077,7 +1079,7 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
 	} else
-	  REPLACE_CHAR(c, feed_utf8e, cs);
+	  REPLACE_CHAR(c, feed_utf8e, cs, p - STR2(str) - 1);
       /* FIXME: Encode using surrogates? */
     }
     break;
@@ -1204,7 +1206,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	  u7->dat = dat;
 	  u7->shift = shift;
 	  u7->datbit = datbit;
-	  REPLACE_CHAR(c, feed_utf7e, u7);
+	  REPLACE_CHAR(c, feed_utf7e, u7, p - STR2(str) - 1);
 	  dat = u7->dat;
 	  shift = u7->shift;
 	  datbit = u7->datbit;
@@ -1315,7 +1317,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8)
+	  REPLACE_CHAR(c, feed_std8e, s8, p - STR0(str) - 1)
     }
     break;
   case 1:
@@ -1327,7 +1329,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8);
+	  REPLACE_CHAR(c, feed_std8e, s8, p - STR1(str) - 1);
     }
     break;
   case 2:
@@ -1339,7 +1341,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8);
+	  REPLACE_CHAR(c, feed_std8e, s8, p - STR2(str) - 1);
     }
     break;
   default:
@@ -1403,7 +1405,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16);
+	  REPLACE_CHAR(c, feed_std16e, s16, p - STR0(str) - 1);
     }
     break;
   case 1:
@@ -1417,7 +1419,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16);
+	  REPLACE_CHAR(c, feed_std16e, s16, p - STR1(str) - 1);
     }
     break;
   case 2:
@@ -1431,7 +1433,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16);
+	  REPLACE_CHAR(c, feed_std16e, s16, p - STR2(str) - 1);
     }
     break;
   default:

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.27 2003/06/24 15:47:35 marcus Exp $
+|| $Id: iso2022.c,v 1.28 2003/09/23 17:47:28 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.27 2003/06/24 15:47:35 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.28 2003/09/23 17:47:28 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -359,14 +359,16 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
   return 0;
 }
 
-#define REPLACE_CHAR(ch) \
+#define REPLACE_CHAR(ch, pos)			       \
           if(repcb != NULL && call_repcb(repcb, ch)) { \
 	    eat_enc_string(sp[-1].u.string, s, rep, NULL); \
             pop_stack(); \
 	  } else if(rep != NULL) \
             eat_enc_string(rep, s, NULL, NULL); \
 	  else \
-	    Pike_error("Character unsupported by encoding.\n");
+	    Pike_error("Character %lu at position %"PRINTPTRDIFFT"d "	\
+		       "unsupported by encoding.\n",			\
+		       (unsigned long) ch, (pos));
 
 
 static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
@@ -499,7 +501,9 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c==0xfffd) {
 	  /* Substitution character... */
-	  REPLACE_CHAR(0xfffd);
+	  REPLACE_CHAR(0xfffd,
+		       s1 ? (p_wchar1 *) p - STR1(str) - 1 :
+		       (p_wchar2 *) p - STR2(str) - 1);
 	} else if(s->r[0].map != NULL && c >= s->r[0].lo && c < s->r[0].hi &&
 		  s->r[0].map[c-s->r[0].lo]) {
 	  /* Char contained in current G0 set */
@@ -647,7 +651,9 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  if(ttab == NULL) {
 	    if(rmap != NULL)
 	      free(rmap);
-	    REPLACE_CHAR(c);
+	    REPLACE_CHAR(c,
+			 s1 ? (p_wchar1 *) p - STR1(str) - 1 :
+			 (p_wchar2 *) p - STR2(str) - 1);
 	  }
 	}
       }
