@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.569 2002/11/28 13:05:08 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.570 2002/11/28 19:16:33 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9112,32 +9112,6 @@ test_compile(
 ]]);
 
 // - Calendar
-test_true(Calendar.Day())
-
-// the more elaborate tests
-test_eq([[
-// note: *every* time the Calendar tests have failed, it's not the 
-//       Calendar module that had any errors. Please don't commit 
-//       your Pike until you've got Calendar to compile again. /Mirar
-Calendar.Gregorian.Day(2500000)->month_day()]],31)
-test_eq([[
-// note: *every* time the Calendar tests have failed, it's not the 
-//       Calendar module that had any errors. Please don't commit 
-//       your Pike until you've got Calendar to compile again. /Mirar
-Calendar.ISO.Day(2500000)->month_day()]],31)
-test_eq([[
-// note: *every* time the Calendar tests have failed, it's not the 
-//       Calendar module that had any errors. Please don't commit 
-//       your Pike until you've got Calendar to compile again. /Mirar
-Calendar.Julian.Day(2500000)->month_day()]],17)
-test_eq([[
-// note: *every* time the Calendar tests have failed, it's not the 
-//       Calendar module that had any errors. Please don't commit 
-//       your Pike until you've got Calendar to compile again. /Mirar
-(int)(Calendar.Stardate.Tick("julian",2500000)->tic())]],-190335)
-
-// Regression test for recent Calendar bug:  /jhs
-test_eq(Calendar.ISO.Week(2002,1)->day()->format_ymd(),"2001-12-31")
 
 // - Filesystem
 
