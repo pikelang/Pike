@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.178 2000/05/09 01:17:59 hubbe Exp $");
+RCSID("$Id: las.c,v 1.179 2000/05/11 14:09:45 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -30,6 +30,7 @@ RCSID("$Id: las.c,v 1.178 2000/05/09 01:17:59 hubbe Exp $");
 #include "builtin_functions.h"
 #include "cyclic.h"
 #include "block_alloc.h"
+#include "opcodes.h"
 
 #define LASDEBUG
 
@@ -484,7 +485,7 @@ node *debug_check_node_hash(node *n)
     fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
 	    n, n->current_file->str, n->line_number,
 	    n->token);
-    debug_malloc_dump_references(n);
+    debug_malloc_dump_references(n,0,0,0);
     print_tree(n);
     fatal("Bad node hash!\n");
   }

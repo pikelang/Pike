@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.16 2000/03/10 20:06:34 hubbe Exp $
+ * $Id: lexer.h,v 1.17 2000/05/11 14:09:46 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -280,11 +280,11 @@ static int low_yylex(YYSTYPE *yylval)
     {
     case 0:
       lex.pos -= (1<<SHIFT);
-#ifdef F_LEX_EOF
-      return F_LEX_EOF;
-#else /* !F_LEX_EOF */
+#ifdef TOK_LEX_EOF
+      return TOK_LEX_EOF;
+#else /* !TOK_LEX_EOF */
       return 0;
-#endif /* F_LEX_EOF */
+#endif /* TOK_LEX_EOF */
 
     case '\n':
       lex.current_line++;
@@ -395,25 +395,25 @@ static int low_yylex(YYSTYPE *yylval)
       if(!GOBBLE('\''))
 	yyerror("Unterminated character constant.");
       debug_malloc_pass( yylval->n=mkintnode(c) );
-      return F_NUMBER;
+      return TOK_NUMBER;
 	
     case '"':
     {
       struct pike_string *s=readstring();
       yylval->n=mkstrnode(s);
       free_string(s);
-      return F_STRING;
+      return TOK_STRING;
     }
   
     case ':':
-      if(GOBBLE(':')) return F_COLON_COLON;
+      if(GOBBLE(':')) return TOK_COLON_COLON;
       return c;
 
     case '.':
       if(GOBBLE('.'))
       {
-	if(GOBBLE('.')) return F_DOT_DOT_DOT;
-	return F_DOT_DOT;
+	if(GOBBLE('.')) return TOK_DOT_DOT_DOT;
+	return TOK_DOT_DOT;
       }
       return c;
   
@@ -443,7 +443,7 @@ static int low_yylex(YYSTYPE *yylval)
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
 	free_svalue(&sval);
-	return F_NUMBER;
+	return TOK_NUMBER;
       }
     }
   
@@ -484,79 +484,79 @@ static int low_yylex(YYSTYPE *yylval)
 	free_node(yylval->n);
 	lex.pos=p1;
 	yylval->fnum=(FLOAT_TYPE)f;
-	return F_FLOAT;
+	return TOK_FLOAT;
       }else{
 	debug_malloc_touch(yylval->n);
 	lex.pos=p2;
-	return F_NUMBER;
+	return TOK_NUMBER;
       }
   
     case '-':
-      if(GOBBLE('=')) return F_SUB_EQ;
-      if(GOBBLE('>')) return F_ARROW;
-      if(GOBBLE('-')) return F_DEC;
+      if(GOBBLE('=')) return TOK_SUB_EQ;
+      if(GOBBLE('>')) return TOK_ARROW;
+      if(GOBBLE('-')) return TOK_DEC;
       return '-';
   
     case '+':
-      if(GOBBLE('=')) return F_ADD_EQ;
-      if(GOBBLE('+')) return F_INC;
+      if(GOBBLE('=')) return TOK_ADD_EQ;
+      if(GOBBLE('+')) return TOK_INC;
       return '+';
   
     case '&':
-      if(GOBBLE('=')) return F_AND_EQ;
-      if(GOBBLE('&')) return F_LAND;
+      if(GOBBLE('=')) return TOK_AND_EQ;
+      if(GOBBLE('&')) return TOK_LAND;
       return '&';
   
     case '|':
-      if(GOBBLE('=')) return F_OR_EQ;
-      if(GOBBLE('|')) return F_LOR;
+      if(GOBBLE('=')) return TOK_OR_EQ;
+      if(GOBBLE('|')) return TOK_LOR;
       return '|';
 
     case '^':
-      if(GOBBLE('=')) return F_XOR_EQ;
+      if(GOBBLE('=')) return TOK_XOR_EQ;
       return '^';
   
     case '*':
-      if(GOBBLE('=')) return F_MULT_EQ;
+      if(GOBBLE('=')) return TOK_MULT_EQ;
       return '*';
 
     case '%':
-      if(GOBBLE('=')) return F_MOD_EQ;
+      if(GOBBLE('=')) return TOK_MOD_EQ;
       return '%';
   
     case '/':
-      if(GOBBLE('=')) return F_DIV_EQ;
+      if(GOBBLE('=')) return TOK_DIV_EQ;
       return '/';
   
     case '=':
-      if(GOBBLE('=')) return F_EQ;
+      if(GOBBLE('=')) return TOK_EQ;
       return '=';
   
     case '<':
       if(GOBBLE('<'))
       {
-	if(GOBBLE('=')) return F_LSH_EQ;
-	return F_LSH;
+	if(GOBBLE('=')) return TOK_LSH_EQ;
+	return TOK_LSH;
       }
-      if(GOBBLE('=')) return F_LE;
+      if(GOBBLE('=')) return TOK_LE;
       return '<';
   
     case '>':
-      if(GOBBLE(')')) return F_MULTISET_END;
-      if(GOBBLE('=')) return F_GE;
+      if(GOBBLE(')')) return TOK_MULTISET_END;
+      if(GOBBLE('=')) return TOK_GE;
       if(GOBBLE('>'))
       {
-	if(GOBBLE('=')) return F_RSH_EQ;
-	return F_RSH;
+	if(GOBBLE('=')) return TOK_RSH_EQ;
+	return TOK_RSH;
       }
       return '>';
 
     case '!':
-      if(GOBBLE('=')) return F_NE;
-      return F_NOT;
+      if(GOBBLE('=')) return TOK_NE;
+      return TOK_NOT;
 
     case '(':
-      if(GOBBLE('<')) return F_MULTISET_START;
+      if(GOBBLE('<')) return TOK_MULTISET_START;
       return '(';
 
     case ']':
@@ -651,7 +651,7 @@ static int low_yylex(YYSTYPE *yylval)
 	struct pike_string *s=make_shared_string(tmp+offset);
 	yylval->n=mkstrnode(s);
 	free_string(s);
-	return F_IDENTIFIER;
+	return TOK_IDENTIFIER;
       }
     }
 
@@ -674,116 +674,116 @@ static int low_yylex(YYSTYPE *yylval)
 			  INDEX_CHARP(buf, 1, SHIFT)))
 	  {
 	  case TWO_CHAR('a','r'):
-	    if(ISWORD("array")) return F_ARRAY_ID;
+	    if(ISWORD("array")) return TOK_ARRAY_ID;
 	  break;
 	  case TWO_CHAR('b','r'):
-	    if(ISWORD("break")) return F_BREAK;
+	    if(ISWORD("break")) return TOK_BREAK;
 	  break;
 	  case TWO_CHAR('c','a'):
-	    if(ISWORD("case")) return F_CASE;
-	    if(ISWORD("catch")) return F_CATCH;
+	    if(ISWORD("case")) return TOK_CASE;
+	    if(ISWORD("catch")) return TOK_CATCH;
 	  break;
 	  case TWO_CHAR('c','l'):
-	    if(ISWORD("class")) return F_CLASS;
+	    if(ISWORD("class")) return TOK_CLASS;
 	  break;
 	  case TWO_CHAR('c','o'):
-	    if(ISWORD("constant")) return F_CONSTANT;
-	    if(ISWORD("continue")) return F_CONTINUE;
+	    if(ISWORD("constant")) return TOK_CONSTANT;
+	    if(ISWORD("continue")) return TOK_CONTINUE;
 	  break;
 	  case TWO_CHAR('d','e'):
-	    if(ISWORD("default")) return F_DEFAULT;
+	    if(ISWORD("default")) return TOK_DEFAULT;
 	  break;
 	  case TWO_CHAR('d','o'):
-	    if(ISWORD("do")) return F_DO;
+	    if(ISWORD("do")) return TOK_DO;
 	  break;
 	  case TWO_CHAR('e','l'):
-	    if(ISWORD("else")) return F_ELSE;
+	    if(ISWORD("else")) return TOK_ELSE;
 	  break;
 	  case TWO_CHAR('e','x'):
-	    if(ISWORD("extern")) return F_EXTERN;
+	    if(ISWORD("extern")) return TOK_EXTERN;
 	  break;
 	  case TWO_CHAR('f','i'):
-	    if(ISWORD("final")) return F_FINAL_ID;
+	    if(ISWORD("final")) return TOK_FINAL_ID;
 	  break;
 	  case TWO_CHAR('f','l'):
-	    if(ISWORD("float")) return F_FLOAT_ID;
+	    if(ISWORD("float")) return TOK_FLOAT_ID;
 	  break;
 	  case TWO_CHAR('f','o'):
-	    if(ISWORD("for")) return F_FOR;
-	    if(ISWORD("foreach")) return F_FOREACH;
+	    if(ISWORD("for")) return TOK_FOR;
+	    if(ISWORD("foreach")) return TOK_FOREACH;
 	  break;
 	  case TWO_CHAR('f','u'):
-	    if(ISWORD("function")) return F_FUNCTION_ID;
+	    if(ISWORD("function")) return TOK_FUNCTION_ID;
 	  break;
 	  case TWO_CHAR('g','a'):
-	    if(ISWORD("gauge")) return F_GAUGE;
+	    if(ISWORD("gauge")) return TOK_GAUGE;
 	  break;
 	  case TWO_CHAR('i','f'):
-	    if(ISWORD("if")) return F_IF;
+	    if(ISWORD("if")) return TOK_IF;
 	  break;
 	  case TWO_CHAR('i','m'):
-	    if(ISWORD("import")) return F_IMPORT;
+	    if(ISWORD("import")) return TOK_IMPORT;
 	  break;
 	  case TWO_CHAR('i','n'):
-	    if(ISWORD("int")) return F_INT_ID;
-	    if(ISWORD("inherit")) return F_INHERIT;
-	    if(ISWORD("inline")) return F_INLINE;
+	    if(ISWORD("int")) return TOK_INT_ID;
+	    if(ISWORD("inherit")) return TOK_INHERIT;
+	    if(ISWORD("inline")) return TOK_INLINE;
 	  break;
 	  case TWO_CHAR('l','a'):
-	    if(ISWORD("lambda")) return F_LAMBDA;
+	    if(ISWORD("lambda")) return TOK_LAMBDA;
 	  break;
 	  case TWO_CHAR('l','o'):
-	    if(ISWORD("local")) return F_LOCAL_ID;
+	    if(ISWORD("local")) return TOK_LOCAL_ID;
 	  break;
 	  case TWO_CHAR('m','a'):
-	    if(ISWORD("mapping")) return F_MAPPING_ID;
+	    if(ISWORD("mapping")) return TOK_MAPPING_ID;
 	  break;
 	  case TWO_CHAR('m','i'):
-	    if(ISWORD("mixed")) return F_MIXED_ID;
+	    if(ISWORD("mixed")) return TOK_MIXED_ID;
 	  break;
 	  case TWO_CHAR('m','u'):
-	    if(ISWORD("multiset")) return F_MULTISET_ID;
+	    if(ISWORD("multiset")) return TOK_MULTISET_ID;
 	  break;
 	  case TWO_CHAR('n','o'):
-	    if(ISWORD("nomask")) return F_NO_MASK;
+	    if(ISWORD("nomask")) return TOK_NO_MASK;
 	  break;
 	  case TWO_CHAR('o','b'):
-	    if(ISWORD("object")) return F_OBJECT_ID;
+	    if(ISWORD("object")) return TOK_OBJECT_ID;
 	  break;
 	  case TWO_CHAR('o','p'):
-	    if(ISWORD("optional")) return F_OPTIONAL;
+	    if(ISWORD("optional")) return TOK_OPTIONAL;
 	  break;
 	  case TWO_CHAR('p','r'):
-	    if(ISWORD("program")) return F_PROGRAM_ID;
-	    if(ISWORD("predef")) return F_PREDEF;
-	    if(ISWORD("private")) return F_PRIVATE;
-	    if(ISWORD("protected")) return F_PROTECTED;
+	    if(ISWORD("program")) return TOK_PROGRAM_ID;
+	    if(ISWORD("predef")) return TOK_PREDEF;
+	    if(ISWORD("private")) return TOK_PRIVATE;
+	    if(ISWORD("protected")) return TOK_PROTECTED;
 	    break;
 	  break;
 	  case TWO_CHAR('p','u'):
-	    if(ISWORD("public")) return F_PUBLIC;
+	    if(ISWORD("public")) return TOK_PUBLIC;
 	  break;
 	  case TWO_CHAR('r','e'):
-	    if(ISWORD("return")) return F_RETURN;
+	    if(ISWORD("return")) return TOK_RETURN;
 	  break;
 	  case TWO_CHAR('s','s'):
-	    if(ISWORD("sscanf")) return F_SSCANF;
+	    if(ISWORD("sscanf")) return TOK_SSCANF;
 	  break;
 	  case TWO_CHAR('s','t'):
-	    if(ISWORD("string")) return F_STRING_ID;
-	    if(ISWORD("static")) return F_STATIC;
+	    if(ISWORD("string")) return TOK_STRING_ID;
+	    if(ISWORD("static")) return TOK_STATIC;
 	  break;
 	  case TWO_CHAR('s','w'):
-	    if(ISWORD("switch")) return F_SWITCH;
+	    if(ISWORD("switch")) return TOK_SWITCH;
 	  break;
 	  case TWO_CHAR('t','y'):
-	    if(ISWORD("typeof")) return F_TYPEOF;
+	    if(ISWORD("typeof")) return TOK_TYPEOF;
 	  break;
 	  case TWO_CHAR('v','o'):
-	    if(ISWORD("void")) return F_VOID_ID;
+	    if(ISWORD("void")) return TOK_VOID_ID;
 	  break;
 	  case TWO_CHAR('w','h'):
-	    if(ISWORD("while")) return F_WHILE;
+	    if(ISWORD("while")) return TOK_WHILE;
 	  break;
 	  }
 	}
@@ -801,7 +801,7 @@ static int low_yylex(YYSTYPE *yylval)
 #endif /* SHIFT == 0 */
 	  yylval->n=mkstrnode(tmp);
 	  free_string(tmp);
-	  return F_IDENTIFIER;
+	  return TOK_IDENTIFIER;
 	}
 #if 0
       }else if (c == (c & 0x9f)) {

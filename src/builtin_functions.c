@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.273 2000/05/07 00:39:17 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.274 2000/05/11 14:09:45 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -40,7 +40,6 @@ RCSID("$Id: builtin_functions.c,v 1.273 2000/05/07 00:39:17 hubbe Exp $");
 #include "security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
-#include "language.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H

@@ -5,10 +5,9 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.72 2000/05/01 03:33:45 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.73 2000/05/11 14:09:45 grubba Exp $");
 #include "las.h"
 #include "program.h"
-#include "language.h"
 #include "pike_types.h"
 #include "stralloc.h"
 #include "interpret.h"
@@ -19,12 +18,14 @@ RCSID("$Id: docode.c,v 1.72 2000/05/01 03:33:45 hubbe Exp $");
 #include "pike_memory.h"
 #include "svalue.h"
 #include "main.h"
-#include "lex.h"
 #include "builtin_functions.h"
 #include "peep.h"
 #include "docode.h"
 #include "operators.h"
 #include "object.h"
+#include "opcodes.h"
+#include "language.h"
+#include "lex.h"
 
 static int do_docode2(node *n,int flags);
 

@@ -11,7 +11,7 @@
 #include "las.h"
 #include "stralloc.h"
 #include "interpret.h"
-#include "language.h"
+#include "opcodes.h"
 #include "error.h"
 #include "pike_types.h"
 #include "fsort.h"
@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.70 2000/05/03 09:00:44 hubbe Exp $");
+RCSID("$Id: array.c,v 1.71 2000/05/11 14:09:44 grubba Exp $");
 
 struct array empty_array=
 {

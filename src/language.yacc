@@ -6,196 +6,110 @@
 \*/
 /**/
 %pure_parser
-/*
- * These values are used by the stack machine, and can not be directly
- * called from Pike.
- */
-%token F_OFFSET
 
-%token F_PREFIX_256 F_PREFIX_512 F_PREFIX_768 F_PREFIX_1024
-%token F_PREFIX_CHARX256 F_PREFIX_WORDX256 F_PREFIX_24BITX256
-
-%token F_PREFIX2_256 F_PREFIX2_512 F_PREFIX2_768 F_PREFIX2_1024
-%token F_PREFIX2_CHARX256 F_PREFIX2_WORDX256 F_PREFIX2_24BITX256
-
-%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2 F_MARK_X F_POP_MARK
-%token F_CALL_LFUN F_CALL_LFUN_AND_POP F_CALL_LFUN_AND_RETURN
-%token F_APPLY F_APPLY_AND_POP F_MARK_APPLY F_MARK_APPLY_POP
-%token F_APPLY_AND_RETURN F_MARK_AND_STRING
-%token F_APPLY_ASSIGN_LOCAL F_APPLY_ASSIGN_LOCAL_AND_POP
-
-%token F_BRANCH F_BRANCH_WHEN_ZERO F_BRANCH_WHEN_NON_ZERO
-%token F_BRANCH_AND_POP_WHEN_ZERO F_BRANCH_AND_POP_WHEN_NON_ZERO
-%token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
-%token F_BRANCH_WHEN_LE F_BRANCH_WHEN_GE
-%token F_BRANCH_WHEN_EQ F_BRANCH_WHEN_NE
-%token F_BRANCH_IF_LOCAL F_BRANCH_IF_NOT_LOCAL
-%token F_BRANCH_IF_NOT_LOCAL_ARROW
-%token F_INC_LOOP F_DEC_LOOP
-%token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
-%token F_RECUR F_TAIL_RECUR F_COND_RECUR
-
-%token F_LEXICAL_LOCAL F_LEXICAL_LOCAL_LVALUE
-
-%token F_INDEX F_ARROW F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
-%token F_LOCAL_LOCAL_INDEX F_LOCAL_ARROW F_GLOBAL_LOCAL_INDEX
-%token F_POS_INT_INDEX F_NEG_INT_INDEX F_MAGIC_INDEX F_MAGIC_SET_INDEX
-%token F_LTOSVAL F_LTOSVAL2
-%token F_PUSH_ARRAY 
-%token F_RANGE F_COPY_VALUE
+%token TOK_ARROW
 
 /*
  * Basic value pushing
  */
-%token F_LFUN F_TRAMPOLINE
-%token F_GLOBAL F_GLOBAL_LVALUE
-%token F_LOCAL F_2_LOCALS F_LOCAL_LVALUE F_MARK_AND_LOCAL
-%token F_EXTERNAL F_EXTERNAL_LVALUE
-%token F_CLEAR_LOCAL F_CLEAR_2_LOCAL F_CLEAR_4_LOCAL
-%token F_CLEAR_STRING_SUBTYPE
-%token F_CONSTANT F_FLOAT F_STRING F_ARROW_STRING
-%token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
-%token F_UNDEFINED
+%token TOK_CONSTANT TOK_FLOAT TOK_STRING
+%token TOK_NUMBER
+
 /*
  * These are the predefined functions that can be accessed from Pike.
  */
 
-%token F_INC F_DEC F_POST_INC F_POST_DEC F_INC_AND_POP F_DEC_AND_POP
-%token F_INC_LOCAL F_INC_LOCAL_AND_POP F_POST_INC_LOCAL
-%token F_DEC_LOCAL F_DEC_LOCAL_AND_POP F_POST_DEC_LOCAL
-%token F_RETURN F_DUMB_RETURN F_RETURN_0 F_RETURN_1 F_RETURN_LOCAL
-%token F_RETURN_IF_TRUE F_THROW_ZERO
+%token TOK_INC TOK_DEC
+%token TOK_RETURN
 
-%token F_ASSIGN F_ASSIGN_AND_POP
-%token F_ASSIGN_LOCAL F_ASSIGN_LOCAL_AND_POP
-%token F_ASSIGN_GLOBAL F_ASSIGN_GLOBAL_AND_POP
-%token F_LOCAL_2_LOCAL F_LOCAL_2_GLOBAL F_GLOBAL_2_LOCAL
-%token F_ADD F_SUBTRACT F_ADD_INT F_ADD_NEG_INT
-%token F_ADD_TO_AND_POP F_ADD_FLOATS F_ADD_INTS
-%token F_MULTIPLY F_DIVIDE F_MOD
+%token TOK_EQ TOK_GE TOK_LE TOK_NE
+%token TOK_NOT
+%token TOK_LSH TOK_RSH
+%token TOK_LAND TOK_LOR
 
-%token F_LT F_GT F_EQ F_GE F_LE F_NE
-%token F_NEGATE F_NOT F_COMPL
-%token F_AND F_OR F_XOR
-%token F_LSH F_RSH
-%token F_LAND F_LOR
-%token F_EQ_OR F_EQ_AND
-
-%token F_SWITCH F_SSCANF F_CATCH
-%token F_CAST
-%token F_SOFT_CAST
-%token F_FOREACH
-
-%token F_SIZEOF F_SIZEOF_LOCAL
-%token F_CALL_FUNCTION F_CALL_FUNCTION_AND_RETURN
-
-/*
- * These are token values that needn't have an associated code for the
- * compiled file
- */
-%token F_MAX_OPCODE
+%token TOK_SWITCH TOK_SSCANF TOK_CATCH
+%token TOK_FOREACH
 
 /* This is the end of file marker used by the lexer
  * to enable nicer EOF in error handling.
  */
-%token F_LEX_EOF
+%token TOK_LEX_EOF
 
-%token F_ADD_EQ
-%token F_AND_EQ
-%token F_ARG_LIST
-%token F_COMMA_EXPR
-%token F_ARRAY_ID
-%token F_BREAK
-%token F_CASE
-%token F_CLASS
-%token F_COLON_COLON
-%token F_COMMA
-%token F_CONTINUE 
-%token F_DEFAULT
-%token F_DIV_EQ
-%token F_DO
-%token F_DOT_DOT
-%token F_DOT_DOT_DOT
-%token F_REDEF
-%token F_EFUN_CALL
-%token F_ELSE
-%token F_EXTERN
-%token F_FLOAT_ID
-%token F_FOR
-%token F_FUNCTION_ID
-%token F_GAUGE
-%token F_IDENTIFIER
-%token F_IF
-%token F_IMPORT
-%token F_INHERIT
-%token F_INLINE
-%token F_LOCAL_ID
-%token F_FINAL_ID
-%token F_INT_ID
-%token F_LAMBDA
-%token F_MULTISET_ID
-%token F_MULTISET_END
-%token F_MULTISET_START
-%token F_LOCAL
-%token F_LSH_EQ
-%token F_LVALUE_LIST
-%token F_ARRAY_LVALUE
-%token F_MAPPING_ID
-%token F_MIXED_ID
-%token F_MOD_EQ
-%token F_MULT_EQ
-%token F_NO_MASK
-%token F_OBJECT_ID
-%token F_OR_EQ
-%token F_PRIVATE
-%token F_PROGRAM_ID
-%token F_PROTECTED
-%token F_PREDEF
-%token F_PUBLIC
-%token F_RSH_EQ
-%token F_STATIC
-%token F_STATUS
-%token F_STRING_ID
-%token F_SUBSCRIPT
-%token F_SUB_EQ
-%token F_TYPEOF
-%token F_VAL_LVAL
-%token F_VOID_ID
-%token F_WHILE
-%token F_XOR_EQ
-%token F_NOP
-%token F_UNDEFINED
-%token F_OPTIONAL
+%token TOK_ADD_EQ
+%token TOK_AND_EQ
+%token TOK_ARRAY_ID
+%token TOK_BREAK
+%token TOK_CASE
+%token TOK_CLASS
+%token TOK_COLON_COLON
+%token TOK_CONTINUE 
+%token TOK_DEFAULT
+%token TOK_DIV_EQ
+%token TOK_DO
+%token TOK_DOT_DOT
+%token TOK_DOT_DOT_DOT
+%token TOK_ELSE
+%token TOK_EXTERN
+%token TOK_FLOAT_ID
+%token TOK_FOR
+%token TOK_FUNCTION_ID
+%token TOK_GAUGE
+%token TOK_IDENTIFIER
+%token TOK_IF
+%token TOK_IMPORT
+%token TOK_INHERIT
+%token TOK_INLINE
+%token TOK_LOCAL_ID
+%token TOK_FINAL_ID
+%token TOK_INT_ID
+%token TOK_LAMBDA
+%token TOK_MULTISET_ID
+%token TOK_MULTISET_END
+%token TOK_MULTISET_START
+%token TOK_LSH_EQ
+%token TOK_MAPPING_ID
+%token TOK_MIXED_ID
+%token TOK_MOD_EQ
+%token TOK_MULT_EQ
+%token TOK_NO_MASK
+%token TOK_OBJECT_ID
+%token TOK_OR_EQ
+%token TOK_PRIVATE
+%token TOK_PROGRAM_ID
+%token TOK_PROTECTED
+%token TOK_PREDEF
+%token TOK_PUBLIC
+%token TOK_RSH_EQ
+%token TOK_STATIC
+%token TOK_STRING_ID
+%token TOK_SUB_EQ
+%token TOK_TYPEOF
+%token TOK_VOID_ID
+%token TOK_WHILE
+%token TOK_XOR_EQ
+%token TOK_OPTIONAL
 
-%token F_ALIGN
-%token F_POINTER
-%token F_LABEL
-%token F_DATA
-%token F_START_FUNCTION
-%token F_BYTE
-
-%token F_MAX_INSTR
 
 %right '='
 %right '?'
-%left F_LOR
-%left F_LAND
+%left TOK_LOR
+%left TOK_LAND
 %left '|'
 %left '^'
 %left '&'
-%left F_EQ F_NE
-%left '>' F_GE '<' F_LE  /* nonassoc? */
-%left F_LSH F_RSH
+%left TOK_EQ TOK_NE
+%left '>' TOK_GE '<' TOK_LE  /* nonassoc? */
+%left TOK_LSH TOK_RSH
 %left '+' '-'
 %left '*' '%' '/'
-%right F_NOT '~'
-%nonassoc F_INC F_DEC
+%right TOK_NOT '~'
+%nonassoc TOK_INC TOK_DEC
 
 %{
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.184 2000/05/09 01:17:59 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.185 2000/05/11 14:09:45 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -214,6 +128,7 @@ RCSID("$Id: language.yacc,v 1.184 2000/05/09 01:17:59 hubbe Exp $");
 #include "docode.h"
 #include "machine.h"
 #include "main.h"
+#include "opcodes.h"
 
 #define YYMAXDEPTH	1000
 
@@ -270,44 +185,44 @@ int yylex(YYSTYPE *yylval);
 #endif /* YYBISON */
 %}
 
-%type <fnum> F_FLOAT
+%type <fnum> TOK_FLOAT
 
-%type <number> F_ARRAY_ID
-%type <number> F_BREAK
-%type <number> F_CASE
-%type <number> F_CATCH
-%type <number> F_CONTINUE
-%type <number> F_DEFAULT
-%type <number> F_DO
-%type <number> F_ELSE
-%type <number> F_FLOAT_ID
-%type <number> F_FOR
-%type <number> F_FOREACH
-%type <number> F_FUNCTION_ID
-%type <number> F_GAUGE
-%type <number> F_IF
-%type <number> F_INHERIT
-%type <number> F_INLINE
-%type <number> F_INT_ID
-%type <number> F_LAMBDA
-%type <number> F_LOCAL
-%type <number> F_MAPPING_ID
-%type <number> F_MIXED_ID
-%type <number> F_MULTISET_ID
-%type <number> F_NO_MASK
-%type <number> F_OBJECT_ID
-%type <number> F_PREDEF
-%type <number> F_PRIVATE
-%type <number> F_PROGRAM_ID
-%type <number> F_PROTECTED
-%type <number> F_PUBLIC
-%type <number> F_RETURN
-%type <number> F_SSCANF
-%type <number> F_STATIC
-%type <number> F_STRING_ID
-%type <number> F_SWITCH
-%type <number> F_VOID_ID
-%type <number> F_WHILE
+%type <number> TOK_ARRAY_ID
+%type <number> TOK_BREAK
+%type <number> TOK_CASE
+%type <number> TOK_CATCH
+%type <number> TOK_CONTINUE
+%type <number> TOK_DEFAULT
+%type <number> TOK_DO
+%type <number> TOK_ELSE
+%type <number> TOK_FLOAT_ID
+%type <number> TOK_FOR
+%type <number> TOK_FOREACH
+%type <number> TOK_FUNCTION_ID
+%type <number> TOK_GAUGE
+%type <number> TOK_IF
+%type <number> TOK_INHERIT
+%type <number> TOK_INLINE
+%type <number> TOK_INT_ID
+%type <number> TOK_LAMBDA
+%type <number> TOK_LOCAL_ID
+%type <number> TOK_MAPPING_ID
+%type <number> TOK_MIXED_ID
+%type <number> TOK_MULTISET_ID
+%type <number> TOK_NO_MASK
+%type <number> TOK_OBJECT_ID
+%type <number> TOK_PREDEF
+%type <number> TOK_PRIVATE
+%type <number> TOK_PROGRAM_ID
+%type <number> TOK_PROTECTED
+%type <number> TOK_PUBLIC
+%type <number> TOK_RETURN
+%type <number> TOK_SSCANF
+%type <number> TOK_STATIC
+%type <number> TOK_STRING_ID
+%type <number> TOK_SWITCH
+%type <number> TOK_VOID_ID
+%type <number> TOK_WHILE
 %type <number> arguments
 %type <number> arguments2
 %type <number> func_args
@@ -337,11 +252,11 @@ int yylex(YYSTYPE *yylval);
 %type <n> simple_identifier_type
 %type <n> string_constant
 %type <n> string
-%type <n> F_STRING
-%type <n> F_NUMBER
+%type <n> TOK_STRING
+%type <n> TOK_NUMBER
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
-%type <n> F_IDENTIFIER
+%type <n> TOK_IDENTIFIER
 %type <n> assoc_pair
 %type <n> block
 %type <n> failsafe_block
@@ -405,8 +320,8 @@ int yylex(YYSTYPE *yylval);
 %%
 
 all: program { YYACCEPT; }
-  | program F_LEX_EOF { YYACCEPT; }
-/*  | error F_LEX_EOF { YYABORT; } */
+  | program TOK_LEX_EOF { YYACCEPT; }
+/*  | error TOK_LEX_EOF { YYABORT; } */
   ;
 
 program: program def optional_semi_colons
@@ -432,7 +347,7 @@ string_constant: string
   }
   ;
 
-optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
+optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
   | ':' bad_identifier { $$=0; }
   | ':' error { $$=0; }
   | { $$=0; }
@@ -483,7 +398,7 @@ program_ref: low_program_ref
   }
   ;
       
-inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
+inheritance: modifiers TOK_INHERIT low_program_ref optional_rename_inherit ';'
   {
     if (($1 & ID_EXTERN) && (compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
@@ -498,37 +413,37 @@ inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
     pop_n_elems(1);
     free_node($3);
   }
-  | modifiers F_INHERIT low_program_ref error ';'
+  | modifiers TOK_INHERIT low_program_ref error ';'
   {
     free_node($3); yyerrok;
   }
-  | modifiers F_INHERIT low_program_ref error F_LEX_EOF
+  | modifiers TOK_INHERIT low_program_ref error TOK_LEX_EOF
   {
     free_node($3);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers F_INHERIT low_program_ref error '}'
+  | modifiers TOK_INHERIT low_program_ref error '}'
   {
     free_node($3); yyerror("Missing ';'.");
   }
-  | modifiers F_INHERIT error ';' { yyerrok; }
-  | modifiers F_INHERIT error F_LEX_EOF
+  | modifiers TOK_INHERIT error ';' { yyerrok; }
+  | modifiers TOK_INHERIT error TOK_LEX_EOF
   {
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers F_INHERIT error '}' { yyerror("Missing ';'."); }
+  | modifiers TOK_INHERIT error '}' { yyerror("Missing ';'."); }
   ;
 
-import: F_IMPORT idents ';'
+import: TOK_IMPORT idents ';'
   {
     resolv_constant($2);
     free_node($2);
     use_module(sp-1);
     pop_stack();
   }
-  | F_IMPORT string ';'
+  | TOK_IMPORT string ';'
   {
     ref_push_string($2->u.sval.u.string);
     free_node($2);
@@ -542,16 +457,16 @@ import: F_IMPORT idents ';'
     use_module(sp-1);
     pop_stack();
   }
-  | F_IMPORT error ';' { yyerrok; }
-  | F_IMPORT error F_LEX_EOF
+  | TOK_IMPORT error ';' { yyerrok; }
+  | TOK_IMPORT error TOK_LEX_EOF
   {
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | F_IMPORT error '}' { yyerror("Missing ';'."); }
+  | TOK_IMPORT error '}' { yyerror("Missing ';'."); }
   ;
 
-constant_name: F_IDENTIFIER '=' safe_expr0
+constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
     int tmp;
     /* This can be made more lenient in the future */
@@ -597,14 +512,14 @@ constant_list: constant_name
   | constant_list ',' constant_name
   ;
 
-constant: modifiers F_CONSTANT constant_list ';' {}
-  | modifiers F_CONSTANT error ';' { yyerrok; }
-  | modifiers F_CONSTANT error F_LEX_EOF
+constant: modifiers TOK_CONSTANT constant_list ';' {}
+  | modifiers TOK_CONSTANT error ';' { yyerrok; }
+  | modifiers TOK_CONSTANT error TOK_LEX_EOF
   {
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers F_CONSTANT error '}' { yyerror("Missing ';'."); }
+  | modifiers TOK_CONSTANT error '}' { yyerror("Missing ';'."); }
   ;
 
 block_or_semi: block
@@ -612,7 +527,7 @@ block_or_semi: block
     $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
   }
   | ';' { $$ = NULL; }
-  | F_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
+  | TOK_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
   | error { $$ = NULL; }
   ;
 
@@ -673,7 +588,7 @@ push_compiler_frame0: /* empty */
   }
   ;
 
-def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
+def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   '(' arguments close_paren_or_missing
   {
     int e;
@@ -802,7 +717,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     free_node($8);
     free_node($<n>9);
   }
-  | modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
+  | modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     error
   {
     pop_compiler_frame();
@@ -821,7 +736,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
   | import {}
   | constant {}
   | class { free_node($1); }
-  | error F_LEX_EOF
+  | error TOK_LEX_EOF
   {
     reset_type_stack();
     yyerror("Missing ';'.");
@@ -852,11 +767,11 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     }
   ;
 
-optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
+optional_dot_dot_dot: TOK_DOT_DOT_DOT { $$=1; }
   | /* empty */ { $$=0; }
   ;
 
-optional_identifier: F_IDENTIFIER
+optional_identifier: TOK_IDENTIFIER
   | bad_identifier { $$=0; }
   | /* empty */ { $$=0; }
   ;
@@ -909,73 +824,73 @@ arguments2: new_arg_name { $$ = 1; }
   }
   ;
 
-modifier: F_NO_MASK    { $$ = ID_NOMASK; }
-  | F_FINAL_ID   { $$ = ID_NOMASK; }
-  | F_STATIC     { $$ = ID_STATIC; }
-  | F_EXTERN     { $$ = ID_EXTERN; }
-  | F_OPTIONAL   { $$ = ID_OPTIONAL; }
-  | F_PRIVATE    { $$ = ID_PRIVATE | ID_STATIC; }
-  | F_LOCAL_ID   { $$ = ID_INLINE; }
-  | F_PUBLIC     { $$ = ID_PUBLIC; }
-  | F_PROTECTED  { $$ = ID_PROTECTED; }
-  | F_INLINE     { $$ = ID_INLINE; }
+modifier: TOK_NO_MASK    { $$ = ID_NOMASK; }
+  | TOK_FINAL_ID   { $$ = ID_NOMASK; }
+  | TOK_STATIC     { $$ = ID_STATIC; }
+  | TOK_EXTERN     { $$ = ID_EXTERN; }
+  | TOK_OPTIONAL   { $$ = ID_OPTIONAL; }
+  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_STATIC; }
+  | TOK_LOCAL_ID   { $$ = ID_INLINE; }
+  | TOK_PUBLIC     { $$ = ID_PUBLIC; }
+  | TOK_PROTECTED  { $$ = ID_PROTECTED; }
+  | TOK_INLINE     { $$ = ID_INLINE; }
   ;
 
 magic_identifiers1:
-    F_NO_MASK    { $$ = "nomask"; }
-  | F_FINAL_ID   { $$ = "final"; }
-  | F_STATIC     { $$ = "static"; }
-  | F_EXTERN	 { $$ = "extern"; }
-  | F_PRIVATE    { $$ = "private"; }
-  | F_LOCAL_ID   { $$ = "local"; }
-  | F_PUBLIC     { $$ = "public"; }
-  | F_PROTECTED  { $$ = "protected"; }
-  | F_INLINE     { $$ = "inline"; }
-  | F_OPTIONAL   { $$ = "optional"; }
+    TOK_NO_MASK    { $$ = "nomask"; }
+  | TOK_FINAL_ID   { $$ = "final"; }
+  | TOK_STATIC     { $$ = "static"; }
+  | TOK_EXTERN	 { $$ = "extern"; }
+  | TOK_PRIVATE    { $$ = "private"; }
+  | TOK_LOCAL_ID   { $$ = "local"; }
+  | TOK_PUBLIC     { $$ = "public"; }
+  | TOK_PROTECTED  { $$ = "protected"; }
+  | TOK_INLINE     { $$ = "inline"; }
+  | TOK_OPTIONAL   { $$ = "optional"; }
   ;
 
 magic_identifiers2:
-    F_VOID_ID       { $$ = "void"; }
-  | F_MIXED_ID      { $$ = "mixed"; }
-  | F_ARRAY_ID      { $$ = "array"; }
-  | F_MAPPING_ID    { $$ = "mapping"; }
-  | F_MULTISET_ID   { $$ = "multiset"; }
-  | F_OBJECT_ID     { $$ = "object"; }
-  | F_FUNCTION_ID   { $$ = "function"; }
-  | F_PROGRAM_ID    { $$ = "program"; }
-  | F_STRING_ID     { $$ = "string"; }
-  | F_FLOAT_ID      { $$ = "float"; }
-  | F_INT_ID        { $$ = "int"; }
+    TOK_VOID_ID       { $$ = "void"; }
+  | TOK_MIXED_ID      { $$ = "mixed"; }
+  | TOK_ARRAY_ID      { $$ = "array"; }
+  | TOK_MAPPING_ID    { $$ = "mapping"; }
+  | TOK_MULTISET_ID   { $$ = "multiset"; }
+  | TOK_OBJECT_ID     { $$ = "object"; }
+  | TOK_FUNCTION_ID   { $$ = "function"; }
+  | TOK_PROGRAM_ID    { $$ = "program"; }
+  | TOK_STRING_ID     { $$ = "string"; }
+  | TOK_FLOAT_ID      { $$ = "float"; }
+  | TOK_INT_ID        { $$ = "int"; }
   ;
 
 magic_identifiers3:
-    F_IF         { $$ = "if"; }
-  | F_DO         { $$ = "do"; }
-  | F_FOR        { $$ = "for"; }
-  | F_WHILE      { $$ = "while"; }
-  | F_ELSE       { $$ = "else"; }
-  | F_FOREACH    { $$ = "foreach"; }
-  | F_CATCH      { $$ = "catch"; }
-  | F_GAUGE      { $$ = "gauge"; }
-  | F_CLASS      { $$ = "class"; }
-  | F_BREAK      { $$ = "break"; }
-  | F_CASE       { $$ = "case"; }
-  | F_CONSTANT   { $$ = "constant"; }
-  | F_CONTINUE   { $$ = "continue"; }
-  | F_DEFAULT    { $$ = "default"; }
-  | F_IMPORT     { $$ = "import"; }
-  | F_INHERIT    { $$ = "inherit"; }
-  | F_LAMBDA     { $$ = "lambda"; }
-  | F_PREDEF     { $$ = "predef"; }
-  | F_RETURN     { $$ = "return"; }
-  | F_SSCANF     { $$ = "sscanf"; }
-  | F_SWITCH     { $$ = "switch"; }
-  | F_TYPEOF     { $$ = "typeof"; }
+    TOK_IF         { $$ = "if"; }
+  | TOK_DO         { $$ = "do"; }
+  | TOK_FOR        { $$ = "for"; }
+  | TOK_WHILE      { $$ = "while"; }
+  | TOK_ELSE       { $$ = "else"; }
+  | TOK_FOREACH    { $$ = "foreach"; }
+  | TOK_CATCH      { $$ = "catch"; }
+  | TOK_GAUGE      { $$ = "gauge"; }
+  | TOK_CLASS      { $$ = "class"; }
+  | TOK_BREAK      { $$ = "break"; }
+  | TOK_CASE       { $$ = "case"; }
+  | TOK_CONSTANT   { $$ = "constant"; }
+  | TOK_CONTINUE   { $$ = "continue"; }
+  | TOK_DEFAULT    { $$ = "default"; }
+  | TOK_IMPORT     { $$ = "import"; }
+  | TOK_INHERIT    { $$ = "inherit"; }
+  | TOK_LAMBDA     { $$ = "lambda"; }
+  | TOK_PREDEF     { $$ = "predef"; }
+  | TOK_RETURN     { $$ = "return"; }
+  | TOK_SSCANF     { $$ = "sscanf"; }
+  | TOK_SWITCH     { $$ = "switch"; }
+  | TOK_TYPEOF     { $$ = "typeof"; }
   ;
 
 magic_identifiers: magic_identifiers1 | magic_identifiers2 | magic_identifiers3 ;
 
-magic_identifier: F_IDENTIFIER 
+magic_identifier: TOK_IDENTIFIER 
   | magic_identifiers
   {
     struct pike_string *tmp=make_shared_string($1);
@@ -1139,17 +1054,17 @@ type2: type2 '|' type3 { push_type(T_OR); }
   | type3 
   ;
 
-type3: F_INT_ID  opt_int_range    { push_type(T_INT); }
-  | F_FLOAT_ID    { push_type(T_FLOAT); }
-  | F_PROGRAM_ID  { push_type(T_PROGRAM); }
-  | F_VOID_ID     { push_type(T_VOID); }
-  | F_MIXED_ID    { push_type(T_MIXED); }
-  | F_STRING_ID { push_type(T_STRING); }
-  | F_OBJECT_ID   opt_object_type { push_type(T_OBJECT); }
-  | F_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
-  | F_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
-  | F_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
-  | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
+type3: TOK_INT_ID  opt_int_range    { push_type(T_INT); }
+  | TOK_FLOAT_ID    { push_type(T_FLOAT); }
+  | TOK_PROGRAM_ID  { push_type(T_PROGRAM); }
+  | TOK_VOID_ID     { push_type(T_VOID); }
+  | TOK_MIXED_ID    { push_type(T_MIXED); }
+  | TOK_STRING_ID { push_type(T_STRING); }
+  | TOK_OBJECT_ID   opt_object_type { push_type(T_OBJECT); }
+  | TOK_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
+  | TOK_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
+  | TOK_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
+  | TOK_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
   ;
 
 type8: type3 | identifier_type ;
@@ -1158,8 +1073,8 @@ number_or_maxint: /* Empty */
   {
     $$ = mkintnode(MAX_INT32);
   }
-  | F_NUMBER
-  | '-' F_NUMBER
+  | TOK_NUMBER
+  | '-' TOK_NUMBER
   {
 #ifdef PIKE_DEBUG
     if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
@@ -1175,8 +1090,8 @@ number_or_minint: /* Empty */
   {
     $$ = mkintnode(MIN_INT32);
   }
-  | F_NUMBER
-  | '-' F_NUMBER
+  | TOK_NUMBER
+  | '-' TOK_NUMBER
   {
 #ifdef PIKE_DEBUG
     if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
@@ -1193,7 +1108,7 @@ opt_int_range: /* Empty */
     push_type_int(MAX_INT32);
     push_type_int(MIN_INT32);
   }
-  | '(' number_or_minint F_DOT_DOT number_or_maxint ')'
+  | '(' number_or_minint TOK_DOT_DOT number_or_maxint ')'
   {
     /* FIXME: Check that $4 is >= $2. */
     if($2->token == F_CONSTANT && $2->u.sval.type == T_INT)
@@ -1338,7 +1253,7 @@ name_list: new_name
   | name_list ',' new_name
   ;
 
-new_name: optional_stars F_IDENTIFIER
+new_name: optional_stars TOK_IDENTIFIER
   {
     struct pike_string *type;
     push_finished_type(compiler_frame->current_type);
@@ -1352,7 +1267,7 @@ new_name: optional_stars F_IDENTIFIER
     free_node($2);
   }
   | optional_stars bad_identifier {}
-  | optional_stars F_IDENTIFIER '='
+  | optional_stars TOK_IDENTIFIER '='
   {
     struct pike_string *type;
     push_finished_type(compiler_frame->current_type);
@@ -1376,11 +1291,11 @@ new_name: optional_stars F_IDENTIFIER
 				       mkidentifiernode($<number>4))));
     free_node($2);
   }
-  | optional_stars F_IDENTIFIER '=' error
+  | optional_stars TOK_IDENTIFIER '=' error
   {
     free_node($2);
   }
-  | optional_stars F_IDENTIFIER '=' F_LEX_EOF
+  | optional_stars TOK_IDENTIFIER '=' TOK_LEX_EOF
   {
     yyerror("Unexpected end of file in variable definition.");
     free_node($2);
@@ -1392,7 +1307,7 @@ new_name: optional_stars F_IDENTIFIER
   ;
 
 
-new_local_name: optional_stars F_IDENTIFIER
+new_local_name: optional_stars TOK_IDENTIFIER
   {    
     push_finished_type($<n>0->u.sval.u.string);
     if ($1 && (compiler_pass == 2)) {
@@ -1404,7 +1319,7 @@ new_local_name: optional_stars F_IDENTIFIER
     free_node($2);
   }
   | optional_stars bad_identifier { $$=0; }
-  | optional_stars F_IDENTIFIER '=' expr0 
+  | optional_stars TOK_IDENTIFIER '=' expr0 
   {
     push_finished_type($<n>0->u.sval.u.string);
     if ($1 && (compiler_pass == 2)) {
@@ -1420,13 +1335,13 @@ new_local_name: optional_stars F_IDENTIFIER
     free_node($4);
     $$=0;
   }
-  | optional_stars F_IDENTIFIER '=' error
+  | optional_stars TOK_IDENTIFIER '=' error
   {
     free_node($2);
     /* No yyerok here since we aren't done yet. */
     $$=0;
   }
-  | optional_stars F_IDENTIFIER '=' F_LEX_EOF
+  | optional_stars TOK_IDENTIFIER '=' TOK_LEX_EOF
   {
     yyerror("Unexpected end of file in local variable definition.");
     free_node($2);
@@ -1435,7 +1350,7 @@ new_local_name: optional_stars F_IDENTIFIER
   }
   ;
 
-new_local_name2: F_IDENTIFIER
+new_local_name2: TOK_IDENTIFIER
   {
     add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string, 0);
@@ -1443,7 +1358,7 @@ new_local_name2: F_IDENTIFIER
     free_node($1);
   }
   | bad_identifier { $$=0; }
-  | F_IDENTIFIER '=' safe_expr0
+  | TOK_IDENTIFIER '=' safe_expr0
   {
     add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string, 0);
@@ -1467,7 +1382,7 @@ block:'{'
   ;
 
 end_block: '}'
-  | F_LEX_EOF
+  | TOK_LEX_EOF
   {
     yyerror("Missing '}'.");
     yyerror("Unexpected end of file.");
@@ -1476,7 +1391,7 @@ end_block: '}'
 
 failsafe_block: block
               | error { $$=0; }
-              | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
+              | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
               ;
   
 
@@ -1510,7 +1425,7 @@ statement: unused2 ';'
   | break expected_semicolon
   | continue expected_semicolon
   | error ';' { reset_type_stack(); $$=0; yyerrok; }
-  | error F_LEX_EOF
+  | error TOK_LEX_EOF
   {
     reset_type_stack();
     yyerror("Missing ';'.");
@@ -1528,15 +1443,15 @@ statement: unused2 ';'
   ;
 
 
-break: F_BREAK { $$=mknode(F_BREAK,0,0); } ;
-default: F_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); }
-  | F_DEFAULT
+break: TOK_BREAK { $$=mknode(F_BREAK,0,0); } ;
+default: TOK_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); }
+  | TOK_DEFAULT
   {
     $$=mknode(F_DEFAULT,0,0); yyerror("Expected ':' after default.");
   }
   ;
 
-continue: F_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
+continue: TOK_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
 
 push_compiler_frame1: /* empty */
   {
@@ -1544,7 +1459,7 @@ push_compiler_frame1: /* empty */
   }
   ;
 
-lambda: F_LAMBDA push_compiler_frame1
+lambda: TOK_LAMBDA push_compiler_frame1
   {
     debug_malloc_touch(compiler_frame->current_return_type);
     if(compiler_frame->current_return_type)
@@ -1610,13 +1525,13 @@ lambda: F_LAMBDA push_compiler_frame1
     free_string(type);
     pop_compiler_frame();
   }
-  | F_LAMBDA push_compiler_frame1 error
+  | TOK_LAMBDA push_compiler_frame1 error
   {
     pop_compiler_frame();
   }
   ;
 
-local_function: F_IDENTIFIER push_compiler_frame1 func_args 
+local_function: TOK_IDENTIFIER push_compiler_frame1 func_args 
   {
     char buf[40];
     struct pike_string *name,*type;
@@ -1713,14 +1628,14 @@ local_function: F_IDENTIFIER push_compiler_frame1 func_args
 		mklocalnode(localid,0));
     }
   }
-  | F_IDENTIFIER push_compiler_frame1 error
+  | TOK_IDENTIFIER push_compiler_frame1 error
   {
     pop_compiler_frame();
     $$=mkintnode(0);
   }
   ;
 
-local_function2: optional_stars F_IDENTIFIER push_compiler_frame1 func_args 
+local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args 
   {
     char buf[40];
     struct pike_string *name,*type;
@@ -1826,7 +1741,7 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1 func_args
 		mklocalnode(localid,0));
     }
   }
-  | optional_stars F_IDENTIFIER push_compiler_frame1 error
+  | optional_stars TOK_IDENTIFIER push_compiler_frame1 error
   {
     pop_compiler_frame();
     free_node($2);
@@ -1837,13 +1752,13 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1 func_args
 
 failsafe_program: '{' program end_block
                 | error { yyerrok; }
-                | F_LEX_EOF
+                | TOK_LEX_EOF
                 {
 		  yyerror("End of file where program definition expected.");
 		}
                 ;
 
-class: modifiers F_CLASS optional_identifier
+class: modifiers TOK_CLASS optional_identifier
   {
     extern int num_parse_error;
     int num_errors=num_parse_error;
@@ -1937,7 +1852,7 @@ class: modifiers F_CLASS optional_identifier
   }
   ;
 
-cond: F_IF
+cond: TOK_IF
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
@@ -1953,7 +1868,7 @@ cond: F_IF
 
 end_cond: ')'
   | '}' { yyerror("Missing ')'."); }
-  | F_LEX_EOF
+  | TOK_LEX_EOF
   {
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
@@ -1961,7 +1876,7 @@ end_cond: ')'
   ;
 
 optional_else_part: { $$=0; }
-  | F_ELSE statement { $$=$2; }
+  | TOK_ELSE statement { $$=$2; }
   ;      
 
 safe_lvalue: lvalue
@@ -1969,11 +1884,11 @@ safe_lvalue: lvalue
   ;
 
 safe_expr0: expr0
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
+  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
   | error { $$=0; }
   ;
 
-foreach: F_FOREACH
+foreach: TOK_FOREACH
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
@@ -1991,18 +1906,18 @@ foreach: F_FOREACH
   }
   ;
 
-do: F_DO statement F_WHILE '(' safe_comma_expr end_cond expected_semicolon
+do: TOK_DO statement TOK_WHILE '(' safe_comma_expr end_cond expected_semicolon
   {
     $$=mknode(F_DO,$2,$5);
     $$->line_number=$1;
   }
-  | F_DO statement F_WHILE F_LEX_EOF
+  | TOK_DO statement TOK_WHILE TOK_LEX_EOF
   {
     $$=0;
     yyerror("Missing '(' in do-while loop.");
     yyerror("Unexpected end of file.");
   }
-  | F_DO statement F_LEX_EOF
+  | TOK_DO statement TOK_LEX_EOF
   {
     $$=0;
     yyerror("Missing 'while' in do-while loop.");
@@ -2011,14 +1926,14 @@ do: F_DO statement F_WHILE '(' safe_comma_expr end_cond expected_semicolon
   ;
 
 expected_semicolon: ';'
-  | F_LEX_EOF
+  | TOK_LEX_EOF
   {
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
   ;
 
-for: F_FOR
+for: TOK_FOR
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
@@ -2035,7 +1950,7 @@ for: F_FOR
   ;
 
 
-while:  F_WHILE
+while:  TOK_WHILE
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
@@ -2053,7 +1968,7 @@ for_expr: /* EMPTY */ { $$=mkintnode(1); }
   | safe_comma_expr
   ;
 
-switch:	F_SWITCH
+switch:	TOK_SWITCH
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
@@ -2065,11 +1980,11 @@ switch:	F_SWITCH
   }
   ;
 
-case: F_CASE safe_comma_expr expected_colon
+case: TOK_CASE safe_comma_expr expected_colon
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | F_CASE safe_comma_expr F_DOT_DOT optional_comma_expr expected_colon
+  | TOK_CASE safe_comma_expr TOK_DOT_DOT optional_comma_expr expected_colon
   {
      $$=mknode(F_CASE,$4?$2:0,$4?$4:$2);
   }
@@ -2088,14 +2003,14 @@ expected_colon: ':'
   {
     yyerror("Missing ':'.");
   }
-  | F_LEX_EOF
+  | TOK_LEX_EOF
   {
     yyerror("Missing ':'.");
     yyerror("Unexpected end of file.");
   }
   ;
 
-return: F_RETURN
+return: TOK_RETURN
   {
     if(!match_types(compiler_frame->current_return_type,
 		    void_type_string))
@@ -2104,7 +2019,7 @@ return: F_RETURN
     }
     $$=mknode(F_RETURN,mkintnode(0),0);
   }
-  | F_RETURN safe_comma_expr
+  | TOK_RETURN safe_comma_expr
   {
     $$=mknode(F_RETURN,$2,0);
   }
@@ -2159,16 +2074,16 @@ expr01: expr1
   | expr1 '?' expr01 ':' expr01 { $$=mknode('?',$1,mknode(':',$3,$5)); }
   ;
 
-assign: F_AND_EQ { $$=F_AND_EQ; }
-  | F_OR_EQ  { $$=F_OR_EQ; }
-  | F_XOR_EQ { $$=F_XOR_EQ; }
-  | F_LSH_EQ { $$=F_LSH_EQ; }
-  | F_RSH_EQ { $$=F_RSH_EQ; }
-  | F_ADD_EQ { $$=F_ADD_EQ; }
-  | F_SUB_EQ { $$=F_SUB_EQ; }
-  | F_MULT_EQ{ $$=F_MULT_EQ; }
-  | F_MOD_EQ { $$=F_MOD_EQ; }
-  | F_DIV_EQ { $$=F_DIV_EQ; }
+assign: TOK_AND_EQ { $$=F_AND_EQ; }
+  | TOK_OR_EQ  { $$=F_OR_EQ; }
+  | TOK_XOR_EQ { $$=F_XOR_EQ; }
+  | TOK_LSH_EQ { $$=F_LSH_EQ; }
+  | TOK_RSH_EQ { $$=F_RSH_EQ; }
+  | TOK_ADD_EQ { $$=F_ADD_EQ; }
+  | TOK_SUB_EQ { $$=F_SUB_EQ; }
+  | TOK_MULT_EQ{ $$=F_MULT_EQ; }
+  | TOK_MOD_EQ { $$=F_MOD_EQ; }
+  | TOK_DIV_EQ { $$=F_DIV_EQ; }
   ;
 
 optional_comma: { $$=0; } | ',' { $$=1; };
@@ -2204,37 +2119,37 @@ assoc_pair:  expr0 expected_colon expr1 { $$=mknode(F_ARG_LIST,$1,$3); }
   ;
 
 expr1: expr2
-  | expr1 F_LOR expr1  { $$=mknode(F_LOR,$1,$3); }
-  | expr1 F_LAND expr1 { $$=mknode(F_LAND,$1,$3); }
+  | expr1 TOK_LOR expr1  { $$=mknode(F_LOR,$1,$3); }
+  | expr1 TOK_LAND expr1 { $$=mknode(F_LAND,$1,$3); }
   | expr1 '|' expr1    { $$=mkopernode("`|",$1,$3); }
   | expr1 '^' expr1    { $$=mkopernode("`^",$1,$3); }
   | expr1 '&' expr1    { $$=mkopernode("`&",$1,$3); }
-  | expr1 F_EQ expr1   { $$=mkopernode("`==",$1,$3); }
-  | expr1 F_NE expr1   { $$=mkopernode("`!=",$1,$3); }
+  | expr1 TOK_EQ expr1   { $$=mkopernode("`==",$1,$3); }
+  | expr1 TOK_NE expr1   { $$=mkopernode("`!=",$1,$3); }
   | expr1 '>' expr1    { $$=mkopernode("`>",$1,$3); }
-  | expr1 F_GE expr1   { $$=mkopernode("`>=",$1,$3); }
+  | expr1 TOK_GE expr1   { $$=mkopernode("`>=",$1,$3); }
   | expr1 '<' expr1    { $$=mkopernode("`<",$1,$3); }
-  | expr1 F_LE expr1   { $$=mkopernode("`<=",$1,$3); }
-  | expr1 F_LSH expr1  { $$=mkopernode("`<<",$1,$3); }
-  | expr1 F_RSH expr1  { $$=mkopernode("`>>",$1,$3); }
+  | expr1 TOK_LE expr1   { $$=mkopernode("`<=",$1,$3); }
+  | expr1 TOK_LSH expr1  { $$=mkopernode("`<<",$1,$3); }
+  | expr1 TOK_RSH expr1  { $$=mkopernode("`>>",$1,$3); }
   | expr1 '+' expr1    { $$=mkopernode("`+",$1,$3); }
   | expr1 '-' expr1    { $$=mkopernode("`-",$1,$3); }
   | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
   | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
   | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
-  | expr1 F_LOR error 
-  | expr1 F_LAND error
+  | expr1 TOK_LOR error 
+  | expr1 TOK_LAND error
   | expr1 '|' error   
   | expr1 '^' error   
   | expr1 '&' error   
-  | expr1 F_EQ error  
-  | expr1 F_NE error  
+  | expr1 TOK_EQ error  
+  | expr1 TOK_NE error  
   | expr1 '>' error   
-  | expr1 F_GE error  
+  | expr1 TOK_GE error  
   | expr1 '<' error   
-  | expr1 F_LE error  
-  | expr1 F_LSH error 
-  | expr1 F_RSH error 
+  | expr1 TOK_LE error  
+  | expr1 TOK_LSH error 
+  | expr1 TOK_RSH error 
   | expr1 '+' error   
   | expr1 '-' error   
   | expr1 '*' error   
@@ -2253,21 +2168,21 @@ expr2: expr3
     $$=mksoftcastnode($1->u.sval.u.string,$2);
     free_node($1);
   }
-  | F_INC expr4       { $$=mknode(F_INC,$2,0); }
-  | F_DEC expr4       { $$=mknode(F_DEC,$2,0); }
-  | F_NOT expr2        { $$=mkopernode("`!",$2,0); }
+  | TOK_INC expr4       { $$=mknode(F_INC,$2,0); }
+  | TOK_DEC expr4       { $$=mknode(F_DEC,$2,0); }
+  | TOK_NOT expr2        { $$=mkopernode("`!",$2,0); }
   | '~' expr2          { $$=mkopernode("`~",$2,0); }
   | '-' expr2          { $$=mkopernode("`-",$2,0); }
   ;
 
 expr3: expr4
-  | expr4 F_INC       { $$=mknode(F_POST_INC,$1,0); }
-  | expr4 F_DEC       { $$=mknode(F_POST_DEC,$1,0); }
+  | expr4 TOK_INC       { $$=mknode(F_POST_INC,$1,0); }
+  | expr4 TOK_DEC       { $$=mknode(F_POST_DEC,$1,0); }
   ;
 
 expr4: string
-  | F_NUMBER 
-  | F_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
+  | TOK_NUMBER 
+  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
   | catch
   | gauge
   | typeof
@@ -2277,7 +2192,7 @@ expr4: string
   | idents
   | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
   | expr4 '(' error ')' { $$=mkapplynode($1, NULL); yyerrok; }
-  | expr4 '(' error F_LEX_EOF
+  | expr4 '(' error TOK_LEX_EOF
   {
     yyerror("Missing ')'."); $$=mkapplynode($1, NULL);
     yyerror("Unexpected end of file.");
@@ -2285,12 +2200,12 @@ expr4: string
   | expr4 '(' error ';' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
   | expr4 '(' error '}' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
   | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
-  | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
+  | expr4 '['  comma_expr_or_zero TOK_DOT_DOT comma_expr_or_maxint ']'
   {
     $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
   }
   | expr4 '[' error ']' { $$=$1; yyerrok; }
-  | expr4 '[' error F_LEX_EOF
+  | expr4 '[' error TOK_LEX_EOF
   {
     $$=$1; yyerror("Missing ']'.");
     yyerror("Unexpected end of file.");
@@ -2303,42 +2218,42 @@ expr4: string
     { $$=mkefuncallnode("aggregate",$3); }
   | '(' '[' m_expr_list close_bracket_or_missing ')'
     { $$=mkefuncallnode("aggregate_mapping",$3); }
-  | F_MULTISET_START expr_list F_MULTISET_END
+  | TOK_MULTISET_START expr_list TOK_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
-  | F_MULTISET_START expr_list ')'
+  | TOK_MULTISET_START expr_list ')'
     {
       yyerror("Missing '>'.");
       $$=mkefuncallnode("aggregate_multiset",$2);
     }
   | '(' error ')' { $$=0; yyerrok; }
-  | '(' error F_LEX_EOF
+  | '(' error TOK_LEX_EOF
   {
     $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
   | '(' error ';' { $$=0; yyerror("Missing ')'."); }
   | '(' error '}' { $$=0; yyerror("Missing ')'."); }
-  | F_MULTISET_START error F_MULTISET_END { $$=0; yyerrok; }
-  | F_MULTISET_START error ')' {
+  | TOK_MULTISET_START error TOK_MULTISET_END { $$=0; yyerrok; }
+  | TOK_MULTISET_START error ')' {
     yyerror("Missing '>'.");
     $$=0; yyerrok;
   }
-  | F_MULTISET_START error F_LEX_EOF
+  | TOK_MULTISET_START error TOK_LEX_EOF
   {
     $$=0; yyerror("Missing '>)'.");
     yyerror("Unexpected end of file.");
   }
-  | F_MULTISET_START error ';' { $$=0; yyerror("Missing '>)'."); }
-  | F_MULTISET_START error '}' { $$=0; yyerror("Missing '>)'."); }
-  | expr4 F_ARROW magic_identifier
+  | TOK_MULTISET_START error ';' { $$=0; yyerror("Missing '>)'."); }
+  | TOK_MULTISET_START error '}' { $$=0; yyerror("Missing '>)'."); }
+  | expr4 TOK_ARROW magic_identifier
   {
     $$=mknode(F_ARROW,$1,$3);
   }
-  | expr4 F_ARROW error {}
+  | expr4 TOK_ARROW error {}
   ;
 
 idents: low_idents
-  | idents '.' F_IDENTIFIER
+  | idents '.' TOK_IDENTIFIER
   {
     $$=index_node($1, last_identifier?last_identifier->str:NULL,
 		  $3->u.sval.u.string);
@@ -2347,7 +2262,7 @@ idents: low_idents
     copy_shared_string(last_identifier, $3->u.sval.u.string);
     free_node($3);
   }
-  | '.' F_IDENTIFIER
+  | '.' TOK_IDENTIFIER
   {
     node *tmp;
     push_text(".");
@@ -2370,7 +2285,7 @@ idents: low_idents
   | idents '.' error {}
   ;
 
-low_idents: F_IDENTIFIER
+low_idents: TOK_IDENTIFIER
   {
     int i;
     struct efun *f;
@@ -2398,7 +2313,7 @@ low_idents: F_IDENTIFIER
     }
     free_node($1);
   }
-  | F_PREDEF F_COLON_COLON F_IDENTIFIER
+  | TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
   {
     struct svalue tmp;
     node *tmp2;
@@ -2416,11 +2331,11 @@ low_idents: F_IDENTIFIER
     free_node(tmp2);
     free_node($3);
   }
-  | F_PREDEF F_COLON_COLON bad_identifier
+  | TOK_PREDEF TOK_COLON_COLON bad_identifier
   {
     $$=0;
   }
-  | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
+  | TOK_IDENTIFIER TOK_COLON_COLON TOK_IDENTIFIER
   {
     if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $3->u.sval.u.string);
@@ -2439,9 +2354,9 @@ low_idents: F_IDENTIFIER
     free_node($1);
     free_node($3);
   }
-  | F_IDENTIFIER F_COLON_COLON bad_identifier
-  | F_IDENTIFIER F_COLON_COLON error
-  | F_COLON_COLON F_IDENTIFIER
+  | TOK_IDENTIFIER TOK_COLON_COLON bad_identifier
+  | TOK_IDENTIFIER TOK_COLON_COLON error
+  | TOK_COLON_COLON TOK_IDENTIFIER
   {
     int e,i;
 
@@ -2482,7 +2397,7 @@ low_idents: F_IDENTIFIER
     }
     free_node($2);
   }
-  | F_COLON_COLON bad_identifier
+  | TOK_COLON_COLON bad_identifier
   {
     $$=0;
   }
@@ -2490,15 +2405,15 @@ low_idents: F_IDENTIFIER
 
 comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
   | comma_expr
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
+  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
   ;
 
 comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
   | comma_expr
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0x7fffffff); }
+  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0x7fffffff); }
   ;
 
-gauge: F_GAUGE catch_arg
+gauge: TOK_GAUGE catch_arg
   {
 #ifdef HAVE_GETHRVTIME
     $$=mkefuncallnode("abs",
@@ -2520,7 +2435,7 @@ gauge: F_GAUGE catch_arg
 #endif
   };
 
-typeof: F_TYPEOF '(' expr0 ')'
+typeof: TOK_TYPEOF '(' expr0 ')'
   {
     struct pike_string *s;
     node *tmp;
@@ -2534,19 +2449,19 @@ typeof: F_TYPEOF '(' expr0 ')'
     free_string(s);
     free_node(tmp);
   } 
-  | F_TYPEOF '(' error ')' { $$=0; yyerrok; }
-  | F_TYPEOF '(' error '}' { $$=0; yyerror("Missing ')'."); }
-  | F_TYPEOF '(' error F_LEX_EOF
+  | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
+  | TOK_TYPEOF '(' error '}' { $$=0; yyerror("Missing ')'."); }
+  | TOK_TYPEOF '(' error TOK_LEX_EOF
   {
     $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | F_TYPEOF '(' error ';' { $$=0; yyerror("Missing ')'."); }
+  | TOK_TYPEOF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
  
 catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error ')' { $$=0; yyerrok; }
-  | '(' error F_LEX_EOF
+  | '(' error TOK_LEX_EOF
   {
     $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
@@ -2557,7 +2472,7 @@ catch_arg: '(' comma_expr ')'  { $$=$2; }
   | error { $$=0; yyerror("Bad expression for catch."); }
   ; 
 
-catch: F_CATCH
+catch: TOK_CATCH
      {
        catch_level++;
      }
@@ -2568,18 +2483,18 @@ catch: F_CATCH
      }
      ;
 
-sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
+sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   {
     $$=mknode(F_SSCANF,mknode(F_ARG_LIST,$3,$5),$6);
   }
-  | F_SSCANF '(' expr0 ',' expr0 error ')'
+  | TOK_SSCANF '(' expr0 ',' expr0 error ')'
   {
     $$=0;
     free_node($3);
     free_node($5);
     yyerrok;
   }
-  | F_SSCANF '(' expr0 ',' expr0 error F_LEX_EOF
+  | TOK_SSCANF '(' expr0 ',' expr0 error TOK_LEX_EOF
   {
     $$=0;
     free_node($3);
@@ -2587,58 +2502,58 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | F_SSCANF '(' expr0 ',' expr0 error '}'
+  | TOK_SSCANF '(' expr0 ',' expr0 error '}'
   {
     $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
   }
-  | F_SSCANF '(' expr0 ',' expr0 error ';'
+  | TOK_SSCANF '(' expr0 ',' expr0 error ';'
   {
     $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
   }
-  | F_SSCANF '(' expr0 error ')'
+  | TOK_SSCANF '(' expr0 error ')'
   {
     $$=0;
     free_node($3);
     yyerrok;
   }
-  | F_SSCANF '(' expr0 error F_LEX_EOF
+  | TOK_SSCANF '(' expr0 error TOK_LEX_EOF
   {
     $$=0;
     free_node($3);
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | F_SSCANF '(' expr0 error '}'
+  | TOK_SSCANF '(' expr0 error '}'
   {
     $$=0;
     free_node($3);
     yyerror("Missing ')'.");
   }
-  | F_SSCANF '(' expr0 error ';'
+  | TOK_SSCANF '(' expr0 error ';'
   {
     $$=0;
     free_node($3);
     yyerror("Missing ')'.");
   }
-  | F_SSCANF '(' error ')' { $$=0; yyerrok; }
-  | F_SSCANF '(' error F_LEX_EOF
+  | TOK_SSCANF '(' error ')' { $$=0; yyerrok; }
+  | TOK_SSCANF '(' error TOK_LEX_EOF
   {
     $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | F_SSCANF '(' error '}' { $$=0; yyerror("Missing ')'."); }
-  | F_SSCANF '(' error ';' { $$=0; yyerror("Missing ')'."); }
+  | TOK_SSCANF '(' error '}' { $$=0; yyerror("Missing ')'."); }
+  | TOK_SSCANF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
 
 lvalue: expr4
   | '[' low_lvalue_list ']' { $$=mknode(F_ARRAY_LVALUE, $2,0); }
-  | type6 F_IDENTIFIER
+  | type6 TOK_IDENTIFIER
   {
     add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     $$=mklocalnode(islocal($2->u.sval.u.string),0);
@@ -2654,8 +2569,8 @@ lvalue_list: /* empty */ { $$ = 0; }
   | ',' lvalue lvalue_list { $$ = mknode(F_LVALUE_LIST,$2,$3); }
   ;
 
-string: F_STRING 
-  | string F_STRING
+string: TOK_STRING 
+  | string TOK_STRING
   {
     struct pike_string *a,*b;
     copy_shared_string(a,$1->u.sval.u.string);
@@ -2674,92 +2589,92 @@ string: F_STRING
 
 /* FIXME: Should probably set last_identifier. */
 bad_identifier: bad_expr_ident
-  | F_CLASS
+  | TOK_CLASS
   { yyerror("class is a reserved word."); }
-  | F_ARRAY_ID
+  | TOK_ARRAY_ID
   { yyerror("array is a reserved word."); }
-  | F_FLOAT_ID
+  | TOK_FLOAT_ID
   { yyerror("float is a reserved word.");}
-  | F_FUNCTION_ID
+  | TOK_FUNCTION_ID
   { yyerror("function is a reserved word.");}
-  | F_INT_ID
+  | TOK_INT_ID
   { yyerror("int is a reserved word."); }
-  | F_MAPPING_ID
+  | TOK_MAPPING_ID
   { yyerror("mapping is a reserved word."); }
-  | F_MIXED_ID
+  | TOK_MIXED_ID
   { yyerror("mixed is a reserved word."); }
-  | F_MULTISET_ID
+  | TOK_MULTISET_ID
   { yyerror("multiset is a reserved word."); }
-  | F_OBJECT_ID
+  | TOK_OBJECT_ID
   { yyerror("object is a reserved word."); }
-  | F_PROGRAM_ID
+  | TOK_PROGRAM_ID
   { yyerror("program is a reserved word."); }
-  | F_STRING_ID
+  | TOK_STRING_ID
   { yyerror("string is a reserved word."); }
-  | F_VOID_ID
+  | TOK_VOID_ID
   { yyerror("void is a reserved word."); }
   ;
 
 bad_expr_ident:
-    F_INLINE
+    TOK_INLINE
   { yyerror("inline is a reserved word."); }
-  | F_LOCAL_ID
+  | TOK_LOCAL_ID
   { yyerror("local is a reserved word."); }
-  | F_NO_MASK
+  | TOK_NO_MASK
   { yyerror("nomask is a reserved word."); }
-  | F_PREDEF
+  | TOK_PREDEF
   { yyerror("predef is a reserved word."); }
-  | F_PRIVATE
+  | TOK_PRIVATE
   { yyerror("private is a reserved word."); }
-  | F_PROTECTED
+  | TOK_PROTECTED
   { yyerror("protected is a reserved word."); }
-  | F_PUBLIC
+  | TOK_PUBLIC
   { yyerror("public is a reserved word."); }
-  | F_OPTIONAL
+  | TOK_OPTIONAL
   { yyerror("optional is a reserved word."); }
-  | F_STATIC
+  | TOK_STATIC
   { yyerror("static is a reserved word."); }
-  | F_EXTERN
+  | TOK_EXTERN
   { yyerror("extern is a reserved word."); }
-  | F_FINAL_ID
+  | TOK_FINAL_ID
   { yyerror("final is a reserved word.");}
-  | F_DO
+  | TOK_DO
   { yyerror("do is a reserved word."); }
-  | F_ELSE
+  | TOK_ELSE
   { yyerror("else without if."); }
-  | F_RETURN
+  | TOK_RETURN
   { yyerror("return is a reserved word."); }
-  | F_CONSTANT
+  | TOK_CONSTANT
   { yyerror("constant is a reserved word."); }
-  | F_IMPORT
+  | TOK_IMPORT
   { yyerror("import is a reserved word."); }
-  | F_INHERIT
+  | TOK_INHERIT
   { yyerror("inherit is a reserved word."); }
-  | F_CATCH
+  | TOK_CATCH
   { yyerror("catch is a reserved word."); }
-  | F_GAUGE
+  | TOK_GAUGE
   { yyerror("gauge is a reserved word."); }
-  | F_LAMBDA
+  | TOK_LAMBDA
   { yyerror("lambda is a reserved word."); }
-  | F_SSCANF
+  | TOK_SSCANF
   { yyerror("sscanf is a reserved word."); }
-  | F_SWITCH
+  | TOK_SWITCH
   { yyerror("switch is a reserved word."); }
-  | F_TYPEOF
+  | TOK_TYPEOF
   { yyerror("typeof is a reserved word."); }
-  | F_BREAK
+  | TOK_BREAK
   { yyerror("break is a reserved word."); }
-  | F_CASE
+  | TOK_CASE
   { yyerror("case is a reserved word."); }
-  | F_CONTINUE
+  | TOK_CONTINUE
   { yyerror("continue is a reserved word."); }
-  | F_DEFAULT
+  | TOK_DEFAULT
   { yyerror("default is a reserved word."); }
-  | F_FOR
+  | TOK_FOR
   { yyerror("for is a reserved word."); }
-  | F_FOREACH
+  | TOK_FOREACH
   { yyerror("foreach is a reserved word."); }
-  | F_IF
+  | TOK_IF
   { yyerror("if is a reserved word."); }
   ;
 

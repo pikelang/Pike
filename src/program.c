@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.236 2000/05/07 00:39:17 hubbe Exp $");
+RCSID("$Id: program.c,v 1.237 2000/05/11 14:09:46 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -31,6 +31,7 @@ RCSID("$Id: program.c,v 1.236 2000/05/07 00:39:17 hubbe Exp $");
 #include "cyclic.h"
 #include "security.h"
 #include "pike_types.h"
+#include "opcodes.h"
 
 #include <errno.h>
 #include <fcntl.h>

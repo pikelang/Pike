@@ -5,11 +5,9 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.62 2000/03/30 09:54:18 hubbe Exp $
+ * $Id: cpp.c,v 1.63 2000/05/11 14:09:45 grubba Exp $
  */
 #include "global.h"
-#include "language.h"
-#include "lex.h"
 #include "stralloc.h"
 #include "module_support.h"
 #include "interpret.h"

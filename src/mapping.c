@@ -5,14 +5,13 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.82 2000/05/01 02:10:30 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.83 2000/05/11 14:09:46 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
 #include "svalue.h"
 #include "array.h"
 #include "pike_macros.h"
-#include "language.h"
 #include "error.h"
 #include "pike_memory.h"
 #include "dynamic_buffer.h"
@@ -22,6 +21,7 @@ RCSID("$Id: mapping.c,v 1.82 2000/05/01 02:10:30 hubbe Exp $");
 #include "stralloc.h"
 #include "security.h"
 #include "block_alloc.h"
+#include "opcodes.h"
 
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
