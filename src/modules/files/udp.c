@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.1 1999/07/15 17:36:35 mirar Exp $
+ * $Id: udp.c,v 1.2 1999/07/15 17:43:49 mirar Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.1 1999/07/15 17:36:35 mirar Exp $");
+RCSID("$Id: udp.c,v 1.2 1999/07/15 17:43:49 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -178,6 +178,7 @@ void udp_enable_broadcast(INT32 args)
   pop_n_elems(args);
   o = 1;
   push_int(fd_setsockopt(FD, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
+  THIS->my_errno=errno;
 #else /* SO_BROADCAST */
   pop_n_elems(args);
   push_int(0);
@@ -216,6 +217,8 @@ void udp_read(INT32 args)
 			 (struct sockaddr *)&from, &fromlen))==-1)
 	&&(errno==EINTR));
   THREADS_DISALLOW();
+
+  THIS->my_errno=errno;
 
   if(res<0)
   {
@@ -438,6 +441,11 @@ static void udp_query_address(INT32 args)
   push_string(make_shared_string(buffer));
 }
 
+static void udp_errno(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->my_errno);
+}
 
 void init_udp(void)
 {
@@ -464,6 +472,8 @@ void init_udp(void)
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
   ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
+
+  ADD_FUNCTION("errno",udp_errno,tFunc(tNone,tInt),0);
 
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
