@@ -175,6 +175,19 @@ int test_version() {
   return status;
 }
 
+void test_fncases(void|string dir) {
+  dir = dir||".";
+  array d = get_dir(dir);
+  multiset d2 = (<>);
+  foreach(d, string fn) {
+    if( d2[lower_case(fn)] )
+      write("%O with different casings in %O.\n", fn, dir);
+    if( Stdio.is_dir(dir+"/"+fn) )
+      test_fncases(dir+"/"+fn);
+    d2[lower_case(fn)]=1;
+  }
+}
+
 void main(int args) {
   if(args>1) {
     write("This program checks various aspects of the Pike tree\n"
@@ -196,4 +209,13 @@ void main(int args) {
   test_unicode();
   test_realpike();
   test_version();
+
+  test_fncases("src");
+  test_fncases("lib");
+  test_fncases("bin");
+  test_fncases("man");
+  test_fncases("tools");
+  test_fncases("packaging");
+  test_fncases("refdoc");
+
 }
