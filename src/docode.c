@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.114 2001/06/07 21:45:51 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.115 2001/06/08 01:41:53 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -730,6 +730,7 @@ static int do_docode2(node *n, INT16 flags)
 	tmp1=do_docode(CDR(n),DO_LVALUE);
 	if(match_types(CDR(n)->type, array_type_string) ||
 	   match_types(CDR(n)->type, string_type_string) ||
+	   match_types(CDR(n)->type, object_type_string) ||
 	   match_types(CDR(n)->type, multiset_type_string) ||
 	   match_types(CDR(n)->type, mapping_type_string))
 	{
