@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.64 2003/11/14 00:42:10 mast Exp $
+|| $Id: las.h,v 1.65 2004/08/25 14:14:14 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -261,9 +261,11 @@ void resolv_program(node *n);
 
 #define COPY_LINE_NUMBER_INFO(TO, FROM) do {				\
     node *to_ = (TO), *from_ = (FROM);					\
-    to_->line_number = from_->line_number;				\
-    free_string (to_->current_file);					\
-    copy_shared_string (to_->current_file, from_->current_file);	\
+    if (from_) {							\
+      to_->line_number = from_->line_number;				\
+      free_string (to_->current_file);					\
+      copy_shared_string (to_->current_file, from_->current_file);	\
+    }									\
   } while (0)
 
 
