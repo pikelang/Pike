@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.c,v 1.33 2002/12/11 21:20:13 mast Exp $
+|| $Id: callback.c,v 1.34 2003/11/14 00:05:08 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.33 2002/12/11 21:20:13 mast Exp $");
+RCSID("$Id: callback.c,v 1.34 2003/11/14 00:05:08 mast Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -82,8 +82,10 @@ static void check_callback_chain(struct callback_list *lst)
 	struct callback *tmp;
 	for(tmp=foo->next;tmp && len2<=len;tmp=tmp->next)
 	{
+#ifdef PIKE_DEBUG
 	  if(tmp==foo)
 	    Pike_fatal("Callback list is cyclic!!!\n");
+#endif
 	}
       }
       len++;
@@ -174,11 +176,13 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
       while(*ptr != l)
       {
 	ptr=&(ptr[0]->next);
+#ifdef PIKE_DEBUG
 	if(!*ptr)
 	{
 	  /* We totally failed to find where we are in the linked list.. */
 	  Pike_fatal("Callback linked list breakdown.\n");
 	}
+#endif
       }
 
       *ptr=l->next;
