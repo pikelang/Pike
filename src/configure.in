@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.433 2000/11/25 16:34:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.434 2000/11/26 13:47:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -410,8 +410,8 @@ if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | he
 else
   AC_MSG_RESULT(no)
 
-  if echo foo "$CC" | egrep 'rntc.|rntec.' >/dev/null; then
-    echo Warning: rntcc/rntcl/rntecl detected.
+  if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
+    echo Warning: rntcc/rntcl/rnticl/rntecl detected.
     echo Using the smartlink /bin/sh script.
     SMARTLINK="$BINDIR/smartlink"
   else
