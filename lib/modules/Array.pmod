@@ -541,13 +541,15 @@ int lyskom_sort_func(string a,string b)
 
 //! Flatten a multi-dimensional array to a one-dimensional array.
 //! @note
-//!   There is no safeguard against flattening a cyclic array;
-//!   trying to do so may result in an infinite loop.
-array flatten(array a)
+//!   Prior to Pike 7.5.7 it was not safe to call this function
+//!   with cyclic data-structures.
+array flatten(array a, mapping|void state)
 {
-  array ret=({});
-  foreach(a, mixed b) ret+=arrayp(b)?flatten([array]b):({b});
-  return ret;
+  if (state && state[a]) return state[a];
+  if (!state) state = ([a:({})]);
+  else state[a] = ({});
+  foreach(a, mixed b) state[a]+=arrayp(b)?flatten([array]b, state):({b});
+  return state[a];
 }
 
 //! Sum the elements of an array using `+
