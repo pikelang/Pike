@@ -233,18 +233,6 @@ class dirnode
   }
 };
 
-class mergenode
-{
-  mixed *modules;
-  void create(mixed * m) { modules=m; }
-  mixed `[](string index)
-  {
-    foreach(modules, mixed mod)
-      if(mixed ret=mod[index]) return ret;
-    return UNDEFINED;
-  }
-};
-
 object findmodule(string fullname)
 {
   mixed *stat;
@@ -264,14 +252,6 @@ object findmodule(string fullname)
   }
 #endif
 
-#ifdef NOT_INSTALLED
-  /* Hack for pre-install testing */
-  if(mixed *stat=file_stat(fullname))
-  {
-    if(stat[1]==-2)
-      return findmodule(fullname+"/module");
-  }
-#endif
 
   return UNDEFINED;
 }
