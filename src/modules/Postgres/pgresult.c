@@ -232,4 +232,8 @@ void pgresult_init (void)
 	pgresult_program->refs++;
 }
 
+#else
+
+static int place_holder;	/* Keep the compiler happy */
+
 #endif
