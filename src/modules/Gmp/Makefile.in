@@ -13,7 +13,7 @@ prime_table.out: prime_table
 	./prime_table $(PRIME_LIMIT) >prime_table.out
 
 prime_table: prime_table.c
-	$(CC) $< -o $@
+	$(CC) prime_table.c -o prime_table
 
 depend: prime_table.out
 
