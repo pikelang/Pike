@@ -40,6 +40,7 @@ string remove_ext(string file)
 
 int main(int argc, string *argv)
 {
+//	werror("%O\n",argv);
   string *ldopts=({"-INCREMENTAL:no"});
   string *cflags=({
     "-Zm300",
@@ -164,7 +165,7 @@ int main(int argc, string *argv)
 	      // paths for the 'uname' binary.
 	      if(sscanf(tmp,"-rpath%*s")) break;
 	      
-	      cflags+=({tmp});
+	      ldopts+=({tmp});
 	      break;
 	    }
 	  }
@@ -258,12 +259,20 @@ int main(int argc, string *argv)
 	  })
 	  +ldopts;
       }
+
+      break;
+
+    default:
+      if(sizeof(ldopts))
+	cmd+=({"-link" }) +ldopts;
+      break;
   }
 
 
   int ret;
   if(verbose && target!="-")
   { 
+//    werror("Doing: %s\n",cmd*" ");
     ret=do_cmd(cmd);
   }else{
     int first_line=1;
