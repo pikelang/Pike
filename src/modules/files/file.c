@@ -3,10 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#define READ_BUFFER 16384
+#define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.24 1997/01/28 03:28:45 hubbe Exp $");
+RCSID("$Id: file.c,v 1.25 1997/01/29 20:24:13 per Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -405,8 +405,18 @@ static void file_write(INT32 args)
   written=0;
   str=sp[-args].u.string;
 
-  while(written < str->len)
-  {
+/*  while(written < str->len)  Not really. The only thing this does is:
+
+  write(24, " H e d b o r < / a > < /".., 534712) = 7300
+  write(24, " f = / m l i s t . l p c".., 527412) Err#11 EAGAIN
+
+  etc.
+
+  The 'write' system call in blocking mode is quite atomous, unless a
+  signal is received. This case (signals) is handled below. /Per
+  
+  */
+  do {
     int fd=FD;
     THREADS_ALLOW();
     i=write(fd, str->str + written, str->len - written);
@@ -422,13 +432,13 @@ static void file_write(INT32 args)
 	push_int(-1);
 	return;
 
-      case EINTR: continue;
+      case EINTR: continue; /* Got a signal, Retry... /Per */
       case EWOULDBLOCK: break;
       }
-      break;
     }
-    written+=i;
-  }
+    written=i;
+    break;
+  } while(1);
 
   if(!IS_ZERO(& THIS->write_callback))
     set_write_callback(FD, file_write_callback, 0);
