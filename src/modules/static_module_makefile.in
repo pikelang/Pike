@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.68 2001/10/15 09:37:03 mast Exp $
+# $Id: static_module_makefile.in,v 1.69 2001/12/17 04:24:33 mast Exp $
 #
 
 
@@ -102,7 +102,7 @@ module.pmod: Makefile
 	  if [ -f ./module.pmod.in ]; then \
 	   sed -e "s/@module@/__builtin_dirnode.$(MODNAME)/" <./module.pmod.in >module.pmod ;\
 	  else \
-	    echo >>module.pmod "#pike __REAL_VERSION__" ;\
+	    echo >module.pmod "#pike __REAL_VERSION__" ;\
 	    echo >>module.pmod "#if constant(_static_modules.$(MODNAME));" ;\
 	    echo >>module.pmod "inherit _static_modules.$(MODNAME);" ;\
 	    echo >>module.pmod "#endif" ;\
