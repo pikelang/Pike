@@ -151,6 +151,7 @@ string|int find_option(array(string) argv,
 		  value=arg;
                   arg="";
 		}
+		if (value == "") value = 1;
 	      } else {
 		value=1;
 	      }
@@ -334,6 +335,7 @@ array find_all_options(array(string) argv,
 	      }
 	    }
 
+	    if (arg == "") arg = 0;
 	    ret+=({ ({ option[0], arg || 1 }) });
 	  }
 	}
