@@ -138,7 +138,7 @@ void
 mpz_next_prime(mpz_t p, mpz_t n, int count, int prime_limit)
 {
   mpz_t tmp;
-  unsigned long *moduli = NULL;
+  unsigned long *moduli = 0;
   unsigned long difference;
   int i;
   int composite;
