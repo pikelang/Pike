@@ -1,10 +1,20 @@
+test_compile_error(int foo() { LJjjjjJJJ ; })
+test_true(clone(class { constant i=1; })->i)
+test_true(clone(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
+test_true(clone(class { constant i=1; mixed `->(string s) { return 0; }})["i"])
+test_true(clone(class { constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
+test_true(clone(class { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
+test_true(clone(class { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
+
+test_compile(class A {}; class B { inherit A; })
+
 test_true(mappingp(_memory_usage()))
 test_true(objectp( _next(this_object()) || _prev(this_object())))
 test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.15 1996/12/07 23:41:06 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.16 1997/01/22 05:19:47 hubbe Exp $"]])
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)

@@ -6,6 +6,8 @@
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 
+#include "las.h"
+
 extern int max_correct_args;
 extern struct pike_string *string_type_string;
 extern struct pike_string *int_type_string;
@@ -29,6 +31,7 @@ void pop_type_stack();
 void type_stack_pop_to_mark();
 void type_stack_reverse();
 void push_type(unsigned char tmp);
+void push_type_int(unsigned INT32 i);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_string *type);
 struct pike_string *pop_unfinished_type();
@@ -40,12 +43,13 @@ char *low_describe_type(char *t);
 struct pike_string *describe_type(struct pike_string *type);
 TYPE_T compile_type_to_runtime_type(struct pike_string *s);
 int match_types(struct pike_string *a,struct pike_string *b);
-struct pike_string *index_type(struct pike_string *type);
+struct pike_string *index_type(struct pike_string *type, node *n);
 int check_indexing(struct pike_string *type,
-		   struct pike_string *index_type);
+		   struct pike_string *index_type,
+		   node *n);
 int count_arguments(struct pike_string *s);
 struct pike_string *check_call(struct pike_string *args,
-				 struct pike_string *type);
+			       struct pike_string *type);
 void check_array_type(struct array *a);
 struct pike_string *get_type_of_svalue(struct svalue *s);
 char *get_name_of_type(int t);

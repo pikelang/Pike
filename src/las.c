@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.12 1997/01/19 09:08:00 hubbe Exp $");
+RCSID("$Id: las.c,v 1.13 1997/01/22 05:19:45 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1138,40 +1138,56 @@ void fix_type_field(node *n)
     break;
 
   case F_INDEX:
+    type_a=CAR(n)->type;
+    type_b=CDR(n)->type;
+    if(!check_indexing(type_a, type_b, n))
+      my_yyerror("Indexing on illegal type.");
+    n->type=index_type(type_a,n);
+    break;
+
   case F_ARROW:
     type_a=CAR(n)->type;
     type_b=CDR(n)->type;
-    if(!check_indexing(type_a, type_b))
+    if(!check_indexing(type_a, type_b, n))
       my_yyerror("Indexing on illegal type.");
-    n->type=index_type(type_a);
+    n->type=index_type(type_a,n);
     break;
 
   case F_APPLY:
   {
     struct pike_string *s;
+    struct pike_string *f;
     push_type(T_MIXED); /* match any return type, even void */
     push_type(T_VOID); /* not varargs */
     push_type(T_MANY);
     low_build_function_type(CDR(n));
     push_type(T_FUNCTION);
     s=pop_type();
-    
-    n->type=check_call(s,CAR(n)->type?CAR(n)->type:mixed_type_string);
+    f=CAR(n)->type?CAR(n)->type:mixed_type_string;
+    n->type=check_call(s,f);
 
     if(!n->type)
     {
+      char *name;
+      int args;
       switch(CAR(n)->token)
       {
       case F_IDENTIFIER:
 	setup_fake_program();
-	my_yyerror("Bad argument %d to '%s'.",
-		   max_correct_args+1,
-		   ID_FROM_INT(& fake_program, CAR(n)->u.number)->name->str);
+	name=ID_FROM_INT(&fake_program, CAR(n)->u.number)->name->str;
 	break;
-
+	
       case F_CONSTANT:
       default:
-	my_yyerror("Bad argument %d to function call.",max_correct_args+1);
+	name="function call";
+      }
+
+      if(max_correct_args == count_arguments(s))
+      {
+	my_yyerror("To few arguments to %s.\n",name);
+      }else{
+	my_yyerror("Bad argument %d to %s.",
+		   max_correct_args+1, name);
       }
       copy_shared_string(n->type, mixed_type_string);
     }

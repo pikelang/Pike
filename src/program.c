@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.13 1997/01/19 09:08:03 hubbe Exp $");
+RCSID("$Id: program.c,v 1.14 1997/01/22 05:19:46 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -85,6 +85,9 @@ void use_module(struct svalue *s)
 }
 
 
+static int low_find_shared_string_identifier(struct pike_string *name,
+					     struct program *prog);
+
 int find_module_identifier(struct pike_string *ident)
 {
   JMP_BUF tmp;
@@ -116,6 +119,45 @@ int find_module_identifier(struct pike_string *ident)
     }
   }
   UNSETJMP(tmp);
+
+  {
+    struct program_state *p;
+    for(p=previous_program_state;p;p=p->previous)
+    {
+      INT32 i;
+      if(previous_file_state &&
+	 previous_file_state->previous_program_state==p->previous)
+	break;
+
+      i=low_find_shared_string_identifier(ident, &p->fake_program);
+      if(i!=-1)
+      {
+	struct identifier *id;
+	id=ID_FROM_INT(&p->fake_program, i);
+	if(IDENTIFIER_IS_CONSTANT(id->flags))
+	{
+	  push_svalue(PROG_FROM_INT(&p->fake_program, i)->constants+
+		      id->func.offset);
+	  return 1;
+	}else{
+	  yyerror("Identifier is not a constant");
+	  return 0;
+	}
+      }
+    }
+  }
+
+  return 0;
+}
+
+/* This should be optimized */
+struct program *id_to_program(INT32 id)
+{
+  struct program *p;
+  if(id) 
+    for(p=first_program;p;p=p->next)
+      if(id==p->id)
+	return p;
   return 0;
 }
 
@@ -161,11 +203,17 @@ void start_new_program()
   struct pike_string *name;
 
   threads_disabled++;
+  if(local_variables)
+    setup_fake_program();
 #define PROGRAM_STATE
 #define PUSH
 #include "compilation.h"
 #undef PUSH
 #undef PROGRAM_STATE
+
+  if(previous_program_state->fake_program.num_inherits)
+    previous_program_state->fake_program.inherits[0].prog=
+      &previous_program_state->fake_program;
 
   for(e=0; e<NUM_AREAS; e++) low_reinit_buf(areas + e);
   low_reinit_buf(& inherit_names);
@@ -569,6 +617,8 @@ struct program *end_program()
 #include "compilation.h"
 #undef POP
 #undef PROGRAM_STATE
+  if(fake_program.num_inherits)
+    fake_program.inherits[0].prog=&fake_program;
   threads_disabled--;
   free_all_nodes();
   return prog;

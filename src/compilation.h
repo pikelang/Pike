@@ -75,18 +75,6 @@
   ZMEMBER(struct pike_string *,X)
 #endif
 
-#ifdef FILE_STATE
-  SNAME(file_state,previous_file_state)
-  ZMEMBER(INT32,old_line)
-  ZMEMBER(INT32,current_line)
-  ZMEMBER(INT32,nexpands)
-  ZMEMBER(int,pragma_all_inline)
-  ZMEMBER(struct inputstate *,istate)
-  ZMEMBER(struct hash_table *,defines)
-  STRMEMBER(current_file,"current_file")
-  SEND
-#endif
-
 #ifdef PROGRAM_STATE
   SNAME(program_state,previous_program_state)
   ZMEMBER(INT32,last_line)
@@ -97,10 +85,25 @@
   ZMEMBER(int,num_parse_error)
   ZMEMBER(struct locals *,local_variables)
   ZMEMBER(dynamic_buffer,inherit_names)
+  ZMEMBER(dynamic_buffer,used_modules)
   ZMEMBER2(dynamic_buffer,areas,[NUM_AREAS])
   IMEMBER(int,comp_stackp)
   SEND
 #endif
+
+#ifdef FILE_STATE
+  SNAME(file_state,previous_file_state)
+  ZMEMBER(INT32,old_line)
+  ZMEMBER(INT32,current_line)
+  ZMEMBER(INT32,nexpands)
+  ZMEMBER(int,pragma_all_inline)
+  ZMEMBER(struct inputstate *,istate)
+  ZMEMBER(struct hash_table *,defines)
+  ZMEMBER(struct program_state *,previous_program_state)
+  STRMEMBER(current_file,"current_file")
+  SEND
+#endif
+
 
 #undef PCODE
 #undef STRMEMBER

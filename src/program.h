@@ -184,6 +184,7 @@ extern struct program fake_program;
 /* Prototypes begin here */
 void use_module(struct svalue *s);
 int find_module_identifier(struct pike_string *ident);
+struct program *id_to_program(INT32 id);
 void setup_fake_program();
 void start_new_program();
 void really_free_program(struct program *p);

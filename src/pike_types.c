@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.12 1997/01/04 05:09:25 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.13 1997/01/22 05:19:45 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -18,6 +18,8 @@ RCSID("$Id: pike_types.c,v 1.12 1997/01/04 05:09:25 hubbe Exp $");
 #include "mapping.h"
 #include "macros.h"
 #include "error.h"
+#include "las.h"
+#include "language.h"
 
 int max_correct_args;
 
@@ -890,10 +892,44 @@ int match_types(struct pike_string *a,struct pike_string *b)
 
 
 /* FIXME, add the index */
-static struct pike_string *low_index_type(char *t)
+static struct pike_string *low_index_type(char *t, node *n)
 {
   switch(EXTRACT_UCHAR(t++))
   {
+  case T_OBJECT:
+  {
+    struct program *p=id_to_program(EXTRACT_INT(t));
+    if(p)
+    {
+      if(n->token == F_ARROW)
+      {
+	if(find_identifier("`->",p) != -1 || find_identifier("`->=",p) != -1)
+	{
+	  reference_shared_string(mixed_type_string);
+	  return mixed_type_string;
+	}
+      }else{
+	if(find_identifier("`[]",p) != -1 || find_identifier("`[]=",p) != -1)
+	{
+	  reference_shared_string(mixed_type_string);
+	  return mixed_type_string;
+	}
+      }
+      if(CDR(n)->token == F_CONSTANT && CDR(n)->u.sval.type==T_STRING)
+      {
+	INT32 i;
+	i=find_shared_string_identifier(CDR(n)->u.sval.u.string, p);
+	if(i==-1)
+	{
+	  reference_shared_string(int_type_string);
+	  return int_type_string;
+	}else{
+	  reference_shared_string(ID_FROM_INT(p, i)->type);
+	  return ID_FROM_INT(p, i)->type;
+	}	   
+      }
+    }
+  }
   default:
     reference_shared_string(mixed_type_string);
     return mixed_type_string;
@@ -901,9 +937,9 @@ static struct pike_string *low_index_type(char *t)
   case T_OR:
   {
     struct pike_string *a,*b;
-    a=low_index_type(t);
+    a=low_index_type(t,n);
     t+=type_length(t);
-    b=low_index_type(t);
+    b=low_index_type(t,n);
     if(!b) return a;
     if(!a) return b;
     push_finished_type(b);
@@ -913,7 +949,7 @@ static struct pike_string *low_index_type(char *t)
   }
 
   case T_AND:
-    return low_index_type(t+type_length(t));
+    return low_index_type(t+type_length(t),n);
 
   case T_STRING: /* always int */
   case T_MULTISET: /* always int */
@@ -928,35 +964,51 @@ static struct pike_string *low_index_type(char *t)
   }
 }
 
-struct pike_string *index_type(struct pike_string *type)
+struct pike_string *index_type(struct pike_string *type, node *n)
 {
   struct pike_string *t;
-  t=low_index_type(type->str);
+  t=low_index_type(type->str,n);
   if(!t) copy_shared_string(t,mixed_type_string);
   return t;
 }
 
-static int low_check_indexing(char *type, char *index_type)
+static int low_check_indexing(char *type, char *index_type, node *n)
 {
   switch(EXTRACT_UCHAR(type++))
   {
   case T_OR:
-    return low_check_indexing(type,index_type) ||
-      low_check_indexing(type+type_length(type),index_type);
+    return low_check_indexing(type,index_type,n) ||
+      low_check_indexing(type+type_length(type),index_type,n);
 
   case T_AND:
-    return low_check_indexing(type,index_type) &&
-      low_check_indexing(type+type_length(type),index_type);
+    return low_check_indexing(type,index_type,n) &&
+      low_check_indexing(type+type_length(type),index_type,n);
 
   case T_NOT:
-    return !low_check_indexing(type,index_type);
+    return !low_check_indexing(type,index_type,n);
 
   case T_STRING:
   case T_ARRAY:
     return !!low_match_types(int_type_string->str, index_type,0);
 
   case T_OBJECT:
-    return !!low_match_types(string_type_string->str, index_type,0);
+  {
+    struct program *p=id_to_program(EXTRACT_INT(type));
+    if(p)
+    {
+      if(n->token == F_ARROW)
+      {
+	if(find_identifier("`->",p) != -1 || find_identifier("`->=",p) != -1)
+	return 1;
+      }else{
+	if(find_identifier("`[]",p) != -1 || find_identifier("`[]=",p) != -1)
+	return 1;
+      }
+      return !!low_match_types(string_type_string->str, index_type,0);
+    }else{
+      return 1;
+    }
+  }
 
   case T_MULTISET:
   case T_MAPPING:
@@ -971,12 +1023,13 @@ static int low_check_indexing(char *type, char *index_type)
 }
 				 
 int check_indexing(struct pike_string *type,
-		   struct pike_string *index_type)
+		   struct pike_string *index_type,
+		   node *n)
 {
   CHECK_TYPE(type);
   CHECK_TYPE(index_type);
 
-  return low_check_indexing(type->str, index_type->str);
+  return low_check_indexing(type->str, index_type->str, n);
 }
 
 /* Count the number of arguments for a funciton type.
