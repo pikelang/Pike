@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.13 1999/09/29 14:55:44 mirar Exp $
+ * $Id: file.h,v 1.14 2000/01/27 15:35:22 grubba Exp $
  */
 
 #ifndef FILE_H
@@ -47,6 +47,52 @@ struct my_file
   struct object *myself;
 };
 
+#ifdef _REENTRANT
+
+#ifndef HAVE_STRUCT_IOVEC
+struct iovec {
+  void *iov_base;
+  int iov_len;
+};
+#endif /* !HAVE_STRUCT_IOVEC */
+
+
+struct pike_sendfile
+{
+  struct object *self;
+
+  int sent;
+
+  struct array *headers;
+  struct array *trailers;
+
+  struct object *from_file;
+  struct object *to_file;
+
+  struct svalue callback;
+  struct array *args;
+
+  int from_fd;
+  int to_fd;
+
+  struct my_file *from;
+  struct my_file *to;
+
+  INT_TYPE offset;
+  INT_TYPE len;
+
+  struct iovec *hd_iov;
+  struct iovec *tr_iov;
+
+  int hd_cnt;
+  int tr_cnt;
+
+  struct iovec *iovs;
+  char *buffer;
+};
+
+#endif /* _REENTRANT */
+
 extern struct program *file_program;
 extern struct program *file_ref_program;
 
@@ -57,6 +103,8 @@ static void PIKE_CONCAT(file_,X) (int fd, void *data);		\
 static void PIKE_CONCAT(file_set_,X) (INT32 args);		\
 static void PIKE_CONCAT(file_query_,X) (INT32 args);		\
 
+
+void low_do_sendfile(struct pike_sendfile *);
 
 /* Prototypes begin here */
 void my_set_close_on_exec(int fd, int to);

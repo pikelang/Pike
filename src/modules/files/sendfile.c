@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.32 2000/01/24 21:42:59 grubba Exp $
+ * $Id: sendfile.c,v 1.33 2000/01/27 15:35:22 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -97,53 +97,6 @@
  */
 #ifdef _REENTRANT
 
-
-/*
- * Struct's
- */
-
-#ifndef HAVE_STRUCT_IOVEC
-struct iovec {
-  void *iov_base;
-  int iov_len;
-};
-#endif /* !HAVE_STRUCT_IOVEC */
-
-
-struct pike_sendfile
-{
-  struct object *self;
-
-  int sent;
-
-  struct array *headers;
-  struct array *trailers;
-
-  struct object *from_file;
-  struct object *to_file;
-
-  struct svalue callback;
-  struct array *args;
-
-  int from_fd;
-  int to_fd;
-
-  struct my_file *from;
-  struct my_file *to;
-
-  INT_TYPE offset;
-  INT_TYPE len;
-
-  struct iovec *hd_iov;
-  struct iovec *tr_iov;
-
-  int hd_cnt;
-  int tr_cnt;
-
-  struct iovec *iovs;
-  char *buffer;
-};
-
 #undef THIS
 #define THIS	((struct pike_sendfile *)(fp->current_storage))
 
@@ -227,7 +180,7 @@ static int writev(int fd, struct iovec *iov, int n)
  * Helper functions
  */
 
-void sf_call_callback(struct pike_sendfile *this)
+static void sf_call_callback(struct pike_sendfile *this)
 {
   if (this->callback.type != T_INT) {
     int sz = this->args->size;
@@ -248,7 +201,7 @@ void sf_call_callback(struct pike_sendfile *this)
   }
 }
 
-void call_callback_and_free(struct callback *cb, void *this_, void *arg)
+static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
 {
   struct pike_sendfile *this = this_;
   int sz;
@@ -276,7 +229,7 @@ void call_callback_and_free(struct callback *cb, void *this_, void *arg)
  */
 
 /* writev() without the IOV_MAX limit. */
-int send_iov(int fd, struct iovec *iov, int iovcnt)
+static int send_iov(int fd, struct iovec *iov, int iovcnt)
 {
   int sent = 0;
 
@@ -318,10 +271,8 @@ int send_iov(int fd, struct iovec *iov, int iovcnt)
   return sent;
 }
 
-void worker(void *this_)
+void low_do_sendfile(struct pike_sendfile *this)
 {
-  struct pike_sendfile *this = this_;
-
   /* Make sure we're using blocking I/O */
   set_nonblocking(this->to_fd, 0);
 
@@ -585,6 +536,13 @@ void worker(void *this_)
   SF_DFPRINTF((stderr,
 	      "sendfile: Done. Setting up callback\n"
 	      "%d bytes sent\n", this->sent));
+}
+
+static void worker(void *this_)
+{
+  struct pike_sendfile *this = this_;
+
+  low_do_sendfile(this);
 
   mt_lock(&interpreter_lock);
 
