@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.10 1998/04/19 00:31:04 grubba Exp $
+ * $Id: XImage.pmod,v 1.11 1998/04/19 00:34:11 mirar Exp $
  */
 
 /*
@@ -404,7 +404,7 @@ void ShapedWindowImage(object in, object color, object|void alpha,
   object bgpm = in->CreatePixmap(width, height, in->depth);
   PixmapImage( bgpm )->set_image( color );
   in->ChangeAttributes( (["BackPixmap":bgpm ]) );
-  if(shape)
+  if(alpha)
   {
     mapping f;
     object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
