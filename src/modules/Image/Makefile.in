@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.32 2000/05/29 09:58:24 per Exp $
+# $Id: Makefile.in,v 1.33 2002/08/26 09:58:00 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \
@@ -9,7 +9,7 @@ OBJS = image_module.o \
 MODNAME=image
 MODULE_SUBDIRS=encodings
 MODULE_ARCHIVES=encodings/encodings.a
-MODULE_LDFLAGS=@LDFLAGS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 REAL_TESTSUITE=module_testsuite.in
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
