@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.36 2003/07/23 18:18:59 nilsson Exp $
+|| $Id: psd.c,v 1.37 2003/07/24 10:45:36 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: psd.c,v 1.36 2003/07/23 18:18:59 nilsson Exp $");
+RCSID("$Id: psd.c,v 1.37 2003/07/24 10:45:36 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -733,13 +733,15 @@ static void decode_resources( struct buffer *b )
       case 0x0405: /* Image mode for raw format files. */
       case 0x0406: /* JPEG quality */
       case 0x040A: /* Copyright flag */
-      case 0x07d0-0x0bb6: /* Path information */
       case 0x0bb7: /* Name of clipping path */
       case 0x2710: /* Print flags information .
 		      2 bytes version (=1), 1 byte center crop marks,
 		      1 zeroed byte, 4 bytes bleed width value,
 		      2 bytes bleed width scale. */
       default:
+	if ((id >= 0x07d0) && (id <= 0x0bb6)) {
+	  /* Path information */
+	}
 	push_int( id );
 	push_buffer( &data );
 	break;
