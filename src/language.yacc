@@ -182,7 +182,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.120 1999/08/03 00:45:12 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.121 1999/08/06 22:11:00 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1234,6 +1234,8 @@ failsafe_program: '{' program end_block
 
 class: modifiers F_CLASS optional_identifier
   {
+    extern int num_parse_error;
+    int num_errors=num_parse_error;
     if(!$3)
     {
       struct pike_string *s;
@@ -1277,6 +1279,7 @@ class: modifiers F_CLASS optional_identifier
 	}
       }
     }
+    num_parse_error=num_errors; /* Kluge to prevent gazillion error messages */
   }
   failsafe_program
   {
