@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.16 2004/04/21 00:01:21 jhs Exp $
+# $Id: configure.in,v 1.17 2004/10/05 10:34:39 mast Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -47,12 +47,12 @@ else
       ac_cv_lib_nettle_nettle_md5_init
       ac_cv_lib_nettle_md5_init
     ], [Cannot compile --with-nettle without the Nettle library.
-It is highly recommended that you install a working Nettle
-library on your system as that will add features to Pike
-required by many applications. These features include ciphers,
-hash algorithms and random generators. If you know that you do
-not need cryptographic functions, you can re-run configure
-with the option --without-nettle instead.
+It is highly recommended that you install a working Nettle library on
+your system as that will add features to Pike required by many
+applications. These features include ciphers, hash algorithms and
+random generators. If you know that you do not need cryptographic
+functions, you can re-run configure with the option --without-nettle
+instead. Nettle is available at http://www.lysator.liu.se/~nisse/nettle/.
     ])
     PIKE_FEATURE_NODEP(Nettle)
   fi
