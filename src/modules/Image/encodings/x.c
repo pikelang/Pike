@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.18 1999/04/13 12:32:46 mirar Exp $ */
+/* $Id: x.c,v 1.19 1999/05/03 21:16:10 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.18 1999/04/13 12:32:46 mirar Exp $
+**!	$Id: x.c,v 1.19 1999/05/03 21:16:10 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.18 1999/04/13 12:32:46 mirar Exp $");
+RCSID("$Id: x.c,v 1.19 1999/05/03 21:16:10 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -216,7 +216,7 @@ static void image_x_encode_truecolor(INT32 args)
 
    y=img->ysize;
 
-THREADS_ALLOW();
+   THREADS_ALLOW();
    
    if (!(rshift&7) && !(gshift&7) && !(bshift&7) 
        && sizeof(COLORTYPE)==1
@@ -238,7 +238,7 @@ THREADS_ALLOW();
 	    x=img->xsize;
 	    while (x--) 
 	       d+=4,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,
-	       d[zpos]=0,s++; 
+		  d[zpos]=0,s++; 
 	 }
       }
       else if (!linemod && Bpp==3 && rpos!=gpos && gpos!=bpos) 
@@ -248,7 +248,7 @@ THREADS_ALLOW();
 	    x=img->xsize;
 	    while (x--) 
 	       d+=3,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,
-	       s++; 
+		  s++; 
 	 }
       }
       else
@@ -260,7 +260,7 @@ THREADS_ALLOW();
 	    x=img->xsize;
 	    while (x--) 
 	       d+=Bpp,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,
-	       s++; 
+		  s++; 
 	    d+=linemod;
 	 }
       }
@@ -354,7 +354,7 @@ THREADS_ALLOW();
       }
    }
 
-THREADS_DISALLOW();
+   THREADS_DISALLOW();
 
    if (nct) free(tmp);
 
@@ -363,8 +363,8 @@ THREADS_DISALLOW();
 }
 
 static INLINE void image_x_examine_mask(struct svalue *mask,
-				  const char *what,
-				  int *bits,int *shift)
+					const char *what,
+					int *bits,int *shift)
 {
    unsigned long x;
    if (mask->type!=T_INT)
@@ -386,16 +386,16 @@ static INLINE void image_x_examine_mask(struct svalue *mask,
 
 static void image_x_call_examine_mask(INT32 args)
 {
-    int bits,shift;
-    if (args<1 || sp[-args].type!=T_INT)
-       error("Image.X.examine_mask: illegal argument(s)\n");
+   int bits,shift;
+   if (args<1 || sp[-args].type!=T_INT)
+      error("Image.X.examine_mask: illegal argument(s)\n");
 
    image_x_examine_mask(sp-args,"argument 1",&bits,&shift);
-    pop_n_elems(args);
+   pop_n_elems(args);
     
-    push_int(bits);
-    push_int(shift);
-    f_aggregate(2);
+   push_int(bits);
+   push_int(shift);
+   f_aggregate(2);
 }
 
 static void image_x_encode_truecolor_masks(INT32 args)
@@ -422,9 +422,9 @@ static void image_x_encode_truecolor_masks(INT32 args)
    if (sp[3-args].type!=T_INT)
       error("Image.X.encode_truecolor_masks: illegal argument 4 (expected integer)\n");
 
-  image_x_examine_mask(sp+4-args,"argument 3 (red mask)",&rbits,&rshift);
-  image_x_examine_mask(sp+5-args,"argument 4 (blue mask)",&gbits,&gshift);
-  image_x_examine_mask(sp+6-args,"argument 5 (green mask)",&bbits,&bshift);
+   image_x_examine_mask(sp+4-args,"argument 3 (red mask)",&rbits,&rshift);
+   image_x_examine_mask(sp+5-args,"argument 4 (blue mask)",&gbits,&gshift);
+   image_x_examine_mask(sp+6-args,"argument 5 (green mask)",&bbits,&bshift);
 
    if (ct) add_ref(ct);
    pop_n_elems(args-4);
@@ -437,10 +437,10 @@ static void image_x_encode_truecolor_masks(INT32 args)
    if (ct)
    {
       push_object(ct);
-     image_x_encode_truecolor(11);
+      image_x_encode_truecolor(11);
    }
    else
-     image_x_encode_truecolor(10);
+      image_x_encode_truecolor(10);
 }
 
 /*
@@ -467,10 +467,10 @@ static void image_x_encode_truecolor_masks(INT32 args)
 */
 
 static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
-					     struct image *img,
-					     struct neo_colortable *nct,
-					     int bpp,int vbpp,int alignbits,
-					     unsigned char* translate)
+						   struct image *img,
+						   struct neo_colortable *nct,
+						   int bpp,int vbpp,int alignbits,
+						   unsigned char* translate)
 {
    struct pike_string *dest;
    INT32 linemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1)>>3;
@@ -535,10 +535,10 @@ static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
 }
 					     
 static void image_x_encode_pseudocolor_1byte(INT32 args,
-				       struct image *img,
-				       struct neo_colortable *nct,
-				       int bpp,int vbpp,int alignbits,
-				       unsigned char* translate)
+					     struct image *img,
+					     struct neo_colortable *nct,
+					     int bpp,int vbpp,int alignbits,
+					     unsigned char* translate)
 {
    struct pike_string *dest;
    INT32 blinemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1);
@@ -596,18 +596,26 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-/*fprintf(stderr,"   b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
+#ifdef DEBUG
+	       fprintf(stderr,"   b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
+#endif
 	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
-/*fprintf(stderr,">  b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
+#ifdef DEBUG
+	       fprintf(stderr,">  b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
+#endif
 	       *(++d)=0; bit=0;
 	    }
-/*fprintf(stderr," - b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
-	    *d|=b>>24; 
+#ifdef DEBUG
+	    fprintf(stderr," - b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
+#endif
+	    *d|=(unsigned char)(b>>(24+bit));
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
-/*fprintf(stderr,"^- b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
+#ifdef DEBUG
+	    fprintf(stderr,"^- b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
+#endif
 	 }
       }
       bp=blinemod;
@@ -622,10 +630,10 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 }
 					     
 static void image_x_encode_pseudocolor_2byte(INT32 args,
-				       struct image *img,
-				       struct neo_colortable *nct,
-				       int bpp,int vbpp,int alignbits,
-				       unsigned short  *translate)
+					     struct image *img,
+					     struct neo_colortable *nct,
+					     int bpp,int vbpp,int alignbits,
+					     unsigned short  *translate)
 {
    struct pike_string *dest;
    INT32 blinemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1);
@@ -704,7 +712,7 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
    push_string(end_shared_string(dest2));
 }
 					     
-static void image_x_encode_pseudocolor(INT32 args)
+void image_x_encode_pseudocolor(INT32 args)
 {
    INT32 bpp,alignbits,vbpp;
    struct image *img;
@@ -741,15 +749,16 @@ static void image_x_encode_pseudocolor(INT32 args)
 	 translate=sp[5-args].u.string->str;
    } 
    if ( vbpp==8 && bpp==8 && !((bpp*img->xsize)%alignbits) )
-     image_x_encode_pseudocolor_1byte_exact(args,img,nct,vbpp,bpp,alignbits,
-				       (unsigned char*)translate);
+      image_x_encode_pseudocolor_1byte_exact(args,img,nct,vbpp,bpp,alignbits,
+					     (unsigned char*)translate);
    else if (vbpp<=8) 
-     image_x_encode_pseudocolor_1byte(args,img,nct,bpp,vbpp,alignbits,
-				 (unsigned char*)translate);
+      image_x_encode_pseudocolor_1byte(args,img,nct,bpp,vbpp,alignbits,
+				       (unsigned char*)translate);
    else if (vbpp<=16) 
-     image_x_encode_pseudocolor_2byte(args,img,nct,bpp,vbpp,alignbits,
-				 (unsigned short*)translate);
-   else error("Image.X.encode_pseudocolor: sorry, too many bits\n");
+      image_x_encode_pseudocolor_2byte(args,img,nct,bpp,vbpp,alignbits,
+				       (unsigned short*)translate);
+   else error("Image.X.encode_pseudocolor: sorry, too many bits (%d>16)\n",
+	      vbpp);
 }
 
 /*
@@ -813,8 +822,8 @@ static void image_x_decode_truecolor(INT32 args)
       
       if (swapbytes)
 	 rpos=Bpp-1-rpos,
-	 gpos=Bpp-1-gpos,
-	 bpos=Bpp-1-bpos;
+	    gpos=Bpp-1-gpos,
+	    bpos=Bpp-1-bpos;
 
       push_int(width);
       push_int(height);
@@ -887,7 +896,7 @@ void image_x_decode_truecolor_masks(INT32 args)
       image_x_decode_truecolor(13);
    }
    else
-     image_x_decode_truecolor(12);
+      image_x_decode_truecolor(12);
 }
 
 /*
@@ -982,7 +991,7 @@ struct program *image_x_module_program=NULL;
 
 void init_image_x(void)
 {
-  struct pike_string *s;
+   struct pike_string *s;
    start_new_program();
    
    add_function("encode_truecolor",image_x_encode_truecolor,
@@ -1004,9 +1013,9 @@ void init_image_x(void)
 
 void exit_image_x(void)
 {
-  if(image_x_module_program)
-  {
-    free_program(image_x_module_program);
-    image_x_module_program=0;
-  }
+   if(image_x_module_program)
+   {
+      free_program(image_x_module_program);
+      image_x_module_program=0;
+   }
 }

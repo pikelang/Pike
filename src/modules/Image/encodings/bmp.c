@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.10 1999/05/02 20:15:37 mirar Exp $ */
+/* $Id: bmp.c,v 1.11 1999/05/03 21:16:08 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.10 1999/05/02 20:15:37 mirar Exp $
+**!	$Id: bmp.c,v 1.11 1999/05/03 21:16:08 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.10 1999/05/02 20:15:37 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.11 1999/05/03 21:16:08 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -76,21 +76,47 @@ static INLINE unsigned long _int_from_16bit(unsigned char *data)
 
 }
 
+static int parameter_int(struct svalue *map,struct pike_string *what,INT32 *p)
+{
+   struct svalue *v;
+   v=low_mapping_string_lookup(map->u.mapping,what);
+
+   if (!v || v->type!=T_INT) return 0;
+
+   *p=v->u.integer;
+   return 1;
+}
+
+static int parameter(struct svalue *map,struct pike_string *what,struct svalue **d)
+{
+   struct svalue *v;
+   v=low_mapping_string_lookup(map->u.mapping,what);
+
+   if (!v || IS_UNDEFINED(v)) return 0;
+
+   *d=v;
+   return 1;
+}
+
 /*
 **! method string encode(object image)
+**! method string encode(object image,mapping options)
 **! method string encode(object image,object colortable)
-**  method string encode(object image,mapping options)
+**! method string encode(object image,int bpp)
 **!	Make a BMP. It default to a 24 bpp BMP file,
 **!	but if a colortable is given, it will be 8bpp 
 **!	with a palette entry.
 **!
-** 	<tt>option</tt> is a mapping that may contain:
-** 	<pre>
-** 	"colortable": Image.Colortable   - palette
-** 	"bpp":        1|4|8|24           - force this many bits per pixel
+**!	<tt>option</tt> is a mapping that may contain:
+**!	<pre>
+**!	"colortable": Image.Colortable   - palette
+**!	"bpp":        1|4|8|24           - force this many bits per pixel
 ** 	"windows":    0|1                - windows mode (default is 1)
-** 	"rle":        0|1                - run-length encode (default is 0)
-** 	</pre>
+**!	"rle":        0|1                - run-length encode (default is 0)
+**!
+**      wizard options:
+** 	"fuji":       0|1                - fuji-jpeg mode (default is 0)    
+**!	</pre>
 **!
 **! arg object image
 **!	Source image.
@@ -102,7 +128,7 @@ static INLINE unsigned long _int_from_16bit(unsigned char *data)
 **! returns the encoded image as a string
 **!
 **! bugs
-**!	Doesn't support all BMP modes. At all.
+**!	Doesn't support old BMP mode, only "windows" mode.
 */
 
 void img_bmp_encode(INT32 args)
@@ -114,6 +140,8 @@ void img_bmp_encode(INT32 args)
    int size,offs;
    struct pike_string *ps; 
 
+   int rle=0;
+
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.encode",1);
 
@@ -124,18 +152,73 @@ void img_bmp_encode(INT32 args)
    if (args==1)
       nct=NULL,oc=NULL;
    else
-      if (sp[-args].type!=T_OBJECT ||
-	  !(nct=(struct neo_colortable*)
-	    get_storage(oc=sp[1-args].u.object,image_colortable_program)))
-	 SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
+      if (sp[1-args].type==T_OBJECT)
+      {
+	 if (!(nct=(struct neo_colortable*)
+	       get_storage(oc=sp[1-args].u.object,image_colortable_program)))
+	    SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
+      }
+      else if (sp[1-args].type==T_MAPPING)
+      {
+	 struct svalue *v;
+	 struct pike_string *qs;
 
-   if (!nct) 
-      bpp=24;
-   else if (image_colortable_size(nct)<=256)
-      bpp=8; /* only supports this for now */
-   else
-      SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,
-			   "colortable object with max 256 colors");
+	 MAKE_CONSTANT_SHARED_STRING(qs,"rle");
+	 if (parameter_int(sp+1-args,qs,&rle))
+	    rle=!!rle;
+
+	 MAKE_CONSTANT_SHARED_STRING(qs,"bpp");
+	 parameter_int(sp+1-args,qs,&bpp);
+
+	 MAKE_CONSTANT_SHARED_STRING(qs,"colortable");
+	 if (parameter(sp+1-args,qs,&v))
+	 {
+	    if (v->type!=T_OBJECT  ||
+		!(nct=(struct neo_colortable*)
+		  get_storage(oc=v->u.object,image_colortable_program)))
+	       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object at index \"colortable\"\n");
+	 }
+      } 
+      else if (sp[1-args].type==T_INT)
+      {
+	 bpp=sp[1-args].u.integer;
+      }
+      else
+	 SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"mapping|object|int\n");
+
+   if (bpp==0)
+      if (!nct) 
+	 bpp=24;
+      else if (image_colortable_size(nct)<=2 && !rle)
+	 bpp=1;
+      else if (image_colortable_size(nct)<=16)
+	 bpp=4; 
+      else 
+	 bpp=8;
+
+   switch (bpp)
+   {
+      case 1:
+	 if (rle) 
+	    bad_arg_error("Image.BMP.encode",sp-args,args,2,"mapping",sp+2-1-args,"run-length encoding can only be done on a palette-based image with 4 or 8 bits per pixel");
+      case 4:
+      case 8:
+	 if (!nct)
+	 {
+	    /* make one */
+	    ref_push_object(o);
+	    push_int(1<<bpp);
+	    oc=clone_object(image_colortable_program,2);
+	    nct=(struct neo_colortable*)
+	       get_storage(oc,image_colortable_program);
+	 }
+	 else if (image_colortable_size(nct)>(1<<bpp))
+	    bad_arg_error("Image.BMP.encode",sp-args,args,2,"mapping",sp+2-1-args,"colortable must have at most %d colors (has %d colors)\n",1<<bpp,image_colortable_size(nct));
+      case 24:
+	 break;
+      default:
+	 bad_arg_error("Image.BMP.encode",sp-args,args,2,"mapping",sp+2-1-args,"illegal bits per pixel: %d (1, 4, 8 and 24 are valid)\n",bpp);
+   }
 
    if (oc) oc->refs++;
    o->refs++;
@@ -154,7 +237,7 @@ void img_bmp_encode(INT32 args)
    push_ubo_32bit(img->ysize); /* height */
    push_ubo_16bit(1);  /* "number of planes for the target device" */
    push_ubo_16bit(bpp); /* bits per pixel (see above) */
-   push_ubo_32bit(0); /* compression: none */
+   push_ubo_32bit(rle?(bpp==4)?2:1:0); /* compression */
    push_ubo_32bit(0); /* size of image (0 is valid if no compression) */
    push_ubo_32bit(0); /* horisontal resolution in pixels/meter */
    push_ubo_32bit(0); /* vertical resolution in pixels/meter */
@@ -169,7 +252,7 @@ void img_bmp_encode(INT32 args)
 
    /* palette */
 
-   if (nct)
+   if (bpp<24)
    {
       ps=begin_shared_string((1<<bpp)*4);
       MEMSET(ps->str,0,(1<<bpp)*4);
@@ -183,27 +266,142 @@ void img_bmp_encode(INT32 args)
    /* the image */
    offs=sp[-1].u.string->len;
 
-   if (nct)
+   if (bpp<24)
    {
-      /* 8bpp image */
-      ps=begin_shared_string(img->xsize*img->ysize);
-      image_colortable_index_8bit_image(nct,img->img,(unsigned char *)ps->str,
-					img->xsize*img->ysize,img->xsize);
-      push_string(ps=end_shared_string(ps));
-      n++;
+      unsigned char *s;
+      unsigned char *d;
+      int i;
+      unsigned char a,b=0;
+      int m;
+      int l;
+
+      switch (rle)
+      {
+	 case 0:
+	    ref_push_object(o);
+	    push_int(bpp);
+	    push_int(32);
+	    push_int(bpp);
+	    ref_push_object(oc);
+	    image_x_encode_pseudocolor(5);
+
+	    n++;
+	    break;
+
+	 case 1: /* basic RLE */
+	    /* source image */
+	    ps=begin_shared_string(img->xsize*img->ysize);
+	    image_colortable_index_8bit_image(nct,img->img,
+					      (unsigned char *)ps->str,
+					      m=img->xsize*img->ysize,
+					      img->xsize);
+	    push_string(ps=end_shared_string(ps));
+	    s=(unsigned char*)ps->str;
+
+	    /* allocate worst case */
+	    ps=begin_shared_string((img->xsize+2)*img->ysize*2+2); 
+        
+	    d=(unsigned char*)ps->str;
+
+	    l=img->xsize;
+
+	    if (bpp==4)
+	    {
+	       while (m)
+	       {
+		  a=s[0];
+		  if (m>1) 
+		  {
+		     b=s[1];
+		     for (i=2; i<m; i++)
+			if (s[i]!=((i&1)?a:b)) break;
+		  }
+		  else
+		     i=1;
+
+		  if (i>l) i=l;
+	       
+		  *(d++)=(unsigned char)i;
+		  *(d++)=(unsigned char)((a<<4)|b);
+
+		  m-=i;
+		  s+=i;
+
+		  if (!m) break;
+
+		  l-=i;
+
+		  if (!l)
+		  {
+		     *(d++)=0; /* EOL */
+		     *(d++)=0;
+		     l=img->xsize;
+		  }
+	       }
+	    }
+	    else /* bpp==8 */
+	    {
+	       while (m)
+	       {
+		  a=s[0];
+		  for (i=1; i<m; i++)
+		     if (s[i]!=a) break;
+
+		  if (i>l) i=l;
+	       
+		  *(d++)=i;
+		  *(d++)=a;
+
+		  m-=i;
+		  s+=i;
+
+		  if (!m) break;
+
+		  l-=i;
+
+		  if (!l)
+		  {
+		     *(d++)=0; /* EOL */
+		     *(d++)=0;
+		     l=img->xsize;
+		  }
+	       }
+	    }
+	    *(d++)=0; /* EOD */
+	    *(d++)=1;
+	    ps->len=d-(unsigned char*)ps->str;
+	    push_string(ps=end_shared_string(ps));
+
+	    stack_swap();
+	    pop_stack();
+
+	    n++;
+	    
+	    break;
+
+	 default:
+	    fatal("reached unknown RLE level\n");
+      }
    }
    else
    {
       unsigned char *c;
       int m=img->xsize*img->ysize;
       rgb_group *s=img->img;
-      c=(unsigned char*)((ps=begin_shared_string(m*3))->str);
+      int l=img->xsize-1;
+      int skip=(4-((img->xsize*3)&3))&3;
+      c=(unsigned char*)((ps=begin_shared_string(m*3+skip*img->ysize))->str);
       while (m--)
       {
 	 *(c++)=s->b;
 	 *(c++)=s->g;
 	 *(c++)=s->r;
 	 s++;
+	 if (!l--)
+	 {
+	    c+=skip;
+	    l=img->xsize-1;
+	 }
       }
       push_string(end_shared_string(ps));
       n++;
@@ -274,17 +472,6 @@ void img_bmp_encode(INT32 args)
 **!	Doesn't support all BMP modes. At all.
 */
 
-static int parameter_int(struct svalue *map,struct pike_string *what,INT32 *p)
-{
-   struct svalue *v;
-   v=low_mapping_string_lookup(map->u.mapping,what);
-
-   if (!v || v->type!=T_INT) return 0;
-
-   *p=v->u.integer;
-   return 1;
-}
-
 void i_img_bmp__decode(INT32 args,int header_only)
 {
    p_wchar0 *s,*os;
@@ -294,7 +481,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    struct neo_colortable *nct=NULL;
    struct object *o;
    rgb_group *d;
-   int n=0,j,i,y,skip;
+   int n=0,j=0,i,y,skip;
    int windows=0;
    int quality=50; /* for JPEG decoding */
 
@@ -503,6 +690,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 s+=(3<<bpp);
 	 len-=(3<<bpp);
       }
+
+      n++;
    }
 
    push_text("image");
@@ -527,13 +716,13 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	 skip=(4-((img->xsize*3)&3))&3;
 
-	 j=(len)/3;
+	 j=len;
 	 y=img->ysize;
 	 while (j && y--)
 	 {
 	    d=img->img+img->xsize*y;
 	    i=img->xsize; if (i>j) i=j; 
-	    j-=i;
+	    j-=i*3;
 	    while (i--)
 	    {
 	       d->b=*(s++);
@@ -563,6 +752,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	    y=img->ysize-1;
 	    d=img->img+img->xsize*y;
+
+	    j=len;
 	    
 	    while (j--)
 	    {
@@ -572,25 +763,32 @@ void i_img_bmp__decode(INT32 args,int header_only)
 		  case 0:
 		     switch (s[1])
 		     {
-			case 0:
+			case 0: /* EOL */
+#ifdef RLE_DEBUG
+			   fprintf(stderr,"end of line  %5d %02x %02x\n",
+				   j,s[0],s[1]);
+#endif
 			   if (y!=0) y--;
 			   d=img->img+img->xsize*y;
 			   break;
-			case 1:
+			case 1: /* EOD */
 			   goto done_rle8;
-			case 2:
+			case 2: /* cursor */
 			   error("Image.BMP.decode: advanced RLE "
 				 "decompression (cursor movement) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
-			default:
+			default: /* literal run */
 			   error("Image.BMP.decode: advanced RLE "
-				 "decompression (non-rle data) "
+				 "decompression (literal run) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
 		     }
 		     break;
 		  default:
+#ifdef RLE_DEBUG		     
+		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);		     
+#endif
 		     for (i=0; i<s[0] && d<maxd; i++)
 			if (s[1]>nct->u.flat.numentries) 
 			   d++;
@@ -647,7 +845,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 		     switch (s[1])
 		     {
 			case 0:
-#if RLE_DEBUG
+#ifdef RLE_DEBUG
 			   fprintf(stderr,"end of line  %5d %02x %02x\n",
 				   j,s[0],s[1]);
 #endif
@@ -656,7 +854,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			   
 			   break;
 			case 1:
-#if RLE_DEBUG
+#ifdef RLE_DEBUG
 			   fprintf(stderr,"end of data  %5d %02x %02x\n",
 				   j,s[0],s[1]);
 #endif
@@ -666,7 +864,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 				 "decompression (cursor movement) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
-#if RLE_DEBUG
+#ifdef RLE_DEBUG
 			   if (j<2) break;
 			   fprintf(stderr,"cursor       "
 				   "%5d %02x %02x %02x %02x\n",
@@ -679,7 +877,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 				 "decompression (non-rle data) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
-#if RLE_DEBUG
+#ifdef RLE_DEBUG
 			   fprintf(stderr,"data         %5d %02x %02x [ ",
 				   j,s[0],s[1]);
 			   fflush(stderr);
@@ -696,7 +894,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 		     }
 		     break;
 		  default:
-#if RLE_DEBUG		     
+#ifdef RLE_DEBUG		     
 		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);		     
 #endif
 		     for (i=0; i<s[0] && d<maxd; i++)
@@ -799,7 +997,7 @@ void init_image_bmp(void)
    start_new_program();
    
    add_function("encode",img_bmp_encode,
-		"function(object,void|object:string)",0);
+		"function(object,void|object|int|mapping:string)",0);
    add_function("_decode",img_bmp__decode,
 		"function(string,void|mapping:mapping)",0);
    add_function("decode",img_bmp_decode,
