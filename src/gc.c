@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.164 2001/07/01 23:44:40 mast Exp $");
+RCSID("$Id: gc.c,v 1.165 2001/07/02 01:02:56 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -42,7 +42,7 @@ RCSID("$Id: gc.c,v 1.164 2001/07/01 23:44:40 mast Exp $");
 #define MAX_ALLOC_THRESHOLD 10000000
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
-#define GC_LINK_CHUNK_SIZE 31
+#define GC_LINK_CHUNK_SIZE 63
 
 /* The gc will free all things with no external references that isn't
  * referenced by undestructed objects with destroy() lfuns (known as
@@ -234,8 +234,11 @@ PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 
 int gc_in_cycle_check = 0;
 static unsigned delayed_freed, weak_freed, checked, marked, cycle_checked, live_ref;
-static unsigned max_gc_frames, num_gc_frames = 0;
+static unsigned max_gc_frames, num_gc_frames = 0, live_rec, frame_rot;
 static unsigned gc_extra_refs = 0;
+
+static unsigned max_tot_gc_frames = 0;
+static unsigned tot_cycle_checked = 0, tot_live_rec = 0, tot_frame_rot = 0;
 
 void dump_gc_info(void)
 {
@@ -247,6 +250,9 @@ void dump_gc_info(void)
   fprintf(stderr,"Second since last gc()   : %ld\n",
 	  DO_NOT_WARN((long)TIME(0) - (long)last_gc));
   fprintf(stderr,"Projected garbage        : %f\n", objects_freed * (double) num_allocs / (double) alloc_threshold);
+  fprintf(stderr,"Max used gc frames       : %u\n", max_tot_gc_frames);
+  fprintf(stderr,"Live recursed ratio      : %g\n", (double) tot_live_rec / tot_cycle_checked);
+  fprintf(stderr,"Frame rotation ratio     : %g\n", (double) tot_frame_rot / tot_cycle_checked);
   fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
 
@@ -1597,10 +1603,12 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
     while (b->frameflags & GC_OFF_STACK) {
       if ((b = NEXT(b)) == pos) goto done;
       CHECK_POP_FRAME(b);
+      DO_IF_DEBUG(frame_rot++);
     }
     while (p->frameflags & GC_OFF_STACK) {
       if (!(p = NEXT(p))) goto done;
       CHECK_POP_FRAME(p);
+      DO_IF_DEBUG(frame_rot++);
     }
     old_rec_top = gc_rec_top;
     gc_rec_top = p->back;
@@ -1608,6 +1616,7 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
     b->back = old_rec_top;
   }
 done:
+  DO_IF_DEBUG(frame_rot++);
 
   {
     struct gc_frame *new_rec_last = PREV(pos);
@@ -1903,6 +1912,9 @@ live_recurse:
     gc_rec_last = l;
   }
 
+#ifdef PIKE_DEBUG
+  live_rec++;
+#endif
   return 1;
 }
 
@@ -2167,6 +2179,7 @@ int do_gc(void)
 
 #ifdef PIKE_DEBUG
   delayed_freed = weak_freed = checked = marked = cycle_checked = live_ref = 0;
+  live_rec = frame_rot = 0;
   if (gc_debug) {
     unsigned n;
     Pike_in_gc = GC_PASS_PRETOUCH;
@@ -2279,9 +2292,11 @@ int do_gc(void)
     GC_VERBOSE_DO(fprintf(stderr,
 			  "| cycle: %u internal things visited, %u cycle ids used,\n"
 			  "|        %u weak references freed, %d more things to free,\n"
+			  "|        %u live recursed frames, %u frame rotations,\n"
 			  "|        space for %u gc frames used\n",
 			  cycle_checked, last_cycle, weak_freed,
-			  delayed_freed - obj_count, max_gc_frames));
+			  delayed_freed - obj_count,
+			  live_rec, frame_rot, max_gc_frames));
   }
 
   if (gc_ext_weak_refs) {
@@ -2512,6 +2527,9 @@ int do_gc(void)
 	    objs, objs + num_objects);
 #endif
   }
+  if (max_gc_frames > max_tot_gc_frames) max_tot_gc_frames = max_gc_frames;
+  tot_cycle_checked += cycle_checked;
+  tot_live_rec += live_rec, tot_frame_rot += frame_rot;
 #endif
 
 #ifdef ALWAYS_GC
@@ -2551,30 +2569,39 @@ int do_gc(void)
  */
 void f__gc_status(INT32 args)
 {
+  int size = 0;
+
   pop_n_elems(args);
 
   push_constant_text("num_objects");
   push_int(num_objects);
+  size++;
 
   push_constant_text("num_allocs");
   push_int(num_allocs);
+  size++;
 
   push_constant_text("alloc_threshold");
   push_int64(alloc_threshold);
+  size++;
 
   push_constant_text("objects_alloced");
   push_int64(objects_alloced);
+  size++;
 
   push_constant_text("objects_freed");
   push_int64(objects_freed);
+  size++;
 
   push_constant_text("last_gc");
   push_int64(last_gc);
+  size++;
 
   push_constant_text("projected_garbage");
   push_float(objects_freed * (double) num_allocs / (double) alloc_threshold);
+  size++;
 
-  f_aggregate_mapping(14);
+  f_aggregate_mapping(size * 2);
 }
 
 void cleanup_gc(void)
