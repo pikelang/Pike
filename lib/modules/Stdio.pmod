@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.39 1999/06/29 16:02:58 mast Exp $
+// $Id: Stdio.pmod,v 1.40 2001/06/13 12:01:27 grubba Exp $
 
 #include <string.h>
 
@@ -107,7 +107,11 @@ class File
     }
     _async_cb = callback;
     _async_args = args;
+#if constant(files.__HAVE_OOB__)
+    set_nonblocking(0, _async_connected, _async_failed, _async_connect, 0);
+#else /* !constant(files.__HAVE_OOB__) */
     set_nonblocking(0, _async_connected, _async_failed);
+#endif /* constant(files.__HAVE_OOB__) */
     mixed err;
     if (err = catch(connect(host, port))) {
       // Illegal format. -- Bad hostname?
