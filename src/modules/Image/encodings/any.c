@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.15 2000/02/26 22:33:19 hubbe Exp $ */
+/* $Id: any.c,v 1.16 2000/03/22 18:12:19 peter Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.15 2000/02/26 22:33:19 hubbe Exp $
+**!	$Id: any.c,v 1.16 2000/03/22 18:12:19 peter Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.15 2000/02/26 22:33:19 hubbe Exp $");
+RCSID("$Id: any.c,v 1.16 2000/03/22 18:12:19 peter Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -44,6 +44,7 @@ void image_xwd__decode(INT32 args);
 void image_ilbm_decode(INT32 args);
 void image_ras_decode(INT32 args);
 void image_pvr_f_decode_header(INT32 args);
+void image_tim_f_decode_header(INT32 args);
 
 /*
 **! method mapping _decode(string data)
@@ -154,6 +155,11 @@ void image_any__decode(INT32 args)
 	 image_pvr_f__decode(1);
 	 return;
 
+      case CHAR2(0x10,0):
+         /* TIM */
+	 image_tim_f__decode(1);
+	 return;
+
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
 	 {
@@ -262,6 +268,11 @@ void image_any_decode_header(INT32 args)
       case CHAR2('G','B'):
 	 /* PVR */
 	 image_pvr_f_decode_header(1);
+	 return;
+
+      case CHAR2(0x10,0):
+	 /* TIM */
+	 image_tim_f_decode_header(1);
 	 return;
 
       case CHAR2(0,0):
