@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.31 2003/04/02 00:56:45 mast Exp $
+|| $Id: pike_error.h,v 1.32 2003/07/30 17:16:31 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -209,9 +209,9 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
 /* Works, but probably not interresting for most people
  *	/grubba 1998-04-11
  */
-#define PIKE_ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, __FILE__, __LINE__);
+#define PIKE_ERROR(NAME, TEXT, SP, ARGS) new_error(NAME, TEXT, SP, ARGS, __FILE__, __LINE__)
 #else
-#define PIKE_ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, NULL, 0);
+#define PIKE_ERROR(NAME, TEXT, SP, ARGS) new_error(NAME, TEXT, SP, ARGS, NULL, 0)
 #endif /* PIKE_DEBUG */
 
 /* Prototypes begin here */
