@@ -35,18 +35,18 @@ NAME_ARGS(message, messagebox_type, buttons);
   buttons = malloc( (args-1)*sizeof( char *) );
   buttons[args-2] = NULL;
   for( i = 2; i<args; i++ )
-    if( sp[-args+i].type != T_STRING )
+    if( Pike_sp[-args+i].type != PIKE_T_STRING )
     {
       free( buttons );
       error( "Bad argument %d, should be string\n", i );
     }
     else
-      buttons[i-2] = sp[-args+i].u.string->str;
+      buttons[i-2] = Pike_sp[-args+i].u.string->str;
 
   THIS->obj = GTK_OBJECT( gnome_message_box_newv( (const gchar *)message,
                                                   (const gchar *)type,
                                                   (const gchar **)buttons ) );
-  pgtk__init_object( fp->current_object );
+  pgtk__init_object( Pike_fp->current_object );
   free( buttons );
   pop_n_elems( args );
   push_int( 0 );

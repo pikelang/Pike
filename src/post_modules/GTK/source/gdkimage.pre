@@ -23,7 +23,7 @@ NAME_ARGS(fast_mode,image);
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   THIS->extra_int = GDK_IMAGE_NORMAL;
-  if(args && sp[-args].u.integer)
+  if(args && Pike_sp[-args].u.integer)
     THIS->extra_int = GDK_IMAGE_FASTEST;
   if( args == 2)
   {
@@ -32,7 +32,7 @@ NAME_ARGS(fast_mode,image);
     pgtk_GdkImage_set( 1 );
   }
 /* Do not add one extra ref for the internal gdk object..*/
-/*  add_ref(fp->current_object); */
+/*  add_ref(Pike_fp->current_object); */
 }
 FUNCTION(destroy, "function(void:void)");
 // Destructor. Destroys the image. Automatically called by pike when the object

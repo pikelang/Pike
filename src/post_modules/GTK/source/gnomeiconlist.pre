@@ -38,7 +38,7 @@ NAME_ARGS(icon_width,flags);
   pgtk_verify_not_inited();
   pop_n_elems( args );
   THIS->obj = (GtkObject *)gnome_icon_list_new_flags( a,0,b );
-  pgtk__init_object( fp->current_object );
+  pgtk__init_object( Pike_fp->current_object );
 }
 
 void set_hadjustment( adjustment hadj );
@@ -169,10 +169,10 @@ FUNCTION(get_selected_icons, "function(void:array(int))");
 // Return an array with the currently selected icons
 {
   GList *l;
-  struct svalue *osp = sp;
+  struct svalue *osp = Pike_sp;
   my_pop_n_elems( args );
   osp -= args;
   for (l = ((GnomeIconList *)THIS->obj)->selection; l; l = l->next)
     push_int( GPOINTER_TO_INT (l->data) );
-  f_aggregate( sp - osp );
+  f_aggregate( Pike_sp - osp );
 }

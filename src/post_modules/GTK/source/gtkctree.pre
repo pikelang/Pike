@@ -75,14 +75,14 @@ RETURNS(GTK.CTreeNode);
   if(args < 5)
     error("Too few arguments to insert_node\n");
 
-  if(sp[-args].type == T_OBJECT)
-    parent = get_pgdkobject( sp[-args].u.object, pgtk_CTreeNode_program );
-  if(sp[-args+1].type == T_OBJECT)
-    sibling = get_pgdkobject( sp[-args].u.object, pgtk_CTreeNode_program );
-  if(sp[-args+2].type == T_ARRAY)
-    text = sp[-args+2].u.array;
-  is_leaf =sp[-args+3].u.integer;
-  expanded =sp[-args+4].u.integer;
+  if(Pike_sp[-args].type == PIKE_T_OBJECT)
+    parent = get_pgdkobject( Pike_sp[-args].u.object, pgtk_CTreeNode_program );
+  if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+    sibling = get_pgdkobject( Pike_sp[-args].u.object, pgtk_CTreeNode_program );
+  if(Pike_sp[-args+2].type == PIKE_T_ARRAY)
+    text = Pike_sp[-args+2].u.array;
+  is_leaf =Pike_sp[-args+3].u.integer;
+  expanded =Pike_sp[-args+4].u.integer;
 
   if(text)
   {
@@ -93,7 +93,7 @@ RETURNS(GTK.CTreeNode);
 
     text_arr = alloca(GTK_CLIST(THIS->obj)->columns * sizeof(gchar *));
     for(i=0; i<GTK_CLIST(THIS->obj)->columns; i++)
-      if(i<text->size && text->item[i].type == T_STRING)
+      if(i<text->size && text->item[i].type == PIKE_T_STRING)
         text_arr[i] = text->item[i].u.string->str;
       else
         text_arr[i] = NULL;

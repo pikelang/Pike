@@ -11,14 +11,14 @@ NAME_ARGS(XWindowID|parent,void|atrributes);
 {
   pgtk_verify_setup();
   pgtk_verify_not_inited();
-  if(sp[-args].type == T_INT)
+  if(Pike_sp[-args].type == PIKE_T_INT)
   {
     int id;
     get_all_args( "GdkWindow", args, "%d", &id );
     THIS->obj = (void *)gdk_window_foreign_new( id );
     if( !THIS->obj )
       error("The window with id 0x%x does not exist\n", id);
-  } else if(sp[-args].type == T_OBJECT) {
+  } else if(Pike_sp[-args].type == PIKE_T_OBJECT) {
     struct object *parent;
     struct mapping *m;
     GdkWindowAttr attrs;
@@ -28,15 +28,15 @@ NAME_ARGS(XWindowID|parent,void|atrributes);
 
 #define GET_ARG(x,y,z) pgtk_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
 
-    GET_ARG(title, T_STRING, GDK_WA_TITLE);
-    GET_ARG(x, T_INT, GDK_WA_X);
-    GET_ARG(y, T_INT, GDK_WA_Y);
-    GET_ARG(width, T_INT, 0);
-    GET_ARG(height, T_INT, 0);
-    GET_ARG(window_type, T_INT, 0);
-    GET_ARG(wmclass_name, T_STRING, 0);
-    GET_ARG(wmclass_class, T_STRING, 0);
-    GET_ARG(override_redirect, T_INT, GDK_WA_NOREDIR);
+    GET_ARG(title, PIKE_T_STRING, GDK_WA_TITLE);
+    GET_ARG(x, PIKE_T_INT, GDK_WA_X);
+    GET_ARG(y, PIKE_T_INT, GDK_WA_Y);
+    GET_ARG(width, PIKE_T_INT, 0);
+    GET_ARG(height, PIKE_T_INT, 0);
+    GET_ARG(window_type, PIKE_T_INT, 0);
+    GET_ARG(wmclass_name, PIKE_T_STRING, 0);
+    GET_ARG(wmclass_class, PIKE_T_STRING, 0);
+    GET_ARG(override_redirect, PIKE_T_INT, GDK_WA_NOREDIR);
 
     THIS->obj=(void *)gdk_window_new(get_gdkobject(parent,Window),&attrs,mask);
   }
@@ -299,14 +299,14 @@ ARGS(GDK.Pixmap,GDK.Bitmap,GDK.Window);
   {
    default:
    case 3:
-     if(sp[-args+2].type == T_OBJECT)
-       w = get_gdkobject(sp[-args+2].u.object , Window );
+     if(Pike_sp[-args+2].type == PIKE_T_OBJECT)
+       w = get_gdkobject(Pike_sp[-args+2].u.object , Window );
    case 2:
-     if(sp[-args+1].type == T_OBJECT)
-       m = get_gdkobject(sp[-args+1].u.object , Bitmap );
+     if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+       m = get_gdkobject(Pike_sp[-args+1].u.object , Bitmap );
    case 1:
-     if(sp[-args].type == T_OBJECT)
-       p = get_gdkobject(sp[-args].u.object , Pixmap );
+     if(Pike_sp[-args].type == PIKE_T_OBJECT)
+       p = get_gdkobject(Pike_sp[-args].u.object , Pixmap );
      /*    case 0:
       * Some commercial CC breaks with empty case.
       * // David

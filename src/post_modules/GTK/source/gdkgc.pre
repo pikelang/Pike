@@ -24,7 +24,7 @@ FUNCTION(destoy, "function(void:void)");
 // Free the gc, called automatically by pike when the object is destroyed.
 {
   gdk_gc_destroy( (GdkGC*)THIS->obj );
-  destruct(fp->current_object);
+  destruct(Pike_fp->current_object);
 }
 FUNCTION(set_foreground, "function(object:object)");
 ARGS(GDK.Color);

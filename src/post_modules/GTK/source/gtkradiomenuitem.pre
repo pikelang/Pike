@@ -14,10 +14,10 @@ NAME_ARGS(title,groupmember);
   struct object *o=NULL;
   if(args)
   {
-    if(sp[-args].type == T_STRING)
-      label = (gchar *)sp[-args].u.string->str;
-    if(args==2 && (sp[-1].type == T_OBJECT))
-	o = sp[-1].u.object;
+    if(Pike_sp[-args].type == PIKE_T_STRING)
+      label = (gchar *)Pike_sp[-args].u.string->str;
+    if(args==2 && (Pike_sp[-1].type == PIKE_T_OBJECT))
+	o = Pike_sp[-1].u.object;
   }
 
   pgtk_verify_not_inited();

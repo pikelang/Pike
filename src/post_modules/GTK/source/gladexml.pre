@@ -15,7 +15,7 @@ class GladeXML;
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.6 2000/03/08 17:57:33 per Exp $");
+RCSID("$Id: gladexml.pre,v 1.7 2000/07/07 21:52:25 marcus Exp $");
 
 %{
 /* This function is used by signal_autoconnect to handle signal
@@ -54,7 +54,7 @@ static void pgtk__signal_connect(const gchar *handler_name,
     fprintf(stderr, "** WARNING **: Unknown function %s for signal %s\n",
 	    handler_name, signal_name);
     return;
-  } else if(cb->type != T_FUNCTION) {
+  } else if(cb->type != PIKE_T_FUNCTION) {
     fprintf(stderr, "** WARNING **: Value for handler %s for signal %s not a function\n.\n",
 	    handler_name, signal_name);
     return;
@@ -100,22 +100,22 @@ RETURNS(GTK.GladeXML);
   switch(args)
   {
    case 3:
-    if(sp[-1].type == T_STRING) {
-      domain = sp[-1].u.string->str;
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      domain = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
       error("GladeXML->new_from_memory(): Invalid argument 3, expected string.\n");
    case 2:
-    if(sp[-1].type == T_STRING) {
-      root = sp[-1].u.string->str;
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      root = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
       error("GladeXML->new_from_memory(): Invalid argument 2, expected string.\n");
    case 1:
-    if(sp[-1].type == T_STRING) {
-      data = sp[-1].u.string;
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      data = Pike_sp[-1].u.string;
       pop_n_elems(1);
       args--;
     } else
@@ -130,7 +130,7 @@ RETURNS(GTK.GladeXML);
 				  root,
 				  domain);
   THIS->obj =  (GtkObject *)xml;
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
 }
 
 FUNCTION(new, "function(string,void|string,void|string:object)");
@@ -154,24 +154,24 @@ NAME_ARGS(filename, root, domain);
   switch(args)
   {
    case 3:
-    if(sp[-1].type == T_STRING) {
-      domain = sp[-1].u.string->str;
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      domain = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
       error("GladeXML->new(): Invalid argument 3, expected string.\n");
 
    case 2:
-    if(sp[-1].type == T_STRING) {
-      root = sp[-1].u.string->str;
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      root = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
       error("GladeXML->new(): Invalid argument 2, expected string.\n");
 
    case 1:
-    if(sp[-1].type == T_STRING) {
-      data = sp[-1].u.string->str;
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      data = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
@@ -185,7 +185,7 @@ NAME_ARGS(filename, root, domain);
   else
     xml = glade_xml_new(data, root);
   THIS->obj = (GtkObject *)xml;
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
 }
 
 FUNCTION(create, "function(void|int:void)");
@@ -199,14 +199,14 @@ FUNCTION(create, "function(void|int:void)");
 #ifdef NEED_GNOMESUPPORT_H
     if(args)
     {
-      if(sp[-args].type == T_INT && sp[-1].u.integer != 0)
+      if(Pike_sp[-args].type == PIKE_T_INT && Pike_sp[-1].u.integer != 0)
 	glade_gnome_init();
     }
 #endif
     glade_is_setup = 1;
   }
   pop_n_elems(args);
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
 }
 
 
@@ -221,8 +221,8 @@ NAME_ARGS(name);
   if(!THIS->obj)
     error("GladeXML->get_widget(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
-  if(args == 1 && sp[-1].type == T_STRING) {
-    widget = glade_xml_get_widget(xml, sp[-1].u.string->str);
+  if(args == 1 && Pike_sp[-1].type == PIKE_T_STRING) {
+    widget = glade_xml_get_widget(xml, Pike_sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
   } else
@@ -244,8 +244,8 @@ NAME_ARGS(long_name);
   if(!THIS->obj)
     error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
-  if(args == 1 && sp[-1].type == T_STRING) {
-    widget = glade_xml_get_widget_by_long_name(xml, sp[-1].u.string->str);
+  if(args == 1 && Pike_sp[-1].type == PIKE_T_STRING) {
+    widget = glade_xml_get_widget_by_long_name(xml, Pike_sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
   } else
@@ -317,7 +317,7 @@ RETURNS(void);
 // saved and sent as the first argument to all callback functions.
 {
   GladeXML *xml;
-  if(args != 2 || sp[-args].type != T_MAPPING)
+  if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
     error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
   if(!THIS->obj)
     error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
@@ -326,4 +326,4 @@ RETURNS(void);
   pop_n_elems(args);
 }
 
-// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.6 2000/03/08 17:57:33 per Exp $</i></font>
+// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.7 2000/07/07 21:52:25 marcus Exp $</i></font>

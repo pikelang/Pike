@@ -61,7 +61,7 @@ NAME_ARGS(popdows_strings);
   int i;
   get_all_args("set_popdown_strings", args, "%a", &a);
   for(i=0; i<a->size; i++)
-    if(a->item[i].type == T_STRING)
+    if(a->item[i].type == PIKE_T_STRING)
       s = g_list_append( s, a->item[i].u.string->str );
   if(!s)
     error("No items in list!\n");

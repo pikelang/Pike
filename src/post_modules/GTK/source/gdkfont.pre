@@ -104,5 +104,5 @@ NAME_ARGS(character);
 // rendered with this font. The character can be between 0 and 65535,
 // the character encoding is font specific.
 {
-  push_int(gdk_char_width((GdkFont*)THIS->obj, sp[-args].u.integer));
+  push_int(gdk_char_width((GdkFont*)THIS->obj, Pike_sp[-args].u.integer));
 }

@@ -134,7 +134,7 @@ static gdouble progressfunc(struct signal_data *d)
   gdouble res;
   push_svalue( &d->args );
   apply_svalue( &d->cb, 1 );
-  res = (gdouble)sp[-1].u.float_number;
+  res = (gdouble)Pike_sp[-1].u.float_number;
   pop_stack();
 /*   free( d ); */
   return res;
@@ -258,10 +258,10 @@ FUNCTION(set, "function(float:object)");
 NAME_ARGS(percent);
 RETURNS(Gnome.AppProgressKey);
 {
-  if(args!=1 || sp[-1].type != T_FLOAT )
+  if(args!=1 || Pike_sp[-1].type != PIKE_T_FLOAT )
     error("Bad argument 1 to set\n");
   gnome_app_set_progress( (GnomeAppProgressKey)THIS->obj,
-                          (gdouble)sp[-1].u.float_number );
+                          (gdouble)Pike_sp[-1].u.float_number );
   RETURN_THIS();
 }
 
@@ -272,5 +272,5 @@ FUNCTION(destroy, "function(void:void)");
 
 FUNCTION(done, "function(void:void)");
 {
-  destruct( fp->current_object );
+  destruct( Pike_fp->current_object );
 }

@@ -42,25 +42,25 @@ NAME_ARGS(variable_name,variable_value);
   gint i;
   void *p;
   GnomeCanvasItem *tci = (void *)THIS->obj;
-  if( args != 2 || sp[-2].type != T_STRING )
+  if( args != 2 || Pike_sp[-2].type != PIKE_T_STRING )
     error("Bad argument 1 to set\n");
-  switch( sp[-1].type )
+  switch( Pike_sp[-1].type )
   {
-   case T_OBJECT:
-     p = get_pgtkobject(sp[-1].u.object,pgtk_object_program);
-     gnome_canvas_item_set( tci, sp[-2].u.string->str, p );
+   case PIKE_T_OBJECT:
+     p = get_pgtkobject(Pike_sp[-1].u.object,pgtk_object_program);
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, p );
      break;
-   case T_STRING:
-     p = sp[-1].u.string->str;
-     gnome_canvas_item_set( tci, sp[-2].u.string->str, p );
+   case PIKE_T_STRING:
+     p = Pike_sp[-1].u.string->str;
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, p );
      break;
-   case T_INT:
-     i = sp[-1].u.integer;
-     gnome_canvas_item_set( tci, sp[-2].u.string->str, i );
+   case PIKE_T_INT:
+     i = Pike_sp[-1].u.integer;
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, i );
      break;
-   case T_FLOAT:
-     d = sp[-1].u.float_number;
-     gnome_canvas_item_set( tci, sp[-2].u.string->str, d );
+   case PIKE_T_FLOAT:
+     d = Pike_sp[-1].u.float_number;
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, d );
      break;
    default:
      error("Bad argument 2 to set\n");

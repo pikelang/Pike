@@ -12,7 +12,7 @@ NAME_ARGS(parent);
   THIS->obj =(void *)
       gnome_canvas_item_new((void *)get_pgtkobject(o,pgtk_gnome_canvas_item_program),
                             gnome_canvas_line_get_type(), "smooth", 1);
-  pgtk__init_object( fp->current_object );
+  pgtk__init_object( Pike_fp->current_object );
   pop_n_elems(args);
   push_int( 0 );
 }

@@ -39,7 +39,7 @@ void my_ref_push_object( struct object *o )
 void pgtk_return_this( int n )
 {
   pop_n_elems( n );
-  ref_push_object( fp->current_object );
+  ref_push_object( Pike_fp->current_object );
 }
 
 void pgtk_get_image_module()
@@ -47,7 +47,7 @@ void pgtk_get_image_module()
   push_constant_text("Image");
   push_int(0);
   SAFE_APPLY_MASTER("resolv", 2);
-  if (sp[-1].type!=T_OBJECT)
+  if (Pike_sp[-1].type!=PIKE_T_OBJECT)
     error("No Image module.\n");
 }
 
@@ -56,7 +56,7 @@ void pgtk_index_stack( char *what )
   push_text(what);
   f_index(2);
 #ifdef DEBUG
-  if (sp[-1].type==T_INT)
+  if (Pike_sp[-1].type==PIKE_T_INT)
     error("Internal indexing error.\n");
 #endif
 }
@@ -70,7 +70,7 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
     pgtk_get_image_module();
     pgtk_index_stack( "Color" );
     pgtk_index_stack( "Color" );
-    pike_color_program = program_from_svalue(--sp);
+    pike_color_program = program_from_svalue(--Pike_sp);
   }
 
   col = (struct color_struct *)get_storage( o, pike_color_program );
@@ -247,12 +247,12 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       pgtk_get_image_module();
       pgtk_index_stack("colortable");
       /* on stack: array function */
-      sp[0]=sp[-1];
-      sp[-1]=sp[-2];
-      sp[-2]=sp[0];
+      Pike_sp[0]=Pike_sp[-1];
+      Pike_sp[-1]=Pike_sp[-2];
+      Pike_sp[-2]=Pike_sp[0];
       /* on stack: function array */
       PFTIME("Creating colormap obj");
-      apply_svalue( sp-2, 1 );
+      apply_svalue( Pike_sp-2, 1 );
       /* on stack: function cmap */
       get_all_args("internal", 1, "%o", &pike_cmap);
       pike_cmap->refs+=100; /* lets keep this one.. :-) */
@@ -291,14 +291,14 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       /* on stack: function img bpp linepad depth cmap*/
       /*             6       5    4  3       2     1 */
       PFTIME("Dithering image");
-      apply_svalue( sp-6, 5 );
-      if(sp[-1].type != T_STRING)
+      apply_svalue( Pike_sp-6, 5 );
+      if(Pike_sp[-1].type != PIKE_T_STRING)
       {
 	gdk_image_destroy((void *)i);
 	error("Failed to convert image\n");
       }
       PFTIME("Converting image");
-      MEMCPY(i->mem, sp[-1].u.string->str, sp[-1].u.string->len);
+      MEMCPY(i->mem, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
       pop_stack(); /* string */
       pop_stack(); /* function */
     }
@@ -418,14 +418,14 @@ void pgtk_get_mapping_arg( struct mapping *map,
     {
       switch(type)
       {
-       case T_STRING:
+       case PIKE_T_STRING:
 #ifdef DEBUG
          if(len != sizeof(char *))
            fatal("oddities detected\n");
 #endif
          MEMCPY(((char **)dest), &s->u.string->str, sizeof(char *));
          break;
-       case T_INT:
+       case PIKE_T_INT:
          if(len == 2)
          {
            short i = (short)s->u.integer;
@@ -434,7 +434,7 @@ void pgtk_get_mapping_arg( struct mapping *map,
          else if(len == 4)
            MEMCPY(((int *)dest), &s->u.integer, len);
          break;
-       case T_FLOAT:
+       case PIKE_T_FLOAT:
          if(len == sizeof(FLOAT_TYPE))
            MEMCPY(((FLOAT_TYPE *)dest), &s->u.float_number,len);
          else if(len == sizeof(double))
@@ -536,7 +536,7 @@ int pgtkbuttonfuncwrapper(GtkObject *obj, struct signal_data *d, void *foo)
   int res;
   push_svalue(&d->args);
   apply_svalue(&d->cb, 1);
-  res = sp[-1].u.integer;
+  res = Pike_sp[-1].u.integer;
   pop_stack();
   return res;
 }
@@ -713,7 +713,7 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                              int nparams, GtkArg *params)
 {
   int i, j=0, res, return_value = 0;
-  struct svalue *osp = sp;
+  struct svalue *osp = Pike_sp;
 
   if( !last_used_callback ) build_push_callbacks();
 
@@ -723,8 +723,8 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
   for(i=0; !return_value && (i<nparams); i++)
     return_value = push_param( params+i );
 
-  apply_svalue(&d->cb, sp-osp);
-  res = sp[-1].u.integer;
+  apply_svalue(&d->cb, Pike_sp-osp);
+  res = Pike_sp[-1].u.integer;
   pop_stack();
 
   if( return_value )

@@ -69,13 +69,13 @@ NAME_ARGS(string,font,bg,fg);
   {
     get_all_args("insert", args, "%S%*%*%*", &s,&a,&b,&c);
 
-    if(a->type == T_OBJECT)
+    if(a->type == PIKE_T_OBJECT)
       font = get_gdkobject( a->u.object,Font );
 
-    if(b->type == T_OBJECT)
+    if(b->type == PIKE_T_OBJECT)
       fg = get_gdkobject( b->u.object,Color );
 
-    if(c->type == T_OBJECT)
+    if(c->type == PIKE_T_OBJECT)
       bg = get_gdkobject( c->u.object,Color );
   } else
     get_all_args("insert", args, "%S", &s);

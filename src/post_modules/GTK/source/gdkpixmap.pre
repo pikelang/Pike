@@ -47,7 +47,7 @@ NAME_ARGS(image|xid);
   if(THIS->obj)
     error("Pixmap already initialized\n");
 
-  if( sp[-args].type == T_OBJECT )
+  if( Pike_sp[-args].type == PIKE_T_OBJECT )
   {
     get_all_args("create", args, "%o", &o );
     i = pgtk_pixmap_setup( o, &f );
@@ -61,9 +61,9 @@ NAME_ARGS(image|xid);
     pgtk__pixmap_draw( i );
     if(f) gdk_image_destroy( i );
   }
-  else if( args && sp[-1].type == T_INT )
+  else if( args && Pike_sp[-1].type == PIKE_T_INT )
   {
-    THIS->obj = (void *)gdk_pixmap_foreign_new( sp[-1].u.integer );
+    THIS->obj = (void *)gdk_pixmap_foreign_new( Pike_sp[-1].u.integer );
     if( !THIS->obj )
       error("Failed to find remote pixmap\n");
   }

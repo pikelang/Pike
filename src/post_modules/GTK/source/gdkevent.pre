@@ -2,7 +2,7 @@ class GdkEvent;
 
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
-#define RETURN_NIL() do{ my_pop_n_elems( args );push_int( 0 );sp[-1].subtype=1;return; } while(0)
+#define RETURN_NIL() do{ my_pop_n_elems( args );push_int( 0 );Pike_sp[-1].subtype=1;return; } while(0)
 #define RETURN_TEXT(X) do { my_pop_n_elems( args );ref_push_string( s_##X ); return; } while(0)
 #define RETURN_INT(X) do { my_pop_n_elems( args );push_int( X ); return; } while(0)
 #define RETURN_FLOAT(X) do { my_pop_n_elems( args );push_float( X ); return; } while(0)
@@ -228,14 +228,14 @@ FUNCTION(_sprintf, "function(int:string)" );
 
 FUNCTION(cast, "function(string:mixed)");
 {
-  struct svalue *osp = sp-args;
+  struct svalue *osp = Pike_sp-args;
   char *a;
   GdkEvent *e = (GdkEvent *)THIS->obj;
 
   if(!e) error("No event\n");
 
   if( !s_type ) define_gdkeventstrings();
-  if( !args  || sp[-args].u.string != s_mapping )
+  if( !args  || Pike_sp[-args].u.string != s_mapping )
     error("Can only cast to mapping\n");
   pop_n_elems( args );
 
@@ -441,7 +441,7 @@ FUNCTION(cast, "function(string:mixed)");
      ref_push_string(s_context);push_gdkobject( e->dnd.context, DragContext);
      break;
   }
-  f_aggregate_mapping( sp - osp );
+  f_aggregate_mapping( Pike_sp - osp );
 }
 
 

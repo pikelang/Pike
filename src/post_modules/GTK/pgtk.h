@@ -2,6 +2,7 @@
 /* Sort of unnessesary, and decreases code-size with 140Kb */
 #define GTK_NO_CHECK_CASTS
 
+#define NO_PIKE_SHORTHAND
 #include "config.h"
 #include <program.h>
 #include <pike_types.h>
@@ -88,7 +89,7 @@ void *get_swapped_string(struct pike_string *s, int force_wide);
 int signal_func_wrapper(GtkObject *obj, struct signal_data *d,
                         int nparams, GtkArg *params);
 
-#define pgtk__init_this_object() pgtk__init_object(fp->current_object)
+#define pgtk__init_this_object() pgtk__init_object(Pike_fp->current_object)
 void pgtk__init_object( struct object *o );
 
 void *get_pgdkobject(struct object *from, struct program *type);
@@ -112,8 +113,8 @@ void push_pgdkobject(void *obj, struct program *def);
 GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i );
 struct object *pikeimage_from_gdkimage( GdkImage *img );
 
-#define THIS ((struct object_wrapper *)fp->current_storage)
-#define THISO ((struct object_wrapper *)fp->current_storage)->obj
+#define THIS ((struct object_wrapper *)Pike_fp->current_storage)
+#define THISO ((struct object_wrapper *)Pike_fp->current_storage)->obj
 
 
 #define RETURN_THIS()  pgtk_return_this( args )

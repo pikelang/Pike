@@ -521,7 +521,7 @@ static gint please_do_compare_with_pike_func( GtkCList *clist,
   int ret;
   struct svalue *sf = gtk_object_get_data(GTK_OBJECT(THIS->obj),
                                           "pike_clist_sort_fun");
-  struct svalue *op = sp;
+  struct svalue *op = Pike_sp;
 
   if(!sf)
     return 1;
@@ -572,9 +572,9 @@ static gint please_do_compare_with_pike_func( GtkCList *clist,
   }
 
 
-  f_aggregate_mapping( sp-op );
+  f_aggregate_mapping( Pike_sp-op );
   apply_svalue( sf, 1 );
-  ret = sp[-1].u.integer;
+  ret = Pike_sp[-1].u.integer;
   pop_stack();
   return ret;
 }
@@ -612,13 +612,13 @@ NAME_ARGS(cmpfun);
 //   0: The rows are equal<br>
 //  -1: Row 1 is lesser than row 2<br>
 {
-  if(IS_ZERO(sp-1))
+  if(IS_ZERO(Pike_sp-1))
   {
     gtk_object_remove_data( THIS->obj, "pike_clist_sort_fun" );
     gtk_clist_set_compare_func( GTK_CLIST( THIS->obj ), NULL );
   } else {
     gtk_object_set_data_full(THIS->obj, "pike_clist_sort_fun",
-                             (void*)my_dup_svalue(sp-1), (void*)my_free_svalue);
+                             (void*)my_dup_svalue(Pike_sp-1), (void*)my_free_svalue);
     gtk_clist_set_compare_func( GTK_CLIST( THIS->obj ),
                                 (void *)please_do_compare_with_pike_func );
   }

@@ -604,7 +604,7 @@ NAME_ARGS(flags);
 // GTK.CanFocus and GTK.CanDefault
 RETURNS(GTK.Widget);
 {
-  GTK_WIDGET_SET_FLAGS( GTK_WIDGET( THIS->obj ), sp[-1].u.integer );
+  GTK_WIDGET_SET_FLAGS( GTK_WIDGET( THIS->obj ), Pike_sp[-1].u.integer );
   RETURN_THIS();
 }
 
@@ -614,7 +614,7 @@ NAME_ARGS(flags);
 // GTK.CanFocus and GTK.CanDefault
 RETURNS(GTK.Widget);
 {
-  GTK_WIDGET_UNSET_FLAGS( GTK_WIDGET( THIS->obj ), sp[-1].u.integer );
+  GTK_WIDGET_UNSET_FLAGS( GTK_WIDGET( THIS->obj ), Pike_sp[-1].u.integer );
   RETURN_THIS();
 }
 
@@ -641,7 +641,7 @@ NAME_ARGS(mask);
 RETURNS(GTK.Widget);
 {
   my_pop_n_elems(args);
-  push_int( GTK_WIDGET_FLAGS(GTK_WIDGET(THIS->obj)) | sp[-1].u.integer );
+  push_int( GTK_WIDGET_FLAGS(GTK_WIDGET(THIS->obj)) | Pike_sp[-1].u.integer );
 }
 
 
@@ -694,12 +694,12 @@ RETURNS(GTK.Widget);
 
   for(j=0; j<a->size; j++)
   {
-    if(a->item[j].type != T_ARRAY ||
+    if(a->item[j].type != PIKE_T_ARRAY ||
        a->item[j].u.array->size != 3 ||
-       a->item[j].u.array->item[0].type != T_STRING ||
+       a->item[j].u.array->item[0].type != PIKE_T_STRING ||
        a->item[j].u.array->item[0].u.string->size_shift > 1 ||
-       a->item[j].u.array->item[1].type != T_INT ||
-       a->item[j].u.array->item[2].type != T_INT)
+       a->item[j].u.array->item[1].type != PIKE_T_INT ||
+       a->item[j].u.array->item[2].type != PIKE_T_INT)
     {
       free(entries);
       error("The array is malformed.\n");
@@ -737,12 +737,12 @@ RETURNS(GTK.Widget);
 
   for(j=0; j<a->size; j++)
   {
-    if(a->item[j].type != T_ARRAY ||
+    if(a->item[j].type != PIKE_T_ARRAY ||
        a->item[j].u.array->size != 3 ||
-       a->item[j].u.array->item[0].type != T_STRING ||
+       a->item[j].u.array->item[0].type != PIKE_T_STRING ||
        a->item[j].u.array->item[0].u.string->size_shift > 1 ||
-       a->item[j].u.array->item[1].type != T_INT ||
-       a->item[j].u.array->item[2].type != T_INT)
+       a->item[j].u.array->item[1].type != PIKE_T_INT ||
+       a->item[j].u.array->item[2].type != PIKE_T_INT)
     {
       free(entries);
       error("The array is malformed.\n");
@@ -775,13 +775,13 @@ NAME_ARGS(image,mask);
   struct object *p=NULL, *m=NULL;
   if(args == 2)
   {
-    if(sp[-args].type == T_OBJECT)
-      p = sp[-args].u.object;
-    if(sp[-args+1].type == T_OBJECT)
-      m = sp[-args+1].u.object;
+    if(Pike_sp[-args].type == PIKE_T_OBJECT)
+      p = Pike_sp[-args].u.object;
+    if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+      m = Pike_sp[-args+1].u.object;
   }  else {
-    if(sp[-args].type == T_OBJECT)
-      p = sp[-args].u.object;
+    if(Pike_sp[-args].type == PIKE_T_OBJECT)
+      p = Pike_sp[-args].u.object;
   }
   gtk_drag_source_set_icon( GTK_WIDGET( THIS->obj ),
                             gdk_colormap_get_system(),

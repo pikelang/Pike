@@ -77,8 +77,8 @@ static void do_error( void *dom, int level, char *err, void *data )
   f_backtrace( 0 );
   f_aggregate( 2 );
   APPLY_MASTER("describe_backtrace",1);
-  if(sp[-1].type==T_STRING)
-    write_to_stderr(sp[-1].u.string->str, sp[-1].u.string->len);
+  if(Pike_sp[-1].type==PIKE_T_STRING)
+    write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
   pop_stack();
 }
 
@@ -111,7 +111,7 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   data = malloc(sizeof(char *)*(a->size+1));
   for(argc=0; argc<a->size; argc++)
   {
-    if(a->item[argc].type != T_STRING)
+    if(a->item[argc].type != PIKE_T_STRING)
     {
       free(data);
       error("Index %d in the array given as argument to setup_gtk "
@@ -225,7 +225,7 @@ NAME_ARGS(argv, do_not_parse_rc);
     data = malloc(sizeof(char *)*(a->size+1));
     for(argc=0; argc<a->size; argc++)
     {
-      if(a->item[argc].type != T_STRING)
+      if(a->item[argc].type != PIKE_T_STRING)
       {
         free(data);
         error("Index %d in the array given as argument to setup_gtk "

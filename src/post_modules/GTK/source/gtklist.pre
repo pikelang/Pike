@@ -48,7 +48,7 @@ NAME_ARGS(items,position);
   get_all_args("insert_items", args, "%a%d", &a, &p);
   
   for(i=0; i<a->size; i++)
-    if(a->item[i].type == T_OBJECT &&
+    if(a->item[i].type == PIKE_T_OBJECT &&
        get_pgtkobject( a->item[i].u.object, pgtk_list_item_program ))
       g_list_prepend(items, get_pgtkobject(a->item[i].u.object,
                                            pgtk_list_item_program));
@@ -68,7 +68,7 @@ NAME_ARGS(items,position);
   get_all_args("append_items", args, "%a", &a);
   
   for(i=0; i<a->size; i++)
-    if(a->item[i].type == T_OBJECT &&
+    if(a->item[i].type == PIKE_T_OBJECT &&
        get_pgtkobject( a->item[i].u.object, pgtk_list_item_program ))
       g_list_prepend(items, get_pgtkobject(a->item[i].u.object,
                                            pgtk_list_item_program));
@@ -88,7 +88,7 @@ NAME_ARGS(items,position);
   get_all_args("prepend_items", args, "%a", &a);
   
   for(i=0; i<a->size; i++)
-    if(a->item[i].type == T_OBJECT &&
+    if(a->item[i].type == PIKE_T_OBJECT &&
        get_pgtkobject( a->item[i].u.object, pgtk_list_item_program ))
       g_list_prepend(items, get_pgtkobject(a->item[i].u.object,
                                            pgtk_list_item_program));
@@ -108,7 +108,7 @@ NAME_ARGS(items,position);
   get_all_args("remove_items", args, "%a", &a);
   
   for(i=0; i<a->size; i++)
-    if(a->item[i].type == T_OBJECT &&
+    if(a->item[i].type == PIKE_T_OBJECT &&
        get_pgtkobject( a->item[i].u.object, pgtk_list_item_program ))
       g_list_prepend(items, get_pgtkobject(a->item[i].u.object,
                                            pgtk_list_item_program));

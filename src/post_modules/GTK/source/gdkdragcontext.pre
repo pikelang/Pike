@@ -33,7 +33,7 @@ NAME_ARGS(action);
 {
   time_t curtime = time(0);
   gdk_drag_status( ((GdkDragContext *)THIS->obj),
-                   (args?sp[-1].u.integer:
+                   (args?Pike_sp[-1].u.integer:
                     ((GdkDragContext *)THIS->obj)->suggested_action),
                    curtime);
   RETURN_THIS();
@@ -103,12 +103,12 @@ NAME_ARGS(image,mask,hot_x,hot_y);
   int x, y;
   if(args != 4)
     error("Too few arguments to drag_set_icon_pixmap\n");
-  if(sp[-args].type == T_OBJECT)
-    p = sp[-args].u.object;
-  if(sp[-args+1].type == T_OBJECT)
-    m = sp[-args+1].u.object;
-  x  = sp[-args+2].u.integer;
-  y  = sp[-args+3].u.integer;
+  if(Pike_sp[-args].type == PIKE_T_OBJECT)
+    p = Pike_sp[-args].u.object;
+  if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+    m = Pike_sp[-args+1].u.object;
+  x  = Pike_sp[-args+2].u.integer;
+  y  = Pike_sp[-args+3].u.integer;
 
   gtk_drag_set_icon_pixmap( ((GdkDragContext *)THIS->obj),
                             gdk_colormap_get_system(),

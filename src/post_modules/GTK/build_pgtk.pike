@@ -695,7 +695,7 @@ void do_default_sprintf( int args, int offset, int len )
       last_function=fn;
       NUMBER_FUNCTION();
       if(fn == "create")
-	fin = "  pgtk__init_object( fp->current_object );\n";
+	fin = "  pgtk__init_object( Pike_fp->current_object );\n";
       int last_was_optional;
       array tmp = map( (types/","-({""})),
                        lambda( string q ) {
@@ -741,7 +741,7 @@ void do_default_sprintf( int args, int offset, int len )
 	   post += ("  arg"+na+"=malloc(sizeof(char *)* (_arg"+na+"->size+"+null+"));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
-		    "    if(_arg"+na+"->item[_i].type != T_STRING)\n"
+		    "    if(_arg"+na+"->item[_i].type != PIKE_T_STRING)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
 		    "      error(\"Wrong type array argument.\\n\");\n"
@@ -767,7 +767,7 @@ void do_default_sprintf( int args, int offset, int len )
 	   post += ("  arg"+na+"=g_malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
-		    "    if(_arg"+na+"->item[_i].type != T_FLOAT)\n"
+		    "    if(_arg"+na+"->item[_i].type != PIKE_T_FLOAT)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
 		    "      error(\"Wrong type array argument. Expected float\\n\");\n"
@@ -791,7 +791,7 @@ void do_default_sprintf( int args, int offset, int len )
 	   post += ("  arg"+na+"=g_malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
-		    "    if(_arg"+na+"->item[_i].type != T_FLOAT)\n"
+		    "    if(_arg"+na+"->item[_i].type != PIKE_T_FLOAT)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
 		    "      error(\"Wrong type array argument. Expected float\\n\");\n"
@@ -814,7 +814,7 @@ void do_default_sprintf( int args, int offset, int len )
 	   post += ("  arg"+na+"=g_malloc(sizeof(gint)* (1+_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
-		    "    if(_arg"+na+"->item[_i].type != T_INT)\n"
+		    "    if(_arg"+na+"->item[_i].type != PIKE_T_INT)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
 		    "      error(\"Wrong type array argument. Expected int\\n\");\n"
@@ -876,7 +876,7 @@ void do_default_sprintf( int args, int offset, int len )
 		       "  arg"+na+"=alloca(sizeof(char *)* (_arg"+na+"->size));\n"
 		       "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		       "  {\n"
-		       "    if(_arg"+na+"->item[_i].type != T_STRING)\n"
+		       "    if(_arg"+na+"->item[_i].type != PIKE_T_STRING)\n"
 		       "      error(\"Wrong type array argument.\\n\");\n"
 		       "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.string->str;\n"
 		       "  }\n");
@@ -1100,7 +1100,7 @@ void do_default_sprintf( int args, int offset, int len )
 
   emit_nl(extra_cpp);
   emit_nl("void clear_obj_struct(struct object *o)\n{\n");
-  emit_nl("  MEMSET(fp->current_storage, 0, sizeof(struct object_wrapper));\n");
+  emit_nl("  MEMSET(Pike_fp->current_storage, 0, sizeof(struct object_wrapper));\n");
   emit_nl("}\n");
   emit_nl("static void _1()\n{\n");
   array _inits = ({ "_1" });

@@ -100,14 +100,14 @@ ARGS(GDK.Pixmap,GDK.Bitmap,GDK.Window);
   {
    default:
    case 3:
-     if(sp[-args+2].type == T_OBJECT)
-       w = get_gdkobject(sp[-args+2].u.object , Window );
+     if(Pike_sp[-args+2].type == PIKE_T_OBJECT)
+       w = get_gdkobject(Pike_sp[-args+2].u.object , Window );
    case 2:
-     if(sp[-args+1].type == T_OBJECT)
-       m = get_gdkobject(sp[-args+1].u.object , Bitmap );
+     if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+       m = get_gdkobject(Pike_sp[-args+1].u.object , Bitmap );
    case 1:
-     if(sp[-args].type == T_OBJECT)
-       p = get_gdkobject(sp[-args].u.object , Pixmap );
+     if(Pike_sp[-args].type == PIKE_T_OBJECT)
+       p = get_gdkobject(Pike_sp[-args].u.object , Pixmap );
   }
   gdk_window_set_icon(GTK_WIDGET(THIS->obj)->window, w, p, m );
   RETURN_THIS();
