@@ -23,6 +23,30 @@ struct program *image_program;
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)<(b)?(b):(a))
 
+#if 0
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X)
+
+void chrono(char *x)
+{
+   struct rusage r;
+   static struct rusage rold;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
+	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
+
+	   ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+	   +r.ru_utime.tv_sec-rold.ru_utime.tv_sec,
+           ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+           + r.ru_utime.tv_usec-rold.ru_utime.tv_usec
+	   );
+
+   rold=r;
+}
+#else
+#define CHRONO(X)
+#endif
+
 /***************** internals ***********************************/
 
 #define apply_alpha(x,y,alpha) \
@@ -93,12 +117,16 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
 	      INT32 lines,INT32 moddest,INT32 modsrc)
 {
+CHRONO("image_blit begin");
+
    while (lines--)
    {
       MEMCPY(dest,src,sizeof(rgb_group)*width);
       dest+=moddest;
       src+=modsrc;
    }
+CHRONO("image_blit end");
+
 }
 
 void img_crop(struct image *dest,
@@ -241,7 +269,11 @@ void image_paste_alpha(INT32 args)
 void image_paste_mask(INT32 args)
 {
    struct image *img,*mask;
-   INT32 x1,y1,x,y,x2,y2;
+   INT32 x1,y1,x,y,x2,y2,smod,dmod,mmod;
+   rgb_group *s,*d,*m;
+   float q;
+
+CHRONO("image_paste_mask init");
 
    if (args<2)
       error("illegal number of arguments to image->paste_mask()\n");
@@ -273,19 +305,37 @@ void image_paste_mask(INT32 args)
    x2=min(THIS->xsize-x1,min(img->xsize,mask->xsize));
    y2=min(THIS->ysize-y1,min(img->ysize,mask->ysize));
 
-   for (x=max(0,-x1); x<x2; x++)
-      for (y=max(0,-y1); y<y2; y++)
+CHRONO("image_paste_mask begin");
+
+   s=img->img+max(0,-x1)+max(0,-y1)*img->xsize;
+   m=mask->img+max(0,-x1)+max(0,-y1)*mask->xsize;
+   d=THIS->img+max(0,-x1)+x1+(y1+max(0,-y1))*THIS->xsize;
+   x=max(0,-x1);
+   smod=img->xsize-(x2-x);
+   mmod=mask->xsize-(x2-x);
+   dmod=THIS->xsize-(x2-x);
+
+   q=1.0/255;
+
+   for (y=max(0,-y1); y<y2; y++)
+   {
+      for (x=max(0,-x1); x<x2; x++)
       {
-	 pixel(THIS,x+x1,y+y1).r=
-            (unsigned char)((pixel(THIS,x+x1,y+y1).r*(long)(255-pixel(mask,x,y).r)+
-			     pixel(img,x,y).r*(long)pixel(mask,x,y).r)/255);
-	 pixel(THIS,x+x1,y+y1).g=
-            (unsigned char)((pixel(THIS,x+x1,y+y1).g*(long)(255-pixel(mask,x,y).g)+
-			     pixel(img,x,y).g*(long)pixel(mask,x,y).g)/255);
-	 pixel(THIS,x+x1,y+y1).b=
-            (unsigned char)((pixel(THIS,x+x1,y+y1).b*(long)(255-pixel(mask,x,y).b)+
-			     pixel(img,x,y).b*(long)pixel(mask,x,y).b)/255);
+	 if (m->r==255) d->r=s->r;
+	 else if (m->r==0) d->r=d->r;
+	 else d->r=(unsigned char)(((d->r*(255-m->r))+(s->r*m->r))*q);
+	 if (m->g==255) d->g=s->g;
+	 else if (m->g==0) d->g=d->g;
+	 else d->g=(unsigned char)(((d->g*(255-m->g))+(s->g*m->g))*q);
+	 if (m->b==255) d->b=s->b;
+	 else if (m->b==0) d->b=d->b;
+	 else d->b=(unsigned char)(((d->b*(255-m->b))+(s->b*m->b))*q);
+	 s++; m++; d++;
       }
+      s+=smod; m+=mmod; d+=dmod;
+   }
+CHRONO("image_paste_mask end");
+
    pop_n_elems(args);
    THISOBJ->refs++;
    push_object(THISOBJ);
@@ -295,6 +345,9 @@ void image_paste_alpha_color(INT32 args)
 {
    struct image *img,*mask;
    INT32 x1,y1,x,y,x2,y2;
+   rgb_group rgb,*d,*m;
+   INT32 mmod,dmod;
+   float q;
 
    if (args!=1 && args!=4 && args!=6 && args!=3)
       error("illegal number of arguments to image->paste_alpha_color()\n");
@@ -330,19 +383,37 @@ void image_paste_alpha_color(INT32 args)
    x2=min(THIS->xsize-x1,mask->xsize);
    y2=min(THIS->ysize-y1,mask->ysize);
 
-   for (x=max(0,-x1); x<x2; x++)
-      for (y=max(0,-y1); y<y2; y++)
+CHRONO("image_paste_alpha_color begin");
+
+   m=mask->img+max(0,-x1)+max(0,-y1)*mask->xsize;
+   d=THIS->img+max(0,-x1)+x1+(y1+max(0,-y1))*THIS->xsize;
+   x=max(0,-x1);
+   mmod=mask->xsize-(x2-x);
+   dmod=THIS->xsize-(x2-x);
+
+   q=1.0/255;
+
+   rgb=THIS->rgb;
+
+   for (y=max(0,-y1); y<y2; y++)
+   {
+      for (x=max(0,-x1); x<x2; x++)
       {
-	 pixel(THIS,x+x1,y+y1).r=
-            (unsigned char)((pixel(THIS,x+x1,y+y1).r*(long)(255-pixel(mask,x,y).r)+
-			     THIS->rgb.r*(long)pixel(mask,x,y).r)/255);
-	 pixel(THIS,x+x1,y+y1).g=
-            (unsigned char)((pixel(THIS,x+x1,y+y1).g*(long)(255-pixel(mask,x,y).g)+
-			     THIS->rgb.g*(long)pixel(mask,x,y).g)/255);
-	 pixel(THIS,x+x1,y+y1).b=
-            (unsigned char)((pixel(THIS,x+x1,y+y1).b*(long)(255-pixel(mask,x,y).b)+
-			     THIS->rgb.b*(long)pixel(mask,x,y).b)/255);
+	 if (m->r==255) d->r=rgb.r;
+	 else if (m->r==0) ;
+	 else d->r=(unsigned char)(((d->r*(255-m->r))+(rgb.r*m->r))*q);
+	 if (m->g==255) d->g=rgb.g;
+	 else if (m->g==0) ;
+	 else d->g=(unsigned char)(((d->g*(255-m->g))+(rgb.g*m->g))*q);
+	 if (m->b==255) d->b=rgb.b;
+	 else if (m->b==0) ;
+	 else d->b=(unsigned char)(((d->b*(255-m->b))+(rgb.b*m->b))*q);
+	 m++; d++;
       }
+      m+=mmod; d+=dmod;
+   }
+CHRONO("image_paste_alpha_color end");
+
    pop_n_elems(args);
    THISOBJ->refs++;
    push_object(THISOBJ);

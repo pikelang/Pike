@@ -23,6 +23,25 @@ struct program *image_program;
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)<(b)?(b):(a))
 
+#undef MATRIX_CHRONO
+#ifdef MATRIX_CHRONO
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X)
+
+void chrono(char *x)
+{
+   struct rusage r;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld %ld.%06ld %ld.%06ld\n",x,
+	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
+	   r.ru_stime.tv_sec,r.ru_stime.tv_usec,
+	   r.ru_stime.tv_sec+r.ru_utime.tv_sec,
+	   r.ru_stime.tv_usec+r.ru_utime.tv_usec);
+}
+#else
+#define CHRONO(X)
+#endif
+
 /***************** internals ***********************************/
 
 #define apply_alpha(x,y,alpha) \
@@ -457,9 +476,11 @@ static void img_skewx(struct image *src,
    d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize);
    if (!d) return;
    s=src->img;
-   
+
    xmod=diff/src->ysize;
    rgb=dest->rgb;
+
+   CHRONO("skewx begin\n");
 
    y=src->ysize;
    while (y--)
@@ -504,6 +525,8 @@ static void img_skewx(struct image *src,
       while (j--) *(d++)=rgb;
       x0+=xmod;
    }
+
+   CHRONO("skewx end\n");
 }
 
 static void img_skewy(struct image *src,
@@ -530,6 +553,8 @@ static void img_skewy(struct image *src,
    
    ymod=diff/src->xsize;
    rgb=dest->rgb;
+
+CHRONO("skewy begin\n");
 
    x=src->xsize;
    while (x--)
@@ -576,6 +601,9 @@ static void img_skewy(struct image *src,
       d-=dest->ysize*xsz-1;
       y0+=ymod;
    }
+
+CHRONO("skewy end\n");
+
 }
 
 void image_skewx(INT32 args)
@@ -707,11 +735,11 @@ void img_rotate(INT32 args,int xpn)
 
    dest2.img=d0.img=NULL;
 
-   if (angle<-135) angle-=360*(int)(angle/360);
-   else if (angle>225) angle-=360*(int)(angle/360);
+   if (angle<-135) angle-=360*(int)((angle-225)/360);
+   else if (angle>225) angle-=360*(int)((angle+135)/360);
    if (angle<-45) 
    { 
-      img_cw(THIS,&dest2); 
+      img_ccw(THIS,&dest2); 
       angle+=90; 
    }
    else if (angle>135) 
@@ -722,8 +750,8 @@ void img_rotate(INT32 args,int xpn)
    }
    else if (angle>45) 
    { 
-      img_ccw(THIS,&dest2);  
-      angle-=180; 
+      img_cw(THIS,&dest2);  
+      angle-=90; 
    }
    else dest2=*THIS;
    
