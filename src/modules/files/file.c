@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.186 2000/08/15 13:05:15 grubba Exp $");
+RCSID("$Id: file.c,v 1.187 2000/08/16 16:06:27 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1055,7 +1055,7 @@ static void file_write(INT32 args)
 	if (!written) {
 	  push_int(-1);
 	} else {
-	  push_int(written);
+	  push_int64(written);
 	}
 	return;
 
@@ -1080,7 +1080,7 @@ static void file_write(INT32 args)
   ERRNO=0;
 
   pop_n_elems(args);
-  push_int(written);
+  push_int64(written);
 }
 
 #ifdef WITH_OOB

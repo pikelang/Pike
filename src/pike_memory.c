@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.79 2000/08/11 13:29:02 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.80 2000/08/16 15:51:20 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -52,13 +52,13 @@ INLINE p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
   return (p_wchar2 *)0;
 }
 
-void swap(char *a, char *b, INT32 size)
+void swap(char *a, char *b, size_t size)
 {
-  int tmp;
+  size_t tmp;
   char tmpbuf[1024];
   while(size)
   {
-    tmp=MINIMUM((long)sizeof(tmpbuf), size);
+    tmp = MINIMUM((size_t)sizeof(tmpbuf), size);
     MEMCPY(tmpbuf,a,tmp);
     MEMCPY(a,b,tmp);
     MEMCPY(b,tmpbuf,tmp);
@@ -68,7 +68,7 @@ void swap(char *a, char *b, INT32 size)
   }
 }
 
-void reverse(char *memory, INT32 nitems, INT32 size)
+void reverse(char *memory, size_t nitems, size_t size)
 {
 
 #define DOSIZE(X,Y)						\

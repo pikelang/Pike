@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.22 2000/08/16 10:28:17 grubba Exp $
+ * $Id: pike_memory.h,v 1.23 2000/08/16 15:51:03 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -65,8 +65,8 @@ PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz);
 PMOD_EXPORT long pcharp_strlen(PCHARP a);
 PMOD_EXPORT INLINE p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar1 c, ptrdiff_t e);
 PMOD_EXPORT INLINE p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e);
-PMOD_EXPORT void swap(char *a, char *b, INT32 size);
-PMOD_EXPORT void reverse(char *memory, INT32 nitems, INT32 size);
+PMOD_EXPORT void swap(char *a, char *b, size_t size);
+PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 PMOD_EXPORT size_t hashmem(const unsigned char *a, size_t len, size_t mlen);
 PMOD_EXPORT size_t hashstr(const unsigned char *str, ptrdiff_t maxn);

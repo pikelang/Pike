@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.83 2000/08/15 16:19:12 grubba Exp $");
+RCSID("$Id: array.c,v 1.84 2000/08/16 15:54:07 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -71,8 +71,8 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
   v->type_field=BIT_MIXED | BIT_UNFINISHED;
   v->flags=0;
 
-  v->malloced_size=size+extra_space;
-  v->size=size;
+  v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
+  v->size = DO_NOT_WARN((INT32)size);
   v->refs=1;
   LINK_ARRAY(v);
 
@@ -367,7 +367,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
 /*
  * Shrink an array destructively
  */
-PMOD_EXPORT struct array *array_shrink(struct array *v,INT32 size)
+PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
 {
   struct array *a;
 
@@ -1742,7 +1742,7 @@ PMOD_EXPORT void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to)
 {
-  INT32 i = -1;
+  ptrdiff_t i = -1;
 
   while((i=array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
 }

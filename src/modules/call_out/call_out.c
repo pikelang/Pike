@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.37 2000/08/07 10:03:01 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.38 2000/08/16 16:08:06 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -355,8 +355,8 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
     case T_FLOAT:
     {
       FLOAT_TYPE tmp=argp[0].u.float_number;
-      new->tv.tv_sec=floor(tmp);
-      new->tv.tv_usec=(long)(1000000.0 * (tmp - floor(tmp)));
+      new->tv.tv_sec = DO_NOT_WARN((long)floor(tmp));
+      new->tv.tv_usec = DO_NOT_WARN((long)(1000000.0 * (tmp - floor(tmp))));
       break;
     }
 
@@ -407,8 +407,8 @@ static void count_memory_in_call_outs(struct callback *foo,
   push_text("call_out_bytes");
 
   /* FIXME */
-  push_int(call_buffer_size * sizeof(call_out **)+
-	   num_pending_calls * sizeof(call_out));
+  push_int64(call_buffer_size * sizeof(call_out **)+
+	     num_pending_calls * sizeof(call_out));
 }
 
 static struct callback *call_out_backend_callback=0;

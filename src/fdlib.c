@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.37 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.38 2000/08/16 15:59:28 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -92,8 +92,9 @@ void fd_exit()
 
 int debug_fd_stat(char *file, struct stat *buf)
 {
-  int l=strlen(file);
+  ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
+
   if(file[l-1]=='/' || file[l-1]=='\\')
   {
     do l--;
@@ -117,8 +118,9 @@ PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode)
   FD fd;
   DWORD omode,cmode,amode;
 
-  int l=strlen(file);
+  ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
+
   if(file[l-1]=='/' || file[l-1]=='\\')
   {
     do l--;
@@ -440,7 +442,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 
 PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len)
 {
-  DWORD ret;
+  SDWORD ret;
   long handle;
   mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr,"Writing %d bytes to %d (%d)\n",len,fd,da_handle[fd]));
@@ -655,7 +657,7 @@ static long convert_filetime_to_time_t(FILETIME tmp)
   t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
   t/=10000000.0;
   t-=11644473600.0;
-  return (long)floor(t);
+  return DO_NOT_WARN((long)floor(t));
 }
 
 PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
@@ -862,7 +864,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
 {
-  int len=strlen(dir);
+  ptrdiff_t len=strlen(dir);
   char *foo;
   DIR *ret=(DIR *)malloc(sizeof(DIR) + len+5);
   if(!ret)

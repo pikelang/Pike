@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.24 2000/08/09 18:42:31 grubba Exp $
+ * $Id: mime.c,v 1.25 2000/08/16 16:12:43 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.24 2000/08/09 18:42:31 grubba Exp $");
+RCSID("$Id: mime.c,v 1.25 2000/08/16 16:12:43 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -493,11 +493,12 @@ static void do_uue_encode(ptrdiff_t groups, unsigned char **srcp, char **destp,
 
   while (groups || last) {
     /* A single line can hold at most 15 groups */
-    int g = (groups >= 15? 15 : groups);
+    ptrdiff_t g = (groups >= 15? 15 : groups);
 
     if (g<15) {
       /* The line isn't filled completely.  Add space for the "last" bytes */
-      *dest++ = ' ' + (3*g + last);
+      *dest++ = ' ' +
+	DO_NOT_WARN((char)(3*g + last));
       last = 0;
     } else
       *dest++ = ' ' + (3*g);

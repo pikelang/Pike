@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.27 2000/08/15 11:17:20 grubba Exp $
+ * $Id: array.h,v 1.28 2000/08/16 15:54:28 grubba Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -101,7 +101,7 @@ PMOD_EXPORT void array_set_index(struct array *v,INT32 index, struct svalue *s);
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
-PMOD_EXPORT struct array *array_shrink(struct array *v,INT32 size);
+PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size);
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index);
 PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 				   ptrdiff_t start);

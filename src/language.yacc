@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.206 2000/08/15 19:00:24 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.207 2000/08/16 16:02:08 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -474,7 +474,7 @@ import: TOK_IMPORT idents ';'
 
 constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
-    int tmp;
+    ptrdiff_t tmp;
     /* This can be made more lenient in the future */
 
     /* Ugly hack to make sure that $3 is optimized */
@@ -502,7 +502,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	{
 	  yyerror("Error in constant definition.");
 	}else{
-	  pop_n_elems(tmp-1);
+	  pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
 	  add_constant($1->u.sval.u.string, Pike_sp-1,
 		       Pike_compiler->current_modifiers & ~ID_EXTERN);
 	  pop_stack();
