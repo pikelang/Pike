@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.21 1998/07/21 00:27:54 hubbe Exp $
+ * $Id: passwords.c,v 1.22 1998/07/22 01:06:55 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.21 1998/07/21 00:27:54 hubbe Exp $");
+RCSID("$Id: passwords.c,v 1.22 1998/07/22 01:06:55 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -436,7 +436,7 @@ void f_get_groups_for_user(INT32 arg)
   struct group *gr;
   struct passwd *pw;
   struct array *a;
-  char *user;
+  char *user = NULL;	/* Keep compiler happy */
   ONERROR err;
   int base_gid;
 
