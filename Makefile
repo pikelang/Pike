@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.76 2002/07/18 20:00:08 per Exp $
+# $Id: Makefile,v 1.77 2002/07/29 19:44:53 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -262,7 +262,7 @@ xenofarm_low:
 	@$(MAKE) $(MAKE_FLAGS) > build/xenofarm/makelog.txt 2>&1
 	@echo "Begin verify" | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
-	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TESTARGS="-a -q" > \
+	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TESTARGS="-a -T" > \
 	  build/xenofarm/verifylog.txt 2>&1
 	@echo "Begin export" | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
