@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.11 2003/05/27 15:24:52 grubba Exp $
+|| $Id: circular_list.cmod,v 1.12 2003/06/26 11:53:55 peta Exp $
 */
 
 #include "global.h"
@@ -466,7 +466,7 @@ PIKECLASS CircularList
     a->type_field = THIS->a->type_field;
     end = circ2array(THIS->size);
     
-    if (end < THIS->pos)
+    if (end <= THIS->pos && THIS->size > 0)
     {
       //if the list pass the end of the array do it in two parts
       tmp = THIS->a->size - THIS->pos;
@@ -699,13 +699,13 @@ PIKECLASS CircularList
     RETURN THIS->a->size;
   }
 
-  /*! @decl mixed peekBack()
+  /*! @decl mixed peek_back()
    *!
    *! @returns
    *!    The value at the back of the list but do not remove it from the list.
    */
 
- PIKEFUN mixed peekBack()
+ PIKEFUN mixed peek_back()
   {
     struct svalue ind;
     if (THIS->size <= 0)
@@ -718,13 +718,13 @@ PIKECLASS CircularList
     Pike_sp++;
   }
 
-  /*! @decl mixed peekFront()
+  /*! @decl mixed peek_front()
    *!
    *! @returns
    *!    The value at the front of the list but do not remove it from the list.
    */
 
-  PIKEFUN mixed peekFront()
+  PIKEFUN mixed peek_front()
   {
     struct svalue ind;
     if (THIS->size == 0)
@@ -737,7 +737,7 @@ PIKECLASS CircularList
     Pike_sp++;
   }
   
-  /*! @decl mixed popBack()
+  /*! @decl mixed pop_back()
    *! 
    *! Remove the value at the back of the list and return it.
    *!
@@ -745,7 +745,7 @@ PIKECLASS CircularList
    *!    The value at the back of the list.
    */
 
-  PIKEFUN mixed popBack()
+  PIKEFUN mixed pop_back()
   {
     struct svalue ind;
     struct svalue zero;
@@ -766,7 +766,7 @@ PIKECLASS CircularList
   }
 
   
-  /*! @decl mixed popFront()
+  /*! @decl mixed pop_front()
    *! 
    *! Remove the value at the front of the list and return it.
    *!
@@ -774,7 +774,7 @@ PIKECLASS CircularList
    *!    The value at the front of the list.
    */
 
-  PIKEFUN mixed popFront()
+  PIKEFUN mixed pop_front()
   {
     struct svalue ind;
     struct svalue zero;
@@ -799,7 +799,7 @@ PIKECLASS CircularList
   }
   
   
-  /*! @decl void pushBack(mixed value)
+  /*! @decl void push_back(mixed value)
    *! 
    *! Add a new value at the end of the list.
    *!
@@ -807,7 +807,7 @@ PIKECLASS CircularList
    *!    The value to add.
    */
 
-  PIKEFUN void pushBack(mixed value)
+  PIKEFUN void push_back(mixed value)
   {
     struct svalue ind;
     should_copy();
@@ -823,7 +823,7 @@ PIKECLASS CircularList
   }
 
   
-  /*! @decl void pushFront(mixed value)
+  /*! @decl void push_front(mixed value)
    *! 
    *! Add a new value at the end of the list.
    *!
@@ -831,7 +831,7 @@ PIKECLASS CircularList
    *!    The value to add.
    */
 
-  PIKEFUN void pushFront(mixed value)
+  PIKEFUN void push_front(mixed value)
   {
     struct svalue ind;
     if (THIS->size == THIS->a->size)
@@ -917,7 +917,7 @@ PIKECLASS CircularList
     free_array(THIS->a);
   }
 
-  
+   
 
   /*! @class CircularListIterator
    *!    This is the iterator for the CircularList. It implements the 
