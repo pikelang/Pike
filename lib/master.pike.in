@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.281 2003/05/28 16:48:54 jhs Exp $
+// $Id: master.pike.in,v 1.282 2003/05/31 10:58:30 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -131,7 +131,7 @@ string fakeroot(string s)
 #ifdef PIKE_MODULE_RELOC
 string relocate_module(string s)
 {
-  if(s[..1]=="/$" && (s+"/")[..20] == "/${PIKE_MODULE_PATH}/") {
+  if(s == "/${PIKE_MODULE_PATH}" || has_prefix (s, "/${PIKE_MODULE_PATH}/")) {
     string tmp = s[21..];
     foreach(pike_module_path, string path) {
       string s2 = fakeroot(sizeof(tmp)? combine_path(path, tmp) : path);
@@ -144,19 +144,28 @@ string relocate_module(string s)
 
 string unrelocate_module(string s)
 {
-  if(s[..1]=="/$" && (s+"/")[..20] == "/${PIKE_MODULE_PATH}/")
+  if(s == "/${PIKE_MODULE_PATH}" || has_prefix (s, "/${PIKE_MODULE_PATH}/"))
     return s;
 
   foreach(pike_module_path, string path)
     if(s == path)
       return "/${PIKE_MODULE_PATH}";
     else {
-      string s2 = combine_path(path, "");
-      if(s[..sizeof(s2)-1] == s2)
-	return "/${PIKE_MODULE_PATH}/"+s[sizeof(s2)..];
+      path = combine_path(path, "");
+      if(has_prefix (s, path))
+	return "/${PIKE_MODULE_PATH}/"+s[sizeof(path)..];
     }
+
+  /* This is necessary to find compat modules... */
+  foreach(pike_module_path, string path) {
+    path = combine_path(path, "..", "");
+    if(has_prefix (s, path))
+      return "/${PIKE_MODULE_PATH}/../"+x[sizeof(path)..];
+  }
+
   return s;
 }
+
 #ifdef fakeroot
 #undef fakeroot
 #endif
@@ -248,14 +257,15 @@ int newest;
     newest=0
     
 
-#define AUTORELOAD_FINISH(VAR, CACHE, FILE)		\
-   if(autoreload_on) {                                  \
-     if(CACHE [ FILE ] && newest <= load_time[FILE]) {	\
-        VAR = CACHE [ FILE ]; 				\
-      }                                                 \
-    }                                                   \
-    load_time[FILE]=time();				\
-    if(___newest > newest) newest=___newest;
+#define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
+  if(autoreload_on) {							\
+    mixed val = CACHE[FILE];						\
+    if(!zero_type (val) && val != no_value && newest <= load_time[FILE]) { \
+      VAR = val;							\
+    }									\
+  }									\
+  load_time[FILE]=time();						\
+  if(___newest > newest) newest=___newest;
 
 
 mapping(string:int) load_time=([]);
@@ -505,7 +515,66 @@ string normalize_path( string path )
 //! @note
 //!   As a special case the current master program is available
 //!   under the name @expr{"/master"@}.
-mapping(string:program) programs=(["/master":object_program(this_object())]);
+mapping(string:program|NoValue) programs=(["/master":object_program(this_object())]);
+
+mapping (program:object|NoValue) objects=([
+  object_program(this_object()):this_object(),
+  object_program(_static_modules): _static_modules
+]);
+
+mapping(string:object|NoValue) fc=([]);
+
+// Note: It's assumed that the mappings above never decrease in size
+// except in *_reverse_lookup(). no_value is used for entries that
+// should be considered removed.
+
+constant no_value = (<>);
+constant NoValue = typeof (no_value);
+
+// The reverse mapping for objects isn't only for speed; search()
+// doesn't work reliably there since it calls `==.
+static mapping(program:string) rev_programs = ([]);
+static mapping(object:program) rev_objects = ([]);
+static mapping(mixed:string) rev_fc = ([]);
+
+string programs_reverse_lookup (program prog)
+//! Returns the path for @[prog] in @[programs], if it got any.
+{
+  if (sizeof (rev_programs) < sizeof (programs)) {
+    foreach (programs; string path; program|NoValue prog)
+      if (prog == no_value)
+	m_delete (programs, path);
+      else
+	rev_programs[prog] = path;
+  }
+  return rev_programs[prog];
+}
+
+program objects_reverse_lookup (object obj)
+//! Returns the program for @[obj] in @[objects], if it got any.
+{
+  if (sizeof (rev_objects) < sizeof (objects)) {
+    foreach (objects; program prog; object|NoValue obj)
+      if (obj == no_value)
+	m_delete (objects, obj);
+      else
+	rev_objects[obj] = prog;
+  }
+  return rev_objects[obj];
+}
+
+string fc_reverse_lookup (object obj)
+//! Returns the path for @[obj] in @[fc], if it got any.
+{
+  if (sizeof (rev_fc) < sizeof (fc)) {
+    foreach (fc; string path; mixed obj)
+      if (obj == no_value)
+	m_delete (fc, obj);
+      else
+	rev_fc[obj] = path;
+  }
+  return rev_fc[obj];
+}
 
 array(string) query_precompiled_names(string fname)
 {
@@ -560,7 +629,7 @@ static program low_findprog(string pname,
   if(!autoreload_on || load_time[fname]>=time())
 #endif
   {
-    if(!zero_type (ret=programs[fname])) {
+    if(!zero_type (ret=programs[fname]) && ret != no_value) {
       resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
       return ret;
     }
@@ -587,7 +656,7 @@ static program low_findprog(string pname,
 
 #ifdef PIKE_AUTORELOAD
     if (load_time[fname] > s->mtime)
-      if (!zero_type (ret=programs[fname])) {
+      if (!zero_type (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
       }
@@ -607,8 +676,8 @@ static program low_findprog(string pname,
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
 	      ret = decode_value(master_read_file(oname),
-				 (handler && handler->get_codec ||
-				  get_codec)(fname, mkobj));
+				 (handler && handler->Decoder ||
+				  Decoder)(fname, mkobj));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
 	      return programs[fname] = ret;
@@ -616,7 +685,7 @@ static program low_findprog(string pname,
 	    };
 	    DEC_RESOLV_MSG_DEPTH();
 	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
-	    m_delete(programs, fname);
+	    programs[fname] = no_value;
 	    if (handler && handler->compile_warning) {
 	      handler->compile_warning(oname, 0,
 				       sprintf("Decode failed:\n"
@@ -649,7 +718,7 @@ static program low_findprog(string pname,
       {
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("low_findprog %s: compilation failed\n", fname);
-	m_delete(objects, ret);
+	objects[ret] = no_value;
 	ret=programs[fname]=0;	// Negative cache.
         throw(e);
       }
@@ -684,20 +753,20 @@ static program low_findprog(string pname,
 void unregister(program p)
 {
   if(string fname=search(programs,p)) {
-    m_delete(programs, fname);
+    programs[fname] = no_value;
     // FIXME: The following assumes that programs are always stored
     // with '/' as path separators, even on NT. Haven't checked if
     // that always is the case.
     fname = dirname (fname);
     object n;
-    if ( fname!="" && (n = fc[fname]) )
+    if ( fname!="" && objectp (n = fc[fname]) )
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
 	n->delete_value (p);
   }
-  m_delete(objects, p);
+  if (objectp (objects[p])) objects[p] = no_value;
   foreach (fc; string name; mixed mod)
     if (objectp(mod) && object_program(mod) == p)
-      m_delete(fc, name);
+      fc[name] = no_value;
 }
 
 static program findprog(string pname,
@@ -744,8 +813,8 @@ program low_cast_to_program(string pname,
 
   if(IS_ABSOLUTE_PATH(pname))
   {
-    if (programs[pname])
-      return programs[pname];
+    program|NoValue prog = programs[pname];
+    if (programp (prog)) return prog;
     pname=combine_path("/",pname);
     return findprog(pname,ext,handler,mkobj);
   }
@@ -917,11 +986,6 @@ program handle_inherit(string pname, string current_file, object|void handler)
   resolv_debug ("handle_inherit(%O, %O) => %O\n", pname, current_file, ret);
   return ret;
 }
-
-mapping (program:object) objects=([
-  object_program(this_object()):this_object(),
-  object_program(_static_modules): _static_modules
-]);
 
 object low_cast_to_object(string oname, string current_file,
 			  object|void current_handler)
@@ -1323,17 +1387,24 @@ class joinnode
 	m_delete (o, name);
     }
   }
-};
 
-// Variables mustn't be static to allow for replace_master().
-//	/grubba 1998-04-10
-mapping(string:mixed) fc=([]);
+  array(object) _encode()
+  {
+    return joined_modules;
+  }
+
+  void _decode (array(object) joined_modules)
+  {
+    this_program::joined_modules = joined_modules;
+  }
+};
 
 object findmodule(string fullname, object|void handler)
 {
   object o;
+
   resolv_debug ("findmodule(%O)\n", fullname);
-  if(!zero_type(o=fc[fullname]))
+  if(!zero_type(o=fc[fullname]) && o != no_value)
   {
     if (objectp(o) || o != 0) {
       resolv_debug ("findmodule(%O) => found %O (cached)\n", fullname, o);
@@ -1348,7 +1419,7 @@ object findmodule(string fullname, object|void handler)
     if(stat->isdir)
     {
       resolv_debug ("findmodule(%O) => new dirnode\n", fullname);
-      return dirnode(fullname+".pmod", handler);
+      return fc[fullname] = dirnode(fullname+".pmod", handler);
     }
   }
 
@@ -1386,18 +1457,25 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   } else {
     path = combine_path_with_cwd(what);
   }
+
+#if 0
+  // If we can't cache the dirnode when we got a handler, then
+  // findmodule has to be broken too. Good caching is necessary for
+  // module dumping. /mast
   if (handler) {
     resolv_debug ("handle_import(%O, %O, %O) => new dirnode with handler\n",
 		  what, current_file, handler);
     return dirnode(path, handler);
   }
-  if(fc[path]) {
+#endif
+
+  if(objectp (fc[path])) {
     resolv_debug ("handle_import(%O, %O) => found %O (cached)\n",
 		  what, current_file, fc[path]);
     return fc[path];
   }
   resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
-  return dirnode(path);
+  return fc[path] = dirnode(path);
 }
 
 
@@ -2112,7 +2190,7 @@ void _main(array(string) orig_argv, array(string) env)
 	      "%s\n", argv[0],
 	      stringp(err[0])?err[0]:describe_backtrace(err) );
 
-    argv[0] = search(master()->programs, prog) || argv[0];
+    argv[0] = search(programs, prog) || argv[0];
   } else {
     argv[0]=combine_path_with_cwd(argv[0]);
 
@@ -2570,6 +2648,28 @@ class Describer
 }
 
 
+string module_path_to_name (string path)
+//! Converts a module path on the form @expr{"Foo.pmod/Bar.pmod"@} to
+//! a module identifier on the form @expr{"Foo.Bar"@}.
+{
+  string modname = replace(path, ".pmod/", ".");
+  if(search(modname, "/")<0) path=modname;
+  if (has_suffix(path, ".module.pmod")) {
+    return path[..sizeof(path)-13];
+  }
+  if (has_suffix(path, ".pmod")) {
+    return path[..sizeof(path)-6];
+  }
+  if (has_suffix(path, ".so")) {
+    return path[..sizeof(path)-4];
+  }
+  if (has_suffix(path, ".pike")) {
+    return path[..sizeof(path)-6];
+  }
+  return path;
+}
+
+
 static string get_clean_program_path ( program p, string pref1,
 				       string suff1, string suff2 )
 {
@@ -2578,7 +2678,7 @@ static string get_clean_program_path ( program p, string pref1,
     sort(map(paths, sizeof), paths);
     return reverse(paths);
   };
-  string path = search(programs, p);
+  string path = programs_reverse_lookup (p);
   if (path) {
     if (path == "/master") return "master"+suff2;
     foreach(sort_paths_by_length(map(pike_module_path - ({""}),
@@ -2783,7 +2883,7 @@ string describe_function (function f)
 
   string name;
 
-  if(string s=search(programs,f))
+  if(string s = programs_reverse_lookup (f))
   {
     if(has_suffix(s, ".pmod"))
       name = EXPLODE_PATH(s[..sizeof(s)-6])[-1];
@@ -3020,97 +3120,358 @@ string describe_error (mixed trace)
 }
 
 
-class Codec (void|string fname, void|int mkobj)
+#ifdef ENCODE_DEBUG
+#  define ENC_MSG(X...) do werror (X); while (0)
+#  define ENC_RETURN(val) do {						\
+  mixed _v__ = (val);							\
+  werror ("  returned %s\n",						\
+	  zero_type (_v__) ? "UNDEFINED" :				\
+	  sprintf ("%O", _v__));					\
+  return _v__;								\
+} while (0)
+#else
+#  define ENC_MSG(X...) do {} while (0)
+#  define ENC_RETURN(val) do return (val); while (0)
+#endif
+
+#ifdef DECODE_DEBUG
+#  define DEC_MSG(X...) do werror (X); while (0)
+#  define DEC_RETURN(val) do {						\
+  mixed _v__ = (val);							\
+  werror ("  returned %s\n",						\
+	  zero_type (_v__) ? "UNDEFINED" :				\
+	  sprintf ("%O", _v__));					\
+  return _v__;								\
+} while (0)
+#else
+#  define DEC_MSG(X...) do {} while (0)
+#  define DEC_RETURN(val) do return (val); while (0)
+#endif
+
+class Encoder
+//! Codec for use with @[encode_value]. It understands all the
+//! standard references to builtin functions and pike modules.
+//!
+//! The format of the produced identifiers are documented here to
+//! allow extension of this class:
+//!
+//! The produced names are either strings or arrays. The string
+//! variant specifies the thing to look up according to the first
+//! character:
+//!
+//! 'c'   Look up in all_constants().
+//! 's'   Look up in _static_modules.
+//! 'p'   Look up in programs.
+//! 'o'   Look up in programs, then look up the result in objects.
+//! 'f'   Look up in fc.
+//!
+//! In the array format, the first element is a string as above and
+//! the rest specify a series of things to do with the result:
+//!
+//! A string   Look up this string in the result.
+//! 'p'        Do object_program(result).
+//!
+//! All lowercase letters and the symbols ':', '/' and '.' are
+//! reserved for internal use in both cases where characters are used
+//! above.
 {
-  program prog_to_mkobj;
+  mixed encoded;
 
-  object __register_new_program(program p)
-    {
-      if(fname)
-      {
-	programs[fname]=prog_to_mkobj=p;
-	fname=0;
-	if (mkobj)
-	  return objectp (objects[p]) ? objects[p] : (objects[p]=__null_program());
+  static mapping(mixed:string) rev_constants = ([]);
+  static mapping(mixed:string) rev_static_modules = ([]);
+
+  static array(string) find_index (object|program parent, mixed child)
+  {
+    array id;
+
+  find_id: {
+      array vals = values (parent);
+      int i = search (vals, child);
+      if (i >= 0)
+	id = ({indices (parent)[i]});
+      else {
+	// Try again with the programs of the objects in parent, since
+	// it's common that only objects and not their programs are
+	// accessible in modules.
+	foreach (vals; i; mixed val)
+	  if (objectp (val) && child == object_program (val)) {
+	    id = ({indices (parent)[i], 'p'});
+	    break find_id;
+	  }
+	error ("Cannot find %O in %O.\n", child, parent);
       }
-      return 0;
     }
 
-  mapping(string:mixed) f=all_constants();
+    if (!stringp (id[0]))
+      error ("Got nonstring index %O for %O in %O.\n", id[0], child, parent);
 
-  string nameof(mixed x)
-    {
-      if(string s=search(f,x))
-	return "efun:"+s;
-      
-      if (programp(x)) {
-	if(string s=search(programs,x))
-	  return s;
+    return id;
+  }
 
-	if(int tmp=search(values(_static_modules), x))
-	  return "_static_modules."+[string](indices(_static_modules)[tmp]);
-      }
-      else if (objectp(x))
-	if(program p=search(objects,x))
-	  if(string s=search(programs,p))
-	    return s;
+  string|array(string) nameof (mixed what)
+  {
+    ENC_MSG ("nameof (%t %O)\n", what, what);
+
+    if (what == encoded) {
+      ENC_MSG ("  got the thing to encode - encoding recursively\n");
       return UNDEFINED;
-    } 
-  
-  function functionof(string x)
-    {
-      if(sscanf(x,"efun:%s",x)) return [function]f[x];
-      if(sscanf(x,"resolv:%s",x)) return [function]resolv(x);
-      return 0;
     }
-  
-  object objectof(string x)
-    {
-      if(sscanf(x,"efun:%s",x)) return [object]f[x];
-      if(sscanf(x,"resolv:%s",x)) return [object]resolv(x);
-      if(sscanf(x,"mpath:%s",x))
-	foreach(pike_module_path, string path) {
-	  object ret = low_cast_to_object(combine_path(path,x),0,
-					  this_object());
-	  if (objectp (ret)) return ret;
+
+    if (string id = rev_constants[what]) ENC_RETURN (id);
+    if (string id = rev_static_modules[what]) ENC_RETURN (id);
+
+    if (objectp (what)) {
+      if (program prog = objects_reverse_lookup (what)) {
+	if (prog == encoded) ENC_RETURN ("o");
+	if (string path = programs_reverse_lookup (prog)) {
+#ifdef PIKE_MODULE_RELOC
+	  ENC_RETURN ("o" + unrelocate_module (path));
+#else
+	  ENC_RETURN ("o" + path);
+#endif
 	}
-      return low_cast_to_object(x, 0, this_object());
+      }
+
+      if (string path = fc_reverse_lookup (what)) {
+#ifdef PIKE_MODULE_RELOC
+	ENC_RETURN ("f" + unrelocate_module (path));
+#else
+	ENC_RETURN ("f" + path);
+#endif
+      }
+
+      if (what->_encode) {
+	ENC_MSG ("  object got _encode function - encoding recursively\n");
+	return UNDEFINED;
+      }
+
+      if (function|program prog = object_program (what))
+	if (object|program parent = function_object (prog) || function_program (prog)) {
+	  string|array(string) parent_name = nameof (parent);
+	  if (!parent_name) {
+	    ENC_MSG ("  inside the thing to encode - encoding recursively\n");
+	    return UNDEFINED;
+	  }
+	  else {
+	    // If we did an object_program step in the recursive nameof to get
+	    // the parent then we'll always be able to do a better job if we
+	    // base the indexing on the corresponding object instead.
+
+#define CONVERT_PARENT_TO_OBJ(parent_name, parent)			\
+	    if (arrayp (parent_name) && parent_name[-1] == 'p') {	\
+	      object|program grandparent =				\
+		objectp (parent) ? object_program (parent) : parent;	\
+	      grandparent =						\
+		function_object (grandparent) || function_program (grandparent); \
+	      parent = grandparent[parent_name[-2]];			\
+	      parent_name = parent_name[..sizeof (parent_name) - 2];	\
+	    }
+
+	    CONVERT_PARENT_TO_OBJ (parent_name, parent);
+	    array(string) id = find_index (parent, what);
+	    ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	  }
+	}
+
+      error ("Failed to find name of unencodable object %O.\n", what);
     }
-  
-  program programof(string x)
-    {
-      if(sscanf(x,"efun:%s",x)) return [program]f[x];
-      if(sscanf(x,"resolv:%s",x)) return [program]resolv(x);
-      if(sscanf(x,"mpath:%s",x))
-	foreach(pike_module_path, string path)
-	  if(program ret=cast_to_program(combine_path(path,x), 0,
-					 this_object()))
-	    return ret;
-      return cast_to_program(x, 0, this_object());
+
+    if (programp (what) || functionp (what)) {
+      if (string path = programs_reverse_lookup (what)) {
+#ifdef PIKE_MODULE_RELOC
+	ENC_RETURN ("p" + unrelocate_module (path));
+#else
+	ENC_RETURN ("p" + path);
+#endif
+      }
+
+      if (object|program parent = function_object (what) || function_program (what)) {
+	string|array(string) parent_name = nameof (parent);
+	if (!parent_name) {
+	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
+	  return UNDEFINED;
+	}
+	else {
+	  string|array(string) id = function_name (what);
+	  if (stringp (id)) id = ({id});
+	  else {
+	    CONVERT_PARENT_TO_OBJ (parent_name, parent);
+	    id = find_index (parent, what);
+	  }
+	  ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	}
+      }
+
+      error ("Failed to find name of %t %O.\n", what, what);
     }
+
+    // FIXME: Should have a reverse mapping of constants in modules;
+    // it can potentially be large mappings and stuff that we encode
+    // here. They can go stale too.
+
+    ENC_MSG ("  encoding recursively\n");
+    return ([])[0];
+  } 
   
   mixed encode_object(object x)
-    {
-      if(x->_encode) return ([function]x->_encode)();
-      error("Cannot encode objects yet.\n");
+  {
+    DEC_MSG ("encode_object (%O)\n", x);
+    if(!x->_encode)
+      error ("Cannot encode object %O without _encode function.\n", x);
+    DEC_RETURN (([function]x->_encode)());
+  }
+
+  void create (void|mixed encoded)
+  //! Creates an encoder instance. If @[encoded] is specified, it's
+  //! encoded instead of being reverse resolved to a name. That's
+  //! necessary to encode programs.
+  {
+    this_program::encoded = encoded;
+
+    foreach (all_constants(); string var; mixed val)
+      rev_constants[val] = "c" + var;
+
+    rev_static_modules =
+      mkmapping (values (_static_modules),
+		 map (indices (_static_modules),
+		      lambda (string name) {return "s" + name;}));
+
+#if 0
+    // This looks flawed; when the decoder looks it up, it'll get the
+    // module and not its program. /mast
+    foreach (rev_static_modules; mixed module; string name) {
+      if (objectp(module)) {
+	program p = object_program(module);
+	if (!rev_static_modules[p]) {
+	  // Some people inherit modules...
+	  rev_static_modules[p] = "s" + name;
+	}
+      }
     }
-  
-  
+#endif
+  }
+}
+
+class Decoder (void|string fname, void|int mkobj)
+//! Codec for use with @[decode_value]. This is the decoder
+//! corresponding to @[Encoder]. See that one for more details.
+{
+  static int unregistered = 1;
+
+  object __register_new_program(program p)
+  {
+    DEC_MSG ("__register_new_program (%O)\n", p);
+    if(unregistered && fname)
+    {
+      unregistered = 0;
+      programs[fname]=p;
+      if (mkobj)
+	DEC_RETURN (objectp (objects[p]) ? objects[p] : (objects[p]=__null_program()));
+    }
+    DEC_RETURN (0);
+  }
+
+  static mixed thingof (string|array(string) what)
+  {
+    mixed res;
+    array(string) sublist;
+    if (arrayp (what)) sublist = what, what = sublist[0];
+
+    switch (what[0]) {
+      case 'c':
+	if (zero_type (res = all_constants()[what[1..]]))
+	  error ("Cannot find global constant %O.\n", what[1..]);
+	break;
+      case 's':
+	if (zero_type (res = _static_modules[what[1..]]))
+	  error ("Cannot find %O in _static_modules.\n", what[1..]);
+	break;
+      case 'p':
+	if (!(res = low_cast_to_program (what[1..], fname, this)))
+	  error ("Cannot find program for %O.\n", what[1..]);
+	break;
+      case 'o':
+	if (!objectp (res = low_cast_to_object (what[1..], fname, this)))
+	  error ("Cannot find object for %O.\n", what[1..]);
+	break;
+      case 'f':
+	if (!objectp (res = findmodule (what[1..], this)))
+	  error ("Cannot find module for %O.\n", what[1..]);
+	break;
+    }
+
+    if (sublist) {
+      mixed subres = res;
+      for (int i = 1; i < sizeof (sublist); i++) {
+	mixed op = sublist[i];
+	if (stringp (op)) {
+	  if (!programp (subres) && !objectp (subres) && !mappingp (subres))
+	    error ("Cannot subindex %O%{[%O]%} since it's a %t.\n",
+		   res, sublist[1..i-1], subres);
+	  if (zero_type (subres = subres[op]))
+	    error ("Cannot find %O in %O%{[%O]%}.\n",
+		   op, res, sublist[1..i-1]);
+	}
+	else if (op == 'p')
+	  subres = object_program (subres);
+	else
+	  error ("Unknown sublist operation %O in %O\n", op, what);
+      }
+      res = subres;
+    }
+
+    return res;
+  }
+
+  object objectof (string|array(string) what)
+  {
+    DEC_MSG ("objectof (%O)\n", what);
+    mixed res = thingof (what);
+    if (!objectp (res)) error ("Expected object for %O, got %O.\n", what, res);
+    DEC_RETURN ([object] res);
+  }
+
+  function functionof (string|array(string) what)
+  {
+    DEC_MSG ("functionof (%O)\n", what);
+    mixed res = thingof (what);
+    if (!functionp (res)) error ("Expected function for %O, got %O.\n", what, res);
+    DEC_RETURN ([function] res);
+  }
+
+  program programof (string|array(string) what)
+  {
+    DEC_MSG ("programof (%O)\n", what);
+    mixed res = thingof (what);
+    if (!programp (res)) error ("Expected program for %O, got %O.\n", what, res);
+    DEC_RETURN ([program] res);
+  }
+
   void decode_object(object o, mixed data)
   {
+    DEC_MSG ("decode_object (object(%O), %O)\n", object_program (o), data);
+    if(!o->_decode)
+      error ("Cannot decode object(%O) without _decode function.\n",
+	     object_program (o));
     ([function(mixed:void)]o->_decode)(data);
   }
 }
 
-
-mapping(string:Codec) codecs = set_weak_flag(([]),1);
-Codec get_codec(string|void fname, int|void mkobj)
+class Codec
+//! @[Encoder] and @[Decoder] rolled into one. This is for mainly
+//! compatibility; there's typically no use combining encoding and
+//! decoding into the same object.
 {
-  string key = fname + "\0" + mkobj;
-  if (codecs[key]) return codecs[key];
-  return codecs[key] = Codec(fname, mkobj);
-}
+  inherit Encoder;
+  inherit Decoder;
 
+  void create (void|mixed encoded)
+  //! The optional argument is the thing to encode; it's passed on to
+  //! @[Encoder].
+  {
+    Encoder::create (encoded);
+  }
+}
 
 
 //! Contains version information about a Pike version.
