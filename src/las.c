@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.323 2003/02/04 18:17:33 mast Exp $
+|| $Id: las.c,v 1.324 2003/02/08 03:49:22 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.323 2003/02/04 18:17:33 mast Exp $");
+RCSID("$Id: las.c,v 1.324 2003/02/08 03:49:22 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3887,34 +3887,34 @@ void fix_type_field(node *n)
        */
       switch(n->token) {
       case F_AND_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`&");
+	MAKE_CONST_STRING(op_string, "`&");
 	break;
       case F_OR_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`|");
+	MAKE_CONST_STRING(op_string, "`|");
 	break;
       case F_XOR_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`^");
+	MAKE_CONST_STRING(op_string, "`^");
 	break;
       case F_LSH_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`<<");
+	MAKE_CONST_STRING(op_string, "`<<");
 	break;
       case F_RSH_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`>>");
+	MAKE_CONST_STRING(op_string, "`>>");
 	break;
       case F_ADD_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`+");
+	MAKE_CONST_STRING(op_string, "`+");
 	break;
       case F_SUB_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`-");
+	MAKE_CONST_STRING(op_string, "`-");
 	break;
       case F_MULT_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`*");
+	MAKE_CONST_STRING(op_string, "`*");
 	break;
       case F_MOD_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`%");
+	MAKE_CONST_STRING(op_string, "`%");
 	break;
       case F_DIV_EQ:
-	MAKE_CONSTANT_SHARED_STRING(op_string, "`/");
+	MAKE_CONST_STRING(op_string, "`/");
 	break;
       default:
 	Pike_fatal("fix_type_field(): Unhandled token: %d\n", n->token);
@@ -3924,7 +3924,6 @@ void fix_type_field(node *n)
 	my_yyerror("Internally used efun undefined for token %d: %s()",
 		   n->token, op_string->str);
 	copy_pike_type(n->type, mixed_type_string);
-	free_string(op_string);
 	break;
       }
       if (!op_node->type) {
@@ -3949,7 +3948,6 @@ void fix_type_field(node *n)
 	/* Type check ok. */
 	free_node(op_node);
 	free_type(call_type);
-	free_string(op_string);
 	break;
       }
       my_yyerror("Bad arguments to %s=().", op_string->str);
@@ -3957,7 +3955,6 @@ void fix_type_field(node *n)
 		   call_type, 0);
       free_node(op_node);
       free_type(call_type);
-      free_string(op_string);
     }
     copy_pike_type(n->type, mixed_type_string);
     break;

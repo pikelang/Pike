@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.33 2002/12/31 14:14:13 grubba Exp $
+|| $Id: iterators.cmod,v 1.34 2003/02/08 03:49:22 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.33 2002/12/31 14:14:13 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.34 2003/02/08 03:49:22 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -980,7 +980,7 @@ PIKECLASS string_split_iterator
       offset = 0;						\
       if (ssi->feed.type == T_INT) {				\
 	if (!(FLAGS)) {						\
-	  MAKE_CONSTANT_SHARED_STRING(ssi->current, "");	\
+	  copy_shared_string(ssi->current, empty_pike_string);	\
 	  ssi->index++;						\
 	}							\
 	return;							\
@@ -998,7 +998,7 @@ PIKECLASS string_split_iterator
 	ssi->feed.u.integer = 0;				\
 	pop_stack();						\
 	if (!(FLAGS)) {						\
-	  MAKE_CONSTANT_SHARED_STRING(ssi->current, "");	\
+	  copy_shared_string(ssi->current, empty_pike_string);	\
 	  ssi->index++;						\
 	}							\
 	return;							\

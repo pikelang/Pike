@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.114 2003/02/01 16:00:25 mast Exp $
+|| $Id: builtin.cmod,v 1.115 2003/02/08 03:49:22 mast Exp $
 */
 
 #include "global.h"
@@ -372,14 +372,12 @@ PIKEFUN int trace(int level, void|string facility, void|int all_threads)
     struct pike_string *gc_str;
     if (facility->type != T_STRING)
       SIMPLE_BAD_ARG_ERROR("trace", 2, "void|string");
-    MAKE_CONSTANT_SHARED_STRING(gc_str, "gc");
+    MAKE_CONST_STRING(gc_str, "gc");
     if (facility->u.string == gc_str) {
-      free_string(gc_str);
       old_level = gc_trace;
       gc_trace = level;
     }
     else {
-      free_string(gc_str);
       bad_arg_error("trace", Pike_sp-args, args, 2,
 		   "trace facility identifier", Pike_sp-args+1,
                    "Bad argument 2 to trace(). Unknown trace facility.");
@@ -458,8 +456,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
     SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1, "void|mapping");
 
 #define HANDLE_PARAM(NAME, CHECK_AND_SET, GET) do {			\
-    MAKE_CONSTANT_SHARED_STRING (str, NAME);				\
-    free_string (str); /* Got a ref above anyway. */			\
+    MAKE_CONST_STRING (str, NAME);					\
     if ((set = low_mapping_string_lookup (params->u.mapping, str))) {	\
       CHECK_AND_SET;							\
     }									\
@@ -1638,13 +1635,11 @@ PIKECLASS Buffer
   {
     struct pike_string *string_t;
     struct pike_string *int_t;
-    MAKE_CONSTANT_SHARED_STRING( string_t, "string" ); 
-    MAKE_CONSTANT_SHARED_STRING( int_t, "int" );
+    MAKE_CONST_STRING( string_t, "string" );
+    MAKE_CONST_STRING( int_t, "int" );
 
     if( type == string_t )
     {
-      free_string(string_t);
-      free_string(int_t);
       pop_n_elems( args );
       if( Pike_fp->current_object->refs != 1 )
 	f_Buffer_get_copy( 0 );
@@ -1653,12 +1648,9 @@ PIKECLASS Buffer
       return;
     }
 
-    free_string(string_t);
-
     if( type == int_t )
     {
       struct Buffer_struct *str = THIS;
-      free_string(int_t);
       pop_stack();
       if( Pike_fp->current_object->refs != 1 )
 	f_Buffer_get_copy( 0 );
@@ -1667,7 +1659,6 @@ PIKECLASS Buffer
       o_cast_to_int( );
       return;
     }
-    free_string(int_t);
     Pike_error("Cannot cast to %s\n", type->str );
   }
   
@@ -2301,10 +2292,8 @@ PIKECLASS Time
     struct pike_string *usec;
     struct pike_string *sec;
 
-    MAKE_CONSTANT_SHARED_STRING( sec, "sec" );
-    free_string (sec);
-    MAKE_CONSTANT_SHARED_STRING( usec, "usec" );
-    free_string (usec);
+    MAKE_CONST_STRING( sec, "sec" );
+    MAKE_CONST_STRING( usec, "usec" );
 
     if( !x )
       RETURN 0;

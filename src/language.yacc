@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.314 2003/02/04 18:17:33 mast Exp $
+|| $Id: language.yacc,v 1.315 2003/02/08 03:49:22 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.314 2003/02/04 18:17:33 mast Exp $");
+RCSID("$Id: language.yacc,v 1.315 2003/02/08 03:49:22 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -848,8 +848,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 
       if ($1 & ID_VARIANT) {
 	struct pike_string *bad_arg_str;
-	MAKE_CONSTANT_SHARED_STRING(bad_arg_str,
-				    "Bad number of arguments!\n");
+	MAKE_CONST_STRING(bad_arg_str,
+			  "Bad number of arguments!\n");
 
 	fprintf(stderr, "Required args: %d\n", num_required_args);
 
@@ -863,7 +863,6 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 				       mkefuncallnode("aggregate",
 						      mkstrnode(bad_arg_str))),
 			NULL));
-	free_string(bad_arg_str);
       }
 
       {
@@ -991,10 +990,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
 
     if(!$3)
     {
-      struct pike_string *s;
-      MAKE_CONSTANT_SHARED_STRING(s,"");
-      $3=mkstrnode(s);
-      free_string(s);
+      $3=mkstrnode(empty_pike_string);
     }
 
     if($3->u.sval.u.string->len &&
@@ -2277,7 +2273,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     struct pike_string *create_string = NULL;
     int f;
 
-    MAKE_CONSTANT_SHARED_STRING(create_string, "create");
+    MAKE_CONST_STRING(create_string, "create");
 
     /* First: Deduce the type for the create() function. */
     push_type(T_VOID); /* Return type. */
@@ -2377,7 +2373,6 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     pop_compiler_frame();
     free_node($4);
     free_type(type);
-    free_string(create_string);
   }
   ;
 
@@ -3254,7 +3249,7 @@ idents: low_idents
   | '.' TOK_IDENTIFIER
   {
     struct pike_string *dot;
-    MAKE_CONSTANT_SHARED_STRING(dot, ".");
+    MAKE_CONST_STRING(dot, ".");
     if (call_handle_import(dot)) {
       node *tmp=mkconstantsvaluenode(Pike_sp-1);
       pop_stack();
@@ -3263,7 +3258,6 @@ idents: low_idents
     }
     else
       $$=mknewintnode(0);
-    free_string(dot);
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
     free_node($2);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.478 2003/02/04 17:29:19 mast Exp $
+|| $Id: program.c,v 1.479 2003/02/08 03:49:22 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.478 2003/02/04 17:29:19 mast Exp $");
+RCSID("$Id: program.c,v 1.479 2003/02/08 03:49:22 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2564,7 +2564,7 @@ struct program *end_first_pass(int finish)
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 
-  MAKE_CONSTANT_SHARED_STRING(s,"__INIT");
+  MAKE_CONST_STRING(s,"__INIT");
 
 
   /* Collect references to inherited __INIT functions */
@@ -2606,8 +2606,6 @@ struct program *end_first_pass(int finish)
     e=-1;
   }
   Pike_compiler->new_program->lfuns[LFUN___INIT]=e;
-
-  free_string(s);
 
   pop_compiler_frame(); /* Pop __INIT local variables */
 
@@ -5092,7 +5090,7 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
   struct pike_string *res = low_get_program_line(prog, linep);
   if (!res) {
     struct pike_string *dash;
-    MAKE_CONSTANT_SHARED_STRING(dash, "-");
+    REF_MAKE_CONST_STRING(dash, "-");
     return dash;
   }
   return res;
@@ -5231,7 +5229,7 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 
   if (prog == 0) {
     struct pike_string *unknown_program;
-    MAKE_CONSTANT_SHARED_STRING(unknown_program, "Unknown program");
+    REF_MAKE_CONST_STRING(unknown_program, "Unknown program");
     linep[0] = 0;
     return unknown_program;
   }
@@ -5239,7 +5237,7 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
   res = low_get_line(pc, prog, linep);
   if (!res) {
     struct pike_string *not_found;
-    MAKE_CONSTANT_SHARED_STRING(not_found, "Line not found");
+    REF_MAKE_CONST_STRING(not_found, "Line not found");
     return not_found;
   }
   return res;
@@ -6298,9 +6296,9 @@ void init_program(void)
   struct svalue id;
   init_program_blocks();
 
-  MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
-  MAKE_CONSTANT_SHARED_STRING(this_string,"this");
-  MAKE_CONSTANT_SHARED_STRING(UNDEFINED_string,"UNDEFINED");
+  MAKE_CONST_STRING(this_program_string,"this_program");
+  MAKE_CONST_STRING(this_string,"this");
+  MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
 
   lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);
@@ -6362,10 +6360,6 @@ void init_program(void)
 void cleanup_program(void)
 {
   int e;
-
-  free_string(UNDEFINED_string);
-  free_string(this_string);
-  free_string(this_program_string);
 
   free_mapping(lfun_types);
   free_mapping(lfun_ids);
@@ -6734,7 +6728,8 @@ void pop_local_variables(int level)
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
       free_string(Pike_compiler->compiler_frame->variable[level].name);
-      MAKE_CONSTANT_SHARED_STRING(Pike_compiler->compiler_frame->variable[level].name,"");
+      copy_shared_string(Pike_compiler->compiler_frame->variable[level].name,
+			 empty_pike_string);
     }
   }
 #endif

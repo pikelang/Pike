@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.72 2002/12/20 15:14:26 grubba Exp $
+// $Id: treeopt.in,v 1.73 2003/02/08 03:49:23 mast Exp $
 //
 // The tree optimizer
 //
@@ -1307,7 +1307,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
   int tmpvar;
   void add_local_name(struct pike_string *, struct pike_type *, node *);
 
-  MAKE_CONSTANT_SHARED_STRING(tmpname, " ");
+  MAKE_CONST_STRING(tmpname, " ");
   tmpvar = islocal(tmpname);
   if(tmpvar == -1)
   {
@@ -1315,7 +1315,6 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
     add_local_name(tmpname, mixed_type_string, 0);
     tmpvar = islocal(tmpname);
   }
-  free_string(tmpname);
   $$ = mknode('?', mknode(F_ASSIGN, $0, mklocalnode(tmpvar,0)),
 	      mknode(':',mknode(F_RETURN,
 				mksoftcastnode(type, mklocalnode(tmpvar,0)),
