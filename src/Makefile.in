@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.245 2001/06/10 22:54:37 grubba Exp $
+# $Id: Makefile.in,v 1.246 2001/06/28 19:43:35 per Exp $
 #
 
 # This line is needed on some machines.
@@ -414,6 +414,7 @@ TAGS:
 # verify / debug
 module_testsuites:
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
+	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 
 just_verify: module_testsuites testsuite master.pike
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
