@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.70 2002/11/13 17:15:53 grubba Exp $
+// $Id: treeopt.in,v 1.71 2002/11/18 16:37:08 grubba Exp $
 //
 // The tree optimizer
 //
@@ -1270,15 +1270,16 @@ F_LOOP(0 = +[ !depend_p($$, $$) ],
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // loop(n) x+=k;  ==> if (n > 0) x += k*n;
-F_LOOP(0 = +[ !depend_p($$, $$) &&
-	      !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
-				 OPT_CASE|OPT_CONTINUE|
-				 OPT_BREAK|OPT_RETURN)) ],
+F_LOOP(0 = +[ !depend_p($$, $$)]
+       [ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+			    OPT_CASE|OPT_CONTINUE|
+			    OPT_BREAK|OPT_RETURN)) ],
        F_ADD_EQ(1 = +[ !depend_p($$, $$) ],
-		2 = +[ !depend_p($$, $1) &&
-		       ((($$->type == int_type_string) &&
-			 ($1->type == int_type_string)) ||
-			($$->type == string_type_string)) ])):
+		2 = +[ !depend_p($$, $1) ]
+		[ !($$->tree_info & OPT_SIDE_EFFECT) ]
+		[ ((($$->type == int_type_string) &&
+		    ($1->type == int_type_string)) ||
+		   ($$->type == string_type_string)) ])):
   {
     $$ = mknode(F_POP_VALUE,
 		mknode('?',
