@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.51 1999/05/13 07:26:38 hubbe Exp $
+// $Id: module.pmod,v 1.52 1999/05/21 17:50:21 grubba Exp $
 
 import String;
 
@@ -742,6 +742,9 @@ static class nb_sendfile
     } else {
       if (sizeof(to_write)) {
 	start_writer();
+      } else {
+	writer_done();
+	return;
       }
     }
   }
