@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.797 2004/03/07 14:06:01 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.798 2004/03/07 16:33:00 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6936,6 +6936,11 @@ $bundle_info])
 	fi
 	( cd "bundles/$bundle.build" || exit 1
 
+	  # Make sure stuff in /usr/ccs/bin and the like can be found.
+	  OLD_PATH="$PATH"
+	  PATH="$PATH:$EXTRA_PATH"
+	  export PATH
+
 	  if test -f "Makefile"; then :; else
             # Configure bundle.
 	    # Note
@@ -6961,11 +6966,6 @@ $bundle_info])
 	    CFLAGS="$CCSHARED $CFLAGS"
 	    export CFLAGS
 
-	    # Make sure stuff in /usr/ccs/bin and the like can be found.
-	    OLD_PATH="$PATH"
-	    PATH="$PATH:$EXTRA_PATH"
-	    export PATH
-
 	    extra_configure_args=""
 	    # Some libraries insist in using config.guess;
 	    # they tend to have problems with rntcl...
@@ -6986,9 +6986,8 @@ $bundle_info])
 	      --prefix="$pike_bundle_prefix" ${extra_configure_args} \
 	      --disable-shared --cache-file=config.cache || exit 1
 
-	    # Restore CFLAGS and PATH
+	    # Restore CFLAGS
 	    CFLAGS="$OLD_CFLAGS"
-	    PATH="$OLD_PATH"
 
 	    if test -f "Makefile"; then :; else
 	      echo "Makefile not found in `pwd`."
@@ -7003,6 +7002,9 @@ $bundle_info])
 	  # Install bundle.
 	  echo "Installing bundle $bundle in ${pike_bundle_prefix}..."
 	  ${MAKE-make} install || exit 1
+
+	  # Restore PATH
+	  PATH="$OLD_PATH"
 
 	  # Done.
 	  echo "Bundle $bundle installed successfully."
