@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.365 2000/05/05 00:27:16 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.366 2000/05/10 00:43:28 neotron Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -246,6 +246,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
     $4
   fi
 ])
+
 
 # arch, option, cache_name, variable
 AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
@@ -503,9 +504,9 @@ AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing inste
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
-AC_ARG_WITH(c_profiling, [  --with-pg              Use the gcc -pg option],
+AC_ARG_WITH(pg, [  --with-pg              Use the gcc -pg option],
 [
-  if "x$with_c_profiling" = xyes; then
+  if "x$with_pg" = xyes; then
     PROFIL=-pg
   else
     PROFIL=
