@@ -5,7 +5,7 @@
 
 #pike __REAL_VERSION__
 
-//! Mapping from ISO 639-2/T code to language name.
+// Mapping from ISO 639-2/T code to language name.
 static constant languages = ([
   "aar":"Afar",
   "abk":"Abkhazian",
@@ -443,7 +443,8 @@ static constant languages = ([
   "zun":"Zuni"
 ]);
 
-//! Look up the language name given a ISO 639-2/T code.
+//! Look up the language name given a ISO 639-2/T code
+//! in lower case.
 string get_language(string code) {
   return languages[code];
 }
@@ -453,7 +454,7 @@ mapping(string:string) list_languages() {
   return languages+([]);
 }
 
-//! Mapping from ISO 639-1 code to ISO 639-2/T code.
+// Mapping from ISO 639-1 code to ISO 639-2/T code.
 static constant conversion = ([
   "aa":"aar",
   "ab":"abk",
@@ -615,7 +616,8 @@ static constant conversion = ([
   "zu":"zul"
 ]);
 
-//! Look up the ISO 639-2/T code given an ISO 639-1 code.
+//! Look up the ISO 639-2/T code given an ISO 639-1 code
+//! in lower case.
 string map_639_1(string code) {
   return conversion[code];
 }
