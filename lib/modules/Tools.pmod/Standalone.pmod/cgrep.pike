@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.4 2003/01/18 15:26:02 nilsson Exp $
+// $Id: cgrep.pike,v 1.5 2003/01/18 15:43:39 grubba Exp $
 
 constant description = "Context aware grep.";
 
@@ -183,7 +183,7 @@ int handle_file(string path, string fn) {
   // in pike and emacs -*- things with c or pike in them.
 
   if(!f) {
-    msg("No tokanizer found for %O\n", path);
+    msg("No tokenizer found for %O\n", path);
     return 0;
   }
 
@@ -299,7 +299,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.4 $
+constant version = #"cgrep $Revision: 1.5 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
