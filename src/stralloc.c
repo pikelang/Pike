@@ -329,6 +329,19 @@ void verify_shared_strings_tables(void)
   }
 }
 
+int safe_debug_findstring(struct pike_string *foo)
+{
+  unsigned INT32 e;
+  if(!base_table) return 0;
+  for(e=0;e<htable_size;e++)
+  {
+    struct pike_string *p;
+    for(p=base_table[e];p;p=p->next)
+      if(p==foo) return 1;
+  }
+  return 0;
+}
+
 struct pike_string *debug_findstring(const struct pike_string *foo)
 {
   struct pike_string *tmp;

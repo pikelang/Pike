@@ -51,6 +51,7 @@ void really_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 void check_string(struct pike_string *s);
 void verify_shared_strings_tables(void);
+int safe_debug_findstring(struct pike_string *foo);
 struct pike_string *debug_findstring(const struct pike_string *foo);
 void dump_stralloc_strings(void);
 int low_quick_binary_strcmp(char *a,INT32 alen,
@@ -59,6 +60,9 @@ int my_quick_strcmp(struct pike_string *a,struct pike_string *b);
 int my_strcmp(struct pike_string *a,struct pike_string *b);
 struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
 struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size);
+struct pike_string *modify_shared_string(struct pike_string *a,
+					 INT32 index,
+					 char c);
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
 struct pike_string *add_and_free_shared_strings(struct pike_string *a,

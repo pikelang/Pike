@@ -139,6 +139,8 @@ TYPE_T attempt_to_identify(void *something)
   struct array *a;
   struct object *o;
   struct program *p;
+  struct mapping *m;
+  struct multiset *mu;
 
   a=&empty_array;
   do
@@ -155,6 +157,21 @@ TYPE_T attempt_to_identify(void *something)
     if(p==(struct program *)something)
       return T_PROGRAM;
 
+  for(m=first_mapping;m;m=m->next)
+    if(m==(struct program *)something)
+      return T_MAPPING;
+
+  for(m=first_mapping;m;m=m->next)
+    if(m==(struct mapping *)something)
+      return T_MAPPING;
+
+  for(mu=first_multiset;mu;mu=mu->next)
+    if(mu==(struct multiset *)something)
+      return T_MULTISET;
+
+  if(safe_debug_findstring((struct pike_string *)something))
+    return T_STRING;
+
   return T_UNKNOWN;
 }
 
@@ -168,38 +185,42 @@ void describe_location(void *memblock, TYPE_T type, void *location)
 {
   if(!location) return;
   fprintf(stderr,"**Location of (short) svalue: %p\n",location);
-  if(type==T_OBJECT)
+
+  switch(type)
   {
-    struct object *o=(struct object *)memblock;
-    if(o->prog)
+    case T_OBJECT:
     {
-      INT32 e,d;
-      for(e=0;e<(INT32)o->prog->num_inherits;e++)
+      struct object *o=(struct object *)memblock;
+      if(o->prog)
       {
-	struct inherit tmp=o->prog->inherits[e];
-	char *base=o->storage + tmp.storage_offset;
-
-	for(d=0;d<(INT32)tmp.prog->num_identifiers;d++)
+	INT32 e,d;
+	for(e=0;e<(INT32)o->prog->num_inherits;e++)
 	{
-	  struct identifier *id=tmp.prog->identifiers+d;
-	  if(!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
-
-	  if(location == (void *)(base + id->func.offset))
+	  struct inherit tmp=o->prog->inherits[e];
+	  char *base=o->storage + tmp.storage_offset;
+	  
+	  for(d=0;d<(INT32)tmp.prog->num_identifiers;d++)
 	  {
-	    fprintf(stderr,"**In variable %s\n",id->name->str);
+	    struct identifier *id=tmp.prog->identifiers+d;
+	    if(!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
+	    
+	    if(location == (void *)(base + id->func.offset))
+	    {
+	      fprintf(stderr,"**In variable %s\n",id->name->str);
+	    }
 	  }
 	}
       }
+      return;
     }
-    return;
-  }
 
-  if(type == T_ARRAY)
-  {
-    struct array *a=(struct array *)memblock;
-    struct svalue *s=(struct svalue *)location;
-    fprintf(stderr,"**In index %ld\n",(long)(s-ITEM(a)));
-    return;
+    case T_ARRAY:
+    {
+      struct array *a=(struct array *)memblock;
+      struct svalue *s=(struct svalue *)location;
+      fprintf(stderr,"**In index %ld\n",(long)(s-ITEM(a)));
+      return;
+    }
   }
 }
 
@@ -292,6 +313,19 @@ void describe_something(void *a, int t)
       fprintf(stderr,"**Describing array:\n");
       debug_dump_array((struct array *)a);
       break;
+
+    case T_STRING:
+    {
+      struct pike_string *s=(struct pike_string *)a;
+      fprintf(stderr,"**String length is %d:\n",s->len);
+      if(s->len>77)
+      {
+	fprintf(stderr,"** \"%60s ...\"\n",s->str);
+      }else{
+	fprintf(stderr,"** \"%s\"\n",s->str);
+      }
+      break;
+    }
   }
 }
 

@@ -17,6 +17,8 @@ struct mapping
   struct keypair *free_list;
 };
 
+extern struct mapping *first_mapping;
+
 #define m_sizeof(m) ((m)->size)
 #define m_ind_types(m) ((m)->ind_types)
 #define m_val_types(m) ((m)->val_types)
