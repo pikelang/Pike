@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.570 2002/11/28 19:16:33 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.571 2002/11/28 20:11:43 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7799,9 +7799,15 @@ test_eq(1,call_function(a))
 test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
 
-// - clone
-test_true(objectp(clone(compile_string("int foo() { return 17; }"))))
-test_eq(clone(compile_string("int foo() { return 17; }"))->foo(),17)
+// - new/clone
+test_true(objectp(new(compile_string("int foo() { return 17; }"))))
+test_eq(new(compile_string("int foo() { return 17; }"))->foo(),17)
+test_true([[
+#pike 7.2
+objectp(clone(compile_string("int foo() { return 17; }"))) ]])
+test_eq([[
+#pike 7.2
+clone(compile_string("int foo() { return 17; }"))->foo() ]],17)
 
 // - combine_path
 test_eq([[combine_path("/foo/bar/gazonk/","..")]],"/foo/bar")
@@ -9111,7 +9117,6 @@ test_compile(
    };
 ]]);
 
-// - Calendar
 
 // - Filesystem
 
