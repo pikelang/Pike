@@ -15,56 +15,7 @@
   deallocated at next call of sprintf. Most operators doesn't need this
   feature though as they allocate their buffers with alloca() or simply use
   pointers into other strings.
-  It also has a lot more features:
-
-  Modifiers:
-    0  Zero pad numbers (implies right justification)
-    !  Toggle truncation
-       pad positive integers with a space
-    +  pad positive integers with a plus sign
-    -  left adjusted within field size (default is right)
-    |  centered within field size
-    =  column mode if strings are greater than field size
-    /  Rough linebreak (break at exactly fieldsize instead of between words)
-    #  table mode, print a list of '\n' separated word (top-to-bottom order)
-    $  Inverse table mode (left-to-right order)
-    n  (where n is a number or *) a number specifies field size
-   .n  set precision
-   :n  set field size & precision
-   ;n  Set column width
-    *  if n is a * then next argument is used
-    ~  get pad string from argument list
-   'X'  Set a pad string. ' cannot be a part of the pad_string (yet)
-    <  Use same arg again
-    ^  repeat this on every line produced
-    @  do this format for each entry in argument array
-    > Put the string at the bottom end of column instead of top
-    _ Set width to size of length of data
-   [n] Select argument n. Use * to use the next arg as selector. 
-
- Operators:
-   %% percent
-   %d signed decimal int
-   %u unsigned decimal int
-   %o unsigned octal int
-   %x lowercase unsigned hexadecimal int
-   %X uppercase unsigned hexadecimal int
-   %c char
-   %f float
-   %g heuristically chosen representation of float
-   %e exponential notation float
-   %s string
-   %O any type (prettyprint)
-   %n nop
-   %t type of argument
-   %<modifiers>{format%}  do a format for every index in an array.
-
-   Most flags and operators are combinable in any fashion, but _really_
-   strange results can arise from things like:
-      sprintf("%+080#{%s\n%}",get_dir("/"))
-
- Callbacks:
-   string _sprintf(int operator, mapping modifiers);
+  It also has a lot more features.
 
  Ideas yet to be implemented:
    Line-break with fill? Lower-case? Upper case? Capitalize?
@@ -102,8 +53,126 @@
 
 */
 
+/*! @decl string sprintf(string format, mixed ... args)
+ *!
+ *!   Print formated output to string.
+ *!
+ *!   The @[format] string is a string containing a description of how to
+ *!   output the data in @[args]. This string should generally speaking
+ *!   have one @tt{%@i{<modifiers>@}@i{<operator>@}@} format specifier
+ *!   (examples: @tt{%s@}, @tt{%0d@}, @tt{%-=20s@}) for each of the arguments.
+ *!
+ *!   The following modifiers are supported:
+ *!   @int
+ *!     @value '0'
+ *!       Zero pad numbers (implies right justification).
+ *!     @value '!'
+ *!       Toggle truncation.
+ *!     @value ' '
+ *!       Pad positive integers with a space.
+ *!     @value '+'
+ *!       Pad positive integers with a plus sign.
+ *!     @value '-'
+ *!       Left adjust within field size (default is right).
+ *!     @value '|'
+ *!       Centered within field size.
+ *!     @value '='
+ *!       Column mode if strings are greater than field size.
+ *!     @value '/'
+ *!       Rough line break (break at exactly field size instead of between
+ *!       words).
+ *!     @value '#'
+ *!       Table mode, print a list of '\n' separated word (top-to-bottom
+ *!       order).
+ *!     @value '$'
+ *!       Inverse table mode (left-to-right order).
+ *!     @value 'n'
+ *!       (Where n is a number or *) field size specifier.
+ *!     @value '.n'
+ *!       Precision specifier.
+ *!     @value ':n'
+ *!       Field size precision specifier.
+ *!     @value ';n'
+ *!       Column width specifier.
+ *!     @value '*'
+ *!       If n is a * then next argument is used for precision/field size.
+ *!     @value "'"
+ *!       Set a pad string. @tt{'@} cannot be a part of the pad string (yet).
+ *!     @value '~'
+ *!       Get pad string from argument list.
+ *!     @value '<'
+ *!       Use same argument again.
+ *!     @value '^'
+ *!       Repeat this on every line produced.
+ *!     @value '@@'
+ *!       Repeat this format for each element in the argument array.
+ *!     @value '>'
+ *!       Put the string at the bottom end of column instead of top.
+ *!     @value '_'
+ *!       Set width to the length of data.
+ *!     @value '[n]'
+ *!       Select argument number @tt{@i{n@}@}. Use @tt{*@} to use the next
+ *!       argument as selector.
+ *!   @endint
+ *!
+ *!   The following operators are supported:
+ *!   @int
+ *!     @value '%'
+ *!       Percent.
+ *!     @value 'b'
+ *!       Signed binary integer.
+ *!     @value 'd'
+ *!       Signed decimal integer.
+ *!     @value 'u'
+ *!       Unsigned decimal integer.
+ *!     @value 'o'
+ *!       Signed octal integer.
+ *!     @value 'x'
+ *!       Lowercase signed hexadecimal integer.
+ *!     @value 'X'
+ *!       Uppercase signed hexadecimal integer.
+ *!     @value 'c'
+ *!       Character. If a fieldsize has been specified this will output
+ *!       the low-order bytes of the integer in network byte order.
+ *!     @value 'f'
+ *!       Float.
+ *!     @value 'g'
+ *!       Heuristically chosen representation of float.
+ *!     @value 'G'
+ *!       Like @tt{%g@}, but uses uppercase @tt{E@} for exponent.
+ *!     @value 'e'
+ *!       Exponential notation float.
+ *!     @value 'E'
+ *!       Like @tt{%e@}, but uses uppercase @tt{E@} for exponent.
+ *!     @value 'F'
+ *!       Binary IEEE representation of float (@tt{%4F@} gives 
+ *!       single precision, @tt{%8F@} gives double precision.)
+ *!     @value 's'
+ *!       String.
+ *!     @value 'O'
+ *!       Any value (debug style).
+ *!     @value 'n'
+ *!       No operation (ignore the argument).
+ *!     @value 't'
+ *!       Type of the argument.
+ *!     @value '{'
+ *!     @value '}'
+ *!       Perform the enclosed format for every element of the argument array.
+ *!   @endint
+ *!
+ *!   Most modifiers and operators are combinable in any fashion, but some
+ *!   combinations may render strange results.
+ *!
+ *!   If an argument is an object that implements @[lfun::_sprintf()], that
+ *!   callback will be called with the operator as the first argument, and
+ *!   the current modifiers as the second. The callback is expected to return
+ *!   a string.
+ *!
+ *! @seealso
+ *!   @[lfun::_sprintf()]
+ */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.81 2001/08/15 09:26:02 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.82 2001/09/12 20:48:34 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
