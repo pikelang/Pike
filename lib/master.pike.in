@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.313 2003/12/06 10:08:13 nilsson Exp $
+// $Id: master.pike.in,v 1.314 2003/12/17 22:46:07 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -50,7 +50,7 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
 
-#ifdef __NT__
+#if defined(__NT__) || defined(__amigaos__)
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
