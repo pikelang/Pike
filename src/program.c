@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.454 2002/11/07 15:00:56 grubba Exp $
+|| $Id: program.c,v 1.455 2002/11/07 17:03:27 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.454 2002/11/07 15:00:56 grubba Exp $");
+RCSID("$Id: program.c,v 1.455 2002/11/07 17:03:27 marcus Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1127,17 +1127,10 @@ struct node_s *program_magic_identifier (struct program_state *state,
       return mkefuncallnode ("this_object", mknewintnode (state_depth));
 
     /* Handle this_program */
-    if (ident == this_program_string) {
-      if (compilation_depth > state_depth)
-	return mkexternalnode(state->previous->new_program,
-			      state->previous->parent_identifier);
-      else {
-	struct svalue s;
-	s.type=T_PROGRAM;
-	s.u.program=state->new_program;
-	return mkconstantsvaluenode(&s);
-      }
-    }
+    if (ident == this_program_string)
+      return mkefuncallnode ("object_program",
+			     mkefuncallnode ("this_object",
+					     mknewintnode (state_depth)));
   }
 
   if (colon_colon_ref) {

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.558 2002/11/04 09:24:42 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.559 2002/11/07 17:03:28 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1014,9 +1014,7 @@ test_program([[
 test_program([[
   class A {this_program clone() {return this_program();}}
   class B {inherit A;}
-  // It would perhaps be nice if this_program possessed the magic
-  // to refer to B in the inherit from A, but that would be magic indeed.
-  int a() {return object_program (B()->clone()) == A;}
+  int a() {return object_program (B()->clone()) == B;}
 ]])
 
 test_program([[
