@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: syslog.c,v 1.24 2004/05/19 11:28:49 grubba Exp $
+|| $Id: syslog.c,v 1.25 2004/05/19 11:45:13 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.24 2004/05/19 11:28:49 grubba Exp $");
+RCSID("$Id: syslog.c,v 1.25 2004/05/19 11:45:13 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -230,10 +230,32 @@ void f_openlog(INT32 args)
   pop_n_elems(args);
 }
  
-/*! @decl void syslog(int a, string b)
+/*! @decl void syslog(int priority, string msg)
  *!
- *! @fixme
- *!   Document this function.
+ *! Writes the message @[msg] to the log with the priorities in
+ *! @[priority].
+ *!
+ *! @param priority
+ *!   Priority is a bit vector with the wanted priorities or:ed
+ *!   together.
+ *!   @int
+ *!     @value 0
+ *!       LOG_EMERG, system is unusable.
+ *!     @value 1
+ *!       LOG_ALERT, action must be taken immediately.
+ *!     @value 2
+ *!       LOG_CRIT, critical conditions.
+ *!     @value 3
+ *!       LOG_ERR, error conditions.
+ *!     @value 4
+ *!       LOG_WARNING, warnind conditions.
+ *!     @value 5
+ *!       LOG_NOTICE, normal, but significant, condition.
+ *!     @value 6
+ *!       LOG_INFO, informational message.
+ *!     @value 7
+ *!       LOG_DEBUG, debug-level message.
+ *!   @endint
  */
 void f_syslog(INT32 args)
 {
