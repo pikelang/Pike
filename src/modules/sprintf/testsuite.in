@@ -194,5 +194,5 @@ test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
 
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
-test_eval_error(sprintf("%d"))
+test_eval_error(return sprintf("%d");)
 
