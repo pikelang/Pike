@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.94 2003/01/22 15:13:16 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.95 2003/01/24 02:14:59 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -2021,6 +2021,7 @@ class StdinHilfe
 	if(Stdio.File f=Stdio.File(home+"/.hilfe_history","r"))
 	{
 	  string s=f->read()||"";
+	  f->close();
 	  hist=s/"\n";
 	  readline->enable_history(hist);
 	}
