@@ -26,6 +26,7 @@
 #include "mapping.h"
 #include "array.h"
 #include "builtin_efuns.h"
+#include "lock.h"
 
 #include <pwd.h>
 
@@ -1509,10 +1510,12 @@ void init_spider_efuns(void)
   make_shared_string("GET");
   make_shared_string("POST");
 
+#ifdef HAVE_SEMGET
   add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_new_lock", f_newlock, "function(:int)", OPT_SIDE_EFFECT);
+#endif
 
 #ifdef HAVE_ALARM
   add_efun("alarm", f_alarm, "function(int:int)", OPT_SIDE_EFFECT);

@@ -1,3 +1,5 @@
+#include "spider.h"
+
 #include <sys/types.h>
 #ifdef HAVE_SYS_IPC_H
 #include <sys/ipc.h>
@@ -17,6 +19,8 @@
 #include "mapping.h"
 #include "array.h"
 #include "builtin_efuns.h"
+
+#include <errno.h>
 
 void f_lock(INT32 args)
 {
@@ -58,7 +62,7 @@ void f_freelock(INT32 args)
 {
 #ifdef HAVE_SEMCTL
   if(!args) error("You have to supply the lock-id.\n");
-  return !(semctl(args[-1].u.integer, 0, IPC_RMID))
+  push_int(!(semctl(sp[-1].u.integer, 0, IPC_RMID)));
 #endif
 }
 

@@ -57,7 +57,7 @@
 
 #undef HAVE_SYS_SEM_H
 #undef HAVE_SYS_IPC_H
-#undef HAVE_SEMO
+#undef HAVE_SEMOP
 #undef HAVE_SEMCTL
 #undef HAVE_SEMGET
 

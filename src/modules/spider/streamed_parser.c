@@ -149,14 +149,17 @@ void streamed_parser_destruct()
 {
   if (DATA->last_buffer)
     free( DATA->last_buffer );
+#if 0 /* Per, to clean up _some_ of the warnings */
   if (DATA->start_tags)
     ;
   if (DATA->end_tags)
     ;
+#endif
 }
 
 void streamed_parser_set_data( INT32 args )
 {
+  if(args != 3) error("FOO\n"); /* Per, one other warning... */
   DATA->end_tags = sp[-1].u.mapping;
   sp--;
   
@@ -237,12 +240,14 @@ static void add_arg()
 
 void streamed_parser_parse( INT32 args )
 {
-  int c, length, state, begin, last, ind, ind2, ind3, ind4, ind5, content_tag;
+  int c, length, state, begin, last, ind=0, ind2=0, ind3=0, ind4=0, ind5=0, content_tag=0;
   char *str;
   struct svalue *sp_save;
   struct svalue *sp_tag_save;
   struct svalue *data_arg;
-  
+
+  if(!args) error("FOO!\n"); /* Per ... */
+
   state = NOTAG;
   begin = 0; 
   last = -1;
@@ -331,6 +336,7 @@ void streamed_parser_parse( INT32 args )
 	push_string( make_shared_binary_string( str + ind, ind2 - ind ) );
 	f_lower_case( 1 );
 	if (list_member( DATA->end_tags, sp-1 ))
+	{
 	  if (handle_end_tag( data_arg ))
 	  {
 	    if (last >= begin)
@@ -340,8 +346,7 @@ void streamed_parser_parse( INT32 args )
 	    }
 	    begin = c+1;
 	  }
-	  else
-	    ;
+	}
 	else
 	  pop_stack();
 	last = c;
@@ -427,8 +432,10 @@ void streamed_parser_parse( INT32 args )
 	    }
 	    begin = c+1;
 	  }
+#if 0 /* DITTO */
 	  else
 	    ;
+#endif
 	}
 	else if (list_member( DATA->content_tags, sp-1 ))
 	{
@@ -467,8 +474,10 @@ void streamed_parser_parse( INT32 args )
 	  }
 	  begin = c+1;
 	}
+#if 0 /* DITTO */
 	else
 	  ;
+#endif
 	last = c;
 	sp_tag_save = 0;
 	state = NOTAG;
@@ -513,8 +522,10 @@ void streamed_parser_parse( INT32 args )
 	  }
 	  begin = c+1;
 	}
+#if 0 /* DITTO */
 	else
 	  ;
+#endif
 	last = c;
 	sp_tag_save = 0;
 	state = NOTAG;
@@ -548,8 +559,10 @@ void streamed_parser_parse( INT32 args )
 	  }
 	  begin = c+1;
 	}
+#if 0 /* DITTO */
 	else
 	  ;
+#endif
 	last = c;
 	sp_tag_save = 0;
 	state = NOTAG;
@@ -586,8 +599,10 @@ void streamed_parser_parse( INT32 args )
 	  }
 	  begin = c+1;
 	}
+#if 0 /* DITTO */
 	else
 	  ;
+#endif
 	last = c;
 	sp_tag_save = 0;
 	state = NOTAG; /* error */
@@ -655,8 +670,10 @@ void streamed_parser_parse( INT32 args )
 	  }
 	  begin = c+1;
 	}
+#if 0 /* DITTO ½ */
 	else
 	  ;
+#endif
 	last = c;
 	sp_tag_save = 0;
 	state = NOTAG;
@@ -728,9 +745,10 @@ void streamed_parser_parse( INT32 args )
 	    }
 	    begin = c+1;
 	  }
+#if 0 /* DITTO */
 	  else
 	    ;
-	  
+#endif
 	  last = c;
 	  sp_tag_save = 0;
 	  state = NOTAG;
@@ -790,9 +808,7 @@ void streamed_parser_parse( INT32 args )
     push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
   if (sp - sp_save == 0)
     push_text( "" );
-  else if (sp - sp_save == 1)
-    ;
-  else
+  else if (sp - sp_save != 1)
     f_add( sp - sp_save ); /* fix? this is what we return */
   SWAP;
   pop_stack(); /* get rid of data_arg */
@@ -806,6 +822,7 @@ void streamed_parser_parse( INT32 args )
 
 void streamed_parser_finish( INT32 args )
 {
+  if(args) error("FOO!\n"); /* Per ... */
   push_string( make_shared_binary_string( DATA->last_buffer, DATA->last_buffer_size ) );
   if (DATA->last_buffer)
     free( DATA->last_buffer );
