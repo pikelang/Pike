@@ -86,7 +86,9 @@ class client
 
   void simple_mail(string to, string subject, string from, string msg)
   {
-    send_message(from, ({ to }),
+    array foo = MIME.tokenize(to);
+    string bar = "<"+replace(((foo/({60}))[-1]/({62}))[0],64,"@")*""+">";
+    send_message(from, ({ bar }),
 		 (string)MIME.Message(msg, (["mime-version":"1.0",
 					     "subject":subject,
 					     "from":from,
