@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.6 1998/03/28 15:05:39 grubba Exp $
+ * $Id: pike_macros.h,v 1.7 1998/04/08 01:00:58 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -49,7 +49,15 @@
 #define isidchar(X) is8bitalnum(X)
 
 #define ALIGN_BOUND sizeof(char *)
-#define DO_ALIGN(X,Y) (((long)(X)+(Y-1)) & -(Y))
-#define MY_ALIGN(X) DO_ALIGN(X,ALIGN_BOUND)
 
+#ifdef __GNUC__
+#define ALIGNOF(X) __alignof__(X)
+#define HAVE_ALIGNOF
+#else
+#define ALIGNOF(X) (sizeof(X)>ALIGN_BOUND?ALIGN_BOUND:( 1<<my_log2(sizeof(X))))
+#endif
+
+#define DO_ALIGN(X,Y) (((long)(X)+((Y)-1)) & -(Y))
+#define MY_ALIGN(X) DO_ALIGN((X),ALIGN_BOUND)
+#define SMART_ALIGN(X,Y) DO_ALIGN((X),(Y)>ALIGN_BOUND? (((Y)-1) & ~(Y)) :ALIGN_BOUND)
 #endif

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.70 1998/04/06 20:38:00 hubbe Exp $");
+RCSID("$Id: program.c,v 1.71 1998/04/08 01:00:58 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -25,6 +25,7 @@ RCSID("$Id: program.c,v 1.70 1998/04/06 20:38:00 hubbe Exp $");
 #include "constants.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "stuff.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -312,7 +313,8 @@ void optimize_program(struct program *p)
   if(p->flags & PROGRAM_OPTIMIZED) return;
 
 #define FOO(NUMTYPE,TYPE,NAME) \
-  size+=MY_ALIGN(p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]));
+  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
+  size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
 
   data=malloc(size);
@@ -321,10 +323,11 @@ void optimize_program(struct program *p)
   size=0;
 
 #define FOO(NUMTYPE,TYPE,NAME) \
+  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
   free((char *)p->NAME); \
   p->NAME=(TYPE *)(data+size); \
-  size+=MY_ALIGN(p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]));
+  size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
 
   p->total_size=size + sizeof(struct program);
@@ -641,6 +644,35 @@ static void toss_compilation_resources(void)
   
 }
 
+static int sizeof_variable(int run_time_type)
+{
+  switch(run_time_type)
+  {
+    case T_FUNCTION:
+    case T_MIXED: return sizeof(struct svalue);
+    case T_INT: return sizeof(INT_TYPE);
+    case T_FLOAT: return sizeof(FLOAT_TYPE);
+    default: return sizeof(char *);
+  }
+}
+
+static int alignof_variable(int run_time_type)
+{
+  switch(run_time_type)
+  {
+    case T_FUNCTION:
+    case T_MIXED:
+#ifdef HAVE_ALIGNOF
+      return ALIGNOF(struct svalue);
+#else
+      return ALIGNOF(union u);
+#endif
+    case T_INT: return ALIGNOF(INT_TYPE);
+    case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
+    default: return ALIGNOF(char *);
+  }
+}
+
 #ifdef DEBUG
 void check_program(struct program *p)
 {
@@ -671,53 +703,6 @@ void check_program(struct program *p)
   if(p->num_identifier_index > p->num_identifier_references)
     fatal("Too many identifier index entries in program!\n");
 
-#if 0
-  size=MY_ALIGN(sizeof(struct program));
-  size+=MY_ALIGN(p->num_linenumbers);
-  size+=MY_ALIGN(p->program_size);
-  size+=MY_ALIGN(p->num_constants * sizeof(struct svalue));
-  size+=MY_ALIGN(p->num_strings * sizeof(struct pike_string *));
-  size+=MY_ALIGN(p->num_identifiers * sizeof(struct identifier));
-  size+=MY_ALIGN(p->num_identifier_references * sizeof(struct reference));
-  size+=MY_ALIGN(p->num_inherits * sizeof(struct inherit));
-
-  size+=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
-
-  if(size > (INT32)p->total_size)
-    fatal("Program size is in error.\n");
-
-  size-=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
-  size+=MY_ALIGN(p->num_identifier_references * sizeof(INT16));
-
-  if(size < (INT32)p->total_size)
-    fatal("Program size is in error.\n");
-
-#define CHECKRANGE(X,Y) \
-if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Program->%s is wrong.\n",Y)
-
-  CHECKRANGE(program,"program");
-  CHECKRANGE(strings,"strings");
-  CHECKRANGE(inherits,"inherits");
-  CHECKRANGE(identifier_references,"identifier_references");
-  CHECKRANGE(identifiers,"identifier");
-  CHECKRANGE(identifier_index,"identifier_index");
-  CHECKRANGE(constants,"constants");
-  CHECKRANGE(linenumbers,"linenumbers");
-
-  checksum=hashmem(p->program, p->program_size, p->program_size) +
-    hashmem((unsigned char*)p->linenumbers,p->num_linenumbers,p->num_linenumbers);
-
-  if(!checksum) checksum=1;
-
-  if(!p->checksum)
-  {
-    p->checksum=checksum;
-  }else{
-    if(p->checksum != checksum)
-      fatal("Someone changed a program!!!\n");
-  }
-#endif
-
   for(e=0;e<(int)p->num_constants;e++)
     check_svalue(p->constants + e);
 
@@ -737,9 +722,10 @@ if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Progra
 
     if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
     {
-      if(p->identifiers[e].func.offset & (sizeof(char *)-1))
+      if(p->identifiers[e].func.offset &
+	 (alignof_variable(p->identifiers[e].run_time_type)-1))
       {
-	fatal("Variable offset is not properly aligned (%s).\n",p->identifiers[e].name->str);
+	fatal("Variable %s offset is not properly aligned (%d).\n",p->identifiers[e].name->str,p->identifiers[e].func.offset);
       }
     }
   }
@@ -764,6 +750,11 @@ if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Progra
   {
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
+
+    if(p->inherits[e].storage_offset & (ALIGN_BOUND-1))
+    {
+      fatal("inherit[%d].storage_offset is not properly aligned.\n",e);
+    }
   }
 }
 #endif
@@ -863,13 +854,23 @@ struct program *debug_end_program(void)
  * Allocate needed for this program in the object structure.
  * An offset to the data is returned.
  */
-SIZE_T add_storage(SIZE_T size)
+SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment)
 {
   SIZE_T offset;
-  offset=new_program->storage_needed;
-  size=MY_ALIGN(size);
-  new_program->storage_needed += size;
+  offset=DO_ALIGN(new_program->storage_needed, alignment);
+  new_program->storage_needed = offset + size;
+#ifdef DEBUG
+  if(alignment <=0) fatal("Alignment must be at least 1\n");
+  if(new_program->storage_needed<0)
+    fatal("add_storage failed horribly!\n");
+#endif
   return offset;
+}
+
+SIZE_T add_storage(SIZE_T storage)
+{
+  return low_add_storage(storage,
+			 storage>ALIGN_BOUND? ALIGN_BOUND : storage ? (1<<my_log2(storage)) : 1);
 }
 
 /*
@@ -1030,8 +1031,7 @@ void low_inherit(struct program *p,
 
   inherit_offset = new_program->num_inherits;
 
-  storage_offset=new_program->storage_needed;
-  add_storage(p->storage_needed);
+  storage_offset=add_storage(p->storage_needed);
 
   for(e=0; e<(int)p->num_inherits; e++)
   {
@@ -1061,6 +1061,37 @@ void low_inherit(struct program *p,
 	}
       }else{
 	inherit.parent_offset+=parent_offset;
+      }
+    }else{
+      if(parent && parent->next != parent && inherit.parent_offset)
+      {
+	struct object *par=parent;
+	int e,pid=parent_identifier;
+	for(e=1;e<inherit.parent_offset;e++)
+	{
+	  struct inherit *in;
+	  if(!par->prog)
+	  {
+	    par=0;
+	    pid=0;
+	    break;
+	  }
+
+	  in=INHERIT_FROM_INT(par->prog, pid);
+	  if(in->parent_offset)
+	  {
+	    pid=par->parent_identifier;
+	    par=par->parent;
+	    e-=in->parent_offset-1;
+	  }else{
+	    pid=in->parent_identifier;
+	    par=in->parent;
+	  }
+	}
+
+	inherit.parent=par;
+	inherit.parent_identifier=pid;
+	inherit.parent_offset=0;
       }
     }
     if(inherit.parent) inherit.parent->refs++;
@@ -1274,7 +1305,6 @@ int low_define_variable(struct pike_string *name,
   return n;
 }
 
-
 int map_variable(char *name,
 		 char *type,
 		 INT32 flags,
@@ -1352,9 +1382,8 @@ int define_variable(struct pike_string *name,
   }
   
   n=low_define_variable(name,type,flags,
-			add_storage(run_time_type == T_MIXED ?
-				    sizeof(struct svalue) :
-				    sizeof(union anything)),
+			low_add_storage(sizeof_variable(run_time_type),
+					alignof_variable(run_time_type)),
 			run_time_type);
   
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.36 1998/04/06 04:31:32 hubbe Exp $
+ * $Id: program.h,v 1.37 1998/04/08 01:00:58 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -222,6 +222,7 @@ struct program
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
 
+
 extern struct object *fake_object;
 extern struct program *new_program;
 extern struct program *first_program;
@@ -252,7 +253,8 @@ void dump_program_desc(struct program *p);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 struct program *debug_end_program(void);
-SIZE_T add_storage(SIZE_T size);
+SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment);
+SIZE_T add_storage(SIZE_T storage);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_mark_callback(void (*m)(struct object *));
