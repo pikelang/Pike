@@ -781,6 +781,7 @@ class Fifo
 
   array try_read_array()
   {
+    array ret;
     switch (num) {
       case 0:
 	ret = ({});
