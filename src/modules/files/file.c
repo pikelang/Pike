@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.210 2001/02/03 07:02:07 hubbe Exp $");
+RCSID("$Id: file.c,v 1.211 2001/06/25 15:52:50 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1412,6 +1412,29 @@ static void file_open(INT32 args)
   pop_n_elems(args);
   push_int(fd>=0);
 }
+
+#ifdef HAVE_FSYNC
+static void file_sync(INT32 args)
+{
+  int ret;
+
+  if(FD < 0)
+    Pike_error("File not open.\n");
+
+  pop_n_elems(args);
+
+  do {
+    ret = fsync(FD);
+  } while ((ret < 0) && (errno == EINTR));
+
+  if (ret < 0) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
+}
+#endif /* HAVE_FSYNC */
 
 static void file_seek(INT32 args)
 {

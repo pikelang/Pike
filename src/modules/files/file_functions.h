@@ -10,6 +10,10 @@
   FILE_FUNC("write_oob",file_write_oob,"function(string,void|mixed...:int)")
 #endif /* WITH_OOB */
 
+#ifdef HAVE_FSYNC
+  FILE_FUNC("sync", file_sync, "function(:int)")
+#endif /* HAVE_FSYNC */
+
   FILE_FUNC("seek",file_seek,"function(int,int|void,int|void:int)")
   FILE_FUNC("tell",file_tell,"function(:int)")
   FILE_FUNC("truncate",file_truncate,"function(int:int)")
