@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.123 2003/02/19 16:30:17 grubba Exp $
+|| $Id: builtin.cmod,v 1.124 2003/02/19 17:31:29 marcus Exp $
 */
 
 #include "global.h"
@@ -2276,7 +2276,7 @@ PIKECLASS bootstring
   CVAR INT_TYPE base, tmin, tmax, skew, damp;
   CVAR INT_TYPE initial_bias, initial_n;
   CVAR p_wchar2 delim;
-  PIKEVAR string digits;
+  PIKEVAR string digits flags ID_STATIC|ID_PRIVATE;
 
   static INT_TYPE bootstring_cp_to_digit(p_wchar2 ch)
   {
