@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.103 2003/09/14 15:18:28 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.104 2003/09/14 15:19:58 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1860,6 +1860,8 @@ class Evaluator {
     string prog;
     if(strict_types)
       prog = "#pragma strict_types\n";
+    else
+      prog = "";
 
     prog +=
       map(inherits, lambda(string f) { return "inherit "+f+";\n"; }) * "" +
