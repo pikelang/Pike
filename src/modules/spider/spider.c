@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.51 1998/03/03 11:24:48 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.52 1998/03/03 14:25:34 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -440,7 +440,7 @@ void f_set_start_quote(INT32 args)
        j=i;\
      } }while(0)
 
-#define SKIP_SPACE()  while (i<len && ISSPACE(s[i])) i++
+#define SKIP_SPACE()  while (i<len && ISSPACE(((unsigned char *)s)[i])) i++
 #define STARTQUOTE(C) do{PUSH();j=i+1;inquote = 1;endquote=(C);}while(0)
 #define ENDQUOTE() do{PUSH();j++;inquote=0;endquote=0;}while(0)       
 
@@ -485,11 +485,12 @@ int extract_word(char *s, int i, int len)
 	  STARTQUOTE(end_quote_character);
       }
       else if(endquote == end_quote_character) {
-	if(s[i] == endquote)
+	if(s[i] == endquote) {
 	  if(!--inquote)
 	    ENDQUOTE();
 	  else if(s[i] == start_quote_character) 
 	    inquote++;
+	}
       }
       break;
     }
@@ -628,12 +629,12 @@ void do_html_parse(struct pike_string *ss,
       int n;
       /* skip all spaces */
       i++;
-      for (n=i;n<len && ISSPACE(s[n]); n++);
+      for (n=i;n<len && ISSPACE(((unsigned char *)s)[n]); n++);
       /* Find tag name
        *
        * Ought to handle the <"tag"> and <'tag'> cases too.
        */
-      for (j=n; j<len && s[j]!='>' && !ISSPACE(s[j]); j++);
+      for (j=n; j<len && s[j]!='>' && !ISSPACE(((unsigned char *)s)[j]); j++);
 
       if (j==len) break; /* end of string */
 
@@ -880,7 +881,7 @@ void do_html_parse_lines(struct pike_string *ss,
     } else if (s[i]=='<') {
       /* skip all spaces */
       i++;
-      for (j=i; j<len && s[j]!='>' && !isspace(s[j]); j++);
+      for (j=i; j<len && s[j]!='>' && !isspace(((unsigned char *)s)[j]); j++);
 
       if (j==len) break; /* end of string */
 
