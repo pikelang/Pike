@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.19 1998/07/15 23:26:24 hubbe Exp $
+ * $Id: fdlib.h,v 1.20 1998/07/16 19:12:12 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -82,8 +82,6 @@ SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
-int fd_getsockname(FD fd, struct sockaddr *a, size_t *b);
-int fd_getpeername(FD fd, struct sockaddr *a, size_t *b);
 int fd_close(FD fd);
 long fd_write(FD fd, void *buf, long len);
 long fd_read(FD fd, void *to, long len);

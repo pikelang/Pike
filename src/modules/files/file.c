@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.112 1998/07/15 23:26:58 hubbe Exp $");
+RCSID("$Id: file.c,v 1.113 1998/07/16 19:12:33 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1306,7 +1306,10 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
   int retries=0;
-  size_t len;
+  /* Solaris thinks this variable should a size_t, everybody else thinks
+   * it should be an int.
+   */
+   int len;
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -1853,7 +1856,10 @@ static void file_query_address(INT32 args)
 {
   struct sockaddr_in addr;
   int i;
-  size_t len;
+  /* Solaris thinks this variable should a size_t, everybody else thinks
+   * it should be an int.
+   */
+  int len;
   char buffer[496],*q;
 
   if(FD <0)
