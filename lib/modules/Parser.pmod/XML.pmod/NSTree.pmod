@@ -15,7 +15,7 @@ class NSNode {
   static string default_ns;
   static mapping(string:string) nss;
   static string element_ns;
-  static mapping(string:mapping(string:string)) ns_attrs;
+  static mapping(string:mapping(string:string)) ns_attrs = ([]);
 
   //! Returns the namespace in which the current element is defined in.
   string get_ns() { return element_ns; }
@@ -26,7 +26,7 @@ class NSNode {
   //! Returns a mapping with all the namespaces defined in the current
   //! scope, except the default namespace.
   //! @note
-  //!   The return mapping is the same as the one in the node, so
+  //!   The returned mapping is the same as the one in the node, so
   //!   destructive changes will affect the node.
   mapping(string:string) get_defined_nss() {
     return nss;
@@ -39,12 +39,30 @@ class NSNode {
   //! @decl mapping(string:mapping(string:string)) get_ns_attributes()
   //! Returns all the attributes in all namespaces that is associated with
   //! this node.
+  //! @note
+  //!   The returned mapping is the same as the one in the node, so
+  //!   destructive changes will affect the node.
 
   mapping(string:string)|mapping(string:mapping(string:string))
     get_ns_attributes(void|string namespace) {
     if(namespace)
       return ns_attrs[namespace];
     return ns_attrs;
+  }
+
+  //! Adds a new namespace to this node. The preferred symbol to
+  //! use to identify the namespace can be provided in the @[symbol]
+  //! argument. If @[chain] is set, no attempts to overwrite an
+  //! already defined namespace with the same identifier will be made.
+  void add_namespace(string ns, void|string symbol, void|int(0..1) chain) {
+    if(!symbol)
+      symbol = make_prefix(ns);
+    if(chain && nss[symbol])
+      return;
+    if(nss[symbol]==ns)
+      return;
+    nss[symbol] = ns;
+    get_children()->add_namespace(ns, symbol, 1);
   }
 
   //! Returns the difference between this nodes and its parents namespaces.
@@ -56,6 +74,12 @@ class NSNode {
 	res[sym]=nss[sym];
   }
 
+  static string make_prefix(string ns) {
+    // FIXME: Cache?
+    return Crypto.string_to_hex(Crypto.md5()->
+				update(ns)->digest())[..10];
+  }
+
   //! Returns the element name as it occurs in xml files. E.g.
   //! "zonk:name" for the element "name" defined in a namespace
   //! denoted with "zonk". It will look up a symbol for the namespace
@@ -65,8 +89,8 @@ class NSNode {
     if(element_ns==default_ns) return mTagName;
     string prefix = search(nss, element_ns);
     if(!prefix)
-      prefix = Crypto.string_to_hex(Crypto.md5()->update(element_ns)->digest())[..10];
-    return search(nss, element_ns) + ":" + mTagName;
+      prefix = make_prefix(element_ns);
+    return prefix + ":" + mTagName;
   }
 
   // Override old stuff
@@ -87,27 +111,34 @@ class NSNode {
       return;
     }
 
+    // First handle all xmlns attributes.
     foreach(attr; string name; string value) {
 
       // Update namespace scope. Must be done before analyzing the namespace
       // of the current element.
-      if(name=="xmlns") {
+      string lcname = lower_case(name);
+      if(lcname=="xmlns") {
 	default_ns = value;
 	m_delete(attr, name);
       }
-      else if(has_prefix(name, "xmlns:")) {
+      else if(has_prefix(lcname, "xmlns:")) {
 	nss = nss + ([ name[6..]:value ]); // No destructive changes.
 	continue;
       }
+    }
 
-      // Move namespaved attributes to a mapping of their own.
+    // Then take care of the rest of the attributes.
+    foreach(attr; string name; string value) {
+
+      if(has_prefix(lower_case(name), "xmlns"))
+	continue;
+
+      // Move namespaced attributes to a mapping of their own.
       string ns, m;
       if( sscanf(name, "%s:%s", ns, m)==2 ) {
 	if(!nss[ns])
 	  error("Unknown namespace %s.\n", ns);
 	ns = nss[ns];
-	if(!ns_attrs)
-	  ns_attrs = ([]);
 	if(!ns_attrs[ns])
 	  ns_attrs[ns] = ([]);
 	ns_attrs[ns][m] = value;
@@ -167,31 +198,37 @@ class NSNode {
 
   string render_xml()
   {
-    string  data = "";
+    String.Buffer data = String.Buffer();
 	
     walk_preorder_2(
 		    lambda(Node n) {
 		      switch(n->get_node_type()) {
 
 		      case XML_TEXT:
-                        data += text_quote(n->get_text());
+                        data->add( text_quote(n->get_text()) );
 			break;
 
 		      case XML_ELEMENT:
 			if (!strlen(n->get_tag_name()))
 			  break;
 
-			data += "<" + n->get_xml_name();
+			data->add("<", n->get_xml_name());
 
 			if (mapping attr = n->get_attributes()) { // FIXME
                           foreach(indices(attr), string a)
-                            data += " " + a + "='"
-                              + attribute_quote(attr[a]) + "'";
+                            data->add(" ", a, "='", attribute_quote(attr[a]), "'");
 			}
+			/*
+			mapping attr = n->get_ns_attrubutes();
+			if(sizeof(attr)) {
+			  foreach(attr; string ns; mapping attr) {
+			  }
+			}
+			*/
 			if (n->count_children())
-			  data += ">";
+			  data->add(">");
 			else
-			  data += "/>";
+			  data->add("/>");
 			break;
 		      }
 		    },
@@ -200,10 +237,10 @@ class NSNode {
 		      if (n->get_node_type() == XML_ELEMENT)
 			if (n->count_children())
 			  if (strlen(n->get_tag_name()))
-			    data += "</" + n->get_xml_name() + ">";
+			    data->add("</", n->get_xml_name(), ">");
 		    });
 	
-    return (data);
+    return (string)data;
   }
 
   string _sprintf(int t) {
