@@ -104,6 +104,7 @@ static void order_mapping(struct mapping *m)
 {
   INT32 *order;
   order = get_set_order(m->ind);
+  if(!order) return;
   m->ind = order_array(m->ind, order);
   m->val = order_array(m->val, order);
   free((char *)order);
