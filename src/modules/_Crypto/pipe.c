@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.19 2000/12/01 08:10:29 hubbe Exp $
+ * $Id: pipe.c,v 1.20 2001/02/13 14:42:53 grubba Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -76,7 +76,20 @@ void exit_pike_crypto_pipe(struct object *o)
  * efuns and the like
  */
 
-/* void create(program|object|array(program|mixed)) */
+/*! @module Crypto
+ */
+
+/*! @class pipe
+ *!
+ *! Chains serveral block-cryptos.
+ *!
+ *! This can be used to implement eg DES3.
+ */
+
+/*! @decl void create(program|object|array(program|mixed) ciphers)
+ *!
+ *! Initialize a block-crypto pipe.
+ */
 static void f_create(INT32 args)
 {
   int i;
@@ -154,7 +167,12 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 }
 
-/* string name(void) */
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"PIPE("@} followed by a
+ *! comma-separated list of the names of contained ciphers, and
+ *! terminated with the string @tt{")"@}.
+ */
 static void f_name(INT32 args)
 {
   int i;
@@ -174,7 +192,10 @@ static void f_name(INT32 args)
   f_add(2*THIS->num_objs + 1);
 }
 
-/* int query_block_size(void) */
+/*! @decl int query_block_size()
+ *!
+ *! Returns the joined block size.
+ */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
@@ -182,7 +203,10 @@ static void f_query_block_size(INT32 args)
   push_int(THIS->block_size);
 }
 
-/* array(int|array) query_key_length(void) */
+/*! @decl array(int|array) query_key_length()
+ *!
+ *! Returns an array of the contained ciphers key lengths.
+ */
 static void f_query_key_length(INT32 args)
 {
   int i;
@@ -195,7 +219,10 @@ static void f_query_key_length(INT32 args)
   f_aggregate(THIS->num_objs);
 }
 
-/* void set_encrypt_key(array|string ..) */
+/*! @decl void set_encrypt_key(array|string ... keys)
+ *!
+ *! Sets the encryption keys for the contained ciphers.
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   int i;
@@ -224,7 +251,10 @@ static void f_set_encrypt_key(INT32 args)
   push_object(this_object());
 }
 
-/* void set_decrypt_key(array|string ..) */
+/*! @decl void set_decrypt_key(array|string ... keys)
+ *!
+ *! Sets the decryption keys for the contained ciphers.
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   int i;
@@ -253,7 +283,11 @@ static void f_set_decrypt_key(INT32 args)
   pop_n_elems(args);
 }
 
-/* string crypt_block(string) */
+/*! @decl string crypt_block(string data)
+ *!
+ *! De/encrypts the string @[data] with the contained ciphers
+ *! in sequence.
+ */
 static void f_crypt_block(INT32 args)
 {
   int i;
@@ -281,6 +315,12 @@ static void f_crypt_block(INT32 args)
     }
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
@@ -310,20 +350,21 @@ void pike_pipe_init(void)
   ADD_STORAGE(struct pike_crypto_pipe);
 
   /* function(program|object|array(program|mixed) ...:void) */
-  ADD_FUNCTION("create", f_create,tFuncV(tNone,tOr3(tPrg,tObj,tArr(tOr(tPrg,tMix))),tVoid), 0);
+  ADD_FUNCTION("create", f_create,
+	       tFuncV(tNone, tOr3(tPrg,tObj,tArr(tOr(tPrg,tMix))), tVoid), 0);
 
   /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
 
   set_init_callback(init_pike_crypto_pipe);
   set_exit_callback(exit_pike_crypto_pipe);
