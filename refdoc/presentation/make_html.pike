@@ -785,7 +785,7 @@ string render_class_path(Node n,int|void class_only)
 
 string parse_not_doc(Node n) {
   string ret = "";
-  int method, argument, variable, const;
+  int method, argument, variable, const, typedf;
 
   foreach(n->get_children(), Node c) {
 
@@ -863,6 +863,15 @@ string parse_not_doc(Node n) {
       break;
 
     case "typedef":
+      if(typedf++) ret += "<br />\n";
+      ret += "<tt>typedef ";
+      cc = c->get_first_element("modifiers");
+      if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+      ret += parse_type(get_first_element(c->get_first_element("type")), "typedef") + " " +
+	render_class_path(c) + "<font color='#F000F0'>" + c->get_attributes()->name +
+	"</font></tt>";
+      break;
+
     case "inherit":
       ret += "<font color='red'>Missing content (" + c->render_xml() + ")</font>";
       // Not implemented yet.
