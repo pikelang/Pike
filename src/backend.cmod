@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.99 2004/04/02 14:22:34 grubba Exp $
+|| $Id: backend.cmod,v 1.100 2004/04/02 19:06:19 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.99 2004/04/02 14:22:34 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.100 2004/04/02 19:06:19 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -615,6 +615,24 @@ static void copy_selectors(struct active_selectors *to,
 }
 
 #endif	/* HAVE_POLL */
+
+#ifdef USE_POLL_DEVICE
+#  define DO_IF_USE_POLL_DEVICE_ELSE(POLLDEV_CODE, NO_POLLDEV_CODE) POLLDEV_CODE
+#else
+#  define DO_IF_USE_POLL_DEVICE_ELSE(POLLDEV_CODE, NO_POLLDEV_CODE) NO_POLLDEV_CODE
+#endif
+
+#ifdef RBBAND_IS_SPECIAL
+#  define MY_FD_CLR_RDBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLRDBAND)
+#else
+#  define MY_FD_CLR_RDBAND(SET, FD)
+#endif
+
+#ifdef WRBAND_IS_SPECIAL
+#  define MY_FD_CLR_WRBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLWRBAND)
+#else
+#  define MY_FD_CLR_WRBAND(SET, FD)
+#endif
 
 /*! @module Pike
  */
@@ -1372,7 +1390,7 @@ PIKECLASS Backend
 #define ASSURE_FDS_SIZE(ME,X)  do{ 		\
   struct Backend_struct *me_=(ME);		\
   int fd_=(X);					\
-  if(fd_ >= me_->fds_size)  grow_fds(ME,X);	\
+  if(fd_ >= me_->fds_size)  grow_fds(ME,fd_);	\
 }while(0)
   
   void grow_fds(struct Backend_struct *me,
@@ -1476,14 +1494,14 @@ PIKECLASS Backend
   static void unregister_backend(struct Backend_struct *me)
   {
     int i = num_backends;
-    /* Search backwards since new backends are more likely to be detructed
+    /* Search backwards since new backends are more likely to be destructed
      * than old backends.
      */
     while (i--) {
       if (backends[i] == me) {
 	backends[i] = backends[num_backends-1];
 	backends[num_backends-1] = NULL;
-	return;	/* A backend is only supposed to be registred once. */
+	return;	/* A backend is only supposed to be registered once. */
       }
     }
   }
@@ -1498,358 +1516,187 @@ PIKECLASS Backend
   }
 #endif /* USE_POLL_DEVICE */
 
-  struct callback *backend_debug_add_backend_callback(struct Backend_struct *me,
-						      callback_func call,
-						      void *arg,
-						      callback_func free_func)
+  PMOD_EXPORT struct callback *backend_debug_add_backend_callback(
+    struct Backend_struct *me, callback_func call, void *arg,
+    callback_func free_func)
     {
       return add_to_callback(& me->backend_callbacks, call, arg, free_func);
     }
-  
 
-  void backend_set_read_callback(struct Backend_struct *me,
-				 int fd,
-				 file_callback cb,
-				 void *data)
-    {
-      int was_set;
-      IF_PD(fprintf(stderr, "BACKEND[%d]: set_read_callback(%d, %p, %p)\n",
-		    me->id, fd, cb, data));
+#define BACKEND_SET_CALLBACK(WHAT, SET_FD_FLAGS_CODE, CLEAR_FD_FLAGS_CODE) \
+  PMOD_EXPORT void PIKE_CONCAT3 (backend_set_, WHAT, _callback) (	\
+    struct Backend_struct *me, int fd,					\
+    file_callback cb, void *data)					\
+  {									\
+    int was_set;							\
+    IF_PD(fprintf(stderr, "BACKEND[%d]: set_" #WHAT "_callback(%d, %p, %p)\n", \
+		  me->id, fd, cb, data));				\
+									\
+    if(!me || (!cb && me->fds_size <= fd)) return;			\
+									\
+    debug_malloc_touch(me->fds);					\
+    ASSURE_FDS_SIZE(me, fd);						\
+    debug_malloc_touch(me->fds);					\
+    was_set = FDS_ISSET(fd, WHAT.callback);				\
+    DO_IF_DEBUG (							\
+      if(fd<0)								\
+	Pike_fatal("File descriptor out of range.\n %d",fd);		\
+    );									\
+									\
+    me->fds[fd].WHAT.callback=cb;					\
+    me->fds[fd].WHAT.data=data;						\
+									\
+    DO_IF_USE_POLL_DEVICE_ELSE (					\
+      if (!cb != !was_set) {						\
+	UPDATE_BLACK_BOX(me, fd);					\
+	if (!was_set) {							\
+	  backend_wake_up_backend(me);					\
+	}								\
+      },								\
+									\
+      if(cb)								\
+      {									\
+	DO_IF_DEBUG (							\
+	  if (get_backend_for_fd (fd) != me)				\
+	    Pike_fatal ("This backend doesn't own this fd.\n");		\
+	);								\
+	if(!was_set)							\
+	{								\
+	  {SET_FD_FLAGS_CODE;}						\
+	  backend_wake_up_backend(me);					\
+	}								\
+      }else{								\
+	if (was_set) {CLEAR_FD_FLAGS_CODE;}				\
+      }									\
+    );									\
+  }
 
-      if(!me || (!cb && me->fds_size <= fd)) return;
-
-      debug_malloc_touch(me->fds);
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      was_set = FDS_ISSET(fd, read.callback);
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      me->fds[fd].read.callback=cb;
-      me->fds[fd].read.data=data;
-
-#ifdef USE_POLL_DEVICE
-      if (!cb != !was_set) {
-	UPDATE_BLACK_BOX(me, fd);
-	if (!was_set) {
-	  backend_wake_up_backend(me);
-	}
-      }
-#else /* !USE_POLL_DEVICE */      
-      if(cb)
-      {
-#ifdef PIKE_DEBUG
-	if (get_backend_for_fd (fd) != me)
-	  Pike_fatal ("This backend doesn't own this fd.\n");
-#endif
-	if(!was_set)
-	{
-	  MY_FD_SET(&me->set, fd, MY_POLLIN);
-#ifndef HAVE_POLL
-		    /* Got to enable the exception set to get errors
-		     * (at least according to POSIX). */
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
-#endif
-	  backend_wake_up_backend(me);
-	}
-      }else{
-	if (was_set) {
-	  MY_FD_CLR(&me->set, fd, MY_POLLIN);
-#if defined(HAVE_POLL)
-	  if (me->fds[fd].read_oob.callback)
-          {
-            MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
-	  }
-#else
-	  if (!me->fds[fd].read_oob.callback && !me->fds[fd].write.callback)
-	    /* Exceptions might cause calls to read, read_oob and write. */
-	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
-#endif
-        }
-      }
-#endif /* USE_POLL_DEVICE */
-    }
-  
-  void backend_set_write_callback(struct Backend_struct *me,
-				  int fd,
-				  file_callback cb,
-				  void *data)
-    {
-      int was_set;
-      IF_PD(fprintf(stderr, "BACKEND[%d]: set_write_callback(%d, %p, %p)\n",
-		    me->id, fd, cb, data));
-      
-      if(!me || (!cb && me->fds_size <= fd)) return;
-
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      was_set = FDS_ISSET(fd, write.callback);
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      
-      me->fds[fd].write.callback=cb;
-      me->fds[fd].write.data=data;
-      
-#ifdef USE_POLL_DEVICE
-      if (!cb != !was_set) {
-	UPDATE_BLACK_BOX(me, fd);
-	if (!was_set) {
-	  backend_wake_up_backend(me);
-	}
-      }
-#else /* !USE_POLL_DEVICE */      
-      if(cb)
-      {
-#ifdef PIKE_DEBUG
-	if (get_backend_for_fd (fd) != me)
-	  Pike_fatal ("This backend doesn't own this fd.\n");
-#endif
-	if(!was_set)
-	{
-	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
-#ifndef HAVE_POLL
-		    /* Got to enable the exception set to get errors
-		     * (at least according to POSIX). */
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
-#endif
-	  backend_wake_up_backend(me);
-	}
-      } else {
-	if (was_set
-	    && !me->fds[fd].write_oob.callback
-	   ) {
-	  MY_FD_CLR(&me->set, fd, MY_POLLOUT);
-#ifndef HAVE_POLL
-	  if (!me->fds[fd].read.callback && !me->fds[fd].read_oob.callback)
-	    /* Exceptions might cause calls to read, read_oob and write. */
-	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
-#endif
-	}
-      }
-#endif /* USE_POLL_DEVICE */
-    }
-
-
-  void backend_set_read_oob_callback(struct Backend_struct *me,
-				     int fd,
-				     file_callback cb,
-				     void *data)
-    {
-      int was_set;
-      IF_PD(fprintf(stderr, "BACKEND[%d]: set_read_oob_callback(%d, %p, %p)\n",
-		    me->id, fd, cb, data));
-      
-      if(!me || (!cb && me->fds_size <= fd)) return;
-
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      was_set = FDS_ISSET(fd, read_oob.callback);
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      me->fds[fd].read_oob.callback=cb;
-      me->fds[fd].read_oob.data=data;
-      
-#ifdef USE_POLL_DEVICE
-      if (!cb != !was_set) {
-	UPDATE_BLACK_BOX(me, fd);
-	if (!was_set) {
-	  backend_wake_up_backend(me);
-	}
-      }
-#else /* !USE_POLL_DEVICE */      
-      if(cb)
-      {
-#ifdef PIKE_DEBUG
-	if (get_backend_for_fd (fd) != me)
-	  Pike_fatal ("This backend doesn't own this fd.\n");
-#endif
-	MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
-	backend_wake_up_backend(me);
-      }else{
-	if(was_set) {
-	  if (!me->fds[fd].read.callback) {
 #ifdef HAVE_POLL
-	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
-#else
-	    if (!me->fds[fd].write.callback)
-	      /* Exceptions might cause calls to read, read_oob and write. */
-	      MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
-#endif
-	  } else {
-#ifdef RDBAND_IS_SPECIAL
-	    MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
-#endif
-	  }
-	}
-      }
-#endif /* USE_POLL_DEVICE */
-    }
-  
 
-  void backend_set_write_oob_callback(struct Backend_struct *me,
-				      int fd,
-				      file_callback cb,
-				      void *data)
-    {
-      int was_set;
-      IF_PD(fprintf(stderr, "BACKEND[%d]: set_write_oob_callback(%d, %p, %p)\n",
-		    me->id, fd, cb, data));
-      
-      if(!me || (!cb && me->fds_size <= fd)) return;
-
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      was_set = FDS_ISSET(fd, write_oob.callback);
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      
-      me->fds[fd].write_oob.callback=cb;
-      me->fds[fd].write_oob.data=data;
-      
-#ifdef USE_POLL_DEVICE
-      if (!cb != !was_set) {
-	UPDATE_BLACK_BOX(me, fd);
-	if (!was_set) {
-	  backend_wake_up_backend(me);
-	}
-      }
-#else /* !USE_POLL_DEVICE */      
-      if(cb)
+  BACKEND_SET_CALLBACK (read, {
+      MY_FD_SET(&me->set, fd, MY_POLLIN);
+    }, {
+      MY_FD_CLR(&me->set, fd, MY_POLLIN);
+      if (me->fds[fd].read_oob.callback)
       {
-#ifdef PIKE_DEBUG
-	if (get_backend_for_fd (fd) != me)
-	  Pike_fatal ("This backend doesn't own this fd.\n");
-#endif
-	MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
-	backend_wake_up_backend(me);
-      }else{
-	if(was_set) {
-	  if (!me->fds[fd].write.callback) {
-	    MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
-	  } else {
-#ifdef WRBAND_IS_SPECIAL
-	    MY_FD_CLR(&me->set, fd, MY_POLLWRBAND);
-#endif
-	  }
-	}
+	MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
       }
-#endif /* USE_POLL_DEVICE */
-    }
-  
-  file_callback backend_query_read_callback(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_callback(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].read.callback;
-    }
-  
-  file_callback backend_query_write_callback(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_callback(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].write.callback;
-    }
+    })
 
-  file_callback backend_query_read_oob_callback(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_oob_callback(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].read_oob.callback;
-    }
-  
-  file_callback backend_query_write_oob_callback(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_oob_callback(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].write_oob.callback;
-    }
-  
-  void *backend_query_read_callback_data(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_callback_data(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].read.data;
-    }
+  BACKEND_SET_CALLBACK (read_oob, {
+      MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+    }, {
+      if (!me->fds[fd].read.callback) {
+	MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+      } else {
+	MY_FD_CLR_RDBAND(&me->set, fd);
+      }
+    })
 
-  /* FIXME */
-  void *backend_query_write_callback_data(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_callback_data(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].write.data;
-    }
+  BACKEND_SET_CALLBACK (write, {
+      MY_FD_SET(&me->set, fd, MY_POLLOUT);
+    }, {
+      if (!me->fds[fd].write_oob.callback) {
+	MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+      }
+    })
 
-  /* FIXME */
-  void *backend_query_read_oob_callback_data(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_oob_callback_data(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd );
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].read_oob.data;
-    }
+  BACKEND_SET_CALLBACK (write_oob, {
+      MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
+    }, {
+      if (!me->fds[fd].write.callback) {
+	MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
+      } else {
+	MY_FD_CLR_WRBAND(&me->set, fd);
+      }
+    })
 
-  /* FIXME */
-  void *backend_query_write_oob_callback_data(struct Backend_struct *me,int fd)
-    {
-#ifdef PIKE_DEBUG
-      if(fd<0)
-	Pike_fatal("File descriptor out of range.\n %d",fd);
-#endif
-      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_oob_callback_data(%d)\n", me->id, fd));
-      if(!me || (me->fds_size <= fd)) return 0;
-      ASSURE_FDS_SIZE(me, fd);
-      debug_malloc_touch(me->fds);
-      return me->fds[fd].write_oob.data;
-    }
-  
+#else  /* !HAVE_POLL */
+
+  BACKEND_SET_CALLBACK (read, {
+      MY_FD_SET(&me->set, fd, MY_POLLIN);
+      /* Got to enable the exception set to get errors (at least
+       * according to POSIX). */
+      MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+    }, {
+      MY_FD_CLR(&me->set, fd, MY_POLLIN);
+      if (!me->fds[fd].read_oob.callback && !me->fds[fd].write.callback)
+	/* Exceptions might cause calls to read, read_oob and write. */
+	MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+    })
+
+  BACKEND_SET_CALLBACK (read_oob, {
+      MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+    }, {
+      if (!me->fds[fd].read.callback) {
+	if (!me->fds[fd].write.callback)
+	  /* Exceptions might cause calls to read, read_oob and write. */
+	  MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+      } else {
+	MY_FD_CLR_RDBAND(&me->set, fd);
+      }
+    })
+
+  BACKEND_SET_CALLBACK (write, {
+      MY_FD_SET(&me->set, fd, MY_POLLOUT);
+      /* Got to enable the exception set to get errors (at least
+       * according to POSIX). */
+      MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+    }, {
+      if (!me->fds[fd].write_oob.callback) {
+	MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+	if (!me->fds[fd].read.callback && !me->fds[fd].read_oob.callback)
+	  /* Exceptions might cause calls to read, read_oob and write. */
+	  MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+      }
+    })
+
+  BACKEND_SET_CALLBACK (write_oob, {
+      MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
+    }, {
+      if (!me->fds[fd].write.callback) {
+	MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
+      } else {
+	MY_FD_CLR_WRBAND(&me->set, fd);
+      }
+    })
+
+#endif	/* !HAVE_POLL */
+
+#define BACKEND_QUERY_CALLBACKS(WHAT)					\
+  PMOD_EXPORT file_callback PIKE_CONCAT3(backend_query_, WHAT, _callback) ( \
+    struct Backend_struct *me,int fd)					\
+  {									\
+    DO_IF_DEBUG (							\
+      if(fd<0)								\
+	Pike_fatal("File descriptor out of range.\n %d",fd);		\
+    );									\
+    IF_PD(fprintf(stderr, "BACKEND[%d]: query_" #WHAT "_callback(%d)\n", \
+		  me->id, fd));						\
+    if(!me || (me->fds_size <= fd)) return 0;				\
+    debug_malloc_touch(me->fds);					\
+    return me->fds[fd].WHAT.callback;					\
+  }									\
+									\
+  PMOD_EXPORT void *PIKE_CONCAT3(backend_query_, WHAT, _callback_data) ( \
+    struct Backend_struct *me,int fd)					\
+  {									\
+    DO_IF_DEBUG (							\
+      if(fd<0)								\
+	Pike_fatal("File descriptor out of range.\n %d",fd);		\
+    );									\
+    IF_PD(fprintf(stderr, "BACKEND[%d]: query_" #WHAT "_callback_data(%d)\n", \
+		  me->id, fd));						\
+    if(!me || (me->fds_size <= fd)) return 0;				\
+    debug_malloc_touch(me->fds);					\
+    return me->fds[fd].WHAT.data;					\
+  }
+
+  BACKEND_QUERY_CALLBACKS (read)
+  BACKEND_QUERY_CALLBACKS (write)
+  BACKEND_QUERY_CALLBACKS (read_oob)
+  BACKEND_QUERY_CALLBACKS (write_oob)
+
 #ifdef PIKE_DEBUG
 
   static void backend_do_debug(struct Backend_struct *me)
@@ -2256,9 +2103,7 @@ PIKECLASS Backend
 	      if (!me->fds[fd].read.callback) {
 		MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
 	      } else {
-#ifdef RDBAND_IS_SPECIAL
-		MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
-#endif
+		MY_FD_CLR_RDBAND(&me->set, fd);
 	      }
 #endif /* !USE_POLL_DEVICE */
 	    }
@@ -2300,9 +2145,7 @@ PIKECLASS Backend
 	      if (!me->fds[fd].write.callback) {
 		MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
 	      } else {
-#ifdef WRBAND_IS_SPECIAL
-		MY_FD_CLR(&me->set, fd, MY_POLLWRBAND);
-#endif
+		MY_FD_CLR_WRBAND(&me->set, fd);
 	      }
 #endif /* !USE_POLL_DEVICE */
 	    }
