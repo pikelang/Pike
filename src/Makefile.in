@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.304 2002/04/30 19:38:49 mast Exp $
+# $Id: Makefile.in,v 1.305 2002/04/30 20:02:02 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -336,18 +336,24 @@ force_dump_modules:
 # First try compiling with optimization and if that doesn't work, without.
 # GCC dumps core on some files @ OSF1
 # This kluge should work around that...
-# FIXME: Make this a configure option
 .c.o:
 	@echo "Compiling $<" ;\
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
-	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	  NO_ULIMIT=yes; \
-	  export NO_ULIMIT; \
-	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
-	    exit $$?; \
+	  status=$$?; \
+	  if test x"@noopt_retry@" = xyes ; then \
+	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
+	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	      status=$$?; \
+	      echo "Compilation command was:" >&2;\
+	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      exit $$status; \
+	    fi; \
+	  else \
+	    echo "Compilation command was:" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	    exit $$status; \
 	  fi; \
 	fi
 

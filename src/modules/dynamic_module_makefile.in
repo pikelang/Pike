@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.91 2002/04/11 22:13:33 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.92 2002/04/30 20:02:03 mast Exp $
 #
 
 
@@ -57,16 +57,25 @@ dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment module.s
 
 # GCC dumps core on some files @ OSF1
 # This kluge should work around that...
-# FIXME: Make this a configure option
 .c.o:
 	@echo "Compiling $<" ;\
 	rm -f $@.fail >/dev/null 2>&1; \
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
-	else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "$(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
-	  echo "$(CC) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  if test x"@noopt_retry@" = xyes ; then \
+	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
+	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	      status=$$?; \
+	      echo "Compilation command was:" >&2;\
+	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      exit $$status; \
+	    fi; \
+	  else \
+	    echo "Compilation command was:" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	    exit $$status; \
+	  fi; \
 	fi
 
 linker_options: Makefile

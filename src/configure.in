@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.583 2002/04/27 21:29:08 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.584 2002/04/30 20:02:02 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -96,6 +96,10 @@ else
   pike_cv_prog_CC_save="$CC"
 
 fi
+
+AC_ARG_ENABLE(noopt-retry, MY_DESCR([--disable-noopty-retry],
+    [don't retry compilation without optimizations if it fails]),
+	      [], [noopt_retry=yes])
 
 # Do the below even when --disable-binary is used, since we need a
 # real $CPP, and AC_PROG_CPP wants AC_PROG_CC to be called earlier.
@@ -5720,6 +5724,7 @@ echo
 export LDFLAGS CFLAGS CPPFLAGS LIBS
 export prefix exec_prefix OTHERFLAGS
 export TMP_BINDIR DEFINES INSTALL
+export noopt_retry
 
 PIKE_SRC_DIR=$srcdir
 export PIKE_SRC_DIR
@@ -5736,6 +5741,7 @@ AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
+AC_SUBST(noopt_retry)
 
 pike_cv_prog_CC="${CC}"
 
