@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+// $Id: Query.pike,v 1.39 2002/01/17 10:25:31 grubba Exp $
+
 //!	Open and execute an HTTP query.
 
 /****** variables **************************************************/
@@ -60,7 +62,7 @@ static void ponder_answer()
       if (i<0) i=0;
       j=search(buf, "\r\n\r\n", i); if(j==-1) j=10000000;
       i=search(buf, "\n\n", i);     if(i==-1) i=10000000;
-      if ((i=min(i,j))!=10000000)  break;
+      if ((i=min(i,j))!=10000000) break;
 
       s=con->read(8192,1);
       if (!s || s=="") { i=strlen(buf); break; }
