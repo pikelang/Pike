@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.129 2003/08/05 12:58:42 mast Exp $
+|| $Id: opcodes.c,v 1.130 2003/08/26 17:36:33 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.129 2003/08/05 12:58:42 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.130 2003/08/26 17:36:33 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -700,6 +700,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	      pop_stack();
 	    } while ((nodepos = multiset_next (tmp, nodepos)) >= 0);
 	    UNSET_ONERROR (uwp);
+	    sub_msnode_ref (tmp);
 	  }
 
 #else  /* PIKE_NEW_MULTISETS */
