@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.11 2003/01/27 23:12:09 grendel Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.12 2003/02/18 13:47:33 finnman Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -824,6 +824,7 @@ PIKECLASS File
       Pike_error("Too many arguments in call to Bz2.File()->close(), there should be none");
     }
     THIS->mode = NO_FILE_MODE;
+    THIS->small = 0;
 
     if((THIS->bzerror)==BZ_OK){
       RETURN(1);
@@ -843,6 +844,7 @@ PIKECLASS File
     if(THIS->file != NULL){
       f_File_close(0);
     }
+    THIS->small = 0;
     THIS->bzerror = 0;
     THIS->mode = NO_FILE_MODE;
     THIS->file = NULL;
@@ -1124,6 +1126,7 @@ PIKECLASS File
 
   INIT
     {
+      THIS->small = 0;
       THIS->file = NULL;
       THIS->bzerror = 0;
       THIS->mode = NO_FILE_MODE;
