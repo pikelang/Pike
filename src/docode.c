@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.54 1999/11/11 13:55:58 grubba Exp $");
+RCSID("$Id: docode.c,v 1.55 1999/11/18 16:40:52 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -682,6 +682,12 @@ static int do_docode2(node *n,int flags)
     current_continue=continue_save;
     return 0;
   }
+
+  case F_POP_VALUE:
+    {
+      DO_CODE_BLOCK(CAR(n));
+      return 0;
+    }
 
   case F_CAST:
     if(n->type==void_type_string)
