@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.595 2005/04/02 12:24:43 mast Exp $
+|| $Id: builtin_functions.c,v 1.596 2005/04/02 15:06:02 mast Exp $
 */
 
 #include "global.h"
@@ -2106,7 +2106,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
   switch (shift) {
     case 0: {
-      p_wchar0 *out_str = (p_wchar0 *) out->str;
+      p_wchar0 *out_str = STR0 (out);
       for(j=i=0; i < in->len;) {
 	unsigned int c = STR0(in)[i++];
 	/* NOTE: No tests here since we've already tested the string above. */
@@ -2122,7 +2122,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     }
 
     case 1: {
-      p_wchar1 *out_str = (p_wchar1 *) out->str;
+      p_wchar1 *out_str = STR1 (out);
       for(j=i=0; i < in->len;) {
 	unsigned int c = STR0(in)[i++];
 	/* NOTE: No tests here since we've already tested the string above. */
@@ -2146,7 +2146,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     }
 
     case 2: {
-      p_wchar2 *out_str = (p_wchar2 *) out->str;
+      p_wchar2 *out_str = STR2 (out);
       for(j=i=0; i < in->len;) {
 	unsigned int c = STR0(in)[i++];
 	/* NOTE: No tests here since we've already tested the string above. */
@@ -2195,6 +2195,9 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   }
 #endif /* PIKE_DEBUG */
   out = low_end_shared_string(out);
+#ifdef PIKE_DEBUG
+  check_string (out);
+#endif
   pop_n_elems(args);
   push_string(out);
 }
