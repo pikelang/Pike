@@ -174,8 +174,8 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   {
-    unsigned int *b;
-    b=(unsigned int *)a;
+    unsigned INT32 *b;
+    b=(unsigned INT32 *)a;
 
     for(mlen>>=3;--mlen>=0;)
     {
