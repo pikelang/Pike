@@ -210,3 +210,9 @@ void create(object p, int portnr, object server, int|void debug)
   if (debug_level)
     werror("IMAP: Bound to port %d\n", portnr);
 }
+
+void close()
+{
+  if (port)
+    destruct(port);
+}
