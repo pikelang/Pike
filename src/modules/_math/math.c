@@ -27,7 +27,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.26 1999/11/16 17:07:30 grubba Exp $");
+RCSID("$Id: math.c,v 1.27 1999/12/11 19:30:41 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -333,15 +333,32 @@ void pike_module_init(void)
 /* function(float:float) */
   ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
 
+#define OLD_CMP_TYPE \
+  tOr5(tIfnot(tFuncV(tNone,tNot(tObj),tMix),tFuncV(tNone,tMix,tMix)), \
+       tFuncV(tNone,tInt,tInt), \
+       tFuncV(tNone,tFloat,tFloat), \
+       tFuncV(tNone,tString,tString), \
+       tIfnot(tFuncV(tNone,tInt,tMix), \
+	      tIfnot(tFuncV(tNone,tFloat,tMix), \
+		     tFuncV(tNone,tOr(tInt,tFloat),tOr(tInt|tFloat)))))
+
 #define CMP_TYPE \
-  "!function(!object...:mixed)&function(mixed...:mixed)|" \
-  "function(int...:int)|" \
-  "function(float...:float)|" \
-  "function(string...:string)|"  \
-  "!function(int...:mixed)&!function(float...:mixed)&function(int|float...:int|float)"
-    
-  add_efun("max",f_max,CMP_TYPE,0);
-  add_efun("min",f_min,CMP_TYPE,0);
+  tOr3(tFuncV(tNone,tString,tString), \
+       tFuncV(tNone,tSetvar(0,tOr(tInt,tFloat)),tVar(0)), \
+       tIfnot(tFuncV(tNone,tString,tMix), \
+              tIfnot(tFuncV(tNone,tOr(tInt,tFloat),tMix), \
+	             tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix), \
+		            tFuncV(tNone,tMix,tMix)))))
+    /*
+     * "!function(!object...:mixed)&function(mixed...:mixed)|" \
+     * "function(int|zero...:int)|" \
+     * "function(float...:float)|" \
+     * "function(string...:string)|"  \
+     * "!function(int...:mixed)&!function(float...:mixed)&function(int|float...:int|float)"
+     */
+
+  ADD_EFUN("max",f_max,CMP_TYPE,0);
+  ADD_EFUN("min",f_min,CMP_TYPE,0);
   
 /* function(float|int|object:float|int|object) */
   ADD_EFUN("abs",f_abs,tFunc(tOr3(tFlt,tInt,tObj),tOr3(tFlt,tInt,tObj)),0);
