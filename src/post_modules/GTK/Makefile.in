@@ -42,6 +42,9 @@ sources0:
 docs: docs@WITH_GTK@
 	@:
 
+wmml: wmml@WITH_GTK@
+	@:
+
 docs1:
 	-@mkdir docs
 	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike docs/cursor_
@@ -49,5 +52,15 @@ docs1:
 
 
 docs0:
+	echo Pike-GTK disabled.
+
+wmml1:
+	-@mkdir wmml
+	-@mkdir wmml/gtkimg
+	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike wmml/gtkimg/cursor_
+	$(MYRUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) --wmml
+
+
+wmml0:
 	echo Pike-GTK disabled.
 
