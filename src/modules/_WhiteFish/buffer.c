@@ -1,6 +1,6 @@
 
 
-/* $Id: buffer.c,v 1.13 2004/08/07 15:26:56 js Exp $
+/* $Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $
  */
 #include "global.h"
 
@@ -17,7 +17,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.13 2004/08/07 15:26:56 js Exp $");
+RCSID("$Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $");
 #include "interpret.h"
 
 #include "whitefish.h"
@@ -27,6 +27,8 @@ RCSID("$Id: buffer.c,v 1.13 2004/08/07 15:26:56 js Exp $");
 
 static INLINE int range( int n, int m )
 {
+  int o;
+  int f;
   if( !m )
     m = 8;
   if( m >= 32*1024 )
@@ -35,8 +37,8 @@ static INLINE int range( int n, int m )
       return 32*1024;
     return (n+1);
   }
-  int o = m;
-  int f = m+n;
+  o = m;
+  f = m+n;
   while( m<f ) m*=2;
   return m-o;
 }
