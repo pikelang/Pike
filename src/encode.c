@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.40 1999/10/18 22:54:32 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.41 1999/10/19 15:31:19 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -1102,8 +1102,15 @@ static void decode_value2(struct decode_data *data)
 
 #ifdef DEBUG_MALLOC
 	  if(p->num_linenumbers && p->linenumbers &&
-	     EXTRACT_UCHAR(p->linenumbers))
-	    debug_malloc_name(p, p->linenumbers+1, 0);
+	     EXTRACT_UCHAR(p->linenumbers)==127)
+	  {
+	    char *foo;
+	    extern int get_small_number(char **);
+	    foo=p->linenumbers+1;
+	    foo+=strlen(foo)+1;
+	    debug_malloc_name(p, p->linenumbers+1, 
+			      get_small_number(&foo));
+	  }
 #endif
 	    
 

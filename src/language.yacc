@@ -182,7 +182,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.126 1999/10/10 00:49:12 noring Exp $");
+RCSID("$Id: language.yacc,v 1.127 1999/10/19 15:31:20 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1253,6 +1253,11 @@ class: modifiers F_CLASS optional_identifier
     if(compiler_pass==1)
     {
       low_start_new_program(0, $3->u.sval.u.string, $1);
+      if(lex.current_file)
+      {
+	store_linenumber(lex.current_line, lex.current_file);
+	debug_malloc_name(new_program, lex.current_file->str, lex.current_line);
+      }
     }else{
       int i;
       struct program *p;
