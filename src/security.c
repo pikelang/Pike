@@ -32,6 +32,7 @@ static int valid_creds_object(struct object *o)
     OBJ2CREDS(o)->user;
 }
 
+/* mixed call_with_creds(object(Creds) creds, mixed func, mixed ... args) */
 static void f_call_with_creds(INT32 args)
 {
   struct object *o;
@@ -40,7 +41,14 @@ static void f_call_with_creds(INT32 args)
   {
     case T_INT:
       /* We might want allocate a bit for this so that we can
-       * disallow this
+       * disallow this.
+       * /hubbe
+       *
+       * YES, since if call_with_creds() is called from an object
+       * with NULL creds, you get back all permissions!
+       * Hmm, maybe it should only be allowed if current_object->prot
+       * is not NULL?
+       * /grubba 1999-07-07
        */
       o=fp->current_object->prot;
       break;
@@ -68,6 +76,7 @@ static void f_call_with_creds(INT32 args)
   sp--;
 }
 
+/* object(Creds) get_current_creds() */
 static void f_get_current_creds(INT32 args)
 {
   pop_n_elems(args);
@@ -80,6 +89,8 @@ static void f_get_current_creds(INT32 args)
 /* Should be no need for special security for these. obj->creds
  * should say what we can do with it.
  */
+
+/* object(Creds) creds->get_default_creds() */
 static void get_default_creds(INT32 args)
 {
   pop_n_elems(args);
@@ -89,12 +100,14 @@ static void get_default_creds(INT32 args)
     push_int(0);
 }
 
+/* void creds->set_default_creds(object(Creds) creds) */
 static void set_default_creds(INT32 args)
 {
   struct object *o;
   INT_TYPE may,data;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("set_default_creds: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("set_default_creds: permission denied.\n"));
 
   get_all_args("init_creds",args,"%o",&o);
   
@@ -103,12 +116,14 @@ static void set_default_creds(INT32 args)
   pop_n_elems(args);
 }
 
+/* void creds->create(object user, int allow_bits, int data_bits) */
 static void creds_create(INT32 args)
 {
   struct object *o;
   INT_TYPE may,data;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("creds_create: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("creds_create: permission denied.\n"));
 
   get_all_args("init_creds",args,"%o%i%i",&o,&may,&data);
   if(THIS->user)
@@ -120,6 +135,7 @@ static void creds_create(INT32 args)
   pop_n_elems(args);
 }
 
+/* object creds->get_user() */
 static void creds_get_user(INT32 args)
 {
   pop_n_elems(args);
@@ -129,18 +145,21 @@ static void creds_get_user(INT32 args)
     push_int(0);
 }
 
+/* int creds->get_allow_bits() */
 static void creds_get_allow_bits(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->may_always);
 }
 
+/* int creds->get_data_bits() */
 static void creds_get_data_bits(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->data_bits);
 }
 
+/* void creds->apply(object|program|function|array|mapping|multiset o) */
 static void creds_apply(INT32 args)
 {
   if(args < 0 || sp[-args].type > MAX_COMPLEX)
@@ -159,6 +178,7 @@ static void creds_apply(INT32 args)
   pop_n_elems(args);
 }
 
+/* object(Creds) get_object_creds(object|program|function|array|mapping|multiset o) */
 static void f_get_object_creds(INT32 args)
 {
   struct object *o;
@@ -250,7 +270,7 @@ void init_pike_security(void)
 /* function(mixed:object) */
   ADD_EFUN("get_object_creds",f_get_object_creds,tFunc(tMix,tObj),OPT_EXTERNAL_DEPEND);
 
-#define CONST(X) add_integer_constant("BIT_" #X,SECURITY_BIT_##X,0)
+#define CONST(X) add_integer_constant("BIT_" #X,PIKE_CONCAT(SECURITY_BIT_,X),0)
   CONST(INDEX);
   CONST(SET_INDEX);
   CONST(CALL);
