@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.66 2004/09/18 23:00:25 nilsson Exp $
+|| $Id: png.c,v 1.67 2004/09/18 23:30:45 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.66 2004/09/18 23:00:25 nilsson Exp $");
+RCSID("$Id: png.c,v 1.67 2004/09/18 23:30:45 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -62,13 +62,13 @@ static INLINE void push_nbo_32bit(size_t x)
    push_string(make_shared_binary_string(buf,4));
 }
 
-static INLINE unsigned long int_from_32bit(unsigned char *data)
+static INLINE unsigned long int_from_32bit(const unsigned char *data)
 {
    return (data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
 }
 
 #define int_from_16bit(X) _int_from_16bit((unsigned char*)(X))
-static INLINE unsigned long _int_from_16bit(unsigned char *data)
+static INLINE unsigned long _int_from_16bit(const unsigned char *data)
 {
    return (data[0]<<8)|(data[1]);
 }
@@ -103,14 +103,14 @@ static INLINE void add_crc_string(void)
    push_nbo_32bit(call_gz_crc32(1));
 }
 
-static INLINE INT32 my_crc32(INT32 init,unsigned char *data,INT32 len)
+static INLINE INT32 my_crc32(INT32 init,const unsigned char *data,INT32 len)
 {
    push_string(make_shared_binary_string((char*)data,len));
    push_int(init);
    return call_gz_crc32(2);
 }
 
-static void push_png_chunk(char *type,    /* 4 bytes */
+static void push_png_chunk(const char *type,    /* 4 bytes */
 			   struct pike_string *data) /* (freed) or on stack */
 {
    /* 
@@ -526,12 +526,12 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 static int _png_write_rgb(rgb_group *w1,
 			  rgb_group *wa1,
 			  int type,int bpp,
-			  unsigned char *s,
+			  const unsigned char *s,
 			  size_t len,
 			  unsigned long width,
 			  size_t n,
-			  struct neo_colortable *ct,
-			  struct pike_string *trns)
+			  const struct neo_colortable *ct,
+			  const struct pike_string *trns)
 {
    /* returns 1 if alpha channel, 0 if not */
    /* w1, wa1 will be freed upon error */
