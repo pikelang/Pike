@@ -13,6 +13,10 @@ test_eq([[MIME.encode_base64("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?")]],
 	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
 	"Hdvb2RjaHVjayBjb3Vs\r\nZCBjaHVjayB3b29kPw==")
+test_eq([[MIME.encode_base64("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?", 1)]],
+	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
+	"Hdvb2RjaHVjayBjb3VsZCBjaHVjayB3b29kPw==")
 test_any([[string data=Stdio.read_file("Makefile");
 	return MIME.decode_base64(MIME.encode_base64(data))==data]],1)
 
@@ -22,6 +26,10 @@ test_eq([[MIME.encode_qp("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?")]],
 	"How=20much=20wood=20could=20a=20woodchuck=20chuck=20if=20"
 	"a=20woodchuck=20=\r\ncould=20chuck=20wood?")
+test_eq([[MIME.encode_qp("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?", 1)]],
+	"How=20much=20wood=20could=20a=20woodchuck=20chuck=20if=20"
+	"a=20woodchuck=20could=20chuck=20wood?")
 test_any([[string data=Stdio.read_file("Makefile");
 	return MIME.decode_qp(MIME.encode_qp(data))==data]],1)
 
@@ -66,7 +74,15 @@ test_true([[catch(MIME.decode("foo", "bzot"))]])
 test_eq([[MIME.encode("foo=21bar", 0)]], "foo=21bar")
 test_eq([[MIME.encode("foo=21bar", "quOteD-priNtaBle")]], "foo=3D21bar")
 test_eq([[MIME.encode("foo=21bar", "qUotEd-pRinTablE", "gek")]], "foo=3D21bar")
+test_eq([[MIME.encode("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?", "quoted-PRINtable", 0, 1)]],
+	"How=20much=20wood=20could=20a=20woodchuck=20chuck=20if=20"
+	"a=20woodchuck=20could=20chuck=20wood?")
 test_eq([[MIME.encode("foobar", "bASe64")]], "Zm9vYmFy")
+test_eq([[MIME.encode("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?", "base64", 0, 1)]],
+	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
+	"Hdvb2RjaHVjayBjb3VsZCBjaHVjayB3b29kPw==")
 test_eq([[MIME.encode("hepp", "x-Uue")]],
 		[["begin 644 attachment\r\n$:&5P<```\r\n`\r\nend\r\n"]])
 test_eq([[MIME.encode("baz", "x-uuE", "foo")]],

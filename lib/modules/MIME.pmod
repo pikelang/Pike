@@ -1,5 +1,5 @@
 /*
- * $Id: MIME.pmod,v 1.5 1997/05/05 12:39:09 marcus Exp $
+ * $Id: MIME.pmod,v 1.6 1997/05/05 22:33:52 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -39,9 +39,9 @@ class support {
   {
     switch (lower_case( encoding || "binary" )) {
     case "base64":
-      return (stripcrlf? encode_base64( data )-"\r\n" : encode_base64( data ));
+      return encode_base64( data, stripcrlf );
     case "quoted-printable":
-      return (stripcrlf? encode_qp( data )-"=\r\n" : encode_qp( data ));
+      return encode_qp( data, stripcrlf );
     case "x-uue":
       return encode_uue( data, filename );
     case "7bit":

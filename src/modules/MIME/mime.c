@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.7 1997/04/19 23:25:32 grubba Exp $
+ * $Id: mime.c,v 1.8 1997/05/05 22:33:54 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -9,7 +9,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: mime.c,v 1.7 1997/04/19 23:25:32 grubba Exp $");
+RCSID("$Id: mime.c,v 1.8 1997/05/05 22:33:54 marcus Exp $");
 #include "stralloc.h"
 #include "types.h"
 #include "pike_macros.h"
@@ -98,11 +98,11 @@ void pike_module_init( void )
   add_function_constant( "decode_base64", f_decode_base64,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
   add_function_constant( "encode_base64", f_encode_base64,
-			 "function(string:string)", OPT_TRY_OPTIMIZE );
+			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
   add_function_constant( "encode_qp", f_encode_qp,
-			 "function(string:string)", OPT_TRY_OPTIMIZE );
+			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
   add_function_constant( "decode_uue", f_decode_uue,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
   add_function_constant( "encode_uue", f_encode_uue,
@@ -184,7 +184,8 @@ static void f_decode_base64( INT32 args )
 /*  Convenience function for encode_base64();  Encode groups*3 bytes from
  *  *srcp into groups*4 bytes at *destp.
  */
-static int do_b64_encode( INT32 groups, unsigned char **srcp, char **destp )
+static int do_b64_encode( INT32 groups, unsigned char **srcp, char **destp,
+			  int insert_crlf )
 {
   unsigned char *src = *srcp;
   char *dest = *destp;
@@ -201,7 +202,7 @@ static int do_b64_encode( INT32 groups, unsigned char **srcp, char **destp )
     *dest++ = base64tab[(d>>6)&63];
     *dest++ = base64tab[d&63];
     /* Insert a linebreak once in a while... */
-    if(++g == 19) {
+    if(insert_crlf && ++g == 19) {
       *dest++ = 13;
       *dest++ = 10;
       g=0;
@@ -218,22 +219,27 @@ static int do_b64_encode( INT32 groups, unsigned char **srcp, char **destp )
 
 static void f_encode_base64( INT32 args )
 {
-  if(args != 1)
+  if(args != 1 && args != 2)
     error( "Wrong number of arguments to MIME.encode_base64()\n" );
-  else if(sp[-1].type != T_STRING)
+  else if(sp[-args].type != T_STRING)
     error( "Wrong type of argument to MIME.encode_base64()\n" );
   else {
 
-    /* Encode the string in sp[-1].u.string.  First, we need to know
+    /* Encode the string in sp[-args].u.string.  First, we need to know
        the number of 24 bit groups in the input, and the number of
        bytes actually present in the last group. */
 
-    INT32 groups = (sp[-1].u.string->len+2)/3;
-    int last = (sp[-1].u.string->len-1)%3+1;
-    /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
-    struct pike_string *str = begin_shared_string( groups*4+(groups/19)*2 );
+    INT32 groups = (sp[-args].u.string->len+2)/3;
+    int last = (sp[-args].u.string->len-1)%3+1;
 
-    unsigned char *src = (unsigned char *)sp[-1].u.string->str;
+    int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
+			sp[-1].u.integer != 0);
+
+    /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
+    struct pike_string *str =
+      begin_shared_string( groups*4+(insert_crlf? (groups/19)*2 : 0) );
+
+    unsigned char *src = (unsigned char *)sp[-args].u.string->str;
     char *dest = str->str;
 
     if (groups) {
@@ -242,7 +248,7 @@ static void f_encode_base64( INT32 args )
       unsigned char tmp[3], *tmpp = tmp;
       int i;
 
-      if (do_b64_encode( groups-1, &src, &dest ) == 18)
+      if (do_b64_encode( groups-1, &src, &dest, insert_crlf ) == 18)
 	/* Skip the final linebreak if it's not to be followed by anything */
 	str->len -= 2;
 
@@ -252,7 +258,7 @@ static void f_encode_base64( INT32 args )
 	tmp[i] = *src++;
 
       /* Encode the last group, and replace output codes with pads as needed */
-      do_b64_encode( 1, &tmpp, &dest );
+      do_b64_encode( 1, &tmpp, &dest, 0 );
       switch (last) {
       case 1:
 	*--dest = '=';
@@ -323,25 +329,27 @@ static void f_decode_qp( INT32 args )
 
 static void f_encode_qp( INT32 args )
 {
-  if (args != 1)
+  if (args != 1 && args != 2)
     error( "Wrong number of arguments to MIME.encode_qp()\n" );
-  else if (sp[-1].type != T_STRING)
+  else if (sp[-args].type != T_STRING)
     error( "Wrong type of argument to MIME.encode_qp()\n" );
   else {
 
-    /* Encode the string in sp[-1].u.string.  We don't know how
+    /* Encode the string in sp[-args].u.string.  We don't know how
        much of the data has to be encoded, so let's use that trusty
        dynamic buffer once again. */
 
     dynamic_buffer buf;
-    unsigned char *src = (unsigned char *)sp[-1].u.string->str;
+    unsigned char *src = (unsigned char *)sp[-args].u.string->str;
     INT32 cnt;
     int col = 0;
+    int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
+			sp[-1].u.integer != 0);
 
     buf.s.str = NULL;
     initialize_buf( &buf );
 
-    for (cnt = sp[-1].u.string->len; cnt--; src++) {
+    for (cnt = sp[-args].u.string->len; cnt--; src++) {
       if ((*src >= 33 && *src <= 60) ||
 	  (*src >= 62 && *src <= 126))
 	/* These characters can always be encoded as themselves */
@@ -354,7 +362,7 @@ static void f_encode_qp( INT32 args )
 	col += 2;
       }
       /* We'd better not let the lines get too long */
-      if (++col >= 73) {
+      if (++col >= 73 && insert_crlf) {
 	low_my_putchar( '=', &buf );
 	low_my_putchar( 13, &buf );
 	low_my_putchar( 10, &buf );
