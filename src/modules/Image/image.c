@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.22 1997/04/09 01:49:51 mirar Exp $ */
+/* $Id: image.c,v 1.23 1997/04/18 06:47:26 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.22 1997/04/09 01:49:51 mirar Exp $");
+RCSID("$Id: image.c,v 1.23 1997/04/18 06:47:26 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1055,13 +1055,13 @@ static INLINE void
 **!	rectangle corners
 **! arg array(array(int)) corner_color
 **!     colors of the corners:
-**!
+**!	<pre>
 **!	({x1y1,x2y1,x1y2,x2y2})
-**!
+**!	</pre>
 **!	each of these is an array of integeres:
-**!
+**!	<pre>
 **!	({r,g,b}) or ({r,g,b,alpha})
-**!
+**!	</pre>
 **!	Default alpha channel value is 0 (opaque).
 */
 

@@ -5,6 +5,7 @@
 **! class font
 **!
 **! 	Short technical documentation on a font file:
+**!	<pre>
 **!	       struct file_head 
 **!	       {
 **!		  unsigned INT32 cookie;   - 0x464f4e54 
@@ -20,10 +21,11 @@
 **!		  unsigned INT32 spacing;  - spacing to next character
 **!		  unsigned char data[1];   - pixmap data (1byte/pixel)
 **!	       } *ch;
+**!	</pre>
 **!
 */
 
-/* $Id: font.c,v 1.7 1997/04/16 03:10:45 hubbe Exp $ */
+/* $Id: font.c,v 1.8 1997/04/18 06:47:22 mirar Exp $ */
 
 #include "global.h"
 
@@ -468,7 +470,7 @@ void font_height(INT32 args)
 }
 
 /*
-**! method  text_extents(string text,...)
+**! method array(int) text_extents(string text,...)
 **!	Calculate extents of a text-image,
 **!	that would be created by calling <ref>write</ref>
 **!	with the same arguments.
