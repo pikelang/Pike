@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.25 2002/01/16 02:54:16 nilsson Exp $
+ * $Id: opcodes.h,v 1.26 2002/03/02 18:47:39 mast Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -74,6 +74,7 @@ enum Pike_opcodes
   F_COMMA_EXPR,
   F_BREAK,
   F_CASE,
+  F_CASE_RANGE,
   F_CONTINUE,
   F_DEFAULT,
   F_DIV_EQ,

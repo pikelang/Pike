@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.139 2002/01/16 02:54:09 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.140 2002/03/02 18:47:38 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -161,12 +161,17 @@ static int current_stack_depth = 0;
       fatal("Cleanup frames still left in statement_label.\n"));	\
 } while (0)
 
-static INT32 current_switch_case;
-static INT32 current_switch_default;
-static INT32 current_switch_values_on_stack;
-static INT32 *current_switch_jumptable =0;
+struct switch_data
+{
+  INT32 index;
+  INT32 less_label, greater_label, default_label;
+  INT32 values_on_stack;
+  INT32 *jumptable;
+  struct pike_type *type;
+};
+
+static struct switch_data current_switch = {0, 0, 0, 0, 0, NULL, NULL};
 static int in_catch=0;
-static struct pike_type *current_switch_type = NULL;
 
 void upd_int(int offset, INT32 tmp)
 {
@@ -395,6 +400,8 @@ static INT32 count_cases(node *n)
     return 0;
 
   case F_CASE:
+    return 1;
+  case F_CASE_RANGE:
     return !!CAR(n)+!!CDR(n);
 
   default:
@@ -677,9 +684,9 @@ static int do_docode2(node *n, INT16 flags)
 
   case '?':
   {
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
+    INT32 *prev_switch_jumptable = current_switch.jumptable;
     int adroppings , bdroppings;
-    current_switch_jumptable=0;
+    current_switch.jumptable=0;
 
 
     if(!CDDR(n))
@@ -688,7 +695,7 @@ static int do_docode2(node *n, INT16 flags)
       do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
       DO_CODE_BLOCK(CADR(n));
       low_insert_label( DO_NOT_WARN((INT32)tmp1));
-      current_switch_jumptable = prev_switch_jumptable;
+      current_switch.jumptable = prev_switch_jumptable;
       return 0;
     }
 
@@ -698,7 +705,7 @@ static int do_docode2(node *n, INT16 flags)
       do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
       DO_CODE_BLOCK(CDDR(n));
       low_insert_label( DO_NOT_WARN((INT32)tmp1));
-      current_switch_jumptable = prev_switch_jumptable;
+      current_switch.jumptable = prev_switch_jumptable;
       return 0;
     }
 
@@ -727,7 +734,7 @@ static int do_docode2(node *n, INT16 flags)
 
     low_insert_label( DO_NOT_WARN((INT32)tmp2));
 
-    current_switch_jumptable = prev_switch_jumptable;
+    current_switch.jumptable = prev_switch_jumptable;
     return adroppings;
   }
       
@@ -1122,11 +1129,11 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_FOR:
   {
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
+    INT32 *prev_switch_jumptable = current_switch.jumptable;
     BLOCK_BEGIN;
     PUSH_STATEMENT_LABEL;
 
-    current_switch_jumptable=0;
+    current_switch.jumptable=0;
     current_label->break_label=alloc_label();
     current_label->continue_label=alloc_label();
 
@@ -1143,7 +1150,7 @@ static int do_docode2(node *n, INT16 flags)
     do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp2));
     ins_label(current_label->break_label);
 
-    current_switch_jumptable = prev_switch_jumptable;
+    current_switch.jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     BLOCK_END;
     return 0;
@@ -1155,7 +1162,7 @@ static int do_docode2(node *n, INT16 flags)
   case F_FOREACH:
   {
     node *arr;
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
+    INT32 *prev_switch_jumptable = current_switch.jumptable;
     arr=CAR(n);
 
     if(CDR(arr) && CDR(arr)->token == ':')
@@ -1186,7 +1193,7 @@ static int do_docode2(node *n, INT16 flags)
       PUSH_CLEANUP_FRAME(do_pop, 5);
 
       PUSH_STATEMENT_LABEL;
-      current_switch_jumptable=0;
+      current_switch.jumptable=0;
       current_label->break_label=alloc_label();
       current_label->continue_label=alloc_label();
       
@@ -1198,7 +1205,7 @@ static int do_docode2(node *n, INT16 flags)
       do_jump(F_NEW_FOREACH, DO_NOT_WARN((INT32)tmp1));
       ins_label(current_label->break_label);
       
-      current_switch_jumptable = prev_switch_jumptable;
+      current_switch.jumptable = prev_switch_jumptable;
       POP_STATEMENT_LABEL;
       POP_AND_DO_CLEANUP;
       BLOCK_END;
@@ -1229,7 +1236,7 @@ static int do_docode2(node *n, INT16 flags)
     PUSH_CLEANUP_FRAME(do_pop, 4);
 
     PUSH_STATEMENT_LABEL;
-    current_switch_jumptable=0;
+    current_switch.jumptable=0;
     current_label->break_label=alloc_label();
     current_label->continue_label=alloc_label();
 
@@ -1241,7 +1248,7 @@ static int do_docode2(node *n, INT16 flags)
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_label->break_label);
 
-    current_switch_jumptable = prev_switch_jumptable;
+    current_switch.jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     POP_AND_DO_CLEANUP;
     BLOCK_END;
@@ -1253,14 +1260,14 @@ static int do_docode2(node *n, INT16 flags)
   case F_INC_LOOP:
   case F_DEC_LOOP:
   {
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
+    INT32 *prev_switch_jumptable = current_switch.jumptable;
     BLOCK_BEGIN;
 
     do_docode(CAR(n),0);
     PUSH_CLEANUP_FRAME(do_pop, 3);
 
     PUSH_STATEMENT_LABEL;
-    current_switch_jumptable=0;
+    current_switch.jumptable=0;
     current_label->break_label=alloc_label();
     current_label->continue_label=alloc_label();
     tmp3=do_branch(-1);
@@ -1272,7 +1279,7 @@ static int do_docode2(node *n, INT16 flags)
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_label->break_label);
 
-    current_switch_jumptable = prev_switch_jumptable;
+    current_switch.jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     POP_AND_DO_CLEANUP;
     BLOCK_END;
@@ -1298,11 +1305,11 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_DO:
   {
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
+    INT32 *prev_switch_jumptable = current_switch.jumptable;
     BLOCK_BEGIN;
     PUSH_STATEMENT_LABEL;
 
-    current_switch_jumptable=0;
+    current_switch.jumptable=0;
     current_label->break_label=alloc_label();
     current_label->continue_label=alloc_label();
 
@@ -1312,7 +1319,7 @@ static int do_docode2(node *n, INT16 flags)
     do_jump_when_non_zero(CDR(n), DO_NOT_WARN((INT32)tmp2));
     ins_label(current_label->break_label);
 
-    current_switch_jumptable = prev_switch_jumptable;
+    current_switch.jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     BLOCK_END;
     return 0;
@@ -1561,11 +1568,7 @@ static int do_docode2(node *n, INT16 flags)
   {
     INT32 e,cases,*order;
     INT32 *jumptable;
-    INT32 prev_switch_values_on_stack = current_switch_values_on_stack;
-    INT32 prev_switch_case = current_switch_case;
-    INT32 prev_switch_default = current_switch_default;
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
-    struct pike_type *prev_switch_type = current_switch_type;
+    struct switch_data prev_switch = current_switch;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
 #endif
@@ -1575,8 +1578,8 @@ static int do_docode2(node *n, INT16 flags)
     if(do_docode(CAR(n),0)!=1)
       fatal("Internal compiler error, time to panic\n");
 
-    if (!(CAR(n) && (current_switch_type = CAR(n)->type))) {
-      current_switch_type = mixed_type_string;
+    if (!(CAR(n) && (current_switch.type = CAR(n)->type))) {
+      current_switch.type = mixed_type_string;
     }
 
     current_label->break_label=alloc_label();
@@ -1587,20 +1590,20 @@ static int do_docode2(node *n, INT16 flags)
     current_stack_depth--;
     emit1(F_ALIGN,sizeof(INT32));
 
-    current_switch_values_on_stack=0;
-    current_switch_case=1;
-    current_switch_default=-1;
-    current_switch_jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
+    current_switch.values_on_stack=0;
+    current_switch.index=2;
+    current_switch.less_label=-1;
+    current_switch.greater_label=-1;
+    current_switch.default_label=-1;
+    current_switch.jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
     jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
 
     for(e=1; e<cases*2+2; e++)
     {
       jumptable[e] = DO_NOT_WARN((INT32)emit1(F_POINTER, 0));
-      current_switch_jumptable[e]=-1;
+      current_switch.jumptable[e]=-1;
     }
     emit0(F_NOTREACHED);
-
-    current_switch_jumptable[current_switch_case++]=-1;
 
     DO_CODE_BLOCK(CDR(n));
 
@@ -1618,13 +1621,21 @@ static int do_docode2(node *n, INT16 flags)
 
     if (!Pike_compiler->num_parse_error) {
       /* Check for cases inside a range */
+      if (cases &&
+	  ((current_switch.less_label >= 0 &&
+	    current_switch.jumptable[order[0]*2+2] !=
+	    current_switch.less_label) ||
+	   (current_switch.greater_label >= 0 &&
+	    current_switch.jumptable[order[cases-1]*2+2] !=
+	    current_switch.greater_label)))
+	yyerror("Case inside range.");
       for(e=0; e<cases-1; e++)
       {
 	if(order[e] < cases-1)
 	{
 	  int o1=order[e]*2+2;
-	  if(current_switch_jumptable[o1]==current_switch_jumptable[o1+1] &&
-	     current_switch_jumptable[o1]==current_switch_jumptable[o1+2])
+	  if(current_switch.jumptable[o1]==current_switch.jumptable[o1+1] &&
+	     current_switch.jumptable[o1]==current_switch.jumptable[o1+2])
 	  {
 	    if(order[e]+1 != order[e+1])
 	      yyerror("Case inside range.");
@@ -1634,33 +1645,32 @@ static int do_docode2(node *n, INT16 flags)
       }
     }
 
-    if(current_switch_default < 0)
-      current_switch_default = ins_label(-1);
-
-    for(e=1;e<cases*2+2;e++)
-      if(current_switch_jumptable[e]==-1)
-	current_switch_jumptable[e]=current_switch_default;
-
     order_array(Pike_sp[-1].u.array,order);
 
-    reorder((void *)(current_switch_jumptable+2),cases,sizeof(INT32)*2,order);
+    reorder((void *)(current_switch.jumptable+2),cases,sizeof(INT32)*2,order);
     free((char *)order);
 
+    current_switch.jumptable[1] = current_switch.less_label;
+    current_switch.jumptable[current_switch.index - 1] = current_switch.greater_label;
+
+    if(current_switch.default_label < 0)
+      current_switch.default_label = ins_label(-1);
+
+    for(e=1;e<cases*2+2;e++)
+      if(current_switch.jumptable[e]==-1)
+	current_switch.jumptable[e]=current_switch.default_label;
+
     for(e=1; e<cases*2+2; e++)
-      update_arg(jumptable[e], current_switch_jumptable[e]);
+      update_arg(jumptable[e], current_switch.jumptable[e]);
 
     update_arg(DO_NOT_WARN((INT32)tmp1),
 	       store_constant(Pike_sp-1,1,0));
 
     pop_stack();
     free((char *)jumptable);
-    free((char *)current_switch_jumptable);
+    free((char *)current_switch.jumptable);
 
-    current_switch_jumptable = prev_switch_jumptable;
-    current_switch_default = prev_switch_default;
-    current_switch_case = prev_switch_case;
-    current_switch_values_on_stack = prev_switch_values_on_stack;
-    current_switch_type = prev_switch_type;
+    current_switch = prev_switch;
 
     low_insert_label( current_label->break_label);
 
@@ -1674,97 +1684,84 @@ static int do_docode2(node *n, INT16 flags)
   }
 
   case F_CASE:
+  case F_CASE_RANGE:
   {
-    if(!current_switch_jumptable)
+    if(!current_switch.jumptable)
     {
       yyerror("Case outside switch.");
     }else{
-      node *lower=CAR(n);
-      if(!lower) lower=CDR(n);
+      INT32 label = ins_label(-1);
+      int i;
 
-      if(!is_const(lower))
-	yyerror("Case label isn't constant.");
+      for (i = 0; i < 2; i++) {
+	node *case_val = i == 0 ? CAR(n) : CDR(n);
 
-      if (lower && lower->type && !TEST_COMPAT(0,6)) {
-	if (!pike_types_le(lower->type, current_switch_type)) {
-	  if (!match_types(lower->type, current_switch_type)) {
-	    yytype_error("Type mismatch in case.",
-			 current_switch_type, lower->type, 0);
-	  } else if (lex.pragmas & ID_STRICT_TYPES) {
-	    yytype_error("Type mismatch in case.",
-			 current_switch_type, lower->type, YYTE_IS_WARNING);
-	  }
-	}
-      }
-
-      if (!Pike_compiler->num_parse_error) {
-	tmp1=eval_low(lower);
-	if(tmp1<1)
-	{
-	  yyerror("Error in case label.");
-	  push_int(0);
-	  tmp1=1;
-	}
-	pop_n_elems(tmp1-1);
-	current_switch_values_on_stack++;
-	for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
-	  if(is_equal(Pike_sp-tmp1, Pike_sp-1))
-	    yyerror("Duplicate case.");
-      } else {
-	push_int(0);
-	current_switch_values_on_stack++;
-      }
-      current_switch_jumptable[current_switch_case++]=ins_label(-1);
-
-      if(CDR(n))
-      {
-	current_switch_jumptable[current_switch_case]=
-	  current_switch_jumptable[current_switch_case-1];
-	current_switch_case++;
-
-	if(CAR(n))
-	{
-	  if(!is_const(CDR(n)))
+	if (case_val) {
+	  if(!is_const(case_val))
 	    yyerror("Case label isn't constant.");
-	  
-	  current_switch_jumptable[current_switch_case]=
-	    current_switch_jumptable[current_switch_case-1];
-	  current_switch_case++;
+
+	  if (case_val->type && !TEST_COMPAT(0,6)) {
+	    if (!pike_types_le(case_val->type, current_switch.type)) {
+	      if (!match_types(case_val->type, current_switch.type)) {
+		yytype_error("Type mismatch in case.",
+			     current_switch.type, case_val->type, 0);
+	      } else if (lex.pragmas & ID_STRICT_TYPES) {
+		yytype_error("Type mismatch in case.",
+			     current_switch.type, case_val->type, YYTE_IS_WARNING);
+	      }
+	    }
+	  }
 
 	  if (!Pike_compiler->num_parse_error) {
-	    tmp1=eval_low(CDR(n));
+	    tmp1=eval_low(case_val);
 	    if(tmp1<1)
 	    {
-	      yyerror("Error in second half of case label.");
+	      yyerror("Error in case label.");
 	      push_int(0);
 	      tmp1=1;
 	    }
 	    pop_n_elems(tmp1-1);
-	    current_switch_values_on_stack++;
-	    for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
+	    current_switch.values_on_stack++;
+	    for(tmp1=current_switch.values_on_stack; tmp1 > 1; tmp1--)
 	      if(is_equal(Pike_sp-tmp1, Pike_sp-1))
-		yyerror("Duplicate case.");
+		yyerror("Duplicate case label.");
 	  } else {
 	    push_int(0);
-	    current_switch_values_on_stack++;
+	    current_switch.values_on_stack++;
 	  }
-	  current_switch_jumptable[current_switch_case++]=-1;
 	}
-      }else{
-	current_switch_jumptable[current_switch_case++]=-1;
+      }
+
+      if (n->token == F_CASE) {
+	current_switch.jumptable[current_switch.index++] = label;
+	current_switch.jumptable[current_switch.index++] = -1;
+      }
+      else {
+	if (!CAR(n)) current_switch.less_label = label;
+	if (!CDR(n)) current_switch.greater_label = label;
+	if (CAR(n) && CDR(n)) {
+	  current_switch.jumptable[current_switch.index++] = label;
+	  current_switch.jumptable[current_switch.index++] = label;
+	  current_switch.jumptable[current_switch.index++] = label;
+	  current_switch.jumptable[current_switch.index++] = -1;
+	}
+	else {
+	  current_switch.jumptable[current_switch.index++] = label;
+	  current_switch.jumptable[current_switch.index++] = -1;
+	}
       }
     }
     return 0;
   }
 
   case F_DEFAULT:
-    if(!current_switch_jumptable)
+    if(!current_switch.jumptable)
     {
       yyerror("Default outside switch.");
-    }else if(current_switch_default!=-1){
+    }else if(current_switch.default_label!=-1){
       yyerror("Duplicate switch default.");
     }else{
-      current_switch_default = ins_label(-1);
+      current_switch.default_label = ins_label(-1);
     }
     return 0;
 
@@ -1883,13 +1880,13 @@ static int do_docode2(node *n, INT16 flags)
     return 1;
 
   case F_CATCH: {
-    INT32 *prev_switch_jumptable = current_switch_jumptable;
+    INT32 *prev_switch_jumptable = current_switch.jumptable;
 
     tmp1=do_jump(F_CATCH,-1);
     PUSH_CLEANUP_FRAME(do_escape_catch, 0);
 
     PUSH_STATEMENT_LABEL;
-    current_switch_jumptable=0;
+    current_switch.jumptable=0;
     current_label->break_label=alloc_label();
     if (TEST_COMPAT(7,0))
       current_label->continue_label = current_label->break_label;
@@ -1901,7 +1898,7 @@ static int do_docode2(node *n, INT16 flags)
     ins_label(current_label->break_label);
     emit0(F_THROW_ZERO);
     POP_STATEMENT_LABEL;
-    current_switch_jumptable = prev_switch_jumptable;
+    current_switch.jumptable = prev_switch_jumptable;
 
     ins_label(DO_NOT_WARN((INT32)tmp1));
     current_stack_depth++;

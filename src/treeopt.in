@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.67 2002/02/14 14:50:56 grubba Exp $
+// $Id: treeopt.in,v 1.68 2002/03/02 18:47:39 mast Exp $
 //
 // The tree optimizer
 //
@@ -248,6 +248,9 @@ F_POP_VALUE(0 = F_BREAK, *):
   $0;
 
 F_POP_VALUE(0 = F_CASE, *):
+  $0;
+
+F_POP_VALUE(0 = F_CASE_RANGE, *):
   $0;
 
 F_POP_VALUE(0 = F_DEFAULT, *):

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.281 2002/02/06 17:23:24 grubba Exp $");
+RCSID("$Id: las.c,v 1.282 2002/03/02 18:47:38 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -252,6 +252,7 @@ INT32 count_args(node *n)
     return count_args(CAR(n));
 
   case F_CASE:
+  case F_CASE_RANGE:
   case F_FOR:
   case F_DO:
   case F_LOOP:
@@ -1040,6 +1041,7 @@ node *debug_mknode(short token, node *a, node *b)
 
   case F_DEFAULT:
   case F_CASE:
+  case F_CASE_RANGE:
     res->node_info |= OPT_CASE;
     break;
 
@@ -3781,7 +3783,7 @@ void fix_type_field(node *n)
     copy_pike_type(n->type, void_type_string);
     break;
 
-  case F_CASE:
+  case F_CASE_RANGE:
     if (CDR(n) && CAR(n) && !TEST_COMPAT(0,6)) {
       /* case 1 .. 2: */
       if (!match_types(CAR(n)->type, CDR(n)->type)) {
@@ -3810,6 +3812,7 @@ void fix_type_field(node *n)
       }
     }
     /* FALL_THROUGH */
+  case F_CASE:
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
@@ -4223,6 +4226,7 @@ static void find_usage(node *n, unsigned char *usage,
 
   case F_DEFAULT:
   case F_CASE:
+  case F_CASE_RANGE:
     {
       int i;
 
@@ -4534,6 +4538,7 @@ static node *low_localopt(node *n,
 
   case F_DEFAULT:
   case F_CASE:
+  case F_CASE_RANGE:
     {
       int i;
 
