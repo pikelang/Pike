@@ -3,6 +3,7 @@
 #undef HAVE_FCHROOT
 #undef HAVE_GETEGID
 #undef HAVE_GETEUID
+#undef HAVE_ALARM
 #undef HAVE_SETEUID
 #undef HAVE_SETEGID
 #undef HAVE_SETRESUID

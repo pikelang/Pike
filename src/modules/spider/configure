@@ -757,7 +757,7 @@ done
 
 for ac_func in syslog perror strerror getppid getpgrp getppid getuid getgid \
 	gethostname geteuid getegid fchroot strdup seteuid setegid setresuid \
-        setresgid uname gethostbyname gethostbyaddr \
+        setresgid uname gethostbyname gethostbyaddr alarm\
         getpwent setpwent endpwent getpwuid getpwnam \
         getspent setspent endspent getspuid getspnam \
 

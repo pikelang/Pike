@@ -1057,7 +1057,7 @@ void f_strerror(INT32 args)
 {
   char *s;
   if(!args) 
-    s=NULL;
+    s=strerror(errno);
   else
     s=strerror(sp[-args].u.integer);
   pop_n_elems(args);
@@ -1474,7 +1474,16 @@ void f_getpwent(INT32 args)
 }
 #endif
 
-
+#ifdef HAVE_ALARM
+void f_alarm(INT32 args)
+{
+  int i;
+  if(!args || sp[-1].type != T_INT || sp[-1].u.integer < 0)
+    error("Invalid argument to alarm(INT);\n");
+  i=sp[-1].u.integer;
+  push_int(alarm(i));
+}
+#endif
 
 void init_spider_efuns(void) 
 {
@@ -1486,6 +1495,10 @@ void init_spider_efuns(void)
   make_shared_string("HTTP/1.0");
   make_shared_string("GET");
   make_shared_string("POST");
+
+#ifdef HAVE_ALARM
+  add_efun("alarm", f_alarm, "function(int:int)", OPT_SIDE_EFFECT);
+#endif
 
 #ifdef HAVE_GETPWNAM
   add_efun("getpwnam", f_getpwnam, "function(string:array)", 
@@ -1602,7 +1615,7 @@ void init_spider_efuns(void)
 	   "function(int:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_STRERROR
-  add_efun("strerror",f_strerror, "function(int:string)",OPT_TRY_OPTIMIZE);
+  add_efun("strerror", f_strerror, "function(int|void:string)",OPT_TRY_OPTIMIZE);
 #endif
 
   add_efun("real_perror",f_real_perror, "function(:void)",OPT_EXTERNAL_DEPEND);

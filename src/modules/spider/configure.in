@@ -12,7 +12,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
 
 AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp getppid getuid getgid \
 	gethostname geteuid getegid fchroot strdup seteuid setegid setresuid \
-        setresgid uname gethostbyname gethostbyaddr \
+        setresgid uname gethostbyname gethostbyaddr alarm\
         getpwent setpwent endpwent getpwuid getpwnam \
         getspent setspent endspent getspuid getspnam \
 )
