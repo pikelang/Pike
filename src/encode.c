@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.87 2001/02/24 22:14:53 grubba Exp $");
+RCSID("$Id: encode.c,v 1.88 2001/02/24 22:41:11 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -263,6 +263,114 @@ static void do_enable_threads(void)
 }
 #endif
 
+#ifdef USE_PIKE_TYPE
+/* NOTE: Take care to encode it exactly as the corresponing
+ *       type string would have been encoded (cf TFUNCTION, T_MANY).
+ */
+static void encode_type(struct pike_type *t, struct encode_data *data)
+{
+ one_more_type:
+  if (t->type == T_MANY) {
+    addchar(T_FUNCTION);
+  }
+  addchar(t->type);
+  switch(t->type) {
+    default:
+      fatal("error in type tree: %d.\n", t->type);
+      /*NOTREACHED*/
+
+      break;
+    
+    case T_ASSIGN:
+      addchar((ptrdiff_t)t->car);
+      t = t->cdr;
+      goto one_more_type;
+
+    case T_FUNCTION:
+      while(t->type == T_FUNCTION) {
+	encode_type(t->car, data);
+	t = t->cdr;
+      }
+      addchar(T_MANY);
+      /* FALL_THROUGH */
+    case T_MANY:
+      encode_type(t->car, data);
+      t = t->cdr;
+      goto one_more_type;
+
+    case T_MAPPING:
+    case T_OR:
+    case T_AND:
+      encode_type(t->car, data);
+      t = t->cdr;
+      goto one_more_type;
+
+    case T_ARRAY:
+    case T_MULTISET:
+    case T_NOT:
+      t = t->car;
+      goto one_more_type;
+
+    case T_INT:
+      {
+	ptrdiff_t val;
+
+	val = (ptrdiff_t)t->car;
+	addchar((val >> 24)&0xff);
+	addchar((val >> 16)&0xff);
+	addchar((val >> 8)&0xff);
+	addchar(val & 0xff);
+	val = (ptrdiff_t)t->cdr;
+	addchar((val >> 24)&0xff);
+	addchar((val >> 16)&0xff);
+	addchar((val >> 8)&0xff);
+	addchar(val & 0xff);
+      }
+      break;
+
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case T_FLOAT:
+    case T_STRING:
+    case T_PROGRAM:
+    case T_MIXED:
+    case T_ZERO:
+    case T_VOID:
+    case PIKE_T_UNKNOWN:
+      break;
+
+    case T_OBJECT:
+    {
+      INT32 x;
+      addchar((ptrdiff_t)t->car);
+
+      if(t->cdr)
+      {
+	struct program *p=id_to_program(x);
+	if(p)
+	{
+	  ref_push_program(p);
+	}else{
+	  push_int(0);
+	}
+      }else{
+	push_int(0);
+      }
+      encode_value2(Pike_sp-1, data);
+      pop_stack();
+      break;
+    }
+  }
+}
+#else /* !USE_PIKE_TYPE */
 static ptrdiff_t low_encode_type(unsigned char *t, struct encode_data *data)
 {
   unsigned char *q = t;
@@ -271,7 +379,7 @@ one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
-      fatal("error in type string.\n");
+      fatal("error in type string: %d.\n", t[-1]);
       /*NOTREACHED*/
 
       break;
@@ -353,10 +461,11 @@ one_more_type:
   return t-q;
 }
 
-static ptrdiff_t encode_type(struct pike_type *t, struct encode_data *data)
+static void encode_type(struct pike_type *t, struct encode_data *data)
 {
-  return low_encode_type(t->str, data);
+  low_encode_type(t->str, data);
 }
+#endif /* USE_PIKE_TYPE */
 
 static void encode_value2(struct svalue *val, struct encode_data *data)
 
