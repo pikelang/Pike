@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.31 2000/10/20 09:08:38 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.32 2000/10/25 14:20:46 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1186,7 +1186,7 @@ void image_xcf_f__decode_tiles( INT32 args )
   int rxs, rys;
   rgb_group *colortable=NULL;
   rgb_group pix = {0,0,0};
-  rgb_group apix= {255,255,255}; // avoid may use uninitialized warnings
+  rgb_group apix= {255,255,255}; /* avoid may use uninitialized warnings */
 
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
