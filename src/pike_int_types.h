@@ -1,6 +1,6 @@
 /* Integer types with defined sizes.
  *
- * $Id: pike_int_types.h,v 1.1 2003/05/01 15:59:19 grubba Exp $
+ * $Id: pike_int_types.h,v 1.2 2004/03/17 19:24:42 mast Exp $
  *
  * Extracted from global.h 1.90
  */
@@ -45,24 +45,30 @@
 # endif
 # ifndef MAX_INT64
 #  if SIZEOF_LONG >= 8
+#    define MAX_UINT64 ULONG_MAX
 #    define MAX_INT64 LONG_MAX
 #    define MIN_INT64 LONG_MIN
 #  elif SIZEOF_LONG_LONG - 0 >= 8
 #   ifdef LLONG_MAX
+#    define MAX_UINT64 ULLONG_MAX
 #    define MAX_INT64 LLONG_MAX
 #    define MIN_INT64 LLONG_MIN
 #   elif defined(LONG_LONG_MAX)
+#    define MAX_UINT64 ULONG_LONG_MAX
 #    define MAX_INT64 LONG_LONG_MAX
 #    define MIN_INT64 LONG_LONG_MIN
 #   else
+#    define MAX_UINT64 0xffffffffffffffffULL
 #    define MAX_INT64 0x7fffffffffffffffLL
 #    define MIN_INT64 (-0x7fffffffffffffffLL - 1LL)
 #   endif
 #  elif SIZEOF___INT64 - 0 >= 8
+#   define MAX_UINT64 _UI64_MAX
 #   define MAX_INT64 _I64_MAX
 #   define MIN_INT64 _I64_MIN
 #  else
     /* We probably ought to warn here, but... */
+#   define MAX_UINT64 0xffffffffffffffffULL
 #   define MAX_INT64 0x7fffffffffffffffLL
 #   define MIN_INT64 (-0x7fffffffffffffffLL - 1LL)
 #  endif
@@ -80,6 +86,7 @@
 # endif
 #endif
 #ifndef MAX_INT32
+# define MAX_UINT32 4294967295U
 # define MAX_INT32 2147483647
 # define MIN_INT32 (-2147483647-1)
 #endif
@@ -94,11 +101,16 @@
 # define INT8 char
 #endif
 
-#ifndef LONGEST
-# ifdef INT64
-#  define LONGEST INT64
-# else
-#  define LONGEST INT32
-# endif
+#ifdef INT64
+# define LONGEST INT64
+# define PRINTLONGEST PRINTINT64
+# define MAX_ULONGEST MAX_UINT64
+# define MAX_LONGEST MAX_INT64
+# define MIN_LONGEST MIN_INT64
+#else
+# define LONGEST INT32
+# define PRINTLONGEST ""
+# define MAX_ULONGEST MAX_UINT32
+# define MAX_LONGEST MAX_INT32
+# define MIN_LONGEST MIN_INT32
 #endif
-
