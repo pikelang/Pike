@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.60 2001/07/25 23:42:58 nilsson Exp $
+ * $Id: builtin.cmod,v 1.61 2001/07/26 15:21:08 nilsson Exp $
  */
 
 #include "global.h"
@@ -266,7 +266,8 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   RETURN mkmapping(ind, val);
 }
 
-/*! @decl int String.count(string haystack, string needle)
+/*! @decl int count(string haystack, string needle)
+ *! @belongs String
  *!
  *! Count the number of non-overlapping times the string @[needle] occurrs
  *! in the string @[haystack].
@@ -306,7 +307,8 @@ PIKEFUN int string_count(string haystack, string needle)
    RETURN DO_NOT_WARN((INT_TYPE)c);
 }
 
-/*! @decl string String.trim_whites (string s)
+/*! @decl string trim_whites (string s)
+ *! @belongs String
  *!
  *! Trim leading and trailing spaces and tabs from the string @[s].
  */
@@ -336,7 +338,8 @@ PIKEFUN string string_trim_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
-/*! @decl string String.trim_all_whites (string s)
+/*! @decl string trim_all_whites (string s)
+ *! @belongs String
  *!
  *! Trim leading and trailing white spaces characters (space, tab,
  *! newline and carriage return) from the string @[s].
@@ -369,7 +372,8 @@ PIKEFUN string string_trim_all_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
-/*! @decl int Program.implements(program prog, program api)
+/*! @decl int implements(program prog, program api)
+ *! @belongs Program
  *!
  *! Returns 1 if @[prog] implements @[api].
  */
@@ -380,7 +384,8 @@ PIKEFUN int program_implements(program prog, program api)
   RETURN implements(prog, api);
 }
 
-/*! @decl int Program.inherits(program child, program parent)
+/*! @decl int inherits(program child, program parent)
+ *! @belongs Program
  *!
  *! Returns 1 if @[child] has inherited @[parent].
  */
@@ -391,7 +396,8 @@ PIKEFUN int program_inherits(program parent, program child)
   RETURN low_get_storage(parent, child) != -1;
 }
 
-/*! @decl string Program.defined(program p)
+/*! @decl string defined(program p)
+ *! @belongs Program
  *!
  *! Returns a string with filename and linenumber describing where
  *! the program @[p] was defined.
@@ -426,7 +432,8 @@ PIKEFUN string program_defined(program p)
   push_int(0);
 }
 
-/*! @decl int(8..8)|int(16..16)|int(32..32) String.width(string s)
+/*! @decl int(8..8)|int(16..16)|int(32..32) width(string s)
+ *! @belongs String
  *!
  *! Returns the width of a string.
  *!
