@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.44 2002/10/28 16:21:59 jhs Exp $
+// $Id: Query.pike,v 1.45 2002/10/31 11:44:24 mirar Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -318,6 +318,18 @@ string headers_encode(mapping h)
 			    intp(headers[hname]))
 			   return String.capitalize(replace(hname,"_","-")) +
 			      ": " + headers[hname];
+			if (arrayp(headers[hname]))
+			{
+			   return map(headers[hname],
+				      lambda(string b,string hname)
+				      {
+					 return String.capitalize(
+					    replace(hname,"_","-")) +
+					    ": " + b;
+				      },hname)*"\r\n";
+			}
+			error("bad type in headers: %O=%O\n",
+			      hname,headers[hname]);
 		     }, h )*"\r\n" + "\r\n";
 }
 
