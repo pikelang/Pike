@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.24 2004/01/22 09:41:46 grubba Exp $
+# $Id: common_module_makefile.in,v 1.25 2004/03/22 22:37:09 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -108,9 +108,13 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.24 2004/01/22 09:41:46 grubba Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.25 2004/03/22 22:37:09 mast Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
+	  echo >>module.pmod '#if constant ($(MODULE_PROGRAM))'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
+	  echo >>module.pmod '#else'; \
+	  echo >>module.pmod 'constant this_program_does_not_exist = 1;'; \
+	  echo >>module.pmod '#endif'; \
 	else \
 	  if [ -f "$(MODULE_PMOD_IN)" ]; then \
 	    sed -e "s/@module@/$(MODULE_PROGRAM)/" \
