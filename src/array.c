@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.108 2001/06/07 21:45:26 hubbe Exp $");
+RCSID("$Id: array.c,v 1.109 2001/06/08 01:38:09 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -527,7 +527,7 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
       free_svalues(ITEM(v) + end, v->size - end, v->type_field);
       free_svalues(ITEM(v), start, v->type_field);
       v->item+=start;
-      v->malloced_size+=start;
+      v->malloced_size-=start;
       v->size=end-start;
 #ifdef PIKE_DEBUG
       if(d_flag>1)
