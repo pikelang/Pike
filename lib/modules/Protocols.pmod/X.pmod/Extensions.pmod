@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.13 2002/06/13 20:21:17 bill Exp $
+ * $Id: Extensions.pmod,v 1.14 2002/06/17 19:39:42 bill Exp $
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -24,13 +24,18 @@
 
 #pike __REAL_VERSION__
 
+//! an abstract class used to provide features for implimenting
+//! X11 extensions. Provides no useful functionality on its own.
 static class extension
 {
   object dpy;
   int major, error, event;
 
   void post_init() {}
-  
+
+//! initialize the extension.
+//! @param d
+//! An object of type Protocols.X.Xlib.Display
   int init(object d)
   {
     dpy = d;
@@ -153,7 +158,7 @@ class Shape
 //   }
 }
 
-
+//! Provides support for the X11 XTEST extension.
 class XTEST
 {
   inherit extension;
@@ -162,20 +167,13 @@ class XTEST
   mapping event_op = (["KeyPress": 2, "KeyRelease": 3, "ButtonPress": 4,
 	"ButtonRelease": 5, "MotionNotify": 6]);
 
-  //! @decl void create()
-  //!
   //! Create object.
-
   void create() {}
 
-  //! @decl int init(object display)
-  //!
   //! Initialize the XTEST extension. Returns 1 if successful.
   //!
   //! @param display
   //!  Protocols.X.Display object
-  //!
-
   int init(object display)
   {
     return ::init(display);
@@ -192,8 +190,6 @@ class XTEST
     
   }
 
-  //! @decl int XTestFakeInput(string event_type, int detail, int delay, object|void window, int|void xloc, int|void yloc)
-  //!
   //! Send a synthetic event to an X server.
   //!
   //! @param event_type
@@ -210,8 +206,6 @@ class XTEST
   //!   For motion events, this is the relative X distance or absolute X coordinates.
   //! @param yloc
   //!   For motion events, this is the relative Y distance or absolute Y coordinates.
-  //!
-
   void XTestFakeInput(string event_type, int detail, int delay, 
 	object|void window, int|void xloc, int|void yloc)
   {
@@ -229,8 +223,6 @@ class XTEST
 
   }
 
-  //! @decl int XTestGrabControl(int impervious)
-  //!
   //! Cause the executing client to become impervious to server grabs.
   //! That is, it can continue to execute requests even if another client 
   //! grabs the server.
@@ -239,8 +231,6 @@ class XTEST
   //!   A true (non zero) value causes the client to perform as 
   //!   described above. If false (zero), server returns to the normal 
   //!   state of  being susceptible to server grabs.
-  //!
-
   void XTestGrabControl(int impervious)
   {
 
@@ -251,8 +241,5 @@ class XTEST
 
     req->data = sprintf("%c\0\0\0", impervious);
     dpy->send_request( req );
-
-
   }
-
 }
