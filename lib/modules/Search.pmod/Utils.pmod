@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.13 2001/07/12 16:41:22 js Exp $
+// $Id: Utils.pmod,v 1.14 2001/07/12 23:23:59 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -24,6 +24,112 @@ public string normalize(string in)
 //! and then lowercases the whole string
 {
   return Unicode.normalize( lower_case(in), "KD" );
+}
+
+
+#define THROW(X) throw( ({ (X), backtrace() }) )
+
+class ProfileCache(string db_name) {
+
+  private mapping(int:mapping(string:mixed)) value_cache = ([]);
+  private mapping(string:int) db_profile_names = ([]);
+  private mapping(string:int) srh_profile_names = ([]);
+
+  private Sql.Sql get_db() {
+    Sql.Sql db = DBManager.cached_get(db_name);
+    if(!db) THROW("Could not connect to database " + db_name + ".\n");
+    return db;
+  }
+
+  //! Return the profile number for the given database profile.
+  int get_db_profile_number(string name) {
+    int db_profile;
+    if(db_profile=db_profile_names[name])
+      return db_profile;
+
+    array res = get_db()->
+      query("SELECT id FROM wf_profile WHERE name=%s AND parent=0",
+	    name);
+    if(!sizeof(res))
+      THROW("No database profile " + name + " found.\n");
+
+    return db_profile_names[name] = (int)res[0]->id;
+  }
+
+  //! Return the profile number for the given search profile.
+  int get_srh_profile_number(string name, int db_profile) {
+    int srh_profile;
+    if(srh_profile=srh_profile_names[(string)db_profile+"\n"+name])
+      return srh_profile;
+
+    array res = get_db()->
+      query("SELECT id FROM wf_profile WHERE name=%s AND parent=%d",
+	    name, db_profile);
+    if(!sizeof(res))
+      THROW("No search profile " + name + " found.\n");
+
+    return srh_profile_names[(string)db_profile+"\n"+name] = (int)res[0]->id;
+  }
+
+  // Used when decoding text encoded pike data types.
+  private object compile_handler = class {
+      mapping(string:mixed) get_default_module() {
+	return ([ "aggregate_mapping":aggregate_mapping,
+		  "aggregate_multiset":aggregate_multiset,
+		  "aggregate":aggregate,
+		  "allocate":allocate,
+		  "this_program":0 ]);
+      }
+
+      mixed resolv(string id, void|string fn, void|string ch) {
+	throw( ({ sprintf("Found symbol %O while trying to decode Roxen Search "
+			  "settings. The database is corrupt or has been "
+			  "tampered with.\n", id),
+		  backtrace() }) );
+      }
+    }();
+
+  // Decodes a "readable" pike data type to its actual pike value.
+  private mixed reacodec_decode(string str) {
+    return compile_string("mixed foo=" + str + ";", 0, compile_handler)()->foo;
+  }
+
+  //! Return the value mapping for the given profile.
+  mapping get_value_mapping(int profile) {
+    mapping val;
+    if(val=copy_value(value_cache[profile]))
+      return val;
+
+    array res = get_db()->
+      query("SELECT name,value FROM wf_value WHERE pid=%d", profile);
+
+    val = mkmapping( res->name, map(res->value, reacodec_decode) );
+    value_cache[profile] = copy_value(val);
+    return val;
+  }
+
+  //! Return the named database/search profile pair.
+  array(mapping(string:mixed)) get_profile_pair(string db_name, void|string srh_name) {
+    int db = get_db_profile_number(db_name);
+    int srh = get_srh_profile_number(srh_name||"Default", db);
+    return ({ get_value_mapping(db), get_value_mapping(srh) });
+  }
+
+  //! Flushes an entry from the profile cache.
+  void flush_profile(int p) {
+    m_delete(value_cache, p);
+    foreach(indices(db_profile_names), string name)
+      if(db_profile_names[name]==p)
+	m_delete(db_profile_names, name);
+    m_delete(srh_profile_names, p);
+  }
+
+  //! Empty the whole cache.
+  void flush_cache() {
+    value_cache = ([]);
+    db_profile_names = ([]);
+    srh_profile_names = ([]);
+  }
 }
 
 class Logger {
