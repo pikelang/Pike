@@ -1,5 +1,5 @@
 
-#pike 7.6
+#pike 7.7
 
 inherit Array;
 
