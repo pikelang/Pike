@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.60 2001/11/08 14:00:09 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.61 2001/11/14 16:44:58 jonasw Exp $ */
 
 import Stdio;
 
@@ -129,7 +129,7 @@ void signal_watchdog()
 
 int main(int argc, array(string) argv)
 {
-  int e, verbose, successes, errors, t, check;
+  int e, verbose, prompt, successes, errors, t, check;
   int skipped, quiet;
   array(string) tests;
   string tmp;
@@ -171,6 +171,7 @@ int main(int argc, array(string) argv)
     ({"watchdog",Getopt.HAS_ARG,({"--watchdog"})}),
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.MAY_HAVE_ARG,({"-v","--verbose"})}),
+    ({"prompt",Getopt.NO_ARG,({"-p","--prompt"})}),
     ({"quiet",Getopt.NO_ARG,({"-q","--quiet"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
     ({"end",Getopt.HAS_ARG,({"-e","--end-after"})}),
@@ -269,10 +270,11 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "help":
-	  werror("Usage: "+argv[e]+" [-v | --verbose] [-h | --help] [-t <testno>] <testfile>\n");
+	  werror("Usage: "+argv[e]+" [-v | --verbose] [-p | --prompt] [-h | --help] [-t <testno>] <testfile>\n");
 	  return 0;
 
 	case "verbose": verbose+=foo(opt[1]); break;
+	case "prompt": prompt+=foo(opt[1]); break;
         case "quiet": quiet=1; istty_cache=-1; break;
 	case "start": start=foo(opt[1]); start--; break;
 	case "end": end=foo(opt[1]); break;
@@ -472,6 +474,14 @@ int main(int argc, array(string) argv)
 	
 	  if(verbose)
 	  {
+ 	    if (prompt) {
+ 	      if (Stdio.Readline()->
+ 		  read(sprintf("About to run test: %d. [<RETURN>/'quit']: ",
+ 			       e + 1)) == "quit") {
+ 		f = 999999;
+ 		break;
+ 	      }
+ 	    }
 	    werror("Doing test %d (%d total)%s\n",e+1,successes+errors+1,extra_info);
 	    if(verbose>1) bzot(test);
 	  }
