@@ -618,12 +618,15 @@ static array(array) low_chunky_diff(array d1, array d2)
     last = at + 1;
     if(at < 2) continue;
     b = d2[at-1]; yb = d2[at];
-    if(sizeof(yb) > sizeof(b) &&
-       equal(b, yb[sizeof(yb)-sizeof(b)..])) // has_suffix(yb, b)
+out:if(sizeof(yb) > sizeof(b))
     {
+      int i = sizeof(b), j = sizeof(yb);
+      while(i)
+	if(b[--i] != yb[--j])
+	  break out; // past five lines implement an if(has_suffix(yb, b))
       x = d2[at-2];
       y = yb[..sizeof(yb)-sizeof(b)-1];
-      if(at <= sizeof(d1))
+      if(at+1 <= sizeof(d1))
       {
 	c = d2[at+1];
 	array bc = b+c;
