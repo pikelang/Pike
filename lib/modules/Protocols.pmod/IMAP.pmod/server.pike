@@ -63,26 +63,34 @@ void recv_command(string s)
     return;
   }
   
-  string command = line->get_atom();
+  int state = 0;
+  do {
+    string command = line->get_atom();
 
-  if (!command)
-  {
-    send_bad_response(tag, "No command");
-    return;
-  }
+    if (!command)
+    {
+      send_bad_response(tag, "No command");
+      return;
+    }
 
-  if (debug_level)
-    werror("Read command: %O\n", command);
+    if (debug_level)
+      werror("Read command: %O\n", command);
     
-  function req = commands[lower_case(command)];
+    int|function req = commands[lower_case(command)];
+    if (intp(req)) {
+      if (!req || state)
+      {
+	send_bad_response(tag, "Unknown command");
+	return;
+      }
+      state = req;
+    } else {
+      // Found a function.
+      break;
+    }
+  } while (1);
 
-  if (!req)
-  {
-    send_bad_response(tag, "Unknown command");
-    return;
-  }
-
-  request_callback(req(tag, line));
+  request_callback(req(tag, line, state));
 }
 
 class recv_line
