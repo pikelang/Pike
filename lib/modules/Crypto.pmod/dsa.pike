@@ -63,7 +63,7 @@ bignum hash2number(string digest)
 bignum dsa_hash(string msg)
 {
 #if constant(Nettle.SHA1_State)
-  return hash2number(.SHA.hash(msg));
+  return hash2number(.SHA1.hash(msg));
 #else
   return hash2number(.sha()->update(msg)->digest());
 #endif
@@ -188,7 +188,7 @@ string nist_hash(bignum x)
   string s = x->digits(256);
 
 #if constant(Nettle.SHA1_State)
-  return .SHA.hash(s[sizeof(s) - SEED_LENGTH..]);
+  return .SHA1.hash(s[sizeof(s) - SEED_LENGTH..]);
 #else
   return .sha()->update(s[sizeof(s) - SEED_LENGTH..])->digest();
 #endif

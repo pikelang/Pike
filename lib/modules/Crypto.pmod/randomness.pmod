@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.4 2004/02/04 14:50:37 nilsson Exp $
+// $Id: randomness.pmod,v 1.5 2004/02/05 19:21:15 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -111,7 +111,7 @@ class arcfour_random {
   //! Initialize and seed the arcfour random generator.
   void create(string secret)
   {
-    set_encrypt_key(Crypto.SHA->hash(secret));
+    set_encrypt_key(Crypto.SHA1->hash(secret));
   }
 
   //! Return a string of the next len random characters from the

@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.27 2004/02/04 21:37:09 nilsson Exp $
+dnl $Id: testsuite.in,v 1.28 2004/02/05 19:21:15 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -136,23 +136,23 @@ cond_resolv( Nettle.MD4_Info, [[
 ]])
 
 
-dnl Crypto.SHA
+dnl Crypto.SHA1
 cond_resolv( Nettle.SHA1_Info, [[
-  test_eq(Crypto.SHA()->update("")->digest(),
+  test_eq(Crypto.SHA1()->update("")->digest(),
           String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709"))
-  test_eq(Crypto.SHA()->update("abc")->digest(),
+  test_eq(Crypto.SHA1()->update("abc")->digest(),
           String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d"))
-  test_eq(String.string2hex(Crypto.SHA()->update("x"*63)->digest()),
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*63)->digest()),
           "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
-  test_eq(String.string2hex(Crypto.SHA()->update("x"*64)->digest()),
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*64)->digest()),
           "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
-  test_eq(String.string2hex(Crypto.SHA()->update("x"*65)->digest()),
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*65)->digest()),
           "78c741ddc482e4cdf8c474a0876347a0905b6233")
-  test_eq(String.string2hex(Crypto.SHA()->update("x"*257)->digest()),
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*257)->digest()),
           "0796067748b6b0c2af864656a399f7722ef9283a")
-  test_eq(Crypto.SHA.hash("foo"),
+  test_eq(Crypto.SHA1.hash("foo"),
 	  String.hex2string("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"))
-  test_eq(Crypto.SHA()->update("f")->update("oo")->digest(),
+  test_eq(Crypto.SHA1()->update("f")->update("oo")->digest(),
 	  String.hex2string("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"))
 ]])
 

@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.11 2004/02/02 22:58:06 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.12 2004/02/05 19:22:01 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -58,7 +58,7 @@ class MACsha
   static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
 
-  static Crypto.Hash algorithm = Crypto.SHA;
+  static Crypto.Hash algorithm = Crypto.SHA1;
   static string secret;
 
   //!
@@ -138,7 +138,7 @@ class MAChmac_sha {
   //!
   static void create(string|void s) {
     secret = s || "";
-    hmac=Crypto.HMAC(Crypto.SHA);
+    hmac=Crypto.HMAC(Crypto.SHA1);
   }
 }
 
@@ -177,7 +177,7 @@ string prf(string secret,string label,string seed,int len) {
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
 
   string a=P_hash(Crypto.MD5,16,s1,label+seed,len);
-  string b=P_hash(Crypto.SHA,20,s2,label+seed,len);
+  string b=P_hash(Crypto.SHA1,20,s2,label+seed,len);
 
   return a ^ b;
 }
@@ -234,7 +234,7 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
   /* Exactly how is the signature process defined? */
   
   string params = cookie + struct->contents();
-  string digest = Crypto.MD5->hash(params) + Crypto.SHA->hash(params);
+  string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
       
   object s = context->rsa->raw_sign(digest);
 #ifdef SSL3_DEBUG_CRYPT
@@ -254,7 +254,7 @@ int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
   /* Exactly how is the signature process defined? */
 
   string params = cookie + struct->contents();
-  string digest = Crypto.MD5->hash(params) + Crypto.SHA->hash(params);
+  string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
 
   return context->rsa->raw_verify(digest, signature);
 }

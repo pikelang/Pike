@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.27 2004/02/04 20:07:32 bill Exp $
+ * $Id: X509.pmod,v 1.28 2004/02/05 19:22:17 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -224,8 +224,8 @@ string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
     ({ tbs,
        rsa_sha1_algorithm,
        BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
-#if constant(Crypto.SHA.name)
-				 Crypto.SHA.hash(tbs->get_der())
+#if constant(Crypto.SHA1.name)
+				 Crypto.SHA1.hash(tbs->get_der())
 #else
 				 Crypto.sha()->update(tbs->get_der())->digest()
 #endif
@@ -267,8 +267,8 @@ class rsa_verifier
 			       signature);
     if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.sha1_id,
-#if constant(Crypto.SHA.name)
-			       Crypto.SHA.hash(msg),
+#if constant(Crypto.SHA1.name)
+			       Crypto.SHA1.hash(msg),
 #else
 			       Crypto.sha()->update(msg)->digest(),
 #endif

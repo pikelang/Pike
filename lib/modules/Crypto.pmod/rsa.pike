@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.7 2003/12/15 13:54:02 grubba Exp $
+/* $Id: rsa.pike,v 1.8 2004/02/05 19:21:15 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -185,8 +185,8 @@ int(0..1) verify(string msg, program h, object sign)
 //!   Document this function.
 string sha_sign(string message, mixed|void r)
 {
-#if constant(Crypto.SHA.`())
-  Crypto.Cipher hash = Crypto.SHA();
+#if constant(Crypto.SHA1.`())
+  Crypto.Cipher hash = Crypto.SHA1();
 #else
   Crypto.sha hash = Crypto.sha();
 #endif
@@ -202,8 +202,8 @@ string sha_sign(string message, mixed|void r)
 //!   Document this function.
 int sha_verify(string message, string signature)
 {
-#if constant(Crypto.SHA.`())
-  Crypto.Cipher hash = Crypto.SHA();
+#if constant(Crypto.SHA1.`())
+  Crypto.Cipher hash = Crypto.SHA1();
 #else
   Crypto.sha hash = Crypto.sha();
 #endif

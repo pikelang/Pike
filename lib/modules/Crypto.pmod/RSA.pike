@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.3 2004/02/04 21:37:09 nilsson Exp $
+/* $Id: RSA.pike,v 1.4 2004/02/05 19:21:15 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -234,7 +234,7 @@ int(0..1) verify(string msg, .Hash h, Gmp.mpz sign)
 //!   Document this function.
 string sha_sign(string message, mixed|void r)
 {
-  string s = Crypto.SHA.hash(message);
+  string s = Crypto.SHA1.hash(message);
   s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
   return cooked_sign(s);
 }
@@ -243,7 +243,7 @@ string sha_sign(string message, mixed|void r)
 //!   Document this function.
 int sha_verify(string message, string signature)
 {
-  string s = Crypto.SHA.hash(message);
+  string s = Crypto.SHA1.hash(message);
   s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
