@@ -5,6 +5,8 @@
 AppName=Pike 7.6 *BETA*
 AppVerName=Pike 7.6.13, SDL, OpenGL, MySQL, Freetype, Gz and GTK+
 AppVersion=7.6.13
+VersionInfoVersion=7.6.13.0
+AppPublisher=The Pike Team
 AppPublisherURL=http://pike.ida.liu.se/
 AppSupportURL=http://pike.ida.liu.se/
 AppUpdatesURL=http://pike.ida.liu.se/
@@ -20,10 +22,10 @@ LicenseFile=X:\win32-pike\pikeinstaller\Copying.txt
 ;FIXME: pike.exe failed on win98 if Pike already is installed. Fix automatic
 ;uninstall. Late note: Seems to fail on XP too. Applies to 7.4 as well?
 
-Compression=bzip
-ShowLanguageDialog=no
+Compression=lzma/ultra
 SetupIconFile=X:\win32-pike\icons\pikeinstall.ico
-UninstallDisplayIcon=X:\win32-pike\icons\pike_red.ico
+UninstallIconFile=X:\win32-pike\icons\pike_red.ico
+InternalCompressionLevel=ultra
 
 [Files]
 Source: X:\win32-pike\dists\Pike-v7.6.13-Win32-Windows-NT-5.1.2600-i86pc.exe; DestDir: {tmp}; Flags: deleteafterinstall ignoreversion
@@ -116,6 +118,3 @@ Type: filesandordirs; Name: {app}\bin
 Type: filesandordirs; Name: {app}\include
 Type: filesandordirs; Name: {app}\lib
 Type: filesandordirs; Name: {app}\man
-
-[_ISTool]
-Use7zip=false
