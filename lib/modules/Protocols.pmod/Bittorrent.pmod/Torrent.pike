@@ -61,6 +61,8 @@
 
 import .Bencoding;
 
+Protocols.HTTP.Session http=Protocols.HTTP.Session();
+
 mapping(string:int|array|string|mapping) metainfo;
 mapping(string:int|array|string|mapping) info; // info part of metainfo
 
@@ -429,7 +431,6 @@ void update_tracker(void|string event,void|int contact)
       call_out(update_tracker_loop,tracker_update_interval);
    }
 
-
    mapping req=
       (["info_hash":info_sha1,
 	"peer_id":my_peer_id,
@@ -441,65 +442,67 @@ void update_tracker(void|string event,void|int contact)
    if (my_ip) req->ip=my_ip;
    if (event) req->event=event;
 
-   object q=Protocols.HTTP.get_url(
+   object r;
+   r=http->async_get_url(
       metainfo->announce,
-      req);
-
-   if (!q)
-   {
-      warning("tracker request failed, %s\n",strerror(errno()));
-      return;
-   }
-
-   if (!q->status_desc)
-   {
-      warning("tracker request failed, tracker hanged up\n");
-      return;
-   }
-
-   if (q->status!=200)
-   {
-      warning("tracker request failed, code %d %O:\n%O\n",
-	      q->status,q->status_desc[..50],
-	      q->data()[..77]);
-      return;
-   }
-
-   mapping m;
-   mixed err=catch {
-      m=decode(q->data());
-   };
-   if (err)
-   {
-      error("tracker request failed, says "
-	    "(raw, doesn't speak bencoded):\n%O\n",
-	    q->data()[..77]);
-   }
-   else
-   {
-      if (q["failure reason"])
-	 error("tracker request failed, failure reason:\n%O\n",
-	       q["failure reason"][..1000]);
-   }
-
-   if (m->peers)
-   {
-      foreach (m->peers;;mapping m)
-	 if (!peers[m["peer id"]])
+      req,
+      0, // headers ok
+      lambda() // data ok
+      {
+	 if (!r->status_desc())
 	 {
-	    .Peer p;
-	    if (peers[m["peer id"]]) continue;
-
-	    peers[m["peer id"]]=(p=peer_program(this_object(),m));
-	    if (sizeof(peers_ordered)<max_peers && contact) 
-	    {
-	       peers_ordered+=({p});
- 	       p->connect();
-	    }
-	    else 
-	       peers_unused+=({p});
+	    warning("tracker request failed, tracker hanged up\n");
+	    return;
 	 }
-   }
+
+	 if (r->status()!=200)
+	 {
+	    warning("tracker request failed, code %d %O: %O\n",
+		    r->status(),r->status_desc()[..50],
+		    r->data()[..77]);
+	    return;
+	 }
+
+	 mapping m;
+	 mixed err=catch {
+	    m=decode(r->data());
+	 };
+	 if (err)
+	 {
+	    error("tracker request failed, says "
+		  "(raw, doesn't speak bencoded): %O\n",
+		  r->data()[..77]);
+	 }
+	 else
+	 {
+	    if (m["failure reason"])
+	       error("tracker request failed, failure reason: %O\n",
+		     m["failure reason"][..1000]);
+	 }
+
+	 if (m->peers)
+	 {
+	    foreach (m->peers;;mapping m)
+	       if (!peers[m["peer id"]])
+	       {
+		  .Peer p;
+		  if (peers[m["peer id"]]) continue;
+
+		  peers[m["peer id"]]=(p=peer_program(this_object(),m));
+		  if (sizeof(peers_ordered)<max_peers && contact) 
+		  {
+		     peers_ordered+=({p});
+		     p->connect();
+		  }
+		  else 
+		     peers_unused+=({p});
+	       }
+	 }
+      },
+      lambda() // failed
+      {
+	 warning("tracker request failed, %s\n",strerror(errno()));
+      });
 }
 
 int last_increase=0;
@@ -1159,6 +1162,19 @@ void got_piece(int piece,string data)
       foreach (peers_ordered;;.Peer p)
 	 if (p->peer_interested)
 	    p->unchoke();
+}
+
+// ----------------------------------------------------------------
+
+void destroy()
+{
+// some clean-up
+   map(targets,destruct);
+   map(peers_ordered,destruct);
+   map(peers_unused,destruct);
+
+   remove_call_out(update_tracker_loop);
+   remove_call_out(increase_number_of_peers);
 }
 
 // ----------------------------------------------------------------
