@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.27 1999/06/22 18:58:37 marcus Exp $
+ * $Id: fdlib.h,v 1.28 1999/12/22 20:51:09 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -244,6 +244,7 @@ extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 #define direct _WIN32_FIND_DATAA
 #define dirent direct
 #define MAXPATHLEN MAX_PATH
+#define NAMLEN(dirent) strlen((dirent)->d_name)
 
 typedef struct DIR_s
 {
@@ -257,6 +258,12 @@ int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d);
 void closedir(DIR *dir);
 
 #define HAVE_POSIX_READDIR_R
+
+/* Do not use these... */
+#undef HAVE_DIRECT_H
+#undef HAVE_NDIR_H
+#undef HAVE_SYS_NDIR_H
+#undef HAVE_DIRENT_H
 
 #endif
 
