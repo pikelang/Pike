@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.35 2002/11/06 17:59:13 grubba Exp $
+|| $Id: odbc_result.c,v 1.36 2002/11/07 11:41:01 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.35 2002/11/06 17:59:13 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.36 2002/11/07 11:41:01 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -259,7 +259,7 @@ static void odbc_fix_fields(void)
   }
   f_aggregate(PIKE_ODBC_RES->num_fields);
 
-  add_ref(PIKE_ODBC_RES->fields = sp[-1].u.array);
+  add_ref(PIKE_ODBC_RES->fields = Pike_sp[-1].u.array);
   pop_stack();
 
   PIKE_ODBC_RES->field_info = (struct field_info *)
@@ -284,13 +284,13 @@ static void f_create(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to odbc_result()\n");
   }
-  if ((sp[-args].type != T_OBJECT) ||
+  if ((Pike_sp[-args].type != T_OBJECT) ||
       (!(PIKE_ODBC_RES->odbc =
-	 (struct precompiled_odbc *)get_storage(sp[-args].u.object,
+	 (struct precompiled_odbc *)get_storage(Pike_sp[-args].u.object,
 						odbc_program)))) {
     Pike_error("Bad argument 1 to odbc_result()\n");
   }
-  add_ref(PIKE_ODBC_RES->obj = sp[-args].u.object);
+  add_ref(PIKE_ODBC_RES->obj = Pike_sp[-args].u.object);
 
   odbc_check_error("odbc_result", "Statement allocation failed",
 		   SQLAllocStmt(PIKE_ODBC_RES->odbc->hdbc, &hstmt), NULL);
