@@ -1,12 +1,8 @@
-//!
-//! module Calendar
-//! submodule Time
-//!
 //! 	Base for time of day in calendars, ie 
 //! 	calendars with hours, minutes, seconds
 //! 	
 //! 	This module can't be used by itself, but
-//! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>, 
+//! 	is inherited by other modules (@[ISO] by @[YMD], 
 //! 	for instance).
 
 #pike __REAL_VERSION__
@@ -39,12 +35,11 @@ Ruleset.Timezone Timezone_UTC=Ruleset.Timezone(0,"UTC"); // needed for dumping
 string calendar_name() { return "Time"; }
 
 //------------------------------------------------------------------------
-//! class TimeOfDay
-//------------------------------------------------------------------------
-
+//! Time of day.
 class TimeofDay
+//------------------------------------------------------------------------
 {
-//! inherits TimeRange
+   //! inherits TimeRange
    inherit TimeRange;
 
    constant is_timeofday=1;
@@ -58,20 +53,20 @@ class TimeofDay
    int utco=CALUNKNOWN; // offset to utc, counting dst
    string tzn;     // name of timezone
    
-//! method void create()
-//! method void create(int unixtime)
-//!	In addition to the wide range of construction arguments
-//!	for a normal TimeRange (see <ref>TimeRange.create</ref>),
-//!	a time of day can also be constructed with unixtime
-//!	as single argument consisting of the unix time
-//!	- as returned from <tt>time(2)</tt> - of the time unit start.
-//!
-//!	It can also be constructed without argument, which
-//!	then means "now", as in "this minute".
 
 //- for internal use:
 //- method void create("timeofday",rules,unixtime,len)
 
+   //! @decl void create()
+   //! @decl void create(int unixtime)
+   //!	In addition to the wide range of construction arguments
+   //!	for a normal TimeRange (see @[TimeRange->create()]),
+   //!	a time of day can also be constructed with unixtime
+   //!	as single argument consisting of the unix time
+   //!	- as returned from @tt{time(2)@} - of the time unit start.
+   //!
+   //!	It can also be constructed without argument, which
+   //!	then means "now", as in "this minute".
    void create(mixed ...args)
    {
       if (!sizeof(args))
@@ -304,51 +299,49 @@ class TimeofDay
       return base->add(n,step)->place(this_object(),1);
    }
 
-//! method Hour hour()
-//! method Hour hour(int n)
-//! method array(Hour) hours()
-//! method array(Hour) hours(int first,int last)
-//! method int number_of_hours()
-//!	<ref>hour</ref>() gives back the timerange representing the
-//!	first or <i>n</i>th Hour of the called object.
-//!	Note that hours normally starts to count at zero,
-//!	so <tt>->hour(2)</tt> gives the third hour within
-//!	the range.
-//!
-//!	An Hour is in the Calendar perspective as any other
-//!	time range not only 60 minutes, but also one 
-//!	of the (normally) 24 hours of the day, precisely.
-//!
-//!	<ref>hours</ref>() give back an array of all the hours
-//!	containing the time periods called. With arguments,
-//!	it will give back a range of those hours, in the
-//!	same enumeration as the <i>n</i> to <ref>hour</ref>().
-//!
-//!	<ref>number_of_hours</ref>() simple counts the
-//!	number of hours containing the called time period.
-//!
-//! Note:
-//!	The called object doesn't have to
-//!	*fill* all the hours it will send back, it's 
-//!	enough if it exist in those hours:
-//!
-//! 	<pre>
-//!	> object h=Calendar.Time.Hour();
-//!	Result: Hour(265567)
-//!	> h->hours();                    
-//!	Result: ({ /* 1 element */
-//!		    Hour(265567)
-//!		})
-//!	> h+=Calendar.Time.Minute();
-//!	Result: Minute(265567:01+60m)
-//!	> h->hours();
-//!	Result: ({ /* 2 elements */
-//!		    Hour(265567),
-//!		    Hour(265568)
-//!		})
-//!	</pre>
-
-
+   //! @decl Hour hour()
+   //! @decl Hour hour(int n)
+   //! @decl array(Hour) hours()
+   //! @decl array(Hour) hours(int first,int last)
+   //! @decl int number_of_hours()
+   //!	@[hour()] returns the timerange representing the
+   //!	first or @[n]th Hour of the called object.
+   //!	Note that hours normally start to count at zero,
+   //!	so @tt{->hour(2)@} returns the third hour within
+   //!	the range.
+   //!
+   //!	An Hour is in the Calendar perspective as any other
+   //!	time range not only 60 minutes, but also one 
+   //!	of the (normally) 24 hours of the day, precisely.
+   //!
+   //!	@[hours()] returns an array of all the hours
+   //!	containing the time periods called. With arguments,
+   //!	it will give back a range of those hours, in the
+   //!	same enumeration as the @[n] to @[hour()].
+   //!
+   //!	[number_of_hours()] simply counts the
+   //!	number of hours containing the called time period.
+   //!
+   //! @note
+   //!	The called object doesn't have to
+   //!	*fill* all the hours it will send back, it's 
+   //!	enough if it exist in those hours:
+   //!
+   //! 	@pre{
+   //!	> object h=Calendar.Time.Hour();
+   //!	Result: Hour(265567)
+   //!	> h->hours();                    
+   //!	Result: ({ /* 1 element */
+   //!		    Hour(265567)
+   //!		})
+   //!	> h+=Calendar.Time.Minute();
+   //!	Result: Minute(265567:01+60m)
+   //!	> h->hours();
+   //!	Result: ({ /* 2 elements */
+   //!		    Hour(265567),
+   //!		    Hour(265568)
+   //!		})
+   //!	@}
 
    cHour hour(void|int n)
    {
@@ -374,29 +367,29 @@ class TimeofDay
    array(cSecond) hours(int ...range)
    { return get_timeofday("hours",0,3600,Hour,@range); }
 
-//! method Minute minute()
-//! method Minute minute(int n)
-//! method array(Minute) minutes()
-//! method array(Minute) minutes(int first,int last)
-//! method int number_of_minutes()
-//!	<ref>minute</ref>() gives back the timerange representing the
-//!	first or <i>n</i>th Minute of the called object.
-//!	Note that minutes normally starts to count at zero,
-//!	so <tt>->minute(2)</tt> gives the third minute within
-//!	the range.
-//!
-//!	An Minute is in the Calendar perspective as any other
-//!	time range not only 60 seconds, but also one 
-//!	of the (normally) 60 minutes of the <ref>Hour</ref>, precisely.
-//!
-//!	<ref>minutes</ref>() give back an array of all the minutes
-//!	containing the time periods called. With arguments,
-//!	it will give back a range of those minutes, in the
-//!	same enumeration as the <i>n</i> to <ref>minute</ref>().
-//!
-//!	<ref>number_of_minutes</ref>() simple counts the
-//!	number of minutes containing the called time period.
-//!
+   //! @decl Minute minute()
+   //! @decl Minute minute(int n)
+   //! @decl array(Minute) minutes()
+   //! @decl array(Minute) minutes(int first,int last)
+   //! @decl int number_of_minutes()
+   //!	@[minute()] returns the timerange representing the
+   //!	first or @[n]th Minute of the called object.
+   //!	Note that minutes normally start to count at zero,
+   //!	so @tt{->minute(2)@} returns the third minute within
+   //!	the range.
+   //!
+   //!	A Minute is in the Calendar perspective as any other
+   //!	time range not only 60 seconds, but also one 
+   //!	of the (normally) 60 minutes of the @[Hour], precisely.
+   //!
+   //!	@[minutes()] returns an array of all the minutes
+   //!	containing the time periods called. With arguments,
+   //!	it will give back a range of those minutes, in the
+   //!	same enumeration as the @[n] to @[minute()].
+   //!
+   //!	@[number_of_minutes()] simply counts the
+   //!	number of minutes containing the called time period.
+   //!
 
    cMinute minute(void|int n)
    {
@@ -422,24 +415,24 @@ class TimeofDay
    array(cSecond) minutes(int ...range)
    { return get_timeofday("minutes",0,60,Minute,@range); }
 
-//! method Second second()
-//! method Second second(int n)
-//! method array(Second) seconds()
-//! method array(Second) seconds(int first,int last)
-//! method int number_of_seconds()
-//!	<ref>second</ref>() gives back the timerange representing the
-//!	first or <i>n</i>th Second of the called object.
-//!	Note that seconds normally starts to count at zero,
-//!	so <tt>->second(2)</tt> gives the third second within
-//!	the range.
-//!
-//!	<ref>seconds</ref>() give back an array of all the seconds
-//!	containing the time periods called. With arguments,
-//!	it will give back a range of those seconds, in the
-//!	same enumeration as the <i>n</i> to <ref>second</ref>().
-//!
-//!	<ref>number_of_seconds</ref>() simple counts the
-//!	number of seconds containing the called time period.
+   //! @decl Second second()
+   //! @decl Second second(int n)
+   //! @decl array(Second) seconds()
+   //! @decl array(Second) seconds(int first,int last)
+   //! @decl int number_of_seconds()
+   //!	@[second()] returns the timerange representing the
+   //!	first or @[n]th Second of the called object.
+   //!	Note that seconds normally start to count at zero,
+   //!	so @tt{->second(2)@} returns the third second within
+   //!	the range.
+   //!
+   //!	@[seconds()] returns an array of all the seconds
+   //!	containing the time periods called. With arguments,
+   //!	it will give back a range of those seconds, in the
+   //!	same enumeration as the @[n] to @[second()].
+   //!
+   //!	@[number_of_seconds()] simply counts the
+   //!	number of seconds containing the called time period.
 
    cSecond second(void|int n)
    {
@@ -550,11 +543,10 @@ class TimeofDay
       return a+" "+nice_print()+" - "+b+" "+end()->nice_print();
    }
 
-//! method TimeRange set_size_seconds(int seconds)
-//! method TimeRange set_size_ns(int nanoseconds)
-//!	These two methods allows the time range
-//!	to be edited by size of specific units.
-
+   //! @decl TimeRange set_size_seconds(int seconds)
+   //! @decl TimeRange set_size_ns(int nanoseconds)
+   //!	These two methods allow the time range
+   //!	to be edited by size of specific units.
 
    TimeRange set_size_seconds(int seconds)
    {
@@ -570,14 +562,14 @@ class TimeofDay
 	 ->autopromote();
    }
 
-//! method TimeRange move_seconds(int seconds)
-//! method TimeRange move_ns(int nanoseconds)
-//!	These two methods gives back the 
-//!	time range called moved the specified
-//!	amount of time, with the length intact.
-//!
-//!	The motion is relative to the original position
-//!	in time; 10 seconds ahead of 10:42:32 is 10:42:42, etc.
+   //! @decl TimeRange move_seconds(int seconds)
+   //! @decl TimeRange move_ns(int nanoseconds)
+   //!	These two methods return the 
+   //!	time range called moved the specified
+   //!	amount of time, with the length intact.
+   //!
+   //!	The motion is relative to the original position
+   //!	in time; 10 seconds ahead of 10:42:32 is 10:42:42, etc.
 
    TimeRange move_seconds(int seconds)
    {
@@ -592,36 +584,32 @@ class TimeofDay
 
 // --------
 
-//! method int unix_time()
-//!	This calculates the corresponding unix time,
-//!	- as returned from <tt>time(2)</tt> - from the
-//!	time range. Note that the calculated unix time
-//!	is the beginning of the period.
-
+   //!	This calculates the corresponding unix time,
+   //!	- as returned from @tt{time(2)@} - from the
+   //!	time range. Note that the calculated unix time
+   //!	is the beginning of the period.
    int unix_time() { return ux; }
 
-//! method float julian_day()
-//!	This calculates the corresponding julian day,
-//!	from the time range. Note that the calculated day
-//!	is the beginning of the period, and is a float -
-//!	julian day standard says .00 is midday, 12:00 pm.
-//!
-//! note:
-//!	Normal pike (ie, 32 bit) floats (without --with-double-precision)
-//!	has a limit of about 7 digits, and since we are about
-//!	julian day 2500000, the precision on time of day is very limited.
-
+   //!	This calculates the corresponding julian day,
+   //!	from the time range. Note that the calculated day
+   //!	is the beginning of the period, and is a float -
+   //!	julian day standard says .00 is midday, 12:00 pm.
+   //!
+   //! @note
+   //!	Normal pike (ie, 32 bit) floats (without @tt{--with-double-precision@})
+   //!	has a limit of about 7 digits, and since we are about
+   //!	julian day 2500000, the precision on time of day is very limited.
    float julian_day() 
    { 
       return 2440588+ux/86400.0-0.5;
    }
 
-//! method int hour_no()
-//! method int minute_no()
-//! method int second_no()
-//! method float fraction_no()
-//!	This gives back the number of the time unit,
-//!	on this day. Fraction is a float number, 0&lt;=fraction&lt;1.
+   //! @decl int hour_no()
+   //! @decl int minute_no()
+   //! @decl int second_no()
+   //! @decl float fraction_no()
+   //!	These return the number of the time unit,
+   //!	on this day. Fraction is a float number, 0 <= fraction < 1.
 
    int hour_no()
    {
@@ -646,29 +634,37 @@ class TimeofDay
       return 0.0;
    }
 
-//! function mapping datetime()
-//!     This gives back a mapping with the relevant
-//!	time information (representing the start of the period);
-//!	<pre>
-//!	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
-//!	    "month":    int(1..)   // month of year
-//!	    "day":      int(1..)   // day of month
-//!	    "yearday":  int(1..)   // day of year
-//!	    "week":	int(1..)   // week of year
-//!	    "week_day": int(1..)   // day of week (depending on calendar)
-//!
-//!	    "hour":     int(0..)   // hour of day, including dst
-//!	    "minute":   int(0..59) // minute of hour
-//!	    "second":   int(0..59) // second of minute 
-//!	    "fraction": float      // fraction of second
-//!	    "timezone": int        // offset to utc, including dst
-//!
-//!	    "unix":     int        // unix time
-//!	    "julian":   float      // julian day
-//!	 ]);
-//!	</pre>
-
-   mapping datetime()
+   //!  This function returns a mapping with the relevant
+   //!	time information (representing the start of the period);
+   //!	@mapping
+   //!	  @member int "year"
+   //!      Year number (2000 AD==2000, 1 BC==0).
+   //!	  @member int(1..) "month"
+   //!      Month of year.
+   //!	  @member int(1..) "day"
+   //!      Day of month.
+   //!	  @member int(1..) "yearday"
+   //!      Day of year.
+   //!	  @member int(1..) "week"
+   //!      Week of year.
+   //!	  @member int(1..) "week_day"
+   //!      Day of week (depending on calendar).
+   //!	  @member int(0..) "hour"
+   //!      Hour of day, including daylight savings.
+   //!	  @member int(0..59) "minute"
+   //!      Minute of hour.
+   //!	  @member int(0..60) "second"
+   //!      Second of minute.
+   //!	  @member float "fraction"
+   //!      Fraction of second.
+   //!	  @member int "timezone"
+   //!      Offset to UTC, including daylight savings.
+   //!	  @member int "unix"
+   //!      Unix time (seconds since 00:00:00 Jan 1 1970).
+   //!	  @member float "julian"
+   //!      Julian day.
+   //!	@endmapping
+   mapping(string:int|float) datetime()
    {
       if (ls==CALUNKNOWN) make_local();
       if (!base) make_base();
@@ -683,71 +679,76 @@ class TimeofDay
       ]);
    }
 
-// --- string format ----
-
-//! method string format_iso_ymd();
-//! method string format_ymd();
-//! method string format_ymd_short();
-//! method string format_ymd_xshort();
-//! method string format_iso_week();
-//! method string format_iso_week_short();
-//! method string format_week();
-//! method string format_week_short();
-//! method string format_month();
-//! method string format_month_short();
-//! method string format_iso_time();
-//! method string format_time();
-//! method string format_time_short();
-//! method string format_time_xshort();
-//! method string format_mtime();
-//! method string format_xtime();
-//! method string format_tod();
-//! method string format_xtod();
-//! method string format_mod();
-//! method string format_nice();
-//! method string format_nicez();
-//!	Format the object into nice strings;
-//!	<pre>
-//!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
-//!	ext_ymd        "Friday, 2 June 2000" [2]
-//!     ymd            "2000-06-02" 
-//!     ymd_short      "20000602"
-//!     ymd_xshort     "000602" [1]
-//!	iso_week       "2000-W22"
-//!	iso_week_short "2000W22"
-//!	week           "2000-w22" [2]
-//!	week_short     "2000w22" [2]
-//!	month          "2000-06"
-//!	month_short    "200006" [1]
-//!	iso_time       "2000-06-02 (Jun) -W22-5 (Fri) 20:53:14 UTC+1" [2]
-//!	ext_time       "Friday, 2 June 2000, 20:53:14" [2]
-//!	ctime          "Fri Jun  4 20:53:14 2000\n" [2] [3]
-//!	http           "Fri, 02 Jun 2000 19:53:14 GMT" [4]
-//!     time           "2000-06-02 20:53:14" 
-//!	time_short     "20000602 20:53:14"
-//!	time_xshort    "000602 20:53:14"
-//!     mtime          "2000-06-02 20:53" 
-//!     xtime          "2000-06-02 20:53:14.000000" 
-//!     todz           "20:53:14 CET"
-//!     todz_iso       "20:53:14 UTC+1"
-//!     tod            "20:53:14"
-//!     tod_short      "205314"
-//!     xtod           "20:53:14.000000"
-//!     mod            "20:53"
-//!     nice           "2 Jun 20:53", "2 Jun 2000 20:53:14" [2][5]
-//!     nicez          "2 Jun 20:53 CET" [2][5]
-//!     smtp           "Fri, 2 Jun 2000 20:53:14 +0100" [6]
-//!	</pre>
-//!	<tt>[1]</tt> note conflict (think 1 February 2003)
-//!	<br><tt>[2]</tt> language dependent
-//!	<br><tt>[3]</tt> as from the libc function ctime()
-//!	<br><tt>[4]</tt> as specified by the HTTP standard;
-//!		this is always in GMT, ie, UTC. The timezone calculations
-//!		needed will be executed implicitly. It is not language
-//!		dependent.
-//!	<br><tt>[5]</tt> adaptive to type and with special cases
-//!	 	for yesterday, tomorrow and other years
-//!	<br><tt>[6]</tt> as seen in Date: headers in mails
+   // --- string format ----
+   
+   //! @decl string format_iso_ymd();
+   //! @decl string format_ymd();
+   //! @decl string format_ymd_short();
+   //! @decl string format_ymd_xshort();
+   //! @decl string format_iso_week();
+   //! @decl string format_iso_week_short();
+   //! @decl string format_week();
+   //! @decl string format_week_short();
+   //! @decl string format_month();
+   //! @decl string format_month_short();
+   //! @decl string format_iso_time();
+   //! @decl string format_time();
+   //! @decl string format_time_short();
+   //! @decl string format_time_xshort();
+   //! @decl string format_mtime();
+   //! @decl string format_xtime();
+   //! @decl string format_tod();
+   //! @decl string format_xtod();
+   //! @decl string format_mod();
+   //! @decl string format_nice();
+   //! @decl string format_nicez();
+   //!	Format the object into nice strings;
+   //!	@pre{
+   //!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
+   //!	ext_ymd        "Friday, 2 June 2000" [2]
+   //!  ymd            "2000-06-02" 
+   //!  ymd_short      "20000602"
+   //!  ymd_xshort     "000602" [1]
+   //!	iso_week       "2000-W22"
+   //!	iso_week_short "2000W22"
+   //!	week           "2000-w22" [2]
+   //!	week_short     "2000w22" [2]
+   //!	month          "2000-06"
+   //!	month_short    "200006" [1]
+   //!	iso_time       "2000-06-02 (Jun) -W22-5 (Fri) 20:53:14 UTC+1" [2]
+   //!	ext_time       "Friday, 2 June 2000, 20:53:14" [2]
+   //!	ctime          "Fri Jun  4 20:53:14 2000\n" [2] [3]
+   //!	http           "Fri, 02 Jun 2000 19:53:14 GMT" [4]
+   //!  time           "2000-06-02 20:53:14" 
+   //!	time_short     "20000602 20:53:14"
+   //!	time_xshort    "000602 20:53:14"
+   //!  mtime          "2000-06-02 20:53" 
+   //!  xtime          "2000-06-02 20:53:14.000000" 
+   //!  todz           "20:53:14 CET"
+   //!  todz_iso       "20:53:14 UTC+1"
+   //!  tod            "20:53:14"
+   //!  tod_short      "205314"
+   //!  xtod           "20:53:14.000000"
+   //!  mod            "20:53"
+   //!  nice           "2 Jun 20:53", "2 Jun 2000 20:53:14" [2][5]
+   //!  nicez          "2 Jun 20:53 CET" [2][5]
+   //!  smtp           "Fri, 2 Jun 2000 20:53:14 +0100" [6]
+   //!	@}
+   //!	@tt{[1]@} note conflict (think 1 February 2003).
+   //!
+   //!	@tt{[2]@} language dependent.
+   //!
+   //!	@tt{[3]@} as from the libc function @tt{ctime()@}.
+   //!
+   //!	@tt{[4]@} as specified by the HTTP standard;
+   //!		this is always in GMT, ie, UTC. The timezone calculations
+   //!		needed will be executed implicitly. It is not language
+   //!		dependent.
+   //!
+   //!	@tt{[5]@} adaptive to type and with special cases
+   //!	 	for yesterday, tomorrow and other years.
+   //!
+   //!     @tt{[6]@} as seen in Date: headers in mails.
 
    string format_ext_ymd();
    string format_iso_ymd();
@@ -954,68 +955,72 @@ class TimeofDay
       werror(_ind+"= %O\n",x);						\
       return x;								\
    }
+
+   //! @ignore
    DEBUG_OVERLOAD_OPERATOR(`&,"&","|  ");
    DEBUG_OVERLOAD_OPERATOR(`^,"^","|  ");
    DEBUG_OVERLOAD_OPERATOR(`|,"|","|  ");
    DEBUG_OVERLOAD_OPERATOR(subtract,"-","|  ");
+   //! @endignore
 #endif
 }
 
    string _ind="* ";
 
 //-----------------------------------------------------------------
-//! class SuperTimeRange
-//! inherits TimeRanges.SuperTimeRange
-//-----------------------------------------------------------------
-
+//! Super time-range.
 class cSuperTimeRange
+//-----------------------------------------------------------------
 {
+   //! inherits TimeRanges.SuperTimeRange
    inherit TimeRanges::cSuperTimeRange;
 
 #ifdef TIME_OPERATOR_DEBUG
+   //! @ignore
    DEBUG_OVERLOAD_OPERATOR(`&,"&","S  ");
    DEBUG_OVERLOAD_OPERATOR(`^,"^","S  ");
    DEBUG_OVERLOAD_OPERATOR(`|,"|","S  ");
    DEBUG_OVERLOAD_OPERATOR(subtract,"-","S  ");
+   //! @endignore
 #endif
 
-//! method Second second()
-//! method Second second(int n)
-//! method array(Second) seconds()
-//! method array(Second) seconds(int first,int last)
-//! method int number_of_seconds()
-//! method Minute minute()
-//! method Minute minute(int n)
-//! method array(Minute) minutes()
-//! method array(Minute) minutes(int first,int last)
-//! method int number_of_minutes()
-//! method Hour hour()
-//! method Hour hour(int n)
-//! method array(Hour) hours()
-//! method array(Hour) hours(int first,int last)
-//! method int number_of_hours()
-//!	Similar to <ref>TimeofDay</ref>, the Time::SuperTimeRange
-//!	has a number of methods for digging out time parts of the
-//!	range. Since a <ref>SuperTimeRange</ref> is a bit more
-//!	complex - the major reason for its existance it that it 
-//!	contains holes, this calculation is a bit more advanced too.
-//!
-//!	If a range contains the seconds, say, 1..2 and 4..5, 
-//!	the third second (number 2, since we start from 0) 
-//!	in the range would be number 4, like this:
-//!
-//!	<pre>
-//!	no   means this second
-//!	0    1        
-//!	1    2        
-//!	2    4      &lt;- second three is missing,
-//!	3    5         as we don't have it in the example range
-//!	</pre>
-//!
-//!	<ref>number_of_seconds</ref>() will in this example 
-//!	therefore also report 4, not 5, even if the time from
-//!	start of the range to the end of the range is 5 seconds.
-//!
+   //! @decl Second second()
+   //! @decl Second second(int n)
+   //! @decl array(Second) seconds()
+   //! @decl array(Second) seconds(int first, int last)
+   //! @decl int number_of_seconds()
+   //! @decl Minute minute()
+   //! @decl Minute minute(int n)
+   //! @decl array(Minute) minutes()
+   //! @decl array(Minute) minutes(int first, int last)
+   //! @decl int number_of_minutes()
+   //! @decl Hour hour()
+   //! @decl Hour hour(int n)
+   //! @decl array(Hour) hours()
+   //! @decl array(Hour) hours(int first, int last)
+   //! @decl int number_of_hours()
+   //!	Similar to @[TimeofDay], the Time::SuperTimeRange
+   //!	has a number of methods for digging out time parts of the
+   //!	range. Since a @[SuperTimeRange] is a bit more
+   //!	complex - the major reason for its existance it that it 
+   //!	contains holes, this calculation is a bit more advanced too.
+   //!
+   //!	If a range contains the seconds, say, 1..2 and 4..5, 
+   //!	the third second (number 2, since we start from 0) 
+   //!	in the range would be number 4, like this:
+   //!
+   //!	@pre{
+   //!	no   means this second
+   //!	0    1        
+   //!	1    2        
+   //!	2    4      &lt;- second three is missing,
+   //!	3    5         as we don't have it in the example range
+   //!	@}
+   //!
+   //!	@[number_of_seconds()] will in this example 
+   //!	therefore also report 4, not 5, even if the time from
+   //!	start of the range to the end of the range is 5 seconds.
+   //!
 
    array(cHour) hours(int ...range) { return get_units("hours",@range); }
    cHour hour(void|int n) { return get_unit("hours",n); }
@@ -1157,16 +1162,15 @@ class cNullTimeRange
 }
 
 //------------------------------------------------------------------------
-//! class Hour
-//------------------------------------------------------------------------
-
 function(mixed...:cHour) Hour=cHour; // inheritance purposes
+
+//! class Hour
 class cHour
+//------------------------------------------------------------------------
 {
    constant is_hour=1;
 
-//! inherits TimeofDay
-
+   //! inherits TimeofDay
    inherit TimeofDay;
 
    void create_unixtime_default(int unixtime)
@@ -1235,16 +1239,15 @@ class cHour
 }
 
 //------------------------------------------------------------------------
-//! class Minute
-//------------------------------------------------------------------------
-
 function(mixed...:cMinute) Minute=cMinute; // inheritance purposes
+
+//! class Minute
 class cMinute
+//------------------------------------------------------------------------
 {
    constant is_minute=1;
 
-//! inherits TimeofDay
-
+   //! inherits TimeofDay
    inherit TimeofDay;
 
    void create_unixtime_default(int unixtime)
@@ -1310,16 +1313,15 @@ class cMinute
 }
 
 //------------------------------------------------------------------------
-//! class Second
-//------------------------------------------------------------------------
-
 function(mixed...:cSecond) Second=cSecond; // inheritance purposes
+
+//! class Second
 class cSecond
+//------------------------------------------------------------------------
 {
    constant is_second=1;
 
-//! inherits TimeofDay
-
+   //! inherits TimeofDay
    inherit TimeofDay;
 
    void create_unixtime_default(int unixtime)
@@ -1391,7 +1393,8 @@ class cSecond
 }
 
 //------------------------------------------------------------------------
-//! class Fraction
+function(mixed...:cFraction) Fraction=cFraction;
+
 //!	A Fraction is a part of a second, and/or a time period
 //!	with higher resolution then a second. 
 //!
@@ -1403,13 +1406,10 @@ class cSecond
 //!	Internally, the fraction time period is measured in
 //!	nanoseconds. A shorter or more precise time period then 
 //!	in nanoseconds is not possible within the current Fraction class.
-//!
-//! inherits TimeofDay
-//------------------------------------------------------------------------
-
-function(mixed...:cFraction) Fraction=cFraction;
 class cFraction
+//------------------------------------------------------------------------
 {
+   //! inherits TimeofDay
    inherit cSecond;
 
    constant is_timeofday_f=1;
@@ -1419,25 +1419,24 @@ class cFraction
    int len_ns; // nanoseconds length
    int len_s;  // seconds length
 
-//! method void create()
-//! method void create("unixtime",int|float unixtime)
-//! method void create("unixtime",int|float unixtime,int|float len)
-//!	It is possible to create a Fraction in two ways,
-//!	either "now" with no arguments or
-//!	from a unix time (as from <tt>time(2)</tt>).
-//!
-//!	If created from unix time, both the start of the period
-//!	and the size of the period can be given in floats,
-//!	both representing seconds. Note that the default
-//!	float precision in pike is rather low (same as 'float' in C,
-//!	the 32 bit floating point precision, normally about 7 digits),
-//!	so beware that the resolution might bite you. (Internally
-//!	in a Fraction, the representation is an integer.)
-//!
-//!	If created without explicit length, the fraction will always be
-//!	of zero length.
-
-   void create(mixed ...args)
+   //! @decl void create()
+   //! @decl void create("unixtime",int|float unixtime)
+   //! @decl void create("unixtime",int|float unixtime,int|float len)
+   //!	It is possible to create a Fraction in two ways,
+   //!	either "now" with no arguments or
+   //!	from a unix time (as from @tt{time(2)@}).
+   //!
+   //!	If created from unix time, both the start of the period
+   //!	and the size of the period can be given in floats,
+   //!	both representing seconds. Note that the default
+   //!	float precision in pike is rather low (same as 'float' in C,
+   //!	the 32 bit floating point precision, normally about 7 digits),
+   //!	so beware that the resolution might bite you. (Internally
+   //!	in a Fraction, the representation is an integer.)
+   //!
+   //!	If created without explicit length, the fraction will always be
+   //!	of zero length.
+   void create(mixed ... args)
    {
       if (!sizeof(args))
       {
@@ -1830,29 +1829,27 @@ class cFraction
 //  global convinience functions
 //------------------------------------------------------------------------
 
-//! method TimeofDay now()
 //!	Give the zero-length time period of the
 //!	current time.
-
 TimeofDay now()
 {
    return Fraction();
 }
 
-//! method Calendar set_timezone(Timezone tz)
-//! method Calendar set_timezone(string|Timezone tz)
-//! method TimeZone timezone()
+//! @decl Calendar set_timezone(Timezone tz)
+//! @decl Calendar set_timezone(string|Timezone tz)
+//! @decl TimeZone timezone()
 //!	Set or get the current timezone (including dst) rule.
-//!	<ref>set_timezone</ref> returns a new calendar object,
+//!	@[set_timezone()] returns a new calendar object,
 //!	as the called calendar but with another set of rules.
 //!
-//!	Example:
-//!	<pre>
-//!	&gt; Calendar.now();                                      
+//! @example
+//!	@pre{
+//!	> Calendar.now();                                      
 //!	Result: Fraction(Fri 2 Jun 2000 18:03:22.010300 CET)
-//!	&gt; Calendar.set_timezone(Calendar.Timezone.UTC)->now();
+//!	> Calendar.set_timezone(Calendar.Timezone.UTC)->now();
 //!	Result: Fraction(Fri 2 Jun 2000 16:03:02.323912 UTC)
-//!	</pre>
+//!	@}
 
 this_program set_timezone(string|Ruleset.Timezone tz)
 {
@@ -1874,10 +1871,10 @@ Ruleset.Language language()
    return default_rules->language;
 }
 
-//! method Calendar set_ruleset(Ruleset r)
-//! method Ruleset ruleset()
+//! @decl Calendar set_ruleset(Ruleset r)
+//! @decl Ruleset ruleset()
 //!	Set or read the ruleset for the calendar.
-//!	<ref>set_ruleset</ref> returns a new calendar object,
+//!	@[set_ruleset()] returns a new calendar object,
 //!	but with the new ruleset.
 
 this_program set_ruleset(Ruleset r)

@@ -1,7 +1,3 @@
-//!
-//! module Calendar
-//! submodule YMD
-//!
 //! base for all Roman-kind of Calendars,
 //! ie, one with years, months, weeks and days
 //!
@@ -48,13 +44,11 @@ static int(0..1) year_leap_year(int y);
 static int compat_week_day(int n);
 
 //------------------------------------------------------------------------
-//! class YMD
 //! 	Base (virtual) time period of the Roman-kind of calendar.
-//! inherits TimeRange
-//------------------------------------------------------------------------
-
 class YMD
+//------------------------------------------------------------------------
 {
+   //! inherits TimeRange
    inherit TimeRange;
 
 // --- generic for all YMD:
@@ -122,29 +116,29 @@ class YMD
 
 // --- query
 
-//! method float fraction_no()
-//! method int hour_no()
-//! method int julian_day()
-//! method int leap_year()
-//! method int minute_no()
-//! method int month_day()
-//! method int month_no()
-//! method int second_no()
-//! method int unix_time()
-//! method int utc_offset()
-//! method int week_day()
-//! method int week_no()
-//! method int year_day()
-//! method int year_no()
-//! method string month_name()
-//! method string month_shortname()
-//! method string month_day_name()
-//! method string week_day_name()
-//! method string week_day_shortname()
-//! method string week_name()
-//! method string year_name()
-//! method string tzname()
-//! method string tzname_iso()
+   //! @decl float fraction_no()
+   //! @decl int hour_no()
+   //! @decl int julian_day()
+   //! @decl int leap_year()
+   //! @decl int minute_no()
+   //! @decl int month_day()
+   //! @decl int month_no()
+   //! @decl int second_no()
+   //! @decl int unix_time()
+   //! @decl int utc_offset()
+   //! @decl int week_day()
+   //! @decl int week_no()
+   //! @decl int year_day()
+   //! @decl int year_no()
+   //! @decl string month_name()
+   //! @decl string month_shortname()
+   //! @decl string month_day_name()
+   //! @decl string week_day_name()
+   //! @decl string week_day_shortname()
+   //! @decl string week_name()
+   //! @decl string year_name()
+   //! @decl string tzname()
+   //! @decl string tzname_iso()
 
    int julian_day()
    {
@@ -272,35 +266,44 @@ class YMD
    int second_no() { return 0; }
    float fraction_no() { return 0.0; }
    
-//! function method datetime()
-//!     This gives back a mapping with the relevant
-//!	time information (representing the start of the period);
-//!	<pre>
-//!	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
-//!	    "month":    int(1..)   // month of year
-//!	    "day":      int(1..)   // day of month
-//!	    "yearday":  int(0..)   // day of year
-//!	    "week":	int(1..)   // week of year
-//!	    "week_day": int(0..)   // day of week
-//!	    "timezone": int        // offset to utc, including dst
-//!
-//!	    "unix":     int        // unix time
-//!	    "julian":   int        // julian day
-//!      // for compatibility:
-//!	    "hour":     0          // hour of day, including dst
-//!	    "minute":   0          // minute of hour
-//!	    "second":   0          // second of minute 
-//!	    "fraction": 0.0        // fraction of second
-//!	 ]);
-//!	</pre>
-//!
-//! note:
-//!	Day of week is compatible with old versions,
-//!	ie, 0 is sunday, 6 is saturday, so it shouldn't be
-//!	used to calculate the day of the week with the given 
-//!	week number. Year day is also backwards compatible,
-//!	ie, one (1) less then from the year_day() function.
-
+   //!     This gives back a mapping with the relevant
+   //!	time information (representing the start of the period);
+   //!	@mapping
+   //!	  @member int "year"
+   //!      Year number (2000 AD==2000, 1 BC==0).
+   //!	  @member int(1..) "month"
+   //!      Month of year.
+   //!	  @member int(1..) "day"
+   //!      Day of month.
+   //!	  @member int(0..) "yearday"
+   //!      Day of year.
+   //!	  @member int(1..) "week"
+   //!      Week of year.
+   //!	  @member int(0..) "week_day"
+   //!      Day of week.
+   //!	  @member int "timezone"
+   //!      Offset to utc, including dst.
+   //!	  @member int "unix"
+   //!      Unix time.
+   //!	  @member int "julian"
+   //!      Julian day.
+   //!	  @member int(0..0) "hour"
+   //!      Hour of day, including dst (compatibility), always zero.
+   //!	  @member int(0..0) "minute"
+   //!      Minute of hour (compatibility), always zero.
+   //!	  @member int(0..0) "second"
+   //!      Second of minute (compatibility), always zero.
+   //!	  @member float "fraction"
+   //!      Fraction of second (compatibility), always zero.
+   //!	 ]);
+   //!	@endmapping
+   //!
+   //! @note
+   //!	Day of week is compatible with old versions,
+   //!	ie, 0 is sunday, 6 is saturday, so it shouldn't be
+   //!	used to calculate the day of the week with the given 
+   //!	week number. Year day is also backwards compatible,
+   //!	ie, one (1) less then from the year_day() function.
    mapping datetime(void|int skip_stuff)
    {
       if (m==CALUNKNOWN) make_month();
@@ -335,60 +338,63 @@ class YMD
 
 // --- string format ----
 
-//! method string format_iso_ymd();
-//! method string format_ymd();
-//! method string format_ymd_short();
-//! method string format_ymd_xshort();
-//! method string format_iso_week();
-//! method string format_iso_week_short();
-//! method string format_week();
-//! method string format_week_short();
-//! method string format_month();
-//! method string format_month_short();
-//! method string format_iso_time();
-//! method string format_time();
-//! method string format_time_short();
-//! method string format_time_xshort();
-//! method string format_mtime();
-//! method string format_xtime();
-//! method string format_tod();
-//! method string format_todz();
-//! method string format_xtod();
-//! method string format_mod();
-//!	Format the object into nice strings;
-//!	<pre>
-//!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
-//!	ext_ymd        "Friday, 2 June 2000" [2]
-//!     ymd            "2000-06-02" 
-//!     ymd_short      "20000602"
-//!     ymd_xshort     "000602" [1]
-//!	iso_week       "2000-W22"
-//!	iso_week_short "2000W22"
-//!	week           "2000-w22" [2]
-//!	week_short     "2000w22" [2]
-//!	month          "2000-06"
-//!	month_short    "200006" [1]
-//!	iso_time       "2000-06-02 (Jun) -W22-5 (Fri) 00:00:00 UTC+1" [2]
-//!	ext_time       "Friday, 2 June 2000, 00:00:00" [2]
-//!	ctime          "Fri Jun  2 00:00:00 2000\n" [2] [3]
-//!	http           "Fri, 02 Jun 2000 00:00:00 GMT" [4]
-//!     time           "2000-06-02 00:00:00" 
-//!	time_short     "20000602 00:00:00"
-//!	time_xshort    "000602 00:00:00"
-//!     mtime          "2000-06-02 00:00" 
-//!     xtime          "2000-06-02 00:00:00.000000" 
-//!     tod            "00:00:00"
-//!     tod_short      "000000"
-//!     todz           "00:00:00 CET"
-//!     todz_iso       "00:00:00 UTC+1"
-//!     xtod           "00:00:00.000000"
-//!     mod            "00:00"
-//!	</pre>
-//!	<tt>[1]</tt> note conflict (think 1 February 2003)
-//!	<br><tt>[2]</tt> language dependent
-//!	<br><tt>[3]</tt> as from the libc function ctime()
-//!	<br><tt>[4]</tt> as specified by the HTTP standard;
-//!	not language dependent.
+   //! @decl string format_iso_ymd();
+   //! @decl string format_ymd();
+   //! @decl string format_ymd_short();
+   //! @decl string format_ymd_xshort();
+   //! @decl string format_iso_week();
+   //! @decl string format_iso_week_short();
+   //! @decl string format_week();
+   //! @decl string format_week_short();
+   //! @decl string format_month();
+   //! @decl string format_month_short();
+   //! @decl string format_iso_time();
+   //! @decl string format_time();
+   //! @decl string format_time_short();
+   //! @decl string format_time_xshort();
+   //! @decl string format_mtime();
+   //! @decl string format_xtime();
+   //! @decl string format_tod();
+   //! @decl string format_todz();
+   //! @decl string format_xtod();
+   //! @decl string format_mod();
+   //!	Format the object into nice strings;
+   //!	@pre{
+   //!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
+   //!	ext_ymd        "Friday, 2 June 2000" [2]
+   //!  ymd            "2000-06-02" 
+   //!  ymd_short      "20000602"
+   //!  ymd_xshort     "000602" [1]
+   //!	iso_week       "2000-W22"
+   //!	iso_week_short "2000W22"
+   //!	week           "2000-w22" [2]
+   //!	week_short     "2000w22" [2]
+   //!	month          "2000-06"
+   //!	month_short    "200006" [1]
+   //!	iso_time       "2000-06-02 (Jun) -W22-5 (Fri) 00:00:00 UTC+1" [2]
+   //!	ext_time       "Friday, 2 June 2000, 00:00:00" [2]
+   //!	ctime          "Fri Jun  2 00:00:00 2000\n" [2] [3]
+   //!	http           "Fri, 02 Jun 2000 00:00:00 GMT" [4]
+   //!  time           "2000-06-02 00:00:00" 
+   //!	time_short     "20000602 00:00:00"
+   //!	time_xshort    "000602 00:00:00"
+   //!  mtime          "2000-06-02 00:00" 
+   //!  xtime          "2000-06-02 00:00:00.000000" 
+   //!  tod            "00:00:00"
+   //!  tod_short      "000000"
+   //!  todz           "00:00:00 CET"
+   //!  todz_iso       "00:00:00 UTC+1"
+   //!  xtod           "00:00:00.000000"
+   //!  mod            "00:00"
+   //!	@}
+   //!	@tt{[1]@} note conflict (think 1 February 2003).
+   //!
+   //!	@tt{[2]@} language dependent.
+   //!
+   //!	@tt{[3]@} as from the libc function @tt{ctime()@}.
+   //!
+   //!	@tt{[4]@} as specified by the HTTP standard;
+   //!	not language dependent.
 
    string format_iso_ymd()
    {
@@ -925,23 +931,23 @@ class YMD
       return z;
    }
 
-//! method Second second()
-//! method Second second(int n)
-//! method Minute minute(int hour,int minute,int second)
-//! method array(Second) seconds()
-//! method array(Second) seconds(int first,int last)
-//! method int number_of_seconds()
-//! method Minute minute()
-//! method Minute minute(int n)
-//! method Minute minute(int hour,int minute)
-//! method array(Minute) minutes()
-//! method array(Minute) minutes(int first,int last)
-//! method int number_of_minutes()
-//! method Hour hour()
-//! method Hour hour(int n)
-//! method array(Hour) hours()
-//! method array(Hour) hours(int first,int last)
-//! method int number_of_hours()
+   //! @decl Second second()
+   //! @decl Second second(int n)
+   //! @decl Minute minute(int hour,int minute,int second)
+   //! @decl array(Second) seconds()
+   //! @decl array(Second) seconds(int first,int last)
+   //! @decl int number_of_seconds()
+   //! @decl Minute minute()
+   //! @decl Minute minute(int n)
+   //! @decl Minute minute(int hour,int minute)
+   //! @decl array(Minute) minutes()
+   //! @decl array(Minute) minutes(int first,int last)
+   //! @decl int number_of_minutes()
+   //! @decl Hour hour()
+   //! @decl Hour hour(int n)
+   //! @decl array(Hour) hours()
+   //! @decl array(Hour) hours(int first,int last)
+   //! @decl int number_of_hours()
 
    int number_of_hours() { return (number_of_seconds()+3599)/3600; }
    cHour hour(void|int n) { return get_unit("hour",n); }
@@ -1008,33 +1014,32 @@ class YMD
    YMD autopromote() { return this; }
 }
 
+
 //------------------------------------------------------------------------
 //! class Year
-//! 	This is the time period of a year.
-//! inherits TimeRange
-//! inherits YMD
-//------------------------------------------------------------------------
-
 function(mixed...:cYear) Year=cYear;
+
 class cYear
+//! 	This is the time period of a year.
+//------------------------------------------------------------------------
 {
+  //! inherits TimeRange
+  //! inherits YMD
    inherit YMD;
 
    constant is_year=1;
 
 // --- 
    
-//!
-//! method void create("unix",int unix_time)
-//! method void create("julian",int|float julian_day)
-//! method void create(int year)
-//! method void create(string year)
-//!	It's possible to create the standard week
-//!	by using three different methods; either the normal
-//!	way - from standard unix time or the julian day,
-//!	and also, for more practical use, from the year number.
-//!
-
+   //! @decl void create("unix",int unix_time)
+   //! @decl void create("julian",int|float julian_day)
+   //! @decl void create(int year)
+   //! @decl void create(string year)
+   //!	It's possible to create the standard week
+   //!	by using three different methods; either the normal
+   //!	way - from standard unix time or the julian day,
+   //!	and also, for more practical use, from the year number.
+   //!
    void create(mixed ...args)
    {
       if (!sizeof(args))
@@ -1229,18 +1234,17 @@ class cYear
 
    int number_of_weeks();
 
-//! method Month month()
-//! method Month month(int n)
-//! method Month month(string name)
-//!	The Year type overloads the month() method,
-//!	so it is possible to get a specified month
-//!	by string:
-//!
-//!	<tt>year-&gt;month("April")</tt>
-//!
-//!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.month>YMD</ref>().
-
+   //! @decl Month month()
+   //! @decl Month month(int n)
+   //! @decl Month month(string name)
+   //!	The Year type overloads the month() method,
+   //!	so it is possible to get a specified month
+   //!	by string:
+   //!
+   //!	@code{year->month("April")@}
+   //!
+   //!	The integer and no argument behavior is inherited
+   //!	from <ref to=YMD.month>YMD</ref>().
    cMonth month(int|string ... mp)
    {
       if (sizeof(mp) && 
@@ -1257,24 +1261,23 @@ class cYear
 	 return ::month(@mp);
    }
 
-//! method Week	week()
-//! method Week	week(int n)
-//! method Week	week(string name)
-//!	The Year type overloads the week() method,
-//!	so it is possible to get a specified week
-//!	by name:
-//!
-//!	<tt>year-&gt;week("17")</tt>
-//!	<tt>year-&gt;week("w17")</tt>
-//!
-//!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.week>YMD</ref>().
-//!
-//!	This is useful, since the first week of a year
-//!	not always (about half the years, in the ISO calendar) 
-//!	is numbered '1'.
-//!
-
+   //! @decl Week week()
+   //! @decl Week week(int n)
+   //! @decl Week week(string name)
+   //!	The Year type overloads the week() method,
+   //!	so it is possible to get a specified week
+   //!	by name:
+   //!
+   //!	@code{year->week("17")@}
+   //!	@code{year->week("w17")@}
+   //!
+   //!	The integer and no argument behavior is inherited
+   //!	from @[YMD.week()].
+   //!
+   //!	This is useful, since the first week of a year
+   //!	not always (about half the years, in the ISO calendar) 
+   //!	is numbered '1'.
+   //!
    cWeek week(int|string ... mp)
    {
       if (sizeof(mp) && 
@@ -1552,6 +1555,9 @@ class cMonth
 
 // ----------------------------------------------------------------
 //! class Week
+function(mixed...:cWeek) Week=cWeek;
+
+class cWeek
 //!	The Calendar week represents a standard time period of
 //!	a week. In the Gregorian calendar, the standard week
 //!	starts on a sunday and ends on a saturday; in the ISO
@@ -1576,25 +1582,20 @@ class cMonth
 //!	if tries to place the moved week in the 
 //!	resulting year.
 // ----------------------------------------------------------------
-
-function(mixed...:cWeek) Week=cWeek;
-class cWeek
 {
    inherit YMD;
 
    constant is_week=1;
 
-//!
-//! method void create("unix",int unix_time)
-//! method void create("julian",int|float julian_day)
-//! method void create(int year,int week)
-//!	It's possible to create the standard week
-//!	by using three different methods; either the normal
-//!	way - from standard unix time or the julian day,
-//!	and also, for more practical use, from year and week
-//!	number.
-//!
-
+   //! @decl void create("unix",int unix_time)
+   //! @decl void create("julian",int|float julian_day)
+   //! @decl void create(int year,int week)
+   //!	It's possible to create the standard week
+   //!	by using three different methods; either the normal
+   //!	way - from standard unix time or the julian day,
+   //!	and also, for more practical use, from year and week
+   //!	number.
+   //!
    void create(mixed ...args)
    {
       if (!sizeof(args))
@@ -1836,21 +1837,20 @@ class cWeek
 
    int number_of_days();
 
-//! method Day day()
-//! method Day day(int n)
-//! method Day day(string name)
-//!	The Week type overloads the day() method,
-//!	so it is possible to get a specified weekday
-//!	by string:
-//!
-//!	<tt>week-&gt;day("sunday")</tt>
-//!
-//!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.day>YMD</ref>().
-//!
-//! note:
-//!	the weekday-from-string routine is language dependent.
-
+   //! @decl Day day()
+   //! @decl Day day(int n)
+   //! @decl Day day(string name)
+   //!	The Week type overloads the day() method,
+   //!	so it is possible to get a specified weekday
+   //!	by string:
+   //!
+   //!	@code{week->day("sunday")@}
+   //!
+   //!	The integer and no argument behavior is inherited
+   //!	from @[YMD.day()].
+   //!
+   //! @note
+   //!	The weekday-from-string routine is language dependent.
    cDay day(int|string ... mp)
    {
       if (sizeof(mp) && 
@@ -1882,6 +1882,8 @@ class cWeek
 // ----------------------------------------------------------------
 
 function(mixed...:cDay) Day=cDay;
+
+//! Day.
 class cDay
 {
    inherit YMD;
@@ -1889,19 +1891,17 @@ class cDay
    constant is_day=1;
    int nw;
 
-//!
-//! method void create("unix",int unix_time)
-//! method void create("julian",int|float julian_day)
-//! method void create(int year,int month,int day)
-//! method void create(int year,int year_day)
-//! method void create(int julian_day)
-//!	It's possible to create the day
-//!	by using five different methods; either the normal
-//!	way - from standard unix time or the julian day,
-//!	and also, for more practical use, from year, month and day,
-//!	from year and day of year, and from julian day
-//!	without extra fuzz.
-
+   //! @decl void create("unix", int unix_time)
+   //! @decl void create("julian", int|float julian_day)
+   //! @decl void create(int year, int month,int day)
+   //! @decl void create(int year, int year_day)
+   //! @decl void create(int julian_day)
+   //!	It's possible to create the day
+   //!	by using five different methods; either the normal
+   //!	way - from standard unix time or the julian day,
+   //!	and also, for more practical use, from year, month and day,
+   //!	from year and day of year, and from julian day
+   //!	without extra fuzz.
    void create(mixed ...args)
    {
       if (!sizeof(args))
@@ -2260,36 +2260,48 @@ class YMD_Time
 
 //------------------------------------------------------------------------
 //! class Hour
-//! inherits Time.Hour
-//! inherits YMD
-//------------------------------------------------------------------------
-
 class cHour
+//------------------------------------------------------------------------
 {
+   //! inherits Time.Hour
    inherit Time::cHour;
+
+   //! inherits YMD
    inherit YMD_Time;
+
+   //! @ignore
    OVERLOAD_TIMEOFDAY;
+   //! @endignore
 }
 
 class cMinute
 {
    inherit Time::cMinute;
    inherit YMD_Time;
+
+   //! @ignore
    OVERLOAD_TIMEOFDAY;
+   //! @endignore
 }
 
 class cSecond
 {
    inherit Time::cSecond;
    inherit YMD_Time;
+
+   //! @ignore
    OVERLOAD_TIMEOFDAY;
+   //! @endignore
 }
 
 class cFraction
 {
    inherit Time::cFraction;
    inherit YMD_Time;
+
+   //! @ignore
    OVERLOAD_TIMEOFDAY;
+   //! @endignore
 }
 
 class cSuperTimeRange
@@ -2344,15 +2356,15 @@ class cSuperTimeRange
 }
 
 //------------------------------------------------------------------------
-//! global convinience functions
+// global convinience functions
 //------------------------------------------------------------------------
 
-//! method TimeRange parse(string fmt,string arg)
+//! @decl TimeRange parse(string fmt,string arg)
 //!	parse a date, create relevant object
 //!	fmt is in the format "abc%xdef..."
 //!	where abc and def is matched, and %x is
 //!	one of those time units:
-//!	<pre>
+//!	@pre{
 //!	%Y absolute year 
 //!	%y dwim year (70-99 is 1970-1999, 0-69 is 2000-2069)
 //!	%M month (number, name or short name) (needs %y)
@@ -2369,11 +2381,12 @@ class cSuperTimeRange
 //!	%z zone
 //!	%p "am" or "pm"
 //!	%n empty string (to be put at the end of formats)
-//!	</pre>
+//!	@}
 //!
-//! returns 0 if format doesn't match data, or the appropriate time object.
+//! @returns
+//!     Returns 0 if format doesn't match data, or the appropriate time object.
 //!
-//! note:
+//! @note
 //!	The zone will be a guess if it doesn't state an exact
 //!	regional timezone (like "Europe/Stockholm") - 
 //!	most zone abbriviations (like "CET") are used by more
@@ -2381,7 +2394,7 @@ class cSuperTimeRange
 //!	Also beware that for instance CST can be up to four different zones,
 //!	central Australia or America being the most common.
 //!
-//!	<pre>
+//!	@pre{
 //! 	Abbreviation Interpretation
 //!	AMT          America/Manaus       [UTC-4]
 //!	AST	     America/Curacao      [UTC-4]
@@ -2391,11 +2404,10 @@ class cSuperTimeRange
 //!	GST          Asia/Dubai           [UTC+4]
 //!	IST          Asia/Jerusalem       [UTC+2]
 //!	WST          Australia/Perth      [UTC+8]
-//!	</pre>
+//!	@}
 //!
 //!	This mapping is modifiable in the ruleset, see 
-//!	<ref>Ruleset.set_abbr2zone</ref>.
-
+//!	@[Ruleset.set_abbr2zone()].
 
 // dwim time of day; needed to correct timezones
 // this API may change without further notice
@@ -2668,10 +2680,10 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
        return 0;
 }
 
-//! function Day dwim_day(string date)
-//! function Day dwim_day(string date,TimeRange context)
+//! @decl Day dwim_day(string date)
+//! @decl Day dwim_day(string date,TimeRange context)
 //!	Tries a number of different formats on the given date (in order):
-//!	<pre>
+//!	@pre{
 //!     <ref>parse</ref> format                  as in
 //!	"%y-%M-%D (%M) -W%W-%e (%e)"  "2000-03-20 (Mar) -W12-1 (Mon)"
 //!	"%M%/%D/%y"	              "3/20/2000" 
@@ -2692,9 +2704,9 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 //!     "today"                       "today"
 //!	"last %e"                     "last monday"
 //!	"next %e"                     "next monday"
-//!	</pre>
+//!	@}
 //!
-//! note:
+//! @note
 //!	Casts exception if it fails to dwim out a day.
 //!	"dwim" means do-what-i-mean.
 
@@ -2852,10 +2864,8 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 
 //-- auxillary functions------------------------------------------------
 
-//!
-//! function datetime(int|void unix_time)
 //!     Replacement for localtime; gives back a mapping:
-//!	<pre>
+//!	@pre{
 //!	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
 //!	    "month":    int(1..)   // month of year
 //!	    "day":      int(1..)   // day of month
@@ -2870,31 +2880,17 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 //!	    "fraction": float      // fraction of second
 //!	    "timezone": int        // offset to utc, including dst
 //!	 ]);
-//!	</pre>
-//!	This is the same as calling <ref>Second</ref>()-><ref to=Second.datetime>datetime</ref>().
-//!
-//! function datetime_name(int|void unix_time)
-//! function datetime_short_name(int|void unix_time)
-//!     Compat functions; same as <ref>format_iso</ref>
-//!	and <ref>format_iso_short</ref>.
-//!	
-//! function string format_iso(void|int unix_time)
-//! function string format_iso_short(void|int unix_time)
-//! function string format_iso_tod(void|int unix_time)
-//! function string format_day_iso(void|int unix_time)
-//! function string format_day_iso_short(void|int unix_time)
-//!	Format the object into nice strings;
-//!	<pre>
-//!	iso    "2000-06-02 (Jun) -W22-5 (Fri) 11:57:18 CEST"
-//!     iso_short   "2000-06-02 11:57:18"
-//!	iso_tod     "11:57:18"
-//!	</pre>
-
-// Sane replacement for localtime().
+//!	@}
+//!	This is the same as calling @[Second->datetime()].
 mapping(string:int) datetime(int|void unix_time)
 {
    return Second("unix",unix_time||time())->datetime();
 }
+
+//! @decl string datetime_name(int|void unix_time)
+//! @decl string datetime_short_name(int|void unix_time)
+//!     Compat functions; same as <ref>format_iso</ref>
+//!	and <ref>format_iso_short</ref>.
 
 string datetime_name(int|void unix_time)
 {
@@ -2905,6 +2901,18 @@ string datetime_short_name(int|void unix_time)
 {
    return Second("unix",unix_time||time())->format_iso_short();
 }
+
+//! @decl string format_iso(void|int unix_time)
+//! @decl string format_iso_short(void|int unix_time)
+//! @decl string format_iso_tod(void|int unix_time)
+//! @decl string format_day_iso(void|int unix_time)
+//! @decl string format_day_iso_short(void|int unix_time)
+//!	Format the object into nice strings;
+//!	@pre{
+//!	iso    "2000-06-02 (Jun) -W22-5 (Fri) 11:57:18 CEST"
+//!     iso_short   "2000-06-02 11:57:18"
+//!	iso_tod     "11:57:18"
+//!	@}
 
 string format_iso(int|void unix_time)
 {

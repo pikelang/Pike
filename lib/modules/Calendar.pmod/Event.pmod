@@ -17,38 +17,10 @@ function(mixed...:TimeRange) std_second=master()->resolv("Calendar")["Second"];
 // base classes
 // ----------------------------------------------------------------
 
-//! module Calendar
-//! submodule Event
-//! subclass Event
-//! 	<ref>Event</ref> is a base class, defining what
+
+
+//! 	@[Event] is a base class, defining the
 //!	methods an Event need to have.
-
-//! method array(TimeRange) scan(TimeRange in)
-//!	This calculates the eventual events that
-//!	is contained or overlapped by the given timerange.
-//!	
-//!	Example:
-//!	<tt>Event.christmas_eve->scan(Year(2000))</tt>
-//!	=> <tt>({ Day(Sun 24 Dec 2000) })</tt>
-//!
-//!	<ref>scan</ref> uses <ref>next</ref> if not overloaded.
-//!
-//! note:
-//!	<ref>scan</ref> can return an array of overlapping timeranges.
-//!	
-//!	This method must use <tt>in->calendar_object-></tt><i>type</i>
-//!	to create the returned timeranges, and must keep the ruleset.
-
-//! method TimeRange next(TimeRange from,void|int(0..1) including)
-//! method TimeRange previous(TimeRange from,void|int(0..1) including)
-//!	This calculates the next or previous occurance of the event,
-//!	from the given timerange's <b>start</b>,
-//!	including any event occuring at the start if that flag is set.
-//!
-//!	It returns zero if there is no next event.
-//!
-//!	This method is virtual in the base class.
-
 class Event
 {
    string name;
@@ -56,10 +28,34 @@ class Event
 
    constant is_event=1;
 
+   //!	These functions calculate the next or previous occurance of the event,
+   //!	from the given timerange's @b{start@},
+   //!	including any event occuring at the start if the
+   //!  @[including] flag is set.
+   //!
+   //!  @returns
+   //!	  Zero is returned if there is no next event.
+   //!
+   //!  @note
+   //!	  These methods are virtual in the base class.
    TimeRange next(void|TimeRange from,void|int(0..1) including);
    TimeRange previous(void|TimeRange from,void|int(0..1) including);
 
 // what events in this period?
+   //!	This calculates the eventual events that
+   //!	are contained or overlapped by the given timerange.
+   //!	
+   //!	@example
+   //!	  @code{Event.christmas_eve->scan(Year(2000))@}
+   //!	  => @code{({ Day(Sun 24 Dec 2000) })@}.
+   //!
+   //!	@[scan()] uses @[next()] if not overloaded.
+   //!
+   //! @note
+   //!	@[scan()] can return an array of overlapping timeranges.
+   //!	
+   //!	This method must use @tt{in->calendar_object->@i{type@}@}
+   //!	to create the returned timeranges, and must keep the ruleset.
    array(TimeRange) scan(TimeRange in)
    {
       array res=({});
@@ -190,12 +186,8 @@ class Day_Event
 }
 
 
-//! module Calendar
-//! submodule Event
-//! subclass Nameday
-//!	This is created by the <ref>Namedays</ref> classes
+//!	This is created by the @[Namedays] classes
 //!	to represent an event for a name.
-
 class Nameday
 {
    inherit Day_Event;
@@ -222,12 +214,8 @@ class Nameday
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! subclass Namedays
 //!	This contains a ruleset about namedays. 
 //! inherits Event
-
 class Namedays
 {
    inherit Event;
@@ -254,21 +242,17 @@ class Namedays
       lookup=_lookup;
    }
 
-//! method array(string) names(TimeRange t)
-//!	Gives back an array of names that occur during
-//!	the time period, in no particular order.
-
+   //!	Gives back an array of names that occur during
+   //!	the time period, in no particular order.
    array(string) names(TimeRange t)
    {
 // optimize this?
       return predef::`|(({}),@values(namedays(t)));
    }
 
-//! method mapping(TimeRange:array(string)) namedays(TimeRange t)
-//!	Gives back an table of days with names that occur during
-//!	the time period. Note that days without names will not
-//!	appear in the returned mapping.
-
+   //!	Gives back an table of days with names that occur during
+   //!	the time period. Note that days without names will not
+   //!	appear in the returned mapping.
    mapping(TimeRange:array(string)) namedays(TimeRange t)
    {
       int jd=t->julian_day();
@@ -325,8 +309,8 @@ class Namedays
       return indices(namedays(in));
    }
 
-//! method TimeRange previous(TimeRange from,void|int(0..1) including)
-//! method TimeRange next(TimeRange from,void|int(0..1) including)
+   //! @decl TimeRange previous(TimeRange from,void|int(0..1) including)
+   //! @decl TimeRange next(TimeRange from,void|int(0..1) including)
 
    static TimeRange _find(TimeRange t,int including,int direction)
    {
@@ -642,18 +626,11 @@ class Julian_Fixed
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! subclass Date
 //! 	This class represents the event of a given gregorian date.
 //!	For instance, 
 //!	<tt>Event.Date(12,10)->next(Day())</tt>
 //!	finds the next 12 of October.
 //!
-//! method void create(int month_day,int month)
-//!	The event is created by a given month day and
-//!	a month number (1=January, 12=December).
-
 class Date
 {
    inherit Day_Event;
@@ -662,6 +639,9 @@ class Date
    
    int yd;
 
+   //! @decl void create(int month_day, int month)
+   //!	The event is created by a given month day and
+   //!	a month number (1=January, 12=December).
    void create(int _md,int _mn)
    {
       md=_md;
@@ -696,25 +676,12 @@ class Date
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! subclass Date_Weekday
 //! 	This class represents the event that a given gregorian date appears
 //!	a given weekday.
 //!	For instance, 
 //!	<tt>Event.Date_Weekday(12,10,5)->next(Day())</tt>
 //!	finds the next 12 of October that is a friday.
 //! 
-//! method void create(int month_day,int month,int weekday)
-//!	The event is created by a given month day,
-//!	a month number (1=January, 12=December), and a 
-//!	weekday number (1=Monday, 7=Sunday).
-//!
-//! note:
-//!	The week day numbers used
-//!	are the same as the day of week in the <ref>ISO</ref> calendar -
-//!	the <ref>Gregorian</ref> calendar has 1=Sunday, 7=Saturday.
-
 class Date_Weekday
 {
    inherit Day_Event;
@@ -724,6 +691,15 @@ class Date_Weekday
    int yd;
    int jd_wd;
 
+   //! @decl void create(int month_day,int month,int weekday)
+   //!	The event is created by a given month day,
+   //!	a month number (1=January, 12=December), and a 
+   //!	weekday number (1=Monday, 7=Sunday).
+   //!
+   //! @note
+   //!	The week day numbers used
+   //!	are the same as the day of week in the @[ISO] calendar -
+   //!	the @[Gregorian] calendar has 1=Sunday, 7=Saturday.
    void create(int _md,int _mn,int wd)
    {
       md=_md;
@@ -761,24 +737,12 @@ class Date_Weekday
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! subclass Monthday_Weekday
 //! 	This class represents the event that a given gregorian 
 //!	day of month appears a given weekday.
 //!	For instance, 
-//!	<tt>Event.Monthday_Weekday(13,5)->next(Day())</tt>
+//!	@code{Event.Monthday_Weekday(13,5)->next(Day())@}
 //!	finds the next friday the 13th.
 //! 
-//! method void create(int month_day,int weekday)
-//!	The event is created by a given month day,
-//!	and a weekday number (1=Monday, 7=Sunday).
-//!
-//! note:
-//!	The week day numbers used
-//!	are the same as the day of week in the <ref>ISO</ref> calendar -
-//!	the <ref>Gregorian</ref> calendar has 1=Sunday, 7=Saturday.
-
 class Monthday_Weekday
 {
    inherit Day_Event;
@@ -786,6 +750,14 @@ class Monthday_Weekday
    int md;
    int jd_wd;
 
+   //! @decl void create(int month_day, int weekday)
+   //!	The event is created by a given month day,
+   //!	and a weekday number (1=Monday, 7=Sunday).
+   //!
+   //! @note
+   //!	The week day numbers used
+   //!	are the same as the day of week in the @[ISO] calendar -
+   //!	the @[Gregorian] calendar has 1=Sunday, 7=Saturday.
    void create(int _md,int wd)
    {
       md=_md;
@@ -827,9 +799,6 @@ class Monthday_Weekday
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! subclass Weekday
 //! 	This class represents any given weekday.
 //!	For instance, 
 //!	<tt>Event.Weekday(5)->next(Day())</tt>
@@ -839,16 +808,6 @@ class Monthday_Weekday
 //!	"monday", "tuesday", "wednesday", "thursday", 
 //!	"friday", "saturday" and "sunday".
 //! 
-//! method void create(int weekday)
-//!	The event is created by a given 
-//!	weekday number (1=Monday, 7=Sunday).
-//!
-//! note:
-//!	The week day numbers used
-//!	are the same as the day of week in the <ref>ISO</ref> calendar -
-//!	not the <ref>Gregorian</ref> or <ref>Julian</ref>
-//!	calendar that has 1=Sunday, 7=Saturday.
-
 class Weekday
 {
    inherit Day_Event;
@@ -856,6 +815,15 @@ class Weekday
 
    int jd_wd;
 
+   //! @decl void create(int weekday)
+   //!	The event is created by a given 
+   //!	weekday number (1=Monday, 7=Sunday).
+   //!
+   //! @note
+   //!	The week day numbers used
+   //!	are the same as the day of week in the @[ISO] calendar -
+   //!	not the @[Gregorian] or @[Julian]
+   //!	calendar that have 1=Sunday, 7=Saturday.
    void create(int wd,void|string _id)
    {
       jd_wd=(wd+6)%7; // convert to julian day numbering
@@ -1085,16 +1053,12 @@ class Monthday_Weekday_Relative
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! subclass SuperEvent
 //!	This class holds any number of events,
 //!	and adds the functionality of event flags.
 //!
-//! note:
+//! @note
 //!	Scanning (scan_events,next,etc) will drop flag information.
-//!	Dig out what you need with -><ref>holidays</ref> et al first.
-
+//!	Dig out what you need with @tt{->@[holidays]@} et al first.
 class SuperEvent
 {
    inherit Event;
@@ -1140,14 +1104,14 @@ class SuperEvent
 	 else other_events+=({e});
    }
 
-//! method SuperEvent filter_flag(string flag)
-//! method SuperEvent holidays()
-//! method SuperEvent flagdays()
-//!	Filter out the events that has a certain flag set.
-//!	Holidays (flag "h") are the days that are marked
-//!	red in the calendar (non-working days),
-//!	Flagdays (flag "f") are the days that the flag
-//!	should be visible in (only some countries).
+   //! @decl SuperEvent filter_flag(string flag)
+   //! @decl SuperEvent holidays()
+   //! @decl SuperEvent flagdays()
+   //!	Filter out the events that has a certain flag set.
+   //!	Holidays (flag "h") are the days that are marked
+   //!	red in the calendar (non-working days),
+   //!	Flagdays (flag "f") are the days that the flag
+   //!	should be visible in (only some countries).
 
    SuperEvent filter_flag(string flag)
    {

@@ -4,27 +4,38 @@
 // this file is created half-manually
 // ----------------------------------------------------------------
 
-//! module Calendar
-//! submodule TZnames
-//!	This module contains listnings of available timezones,
-//!	in some different ways
+//!	This module is a mapping of the names of 
+//!	all the geographical (political) 
+//!	based timezones. It looks mainly like
+//!	@pre{
+//!	(["Europe":({"Stockholm","Paris",...}),
+//!       "America":({"Chicago","Panama",...}),
+//!	  ...
+//!     ])
+//!     @}
+//!
+//!	It is mainly there for easy and reliable ways
+//!	of making user interfaces to select timezone.
+//!
+//!	The Posix and standard timezones (like CET, PST8PDT, etc)
+//!	are not listed.
 
 #pike __REAL_VERSION__
 
-//! method string _zone_tab()
-//! method array(array) zone_tab()
-//!	This returns the raw respectively parsed zone tab file 
+//! @decl string _zone_tab()
+//! @decl array(array) zone_tab()
+//!	These return the raw respectively parsed zone tab file 
 //!	from the timezone data files.
 //!
 //!	The parsed format is an array of zone tab line arrays,
-//!	<pre>
+//!	@code{
 //!	({ string country_code, 
 //!	   string position, 
 //!	   string zone_name, 
 //!	   string comment })
-//!	</pre>
+//!     @}
 //!
-//!	To convert the position to a Geography.Position, simply
+//!	To convert the position to a @[Geography.Position], simply
 //!	feed it to the constructor.
 
 static string raw_zone_tab=0;
@@ -55,9 +66,9 @@ array(array(string)) zone_tab()
 	   -({0}));
 }
 
-//! method array(string) zonenames()
+//! @decl array(string) zonenames()
 //!	This reads the zone.tab file and returns name of all
-//!	standard timezones, like "Europe/Belgrade".
+//!	standard timezones, like @tt{"Europe/Belgrade"@}.
 
 static array(string) zone_names=0;
 array(string) zonenames()
@@ -65,22 +76,20 @@ array(string) zonenames()
    return zone_names || (zone_names=column(zone_tab(),2));
 }
 
-//! constant mapping(string:array(string)) zones
 //!	This constant is a mapping that can be
 //!	used to loop over to get all the region-based
 //!	timezones. 
 //!
 //!	It looks like this:
-//!	<pre>
+//!	@code{
 //!	([ "America": ({ "Los_Angeles", "Chicago", <i>[...]</i> }),
 //!	   "Europe":  ({ "Stockholm", <i>[...]</i> }),
 //!        <i>[...]</i> }),
-//!	</pre>
+//!	@}
 //!
 //!	Please note that loading all the timezones can take some 
 //!	time, since they are generated and compiled on the fly.
-
-mapping zones=
+mapping(string:array(string)) zones =
 ([
    "America":   ({"Scoresbysund","Godthab","Thule","New_York","Chicago",    
                   "Denver","Los_Angeles","Juneau","Yakutat","Anchorage",    
@@ -161,20 +170,19 @@ mapping zones=
 
 // this is used to dwim timezone
 
-//! constant mapping(string:array(string)) abbr2zones
 //!	This mapping is used to look up abbreviation
 //!	to the possible regional zones. 
 //!
 //!	It looks like this:
-//!	<pre>
-//!	([ "CET": ({ "Europe/Stockholm", <i>[...]</i> }),
-//!	   "CST": ({ "America/Chicago", "Australia/Adelaide", <i>[...]</i> }),
-//!        <i>[...]</i> }),
-//!	</pre>
+//!	@code{
+//!	([ "CET": ({ "Europe/Stockholm", @i{[...]@} }),
+//!	   "CST": ({ "America/Chicago", "Australia/Adelaide", @i{[...]@} }),
+//!        @i{[...]@} }),
+//!	@}
 //!
-//!	Note this: Just because it's noted "CST" doesn't mean it's a
-//!	unique timezone. There is about 7 *different* timezones that
-//!	uses "CST" as abbreviation; not at the same time,
+//!	Note this: Just because it's noted @tt{"CST"@} doesn't mean it's a
+//!	unique timezone. There are about 7 *different* timezones that
+//!	use @tt{"CST"@} as abbreviation; not at the same time,
 //!	though, so the DWIM routines checks this before
 //!	it's satisfied. Same with some other timezones. 
 //!
@@ -182,10 +190,9 @@ mapping zones=
 //!     given time are equal. This is because region timezones include rules
 //!     about local summer time shifts and possible historic shifts.
 //!
-//!	The <ref>YMD.parse</ref> functions can handle timezone abbreviations
+//!	The @[YMD.parse] functions can handle timezone abbreviations
 //!	by guessing.
-
-mapping abbr2zones=
+mapping(string:array(string)) abbr2zones=
 ([
    "ACST": ({"America/Porto_Acre"}),                                           
    "ACT": ({"America/Porto_Acre"}),                                            

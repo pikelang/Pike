@@ -1,21 +1,17 @@
-//!
-//! module Calendar
-//! submodule Coptic
-//!
 //! 	This is the Coptic Orthodox Church calendar,
-//!	that starts the 11th or 12th September and has
+//!	which starts the 11th or 12th September and has
 //!	13 months. 
 //!
-//! note:
+//! @note
 //!	The (default) names of the months
-//!	are different then other the emacs calendar;
+//!	are different than the emacs calendar;
 //!	I do not know which ones are used - the difference
-//!	seem to be only the transcription of the phonetic sounds
-//!	(B &lt;-&gt; P, etc).
+//!	seems to be only the transcription of the phonetic sounds
+//!	(B <-> P, etc).
 //!
 //!	I do not know for how long back the calendar is valid,
 //!	either. My sources claim that the calendar is synchronized
-//!	with the <ref>Gregorian</ref> calendar, which is odd.
+//!	with the @[Gregorian] calendar, which is odd.
 //! 	
 
 #pike __REAL_VERSION__

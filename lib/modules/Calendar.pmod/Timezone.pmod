@@ -1,32 +1,30 @@
-//! module Calendar
-//! submodule Timezone
-//!
 //! 	This module contains all the predefined timezones. 	
 //!	Index it with whatever timezone you want to use.
 //!
-//!	Example:
-//!	<tt>Calendar.Calendar my_cal=
+//! @example
+//!	@code{Calendar.Calendar my_cal=
 //!	    Calendar.ISO->set_timezone(Calendar.Timezone["Europe/Stockholm"]);
-//!	</tt>
+//!	@}
 //!
+//! @note
 //!	A simpler way of selecting timezones might be 
 //!	to just give the string to
-//!	<ref to=Ruleset.set_timezone>set_timezone</ref>;
-//!	<ref to=Ruleset.set_timezone>it</ref> indexes by itself:
+//!	@[Ruleset.set_timezone()];
+//!	it indexes by itself:
 //!
-//!	<tt>Calendar.Calendar my_cal=
+//!	@code{Calendar.Calendar my_cal=
 //!	    Calendar.ISO->set_timezone("Europe/Stockholm");
-//!	</tt>
+//!	@}
 //!
-//! note
-//!	Do not confuse this module with <ref>Ruleset.Timezone</ref>,
+//! @note
+//!	Do not confuse this module with @[Ruleset.Timezone],
 //!	which is the base class of a timezone object.
 //!
-//!	<tt>"CET"</tt> and some other standard abbreviations work too,
-//!	but not all of them (due to more then one country using them).
+//!	@tt{"CET"@} and some other standard abbreviations work too,
+//!	but not all of them (due to more than one country using them).
 //!
-//!	Do not call <ref to=Calendar.Time.set_timezone>set_timezone</ref>
-//!	too often, but remember the result if possible. It might take
+//!	Do not call @[Calendar.Time.set_timezone()]
+//!	too often, and remember the result if possible. It can take
 //!	some time to initialize a timezone object.
 //!
 //!	There are about 504 timezones with 127 different daylight
@@ -34,48 +32,15 @@
 //!
 //!	The timezone information comes from 
 //!	<a href=ftp://elsie.nci.nih.gov/pub/>ftp://elsie.nci.nih.gov/pub/</a>
-//!	and are not made up from scratch. Timezone bugs may be reported
+//!	and is not made up from scratch. Timezone bugs may be reported
 //!	to the timezone mailing list, 
-//!	<a href=mailto:tz@elsie.nci.nih.gov>tz@elsie.nci.nih.gov</a>,
-//!	preferable with a <tt>cc</tt> to 
-//!	<a href=mailto:mirar@mirar.org>mirar@mirar.org</a>. /Mirar
+//!	<a href=mailto:tz@@elsie.nci.nih.gov>tz@@elsie.nci.nih.gov</a>,
+//!	preferable with a @tt{cc@} to 
+//!	<a href=mailto:mirar@@mirar.org>mirar@@mirar.org</a>. /Mirar
 //!
-//! see also: TZnames, Ruleset.Timezone
+//! @seealso
+//!   @[TZnames], @[Ruleset.Timezone]
 
-//! constant Ruleset.Timezone locale
-//!	This contains the local timezone, found from
-//!	various parts of the system, if possible.
-
-//! constant Ruleset.Timezone localtime
-//!	This is a special timezone, that uses <ref>localtime</ref>()
-//!	and <ref>tzname</ref>
-//!	to find out what current offset and timezone string to use.
-//!	
-//!	<ref>locale</ref> uses this if there is no other
-//!	way of finding a better timezone to use.
-//!
-//!	This timezone is limited by <ref>localtime</ref> and 
-//!	libc to the range of <tt>time_t</tt>, 
-//!	which is a MAXINT on most systems - 13 Dec 1901 20:45:52
-//!	to 19 Jan 2038 3:14:07, UTC.
-
-//! module Calendar
-//! submodule TZnames
-//!	This module is a mapping of the names of 
-//!	all the geographical (political) 
-//!	based timezones. It looks mainly like
-//!	<pre>
-//!	(["Europe":({"Stockholm","Paris",...}),
-//!       "America":({"Chicago","Panama",...}),
-//!	  ...
-//!     ])
-//!     </pre>
-//!
-//!	It is mainly there for easy and reliable ways
-//!	of making user interfaces to select timezone.
-//!
-//!	The Posix and standard timezones (like CET, PST8PDT, etc)
-//!	are not listed.
 
 
 #pike __REAL_VERSION__
@@ -90,6 +55,8 @@ Ruleset.Timezone UTC=Ruleset.Timezone(0,"UTC");
 // ----------------------------------------------------------------
 // from the system
 
+//!	This contains the local timezone, found from
+//!	various parts of the system, if possible.
 Ruleset.Timezone locale=0;
 
 static function(:Ruleset.Timezone) _locale()
@@ -191,6 +158,19 @@ Ruleset.Timezone expert(Ruleset.Timezone try)
 }
 
 // ----------------------------------------------------------------
+
+//! @decl Ruleset.Timezone localtime
+//!	This is a special timezone, that uses @[predef::localtime()]
+//!	and @[predef::tzname()]
+//!	to find out what current offset and timezone string to use.
+//!	
+//!	@[locale()] uses this if there is no other
+//!	way of finding a better timezone to use.
+//!
+//!	This timezone is limited by @[predef::localtime()] and 
+//!	libc to the range of @tt{time_t@}, 
+//!	which is a MAXINT on most systems - 13 Dec 1901 20:45:52
+//!	to 19 Jan 2038 3:14:07, UTC.
 
 class localtime
 {

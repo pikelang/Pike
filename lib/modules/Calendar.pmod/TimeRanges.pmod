@@ -1,6 +1,4 @@
-//! module Calendar
-
-// $Id: TimeRanges.pmod,v 1.15 2001/04/20 20:55:07 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.16 2001/04/27 16:56:59 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -19,8 +17,6 @@ string _sprintf(int t) { return (t=='O')?calendar_name():0; }
 Ruleset default_rules=
    master()->resolv("Calendar")["default_rules"];
 
-//------------------------------------------------------------------------
-//! class TimeRange
 //! 	This is the base class for any time measurement
 //!	and calendrar information. It defines all the
 //!	things you can do with a time range, any time
@@ -33,40 +29,38 @@ Ruleset default_rules=
 //!	and thereby reducing it to just 7 days),
 //!	no matter when in time the actual day were.
 //!
-//------------------------------------------------------------------------
-
 class TimeRange
 {
    constant is_timerange=1;
 
    Ruleset rules;
 
-//! method void create("unix",int unixtime)
-//! method void create("unix",int unixtime,int seconds_len)
-//!	Create the timerange from unix time (as given by
-//!	<tt>time(2)</tt>), with eventually the size of
-//!	the time range in the same unit, seconds.
-//!
-//! method void create("julian",int|float julian_day)
-//!	Create the timerange from a julian day, the 
-//!	standardized method of counting days. If
-//!	the timerange is more then a day, it will 
-//!	at least enclose the day.
-//!
-//! method void create(TimeRange from)
-//!	Create the timerange from another timerange.
-//!
-//!	This is useful when converting objects from
-//!	one calendar to another. Note that the ruleset will be
-//!	transferred to the new object, so this method
-//!	can't be used to convert between timezones 
-//!	or languges - use <ref>set_timezone</ref>,
-//!	<ref>set_language</ref> or <ref>set_ruleset</ref>
-//!	to achieve this.
-//!
-//! note:
-//!	The size of the new object may be inexact;
-//!	a Month object can't comprehend seconds, for instance.
+   //! @decl void create("unix", int unixtime)
+   //! @decl void create("unix", int unixtime, int seconds_len)
+   //!	Create the timerange from unix time (as given by
+   //!	@tt{time(2)@}), with eventually the size of
+   //!	the time range in the same unit, seconds.
+   
+   //! @decl void create("julian", int|float julian_day)
+   //!	Create the timerange from a julian day, the 
+   //!	standardized method of counting days. If
+   //!	the timerange is more then a day, it will 
+   //!	at least enclose the day.
+   
+   //! @decl void create(TimeRange from)
+   //!	Create the timerange from another timerange.
+   //!
+   //!	This is useful when converting objects from
+   //!	one calendar to another. Note that the ruleset will be
+   //!	transferred to the new object, so this method
+   //!	can't be used to convert between timezones 
+   //!	or languges - use @[set_timezone()],
+   //!	@[set_language()] or @[set_ruleset()]
+   //!	to achieve this.
+   //!
+   //! @note
+   //!	The size of the new object may be inexact;
+   //!	a Month object can't comprehend seconds, for instance.
 
    static void create_unixtime(int unixtime,int len);
    static void create_unixtime_default(int unixtime);
@@ -146,14 +140,14 @@ class TimeRange
 	       object_program(this_object()));
    }
 
-//! method TimeRange set_size(TimeRange size)
-//! method TimeRange set_size(int n,TimeRange size)
-//!	Gives back a new (or the same, if the size matches) 
-//!	timerange with the new size. 
-//!	If <i>n</i> are given, the resulting size
-//!	will be <i>n</i> amounts of the given size.
-//! note:	
-//!	A negative size is not permitted; a zero one are.
+   //! @decl TimeRange set_size(TimeRange size)
+   //! @decl TimeRange set_size(int n, TimeRange size)
+   //!	Gives back a new (or the same, if the size matches) 
+   //!	timerange with the new size. 
+   //!	If @[n] are given, the resulting size
+   //!	will be @[n] amounts of the given size.
+   //! @note	
+   //!	A negative size is not permitted; a zero one are.
 
 // virtual
    static TimeRange _set_size(int n,TimeRange x);
@@ -177,28 +171,28 @@ class TimeRange
       return _set_size(n,[object(TimeRange)]x);
    }
 
-//! method TimeRange add(int n,void|TimeRange step)
-//!     calculates the (promoted) time period n steps away;
-//!	if no step is given, the step's length is of the
-//!	same length as the called time period.
-//!
-//!	It is not recommended to loop by adding the increment
-//!	time period to a shorter period; this can cause faults,
-//!	if the shorter time period doesn't exist in the incremented 
-//!	period. (Like week 53, day 31 of a month or the leap day of a year.)
-//!
-//!	Recommended use are like this:
-//!	<pre>
-//!	   // loop over the 5th of the next 10 months
-//!	   TimeRange month=Month()+1;
-//!	   TimeRange orig_day=month()->day(5);
-//!	   for (int i=0; i&lt;10; i++)
-//!	   {
-//!	      month++;
-//!	      TimeRange day=month->place(orig_day);
-//!	      <i>...use day...</i>
-//!	   }
-//!	</pre>
+   //!@decl TimeRange add(int n, void|TimeRange step)
+   //!     Calculates the (promoted) time period n steps away;
+   //!	if @[step] is not specified, the step's length is of the
+   //!	same length as the called time period.
+   //!
+   //!	It is not recommended to loop by adding the increment
+   //!	time period to a shorter period; this can cause faults,
+   //!	if the shorter time period doesn't exist in the incremented 
+   //!	period. (Like week 53, day 31 of a month or the leap day of a year.)
+   //!
+   //!	Recommended use are like this:
+   //!	@code{
+   //!	   // loop over the 5th of the next 10 months
+   //!	   TimeRange month=Month()+1;
+   //!	   TimeRange orig_day=month()->day(5);
+   //!	   for (int i=0; i<10; i++)
+   //!	   {
+   //!	      month++;
+   //!	      TimeRange day=month->place(orig_day);
+   //!	      @i{...use day...@}
+   //!	   }
+   //!	@}
 
 // virtual
    static this_program _add(int n,this_program step);
@@ -220,55 +214,56 @@ class TimeRange
       return _add(n,[object(this_program)]x);
    }
 
-//! method TimeRange place(TimeRange this)
-//! method TimeRange place(TimeRange this,int(0..1) force)
-//!	This will place the given timerange in this timerange,
-//!	for instance, day 37 in the year - 
-//!	<tt>Year(1934)->place(Day(1948 d37)) => Day(1934 d37)</tt>.
-//!
-//! note:
-//!	The rules how to place things in different timeranges
-//!	can be somewhat 'dwim'.
+   //! @decl TimeRange place(TimeRange this)
+   //! @decl TimeRange place(TimeRange this, int(0..1) force)
+   //!	This will place the given timerange in this timerange,
+   //!	for instance, day 37 in the year - 
+   //!	@tt{Year(1934)->place(Day(1948 d37)) => Day(1934 d37)@}.
+   //!
+   //! @note
+   //!	The rules how to place things in different timeranges
+   //!	can be somewhat 'dwim'.
 
 // virtual
    TimeRange place(TimeRange what,void|int force);
 
-//! method TimeRange `+(int n)
-//! method TimeRange `+(TimeRange offset)
-//! method TimeRange `-(int m)
-//! method TimeRange `-(TimeRange x)
-//!	This calculates the (promoted) time period 
-//!	either n step away or with a given offset.
-//!	These functions does use <ref>add</ref> to really
-//!	do the job:
-//!	<pre>
-//!	t+n         t->add(n)             t is a time period
-//!	t-n         t->add(-n)            offset is a time period
-//!	t+offset    t->add(1,offset)      n is an integer
-//!	t-offset    t->add(-1,offset)
-//!	n+t         t->add(n)
-//!	n-t         illegal
-//!	offset+t    offset->add(1,t)      | note this!
-//!	offset-t    offset->add(-1,t)     | 
-//!	</pre>
-//!
-//!	Mathematic rules:
-//!	<pre>
-//!	x+(t-x) == t    x is an integer or a time period
-//!	(x+t)-x == t    t is a time period
-//!	(t+x)-x == t
-//!	o-(o-t) == t    o is a time period 
-//!     t++ == t+1
-//!     t-- == t-1
-//!	</pre>
-//!
-//! note:
-//!	a-b does not give the distance between the start of a and b.
-//!	Use the <ref>distance</ref>() function to calculate that.
-//!
-//!	The integer used to `+, `- and add are the <i>number</i>
-//!	of steps the motion will be. It does <i>never</i> represent
-//!	any <i>fixed</i> amount of time, like seconds or days.
+   //! @decl TimeRange `+(int n)
+   //! @decl TimeRange `+(TimeRange offset)
+   //! @decl TimeRange `-(int m)
+   //! @decl TimeRange `-(TimeRange x)
+   //!	These calculate the (promoted) time period 
+   //!	either @[n] steps away or at a given @[offset].
+   //!
+   //!	These functions use @[add()] to really
+   //!	perform the work:
+   //!	@pre{
+   //!	t+n         t->add(n)             t is a time period
+   //!	t-n         t->add(-n)            offset is a time period
+   //!	t+offset    t->add(1,offset)      n is an integer
+   //!	t-offset    t->add(-1,offset)
+   //!	n+t         t->add(n)
+   //!	n-t         illegal
+   //!	offset+t    offset->add(1,t)      | note this!
+   //!	offset-t    offset->add(-1,t)     | 
+   //!	@}
+   //!
+   //!	Mathematic rules:
+   //!	@pre{
+   //!	x+(t-x) == t    x is an integer or a time period
+   //!	(x+t)-x == t    t is a time period
+   //!	(t+x)-x == t
+   //!	o-(o-t) == t    o is a time period 
+   //!     t++ == t+1
+   //!     t-- == t-1
+   //!	@}
+   //!
+   //! @note
+   //!	a-b does not give the distance between the start of a and b.
+   //!	Use the @[distance()] function to calculate that.
+   //!
+   //!	The integer used to @[`+()], @[`-()] and @[add()] are the @i{number@}
+   //!	of steps the motion will be. It does @i{never@} represent
+   //!	any @i{fixed@} amount of time, like seconds or days.
 
    TimeRange `+(program|this_program|int n)
    {
@@ -287,11 +282,11 @@ class TimeRange
       return add(-n);
    }
 
-//! method TimeRange next()
-//! method TimeRange prev()
-//!	Next and prev are compatible and convinience functions;
-//!	<tt>a->next()</tt> is exactly the same as <tt>a+1</tt>;
-//!	<tt>a=a->next()</tt> is <tt>a++</tt>.
+   //! @decl TimeRange next()
+   //! @decl TimeRange prev()
+   //!	These are compatibility and convinience functions;
+   //!  @code{a->next()@} is exactly the same as @code{a + 1@};
+   //!	@code{a=a->next()@} is the same as @code{a++@}.
 
    TimeRange next()
    {
@@ -303,10 +298,10 @@ class TimeRange
       return this_object()-1;
    }
 
-//! method TimeRange `*(int n)
-//!	This changes the amount of time in 
-//!	the time period. <tt>t*17</tt> is
-//!	the same as doing <tt>t-><ref>set_size</ref>(t,17)</tt>.
+   //! @decl TimeRange `*(int n)
+   //!	This changes the amount of time in 
+   //!	the time period. @code{t * 17@} is
+   //!	the same as doing @code{t->@[set_size](t, 17)@}.
 
    function ``* = `*;
    TimeRange `*(int n)
@@ -314,24 +309,24 @@ class TimeRange
       return set_size(n,this_object());
    }
 
-//! method array(TimeRange) `/(int n)
-//! method array(TimeRange) split(int n)
-//!	This divides the called timerange into
-//!	n pieces. The returned timerange type
-//!	is not neccesarily of the same type as the called one.
-//!
-//! known bugs:
-//!	These are currently not defined for 
-//!	<ref to=SuperTimeRange>supertimeranges</ref>.
+   //! @decl array(TimeRange) `/(int n)
+   //! @decl array(TimeRange) split(int n)
+   //!	This divides the called timerange into
+   //!	@[n] pieces. The returned timerange type
+   //!	is not neccesarily of the same type as the called one.
+   //!
+   //! @bugs
+   //!	These are currently not defined for 
+   //!	@[SuperTimeRange].
 
-//! method int `/(TimeRange with)
-//! method int how_many(TimeRange with)
-//!	This calculates how many instances of the given
-//!	timerange has passed during the called timerange.
-//!
-//!	For instance, to figure out your age,
-//!	create the timerange of your lifespan, and divide
-//!	with the instance of a <ref to=YMD.Year>Year</ref>.
+   //! @decl int `/(TimeRange with)
+   //! @decl int how_many(TimeRange with)
+   //!	This calculates how many instances of the given
+   //!	timerange has passed during the called timerange.
+   //!
+   //!	For instance, to figure out your age,
+   //!	create the timerange of your lifespan, and divide
+   //!	with the instance of a @[YMD.Year].
 
 // virtual
    array(TimeRange) split(int n);
@@ -405,17 +400,17 @@ class TimeRange
       else return how_many(x);
    }
 
-//! method int offset_to(TimeRange x)
-//!	Calculates offset to x; this compares
-//!	two timeranges and gives the integer offset
-//!	between the two starting points.
-//!	
-//!	This is true for suitable a and b:
-//!	<tt>a+a->offset_to(b)==b</tt>
-//!
-//!	By suitable means that a and b are of the same
-//!	type and size. This is obviously true only
-//!	if a+n has b as a possible result for any n.
+   //! @decl int offset_to(TimeRange x)
+   //!	Calculates offset to x; this compares
+   //!	two timeranges and gives the integer offset
+   //!	between the two starting points.
+   //!	
+   //!	This is true for suitable a and b:
+   //!	@code{a+a->@[offset_to](b)==b@}
+   //!
+   //!	By suitable means that a and b are of the same
+   //!	type and size. This is obviously true only
+   //!	if a+n has b as a possible result for any n.
 
    int offset_to(TimeRange x)
    {
@@ -425,32 +420,34 @@ class TimeRange
       return this_object()->distance(x)/this_object();
    }
 
-//! method TimeRange beginning()
-//! method TimeRange end()
-//!	This gives back the zero-sized beginning
-//!	or end of the called time period.
-//!
-//!	rule: 
-//!	<tt>range(t->beginning(),t->end())==t</tt>
+   //! @decl TimeRange beginning()
+   //! @decl TimeRange end()
+   //!	This gives back the zero-sized beginning
+   //!	or end of the called time period.
+   //!
+   //!	rule: 
+   //!	@code{range(t->beginning(),t->end()) == t@}
 
    TimeRange beginning();
    TimeRange end();
 
-//! method TimeRange range(TimeRange other)
-//! method TimeRange space(TimeRange other)
-//! method TimeRange distance(TimeRange other)
-//!	Derives different time periods in between
-//!	the called timerange and the parameter timerange.
-//!
-//!     <pre>
-//!    &gt;- the past          the future -&lt;
-//!	|--called--|         |--other--|
-//!     &gt;------------ range -----------&lt;
-//!                &gt;--space--&lt;
-//!     &gt;----- distance -----&lt;
-//!	</pre>
-//!
-//!	See also: add, TimeRanges.range, TimeRanges.space, TimeRanges.distance
+   //! @decl TimeRange range(TimeRange other)
+   //! @decl TimeRange space(TimeRange other)
+   //! @decl TimeRange distance(TimeRange other)
+   //!	Derives different time periods in between
+   //!	the called timerange and the parameter timerange.
+   //!
+   //!  @pre{
+   //!  <- the past          the future ->
+   //!	 |--called--|         |--other--|
+   //!   >------------ range -----------<
+   //!              >--space--<
+   //!   >----- distance -----<
+   //!	@}
+   //!
+   //! @seealso
+   //!   @[add()], @[TimeRanges->range()], @[TimeRanges->space()],
+   //!   @[TimeRanges->distance()]
 
 // virtual
    TimeRange distance(TimeRange to);
@@ -466,63 +463,63 @@ class TimeRange
    }
 
 
-//! method int(0..1) strictly_preceeds(TimeRange what);
-//! method int(0..1) preceeds(TimeRange what);
-//! method int(0..1) is_previous_to(TimeRange what);
-//! method int(0..1) overlaps(TimeRange what);
-//! method int(0..1) contains(TimeRange what);
-//! method int(0..1) equals(TimeRange what);
-//! method int(0..1) is_next_to(TimeRange what);
-//! method int(0..1) succeeds(TimeRange what);
-//! method int(0..1) strictly_succeeds(TimeRange what);
-//!	These methods exists to compare two periods
-//!	of time on the timeline.
-//!
-//! <pre>
-//!           case            predicates 
-//!
-//!  &lt;-- past       future -&gt;
-//!
-//!  |----A----|              A strictly preceeds B,
-//!               |----B----| A preceeds B
-//!
-//!  |----A----|              A strictly preceeds B, A preceeds B, 
-//!            |----B----|    A is previous to B, A touches B
-//!                           
-//!      |----A----|          A preceeds B,
-//!            |----B----|    A overlaps B, A touches B
-//!
-//!      |-------A-------|    A preceeds B, A ends with B
-//!            |----B----|    A overlaps B, A contains B, A touches B,
-//!
-//!      |-------A-------|    A preceeds B,  A succeeds B,
-//!          |---B---|        A overlaps B, A contains B, A touches B
-//!
-//!         |----A----|       A overlaps B, A touches B, A contains B
-//!         |----B----|       A equals B, A starts with B, A ends with B
-//!
-//!      |-------A-------|    A succeeds B, A starts with B
-//!      |----B----|          A overlaps B, A contains B, A touches B
-//!
-//!            |----A----|    A succeeds B, 
-//!      |----B----|          A overlaps B, A touches B
-//!
-//!            |----A----|    A strictly succeeds B, A succeeds B
-//!  |----B----|              A is next to B, A touches B
-//!
-//!              |----A----|  A strictly succeeds B, 
-//!  |----B----|              A succeeds B
-//!
-//!  </pre>
-//!
-//! note:
-//!	These methods only check the range of the first to the 
-//!	last time in the period;
-//!	use of combined time periods (<ref>SuperTimeRange</ref>s)
-//!	might not give you the result you want. 
-//!
-//! see also: `&
-
+   //! @decl int(0..1) strictly_preceeds(TimeRange what);
+   //! @decl int(0..1) preceeds(TimeRange what);
+   //! @decl int(0..1) is_previous_to(TimeRange what);
+   //! @decl int(0..1) overlaps(TimeRange what);
+   //! @decl int(0..1) contains(TimeRange what);
+   //! @decl int(0..1) equals(TimeRange what);
+   //! @decl int(0..1) is_next_to(TimeRange what);
+   //! @decl int(0..1) succeeds(TimeRange what);
+   //! @decl int(0..1) strictly_succeeds(TimeRange what);
+   //!	These methods exists to compare two periods
+   //!	of time on the timeline.
+   //!
+   //! @pre{
+   //!           case            predicates 
+   //!
+   //!  <-- past       future ->
+   //!
+   //!  |----A----|              A strictly preceeds B,
+   //!               |----B----| A preceeds B
+   //!
+   //!  |----A----|              A strictly preceeds B, A preceeds B, 
+   //!            |----B----|    A is previous to B, A touches B
+   //!                           
+   //!      |----A----|          A preceeds B,
+   //!            |----B----|    A overlaps B, A touches B
+   //!
+   //!      |-------A-------|    A preceeds B, A ends with B
+   //!            |----B----|    A overlaps B, A contains B, A touches B,
+   //!
+   //!      |-------A-------|    A preceeds B,  A succeeds B,
+   //!          |---B---|        A overlaps B, A contains B, A touches B
+   //!
+   //!         |----A----|       A overlaps B, A touches B, A contains B
+   //!         |----B----|       A equals B, A starts with B, A ends with B
+   //!
+   //!      |-------A-------|    A succeeds B, A starts with B
+   //!      |----B----|          A overlaps B, A contains B, A touches B
+   //!
+   //!            |----A----|    A succeeds B, 
+   //!      |----B----|          A overlaps B, A touches B
+   //!
+   //!            |----A----|    A strictly succeeds B, A succeeds B
+   //!  |----B----|              A is next to B, A touches B
+   //!
+   //!              |----A----|  A strictly succeeds B, 
+   //!  |----B----|              A succeeds B
+   //!
+   //!  @}
+   //!
+   //! @note
+   //!	These methods only check the range of the first to the 
+   //!	last time in the period;
+   //!	use of combined time periods (<ref>SuperTimeRange</ref>s)
+   //!	might not give you the result you want. 
+   //!
+   //! @seealso
+   //!   @[`&()]
 
 //- internal method 
 //- returns [-1,0,1] for comparison between
@@ -638,12 +635,12 @@ class TimeRange
       return !a[END_END];
    }
 
-//! method int(0..1) `<(TimeRange compared_to)
-//! method int(0..1) `>(TimeRange compared_to)
-//!	These operators sorts roughty on the 
-//!	periods place in time. The major use
-//!	might be to get multiset to work, 
-//!	besides sorting events clearly defined in time.
+   //! @decl int(0..1) `<(TimeRange compared_to)
+   //! @decl int(0..1) `>(TimeRange compared_to)
+   //!	These operators roughly sort on the 
+   //!	periods place in time. The major use
+   //!	might be to get multiset to work, 
+   //!	besides sorting events clearly defined in time.
 
    int(0..1) `<(TimeRange compared_to)
    {
@@ -663,25 +660,25 @@ class TimeRange
       return 0;
    }
 
-//! method int(0..1) `==(TimeRange compared_to)
-//! method int(0..1) _equal(TimeRange compared_to)
-//!	These two overloads the operator <tt>`==</tt> and
-//!	the result of the <tt>equal</tt> function.
-//!
-//!	a<tt>==</tt>b is considered true if the two
-//!	timeranges are of the same type, have the same rules
-//!	(language, timezone, etc) and are the same timerange.
-//!
-//!	<tt>equal(</tt>a<tt>,</tt>b<tt>)</tt> are considered
-//!	true if a and b are the same timerange, exactly the same
-//!	as the <ref>equals</ref> method.
-//!
-//!	The <tt>__hash</tt> method is also present, 
-//!	to make timeranges possible to use as keys in mappings.
-//!
-//! known bugs:
-//!	_equal is not currently possible to overload,
-//!	due to wierd bugs, so equal uses `== for now.
+   //! @decl int(0..1) `==(TimeRange compared_to)
+   //! @decl int(0..1) _equal(TimeRange compared_to)
+   //!	These two overload the operator @[predef::`==()] and
+   //!	the result of the @[predef::equal()] function.
+   //!
+   //!	a @tt{==@} b is considered true if the two
+   //!	timeranges are of the same type, have the same rules
+   //!	(language, timezone, etc) and are the same timerange.
+   //!
+   //!	@code{@[equal](a, b)@} is considered
+   //!	true if a and b are the same timerange, exactly the same
+   //!	as the @[equals()] method.
+   //!
+   //!	The @[__hash()] method is also present, 
+   //!	to make timeranges possible to use as keys in mappings.
+   //!
+   //! @bugs
+   //!	@[_equal()] is currently not possible to overload,
+   //!	due to wierd bugs, so @[predef::equal()] uses @[`==()] for now.
 
    int(0..1) `==(TimeRange what) 
    { 
@@ -697,16 +694,16 @@ class TimeRange
 //        return equals(what);
 //     }
 
-//! method TimeRange `&(TimeRange with)
-//!	Gives the cut on the called time period
-//!	with another time period. The result is
-//!	zero if the two periods doesn't overlap.
-//!     <pre>
-//!    &gt;- the past          the future -&lt;
-//!	|-------called-------|         
-//!	     |-------other--------|
-//!          &gt;----- cut -----&lt;
-//!	</pre>
+   //! @decl TimeRange `&(TimeRange with)
+   //!	Gives the cut on the called time period
+   //!	with another time period. The result is
+   //!	zero if the two periods doesn't overlap.
+   //!     @pre{
+   //!  <- the past          the future ->
+   //!	 |-------called-------|         
+   //!	      |-------other--------|
+   //!        >----- cut -----<
+   //!	@}
 
    function ``& = `&;
    TimeRange|zero `&(TimeRange with, mixed ...extra)
@@ -734,15 +731,15 @@ class TimeRange
       return res;
    }
 
-//! method TimeRange `|(TimeRange with)
-//!	Gives the union on the called time period
-//!	and another time period.
-//!     <pre>
-//!    &gt;- the past          the future -&lt;
-//!	|-------called-------|         
-//!	     |-------other--------|
-//!     &lt;----------union----------&gt;
-//!	</pre>
+   //! @decl TimeRange `|(TimeRange with)
+   //!	Gives the union on the called time period
+   //!	and another time period.
+   //!  @pre{
+   //!  >- the past          the future -<
+   //!	  |-------called-------|         
+   //!	       |-------other--------|
+   //!    <----------union---------->
+   //!	@}
 
    function ``| = `|;
    TimeRange `|(TimeRange with,mixed ...extra)
@@ -771,17 +768,17 @@ class TimeRange
       return from;
    }
 
-//! method TimeRange `^(TimeRange with)
-//!	Gives the exclusive-or on the called time period
-//!	and another time period, ie the union without
-//!	the cut. The result is zero if the 
-//!	two periods were the same.
-//!     <pre>
-//!    &gt;- the past          the future -&lt;
-//!	|-------called-------|         
-//!	     |-------other--------|
-//!     &lt;----|               |---->   - exclusive or
-//!	</pre>
+   //! @decl TimeRange `^(TimeRange with)
+   //!	Gives the exclusive-or on the called time period
+   //!	and another time period, ie the union without
+   //!	the cut. The result is zero if the 
+   //!	two periods were the same.
+   //!  @pre{
+   //!  >- the past          the future -<
+   //!	  |-------called-------|         
+   //!	       |-------other--------|
+   //!    <----|               |---->   - exclusive or
+   //!	@}
 
    function ``^ = `^;
    TimeRange `^(TimeRange with,mixed ... extra)
@@ -827,18 +824,18 @@ class TimeRange
       return res;
    }
 
-//! method TimeRange subtract(TimeRange what)
-//!	This subtracts a period of time from another;
-//!     <pre>
-//!     &gt;- the past          the future -&lt;
-//!	|-------called-------|         
-//!	     |-------other--------|
-//!     &lt;----&gt;  &lt;- called-&gt;subtract(other)
-//!
-//!	|-------called-------|         
-//!	     |---third---|
-//!     &lt;----&gt;           &lt;---> &lt;- called->subtract(third)
-//!	</pre>
+   //! @decl TimeRange subtract(TimeRange what)
+   //!	This subtracts a period of time from another;
+   //!  @pre{
+   //!  >- the past          the future -<
+   //!	|-------called-------|         
+   //!	     |-------other--------|
+   //!  <---->  <- called->subtract(other)
+   //!
+   //!	|-------called-------|         
+   //!	     |---third---|
+   //!  <---->           <---> <- called->subtract(third)
+   //!	@}
 
    TimeRange subtract(TimeRange what,mixed ... extra)
    {
@@ -882,12 +879,12 @@ class TimeRange
       return res;
    }
 
-//! method TimeRange set_ruleset(Ruleset r)
-//! method TimeRange ruleset(Ruleset r)
-//!	Set or get the current ruleset.
-//! note: 
-//!	this may include timezone shanges,
-//!	and change the time of day.
+   //! @decl TimeRange set_ruleset(Ruleset r)
+   //! @decl TimeRange ruleset(Ruleset r)
+   //!	Set or get the current ruleset.
+   //! @note
+   //!	this may include timezone shanges,
+   //!	and change the time of day.
 
    TimeRange set_ruleset(Ruleset r);
    Ruleset ruleset()
@@ -895,20 +892,20 @@ class TimeRange
       return rules;
    }
 
-//! method TimeRange set_timezone(Timezone tz)
-//! method TimeRange set_timezone(string tz)
-//! method TimeZone timezone()
-//!	Set or get the current timezone (including dst) rule.
-//!
-//! note: 
-//!	The time-of-day may very well
-//!	change when you change timezone.
-//!
-//!	To get the time of day for a specified timezone,
-//!	select the timezone before getting the time of day:
-//!
-//!	<tt>Year(2003)-&gt;...-&gt;set_timezone(TimeZone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
-//!
+   //! @decl TimeRange set_timezone(Timezone tz)
+   //! @decl TimeRange set_timezone(string tz)
+   //! @decl TimeZone timezone()
+   //!	Set or get the current timezone (including dst) rule.
+   //!
+   //! @note
+   //!	The time-of-day may very well
+   //!	change when you change timezone.
+   //!
+   //!	To get the time of day for a specified timezone,
+   //!	select the timezone before getting the time of day:
+   //!
+   //!	@tt{Year(2003)->...->set_timezone(TimeZone.CET)->...->hour(14)->...@}
+   //!
 
    TimeRange set_timezone(string|Ruleset.Timezone tz)
    {
@@ -920,10 +917,10 @@ class TimeRange
       return rules->timezone;
    }
 
-//! method TimeRange set_language(Language lang)
-//! method TimeRange set_language(string lang)
-//! method Language language()
-//!	Set or get the current language rule.
+   //! @decl TimeRange set_language(Language lang)
+   //! @decl TimeRange set_language(string lang)
+   //! @decl Language language()
+   //!	Set or get the current language rule.
 
    TimeRange set_language(string|Ruleset.Language lang)
    {
@@ -935,9 +932,9 @@ class TimeRange
       return rules->language;
    }
 
-//! method Calendar calendar()
-//!	Simply gives back the calendar in use, for instance
-//!	Calendar.ISO or Calendar.Discordian.
+   //! @decl Calendar calendar()
+   //!	Simply gives back the calendar in use, for instance
+   //!	Calendar.ISO or Calendar.Discordian.
 
    object calendar()
    {
@@ -947,26 +944,23 @@ class TimeRange
 
 // ----------------------------------------------------------------
 
-//!
-//! module Calendar
 //! class SuperTimeRange
 //!     This class handles the cases where you have a time
 //!	period with holes. These can be created by the
 //!	<tt>^</tt> or <tt>|</tt> operators on time ranges.
-//! inherits TimeRange
-
 class cSuperTimeRange
 {
+   //! inherits TimeRange
    inherit TimeRange;
 
    constant is_supertimerange=1;
 
    array parts;
 
-//! method void create(array(TimeRange) parts)
-//!	A SuperTimeRange must have at least two parts,
-//!	two time ranges. Otherwise, it's either not
-//!	a time period at all or a normal time period.
+   //! @decl void create(array(TimeRange) parts)
+   //!	A SuperTimeRange must have at least two parts,
+   //!	two time ranges. Otherwise, it's either not
+   //!	a time period at all or a normal time period.
 
    void create(array(TimeRange) _parts)
    {
@@ -1143,16 +1137,16 @@ class cSuperTimeRange
    }
 }
 
-//! constant TimeRange nulltimerange
+//! @decl TimeRange nulltimerange
 //!	This represents the null time range, 
 //!	which, to differ from the zero time range
 //!	(the zero-length time range), isn't placed
 //!	in time. This is the result of for instance
-//!	<ref>`&</ref> between two strict non-overlapping
+//!	@[`&()] between two strict non-overlapping
 //!	timeranges - no time at all.
 //!
-//! 	It has a constant, <tt>is_nulltimerange</tt>, which
-//!	is non-zero. <tt>`!</tt> on this timerange is true.
+//! 	It has a constant, @[is_nulltimerange], which
+//!	is non-zero. @[`!()] on this timerange is true.
 
 
 program NullTimeRange=cNullTimeRange;

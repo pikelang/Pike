@@ -1,6 +1,3 @@
-//!
-//! module Calendar
-//! submodule Discordian
 //!	The Discordian calendar, as described on page 34
 //!	in the fourth edition of Principia Discordia.
 //!
@@ -16,12 +13,11 @@
 //!	The Principia calls months "seasons", but for simplicity I 
 //!	call them months in this calendar.
 //!
-//!	If anyone know more about how to treat the leap day - now it is 
+//!	If anyone knows more about how to treat the leap day - now it is 
 //!	inserted in the month and week where it lands, rather then being
 //!	separated from month and weeks, I'm interested to know.
 //!
 //!	- Mirar, Pope of POEE.
-//!
 
 // the discordian calendar follows the gregorian years, very practical ;)
 

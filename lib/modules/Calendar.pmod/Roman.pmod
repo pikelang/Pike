@@ -1,7 +1,3 @@
-//!
-//! module Calendar
-//! submodule Roman
-//!
 //! base for all Roman-kind of calendars
 //! ie, one with years, months, weeks and days
 //!

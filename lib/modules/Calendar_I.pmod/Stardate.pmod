@@ -1,10 +1,7 @@
-//! submodule Stardate
 //!	time unit: TNGDate
 
-//! class TNGDate
-//!	implements ST:TNG stardates
-//!	can be used as create argument to Day 
-
+//!	Implements ST:TNG stardates.
+//!	Can be used as create argument to Day.
 class TNGDate
 {
    inherit Calendar_I._TimeUnit;
