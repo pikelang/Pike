@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.47 2000/04/15 05:03:41 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.48 2000/05/16 08:35:06 hubbe Exp $ */
 
 import Stdio;
 
@@ -404,7 +404,8 @@ int main(int argc, array(string) argv)
 
 	  if(istty())
 	  {
-	    werror("%6d\r",e+1);
+	    if(!verbose)
+	      werror("%6d\r",e+1);
 	  }else{
 	    /* Use + instead of . so that sendmail and
 	     * cron will not cut us off... :(
@@ -479,6 +480,8 @@ int main(int argc, array(string) argv)
 	  if(verbose>9) bzot(to_compile);
 	  switch(type)
 	  {
+	    mixed at,bt;
+	    mixed err;
 	    case "COMPILE":
 	      _dmalloc_set_name(fname,0);
 	      if(catch(compile_string(to_compile, fname)))
@@ -512,10 +515,18 @@ int main(int argc, array(string) argv)
 	    case "EVAL_ERROR":
 	      master()->set_inhibit_compile_errors(1);
 	      _dmalloc_set_name(fname,0);
-	      if(catch(clone(compile_string(to_compile, fname))->a()))
+
+	      at = gauge {
+		err=catch {
+		  clone(compile_string(to_compile, fname))->a();
+		};
+	      };
+	      if(err)
 	      {
 		_dmalloc_set_name();
 		successes++;
+		if(verbose>2)
+		  werror("Time in a(): %f\n",at);
 	      }else{
 		_dmalloc_set_name();
 		werror(fname + " failed.\n");
@@ -526,7 +537,6 @@ int main(int argc, array(string) argv)
 	      break;
 	    
 	    default:
-	      mixed err;
 	      if (err = catch{
 		_dmalloc_set_name(fname,0);
 		o=clone(compile_string(to_compile,fname));
@@ -537,8 +547,16 @@ int main(int argc, array(string) argv)
 		a=b=0;
 		if(t) trace(t);
 		_dmalloc_set_name(fname,1);
-		if(functionp(o->a)) a=o->a();
-		if(functionp(o->b)) b=o->b();
+		if(functionp(o->a))
+		{
+		  at = gauge { a=o->a(); };
+		}
+
+		if(functionp(o->b))
+		{
+		  bt = gauge { b=o->b(); };
+		}
+		  
 		_dmalloc_set_name();
 
 		if(t) trace(0);
@@ -568,6 +586,9 @@ int main(int argc, array(string) argv)
 		  werror("Actual lines: %d\n",computed_line);
 		errors++;
 	      }
+
+	      if(verbose>2)
+		werror("Time in a(): %f, Time in b(): %O\n",at,bt);
 	    
 	      switch(type)
 	      {
