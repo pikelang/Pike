@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.163 2000/02/15 02:41:26 hubbe Exp $");
+RCSID("$Id: las.c,v 1.164 2000/02/15 03:09:17 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1327,7 +1327,11 @@ node *debug_mkconstantsvaluenode(struct svalue *s)
   if(s->type == T_OBJECT ||
      (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
   {
-    res->node_info|=OPT_EXTERNAL_DEPEND;
+    /* Is it in a fake object? */
+    if( s->u.object->next == s->u.object)
+    {
+      res->node_info|=OPT_EXTERNAL_DEPEND;
+    }
   }
   res->type = get_type_of_svalue(s);
   return freeze_node(res);
