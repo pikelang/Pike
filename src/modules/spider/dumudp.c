@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.14 1997/08/30 18:36:25 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.15 1997/09/02 21:12:36 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -46,6 +46,10 @@ RCSID("$Id: dumudp.c,v 1.14 1997/08/30 18:36:25 grubba Exp $");
 
 #ifdef HAVE_SYS_PROTOSW_H
 #include <sys/protosw.h>
+#endif
+
+#ifdef HAVE_SYS_STREAM_H
+#include <sys/stream.h>
 #endif
 
 #ifdef HAVE_SYS_SOCKETVAR_H
