@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.237 2000/05/11 14:09:46 grubba Exp $");
+RCSID("$Id: program.c,v 1.238 2000/05/13 02:44:36 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4101,4 +4101,74 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
     }
   }
   return 1;
+}
+
+/* This will be moved to program.c - Hubbe */
+void *parent_storage(int depth)
+{
+  struct inherit *inherit;
+  struct program *p;
+  struct object *o;
+  INT32 i;
+
+  inherit=&fp->context;
+  o=fp->current_object;
+  
+  if(!o)
+    error("Current object is destructed\n");
+  
+  while(1)
+  {
+    if(inherit->parent_offset)
+    {
+      i=o->parent_identifier;
+      o=o->parent;
+      depth+=inherit->parent_offset-1;
+    }else{
+      i=inherit->parent_identifier;
+      o=inherit->parent;
+    }
+    
+    if(!o) return 0;
+    if(!(p=o->prog)) return 0;
+    
+#ifdef DEBUG_MALLOC
+    if (o->refs == 0x55555555) {
+      fprintf(stderr, "The object %p has been zapped!\n", o);
+      describe(p);
+      fatal("Object zapping detected.\n");
+    }
+    if (p->refs == 0x55555555) {
+      fprintf(stderr, "The program %p has been zapped!\n", p);
+      describe(p);
+      fprintf(stderr, "Which taken from the object %p\n", o);
+      describe(o);
+      fatal("Looks like the program %p has been zapped!\n", p);
+    }
+#endif /* DEBUG_MALLOC */
+    
+#ifdef PIKE_DEBUG
+    if(i < 0 || i > p->num_identifier_references)
+      fatal("Identifier out of range!\n");
+#endif
+    
+    inherit=INHERIT_FROM_INT(p, i);
+    
+#ifdef DEBUG_MALLOC
+    if (inherit->storage_offset == 0x55555555) {
+      fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
+      debug_malloc_dump_references(inherit,0,2,0);
+      fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
+      describe(p);
+      fprintf(stderr, "Which was in turn taken from the object %p\n", o);
+      describe(o);
+      fatal("Looks like the program %p has been zapped!\n", p);
+    }
+#endif /* DEBUG_MALLOC */
+    
+    if(!depth) break;
+    --depth;
+  }
+
+  return o->storage + inherit->storage_offset;
 }

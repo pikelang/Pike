@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.39 2000/05/13 02:09:41 hubbe Exp $
+ * $Id: oracle.c,v 1.40 2000/05/13 02:45:26 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -42,7 +42,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.39 2000/05/13 02:09:41 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.40 2000/05/13 02:45:26 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -147,7 +147,11 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define PARENTOF(X) (X)->parent
 
 
-/* This will be moved to program.c - Hubbe */
+/* This define only exists in Pike 7.1.x, if it isn't defined
+ * we have to provide this function ourselves -Hubbe
+ */
+#ifndef IDENTIFIER_SCOPE_USED
+
 void *parent_storage(int depth)
 {
   struct inherit *inherit;
@@ -216,6 +220,7 @@ void *parent_storage(int depth)
 
   return o->storage + inherit->storage_offset;
 }
+#endif
 
 #ifdef PIKE_DEBUG
 void *check_storage(void *storage, unsigned long magic, char *prog)
