@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.316 2003/12/18 22:39:35 marcus Exp $
+// $Id: master.pike.in,v 1.317 2003/12/18 23:00:35 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -250,9 +250,16 @@ array(string) explode_path(string p)
 string dirname(string x)
 {
   if(x=="") return "";
+#ifdef __amigaos__
+  array(string) tmp=x/":";
+  array(string) tmp2=tmp[-1]/"/";
+  tmp[-1]=tmp2[..sizeof(tmp2)-2]*"/";
+  return tmp*":";
+#else
   array(string) tmp=EXPLODE_PATH(x);
   if(x[0]=='/' && sizeof(tmp)<3) return "/";
   return tmp[..sizeof(tmp)-2]*"/";
+#endif
 }
 
 //! @appears basename
@@ -262,10 +269,15 @@ string dirname(string x)
 //! @[dirname()], @[explode_path()]
 string basename(string x)
 {
+#ifdef __amigaos__
+  return ((x/":")[-1]/"/")[-1];
+#define BASENAME(X) ((((X)/":")[-1]/"/")[-1])
+#else
   array(string) tmp=EXPLODE_PATH(x);
   return tmp[-1];
-}
 #define BASENAME(X) (EXPLODE_PATH(X)[-1])
+#endif
+}
 
 #ifdef PIKE_AUTORELOAD
 
