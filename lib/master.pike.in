@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.235 2002/12/03 21:17:58 nilsson Exp $
+// $Id: master.pike.in,v 1.236 2002/12/04 15:21:57 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -2457,7 +2457,7 @@ string describe_object(object|program o)
   catch {
     object|program parent_obj = function_object(parent_fun);
 
-    if (objectp (parent_obj)) {
+    if (objectp (parent_obj) || parent_obj) {
       /* Check if we have a constant object. */
       object tmp = objects[parent_obj];
       if (objectp (tmp)) parent_obj = tmp;
@@ -2499,9 +2499,10 @@ string describe_program(program p)
     return s;
 
   if(mixed tmp=function_object(p))
-  {
-    return describe_module(tmp) + function_name(p);
-  }
+    if(s = function_name(p))
+      {
+	return describe_module(tmp) + s;
+      }
 
   if(s=_static_modules.Builtin()->program_defined(p))
     return EXPLODE_PATH(s)[-1];
