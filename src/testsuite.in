@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.478 2001/12/19 23:52:44 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.479 2001/12/20 00:17:33 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -262,6 +262,8 @@ test_compile_error([[ int b=17; float c=42.0; b=b-c; ]])
 test_compile_error([[ int b=17; float c=42.0; b-=c; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
+
+test_compile_error([[class F {inherit master()->dirnode;};]]);
 
 //
 
