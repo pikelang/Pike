@@ -1,3 +1,10 @@
+pike7.4 (7.4.21-4) unstable; urgency=low
+
+  * Upload to force the recompile with correct dependencies on some
+    platforms.
+
+ -- Marek Habersack <grendel@debian.org>  Sat,  3 May 2003 22:48:14 -0400
+
 pike7.4 (7.4.21-3) unstable; urgency=low
 
   * Recompiled with the LGPL mysql client library
