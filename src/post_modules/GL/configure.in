@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.19 2003/05/12 12:38:22 grubba Exp $
+# $Id: configure.in,v 1.20 2003/06/16 17:44:26 mast Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -97,13 +97,13 @@ else
 
     tmp_gl_fail=no
     if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
-      LIBS="-lGL $LIBS"
+      LIBS="-lGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL" = xyes; then
       LIBS="-lOpenGL $LIBS"
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL32" = xyes; then
       LIBS="-lOpenGL32 $LIBS"
     elif test x"$with_lib_MesaGL" = "xyes" -a x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
-      LIBS="-lMesaGL $LIBS"
+      LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     elif test x"$ac_cv_lib_GL_glOrtho" = xyes; then
       LIBS="-lGL $LIBS"
     elif test x"$pike_cv_lib_OpenGL" = xyes; then
@@ -113,7 +113,7 @@ else
     elif test x"$pike_cv_framework_OpenGL" = xyes; then
       LIBS="-framework OpenGL $LIBS"
     elif test x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
-      LIBS="-lMesaGL $LIBS"
+      LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     else
       AC_MSG_WARN([No GL or MesaGL libraries, disabling GL support.])
       PIKE_FEATURE_NODEP(GL)
