@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.43 1998/04/06 23:56:08 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.44 1998/04/09 10:37:15 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -768,9 +768,9 @@ void f_create_process(INT32 args)
 	      if(ITEM(i)[e].type == T_STRING && ITEM(v)[e].type == T_STRING)
 	      {
 		check_stack(3);
-		push_string(ITEM(i)[e].u.string);
+		ref_push_string(ITEM(i)[e].u.string);
 		push_string(make_shared_string("="));
-		push_string(ITEM(v)[e].u.string);
+		ref_push_string(ITEM(v)[e].u.string);
 		f_add(3);
 		ptr++;
 	      }
