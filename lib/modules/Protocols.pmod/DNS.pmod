@@ -4,6 +4,8 @@
 //! module Protocols
 //! submodule DNS
 
+//! $Id: DNS.pmod,v 1.49 2000/09/11 17:16:18 leif Exp $
+
 constant NOERROR=0;
 constant FORMERR=1;
 constant SERVFAIL=2;
