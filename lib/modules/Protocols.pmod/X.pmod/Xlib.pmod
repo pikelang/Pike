@@ -4,7 +4,7 @@
 
 #include "error.h"
 
-#define DEBUG
+// #define DEBUG
 
 constant XPORT = 6000;
 
@@ -235,6 +235,8 @@ class Display
   
   void default_error_handler(object me, mapping e)
   {
+    if(e->failed_request)
+      e->failed_request = e->failed_request[0..32];
     error(sprintf("Xlib: Unhandled error %O\n", e));
   }
 
@@ -340,7 +342,7 @@ class Display
 		int wid = struct->get_uint(4);
 		object r = Types.RootWindow(this_object(), wid);
 		int cm = struct->get_uint(4);
-		r->defaultColorMap = Types.Colormap(this_object(), cm, 0);
+		r->colormap = r->defaultColorMap = Types.Colormap(this_object(), cm, 0);
 		r->whitePixel = struct->get_uint(4);
 		r->blackPixel = struct->get_uint(4);
 		r->currentInputMask = struct->get_uint(4);
@@ -666,14 +668,13 @@ class Display
 
   void close_callback(mixed id)
   {
-    werror("Xlib.close_callback\n");
     if (state == STATE_WAIT_CONNECT)
       connect_handler(this_object(), 0);
     else
       if (close_handler)
 	close_handler(this_object());
       else
-	io_error_handler(this_object());
+	exit(0);
     close();
   }
   
@@ -810,7 +811,7 @@ class Display
     send(data);
 #ifdef DEBUG
     debug_requests[sequence_number & 0x7fff] = data;
-#endif DEBUG
+#endif
     return sequence_number++ & 0x7fff;
   }
 

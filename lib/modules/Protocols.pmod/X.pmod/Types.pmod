@@ -206,6 +206,8 @@ class Drawable
 {
   inherit XResource;
 
+  object colormap;
+
   object CreateGC_req()
   {
     object req = Requests.CreateGC();
@@ -243,7 +245,7 @@ class Drawable
     object req = CreatePixmap_req(width, height, depth);
     display->send_request(req);
     
-    return Pixmap(display, req->pid, this_object());
+    return Pixmap(display, req->pid, this_object(),colormap);
   }
 
   object FillPoly_req(int gc, int shape, int coordMode, array(object) p)
@@ -315,7 +317,7 @@ class Drawable
   {
     object req = PutImage_req(gc, depth, tx, ty, width, height, data);
     req->format = format;
-    display->send_request(req);
+    display->send_request( req );
   }
 
   object ImageText8_req(int gc, int x, int y, string str)
@@ -368,13 +370,14 @@ class Pixmap
   {
     ::create( @args );
     if(sizeof(args)>2 && objectp(args[2]))  parent = args[2];
+    if(sizeof(args)>3 && objectp(args[3]))  colormap = args[3];
   }
 }
 
 class Window
 {
   inherit Drawable;
-  object visual, colortable, parent;
+  object visual, parent;
   int currentInputMask;
 
   mapping(string:array(function)) event_callbacks = ([ ]);
@@ -567,22 +570,24 @@ class Window
   {
     object req = CreateWindow_req(x, y, width, height,
 				  border_width,depth,visual);
+    object c = colormap||parent->defaultColorMap;
 
     if (attributes)
+    {
       req->attributes = attributes;
-
+      if(attributes->Colormap) c= attributes->Colormap;
+    }    
 
     // object w = Window(display, req->wid);
     display->send_request(req);
     object w = new(display, req->wid, visual, this_object());
-    w->colortable = req->attributes->Colormap;
+    w->colormap = c;
     w->currentInputMask = req->attributes->EventMask;
     return w;
   }
     
   object CreateSimpleWindow(int x, int y, int width, int height,
-			    int border_width,
-			    int border, int background)
+			    int border_width,int border, int background)
   {
     object req = CreateWindow_req(x, y, width, height,
 				  border_width,0,0);

@@ -6,6 +6,7 @@
 
 // Base class.
 // FIXME: Why not inherit Image.Image directly?
+// Guess five times... /Per
 class Image_wrapper
 {
   class funcall
@@ -35,19 +36,19 @@ class Image_wrapper
     // Changed by the inheriting class.
   }
 
-  void copy(mixed ... args)
+  object copy(mixed ... args)
   {
     return image->copy( @args );
   }
 
-  varargs object paste(object what, int x, int y)
+  object paste(object what, int|void x, int|void y)
   {
     image->paste(what, x, y);
     clear_caches(x,y,what->xsize(),what->ysize());
     redraw(x,y,what->xsize(),what->ysize());
   }
 
-  varargs object paste_mask(object what, object mask, int x, int y)
+  object paste_mask(object what, object mask, int|void x, int|void y)
   {
     image->paste_mask(what, mask, x, y);
     clear_caches(x,y,what->xsize(),what->ysize());
@@ -87,7 +88,7 @@ class XImage
 
   int depth, bpp;
   function converter;
-  int linepad;
+  int linepad, swapbytes;
   int rmask, gmask, bmask;
 
   int offset_x, offset_y;
@@ -120,7 +121,7 @@ class XImage
 
     int max_pixel;
 
-    Array.map((array)wanted,
+    Array.map(((array)wanted+({({255,255,255}),({0,0,0})})),
 	    lambda(array o){
 	      return colormap->AllocColor(o[0]*257,o[1]*257,o[2]*257);
 	    });
@@ -133,8 +134,6 @@ class XImage
 
     foreach(values(colormap->alloced), mapping m)
       if(m) res[ m->pixel ] = ({ m->red/257, m->green/257, m->blue/257 });
-// What to do with unallocated colors?
-    res = replace( res, 0, ({ 255,0,255 }) );
 
     object ct = Image.colortable( res );
     ct->cubicles(12, 12, 12);
@@ -153,10 +152,12 @@ class XImage
 
   void redraw(int x, int y, int width, int height)
   {
-    werror(sprintf("XImage->redraw: %d, %d, %d, %d, %d, %d\n",
-		   x, y, offset_x, offset_y, width, height));
+    int max_pixels = ((window->display->maxRequestSize - 64)*32) / bpp;
+    int slice = (max_pixels / width)-1;
 
-    int slice = (window->display->maxRequestSize/depth)*32 / width;
+//     werror(sprintf("XImage->redraw: [%d, %d]+[%d, %d] (%d)\n",
+// 		   x, y, width, height, slice));
+
     if(x+width > image->xsize())
       width = image->xsize()-x;
     if (x<0)
@@ -181,24 +182,27 @@ class XImage
       height -= slice;
       if(height < 0) slice += height;
       object mimg = image->copy(x,y,x+width-1,y+slice-1);
-
       if(rmask)
+      {
+	string data = 
+	  converter(mimg,bpp,linepad,swapbytes,rmask,gmask,bmask,
+		    @(ccol?({ccol}):({})));
+
 	window->PutImage( dgc, depth, x + offset_x, y + offset_y,
-			  width, slice,
-			  converter( mimg, bpp, linepad, rmask, gmask, bmask,
-				     @(ccol?({ccol}):({}))));
+			  width, slice, data, 2 );
+      }
       else
       {
 	if(!ccol) ccol = allocate_colortable();
 	string data = converter( mimg, bpp, linepad, depth, ccol );
 	window->PutImage( dgc, bpp, x + offset_x, y + offset_y,
-			  width, slice, data );
+			  width, slice, data, 2 );
       }
       y += slice;
     }
   }
 
-  void set_window(object w)
+  void set_drawable(object w)
   {
     window = w;
     if(!w->visual)
@@ -219,42 +223,54 @@ class XImage
 
       if(!visual)
 	visual = root->visual;
-    } else
+      root = w->root;
+    } else {
+      root = w->parent;
+      while(root->parent) root = root->parent;
       visual = w->visual;
-
-    if(root->visual == visual)
-    {
-      werror("using default visual\n");
-      colormap = root->defaultColorMap;
     }
+    if(w->colormap)
+      colormap = w->colormap;
     else
-      colormap = w->CreateColormap( visual, 0 );
+      colormap = root->defaultColorMap;
+    
+    swapbytes = !w->display->imageByteOrder;
     rmask = visual->redMask;
     gmask = visual->greenMask;
     bmask = visual->blueMask;
     depth = visual->depth;
-    bpp = visual->bitsPerRGB;
-    linepad = 32; // FIXME!
+
+    foreach(w->display->formats, mapping format)
+      if(format->depth == depth)
+      {
+// 	werror(sprintf("found matching format: %O", format));
+	bpp = format->bitsPerPixel;
+	linepad = format->scanLinePad;
+	break;
+      }
     
     switch(_Xlib.visual_classes[visual->c_class])
     {
-     case "StaticGray":  
+     case "StaticGray":
        ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
        converter = Image.X.encode_pseudocolor;
        break;
-     case "GrayScale":   
-       ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
-       converter = Image.X.encode_pseudocolor;
-       break;
-     case "PseudoColor": 
+//        ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
+//        converter = Image.X.encode_pseudocolor;
+//        break;
+     case "GrayScale":
+     case "PseudoColor":
        ccol = 0;
        converter = Image.X.encode_pseudocolor;
        break;
-     case "StaticColor": 
+     case "StaticColor":
      case "TrueColor":
-       if(depth < 16)
+       if(depth <= 16)
        {
-	 ccol = Image.colortable(1<<depth, 1<<rmask, 1<<gmask, 1<<bmask);
+#define BITS(Y) (Image.X.examine_mask(Y)[0])
+	 ccol = Image.colortable(1<<BITS(rmask),
+				 1<<BITS(gmask),
+				 1<<BITS(bmask));
 	 ccol->ordered();
        }
        converter = Image.X.encode_truecolor_masks;
@@ -281,14 +297,21 @@ class WindowImage
 
   void exposed(mixed event)
   {
-    werror("expose...");
+//     werror(sprintf("%O\n", event));
+#ifdef BUGGY_X
+    if(!event->count)
+    {
+      remove_call_out(redraw);
+      call_out(redraw,0.1,0,0,image->xsize(),image->ysize());
+    }
+#else
     redraw(event->x, event->y, event->width, event->height);
-    werror("done\n");
+#endif
   }
 
-  void create(object (Types.Window) w)
+  void create(object(Types.Window) w)
   {
-    set_window(w);
+    set_drawable(w);
     w->set_event_callback("Expose", exposed); // internal callback...
     w->SelectInput("Exposure");
   }
@@ -296,21 +319,10 @@ class WindowImage
 
 class PixmapImage
 {
-  inherit Image_wrapper;
-  object pixmap;
-  object (Types.Window) window, root;
-  object (Types.Visual) visual;
-  object (Types.Colormap) colormap;
+  inherit XImage;
 
-  int depth;
-  function converter;
-  int linepad;
-  int rmask, gmask, bmask;
-
-
-  void create(object (Types.Pixmap) p, object (Types.Window) w)
+  void create(object (Types.Pixmap) p)
   {
-    pixmap = p;
-    window = w;
+    set_drawable( p );
   }
 }
