@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.44 2003/11/03 04:17:07 grendel Exp $
+# $Id: rules,v 1.45 2003/11/11 17:32:04 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -53,6 +53,7 @@ CFARGS=--without-rtldebug \
        --with-zlib \
        --with-freetype \
        --with-ttflib \
+       --with-libnettle \
        --without-libpdf \
        --without-libpanda \
        --without-sybase \

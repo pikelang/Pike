@@ -1,3 +1,9 @@
+pike7.5 (7.5.12-2) experimental; urgency=low
+
+  * Added libnettle to the build dependencies.
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 11 Nov 2003 18:24:24 +0100
+
 pike7.5 (7.5.12-1) experimental; urgency=low
 
   * Catching up on version numbers.
