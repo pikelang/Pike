@@ -1,34 +1,29 @@
+#pike __REAL_VERSION__
+
+//! The Discordian calendar, as described on page 34
+//! in the fourth edition of Principia Discordia.
 //!
-//! module Calendar
-//! submodule Discordian
-//!	The Discordian calendar, as described on page 34
-//!	in the fourth edition of Principia Discordia.
+//! Chaotic enough, it's quite simpler then the @[Gregorian] calendar;
+//! weeks are 5 days, and evens up on a year. Months are 73 days.
 //!
-//!	Chaotic enough, it's quite simpler then the Gregorian calendar;
-//!	weeks are 5 days, and evens up on a year. Months are 73 days.
+//! The leap day is inserted at the 60th day of the first month 
+//! (Chaos), giving the first month 74 days. The description of
+//! the calendar is a "perpetual date converter from the gregorian
+//! to the POEE calendar", so the leap years are the same as
+//! the gregorians.
 //!
-//!	The leap day is inserted at the 60th day of the first month 
-//!	(Chaos), giving the first month 74 days. The description of
-//!	the calendar is a "perpetual date converter from the gregorian
-//!	to the POEE calendar", so the leap years are the same as
-//!	the gregorians.
+//! The Principia calls months "seasons", but for simplicity I 
+//! call them months in this calendar.
 //!
-//!	The Principia calls months "seasons", but for simplicity I 
-//!	call them months in this calendar.
-//!
-//!	If anyone know more about how to treat the leap day - now it is 
-//!	inserted in the month and week where it lands, rather then being
-//!	separated from month and weeks, I'm interested to know.
+//! If anyone know more about how to treat the leap day - now it is 
+//! inserted in the month and week where it lands, rather then being
+//! separated from month and weeks, I'm interested to know.
 //!
 //!	- Mirar, Pope of POEE.
-//!
 
 // the discordian calendar follows the gregorian years, very practical ;)
 
-#pike __REAL_VERSION__
-
-import ".";
-inherit Gregorian:Gregorian;
+inherit .Gregorian:Gregorian;
 
 #include "constants.h"
 

@@ -1,91 +1,83 @@
 #pike __REAL_VERSION__
 
-import ".";
-constant TimeRange=TimeRanges.TimeRange;
+static constant M_YD=({0,0,31,59,90,120,151,181,212,243,273,304,334});
+static constant M_ED=({({0,31,59,90,120,151,181,212,243,273,304,334,365}),
+		       ({0,31,60,91,121,152,182,213,244,274,305,335,366}),
+		       ({0,31,60,90,120,151,181,212,243,273,304,334,365}) });
+static constant M_NAME="---JanFebMarAprMayJunJulAugSepOctNovDec"/3;
+static constant WD_NAME="---MonTueWedThuFriSatSun"/3;
 
-constant M_YD=({0,0,31,59,90,120,151,181,212,243,273,304,334});
-constant M_ED=({({0,31,59,90,120,151,181,212,243,273,304,334,365}),
-		({0,31,60,91,121,152,182,213,244,274,305,335,366}),
-		({0,31,60,90,120,151,181,212,243,273,304,334,365}) });
-constant M_NAME="---JanFebMarAprMayJunJulAugSepOctNovDec"/3;
-constant WD_NAME="---MonTueWedThuFriSatSun"/3;
-
-function(mixed...:TimeRange) std_day=master()->resolv("Calendar")["Day"];
-function(mixed...:TimeRange) std_second=master()->resolv("Calendar")["Second"];
+static function(mixed...:.TimeRanges.TimeRange) std_day=Calendar.Day;
+static function(mixed...:.TimeRanges.TimeRange) std_second=Calendar.Second;
 
 // ----------------------------------------------------------------
 // base classes
 // ----------------------------------------------------------------
 
-//! module Calendar
-//! submodule Event
-//! class Event
-//! 	<ref>Event</ref> is a base class, defining what
-//!	methods an Event need to have.
 
-//! method array(TimeRange) scan(TimeRange in)
-//!	This calculates the eventual events that
-//!	is contained or overlapped by the given timerange.
-//!	
-//!	Example:
-//!	<tt>Event.christmas_eve->scan(Year(2000))</tt>
-//!	=> <tt>({ Day(Sun 24 Dec 2000) })</tt>
-//!
-//!	<ref>scan</ref> uses <ref>next</ref> if not overloaded.
-//!
-//! note:
-//!	<ref>scan</ref> can return an array of overlapping timeranges.
-//!	
-//!	This method must use <tt>in->calendar_object-></tt><i>type</i>
-//!	to create the returned timeranges, and must keep the ruleset.
-
-//! method TimeRange next(TimeRange from,void|int(0..1) including)
-//! method TimeRange previous(TimeRange from,void|int(0..1) including)
-//!	This calculates the next or previous occurance of the event,
-//!	from the given timerange's <b>start</b>,
-//!	including any event occuring at the start if that flag is set.
-//!
-//!	It returns zero if there is no next event.
-//!
-//!	This method is virtual in the base class.
-
+//! Event is an abstract class, defining what methods an Event
+//! need to have.
 class Event
 {
    string name;
    string id="?";
 
+  //! This constant may be used to identify an event object.
    constant is_event=1;
 
-   TimeRange next(void|TimeRange from,void|int(0..1) including);
-   TimeRange previous(void|TimeRange from,void|int(0..1) including);
+  //! This calculates the next or previous occurance of the event,
+  //! from the given timerange's start, including any event occuring
+  //! at the start if that flag is set.
+  //!
+  //! It returns zero if there is no next event.
+  //!
+  //! These methods are virtual in the base class.
+  .TimeRanges.TimeRange next(void|.TimeRanges.TimeRange from,
+			     void|int(0..1) including);
+  .TimeRanges.TimeRange previous(void|.TimeRanges.TimeRange from,
+				 void|int(0..1) including);
 
-// what events in this period?
-   array(TimeRange) scan(TimeRange in)
-   {
+  //! This calculates the eventual events that is contained or
+  //! overlapped by the given timerange. @[scan] uses @[next], if not
+  //! overloaded.
+  //!
+  //! @example
+  //!   Event.christmas_eve->scan(Year(2000))
+  //!     => ({ Day(Sun 24 Dec 2000) })
+  //!
+  //! @note
+  //!   @[scan] can return an array of overlapping timeranges.
+  //!
+  //!   This method must use @tt{in->calendar_object->@}@i{type@}
+  //!   to create the returned timeranges, and must keep the ruleset.
+  array(.TimeRanges.TimeRange) scan(.TimeRanges.TimeRange in)
+  {
       array res=({});
-      TimeRange t=next(in,1);
+      .TimeRanges.TimeRange t=next(in,1);
       for (;;)
       {
 	 if (!t || !t->overlaps(in)) return res;
 	 res+=({t});
 	 t=next(t);
       }
-   }
+  }
 
-   mapping(TimeRange:Event) scan_events(TimeRange in)
-   {
-      array r=scan(in);
-      return mkmapping(r,allocate(sizeof(r),this_object()));
-   }
+  //! Returns a mapping with time ranges mapped to events.
+  mapping(.TimeRanges.TimeRange:Event) scan_events(.TimeRanges.TimeRange in)
+  {
+    array r=scan(in);
+    return mkmapping(r,allocate(sizeof(r),this_object()));
+  }
 
-   Event `|(Event ... with)
+  //! Joins several events into one @[SuperEvent].
+   SuperEvent `|(Event ... with)
    {
       with-=({0});
       with|=({this_object()});
       if (sizeof(with)==1) return with[0];
       return SuperEvent(with);
    }
-   Event ``|(Event with) { return `|(with); }
+   SuperEvent ``|(Event with) { return `|(with); }
 
    string _sprintf(int t)
    {
@@ -100,16 +92,19 @@ class Event
 	 error("Can't cast to %O\n",to);
    }
 
+  //! Returns a description of the event.
    string describe()
    {
       return "Unknown event";
    }
 }
 
+//! A non-event.
 class NullEvent
 {
    inherit Event;
 
+  //! This constant may be used to identify a NullEvent.
    constant is_nullevent=1;
 
    void create(string _id,string s,mixed ...args) 
@@ -118,54 +113,56 @@ class NullEvent
       name=s;
    }
  
-   TimeRange next(void|TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange next(void|.TimeRanges.TimeRange from,
+			      void|int(0..1) including)
    {
       return 0;
    }
 
-   TimeRange previous(void|TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange previous(void|.TimeRanges.TimeRange from,
+				  void|int(0..1) including)
    {
       return 0;
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class Day_Event
-//! 	<ref>Day_Event</ref> is a base class, extending <ref>Event</ref>
-//!	for events that are single days, using julian day numbers
-//!	for the calculations.
-//!
-//! method array(TimeRange) scan(TimeRange in)
-//! method TimeRange next(TimeRange from)
-//! method TimeRange next(TimeRange from,int(0..1) including)
-//!	These methods are implemented, using the
-//!	virtual method <ref>scan_jd</ref>.
-//! see also: Event
-//!
-//! method int scan_jd(Calendar realm,int jd,int(-1..-1)||int(1..1) direction)
-//!	These methods has to be defined, and is what
-//!	really does some work. It should return the next or previos
-//!	julian day (&gt;<i>jd</i>) when the event occurs,
-//!	or the constant <tt>NODAY</tt> if it doesn't.
-//!
-//!	<i>direction</i> <tt>1</tt> is forward (next),
-//!	<tt>-1</tt> is backward (previous).
-
+//! @[Day_Event] is an abstract class, extending @[Event] for events
+//! that are single days, using julian day numbers for the calculations.
 class Day_Event
 {
    inherit Event;
 
+  //! This constant may be used to identify @[Day_Event] objects.
    constant is_day_event=1;
+
+  //! Returned from @[scan_jd] if the even searched for did not
+  //! exist.
    constant NODAY=-1;
 
    int nd=1;
 
-// find the next (or same) jd with the event
-   int scan_jd(Calendar realm,int jd,int(1..1)|int(-1..-1) direction);
+  //! @decl int scan_jd(.Calendar realm,int jd,@
+  //!                   int(-1..-1)||int(1..1) direction)
+  //! These methods has to be defined, and is what
+  //! really does some work. It should return the next or previos
+  //! julian day (>@i{jd@}) when the event occurs,
+  //! or the constant @[NODAY] if it doesn't.
+  //!
+  //! @param direction
+  //!   @int
+  //!     @value 1
+  //!       Forward (next),
+  //!     @value -1
+  //!	    Backward (previous).
+  //!   @endint
 
-// find
-   TimeRange next(void|TimeRange from,void|int(0..1) including)
+   int scan_jd(.Calendar realm,int jd,int(1..1)|int(-1..-1) direction);
+
+  //! Uses the virtual method @[scan_jd].
+  //! @seealso
+  //!   @[Event.next]
+  .TimeRanges.TimeRange next(void|.TimeRanges.TimeRange from,
+			     void|int(0..1) including)
    {
       if (!from) from=std_day();
       int jd;
@@ -175,7 +172,11 @@ class Day_Event
       return (from->calendar()->Day)("julian_r",jd,from->ruleset())*nd;
    }
 
-   TimeRange previous(void|TimeRange from,void|int(0..1) including)
+  //! Uses the virtual method @[scan_jd].
+  //! @seealso
+  //!   @[Event.previous]
+   .TimeRanges.TimeRange previous(void|.TimeRanges.TimeRange from,
+				  void|int(0..1) including)
    {
       if (!from) from=std_day();
       int jd;
@@ -190,16 +191,13 @@ class Day_Event
 }
 
 
-//! module Calendar
-//! submodule Event
-//! class Nameday
-//!	This is created by the <ref>Namedays</ref> classes
-//!	to represent an event for a name.
-
+//! This is created by the @[Namedays] classes
+//! to represent an event for a name.
 class Nameday
 {
    inherit Day_Event;
 
+  //! This constant may be used to identify @[Nameday] objects.
    constant is_nameday=1;
 
    int jd;
@@ -210,7 +208,7 @@ class Nameday
       jd=_jd;
    }
 
-   int scan_jd(Calendar realm,int sjd,int(1..1)|int(-1..-1) direction)
+   int scan_jd(.Calendar realm,int sjd,int(1..1)|int(-1..-1) direction)
    {
       if (direction==1) return sjd<=jd?jd:NODAY;
       else return sjd>=jd?jd:NODAY;
@@ -222,15 +220,12 @@ class Nameday
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class Namedays
-//!	This contains a ruleset about namedays. 
-//! inherits Event
-
+//! This contains a ruleset about namedays. 
 class Namedays
 {
    inherit Event;
+
+  //! This constant may be used to identify @[Namedays].
    constant is_namedays=1;
 
    int leapdayshift;
@@ -254,27 +249,24 @@ class Namedays
       lookup=_lookup;
    }
 
-//! method array(string) names(TimeRange t)
-//!	Gives back an array of names that occur during
-//!	the time period, in no particular order.
-
-   array(string) names(TimeRange t)
+  //! Gives back an array of names that occur during
+  //! the time period, in no particular order.
+   array(string) names(.TimeRanges.TimeRange t)
    {
-// optimize this?
+     // optimize this?
       return predef::`|(({}),@values(namedays(t)));
    }
 
-//! method mapping(TimeRange:array(string)) namedays(TimeRange t)
-//!	Gives back an table of days with names that occur during
-//!	the time period. Note that days without names will not
-//!	appear in the returned mapping.
-
-   mapping(TimeRange:array(string)) namedays(TimeRange t)
+  //! Gives back an table of days with names that occur during
+  //! the time period. Note that days without names will not
+  //! appear in the returned mapping.
+   mapping(.TimeRanges.TimeRange:array(string))
+     namedays(.TimeRanges.TimeRange t)
    {
       int jd=t->julian_day();
       mapping res=([]);
-      function(mixed...:TimeRange) day=t->calendar()->Day;
-      Ruleset rules=t->ruleset();
+      function(mixed...:.TimeRanges.TimeRange) day=t->calendar()->Day;
+      .Ruleset rules=t->ruleset();
       [int y,int yjd,int leap]=gregorian_yjd(jd);
       if (first_year!=-1 && y<first_year)
 	 [y,yjd,leap]=gregorian_year(first_year),jd=yjd;
@@ -285,7 +277,7 @@ class Namedays
 
       for (;;)
       {
-	 TimeRange td=day("julian_r",jd,rules);
+	 .TimeRanges.TimeRange td=day("julian_r",jd,rules);
 	 if (!td->overlaps(t)) return res; 
 
 	 if (jd>=yjd+365+leap)  // next year
@@ -312,23 +304,21 @@ class Namedays
       }
    }
 
-   mapping(TimeRange:Event) scan_events(TimeRange in)
+   mapping(.TimeRanges.TimeRange:Event) scan_events(.TimeRanges.TimeRange in)
    {
       mapping res=([]);
-      foreach ((array)namedays(in),[TimeRange t,array(string) s])
+      foreach ((array)namedays(in),[.TimeRanges.TimeRange t,array(string) s])
 	 res[t]=predef::`|(@map(s,Nameday,t->julian_day()));
       return res;
    }
 
-   array(TimeRange) scan(TimeRange in)
+   array(.TimeRanges.TimeRange) scan(.TimeRanges.TimeRange in)
    {
       return indices(namedays(in));
    }
 
-//! method TimeRange previous(TimeRange from,void|int(0..1) including)
-//! method TimeRange next(TimeRange from,void|int(0..1) including)
-
-   static TimeRange _find(TimeRange t,int including,int direction)
+   static .TimeRanges.TimeRange _find(.TimeRanges.TimeRange t,
+				      int including, int direction)
    {
       int jd=(int)t->julian_day();
 
@@ -372,12 +362,14 @@ class Namedays
       }
    }
 
-   TimeRange next(TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange next(.TimeRanges.TimeRange from,
+			      void|int(0..1) including)
    {
       return _find(from,including,1);
    }
 
-   TimeRange previous(TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange previous(.TimeRanges.TimeRange from,
+				  void|int(0..1) including)
    {
       return _find(from,including,-1);
    }
@@ -411,6 +403,7 @@ class Namedays
    }
 }
 
+//! Container for merged @[Namedays] objects.
 class SuperNamedays
 {
    inherit Event;
@@ -436,19 +429,21 @@ class SuperNamedays
       return "Namedays";
    }
 
-   array(TimeRange) scan(TimeRange in)
+   array(.TimeRanges.TimeRange) scan(.TimeRanges.TimeRange in)
    {
       return indices(namedays(in));
    }
 
-   mapping(TimeRange:Event) scan_events(TimeRange in)
+   mapping(.TimeRanges.TimeRange:Event) scan_events(.TimeRanges.TimeRange in)
    {
       return predef::`|(@map(namedayss,"scan_events",in));
    }
 
-   TimeRange next(TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange next(.TimeRanges.TimeRange from,
+			      void|int(0..1) including)
    {
-      array(TimeRange) a=map(namedayss,"next",from,including)-({0});
+      array(.TimeRanges.TimeRange) a=map(namedayss,"next",
+					 from,including)-({0});
       switch (sizeof(a))
       {
 	 case 0: return UNDEFINED;
@@ -457,9 +452,11 @@ class SuperNamedays
       }
    }
 
-   TimeRange previous(TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange previous(.TimeRanges.TimeRange from,
+				  void|int(0..1) including)
    {
-      array(TimeRange) a=map(namedayss,"previous",from,including)-({0});
+      array(.TimeRanges.TimeRange) a=map(namedayss,"previous",
+					 from,including)-({0});
       switch (sizeof(a))
       {
 	 case 0: return UNDEFINED;
@@ -468,12 +465,13 @@ class SuperNamedays
       }
    }
 
-   mapping(TimeRange:array(string)) namedays(TimeRange t)
+   mapping(.TimeRanges.TimeRange:array(string))
+     namedays(.TimeRanges.TimeRange t)
    {
       return predef::`|(@map(namedayss,"namedays",t));
    }
 
-   array(string) names(TimeRange t)
+   array(string) names(.TimeRanges.TimeRange t)
    {
       return predef::`|(@map(namedayss,"names",t));
    }
@@ -550,17 +548,22 @@ static array julian_year(int y)
    });
 }
 
-// a set date of year, counting leap day in february -
-// used for the gregorian fixed events in the events list
+//! A set date of year, counting leap day in February,
+//! used for the Gregorian fixed events in the events list.
+//! @seealso
+//!   @[Julian_Fixed]
 class Gregorian_Fixed
 {
    inherit Day_Event;
 
+  //! This constant may be used to identify @[Gregorian_Fixed] objects.
    constant is_fixed=1;
 
    int md,mn;
    int yd;
 
+  //! @decl create(string id, string name, int(1..31) month_day,@
+  //!              int(1..12) month, int extra)
    void create(string _id,string _name,
 	       int(1..31) _md,int(1..12) _mn,int ... _n)
    {
@@ -573,7 +576,7 @@ class Gregorian_Fixed
       if (sizeof(_n)) nd=_n[0];
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       [int y,int yjd,int leap]=gregorian_yjd(jd);
       int njd;
@@ -604,14 +607,18 @@ class Gregorian_Fixed
    }
 }
 
-// same, but julian
+//! A set date of year, counting leap day in February,
+//! used for the Gregorian fixed events in the events list.
+//! @seealso
+//!   @[Gregorian_Fixed]
 class Julian_Fixed
 {
    inherit Gregorian_Fixed;
 
+  //! This constant may be used to identify @[Julian_Fixed] objects.
    constant is_julian_fixed=1;
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       [int y,int yjd,int leap]=julian_yjd(jd);
       int njd;
@@ -642,18 +649,8 @@ class Julian_Fixed
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class Date
-//! 	This class represents the event of a given gregorian date.
-//!	For instance, 
-//!	<tt>Event.Date(12,10)->next(Day())</tt>
-//!	finds the next 12 of October.
-//!
-//! method void create(int month_day,int month)
-//!	The event is created by a given month day and
-//!	a month number (1=January, 12=December).
-
+//! This class represents the event of a given gregorian date. For instance, 
+//! @tt{Event.Date(12,10)->next(Day())@} finds the next 12 of October.
 class Date
 {
    inherit Day_Event;
@@ -662,6 +659,9 @@ class Date
    
    int yd;
 
+  //! @decl void create(int(1..31) month_day, int(1..12) month)
+  //! The event is created by a given month day and a month number
+  //! (1=January, 12=December).
    void create(int _md,int _mn)
    {
       md=_md;
@@ -671,7 +671,7 @@ class Date
       yd=M_YD[mn]+md;
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       [int y,int yjd,int leap]=gregorian_yjd(jd);
       for (;;)
@@ -696,25 +696,10 @@ class Date
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class Date_Weekday
-//! 	This class represents the event that a given gregorian date appears
-//!	a given weekday.
-//!	For instance, 
-//!	<tt>Event.Date_Weekday(12,10,5)->next(Day())</tt>
-//!	finds the next 12 of October that is a friday.
-//! 
-//! method void create(int month_day,int month,int weekday)
-//!	The event is created by a given month day,
-//!	a month number (1=January, 12=December), and a 
-//!	weekday number (1=Monday, 7=Sunday).
-//!
-//! note:
-//!	The week day numbers used
-//!	are the same as the day of week in the <ref>ISO</ref> calendar -
-//!	the <ref>Gregorian</ref> calendar has 1=Sunday, 7=Saturday.
-
+//! This class represents the event that a given gregorian date appears
+//! a given weekday. For instance, 
+//! @tt{Event.Date_Weekday(12,10,5)->next(Day())@} finds the next 12 of
+//! October that is a friday.
 class Date_Weekday
 {
    inherit Day_Event;
@@ -724,6 +709,15 @@ class Date_Weekday
    int yd;
    int jd_wd;
 
+  //! @decl void create(int month_day, int month, int weekday)
+  //! The event is created by a given month day,
+  //! a month number (1=January, 12=December), and a 
+  //! weekday number (1=Monday, 7=Sunday).
+  //!
+  //! @note
+  //! The week day numbers used are the same as the day of week in
+  //! the @[ISO] calendar - the @[Gregorian] calendar has 1=Sunday,
+  //! 7=Saturday.
    void create(int _md,int _mn,int wd)
    {
       md=_md;
@@ -734,7 +728,7 @@ class Date_Weekday
       jd_wd=(wd+6)%7;
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       if (md<1) return 0;
       [int y,int yjd,int leap]=gregorian_yjd(jd);
@@ -761,24 +755,10 @@ class Date_Weekday
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class Monthday_Weekday
-//! 	This class represents the event that a given gregorian 
-//!	day of month appears a given weekday.
-//!	For instance, 
-//!	<tt>Event.Monthday_Weekday(13,5)->next(Day())</tt>
-//!	finds the next friday the 13th.
-//! 
-//! method void create(int month_day,int weekday)
-//!	The event is created by a given month day,
-//!	and a weekday number (1=Monday, 7=Sunday).
-//!
-//! note:
-//!	The week day numbers used
-//!	are the same as the day of week in the <ref>ISO</ref> calendar -
-//!	the <ref>Gregorian</ref> calendar has 1=Sunday, 7=Saturday.
-
+//! This class represents the event that a given gregorian 
+//! day of month appears a given weekday. For instance,
+//! @tt@{Event.Monthday_Weekday(13,5)->next(Day())@} finds the next
+//! friday the 13th.
 class Monthday_Weekday
 {
    inherit Day_Event;
@@ -786,6 +766,14 @@ class Monthday_Weekday
    int md;
    int jd_wd;
 
+  //! @decl void create(int month_day,int weekday)
+  //! The event is created by a given month day,
+  //! and a weekday number (1=Monday, 7=Sunday).
+  //!
+  //! @note
+  //! The week day numbers used are the same as the day of week in
+  //! the @[ISO] calendar - the @[Gregorian] calendar has 1=Sunday,
+  //! 7=Saturday.
    void create(int _md,int wd)
    {
       md=_md;
@@ -793,7 +781,7 @@ class Monthday_Weekday
       jd_wd=(wd+6)%7;
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       if (md>31 || md<1) return 0;
       [int y,int yjd,int leap]=gregorian_yjd(jd);
@@ -827,28 +815,12 @@ class Monthday_Weekday
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class Weekday
-//! 	This class represents any given weekday.
-//!	For instance, 
-//!	<tt>Event.Weekday(5)->next(Day())</tt>
-//!	finds the next friday.
+//! This class represents any given weekday. For instance, 
+//! @tt{Event.Weekday(5)->next(Day())@}	finds the next friday.
 //!
-//!	These are also available as the pre-defined events
-//!	"monday", "tuesday", "wednesday", "thursday", 
-//!	"friday", "saturday" and "sunday".
-//! 
-//! method void create(int weekday)
-//!	The event is created by a given 
-//!	weekday number (1=Monday, 7=Sunday).
-//!
-//! note:
-//!	The week day numbers used
-//!	are the same as the day of week in the <ref>ISO</ref> calendar -
-//!	not the <ref>Gregorian</ref> or <ref>Julian</ref>
-//!	calendar that has 1=Sunday, 7=Saturday.
-
+//! These are also available as the pre-defined events @[Events.monday],
+//! @[Events.tuesday], @[Events.wednesday], @[Events.thursday],
+//! @[Events.friday], @[Events.saturday] and @[Events.sunday].
 class Weekday
 {
    inherit Day_Event;
@@ -856,6 +828,13 @@ class Weekday
 
    int jd_wd;
 
+  //! @decl void create(int weekday, void|string id)
+  //! The event is created by a given weekday number (1=Monday, 7=Sunday).
+  //!
+  //! @note
+  //! The week day numbers used are the same as the day of week in
+  //! the @[ISO] calendar - the @[Gregorian] calendar has 1=Sunday,
+  //! 7=Saturday.
    void create(int wd,void|string _id)
    {
       jd_wd=(wd+6)%7; // convert to julian day numbering
@@ -863,7 +842,7 @@ class Weekday
       if (!id) id=name; else id=_id;
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       if (direction==-1) return jd-(jd-jd_wd)%7;
       return jd+(7-(jd-jd_wd))%7;
@@ -871,22 +850,22 @@ class Weekday
 }
 
 
-// Easter
-
+//! This class represents an easter.
 class Easter
 {
    inherit Day_Event;
 
-// shift is the year to shift from old to new style
-
    int shift=1582;
 
+  //! @decl void create(void|int shift)
+  //! @[shift] is the year to shift from old to new style easter
+  //! calculation. Default is 1582.
    void create(void|int _shift)
    {
       if (_shift) shift=_shift;
    }
 
-   int new_style(int y)
+   static int new_style(int y)
    {
       int century=y/100;
       int solar=century-century/4;
@@ -906,7 +885,7 @@ class Easter
       return full_moon+7-week_day;
    }
 
-   int old_style(int y)
+   static int old_style(int y)
    {
 #if 1
       int new_moon=23-11*(y%19);
@@ -926,19 +905,20 @@ class Easter
 #endif
    }
 
+  //! Calculates the year day for the easter.
    int easter_yd(int y,int yjd,int leap)
    {
       int z=(y<shift)?old_style(y):new_style(y);
       return `+(yjd,z,58,leap);
    }
 
-   array(int) my_year(int y)
+   static array(int) my_year(int y)
    {
       if (y<shift) return julian_year(y);
       return gregorian_year(y);
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       int y,yjd,leap,ejd;
 
@@ -968,8 +948,7 @@ class Easter
    }
 }
 
-// Easter relative
-
+// This class represents an easter relative event.
 class Easter_Relative
 {
    inherit Easter;
@@ -978,6 +957,7 @@ class Easter_Relative
 
    int offset;
 
+  //! @decl void create(string id, string name, int offset)
    void create(string _id,string _name,void|int _offset)
    {
       id=_id;
@@ -985,7 +965,7 @@ class Easter_Relative
       offset=_offset;
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       return offset+::scan_jd(realm,jd-direction*offset,direction);
    }
@@ -998,9 +978,7 @@ class Easter_Relative
    }
 }
 
-// Orthodox Easter relative
-// simple set shift year very high
-
+// This class represents an orthodox easter relative event.
 class Orthodox_Easter_Relative
 {
    inherit Easter_Relative;
@@ -1009,6 +987,7 @@ class Orthodox_Easter_Relative
 
    int offset;
 
+  //! @decl void create(string id, string name, int offset)
    void create(string _id,string _name,void|int _offset)
    {
       ::create(_id,_name,_offset);
@@ -1016,10 +995,9 @@ class Orthodox_Easter_Relative
    }
 }
 
-// Monthday Weekday relative,
-// n:th special weekday,
-// "fourth sunday before 24 dec" => md=24,mn=12,wd=7,n=-4
-
+//! This class represents a monthday weekday relative event or
+//! n:th special weekday event, e.g.
+//! "fourth sunday before 24 dec" => md=24,mn=12,wd=7,n=-4
 class Monthday_Weekday_Relative
 {
    inherit Gregorian_Fixed;
@@ -1032,6 +1010,7 @@ class Monthday_Weekday_Relative
 
    int n,inclusive;
 
+  //!
    void create(string id,string name,int(1..31) md,int(1..12) mn,
 	       int(1..7) _wd,int _n,void|int(0..1) _inclusive)
    {
@@ -1051,7 +1030,7 @@ class Monthday_Weekday_Relative
       wd=_wd;
    }
 
-   int scan_jd(Calendar realm,int jd,int(-1..1) direction)
+   int scan_jd(.Calendar realm,int jd,int(-1..1) direction)
    {
       [int y,int yjd,int leap]=gregorian_yjd(jd-offset);
       for (;;)
@@ -1085,16 +1064,12 @@ class Monthday_Weekday_Relative
    }
 }
 
-//! module Calendar
-//! submodule Event
-//! class SuperEvent
-//!	This class holds any number of events,
-//!	and adds the functionality of event flags.
+//! This class holds any number of events,
+//! and adds the functionality of event flags.
 //!
-//! note:
-//!	Scanning (scan_events,next,etc) will drop flag information.
-//!	Dig out what you need with -><ref>holidays</ref> et al first.
-
+//! @note
+//! Scanning (scan_events,next,etc) will drop flag information.
+//! Dig out what you need with @[holidays] et al first.
 class SuperEvent
 {
    inherit Event;
@@ -1140,9 +1115,9 @@ class SuperEvent
 	 else other_events+=({e});
    }
 
-//! method SuperEvent filter_flag(string flag)
-//! method SuperEvent holidays()
-//! method SuperEvent flagdays()
+//! @decl SuperEvent filter_flag(string flag)
+//! @decl SuperEvent holidays()
+//! @decl SuperEvent flagdays()
 //!	Filter out the events that has a certain flag set.
 //!	Holidays (flag "h") are the days that are marked
 //!	red in the calendar (non-working days),
@@ -1161,42 +1136,44 @@ class SuperEvent
    SuperEvent holidays() { return filter_flag("h"); }
    SuperEvent flagdays() { return filter_flag("f"); }
 
-   mapping(TimeRange:Event) scan_events(TimeRange in)
+   mapping(.TimeRanges.TimeRange:Event) scan_events(.TimeRanges.TimeRange in)
    {
       mapping res=([]);
       foreach (events,Event e)
       {
 	 mapping er=e->scan_events(in);
-	 foreach ((array)er,[TimeRange t,Event e])
+	 foreach ((array)er,[.TimeRanges.TimeRange t,Event e])
 	    if (res[t]) res[t]|=e; // join 
 	    else res[t]=e;
       }
       return res;
    }
 
-   array(TimeRange) scan(TimeRange in)
+   array(.TimeRanges.TimeRange) scan(.TimeRanges.TimeRange in)
    {
       return indices(scan_events(in));
    }
 
-   TimeRange next(TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange next(.TimeRanges.TimeRange from,
+			      void|int(0..1) including)
    {
-      TimeRange best=0;
+      .TimeRanges.TimeRange best=0;
       foreach (events,Event e)
       {
-	 TimeRange y=e->next(from,including);
+	 .TimeRanges.TimeRange y=e->next(from,including);
 	 if (!best || y->preceeds(best)) best=y;
 	 else if (y->starts_with(best)) best|=y;
       }
       return best;
    }
     
-   TimeRange previous(TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange previous(.TimeRanges.TimeRange from,
+				  void|int(0..1) including)
    {
-      TimeRange best=0;
+      .TimeRanges.TimeRange best=0;
       foreach (events,Event e)
       {
-	 TimeRange y=e->previous(from,including);
+	 .TimeRanges.TimeRange y=e->previous(from,including);
 	 if (!best || best->preceeds(y)) best=y;
 	 else if (y->ends_with(best)) best|=y;
       }
@@ -1260,34 +1237,38 @@ class SuperEvent
    }
 }
 
+//! Event containing information about when a timezone is changed.
 class TZShift_Event
 {
    inherit Event;
 
    constant is_tzshift_event=1;
 
-   Rule.Timezone timezone;
+   .Rule.Timezone timezone;
 
-   void create(void|Rule.Timezone _tz)
+   void create(void|.Rule.Timezone _tz)
    {
       timezone=_tz;
    }
 
-   TimeRange next(void|TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange next(void|.TimeRanges.TimeRange from,
+			      void|int(0..1) including)
    {
       if (!from) from=std_second();
       return scan_shift(timezone||from->timezone(),
 			from,1,including);
    }
-   TimeRange previous(void|TimeRange from,void|int(0..1) including)
+   .TimeRanges.TimeRange previous(void|.TimeRanges.TimeRange from,
+				  void|int(0..1) including)
    {
       if (!from) from=std_second();
       return scan_shift(timezone||from->timezone(),
 			from,-1,including);
    }
 
-   static TimeRange scan_shift(Rule.Timezone tz,
-			       TimeRange from,
+  //!
+   static .TimeRanges.TimeRange scan_shift(.Rule.Timezone tz,
+			       .TimeRanges.TimeRange from,
 			       int direction,int including)
    {
       if (tz->whatrule)
@@ -1295,8 +1276,9 @@ class TZShift_Event
       return scan_rule(tz,from,direction,including);
    }
 
-   static TimeRange scan_history(Rule.Timezone tz,
-				 TimeRange from,
+  //!
+   static .TimeRanges.TimeRange scan_history(.Rule.Timezone tz,
+				 .TimeRanges.TimeRange from,
 				 int direction,int(0..1) including)
    {
       int ux;
@@ -1316,14 +1298,14 @@ class TZShift_Event
 	 foreach (reverse(tz->shifts),int z)
 	    if (z<=ux) { nextshift=z; break; }
 
-      TimeRange btr=0;
+      .TimeRanges.TimeRange btr=0;
       if (nextshift!=-1)
 	 btr=from->calendar()->Second("unix_r",nextshift,from->ruleset());
       
-      TimeRange atr=from;
+      .TimeRanges.TimeRange atr=from;
       for (;;)
       {
-	 Rule.Timezone atz=tz->whatrule(ux);
+	 .Rule.Timezone atz=tz->whatrule(ux);
 	 atr=scan_rule(atz,atr,direction,including);
 	 if (!atr) break;
 	 if (direction==1)
@@ -1342,8 +1324,9 @@ class TZShift_Event
 	 return atr;
    }
 
-   static TimeRange scan_rule(Rule.Timezone tz,
-			      TimeRange from,
+  //!
+   static .TimeRanges.TimeRange scan_rule(.Rule.Timezone tz,
+			      .TimeRanges.TimeRange from,
 			      int direction,int including)
    {
       if (!tz->jd_year_periods)
@@ -1370,7 +1353,7 @@ class TZShift_Event
 	    foreach (per[1..],array shift)
 	       if (shift[0]>=jd)
 	       {
-		  TimeRange atr=from->calendar()
+		  .TimeRanges.TimeRange atr=from->calendar()
 		     ->Second("unix_r",(shift[0]-2440588)*86400+shift[1],
 			      from->ruleset());
 		  if (atr>=from) return atr;
@@ -1381,7 +1364,7 @@ class TZShift_Event
 	    foreach (reverse(per[1..]),array shift)
 	       if (shift[0]<=jd)
 	       {
-		  TimeRange atr=from->calendar()
+		  .TimeRanges.TimeRange atr=from->calendar()
 		     ->Second("unix_r",(shift[0]-2440588)*86400+shift[1],
 			      from->ruleset());
 		  if (atr<=from) return atr;
