@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.303 1999/07/15 16:54:35 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.304 1999/08/07 23:42:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -534,6 +534,14 @@ if test $cflags_is_set = no; then
     ])
    ;;
   esac
+
+  # AIX
+  DO_IF_OS(AIX,
+  [
+    # Tell the linker to generate a large toc if needed
+    AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
+  ])
+
  else if test "x${TCC-}" = xyes ; then
 
   # Yikes! We're using the TenDRA compiler!
@@ -611,6 +619,8 @@ if test $cflags_is_set = no; then
     # which is needed for several configure-scripts.
     AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
     AC_SYS_COMPILER_FLAG(-qro,qro,OPTIMIZE)
+    # Tell the linker to generate a large toc if needed
+    AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
   ])
 
   # HP-UX
