@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.116 2002/04/15 15:53:02 grubba Exp $
+ * $Id: program.h,v 1.117 2002/04/18 09:21:58 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -250,7 +250,7 @@ struct pike_trampoline
 #define PROGRAM_NO_EXPLICIT_DESTRUCT 512
 
 /* Program is in an inconsistant state */
-#define PROGRAM_AVOID_CHECK 512
+#define PROGRAM_AVOID_CHECK 1024
 
 
 struct program
