@@ -455,6 +455,7 @@ void do_export()
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
     TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
+    "unpack_master.pike" : tmpdir+"/master.pike",
     "":tmpdir+"/build",
   ]);
 
@@ -1250,20 +1251,25 @@ void do_install()
     install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
 		 pike+".syms");
 
-    string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
+    string master_src=combine_path(vars->LIBDIR_SRC,"master.pike.in");
 
     if(export)
     {
-      make_master("master.pike", master, "build/lib", "build", "lib");
-
-      to_export+=({master,
-		   "master.pike",
-		   //combine_path(vars->TMP_BUILDDIR,"master.pike"),
-		   combine_path(vars->TMP_BUILDDIR,"specs"),
-		   combine_path(vars->TMP_BUILDDIR,
-				"modules/dynamic_module_makefile"),
-		   combine_path(vars->SRCDIR,"install-welcome"),
-		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
+      string unpack_master =
+#ifdef __NT__
+	// We don't want to overwrite the main master...
+	// This prefix is undone by the translator.
+	"unpack_"
+#endif
+	"master.pike";
+      make_master(unpack_master, master_src, "build/lib", "build", "lib");
+      to_export+=({
+	unpack_master, master_src,
+	combine_path(vars->TMP_BUILDDIR,"specs"),
+	combine_path(vars->TMP_BUILDDIR,
+		     "modules/dynamic_module_makefile"),
+	combine_path(vars->SRCDIR,"install-welcome"),
+	combine_path(vars->SRCDIR,"dumpmaster.pike"),
       });
 
       void basefile(string x) {
@@ -1278,7 +1284,7 @@ void do_install()
       basefile("COPYRIGHT");
     }
     else
-      make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master,
+      make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master_src,
 		  lib_prefix, include_prefix);
 
     install_dir(vars->TMP_LIBDIR,lib_prefix,1);
