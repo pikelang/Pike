@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.43 1998/05/20 02:14:29 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.44 1998/06/06 03:19:53 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1667,4 +1667,42 @@ void cleanup_pike_types(void)
   free_string(mixed_type_string);
   free_string(void_type_string);
   free_string(any_type_string);
+}
+
+
+int type_may_overload(char *type, int lfun)
+{
+  switch(EXTRACT_UCHAR(type++))
+  {
+    case T_ASSIGN:
+      return type_may_overload(type+1,lfun);
+      
+    case T_FUNCTION:
+    case T_ARRAY:
+      /* might want to check for `() */
+      
+    default:
+      return 0;
+
+    case T_OR:
+      return type_may_overload(type,lfun) ||
+	type_may_overload(type+type_length(type),lfun);
+      
+    case T_AND:
+      return type_may_overload(type,lfun) &&
+	type_may_overload(type+type_length(type),lfun);
+      
+    case T_NOT:
+      return !type_may_overload(type,lfun);
+
+    case T_MIXED:
+      return 1;
+      
+    case T_OBJECT:
+    {
+      struct program *p=id_to_program(EXTRACT_INT(type+1));
+      if(!p) return 1;
+      return FIND_LFUN(p, lfun)!=-1;
+    }
+  }
 }

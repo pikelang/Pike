@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.13 1998/05/20 02:14:29 hubbe Exp $
+ * $Id: pike_types.h,v 1.14 1998/06/06 03:19:54 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -120,6 +120,7 @@ INT32 get_max_args(struct pike_string *type);
 struct pike_string *get_type_of_svalue(struct svalue *s);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);
+int type_may_overload(char *type, int lfun);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC
