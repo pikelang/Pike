@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.285 2002/03/03 20:09:01 nilsson Exp $
+# $Id: Makefile.in,v 1.286 2002/03/08 02:40:56 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -306,6 +306,12 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	fi
 	@echo "Done."
 
+dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
+	args="$(DUMPARGS)"; \
+	cd $(LIBDIR_SRC) && \
+	$(RUNPIKE) $(SRCDIR)/dumpmodule.pike \
+	$${args:- --update-only="$(TMP_BUILDDIR)/dumpversion" --report-failed} \
+	--recursive --target-dir="$(TMP_BUILDDIR)/lib" modules 2>dumpmodule.log
 
 .SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src
 
