@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.163 2003/04/25 18:41:34 mast Exp $
+|| $Id: svalue.c,v 1.164 2003/04/26 16:11:25 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.163 2003/04/25 18:41:34 mast Exp $");
+RCSID("$Id: svalue.c,v 1.164 2003/04/26 16:11:25 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -981,7 +981,6 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     if(a->type == T_OBJECT)
     {
     a_is_object:
-      a_is_obj_without_lt = 0;
       if(!a->u.object->prog)
 	Pike_error("Comparison on destructed object.\n");
       if(FIND_LFUN(a->u.object->prog,LFUN_LT) != -1)
@@ -1001,6 +1000,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 	  pop_stack();
 	  return 1;
 	}
+	a_is_obj_without_lt = 0;
       }
       else
 	a_is_obj_without_lt = 1;
