@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.11 2001/06/19 16:49:08 wellhard Exp $
+ * $Id: Tar.pmod,v 1.12 2001/08/23 14:29:42 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -15,13 +15,21 @@ class _Tar  // filesystem
 
     static private int start, pos, len;
 
+    static string _sprintf()
+    {
+      return sprintf("Filesystems.Tar.ReadFile(%d, %d /* pos = %d */)",
+		     start, len, pos);
+    }
+
     int seek(int p)
     {
       if(p<0)
 	if((p += len)<0)
 	  p = 0;
-      if(p>=len)
+      if(p>=len) {
 	p = len-1;
+	if (!len) p = 0;
+      }
       return ::seek((pos = p)+start);
     }
 
