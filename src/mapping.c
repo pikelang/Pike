@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.125 2001/06/26 21:03:50 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.126 2001/06/27 00:01:31 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2262,7 +2262,6 @@ unsigned gc_touch_all_mappings(void)
     fatal("Error in mapping link list.\n");
   for (m = first_mapping; m; m = m->next) {
     debug_gc_touch(m);
-    debug_gc_touch(m->data);
     n++;
     if (m->next && m->next->prev != m)
       fatal("Error in mapping link list.\n");

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.427 2001/06/23 10:33:11 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.428 2001/06/27 00:01:32 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3824,6 +3824,84 @@ ifefun(gc,
     destruct (o);
     gc();
     return sizeof (m);
+  ]], 1)
+
+  test_any([[
+    return class {
+      mapping x;
+      int test()
+      {
+	object o = class {
+	    mapping a = ([1: this_object()]);
+	    void destroy() {x = a;}
+	  }();
+	o = 0;
+	gc();
+	return x && !x[1];
+      }
+    }()->test();
+  ]], 1)
+  test_any([[
+    return class {
+      multiset x;
+      int test()
+      {
+	object o = class {
+	    multiset a = (<this_object()>);
+	    void destroy() {x = a;}
+	  }();
+	o = 0;
+	gc();
+	return x && !sizeof (x + (<>));
+      }
+    }()->test();
+  ]], 1)
+  test_any([[
+    return class {
+      array x;
+      int test()
+      {
+	object o = class {
+	    array a = ({this_object()});
+	    void destroy() {x = a;}
+	  }();
+	o = 0;
+	gc();
+	return x && !x[0];
+      }
+    }()->test();
+  ]], 1)
+  test_any([[
+    return class {
+      class Obj (object o) {void destroy() {}}
+      Obj x;
+      int test()
+      {
+	object o = class {
+	    Obj a = Obj (this_object());
+	    void destroy() {x = a;}
+	  }();
+	o = 0;
+	gc();
+	return !x;
+      }
+    }()->test();
+  ]], 1)
+  test_any([[
+    return class {
+      class Obj (object o) {}
+      Obj x;
+      int test()
+      {
+	object o = class {
+	    Obj a = Obj (this_object());
+	    void destroy() {x = a;}
+	  }();
+	o = 0;
+	gc();
+	return x && !x->o;
+      }
+    }()->test();
   ]], 1)
 ]])
 
