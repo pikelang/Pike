@@ -5,6 +5,15 @@ test_eq([[ array_sscanf(sprintf("%1c", -1), "%1c")[0] ]], 255)
 test_eq([[ array_sscanf(sprintf("%2c", -1), "%2c")[0] ]], 65535)
 test_eq([[ array_sscanf(sprintf("%3c", -1), "%3c")[0] ]], 16777215)
 
+test_eq([[ sprintf("%4c",16909060) ]],"\1\2\3\4")
+test_eq([[ sprintf("%-4c",16909060) ]],"\4\3\2\1")
+test_eq([[ sprintf("%2c",16909060) ]],"\3\4")
+test_eq([[ sprintf("%-2c",16909060) ]],"\4\3")
+test_eq([[ sprintf("%4c",2147483648) ]],"\200\0\0\0")
+test_eq([[ sprintf("%-4c",2147483648) ]],"\0\0\0\200")
+test_eq([[ sprintf("%2c",2147483648) ]],"\0\0")
+test_eq([[ sprintf("%-2c",2147483648) ]],"\0\0")
+
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
   test_eq([[ sprintf("%1c", 0x1abcd7893) ]], "\223")
