@@ -37,7 +37,7 @@ array(string) features()
 	     "_Image_FreeType", "_Image_GIF", "_Image_JPEG", "_Image_TIFF",
 	     "_Image_TTF", "_Image_XFace", "Image.PNG", "Java", "Mird",
 	     "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl", "Postgres",
-	     "SANE", "Ssleay", "Yp", "sybase", "_WhiteFish", "X" }),
+	     "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish", "X" }),
 	  string modname)
   {
     catch
