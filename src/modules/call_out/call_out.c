@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.35 2000/08/03 18:48:48 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.36 2000/08/03 18:56:04 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -49,12 +49,12 @@ struct call_out_s
 
 #ifdef PIKE_DEBUG
 #define MESS_UP_BLOCK(X) \
- (X)->next_arr=(struct call_out_s *)-1; \
- (X)->next_fun=(struct call_out_s *)-1; \
- (X)->prev_arr=(struct call_out_s **)-1; \
- (X)->prev_fun=(struct call_out_s **)-1; \
- (X)->caller=(struct object *)-1; \
- (X)->args=(struct array *)-1; \
+ (X)->next_arr=(struct call_out_s *)(ptrdiff_t)-1; \
+ (X)->next_fun=(struct call_out_s *)(ptrdiff_t)-1; \
+ (X)->prev_arr=(struct call_out_s **)(ptrdiff_t)-1; \
+ (X)->prev_fun=(struct call_out_s **)(ptrdiff_t)-1; \
+ (X)->caller=(struct object *)(ptrdiff_t)-1; \
+ (X)->args=(struct array *)(ptrdiff_t)-1; \
  (X)->pos=-1
 #else
 #define MESS_UP_BLOCK(X)
