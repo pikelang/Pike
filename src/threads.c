@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.190 2002/10/28 21:53:45 mast Exp $
+|| $Id: threads.c,v 1.191 2002/11/18 17:09:11 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.190 2002/10/28 21:53:45 mast Exp $");
+RCSID("$Id: threads.c,v 1.191 2002/11/18 17:09:11 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1451,7 +1451,8 @@ static void f_thread_id_result(INT32 args)
 
 void init_thread_obj(struct object *o)
 {
-  MEMSET(THIS_THREAD, 0, sizeof(struct Pike_interpreter));
+  MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter));
+  THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
