@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.2 2003/09/20 19:28:37 mirar Exp $
+|| $Id: pcre_glue.cmod,v 1.3 2003/09/20 20:50:28 nilsson Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.2 2003/09/20 19:28:37 mirar Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.3 2003/09/20 20:50:28 nilsson Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -46,7 +46,8 @@ PIKECLASS _pcre
    CVAR pcre_extra *extra;
    PIKEVAR string pattern;
 
-/*!
+/*! @decl void create(string pattern, void|int options, void|object table)
+ *!
  *! the option bits are:
  *!    OPTION.ANCHORED         Force pattern anchoring
  *!    OPTION.CASELESS         Do caseless matching
@@ -106,7 +107,8 @@ PIKECLASS _pcre
 		       erroffset,errptr);
       }
 
-/*!
+/*! @decl object study()
+ *!
  *!  (from the pcreapi man-page)
  *!  "When  a pattern is going to be used several times, it is worth spending
  *!  more time analyzing it in order to speed up the time taken  for  match-
@@ -329,7 +331,7 @@ PIKECLASS _pcre
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
       }
 
-/*! @decl get_stringnumber(string stringname)
+/*! @decl int get_stringnumber(string stringname)
  *!    returns the number of a named subpattern
  */
 
@@ -574,7 +576,13 @@ PIKE_MODULE_INIT
 
    END_PROGRAM_MAKE_SUBMODULE("ERROR");
 
-/*! @endmodule
+/*! @endmodule CONFIG
+ */
+
+/*! @endmodule PCRE
+ */
+
+/*! @endmodule Regexp
  */
 
    INIT
