@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.417 2000/09/16 08:48:36 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.418 2000/09/16 11:51:43 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -50,19 +50,97 @@ fi
 
 pike_cv_prog_CC_save="$CC"
 
-#
-# We want 64bit mode if possible.
-# This variable is looked at by AIX 5L/cc.
-#
-
-if test "x$OBJECT_MODE" = "x"; then
-  OBJECT_MODE=64
-  export OBJECT_MODE
-fi
-
 # MY_AC_PROG_CC
 # The above has problems if the smartlink binary is removed. /grubba
 AC_PROG_CC
+
+if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
+  #
+  # We want 64bit mode if possible.
+  # This variable is looked at by AIX 5L/cc.
+  # Unfortunately OBJECT_MODE=64 confuses gcc...
+  #
+
+  if test "x$OBJECT_MODE" = "x"; then
+    AC_MSG_CHECKING([whether we can run the compiler in 64bit mode])
+    AC_CACHE_VAL(pike_cv_OBJECT_MODE_64, [
+      OBJECT_MODE=64
+      export OBJECT_MODE
+      AC_LANG_C
+      AC_TRY_COMPILER([main(){return(0);}], pike_cv_OBJECT_MODE_64,
+        pike_cv_OBJECT_MODE_64_broken)
+      AC_LANG_RESTORE
+      if test "x$pike_cv_OBJECT_MODE_64_broken" = "x$ac_cv_prog_cc_cross"; then
+        :;
+      else
+        # OBJECT_MODE 64 makes broken binaries.
+        # don't use it.
+        pike_cv_OBJECT_MODE_64=no
+      fi
+      unset OBJECT_MODE
+    ])
+    if test "x$pike_cv_OBJECT_MODE_64" = "xyes"; then
+      AC_MSG_RESULT(yes)
+      OBJECT_MODE=64
+      export OBJECT_MODE
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
+
+  if test "x$ac_cv_prog_cc_cross" = "xyes"; then
+    # The AIX 5L/cc beta can't generate working binaries without a
+    # data-segment...
+    AC_MSG_CHECKING([if we're really using a cross-compiler])
+    AC_CV_CACHE_VAL(pike_cv_datasegment_required, [
+      AC_LANG_C
+      AC_TRY_COMPILER([int foo;main(){return(0);}], pike_cv_compiler_works,
+        pike_cv_cross_compiler)
+      AC_LANG_RESTORE
+      if test "x$pike_cv_cross_compiler" = "xno"; then
+        pike_cv_datasegment_required=yes
+      else
+        pike_cv_datasegment_required=no
+      fi
+    ])
+    if test "x$pike_cv_datasegment_required" = "xyes"; then
+      AC_MSG_RESULT([no -- Applying data-segment kludge])
+      ac_cv_prog_cc_cross=no
+      cat >conftest.c <<EOF
+static int foo;
+EOF
+      pike_cv_datasegemnt_file=no
+      if AC_TRY_EVAL(ac_compile); then
+        if test -f "conftest.$ac_objext"; then
+	  rm -f "data-segment.$ac_objext"
+	  if mv "conftest.$ac_objext" "data-segment.$ac_objext"; then
+	    if test -f "`pwd`/data-segment.$ac_objext"; then
+	      pike_cv_datasegemnt_file="`pwd`/data-segment.$ac_objext"
+	    else
+	      AC_MSG_WARN(Lost track of data-segment kludge-file.)
+	    fi
+	  else
+	    AC_MSG_WARN(Failed to rename data-segment kludge-file.)
+	  fi
+	else
+	  AC_MSG_WARN(Can not find data-segment kludgefile.)
+	fi
+      else
+        AC_MSG_WARN(Failed to compile data-segment kludge.)
+      fi
+      if test "x$pike_cv_datasegment_file" = "xno"; then
+	AC_MSG_WARN(Some tests may yield false results.)
+      else
+        LIBS="$pike_cv_datasegment_file $LIBS"
+	export LIBS
+        AC_MSG_WARN(Data-segment kludge applied.)
+      fi
+    else
+      AC_MSG_RESULT(yes)
+    fi
+  fi
+fi
+
 AC_ISC_POSIX
 AC_PROG_CPP
 
