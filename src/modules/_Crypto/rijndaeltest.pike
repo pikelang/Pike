@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.2 2001/03/24 22:32:22 grubba Exp $
+ * $Id: rijndaeltest.pike,v 1.3 2001/03/25 21:21:22 grubba Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -40,8 +40,8 @@ int check_ecb_e_m()
 
   fail = run_test(raw_ecb_e_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      keysize = v->KEYSIZE;
       if (keysize) write("\n");
+      keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
@@ -73,8 +73,8 @@ int check_ecb_d_m()
 
   fail = run_test(raw_ecb_e_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      keysize = v->KEYSIZE;
       if (keysize) write("\n");
+      keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
@@ -106,8 +106,8 @@ int check_cbc_e_m()
 
   fail = run_test(raw_cbc_e_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      keysize = v->KEYSIZE;
       if (keysize) write("\n");
+      keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
@@ -143,8 +143,8 @@ int check_cbc_d_m()
 
   fail = run_test(raw_cbc_d_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      keysize = v->KEYSIZE;
       if (keysize) write("\n");
+      keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
@@ -169,7 +169,48 @@ int check_cbc_d_m()
   return fail;
 }
 
+int check_ecb_tbl()
+{
+  int fail;
+  string keysize;
+
+  object aes_e = Crypto.aes();
+  object aes_d = Crypto.aes();
+
+  fail = run_test(raw_ecb_tbl, lambda(mapping(string:string) v) {
+    if (v->KEYSIZE) {
+      if (keysize) write("\n");
+      keysize = v->KEYSIZE;
+      return;
+    }
+    if (!v->I) return;
+
+    write("Rijndael ECB encrypt/decrypt (%s): %s\r", keysize, v->I);
+
+    string pt = Crypto.hex_to_string(v->PT);
+    string ct = Crypto.hex_to_string(v->CT);
+
+    aes_e->set_encrypt_key(Crypto.hex_to_string(v->KEY));
+    aes_d->set_decrypt_key(Crypto.hex_to_string(v->KEY));
+
+    string _ct = aes_e->crypt_block(pt);
+    string _pt = aes_d->crypt_block(ct);
+
+    return (ct != _ct) || (pt != _pt);
+  });
+
+  write("\n");
+  return fail;
+}
+
 int main(int argc, array(string) argv)
 {
+  array(array(string|int)) q = Getopt.find_all_options(argv, ({
+    ({ "quick", Getopt.NO_ARG, ({ "-q", "--quick"}) })
+  }));
+  if (check_ecb_tbl()) return 1;
+  foreach(q, array(string|int) option) {
+    if (option[0] == "quick") return 0;
+  }
   return check_ecb_e_m() | check_ecb_d_m() | check_cbc_e_m() | check_cbc_d_m();
 }
