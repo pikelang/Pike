@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.21 2000/09/06 10:21:08 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.22 2001/01/31 21:42:55 mast Exp $ */
 
 #define JUMPBACK 3
 
@@ -125,6 +125,12 @@ array(int|string|array(string)) split(string s)
       s=s[1..];
       break;
 
+      // Any identifier (i.e. not eof).
+    case '?':
+      b+=({"?"});
+      s=s[1..];
+      break;
+
       /* Identifier */
     case 'A'..'Z':
     case 'a'..'z':
@@ -170,7 +176,7 @@ array(int|string|array(string)) split(string s)
 
   /* Count 'steps' in source */
   for(e=0;e<sizeof(a);e++)
-    if(a[e][0]=='F')
+    if((<'F', '?'>)[a[e][0]])
       opcodes++;
 
 #if 0
@@ -220,6 +226,11 @@ array(int|string|array(string)) split(string s)
     case 'F':
       i++;
       newa+=({ a[e]+"==$"+i+"o" });
+      break;
+
+    case '?':
+      i++;
+      newa += ({"$" + i + "o != -1"});
       break;
 
       default: newa+=({a[e]});
