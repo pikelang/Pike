@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: builtin_functions.h,v 1.7 1998/03/28 15:38:55 grubba Exp $
+ */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
 

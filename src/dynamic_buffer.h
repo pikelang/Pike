@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: dynamic_buffer.h,v 1.6 1998/03/28 15:33:30 grubba Exp $
+ */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
 

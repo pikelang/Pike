@@ -1,4 +1,6 @@
 /*
+ * $Id: compilation.h,v 1.8 1998/03/28 15:38:36 grubba Exp $
+ *
  * Compilator state push / pop operator construction file
  *
  * (Can you tell I like macros?)

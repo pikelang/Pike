@@ -1,3 +1,4 @@
+# $Id: module_makefile,v 1.3 1998/03/28 14:52:48 grubba Exp $
 PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I.
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 

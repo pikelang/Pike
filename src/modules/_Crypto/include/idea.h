@@ -1,4 +1,6 @@
-/* idea.h */
+/*
+ * $Id: idea.h,v 1.4 1998/03/28 14:26:27 grubba Exp $
+ */
 
 #ifndef IDEA_H_INCLUDED
 #define IDEA_H_INCLUDED

@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/* $Id: ualarm.c,v 1.2 1998/03/28 14:56:42 grubba Exp $ */
 /*
  * Copyright (c) 1985 Regents of the University of California.
  * All rights reserved.

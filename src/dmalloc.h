@@ -1,3 +1,6 @@
+/*
+ * $Id: dmalloc.h,v 1.5 1998/03/28 15:03:54 grubba Exp $
+ */
 #ifdef DEBUG_MALLOC
 
 struct memhdr;

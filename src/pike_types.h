@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: pike_types.h,v 1.11 1998/03/28 15:06:01 grubba Exp $
+ */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 

@@ -1,4 +1,6 @@
 /*
+ * $Id: cast.h,v 1.2 1998/03/28 14:27:01 grubba Exp $
+ *
  *	CAST-128 in C
  *	Written by Steve Reid <sreid@sea-to-sky.net>
  *	100% Public Domain - no warranty

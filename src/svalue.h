@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: svalue.h,v 1.14 1998/03/28 15:07:20 grubba Exp $
+ */
 #ifndef SVALUE_H
 #define SVALUE_H
 

@@ -4,6 +4,9 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
+/*
+ * $Id: module_support.h,v 1.6 1998/03/28 15:09:51 grubba Exp $
+ */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
 

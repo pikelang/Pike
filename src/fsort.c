@@ -9,6 +9,8 @@
 #include "global.h"
 #include "fsort.h"
 
+RCSID("$Id: fsort.c,v 1.9 1998/03/28 15:29:54 grubba Exp $");
+
 static fsortfun cmpfun;
 static long size;
 static char *tmp_area;

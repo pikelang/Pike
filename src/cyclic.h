@@ -1,3 +1,6 @@
+/*
+ * $Id: cyclic.h,v 1.3 1998/03/28 15:34:38 grubba Exp $
+ */
 #ifndef CYCLIC_H
 #define CYCLIC_H
 

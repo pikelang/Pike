@@ -1,5 +1,5 @@
-/* sha.h
- *
+/* 
+ * $Id: sha.h,v 1.4 1998/03/28 14:25:35 grubba Exp $
  */
 
 #include "crypto_types.h"

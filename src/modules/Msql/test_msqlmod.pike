@@ -1,6 +1,8 @@
 #!../../pike
 #include <msql.h>
 
+/* $Id: test_msqlmod.pike,v 1.2 1998/03/28 14:45:36 grubba Exp $ */
+
 int main()
 {
 	array result;

@@ -6,6 +6,8 @@
 #ifndef REGEXP_H
 #define REGEXP_H
 /*
+ * $Id: pike_regexp.h,v 1.3 1998/03/28 14:35:36 grubba Exp $
+ *
  * Definitions etc. for regexp(3) routines.
  *
  * Caveat:  this is V8 regexp(3) [actually, a reimplementation thereof],

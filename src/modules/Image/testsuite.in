@@ -1,3 +1,5 @@
+// $Id: testsuite.in,v 1.5 1998/03/28 14:48:09 grubba Exp $
+
 cond([[ master()->resolv("Image")->image ]],
 [[
   test_true(programp(Image.image))

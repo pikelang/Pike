@@ -28,6 +28,8 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
+RCSID("$Id: yp.c,v 1.12 1998/03/28 14:32:57 grubba Exp $");
+
 #define YPERROR(fun,err) do{if(err)error("yp->%s(): %s\n", (fun), yperr_string( err ));}while(0)
 
 struct my_yp_domain

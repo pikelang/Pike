@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: encode.h,v 1.2 1998/03/28 15:31:23 grubba Exp $
+ */
 #ifndef ENCODE_H
 #define ENCODE_H
 

@@ -1,4 +1,4 @@
-/* next_prime.c
+/* $Id: next_prime.c,v 1.6 1998/03/28 14:51:15 grubba Exp $
  *
  * Prime number test using trial division for small primes and then
  * Miller-Rabin, as suggested in Schneier's Applied Cryptography.
@@ -8,6 +8,8 @@
  */
 
 #include "global.h"
+
+RCSID("$Id: next_prime.c,v 1.6 1998/03/28 14:51:15 grubba Exp $");
 
 #include "gmp_machine.h"
 

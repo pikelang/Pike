@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.4 1998/03/28 14:41:49 grubba Exp $
 AC_INIT(pipe.c)
 AC_CONFIG_HEADER(config.h)
 

@@ -1,4 +1,6 @@
 /*
+ * $Id: pgresult.c,v 1.5 1998/03/28 14:41:01 grubba Exp $
+ *
  * Postgres95 support for pike/0.5 and up
  *
  * (C) 1997 Francesco Chemolli <kinkie@comedia.it>
@@ -60,6 +62,8 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+
+RCSID("$Id: pgresult.c,v 1.5 1998/03/28 14:41:01 grubba Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;

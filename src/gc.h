@@ -1,3 +1,6 @@
+/*
+ * $Id: gc.h,v 1.16 1998/03/28 15:15:32 grubba Exp $
+ */
 #ifndef GC_H
 #define GC_H
 

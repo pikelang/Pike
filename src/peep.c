@@ -12,6 +12,8 @@
 #include "peep.h"
 #include "dmalloc.h"
 
+RCSID("$Id: peep.c,v 1.19 1998/03/28 15:11:56 grubba Exp $");
+
 struct p_instr_s
 {
   short opcode;

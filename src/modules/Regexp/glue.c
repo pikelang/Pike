@@ -18,6 +18,8 @@
 #include "threads.h"
 #include "module_support.h"
 
+RCSID("$Id: glue.c,v 1.10 1998/03/28 14:37:54 grubba Exp $");
+
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
 

@@ -3,8 +3,8 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include "stralloc.h"
 #include "global.h"
+#include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -17,6 +17,8 @@
 #include "error.h"
 #include "operators.h"
 #include "builtin_functions.h"
+
+RCSID("$Id: encode.c,v 1.18 1998/03/28 15:34:22 grubba Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>

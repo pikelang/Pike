@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: operators.h,v 1.4 1998/03/28 15:07:37 grubba Exp $
+ */
 #ifndef OPERATORS_H
 #define OPERATORS_H
 

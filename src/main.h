@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: main.h,v 1.7 1998/03/28 15:12:14 grubba Exp $
+ */
 #ifndef MAIN_H
 #define MAIN_H
 

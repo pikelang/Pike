@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: backend.h,v 1.6 1998/03/28 15:39:44 grubba Exp $
+ */
 #ifndef BACKEND_H
 #define BACKEND_H
 

@@ -1,4 +1,7 @@
+#include "global.h"
 #include "cyclic.h"
+
+RCSID("$Id: cyclic.c,v 1.3 1998/03/28 15:35:34 grubba Exp $");
 
 #define CYCLIC_HASH_SIZE 4711
 

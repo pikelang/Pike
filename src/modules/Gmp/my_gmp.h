@@ -1,4 +1,4 @@
-/* my_gmp.h
+/* $Id: my_gmp.h,v 1.3 1998/03/28 14:51:31 grubba Exp $
  *
  * These functions or something similar will hopefully be included
  * with Gmp-2.1 .

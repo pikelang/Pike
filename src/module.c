@@ -17,6 +17,8 @@
 
 #include "modules/modlist_headers.h"
 
+RCSID("$Id: module.c,v 1.8 1998/03/28 15:10:50 grubba Exp $");
+
 typedef void (*modfun)(void);
 
 struct static_module

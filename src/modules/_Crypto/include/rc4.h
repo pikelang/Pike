@@ -1,4 +1,6 @@
-/* rc4.h */
+/*
+ * $Id: rc4.h,v 1.3 1998/03/28 14:25:55 grubba Exp $
+ */
 
 #ifndef RC4_H_INCLUDED
 #define RC4_H_INCLUDED

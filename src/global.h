@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: global.h,v 1.20 1998/03/28 15:15:13 grubba Exp $
+ */
 #ifndef GLOBAL_H
 #define GLOBAL_H
 

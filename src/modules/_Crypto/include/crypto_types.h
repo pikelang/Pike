@@ -1,4 +1,4 @@
-/* crypto_types.h
+/* $Id: crypto_types.h,v 1.5 1998/03/28 14:26:43 grubba Exp $
  *
  * Defines the types INT32 and INT8 */
 

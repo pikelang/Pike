@@ -14,6 +14,8 @@
 #include "main.h"
 #include "builtin_functions.h"
 
+RCSID("$Id: error.c,v 1.14 1998/03/28 15:33:04 grubba Exp $");
+
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 

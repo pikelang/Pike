@@ -1,3 +1,4 @@
+/* $Id: gmp_machine.h.in,v 1.2 1998/03/28 14:51:57 grubba Exp $ */
 #ifndef GMP_MACHINE_H
 #define GMP_MACHINE_H
 

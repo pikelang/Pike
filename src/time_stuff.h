@@ -3,6 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/*
+ * $Id: time_stuff.h,v 1.8 1998/03/28 14:57:08 grubba Exp $
+ */
 #ifndef TIME_STUFF_H
 #define TIME_STUFF_H
 

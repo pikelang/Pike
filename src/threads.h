@@ -1,3 +1,6 @@
+/*
+ * $Id: threads.h,v 1.40 1998/03/28 14:58:31 grubba Exp $
+ */
 #ifndef THREADS_H
 #define THREADS_H
 

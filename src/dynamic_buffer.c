@@ -9,6 +9,8 @@
 #include "error.h"
 #include "pike_memory.h"
 
+RCSID("$Id: dynamic_buffer.c,v 1.8 1998/03/28 15:33:52 grubba Exp $");
+
 static dynamic_buffer buff;
 
 char *low_make_buf_space(INT32 space, dynamic_buffer *buf)

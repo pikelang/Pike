@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: program.h,v 1.35 1998/03/28 15:36:22 grubba Exp $
+ */
 #ifndef PROGRAM_H
 #define PROGRAM_H
 

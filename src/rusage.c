@@ -13,6 +13,8 @@
 #include <errno.h>
 #include "rusage.h"
 
+RCSID("$Id: rusage.c,v 1.10 1998/03/28 15:00:50 grubba Exp $");
+
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif

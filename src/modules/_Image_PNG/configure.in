@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.2 1998/03/28 14:53:37 grubba Exp $
 AC_INIT(image_png.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])

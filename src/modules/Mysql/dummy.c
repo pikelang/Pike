@@ -1,4 +1,6 @@
 /*
+ * $Id: dummy.c,v 1.4 1998/03/28 14:44:34 grubba Exp $
+ *
  * Glue needed on Solaris if libgcc.a isn't compiled with -fpic.
  *
  * Henrik Grubbström 1997-03-06

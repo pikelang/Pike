@@ -1,3 +1,4 @@
+/* $Id: RCSID.h,v 1.6 1998/03/28 14:27:26 grubba Exp $ */
 #ifndef RCSID_H_INCLUDED
 #define RCSID_H_INCLUDED
 

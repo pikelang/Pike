@@ -1,3 +1,4 @@
+# $Id: Makefile.in,v 1.2 1998/03/28 14:47:10 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=mime.o

@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: cpp.c,v 1.21 1998/03/28 15:41:55 grubba Exp $
+ */
 #include "global.h"
 #include "dynamic_buffer.h"
 #include "lex.h"

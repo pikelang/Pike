@@ -1,3 +1,6 @@
+/*
+ * $Id: cpp.h,v 1.4 1998/03/28 15:00:07 grubba Exp $
+ */
 #ifndef CPP_H
 #define CPP_H
 

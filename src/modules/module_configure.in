@@ -1,3 +1,4 @@
+# $Id: module_configure.in,v 1.5 1998/03/28 14:53:03 grubba Exp $
 AC_PROG_CC
 
 AC_DEFINE(POSIX_SOURCE)

@@ -1,4 +1,4 @@
-/* sha.c
+/* $Id: sha.c,v 1.10 1998/03/28 14:28:18 grubba Exp $
  *
  * Written by Niels Möller
  */
@@ -15,6 +15,8 @@
 #include "error.h"
 #include "module_support.h"
 #include "las.h"
+
+RCSID("$Id: sha.c,v 1.10 1998/03/28 14:28:18 grubba Exp $");
 
 #include <sha.h>
 

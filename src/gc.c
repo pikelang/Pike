@@ -25,6 +25,8 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
+RCSID("$Id: gc.c,v 1.30 1998/03/28 15:31:05 grubba Exp $");
+
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
  * garbage.

@@ -6,6 +6,9 @@
 #  include "module.h"
 #  include "stralloc.h"
 #  include "pike_macros.h"
+
+RCSID("$Id: dynamic_load.c,v 1.25 1998/03/28 15:32:46 grubba Exp $");
+
 #endif
 
 #if !defined(HAVE_DLOPEN)

@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: las.h,v 1.13 1998/03/28 15:15:53 grubba Exp $
+ */
 #ifndef LAS_H
 #define LAS_H
 

@@ -15,6 +15,8 @@
 
 #include <ctype.h>
 
+RCSID("$Id: stralloc.c,v 1.30 1998/03/28 15:11:13 grubba Exp $");
+
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
 #define HASH_PREFIX 64

@@ -1,3 +1,6 @@
+/*
+ * $Id: peep.h,v 1.4 1998/03/28 15:06:27 grubba Exp $
+ */
 #ifndef PEEP_H
 #define PEEP_H
 

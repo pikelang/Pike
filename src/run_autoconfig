@@ -1,5 +1,7 @@
 #!/bin/sh
-
+#
+# $Id: run_autoconfig,v 1.21 1998/03/28 15:01:10 grubba Exp $
+#
 # Bootstrap script
 
 need_to_make_depend=no

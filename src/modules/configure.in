@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.5 1998/03/28 14:54:09 grubba Exp $
 AC_INIT(dynamic_module_makefile.in)
 
 AC_SET_MAKE

@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: callback.h,v 1.7 1998/03/28 15:38:18 grubba Exp $
+ */
 #ifndef CALLBACK_H
 #define CALLBACK_H
 

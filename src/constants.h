@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: constants.h,v 1.6 1998/03/28 15:36:02 grubba Exp $
+ */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
 

@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: efun.h,v 1.3 1998/03/28 15:32:00 grubba Exp $
+ */
 #ifndef EFUN_H
 #define EFUN_H
 

@@ -1,3 +1,4 @@
+# $Id: Makefile,v 1.8 1998/03/28 14:49:20 grubba Exp $
 
 DOCFILES = doc-header \
    blit.c blit_layer_include.h colortable.c colortable.h dct.c font.c \

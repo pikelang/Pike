@@ -1,1 +1,2 @@
+# $Id: .exportable_files,v 1.2 1998/03/28 15:45:03 grubba Exp $
 configure.in md5.c sha.c

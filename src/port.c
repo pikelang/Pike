@@ -15,6 +15,8 @@
 #include <float.h>
 #include <string.h>
 
+RCSID("$Id: port.c,v 1.15 1998/03/28 15:08:34 grubba Exp $");
+
 #ifdef sun
 time_t time PROT((time_t *));
 #endif

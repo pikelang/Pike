@@ -1,3 +1,6 @@
+/*
+ * $Id: fdlib.h,v 1.13 1998/03/28 15:08:12 grubba Exp $
+ */
 #ifndef FDLIB_H
 #define FDLIB_H
 

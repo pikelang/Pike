@@ -1,5 +1,8 @@
-/*      From Andy Tanenbaum's book "Computer Networks",
-        rewritten in C
+/*
+ * $Id: crypt.c,v 1.2 1998/03/28 15:01:41 grubba Exp $
+ *
+ *      From Andy Tanenbaum's book "Computer Networks",
+ *      rewritten in C
 */
 
 struct block {

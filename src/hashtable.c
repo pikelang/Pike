@@ -9,6 +9,8 @@
 #include "stuff.h"
 #include "error.h"
 
+RCSID("$Id: hashtable.c,v 1.4 1998/03/28 15:14:56 grubba Exp $");
+
 static unsigned INT32 gobble(struct pike_string *s)
 {
   unsigned INT32 i;

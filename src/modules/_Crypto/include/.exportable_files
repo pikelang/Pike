@@ -1,1 +1,2 @@
+# $Id: .exportable_files,v 1.2 1998/03/28 15:45:19 grubba Exp $
 crypto_types.h md5.h sha.h RCSID.h

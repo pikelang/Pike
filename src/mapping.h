@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: mapping.h,v 1.10 1998/03/28 15:12:50 grubba Exp $
+ */
 #ifndef MAPPING_H
 #define MAPPING_H
 

@@ -1,3 +1,5 @@
+// $Id: testsuite.in,v 1.12 1998/03/28 14:50:26 grubba Exp $
+
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[

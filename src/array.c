@@ -19,6 +19,8 @@
 #include "gc.h"
 #include "main.h"
 
+RCSID("$Id: array.c,v 1.31 1998/03/28 15:40:19 grubba Exp $");
+
 struct array empty_array=
 {
   1,                     /* Never free */

@@ -1,3 +1,7 @@
+/*
+ * $Id: fsort_template.h,v 1.3 1998/03/28 15:16:12 grubba Exp $
+ */
+
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
 #define SIZE ((long)(char *)STEP((TYPE *)0,1))

@@ -6,6 +6,8 @@
 #include "pike_types.h"
 #include "error.h"
 
+RCSID("$Id: module_support.c,v 1.9 1998/03/28 15:10:10 grubba Exp $");
+
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
  * If something went wrong, 'exepect_result' tells you what went wrong.

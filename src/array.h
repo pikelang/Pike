@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: array.h,v 1.12 1998/03/28 15:40:00 grubba Exp $
+ */
 #ifndef ARRAY_H
 #define ARRAY_H
 

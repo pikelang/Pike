@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: hashtable.h,v 1.5 1998/03/28 15:14:36 grubba Exp $
+ */
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 

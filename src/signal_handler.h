@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: signal_handler.h,v 1.6 1998/03/28 14:59:32 grubba Exp $
+ */
 #ifndef SIGNAL_H
 #define SIGNAL_H
 

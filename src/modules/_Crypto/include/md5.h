@@ -1,5 +1,5 @@
-/* md5.h
- *
+/*
+ * $Id: md5.h,v 1.2 1998/03/28 14:26:10 grubba Exp $
  */
 
 #include "crypto_types.h"

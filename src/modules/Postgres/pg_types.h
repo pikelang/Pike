@@ -1,3 +1,4 @@
+/* $Id: pg_types.h,v 1.3 1998/03/28 14:41:17 grubba Exp $ */
 #ifndef _PG_TYPES_H_
 #define _PG_TYPES_H_
 

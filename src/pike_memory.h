@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: pike_memory.h,v 1.4 1998/03/28 15:05:02 grubba Exp $
+ */
 #ifndef MEMORY_H
 #define MEMORY_H
 

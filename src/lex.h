@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: lex.h,v 1.10 1998/03/28 15:13:07 grubba Exp $
+ */
 #ifndef LEX_H
 #define LEX_H
 

@@ -22,6 +22,8 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
+RCSID("$Id: signal_handler.c,v 1.41 1998/03/28 15:03:31 grubba Exp $");
+
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
 #endif

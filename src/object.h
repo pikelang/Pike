@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: object.h,v 1.17 1998/03/28 15:12:32 grubba Exp $
+ */
 #ifndef OBJECT_H
 #define OBJECT_H
 

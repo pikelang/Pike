@@ -1,5 +1,5 @@
 /*
- * precompiled_crypto.h
+ * $Id: precompiled_crypto.h,v 1.17 1998/03/28 14:27:46 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *

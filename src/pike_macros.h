@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: pike_macros.h,v 1.6 1998/03/28 15:05:39 grubba Exp $
+ */
 #ifndef MACROS_H
 #define MACROS_H
 

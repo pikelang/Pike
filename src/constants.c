@@ -14,6 +14,8 @@
 #include "mapping.h"
 #include "error.h"
 
+RCSID("$Id: constants.c,v 1.13 1998/03/28 15:37:45 grubba Exp $");
+
 static INT32 num_callable=0;
 static struct mapping *builtin_constants = 0;
 

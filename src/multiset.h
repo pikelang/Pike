@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: multiset.h,v 1.7 1998/03/28 15:11:31 grubba Exp $
+ */
 #ifndef MULTISET_H
 #define MULTISET_H
 

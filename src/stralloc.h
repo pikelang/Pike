@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: stralloc.h,v 1.15 1998/03/28 15:09:14 grubba Exp $
+ */
 #ifndef STRALLOC_H
 #define STRALLOC_H
 #include "global.h"

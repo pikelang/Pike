@@ -1,3 +1,6 @@
+/*
+ * $Id: acconfig.h,v 1.19 1998/03/28 15:41:37 grubba Exp $
+ */
 #ifndef MACHINE_H
 #define MACHINE_H
 

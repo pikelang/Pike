@@ -3,6 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+/*
+ * $Id: port.h,v 1.18 1998/03/28 15:03:11 grubba Exp $
+ */
 #ifndef PORT_H
 #define PORT_H
 
