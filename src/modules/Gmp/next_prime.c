@@ -7,6 +7,8 @@
  * with Gmp-2.1 .
  */
 
+#include "global.h"
+
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
