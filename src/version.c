@@ -12,5 +12,5 @@
 void f_version(INT32 args)
 {
   pop_n_elems(args);
-  push_text("Pike v0.5 release 89");
+  push_text("Pike v0.5 release 90");
 }
