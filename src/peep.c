@@ -12,8 +12,9 @@
 #include "peep.h"
 #include "dmalloc.h"
 #include "stuff.h"
+#include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.26 1999/10/24 05:56:34 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.27 1999/10/25 10:19:35 hubbe Exp $");
 
 struct p_instr_s
 {
