@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.296 2003/10/15 16:57:59 mast Exp $
+|| $Id: file.c,v 1.297 2003/10/15 17:07:00 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.296 2003/10/15 16:57:59 mast Exp $");
+RCSID("$Id: file.c,v 1.297 2003/10/15 17:07:00 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -762,7 +762,9 @@ static struct pike_string *do_read_oob(int fd,
  *!   @item
  *!     it's a socket or pipe that has been closed from the other end, or
  *!   @item
- *!     nonblocking mode is used.
+ *!     nonblocking mode is used, or
+ *!   @item
+ *!     @[not_all] isn't set and an error occurred (see below).
  *! @endul
  *!
  *! If @[not_all] is nonzero, @[read()] will not try its best to read
@@ -772,10 +774,10 @@ static struct pike_string *do_read_oob(int fd,
  *! a time.
  *!
  *! If something goes wrong and @[not_all] is set, zero will be
- *! returned. If something goes wrong and @[not_all] is not set,
- *! either zero or a string shorter than @[len] is returned. If the
- *! problem persists then a later call to @[read()] will fail and
- *! return zero, however.
+ *! returned. If something goes wrong and @[not_all] is zero or left
+ *! out, then either zero or a string shorter than @[len] is returned.
+ *! If the problem persists then a later call to @[read()] will fail
+ *! and return zero, however.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
  *! will return zero. That includes an end due to end-of-file or
@@ -943,14 +945,29 @@ static void file_peek(INT32 args)
  *! @decl string read_oob(int len)
  *! @decl string read_oob(int len, int(0..1) not_all)
  *!
- *! Read out-of-band data from a stream.
- *!
  *! Attempts to read @[len] bytes of out-of-band data from the stream,
- *! and returns it as a string. If something goes wrong, zero is returned.
+ *! and returns it as a string. Less than @[len] bytes can be returned if
  *!
- *! If a one is given as the second argument to @[read_oob()], only
- *! as many bytes of out-of-band data as are currently available will be
- *! returned.
+ *! @ul
+ *!   @item
+ *!     the stream has been closed from the other end, or
+ *!   @item
+ *!     nonblocking mode is used, or
+ *!   @item
+ *!     @[not_all] isn't set and an error occurred (see below).
+ *! @endul
+ *!
+ *! If @[not_all] is nonzero, @[read_oob()] will only return as many
+ *! bytes of out-of-band data as are currently available.
+ *!
+ *! If something goes wrong and @[not_all] is set, zero will be
+ *! returned. If something goes wrong and @[not_all] is zero or left
+ *! out, then either zero or a string shorter than @[len] is returned.
+ *! If the problem persists then a later call to @[read()] will fail
+ *! and return zero, however.
+ *!
+ *! If everything went fine, a call to @[errno()] directly afterwards
+ *! will return zero. That includes an end due to remote close.
  *!
  *! If no arguments are given, @[read_oob()] will read to the end of
  *! the stream.
@@ -959,9 +976,20 @@ static void file_peek(INT32 args)
  *!   This function is only available if the option @tt{'--without-oob'@}
  *!   was not specified when the Pike runtime was compiled.
  *!
+ *! @note
  *!   It is not guaranteed that all out-of-band data sent from the other end
  *!   will be received. Most streams only allow for a single byte of
  *!   out-of-band data at a time.
+ *!
+ *! @note
+ *! It's not necessary to set @[not_all] to avoid blocking reading
+ *! when nonblocking mode is used.
+ *!
+ *! @note
+ *! When at the end of a file or stream, repeated calls to @[read()]
+ *! will return the empty string since it's not considered an error.
+ *! The empty string is never returned in other cases, unless
+ *! nonblocking mode is used or @[len] is zero.
  *!
  *! @seealso
  *!   @[read()], @[write_oob()]
@@ -1360,6 +1388,7 @@ static void file_write(INT32 args)
  *!   This function is only available if the option @tt{'--without-oob'@}
  *!   was not specified when the Pike runtime was compiled.
  *!
+ *! @note
  *!   It is not guaranteed that all out-of-band data sent from the other end
  *!   will be received. Most streams only allow for a single byte of
  *!   out-of-band data at a time. Some streams will send the rest of the data
