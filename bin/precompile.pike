@@ -1067,9 +1067,11 @@ mapping parse_attributes(array attr, void|string location)
 	  attributes[(string)attr[0]]=merge(tmp);
       }
 
-      if(!valid_attributes[(string)attr[0]])
-	exit(1, "%s:%d: Invalid attribute name %O.\n",
-	     attr[0]->file, attr[0]->line, (string)attr[0]);
+      if(!valid_attributes[(string)attr[0]]) {
+	werror("%s:%d: Invalid attribute name %O.\n",
+	       attr[0]->file, attr[0]->line, (string)attr[0]);
+	exit(1);
+      }
     }
   return attributes;
 }
