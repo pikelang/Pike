@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.17 1998/03/19 19:55:25 grubba Exp $
+ * $Id: sql.pike,v 1.18 1998/03/19 23:49:37 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.17 1998/03/19 19:55:25 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.18 1998/03/19 23:49:37 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -20,8 +20,8 @@
 
 #define throw_error(X)	throw(({ (X), backtrace() }))
 
-import Array;
-import Simulate;
+// import Array;
+// import Simulate;
 
 //. + master_sql
 //.   Object to use for the actual SQL-queries.
@@ -36,8 +36,8 @@ object master_sql;
 int case_convert;
 
 //. - quote
-//.   Quote a string so that it can safely be pu in a query.
-//. > s - String to qoute.
+//.   Quote a string so that it can safely be put in a query.
+//. > s - String to quote.
 string quote(string s)
 {
   if (master_sql && master_sql->quote) {
@@ -223,8 +223,8 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
     array(string) fieldnames;
     array(mixed) row;
       
-    fieldnames = map(res_obj->fetch_fields(),
-		     lambda (mapping(string:mixed) m) {
+    fieldnames = Array.map(res_obj->fetch_fields(),
+			   lambda (mapping(string:mixed) m) {
       if (case_convert) {
 	return(lower_case(m->name));	/* Hope this is even more unique */
       } else {
@@ -378,12 +378,13 @@ array(string) list_dbs(string|void wild)
     res = query("show databases");
   }
   if (sizeof(res) && mappingp(res[0])) {
-    res = map(res, lambda (mapping m) {
+    res = Array.map(res, lambda (mapping m) {
       return(values(m)[0]);	/* Hope that there's only one field */
     } );
   }
   if (wild) {
-    res = map_regexp(res, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
+    res = Simulate.map_regexp(res,
+			      replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
   }
   return(res);
 }
@@ -404,12 +405,13 @@ array(string) list_tables(string|void wild)
     res = query("show tables");
   }
   if (sizeof(res) && mappingp(res[0])) {
-    res = map(res, lambda (mapping m) {
+    res = Array.map(res, lambda (mapping m) {
       return(values(m)[0]);	/* Hope that there's only one field */
     } );
   }
   if (wild) {
-    res = map_regexp(res, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
+    res = Simulate.map_regexp(res,
+			      replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
   }
   return(res);
 }
@@ -430,8 +432,8 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     }
     if (wild) {
       /* Not very efficient, but... */
-      res = filter(res, lambda (mapping m, string re) {
-	return(sizeof(map_regexp( ({ m->name }), re)));
+      res = Array.filter(res, lambda (mapping m, string re) {
+	return(sizeof(Simulate.map_regexp( ({ m->name }), re)));
       }, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ) );
     }
     return(res);
@@ -442,7 +444,7 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   } else {
     res = query("show fields from \'" + table + "\'");
   }
-  res = map(res, lambda (mapping m, string table) {
+  res = Array.map(res, lambda (mapping m, string table) {
     foreach(indices(m), string str) {
       /* Add the lower case variants */
       string low_str = lower_case(str);
