@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.2 1997/03/28 12:32:36 grubba Exp $
+ * $Id: sql.pike,v 1.3 1997/03/30 14:29:56 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -28,8 +28,9 @@ void create(void|string|object host, void|string db,
     return;
   } else {
     foreach(get_dir(Sql->dirname), string program_name) {
-      if (sizeof(program_name / "_result") == 1 &&
-	  (program_name != "sql.pike")) {
+      if ((sizeof(program_name / "_result") == 1) &&
+	  (program_name != "sql.pike") &&
+	  (program_name != "CVS")) {
 	/* Don't call ourselves... */
 	array(mixed) err;
 	
