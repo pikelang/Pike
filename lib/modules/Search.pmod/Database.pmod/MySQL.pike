@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.35 2001/06/22 23:05:24 js Exp $
+// $Id: MySQL.pike,v 1.36 2001/06/22 23:28:45 js Exp $
 
 inherit .Base;
 
@@ -127,11 +127,29 @@ int get_document_id(string uri, void|string language_code)
   return db->master_sql->insert_id();
 }
 
+int allocate_field_id(string field)
+{
+  db->query("lock tables field read");
+  for(int i=1; i++; i<64)
+  {
+    array a=db->query("select name from field where id=%d",i);
+    if(!sizeof(a))
+    {
+      a=db->query("insert into field (id,name) values (%d,%s)",
+		  i, field);
+      db->query("unlock tables");
+      return i;
+    }
+  }
+  db->query("unlock tables");
+  throw("Could not allocate new field id");
+}
+
 static mapping field_cache = ([]);
 int get_field_id(string field, void|int do_not_create)
 {
+  // The one special case.
   if(field=="body")      return 0;
-  if(field=="anchor")    return 1;
   if(field_cache[field]) return field_cache[field];
   
   string s=sprintf("select id from field where name='%s'",db->quote(field));
@@ -145,10 +163,13 @@ int get_field_id(string field, void|int do_not_create)
   if(do_not_create)
     return 0;
 
-  // FIXME: Write a custom id allocation algorithm
-  s=sprintf("insert into field (name) values ('%s')", db->quote(field));
-  db->query(s);
-  return db->master_sql->insert_id()+1;
+  return allocate_field_id(field);
+}
+
+void remove_field_id(string field)
+{
+  m_delete(field_cache, field);
+  db->query("delete from field where name=%s", field);
 }
 
 _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
