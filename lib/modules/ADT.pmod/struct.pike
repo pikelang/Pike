@@ -1,4 +1,4 @@
-/* $Id: struct.pike,v 1.2 1997/05/31 22:03:44 grubba Exp $
+/* $Id: struct.pike,v 1.3 1998/02/11 01:48:14 mirar Exp $
  *
  * Read and write structures from strings.
  */
@@ -52,11 +52,12 @@ void put_var_array(array(int) data, int item_size, int len)
   put_fix_array(data, item_size);
 }
 
+#if constant(Gmp.mpz)
 mixed get_int(int len)
 {
   mixed i;
   if ( (strlen(buffer) - index) < len)
-    throw( ({ "SSL.struct->get_int: no data\n", backtrace() }) );
+    throw( ({ "ADT.struct->get_int: no data\n", backtrace() }) );
   if (len <= 3)
   {
     sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
@@ -72,7 +73,7 @@ string get_fix_string(int len)
   string res;
   
   if ((strlen(buffer) - index) < len)
-    throw( ({ "SSL.struct->get_fix_string: no data\n", backtrace() }) );
+    throw( ({ "ADT.struct->get_fix_string: no data\n", backtrace() }) );
   res = buffer[index .. index + len - 1];
   index += len;
   return res;
@@ -95,6 +96,7 @@ array(mixed) get_var_array(int item_size, int len)
 {
   return get_fix_array(item_size, get_int(len));
 }
+#endif
 
 int is_empty()
 {
