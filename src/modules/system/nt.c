@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.18 2000/06/29 00:13:01 hubbe Exp $
+ * $Id: nt.c,v 1.19 2000/07/03 18:32:35 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -21,6 +21,8 @@
 #include "mapping.h"
 #include "constants.h"
 #include "builtin_functions.h"
+#include "interpret.h"
+#include "operators.h"
 
 #include <winsock.h>
 #include <windows.h>
@@ -929,6 +931,7 @@ void f_NetUserEnum(INT32 args)
 	  encode_user_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
+	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_user_info(level);
@@ -1012,6 +1015,7 @@ void f_NetGroupEnum(INT32 args)
 	  encode_group_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
+	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_group_info(level);
@@ -1094,6 +1098,7 @@ void f_NetLocalGroupEnum(INT32 args)
 	  encode_localgroup_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
+	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_localgroup_info(level);
@@ -1178,6 +1183,7 @@ void f_NetUserGetGroups(INT32 args)
       encode_group_users_info(ptr,level);
       a->item[pos]=sp[-1];
       sp--;
+      dmalloc_touch_svalue(sp);
       pos++;
       if(pos>=a->size) break;
       ptr+=sizeof_group_users_info(level);
@@ -1265,6 +1271,7 @@ void f_NetUserGetLocalGroups(INT32 args)
       encode_localgroup_users_info(ptr,level);
       a->item[pos]=sp[-1];
       sp--;
+      dmalloc_touch_svalue(sp);
       pos++;
       if(pos>=a->size) break;
       ptr+=sizeof_localgroup_users_info(level);
@@ -1358,6 +1365,7 @@ void f_NetGroupGetUsers(INT32 args)
 	  encode_group_users_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
+	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_group_users_info(level);
@@ -1460,6 +1468,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
 	  encode_localgroup_members_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
+	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_localgroup_members_info(level);
