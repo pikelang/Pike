@@ -3772,12 +3772,31 @@ static void html_clone(INT32 args)
 
 static void html_set_extra(INT32 args)
 {
-   f_aggregate(args);
    if (THIS->extra_args) free_array(THIS->extra_args);
-   THIS->extra_args=sp[-1].u.array;
-   sp--;
+   if (args) {
+     f_aggregate(args);
+     THIS->extra_args=sp[-1].u.array;
+     sp--;
+   }
+   else THIS->extra_args=NULL;
    dmalloc_touch_svalue(sp);
    ref_push_object(THISOBJ);
+}
+
+/*
+**! method array get_extra()
+**!	Gets the extra arguments set by <ref>set_extra</ref>().
+**!
+**! returns the called object
+*/
+
+static void html_get_extra(INT32 args)
+{
+  pop_n_elems(args);
+  if (THIS->extra_args)
+    ref_push_array (THIS->extra_args);
+  else
+    ref_push_array (&empty_array);
 }
 
 /*
@@ -4004,6 +4023,8 @@ void init_parser_html(void)
 
    ADD_FUNCTION("set_extra",html_set_extra,
 		tFuncV(tNone,tMix,tObjImpl_PARSER_HTML),0);
+   ADD_FUNCTION("get_extra",html_get_extra,
+		tFunc(tNone,tArray),0);
 
    ADD_FUNCTION("case_insensitive_tag",html_case_insensitive_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
