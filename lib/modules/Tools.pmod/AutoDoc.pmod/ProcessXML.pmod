@@ -425,6 +425,18 @@ static array(string) splitRef(string ref) {
     else
       return result;
     token = sizeof(a) ? a[0] : "";
+    if (token == "(") {
+      // Skip parenthesized expressions.
+      int cnt = 1;
+      int i = 1;
+      while ((cnt > 0) && (i < sizeof(a))) {
+	if (a[i] == "(") cnt++;
+	else if (a[i] == ")") cnt--;
+	i++;
+      }
+      a = a[i..];
+      token = sizeof(a) ? a[0] : "";
+    }
     if ((<".", "->">)[token])
       a = a[1..];
     else
