@@ -5,6 +5,11 @@
 
 #pike __REAL_VERSION__
 
+#pragma dont_save_parent
+// Override if someone set __pragma_save_parent__ globally. Other code
+// in the calendar module does Ruleset.Timezone(...) which won't work
+// if Timezone gets a parent pointer. /mast
+
 class Timezone
 {
    constant is_timezone=1;

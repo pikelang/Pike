@@ -1,8 +1,13 @@
 #pike __REAL_VERSION__
 
-/* $Id: cipher.pike,v 1.19 2002/03/20 16:40:00 nilsson Exp $
+/* $Id: cipher.pike,v 1.20 2002/06/11 18:01:04 mast Exp $
  *
  */
+
+#pragma dont_save_parent
+// Override if someone set __pragma_save_parent__ globally. Other code
+// assumes the constants can be indexed out of this class directly. It
+// should probably be a pmod instead. /mast
 
 //! Encryption and MAC algorithms used in SSL.
 
