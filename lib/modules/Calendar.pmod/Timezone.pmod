@@ -201,11 +201,12 @@ static private Ruleset.Timezone _magic_timezone(string tz)
    if (!runtime_timezone_compiler)
       runtime_timezone_compiler=Runtime_timezone_compiler();
 
-   int t=time(1);
-   float t1=time(t);
+//     int t=time(1);
+//     float t1=time(t);
+//     runtime_timezone_compiler->find_rule("EU");
    object p=runtime_timezone_compiler->find_zone(tz);
-   float t2=time(t);
-   werror("%O\n",t2-t1);
+//     float t2=time(t);
+//     werror("%O\n",t2-t1);
    if (p) return p;
 
    if (sscanf(tz,"%s+%f",z,d)==2)
@@ -543,7 +544,7 @@ class Runtime_timezone_compiler
 	 mapping r2=([]);
 	 Shift last=Shift(({"0","?",0,"u",0,"?"}));
 	 Shift first=last;
-	 string res="";
+	 array res=({});
 
 	 if (!r2[NUL_YEAR]) r2[NUL_YEAR]=({last});
 
@@ -551,19 +552,17 @@ class Runtime_timezone_compiler
 	 for (;y<=INF_YEAR; y++)
 	    [r2[y],last]=mkperiods(rules[y],last,first);
 
-	 werror("%O\n",last);
-
 	 res+=
-	    TZrules_init+
-	    "import __Calendar_mkzone;\n"
-	    "   inherit TZRules;\n"
-	    "   array(array(string|int)) jd_year_periods(int jd)\n"
-	    "   {\n"
-	    "      [int y,int yjd,int leap]=gregorian_yjd(jd);\n"
-	    "      switch (y)\n"
-	    "      {\n";
+	    ({TZrules_init+
+	      "import __Calendar_mkzone;\n"
+	      "   inherit TZRules;\n"
+	      "   array(array(string|int)) jd_year_periods(int jd)\n"
+	      "   {\n"
+	      "      [int y,int yjd,int leap]=gregorian_yjd(jd);\n"
+	      "      switch (y)\n"
+	      "      {\n"});
 
-	 string s="",t;
+	 array sr=({});
 
 	 int y,mn=min(@indices(rules-(<NUL_YEAR>)));
 
@@ -579,7 +578,7 @@ class Runtime_timezone_compiler
 
 	       foreach ((array)my,int y2) m_delete(r2,y2);
 
-	       string t="";
+	       array tr=({});
 
 	       int y0=min(@(array)my);
 	       int y2=max(@(array)my);
@@ -594,54 +593,54 @@ class Runtime_timezone_compiler
 		     if (y0==NUL_YEAR)
 		     {
 			if (my[INF_YEAR])
-			   t+="         default: // .."+max(y1,mn-1)+
-			      " and ½½½..\n";
+			   tr+=({"         default: // .."+max(y1,mn-1),
+				  " and ½½½..\n"});
 			else
-			   t+="         default: // .."+max(y1,mn-1)+":\n";
+			   tr+=({"         default: // .."+max(y1,mn-1),
+				  ":\n"});
 		     }
 		     else if (y0==y1)
-			t+="         case "+y0+":\n";
+			tr+=({"         case "+y0+":\n"});
 		     else if (y1==2050)
 		     { 
-			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n"; 
-			else t=replace(t,"½½½",(string)y0); 
+			if (!my[NUL_YEAR]) 
+			   tr+=({"         case "+y0,"..:\n"}); 
+			else 
+			   tr[0]=replace(tr[0],"½½½",(string)y0); 
 		     }
 		     else 		  
-			t+="         case "+y0+".."+y1+":\n";
+			tr+=({"         case "+y0,".."+y1+":\n"});
 
 		     y0=y1;
 		  }
 
 	       int lastoffset=0;
-	       string res=" "*12+"return ({";
+	       tr+=({" "*12,"return ({"});
 	       foreach (z,Shift s)
 	       {
-		  res+=s->dump(lastoffset,my)+("\n"+" "*21);
+		  tr+=({s->dump(lastoffset,my),"\n"," "*21});
 		  lastoffset=s->offset;
 	       }
-	       array resa=res/"\n";
-	       resa[-2]=replace(resa[-2],",  ","});");
-	 
-	       t+=resa[..sizeof(resa)-2]*"\n"+"\n";
-	       s=t+s;
+	       tr[-3]=replace(tr[-3],",  ","});");
+	       sr=tr[..sizeof(tr)-2]+sr;
 	    }
-	 res+=(s+
-	       "      }\n"
-	       "   }\n");
-
-	 res+=("\n"
-	       "array(string) rule_s=\n");
+	 res+=sr+
+	 ({"      }\n"
+	   "   }\n"
+	   "\n"
+	   "array(string) rule_s=\n"});
 
 	 multiset tzname=(<>);
 	 foreach (values(rules),array(Shift)|object(Shift) s)
 	    if (arrayp(s)) foreach (s,Shift s) tzname[s->s]=1;
 	    else  tzname[s->s]=1;
 
-	 res+=("({"+map((array)tzname,
-			lambda(string s) { return sprintf("%O",s); })*","
-	       +"});\n");
+	 res+=({"({",map((array)tzname,
+			 lambda(string s) { return sprintf("%O",s); })*",",
+		"});\n",
+		sprintf("string name=%O;\n",id)});
 
-	 return res;
+	 return res*"";
       }
 
       int join_periods(array s,array t,int y0,int y1)
@@ -796,20 +795,17 @@ class Runtime_timezone_compiler
 
       string dump()
       {
-	 string res="";
+	 array(string) res=({});
 
 	 if (!sizeof(rules))
-	 {
-	    res+=("// skipped %O due to errors\n",id);
-	    return res;
-	 }
+	    error("no rules for %O\n",id);
 	       
-	 res+="import __Calendar_mkzone;\n";
+	 res+=({"import __Calendar_mkzone;\n"});
 
 	 if (sizeof(rules)==1) // simple zone
 	 {
-	    res+=("object thezone="+rules[0][4]+";\n");
-	    return res;
+	    res+=({"object thezone=",rules[0][4],";\n"});
+	    return res*"";
 	 }
 
 	 mapping rname=([]);
@@ -819,11 +815,11 @@ class Runtime_timezone_compiler
 	    if (rname[a[4]]) a[6]=rname[a[4]];
 	    else a[6]=rname[a[4]]="tz"+n++;
       
-	 res+=( "inherit TZHistory;\n"
-		"Ruleset.Timezone "+
-		sort(values(rname))*","+";\n"
-		"Ruleset.Timezone whatrule(int ux)\n"
-		"{\n" );
+	 res+=({ "inherit TZHistory;\n"
+		 "Ruleset.Timezone ",
+		 sort(values(rname))*",",";\n"
+		 "Ruleset.Timezone whatrule(int ux)\n"
+		 "{\n" });
 
 	 foreach (rules,array a)
 	 {
@@ -838,17 +834,16 @@ class Runtime_timezone_compiler
 	 array last=rules[-1];
 	 foreach (reverse(rules)[1..],array a)
 	 {
-	    res+=sprintf("   if (ux>=%s) // %s %s\n"
-			 "      return %s || (%s=%s);\n",
-			 a[5],a[3],last[7],last[6],last[6],last[4]);
+	    res+=({sprintf("   if (ux>=%s) // %s %s\n"
+			   "      return %s || (%s=%s);\n",
+			   a[5],a[3],last[7],last[6],last[6],last[4])});
 	    last=a;
 	 }
 	 if (last[7]!="")
-	    res+=sprintf("   // %s\n",last[7]);
-	 res+=sprintf("   return %s || (%s=%s);\n",
-		      last[6],last[6],last[4]);
-
-	 res+=("}\n");
+	    res+=({sprintf("   // %s\n",last[7])});
+	 res+=({sprintf("   return %s || (%s=%s);\n",
+			last[6],last[6],last[4])+
+		"}\n"});
 
 	 multiset tzname=(<>);
 	 foreach (rules,array a)
@@ -861,19 +856,16 @@ class Runtime_timezone_compiler
 		  tzname[sprintf(a[2],s)]=1;
 	    }
 
-	 res+=("array(string) zone_s=({"+map((array)tzname,
-			lambda(string s) { return sprintf("%O",s); })*","
-	       +"});\n");
-      
-	 res+="array(int) shifts=({";
+	 res+=({"array(string) zone_s=({"+
+		map((array)tzname,
+		    lambda(string s) { return sprintf("%O",s); })*",",
+		"});\n",
+		"array(int) shifts=({"});
 	 foreach (rules[..sizeof(rules)-2],array a)
-	 {
-	    res+=a[5]+",";
-	 }
-	 res+="});\n";
-	 
+	    res+=({a[5]+","});
+	 res+=({"});\n"});
 
-	 return res;
+	 return res*"";
       }
    }
 
@@ -888,6 +880,7 @@ class Runtime_timezone_compiler
       "etcetera",
       "europe",
       "northamerica",
+      "southamerica",
       "pacificnew",
       "systemv",
    });
@@ -921,7 +914,8 @@ class Runtime_timezone_compiler
      "Ruleset":Ruleset,
      "ZEROSHIFT":({0,0,0,""})]);
 
-#define RTTZC_DEBUG
+//  #define RTTZC_DEBUG
+//  #define RTTZC_TIMING
 
    object find_zone(string s)
    {
@@ -932,7 +926,7 @@ class Runtime_timezone_compiler
 
       if (!all_rules) all_rules=get_all_rules();
 
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
       int t=time(1);
       float t1=time(t);
 #endif
@@ -972,11 +966,17 @@ class Runtime_timezone_compiler
 	    return find_zone(a);
 	 n++;
       }
-      string c=z->dump();
-
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
       float t2=time(t);
       werror("find %O: %O\n",s,t2-t1);
+#endif
+
+      string c=z->dump();
+
+#ifdef RTTZC_TIMING
+      float td=time(t);
+      werror("dump %O: %O\n",s,td-t2);
+      float td=time(t);
 #endif
 
 #ifdef RTTZC_DEBUG
@@ -989,13 +989,15 @@ class Runtime_timezone_compiler
       object zo=p();
       if (zo->thezone) zo=zo->thezone;
 
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
       float t3=time(t);
-      werror("compile %O: %O\n",s,t3-t2);
+      werror("compile %O: %O\n",s,t3-td);
 #endif
 
       return zone_cache[s]=zo;
    }
+
+//  #define RTTZC_TIMING
 
    program find_rule(string s)
    {
@@ -1007,7 +1009,7 @@ class Runtime_timezone_compiler
 
       if (!all_rules) all_rules=get_all_rules();
 
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
       int t=time(1);
       float t1=time(t);
 #endif
@@ -1031,19 +1033,20 @@ class Runtime_timezone_compiler
 		    string a,string b,string q)==5 && a==s)
 	 {
 	    r->add(b);
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
 	    float tf=time(t);
 	    werror("find %O at: %O\n",s,tf-t1);
+	    float tq=time(t);
 #endif
 	    foreach (q/"\n",string line)
 	       if (sscanf(line,"Rule%*[ \t]%[^ \t]%*[ \t]%s",a,b)==4 &&
 		   a==s)
-		  r->add(b);
+  		  r->add(b);
 	       else 
 		  break; // end of zone
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
 	    float tf=time(t);
-	    werror("done %O at: %O\n",s,tf-t1);
+	    werror("load %O: %O\n",s,tf-tq);
 #endif
 	    break;
 	 }
@@ -1054,16 +1057,17 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_DEBUG
       werror("%s\n",c);
 #endif
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
       float t2=time(t);
       werror("find %O: %O\n",s,t2-t1);
+      float t2=time(t);
 #endif
       
       add_constant("__Calendar_mkzone",mkzonemod);
 
       program p=compile_string(c);
 
-#ifdef RTTZC_DEBUG
+#ifdef RTTZC_TIMING
       float t3=time(t);
       werror("compile %O: %O\n",s,t3-t2);
 #endif
