@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.98 2004/07/08 00:54:57 bill Exp $
+dnl $Id: aclocal.m4,v 1.99 2004/07/08 08:55:02 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -357,7 +357,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.98 2004/07/08 00:54:57 bill Exp $
+  # $Id: aclocal.m4,v 1.99 2004/07/08 08:55:02 marcus Exp $
 
   MY_AC_PROG_CC
 
@@ -446,7 +446,7 @@ define([AC_MODULE_INIT],
   AC_LOW_MODULE_INIT()
   PIKE_FEATURE_CLEAR()
 
-  if test -e "$srcdir/module.pmod.in"; then
+  if test -f "$srcdir/module.pmod.in" -o -d "$srcdir/module.pmod.in"; then
     MODULE_PMOD_IN="$srcdir/module.pmod.in"
     MODULE_WRAPPER_PREFIX="___"
   else
