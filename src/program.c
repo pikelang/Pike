@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.17 1997/01/29 01:09:19 hubbe Exp $");
+RCSID("$Id: program.c,v 1.18 1997/01/31 23:09:03 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1441,7 +1441,13 @@ struct program *compile_file(struct pike_string *file_name)
     fd=open(file_name->str,O_RDONLY);
     if(fd >= 0) break;
     if(errno != EINTR)
-      error("Couldn't open file '%s'.\n",file_name->str);
+    {
+#ifdef HAVE_STRERROR
+      error("Couldn't open file '%s'. (%s)\n",file_name->str,strerror(errno));
+#else
+      error("Couldn't open file '%s'. (ERRNO=%d)\n",file_name->str,errno);
+#endif
+    }
   }
 
 #define FILE_STATE

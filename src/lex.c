@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.14 1997/01/30 03:51:34 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.15 1997/01/31 23:09:02 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1032,7 +1032,11 @@ static void handle_include(char *name, int local_include)
   {
     if(errno == EINTR) goto retry;
 
-    my_yyerror("Couldn't open file to include '%s'.",sp[-1].u.string->str);
+#ifdef HAVE_STRERROR    
+    my_yyerror("Couldn't open file to include '%s'. (%s)",sp[-1].u.string->str,strerror(errno));
+#else
+    my_yyerror("Couldn't open file to include '%s'. (ERRNO=%d)",sp[-1].u.string->str,errno);
+#endif
     return;
   }
 
