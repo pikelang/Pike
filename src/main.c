@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.95 2000/08/06 06:16:30 hubbe Exp $");
+RCSID("$Id: main.c,v 1.96 2000/08/15 15:56:27 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -409,10 +409,10 @@ int dbm_main(int argc, char **argv)
    */
 #if STACK_DIRECTION < 0
   /* Equvivalent with |= 0xffff */
-  Pike_interpreter.stack_top += (~((unsigned long)Pike_interpreter.stack_top)) & 0xffff;
+  Pike_interpreter.stack_top += (~((size_t)Pike_interpreter.stack_top)) & 0xffff;
 #else /* STACK_DIRECTION >= 0 */
   /* Equvivalent with &= ~0xffff */
-  Pike_interpreter.stack_top -= ( ((unsigned long)Pike_interpreter.stack_top)) & 0xffff;
+  Pike_interpreter.stack_top -= ( ((size_t)Pike_interpreter.stack_top)) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
 
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_STACK)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.53 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.54 2000/08/15 16:16:14 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1006,7 +1006,7 @@ void backend(void)
 
       }
     }
-    call_callback(& backend_callbacks, (void *)1);
+    call_callback(& backend_callbacks, (void *)(ptrdiff_t)1);
   }
 
   UNSETJMP(back);

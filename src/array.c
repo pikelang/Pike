@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.82 2000/08/15 11:17:07 grubba Exp $");
+RCSID("$Id: array.c,v 1.83 2000/08/15 16:19:12 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -704,7 +704,7 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return 0;
 
   case T_STRING:
-    return my_quick_strcmp(a->u.string, b->u.string);
+    return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
     
   default:
     return set_svalue_cmpfun(a,b);
@@ -728,7 +728,7 @@ static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
 	return 0;
 	
       case T_STRING:
-	return my_strcmp(a->u.string, b->u.string);
+	return DO_NOT_WARN((int)my_strcmp(a->u.string, b->u.string));
 	
       case T_ARRAY:
 	if(a==b) return 0;
@@ -1032,7 +1032,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   if((opcode >> 8) & PIKE_ARRAY_OP_A) while(ap<a->size) *(ptr++)=ap++;
   if(opcode & PIKE_ARRAY_OP_B) while(bp<b->size) *(ptr++)=~(bp++);
 
-  *ret=(ptr-ret-1);
+  *ret = DO_NOT_WARN((INT32)(ptr-ret-1));
 
   return ret;
 }
@@ -1708,7 +1708,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
   INT32 e;
   struct array *ret;
-  INT32 argp;
+  ptrdiff_t argp;
 
   argp=Pike_sp-args - Pike_interpreter.evaluator_stack;
 
@@ -1716,7 +1716,8 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
   check_array_for_destruct(a);
   for(e=0;e<a->size;e++)
   {
-    assign_svalues_no_free(Pike_sp,Pike_interpreter.evaluator_stack+argp,args,BIT_MIXED);
+    assign_svalues_no_free(Pike_sp, Pike_interpreter.evaluator_stack + argp,
+			   args, BIT_MIXED);
     Pike_sp+=args;
     apply_svalue(ITEM(a)+e,args);
   }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.42 2000/08/14 17:48:50 grubba Exp $
+ * $Id: pike_types.h,v 1.43 2000/08/15 15:59:49 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -148,7 +148,7 @@ extern struct pike_string *weak_type_string;
 /* Prototypes begin here */
 void check_type_string(struct pike_string *s);
 void init_types(void);
-INT32 pop_stack_mark(void);
+ptrdiff_t pop_stack_mark(void);
 void pop_type_stack(void);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
@@ -162,7 +162,7 @@ struct pike_string *debug_pop_unfinished_type(void);
 struct pike_string *debug_pop_type(void);
 struct pike_string *debug_compiler_pop_type(void);
 struct pike_string *parse_type(char *s);
-void stupid_describe_type(char *a,INT32 len);
+void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_string *s);
 char *low_describe_type(char *t);
 struct pike_string *describe_type(struct pike_string *type);

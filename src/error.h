@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.47 2000/08/15 11:05:19 grubba Exp $
+ * $Id: error.h,v 1.48 2000/08/15 16:11:50 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -59,8 +59,8 @@ typedef struct JMP_BUF
   struct JMP_BUF *previous;
   jmp_buf recovery;
   struct pike_frame *frame_pointer;
-  INT32 stack_pointer;
-  INT32 mark_sp;
+  ptrdiff_t stack_pointer;
+  ptrdiff_t mark_sp;
   INT32 severity;
   ONERROR *onerror;
 #ifdef PIKE_DEBUG

@@ -11,7 +11,7 @@
 #include "fsort.h"
 #include "main.h"
 
-RCSID("$Id: fsort.c,v 1.13 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: fsort.c,v 1.14 2000/08/15 16:04:48 grubba Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
@@ -91,7 +91,7 @@ void fsort(void *base,
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(elmSize)
 #else
-  switch( (((unsigned long)base) % elmSize) ? 0 : elmSize )
+  switch( (((size_t)base) % elmSize) ? 0 : elmSize )
 #endif
   {
   case  1:  fsort_1(( B1_T *)base,(elms-1)+( B1_T *)base, cmpfunc); break;

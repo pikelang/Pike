@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.65 2000/08/10 13:23:59 grubba Exp $");
+RCSID("$Id: encode.c,v 1.66 2000/08/15 16:15:43 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1654,14 +1654,14 @@ static void rec_restore_value(char **v, INT32 *l)
     if(t<0) error("Format error, length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate(t);
+    f_aggregate(DO_NOT_WARN(t));
     return;
 
   case TAG_MULTISET:
     if(t<0) error("Format error, length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate_multiset(t);
+    f_aggregate_multiset(DO_NOT_WARN(t));
     return;
 
   case TAG_MAPPING:
@@ -1672,7 +1672,7 @@ static void rec_restore_value(char **v, INT32 *l)
       rec_restore_value(v,l);
       rec_restore_value(v,l);
     }
-    f_aggregate_mapping(t*2);
+    f_aggregate_mapping(DO_NOT_WARN(t*2));
     return;
 
   case TAG_OBJECT:
@@ -1729,7 +1729,7 @@ void f_decode_value(INT32 args)
   if(!my_decode(s, codec))
   {
     char *v=s->str;
-    INT32 l=s->len;
+    ptrdiff_t l=s->len;
     rec_restore_value(&v, &l);
   }
   assign_svalue(Pike_sp-args-1, Pike_sp-1);

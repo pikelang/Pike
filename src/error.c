@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.59 2000/08/15 11:42:44 grubba Exp $");
+RCSID("$Id: error.c,v 1.60 2000/08/15 16:11:36 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -225,13 +225,15 @@ PMOD_EXPORT void check_recovery_context(void)
   char foo;
 #define TESTILITEST ((((char *)Pike_interpreter.recoveries)-((char *)&foo))*STACK_DIRECTION)
   if(Pike_interpreter.recoveries && TESTILITEST > 0) {
-    fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",
-	    Pike_interpreter.recoveries, &foo, TESTILITEST);
+    fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
+	    Pike_interpreter.recoveries, &foo,
+	    DO_NOT_WARN((long)TESTILITEST));
     fprintf(stderr, "Last recovery was added at %s:%d\n",
 	    Pike_interpreter.recoveries->file,
 	    Pike_interpreter.recoveries->line);
     fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",
-	  Pike_interpreter.recoveries, &foo, TESTILITEST);
+	  Pike_interpreter.recoveries, &foo,
+	  DO_NOT_WARN((long)TESTILITEST));
   }
 
   /* Add more stuff here when required */
@@ -356,7 +358,7 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
     exit(99);
   }
 
-  if((long)strlen(buf) >= (long)sizeof(buf))
+  if((size_t)strlen(buf) >= (size_t)sizeof(buf))
     fatal("Buffer overflow in error()\n");
   
   low_error(buf);
@@ -738,7 +740,7 @@ PMOD_EXPORT void resource_error(
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
   INIT_ERROR(resource);
-  ERROR_COPY(resource,howmuch);
+  ERROR_COPY(resource, DO_NOT_WARN((INT32)howmuch));
   ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);
   ERROR_DONE(generic);
 }

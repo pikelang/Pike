@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.20 2000/08/15 15:54:51 grubba Exp $
+ * $Id: pike_memory.h,v 1.21 2000/08/15 15:55:35 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -18,7 +18,8 @@
 struct link
 {
   struct link *next;
-  INT32 key, offset;
+  INT32 key;
+  ptrdiff_t offset;
 };
 
 enum methods {

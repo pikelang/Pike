@@ -11,7 +11,7 @@ int PIKE_CONCAT(NAME,_error_offset);
 #ifdef ERR_EXT_DECLARE
 #define DECLARE_ERROR(NAME, INHERIT, DECL) \
 extern struct program *PIKE_CONCAT(NAME,_error_program); \
-extern int PIKE_CONCAT(NAME,_error_offset); \
+extern ptrdiff_t PIKE_CONCAT(NAME,_error_offset); \
 struct PIKE_CONCAT(NAME,_error_struct) { \
   DECL \
 };
@@ -21,11 +21,12 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 
 #ifdef ERR_SETUP
 #define DECLARE_ERROR(NAME, INHERIT, DECL) do{ \
-  int current_offset=0; \
+  ptrdiff_t current_offset=0; \
   struct PIKE_CONCAT(NAME,_error_struct) foo; \
   start_new_program(); \
   INHERIT \
-  current_offset = PIKE_CONCAT(NAME,_error_offset)=ADD_STORAGE(struct PIKE_CONCAT(NAME,_error_struct));\
+  current_offset = PIKE_CONCAT(NAME,_error_offset) = \
+    ADD_STORAGE(struct PIKE_CONCAT(NAME,_error_struct));\
   add_string_constant("error_type",#NAME "_error",0); \
   add_integer_constant("is_" #NAME "_error",1,0); \
   DECL \

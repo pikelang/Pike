@@ -3,17 +3,18 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "hashtable.h"
 #include "stralloc.h"
 #include "stuff.h"
 #include "error.h"
 
-RCSID("$Id: hashtable.c,v 1.6 1999/04/17 13:48:01 grubba Exp $");
+RCSID("$Id: hashtable.c,v 1.7 2000/08/15 16:03:48 grubba Exp $");
 
-static unsigned INT32 gobble(struct pike_string *s)
+static size_t gobble(struct pike_string *s)
 {
-  unsigned INT32 i;
+  size_t i;
   i=my_hash_string(s);
   i+=i >> 3;
   i+=i >> 7;
