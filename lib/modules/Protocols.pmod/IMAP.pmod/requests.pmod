@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.18 1999/02/02 21:49:40 grubba Exp $
+ * $Id: requests.pmod,v 1.19 1999/02/02 22:20:57 grubba Exp $
  */
 
 import .types;
@@ -254,6 +254,7 @@ class fetch
 
   mapping easy_process(object message_set, mapping request)
   {
+    werror(sprintf("fetch->easy_process(X, %O)\n", request));
     array fetch_attrs = 0;
     switch(request->type)
     {
