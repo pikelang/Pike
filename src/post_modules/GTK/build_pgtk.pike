@@ -1087,25 +1087,21 @@ int main(int argc, array argv)
       {
 	emit( args );
         if( fn == "create" )
-          emit( "  if( !pigtk_is_setup )\n"
-                "      error(\"You must call GTK.setup_gtk( argv ) first"
-                "\\n\");\n");
-	emit( "  get_all_args(\""+progname+"->"+fn+"\", args, \""+
+          emit("  pgtk_verify_setup();\n");
+	emit( "  get_all_args(\""+fn+"\", args, \""+
 	      format_string+"\""+((sargs-"*")-zap)+");\n");
 	sargs = replace(sargs,"&tmp1,&tmp2","(void *)pgtk_button_func_wrapper, b");
 	emit(post);
       }
       if(fn == "create") 
       {
-	emit("  if(THIS->obj) error(\"create called more than once\\n\");\n");
+        emit("  pgtk_verify_not_inited();\n");
 	emit("  THIS->obj = GTK_OBJECT( gtk_"+progname+"_new("+
 	     replace((sargs[1..]-"&")-"_","^^","_")+" ) );\n");
-	emit("  if(!THIS->obj) error(\"Failed to initiate "+progname+"\\n\");\n");
       }
       else
       {
-	emit("  if(!THIS->obj)\n"
-	     "    error(\"Calling function in unitiated object\\n\");\n");
+        emit("  pgtk_verify_inited();\n");
         if(rest)
           emit("  result = ");
         else
@@ -1115,11 +1111,11 @@ int main(int argc, array argv)
       }
       if(strlen(fin)) 
         emit(fin+"\n");
-      emit("  my_pop_n_elems(args);\n");
       if(!rest)
       {
-        emit("  my_ref_push_object( fp->current_object );\n");
+        emit("  RETURN_THIS();\n");
       } else {
+        emit("  my_pop_n_elems(args);\n");
         switch(rest)
         {
          case "float":
@@ -1163,17 +1159,15 @@ int main(int argc, array argv)
 	 /* void function.... */
 	 true_types[progname+fn] = ({ classname(progname), "" });
 	 struct[progname][fn] = "\"function(void:object)\"";
-	 emit("  if(!THIS->obj)\n"
-	      "    error(\"Calling function in unitiated object\\n\");\n");
+         emit("  pgtk_verify_inited();\n");
 	 emit("  gtk_"+progname+"_"+fn+"(GTK_"+upper_case(progname)+"(THIS->obj));\n");
 	 break;
        case "_INT_":
 	 emit("  int i;\n");
 	 struct[progname][fn] = "\"function(int:object)\"";
 	 true_types[progname+fn] = ({ classname(progname), "int" });
-	 emit("  if(!THIS->obj)\n"
-	      "    error(\"Calling function in unitiated object\\n\");\n");
-	 emit("  get_all_args(\""+progname+"->"+fn+"\",args, \"%D\", &i);\n");
+         emit("  pgtk_verify_inited();\n");
+	 emit("  get_all_args(\""+fn+"\",args, \"%D\", &i);\n");
 	 emit("  gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+
 	      "( THIS->obj ), i );\n");
 	 break;
@@ -1185,17 +1179,15 @@ int main(int argc, array argv)
 				    "<a href=\""+lower_case(line)+".html\">"+
 				    classname(lower_case(line))+"</a>" });
 	 emit("  GtkObject *f;\n");
-	 emit("  if(!THIS->obj)\n"
-	      "    error(\"Calling function in unitiated object\\n\");\n");
-	 emit("  get_all_args(\""+progname+"->"+fn+"\", args, \"%o\", &o);\n");
+         emit("  pgtk_verify_inited();\n");
+	 emit("  get_all_args(\""+fn+"\", args, \"%o\", &o);\n");
 	 emit("  f = get_gtkobject( o );\n");
 	 emit("  if(!f)\n"
 	      "    error(\"Expected "+classname(line)+", got NULL\\n\");\n");
 	 emit("  gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+"( THIS->obj ), GTK_"+upper_case(line)+"( f ) );\n");
       }
 
-      emit("  my_pop_n_elems(args);\n");
-      emit("  my_ref_push_object( fp->current_object );\n");
+      emit("  RETURN_THIS();\n");
       emit("}\n");
     } else if(sscanf(line, "ARGS(%s);", line)==1) {
       true_types[progname+last_function][1] = line;
@@ -1351,11 +1343,19 @@ int main(int argc, array argv)
       if( f != "inherit"  && f)
         functions |= ({ f, function_type(struct[q][f]) });
 
-  sort( map(functions,strlen), functions );
+  mapping q = ([]);
+  // Do a stable sort, to avoid rebuilding pgtk.c all the time.
+  
+  foreach( functions, function f )
+    q[strlen(f)] = (q[strlen(f)]||({})) | ({ f });
+
+  functions = ({});
+
+  foreach(sort(indices( q )), int i)
+    functions += sort(q[i]);
 
   foreach(reverse(functions), string q ) // Evil me. Sort for best compression
     data_offset( q );
-
 
   foreach(sort_dependencies(indices(struct),struct), string w)
   {
