@@ -793,4 +793,29 @@ if test "x$WITH_GTK" = x1 ; then
 else
   WITH_GTK=0
 fi
+
+# On some systems, gtk-config et al points to uninstalled 
+# libraries. Use this to be able to detect a faulty installation
+# of GTK, ie try a real link. If it fails, warn and don't try
+# to use GTK or the detected libs.
+AC_MSG_CHECKING([If GTK really links])
+AC_CACHE_VAL(pgtk_cv_gtk_really_links,[
+   AC_TRY_LINK([int gtk_init();],
+               [gtk_init();],
+	       pgtk_cv_gtk_really_links=yes,
+	       pgtk_cv_gtk_really_links=no)
+])
+AC_MSG_RESULT($pgtk_cv_gtk_really_links)
+if test "x$pgtk_cv_gtk_really_links" = "xno" ; then
+  WITH_GTK=0
+  PGTK_LIBS=""
+  GNOME_LIBS=""
+  LIBGLADE_LIBS=""
+  LIBS=""
+  
+  PIKE_FEATURE(GTK,[no (linking failed, erranous installation?)])
+  PIKE_MSG_WARN([GTK found, but linking failed. Your installation seems to 
+be missing pieces. See .../post_modules/GTK/config.log.])
+fi
+
 AC_OUTPUT(Makefile options)
