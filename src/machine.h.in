@@ -317,7 +317,7 @@
 #define F_OFFSET 257
 
 /* Define this if struct tm is included in <sys/time.h> as opposed to <time.h> */
-#define TM_IN_SYS_TIME
+#undef TM_IN_SYS_TIME
 
 /* define this if #include <time.h> provides an external int timezone */
 #undef HAVE_EXTERNAL_TIMEZONE
@@ -326,7 +326,7 @@
 #undef STRUCT_TM_HAS_GMTOFF
 
 /* Define if you have struct timeval */
-#define HAVE_STRUCT_TIMEVAL
+#undef HAVE_STRUCT_TIMEVAL
 
 /* Define this to the max value of an unsigned short unles <limits.h> does.. */
 #undef USHRT_MAX
