@@ -18,28 +18,13 @@ they will never be touched by any pike package again. The directories
 are:
 
 /usr/local/include/pike
-/usr/local/include/pike7.4
+/usr/local/include/pike7.5
 
 /usr/local/lib/pike/site_pike
-/usr/local/lib/pike7.4/site_pike
+/usr/local/lib/pike7.5/site_pike
 
 /usr/local/share/pike/site_pike
-/usr/local/share/pike7.4/site_pike
-
-
-Pike mode helper for Emacsen
-----------------------------
-
-The /usr/share/emacs directory contains a file called pike.el which is
-a highlighting helper for the Pike mode (provided by the CC-Mode).
-Here's how to use that helper with your Emacs:
-
-Put the following in your ~/.emacs (or ~/.xemacs/init.el if using Xemacs21 
-and using the ~/.xemacs/ directory):
-
-(require 'pike)
-
-That should do the trick for the Emacsen provided with Debian.
+/usr/local/share/pike7.5/site_pike
 
 ----
-$Id: README.Debian,v 1.4 2003/01/27 23:43:21 grendel Exp $
+$Id: README.Debian,v 1.5 2004/04/02 14:46:43 grendel Exp $
