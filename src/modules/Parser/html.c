@@ -24,6 +24,8 @@
 #define DEBUG(X) do; while(0)
 #endif
 
+#define free(X) fprintf(stderr,"free line %d: %p\n",__LINE__,X); free(X)
+
 #define MAX_FEED_STACK_DEPTH 10
 
 struct location
@@ -445,6 +447,8 @@ static int scan_forward(struct piece *feed,
 	 {
 	    int ce=feed->s->len-c;
 	    p_wchar2 f=*look_for;
+	    fprintf(stderr,"%p:%d .. %p:%d (%d)\n",
+		    feed,c,feed,feed->s->len,ce);
 	    switch (feed->s->size_shift)
 	    {
 	       case 0:
@@ -485,6 +489,7 @@ static int scan_forward(struct piece *feed,
 		  error("unknown width of string\n");
 	    }
 	    if (!feed->next) break;
+	    c=0;
 	    feed=feed->next;
 	 }
 	 break;
@@ -547,6 +552,7 @@ static int scan_forward(struct piece *feed,
 		  error("unknown width of string\n");
 	    }
 	    if (!feed->next) break;
+	    c=0;
 	    feed=feed->next;
 	 }
 	 break;
@@ -839,6 +845,10 @@ static void html_feed(INT32 args)
 {
    struct piece *f;
 
+   DEBUG((stderr,"feed %d chars\n",
+	  (args&&sp[-args].type==T_STRING)?
+	  sp[-args].u.string->len:-1));
+
    if (args)
    {
       if (sp[-args].type!=T_STRING)
@@ -1005,7 +1015,7 @@ void html__inspect(INT32 args)
 
       while (f)
       {
-	 push_string(f->s);
+	 ref_push_string(f->s);
 	 p++;
 	 f=f->next;
       }
@@ -1043,7 +1053,7 @@ void html__inspect(INT32 args)
    f=THIS->out;
    while (f)
    {
-      push_string(f->s);
+      ref_push_string(f->s);
       p++;
       f=f->next;
    }
