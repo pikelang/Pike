@@ -1747,7 +1747,11 @@ static int scan_for_string (struct parser_html_storage *this,
       TYPE *p, *e;							\
       struct piece *dst;						\
       int cdst;								\
-      if (!scan_forward (feed, c, &feed, &c, &look_for, 1)) return 0;	\
+      if (!scan_forward (feed, c, &feed, &c, &look_for, 1)) {		\
+	*destp = feed;							\
+	*d_p = c;							\
+	return 0;							\
+      }									\
 									\
       p = (TYPE *) str->str + 1;					\
       e = (TYPE *) str->str + str->len;					\
@@ -1755,7 +1759,12 @@ static int scan_for_string (struct parser_html_storage *this,
       cdst = c + 1;							\
       for (; p < e; p++, cdst++) {					\
 	while (cdst == dst->s->len) {					\
-	  if (!(dst = dst->next)) return 0;				\
+	  if (dst->next) dst = dst->next;				\
+	  else {							\
+	    *destp = dst;						\
+	    *d_p = dst->s->len;						\
+	    return 0;							\
+	  }								\
 	  cdst = 0;							\
 	}								\
 	if ((p_wchar2) *p !=						\
