@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.95 2001/06/08 12:03:47 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.96 2001/06/29 15:00:17 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -754,7 +754,7 @@ void f_get_dir(INT32 args)
 	if ((err = readdir_r(dir, tmp, &d)) || !d) {
 #ifdef READDIR_DEBUG
 	  fprintf(stderr, "POSIX readdir_r(\"%s\") => err %d\n",
-		  path, err);
+		  str->str, err);
 	  fprintf(stderr, "POSIX readdir_r(), d= 0x%08x\n",
 		  (unsigned int)d);
 #endif /* READDIR_DEBUG */
@@ -764,7 +764,7 @@ void f_get_dir(INT32 args)
 	  }
 #ifdef READDIR_DEBUG
 	  fprintf(stderr, "POSIX readdir_r(\"%s\") => errno %d\n",
-		  path, err);
+		  str->str, err);
 #endif /* READDIR_DEBUG */
 	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
 	   *
