@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.4 1997/01/22 05:15:27 hubbe Exp $
+ * $Id: system.c,v 1.5 1997/01/22 10:21:32 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -13,7 +13,7 @@
 #include "system_machine.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.4 1997/01/22 05:15:27 hubbe Exp $");
+RCSID("$Id: system.c,v 1.5 1997/01/22 10:21:32 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -314,13 +314,13 @@ void f_setegid(INT32 args)
 void f_getpgrp(INT32 args)
 {
   int pid = 0;
-  int pgid = 0
+  int pgid = 0;
 
   if (args) {
     if (sp[-args].type != T_INT) {
       error("Bad argument 1 to getpgrp()\n");
     }
-    id = sp[-args].u.integer;
+    pid = sp[-args].u.integer;
   }
   pop_n_elems(args);
 #ifdef HAVE_GETPGID
