@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.22 2001/07/24 13:51:53 grubba Exp $
+ * $Id: opcodes.h,v 1.23 2001/07/27 15:02:05 grubba Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -28,6 +28,12 @@
 #define OPCODE0_TAILJUMP(X,Y) X,
 #define OPCODE1_TAILJUMP(X,Y) X,
 #define OPCODE2_TAILJUMP(X,Y) X,
+#define OPCODE0_RETURN(X,Y) X,
+#define OPCODE1_RETURN(X,Y) X,
+#define OPCODE2_RETURN(X,Y) X,
+#define OPCODE0_TAILRETURN(X,Y) X,
+#define OPCODE1_TAILRETURN(X,Y) X,
+#define OPCODE2_TAILRETURN(X,Y) X,
 
 enum Pike_opcodes
 {
@@ -114,6 +120,12 @@ enum Pike_opcodes
 #undef OPCODE0_TAILJUMP
 #undef OPCODE1_TAILJUMP
 #undef OPCODE2_TAILJUMP
+#undef OPCODE0_RETURN
+#undef OPCODE1_RETURN
+#undef OPCODE2_RETURN
+#undef OPCODE0_TAILRETURN
+#undef OPCODE1_TAILRETURN
+#undef OPCODE2_TAILRETURN
 
 
 /* Prototypes begin here */

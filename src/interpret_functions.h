@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.83 2001/07/27 08:32:03 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.84 2001/07/27 15:02:04 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -41,6 +41,12 @@
 #define OPCODE0_TAILJUMP(A, B, C)	OPCODE0_TAILJUMP(A, B) C
 #define OPCODE1_TAILJUMP(A, B, C)	OPCODE1_TAILJUMP(A, B) C
 #define OPCODE2_TAILJUMP(A, B, C)	OPCODE2_TAILJUMP(A, B) C
+#define OPCODE0_RETURN(A, B, C)		OPCODE0_RETURN(A, B) C
+#define OPCODE1_RETURN(A, B, C)		OPCODE1_RETURN(A, B) C
+#define OPCODE2_RETURN(A, B, C)		OPCODE2_RETURN(A, B) C
+#define OPCODE0_TAILRETURN(A, B, C)	OPCODE0_TAILRETURN(A, B) C
+#define OPCODE1_TAILRETURN(A, B, C)	OPCODE1_TAILRETURN(A, B) C
+#define OPCODE2_TAILRETURN(A, B, C)	OPCODE2_TAILRETURN(A, B) C
 #endif /* GEN_PROTOS */
 
 
@@ -1117,7 +1123,7 @@ OPCODE0_JUMP(F_CATCH, "catch", {
   /* NOT_REACHED */
 });
 
-OPCODE0(F_ESCAPE_CATCH, "escape catch", {
+OPCODE0_RETURN(F_ESCAPE_CATCH, "escape catch", {
   Pike_fp->pc = PROG_COUNTER;
   INTER_ESCAPE_CATCH;
 });
@@ -1267,7 +1273,7 @@ OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
 });
 
 
-OPCODE1(F_RETURN_LOCAL,"return local",{
+OPCODE1_RETURN(F_RETURN_LOCAL,"return local",{
   DO_IF_DEBUG(
     /* special case! Pike_interpreter.mark_stack may be invalid at the time we
      * call return -1, so we must call the callbacks here to
@@ -1288,26 +1294,26 @@ OPCODE1(F_RETURN_LOCAL,"return local",{
 });
 
 
-OPCODE0(F_RETURN_IF_TRUE,"return if true",{
+OPCODE0_RETURN(F_RETURN_IF_TRUE,"return if true",{
   if(!IS_ZERO(Pike_sp-1)) DO_RETURN;
   pop_stack();
 });
 
-OPCODE0(F_RETURN_1,"return 1",{
+OPCODE0_RETURN(F_RETURN_1,"return 1",{
   push_int(1);
   DO_RETURN;
 });
 
-OPCODE0(F_RETURN_0,"return 0",{
+OPCODE0_RETURN(F_RETURN_0,"return 0",{
   push_int(0);
   DO_RETURN;
 });
 
-OPCODE0(F_RETURN, "return", {
+OPCODE0_RETURN(F_RETURN, "return", {
   DO_RETURN;
 });
 
-OPCODE0(F_DUMB_RETURN,"dumb return", {
+OPCODE0_RETURN(F_DUMB_RETURN,"dumb return", {
   DO_DUMB_RETURN;
 });
 
@@ -1725,7 +1731,8 @@ OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", {			   \
   }									   \
 });									   \
 									   \
-OP(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),NAME " & return", {		   \
+PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
+			NAME " & return", {				   \
   if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
 		    ARG2,ARG3))						   \
   {									   \
@@ -1760,7 +1767,8 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", {	   \
   }									   \
 });									   \
 									   \
-OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),"mark, " NAME " & return", {   \
+PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
+			"mark, " NAME " & return", {			   \
   if(low_mega_apply(TYPE,0,						   \
 		    ARG2,ARG3))						   \
   {									   \
@@ -1831,7 +1839,7 @@ OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", {
   pop_stack();
 });
 
-OPCODE1(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", {
+OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", {
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   DO_DUMB_RETURN;
 });
@@ -1846,7 +1854,7 @@ OPCODE1(F_MARK_CALL_BUILTIN_AND_POP, "mark, call builtin & pop", {
   pop_stack();
 });
 
-OPCODE1(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return", {
+OPCODE1_RETURN(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return", {
   DO_CALL_BUILTIN(0);
   DO_DUMB_RETURN;
 });

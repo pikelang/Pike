@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.235 2001/07/27 08:32:03 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.236 2001/07/27 15:02:03 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -808,6 +808,14 @@ C }
 #define OPCODE0_TAILJUMP(O,N,C) OPCODE0(O,N,C)
 #define OPCODE1_TAILJUMP(O,N,C) OPCODE1(O,N,C)
 #define OPCODE2_TAILJUMP(O,N,C) OPCODE2(O,N,C)
+
+#define OPCODE0_RETURN(O,N,C) OPCODE0(O,N,C)
+#define OPCODE1_RETURN(O,N,C) OPCODE1(O,N,C)
+#define OPCODE2_RETURN(O,N,C) OPCODE2(O,N,C)
+
+#define OPCODE0_RETURNJUMP(O,N,C) OPCODE0(O,N,C)
+#define OPCODE1_RETURNJUMP(O,N,C) OPCODE1(O,N,C)
+#define OPCODE2_RETURNJUMP(O,N,C) OPCODE2(O,N,C)
 
 #undef HAVE_COMPUTED_GOTO
 

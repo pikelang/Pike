@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.99 2001/07/24 13:51:53 grubba Exp $");
+RCSID("$Id: lex.c,v 1.100 2001/07/27 15:02:05 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -164,6 +164,13 @@ void exit_lex(void)
 #define OPCODE0_TAILJUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(void);
 #define OPCODE1_TAILJUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32);
 #define OPCODE2_TAILJUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32,INT32);
+
+#define OPCODE0_RETURN(OP, DESC) OPCODE0(OP, DESC)
+#define OPCODE1_RETURN(OP, DESC) OPCODE1(OP, DESC)
+#define OPCODE2_RETURN(OP, DESC) OPCODE2(OP, DESC)
+#define OPCODE0_TAILRETURN(OP, DESC) OPCODE0_TAIL(OP, DESC)
+#define OPCODE1_TAILRETURN(OP, DESC) OPCODE1_TAIL(OP, DESC)
+#define OPCODE2_TAILRETURN(OP, DESC) OPCODE2_TAIL(OP, DESC)
 
 #include "interpret_protos.h"
 
