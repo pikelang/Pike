@@ -58,7 +58,11 @@ static class Inf {
 
   static constant neg = 0;
   static int __hash() { return 17; }
-  static int(0..1) _equal(mixed arg) { return arg==this; }
+  static int(0..1) _equal(mixed arg) {
+    if(neg && arg==-Math.inf) return 1;
+    if(!neg && arg==Math.inf) return 1;
+    return arg==this;
+  }
   static int(0..1) _is_type(mixed type) { return (< "int", "object" >)[type]; }
   static mixed _random() { return this; }
   static mixed _sqrt() { return this; }
@@ -100,6 +104,21 @@ static class Inf {
     return !neg;
   }
   static mixed `~() { return `-(); }
+  static mixed `<<(mixed arg) {
+    if(arg<0) error("Got negative shift count.\n");
+    return this;
+  }
+  static mixed ``<<(mixed arg) {
+    if(arg<0) return ninf;
+    return inf;
+  }
+  static mixed `>>(mixed arg) {
+    if(arg<0) error("Got negative shift count.\n");
+    return this;
+  }
+  static mixed ``>>(mixed arg) {
+    return 0;
+  }
   static mixed cast(string to) {
     switch(to) {
     case "string":
