@@ -25,10 +25,11 @@ program request_program=Request;
 //!   An optional SSL secret key, provided in binary format, such
 //!   as that created by @[Standards.PKCS.RSA.private_key()].
 //! @param certificate
-//!   An optional SSL certificate, provided in binary format.
+//!   An optional SSL certificate or chain of certificates with the host 
+//!   certificate first, provided in binary format.
 void create(function(Request:void) _callback,
 	    void|int _portno,
-	    void|string _interface, void|string key, void|string certificate)
+	    void|string _interface, void|string key, void|string|array certificate)
 {
    portno=_portno;
    if (!portno) portno=443; // default HTTPS port
@@ -61,7 +62,7 @@ void destroy() { close(); }
 //! The port accept callback
 static void new_connection()
 {
-   Stdio.File fd=port->accept();
+   SSL.SSLFile fd=port->accept();
    Request r=request_program();
    r->attach_fd(fd,this,callback);
 }
@@ -142,8 +143,11 @@ void set_key(string skey)
   }
 
 //!
-void set_certificate(string certificate)
+void set_certificate(string|array certificate)
 {
+  if(arrayp(certificate))
+    certificates = certificate;
+  else
     certificates = ({ certificate });
 }
 
