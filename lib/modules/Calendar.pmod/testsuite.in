@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.6 2003/02/11 15:59:58 jhs Exp $
+dnl $Id: testsuite.in,v 1.7 2003/03/12 19:43:44 nilsson Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -7,6 +7,8 @@ dnl   your Pike until you've got Calendar to compile again. /Mirar
 
 test_true(Calendar.Day())
 
+test_eq([[Calendar.Austrian.Day(2500000)->month_day()]],31)
+test_eq([[Calendar.Coptic.Day(2500000)->month_day()]],25);
 test_eq([[Calendar.Gregorian.Day(2500000)->month_day()]],31)
 test_eq([[Calendar.ISO.Day(2500000)->month_day()]],31)
 test_eq([[Calendar.Julian.Day(2500000)->month_day()]],17)
