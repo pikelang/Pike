@@ -155,3 +155,11 @@ test_any([[
   p->add_entity ("e", lambda (object p) {return "e";});
   return p->feed("&e")->read() + " " + p->feed(";")->read();
 ]], " e")
+
+// Misc
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "e");
+  p->add_tag ("t", lambda (object p, mapping a) {return ({sort(values(a))*","});});
+  return p->finish("<t a=\"&e;\">")->read();
+]], "&e;")
