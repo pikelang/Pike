@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.13 2003/08/08 16:54:08 nilsson Exp $
+// $Id: RDF.pike,v 1.14 2003/08/11 20:36:44 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -24,6 +24,7 @@ static mapping(string:Resource) uris = ([]);
 //!   @[URIResource], @[LiteralResource]
 class Resource {
   static int(1..) number;
+  constant is_resource = 1;
 
   void create() {
     number = node_counter++;
@@ -130,6 +131,11 @@ class URIResource {
   string _sprintf(int t) { return __sprintf("URIResource", t); }
 }
 
+static int(0..1) is_resource(mixed res) {
+  if(!objectp(res)) return 0;
+  return res->is_resource;
+}
+
 
 //
 // General RDF set modification
@@ -138,7 +144,11 @@ class URIResource {
 static mapping(Resource:ADT.Relation.Binary) statements = ([]);
 
 //! Adds a statement to the RDF set.
+//! @throws
+//!   Throws an exception if any argument isn't a Resouce object.
 void add_statement(Resource subj, Resource pred, Resource obj) {
+  if(!is_resource(subj) || !is_resource(pred) || !is_resource(obj))
+    error("Non-resource argument to add_statement");
   ADT.Relation.Binary rel = statements[pred];
   if(!rel) {
     rel = ADT.Relation.Binary();
@@ -301,8 +311,9 @@ array(array(Resource)) find_statements(Resource|int(0..0) subj,
     return ret;
   };
 
-  if(pred)
+  if(statements[pred])
     return find_subj_obj(subj, pred, obj, statements[pred]);
+  if(pred) return ({});
 
   foreach(statements; Resource pred; ADT.Relation.Binary rel)
     ret += find_subj_obj(subj, pred, obj, rel);
