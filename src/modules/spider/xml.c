@@ -2686,42 +2686,6 @@ static void parse_dtd(INT32 args)
   *sp++=tmp;
 }
 
-static void create(INT32 args)
-{
-  pop_n_elems(args);
-  if(!THIS->entities)
-  {
-    push_constant_text("lt");    push_constant_text("&#60;");
-    push_constant_text("gt");    push_constant_text(">");
-    push_constant_text("amp");   push_constant_text("&#38;");
-    push_constant_text("apos");  push_constant_text("'");
-    push_constant_text("quot");  push_constant_text("\"");
-
-    f_aggregate_mapping(10);
-    THIS->entities=sp[-1].u.mapping;
-    sp--;
-    dmalloc_touch_svalue(sp);
-  }
-
-  if(!THIS->attributes)
-  {
-    f_aggregate_mapping(0);
-    THIS->attributes=sp[-1].u.mapping;
-    sp--;
-    dmalloc_touch_svalue(sp);
-  }
-
-  if(!THIS->is_cdata)
-  {
-    f_aggregate_mapping(0);
-    THIS->is_cdata=sp[-1].u.mapping;
-    sp--;
-    dmalloc_touch_svalue(sp);
-  }
-
-  push_int(0);
-}
-
 static void autoconvert(INT32 args)
 {
   INT32 e;
@@ -2824,19 +2788,47 @@ static void autoconvert(INT32 args)
   f_utf8_to_string(1);
 }
 
+static void init_xml_struct(struct object *o)
+{
+  push_constant_text("lt");    push_constant_text("&#60;");
+  push_constant_text("gt");    push_constant_text(">");
+  push_constant_text("amp");   push_constant_text("&#38;");
+  push_constant_text("apos");  push_constant_text("'");
+  push_constant_text("quot");  push_constant_text("\"");
+  
+  f_aggregate_mapping(10);
+  THIS->entities=sp[-1].u.mapping;
+  sp--;
+  dmalloc_touch_svalue(sp);
+
+  f_aggregate_mapping(0);
+  THIS->attributes=sp[-1].u.mapping;
+  sp--;
+  dmalloc_touch_svalue(sp);
+
+  f_aggregate_mapping(0);
+  THIS->is_cdata=sp[-1].u.mapping;
+  sp--;
+  dmalloc_touch_svalue(sp);
+}
+
 void init_xml(void)
 {
   ptrdiff_t off;
   start_new_program();
   off = ADD_STORAGE(struct xmlobj);
-  map_variable("__entities","mapping",0,
+  map_variable("__entities", "mapping", ID_STATIC|ID_PRIVATE,
 	       off + OFFSETOF(xmlobj, entities),T_MAPPING);
-  map_variable("__attributes","mapping",0,
+  map_variable("__attributes", "mapping", ID_STATIC|ID_PRIVATE,
 	       off + OFFSETOF(xmlobj, attributes),T_MAPPING);
-  map_variable("__is_cdata","mapping",0,
+  map_variable("__is_cdata", "mapping", ID_STATIC|ID_PRIVATE,
 	       off + OFFSETOF(xmlobj, is_cdata),T_MAPPING);
-  map_variable("__allow_rxml_entities", "int", 0,
+  map_variable("__allow_rxml_entities", "int", ID_STATIC|ID_PRIVATE,
 	       off + OFFSETOF(xmlobj, rxml_mode), T_INT);
+
+  set_init_callback(init_xml_struct);
+
+  /* All variables are mapped, so no need for an exit callback. */
 
   /* callback:
    *   string type
@@ -2860,8 +2852,6 @@ void init_xml(void)
   ADD_FUNCTION("define_entity",define_entity,tFuncV(tStr tStr tMix,tMix,tVoid),0);
   ADD_FUNCTION("allow_rxml_entities", allow_rxml_entities,
 	       tFunc(tInt, tVoid), 0);
-  /* function(:void) */
-  ADD_FUNCTION("create",create,tFunc(tNone,tVoid),0);
   end_class("XML",0);
 
   ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
