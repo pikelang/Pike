@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.51 1998/04/10 23:29:21 grubba Exp $");
+RCSID("$Id: lex.c,v 1.52 1998/04/27 19:17:16 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -482,7 +482,11 @@ static int yylex2(YYSTYPE *yylval)
     {
     case 0:
       lex.pos--;
+#ifdef F_LEX_EOF
+      return F_LEX_EOF;
+#else /* !F_LEX_EOF */
       return 0;
+#endif /* F_LEX_EOF */
 
     case '\n':
       lex.current_line++;
