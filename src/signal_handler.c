@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.189 2001/01/23 10:36:17 norlin Exp $");
+RCSID("$Id: signal_handler.c,v 1.190 2001/09/13 14:11:43 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1920,6 +1920,9 @@ void f_create_process(INT32 args)
     /* Damn! NT doesn't have quoting! The below code attempts to
      * fake it
      */
+    /* Note: On NT the following characters are illegal in filenames:
+     *	\ / : * ? " < > |
+     */
     {
       int e,d;
       dynamic_buffer buf;
@@ -1944,10 +1947,10 @@ void f_create_process(INT32 args)
 	    {
 	      /* Hopefully this should work better -Hubbe */
 	      case '\\':
-		low_my_putchar('"', &buf);
+		/*low_my_putchar('"', &buf);*/
 		low_my_putchar('\\', &buf);
 		low_my_putchar('\\', &buf);
-		low_my_putchar('"', &buf);
+		/*low_my_putchar('"', &buf);*/
 		break;
 	      case '"':
 		low_my_putchar('\\', &buf);
@@ -1965,6 +1968,10 @@ void f_create_process(INT32 args)
       low_my_putchar(0, &buf);
       
 /*      fprintf(stderr,"COM: %s\n",buf.s.str); */
+
+      /* NOTE: buf isn't finalized, since CreateProcess performs destructive
+       *       operations on it.
+       */
 
       command_line=(TCHAR *)buf.s.str;
     }
