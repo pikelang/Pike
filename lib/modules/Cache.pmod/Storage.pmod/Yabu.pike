@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Yabu.pike,v 1.4 2000/09/28 03:38:31 hubbe Exp $
+ * $Id: Yabu.pike,v 1.5 2000/11/26 17:30:58 nilsson Exp $
  *
  * Settings will be added later.
  */
@@ -24,7 +24,7 @@ class Data {
   int _size=0;
   string _key=0;
   mixed _data=0;
-  private Yabu.table db, metadb;
+  private Yabu.Table db, metadb;
   
   int size() {
     if (_size) return _size;
