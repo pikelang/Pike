@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.50 1999/10/22 00:27:43 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.51 1999/10/26 02:07:22 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1067,25 +1067,79 @@ static void low_pike_sprintf(struct format_stack *fs,
 	break;
       }
 
+      /*
+	WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+	WARNING                                                 WARNING
+	WARNING   This routine is not very well tested, so it   WARNING
+	WARNING   may give errouneous results.   /Noring        WARNING
+	WARNING                                                 WARNING
+	WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+       */
       case 'o':
       case 'd':
       case 'u':
       case 'x':
       case 'X':
       {
+	int mask_size = 0;
 	char *x;
 	
 	DO_OP();
-
 	CHECK_OBJECT_SPRINTF()
-
 	GET_INT(tmp);
+
+	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision > 0)
+	  mask_size = fs->fsp->precision;
+	
 	buffer[0]='%';
 	buffer[1]=EXTRACT_PCHARP(a);
 	buffer[2]=0;
-	x=(char *)alloca(100);
+	x=(char *)alloca(100 + mask_size);
+	x[0] = '-';
 	fs->fsp->b=MKPCHARP(x,0);
+	
+	/* Within AUTO_BIGNUM until we think this really
+	   works the way we want it do do.   /Noring */
+#ifdef AUTO_BIGNUM
+	if(mask_size)
+	{
+	  INT_TYPE base = 0, i = 0, m, n;
+
+	  switch(EXTRACT_PCHARP(a))
+	  {
+	  case 'o': base =  8; break;
+	  case 'x': base = 16; break;
+	  case 'X': base = 16; break;
+	  }
+
+	  if(base)
+	  {
+	    for(n = m = 0; n < mask_size && m >= 0; n++)
+	      m = m*base + base-1;
+
+	    if(tmp < 0)
+	      if(base == 8)
+		for(i = 0; i < mask_size - n; i++)
+		  x[i] = '7';
+	      else
+		for(i = 0; i < mask_size - n; i++)
+		  x[i] = 'f';
+	    
+	    sprintf(x + i, buffer, tmp & m);
+
+	    /* This is done because octal numbers
+	       don't align very well...   /Noring */
+	    if(base == 8 && tmp < 0 && x[i] == '3')
+	      x[i] = '7';
+	  }
+	  else
+	    sprintf(x, buffer, tmp);
+	}
+	else
+	  sprintf(x + (tmp<0 ? 1 : 0), buffer, (tmp<0 ? -tmp : tmp));
+#else
 	sprintf(x,buffer,tmp);
+#endif /* AUTO_BIGNUM */
 	fs->fsp->len=strlen(x);
 	break;
       }

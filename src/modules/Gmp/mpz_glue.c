@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.55 1999/10/26 00:18:39 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.56 1999/10/26 02:07:23 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -273,20 +273,52 @@ static void mpzmod_digits(INT32 args)
 
 static void mpzmod__sprintf(INT32 args)
 {
+  INT_TYPE precision, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
   
   if(args < 1 || sp[-args].type != T_INT)
     error("Bad argument 1 for Mpz->_sprintf().\n");
+  if(args < 2 || sp[1-args].type != T_MAPPING)
+    error("Bad argument 2 for Mpz->_sprintf().\n");
 
+  push_svalue(&sp[1-args]);
+  push_constant_text("precision");
+  f_index(2);
+  if(sp[-1].type != T_INT)
+    error("Precision argument to Mpz->_sprintf() is not an integer.\n");
+  precision = (--sp)->u.integer;
+  
   switch(sp[-args].u.integer)
   {
-  case 'o': s = low_get_digits(THIS,  8); break;
-  case 'd': s = low_get_digits(THIS, 10); break;
-  case 'u': s = low_get_digits(THIS, 10); break;
-  case 'x': s = low_get_digits(THIS, 16); break;
-  case 'X': s = low_get_digits(THIS, 16); break;
-    
-  case 'O': s = low_get_digits(THIS, 10); break;
+  case 'O':
+  case 'u': /* Note: 'u' is not really supported. */
+  case 'd':
+    s = low_get_digits(THIS, 10);
+    break;
+
+  case 'x':
+  case 'X':
+    base += 8;
+    mask_shift += 1;
+    /* Fall-through. */
+  case 'o':
+    base += 8;
+    mask_shift += 3;
+
+    if(precision > 0)
+    {
+      mpz_t mask;
+
+      mpz_init_set_ui(mask, 1);
+      mpz_mul_2exp(mask, mask, precision * mask_shift);
+      mpz_sub_ui(mask, mask, 1);
+      mpz_and(mask, mask, THIS);
+      s = low_get_digits(mask, base);
+      mpz_clear(mask);
+    }
+    else
+      s = low_get_digits(THIS, base);
+    break;
   }
 
   pop_n_elems(args);
