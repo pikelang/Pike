@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.32 1999/02/11 21:00:05 grubba Exp $
+ * $Id: requests.pmod,v 1.33 1999/02/12 22:43:53 grubba Exp $
  */
 
 import .types;
@@ -256,6 +256,8 @@ class fetch
 
   constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
 
+  constant is_uid = 0;
+
   mapping easy_process(object message_set, mapping request)
   {
     werror(sprintf("fetch->easy_process(X, %O)\n", request));
@@ -315,6 +317,24 @@ class fetch
       break;
     default:
       throw( ({ "Internal error!\n", backtrace() }) );
+    }
+
+    if (is_uid) {
+      // RFC 2060, Section 6.4.8:
+      //   However, server implementations MUST implicitly include the UID
+      //   message data item as part of any FETCH response caused by a UID
+      //   command, regardless of wether a UID was specified as a message
+      //   data item to the FETCH.
+      int add_uid = 1;
+      foreach(fetch_attrs, mapping(string:mixed) attr) {
+	if (lower_case(attr->wanted) == "uid") {
+	  add_uid = 0;
+	  break;
+	}
+      }
+      if (add_uid) {
+	fetch_attrs += ({ ([ "wanted" : "uid" ]) });
+      }
     }
 
     array info;
@@ -706,6 +726,7 @@ class uid {
   inherit fetch;
 
   constant arg_info = ({ ({ "string" }), ({ "set" }), ({ "any", 3 }) });
+  constant is_uid = 1;
 
   mapping easy_process(string cmd, object message_set, mapping request)
   {
