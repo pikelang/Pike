@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.42 2001/01/15 00:21:47 mast Exp $
+ * $Id: interpret_functions.h,v 1.43 2004/10/06 18:47:05 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -293,6 +293,7 @@ OPCODE1(F_INC_LOCAL, "++local")
       )
   {
     Pike_fp->locals[arg1].u.integer++;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
     assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
   } else {
     assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
@@ -311,6 +312,7 @@ OPCODE1(F_POST_INC_LOCAL, "local++")
       )
   {
     Pike_fp->locals[arg1].u.integer++;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
     push_int(1);
@@ -328,6 +330,7 @@ OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop")
       )
   {
     Pike_fp->locals[arg1].u.integer++;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
     push_int(1);
@@ -345,6 +348,7 @@ OPCODE1(F_DEC_LOCAL, "--local")
       )
   {
     Pike_fp->locals[arg1].u.integer--;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
     assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
   } else {
     assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
@@ -363,6 +367,7 @@ OPCODE1(F_POST_DEC_LOCAL, "local--")
       )
   {
     Pike_fp->locals[arg1].u.integer--;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
     push_int(1);
@@ -381,6 +386,7 @@ OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop")
       )
   {
     Pike_fp->locals[arg1].u.integer--;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
     push_int(1);
@@ -1070,7 +1076,10 @@ OPCODE0(F_NEGATE, "unary minus")
     }
     else
 #endif /* AUTO_BIGNUM */
+    {
       Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
+      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    }
   }
   else if(Pike_sp[-1].type == PIKE_T_FLOAT)
   {
@@ -1089,6 +1098,7 @@ OPCODE0(F_NOT, "!")
   {
   case PIKE_T_INT:
     Pike_sp[-1].u.integer =! Pike_sp[-1].u.integer;
+    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
     break;
 
   case PIKE_T_FUNCTION:
@@ -1106,6 +1116,7 @@ OPCODE0(F_NOT, "!")
   default:
     free_svalue(Pike_sp-1);
     Pike_sp[-1].type=PIKE_T_INT;
+    Pike_sp[-1].subtype = NUMBER_NUMBER;
     Pike_sp[-1].u.integer=0;
   }
 BREAK;
@@ -1137,6 +1148,7 @@ OPCODE0(F_ADD_INTS, "int+int")
     )
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
+    Pike_sp[-2].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
     Pike_sp--;
   }else{
     f_add(2);
@@ -1189,6 +1201,7 @@ OPCODE1(F_ADD_INT, "add integer")
      )
   {
     Pike_sp[-1].u.integer+=arg1;
+    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   }else{
     push_int(arg1);
     f_add(2);
@@ -1203,6 +1216,7 @@ OPCODE1(F_ADD_NEG_INT, "add -integer")
      )
   {
     Pike_sp[-1].u.integer-=arg1;
+    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   }else{
     push_int(-arg1);
     f_add(2);
