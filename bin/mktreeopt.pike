@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.3 1999/11/08 02:22:48 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.4 1999/11/08 13:57:58 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -568,20 +568,49 @@ string generate_cdr_match(array(object(node)) rule_set, string indent)
   return res;
 }
 
+static int label_cnt;
+
 string generate_car_match(array(object(node)) rule_set, string indent)
 {
   mapping(string: array(object(node))) car_follow = ([]);
+
+  array(object(node)) cdr_null = ({});
+
+  array(object(node)) car_any_cdr_null = ({});
 
   foreach(rule_set, object(node) n) {
     string t;
     if (n->car) {
       // Follow.
       t = n->car->token;
-      if (t != "-") {
+      if (t == "-") {
+	// car is NULL.
+	// Mark as followed.
+	n->car = 0;
+      } else {
+	if (n->cdr && (n->cdr->token == "-")) {
+	  // cdr is NULL.
+	  // Mark as followed.
+	  n->cdr = 0;
+
+	  if (t == "*") {
+	    car_any_cdr_null += ({ n });
+	  } else {
+	    cdr_null += ({ n });
+	  }
+	  continue;
+	}
 	n = n->car;
       }
     } else {
-      // Null.
+      // car is ANY.
+      if (n->cdr && (n->cdr->token == "-")) {
+	// cdr is NULL.
+	// Mark as followed.
+	n->cdr = 0;
+	car_any_cdr_null += ({ n });
+	continue;
+      }
       t = 0;
     }
     if (!car_follow[t]) {
@@ -603,15 +632,52 @@ string generate_car_match(array(object(node)) rule_set, string indent)
 
   int last_was_if;
 
+  string label;
+
   if (car_follow["-"]) {
 
-    res = sprintf("%sif (!CA%sR(n)) {\n", indent, tpos);
+    res = indent + sprintf("if (!CA%sR(n)) {\n", tpos);
 
     res += generate_cdr_match(car_follow["-"], "  " + indent);
 
     m_delete(car_follow, "-");
 
     last_was_if = 1;
+
+    if (sizeof(car_any_cdr_null)) {
+      // Add a goto to the X(*, -) code.
+      label = sprintf("label_%d", label_cnt++);
+      res += sprintf("%s  if (!CD%sR(n)) {\n"
+		     "%s    goto %s;\n"
+		     "%s  }\n",
+		     indent, tpos,
+		     indent, label,
+		     indent);
+    }
+
+    res += indent + "}";
+  }
+
+  if (sizeof(cdr_null) || sizeof(car_any_cdr_null)) {
+    if (last_was_if) {
+      res += " else ";
+    } else {
+      res += indent;
+    }
+    last_was_if = 1;
+    res += sprintf("if (!CD%sR(n)) {\n", tpos);
+
+    if (sizeof(cdr_null)) {
+      res += generate_car_match(cdr_null, indent + "  ");
+    }
+    
+    if (sizeof(car_any_cdr_null)) {
+      res += indent + label + ":\n";
+    }
+
+    if (sizeof(car_any_cdr_null)) {
+      res += generate_car_match(car_any_cdr_null, indent + "  ");
+    }
 
     res += indent + "}";
   }
