@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.148 2002/10/20 22:05:07 marcus Exp $
+|| $Id: svalue.c,v 1.149 2002/11/23 17:07:51 marcus Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.148 2002/10/20 22:05:07 marcus Exp $");
+RCSID("$Id: svalue.c,v 1.149 2002/11/23 17:07:51 marcus Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1094,6 +1094,52 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
   }
 }
 
+static void dsv_add_string_to_buf (struct pike_string *str)
+{
+  char buf[16];
+  int i;
+  switch(str->size_shift)
+    {
+    case 0:
+      my_binary_strcat((char *)STR0(str), str->len);
+      break;
+      
+    case 1:
+      {
+	p_wchar1 *cp=STR1(str);
+	for(i=0;i<str->len;i++)
+	  {
+	    int c=cp[i];
+	    if(c<256) 
+	      my_putchar(c);
+	    else
+	      {
+		sprintf(buf,"<%d>",c);
+		my_strcat(buf);
+	      }
+	  }
+	break;
+      }
+
+    case 2:
+      {
+	p_wchar2 *cp=STR2(str);
+	for(i=0;i<str->len;i++)
+	  {
+	    int c=cp[i];
+	    if(c<256) 
+	      my_putchar(c);
+	    else
+	      {
+		sprintf(buf,"<%d>",c);
+		my_strcat(buf);
+	      }
+	  }
+	break;
+      }
+    }
+}
+
 PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p)
 {
   char buf[50];
@@ -1201,7 +1247,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	}
 	if(s->u.object->prog)
 	{
-	  if (s->u.object->prog == pike_trampoline_program) {
+	  struct pike_string *name;
+	  struct program *prog = s->u.object->prog;
+
+	  if (prog == pike_trampoline_program) {
 	    /* Trampoline */
 	    struct pike_trampoline *tramp = (struct pike_trampoline *)
 	      get_storage(s->u.object, pike_trampoline_program);
@@ -1209,18 +1258,67 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		!tramp->frame->current_object->prog) {
 	      /* Uninitialized trampoline, or
 	       * trampoline to destructed object. */
-	      my_strcat("0");
+	      name = NULL;
 	    } else {
-	      struct pike_string *name;
-	      name = ID_FROM_INT(tramp->frame->current_object->prog,
-				 tramp->func)->name;
-	      my_binary_strcat(name->str, name->len);
+	      prog = tramp->frame->current_object->prog;
+	      name = ID_FROM_INT(prog, tramp->func)->name;
 	    }
 	  } else {
-	    struct pike_string *name;
-	    name=ID_FROM_INT(s->u.object->prog,s->subtype)->name;
-	    my_binary_strcat(name->str,name->len);
+	    name=ID_FROM_INT(prog, s->subtype)->name;
 	  }
+
+	  if(name && prog && (prog->flags & PROGRAM_FINISHED) &&
+	     Pike_interpreter.evaluator_stack && !Pike_in_gc) {
+	    DECLARE_CYCLIC();
+	    debug_malloc_touch(s->u.object);
+	    if (!BEGIN_CYCLIC(s->u.object, 0)) {
+	      /* We require some tricky coding to make this work
+	       * with tracing...
+	       */
+	      int save_t_flag=t_flag;
+	      dynbuf_string save_buffer=complex_free_buf();
+	    
+	      t_flag=0;
+	      SET_CYCLIC_RET(1);
+	    
+	      debug_malloc_touch(prog);
+	    
+	      ref_push_program(prog);
+	      SAFE_APPLY_MASTER("describe_module", 1);
+	    
+	      debug_malloc_touch(s->u.program);
+	    
+	      if(!SAFE_IS_ZERO(sp-1))
+		{
+		  if(sp[-1].type != T_STRING)
+		    {
+		      pop_stack();
+		      push_text("(master returned illegal value from describe_module)");
+		    }
+	      
+		  init_buf_with_string(save_buffer);
+		  t_flag=save_t_flag;
+		
+		  dsv_add_string_to_buf( sp[-1].u.string );
+		  my_binary_strcat(name->str,name->len);
+
+		  pop_stack();
+		  END_CYCLIC();
+		  break;
+		}
+	      
+	      debug_malloc_touch(save_buffer.str);
+	      
+	      init_buf_with_string(save_buffer);
+	      t_flag=save_t_flag;
+	      pop_stack();
+	    }
+	    END_CYCLIC();
+	  }
+	  if(name)
+	    my_binary_strcat(name->str,name->len);
+	  else
+	    my_strcat("0");
 	}else{
 	  my_strcat("0");
 	}
@@ -1230,104 +1328,103 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     case T_OBJECT:
       if(s->u.object->prog && (s->u.object->prog->flags & PROGRAM_FINISHED))
       {
-	int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
-	debug_malloc_touch(s->u.object->prog);
-	if(fun != -1 && Pike_interpreter.evaluator_stack && !Pike_in_gc)
-	{
+	if(Pike_interpreter.evaluator_stack && !Pike_in_gc) {
 	  DECLARE_CYCLIC();
-	  if (!BEGIN_CYCLIC(s->u.object, fun)) {
+	  int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
+	  debug_malloc_touch(s->u.object->prog);
+	  if(fun != -1) {
+	    if (!BEGIN_CYCLIC(s->u.object, fun)) {
+	      /* We require some tricky coding to make this work
+	       * with tracing...
+	       */
+	      int save_t_flag=t_flag;
+	      dynbuf_string save_buffer=complex_free_buf();
+	      
+	      t_flag=0;
+	      SET_CYCLIC_RET(1);
+	      
+	      debug_malloc_touch(s->u.object);
+
+	      push_int('O');
+	      push_constant_text("indent");
+	      push_int(indent);
+	      f_aggregate_mapping(2);					      
+	      safe_apply_low2(s->u.object, fun ,2,1);
+
+	      debug_malloc_touch(s->u.object);
+
+	      if(!SAFE_IS_ZERO(sp-1))
+		{
+		  if(sp[-1].type != T_STRING)
+		    {
+		      pop_stack();
+		      push_text("(object returned illegal value from _sprintf)");
+		    }
+
+		  init_buf_with_string(save_buffer);
+		  t_flag=save_t_flag;
+
+		  dsv_add_string_to_buf( sp[-1].u.string );
+
+		  pop_stack();
+		  END_CYCLIC();
+		  break;
+		}
+
+	      debug_malloc_touch(save_buffer.str);
+
+	      init_buf_with_string(save_buffer);
+	      t_flag=save_t_flag;
+	      pop_stack();
+	    }
+	    END_CYCLIC();
+	  }
+	  
+	  if (!BEGIN_CYCLIC(0, s->u.object)) {
 	    /* We require some tricky coding to make this work
 	     * with tracing...
 	     */
 	    int save_t_flag=t_flag;
 	    dynbuf_string save_buffer=complex_free_buf();
-
+	    
 	    t_flag=0;
 	    SET_CYCLIC_RET(1);
-
-	    debug_malloc_touch(s->u.object);
-
-	    push_int('O');
-	    push_constant_text("indent");
-	    push_int(indent);
-	    f_aggregate_mapping(2);					      
-	    safe_apply_low2(s->u.object, fun ,2,1);
-
-	    debug_malloc_touch(s->u.object);
-
-	    if(!SAFE_IS_ZERO(sp-1))
-	    {
-	      struct pike_string *str;
-	      int i;
-	      if(sp[-1].type != T_STRING)
-	      {
-		pop_stack();
-		push_text("(object returned illegal value from _sprintf)");
-	      }
-
-	      init_buf_with_string(save_buffer);
-	      t_flag=save_t_flag;
-
-	      str=sp[-1].u.string;
 	    
-	      switch(str->size_shift)
+	    debug_malloc_touch(s->u.object);
+	    
+	    push_svalue(s);
+	    SAFE_APPLY_MASTER("describe_object", 1);
+	    
+	    debug_malloc_touch(s->u.object);
+	    
+	    if(!SAFE_IS_ZERO(sp-1))
 	      {
-	      case 0:
-		my_binary_strcat((char *)STR0(str), str->len);
+		if(sp[-1].type != T_STRING)
+		  {
+		    pop_stack();
+		    push_text("(master returned illegal value from describe_object)");
+		  }
+		
+		init_buf_with_string(save_buffer);
+		t_flag=save_t_flag;
+		
+		dsv_add_string_to_buf( sp[-1].u.string );
+
+		pop_stack();
+		END_CYCLIC();
 		break;
-
-	      case 1:
-		{
-		  p_wchar1 *cp=STR1(str);
-		  for(i=0;i<str->len;i++)
-		  {
-		    int c=cp[i];
-		    if(c<256) 
-		      my_putchar(c);
-		    else
-		    {
-		      sprintf(buf,"<%d>",c);
-		      my_strcat(buf);
-		    }
-		  }
-		  break;
-		}
-
-	      case 2:
-		{
-		  p_wchar2 *cp=STR2(str);
-		  for(i=0;i<str->len;i++)
-		  {
-		    int c=cp[i];
-		    if(c<256) 
-		      my_putchar(c);
-		    else
-		    {
-		      sprintf(buf,"<%d>",c);
-		      my_strcat(buf);
-		    }
-		  }
-		  break;
-		}
 	      }
-	      pop_stack();
-	      END_CYCLIC();
-	      break;
-	    }
-
+	    
 	    debug_malloc_touch(save_buffer.str);
-
+	    
 	    init_buf_with_string(save_buffer);
 	    t_flag=save_t_flag;
 	    pop_stack();
-	  } else {
-	    /* Cyclic _sprintf() detected. */
-	    my_strcat("object");
 	  }
 	  END_CYCLIC();
 	}
-	else {
 #if 0
+	{
 	  struct pike_string *file;
 	  INT32 line;
 	  /* This provides useful info sometimes, but there is code
@@ -1342,40 +1439,89 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      my_strcat(buf);
 	    }
 	    my_putchar(')');
+	    break;
 	  }
-	  else
-#endif
-	    my_strcat("object");
 	}
+#endif
+	my_strcat("object");
       } else {
 	my_strcat("0");
       }
       break;
 
     case T_PROGRAM: {
-#if 0
-      struct pike_string *file;
-      INT32 line;
-      /* This provides useful info sometimes, but there is code that
-       * looks for the plain "program" string to resort to other
-       * fallbacks. */
-      if (!Pike_in_gc && (file = get_program_line(s->u.program, &line))) {
-	my_strcat("program(");
-	my_strcat(file->str);
-	free_string(file);
-	if (line) {
-	  sprintf(buf, ":%d", line);
-	  my_strcat(buf);
+      if(s->u.program && (s->u.program->flags & PROGRAM_FINISHED) &&
+	 Pike_interpreter.evaluator_stack && !Pike_in_gc) {
+	DECLARE_CYCLIC();
+	debug_malloc_touch(s->u.program);
+	if (!BEGIN_CYCLIC(s->u.program, 0)) {
+	  /* We require some tricky coding to make this work
+	   * with tracing...
+	   */
+	  int save_t_flag=t_flag;
+	  dynbuf_string save_buffer=complex_free_buf();
+	    
+	  t_flag=0;
+	  SET_CYCLIC_RET(1);
+	    
+	  debug_malloc_touch(s->u.program);
+	    
+	  push_svalue(s);
+	  SAFE_APPLY_MASTER("describe_program", 1);
+	    
+	  debug_malloc_touch(s->u.program);
+	    
+	  if(!SAFE_IS_ZERO(sp-1))
+	    {
+	      if(sp[-1].type != T_STRING)
+		{
+		  pop_stack();
+		  push_text("(master returned illegal value from describe_program)");
+		}
+	      
+	      init_buf_with_string(save_buffer);
+	      t_flag=save_t_flag;
+		
+	      dsv_add_string_to_buf( sp[-1].u.string );
+
+	      pop_stack();
+	      END_CYCLIC();
+	      break;
+	    }
+	    
+	  debug_malloc_touch(save_buffer.str);
+	    
+	  init_buf_with_string(save_buffer);
+	  t_flag=save_t_flag;
+	  pop_stack();
 	}
-#if 0
-	sprintf(buf, " %p", s->u.program);
-	my_strcat(buf);
-#endif
-	my_putchar(')');
+	END_CYCLIC();
       }
-      else
+#if 0
+      {
+	struct pike_string *file;
+	INT32 line;
+	/* This provides useful info sometimes, but there is code that
+	 * looks for the plain "program" string to resort to other
+	 * fallbacks. */
+	if (!Pike_in_gc && (file = get_program_line(s->u.program, &line))) {
+	  my_strcat("program(");
+	  my_strcat(file->str);
+	  free_string(file);
+	  if (line) {
+	    sprintf(buf, ":%d", line);
+	    my_strcat(buf);
+	  }
+#if 0
+	  sprintf(buf, " %p", s->u.program);
+	  my_strcat(buf);
 #endif
-	my_strcat("program");
+	  my_putchar(')');
+	  break;
+	}
+      }
+#endif
+      my_strcat("program");
       break;
     }
 

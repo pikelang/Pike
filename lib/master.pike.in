@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.224 2002/11/23 13:22:38 grubba Exp $
+// $Id: master.pike.in,v 1.225 2002/11/23 17:07:51 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -2066,7 +2066,7 @@ void runtime_warning (string where, string what, mixed... args)
 	// modifier, so it can't be avoided in a reasonable way.
 	werror ("GC warning: Garbing cycle where destroy() will be called "
 		"in arbitrary order:\n%{            %s\n%}",
-		map (args[0], describe_object));
+		sprintf("%O", args[0][*]));
 #endif
 	break;
 
@@ -2227,7 +2227,7 @@ class Describer
 	break;
       default:
 	if (objectp(m))
-	  if(string tmp=describe_object(m)) {
+	  if(string tmp=sprintf("%O", m)) {
 	    res = tmp;
 	    break;
 	  }
@@ -2341,6 +2341,48 @@ class Describer
 }
 
 
+static string get_clean_program_path ( program p, string suff1, string suff2 )
+{
+  array(string) sort_paths_by_length(array(string) paths)
+  {
+    sort(map(paths, sizeof), paths);
+    return reverse(paths);
+  };
+  string path = search(programs, p);
+  if (path) {
+    if (path == "/master") return "master()"+suff2;
+    foreach(sort_paths_by_length(map(pike_module_path - ({""}),
+				     lambda(string s) {
+				       if (s[-1] == '/') return s;
+				       return s+"/";
+				     })),
+	    string prefix) {
+      if (has_prefix(path, prefix)) {
+	path = path[sizeof(prefix)..];
+	break;
+      }
+    }
+    path = trim_file_name(path);
+    string modname = replace(path, ".pmod/", ".");
+    if(search(modname, "/")<0) path=modname;
+    if (has_suffix(path, ".pmod/module.pmod")) {
+      return path[..sizeof(path)-18]+suff1;
+    }
+    if (has_suffix(path, ".pmod")) {
+      return path[..sizeof(path)-6]+suff1;
+    }
+    if (has_suffix(path, ".so")) {
+      return path[..sizeof(path)-4]+suff1;
+    }
+    if (has_suffix(path, ".pike")) {
+      return path[..sizeof(path)-6]+suff2;
+    }
+    return path + suff2;
+  }
+  return 0;
+}
+
+
 //! Describe the path to the module @[mod].
 //!
 //! @param mod
@@ -2371,39 +2413,14 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   if (mod) {
     catch {
       string res = sprintf("%O", mod);
-      if (res != "object" && res != "") return res+"->";
+      if (res != "object" && res != "")
+	return (objects[parent_fun]? res+".":res+"->");
     };
   }
   if (!object_program(parent_fun)) {
     // We might be a top-level entity.
-    string path = search(programs, parent_fun);
-    if (path) {
-      if (path == "/master") return "master()->";
-      foreach(map(pike_module_path - ({""}),
-		  lambda(string s) {
-		    if (s[-1] == '/') return s;
-		    return s+"/";
-		  }),
-	      string prefix) {
-	if (has_prefix(path, prefix)) {
-	  path = path[sizeof(prefix)..];
-	  break;
-	}
-      }
-      if (has_suffix(path, ".pmod/module.pmod")) {
-	return path[..sizeof(path)-18]+".";
-      }
-      if (has_suffix(path, ".pmod")) {
-	return path[..sizeof(path)-6]+".";
-      }
-      if (has_suffix(path, ".so")) {
-	return path[..sizeof(path)-4]+".";
-      }
-      if (has_suffix(path, ".pike")) {
-	return path[..sizeof(path)-6]+"()->";
-      }
-      return path + "()->";
-    }
+    string path = get_clean_program_path(parent_fun, ".", "()->");
+    if(path) return path;
   }
   // Begin by describing our parent.
   array(object) parent_obj = ({ 0 });
@@ -2445,7 +2462,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   }
 
   // We're really out of luck here...
-  return res + "unknown_program()->";
+  return res + (describe_program(parent_fun)||"unknown_program") + "()->";
 }
 
 //!
@@ -2453,8 +2470,6 @@ string describe_object(object|program o)
 {
   string s;
   if(!o) return 0;
-
-  if (!catch (s = sprintf("%O",o)) && s != "object") return s;
 
   function parent_fun = object_program(o);
 
@@ -2480,13 +2495,13 @@ string describe_object(object|program o)
       }
       if (i >= 0) {
 	s = indices(parent_obj)[i];
-	return describe_module(parent_obj) + "." + s;
+	return describe_module(parent_obj) + s;
       }
     }
   };
   /* Try identifying the program. */
   if(( s=describe_program(parent_fun) ))
-    return s+"()";
+    return (objects[parent_fun]? s : s+"()");
 
   return 0;
 }
@@ -2496,12 +2511,9 @@ string describe_program(program p)
 {
   string s;
   if(!p) return 0;
-  if(s=search(programs,p))
-  {
-    if(has_suffix(s, ".pmod"))
-      return EXPLODE_PATH(s[..sizeof(s)-6])[-1];
-    return trim_file_name(s);
-  }
+
+  if(s=get_clean_program_path(p, "", ""))
+    return s;
 
   if(mixed tmp=function_object(p))
   {

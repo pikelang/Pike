@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.3 2002/10/10 02:18:51 nilsson Exp $
+// $Id: testsuite.in,v 1.4 2002/11/23 17:07:52 marcus Exp $
 
 // Tools.Hilfe
 test_tests([[
@@ -80,7 +80,7 @@ array(int) a() {
   test( ({ "string a=#\"hej", "san\";" }), "");
   test("a;", "\"hej\\nsan\"");
   test("class A{}", "");
-  test("A();", "object");
+  test("A();", "HilfeInput()->A()");
   test("A a=A();", "");
   test("class { int i=4; }()->i;", "4");
   //  test("class A{}();", "object");
