@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.278 2003/05/15 15:24:06 marcus Exp $
+|| $Id: file.c,v 1.279 2003/05/15 16:13:33 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.278 2003/05/15 15:24:06 marcus Exp $");
+RCSID("$Id: file.c,v 1.279 2003/05/15 16:13:33 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1727,7 +1727,7 @@ static void file_openpt(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->openpt", 1, "string");
 
 #ifdef HAVE_POSIX_OPENPT
-  flags = parse((flag_str = Pike_sp[1-args].u.string)->str);
+  flags = parse((flag_str = Pike_sp[-args].u.string)->str);
   
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     Pike_error("Must open file for at least one of read and write.\n");
