@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.36 2004/01/28 11:56:54 nilsson Exp $
+// $Id: RDF.pike,v 1.37 2004/01/28 12:43:31 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -181,8 +181,10 @@ class RDFResource {
 
   string get_qname(void|string ns) {
     if(!ns) ns = common_ns;
-    if(ns=rdf_ns) return id;
-    return "rdf:"+id;
+    string rid;
+    sscanf(id, rdf_ns+"%s", rid);
+    if(ns==rdf_ns) return rid;
+    return "rdf:"+rid;
   }
 }
 
@@ -191,6 +193,8 @@ RDFResource rdf_predicate = RDFResource("predicate");
 RDFResource rdf_subject   = RDFResource("subject");
 RDFResource rdf_object    = RDFResource("object");
 RDFResource rdf_type      = RDFResource("type");
+
+RDFResource rdf_Seq       = RDFResource("Seq");
 
 RDFResource rdf_first     = RDFResource("first");
 RDFResource rdf_rest      = RDFResource("rest");
@@ -693,6 +697,12 @@ static Node add_xml_children(Node p, string rdfns) {
   else
     rdfns = p->get_ns();
 
+  if(rdfns==rdf_ns) {
+    string name = p->get_any_name();
+    if( name == "Seq" )
+      add_statement(subj, rdf_type, rdf_Seq);
+  }
+
   // Handle attribute abbreviation (2.2.2. Basic Abbreviated Syntax)
   mapping m = p->get_ns_attributes();
   foreach(m; string ns; mapping m) {
@@ -881,7 +891,6 @@ static class XML {
 
   string make_prop_attr(mapping(Resource:array(Resource)) rel,
 			int nl, int i2) {
-
     foreach(rel; Resource left; array(Resource) rights) {
       if(!left->is_uri_resource) continue;
       foreach(rights; int p; Resource right) {
@@ -958,6 +967,8 @@ static class XML {
   }
 
   string render() {
+
+    fix_namespaces();
 
     // First all root resources.
     foreach(subjects; Resource n;
