@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.16 1997/03/11 03:13:51 nisse Exp $
+ * $Id: crypto.c,v 1.17 1997/03/12 12:21:14 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -231,7 +231,7 @@ static void f_create(INT32 args)
     error("Bad argument 1 to crypto->create()\n");
   }
   if (sp[-args].type == T_PROGRAM) {
-    THIS->object = clone(sp[-args].u.program, args-1);
+    THIS->object = clone_object(sp[-args].u.program, args-1);
   } else {
     if (args != 1) {
       error("Too many arguments to crypto->create()\n");

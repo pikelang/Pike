@@ -1,4 +1,4 @@
-/* $Id: pattern.c,v 1.1 1997/02/11 08:35:45 hubbe Exp $ */
+/* $Id: pattern.c,v 1.2 1997/03/12 12:19:27 hubbe Exp $ */
 
 #include "global.h"
 
@@ -208,7 +208,7 @@ void image_noise(INT32 args)
 
    init_colorrange(cr,sp-args,"image->noise()");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -263,7 +263,7 @@ void image_turbulence(INT32 args)
 
    init_colorrange(cr,sp-args,"image->turbulence()");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))

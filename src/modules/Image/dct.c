@@ -1,4 +1,4 @@
-/* $Id: dct.c,v 1.2 1997/03/10 21:33:36 grubba Exp $ */
+/* $Id: dct.c,v 1.3 1997/03/12 12:19:25 hubbe Exp $ */
 
 #include "global.h"
 
@@ -54,7 +54,7 @@ void image_dct(INT32 args)
       error("Out of memory\n");
    }
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
    

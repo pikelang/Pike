@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.5 1997/03/11 03:12:59 nisse Exp $
+ * $Id: cbc.c,v 1.6 1997/03/12 12:21:13 hubbe Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -128,7 +128,7 @@ static void f_create(INT32 args)
     error("Bad argument 1 to cbc->create()\n");
   }
   if (sp[-args].type == T_PROGRAM) {
-    THIS->object = clone(sp[-args].u.program, args-1);
+    THIS->object = clone_object(sp[-args].u.program, args-1);
   } else {
     if (args != 1) {
       error("Too many arguments to cbc->create()\n");

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.2 1997/03/09 13:45:56 grubba Exp $ */
+/* $Id: image.c,v 1.3 1997/03/12 12:19:26 hubbe Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.2 1997/03/09 13:45:56 grubba Exp $");
+RCSID("$Id: image.c,v 1.3 1997/03/12 12:19:26 hubbe Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -385,7 +385,7 @@ void image_clone(INT32 args)
 	  sp[1-args].type!=T_INT)
 	 error("Illegal arguments to image->clone()\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
 
@@ -431,7 +431,7 @@ void image_clear(INT32 args)
    struct object *o;
    struct image *img;
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
 
@@ -457,7 +457,7 @@ void image_copy(INT32 args)
 
    if (!args)
    {
-      o=clone(image_program,0);
+      o=clone_object(image_program,0);
       if (THIS->img) img_clone((struct image*)o->storage,THIS);
       pop_n_elems(args);
       push_object(o);
@@ -474,7 +474,7 @@ void image_copy(INT32 args)
 
    getrgb(THIS,2,args,"image->crop()"); 
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
 
    img_crop(img,THIS,
@@ -511,7 +511,7 @@ static void image_change_color(INT32 args)
       to=THIS->rgb;
    }
    
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
 
@@ -610,7 +610,7 @@ void image_autocrop(INT32 args)
       if (!done) break;
    }
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
 
    img_crop(img,THIS,x1-border,y1-border,x2+border,y2+border);
@@ -910,7 +910,7 @@ void image_gray(INT32 args)
       getrgbl(&rgb,0,args,"image->gray()");
    div=rgb.r+rgb.g+rgb.b;
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -958,7 +958,7 @@ void image_color(INT32 args)
    else
       getrgbl(&rgb,0,args,"image->color()");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -996,7 +996,7 @@ void image_invert(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -1035,7 +1035,7 @@ void image_threshold(INT32 args)
 
    getrgb(THIS,0,args,"image->threshold()");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -1079,7 +1079,7 @@ void image_distancesq(INT32 args)
 
    getrgb(THIS,0,args,"image->threshold()");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -1234,7 +1234,7 @@ void image_select_from(INT32 args)
       low_limit=30;
    low_limit=low_limit*low_limit;
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -1363,7 +1363,7 @@ CHRONO("apply_matrix");
       free_svalue(&s2);
    }
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
 
 CHRONO("apply_matrix, begin");
 
@@ -1444,7 +1444,7 @@ void image_modify_by_intensity(INT32 args)
    list[255]=s[x];
    free(s);
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -1490,7 +1490,7 @@ static void image_map_closest(INT32 args)
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
-   o=clone(image_program,2);
+   o=clone_object(image_program,2);
       
    ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
    pop_n_elems(args);
@@ -1524,7 +1524,7 @@ static void image_map_fast(INT32 args)
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
-   o=clone(image_program,2);
+   o=clone_object(image_program,2);
       
    ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
    pop_n_elems(args);
@@ -1560,7 +1560,7 @@ static void image_map_fs(INT32 args)
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
-   o=clone(image_program,2);
+   o=clone_object(image_program,2);
       
    res=(int*)xalloc(sizeof(int)*THIS->xsize);
    errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);

@@ -39,7 +39,7 @@ extern struct program *master_program;
 /* Prototypes begin here */
 void setup_fake_object();
 struct object *low_clone(struct program *p);
-struct object *clone(struct program *p, int args);
+struct object *clone_object(struct program *p, int args);
 struct object *get_master();
 struct object *master();
 void destruct(struct object *o);

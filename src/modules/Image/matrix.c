@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.1 1997/02/11 08:35:44 hubbe Exp $ */
+/* $Id: matrix.c,v 1.2 1997/03/12 12:19:26 hubbe Exp $ */
 
 #include "global.h"
 
@@ -265,7 +265,7 @@ void image_scale(INT32 args)
    struct object *o;
    struct image *newimg;
    
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    newimg=(struct image*)(o->storage);
 
    if (args==1 && sp[-args].type==T_FLOAT) {
@@ -326,7 +326,7 @@ void image_ccw(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -417,7 +417,7 @@ void image_cw(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -454,7 +454,7 @@ void image_mirrorx(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -490,7 +490,7 @@ void image_mirrory(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
@@ -690,7 +690,7 @@ void image_skewx(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
 
    if (!getrgb((struct image*)(o->storage),1,args,"image->skewx()"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
@@ -717,7 +717,7 @@ void image_skewy(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
 
    if (!getrgb((struct image*)(o->storage),1,args,"image->skewy()"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
@@ -744,7 +744,7 @@ void image_skewx_expand(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
 
    if (!getrgb((struct image*)(o->storage),1,args,"image->skewx()"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
@@ -771,7 +771,7 @@ void image_skewy_expand(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
 
    if (!getrgb((struct image*)(o->storage),1,args,"image->skewy()"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
@@ -825,7 +825,7 @@ void img_rotate(INT32 args,int xpn)
    
    angle=(angle/180.0)*3.141592653589793;
 
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
 
    dest=(struct image*)(o->storage);
    if (!getrgb(dest,1,args,"image->rotate()"))
@@ -876,7 +876,7 @@ void img_translate(INT32 args,int expand)
    xt-=floor(xt);
    yt-=floor(yt);
    
-   o=clone(image_program,0);
+   o=clone_object(image_program,0);
    img=(struct image*)o->storage;
 
    img->xsize=THIS->xsize+(xt!=0);

@@ -1,3 +1,7 @@
+Wed Mar 12 03:58:53 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* renamed clone() to clone_object(), threads works with linux now.
+
 Wed Mar 12 00:53:13 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* module_support.c (va_get_args): %f didn't work before.

@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.2 1997/03/09 13:46:51 grubba Exp $
+ * $Id: mysql.c,v 1.3 1997/03/12 12:20:02 hubbe Exp $
  *
  * SQL database functionality for Pike
  *
@@ -71,7 +71,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.2 1997/03/09 13:46:51 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.3 1997/03/12 12:20:02 hubbe Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -304,7 +304,7 @@ static void f_big_query(INT32 args)
     push_object(fp->current_object);
     fp->current_object->refs++;
 
-    push_object(clone(mysql_result_program, 1));
+    push_object(clone_object(mysql_result_program, 1));
   }
 }
 
@@ -499,7 +499,7 @@ static void f_list_dbs(INT32 args)
   push_object(fp->current_object);
   fp->current_object->refs++;
 
-  push_object(clone(mysql_result_program, 1));
+  push_object(clone_object(mysql_result_program, 1));
 }
 
 /* object(mysql_res) list_tables(void|string wild) */
@@ -536,7 +536,7 @@ static void f_list_tables(INT32 args)
   push_object(fp->current_object);
   fp->current_object->refs++;
 
-  push_object(clone(mysql_result_program, 1));
+  push_object(clone_object(mysql_result_program, 1));
 }
 
 /* array(int|mapping(string:mixed)) list_fields(string table, void|string wild) */
@@ -615,7 +615,7 @@ static void f_list_processes(INT32 args)
   push_object(fp->current_object);
   fp->current_object->refs++;
 
-  push_object(clone(mysql_result_program, 1));
+  push_object(clone_object(mysql_result_program, 1));
 }
 
 /*

@@ -1,4 +1,4 @@
-/* $Id: operator.c,v 1.1 1997/02/11 08:35:45 hubbe Exp $ */
+/* $Id: operator.c,v 1.2 1997/03/12 12:19:26 hubbe Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -61,7 +61,7 @@ extern struct program *image_program;
 		   		   		   		\
    push_int(THIS->xsize);		   			\
    push_int(THIS->ysize);		   			\
-   o=clone(image_program,2);		   			\
+   o=clone_object(image_program,2);				\
    img=(struct image*)o->storage;		   		\
    if (!img->img) { free_object(o); error("out of memory\n"); }	\
 		   		   		   		\

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.35 1997/03/11 03:36:42 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.36 1997/03/12 12:15:28 hubbe Exp $"]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
@@ -359,12 +359,12 @@ test_eq(signame(2),"SIGINT")
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-test_do(signal(signum("SIGUSR1"),lambda() { add_constant("AFJLLAF",17); }))
-test_do(kill(getpid(),signum("SIGUSR1")))
+test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
+test_do(kill(getpid(),signum("SIGFPE")))
 test_eq(AFJLLAF,17)
 test_do(add_constant("AFJLLAF"))
-test_do(signal(signum("SIGUSR1",0)))
-test_do(signal(signum("SIGUSR1")))
+test_do(signal(signum("SIGFPE",0)))
+test_do(signal(signum("SIGFPE")))
 
 // typeof
 test_eq(typeof(1),"int")

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.5 1997/03/11 04:00:25 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.6 1997/03/12 12:18:25 hubbe Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -303,7 +303,7 @@ static MP_INT *get_mpz(struct svalue *s)
   case T_STRING:
   case T_ARRAY:
 #endif
-    o=clone(mpzmod_program,0);
+    o=clone_object(mpzmod_program,0);
     get_new_mpz(OBTOMPZ(o), s);
     free_svalue(s);
     s->u.object=o;
@@ -328,7 +328,7 @@ static struct object *temporary;
 MP_INT *get_tmp()
 {
   if(!temporary)
-    temporary=clone(mpzmod_program,0);
+    temporary=clone_object(mpzmod_program,0);
 
   return (MP_INT *)temporary->storage;
 }
@@ -348,7 +348,7 @@ static void name(INT32 args)				\
   struct object *res;					\
   for(e=0; e<args; e++)					\
     get_mpz(sp+e-args);					\
-  res = clone(mpzmod_program, 0);			\
+  res = clone_object(mpzmod_program, 0);			\
   mpz_set(OBTOMPZ(res), THIS);				\
   for(e=0;e<args;e++)					\
     fun(OBTOMPZ(res), OBTOMPZ(res),			\
@@ -370,7 +370,7 @@ static void mpzmod_sub(INT32 args)
     for (e = 0; e<args; e++)
       get_mpz(sp + e - args);
   
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_set(OBTOMPZ(res), THIS);
 
   if(args)
@@ -393,7 +393,7 @@ static void mpzmod_div(INT32 args)
     if (!mpz_sgn(get_mpz(sp+e-args)))
       error("Division by zero.\n");	
   
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
     mpz_tdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
@@ -411,7 +411,7 @@ static void mpzmod_mod(INT32 args)
     if (!mpz_sgn(get_mpz(sp+e-args)))
       error("Division by zero.\n");	
   
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
     mpz_tdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
@@ -430,9 +430,9 @@ static void mpzmod_gcdext(INT32 args)
 
   a = get_mpz(sp-1);
   
-  g = clone(mpzmod_program, 0);
-  s = clone(mpzmod_program, 0);
-  t = clone(mpzmod_program, 0);
+  g = clone_object(mpzmod_program, 0);
+  s = clone_object(mpzmod_program, 0);
+  t = clone_object(mpzmod_program, 0);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), OBTOMPZ(t), THIS, a);
   pop_n_elems(args);
@@ -450,8 +450,8 @@ static void mpzmod_gcdext2(INT32 args)
 
   a = get_mpz(sp-args);
   
-  g = clone(mpzmod_program, 0);
-  s = clone(mpzmod_program, 0);
+  g = clone_object(mpzmod_program, 0);
+  s = clone_object(mpzmod_program, 0);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), NULL, THIS, a);
   pop_n_elems(args);
@@ -469,7 +469,7 @@ static void mpzmod_invert(INT32 args)
   modulo = get_mpz(sp-args);
   if (!mpz_sgn(modulo))
     error("divide by zero");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
     really_free_object(res);
@@ -486,7 +486,7 @@ static void mpzmod_compl(INT32 args)
 {
   struct object *o;
   pop_n_elems(args);
-  o=clone(mpzmod_program,0);
+  o=clone_object(mpzmod_program,0);
   push_object(o);
   mpz_com(OBTOMPZ(o), THIS);
 }
@@ -529,7 +529,7 @@ static void mpzmod_sqrt(INT32 args)
   if(mpz_sgn(THIS)<0)
     error("mpz->sqrt() on negative number.\n");
 
-  o=clone(mpzmod_program,0);
+  o=clone_object(mpzmod_program,0);
   push_object(o);
   mpz_sqrt(OBTOMPZ(o), THIS);
 }
@@ -542,8 +542,8 @@ static void mpzmod_sqrtrem(INT32 args)
   if(mpz_sgn(THIS)<0)
     error("mpz->sqrtrem() on negative number.\n");
 
-  root = clone(mpzmod_program,0);
-  rem = clone(mpzmod_program,0);
+  root = clone_object(mpzmod_program,0);
+  rem = clone_object(mpzmod_program,0);
   mpz_sqrtrem(OBTOMPZ(root), OBTOMPZ(rem), THIS);
   push_object(root); push_object(rem);
   f_aggregate(2);
@@ -559,7 +559,7 @@ static void mpzmod_lsh(INT32 args)
   f_cast(2);
   if(sp[-1].u.integer < 0)
     error("mpz->lsh on negative number.\n");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   push_object(res);
@@ -575,7 +575,7 @@ static void mpzmod_rsh(INT32 args)
   f_cast(2);
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->rsh: Shift count must be positive.\n");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_tdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   push_object(res);
@@ -592,7 +592,7 @@ static void mpzmod_powm(INT32 args)
   n = get_mpz(sp - 1);
   if (!mpz_sgn(n))
     error("Gmp.mpz->powm: Divide by zero\n");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_powm(OBTOMPZ(res), THIS, get_mpz(sp - 2), n);
   pop_n_elems(args);
   push_object(res);
@@ -608,7 +608,7 @@ static void mpzmod_pow(INT32 args)
     error("Gmp.mpz->pow: Non int exponent.\n");
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->pow: Negative exponent.\n");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   push_object(res);
@@ -628,7 +628,7 @@ static void gmp_pow(INT32 args)
   if ( (sp[-2].type != T_INT) || (sp[-2].u.integer < 0)
        || (sp[-1].type != T_INT) || (sp[-1].u.integer < 0))
     error("Gmp.pow: Negative arguments");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_ui_pow_ui(OBTOMPZ(res), sp[-2].u.integer, sp[-1].u.integer);
   pop_n_elems(args);
   push_object(res);
@@ -643,7 +643,7 @@ static void gmp_fac(INT32 args)
     error("Gmp.fac: Non int argument.\n");
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->pow: Negative exponent.\n");
-  res = clone(mpzmod_program, 0);
+  res = clone_object(mpzmod_program, 0);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
   push_object(res);

@@ -1,6 +1,6 @@
 #include <config.h>
 
-/* $Id: font.c,v 1.2 1997/03/09 13:45:55 grubba Exp $ */
+/* $Id: font.c,v 1.3 1997/03/12 12:19:25 hubbe Exp $ */
 
 #include "global.h"
 
@@ -367,7 +367,7 @@ void font_write(INT32 args)
      if (maxwidth>maxwidth2) maxwidth2=maxwidth;
    }
    
-   o = clone(image_program,0);
+   o = clone_object(image_program,0);
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
    if(args>1)

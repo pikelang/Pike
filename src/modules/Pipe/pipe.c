@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.2 1997/02/20 01:35:52 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.3 1997/03/12 12:20:30 hubbe Exp $");
 
 #include "stralloc.h"
 #include "types.h"
@@ -733,7 +733,7 @@ static void pipe_output(INT32 args)
   THISOBJ->refs++;		/* Weird */
 
   /* Allocate a new struct output */
-  obj=clone(output_program,0);
+  obj=clone_object(output_program,0);
   o=(struct output *)(obj->storage);
   o->next=THIS->firstoutput;
   THIS->firstoutput=obj;

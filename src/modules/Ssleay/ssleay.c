@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.1 1997/02/11 08:39:19 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.2 1997/03/12 12:20:48 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -203,7 +203,7 @@ static void ssleay_new(INT32 args)
   pop_n_elems(args);
   THISOBJ->refs++;
   push_object(THISOBJ);
-  push_object(clone(ssleay_connection_program, 1));
+  push_object(clone_object(ssleay_connection_program, 1));
 }
 
 

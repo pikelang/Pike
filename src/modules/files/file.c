@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.28 1997/02/07 01:40:16 hubbe Exp $");
+RCSID("$Id: file.c,v 1.29 1997/03/12 12:21:50 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -888,7 +888,7 @@ struct object *file_make_object_from_fd(int fd, int mode)
   struct object *o;
 
   init_fd(fd, mode);
-  o=clone(file_program,0);
+  o=clone_object(file_program,0);
   ((struct file_struct *)(o->storage))->fd=fd;
   ((struct file_struct *)(o->storage))->my_errno=0;
   return o;
@@ -1090,7 +1090,7 @@ static void file_dup(INT32 args)
 
   pop_n_elems(args);
 
-  o=clone(file_program,0);
+  o=clone_object(file_program,0);
   ((struct file_struct *)o->storage)->fd=FD;
   ((struct file_struct *)o->storage)->my_errno=0;
   ERRNO=0;
@@ -1114,7 +1114,7 @@ static void file_assign(INT32 args)
    * /precompiled/file
    */
   if(!o->prog || o->prog->inherits[0].prog != file_program)
-    error("Argument 1 to file->assign() must be a clone of /precompiled/file\n");
+    error("Argument 1 to file->assign() must be a clone of Stdio.File\n");
   do_close(FD, FILE_READ | FILE_WRITE);
 
   FD=((struct file_struct *)(o->storage))->fd;
@@ -1145,7 +1145,7 @@ static void file_dup2(INT32 args)
    * /precompiled/file
    */
   if(!o->prog || o->prog->inherits[0].prog != file_program)
-    error("Argument 1 to file->assign() must be a clone of /precompiled/file\n");
+    error("Argument 1 to file->assign() must be a clone of Stdio.File\n");
 
   fd=((struct file_struct *)(o->storage))->fd;
 

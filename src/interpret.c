@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.34 1997/03/11 04:00:38 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.35 1997/03/12 12:15:27 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1551,7 +1551,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
 
   case T_PROGRAM:
     {
-      struct object *o=clone(s->u.program,args);
+      struct object *o=clone_object(s->u.program,args);
       push_object(o);
     }
     break;
