@@ -53,3 +53,74 @@ int(0..4294967295) swap_long(int(0..4294967295) i) {
   return ((i&255)<<24) | ((i&(255<<8))<<8) |
     ((i&(255<<16))>>8) | ((i&(255<<24))>>24);
 }
+
+static class Inf {
+
+  static constant neg = 0;
+  static int __hash() { return 17; }
+  static int(0..1) _equal(mixed arg) { return arg==this; }
+  static int(0..1) _is_type(mixed type) { return (< "int", "object" >)[type]; }
+  static mixed _random() { return this; }
+  static mixed _sqrt() { return this; }
+  // % == nan
+  // & == nan
+  static mixed `*(mixed ... args) {
+    int n = neg;
+    foreach(args, mixed arg)
+      if(arg<0) n = !n;
+    if(n) return ninf;
+    return inf;
+  }
+  static mixed ``*(mixed ... args) { return `*(@args); }
+  static mixed `+(mixed ... args) {
+    foreach(args, mixed arg)
+      if(arg==`-()) error("NaN\n");
+    return this;
+  }
+  static mixed ``+(mixed ... args) { return ``+(@args); }
+  static mixed `-(mixed ... args) {
+    if(!sizeof(args)) {
+      if(neg) return inf;
+      return ninf;
+    }
+    foreach(args, mixed arg)
+      if(arg==inf || arg==ninf) error("NaN\n");
+    return this;
+  }
+  static mixed ``-(mixed arg) {
+    if(arg==inf || arg==ninf) error("NaN\n");
+    return this;
+  }
+  static int(0..1) `<(mixed arg) {
+    if(arg==this) return 0;
+    return neg;
+  }
+  static int(0..1) `>(mixed arg) {
+    if(arg==this) return 0;
+    return !neg;
+  }
+  static mixed `~() { return `-(); }
+  static mixed cast(string to) {
+    switch(to) {
+    case "string":
+      return "inf";
+    case "float":
+      return Math.inf;
+    default:
+      error("Can not cast to %O.\n", to);
+    }
+  }
+  static string _sprintf(int t) {
+    return t=='O' && (neg?"-":"")+"Int.inf";
+  }
+}
+
+class NInf {
+  inherit Inf;
+  constant neg = 1;
+}
+
+static Inf ninf = NInf();
+
+//! An infinite number.
+Inf inf = Inf();
