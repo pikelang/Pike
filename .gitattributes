@@ -52,6 +52,7 @@ testfont binary
 /lib/modules/Sql.pmod/odbc.pike foreign_ident
 /lib/modules/Sql.pmod/odbc_result.pike foreign_ident
 /lib/modules/Sql.pmod/oracle.pike foreign_ident
+/lib/modules/Sql.pmod/postgres.pike foreign_ident
 /lib/modules/Sql.pmod/sql.pike foreign_ident
 /lib/modules/Sql.pmod/sql_result.pike foreign_ident
 /src/backend.c foreign_ident
@@ -124,6 +125,7 @@ testfont binary
 /src/modules/Postgres/configure.in foreign_ident
 /src/modules/Postgres/pgres_config.h.in foreign_ident
 /src/modules/Postgres/postgres.c foreign_ident
+/src/modules/Postgres/version.h foreign_ident
 /src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident
 /src/modules/Yp/acconfig.h foreign_ident

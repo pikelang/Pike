@@ -65,11 +65,9 @@
 MUTEX_T pike_postgres_result_mutex;
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex)
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
-#define THREAD() THREADS_ALLOW();PQ_LOCK()
-#define UNTHREAD() THREADS_DISQLLOW(); PQ_UNLOCK()
 #else
-#define THREAD() /**/
-#define UNTHREAD() /**/
+#define PQ_LOCK() /**/
+#define PQ_UNLOCK() /**/
 #endif
 
 #include "pg_types.h"
@@ -98,13 +96,6 @@ static void f_create (INT32 args)
 	char *storage;
 	check_all_args("postgres_result->create",args,BIT_OBJECT,0);
 	pgdebug("result->f_create(%d).\n",args);
-#if OLD
-	if (sp[-args].u.object->prog != postgres_program)
-		error ("Need a postgres type object.\n");
-	THIS->result=
-		((struct pgres_object_data *)sp[-args].u.object->storage)->last_result;
-	((struct pgres_object_data *) sp[-args].u.object->storage)->last_result=NULL;
-#endif
 
 	storage=get_storage(sp[-args].u.object,postgres_program);
 	if (!storage)

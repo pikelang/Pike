@@ -1,5 +1,5 @@
 /*
- * Postgres95 support for pike/0.5 and up
+ * Postgres95 and PostgreSQL support for pike/0.5 and up
  *
  * (C) 1997 Francesco Chemolli <kinkie@comedia.it>
  *
@@ -10,18 +10,20 @@
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
 
+#include "version.h"
+
 /* #define PGDEBUG */
 
 /* System includes */
 #include <stdlib.h>
 #include <stdio.h> /* Needed or libpq-fe.h pukes :( */
-#include <malloc.h>
 #include <string.h>
 
 /* Pike includes */
 #include <global.h>
 #include <las.h>
 #include <machine.h>
+#include <pike_memory.h>
 #include <svalue.h>
 #include <threads.h>
 #include <stralloc.h>
@@ -34,6 +36,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif 
+
 #include <postgres.h>
 #include <libpq-fe.h>
 
@@ -59,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.1.1.1 1997/10/14 22:07:21 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.2 1997/11/25 20:57:59 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -76,9 +79,7 @@ static void pgres_create (struct object * o) {
 	pgdebug ("pgres_create().\n");
 	THIS->dblink=NULL;
 	THIS->last_error=NULL;
-	THIS->notify_callback=malloc(sizeof(struct svalue));
-	if (!THIS->notify_callback)
-		error ("Memory allocation error.\n");
+	THIS->notify_callback=(struct svalue*)xalloc(sizeof(struct svalue));
 	THIS->notify_callback->type=T_INT;
 }
 
@@ -87,11 +88,11 @@ static void pgres_destroy (struct object * o)
 	PGconn * conn;
 	pgdebug ("pgres_destroy().\n");
 	if ((conn=THIS->dblink)) {
-		PQ_LOCK();
 		THREADS_ALLOW();
+		PQ_LOCK();
 		PQfinish(conn);
-		THREADS_DISALLOW();
 		PQ_UNLOCK();
+		THREADS_DISALLOW();
 		THIS->dblink=NULL;
 	}
 	if(THIS->last_error) {
@@ -110,47 +111,54 @@ static void f_create (INT32 args)
 	char * host=NULL, *db=NULL, *port=NULL;
 	PGconn * conn;
 
-	check_all_args("Postgres->create",args,
+	check_all_args("postgres->create",args,
 			BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
 			BIT_INT|BIT_VOID,0);
 
 	if (THIS->dblink) {
 		conn=THIS->dblink;
-		PQ_LOCK();
 		THREADS_ALLOW();
+		PQ_LOCK();
 		PQfinish(conn);
-		THREADS_DISALLOW();
 		PQ_UNLOCK();
+		THREADS_DISALLOW();
 	}
 	if (args>=1)
-		if(sp[-args].u.string->len)
+		if(sp[-args].type==T_STRING && sp[-args].u.string->len)
 			host=sp[-args].u.string->str;
 		/* postgres docs say they use hardwired defaults if no variable is found*/
 	if (args>=2)
-		if (sp[1-args].u.string->len)
+		if (sp[1-args].type==T_STRING && sp[1-args].u.string->len)
 			db=sp[1-args].u.string->str;
+		/* This is not beautiful code, but it works:
+		 * it specifies the port to connect to if there is a third
+		 * argument greater than 0. It accepts integer arguments >= 0
+		 * to allow simpler code in pike wrappers part.
+		 */
 	if (args==3)
-		if (sp[2-args].u.integer <=65535 && sp[2-args].u.integer>0) {
-			port=malloc(10*sizeof(char)); /*it's enough, we need only 6*/
-			sprintf(port,"%d",sp[2-args].u.integer);
+		if (sp[2-args].type==T_INT && sp[2-args].u.integer <=65535 && sp[2-args].u.integer >= 0) {
+			if (sp[2-args].u.integer>0) {
+				port=xalloc(10*sizeof(char)); /*it's enough, we need only 6*/
+				sprintf(port,"%d",sp[2-args].u.integer);
+			}
 		}
 		else
-			error ("You must specify a TCP/IP port number as argument 5 to postgres->create().\n");
-	PQ_LOCK();
+			error ("You must specify a TCP/IP port number as argument 5 to Sql.postgres->create().\n");
 	THREADS_ALLOW();
-	pgdebug("f_create(%s,%s,%s).\n",host,port,db);
+	PQ_LOCK();
+	pgdebug("f_create(host: %s, port: %s, db: %s).\n",host,port,db);
 	conn=PQsetdb(host,port,NULL,NULL,db);
-	THREADS_DISALLOW();
 	PQ_UNLOCK();
+	THREADS_DISALLOW();
 	if (!conn)
-		error ("Internal error: PQserdb returned NULL!\n");
+		error ("Could not conneect to server\n");
 	if (PQstatus(conn)!=CONNECTION_OK) {
 		set_error(PQerrorMessage(conn));
-		PQ_LOCK();
 		THREADS_ALLOW();
+		PQ_LOCK();
 		PQfinish(conn);
-		THREADS_DISALLOW();
 		PQ_UNLOCK();
+		THREADS_DISALLOW();
 		error("Could not connect to database.\n");
 	}
 	THIS->dblink=conn;
@@ -170,15 +178,15 @@ static void f_select_db (INT32 args)
 		error ("Internal error. How can you possibly not be linked to a "
 				"database already?\n");
 	conn=THIS->dblink;
-	PQ_LOCK();
 	THREADS_ALLOW();
+	PQ_LOCK();
 	host=PQhost(conn);
 	port=PQport(conn);
 	options=PQoptions(conn);
 	tty=PQtty(conn);
 	db=PQdb(conn);
-	THREADS_DISALLOW();
 	PQ_UNLOCK();
+	THREADS_DISALLOW();
 #if 0
 	/* This is an optimization, but people may want to reset a connection
 	 * re-selecting its database.
@@ -191,8 +199,8 @@ static void f_select_db (INT32 args)
 	db=sp[-args].u.string->str;
 	/* This could be really done calling f_create, but it's more efficient this
 	 * way */
-	PQ_LOCK();
 	THREADS_ALLOW();
+	PQ_LOCK();
 	/* using newconn is necessary or otherwise the datastructures I use
 	 * as arguments get freed by PQfinish. Could be a problem under extreme
 	 * situations (i.e. if the temporary use of _one_ more filedescriptor
@@ -201,8 +209,8 @@ static void f_select_db (INT32 args)
 	newconn=PQsetdb(host,port,options,tty,db);
 	PQfinish(conn);
 	conn=newconn;
-	THREADS_DISALLOW();
 	PQ_UNLOCK();
+	THREADS_DISALLOW();
 	if (PQstatus(conn)==CONNECTION_BAD) {
 		set_error(PQerrorMessage(conn));
 		PQfinish(conn);
@@ -229,13 +237,13 @@ static void f_big_query(INT32 args)
 	else
 		query=" ";
 
-	PQ_LOCK();
 	THREADS_ALLOW();
+	PQ_LOCK();
 	pgdebug("f_big_query(\"%s\")\n",query);
 	res=PQexec(conn,query);
 	notification=PQnotifies(conn);
-	THREADS_DISALLOW();
 	PQ_UNLOCK();
+	THREADS_DISALLOW();
 
 	pop_n_elems(args);
 	if (notification!=NULL) {
@@ -307,11 +315,11 @@ static void f_reset (INT32 args)
 	if (!THIS->dblink)
 		error ("Not connected.\n");
 	conn=THIS->dblink;
-	PQ_LOCK();
 	THREADS_ALLOW();
+	PQ_LOCK();
 	PQreset(conn);
-	THREADS_DISALLOW();
 	PQ_UNLOCK();
+	THREADS_DISALLOW();
 	if (PQstatus(conn)==CONNECTION_BAD) {
 		set_error(PQerrorMessage(conn));
 		error("Bad connection.\n");
@@ -340,9 +348,10 @@ static void f_trace (INT32 args)
 }
 #endif
 
-/* I hope I'm doing this right... */
 static void f_callback(INT32 args)
 {
+	check_all_args("postgres->_set_notify_callback()",BIT_INT|BIT_FUNCTION,0);
+
 	if (sp[-args].type==T_INT) {
 		if (THIS->notify_callback->type!=T_INT) {
 			free_svalue(THIS->notify_callback);
@@ -414,6 +423,9 @@ void pike_module_init (void)
 	postgres_program = end_program();
 	add_program_constant("postgres",postgres_program,0);
 	postgres_program->refs++;
+
+	add_string_constant("version",PGSQL_VERSION,0);
+
 	pgresult_init(); 
 }
 

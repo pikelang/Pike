@@ -1,4 +1,4 @@
-/* $Id: pgres_config.h.in,v 1.1.1.1 1997/10/14 22:07:21 grubba Exp $ */
+/* $Id: pgres_config.h.in,v 1.2 1997/11/25 20:57:57 grubba Exp $ */
 #undef STDC_HEADERS
 
 #undef HAVE_POSTGRES_H
