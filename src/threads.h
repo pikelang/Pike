@@ -95,16 +95,16 @@ void exit_cond_obj(struct object *o);
 void th_init_programs();
 /* Prototypes end here */
 
-
 #else
-#define mt_init()
-#define mt_lock()
-#define mt_unlock()
+#define mt_init(X)
+#define mt_lock(X)
+#define mt_unlock(X)
 #define THREADS_ALLOW()
 #define THREADS_DISALLOW()
 #define th_init()
 #define th_init_programs()
 #endif
+
 
 extern int threads_disabled;
 #endif

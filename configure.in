@@ -1,3 +1,0 @@
-AC_INIT(Makefile.in)
-AC_CONFIG_SUBDIRS(src)
-AC_OUTPUT(Makefile)
