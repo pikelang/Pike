@@ -162,9 +162,8 @@ string parse_appendix(Node n, void|int noheader) {
 
 string parse_module(Node n, void|int noheader) {
   string ret ="";
-  if(n->get_attributes()->name == "")
-    noheader = 1;
-  if(!noheader)
+
+  if(!noheader && n->get_attributes()->name != "")
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Module <b>" +
@@ -629,7 +628,7 @@ string render_class_path(Node n) {
 	      "section", "subsection" }), string node)
     root = max(root, search(b, node));
   a = a[root+1..];
-  if(sizeof(a) && a[0]=="")
+  if(sizeof(a) && a[0]->get_attributes()->name=="")
     a = a[1..];
   string ret = a->get_attributes()->name * ".";
   if(!sizeof(ret))
