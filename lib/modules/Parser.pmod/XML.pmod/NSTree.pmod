@@ -146,8 +146,12 @@ class NSNode {
       // Move namespaced attributes to a mapping of their own.
       string ns, m;
       if( sscanf(name, "%s:%s", ns, m)==2 ) {
-	if(!nss[ns])
-	  error("Unknown namespace %s.\n", ns);
+	if(!nss[ns]) {
+	  if(ns=="xml")
+	    add_namespace("xml","xml");
+	  else
+	    error("Unknown namespace %s.\n", ns);
+	}
 	ns = nss[ns];
 	m_delete(attr, name);
       } else {
