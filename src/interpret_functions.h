@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.6 2000/04/18 20:18:38 grubba Exp $
+ * $Id: interpret_functions.h,v 1.7 2000/04/18 20:23:59 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -102,7 +102,7 @@ OPCODE1(F_GLOBAL,"global")
 BREAK;
 
 
-OPCODE2ACK(F_EXTERNAL,"external")
+OPCODE1ACC(F_EXTERNAL,"external")
 {
   struct inherit *inherit;
   struct program *p;
@@ -130,7 +130,7 @@ OPCODE2ACK(F_EXTERNAL,"external")
       
       i=o->parent_identifier;
       o=o->parent;
-      arg2+=inherit->parent_offset-1;
+      acc+=inherit->parent_offset-1;
     }else{
 #ifdef PIKE_DEBUG
       if(t_flag>4)
@@ -183,8 +183,8 @@ OPCODE2ACK(F_EXTERNAL,"external")
     }
 #endif /* DEBUG_MALLOC */
     
-    if(!arg2) break;
-    --arg2;
+    if(!acc) break;
+    --acc;
   }
   
   low_object_index_no_free(Pike_sp,
@@ -1220,12 +1220,12 @@ BREAK;
       print_return_value();
       break;
 
-OPCODE1(F_MAGIC_INDEX, "::`[]")
-  push_magic_index(magic_index_program, accumulator, arg1);
+OPCODE1ACC(F_MAGIC_INDEX, "::`[]")
+  push_magic_index(magic_index_program, acc, arg1);
 BREAK;
 
-OPCODE1(F_MAGIC_SET_INDEX, "::`[]=")
-  push_magic_index(magic_set_index_program, accumulator, arg1);
+OPCODE1ACC(F_MAGIC_SET_INDEX, "::`[]=")
+  push_magic_index(magic_set_index_program, acc, arg1);
 BREAK;
 
 OPCODE0(F_CAST, "cast")
