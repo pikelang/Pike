@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.70 2003/10/29 19:01:53 mast Exp $
+|| $Id: backend.cmod,v 1.71 2003/10/30 13:56:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.70 2003/10/29 19:01:53 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.71 2003/10/30 13:56:17 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -989,9 +989,9 @@ PIKECLASS Backend
 	    Pike_error ("Backend already in use by another thread.\n");
 	  else
 #endif
-	    /* It's actually not a problem to support reentrancy, but I
-	     * can't think of any sane way to use it. Otoh, this error
-	     * can help discover otherwise tricky bugs. /mast */
+	    /* It's actually not a problem to support reentrancy, but
+	     * I can't think of any sane way to use it. Also, this
+	     * error can help discover otherwise tricky bugs. /mast */
 	    Pike_error ("Backend already running - cannot reenter.\n");
 	}
 #ifdef PIKE_THREADS
@@ -1113,20 +1113,20 @@ PIKECLASS Backend
 	  if(fd_FD_ISSET(i, &me->active_set.eset) &&
 	     me->fds[i].read_oob.callback)
 	    if ((*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data) == -1)
-	      goto callbacks_done;
+	      goto backend_round_done;
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.rset) && me->fds[i].read.callback)
 	    if ((*(me->fds[i].read.callback))(i, me->fds[i].read.data) == -1)
-	      goto callbacks_done;
+	      goto backend_round_done;
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
 	    if (me->fds[i].write_oob.callback) {
 	      if ((*(me->fds[i].write_oob.callback))(i, me->fds[i].write_oob.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    } else
 	      if (me->fds[i].write.callback) {
 		if ((*(me->fds[i].write.callback))(i, me->fds[i].write.data) == -1)
-		  goto callbacks_done;
+		  goto backend_round_done;
 	      }
 	  }
 	}
@@ -1168,7 +1168,7 @@ PIKECLASS Backend
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].read_oob.data));
 	      if ((*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    }
 	    else {
 	      if (!me->fds[fd].read.callback) {
@@ -1212,12 +1212,12 @@ PIKECLASS Backend
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].read.data));
 	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    } else if (me->fds[fd].write.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].write.data));
 	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -1232,7 +1232,7 @@ PIKECLASS Backend
 			    me->id, fd, me->fds[fd].read.data));
 	      errno = 0;
 	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    } else {
 	      MY_FD_CLR(&me->set, fd, POLLRDNORM|POLLIN);
 	    }
@@ -1248,7 +1248,7 @@ PIKECLASS Backend
 			    me->id, fd, me->fds[fd].write_oob.data));
 	      errno = 0;
 	      if ((*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    }
 	    else {
 	      if (!me->fds[fd].write.callback) {
@@ -1271,7 +1271,7 @@ PIKECLASS Backend
 			    me->id, fd, me->fds[fd].write.data));
 	      errno = 0;
 	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
-		goto callbacks_done;
+		goto backend_round_done;
 	    } else {
 	      MY_FD_CLR(&me->set, fd, POLLOUT);
 	    }
@@ -1304,7 +1304,6 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 #endif	/* HAVE_POLL */
 
-      callbacks_done:
 	/* Must be up-to-date for backend_do_call_outs. */
 	GETTIMEOFDAY(&current_time);
       }else{
@@ -1423,11 +1422,18 @@ PIKECLASS Backend
 	}
       }
 
-      done_something +=
-	backend_do_call_outs(me); /* Will update current_time after calls. */
+      {
+	int call_outs_called =
+	  backend_do_call_outs(me); /* Will update current_time after calls. */
+	if (call_outs_called)
+	  done_something = 1;
+	if (call_outs_called < 0)
+	  goto backend_round_done;
+      }
 
       call_callback(& me->backend_callbacks, (void *)(ptrdiff_t)1);
 
+    backend_round_done:
       if (!done_something)
 	timeout->tv_sec = -1;
       else {
@@ -1446,8 +1452,8 @@ PIKECLASS Backend
    *!
    *! @returns
    *!   If the backend did call any callbacks or call outs then the
-   *!   time spent in the backend is returned. Otherwise the integer
-   *!   @expr{0@} is returned.
+   *!   time spent in the backend is returned as a float. Otherwise
+   *!   the integer @expr{0@} is returned.
    */
   PIKEFUN float|int(0..0) `()(void|float|int(0..0) sleep_time)
   {
@@ -1897,6 +1903,7 @@ PIKECLASS Backend
 	   if (Pike_sp[-1].type == T_INT && Pike_sp[-1].u.integer == -1) {
 	     pop_stack();
 	     backend_verify_call_outs(me);
+	     call_count = -call_count;
 	     break;
 	   }
 	   else
@@ -1955,7 +1962,7 @@ PIKECLASS Backend
      }
 
 
-/*! @decl void _do_call_outs()
+/*! @decl int _do_call_outs()
  *!
  *! Do all pending call_outs.
  *!
@@ -1966,13 +1973,16 @@ PIKECLASS Backend
  *! As a side-effect, this function sets the value returned by
  *! @[time(1)] to the current time.
  *!
+ *! @returns
+ *! Zero if no call outs were called, nonzero otherwise.
+ *!
  *! @seealso
  *! @[call_out()], @[find_call_out()], @[remove_call_out()]
  */
-   PIKEFUN void _do_call_outs()
+   PIKEFUN int _do_call_outs()
      {
        GETTIMEOFDAY(&current_time);
-       backend_do_call_outs(THIS);
+       RETURN backend_do_call_outs(THIS);
      }
 
 /*! @decl int find_call_out(function f)
