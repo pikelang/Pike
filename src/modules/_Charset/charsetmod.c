@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.3 1998/11/05 01:07:00 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.4 1998/11/16 18:59:12 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -23,13 +23,14 @@ p_wchar1 *misc_charset_lookup(char *name, int *rlo, int *rhi);
 
 static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
+static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_8bit_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
-  struct pike_string *retain;
+  struct pike_string *retain, *replace;
 };
 
 struct std_rfc_stor {
@@ -50,6 +51,22 @@ static SIZE_T utf7_stor_offs = 0;
 
 static SIGNED char rev64t['z'-'+'+1];
 
+
+static void f_create(INT32 args)
+{
+  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+
+  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT, 0);
+
+  if(args>0 && sp[-args].type == T_STRING) {
+    if(s->replace != NULL)
+      free_string(s->replace);
+    add_ref(s->replace = sp[-args].u.string);
+  }
+
+  pop_n_elems(args);
+  push_int(0);
+}
 
 static void f_drain(INT32 args)
 {
@@ -81,6 +98,7 @@ static void init_stor(struct object *o)
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
   s->retain = NULL;
+  s->replace = NULL;
 
   init_string_builder(&s->strbuild,0);
 }
@@ -94,6 +112,11 @@ static void exit_stor(struct object *o)
     s->retain = NULL;
   }
 
+  if(s->replace != NULL) {
+    free_string(s->replace);
+    s->replace = NULL;
+  }
+
   reset_string_builder(&s->strbuild);
   free_string(finish_string_builder(&s->strbuild));
 }
@@ -105,7 +128,7 @@ static void f_std_feed(INT32 args, INT32 (*func)(const p_wchar0 *, INT32 n,
   struct pike_string *str, *tmpstr = NULL;
   INT32 l;
 
-  get_all_args("feed()", args, "%S", &str);
+  get_all_args("feed()", args, "%W", &str);
 
   if(str->size_shift>0)
     error("Can't feed on wide strings!\n");
@@ -297,7 +320,10 @@ static void f_rfc1345(INT32 args)
   int lo=0, hi=num_charset_def-1;
   p_wchar1 *tabl;
 
-  get_all_args("rfc1345()", args, "%S", &str);
+  check_all_args("rfc1345()", args, BIT_STRING, BIT_INT|BIT_VOID,
+		 BIT_STRING|BIT_VOID|BIT_INT, 0);
+
+  str = sp[-args].u.string;
 
   if(str->size_shift>0)
     hi = -1;
@@ -306,6 +332,10 @@ static void f_rfc1345(INT32 args)
     int c, mid = (lo+hi)>>1;
     if((c = strcmp(STR0(str), charset_map[mid].name))==0) {
       struct program *p;
+
+      if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0)
+	error("No '%s' encoding today, sorry.\n", STR0(str));
+
       pop_n_elems(args);
       switch(charset_map[mid].mode) {
       case MODE_94: p = std_94_program; break;
@@ -328,6 +358,10 @@ static void f_rfc1345(INT32 args)
 
   if(str->size_shift==0 &&
      (tabl = misc_charset_lookup(STR0(str), &lo, &hi))!=NULL) {
+
+    if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0)
+      error("No '%s' encoding today, sorry.\n", STR0(str));
+
     pop_n_elems(args);
     push_object(clone_object(std_8bit_program, 0));
     ((struct std_rfc_stor *)(sp[-1].u.object->storage+std_rfc_stor_offs))
@@ -458,6 +492,96 @@ static void f_feed_8bit(INT32 args)
   f_std_feed(args, feed_8bit);
 }
 
+
+static void feed_utf8e(struct string_builder *sb,
+		       struct pike_string *str, struct pike_string *rep)
+{
+  INT32 l = str->len;
+
+  switch(str->size_shift) {
+  case 0:
+    {
+      p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+        else {
+	  string_builder_putchar(sb, 0xc0|(c>>6));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	}
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+	else if(c<=0x7ff) {
+	  string_builder_putchar(sb, 0xc0|(c>>6));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	} else {
+      	  string_builder_putchar(sb, 0xe0|(c>>12));
+	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	}
+    }
+    break;
+  case 2:
+    {
+      p_wchar2 c, *p = STR2(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+	else if(c<=0x7ff) {
+	  string_builder_putchar(sb, 0xc0|(c>>6));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	} else if(c<=0xffff) {
+	  string_builder_putchar(sb, 0xe0|(c>>12));
+	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	} else if(c<=0x1fffff) {
+	  string_builder_putchar(sb, 0xf0|(c>>18));
+	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
+	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	} else if(c<=0x3ffffff) {
+	  string_builder_putchar(sb, 0xf8|(c>>24));
+	  string_builder_putchar(sb, 0x80|((c>>18)&0x3f));
+	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
+	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	} else if(c<=0x7fffffff) {
+	  string_builder_putchar(sb, 0xfc|(c>>30));
+	  string_builder_putchar(sb, 0x80|((c>>24)&0x3f));
+	  string_builder_putchar(sb, 0x80|((c>>18)&0x3f));
+	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
+	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	} else if(rep != NULL)
+	  feed_utf8e(sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  default:
+    fatal("Illegal shift size!\n");
+  }
+}
+
+static void f_feed_utf8e(INT32 args)
+{
+  struct pike_string *str;
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+
+  get_all_args("feed()", args, "%W", &str);
+
+  feed_utf8e(&cs->strbuild, str, cs->replace);
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
 void pike_module_init(void)
 {
   int i;
@@ -471,6 +595,7 @@ void pike_module_init(void)
   add_storage(sizeof(struct std_cs_stor));
   add_function("drain", f_drain, "function(:string)", 0);
   add_function("clear", f_clear, "function(:object)", 0);
+  add_function("create", f_create, "function(string|void:void)", 0);
   set_init_callback(init_stor);
   set_exit_callback(exit_stor);
   std_cs_program = end_program();
@@ -490,12 +615,21 @@ void pike_module_init(void)
   add_function("feed", f_feed_utf7, "function(string:object)", 0);
   add_function("clear", f_clear_utf7, "function(:object)", 0);
   set_init_callback(utf7_init_stor);
-  add_program_constant("UTF7", utf7_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF7dec", utf7_program = end_program(), ID_STATIC|ID_NOMASK);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   add_function("feed", f_feed_utf8, "function(string:object)", 0);
-  add_program_constant("UTF8", utf8_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF8dec", utf8_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  add_program_constant("UTF7enc", utf7e_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  add_function("feed", f_feed_utf8e, "function(string:object)", 0);
+  add_program_constant("UTF8enc", utf8e_program = end_program(), ID_STATIC|ID_NOMASK);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -530,12 +664,19 @@ void pike_module_init(void)
   add_function("feed", f_feed_8bit, "function(string:object)", 0);
   std_8bit_program = end_program();
 
-  add_function_constant("rfc1345", f_rfc1345, "function(string:object)", 0);
+  add_function_constant("rfc1345", f_rfc1345,
+			"function(string,int|void,string|void:object)", 0);
 }
 
 void pike_module_exit(void)
 {
   extern void iso2022_exit();
+
+  if(utf7e_program != NULL)
+    free_program(utf7e_program);
+
+  if(utf8e_program != NULL)
+    free_program(utf8e_program);
 
   if(utf7_program != NULL)
     free_program(utf7_program);
