@@ -16,7 +16,7 @@ static void resolve_auto_bignum_program(void)
 {
   if(auto_bignum_program.type == T_INT)
   {
-    push_text("Gmp.mpz");
+    push_text("Gmp.bignum");
     SAFE_APPLY_MASTER("resolv", 1);
     
     if(sp[-1].type != T_FUNCTION)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.56 1999/10/26 02:07:23 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.57 1999/10/26 06:30:49 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -51,8 +51,12 @@ long random(void)
 #undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
+#define THIS_PROGRAM (fp->context.prog)
 
 static struct program *mpzmod_program;
+#ifdef AUTO_BIGNUM
+static struct program *bignum_program;
+#endif
 
 static void get_mpz_from_digits(MP_INT *tmp,
 				struct pike_string *digits,
@@ -97,7 +101,11 @@ static void get_new_mpz(MP_INT *tmp, struct svalue *s)
     break;
 
   case T_OBJECT:
-    if(s->u.object->prog != mpzmod_program)
+    if(s->u.object->prog != mpzmod_program
+#ifdef AUTO_BIGNUM
+       && s->u.object->prog != bignum_program
+#endif
+      )
       error("Wrong type of object, cannot convert to mpz.\n");
 
     mpz_set(tmp, OBTOMPZ(s->u.object));
@@ -462,7 +470,11 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
     return (MP_INT *)o->storage;
     
   case T_OBJECT:
-    if(s->u.object->prog != mpzmod_program)
+    if(s->u.object->prog != mpzmod_program
+#ifdef AUTO_BIGNUM
+       && s->u.object->prog != bignum_program
+#endif
+      )
       {
 	MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
 	return 0;
@@ -509,7 +521,13 @@ static void reduce(struct object *o)
     push_object(o);
   }
 }
-#define PUSH_REDUCED(o) reduce(o)
+#define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
+   if(THIS_PROGRAM == bignum_program)				\
+     reduce(reducetmp__);					\
+   else								\
+     push_object(reducetmp__);					\
+}while(0)
+
 #else
 #define PUSH_REDUCED(o) push_object(o)
 #endif /* AUTO_BIGNUM */
@@ -520,8 +538,8 @@ static void name(INT32 args)				\
   INT32 e;						\
   struct object *res;					\
   for(e=0; e<args; e++)					\
-    get_mpz(sp+e-args, 1);					\
-  res = clone_object(mpzmod_program, 0);			\
+    get_mpz(sp+e-args, 1);				\
+  res = fast_clone_object(THIS_PROGRAM, 0);		\
   mpz_set(OBTOMPZ(res), THIS);				\
   for(e=0;e<args;e++)					\
     fun(OBTOMPZ(res), OBTOMPZ(res),			\
@@ -557,7 +575,7 @@ static void mpzmod_sub(INT32 args)
     for (e = 0; e<args; e++)
       get_mpz(sp + e - args, 1);
   
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_set(OBTOMPZ(res), THIS);
 
   if(args)
@@ -583,7 +601,7 @@ static void mpzmod_rsub(INT32 args)
   
   a=get_mpz(sp-1,1);
   
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
 
   mpz_sub(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
@@ -602,7 +620,7 @@ static void mpzmod_div(INT32 args)
 	error("Division by zero.\n");	
   }
   
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
   {
@@ -628,7 +646,7 @@ static void mpzmod_rdiv(INT32 args)
 
   a=get_mpz(sp-1,1);
   
-  res=clone_object(mpzmod_program,0);
+  res=fast_clone_object(THIS_PROGRAM,0);
   mpz_fdiv_q(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -643,7 +661,7 @@ static void mpzmod_mod(INT32 args)
     if (!mpz_sgn(get_mpz(sp+e-args, 1)))
       error("Division by zero.\n");	
   
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
     mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
@@ -664,7 +682,7 @@ static void mpzmod_rmod(INT32 args)
 
   a=get_mpz(sp-1,1);
   
-  res=clone_object(mpzmod_program,0);
+  res=fast_clone_object(THIS_PROGRAM,0);
   mpz_fdiv_r(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -681,9 +699,9 @@ static void mpzmod_gcdext(INT32 args)
 
   a = get_mpz(sp-1, 1);
   
-  g = clone_object(mpzmod_program, 0);
-  s = clone_object(mpzmod_program, 0);
-  t = clone_object(mpzmod_program, 0);
+  g = fast_clone_object(THIS_PROGRAM, 0);
+  s = fast_clone_object(THIS_PROGRAM, 0);
+  t = fast_clone_object(THIS_PROGRAM, 0);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), OBTOMPZ(t), THIS, a);
   pop_n_elems(args);
@@ -701,8 +719,8 @@ static void mpzmod_gcdext2(INT32 args)
 
   a = get_mpz(sp-args, 1);
   
-  g = clone_object(mpzmod_program, 0);
-  s = clone_object(mpzmod_program, 0);
+  g = fast_clone_object(THIS_PROGRAM, 0);
+  s = fast_clone_object(THIS_PROGRAM, 0);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), NULL, THIS, a);
   pop_n_elems(args);
@@ -720,7 +738,7 @@ static void mpzmod_invert(INT32 args)
   modulo = get_mpz(sp-args, 1);
   if (!mpz_sgn(modulo))
     error("divide by zero");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
     free_object(res);
@@ -737,7 +755,7 @@ static void mpzmod_compl(INT32 args)
 {
   struct object *o;
   pop_n_elems(args);
-  o=clone_object(mpzmod_program,0);
+  o=fast_clone_object(THIS_PROGRAM,0);
   mpz_com(OBTOMPZ(o), THIS);
   PUSH_REDUCED(o);
 }
@@ -824,7 +842,7 @@ static void mpzmod_next_prime(INT32 args)
   }
   pop_n_elems(args);
   
-  o = clone_object(mpzmod_program, 0);
+  o = fast_clone_object(THIS_PROGRAM, 0);
   mpz_next_prime(OBTOMPZ(o), THIS, count, limit);
   
   PUSH_REDUCED(o);
@@ -844,7 +862,7 @@ static void mpzmod_sqrt(INT32 args)
   if(mpz_sgn(THIS)<0)
     error("mpz->sqrt() on negative number.\n");
 
-  o=clone_object(mpzmod_program,0);
+  o=fast_clone_object(THIS_PROGRAM,0);
   mpz_sqrt(OBTOMPZ(o), THIS);
   PUSH_REDUCED(o);
 }
@@ -857,8 +875,8 @@ static void mpzmod_sqrtrem(INT32 args)
   if(mpz_sgn(THIS)<0)
     error("mpz->sqrtrem() on negative number.\n");
 
-  root = clone_object(mpzmod_program,0);
-  rem = clone_object(mpzmod_program,0);
+  root = fast_clone_object(THIS_PROGRAM,0);
+  rem = fast_clone_object(THIS_PROGRAM,0);
   mpz_sqrtrem(OBTOMPZ(root), OBTOMPZ(rem), THIS);
   PUSH_REDUCED(root); PUSH_REDUCED(rem);
   f_aggregate(2);
@@ -874,7 +892,7 @@ static void mpzmod_lsh(INT32 args)
   f_cast();
   if(sp[-1].u.integer < 0)
     error("mpz->lsh on negative number.\n");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -890,7 +908,7 @@ static void mpzmod_rsh(INT32 args)
   f_cast();
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->rsh: Shift count must be positive.\n");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -907,7 +925,7 @@ static void mpzmod_rlsh(INT32 args)
   if(i < 0)
     error("mpz->``<< on negative number.\n");
 
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_mul_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -923,7 +941,7 @@ static void mpzmod_rrsh(INT32 args)
   i=mpz_get_si(THIS);
   if(i < 0)
     error("mpz->``>> on negative number.\n");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_fdiv_q_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -940,7 +958,7 @@ static void mpzmod_powm(INT32 args)
   n = get_mpz(sp - 1, 1);
   if (!mpz_sgn(n))
     error("Gmp.mpz->powm: Divide by zero\n");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_powm(OBTOMPZ(res), THIS, get_mpz(sp - 2, 1), n);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -956,7 +974,7 @@ static void mpzmod_pow(INT32 args)
     error("Gmp.mpz->pow: Non int exponent.\n");
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->pow: Negative exponent.\n");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -996,7 +1014,7 @@ static void gmp_pow(INT32 args)
   if ( (sp[-2].type != T_INT) || (sp[-2].u.integer < 0)
        || (sp[-1].type != T_INT) || (sp[-1].u.integer < 0))
     error("Gmp.pow: Negative arguments");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_ui_pow_ui(OBTOMPZ(res), sp[-2].u.integer, sp[-1].u.integer);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1011,7 +1029,7 @@ static void gmp_fac(INT32 args)
     error("Gmp.fac: Non int argument.\n");
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->pow: Negative exponent.\n");
-  res = clone_object(mpzmod_program, 0);
+  res = fast_clone_object(THIS_PROGRAM, 0);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1024,7 +1042,7 @@ static void mpzmod_random(INT32 args)
   if(mpz_sgn(THIS) <= 0)
     error("random on negative number.\n");
 
-  res=clone_object(mpzmod_program,0);
+  res=fast_clone_object(THIS_PROGRAM,0);
   /* We add two to assure reasonably uniform randomness */
   mpz_random(OBTOMPZ(res), mpz_size(THIS) + 2);
   mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
@@ -1046,111 +1064,129 @@ void pike_module_exit(void)
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
   free_program(mpzmod_program);
+  mpzmod_program=0;
+#ifdef AUTO_BIGNUM
+  free_program(bignum_program);
+  bignum_program=0;
+#endif
 #endif
 }
+
+
+#define MPZ_ARG_TYPE "int|float|object"
+#define MPZ_SHIFT_TYPE "function(int|float|object:object)"
+#define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:object)")
+#define MPZ_CMPOP_TYPE ("function(" MPZ_ARG_TYPE ":int)")
+
+#define MPZ_DEFS()							\
+  ADD_STORAGE(MP_INT);							\
+  									\
+  /* function(void|string|int|float|object:void)"			\
+  "|function(string,int:void) */					\
+  ADD_FUNCTION("create", mpzmod_create,					\
+	       tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,			\
+			      tObj),tVoid),				\
+		   tFunc(tStr tInt,tVoid)), 0);				\
+									\
+  add_function("`+",mpzmod_add,MPZ_BINOP_TYPE,0);			\
+  add_function("`+=",mpzmod_add_eq,MPZ_BINOP_TYPE,0);			\
+  add_function("``+",mpzmod_add,MPZ_BINOP_TYPE,0);			\
+  add_function("`-",mpzmod_sub,MPZ_BINOP_TYPE,0);			\
+  add_function("``-",mpzmod_rsub,MPZ_BINOP_TYPE,0);			\
+  add_function("`*",mpzmod_mul,MPZ_BINOP_TYPE,0);			\
+  add_function("``*",mpzmod_mul,MPZ_BINOP_TYPE,0);			\
+  add_function("`/",mpzmod_div,MPZ_BINOP_TYPE,0);			\
+  add_function("``/",mpzmod_rdiv,MPZ_BINOP_TYPE,0);			\
+  add_function("`%",mpzmod_mod,MPZ_BINOP_TYPE,0);			\
+  add_function("``%",mpzmod_rmod,MPZ_BINOP_TYPE,0);			\
+  add_function("`&",mpzmod_and,MPZ_BINOP_TYPE,0);			\
+  add_function("``&",mpzmod_and,MPZ_BINOP_TYPE,0);			\
+  add_function("`|",mpzmod_or,MPZ_BINOP_TYPE,0);			\
+  add_function("``|",mpzmod_or,MPZ_BINOP_TYPE,0);			\
+  /* function(:object) */						\
+  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj),0);			\
+									\
+  add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);			\
+  add_function("`>>",mpzmod_rsh,MPZ_SHIFT_TYPE,0);			\
+  add_function("``<<",mpzmod_rlsh,MPZ_SHIFT_TYPE,0);			\
+  add_function("``>>",mpzmod_rrsh,MPZ_SHIFT_TYPE,0);			\
+									\
+  add_function("`>", mpzmod_gt,MPZ_CMPOP_TYPE,0);			\
+  add_function("`<", mpzmod_lt,MPZ_CMPOP_TYPE,0);			\
+  add_function("`>=",mpzmod_ge,MPZ_CMPOP_TYPE,0);			\
+  add_function("`<=",mpzmod_le,MPZ_CMPOP_TYPE,0);			\
+									\
+  add_function("`==",mpzmod_eq,MPZ_CMPOP_TYPE,0);			\
+  add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE,0);			\
+									\
+  /* function(:int) */							\
+  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt),0);			\
+									\
+  /* function(:int) */							\
+  ADD_FUNCTION("__hash",mpzmod_get_int,tFunc(tNone,tInt),0);		\
+  /* function(string:mixed) */						\
+  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);			\
+									\
+  /* function(int:string) */						\
+  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), 0);	\
+  									\
+  /* function(void|int:string) */					\
+  ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
+  /* function(int:string) */						\
+  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), 0);	\
+  /* function(void|int:int) */						\
+  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
+									\
+  /* function(:int) */							\
+  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
+  /* function(:string) */						\
+  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr),0);	\
+  /* function(:float) */						\
+  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);	\
+									\
+  /* function(:int) */							\
+  ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
+	       tFunc(tNone,tInt),0);					\
+  /* function(int|void:int) */						\
+  ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
+	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
+  /* function(int|void,int|void:object) */				\
+  ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
+	       tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tObj), 0);		\
+  									\
+  add_function("gcd",mpzmod_gcd, MPZ_BINOP_TYPE, 0);			\
+  add_function("gcdext", mpzmod_gcdext,					\
+  "function(" MPZ_ARG_TYPE ":array(object))", 0);			\
+  add_function("gcdext2", mpzmod_gcdext2,				\
+  "function(" MPZ_ARG_TYPE ":array(object))", 0);			\
+  add_function("invert", mpzmod_invert,					\
+  "function(" MPZ_ARG_TYPE ":object)", 0);				\
+									\
+  /* function(:object) */						\
+  ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tObj),0);		\
+  /* function(:array(object)) */					\
+  ADD_FUNCTION("sqrtrem", mpzmod_sqrtrem,tFunc(tNone,tArr(tObj)), 0);	\
+  add_function("powm",mpzmod_powm,					\
+  "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);		\
+  /* function(int:object) */						\
+  ADD_FUNCTION("pow", mpzmod_pow,tFunc(tInt,tObj), 0);			\
+									\
+  /* function(void:int) */						\
+  ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
+									\
+  ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tObj),0);		\
+  									\
+  set_init_callback(init_mpz_glue);					\
+  set_exit_callback(exit_mpz_glue);
+
 
 void pike_module_init(void)
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
-  int id;
   start_new_program();
-  ADD_STORAGE(MP_INT);
-  
-  /* function(void|string|int|float|object:void)"
-  "|function(string,int:void) */
-  ADD_FUNCTION("create", mpzmod_create,tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tVoid),tFunc(tStr tInt,tVoid)), 0);
 
-#define MPZ_ARG_TYPE "int|float|object"
-#define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:object)")
+  MPZ_DEFS();
 
-  add_function("`+",mpzmod_add,MPZ_BINOP_TYPE,0);
-  add_function("`+=",mpzmod_add_eq,MPZ_BINOP_TYPE,0);
-  add_function("``+",mpzmod_add,MPZ_BINOP_TYPE,0);
-  add_function("`-",mpzmod_sub,MPZ_BINOP_TYPE,0);
-  add_function("``-",mpzmod_rsub,MPZ_BINOP_TYPE,0);
-  add_function("`*",mpzmod_mul,MPZ_BINOP_TYPE,0);
-  add_function("``*",mpzmod_mul,MPZ_BINOP_TYPE,0);
-  add_function("`/",mpzmod_div,MPZ_BINOP_TYPE,0);
-  add_function("``/",mpzmod_rdiv,MPZ_BINOP_TYPE,0);
-  add_function("`%",mpzmod_mod,MPZ_BINOP_TYPE,0);
-  add_function("``%",mpzmod_rmod,MPZ_BINOP_TYPE,0);
-  add_function("`&",mpzmod_and,MPZ_BINOP_TYPE,0);
-  add_function("``&",mpzmod_and,MPZ_BINOP_TYPE,0);
-  add_function("`|",mpzmod_or,MPZ_BINOP_TYPE,0);
-  add_function("``|",mpzmod_or,MPZ_BINOP_TYPE,0);
-  /* function(:object) */
-  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj),0);
-
-#define MPZ_SHIFT_TYPE "function(int|float|object:object)"
-  add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);
-  add_function("`>>",mpzmod_rsh,MPZ_SHIFT_TYPE,0);
-  add_function("``<<",mpzmod_rlsh,MPZ_SHIFT_TYPE,0);
-  add_function("``>>",mpzmod_rrsh,MPZ_SHIFT_TYPE,0);
-
-#define MPZ_CMPOP_TYPE ("function(" MPZ_ARG_TYPE ":int)")
-
-  add_function("`>", mpzmod_gt,MPZ_CMPOP_TYPE,0);
-  add_function("`<", mpzmod_lt,MPZ_CMPOP_TYPE,0);
-  add_function("`>=",mpzmod_ge,MPZ_CMPOP_TYPE,0);
-  add_function("`<=",mpzmod_le,MPZ_CMPOP_TYPE,0);
-
-  add_function("`==",mpzmod_eq,MPZ_CMPOP_TYPE,0);
-  add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE,0);
-
-  /* function(:int) */
-  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt),0);
-
-  /* function(:int) */
-  ADD_FUNCTION("__hash",mpzmod_get_int,tFunc(tNone,tInt),0);
-  /* function(string:mixed) */
-  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);
-
-  /* function(int:string) */
-  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), 0);
-  
-  /* function(void|int:string) */
-  ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);
-  /* function(int:string) */
-  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), 0);
-  /* function(void|int:int) */
-  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);
-
-  /* function(:int) */
-  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);
-  /* function(:string) */
-  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr),0);
-  /* function(:float) */
-  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);
-
-  /* function(:int) */
-  ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,tFunc(tNone,tInt),0);
-  /* function(int|void:int) */
-  ADD_FUNCTION("small_factor", mpzmod_small_factor,tFunc(tOr(tInt,tVoid),tInt), 0);
-  /* function(int|void,int|void:object) */
-  ADD_FUNCTION("next_prime", mpzmod_next_prime,tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tObj), 0);
-  
-  add_function("gcd",mpzmod_gcd, MPZ_BINOP_TYPE, 0);
-  add_function("gcdext", mpzmod_gcdext,
-  "function(" MPZ_ARG_TYPE ":array(object))", 0);
-  add_function("gcdext2", mpzmod_gcdext2,
-  "function(" MPZ_ARG_TYPE ":array(object))", 0);
-  add_function("invert", mpzmod_invert,
-  "function(" MPZ_ARG_TYPE ":object)", 0);
-
-  /* function(:object) */
-  ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tObj),0);
-  /* function(:array(object)) */
-  ADD_FUNCTION("sqrtrem", mpzmod_sqrtrem,tFunc(tNone,tArr(tObj)), 0);
-  add_function("powm",mpzmod_powm,
-  "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);
-  /* function(int:object) */
-  ADD_FUNCTION("pow", mpzmod_pow,tFunc(tInt,tObj), 0);
-
-  /* function(void:int) */
-  ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);
-
-  ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tObj),0);
-  
 #if 0
   /* These are not implemented yet */
   /* function(:int) */
@@ -1159,11 +1195,8 @@ void pike_module_init(void)
   add_function("divm", mpzmod_divm, "function(" MPZ_ARG_TYPE ","
 	       MPZ_ARG_TYPE ":object)", 0);
 #endif
-  set_init_callback(init_mpz_glue);
-  set_exit_callback(exit_mpz_glue);
 
-
-  id=add_program_constant("mpz", mpzmod_program=end_program(), 0);
+  add_program_constant("mpz", mpzmod_program=end_program(), 0);
 
   /* function(int, int:object) */
   ADD_FUNCTION("pow", gmp_pow,tFunc(tInt tInt,tObj), 0);
@@ -1172,8 +1205,22 @@ void pike_module_init(void)
 
 #ifdef AUTO_BIGNUM
   {
-    /* Alert bignum.c that we have been loaded /Hubbe */
+    int id;
     extern gmp_library_loaded;
+
+    /* This program autoconverts to integers, Gmp.mpz does not!!
+     * magic? no, just an if statement :)              /Hubbe
+     */
+    start_new_program();
+
+    /* I first tried to just do an inherit here, but it becomes too hard
+     * to tell the programs apart when I do that..          /Hubbe
+     */
+    MPZ_DEFS();
+
+    id=add_program_constant("bignum", bignum_program=end_program(), 0);
+    
+    /* Alert bignum.c that we have been loaded /Hubbe */
     gmp_library_loaded=1;
 
 #if 0

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.31 1999/10/22 02:35:56 hubbe Exp $
+ * $Id: object.h,v 1.32 1999/10/26 06:30:35 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -52,13 +52,17 @@ struct object *low_clone(struct program *p);
 void call_c_initializers(struct object *o);
 void do_free_object(struct object *o);
 struct object *debug_clone_object(struct program *p, int args);
+struct object *fast_clone_object(struct program *p, int args);
 struct object *parent_clone_object(struct program *p,
 				   struct object *parent,
 				   int parent_identifier,
 				   int args);
 struct object *get_master(void);
 struct object *debug_master(void);
+struct destroy_called_mark;
 PTR_HASH_ALLOC(destroy_called_mark,128)
+static void call_destroy(struct object *o, int foo);
+void low_destruct(struct object *o,int do_free);
 void destruct(struct object *o);
 void destruct_objects_to_destruct(void);
 void really_free_object(struct object *o);
@@ -97,9 +101,11 @@ struct magic_index_struct;
 void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void init_object(void);
 void exit_object(void);
+void check_object_context(struct object *o,
+			  struct program *context_prog,
+			  char *current_storage);
 void check_object(struct object *o);
 void check_all_objects(void);
-void check_object_context(struct object *o, struct program *p, char *storage);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.167 1999/10/26 03:36:28 hubbe Exp $");
+RCSID("$Id: program.c,v 1.168 1999/10/26 06:30:36 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1744,12 +1744,14 @@ int define_variable(struct pike_string *name,
   switch(run_time_type)
   {
 #ifdef AUTO_BIGNUM
+#if 0
     case T_OBJECT:
       /* This is to allow room for integers in variables declared as
        * 'object', however, this could be changed in the future to only
        * make room for integers if the variable was declared as
        * 'object(Gmp.mpz)'                                     /Hubbe
        */
+#endif
     case T_INT:
 #endif
     case T_FUNCTION:
