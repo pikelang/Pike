@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.31 2003/02/16 03:50:23 mast Exp $
+|| $Id: pike_threadlib.h,v 1.32 2003/02/16 04:18:52 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -597,6 +597,21 @@ extern void dumpmem(char *desc, void *x, int size);
 #define REVEAL_PC
 #endif
 
+#define HIDE_GLOBAL_VARIABLES() do { \
+   int Pike_interpreter =0; \
+   int pop_n_elems = 0; \
+   int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1 \
+   HIDE_PC
+
+/* Note that the semi-colon below is needed to add an empty statement
+ * in case there is a label before the macro.
+ */
+#define REVEAL_GLOBAL_VARIABLES() ; REVEAL_PC } while(0)
+#else /* PIKE_DEBUG */
+#define HIDE_GLOBAL_VARIABLES()
+#define REVEAL_GLOBAL_VARIABLES()
+#endif /* PIKE_DEBUG */
+
 #ifdef PIKE_DEBUG
 #define ASSERT_THREAD_SWAPPED_IN() do {				\
     struct thread_state *_tmp=thread_state_for_id(th_self());	\
@@ -615,21 +630,6 @@ extern void dumpmem(char *desc, void *x, int size);
 #define ASSERT_THREAD_SWAPPED_IN() do { } while (0)
 #define DEBUG_CHECK_THREAD() do { } while (0)
 #endif
-
-#define HIDE_GLOBAL_VARIABLES() do { \
-   int Pike_interpreter =0; \
-   int pop_n_elems = 0; \
-   int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1 \
-   HIDE_PC
-
-/* Note that the semi-colon below is needed to add an empty statement
- * in case there is a label before the macro.
- */
-#define REVEAL_GLOBAL_VARIABLES() ; REVEAL_PC } while(0)
-#else /* PIKE_DEBUG */
-#define HIDE_GLOBAL_VARIABLES()
-#define REVEAL_GLOBAL_VARIABLES()
-#endif /* PIKE_DEBUG */
 
 #define THREADSTATE2OBJ(X) ((X)->state.thread_obj)
 
