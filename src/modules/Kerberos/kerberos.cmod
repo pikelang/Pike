@@ -1,5 +1,5 @@
 /*
- * $Id: kerberos.cmod,v 1.1 2004/05/13 08:57:08 grubba Exp $
+ * $Id: kerberos.cmod,v 1.2 2004/05/13 13:09:19 grubba Exp $
  *
  * Kerberos support for Pike.
  *
@@ -14,6 +14,9 @@
 #include "svalue.h"
 #include "module.h"
 #include "interpret.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 #if defined(HAVE_KRB5_H) && defined(HAVE_LIBKRB5)
 #define HAVE_KRB5
@@ -123,12 +126,12 @@ PIKECLASS Context
 
 #endif /* HAVE_KRB5 */
 
-PIKE_MODULE_INIT
+void pike_module_init(void)
 {
   INIT;
 }
 
-PIKE_MODULE_EXIT
+void pike_module_exit(void)
 {
   EXIT;
 }

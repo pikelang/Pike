@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2004/05/13 08:57:07 grubba Exp $
+# $Id: Makefile.in,v 1.2 2004/05/13 13:09:18 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=kerberos.o
@@ -8,5 +8,10 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 kerberos.o: $(SRCDIR)/kerberos.c
+
+.SUFFIXES: .c .o .cmod
+
+.cmod.c:
+	../../precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 @dependencies@

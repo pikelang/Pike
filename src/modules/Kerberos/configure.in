@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 2004/05/13 08:57:07 grubba Exp $
+# $Id: configure.in,v 1.2 2004/05/13 13:09:18 grubba Exp $
 #
 # Support for Kerberos
 #
@@ -12,27 +12,17 @@ AC_ARG_WITH(krb5,     [  --with(out)-krb5       Support for Kerberos 5],[],[with
 
 AC_MODULE_INIT()
 
-PIKE_FEATURE_OK(Math.)
-
 AC_C_CHAR_UNSIGNED
 
 if test x$with_krb5 = xyes ; then
   dnl Checks for header files.
-
-  PIKE_FEATURE(Kerberos,[no (krb5.h not found)])
 
   AC_CHECK_HEADERS(krb5.h)
 
   if test "$ac_cv_header_krb5_h" = "yes"; then
     dnl Checks for libraries.
 
-    PIKE_FEATURE(Kerberos,[no (krb5 libraries not found)])
-
     AC_CHECK_LIB(krb5, krb5_init_context)
-
-    if test "$ac_cv_lib_krb5_krb5_init_context" = "yes"; then
-      PIKE_FEATURE(Kerberos,[yes])
-    fi
   fi
 fi
 
