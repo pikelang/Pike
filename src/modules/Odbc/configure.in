@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 1998/02/23 17:37:12 grubba Exp $
+# $Id: configure.in,v 1.9 1998/02/24 13:07:23 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -30,12 +30,6 @@ if test x$with_odbc = xyes; then
       foodir=''
     else
       foodir=$INFORMIXDIR/cli/dlls
-    fi
-
-    if test "x$MIMER_HOME" = "x" ; then
-      :
-    else
-      foodir="$foodir $MIMER_HOME/lib $MIMER_HOME/modules/.odbc/"
     fi
 
     for pike_cv_odbc_lib_dir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
