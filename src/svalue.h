@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.114 2002/12/01 00:00:31 mast Exp $
+|| $Id: svalue.h,v 1.115 2003/02/15 02:51:06 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -401,6 +401,8 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
   struct svalue *_b=(Y);				\
   struct svalue _tmp;					\
   assert_svalue_locked(_a); assert_svalue_locked(_b);	\
+  dmalloc_touch_svalue(_a);				\
+  dmalloc_touch_svalue(_b);				\
   _tmp=*_a; *_a=*_b; *_b=_tmp;				\
 }while(0)
 
@@ -409,7 +411,6 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
   assert_svalue_locked(_s);					\
   check_type(_s->type); check_refs(_s);				\
   if(_s->type<=MAX_REF_TYPE) {					\
-    debug_malloc_touch(_s->u.refs);				\
     if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); }	\
   }								\
   DO_IF_DMALLOC(_s->type=PIKE_T_UNKNOWN;_s->u.refs=(void *)-1); \
@@ -494,6 +495,7 @@ extern struct svalue dest_ob_zero;
 
 #define really_free_short_svalue(U, TYPE) do {				\
     union anything *any_ = (U);						\
+    debug_malloc_touch (any_->ptr);					\
     really_free_short_svalue_ptr (&any_->ptr, (TYPE));			\
   } while (0)
 
