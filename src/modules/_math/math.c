@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.63 2003/07/17 16:53:44 mirar Exp $
+|| $Id: math.c,v 1.64 2003/07/17 17:06:54 mirar Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.63 2003/07/17 16:53:44 mirar Exp $");
+RCSID("$Id: math.c,v 1.64 2003/07/17 17:06:54 mirar Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -204,29 +204,27 @@ void f_atan2(INT32 args)
 /*! @decl float sinh(float f)
  *!
  *! Returns the hyperbolic sine value for @[f].
- *! @[f] should be specified in radians.
  *!
  *! @seealso
  *!   @[asinh()], @[cosh()], @[tanh()]
  */
 void f_sinh(INT32 args)
 {
-  ARG_CHECK("sin");
+  ARG_CHECK("sinh");
   sp[-1].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)sinh(sp[-1].u.float_number));
 }
 
 /*! @decl float asinh(float f)
  *!
- *! Return the arcus sine value for @[f].
- *! The result will be in radians.
+ *! Return the hyperbolic arcus sine value for @[f].
  *!
  *! @seealso
  *!   @[sinh()], @[acosh()]
  */
 void f_asinh(INT32 args)
 {
-  ARG_CHECK("asin");
+  ARG_CHECK("asinh");
   sp[-1].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)asinh(sp[-1].u.float_number));
 }
@@ -234,29 +232,27 @@ void f_asinh(INT32 args)
 /*! @decl float cosh(float f)
  *!
  *! Return the cosine value for @[f].
- *! @[f] should be specified in radians.
  *!
  *! @seealso
  *!   @[acosh()], @[sinh()], @[tanh()]
  */
 void f_cosh(INT32 args)
 {
-  ARG_CHECK("cos");
+  ARG_CHECK("cosh");
   sp[-1].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)cosh(sp[-1].u.float_number));
 }
 
 /*! @decl float acosh(float f)
  *!
- *! Return the arcus cosine value for @[f].
- *! The result will be in radians.
+ *! Return the hyperbolic arcus cosine value for @[f].
  *!
  *! @seealso
  *!   @[cosh()], @[asinh()]
  */
 void f_acosh(INT32 args)
 {
-  ARG_CHECK("acos");
+  ARG_CHECK("acosh");
   sp[-1].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)acosh(sp[-1].u.float_number));
 }
@@ -264,7 +260,6 @@ void f_acosh(INT32 args)
 /*! @decl float tanh(float f)
  *!
  *! Returns the hyperbolic tangent value for @[f].
- *! @[f] should be specified in radians.
  *!
  *! @seealso
  *!   @[atanh()], @[sinh()], @[cosh()]
@@ -272,7 +267,7 @@ void f_acosh(INT32 args)
 void f_tanh(INT32 args)
 {
   double f;
-  ARG_CHECK("tan");
+  ARG_CHECK("tanh");
 
   f = (sp[-1].u.float_number-M_PI/2) / M_PI;
   if (f==floor(f+0.5))
@@ -287,14 +282,13 @@ void f_tanh(INT32 args)
 /*! @decl float atanh(float f)
  *!
  *! Returns the hyperbolic arcus tangent value for @[f].
- *! The result will be in radians.
  *!
  *! @seealso
  *!   @[tanh()], @[asinh()], @[acosh()], @[atan2h()]
  */ 
 void f_atanh(INT32 args)
 {
-  ARG_CHECK("atan");
+  ARG_CHECK("atanh");
   sp[-1].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)atanh(sp[-1].u.float_number));
 }
