@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.42 2002/03/14 14:19:18 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.43 2002/03/15 15:13:12 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -460,7 +460,7 @@ private class Expression {
   }
 
   // We do not test for out of boundery indexing here...
-  //! Returns a token or a token range without whitespaces.
+  // Returns a token or a token range without whitespaces.
   string `[](int f, void|int t) {
     if(!t)
       return tokens[positions[f]];
@@ -470,8 +470,8 @@ private class Expression {
     return tokens[positions[f]..positions[t]]*"";
   }
 
-  //! See if there is any forbidden modifiers used in the expression,
-  //! e.g. "private int x;" is not valid inside Hilfe.
+  // See if there is any forbidden modifiers used in the expression,
+  // e.g. "private int x;" is not valid inside Hilfe.
   string check_modifiers() {
     foreach(sort(values(positions)), int pos)
       if(modifier[tokens[pos]])
@@ -482,13 +482,13 @@ private class Expression {
     return 0;
   }
 
-  //! Returns the expression verbatim.
+  // Returns the expression verbatim.
   string code() {
     return tokens*"";
   }
 
-  //! Returns the first complex entity in the expression,
-  //! e.g. "Stdio.File" is returned from ({ "Stdio", ".", "File", " ", "f", ";" }).
+  // Returns the first complex entity in the expression,
+  // e.g. "Stdio.File" is returned from ({ "Stdio", ".", "File", " ", "f", ";" }).
   string first_complex() {
     int p = search(tokens, " ");
     if(p==-1) p = sizeof(tokens)-1;
