@@ -18,7 +18,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-        create - connect to an SQL database
+	create - connect to an SQL database
  
 SYNTAX
 	#include <sql.h>
@@ -77,12 +77,12 @@ EXAMPLE
 	}
 
 SEE ALSO
-	sql->query()
+	sql->query
 
 
 ============================================================================
 NAME
-	error - report the last error from the underlying SQL-module
+	error - report the last error from the underlying SQL module
 
 SYNTAX
 	#include <sql.h>
@@ -105,10 +105,10 @@ SYNTAX
 
 DESCRIPTION
 	Most SQL-servers can hold several databases. You select which one
-	you want to sccess with this function.
+	you want to access with this function.
 
 SEE ALSO
-	sql->create, sql->create_db, sql->drop_db
+	Sql, sql->create_db, sql->drop_db
 
 
 ============================================================================
@@ -132,7 +132,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	big_query - make an SQL query, advanced version
+	big_query - make an SQL query (advanced version)
 
 SYNTAX
 	#include <sql.h>
@@ -185,7 +185,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	shutdown - shutdown the SQL-server
+	shutdown - shutdown the SQL server
 
 SYNTAX
 	#include <sql.h>
@@ -217,7 +217,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	server_info - give information about the current SQL-server
+	server_info - give information about the current SQL server
 
 SYNTAX
 	#include <sql.h>
@@ -250,7 +250,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	list_dbs - list available databases from this SQL-server
+	list_dbs - list available databases from this SQL server
 
 SYNTAX
 	#include <sql.h>
