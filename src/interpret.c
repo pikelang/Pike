@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.227 2001/07/18 20:20:23 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.228 2001/07/19 19:06:48 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -845,11 +845,13 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 			:
 			: "cc", "memory", "eax" );
 #elif defined(sparc)
-  /* No extra setup needed!
-   */
-  return ((int (*)(void))pc)();
+  /* The test is needed to get the labels to work... */
+  if (pc) {
+    /* No extra setup needed!
+     */
+    return ((int (*)(void))pc)();
+  }
 #endif /* __i386__ || sparc */
-
   /* This code is never reached, but will
    * prevent gcc from optimizing the labels below too much
    */
@@ -862,8 +864,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
    * should not matter to these return statements. -Hubbe
    */
 
- inter_return_label: return -1;
  inter_escape_catch_label: return -2;
+ inter_return_label: return -1;
 }
 
 #endif /* __GNUC__ */
