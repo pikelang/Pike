@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.141 2003/03/16 19:18:05 grubba Exp $
+|| $Id: pike_memory.c,v 1.142 2003/03/16 19:26:03 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.141 2003/03/16 19:18:05 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.142 2003/03/16 19:26:03 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2083,6 +2083,8 @@ static void find_references_to(void *block, int indent, int depth, int flags)
      *
      * This entire loop seems strange. Why is it split into
      * two parts?
+     *
+     * Hmm... Could it be that describe_location() can do find_memhdr()?
      */
     for(m=memhdr_hash_table[h];m;m=m->next)
     {
