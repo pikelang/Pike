@@ -1,12 +1,14 @@
 /*
- * $Id: mysql.c,v 1.14 1997/01/31 23:53:39 grubba Exp $
+ * $Id: mysql.c,v 1.15 1997/02/01 01:14:43 grubba Exp $
  *
  * SQL database functionality for Pike
  *
  * Henrik Grubbström 1996-12-21
  */
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif /* HAVE_CONFIG_H */
 
 #ifdef HAVE_MYSQL
 
@@ -61,7 +63,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.14 1997/01/31 23:53:39 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.15 1997/02/01 01:14:43 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
