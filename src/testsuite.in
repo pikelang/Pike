@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.752 2005/02/18 13:54:04 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.753 2005/04/02 11:43:03 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10030,9 +10030,9 @@ test_eval_error(return unicode_to_string(" "))
 test_eq(string_to_utf8("foo"), "foo")
 test_eq(string_to_utf8("blä"), "bl\303\244")
 test_eq(string_to_utf8("\77077"), "\347\270\277")
-test_eq(string_to_utf8("\7077077"), "\367\207\270\277")
-test_eq(string_to_utf8("\77077077"), "\370\277\207\270\277")
-test_eq(string_to_utf8("\7077077077"), "\374\270\277\207\270\277")
+test_eq(string_to_utf8("\7077077", 1), "\367\207\270\277")
+test_eq(string_to_utf8("\77077077", 1), "\370\277\207\270\277")
+test_eq(string_to_utf8("\7077077077", 1), "\374\270\277\207\270\277")
 
 // 077077077077 has 33 bits unsigned. The escape sequence parser used
 // to silently truncate too long char values, but not anymore.
@@ -10042,9 +10042,9 @@ dnl test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\77077077077")
 test_eq(string_to_utf8("\37077077077", 1), "\376\203\270\277\207\270\277")
 test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\37077077077")
 
-test_eq(utf8_to_string("\374\270\277\207\270\277"), "\7077077077")
-test_eq(utf8_to_string("\370\277\207\270\277"), "\77077077")
-test_eq(utf8_to_string("\367\207\270\277"), "\7077077")
+test_eq(utf8_to_string("\374\270\277\207\270\277", 1), "\7077077077")
+test_eq(utf8_to_string("\370\277\207\270\277", 1), "\77077077")
+test_eq(utf8_to_string("\367\207\270\277", 1), "\7077077")
 test_eq(utf8_to_string("\347\270\277"), "\77077")
 test_eq(utf8_to_string("bl\303\244"), "blä")
 test_eq(utf8_to_string("foo"), "foo")
@@ -10065,6 +10065,54 @@ test_eval_error(return utf8_to_string("\370\277\207\270a"));
 test_eval_error(return utf8_to_string("\367\207\270a"));
 test_eval_error(return utf8_to_string("\347\270a"));
 test_eval_error(return utf8_to_string("\303a"));
+
+// Invalid ranges
+test_eq(string_to_utf8 ("\ud7ff"), "\u00ed\u009f\u00bf")
+test_eval_error(return string_to_utf8 ("\ud800"))
+test_eq(string_to_utf8 ("\ud800", 1), "\u00ed\u00a0\u0080")
+test_eq(string_to_utf8 ("\udfff", 1), "\u00ed\u00bf\u00bf")
+test_eval_error(return string_to_utf8 ("\udfff"))
+test_eq(string_to_utf8 ("\ue000"), "\u00ee\u0080\u0080")
+test_eq(string_to_utf8 ("\U0010ffff"), "\u00f4\u008f\u00bf\u00bf")
+test_eval_error(return string_to_utf8 ("\U00110000"))
+test_eq(string_to_utf8 ("\U00110000", 1), "\u00f4\u0090\u0080\u0080")
+
+test_eq(utf8_to_string ("\u00ed\u009f\u00bf"), "\ud7ff")
+test_eval_error(return utf8_to_string ("\u00ed\u00a0\u0080"))
+test_eq(utf8_to_string ("\u00ed\u00a0\u0080", 1), "\ud800")
+test_eq(utf8_to_string ("\u00ed\u00bf\u00bf", 1), "\udfff")
+test_eval_error(return utf8_to_string ("\u00ed\u00bf\u00bf"))
+test_eq(utf8_to_string ("\u00ee\u0080\u0080"), "\ue000")
+test_eq(utf8_to_string ("\u00f4\u008f\u00bf\u00bf"), "\U0010ffff")
+test_eval_error(return utf8_to_string ("\u00f4\u0090\u0080\u0080"))
+test_eq(utf8_to_string ("\u00f4\u0090\u0080\u0080", 1), "\U00110000")
+test_eval_error(return utf8_to_string ("\u00f8\u0088\u0080\u0080\u0080"))
+test_eval_error(return utf8_to_string ("\u00fc\u0084\u0080\u0080\u0080\u0080"))
+test_eval_error(return utf8_to_string ("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080"))
+test_eq(utf8_to_string ("\u00fe\u0083\u00bf\u00bf\u00bf\u00bf\u00bf", 1), "\Uffffffff")
+test_eval_error(return utf8_to_string ("\u00fe\u0084\u0080\u0080\u0080\u0080\u0080", 1))
+test_eval_error(return utf8_to_string ("\u00ff"))
+test_eval_error(return utf8_to_string ("\u00ff", 1))
+
+// Non-shortest forms
+test_eval_error(return utf8_to_string ("\u00c0\u0080"))
+test_eval_error(return utf8_to_string ("\u00c1\u00bf"))
+test_eq(utf8_to_string ("\u00c2\u0080"), "\u0080")
+test_eval_error(return utf8_to_string ("\u00e0\u0080\u0080"))
+test_eval_error(return utf8_to_string ("\u00e0\u009f\u00bf"))
+test_eq(utf8_to_string ("\u00e0\u00a0\u0080"), "\u0800"))
+test_eval_error(return utf8_to_string ("\u00f0\u0080\u0080\u0080"))
+test_eval_error(return utf8_to_string ("\u00f0\u008f\u00bf\u00bf"))
+test_eq(utf8_to_string ("\u00f0\u0090\u0080\u0080"), "\U00010000")
+test_eval_error(return utf8_to_string ("\u00f8\u0080\u0080\u0080\u0080", 1))
+test_eval_error(return utf8_to_string ("\u00f8\u0087\u00bf\u00bf\u00bf", 1))
+test_eq(utf8_to_string ("\u00f8\u0088\u0080\u0080\u0080", 1), "\U00200000")
+test_eval_error(return utf8_to_string ("\u00fc\u0080\u0080\u0080\u0080\u0080", 1))
+test_eval_error(return utf8_to_string ("\u00fc\u0083\u00bf\u00bf\u00bf\u00bf", 1))
+test_eq(utf8_to_string ("\u00fc\u0084\u0080\u0080\u0080\u0080", 1), "\U04000000")
+test_eval_error(return utf8_to_string ("\u00fe\u0080\u0080\u0080\u0080\u0080\u0080", 1))
+test_eval_error(return utf8_to_string ("\u00fe\u0081\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
+test_eq(utf8_to_string ("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1), "\U80000000")
 
 // - stringp
 // Tested in foop
