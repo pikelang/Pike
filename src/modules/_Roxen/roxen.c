@@ -73,23 +73,27 @@ static void f_hp_feed( INT32 args )
     Pike_error("Wide string headers not supported\n");
   while( str->len >= hp->left )
   {
+    char *buf;
     if( THP->hsize > 512 * 1024 )
       Pike_error("Too many headers\n");
     THP->hsize += 8192;
+    buf = THP->headers;
     THP->headers = realloc( THP->headers, THP->hsize );
     if( !THP->headers )
     {
+      free(buf);
       THP->hsize = 0;
       THP->left = 0;
       Pike_error("Running out of memory in header parser\n");
     }
-    THP->left  += 8192;
+    THP->left += 8192;
     THP->pnt = (THP->headers + THP->hsize - THP->left);
   }
 
   MEMCPY( hp->pnt, str->str, str->len );
   pop_n_elems( args );
 
+  /* FIXME: The below does not support lines terminated with just \r. */
   for( ep=(hp->pnt+str->len),pp=MAXIMUM(hp->headers,hp->pnt-3); 
        pp<ep && slash_n<2; pp++ )
     if( *pp == ' ' )  spc++;
@@ -128,53 +132,74 @@ static void f_hp_feed( INT32 args )
 
   /* find first line here */
   for( i = 0; i < l; i++ )
-    if( in[i] == '\n' )
+    if((in[i] == '\n') || (in[i] == '\r'))
       break;
 
-  if( in[i-1] != '\r' ) 
+  push_string( make_shared_binary_string( in, i ) );
+
+  if((in[i] == '\r') && (in[i+1] == '\n'))
     i++;
+  i++;
 
-  push_string( make_shared_binary_string( in, i-1 ) );
   in += i; l -= i;
-  if( *in == '\n' ) (in++),(l--);
 
+  /* Parse headers. */
   for(i = 0; i < l; i++)
   {
-    if(in[i] > 64 && in[i] < 91) in[i]+=32;
+    if(in[i] > 64 && in[i] < 91) in[i]+=32;	/* lower_case */
     else if( in[i] == ':' )
     {
+      /* FIXME: Does not support white space before the colon. */
       /* in[os..i-1] == the header */
+      int val_cnt = 0;
       push_string(make_shared_binary_string((char*)in+os,i-os));
-      os = i+1;
-      while(in[os]==' ') os++;
-      for(j=os;j<l;j++) 
-        if( in[j] == '\n' || in[j]=='\r')
-          break; 
 
-      push_string(make_shared_binary_string((char*)in+os,j-os));
+      /* Skip the colon and initial white space. */
+      os = i+1;
+      while((in[os]==' ') || (in[os]=='\t')) os++;
+
+      /* NOTE: We need to support MIME header continuation lines
+       *       (Opera uses this...).
+       */
+      do {
+	for(j=os;j<l;j++)	/* Find end of line */
+	  if( in[j] == '\n' || in[j]=='\r')
+	    break; 
+
+	push_string(make_shared_binary_string((char*)in+os,j-os));
+	val_cnt++;
+
+	if((in[j] == '\r') && (in[j+1] == '\n')) j++;
+	os = j+1;
+	i = j;
+	/* Check for continuation line. */
+      } while ((os < l) && ((in[os] == ' ') || (in[os] == '\t')));
+
+      if (val_cnt > 1) {
+	/* Join partial header values. */
+	f_add(val_cnt);
+      }
 
       if((tmp = low_mapping_lookup(headers, Pike_sp-2)))
       {
-        f_aggregate( 1 );
-        if( tmp->type == PIKE_T_ARRAY )
-        {
-          tmp->u.array->refs++;
-          push_array(tmp->u.array);
-          map_delete(headers, Pike_sp-3);
-          f_add(2);
-        } else {
-          tmp->u.string->refs++;
-          push_string(tmp->u.string);
-          f_aggregate(1);
-          map_delete(headers, Pike_sp-3);
-          f_add(2);
-        }
+	f_aggregate( 1 );
+	if( tmp->type == PIKE_T_ARRAY )
+	{
+	  tmp->u.array->refs++;
+	  push_array(tmp->u.array);
+	  map_delete(headers, Pike_sp-3);
+	  f_add(2);
+	} else {
+	  tmp->u.string->refs++;
+	  push_string(tmp->u.string);
+	  f_aggregate(1);
+	  map_delete(headers, Pike_sp-3);
+	  f_add(2);
+	}
       }
       mapping_insert(headers, Pike_sp-2, Pike_sp-1);
+
       pop_n_elems(2);
-      if( in[j+1] == '\n' ) j++;
-      os = j+1;
-      i = j;
     }
   }
   push_mapping( headers );
@@ -193,6 +218,9 @@ static void f_hp_create( INT32 args )
   pop_n_elems(args);
   push_int(0);
 }
+
+/*! @endclass
+ */
 
 static void f_make_http_headers( INT32 args )
 /*! @decl string @
@@ -214,7 +242,7 @@ static void f_make_http_headers( INT32 args )
     if( k->ind.type != PIKE_T_STRING || k->ind.u.string->size_shift )
       Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|array(string(8bit))) heads)\n");
-    if( k->val.type == PIKE_T_STRING  && !k->val.u.string->size_shift )
+    if( k->val.type == PIKE_T_STRING && !k->val.u.string->size_shift )
       total_len +=  k->val.u.string->len + 2 + k->ind.u.string->len + 2;
     else if( k->val.type == PIKE_T_ARRAY )
     {
@@ -307,6 +335,10 @@ static void f_http_decode_string(INT32 args)
 }
 
 static void f_html_encode_string( INT32 args )
+/*! @decl string html_encode_string(mixed in)
+ *!
+ *! Encodes the @[in] data as an HTML safe string.
+ */
 {
   struct pike_string *str;
   int newlen;
