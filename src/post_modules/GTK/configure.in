@@ -331,11 +331,11 @@ AC_SUBST(have_gtk_120)
  AC_SUBST(PGTK_LIBS)
  AC_SUBST(GNOME_CFLAGS)
  AC_SUBST(GNOME_LIBS)
- AC_SUBST(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL)
- AC_SUBST(pgtk_defined_HAVE_PANEL_BIND_EVENTS)
- AC_SUBST(pgtk_defined_HAVE_PANEL_PIXEL_SIZE)
- AC_SUBST(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL)
- AC_SUBST(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE)
+ AC_SUBST(pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL)
+ AC_SUBST(pgtk_cv_defined_HAVE_PANEL_BIND_EVENTS)
+ AC_SUBST(pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE)
+ AC_SUBST(pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL)
+ AC_SUBST(pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE)
  AC_SUBST(pgtk_has_gnome)
  AC_SUBST(pgtk_has_docklets)
 
@@ -422,7 +422,7 @@ if test "x$WITH_GTK" = x1 ; then
      ;;
    esac
  fi
- 
+
  AC_MSG_CHECKING([gnome])
  
  if test "$GNOME_CONFIG" = "no"; then
@@ -432,9 +432,7 @@ if test "x$WITH_GTK" = x1 ; then
    GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets`"
    GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets`"
    pgtk_has_gnome=gnome
-   AC_DEFINE(HAVE_GNOME)
    AC_MSG_RESULT(yes);
-   PIKE_FEATURE_OK(Gnome)
  fi
  
  AC_MSG_CHECKING([gnome docklets])
@@ -453,12 +451,40 @@ if test "x$WITH_GTK" = x1 ; then
      AC_MSG_RESULT(yes);
    fi
  fi
- 
+
  oCFLAG="$CFLAGS"
  CFLAGS="$GNOME_CFLAGS"
+
+ # Do some extra effort to check for the header files, since some
+ # Gnome packagings doesn't include them all (e.g. applet-widget.h on
+ # Debian systems). Can't use AC_CHECK_HEADERS here since it doesn't
+ # use $CFLAGS.
+ define(REALLY_CHECK_HEADER, [
+   AC_CACHE_CHECK([for $1], [pgtk_cv_header_]translit($1,./-,___), [
+     AC_TRY_COMPILE([#include <$1>],,
+     [[pgtk_cv_header_]translit($1,./-,___)=yes],
+     [[pgtk_cv_header_]translit($1,./-,___)=no])
+   ])
+ ])
+ REALLY_CHECK_HEADER(gnome.h)
+ REALLY_CHECK_HEADER(libgnorba/gnorba.h)
+ REALLY_CHECK_HEADER(applet-widget.h)
+ if test "$pgtk_cv_header_gnome_h" != "yes" ; then
+   pgtk_has_gnome=nognome
+   PIKE_FEATURE(Gnome, [no (gnome.h not found)])
+ elif test "$pgtk_cv_header_libgnorba_gnorba_h" != "yes" ; then
+   pgtk_has_gnome=nognome
+   PIKE_FEATURE(Gnome, [no (libgnorba/gnorba.h not found)])
+ elif test "$pgtk_cv_header_applet_widget_h" != "yes" ; then
+   pgtk_has_gnome=nognome
+   PIKE_FEATURE(Gnome, [no (applet-widget.h not found)])
+ else
+   AC_DEFINE(HAVE_GNOME)
+   PIKE_FEATURE_OK(Gnome)
+ fi
  
  AC_MSG_CHECKING([if HAVE_SAVE_SESSION_SIGNAL is defined in applet-widget.h])
- AC_CACHE_VAL(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL,[
+ AC_CACHE_VAL(pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL,[
  AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
@@ -466,17 +492,17 @@ if test "x$WITH_GTK" = x1 ; then
    int i = HAVE_SAVE_SESSION_SIGNAL;
    exit(0);
  ], 
- [pgtk_defined_HAVE_SAVE_SESSION_SIGNAL='defined HAVE_SAVE_SESSION_SIGNAL'],
- [pgtk_defined_HAVE_SAVE_SESSION_SIGNAL=''])
+ [pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL='defined HAVE_SAVE_SESSION_SIGNAL'],
+ [pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL=''])
  ])
- if test "x$pgtk_defined_HAVE_SAVE_SESSION_SIGNAL" = "x" ; then
+ if test "x$pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL" = "x" ; then
    AC_MSG_RESULT(no)
  else
    AC_MSG_RESULT(yes)
  fi
  
  AC_MSG_CHECKING([if HAVE_APPLET_BIND_EVENTS is defined in applet-widget.h])
- AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_BIND_EVENTS,[
+ AC_CACHE_VAL(pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS,[
  AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
@@ -484,10 +510,10 @@ if test "x$WITH_GTK" = x1 ; then
    int i = HAVE_APPLET_BIND_EVENTS;
    exit(0);
  ], 
- [pgtk_defined_HAVE_APPLET_BIND_EVENTS='defined HAVE_APPLET_BIND_EVENTS'],
- [pgtk_defined_HAVE_APPLET_BIND_EVENTS=''])
+ [pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS='defined HAVE_APPLET_BIND_EVENTS'],
+ [pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS=''])
  ])
- if test "x$pgtk_defined_HAVE_APPLET_BIND_EVENTS" = "x" ; then
+ if test "x$pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS" = "x" ; then
    AC_MSG_RESULT(no)
  else
    AC_MSG_RESULT(yes)
@@ -495,7 +521,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  
  AC_MSG_CHECKING([if HAVE_PANEL_PIXEL_SIZE is defined in applet-widget.h])
- AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_PIXEL_SIZE,[
+ AC_CACHE_VAL(pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE,[
  AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
@@ -503,17 +529,17 @@ if test "x$WITH_GTK" = x1 ; then
    int i = HAVE_PANEL_PIXEL_SIZE;
    exit(0);
  ], 
- [pgtk_defined_HAVE_PANEL_PIXEL_SIZE='defined HAVE_PANEL_PIXEL_SIZE'],
- [pgtk_defined_HAVE_PANEL_PIXEL_SIZE=''])
+ [pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE='defined HAVE_PANEL_PIXEL_SIZE'],
+ [pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE=''])
  ])
- if test "x$pgtk_defined_HAVE_PANEL_PIXEL_SIZE" = "x" ; then
+ if test "x$pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE" = "x" ; then
    AC_MSG_RESULT(no)
  else
    AC_MSG_RESULT(yes)
  fi
  
  AC_MSG_CHECKING([if HAVE_PANEL_DRAW_SIGNAL is defined in applet-widget.h])
- AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL,[
+ AC_CACHE_VAL(pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL,[
  AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
@@ -521,17 +547,17 @@ if test "x$WITH_GTK" = x1 ; then
    int i = HAVE_PANEL_DRAW_SIGNAL;
    exit(0);
  ], 
- [pgtk_defined_HAVE_PANEL_DRAW_SIGNAL='defined HAVE_PANEL_DRAW_SIGNAL'],
- [pgtk_defined_HAVE_PANEL_DRAW_SIGNAL=''])
+ [pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL='defined HAVE_PANEL_DRAW_SIGNAL'],
+ [pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL=''])
  ])
- if test "x$pgtk_defined_HAVE_PANEL_DRAW_SIGNAL" = "x" ; then
+ if test "x$pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL" = "x" ; then
    AC_MSG_RESULT(no)
  else
    AC_MSG_RESULT(yes)
  fi
  
  AC_MSG_CHECKING([if HAVE_APPLET_QUEUE_RESIZE is defined in applet-widget.h])
- AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE,[
+ AC_CACHE_VAL(pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE,[
  AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
@@ -539,10 +565,10 @@ if test "x$WITH_GTK" = x1 ; then
    int i = HAVE_APPLET_QUEUE_RESIZE;
    exit(0);
  ], 
- [pgtk_defined_HAVE_APPLET_QUEUE_RESIZE='defined HAVE_APPLET_QUEUE_RESIZE'],
- [pgtk_defined_HAVE_APPLET_QUEUE_RESIZE=''])
+ [pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE='defined HAVE_APPLET_QUEUE_RESIZE'],
+ [pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE=''])
  ])
- if test "x$pgtk_defined_HAVE_APPLET_QUEUE_RESIZE" = "x" ; then
+ if test "x$pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE" = "x" ; then
    AC_MSG_RESULT(no)
  else
    AC_MSG_RESULT(yes)
