@@ -1,8 +1,8 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.13 2003/04/06 22:49:11 nilsson Exp $
+// $Id: module.pike,v 1.14 2003/04/06 22:53:10 nilsson Exp $
 
-constant version = ("$Revision: 1.13 $"/" ")[1];
+constant version = ("$Revision: 1.14 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -258,7 +258,7 @@ int main(int argc, array(string) argv)
 	string data = Process.popen("autoconf --version");
 	data = (data/"\n")[0];
 	float v;
-	sscanf(data, "%*s %f", v);
+	sscanf(data, "%*s%f", v);
 
 	// If we fail to determine the autoconf version we assume
 	// yet another incompatble autoconf change.
