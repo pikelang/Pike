@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.93 1998/05/25 16:40:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.94 1998/05/25 19:00:37 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2065,7 +2065,7 @@ void program_index_no_free(struct svalue *to, struct program *p,
     }
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
-      *to = *(p2->constants + id->func.offset);
+      assign_svalue_no_free(to, (p2->constants + id->func.offset));
       return;
     } else {
       if (s->len < 1024) {
