@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.63 2000/03/09 05:06:08 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.64 2000/03/10 20:02:40 hubbe Exp $
 #
 
 
@@ -87,6 +87,10 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 
 config.status: $(SRCDIR)/configure
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status --recheck
+
+# FIXME:
+#  Move -lc $(LIBGCC) into a configurable variable and make sure it is empty on UnixWare
+#
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	@echo "linking $(MODNAME)" ;\

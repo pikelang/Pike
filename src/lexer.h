@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.15 2000/02/03 19:09:12 grubba Exp $
+ * $Id: lexer.h,v 1.16 2000/03/10 20:06:34 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -342,6 +342,7 @@ static int low_yylex(YYSTYPE *yylval)
 	goto badhash;
 
       case 'p':
+	/* FIXME: Support #pike */
 	if(ISWORD("pragma"))
 	{
 	  SKIPSPACE();
