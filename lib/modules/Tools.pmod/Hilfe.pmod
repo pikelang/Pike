@@ -105,9 +105,9 @@ import Getopt;
 	}
       }else{
 	if(show_result)
-	  write("Result: "+a+"\n");
+	   write("Result: "+replace(a, "\n", "\n        ")+"\n");
 	else
-	  write("Ok.\n");
+	   write("Ok.\n");
 	variables=foo->query_variables();
       }
     }
