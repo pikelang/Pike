@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.5 1999/01/24 17:31:02 mirar Exp $
+**!	$Id: colors.c,v 1.6 1999/01/24 21:38:01 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.5 1999/01/24 17:31:02 mirar Exp $");
+RCSID("$Id: colors.c,v 1.6 1999/01/24 21:38:01 mirar Exp $");
 
 #include "config.h"
 
@@ -143,8 +143,12 @@ struct color_struct
    struct pike_string *name;
 };
 
-void image_make_hsv_color(INT32 args); /* forward */
-void image_make_cmyk_color(INT32 args); /* forward */
+/* forward */
+static void image_make_rgb_color(INT32 args); 
+static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
+static void image_make_hsv_color(INT32 args); 
+static void image_make_cmyk_color(INT32 args);
+static void image_make_color(INT32 args);
 
 struct html_color
 {
@@ -182,13 +186,17 @@ static void make_colors(void)
 
    for (i=0;i<n;i++)
    {
+      struct color_struct *cs;
       push_text(c[i].name);
       copy_shared_string(c[i].pname,sp[-1].u.string);
-      push_int(c[i].r);
-      push_int(c[i].g);
-      push_int(c[i].b);
-      push_text(c[i].name);
-      push_object(clone_object(image_color_program,4)); 
+
+      push_object(clone_object(image_color_program,0)); 
+      cs=(struct color_struct*)
+	 get_storage(sp[-1].u.object,image_color_program);
+      cs->rgb.r=(COLORTYPE)c[i].r;
+      cs->rgb.g=(COLORTYPE)c[i].g;
+      cs->rgb.b=(COLORTYPE)c[i].b;
+      copy_shared_string(cs->name,c[i].pname);
    }
    f_aggregate_mapping(n*2);
    colors=sp[-1].u.mapping;
@@ -225,13 +233,13 @@ static void make_colors(void)
 #define THIS ((struct color_struct*)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-void init_color_struct(struct object *dummy)
+static void init_color_struct(struct object *dummy)
 {
    THIS->rgb.r=THIS->rgb.g=THIS->rgb.b=0;
    THIS->name=NULL;
 }
 
-void exit_color_struct(struct object *dummy)
+static void exit_color_struct(struct object *dummy)
 {
    if (THIS->name) 
    {
@@ -240,34 +248,34 @@ void exit_color_struct(struct object *dummy)
    }
 }
 
-static void try_find_name(void)
+static void try_find_name(struct color_struct *this)
 {
    rgb_group d;
 
    if (!colors)
       make_colors();
 
-   if (THIS->name) 
+   if (this->name) 
    {
-      free_string(THIS->name);
-      THIS->name=NULL;
+      free_string(this->name);
+      this->name=NULL;
    }
 
    image_colortable_map_image((struct neo_colortable*)colortable->storage,
-			      &(THIS->rgb),&d,1,1);
+			      &(this->rgb),&d,1,1);
    
-   if (d.r==THIS->rgb.r &&
-       d.g==THIS->rgb.g &&
-       d.b==THIS->rgb.b)
+   if (d.r==this->rgb.r &&
+       d.g==this->rgb.g &&
+       d.b==this->rgb.b)
    {
       unsigned short d2;
       image_colortable_index_16bit_image(
 	 (struct neo_colortable*)colortable->storage,
-	 &(THIS->rgb),&d2,1,1);
+	 &(this->rgb),&d2,1,1);
 
       if (d2<colornames->size)
       {
-	 copy_shared_string(THIS->name,
+	 copy_shared_string(this->name,
 			    colornames->item[d2].u.string);
       }
    }
@@ -280,50 +288,6 @@ static void try_find_name(void)
 **----- internal note: it takes a fourth argument, name of color ---
 **!
 */
-
-void image_color_create(INT32 args)
-{
-   if (args==4) /* r,g,b,name */
-   {
-      INT32 r,g,b;
-      get_all_args("Image.color.color->create()",args,"%i%i%i%W",
-		   &r,&g,&b,&(THIS->name));
-
-      if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
-      if (g<0) g=0; else if (g>COLORMAX) g=COLORMAX;
-      if (b<0) b=0; else if (b>COLORMAX) b=COLORMAX;
-
-      THIS->rgb.r=(COLORTYPE)r;
-      THIS->rgb.g=(COLORTYPE)g;
-      THIS->rgb.b=(COLORTYPE)b;
-
-      reference_shared_string(THIS->name);
-
-      pop_n_elems(args);
-   }
-   else if (args==3) /* r,g,b */
-   {
-      INT32 r,g,b;
-      get_all_args("Image.color.color->create()",args,"%i%i%i",
-		   &r,&g,&b);
-
-      if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
-      if (g<0) g=0; else if (g>COLORMAX) g=COLORMAX;
-      if (b<0) b=0; else if (b>COLORMAX) b=COLORMAX;
-
-      THIS->rgb.r=(COLORTYPE)r;
-      THIS->rgb.g=(COLORTYPE)g;
-      THIS->rgb.b=(COLORTYPE)b;
-
-      pop_n_elems(args);
-
-      try_find_name();
-   }
-   else error("Image.color.color->create(): Illegal argument(s)\n");
-
-   push_int(0);
-}
-
 /*
 **! method array(int) rgb()
 **! method array(int) hsv()
@@ -347,7 +311,7 @@ void image_color_create(INT32 args)
 **! see also: Image.color.color, grey
 */
 
-void image_color_rgb(INT32 args)
+static void image_color_rgb(INT32 args)
 {
    pop_n_elems(args);
    push_int(THIS->rgb.r);
@@ -356,7 +320,7 @@ void image_color_rgb(INT32 args)
    f_aggregate(3);
 }
 
-void image_color_greylevel(INT32 args)
+static void image_color_greylevel(INT32 args)
 {
    INT32 r,g,b;
    if (args==0)
@@ -376,7 +340,7 @@ void image_color_greylevel(INT32 args)
 
 #define MAX3(X,Y,Z) MAXIMUM(MAXIMUM(X,Y),Z)
 
-void image_color_hsv(INT32 args)
+static void image_color_hsv(INT32 args)
 {
    float max, min;
    float r,g,b, delta;
@@ -420,7 +384,7 @@ void image_color_hsv(INT32 args)
    f_aggregate(3);
 }
 
-void image_color_cmyk(INT32 args)
+static void image_color_cmyk(INT32 args)
 {
    float c,m,y,k;
    pop_n_elems(args);
@@ -447,12 +411,12 @@ void image_color_cmyk(INT32 args)
 **! see also: greylevel
 */
 
-void image_color_grey(INT32 args)
+static void image_color_grey(INT32 args)
 {
    image_color_greylevel(args);
    stack_dup();
    stack_dup();
-   push_object(clone_object(image_color_program,3));
+   image_make_rgb_color(3);
 }
 
 /*
@@ -479,7 +443,7 @@ void image_color_grey(INT32 args)
 **! see also: rgb, hsv, Image.color
 */
 
-void image_color_hex(INT32 args)
+static void image_color_hex(INT32 args)
 {
    char buf[80];
    INT32 i=sizeof(COLORTYPE)*2;
@@ -532,7 +496,7 @@ void image_color_hex(INT32 args)
    push_text(buf);
 }
 
-void image_color_html(INT32 args)
+static void image_color_html(INT32 args)
 {
    int i;
 
@@ -553,7 +517,7 @@ void image_color_html(INT32 args)
    image_color_hex(1);
 }
 
-void image_color_name(INT32 args)
+static void image_color_name(INT32 args)
 {
    pop_n_elems(args);
    if (THIS->name)
@@ -571,7 +535,7 @@ void image_color_name(INT32 args)
 **! see also: rgb, name
 */
 
-void image_color_cast(INT32 args)
+static void image_color_cast(INT32 args)
 {
    if (args!=1 ||
        sp[-1].type!=T_STRING)
@@ -590,7 +554,7 @@ void image_color_cast(INT32 args)
    error("Image.color.color->cast(): Can't cast to that\n");
 }
 
-void image_color_index(INT32 args)
+static void image_color_index(INT32 args)
 {
    struct svalue s;
 
@@ -672,7 +636,7 @@ void image_color_index(INT32 args)
 **!	The other datatype (not color object) must be to the right!
 */
 
-void image_color_equal(INT32 args)
+static void image_color_equal(INT32 args)
 {
    if (args!=1) 
       error("Image.color.color->`==: illegal number of arguments");
@@ -784,7 +748,7 @@ void image_color_equal(INT32 args)
 */
 
 
-void image_color_light(INT32 args)
+static void image_color_light(INT32 args)
 {
    pop_n_elems(args);
    image_color_hsv(0);
@@ -794,7 +758,7 @@ void image_color_light(INT32 args)
    image_make_hsv_color(3);
 }
 
-void image_color_dark(INT32 args)
+static void image_color_dark(INT32 args)
 {
    pop_n_elems(args);
    image_color_hsv(0);
@@ -804,7 +768,7 @@ void image_color_dark(INT32 args)
    image_make_hsv_color(3);
 }
 
-void image_color_neon(INT32 args)
+static void image_color_neon(INT32 args)
 {
    pop_n_elems(args);
    image_color_hsv(0);
@@ -815,7 +779,7 @@ void image_color_neon(INT32 args)
    image_make_hsv_color(3);
 }
 
-void image_color_dull(INT32 args)
+static void image_color_dull(INT32 args)
 {
    pop_n_elems(args);
    image_color_hsv(0);
@@ -826,7 +790,7 @@ void image_color_dull(INT32 args)
    image_make_hsv_color(3);
 }
 
-void image_color_bright(INT32 args)
+static void image_color_bright(INT32 args)
 {
    pop_n_elems(args);
    image_color_hsv(0);
@@ -837,12 +801,85 @@ void image_color_bright(INT32 args)
    image_make_hsv_color(3);
 }
 
+
+static void image_color_mult(INT32 args)
+{
+   float x=0.0;
+   get_all_args("Image.color.color->`*",args,"%f",&x);
+   pop_n_elems(args);
+   _image_make_rgb_color((int)(THIS->rgb.r*x),
+			 (int)(THIS->rgb.g*x),
+			 (int)(THIS->rgb.b*x));
+}
+
+static int image_color_arg(INT32 args,rgb_group *rgb)
+{
+   if (!args) return 0;
+   if (sp[-args].type==T_OBJECT)
+   {
+      struct color_struct *cs=(struct color_struct*)
+	 get_storage(sp[-args].u.object,image_color_program);
+
+      if (cs) 
+      {
+	 *rgb=cs->rgb;
+	 return 1;
+      }
+   }
+   else if (sp[-args].type==T_ARRAY)
+   {
+      int n=sp[-args].u.array->size;
+      add_ref(sp[-args].u.array);
+      push_array_items(sp[-args].u.array);
+      image_make_color(n);
+      if (sp[-1].type==T_OBJECT)
+      {
+	 struct color_struct *cs=(struct color_struct*)
+	    get_storage(sp[-args].u.object,image_color_program);
+	 *rgb=cs->rgb;
+	 pop_stack();
+	 return 1;
+      }
+      pop_stack();
+   }
+   else if (sp[-args].type==T_STRING)
+   {
+      push_svalue(sp-args);
+      image_make_color(1);
+      if (sp[-1].type==T_OBJECT)
+      {
+	 struct color_struct *cs=(struct color_struct*)
+	    get_storage(sp[-args].u.object,image_color_program);
+	 *rgb=cs->rgb;
+	 pop_stack();
+	 return 1;
+      }
+      pop_stack();
+   }
+   return NULL;
+}
+
+static void image_color_add(INT32 args)
+{
+   rgb_group rgb;
+
+   if (!image_color_arg(args,&rgb))
+      error("Image.color.color->`+: Illegal argument(s)");
+
+   pop_n_elems(args);
+   _image_make_rgb_color((int)(THIS->rgb.r+rgb.r),
+			 (int)(THIS->rgb.g+rgb.g),
+			 (int)(THIS->rgb.b+rgb.b));
+}
+
+
+
 #define HEXTONUM(C) \
 	(((C)>='0' && (C)<='9')?(C)-'0': \
 	 ((C)>='a' && (C)<='f')?(C)-'a'+10: \
 	 ((C)>='A' && (C)<='F')?(C)-'A'+10:-1)
 
-void image_get_color(INT32 args)
+static void image_get_color(INT32 args)
 {
    struct svalue s;
    int n;
@@ -914,7 +951,7 @@ void image_get_color(INT32 args)
 	       push_int((INT32)rgb[0]);
 	       push_int((INT32)rgb[1]);
 	       push_int((INT32)rgb[2]);
-	       push_object(clone_object(image_color_program,3));
+	       image_make_rgb_color(3);
 
 	       return;
 	    }
@@ -991,7 +1028,7 @@ void image_get_color(INT32 args)
    *(sp++)=s;
 }
 
-void image_guess_color(INT32 args)
+static void image_guess_color(INT32 args)
 {
    struct svalue s;
 
@@ -1018,7 +1055,7 @@ void image_guess_color(INT32 args)
    image_get_color(1);
 }
 
-void image_make_color(INT32 args)
+static void image_make_color(INT32 args)
 {
    struct svalue s;
 
@@ -1027,8 +1064,7 @@ void image_make_color(INT32 args)
       image_get_color(args);
       return;
    }
-
-   push_object(clone_object(image_color_program,args));
+   image_make_rgb_color(args);
 }
 
 
@@ -1061,18 +1097,36 @@ void image_make_color(INT32 args)
 **! returns the created object.
 */
 
-void image_make_rgb_color(INT32 args)
+static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 {
-   if (args!=3) 
-   {
-      error("Image.color.rgb(): illegal number of arguments\n");
-      return;
-   }
+   struct color_struct *cs;
 
-   push_object(clone_object(image_color_program,args));
+   if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
+   if (g<0) g=0; else if (g>COLORMAX) g=COLORMAX;
+   if (b<0) b=0; else if (b>COLORMAX) b=COLORMAX;
+
+   push_object(clone_object(image_color_program,0));
+
+   cs=(struct color_struct*)
+      get_storage(sp[-1].u.object,image_color_program);
+
+   cs->rgb.r=(COLORTYPE)r;
+   cs->rgb.g=(COLORTYPE)g;
+   cs->rgb.b=(COLORTYPE)b;
+
+   try_find_name(cs);
 }
 
-void image_make_hsv_color(INT32 args)
+static void image_make_rgb_color(INT32 args)
+{
+   INT32 r=0,g=0,b=0;
+
+   get_all_args("Image.color.rgb()",args,"%i%i%i",&r,&g,&b);
+
+   _image_make_rgb_color(r,g,b);
+}
+
+static void image_make_hsv_color(INT32 args)
 {
    float h,s,v;
    INT32 hi,si,vi;
@@ -1117,14 +1171,13 @@ void image_make_hsv_color(INT32 args)
 #undef q
 #undef t
 #define FOO(X) ((int)((X)<0.0?0:(X)>1.0?COLORMAX:(int)((X)*((float)COLORMAX)+0.5)))
-   push_int(FOO(r));
-   push_int(FOO(g));
-   push_int(FOO(b));
 
-   push_object(clone_object(image_color_program,3));
+   _image_make_rgb_color(FOO(r),FOO(g),FOO(b));
+
+#undef FOO
 }
 
-void image_make_cmyk_color(INT32 args)
+static void image_make_cmyk_color(INT32 args)
 {
    float c,m,y,k,r,g,b;
    get_all_args("Image.color.cmyk()",args,"%F%F%F%F",&c,&m,&y,&k);
@@ -1134,28 +1187,22 @@ void image_make_cmyk_color(INT32 args)
    g=100-(m+k);
    b=100-(y+k);
 
-   push_int((int)(r*255.4/100.0));
-   push_int((int)(g*255.4/100.0));
-   push_int((int)(b*255.4/100.0));
-
-   push_object(clone_object(image_color_program,3));
+   _image_make_rgb_color((int)(r*255.4/100.0),
+			 (int)(g*255.4/100.0),
+			 (int)(b*255.4/100.0));
 }
 
-void image_make_greylevel_color(INT32 args)
+static void image_make_greylevel_color(INT32 args)
 {
    INT32 i;
 
    get_all_args("Image.color.greylevel()",args,"%i",&i);
    pop_n_elems(args);
-   
-   push_int(i);
-   push_int(i);
-   push_int(i);
 
-   push_object(clone_object(image_color_program,3));
+   _image_make_rgb_color(i,i,i);
 }
 
-void image_make_html_color(INT32 args)
+static void image_make_html_color(INT32 args)
 {
    int i;
 
@@ -1170,22 +1217,21 @@ void image_make_html_color(INT32 args)
    for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
       if (html_color[i].pname==sp[-1].u.string)
       {
-	 push_int(html_color[i].r);
-	 push_int(html_color[i].g);
-	 push_int(html_color[i].b);
-	 push_object(clone_object(image_color_program,3));
+	 _image_make_rgb_color(html_color[i].r,
+			       html_color[i].g,
+			       html_color[i].b);
 	 return;
       }
 
    if (sp[-1].u.string->len>0 &&
        sp[-1].u.string->str[0]=='#')
-      push_object(clone_object(image_color_program,1));
+      image_get_color(1);
    else
    {
       push_text("#");
       stack_swap();
       f_add(2);
-      push_object(clone_object(image_color_program,1));
+      image_get_color(1);
    }
 }
 
@@ -1198,7 +1244,7 @@ void image_make_html_color(INT32 args)
 **! see also: Image.color
 */
 
-void image_colors_indices(INT32 args)
+static void image_colors_indices(INT32 args)
 {
    pop_n_elems(args);
    if (!colors) make_colors();
@@ -1206,7 +1252,7 @@ void image_colors_indices(INT32 args)
    f_indices(1);
 }
 
-void image_colors_values(INT32 args)
+static void image_colors_values(INT32 args)
 {
    pop_n_elems(args);
    if (!colors) make_colors();
@@ -1233,9 +1279,6 @@ void init_image_colors(void)
    add_storage(sizeof(struct color_struct));
    set_init_callback(init_color_struct);
    set_exit_callback(exit_color_struct);
-
-   add_function("create",image_color_create,
-		"function(:void)",0);
 
    /* color info methods */
 
@@ -1280,6 +1323,11 @@ void init_image_colors(void)
 		"function(:object)",OPT_TRY_OPTIMIZE);
    add_function("dull",image_color_dull,
 		"function(:object)",OPT_TRY_OPTIMIZE);
+
+   add_function("`*",image_color_mult,
+		"function(float:object)",OPT_TRY_OPTIMIZE);
+   add_function("`+",image_color_add,
+		"function(object:object)",OPT_TRY_OPTIMIZE);
 
    image_color_program=end_program();
    
