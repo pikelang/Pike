@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "pike_macros.h"
 #include "error.h"
@@ -16,7 +17,7 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.23 1999/01/31 09:01:45 hubbe Exp $");
+RCSID("$Id: error.c,v 1.24 1999/02/20 17:44:55 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

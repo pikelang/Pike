@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.89 1999/02/10 21:46:58 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.90 1999/02/20 17:44:37 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -176,6 +176,8 @@ void low_init_threads_disable(void)
 		    (stderr, "low_init_threads_disable(): Locking IM's...\n"));
 
     if (thread_id) {
+      /* Threads have been enabled. */
+
       IMUTEX_T *im;
 
       THREADS_ALLOW();
@@ -193,6 +195,8 @@ void low_init_threads_disable(void)
 
       THREADS_DISALLOW();
     } else {
+      /* Threads haven't been enabled yet. */
+
       IMUTEX_T *im;
 
       /* Keep this the entire session. */
