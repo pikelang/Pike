@@ -1,26 +1,21 @@
-;;; pike.el -- Major mode for editing Pike and other LPC files.
-;;; $Id: pike.el,v 1.7 1999/10/02 05:49:54 mast Exp $
+;;; pike.el -- Font lock definitions for Pike and other LPC files.
+;;; $Id: pike.el,v 1.8 1999/11/27 19:48:01 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
 ;;; Keywords: Pike, LPC, uLPC, µLPC, highlight
 
-;;; This file also provides a highlight-syntax table for Pike.
-;;; In fact, it more or less require that you can set the highlight
-;;; table.. It require Emacs 19.30 or later
-
-;;; This file is modified by Martin Stjernholm <mast@lysator.liu.se>
-;;; to work with CC Mode that have Pike support.
-
-;;; Modified again by Per to support highlighting of 'new style' pike.
-;;; All pike manual stuff removed, there are normal manpages nowdays.
-
-;;; (load "pike")
-;;; (setq auto-mode-alist 
+;;; To use:
+;;;
+;;; (require 'pike)
+;;;
+;;; Older Emacs versions doesn't come with a Pike-aware CC Mode (M-x
+;;; c-version should report 5.23 or later), so you might have to
+;;; upgrade that (see http://www.python.org/emacs/cc-mode/). You
+;;; probably want this too in that case:
+;;;
+;;; (setq auto-mode-alist
 ;;;   (append '(("\\.pike$" . pike-mode)) auto-mode-alist)
-
-;;; Known problems:
-;;; The highlighting is at times quite bogus.
 
 (require 'font-lock)
 
@@ -219,7 +214,6 @@ The name is assumed to begin with a capital letter.")
 			    pike-font-lock-identifier-regexp ; 4
 			    ")")
 			   "\\)")
-		   ;;"\\s *\\(\\[\\s *\\]\\s *\\)*"
 		   (concat "\\("
 			   "[,:|\)]"
 			   "\\|"
@@ -295,10 +289,20 @@ The name is assumed to begin with a capital letter.")
 		   (setq pos (point)))
 		 (goto-char pos)))
 	     (condition-case nil
-		 (prog2
-		     (forward-sexp)
-		     (save-match-data
-		       (looking-at "\\s *\\(`\\|\\<\\|$\\)")))
+		 (progn
+		   (while (save-match-data
+			    (forward-sexp)
+			    (if (looking-at
+				 (concat "\\s *|"
+					 "\\(" pike-font-lock-class-name-regexp
+					 "\\|" pike-font-lock-type-regexp
+					 "\\s *\(?\\)"))
+				(progn
+				  (if (eq (char-after (1- (match-end 0))) ?\()
+				      (forward-sexp))
+				  t))))
+		   (save-match-data
+		     (looking-at "\\s *\\(`\\|\\<\\|$\\)")))
 	       (error nil))))
     (goto-char limit)))
 
@@ -318,8 +322,6 @@ The name is assumed to begin with a capital letter.")
 		    (looking-at pike-font-lock-type-regexp))
 		(error nil)))
     (forward-char 1))
-;  (if (looking-at "\\s *\\(\\[\\s *\\]\\s *\\)*")
-;      (goto-char (match-end 0)))
   (looking-at "\\(\\s *\\.\\.\\.\\)?\\(\\s \\|/\\*\\([^*]\\|\\*[^/]\\)*\\*/\\)*")
   (goto-char (match-end 0))
   (and
@@ -333,7 +335,6 @@ The name is assumed to begin with a capital letter.")
        (goto-char (match-beginning 1))
        (not (looking-at
 	     (concat pike-font-lock-class-name-regexp
-		     ;;"\\s *\\(\\[\\s *\\]\\s *\\)*\\<")))))
 		     "\\s *\\(\\<\\||\\)")))))
    (save-match-data
      (let ((start (match-end 0)))
@@ -373,4 +374,8 @@ The name is assumed to begin with a capital letter.")
 		   (font-lock-mark-block-function . mark-defun)))
 	   font-lock-defaults-alist)))
 
+;; Autoload spec for older emacsen that doesn't come with a Pike aware
+;; CC Mode. Doesn't do any harm in later emacsen.
 (autoload 'pike-mode "cc-mode" "Major mode for editing Pike code.")
+
+(provide 'pike)
