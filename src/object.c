@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.48 1998/04/24 00:32:09 hubbe Exp $");
+RCSID("$Id: object.c,v 1.49 1998/04/26 11:42:00 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -214,7 +214,7 @@ struct object *get_master(void)
 	/* do nothing */
 	UNSETJMP(tmp);
       }else{
-	extern f_decode_value(INT32);
+	extern void f_decode_value(INT32);
 
 	push_string(s);
 	push_int(0);

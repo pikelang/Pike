@@ -20,7 +20,7 @@
 #include "pike_macros.h"
 #include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.28 1998/04/24 00:10:44 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.29 1998/04/26 11:45:21 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -141,7 +141,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
   case BIT_FLOAT | BIT_INT:
     return;
 
-#define DOTYPE(X,Y,Z) case X:while(--num>=0) { debug_malloc_update_location(s->u.Z, file, line); Y(s->u.Z); s++; }return
+#define DOTYPE(X,Y,Z) case X:while(--num>=0) { DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, file, line)); Y(s->u.Z); s++; }return
     DOTYPE(BIT_STRING, free_string, string);
     DOTYPE(BIT_ARRAY, free_array, array);
     DOTYPE(BIT_MAPPING, free_mapping, mapping);
