@@ -1,10 +1,10 @@
 #!/usr/local/bin/pike
 
-// Partial linker for COFF files, written by Fredrik Hubinette 2000
+// Partial linker for COFF files, written by Fredrik Hubinette 2000 - 2001
 // 
 // Things left to do:
 //   Support long-format import libaries
-//   Merge sections (if given -O)
+//   Merge sections (if given -O ?)
 //   Support line number information
 //   Test if resulting files work with cl.exe
 //   Support 64 bit architechtures
@@ -51,6 +51,38 @@ class Symbol
 	  return name;
       if( (type >> 4) == 2) ret+="()";
       return ret;
+    }
+
+
+  /* We might want to patch the name of the antisymbol somehow to
+   * make sure symbols are never defined more than once
+   * As long as the modification is zapped in the demangle process
+   * it should be fine...
+   */
+  Symbol antisymbol()
+    {
+      Symbol s=Symbol();
+      s->name=name+"@__pntld_internal__";
+      s->value=value;
+      s->section=section;
+      s->type=(type & 0xf) | ( (type>>4)==2 ? 0 : (2<<4) );
+      s->cls=cls;
+      s->aux=aux;
+      return s;
+    }
+
+  int defined()
+    {
+      return !!(section || value);
+    }
+
+  int shareable()
+    {
+      if(!defined()) return 1;
+      if(sizeof(name/"@")>2) return 1;  /* real constant */
+      if(sscanf(name,"__real@%*s")) return 1; /* real constant */
+      if(!section && value) return 1; /* common symbols */
+      return 0;
     }
 };
 
@@ -678,6 +710,57 @@ class dumpfile
       return getCOFFstring(symboltable + x * 18);
     }
 
+
+  Symbol export_symbol(Symbol s)
+    {
+      Symbol ret;
+      string tmpname=s->demangle();
+//      if(s->name == "___gmpz_clear")
+//	werror("Exporting... ___gmpz_clear: %O\n",s->section);
+      
+      if(ret = global_symbols[tmpname])
+      {
+	if(ret->defined() && s->defined())
+	{
+	  if(!(ret->shareable() && s->shareable()))
+	  {
+	    if(search(ret->name,"@__pntld_internal__")==-1)
+	    {
+	      werror("%s: Warning: Symbol %s redefined.\n",
+		     filename,
+		     s->name);
+	    }
+	    ret=s;
+	  }
+	}
+	
+	if(s->defined())
+	{
+	  if( (ret->type >> 4) != ( s->type>>4) )
+	  {
+	    werror("Warning: same symbol, different levels of indirection!!!!!!\n");
+	    err++;
+	  }
+	}
+
+	if(s->defined())
+	{
+//	  if(s->name == "___gmpz_clear")
+//	    werror("Overriding %d\n",s==ret);
+
+	  ret->section = s->section;
+	  ret->value = s->value;
+	  ret->type = s->type;
+	}
+      }else{
+	ret=s;
+      }
+      
+      global_symbols[tmpname]=ret;
+
+      return ret;
+    }
+
   void dumpSymTable()
     {
       array ret=allocate(numsymbols);
@@ -734,37 +817,8 @@ class dumpfile
 	    switch(cls)
 	    {
 	      case COFFSYM_external:
-		string tmpname=s->demangle();
-		
-		if(global_symbols[tmpname])
-		{
-		  Symbol newsym=global_symbols[tmpname];
-		  if(newsym->section && sect > 0)
-		  {
-		    werror("%s: Warning: Symbol %s redefined.\n",
-			   filename,
-			   name);
-		    newsym=s;
-		  }
-		  
-		  if(sect > 0)
-		  {
-		    if( (newsym->type >> 4) != (type>>4) )
-		    {
-		      werror("Warning: same symbol, different levels of indirection!!!!!!\n");
-		      err++;
-		    }
-		  }
-		  s=newsym;
-		}
-		
-		if(sect > 0)
-		{
-		  s->section=file_sections[sect-1];
-		  s->value = value;
-		  s->type = type;
-		}
-		global_symbols[tmpname]=s;
+		if(s->section) export_symbol(s->antisymbol());
+		s=export_symbol(s);
 	    }
 	    file_symbols[e]=s;
 	    
@@ -982,7 +1036,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.8 2001/01/24 17:46:09 hubbe Exp $\n"
+	 "$Id: pntld,v 1.9 2001/01/26 12:45:37 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1108,7 +1162,10 @@ int main(int argc, array(string) argv)
 	      sym->value=0;
 	      if((sym->type >> 4) ==  2)
 	      {
-		werror("Warning: Symbol %s is double indirected!\n",sym->name);
+		if(search(sym->name,"@__pntld_internal__")==-1)
+		{
+		  werror("Warning: Symbol %s is double indirected!\n",sym->name);
+		}
 	      }
 	      sym->type=2<<4;
 	    }
