@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.149 2003/04/30 18:19:24 grubba Exp $
+|| $Id: system.c,v 1.150 2003/05/03 23:21:12 mast Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.149 2003/04/30 18:19:24 grubba Exp $");
+RCSID("$Id: system.c,v 1.150 2003/05/03 23:21:12 mast Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -1165,6 +1165,11 @@ f_get(f_getppid, getppid)
  *! @decl int chroot(Stdio.File newroot)
  *!
  *! Changes the root directory for this process to the indicated directory.
+ *!
+ *! @returns
+ *!   A nonzero value is returned if the call is successful. If
+ *!   there's an error then zero is returned and @[errno] is set
+ *!   appropriately.
  *!
  *! @note
  *!   Since this function modifies the directory structure as seen from
