@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.182 2000/08/16 12:56:47 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.183 2000/11/04 16:24:24 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1605,6 +1605,7 @@ lambda: F_LAMBDA push_compiler_frame1
   | F_LAMBDA push_compiler_frame1 error
   {
     pop_compiler_frame();
+    $$ = mkintnode(0);
   }
   ;
 
