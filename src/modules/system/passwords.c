@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.13 1998/04/20 12:33:21 grubba Exp $
+ * $Id: passwords.c,v 1.14 1998/05/22 12:34:28 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.13 1998/04/20 12:33:21 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.14 1998/05/22 12:34:28 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -132,7 +132,11 @@ void push_pwent(struct passwd *ent)
     push_text(ent->pw_passwd);
   push_int(ent->pw_uid);
   push_int(ent->pw_gid);
+#ifdef HAVE_PW_GECOS
   push_text(ent->pw_gecos);
+#else /* !HAVE_PW_GECOS */
+  push_text("Mister Anonymous");
+#endif /* HAVE_PW_GECOS */
   push_text(ent->pw_dir);
   push_text(ent->pw_shell);
   f_aggregate(7);
