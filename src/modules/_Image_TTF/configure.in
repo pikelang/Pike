@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 1999/03/06 02:05:00 grubba Exp $
+# $Id: configure.in,v 1.6 1999/07/30 16:15:11 marcus Exp $
 #
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)
@@ -12,7 +12,7 @@ if test x$with_ttflib = xyes ; then
   AC_CHECK_HEADERS(ftxkern.h)
   if test $ac_cv_header_freetype_h = yes -a \
           $ac_cv_header_ftxkern_h = yes ; then
-    AC_CHECK_LIB(ttf, Load_TrueType_Names, [
+    AC_CHECK_LIB(ttf, TT_Open_Collection, [
       AC_DEFINE(HAVE_LIBTTF) 
       LIBS="${LIBS-} -lttf"
     ])
