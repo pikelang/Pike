@@ -1,0 +1,146 @@
+<!--
+<head>
+<title>WMML tutorial</title
+</head>
+-->
+
+<firstpage>
+<p>
+<center>
+<h1>
+WMML
+</h1>
+</center>
+</firstpage>
+
+<preface title="Preface">
+This is a terse documentation about WMML.
+</preface>
+
+<table-of-contents title="Table of contents">
+
+<introduction title="Introduction">
+...
+</introduction>
+
+<chapter title="Reference">
+
+<!------------------------------------------------------------------>
+
+<section title="markup tags (implying format)">
+
+<method name=example title="mark a section as an example">
+<man_syntax>
+&lt;example&lt; ... &lt;/example&lt;
+</man_syntax>
+<man_arguments>
+<aargdesc><aarg>language</aarg>
+          <adesc>what language the example is written in 
+                 (pike is the only supported)</adesc></aargdesc>
+<aargdesc><aarg>meta</aarg>
+          <adesc>comma-separated list of ?</adesc></aargdesc>
+<man_description>
+This tag marks an area as an example. If <tt>language</tt> equals
+"<tt>pike</tt>", the are will count as preformatted.
+</man_description>
+<man_see>man_example, data_description</man_see>
+</method>
+
+data_description type=
+
+firstpage
+ref to=
+anchor name=
+
+</section title="markup tags (implying format)">
+
+<!------------------------------------------------------------------>
+
+<section title="text format tags">
+
+br
+center
+hr newpage
+tt
+p
+pre
+dd
+dl compact
+dl
+dt
+ul
+ol
+li
+i
+b
+
+</section title="text format tags">
+
+<!------------------------------------------------------------------>
+
+<section title="structure tags">
+
+preface title=
+introduction title=
+table-of-contents title=
+chapter title= name=
+section title= name=
+appendix title= name=
+index title=
+
+</section title="structure tags">
+
+<!------------------------------------------------------------------>
+
+<section title="recommendations to layout">
+wbr
+</section>
+
+<!------------------------------------------------------------------>
+
+<section title="reference markup tags">
+
+method name= title= 
+module name= title= mansuffix= 
+class name= title=
+constant name= title=
+function name= fullpath= title=
+variable name= title=
+
+man_arguments
+  aargdesc
+  adesc
+man_bugs
+man_description
+man_example
+man_note
+man_returns
+man_see
+man_syntax
+
+</section>
+
+<!------------------------------------------------------------------>
+
+<section title="illustrations and images">
+illustration __from__= src= type=
+img src=
+</section>
+
+<!------------------------------------------------------------------>
+
+<section title="magic">
+include file=
+head
+h1
+
+table border= cellpadding= cellspacing= halign=
+td align= valign=
+td rowspan=
+tr valign=
+</section>
+
+</chapter>
+
+<!------------------------------------------------------------------>
+
