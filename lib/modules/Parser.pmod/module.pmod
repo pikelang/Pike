@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.15 2002/11/26 12:44:24 grubba Exp $
+ * $Id: module.pmod,v 1.16 2004/06/08 12:13:37 anders Exp $
  *
  */
 
@@ -531,10 +531,12 @@ string decode_numeric_xml_entity (string chref)
 
 //! @decl HTML html_entity_parser()
 //! @decl string parse_html_entities(string in)
+//! @decl HTML html_entity_parser(int noerror)
+//! @decl string parse_html_entities(string in,int noerror)
 //!	Parse any HTML entities in the string to unicode characters.
 //!	Either return a complete parser (to build on or use) or parse
 //!	a string. Throw an error if there is an unrecognized entity in
-//!	the string.
+//!	the string if noerror is not set.
 //! @note
 //!	Currently using XHTML 1.0 tables.
 
@@ -557,14 +559,30 @@ static HTML entityparser =
     return p;
   }();
 
-HTML html_entity_parser()
+static HTML entityparser_noerror =
+  lambda () {
+     HTML p=entityparser->clone();
+
+     p->_set_entity_callback(
+	lambda(HTML p,string ent)
+	{
+	   string chr = decode_numeric_xml_entity (p->tag_name());
+	   if (!chr)
+	      return 0;
+	   return ({chr});
+	});
+
+    return p;
+  }();
+
+HTML html_entity_parser(void|int noerror)
 {
-   return entityparser->clone();
+   return (noerror?entityparser_noerror:entityparser)->clone();
 }
 
-string parse_html_entities(string in)
+string parse_html_entities(string in,void|int noerror)
 {
-   return html_entity_parser()->finish(in)->read();
+   return html_entity_parser(noerror)->finish(in)->read();
 }
 
 static mapping(string:string) rev_html_entities;
