@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.25 2000/11/01 14:15:42 grubba Exp $
+# $Id: configure.in,v 1.26 2000/11/01 14:22:05 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -189,13 +189,15 @@ if test x$with_oracle = xyes; then
 
     if test "x$pike_cv_sys_os" = "xWindows_NT"; then
       ORACLE_LIBS="-loci"
-    else if test -f "$oracle_lib_dir/libcommon8.a"; then
-      ORACLE_LIBS="-lclntsh"
     else
-      if test -f "$oracle_lib_dir/libcore4.a"; then
-        ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+      if test -f "$oracle_lib_dir/libcommon8.a"; then
+        ORACLE_LIBS="-lclntsh"
       else
-        ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+        if test -f "$oracle_lib_dir/libcore4.a"; then
+          ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+        else
+          ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+	fi
       fi
     fi
 
