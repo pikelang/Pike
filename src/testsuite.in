@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.363 2001/01/10 21:45:03 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.364 2001/01/10 23:32:18 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4322,6 +4322,36 @@ foo:
   }
   return ({a, b});
 ]], ({3, 1}));
+test_any_equal([[
+  int a, b;
+foo: {
+    for (int i = 1; i <= 4; i++) {
+      a = i;
+      switch (1) {
+	case 1:
+	  if (i >= 3) break foo;
+      }
+      b = i;
+    }
+  }
+  return ({a, b});
+]], ({3, 2}));
+test_any_equal([[
+  array res = ({});
+  foreach (({1, 2, 3}), int x) {
+    res += ({-x});
+  foo:
+    foreach (({1, 2, 3, 4}), int i) {
+      res += ({i});
+      foreach (({1, 2}), int y) {
+	if (i >= 3) break foo;
+	if (i >= 2) continue foo;
+      }
+      res += ({i});
+    }
+  }
+  return res;
+]], ({-1, 1, 1, 2, 3, -2, 1, 1, 2, 3, -3, 1, 1, 2, 3}));
 test_any_equal([[
   int a, b;
 foo:
