@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.338 2004/03/22 22:35:27 mast Exp $
+// $Id: master.pike.in,v 1.339 2004/03/24 10:10:50 anders Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -4102,7 +4102,7 @@ class Decoder (void|string fname, void|int mkobj)
       // here. So if we throw an error we can't decode values which
       // 7.2 would encode and decode without a codec (albeit partly
       // incorrectly). So just print a sulky warning and continue.. :P
-      werror ("Warning: Decoded broken object identifier to zero.\n");
+      DEC_MSG ("Warning: Decoded broken object identifier to zero.\n");
       DEC_RETURN (0);
     }
     DEC_RETURN ([object] thingof (what));
