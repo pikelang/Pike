@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.3 2000/02/27 13:06:45 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.4 2000/02/27 14:01:31 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -268,13 +268,15 @@ void img_pvr_decode(INT32 args,int header_only)
    len=str->len;
    pop_n_elems(args-1);
 
-   if(len >= 12 && !strncmp(s, "GBIX", 4) &&
-      s[4]==4 && s[5]==0 && s[6]==0 && s[7]==0) {
-     push_text("global_index");
-     push_int(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24));
-     n++;
-     len -= 12;
-     s += 12;
+   if(len >= 12 && !strncmp(s, "GBIX", 4)) {
+     INT32 l = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
+     if(l>=4 && l<=len-8) {
+       push_text("global_index");
+       push_int(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24));
+       n++;
+       len -= l+8;
+       s += l+8;
+     }
    }
 
    if(len < 16 || strncmp(s, "PVRT", 4))
@@ -313,10 +315,12 @@ void img_pvr_decode(INT32 args,int header_only)
      int twiddle=0, hasalpha=0, bpp=0;
      struct object *o;
      struct image *img;
+     INT32 mipmap=0;
 
      switch(attr&0xff00) {
-      case MODE_TWIDDLE:
       case MODE_TWIDDLE_MIPMAP:
+	mipmap = 1;
+      case MODE_TWIDDLE:
 	twiddle = 1;
 	if(w != h || w<8 || w>1024 || (w&(w-1)))
 	  error("invalid size for twiddle texture\n");
@@ -336,7 +340,7 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_CLUT4_MIPMAP:
       case MODE_CLUT8:
       case MODE_CLUT8_MIPMAP:
-	error("palette PVRs not supported\n");
+   	error("palette PVRs not supported\n");
       default:
 	error("unknown PVR format\n");
      }
@@ -358,8 +362,14 @@ void img_pvr_decode(INT32 args,int header_only)
 	error("unknown PVR color mode\n");
      }
 
-     if(len < (INT32)bpp*h*w)
+     if(mipmap)
+       for(x=w; x>>=1;)
+	 mipmap += x*x;
+
+     if(len < (INT32)(bpp*(h*w+mipmap)))
        error("short PVRT chunk\n");
+
+     s += bpp*mipmap;
 
      push_text("image");
      push_int(w);
