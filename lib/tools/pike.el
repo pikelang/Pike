@@ -1,5 +1,5 @@
 ;;; pike.el -- Major mode for editing Pike and other LPC files.
-;;; $Id: pike.el,v 1.3 1999/06/27 15:37:10 mast Exp $
+;;; $Id: pike.el,v 1.4 1999/08/13 15:31:17 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -67,7 +67,6 @@ This adds highlighting of Java documentation tags, such as @see.")
   "Regexp which should match a primitive type.")
 
 
-
 ; Problems: We really should allow 
 (let ((capital-letter "A-Z\300-\326\330-\337")
       (letter "a-zA-Z\241-\377_")
@@ -95,13 +94,13 @@ The name is assumed to begin with a capital letter.")
 	      (set-buffer-file-coding-system (symbol-concat coding))))
       (t nil)))
 
+
   (defconst pike-modifier-regexp
     (concat "\\<\\(public\\|inline\\|final\\|static\\|protected\\|"
 	    "local\\|private\\|nomask\\|\\)\\>"))
   (defconst pike-operator-identifiers 
-    (concat "``?\\(!=\\|->=?\\|<[<=]\\|==\\|>[=>]\\|\\[\\]=?"
+    (concat "``?\\(!=\\|->=?\\|<[<=]\\|==\\|>[=>]\\|\\[\\]=?\\|\(\)"
 	    "\\|[!%&+*/<>^|~-]\\)"))
-
     ;; Basic font-lock support:
   (setq pike-font-lock-keywords-1
 	(list
@@ -142,13 +141,20 @@ The name is assumed to begin with a capital letter.")
         
 	 
 	 ;; Methods:
-	 (list (concat "\\(" 
-		       pike-font-lock-type-regexp "\\|"
-		       pike-font-lock-class-name-regexp
-		       "\\)"
-		       "\\s *\\(\\[\\s *\\]\\s *\\)*"
-		       pike-font-lock-identifier-regexp "\\s *(")
-	       5
+	 (list (concat (concat "\\("
+			       pike-font-lock-type-regexp
+			       "\\|"
+			       pike-font-lock-class-name-regexp
+			       "\\)")
+		       "\\s *"
+		       ;;"\\s *\\(\\[\\s *\\]\\s *\\)*"
+		       (concat "\\("
+			       pike-font-lock-identifier-regexp
+			       "\\|"
+			       pike-operator-identifiers
+			       "\\)")
+		       "\\s *(")
+	       4
 	       'font-lock-function-name-face)
 
 	 ;; Case statements:
@@ -159,22 +165,16 @@ The name is assumed to begin with a capital letter.")
     (setq pike-font-lock-keywords-2
 	  (append 
 	   (list
-	    (list pike-operator-identifiers 
-		  0 
-		  font-lock-function-name-face)
-
 	    '("^#!.*$" 0 font-lock-comment-face)
 
-	    '("^\\(#[ \t]*error\\)\\(.*\\)$" 
-	      (1 font-lock-reference-face) 
-	      (2 font-lock-comment-face))
+	    '("^#[ \t]*error\\(.*\\)$"
+	      (1 font-lock-comment-face))
 
 	    ;; #charset char-set-name
 
 	    ;; Defines the file charset. 
 
-	    '("^\\(#[ \t]*charset\\)[ \t]*\\(.*\\)$" 
-	      (1 font-lock-reference-face) 
+	    '("^\\(#[ \t]*charset\\)[ \t]*\\(.*\\)$"
 	      (2 font-lock-keyword-face)
 	      (pike-font-lock-hack-file-coding-system-perhaps
 	       ))
@@ -183,17 +183,19 @@ The name is assumed to begin with a capital letter.")
 	    '("^#[ \t]*include[ \t]+\\(<[^>\"\n]+>\\)" 
 	      1 font-lock-string-face)
 
-	    '("^#[ \t]*define[ \t]+\\(\\(\\sw+\\)(\\)" 
-	      2 font-lock-function-name-face)
+	    '("^#[ \t]*define[ \t]+\\(\\sw+\\)\("
+	      1 font-lock-function-name-face)
+	    '("^#[ \t]*define[ \t]+\\(\\sw+\\)"
+	      1 font-lock-variable-name-face)
 	    ;; Fontify symbol names in #if ...defined 
 	    ;; etc preprocessor directives.
 	    '("^#[ \t]*if\\>"
 	      ("\\<\\(defined\\|efun\\|constant\\)\\>[ \t]*(?\\(\\sw+\\)?" 
 	       nil nil
-	       (1 font-lock-reference-face) 
+	       (1 font-lock-reference-face)
 	       (2 font-lock-variable-name-face nil t)))
 
-	    '("^\\(#[ \t]*[a-z]+\\)\\>[ \t]*\\(\\.*\\)?"
+	    '("^\\(#[ \t]*[a-z]+\\)\\>[ \t]*\\(.*\\)?"
 	      (1 font-lock-reference-face) 
 	      (2 font-lock-variable-name-face nil t))
 	    )
@@ -217,13 +219,22 @@ The name is assumed to begin with a capital letter.")
 	    ;; Expressions beginning with a unary numerical operator,
 	    ;; e.g. +, can't be cast to an object type.
 	    (list (concat pike-font-lock-class-name-regexp
-			  "\\s *\\(\\[\\s *\\]\\s *\\)*"
-			  "\\(\\<\\|$\\|)\\s *\\([\(\"]\\|\\<\\)\\)")
-		  '(1 (save-match-data
-			(save-excursion
-			  (goto-char
-			   (match-beginning 3))
-			  'font-lock-type-face)))
+			  ;;"\\s *\\(\\[\\s *\\]\\s *\\)*"
+			  (concat "\\("
+				  (concat (concat "\\("
+						  "\)*\\s *\\.\\.\\."
+						  "\\|"
+						  "[,:|]"
+						  "\\)?")
+					  "\\s *"
+					  "\\(`\\|\\<\\|$\\)")
+				  "\\|"
+				  (concat "\)\\s *"
+					  "\\([\(\"]\\|\\<\\)")
+				  "\\|"
+				  "\\s *$"
+				  "\\)"))
+		  '(1 font-lock-type-face)
 		  (list (concat "\\=" pike-font-lock-identifier-regexp
 				"\\.")
 			'(progn
@@ -236,8 +247,9 @@ The name is assumed to begin with a capital letter.")
 			'(0 nil))	; Workaround for bug in XEmacs.
 		  '(font-lock-match-pike-declarations
 		    (goto-char (match-end 1))
-		    (goto-char (match-end 0))
-		    (1 font-lock-variable-name-face))))))
+		    nil
+		    (1 font-lock-variable-name-face)))
+	    )))
 
   ;; Modifier keywords
   (setq pike-font-lock-keywords-3
@@ -271,8 +283,10 @@ The name is assumed to begin with a capital letter.")
   "Match and skip over variable definitions."
   (while (looking-at ")")
     (forward-char 1))
-  (if (looking-at "\\s *\\(\\[\\s *\\]\\s *\\)*")
-      (goto-char (match-end 0)))
+;  (if (looking-at "\\s *\\(\\[\\s *\\]\\s *\\)*")
+;      (goto-char (match-end 0)))
+  (looking-at "\\s *\\(\\.\\.\\.\\s *\\)?")
+  (goto-char (match-end 0))
   (and
    (looking-at pike-font-lock-identifier-regexp)
    (save-match-data
@@ -296,7 +310,7 @@ The name is assumed to begin with a capital letter.")
 	   (while (not (looking-at "\\s *\\(\\(,\\)\\|;\\|$\\)"))
 	     (goto-char (or (scan-sexps (point) 1) (point-max))))
 	   (goto-char (match-end 2)))   ; non-nil
-       (error t)))))
+       (error (goto-char limit))))))
 
 ;; XEmacs way.
 (put 'pike-mode 'font-lock-defaults 
