@@ -65,6 +65,9 @@ tutorial_split.html: .DUMMY  $(SRCFILES)
 tutorial.tex: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml latex tutorial
 
+tutorial.xml: .DUMMY $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml xml tutorial
+
 # latex has to be run twice to work with labels and stuff
 # but there are no labels yet...
 tutorial.dvi: tutorial.tex
