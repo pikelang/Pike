@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.502 2003/05/16 14:08:38 grubba Exp $
+|| $Id: program.c,v 1.503 2003/06/03 18:02:28 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.502 2003/05/16 14:08:38 grubba Exp $");
+RCSID("$Id: program.c,v 1.503 2003/06/03 18:02:28 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1604,6 +1604,14 @@ void fixate_program(void)
     Pike_fatal("Cannot fixate optimized program\n");
 #endif
 
+  /* Fixup identifier overrides. */
+  for (i = 0; i < p->num_identifier_references; i++) {
+    struct reference *ref = p->identifier_references + i;
+    if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->inherit_offset != 0) continue;
+    override_identifier (ref, ID_FROM_PTR (p, ref)->name);
+  }
+
   /* Ok, sort for binsearch */
   for(e=i=0;i<(int)p->num_identifier_references;i++)
   {
@@ -1792,11 +1800,12 @@ struct program *low_allocate_program(void)
  * Start building a new program
  */
 void low_start_new_program(struct program *p,
+			   int pass,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp)
 {
-  int e,id=0;
+  int id=0;
   struct svalue tmp;
 
 #if 0
@@ -1837,7 +1846,6 @@ void low_start_new_program(struct program *p,
     }
     if(compilation_depth >= 1)
       add_ref(p->parent = Pike_compiler->new_program);
-    e=1;
   }else{
     tmp.u.program=p;
     add_ref(p);
@@ -1851,7 +1859,6 @@ void low_start_new_program(struct program *p,
       free_type(i->type);
       i->type=get_type_of_svalue(&tmp);
     }
-    e=2;
   }
   p->flags &=~ PROGRAM_VIRGIN;
   Pike_compiler->parent_identifier=id;
@@ -1868,7 +1875,7 @@ void low_start_new_program(struct program *p,
 #define PUSH
 #include "compilation.h"
 
-  Pike_compiler->compiler_pass=e;
+  Pike_compiler->compiler_pass = pass;
 
   Pike_compiler->num_used_modules=0;
 
@@ -2054,7 +2061,7 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 	     "threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), line, file, threads_disabled, compilation_depth));
 
-  low_start_new_program(0,0,0,0);
+  low_start_new_program(0,1,0,0,0);
   store_linenumber(line,lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
 
@@ -2341,6 +2348,17 @@ void dump_program_tables (struct program *p, int indent)
 		 indent, "", file->str, line);
     }
   }
+
+  fprintf(stderr, "\n"
+	  "%*sIdentifier index table:\n"
+	  "%*s  ####: Index\n",
+	  indent, "", indent, "");
+  for (d = 0; d < p->num_identifier_index; d++) {
+    fprintf(stderr, "%*s  %4d: %5d\n",
+	    indent, "",
+	    d, p->identifier_index[d]);
+  }
+
   fprintf(stderr, "\n"
 	  "%*sInherit table:\n"
 	  "%*s  ####: Level id_level offset ref_offset\n",
@@ -2365,6 +2383,7 @@ void dump_program_tables (struct program *p, int indent)
 	    d, id->identifier_flags, id->func.offset,
 	    id->run_time_type, id->name->str);
   }
+
   fprintf(stderr, "\n"
 	  "%*sVariable table:\n"
 	  "%*s  ####: Index\n",
@@ -2414,6 +2433,7 @@ void dump_program_tables (struct program *p, int indent)
       fprintf(stderr, "%*s    %8d:%8d\n", indent, "", off, line);
     }
   }
+
   fprintf(stderr, "\n");
 }
 
@@ -4996,12 +5016,13 @@ static void insert_small_number(INT32 a)
   }
 #ifdef PIKE_DEBUG
   {
-    unsigned char *tmp = Pike_compiler->new_program->linenumbers + start;
-    INT32 res = get_small_number((char **)&tmp);
+    char *tmp = Pike_compiler->new_program->linenumbers + start;
+    INT32 res = get_small_number(&tmp);
     if (a != res) {
       tmp = Pike_compiler->new_program->linenumbers + start;
       fprintf(stderr, "0x%p: %02x %02x %02x %02x %02x\n",
-	      tmp, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4]);	      
+	      tmp, (unsigned char) tmp[0], (unsigned char) tmp[1],
+	      (unsigned char) tmp[2], (unsigned char) tmp[3], (unsigned char) tmp[4]);
       Pike_fatal("insert_small_number failed: %d (0x%08x) != %d (0x%08x)\n",
 	    a, a, res, res);
     }
@@ -5897,7 +5918,7 @@ static int run_pass1(struct compilation *c)
     return 0;
   }
 
-  low_start_new_program(c->target,0,0,0);
+  low_start_new_program(c->target,1,0,0,0);
   c->supporter.prog = Pike_compiler->new_program;
 
   CDFPRINTF((stderr,
@@ -5906,7 +5927,6 @@ static int run_pass1(struct compilation *c)
 	     (long)th_self(), Pike_compiler->new_program,
 	     threads_disabled, compilation_depth));
 
-  Pike_compiler->compiler_pass=1;
   run_init2(c);
 
   if(c->placeholder)
@@ -5977,11 +5997,9 @@ void run_pass2(struct compilation *c)
   debug_malloc_touch(c->placeholder);
 
   run_init(c);
-  low_start_new_program(c->p,0,0,0);
+  low_start_new_program(c->p,2,0,0,0);
   free_program(c->p);
   c->p=0;
-
-  Pike_compiler->compiler_pass=2;
 
   run_init2(c);
 
@@ -7033,6 +7051,7 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 {
   switch(s->type)
   {
+#if 0
     case T_OBJECT:
     {
       struct program *p = s->u.object->prog;
@@ -7054,6 +7073,7 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
       pop_stack();
       return p; /* We trust that there is a reference somewhere... */
     }
+#endif
 
   case T_FUNCTION:
     return program_from_function(s);
