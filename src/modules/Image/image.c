@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.71 1998/01/07 01:11:26 mirar Exp $ */
+/* $Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.71 1998/01/07 01:11:26 mirar Exp $
+**!	$Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.71 1998/01/07 01:11:26 mirar Exp $");
+RCSID("$Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -161,7 +161,7 @@ static void exit_image_struct(struct object *obj)
 /*
   fprintf(stderr,"exit %lx (%d) %dx%d=%.1fKb\n",obj,--obj_counter,
 	  THIS->xsize,THIS->ysize,
-	  (THIS->xsize*THIS->ysize*3+sizeof(struct image))/1024.0);
+	  (THIS->xsize*THIS->ysize*sizeof(rgb_group)+sizeof(struct image))/1024.0);
 	  */
 }
 
@@ -2654,7 +2654,7 @@ void image_read_lsb_rgb(INT32 args)
    char *d;
    struct pike_string *ps;
 
-   ps=begin_shared_string((THIS->xsize*THIS->ysize*3+7)>>3);
+   ps=begin_shared_string((THIS->xsize*THIS->ysize*sizeof(rgb_group)+7)>>3);
 
    d=ps->str;
 
@@ -2663,7 +2663,7 @@ void image_read_lsb_rgb(INT32 args)
 
    b=128;
 
-   MEMSET(d,0,(THIS->xsize*THIS->ysize*3+7)>>3);
+   MEMSET(d,0,(THIS->xsize*THIS->ysize*sizeof(rgb_group)+7)>>3);
 
    if (s)
    while (n--)
