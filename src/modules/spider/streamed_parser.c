@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include "stralloc.h"
 #include "global.h"
 #include "pike_macros.h"
@@ -14,6 +18,8 @@
 #include "operators.h"
 
 #include "streamed_parser.h"
+
+#ifdef ENABLE_STREAMED_PARSER
 
 /* streamed SGML parser, by wing */
 
@@ -839,3 +845,8 @@ void streamed_parser_finish( INT32 args )
   DATA->last_buffer_size = 0;
 }
 
+#else /* ENABLE_STREAMED_PARSER */
+
+int streamed_parser_place_holder;	/* Place holder */
+
+#endif /* ENABLE_STREAMED_PARSER */
