@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.120 2001/07/16 15:41:28 grubba Exp $
+// $Id: module.pmod,v 1.121 2001/07/19 18:52:35 david%hedbor.org Exp $
 #pike __REAL_VERSION__
 
 
@@ -307,6 +307,7 @@ class File
   static private void _async_connected(mixed|void ignored)
   {
     // Copy the args to avoid races.
+    if(!_async_cb) return;
     function(int, mixed ...:void) cb = _async_cb;
     array(mixed) args = _async_args;
     _async_cb = 0;
@@ -317,6 +318,7 @@ class File
   static private void _async_failed(mixed|void ignored)
   {
     // Copy the args to avoid races.
+    if(!_async_cb) return;
     function(int, mixed ...:void) cb = _async_cb;
     array(mixed) args = _async_args;
     _async_cb = 0;
