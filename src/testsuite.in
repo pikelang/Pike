@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.466 2001/11/01 19:03:51 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.467 2001/11/02 11:45:59 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2633,6 +2633,7 @@ void test()
       "-e",
       sprintf ("sleep (0.5); "
 	       "Stdio.File f = Stdio.File (%O, \"w\"); "
+	       "sleep (0.5); "
 	       "f->close();", fifo)}));
 
   log (test, "opening pipe\n");
