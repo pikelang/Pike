@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.35 1998/01/25 08:25:10 hubbe Exp $");
+RCSID("$Id: main.c,v 1.36 1998/01/25 09:15:47 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -25,6 +25,7 @@ RCSID("$Id: main.c,v 1.35 1998/01/25 08:25:10 hubbe Exp $");
 #include "multiset.h"
 #include "mapping.h"
 #include "cpp.h"
+#include "main.h"
 
 #include <errno.h>
 
