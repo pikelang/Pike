@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.16 1999/05/01 21:50:49 grubba Exp $
+ * $Id: sendfile.c,v 1.17 1999/05/07 14:58:13 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -40,6 +40,10 @@
 #endif /* HAVE_UNISTD_H */
 
 #include <sys/stat.h>
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
 
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
@@ -347,7 +351,7 @@ void *worker(void *this_)
 	fatal("FreeBSD style sendfile(): EFAULT\n");
 	break;
       case EBADF:
-      case ENOTCON:
+      case ENOTCONN:
       case EPIPE:
       case EIO:
       case EAGAIN:
