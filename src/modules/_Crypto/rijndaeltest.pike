@@ -1,12 +1,12 @@
 /*
- * $Id: rijndaeltest.pike,v 1.9 2003/10/05 01:31:41 nilsson Exp $
+ * $Id: rijndaeltest.pike,v 1.10 2004/02/04 10:35:04 grubba Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
  * Henrik Grubbström 2001-03-24
  */
 
-#if !constant(Crypto.aes)
+#if !constant(Crypto.cbc)
 #pike 7.4
 #endif
 
