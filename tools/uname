@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.12 2004/03/01 14:55:06 grubba Exp $
+# $Id: uname,v 1.13 2004/03/01 14:55:26 grubba Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Rev$" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.13 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
