@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.287 2000/12/14 07:29:20 mast Exp $");
+RCSID("$Id: program.c,v 1.288 2000/12/16 18:59:48 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3888,6 +3888,9 @@ void gc_zap_ext_weak_refs_in_programs(void)
 void gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
+#ifdef PIKE_DEBUG
+  int first = 1;
+#endif
 
   for(p=gc_internal_program;p;p=next)
   {
@@ -3916,9 +3919,15 @@ void gc_free_all_unreferenced_programs(void)
       /* FIXME: Is there anything else that needs to be freed here? */
       gc_free_extra_ref(p);
       SET_NEXT_AND_FREE(p, free_program);
+#ifdef PIKE_DEBUG
+      if (first) gc_internal_program = next;
+#endif
     }else{
       next=p->next;
     }
+#ifdef PIKE_DEBUG
+    first = 0;
+#endif
   }
 
 #ifdef PIKE_DEBUG
