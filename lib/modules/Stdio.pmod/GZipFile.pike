@@ -1,4 +1,4 @@
-// $Id: GZipFile.pike,v 1.1 2002/08/25 11:05:49 agehall Exp $
+// $Id: GZipFile.pike,v 1.2 2002/08/26 09:08:33 grendel Exp $
 #pike __REAL_VERSION__
 
 //! Allows the user to open a Gzip archive and read and write
@@ -18,7 +18,8 @@ private int is_open;
 //! Filename or filedescriptor of the gzip file to open.
 //! @param mode
 //! mode for the file. Defaults to "rb".
-//! @seealso [open]
+//! @seealso 
+//!  [open]
 void create(mixed ... args) {
   ::create();
 
@@ -45,7 +46,8 @@ void destroy() {
 //! @enddl
 //! For the wb and ab mode, additional parameters may
 //! be specified. Please se zlib manual for more info.
-//! @returns non-zero if successful.
+//! @returns 
+//!  non-zero if successful.
 int open(string|int file, void|string mode) {
   string open_mode="rb";
 

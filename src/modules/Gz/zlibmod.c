@@ -1,11 +1,11 @@
-/*\
+;/*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.48 2002/08/25 12:27:12 agehall Exp $");
+RCSID("$Id: zlibmod.c,v 1.49 2002/08/26 09:08:33 grendel Exp $");
 
 #include "zlib_machine.h"
 
@@ -575,7 +575,7 @@ void gz_file_open(INT32 args)
   push_int(THIS->gzfile != NULL);
 }
 
-/*! @decl create(void|string gzFile, void|string mode)
+/*! @decl void create(void|string gzFile, void|string mode)
  *! Opens a gzip file for reading.
  */
 void gz_file_create(INT32 args)
@@ -592,7 +592,8 @@ void gz_file_create(INT32 args)
 
 /*! @decl int close()
  *! closes the file
- *! @returns 1 if successful
+ *! @returns 
+ *!  1 if successful
  */
 void gz_file_close(INT32 args)
 {
@@ -654,7 +655,8 @@ void gz_file_read(INT32 args)
 
 /*! @decl int write(string data)
  *! Writes the data to the file.
- *! @returns the number of bytes written to the file.
+ *! @returns 
+ *!  the number of bytes written to the file.
  */
 void gz_file_write(INT32 args)
 {
@@ -689,7 +691,8 @@ void gz_file_write(INT32 args)
  *! SEEK_SET = set current position in file to pos
  *! SEEK_CUR = new position is current+pos
  *! SEEK_END is not supported.
- *! @returns New position or negative number if seek failed.
+ *! @returns 
+ *!  New position or negative number if seek failed.
  */
 void gz_file_seek(INT32 args)
 {
@@ -726,7 +729,8 @@ void gz_file_seek(INT32 args)
 }
 
 /*! @decl int seek()
- *! @returns the current position within the file.
+ *! @returns 
+ *!  the current position within the file.
  */
 void gz_file_tell(INT32 args)
 {
@@ -744,7 +748,8 @@ void gz_file_tell(INT32 args)
 }
 
 /*! @decl int(0..1) eof()
- *! @returns 1 if EOF has been reached.
+ *! @returns 
+ *!  1 if EOF has been reached.
  */
 void gz_file_eof(INT32 args)
 {
