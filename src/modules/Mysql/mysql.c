@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $
+ * $Id: mysql.c,v 1.28 1999/10/19 21:01:37 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -79,7 +79,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.28 1999/10/19 21:01:37 grubba Exp $");
 
 /*
 **! module Mysql
@@ -91,7 +91,7 @@ RCSID("$Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $
+**!	$Id: mysql.c,v 1.28 1999/10/19 21:01:37 grubba Exp $
 **!
 **! class mysql
 **!
@@ -288,6 +288,12 @@ static void pike_mysql_reconnect(void)
 	  "%s\n",
 	  mysql_error(&PIKE_MYSQL->mysql));
   }
+
+  if (socket->net.fd >= 0) {
+    /* Make sure the fd gets closed on exec. */
+    set_close_on_exec(socket->net.fd, 1);
+  }
+
   if (database) {
     int tmp;
 
