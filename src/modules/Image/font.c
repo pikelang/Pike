@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.69 2001/11/18 02:54:21 nilsson Exp $ */
+/* $Id: font.c,v 1.70 2002/02/05 19:08:56 mast Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -325,8 +325,7 @@ void font_load(INT32 args)
      fprintf(stderr,"FONT open '%s'\n",sp[-args].u.string->str);
 #endif
      fd = fd_open(sp[-args].u.string->str,fd_RDONLY,0);
-     /* FIXME: check_threads_etc(); ?
-      */
+     if (errno == EINTR) check_threads_etc();
    } while(fd < 0 && errno == EINTR);
 
    if (fd >= 0)

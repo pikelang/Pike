@@ -1,6 +1,6 @@
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.6 2002/02/05 15:28:05 nilsson Exp $");
+RCSID("$Id: clf.c,v 1.7 2002/02/05 19:08:54 mast Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -181,12 +181,14 @@ static void f_read_clf( INT32 args )
     my_fd = 0;
   } else if(file->type == T_STRING &&
 	    file->u.string->size_shift == 0) {
-    THREADS_ALLOW();
     do {
+      THREADS_ALLOW();
       f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);
-    } while(f < 0 && errno == EINTR);
-    THREADS_DISALLOW();
-    
+      THREADS_DISALLOW();
+      if (f >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+
     if(errno < 0)
       Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
 	    errno);
@@ -203,11 +205,13 @@ static void f_read_clf( INT32 args )
   buf = malloc(bufsize);
 #endif
   while(1) {
-    THREADS_ALLOW();
     do {
+      THREADS_ALLOW();
       len = fd_read(f, read_buf, CLF_BLOCK_SIZE);
-    } while(len < 0 && errno == EINTR);
-    THREADS_DISALLOW();
+      THREADS_DISALLOW();
+      if (len >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
     if(len == 0)
       break; /* nothing more to read. */
     if(len < 0)
@@ -773,6 +777,9 @@ static void f_read_clf( INT32 args )
   pop_n_elems(sp-old_sp+args);  
   push_int64(offs0);
 }
+
+
+
 
 /*! @endmodule
  */

@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.109 2002/01/16 02:57:28 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.110 2002/02/05 19:08:58 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -778,7 +778,11 @@ void f_mkdir(INT32 args)
 	mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
 	do {
 	  i = chmod(str->str, mode) != -1;
-	} while (!i && (errno == EINTR));
+	  if (i || errno != EINTR) break;
+	  THREADS_DISALLOW_UID();
+	  check_threads_etc();
+	  THREADS_ALLOW_UID();
+	} while (1);
       }
       if (i) {
 	i = LSTAT(str->str, &statbuf2) != -1;

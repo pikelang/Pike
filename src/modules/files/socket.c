@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.58 2002/01/16 02:57:29 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.59 2002/02/05 19:08:59 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -85,8 +85,10 @@ static void do_close(struct port *p, struct object *o)
   if(p->fd >= 0)
   {
     if(fd_close(p->fd) < 0)
-      if(errno == EINTR)
+      if(errno == EINTR) {
+	check_threads_etc();
 	goto retry;
+      }
 
     set_read_callback(p->fd,0,0);
   }

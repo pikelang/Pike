@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.46 2001/09/24 11:58:28 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.47 2002/02/05 19:08:57 mast Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -472,6 +472,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
 	  if (errno != EINTR) {
 	    return(NULL);
 	  }
+	  check_threads_etc();
 	}
       } while(len < 0);
       /*

@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.231 2002/01/16 02:57:29 nilsson Exp $");
+RCSID("$Id: file.c,v 1.232 2002/02/05 19:08:58 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -273,14 +273,17 @@ static void close_fd_quietly(void)
   FD=-1;
   while(1)
   {
-    int i;
+    int i, e;
     THREADS_ALLOW_UID();
     i=fd_close(fd);
     THREADS_DISALLOW_UID();
 
+    e=errno;  /* check_threads_etc may affect errno */
+    check_threads_etc();
+
     if(i < 0)
     {
-      switch(errno)
+      switch(e)
       {
 	default:
 	{
@@ -299,7 +302,7 @@ static void close_fd_quietly(void)
 #endif
 
        case EINTR:
-         continue;
+	 continue;
       }
     }
     break;
@@ -322,19 +325,22 @@ static void just_close_fd(void)
   FD=-1;
   while(1)
   {
-    int i;
+    int i, e;
     THREADS_ALLOW_UID();
     i=fd_close(fd);
     THREADS_DISALLOW_UID();
 
+    e=errno;  /* check_threads_etc may affect errno */
+    check_threads_etc();
+
     if(i < 0)
     {
-      switch(errno)
+      switch(e)
       {
 	default:
-	  ERRNO=errno;
+	  ERRNO=e;
 	  FD=fd;
-	  push_int(errno);
+	  push_int(e);
 	  f_strerror(1);
 	  Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
 	  break;
@@ -350,7 +356,7 @@ static void just_close_fd(void)
 #endif
 
        case EINTR:
-         continue;
+	 continue;
       }
     }
     break;
@@ -469,8 +475,8 @@ static struct pike_string *do_read(int fd,
       i = fd_read(fd, str->str+bytes_read, r);
       THREADS_DISALLOW();
 
-      e=errno;  /* check signals may affect errno */
-      check_signals(0,0,0);
+      e=errno;  /* check_threads_etc may affect errno */
+      check_threads_etc();
 
       if(i>0)
       {
@@ -533,8 +539,8 @@ static struct pike_string *do_read(int fd,
       i = fd_read(fd, buf, try_read);
       THREADS_DISALLOW();
 
-      e=errno; /* check signals may effect errno */
-      check_signals(0,0,0);
+      e=errno; /* check_threads_etc may effect errno */
+      check_threads_etc();
 
       if(i==try_read)
       {
@@ -610,8 +616,8 @@ static struct pike_string *do_read_oob(int fd,
       i=fd_recv(fd, str->str+bytes_read, r, MSG_OOB);
       THREADS_DISALLOW();
 
-      e=errno;
-      check_signals(0,0,0);
+      e=errno; /* check_threads_etc may effect errno */
+      check_threads_etc();
 
       if(i>0)
       {
@@ -674,8 +680,8 @@ static struct pike_string *do_read_oob(int fd,
       i=fd_recv(fd, buf, try_read, MSG_OOB);
       THREADS_DISALLOW();
 
-      e=errno;
-      check_signals(0,0,0);
+      e=errno; /* check_threads_etc may effect errno */
+      check_threads_etc();
 
       if(i==try_read)
       {
@@ -1134,6 +1140,7 @@ static void file_write(INT32 args)
 
       for(written = 0; iovcnt; check_signals(0,0,0)) {
 	int fd = FD;
+	int e;
 	int cnt = iovcnt;
 	THREADS_ALLOW();
 
@@ -1150,6 +1157,9 @@ static void file_write(INT32 args)
 	/* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
 	   fd, (unsigned int)iov, cnt, i); */
 
+	e=errno; /* check_threads_etc may effect errno */
+	check_threads_etc();
+
 #ifdef _REENTRANT
 	if (FD<0) {
 	  free(iovbase);
@@ -1159,11 +1169,11 @@ static void file_write(INT32 args)
 	if(i<0)
 	{
 	  /* perror("writev"); */
-	  switch(errno)
+	  switch(e)
 	  {
 	  default:
 	    free(iovbase);
-	    ERRNO=errno;
+	    ERRNO=e;
 	    pop_n_elems(args);
 	    if (!written) {
 	      push_int(-1);
@@ -1234,8 +1244,8 @@ static void file_write(INT32 args)
     i=fd_write(fd, str->str + written, str->len - written);
     THREADS_DISALLOW();
 
-    e=errno;
-    check_signals(0,0,0);
+    e=errno; /* check_threads_etc may effect errno */
+    check_threads_etc();
 
 #ifdef _REENTRANT
     if(FD<0) Pike_error("File destructed while in file->write.\n");
@@ -1330,9 +1340,13 @@ static void file_write_oob(INT32 args)
   while(written < str->len)
   {
     int fd=FD;
+    int e;
     THREADS_ALLOW();
     i = fd_send(fd, str->str + written, str->len - written, MSG_OOB);
     THREADS_DISALLOW();
+
+    e=errno; /* check_threads_etc may effect errno */
+    check_threads_etc();
 
 #ifdef _REENTRANT
     if(FD<0) Pike_error("File destructed while in file->write_oob.\n");
@@ -1340,10 +1354,10 @@ static void file_write_oob(INT32 args)
 
     if(i<0)
     {
-      switch(errno)
+      switch(e)
       {
       default:
-	ERRNO=errno;
+	ERRNO=e;
 	pop_n_elems(args);
 	if (!written) {
 	  push_int(-1);
@@ -1657,18 +1671,24 @@ static void file_open(INT32 args)
 void file_sync(INT32 args)
 {
   int ret;
+  int fd = FD;
+  int e;
 
-  if(FD < 0)
+  if(fd < 0)
     Pike_error("File not open.\n");
 
   pop_n_elems(args);
 
   do {
-    ret = fsync(FD);
-  } while ((ret < 0) && (errno == EINTR));
+    THREADS_ALLOW();
+    ret = fsync(fd);
+    e = errno;
+    THREADS_DISALLOW();
+    check_threads_etc();
+  } while ((ret < 0) && (e == EINTR));
 
   if (ret < 0) {
-    ERRNO = errno;
+    ERRNO = e;
     push_int(0);
   } else {
     push_int(1);

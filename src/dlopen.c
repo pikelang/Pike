@@ -183,7 +183,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.28 2002/01/16 02:54:09 nilsson Exp $");
+RCSID("$Id: dlopen.c,v 1.29 2002/02/05 19:08:52 mast Exp $");
 
 #endif
 
@@ -406,6 +406,9 @@ static char *read_file(const char *name, size_t *len)
   fprintf(stderr,"Opening file: %s\n",name);
 #endif
     fd=fd_open(name,fd_RDONLY | fd_BINARY, 0);
+#ifndef TEST
+    check_threads_etc();
+#endif
   }while(fd<0 && errno == EINTR);
 
   if(fd < 0) return 0;
@@ -417,6 +420,9 @@ static char *read_file(const char *name, size_t *len)
     ptrdiff_t x;
     do{
       x=fd_read(fd, buffer + tmp, l - tmp);
+#ifndef TEST
+      check_threads_etc();
+#endif
     } while(x < 0 && errno == EINTR);
 #ifdef DLDEBUG
       fprintf(stderr,"Reading ... tmp=%d len=%d x=%d errno=%d\n",tmp,l,x,errno);
@@ -428,7 +434,11 @@ static char *read_file(const char *name, size_t *len)
       return 0;
     }
   }
-  while(fd_close(fd) < 0 && errno==EINTR);
+  while(fd_close(fd) < 0 && errno==EINTR) {
+#ifndef TEST
+    check_threads_etc();
+#endif
+  }
 #ifdef DLDEBUG
   fprintf(stderr,"Done reading\n");
   fflush(stderr);

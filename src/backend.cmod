@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.22 2002/01/16 02:54:08 nilsson Exp $");
+RCSID("$Id: backend.cmod,v 1.23 2002/02/05 19:08:52 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -852,6 +852,7 @@ PIKECLASS Backend
 	  int ret;
 	  do {
 	    ret = fd_fstat(e, &tmp);
+	    /* FIXME: Perhaps do check_threads_etc() here? */
 	  }while(ret < 0 && errno == EINTR);
 
 	  if(ret<0)
@@ -874,6 +875,7 @@ PIKECLASS Backend
 	int ret;
 	do {
 	  ret=fd_fstat(me->set.poll_fds[e].fd, &tmp);
+	  /* FIXME: Perhaps do check_threads_etc() here? */
 	}while(ret < 0 && errno == EINTR);
 
 	if(ret<0)
@@ -2053,6 +2055,7 @@ PMOD_EXPORT int write_to_stderr(char *a, size_t len)
 #endif
 	  
 	case EINTR:
+	  check_threads_etc();
 	  continue;
       }
       break;

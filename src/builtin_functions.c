@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.419 2002/01/16 02:54:08 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.420 2002/02/05 19:08:52 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3403,7 +3403,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
      {
        break;
      }else{
-       check_signals(0,0,0);
+       check_threads_etc();
      }
    }
 }
@@ -3517,7 +3517,7 @@ PMOD_EXPORT void f_delay(INT32 args)
        {
 	 break;
        }else{
-	 check_signals(0,0,0);
+	 check_threads_etc();
        }
      }
    }

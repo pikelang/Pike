@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.177 2001/12/16 02:49:44 mast Exp $");
+RCSID("$Id: threads.c,v 1.178 2002/02/05 19:15:23 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -21,6 +21,7 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "pike_types.h"
 #include "operators.h"
 #include "bignum.h"
+#include "signal_handler.h"
 
 #include <errno.h>
 
@@ -821,6 +822,7 @@ void f_thread_create(INT32 args)
     tmp = th_create(& OBJ2THREAD(arg->id)->id,
 		    new_thread_func,
 		    arg);
+    if (tmp == EINTR) check_threads_etc();
   } while( tmp == EINTR );
 
   if(!tmp)
@@ -1010,13 +1012,14 @@ void f_mutex_lock(INT32 args)
       free_object(o);
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
-    SWAP_OUT_CURRENT_THREAD();
     do
     {
+      SWAP_OUT_CURRENT_THREAD();
       THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
       co_wait_interpreter(& m->condition);
+      SWAP_IN_CURRENT_THREAD();
+      check_threads_etc();
     }while(m->key);
-    SWAP_IN_CURRENT_THREAD();
   }
   m->key=o;
   OB2KEY(o)->mut=m;
@@ -1268,14 +1271,18 @@ void f_cond_wait(INT32 args)
       /* Wait and allow mutex operations */
       SWAP_OUT_CURRENT_THREAD();
       co_wait_interpreter(c);
+      SWAP_IN_CURRENT_THREAD();
     
       /* Lock mutex */
-      while(mut->key)
+      while(mut->key) {
+	SWAP_OUT_CURRENT_THREAD();
 	co_wait_interpreter(& mut->condition);
+	SWAP_IN_CURRENT_THREAD();
+	check_threads_etc();
+      }
       mut->key=key;
       OB2KEY(key)->mut=mut;
       
-      SWAP_IN_CURRENT_THREAD();
       pop_n_elems(args);
       return;
     }
@@ -1398,12 +1405,12 @@ static void f_thread_id_result(INT32 args)
     Pike_error("Cannot wait for threads when threads are disabled!\n");
   }
 
-  SWAP_OUT_CURRENT_THREAD();
-
-  while(th->status != THREAD_EXITED)
+  while(th->status != THREAD_EXITED) {
+    SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
-
-  SWAP_IN_CURRENT_THREAD();
+    SWAP_IN_CURRENT_THREAD();
+    check_threads_etc();
+  }
 
   low_object_index_no_free(Pike_sp,
 			   Pike_fp->current_object, 

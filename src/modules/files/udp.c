@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.28 2001/12/16 02:49:49 mast Exp $
+ * $Id: udp.c,v 1.29 2002/02/05 19:08:59 mast Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.28 2001/12/16 02:49:49 mast Exp $");
+RCSID("$Id: udp.c,v 1.29 2002/02/05 19:08:59 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -397,7 +397,7 @@ void udp_read(INT32 args)
     e = errno;
     THREADS_DISALLOW();
 
-    check_signals(0, 0, 0);
+    check_threads_etc();
   } while((res==-1) && (e==EINTR));
 
   THIS->my_errno=e;
@@ -503,7 +503,7 @@ void udp_sendto(INT32 args)
     e = errno;
     THREADS_DISALLOW();
 
-    check_signals(0, 0, 0);
+    check_threads_etc();
   } while((res == -1) && e==EINTR);
   
   if(res<0)
