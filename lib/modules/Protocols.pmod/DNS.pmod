@@ -285,7 +285,7 @@ class client {
 
       
       domain=get_tcpip_param("Domain");
-      nameservers = ({ get_tcpip_param("NameServer") });
+      nameservers = get_tcpip_param("NameServer") / " ";
       domains=get_tcpip_param("SearchList") / " "- ({""});
 #else
       string resolv_conf;
