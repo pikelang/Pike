@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.638 2003/04/28 18:32:38 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.639 2003/04/28 22:04:10 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9006,7 +9006,11 @@ test_equal(sort(({1,3,2,4})),({1,2,3,4}))
 test_equal(sort(({4,3,2,1})),({1,2,3,4}))
 test_equal([[lambda() {array(int) a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
 test_equal([[lambda() {array(int) a=({1,2,3,4}), b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
-dnl test_equal([[sort("a,A,å,Å,ä,*A,[A"/",")]],[["*A,A,[A,a,Å,ä,å"/","]])
+test_equal([[sort("a,A,å,Å,ä,*A,[A"/",")]],[["*A,A,[A,a,Å,ä,å"/","]])
+test_equal([[sort(sprintf("%c",enumerate(256)[*]))]],
+  [[sprintf("%c",enumerate(256)[*])]])
+test_equal([[sort(sprintf("%c",enumerate(1024)[*]))]],
+  [[sprintf("%c",enumerate(1024)[*])]])
 test_equal(sort(({})),({}))
 test_equal(sort(({1.0,2.0,4.0,3.0})),({1.0,2.0,3.0,4.0}))
 test_any_equal([[
