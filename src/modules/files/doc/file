@@ -205,7 +205,7 @@ DESCRIPTION
 	stream is just set to nonblocking mode.
 
 SEE ALSO
-	files->set_blocking
+	file->set_blocking
 
 ============================================================================
 NAME
@@ -264,7 +264,7 @@ DESCRIPTION
 	will wait until data has been written before returning.
 
 SEE ALSO
-	files/set_nonblocking
+	file->set_nonblocking
 
 ============================================================================
 NAME

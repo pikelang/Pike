@@ -34,7 +34,7 @@ DESCRIPTION
 NAME
 	deflate - pack data
 
-SYNAX
+SYNTAX
 	string deflate(string data, int flush);
 
 DESCRIPTION

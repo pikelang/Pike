@@ -30,7 +30,7 @@ DESCRIPTION
 NAME
 	inflate - unpack data
 
-SYNAX
+SYNTAX
 	string inflate(string data);
 
 DESCRIPTION
