@@ -1,4 +1,5 @@
-test_true([[Bz2.Deflate();]])
+cond([[ master()->resolv("Bz2")->Deflate ]], [[
+
 test_true([[Bz2.Inflate();]])
 test_true([[Bz2.File();]])
 define(test_codec,[[
@@ -76,3 +77,5 @@ test_any([[
   return(in_data == out_data);
 
 ]],1)
+
+]])
