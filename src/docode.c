@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.151 2002/10/25 13:13:57 marcus Exp $
+|| $Id: docode.c,v 1.152 2002/11/06 16:16:34 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.151 2002/10/25 13:13:57 marcus Exp $");
+RCSID("$Id: docode.c,v 1.152 2002/11/06 16:16:34 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1886,6 +1886,9 @@ static int do_docode2(node *n, INT16 flags)
 
     tmp1=do_jump(F_CATCH,-1);
     PUSH_CLEANUP_FRAME(do_escape_catch, 0);
+
+    /* Entry point called by eval_instruction() via o_catch(). */
+    emit0(F_ENTRY);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
