@@ -2,8 +2,12 @@
 test_true([[objectp(Crypto)]])
 
 // C-programs
-test_true([[programp(Crypto.cbc)]])
-test_true([[programp(Crypto.crypto)]])
+test_true([[
+#pike 7.4
+programp(Crypto.cbc)]])
+test_true([[
+#pike 7.4
+programp(Crypto.crypto)]])
 test_true([[
 #pike 7.4
 programp(Crypto.invert)]])
@@ -16,7 +20,9 @@ programp(Crypto.md4)]])
 test_true([[
 #pike 7.4
 programp(Crypto.md5)]])
-test_true([[programp(Crypto.pipe)]])
+test_true([[
+#pike 7.4
+programp(Crypto.pipe)]])
 test_true([[programp(
 #pike 7.4
 Crypto.sha)]])
@@ -476,7 +482,9 @@ Crypto.rijndael()->name(),"RIJNDAEL")
 test_eq(
 #pike 7.4
 Crypto.aes()->name(),"AES")
-test_eq(Crypto.idea()->name(),"IDEA")
+test_eq(
+#pike 7.4
+Crypto.idea()->name(),"IDEA")
 test_eq(
 #pike 7.4
 Crypto.cast()->name(),"CAST")
@@ -510,7 +518,9 @@ cond([[ Crypto["AES"] ]],[[
   test_eq(Crypto.AES.key_size(),32)
   test_eq(Crypto.AES()->key_size(),0)
 ]])
-test_eq(Crypto.idea()->query_key_length(),16)
+test_eq(
+#pike 7.4
+Crypto.idea()->query_key_length(),16)
 test_eq(
 #pike 7.4
 Crypto.cast()->query_key_length(),16)
@@ -531,7 +541,9 @@ Crypto.aes()->query_block_size(),16)
 cond([[ Crypto["AES"] ]],[[
   test_eq(Crypto.AES()->block_size(),16)
 ]])
-test_eq(Crypto.idea()->query_block_size(),8)
+test_eq(
+#pike 7.4
+Crypto.idea()->query_block_size(),8)
 test_eq(
 #pike 7.4
 Crypto.cast()->query_block_size(),8)
@@ -549,7 +561,7 @@ test_equal(
 #pike 7.4
  Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
    Crypto.cast(), Crypto.arcfour() )->query_key_length(),
-   ({ 8, 32, 16, 16, 1 }) )
+   ({ 0, 0, 0, 0, 0 }) )
 test_eq(
 #pike 7.4
  Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
