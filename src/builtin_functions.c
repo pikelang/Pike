@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.329 2001/01/09 00:21:44 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.330 2001/01/09 14:49:25 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4045,7 +4045,7 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 
 /*! @decl array parse_format(string fmt)
  *!
- *! Parse a sprintf/sscanf-style format string
+ *! Parses a sprintf/sscanf-style format string
  */
 static void f_parse_format(INT32 args)
 {
@@ -4179,7 +4179,16 @@ PMOD_EXPORT void f_glob(INT32 args)
 
 /* comb_merge */
 
-/* mixed interleave_array(array(mapping(int:mixed)) tab) */
+/*! @module Array
+ */
+
+/*! @decl array(int) interleave_array(array(mapping(int:mixed)) tab)
+ *!
+ *! Interleave a sparse matrix.
+ *!
+ *! Returns an array with offsets that describe how to interleave
+ *! the rows of @[tab].
+ */
 static void f_interleave_array(INT32 args)
 {
   struct array *arr = NULL;
@@ -4429,6 +4438,16 @@ static struct array *longest_ordered_sequence(struct array *a)
   return res;
 }
 
+/*! @decl array(int) longest_ordered_sequence(array a)
+ *!
+ *! Find the longest ordered sequence of elements.
+ *!
+ *! This function returns an array of the indices in the longest
+ *! ordered sequence of elements in the array.
+ *!
+ *! @seealso
+ *! @[diff()]
+ */
 static void f_longest_ordered_sequence(INT32 args)
 {
   struct array *a = NULL;
@@ -5118,6 +5137,16 @@ static struct array* diff_build(struct array *a,
    return aggregate_array(2);
 }
 
+/*! @decl array permute(array in, int number)
+ *!
+ *! Give a specified permutation of an array.
+ *!
+ *! The number of permutations is equal to @code{sizeof(@[in])!@}
+ *! (the factorial of the size of the given array).
+ *!
+ *! @seealso
+ *! @[shuffle()]
+ */
 PMOD_EXPORT void f_permute( INT32 args )
 {
   INT_TYPE q, i=0, n;
@@ -5153,6 +5182,18 @@ PMOD_EXPORT void f_permute( INT32 args )
   push_array( a );
 }
 
+/*! @decl array(array(array)) diff(array a, array b)
+ *!
+ *! Calculates which parts of the arrays that are common to both, and
+ *! which parts that are not.
+ *!
+ *! @returns
+ *! Returns an array with two elements, the first is an array of parts in
+ *! array @[a], and the second is an array of parts in array @[b].
+ *!
+ *! @seealso
+ *! @[diff_compare_table()], @[diff_longset_sequence()], @[String.fuzzymatch()]
+ */
 PMOD_EXPORT void f_diff(INT32 args)
 {
    struct array *seq;
@@ -5198,6 +5239,14 @@ PMOD_EXPORT void f_diff(INT32 args)
    push_array(diff);
 }
 
+/*! @decl array(array(int)) diff_compare_table(array a, array b)
+ *!
+ *! Returns an array which maps from index in @[a] to corresponding
+ *! indices in @[b].
+ *!
+ *! @seealso
+ *! @[diff()], @[diff_longset_sequence()], @[String.fuzzymatch()]
+ */
 void f_diff_compare_table(INT32 args)
 {
   struct array *a;
@@ -5212,6 +5261,14 @@ void f_diff_compare_table(INT32 args)
   push_array(cmptbl);
 }
 
+/*! @decl array(int) diff_longest_sequence(array a, array b)
+ *!
+ *! Gives the longest sequence of indices in @[b] that have corresponding
+ *! values in the same order in @[a].
+ *!
+ *! @seealso
+ *! @[diff()], @[diff_compare_table()], @[String.fuzzymatch()]
+ */
 void f_diff_longest_sequence(INT32 args)
 {
   struct array *a;
@@ -5231,6 +5288,19 @@ void f_diff_longest_sequence(INT32 args)
   push_array(seq); 
 }
 
+/*! @decl array(int) diff_dyn_longest_sequence(array a, array b)
+ *!
+ *! Gives the longest sequence of indices in @[b] that have corresponding
+ *! values in the same order in @[a].
+ *!
+ *! This function performs the same operation as @[diff_longset_sequence()],
+ *! but uses a different algorithm, which in some rare cases might be faster
+ *! (usually it's slower though).
+ *!
+ *! @seealso
+ *! @[diff_longest_sequence()], @[diff()], @[diff_compare_table()],
+ *! @[String.fuzzymatch()]
+ */
 void f_diff_dyn_longest_sequence(INT32 args)
 {
   struct array *a;
@@ -5250,6 +5320,9 @@ void f_diff_dyn_longest_sequence(INT32 args)
   push_array(seq); 
 }
 
+/*! @endmodule
+ */
+
 /**********************************************************************/
 
 static struct callback_list memory_usage_callback;
@@ -5261,7 +5334,20 @@ struct callback *add_memory_usage_callback(callback_func call,
   return add_to_callback(&memory_usage_callback, call, arg, free_func);
 }
 
-
+/*! @decl mapping(string:int) _memory_usage()
+ *!
+ *! Check memory usage.
+ *!
+ *! This function is mostly intended for debugging. It delivers a mapping
+ *! with information about how many arrays/mappings/strings etc. there
+ *! are currently allocated and how much memory they use.
+ *!
+ *! @note
+ *! Exactly what this function returns is version dependant.
+ *!
+ *! @seealso
+ *! @[_verify_internals()]
+ */
 PMOD_EXPORT void f__memory_usage(INT32 args)
 {
   INT32 num,size;
@@ -5328,6 +5414,18 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
 }
 
+/*! @decl mixed _next(mixed x)
+ *!
+ *! Find the next object/array/mapping/multiset/program or string.
+ *!
+ *! All objects, arrays, mappings, multisets, programs and strings are
+ *! stored in linked lists inside Pike. This function returns the next
+ *! item on the corresponding list. It is mainly meant for debugging
+ *! the Pike runtime, but can also be used to control memory usage.
+ *!
+ *! @seealso
+ *! @[next_object()], @[_prev()]
+ */
 PMOD_EXPORT void f__next(INT32 args)
 {
   struct svalue tmp;
@@ -5361,6 +5459,21 @@ PMOD_EXPORT void f__next(INT32 args)
   }
 }
 
+/*! @decl mixed _prev(mixed x)
+ *!
+ *! Find the previous object/array/mapping/multiset or program.
+ *!
+ *! All objects, arrays, mappings, multisets and programs are
+ *! stored in linked lists inside Pike. This function returns the previous
+ *! item on the corresponding list. It is mainly meant for debugging
+ *! the Pike runtime, but can also be used to control memory usage.
+ *!
+ *! @note
+ *! Unlike @[_next()] this function does not work on strings.
+ */
+ *! @seealso
+ *! @[next_object()], @[_prev()]
+ */
 PMOD_EXPORT void f__prev(INT32 args)
 {
   struct svalue tmp;
@@ -5392,6 +5505,20 @@ PMOD_EXPORT void f__prev(INT32 args)
   }
 }
 
+/*! @decl int _refs(string|array|mapping|multiset|function|object|program o)
+ *!
+ *! Return the number of references @[o] has.
+ *!
+ *! It is mainly meant for debugging the Pike runtime, but can also be
+ *! used to control memory usage.
+ *!
+ *! @note
+ *! Note that the number of references will always be at least one since
+ *! the value is located on the stack when this function is executed.
+ *!
+ *! @seelaso
+ *! @[_next()], @[_prev()]
+ */
 PMOD_EXPORT void f__refs(INT32 args)
 {
   INT32 i;
@@ -5431,6 +5558,13 @@ PMOD_EXPORT void f__leak(INT32 args)
   push_int(i);
 }
 
+/*! @decl type _typeof(mixed x)
+ *!
+ *! Return the runtime type of @[x].
+ *!
+ *! @seealso
+ *! @[typeof()]
+ */
 PMOD_EXPORT void f__typeof(INT32 args)
 {
   struct pike_string *s;
@@ -5444,6 +5578,22 @@ PMOD_EXPORT void f__typeof(INT32 args)
   Pike_sp[-1].type = T_TYPE;
 }
 
+/*! @decl void replace_master(object o)
+ *!
+ *! Replace the master object with @[o].
+ *!
+ *! This will let you control many aspects of how Pike works, but beware that
+ *! @tt{master.pike} may be required to fill certain functions, so it is
+ *! probably a good idea to have your master inherit the original master and
+ *! only re-define certain functions.
+ *!
+ *! @comment
+ *! FIXME: Tell how to inherit the master.
+ *! @endcomment
+ *!
+ *! @seealso
+ *! @[master()]
+ */
 PMOD_EXPORT void f_replace_master(INT32 args)
 {
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
@@ -5468,6 +5618,13 @@ PMOD_EXPORT void f_replace_master(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl object master();
+ *!
+ *! Return the current master object.
+ *!
+ *! @seealso
+ *! @[replace_master()]
+ */
 PMOD_EXPORT void f_master(INT32 args)
 {
   pop_n_elems(args);
@@ -5479,7 +5636,8 @@ PMOD_EXPORT void f_master(INT32 args)
 #endif
 
 #ifdef HAVE_GETHRVTIME
-
+/*! @decl int gethrvtime()
+ */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
   pop_n_elems(args);
@@ -5487,6 +5645,8 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
 }
 #endif
 
+/*! @decl int gethrtime()
+ */
 #ifdef HAVE_GETHRTIME
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
@@ -5517,6 +5677,36 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 #endif /* HAVE_GETHRTIME */
 
 #ifdef PROFILING
+/*! @decl array(int|mapping(string:array(int))) get_profiling_info(program prog)
+ *!
+ *! Get profiling information.
+ *!
+ *! @returns
+ *! Returns an array with two elements.
+ *! @array
+ *!   @elem int num_clones
+ *!     The first element is the number of times the program @[prog] has been
+ *!     instantiated.
+ *!   @elem mapping(string:array(int)) fun_prof_info
+ *!     The second element is mapping from function name to an
+ *!     array with three elements.
+ *!     @array
+ *!       @elem int num_calls
+ *!         The first element is the number of times the function has been
+ *!         called.
+ *!       @elem int total_time
+ *!         The second element is the total time (in milliseconds) spent
+ *!         executing this function, and any functions called from it.
+ *!       @elem int self_time
+ *!         The third element is the time (in milliseconds) actually spent
+ *!         in this function so far.
+ *!     @endarray
+ *! @endarray
+ *!
+ *! @note
+ *! This function is only available if the runtime was compiled with
+ *! the option @tt{--with-profiling}.
+ */
 static void f_get_prof_info(INT32 args)
 {
   struct program *prog = 0;
@@ -5558,6 +5748,16 @@ static void f_get_prof_info(INT32 args)
 }
 #endif /* PROFILING */
 
+/*! @decl int(0..1) object_variablep(object o, string var)
+ *!
+ *! Find out if an object identifier is a variable.
+ *!
+ *! This function return @tt{1@} if @[var] exists is a non-static variable
+ *! in @[o], @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *! @[indices()], @[values()]
+ */
 PMOD_EXPORT void f_object_variablep(INT32 args)
 {
   struct object *o;
@@ -5570,6 +5770,8 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
     bad_arg_error("variablep", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Called on destructed object.\n");
 
+  /* FIXME: Ought to be overloadable, since `[]=() is... */
+
   ret=find_shared_string_identifier(s,o->prog);
   if(ret!=-1)
   {
@@ -5581,7 +5783,16 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
   push_int(!!ret);
 }
 
-/* uniqify an array while at the same time keeping the order intact */
+/*! @module Array
+ */
+
+/*! @decl array uniq(array a)
+ *!
+ *! Remove elements that are duplicates.
+ *!
+ *! This function returns an copy of the array <i>a</i> with all duplicate
+ *! values removed. The order of the values is kept in the result.
+ */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
   struct array *a, *b;
@@ -5610,6 +5821,18 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   push_array(b);
 }
 
+/*! @decl array(mixed) Array.splice(array(mixed) arr1, array(mixed) arr2,
+ *!                                 array(mixed) ...);
+ *!
+ *! Splice two or more arrays.
+ *!
+ *! This means that the the array becomes an array of the first element
+ *! in the first given array, the first argument in next array and so on
+ *! for all arrays. Then the second elements are added, etc.
+ *!
+ *! @seealso
+ *! @[`/()], @[`*()], @[`+()], @[`-()], @[everynth()]
+ */
 PMOD_EXPORT void f_splice(INT32 args)
 {
   struct array *out;
@@ -5646,6 +5869,16 @@ PMOD_EXPORT void f_splice(INT32 args)
   return;
 }
 
+/*! @decl array(mixed) Array.everynth(array(mixed) a, void|int n,
+ *!                                   void|int start)
+ *!
+ *! Return an array with every @[n]:th element of the array @[a].
+ *!
+ *! If @[n] is zero every other element will be returned.
+ *!
+ *! @seealso
+ *! @[splice()], @[`/()]
+ */
 void f_everynth(INT32 args)
 {
   INT32 k,n=2;
@@ -5687,7 +5920,8 @@ void f_everynth(INT32 args)
   return;
 }
 
-
+/*! @decl array(array) transpose(array(array) matrix)
+ */
 PMOD_EXPORT void f_transpose(INT32 args)
 {
   struct array *out;
@@ -5759,7 +5993,12 @@ PMOD_EXPORT void f_transpose(INT32 args)
   return;
 }
 
+/*! @endmodule
+ */
+
 #ifdef DEBUG_MALLOC
+/*! @decl void _reset_dmalloc()
+ */
 PMOD_EXPORT void f__reset_dmalloc(INT32 args)
 {
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
@@ -5768,6 +6007,8 @@ PMOD_EXPORT void f__reset_dmalloc(INT32 args)
   reset_debug_malloc();
 }
 
+/*! @decl void _dmalloc_set_name(string filename, int linenumber)
+ */
 PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 {
   char *s;
@@ -5785,6 +6026,8 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl void _list_open_fds()
+ */
 PMOD_EXPORT void f__list_open_fds(INT32 args)
 {
   extern void list_open_fds(void);
@@ -5813,6 +6056,8 @@ PMOD_EXPORT void f__locate_references(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! mixed _describe(mixed x)
+ */
 PMOD_EXPORT void f__describe(INT32 args)
 {
   struct svalue *s;
@@ -5826,6 +6071,19 @@ PMOD_EXPORT void f__describe(INT32 args)
 
 #endif
 
+/*! @decl array map_array(array arr, function fun, mixed ... args)
+ *! @decl array map_array(array(object) arr, string fun, mixed ... args)
+ *! @decl array map_array(array(function) arr, int(-1..-1) minus_one,
+ *!                       mixed ... args)
+ *!
+ *! This function is similar to @[map()].
+ *!
+ *! @note
+ *! This function has been deprecated in favour of @[map()].
+ *!
+ *! @see_also
+ *! @[map()]
+ */
 PMOD_EXPORT void f_map_array(INT32 args)
 {
   ONERROR tmp;
@@ -6224,35 +6482,52 @@ PMOD_EXPORT void f_map(INT32 args)
    }      
 }
 
+/*! @decl array filter(array arr, function fun, mixed ...extra)
+ *! @decl mixed filter(mixed arr, void|mixed fun, void|mixed ...extra)
+ *!
+ *! Map a function over elements and filters.
+ *!
+ *! Calls the given function @[fun] for all elements in @[arr], and keeps the
+ *! elements in @[arr] that resulted in a non-zero value from the function. 
+ *!
+ *! @mixed @[arr]
+ *!   @type array
+ *!     If @[fun] is an array:
+ *!       @code{for (i=0; i<sizeof(@[arr]); i++) {
+ *!               if (fun[i]) res += ({ @[arr][i]});
+ *!       @}
+ *!     otherwise:
+ *!       @code{keep = map(@[arr], @[fun], @@@[extra]);
+ *!             for (i=0; i < sizeof(@[arr]); i++) {
+ *!               if (keep[i]) res += ({ @[arr][i]});
+ *!       @}
+ *!   @type multiset
+ *!     @code{(multiset)filter((array)@[arr], @[fun], @@@[extra])@}
+ *!   @type mapping|program|function
+ *!     @code{ind = indices(@[arr]);
+ *!           val = values(@[arr]);
+ *!           keep = map(val, @[fun], @@@[extra]);
+ *!           for (i=0; i<sizeof(keep); i++) 
+ *!             if (keep[i]) res[ind[i]] = val[i];
+ *!     @}
+ *!   @type string
+ *!     @code{(string)filter((array)@[arr], @[fun], @@@[extra])@}
+ *!   @type object
+ *!     if @code{@[arr]->cast@}, try in turn:
+ *!       @code{filter((array)@[arr], @[fun], @@@[extra])@}
+ *!       @code{filter((mapping)@[arr], @[fun], @@@[extra])@}
+ *!       @code{filter((multiset)@[arr], @[fun], @@@[extra])@}
+ *! @endmixed
+ *!
+ *! @returns
+ *! Returns the same datatype as given, the exceptions are program and
+ *! function that give a mapping back.
+ *!
+ *! @seealso
+ *! @[map()], @[foreach()]
+ */
 PMOD_EXPORT void f_filter(INT32 args)
 {
-   /* filter(mixed arr,mixed fun,mixed ... extra) ->
-
-        _arr__________goes________
-
-        array		if fun is an array:
-			   for (i=0; i<sizeof(arr); i++) 
-				   if (fun[i]) res+=({arr[i]});
-			otherwise:
-			   keep=map(arr,fun,@extra);
-			   for (i=0; i<sizeof(arr); i++) 
-				   if (keep[i]) res+=({arr[i]});
-        
-        multiset	(multiset)filter((array)arr,fun,@extra);
-        
-        mapping |	ind=indices(arr),val=values(arr)
-        program |       keep=map(val,fun,@extra);
-        function     	for (i=0; i<sizeof(keep); i++) 
-				if (keep[i]) res[ind[i]]=val[i];
-        
-        string		(string)filter( (array)arr,fun,@extra );
-   
-        object	        if arr->cast :              
-                           try filter((array)arr,fun,@extra);
-                           try filter((mapping)arr,fun,@extra);
-			   try filter((multiset)arr,fun,@extra);
-   */
-
    int n,i,m,k;
    struct array *a,*y,*f;
    struct svalue *mysp;
@@ -6464,6 +6739,33 @@ static node *fix_map_node_info(node *n)
   return 0;	/* continue optimization */
 }
 
+/*! @decl array(int) enumerate(int n)
+ *! @decl array enumerate(int n, void|mixed step, void|mixed start,
+ *!                       void|function operator)
+ *!
+ *! Create an array with an enumeration, useful for initializing arrays
+ *! or as first argument to @[map()] or @[foreach()].
+ *!
+ *! The defaults are: @[step] = 1, @[start] = 0, @[operator] = @[`+]
+ *!
+ *! @section Advanced use
+ *! The resulting array is calculated like this:
+ *! @code{
+ *!   array enumerate(int n, mixed step, mixed start, function operator)
+ *!   {
+ *!     array res = allocate(n);
+ *!     for (int i=0; i < n; i++)
+ *!     {
+ *!       res[i] = start;
+ *!       start = operator(start, step);
+ *!     }
+ *!     return res;
+ *!   }
+ *! @}
+ *!
+ *! @seealso
+ *! @[map()], @[foreach()]
+ */
 void f_enumerate(INT32 args)
 {
    struct array *d;
@@ -6579,6 +6881,13 @@ void f_enumerate(INT32 args)
    }
 }
 
+/* @module Program
+ */
+
+/*! @decl array(program) inherit_list(program p)
+ *!
+ *! Returns an array with the programs that @[p] has inherited.
+ */
 PMOD_EXPORT void f_inherit_list(INT32 args)
 {
   struct program *p;
@@ -6655,7 +6964,19 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
   f_aggregate(q);
 }
 
+/*! @endmodule
+ */
 
+/*! @module Function
+ */
+
+/*! @decl string defined(function fun)
+ *!
+ *! Returns a string with filename and linenumber where @[fun]
+ *! was defined.
+ *!
+ *! Returns @tt{0@} (zero) for builtin functions.
+ */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
   check_all_args("Function.defined",args,BIT_FUNCTION, 0);
@@ -6691,6 +7012,9 @@ PMOD_EXPORT void f_function_defined(INT32 args)
   push_int(0);
   
 }
+
+/*! @endmodule
+ */
 
 void init_builtin_efuns(void)
 {
