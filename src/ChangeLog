@@ -1,3 +1,10 @@
+Fri Apr 25 18:22:04 1997  Niels Möller  <nisse@infovav.se>
+
+	* modules/Gmp/mpz_glue.c (mpzmod_probably_prime_p): Added optional
+	argument COUNT.
+	(mpzmod_small_factor): New function
+	(mpzmod_next_prime): New function
+
 Sat Apr 12 16:38:25 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/spider/spider.c (push_parsed_tag, tagsequal, find_endtag):
