@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.84 2003/03/29 17:21:28 grubba Exp $
+|| $Id: global.h,v 1.85 2003/04/02 19:22:43 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -280,7 +280,7 @@ void *alloca();
 
 #define SIZE_T unsigned INT32
 
-#define TYPE_T unsigned INT8
+#define TYPE_T unsigned int
 #define TYPE_FIELD unsigned INT16
 
 #define B1_T char

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.170 2003/03/28 23:54:24 mast Exp $
+|| $Id: encode.c,v 1.171 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.170 2003/03/28 23:54:24 mast Exp $");
+RCSID("$Id: encode.c,v 1.171 2003/04/02 19:22:43 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -979,8 +979,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	encode_value2(Pike_sp-1,data);			/**/
 	pop_stack();
 
-#define FOO(X,Y,Z) \
-	code_number( p->PIKE_CONCAT(num_,Z), data);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
+	code_number( p->PIKE_CONCAT(num_,NAME), data);
 #include "program_areas.h"
 
 	code_number(PIKE_BYTECODE_METHOD, data);
@@ -1112,8 +1112,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	pop_stack();
 
 	/* num_* */
-#define FOO(X,Y,Z) \
-        code_number( p->PIKE_CONCAT(num_,Z), data);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
+	code_number( p->PIKE_CONCAT(num_,NAME), data);
 #include "program_areas.h"
 
 	/* Byte-code method
@@ -2576,14 +2576,14 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(p);
 
-#define FOO(X,Y,Z) \
-	  decode_number( p->num_##Z, data);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
+	  decode_number( p->PIKE_CONCAT(num_,NAME), data);
 #include "program_areas.h"
 
 
 	  if(data->pass == 1)
 	  {
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
           size=DO_ALIGN(size, ALIGNOF(TYPE)); \
           size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
@@ -2592,7 +2592,7 @@ static void decode_value2(struct decode_data *data)
 	    debug_malloc_touch(dat);
 	    MEMSET(dat,0,size);
 	    size=0;
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
 	  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
           p->NAME=(TYPE *)(dat+size); \
           size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
@@ -3036,7 +3036,7 @@ static void decode_value2(struct decode_data *data)
 	  int entry_type;
 	  INT16 id_flags;
 	  INT16 p_flags;
-#define FOO(NUMTYPE,Y,NAME)   \
+#define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
 
@@ -3121,7 +3121,8 @@ static void decode_value2(struct decode_data *data)
 	  Pike_sp--;
 
 	  /* Decode lengths. */
-#define FOO(X,Y,NAME) decode_number(PIKE_CONCAT(local_num_, NAME), data);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
+	  decode_number(PIKE_CONCAT(local_num_, NAME), data);
 #include "program_areas.h"
 
 	  /* Byte-code method */
@@ -3537,7 +3538,7 @@ static void decode_value2(struct decode_data *data)
 	  push_program(p);
 
 	  /* Verify... */
-#define FOO(NUMTYPE,Y,NAME)                                                  \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					     \
           if (PIKE_CONCAT(local_num_, NAME) != p->PIKE_CONCAT(num_,NAME)) {  \
             Pike_error("Value mismatch for num_" TOSTR(NAME) ": %d != %d\n", \
                        PIKE_CONCAT(local_num_, NAME),                        \

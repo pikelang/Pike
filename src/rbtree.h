@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.h,v 1.9 2002/12/22 17:18:55 mast Exp $
+|| $Id: rbtree.h,v 1.10 2003/04/02 19:22:44 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -68,7 +68,7 @@ struct rb_node_hdr
  */
 
 #define keep_flags(node, code) do {					\
-    INT16 kept_flags_ = (node)->flags;					\
+    int kept_flags_ = (node)->flags;					\
     {code;}								\
     (node)->flags =							\
       ((node)->flags & ~RB_FLAG_MASK) | (kept_flags_ & RB_FLAG_MASK);	\

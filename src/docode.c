@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.163 2003/02/24 21:00:44 mast Exp $
+|| $Id: docode.c,v 1.164 2003/04/02 19:22:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.163 2003/02/24 21:00:44 mast Exp $");
+RCSID("$Id: docode.c,v 1.164 2003/04/02 19:22:42 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -30,7 +30,7 @@ RCSID("$Id: docode.c,v 1.163 2003/02/24 21:00:44 mast Exp $");
 #include "mapping.h"
 #include "multiset.h"
 
-static int do_docode2(node *n, INT16 flags);
+static int do_docode2(node *n, int flags);
 
 typedef void (*cleanup_func)(void *);
 
@@ -284,7 +284,7 @@ void do_escape_catch(void)
 
 #define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP ))
 
-int do_docode(node *n, INT16 flags)
+int do_docode(node *n, int flags)
 {
   int i;
   int stack_depth_save = current_stack_depth;
@@ -308,9 +308,9 @@ static int is_efun(node *n, c_fun fun)
     n->u.sval.u.efun->function == fun;
 }
 
-static void code_expression(node *n, INT16 flags, char *err)
+static void code_expression(node *n, int flags, char *err)
 {
-  switch(do_docode(check_node_hash(n), (INT16)(flags & ~DO_POP)))
+  switch(do_docode(check_node_hash(n), flags & ~DO_POP))
   {
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
@@ -362,7 +362,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
     return;
   }
 
-  code_expression(n, (INT16)(flags | DO_NOT_COPY), "condition");
+  code_expression(n, flags | DO_NOT_COPY, "condition");
   
   if(flags & DO_POP)
   {
@@ -537,7 +537,7 @@ static void emit_apply_builtin(char *func)
 }
 
 static int do_encode_automap_arg_list(node *n,
-				      INT16 flags)
+				      int flags)
 {
   int stack_depth_save = current_stack_depth;
   if(!n) return 0;
@@ -596,7 +596,7 @@ static void emit_builtin_svalue(char *func)
   free_node(n);
 }
 
-static int do_docode2(node *n, INT16 flags)
+static int do_docode2(node *n, int flags)
 {
   ptrdiff_t tmp1,tmp2,tmp3;
 
@@ -1569,7 +1569,7 @@ static int do_docode2(node *n, INT16 flags)
 	n = CAR(n);
       }
       /* CAR(n) is not F_ARG_LIST or F_COMMA_EXPR */
-      tmp1 += do_docode(CAR(n), (INT16)(flags & ~WANT_LVALUE));
+      tmp1 += do_docode(CAR(n), flags & ~WANT_LVALUE);
       
       do {
 	if (CDR(n)) {
@@ -1584,7 +1584,7 @@ static int do_docode2(node *n, INT16 flags)
 	  }
 	  /* CDR(n) is not F_ARG_LIST or F_COMMA_EXPR */
 	  if (n->parent) {
-	    tmp1 += do_docode(CDR(n), (INT16)(flags & ~WANT_LVALUE));
+	    tmp1 += do_docode(CDR(n), flags & ~WANT_LVALUE);
 	  } else {
 	    tmp1 += do_docode(CDR(n), flags);
 	  }
@@ -2003,7 +2003,7 @@ static int do_docode2(node *n, INT16 flags)
     {
       int mklval=CAR(n) && match_types(CAR(n)->type, string_type_string);
       tmp1 = do_docode(CAR(n),
-		       (INT16)(mklval ? DO_LVALUE_IF_POSSIBLE : 0));
+		       mklval ? DO_LVALUE_IF_POSSIBLE : 0);
       if(tmp1==2)
       {
 #ifdef PIKE_DEBUG
@@ -2226,7 +2226,7 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_VAL_LVAL:
     return do_docode(CAR(n),flags) +
-      do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
+      do_docode(CDR(n), flags | DO_LVALUE);
 
   case F_AUTO_MAP:
     emit0(F_MARK);

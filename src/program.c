@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.496 2003/04/01 18:11:09 nilsson Exp $
+|| $Id: program.c,v 1.497 2003/04/02 19:22:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.496 2003/04/01 18:11:09 nilsson Exp $");
+RCSID("$Id: program.c,v 1.497 2003/04/02 19:22:44 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -928,7 +928,7 @@ int get_small_number(char **q);
 #define RELOCATE_constants(ORIG,NEW)
 #define RELOCATE_relocations(ORIG,NEW)
 
-#define FOO(NUMTYPE,TYPE,NAME)						\
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
 void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
                                     TYPE ARG) {				\
   if(state->malloc_size_program->PIKE_CONCAT(num_,NAME) ==		\
@@ -947,7 +947,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
   state->new_program->							\
     NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
 }									\
-void PIKE_CONCAT(add_to_,NAME) (TYPE ARG) {				\
+void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
   CHECK_FOO(NUMTYPE,TYPE,NAME);						\
   PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
 }
@@ -970,7 +970,7 @@ void ins_int(INT32 i, void (*func)(char tmp))
   }
 }
 
-void ins_short(INT16 i, void (*func)(char tmp))
+void ins_short(int i, void (*func)(char tmp))
 {
   int e;
   unsigned char *p = (unsigned char *)&i;
@@ -1443,7 +1443,7 @@ void optimize_program(struct program *p)
   /* Already done (shouldn't happen, but who knows?) */
   if(p->flags & PROGRAM_OPTIMIZED) return;
 
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
@@ -1457,7 +1457,7 @@ void optimize_program(struct program *p)
 
   size=0;
 
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
   PIKE_CONCAT(RELOCATE_,NAME)(p, (TYPE *)(data+size)); \
@@ -1505,10 +1505,10 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
   {
     char *tmp=dmalloc_find_name(p);
     if (tmp) {
-      char *p = strchr (tmp, ':');
+      char *p = STRCHR (tmp, ':');
       if (p) {
 	char *pp;
-	while ((pp = strchr (p + 1, ':'))) p = pp;
+	while ((pp = STRCHR (p + 1, ':'))) p = pp;
 	*line = atoi (p + 1);
 	return make_shared_binary_string (tmp, p - tmp);
       }
@@ -1928,7 +1928,7 @@ void low_start_new_program(struct program *p,
 
   if(Pike_compiler->new_program->program)
   {
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
     Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME)=Pike_compiler->new_program->PIKE_CONCAT(num_,NAME);
 #include "program_areas.h"
 
@@ -1971,7 +1971,7 @@ void low_start_new_program(struct program *p,
     struct inherit i;
 
 #define START_SIZE 64
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
     if (Pike_compiler->new_program->NAME) {				\
       free (Pike_compiler->new_program->NAME);				\
       Pike_compiler->new_program->PIKE_CONCAT(num_,NAME) = 0;		\
@@ -2034,7 +2034,7 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 
 static void exit_program_struct(struct program *p)
 {
-  unsigned INT16 e;
+  unsigned e;
 
 #ifdef PIKE_DEBUG
   if (p->refs) {
@@ -2109,10 +2109,10 @@ static void exit_program_struct(struct program *p)
 #endif /* PIKE_USE_MACHINE_CODE */
       dmfree(p->program);
     }
-#define FOO(NUMTYPE,TYPE,NAME) p->NAME=0;
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
     if(p->NAME) { dmfree((char *)p->NAME); p->NAME=0; }
 #include "program_areas.h"
   }
@@ -4191,7 +4191,7 @@ PMOD_EXPORT int add_object_constant(const char *name,
 }
 
 PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32),
-				      const char * type, INT16 flags)
+				      const char * type, int flags)
 {
   struct svalue s;
   INT32 ret;
@@ -4230,10 +4230,10 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
  */
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
-		      unsigned INT16 flags,
-		      unsigned INT8 function_flags,
+		      unsigned flags,
+		      unsigned function_flags,
 		      union idptr *func,
-		      unsigned INT16 opt_flags)
+		      unsigned opt_flags)
 {
   struct identifier *funp,fun;
   struct reference ref;
@@ -6209,8 +6209,8 @@ struct program *compile(struct pike_string *aprog,
 }
 
 PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned INT8 flags,
-				   unsigned INT16 opt_flags)
+				   const char *type, unsigned flags,
+				   unsigned opt_flags)
 {
   int ret;
   struct pike_string *name_tmp;
@@ -6247,8 +6247,8 @@ PMOD_EXPORT int quick_add_function(const char *name,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int type_length,
-				   unsigned INT8 flags,
-				   unsigned INT16 opt_flags)
+				   unsigned flags,
+				   unsigned opt_flags)
 {
   int ret;
   struct pike_string *name_tmp;

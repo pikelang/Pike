@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.c,v 1.22 2002/10/20 22:05:07 marcus Exp $
+|| $Id: dynamic_buffer.c,v 1.23 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.22 2002/10/20 22:05:07 marcus Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.23 2003/04/02 19:22:43 mast Exp $");
 
 static dynamic_buffer buff;
 
@@ -39,7 +39,7 @@ PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
   return ret;
 }
 
-PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf)
+PMOD_EXPORT void low_my_putchar(int b,dynamic_buffer *buf)
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
@@ -128,7 +128,7 @@ PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
 
 PMOD_EXPORT struct pike_string *debug_free_buf(void) { return low_free_buf(&buff); }
 PMOD_EXPORT char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
-PMOD_EXPORT void my_putchar(char b) { low_my_putchar(b,&buff); }
+PMOD_EXPORT void my_putchar(int b) { low_my_putchar(b,&buff); }
 PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l) { low_my_binary_strcat(b,l,&buff); }
 PMOD_EXPORT void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
 PMOD_EXPORT void initialize_global_buf(void) { buff.s.str = NULL; }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.49 2003/03/28 13:38:47 marcus Exp $
+|| $Id: port.h,v 1.50 2003/04/02 19:22:43 mast Exp $
 */
 
 #ifndef PORT_H
@@ -131,12 +131,12 @@ PMOD_EXPORT void *MEMCHR(void *p,char c,size_t e);
 #  ifdef HAVE_INDEX
 #    define STRCHR(X,Y) ((char *)index(X,Y))
 #  else
-PMOD_EXPORT char *STRCHR(char *s,char c);
+PMOD_EXPORT char *STRCHR(char *s,int c);
 #  endif
 #else
 #  define STRCHR strchr
 #  ifdef STRCHR_DECL_MISSING
-char *STRCHR(char *s,char c);
+char *STRCHR(char *s,int c);
 #  endif
 #endif
 
@@ -201,14 +201,14 @@ PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p);
 PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p);
 PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p);
 #else
-static INLINE unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
+static INLINE unsigned EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-static INLINE INT16 EXTRACT_WORD_(unsigned char *p)
+static INLINE int EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));

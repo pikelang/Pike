@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.180 2003/03/29 22:42:48 mast Exp $
+|| $Id: program.h,v 1.181 2003/04/02 19:22:44 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -378,10 +378,10 @@ struct program
 
   size_t total_size;
 
-#define FOO(NUMTYPE,TYPE,NAME) TYPE * NAME ;
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) TYPE * NAME ;
 #include "program_areas.h"
 
-#define FOO(NUMTYPE,TYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
 #include "program_areas.h"
   
   INT16 lfuns[NUM_LFUNS];
@@ -424,7 +424,7 @@ extern int compilation_depth;
 #define ADD_STORAGE(X) low_add_storage(sizeof(X), ALIGNOF(X),0)
 #define STORAGE_NEEDED(X) ((X)->storage_needed - (X)->inherits[0].storage_offset)
 
-#define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) void PIKE_CONCAT(add_to_,NAME(ARGTYPE ARG));
 #include "program_areas.h"
 
 /* This flag is set when resolve functions should force the lookup so
@@ -450,7 +450,7 @@ struct Supporter
 
 /* Prototypes begin here */
 void ins_int(INT32 i, void (*func)(char tmp));
-void ins_short(INT16 i, void (*func)(char tmp));
+void ins_short(int i, void (*func)(char tmp));
 void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
@@ -563,14 +563,14 @@ PMOD_EXPORT int add_program_constant(const char *name,
 PMOD_EXPORT int add_object_constant(const char *name,
 			struct object *o,
 			INT32 flags);
-PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32), const char * type, INT16 flags);
+PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32), const char * type, int flags);
 PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
-		      unsigned INT16 flags,
-		      unsigned INT8 function_flags,
+		      unsigned flags,
+		      unsigned function_flags,
 		      union idptr *func,
-		      unsigned INT16 opt_flags);
+		      unsigned opt_flags);
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
@@ -626,15 +626,15 @@ struct program *compile(struct pike_string *aprog,
 			struct program *atarget,
 			struct object *aplaceholder);
 PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned INT8 flags,
-				   unsigned INT16 opt_flags);
+				   const char *type, unsigned flags,
+				   unsigned opt_flags);
 PMOD_EXPORT int quick_add_function(const char *name,
 				   int name_length,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int type_length,
-				   unsigned INT8 flags,
-				   unsigned INT16 opt_flags);
+				   unsigned flags,
+				   unsigned opt_flags);
 void check_all_programs(void);
 void placeholder_index(INT32 args);
 void init_program(void);

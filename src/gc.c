@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.215 2003/03/30 20:46:41 mast Exp $
+|| $Id: gc.c,v 1.216 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.215 2003/03/30 20:46:41 mast Exp $");
+RCSID("$Id: gc.c,v 1.216 2003/04/02 19:22:43 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -446,11 +446,11 @@ void describe_location(void *real_memblock,
 	break;
       }
 
-#define FOO(NTYP,TYP,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
     if(location == (void *)&p->NAME) fprintf(stderr,"%*s  **In p->" #NAME "\n",indent,""); \
     if(ptr >= (char *)p->NAME  && ptr<(char*)(p->NAME+p->PIKE_CONCAT(num_,NAME))) \
       fprintf(stderr,"%*s  **In p->" #NAME "[%"PRINTPTRDIFFT"d]\n",indent,"", \
-              ((char *)ptr - (char *)(p->NAME)) / sizeof(TYP));
+	      ((char *)ptr - (char *)(p->NAME)) / sizeof(TYPE));
 #include "program_areas.h"
       
       break;
@@ -916,7 +916,7 @@ again:
 
       if(flags & DESCRIBE_MEM)
       {
-#define FOO(NUMTYPE,TYPE,NAME) \
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
       fprintf(stderr, "%*s* " #NAME " %p[%"PRINTSIZET"u]\n", \
               indent, "", p->NAME, p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"

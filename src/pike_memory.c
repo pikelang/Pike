@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.144 2003/03/30 20:46:41 mast Exp $
+|| $Id: pike_memory.c,v 1.145 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.144 2003/03/30 20:46:41 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.145 2003/04/02 19:22:43 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -380,9 +380,9 @@ char *memory_search(struct mem_searcher *s,
 void init_generic_memsearcher(struct generic_mem_searcher *s,
 			      void *needle,
 			      size_t needlelen,
-			      char needle_shift,
+			      int needle_shift,
 			      size_t estimated_haystack,
-			      char haystack_shift)
+			      int haystack_shift)
 {
   s->needle_shift=needle_shift;
   s->haystack_shift=haystack_shift;
@@ -424,7 +424,7 @@ void init_generic_memsearcher(struct generic_mem_searcher *s,
 void *generic_memory_search(struct generic_mem_searcher *s,
 			    void *haystack,
 			    size_t haystacklen,
-			    char haystack_shift)
+			    int haystack_shift)
 {
   if(s->needle_shift==0 && s->haystack_shift==0)
   {
@@ -2037,16 +2037,16 @@ static void parse_location (struct memloc *l, struct parsed_location *pl)
   const char *p;
   pl->file = LOCATION_NAME (l->location);
 
-  p = strchr (pl->file, ' ');
+  p = STRCHR (pl->file, ' ');
   if (p)
     pl->extra = p;
   else
-    pl->extra = strchr (pl->file, 0);
+    pl->extra = STRCHR (pl->file, 0);
 
-  p = strchr (pl->file, ':');
+  p = STRCHR (pl->file, ':');
   if (p && p < pl->extra) {
     const char *pp;
-    while ((pp = strchr (p + 1, ':')) && pp < pl->extra) p = pp;
+    while ((pp = STRCHR (p + 1, ':')) && pp < pl->extra) p = pp;
     pl->line = atoi (p + 1);
     pl->file_len = p - pl->file;
   }

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.333 2003/03/27 02:19:01 mast Exp $
+|| $Id: las.c,v 1.334 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.333 2003/03/27 02:19:01 mast Exp $");
+RCSID("$Id: las.c,v 1.334 2003/04/02 19:22:43 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -886,7 +886,7 @@ static int is_automap_arg_list(node *n)
 }
 
 
-node *debug_mknode(short token, node *a, node *b)
+node *debug_mknode(int token, node *a, node *b)
 {
   node *res;
 

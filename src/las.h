@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.61 2003/03/27 02:05:12 mast Exp $
+|| $Id: las.h,v 1.62 2003/04/02 19:22:43 mast Exp $
 */
 
 #ifndef LAS_H
@@ -125,7 +125,7 @@ struct node_chunk;
 void free_all_nodes(void);
 void debug_free_node(node *n);
 node *debug_check_node_hash(node *n);
-node *debug_mknode(short token,node *a,node *b);
+node *debug_mknode(int token,node *a,node *b);
 node *debug_mkstrnode(struct pike_string *str);
 node *debug_mkintnode(INT_TYPE nr);
 node *debug_mknewintnode(INT_TYPE nr);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.43 2003/03/02 14:28:42 grubba Exp $
+|| $Id: pike_memory.h,v 1.44 2003/04/02 19:22:43 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -146,13 +146,13 @@ PMOD_EXPORT char *memory_search(struct mem_searcher *s,
 PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
 			      void *needle,
 			      size_t needlelen,
-			      char needle_shift,
+			      int needle_shift,
 			      size_t estimated_haystack,
-			      char haystack_shift);
+			      int haystack_shift);
 PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
 			    void *haystack,
 			    size_t haystacklen,
-			    char haystack_shift);
+			    int haystack_shift);
 PMOD_EXPORT char *my_memmem(char *needle,
 		size_t needlelen,
 		char *haystack,

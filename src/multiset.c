@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.70 2003/04/01 18:10:21 nilsson Exp $
+|| $Id: multiset.c,v 1.71 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.70 2003/04/01 18:10:21 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.71 2003/04/02 19:22:43 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -277,7 +277,7 @@ void free_multiset_data (struct multiset_data *msd);
 BLOCK_ALLOC_FILL_PAGES (multiset, 2)
 
 /* Note: The returned block has no refs. */
-static struct multiset_data *low_alloc_multiset_data (int allocsize, INT16 flags)
+static struct multiset_data *low_alloc_multiset_data (int allocsize, int flags)
 {
   struct multiset_data *msd;
 
@@ -598,8 +598,8 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
   new->refs = old->refs;
   new->noval_refs = old->noval_refs;
 
-  /* No longer contains any references to account for, thus a simple
-   * free. */
+  /* All references have moved to the new block, so this one has thus
+   * become a simple block from the gc's perspective. */
   GC_FREE_SIMPLE_BLOCK (old);
   xfree (old);
 
@@ -5281,7 +5281,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.70 2003/04/01 18:10:21 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.71 2003/04/02 19:22:43 mast Exp $");
 
 struct multiset *first_multiset;
 

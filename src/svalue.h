@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.117 2003/03/14 15:43:22 grubba Exp $
+|| $Id: svalue.h,v 1.118 2003/04/02 19:22:44 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -655,7 +655,7 @@ static inline void free_svalue(struct svalue *s)
 #endif
 
 #ifndef free_short_svalue
-static inline void free_short_svalue(union anything *s, INT16 t)
+static inline void free_short_svalue(union anything *s, int t)
 {
   if(t <= MAX_REF_TYPE)
   {

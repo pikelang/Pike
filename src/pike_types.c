@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.213 2003/03/29 13:47:52 marcus Exp $
+|| $Id: pike_types.c,v 1.214 2003/04/02 19:22:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.213 2003/03/29 13:47:52 marcus Exp $");
+RCSID("$Id: pike_types.c,v 1.214 2003/04/02 19:22:43 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -607,7 +607,7 @@ void debug_push_finished_type(struct pike_type *t)
   TYPE_STACK_DEBUG("push_finished_type");
 }
 
-void debug_push_type(unsigned INT16 type)
+void debug_push_type(unsigned int type)
 {
   /* fprintf(stderr, "push_type(%d)\n", type); */
 
@@ -677,7 +677,7 @@ void debug_push_type(unsigned INT16 type)
 }
 
 /* Pop one level of types. This is the inverse of push_type() */
-void debug_pop_type_stack(unsigned INT16 expected)
+void debug_pop_type_stack(unsigned int expected)
 { 
   struct pike_type *top;
   if(Pike_compiler->type_stackp<type_stack)
@@ -754,7 +754,7 @@ void debug_pop_type_stack(unsigned INT16 expected)
   TYPE_STACK_DEBUG("pop_type_stack");
 }
 
-void debug_push_reverse_type(unsigned INT16 type)
+void debug_push_reverse_type(unsigned int type)
 {
   /* fprintf(stderr, "push_reverse_type(%d)\n", type); */
 
