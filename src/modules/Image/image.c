@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.212 2004/05/04 00:54:21 nilsson Exp $
+|| $Id: image.c,v 1.213 2004/05/04 01:06:46 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.212 2004/05/04 00:54:21 nilsson Exp $");
+RCSID("$Id: image.c,v 1.213 2004/05/04 01:06:46 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -754,19 +754,17 @@ void image_create_method(INT32 args)
    if (sp[-args].type!=T_STRING)
       SIMPLE_BAD_ARG_ERROR("create_method",1,"string");
 
-   if(!s_grey) {
-     MAKE_CONSTANT_SHARED_STRING(s_grey,"grey");
-     MAKE_CONSTANT_SHARED_STRING(s_rgb,"rgb");
-     MAKE_CONSTANT_SHARED_STRING(s_cmyk,"cmyk");
-     MAKE_CONSTANT_SHARED_STRING(s_cmy,"cmy");
-     MAKE_CONSTANT_SHARED_STRING(s_test,"test");
-     MAKE_CONSTANT_SHARED_STRING(s_gradients,"gradients");
-     MAKE_CONSTANT_SHARED_STRING(s_noise,"noise");
-     MAKE_CONSTANT_SHARED_STRING(s_turbulence,"turbulence");
-     MAKE_CONSTANT_SHARED_STRING(s_random,"random");
-     MAKE_CONSTANT_SHARED_STRING(s_randomgrey,"randomgrey");
-     MAKE_CONSTANT_SHARED_STRING(s_tuned_box,"tuned_box");
-   }
+   MAKE_CONST_STRING(s_grey,"grey");
+   MAKE_CONST_STRING(s_rgb,"rgb");
+   MAKE_CONST_STRING(s_cmyk,"cmyk");
+   MAKE_CONST_STRING(s_cmy,"cmy");
+   MAKE_CONST_STRING(s_test,"test");
+   MAKE_CONST_STRING(s_gradients,"gradients");
+   MAKE_CONST_STRING(s_noise,"noise");
+   MAKE_CONST_STRING(s_turbulence,"turbulence");
+   MAKE_CONST_STRING(s_random,"random");
+   MAKE_CONST_STRING(s_randomgrey,"randomgrey");
+   MAKE_CONST_STRING(s_tuned_box,"tuned_box");
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
       Pike_error("create_method: image size is too small\n");
@@ -1979,11 +1977,8 @@ static void image_gradients(INT32 args)
       struct array *a = NULL;
       if (sp[-1].type!=T_ARRAY ||
 	  (a=sp[-1].u.array)->size!=5 ||
-	  a->item[0].type!=T_INT ||
-	  a->item[1].type!=T_INT ||
-	  a->item[2].type!=T_INT ||
-	  a->item[3].type!=T_INT ||
-	  a->item[4].type!=T_INT)
+	  ( (a->type_field & ~BIT_INT) &&
+	    (array_fix_type_field(a),a->type_field & ~BIT_INT) ))
       {
 	 while (first) { c=first; first=c->next; free(c); }
 	 bad_arg_error("Image.Image->gradients",sp-args,args,0,"",sp-args,
@@ -3803,14 +3798,12 @@ static void image_apply_curve( INT32 args )
 	 if( sp[-args+1].u.array->item[j].type == T_INT )
 	   curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
 
-       if(!s_red) {
-	 MAKE_CONSTANT_SHARED_STRING(s_red,"red");
-	 MAKE_CONSTANT_SHARED_STRING(s_green,"green");
-	 MAKE_CONSTANT_SHARED_STRING(s_blue,"blue");
-	 MAKE_CONSTANT_SHARED_STRING(s_saturation,"saturation");
-	 MAKE_CONSTANT_SHARED_STRING(s_value,"value");
-	 MAKE_CONSTANT_SHARED_STRING(s_hue,"hue");
-       }
+       MAKE_CONST_STRING(s_red,"red");
+       MAKE_CONST_STRING(s_green,"green");
+       MAKE_CONST_STRING(s_blue,"blue");
+       MAKE_CONST_STRING(s_saturation,"saturation");
+       MAKE_CONST_STRING(s_value,"value");
+       MAKE_CONST_STRING(s_hue,"hue");
 
        if( sp[-args].u.string == s_red )
        {
@@ -4812,26 +4805,4 @@ void init_image_image(void)
 
 void exit_image_image(void) 
 {
-  if(s_red) {
-    free_string(s_red);
-    free_string(s_green);
-    free_string(s_blue);
-    free_string(s_value);
-    free_string(s_saturation);
-    free_string(s_hue);
-  }
-
-  if(s_grey) {
-   free_string(s_grey);
-   free_string(s_rgb);
-   free_string(s_cmyk);
-   free_string(s_cmy);
-   free_string(s_test);
-   free_string(s_gradients);
-   free_string(s_noise);
-   free_string(s_turbulence);
-   free_string(s_random);
-   free_string(s_randomgrey);
-   free_string(s_tuned_box);
-  }
 }
