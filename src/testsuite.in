@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.739 2004/10/06 18:40:53 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.740 2004/10/22 20:18:35 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7566,7 +7566,8 @@ test_equal([[
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
-// The following two tests are in triplicate to force testing in all shifts.
+
+// The following three tests are in triplicate to force testing in all shifts.
 test_do([[
 #define FOO(X) X
 string s = FOO (#"a
@@ -7584,6 +7585,24 @@ test_do([[
 string s = FOO (#"a
 b
 c");
+]]);
+test_do([[
+#define FOO(X) X
+string s = FOO (#"
+
+");
+]]);
+test_do([[
+#define FOO(X) X
+string s = FOO (#"
+
+");
+]]);
+test_do([[
+#define FOO(X) X
+string s = FOO (#"
+
+");
 ]]);
 test_any([[
 #define FOO(X) X
