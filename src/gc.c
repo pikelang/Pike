@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.200 2003/02/08 17:12:27 mast Exp $
+|| $Id: gc.c,v 1.201 2003/02/09 13:35:29 mast Exp $
 */
 
 #include "global.h"
@@ -25,6 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "constants.h"
 #include "interpret.h"
 #include "bignum.h"
+#include "pike_threadlib.h"
 
 #include "gc.h"
 #include "main.h"
@@ -32,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.200 2003/02/08 17:12:27 mast Exp $");
+RCSID("$Id: gc.c,v 1.201 2003/02/09 13:35:29 mast Exp $");
 
 int gc_enabled = 1;
 
