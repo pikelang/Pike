@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.70 1999/08/20 05:07:44 hubbe Exp $
+# $Id: configure.in,v 1.71 2000/03/21 22:28:56 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -94,6 +94,30 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   if test "$pike_cv_sendfile_args" = "7"; then
     AC_MSG_RESULT([7 - FreeBSD style])
     AC_DEFINE(HAVE_FREEBSD_SENDFILE)
+
+    AC_MSG_CHECKING([if sendfile looks thread-safe])
+    AC_CACHE_VAL(pike_cv_freebsd_sendfile_threadsafe, [
+      # We're optimistic -- default to assuming it works.
+      pike_cv_freebsd_sendfile_threadsafe="yes"
+      if test -f /usr/lib/libc_r.so; then
+        if /usr/bin/nm /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
+	  # Ok, looks like we can perform the test.
+	  # Assume we have a broken sendfile(2).
+          pike_cv_freebsd_sendfile_threadsafe="yes"
+	  if /usr/bin/nm /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
+	    # Wee! They have actually added a wrapper for sendfile(2)!
+	    pike_cv_freebsd_sendfile_threadsafe="yes"
+	  else :; fi
+	else :; fi
+      else :; fi
+    ])
+
+    if test "$pike_cv_freebsd_sendfile_threadsafe" = "yes"; then
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no - disabling use of sendfile)
+      AC_DEFINE(HAVE_BROKEN_SENDFILE)
+    fi
   else
     if test "$pike_cv_sendfile_args" = "6"; then
       AC_MSG_RESULT([6 - HP/UX style])
