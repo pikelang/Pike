@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.156 2003/11/15 17:25:05 mast Exp $
+|| $Id: mpz_glue.c,v 1.157 2004/01/12 22:33:13 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.156 2003/11/15 17:25:05 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.157 2004/01/12 22:33:13 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -238,6 +238,13 @@ overflow:
 #endif /* AUTO_BIGNUM */
 
 /*! @module Gmp
+ */
+
+/*! @class bignum
+ *! This program is used by the internal auto-bignum conversion. It
+ *! can be used to explicitly type integers that are to big to be
+ *! INT_TYPE. Best is however to not use this program unless you
+ *! really know what you are doing.
  */
 
 /*! @class mpz
