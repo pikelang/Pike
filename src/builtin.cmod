@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.156 2004/04/25 19:50:18 nilsson Exp $
+|| $Id: builtin.cmod,v 1.157 2004/04/29 23:54:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -592,8 +592,11 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
 /*! @decl int count(string haystack, string needle)
  *! @belongs String
  *!
- *! Count the number of non-overlapping times the string @[needle] occurrs
- *! in the string @[haystack].
+ *! Count the number of non-overlapping times the string @[needle]
+ *! occurs in the string @[haystack]. The special cases for the needle
+ *! @expr{""@} is that it occurs one time in the empty string, zero
+ *! times in a one character string and between every character
+ *! (length-1) in any other string.
  *!
  *! @seealso
  *! @[search()], @[`/()]
@@ -617,6 +620,7 @@ PIKEFUN int string_count(string haystack, string needle)
        break;
      case 1:
        /* maybe optimize? */
+       /* It is already fairly optimized in pike_search_engine. */
      default:
        for (i=0; i<haystack->len; i++)
        {
@@ -1895,6 +1899,14 @@ PIKECLASS Buffer
  */
 
 /*! @class Replace
+ *!
+ *! This is a "compiled" version of the @[replace] function applied on
+ *! a string, with more than one replace string. The replace strings
+ *! are given to the create method as a @i{from@} and @i{to@} array
+ *! and are then analyzed. The @expr{`()@} is then called with a
+ *! string and the replace rules in the Replace object will be
+ *! applied. The Replace object is used internally by the Pike
+ *! optimizer and need not be used manually.
  */
 PIKECLASS multi_string_replace
 {
@@ -1933,14 +1945,18 @@ PIKECLASS multi_string_replace
     if (from->size != to->size) {
       Pike_error("Replace must have equal-sized from and to arrays.\n");
     }
-    for (i = 0; i < (int)from->size; i++) {
-      if (from->item[i].type != PIKE_T_STRING) {
-	Pike_error("Replace: from array is not an array(string).\n");
-      }
-      if (to->item[i].type != PIKE_T_STRING) {
-	Pike_error("Replace: to array is not an array(string).\n");
-      }
+
+    if(from->type_field & ~BIT_STRING) {
+      array_fix_type_field(from);
+      if(from->type_field & ~BIT_STRING)
+	SIMPLE_BAD_ARG_ERROR("Replace", 1, "array(string)");
     }
+    if(to->type_field & ~BIT_STRING) {
+      array_fix_type_field(to);
+      if(to->type_field & ~BIT_STRING)
+	SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)");
+    }
+
     if (THIS->v) {
       for (i = 0; i < (int)THIS->v_sz; i++) {
 	if (!THIS->v[i].ind) break;
@@ -2171,6 +2187,14 @@ PIKECLASS multi_string_replace
  */
 
 /*! @class SingleReplace
+ *!
+ *! This is a "compiled" version of the @[replace] function applied on
+ *! a string, with just one replace string. The replace strings are
+ *! given to the create method as a @i{from@} and @i{tom@} string and
+ *! are then analyzed. The @expr{`()@} is then called with a string
+ *! and the replace rule in the Replace object will be applied. The
+ *! Replace object is used internally by the Pike optimizer and need
+ *! not be used manually.
  */
 PIKECLASS single_string_replace
 {
@@ -2203,7 +2227,7 @@ PIKECLASS single_string_replace
     }
   }
 
-  /*! @decl void create(string|void del, string|void to)
+  /*! @decl void create(string|void from, string|void to)
    */
   PIKEFUN void create(string|void del_, string|void to_)
   {
