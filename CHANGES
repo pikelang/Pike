@@ -84,6 +84,7 @@ o Fixed bug in trampoline objects so that they can be indexed and
 o Fixed a bug in the dependency analyser. It didn't check arguments to
   side-effect free functions for written variables, which could cause
   overoptimization breakage.
+o Fixed Image.Image(1,1)->scale(0.5)->scale(2.0) segmentation fault bug.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
