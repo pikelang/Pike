@@ -469,11 +469,11 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 
 	  case "image":
-	    ret+="\\epsfbox{"+Wmml.image_to_eps(tag,300.0)+"}";
+	    ret+="\\epsfbox{"+Wmml.image_to_eps(tag,75.0)+"}";
 	    break;
 
 	  case "illustration":
-	    ret+="\\epsfbox{"+Wmml.illustration_to_eps(tag,300.0)+"}";
+	    ret+="\\epsfbox{"+Wmml.illustration_to_eps(tag,75.0)+"}";
 	    break;
 
 	  default:
