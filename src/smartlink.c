@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.15 2003/01/16 20:00:35 neotron Exp $
+|| $Id: smartlink.c,v 1.16 2004/05/10 21:45:13 agehall Exp $
 */
 
 /*
@@ -11,6 +11,10 @@
  *
  * Henrik Grubbström 1999-03-04
  */
+
+#ifdef __MINGW32__
+#error Smartlink binary does not support Mingw32.
+#endif
 
 /* NOTE: Use confdefs.h and not machine.h, since we are compiled by configure
  */
@@ -92,7 +96,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.15 2003/01/16 20:00:35 neotron Exp $\n"
+	    "$Id: smartlink.c,v 1.16 2004/05/10 21:45:13 agehall Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.76 2003/10/24 23:38:56 nilsson Exp $
+|| $Id: port.c,v 1.77 2004/05/10 21:45:13 agehall Exp $
 */
 
 /*
@@ -21,13 +21,19 @@
 #include <sys/types.h>
 #endif
 
+#ifdef __MINGW32__
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#endif
+
 #include <ctype.h>
 #include <math.h>
 #include <errno.h>
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.76 2003/10/24 23:38:56 nilsson Exp $");
+RCSID("$Id: port.c,v 1.77 2004/05/10 21:45:13 agehall Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -58,9 +64,15 @@ void GETTIMEOFDAY(struct timeval *t)
   GetSystemTimeAsFileTime(&ft.ft_struct);
 
   ft.ft_scalar /= 10;
+#ifndef __GNUC__
   ft.ft_scalar -= 11644473600000000i64;
   t->tv_sec = (long)(ft.ft_scalar / 1000000i64);
   t->tv_usec = (long)(ft.ft_scalar % 1000000i64);
+#else
+  ft.ft_scalar -= 11644473600000000;
+  t->tv_sec = (long)(ft.ft_scalar / 1000000);
+  t->tv_usec = (long)(ft.ft_scalar % 1000000);
+#endif
 }
 
 #else
@@ -1044,4 +1056,86 @@ double FREXP(double x, int *exp)
   ret = (x*pow(2.0,(double)-*exp));
   return ret;
 }
+#endif
+
+#ifdef __MINGW32__
+static unsigned int __loctotime_t_init = 0;
+static FILETIME base_ft;
+static time_t base_utc;
+
+time_t __loctotime_t(WORD wYear, WORD wMonth, 
+		     WORD wDay,WORD wHour, 
+		     WORD wMinute, WORD wSecond, 
+		     int dst) {
+  time_t ret;
+  FILETIME ft;
+  SYSTEMTIME st;
+
+  if (!__loctotime_t_init) {
+    st.wYear = 1970;
+    st.wMonth = 1;
+    st.wDay = 1;
+    st.wHour = 0;
+    st.wMinute = 0;
+    st.wSecond = 0;
+    st.wMilliseconds = 0;
+    
+    SystemTimeToFileTime (&st, &base_ft);
+    base_utc = (time_t) base_ft.dwHighDateTime
+      * 4294967296 + base_ft.dwLowDateTime;
+    
+    __loctotime_t_init = 1;
+  }
+  st.wYear = wYear;
+  st.wMonth = wMonth;
+  st.wDay = wDay;
+  st.wHour = wHour;
+  st.wMinute = wMinute;
+  st.wSecond = wSecond;
+  SystemTimeToFileTime(&st, &ft);
+
+  if (CompareFileTime(&ft, &base_ft) < 0)
+    return 0;
+  
+  ret = (time_t) ft.dwHighDateTime * 4294967296 + ft.dwLowDateTime;
+  ret -= base_utc;
+  return (time_t) (ret / 10000000);
+}
+
+#define ATTR_READONLY  0x01
+#define ATTR_DIRECTORY 0x10
+#define ISSLASH(a)  ((a) == '\\' || (a) == '/')
+
+unsigned short __dtoxmode(int attr, const char *name) {
+  unsigned short unix_mode;
+  unsigned dos_mode;
+  const char *p;
+  dos_mode = attr & 0xff;
+  if ((p=name)[1]==(':'))
+    p+=2;
+
+  unix_mode = (unsigned short) (((ISSLASH(*p) && !p[1]) ||
+				 (dos_mode & ATTR_DIRECTORY) ||
+				 !*p)
+    ? _S_IFDIR|_S_IEXEC:_S_IFREG);
+  
+  unix_mode |= (dos_mode & ATTR_READONLY)?_S_IREAD : (_S_IREAD|_S_IWRITE);
+
+  if (p=strchr(name, '.')) {
+    if ( !strcmp(p, ".exe") ||
+	 !strcmp(p, ".cmd") ||
+	 !strcmp(p, ".bat") ||
+	 !strcmp(p, ".com"))
+      unix_mode |= _S_IEXEC;
+  }
+
+  unix_mode |= (unix_mode & 0700) >> 3;
+  unix_mode |= (unix_mode & 0700) >> 6;
+  return unix_mode;
+}
+
+void _dosmaperr(int x) {
+}
+// #define _dosmaperr(X)
+
 #endif

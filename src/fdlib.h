@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.51 2004/05/01 20:18:02 grubba Exp $
+|| $Id: fdlib.h,v 1.52 2004/05/10 21:45:13 agehall Exp $
 */
 
 #ifndef FDLIB_H
@@ -254,7 +254,7 @@ extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 
 
 /* This may be inaccurate! /Hubbe */
-#ifdef __NT__
+#if defined(__NT__) && !defined(__MINGW32__)
 #define EMULATE_DIRECT
 #endif
 

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.831 2004/05/08 08:32:51 agehall Exp $")
+AC_REVISION("$Id: configure.in,v 1.832 2004/05/10 21:45:13 agehall Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -673,6 +673,8 @@ if test "$cross_compiling" = "yes"; then
     *solaris*)	pike_cv_sys_os="Solaris";;
     *sunos*)	pike_cv_sys_os="SunOS";;
     *windows*)	pike_cv_sys_os="Windows_NT";;
+    *mingw*)	pike_cv_sys_os="Windows_NT"
+		pike_is_mingw="yes";;
     *)		pike_cv_sys_os="Unknown";;
   esac
 else
@@ -699,6 +701,13 @@ if test "$uname_prog" != "no"; then
     *Windows*|*windows*)
       pike_cv_sys_os="Windows_NT"
     ;;
+    *MINGW*|*mingw*)
+      # Stupid mingw does not define __NT__ so we must...
+      CFLAGS="$CFLAGS -D__NT__=1"
+      pike_is_mingw="yes"
+      pike_cv_sys_os="Windows_NT"
+    ;;
+
   esac
 else
   pike_cv_sys_os="Not Solaris"
@@ -757,6 +766,12 @@ case "$pike_cv_sys_os" in
       ac_cv_header_winbase_h="no"
       ac_cv_header_windows_h="no"
       with_machine_code="no"
+   ;;
+  Windows_NT)
+   if test "$pike_is_mingw" = "yes"; then
+     with_machine_code="no"
+     ac_cv_func_fpclass="no"
+   fi
    ;;
   FreeBSD*)
       # FreeBSD have other naming convention for gtk-config and sdl-config
@@ -940,7 +955,10 @@ if test "$GCC" = "yes"; then
     #### For exec-shield in newer linux kernels.
     #### We should really fix the machine code generator to use mprotect instead.
     #### That should work.
-    AC_SYS_COMPILER_FLAG([[-Wa,--execstack]],executableheap,CFLAGS)
+    #### This test crashes under mingw32 so let's disable for win32 for now.
+    if test "$pike_cv_sys_os" != "Windows_NT"; then
+      AC_SYS_COMPILER_FLAG([[-Wa,--execstack]],executableheap,CFLAGS)
+    fi
   fi
 fi
 

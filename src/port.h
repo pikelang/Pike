@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.55 2003/11/14 06:55:58 mast Exp $
+|| $Id: port.h,v 1.56 2004/05/10 21:45:13 agehall Exp $
 */
 
 #ifndef PORT_H
@@ -10,6 +10,95 @@
 
 #include "global.h"
 #include <math.h>
+
+#ifdef __MINGW32__
+/******************************************************/
+/* First we must ensure that all defines are in mingw */#
+/******************************************************/
+#ifndef PROCESSOR_PPC_601
+#define PROCESSOR_PPC_601       601
+#endif
+
+#ifndef PROCESSOR_PPC_604
+#define PROCESSOR_PPC_603       603
+#endif
+
+#ifndef PROCESSOR_PPC_604
+#define PROCESSOR_PPC_604       604
+#endif
+
+#ifndef PROCESSOR_PPC_620
+#define PROCESSOR_PPC_620       620
+#endif
+
+#ifndef PROCESSOR_OPTIL
+#define PROCESSOR_OPTIL         0x494f  // MSIL
+#endif
+
+#ifndef PROCESSOR_ARCHITECTURE_MSIL
+#define PROCESSOR_ARCHITECTURE_MSIL 8
+#endif
+
+#ifndef PROCESSOR_ARCHITECTURE_AMD64
+#define PROCESSOR_ARCHITECTURE_AMD64            9
+#endif
+
+#ifndef PROCESSOR_ARCHITECTURE_IA32_ON_WIN64
+#define PROCESSOR_ARCHITECTURE_IA32_ON_WIN64    10
+#endif
+
+#ifndef PROCESSOR_HITACHI_SH3
+#define PROCESSOR_HITACHI_SH3   10003   // Windows CE
+#endif
+
+#ifndef PROCESSOR_HITACHI_SH3E
+#define PROCESSOR_HITACHI_SH3E  10004   // Windows CE
+#endif
+
+#ifndef PROCESSOR_HITACHI_SH4
+#define PROCESSOR_HITACHI_SH4   10005   // Windows CE
+#endif
+
+#ifndef PROCESSOR_SHx_SH3
+#define PROCESSOR_SHx_SH3       103     // Windows CE
+#endif
+
+#ifndef PROCESSOR_SHx_SH4
+#define PROCESSOR_SHx_SH4       104     // Windows CE
+#endif
+
+#ifndef PROCESSOR_STRONGARM
+#define PROCESSOR_STRONGARM     2577    // Windows CE - 0xA11
+#endif
+
+#ifndef PROCESSOR_ARM720
+#define PROCESSOR_ARM720        1824    // Windows CE - 0x720
+#endif
+
+#ifndef PROCESSOR_ARM820
+#define PROCESSOR_ARM820        2080    // Windows CE - 0x820
+#endif
+
+#ifndef PROCESSOR_ARM920
+#define PROCESSOR_ARM920        2336    // Windows CE - 0x920
+#endif
+
+#ifndef PROCESSOR_ARM_7TDMI
+#define PROCESSOR_ARM_7TDMI     70001   // Windows CE
+#endif
+
+#ifndef LOGON32_LOGON_NETWORK
+#define LOGON32_LOGON_NETWORK 3
+#endif
+
+/* FP_CLASS compleation */
+
+/* Now for some functions */
+#define Emulate_GetLongPathName GetLongPathNameA
+
+
+
+#endif /* __MINGW32__ */
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
