@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.94 2003/11/07 18:28:05 mast Exp $
+|| $Id: global.h,v 1.95 2003/12/07 19:42:03 marcus Exp $
 */
 
 #ifndef GLOBAL_H
@@ -472,7 +472,7 @@ char *getenv PROT((char *));
 #endif
 
 #ifdef USE_CRYPT_C
-char *crypt(char *, char *);
+char *crypt(const char *, const char *);
 #endif /* USE_CRYPT_C */
 
 /* If this define is present, error() has been renamed to Pike_error() and

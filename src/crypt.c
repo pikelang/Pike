@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt.c,v 1.8 2003/11/11 13:47:26 grubba Exp $
+|| $Id: crypt.c,v 1.9 2003/12/07 19:42:03 marcus Exp $
 */
 
 /*
@@ -214,12 +214,12 @@ static void encrypt(char *blck, int edflag)
         transpose(p, &FinalTr, 64);
 }
 
-char *crypt(char *pw, char *salt)
+char *crypt(const char *pw, const char *salt)
 {
 
         char pwb[66];
         static char result[16];
-        register char *p = pwb;
+        register char *p = pwb, *p2;
         struct ordering new_etr;
         register int i;
 
@@ -265,7 +265,7 @@ char *crypt(char *pw, char *salt)
         EP = &etr;
 
         p = pwb;
-        pw = result+2;
+        p2 = result+2;
         while (p < &pwb[66]) {
                 register int c = 0;
                 register int j = 6;
@@ -277,8 +277,8 @@ char *crypt(char *pw, char *salt)
                 c += '.';               /* becomes >= '.' */
                 if (c > '9') c += 7;    /* not in [./0-9], becomes upper */
                 if (c > 'Z') c += 6;    /* not in [A-Z], becomes lower */
-                *pw++ = (char) c;
+                *p2++ = (char) c;
         }
-        *pw = 0;
+        *p2 = 0;
         return result;
 }
