@@ -61,6 +61,9 @@ void CALL_MACHINE_CODE(PIKE_OPCODE_T *pc)
 	returned in the macro should be one of -1 (inter return),
 	or -2 (inter escape catch).
 
+void EXIT_MACHINE_CODE()
+	Clean up from CALL_MACHINE_CODE.
+
 void SET_PROG_COUNTER(PIKE_OPCODE_T *newpc)
 	Set PROG_COUNTER to a new value.
 

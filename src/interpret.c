@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.298 2003/03/21 14:36:01 mast Exp $
+|| $Id: interpret.c,v 1.299 2003/03/22 13:38:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.298 2003/03/21 14:36:01 mast Exp $");
+RCSID("$Id: interpret.c,v 1.299 2003/03/22 13:38:42 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -952,6 +952,10 @@ void *dummy_label = NULL;
   } while(0)
 #endif /* !CALL_MACHINE_CODE */
 
+#ifndef EXIT_MACHINE_CODE
+#define EXIT_MACHINE_CODE
+#endif
+
 #ifdef PIKE_DEBUG
 
 static void debug_instr_prologue (PIKE_INSTR_T instr)
@@ -1143,13 +1147,13 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
   fprintf(stderr,"We have reached the end of the world!\n");
   goto *dummy_label;
 
-  /* %%esp will be slightly buggered after
-   * returning from the function code (8 bytes off), but that
-   * should not matter to these return statements. -Hubbe
-   */
+ inter_escape_catch_label:
+  EXIT_MACHINE_CODE();
+  return -2;
 
- inter_escape_catch_label: return -2;
- inter_return_label: return -1;
+ inter_return_label:
+  EXIT_MACHINE_CODE();
+  return -1;
 }
 
 #endif /* __GNUC__ */
