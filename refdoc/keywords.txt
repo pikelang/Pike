@@ -139,6 +139,19 @@ ________________________________________________________________________________
 
 ================================================================================
 
+Keyword:      @bugs
+Description:  Document shortcomings of the current block module/class/function
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @bugs
+                Converted images with bigger size than 512x512 pixels will be
+                distorted in the corners.
+
+XML:          <bugs/>
+________________________________________________________________________________
+
 Keyword:      @deprecated
 Description:  Documents the fact that the entity is deprecated by one or
               several other classes/modules/methods/variables.
@@ -260,6 +273,27 @@ XML:          `@array Foo' =>
               <array name="Foo">
 ________________________________________________________________________________
 
+Keyword:      @b{ ... @}
+Description:  Bold.
+Children:     Text that will be rendered in bold.
+Examples:     You really look @b{bold@}! - You mean @b{bald@}, don't you?
+
+XML:          <b>...</b>
+________________________________________________________________________________
+
+Keyword:      @code{ ... @}
+Description:  Encapsulates a code block.
+Children:     Text that will be rendered as program code.
+Examples:     @code{
+              int fac(int i) {
+                if(i<2) return i;
+                return i*fac(i-1);
+              }
+              @}
+
+XML:          <code>...</code>
+________________________________________________________________________________
+
 Keyword:      @dl - @enddl
 Description:  Render a definition list.
 Arguments:    -
@@ -312,6 +346,14 @@ Children:     Text that will be rendered in italics.
 Examples:     You really look @i{italic@}! - You mean @i{Italian@}, don't you?
 
 XML:          <i>...</i>
+________________________________________________________________________________
+
+Keyword:      @image{ ... @}
+Description:  Insert the specified image.
+Children:     The filename of the image file.
+Examples:     @image{chart2.png@}
+
+XML:          <image>...</image>
 ________________________________________________________________________________
 
 Keyword:      @int - @endint
@@ -396,6 +438,18 @@ Examples:     @ol
 XML:          <ol>...</ol>
 ________________________________________________________________________________
 
+Keyword:      @pre{ ... @}
+Description:  Preformatted text.
+Children:     Text that will be rendered as is, e.g. whitespaces kept.
+Examples:     @pre{
+               +----------+------+--------+
+               | startbit | data | endbit |
+               +----------+------+--------+
+              @}
+
+XML:          <pre>...</pre>
+________________________________________________________________________________
+
 Keyword:      @ref{ ... @}
 Description:  A reference to a Pike entity. There is also a shortcut for this
               keyword, since it is expected to be so common: @[ ... ]
@@ -461,6 +515,11 @@ Examples:     @ul
               @endul
 
 XML:          <ul>...</ul>
+________________________________________________________________________________
+
+Keyword:      @url{ ... @}
+Children:     Text with markup.
+Note:         Might be deprecated, since it isn't used...
 ________________________________________________________________________________
 
 Keyword:      @xml{ ... @}
