@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.31 1999/04/16 17:45:05 mirar Exp $ */
+/* $Id: blit.c,v 1.32 1999/05/20 17:34:34 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.31 1999/04/16 17:45:05 mirar Exp $
+**!	$Id: blit.c,v 1.32 1999/05/20 17:34:34 mirar Exp $
 **! class Image
 */
 
@@ -80,11 +80,17 @@ static void chrono(char *x)
    (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
     0:(setpixel(x,y),0))
 
-static INLINE void getrgb(struct image *img,
-			  INT32 args_start,INT32 args,char *name)
+static INLINE int getrgb(struct image *img,
+			 INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
-   if (args-args_start<3) return;
+   if (args-args_start<1) return 0;
+
+   if (image_color_svalue(sp-args+args_start,&(img->rgb)))
+      return 1;
+
+   if (args-args_start<3) return 0;
+
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
          error("Illegal r,g,b argument to %s\n",name);
@@ -95,10 +101,17 @@ static INLINE void getrgb(struct image *img,
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
+      {
          img->alpha=sp[3-args+args_start].u.integer;
+	 return 4;
+      }
    else
+   {
       img->alpha=0;
+      return 3;
+   }
 }
+
 
 /*** end internals ***/
 
@@ -271,7 +284,7 @@ void img_clone(struct image *newimg,struct image *img)
 
 void image_paste(INT32 args)
 {
-   struct image *img;
+   struct image *img=NULL;
    INT32 x1,y1,x2,y2,blitwidth,blitheight;
 
    if (args<1
@@ -504,6 +517,8 @@ CHRONO("image_paste_mask end");
 **! method object paste_alpha_color(object mask,int x,int y)
 **! method object paste_alpha_color(object mask,int r,int g,int b)
 **! method object paste_alpha_color(object mask,int r,int g,int b,int x,int y)
+**! method object paste_alpha_color(object mask,Color color)
+**! method object paste_alpha_color(object mask,Color color,int x,int y)
 **!    Pastes a given color over the current image,
 **!    using the given mask as opaque channel.  
 **!    
@@ -535,9 +550,10 @@ void image_paste_alpha_color(INT32 args)
    rgb_group rgb,*d,*m;
    INT32 mmod,dmod;
    float q;
+   int arg=1;
 
-   if (args!=1 && args!=4 && args!=6 && args!=3)
-      error("illegal number of arguments to image->paste_alpha_color()\n");
+   if (args<1)
+      error("too few arguments to image->paste_alpha_color()\n");
    if (sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
@@ -545,23 +561,15 @@ void image_paste_alpha_color(INT32 args)
    if (!THIS->img) return;
    if (!mask->img) return;
 
-   if (args==6 || args==4) /* colors at arg 2..4 */
-      getrgb(THIS,1,args,"image->paste_alpha_color()\n");
-   if (args==3) /* coords at 2..3 */
+   if (args==6 || args==4 || args==2 || args==3) /* color at arg 2.. */
+      arg=1+getrgb(THIS,1,args,"image->paste_alpha_color()\n");
+   if (args>arg+1) 
    {
-      if (sp[1-args].type!=T_INT
-	  || sp[2-args].type!=T_INT)
+      if (sp[arg-args].type!=T_INT
+	  || sp[arg-args].type!=T_INT)
          error("illegal coordinate arguments to image->paste_alpha_color()\n");
-      x1=sp[1-args].u.integer;
-      y1=sp[2-args].u.integer;
-   }
-   else if (args==6) /* at 5..6 */
-   {
-      if (sp[4-args].type!=T_INT
-	  || sp[5-args].type!=T_INT)
-         error("illegal coordinate arguments to image->paste_alpha_color()\n");
-      x1=sp[4-args].u.integer;
-      y1=sp[5-args].u.integer;
+      x1=sp[arg-args].u.integer;
+      y1=sp[arg-args].u.integer;
    }
    else x1=y1=0;
    

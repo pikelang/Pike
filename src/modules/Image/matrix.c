@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.18 1999/04/13 12:32:25 mirar Exp $ */
+/* $Id: matrix.c,v 1.19 1999/05/20 17:34:37 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.18 1999/04/13 12:32:25 mirar Exp $
+**!	$Id: matrix.c,v 1.19 1999/05/20 17:34:37 mirar Exp $
 **! class Image
 */
 
@@ -79,10 +79,16 @@ static void chrono(char *x)
     0:(setpixel(x,y),0))
 
 static INLINE int getrgb(struct image *img,
-			  INT32 args_start,INT32 args,char *name)
+			 INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
+   if (args-args_start<1) return 0;
+
+   if (image_color_svalue(sp-args+args_start,&(img->rgb)))
+      return 1;
+
    if (args-args_start<3) return 0;
+
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
          error("Illegal r,g,b argument to %s\n",name);
@@ -93,11 +99,17 @@ static INLINE int getrgb(struct image *img,
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
+      {
          img->alpha=sp[3-args+args_start].u.integer;
+	 return 4;
+      }
    else
+   {
       img->alpha=0;
-   return 1;
+      return 3;
+   }
 }
+
 
 static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name)
 {

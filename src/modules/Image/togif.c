@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.33 1999/04/13 12:32:36 mirar Exp $ 
+$Id: togif.c,v 1.34 1999/05/20 17:34:38 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.33 1999/04/13 12:32:36 mirar Exp $
+**!	$Id: togif.c,v 1.34 1999/05/20 17:34:38 mirar Exp $
 **! class Image
 */
 
@@ -307,11 +307,17 @@ static void img_encode_gif(rgb_group *transparent,int fs,INT32 args)
    else _image_gif_encode(2,fs);
 }
 
-static INLINE void getrgb(struct image *img,
-                          INT32 args_start,INT32 args,char *name)
+static INLINE int getrgb(struct image *img,
+			 INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
-   if (args-args_start<3) return;
+   if (args-args_start<1) return 0;
+
+   if (image_color_svalue(sp-args+args_start,&(img->rgb)))
+      return 1;
+
+   if (args-args_start<3) return 0;
+
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
          error("Illegal r,g,b argument to %s\n",name);
@@ -322,9 +328,15 @@ static INLINE void getrgb(struct image *img,
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
+      {
          img->alpha=sp[3-args+args_start].u.integer;
+	 return 4;
+      }
    else
+   {
       img->alpha=0;
+      return 3;
+   }
 }
 
 void image_togif(INT32 args)
