@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.87 2000/09/14 19:58:43 mast Exp $");
+RCSID("$Id: array.c,v 1.88 2000/09/17 19:53:52 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1697,6 +1697,8 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,struct processi
 
   ret=allocate_array_no_init(a->size,0);
   doing.pointer_b=(void *)ret;
+
+  ret->flags = a->flags & ~ARRAY_LVALUE;
 
   copy_svalues_recursively_no_free(ITEM(ret),ITEM(a),a->size,&doing);
 
