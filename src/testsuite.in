@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.47 1997/08/27 02:39:18 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.48 1997/09/02 22:16:13 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -141,11 +141,12 @@ cond([[all_constants()->thread_create]],
   test_true(_tmp_mutex->trylock())
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex_lock",_tmp_mutex->lock()))
-  test_false(_tmp_mutex->trylock())
+  test_true(catch(_tmp_mutex->trylock()))
   test_do(add_constant("_tmp_mutex_lock"))
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex"))
-  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(5); data[0]=1; destruct(o);  },data); object l=data[2]->lock(); object ll=data[1]->lock(); return data[0]; ]],1)
+  test_true([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); destruct(k); }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]])
+  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l; while (catch(l=data[2]->lock())) sleep(1); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[mixed *data=({1, Thread.Mutex()}); for(int e=0;e<3;e++) thread_create(lambda(mixed *data) { for(int e=0;e<1000;e++) { object o=data[1]->lock(); data[0]*=2; for(int d=0;d<5;d++) { data[0]--; data[0]*=2; } data[0]--; destruct(o); }}, data); return data[0];]],1)
 
 // /precompiled/condition
@@ -1566,7 +1567,7 @@ test_equal(lower_case("Foo1234-*~\n"),"foo1234-*~\n")
 
 // - next_object
 test_true(objectp(next_object()))
-test_any(int e;object o=next_object(); for(e=0;e<1000 && o;e++) o=next_object(o); return o,0)
+test_any(gc();int e;object o=next_object(); for(e=0;e<2000 && o;e++) o=next_object(o); return o,0)
 
 // - object_program
 test_true(programp(object_program(this_object())))
