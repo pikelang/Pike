@@ -203,7 +203,7 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	void|array(string|int) mysql_result->fetch_row();
+	int|array(string|int) mysql_result->fetch_row();
 
 DESCRIPTION
 	Returns an array with the contents of the next row in the result.
