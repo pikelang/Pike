@@ -68,14 +68,19 @@ void f_sqrt(INT32 args)
 
   if(sp[-args].type==T_INT)
   {
-    INT32 a,b,c,q;
-    q=sp[-args].u.integer;
-    for(a=0,b=0x10000;a+1<b;)
+    unsigned INT32 n, b, s, y=0;
+    unsigned INT16 x=0;
+    
+    n=sp[-args].u.integer;
+    for(b=1<<(sizeof(INT32)*8-2); b; b>>=2)
     {
-      c=(a+b)/2;
-      if(c*c>q) b=c; else a=c;
+      x<<=1; s=b+y; y>>=1;
+      if(n>=s)
+      {
+	x|=1; y|=b; n-=s;
+      }
     }
-    sp[-args].u.integer=a;
+    sp[-args].u.integer=x;
   }
   else if(sp[-args].type==T_FLOAT)
   {
