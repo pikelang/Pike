@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.44 1999/03/10 02:42:48 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.45 1999/03/26 19:28:06 hubbe Exp $
 #
 
 
@@ -19,10 +19,12 @@ CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
 
-all: subdirs dummy
+all: dummy
 
-subdirs:
-	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$? ; fi ; done
+force:
+
+$(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
+	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$?
 
 dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	@tmp="$(INSTALL_NAME)" ;\
