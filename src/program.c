@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.473 2003/01/11 03:06:54 mast Exp $
+|| $Id: program.c,v 1.474 2003/01/15 21:38:38 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.473 2003/01/11 03:06:54 mast Exp $");
+RCSID("$Id: program.c,v 1.474 2003/01/15 21:38:38 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6175,6 +6175,26 @@ static void not_trampoline(INT32 args)
   }
 }
 
+static void sprintf_trampoline (INT32 args)
+{
+  dynbuf_string str;
+
+  if (!args || sp[-args].type != T_INT || sp[-args].u.integer != 'O' ||
+      !THIS->frame || !THIS->frame->current_object) {
+    pop_n_elems (args);
+    push_int (0);
+    return;
+  }
+  pop_n_elems (args);
+
+  ref_push_function (THIS->frame->current_object, THIS->func);
+  init_buf();
+  describe_svalue (sp - 1, 0, 0);
+  str = complex_free_buf();
+  pop_stack();
+  push_string (make_shared_binary_string (str.str, str.len));
+}
+
 static void init_trampoline(struct object *o)
 {
   THIS->frame=0;
@@ -6279,8 +6299,10 @@ void init_program(void)
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
   ADD_STORAGE(struct pike_trampoline);
-  add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
-  add_function("`!",not_trampoline,"function(:int)",0);
+  ADD_FUNCTION("`()",apply_trampoline,tFunction,0);
+  ADD_FUNCTION("`!",not_trampoline,tFunc(tVoid,tInt),0);
+  ADD_FUNCTION("_sprintf", sprintf_trampoline,
+	       tFunc(tInt tOr(tMapping,tVoid),tStr), 0);
   set_init_callback(init_trampoline);
   set_exit_callback(exit_trampoline);
   set_gc_check_callback(gc_check_trampoline);
