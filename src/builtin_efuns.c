@@ -285,10 +285,21 @@ void f_clone(INT32 args)
 
 void f_call_function(INT32 args)
 {
+  struct svalue *expected_sp=sp-args+2;
   strict_apply_svalue(sp-args, args - 1);
-  free_svalue(sp-2);
-  sp[-2]=sp[-1];
-  sp--;
+  if(sp < expected_sp)
+  {
+#ifdef DEBUG
+    if(sp+1 != expected_sp) fatal("Stack underflow!\n");
+#endif
+
+    pop_stack();
+    push_int(0);
+  }else{
+    free_svalue(sp-2);
+    sp[-2]=sp[-1];
+    sp--;
+  }
 }
 
 void f_backtrace(INT32 args)
@@ -1096,6 +1107,9 @@ void f_replace(INT32 args)
     push_string(s);
     break;
   }
+
+  default:
+    error("Bad argument 1 to replace().\n");
   }
 }
 
