@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.74 1999/08/25 23:29:17 per Exp $");
+RCSID("$Id: efuns.c,v 1.75 1999/10/05 05:32:54 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -360,7 +360,7 @@ void f_filesystem_stat(INT32 args)
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_STRUCT_STATFS
-#ifdef 0 && HAVE_STATFS_F_FSID
+#if 0 && HAVE_STATFS_F_FSID
     push_text("id");           push_int(st.f_fsid);
 #else
     num_fields--;
