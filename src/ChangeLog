@@ -1,3 +1,11 @@
+Tue Oct 15 06:01:26 1996  Fredrik Hubinette  <hubbe@skuld.infovav.se>
+
+	* thread swaps, gc, object destruction and signal handling
+	  is now handled by generic evaluator callbacks
+	* /precompiled/FILE added
+	* strmult, find_option, get_args added
+	* while(1); now compiles correctly
+
 Sat Oct 12 20:03:39 1996  Fredrik Hubinette  <hubbe@skuld.infovav.se>
 
 	* string hash table now grows when needed
