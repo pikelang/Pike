@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.111 2003/10/30 22:22:34 bill Exp $
+# $Id: dynamic_module_makefile.in,v 1.112 2003/10/30 23:17:25 bill Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -77,4 +77,14 @@ local_install: $(MODULE_INSTALL)
 	fi; \
 	$(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod 
 
+dump_module: install
+	-rm -f dumpmodule.log
+	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
+	$(RUNPIKE) -x dump $$args \
+	--recursive "$(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod"
 
+dump_local_module: install
+	-rm -f dumpmodule.log
+	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
+	$(RUNPIKE) -x dump $$args \
+	--recursive "$(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod"
