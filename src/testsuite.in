@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.381 2001/02/04 09:09:01 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.382 2001/02/05 11:24:16 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6076,6 +6076,34 @@ test_true(time(1))
 test_true(intp(time()))
 test_true(intp(time(1)))
 test_true(floatp(time(2)))
+
+
+// gethrtime() may gethrtime(), RDTSC or gettimeofday
+// sleep uses a combination of select/poll and the above
+// time() uses gettimeofday
+test_any([[
+   float tts=2.0;
+
+   int t0=time();
+   float t1=time(t0);
+   int hrt1=gethrtime();
+   sleep(tts);
+   int hrt2=gethrtime();
+   float t2=time(t0);
+   
+   float e=(hrt2-hrt1)*1e-6;
+   float f=t2-t1;
+
+   array r=({});
+   if (e<tts-0.1 || e>tts+0.1) 
+      r+=({sprintf("hrtime %.6f, %+.6f",e,e-tts)});
+
+   if (f<tts-0.1 || f>tts+0.1) 
+      r+=({sprintf("timeofday %.6f, %+.6f",f,f-tts)});
+
+   if (sizeof(r)) return r*" / ";
+   return "no error";
+]],"no error")
 
 // - trace
 test_do(trace(0))

@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.37 2001/02/02 15:52:41 per Exp $");
+RCSID("$Id: port.c,v 1.38 2001/02/05 11:24:14 mirar Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -662,6 +662,7 @@ PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
 
 static long long hrtime_rtsc_zero;
 static long long hrtime_rtsc_last;
+static long long hrtime_max;
 static struct timeval hrtime_timeval_zero;
 static long double hrtime_conv=0.0;
 
@@ -672,18 +673,22 @@ static long double hrtime_conv=0.0;
 
 void own_gethrtime_init()
 {
+   GETTIMEOFDAY(&hrtime_timeval_zero);
    RTSC(hrtime_rtsc_zero);
    hrtime_rtsc_last=hrtime_rtsc_zero;
-   GETTIMEOFDAY(&hrtime_timeval_zero);
+   hrtime_max=0;
 }
 
-void own_gethrtime_update(struct timeval *ptr)
+int own_gethrtime_update(struct timeval *ptr)
 {
    long long td,t,now;
-   RTSC(now);
    GETTIMEOFDAY(ptr);
+   RTSC(now);
    td=((long long)ptr->tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
       ((long long)ptr->tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+
+   if (td<100000000) return 0; /* less then 0.1 seconds */
+
    hrtime_rtsc_last=now;
    t=now-hrtime_rtsc_zero;
    if (t) hrtime_conv=((long double)td)/t;
@@ -692,17 +697,32 @@ void own_gethrtime_update(struct timeval *ptr)
    when time is adjusted, this calculation isn't linear anymore,
    so it might be best to reset it */
 
-#if 0
-   fprintf(stderr,"conv=%.8llg MHz=%.8llg\n",hrtime_conv,1000.0/hrtime_conv);
+#ifdef RTSC_DEBUG
+   fprintf(stderr,"conv=%.8Lg MHz=%.8Lg\n",hrtime_conv,1000.0/hrtime_conv);
 #endif
+   return 1;
 }
 
 long long gethrtime()
 {
    long long now;
-   struct timeval dummy;
+   struct timeval tv;
 
-   if (hrtime_conv==0.0) own_gethrtime_update(&dummy);
+   if (hrtime_conv==0.0) 
+   {
+      if (!own_gethrtime_update(&tv))  /* not calibrated yet */
+      {
+#ifdef RTSC_DEBUG
+	 fprintf(stderr,"not calibrated yet (%lld)\n",
+		 ((long long)tv.tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
+		 ((long long)tv.tv_usec-hrtime_timeval_zero.tv_usec)*1000);
+#endif
+	 return
+	    hrtime_max=
+	    ((long long)tv.tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
+	    ((long long)tv.tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+      }
+   }
 
    RTSC(now);
 
@@ -710,11 +730,18 @@ long long gethrtime()
    if (now-hrtime_rtsc_last > 2000000000) 
    {
 /*      fprintf(stderr,"update: %.8llg\n",1e-9*(now-hrtime_rtsc_last)); */
-      own_gethrtime_update(&dummy);
+      own_gethrtime_update(&tv);
       return gethrtime();
    }
 
-   return (long long) ( (long double)now * hrtime_conv );
+   now = (long long) ( (long double)(now-hrtime_rtsc_zero) * hrtime_conv );
+
+#ifdef RTSC_DEBUG
+   fprintf(stderr,"(%lld)\n",now);
+#endif
+
+   if (now<hrtime_max) now=hrtime_max;
+   return hrtime_max=now;
 }
 
 #endif
