@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.138 2003/04/02 00:38:31 mast Exp $
+|| $Id: mpz_glue.c,v 1.139 2003/04/02 19:29:21 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.138 2003/04/02 00:38:31 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.139 2003/04/02 19:29:21 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1734,7 +1734,6 @@ PIKE_MODULE_EXIT
 
 #define tMpz_arg tOr3(tInt,tFloat,tObj)
 #define tMpz_ret tObjIs_GMP_MPZ
-#define tMpz_int tInt
 #define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
 #define tMpz_cmpop_type tFunc(tMixed, tInt01)
@@ -1793,7 +1792,7 @@ PIKE_MODULE_EXIT
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), ID_STATIC);\
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
 									\
-  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tMpz_int),0);	\
+  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
   ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr),0);	\
   ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);	\
 									\
@@ -1857,9 +1856,7 @@ PIKE_MODULE_INIT
     start_new_program();
 
 #undef tMpz_ret
-#undef tMpz_int
 #define tMpz_ret tInt
-#define tMpz_int tInt
 
     /* I first tried to just do an inherit here, but it becomes too hard
      * to tell the programs apart when I do that..          /Hubbe
