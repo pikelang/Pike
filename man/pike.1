@@ -1,18 +1,18 @@
-.\" $Id: pike.1,v 1.3 1998/05/12 21:22:20 grubba Exp $
+.\" $Id: pike.1,v 1.4 1998/05/12 21:47:54 grubba Exp $
 .\" name section last-modified section-name title product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 1998/05/12 21:22:20 $" Pike "Pike Manual" Pike
-.if !\*(]LPike .ds ]L $Date: 1998/05/12 21:22:20 $ \" Solaris nroff
+.TH pike 1 "$Date: 1998/05/12 21:47:54 $" Pike "Pike Manual" Pike
+.if !\*(]LPike .ds ]L $Date: 1998/05/12 21:47:54 $ \" Solaris nroff
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
 .B pike
 [
-.B -driver options
+.B \-driver\-options ...
 ] [
 .IR script
 [
-.B script arguments
+.B script\-arguments ...
 ] ]
 .SH DESCRIPTION
 Compiler and interpreter for the Pike programming language.
@@ -138,7 +138,12 @@ Increase or set the debug level (debug).
 Show the paths pike will use and exit (debug).
 .TP
 .B \-\-trace
-Increase or set the trace level (debug).
+Increase the trace level (debug).
+.TP
+.BI \-\-trace =num
+Set the trace level to
+.I num
+(debug).
 .SH OPERANDS
 The following operand is supported:
 .TP
@@ -156,7 +161,7 @@ On NT, Pike is affected by the following keys in the registry:
 .B HKEY_LOCAL_MACHINE\eSoftware\eIdonex\ePike\e0.6\ePIKE_MASTER
 .RS
 Specifies the name of the master program (overridden by
-.BI -m master_program
+.BI \-m master_program
 ).
 .RE
 .SH ENVIRONMENT
@@ -164,7 +169,7 @@ Pike is affected by the following environment variables:
 .TP
 .B PIKE_MASTER
 Specifies the name of the master program (overridden by
-.BI -mmaster_program
+.BI \-m master_program
 ).
 .LP
 Depending on operating system Pike may be affected by the following
@@ -224,7 +229,7 @@ dynamically loaded modules
 modules implemented in pike
 .TP
 .B /usr/local/lib/pike/include/*
-architecture dependant include files
+architecture dependant include-files
 .TP
 .B /usr/local/share/pike/include/*
 pike include files
