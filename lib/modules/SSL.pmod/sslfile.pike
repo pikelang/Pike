@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.36 2001/09/17 14:51:20 nilsson Exp $
+/* $Id: sslfile.pike,v 1.37 2002/02/09 06:18:01 per-bash Exp $
  *
  */
 
@@ -491,14 +491,16 @@ void set_blocking()
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_blocking\n");
 #endif
+  if(socket)
+    socket->set_blocking();
+
+  blocking = 1;
+
   if (sizeof (write_buffer) && !blocking && socket)
     ssl_write_callback(socket->query_id());
-  blocking = 1;
+
   if(socket)
-  {
-    socket->set_blocking();
     get_blocking_to_handshake_finished_state();
-  }
 }
 
 string query_address(int|void arg)
