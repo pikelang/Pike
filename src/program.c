@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.116 1999/03/11 13:44:38 hubbe Exp $");
+RCSID("$Id: program.c,v 1.117 1999/03/15 08:24:01 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -286,7 +286,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
     int n;
     for(n=0;n<compilation_depth;n++,p=p->previous)
     {
-      int i=low_find_shared_string_identifier(ident, p->new_program);
+      int i=really_low_find_shared_string_identifier(ident, p->new_program,1);
       if(i!=-1)
       {
 	struct identifier *id;
@@ -1925,11 +1925,14 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   struct reference *funp;
   struct identifier *fun;
   int i,t;
+
+/*  fprintf(stderr,"Trying to find %s see_static=%d\n",name->str,see_static); */
+
   for(i=0;i<(int)prog->num_identifier_references;i++)
   {
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
-    if(funp->id_flags & ID_HIDDEN)
+    if(funp->id_flags & ID_STATIC)
       if(!see_static)
 	continue;
     fun = ID_FROM_PTR(prog, funp);
@@ -1945,7 +1948,8 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 	
 	if(t==i) continue;
 	funpb=prog->identifier_references+t;
-	if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
+	if(funpb->id_flags & ID_HIDDEN) continue;
+	if(funpb->id_flags & ID_STATIC) if(!see_static) continue;
 	if((funpb->id_flags & ID_INHERITED) && t<i) continue;
 	funb=ID_FROM_PTR(prog,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
