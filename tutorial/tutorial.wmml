@@ -5574,113 +5574,83 @@ getpid, getppid
 
 <hr noshade size=1>
 
-<anchor name=getpid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getpid</tt> - get the process ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getpid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<method name=getpid title="get the process ID">
+<man_syntax>
+int getpid();<br>
+</man_syntax>
+<man_description>
 Returns the process ID of this process.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getppid>getppid</link> and <link to=getpgrp>getpgrp</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+getppid, getpgrp
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=getppid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getppid</tt> - get the parent process ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getppid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=getppid title="get the parent process ID">
+<man_syntax>
+int getppid();<br>
+</man_syntax>
+<man_description>
 Returns the process ID of the parent process.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getpid>getpid</link> and <link to=getpgrp>getpgrp</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+getpid, getpgrp
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=getuid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getuid</tt> - get the user ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getuid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=getuid title="get the user ID">
+<man_syntax>
+int getuid();<br>
+</man_syntax>
+<man_description>
 Get the real user ID.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, setgid, getgid, seteuid, geteuid, setegid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=hardlink>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>hardlink</tt> - create a hardlink
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void hardlink(string <I>from</I>, string <I>to</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=hardlink title="create a hardlink">
+<man_syntax>
+void hardlink(string <I>from</I>, string <I>to</I>);<br>
+</man_syntax>
+<man_description>
 Creates a hardlink named <i>to</i> from the file <i>from</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=symlink>symlink</link>, <link to=mv>mv</link> and <link to=rm>rm</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+symlink, mv, rm
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=initgroups>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>initgroups</tt> - initialize the group access list
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void initgroups(string <I>username</I>, int <I>base_gid</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=initgroups title="initialize the group access list">
+<man_syntax>
+void initgroups(string <I>username</I>, int <I>base_gid</I>);<br>
+</man_syntax>
+<man_description>
 Initializes the group access list according to the system
 group database. <i>base_gid</i> is also added to the group access
 list.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link>, <link to=getegid>getegid</link>, system/getgroups and system/setgroups
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, setgid, getgid, seteuid, geteuid, setegid, getegid, getgroups, setgroups
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=openlog>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>openlog</tt> - initializes the connection to syslogd
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void openlog(string <I>ident</I>, int <I>options</I>, <I>facility</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=openlog title="initializes the connection to syslogd">
+<man_syntax>
+void openlog(string <I>ident</I>, int <I>options</I>, <I>facility</I>);<br>
+</man_syntax>
+<man_description>
 Initializes the connection to syslogd.
 <p>The <i>ident</i> argument specifies an identifier to tag all log entries
 with.
@@ -5711,161 +5681,122 @@ facilities are:
 <tr valign=top><td> LOG_UUCP </td><td> UUCP subsystem </td></tr>
 </table>
 </dl>
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 Only available on systems with syslog(3).
-
-BUGS
+</man_note>
+<man_bugs>
 LOG_NOWAIT should probably always be specified.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-syslog, closelog and setlogmask
-<p>
-</dl>
+</man_bugs>
+<man_see>
+syslog, closelog, setlogmask
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=readlink>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>readlink</tt> - read a symbolic link
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string readlink(string <I>linkname</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=readlink title="read a symbolic link">
+<man_syntax>
+string readlink(string <I>linkname</I>);<br>
+</man_syntax>
+<man_description>
 Returns what the symbolic link <i>linkname</i> points to.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=symlink>symlink</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+symlink
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=setegid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>setegid</tt> - set the effective group ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setegid(int <I>uid</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=setegid title="set the effective group ID">
+<man_syntax>
+void setegid(int <I>uid</I>);<br>
+</man_syntax>
+<man_description>
 Sets the effective group ID to <i>gid</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, setgid, getgid, seteuid, geteuid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=seteuid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>seteuid</tt> - set the effective user ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void seteuid(int <I>uid</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=seteuid title="set the effective user ID">
+<man_syntax>
+void seteuid(int <I>uid</I>);<br>
+</man_syntax>
+<man_description>
 Sets the effective user ID to <i>uid</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, setgid, getgid, geteuid, setegid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=setgid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>setgid</tt> - set the group ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setgid(int <I>gid</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=setgid title="set the group ID">
+<man_syntax>
+void setgid(int <I>gid</I>);<br>
+</man_syntax>
+<man_description>
 Sets the real group ID, effective group ID and saved group ID to <i>gid</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, getgid, seteuid, geteuid, setegid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=setuid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>setuid</tt> - set the user ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setuid(int <I>uid</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=setuid title="set the user ID">
+<man_syntax>
+void setuid(int <I>uid</I>);<br>
+</man_syntax>
+<man_description>
 Sets the real user ID, effective user ID and saved user ID to <i>uid</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+getuid, setgid, getgid, seteuid, geteuid, setegid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=symlink>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>symlink</tt> - create a symbolic link
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void symlink(string <I>from</I>, string <I>to</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=symlink title="create a symbolic link">
+<man_syntax>
+void symlink(string <I>from</I>, string <I>to</I>);<br>
+</man_syntax>
+<man_description>
 Creates a symbolic link named <i>to</i> pointing to <i>from</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=hardlink>hardlink</link>, <link to=readlink>readlink</link>, <link to=mv>mv</link> and <link to=rm>rm</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+hardlink, readlink, mv, rm
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=uname>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>uname</tt> - get operating system information
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:string) <I>uname</I>();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=uname title="get operating system information">
+<man_syntax>
+mapping(string:string) <I>uname</I>();<br>
+</man_syntax>
+<man_description>
 Returns a mapping describing the operating system.
 <p>The mapping contains the following fields:
 <p><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td>  </td><td> "sysname": </td><td> Operating system name </td></tr>
 <tr valign=top><td>  </td><td> "nodename": "release": "version": "machine": </td><td> Host name Release of this OS Version number of this OS Machine architecture </td></tr>
 </table>
-
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This function only exists on systems that have the uname(2)
 system call.
-<p>
-</dl>
+</man_note>
+</method>
 
-</anchor>
-</section>
-</anchor>
 <hr noshade size=1>
 
 <anchor name=Process>
