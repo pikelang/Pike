@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.109 2000/03/27 01:17:23 per Exp $
+ * $Id: master.pike.in,v 1.110 2000/03/30 19:04:50 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -78,7 +78,7 @@ object low_cast_to_object(string oname, string current_file);
 array(string) pike_include_path=({});
 array(string) pike_module_path=({});
 array(string) pike_program_path=({});
-int want_warnings;
+int want_warnings = 1;
 
 #ifdef PIKE_AUTORELOAD
 
@@ -274,9 +274,13 @@ static program low_findprog(string pname, string ext, object|void handler)
   // FIXME: The catch is needed, since we might be called in
   // a context when threads are disabled.
   // (compile() disables threads).
-  catch {
+  mixed err = catch {
     key=compilation_mutex->lock(2);
   };
+  if (err) {
+    werror(sprintf("low_findprog: Caught spurious error:\n"
+		   "%s\n", describe_backtrace(err)));
+  }
 #endif
 
 #ifdef PIKE_AUTORELOAD
@@ -578,8 +582,8 @@ class dirnode
 {
   string dirname;
   mixed module;
-  mapping cache=([]);
-  array files;
+  mapping(string:mixed) cache=([]);
+  array(string) files;
 
   void create(string name)
   {
@@ -590,7 +594,7 @@ class dirnode
 	module=tmp;
   }
 
-  static object|program ind(string index)
+  static mixed ind(string index)
   {
     if(module) 
     {
@@ -622,7 +626,7 @@ class dirnode
     return UNDEFINED;
   }
 
-  object|program `[](string index)
+  mixed `[](string index)
   {
     mixed ret;
     if(!zero_type(ret=cache[index]))
@@ -633,7 +637,7 @@ class dirnode
     return cache[index]=ind(index);
   }
 
-  int _cache_full;
+  static int _cache_full;
   void fill_cache()
   {
 #ifdef RESOLV_DEBUG
@@ -674,11 +678,13 @@ class dirnode
   }
   array(string) _indices()
   {
+    // werror("indices(%O) called\n", dirname);
     fill_cache();
     return indices(filter(cache, lambda(mixed x){ return x!=0; }));
   }
   array(mixed) _values()
   {
+    // werror("values(%O) called\n", dirname);
     fill_cache();
     return values(cache)-({0});
   }
@@ -689,14 +695,14 @@ static class ZERO_TYPE {};
 class joinnode
 {
   array(object|mapping) joined_modules;
-  mapping cache=([]);
+  mapping(string:mixed) cache=([]);
 
   void create(array(object|mapping) _joined_modules)
   {
     joined_modules = _joined_modules;
   }
 
-  static object|mapping|program ind(string index)
+  static mixed ind(string index)
   {
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o) 
@@ -724,9 +730,9 @@ class joinnode
     return UNDEFINED;
   }
 
-  object|mapping|program `[](string index)
+  mixed `[](string index)
   {
-    object|mapping|program ret;
+    mixed ret;
     if (!zero_type(ret = cache[index])) {
       if (ret != ZERO_TYPE) {
 	return ret;
@@ -741,7 +747,7 @@ class joinnode
     }
     return ret;
   }
-  int _cache_full;
+  static int _cache_full;
   void fill_cache()
   {
 #ifdef RESOLV_DEBUG
@@ -935,6 +941,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
       ({"showpaths",tmp->NO_ARG,"--show-paths"}),
       ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
+      ({"nowarnings",tmp->NO_ARG,({"-W", "--woff", "--no-warnings"})}),
 #ifdef PIKE_AUTORELOAD
       ({"autoreload",tmp->NO_ARG,({"--autoreload"})}),
 #endif
@@ -991,6 +998,10 @@ void _main(array(string) orig_argv, array(string) env)
 
       case "warnings":
 	want_warnings++;
+	break;
+
+      case "no-warnings":
+	want_warnings--;
 	break;
 
       case "master":
