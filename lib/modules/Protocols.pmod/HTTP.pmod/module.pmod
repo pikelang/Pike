@@ -67,8 +67,8 @@ array(string) get_url_nice(string url,void|mapping query_variables)
 
 array(string) get_url_data(string url,void|mapping query_variables)
 {
-   array z=get_url(url,query_variables);
-   return z && get_url(url,query_variables)[1];
+   object z=get_url(url,query_variables);
+   return z && z->data();
 }
 
 object post_url(string url,mapping query_variables)
@@ -109,8 +109,8 @@ array(string) post_url_nice(string url,mapping query_variables)
 
 array(string) post_url_data(string url,mapping query_variables)
 {
-   array z=post_url(url,query_variables);
-   return z && post_url(url,query_variables)[1];
+   object z=post_url(url,query_variables);
+   return z && z->data();
 }
 
 //!
