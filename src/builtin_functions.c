@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.134 1998/10/15 18:54:31 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.135 1998/10/23 02:14:04 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -799,7 +799,7 @@ void f_string_to_utf8(INT32 args)
     }
   }
   if (len == in->len) {
-    // 7bit string -- already valid utf8.
+    /* 7bit string -- already valid utf8. */
     pop_n_elems(args - 1);
     return;
   }
