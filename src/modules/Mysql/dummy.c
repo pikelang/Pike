@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.13 2003/06/23 20:03:24 kiwi Exp $
+|| $Id: dummy.c,v 1.14 2003/06/24 08:05:10 kiwi Exp $
 */
 
 /*
@@ -39,7 +39,7 @@ _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
   read(0, 0, 0);
 #endif
 #ifdef HAVE_FILENO
-  fileno(0);
+  fileno((FILE*)0);
 #endif
 #ifdef HAVE_PUTS
   puts(0);
