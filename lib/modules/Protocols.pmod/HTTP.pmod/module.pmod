@@ -8,6 +8,21 @@
 //!	and returns the created and initialized <ref>Query</ref> object.
 //!	0 is returned upon failure.
 //!
+//! method object(Protocols.HTTP.Query) put_url(string url)
+//! method object(Protocols.HTTP.Query) put_url(string url,string file)
+//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables)
+//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables, mapping request_headers)
+//! 	Sends a HTTP PUT request to the server in the URL
+//!	and returns the created and initialized <ref>Query</ref> object.
+//!	0 is returned upon failure.
+//!
+//! method object(Protocols.HTTP.Query) delete_url(string url)
+//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables, mapping request_headers)
+//! 	Sends a HTTP DELETE request to the server in the URL
+//!	and returns the created and initialized <ref>Query</ref> object.
+//!	0 is returned upon failure.
+//!
 //! method array(string) get_url_nice(string url)
 //! method array(string) get_url_nice(string url,mapping query_variables)
 //! method array(string) get_url_nice(string url,mapping query_variables, mapping request_headers)
@@ -62,6 +77,86 @@ object get_url(string url,void|mapping query_variables, void|mapping request_hea
 		     "GET /"+query+" HTTP/1.0",
 		     (["user-agent":
 		       "Mozilla/4.0 compatible (Pike HTTP client)"]) | request_headers);
+
+   if (!con->ok) return 0;
+   return con;
+}
+
+object put_url(string url, void|string file, void|mapping query_variables,
+	       void|mapping request_headers)
+{
+   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
+   
+   string prot="http",host;
+   int port=80;
+   string query;
+   if(!request_headers)
+     request_headers = ([]);
+
+   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
+      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
+      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
+      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
+      (host=url,query="");
+
+   if (prot!="http")
+      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
+	    prot);
+
+   if (query_variables)
+   {
+      if (search(query,"?")!=-1)
+	 query+="&"+http_encode_query(query_variables);
+      else
+	 query+="?"+http_encode_query(query_variables);
+   }
+
+   con->sync_request(host,port,
+		     "PUT /"+query+" HTTP/1.0",
+		     ([
+		       "user-agent":
+		       "Mozilla/4.0 compatible (Pike HTTP client)"
+		     ]) | request_headers,
+		     file);
+
+   if (!con->ok) return 0;
+   return con;
+}
+
+object delete_url(string url, void|mapping query_variables,
+		  void|mapping request_headers)
+{
+   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
+   
+   string prot="http",host;
+   int port=80;
+   string query;
+   if(!request_headers)
+     request_headers = ([]);
+
+   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
+      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
+      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
+      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
+      (host=url,query="");
+
+   if (prot!="http")
+      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
+	    prot);
+
+   if (query_variables)
+   {
+      if (search(query,"?")!=-1)
+	 query+="&"+http_encode_query(query_variables);
+      else
+	 query+="?"+http_encode_query(query_variables);
+   }
+
+   con->sync_request(host,port,
+		     "DELETE /"+query+" HTTP/1.0",
+		     (["user-agent":
+		       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
+		     request_headers);
 
    if (!con->ok) return 0;
    return con;
