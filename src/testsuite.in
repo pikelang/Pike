@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.596 2004/04/14 22:09:33 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.597 2004/04/21 17:54:25 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2131,6 +2131,16 @@ test_any([[
  class D { inherit C; };
  return sizeof( Program.all_inherits(D) - ({A,B,C}) );
 ]],0)
+
+test_any_equal([[
+  class A {
+    class C {}
+  };
+  class B {
+    class C {}
+  };
+  return ({A <= B, A >= B});
+]], ({1, 1}))
 
 test_tests([[
 
@@ -6796,6 +6806,21 @@ test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X
 test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
 test_eq([[cpp("#define A(X) #X\n#define B(Y) A(Y)\nB(foo)")]],
 	"# 1 \"-\"\n\n\n \"foo\" ")
+test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "# 1 \"-\"\n\n\n \"\" \n");
+test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "# 1 \"-\"\n\n\n \"\"  \n");
+test_do([[
+#define FOO(X) X
+string s = FOO (#"a
+b
+c");
+]]);
+test_any([[
+#define FOO(X) X
+FOO ("\
+\
+");
+return __LINE__;
+]], 6);
 
 test_eq([[compile_string(#"
 #define Y(y) #y
