@@ -410,7 +410,7 @@ o Math
 
 o MIME
     Added method ext_to_media_type, which returns the MIME media type for
-    a given extension
+    a given extension.
 
 o Oracle
     The Oracle database glue now supports CLOBs and BLOBs.
@@ -553,29 +553,46 @@ o Web.Crawler
 Optimizations:
 --------------
 
+Several general optimizations and tuning of algorithms and
+implementations in Pike has been done since Pike 7.2. Much of the work
+has been to get an general speed up in the compiler and interpreter,
+but some targeted work has also been done to make common code
+constructions execute faster. A comparison between Pike 7.2.440 and
+Pike 7.4.1 done on an IA32 machine running Red Hat Linux:
+
+  	      Pike 7.2.440  Pike 7.4.1
+   ackermann:         5.98  	  4.96
+  	ary3:        10.60  	  6.53
+  	fibo:         8.64  	  6.58
+  	hash:         5.93  	  5.13
+    heapsort:        10.88  	  6.65
+       lists:         7.12  	  6.20
+    methcall:         8.23  	  8.45
+  nestedloop:        52.75  	 11.24
+     objinst:         6.39  	  5.27
+      random:         7.47  	  4.64
+       sieve:        10.63  	  6.72
+      strcat:         3.22  	  2.25
+
+These tests use standard tests right from The Great Computer Language
+Shootout. If the lists test and the strcat tests are slightly modified
+to use arrays in the first case and normal strings in the second case,
+Pike will yield an even better result.
+
 o Machine code generation
     On systems with IA32, SPARC or PPC32 processors Pike will generate
     native machine code as byte code. This byte code can then by
     executed directly outside the virtual machine and gives a 30%
     performance boost compared to other systems.
 
-o Computed goto
-    FIXME
-
 o Better module dumping
-
-o Overall speed improvements.
-    Function calls (new opcodes)
-    sprintf
-    arrays
-    replace
+    More modules than ever dumps successfully into object files,
+    making the Pike startup time less then ever.
 
 o Deferred backtraces
     Most of the information in backtraces are now calculated upon
     presenting the backtrace information and not when the backtrace is
     generated. This improves the performance of catched errors.
-
-o Saved 8 bytes per object for objects not using their parent scope
 
 
 Compatibility changes:
