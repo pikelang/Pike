@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.23 2003/12/06 14:52:40 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.24 2003/12/12 21:53:42 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -381,6 +381,12 @@ PIKECLASS CBC
     MEMSET(THIS->iv, 0, THIS->block_size);
   }
 
+  /*! @decl string name()
+   */
+  PIKEFUN string name() {
+    push_constant_text("CBC");
+  }
+
   /*! @decl int block_size()
    */
   PIKEFUN int block_size() {
@@ -500,6 +506,12 @@ PIKECLASS Proxy {
     THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
     THIS->backlog_len = 0;
     MEMSET(THIS->backlog, 0, THIS->block_size);
+  }
+
+  /*! @decl string name()
+   */
+  PIKEFUN string name() {
+    push_constant_text("Proxy");
   }
 
   /*! @decl int block_size()
