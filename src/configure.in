@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.329 1999/11/07 01:41:00 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.330 1999/11/13 00:33:17 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -441,6 +441,7 @@ AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of 
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[],[with_bignums=yes])
+AC_ARG_WITH(shared-nodes,[  --with-shared-nodes    enable the SHARED_NODES mode of the optimizer (EXPERIMENTAL)],[],[])
 
 if test "x$with_bignums" = xyes; then
   AC_DEFINE(AUTO_BIGNUM)
@@ -450,6 +451,12 @@ Either install GMP on your system or run configure with
 the option --without-bignums.
 ])
   else :; fi
+else :; fi
+
+if test "x$with_shared_nodes" = xyes; then
+  AC_MSG_WARN([Enabling the SHARED_NODES mode of the optimizer.])
+  AC_MSG_WARN([Note that this is EXPERIMENTAL.])
+  AC_DEFINE(SHARED_NODES)
 else :; fi
 
 if test "x$with_poll" = "xyes"; then
