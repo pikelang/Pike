@@ -1,7 +1,7 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 
 /*
- * $Id: Grammar_parser.pmod,v 1.3 1997/03/30 17:28:17 grubba Exp $
+ * $Id: Grammar_parser.pmod,v 1.4 1997/04/22 00:09:28 grubba Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	Grammar_parser.pmod
-//. RCSID:	$Id: Grammar_parser.pmod,v 1.3 1997/03/30 17:28:17 grubba Exp $
+//. RCSID:	$Id: Grammar_parser.pmod,v 1.4 1997/04/22 00:09:28 grubba Exp $
 //. Author:	Henrik grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Generates an LR parser from a textual specification.
@@ -359,7 +359,7 @@ object(parser) make_parser(string str, object|void m)
 
   if ((!_parser->error) &&
       (!error) &&
-      (g->compile())) {
+      (!g->compile())) {
     res = g;
   }
 
@@ -373,11 +373,11 @@ object(parser) make_parser(string str, object|void m)
 //. Compiles the file specified in the first argument into an LR parser.
 //.
 //. SEE ALSO: Grammar_parser.make_parser
-int|object(parser) make_parser_from_file(string f, object|void m)
+int|object(parser) make_parser_from_file(string fname, object|void m)
 {
   object(files.file) f = files.file();
   int|object(parser) g = 0;
-  if (f->open(argv[i], "r")) {
+  if (f->open(fname, "r")) {
     g = make_parser(f->read(0x7fffffff), m);
     f->close();
   }
@@ -403,7 +403,6 @@ int main(int argc, string *argv)
       } else {
 	werror("Compilation done\n");
       }
-      f->close();
     }
   }
 }
