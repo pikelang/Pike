@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.17 1998/05/01 15:31:23 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.18 1998/05/06 00:33:20 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -142,11 +142,14 @@ FD fd_open(char *file, int open_mode, int create_mode)
 	       amode,
 	       NULL);
 
+  
   if(x==INVALID_HANDLE_VALUE)
   {
     errno=GetLastError();
     return -1;
   }
+
+  SetHandleInformation(x,HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
 
   mt_lock(&fd_mutex);
 
@@ -186,6 +189,7 @@ FD fd_socket(int domain, int type, int proto)
     return -1;
   }
   
+  SetHandleInformation(s,HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
   mt_lock(&fd_mutex);
   fd=first_free_handle;
   first_free_handle=fd_type[fd];
@@ -215,6 +219,8 @@ int fd_pipe(int fds[2])
     return -1;
   }
   
+  SetHandleInformation(files[0],HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
+  SetHandleInformation(files[1],HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
   mt_lock(&fd_mutex);
   fds[0]=first_free_handle;
   first_free_handle=fd_type[fds[0]];
@@ -260,6 +266,7 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
     return -1;
   }
   
+  SetHandleInformation(s,HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
   mt_lock(&fd_mutex);
   new_fd=first_free_handle;
   first_free_handle=fd_type[new_fd];
@@ -438,6 +445,12 @@ long fd_read(FD fd, void *to, long len)
       if(!ReadFile((HANDLE)handle, to, len, &ret,0) && ret<=0)
       {
 	errno=GetLastError();
+	switch(errno)
+	{
+	  /* Pretend we reached the end of the file */
+	  case ERROR_BROKEN_PIPE:
+	    return 0;
+	}
 	FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
 	return -1;
       }
