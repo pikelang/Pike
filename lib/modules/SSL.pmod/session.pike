@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.9 1999/03/19 14:12:14 nisse Exp $
+/* $Id: session.pike,v 1.10 1999/05/22 23:09:02 mast Exp $
  *
  */
 
@@ -40,11 +40,17 @@ void set_compression_method(int compr)
 
 string generate_key_block(string client_random, string server_random)
 {
-  int required = 2 * (cipher_spec->is_exportable
-		      ? (5 + cipher_spec->hash_size)
-		      : ( cipher_spec->key_material +
-			  cipher_spec->hash_size +
-			  cipher_spec->iv_size));
+  int required = 2 * (
+#ifndef WEAK_CRYPTO_40BIT
+    cipher_spec->is_exportable ?
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+    (5 + cipher_spec->hash_size)
+#ifndef WEAK_CRYPTO_40BIT
+    : ( cipher_spec->key_material +
+	cipher_spec->hash_size +
+	cipher_spec->iv_size)
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+  );
   object sha = mac_sha();
   object md5 = mac_md5();
   int i = 0;
@@ -80,7 +86,9 @@ array generate_keys(string client_random, string server_random)
   /* server_write_MAC_secret */
   keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
 
+#ifndef WEAK_CRYPTO_40BIT
   if (cipher_spec->is_exportable)
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
     object md5 = mac_md5()->hash_raw;
     
@@ -95,7 +103,9 @@ array generate_keys(string client_random, string server_random)
       keys[4] = md5(client_random + server_random)[..cipher_spec->iv_size-1];
       keys[5] = md5(server_random + client_random)[..cipher_spec->iv_size-1];
     }
-  } else {
+  }
+#ifndef WEAK_CRYPTO_40BIT
+  else {
     keys[2] = key_data->get_fix_string(cipher_spec->key_material);
     keys[3] = key_data->get_fix_string(cipher_spec->key_material);
     if (cipher_spec->iv_size)
@@ -104,6 +114,7 @@ array generate_keys(string client_random, string server_random)
       keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
     }
   }
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   return keys;
 }
 
