@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.254 2004/09/27 21:37:13 mast Exp $
+|| $Id: gc.c,v 1.255 2004/09/28 16:56:00 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.254 2004/09/27 21:37:13 mast Exp $");
+RCSID("$Id: gc.c,v 1.255 2004/09/28 16:56:00 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1567,8 +1567,8 @@ static void init_gc(void)
      * gc_keep_markers is set. */
     if (marker_hash_table) cleanup_markers();
     if (!marker_hash_table)
-      low_init_marker_hash(num_objects);
 #endif
+      low_init_marker_hash(num_objects);
     get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
 #ifdef PIKE_DEBUG
   }
