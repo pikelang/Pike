@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.451 2002/10/30 16:02:00 nilsson Exp $
+|| $Id: program.c,v 1.452 2002/11/07 14:58:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.451 2002/10/30 16:02:00 nilsson Exp $");
+RCSID("$Id: program.c,v 1.452 2002/11/07 14:58:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2114,6 +2114,34 @@ void dump_program_tables (struct program *p, int indent)
 	    indent, "",
 	    d, c->sval.type,
 	    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
+  }
+
+  fprintf(stderr, "\n"
+	  "%*sLinenumber table:\n",
+	  indent, "");
+  {
+    INT32 off = 0, line = 0;
+    char *cnt = p->line_numbers;
+
+    while (cnt < p->line_numbers + p->num_linenumbers) {
+      if (*cnt == 127) {
+	int len;
+	char *file;
+	cnt++;
+	len = get_small_number(&cnt);
+	shift = *cnt;
+	file = ++cnt;
+	cnt += len << shift;
+	if (!shift) {
+	  fprintf(stderr, "%*s  Filename: \"%s\"\n", indent, "", file);
+	} else {
+	  fprintf(stderr, "%*s  Filename: len:%d, shift:%d\n", indent, "", len, shift);
+	}
+      }
+      off += get_small_number(&cnt);
+      line += get_small_number(&cnt);
+      fprintf(stderr, "%*s    %8d:%8d\n", indent, "", off, line);
+    }
   }
   fprintf(stderr, "\n");
 }
