@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.216 2000/10/26 01:33:25 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.217 2000/11/04 16:23:13 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1738,6 +1738,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
   | TOK_LAMBDA push_compiler_frame1 error
   {
     pop_compiler_frame();
+    $$ = mkintnode(0);
   }
   ;
 
