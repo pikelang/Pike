@@ -145,7 +145,30 @@ char *MEMCHR(char *p,char c,int e)
 #endif
 
 #ifndef HAVE_MEMMEM
-
+#if 1
+char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack,
+	     SIZE_T haystacklen)
+{
+  if(needlelen>haystacklen)
+    return 0;
+  switch(needlelen)
+  {
+  case 0: return haystack;
+  case 1: return MEMCHR(haystack,needle[0],haystacklen);
+  default:
+   SIZE_T i, j;
+   for(i=0; i<haystacklen-needlelen; i++)
+   {
+     for(j=0; j<needlelen; j++)
+       if(haystack[i] != needle[j])
+	 break;
+     if(j==needlelen)
+       return haystack+i;
+   }
+   return 0;
+ }
+}
+#else 
 /*
  * a quick memmem
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
@@ -159,7 +182,8 @@ typedef struct link2_s
   INT32 key, offset;
 } link2;
 
-char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack, SIZE_T haystacklen)
+char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack, 
+	     SIZE_T haystacklen)
 {
   if(needlelen > haystacklen) return 0;
 
@@ -281,7 +305,7 @@ char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack, SIZE_T haystacklen)
     
   }
 }
-
+#endif
 #endif
 
 #if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
