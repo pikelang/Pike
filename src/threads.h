@@ -279,6 +279,7 @@ void th_cleanup(void);
 #define th_init()
 #define th_cleanup()
 #define th_init_programs()
+#define th_self() ((void*)0)
 #endif /* _REENTRANT */
 
 

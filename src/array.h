@@ -20,9 +20,11 @@ struct array
 			 * Bits can be set that don't exist in the array
 			 * though.
 			 */
+  INT16 flags;          /* ARRAY_* flags */
   struct svalue item[1];
 };
 
+#define ARRAY_CYCLIC 1
 
 extern struct array empty_array;
 

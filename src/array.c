@@ -27,6 +27,7 @@ struct array empty_array=
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
+  0,			 /* no flags */
 };
 
 
@@ -143,8 +144,8 @@ void array_index(struct svalue *s,struct array *v,INT32 index)
   free_array(v);
 }
 
-
-void simple_array_index_no_free(struct svalue *s,struct array *a,struct svalue *ind)
+void simple_array_index_no_free(struct svalue *s,
+				struct array *a,struct svalue *ind)
 {
   INT32 i;
   switch(ind->type)
@@ -164,7 +165,7 @@ void simple_array_index_no_free(struct svalue *s,struct array *a,struct svalue *
       s[0]=sp[-1];
       sp--;
       break;
-
+	
     default:
       error("Index is not an integer.\n");
   }

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.45 1997/09/11 02:13:10 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.46 1997/10/03 02:25:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -35,6 +35,7 @@ RCSID("$Id: builtin_functions.c,v 1.45 1997/09/11 02:13:10 hubbe Exp $");
 #include "module_support.h"
 #include "module.h"
 #include "opcodes.h"
+#include "cyclic.h"
 
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
@@ -1294,6 +1295,7 @@ void f_column(INT32 args)
 {
   INT32 e;
   struct array *a,*tmp;
+  DECLARE_CYCLIC();
 
   if(args < 2)
     error("Too few arguments to column().\n");
@@ -1302,14 +1304,23 @@ void f_column(INT32 args)
     error("Bad argument 1 to column().\n");
 
   tmp=sp[-args].u.array;
-  push_array(a=allocate_array(tmp->size));
+  if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
+  {
+    a->refs++;
+    pop_n_elems(args);
+    push_array(a);
+  }else{
+    push_array(a=allocate_array(tmp->size));
+    SET_CYCLIC_RET(a);
 
-  for(e=0;e<a->size;e++)
-    index_no_free(ITEM(a)+e, ITEM(tmp)+e, sp-args);
+    for(e=0;e<a->size;e++)
+      index_no_free(ITEM(a)+e, ITEM(tmp)+e, sp-args);
 
-  a->refs++;
-  pop_n_elems(args+1);
-  push_array(a);
+    END_CYCLIC();
+    a->refs++;
+    pop_n_elems(args+1);
+    push_array(a);
+  }
 }
 
 #ifdef DEBUG

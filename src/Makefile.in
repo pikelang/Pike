@@ -67,6 +67,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 OBJ= \
  language.o \
  constants.o \
+ cyclic.o \
  array.o \
  backend.o \
  builtin_functions.o \
