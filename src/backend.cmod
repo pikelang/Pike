@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.108 2004/04/03 19:52:16 grubba Exp $
+|| $Id: backend.cmod,v 1.109 2004/04/03 20:02:29 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.108 2004/04/03 19:52:16 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.109 2004/04/03 20:02:29 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1547,6 +1547,7 @@ PIKECLASS Backend
     POLL_DEVICE_SET_EVENTS(me->set, fd, events);
   }
 
+#ifdef CHILD_NEEDS_TO_REOPEN
   /* This is called in the child process to restore
    * poll state after fork() in case of detaching.
    */
@@ -1579,7 +1580,10 @@ PIKECLASS Backend
     for (fd = 0; fd < me->fds_size; fd++)
       UPDATE_BLACK_BOX(me, fd);
   }
+#endif /* CHILD_NEEDS_TO_REOPEN */
+#endif /* USE_POLL_DEVICE */
 
+#ifdef CHILD_NEEDS_TO_REOPEN
   static struct Backend_struct **backends = NULL;
   static int num_backends = 0;
   static int backends_size = 0;
@@ -1623,7 +1627,10 @@ PIKECLASS Backend
       REOPEN_POLL_DEVICE(backends[i]);
     }
   }
-#endif /* USE_POLL_DEVICE */
+#else /* !CHILD_NEEDS_TO_REOPEN */
+#define register_backend(X)
+#define unregister_backend(X)
+#endif /* CHILD_NEEDS_TO_REOPEN */
 
   PMOD_EXPORT struct callback *backend_debug_add_backend_callback(
     struct Backend_struct *me, callback_func call, void *arg,
