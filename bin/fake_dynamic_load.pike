@@ -7,6 +7,14 @@ import ".";
 #define PC .C
 #endif
 
+int errors = 0;
+
+void report_error (string msg, mixed... args)
+{
+  werror (msg, @args);
+  errors++;
+}
+
 #if 0
 string strip(string s)
 {
@@ -51,7 +59,7 @@ string low_strip_other_files(string data, string s)
    */
   if(!data)
   {
-    werror("File %s missing?\n",s);
+    report_error("File %s missing?\n",s);
     return 0;
   }
 
@@ -98,7 +106,7 @@ string low_strip_other_files(string data, string s)
 #if 0
   if(!data)
   {
-    werror("File %s missing?\n",s);
+    werror_error("File %s missing?\n",s);
     return 0;
   }
 
@@ -211,6 +219,19 @@ string implode(array(string) s)
   return ret[1..];
 }
 
+array(string|int) parse_declarator (array|PC.Token decl)
+{
+  if (!arrayp (decl))
+    return ({decl->file + ":" + decl->line, (string) decl, 0});
+  int i, ptrs = 0;
+  for (i = 1; i < sizeof (decl); i++)
+    if (decl[i] == "*") ptrs++;
+    else break;
+  if (i != sizeof (decl) - 2) return 0;
+  array(string|int) res = parse_declarator (decl[i]);
+  if (arrayp (res)) res[2] += ptrs;
+  return res;
+}
 
 array classify(array s)
 {
@@ -287,20 +308,29 @@ array classify(array s)
 	    if(arrayp(expr[ptr]))
 	    {
 	      if("(" != (string) (expr[ptr][0]) ) break; /* Ignore structs and unions */
-
+	      if (sizeof (expr) < 3) {
+		report_error ("%s:%d: Don't know how to parse declaration %s\n",
+			      expr[0]->file, expr[0]->line,
+			      PC.simple_reconstitute(expr));
+		break;
+	      }
 //	      werror("GURKA!\n");
 	      array args=map(expr[ptr][1..sizeof(expr[ptr])-2]/({","}),fixarg);
 	      string rettype=implode(expr[..sizeof(expr)-3]);
+	      int ptrs;
 //	      werror("%O\n",expr);
-	      mixed name=expr[-2];
-	      string location;
-	      if(arrayp(name))
-	      {
-		location=name[0]->file+":"+name[0]->line;
-		name=PC.simple_reconstitute(name);
-	      }else{
-		location=name->file+":"+name->line;
-		name=(string)name;
+	      mixed declarator=expr[-2];
+	      string location, name;
+	      if (array(string|int) res = parse_declarator (declarator))
+		[location, name, ptrs] = res;
+	      else {
+		if (arrayp (declarator))
+		  location=declarator[0]->file+":"+declarator[0]->line;
+		else
+		  location=declarator->file+":"+declarator->line;
+		report_error ("%s: Don't know how to parse declarator %s\n",
+			      location, implode(declarator));
+		break;
 	      }
 	      data+=({ ([
 		"class": "function",
@@ -309,8 +339,14 @@ array classify(array s)
 		"name": name,
 		"args": args,
 		"post_type":implode(expr[ptr+1..]),
-		"ptrtype":sprintf("%s(*)(%s)",rettype,implode(args*({","}))),
-		"proto":sprintf("%s %s(%s)",rettype,name,implode(args*({","}))),
+		"ptrtype":sprintf("%s(*%s)(%s)",
+				  rettype,
+				  "*" * ptrs,
+				  implode(args*({","}))),
+		"proto":sprintf("%s %s(%s)",
+				rettype,
+				arrayp (declarator) ? implode (declarator) : declarator,
+				implode(args*({","}))),
 		]) });
 	    }else{
 //	      werror("FNORD\n");
@@ -368,7 +404,7 @@ void process_file(string file)
   low_process_file(my_read_file(file), file);
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   int protos_only;
   int run_cpp;
@@ -442,7 +478,6 @@ int main(int argc, string *argv)
     foreach(prototypes, mixed expr)
       write("PMOD_PROTO %s;\n",expr->proto);
     werror("[ %d symbol%s exported ]\n", sizeof(prototypes),sizeof(prototypes)==1?"":"s");
-    exit(0);
   }else{
     string ret="/* Fake prototypes */\n";
     foreach(prototypes, mixed expr)
@@ -469,12 +504,13 @@ int main(int argc, string *argv)
 		     num++);
 	
 	if(expr->post_type!="")
-	  werror("NOSUPP: %s %s %s\n",expr->type,expr->name,expr->post_type);
+	  report_error("NOSUPP: %s %s %s\n",expr->type,expr->name,expr->post_type);
       }
     
     Stdio.stdout->write(ret);
     
     werror("[ %d symbol%s exported ]\n", sizeof(prototypes),sizeof(prototypes)==1?"":"s");
-    if(!sizeof(prototypes)) exit(1);
   }
+
+  return errors;
 }
