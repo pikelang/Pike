@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.19 1999/05/03 21:16:10 mirar Exp $ */
+/* $Id: x.c,v 1.20 1999/05/03 21:17:32 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.19 1999/05/03 21:16:10 mirar Exp $
+**!	$Id: x.c,v 1.20 1999/05/03 21:17:32 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.19 1999/05/03 21:16:10 mirar Exp $");
+RCSID("$Id: x.c,v 1.20 1999/05/03 21:17:32 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -596,24 +596,24 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-#ifdef DEBUG
+#ifdef BITDEBUG
 	       fprintf(stderr,"   b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
 #endif
 	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
-#ifdef DEBUG
+#ifdef BITDEBUG
 	       fprintf(stderr,">  b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
 #endif
 	       *(++d)=0; bit=0;
 	    }
-#ifdef DEBUG
+#ifdef BITDEBUG
 	    fprintf(stderr," - b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
 #endif
 	    *d|=(unsigned char)(b>>(24+bit));
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
-#ifdef DEBUG
+#ifdef BITDEBUG
 	    fprintf(stderr,"^- b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);
 #endif
 	 }
