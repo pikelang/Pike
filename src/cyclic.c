@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.c,v 1.9 2002/12/01 17:36:03 mast Exp $
+|| $Id: cyclic.c,v 1.10 2003/01/06 17:20:59 grubba Exp $
 */
 
 #include "global.h"
 #include "cyclic.h"
 
-RCSID("$Id: cyclic.c,v 1.9 2002/12/01 17:36:03 mast Exp $");
+RCSID("$Id: cyclic.c,v 1.10 2003/01/06 17:20:59 grubba Exp $");
 
 #define CYCLIC_HASH_SIZE 4711
 
@@ -18,13 +18,13 @@ static void low_unlink_cyclic(CYCLIC *c)
 {
   size_t h;
   CYCLIC **p;
-  h=(ptrdiff_t)c->id;
+  h=((char *)c->id)-(char *)0;
   h*=33;
-  h|=(ptrdiff_t)c->a;
+  h|=((char *)c->a)-(char *)0;
   h*=33;
-  h|=(ptrdiff_t)c->b;
+  h|=((char *)c->b)-(char *)0;
   h*=33;
-  h|=(ptrdiff_t)c->th;
+  h|=((char *)c->th)-(char *)0;
   h*=33;
   h%=CYCLIC_HASH_SIZE;
 
@@ -58,13 +58,13 @@ void *begin_cyclic(CYCLIC *c,
   void *ret=0;
   CYCLIC *p;
 
-  h=(ptrdiff_t)id;
+  h=((char *)id)-(char *)0;
   h*=33;
-  h|=(ptrdiff_t)a;
+  h|=((char *)a)-(char *)0;
   h*=33;
-  h|=(ptrdiff_t)b;
+  h|=((char *)b)-(char *)0;
   h*=33;
-  h|=(ptrdiff_t)th;
+  h|=((char *)th)-(char *)0;
   h*=33;
   h%=CYCLIC_HASH_SIZE;
 
