@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.279 2000/11/01 23:34:30 grubba Exp $");
+RCSID("$Id: program.c,v 1.280 2000/11/02 14:43:18 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4445,7 +4445,7 @@ PMOD_EXPORT void *parent_storage(int depth)
     }
   }
 
-  if(!~Pike_fp->fun)
+  if((Pike_fp->fun & 0xffff) == 0xffff)
     error("Cannot access parent storage!\n");
 
   loc.parent_identifier=Pike_fp->fun;
