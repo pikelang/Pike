@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.3 1998/01/21 22:48:26 grubba Exp $
+ * $Id: cast.c,v 1.4 1998/04/24 00:59:26 hubbe Exp $
  *
  * CAST crypto module for Pike
  *
@@ -28,6 +28,7 @@ struct pike_crypto_cast {
 		    unsigned INT8* outblock);
 };
 
+#undef THIS
 #define THIS ((struct pike_crypto_cast *)(fp->current_storage))
 #define OBTOCTX(o) ((struct pike_crypto_cast *)(o->storage))
 

@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.10 1997/11/16 22:25:43 nisse Exp $
+ * $Id: idea.c,v 1.11 1998/04/24 00:59:26 hubbe Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -24,6 +24,7 @@
 /* Backend includes */
 #include <idea.h>
 
+#undef THIS
 #define THIS ((unsigned INT16 *)(fp->current_storage))
 #define OBTOCTX(o) ((unsigned INT16 *)(o->storage))
 

@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.7 1997/11/16 22:25:44 nisse Exp $
+ * $Id: md5.c,v 1.8 1998/04/24 00:59:26 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -24,6 +24,7 @@
 
 #include <md5.h>
 
+#undef THIS
 #define THIS ((struct md5_ctx *)(fp->current_storage))
 #define OBTOCTX(o) ((struct md5_ctx *)(o->storage))
 

@@ -16,8 +16,9 @@
 
 #include "rc4.h"
 
-RCSID("$Id: rc4.c,v 1.6 1997/11/16 22:25:46 nisse Exp $");
+RCSID("$Id: rc4.c,v 1.7 1998/04/24 00:59:26 hubbe Exp $");
 
+#undef THIS
 #define THIS ((struct rc4_ctx *)(fp->current_storage))
 
 struct program *pike_rc4_program;

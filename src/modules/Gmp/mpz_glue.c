@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.32 1998/04/20 18:53:25 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.33 1998/04/24 00:59:15 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -32,6 +32,7 @@ RCSID("$Id: mpz_glue.c,v 1.32 1998/04/20 18:53:25 grubba Exp $");
 
 #include <limits.h>
 
+#undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 
