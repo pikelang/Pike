@@ -179,7 +179,11 @@ static void *handle_timeouts(void *ignored)
     }
     mt_unlock( &aap_timeout_mutex );
 #ifdef HAVE_POLL
-    poll(0,0,1000);
+    {
+      /*  MacOS X is stupid, and requires a non-NULL pollfd pointer. */
+      struct pollfd sentinel;
+      poll(&sentinel,0,1000);
+    }
 #else
     sleep(1);
 #endif
