@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.132 1997/11/02 21:24:40 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.133 1997/11/03 00:07:03 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1657,7 +1657,7 @@ if test -z "$CCSHARED" ; then
 	hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-	Solaris*) CCHARED="-KPIC -Bdynamic";;
+	Solaris*) CCSHARED="-KPIC -Bdynamic";;
     esac
   fi
 fi
