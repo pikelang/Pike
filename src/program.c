@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.99 1998/07/19 22:51:26 grubba Exp $");
+RCSID("$Id: program.c,v 1.100 1998/10/22 19:44:06 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2430,7 +2430,7 @@ void gc_mark_program_as_referenced(struct program *p)
       if(p->inherits[e].parent)
 	gc_mark_object_as_referenced(p->inherits[e].parent);
 
-      if(e)
+      if(e && p->inherits[e].prog)
 	gc_mark_program_as_referenced(p->inherits[e].prog);
     }
       
@@ -2462,7 +2462,7 @@ void gc_check_all_programs(void)
       if(d_flag && p->inherits[e].name)
 	debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
 
-      if(e)
+      if(e && p->inherits[e].prog)
 	debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);
     }
 
