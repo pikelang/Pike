@@ -411,6 +411,8 @@ o Math
 o MIME
     Added method ext_to_media_type, which returns the MIME media type for
     a given extension. The module know of 469 different file extensions.
+    The MIME.Message class is also extended with a "guess" mode that
+    parses input more forgivingly.
 
 o Oracle
     The Oracle database glue now supports CLOBs and BLOBs.
@@ -467,9 +469,9 @@ o Standards.EXIF
     Nikon, Canon, Fuji Film, Olympus, Sanyo and Casio.
 
 o Standards.FIPS10_4
-    The Federal Information Processing Standard for Countries,
+    "The Federal Information Processing Standard for Countries,
     Dependencies, Areas of Special Sovereignty, and their Principal
-    Administrative Divisions = american standard for countries and
+    Administrative Divisions" = american standard for countries and
     country division codes.
 
 o Standards.ID3
@@ -718,6 +720,13 @@ o Protocols.LDAP.client
     logic better. 0 is now a failure. The old behavior is emulated in
     a compatibility layer.
 
+o Protocols.SNMP
+    Support for SNMP v1 and v2c, including a simple SNMP agent with
+    support for Get requests.
+
+o Protocols.X
+    Support for the X11 XTEST extension has been added.
+
 o dirname
     Now correctly returns a directory instead of just stripping the
     part after the nearest directory separator.
@@ -803,8 +812,9 @@ o --with-internal-profiling
     FIXME: Expand on this.
 
 o Module symbols not available from other modules.
-    To avoid clashes between modules their symbols are now no longer
-    available to eachother. FIXME: How to do now?
+    To avoid clashes between modules the symbols of dynamically loaded
+    modules are now no longer available to eachother.
+    FIXME: How to do now?
 
 o Pike valgrinded
     Pike has been the subject to some Valgrind scrutiny. Some specific
@@ -829,20 +839,19 @@ o Works with Autoconf 2.50
 
 Uncategorized misc changes:
 ---------------------------
+
 o it is possible to change predefines without forking a new pike
+  add_predefine/remove_predefine
+
 o #pragma save_parent
 o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
-o dont_dump_module *FIXME: grubba*
-o C modules can no longer call functions in other dynamic C modules directly
-  FIXME: mast, grubba?
-o Separate weak flags for indices and values in mappings
 
+o dont_dump_module *FIXME: grubba*
 
 System.usleep/nanosleep
    FIXME: per?
 
 master.pike
-- add_predefine/remove_predefine
 - Improved handling of module cross dependencies.
 
 Multiset
@@ -856,15 +865,6 @@ o String.SplitIterator
     FIXME: grubba
 
 o String.Replace, String.SingleReplace
-    FIXME
-
-o MIME.Message
-    Guess mode added. *FIXME: expand on this jhs*
-
-o Protocols.SNMP
-    FIXME
-
-o Protocols.X.KeySyms
     FIXME
 
 Array.common_prefix
