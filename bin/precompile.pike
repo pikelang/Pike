@@ -54,9 +54,10 @@
  *   efun;          makes this function a global constant (no value)
  *   flags;         ID_STATIC | ID_NOMASK etc.
  *   optflags;      OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
- *   type;          tInt, tMix etc. use this type instead of automatically
- *                  generating a type from the prototype
+ *   type;          Override the pike type in the prototype with this type.
  *                  FIXME: this doesn't quite work
+ *   rawtype;       Override the pike type in the prototype with this C-code
+ *                  type, e.g. tInt, tMix etc.
  *   errname;       The name used when throwing errors.
  *   name;          The name used when doing add_function.
  *   prototype;     Ignore the function body, just add a prototype entry.
@@ -848,6 +849,16 @@ class PikeType
     }
 };
 
+class CType {
+  inherit PikeType;
+  string ctype;
+
+  string output_c_type() { return ctype; }
+  void create(string _ctype) {
+    ctype = _ctype;
+  }
+}
+
 /*
  * This class is used to represent one function argument
  */
@@ -1436,7 +1447,7 @@ class ParseBlock
 	array rest=var[pos+1..];
 	string define=make_unique_name("var",name,base,"defined");
 	mapping attributes = parse_attributes(var[pos2+1..pos]);
-    
+
 //    werror("type: %O\n",type);
 
 	thestruct+=
@@ -1721,7 +1732,9 @@ class ParseBlock
 	// FIXME: support ... types
 	PikeType type;
 
-	if(attributes->type)
+	if(attributes->rawtype)
+	  type = CType(attributes->rawtype);
+	else if(attributes->type)
 	{
 	  mixed err=catch {
 	    type=PikeType(attributes->type);
