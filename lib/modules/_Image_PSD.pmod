@@ -1,6 +1,15 @@
 #pike __REAL_VERSION__
 
-inherit Image._PSD;
+/* Note: I'm following the convention from Image.XCF here to not
+   document all optional arguments. Makes the functions look easier to
+   use to the casual Pike programmer, so it might be a good idea, but
+   I'm not sure. /Zino */
+
+//! @appears Image.PSD
+
+//! @ignore
+ inherit Image._PSD;
+//! @endignore
 
 class Layer
 {
@@ -17,6 +26,7 @@ class Layer
   int mask_xoffset, mask_yoffset;
   int mask_width, mask_height;
 }
+
 
 int foo;
 Layer decode_layer(mapping layer, mapping i)
@@ -170,6 +180,12 @@ Layer decode_layer(mapping layer, mapping i)
   return l;
 }
 
+//! @decl mapping __decode(string|mapping data)
+//! 
+//! Decodes a PSD image to a mapping.
+/* FIXME: Someone with free time could check psd.c for what is
+   acctually in the mapping. See XCF.___decode for reference, but note
+   that it is not the same mapping. */
 mapping __decode( mapping|string what, mapping|void options )
 {
   mapping data;
@@ -241,6 +257,26 @@ string translate_mode( string mode )
   }
 }
 
+//! @decl array(Image.Layer) decode_layers( string data, mapping|void options ))
+//!
+//! Decodes a PSD image to an array of Image.Layer objects
+//!
+//! Takes the same aptions mapping as @[_decode], note especially 
+//! "draw_all_layers":1.
+//!
+//! The layer object have the following extra variables (to be queried
+//! using @ref[Image.Layer()->get_misc_value]):
+//!
+//! @string
+//!   @value "image_guides"
+//!     Returns array containing guide definitions.
+//!   @value "name"
+//!     Returns string containing the name of the layer.
+//!   @value "visible"
+//!     FIXME: Undocumented.
+//!   @value "active"
+//!     FIXME: Undocumented.
+//! @endstring
 array decode_layers( string|mapping what, mapping|void opts )
 {
   if(!opts) opts = ([]);
@@ -320,6 +356,41 @@ array decode_layers( string|mapping what, mapping|void opts )
   return layers;
 }
 
+//! @decl mapping _decode(string|mapping data, mapping|void options)
+//!
+//! Decodes a PSD image to a mapping, with at least an
+//! 'image' and possibly an 'alpha' object. Data is either a PSD image, or
+//! a mapping (as received from @ref[__decode])
+//!
+//! Supported options
+//!
+//! @string
+//!   @value "background"
+//!     ({r,g,b})||Image.Color object
+//!
+//!   @value "draw_all_layers:1"
+//!     Draw invisible layers as well
+//!
+//!   @value "draw_guides:1"
+//!     Draw the guides
+//!
+//!   @value "draw_selection:1"
+//!     Mark the selection using an overlay
+//!
+//!   @value "ignore_unknown_layer_modes:1"
+//!     Do not asume 'Normal' for unknown layer modes.
+//!
+//!   @value "mark_layers:1"
+//!     Draw an outline around all (drawn) layers
+//!
+//!   @value "mark_layer_names:Image.Font object"
+//!     Write the name of all layers using the font object,
+//!
+//!   @value "mark_active_layer:1"
+//!     Draw an outline around the active layer
+//!
+//! @note
+//!   Throws upon error in data. For more information, see @ref[__decode]
 mapping _decode( string|mapping what, mapping|void opts )
 {
   mapping data;
@@ -342,6 +413,12 @@ mapping _decode( string|mapping what, mapping|void opts )
   ]);
 }
 
+//! @decl Image.Image decode(string data)
+//!   Decodes a PSD image to a single image object.
+//!
+//! @note
+//!   Throws upon error in data. To get access to more information like
+//!   alpha channels and layer names, see @[_decode] and @[__decode].
 Image.Image decode( string|mapping what, mapping|void opts )
 {
   mapping data;
