@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.659 2002/12/11 10:57:11 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.660 2002/12/11 12:02:35 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4279,7 +4279,13 @@ else
 fi
 
 #############################################################################
+AC_ARG_WITH(copt, MY_DESCR([--without-mmx], [disable MMX usage]), [], [with_mmx=])
+
 mmx_reason=' (no mmx.h found)'
+if test "x$with_mmx" = xno; then
+   mmx_reason=' (--without-mmx)'
+   unset pike_cv_sys_has_working_mmx
+else
 if test "x$ac_cv_header_mmx_h" = xyes; then
   AC_MSG_CHECKING(for working MMX)
   mmx_reason=' (mmx.h found, but mmx operations failed)'
@@ -4308,7 +4314,12 @@ if test "x$ac_cv_header_mmx_h" = xyes; then
     AC_DEFINE(TRY_USE_MMX)
     mmx_reason=''
   else :; fi
+
+  if test "x$with_copt" = "xno"; then
+    PIKE_MSG_WARN([--without-mmx is advisable when using --without-copt.])
+  fi
 else :; fi
+fi
 
 #############################################################################
 
