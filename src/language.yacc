@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.82 1998/04/17 17:13:37 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.83 1998/04/18 07:21:03 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -741,7 +741,7 @@ identifier_type: idents
        resolv_program($1);
        if((p=program_from_svalue(sp-1)))
        {
-         push_type_int(sp[-1].u.program->id);
+         push_type_int(p->id);
        }else{
          push_type_int(0);
        }

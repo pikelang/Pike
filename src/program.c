@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.83 1998/04/16 21:32:03 hubbe Exp $");
+RCSID("$Id: program.c,v 1.84 1998/04/18 07:21:04 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -757,10 +757,13 @@ void check_program(struct program *p)
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
 
+#if 0
+    /* This test doesn't really work... */
     if(p->inherits[e].storage_offset & (ALIGN_BOUND-1))
     {
-      fatal("inherit[%d].storage_offset is not properly aligned.\n",e);
+      fatal("inherit[%d].storage_offset is not properly aligned (%d).\n",e,p->inherits[e].storage_offset);
     }
+#endif
   }
 }
 #endif
