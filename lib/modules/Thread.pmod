@@ -454,7 +454,7 @@ optional class Farm
 	case 't':
 	  return "Thread.Farm().Result";
 	case 'O':
-	  return sprintf( "%t(%d %O)", this_object(), ready, value );
+	  return sprintf( "%t(%d %O)", this, ready, value );
       }
     }
   }
@@ -488,7 +488,7 @@ optional class Farm
           else if( q[0] )
             ([object]q[0])->provide( res );
           object lock = mutex->lock();
-          free_threads += ({ this_object() });
+          free_threads += ({ this });
           lock = 0;
           st = gethrtime()-st;
           total_time += st/1000.0;
@@ -499,8 +499,8 @@ optional class Farm
           ft_cond->broadcast();
         } else  {
           object lock = mutex->lock();
-          threads -= ({ this_object() });
-          free_threads -= ({ this_object() });
+          threads -= ({ this });
+          free_threads -= ({ this });
           lock = 0;
           destruct();
           return;
@@ -546,7 +546,7 @@ optional class Farm
 	case 't':
 	  return "Thread.Farm().Handler";
 	case 'O':
-	  return sprintf( "%t(%f / %d,  %d)", this_object(),
+	  return sprintf( "%t(%f / %d,  %d)", this,
 			  total_time, max_time, handled );
       }
     }
@@ -695,7 +695,7 @@ optional class MutexKey (static function(:void) dec_locks)
     // Should be destructed when the mutex is, but we can't pull that
     // off. Try to simulate it as well as possible.
     if (dec_locks) return 0;
-    destruct (this_object());
+    destruct (this);
     return 1;
   }
 
