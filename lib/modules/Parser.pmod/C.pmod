@@ -1,4 +1,7 @@
-#pike __VERSION__
+/* This file needs to support pikes that don't understand "#pike".
+ * Some of them fail when they see an unknown cpp directive.
+ */
+/* #pike __VERSION__ */
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
