@@ -38,6 +38,11 @@
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
 
+      if(!(p->flags & PROGRAM_PASS_1_DONE))
+	PIKE_ERROR("__empty_program() -> function",
+	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
+	
+
 #ifdef PIKE_SECURITY
       CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
 				   ("Function call permission denied.\n"));
