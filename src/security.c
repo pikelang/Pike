@@ -73,6 +73,12 @@ static int valid_creds_object(struct object *o)
     OBJ2CREDS(o)->user;
 }
 
+static void restore_creds(struct object *creds)
+{
+  SET_CURRENT_CREDS(creds);
+  free_object(creds);
+}
+
 /*! @decl mixed call_with_creds(object(Creds) creds, mixed func, @
  *!                             mixed ... args)
  *!
@@ -90,6 +96,7 @@ static int valid_creds_object(struct object *o)
 static void f_call_with_creds(INT32 args)
 {
   struct object *o;
+  ONERROR tmp;
 
   switch(Pike_sp[-args].type)
   {
@@ -119,6 +126,11 @@ static void f_call_with_creds(INT32 args)
     
   if(!valid_creds_object(o))
     Pike_error("call_with_creds: Not a valid creds object.\n");
+
+  if(CURRENT_CREDS) add_ref(CURRENT_CREDS);
+
+  SET_ONERROR(tmp, restore_creds, CURRENT_CREDS);
+
   SET_CURRENT_CREDS(o);
 
   /* NOTE: This only works on objects that have no credentials, or have
@@ -127,8 +139,7 @@ static void f_call_with_creds(INT32 args)
    */
   f_call_function(args-1);
 
-  /* NOTE: curent_creds will be restored by the mega_apply() that called us.
-   */
+  CALL_AND_UNSET_ONERROR(tmp);
 
   free_svalue(Pike_sp-2);
   Pike_sp[-2]=Pike_sp[-1];

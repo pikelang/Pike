@@ -29,15 +29,17 @@ struct pike_creds
 
 #define OBJ2CREDS(O) ((struct pike_creds *)(CHECK_VALID_CREDS(O)->storage))
 
+#define CURRENT_CREDS \
+  (Pike_interpreter.frame_pointer ? Pike_interpreter.frame_pointer->current_creds : Pike_interpreter.current_creds)
 
 /* Do we need a 'may never' ? */
 #define CHECK_SECURITY(BIT) \
-   (!Pike_interpreter.current_creds || (OBJ2CREDS(Pike_interpreter.current_creds)->may_always & (BIT)))
+   (!CURRENT_CREDS || (OBJ2CREDS(CURRENT_CREDS)->may_always & (BIT)))
 
 #define CHECK_DATA_SECURITY(DATA,BIT) (\
    CHECK_SECURITY(BIT) || \
    !(DATA)->prot || (OBJ2CREDS((DATA)->prot)->data_bits & (BIT)) || \
-   (OBJ2CREDS((DATA)->prot)->user == OBJ2CREDS(Pike_interpreter.current_creds)->user) )
+   (OBJ2CREDS((DATA)->prot)->user == OBJ2CREDS(CURRENT_CREDS)->user) )
 
 #define CHECK_DATA_SECURITY_OR_ERROR(DATA,BIT,ERR) do {	\
   if(!CHECK_DATA_SECURITY(DATA,BIT))             \
@@ -49,13 +51,22 @@ struct pike_creds
      Pike_error ERR;					\
  }while(0)
 
-#define SET_CURRENT_CREDS(O) do {		\
-   if(Pike_interpreter.current_creds)  free_object(Pike_interpreter.current_creds);		\
-   add_ref(Pike_interpreter.current_creds=CHECK_VALID_UID((O)));	\
- }while(0)
+#define SET_CURRENT_CREDS(O) do { struct object *_o=(O);		\
+ if(Pike_interpreter.frame_pointer)					\
+ {									\
+   if(Pike_interpreter.frame_pointer->current_creds)			\
+     free_object(Pike_interpreter.frame_pointer->current_creds);	\
+   add_ref(Pike_interpreter.frame_pointer->current_creds=		\
+	   CHECK_VALID_UID(_o));					\
+ }else{									\
+   if(Pike_interpreter.current_creds)					\
+     free_object(Pike_interpreter.current_creds);			\
+   add_ref(Pike_interpreter.current_creds=CHECK_VALID_UID(_o));	\
+ }									\
+}while(0)
 
 #define INITIALIZE_PROT(X) \
-  do { if(Pike_interpreter.current_creds) add_ref((X)->prot=CHECK_VALID_CREDS(OBJ2CREDS(Pike_interpreter.current_creds)->default_creds?OBJ2CREDS(Pike_interpreter.current_creds)->default_creds:Pike_interpreter.current_creds)); else (X)->prot=0; }while(0)
+  do { if(CURRENT_CREDS) add_ref((X)->prot=CHECK_VALID_CREDS(OBJ2CREDS(CURRENT_CREDS)->default_creds?OBJ2CREDS(CURRENT_CREDS)->default_creds:CURRENT_CREDS)); else (X)->prot=0; }while(0)
 
 #define FREE_PROT(X) do { if((X)->prot) free_object((X)->prot); (X)->prot=0; }while(0)
 
@@ -73,7 +84,7 @@ struct pike_creds
 									\
     for(e=0;e<args;e++) push_svalue(base_sp+e);				\
 									\
-    safe_apply(OBJ2CREDS(Pike_interpreter.current_creds)->user,"valid_io",args+2);	\
+    safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_io",args+2);	\
 									\
     switch(Pike_sp[-1].type)							\
     {									\
@@ -124,8 +135,6 @@ struct pike_creds
 void init_pike_security(void);
 void exit_pike_security(void);
 /* Prototypes end here */
-
-
 
 #else
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.197 2001/05/14 05:28:46 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.198 2001/05/14 06:31:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -855,7 +855,13 @@ static void do_trace_call(INT32 args)
 
 
 #undef INIT_BLOCK
-#define INIT_BLOCK(X) do { X->refs=1; X->flags=0; X->scope=0; }while(0)
+#define INIT_BLOCK(X) do {			\
+  X->refs=1;					\
+  X->flags=0; 					\
+  X->scope=0;					\
+  DO_IF_SECURITY( if(CURRENT_CREDS)		\
+    add_ref(X->current_creds=CURRENT_CREDS); )	\
+}while(0)
 
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {				\
@@ -863,6 +869,7 @@ static void do_trace_call(INT32 args)
   if(X->context.prog) free_program(X->context.prog);	\
   if(X->context.parent) free_object(X->context.parent);	\
   if(X->scope) free_pike_frame(X->scope);		\
+  DO_IF_SECURITY( if(X->current_creds) free_object(X->current_creds); )	\
   if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)		\
   {							\
     free_svalues(X->locals,X->num_locals,BIT_MIXED);	\
@@ -1451,16 +1458,7 @@ void unlink_previous_frame(void)
 }
 
 
-
-#ifdef PIKE_SECURITY
-/* Magic trick */
-static
-
-#else
-#define mega_apply2 mega_apply
-#endif
-
-void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
+void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   if(low_mega_apply(type, args, arg1, arg2))
   {
@@ -1468,26 +1466,6 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
     low_return();
   }
 }
-
-#ifdef PIKE_SECURITY
-static void restore_creds(struct object *creds)
-{
-  if(Pike_interpreter.current_creds)
-    free_object(Pike_interpreter.current_creds);
-  Pike_interpreter.current_creds = creds;
-}
-
-PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
-{
-  ONERROR tmp;
-  if(Pike_interpreter.current_creds)
-    add_ref(Pike_interpreter.current_creds);
-
-  SET_ONERROR(tmp, restore_creds, Pike_interpreter.current_creds);
-  mega_apply2(type, args, arg1, arg2);
-  CALL_AND_UNSET_ONERROR(tmp);
-}
-#endif
 
 
 /* Put catch outside of eval_instruction, so

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.82 2001/05/14 05:28:46 hubbe Exp $
+ * $Id: interpret.h,v 1.83 2001/05/14 06:31:12 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -76,6 +76,7 @@ struct pike_frame
   struct svalue **mark_sp_base;
   struct object *current_object;
 
+  DO_IF_SECURITY(struct object *current_creds;)
 #if defined(PROFILING) && defined(HAVE_GETHRTIME)
   long long children_base;
   long long start_time;
