@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.10 2002/12/12 21:20:25 nilsson Exp $
+# $Id: Makefile.in,v 1.11 2003/05/09 15:45:39 grubba Exp $
 
 @make_variables@
 
@@ -18,8 +18,8 @@ $(MODULES) no : force
 	  echo Making $@; \
 	  ( cd $@ && \
 	    (  rm remake >/dev/null 2>&1 || : ) && \
-	    ( $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) ) \
+	    ( $(MAKE) $(MAKE_FLAGS) || \
+	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
 	  ) || exit $$?; \
 	fi
 
@@ -68,8 +68,8 @@ depend: Makefile
 	  if test "$$a" = "no"; then :; else \
 	    ( cd $$a && { \
 	      rm -f remake; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend || \
-		if test -f remake; then ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend; else exit $$?; fi; \
+	      ${MAKE} $(MAKE_FLAGS) depend || \
+		if test -f remake; then ${MAKE} $(MAKE_FLAGS) depend; else exit $$?; fi; \
 	    }); \
 	  fi; \
 	done
@@ -77,14 +77,14 @@ depend: Makefile
 install:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
+	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) install ) ; \
 	  fi; \
 	done
 
 clean:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
+	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; \
 	  fi; \
 	done
 	-rm -f linker_options modlist.h modlist_headers.h
@@ -94,7 +94,7 @@ verify:
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; \
 	      echo verifying $$a ; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify \
+	      ${MAKE} $(MAKE_FLAGS) verify \
 	    ) || exit $$? ; \
 	  fi; \
 	done
@@ -103,7 +103,7 @@ verbose_verify:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
+	      ${MAKE} $(MAKE_FLAGS) verbose_verify \
 	    ) || exit $$? ; \
 	  fi; \
 	done
@@ -127,7 +127,7 @@ extra_tests:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a && \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
+	      ${MAKE} $(MAKE_FLAGS) extra_tests \
 	    ) || exit $$? ; \
 	  fi; \
 	done
