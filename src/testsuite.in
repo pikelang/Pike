@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.500 2002/04/28 02:27:31 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.501 2002/04/28 04:48:19 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1082,6 +1082,37 @@ test_program([[
       switch (functionp (ent[2]) && function_name (ent[2])) {
 	case "create": if (ent[1] == 7) ok++; break;
 	case "f": if (ent[1] == 14) ok++; break;
+      }
+    return ok == 2;
+  }
+]])
+
+test_program([[// [bug 3060]
+  void x (mixed val)
+  {
+  }
+
+  class X
+  {
+    void create() {error ("foo\n");} // Line 8
+  }
+
+  object rx = class {}();
+
+  int y()
+  {
+    x (rx->x);
+    rx = X(); // Line 16
+  }
+
+  int a()
+  {
+    mixed bt = catch (y())[1];
+    int ok = 0;
+    foreach (reverse (bt), object ent)
+      switch (functionp (ent[2]) && function_name (ent[2])) {
+	case "create": if (ent[1] == 8) ok++; break;
+	case "y": if (ent[1] == 16) ok++; break;
       }
     return ok == 2;
   }
