@@ -87,7 +87,7 @@ int main()
       werror(PRE"reporting ok\n");
       return 0;
    }
-   call_out(timeout,1);
+   call_out(timeout, 10);
    return -1;
 }
 
