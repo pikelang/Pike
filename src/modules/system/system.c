@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.37 1998/01/13 23:01:47 hubbe Exp $
+ * $Id: system.c,v 1.38 1998/01/21 19:59:11 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,9 +14,13 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.37 1998/01/13 23:01:47 hubbe Exp $");
+RCSID("$Id: system.c,v 1.38 1998/01/21 19:59:11 hubbe Exp $");
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
 #endif
 
 #include "module_support.h"
@@ -855,6 +859,20 @@ static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
 }
 #endif
 
+#ifdef __NT__
+static void f_cp(INT32 args)
+{
+  char *from, *to;
+  int ret;
+  get_all_args("cp",args,"%s%s",&from,&to);
+  ret=CopyFile(from, to, 0);
+  if(!ret) errno=GetLastError();
+  pop_n_elems(args);
+  push_int(ret);
+}
+#endif
+
+
 /*
  * Module linkage
  */
@@ -975,6 +993,10 @@ void pike_module_init(void)
 
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   add_to_callback(& fork_child_callback, cleanup_after_fork, 0, 0);
+#endif
+
+#ifdef __NT__
+  add_function("cp",f_cp,"function(string,string:int)", 0);
 #endif
 }
 
