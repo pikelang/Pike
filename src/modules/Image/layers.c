@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.10 1999/04/23 23:45:27 mirar Exp $
+**!	$Id: layers.c,v 1.11 1999/05/08 00:42:12 hubbe Exp $
 **! class Layer
 */
 
@@ -10,7 +10,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.10 1999/04/23 23:45:27 mirar Exp $");
+RCSID("$Id: layers.c,v 1.11 1999/05/08 00:42:12 hubbe Exp $");
 
 #include "config.h"
 
@@ -83,6 +83,7 @@ struct layer
    int optimize_alpha;
 };
 
+#undef THIS
 #define THIS ((struct layer *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
