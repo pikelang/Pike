@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.4 2003/03/13 22:48:40 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.5 2003/10/24 19:13:18 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -222,8 +222,8 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
       
   object s = context->rsa->raw_sign(digest);
 #ifdef SSL3_DEBUG_CRYPT
-  werror("  Digest: '%O'\n"
-	 "  Signature: '%O'\n",
+  werror("  Digest: %O\n"
+	 "  Signature: %O\n",
 	 digest, s->digits(256));
 #endif
   
