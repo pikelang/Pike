@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.22 1998/05/17 19:28:45 grubba Exp $
+# $Id: configure.in,v 1.23 1998/05/22 12:43:13 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -74,7 +74,7 @@ fi
 AC_MSG_CHECKING(for h_addr_list)
 AC_CACHE_VAL(pike_cv_struct_has_h_addr_list,
 [
-AC_TRY_LINK([
+AC_TRY_COMPILE([
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -89,6 +89,39 @@ foo.h_addr_list[0];
 if test "$pike_cv_struct_has_h_addr_list" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_H_ADDR_LIST)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(whether struct passwd has the pw_gecos field)
+AC_CACHE_VAL(pike_cv_struct_has_pw_gecos,
+[
+AC_TRY_COMPILE([
+#ifdef HAVE_PASSWD_H
+# include <passwd.h>
+# include <group.h>
+#endif /* HAVE_PASSWD_H */
+
+#ifdef HAVE_PWD_H
+# include <pwd.h>
+#endif /* HAVE_PWD_H */
+
+#ifdef HAVE_GRP_H
+# include <grp.h>
+#endif /* HAVE_GRP_H */
+
+#ifdef HAVE_SHADOW_H
+# include <shadow.h>
+#endif /* HAVE_SHADOW_H */
+], [
+  struct passwd ent;
+  ent->pw_gecos = "FOO";
+], pike_cv_struct_has_pw_gecos=yes, pike_cv_struct_has_pw_gecos=no)
+])
+
+if test "$pike_cv_struct_has_pw_gecos" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_PW_GECOS)
 else
   AC_MSG_RESULT(no)
 fi
