@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.11 1998/04/24 00:59:26 hubbe Exp $
+/* $Id: sha.c,v 1.12 1998/07/19 21:58:24 nisse Exp $
  *
  * Written by Niels Möller
  */
@@ -16,7 +16,7 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.11 1998/04/24 00:59:26 hubbe Exp $");
+RCSID("$Id: sha.c,v 1.12 1998/07/19 21:58:24 nisse Exp $");
 
 #include <sha.h>
 
@@ -57,6 +57,19 @@ static void f_update(INT32 args)
   sha_update(THIS, (unsigned INT8 *) s->str, s->len);
   pop_n_elems(args);
   push_object(this_object());
+}
+
+static void f_identifier(INT32 args)
+{
+  /*
+      SHA1 OBJECT IDENTIFIER ::= {
+         iso(1) identified-organization(3) oiw(14) secsig(3) 
+         algorithm(2) 26 
+      }
+  */
+  pop_n_elems(args);
+  push_string(make_shared_binary_string(
+    "\x2b\x0e\x03\x02\x1a", 5));
 }
 
 static void f_digest(INT32 args)
