@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.6 2001/03/12 16:34:15 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.7 2001/03/12 16:43:21 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -353,13 +353,13 @@ struct active_selectors
   int max_fd;
 };
 
-#define MY_POLLIN &me->selectors.read
-#define MY_POLLOUT &me->selectors.write
+#define MY_POLLIN &me->set.read
+#define MY_POLLOUT &me->set.write
 
-#define MY_POLLEXCEPT &me->selectors.except
-#define MY_POLLRDBAND &me->selectors.except
-#define MY_POLLWREXCEPT &me->selectors.write
-#define MY_POLLWRBAND &me->selectors.write
+#define MY_POLLEXCEPT &me->set.except
+#define MY_POLLRDBAND &me->set.except
+#define MY_POLLWREXCEPT &me->set.write
+#define MY_POLLWRBAND &me->set.write
 
 #define RDBAND_IS_SPECIAL
 
@@ -376,10 +376,10 @@ void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
   if(fd == me->max_fd)
   {
     while(me->max_fd >=0 &&
-	  !my_FD_ISSET(me->max_fd, &me->selectors.read) &&
-	  !my_FD_ISSET(me->max_fd, &me->selectors.write)
+	  !my_FD_ISSET(me->max_fd, &me->read) &&
+	  !my_FD_ISSET(me->max_fd, &me->write)
 #ifdef WITH_OOB
-	  && !my_FD_ISSET(me->max_fd, &me->selectors.except)
+	  && !my_FD_ISSET(me->max_fd, &me->except)
 #endif /* WITH_OOB */
       )
       me->max_fd--;
@@ -941,14 +941,15 @@ PIKECLASS Backend
 	for(i=0; i<max_fd+1; i++)
 	{
 #ifdef WITH_OOB
-	  if(fd_FD_ISSET(i, &eset) && me->fds[i].read_oob.callback)
+	  if(fd_FD_ISSET(i, &me->active_set.eset) &&
+	     me->fds[i].read_oob.callback)
 	    (*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data);
 #endif /* WITH_OOB */
 	  
-	  if(fd_FD_ISSET(i, &rset) && me->fds[i].read.callback)
+	  if(fd_FD_ISSET(i, &me->active_set.rset) && me->fds[i].read.callback)
 	    (*(me->fds[i].read.callback))(i, me->fds[i].read.data);
 	  
-	  if(fd_FD_ISSET(i, &wset)) {
+	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
 #ifdef WITH_OOB
 	    if (me->fds[i].write_oob.callback) {
 	      (*(me->fds[i].write_oob.callback))(i, me->fds[i].write_oob.data);
