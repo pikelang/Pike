@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.161 2001/06/30 21:28:35 mast Exp $");
+RCSID("$Id: gc.c,v 1.162 2001/07/01 18:17:30 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -569,22 +569,25 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
   fprintf(stderr, "**");
   (void) VFPRINTF(stderr, fmt, args);
 
-  /* Temporarily jumping out of gc to avoid being catched in debug
-   * checks in describe(). */
-  Pike_in_gc = 0;
-  describe(a);
+  if (a) {
+    /* Temporarily jumping out of gc to avoid being catched in debug
+     * checks in describe(). */
+    Pike_in_gc = 0;
+    describe(a);
   
-  if (flags & 1) locate_references(a);
+    if (flags & 1) locate_references(a);
 
-  m=find_marker(a);
-  if(m)
-  {
-    fprintf(stderr,"** Describing marker for this thing.\n");
-    describe(m);
-  }else{
-    fprintf(stderr,"** No marker found for this thing.\n");
+    m=find_marker(a);
+    if(m)
+    {
+      fprintf(stderr,"** Describing marker for this thing.\n");
+      describe(m);
+    }else{
+      fprintf(stderr,"** No marker found for this thing.\n");
+    }
+    Pike_in_gc = orig_gc_pass;
   }
-  Pike_in_gc = orig_gc_pass;
+
   if (flags & 2)
     fatal_after_gc = "Fatal in garbage collector.\n";
   else
@@ -1171,16 +1174,12 @@ void locate_references(void *a)
   gc_check_all_objects();
 
 #ifdef PIKE_DEBUG
-  if(master_object) {
-    found_where = " as master_object";
-    gc_external_mark2(master_object,0," &master_object");
-  }
+  if(master_object)
+    gc_external_mark2(master_object,0," as master_object");
   {
     extern struct mapping *builtin_constants;
-    if(builtin_constants) {
-      found_where = " as builtin_constants";
-      gc_external_mark2(builtin_constants,0," &builtin_constants");
-    }
+    if(builtin_constants)
+      gc_external_mark2(builtin_constants,0," as builtin_constants");
   }
 #endif
   
@@ -1699,34 +1698,30 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       }
       CYCLE_DEBUG_MSG(m, "gc_cycle_push, no live recurse");
     }
-
     else {
-      /* Nothing more to do. Unwind the live recursion. */
+      /* We'll get here eventually in the normal recursion. Pop off
+       * the remaining live recurse frames for the last thing. */
       int flags;
-      CYCLE_DEBUG_MSG(m, "gc_cycle_push, live rec done");
-      do {
-	last->flags &= ~GC_LIVE_RECURSE;
-#ifdef GC_CYCLE_DEBUG
-	gc_cycle_indent -= 2;
-	CYCLE_DEBUG_MSG(find_marker(gc_rec_last->data),
-			"> gc_cycle_push, unwinding live");
-#endif
-	while (1) {
-	  struct gc_frame *l = gc_rec_top;
+      CYCLE_DEBUG_MSG(m, "gc_cycle_push, no live recurse");
+      last->flags &= ~GC_LIVE_RECURSE;
+      while (1) {
+	struct gc_frame *l = gc_rec_top;
 #ifdef PIKE_DEBUG
-	  if (!gc_rec_top)
-	    fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
+	if (!gc_rec_top)
+	  fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
 #endif
-	  gc_rec_top = l->back;
-	  if (l->frameflags & GC_POP_FRAME) {
-	    gc_rec_last = PREV(l);
-	    debug_really_free_gc_frame(l);
-	    break;
-	  }
+	gc_rec_top = l->back;
+	if (l->frameflags & GC_POP_FRAME) {
+	  gc_rec_last = PREV(l);
 	  debug_really_free_gc_frame(l);
+	  break;
 	}
-	last = find_marker(gc_rec_last->data);
-      } while (last->flags & GC_LIVE_RECURSE);
+	debug_really_free_gc_frame(l);
+      }
+#ifdef GC_CYCLE_DEBUG
+      gc_cycle_indent -= 2;
+      CYCLE_DEBUG_MSG(m, "> gc_cycle_push, unwound live rec");
+#endif
     }
 
     return 0;
@@ -1771,8 +1766,16 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 	  if (p == gc_rec_last) break;
 	}
 #ifdef PIKE_DEBUG
-	if (p == gc_rec_last && !nonstrong_ref)
-	  gc_fatal(x, 0, "Only strong links in cycle.\n");
+	if (p == gc_rec_last && !nonstrong_ref) {
+	  fprintf(stderr, "Only strong links in cycle:\n");
+	  for (p = NEXT(m->frame);; p = NEXT(p)) {
+	    describe(p->data);
+	    locate_references(p->data);
+	    if (p == gc_rec_last) break;
+	    fprintf(stderr, "========= next =========\n");
+	  }
+	  gc_fatal(0, 0, "Only strong links in cycle.\n");
+	}
 #endif
       }
 
@@ -2192,12 +2195,12 @@ int do_gc(void)
 
 #ifdef PIKE_DEBUG
   if(master_object)
-    gc_external_mark2(master_object,0," &master_object");
+    gc_external_mark2(master_object,0," as master_object");
 
   {
     extern struct mapping *builtin_constants;
     if(builtin_constants)
-      gc_external_mark2(builtin_constants,0," &builtin_constants");
+      gc_external_mark2(builtin_constants,0," as builtin_constants");
   }
 #endif
 
@@ -2278,7 +2281,7 @@ int do_gc(void)
 			  "|        %u weak references freed, %d more things to free,\n"
 			  "|        space for %u gc frames used\n",
 			  cycle_checked, last_cycle, weak_freed,
-			  obj_count - delayed_freed, max_gc_frames));
+			  delayed_freed - obj_count, max_gc_frames));
   }
 
   if (gc_ext_weak_refs) {
@@ -2301,7 +2304,7 @@ int do_gc(void)
 	      "| zap weak: freed %ld external weak refs, %lu internal still around,\n"
 	      "|           %d more things to free\n",
 	      PTRDIFF_T_TO_LONG(to_free - gc_ext_weak_refs),
-	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - delayed_freed));
+	      SIZE_T_TO_ULONG(gc_ext_weak_refs), delayed_freed - obj_count));
   }
 
 #ifdef PIKE_DEBUG
