@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.9 1996/11/17 18:42:50 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.10 1996/11/18 02:47:51 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -170,7 +170,14 @@ static void mpzmod_digits(INT32 args)
   struct pike_string *s;
   INT32 len;
 
-  base = sp[-args].u.integer;
+  if (!args)
+    base = 10;
+  else
+    {
+      if (sp[-args].type != T_INT)
+	error("wrong type");
+      base = sp[-args].u.integer;
+    }
   if ( (base >= 2) && (base <= 36))
     {
       len = mpz_sizeinbase(THIS, base) + 2;
@@ -208,7 +215,28 @@ static void mpzmod_digits(INT32 args)
   pop_n_elems(args);
   push_string(s);
 }
-  
+
+static void mpzmod_size(INT32 args)
+{
+  int base;
+  if (!args)
+    /* Default is number of bits */
+    base = 2;
+  else
+    {
+      if ((sp-args)->type != T_INT)
+	error("wrong type");
+      base = (sp-args)->u.integer;
+      if ((base != 256) && ((base < 2) || (base > 36)))
+	error("invalid base");
+    }
+  pop_n_elems(args);
+  if (base == 256)
+    push_int((mpz_sizeinbase(THIS, 2) + 7) / 8);
+  else
+    push_int(mpz_sizeinbase(THIS, base));
+}
+
 static void mpzmod_cast(INT32 args)
 {
   if(args < 1)
@@ -412,6 +440,20 @@ static void mpzmod_gcdext2(INT32 args)
   f_aggregate(2);
 }
 
+static void mpzmod_invert(INT32 args)
+{
+  MP_INT *modulo;
+  MP_INT *tmp;
+  
+  modulo = get_mpz(sp-args);
+  if (!mpz_sgn(modulo))
+    error("divide by zero");
+  tmp = get_tmp();
+  if (mpz_invert(tmp, THIS, modulo) == 0)
+    error("not invertible");
+  return_temporary(args);
+}
+
 BINFUN(mpzmod_and,mpz_and)
 BINFUN(mpzmod_or,mpz_ior)
 
@@ -587,7 +629,9 @@ void init_gmpmod_programs(void)
   add_function("__hash",mpzmod_get_int,"function(:int)",0);
   add_function("cast",mpzmod_cast,"function(string:mixed)",0);
 
-  add_function("digits", mpzmod_digits, "function(int:string)", 0);
+  add_function("digits", mpzmod_digits, "function(void|int:string)", 0);
+  add_function("size", mpzmod_size, "function(void|int:int)", 0);
+
   add_function("cast_to_int",mpzmod_get_int,"function(:int)",0);
   add_function("cast_to_string",mpzmod_get_string,"function(:string)",0);
   add_function("cast_to_float",mpzmod_get_float,"function(:float)",0);
@@ -598,6 +642,9 @@ void init_gmpmod_programs(void)
   "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":array(object))", 0);
   add_function("gcdext2", mpzmod_gcdext2,
   "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":array(object))", 0);
+  add_function("invert", mpzmod_invert,
+  "function(" MPZ_ARG_TYPE ":object)", 0);
+
   add_function("sqrt",mpzmod_gcd,"function(:object)",0);
   add_function("sqrtrem", mpzmod_sqrtrem, "function(:array(object))", 0);
   add_function("`~",mpzmod_gcd,"function(:object)",0);
@@ -609,8 +656,6 @@ void init_gmpmod_programs(void)
   add_function("divmod", mpzmod_divmod, "function(" MPZ_ARG_TYPE ":array(object))", 0);
   add_function("pow", mpzmod_pow, "function(int:object)", 0);
   add_function("divm", mpzmod_divm, "function(string|int|float|object, string|int|float|object:object)", 0);
-  add_function("invert", mpzmod_invert, "function(:object)", 0);
-  add_function("size_in_base", mpz_size, "function(int:int)", 0);
   add_efun("mpz_pow", mpz_pow, "function(int, int)", 0);
   add_efun("mpz_fac", mpz_fac, "function(int|object:object)", 0);
 #endif
