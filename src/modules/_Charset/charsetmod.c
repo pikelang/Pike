@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.47 2004/09/27 21:45:35 nilsson Exp $
+|| $Id: charsetmod.c,v 1.48 2004/10/15 14:59:14 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -559,10 +559,10 @@ static void f_create_multichar(INT32 args)
 
   switch(no) {
   case 1:
-    s->table = &GBK;
+    s->table = GBK;
     break;
   case 2:
-    s->table = &cp949;
+    s->table = cp949;
     break;
   default:
     Pike_error("Unknown multichar table.\n");
