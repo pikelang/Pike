@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.28 2000/04/20 02:41:45 hubbe Exp $
+// $Id: peep.in,v 1.29 2000/04/25 09:32:46 hubbe Exp $
 //
 
 NOP :
@@ -276,3 +276,6 @@ CONSTANT POP_VALUE :
 LOCAL POP_VALUE :
 IDENTIFIER POP_VALUE :
 TRAMPOLINE POP_VALUE :
+
+
+RECUR RETURN: TAIL_RECUR ($1a)

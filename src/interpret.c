@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.147 2000/04/21 23:07:10 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.148 2000/04/25 09:32:46 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1068,10 +1068,8 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	num_locals=EXTRACT_UCHAR(pc++);
 	num_args=EXTRACT_UCHAR(pc++);
 
-	/* FIXME: this is only needed if this function contains
-	 * trampolines
-	 */
-	new_frame->expendible+=num_locals;
+	if(function->identifier_flags & IDENTIFIER_SCOPED)
+	  new_frame->expendible+=num_locals;
 	
 	/* adjust arguments on stack */
 	if(args < num_args) /* push zeros */

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.68 2000/04/20 02:41:44 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.69 2000/04/25 09:32:45 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -198,6 +198,30 @@ static inline struct compiler_frame *find_local_frame(INT32 depth)
   struct compiler_frame *f=compiler_frame;
   while(--depth>=0) f=f->previous;
   return f;
+}
+
+int do_lfun_call(int id,node *args)
+{
+#if 1
+  if(id == compiler_frame->current_function_number)
+  {
+    if(new_program->identifier_references[id].id_flags & ID_INLINE)
+    {
+      int n=count_args(args);
+      if(n == count_arguments(ID_FROM_INT(new_program, id) -> type))
+      {
+	emit0(F_MARK);
+	do_docode(args,0);
+	emit1(F_RECUR,0); /* 0 is label at beginning of function */
+	return 1;
+      }
+    }
+  }
+#endif
+  emit0(F_MARK);
+  do_docode(args,0);
+  emit1(F_CALL_LFUN, id);
+  return 1;
 }
 
 static int do_docode2(node *n,int flags)
@@ -743,12 +767,7 @@ static int do_docode2(node *n,int flags)
 	  return 1;
 	}else{
 	  if(CAR(n)->u.sval.u.object == fake_object)
-	  {
-	    emit0(F_MARK);
-	    do_docode(CDR(n),0);
-	    emit1(F_CALL_LFUN, CAR(n)->u.sval.subtype);
-	    return 1;
-	  }
+	    return do_lfun_call(CAR(n)->u.sval.subtype,CDR(n));
        	}
       }
 
@@ -762,12 +781,10 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
-	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, CAR(n)->u.id.number)->identifier_flags))
+	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program,
+					       CAR(n)->u.id.number)->identifier_flags))
     {
-      emit0(F_MARK);
-      do_docode(CDR(n),0);
-      emit1(F_CALL_LFUN, CAR(n)->u.id.number);
-      return 1;
+      return do_lfun_call(CAR(n)->u.id.number,CDR(n));
     }
     else
     {
@@ -1277,7 +1294,8 @@ static int do_docode2(node *n,int flags)
 void do_code_block(node *n)
 {
   init_bytecode();
-  label_no=0;
+  label_no=1;
+  emit1(F_LABEL,0);
   DO_CODE_BLOCK(n);
   assemble();
 }
@@ -1289,7 +1307,7 @@ int docode(node *n)
   dynamic_buffer instrbuf_save = instrbuf;
 
   instrbuf.s.str=0;
-  label_no=0;
+  label_no=1;
   init_bytecode();
 
   tmp=do_docode(n,0);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.232 2000/04/23 03:01:26 mast Exp $");
+RCSID("$Id: program.c,v 1.233 2000/04/25 09:32:46 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3670,6 +3670,7 @@ void push_compiler_frame(int lexical_scope)
   f->current_number_of_locals=0;
   f->max_number_of_locals=0;
   f->previous=compiler_frame;
+  f->current_function_number=-2; /* no function */
   compiler_frame=f;
 }
 

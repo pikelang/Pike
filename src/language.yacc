@@ -33,6 +33,7 @@
 %token F_BRANCH_IF_NOT_LOCAL_ARROW
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
+%token F_RECUR F_TAIL_RECUR
 
 %token F_LEXICAL_LOCAL F_LEXICAL_LOCAL_LVALUE
 
@@ -192,7 +193,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.180 2000/04/20 02:41:45 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.181 2000/04/25 09:32:46 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -710,13 +711,17 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
       free_string(s);
     }
 
-    if(compiler_pass==1)
+/*    if(compiler_pass==1) */
     {
-      $<number>5=define_function(check_node_hash($4)->u.sval.u.string,
-				 check_node_hash($<n>$)->u.sval.u.string,
-				 $1 & (~ID_EXTERN),
-				 IDENTIFIER_PIKE_FUNCTION,
-				 0);
+      /* FIXME:
+       * set current_function_number for local functions as well
+       */
+      compiler_frame->current_function_number=
+	define_function(check_node_hash($4)->u.sval.u.string,
+			check_node_hash($<n>$)->u.sval.u.string,
+			$1 & (~ID_EXTERN),
+			IDENTIFIER_PIKE_FUNCTION,
+			0);
     }
   }
   block_or_semi
@@ -778,14 +783,16 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
       lex.current_file = save_file;
 #endif /* PIKE_DEBUG */
 
-      f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($10),
-		  check_node_hash($<n>9)->u.sval.u.string, $1);
+      f=dooptcode(check_node_hash($4)->u.sval.u.string,
+		  check_node_hash($10),
+		  check_node_hash($<n>9)->u.sval.u.string,
+		  $1);
 #ifdef PIKE_DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
 
-      if(compiler_pass == 1 && f!=$<number>5)
-	fatal("define_function screwed up! %d != %d\n",f,$<number>5);
+      if(compiler_pass == 1 && f!=compiler_frame->current_function_number)
+	fatal("define_function screwed up! %d != %d\n",f,compiler_frame->current_function_number);
 #endif
     }
     pop_compiler_frame();

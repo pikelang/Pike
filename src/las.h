@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.34 2000/04/23 02:42:01 mast Exp $
+ * $Id: las.h,v 1.35 2000/04/25 09:32:46 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -52,6 +52,7 @@ struct compiler_frame
   int current_number_of_locals;
   int max_number_of_locals;
   int lexical_scope;
+  int current_function_number;
   struct local_variable variable[MAX_LOCAL];
 };
 

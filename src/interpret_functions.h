@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.15 2000/04/21 00:29:48 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.16 2000/04/25 09:32:46 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -996,29 +996,31 @@ BREAK;
 	return args+1;
       }
 
-      CASE(F_CALL_LFUN_AND_RETURN);
-      {
-	INT32 args=Pike_sp - *--Pike_mark_sp;
-	if(Pike_fp->expendible >= Pike_sp-args)
-	{
-	  MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(struct svalue));
-	  Pike_sp++;
-	  Pike_sp[-args-1].type=PIKE_T_INT;
-	}else{
-	  free_svalue(Pike_sp-args-1);
-	}
-	/* More stack sabotage */
-	Pike_sp[-args-1].u.object=Pike_fp->current_object;
-	Pike_sp[-args-1].subtype=GET_ARG()+Pike_fp->context.identifier_level;
-#ifdef PIKE_DEBUG
-	if(t_flag > 9)
-	  fprintf(stderr,"-    IDENTIFIER_LEVEL: %d\n",Pike_fp->context.identifier_level);
-#endif
-	Pike_sp[-args-1].type=PIKE_T_FUNCTION;
-	add_ref(Pike_fp->current_object);
+OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
+{
+  INT32 args=sp - *--Pike_mark_sp;
 
-	return args+1;
-      }
+  if(Pike_fp->expendible >= Pike_sp-args)
+  {
+    MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(struct svalue));
+    Pike_sp++;
+    Pike_sp[-args-1].type=PIKE_T_INT;
+  }else{
+    free_svalue(Pike_sp-args-1);
+  }
+  /* More stack sabotage */
+  Pike_sp[-args-1].u.object=Pike_fp->current_object;
+  Pike_sp[-args-1].subtype=arg1+Pike_fp->context.identifier_level;
+#ifdef PIKE_DEBUG
+  if(t_flag > 9)
+    fprintf(stderr,"-    IDENTIFIER_LEVEL: %d\n",Pike_fp->context.identifier_level);
+#endif
+  Pike_sp[-args-1].type=PIKE_T_FUNCTION;
+  add_ref(Pike_fp->current_object);
+  
+  return args+1;
+}
+BREAK
 
       CASE(F_RETURN_LOCAL);
       instr=GET_ARG();
@@ -1157,13 +1159,31 @@ OPCODE0(F_MOD, "%")
 BREAK;
 
 OPCODE1(F_ADD_INT, "add integer")
-  push_int(arg1);
-  f_add(2);
+  if(sp[-1].type == T_INT
+#ifdef AUTO_BIGNUM
+      && (!INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, arg1))
+#endif
+     )
+  {
+    sp[-1].u.integer+=arg1;
+  }else{
+    push_int(arg1);
+    f_add(2);
+  }
 BREAK;
 
 OPCODE1(F_ADD_NEG_INT, "add -integer")
-  push_int(-arg1);
-  f_add(2);
+  if(sp[-1].type == T_INT
+#ifdef AUTO_BIGNUM
+      && (!INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, -arg1))
+#endif
+     )
+  {
+    sp[-1].u.integer-=arg1;
+  }else{
+    push_int(-arg1);
+    f_add(2);
+  }
 BREAK;
 
 OPCODE0(F_PUSH_ARRAY, "@")
@@ -1464,3 +1484,84 @@ BREAK;
       return args;
     }
 
+
+/* Assume that the number of arguments is correct */
+OPCODE0_JUMP(F_RECUR,"recur")
+{
+  int x,num_locals,args;
+  char *addr;
+  struct svalue *expendible=fp->expendible;
+  struct svalue *locals=fp->locals;
+  struct svalue *save_sp;
+
+  fast_check_threads_etc(6);
+  check_c_stack(8192);
+  check_stack(256);
+
+  save_sp=fp->expendible=fp->locals=*--Pike_mark_sp;
+  args=sp-fp->locals;
+
+  addr=pc+EXTRACT_INT(pc);
+  num_locals=EXTRACT_UCHAR(addr-1);
+
+#ifdef PIKE_DEBUG
+  if(args != EXTRACT_UCHAR(addr-2))
+    fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-2));
+#endif
+
+  clear_svalues(sp, num_locals - args);
+  sp += num_locals - args;
+
+  x=eval_instruction(addr);
+  if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
+  pc+=sizeof(INT32);
+  if(save_sp+1 < sp)
+  {
+    assign_svalue(save_sp,sp-1);
+    pop_n_elems(sp-save_sp-1);
+  }
+  fp->expendible=expendible;
+  fp->locals=locals;
+  print_return_value();
+#ifdef PIKE_DEBUG
+  if(sp != save_sp+1)
+    fatal("Stack whack in F_RECUR sp=%p, expected=%p\n",sp,save_sp+1);
+#endif
+}
+BREAK
+
+/* Assume that the number of arguments is correct */
+OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
+{
+  int x,num_locals;
+  char *addr;
+  int args=sp - *--mark_sp;
+
+  fast_check_threads_etc(6);
+
+  addr=pc+EXTRACT_INT(pc);
+  num_locals=EXTRACT_UCHAR(addr-1);
+
+
+#ifdef PIKE_DEBUG
+  if(args != EXTRACT_UCHAR(addr-2))
+    fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",args,EXTRACT_UCHAR(addr-2));
+#endif
+
+  if(sp-args != fp->locals)
+  {
+    assign_svalues(fp->locals, sp-args, args, BIT_MIXED);
+    pop_n_elems(sp - (fp->locals + args));
+  }
+
+  clear_svalues(sp, num_locals - args);
+  sp += num_locals - args;
+
+#ifdef PIKE_DEBUG
+  if(sp != fp->locals + fp->num_locals)
+    fatal("Sp whacked!\n");
+#endif
+
+  pc=addr;
+}
+BREAK
