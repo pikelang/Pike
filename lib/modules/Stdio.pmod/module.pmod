@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.131 2001/12/04 12:33:00 nilsson Exp $
+// $Id: module.pmod,v 1.132 2001/12/07 10:37:38 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2008,7 +2008,7 @@ static class nb_sendfile
   {
     SF_WERR("Blocking writer.");
 
-    int bytes = to->write(to_write);
+    int bytes = sizeof(to_write) && to->write(to_write);
 
     if (bytes >= 0) {
       sent += bytes;
@@ -2028,7 +2028,7 @@ static class nb_sendfile
 	  }
 	}
       }
-      // Not reached, but...
+
       return 1;
     } else {
       SF_WERR("Blocking writer got EOF.");
