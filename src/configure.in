@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.654 2002/12/07 17:14:28 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.655 2002/12/10 07:33:58 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -57,6 +57,9 @@ if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
   echo Using settings from /etc/make.conf...
   source /etc/make.conf
   set | diff -u conftest.tmp -  | grep '^+C'
+  cflags_make_conf=yes
+else
+  cflags_make_conf=no
 fi
 
 
@@ -1437,50 +1440,63 @@ fi
 WARN=""
 OPTIMIZE="${OPTFLAGS-}"
 
-if test "$cflags_is_set" = "no"; then
+AC_ARG_ENABLE(pedantic, MY_DESCR([--enable-pedantic],
+   [enable -pedantic compilation]),
+             [enable_make_conf=yes], [])
+
+if test "$cflags_is_set" = "no" -o "$cflags_make_conf" = "yes"; then
   if test "x$with_cdebug" = "xno" ; then
     CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`
   else
     :
   fi
 
+  if test "x$enable_pedantic" = "xyes"; then
+    AC_SYS_COMPILER_FLAG(-pedantic,pedantic,WARN)
+  fi
 
- if test "x${GCC-}" = xyes ; then
+
+  if test "x${GCC-}" = xyes ; then
   # Do not use -Wall, since that produces a lot of warnings that are not
   # really interresting (such as the warning for if( ... ) ... if(
   # ... ) .... else
-  AC_SYS_COMPILER_FLAG(-W,W,WARN)
-  AC_SYS_COMPILER_FLAG(-Wall,Wall,WARN)
-  AC_SYS_COMPILER_FLAG(-Wno-unused,Wno_unused,WARN)
-  AC_SYS_COMPILER_FLAG(-Wcomment,Wcomment,WARN)
-  AC_SYS_COMPILER_FLAG(-Wformat,Wformat,WARN)
-  AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
-  AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
-  AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
-  if test "x$with_copt" != xno; then
-    # gcc complains that it doesn't support this when compiling
-    # without optimizations.
-    AC_SYS_COMPILER_FLAG(-Wuninitialized,Wuninitialized,WARN)
-  fi
-  AC_SYS_COMPILER_FLAG(-Wpointer-arith,Wpointer_arith,WARN)
-  AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
-  AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
+    AC_SYS_COMPILER_FLAG(-W,W,WARN)
+    AC_SYS_COMPILER_FLAG(-Wall,Wall,WARN)
+    AC_SYS_COMPILER_FLAG(-Wno-unused,Wno_unused,WARN)
+    AC_SYS_COMPILER_FLAG(-Wcomment,Wcomment,WARN)
+    AC_SYS_COMPILER_FLAG(-Wformat,Wformat,WARN)
+    AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
+    AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
+    AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
+    if test "x$with_copt" != xno; then
+      # gcc complains that it doesn't support this when compiling
+      # without optimizations.
+      AC_SYS_COMPILER_FLAG(-Wuninitialized,Wuninitialized,WARN)
+    fi
+    AC_SYS_COMPILER_FLAG(-Wpointer-arith,Wpointer_arith,WARN)
+    AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
+    AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
 
-  if test "x${with_static_linking-}" = "xyes" ; then
-    AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
-  else
-    :
-  fi
+    if test "x${with_static_linking-}" = "xyes" ; then
+      AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
+    else
+      :
+    fi
 
-  ##
-  ## -fomit-frame-pointer does not work with egcs 1.1.1
-  ## /Hubbe 1998-12-20
-  ##
-  #if test "x$with_cdebug" = "xno" ; then
-  #  AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
-  #else
-  #  :
-  #fi  
+    ##
+    ## -fomit-frame-pointer does not work with egcs 1.1.1
+    ## /Hubbe 1998-12-20
+    ##
+    #if test "x$with_cdebug" = "xno" ; then
+    #  AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
+    #else
+    #  :
+    #fi  
+  fi
+fi
+
+if test "$cflags_is_set" = "no"; then
+ if test "x${GCC-}" = xyes ; then
 
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
@@ -6160,9 +6176,12 @@ pike............ $PIKE
 install......... $INSTALL
 shared object... .$SO
 libs............ $LIBS
-optimize........ $OPTIMIZE
-CFLAGS.......... $CFLAGS
 cross-compiled.. $cross_compiling
+CFLAGS (cpp).... -I. -I$srcdir $CPPFLAGS
+CFLAGS (opt)....$OPTIMIZE
+CFLAGS (warn)...$WARN
+CFLAGS (misc)...$CFLAGS $OSFLAGS $PROFIL
+LDFLAGS.........$LDFLAGS $LINKFORSHARED $EXTRALDFLAGS
 
 features:
 PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
@@ -6178,6 +6197,8 @@ EOF
 
 touch confdefs.h 2>/dev/null
 
+OLD_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="-I. -I$srcdir $CPPFLAGS"
 AC_TRY_RUN([
 #include "global.h"
 #include "svalue.h"
@@ -6223,6 +6244,7 @@ int main()
 }
 ],[],[],[:])
 rm conftypes.txt 2>/dev/null
+CPPFLAGS="$OLD_CPPFLAGS"
 
 echo >>config.info
 
