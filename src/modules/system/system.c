@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.71 1999/06/01 21:44:49 grubba Exp $
+ * $Id: system.c,v 1.72 1999/06/19 20:26:55 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.71 1999/06/01 21:44:49 grubba Exp $");
+RCSID("$Id: system.c,v 1.72 1999/06/19 20:26:55 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1102,7 +1102,7 @@ void pike_module_init(void)
 #ifdef HAVE_SETGROUPS
   
 /* function(:void) */
-  ADD_EFUN("cleargroups", f_cleargroups,tFunc(,tVoid), OPT_SIDE_EFFECT);
+  ADD_EFUN("cleargroups", f_cleargroups,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   /* NOT Implemented in Pike 0.5 */
   
 /* function(array(int):void) */
@@ -1111,7 +1111,7 @@ void pike_module_init(void)
 #ifdef HAVE_GETGROUPS
   
 /* function(:array(int)) */
-  ADD_EFUN("getgroups", f_getgroups,tFunc(,tArr(tInt)), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getgroups", f_getgroups,tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETGROUPS */
 #ifdef HAVE_INNETGR
 /* function(string, string|void, string|void, string|void:int) */
@@ -1143,37 +1143,37 @@ void pike_module_init(void)
 #ifdef HAVE_GETUID
   
 /* function(:int) */
-  ADD_EFUN("getuid", f_getuid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getuid", f_getuid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef HAVE_GETGID
   
 /* function(:int) */
-  ADD_EFUN("getgid", f_getgid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getgid", f_getgid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
 #endif
  
 #ifdef HAVE_GETEUID
   
 /* function(:int) */
-  ADD_EFUN("geteuid", f_geteuid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("geteuid", f_geteuid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   
 /* function(:int) */
-  ADD_EFUN("getegid", f_getegid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getegid", f_getegid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETEUID */
  
   
 /* function(:int) */
-  ADD_EFUN("getpid", f_getpid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getpid", f_getpid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
   
 /* function(:int) */
-  ADD_EFUN("getppid", f_getppid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getppid", f_getppid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPPID */
  
 #ifdef HAVE_GETPGRP
   
 /* function(:int) */
-  ADD_EFUN("getpgrp", f_getpgrp,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getpgrp", f_getpgrp,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPGRP */
 
 #ifdef HAVE_CHROOT 
@@ -1186,13 +1186,13 @@ void pike_module_init(void)
 #ifdef HAVE_UNAME
   
 /* function(:mapping) */
-  ADD_EFUN("uname", f_uname,tFunc(,tMapping), OPT_TRY_OPTIMIZE);
+  ADD_EFUN("uname", f_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
 #endif /* HAVE_UNAME */
  
 #if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME)
   
 /* function(:string) */
-  ADD_EFUN("gethostname", f_gethostname,tFunc(,tStr),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_TRY_OPTIMIZE);
 #endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
 
 #ifdef GETHOST_DECLARE
@@ -1218,7 +1218,7 @@ void pike_module_init(void)
   ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
   
 /* function(:void) */
-  ADD_EFUN("closelog", f_closelog,tFunc(,tVoid), 0);
+  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), 0);
 #endif /* HAVE_SYSLOG */
 
   init_passwd();

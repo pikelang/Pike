@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.16 1999/06/01 21:23:05 marcus Exp $
+ * $Id: image_ttf.c,v 1.17 1999/06/19 20:26:11 hubbe Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.16 1999/06/01 21:23:05 marcus Exp $");
+RCSID("$Id: image_ttf.c,v 1.17 1999/06/19 20:26:11 hubbe Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1260,18 +1260,18 @@ void pike_module_init(void)
 
 #ifdef TTF_DEBUG_INFO
       /* function(:mapping) */
-  ADD_FUNCTION("properties",image_ttf_face_properties,tFunc(,tMapping),0);
+  ADD_FUNCTION("properties",image_ttf_face_properties,tFunc(tNone,tMapping),0);
 #endif /* TTF_DEBUG_INFO */
 
       /* function(:object) */
-  ADD_FUNCTION("flush",image_ttf_face_flush,tFunc(,tObj),0);
+  ADD_FUNCTION("flush",image_ttf_face_flush,tFunc(tNone,tObj),0);
       /* function(:mapping(string:string)) */
-  ADD_FUNCTION("names",image_ttf_face_names,tFunc(,tMap(tStr,tStr)),0);
+  ADD_FUNCTION("names",image_ttf_face_names,tFunc(tNone,tMap(tStr,tStr)),0);
       /* function(:array(array)) */
-  ADD_FUNCTION("_names",image_ttf_face__names,tFunc(,tArr(tArray)),0);
+  ADD_FUNCTION("_names",image_ttf_face__names,tFunc(tNone,tArr(tArray)),0);
 
       /* function(:object) */
-  ADD_FUNCTION("`()",image_ttf_face_make,tFunc(,tObj),0);
+  ADD_FUNCTION("`()",image_ttf_face_make,tFunc(tNone,tObj),0);
 
       set_exit_callback(image_ttf_face_exit);
       image_ttf_face_program=end_program();
@@ -1286,9 +1286,9 @@ void pike_module_init(void)
       /* function(string:object) */
   ADD_FUNCTION("ponder",image_ttf_faceinstance_ponder,tFunc(tStr,tObj),0);
       /* function(string...:object) */
-  ADD_FUNCTION("write",image_ttf_faceinstance_write,tFuncV(,tStr,tObj),0);
+  ADD_FUNCTION("write",image_ttf_faceinstance_write,tFuncV(tNone,tStr,tObj),0);
       /* function(:object) */
-  ADD_FUNCTION("face",image_ttf_faceinstance_face,tFunc(,tObj),0);
+  ADD_FUNCTION("face",image_ttf_faceinstance_face,tFunc(tNone,tObj),0);
       /* function(int:object) */
   ADD_FUNCTION("set_height",image_ttf_faceinstance_set_height,tFunc(tInt,tObj),0);
       

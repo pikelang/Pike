@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.81 1999/06/03 14:01:44 grubba Exp $");
+RCSID("$Id: spider.c,v 1.82 1999/06/19 20:26:41 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1260,7 +1260,7 @@ void pike_module_init(void)
 
   
 /* function(:array(array)) */
-  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(,tArr(tArray)), 
+  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(tNone,tArr(tArray)), 
 	   OPT_EXTERNAL_DEPEND);
 
   
@@ -1280,10 +1280,10 @@ void pike_module_init(void)
   ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
 
 /* function(:int) */
-  ADD_EFUN("timezone", f_timezone,tFunc(,tInt), 0);
+  ADD_EFUN("timezone", f_timezone,tFunc(tNone,tInt), 0);
   
 /* function(:array(int)) */
-  ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(,tArr(tInt)),
+  ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(tNone,tArr(tInt)),
 	   OPT_EXTERNAL_DEPEND);
   
 /* function(int:int) */

@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.71 1999/06/02 21:22:51 marcus Exp $");
+RCSID("$Id: efuns.c,v 1.72 1999/06/19 20:26:28 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -615,7 +615,7 @@ void f_get_dir(INT32 args)
 
       while(1)
       {
-#ifdef HAVE_SOLARIS_READDIR_R
+#if defined(HAVE_SOLARIS_READDIR_R)
 	/* Solaris readdir_r returns the second arg on success,
 	 * and returns NULL on error or at end of dir.
 	 */
@@ -975,7 +975,7 @@ void init_files_efuns(void)
 #endif /* HAVE_STATVFS || HAVE_STATFS */
   
 /* function(:int) */
-  ADD_EFUN("errno",f_errno,tFunc(,tInt),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("errno",f_errno,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
   
 /* function(string,void|mixed...:void) */
   ADD_EFUN("werror",f_werror,tFuncV(tStr,tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
@@ -996,7 +996,7 @@ void init_files_efuns(void)
   ADD_EFUN("cd",f_cd,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
   
 /* function(:string) */
-  ADD_EFUN("getcwd",f_getcwd,tFunc(,tStr),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getcwd",f_getcwd,tFunc(tNone,tStr),OPT_EXTERNAL_DEPEND);
   
 /* function(string,mixed*,void|mapping(string:string):int) */
   ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT); 

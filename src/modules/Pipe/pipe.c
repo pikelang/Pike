@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.32 1999/03/05 16:17:19 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.33 1999/06/19 20:25:40 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -1267,7 +1267,7 @@ void pike_module_init(void)
    ADD_STORAGE(struct pipe);
    
 /* function(:array) */
-  ADD_EFUN("_pipe_debug", f__pipe_debug,tFunc(,tArray), 0);
+  ADD_EFUN("_pipe_debug", f__pipe_debug,tFunc(tNone,tArray), 0);
    /* function(object:void) */
   ADD_FUNCTION("input",pipe_input,tFunc(tObj,tVoid),0);
    /* function(object,void|int:void) */
@@ -1276,9 +1276,9 @@ void pike_module_init(void)
   ADD_FUNCTION("write",pipe_write,tFunc(tStr,tVoid),0);
 
    /* function(:void) */
-  ADD_FUNCTION("start",pipe_start,tFunc(,tVoid),0);
+  ADD_FUNCTION("start",pipe_start,tFunc(tNone,tVoid),0);
    /* function(:void) */
-  ADD_FUNCTION("finish",pipe_finish,tFunc(,tVoid),0);
+  ADD_FUNCTION("finish",pipe_finish,tFunc(tNone,tVoid),0);
    
    /* function(void|function(mixed,object:mixed),void|mixed:void) */
   ADD_FUNCTION("set_output_closed_callback",pipe_set_output_closed_callback,tFunc(tOr(tVoid,tFunc(tMix tObj,tMix)) tOr(tVoid,tMix),tVoid),0);
@@ -1295,10 +1295,10 @@ void pike_module_init(void)
   ADD_FUNCTION("_input_read_callback",pipe_read_input_callback,tFunc(tInt tStr,tVoid),0);
 
    /* function(:string) */
-  ADD_FUNCTION("version",pipe_version,tFunc(,tStr),0);
+  ADD_FUNCTION("version",pipe_version,tFunc(tNone,tStr),0);
    
    /* function(:int) */
-  ADD_FUNCTION("bytes_sent",f_bytes_sent,tFunc(,tInt),0);
+  ADD_FUNCTION("bytes_sent",f_bytes_sent,tFunc(tNone,tInt),0);
 
    set_init_callback(init_pipe_struct);
    set_exit_callback(exit_pipe_struct);

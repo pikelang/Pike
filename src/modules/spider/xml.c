@@ -2303,6 +2303,6 @@ void init_xml(void)
   add_function("parse",parse_xml,PARSETYPE,0);
   add_function("parse_dtd",parse_dtd,PARSETYPE,0);
   /* function(:void) */
-  ADD_FUNCTION("create",create,tFunc(,tVoid),0);
+  ADD_FUNCTION("create",create,tFunc(tNone,tVoid),0);
   end_class("XML",0);
 }

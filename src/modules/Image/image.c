@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.146 1999/06/18 19:19:23 mirar Exp $ */
+/* $Id: image.c,v 1.147 1999/06/19 20:24:46 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.146 1999/06/18 19:19:23 mirar Exp $
+**!	$Id: image.c,v 1.147 1999/06/19 20:24:46 hubbe Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.146 1999/06/18 19:19:23 mirar Exp $");
+RCSID("$Id: image.c,v 1.147 1999/06/19 20:24:46 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3596,14 +3596,14 @@ void init_image_image(void)
 
    ADD_FUNCTION("cast",image_cast,
 		tFunc(tStr,tStr),0);
-   ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(,tStr),0);
+   ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(tNone,tStr),0);
 
 
    ADD_FUNCTION("copy",image_copy,
 		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) 
 		      tOr(tVoid,tInt) tRGB,tObj),0);
    ADD_FUNCTION("autocrop",image_autocrop,
-		tFuncV(,tOr(tVoid,tInt),tObj),0);
+		tFuncV(tNone,tOr(tVoid,tInt),tObj),0);
    ADD_FUNCTION("scale",image_scale,
 		tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
    ADD_FUNCTION("translate",image_translate,
@@ -3640,11 +3640,11 @@ void init_image_image(void)
    ADD_FUNCTION("tuned_box",image_tuned_box,
 		tFunc(tInt tInt tInt tInt tArray,tObj),0);
    ADD_FUNCTION("gradients",image_gradients,
-		tFuncV(,tOr(tArr(tInt),tFlt),tObj),0);
+		tFuncV(tNone,tOr(tArr(tInt),tFlt),tObj),0);
    ADD_FUNCTION("polygone",image_polyfill,
-		tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
+		tFuncV(tNone,tArr(tOr(tFlt,tInt)),tObj),0);
    ADD_FUNCTION("polyfill",image_polyfill,
-		tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
+		tFuncV(tNone,tArr(tOr(tFlt,tInt)),tObj),0);
 
    ADD_FUNCTION("gray",image_grey,
 		tFunc(tRGB,tObj),0);
@@ -3688,13 +3688,13 @@ void init_image_image(void)
 		    tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
 
    ADD_FUNCTION("rotate_ccw",image_ccw,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("rotate_cw",image_cw,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("mirrorx",image_mirrorx,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("mirrory",image_mirrory,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("skewx",image_skewx,
 		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
    ADD_FUNCTION("skewy",image_skewy,
@@ -3710,9 +3710,9 @@ void init_image_image(void)
 		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
 
    ADD_FUNCTION("xsize",image_xsize,
-		tFunc(,tInt),0);
+		tFunc(tNone,tInt),0);
    ADD_FUNCTION("ysize",image_ysize,
-		tFunc(,tInt),0);
+		tFunc(tNone,tInt),0);
 
    ADD_FUNCTION("map_closest",image_map_compat,
 		tFunc(tArr(tArr(tInt)),tObj),0);
@@ -3735,7 +3735,7 @@ void init_image_image(void)
 		tFunc(tOr(tVoid,tInt),tObj),0);
 
    ADD_FUNCTION("dct",image_dct,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
 
    ADD_FUNCTION("`-",image_operator_minus,
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
@@ -3760,45 +3760,45 @@ void init_image_image(void)
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
 
    ADD_FUNCTION("min",image_min,
-		tFunc(,tArr(tInt)),0);
+		tFunc(tNone,tArr(tInt)),0);
    ADD_FUNCTION("max",image_max,
-		tFunc(,tArr(tInt)),0);
+		tFunc(tNone,tArr(tInt)),0);
    ADD_FUNCTION("sum",image_sum,
-		tFunc(,tArr(tInt)),0);
+		tFunc(tNone,tArr(tInt)),0);
    ADD_FUNCTION("sumf",image_sumf,
-		tFunc(,tArr(tInt)),0);
+		tFunc(tNone,tArr(tInt)),0);
    ADD_FUNCTION("average",image_average,
-		tFunc(,tArr(tInt)),0);
+		tFunc(tNone,tArr(tInt)),0);
   
    ADD_FUNCTION("find_min",image_find_min,
-		tOr(tFunc(,tArr(tInt)),
+		tOr(tFunc(tNone,tArr(tInt)),
 		    tFunc(tInt tInt tInt,tArr(tInt))),0);
    ADD_FUNCTION("find_max",image_find_max,
-		tOr(tFunc(,tArr(tInt)),
+		tOr(tFunc(tNone,tArr(tInt)),
 		    tFunc(tInt tInt tInt,tArr(tInt))),0);
 		
    ADD_FUNCTION("read_lsb_rgb",image_read_lsb_rgb,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("write_lsb_rgb",image_write_lsb_rgb,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("read_lsb_grey",image_read_lsb_rgb,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("write_lsb_grey",image_write_lsb_rgb,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
 
    ADD_FUNCTION("orient4",image_orient4,
-		tFunc(,tArr(tObj)),0);
+		tFunc(tNone,tArr(tObj)),0);
    ADD_FUNCTION("orient",image_orient,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
   
    ADD_FUNCTION("phaseh",image_phaseh,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("phasev",image_phasev,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("phasehv",image_phasehv,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
    ADD_FUNCTION("phasevh",image_phasevh,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
 
    ADD_FUNCTION("match_phase",image_match_phase,
 		tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),

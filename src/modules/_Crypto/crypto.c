@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.27 1999/02/10 21:51:33 hubbe Exp $
+ * $Id: crypto.c,v 1.28 1999/06/19 20:26:00 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -28,7 +28,9 @@
 #include <sys/mman.h>
 #endif
 #include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
 

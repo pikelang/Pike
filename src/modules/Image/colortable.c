@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.71 1999/06/18 19:19:16 mirar Exp $ */
+/* $Id: colortable.c,v 1.72 1999/06/19 20:24:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.71 1999/06/18 19:19:16 mirar Exp $
+**!	$Id: colortable.c,v 1.72 1999/06/19 20:24:44 hubbe Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.71 1999/06/18 19:19:16 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.72 1999/06/19 20:24:44 hubbe Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -4424,12 +4424,12 @@ void init_image_colortable(void)
    ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),0);
 
    /* info */
-   ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(,tInt),0);
+   ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(tNone,tInt),0);
 
    /* lookup modes */
-   ADD_FUNCTION("cubicles",image_colortable_cubicles,tFunc(,tObj),0);
-   ADD_FUNCTION("rigid",image_colortable_rigid,tFunc(,tObj),0);
-   ADD_FUNCTION("full",image_colortable_full,tFunc(,tObj),0);
+   ADD_FUNCTION("cubicles",image_colortable_cubicles,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("rigid",image_colortable_rigid,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("full",image_colortable_full,tFunc(tNone,tObj),0);
 
    /* map image */
    /* function(object:object)|function(string,int,int) */
@@ -4442,26 +4442,26 @@ void init_image_colortable(void)
 
    /* dither */
    /* function(:object) */
-   ADD_FUNCTION("nodither",image_colortable_nodither,tFunc(,tObj),0);
+   ADD_FUNCTION("nodither",image_colortable_nodither,tFunc(tNone,tObj),0);
    /* function(void|int:object)"
       "|function(int,int|float,int|float,int|float,int|float:object) */
    ADD_FUNCTION("floyd_steinberg",image_colortable_floyd_steinberg,tOr(tFunc(tOr(tVoid,tInt),tObj),tFunc(tInt tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt),tObj)),0);
    /* function(:object)|function(int,int,int:object) */
-   ADD_FUNCTION("randomcube",image_colortable_randomcube,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
+   ADD_FUNCTION("randomcube",image_colortable_randomcube,tOr(tFunc(tNone,tObj),tFunc(tInt tInt tInt,tObj)),0);
    /* function(:object)|function(int:object) */
-   ADD_FUNCTION("randomgrey",image_colortable_randomgrey,tOr(tFunc(,tObj),tFunc(tInt,tObj)),0);
+   ADD_FUNCTION("randomgrey",image_colortable_randomgrey,tOr(tFunc(tNone,tObj),tFunc(tInt,tObj)),0);
    /* function(:object)"
       "|function(int,int,int:object) */
-   ADD_FUNCTION("ordered",image_colortable_ordered,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
+   ADD_FUNCTION("ordered",image_colortable_ordered,tOr(tFunc(tNone,tObj),tFunc(tInt tInt tInt,tObj)),0);
 
    /* function(:object) */
-   ADD_FUNCTION("image",image_colortable_image,tFunc(,tObj),0);
+   ADD_FUNCTION("image",image_colortable_image,tFunc(tNone,tObj),0);
 
    /* tuning image */
    /* function(int,int,int:object) */
    ADD_FUNCTION("spacefactors",image_colortable_spacefactors,tFunc(tInt tInt tInt,tObj),0);
 
-   ADD_FUNCTION("corners",image_colortable_corners,tFunc(,tArray),0);
+   ADD_FUNCTION("corners",image_colortable_corners,tFunc(tNone,tArray),0);
 
 }
 

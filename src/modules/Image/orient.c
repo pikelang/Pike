@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.12 1999/06/18 19:19:28 mirar Exp $ */
+/* $Id: orient.c,v 1.13 1999/06/19 20:24:48 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.12 1999/06/18 19:19:28 mirar Exp $
+**!	$Id: orient.c,v 1.13 1999/06/19 20:24:48 hubbe Exp $
 **! class Image
 */
 
@@ -95,7 +95,7 @@ static void chrono(char *x)
 **!	output in later versions
 */
 static INLINE int sq(int a) { return a*a; }
-static INLINE int abs(int a) { return (a<0)?-a:a; }
+static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 static void _image_orient(struct image *source,
 			  struct object *o[4],
@@ -132,7 +132,7 @@ CHRONO("start");
   d[x+y*xz].CO \
      = \
   (COLORTYPE) \
-     abs( s[(x+xd)+(y+yd)*xz].CO - s[(x-xd)+(y-yd)*xz].CO )
+     my_abs( s[(x+xd)+(y+yd)*xz].CO - s[(x-xd)+(y-yd)*xz].CO )
 
 	    /*
 	      sqrt( ( sq( s[(x-xd)+(y-yd)*xz].CO - s[x+y*xz].CO ) + \
@@ -240,11 +240,11 @@ CHRONO("begin hsv...");
 
      int z,w;
 
-     if (abs(h)>abs(j)) 
-	if (h) z=-(int)(32*(j/h)+(h>0)*128+64),w=abs(h);
+     if (my_abs(h)>my_abs(j)) 
+	if (h) z=-(int)(32*(j/h)+(h>0)*128+64),w=my_abs(h);
 	else z=0,w=0;
      else 
-	z=-(int)(-32*(h/j)+(j>0)*128+128),w=abs(j);
+	z=-(int)(-32*(h/j)+(j>0)*128+128),w=my_abs(j);
 
      d->r=(COLORTYPE)z;
      d->g=255;     

@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.16 1999/02/10 21:49:57 hubbe Exp $
+ * $Id: oracle.c,v 1.17 1999/06/19 20:25:09 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -36,7 +36,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.16 1999/02/10 21:49:57 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.17 1999/06/19 20:25:09 hubbe Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -723,11 +723,11 @@ void pike_module_init(void)
   /* function(object, array(string|int):void) */
   ADD_FUNCTION("create", f_result_create,tFunc(tObj tArr(tOr(tStr,tInt)),tVoid), ID_PUBLIC);
   /* function(:int) */
-  ADD_FUNCTION("num_fields", f_num_fields,tFunc(,tInt), ID_PUBLIC);
+  ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
   /* function(:array(mapping(string:mixed))) */
-  ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(,tArr(tMap(tStr,tMix))), ID_PUBLIC);
+  ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))), ID_PUBLIC);
   /* function(:int|array(string|int)) */
-  ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
+  ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
 
   set_init_callback(init_dbresult_struct);
   set_exit_callback(exit_dbresult_struct);

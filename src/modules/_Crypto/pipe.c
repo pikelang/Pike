@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.14 1999/02/10 21:51:39 hubbe Exp $
+ * $Id: pipe.c,v 1.15 1999/06/19 20:26:02 hubbe Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -307,7 +307,7 @@ void pike_pipe_init(void)
   ADD_STORAGE(struct pike_crypto_pipe);
 
   /* function(program|object|array(program|mixed) ...:void) */
-  ADD_FUNCTION("create", f_create,tFuncV(,tOr3(tPrg,tObj,tArr(tOr(tPrg,tMix))),tVoid), 0);
+  ADD_FUNCTION("create", f_create,tFuncV(tNone,tOr3(tPrg,tObj,tArr(tOr(tPrg,tMix))),tVoid), 0);
 
   /* function(void:string) */
   ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);

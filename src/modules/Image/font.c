@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.52 1999/06/18 19:19:21 mirar Exp $ */
+/* $Id: font.c,v 1.53 1999/06/19 20:24:45 hubbe Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.52 1999/06/18 19:19:21 mirar Exp $
+**!	$Id: font.c,v 1.53 1999/06/19 20:24:45 hubbe Exp $
 **! class Font
 **!
 **! note
@@ -904,19 +904,19 @@ void init_image_font(void)
    ADD_FUNCTION("create",font_create,tFunc(tOr(tVoid,tStr),tVoid),0);
 
    /* function(string:object) */
-   ADD_FUNCTION("write",font_write,tFuncV(,tStr,tObj),0);
+   ADD_FUNCTION("write",font_write,tFuncV(tNone,tStr,tObj),0);
 
    /* function(:int) */
-   ADD_FUNCTION("height",font_height,tFunc(,tInt),0);
+   ADD_FUNCTION("height",font_height,tFunc(tNone,tInt),0);
 
    /* function(:int) */
-   ADD_FUNCTION("baseline",font_baseline,tFunc(,tInt),0);
+   ADD_FUNCTION("baseline",font_baseline,tFunc(tNone,tInt),0);
 		
    /* function(string ...:array(int)) */
-   ADD_FUNCTION("extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
+   ADD_FUNCTION("extents",font_text_extents,tFuncV(tNone,tStr,tArr(tInt)),0);
 		
    /* function(string ...:array(int)) */
-   ADD_FUNCTION("text_extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
+   ADD_FUNCTION("text_extents",font_text_extents,tFuncV(tNone,tStr,tArr(tInt)),0);
 		
    /* function(float:void) */
    ADD_FUNCTION("set_x_spacing",font_set_xspacing_scale,tFunc(tFlt,tVoid),0);

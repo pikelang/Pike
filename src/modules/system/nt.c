@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.11 1999/06/01 21:34:26 marcus Exp $
+ * $Id: nt.c,v 1.12 1999/06/19 20:26:54 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -111,8 +111,8 @@ static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)(fp->current_storage))
 
-typedef BOOL WINAPI (*logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
-typedef DWORD WINAPI (*getlengthsidtype)(PSID);
+typedef BOOL (WINAPI *logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
+typedef DWORD (WINAPI *getlengthsidtype)(PSID);
 
 static logonusertype logonuser;
 static getlengthsidtype getlengthsid;
@@ -181,7 +181,7 @@ static void exit_token(struct object *o)
 
 static void low_encode_user_info_0(USER_INFO_0 *tmp)
 {
-#define SAFE_PUSH_WSTR(X) \ 
+#define SAFE_PUSH_WSTR(X) \
   if(X) \
     push_string(make_shared_string1((p_wchar1 *) X)); \
   else \
@@ -423,7 +423,7 @@ static void encode_localgroup_users_info(BYTE *u, int level)
 
 static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
 {
-#define SAFE_PUSH_SID(X) \ 
+#define SAFE_PUSH_SID(X) \
   if(getlengthsid && (X)) \
     push_string(make_shared_binary_string((char *)(X),getlengthsid((X)))); \
   else \
@@ -538,13 +538,13 @@ static int sizeof_localgroup_members_info(int level)
   }
 }
 
-typedef NET_API_STATUS WINAPI (*netusergetinfotype)(LPWSTR,LPWSTR,DWORD,LPBYTE *);
-typedef NET_API_STATUS WINAPI (*netuserenumtype)(LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
-typedef NET_API_STATUS WINAPI (*netusergetgroupstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
-typedef NET_API_STATUS WINAPI (*netusergetlocalgroupstype)(LPWSTR,LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
-typedef NET_API_STATUS WINAPI (*netgroupenumtype)(LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
-typedef NET_API_STATUS WINAPI (*netgroupgetuserstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
-typedef NET_API_STATUS WINAPI (*netapibufferfreetype)(LPVOID);
+typedef NET_API_STATUS (WINAPI *netusergetinfotype)(LPWSTR,LPWSTR,DWORD,LPBYTE *);
+typedef NET_API_STATUS (WINAPI *netuserenumtype)(LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS (WINAPI *netusergetgroupstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS (WINAPI *netusergetlocalgroupstype)(LPWSTR,LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS (WINAPI *netgroupenumtype)(LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS (WINAPI *netgroupgetuserstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS (WINAPI *netapibufferfreetype)(LPVOID);
 
 static netusergetinfotype netusergetinfo;
 static netuserenumtype netuserenum;

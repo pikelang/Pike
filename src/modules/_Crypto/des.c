@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.13 1999/02/10 21:51:34 hubbe Exp $
+ * $Id: des.c,v 1.14 1999/06/19 20:26:01 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -31,7 +31,11 @@
 #include <sys/mman.h>
 #endif
 #include <sys/stat.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
 #include <fcntl.h>
 #include <errno.h>
 

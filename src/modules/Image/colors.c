@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.22 1999/06/18 19:19:15 mirar Exp $
+**!	$Id: colors.c,v 1.23 1999/06/19 20:24:42 hubbe Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -182,7 +182,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.22 1999/06/18 19:19:15 mirar Exp $");
+RCSID("$Id: colors.c,v 1.23 1999/06/19 20:24:42 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -1544,29 +1544,29 @@ void init_image_colors(void)
    ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
    ADD_FUNCTION("`->",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
    ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObj,tInt),tInt),0);
-   ADD_FUNCTION("__hash",image_color___hash,tFunc(,tInt),0);
+   ADD_FUNCTION("__hash",image_color___hash,tFunc(tNone,tInt),0);
 
-   ADD_FUNCTION("name",image_color_name,tFunc(,tStr),0);
-   ADD_FUNCTION("hex",image_color_hex,tFunc(,tStr),0);
-   ADD_FUNCTION("html",image_color_html,tFunc(,tStr),0);
+   ADD_FUNCTION("name",image_color_name,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("hex",image_color_hex,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("html",image_color_html,tFunc(tNone,tStr),0);
 
-   ADD_FUNCTION("rgb",image_color_rgb,tFunc(,tArr(tInt)),0);
-   ADD_FUNCTION("rgbf",image_color_rgbf,tFunc(,tArr(tFlt)),0);
-   ADD_FUNCTION("hsv",image_color_hsv,tFunc(,tArr(tInt)),0);
-   ADD_FUNCTION("hsvf",image_color_hsvf,tFunc(,tArr(tFlt)),0);
-   ADD_FUNCTION("cmyk",image_color_cmyk,tFunc(,tArr(tFlt)),0);
-   ADD_FUNCTION("greylevel",image_color_greylevel,tOr(tFunc(,tInt),tFunc(tInt tInt tInt,tInt)),0);
+   ADD_FUNCTION("rgb",image_color_rgb,tFunc(tNone,tArr(tInt)),0);
+   ADD_FUNCTION("rgbf",image_color_rgbf,tFunc(tNone,tArr(tFlt)),0);
+   ADD_FUNCTION("hsv",image_color_hsv,tFunc(tNone,tArr(tInt)),0);
+   ADD_FUNCTION("hsvf",image_color_hsvf,tFunc(tNone,tArr(tFlt)),0);
+   ADD_FUNCTION("cmyk",image_color_cmyk,tFunc(tNone,tArr(tFlt)),0);
+   ADD_FUNCTION("greylevel",image_color_greylevel,tOr(tFunc(tNone,tInt),tFunc(tInt tInt tInt,tInt)),0);
 
    /* color conversion methods */
 
    ADD_FUNCTION("grey",image_color_grey,
-		tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
+		tOr(tFunc(tNone,tObj),tFunc(tInt tInt tInt,tObj)),0);
 
-   ADD_FUNCTION("light",image_color_light,tFunc(,tObj),0);
-   ADD_FUNCTION("dark",image_color_dark,tFunc(,tObj),0);
-   ADD_FUNCTION("neon",image_color_neon,tFunc(,tObj),0);
-   ADD_FUNCTION("bright",image_color_bright,tFunc(,tObj),0);
-   ADD_FUNCTION("dull",image_color_dull,tFunc(,tObj),0);
+   ADD_FUNCTION("light",image_color_light,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("dark",image_color_dark,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("neon",image_color_neon,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("bright",image_color_bright,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("dull",image_color_dull,tFunc(tNone,tObj),0);
 
    ADD_FUNCTION("`*",image_color_mult,tFunc(tFlt,tObj),0);
    ADD_FUNCTION("`+",image_color_add,tFunc(tObj,tObj),0);
@@ -1590,8 +1590,8 @@ void init_image_colors(void)
    ADD_FUNCTION("html",image_make_html_color,tFunc(tStr,tObj),0);
    ADD_FUNCTION("guess",image_guess_color,tFunc(tStr,tObj),0);
    ADD_FUNCTION("greylevel",image_make_greylevel_color,tFunc(tInt,tObj),0);
-   ADD_FUNCTION("_indices",image_colors_indices,tFunc(,tArr(tStr)),0);
-   ADD_FUNCTION("_values",image_colors_values,tFunc(,tArr(tObj)),0);
+   ADD_FUNCTION("_indices",image_colors_indices,tFunc(tNone,tArr(tStr)),0);
+   ADD_FUNCTION("_values",image_colors_values,tFunc(tNone,tArr(tObj)),0);
 
    add_program_constant("Color",image_color_program,0);
 }

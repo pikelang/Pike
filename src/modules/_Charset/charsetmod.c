@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.14 1999/04/29 15:11:54 mast Exp $");
+RCSID("$Id: charsetmod.c,v 1.15 1999/06/19 20:25:51 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1082,9 +1082,9 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct std_cs_stor);
   /* function(:string) */
-  ADD_FUNCTION("drain", f_drain,tFunc(,tStr), 0);
+  ADD_FUNCTION("drain", f_drain,tFunc(tNone,tStr), 0);
   /* function(:object) */
-  ADD_FUNCTION("clear", f_clear,tFunc(,tObj), 0);
+  ADD_FUNCTION("clear", f_clear,tFunc(tNone,tObj), 0);
   /* function(string|void,function(string:string)|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
   /* function(function(string:string):void) */
@@ -1109,7 +1109,7 @@ void pike_module_init(void)
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7,tFunc(tStr,tObj), 0);
   /* function(:object) */
-  ADD_FUNCTION("clear", f_clear_utf7,tFunc(,tObj), 0);
+  ADD_FUNCTION("clear", f_clear_utf7,tFunc(tNone,tObj), 0);
   set_init_callback(utf7_init_stor);
   add_program_constant("UTF7dec", utf7_program = end_program(), ID_STATIC|ID_NOMASK);
 
@@ -1125,7 +1125,7 @@ void pike_module_init(void)
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7e,tFunc(tStr,tObj), 0);
   /* function(:string) */
-  ADD_FUNCTION("drain", f_drain_utf7e,tFunc(,tStr), 0);
+  ADD_FUNCTION("drain", f_drain_utf7e,tFunc(tNone,tStr), 0);
   add_program_constant("UTF7enc", utf7e_program = end_program(), ID_STATIC|ID_NOMASK);
   prog.u.program = std_cs_program;
 

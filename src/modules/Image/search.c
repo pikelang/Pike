@@ -97,7 +97,7 @@ static void chrono(char *x)
 **!	output in later versions
 */
 static INLINE int sq(int a) { return a*a; }
-static INLINE int abs(int a) { return (a<0)?-a:a; }
+static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 /* phase-image creating functions */
 
@@ -139,7 +139,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 **!
 **!     <pre>
 **!        new pixel value = 
-**!          sum( abs(needle_pixel-haystack_pixel))
+**!          sum( my_abs(needle_pixel-haystack_pixel))
 **!     </pre>
 **!
 **!     The new image only have the red rgb-part set.
@@ -181,7 +181,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 #define NAME "match"
 #define INAME image_match
 #define PIXEL_VALUE_DISTANCE(CO) \
-       (abs(haystacki[j].CO-needlei[ny*nxs+nx].CO))
+       (my_abs(haystacki[j].CO-needlei[ny*nxs+nx].CO))
 #include "match.h"
 
 #define NAME "match_phase"
@@ -198,7 +198,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 #define INAME image_match_norm
 #define NEEDLEAVRCODE 
 #define PIXEL_VALUE_DISTANCE(CO)  \
- (abs(( haystacki[j].CO-tempavr )-( needlei[ny*nxs+nx].CO-needle_average)))
+ (my_abs(( haystacki[j].CO-tempavr )-( needlei[ny*nxs+nx].CO-needle_average)))
 #include "match.h"
 
 #define NAME "match_norm_corr"

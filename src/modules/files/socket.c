@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.42 1999/02/10 21:53:36 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.43 1999/06/19 20:26:30 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -405,13 +405,13 @@ void port_setup_program(void)
   /* function(mixed:mixed) */
   ADD_FUNCTION("set_id",port_set_id,tFunc(tMix,tMix),0);
   /* function(:mixed) */
-  ADD_FUNCTION("query_id",port_query_id,tFunc(,tMix),0);
+  ADD_FUNCTION("query_id",port_query_id,tFunc(tNone,tMix),0);
   /* function(:string) */
-  ADD_FUNCTION("query_address",socket_query_address,tFunc(,tStr),0);
+  ADD_FUNCTION("query_address",socket_query_address,tFunc(tNone,tStr),0);
   /* function(:int) */
-  ADD_FUNCTION("errno",port_errno,tFunc(,tInt),0);
+  ADD_FUNCTION("errno",port_errno,tFunc(tNone,tInt),0);
   /* function(:object) */
-  ADD_FUNCTION("accept",port_accept,tFunc(,tObj),0);
+  ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObj),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create",port_create,tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),tVoid),0);
 

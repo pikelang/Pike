@@ -157,7 +157,8 @@ struct parser_html_storage
    int num_look_for_end[MAX_ARGQ];
 };
 
-typedef enum { P_DONE=0, P_WAIT, P_REREAD } newstate;
+/* P_WAIT was already used by MSVC++ :(  /Hubbe */
+typedef enum { Pi_DONE=0, Pi_WAIT, Pi_REREAD } newstate;
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -1201,7 +1202,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 st2->c=0;
 	 this->stack=st2;
 	 THIS->stack_count++;
-	 return P_REREAD; /* please reread stack head */
+	 return Pi_REREAD; /* please reread stack head */
 
       case T_INT:
 	 switch (sp[-1].u.integer)
@@ -1210,11 +1211,11 @@ static newstate handle_result(struct parser_html_storage *this,
 	       /* just output range */
 	       put_out_feed_range(this,*head,*c_head,tail,c_tail);
 	       skip_feed_range(st,head,c_head,tail,c_tail);
-	       return P_DONE; /* continue */
+	       return Pi_DONE; /* continue */
 	    case 1:
 	       /* wait: "incomplete" */
 	       skip_feed_range(st,head,c_head,tail,c_tail);
-	       return P_WAIT; /* continue */
+	       return Pi_WAIT; /* continue */
 	 }
 	 error("Parse.HTML: illegal result from callback: %d, "
 	       "not 0 (skip) or 1 (wait)\n",
@@ -1230,7 +1231,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	    put_out_feed(this,sp[-1].u.array->item[i].u.string);
 	 }
 	 skip_feed_range(st,head,c_head,tail,c_tail);
-	 return P_DONE; /* continue */
+	 return Pi_DONE; /* continue */
 
       default:
 	 error("Parse.HTML: illegal result from callback: not 0, string or array(string)\n");   
@@ -1271,7 +1272,7 @@ static newstate entity_callback(struct parser_html_storage *this,
    {
       case T_STRING:
 	 push_svalue(v);
-	 return P_DONE;
+	 return Pi_DONE;
       case T_ARRAY:
 	 error("unimplemented");
 	 
@@ -1322,7 +1323,7 @@ static newstate tag_callback(struct parser_html_storage *this,
    {
       case T_STRING:
 	 push_svalue(v);
-	 return P_DONE;
+	 return Pi_DONE;
       case T_ARRAY:
 	 error("unimplemented");
 	 
@@ -1376,7 +1377,7 @@ static newstate container_callback(struct parser_html_storage *this,
    {
       case T_STRING:
 	 push_svalue(v);
-	 return P_DONE; /* done */
+	 return Pi_DONE; /* done */
       case T_ARRAY:
 	 error("unimplemented");
 	 
@@ -1452,7 +1453,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	 {
 	    DEBUG_MARK_SPOT("find_end_of_cont : wait\n",s1,c1);
 	    free_svalue(endtagname);
-	    return P_WAIT; /* please wait */
+	    return Pi_WAIT; /* please wait */
 	 }
 	 else
 	 {
@@ -1460,7 +1461,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	    *e1=*e2=s1;
 	    *ce1=*ce2=c1;
 	    free_svalue(endtagname);
-	    return P_DONE; /* end of tag, sure... */
+	    return Pi_DONE; /* end of tag, sure... */
 	 }
       }
       DEBUG_MARK_SPOT("find_end_of_container got tag",feed,c);
@@ -1468,7 +1469,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       {
 	 DEBUG_MARK_SPOT("find_end_of_cont : wait for end\n",s1,c1);
 	 free_svalue(endtagname);
-	 return P_WAIT;
+	 return Pi_WAIT;
       }
       tag_name(this,s1,c1+1);
 
@@ -1501,7 +1502,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	 *e2=s2;
 	 *ce2=c2+1;
 
-	 return P_DONE;
+	 return Pi_DONE;
       }
       else
       {
@@ -1576,7 +1577,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
-	       st->ignore_data=(res==P_WAIT);
+	       st->ignore_data=(res==Pi_WAIT);
 	       return res;
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
@@ -1637,7 +1638,7 @@ static int do_try_feed(struct parser_html_storage *this,
 		  DEBUG((stderr,"%*d tag callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
 			 res,*feed,st->c));
-		  st->ignore_data=(res==P_WAIT);
+		  st->ignore_data=(res==Pi_WAIT);
 		  return res;
 	       }
 
@@ -1665,7 +1666,7 @@ static int do_try_feed(struct parser_html_storage *this,
 		  DEBUG((stderr,"%*d find end of cont return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
 			 res,*feed,st->c));
-		  st->ignore_data=(res==P_WAIT);
+		  st->ignore_data=(res==Pi_WAIT);
 		  pop_stack();
 		  return res;
 	       }
@@ -1680,7 +1681,7 @@ static int do_try_feed(struct parser_html_storage *this,
 		  DEBUG((stderr,"%*d container callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
 			 res,*feed,st->c));
-		  st->ignore_data=(res==P_WAIT);
+		  st->ignore_data=(res==Pi_WAIT);
 		  return res;
 	       }
 
@@ -1763,7 +1764,7 @@ static int do_try_feed(struct parser_html_storage *this,
 		  DEBUG((stderr,"%*d entity callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
 			 res,*feed,st->c));
-		  st->ignore_data=(res==P_WAIT);
+		  st->ignore_data=(res==Pi_WAIT);
 		  return res;
 	       }
 
@@ -1834,7 +1835,7 @@ static void try_feed(int finished)
 			  :&(THIS->feed),
 			  finished||(THIS->stack->prev!=NULL)))
       {
-	 case P_DONE: /* done, pop stack */
+	 case Pi_DONE: /* done, pop stack */
 	    if (!THIS->feed) THIS->feed_end=NULL;
 
 	    st=THIS->stack->prev;
@@ -1852,10 +1853,10 @@ static void try_feed(int finished)
 	    THIS->stack_count--;
 	    break;
 
-	 case P_WAIT: /* incomplete, call again */
+	 case Pi_WAIT: /* incomplete, call again */
 	    return;
 
-	 case P_REREAD: /* reread stack head */
+	 case Pi_REREAD: /* reread stack head */
 	    if (THIS->stack_count>THIS->max_stack_depth)
 	       error("Parse.HTML: too deep recursion\n");
 	    break;
@@ -2401,7 +2402,7 @@ static void html_clone(INT32 args)
 /****** module init *********************************/
 
 #define tCbret tOr3(tInt0,tStr,tArr(tStr))
-#define tCbfunc(X) tOr(tFunc(,tCbret),tFunc(tObj X,tCbret))
+#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObj X,tCbret))
 #define tTodo(X) tOr3(tStr,tCbfunc(X),tArr(tCbfunc(X)))
 #define tTagargs tMap(tStr,tOr(tStr,tInt1))
 
@@ -2416,13 +2417,13 @@ void init_parser_html(void)
 
 #define CBRET "string|array(string)" /* 0|string|({string}) */
 
-   ADD_FUNCTION("create",html_create,tFunc(,tVoid),0);
-   ADD_FUNCTION("clone",html_clone,tFuncV(,tMixed,tVoid),0);
+   ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),0);
+   ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tVoid),0);
 
    /* feed control */
 
-   ADD_FUNCTION("feed",html_feed,tOr(tFunc(,tObj),tFunc(tStr tOr(tVoid,tInt),tObj)),0);
-   ADD_FUNCTION("finish",html_finish,tFunc(,tObj),0);
+   ADD_FUNCTION("feed",html_feed,tOr(tFunc(tNone,tObj),tFunc(tStr tOr(tVoid,tInt),tObj)),0);
+   ADD_FUNCTION("finish",html_finish,tFunc(tNone,tObj),0);
    ADD_FUNCTION("read",html_read,tFunc(tOr(tVoid,tInt),tStr),0);
 
    ADD_FUNCTION("write_out",html_write_out,tFunc(tStr,tObj),0);
@@ -2430,15 +2431,15 @@ void init_parser_html(void)
 
    /* query */
 
-   ADD_FUNCTION("current",html_current,tFunc(,tStr),0);
+   ADD_FUNCTION("current",html_current,tFunc(tNone,tStr),0);
 
-   ADD_FUNCTION("at",html_at,tFunc(,tArr(tInt)),0);
-   ADD_FUNCTION("at_line",html_at_line,tFunc(,tInt),0);
-   ADD_FUNCTION("at_char",html_at_char,tFunc(,tInt),0);
-   ADD_FUNCTION("at_column",html_at_column,tFunc(,tInt),0);
+   ADD_FUNCTION("at",html_at,tFunc(tNone,tArr(tInt)),0);
+   ADD_FUNCTION("at_line",html_at_line,tFunc(tNone,tInt),0);
+   ADD_FUNCTION("at_char",html_at_char,tFunc(tNone,tInt),0);
+   ADD_FUNCTION("at_column",html_at_column,tFunc(tNone,tInt),0);
 
-   ADD_FUNCTION("tag_name",html_tag_name,tFunc(,tStr),0);
-   ADD_FUNCTION("tag_args",html_tag_args,tFunc(,tMapping),0);
+   ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("tag_args",html_tag_args,tFunc(tNone,tMapping),0);
 
    /* callback setup */
 
@@ -2457,11 +2458,11 @@ void init_parser_html(void)
 		tFunc(tMap(tStr,tTodo( "" )),tVoid),0);
 
    ADD_FUNCTION("tags",html_tags,
-		tFunc(,tMap(tStr,tTodo( tTagargs ))),0);
+		tFunc(tNone,tMap(tStr,tTodo( tTagargs ))),0);
    ADD_FUNCTION("containers",html_containers,
-		tFunc(,tMap(tStr,tTodo( tTagargs tStr ))),0);
+		tFunc(tNone,tMap(tStr,tTodo( tTagargs tStr ))),0);
    ADD_FUNCTION("entities",html_entities,
-		tFunc(,tMap(tStr,tTodo( "" ))),0);
+		tFunc(tNone,tMap(tStr,tTodo( "" ))),0);
 
 
    /* special callbacks */
@@ -2475,7 +2476,7 @@ void init_parser_html(void)
 
    /* debug, whatever */
    
-   ADD_FUNCTION("_inspect",html__inspect,tFunc(,tMapping),0);
+   ADD_FUNCTION("_inspect",html__inspect,tFunc(tNone,tMapping),0);
 
    /* just useful */
 

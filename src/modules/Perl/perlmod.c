@@ -227,7 +227,7 @@ void pike_module_init(void)
   /* function(array(string),void|mapping(string:string):int) */
   ADD_FUNCTION("create",perlmod_create,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tStr)),tInt),0);
   /* function(:int) */
-  ADD_FUNCTION("run",perlmod_run,tFunc(,tInt),0);
+  ADD_FUNCTION("run",perlmod_run,tFunc(tNone,tInt),0);
   /* function(string:int) */
   ADD_FUNCTION("eval",perlmod_eval,tFunc(tStr,tInt),0);
   /* function(string,mixed...:int) */

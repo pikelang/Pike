@@ -1,10 +1,15 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.29 1999/06/08 17:31:22 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.30 1999/06/19 20:24:49 hubbe Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
 
+#include "global.h"
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
 #include <math.h>
 
 #include "image_machine.h"
@@ -32,7 +37,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.29 1999/06/08 17:31:22 grubba Exp $
+**!	$Id: polyfill.c,v 1.30 1999/06/19 20:24:49 hubbe Exp $
 **! class Image
 */
 

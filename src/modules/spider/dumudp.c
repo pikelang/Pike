@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.43 1999/02/10 21:54:21 hubbe Exp $
+ * $Id: dumudp.c,v 1.44 1999/06/19 20:26:40 hubbe Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.43 1999/02/10 21:54:21 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.44 1999/06/19 20:26:40 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -442,7 +442,7 @@ void init_udp(void)
   /* function(int,void|function,void|string:int) */
   ADD_FUNCTION("bind",udp_bind,tFunc(tInt tOr(tVoid,tFunction) tOr(tVoid,tStr),tInt),0);
   /* function(:void) */
-  ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,tFunc(,tVoid), 0);
+  ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,tFunc(tNone,tVoid), 0);
   /* function(int|void:mapping(string:int|string)) */
   ADD_FUNCTION("read",udp_read,tFunc(tOr(tInt,tVoid),tMap(tStr,tOr(tInt,tStr))),0);
   /* function(string,int,string,void|int:int) */
@@ -454,7 +454,7 @@ void init_udp(void)
   /* function(void:void) */
   ADD_FUNCTION( "set_blocking", udp_set_blocking,tFunc(tVoid,tVoid), 0 );
   /* function(:string) */
-  ADD_FUNCTION("query_address",udp_query_address,tFunc(,tStr),0);
+  ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
   end_class("dumUDP",0);

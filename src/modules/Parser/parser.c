@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.3 1999/06/12 13:42:42 mirar Exp $");
+RCSID("$Id: parser.c,v 1.4 1999/06/19 20:25:22 hubbe Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -55,6 +55,7 @@ static struct
 #define PARSER_CLASS(name,init,exit,prog) 
 #define PARSER_SUBMODULE(name,init,exit) { name,init,exit },
 #include "initstuff.h"
+  {0,0,0 }
 };
 
 static struct 
@@ -71,6 +72,7 @@ static struct
 #define PARSER_SUBMODULE(a,b,c)
 #define PARSER_SUBMODMAG(name,init,exit) { name,init,exit,NULL,NULL },
 #include "initstuff.h"
+  { 0,0,0,0,0 }
 };
 
 #ifdef PIKE_DEBUG
@@ -90,7 +92,7 @@ static void parser_magic_index(INT32 args)
    if (sp[-1].type!=T_STRING)
       error("Parser.`[]: Illegal type of argument\n");
 
-   for (i=0; i<(int)NELEM(submagic); i++)
+   for (i=0; i<(int)NELEM(submagic)-1; i++)
       if (sp[-1].u.string==submagic[i].ps)
       {
 #ifdef PIKE_DEBUG
@@ -168,7 +170,7 @@ void pike_module_init(void)
       add_program_constant(initclass[i].name,initclass[i].dest[0],0);
    }
 
-   for (i=0; i<(int)NELEM(initsubmodule); i++)
+   for (i=0; i<(int)NELEM(initsubmodule)-1; i++)
    {
       struct program *p;
       struct pike_string *s;
@@ -190,7 +192,7 @@ void pike_module_init(void)
       pop_stack();
    }
 
-   for (i=0; i<(int)NELEM(submagic); i++)
+   for (i=0; i<(int)NELEM(submagic)-1; i++)
       submagic[i].ps=make_shared_string(submagic[i].name);
 
 #undef PARSER_FUNCTION
@@ -209,9 +211,9 @@ void pike_module_exit(void)
       (initclass[i].exit)();
       free_program(initclass[i].dest[0]);
    }
-   for (i=0; i<(int)NELEM(initsubmodule); i++)
+   for (i=0; i<(int)NELEM(initsubmodule)-1; i++)
       (initsubmodule[i].exit)();
-   for (i=0; i<(int)NELEM(submagic); i++)
+   for (i=0; i<(int)NELEM(submagic)-1; i++)
       if (submagic[i].o)
       {
 	 (submagic[i].exit)();
