@@ -1,11 +1,10 @@
 #
-# $Id: Makefile,v 1.13 1999/08/12 16:58:53 mast Exp $
+# $Id: Makefile,v 1.14 1999/08/13 22:05:55 mast Exp $
 #
 # Meta Makefile
 #
 
 VPATH=.
-MAKE=make
 OS=`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`
 BUILDDIR=build/$(OS)
 METATARGET=
@@ -13,8 +12,14 @@ METATARGET=
 # Use this to pass arguments to configure. Leave empty to keep previous args.
 CONFIGUREARGS=
 
+# Set to a flag for parallelizing make, e.g. -j2. It's given to make
+# at the level where it's most effective.
+MAKE_PARALLEL=
+
 # Used to avoid make compatibility problems.
 BIN_TRUE=":"
+
+MAKE_FLAGS="MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
 
 all: bin/pike compile
 	-@$(BIN_TRUE)
@@ -72,10 +77,11 @@ compile: configure
 	cd "$$builddir" && for target in all $$metatarget; do \
 	  echo Making $$target in "$$builddir"; \
 	  rm -f remake; \
-	  $(MAKE) "MAKE=$(MAKE)" $$target || { \
+	  $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || { \
 	    res=$$?; \
 	    if test -f remake; then \
-	      $(MAKE) "MAKE=$(MAKE)" $$target || exit $$?; \
+	      $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || \
+		exit $$?; \
 	    else \
 	      exit $$res; \
 	    fi; \
@@ -87,13 +93,13 @@ bin/pike: force
 	chmod a+x bin/pike
 
 install:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=install"
+	@$(MAKE) "METATARGET=install"
 
 verify:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=verify"
 
 verify_installed:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify_installed"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=verify_installed"
 
 check: verify
 	-@$(BIN_TRUE)
@@ -102,16 +108,16 @@ sure: verify
 	-@$(BIN_TRUE)
 
 verbose_verify:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verbose_verify"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=verbose_verify"
 
 gdb_verify:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=gdb_verify"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=gdb_verify"
 
 run_hilfe:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=run_hilfe"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
 
 feature_list:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=feature_list"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
 
 clean:
 	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" clean
