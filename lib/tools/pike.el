@@ -1,5 +1,5 @@
 ;;; pike.el -- Major mode for editing Pike and other LPC files.
-;;; $Id: pike.el,v 1.1 1999/06/26 06:22:22 peter Exp $
+;;; $Id: pike.el,v 1.2 1999/06/27 15:15:42 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -24,6 +24,10 @@
 
 (require 'font-lock)
 
+;; Added in later font-lock versions. Copied here for backward
+;; compatibility.
+(defvar font-lock-preprocessor-face 'font-lock-keyword-face
+  "Don't even think of using this.")
 
 (defconst pike-font-lock-keywords-1 nil
  "For consideration as a value of `pike-font-lock-keywords'.
@@ -244,7 +248,7 @@ The name is assumed to begin with a capital letter.")
 	   ;; These must come first or the Modifiers from keywords-1 will
 	   ;; catch them.  We don't want to use override fontification here
 	   ;; because then these terms will be fontified within comments.
-	   ("\\<public\\>"    0 font-lock-reference-face)
+	   ("\\<public\\>"    0 font-lock-preprocessor-face)
 	   ("\\<inline\\>"   0 font-lock-preprocessor-face)
 	   ("\\<final\\>" 0 font-lock-preprocessor-face)
 	   ("\\<static\\>" 0 font-lock-preprocessor-face)
@@ -295,11 +299,14 @@ The name is assumed to begin with a capital letter.")
        (error t)))))
 
 
-(put 'pike-mode 'font-lock-defaults 
-     '((pike-font-lock-keywords
-	pike-font-lock-keywords-1 pike-font-lock-keywords-2
-	pike-font-lock-keywords-3)
-       nil nil ((?_ . "w")) beginning-of-defun
-       (font-lock-mark-block-function . mark-defun)))
+(if (not (assq 'pike-mode font-lock-defaults-alist))
+    (setq font-lock-defaults-alist
+	  (cons
+	   (cons 'pike-mode
+		 '((pike-font-lock-keywords pike-font-lock-keywords-1
+		    pike-font-lock-keywords-2 pike-font-lock-keywords-3)
+		   nil nil ((?_ . "w")) beginning-of-defun
+		   (font-lock-mark-block-function . mark-defun)))
+	   font-lock-defaults-alist)))
 
 (autoload 'pike-mode "cc-mode" "Major mode for editing Pike code.")
