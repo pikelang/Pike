@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.1 1997/02/11 08:34:52 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.2 1997/02/27 09:06:25 hubbe Exp $");
 
 #include "zlib_machine.h"
 #include "types.h"
@@ -45,9 +45,9 @@ static void gz_deflate_create(INT32 args)
 
   if(THIS->gz.state)
   {
-    mt_lock(& this->lock);
+    mt_lock(& THIS->lock);
     deflateEnd(&THIS->gz);
-    mt_unlock(& this->lock);
+    mt_unlock(& THIS->lock);
   }
 
   if(args)
@@ -206,9 +206,9 @@ static void gz_inflate_create(INT32 args)
   int tmp;
   if(THIS->gz.state)
   {
-    mt_lock(this->lock);
+    mt_lock(THIS->lock);
     inflateEnd(&THIS->gz);
-    mt_unlock(this->lock);
+    mt_unlock(THIS->lock);
   }
 
 
@@ -244,7 +244,7 @@ static int do_inflate(dynamic_buffer *buf,
   int fail=0;
 
   THREADS_ALLOW();
-  mt_lock(this->lock);
+  mt_lock(& THIS->lock);
   if(!this->gz.state)
   {
     fail=Z_STREAM_ERROR;
@@ -265,7 +265,7 @@ static int do_inflate(dynamic_buffer *buf,
 	}
     } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
   }
-  mt_unlock(this->lock);
+  mt_unlock(& THIS->lock);
   THREADS_DISALLOW();
   return fail;
 }
@@ -314,7 +314,7 @@ static void gz_inflate(INT32 args)
 
 static void init_gz_inflate(struct object *o)
 {
-  mt_init(THIS->locked);
+  mt_init(& THIS->locked);
   MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
