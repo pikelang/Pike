@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.53 2003/12/09 12:52:15 grubba Exp $
+|| $Id: module_support.c,v 1.54 2004/02/28 20:21:32 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.53 2003/12/09 12:52:15 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.54 2004/02/28 20:21:32 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -362,7 +362,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
     case '*': expected_type = "mixed"; break;
     default: expected_type = "Unknown"; break;
     }
-    if (ret <= args) {
+    if (ret < args) {
       bad_arg_error(
 	fname, sp-args, args,
 	ret+1,
