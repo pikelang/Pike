@@ -1,3 +1,15 @@
+pike7.4 (7.4.17-2) unstable; urgency=low
+
+  * Latest update.
+  * src/modules/Image/blit.c: Backported fix for nesting bug from
+    Pike 7.5.
+  * lib/modules/Calendar.pmod/YMD.pmod: Applied patch from Mirar to
+    solve a DST problem.
+  * src/post_modules/SDL/SDL.cmod: Fixed a program leak.
+  * src/pike_types.c: Avoid type aliasing.
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 31 Mar 2003 19:37:35 +0200
+
 pike7.4 (7.4.17-1) unstable; urgency=low
 
   * Latest upstream version.
