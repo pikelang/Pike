@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.17 2001/09/01 07:20:56 hubbe Exp $
+ * $Id: ia32.c,v 1.18 2002/04/08 00:56:12 mast Exp $
  *
  * Machine code generator for IA32.
  *
@@ -82,12 +82,59 @@ static void update_arg2(INT32 value)
 int ia32_reg_eax=REG_IS_UNKNOWN;
 int ia32_reg_ecx=REG_IS_UNKNOWN;
 int ia32_reg_edx=REG_IS_UNKNOWN;
+ptrdiff_t ia32_prev_stored_pc = -1; /* PROG_PC at the last point
+				     * Pike_fp->pc was updated. */
 
 void ia32_flush_code_generator(void)
 {
   ia32_reg_eax=REG_IS_UNKNOWN;
   ia32_reg_ecx=REG_IS_UNKNOWN;
   ia32_reg_edx=REG_IS_UNKNOWN;
+  ia32_prev_stored_pc = -1;
+}
+
+void ia32_update_absolute_pc(INT32 pc_offset)
+{
+  /* Assumes eax contains Pike_interpreter.frame_pointer */
+#if 1
+  /* Store the negated pointer to make the relocation displacements
+   * work in the right direction. */
+  ia32_reg_edx = REG_IS_UNKNOWN;
+  add_to_program(0xba);		/* mov $xxxxxxxx, %edx */
+  ins_pointer(0);
+  add_to_relocations(PIKE_PC - 4);
+  upd_pointer(PIKE_PC - 4, - (INT32) (pc_offset + Pike_compiler->new_program->program));
+  add_to_program(0xf7);		/* neg %edx */
+  add_to_program(0xda);
+  add_to_program(0x89);		/* mov %edx, yy(%eax) */
+  if (OFFSETOF(pike_frame, pc)) {
+    add_to_program(0x50);
+    add_to_program(OFFSETOF(pike_frame, pc));
+  }
+  else
+    add_to_program(0x10);
+#else
+  INT32 displacement;
+  add_to_program(0xe8);		/* call near, relative to next instruction */
+  add_to_program(0);
+  add_to_program(0);
+  add_to_program(0);
+  add_to_program(0);
+  displacement = PIKE_PC - pc_offset;
+  ia32_reg_edx = REG_IS_UNKNOWN;
+  add_to_program(0x8f);		/* pop %edx */
+  add_to_program(0xc2);
+  add_to_program(0x83);		/* sub $nn, %edx */
+  add_to_program(0xea);
+  add_to_program(displacement);
+  add_to_program(0x89);		/* mov %edx, yy(%eax) */
+  if (OFFSETOF(pike_frame, pc)) {
+    add_to_program(0x50);
+    add_to_program(OFFSETOF(pike_frame, pc));
+  }
+  else
+    add_to_program(0x10);
+#endif
 }
 
 void ia32_push_constant(struct svalue *tmp)

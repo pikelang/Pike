@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.14 2002/04/07 19:30:11 mast Exp $
+ * $Id: ia32.h,v 1.15 2002/04/08 00:56:12 mast Exp $
  */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -39,11 +39,11 @@
   if(off_) 						\
   {							\
     add_to_program(0x40);				\
-    add_to_program(OFFSET);				\
+    add_to_program(off_);				\
   }else{						\
     add_to_program(0x0);				\
   }							\
-  ins_pointer(VALUE);					\
+  ins_pointer(VALUE); /* Assumed to be added last. */	\
 }while(0)
 
 #define SET_MEM_REL_EDX(OFFSET, VALUE) do {		\
@@ -52,11 +52,11 @@
   if(off_) 						\
   {							\
     add_to_program(0x42);				\
-    add_to_program(OFFSET);				\
+    add_to_program(off_);				\
   }else{						\
     add_to_program(0x02);				\
   }							\
-  ins_pointer(VALUE);					\
+  ins_pointer(VALUE); /* Assumed to be added last. */	\
 }while(0)
 
 #define REG_IS_SP 1
@@ -67,25 +67,29 @@
 extern int ia32_reg_eax;
 extern int ia32_reg_ecx;
 extern int ia32_reg_edx;
+extern ptrdiff_t ia32_prev_stored_pc;
 
-#if 0
-/* For some reason, this does not work - Hubbe*/
-#define UPDATE_PC() do {				\
-    INT32 tmp=PIKE_PC;					\
-    if(ia32_reg_edx != REG_IS_FP)                      \
-      MOV2EDX(Pike_interpreter.frame_pointer);		\
-    ia32_reg_edx=REG_IS_FP;                             \
-    SET_MEM_REL_EDX(OFFSETOF(pike_frame, pc), tmp);	\
-}while(0)
-#else
-#define UPDATE_PC() do {				\
-   INT32 tmp=PIKE_PC;					\
-   if(ia32_reg_eax != REG_IS_FP)                      \
-     MOV2EAX(Pike_interpreter.frame_pointer);		\
-   ia32_reg_eax=REG_IS_FP;                             \
-   SET_MEM_REL_EAX(OFFSETOF(pike_frame, pc), tmp);	\
-}while(0)
-#endif
+void ia32_update_absolute_pc(INT32 pc_offset);
+
+#define UPDATE_PC() do {						\
+    INT32 tmp = PIKE_PC;						\
+    if(ia32_reg_eax != REG_IS_FP)					\
+      MOV2EAX(Pike_interpreter.frame_pointer);				\
+    ia32_reg_eax=REG_IS_FP;						\
+    if (ia32_prev_stored_pc < 0) 					\
+      ia32_update_absolute_pc(tmp);					\
+    else {								\
+      add_to_program(0x83); /* addl $nn, yy(%eax) */			\
+      if (OFFSETOF(pike_frame, pc)) {					\
+	add_to_program(0x40);						\
+	add_to_program(OFFSETOF(pike_frame, pc));			\
+      }									\
+      else								\
+	add_to_program(0x0);						\
+      add_to_program(tmp - ia32_prev_stored_pc);			\
+    }									\
+    ia32_prev_stored_pc = tmp;						\
+  } while(0)
 
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
