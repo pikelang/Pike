@@ -6,11 +6,12 @@ if [ $NT_DEBUG = yes ]; then
 fi
 
 fixpath() {
-  echo "$*" | sed -e 's@/@\\@g'
+  echo "$*" | sed -e "s@$NTMOUNT@@g
+@/@\\@g"
 }
 
 fixabspath() {
-  echo "$*" | sed -e 's@/@\\@g'
+  fixpath "$*"
 }
 
 getntenv() {

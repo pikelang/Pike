@@ -1,7 +1,14 @@
 #!/bin/sh
 
+# Edit
 NTHOST=kheleyr
 NTDRIVE='j:'
+
+# What dir on the UNIX machine is on $NTDRIVE ?
+# This variable MUST NOT end with a slash.
+NTMOUNT=
+
+# Don't edit
 PATH=`pwd`/tools:$PATH
 CC=rntcc
 NTTOOLS=`pwd`/tools/lib
