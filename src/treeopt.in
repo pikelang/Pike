@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.19 1999/11/14 15:35:00 grubba Exp $
+// $Id: treeopt.in,v 1.20 1999/11/14 18:45:19 grubba Exp $
 //
 // The tree optimizer
 //
@@ -101,17 +101,17 @@ F_COMMA_EXPR(0, -):
 F_COMMA_EXPR(F_CONSTANT, 0 = +):
   $0;
 
-// F_COMMA_EXPR(+[!($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|OPT_CASE|
-// 				     OPT_CONTINUE|OPT_BREAK|OPT_RETURN))], 0 = +):
-//   $0;
-// 
-// F_COMMA_EXPR(F_COMMA_EXPR(0, +[!($$->tree_info & (OPT_SIDE_EFFECT|
-// 						     OPT_ASSIGNMENT|OPT_CASE|
-// 						     OPT_CONTINUE|OPT_BREAK|
-// 						     OPT_RETURN))]), 1 = +):
-//   F_COMMA_EXPR($0, $1);
-
 F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
+  F_COMMA_EXPR($0, $1);
+
+F_COMMA_EXPR(+[!($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|OPT_CASE|
+				  OPT_CONTINUE|OPT_BREAK|OPT_RETURN))], 0 = +):
+  $0;
+
+F_COMMA_EXPR(F_COMMA_EXPR(0, +[!($$->tree_info & (OPT_SIDE_EFFECT|
+						  OPT_ASSIGNMENT|OPT_CASE|
+						  OPT_CONTINUE|OPT_BREAK|
+						  OPT_RETURN))]), 1 = +):
   F_COMMA_EXPR($0, $1);
 
 F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
