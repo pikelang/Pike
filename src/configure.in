@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.249 1998/11/06 11:12:07 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.250 1998/11/06 21:34:31 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -156,6 +156,12 @@ case "$pike_cv_sys_os" in
   ;;
   BSD/OS*)
     LD="$BINDIR/smartlink shlicc"
+  ;;
+  UnixWare*)
+    if test "$GCC" != "yes"; then
+      # We are using built-in inline function
+      CFLAGS="$CFLAGS -Kalloca"
+    fi
   ;;
 esac
 
@@ -844,79 +850,31 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
 
 else
 
-  AC_MSG_CHECKING(unix threads)
+  # Test for POSIX threads
+
   case "x$pike_cv_sys_os" in
+    xOSF1)
+      LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
+    ;;
+ 
+    xBSD/OS*)
+      LIBS="${OLDLIBS}"
+    ;;
+
     xUnixWare)
       if test "$GCC" = yes ; then
         LIBS="${LIBS} -lthread"
       else
-        LIBS="${LIBS} -Kthread"
+        CFLAGS="${CFLAGS} -Kthread"
       fi
-      CFLAGS="${CFLAGS} -D_UNIXWARE_THREADS_"
     ;;
-    *)
-      LIBS="${LIBS} -lthread"
-    ;;
-  esac
 
-  AC_CACHE_VAL(pike_cv_unix_threads, [
-    AC_TRY_RUN([
-#define _REENTRANT
-#define _THREAD_SAFE
-#define _MIT_POSIX_THREADS 1
-#include <thread.h>
-#ifdef _UNIXWARE_THREADS_
-#include <synch.h>
-#endif
-
-void *foo(void *bar) { thr_exit(0); return 0; }
-mutex_t tmp;
-thread_t gazonk;
-
-int main()
-{
-  void *sune;
-  mutex_lock(& tmp);
-  thr_create(0,0,foo,0,0,&gazonk);
-  thr_join(gazonk,0,&sune);
-  exit(0);
-}
-    ],pike_cv_unix_threads=yes,pike_cv_unix_threads=no,pike_cv_unix_threads=no)
-  ])
-
-  if test x$pike_cv_unix_threads = xyes ; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(_REENTRANT)
-    AC_DEFINE(_THREAD_SAFE)
-    AC_DEFINE(_UNIX_THREADS)
-  else
-    AC_MSG_RESULT(no)
-
-    # Test for POSIX threads instead
-
-    case "x$pike_cv_sys_os" in
-      xOSF1)
-        LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
-      ;;
- 
-      xBSD/OS*)
-        LIBS="${OLDLIBS}"
-      ;;
-
-      xUnixWare)
-        if test "$GCC" = yes ; then
-          LIBS="${LIBS} -lthread"
-        else
-          LIBS="${LIBS} -Kthread"
-        fi
-      ;;
-
-      xFreeBSD*)      
-	# Threads on FreeBSD earlier than 1998-06-07 are broken.
-        LIBS="${OLDLIBS}"
-        AC_MSG_CHECKING(if this version of FreeBSD may have working threads)
-	AC_CACHE_VAL(pike_cv_freebsd_threads, [
-	  AC_TRY_RUN([
+    xFreeBSD*)      
+      # Threads on FreeBSD earlier than 1998-06-07 are broken.
+      LIBS="${OLDLIBS}"
+      AC_MSG_CHECKING(if this version of FreeBSD may have working threads)
+      AC_CACHE_VAL(pike_cv_freebsd_threads, [
+        AC_TRY_RUN([
 #include <osreldate.h>
 
 int main(int argc, char **argv)
@@ -932,33 +890,33 @@ int main(int argc, char **argv)
     return(1);
   return(0);
 }
-          ], pike_cv_freebsd_threads=yes, pike_cv_freebsd_threads=no,
-	  pike_cv_freebsd_threads=yes)
-	])
-	if test "x$pike_cv_freebsd_threads" = "xno"; then
-	  AC_MSG_RESULT(no)
-	else
-	  AC_MSG_RESULT(yes)
-          LIBS="${OLDLIBS} -pthread"
-	fi
-      ;;
+        ], pike_cv_freebsd_threads=yes, pike_cv_freebsd_threads=no,
+        pike_cv_freebsd_threads=yes)
+      ])
+      if test "x$pike_cv_freebsd_threads" = "xno"; then
+        AC_MSG_RESULT(no)
+      else
+        AC_MSG_RESULT(yes)
+        LIBS="${OLDLIBS} -pthread"
+      fi
+    ;;
 
-      xAIX*)
-        LIBS="${OLDLIBS} -lpthreads -lc_r"
-      ;;
+    xAIX*)
+      LIBS="${OLDLIBS} -lpthreads -lc_r"
+    ;;
 
-      *)
-        LIBS="${OLDLIBS} -lpthread"
-      ;;
-    esac
+    *)
+      LIBS="${OLDLIBS} -lpthread"
+    ;;
+  esac
 
-    AC_CHECK_FUNCS(pthread_init)
-    AC_CHECK_FUNCS(pthread_mutexattr_init)
+  AC_CHECK_FUNCS(pthread_init)
+  AC_CHECK_FUNCS(pthread_mutexattr_init)
 
-    AC_MSG_CHECKING(posix threads)
+  AC_MSG_CHECKING(posix threads)
 
-    AC_CACHE_VAL(pike_cv_posix_threads, [
-      AC_TRY_RUN([
+  AC_CACHE_VAL(pike_cv_posix_threads, [
+    AC_TRY_RUN([
 #define _REENTRANT
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
@@ -987,108 +945,161 @@ int main()
   pthread_join(gazonk,&sune);
   exit(0);
 }
-      ],pike_cv_posix_threads=yes,pike_cv_posix_threads=no,pike_cv_posix_threads=no)
+    ],pike_cv_posix_threads=yes,pike_cv_posix_threads=no,pike_cv_posix_threads=no)
+  ])
+
+  if test $pike_cv_posix_threads = yes ; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(_REENTRANT)
+    AC_DEFINE(_THREAD_SAFE)
+    AC_DEFINE(_MIT_POSIX_THREADS,1)
+
+    AC_MSG_CHECKING(for pthread_attr_setstacksize)
+    AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
+      AC_TRY_LINK([#include <pthread.h>
+        void foo(pthread_attr_t*x) { pthread_attr_setstacksize(x, 1024*1024); }
+      ],[],[
+        pike_cv_have_pthread_attr_setstacksize=yes
+      ],[
+        pike_cv_have_pthread_attr_setstacksize=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_have_pthread_attr_setstacksize)
+    if test x$pike_cv_have_pthread_attr_setstacksize = xyes ; then
+      AC_DEFINE(HAVE_PTHREAD_ATTR_SETSTACKSIZE)
+    else
+      :
+    fi
+
+    AC_MSG_CHECKING(for pthread_yield)
+    AC_CACHE_VAL(pike_cv_have_pthread_yield,[
+      AC_TRY_LINK([#include <pthread.h>
+        void foo(void) { pthread_yield(); }
+      ],[],[
+        pike_cv_have_pthread_yield=yes
+      ],[
+        pike_cv_have_pthread_yield=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_have_pthread_yield)
+    if test x$pike_cv_have_pthread_yield = xyes ; then
+      AC_DEFINE(HAVE_PTHREAD_YIELD)
+    else
+      :
+    fi
+
+    AC_MSG_CHECKING(for pthread_cond_init)
+    AC_CACHE_VAL(pike_cv_have_pthread_cond_init,[
+      AC_TRY_LINK([#include <pthread.h>
+        void foo(pthread_cond_t*x, pthread_condattr_t*y) { pthread_cond_init(x,y); }
+      ],[],[
+        pike_cv_have_pthread_cond_init=yes
+      ],[
+        pike_cv_have_pthread_cond_init=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_have_pthread_cond_init)
+    if test x$pike_cv_have_pthread_cond_init = xyes ; then
+      AC_DEFINE(HAVE_PTHREAD_COND_INIT)
+    else
+      :
+    fi
+
+    AC_MSG_CHECKING(if pthread_condattr_default is defined)
+    AC_CACHE_VAL(pike_cv_have_pthread_condattr_default,[
+      AC_TRY_LINK([#include <pthread.h>
+        void foo(pthread_cond_t *bar) { pthread_cond_init(bar, pthread_condattr_default); }
+      ],[],[
+        pike_cv_have_pthread_condattr_default=yes
+      ],[
+        pike_cv_have_pthread_condattr_default=no
+      ])
     ])
 
-    if test $pike_cv_posix_threads = yes ; then
+    AC_MSG_RESULT($pike_cv_have_pthread_condattr_default)
+
+    if test x$pike_cv_have_pthread_condattr_default = xyes ; then
+      AC_DEFINE(HAVE_PTHREAD_CONDATTR_DEFAULT)
+    else
+      :
+    fi
+
+    #
+    # FreeBSD doesn't like the &, while AIX requires it...
+    #
+
+    AC_MSG_CHECKING(if pthread_condattr_default is needs an & (AIX))
+    AC_CACHE_VAL(pike_cv_have_pthread_condattr_default_aix,[
+      AC_TRY_LINK([#include <pthread.h>
+        void foo(pthread_cond_t *bar) { pthread_cond_init(bar, &pthread_condattr_default); }
+      ],[],[
+        pike_cv_have_pthread_condattr_default_aix=yes
+      ],[
+        pike_cv_have_pthread_condattr_default_aix=no
+      ])
+    ])
+
+    AC_MSG_RESULT($pike_cv_have_pthread_condattr_default_aix)
+
+    if test x$pike_cv_have_pthread_condattr_default_aix = xyes ; then
+      AC_DEFINE(HAVE_PTHREAD_CONDATTR_DEFAULT_AIX)
+    else
+      :
+    fi
+
+  else
+    AC_MSG_RESULT(no)
+    LIBS="$OLDLIBS"
+
+    # No POSIX threads.
+
+    # Try UNIX threads instead
+
+    AC_MSG_CHECKING(unix threads)
+    case "x$pike_cv_sys_os" in
+      xUnixWare)
+  	if test "$GCC" = yes ; then
+  	  LIBS="${LIBS} -lthread"
+  	else
+  	  CFLAGS="${CFLAGS} -Kthread"
+  	fi
+  	CFLAGS="${CFLAGS} -D_UNIXWARE_THREADS_"
+      ;;
+      *)
+  	LIBS="${LIBS} -lthread"
+      ;;
+    esac
+  
+    AC_CACHE_VAL(pike_cv_unix_threads, [
+      AC_TRY_RUN([
+#define _REENTRANT
+#define _THREAD_SAFE
+#define _MIT_POSIX_THREADS 1
+#include <thread.h>
+#ifdef _UNIXWARE_THREADS_
+#include <synch.h>
+#endif
+
+void *foo(void *bar) { thr_exit(0); return 0; }
+mutex_t tmp;
+thread_t gazonk;
+
+int main()
+{
+  void *sune;
+  mutex_lock(& tmp);
+  thr_create(0,0,foo,0,0,&gazonk);
+  thr_join(gazonk,0,&sune);
+  exit(0);
+}
+      ],pike_cv_unix_threads=yes,pike_cv_unix_threads=no,pike_cv_unix_threads=no)
+    ])
+
+    if test x$pike_cv_unix_threads = xyes ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(_REENTRANT)
       AC_DEFINE(_THREAD_SAFE)
-      AC_DEFINE(_MIT_POSIX_THREADS,1)
-
-      AC_MSG_CHECKING(for pthread_attr_setstacksize)
-      AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
-        AC_TRY_LINK([#include <pthread.h>
-          void foo(pthread_attr_t*x) { pthread_attr_setstacksize(x, 1024*1024); }
-        ],[],[
-	  pike_cv_have_pthread_attr_setstacksize=yes
-	],[
-	  pike_cv_have_pthread_attr_setstacksize=no
-	])
-      ])
-      AC_MSG_RESULT($pike_cv_have_pthread_attr_setstacksize)
-      if test x$pike_cv_have_pthread_attr_setstacksize = xyes ; then
-        AC_DEFINE(HAVE_PTHREAD_ATTR_SETSTACKSIZE)
-      else
-         :
-      fi
-
-      AC_MSG_CHECKING(for pthread_yield)
-      AC_CACHE_VAL(pike_cv_have_pthread_yield,[
-        AC_TRY_LINK([#include <pthread.h>
-          void foo(void) { pthread_yield(); }
-        ],[],[
-	  pike_cv_have_pthread_yield=yes
-	],[
-	  pike_cv_have_pthread_yield=no
-	])
-      ])
-      AC_MSG_RESULT($pike_cv_have_pthread_yield)
-      if test x$pike_cv_have_pthread_yield = xyes ; then
-        AC_DEFINE(HAVE_PTHREAD_YIELD)
-      else
-         :
-      fi
-
-      AC_MSG_CHECKING(for pthread_cond_init)
-      AC_CACHE_VAL(pike_cv_have_pthread_cond_init,[
-        AC_TRY_LINK([#include <pthread.h>
-          void foo(pthread_cond_t*x, pthread_condattr_t*y) { pthread_cond_init(x,y); }
-        ],[],[
-	  pike_cv_have_pthread_cond_init=yes
-	],[
-	  pike_cv_have_pthread_cond_init=no
-	])
-      ])
-      AC_MSG_RESULT($pike_cv_have_pthread_cond_init)
-      if test x$pike_cv_have_pthread_cond_init = xyes ; then
-        AC_DEFINE(HAVE_PTHREAD_COND_INIT)
-      else
-         :
-      fi
-
-      AC_MSG_CHECKING(if pthread_condattr_default is defined)
-      AC_CACHE_VAL(pike_cv_have_pthread_condattr_default,[
-        AC_TRY_LINK([#include <pthread.h>
-          void foo(pthread_cond_t *bar) { pthread_cond_init(bar, pthread_condattr_default); }
-        ],[],[
-	  pike_cv_have_pthread_condattr_default=yes
-	],[
-	  pike_cv_have_pthread_condattr_default=no
-	])
-      ])
-
-      AC_MSG_RESULT($pike_cv_have_pthread_condattr_default)
-
-      if test x$pike_cv_have_pthread_condattr_default = xyes ; then
-        AC_DEFINE(HAVE_PTHREAD_CONDATTR_DEFAULT)
-      else
-        :
-      fi
-
-      #
-      # FreeBSD doesn't like the &, while AIX requires it...
-      #
-
-      AC_MSG_CHECKING(if pthread_condattr_default is needs an & (AIX))
-      AC_CACHE_VAL(pike_cv_have_pthread_condattr_default_aix,[
-        AC_TRY_LINK([#include <pthread.h>
-          void foo(pthread_cond_t *bar) { pthread_cond_init(bar, &pthread_condattr_default); }
-        ],[],[
-	  pike_cv_have_pthread_condattr_default_aix=yes
-	],[
-	  pike_cv_have_pthread_condattr_default_aix=no
-	])
-      ])
-
-      AC_MSG_RESULT($pike_cv_have_pthread_condattr_default_aix)
-
-      if test x$pike_cv_have_pthread_condattr_default_aix = xyes ; then
-        AC_DEFINE(HAVE_PTHREAD_CONDATTR_DEFAULT_AIX)
-      else
-        :
-      fi
-
+      AC_DEFINE(_UNIX_THREADS)
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
@@ -1110,8 +1121,8 @@ int main()
       #   AC_MSG_RESULT(no)
       #   :
       # fi
-    fi
-  fi
+    fi # UNIX threads
+  fi # POSIX threads
 fi  # NT
 else
   # Without threads
@@ -2502,69 +2513,72 @@ AC_MSG_RESULT($SO)
 # LDSHARED is the ld *command* used to create shared library
 # -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x, "ld -shared" on IRIX 5
 AC_MSG_CHECKING(LDSHARED)
-if test -z "$LDSHARED"
-then
-	case "$pike_cv_sys_os" in
-	AIX*)
-         if test "$GCC" = yes ; then
-	   if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
-             LDSHARED="ld -G -bexpall"
-	   else if test "`uname -v`" -gt 4 ; then
-	       # Extra forward compatibility...
-	       # AIX 5+
-	       LDSHARED="ld -G -bexpall"
-	     else
-	       # AIX 4.1 and earlier don't have/have unreliable
-	       # handling of dlopen et al.
-	       #
-	       # Even AIX 4.2.1 has buggy dlopen -- NEVER attempt
-	       # to dlopen a file that hasn't been linked with -G.
-	       pike_cv_sys_dynamic_loading=no
-	       LDSHARED="ld"
-	     fi
-	   fi
-         else
-           # Dynamic linking turned off for AIX-cc
-	   #
-	   # In addition, the dynamic loading test seems to
-	   # cause our RS/6000 to hang, which causes the
-	   # watchdog-timer to PANIC.
-	   pike_cv_sys_dynamic_loading=no
-           LDSHARED="ld"
-         fi
-	;;
-	IRIX*)
-	  if test "$GCC" = yes ; then
-	    # egcs defaults to building -n32 objects
-	    LDSHARED="ld -shared -n32"
+if test -z "$LDSHARED" ; then
+  case "$pike_cv_sys_os" in
+    AIX*)
+      if test "$GCC" = yes ; then
+        if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
+          LDSHARED="ld -G -bexpall"
+	else if test "`uname -v`" -gt 4 ; then
+	    # Extra forward compatibility...
+	    # AIX 5+
+	    LDSHARED="ld -G -bexpall"
 	  else
-            LDSHARED="ld -shared"
+	    # AIX 4.1 and earlier don't have/have unreliable
+	    # handling of dlopen et al.
+	    #
+	    # Even AIX 4.2.1 has buggy dlopen -- NEVER attempt
+	    # to dlopen a file that hasn't been linked with -G.
+	    pike_cv_sys_dynamic_loading=no
+	    LDSHARED="ld"
 	  fi
-	  # -woff isn't understood by ld on Irix 5.
-	  if test "`uname -r`" -ge 6 ; then
-	    LDSHARED="$LDSHARED -woff 84,85,134"
-	  else :; fi
-	;;
-	SunOS*) LDSHARED="ld";;
-	Solaris) LDSHARED="/usr/ccs/bin/ld -G";;
-	hp*|HP*) LDSHARED="ld -b";;
-	OSF*)
-           LDSHARED="ld -expect_unresolved '*' -shared -msym -O3"
-        ;;
-	DYNIX/ptx*) LDSHARED="ld -G";;
-	next) LDSHARED="$CC $CFLAGS -nostdlib -r";;
-	Linux*) LDSHARED="$CC -shared";;
-        GNU*) LDSHARED="ld -Bshareable";;
-	FreeBSD*) LDSHARED="ld -Bshareable";;
-	NetBSD) LDSHARED="ld -Bshareable";;
-	OpenBSD*) LDSHARED="ld -Bshareable";;
-	BSD/OS*) LDSHARED="shlicc -r";;
-	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
-	UNIX_SV) LDSHARED="ld -G";;
-	UnixWare) LDSHARED="ld -G";;
-        Windows_NT*) LDSHARED="$CC -shared";;
-	*) LDSHARED="ld";;
-	esac
+        fi
+      else
+        # Dynamic linking turned off for AIX-cc
+	#
+	# In addition, the dynamic loading test seems to
+	# cause our RS/6000 to hang, which causes the
+	# watchdog-timer to PANIC.
+	pike_cv_sys_dynamic_loading=no
+        LDSHARED="ld"
+      fi
+    ;;
+    IRIX*)
+      if test "$GCC" = yes ; then
+        # egcs defaults to building -n32 objects
+        LDSHARED="ld -shared -n32"
+      else
+        LDSHARED="ld -shared"
+      fi
+      # -woff isn't understood by ld on Irix 5.
+      if test "`uname -r`" -ge 6 ; then
+        LDSHARED="$LDSHARED -woff 84,85,134"
+      else :; fi
+    ;;
+    SunOS*) LDSHARED="ld";;
+    Solaris) LDSHARED="/usr/ccs/bin/ld -G";;
+    hp*|HP*) LDSHARED="ld -b";;
+    OSF*) LDSHARED="ld -expect_unresolved '*' -shared -msym -O3";;
+    DYNIX/ptx*) LDSHARED="ld -G";;
+    next) LDSHARED="$CC $CFLAGS -nostdlib -r";;
+    Linux*) LDSHARED="$CC -shared";;
+    GNU*) LDSHARED="ld -Bshareable";;
+    FreeBSD*) LDSHARED="ld -Bshareable";;
+    NetBSD) LDSHARED="ld -Bshareable";;
+    OpenBSD*) LDSHARED="ld -Bshareable";;
+    BSD/OS*) LDSHARED="shlicc -r";;
+    SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
+    UNIX_SV) LDSHARED="ld -G";;
+    UnixWare)
+      if test "$GCC" = yes ; then
+        LDSHARED="ld -G"
+      else
+        LDSHARED="cc -G -KPIC -Wl,-Bexport"
+      fi
+    ;;
+    Windows_NT*) LDSHARED="$CC -shared";;
+    *) LDSHARED="ld";;
+  esac
 fi
 AC_MSG_RESULT($LDSHARED)
 
@@ -2579,11 +2593,11 @@ if test -z "$CCSHARED" ; then
     esac
   else
     case $pike_cv_sys_os in
-	hp*|HP*) CCSHARED="+z"; ;;
-	FreeBSD*) CCSHARED="-fpic";;
-	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-	Solaris*) CCSHARED="-KPIC -Bdynamic";;
-        Windows_NT*) CCSHARED="-shared" ;;
+      hp*|HP*) CCSHARED="+z"; ;;
+      FreeBSD*) CCSHARED="-fpic";;
+      SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+      Solaris*) CCSHARED="-KPIC -Bdynamic";;
+      Windows_NT*) CCSHARED="-shared" ;;
     esac
   fi
 fi
@@ -2599,37 +2613,36 @@ then
   LINKFORSHARED=""
   if test "$GCC" = yes ; then
     case $pike_cv_sys_os in
-	AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
-	hp*|HP*) LINKFORSHARED="-Wl,-E";;
-	Linux*) LINKFORSHARED="-rdynamic";;
-        GNU*) LINKFORSHARED="-rdynamic";;
-	next) LINKFORSHARED="-u libsys_s";;
-	SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
-	# What about UNIX_SV?
-	UnixWare) LINKFORSHARED="-fpic -Wl,-Bexport";;
+      AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
+      hp*|HP*) LINKFORSHARED="-Wl,-E";;
+      Linux*) LINKFORSHARED="-rdynamic";;
+      GNU*) LINKFORSHARED="-rdynamic";;
+      next) LINKFORSHARED="-u libsys_s";;
+      SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
+      # What about UNIX_SV?
+      UnixWare) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
-        FreeBSD)
-           AC_TRY_RUN([int main(){exit(
+      FreeBSD)
+        AC_TRY_RUN([int main(){exit(
 #ifdef __ELF__
     0
 #else
     1
 #endif
 );}
-],LINKFORSHARED=-rdynamic)
-        ;;
-
+        ],LINKFORSHARED=-rdynamic)
+      ;;
     esac
   else
     case $pike_cv_sys_os in
-	AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
-	hp*|HP*) LINKFORSHARED="-Wl,-E";;
-	Linux*) LINKFORSHARED="-rdynamic";;
-        GNU*) LINKFORSHARED="-rdynamic";;
-	next) LINKFORSHARED="-u libsys_s";;
-	SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
-	# What about UNIX_SV?
-        UnixWare) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+      AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
+      hp*|HP*) LINKFORSHARED="-Wl,-E";;
+      Linux*) LINKFORSHARED="-rdynamic";;
+      GNU*) LINKFORSHARED="-rdynamic";;
+      next) LINKFORSHARED="-u libsys_s";;
+      SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+      # What about UNIX_SV?
+      UnixWare) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
   fi
 fi
