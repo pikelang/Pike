@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.156 2003/04/01 10:53:02 mast Exp $
+ * $Id: master.pike.in,v 1.157 2003/04/10 16:05:45 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -99,9 +99,9 @@ int is_absolute_path(string p)
     return 1;
 #define IS_ABSOLUTE_PATH is_absolute_path
 #else
-#define IS_ABSOLUTE_PATH(X) ((X)[0]=='/')
+#define IS_ABSOLUTE_PATH(X) has_prefix((X),"/")
 #endif
-  return p[0]=='/';
+  return has_prefix(p,"/");
 }
 
 //! @global
