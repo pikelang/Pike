@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.117 2000/04/20 02:41:45 hubbe Exp $");
+RCSID("$Id: object.c,v 1.118 2000/04/21 23:07:10 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -471,7 +471,7 @@ void low_destruct(struct object *o,int do_free)
 
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
-  if(Pike_in_gc > 1 && Pike_in_gc < 4 && Pike_in_gc != 5)
+  if(Pike_in_gc >= 100 && Pike_in_gc < 300)
     fatal("Destructing object inside gc()\n");
 #endif
 
@@ -561,7 +561,7 @@ void destruct_objects_to_destruct(void)
   struct object *o, *next;
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc > 1 && Pike_in_gc < 6)
+  if (Pike_in_gc >= 100 && Pike_in_gc < 400)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
 
@@ -614,7 +614,7 @@ void really_free_object(struct object *o)
     DOUBLELINK(objects_to_destruct,o);
     if (Pike_in_gc) {
       remove_marker(o);
-      if (Pike_in_gc < 6) return; /* Done last in gc(). */
+      if (Pike_in_gc < 400) return; /* Done last in gc(). */
     }
     if(!destruct_object_evaluator_callback)
     {

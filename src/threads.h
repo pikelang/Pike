@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.87 2000/04/20 01:49:45 mast Exp $
+ * $Id: threads.h,v 1.88 2000/04/21 23:07:10 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -506,7 +506,7 @@ struct thread_state {
      DO_IF_DEBUG({ \
        if(thread_for_id(th_self()) != thread_id) \
 	 fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id); \
-       if (Pike_in_gc >1 && Pike_in_gc <4) \
+       if (Pike_in_gc >=100 && Pike_in_gc <300) \
 	 fatal("Threads allowed during garbage collection.\n"); \
      }) \
      if(num_threads > 1 && !threads_disabled) { \
@@ -541,7 +541,7 @@ struct thread_state {
      DO_IF_DEBUG({ \
        if(thread_for_id(th_self()) != thread_id) \
 	 fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id); \
-       if (Pike_in_gc >1 && Pike_in_gc <4) \
+       if (Pike_in_gc >=100 && Pike_in_gc <300) \
 	 fatal("Threads allowed during garbage collection.\n"); \
      }) \
      if(num_threads > 1 && !threads_disabled) { \

@@ -78,8 +78,10 @@ static int eval_instruction(unsigned char *pc)
       backlog[backlogp].program=Pike_fp->context.prog;
       add_ref(Pike_fp->context.prog);
       backlog[backlogp].instruction=instr;
-      backlog[backlogp].arg=0;
       backlog[backlogp].pc=pc;
+#ifdef _REENTRANT
+      backlog[backlogp].thread_id=thread_id;
+#endif
 
       debug_malloc_touch(Pike_fp->current_object);
       switch(d_flag)
