@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.16 1998/04/03 20:56:00 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.17 1998/04/03 21:29:15 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -326,6 +326,31 @@ static void low_start(void)
   free_object(THISOBJ);
 }
 
+static int read_some_data(void)
+{
+  struct pipe *this = THIS;
+  struct input * i = this->firstinput;
+
+  if (!i || i->type != I_BLOCKING_OBJ) {
+    fatal("PIPE: read_some_data(): Bad input type!\n");
+    return;
+  }
+  push_int(8192);
+  push_int(1);    /* We don't care if we don't get all 8192 bytes. */
+  apply(i->u.obj, "read", 2);
+  if ((sp[-1].type == T_STRING) && (sp[-1].u.string->len > 0)) {
+    append_buffer(sp[-1].u.string);
+    pop_stack();
+    THIS->sleeping = 1;
+    return(1);	/* Success */
+  }
+
+  /* FIXME: Should we check the return value here? */
+  pop_stack();
+  /* EOF */
+  return(0);	/* EOF */
+}
+
 /* Let's guess what this function does....
  *
  */
@@ -354,24 +379,9 @@ static INLINE void input_finish(void)
       return;
 
     case I_BLOCKING_OBJ:
-      push_int(8192);
-      push_int(1);    /* We don't care if we don't get all 8192 bytes. */
-      apply(i->u.obj, "read", 2);
-      if (sp[-1].type == T_STRING) {
-	write(2, "PIPE:input_finish(): Read:\"", 27);
-	write(2, sp[-1].u.string->str, sp[-1].u.string->len);	/***********/
-	write(2, "\"\n", 2);
-	append_buffer(sp[-1].u.string);
-	pop_stack();
-	THIS->sleeping = 1;
+      if (read_some_data())
 	return;
-      } else {
-	/* FIXME: Should we check the return value here? */
-	write(2, "PIPE:input_finish(): EOF!\n", 26);		/***********/
-	pop_stack();
-	/* EOF */
-	continue;
-      }
+      continue;
 
     case I_MMAP:
       if (THIS->fd==-1) return;
@@ -448,22 +458,10 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 	  this->bytes_in_buffer<MAX_BYTES_IN_BUFFER)
       {
 	if (this->firstinput->type == I_BLOCKING_OBJ) {
-	  push_int(8192);
-	  push_int(1);  /* We don't care if we don't get all 8192 bytes. */
-	  apply(this->firstinput->u.obj, "read", 2);
-	  if (sp[-1].type == T_STRING) {
-	    write(2, "PIPE:gimme_more_data(): Read:\"", 30);
-	    write(2, sp[-1].u.string->str, sp[-1].u.string->len);	/***********/
-	    write(2, "\"\n", 2);
-	    append_buffer(sp[-1].u.string);
-	  } else {
-	    /* FIXME: Should probably check the return value. */
-	    /* EOF */
-	    write(2, "PIPE:gimme_more_data(): EOF!\n", 29);		/***********/
+	  if (!read_some_data()) {
 	    this->sleeping = 0;
 	    input_finish();
 	  }
-	  pop_stack();
 	} else {
 	  this->sleeping=0;
 	  push_callback(offset_input_read_callback);
@@ -733,6 +731,9 @@ static void pipe_input(INT32 args)
       } else {
         /* Try blocking mode */
 	i->type = I_BLOCKING_OBJ;
+	if (i==THIS->firstinput) {
+	  read_some_data();
+	}
 	return;
       }
    }
