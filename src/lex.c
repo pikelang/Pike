@@ -195,12 +195,14 @@ struct keyword instr_names[]=
 { "indirect",		F_INDIRECT },
 { "jump",               F_BRANCH },
 { "local function call",F_CALL_LFUN },
+{ "local function call and pop",F_CALL_LFUN_AND_POP },
 { "local function",	F_LFUN },	
 { "local",		F_LOCAL },	
 { "ltosval2",		F_LTOSVAL2 },
 { "lvalue to svalue",	F_LTOSVAL },	
 { "lvalue_list",	F_LVALUE_LIST },	
 { "mark",               F_MARK },
+{ "mark mark",          F_MARK2 },
 { "negative number",	F_NEG_NUMBER },
 { "number",             F_NUMBER },
 { "pop",		F_POP_VALUE },	
@@ -241,6 +243,9 @@ struct keyword instr_names[]=
 { "branch if >=",	F_BRANCH_WHEN_GE },
 { "branch if ==",	F_BRANCH_WHEN_EQ },
 { "branch if !=",	F_BRANCH_WHEN_NE },
+{ "sizeof",		F_SIZEOF },
+{ "sizeof local",	F_SIZEOF_LOCAL },
+{ "throw(0)",		F_THROW_ZERO },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
@@ -1540,6 +1545,13 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       case '|': tmp="`|"; break;
       case '^': tmp="`^"; break;
       case '~': tmp="`~"; break;
+      case '[':
+	if(GOBBLE(']'))
+	{
+	  tmp="`[]";
+	  if(GOBBLE('=')) tmp="`[]=";
+	  break;
+	}
 
       default:
 	yyerror("Illegal ` identifier.");
