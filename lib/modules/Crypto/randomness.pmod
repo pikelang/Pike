@@ -14,7 +14,8 @@
 /* Collect somewhat random data from the environment. Unfortunately,
  * this is quite system dependent */
 #define PATH  "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin"
-#define SYSTEM_COMMANDS "last & netstat -anv & netstat -mv & netstat -sv & " \
+#define SYSTEM_COMMANDS "last -256 & " \
+                        "netstat -anv & netstat -mv & netstat -sv & " \
                         "uptime & ps -fel & ps aux & " \
 			"vmstat -s & vmstat -M & " \
 			"iostat & iostat -cdDItx &"
