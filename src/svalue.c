@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.205 2004/11/16 02:11:37 mast Exp $
+|| $Id: svalue.c,v 1.206 2004/11/16 22:17:04 mast Exp $
 */
 
 #include "global.h"
@@ -1090,29 +1090,38 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 
 static void dsv_add_string_to_buf (struct pike_string *str)
 {
-  char buf[11];
-  int i;
+  int i, backslashes = 0;
   ptrdiff_t len = str->len;
   for(i=0; i < len; i++)
   {
-    unsigned j = (unsigned) index_shared_string (str, i);
-    if (j == '\\' && i + 1 < len) {
-      int next = index_shared_string (str, i + 1);
+    unsigned j = index_shared_string (str, i);
+    if (j == '\\') {
+      backslashes++;
       my_putchar ('\\');
-      if (next == 'u' || next == 'U')
-	/* Quote existing unicode escapes for consistency. */
-	/* FIXME: This doesn't look at the number of preceding
-	 * backslashes, which is the method used in strings. */
-	my_putchar (next);
     }
-    else if (j < 256 && isprint (j))
-      my_putchar (j);
     else {
-      if (j > 0xffff)
-	sprintf (buf, "\\U%08x", j);
-      else
-	sprintf (buf, "\\u%04x", j);
-      my_strcat (buf);
+      if ((j == 'u' || j == 'U') && backslashes % 2) {
+	/* Got a unicode escape in the input. Quote it using the
+	 * double-u method to ensure unambiguousness. */
+	my_putchar (j);
+	my_putchar (j);
+      }
+      else if (j < 256 && isprint (j))
+	my_putchar (j);
+      else {
+	char buf[11];
+	if (backslashes % 2)
+	  /* Got an odd number of preceding backslashes, so adding a
+	   * unicode escape here would make it quoted. Have to escape
+	   * the preceding backslash to avoid that. */
+	  my_strcat ("u005c");	/* The starting backslash is already there. */
+	if (j > 0xffff)
+	  sprintf (buf, "\\U%08x", j);
+	else
+	  sprintf (buf, "\\u%04x", j);
+	my_strcat (buf);
+      }
+      backslashes = 0;
     }
   }
 }
@@ -1147,7 +1156,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	for(i=0; i < s->u.string->len; i++)
         {
 	  unsigned j;
-	  switch(j = (unsigned) index_shared_string(s->u.string,i))
+	  switch(j = index_shared_string(s->u.string,i))
           {
 	  case '\n':
 	    my_putchar('\\');

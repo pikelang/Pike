@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.81 2004/11/14 18:35:24 mast Exp $
+|| $Id: preprocessor.h,v 1.82 2004/11/16 22:17:04 mast Exp $
 */
 
 /*
@@ -200,20 +200,19 @@ static struct pike_string *gobble_identifier (WCHAR *data, ptrdiff_t *pos,
       case 'u':
       case 'U': {
 	/* Note: Code dup in parse_esc_seq in lexer.h. */
+	/* Don't have to bother checking for an even number of
+	 * preceding backslashes since they aren't valid outside
+	 * string and char literals in the lexer input. */
 	unsigned INT32 c = 0;
 	ptrdiff_t stop, q;
-	if (data[p + 1] == 'u') {
-	  if (data[p + 2] == 'u')
-	    /* A quoted \u escape means we got "\uxxxx" dequoted here,
-	     * and that can't be part of an identifier. */
-	    goto past_identifier;
+	if (data[p + 2] == data[p + 1])
+	  /* A quoted \u escape means we got "\uxxxx" dequoted here,
+	   * and that can't be part of an identifier. */
+	  goto past_identifier;
+	if (data[p + 1] == 'u')
 	  stop = p + 6;
-	}
-	else {
-	  if (data[p + 2] == 'U')
-	    goto past_identifier;
+	else
 	  stop = p + 10;
-	}
 	for (q = p + 2; q < stop; q++)
 	  switch (data[q]) {
 	    case '0': case '1': case '2': case '3': case '4':

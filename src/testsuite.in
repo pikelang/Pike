@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.747 2004/11/14 18:35:24 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.748 2004/11/16 22:17:04 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -70,7 +70,7 @@ test_compile_warning("\x109a27bc69e256c83deaa34c26b4")
 test_compile_error('\u17fo')
 test_compile_warning("\u17fo")
 test_compile_error('\uu117f')
-test_compile_warning("\uuuu17fo")
+test_eq("\uuuu17fo", "\\uuu17fo")
 test_eq('\u117f', 0x117f)
 test_eq("\u117foo", "\10577oo")
 test_eq("\u1117foo", "\10427foo")
@@ -78,7 +78,7 @@ test_eq("\uuuu117foo", "\\uuu117foo")
 test_compile_error('\U117f')
 test_compile_warning("\U117f")
 test_compile_warning("\UdEaDbEaT")
-test_compile_warning("\UUdEaDbEaT")
+test_eq("\UUdEaDbEaT", "\\UdEaDbEaT")
 test_eq('\UDeaDBeEF', -559038737)
 test_eq("\UDeaDBeEFFF", "\33653337357FF")
 test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
