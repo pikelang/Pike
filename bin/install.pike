@@ -1143,6 +1143,12 @@ void do_install()
       if(install_file(pike_bin_file,pike)) redump_all=1;
     }
 
+#ifdef __NT__
+    // Copy needed DLL files (like libmySQL.dll if available).
+    foreach(glob("*.dll", get_dir(vars->TMP_BUILDDIR)), string dll_name)
+      install_file(combine_path(vars->TMP_BUILDDIR, dll_name),
+		   combine_path(exec_prefix, dll_name));
+#endif
     install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),combine_path(exec_prefix,"hilfe"));
     string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
     
