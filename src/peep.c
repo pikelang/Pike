@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.93 2003/11/19 17:19:29 grubba Exp $
+|| $Id: peep.c,v 1.94 2003/11/19 20:20:31 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.93 2003/11/19 17:19:29 grubba Exp $");
+RCSID("$Id: peep.c,v 1.94 2003/11/19 20:20:31 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -192,7 +192,7 @@ INT32 assemble(int store_linenumbers)
     int previous_line = 0;
     ptrdiff_t num_linedirectives = 0;
 
-    /* Count the number of F_FILE/F_LINE pseudo-ops we need to add. */
+    /* Count the number of F_FILENAME/F_LINE pseudo-ops we need to add. */
     for (e=0; e < length; e++) {
       if (c[e].file != previous_file) {
 	previous_file = c[e].file;
@@ -204,7 +204,9 @@ INT32 assemble(int store_linenumbers)
       }
     }
 
-    fprintf(stderr, "length:%d directives:%d\n", length, num_linedirectives);
+    /* fprintf(stderr, "length:%d directives:%d\n",
+     *         length, num_linedirectives);
+     */
       
     if (!(tripples = malloc(sizeof(struct pike_tripple) *
 			    (length+num_linedirectives)))) {
@@ -400,10 +402,11 @@ INT32 assemble(int store_linenumbers)
 #endif
 
 #ifdef PIKE_PORTABLE_BYTECODE
+  /* FIXME: What about LP64? */
   if (store_linenumbers) {
-    ins_pointer(tripples);
+    ins_data(tripples);
   } else {
-    ins_pointer(NULL);
+    ins_data(NULL);
   }
 #endif /* PIKE_PORTABLE_BYTECODE */
 
