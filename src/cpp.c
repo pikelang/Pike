@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.136 2004/06/30 09:35:43 grubba Exp $
+|| $Id: cpp.c,v 1.137 2004/07/01 20:52:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -110,6 +110,7 @@ struct cpp
   struct object *compat_handler;
   int compat_major;
   int compat_minor;
+  int warn_if_constant_throws;
 };
 
 struct define *defined_macro =0;
@@ -182,13 +183,20 @@ void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
   free_svalue(&thrown);
 }
 
-static void cpp_warning(struct cpp *this, const char *err)
+static void cpp_warning(struct cpp *this, const char *warn_fmt, ...)
 {
+  char msg[8192];
+  va_list args;
+
+  va_start(args, warn_fmt);
+  VSNPRINTF(msg, sizeof(msg), warn_fmt, args);
+  va_end(args);
+
   if((this->handler && this->handler->prog) || get_master())
   {
     ref_push_string(this->current_file);
     push_int(this->current_line);
-    push_text(err);
+    push_text(msg);
     low_safe_apply_handler("compile_warning", this->handler,
 			   this->compat_handler, 3);
     pop_stack();
@@ -196,7 +204,7 @@ static void cpp_warning(struct cpp *this, const char *err)
     (void)fprintf(stderr, "%s:%ld: %s\n",
 		  this->current_file->str,
 		  (long)this->current_line,
-		  err);
+		  msg);
     fflush(stderr);
   }
 }
@@ -1373,14 +1381,15 @@ static void check_constant(struct cpp *this,
 	    char *str = malloc(dlen + 1);
 	    MEMCPY(str, data.ptr, dlen);
 	    str[dlen] = 0;
-	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
-			       "when resolving '%s'.",
-			       get_name_of_type (Pike_sp[-1].type), str);
+	    if(this->warn_if_constant_throws)
+	      cpp_warning (this, "Got placeholder %s (resolver problem) "
+			   "when resolving '%s'.",
+			   get_name_of_type (Pike_sp[-1].type), str);
 	    free (str);
 	  }
-	  else
-	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem).",
-			       get_name_of_type (Pike_sp[-1].type));
+	  else if(this->warn_if_constant_throws)
+	    cpp_warning (this, "Got placeholder %s (resolver problem).",
+			 get_name_of_type (Pike_sp[-1].type));
 	  res = 0;
 	}
 	else
@@ -1388,23 +1397,23 @@ static void check_constant(struct cpp *this,
       }
       else {
 	if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
-	  cpp_error(this, throw_value.u.string->str);
+	  if(this->warn_if_constant_throws)
+	    cpp_warning(this, throw_value.u.string->str);
 	  free_svalue(&throw_value);
 	  throw_value.type = T_INT;
-	  res = 0;
 	}
-	else {
+	else if(this->warn_if_constant_throws) {
 	  if (!data.shift) {
 	    char *str = malloc(dlen + 1);
 	    MEMCPY(str, data.ptr, dlen);
 	    str[dlen] = 0;
-	    cpp_handle_exception (this, "Error resolving '%s'.", str);
+	    cpp_warning (this, "Error resolving '%s'.", str);
 	    free(str);
 	  }
 	  else
-	    cpp_handle_exception (this, "Error resolving identifier.");
-	  res = 0;
+	    cpp_warning (this, "Error resolving identifier.");
 	}
+	res = 0;
       }
     }else{
       res=0;
@@ -1688,7 +1697,8 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
 
 /*! @decl string cpp(string data, string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
- *!                  void|int compat_major, void|int compat_minor)
+ *!                  void|int compat_major, void|int compat_minor, @
+ *!                  void|int warn_if_constant_throws)
  *!
  *! Run a string through the preprocessor.
  *!
@@ -1783,6 +1793,11 @@ void f_cpp(INT32 args)
   {
     cpp_change_compat(&this, sp[4-args].u.integer, sp[5-args].u.integer);
   }
+
+  if(args > 6)
+    this.warn_if_constant_throws = sp[6-args].u.integer;
+  else
+    this.warn_if_constant_throws = 0;
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */
