@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.308 2000/06/29 00:11:04 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.309 2000/07/02 02:24:47 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2385,6 +2385,50 @@ ifefun(gc,
 		      live[0]->x = live[1];
 		      live[1]->y = live[0], live[1]->x = live[2];
 		      live[2]->x = live[1];
+		    }}),
+      ({2, 0, 2, 0, lambda() {	// 64
+		      live[0]->x = live[1], live[0]->y = live_nested[1];
+		      live[1]->w[0] = live_nested[0];
+		      live_nested[0]->y = live[0];
+		    }}),
+      ({2, 0, 2, 0, lambda() {	// 65
+		      live[0]->y = live[1], live[0]->x = live_nested[1];
+		      live[1]->w[0] = live_nested[0];
+		      live_nested[0]->y = live[0];
+		    }}),
+      ({1, 1, 3, 0, lambda() {	// 66
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->x = live[0], live_nested[0]->y = live_nested[2];
+		      live[0]->x = live_nested[1];
+		    }}),
+      ({1, 1, 3, 0, lambda() {	// 67
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->y = live[0], live_nested[0]->x = live_nested[2];
+		      live[0]->x = live_nested[1];
+		    }}),
+      ({0, 1, 2, 2, lambda() {	// 68
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->y = live_nested[1], live_nested[0]->x = dead_nested[0];
+		      live_nested[1]->x = dead_nested[1];
+		      dead_nested[0]->x = live_nested[1];
+		    }}),
+      ({0, 1, 2, 2, lambda() {	// 69
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->x = live_nested[1], live_nested[0]->y = dead_nested[0];
+		      live_nested[1]->x = dead_nested[1];
+		      dead_nested[0]->x = live_nested[1];
+		    }}),
+      ({0, 1, 2, 2, lambda() {	// 70
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->x = live_nested[1], live_nested[0]->y = dead_nested[1];
+		      live_nested[1]->x = dead_nested[0];
+		      dead_nested[0]->x = live_nested[0];
+		    }}),
+      ({0, 1, 2, 2, lambda() {	// 71
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->y = live_nested[1], live_nested[0]->x = dead_nested[1];
+		      live_nested[1]->x = dead_nested[0];
+		      dead_nested[0]->x = live_nested[0];
 		    }}),
       //       ({3, 0, 0, 0, lambda() { // Not possible without weak refs directly in objects.
       // 		   live[0]->x = live[0], live[0]->v[0] = live[1];
