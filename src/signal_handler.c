@@ -605,29 +605,6 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 }
 #endif
 
-/*
- * create_process(string *arguments, mapping optional_data);
- *
- * optional_data:
- *
- *   stdin	object(files.file)
- *   stdout	object(files.file)
- *   stderr	object(files.file)
- *   cwd	string
- *   env	mapping(string:string)
- *
- * only on UNIX:
- *
- *   uid		int
- *   gid		int
- *   nice		int
- *   noinitgroups	int
- *   setgroups		array(int)
- *
- * FIXME:
- *   Support for setresgid().
- */
-
 #ifdef HAVE_GETPWENT
 #ifndef HAVE_GETPWNAM
 struct passwd *getpwnam(char *name)
@@ -674,6 +651,28 @@ struct group *getgrnam(char *name)
 #endif
 #endif
 
+/*
+ * create_process(string *arguments, mapping optional_data);
+ *
+ * optional_data:
+ *
+ *   stdin	object(files.file)
+ *   stdout	object(files.file)
+ *   stderr	object(files.file)
+ *   cwd	string
+ *   env	mapping(string:string)
+ *
+ * only on UNIX:
+ *
+ *   uid		int
+ *   gid		int
+ *   nice		int
+ *   noinitgroups	int
+ *   setgroups		array(int)
+ *
+ * FIXME:
+ *   Support for setresgid().
+ */
 void f_create_process(INT32 args)
 {
   struct array *cmd=0;
