@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.326 2002/09/23 15:56:28 marcus Exp $
+# $Id: Makefile.in,v 1.327 2002/09/24 15:12:20 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -510,7 +510,11 @@ verify: module_testsuites testsuite tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
-	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
+	if test -f ./test-pike ; then \
+	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	else \
+	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	fi
 
 verify_installed: module_testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
@@ -762,9 +766,10 @@ language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCD
 
 $(SRCDIR)/language.c $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
-	( cd $(SRCDIR) &&\
-	 $(YACC) $(YFLAGS) $(SRCDIR)/language.yacc &&\
-	 sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' <y.tab.c >language.c &&\
+	( cd $(SRCDIR) && \
+	 $(YACC) $(YFLAGS) $(SRCDIR)/language.yacc && \
+	 sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
+	     -e 's/YYFROM_CONST/@YY_FROM_CONST@/' <y.tab.c >language.c && \
 	 mv y.tab.h language.h_src && rm y.tab.c)
 
 $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
