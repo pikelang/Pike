@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.45 2001/06/27 06:08:59 js Exp $
+// $Id: MySQL.pike,v 1.46 2001/07/02 13:06:53 js Exp $
 
 inherit .Base;
 
@@ -22,8 +22,8 @@ void init_tables()
 #"create table if not exists document (id            int unsigned primary key
 			               auto_increment not null,
                          uri_id        int unsigned not null,
-                         language_code char(3) default null,
-                         INDEX index_language_code (language_code),
+                         language char(3) default null,
+                         INDEX index_language (language),
                          INDEX index_uri_id (uri_id))"
 			 );
   
@@ -64,9 +64,9 @@ static void init_fields()
     allocate_field_id(field);
 }
 
-void create(string _host)
+void create(string db_url)
 {
-  db=Sql.sql(host=_host);
+  db=Sql.sql(host=db_url);
 }
 
 string _sprintf()
@@ -82,15 +82,7 @@ static string to_md5(string url)
   return Crypto.string_to_hex(md5->digest());
 }
 
-int hash_word(string word)
-{
-  return hash(word);
-  string hashed=Crypto.md5()->update(word[..254]*16)->digest();
-  int c;
-  sscanf(hashed,"%4c",c);
-  return c;
-}
-
+function hash_word = hash;
 
 int get_uri_id(string uri, void|int do_not_create)
 {
@@ -109,23 +101,23 @@ int get_uri_id(string uri, void|int do_not_create)
   return db->master_sql->insert_id();
 }
 
-int get_document_id(string uri, void|string language_code)
+int get_document_id(string uri, void|string language)
 {
   int uri_id=get_uri_id(uri);
   
   string s=sprintf("select id from document where "
 		   "uri_id='%d'", uri_id);
-  if(language_code)
-    s+=sprintf(" and language_code='%s'",db->quote(language_code));
+  if(language)
+    s+=sprintf(" and language='%s'",db->quote(language));
 
   array a = db->query(s);
   if(sizeof(a))
     return (int)a[0]->id;
 
-  s=sprintf("insert into document (uri_id, language_code) "
+  s=sprintf("insert into document (uri_id, language) "
 	    "values ('%d',%s)",
 	    uri_id,
-	    language_code?("'"+language_code+"'"):"NULL");
+	    language?("'"+language+"'"):"NULL");
 
   db->query(s);
   return db->master_sql->insert_id();
@@ -163,7 +155,7 @@ int allocate_field_id(string field)
     }
   }
   db->query("unlock tables");
-  throw("Could not allocate new field id");
+  return -1;
 }
 
 static mapping field_cache = ([]);
@@ -183,12 +175,12 @@ int get_field_id(string field, void|int do_not_create)
   }
 
   if(do_not_create)
-    return 0;
+    return -1;
 
   return allocate_field_id(field);
 }
 
-void remove_field_id(string field)
+void remove_field(string field)
 {
   init_fields();
   m_delete(field_cache, field);
@@ -196,13 +188,14 @@ void remove_field_id(string field)
   db->query("delete from field where name=%s", field);
 }
 
-_WhiteFish.Blobs blobs = _WhiteFish.Blobs();
+static _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 
 #define MAXMEM 20*1024*1024
 
+
 //! Inserts the words of a resource into the database
 void insert_words(Standards.URI|string uri, void|string language,
-		  string field, array(string) words, void|int link_hash)
+		  string field, array(string) words)
 {
   if(!sizeof(words))  return;
   init_fields();
@@ -210,7 +203,7 @@ void insert_words(Standards.URI|string uri, void|string language,
   int doc_id   = get_document_id((string)uri, language);
   int field_id = get_field_id(field);
 
-  blobs->add_words_hash( doc_id, words, field_id, link_hash );
+  blobs->add_words_hash( doc_id, words, field_id, 0 );
 
   if(blobs->memsize() > MAXMEM)
     sync();
@@ -249,8 +242,8 @@ void set_metadata(Standards.URI|string uri, void|string language,
 }
 
 mapping(string:string) get_metadata(int|Standards.URI|string uri,
-					   void|string language,
-					   void|array(string) wanted_fields)
+				    void|string language,
+				    void|array(string) wanted_fields)
 {
   int doc_id;
   if(intp(uri))
@@ -271,7 +264,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 
 mapping get_uri_and_language(int doc_id)
 {
-  array a=db->query("select document.language_code,uri.uri from document,uri "
+  array a=db->query("select document.language,uri.uri from document,uri "
 		    "where uri.id=document.uri_id and document.id=%d",doc_id);
   if(!sizeof(a))
     return 0;
@@ -292,7 +285,7 @@ void remove_document(string|Standards.URI uri, void|string language)
   array a;
   if(language)
     a=db->query("select id from document where uri_id=%d and "
-		"language_code=%s",uri_id,language);
+		"language=%s",uri_id,language);
   else
     a=db->query("select id from document where uri_id=%d",uri_id);
 
@@ -337,7 +330,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
 }
 
 static object old_thread;
-int sync()
+void sync()
 {
 #if THREADS
   if( old_thread )
