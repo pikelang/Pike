@@ -28,7 +28,7 @@ class request
 
   mapping bad(string msg)
     {
-      return ([ "action" : bat, "tag" : tag, "msg" : msg]);
+      return ([ "action" : "bad", "tag" : tag, "msg" : msg]);
     }
   
   mapping easy_process(mixed ... args);
