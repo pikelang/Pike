@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: History.pike,v 1.4 2002/04/06 18:30:16 nilsson Exp $
+// $Id: History.pike,v 1.5 2002/10/19 13:42:30 nilsson Exp $
 
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.
@@ -63,8 +63,10 @@ int get_latest_entry_num() {
 }
 
 //! Returns the absolute sequence number of the
-//! oldest result still in the history.
+//! oldest result still in the history. Returns 0
+//! if there are no results in the history.
 int get_first_entry_num() {
+  if(!size) return 0;
   return latest_entry_num - size + 1;
 }
 
@@ -99,17 +101,19 @@ void set_maxsize(int _maxsize) {
 
   array old_values;
   if(size<maxsize)
-    old_values = stack[..size-1];
-  else
+    old_values = stack;
+  else {
     old_values = stack[top..] + stack[..top-1];
+    top = maxsize;
+  }
 
   if(_maxsize>maxsize)
     stack = old_values + allocate(_maxsize-maxsize);
   else {
     stack = old_values[maxsize-_maxsize..];
     size = _maxsize;
+    top = 0;
   }
-  top = 0;
   maxsize = _maxsize;
 }
 
