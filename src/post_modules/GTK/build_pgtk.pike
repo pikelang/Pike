@@ -132,18 +132,21 @@ void emit_program_block(mapping block, string cl)
   foreach(sort(indices(block)), string f)
   {
     _num_functions++;
+
+    // TODO: Add real type parser here, and generade ADD_FUNCTION instead
+    // of add function
     if( search( block[f], "()" ) != -1 ||
-         search( block[f], "(:" ) != -1 ||
+        search( block[f], "(:" ) != -1 ||
         search( block[f], ":)" ) != -1 ||
         search( block[f], " " ) != -1 ||
-        sizeof(block[f]/")") != sizeof( block[f] / "(" ) ||
+        (sizeof(block[f]/")") != sizeof( block[f] / "(" )) ||
         ((sizeof(block[f]/")") != sizeof( block[f] / ":" )+
           sizeof(block[f]/"array")-1) &&
          (sizeof(block[f]/")") != sizeof( block[f] / ":" )) ) ||
         search( block[f], "function" ) == -1)
-    {
+      if( block[f] != "\"function(array:object)\"" )
         werror(lines[cl+f]+": Warning: suspicious type "+block[f]+"\n");
-    }      
+
     switch(f)
     {
      case "union":
