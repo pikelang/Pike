@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.81 2005/03/21 05:09:45 per Exp $
+|| $Id: math.c,v 1.82 2005/03/21 05:10:47 per Exp $
 */
 
 #include "global.h"
@@ -590,9 +590,9 @@ void f_round(INT32 args)
 }
 
 
-/*! @decl int|float|object limit(int|float|object x, int|float|object minval, int|float|object maxval)
+/*! @decl int|float|object limit(int|float|object minval, int|float|object x, int|float|object maxval)
  *!
- *! Limits the value given so that it's between minval and maxval.
+ *! Limits the value @[x] so that it's between @[minval] and @[maxval].
  *! If @[x] is an object, it must implement the @[lfun::`<] method.
  *!
  *! @seealso
