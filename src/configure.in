@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.601 2002/08/19 13:48:25 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.602 2002/08/19 15:32:06 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1040,6 +1040,14 @@ AC_ARG_WITH(cdebug, MY_DESCR([--without-cdebug],[disable -g]),[],[
     Solaris:no)
       # Solaris/cc has problems with combining optimizations and debuginfo.
       AC_MSG_WARN([Defaulting to --without-cdebug since the OS is Solaris,
+and gcc is not being used.])
+      with_cdebug=no
+    ;;
+    HP-UX:no|HPUX:no)
+      # HP-UX/cc has problems with combining optimizations and debuginfo.
+      #
+      # cc: internal panic 7815: Malloc: underflow detected in free(). (7815)
+      AC_MSG_WARN([Defaulting to --without-cdebug since the OS is HP-UX,
 and gcc is not being used.])
       with_cdebug=no
     ;;
