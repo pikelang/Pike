@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.83 2004/08/31 18:13:21 grubba Exp $
+|| $Id: oracle.c,v 1.84 2004/10/12 17:01:04 mast Exp $
 */
 
 /*
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.83 2004/08/31 18:13:21 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.84 2004/10/12 17:01:04 mast Exp $");
 
 
 /* User-changable defines: */
@@ -289,12 +289,30 @@ void *parent_storage(int depth)
 }
 #endif
 
+#if 0
 
+void *ocimalloc (void *ctx, size_t l)
+{
+  return malloc (l);
+}
+
+void *ocirealloc (void *ctx, void *p, size_t l)
+{
+  return realloc (p, l);
+}
+
+void ocifree (void *ctx, void *p)
+{
+  free (p);
+}
+
+#else
 
 #define ocimalloc NULL
 #define ocirealloc NULL
 #define ocifree NULL
 
+#endif
 
 #ifdef PIKE_DEBUG
 void *low_check_storage(void *storage, unsigned long magic, char *prog)
@@ -665,15 +683,17 @@ static OCIError *global_error_handle=0;
 
 OCIError *get_global_error_handle(void)
 {
-  sword rc;
-  rc=OCIHandleAlloc(get_oracle_environment(),
-		    (void **)& global_error_handle,
-		    OCI_HTYPE_ERROR,
-		    0,
-		    0);
+  if (!global_error_handle) {
+    sword rc;
+    rc=OCIHandleAlloc(get_oracle_environment(),
+		      (void **)& global_error_handle,
+		      OCI_HTYPE_ERROR,
+		      0,
+		      0);
 
-  if(rc != OCI_SUCCESS)
-    Pike_error("Failed to allocate error handle.\n");
+    if(rc != OCI_SUCCESS)
+      Pike_error("Failed to allocate error handle.\n");
+  }
   
   return global_error_handle;
 }
@@ -2191,7 +2211,7 @@ PIKE_MODULE_INIT
     0, ocimalloc, ocirealloc, ocifree) != OCI_SUCCESS)
   {
 #ifdef ORACLE_DEBUG
-    fprintf(stderr,"OCIInitizlie failed\n");
+    fprintf(stderr,"OCIInitialize failed\n");
 #endif
     return;
   }
