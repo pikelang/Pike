@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.104 2001/10/05 22:56:52 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.105 2002/04/07 19:35:46 marcus Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1745,7 +1745,7 @@ void do_code_block(node *n)
     Pike_compiler->compiler_frame->is_inline=1;
 
     /* This is a no-op, but prevents optimizer to delete the bytes below */
-    low_insert_label(-1);
+    emit1(F_LABEL, -1); 
     emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
     emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
     emit0(F_START_FUNCTION);
