@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: testsuite.c,v 1.1 2001/03/26 12:32:57 mirar Exp $
+** $Id: testsuite.c,v 1.2 2002/03/15 22:10:25 nilsson Exp $
 **
 */ 
 #include "mird.h"
@@ -22,9 +22,9 @@
 #include <string.h>
 #endif
 
-//
-// $Id: testsuite.c,v 1.1 2001/03/26 12:32:57 mirar Exp $
-
+/*
+ * $Id: testsuite.c,v 1.2 2002/03/15 22:10:25 nilsson Exp $
+ */
 
 #ifdef DO_TRACE
 #define TRACE(X) fprintf(stderr,"\n%s   ",X);
