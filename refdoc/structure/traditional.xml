@@ -5,10 +5,17 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.1 2001/10/17 04:26:48 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.2 2001/10/18 18:53:38 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
+<!--
+  <file name="top.html">
+    <chapter title="Table of Contents">
+      <contents/>
+    </chapter>
+  </file>
+-->
   <file>
     <chapter-ref file="not_extracted/control_structures.xml"/>
   </file>
@@ -18,14 +25,14 @@
   <file>
     <chapter title="I/O">
       <insert-move entity="Stdio.File"/>
-<!--      <insert-move entity="Stdio.FILE"/> -->
+      <insert-move entity="Stdio.FILE"/>
 <!--      <insert-move entity="Stdio.stdin"/> -->
 <!--      <insert-move entity="Stdio.stdout"/> -->
 <!--      <insert-move entity="Stdio.stderr"/> -->
-<!--      <insert-move entity="Stdio.Port"/> -->
-<!--      <insert-move entity="Stdio.UDP"/> -->
+      <insert-move entity="Stdio.Port"/>
+      <insert-move entity="Stdio.UDP"/>
 <!--      <insert-move entity="Stdio.Terminfo"/> -->
-<!--      <insert-move entity="Stdio.Readline"/> -->
+      <insert-move entity="Stdio.Readline"/>
       <insert-move entity="Stdio"/>
     </chapter>
   </file>
@@ -35,8 +42,8 @@
       <insert-move entity="Array"/>
 <!--      <insert-move entity="Mapping"/> -->
 <!--      <insert-move entity="Multiset"/> -->
-<!--      <insert-move entity="Function"/> -->
-<!--      <insert-move entity="Program"/> -->
+      <insert-move entity="Function"/>
+      <insert-move entity="Program"/>
       <insert-move entity="ADT"/>
     </chapter>
   </file>
