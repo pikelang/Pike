@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.570 2002/03/21 14:02:37 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.571 2002/04/06 01:03:59 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5643,6 +5643,14 @@ LINKFORSHARED="$pike_cv_sys_linkforshared"
 
 AC_MSG_RESULT($LINKFORSHARED)
 
+# In case we're going to use gcc for linking shared objects,
+# we should use the -static-libgcc flag if it exists.
+# Shared libgcc is nothing but trouble.
+STATIC_LIBGCC=""
+if test yes = "$GCC" ; then
+  AC_SYS_COMPILER_FLAG(-static-libgcc,static_libgcc,STATIC_LIBGCC)
+else :; fi
+
 #############################################################################
 
 cat >conftest.c <<EOF
@@ -5736,7 +5744,7 @@ case "x$LDSHARED $LDFLAGS" in
     # Options in CFLAGS, no stuff needs to be added
   ;;
   x$CC*|x\$\(CC\)*)
-    LDSHARED="$LDSHARED \$(CFLAGS)"
+    LDSHARED="$LDSHARED $STATIC_LIBGCC \$(CFLAGS)"
   ;;
   *)
     LDSHARED="$LDSHARED ${LD_FALLBACK_FLAGS-}"
