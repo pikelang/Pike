@@ -86,7 +86,7 @@ struct thread_state {
 struct thread_starter;
 void *new_thread_func(void * data);
 void f_thread_create(INT32 args);
-void f_this_thread();
+void f_this_thread(INT32 args);
 void th_init();
 struct mutex_storage;
 struct key_storage;

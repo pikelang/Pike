@@ -21,6 +21,7 @@
 #include "main.h"
 #include "memory.h"
 #include "operators.h"
+#include "callback.h"
 
 #define LASDEBUG
 
@@ -1295,6 +1296,15 @@ static void optimize(node *n)
 	goto use_tmp1;
       }
 
+      /* for(;1;); -> for(;1;) sleep(255); (saves cpu) */
+      if(node_is_true(CAR(n)) &&
+	 (!CDR(n) || (CDR(n)->token==':' && !CADR(n) && !CDDR(n))))
+      {
+	tmp1=mknode(F_FOR, CAR(n), mknode(':',mkefuncallnode("sleep",mkintnode(255)),0));
+	CAR(n)=0;
+	goto use_tmp1;
+      }
+
       /*
        * if X and Y are free from 'continue' or X is null,
        * then the following optimizations can be done:
@@ -1507,6 +1517,22 @@ static void optimize(node *n)
   current_line = save_line;
 }
 
+struct timer_oflo
+{
+  INT32 counter;
+  int yes;
+};
+
+static void check_evaluation_time(struct callback *cb,void *ignored,void *tmp)
+{
+  struct timer_oflo *foo=(struct timer_oflo *)tmp;
+  if(foo->counter-- < 0)
+  {
+    foo->yes=1;
+    throw();
+  }
+}
+
 int eval_low(node *n)
 {
   unsigned INT16 num_strings, num_constants;
@@ -1530,7 +1556,19 @@ int eval_low(node *n)
   ret=-1;
   if(!num_parse_error)
   {
+    struct callback *tmp_callback;
+    struct timer_oflo foo;
+
+    /* This is how long we try to optimize before giving up... */
+    foo.counter=10000;
+    foo.yes=0;
+
     setup_fake_object();
+
+    tmp_callback=add_to_callback(&evaluator_callbacks,
+				 check_evaluation_time,
+				 (void *)&foo,0);
+				 
     if(apply_low_safe_and_stupid(&fake_object, jump))
     {
       /* Generate error message */
@@ -1548,8 +1586,13 @@ int eval_low(node *n)
 	yyerror("Nonstandard error format.");
       }
     }else{
-      ret=sp-save_sp;
+      if(foo.yes)
+	pop_n_elems(sp-save_sp);
+      else
+	ret=sp-save_sp;
     }
+
+    remove_callback(tmp_callback);
   }
 
   while(fake_program.num_strings > num_strings)

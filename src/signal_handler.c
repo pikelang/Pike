@@ -11,6 +11,7 @@
 #include "macros.h"
 #include "backend.h"
 #include "error.h"
+#include "callback.h"
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -30,6 +31,8 @@ static struct svalue signal_callbacks[MAX_SIGNALS];
 
 static unsigned char sigbuf[SIGNAL_BUFFER];
 static int firstsig, lastsig;
+static struct callback *signal_evaluator_callback =0;
+
 
 struct sigdesc
 {
@@ -305,6 +308,13 @@ static void f_signal(int args)
   if(signum <0 || signum >=MAX_SIGNALS)
   {
     error("Signal out of range.\n");
+  }
+
+  if(!signal_evaluator_callback)
+  {
+    signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
+					      check_signals,
+					      0,0);
   }
 
   if(args == 1)

@@ -1,14 +1,17 @@
 #include "global.h"
+
+int num_threads = 1;
+int threads_disabled = 0;
+
+#ifdef _REENTRANT
 #include "threads.h"
 #include "array.h"
 #include "object.h"
 #include "macros.h"
+#include "callback.h"
 
-int num_threads = 1;
-int threads_disabled = 0;
 struct object *thread_id;
-
-#ifdef _REENTRANT
+static struct callback *threads_evaluator_callback=0;
 
 MUTEX_T interpreter_lock = PTHREAD_MUTEX_INITIALIZER;
 struct program *mutex_key = 0;
@@ -20,6 +23,15 @@ struct thread_starter
   struct object *id;
   struct array *args;
 };
+
+static void check_threads(struct callback *cb, void *arg)
+{
+  THREADS_ALLOW();
+
+  /* Allow other threads to run */
+
+  THREADS_DISALLOW();
+}
 
 void *new_thread_func(void * data)
 {
@@ -61,6 +73,11 @@ void *new_thread_func(void * data)
 
   cleanup_interpret();
   num_threads--;
+  if(!num_threads)
+  {
+    remove_callback(threads_evaluator_callback);
+    threads_evaluator_callback=0;
+  }
   mt_unlock(& interpreter_lock);
   th_exit(0);
 }
@@ -78,6 +95,13 @@ void f_thread_create(INT32 args)
   if(!tmp)
   {
     num_threads++;
+
+    if(num_threads == 1 && !threads_evaluator_callback)
+    {
+      threads_evaluator_callback=add_to_callback(&evaluator_callbacks,
+						 check_threads, 0,0);
+    }
+
     push_object(arg->id);
     arg->id->refs++;
   } else {

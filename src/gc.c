@@ -8,6 +8,8 @@
 
 #ifdef GC2
 
+struct callback *gc_evaluator_callback=0;
+
 #include "array.h"
 #include "multiset.h"
 #include "mapping.h"
@@ -197,7 +199,7 @@ static INT32 hashprimes[] =
   2147483647,/* ~ 2^31 = 2147483648 */
 };
 
-void do_gc(void)
+void do_gc()
 {
   double tmp;
   INT32 tmp2;
@@ -281,6 +283,14 @@ void do_gc(void)
   if(t_flag)
     fprintf(stderr,"done (freed %ld of %ld objects).\n",
 	    (long)(tmp2-num_objects),(long)tmp2);
+#endif
+
+#ifndef ALWAYS_GC
+  if(d_flag < 3 && gc_evaluator_callback)
+  {
+    remove_callback(gc_evaluator_callback);
+    gc_evaluator_callback=0;
+  }
 #endif
 }
 

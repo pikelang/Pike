@@ -4,22 +4,27 @@
 #ifdef GC2
 
 #include "types.h"
+#include "callback.h"
 
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern INT32 alloc_threshold;
 
-#define GC_ALLOC() do{ num_objects++; num_allocs++;  } while(0)
+extern struct callback *gc_evaluator_callback;
+extern struct callback *evaluator_callbacks;
+
+#define ADD_GC_CALLBACK() gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0)
+
+#ifdef ALWAYS_GC
+#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(!gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
+#else
+#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(num_allocs == alloc_threshold && !gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
+#endif
+
 #ifdef DEBUG
 #define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
 #else
 #define GC_FREE() do { num_objects-- ; }while(0)
-#endif
-
-#ifdef ALWAYS_GC
-#define CHECK_FOR_GC(); do { do_gc(); } while(0)
-#else
-#define CHECK_FOR_GC(); do { if(num_allocs > alloc_threshold || d_flag > 3) do_gc(); } while(0)
 #endif
 
 /* Prototypes begin here */
@@ -29,7 +34,7 @@ void gc_check(void *a);
 int gc_is_referenced(void *a);
 int gc_mark(void *a);
 int gc_do_free(void *a);
-void do_gc(void);
+void do_gc();
 /* Prototypes end here */
 
 #else

@@ -25,6 +25,7 @@
 #include "signal_handler.h"
 #include "gc.h"
 #include "threads.h"
+#include "callback.h"
 
 #include <fcntl.h>
 
@@ -293,20 +294,15 @@ void pop_n_elems(INT32 x)
   free_svalues(sp,x,BIT_MIXED);
 }
 
+
+struct callback *evaluator_callbacks =0;
+
 /* This function is called 'every now and then'. (1-10000 / sec or so)
  * It should do anything that needs to be done fairly often.
  */
 void check_threads_etc()
 {
-  THREADS_ALLOW();
-
-  /* Allow other threads to run */
-
-  THREADS_DISALLOW();
-
-  check_signals();
-  if(objects_to_destruct) destruct_objects_to_destruct();
-  CHECK_FOR_GC();
+  call_callback(& evaluator_callbacks, (void *)0);
 }
 
 #ifdef DEBUG

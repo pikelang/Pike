@@ -17,6 +17,7 @@
 #include "array.h"
 #include "gc.h"
 #include "backend.h"
+#include "callback.h"
 
 struct object *master_object = 0;
 struct object *first_object;
@@ -225,34 +226,8 @@ void destruct(struct object *o)
 }
 
 
-struct object *objects_to_destruct = 0;
-
-
-/* really_free_objects:
- * This function is called when an object runs out of references.
- * It frees the object if it is destructed, otherwise it moves it to
- * a separate list of objects which will be destructed later.
- */
-
-void really_free_object(struct object *o)
-{
-  if(o->prev)
-    o->prev->next=o->next;
-  else
-    first_object=o->next;
-
-  if(o->next) o->next->prev=o->prev;
-
-  if(o->prog)
-  {
-    o->next=objects_to_destruct;
-    o->prev=0;
-    objects_to_destruct=o;
-  } else {
-    free((char *)o);
-    GC_FREE();
-  }
-}
+static struct object *objects_to_destruct = 0;
+static struct callback *destruct_object_evaluator_callback =0;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by really_free_object. It links the object back into the
@@ -261,6 +236,7 @@ void really_free_object(struct object *o)
 void destruct_objects_to_destruct()
 {
   struct object *o, *next;
+
   while(o=objects_to_destruct)
   {
     /* Link object back to list of objects */
@@ -280,6 +256,45 @@ void destruct_objects_to_destruct()
     free_object(o);
   }
   objects_to_destruct=0;
+  if(destruct_object_evaluator_callback)
+  {
+    remove_callback(destruct_object_evaluator_callback);
+    destruct_object_evaluator_callback=0;
+  }
+}
+
+
+/* really_free_objects:
+ * This function is called when an object runs out of references.
+ * It frees the object if it is destructed, otherwise it moves it to
+ * a separate list of objects which will be destructed later.
+ */
+
+void really_free_object(struct object *o)
+{
+  if(o->prev)
+    o->prev->next=o->next;
+  else
+    first_object=o->next;
+
+  if(o->next) o->next->prev=o->prev;
+
+  if(o->prog)
+  {
+    if(!objects_to_destruct)
+    {
+      destruct_object_evaluator_callback=
+	add_to_callback(&evaluator_callbacks,
+			(callback_func)destruct_objects_to_destruct,
+			0,0);
+    }
+    o->next=objects_to_destruct;
+    o->prev=0;
+    objects_to_destruct=o;
+  } else {
+    free((char *)o);
+    GC_FREE();
+  }
 }
 
 
