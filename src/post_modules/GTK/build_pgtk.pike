@@ -1344,7 +1344,10 @@ void do_default_sprintf( int args, int offset, int len )
       {
 	emit( args );
         if( fn == "create" )
-          emit("  pgtk_verify_setup();\n");
+          if( search( progname, "gnome" ) != -1 )
+            emit("  pgtk_verify_gnome_setup();\n");
+          else
+            emit("  pgtk_verify_setup();\n");
 
         if( last_was_optional )
         {
