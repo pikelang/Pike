@@ -1,10 +1,12 @@
 //
-// $Id: TELNET.pmod,v 1.5 1998/04/30 13:53:41 grubba Exp $
+// $Id: TELNET.pmod,v 1.6 1999/04/30 06:56:24 hubbe Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
 // Henrik Grubbström <grubba@idonex.se> 1998-04-04
 //
+
+// #define TELNET_DEBUG
 
 #ifdef TELNET_DEBUG
 #define DWRITE(X)	werror(X)
@@ -17,7 +19,212 @@
 //. Also implements the Q method of TELNET option negotiation
 //. as specified by RFC 1143.
 
+class TelnetCodes {
 
+constant IAC = 255;		/* interpret as command: */
+constant DONT=254;		/* you are not to use option */
+constant DO = 253;		/* please, you use option */
+constant WONT=252;		/* I won't use option */
+constant WILL = 251;		/* I will use option */
+constant SB = 250;		/* interpret as subnegotiation */
+constant GA = 249;		/* you may reverse the line */
+constant EL = 248;		/* erase the current line */
+constant EC = 247;		/* erase the current character */
+constant AYT = 246;		/* are you there */
+constant AO = 245;		/* abort output--but let prog finish */
+constant IP = 244;		/* interrupt process--permanently */
+constant BREAK = 243;		/* break */
+constant DM = 242;		/* data mark--for connect. cleaning */
+constant NOP = 241;		/* nop */
+constant SE = 240;		/* end sub negotiation */
+constant EOR = 239;             /* end of record (transparent mode) */
+constant ABORT = 238;		/* Abort process */
+constant SUSP = 237;		/* Suspend process */
+constant xEOF = 236;		/* End of file: EOF is already used... */
+
+constant SYNCH = 242;		/* for telfunc calls */
+};
+
+inherit TelnetCodes;
+
+
+/* telnet options */
+class Telopts {
+
+constant TELOPT_BINARY = 0;	/* 8-bit data path */
+constant TELOPT_ECHO = 1;	/* echo */
+constant TELOPT_RCP = 2;	/* prepare to reconnect */
+constant TELOPT_SGA = 3;        /* suppress go ahead */
+constant TELOPT_NAMS = 4;       /* approximate message size */
+constant TELOPT_STATUS = 5;     /* give status */
+constant TELOPT_TM = 6;         /* timing mark */
+constant TELOPT_RCTE = 7;	/* remote controlled transmission and echo */
+constant TELOPT_NAOL = 8;	/* negotiate about output line width */
+constant TELOPT_NAOP = 9;	/* negotiate about output page size */
+constant TELOPT_NAOCRD = 10;	/* negotiate about CR disposition */
+constant TELOPT_NAOHTS = 11;	/* negotiate about horizontal tabstops */
+constant TELOPT_NAOHTD = 12;	/* negotiate about horizontal tab disposition */
+constant TELOPT_NAOFFD = 13;	/* negotiate about formfeed disposition */
+constant TELOPT_NAOVTS = 14;	/* negotiate about vertical tab stops */
+constant TELOPT_NAOVTD = 15;	/* negotiate about vertical tab disposition */
+constant TELOPT_NAOLFD = 16;	/* negotiate about output LF disposition */
+constant TELOPT_XASCII = 17;	/* extended ascic character set */
+constant TELOPT_LOGOUT = 18;	/* force logout */
+constant TELOPT_BM = 19;	/* byte macro */
+constant TELOPT_DET = 20;	/* data entry terminal */
+constant TELOPT_SUPDUP = 21;	/* supdup protocol */
+constant TELOPT_SUPDUPOUTPUT = 22;	/* supdup output */
+constant TELOPT_SNDLOC = 23;	/* send location */
+constant TELOPT_TTYPE = 24;	/* terminal type */
+constant TELOPT_EOR = 25;	/* end or record */
+constant TELOPT_TUID = 26;	/* TACACS user identification */
+constant TELOPT_OUTMRK = 27;	/* output marking */
+constant TELOPT_TTYLOC = 28;	/* terminal location number */
+constant TELOPT_3270REGIME = 29;	/* 3270 regime */
+constant TELOPT_X3PAD = 30;	/* X.3 PAD */
+constant TELOPT_NAWS = 31;	/* window size */
+constant TELOPT_TSPEED = 32;	/* terminal speed */
+constant TELOPT_LFLOW = 33;	/* remote flow control */
+constant TELOPT_LINEMODE = 34;	/* Linemode option */
+constant TELOPT_XDISPLOC = 35;	/* X Display Location */
+constant TELOPT_OLD_ENVIRON = 36;	/* Old - Environment variables */
+constant TELOPT_AUTHENTICATION = 37; /* Authenticate */
+constant TELOPT_ENCRYPT = 38;	/* Encryption option */
+constant TELOPT_NEW_ENVIRON = 39;	/* New - Environment variables */
+constant TELOPT_EXOPL = 255;	/* extended-options-list */
+
+};
+
+inherit Telopts;
+
+mapping lookup_telopt=mkmapping(values(Telopts()),indices(Telopts()));
+mapping lookup_telnetcodes=mkmapping(values(TelnetCodes()),indices(TelnetCodes()));
+
+
+/* sub-option qualifiers */
+constant TELQUAL_IS=	0;	/* option is... */
+constant TELQUAL_SEND=	1;	/* send option */
+constant TELQUAL_INFO=	2;	/* ENVIRON: informational version of IS */
+constant TELQUAL_REPLY=	2;	/* AUTHENTICATION: client version of IS */
+constant TELQUAL_NAME=	3;	/* AUTHENTICATION: client version of IS */
+
+constant LFLOW_OFF=		0;	/* Disable remote flow control */
+constant LFLOW_ON=		1;	/* Enable remote flow control */
+constant LFLOW_RESTART_ANY=	2;	/* Restart output on any char */
+constant LFLOW_RESTART_XON=	3;	/* Restart output only on XON */
+
+
+constant	LM_MODE	= 1;
+constant	LM_FORWARDMASK = 2;
+constant	LM_SLC = 3;
+
+constant	MODE_EDIT =     0x01;
+constant	MODE_TRAPSIG =  0x02;
+constant	MODE_ACK =	0x04;
+constant MODE_SOFT_TAB=	0x08;
+constant MODE_LIT_ECHO=	0x10;
+
+constant	MODE_MASK=	0x1f;
+
+/* Not part of protocol, but needed to simplify things... */
+constant MODE_FLOW=		0x0100;
+constant MODE_ECHO=		0x0200;
+constant MODE_INBIN=		0x0400;
+constant MODE_OUTBIN=		0x0800;
+constant MODE_FORCE=		0x1000;
+
+constant	SLC_SYNCH=	1;
+constant	SLC_BRK=	2;
+constant	SLC_IP=		3;
+constant	SLC_AO=		4;
+constant	SLC_AYT=	5;
+constant	SLC_EOR=	6;
+constant	SLC_ABORT=	7;
+constant	SLC_EOF=	8;
+constant	SLC_SUSP=	9;
+constant	SLC_EC=		10;
+constant	SLC_EL=		11;
+constant	SLC_EW=		12;
+constant	SLC_RP=		13;
+constant	SLC_LNEXT=	14;
+constant	SLC_XON=	15;
+constant	SLC_XOFF=	16;
+constant	SLC_FORW1=	17;
+constant	SLC_FORW2=	18;
+
+constant	NSLC=		18;
+
+constant	SLC_NOSUPPORT=	0;
+constant	SLC_CANTCHANGE=	1;
+constant	SLC_VARIABLE=	2;
+constant	SLC_DEFAULT=	3;
+constant	SLC_LEVELBITS=	0x03;
+
+constant	SLC_FUNC=	0;
+constant	SLC_FLAGS=	1;
+constant	SLC_VALUE=	2;
+
+constant	SLC_ACK=	0x80;
+constant	SLC_FLUSHIN=	0x40;
+constant	SLC_FLUSHOUT=	0x20;
+
+constant	OLD_ENV_VAR=	1;
+constant	OLD_ENV_VALUE=	0;
+constant	NEW_ENV_VAR=	0;
+constant	NEW_ENV_VALUE=	1;
+constant	ENV_ESC=	2;
+constant	ENV_USERVAR=	3;
+
+/*
+ * AUTHENTICATION suboptions
+ */
+
+/*
+ * Who is authenticating who ...
+ */
+constant	AUTH_WHO_CLIENT=	0;	/* Client authenticating server */
+constant	AUTH_WHO_SERVER=	1;	/* Server authenticating client */
+constant	AUTH_WHO_MASK=		1;
+
+/*
+ * amount of authentication done
+ */
+constant	AUTH_HOW_ONE_WAY=	0;
+constant	AUTH_HOW_MUTUAL=	2;
+constant	AUTH_HOW_MASK=		2;
+
+constant	AUTHTYPE_NULL=		0;
+constant	AUTHTYPE_KERBEROS_V4=	1;
+constant	AUTHTYPE_KERBEROS_V5=	2;
+constant	AUTHTYPE_SPX=		3;
+constant	AUTHTYPE_MINK=		4;
+constant	AUTHTYPE_CNT=		5;
+
+constant	AUTHTYPE_TEST=		99;
+
+
+/*
+ * ENCRYPTion suboptions
+ */
+constant ENCRYPT_IS=		0;	/* I pick encryption type ... */
+constant ENCRYPT_SUPPORT=	1;	/* I support encryption types ... */
+constant ENCRYPT_REPLY=		2;	/* Initial setup response */
+constant ENCRYPT_START=		3;	/* Am starting to send encrypted */
+constant ENCRYPT_END=		4;	/* Am ending encrypted */
+constant ENCRYPT_REQSTART=	5;	/* Request you start encrypting */
+constant ENCRYPT_REQEND=		6;	/* Request you send encrypting */
+constant ENCRYPT_ENC_KEYID=	7;
+constant ENCRYPT_DEC_KEYID=	8;
+constant ENCRYPT_CNT=		9;
+
+constant ENCTYPE_ANY=		0;
+constant ENCTYPE_DES_CFB64=	1;
+constant ENCTYPE_DES_OFB64=	2;
+constant ENCTYPE_CNT=		3;
+
+#define C(X) sprintf("%c",X)
+#define C2(X,Y) sprintf("%c%c",X,Y)
+#define C3(X,Y,Z) sprintf("%c%c%c",X,Y,Z)
 
 //. o protocol
 //.   Implementation of the TELNET protocol.
@@ -29,76 +236,50 @@ class protocol
 
   //. + cb
   //.   Mapping containing extra callbacks.
-  static private mapping cb;
+  static mapping cb;
 
   //. + id
   //.   Value to send to the callbacks.
-  static private mixed id;
+  static mixed id;
 
   //. + write_cb
   //.   Write callback.
-  static private function(mixed|void:string) write_cb;
+  static function(mixed|void:string) write_cb;
 
   //. + read_cb
   //.   Read callback.
-  static private function(mixed, string:void) read_cb;
+  static function(mixed,string:void) read_cb;
 
   //. + close_cb
   //.   Close callback.
-  static private function(mixed|void:void) close_cb;
+  static function(mixed|void:void) close_cb;
 
-  //. + TelnetCodes
-  //.   Mapping of telnet codes to their abreviations.
-  static private constant TelnetCodes = ([
-    236:"EOF",		// End Of File
-    237:"SUSP",		// Suspend Process
-    238:"ABORT",	// Abort Process
-    239:"EOR",		// End Of Record
+  // See RFC 1143 for the use and meaning of these.
 
-    // The following ones are specified in RFC 959:
-    240:"SE",		// Subnegotiation End
-    241:"NOP",		// No Operation
-    242:"DM",		// Data Mark
-    243:"BRK",		// Break
-    244:"IP",		// Interrupt Process
-    245:"AO",		// Abort Output
-    246:"AYT",		// Are You There
-    247:"EC",		// Erase Character
-    248:"EL",		// Erase Line
-    249:"GA",		// Go Ahead
-    250:"SB",		// Subnegotiation
-    251:"WILL",		// Desire to begin/confirmation of option
-    252:"WON'T",	// Refusal to begin/continue option
-    253:"DO",		// Request to begin/confirmation of option
-    254:"DON'T",	// Demand/confirmation of stop of option
-    255:"IAC",		// Interpret As Command
-  ]);
+  static constant UNKNOWN = 0;
+  static constant YES = 1;
+  static constant NO = 2;
+  static constant WANT = 4;
+  static constant OPPOSITE = 8;
 
   //. + option_states
   //.   Negotiation states of all WILL/WON'T options.
   //.   See RFC 1143 for a description of the states.
-  static private array(int) option_states = allocate(256);
+  static array(int) remote_options = allocate(256,NO);
+  static array(int) local_options = allocate(256,NO);
 
-  // See RFC 1143 for the use and meaning of these.
-  static private constant option_us_yes		= 0x0001;
-  static private constant option_us_want	= 0x0002;
-  static private constant option_us_opposite	= 0x0010;
-
-  static private constant option_him_yes	= 0x0100;
-  static private constant option_him_want	= 0x0200;
-  static private constant option_him_opposite	= 0x1000;
 
   //. + to_send
   //.   Data queued to be sent.
-  static private string to_send = "";
+  static string to_send = "";
 
   //. + nonblocking_write
   //.   Tells if we have set the nonblocking write callback or not.
-  static private int nonblocking_write;
+  static int nonblocking_write;
 
   //. - enable_write
   //.   Turns on the write callback if apropriate.
-  static private void enable_write()
+  static void enable_write()
   {
     if (!nonblocking_write && (write_cb || sizeof(to_send))) {
       fd->set_nonblocking(got_data, send_data, close_cb, got_oob);
@@ -108,7 +289,7 @@ class protocol
 
   //. - disable_write
   //.   Turns off the write callback if apropriate.
-  static private void disable_write()
+  static void disable_write()
   {
     if (!write_cb && !sizeof(to_send) && nonblocking_write) {
       fd->set_nonblocking(got_data, 0, close_cb, got_oob);
@@ -121,7 +302,8 @@ class protocol
   //. > s - String to send.
   void write(string s)
   {
-    to_send += replace(s, "\377", "\377\377");
+    DWRITE(sprintf("TELNET, writing :%O\n",s));
+    to_send += replace(s, C(IAC), C2(IAC,IAC));
     enable_write();
   }
 
@@ -137,7 +319,7 @@ class protocol
   //. - send_data
   //.   Callback called when it is clear to send data over the connection.
   //.   This function does the actual sending.
-  static private void send_data()
+  static void send_data()
   {
     if (!sizeof(to_send)) {
       if (write_cb) {
@@ -151,7 +333,7 @@ class protocol
     } else if (sizeof(to_send)) {
       if (to_send[0] == 242) {
 	// DataMark needs extra quoting... Stupid.
-	to_send = "\377\361" + to_send;
+	to_send = C2(IAC,NOP) + to_send;
       }
 
       int n = fd->write(to_send);
@@ -161,27 +343,6 @@ class protocol
     disable_write();
   }
 
-  //. + default_cb
-  //.   Mapping with the default handlers for TELNET commands.
-  static private mapping(string:function) default_cb = ([
-    "BRK":lambda() {
-	    destruct();
-	    throw(0);
-	  },
-    "AYT":lambda() {
-	    to_send += "\377\361";	// NOP
-	    enable_write();
-	  },
-    "WILL":lambda(int code) {
-	     to_send += sprintf("\377\376%c", code);	// DON'T xxx
-	     enable_write();
-	   },
-    "DO":lambda(int code) {
-	   to_send += sprintf("\377\374%c", code);	// WON'T xxx
-	   enable_write();
-	 },
-  ]);
-
   //. - send_synch
   //.   Sends a TELNET synch command.
   void send_synch()
@@ -190,165 +351,236 @@ class protocol
     to_send = "";
 
     if (fd->write_oob) {
-      fd->write_oob("\377");
+      fd->write_oob(C(IAC));
 
-      fd->write("\362");
+      fd->write(C(DM));
     } else {
       // Fallback...
-      fd->write("\377\362");
+      fd->write(C2(IAC,DM));
     }
   }
 
-  //. - enable_option
+  //. - send_DO
   //.   Starts negotiation to enable a TELNET option.
   //. > option - The option to enable.
-  void enable_option(int option)
-  {
-    if ((option < 0) || (option > 255)) {
-      throw(({ sprintf("Bad TELNET option #%d\n", option), backtrace() }));
-    }
-    switch(option_states[option] & 0xff00) {
-    case 0x0000: /* NO */
-    case 0x1000: /* NO OPPOSITE */
-      option_states[option] &= ~option_him_opposite;
-      option_states[option] |= option_him_want | option_him_yes;
-      to_send += sprintf("\377\375%c", option); // DO option
-      break;
-    case 0x0100: /* YES */
-    case 0x1100: /* YES OPPOSITE */
-      /* Error: Already enabled */
-      break;
-    case 0x0200: /* WANTNO EMPTY */
-      /* Error: Cannot initiate new request in the middle of negotiation. */
-      /* FIXME: **********************/
-      break;
-    case 0x1200: /* WANTNO OPPOSITE */
-      /* Error: Already queued an enable request */
-      break;
-    case 0x1300: /* WANTYES OPPOSITE */
-      /* Error: Already negotiating for enable */
-      break;
-    case 0x0300: /* WANTYES EMPTY */
-      option_states[option] &= ~option_him_opposite;
-      break;
-    }
-    enable_write();
-  }
 
-  //. - disable_option
+  //. - send_DONT
   //.   Starts negotiation to disable a TELNET option.
   //. > option - The option to disable.
-  void disable_option(int option)
+
+
+#define CONTROL(OPTIONS,DO,DONT,WILL,WONT,YES,NO)					\
+  void send_##DO(int option)								\
+  {											\
+    if ((option < 0) || (option > 255)) {						\
+      throw(({ sprintf("Bad TELNET option #%d\n", option), backtrace() }));		\
+    }											\
+     DWRITE(sprintf("TELNET: send_" #DO "(%s) state is %d\n",lookup_telopt[option] || (string)option,OPTIONS##_options[option])); \
+    switch(OPTIONS##_options[option])								\
+    {											\
+      case NO:										\
+      case UNKNOWN:									\
+	OPTIONS##_options[option]= WANT | YES;						\
+        DWRITE(sprintf("TELNET: => " #DO " %s\n",lookup_telopt[option] || (string)option)); \
+	to_send += sprintf("%c%c%c",IAC,DO,option); 					\
+	break;										\
+											\
+      case YES: /* Already enabled */							\
+      case WANT | YES: /* Will be enabled soon */					\
+	break;										\
+											\
+      case WANT | NO:									\
+      case WANT | YES | OPPOSITE:							\
+	OPTIONS##_options[option]^=OPPOSITE;						\
+	break;										\
+											\
+      default:										\
+	error("TELNET: Strange remote_options[%d]=%d\n",option,remote_options[option]);	\
+	/* ERROR: weird state! */							\
+	break;										\
+    }											\
+    enable_write();									\
+  }
+
+  CONTROL(remote,DO,DONT,WILL,WONT,YES,NO)
+
+  CONTROL(remote,DONT,DO,WONT,WILL,NO,YES)
+
+  CONTROL(local,WILL,WONT,DO,DONT,YES,NO)
+
+  CONTROL(local,WONT,WILL,DONT,DO,NO,YES)
+
+  void remote_option_callback(int opt, int onoff)
   {
-    if ((option < 0) || (option > 255)) {
-      throw(({ sprintf("Bad TELNET option #%d\n", option), backtrace() }));
+    call_callback("Remote "+ lookup_telopt[opt], onoff);
+    call_callback("Remote option", onoff);
+  }
+
+  void local_option_callback(int opt, int onoff)
+  {
+    call_callback("Local "+ lookup_telopt[opt], onoff);
+    call_callback("Local option", onoff);
+  }
+
+  void set_remote_option(int opt, int state)
+  {
+    remote_options[opt]=state;
+    switch(state)
+    {
+      case YES: remote_option_callback(opt,1); break;
+      case NO:  remote_option_callback(opt,0); break;
     }
-    switch(option_states[option] & 0xff00) {
-    case 0x0000: /* NO */
-    case 0x1000: /* NO OPPOSITE */
-      /* Error: Already disabled */
-      break;
-    case 0x0100: /* YES */
-    case 0x1100: /* YES OPPOSITE */
-      option_states[option] &= ~(option_him_opposite | option_him_yes);
-      option_states[option] |= option_him_want;
-      to_send += sprintf("\377\376%c", option); // DON'T option
-      break;
-    case 0x0200: /* WANTNO EMPTY */
-      /* Error: Already negotiating for disable */
-      break;
-    case 0x1200: /* WANTNO OPPOSITE */
-      option_states[option] &= ~option_him_opposite;
-      break;
-    case 0x1300: /* WANTYES OPPOSITE */
-      /* Error: Cannot initiate new request in the middle of negotiation. */
-      /* FIXME: **********************/
-      break;
-    case 0x0300: /* WANTYES EMPTY */
-      /* Error: Already queued an disable request */
-      break;
+  }
+
+  void set_local_option(int opt, int state)
+  {
+    local_options[opt]=state;
+    switch(state)
+    {
+      case YES: local_option_callback(opt,1); break;
+      case NO:  local_option_callback(opt,0); break;
     }
+  }
+
+  int WILL_callback(int opt)
+  {
+    return call_callback(WILL,opt);
+  }
+
+  int DO_callback(int opt)
+  {
+    return call_callback(DO,opt);
+  }
+
+  void send_SB(int|string ... args)
+  {
+    to_send+=
+      C2(IAC,SB)+
+      replace(Array.map(args,lambda(int|string s)
+			{
+			  return sprintf(intp(s)?"%c":"%s",s);
+			})*"",C(IAC),C2(IAC,IAC))+
+	  C2(IAC,SE);
     enable_write();
   }
+  
 
   //. + synch
   //.   Indicates wether we are in synch-mode or not.
-  static private int synch = 0;
+  static int synch = 0;
+
+  static mixed call_callback(mixed what, mixed ... args)
+  {
+    if(mixed cb=cb[what])
+    {
+      mixed err=catch {
+	return cb(@args);
+      };
+      if(err)
+      {
+	throw(err);
+      }else{
+	if(!this_object()) return;
+	throw(err);
+      }
+    }
+    switch(what)
+    {
+    case BREAK:
+      destruct(this_object());
+      throw(0);
+      break;
+
+    case AYT:
+      to_send += C2(IAC,NOP);	// NOP
+      enable_write();
+      break;
+    }
+  }
 
   //. - got_oob
   //.   Callback called when Out-Of-Band data has been received.
   //. > ignored - The id from the connection.
   //. > s - The Out-Of-Band data received.
-  static private void got_oob(mixed ignored, string s)
+  static void got_oob(mixed ignored, string s)
   {
-    DWRITE(sprintf("TELNET: got_oob(\"%s\")\n", s));
-    synch = synch || (s == "\377");
-    if (cb["URG"]) {
-      cb["URG"](id, s);
+#ifdef TELNET_DEBUG
+  werror("TELNET: got_oob(\"%s\")\n",Array.map(values(s),lambda(int s) { 
+    switch(s)
+    {
+      case ' '..'z':
+	return sprintf("%c",s);
+	
+      default:
+	return sprintf("\\0x%02x",s);
     }
+  })*"");
+#endif
+    synch = synch || (s == C(IAC));
+    call_callback("URG",id,s);
   }
 
-  //. + rest
-  //.   Contains data left over from the line-buffering.
-  static private string rest = "";
+  //. - call_read_cb
+  //. specifically provided for overloading
+  static void call_read_cb(string data)
+  {
+    DWRITE("Fnurgel!\n");
+    if(read_cb && strlen(data)) read_cb(id,data);
+  }
 
   //. - got_data
   //.   Callback called when normal data has been received.
   //.   This function also does most of the TELNET protocol parsing.
   //. > ignored - The id from the connection.
   //. > s - The received data.
-  static private void got_data(mixed ignored, string s)
+  static void got_data(mixed ignored, string line)
   {
-    DWRITE(sprintf("TELNET: got_data(\"%s\")\n", s));
+#ifdef TELNET_DEBUG
+  werror("TELNET: got_data(\"%s\")\n",Array.map(values(line),lambda(int s) { 
+    switch(s)
+    {
+      case ' '..'z':
+	return sprintf("%c",s);
+	
+      default:
+	return sprintf("\\0x%02x",s);
+    }
+  })*"");
+#endif
 
-    if (sizeof(s) && (s[0] == 242)) {
+    if (sizeof(line) && (line[0] == DM)) {
       DWRITE("TELNET: Data Mark\n");
       // Data Mark handing.
-      s = s[1..];
+      line = line[1..];
       synch = 0;
     }
 
-    // A single read() can contain multiple or partial commands
-    // RFC 1123 4.1.2.10
-
-    array lines = s/"\r\n";
-
-    int lineno;
-    for(lineno = 0; lineno < sizeof(lines); lineno++) {
-      string line = lines[lineno];
-      if (search(line, "\377") != -1) {
-	array a = line / "\377";
+      if (search(line, C(IAC)) != -1) {
+	array a = line / C(IAC);
 
 	string parsed_line = a[0];
 	int i;
 	for (i=1; i < sizeof(a); i++) {
 	  string part = a[i];
 	  if (sizeof(part)) {
-	    string name = TelnetCodes[part[0]];
 
-	    DWRITE(sprintf("TELNET: Code %s\n", name || "Unknown"));
+	    DWRITE(sprintf("TELNET: Code %s\n", lookup_telnetcodes[part[0]] || (string)part[0]));
 
 	    int j;
 	    function fun;
-	    switch (name) {
-	    case 0:
-	      // FIXME: Should probably have a warning here.
-	      break;
+	    switch (part[0]) {
 	    default:
-	      if (fun = (cb[name] || default_cb[name])) {
-		mixed err = catch {
-		  fun();
-		};
-		if (err) {
-		  throw(err);
-		} else if (!zero_type(err)) {
-		  // We were just destructed.
-		  return;
-		}
-	      }
+	      call_callback(part[0]);
 	      a[i] = a[i][1..];
 	      break;
-	    case "EC":	// Erase Character
+
+	      // FIXME, find true end of subnegotiation!
+	    case SB:
+	      call_callback(SB,part[1..]);
+	      a[i] = "";
+	      break;
+
+	    case EC:	// Erase Character
 	      for (j=i; j--;) {
 		if (sizeof(a[j])) {
 		  a[j] = a[j][..sizeof(a[j])-2];
@@ -357,188 +589,114 @@ class protocol
 	      }
 	      a[i] = a[i][1..];
 	      break;
+
+#if 0
 	    case "EL":	// Erase Line
 	      for (j=0; j < i; j++) {
 		a[j] = "";
 	      }
 	      a[i] = a[i][1..];
 	      break;
-	    case "WILL":
-	      int option = a[i][1];
-	      int state = option_states[option];
-	      a[i] = a[i][2..];
+#endif
 
-	      DWRITE(sprintf("WILL %d, state 0x%04x\n", option, state));
+#define HANDLE(OPTIONS,WILL,WONT,DO,DONT)						\
+	    case WILL:									\
+	      int option = a[i][1];							\
+	      int state = OPTIONS##_options[option];				       	\
+	      a[i] = a[i][2..];								\
+											\
+	      DWRITE(sprintf(#WILL " %s, state 0x%04x\n", lookup_telopt[option], state));		\
+											\
+	      switch(state)								\
+	      {										\
+		case NO:								\
+		case UNKNOWN:								\
+		  if (WILL##_callback(option))						\
+		  {									\
+		    /* Agree about enabling */						\
+		  state=YES;								\
+		    send_##DO(option);							\
+		  } else {								\
+		    state=NO;								\
+		    send_##DONT(option);						\
+		  }									\
+		  break;								\
+											\
+		case YES:								\
+		  /* Ignore */								\
+		  break;								\
+											\
+		case WANT | NO:								\
+		  state=NO;								\
+		  break;								\
+											\
+		case WANT | YES:							\
+		  state=YES;								\
+		  break;								\
+											\
+		case WANT | YES | OPPOSITE:						\
+		  state=WANT | NO;							\
+		  send_##DONT(option);							\
+		  break;								\
+											\
+		default:								\
+		  error("TELNET: Strange remote_options[%d]=%d\n",			\
+			option,remote_options[option]);					\
+		  /* Weird state ! */							\
+	      }										\
+	      DWRITE(sprintf("=> " #WILL " %s, state 0x%04x\n", lookup_telopt[option], state));	\
+	      set_##OPTIONS##_option(option,state);					\
+	      break;									\
+											\
+	    case WONT:									\
+	      int option = a[i][1];							\
+	      int state = OPTIONS##_options[option];					\
+	      a[i] = a[i][2..];								\
+											\
+	      DWRITE(sprintf(#WONT " %s, state 0x%04x\n", lookup_telopt[option], state));		\
+											\
+	      switch(state)								\
+	      {										\
+		case UNKNOWN:								\
+		case NO:								\
+		  state=NO;								\
+		  break;								\
+											\
+		case YES:								\
+		  state=NO;								\
+		  send_##DONT(option);							\
+		  break;								\
+											\
+		case WANT | NO:								\
+		  state=NO;								\
+		  break;								\
+											\
+		case WANT | NO | OPPOSITE:						\
+		  state=WANT | YES;							\
+		  send_##DO(option);							\
+		  break;								\
+											\
+		case WANT | YES:							\
+		case WANT | YES | OPPOSITE:						\
+		  state=NO;								\
+		  break;								\
+											\
+		default:								\
+		  error("TELNET: Strange remote_options[%d]=%d\n",			\
+			option,remote_options[option]);					\
+		  /* Weird state */							\
+	      }										\
+											\
+	      DWRITE(sprintf("=> " #WONT " %s, state 0x%04x\n", lookup_telopt[option], state));	\
+	      set_##OPTIONS##_option(option,state);					\
+	      break
 
-	      switch(state & 0xff00) {
-	      case 0x0000: /* NO */
-	      case 0x1000: /* NO OPPOSITE */
-		if ((fun = (cb["WILL"] || default_cb["WILL"])) &&
-		    fun(option)) {
-		  /* Agree about enabling */
-		  option_states[option] |= option_him_yes;
-		  to_send += sprintf("\377\375%c", option); // DO option
-		} else {
-		  to_send += sprintf("\377\376%c", option); // DON'T option
-		}
-		break;
-	      case 0x0100: /* YES */
-	      case 0x1100: /* YES OPPOSITE */
-		/* Ignore */
-		break;
-	      case 0x0200: /* WANTNO EMPTY */
-		state &= ~option_him_want;
-		if ((fun = (cb["Enable_Option"] ||
-			    default_cb["Enable_Option"]))) {
-		  fun(option);
-		}
-		break;
-	      case 0x1200: /* WANTNO OPPOSITE */
-		state &= ~(option_him_yes|option_him_opposite);
-		to_send += sprintf("\377\376%c", option); // DON'T option
-		break;
-	      case 0x0300: /* WANTYES EMPTY */
-	      case 0x1300: /* WANTYES OPPOSITE */
-		  // Error: DON'T answered by WILL
-		  option_states[option] &= ~0x1200;
-		  option_states[option] |= option_him_yes;
-		  if ((fun = (cb["Enable_Option"] ||
-			      default_cb["Enable_Option"]))) {
-		    fun(option);
-		  }
-		break;
-	      }
 
-	      state = option_states[option];
-	      DWRITE(sprintf("=> WILL %d, state 0x%04x\n", option, state));
 
-	      break;
-	    case "WON'T":
-	      int option = a[i][1];
-	      int state = option_states[option];
-	      a[i] = a[i][2..];
+	      HANDLE(remote,WILL,WONT,DO,DONT);
+	      HANDLE(local,DO,DONT,WILL,WONT);
 
-	      DWRITE(sprintf("WON'T %d, state 0x%04x\n", option, state));
-
-	      switch(state & 0xff00) {
-	      case 0x0000: /* NO */
-	      case 0x1000: /* NO OPPOSITE */
-		/* Ignore */
-		break;
-	      case 0x0100: /* YES */
-	      case 0x1100: /* YES OPPOSITE */
-		option_states[option] &= ~0xff00;
-		to_send += sprintf("\377\376%c", option); // DON'T option
-		if ((fun = (cb["Disable_Option"] ||
-			    default_cb["Disable_Option"]))) {
-		  fun(option);
-		}
-		break;
-	      case 0x0200: /* WANTNO EMPTY */
-	      case 0x0300: /* WANTYES EMPTY */
-	      case 0x1300: /* WANTYES OPPOSITE */
-		option_states[option] &= ~0xff00;
-		break;
-	      case 0x1200: /* WANTNO OPPOSITE */
-		option_states[option] &= ~option_him_opposite;
-		option_states[option] |= option_him_yes;
-		to_send += sprintf("\377\375%c", option); // DO option
-		break;
-	      }
-
-	      state = option_states[option];
-	      DWRITE(sprintf("=> WON'T %d, state 0x%04x\n", option, state));
-
-	      break;
-	    case "DO":
-	      int option = a[i][1];
-	      int state = option_states[option];
-	      a[i] = a[i][2..];
-
-	      DWRITE(sprintf("DO %d, state 0x%04x\n", option, state));
-
-	      switch(state & 0xff) {
-	      case 0x00: /* NO */
-	      case 0x10: /* NO OPPOSITE */
-		if ((fun = (cb["DO"] || default_cb["DO"])) &&
-		    fun(option)) {
-		  /* Agree about enabling */
-		  DWRITE("AGREE\n");
-		  option_states[option] |= option_us_yes;
-		  to_send += sprintf("\377\373%c", option); // WILL option
-		} else {
-		  DWRITE("DISAGREE\n");
-		  to_send += sprintf("\377\374%c", option); // WON'T option
-		}
-		break;
-	      case 0x01: /* YES */
-	      case 0x11: /* YES OPPOSITE */
-		/* Ignore */
-		break;
-	      case 0x02: /* WANTNO EMPTY */
-		state &= ~option_us_want;
-		if ((fun = (cb["Enable_Option"] ||
-			    default_cb["Enable_Option"]))) {
-		  fun(option);
-		}
-		break;
-	      case 0x12: /* WANTNO OPPOSITE */
-		state &= ~(option_us_yes|option_us_opposite);
-		to_send += sprintf("\377\374%c", option); // WON'T option
-		break;
-	      case 0x03: /* WANTYES EMPTY */
-	      case 0x13: /* WANTYES OPPOSITE */
-		  option_states[option] &= ~0x12;
-		  option_states[option] |= option_us_yes;
-		  if ((fun = (cb["Enable_Option"] ||
-			      default_cb["Enable_Option"]))) {
-		    fun(option);
-		  }
-		break;
-	      }
-
-	      state = option_states[option];
-	      DWRITE(sprintf("=> DO %d, state 0x%04x\n", option, state));
-
-	      break;
-	    case "DON'T":
-	      int option = a[i][1];
-	      int state = option_states[option];
-	      a[i] = a[i][2..];
-
-	      DWRITE(sprintf("DON'T %d, state 0x%04x\n", option, state));
-
-	      switch(state & 0xff) {
-	      case 0x00: /* NO */
-	      case 0x10: /* NO OPPOSITE */
-		/* Ignore */
-		break;
-	      case 0x01: /* YES */
-	      case 0x11: /* YES OPPOSITE */
-		option_states[option] &= ~0xff;
-		to_send += sprintf("\377\374%c", option); // WON'T option
-		if ((fun = (cb["Disable_Option"] ||
-			    default_cb["Disable_Option"]))) {
-		  fun(option);
-		}
-		break;
-	      case 0x02: /* WANTNO EMPTY */
-	      case 0x03: /* WANTYES EMPTY */
-	      case 0x13: /* WANTYES OPPOSITE */
-		option_states[option] &= ~0xff;
-		break;
-	      case 0x12: /* WANTNO OPPOSITE */
-		option_states[option] &= ~option_us_opposite;
-		option_states[option] |= option_us_yes;
-		to_send += sprintf("\377\373%c", option); // WILL option
-		break;
-	      }
-
-	      state = option_states[option];
-	      DWRITE(sprintf("=> DON'T %d, state 0x%04x\n", option, state));
-
-	      break;
-	    case "DM":	// Data Mark
+	    case DM:	// Data Mark
 	      if (synch) {
 		for (j=0; j < i; j++) {
 		  a[j] = "";
@@ -553,22 +711,25 @@ class protocol
 	    i++;
 	  }
 	}
+//	werror("%O\n",a);
 	line = a * "";
       }
-      if (!lineno) {
-	line = rest + line;
+
+      if ((!synch)) {
+#ifdef TELNET_DEBUG
+	werror("TELNET: calling read_callback(X,\"%s\")\n",Array.map(values(line),lambda(int s) { 
+	  switch(s)
+	  {
+	    case ' '..'z':
+	      return sprintf("%c",s);
+	      
+	    default:
+	      return sprintf("\\0x%02x",s);
+	  }
+	})*"");
+#endif
+	call_read_cb(line);
       }
-      if (lineno < (sizeof(lines)-1)) {
-	if ((!synch) && read_cb) {
-	  DWRITE(sprintf("TELNET: Calling read_callback(X, \"%s\")\n",
-			       line));
-	  read_cb(id, line);
-	}
-      } else {
-	DWRITE(sprintf("TELNET: Partial line is \"%s\"\n", line));
-	rest = line;
-      }
-    }
     enable_write();
   }
 
@@ -583,6 +744,12 @@ class protocol
     } else {
       disable_write();
     }
+  }
+
+  //. - create
+  //. created specifically for overloading
+  void setup()
+  {
   }
 
   //. - create
@@ -609,5 +776,222 @@ class protocol
 
     fd->set_nonblocking(got_data, w_cb && send_data, close_cb, got_oob);
     nonblocking_write = !!w_cb;
+    setup();
+  }
+
+  void set_nonblocking(function r_cb, function w_cb, function c_cb)
+  {
+    read_cb = r_cb;
+    write_cb = w_cb;
+    close_cb = c_cb;
+    fd->set_nonblocking(got_data, w_cb && send_data, close_cb, got_oob);
+    nonblocking_write = !!w_cb;
+  }
+
+  void set_blocking()
+  {
+    read_cb = 0;
+    write_cb = 0;
+    close_cb = 0;
+    fd->set_blocking();
+    nonblocking_write = 0;
+  }
+
+  string query_address(int|void remote)
+  {
+    return fd->query_address(remote);
   }
 }
+
+
+class LineMode
+{
+  inherit protocol;
+
+  static string line_buffer="";
+
+  static void call_read_cb(string data)
+  {
+    if(read_cb)
+    {
+      DWRITE(sprintf("Line callback... %O\n",data));
+      data=replace(data,
+		   ({"\r\n","\r\n","\r","\r\0"}),
+		   ({"\r",  "\r",  "\r","\r",}));
+      line_buffer+=data;
+      string *tmp=line_buffer/"\r";
+      line_buffer=tmp[-1];
+      for(int e=0;e<sizeof(tmp)-1;e++) read_cb(id,tmp[e]+"\n");
+    }
+  }
+
+
+  void setup()
+  {
+    send_DO(TELOPT_BINARY);
+    send_DO(TELOPT_SGA);
+    send_DONT(TELOPT_LINEMODE);
+    send_WILL(TELOPT_SGA);
+  }
+}
+
+class Readline
+{
+  inherit LineMode;
+  object readline;
+  
+  string term;
+  int width=80;
+  int height=24;
+  int icanon;
+  
+  mapping tcgetattr()
+  {
+    return ([
+      "rows":height,
+      "columns":width,
+      "ECHO":local_options[TELOPT_ECHO],
+      "ICANON": icanon,
+      ]);
+  }
+  
+  static void call_read_cb(string data)
+  {
+    if(read_cb)
+    {
+      if(!icanon)
+      {
+	if(strlen(data)) read_cb(id,data);
+      }else{
+	DWRITE(sprintf("Line callback... %O\n",data));
+	data=replace(data,
+		     ({"\r\n","\r\n","\r","\r\0"}),
+		     ({"\r",  "\r",  "\r","\r",}));
+	line_buffer+=data;
+	string *tmp=line_buffer/"\r";
+	line_buffer=tmp[-1];
+	for(int e=0;e<sizeof(tmp)-1;e++)
+	{
+	  read_cb(id,tmp[e]+"\n");
+	  write(prompt);
+	}
+      }
+    }
+  }
+  
+  int tcsetattr(mapping options)
+  {
+//    werror("%O\n",options);
+    ( options->ECHO ? send_WONT : send_WILL )(TELOPT_ECHO);
+    ( (icanon=options->ICANON) ? send_DONT : send_DO )(TELOPT_LINEMODE);
+  }
+
+  void set_secret(int onoff)
+  {
+    if(readline)
+    {
+      readline->set_echo(!onoff);
+    }else{
+      ( onoff ? send_WILL : send_WONT )(TELOPT_ECHO);
+    }
+  }
+  
+  static function(mixed,string:void) read_cb2;
+  
+  static void readline_callback(string data)
+  {
+    read_cb2(id,data+"\n");
+  }
+  
+  static mixed call_callback(mixed what, mixed ... args)
+  {
+    switch(what)
+    {
+      case SB:
+	string data=args[0];
+	DWRITE(sprintf("SB callback %O\n",data));
+	switch(data[0])
+	{
+	  case TELOPT_TTYPE:
+	    if(data[1]==TELQUAL_IS)
+	    {
+	      if(!read_cb2)
+	      {
+		read_cb2=read_cb;
+		term=data[2..];
+//		werror("Enabeling READLINE, term=%s\n",term);
+		readline=Stdio.Readline(this_object(),lower_case(term));
+		readline->set_nonblocking(readline_callback);
+		readline->enable_history(200);
+		/* enable data processing */
+	      }
+	    }
+	    break;
+	    
+	  case TELOPT_NAWS:
+	    if(sscanf(data[1..],"%2c%2c",width,height)==2)
+	      if(readline)
+		readline->redisplay();
+	    break;
+	}
+    }
+  }
+
+  void remote_option_callback(int opt, int onoff)
+  {
+    switch(opt)
+    {
+      case TELOPT_TTYPE:
+	if(onoff)
+	{
+	  send_SB(TELOPT_TTYPE,TELQUAL_SEND);
+	}else{
+	  werror("Revert to line mode not yet operational.\n");
+	  /* revert to stupid line mode */
+	}
+    }
+    ::remote_option_callback(opt,onoff);
+  }
+  
+  void setup()
+  {
+    send_DO(TELOPT_SGA);
+    send_DO(TELOPT_BINARY);
+    send_DO(TELOPT_NAWS);
+    send_DO(TELOPT_TTYPE);
+    /* disable data processing */
+  }
+  
+  void message(string s,void|int word_wrap)
+  {
+    if(readline)
+    {
+      readline->write(s,word_wrap);
+    }else{
+      write(replace(s,"\n","\r\n"));
+    }
+  }
+  
+  static string prompt="";
+  void set_prompt(string s)
+  {
+    if(readline)
+    {
+      prompt=s;
+      readline->set_prompt(prompt);
+    }else{
+      if(prompt!=s)
+      {
+	if(s[..strlen(prompt)-1]==prompt)
+	  write(s);
+	prompt=s;
+      }
+    }
+  }
+
+  void destroy()
+  {
+    if(readline) destruct(readline);
+  }
+}
+
