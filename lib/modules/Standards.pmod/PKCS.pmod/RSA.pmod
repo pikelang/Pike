@@ -82,3 +82,13 @@ object build_rsa_public_key(object rsa)
     asn1_bit_string(asn1_sequence(
       ({ asn1_integer(rsa->n), asn1_integer(rsa->e) }) )->get_der()) }) );
 }
+      
+int check_rsa_public_key (string public_key, object rsa)
+{
+  object a = Standards.ASN1.Decode.simple_der_decode (public_key);
+  if (a->type_name != "SEQUENCE" ||
+      sizeof (a->elements) != 2 ||
+      sizeof (a->elements->type_name - ({"INTEGER"})))
+    return 0;
+  return a->elements[0]->value == rsa->n && a->elements[1]->value == rsa->e;
+}

@@ -211,3 +211,20 @@ class Attributes
     }
 }
       
+int check_cert_rsa (string cert, object rsa)
+{
+  object a = Standards.ASN1.Decode.simple_der_decode (cert);
+  object public_key;
+  if (a->type_name != "SEQUENCE" ||
+      sizeof (a->elements) != 3 ||
+      (a = a->elements[0])->type_name != "SEQUENCE" ||
+      (a = a->elements[a->elements[-1]->type_name ? -1 : -2])->type_name != "SEQUENCE" ||
+      sizeof (a->elements) != 2 ||
+      (public_key = a->elements[1])->type_name != "BIT STRING" ||
+      (a = a->elements[0])->type_name != "SEQUENCE" ||
+      sizeof (a->elements) != 2 ||
+      (a = a->elements[0])->type_name != "OBJECT IDENTIFIER" ||
+      !(a == rsa_id))
+    return 0;
+  return RSA.check_rsa_public_key (public_key->value, rsa);
+}
