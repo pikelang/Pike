@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.26 2003/06/02 17:57:40 mast Exp $
+|| $Id: file.h,v 1.27 2003/12/09 09:57:14 grubba Exp $
 */
 
 #ifndef FILE_H
@@ -58,7 +58,7 @@ struct pike_sendfile
 {
   struct object *self;
 
-  ptrdiff_t sent;
+  LONGEST sent;
 
   struct array *headers;
   struct array *trailers;
@@ -76,8 +76,8 @@ struct pike_sendfile
   struct my_file *from;
   struct my_file *to;
 
-  ptrdiff_t offset;
-  ptrdiff_t len;
+  LONGEST offset;
+  LONGEST len;
 
   struct iovec *hd_iov;
   struct iovec *tr_iov;

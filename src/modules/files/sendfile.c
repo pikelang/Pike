@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.62 2003/10/15 18:29:42 grubba Exp $
+|| $Id: sendfile.c,v 1.63 2003/12/09 09:57:14 grubba Exp $
 */
 
 /*
@@ -707,7 +707,7 @@ static void sf_create(INT32 args)
   MEMSET(&sf, 0, sizeof(struct pike_sendfile));
   sf.callback.type = T_INT;
 
-  get_all_args("sendfile", args, "%A%O%i%i%A%o%*",
+  get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &(sf.offset),
 	       &(sf.len), &(sf.trailers), &(sf.to_file), &cb);
 
