@@ -87,12 +87,14 @@ class ExecTest(string id,Test test)
 	       runpike+
 	       ({ "-e","Tools.Shoot._shoot(\""+id+"\")" }),
 	       (["stdout":pipe->pipe(Stdio.PROP_IPC)]) );
+	 int err = errno();
 	 status=pipe->read();
-	 p->wait();
+	 int ret = p->wait();
 
 	 if (status=="")
 	 {
-	    write("failed to spawn pike or run test\n");
+	    write("Failed to spawn pike or run test (code:%d, errno:%d)\n",
+		  ret, errno);
 	    return 1;
 	 }
 
