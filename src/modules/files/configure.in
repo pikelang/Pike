@@ -17,6 +17,99 @@ AC_CHECK_LIB(socket, socket)
 
 AC_HAVE_FUNCS(socketpair getwd perror fork1 readdir_r)
 
+if test x$ac_cv_func_readdir_r = xyes ; then
+  AC_MSG_CHECKING(if readdir_r takes 2(Solaris & HPUX) or 3(Posix) arguments)
+  AC_CACHE_VAL(pike_cv_func_posix_readdir_r, [
+    AC_TRY_RUN([
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#else
+#ifdef HAVE_SYS_NDIR_H
+#include <sys/ndir.h>
+#endif
+#ifdef HAVE_SYS_DIR_H
+#include <sys/dir.h>
+#endif
+#ifdef HAVE_NDIR_H
+#include <ndri.h>
+#endif
+#endif
+
+int main()
+{
+  exit(0);
+
+  /* NOT REACHED */
+  readdir_r((DIR *)0, (struct dirent *)0);
+}
+],pike_cv_func_posix_readdir_r=no,pike_cv_func_posix_readdir_r=yes)
+  ])
+
+if test x$pike_cv_func_posix_readdir_r = xyes ; then
+  AC_MSG_RESULT(3 - POSIX)
+  AC_DEFINE(HAVE_POSIX_READDIR_R)
+else
+  AC_MSG_RESULT(2)
+
+  AC_MSG_CHECKING(if readdir_r returns an int(HPUX) or a pointer(Solaris))
+  AC_CACHE_VAL(pike_cv_func_solaris_style_readdir_r, [
+    AC_TRY_RUN([
+#include <sys/errno.h>
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#else
+#ifdef HAVE_SYS_NDIR_H
+#include <sys/ndir.h>
+#endif
+#ifdef HAVE_SYS_DIR_H
+#include <sys/dir.h>
+#endif
+#ifdef HAVE_NDIR_H
+#include <ndri.h>
+#endif
+#endif
+
+extern int errno;
+
+int main()
+{
+  DIR *dir = opendir(".");
+  char tmp[1024];
+  unsigned long retval;
+
+  retval = (unsigned long) readdir_r(dir, (struct dirent *)tmp);
+
+  if (retval == (unsigned long)tmp) {
+    /* Solaris */
+    exit(0);
+  } else if (retval == ~0UL) {
+    /* HPUX */
+    exit(1);
+  } else if (!retval) {
+    if (!errno) {
+      /* HPUX */
+      exit(1);
+    } else {
+      /* Solaris */
+      exit(0);
+    }
+  } else {
+    /* Unknown, but probably Solaris */
+    exit(0);
+  }
+}
+],pike_cv_func_solaris_style_readdir_r=yes,pike_cv_func_solaris_style_readdir_r=no)
+  ])
+  if test x$pike_cv_func_solaris_style_readdir_r = xyes ; then
+    AC_MSG_RESULT(Solaris style)
+    AC_DEFINE(HAVE_SOLARIS_READDIR_R)
+  else
+    AC_MSG_RESULT(HPUX style)
+  fi
+fi
+
+else :; fi
+
 AC_MSG_CHECKING(for working (and failsafe) strerror)
 AC_CACHE_VAL(pike_cv_func_failsafe_strerror,
 [
