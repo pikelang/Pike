@@ -61,19 +61,7 @@
  *    
  */
 
-#ifdef OLD
-import OLD;
-#define PC Pike
-#else /* !OLD */
 #define PC Parser.Pike
-#endif /* OLD */
-
-#if !constant(has_prefix) || defined(OLD)
-int has_prefix(string s, string p)
-{
-  return (s[..sizeof(p)-1] == p);
-}
-#endif /* !constant(has_prefix) || OLD */
 
 /*
  * This function takes an array of tokens containing a type
@@ -136,16 +124,6 @@ int parse_type(array t, int p)
 string merge(array x)
 {
   return PC.simple_reconstitute(x);
-}
-
-/*
- * Trim whitespaces from the beginning and end of 's'
- */
-string trim(string s)
-{
-  sscanf(s,"%*[ \t]%s",s);
-  if(sscanf(reverse(s),"%*[ \t]%s",s))  s=reverse(s);
-  return s;
 }
 
 /*
