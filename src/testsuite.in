@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.230 1999/11/20 12:43:19 mirar Exp $"]])
+test_true([["$Id: testsuite.in,v 1.231 1999/11/22 23:34:54 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3024,6 +3024,11 @@ test_eq([[combine_path("./.","..")]],"..")
 test_eq([[combine_path("/","../../foo")]],"/foo")
 test_eq([[combine_path("./foobar/.","..")]],".")
 test_eq([[combine_path("/","foo","bar","gazonk")]],"/foo/bar/gazonk")
+
+// - Stdio.append_path
+test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
+test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
+test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
 
 // - compile_file
 // FIXME: add tests for compile_file
