@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.312 1999/08/25 17:01:42 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.313 1999/08/25 18:37:06 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3023,6 +3023,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+        UnixWare*) CCSHARED="-KPIC -dy -Bdynamic";;
 	Solaris*) CCSHARED="-KPIC -Bdynamic";;
 	Windows_NT*) CCSHARED="-shared" ;;
       esac
