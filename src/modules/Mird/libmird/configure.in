@@ -7,7 +7,7 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.1 2001/03/26 12:32:42 mirar Exp $
+# $Id: configure.in,v 1.2 2001/03/26 13:24:13 mirar Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -118,7 +118,7 @@ fi
 
 AC_MSG_CHECKING(MIRD_CFLAGS for large file support)
 AC_CACHE_VAL(mird_cv_largefile_cflags,
-  [mird_cv_largefile_cflags=`getconf LFS_MIRD_CFLAGS 2>&5`])
+  [mird_cv_largefile_cflags=`getconf LFS_CFLAGS 2>&5`])
 if test "x$mird_cv_largefile_cflags" != "x"; then
    AC_MSG_RESULT($mird_cv_largefile_cflags)
    MIRD_CFLAGS="${MIRD_CFLAGS} $mird_cv_largefile_cflags"
@@ -258,8 +258,8 @@ AC_CACHE_VAL(mird_cv_int16,
   	  [mird_cv_int16="long long"],
   	  [AC_MSG_RESULT([no, giving up])
   	   exit 1],[?])],[?])],[?])],
-    [AC_MSG_RESULT(cross-compiling, can't do that)
-     exit 1])])
+    [AC_MSG_RESULT([cross-compiling, guessing short])
+     mird_cv_int16="short"])])
 AC_MSG_RESULT($mird_cv_int16)
 AC_DEFINE_UNQUOTED(INT16,$mird_cv_int16)
 
@@ -275,8 +275,8 @@ AC_CACHE_VAL(mird_cv_int32,
   	  [mird_cv_int32="short"],
   	  [AC_MSG_RESULT([no, giving up])
   	   exit 1],[?])],[?])],[?])],
-    [AC_MSG_RESULT(cross-compiling, can't do that)
-     exit 1])])
+    [AC_MSG_RESULT([cross-compiling, guessing long])
+     mird_cv_int32="long"])])
 AC_MSG_RESULT($mird_cv_int32)
 AC_DEFINE_UNQUOTED(INT32,$mird_cv_int32)
 
@@ -291,8 +291,8 @@ AC_CACHE_VAL(mird_cv_int64,
   	[AC_TRY_RUN([int main() { return sizeof(short)!=8; }],
   	  [mird_cv_int64="short"],
   	  [mird_cv_int64="none"],[?])],[?])],[?])],
-    [AC_MSG_RESULT(cross-compiling, can't do that)
-     exit 1])])
+    [AC_MSG_RESULT([cross-compiling, guessing none])
+     mird_cv_int64="none"])])
 AC_MSG_RESULT($mird_cv_int64)
 if test "x$mird_cv_int64" != "xnone"; then
    AC_DEFINE_UNQUOTED(INT64,$mird_cv_int64)
