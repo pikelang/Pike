@@ -8,6 +8,7 @@ NAME_ARGS(atom_name, only_if_exists);
 {
   char *atom_name;
   int only_if_exists;
+  pgtk_verify_setup();
   get_all_args("GDK.Atom( string, int )",args,"%s%d",&atom_name,&only_if_exists);
   THIS->obj = (void *)gdk_atom_intern( atom_name, only_if_exists );
   pop_n_elems(args);

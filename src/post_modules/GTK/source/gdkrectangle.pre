@@ -6,6 +6,7 @@ NAME_ARGS(x,y,width,height);
 // NOIMG
 {
   GdkRectangle *r;
+  pgtk_verify_setup();
   THIS->obj = (void *)(r=malloc(sizeof(GdkRectangle)));
   get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &r->x, &r->y, 
 		&r->width, &r->height );

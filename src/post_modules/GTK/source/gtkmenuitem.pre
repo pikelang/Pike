@@ -8,7 +8,8 @@ NAME_ARGS(label);
 // string and added to the item. Otherwise, you should add another
 // widget to the list item with -&gt;add().
 {
-  if(THIS->obj) error("GTK.Menu_item->create() can only be called once.\n");
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
   if(args)
   {
     char *s;

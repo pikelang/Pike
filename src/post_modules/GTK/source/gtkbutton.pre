@@ -18,7 +18,8 @@ FUNCTION(create, "function(string|void:void)")
 NAME_ARGS(label_text);
 // If a string is supplied, a W(Label) is created and added to the button.
 {
-  if(THIS->obj) error("GTK.Button->create() can only be called once.\n");
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
   if(args)
   {
     char *s;

@@ -39,6 +39,7 @@ NAME_ARGS(image);
   GdkImage *i;
   int f = 0;
   struct object *o;
+  pgtk_verify_setup();
   if(THIS->obj) 
     error("Pixmap already initialized\n");
 

@@ -20,7 +20,8 @@ NAME_ARGS(title,groupmember);
 	o = sp[-1].u.object;
   }
 
-  if(THIS->obj) error("GTK.Radio_group->create() can only be called once.\n");
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
   if(o) mylist=gtk_radio_menu_item_group(GTK_RADIO_MENU_ITEM(get_gtkobject(o)));
 
   if(label)

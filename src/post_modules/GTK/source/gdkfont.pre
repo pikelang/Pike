@@ -59,6 +59,7 @@ NAME_ARGS(font_name);
 // Create a new font object. The string is the font XLFD.
 {
   char *n;
+  pgtk_verify_setup();
   if(args)
   {
     get_all_args("Gdk.Font", args, "%s", &n);

@@ -13,6 +13,7 @@ NAME_ARGS(r|color,g,b);
   int r,g,b;
   GdkColormap *col = gdk_colormap_get_system();
   GdkColor *c;
+  pgtk_verify_setup();
   if( args == 1)
   {
     struct object *o;

@@ -8,6 +8,7 @@ ARGS(int|object,void|mapping);
 NAME_ARGS(XWindowID|parent,void|atrributes);
 // Not for non-experts. I promise.
 {
+  pgtk_verify_setup();
   if(sp[-args].type == T_INT)
   {
     int id;

@@ -12,6 +12,7 @@ NAME_ARGS(context);
 // which the gc will be valid.
 {
   struct object *o;
+  pgtk_verify_setup();
   get_all_args("'()", args, "%o", &o);
   if(get_gdkobject(o, Drawable))
     THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,Drawable) );

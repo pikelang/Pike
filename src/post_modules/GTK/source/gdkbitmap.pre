@@ -12,6 +12,7 @@ NAME_ARGS(image|xsize, void|ysize, void|xbitmapdata);
 {
   int x, y;
   char *d;
+  pgtk_verify_setup();
   if(args == 3)
   {
     get_all_args("create", args, "%d%d%s", &x, &y, &d );

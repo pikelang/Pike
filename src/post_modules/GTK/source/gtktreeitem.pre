@@ -10,7 +10,8 @@ NAME_ARGS(label);
 // If you specify a string it is used as a label, otherwise pack a widget
 // in the tree item with -&gt;add(widget).
 {
-  if(THIS->obj) error("GTK.Tree_item->create() can only be called once.\n");
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
   if(args)
   {
     char *s;

@@ -1,6 +1,6 @@
 PROGRAM(GdkDragContext);
 // The drag context contains all information about the drag'n'drop
-// connected to the signal.
+// connected to the signal to which it is an argument.
 // <p>
 // NOIMG
 #define GTK_GDKDRAGCONTEXT(X) ((GdkDragContext *)X)

@@ -14,7 +14,8 @@ NAME_ARGS(label);
 // If you supply a string, a label will be created and inserted in the button.
 // Otherwise, use -&gt;add(widget) to create the contents of the button.
 {
-  if(THIS->obj) error("GTK.Toggle_button->create() can only be called once.\n");
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
   if(args)
   {
     char *s;

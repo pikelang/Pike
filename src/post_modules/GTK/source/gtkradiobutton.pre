@@ -26,7 +26,8 @@ NAME_ARGS(title,groupmember);
 	o = sp[-1].u.object;
   }
 
-  if(THIS->obj) error("GTK.RadioButton->create() can only be called once.\n");
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
 
   if(o) 
     mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gtkobject(o)));

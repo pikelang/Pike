@@ -3,21 +3,33 @@ PROGRAM(GdkImage);
 // Mainly used for W(Image) objects.
 //
 // NOIMG
-FUNCTION(create, "function(int|void:void)");
-NAME_ARGS(fast_mode);
-// Create a new	GDK.Image object. The argument is either 0, which indicates that
-// you want a 'slow' image. If you use '1', you indicate that you want a 'fast'
-// image. Fast images are stored in shared memory, and thus are not sent over
-// any network. But please limit your usage of fast images, they use up 
-// a possibly limited system resource set. See the man page for shmget(2)
-// for more information on the limits on shared segments on your system.
+FUNCTION(create, "function(int|void,object|void:void)");
+NAME_ARGS(fast_mode,image);
+// Create a new GDK.Image object. The firstargument is either 0, which
+// indicates that you want a 'slow' image. If you use '1', you
+// indicate that you want a 'fast' image. Fast images are stored in
+// shared memory, and thus are not sent over any network. But please
+// limit your usage of fast images, they use up a possibly limited
+// system resource set. See the man page for shmget(2) for more
+// information on the limits on shared segments on your system.
 //<p>
-// A 'fast' image will automatically revert back to 'slow' mode if no shared
-// memory is available.
+
+// A 'fast' image will automatically revert back to 'slow' mode if no
+// shared memory is available.
+// <p>
+// If the second argument is specified, it is the actual image data.
 {
+  void pgtk_GdkImage_set( int );
+  pgtk_verify_setup();
   THIS->extra_int = GDK_IMAGE_NORMAL;
-  if(args && sp[-1].u.integer)
+  if(args && sp[-args].u.integer)
     THIS->extra_int = GDK_IMAGE_FASTEST;
+  if( args == 2)
+  {
+    stack_swap();
+    pop_stack();
+    pgtk_GdkImage_set( 1 );
+  }
 /* Do not add one extra ref for the internal gdk object..*/
 /*  add_ref(fp->current_object); */
 }

@@ -16,6 +16,7 @@ FUNCTION(create, "function(void:void)");
 // 
 // NOIMG
 {
+  pgtk_verify_setup();
   THIS->obj = (void *)gdk_region_new();
 }
 FUNCTION(destroy, "function(void:void)");
