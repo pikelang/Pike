@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mime.c,v 1.37 2003/04/07 17:25:20 nilsson Exp $
+|| $Id: mime.c,v 1.38 2004/06/29 12:07:29 nilsson Exp $
 */
 
 /*
@@ -15,7 +15,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.37 2003/04/07 17:25:20 nilsson Exp $");
+RCSID("$Id: mime.c,v 1.38 2004/06/29 12:07:29 nilsson Exp $");
 #include "module.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -51,9 +51,9 @@ static void f_quote_labled( INT32 args );
 
 /** Global tables **/
 
-static char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
-static char qptab[16] = "0123456789ABCDEF";
+static const char qptab[16] = "0123456789ABCDEF";
 static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
 #define CT_CTL     0
