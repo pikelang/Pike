@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.16 2000/09/05 13:03:03 grubba Exp $
+# $Id: configure.in,v 1.17 2000/09/05 16:24:06 marcus Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -69,11 +69,11 @@ __MPN(PiKe)
 	])
       ])
     ])
-    if test "x[$]PIKE_PREFIX_NAME" = "xno"; then
+    if test "x$PIKE_PREFIX_NAME" = "xno"; then
       AC_MSG_RESULT(warning -- prefix not found)
     else
-      AC_MSG_RESULT([$]PIKE_PREFIX_NAME)
-      AC_DEFINE(PIKE_MPN_PREFIX, [$]PIKE_PREFIX_NAME)
+      AC_MSG_RESULT($PIKE_PREFIX_NAME)
+      AC_DEFINE_UNQUOTED(PIKE_MPN_PREFIX, $PIKE_PREFIX_NAME)
     fi
     undefine(PIKE_PREFIX_NAME)
 
