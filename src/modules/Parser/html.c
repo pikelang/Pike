@@ -163,6 +163,10 @@ struct subparse_save
 /* flag: parse tags */
 #define FLAG_PARSE_TAGS			0x00000400
 
+/* flag: understand nestled entities (send it all to entity callback) */
+/*       disabled by FLAG_LAZY_ENTITY_END */
+#define FLAG_NESTLING_ENTITY_END	0x00000800
+
 struct parser_html_storage
 {
 /*--- current state -----------------------------------------------*/
@@ -3500,6 +3504,33 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    scan_forward(dst,cdst+1,&dst,&cdst,
 			 this->lazy_entity_ends,this->n_lazy_entity_ends) ?
 	    index_shared_string(dst->s,cdst) : 0;
+	else if (flags & FLAG_NESTLING_ENTITY_END)
+	{
+	   p_wchar2 look_for[2];
+	   int level=1;
+
+	   look_for[0]=this->entity_start;
+	   look_for[1]=this->entity_end;
+
+	   for (;;)
+	   {
+	      if (!scan_forward(dst,cdst+1,&dst,&cdst,look_for,2))
+	      {
+		 end_found=0;
+		 break;
+	      }
+	      if (index_shared_string(dst->s,cdst) == THIS->entity_end)
+	      {
+		 if (!--level)
+		 {
+		    end_found=this->entity_end;
+		    break;
+		 }
+	      }
+	      else
+		 level++;
+	   }
+	}
 	else
 	  end_found =
 	    scan_forward(dst,cdst+1,&dst,&cdst,&this->entity_end,1) ?
@@ -4887,6 +4918,18 @@ static void html_lazy_entity_end(INT32 args)
    push_int(o);
 }
 
+static void html_nestling_entity_end(INT32 args)
+{
+   int o=!!(THIS->flags & FLAG_NESTLING_ENTITY_END);
+   check_all_args("nestling_entity_end",args,BIT_VOID|BIT_INT,0);
+   if (args) {
+     if (sp[-args].u.integer) THIS->flags |= FLAG_NESTLING_ENTITY_END;
+     else THIS->flags &= ~FLAG_NESTLING_ENTITY_END;
+   }
+   pop_n_elems(args);
+   push_int(o);
+}
+
 static void html_match_tag(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_MATCH_TAG);
@@ -5111,6 +5154,8 @@ void init_parser_html(void)
    ADD_FUNCTION("lazy_argument_end",html_lazy_argument_end,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("lazy_entity_end",html_lazy_entity_end,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("nestling_entity_end",html_nestling_entity_end,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("match_tag",html_match_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
