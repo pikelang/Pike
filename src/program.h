@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.94 2000/07/10 18:21:33 grubba Exp $
+ * $Id: program.h,v 1.95 2000/07/12 16:09:36 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -178,8 +178,9 @@ struct program_constant
 #define ID_INHERITED       0x80
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
+#define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
 
-#define ID_MODIFIER_MASK 0x03ff
+#define ID_MODIFIER_MASK 0x07ff
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 
