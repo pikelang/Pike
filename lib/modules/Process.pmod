@@ -2,6 +2,10 @@
 
 import Stdio;
 
+#if !constant(strerror)
+#define strerror(X) ("errno="+X)
+#endif
+
 program create_process = _static_modules.Builtin()->create_process;
 
 int exec(string file,string ... foo)
