@@ -1,8 +1,17 @@
 /*
- * $Id: nt.c,v 1.1 1999/12/01 22:37:22 marcus Exp $
+ * $Id: nt.c,v 1.2 2000/01/10 00:41:48 hubbe Exp $
  *
  * NT crypto stuff for Pike
  */
+
+#ifdef __NT__
+
+/* We need to do this before including global.h /Hubbe */
+/* (because global.h includes windows.h which includes wincrypt.h ) */
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0400
+#endif
 
 #include "global.h"
 #include "stralloc.h"
@@ -13,12 +22,6 @@
 #include "las.h"
 #include "module_support.h"
 
-#ifdef __NT__
-
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0400
-#endif
 #include <wincrypt.h>
 
 
