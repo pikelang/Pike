@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.326 2003/03/07 14:06:57 grubba Exp $
+|| $Id: las.c,v 1.327 2003/03/08 17:24:46 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.326 2003/03/07 14:06:57 grubba Exp $");
+RCSID("$Id: las.c,v 1.327 2003/03/08 17:24:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1862,24 +1862,48 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
     case T_OBJECT:
     case T_PROGRAM:
-      if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
       {
 	struct program *p;
 	if(Pike_sp[-1].type == T_OBJECT)
 	  p=Pike_sp[-1].u.object->prog;
 	else
 	  p=Pike_sp[-1].u.program;
+
+	if (p == Pike_compiler->new_program) {
+	  /* We're looking at ourselves... */
+	  int i = really_low_find_shared_string_identifier(id, p, 0);
+	  UNSETJMP(tmp);
+	  pop_stack();
+	  if (i == -1) {
+	    if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
+	    {
+	      if (node_name) {
+		my_yyerror("Index '%s' not present in self.",
+			   id->str);
+	      } else {
+		my_yyerror("Index '%s' not present in self.", id->str);
+	      }
+	      return NULL;
+	    } else {
+	      return mknode(F_UNDEFINED, 0, 0);
+	    }
+	  }
+	  return mkidentifiernode(i);
+	}
 	
-	if(p && !(p->flags & PROGRAM_PASS_1_DONE))
+	if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
 	{
-	  if(report_compiler_dependency(p))
+	  if(p && !(p->flags & PROGRAM_PASS_1_DONE))
 	  {
-	    pop_stack();
+	    if(report_compiler_dependency(p))
+	    {
+	      pop_stack();
 #if 0
-	    fprintf(stderr, "Placeholder deployed for %p\n", p);
+	      fprintf(stderr, "Placeholder deployed for %p\n", p);
 #endif
-	    ref_push_object(placeholder_object);
-	    break;
+	      ref_push_object(placeholder_object);
+	      break;
+	    }
 	  }
 	}
       }
