@@ -1,3 +1,5 @@
+#include "global.h"
+
 #include <math.h>
 #include <ctype.h>
 
@@ -292,7 +294,7 @@ static void img_scale(struct image *dest,
    new=malloc(newx*newy*sizeof(rgb_group) +1);
    if (!new) error("Out of memory!\n");
 
-   memset(new,0,newx*newy*sizeof(rgb_group));
+   MEMSET(new,0,newx*newy*sizeof(rgb_group));
    
    dx=((double)newx-0.000001)/source->xsize; 
    dy=((double)newy-0.000001)/source->ysize; 
@@ -332,7 +334,7 @@ static void img_scale2(struct image *dest, struct image *source)
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
    new=malloc(newx*newy*sizeof(rgb_group) +1);
    if (!new) error("Out of memory\n");
-   memset(new,0,newx*newy*sizeof(rgb_group));
+   MEMSET(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
    dest->xsize=newx;
@@ -361,7 +363,7 @@ static INLINE unsigned char getnext(struct pike_string *s,INT32 *pos)
 {
    if (*pos>=s->len) return 0;
    if (s->str[(*pos)]=='#')
-      for (;*pos<s->len && isspace(s->str[*pos]);(*pos)++);
+      for (;*pos<s->len && ISSPACE(s->str[*pos]);(*pos)++);
    return s->str[(*pos)++];
 }
 
@@ -381,7 +383,7 @@ static INLINE unsigned char getnext_skip_comment(struct pike_string *s,INT32 *po
 static INLINE void skipwhite(struct pike_string *s,INT32 *pos)
 {
    while (*pos<s->len && 
-	  ( isspace(s->str[*pos]) ||
+	  ( ISSPACE(s->str[*pos]) ||
 	    s->str[*pos]=='#'))
       getnext_skip_comment(s,pos);
 }
