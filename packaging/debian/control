@@ -64,7 +64,7 @@ Description: SVG format support for Pike
 
 Package: pike7.4-image
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version}), pike7.4-gz (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Suggests: pike7.4-svg (=${Source-Version})
 Description: Image module for Pike
  This module provides many powerful image processing functions to
