@@ -1,4 +1,4 @@
-/* $Id: buffer.c,v 1.9 2001/08/14 17:51:16 grubba Exp $
+/* $Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $
  */
 #include "global.h"
 
@@ -15,7 +15,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.9 2001/08/14 17:51:16 grubba Exp $");
+RCSID("$Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -193,7 +193,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
   {
     b->read_only = 1;
     b->str = data;
-    data->refs++;
+    add_ref(data);
     b->size = data->len;
     b->data = data->str;
   }

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.28 2001/09/27 04:25:29 js Exp $");
+RCSID("$Id: blob.c,v 1.29 2002/01/02 12:48:46 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -159,7 +159,7 @@ Blob *wf_blob_new( struct svalue *feed, struct pike_string *word )
   MEMSET(b, 0, sizeof(Blob) );
   b->word = word;
   if( word )
-    word->refs++;
+    add_ref(word);
   b->feed = feed;
   b->b = wf_buffer_new();
   return b;

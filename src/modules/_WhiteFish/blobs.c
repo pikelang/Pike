@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.7 2001/09/27 04:25:30 js Exp $");
+RCSID("$Id: blobs.c,v 1.8 2002/01/02 12:48:46 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -48,7 +48,7 @@ static struct hash *new_hash( struct pike_string *id )
 {
   struct hash *res =  malloc( sizeof( struct hash ) );
   res->id = id;
-  id->refs++;
+  add_ref(id);
   res->next = 0;
   res->bl = clone_object( blob_program,0 );
   return res;

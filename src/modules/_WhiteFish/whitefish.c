@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.32 2001/07/31 15:27:18 js Exp $");
+RCSID("$Id: whitefish.c,v 1.33 2002/01/02 12:48:46 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -39,6 +39,7 @@ static void free_stuff( void *_t )
   if( t->res ) free_object( t->res );
   for( i = 0; i<t->nblobs; i++ )
     wf_blob_free( t->blobs[i] );
+  free(t->blobs);
   free( t->tmp );
   free( t );
 }
@@ -529,6 +530,7 @@ static void f_do_query_and( INT32 args )
 			 field_coefficients,
 			 proximity_coefficients,
 			 cutoff );
+
   pop_n_elems( args );
   wf_resultset_push( res );
 }
