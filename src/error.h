@@ -72,7 +72,7 @@ extern int throw_severity;
   recoveries->onerror=(X).previous; \
   } while(0)
 #else
-#define UNSET_ONERROR(X) recoveries->onerror=X.previous
+#define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
 #endif
 
 /* Prototypes begin here */
