@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.40 1998/11/22 11:02:33 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.41 2001/03/04 21:22:52 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -770,6 +771,8 @@ void backend(void)
 #endif /* PIKE_DEBUG */
 	  if (fds[fd].read.callback) {
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
+	  } else if (fds[fd].write.callback) {
+	    (*(fds[fd].write.callback))(fd, fds[fd].write.data);
 	  }
 	  /* We don't want to keep this fd anymore. */
 	  POLL_FD_CLR(fd, ~0);
