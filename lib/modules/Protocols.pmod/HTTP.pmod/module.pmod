@@ -65,7 +65,7 @@ object get_url(string url,void|mapping query_variables, void|mapping request_hea
       error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	    prot);
 
-   if (query_variables)
+   if (query_variables && sizeof(query_variables))
    {
       if (search(query,"?")!=-1)
 	 query+="&"+http_encode_query(query_variables);
@@ -75,8 +75,10 @@ object get_url(string url,void|mapping query_variables, void|mapping request_hea
 
    con->sync_request(host,port,
 		     "GET /"+query+" HTTP/1.0",
-		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]) | request_headers);
+		     ([
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
+		     ]) | request_headers);
 
    if (!con->ok) return 0;
    return con;
@@ -103,7 +105,7 @@ object put_url(string url, void|string file, void|mapping query_variables,
       error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	    prot);
 
-   if (query_variables)
+   if (query_variables && sizeof(query_variables))
    {
       if (search(query,"?")!=-1)
 	 query+="&"+http_encode_query(query_variables);
@@ -114,8 +116,8 @@ object put_url(string url, void|string file, void|mapping query_variables,
    con->sync_request(host,port,
 		     "PUT /"+query+" HTTP/1.0",
 		     ([
-		       "user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
 		     ]) | request_headers,
 		     file);
 
@@ -144,7 +146,7 @@ object delete_url(string url, void|mapping query_variables,
       error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	    prot);
 
-   if (query_variables)
+   if (query_variables && sizeof(query_variables))
    {
       if (search(query,"?")!=-1)
 	 query+="&"+http_encode_query(query_variables);
@@ -154,8 +156,10 @@ object delete_url(string url, void|mapping query_variables,
 
    con->sync_request(host,port,
 		     "DELETE /"+query+" HTTP/1.0",
-		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
+		     ([
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
+		     ]) |
 		     request_headers);
 
    if (!con->ok) return 0;
@@ -196,8 +200,10 @@ object post_url(string url,mapping query_variables, void|mapping request_headers
 
    con->sync_request(host,port,
 		     "POST /"+query+" HTTP/1.0",
-		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
+		     ([
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
+		     ]) |
 		     request_headers |
 		     (["content-type":
 		       "application/x-www-form-urlencoded"]),
@@ -269,13 +275,15 @@ string unentity(string s)
       );
 }
 
-string http_encode_query(mapping variables)
+string http_encode_query(mapping(string:int|string) variables)
 {
-   return Array.map(indices(variables),
-		    lambda(string ind)
+   return Array.map((array)variables,
+		    lambda(array(string|int) v)
 		    {
-		       return http_encode_string(ind)+"="+
-			  http_encode_string(variables[ind]);
+		      if(intp(v[1]))
+			return http_encode_string(v[0]);
+		      return http_encode_string(v[0]) + "=" +
+			http_encode_string(v[1]);
 		    })*"&";
 }
 
@@ -291,7 +299,8 @@ string http_encode_string(string f)
 	 "\210", "\211", "\212", "\213", "\214", "\215", "\216", "\217", 
 	 "\220", "\221", "\222", "\223", "\224", "\225", "\226", "\227", 
 	 "\230", "\231", "\232", "\233", "\234", "\235", "\236", "\237", 
-	 " ", "%", "'", "\"", "+" }),
+	 " ", "%", "'", "\"", "+", "&", "=", "/",
+	 "#", ";", "\\", "<", ">" }),
       ({ 
 	 "%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07",    
 	 "%08", "%09", "%0a", "%0b", "%0c", "%0d", "%0e", "%0f", 
@@ -301,7 +310,8 @@ string http_encode_string(string f)
 	 "%88", "%89", "%8a", "%8b", "%8c", "%8d", "%8e", "%8f", 
 	 "%90", "%91", "%92", "%93", "%94", "%95", "%96", "%97", 
 	 "%98", "%99", "%9a", "%9b", "%9c", "%9d", "%9e", "%9f", 
-	 "%20", "%25", "%27", "%22", "%2b"}));
+	 "%20", "%25", "%27", "%22", "%2b", "%26", "%3d", "%2f",
+	 "%23", "%3b", "%5c", "%3c", "%3e" }));
 }
 
 string http_encode_cookie(string f)
