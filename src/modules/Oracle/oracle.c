@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.61 2001/09/28 01:37:56 leif Exp $
+ * $Id: oracle.c,v 1.62 2001/09/29 12:25:15 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.61 2001/09/28 01:37:56 leif Exp $");
+RCSID("$Id: oracle.c,v 1.62 2001/09/29 12:25:15 hubbe Exp $");
 
 
 /* User-changable defines: */
@@ -1450,7 +1450,11 @@ static void f_compile_query_create(INT32 args)
     for(t = 0; t < timeout_limit && dbcon->resultobject_busy; ++t)
     {
       THREADS_ALLOW();
+#ifdef __NT__
+      Sleep(1000);
+#else
       sleep(1);
+#endif
       THREADS_DISALLOW();
     }
     if (dbcon->resultobject_busy)
