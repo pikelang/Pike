@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.3 2001/05/05 19:23:09 mirar Exp $ */
+/* $Id: mkxml.pike,v 1.4 2001/05/05 20:38:48 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -310,6 +310,7 @@ string fixdesc(string s,string prefix,string where)
       else if (b[..2]=="pre" &&
 	  sscanf(t,"%s<pre%s>%s</pre>%s",t,q,u,v)==4)
       {
+	 werror("%O\n",u);
 	 s+=replace(t,"\n\n","\n\n<p>")+
 	    "<pre"+q+">\n"+u+"</pre>";
 	 t=v;
@@ -906,6 +907,11 @@ int main(int ac,string *files)
 	    else descM->desc+="\n";
 	    d=getridoftabs(d);
 	    descM->desc+=d;
+	 }
+	 else
+	 {
+	    if (!descM->desc) descM->desc="";
+	    else descM->desc+="\n";
 	 }
       }
    }
