@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.65 2004/02/02 22:59:55 nilsson Exp $
+// $Id: Query.pike,v 1.66 2004/02/29 02:56:50 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -52,7 +52,7 @@ string status_desc;
 int timeout=120; // seconds
 
 // internal
-#if constant(SSL.sslfile) 
+#if constant(SSL.Cipher.CipherAlgorithm)
  import SSL.Constants;
  SSL.sslfile ssl;
 #endif
@@ -160,7 +160,7 @@ static void connect(string server,int port,int blocking)
    werror("<- %O\n",request);
 #endif
 
-#if constant(SSL.sslfile) 
+#if constant(SSL.Cipher.CipherAlgorithm)
    if(https) {
      // Create a context
      SSL.context context = SSL.context();
@@ -284,7 +284,7 @@ void async_got_host(string server,int port)
 		      {
 			if (success) {
 			  // Connect ok.
-#if constant(SSL.sslfile) 
+#if constant(SSL.Cipher.CipherAlgorithm)
 			  if(https) {
 			    //Create a context
 			    SSL.context context = SSL.context();

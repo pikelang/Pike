@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.52 2004/02/02 23:00:50 nilsson Exp $
+// $Id: client.pike,v 1.53 2004/02/29 02:58:12 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -74,7 +74,7 @@
 
 #include "ldap_errors.h"
 
-#if constant(SSL.sslfile)
+#if constant(SSL.Cipher.CipherAlgorithm)
 import SSL.Constants;
 #endif
 
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.52 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.53 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -369,7 +369,7 @@ int _prof_gtim;
 
     if(!stringp(lauth->scheme) ||
        ((lauth->scheme != "ldap")
-#if constant(SSL.sslfile)
+#if constant(SSL.Cipher.CipherAlgorithm)
 	&& (lauth->scheme != "ldaps")
 #endif
 	)) {
@@ -381,7 +381,7 @@ int _prof_gtim;
     if(!lauth->port)
       lauth += ([ "port" : lauth->scheme == "ldap" ? LDAP_DEFAULT_PORT : LDAPS_DEFAULT_PORT ]);
 
-#if constant(SSL.sslfile)
+#if constant(SSL.Cipher.CipherAlgorithm)
     if(lauth->scheme == "ldaps" && !context) {
       context = SSL.context();
       // Allow only strong crypto
@@ -406,7 +406,7 @@ int _prof_gtim;
       THROW(({"Failed to connect to LDAP server.\n",backtrace()}));
     }
 
-#if constant(SSL.sslfile)
+#if constant(SSL.Cipher.CipherAlgorithm)
     if(lauth->scheme == "ldaps") {
       context->random = Crypto.Random.random_string;
       ::create(SSL.sslfile(::_fd, context, 1,1));
