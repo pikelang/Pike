@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.49 2004/05/19 00:08:02 nilsson Exp $
+|| $Id: xcf.c,v 1.50 2004/08/11 08:29:29 per Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.49 2004/05/19 00:08:02 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.50 2004/08/11 08:29:29 per Exp $");
 
 #include "image_machine.h"
 
@@ -1243,6 +1243,8 @@ void image_xcf_f__decode_tiles( INT32 args )
     ewidth = MINIMUM(TILE_WIDTH, (rxs-x));
     eheight = MINIMUM(TILE_HEIGHT, (rys-y));
 
+    if( (double)ewidth * eheight * bpp > INT_MAX )
+      Pike_error("Insanely large tiles not supported\n");
     if(rle)
     {
       struct buffer s = tile, od, d;

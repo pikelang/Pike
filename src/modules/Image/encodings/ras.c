@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ras.c,v 1.21 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: ras.c,v 1.22 2004/08/11 08:28:25 per Exp $
 */
 
 /*
@@ -17,7 +17,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.21 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id: ras.c,v 1.22 2004/08/11 08:28:25 per Exp $");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -221,6 +221,9 @@ void img_ras_decode(INT32 args)
      } else
        len = rs.ras_length;
    }
+
+   if( (double)((rs.ras_width+1)&~1)*3*(double)rs.ras_height > (double)INT_MAX )
+       Pike_error("Too large RAS image (overflow imminent)");
 
    if(rs.ras_type == RT_BYTE_ENCODED) {
      INT32 img_sz = 0;

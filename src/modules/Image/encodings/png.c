@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.64 2004/05/19 00:08:01 nilsson Exp $
+|| $Id: png.c,v 1.65 2004/08/11 08:28:02 per Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.64 2004/05/19 00:08:01 nilsson Exp $");
+RCSID("$Id: png.c,v 1.65 2004/08/11 08:28:02 per Exp $");
 
 #include "image_machine.h"
 
@@ -1284,7 +1284,10 @@ static void img_png_decode(INT32 args,int header_only)
    pop_n_elems(2);
 
    s=(unsigned char*)fs->str;
-
+   if(sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height>(double)INT_MAX)
+       Pike_error("Image.PNG._decode: Too large image "
+		  "(total size exceeds %d bytes (%.0f))\n", INT_MAX, 
+		 sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height);
    w1=d1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
    SET_ONERROR(err, free_and_clear, &d1);
    wa1=da1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.36 2004/05/19 00:08:01 nilsson Exp $
+|| $Id: tga.c,v 1.37 2004/08/11 08:28:47 per Exp $
 */
 
 /*
@@ -63,7 +63,7 @@
 
 
 
-RCSID("$Id: tga.c,v 1.36 2004/05/19 00:08:01 nilsson Exp $");
+RCSID("$Id: tga.c,v 1.37 2004/08/11 08:28:47 per Exp $");
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 
@@ -500,6 +500,11 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     abpp = bpp - pbpp;
     really_no_alpha = 1;
   }
+
+
+  if((double)width * (double)height * bpp  > (double)INT_MAX )
+    Pike_error("Too large image (width * height * bpp overflows)\n");
+
 
   switch (hdr->imageType)
   {
