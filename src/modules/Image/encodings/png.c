@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.47 2002/10/21 17:06:15 marcus Exp $
+|| $Id: png.c,v 1.48 2003/01/06 00:56:53 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.47 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: png.c,v 1.48 2003/01/06 00:56:53 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -45,14 +45,16 @@ static struct pike_string *param_type;
 static struct pike_string *param_bpp;
 static struct pike_string *param_background;
 
+/*! @module Image
+ */
 
-/*
-**! module Image
-**! submodule PNG
-**!
-**! note
-**!	This module uses <tt>zlib</tt>.
-*/
+/*! @class PNG
+ *!   Support for encoding and decoding the Portable Network Graphics
+ *!   format, PNG.
+ *!
+ *! @note
+ *!   This module uses zlib.
+ */
 
 static INLINE void push_nbo_32bit(size_t x)
 {
@@ -157,18 +159,12 @@ static void png_compress(int style)
    free_object(o);
 }
 
-/*
-49 48 44 52
-00 00 01 e0  00 00 01 68  08 06 00 00  00 8f 37 28  20
--> 00 00 00  04
-*/
-/*
-**! method string _chunk(string type,string data)
-**! 	Encodes a PNG chunk.
-**!
-**! note
-**!	Please read about the PNG file format.
-*/
+/*! @decl string _chunk(string type, string data)
+ *! 	Encodes a PNG chunk.
+ *!
+ *! @note
+ *!	Please read about the PNG file format.
+ */
 
 static void image_png__chunk(INT32 args)
 {
@@ -190,28 +186,28 @@ static void image_png__chunk(INT32 args)
 }
 
 
-/*
-**! method array __decode(string data)
-**! method array __decode(string data, int dontcheckcrc)
-**! 	Splits a PNG file into chunks.
-**!
-**!     Result is an array of arrays,
-**!	<tt>({ ({ string chunk_type, string data, int crc_ok }), 
-**!            ({ string chunk_type, string data, int crc_ok }) ... })</tt>
-**!
-**!	<tt>chunk_type</tt> is the type of the chunk, like
-**!	<tt>"IHDR"</tt> or <tt>"IDAT"</tt>.
-**!
-**!	<tt>data</tt> is the actual chunk data.
-**!	
-**!	<tt>crcok</tt> is set to 1 if the checksum is ok and
-**!	<tt>dontcheckcrc</tt> parameter isn't set.
-**!
-**!	Returns 0 if it isn't a PNG file.
-**!
-**! note
-**!	Please read about the PNG file format.
-*/
+/*! @decl array __decode(string data)
+ *! @decl array __decode(string data, int dontcheckcrc)
+ *! 	Splits a PNG file into chunks.
+ *!
+ *! @returns
+ *!   Result is an array of arrays, or 0 if data isn't a PNG file.
+ *!   Each element in the array is constructed as follows.
+ *!   @array
+ *!     @elem string 0
+ *!       The type of the chunk, e.g. "IHDR" or "IDAT".
+ *!     @elem string 1
+ *!       The actual chunk data.
+ *!     @elem int(0..1) 2
+ *!       Set to 1 if the checksum is ok and @[dontcheckcrc]
+ *!       isn't set.
+ *!   @endarray
+ *!
+ *! @note
+ *!   Please read about the PNG file format.
+ *!   Support for decoding cHRM, gAMA, sBIT, hIST, pHYs, tIME,
+ *!   tEXt and zTXt chunks are missing.
+ */
 
 static void image_png___decode(INT32 args)
 {
@@ -222,12 +218,12 @@ static void image_png___decode(INT32 args)
    int n=0;
    ONERROR uwp;
 
-   if (args<1) 
-      Pike_error("Image.PNG.__decode: too few arguments\n");
+   if (args<1)
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.__decode", 1);
    if (sp[-args].type!=T_STRING)
-      Pike_error("Image.PNG.__decode: illegal argument 1\n");
-   
-   if (args==2 &&
+     SIMPLE_BAD_ARG_ERROR("Image.PNG.__decode", 1, "string");
+
+   if (args>1 &&
        (sp[1-args].type!=T_INT ||
 	sp[1-args].u.integer!=0))
       nocrc=1;
@@ -290,99 +286,110 @@ static void image_png___decode(INT32 args)
    f_aggregate(n);
 }
 
+/*! @decl mapping _decode(string|array data)
+ *! @decl mapping _decode(string|array data, mapping options)
+ *!   Decode a PNG image file.
+ *!
+ *! @result
+ *!   @mapping
+ *!     @member Image.Image "image"
+ *!       The decoded image.
+ *!     @member int "bpp"
+ *!       Number of bitplans in the image. One of 1, 2, 4, 8 and 16.
+ *!     @member int "type"
+ *!       Image color type. Bit values are:
+ *!       @int
+ *!         @value 1
+ *!           Palette used.
+ *!         @value 2
+ *!           Color used.
+ *!         @value 4
+ *!           Alpha channel used.
+ *!       @endit
+ *!       Valid values are 0, 2, 3, 4 and 6.
+ *!     @member int "xsize"
+ *!     @member int "ysize"
+ *!       Image dimensions.
+ *!     @member array(int) "background"
+ *!       The background color, if any. An array of size three with
+ *!       the RGB values.
+ *!     @member Image.Image "alpha"
+ *!       The alpha channel, if any.
+ *!   @endmapping
+ *!
+ *! @param options
+ *!    @mapping
+ *!      @member string|array|Image.Colortable "colortable"
+ *!        A replacement color table to be used instead of the one
+ *!        in the PNG file, if any.
+ *!    @endmapping
+ *!
+ *! @throws
+ *!   Throws an error if the image data is erroneous.
+ *!
+ *! @note
+ *!	Please read about the PNG file format.
+ *!	This function ignores any checksum errors in the file.
+ *!	A PNG of higher color resolution than the Image module
+ *!	supports (8 bit) will lose that information in the conversion.
+ */
+
 /*
-**! method array _decode(string|array data)
-**! method array _decode(string|array data,mapping options)
-**! 	Decode a PNG image file.
-**!
-**!     Result is a mapping,
-**!	<pre>
-**!	([
-**!	   "image": object image,
-**!
-**!        ... options ...
-**!     ])
-**!	</pre>
-**!
-**!	<tt>image</tt> is the stored image.
-**!
-**!	Valid entries in <tt>options</tt> is a superset
-**!	of the one given to <ref>encode</ref>:
-**!
-**!	<pre>
-**!     basic options:
-**!
-**!	    "alpha": object alpha,            - alpha channel
-**!
-**!	    "palette": object colortable,     - image palette
-**!                                             (if non-truecolor)
-**!         
-**!     advanced options:
-**! 
-**!	    "background": array(int) color,   - suggested background color
-**!	    "background_index": int index,    - what index in colortable
-**!
-**!	    "chroma": ({ float white_point_x,
-**!	                 float white_point_y,
-**!			 float red_x,
-**!			 float red_y,         - CIE x,y chromaticities
-**!			 float green_x,         
-**!			 float green_y,
-**!			 float blue_x,
-**!			 float blue_y })  
-**!
-**!	    "gamma":  float gamma,            - gamma
-**!
-**!	    "spalette": object colortable,    - suggested palette, 
-**!                                             for truecolor images
-**!	    "histogram": array(int) hist,     - histogram for the image,
-**!	                                        corresponds to palette index
-**!	
-**!	    "physical": ({ int unit,          - physical pixel dimension
-**!	                   int x,y })           unit 0 means pixels/meter
-**!
-**!	    "sbit": array(int) sbits          - significant bits
-**!
-**!	    "text": array(array(string)) text - text information, 
-**!                 ({ ({ keyword, data }), ... })
-**!
-**!                 Standard keywords:
-**!
-**!                 Title          Short (one line) title or caption for image
-**!                 Author         Name of image's creator
-**!                 Description    Description of image (possibly long)
-**!                 Copyright      Copyright notice
-**!                 Creation Time  Time of original image creation
-**!                 Software       Software used to create the image
-**!                 Disclaimer     Legal disclaimer
-**!                 Warning        Warning of nature of content
-**!                 Source         Device used to create the image
-**!                 Comment        Miscellaneous comment
-**!
-**!	    "time": ({ int year, month, day,  - time of last modification
-**!	               hour, minute, second })  
-**!
-**!      wizard options:
-**!	    "compression": int method         - compression method (0)
-**!
-**!      </pre>
-**!	
-**!	This method can also take options, 
-**! 	as a mapping:
-**!	<pre>
-**!     advanced options:
-**!	    "palette": colortable object
-**!		- replace the decoded palette with this when
-**!		  unpacking the image data, if applicable
-**!	</pre>
-**!
-**! note
-**!	Please read about the PNG file format.
-**!	This function ignores any checksum errors in the file.
-**!	A PNG of higher color resolution than the Image module
-**!	supports (8 bit) will lose that information in the conversion.
-**!	It throws an error if the image data is erroneous.
-*/
+ *     basic options:
+ *
+ *	    "alpha": object alpha,            - alpha channel
+ *
+ *	    "palette": object colortable,     - image palette
+ *                                             (if non-truecolor)
+ *         
+ *     advanced options:
+ * 
+ *	    "background": array(int) color,   - suggested background color
+ *	    "background_index": int index,    - what index in colortable
+ *
+ *	    "chroma": ({ float white_point_x,
+ *	                 float white_point_y,
+ *			 float red_x,
+ *			 float red_y,         - CIE x,y chromaticities
+ *			 float green_x,         
+ *			 float green_y,
+ *			 float blue_x,
+ *			 float blue_y })  
+ *
+ *	    "gamma":  float gamma,            - gamma
+ *
+ *	    "spalette": object colortable,    - suggested palette, 
+ *                                             for truecolor images
+ *	    "histogram": array(int) hist,     - histogram for the image,
+ *	                                        corresponds to palette index
+ *	
+ *	    "physical": ({ int unit,          - physical pixel dimension
+ *	                   int x,y })           unit 0 means pixels/meter
+ *
+ *	    "sbit": array(int) sbits          - significant bits
+ *
+ *	    "text": array(array(string)) text - text information, 
+ *                 ({ ({ keyword, data }), ... })
+ *
+ *                 Standard keywords:
+ *
+ *                 Title          Short (one line) title or caption for image
+ *                 Author         Name of image's creator
+ *                 Description    Description of image (possibly long)
+ *                 Copyright      Copyright notice
+ *                 Creation Time  Time of original image creation
+ *                 Software       Software used to create the image
+ *                 Disclaimer     Legal disclaimer
+ *                 Warning        Warning of nature of content
+ *                 Source         Device used to create the image
+ *                 Comment        Miscellaneous comment
+ *
+ *	    "time": ({ int year, month, day,  - time of last modification
+ *	               hour, minute, second })  
+ *
+ *      wizard options:
+ *	    "compression": int method         - compression method (0)
+ */
 
 static struct pike_string *_png_unfilter(unsigned char *data,
 					 size_t len,
@@ -623,7 +630,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
+	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
 		     type,bpp);
 	 }
 	 if (trns && trns->len==2)
@@ -664,7 +671,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
+	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
 		     type,bpp);
 	 }
 	 if (trns && trns->len==6)
@@ -685,20 +692,20 @@ static int _png_write_rgb(rgb_group *w1,
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG->decode: No palette (PLTE entry), but color type (3) needs one\n");
+	    Pike_error("Image.PNG.decode: No palette (PLTE entry), but color type (3) needs one\n");
 	 }
 	 if (ct->type!=NCT_FLAT)
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG->decode: Internal error (created palette isn't flat)\n");
+	    Pike_error("Image.PNG.decode: Internal error (created palette isn't flat)\n");
 	 }
 	 mz=ct->u.flat.numentries;
 	 if (mz==0)
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG->decode: palette is zero entries long; need at least one color.\n");
+	    Pike_error("Image.PNG.decode: palette is zero entries long; need at least one color.\n");
 	 }
 
 #define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
@@ -865,7 +872,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       
 	    default:
 	       free(w1); free(wa1);
-	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
+	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return !!trns; /* alpha channel if trns chunk */
@@ -899,7 +906,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
+	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return 1; /* alpha channel */
@@ -937,16 +944,16 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
+	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return 1; /* alpha channel */
       default:
 	 free(wa1); free(w1);
-	 Pike_error("Image.PNG->_decode: Unknown color type %d (bit depth %d).\n",
+	 Pike_error("Image.PNG._decode: Unknown color type %d (bit depth %d).\n",
 	       type,bpp);
    }
-   Pike_error("Image.PNG->_decode: illegal state\n");
+   Pike_error("Image.PNG._decode: illegal state\n");
    return 0; /* stupid */
 }
 
@@ -985,8 +992,8 @@ static void img_png_decode(INT32 args,int header_only)
       int interlace;
    } ihdr={-1,-1,-1,0,-1,-1,-1};
 
-   if (args<1) 
-      Pike_error("Image.PNG._decode: too few arguments\n");
+   if (args<1)
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG._decode", 1);
 
    m=allocate_mapping(10);
    push_mapping(m);
@@ -994,7 +1001,7 @@ static void img_png_decode(INT32 args,int header_only)
    if (args>=2)
    {
       if (sp[1-args-1].type!=T_MAPPING)
-	 Pike_error("Image.PNG._decode: illegal argument 2\n");
+	SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 2, "mapping");
 
       push_svalue(sp+1-args-1);
       ref_push_string(param_palette);
@@ -1022,6 +1029,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 	 case T_INT:
 	    pop_n_elems(1);
+	    break;
 	 default:
 	    Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
       }
@@ -1040,7 +1048,7 @@ static void img_png_decode(INT32 args,int header_only)
 	 Pike_error("Image.PNG._decode: Not PNG data\n");
    }
    else if (sp[-1].type!=T_ARRAY)
-      Pike_error("Image.PNG._decode: Illegal argument 1\n");
+     SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 1, "string");
 
    a=sp[-1].u.array;
 
@@ -1286,7 +1294,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    if (wa1) free(wa1); 
 	    if (ta1) free(ta1); 
 	    if (ta1) free(t1); 
-	    Pike_error("Image.PNG->_decode: out of memory (close one)\n");
+	    Pike_error("Image.PNG._decode: out of memory (close one)\n");
 	 }
 	 /* loop over adam7 interlace's 
 	    and write them to the arena */
@@ -1404,30 +1412,27 @@ header_stuff:
 
 
 /*
-**! method string encode(object image)
-**! method string encode(object image, mapping options)
-**! 	Encodes a PNG image. 
-**!
-**!     The <tt>options</tt> argument may be a mapping
-**!	containing zero or more encoding options:
-**!
-**!	<pre>
-**!	normal options:
-**!	    "alpha":image object
-**!		Use this image as alpha channel 
-**!		(Note: PNG alpha channel is grey.
-**!		 The values are calculated by (r+2g+b)/4.)
-**!
-**!	    "palette":colortable object
-**!		Use this as palette for pseudocolor encoding
-**!		(Note: encoding with alpha channel and pseudocolor
-**!		 at the same time are not supported)
-**!
-**!	</pre>
-**!
-**! note
-**!	Please read some about PNG files. 
-*/
+ *! @decl string encode(Image.Image image)
+ *! @decl string encode(Image.Image image, mapping options)
+ *! 	Encodes a PNG image. 
+ *!
+ *! @param options
+ *!   @mapping
+ *!     @member Image.Image "alpha"
+ *!       Use this image as alpha channel (Note: PNG alpha
+ *!       channel is grey. The values are calculated by (r+2g+b)/4.)
+ *!     @member Image.Colortable "palette"
+ *!       Use this as palette for pseudocolor encoding
+ *!       (Note: encoding with alpha channel and pseudocolor
+ *!       at the same time are not supported)
+ *!   @mapping
+ *!
+ *! @seealso
+ *!   @[__decode]
+ *!
+ *! @note
+ *!	Please read some about PNG files. 
+ */
 
 static void image_png_encode(INT32 args)
 {
@@ -1439,21 +1444,21 @@ static void image_png_encode(INT32 args)
    char buf[20];
    
    if (!args)
-      Pike_error("Image.PNG.encode: too few arguments\n");
-   
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
+
    if (sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)
 	 get_storage(sp[-args].u.object,image_program)))
-      Pike_error("Image.PNG.encode: illegal argument 1\n");
-   
+     SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
+
    if (!img->img)
       Pike_error("Image.PNG.encode: no image\n");
 
    if (args>1)
    {
       if (sp[1-args].type!=T_MAPPING)
-	 Pike_error("Image.PNG.encode: illegal argument 2\n");
-      
+	SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 2, "mapping");
+
       push_svalue(sp+1-args);
       ref_push_string(param_alpha);
       f_index(2);
@@ -1624,42 +1629,51 @@ static void image_png__decode(INT32 args)
    img_png_decode(args,0);
 }
 
+/*! @decl mapping decode_header(string data)
+ *!   Decodes only the PNG headers.
+ *! @seealso
+ *!   @[_decode]
+ */
+
 static void image_png_decode_header(INT32 args)
 {
    img_png_decode(args,1);
 }
 
-/*
-**! method object decode(string data)
-**! method object decode(string data, mapping options)
-**! 	Decodes a PNG image. 
-**!
-**!     The <tt>options</tt> argument may be a mapping
-**!	containing zero or more encoding options:
-**!
-**!	<pre>
-**!	</pre>
-**!
-**! note
-**!	Throws upon error in data.
-*/
+/*! @decl Image.Image decode(string data)
+ *! @decl Image.Image decode(string data, mapping(string:mixed) options)
+ *!   Decodes a PNG image. The @[options] mapping is the
+ *!   as for @[_decode].
+ *!
+ *! @throws
+ *!   Throws upon error in data.
+ */
 
 static void image_png_decode(INT32 args)
 {
    if (!args)
-      Pike_error("Image.PNG.decode: missing argument(s)\n");
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
    
    image_png__decode(args);
    push_string(make_shared_string("image"));
    f_index(2);
 }
 
+/*! @decl Image.Image decode_alpha(string data, @
+ *!     void|mapping(string:mixed) options)
+ *!   Decodes the alpha channel in a PNG file. The
+ *!   @[optios] mapping is the same as for @[_decode].
+ *!
+ *! @throws
+ *!   Throws upon error in data.
+ */
+
 static void image_png_decode_alpha(INT32 args)
 {
    struct svalue s;
    if (!args)
-      Pike_error("Image.PNG.decode: missing argument(s)\n");
-   
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode_alpha", 1);
+
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);
    push_string(make_shared_string("alpha"));
@@ -1680,6 +1694,12 @@ static void image_png_decode_alpha(INT32 args)
    }
    free_svalue(&s);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*** module init & exit & stuff *****************************************/
 
