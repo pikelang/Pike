@@ -84,9 +84,15 @@ int is_completed()
    return is_complete;
 }
 
-int is_useful()
+int is_available()
 {
-   return !peer_choking;
+   return !peer_choking && online==2 && 
+      (handover || !sizeof(piece_callback));
+}
+
+int is_activated()
+{
+   return !!sizeof(piece_callback);
 }
 
 //! connect to the peer; this is done async. 
@@ -439,6 +445,7 @@ void send_have(int n)
 
 // ----------------------------------------------------------------
 mapping(string:function(int,int,string,object:void|mixed)) piece_callback=([]);
+int handover=0; // more downloads is ok
 
 //! called to request a chunk from this peer
 void request(int piece,int offset,int bytes,
@@ -455,6 +462,7 @@ void request(int piece,int offset,int bytes,
    piece_callback[piece+":"+offset+":"+bytes]=callback;
    send_message(MSG_REQUEST,
 		"%4c%4c%4c",piece,offset,bytes);
+   handover=0;
 }
 
 void got_piece_from_peer(int piece,int offset,string data)
@@ -549,10 +557,11 @@ void progress(int pieceno,int byte,int total)
 string _sprintf(int t)
 {
    if (t=='O') 
-      return sprintf("Bittorrent.Peer(%s:%d %O%s%s d%d u%db/s)",
+      return sprintf("Bittorrent.Peer(%s:%d %O%s%s%s d%d u%db/s)",
 		     ip,port,mode,
-		     parent->activated_peers[this_object]?" dl":"",
+		     is_activated()?" dl":"",
 		     uploading?" ul":"",
+		     is_complete?" c":"",
 		     bandwidth_in,bandwidth_out);
    return 0;
 }

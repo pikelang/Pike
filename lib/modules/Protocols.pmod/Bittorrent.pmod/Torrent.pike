@@ -429,74 +429,75 @@ string file_got_bitfield()
 void start_download()
 {
    downloading=1;
+   download_more();
 }
 
-int downloads=0;
 int max_downloads=10;
 int min_completed_peers=2;
-mapping(.Peer:int) activated_peers=([]);
-multiset(.Peer) available_peers=(<>);
-multiset(int) file_downloading=(<>);
-
-multiset(.Peer) completed_peers;
 
 // downloads lost by disconnect or choking that needs to be taken up again
 mapping(int:PieceDownload) lost_in_space=([]);
+mapping(int:PieceDownload) downloads=([]);
+mapping(int:PieceDownload) handovers=([]);
+
+// ----------------
 
 void download_more()
 {
    int did=0;
-
-   completed_peers=(multiset)filter(values(peers),"is_completed");
-
-   werror("downloads: %d  available: %d  complete: %d  activated: %d\n",
-	  downloads,sizeof(available_peers),
-	  sizeof(completed_peers),sizeof(activated_peers));
-
-   for (;;)
-   {
-//       werror("no downloading? %O>=%O peers:%O (%O)\n",
-// 	     downloads,max_downloads,sizeof(available_peers),
-// 	     sizeof(available_peers & completed_peers));
-
-      if (!downloading || downloads>=max_downloads ||
-	  !sizeof(available_peers))
-	 break;
-
-      if (!start_another_download()) 
-	 break;
-      else
-	 did++;
-   }
+   while (download_one_more()) did++;
 
    if (did) Function.call_callback(downloads_update_status);
 }
 
-int start_another_download()
+int download_one_more()
 {
-// always download the least common piece we can get
+   multiset(Peer) available_peers;
+   multiset(Peer) completed_peers;
+   multiset(Peer) activated_peers;
+   multiset(Peer) completed_peers_avail;
 
-   array v=indices(file_peers);
-   array w=map(values(file_peers),sizeof);
+   available_peers=(multiset)filter(values(peers),"is_available");
+   activated_peers=(multiset)filter(values(peers),"is_activated");
+   completed_peers=(multiset)filter(values(peers),"is_completed");
+   completed_peers_avail=completed_peers & available_peers;
+
+   int completed_peers_used=sizeof(completed_peers&activated_peers);
+
+   werror("downloads: %d  available: %d  complete: %d  activated: %d  "
+	  "c-a: %d\n",
+	  sizeof(downloads),
+	  sizeof(available_peers),
+	  sizeof(completed_peers),
+	  sizeof(activated_peers),
+	  sizeof(completed_peers_avail));
+
+   if (!downloading || sizeof(downloads)>=max_downloads ||
+       !sizeof(available_peers))
+      return 0;
+
+// ----------------
+
+   array v=indices(file_peers)-indices(downloads);
+   array w=map(rows(file_peers,v),sizeof);
    sort(w,v);
 
-   multiset from_peers=filter(available_peers,"is_useful");
+   multiset from_peers=available_peers;
 
    array choices=({});
    int minp=0;
 
-
-   if (sizeof(completed_peers & (multiset)indices(activated_peers))
-       < min(sizeof(completed_peers & available_peers),
+   if (completed_peers_used
+       < min(sizeof(completed_peers_avail),
 	     min_completed_peers) ||
        sizeof(file_want) == sizeof(file_got)) // first seed
-      from_peers&=completed_peers;
+      from_peers&=completed_peers_avail;
 
    if (!sizeof(from_peers)) 
-     return 0;
+      return 0; // no source
 
    if (sizeof(lost_in_space))
-      werror("lost_in_space= %O\n",lost_in_space);
+      werror("lost_in_space=%O\n",lost_in_space);
 
    for (int i=!sizeof(lost_in_space); i<2 && !sizeof(choices); i++)
    {
@@ -504,7 +505,6 @@ int start_another_download()
       if (!i) u&=indices(lost_in_space); // restrain
       foreach (u;;int n)
       {
-	 if (file_downloading[n]) continue;
 	 multiset(Peer) p=file_peers[n];
 
 	 if (!minp) minp=sizeof(p);
@@ -539,9 +539,8 @@ int start_another_download()
    }
 
 // switch algorithm - download same block from more then one peer
-//    werror("nothing to download (%d in progress)\n",sizeof(file_downloading));
-
-   return 0;
+      
+// ----------------
 }
 
 int download_chunk_size=32768;
@@ -563,10 +562,7 @@ class PieceDownload
       peer=_peer;
       piece=n;
 
-      activated_peers[peer]++;
-      available_peers[peer]=0;
-      file_downloading[piece]=1;
-      downloads++;
+      downloads[piece]=this_object();
 
       int size=info["piece length"];
       if (piece+1==sizeof(file_got) &&
@@ -590,10 +586,7 @@ class PieceDownload
 
       peer=_peer;
 
-      activated_peers[peer]++;
-      available_peers[peer]=0;
-      file_downloading[piece]=1;
-      downloads++;
+      downloads[piece]=this_object();
 
       queue_chunks();
    }
@@ -612,7 +605,8 @@ class PieceDownload
       if (!handed_over &&
 	  sizeof(queued_chunks)<download_chunk_max_queue)
       {
-	 handed_over=1;
+	 peer->handover=1;
+	 handovers[piece]=this_object();
 	 disjoin();
       }
    }
@@ -730,22 +724,8 @@ class PieceDownload
    void disjoin()
    {
       werror("%O disjoin\n",this_object());
-      if (!handed_over)
-      {
-	 available_peers[peer]=1;
-      }
-      activated_peers[peer]--;
-      if (!activated_peers[peer])
-	 m_delete(activated_peers,peer);
-      file_downloading[piece]=0;
 
-      if (!peer->online)
-      {
-	 available_peers[peer]=0;
-	 m_delete(activated_peers,peer);
-      }
-      downloads--;
-
+      m_delete(downloads,piece);
       Function.call_callback(downloads_update_status);
    }
 
@@ -791,9 +771,6 @@ void peer_lost(Peer peer)
 	 file_available[i]=0;
       }
    }
-
-   available_peers[peer]=0;
-   m_delete(activated_peers,peer);
 }
 
 void peer_gained(Peer peer)
@@ -805,7 +782,6 @@ void peer_gained(Peer peer)
       if ((m=file_peers[i])) m[peer]=1;
       else file_peers[i]=(<peer>);
    file_available=(multiset)indices(file_peers);
-   available_peers[peer]=1;
 
    if (sizeof(file_available))
       download_more();
