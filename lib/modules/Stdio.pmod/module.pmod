@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.143 2002/04/01 13:25:26 nilsson Exp $
+// $Id: module.pmod,v 1.144 2002/04/05 10:04:15 jhs Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1698,6 +1698,44 @@ string append_path(string absolute, string ... relative)
 		      @map(relative, lambda(string s) {
 				       return combine_path("/", s)[1..];
 				     }));
+}
+
+//! Returns a canonic representation of @[path] (without /./, /../, //
+//! and similar path segments).
+string simplify_path(string path)
+{
+  if(has_prefix(path, "/"))
+    return combine_path("/", path);
+  return combine_path("/", path)[1..];
+}
+
+//! Unwinds all symlinks along the directory trail @[path], returning
+//! a path with no symlink components or 0, in case @[path] does not
+//! exist, for instance because one of its links pointed to a
+//! nonexistent file or if there was a symlink loop. The returned path
+//! is also canonicized/simplified, removing "//", "/./" and the like.
+string|int(0..0) chase_links(string path)
+{
+  string unwound, root = has_prefix(path, "/") ? "/" : "";
+  mapping(string:Stat) seen = ([]);
+  while(!seen[path = simplify_path(path)])
+  {
+    if(!(seen[path] = file_stat(path, 1)))
+      return 0;
+    if(seen[path]->islnk)
+      path = combine_path(path, system.readlink(path));
+    else
+    {
+      if(unwound)
+	unwound = basename(path) + "/" + unwound;
+      else
+	unwound = basename(path);
+      path = dirname(path);
+      if(path=="")
+	return root + unwound;
+    }
+  }
+  return 0;
 }
 
 //! This function prints a message to stderr along with a description
