@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.374 2003/12/07 16:14:34 marcus Exp $
+# $Id: Makefile.in,v 1.375 2003/12/14 20:37:06 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -427,6 +427,7 @@ tidy:
 # make clean
 clean_here: tidy doc_clean
 	-( cd tlib; find . -name testsuite | xargs rm )
+	-( cd extra_tests; find . -name testsuite | xargs rm )
 	-rm -f confdefs.h conftest.*
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
@@ -451,7 +452,7 @@ spotless: clean_here
 	-rm -f lexical.c mon.out *.ln
 	-rm -f pike pike.old l.outa* num_files_to_install
 	-rm -f precompile.sh precompile.sh-stamp smartlink
-	-rm -rf tlib lib precompile
+	-rm -rf tlib extra_tests lib precompile
 
 distclean: spotless
 
@@ -474,8 +475,13 @@ TAGS:
 testsuites:
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
-	( cd $(TMP_BUILDDIR) && $(TMP_BINDIR)/mklibtests.sh --srcdir=$(LIBDIR_SRC) \
+	( cd $(TMP_BUILDDIR) && $(TMP_BINDIR)/mklibtests.sh \
+	  --srcdir=$(LIBDIR_SRC) \
 	  --destdir=tlib --bindir=$(TMP_BINDIR) )
+	if test -d "$(BASEDIR)/extra_tests" ; then \
+	  (cd "$(TMP_BUILDDIR)" && $(TMP_BINDIR)/mklibtests.sh \
+	   --srcdir="$(BASEDIR)/extra_tests" \
+	   --destdir=extra_tests --bindir=$(TMP_BINDIR) ) ; fi;
 
 just_verify: testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
