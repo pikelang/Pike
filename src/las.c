@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.212 2000/09/13 12:28:18 grubba Exp $");
+RCSID("$Id: las.c,v 1.213 2000/09/14 11:33:35 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -595,7 +595,7 @@ void debug_free_node(node *n)
 #endif /* SHARED_NODES */
 #endif /* PIKE_DEBUG */
 
-    dmalloc_touch(node *, n);
+    debug_malloc_touch(n);
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
     if (n->refs) {
@@ -654,7 +654,7 @@ void debug_free_node(node *n)
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
       if (dead->refs) {
-	fatal("Killed node %08p still has refs: %d\n", dead, dead->refs);
+	fatal("Killed node %p still has refs: %d\n", dead, dead->refs);
       }
 #endif /* SHARED_NODES && PIKE_DEBUG */
 
@@ -674,7 +674,7 @@ void debug_free_node(node *n)
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
       if (dead->refs) {
-	fatal("Killed node %08p still has refs: %d\n", dead, dead->refs);
+	fatal("Killed node %p still has refs: %d\n", dead, dead->refs);
       }
 #endif /* SHARED_NODES && PIKE_DEBUG */
 
@@ -706,7 +706,7 @@ void debug_free_node(node *n)
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
     if (n->refs) {
-      fatal("Killed node %08p still has refs: %d\n", n, n->refs);
+      fatal("Killed node %p still has refs: %d\n", n, n->refs);
     }
 #endif /* SHARE_NODES && PIKE_DEBUG */
 
