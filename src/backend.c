@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.41 1999/05/02 08:11:28 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.42 1999/08/06 23:03:00 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -940,6 +940,7 @@ void backend(void)
 	    }
 	  }
 #ifdef _REENTRANT
+	  /* FIXME: Extra stderr messages should not be allowed.../Hubbe */
 	  write_to_stderr("Bad filedescriptor to select().\n"
 			  "fd closed in another thread?\n", 62);
 #else /* !_REENTRANT */
