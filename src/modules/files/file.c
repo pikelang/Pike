@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.194 2000/08/27 01:04:36 grubba Exp $");
+RCSID("$Id: file.c,v 1.195 2000/08/27 18:20:37 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2472,7 +2472,13 @@ static void low_file_lock(INT32 args, int flags)
 #endif
       )
     {
-      error("Recursive file locks!\n");
+      if (flags & fd_LOCK_NB) {
+	pop_n_elems(args);
+	push_int(0);
+	return;
+      } else {
+	error("Recursive file locks!\n");
+      }
     }
   }
 
