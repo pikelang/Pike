@@ -1010,6 +1010,20 @@ array recursive(mixed func, array data, mixed ... args)
   return func(ret, @args);
 }
 
+// FIXME: We could expand this to declare which attributes are valid
+// where.
+constant valid_attributes = (<
+  "efun",
+  "flags",
+  "optflags",
+  "type",
+  "rawtype",
+  "errname",
+  "name",
+  "prototype",
+  "program_flags",
+>);
+
 /*
  * This function takes a list of tokens, containing attributes on the form:
  *   attributename foo bar gazonk ;
@@ -1027,9 +1041,11 @@ mapping parse_attributes(array attr, void|string location)
   mapping attributes=([]);
   foreach(attr/ ({";"}), attr)
     {
+      while(sizeof(attr) && has_prefix((string)attr[0], "/*"))
+	attr = attr[1..];
       switch(sizeof(attr))
       {
-	case 0: break;
+	case 0: continue;
 	case 1:
 	  if(arrayp(attr[0]))
 	  {
@@ -1050,6 +1066,10 @@ mapping parse_attributes(array attr, void|string location)
 	  
 	  attributes[(string)attr[0]]=merge(tmp);
       }
+
+      if(!valid_attributes[(string)attr[0]])
+	exit(1, "%s:%d: Invalid attribute name %O.\n",
+	     attr[0]->file, attr[0]->line, (string)attr[0]);
     }
   return attributes;
 }

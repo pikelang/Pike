@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 
 /*
- * $Id: make_ci.pike,v 1.10 2003/11/19 16:47:46 nilsson Exp $
+ * $Id: make_ci.pike,v 1.11 2004/04/12 01:11:15 nilsson Exp $
  *
  * Creates the file case_info.h
  *
@@ -48,6 +48,11 @@ int main(int argc, array(string) argv)
     }
     int char;
     sscanf(info[0], "%x", char);
+#if 1
+    // Hardcoded in builtin_functions.c
+    if(char && char<='z')
+      continue;
+#endif
     int mode = CIM_NONE;
     int d;
     if (sizeof(info[13])) {
@@ -112,7 +117,7 @@ int main(int argc, array(string) argv)
   outfile->
     write(sprintf("/*\n"
 		  " * Created by\n"
-		  " * $Id: make_ci.pike,v 1.10 2003/11/19 16:47:46 nilsson Exp $\n"
+		  " * $Id: make_ci.pike,v 1.11 2004/04/12 01:11:15 nilsson Exp $\n"
 		  " * on %s"
 		  " *\n"
 		  " * Table used for looking up the case of\n"
