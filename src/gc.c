@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.131 2000/09/04 14:28:08 grubba Exp $");
+RCSID("$Id: gc.c,v 1.132 2000/09/04 23:08:33 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1860,40 +1860,56 @@ int gc_do_free(void *a)
   return !(m->flags & GC_LIVE);
 }
 
+static void free_obj_arr(void *oa)
+{
+  struct array *obj_arr = *((struct array **)oa);
+
+  if (obj_arr) free_array(obj_arr);
+  free(oa);
+}
+
 static void warn_bad_cycles()
 {
-  JMP_BUF uwp;
-  struct array *obj_arr = 0;
+  /* The reason for the extra level of indirection, is that it might
+   * be clobbered by the longjump() in SET_ONERROR otherwise.
+   * (On some architectures longjump() might restore obj_arr's original
+   * value (eg if obj_arr is in a register)).
+   */
+  struct array **obj_arr_ = (struct array **)xalloc(sizeof(struct array *));
+  ONERROR tmp;
 
-  if (!SETJMP(uwp)) {
+  *obj_arr_ = NULL;
+
+  SET_ONERROR(tmp, free_obj_arr, obj_arr_);
+
+  {
     struct gc_frame *p;
     unsigned cycle = 0;
-    obj_arr = allocate_array(0);
+    *obj_arr_ = allocate_array(0);
 
     for (p = kill_list; p;) {
       if ((cycle = CYCLE(p))) {
 	push_object((struct object *) p->data);
-	obj_arr = append_array(obj_arr, --sp);
+	*obj_arr_ = append_array(*obj_arr_, --sp);
       }
       p = NEXT(p);
       if (p ? ((unsigned)(CYCLE(p) != cycle)) : cycle) {
-	if (obj_arr->size >= 2) {
+	if ((*obj_arr_)->size >= 2) {
 	  push_constant_text("gc");
 	  push_constant_text("bad_cycle");
-	  push_array(obj_arr);
-	  obj_arr = 0;
+	  push_array(*obj_arr_);
+	  *obj_arr_ = 0;
 	  SAFE_APPLY_MASTER("runtime_warning", 3);
 	  pop_stack();
-	  obj_arr = allocate_array(0);
+	  *obj_arr_ = allocate_array(0);
 	}
-	else obj_arr = resize_array(obj_arr, 0);
+	else *obj_arr_ = resize_array(*obj_arr_, 0);
       }
       if (!p) break;
     }
   }
 
-  UNSETJMP(uwp);
-  if (obj_arr) free_array(obj_arr);
+  CALL_AND_UNSET_ONERROR(tmp);
 }
 
 int do_gc(void)
