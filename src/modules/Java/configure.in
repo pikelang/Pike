@@ -67,7 +67,7 @@ if test "x$with_java" = xyes; then
   AC_CACHE_VAL(pike_cv_java_java_home, [
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
-      java_home_guess="`java -verbose 2>&1 | /bin/sed -n -e 's/^[[^/]]*//' -e 's:/lib/rt.jar .*$::' -e p -e q`"
+      java_home_guess="`java -verbose 2>&1 | sed -n -e 's/^[[^/]]*//' -e 's:/lib/rt.jar .*$::' -e p -e q`"
       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
           if ls "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
