@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.259 2003/03/27 14:43:32 grubba Exp $
+|| $Id: signal_handler.c,v 1.260 2003/04/05 15:04:20 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.259 2003/03/27 14:43:32 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.260 2003/04/05 15:04:20 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1724,12 +1724,26 @@ static void f_trace_process_cont(INT32 args)
 
   THIS->state = PROCESS_RUNNING;
 
-  /* The addr argument must be 1 for this request. */
-  if (ptrace(PTRACE_CONT, THIS->pid, CAST_TO_PTRACE_ADDR(1), cont_signal) == -1) {
-    int err = errno;
-    THIS->state = PROCESS_STOPPED;
-    /* FIXME: Better diagnostics. */
-    Pike_error("Failed to release process. errno:%d\n", err);
+  if (cont_signal == 9) {
+    /* FREEBSD doesn't kill the process with cont(9),
+     * even though the man-page says the two are
+     * equvivalent.
+     */
+    if (ptrace(PTRACE_KILL, THIS->pid, NULL, 0) == -1) {
+      int err = errno;
+      THIS->state = PROCESS_STOPPED;
+      /* FIXME: Better diagnostics. */
+      Pike_error("Failed to exit process. errno:%d\n", err);
+    }
+  } else {
+    /* The addr argument must be 1 for this request. */
+    if (ptrace(PTRACE_CONT, THIS->pid,
+	       CAST_TO_PTRACE_ADDR(1), cont_signal) == -1) {
+      int err = errno;
+      THIS->state = PROCESS_STOPPED;
+      /* FIXME: Better diagnostics. */
+      Pike_error("Failed to release process. errno:%d\n", err);
+    }
   }
   pop_n_elems(args);
   push_int(0);
