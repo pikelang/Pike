@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.2 2001/05/22 13:52:27 per Exp $");
+RCSID("$Id: blob.c,v 1.3 2001/05/22 14:21:50 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -94,7 +94,15 @@ Hit wf_blob_hit( Blob *b, int n )
   unsigned char h =  b->blob[ off ];
   unsigned char l = b->blob[ off + 1 ];
   Hit hit;
-  hit.raw = (h<<8) | l;
+  hit.u.raw = (h<<8) | l;
+
+  hit.type = HIT_BODY;
+  if( hit.u.body.id == 3 )
+  {
+    hit.type = HIT_FIELD;
+    if( hit.u.field.type == 63 )
+      hit.type = HIT_ANCHOR;
+  }
   return hit;
 }
 
@@ -124,9 +132,9 @@ Blob *wf_blob_new( struct svalue *feed, int word )
   return b;
 }
 
-
 void wf_blob_free( Blob *b )
 {
-  if( b->str )  free_string( b->str );
+  if( b->str )
+    free_string( b->str );
   free( b );
 }
