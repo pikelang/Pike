@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.5 2002/11/15 02:57:51 nilsson Exp $
+dnl $Id: testsuite.in,v 1.6 2002/11/15 21:09:12 grubba Exp $
 
 dnl - Array
 
@@ -362,8 +362,8 @@ test_any_equal([[
 
 test_do( putenv("POSIX_ME_HARDER", "1"); )
 test_eval_error( Getop.get_args(({ "x", "a", "-b" }), -1, 1) )
-test_equal( Getopt.get_args(({ "x", "a", "-b" }), 0, 1), ({ "x", "a", "-b" }))
-test_equal( Getopt.get_args(({ "x", 0, "-b" }), 0, 1), ({ "x", "-b" }))
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 1, 1), ({ "x", "a", "-b" }))
+test_equal( Getopt.get_args(({ "x", 0, "-b" }), 1, 1), ({ "x", "-b" }))
 test_eval_error( opt( ({"x","a","-b"}), ({"y",Getopy.HAS_ARG,"-b"}), -1 ))
 test_any_equal([[
   array x = ({ "x", "a", "-b" });
