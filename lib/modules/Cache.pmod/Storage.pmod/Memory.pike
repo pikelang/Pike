@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Memory.pike,v 1.1 2000/07/02 20:15:57 kinkie Exp $
+ * $Id: Memory.pike,v 1.2 2000/07/05 21:37:25 kinkie Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -105,14 +105,12 @@ void aget(string key,
   callback(key,rv);
 }
 
-Cache.Data|int(0..0) delete(string key, void|int(0..1) hard) {
+void delete(string key, void|int(0..1) hard) {
   object(Cache.Data) rv=data[key];
   if (hard) {
     destruct(rv->value());
-    m_delete(data,key);
-    return 0;
   }
   m_delete(data,key);
-  return rv;
+  return 0;
 }
 
