@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.15 2004/02/03 13:52:40 nilsson Exp $
+/* $Id: https.pike,v 1.16 2004/02/06 19:02:29 grubba Exp $
  *
  * dummy https server
  */
@@ -80,7 +80,7 @@ class no_random {
   {
     if (!secret)
       secret = sprintf("Foo!%4c", time());
-    arcfour->set_encrypt_key(Crypto.SHA->hash(secret));
+    arcfour->set_encrypt_key(Crypto.SHA1->hash(secret));
   }
 
   string read(int size)
