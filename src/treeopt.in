@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.18 1999/11/14 15:03:32 grubba Exp $
+// $Id: treeopt.in,v 1.19 1999/11/14 15:35:00 grubba Exp $
 //
 // The tree optimizer
 //
@@ -52,6 +52,13 @@ F_CAST[$$->type == void_type_string]
 			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
 	       0), *):
 	$0;
+
+0 = F_CAST(F_COMMA_EXPR(F_CAST[$$->type == $0->type](1, *), 2), *):
+{
+  struct pike_string *type = $0->type;
+  $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $1, $2));
+}
+;
 
 0 = F_CAST('?'(1, ':'(F_CAST[$$->type == $0->type](2, *), 3)), *):
 {
@@ -115,15 +122,13 @@ F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
 F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
-F_COMMA_EXPR(F_CAST[$$->type == void_type_string](0, *), 1):
-{
-  $$ = mkcastnode(void_type_string, mknode(F_COMMA_EXPR, $0, $1));
-}
-;
+// F_COMMA_EXPR(F_CAST[$$->type == void_type_string](0, *), 1):
+//   F_COMMA_EXPR($0, $1);
 
-F_COMMA_EXPR(0, F_CAST[$$->type == void_type_string](1, *)):
+F_COMMA_EXPR(0, 1 = F_CAST(2, *)):
 {
-  $$ = mkcastnode(void_type_string, mknode(F_COMMA_EXPR, $0, $1));
+  struct pike_string *type = $1->type;
+  $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $0, $2));
 }
 ;
 
