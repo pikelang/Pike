@@ -858,7 +858,7 @@ void cleanup_memhdrs(void)
   mt_destroy(&debug_malloc_mutex);
 }
 
-int main(int argc, char *argv[], char **env)
+int main(int argc, char **argv, char **env)
 {
   extern int dbm_main(int, char **, char**);
   mt_init(&debug_malloc_mutex);
