@@ -1,7 +1,9 @@
 /*
- * $Id: top.c,v 1.9 1999/08/07 20:52:24 marcus Exp $
+ * $Id: top.c,v 1.10 1999/08/07 21:29:10 marcus Exp $
  *
  */
+
+#include "config.h"
 
 #ifdef HAVE_GL
 
@@ -13,9 +15,7 @@
 
 #include "global.h"
 
-#include "config.h"
-
-RCSID("$Id: top.c,v 1.9 1999/08/07 20:52:24 marcus Exp $");
+RCSID("$Id: top.c,v 1.10 1999/08/07 21:29:10 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
