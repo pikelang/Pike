@@ -15,15 +15,24 @@ struct lzw
    unsigned char *out,lastout;
    struct lzwc 
    {
-      lzwcode_t no;
       unsigned char c;
-      struct lzwc *firstchild;
-      struct lzwc *next;
-   } *code,*current;
+      lzwcode_t firstchild;
+      lzwcode_t next;
+   } *code;
+   lzwcode_t current,firstfree;
+#ifndef GIF_LZW
+   unsigned long alloced;
+#endif
 };
+
+#define LZWCNULL ((lzwcode_t)(~0))
 
 void lzw_add(struct lzw *lzw,int c);
 void lzw_quit(struct lzw *lzw);
 void lzw_init(struct lzw *lzw,int bits);
+unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
+			 unsigned char *src,unsigned long srclen,
+			 int bits);
+
 
 

@@ -90,7 +90,7 @@ static void lzw_recurse_find_code(struct lzw *lzw,lzwcode_t codeno)
 }
 #endif
 
-static void lzw_output(struct lzw *lzw,lzwcode_t codeno)
+static INLINE void lzw_output(struct lzw *lzw,lzwcode_t codeno)
 {
    int bits,bitp;
    unsigned char c;

@@ -63,3 +63,5 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 			   int way,int *res,
 			   struct colortable *ct);
 
+int image_decode_gif(struct image *dest,struct image *dest_alpha,
+		     unsigned char *src,unsigned long len);
