@@ -19,8 +19,8 @@ ONERROR *onerror_stack=0;
 my_jmp_buf *init_recovery(JMP_BUF *r)
 {
   r->fp=fp;
-  r->sp=sp;
-  r->mark_sp=mark_sp;
+  r->sp=sp-evaluator_stack;
+  r->mark_sp=mark_sp - mark_stack;
   r->previous=recoveries;
   r->onerror=onerror_stack;
   recoveries=r;
@@ -33,7 +33,7 @@ void throw()
     fatal("No error recovery context.\n");
 
 #ifdef DEBUG
-  if(sp < recoveries->sp)
+  if(sp - evaluator_stack < recoveries->sp)
     fatal("Error in error.\n");
 #endif
 
@@ -49,8 +49,8 @@ void throw()
     fp = fp->parent_frame;
   }
 
-  pop_n_elems(sp - recoveries->sp);
-  mark_sp = recoveries->mark_sp;
+  pop_n_elems(sp - evaluator_stack - recoveries->sp);
+  mark_sp = mark_stack + recoveries->mark_sp;
 
   while(recoveries->onerror != onerror_stack)
   {

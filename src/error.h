@@ -30,8 +30,8 @@ typedef struct JMP_BUF
   struct JMP_BUF *previous;
   my_jmp_buf recovery;
   struct frame *fp;
-  struct svalue *sp;
-  struct svalue **mark_sp;
+  INT32 sp;
+  INT32 mark_sp;
   ONERROR *onerror;
 } JMP_BUF;
 
