@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.15 2000/08/19 11:47:22 grubba Exp $
+ * $Id: udp.c,v 1.16 2000/10/12 20:22:57 mirar Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.15 2000/08/19 11:47:22 grubba Exp $");
+RCSID("$Id: udp.c,v 1.16 2000/10/12 20:22:57 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -550,6 +550,48 @@ static void udp_set_blocking(INT32 args)
   ref_push_object(THISOBJ);
 }
 
+static void udp_connect(INT32 args)
+{
+  struct sockaddr_in addr;
+  struct pike_string *dest_addr = NULL;
+  struct pike_string *src_addr = NULL;
+  INT_TYPE dest_port = 0;
+  INT_TYPE src_port = 0;
+
+  int tmp;
+
+  get_all_args("UDP.connect", args, "%S%i", &dest_addr, &dest_port);
+
+  if(FD < 0)
+  {
+     FD = fd_socket(AF_INET, SOCK_DGRAM, 0);
+     if(FD < 0)
+     {
+	THIS->my_errno=errno;
+	error("UDP.connect: failed to create socket\n");
+     }
+     set_close_on_exec(FD, 1);
+  }
+
+  get_inet_addr(&addr, dest_addr->str);
+  addr.sin_port = htons(((u_short)dest_port));
+
+  tmp=FD;
+  THREADS_ALLOW();
+  tmp=fd_connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
+  THREADS_DISALLOW();
+
+  if(tmp < 0)
+  {
+    THIS->my_errno=errno;
+    error("UDP.connect: failed to connect\n");
+  }else{
+    THIS->my_errno=0;
+    pop_n_elems(args);
+    push_int(1);
+  }
+}
+
 static void udp_query_address(INT32 args)
 {
   struct sockaddr_in addr;
@@ -613,6 +655,9 @@ void init_udp(void)
 
   ADD_FUNCTION("send",udp_sendto,
 	       tFunc(tStr tInt tStr tOr(tVoid,tInt),tInt),0);
+
+  ADD_FUNCTION("connect",udp_connect,
+	       tFunc(tString tInt,tInt),0);
   
   ADD_FUNCTION("_set_nonblocking", udp_set_nonblocking,
 	       tFunc(tOr(tFunc(tVoid,tVoid),tVoid),tObj), 0 );
