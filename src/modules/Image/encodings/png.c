@@ -1,9 +1,9 @@
-/* $Id: png.c,v 1.2 1998/03/03 11:24:45 hubbe Exp $ */
+/* $Id: png.c,v 1.3 1998/07/04 17:15:44 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: png.c,v 1.2 1998/03/03 11:24:45 hubbe Exp $
+**!	$Id: png.c,v 1.3 1998/07/04 17:15:44 grubba Exp $
 **! submodule PNG
 **!
 **!	This submodule keep the PNG encode/decode capabilities
@@ -18,12 +18,13 @@
 **! see also: Image, Image.image, Image.colortable
 */
 
+#include "global.h"
+
 #include <math.h>
 #include <ctype.h>
 
 #include "stralloc.h"
-#include "global.h"
-RCSID("$Id: png.c,v 1.2 1998/03/03 11:24:45 hubbe Exp $");
+RCSID("$Id: png.c,v 1.3 1998/07/04 17:15:44 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

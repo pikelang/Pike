@@ -3,8 +3,8 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include "stralloc.h"
 #include "global.h"
+#include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

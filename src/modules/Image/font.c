@@ -1,12 +1,14 @@
-/* $Id: font.c,v 1.22 1998/03/03 11:24:43 hubbe Exp $ */
-#include <config.h>
+/* $Id: font.c,v 1.23 1998/07/04 17:14:26 grubba Exp $ */
+#include "global.h"
+
+#include "config.h"
 
 #define SPACE_CHAR 'i'
 
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.22 1998/03/03 11:24:43 hubbe Exp $
+**!	$Id: font.c,v 1.23 1998/07/04 17:14:26 grubba Exp $
 **! class font
 **!
 **! note
@@ -92,8 +94,6 @@ Kerningtable types:
 
 
 
-
-#include "global.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

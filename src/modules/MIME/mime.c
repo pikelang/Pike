@@ -1,15 +1,16 @@
 /*
- * $Id: mime.c,v 1.10 1997/06/26 01:02:48 marcus Exp $
+ * $Id: mime.c,v 1.11 1998/07/04 17:16:51 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
  * Marcus Comstedt 1996-1997
  */
 
+#include "global.h"
+
 #include "config.h"
 
-#include "global.h"
-RCSID("$Id: mime.c,v 1.10 1997/06/26 01:02:48 marcus Exp $");
+RCSID("$Id: mime.c,v 1.11 1998/07/04 17:16:51 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
