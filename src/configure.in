@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.20 1996/11/17 03:26:00 hubbe Exp $
+# $Id: configure.in,v 1.21 1996/11/18 23:09:40 hubbe Exp $
 
 AC_INIT(interpret.c)
 
@@ -139,6 +139,9 @@ fi
 
 #
 # If no cppflags or ldflags where given we try to guess some..
+#
+# This doesn't work since we have to test if the linker accepts
+# -R first... :( /Hubbe
 #
 #if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
 #  for d in /usr/gnu /opt/gnu /usr/local
