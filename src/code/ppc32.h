@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.21 2003/08/07 14:45:10 marcus Exp $
+|| $Id: ppc32.h,v 1.22 2003/08/07 20:48:18 marcus Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -37,6 +37,7 @@
 #define MFSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),339)
 #define MTSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),467)
 
+#define BCLR(BO,BI) PPC_INSTR_XL_FORM(19,BO,BI,0,16,0)
 #define BCLRL(BO,BI) PPC_INSTR_XL_FORM(19,BO,BI,0,16,1)
 #define B(LI) PPC_INSTR_I_FORM(18,LI,0,0)
 #define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
