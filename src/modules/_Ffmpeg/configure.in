@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 2002/09/11 12:13:57 hop Exp $
+# $Id: configure.in,v 1.9 2002/12/06 12:35:44 mirar Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -17,7 +17,7 @@ if test x$with_ffmpeg = xyes ; then
   AC_MSG_CHECKING(for Ffmpeg include-directory)
   AC_CACHE_VAL(pike_cv_ffmpeg_include_dir, [
     for pike_cv_ffmpeg_include_dir in $incdirs; do
-      if test -d $pike_cv_ffmpeg_include_dir/.; then
+      if test -d $pike_cv_ffmpeg_include_dir/avcodec.h; then
         break
       else
         :
@@ -26,51 +26,77 @@ if test x$with_ffmpeg = xyes ; then
   ])
   AC_MSG_RESULT($pike_cv_ffmpeg_include_dir)
   if test x$pike_cv_ffmpeg_include_dir = xno; then :; else
-  echo Adding $pike_cv_ffmpeg_include_dir to the include search path.
+    echo Adding $pike_cv_ffmpeg_include_dir to the include search path.
     CPPFLAGS="${CPPFLAGS} -I$pike_cv_ffmpeg_include_dir"
   fi
 
   AC_CHECK_HEADERS(avcodec.h)
+  AC_CHECK_HEADERS(ffmpeg/avcodec.h)
+
 dnl ffmpeg and avcodec are the same libs... with 2 differents..
 dnl don't ask me why.
 dnl hop: libavcodec is Ffmpeg's native name, libffmpeg should
 dnl      be libavcode + libav libraries together
+
+dnl my libavcodec needs libmp3lame that needs libm /Mirar
+
+  AC_CHECK_LIB( m, pow, [
+    LIBS="${LIBS-} -lm" 
+  ])
+
+  AC_CHECK_LIB( mp3lame, lame_get_copyright, [
+    AC_DEFINE(HAVE_LIBMP3LAME)
+    LIBS="${LIBS-} -lmp3lame" 
+  ])
+
   AC_CHECK_LIB( avcodec, avcodec_init, [
-    AC_DEFINE(HAVE_LIBFFMPEG)
+    AC_DEFINE(HAVE_LIBAVCODEC)
     LIBS="${LIBS-} -lavcodec"
- 
+    got_lib=yes
     PIKE_FEATURE(FFmpeg,[yes (using libavcodec)])
+
+    AC_CHECK_LIB( avformat, first_oformat, [
+      AC_DEFINE(HAVE_LIBAVFORMAT)
+      LIBS="${LIBS-} -lavformat -lavcodec" dnl both (again)
+      PIKE_FEATURE(FFmpeg,[yes (using libavcodec and libavformat)])
     ])
+  ])
   AC_CHECK_LIB( ffmpeg, avcodec_init, [
     AC_DEFINE(HAVE_LIBFFMPEG)
     LIBS="${LIBS-} -lffmpeg"
-
+    got_lib=yes
     PIKE_FEATURE(FFmpeg,[yes (using libffmpeg)])
     ])
 
-  AC_MSG_CHECKING([if library is really working])
-  AC_CACHE_VAL(pike_cv_ffmpeg_working, [
-    AC_TRY_COMPILE([
+  if test x"$got_lib" == x"yes"; then
+    AC_MSG_CHECKING([if library is really working])
+    AC_CACHE_VAL(pike_cv_ffmpeg_working, [
+      AC_TRY_COMPILE([
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
 #endif
-      ], [
-  extern AVCodec *thecodec;
-
-  thecodec->type = 0;
-      ], [
-        pike_cv_ffmpeg_working=yes
-      ], [
-        pike_cv_ffmpeg_working=no
+#endif
+        ], [
+    extern AVCodec *thecodec;
+  
+    thecodec->type = 0;
+        ], [
+          pike_cv_ffmpeg_working=yes
+        ], [
+          pike_cv_ffmpeg_working=no
+        ])
       ])
-    ])
-    AC_MSG_RESULT($pike_cv_ffmpeg_working)
-    if test "x$pike_cv_ffmpeg_working" = "xyes"; then
-      AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
-dnl      PIKE_FEATURE(FFmpeg)
-    else 
-      PIKE_FEATURE(FFmpeg,[no])
-    fi
+      AC_MSG_RESULT($pike_cv_ffmpeg_working)
+      if test "x$pike_cv_ffmpeg_working" = "xyes"; then
+        AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
+        dnl PIKE_FEATURE(FFmpeg)
+      else 
+        PIKE_FEATURE(FFmpeg,[no (not working)])
+      fi
+  fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

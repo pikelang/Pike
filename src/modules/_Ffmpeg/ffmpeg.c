@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.13 2002/12/04 05:53:41 hop Exp $
+|| $Id: ffmpeg.c,v 1.14 2002/12/06 12:35:44 mirar Exp $
 */
 
 /*
@@ -32,6 +32,9 @@
 #include <string.h>
 #include <math.h>
 
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
 #ifdef HAVE_LIBAVCODEC_AVCODEC_H
 #include <libavcodec/avcodec.h>
 #else
@@ -40,6 +43,7 @@
 #else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
+#endif
 #endif
 #endif
 #endif
@@ -498,6 +502,10 @@ PIKE_MODULE_INIT {
    * Internal codec constant name
    *
    */
+#ifndef CODEC_ID_NONE
+/* the codecs are enum'ed */
+#include "codecs_auto.h"
+#else
   add_integer_constant("CODEC_ID_NONE", CODEC_ID_NONE, 0);
   add_integer_constant("CODEC_ID_MPEG1VIDEO", CODEC_ID_MPEG1VIDEO, 0);
   add_integer_constant("CODEC_ID_H263", CODEC_ID_H263, 0);
@@ -567,6 +575,7 @@ PIKE_MODULE_INIT {
   add_integer_constant("CODEC_ID_VORBIS", CODEC_ID_VORBIS, 0);
 #endif
 
+#endif
 
   /*
    * Internal type of codec.
@@ -574,8 +583,13 @@ PIKE_MODULE_INIT {
    */
   add_integer_constant("CODEC_TYPE_AUDIO", CODEC_TYPE_AUDIO, 0);
   add_integer_constant("CODEC_TYPE_VIDEO", CODEC_TYPE_VIDEO, 0);
+#ifndef CODEC_ID_NONE
+/* it's enum'ed */
+  add_integer_constant("CODEC_TYPE_UNKNOWN", CODEC_TYPE_UNKNOWN, 0);
+#else
 #ifdef CODEC_TYPE_UNKNOWN
   add_integer_constant("CODEC_TYPE_UNKNOWN", CODEC_TYPE_UNKNOWN, 0);
+#endif
 #endif
 
   start_new_program();
