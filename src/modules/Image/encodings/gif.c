@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.26 1998/01/16 22:33:12 grubba Exp $ */
+/* $Id: gif.c,v 1.27 1998/01/18 22:15:33 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.26 1998/01/16 22:33:12 grubba Exp $
+**!	$Id: gif.c,v 1.27 1998/01/18 22:15:33 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.26 1998/01/16 22:33:12 grubba Exp $");
+RCSID("$Id: gif.c,v 1.27 1998/01/18 22:15:33 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1645,6 +1645,12 @@ static void _gif_decode_lzw(unsigned char *s,
    unsigned int q;
    unsigned int mask=(unsigned short)((1<<bits)-1);
 
+#ifdef GIF_DEBUG
+   int debug=0;
+
+fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
+	s,len,obits,ncto,dest,alpha,dlen,tidx);
+#endif
 
    nct=(struct neo_colortable*)get_storage(ncto,image_colortable_program);
    if (!nct || nct->type!=NCT_FLAT) return; /* uh? */
@@ -1673,13 +1679,23 @@ static void _gif_decode_lzw(unsigned char *s,
       q>>=bits;
       bit-=bits; 
 
+#ifdef GIF_DEBUG
+      if (debug) fprintf(stderr,"code=%d 0x%x bits=%d\n",n,n,bits);
+#endif
+
       if (n==m) 
       {
 	 c[n].prev=last;
 	 c[n].c=c[last].c;
 	 c[n].len=c[last].len+1;
       }
-      else if (n>=m) break; /* illegal code */
+      else if (n>=m) 
+      {
+#ifdef GIF_DEBUG
+	 fprintf(stderr,"cancel; illegal code, %d>=%d at %lx\n",n,m,s);
+#endif
+	 break; /* illegal code */
+      }
       if (!c[n].len) {
 	 if (n==clearcode) 
 	 {
@@ -1687,15 +1703,29 @@ static void _gif_decode_lzw(unsigned char *s,
 	    mask=(1<<bits)-1;
 	    m=endcode;
 	    last=clearcode;
+	    maxcode=1<<bits;
 	 }
-	 else break; /* endcode */
+	 else 
+	 {
+	    /* endcode */
+#ifdef GIF_DEBUG
+	    fprintf(stderr,"endcode at %lx\n",s);
+#endif
+	    break; 
+	 }
       } else {
 	 struct lzwc *myc;
 	 rgb_group *d,*da=NULL;
 	 unsigned short lc;
 	 myc=c+n;
 	 
-	 if (myc->len>dlen) break;
+	 if (myc->len>dlen) 
+	 {
+#ifdef GIF_DEBUG
+	    fprintf(stderr,"cancel at dlen left=%lu\n",dlen);
+#endif
+	    break;
+	 }
 
 	 d=(dest+=myc->len);
 	 if (alpha) da=(alpha+=myc->len);
@@ -1726,18 +1756,36 @@ static void _gif_decode_lzw(unsigned char *s,
 
 	 m++;
 	 if (m>=maxcode) 
-	 { 
-	    bits++; 
-	    mask=(1<<bits)-1;
-	    maxcode<<=1; 
-	    if (maxcode>MAX_GIF_CODE) break; /* error! too much codes */
-	 }
+	    if (m==MAX_GIF_CODE)
+	    {
+#ifdef GIF_DEBUG
+	       fprintf(stderr,"too many codes at %lx\n",s);
+#endif
+	       m--;
+	       bits=12;
+	    }
+	    else
+	    { 
+	       bits++; 
+	       mask=(1<<bits)-1;
+	       maxcode<<=1; 
+	       if (maxcode>MAX_GIF_CODE) 
+	       {
+#ifdef GIF_DEBUG
+		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
+#endif
+		  break; /* error! too much codes */
+	       }
+	    }
       }
 
 
       while (bit<bits && len) 
 	 q|=((*s)<<bit),bit+=8,s++,len--;
    }
+#ifdef GIF_DEBUG
+   fprintf(stderr,"end. bit=%d\n",bit);
+#endif
 
    free(c);
 }
