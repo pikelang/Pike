@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.471 2004/12/13 19:37:30 mast Exp $
+|| $Id: builtin_functions.c,v 1.472 2004/12/14 15:04:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.471 2004/12/13 19:37:30 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.472 2004/12/14 15:04:57 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4257,6 +4257,13 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
       break;
     }
 
+    if (INT_TYPE_ADD_OVERFLOW (current_ts, diff_ts)) {
+#ifdef DEBUG_MY_TIME_INVERSE
+      fprintf (stderr, "got overflow adding %ld and %ld\n",
+	       (long) current_ts, (long) diff_ts);
+#endif
+      return 0;
+    }
     current_ts += diff_ts;
   }
 
