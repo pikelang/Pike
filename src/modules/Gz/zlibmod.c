@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.29 2001/02/08 19:07:53 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.30 2001/02/15 18:08:06 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -120,7 +120,7 @@ static int do_deflate(dynamic_buffer *buf,
 	 /* Absorb any unused space /Hubbe */
 	 low_make_buf_space(-this->gz.avail_out,buf);
 
-	 /* we don't care about Z_BUF_ERROR here; it won't happen. */
+	 if(ret == Z_BUF_ERROR) ret=Z_OK;
       }
       while (ret==Z_OK && (this->gz.avail_in || !this->gz.avail_out));
 
