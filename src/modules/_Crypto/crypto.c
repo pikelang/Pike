@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.10 1997/01/14 18:26:25 nisse Exp $
+ * $Id: crypto.c,v 1.11 1997/02/11 17:35:16 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -259,6 +259,9 @@ static void f_set_encrypt_key(INT32 args)
     error("crypto->set_encrypt_key(): Object has not been created yet\n");
   }
   safe_apply(THIS->object, "set_encrypt_key", args);
+  pop_stack();
+  this_object()->refs++;
+  push_object(this_object());
 }
 
 /* void set_decrypt_key(INT32 args) */
@@ -271,6 +274,9 @@ static void f_set_decrypt_key(INT32 args)
     error("crypto->set_decrypt_key(): Object has not been created yet\n");
   }
   safe_apply(THIS->object, "set_decrypt_key", args);
+  pop_stack();
+  this_object()->refs++;
+  push_object(this_object());
 }
 
 /* string crypt(string) */
@@ -465,8 +471,8 @@ void MOD_INIT(crypto)(void)
   add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
   add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
 
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
   add_function("crypt", f_crypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
 
   add_function("pad", f_pad, "function(void:string)", OPT_EXTERNAL_DEPEND);
