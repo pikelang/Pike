@@ -212,7 +212,7 @@ class client {
   inherit protocol;
 
   string nameserver;
-  array search = ({});
+  array domains = ({});
   void create(void|string server)
   {
     if(!server)
@@ -236,7 +236,7 @@ class client {
 	 case "search":
 	  rest = replace(rest, "\t", " ");
 	  foreach(rest / " " - ({""}), string dom)
-	    search += ({dom});
+	    domains += ({dom});
 	  break;
 	      
 	 case "nameserver":
@@ -245,7 +245,7 @@ class client {
 	}
       }
       if(domain)
-	search = ({ domain }) + search;
+	domains = ({ domain }) + domains;
     } else {
       nameserver=server;
     }
@@ -272,10 +272,10 @@ class client {
   mixed *gethostbyname(string s)
   {
     mapping m;
-    if(sizeof(search) && s[-1] != '.' && sizeof(s/".") < 3) {
+    if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
       m=do_sync_query(mkquery(s, C_IN, T_A));
       if(!m || !m->an || !sizeof(m->an))
-	foreach(search, string domain)
+	foreach(domains, string domain)
 	{
 	  m=do_sync_query(mkquery(s+"."+domain, C_IN, T_A));
 	  if(m && m->an && sizeof(m->an))
@@ -337,10 +337,10 @@ class client {
   string get_primary_mx(string host)
   {
     mapping m;
-    if(sizeof(search) && host[-1] != '.' && sizeof(host/".") < 3) {
+    if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       m=do_sync_query(mkquery(host, C_IN, T_MX));
       if(!m || !m->an || !sizeof(m->an))
-	foreach(search, string domain)
+	foreach(domains, string domain)
 	{
 	  m=do_sync_query(mkquery(host+"."+domain, C_IN, T_MX));
 	  if(m && m->an && sizeof(m->an))
@@ -445,13 +445,13 @@ class async_client
   {
     if(!answer || !answer->an || !sizeof(answer->an))
     {
-      if(multi == -1 || sizeof(search) < multi) {
+      if(multi == -1 || multi >= sizeof(domains)) {
 	// Either a request without multi (ip, or FQDN) or we have tried all
 	// domains.
 	callback(domain,0,@args);
       } else {
 	// Multiple domain request. Try the next one...
-	do_query(domain+"."+search[multi], C_IN, T_A,
+	do_query(domain+"."+domains[multi], C_IN, T_A,
 		 generic_get, ++multi, "a", domain, callback, @args);
       }
     } else {
@@ -468,7 +468,7 @@ class async_client
 
   void host_to_ip(string host, function callback, mixed ... args)
   {
-    if(sizeof(search) && host[-1] != '.' && sizeof(host/".") < 3) {
+    if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       do_query(host, C_IN, T_A,
 	       generic_get, 0, "a", host, callback, @args );
     } else {
