@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.8 1999/04/25 20:52:23 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.9 1999/05/26 17:06:48 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -717,14 +717,14 @@ static void image_tiff_encode( INT32 args )
   get_all_args( "Image.TIFF.encode", args, "%o", &a.img );
 
 
-  MEMSET(&c, sizeof(c), 0);
+  MEMSET(&c, 0, sizeof(c));
   c.xdpy = 150.0;
   c.ydpy = 150.0;
 #ifdef COMPRESSION_LZW
   c.compression = COMPRESSION_LZW;
 #else
 #ifdef COMPRESSION_PACKBITS
-  c.compression = COMPRESSION_LZW;
+  c.compression = COMPRESSION_PACKBITS;
 #else
   c.compression = COMPRESSION_NONE;
 #endif
