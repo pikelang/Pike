@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.22 2001/12/20 14:34:24 js Exp $
+// $Id: HTML.pmod,v 1.23 2001/12/20 14:35:57 js Exp $
 
 // Filter for text/html
 
@@ -179,7 +179,6 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   array(string) parse_noindex(Parser.HTML p, mapping m, string c)
   {
-    werror("noindex: %s\n", c);
     if(m->nofollow)
       return ({ "" });
     Parser.HTML parser = Parser.HTML();
