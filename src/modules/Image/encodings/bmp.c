@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.15 1999/06/01 14:04:11 mirar Exp $ */
+/* $Id: bmp.c,v 1.16 1999/07/11 15:46:19 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.15 1999/06/01 14:04:11 mirar Exp $
+**!	$Id: bmp.c,v 1.16 1999/07/11 15:46:19 marcus Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.15 1999/06/01 14:04:11 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.16 1999/07/11 15:46:19 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -660,7 +660,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       goto final;
    }
    
-   if (bpp!=24) /* get palette */
+   if (bpp!=24 && bpp!=16) /* get palette */
    {
       push_text("colortable");
 
@@ -728,6 +728,31 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       d->b=*(s++);
 	       d->g=*(s++);
 	       d->r=*(s++);
+	       d++;
+	    }
+	    if (j>=skip) { j-=skip; s+=skip; }
+	 }
+	 break;
+      case 16:
+	 if (comp)
+	    error("Image.BMP.decode: can't handle compressed 16bpp BMP\n");
+
+	 skip=(4-((img->xsize*2)&3))&3;
+
+	 j=len;
+	 y=img->ysize;
+	 while (j && y--)
+	 {
+	    d=img->img+img->xsize*y;
+	    i=img->xsize; if (i>j) i=j; 
+	    j-=i*2;
+	    while (i--)
+	    {
+	       INT32 dat = *(s++);
+	       dat |= (*(s++))<<8;
+	       d->r=((dat&0x7c00)>>7)|((dat&0x7000)>>12);
+	       d->g=((dat&0x03e0)>>2)|((dat&0x0380)>>7);
+	       d->b=((dat&0x001f)<<3)|((dat&0x001c)>>2);
 	       d++;
 	    }
 	    if (j>=skip) { j-=skip; s+=skip; }
