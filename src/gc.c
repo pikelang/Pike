@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.199 2003/09/09 15:00:58 mast Exp $
+|| $Id: gc.c,v 1.200 2003/10/20 13:17:27 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.199 2003/09/09 15:00:58 mast Exp $");
+RCSID("$Id: gc.c,v 1.200 2003/10/20 13:17:27 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -954,7 +954,7 @@ again:
 	fprintf(stderr,"%*s**The program was written in C.\n",indent,"");
       }
 
-      tmp = debug_get_program_line(p, &line);
+      tmp = debug_get_line(NULL, p, &line);
       if(strcmp(tmp, "-"))
       {
 	fprintf(stderr,"%*s**Location: %s:%ld\n",
