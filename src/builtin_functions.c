@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.534 2004/03/30 12:50:56 grubba Exp $
+|| $Id: builtin_functions.c,v 1.535 2004/04/01 15:44:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.534 2004/03/30 12:50:56 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.535 2004/04/01 15:44:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4304,7 +4304,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   	@member int(0..1) "isdst"
  *!   	  Is daylight savings time.
  *!   	@member int "timezone"
- *!   	  Offset from UTC.
+ *!   	  Offset from UTC, including daylight savings time adjustment.
  *!   @endmapping
  *!
  *! An error is thrown if the localtime(2) call failed on the system.
@@ -4312,7 +4312,8 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *! e.g. Windows doesn't handle a negative @[timestamp].
  *!
  *! @note
- *!   The field @expr{"timezone"@} may not be available on all platforms.
+ *!   Prior to Pike 7.5 the field @expr{"timezone"@} was sometimes not
+ *!   present, and was sometimes not adjusted for daylight savings time.
  *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
@@ -4332,25 +4333,19 @@ PMOD_EXPORT void f_localtime(INT32 args)
   pop_n_elems(args);
   encode_struct_tm(tm);
 
+  push_text("timezone");
 #ifdef STRUCT_TM_HAS_GMTOFF
-  push_text("timezone");
   push_int(-tm->tm_gmtoff);
-  f_aggregate_mapping(20);
-#else
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
-  push_text("timezone");
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
   push_int(-tm->__tm_gmtoff);
-  f_aggregate_mapping(20);
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+  /* Assume dst is one hour. */
+  push_int(timezone - 3600*tm->tm_isdst);
 #else
-#ifdef HAVE_EXTERNAL_TIMEZONE
-  push_text("timezone");
-  push_int(timezone);
+  /* Assume dst is one hour. */
+  push_int(-3600*tm->tm_isdst);
+#endif
   f_aggregate_mapping(20);
-#else
-  f_aggregate_mapping(18);
-#endif
-#endif
-#endif
 }
 #endif
 
@@ -4381,11 +4376,6 @@ static time_t my_timegm(struct tm *target_tm)
   time_t diff_ts;
   struct tm *current_tm;
   int loop_cnt = 0;
-
-#if 0	/* The dst offset is part of tz. */
-  /* Assume dst is one hour. */
-  target_tm->tm_hour -= target_tm->tm_isdst;
-#endif /* 0 */
 
   /* This loop seems stable, and usually converges in two passes.
    * The loop counter is for paranoia reasons.
