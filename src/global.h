@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.92 2003/05/02 12:55:29 grubba Exp $
+|| $Id: global.h,v 1.93 2003/11/07 17:53:15 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -188,6 +188,8 @@ void *alloca();
 #undef HAVE_WINDOWS_H
 #endif
 
+#include <float.h>
+
 /* Get INT64, INT32, INT16, INT8, et al. */
 #include "pike_int_types.h"
 
@@ -276,11 +278,44 @@ struct b16_t_s { B8_T x,y; };
 
 /* FLOAT_TYPE stuff */
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
-#define PRINTPIKEFLOAT	"L"
+
+#  define PIKEFLOAT_MANT_DIG	LDBL_MANT_DIG
+#  define PIKEFLOAT_DIG		LDBL_DIG
+#  define PIKEFLOAT_MIN_EXP	LDBL_MIN_EXP
+#  define PIKEFLOAT_MAX_EXP	LDBL_MAX_EXP
+#  define PIKEFLOAT_MIN_10_EXP	LDBL_MIN_10_EXP
+#  define PIKEFLOAT_MAX_10_EXP	LDBL_MAX_10_EXP
+#  define PIKEFLOAT_MAX		LDBL_MAX
+#  define PIKEFLOAT_MIN		LDBL_MIN
+#  define PIKEFLOAT_EPSILON	LDBL_EPSILON
+#  define PRINTPIKEFLOAT	"L"
+
 #elif defined (WITH_DOUBLE_PRECISION_SVALUE)
-#define PRINTPIKEFLOAT	""
+
+#  define PIKEFLOAT_MANT_DIG	DBL_MANT_DIG
+#  define PIKEFLOAT_DIG		DBL_DIG
+#  define PIKEFLOAT_MIN_EXP	DBL_MIN_EXP
+#  define PIKEFLOAT_MAX_EXP	DBL_MAX_EXP
+#  define PIKEFLOAT_MIN_10_EXP	DBL_MIN_10_EXP
+#  define PIKEFLOAT_MAX_10_EXP	DBL_MAX_10_EXP
+#  define PIKEFLOAT_MAX		DBL_MAX
+#  define PIKEFLOAT_MIN		DBL_MIN
+#  define PIKEFLOAT_EPSILON	DBL_EPSILON
+#  define PRINTPIKEFLOAT	""
+
 #else
-#define PRINTPIKEFLOAT	""
+
+#  define PIKEFLOAT_MANT_DIG	FLT_MANT_DIG
+#  define PIKEFLOAT_DIG		FLT_DIG
+#  define PIKEFLOAT_MIN_EXP	FLT_MIN_EXP
+#  define PIKEFLOAT_MAX_EXP	FLT_MAX_EXP
+#  define PIKEFLOAT_MIN_10_EXP	FLT_MIN_10_EXP
+#  define PIKEFLOAT_MAX_10_EXP	FLT_MAX_10_EXP
+#  define PIKEFLOAT_MAX		FLT_MAX
+#  define PIKEFLOAT_MIN		FLT_MIN
+#  define PIKEFLOAT_EPSILON	FLT_EPSILON
+#  define PRINTPIKEFLOAT	""
+
 #endif
 
 #if SIZEOF_FLOAT_TYPE - 0 == 0

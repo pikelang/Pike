@@ -1,10 +1,10 @@
 /* Misc stuff for dealing with floats.
  *
- * $Id: pike_float.h,v 1.1 2003/11/07 17:41:53 mast Exp $
+ * $Id: pike_float.h,v 1.2 2003/11/07 17:53:15 mast Exp $
  */
 
-#ifndef PIKE_FLOAT_TYPES_H
-#define PIKE_FLOAT_TYPES_H
+#ifndef PIKE_FLOAT_H
+#define PIKE_FLOAT_H
 
 #include "global.h"
 
@@ -13,9 +13,6 @@
 #endif
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
-#endif
-#ifdef HAVE_FLOAT_H
-#include <float.h>
 #endif
 #ifdef HAVE_FP_CLASS_H
 #include <fp_class.h>
@@ -47,4 +44,4 @@ static inline int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-#endif	/* !PIKE_FLOAT_TYPES_H */
+#endif	/* !PIKE_FLOAT_H */
