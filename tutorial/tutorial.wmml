@@ -141,9 +141,8 @@ all global functions are included (like threads and Stdio-stuff).
 If the Threads och Stdio-functions begin to work in the modules,
 this comment can be erased.
 
-
+Locale.Charset.*
 Process.create_process ?  done  -hubbe
-
 
 --> 
 
