@@ -302,8 +302,8 @@ pre-everything::
 
 
 pre-configure:
-	@cd ${WRKSRC}; \
-	./run_autoconfig
+#	@cd ${WRKSRC}; \
+#	./run_autoconfig
 	@${ECHO} ${CONFIGURE_ARGS}
 
 post-install:
