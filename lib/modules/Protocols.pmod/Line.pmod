@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.7 1998/10/16 15:34:58 grubba Exp $
+ * $Id: Line.pmod,v 1.8 1998/10/16 17:14:19 nisse Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -82,7 +82,7 @@ class simple
 
   static string read_buffer = "";
 
-  static string get_line()
+  static string read_line()
   {
     int i = search(read_buffer, "\r\n");
     if (i == -1) {
@@ -102,7 +102,7 @@ class simple
 
     string line;
     
-    while( (line = get_line()) )
+    while( (line = read_line()) )
       _handle_command(line);
   }
 
@@ -220,12 +220,14 @@ class imap_style
   inherit simple;
 
   function handle_literal = 0;
+  function handle_line = 0;
+  
   int literal_length;
 
 #if 0
   function timeout_handler = 0;
 #endif
-  
+
   static void read_callback(mixed ignored, string data)
   {
     touch_time();
@@ -245,9 +247,9 @@ class imap_style
 
 	handler(literal);
       } else {
-	string line = get_line();
+	string line = read_line();
 	if (line)
-	  handle_command(line);
+	  handle_line(line);
 	else
 	  break;
       }
