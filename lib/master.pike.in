@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.61 1999/10/15 23:07:40 hubbe Exp $
+/* $Id: master.pike.in,v 1.62 1999/10/15 23:13:49 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -12,7 +12,7 @@
 // Used by describe_backtrace() et al.
 #if !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0)
 #undef BT_MAX_STRING_LEN
-#define BT_MAX_STRING_LEN	255
+#define BT_MAX_STRING_LEN	200
 #endif /* !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0) */
 
 /*
@@ -1311,6 +1311,8 @@ string describe_backtrace(mixed trace, void|int linewidth)
 {
   int e;
   string ret;
+  int backtrace_len=((int)getenv("PIKE_BACKTRACE_LEN")) || BT_MAX_STRING_LEN;
+  
 
   if(!linewidth)
   {
@@ -1381,7 +1383,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	      data ="unknown function";
 	    
 	    data+="("+
-	      stupid_describe_comma_list(tmp[3..], BT_MAX_STRING_LEN)+
+	      stupid_describe_comma_list(tmp[3..], backtrace_len)+
 	    ")";
 
 	    if(sizeof(pos)+sizeof(data) < linewidth-4)
