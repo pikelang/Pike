@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.26 2001/07/18 19:01:36 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.27 2001/07/19 21:23:43 nilsson Exp $ */
 
 string LENA_PATH = "../autodoc/image_ill.pnm";
 string makepic1;
@@ -439,7 +439,7 @@ string doctype(string type,void|string indent)
 	    map(z[..sizeof(z)-2],
 		lambda(string s)
 		{
-		   return nindent+"  <argtype>"+s+"<argtype>";
+		   return nindent+"  <argtype>"+s+"</argtype>";
 		})*""+
 	    nindent+"   <returntype>"+z[-1]+"</returntype>"+
 	    nindent+"</function>";
@@ -482,43 +482,72 @@ void docdecl(string enttype,
    
    if (params)
    {
-      string paramlist(string in)
-      {
-	 int i;
-	 int q=1;
-	 array res=({});
-	 string t;
-	 if (in=="" || in[..0]==")") return "";
-	 for (i=0; i<strlen(in); i++)
-	    switch (in[i])
-	    {
-	       case '(': q++; break;
-//  	       case ')': q--; if (q==-1) return ""; break;
-	       case ')': q--; if (q) break;
-	       case ':':
-	       case ',':
-		  array z=in[..i-1]/" "-({""});
-		  if (sizeof(z)==1)
-		     return "\n     <argument><type>"+doctype(z[0],"\n      ")+
-			"</type></argument>"+
-			paramlist(in[i+1..]);
-		  else
-		     return "\n     <argument name="+S(z[-1])+
-			"><type>"+doctype(z[0..sizeof(z)-2]*"","\n      ")+
-			"</type></argument>"+
-			paramlist(in[i+1..]);
-	    }
-	 array z=in[..i-1]/" "-({""});
-	 if (sizeof(z)==1)
-	    return "\n     <argument><type>"+doctype(z[0])+
-	       "</type></argument>";
-	 else
-	    return "\n     <argument name="+S(z[-1])+
-	       "><type>"+doctype(z[0..sizeof(z)-2]*"");
-      };
 
-      f->write("\n   <returntype>"+doctype(rv,"\n      ")+"</returntype>\n"
-	       "   <arguments>"+paramlist(params)+"\n   </arguments>\n");
+
+     string paramlist(string in) {
+       int i;
+       string res = "";
+
+       while(i<sizeof(in)) {
+
+	 // Find type
+	 string t = "";
+	 int br;
+	 for (; i<sizeof(in); i++) {
+	   t += in[i..i];
+	   if(in[i]=='(') br++;
+	   if(in[i]==')') br--;
+	   if(in[i]==' ' && !br) {
+	     t = doctype(t[..sizeof(t)-2]);
+	     break;
+	   }
+	   if(br==-1 || in[i]==',') {
+	     if(String.trim_all_whites(t)==")")
+	       return res;
+	     if(String.trim_all_whites(t[..sizeof(t)-2])=="void" && res=="")
+		return "<argument/>\n";
+
+	     if(t[-1]==')')
+	       return res += "<argument><value>" + t[..sizeof(t)-2] + "</value></argument>";
+	     if(t[-1]==',')
+	       break;
+	   }
+	 }
+
+	 if(t[-1]==',') {
+	   res += "<argument><value>" + t[..sizeof(t)-2] + "</value></argument>";
+	   i++;
+	   continue;
+	 }
+
+	 // Find name
+	 string n = "";
+	 for (; i<sizeof(in); i++) {
+	   if(in[i]==')')
+	     return res + "<argument name=" + S(n) + "><type>" + t +
+	       "</type></argument>\n";
+	   if(in[i]==',') {
+	     res += "<argument name=" + S(n) + "><type>" + t +
+	       "</type></argument>\n";
+	     break;
+	   }
+	   if(in[i]==' ')
+	     if(n=="...") {
+	       n = "";
+	       t = "<varargs>" + t  + "</varargs>";
+	     }
+	   else
+	     n += in[i..i];
+	 }
+	 i++;
+       }
+
+       throw( ({ "Malformed argument list \"(" + in + "\".\n",
+		 backtrace() }) );
+     };
+
+     f->write("\n   <returntype>"+doctype(rv,"\n      ")+"</returntype>\n"
+	      "   <arguments>"+paramlist(params)+"\n   </arguments>\n");
    }
    else
    {
