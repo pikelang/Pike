@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.13 2001/06/22 01:28:35 nilsson Exp $
+// $Id: RankingProfile.pike,v 1.14 2001/07/31 13:49:15 js Exp $
 
 array(int) field_ranking;
 array(int) proximity_ranking;
@@ -15,24 +15,24 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
 
   // Set cutoff to a value > 0.
   cutoff = _cutoff || 8;
-
-  proximity_ranking=allocate(8);
+  
   if(_proximity_ranking)
-    proximity_ranking = _proximity_ranking;
+    proximity_ranking = copy_value(_proximity_ranking);
   else
-    for(int i=0; i<8; i++)
-      proximity_ranking[i]=8-i;
+    proximity_ranking = ({ 8, 7, 6, 5, 4, 3, 2, 1 });
 
   if(_field_ranking) {
-    if (mappingp(_field_ranking))
+    if(mappingp(_field_ranking))
     {
+      for(int i=0; i<66; i++)
+	field_ranking[i]=1;
       int field_id;
       foreach(indices(_field_ranking), string field)
-        if(field_id=db->get_field_id(field, 1))
+        if(field_id==db->get_field_id(field, 1))
           field_ranking[field_id]=_field_ranking[field];
     }
     else if (arrayp(_field_ranking))
-      field_ranking = _field_ranking;
+      field_ranking = copy_value(_field_ranking);
   }
   else {
     field_ranking[0]=17;
