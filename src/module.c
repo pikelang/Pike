@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.34 2005/01/01 13:41:54 grubba Exp $
+|| $Id: module.c,v 1.35 2005/03/28 21:56:03 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,6 +29,8 @@
 #include "multiset.h"
 #include "pike_types.h"
 #include "constants.h"
+#include "bignum.h"
+#include "module_support.h"
 
 #include "modules/modlist_headers.h"
 #include "post_modules/modlist_headers.h"
