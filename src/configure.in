@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.48 1997/01/27 01:10:29 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.49 1997/01/27 08:11:44 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -21,6 +21,9 @@ else
 fi
 
 AC_PROG_CC
+AC_ISC_POSIX
+AC_MINIX
+
 
 AC_ARG_WITH(gdbm,    [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,     [  --without-gmp          no Support bignums])
@@ -59,52 +62,71 @@ AC_MSG_RESULT($pike_cv_sys_os)
 #############################################################################
 
 
+
+AC_DEFUN(AC_SYS_COMPILER_FLAG,
+[
+  AC_MSG_CHECKING($1)
+  AC_CACHE_VAL(pike_cv_option_$2,
+  [
+    CFLAGS="[$]OLD_CFLAGS $1"
+    AC_TRY_COMPILE([],[],pike_cv_option_$2=yes,pike_cv_option_$2=no)
+  ])
+  
+  CFLAGS="[$]OLD_CFLAGS"
+  
+  if test x"[$]pike_cv_option_$2" = "xyes" ; then
+    OPTIMIZE="[$]OPTIMIZE $1"
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+])
+
+AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
+[
+ if test "`uname -m 2>/dev/null`" = "$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3)
+ fi
+])
+
 WARN=""
 OPTIMIZE=""
+
 if test $cflags_is_set = no; then
  if test "x${GCC-}" = xyes ; then
   WARN="-W -Wformat"
+### Optimize for different SUN machines. If there is no working 'uname'
+### no extra optimization will be done, but nothing should break either.
+  AC_SYS_CPU_COMPILER_FLAG(sun4c,-msparclite,sparclite)
+  AC_SYS_CPU_COMPILER_FLAG(sun4m,-mv8,microsparc)
+  AC_SYS_CPU_COMPILER_FLAG(sun4d,-msupersparc,supersparc)
+  AC_SYS_CPU_COMPILER_FLAG(sun4u,-msupersparc,ultrasparc)
+
+### Generic GCC options. O2 and -funroll-loops makes some code _much_ faster,
+### especially the image module.
+  AC_SYS_COMPILER_FLAG(-O2,O2)
+  AC_SYS_COMPILER_FLAG(-funroll-loops,unroll_loops)
  else
-  OLD_CFLAGS="$CFLAGS"
-  OPTIMIZE="";
-  
-  AC_MSG_CHECKING(-fast)
-  AC_CACHE_VAL(pike_cv_option_fast,
-  [
-    CFLAGS="$OLD_CFLAGS -fast"
-    AC_TRY_COMPILE([],[],pike_cv_option_fast=yes,pike_cv_option_fast=no)
-  ])
-  
-  CFLAGS="$OLD_CFLAGS"
-  
-  if test "$pike_cv_option_fast" = "yes" ; then
-    OPTIMIZE="$OPTIMIZE -fast"
-    AC_MSG_RESULT(-fast found)
-  else
-    AC_MSG_RESULT(-fast not found)
-  
-    case "${CFLAGS-}" in
-      *-O*) ;;
-      *)
-        AC_MSG_CHECKING(-O)
-        AC_CACHE_VAL(pike_cv_option_opt,
-        [
-          CFLAGS="$OLD_CFLAGS -O"
-          AC_TRY_COMPILE([],[],pike_cv_option_opt=yes,pike_cv_option_opt=no)
-        ])
-      
-        if test "$pike_cv_option_opt" = "yes" ; then
-          CFLAGS="$OLD_CFLAGS -O"
-          OPTIMIZE="$OPTIMIZE -O"
-          AC_MSG_RESULT(-O found)
-        else
-          AC_MSG_RESULT(-O not found)
-        fi
-      
-        CFLAGS="$OLD_CFLAGS"
-      ;;
-    esac
-  fi
+
+### Non-gcc thingies. This should probably be enhanced...
+  AC_SYS_COMPILER_FLAG(-fast,fast)
+  AC_SYS_COMPILER_FLAG(-native,native)
+
+### Ok. This is for apcc...
+  AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt)
+  AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2)
+
+
+  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc)
+  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc)
+  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc)
+
+  case "${CFLAGS-}" in
+     *-O*) ;;
+     *)
+      AC_SYS_COMPILER_FLAG(-O,O)
+     ;;
+  esac
  fi
 fi
 
