@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.265 2003/04/01 18:11:45 nilsson Exp $
+|| $Id: file.c,v 1.266 2003/04/01 18:58:28 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.265 2003/04/01 18:11:45 nilsson Exp $");
+RCSID("$Id: file.c,v 1.266 2003/04/01 18:58:28 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1732,7 +1732,7 @@ void file_sync(INT32 args)
  *!
  *! Seek to a specified offset in a file.
  *!
- *! If @[mult] or @[add] are specified, @[pos] will be claculated as
+ *! If @[mult] or @[add] are specified, @[pos] will be calculated as
  *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
  *!
  *! If @[pos] is negative it will be relative to the start of the file,
