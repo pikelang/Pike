@@ -71,8 +71,10 @@ array func_misc = ({
   ({"glLineStipple", "VII"}),
   ({"glLineWidth", "VF"}),
   ({"glListBase", "VI"}),
+  ({"glLoadMatrix", "V[16R"}),
   ({"glLoadName", "VI"}),
   ({"glMaterial", "VEE@Q"}),
+  ({"glMultMatrix", "V[16R"}),
   ({"glNewList", "VIE"}),
   ({"glNormal", "V#ZZZ"}),
   ({"glOrtho", "VDDDDDD"}),
@@ -135,11 +137,9 @@ mapping func_cat = ([
   glIndex
   glIndexPointer
   glInterleavedArrays
-  glLoadMatrix
   glMap1
   glMap2
   glMapGrid
-  glMultMatrix
   glNormalPointer
   glPixelMap
   glPixelTransfer

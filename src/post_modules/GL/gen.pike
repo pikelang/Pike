@@ -18,6 +18,7 @@
    =XXXX = 4/array(4)
    =XXX  = 3/array(3)
    @X    = 1/array(n)
+   [nnX  = array(nn)
 
    #     = like =, but add count
    !     = like =, but no vector version available
@@ -43,7 +44,7 @@ void error(string msg, mixed ... args)
   exit(1);
 }
 
-array(string|array(string)) special_234(int mi, int mx, string ty)
+array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
 {
   string tm="BIT_FLOAT|BIT_INT", baset="float|int", rt="if";
   array(string) typ=({});
@@ -78,7 +79,9 @@ array(string|array(string)) special_234(int mi, int mx, string ty)
   }
   if(ad)
     rt+="d";
-  for(i=0; i<mx; i++) {
+  if(a)
+    typ+=({"array("+baset+")"});
+  else for(i=0; i<mx; i++) {
     string t = baset;
     if(!i)
       t+="|array("+baset+")";
@@ -197,6 +200,22 @@ array(string) gen_func(string name, string ty)
       rtypes=atfix[3];
       i=sizeof(ty);
       break;
+    case '[':
+      int nn;
+      string rst;
+      sscanf(ty[i+1..], "%d%s", nn, rst);
+      array arrfix = special_234(nn, nn, rst, 1);
+      res += "  union zvalue16 zv16;\n  int r1n;\n";
+      argt += arrfix[0];
+      got += "  if(sp["+(a-1)+"-args].u.array->size != "+nn+")\n"
+	"    error(\""+name+": Array length is wrong (is %d, should be "+nn+
+	")\\n\", sp["+(a-1)+"-args].u.array->size);\n\n";
+      got += "  r1n=check_1n_args(\""+name+"\", args-"+(a-1)+", "+
+	arrfix[1]+", "+arrfix[2]+", &zv16);\n";
+      r234=-1;
+      rtypes=arrfix[3];
+      i=sizeof(ty);
+      break;
     case 'w':
       img_obj=1;
       args += ({ "img.width" });
@@ -235,12 +254,15 @@ array(string) gen_func(string name, string ty)
     res += "\n  check_all_args(\""+name+"\", args, "+
       ((Array.map((argt_cut<0?argt:argt[..argt_cut-1]),
 		  lambda(string t) {
+		    string t2;
+		    while(3==sscanf(t, "%s(%*s)%s", t, t2))
+		      t+=t2;
 		    return Array.map(t/"|",
 				     lambda(string t) {
 				       return "BIT_"+upper_case(t);
 				     })*"|";
 		  }))+
-       (r234?({"BIT_MANY|BIT_MIXED|BIT_VOID"}):({}))+({"0"}))*", "+");\n";
+       (r234>0?({"BIT_MANY|BIT_MIXED|BIT_VOID"}):({}))+({"0"}))*", "+");\n";
 
   if(sizeof(got))
     res += "\n"+got+"\n";
@@ -327,6 +349,18 @@ array(string) gen_func(string name, string ty)
 		      ((args+({"zv16."+r[i..i]}))*",")+"); break;";
 		  }, rtypes, fu, vret, args, novec)*"\n"+
 	"\n  }\n";
+    break;
+  case -1:
+    res += "  switch(r1n) {\n"+
+      Array.map(indices(rtypes),
+		lambda(int i, string r, string fu, string vret,
+		       array(string) args, array(int) novec) {
+		  return "    case ZT_ARRAY|ZT_"+
+		  (['i':"INT",'f':"FLOAT",'d':"DOUBLE"])[r[i]]+": "+
+		    (vret?"res=":"")+fu+r[i..i]+"("+
+		    ((args+({"zv16."+r[i..i]}))*",")+"); break;";
+		}, rtypes, fu, vret, args, novec)*"\n"+
+      "\n  }\n";
     break;
   }
 
