@@ -1412,193 +1412,188 @@ class ParseBlock
 
   void create(array(array|PC.Token) x, string base)
     {
-      array(array|PC.Token) ret=x;
+      array(array|PC.Token) ret=({});
+      array thestruct=({});
 
       // FIXME: Consider generating code in the order it appears in
       //        the source file.
       //	/grubba 2004-12-10
 
-      // NOTE:
-      //   Inherits must come before sub classes, since
-      //   otherwise the subclasses can't look in
-      //   Pike_compiler->previous->new_program->inherits[]
-      //   for them.
-      //	/grubba 2004-12-10
-      x=ret/({"INHERIT"});
-      ret = x[0];
-      for (int f = 1; f < sizeof(x); f++)
-      {
-	array inh=x[f];
-	int pos=search(inh,PC.Token(";",0),);
-	mixed name=inh[0];
-	array rest=inh[pos+1..];
-	string define=make_unique_name("inherit",name,base,"defined");
-	mapping attributes = parse_attributes(inh[1..pos]);
-	addfuncs +=
-	  IFDEF(define,
-		({
-		  PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-				   mkname((string)name, "program"),
-				   attributes->flags || "0"),
-			   inh[0]->line),
-		}));
-	ret+=DEFINE(define);
-	ret+=rest;
-      }
-
-      // The EXTRA section may contain inherits too.
-      x=ret/({"EXTRA"});
-      ret = x[0];
-      for (int f = 1; f < sizeof(x); f++)
-      {
-	array extra=x[f];
-	array rest = extra[1..];
-	string define=make_unique_name("extra",base,"defined");
-	addfuncs += IFDEF(define, extra[0]);
-	ret+=DEFINE(define);
-	ret+=rest;
-      }
-
-      x=ret/({"PIKECLASS"});
-      ret=x[0];
-
-      for(int f=1;f<sizeof(x);f++)
-      {
-	array func=x[f];
-	int p;
-	for(p=0;p<sizeof(func);p++)
-	  if(arrayp(func[p]) && func[p][0]=="{")
+      int e;
+      for(e = 0; e < sizeof(x); e++) {
+	array|PC.Token t;
+	if (arrayp(t = x[e])) {
+	  ret += ({ t });
+	  continue;
+	}
+	switch((string)t) {
+	default:
+	  ret += ({ t });
+	  break;
+	case "INHERIT":
+	  {
+	    int pos=search(x,PC.Token(";",0),e);
+	    mixed name=x[e+1];
+	    string define=make_unique_name("inherit",name,base,"defined");
+	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    addfuncs +=
+	      IFDEF(define,
+		    ({
+		      PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
+				       mkname((string)name, "program"),
+				       attributes->flags || "0"),
+			       x[e]->line),
+		    }));
+	    ret += DEFINE(define);
+	    e = pos;
 	    break;
-	array proto=func[..p-1];
-	array body=func[p];
-	array rest=func[p+1..];
-	string name=(string)proto[0];
-	string lname = mkname(base, name);
-	mapping attributes=parse_attributes(proto[1..]);
+	  }
+	case "EXTRA":
+	  {
+	    string define = make_unique_name("extra",base,"defined");
+	    addfuncs += IFDEF(define, x[e+1]);
+	    ret += DEFINE(define);
+	    e++;
+	    break;
+	  }
+	case "PIKECLASS":
+	  {
+	    int p;
+	    for(p=e+1;p<sizeof(x);p++)
+	      if(arrayp(x[p]) && x[p][0]=="{")
+		break;
 
-	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
-					 mkname(base, name));
-	string program_var = mkname(base, name, "program");
+	    array proto = x[e+1..p-1];
+	    array body = x[p];
 
-	string define = make_unique_name("class", base, name, "defined");
+	    string name=(string)proto[0];
+	    string lname = mkname(base, name);
+	    mapping attributes=parse_attributes(proto[1..]);
 
-	ret+=DEFINE(define);
-	// FIXME: The struct program variable should probably default
-	//        to being static.
-	//	/grubba 2004-10-23
-	ret+=({sprintf("struct program *%s=NULL;\n"
-		       "static int %s_fun_num=-1;\n",
-		       program_var, program_var)});
-	ret+=subclass->declarations;
-	ret+=subclass->code;
+	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
+					     mkname(base, name));
+	    string program_var = mkname(base, name, "program");
 
-	addfuncs+=
-	  IFDEF(define,
-		({
-		  IFDEF("PROG_"+upper_case(lname)+"_ID",
-			({
-			  PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
-					   upper_case(lname)),
-				   proto[0]->line),
-			  "#else\n",
-			  PC.Token("  start_new_program();\n",
-				   proto[0]->line),
-			})),
-		  IFDEF("tObjImpl_"+upper_case(lname),
-			0,
-			DEFINE("tObjImpl_"+upper_case(lname), "tObj")),
-		})+
-		IFDEF("THIS_"+upper_case(lname),
-		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",lname,lname) }) )+
-		subclass->addfuncs+
-		({
-		  attributes->program_flags?
-		  PC.Token(sprintf("  Pike_compiler->new_program->flags |= %s;\n",
-				   attributes->program_flags),
-			   proto[1]->line):"",
-		  PC.Token(sprintf("  %s=end_program();\n",program_var),
-			   proto[0]->line),
-		  PC.Token(sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
-				   program_var,
-				   name,
-				   program_var,
-				   attributes->flags || "0"),
-			   proto[0]->line),
+	    string define = make_unique_name("class", base, name, "defined");
+
+	    ret+=DEFINE(define);
+	    // FIXME: The struct program variable should probably default
+	    //        to being static.
+	    //	/grubba 2004-10-23
+	    ret+=({sprintf("struct program *%s=NULL;\n"
+			   "static int %s_fun_num=-1;\n",
+			   program_var, program_var)});
+	    ret+=subclass->declarations;
+	    ret+=subclass->code;
+
+	    addfuncs+=
+	      IFDEF(define,
+		    ({
+		      IFDEF("PROG_"+upper_case(lname)+"_ID",
+			    ({
+			      PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
+					       upper_case(lname)),
+				       proto[0]->line),
+			      "#else\n",
+			      PC.Token("  start_new_program();\n",
+				       proto[0]->line),
+			    })),
+		      IFDEF("tObjImpl_"+upper_case(lname),
+			    0,
+			    DEFINE("tObjImpl_"+upper_case(lname), "tObj")),
+		    })+
+		    IFDEF("THIS_"+upper_case(lname),
+			  ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",lname,lname) }) )+
+		    subclass->addfuncs+
+		    ({
+		      attributes->program_flags?
+		      PC.Token(sprintf("  Pike_compiler->new_program->flags |= %s;\n",
+				     attributes->program_flags),
+			       proto[1]->line):"",
+		      PC.Token(sprintf("  %s=end_program();\n",program_var),
+			       proto[0]->line),
+		      PC.Token(sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
+				       program_var,
+				       name,
+				       program_var,
+				       attributes->flags || "0"),
+			       proto[0]->line),
 		    })
-	    );
-	exitfuncs+=
-	  IFDEF(define,
-		subclass->exitfuncs+
-	    ({
-	      sprintf("  if(%s) {\n", program_var),
-	      PC.Token(sprintf("    free_program(%s);\n", program_var),
-		       proto[0]->line),
-	      sprintf("    %s=0;\n"
-		      "  }\n",
-		      program_var),
-	      }));
+		    );
+	    exitfuncs+=
+	      IFDEF(define,
+		    subclass->exitfuncs+
+		    ({
+		      sprintf("  if(%s) {\n", program_var),
+		      PC.Token(sprintf("    free_program(%s);\n", program_var),
+			       proto[0]->line),
+		      sprintf("    %s=0;\n"
+			      "  }\n",
+			      program_var),
+		    }));
+	    e = p;
+	    break;
+	  }
 
-	ret+=rest;
-      }
-
-      array thestruct=({});
-      x=ret/({"PIKEVAR"});
-      ret=x[0];
-      for(int f=1;f<sizeof(x);f++)
-      {
-	array var=x[f];
-	int pos=search(var,PC.Token(";",0),);
-	int pos2=parse_type(var,0);
-	mixed name=var[pos2];
-	PikeType type=PikeType(var[..pos2-1]);
-	array rest=var[pos+1..];
-	string define=make_unique_name("var",name,base,"defined");
-	mapping attributes = parse_attributes(var[pos2+1..pos]);
+	case "PIKEVAR":
+	  {
+	    int pos = search(x, PC.Token(";",0), e);
+	    int pos2 = parse_type(x, e+1);
+	    mixed name = x[pos2];
+	    PikeType type = PikeType(x[e+1..pos2-1]);
+	    string define = make_unique_name("var",name,base,"defined");
+	    mapping attributes = parse_attributes(x[pos2+1..pos]);
 
 //    werror("type: %O\n",type);
 
-	thestruct+=
-	  IFDEF(define,
-		({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
-	addfuncs+=
-	  IFDEF(define,
-		({
-		  sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
-			  "                    %s, %s, %s);",
-			  (string)name, base, base, name,
-			  type->output_c_type(), type->type_number(),
-			  attributes->flags || "0"),
-		}));
-	ret+=DEFINE(define);
-	ret+=({ PC.Token("DECLARE_STORAGE") });
-	ret+=rest;
-      }
+	    thestruct+=
+	      IFDEF(define,
+		    ({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
+	    addfuncs+=
+	      IFDEF(define,
+		    ({
+		      sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
+			      "                    %s, %s, %s);",
+			      (string)name, base, base, name,
+			      type->output_c_type(), type->type_number(),
+			      attributes->flags || "0"),
+		    }));
+	    ret+=DEFINE(define);
+	    ret+=({ PC.Token("DECLARE_STORAGE") });
+	    e = pos;
+	    break;
+	  }
 
-      x=ret/({"CVAR"});
-      ret=x[0];
-      for(int f=1;f<sizeof(x);f++)
-      {
-	array var=x[f];
-	int pos=search(var,PC.Token(";",0),);
-	int npos=pos-1;
-	while(arrayp(var[npos])) npos--;
-	mixed name=(string)var[npos];
+	case "CVAR":
+	  {
+	    int pos = search(x,PC.Token(";",0),e);
+	    int npos=pos-1;
+	    while(arrayp(x[npos])) npos--;
+	    mixed name=(string)x[npos];
 
-	string define=make_unique_name("var",name,base,"defined");
+	    string define=make_unique_name("var",name,base,"defined");
     
-	thestruct+=IFDEF(define,var[..pos-1]+({";"}));
-	ret+=DEFINE(define);
-	ret+=({ PC.Token("DECLARE_STORAGE") });
-	ret+=var[pos+1..];
-      }
+	    thestruct+=IFDEF(define,x[e+1..pos-1]+({";"}));
+	    ret+=DEFINE(define);
+	    ret+=({ PC.Token("DECLARE_STORAGE") });
+	    e = pos;
+	    break;
+	  }
 
-
-      
-      ret=(ret/({"INIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("init")});
-      ret=(ret/({"EXIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("exit")});
-      ret=(ret/({"GC_RECURSE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("gc_recurse")});
-      ret=(ret/({"GC_CHECK"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("gc_check")});
-      ret=(ret/({"OPTIMIZE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("optimize")});
+	case "INIT":
+	case "EXIT":
+	case "GC_RECURSE":
+	case "GC_CHECK":
+	case "OPTIMIZE":
+	  {
+	    ret += ({
+	      PC.Token("PIKE_INTERNAL"),
+	      PC.Token(lower_case((string)t)),
+	    });
+	    break;
+	  }
+	}
+      }      
 
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
