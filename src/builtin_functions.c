@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.573 2004/11/03 01:26:30 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.574 2004/11/14 03:42:21 aldem Exp $
 */
 
 #include "global.h"
@@ -1983,7 +1983,7 @@ PMOD_EXPORT void f_all_constants(INT32 args)
  */
 PMOD_EXPORT void f_allocate(INT32 args)
 {
-  INT32 size;
+  INT_TYPE size;
   struct array *a;
   struct svalue *init;
 
