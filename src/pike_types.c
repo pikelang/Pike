@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.88 1999/12/11 19:24:38 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.89 1999/12/11 23:37:29 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -55,8 +55,8 @@ static int low_pike_types_le(char *a, char *b);
  * objects are coded thus:
  * T_OBJECT <0/1> <program_id>
  *           ^
- *           0 means 'inherits'
- *           1 means 'is'
+ *           0 means 'implements'
+ *           1 means 'inherits'
  * Integers are encoded as:
  * T_INT <min> <max>
  * Everything except T_VOID matches T_ZERO.
@@ -767,7 +767,7 @@ void stupid_describe_type(char *a,INT32 len)
       case T_PROGRAM: printf("program"); break;
       case T_OBJECT:
 	printf("object(%s %ld)",
-	       EXTRACT_UCHAR(a+e+1)?"clone of":"inherits",
+	       EXTRACT_UCHAR(a+e+1)?"inherits":"implements",
 	       (long)extract_type_int(a+e+2));
 	e+=sizeof(INT32)+1;
 	break;
@@ -856,7 +856,8 @@ char *low_describe_type(char *t)
       if(extract_type_int(t+1))
       {
 	char buffer[100];
-	sprintf(buffer,"object(%s %ld)",*t?"is":"implements",(long)extract_type_int(t+1));
+	sprintf(buffer,"object(%s %ld)",*t?"inherits":"implements",
+		(long)extract_type_int(t+1));
 	my_strcat(buffer);
       }else{
 	my_strcat("object");
