@@ -449,7 +449,7 @@ array parseArgList(int|void allowLiterals) {
         argtypes += ({ 0 });
       }
       else
-        parseError("Expected type, idents or literal constant");
+        parseError("Expected type, idents or literal constant, got %O",peekToken());
     }
     if (peekToken() == ")")
       return ({ argnames, argtypes });
