@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.33 1998/06/13 21:16:51 grubba Exp $");
+RCSID("$Id: backend.c,v 1.34 1998/07/09 01:35:12 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -33,16 +33,23 @@ RCSID("$Id: backend.c,v 1.33 1998/06/13 21:16:51 grubba Exp $");
 #define SELECT_READ 1
 #define SELECT_WRITE 2
 
-file_callback read_callback[MAX_OPEN_FILEDESCRIPTORS];
-void *read_callback_data[MAX_OPEN_FILEDESCRIPTORS];
-file_callback write_callback[MAX_OPEN_FILEDESCRIPTORS];
-void *write_callback_data[MAX_OPEN_FILEDESCRIPTORS];
+
+
+struct cb_data
+{
+  file_callback callback;
+  void * data;
+};
+
+struct fd_datum
+{
+  struct cb_data read, write;
 #ifdef WITH_OOB
-file_callback read_oob_callback[MAX_OPEN_FILEDESCRIPTORS];
-void *read_oob_callback_data[MAX_OPEN_FILEDESCRIPTORS];
-file_callback write_oob_callback[MAX_OPEN_FILEDESCRIPTORS];
-void *write_oob_callback_data[MAX_OPEN_FILEDESCRIPTORS];
-#endif /* WITH_OOB */
+  struct cb_data read_oob, write_oob;
+#endif
+};
+
+struct fd_datum fds[MAX_OPEN_FILEDESCRIPTORS];
 
 #ifndef HAVE_AND_USE_POLL
 #undef HAVE_POLL
@@ -233,14 +240,14 @@ void cleanup_backend(void)
 void set_read_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (read_callback[fd]!=0);
+  int was_set = (fds[fd].read.callback!=0);
 #endif
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-  read_callback[fd]=cb;
-  read_callback_data[fd]=data;
+  fds[fd].read.callback=cb;
+  fds[fd].read.data=data;
 
   if(cb)
   {
@@ -275,15 +282,15 @@ void set_read_callback(int fd,file_callback cb,void *data)
 void set_write_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (write_callback[fd]!=0);
+  int was_set = (fds[fd].write.callback!=0);
 #endif
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  write_callback[fd]=cb;
-  write_callback_data[fd]=data;
+  fds[fd].write.callback=cb;
+  fds[fd].write.data=data;
 
   if(cb)
   {
@@ -318,14 +325,14 @@ void set_write_callback(int fd,file_callback cb,void *data)
 void set_read_oob_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (read_oob_callback[fd]!=0);
+  int was_set = (fds[fd].read_oob.callback!=0);
 #endif
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-  read_oob_callback[fd]=cb;
-  read_oob_callback_data[fd]=data;
+  fds[fd].read_oob.callback=cb;
+  fds[fd].read_oob.data=data;
 
   if(cb)
   {
@@ -361,15 +368,15 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
 void set_write_oob_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (write_oob_callback[fd]!=0);
+  int was_set = (fds[fd].write_oob.callback!=0);
 #endif
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  write_oob_callback[fd]=cb;
-  write_oob_callback_data[fd]=data;
+  fds[fd].write_oob.callback=cb;
+  fds[fd].write_oob.data=data;
 
   if(cb)
   {
@@ -396,7 +403,7 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
     }
 #else
 #if POLLWRBAND == POLLOUT
-    if (was_set && !write_callback[fd])
+    if (was_set && !fds[fd].write.callback)
       POLL_FD_CLR(fd,POLLWRBAND);
 #else /* POLLWRBAND != POLLOUT */
     if(was_set)
@@ -414,7 +421,7 @@ file_callback query_read_callback(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return read_callback[fd];
+  return fds[fd].read.callback;
 }
 
 file_callback query_write_callback(int fd)
@@ -424,7 +431,7 @@ file_callback query_write_callback(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return write_callback[fd];
+  return fds[fd].write.callback;
 }
 
 #ifdef WITH_OOB
@@ -435,7 +442,7 @@ file_callback query_read_oob_callback(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return read_oob_callback[fd];
+  return fds[fd].read_oob.callback;
 }
 
 file_callback query_write_oob_callback(int fd)
@@ -445,7 +452,7 @@ file_callback query_write_oob_callback(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return write_oob_callback[fd];
+  return fds[fd].write_oob.callback;
 }
 #endif /* WITH_OOB */
 
@@ -456,7 +463,7 @@ void *query_read_callback_data(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return read_callback_data[fd];
+  return fds[fd].read.data;
 }
 
 void *query_write_callback_data(int fd)
@@ -466,7 +473,7 @@ void *query_write_callback_data(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return write_callback_data[fd];
+  return fds[fd].write.data;
 }
 
 #ifdef WITH_OOB
@@ -477,7 +484,7 @@ void *query_read_oob_callback_data(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return read_oob_callback_data[fd];
+  return fds[fd].read_oob.data;
 }
 
 void *query_write_oob_callback_data(int fd)
@@ -487,7 +494,7 @@ void *query_write_oob_callback_data(int fd)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
-  return write_oob_callback_data[fd];
+  return fds[fd].write_oob.data;
 }
 #endif /* WITH_OOB */
 
@@ -600,6 +607,8 @@ void backend(void)
     /* FIXME: OOB? */
     fd_copy_my_fd_set_to_fd_set(&rset, &selectors.read, max_fd+1);
     fd_copy_my_fd_set_to_fd_set(&wset, &selectors.write, max_fd+1);
+#else
+    switch_poll_set();
 #endif
 
     alloca(0);			/* Do garbage collect */
@@ -616,9 +625,7 @@ void backend(void)
       next_timeout.tv_usec = 0;
       next_timeout.tv_sec = 0;
     }
-#ifdef HAVE_POLL
-    switch_poll_set();
-#endif
+
     THREADS_ALLOW();
 #ifdef HAVE_POLL
     {
@@ -643,11 +650,11 @@ void backend(void)
       /* FIXME: OOB? */
       for(i=0; i<max_fd+1; i++)
       {
-	if(fd_FD_ISSET(i, &rset) && read_callback[i])
-	  (*(read_callback[i]))(i,read_callback_data[i]);
+	if(fd_FD_ISSET(i, &rset) && fds[i].read.callback)
+	  (*(fds[i].read.callback))(i,fds[i].read.data);
 
-	if(fd_FD_ISSET(i, &wset) && write_callback[i])
-	  (*(write_callback[i]))(i,write_callback_data[i]);
+	if(fd_FD_ISSET(i, &wset) && fds[i].write.callback)
+	  (*(fds[i].write.callback))(i,fds[i].write.data);
       }
 #else
       for(i=0; i<active_num_in_poll; i++)
@@ -669,8 +676,8 @@ void backend(void)
 
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLRDBAND) &&
-	    read_oob_callback[fd]) {
-	  (*(read_oob_callback[fd]))(fd, read_oob_callback_data[fd]);
+	    fds[fd].read_oob.callback) {
+	  (*(fds[fd].read_oob.callback))(fd, fds[fd].read_oob.data);
 #ifdef DEBUG
 	  handled = 1;
 #endif /* DEBUG */
@@ -680,8 +687,8 @@ void backend(void)
 	if((active_poll_fds[i].revents & POLLHUP) ||
 	   (active_poll_fds[i].revents & POLLERR)) {
 	  /* Closed or error */
-	  if (read_callback[fd]) {
-	    (*(read_callback[fd]))(fd,read_callback_data[fd]);
+	  if (fds[fd].read.callback) {
+	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  }
 	  /* We don't want to keep this fd anymore. */
 	  POLL_FD_CLR(fd, ~0);
@@ -691,8 +698,8 @@ void backend(void)
 	}
 
 	if(active_poll_fds[i].revents & POLLRDNORM) {
-	  if (read_callback[fd]) {
-	    (*(read_callback[fd]))(fd,read_callback_data[fd]);
+	  if (fds[fd].read.callback) {
+	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  } else {
 	    POLL_FD_CLR(fd, POLLRDNORM);
 	  }
@@ -703,8 +710,8 @@ void backend(void)
 
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLWRBAND) &&
-	    write_oob_callback[fd]) {
-	  (*(write_oob_callback[fd]))(fd, write_oob_callback_data[fd]);
+	    fds[fd].write_oob.callback) {
+	  (*(fds[fd].write_oob.callback))(fd, fds[fd].write_oob.data);
 #ifdef DEBUG
 	  handled = 1;
 #endif /* DEBUG */
@@ -712,8 +719,8 @@ void backend(void)
 #endif /* WITH_OOB */
 
 	if(active_poll_fds[i].revents & POLLOUT) {
-	  if (write_callback[fd]) {
-	    (*(write_callback[fd]))(fd,write_callback_data[fd]);
+	  if (fds[fd].write.callback) {
+	    (*(fds[fd].write.callback))(fd,fds[fd].write.data);
 	  } else {
 	    POLL_FD_CLR(fd, POLLOUT);
 	  }
