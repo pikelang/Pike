@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.24 1998/04/29 16:00:57 grubba Exp $
+/* $Id: master.pike.in,v 1.25 1998/04/30 15:29:49 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -532,6 +532,9 @@ mixed resolv(string identifier, string|void current_file)
   return UNDEFINED;
 }
 
+// These are useful if you want to start other Pike processes
+// with the same options as this one was started with.
+string _pike_file_name;
 string _master_file_name;
 
 /* This function is called when all the driver is done with all setup
@@ -548,6 +551,8 @@ void _main(string *orig_argv, string *env)
   object tmp;
   string a,b;
   mixed *q;
+
+  _pike_file_name = orig_argv[0];
 
   foreach(env,a) if(sscanf(a,"%s=%s",a,b)) environment[a]=b;
 
