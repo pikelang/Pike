@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.11 1999/07/27 22:19:12 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.12 1999/07/28 21:16:37 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -35,6 +35,10 @@ struct iso2022_stor {
 
 struct iso2022enc_stor {
   struct gdesc g[2];
+  struct {
+    p_wchar1 *map;
+    unsigned lo, hi;
+  } r[2];
   struct pike_string *replace;
   struct string_builder strbuild;
   struct svalue repcb;
@@ -382,15 +386,27 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
 	      s->g[0].transl = NULL;
 	      s->g[0].index = 0;
+	      if(s->r[0].map != NULL) {
+		free(s->r[0].map);
+		s->r[0].map = NULL;
+	      }
 	    }
 	    s->g[1].transl = NULL;
 	    s->g[1].index = 0;
+	    if(s->r[1].map != NULL) {
+	      free(s->r[1].map);
+	      s->r[1].map = NULL;
+	    }
 	    lat = 0;
 	  } else if(!asc && c>' ' && c<0x7f) {
 	    string_builder_strcat(&s->strbuild, "\033(B");
 	    s->g[0].transl = map_ANSI_X3_4_1968;
 	    s->g[0].mode = MODE_94;
 	    s->g[0].index = 0x12;
+	    if(s->r[0].map != NULL) {
+	      free(s->r[0].map);
+	      s->r[0].map = NULL;
+	    }
 	    asc = 1;
 	  }
 	} else if(!lat) {
@@ -398,6 +414,10 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  s->g[1].transl = map_ISO_8859_1_1987;
 	  s->g[1].mode = MODE_96;
 	  s->g[1].index = 0x11;
+	  if(s->r[1].map != NULL) {
+	    free(s->r[1].map);
+	    s->r[1].map = NULL;
+	  }
 	  lat = 1;
 	}
 	string_builder_putchar(&s->strbuild,c);
@@ -423,9 +443,17 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
 	      s->g[0].transl = NULL;
 	      s->g[0].index = 0;
+	      if(s->r[0].map != NULL) {
+		free(s->r[0].map);
+		s->r[0].map = NULL;
+	      }
 	    }
 	    s->g[1].transl = NULL;
 	    s->g[1].index = 0;
+	    if(s->r[1].map != NULL) {
+	      free(s->r[1].map);
+	      s->r[1].map = NULL;
+	    }
 	  }
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c<0x7f) {
@@ -434,6 +462,10 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    s->g[0].transl = map_ANSI_X3_4_1968;
 	    s->g[0].mode = MODE_94;
 	    s->g[0].index = 0x12;
+	    if(s->r[0].map != NULL) {
+	      free(s->r[0].map);
+	      s->r[0].map = NULL;
+	    }
 	  }
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c<0x100) {
@@ -442,18 +474,38 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    s->g[1].transl = map_ISO_8859_1_1987;
 	    s->g[1].mode = MODE_96;
 	    s->g[1].index = 0x11;
+	    if(s->r[1].map != NULL) {
+	      free(s->r[1].map);
+	      s->r[1].map = NULL;
+	    }
 	  }
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c==0xfffd) {
 	  /* Substitution character... */
 	  REPLACE_CHAR(0xfffd);
-	} else if(c>=0x3000) {
-	  /* CJK */
-	  error("Not implemented.\n");
+	} else if(s->r[0].map != NULL && c >= s->r[0].lo && c < s->r[0].hi &&
+		  s->r[0].map[c-s->r[0].lo]) {
+	  /* Char contained in current G0 set */
+	  if((c = s->r[0].map[c-s->r[0].lo])>=0x100)
+	    string_builder_putchar(&s->strbuild,(c&0x7f00)>>8);
+	  string_builder_putchar(&s->strbuild,c&0x7f);
+	} else if(s->r[1].map != NULL && c >= s->r[1].lo && c < s->r[1].hi &&
+		  s->r[1].map[c-s->r[1].lo]) {
+	  /* Char contained in current G1 set */
+	  if((c = s->r[1].map[c-s->r[1].lo])>=0x100)
+	    string_builder_putchar(&s->strbuild,((c&0x7f00)>>8)|0x80);
+	  string_builder_putchar(&s->strbuild,(c&0x7f)|0x80);
 	} else {
-	  int mode, index, ch;
+	  /* Need to switch to another map */
+
+	  int mode, index=0, ch;
 	  UNICHAR *ttab = NULL;
-	  if(c<0x180) {
+	  p_wchar1 *rmap = NULL;
+
+	  if(c>=0x3000) {
+	    /* CJK */
+	    error("Not implemented.\n");
+	  } else if(c<0x180) {
 	    unsigned char map1[] = {
 	      0x02, 0x00, 0x15, 0x00, 0xa0, 0xa0, 0x02, 0xff,
 	      0xff, 0xff, 0xff, 0xf0, 0xff, 0xff, 0x80, 0xc0,
@@ -465,30 +517,37 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  } else {
 	    error("Not implemented.\n");
 	  }
+
 	  if(index!=0 && (ttab = transltab[mode][index-0x10])!=NULL) {
 	    switch(mode) {
 	    case MODE_96:
+	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
+	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
 	      for(ch=0; ch<96; ch++)
-		if(ttab[ch]==c)
-		  break;
-	      if(ch<96) {
-		if(s->g[1].mode != MODE_96 || s->g[1].index != index) {
-		  string_builder_strcat(&s->strbuild, "\033-");
-		  string_builder_putchar(&s->strbuild,index+0x30);
-		  s->g[1].transl = ttab;
-		  s->g[1].mode = MODE_96;
-		  s->g[1].index = index;
-		}
-		string_builder_putchar(&s->strbuild,ch+160);
+		if(ttab[ch]>=0x100)
+		  rmap[ttab[ch]-0x100]=ch+32;
+	      if(rmap[c-0x100]) {
+		string_builder_strcat(&s->strbuild, "\033-");
+		string_builder_putchar(&s->strbuild, 48+index);
+		string_builder_putchar(&s->strbuild, rmap[c-0x100]|0x80);
+		s->g[1].transl = ttab;
+		s->g[1].mode = MODE_96;
+		s->g[1].index = index;
+		if(s->r[1].map != NULL)
+		  free(s->r[1].map);
+		s->r[1].map = rmap;
+		s->r[1].lo = 0x100;
+		s->r[1].hi = 0x10000;
 	      } else
 		ttab = NULL;
 	      break;
-	    default:
-	      ttab = NULL;
 	    }
 	  }
-	  if(ttab == NULL)
+	  if(ttab == NULL) {
+	    if(rmap != NULL)
+	      free(rmap);
 	    REPLACE_CHAR(c);
+	  }
 	}
       }
     }
@@ -592,6 +651,9 @@ static void f_enc_clear(INT32 args)
     s->g[i].transl = NULL;
     s->g[i].mode = MODE_96;
     s->g[i].index = 0;
+    s->r[i].map = NULL;
+    s->r[i].lo = 0;
+    s->r[i].hi = 0;
   }
   s->g[0].transl = map_ANSI_X3_4_1968;
   s->g[0].mode = MODE_94;
