@@ -4,6 +4,7 @@ pike7.3 (7.3.51-2) unstable; urgency=low
     the packaging/debian/ directory.
   * Patches previously applied to the sources before generating the 
     Debian diff are now applied on the compile time.
+  * Most packages depend on pikeX.Y-core now.
 
  -- Marek Habersack <grendel@debian.org>  Tue,  6 Aug 2002 00:36:53 +0200
 
