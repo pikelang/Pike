@@ -1436,7 +1436,6 @@ static void parse_optional_xmldecl(struct xmldata *data)
   if(GOBBLE("<?xml"))
   {
     push_constant_text("<?xml");
-    READ(6);
     push_int(0);
     push_mapping(allocate_mapping(10)); /* Attributes */
     
