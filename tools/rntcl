@@ -51,7 +51,7 @@ int verbose=0;
 int linking_failed;
 
 // Files to remove upon exit
-string *tmpfiles=({});
+array(string) tmpfiles=({});
 
 void exit(int code)
 {
@@ -94,14 +94,14 @@ array|object paranoia_stat(string f)
 int main(int argc, array(string) argv)
 {
 //	werror("%O\n",argv);
-  string *ldopts=({"-INCREMENTAL:no"});
-  string *cflags=default_cflags;
+  array(string) ldopts=({"-INCREMENTAL:no"});
+  array(string) cflags=default_cflags;
 
   string target="exe";
   int debug,optimize,share,dynamic;
   string output, wantfile;
 
-  mixed *opts=Getopt.find_all_options(argv, aggregate(
+  array opts=Getopt.find_all_options(argv, aggregate(
     ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
     ({"oper_asm",Getopt.NO_ARG, ({"-S"}) }),
     ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),	
@@ -121,7 +121,7 @@ int main(int argc, array(string) argv)
     ({"output",Getopt.HAS_ARG, ({"-o"}) }),
     ({"export",Getopt.HAS_ARG, ({"--export"}) })
     ));
-  foreach(opts, mixed *option)
+  foreach(opts, array option)
     {
       switch(option[0])
       {
