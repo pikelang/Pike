@@ -1071,7 +1071,9 @@ struct lpc_string * replace_many(struct lpc_string *str,
 	}
       }
       if(a<from->size &&
-	 !low_quick_binary_strcmp(v[a].ind->str,v[a].ind->len,s,length))
+	 length >= v[a].ind->len &&
+	 !low_quick_binary_strcmp(v[a].ind->str,v[a].ind->len,
+				  s,v[a].ind->len))
       {
 	c=v[a].ind->len;
 	if(!c) c=1;

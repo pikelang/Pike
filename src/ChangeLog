@@ -8,6 +8,17 @@ Sat Feb 10 21:43:42 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 	* simulate.lpc: fixed an add_efun for exec
 	* Updated a LOT of docfiles.
 
+Sat Feb 10 02:26:25 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* array.c: fixed a coredump when doing & on one compact and
+	  one noncompact array.
+	* language.y: fixed so that continue now always need a semicolon
+          after it.
+        * builtin_efuns.c: replace_many fixed.
+	* array.c: fix_type_field fixed.
+	* las.c: fixed node_is_equal, it can now see the differance between
+          different global variables :P
+
 Mon Nov 20 16:52:32 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* builtin_efuns.c (replace_many): Fixed an array bound read.

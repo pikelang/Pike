@@ -615,8 +615,8 @@ statement: unused2 ';' { $$=$1; }
          | return ';'
 	 | block {}
          | foreach
-         | break
-         | continue
+         | break ';'
+         | continue ';'
          | error ';' { $$=0; }
   	 | ';' { $$=0; } 
          ;

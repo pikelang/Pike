@@ -962,7 +962,7 @@ void array_fix_type_field(struct array *v)
    break;
 
   default:
-    v->type_field=1 << v->array_type;
+    t=1 << v->array_type;
     for(e=0; e<v->size; e++)
     {
       if(! SHORT_ITEM(v)[e].refs)
@@ -973,6 +973,10 @@ void array_fix_type_field(struct array *v)
     }
 
   }
+#ifdef DEBUG
+  if(t & ~(v->type_field))
+    fatal("Type field out of order!\n");
+#endif
   v->type_field = t;
 }
 
@@ -1245,7 +1249,7 @@ struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
       }else{
 	if(b->array_type == T_MIXED)
 	{
-	  assign_svalue(ITEM(ret)+e, ITEM(a)+*zipper);
+	  assign_svalue_no_free(ITEM(ret)+e, ITEM(b)+~*zipper);
 	}else{
 	  assign_from_short_svalue_no_free(ITEM(ret)+e,
 				   SHORT_ITEM(b)+~*zipper,

@@ -327,6 +327,7 @@ int node_is_eq(node *a,node *b)
   switch(a->token)
   {
   case F_LOCAL:
+  case F_IDENTIFIER:
     return a->u.number == b->u.number;
 
   case F_CAST:
