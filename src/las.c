@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.133 1999/12/03 02:42:30 mast Exp $");
+RCSID("$Id: las.c,v 1.134 1999/12/05 19:40:41 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2110,9 +2110,9 @@ void fix_type_field(node *n)
 
     if (!CDR(n) || CDR(n)->type == void_type_string)
       copy_shared_string(n->type,void_type_string);
-    else if(CAR(n)->type == CDR(n)->type)
+    else if(n->token == F_LAND || CAR(n)->type == CDR(n)->type)
     {
-      copy_shared_string(n->type,CAR(n)->type);
+      copy_shared_string(n->type,CDR(n)->type);
     }else{
       n->type = or_pike_types(CAR(n)->type, CDR(n)->type);
     }
