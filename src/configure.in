@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.531 2001/07/01 21:47:33 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.532 2001/07/08 20:14:58 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -988,6 +988,7 @@ AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compi
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
+AC_ARG_WITH(computed-goto,[  --with-computed-goto   Enable use of gcc-style computed goto (EXPERIMENTAL).], [], [with_computed_goto=no])
 
 AC_ARG_WITH(keypair-loop,[  --with-keypair-loop    Enable use of the keypair mapping loop method (EXPERIMENTAL).],[
   if test "$with_keypair_loop" = "yes"; then
@@ -4347,6 +4348,28 @@ int main()
 AC_MSG_RESULT($pike_cv_have_working___FUNCTION__)
 if test "$pike_cv_have_working___FUNCTION__" = yes; then
   AC_DEFINE(HAVE_WORKING___FUNCTION__)
+else :; fi
+
+#############################################################################
+
+if test "x$with_computed_goto" = "xyes"; then
+  AC_MSG_CHECKING(for gcc-style computed goto)
+  AC_CACHE_VAL(pike_cv_gcc_computed_goto, [
+    AC_TRY_COMPILE([], [
+      void *skip = &&label;
+
+      goto *skip;
+
+      return 1;
+
+    label:
+      return 0;
+    ], [ pike_cv_gcc_computed_goto=yes ], [ pike_cv_gcc_computed_goto=no ])
+  ])
+  if test "x$pike_cv_gcc_computed_goto" = "xyes"; then
+    AC_MSG_WARN([Enabling computed goto (EXPERIMENTAL).])
+    AC_DEFINE(HAVE_COMPUTED_GOTO)
+  else :; fi
 else :; fi
 
 #############################################################################
