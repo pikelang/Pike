@@ -1,17 +1,10 @@
-/* $Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $
- */
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $");
-#include "pike_macros.h"
+RCSID("$Id: linkfarm.c,v 1.5 2004/08/07 15:26:56 js Exp $");
 #include "interpret.h"
 #include "program.h"
-#include "program_id.h"
-#include "object.h"
 #include "array.h"
-#include "operators.h"
-#include "module_support.h"
 
 #include "config.h"
 
@@ -23,7 +16,7 @@ RCSID("$Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $");
 
 static void exit_linkfarm_struct( );
 
-#define HSIZE 83
+#define HSIZE 211
 
 static struct program *linkfarm_program;
 
@@ -74,10 +67,11 @@ static void find_hash( struct linkfarm *d, struct pike_string *s )
   h = new_hash( s );
   h->next = d->hash[ r ];
   d->hash[ r ] = h;
+  return;
 }
 
 static void low_add( struct linkfarm *t,
-		     struct pike_string *s )
+		    struct pike_string *s )
 {
   int ret=0, i;
 
@@ -90,7 +84,7 @@ static void low_add( struct linkfarm *t,
 	  if( d[i] == '#' )
 	  {
 	    if( !i ) return;
-	    s = make_shared_binary_string0(d, i);
+	    s = make_shared_binary_string0( d, i );
 	    ret = 1;
 	    break;
 	  }
@@ -103,7 +97,7 @@ static void low_add( struct linkfarm *t,
 	  if( d[i] == '#' )
 	  {
 	    if( !i ) return;
-	    s = make_shared_binary_string1(d, i);
+	    s = make_shared_binary_string1( d, i );
 	    ret = 1;
 	    break;
 	  }
@@ -116,7 +110,7 @@ static void low_add( struct linkfarm *t,
 	  if( d[i] == '#' )
 	  {
 	    if( !i ) return;
-	    s = make_shared_binary_string2(d, i);
+	    s = make_shared_binary_string2( d, i );
 	    ret = 1;
 	    break;
 	  }
@@ -124,26 +118,30 @@ static void low_add( struct linkfarm *t,
       break;
   };
   find_hash(t, s);
-  if (ret) free_string(s);
+  if(ret) free_string(s);
 }
 
+/*! @module Search
+ */
 
+/*! @class LinkFarm
+ */
+
+/*! @decl void add(int,array,int,int)
+ */
 static void f_linkfarm_add( INT32 args )
 {
   struct pike_string *s;
   struct linkfarm *f = THIS;
-
+  
   get_all_args("LinkFarm()->add", args, "%W", &s);
-
   low_add(f, s);
-
   pop_n_elems(args);
 }
 
 
 static void f_linkfarm_memsize( INT32 args )
-/*
- *! @decl int memsize()
+/*! @decl int memsize()
  *!
  *! Returns the in-memory size of the linkfarm
  */
@@ -168,8 +166,7 @@ static void f_linkfarm_memsize( INT32 args )
 
 
 static void f_linkfarm_read( INT32 args )
-/*
- *! @decl array read();
+/*! @decl array read();
  *!
  *! returns ({ int word_id, @[Blob] b }) or 0
  */
@@ -183,7 +180,7 @@ static void f_linkfarm_read( INT32 args )
     struct hash *h = t->hash[i];
     while( h )
     {
-/*       fprintf(stderr, "%d/%d %s\n", n+1, THIS->size, h->s->str ); */
+/*    fprintf(stderr, "%d/%d %s\n", n+1, THIS->size, h->s->str ); */
       a->item[n].u.string = h->s;
       h->s = 0;
       a->item[n].type = PIKE_T_STRING;
@@ -194,6 +191,12 @@ static void f_linkfarm_read( INT32 args )
   pop_n_elems( args );
   push_array( a );
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 
 static void init_linkfarm_struct( )

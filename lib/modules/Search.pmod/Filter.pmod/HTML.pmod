@@ -1,29 +1,87 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.36 2004/06/08 12:28:50 anders Exp $
+// $Id: HTML.pmod,v 1.37 2004/08/07 15:26:59 js Exp $
 
 // Filter for text/html
 
-inherit Search.Filter.Base;
+#define INTRAWISE
+
+inherit .Base;
 
 constant contenttypes = ({ "text/html" });
-constant fields = ({ "body", "title", "keywords", "description", "robots", "headline",
-		     "intrawise.folderid", "modified", "author", "intrawise.type",
-		     "summary"});
+constant fields = ({ "body", "title", "keywords", "description", "robots",
+		     "headline", "modified", "author", "summary",
+#ifdef INTRAWISE
+		     "intrawise.folderid", "intrawise.type",
+#endif
+		  });
 
-string _sprintf()
-{
-  return "Search.Filter.HTML";
+static int(0..0) return_zero(mixed ... args) { return 0; }
+
+static Parser.HTML parser;
+static Parser.HTML cleaner;
+static mapping entities;
+
+static void create() {
+  parser = Parser.HTML();
+  parser->case_insensitive_tag(1);
+  parser->lazy_entity_end(1);
+  parser->ignore_unknown(1);
+  parser->match_tag(0);
+
+  parser->add_quote_tag("!--", return_zero, "--");
+  parser->add_quote_tag("?", return_zero, "?");
+
+  parser->_set_tag_callback(lambda(Parser.HTML p, string data) {
+			      //  Do nothing! Callback still needed so that
+			      //  unknown tags aren't sent to
+			      //  _set_data_callback.
+			    });
+
+  constant ignore_tags = ({ "script", "style", });
+  parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
+
+#if __VERSION__ > 7.4
+  cleaner = Parser.html_entity_parser(1);
+#else
+  cleaner = Parser.html_entity_parser();
+  cleaner->_set_entity_callback(
+	   lambda(Parser.HTML p,string ent)
+	   {
+	     string chr = Parser.decode_numeric_xml_entity(p->tag_name());
+	     if (!chr)
+	       return 0;
+	     return ({chr});
+	   });
+#endif
+  cleaner->case_insensitive_tag(1);
+  cleaner->lazy_entity_end(1);
+  cleaner->ignore_unknown(1);
+  cleaner->match_tag(0);
+
+  cleaner->add_quote_tag("!--", return_zero, "--");
+  cleaner->add_quote_tag("?", return_zero, "?");
+  cleaner->_set_tag_callback(lambda(Parser.HTML p, string data) {
+			      return ({ "" });
+			    });
+
+  entities = ([]);
+  foreach(Parser.html_entities; string i; string v)
+    entities["&"+i+";"] = v;
 }
 
-Output filter(Standards.URI uri, string|Stdio.File data,
-	      string content_type,
-	      mapping headers,
-	      string|void default_charset )
+static string clean(string data) {
+  return cleaner->finish(data)->read();
+}
+
+.Output filter(Standards.URI uri, string|Stdio.File data,
+	       string content_type,
+	       mapping headers,
+	       string|void default_charset )
 {
-  function(string:void) dadd;
-  Output res=Output();
+  function(string...:void) dadd;
+  .Output res=.Output();
 
 
   if(objectp(data))
@@ -31,208 +89,190 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   data = .Charset.decode_http( data, headers, default_charset );
 
-  /*
-  int(0..0) parse_rank(Parser.HTML p, mapping m, string c)
+#if 0
+  array parse_rank(Parser.HTML p, mapping m, string c)
   {
     if(!m->name)
-      return 0;
+      return ({});
     
     if(res->fields[m->name])
-      res->fields[m->name] += " "+c;
+      res->fields[m->name] += " " + clean(c);
     else
-      res->fields[m->name] = c;
-    return 0;
+      res->fields[m->name] = clean(c);
+    return ({});
   };
-  */
+#endif
   
-  array(string) parse_meta(Parser.HTML p, mapping m )
+  array parse_meta(Parser.HTML p, mapping m )
   {
     string n = m->name||m["http-equiv"];
     switch(lower_case(n))
     {
       case "description": 
       case "keywords":
-      case "intrawise.folderid":
       case "modified":
       case "author":
+#ifdef INTRAWISE
+      case "intrawise.folderid":
       case "intrawise.type":
-	res->fields[lower_case(n)] =
-	  Parser.parse_html_entities(m->contents||m->content||m->data||"");
+#endif
+	res->fields[lower_case(n)] = m->contents||m->content||m->data||"";
 	break;
       case "robots":
-	res->fields->robots = (stringp(res->fields->robots)? res->fields->robots+",": "")+
+	res->fields->robots = (stringp(res->fields->robots)?
+			       res->fields->robots+",": "") +
 			      (m->contents||m->content||m->data||"");
 	break;
     }
-    return ({ "" });
+    return ({});
   };
 
   _WhiteFish.LinkFarm lf = _WhiteFish.LinkFarm();
-  function low_ladd = lf->add;
-
-  void ladd(string html_href)
-  {
-    low_ladd(Parser.parse_html_entities(html_href));
-  };
+  function ladd = lf->add;
 
   array(string) parse_title(Parser.HTML p, mapping m, string c) {
-    res->fields->title=Parser.parse_html_entities(c);
-    return ({ "" });
+    res->fields->title = clean(c);
+    return ({c});
   };
 
   // FIXME: Push the a contents to the description field of the
   // document referenced to by this tag.
-  array(string) parse_a(Parser.HTML p, mapping m)  {
+  array parse_a(Parser.HTML p, mapping m)  {
     // FIXME: We should try to decode the source with the
     // charset indicated in m->charset.
     // FIXME: We should set the document language to the
     // language indicated in m->hreflang.
     if(m->href) ladd( m->href );
-    // FIXME: Push the value of m->title to the title field of
-    // the referenced document instead.
-    if(m->title)
-      dadd(" " + m->title + " ");
-    return ({ "" });
-  };
 
-  array(string) parse_a_noindex(Parser.HTML p, mapping m) {
-    //  Special version of parse_a which only cares about href
-    if(m->href) ladd( m->href );
-    return ({ "" });
+    // FIXME: Push the value of m->title to the title field of
+    // the referenced document.
+    //    if(m->title)
+    //      dadd(" ", m->title, " ");
+    return ({});
   };
 
   // FIXME: The longdesc information should be pushed to the
   // description field of the frame src URL when it is indexed.
-  array(string) parse_frame(Parser.HTML p, mapping m)  {
+  array parse_frame(Parser.HTML p, mapping m)  {
     if(m->src) ladd( m->src );
-    if(m->longdesc) ladd( m->longdesc );
-    return ({ "" });
+    return ({});
   };
 
   // FIXME: This information should be pushed to the body field
   // of the image file, if it is indexed.
-  array(string) parse_img(Parser.HTML p, mapping m)  {
-//      if( m->alt )
-//        dadd(" " + m->alt + " ");
-    return ({ " " });
+  array parse_img(Parser.HTML p, mapping m)  {
+    if( m->alt && sizeof(m->alt) )
+      dadd(" ", clean(m->alt));
+    if( m->title && sizeof(m->title) )
+      dadd(" ", clean(m->title));
+    return ({});
   };
 
-  array(string) parse_applet(Parser.HTML p, mapping m) {
+  array parse_applet(Parser.HTML p, mapping m) {
     // FIXME: The alt information should be pushed to the body field
     // of all the resources linked from this tag.
     if( m->src ) ladd( m->src );
-    if( m->archive ) ladd( m->archive); // URL to a GNU-ZIP file with classes needed by the applet.
+    if( m->archive )
+      ladd( m->archive); // URL to a GNU-ZIP file with classes needed
+			 // by the applet.
     if( m->code ) ladd( m->code ); // URL to the applets code/class.
     if( m->codebase ) ladd( m->codebase );
-    if( m->alt ) return ({ m->alt });
-    return ({ " " });
+    if( m->alt && sizeof(m->alt) ) dadd(" ", clean(m->alt));
+    return ({});
   };
 
   // <area>, <bgsound>
-  array(string) parse_src_alt(Parser.HTML p, mapping m) {
+  array parse_src_alt(Parser.HTML p, mapping m) {
     // FIXME: The alt information should be pushed to the body field
     // of all the resources linked from this tag.
     if( m->src ) ladd( m->src );
-    if( m->alt ) return ({ m->alt });
-    return ({ "" });
+    if( m->alt && sizeof(m->alt) ) dadd(" ", clean(m->alt));
+    return ({});
   };
 
-  array(string) parse_background(Parser.HTML p, mapping m) {
+  array parse_background(Parser.HTML p, mapping m) {
     if( m->background ) ladd( m->background );
-    return ({ " " });
+    return ({});
   };
 
-  array(string) parse_embed(Parser.HTML p, mapping m) {
-    if( m->pluginspage ) ladd( m->pluginspage ); // Where the required plugin can be downloaded.
-    if( m->pluginurl ) ladd( m->pluginurl ); // Similar to pluginspage, but for java archives.
+  array parse_embed(Parser.HTML p, mapping m) {
+    if( m->pluginspage )
+      ladd( m->pluginspage ); // Where the required plugin can be downloaded.
+    if( m->pluginurl )
+      ladd( m->pluginurl ); // Similar to pluginspage, but for java archives.
     if( m->src ) ladd( m->src );
-    return ({ " " });
+    return ({});
   };
 
-  array(string) parse_layer(Parser.HTML p, mapping m) {
+  array parse_layer(Parser.HTML p, mapping m) {
     if( m->background ) ladd( m->background );
     if( m->src ) ladd( m->src );
-    return ({ " " });
+    return ({});
   };
 
-  array(string) parse_object(Parser.HTML p, mapping m) {
+  array parse_object(Parser.HTML p, mapping m) {
     if( m->archive ) ladd( m->archive );
     if( m->classid ) ladd( m->classid );
     if( m->code ) ladd( m->code );
     if( m->codebase ) ladd( m->codebase );
     if( m->data ) ladd( m->data );
-    if( m->standby )
-      dadd(" " + m->standby + " ");
-    return ({ " " });
+    if( m->standby && sizeof(m->standby) )
+      dadd(" ", clean(m->standby) );
+    return ({});
   };
 
-  array(string) parse_base(Parser.HTML p, mapping m)
+  array parse_base(Parser.HTML p, mapping m)
   {
     if(m->href)
       catch(uri = Standards.URI(m->href));
-    return ({ "" });
+    return ({});
   };
 
-  array(string) parse_q(Parser.HTML p, mapping m) {
+  array parse_q(Parser.HTML p, mapping m) {
     if( m->cite ) ladd( m->cite );
-    return ({ "" });
+    return ({});
   };
 
-  array(string) parse_xml(Parser.HTML p, mapping m) {
+  array parse_xml(Parser.HTML p, mapping m) {
     if( m->ns ) ladd( m->ns );
     if( m->src ) ladd( m->src );
-    return ({ " " });
+    return ({});
   };
 
-  array(string) parse_headline(Parser.HTML p, mapping m, string c)
+  array parse_headline(Parser.HTML p, mapping m, string c)
   {
     if(!res->fields->headline)
       res->fields->headline = "";
-    res->fields->headline += " " + c;
-    return ({ " " });
+    res->fields->headline += " " + clean(c);
+    return ({});
   };
 
-  array(string) parse_noindex(Parser.HTML p, mapping m, string c)
+  array parse_noindex(Parser.HTML p, mapping m, string c)
   {
-    if(m->nofollow)
-      return ({ "" });
-    Parser.HTML parser = Parser.HTML();
-    parser->add_tags( (["a":parse_a_noindex,
-			"base": parse_base,
-			"link":parse_a,
-			"frame":parse_frame,
-			"iframe":parse_frame,
-			"layer":parse_layer,
-			"ilayer":parse_layer,
-			"applet":parse_applet,
-			"area":parse_src_alt,
-			"bgsound":parse_src_alt,
-			"sound":parse_src_alt,
-			"body":parse_background,
-			"table":parse_background,
-			"td":parse_background,
-			"object": parse_object,
-			"q":parse_q,
-			"embed":parse_embed,
-			"xml":parse_xml, ]) );
-    parser->feed(c);
-    parser->finish();
-    return ({""});
+    if(m->nofollow) return ({});
+
+    Parser.HTML parser = p->clone();
+    parser->_set_data_callback(return_zero);
+    parser->_set_entity_callback(return_zero);
+    parser->add_tags( ([ "title" : return_zero,
+			 "h1" : return_zero,
+			 "h2" : return_zero,
+			 "h3" : return_zero,
+    ]) );
+    function odadd = dadd;
+    dadd = return_zero;
+    parser->finish(c);
+    dadd = odadd;
+    return ({});
   };
 
-  String.Buffer databuf=String.Buffer();
-  Parser.HTML parser = Parser.HTML();
+  String.Buffer databuf=String.Buffer(sizeof(data));
+  Parser.HTML parser = parser->clone();
+  parser->add_quote_tag("![CDATA[",
+			lambda(Parser.HTML p, string data) {
+			  dadd(data);
+			}, "]]");
 
-  parser->case_insensitive_tag(1);
-  parser->lazy_entity_end(1);
-  parser->ignore_unknown(1);
-  parser->match_tag(0);
-  
-  int(0..0) return_zero() {return 0;};
-  parser->add_quote_tag("!--", return_zero, "--");
-  parser->add_quote_tag("![CDATA[", return_zero, "]]");
-  parser->add_quote_tag("?", return_zero, "?");
-  
   //  parser->add_container("rank",parse_rank);
   parser->add_containers( ([ "title":parse_title,
 			     "h1": parse_headline,
@@ -264,28 +304,35 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 		       "xml":parse_xml
   ]) );
 
-  constant ignore_tags = ({ "script", "style", });
-  parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
-
   dadd = databuf->add;
+  int space;
   parser->_set_data_callback(lambda(Parser.HTML p, string data) {
-			       dadd(" " + data + " ");
+			       if(space) dadd(" ");
+  			       dadd(data);
+			       space = 1;
 			     });
-  parser->_set_tag_callback(lambda(Parser.HTML p, string data) {
-			      //  Do nothing! Callback still needed so that
-			      //  unknown tags aren't sent to
-			      //  _set_data_callback.
-			    });
+  parser->_set_entity_callback(lambda(Parser.HTML p, string data) {
+				 if(entities[data]) {
+				   dadd(entities[data]);
+				   space = 0;
+				   return;
+				 }
+				 string c = Parser.
+				   decode_numeric_xml_entity(data);
+				 if(c) {
+				   space = 0;
+				   dadd(c);
+				 }
+			       });
   
   res->fields->title="";
   res->fields->description="";
   res->fields->keywords="";
 
-  parser->feed(data);
-  parser->finish();
+  parser->finish(data);
 
   res->links = lf->read();
-  res->fields->body=Parser.parse_html_entities(databuf->get(), 1);
+  res->fields->body=databuf->get();
   res->fix_relative_links(uri);
 
   return res;

@@ -1,4 +1,7 @@
+
 static string pike_binary = replace( getenv("PIKE"), "\\", "/");
+
+#if constant(roxen)
 
 class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configuration conf)
 {
@@ -217,3 +220,4 @@ class Compactor {
     is_perchance_done();
   }
 }
+#endif

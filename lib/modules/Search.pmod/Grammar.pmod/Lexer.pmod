@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Lexer.pmod,v 1.6 2001/08/08 14:43:40 norlin Exp $
+// $Id: Lexer.pmod,v 1.7 2004/08/07 15:27:00 js Exp $
 
 // Lexer for search queries
 
@@ -12,12 +12,14 @@ public enum Token {
   TOKEN_MINUS,
   TOKEN_COLON,
 
-//   TOKEN_EQUAL,
-//   TOKEN_LESSEQUAL,
-//   TOKEN_GREATEREQUAL,
-//   TOKEN_NOTEQUAL,  // <> or !=
-//   TOKEN_LESS,
-//   TOKEN_GREATER,
+  TOKEN_EQUAL,
+  TOKEN_LESSEQUAL,
+  TOKEN_GREATEREQUAL,
+  TOKEN_NOTEQUAL,  // <> or !=
+  TOKEN_LESS,
+  TOKEN_GREATER,
+
+  TOKEN_UNKNOWN,
 
   TOKEN_LPAREN,
   TOKEN_RPAREN,
@@ -88,40 +90,40 @@ public string|array(array(Token|string)) tokenize(string query) {
         break;
       case "+": EMIT(TOKEN_PLUS);       break;
       case "-": EMIT(TOKEN_MINUS);      break;
-      // case "=": EMIT(TOKEN_EQUAL);      break;
+      case "=": EMIT(TOKEN_EQUAL);      break;
       case "(": EMIT(TOKEN_LPAREN);     break;
       case ")": EMIT(TOKEN_RPAREN);     break;
       // case "[": EMIT(TOKEN_LBRACKET);   break;
       // case "]": EMIT(TOKEN_RBRACKET);   break;
       case ":": EMIT(TOKEN_COLON);      break;
-      // case "<":
-      //   if (query[pos + 1] == '=') {
-      //     ++pos;
-      //     EMIT2(TOKEN_LESSEQUAL, "=>");
-      //   }
-      //   else if (query[pos + 1] == '>') {
-      //     ++pos;
-      //     EMIT2(TOKEN_NOTEQUAL, "<>");
-      //   }
-      //   else
-      //     EMIT(TOKEN_LESS);
-      //   break;
-      // case ">":
-      //   if (query[pos + 1] == '=') {
-      //     ++pos;
-      //     EMIT2(TOKEN_GREATEREQUAL, ">=");
-      //   }
-      //   else
-      //     EMIT(TOKEN_GREATER);
-      //   break;
-      // case "!":
-      //   if (query[pos + 1] == '=') {
-      //     ++pos;
-      //     EMIT2(TOKEN_NOTEQUAL, "!=");
-      //   }
-      //   else
-      //     EMIT(TOKEN_UNKNOWN);
-      //   break;
+      case "<":
+	if (query[pos + 1] == '=') {
+	  ++pos;
+	  EMIT2(TOKEN_LESSEQUAL, "=>");
+	}
+	else if (query[pos + 1] == '>') {
+	  ++pos;
+	  EMIT2(TOKEN_NOTEQUAL, "<>");
+	}
+	else
+	  EMIT(TOKEN_LESS);
+	break;
+      case ">":
+	if (query[pos + 1] == '=') {
+	  ++pos;
+	  EMIT2(TOKEN_GREATEREQUAL, ">=");
+	}
+	else
+	  EMIT(TOKEN_GREATER);
+	break;
+      case "!":
+	if (query[pos + 1] == '=') {
+	  ++pos;
+	  EMIT2(TOKEN_NOTEQUAL, "!=");
+	}
+	else
+	  EMIT(TOKEN_UNKNOWN);
+	break;
       default:
         {
         int i = pos + 1;

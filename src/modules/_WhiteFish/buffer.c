@@ -1,4 +1,6 @@
-/* $Id: buffer.c,v 1.12 2004/07/20 17:06:36 grubba Exp $
+
+
+/* $Id: buffer.c,v 1.13 2004/08/07 15:26:56 js Exp $
  */
 #include "global.h"
 
@@ -15,13 +17,8 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.12 2004/07/20 17:06:36 grubba Exp $");
-#include "pike_macros.h"
+RCSID("$Id: buffer.c,v 1.13 2004/08/07 15:26:56 js Exp $");
 #include "interpret.h"
-#include "program.h"
-#include "program_id.h"
-#include "object.h"
-#include "operators.h"
 
 #include "whitefish.h"
 #include "resultset.h"
@@ -30,18 +27,21 @@ RCSID("$Id: buffer.c,v 1.12 2004/07/20 17:06:36 grubba Exp $");
 
 static INLINE int range( int n, int m )
 {
-  if( n < (m>>3) )    return (m>>3);
-  else if( n < 32 )   return 32;
-  else if( n < 64 )   return 64;
-  else if( n < 128 )  return 128;
-  else if( n < 256 )  return 256;
-  else if( n < 512 )  return 512;
-  else if( n < 1024 ) return 1024;
-  else if( n < 2048 ) return 2048;
-  else return n;
+  if( !m )
+    m = 8;
+  if( m >= 32*1024 )
+  {
+    if( n < (32*1024-1) )
+      return 32*1024;
+    return (n+1);
+  }
+  int o = m;
+  int f = m+n;
+  while( m<f ) m*=2;
+  return m-o;
 }
 
-static INLINE void wf_buffer_make_space( struct buffer *b, unsigned int n )
+static void wf_buffer_make_space( struct buffer *b, unsigned int n )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
@@ -50,7 +50,7 @@ static INLINE void wf_buffer_make_space( struct buffer *b, unsigned int n )
   if( b->allocated_size-b->size < n )
   {
     b->allocated_size += range(n,b->allocated_size);
-    b->data =realloc(b->data,b->allocated_size);
+    b->data = realloc(b->data,b->allocated_size);
   }
 }
 
@@ -108,9 +108,9 @@ int wf_buffer_rbyte( struct buffer *b )
 
 unsigned int wf_buffer_rint( struct buffer *b )
 {
-  return (((((wf_buffer_rbyte( b ) << 8) |
-	     wf_buffer_rbyte( b ))<<8)   |
-	   wf_buffer_rbyte( b )) << 8)   |
+  return (((((wf_buffer_rbyte( b )<<8) |
+	     wf_buffer_rbyte( b ))<<8) |
+	   wf_buffer_rbyte( b ))<<8)   |
          wf_buffer_rbyte( b );
 }
 

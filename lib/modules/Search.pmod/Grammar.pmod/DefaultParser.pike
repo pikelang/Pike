@@ -1,20 +1,16 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.10 2002/03/12 15:38:07 js Exp $
+// $Id: DefaultParser.pike,v 1.11 2004/08/07 15:27:00 js Exp $
 
-static inherit Search.Grammar.AbstractParser;
-static inherit Search.Grammar.Lexer;
-static private inherit "./module.pmod";
-//static constant ParseNode = Search.Grammar.ParseNode;
-//static constant OrNode    = Search.Grammar.OrNode;
-//static constant AndNode   = Search.Grammar.AndNode;
-//static constant TextNode  = Search.Grammar.TextNode;
+static inherit .AbstractParser;
+static inherit .Lexer;
+import ".";
 
 #include "debug.h"
 
 // =========================================================================
-//   GRAMMAR FOR IMPLICIT <anything>
+//   GRAMMAR FOR IMPLICIT AND/OR
 // =========================================================================
 //
 // START           : query
@@ -34,10 +30,14 @@ static private inherit "./module.pmod";
 // 
 // expr2           : expr3
 //                 | field ':' expr3
-//                 | 'date' ':' date
+//                 | 'date' '>' date
+//                 | 'date' '<' date
+//                 | 'date' '=' date
+//                 | 'date' '!=' date
+//                 | 'date' '<>' date
 //                 | '(' query ')'
 //                 ;
-// 
+//
 // date            : (word <not followed by ':'>
 //                    | '-' | ':' | <unknown character> )*
 //                 ;
@@ -69,6 +69,10 @@ static private inherit "./module.pmod";
 
 static array(array(Token|string)) tokens;
 static array(string) fieldstack;
+
+// fields : multiset(string)
+// implicit : "or"/"and"
+//!
 mapping(string:mixed) options;
 
 static array(Token|string) peek(void|int lookahead) {
@@ -77,9 +81,12 @@ static array(Token|string) peek(void|int lookahead) {
   return tokens[lookahead];
 }
 
-static void advance() {
+static array advance()
+{
+  array res = tokens[0];
   if (sizeof(tokens) > 1)
     tokens = tokens[1 .. ];
+  return res;
 }
 
 static int lookingAtFieldStart(void|int offset) {
@@ -90,12 +97,24 @@ static int lookingAtFieldStart(void|int offset) {
     && peek(offset + 1)[0] == TOKEN_COLON;
 }
 
+static int lookingAtDateStart(void|int offset) {
+  //  SHOW(tokens);
+  return
+    peek(offset)[0] == TOKEN_TEXT &&
+    lower_case(peek(offset)[1])=="date" &&
+    (< TOKEN_EQUAL, TOKEN_LESSEQUAL, TOKEN_GREATEREQUAL,
+       TOKEN_NOTEQUAL,  TOKEN_LESS, TOKEN_GREATER >)[ peek(offset + 1)[0]];
+}
+
+
+//!
 static void create(mapping(string:mixed)|void opt) {
   options = opt || ([ "implicit" : "or" ]);
   if (!options["fields"])
     options["fields"] = getDefaultFields();
 }
 
+//!
 ParseNode parse(string q) {
   fieldstack = ({ "any" });
   tokens = tokenize(q);
@@ -155,11 +174,17 @@ static ParseNode parseExpr2() {
     fieldstack = ({ peek()[1] }) + fieldstack;
     advance();
     advance();
-    ParseNode n = fieldstack[0] == "date"
-      ? parseDate()
-      : parseExpr3();
+    ParseNode n = parseExpr3();
     fieldstack = fieldstack[1 .. ];
     return n;
+  }
+
+  // 'date' <op> date
+  if(lookingAtDateStart())
+  {
+    advance();
+    array operator = advance();
+    return parseDate(operator);
   }
 
   // '(' query ')'
@@ -175,14 +200,14 @@ static ParseNode parseExpr2() {
 
 static ParseNode parseExpr3() {
   //  TRACE;
-  if (lookingAtFieldStart())
+  if (lookingAtFieldStart() || lookingAtDateStart())
     return 0;
   ParseNode or = OrNode();
   for (;;) {
     ParseNode n = parseExpr4();
     or->addChild(n);
     if (peek()[0] == TOKEN_OR)
-      if (lookingAtFieldStart(1))
+      if (lookingAtFieldStart(1) || lookingAtDateStart(1))
         break; // it was a higher level OR
       else
         advance();
@@ -203,6 +228,7 @@ static ParseNode parseExpr4() {
     // NOTE: No implicit and here!
     if (peek()[0] == TOKEN_AND
         && !(lookingAtFieldStart(1)            // it was a higher level AND
+	     || lookingAtDateStart(1)
              || peek(1)[0] == TOKEN_LPAREN))
       advance();
     else
@@ -241,8 +267,7 @@ static ParseNode parseExpr5() {
     while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
       advance();   // ... ?????????  or something smarter ?????
 
-    int with_field;
-    if (with_field = lookingAtFieldStart()) {
+    if(lookingAtFieldStart()) {
       // Special case...
       ParseNode tmp = TextNode();
       tmp->field = peek()[1];
@@ -270,10 +295,12 @@ static ParseNode parseExpr5() {
             TOKEN_AND,
             TOKEN_OR >) [ peek()[0] ]
          || lookingAtFieldStart()
+         || lookingAtDateStart()
          || (peek()[0] == TOKEN_LPAREN))
       break; // it was a higher level IMPLICIT AND
     if (peek()[0] == TOKEN_OR)
       if (lookingAtFieldStart(1)
+	  || lookingAtDateStart(1)
           || peek(1)[0] == TOKEN_LPAREN)
         break;   // it was a higher level OR
       else
@@ -322,10 +349,12 @@ static void parseExpr6(int prefix, TextNode node) {
   }
 }
 
-static ParseNode parseDate() {
+static ParseNode parseDate(array operator)
+{
   //  TRACE;
   DateNode n = DateNode();
   n->date = "";
+  n->operator = operator;
 loop:
   for (;;) {
     switch (peek()[0]) {
@@ -344,6 +373,3 @@ loop:
   }
   return n;
 }
-
-
-

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.16 2001/09/25 22:02:37 js Exp $
+// $Id: Indexer.pmod,v 1.17 2004/08/07 15:26:57 js Exp $
 
 //!
 void index_document(Search.Database.Base db,
@@ -10,7 +10,8 @@ void index_document(Search.Database.Base db,
 		    mapping fields)
 {
   db->remove_document( uri, language );
-
+  int mtime = (int)fields->mtime;
+  werror("mtime: %O\n", mtime);
   foreach(indices(fields), string field)
   {
     string f;
@@ -20,8 +21,9 @@ void index_document(Search.Database.Base db,
       db->insert_words(uri, language, field, words );
     }
   }
-  // Tokenize any anchor fields
-   
+  if( mtime )
+      db->set_lastmodified( uri, language, mtime );
+// Tokenize any anchor fields
 //    int source_hash=hash((string)uri)&0xf;
 //    foreach(indices(uri_anchors|| ({ })), string link_uri)
 //    {
@@ -33,23 +35,37 @@ void index_document(Search.Database.Base db,
 
 
 //!
-array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
-					      string|Standards.URI uri,
-					      void|string language,
-					      string|Stdio.File data,
-					      string content_type,
-					      mapping headers,
-					      string default_charset )
+string extension_to_type(string extension)
+{
+   return MIME.ext_to_media_type(extension) || "application/octet-stream";
+}
+
+//!
+string filename_to_type(string filename)
+{
+   array v=filename/".";
+   if (sizeof(v)<2) return extension_to_type("default");
+   return extension_to_type(v[-1]);
+}
+
+//!
+Search.Filter.Output filter_and_index(Search.Database.Base db,
+				      string|Standards.URI uri,
+				      void|string language,
+				      string|Stdio.File data,
+				      string content_type,
+				      void|mapping headers,
+				      void|string default_charset )
 {
   Search.Filter.Base filter=Search.get_filter(content_type);
   if(!filter)
-    throw("No indexer for content type "+content_type);
+    return 0;
 
-  Search.Filter.Base.Output filteroutput=
+  Search.Filter.Output filteroutput=
     filter->filter(uri, data, content_type,
 		   headers, default_charset);
   index_document(db, uri, language, filteroutput->fields);
-  return filteroutput->links;
+  return filteroutput;
 }
 
 //!

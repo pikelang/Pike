@@ -1,8 +1,9 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.11 2001/08/08 15:14:48 norlin Exp $
+// $Id: module.pmod,v 1.12 2004/08/07 15:27:00 js Exp $
 
+//! Abstract parse tree node.
 class ParseNode {
   string op = "<node>";
   array(ParseNode) children = ({});
@@ -16,10 +17,7 @@ class ParseNode {
   }
 
   static string printChildren(string indent) {
-    return indentArray(map(children,
-                           lambda(ParseNode n) { return n->print(); }
-                          ),
-                       indent);
+    return indentArray(children->print(), indent);
   }
 
   string print() {
@@ -27,28 +25,33 @@ class ParseNode {
     return sprintf("(%s %s)", op, printChildren(indent));
   }
 
-  string _sprintf() {
-    return "ParseNode" + print();
+  static string _sprintf(int t) {
+    return t=='O' && "ParseNode" + print();
   }
 }
 
+//! And node.
 class AndNode {
   inherit ParseNode;
   string op = "and";
 }
 
+//! Or node.
 class OrNode {
   inherit ParseNode;
   string op = "or";
 }
 
+//! Date node.
 class DateNode {
   inherit ParseNode;
   string op = "date";
+  array operator;
   string date;
-  string print() { return sprintf("(%s %O)", op, date); }
+  string print() { return sprintf("(%s %O %O)", op, date, operator); }
 }
 
+//! Text node.
 class TextNode {
   inherit ParseNode;
   string op = "text";
@@ -74,7 +77,8 @@ class TextNode {
   }
 }
 
-static multiset getDefaultFields() {
+//!
+multiset(string) getDefaultFields() {
   return (< "anchor", "any", "body", "keywords", "title", "url",  >);
 }
 
@@ -120,14 +124,13 @@ static private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
   return result;
 }
 
+//!
 ParseNode optimize(ParseNode node, string|void parentOp) {
   if (!node)
     return 0;
-  node->children = filter(map(node->children, optimize, node->op),
-                          lambda(ParseNode n) {
-                            return n != 0;
-                          });
+  node->children = map(node->children, optimize, node->op) - ({0});
   array(ParseNode) newChildren = 0;
+
   switch (node->op) {
     case "and":
       if (!sizeof(node->children))
@@ -172,23 +175,28 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
       if (!node->date || node->date == "")
         return 0;
       break;
+    case "text":
+      if( node->words==({}) && node->plusWords==({}) && node->minusWords==({})
+	  && node->phrases==({}) && node->plusPhrases==({}) &&
+	  node->minusPhrases==({}) )
+	return 0;
   }
   if (newChildren)
     node->children = newChildren;
   return node;
 }
 
-static private void v(ParseNode node, ParseNode parent) {
-  map(node->children, v, node);
+static private void _validate(ParseNode node, ParseNode parent) {
+  map(node->children, _validate, node);
   switch (node->op) {
     case "date":
       if (!parent || parent->op != "and")
-        throw ("date must restrict query");
+	throw ("date must restrict query");
       break;
     case "and":
       break;
     case "text":
-      if (node->minusWords || node->minusPhrases) {
+      if (sizeof(node->minusWords) || sizeof(node->minusPhrases)) {
         if (!sizeof(node->plusWords)
             && !sizeof(node->plusPhrases)
             && !sizeof(node->words)
@@ -202,7 +210,7 @@ static private void v(ParseNode node, ParseNode parent) {
 string validate(ParseNode node) {
   if (!node)  // A null query is also valid.
     return 0;
-  mixed err = catch (v(node, 0));
+  mixed err = catch (_validate(node, 0));
   if (err)
     if (stringp(err))
       return err;
@@ -211,25 +219,25 @@ string validate(ParseNode node) {
   return 0;
 }
 
-ParseNode remove_stop_words(ParseNode node, array(string) stop_words) {
-  if (!node)
-    return 0;
+//!
+void remove_stop_words(ParseNode node, array(string) stop_words) {
+  if (!node || !sizeof(stop_words))
+    return;
+  low_remove_stop_words(node, stop_words);
+}
+
+static void low_remove_stop_words(ParseNode node, array(string) stop_words) {
   switch (node->op) {
     case "or":
     case "and":
-      node->children = filter(map(node->children, remove_stop_words, stop_words),
-                              lambda(ParseNode n) {
-                                return n != 0;
-                              });
-      return node;
+      foreach(node->children, ParseNode c)
+	remove_stop_words(c, stop_words);
+      break;
       
     case "text":
       node->plusWords  -= stop_words;
       node->minusWords -= stop_words;
       node->words      -= stop_words;
-      return node;
-
-    default:
-      return node;
+      break;
   }
 }

@@ -1,18 +1,18 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: PlainText.pmod,v 1.8 2001/08/08 23:08:21 js Exp $
+// $Id: PlainText.pmod,v 1.9 2004/08/07 15:27:00 js Exp $
 
 // Filter for text/plain
 
-inherit Search.Filter.Base;
+inherit .Base;
 
 constant contenttypes = ({ "text/plain" });
 constant fields = ({ "body" });
 
-Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
+.Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
-  Output res=Output();
+  .Output res=.Output();
 
   if(objectp(data))
     data=data->read();
@@ -20,9 +20,4 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
   res->fields->body=data;
 
   return res;  
-}
-
-string _sprintf()
-{
-  return "Search.Filter.PlainText";
 }

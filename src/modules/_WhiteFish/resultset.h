@@ -2,8 +2,8 @@ typedef struct result_set
 {
   INT32 num_docs;
   struct hits {
-    INT32 doc_id;
-    INT32 ranking;
+    unsigned INT32 doc_id;
+    unsigned INT32 ranking;
   } hits[1];
 } ResultSet;
 #ifdef PIKE_DEBUG
@@ -32,7 +32,8 @@ void wf_resultset_push( struct object *o );
 void wf_resultset_free ( struct object *o );
 /* Free a set */
 
-void wf_resultset_add  ( struct object *o, int document, int weight );
+void wf_resultset_add  ( struct object *o, unsigned int document,
+			 unsigned int weight );
 /* Add a new entry to the resultset. document _must_ be larger than
  * the last added document if and, or, sub and intersect will be used
  * on this set later on.

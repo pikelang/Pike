@@ -1,16 +1,16 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.11 2003/03/19 10:53:26 jonasw Exp $
+// $Id: Word.pmod,v 1.12 2004/08/07 15:27:00 js Exp $
 
-inherit Search.Filter.HTML;
+inherit .HTML;
 
 constant contenttypes = ({ "application/msword", "application/vnd.ms-word" });
 constant fields = ({ "body", "title", "keywords"});
 
-Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
+.Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
-  Output res=Output();
+  .Output res=.Output();
 
   if(objectp(data))
     data=data->read();
@@ -40,9 +40,4 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
     throw(err);
   
   return ::filter(uri, text, "text/html", ([]), "utf-8");
-}
-
-string _sprintf()
-{
-  return "Search.Filter.Word";
 }

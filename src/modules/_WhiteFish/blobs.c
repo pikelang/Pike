@@ -1,35 +1,32 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.11 2004/07/20 17:06:36 grubba Exp $");
+RCSID("$Id: blobs.c,v 1.12 2004/08/07 15:26:56 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
-#include "program_id.h"
 #include "object.h"
 #include "array.h"
-#include "operators.h"
 #include "module_support.h"
 
 #include "config.h"
 
 #include "whitefish.h"
-#include "resultset.h"
-#include "blob.h"
 #include "buffer.h"
 #include "blobs.h"
 
 static void exit_blobs_struct( );
 
-#define HSIZE 4711
-#define THIS ((struct blobs *)Pike_fp->current_storage)
-#define HASH(X) (((unsigned int)(X)>>3) % HSIZE)
+#define HSIZE 10007
 
-extern struct program *blob_program;
+#define THIS ((struct blobs *)Pike_fp->current_storage)
+#define HASH(X) (((unsigned int)(X)) % HSIZE)
 
 struct hash
 {
-  struct object *bl;
+  unsigned int word_data_offset;
+  int current_document;
+  struct buffer *buffer;
   struct hash *next;
   struct pike_string *id;
 };
@@ -37,6 +34,8 @@ struct hash
 struct blobs
 {
   int next_ind;
+  int size;
+  int nwords;
   struct hash *next_h;
   struct hash *hash[HSIZE];
 };
@@ -44,11 +43,15 @@ struct blobs
 
 static struct hash *new_hash( struct pike_string *id )
 {
-  struct hash *res =  malloc( sizeof( struct hash ) );
+  struct hash *res = malloc( sizeof( struct hash ) );
+  if( !res )
+      Pike_error("Out of memory\n");
   res->id = id;
   add_ref(id);
   res->next = 0;
-  res->bl = clone_object( blob_program,0 );
+  res->buffer = wf_buffer_new();
+  res->word_data_offset = 0;
+  res->current_document = -1;
   return res;
 }
 
@@ -64,8 +67,8 @@ static void free_hash( struct hash *h )
   while( h )
   {
     struct hash *n = h->next;
-    if( h->bl ) free_object( h->bl );
-    if( h->id ) free_string( h->id );
+    if( h->buffer ) wf_buffer_free( h->buffer );
+    if( h->id )    free_string( h->id );
     free( h );
     h = n;
   }
@@ -83,12 +86,19 @@ static struct hash *find_hash( struct blobs *d, struct pike_string *id )
   }
   h = new_hash( id );
   insert_hash( d, h );
+  d->nwords++;
+  d->size+=sizeof( struct hash )+32;
   return h;
 }
 
+/*! @module Search
+ */
+
+/*! @class Blobs
+ */
+
 static void f_blobs_add_words( INT32 args )
-/*
- *! @decl void add_words( int docid, array(string) words, int field_id )
+/*! @decl void add_words( int docid, array(string) words, int field_id )
  *!
  *! Add all the words in the 'words' array to the blobs
  */ 
@@ -107,53 +117,48 @@ static void f_blobs_add_words( INT32 args )
     if( words->item[i].type != PIKE_T_STRING )
       Pike_error("Illegal element %d in words array\n", i );
     else
-      wf_blob_low_add( find_hash( blbl, words->item[i].u.string )->bl,
-		       docid, field_id, i );
-
+    {
+      struct hash *x = find_hash( blbl, words->item[i].u.string );
+      if( !x->buffer )
+	Pike_error("Read already called\n");
+      blbl->size-=x->buffer->allocated_size;
+      if( x->current_document != docid )
+      {
+	x->current_document = docid;
+	wf_buffer_wint( x->buffer, docid );
+	wf_buffer_wbyte( x->buffer, 0 );
+	x->word_data_offset = x->buffer->size-1;
+      }
+      if( x->buffer->data[x->word_data_offset] < 255 )
+      {
+	unsigned short s;
+	x->buffer->data[x->word_data_offset]++;
+	blbl->size+=2;
+	if( field_id )
+	    s = (3<<14) | ((field_id-1)<<8) | (i>255?255:i);
+	else
+	    s = i>((1<<14)-1)?((1<<14)-1):i;
+	wf_buffer_wshort( x->buffer, s );
+      }
+      blbl->size+=x->buffer->allocated_size;
+    }
   pop_n_elems( args );
   push_int(0);
 }
 
 static void f_blobs_memsize( INT32 args )
-/*
- *! @decl int memsize()
+/*! @decl int memsize()
  *!
  *! Returns the in-memory size of the blobs
  */
 {
-  size_t size = HSIZE*sizeof(void *); /* htable.. */
-  int i;
-  struct hash *h;
-  struct blobs *bl = THIS;
-  
-  for( i = 0; i<HSIZE; i++ )
-  {
-    h = bl->hash[i];
-    while( h )
-    {
-      if( h->id )
-      {
-	size_t tt = ((int *)h->bl->storage)[1];
-	size += ((sizeof( struct hash )+7)/8)*8+4+
-	         (h->id->len<<h->id->size_shift)    /* and the string */
-	  + OFFSETOF(pike_string, str);
-	size += tt ? tt : wf_blob_low_memsize( h->bl );
-      }
-      else
-	size += ((sizeof( struct hash )+7)/8)*8+4;
-      h = h->next;
-    }
-  }
   pop_n_elems( args );
-  push_int( size );
+  push_int( THIS->size );
 }
-
-
 static void f_blobs_read( INT32 args )
-/*
- *! @decl array read();
+/*! @decl array read();
  *!
- *! returns ({ string word_id, @[Blob] b }) or ({0,0}) As a side-effect,
+ *! returns ({ string word_id, string blob  }) or ({0,0}) As a side-effect,
  *! this function frees the blob and the word_id, so you can only read
  *! the blobs struct once. Also, once you have called @[read],
  *! @[add_words] will no longer work as expected.
@@ -165,7 +170,6 @@ static void f_blobs_read( INT32 args )
   {
     if( t->next_ind >= HSIZE )
     {
-      pop_n_elems( args );
       a->item[0].type = PIKE_T_INT;
       a->item[0].u.integer = 0;
       a->item[1].type = PIKE_T_INT;
@@ -177,23 +181,64 @@ static void f_blobs_read( INT32 args )
     t->next_ind++;
   }
 
-  pop_n_elems( args );
   a->item[0].type = PIKE_T_STRING;
   a->item[0].u.string = t->next_h->id;
-  a->item[1].type = PIKE_T_OBJECT;
-  a->item[1].u.object = t->next_h->bl;
-
+  a->item[1].type = PIKE_T_STRING;
+  a->item[1].u.string = make_shared_binary_string( t->next_h->buffer->data,
+						   t->next_h->buffer->size );
+  wf_buffer_free( t->next_h->buffer );
+  t->next_h->buffer = 0;
   t->next_h->id = 0;
-  t->next_h->bl = 0;
 
   push_array( a );
 
   t->next_h = THIS->next_h->next;
 }
 
+
+static int compare_wordarrays( const void *_a, const void *_b )
+{
+  const struct svalue *a = (struct svalue *)_a;
+  const struct svalue *b = (struct svalue *)_b;
+  return my_quick_strcmp( a->u.array->item[0].u.string,
+			  b->u.array->item[0].u.string );
+}
+
+/*! @decl array(array(string)) read_all_sorted()
+ *!
+ *! returns ({({ string word1_id, string blob1  }),...}), sorted by word_id in octed order.
+ *!
+ *! As a side-effect,
+ *! this function frees the blobs and the word_ids, so you can only read
+ *! the blobs struct once. Also, once you have called @[read] or @[read_all_sorted],
+ *! @[add_words] will no longer work as expected.
+ */
+static void f_blobs_read_all_sorted( INT32 args )
+{
+  struct array *g = allocate_array( THIS->nwords );
+  int i;
+  for( i = 0; i<THIS->nwords; i++ )
+  {
+    f_blobs_read(0);
+    g->item[i]=Pike_sp[-1];
+    Pike_sp--;
+  }
+  qsort( &g->item[0], THIS->nwords, sizeof(struct svalue), compare_wordarrays );
+  push_array(g);
+}
+
+
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 static void init_blobs_struct( )
 {
   MEMSET( THIS, 0, sizeof( struct blobs ) );
+  THIS->size = sizeof( struct blobs ) + 128;
 }
 
 static void exit_blobs_struct( )
@@ -213,7 +258,8 @@ void init_blobs_program()
   add_function("add_words",f_blobs_add_words,
 	       "function(int,array,int:void)",0 );
   add_function("memsize", f_blobs_memsize, "function(void:int)", 0 );
-  add_function("read", f_blobs_read, "function(void:array(string|object))", 0);
+  add_function("read", f_blobs_read, "function(void:array(string))", 0);
+  add_function("read_all_sorted", f_blobs_read_all_sorted, "function(void:array(array(string)))", 0);
   set_init_callback( init_blobs_struct );
   set_exit_callback( exit_blobs_struct );
   blobs_program = end_program( );

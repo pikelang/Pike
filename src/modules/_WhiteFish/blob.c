@@ -1,14 +1,10 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.33 2004/07/20 17:06:36 grubba Exp $");
-#include "pike_macros.h"
+RCSID("$Id: blob.c,v 1.34 2004/08/07 15:26:56 js Exp $");
 #include "interpret.h"
 #include "program.h"
-#include "program_id.h"
 #include "object.h"
-#include "operators.h"
-#include "fsort.h"
 #include "array.h"
 #include "module_support.h"
 
@@ -175,10 +171,6 @@ void wf_blob_free( Blob *b )
   free( b );
 }
 
-
-
-
-
 /* Pike interface to build blobs. */
 
 #define THIS ((struct blob_data *)Pike_fp->current_storage)
@@ -190,7 +182,7 @@ struct hash
   struct buffer *data;
 };
 
-#define HSIZE 13
+#define HSIZE 101
 
 struct blob_data
 {
@@ -202,7 +194,7 @@ struct blob_data
 struct program *blob_program;
 static struct hash *low_new_hash( int doc_id )
 {
-  struct hash *res = xalloc( sizeof( struct hash ) );
+  struct hash *res =  xalloc( sizeof( struct hash ) );
   res->doc_id = doc_id;
   res->next = 0;
   res->data = wf_buffer_new();
@@ -212,7 +204,7 @@ static struct hash *low_new_hash( int doc_id )
 
 static struct hash *new_hash( int doc_id )
 {
-  struct hash *res = low_new_hash( doc_id );
+  struct hash *res =  low_new_hash( doc_id );
   wf_buffer_wint( res->data, doc_id );
   wf_buffer_wbyte( res->data, 0 );
   return res;
@@ -259,6 +251,7 @@ static void free_hash( struct hash *h )
 static void _append_hit( struct blob_data *d, int doc_id, int hit )
 {
   struct hash *h = find_hash( d, doc_id );
+
   int nhits = ((unsigned char *)h->data->data)[4];
 
   /* Max 255 hits */
@@ -289,6 +282,15 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
   wf_buffer_free( b );
 }
 
+/*! @module Search
+ */
+
+/*! @class Blob
+ */
+
+/*! @decl void create(void|string initial)
+ */
+
 static void f_blob_create( INT32 args )
 {
   if( args )
@@ -300,12 +302,18 @@ static void f_blob_create( INT32 args )
   }
 }
 
+/*! @decl void merge(string data)
+ */
+
 static void f_blob_merge( INT32 args )
 {
   if(!args || sp[-1].type != PIKE_T_STRING )
     Pike_error("Expected a string\n");
   _append_blob( THIS, sp[-1].u.string );
 }
+
+/*! @decl void remove(int doc_id)
+ */
 
 static void f_blob_remove( INT32 args )
 {
@@ -317,7 +325,7 @@ static void f_blob_remove( INT32 args )
   get_all_args("remove", args, "%d", &doc_id);
   r = ((unsigned int)doc_id) % HSIZE;
   h = THIS->hash[r];
- 
+
   pop_n_elems(args);
 
   while( h )
@@ -341,6 +349,9 @@ static void f_blob_remove( INT32 args )
 
   push_int(0);
 }
+
+/*! @decl void remove_list(array(int) docs)
+ */
 
 static void f_blob_remove_list( INT32 args )
 {
@@ -399,6 +410,9 @@ void wf_blob_low_add( struct object *o,
   }
   _append_hit( ((struct blob_data *)o->storage), docid, s );
 }
+
+/*! @decl void add(int docid, int field, int offset)
+ */
 
 static void f_blob_add( INT32 args )
 {
@@ -459,11 +473,17 @@ size_t wf_blob_low_memsize( struct object *o )
   }
 }
 
+/*! @decl int memsize()
+ */
+
 static void f_blob_memsize( INT32 args )
 {
   pop_n_elems(args);
   push_int( wf_blob_low_memsize( Pike_fp->current_object ) );
 }
+
+/*! @decl string data()
+ */
 
 static void f_blob__cast( INT32 args )
 {
@@ -529,6 +549,12 @@ static void f_blob__cast( INT32 args )
   push_string( make_shared_binary_string( res->data, res->size ) );
   wf_buffer_free( res );
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 static void init_blob_struct( )
 {

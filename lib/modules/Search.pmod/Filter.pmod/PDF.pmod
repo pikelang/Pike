@@ -1,17 +1,17 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.15 2003/04/09 11:24:08 jonasw Exp $
+// $Id: PDF.pmod,v 1.16 2004/08/07 15:26:59 js Exp $
 
 // Filter for application/pdf
 
-inherit Search.Filter.HTML;
+inherit .HTML;
 
 constant contenttypes = ({ "application/pdf" });
 
-Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
+.Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
-  Output res=Output();
+  .Output res=.Output();
 
   if(objectp(data))
     data=data->read();
