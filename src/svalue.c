@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.44 1999/09/10 00:11:23 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.45 1999/09/14 19:38:51 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -927,12 +927,11 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 }
 
 #ifdef PIKE_DEBUG
-void check_short_svalue(union anything *u, TYPE_T type)
+static void low_check_short_svalue(union anything *u, TYPE_T type)
 {
   static int inside=0;
 
   check_type(type);
-  check_refs2(u,type);
   if ((type > MAX_REF_TYPE)||(!u->refs)) return;
 
   switch(type)
@@ -953,7 +952,7 @@ void check_short_svalue(union anything *u, TYPE_T type)
       case T_MAPPING: check_mapping(u->mapping); break;
       case T_ARRAY: check_array(u->array); break;
       case T_PROGRAM: check_program(u->program); break;
-/*      case T_OBJECT: check_object(u->object); break; */
+      case T_OBJECT: check_object(u->object); break;
 /*      case T_MULTISET: check_multiset(u->multiset); break; */
       }
       inside=0;
@@ -961,10 +960,22 @@ void check_short_svalue(union anything *u, TYPE_T type)
   }
 }
 
+void check_short_svalue(union anything *u, TYPE_T type)
+{
+  if(type<=MAX_REF_TYPE && (3 & (long)(u->refs)))
+    fatal("Odd pointer! type=%d u->refs=%p\n",type,u->refs);
+
+  check_refs2(u,type);
+  low_check_short_svalue(u,type);
+}
+
 void check_svalue(struct svalue *s)
 {
+  if(s->type<=MAX_REF_TYPE && (3 & (long)(s->u.refs)))
+    fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
+
   check_refs(s);
-  check_short_svalue(& s->u, s->type);
+  low_check_short_svalue(& s->u, s->type);
 }
 
 #endif

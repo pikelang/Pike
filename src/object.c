@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.77 1999/09/10 00:11:22 hubbe Exp $");
+RCSID("$Id: object.c,v 1.78 1999/09/14 19:38:48 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -25,9 +25,11 @@ RCSID("$Id: object.c,v 1.77 1999/09/10 00:11:22 hubbe Exp $");
 #include "cyclic.h"
 #include "security.h"
 #include "module_support.h"
-#include "block_alloc.h"
 #include "fdlib.h"
 #include "mapping.h"
+#include "constants.h"
+
+#include "block_alloc.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1407,3 +1409,60 @@ void exit_object(void)
     magic_set_index_program=0;
   }
 }
+
+#ifdef PIKE_DEBUG
+void check_object(struct object *o)
+{
+  int e;
+  struct program *p;
+  debug_malloc_touch(o);
+
+  if(o == fake_object) return;
+
+  p=o->prog;
+  PUSH_FRAME(o);
+
+  /* clear globals and call C initializers */
+  for(e=p->num_inherits-1; e>=0; e--)
+  {
+    int q;
+    SET_FRAME_CONTEXT(p->inherits[e]);
+
+    for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+    {
+      int d=pike_frame->context.prog->variable_index[q];
+      if(d<0 || d>=pike_frame->context.prog->num_identifiers)
+	fatal("Illegal index in variable_index!\n");
+
+      if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+      {
+	struct svalue *s;
+	s=(struct svalue *)(pike_frame->current_storage +
+			    pike_frame->context.prog->identifiers[d].func.offset);
+	check_svalue(s);
+      }else{
+	union anything *u;
+	u=(union anything *)(pike_frame->current_storage +
+			     pike_frame->context.prog->identifiers[d].func.offset);
+	check_short_svalue(u, 
+			   pike_frame->context.prog->identifiers[d].run_time_type);
+      }
+    }
+  }
+
+  POP_FRAME();
+}
+
+void check_all_objects(void)
+{
+  struct object *o, *next;
+  for(o=first_object;o;o=next)
+  {
+    add_ref(o);
+    check_object(o);
+    next=o->next;
+    free_object(o);
+  }
+}
+
+#endif

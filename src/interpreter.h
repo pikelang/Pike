@@ -76,6 +76,8 @@ static int eval_instruction(unsigned char *pc)
       backlog[backlogp].pc=pc;
 
       debug_malloc_touch(fp->current_object);
+      if(d_flag>1)
+	check_object(fp->current_object);
     }
 
     if(t_flag > 2)
@@ -1014,8 +1016,8 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_RETURN);
     do_return:
 #if defined(PIKE_DEBUG) && defined(GC2)
-      if(d_flag>2) do_gc();
-      if(d_flag>3) do_debug();
+      if(d_flag>3) do_gc();
+      if(d_flag>4) do_debug();
       check_threads_etc();
 #endif
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.26 1999/08/18 00:26:41 hubbe Exp $
+ * $Id: object.h,v 1.27 1999/09/14 19:38:50 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -95,6 +95,8 @@ struct magic_index_struct;
 void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void init_object(void);
 void exit_object(void);
+void check_object(struct object *o);
+void check_all_objects(void);
 /* Prototypes end here */
 
 #ifdef MALLOC_DEBUG
