@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.144 1999/01/21 09:07:54 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.145 1999/03/25 16:16:49 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1074,7 +1074,7 @@ void f_this_object(INT32 args)
 
 void f_throw(INT32 args)
 {
-  if(args < 1)
+   if(args < 1)
     PIKE_ERROR("throw", "Too few arguments.\n", sp, args);
   assign_svalue(&throw_value,sp-args);
   pop_n_elems(args);
@@ -1084,11 +1084,15 @@ void f_throw(INT32 args)
 
 void f_exit(INT32 args)
 {
+ static int in_exit=0;
   if(args < 1)
     PIKE_ERROR("exit", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_INT)
     PIKE_ERROR("exit", "Bad argument 1.\n", sp, args);
+
+ if(in_exit) error("exit already called!\n");
+  in_exit=1;
 
   assign_svalue(&throw_value, sp-args);
   throw_severity=THROW_EXIT;
