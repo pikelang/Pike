@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.338 2005/01/19 18:34:57 grubba Exp $
+|| $Id: file.c,v 1.339 2005/01/22 01:19:40 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -52,6 +52,14 @@
 
 #ifdef HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
+#ifdef HAVE_LINUX_IF_H
+#include <linux/if.h>
 #endif
 
 #ifdef HAVE_SYS_UIO_H
@@ -3941,6 +3949,60 @@ static void fd__sprintf(INT32 args)
   Pike_sp[-1].subtype = 1;
 }
 
+#define INTERFACES 256
+
+static void f_gethostip(INT32 args) {
+  int fd, i, j, up = 0;
+
+  pop_n_elems(args);
+
+#if defined(HAVE_LINUX_IF_H) && defined(HAVE_SYS_IOCTL_H)
+  {
+    struct ifconf ifc;
+    struct sockaddr_in addr;
+    char buffer[ INTERFACES * sizeof( struct ifreq ) ];
+
+    fd = fd_socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
+    if( fd < 0 ) Pike_error("gethostip: Failed to open socket.\n");
+
+    ifc.ifc_len = sizeof( buffer );
+    ifc.ifc_ifcu.ifcu_buf = (caddr_t)buffer;
+    if( ioctl( fd, SIOCGIFCONF, &ifc ) < 0 )
+      Pike_error("gethostip: Query failed.\n");
+
+    for( i=0; i<ifc.ifc_len; ) {
+      struct ifreq *ifr = (struct ifreq *)( (caddr_t)ifc.ifc_req+i );
+      struct ifreq ifr2;
+      i += sizeof(struct ifreq);
+
+      strcpy( ifr2.ifr_name, ifr->ifr_name );
+      if( ioctl( fd, SIOCGIFFLAGS, &ifr2 )<0 )
+	Pike_error("gethostip: Query failed.\n");
+
+      if( (ifr2.ifr_flags & IFF_LOOPBACK) ||
+	  !(ifr2.ifr_flags & IFF_UP) ||
+	  (ifr->ifr_addr.sa_family != AF_INET ) )
+	continue;
+
+      push_text( ifr->ifr_name );
+
+      push_constant_text( "ips" );
+      memcpy( &addr, &ifr->ifr_addr, sizeof(ifr->ifr_addr) );
+      push_text( inet_ntoa( addr.sin_addr ) );
+      f_aggregate(1);
+
+      f_aggregate_mapping(2);
+
+      up++;
+    }
+
+    fd_close(fd);
+  }
+#endif /* defined(HAVE_LINUX_IF_H) && defined(HAVE_SYS_IOCTL_H) */
+
+  f_aggregate_mapping(up*2);
+}
+
 #ifdef HAVE_OPENPTY
 #include <pty.h>
 #endif
@@ -4099,8 +4161,12 @@ PIKE_MODULE_INIT
 #endif
 
   /* function(:array(int)) */
-  ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
-	       tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION2("get_all_active_fd", f_get_all_active_fd,
+		tFunc(tNone,tArr(tInt)), 0, OPT_EXTERNAL_DEPEND);
+
+  /* function(void:mapping) */
+  ADD_FUNCTION2("gethostip", f_gethostip, tFunc(tNone,tMapping),
+		0, OPT_EXTERNAL_DEPEND);
 
 #ifdef PIKE_DEBUG
   dmalloc_accept_leak(add_to_callback(&do_debug_callbacks,
