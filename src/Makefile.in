@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.329 2002/10/02 12:53:26 grubba Exp $
+# $Id: Makefile.in,v 1.330 2002/10/15 15:17:50 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -620,7 +620,7 @@ EXPORT_NAME=Pike-v%maj.%min-%Y%M%D
 snapshot_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)"  \
-	--exportlist=src/export_list --name=$(EXPORT_NAME)
+	--exportlist=src/export_list --name=$(EXPORT_NAME) $(EXPORTARGS)
 
 export: full_export
 
