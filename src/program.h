@@ -196,6 +196,7 @@ struct program
 
 extern struct object fake_object;
 extern struct program fake_program;
+extern struct program *first_program;
 
 /* Prototypes begin here */
 void use_module(struct svalue *s);

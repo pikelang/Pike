@@ -20,6 +20,7 @@ struct callback *gc_evaluator_callback=0;
 #include "error.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
+#include "pike_types.h"
 
 #include "gc.h"
 #include "main.h"
@@ -117,11 +118,37 @@ static struct marker *getmark(void *a)
 }
 
 #ifdef DEBUG
+
+TYPE_T attempt_to_identify(void *something)
+{
+  struct array *a;
+  struct object *o;
+  struct program *p;
+
+  a=&empty_array;
+  do
+  {
+    if(a==(struct array *)something) return T_ARRAY;
+    a=a->next;
+  }while(a!=&empty_array);
+
+  for(o=first_object;o;o=o->next)
+    if(o==(struct object *)something)
+      return T_OBJECT;
+
+  for(p=first_program;p;p=p->next)
+    if(p==(struct program *)something)
+      return T_PROGRAM;
+
+  return T_UNKNOWN;
+}
+
 static void *check_for =0;
+static char *found_where="";
 
 static void gdb_gc_stop_here(void *a)
 {
-  fprintf(stderr,"One ref found.\n");
+  fprintf(stderr,"One ref found%s.\n",found_where);
 }
 #endif
 
@@ -149,15 +176,68 @@ int gc_is_referenced(void *a)
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
+    TYPE_T t=attempt_to_identify(a);
+
+    fprintf(stderr,"**An object of type %s at addres %p has wrong number of references.\n",get_name_of_type(t),a);
+    fprintf(stderr,"**The object has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
+
+    {
+      struct program *p=(struct program *)a;
+      switch(t)
+      {
+	case T_OBJECT:
+	  p=((struct object *)a)->prog;
+	  if(!p)
+	  {
+	    fprintf(stderr,"**The object is destructed.\n");
+	    break;
+	  }
+	  fprintf(stderr,"**Attempting to describe program object was instantiated from:\n");
+	  
+	case T_PROGRAM:
+	  if(!p->num_linenumbers)
+	  {
+	    fprintf(stderr,"**The program was written in C.\n");
+	    break;
+	  }
+	  if(p->linenumbers[0]==127)
+	  {
+	    fprintf(stderr,"**The program may have been compiled from %s.\n",p->linenumbers+1);
+	    break;
+	  }
+	  fprintf(stderr,"**No information available about this program.\n");
+	  break;
+
+	case T_ARRAY:
+	  fprintf(stderr,"**Describing array:\n");
+	  debug_dump_array((struct array *)a);
+	  break;
+      }
+    }
+      
+
+    fprintf(stderr,"**Looking for references:\n");
     check_for=a;
 
+    found_where=" in an array";
     gc_check_all_arrays();
+
+    found_where=" in a multiset";
     gc_check_all_multisets();
+
+    found_where=" in a mapping";
     gc_check_all_mappings();
+
+    found_where=" in a program";
     gc_check_all_programs();
+
+    found_where=" in an object";
     gc_check_all_objects();
+
+    found_where=" in a module";
     call_callback(& gc_callbacks, (void *)0);
 
+    found_where="";
     check_for=0;
 
     fatal("Ref counts are wrong (has %d, found %d + %d external)\n",
@@ -177,8 +257,10 @@ int gc_external_mark(void *a)
   {
     if(a==check_for)
     {
+      char *tmp=found_where;
+      found_where="externally";
       gdb_gc_stop_here(a);
-      fprintf(stderr,"--External\n");
+      found_where=tmp;
 
       return 1;
     }
