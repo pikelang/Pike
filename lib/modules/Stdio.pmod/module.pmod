@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.52 1999/05/21 17:50:21 grubba Exp $
+// $Id: module.pmod,v 1.53 1999/05/22 12:45:15 grubba Exp $
 
 import String;
 
@@ -694,6 +694,7 @@ int cp(string from, string to)
 #define READER_RESTART 4
 #define READER_HALT 32
 
+// FIXME: Support for timeouts?
 static class nb_sendfile
 {
   static object from;
@@ -1075,6 +1076,7 @@ static class nb_sendfile
   }
 }
 
+// FIXME: Support for timeouts?
 object sendfile(array(string) headers,
 		object from, int offset, int len,
 		array(string) trailers,
