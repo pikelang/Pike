@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.466 2003/02/01 15:43:50 mast Exp $
+|| $Id: builtin_functions.c,v 1.467 2003/02/02 00:31:16 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.466 2003/02/01 15:43:50 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.467 2003/02/02 00:31:16 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3791,7 +3791,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 #ifdef PIKE_DEBUG
   do_debug();			/* Calls do_gc() since d_flag > 3. */
 #else
-  do_gc();
+  do_gc(NULL, 1);
 #endif
   d_flag=tmp;
   pop_n_elems(args);
