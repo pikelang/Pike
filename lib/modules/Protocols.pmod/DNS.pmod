@@ -484,12 +484,15 @@ class client
       string domain;
 
 #if __NT__
-      
       domain=get_tcpip_param("Domain");
-      nameservers = replace(get_tcpip_param("NameServer"),","," ") / " ";
-      nameservers-=({""});
-      domains=replace(get_tcpip_param("SearchList"),","," ") / " ";
-      domains-=({""});
+      if(!domain || !sizeof(domain))
+        domain=get_tcpip_param("DhcpDomain");
+
+      nameservers = get_tcpip_param("NameServer") / " ";
+      nameservers+= get_tcpip_param("DhcpNameServer") / " ";
+      nameservers -= ({""});
+
+      domains=get_tcpip_param("SearchList") / " "- ({""});
 #else
       string resolv_conf;
       foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}), string resolv_loc)
