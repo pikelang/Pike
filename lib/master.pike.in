@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.352 2004/07/04 12:38:49 mast Exp $
+// $Id: master.pike.in,v 1.353 2004/07/04 14:30:09 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -785,7 +785,7 @@ static program low_findprog(string pname,
 	      INC_RESOLV_MSG_DEPTH();
 	      ret = decode_value(master_read_file(oname),
 				 (handler && handler->get_codec ||
-				  get_codec)(fname, mkobj));
+				  get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
 	      return programs[fname] = ret;
@@ -4070,7 +4070,7 @@ class Encoder
   }
 }
 
-class Decoder (void|string fname, void|int mkobj)
+class Decoder (void|string fname, void|int mkobj, void|object handler)
 //! @appears Pike.Decoder
 //!
 //! Codec for use with @[decode_value]. This is the decoder
@@ -4108,19 +4108,19 @@ class Decoder (void|string fname, void|int mkobj)
 	  error ("Cannot find %O in _static_modules.\n", what[1..]);
 	break;
       case 'r':
-	if (zero_type (res = resolv ([string]what[1..])))
+	if (zero_type (res = resolv ([string]what[1..], fname, handler)))
 	  error ("Cannot resolve %O.\n", what[1..]);
 	break;
       case 'p':
-	if (!(res = low_cast_to_program ([string]what[1..], fname, this)))
+	if (!(res = low_cast_to_program ([string]what[1..], fname, handler)))
 	  error ("Cannot find program for %O.\n", what[1..]);
 	break;
       case 'o':
-	if (!objectp(res = low_cast_to_object([string]what[1..], fname, this)))
+	if (!objectp(res = low_cast_to_object([string]what[1..], fname, handler)))
 	  error ("Cannot find object for %O.\n", what[1..]);
 	break;
       case 'f':
-	if (!objectp (res = findmodule ([string]what[1..], this)))
+	if (!objectp (res = findmodule ([string]what[1..], handler)))
 	  error ("Cannot find module for %O.\n", what[1..]);
 	break;
     }
@@ -4227,8 +4227,13 @@ class Decoder (void|string fname, void|int mkobj)
 }
 
 mapping(string:Decoder) codecs = set_weak_flag(([]),1);
-Decoder get_codec(string|void fname, int|void mkobj)
+Decoder get_codec(string|void fname, int|void mkobj, void|object handler)
 {
+  if (handler)
+    // Maybe cache these too? Not done right now since explicit
+    // handlers are fairly rare. Note that caching easily could
+    // introduce a cyclic ref through Decoder.handler.
+    return Decoder (fname, mkobj, handler);
   string key = fname + "\0" + mkobj;
   if (codecs[key]) return codecs[key];
   return codecs[key] = Decoder(fname, mkobj);
