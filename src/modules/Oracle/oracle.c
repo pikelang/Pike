@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.30 2001/01/06 01:58:27 hubbe Exp $
+ * $Id: oracle.c,v 1.31 2001/02/22 19:29:55 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.30 2001/01/06 01:58:27 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.31 2001/02/22 19:29:55 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -153,6 +153,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define STRING_BUILDER_STR(X) ((X).s)
 #define STRING_BUILDER_LEN(X) ((X).s->len)
 #define tComma ""
+#include "bignum.h"
 
 #endif
 
@@ -341,6 +342,7 @@ struct inout
 #endif
     char shortstr[32];
     OCIDate date;
+    OCINumber num;
 #ifdef STATIC_BUFFERS
     char str[STATIC_BUFFERS];
 #endif
@@ -697,6 +699,12 @@ static sb4 output_callback(struct inout *inout,
       *piecep = OCI_ONE_PIECE;
       return OCI_CONTINUE;
 
+    case SQLT_NUM:
+      *bufpp=&inout->u.num;
+      inout->xlen=sizeof(inout->u.num);
+      *piecep = OCI_ONE_PIECE;
+      return OCI_CONTINUE;
+
     case SQLT_ODT:
       *bufpp=&inout->u.date;
       inout->xlen=sizeof(inout->u.date);
@@ -762,7 +770,7 @@ static void f_fetch_fields(INT32 args)
       char *errfunc=0;
       OCIParam *column_parameter;
       ub2 type;
-      ub4 size;
+      ub2 size;
       sb1 scale;
       char *name;
       ub4 namelen;
@@ -828,6 +836,7 @@ static void f_fetch_fields(INT32 args)
 	ora_error_handler(dbcon->error_handle, rc, errfunc);
 
 #ifdef ORACLE_DEBUG
+      name[namelen]=0;
       fprintf(stderr,"FIELD: name=%s length=%d type=%d\n",name,size,type);
 #endif
 
@@ -857,8 +866,18 @@ static void f_fetch_fields(INT32 args)
 	    data_size=sizeof(info->data.u.f);
 	    type=SQLT_FLT;
 	  }else{
+#if 0
 	    data_size=sizeof(info->data.u.i);
 	    type=SQLT_INT;
+#else
+	    
+	    data_size=sizeof(info->data.u.num);
+#ifdef ORACLE_DEBUG
+/* 	    OCINumberSetZero(dbcon->error_handle, &info->data.u.num); */
+	    MEMSET(&info->data.u.num, 0, data_size);
+#endif
+	    type=SQLT_NUM;
+#endif
 	  }
 	  break;
 	      
@@ -931,7 +950,7 @@ static void f_fetch_fields(INT32 args)
 #ifdef STATIC_BUFFERS
 			data_size<0? STATIC_BUFFERS :data_size,
 #else
-			data_size<0? (0x00200000) :data_size,
+			data_size<0? 8000 :data_size,
 #endif
 			type,
 			& info->data.indicator,
@@ -971,10 +990,11 @@ static void f_fetch_fields(INT32 args)
   }
 }
 
-static void push_inout_value(struct inout *inout)
+static void push_inout_value(struct inout *inout,
+			     struct dbcon *dbcon)
 {
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"%s .. (type = %d, indicator = %d)\n",__FUNCTION__,inout->ftype,inout->indicator);
+  fprintf(stderr,"%s .. (type = %d, indicator = %d, len= %d)\n",__FUNCTION__,inout->ftype,inout->indicator, inout->xlen);
 #endif
 
   if(inout->indicator)
@@ -1043,6 +1063,60 @@ static void push_inout_value(struct inout *inout)
       call_c_initializers(Pike_sp[-1].u.object);
       ((struct dbdate *)STORAGE(Pike_sp[-1].u.object))->date = inout->u.date;
       break;
+
+    case SQLT_NUM:
+    {
+#ifdef INT64
+      INT64 integer;
+#else
+      INT32 integer;
+#endif
+      sword ret;
+
+      /* Kluge */
+      MEMMOVE(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
+      inout->u.shortstr[0]=inout->xlen;
+
+#if 0
+      for(ret=0;ret<22;ret++)
+	fprintf(stderr,"%02x ",((unsigned char *)&inout->u.num)[ret]);
+      fprintf(stderr,"\n");
+#endif
+
+      ret=OCINumberToInt(dbcon->error_handle,
+			 &inout->u.num,
+			 sizeof(integer),
+			 OCI_NUMBER_SIGNED,
+			 &integer);
+
+      if(ret == OCI_SUCCESS)
+      {
+	push_int(integer);
+      }else{
+#ifdef AUTO_BIGNUM
+	unsigned char buffer[80];
+	ub4 buf_size=sizeof(buffer)-1;
+#define N8 "99999999"
+#define FMT "FM" N8 N8 N8 N8  N8 N8 N8 N8
+
+	ret=OCINumberToText(dbcon->error_handle,
+			    &inout->u.num,
+			    FMT,
+			    sizeof(FMT)-sizeof(""),
+			    0,
+			    0,
+			    &buf_size,
+			    buffer);
+	if(ret == OCI_SUCCESS)
+	{
+	  push_string(make_shared_binary_string(buffer,buf_size));
+	  convert_stack_top_to_bignum();
+	}else
+#endif
+	  ora_error_handler(dbcon->error_handle, ret, "OCINumberToInt");
+      }
+    }
+    break;
       
     case SQLT_INT:
       push_int64(inout->u.i);
@@ -1132,7 +1206,7 @@ static void f_fetch_row(INT32 args)
       info=(struct dbresultinfo *)STORAGE(dbquery->field_info->item[i].u.object);
 
       /* Extract data from 'info' */
-      push_inout_value(& info->data);
+      push_inout_value(& info->data, dbcon);
     }
   }
   f_aggregate(dbquery->cols);
@@ -1672,7 +1746,7 @@ static void f_big_query_create(INT32 args)
     {
       if(bind.bind[i].data.has_output)
       {
-	push_inout_value(& bind.bind[i].data);
+	push_inout_value(& bind.bind[i].data, dbcon);
 	mapping_insert(dbquery->output_variables, & bind.bind[i].ind, Pike_sp-1);
 	pop_stack();
       }
