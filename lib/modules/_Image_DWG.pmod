@@ -1,10 +1,9 @@
 // AutoCAD R13/R14/R2000 DWG file decoder
-// $Id: _Image_DWG.pmod,v 1.2 2002/07/10 20:40:33 nilsson Exp $
+// $Id: _Image_DWG.pmod,v 1.3 2002/07/10 21:39:34 nilsson Exp $
 
 #pike __REAL_VERSION__
 
 //! @appears Image.DWG
-
 //! This module decodes the thumbnail raster images embedded in AutoCAD DWG files for
 //! AutoCAD version R13, R14 and R2000 (which equals to file version 12, 14 and 15).
 //! Implemented according to specifications from @url{http://www.opendwg.org/@}.
