@@ -1,3 +1,8 @@
+Sun Apr  5 20:23:22 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* main.c: new option -q, allows you to force an exit after
+	  a certain number of instructions, used for debugging only.
+
 Wed Apr 01 00:47:18 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* mkpeep.pike: peep.in is now processed by cpp().
