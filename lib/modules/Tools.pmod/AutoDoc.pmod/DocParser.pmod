@@ -602,12 +602,15 @@ static class DocParserClass {
           meta->type = keyword;
           .PikeParser nameparser = .PikeParser(arg);
           string s = nameparser->readToken();
-          if (!isIdent(s))
-            parseError("expected %s name, got %O", keyword, s);
+          if (!isIdent(s) && s != "::")
+            parseError("@%s: expected %s name, got %O", keyword, keyword, s);
           if (nameparser->peekToken() == "::")
-            s += nameparser->readToken();
+            if (keyword == "module")
+              s += nameparser->readToken();
+            else
+              parseError("@class: 'scope::' only allowed as @module name");
           if (nameparser->peekToken() != EOF)
-            parseError("expected %s name, got %O", keyword, arg);
+            parseError("@%s: expected %s name, got %O", keyword, keyword, arg);
           meta->name = s;
           }
           break;
@@ -631,17 +634,17 @@ static class DocParserClass {
                "allowScopePrefix" : 1 ]) ); // constants/literals + scope::
           string s = declparser->peekToken();
           if (s != ";" && s != EOF)
-            parseError("expected end of line, got %O", s);
+            parseError("@decl: expected end of line, got %O", s);
           int i = search(p->name, "::");
           if (i >= 0) {
             string scope = p->name[0 .. i + 1];
             p->name = p->name[i + 2 ..];
             if (!first && scopeModule != scope)
-              parseError("@decl's must have identical scope:: prefix");
+              parseError("@decl's must have identical 'scope::' prefix");
             scopeModule = scope;
           }
           else if (!first && scopeModule)
-            parseError("@decl's must have identical scope:: prefix");
+            parseError("@decl's must have identical 'scope::' prefix");
           meta->decls += ({ p });
           }
           break;
@@ -655,11 +658,11 @@ static class DocParserClass {
             if (meta->belongs)
               parseError("both @appears and @belongs");
             if (scopeModule)
-              parseError("both scope:: and @appears");
+              parseError("both 'scope::' and @appears");
             .PikeParser idparser = .PikeParser(arg);
             string s = idparser->parseIdents();
             if (!s)
-              parseError("expected identifier, got %O", arg);
+              parseError("@appears: expected identifier, got %O", arg);
             meta->appears = s;
           }
           else
@@ -675,27 +678,25 @@ static class DocParserClass {
             if (meta->appears)
               parseError("both @appears and @belongs");
             if (scopeModule)
-              parseError("both scope:: and @belongs");
+              parseError("both 'scope::' and @belongs");
             .PikeParser idparser = .PikeParser(arg);
             string s = idparser->parseIdents();
             if (!s && idparser->peekToken() != EOF)
-              parseError("expected identifier or blank, got %O", arg);
+              parseError("@belongs: expected identifier or blank, got %O", arg);
             meta->belongs = s || "";  // blank is allowed too, you know ..
           }
           break;
 
         case "endclass":
         case "endmodule":
+          {
           if (i > 1)
             parseError("@%s must stand alone", keyword);
           meta->type = keyword;
           .PikeParser nameparser = .PikeParser(arg);
-          string s = nameparser->peekToken();
-          if (s != EOF)
-            if (isIdent(s))
-              meta->name = s;
-            else
-              parseError("expected %s name, got %O", keyword, s);
+          while (nameparser->peekToken() != EOF)
+            meta->name = (meta->name || "") + nameparser->readToken();
+          }
           break;
 
         default:

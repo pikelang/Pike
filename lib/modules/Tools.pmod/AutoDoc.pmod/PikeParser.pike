@@ -34,6 +34,9 @@ static multiset(string) modifiers =
    "private", "local", "public", "protected",
    "inline", "optional", "variant"  >);
 
+static multiset(string) scopeModules =
+(< "predef", "top", "lfun", "efun" >);
+
 void skip(multiset(string)|string tokens) {
   if (multisetp(tokens))
     while (tokens[peekToken(WITH_NL)]) readToken(WITH_NL);
@@ -157,10 +160,9 @@ string eat(multiset(string) | string token) {
   return readToken();
 }
 
-// Also ::ident, predef::ident, lfun::ident
+// Also ::ident, scope::ident
 string eatIdentifier(void|int allowScopePrefix) {
-  string scope = peekToken() == "predef" || peekToken() == "lfun"
-    ? readToken() : "";
+  string scope = scopeModules[peekToken()] ? readToken() : "";
   string colons = peekToken() == "::" ? readToken() : "";
   //  werror("scope == %O ,colons == %O\n", scope, colons);
 
@@ -270,14 +272,14 @@ IntType parseInt() {
   return i;
 }
 
-// also parses stuff preceded by "predef::" or "::"
+// also parses stuff preceded by "scope::" or "::"
 string|void parseIdents() {
   string result = "";
   if (peekToken() == "." || peekToken() == "::")
     result = readToken();
-  else if (peekToken() == "predef") {
+  else if (scopeModules[peekToken()]) {
     result = readToken();
-    if (peekToken() != "::")
+    if (peekToken() != "::" && peekToken() != ".") // might be "top.ident" ...
       return result;
     result += readToken();
   }
