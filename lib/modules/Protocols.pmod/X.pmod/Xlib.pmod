@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.35 1998/04/21 02:56:30 per Exp $
+ * $Id: Xlib.pmod,v 1.36 1998/10/17 03:12:55 grubba Exp $
  */
 
 /*
@@ -450,7 +450,7 @@ class Display
 		       m->minorCode, m->majorCode);
 		m->errorCode = ._Xlib.error_codes[errorCode];
 #ifdef DEBUG
-		m->failed_request = debug_requests[DEBUGEQ(m->sequenceNumber)];
+		m->failed_request = debug_requests[DEBUGREQ(m->sequenceNumber)];
 #endif
 #if 0
 		if (m->errorCode == "Success")
