@@ -23,17 +23,11 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.103 2001/04/07 07:38:23 hubbe Exp $");
+RCSID("$Id: array.c,v 1.104 2001/04/15 16:13:17 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
-  1,                     /* Never free */
-#ifdef PIKE_SECURITY
-  0,
-#endif
-#ifdef USE_LOCAL_MUTEX
-  PTHREAD_MUTEX_INITIALIZER,
-#endif
+  PIKE_CONSTANT_MEMOBJ_INIT(1), /* Never free */
   &empty_array,          /* Next */
   &empty_array,          /* previous (circular) */
   0,                     /* Size = 0 */

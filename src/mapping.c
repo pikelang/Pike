@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.120 2001/04/14 11:22:33 jhs Exp $");
+RCSID("$Id: mapping.c,v 1.121 2001/04/15 16:13:18 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -105,8 +105,10 @@ static void check_mapping_type_fields(struct mapping *m)
 }
 #endif
 
-static struct mapping_data empty_data = { 1, 1, 0,0,0,0,0,0 };
-static struct mapping_data weak_empty_data = { 1, 1, 0,0,0,0,0,0,1 };
+static struct mapping_data empty_data =
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0,0 };
+static struct mapping_data weak_empty_data =
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0,1 };
 
 /* This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the

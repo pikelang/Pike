@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.87 2001/04/07 07:38:25 hubbe Exp $
+ * $Id: svalue.h,v 1.88 2001/04/15 16:13:18 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -649,6 +649,20 @@ static inline void assign_svalue(struct svalue *to, struct svalue *from)
   INT32 refs \
   DO_IF_SECURITY(; struct object *prot) \
   IF_LOCAL_MUTEX(; PIKE_MUTEX_T mutex)
+
+#ifdef PIKE_SECURITY
+#ifdef USE_LOCAL_MUTEX
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs, 0, PTHREAD_MUTEX_INITIALIZER
+#else
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs, 0
+#endif
+#else
+#ifdef USE_LOCAL_MUTEX
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs, PTHREAD_MUTEX_INITIALIZER
+#else
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs
+#endif
+#endif
 
 #define INIT_PIKE_MEMOBJ(X) do {			\
   struct ref_dummy *v_=(struct ref_dummy *)(X);		\
