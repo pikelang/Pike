@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.55 1998/07/02 19:49:59 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.56 1998/07/02 21:02:31 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -482,6 +482,7 @@ void f_get_dir(INT32 args)
 	 * at end of dir it sets the third arg to NULL.
 	 */
 	d = NULL;
+	errno = 0;
 	if ((err = readdir_r(dir, tmp, &d)) || !d) {
 	  if (err == -1) {
 	    err = errno;
