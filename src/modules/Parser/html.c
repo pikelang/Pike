@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.134 2003/09/01 14:43:09 mast Exp $ */
+/* $Id: html.c,v 1.135 2004/02/10 22:46:45 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -942,6 +942,7 @@ static void html_add_entity(INT32 args)
 static void html_add_quote_tag(INT32 args)
 {
   int remove;
+  struct mapping *map;
   struct pike_string *name, *end;
   struct pike_string *prefix;
   struct svalue *val;
@@ -968,9 +969,11 @@ static void html_add_quote_tag(INT32 args)
   if (THIS->mapqtag->refs>1)
   {
     push_mapping(THIS->mapqtag);
+    /* Note: Deferred copy; the arrays might still have only one ref. */
     THIS->mapqtag=copy_mapping(THIS->mapqtag);
     pop_stack();
   }
+  map = THIS->mapqtag;
 
   if (!remove) {
     struct pike_string *end = make_shared_binary_string2 (&THIS->tag_end, 1);
@@ -987,7 +990,7 @@ static void html_add_quote_tag(INT32 args)
     copy_shared_string (prefix, name);
   SET_ONERROR (uwp, do_free_string, prefix);
 
-  val = low_mapping_string_lookup (THIS->mapqtag, prefix);
+  val = low_mapping_string_lookup (map, prefix);
   if (val) {
     int i;
     struct array *arr;
@@ -1009,19 +1012,24 @@ static void html_add_quote_tag(INT32 args)
 	    struct svalue tmp;
 	    tmp.type = T_STRING;
 	    tmp.u.string = prefix;
-	    map_delete (THIS->mapqtag, &tmp);
+	    map_delete (map, &tmp);
 	  }
 	  else {
-	    if (arr->refs > 1) {
-	      arr = copy_array (arr);
-	      free_array (val->u.array);
-	      val->u.array = arr;
+	    if (arr->refs > 1 || map->data->refs > 1) {
+	      push_array (arr = copy_array (arr));
+	      mapping_string_insert (map, prefix, sp - 1);
+	      pop_stack();
 	    }
 	    free_svalues (arr->item+i, 3, BIT_MIXED);
 	    MEMCPY (arr->item+i, arr->item+i+3, (arr->size-i-3) * sizeof(struct svalue));
 	    arr->size -= 3;
 	  }
 	else {
+	  if (arr->refs > 1 || map->data->refs > 1) {
+	    push_array (arr = copy_array (arr));
+	    mapping_string_insert (map, prefix, sp - 1);
+	    pop_stack();
+	  }
 	  assign_svalue (arr->item+i+1, sp-2);
 	  assign_svalue (arr->item+i+2, sp-1);
 	}
@@ -1033,12 +1041,14 @@ static void html_add_quote_tag(INT32 args)
 	struct pike_string *cmp = string_slice (name, 0, curname->len);
 	if (cmp == curname) { /* Found a shorter prefix to name; insert before. */
 	  free_string (cmp);
-	  if (arr->refs > 1) {
+	  if (arr->refs > 1 || map->data->refs > 1) {
 	    arr = copy_array (arr);
-	    free_array (val->u.array);
-	    val->u.array = arr;
+	    push_array (arr = resize_array (arr, arr->size+3));
+	    mapping_string_insert (map, prefix, sp - 1);
+	    pop_stack();
 	  }
-	  arr = val->u.array = resize_array (arr, arr->size+3);
+	  else
+	    arr = val->u.array = resize_array (arr, arr->size+3);
 	  MEMCPY (arr->item+i+3, arr->item+i,
 		  (arr->size-i-3) * sizeof(struct svalue));
 	  MEMCPY (arr->item+i, sp-=3, 3 * sizeof(struct svalue));
@@ -1049,12 +1059,14 @@ static void html_add_quote_tag(INT32 args)
     }
 
     if (!remove) {
-      if (arr->refs > 1) {
+      if (arr->refs > 1 || map->data->refs > 1) {
 	arr = copy_array (arr);
-	free_array (val->u.array);
-	val->u.array = arr;
+	push_array (arr = resize_array (arr, arr->size+3));
+	mapping_string_insert (map, prefix, sp - 1);
+	pop_stack();
       }
-      arr = val->u.array = resize_array (arr, arr->size+3);
+      else
+	arr = val->u.array = resize_array (arr, arr->size+3);
       MEMCPY (arr->item+arr->size-3, sp-=3, 3 * sizeof(struct svalue));
     }
 
@@ -1063,7 +1075,7 @@ static void html_add_quote_tag(INT32 args)
 
   else if (!remove) {
     f_aggregate (3);
-    mapping_string_insert (THIS->mapqtag, prefix, sp-1);
+    mapping_string_insert (map, prefix, sp-1);
     pop_stack();
   }
 
