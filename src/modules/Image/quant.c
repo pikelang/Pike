@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.1 1997/02/11 08:35:46 hubbe Exp $ */
+/* $Id: quant.c,v 1.2 1997/02/25 18:56:06 grubba Exp $ */
 
 /*
 
@@ -64,11 +64,11 @@ static void chrono(char *x)
 
 /**********************************************************************/
 
-#define sq(x) ((x)*(x))
+#define SQ(x) ((x)*(x))
 #define DISTANCE(A,B) \
-   (sq(((int)(A).r)-((int)(B).r)) \
-    +sq(((int)(A).g)-((int)(B).g)) \
-    +sq(((int)(A).b)-((int)(B).b)))
+   (SQ(((int)(A).r)-((int)(B).r)) \
+    +SQ(((int)(A).g)-((int)(B).g)) \
+    +SQ(((int)(A).b)-((int)(B).b)))
 
 
 typedef struct
@@ -84,8 +84,9 @@ typedef struct
   rgb_entry tbl[1];
 } rgb_hashtbl;
 
-#define hash(rgb,l) (((rgb).r*127+(rgb).g*997+(rgb).b*2111)&(l-1))
-#define same_col(rgb1,rgb2) \
+#define HASH(rgb,l) \
+     ((((int)(rgb).r)*127+((int)(rgb).g)*997+((int)(rgb).b)*2111)&((l)-1))
+#define SAME_COL(rgb1,rgb2) \
      (((rgb1).r==(rgb2).r) && ((rgb1).g==(rgb2).g) && ((rgb1).b==(rgb2).b))
 
 
@@ -94,10 +95,10 @@ static INLINE int hash_enter(rgb_entry *rgbe,rgb_entry *end,
 {
    register rgb_entry *re;
 
-   re=rgbe+hash(rgb,len);
-/*   fprintf(stderr,"%d\n",hash(rgb,len));*/
+   re=rgbe+HASH(rgb,len);
+/*   fprintf(stderr,"%d\n",HASH(rgb,len));*/
 
-   while (re->count && !same_col(re->rgb,rgb))
+   while (re->count && !SAME_COL(re->rgb,rgb))
       if (++re==end) re=rgbe;
 
    if (!re->count)  /* allocate it */
@@ -130,9 +131,9 @@ static INLINE int hash_enter_strip(rgb_entry *rgbe,rgb_entry *end,
    rgb.g&=strip_g[strip];
    rgb.b&=strip_b[strip];
 
-   re=rgbe+hash(rgb,len);
+   re=rgbe+HASH(rgb,len);
 
-   while (re->count && !same_col(re->rgb,rgb))
+   while (re->count && !SAME_COL(re->rgb,rgb))
       if (++re==end) re=rgbe;
 
    if (!re->count)  /* allocate it */
@@ -167,7 +168,7 @@ static rgb_hashtbl *img_rehash(rgb_hashtbl *old, unsigned long newsize)
 	 {
 	    register rgb_entry *re;
 
-	    re=new->tbl+hash(old->tbl[i].rgb,newsize);
+	    re=new->tbl+HASH(old->tbl[i].rgb,newsize);
 
 	    while (re->count)
 	       if (++re==new->tbl+newsize) re=new->tbl;
@@ -310,6 +311,8 @@ static void sort_tbl(rgb_hashtbl *ht,
    /* check which direction has the most span */
    /* we make it easy for us, only three directions: r,g,b */
 
+      rgbl_group sum={0,0,0};
+      rgb_group mid;
 
 #define PRIO_RED   2
 #define PRIO_GREEN 4
@@ -350,9 +353,6 @@ fprintf(stderr,"space: %d,%d,%d-%d,%d,%d  ",
 	    dir=2;
 #endif
 
-      rgbl_group sum={0,0,0};
-      rgb_group mid;
-
       for (x=0; x<len; x++)
       {
 	 sum.r+=tbl[start+x].rgb.r;
@@ -366,9 +366,9 @@ fprintf(stderr,"space: %d,%d,%d-%d,%d,%d  ",
       sum.r=sum.g=sum.b=0;
       for (x=0; x<len; x++)
       {
-	 sum.r+=sq(tbl[start+x].rgb.r-mid.r);
-	 sum.g+=sq(tbl[start+x].rgb.g-mid.g);
-	 sum.b+=sq(tbl[start+x].rgb.b-mid.b);
+	 sum.r+=SQ(tbl[start+x].rgb.r-mid.r);
+	 sum.g+=SQ(tbl[start+x].rgb.g-mid.g);
+	 sum.b+=SQ(tbl[start+x].rgb.b-mid.b);
       }
 
       if (sum.r*PRIO_RED>sum.g*PRIO_GREEN) /* r>g */
@@ -598,7 +598,9 @@ rerun:
 		  if ((len<<2) > QUANT_MAXIMUM_NUMBER_OF_COLORS)
 		  {
 		     strip++;
+#ifdef QUANT_DEBUG
 		     fprintf(stderr,"strip: %d\n",strip);
+#endif
 		     free(tbl);
 		     goto rerun;
 		  }
@@ -752,7 +754,7 @@ int colortable_rgb(struct colortable *ct,rgb_group rgb)
       return ct->cache->value;
 
 #ifdef QUANT_DEBUG_RGB
-fprintf(stderr,"rgb: %d,%d,%d\n",rgb.r,rgb.g,rgb.b);
+   fprintf(stderr,"rgb: %d,%d,%d\n",rgb.r,rgb.g,rgb.b);
 #endif
 
 #if QUANT_SELECT_CACHE>1
@@ -769,7 +771,7 @@ fprintf(stderr,"rgb: %d,%d,%d\n",rgb.r,rgb.g,rgb.b);
 	 ct->cache[0].value=best;
 
 #ifdef QUANT_DEBUG_RGB
-fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+	 fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
 #endif
 	 return best;
       }
@@ -795,28 +797,28 @@ fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,c
 	      (((*rn)>>30)==0)?'c':
 	      (((*rn)>>30)==1)?'r':
 	      (((*rn)>>30)==2)?'g':'b',
-	      ((*rn)>>22) & 255,
-	      ((*rn)&4194303));
+	      ((*rn)>>22) & 0xff,
+	      ((*rn) & 0x3fffff));
 #endif
 
 	 switch ((*rn)>>30)
 	 {
 	    case 0: /* end node */ break;
 	    case 1: /* red */
-	       split=(unsigned char)( ((*rn)>>22) & 255 );
-	       rn=ct->rgb_node+((*rn)&4194303);
+	       split=(unsigned char)( ((*rn)>>22) & 0xff );
+	       rn=ct->rgb_node+((*rn) & 0x3fffff);
 	       if (rgb.r<=split) max.r=split;
 	       else rn++,min.r=split+1;
 	       continue;
 	    case 2: /* green */
-	       split=(unsigned char)( ((*rn)>>22) & 255 );
-	       rn=ct->rgb_node+((*rn)&4194303);
+	       split=(unsigned char)( ((*rn)>>22) & 0xff );
+	       rn=ct->rgb_node+((*rn) & 0x3fffff);
 	       if (rgb.g<=split) max.g=split;
 	       else rn++,min.g=split+1;
 	       continue;
 	    case 3: /* blue */
-	       split=(unsigned char)( ((*rn)>>22) & 255 );
-	       rn=ct->rgb_node+((*rn)&4194303);
+	       split=(unsigned char)( ((*rn)>>22) & 0xff );
+	       rn=ct->rgb_node+((*rn) & 0x3fffff);
 	       if (rgb.b<=split) max.b=split;
 	       else rn++,min.b=split+1;
 	       continue;
@@ -824,7 +826,7 @@ fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,c
 	 break;
       }
       best=*rn;
-   } 
+   }
    while (0);
 
 #endif
@@ -838,8 +840,8 @@ fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,c
    ct->cache[0].value=best;
 
 #ifdef QUANT_DEBUG_RGB
-fprintf(stderr," -> %lu: %d,%d,%d\n",best,
-	ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+   fprintf(stderr," -> %lu: %d,%d,%d\n",best,
+	   ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
 #endif
    return best;
 }
@@ -855,11 +857,14 @@ int colortable_rgb_nearest(struct colortable *ct,rgb_group rgb)
       return ct->cache->value;
 
 #ifdef QUANT_DEBUG_RGB
-fprintf(stderr,"rgb_n: #%02x%02x%02x;  ",rgb.r,rgb.g,rgb.b);
+   fprintf(stderr,"rgb_n: #%02x%02x%02x;  ",rgb.r,rgb.g,rgb.b);
 #endif
 
 #if QUANT_SELECT_CACHE>1
    for (i=1; i<QUANT_SELECT_CACHE; i++)
+      /*
+       * Why is index 0 skipped? /grubba
+       */
       if (ct->cache[i].index.r==rgb.r &&
 	  ct->cache[i].index.g==rgb.g &&
 	  ct->cache[i].index.b==rgb.b) 
@@ -872,7 +877,7 @@ fprintf(stderr,"rgb_n: #%02x%02x%02x;  ",rgb.r,rgb.g,rgb.b);
 	 ct->cache[0].value=best;
 
 #ifdef QUANT_DEBUG_RGB
-fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+	 fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
 #endif
 	 return best;
       }
@@ -910,8 +915,8 @@ fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,c
    ct->cache[0].value=best;
 
 #ifdef QUANT_DEBUG_RGB
-fprintf(stderr," -> %lu: %d,%d,%d\n",best,
-	ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+   fprintf(stderr," -> %lu: %d,%d,%d\n",best,
+	   ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
 #endif
    return best;
 }
