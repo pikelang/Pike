@@ -10,7 +10,7 @@ varargs int exec(string file,string ... foo)
   if(search(file,"/"))
     return exece(combine_path(getcwd(),file),foo,getenv());
 
-  path=getenv("PATH");
+  path=getenv("PATH")||({});
 
   foreach(path/":",path)
     if(file_stat(path=combine_path(path,file)))
