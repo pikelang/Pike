@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.137 1997/11/23 03:28:39 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.138 1997/11/30 20:09:48 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -334,7 +334,7 @@ else
 fi
 
 echo Searching for binary directories...
-for d in "" /bin /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+for d in "" /usr /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
 do
   AC_MSG_CHECKING($d/bin)
   if test -d "$d/bin/." ; then
@@ -1020,7 +1020,7 @@ define(MY_CHECK_HEADERS,
    pike_cv_decl_$1=nonexistant
    for a in $2
    do
-     AC_EGREP_HEADER($1,$a,pike_cv_decl_$1=existant; break)
+     AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existant; break ])
    done
  ])
  AC_MSG_RESULT($pike_cv_decl_$1)
