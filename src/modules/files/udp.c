@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.48 2003/04/23 23:50:38 marcus Exp $
+|| $Id: udp.c,v 1.49 2003/04/30 10:29:29 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,8 +10,9 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.48 2003/04/23 23:50:38 marcus Exp $");
+RCSID("$Id: udp.c,v 1.49 2003/04/30 10:29:29 grubba Exp $");
 #include "fdlib.h"
+#include "pike_netlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -77,10 +78,6 @@ RCSID("$Id: udp.c,v 1.48 2003/04/23 23:50:38 marcus Exp $");
 #endif
 
 #endif /* HAVE_POLL */
-
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
 
 #if ! defined(EWOULDBLOCK) && defined(WSAEWOULDBLOCK)
 #define EWOULDBLOCK WSAEWOULDBLOCK

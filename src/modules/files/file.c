@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.274 2003/04/26 15:24:19 marcus Exp $
+|| $Id: file.c,v 1.275 2003/04/30 10:31:51 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.274 2003/04/26 15:24:19 marcus Exp $");
+RCSID("$Id: file.c,v 1.275 2003/04/30 10:31:51 grubba Exp $");
 #include "fdlib.h"
+#include "pike_netlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -57,8 +58,7 @@ RCSID("$Id: file.c,v 1.274 2003/04/26 15:24:19 marcus Exp $");
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
 
-#ifdef HAVE_WINSOCK_H
-#  include <winsock.h>
+#if defined(HAVE_WINSOCK_H) || defined(HAVE_WINSOCK2_H)
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #endif

@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.72 2003/04/23 23:50:38 marcus Exp $
+|| $Id: socket.c,v 1.73 2003/04/30 10:30:35 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
 #include "fdlib.h"
+#include "pike_netlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -23,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.72 2003/04/23 23:50:38 marcus Exp $");
+RCSID("$Id: socket.c,v 1.73 2003/04/30 10:30:35 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -40,10 +41,6 @@ RCSID("$Id: socket.c,v 1.72 2003/04/23 23:50:38 marcus Exp $");
 #endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#endif
-
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
 #endif
 
 #ifdef HAVE_SYS_STREAM_H
