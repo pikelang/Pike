@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.9 2003/08/11 20:38:56 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.10 2003/10/14 02:06:28 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -7,8 +7,15 @@ test_true(sizeof(Standards.ISO639_2.list_languages())>400)
 test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
 test_egual(Standards.ISO639_2.map_639_1("xx"),0)
 test_true(sizeof(Standards.ISO639_2.list_639_1())==163)
-test_false(Standards.ISO639_2.verify_overlap())
-
+test_do(
+class A {
+  inherit Standards.ISO639_2;
+  void create() {
+    foreach(indices(b_to_t), string symbol)
+      if(languages[symbol]) error("Overlap in symbol %s\n", symbol);
+  }
+}(); )
+    
 // - Standards.RDF
 test_any_equal([[
   object r = Standards.RDF();

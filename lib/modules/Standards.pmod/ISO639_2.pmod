@@ -548,15 +548,6 @@ string convert_t_to_b(string code) {
   return 0;
 }
 
-//! Returns 1 if there is an overlap between ISO 639-2/T and
-//! ISO 639-2/B symbols. Only used for debugging when updating
-//! the table.
-int(0..1) verify_overlap() {
-  foreach(indices(b_to_t), string symbol)
-    if(languages[symbol]) return 1;
-  return 0;
-}
-
 // Mapping from ISO 639-1 code to ISO 639-2/T code.
 static constant conversion = ([
   "aa":"aar",
