@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.148 2000/09/14 19:58:43 mast Exp $");
+RCSID("$Id: object.c,v 1.149 2000/09/29 15:48:04 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -739,11 +739,9 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
       fprintf(stderr, "|   Freeing storage for %p.\n", o);
 #endif
 
-    if (o->next == o)
-      /* It's a fake object which isn't counted by the gc, so
-       * counteract the num_objects-- done by GC_FREE. */
-      num_objects++;
-    GC_FREE(o);
+    if (o->next != o)
+      /* As far as the gc is concerned, the fake objects doesn't exist. */
+      GC_FREE(o);
 
     FREE_PROT(o);
 
