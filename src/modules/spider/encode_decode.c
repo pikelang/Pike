@@ -16,7 +16,9 @@
 #include <net/nh.h>
 #endif
 
-
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 
 #define strcat(buff, s, l) low_my_binary_strcat((s), (l), (buff))
 #define addchar(buff, t)   low_my_putchar((t),(buff))
