@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.38 2004/08/10 09:40:15 grubba Exp $
+// $Id: connection.pike,v 1.39 2005/01/26 21:09:17 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -328,7 +328,7 @@ string|int got_data(string|int s)
       case PACKET_alert:
        {
 	 int i;
-	 mixed err = 0;
+	 int err = 0;
 	 alert_buffer += packet->fragment;
 	 for (i = 0;
 	      !err && ((sizeof(alert_buffer) - i) >= 2);
@@ -368,8 +368,7 @@ string|int got_data(string|int s)
 			     version[1]));
 	   return -1;
 	 }
-	 mixed err;
-	 int len;
+	 int err, len;
 	 handshake_buffer += packet->fragment;
 
 	 while (sizeof(handshake_buffer) >= 4)
@@ -399,9 +398,11 @@ string|int got_data(string|int s)
 	break;
       case PACKET_V2:
        {
-	 mixed err = handle_handshake(HANDSHAKE_hello_v2,
-				      packet->fragment[1 .. ],
-				      packet->fragment);
+	 int err = handle_handshake(HANDSHAKE_hello_v2,
+				    packet->fragment[1 .. ],
+				    packet->fragment);
+	 // FIXME: Can err ever be 1 here? In that case we're probably
+	 // not returning the right value below.
 	 if (err)
 	   return err;
        }
