@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.2 2002/07/22 13:21:11 nilsson Exp $
+ * $Id: ffmpeg.c,v 1.3 2002/08/05 17:30:57 kiwi Exp $
  *
  */
 
@@ -27,11 +27,15 @@
 #include <string.h>
 #include <math.h>
 
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
 #ifdef HAVE_LIBFFMPEG_AVCODEC_H
 #include <libffmpeg/avcodec.h>
 #else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
+#endif
 #endif
 #endif
 
