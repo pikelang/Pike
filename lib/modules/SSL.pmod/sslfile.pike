@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.70 2004/03/02 15:31:10 grubba Exp $
+/* $Id: sslfile.pike,v 1.71 2004/08/04 18:36:36 bill Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -460,7 +460,7 @@ Stdio.File shutdown()
       explicitly_closed = 0;
     }
 
-    if (conn->session)
+    if (conn->session && !sizeof(conn->session->identity))
       // conn->session doesn't exist before the handshake.
       conn->context->purge_session (conn->session);
     destruct (conn);		// Necessary to avoid garbage.
