@@ -47,7 +47,9 @@ object(ascii) decoder(string name)
 
   program p = ([
     "utf-7": UTF7dec,
-    "utf-8": UTF8dec
+    "utf-8": UTF8dec,
+    "utf-7.5": UTF7_5dec,
+    "utf-7½": UTF7_5dec,
   ])[name];
 
   if(p)
@@ -134,7 +136,9 @@ object(_encoder) encoder(string name, string|void replacement,
 
   program p = ([
     "utf-7": UTF7enc,
-    "utf-8": UTF8enc
+    "utf-8": UTF8enc,
+    "utf-7.5": UTF7_5enc,
+    "utf-7½": UTF7_5enc,
   ])[name];
 
   if(p)

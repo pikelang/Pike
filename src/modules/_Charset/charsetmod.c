@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.26 2000/12/05 21:08:32 per Exp $");
+RCSID("$Id: charsetmod.c,v 1.27 2001/05/10 18:05:17 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -27,6 +27,7 @@ p_wchar1 *misc_charset_lookup(char *name, int *rlo, int *rhi);
 static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
+static struct program *utf7_5_program = NULL, *utf7_5e_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
@@ -245,6 +246,38 @@ static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 static void f_feed_utf8(INT32 args)
 {
   f_std_feed(args, feed_utf8);
+}
+
+static ptrdiff_t feed_utf7_5(const p_wchar0 *p, ptrdiff_t l,
+			     struct std_cs_stor *s)
+{
+  static int utf7_5len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
+			    -1,-1, 1, 2,-1,-1,-1,-1, };
+  static unsigned INT32 utf7_5of[] = { 0ul, 0x28c0ul, 0xb30c0ul };
+  while(l>0) {
+    unsigned INT32 ch = 0;
+    int cl = utf7_5len[(*p)>>4];
+    if(cl>--l)
+      return l+1;
+    switch(cl) {
+    case 2: ch += *p++; ch<<=6;
+    case 1: ch += *p++; ch<<=6;
+    case 0: ch += *p++;
+      break;
+    case -1:
+      /* FIXME: Encoding error if cl < 0. */
+      cl = 0;
+      break;
+    }
+    l-=cl;
+    string_builder_putchar(&s->strbuild, (ch-utf7_5of[cl])&0x7fffffffl);
+  }
+  return l;
+}
+
+static void f_feed_utf7_5(INT32 args)
+{
+  f_std_feed(args, feed_utf7_5);
 }
 
 static ptrdiff_t feed_utf7(const p_wchar0 *p, ptrdiff_t l,
@@ -740,6 +773,77 @@ static void f_feed_utf8e(INT32 args)
   push_object(this_object());
 }
 
+static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
+			 struct pike_string *str, struct pike_string *rep,
+			 struct svalue *repcb)
+{
+  ptrdiff_t l = str->len;
+
+  switch(str->size_shift) {
+  case 0:
+    {
+      p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+        else {
+	  string_builder_putchar(sb, 0xa0|(c>>6));
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	}
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+	else if(c<=0x3ff) {
+	  string_builder_putchar(sb, 0xa0|(c>>6));
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	} else {
+      	  string_builder_putchar(sb, 0xb0|(c>>12));
+	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	}
+    }
+    break;
+  case 2:
+    {
+      p_wchar2 c, *p = STR2(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+	else if(c<=0x3ff) {
+	  string_builder_putchar(sb, 0xa0|(c>>6));
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	} else if(c<=0xffff) {
+	  string_builder_putchar(sb, 0xb0|(c>>12));
+	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	} else
+	  REPLACE_CHAR(c, feed_utf8e, cs);
+      /* FIXME: Encode using surrogates? */
+    }
+    break;
+  default:
+    fatal("Illegal shift size!\n");
+  }
+}
+
+static void f_feed_utf7_5e(INT32 args)
+{
+  struct pike_string *str;
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+
+  get_all_args("feed()", args, "%W", &str);
+
+  feed_utf7_5e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
 static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 		       struct pike_string *str, struct pike_string *rep,
 		       struct svalue *repcb)
@@ -1156,6 +1260,18 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_utf7_5,tFunc(tStr,tObj), 0);
+  add_program_constant("UTF7_5dec", utf7_5_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_utf7_5e,tFunc(tStr,tObj), 0);
+  add_program_constant("UTF7_5enc", utf7_5e_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
   std8e_stor_offs = ADD_STORAGE(struct std8e_stor);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_std8e,tFunc(tStr,tObj), 0);
@@ -1230,6 +1346,12 @@ void pike_module_exit(void)
 
   if(utf8_program != NULL)
     free_program(utf8_program);
+
+  if(utf7_5_program != NULL)
+    free_program(utf7_5_program);
+
+  if(utf7_5e_program != NULL)
+    free_program(utf7_5e_program);
 
   if(std_94_program != NULL)
     free_program(std_94_program);
