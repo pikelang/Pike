@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.192 1998/05/22 13:09:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.193 1998/05/24 22:40:22 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -661,7 +661,7 @@ locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
 sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h grp.h \
 pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
-socket.h)
+socket.h ieeefp.h fp_class.h)
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -1004,6 +1004,13 @@ AC_CHECK_FUNCS( \
  getgrent getgrnam \
  initgroups setgroups \
  socketpair \
+ fpclass \
+ fp_class_d \
+ isinf \
+ isnan \
+ iszero \
+ finite \
+ signbit \
  nice \
 )
 
@@ -1525,6 +1532,81 @@ if test "$pike_cv_method_extract_char" = by_cast; then
   AC_DEFINE(EXTRACT_CHAR_BY_CAST)
 else
   AC_MSG_RESULT(not by cast)
+fi
+
+#############################################################################
+
+define(float_check, [[
+#include <math.h>
+#define TY $1
+#define TEST_$1
+#define TEST_$2
+#define EXPECTED_SIZE_float 4
+#define EXPECTED_SIZE_double 8
+void check(TY n, char *pf, char *pd)
+{
+  int i;
+  char *p, *p2 = (char*)&n;
+#ifdef TEST_float
+    p = pf;
+#else
+    p = pd;
+#endif
+  for(i=0; i<sizeof(TY); i++)
+#ifdef TEST_BIG
+    if(p[i] != p2[i])
+      exit(1);
+#else
+    if(p[i] != p2[sizeof(TY)-i-1])
+      exit(1);
+#endif
+}
+int main()
+{
+  if(sizeof(TY)!=EXPECTED_SIZE_$1)
+    exit(1);
+  check((TY)0.0, "\000\000\000\000", "\000\000\000\000\000\000\000\000");
+  check((TY)1.0, "\077\200\000\000", "\077\360\000\000\000\000\000\000");
+  check((TY)-1.0, "\277\200\000\000", "\277\360\000\000\000\000\000\000");
+  check((TY)2.0, "\100\000\000\000", "\100\000\000\000\000\000\000\000");
+  check((TY)1.5, "\077\300\000\000", "\077\370\000\000\000\000\000\000");
+  check((TY)0.032999999821186065673828125, "\075\007\053\002", "\077\240\345\140\100\000\000\000");
+  exit(0);
+}
+]])
+
+AC_MSG_CHECKING(for type of float)
+AC_CACHE_VAL(pike_cv_float_type,
+[AC_TRY_RUN(float_check(float,BIG),pike_cv_float_type=ieee_big,
+  [AC_TRY_RUN(float_check(float,LITTLE),pike_cv_float_type=ieee_little,
+    pike_cv_float_type=not_ieee)],pike_cv_float_type=not_ieee)])
+if test "$pike_cv_float_type" = ieee_big; then
+  AC_MSG_RESULT(IEEE big endian)
+  AC_DEFINE(FLOAT_IS_IEEE_BIG)
+else
+  if test "$pike_cv_float_type" = ieee_little; then
+    AC_MSG_RESULT(IEEE little endian)
+    AC_DEFINE(FLOAT_IS_IEEE_LITTLE)
+  else
+    AC_MSG_RESULT(not IEEE)
+  fi
+fi
+
+AC_MSG_CHECKING(for type of double)
+AC_CACHE_VAL(pike_cv_double_type,
+[AC_TRY_RUN(float_check(double,BIG),pike_cv_double_type=ieee_big,
+  [AC_TRY_RUN(float_check(double,LITTLE),pike_cv_double_type=ieee_little,
+    pike_cv_double_type=not_ieee)],pike_cv_double_type=not_ieee)])
+if test "$pike_cv_double_type" = ieee_big; then
+  AC_MSG_RESULT(IEEE big endian)
+  AC_DEFINE(DOUBLE_IS_IEEE_BIG)
+else
+  if test "$pike_cv_double_type" = ieee_little; then
+    AC_MSG_RESULT(IEEE little endian)
+    AC_DEFINE(DOUBLE_IS_IEEE_LITTLE)
+  else
+    AC_MSG_RESULT(not IEEE)
+  fi
 fi
 
 #############################################################################

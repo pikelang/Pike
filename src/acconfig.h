@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.23 1998/05/17 22:58:54 grubba Exp $
+ * $Id: acconfig.h,v 1.24 1998/05/24 22:40:21 marcus Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -103,6 +103,12 @@
 /* How to extract a char and an unsigned char from a char * */
 #undef EXTRACT_CHAR_BY_CAST
 #undef EXTRACT_UCHAR_BY_CAST
+
+/* Do you have IEEE floats and/or doubles (either big or little endian) ? */
+#undef FLOAT_IS_IEEE_BIG
+#undef FLOAT_IS_IEEE_LITTLE
+#undef DOUBLE_IS_IEEE_BIG
+#undef DOUBLE_IS_IEEE_LITTLE
 
 /* The rest of this file is just to eliminate warnings */
 
