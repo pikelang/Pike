@@ -1199,10 +1199,12 @@ array generate_overload_func_for(array(FuncData) d,
   int max_args=0;
   foreach(d, FuncData q)
     {
-      for(int a=q->min_args;a<=min(q->max_args,256);a++)
+      int low = max(min_possible_arg, q->min_args);
+      int high = min(max_possible_arg, q->max_args);
+      for(int a=low;a <= min(high, 255);a++)
 	x[a]+=({q});
-      min_args=min(min_args, q->min_args);
-      max_args=max(max_args, q->max_args);
+      min_args=min(min_args, low);
+      max_args=max(max_args, high);
     }
 
   min_args=max(min_args, min_possible_arg);
