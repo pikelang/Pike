@@ -70,6 +70,7 @@ static void f_hp_feed( INT32 args )
 {
   struct pike_string *str = Pike_sp[-1].u.string;
   struct header_buf *hp = THP;
+  int str_len;
   int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc;
   char *pp,*ep;
   struct svalue *tmp;
@@ -81,7 +82,8 @@ static void f_hp_feed( INT32 args )
     Pike_error("Wrong type of argument to feed()\n");
   if( str->size_shift )
     Pike_error("Wide string headers not supported\n");
-  while( str->len >= hp->left )
+  str_len = str->len;
+  while( str_len >= hp->left )
   {
     char *buf;
     if( THP->hsize > 512 * 1024 )
@@ -100,11 +102,11 @@ static void f_hp_feed( INT32 args )
     THP->pnt = (THP->headers + THP->hsize - THP->left);
   }
 
-  MEMCPY( hp->pnt, str->str, str->len );
+  MEMCPY( hp->pnt, str->str, str_len );
   pop_n_elems( args );
 
   /* FIXME: The below does not support lines terminated with just \r. */
-  for( ep=(hp->pnt+str->len),pp=MAXIMUM(hp->headers,hp->pnt-3); 
+  for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt-3); 
        pp<ep && slash_n<2; pp++ )
     if( *pp == ' ' )  spc++;
     else if( *pp == '\n' ) slash_n++, tot_slash_n++;
@@ -113,8 +115,8 @@ static void f_hp_feed( INT32 args )
   hp->slash_n = tot_slash_n;
   hp->spc = spc;
   
-  hp->left -= str->len;
-  hp->pnt += str->len;
+  hp->left -= str_len;
+  hp->pnt += str_len;
   hp->pnt[0] = 0;
 
   if( slash_n != 2 )
