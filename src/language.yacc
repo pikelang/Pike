@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.209 2000/08/30 21:58:15 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.210 2000/09/05 02:18:12 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1518,11 +1518,17 @@ block:'{'
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   } 
+  {
+    /* Trick to store more than one number on compiler stack - Hubbe */
+    $<number>$=Pike_compiler->compiler_frame->last_block_level;
+    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+  }
   statements end_block
   {
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
-    $$=$3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    $$=$4;
   }
   ;
 
@@ -2181,13 +2187,19 @@ cond: TOK_IF
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  {
+    /* Trick to store more than one number on compiler stack - Hubbe */
+    $<number>$=Pike_compiler->compiler_frame->last_block_level;
+    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+  }
   '(' safe_comma_expr end_cond statement optional_else_part
   {
-    $$=mknode('?',$4,mknode(':',$6,$7));
+    $$=mknode('?',$5,mknode(':',$7,$8));
     $$->line_number=$1;
     $$=mkcastnode(void_type_string,$$);
     $$->line_number=$1;
     pop_local_variables($<number>2);
+    Pike_compiler->compiler_frame->last_block_level=$<number>3;
   }
   ;
 
@@ -2217,17 +2229,23 @@ foreach: TOK_FOREACH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  {
+    /* Trick to store more than one number on compiler stack - Hubbe */
+    $<number>$=Pike_compiler->compiler_frame->last_block_level;
+    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+  }
   '(' expr0 ',' safe_lvalue end_cond statement
   {
-    if ($6) {
-      $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$4,$6),$8);
+    if ($7) {
+      $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$5,$7),$9);
       $$->line_number=$1;
     } else {
       /* Error in lvalue */
-      free_node($4);
-      $$=$8;
+      free_node($5);
+      $$=$9;
     }
     pop_local_variables($<number>2);
+    Pike_compiler->compiler_frame->last_block_level=$<number>3;
   }
   ;
 
@@ -2262,15 +2280,21 @@ for: TOK_FOR
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  {
+    /* Trick to store more than one number on compiler stack - Hubbe */
+    $<number>$=Pike_compiler->compiler_frame->last_block_level;
+    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+  }
   '(' unused expected_semicolon for_expr expected_semicolon unused end_cond
   statement
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string,$4),
-	      mknode(F_FOR,$6,mknode(':',$10,$8)));
+    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string,$5),
+	      mknode(F_FOR,$7,mknode(':',$11,$9)));
     lex.current_line=i;
     pop_local_variables($<number>2);
+    Pike_compiler->compiler_frame->last_block_level=$<number>3;
   }
   ;
 
@@ -2279,13 +2303,19 @@ while:  TOK_WHILE
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  {
+    /* Trick to store more than one number on compiler stack - Hubbe */
+    $<number>$=Pike_compiler->compiler_frame->last_block_level;
+    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+  }
   '(' safe_comma_expr end_cond statement
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_FOR,$4,mknode(':',$6,NULL));
+    $$=mknode(F_FOR,$5,mknode(':',$7,NULL));
     lex.current_line=i;
     pop_local_variables($<number>2);
+    Pike_compiler->compiler_frame->last_block_level=$<number>3;
   }
   ;
 
@@ -2297,11 +2327,17 @@ switch:	TOK_SWITCH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  {
+    /* Trick to store more than one number on compiler stack - Hubbe */
+    $<number>$=Pike_compiler->compiler_frame->last_block_level;
+    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+  }
   '(' safe_comma_expr end_cond statement
   {
-    $$=mknode(F_SWITCH,$4,$6);
+    $$=mknode(F_SWITCH,$5,$7);
     $$->line_number=$1;
     pop_local_variables($<number>2);
+    Pike_compiler->compiler_frame->last_block_level=$<number>3;
   }
   ;
 
@@ -3279,6 +3315,16 @@ int low_add_local_name(struct compiler_frame *frame,
 			struct pike_string *type,
 			node *def)
 {
+  int tmp=islocal(str);
+  if(tmp >= frame->last_block_level)
+  {
+    if(str->size_shift)
+      my_yyerror("Duplicate local variable, previous declaration on line %d\n",
+		 frame->variable[tmp].line);
+    else
+      my_yyerror("Duplicate local variable '%s', previous declaration on line %d\n",STR0(str),frame->variable[tmp].line);
+  }
+
   debug_malloc_touch(def);
   debug_malloc_touch(type);
   debug_malloc_touch(str);
@@ -3302,6 +3348,11 @@ int low_add_local_name(struct compiler_frame *frame,
     frame->variable[frame->current_number_of_locals].type = type;
     frame->variable[frame->current_number_of_locals].name = str;
     frame->variable[frame->current_number_of_locals].def = def;
+
+    frame->variable[frame->current_number_of_locals].line=lex.current_line;
+    frame->variable[frame->current_number_of_locals].file=lex.current_file;
+    add_ref(lex.current_file);
+
     frame->current_number_of_locals++;
     if(frame->current_number_of_locals > 
        frame->max_number_of_locals)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.269 2000/08/31 12:23:34 grubba Exp $");
+RCSID("$Id: program.c,v 1.270 2000/09/05 02:18:13 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1740,6 +1740,16 @@ void low_inherit(struct program *p,
   struct inherit inherit;
   struct pike_string *s;
 
+#if 0
+  fprintf(stderr,"LOW_INHERIT(pid=%d, parent=%p, parid=%d, paroff=%d, flags=0x%x, name=%s);\n",
+	  p->id,
+	  parent,
+	  parent_identifier,
+	  parent_offset,
+	  flags,
+	  name?  name->str : "");
+#endif
+	
   if(!p)
   {
     yyerror("Illegal program pointer.");
@@ -3928,8 +3938,11 @@ void push_compiler_frame(int lexical_scope)
   f->lexical_scope=lexical_scope;
   f->current_type=0;
   f->current_return_type=0;
+
   f->current_number_of_locals=0;
   f->max_number_of_locals=0;
+  f->last_block_level=0;
+
   f->current_function_number=-2; /* no function */
   f->recur_label=-1;
   f->is_inline=0;
@@ -3948,6 +3961,8 @@ void pop_local_variables(int level)
     free_string(Pike_compiler->compiler_frame->variable[e].type);
     if(Pike_compiler->compiler_frame->variable[e].def)
       free_node(Pike_compiler->compiler_frame->variable[e].def);
+
+    free_string(Pike_compiler->compiler_frame->variable[e].file);
   }
 }
 
