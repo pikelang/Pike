@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.70 2002/05/13 19:15:16 mast Exp $
+# $Id: Makefile,v 1.71 2002/05/29 00:45:12 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -125,20 +125,19 @@ compile: configure
 
 lobotomize_crypto:
 	@echo "Removing Pike crypto modules."
-	rm -f lib/modules/Crypto/_rsa.pike
-	rm -f lib/modules/Crypto/aes.pike
-	rm -f lib/modules/Crypto/des3.pike
-	rm -f lib/modules/Crypto/des3_cbc.pike
-	rm -f lib/modules/Crypto/idea_cbc.pike
-	rm -f lib/modules/Crypto/rsa.pike
-# Delete crypto dependent modules?
-# rm -rf lib/modules/SSL.pmod
-# rm -f lib/modules/Standards.pmod/PKCS.pmod/RSA.pmod
-# rm -f lib/modules/Tools.pmod/X509.pmod
-	(cd src/modules/_Crypto && ./.build_lobotomized_crypto);
+	-rm -f lib/modules/Crypto/_rsa.pike
+	-rm -f lib/modules/Crypto/aes.pike
+	-rm -f lib/modules/Crypto/des3.pike
+	-rm -f lib/modules/Crypto/des3_cbc.pike
+	-rm -f lib/modules/Crypto/idea_cbc.pike
+	-rm -f lib/modules/Crypto/rsa.pike
+	-rm -rf lib/modules/SSL.pmod
+	-rm -f lib/modules/Standards.pmod/PKCS.pmod/RSA.pmod
+	-rm -f lib/modules/Tools.pmod/X509.pmod
+	-(cd src/modules/_Crypto && ./.build_lobotomized_crypto);
 	@echo
 	@echo "Removing low Crypto module."
-	rm -rf src/modules/_Crypto
+	-rm -rf src/modules/_Crypto
 
 # FIXME: The refdoc stuff ought to use $(BUILDDIR) too.
 
@@ -248,7 +247,7 @@ autobuild:
 	-@cp export.stamp build/autobuild/exportstamp.txt
 	-@uname -s -r -m > build/autobuild/machineid.txt
 	-@uname -n >> build/autobuild/machineid.txt
-	@tar -c build/autobuild/*.txt > autobuild_result.tar
+	@cd build/autobuild && tar -c *.txt > ../../autobuild_result.tar
 	@gzip -f9 autobuild_result.tar
 
 autobuild_low:
