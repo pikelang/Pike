@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.116 2001/01/31 13:14:43 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.117 2001/02/08 00:53:05 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1565,6 +1565,8 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     my_strcat("([ ])");
   }
   else {
+    int save_t_flag = t_flag;
+
     if (m->data->size == 1) {
       my_strcat("([ /* 1 element */\n");
     } else {
@@ -1572,9 +1574,11 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       my_strcat(buf);
     }
 
+    t_flag = 0;
     if(!SETJMP(catch))
       sort_array_destructively(a);
     UNSETJMP(catch);
+    t_flag = save_t_flag;
 
     /* no mapping locking required (I hope) */
     for(e = 0; e < a->size; e++)
