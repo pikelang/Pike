@@ -1,5 +1,5 @@
 
-<!ELEMENT dir (file*|dir*)>
+<!ELEMENT dir (file|dir)*>
 <!ATTLIST dir
   name   %String;   #REQUIRED
   >
