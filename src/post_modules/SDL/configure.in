@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2003/01/01 12:29:26 peter Exp $
+# $Id: configure.in,v 1.5 2003/03/24 17:41:19 marcus Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
@@ -88,6 +88,7 @@ int main (int argc, char *argv[])
 {
   int major, minor, micro;
   char *tmp_version;
+  const SDL_version *link_version;
 
   /* This hangs on some systems (?)
   system ("touch conf.sdltest");
@@ -100,6 +101,41 @@ int main (int argc, char *argv[])
      printf("%s, bad version string\n", "$min_sdl_version");
      exit(1);
    }
+
+  if (SDL_COMPILEDVERSION != SDL_VERSIONNUM($sdl_major_version, $sdl_minor_version, $sdl_micro_version))
+    {
+      printf("\n*** 'sdl-config --version' returned %d.%d.%d, but SDL (%d.%d.%d)\n",
+             $sdl_major_version, $sdl_minor_version, $sdl_micro_version,
+             SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+      printf ("*** header files were found! If sdl-config was correct, then it is best\n");
+      printf ("*** to remove the old version of SDL.\n");
+      printf("*** If sdl-config was wrong, set the environment variable SDL_CONFIG\n");
+      printf("*** to point to the correct copy of sdl-config, and remove the file config.cache\n");
+      printf("*** before re-running configure\n");
+      return 1;
+    }
+
+  if ((link_version = SDL_Linked_Version()) == NULL)
+    {
+      printf("SDL_Linked_Version() failed\n");
+      exit(1);    
+    }
+
+  if (SDL_VERSIONNUM(link_version->major,link_version->minor,link_version->patch) != SDL_VERSIONNUM($sdl_major_version, $sdl_minor_version, $sdl_micro_version))
+    {
+      printf("\n*** 'sdl-config --version' returned %d.%d.%d, but SDL (%d.%d.%d)\n",
+             $sdl_major_version, $sdl_minor_version, $sdl_micro_version,
+             link_version->major, link_version->minor, link_version->patch);
+      printf ("*** libraries were found! If sdl-config was correct, then it is best\n");
+      printf ("*** to remove the old version of SDL. You may also be able to fix the error\n");
+      printf("*** by modifying your LD_LIBRARY_PATH enviroment variable, or by editing\n");
+      printf("*** /etc/ld.so.conf. Make sure you have run ldconfig if that is\n");
+      printf("*** required on your system.\n");
+      printf("*** If sdl-config was wrong, set the environment variable SDL_CONFIG\n");
+      printf("*** to point to the correct copy of sdl-config, and remove the file config.cache\n");
+      printf("*** before re-running configure\n");
+      return 1;
+    }
 
    if (($sdl_major_version > major) ||
       (($sdl_major_version == major) && ($sdl_minor_version > minor)) ||
