@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.13 2000/12/11 21:13:32 noring Exp $
+// $Id: testsuite.in,v 1.14 2001/02/07 11:46:00 noring Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -32,3 +32,4 @@ cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master
 ]])
 
 test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
+test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
