@@ -1,5 +1,5 @@
 /*
- * $Id: kernel.pike,v 1.4 1998/11/12 19:45:42 grubba Exp $
+ * $Id: kernel.pike,v 1.5 1998/11/13 02:37:06 grubba Exp $
  *
  * Implements a LR(1) state;
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	kernel.pike
-//. RCSID:	$Id: kernel.pike,v 1.4 1998/11/12 19:45:42 grubba Exp $
+//. RCSID:	$Id: kernel.pike,v 1.5 1998/11/13 02:37:06 grubba Exp $
 //. Author:	Henrik Grubbström
 //.
 //. Synopsis:	Implements an LR(1) state.
@@ -97,29 +97,5 @@ int equalp(object /* (kernel) */ state)
     state->make_kernel_hash();
   }
   return(kernel_hash == state->kernel_hash);
-
-
-  /* Could probably make it test only kernel items */
-
-  foreach (state->items, object(item) i) {
-    if (search(items, i) == -1) {
-      int found = 0;
-
-      foreach (items, object(item) i2) {
-	/* Two items are the same if they have the same rule
-	 * and the same offset;
-	 */
-	if ((i->offset == i2->offset) &&
-	    (i->r == i2->r)) {
-	  found = 1;
-	  break;		/* BUG in Pike 0.3 beta */
-	}
-      }
-      if (!found) {
-	return(0);
-      }
-    }
-  }
-  return(1);
 }
 
