@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.71 2000/08/10 08:44:31 grubba Exp $
+ * $Id: cpp.c,v 1.72 2000/08/10 08:50:01 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -83,7 +83,7 @@ struct define
   struct hash_entry link; /* must be first */
   magic_define_fun magic;
   int args;
-  int num_parts;
+  ptrdiff_t num_parts;
   short inside;
   short varargs;
   struct pike_string *first;
@@ -131,7 +131,8 @@ void cpp_error(struct cpp *this,char *err)
 }
 
 /* devours one reference to 'name'! */
-static struct define *alloc_empty_define(struct pike_string *name, INT32 parts)
+static struct define *alloc_empty_define(struct pike_string *name,
+					 ptrdiff_t parts)
 {
   struct define *def;
   def=(struct define *)xalloc(sizeof(struct define)+

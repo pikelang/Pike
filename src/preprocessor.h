@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.29 2000/08/10 08:46:09 grubba Exp $
+ * $Id: preprocessor.h,v 1.30 2000/08/10 08:50:56 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1477,7 +1477,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       if(WGOBBLE2(ifndef_))
 	{
-	  INT32 namestart,nflags;
+	  INT32 nflags;
+	  ptrdiff_t namestart;
 	  struct pike_string *s;
 	  SKIPSPACE();
 
@@ -1581,7 +1582,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       if(WGOBBLE2(error_))
 	{
-          INT32 foo;
+          ptrdiff_t foo;
+
           SKIPSPACE();
           foo=pos;
           FIND_EOL();
@@ -1610,7 +1612,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       if(WGOBBLE2(define_))
 	{
 	  struct string_builder str;
-	  INT32 namestart, tmp3, nameend, argno=-1;
+	  INT32 argno=-1;
+	  ptrdiff_t tmp3, namestart, nameend;
 	  struct define *def;
 	  struct svalue *partbase,*argbase=Pike_sp;
 	  int varargs=0;
@@ -1768,7 +1771,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 			check_stack(2);
 			push_string(finish_string_builder(&str));
 			init_string_builder(&str, 0);
-			push_int(e | extra);
+			push_int(DO_NOT_WARN(e | extra));
 			extra=0;
 			break;
 		      }
@@ -1908,7 +1911,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	static WCHAR charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
 
       if (WGOBBLE2(charset_)) {
-	INT32 p;
+	ptrdiff_t p;
 	struct pike_string *s;
 
 	if (flags & (CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE)) {
