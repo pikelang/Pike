@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.164 2000/07/07 13:56:45 grubba Exp $ */
+/* $Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.164 2000/07/07 13:56:45 grubba Exp $
+**!	$Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.164 2000/07/07 13:56:45 grubba Exp $");
+RCSID("$Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3605,6 +3605,224 @@ void image_modify_by_intensity(INT32 args)
 }
 
 /*
+**! method object apply_curve( array(int(0..255)) curve_r, array(int(0..255)) curve_g, array(int(0..255)) curve_b )
+**! method object apply_curve( array(int(0..255)) curve )
+**! method object apply_curve( string channel, array(int(0..255)) curve )
+**!
+**!  Apply a lookup-table on all pixels in an image.
+**!  If only one curve is passed, use the same curve for red, green and blue.
+**!  If 'channel' is specified, the curve is only applied to the
+**!  specified channel.
+**! 
+**!  returns a new image object
+**! 
+**!  arg array(int(0..255)) curve_r
+**!  arg array(int(0..255)) curve_g
+**!  arg array(int(0..255)) curve_b
+**!  arg array(int(0..255)) curve
+**!      An array with 256 elements, each between 0 and 255.
+**!      It is used as a look-up table, if the pixel value is 2 and
+**!      curve[2] is 10, the new pixel value will be 10.
+**!
+**!  arg string channel
+**!      one of "red", "green", "blue", "value", "saturation" and "hue".
+**!
+**!  see also: gamma, `*, modify_by_intensity
+*/
+
+static void image_apply_curve_3( unsigned char curve[3][256] )
+{
+  int j, i;
+  struct object *o;
+  rgb_group *s = THIS->img, *d;
+  push_int( THIS->xsize );
+  push_int( THIS->ysize );
+  o = clone_object( image_program, 2 );
+  d = ((struct image *)get_storage( o, image_program ))->img;
+  i = THIS->xsize*THIS->ysize;
+  
+  THREADS_ALLOW();
+  for( ; i>0; i-- )
+  {
+    d->r = curve[0][s->r];
+    d->g = curve[1][s->g];
+    (d++)->b = curve[2][(s++)->b];
+  }
+  THREADS_DISALLOW();
+
+  push_object( o );
+}
+
+static void image_apply_curve_1( unsigned char curve[256] )
+{
+  int j, i;
+  struct object *o;
+  rgb_group *s = THIS->img, *d;
+  push_int( THIS->xsize );
+  push_int( THIS->ysize );
+  o = clone_object( image_program, 2 );
+  d = ((struct image *)get_storage( o, image_program ))->img;
+  i = THIS->xsize*THIS->ysize;
+  THREADS_ALLOW();
+  for( ; i>0; i-- )
+  {
+    d->r = curve[s->r];
+    d->g = curve[s->g];
+    (d++)->b = curve[(s++)->b];
+  }
+  THREADS_DISALLOW();
+  push_object( o );
+}
+
+
+static void image_apply_curve_2( struct object *o, 
+                                 int channel, 
+                                 unsigned char curve[256] )
+{
+  int j, i;
+  rgb_group *d;
+  d = ((struct image *)get_storage(o,image_program))->img;
+  i = THIS->xsize*THIS->ysize;
+
+  THREADS_ALLOW();
+  switch( channel ) 
+  {
+   case 0: for( ; i>0; i-- ) d->r = curve[(d++)->r]; break;
+   case 1: for( ; i>0; i-- ) d->g = curve[(d++)->g]; break;
+   case 2: for( ; i>0; i-- ) d->b = curve[(d++)->b]; break;
+  }
+  THREADS_DISALLOW();
+
+  push_object( o );
+}
+
+
+static void image_apply_curve( INT32 args )
+{
+  int i, j;
+  switch( args )
+  {
+   case 3:
+     {
+       unsigned char curve[3][256];
+       for( i = 0; i<3; i++ )
+         if( sp[-args+i].type != T_ARRAY ||
+             sp[-args+i].u.array->size != 256 )
+           bad_arg_error("Image.Image->apply_curve", 
+                         sp-args, args, 0, "", sp-args,
+                         "Bad arguments to apply_curve()\n");
+         else
+           for( j = 0; j<256; j++ )
+             if( sp[-args+i].u.array->item[j].type == T_INT )
+               curve[i][j]=MINIMUM(sp[-args+i].u.array->item[j].u.integer,255);
+       pop_n_elems( args );
+       image_apply_curve_3( curve );
+       return;
+     }
+   case 2:
+     {
+       struct pike_string *s_red, *s_green, *s_blue;
+       struct pike_string *s_saturation, *s_value, *s_hue;
+       unsigned char curve[256];
+       int chan = 0, co = 0;
+       struct object *o;
+       MAKE_CONSTANT_SHARED_STRING(s_red,"red");
+       MAKE_CONSTANT_SHARED_STRING(s_green,"green");
+       MAKE_CONSTANT_SHARED_STRING(s_blue,"blue");
+       MAKE_CONSTANT_SHARED_STRING(s_saturation,"saturation");
+       MAKE_CONSTANT_SHARED_STRING(s_value,"value");
+       MAKE_CONSTANT_SHARED_STRING(s_hue,"hue");
+
+       if( sp[-args].type != T_STRING )
+         bad_arg_error("Image.Image->apply_curve", 
+                       sp-args, args, 0, "", sp-args,
+                       "Bad arguments to apply_curve()\n" );
+       if( sp[-args+1].type != T_ARRAY ||
+           sp[-args+1].u.array->size != 256 )
+         bad_arg_error("Image.Image->apply_curve", 
+                       sp-args, args, 0, "", sp-args,
+                       "Bad arguments to apply_curve()\n" );
+       else
+         for( j = 0; j<256; j++ )
+           if( sp[-args+1].u.array->item[j].type == T_INT )
+             curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+
+       if( sp[-args].u.string == s_red )
+       {
+         co = 1;
+         chan = 0;
+       }
+       else if( sp[-args].u.string == s_green )
+       {
+         co = 1;
+         chan = 1;
+       }
+       else if( sp[-args].u.string == s_blue )
+       {
+         co = 1;
+         chan = 2;
+       }
+       else if( sp[-args].u.string == s_hue )
+       {
+         chan = 0;
+         co = 0;
+       }
+       else if( sp[-args].u.string == s_saturation )
+       {
+         chan = 1;
+         co = 0;
+       }
+       else if( sp[-args].u.string == s_value )
+       {
+         chan = 2;
+         co = 0;
+       }
+
+       if( co )
+       { 
+         push_int( THIS->xsize );
+         push_int( THIS->ysize );
+         o = clone_object( image_program, 2 );
+         MEMCPY( ((struct image *)get_storage(o,image_program))->img, 
+                 THIS->img, 
+                 THIS->xsize*THIS->ysize*sizeof(rgb_group) );
+       }
+       else
+       {
+         image_rgb_to_hsv( 0 );
+         o = sp[-1].u.object;
+         sp--;
+       }
+       image_apply_curve_2( o, chan, curve );
+       if( !co )
+       {
+         apply( sp[-1].u.object, "hsv_to_rgb", 0 );
+         stack_swap();
+         pop_stack();
+       }
+       return;
+     }
+   case 1:
+     {
+       unsigned char curve[256];
+       if( sp[-args].type != T_ARRAY ||
+           sp[-args].u.array->size != 256 )
+         bad_arg_error("Image.Image->apply_curve", 
+                       sp-args, args, 0, "", sp-args,
+                       "Bad arguments to apply_curve()\n" );
+       else
+         for( j = 0; j<256; j++ )
+           if( sp[-args].u.array->item[j].type == T_INT )
+             curve[j] = MINIMUM(sp[-args].u.array->item[j].u.integer,255);
+       pop_n_elems( args );
+       image_apply_curve_1( curve );
+       return;
+     }
+  }
+}
+
+
+/*
 **! method object gamma(float g)
 **! method object gamma(float gred,ggreen,gblue)
 **!     Calculate pixels in image by gamma curve.
@@ -4184,6 +4402,11 @@ void init_image_image(void)
    ADD_FUNCTION("gamma",image_gamma,
 		tOr(tFunc(tOr(tFlt,tInt),tObj),
 		    tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
+
+   ADD_FUNCTION("apply_curve",image_apply_curve,
+                tOr3( tFunc(tArr(tInt) tArr(tInt) tArr(tInt),tObj),
+                      tFunc(tArr(tInt),tObj),
+                      tFunc(tString tArr(tInt),tObj) ), 0);
 
    ADD_FUNCTION("rotate_ccw",image_ccw,
 		tFunc(tNone,tObj),0);
