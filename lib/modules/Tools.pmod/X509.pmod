@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.23 2004/01/27 22:01:37 nilsson Exp $
+ * $Id: X509.pmod,v 1.24 2004/01/30 01:06:35 bill Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -521,44 +521,94 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //!   @member int(0..1) "verified"
 //!     Non-zero if the certificate is verified.
 //!   @member string "authority"
-//!     DER-encoded name of the authority that verified the chain.
+//!     @[Standards.ASN1.Sequence] of the authority RDN that verified the chain.
+//!   @member string "cn"
+//!     @[Standards.ASN1.Sequence] of the common name RDN of the leaf certificate.
 //! @endmapping
 //!
+//! @param cert_chain
+//!   An array of certificates, with the relative-root last.
 //! @param authorities
 //!   A mapping from (DER-encoded) names to verifiers.
-mapping verify_certificate_chain(array(string) cert_chain, mapping authorities)
+//! @param forbid_selfsigned
+//!   Require that the certificate be traced to an authority, even if it is self signed.
+//!
+//! See @[Standards.PKCS.Certificate.get_dn_string] for converting the RDN to an X500 style string.
+mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, int|void require_trust)
 {
+
   mapping m = ([ ]);
 
-  for(int i=0; i<sizeof(cert_chain); i++)
+  array chain_obj = ({});
+  array chain_cert = ({});
+ 
+  foreach(cert_chain, string c)
   {
-    object cert = Standards.ASN1.Decode.simple_der_decode(cert_chain[i]);
+     object cert = Standards.ASN1.Decode.simple_der_decode(c);
+     TBSCertificate tbs = decode_certificate(cert);
+     if(!tbs) return m;
+     chain_cert += ({cert});
+     chain_obj += ({tbs});
+  }
 
-    object(TBSCertificate) tbs = decode_certificate(cert);
-    if (!tbs) return m;
-
+  foreach(chain_obj; int idx; TBSCertificate tbs)
+  {
     object v;
 
-    if(i == sizeof(cert_chain)-1) // Last cert
-      v = authorities[tbs->issuer->get_der()];
-    if (!v && tbs->issuer->get_der() == tbs->subject->get_der())
+    if(idx == 0) // The root cert
     {
-      /* A self signed certificate */
-      m->self_signed = 1;
-      X509_WERR("Self signed certificate\n");
-      v = tbs->public_key;
-    }
-    else
       v = authorities[tbs->issuer->get_der()];
 
-    if (v && v->verify(cert->elements[1],
-		       cert->elements[0]->get_der(),
-		       cert->elements[2]->value)
+      // if we don't know the issuer of the root certificate, and we require trust, we're done.
+      if(!v && require_trust)
+      {
+         X509_WERR("we require trust, but haven't got it.\n");
+        return m;
+      }
+
+      // is the root self signed?
+      if (tbs->issuer->get_der() == tbs->subject->get_der())
+      {
+        /* A self signed certificate */
+        m->self_signed = 1;
+        X509_WERR("Self signed certificate\n");
+
+        // always trust our own authority first, even if it is self signed.
+        if(!v) 
+          v = tbs->public_key;
+      }
+    }
+
+    else // otherwise, we make sure the chain is unbroken.
+    {
+      // is the issuer of this certificate the subject of the previous (more rootward) certificate?
+      if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
+      {
+        X509_WERR("issuer chain is broken!\n");
+        return m;
+      }
+      // the verifier for this certificate should be the public key of the previous certificate in the chain.
+      v = chain_obj[idx-1]->public_key;
+    }
+
+    if (v && v->verify(chain_cert[idx]->elements[1],
+		       chain_cert[idx]->elements[0]->get_der(),
+		       chain_cert[idx]->elements[2]->value)
 	&& tbs)
     {
-      m->authority = tbs->issuer->get_der();
-      if(v == authorities[tbs->issuer->get_der()])
-	m->verified = 1;
+       X509_WERR("signature is verified..\n");
+       m->verified = 1;
+
+       if(idx == 0) // if we're the root of the chain and we've verified, this is the authority.
+         m->authority = tbs->issuer;
+ 
+       if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
+    }
+    else
+    {
+      X509_WERR("signature _not_ verified...\n");
+      m->verified = 0;
+      return m;
     }
   }
   return m;
