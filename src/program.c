@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.56 1998/01/27 18:11:35 hubbe Exp $");
+RCSID("$Id: program.c,v 1.57 1998/01/27 20:02:15 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1011,6 +1011,11 @@ void compiler_do_inherit(node *n,
 			 INT32 flags,
 			 struct pike_string *name)
 {
+  if(!n)
+  {
+    yyerror("Unable to inherit");
+    return;
+  }
   switch(n->token)
   {
     case F_EXTERNAL:
@@ -1029,10 +1034,10 @@ void compiler_do_inherit(node *n,
     
       if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
       {
-	struct svalue *s=PROG_FROM_INT(new_program, numid)->constants + i->func.offset;
+	struct svalue *s=PROG_FROM_INT(p, numid)->constants + i->func.offset;
 	if(s->type != T_PROGRAM)
 	{
-	  yyerror("Inherit identifier is not a program");
+	  do_inherit(s,flags,name);
 	  return;
 	}else{
 	  p=s->u.program;

@@ -161,7 +161,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.55 1998/01/26 19:59:54 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.56 1998/01/27 20:02:14 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1474,15 +1474,9 @@ void yyerror(char *str)
 
   if ( get_master() )
   {
-    sp->type = T_STRING;
-    copy_shared_string(sp->u.string, lex.current_file);
-    sp++;
-    sp->type = T_INT;
-    sp->u.integer = lex.current_line;
-    sp++;
-    sp->type = T_STRING;
-    sp->u.string = make_shared_string(str);
-    sp++;
+    ref_push_string(lex.current_file);
+    push_int(lex.current_line);
+    push_text(str);
     SAFE_APPLY_MASTER("compile_error",3);
     pop_stack();
   }else{
