@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.59 1998/01/23 01:20:05 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.60 1998/01/24 18:36:44 per Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -343,6 +343,7 @@ void print_return_value(void)
 
 void pop_n_elems(INT32 x)
 {
+  if(!x) return;
 #ifdef DEBUG
   if(sp - evaluator_stack < x)
     fatal("Popping out of stack.\n");
