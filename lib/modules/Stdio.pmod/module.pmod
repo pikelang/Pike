@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.176 2003/06/26 23:29:09 nilsson Exp $
+// $Id: module.pmod,v 1.177 2003/07/10 13:08:56 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -720,6 +720,16 @@ class File
 ** 
 */
 
+#if 0
+    if (!(::mode() & PROP_IS_NONBLOCKING))
+      error ("Read callback called on blocking socket!\n"
+	     "Callbacks: %O, %O\n"
+	     "Id: %O\n",
+	     ___read_callback,
+	     ___close_callback,
+	     ___id);
+#endif /* 0 */
+
 #if !defined(__NT__)
     if (peek_file_before_read_callback)
        if (!::peek()) 
@@ -764,6 +774,10 @@ class File
 
   static void __stdio_close_callback()
   {
+#if 0
+    if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
+#endif /* 0 */
+
     string s=::read(0, 1);
     if(!s)
     {
@@ -1213,7 +1227,11 @@ class FILE
   /* Private functions / buffers etc. */
 
   private string b="";
-  private int bpos=0, lp, do_lines;
+  private int bpos=0, lp;
+
+  // Contains a prefix of b splitted on "\n".
+  // Note that the last element of the array is a partial line,
+  // and should not be used.
   private array cached_lines = ({});
 
   private function(string:string) output_conversion, input_conversion;
@@ -1223,6 +1241,20 @@ class FILE
     return ::_sprintf( type, flags );
   }
 
+  inline private static nomask int low_get_data()
+  {
+    string s = file::read(BUFSIZE,1);
+    if(s && strlen(s)) {
+      if( input_conversion ) {
+	s = input_conversion( s );
+      }
+      b+=s;
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+ 
   inline private static nomask int get_data()
   {
     if( bpos )
@@ -1230,27 +1262,39 @@ class FILE
       b = b[ bpos .. ];
       bpos=0;
     }
-    string s = file::read(BUFSIZE,1);
-    if( input_conversion )
-      s = input_conversion( s );
-    if(s && sizeof(s))
-      b+=s;
-    else
-      s = 0;
-    if( do_lines && (!sizeof( cached_lines ) || s) )
-    {
-      cached_lines = b/"\n";
-      lp = 0;
-      return 1;
-    } 
-    return s&&1;
+    return low_get_data();
   }
 
+  // Update cached_lines and lp
+  // Return 0 at end of file, 1 otherwise.
+  // At exit cached_lines contains at least one string,
+  // and lp is set to zero.
+  inline private static nomask int get_lines()
+  {
+    if( bpos )
+    {
+      b = b[ bpos .. ];
+      bpos=0;
+    }
+    int start = 0;
+    while ((search(b, "\n", start) == -1) &&
+	   ((start = sizeof(b)), low_get_data()))
+      ;
+
+    cached_lines = b/"\n";
+    lp = 0;
+    return sizeof(cached_lines) > 1;
+  }
+
+  // NB: Caller is responsible for clearing cached_lines and lp.
   inline private static nomask string extract(int bytes, int|void skip)
   {
     string s;
     s=b[bpos..bpos+bytes-1];
-    bpos += bytes+skip;
+    if ((bpos += bytes+skip) > sizeof(b)) {
+      bpos = 0;
+      b = "";
+    }
     return s;
   }
 
@@ -1291,24 +1335,22 @@ class FILE
   //!
   string gets()
   {
-    if( sizeof( cached_lines ) > lp+1 )
-    {
-      string r = cached_lines[ lp++ ];
-      return (bpos += sizeof( r  )+1),r;
-    }
-    do_lines = 1;
-    if( !get_data() )
-    {
-      if( sizeof( cached_lines ) > lp && cached_lines[lp] != "" )
-      {
-	 string r = cached_lines[ lp++ ];
-	 return (bpos += sizeof( r  )+1),r;
+    string r;
+    if( (sizeof(cached_lines) <= lp+1) &&
+	!get_lines()) {
+      // EOF
+
+      // NB: lp is always zero here.
+      if (sizeof(r = cached_lines[0])) {
+	cached_lines = ({});
+	b = "";
+	bpos = 0;
+	return r;
       }
-      cached_lines = ({});
-      lp = 0;
       return 0;
     }
-    return gets();
+    bpos += sizeof(r = cached_lines[lp++]) + 1;
+    return r;
   }
 
   int seek(int pos)
@@ -1344,36 +1386,46 @@ class FILE
     return file::open_socket(port, address, family);
   }
 
+  //! Get @[n] lines.
+  //!
+  //! @param n
+  //!   Number of lines to get, or all remaining if zero.
   array(string) ngets(void|int(1..) n)
   {
-    cached_lines = ({}); lp=0;
+    array(string) res;
     if (!n) 
     {
-       array v=read()/"\n";
-       if (v[-1]=="") return v[..sizeof(v)-2];
-       return v;
+       res=read()/"\n";
+       if (res[-1]=="") return res[..sizeof(res)-2];
+       return res;
     }
+    if (n < 0) return ({});
+    res = ({});
+    do {
+      array(string) delta;
+      if (lp + n < sizeof(cached_lines)) {
+	delta = cached_lines[lp..(lp += n)-1];
+	bpos += `+(@sizeof(delta[*]), sizeof(delta));
+	return res + delta;
+      }
+      delta = cached_lines[lp..sizeof(cached_lines)-2];
+      bpos += `+(@sizeof(delta[*]), sizeof(delta));
+      res += delta;
+      // NB: lp and cached_lines are reset by get_lines().
+    } while(get_lines());
 
-    array res=b[bpos..]/"\n";
-    bpos=sizeof(b)-sizeof(res[-1]);
-    res=res[..sizeof(res)-2];
+    // EOF, and we want more lines...
 
-    while (sizeof(res)<n)
-    {
-       if (!get_data()) 
-	  if (string s=gets()) return res+({s});
-	  else if (!sizeof(res)) return 0;
-	  else return res;
-
-       array a=b[bpos..]/"\n";
-       bpos=sizeof(b)-sizeof(a[-1]);
-       res+=a[..sizeof(a)-2];
+    // NB: At this point lp is always zero, and
+    //     cached_lines contains a single string.
+    if (sizeof(cached_lines[0])) {
+      // Return the partial line too.
+      res += cached_lines;
     }
-    if (sizeof(res)>n)
-    {
-      bpos-=`+(@map(res[n..],sizeof))+(sizeof(res)-n);
-      return res[..n-1];
-    }
+    b = "";
+    bpos = 0;
+    cached_lines = ({});
+    if (!sizeof(res)) return 0;
     return res;
   }
 
@@ -1474,7 +1526,6 @@ class FILE
   //!   @[Stdio.File()->read()], @[set_charset()]
   string read(int|void bytes,void|int(0..1) now)
   {
-    cached_lines = ({}); lp = do_lines = 0;
     if (!query_num_arg()) {
       bytes = 0x7fffffff;
     }
@@ -1486,15 +1537,17 @@ class FILE
       return ::read(bytes, now);
     }
 
-    while(sizeof(b) - bpos < bytes)
+    cached_lines = ({}); lp = 0;
+    while(sizeof(b) - bpos < bytes) {
       if(!get_data()) {
 	// EOF.
-	string res = b[bpos..];
+	// NB: get_data() sets bpos to zero.
+	string res = b;
 	b = "";
-	bpos = 0;
 	return res;
       }
       else if (now) break;
+    }
 
     return extract(bytes);
   }
@@ -1502,14 +1555,18 @@ class FILE
   //! This function puts a string back in the input buffer. The string
   //! can then be read with eg @[read()], @[gets()] or @[getchar()].
   //!
+  //! @note
+  //!   The string must not contain line-feeds.
+  //!
   //! @seealso
   //! @[read()], @[gets()], @[getchar()]
   //!
   void ungets(string s)
   {
-     cached_lines = ({}); lp=0;
-     b=s+"\n"+b[bpos..];
-     bpos=0;
+    cached_lines = ({ s }) + cached_lines[lp..];
+    lp = 0;
+    b=s+"\n"+b[bpos..];
+    bpos=0;
   }
 
   //! This function returns one character from the input stream.
