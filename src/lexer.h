@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.12 1999/11/23 03:11:08 grubba Exp $
+ * $Id: lexer.h,v 1.13 1999/12/17 21:09:49 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -745,6 +745,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  break;
 	  case TWO_CHAR('o','b'):
 	    if(ISWORD("object")) return F_OBJECT_ID;
+	  break;
+	  case TWO_CHAR('o','p'):
+	    if(ISWORD("optional")) return F_OPTIONAL;
 	  break;
 	  case TWO_CHAR('p','r'):
 	    if(ISWORD("program")) return F_PROGRAM_ID;

@@ -156,6 +156,7 @@
 %token F_XOR_EQ
 %token F_NOP
 %token F_UNDEFINED
+%token F_OPTIONAL
 
 %token F_ALIGN
 %token F_POINTER
@@ -184,7 +185,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.149 1999/12/17 19:47:19 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.150 1999/12/17 21:09:48 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -780,6 +781,17 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     yyerror("Missing ';'.");
    /* yychar = '}';	*/ /* Put the '}' back on the input stream */
   }
+  | modifiers
+   '{' 
+    {
+      $<number>$=lex.pragmas;
+      lex.pragmas|=$1;
+    }
+      program
+   '}'
+    {
+      lex.pragmas=$<number>3;
+    }
   ;
 
 optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
@@ -838,6 +850,7 @@ arguments2: new_arg_name { $$ = 1; }
 modifier: F_NO_MASK    { $$ = ID_NOMASK; }
   | F_FINAL_ID   { $$ = ID_NOMASK; }
   | F_STATIC     { $$ = ID_STATIC; }
+  | F_OPTIONAL   { $$ = ID_OPTIONAL; }
   | F_PRIVATE    { $$ = ID_PRIVATE | ID_STATIC; }
   | F_LOCAL_ID   { $$ = ID_INLINE; }
   | F_PUBLIC     { $$ = ID_PUBLIC; }
@@ -854,6 +867,7 @@ magic_identifiers1:
   | F_PUBLIC     { $$ = "public"; }
   | F_PROTECTED  { $$ = "protected"; }
   | F_INLINE     { $$ = "inline"; }
+  | F_OPTIONAL   { $$ = "optional"; }
   ;
 
 magic_identifiers2:
@@ -895,14 +909,15 @@ magic_identifiers3:
   | F_TYPEOF     { $$ = "typeof"; }
   ;
 
-magic_identifiers: magic_identifiers1 | magic_identifiers2 | magic_identifiers3
-magic_identifier: magic_identifiers
+magic_identifiers: magic_identifiers1 | magic_identifiers2 | magic_identifiers3 ;
+
+magic_identifier: F_IDENTIFIER 
+  | magic_identifiers
   {
     struct pike_string *tmp=make_shared_string($1);
     $$=mkstrnode(tmp);
     free_string(tmp);
   }
-  | F_IDENTIFIER
   ;
 
 modifiers: modifier_list
@@ -2069,7 +2084,6 @@ expr4: string
   {
     $$=mknode(F_ARROW,$1,$3);
   }
-  | expr4 F_ARROW bad_identifier {}
   | expr4 F_ARROW error {}
   ;
 
@@ -2451,6 +2465,8 @@ bad_expr_ident:
   { yyerror("protected is a reserved word."); }
   | F_PUBLIC
   { yyerror("public is a reserved word."); }
+  | F_OPTIONAL
+  { yyerror("optional is a reserved word."); }
   | F_STATIC
   { yyerror("static is a reserved word."); }
   | F_FINAL_ID

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.253 1999/12/14 12:58:19 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.254 1999/12/17 21:09:53 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -847,8 +847,11 @@ test_true(clone(class c { constant i=1; })->i)
 test_true(clone(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
 test_true(clone(class c { constant i=1; mixed `->(string s) { return 0; }})["i"])
 test_true(clone(class c { constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
+test_true(clone(class c { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
 test_true(clone(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
 test_true(clone(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
+
+test_eq((["static":42])->static,42)
 
 test_compile_any(class A {}; class B { inherit A; })
 
@@ -4165,8 +4168,8 @@ test_compile_any(class A {int v;} class B {inherit A; int v;})
 test_compile_error_low(class A {int v;} class B {inherit A; float v;})
 test_compile_error_low(class A {int v;} class B {inherit A; mixed v;})
 test_compile_error_low(class A {mixed v;} class B {inherit A; int v;})
-test_compile_error_low(class A {public int v;} class B {inherit A; float v;})
 test_compile_error_low(class A {public int v;} class B {inherit A; mixed v;})
+test_compile_error_low(class A { public { int v; } } class B {inherit A; mixed v;})
 test_compile_error_low(class A {public mixed v;} class B {inherit A; int v;})
 test_compile_error_low(class A {static int v;} class B {inherit A; float v;})
 test_compile_error_low(class A {static int v;} class B {inherit A; mixed v;})

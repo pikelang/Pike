@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.72 1999/12/15 19:42:12 hubbe Exp $
+ * $Id: program.h,v 1.73 1999/12/17 21:09:52 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -162,8 +162,9 @@ struct program_constant
 #define ID_INLINE          0x20
 #define ID_HIDDEN          0x40 /* needed? */
 #define ID_INHERITED       0x80
+#define ID_OPTIONAL       0x100
 
-#define ID_MODIFIER_MASK 0x00ff
+#define ID_MODIFIER_MASK 0x01ff
 
 #define ID_STRICT_TYPES	 0x8000
 
