@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 1997/01/18 21:52:09 hubbe Exp $
+# $Id: configure.in,v 1.9 1997/01/29 20:20:52 per Exp $
 #
 # Configure script for the mysql-module
 #
@@ -103,8 +103,8 @@ if test x$with_mysql = xyes; then
     AC_CHECK_LIB(m, floor, [], [])
 
     # Pthreads is still needed in 3.20.0.
-    AC_CHECK_LIB(pthread, pthread_self, [], [])
-    AC_CHECK_LIB(pthreads, pthread_self, [], [])
+    # AC_CHECK_LIB(pthread, pthread_self, [], [])
+    # AC_CHECK_LIB(pthreads, pthread_self, [], [])
 
     AC_CHECK_LIB(dbug, _db_doprnt_, [], [])
 
