@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.233 2004/04/23 19:35:33 mast Exp $
+|| $Id: threads.c,v 1.234 2004/04/26 15:45:43 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.233 2004/04/23 19:35:33 mast Exp $");
+RCSID("$Id: threads.c,v 1.234 2004/04/26 15:45:43 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1527,8 +1527,8 @@ void f_cond_wait(INT32 args)
 
 #ifdef PICKY_MUTEX
   if (!mutex_obj->prog) {
-    if (!m->num_waiting)
-      co_destroy (&m->condition);
+    if (!mut->num_waiting)
+      co_destroy (&mut->condition);
     Pike_error ("Mutex was destructed while waiting for lock.\n");
   }
 #endif
