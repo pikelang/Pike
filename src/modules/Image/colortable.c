@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.73 1999/07/15 23:36:14 hubbe Exp $ */
+/* $Id: colortable.c,v 1.74 1999/07/27 22:28:06 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.73 1999/07/15 23:36:14 hubbe Exp $
+**!	$Id: colortable.c,v 1.74 1999/07/27 22:28:06 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.73 1999/07/15 23:36:14 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.74 1999/07/27 22:28:06 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -1735,14 +1735,15 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 					     int *cd)
 {
    rgbd_group *er;
-   int i;
+   int i,j;
 
    er=dith->u.floyd_steinberg.errors;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r=0.001*(my_rand()%998-499);
-      er[i].g=0.001*(my_rand()%998-499);
-      er[i].b=0.001*(my_rand()%998-499);
+      er[i].r=(my_rand()&65535)*(1.0/65536)-0.49999; 
+      er[i].g=(my_rand()&65535)*(1.0/65536)-0.49999; 
+      er[i].b=(my_rand()&65535)*(1.0/65536)-0.49999; 
+      fprintf(stderr,"%g %g %g\n",er[i].r,er[i].g,er[i].b);
    }
 
    er=dith->u.floyd_steinberg.nexterrors;
