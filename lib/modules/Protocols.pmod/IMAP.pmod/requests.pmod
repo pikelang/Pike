@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.63 1999/03/03 17:51:37 grubba Exp $
+ * $Id: requests.pmod,v 1.64 1999/03/03 18:06:17 grubba Exp $
  */
 
 import .types;
@@ -632,7 +632,7 @@ class fetch
 	part_number += ({ n });
       }
 
-      res->raw_options = atom->options;
+      res->raw_options = atom->options->atom;
       res->section = path[i..];
       res->part = part_number;
       res->options = atom->options[1..];
