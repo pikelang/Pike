@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.178 2004/11/06 15:33:17 grubba Exp $
+|| $Id: stralloc.c,v 1.179 2004/11/06 15:35:32 grubba Exp $
 */
 
 #include "global.h"
@@ -2187,6 +2187,8 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
   unsigned LONGEST tmp;
   size_t len = 1;
   const char *numbers = "0123456789abcdef";
+  fprintf(stderr, "min_width: %d\nprecision:%d\nflags:0x%04x\n",
+	  min_width, precision, flags);
   if ((base < 2) || (base > 16)) {
     Pike_fatal("string_builder_append_int(): Unsupported base %u.\n", base);
   }
@@ -2340,13 +2342,14 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case '1': case '2': case '3':
 	case '4': case '5': case '6':
 	case '7': case '8': case '9':
-	  if (state = STATE_PRECISION) {
+	  if (state == STATE_PRECISION) {
 	    precision = precision * 10 + fmt[-1] - '0';
 	  } else {
 	    state = STATE_MIN_WIDTH;
 	    min_width = min_width * 10 + fmt[-1] - '0';
 	  }
 	  continue;
+
 	case '.':
 	  state = STATE_PRECISION;
 	  continue;
