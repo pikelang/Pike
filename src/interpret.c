@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.287 2003/03/20 18:02:57 mast Exp $
+|| $Id: interpret.c,v 1.288 2003/03/21 14:36:16 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.287 2003/03/20 18:02:57 mast Exp $");
+RCSID("$Id: interpret.c,v 1.288 2003/03/21 14:36:16 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -713,7 +713,7 @@ struct backlog
 struct backlog backlog[BACKLOG];
 int backlogp=BACKLOG-1;
 
-static inline void low_debug_instr_prologue (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr)
+static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 {
   if(t_flag > 2)
   {
@@ -721,13 +721,13 @@ static inline void low_debug_instr_prologue (PIKE_OPCODE_T *pc, PIKE_INSTR_T ins
     struct pike_string *filep;
     INT32 linep;
 
-    filep = get_line(pc,Pike_fp->context.prog,&linep);
+    filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
     file = filep->str;
     while((f=STRCHR(file,'/')))
       file=f+1;
     fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	    file,(long)linep,
-	    DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program)),
+	    DO_NOT_WARN((long)(Pike_fp->pc - Pike_fp->context.prog->program)),
 #ifdef HAVE_COMPUTED_GOTO
 	    get_opcode_name(instr),
 #else /* !HAVE_COMPUTED_GOTO */
@@ -759,7 +759,7 @@ static inline void low_debug_instr_prologue (PIKE_OPCODE_T *pc, PIKE_INSTR_T ins
     backlog[backlogp].program=Pike_fp->context.prog;
     add_ref(Pike_fp->context.prog);
     backlog[backlogp].instruction=instr;
-    backlog[backlogp].pc=pc;
+    backlog[backlogp].pc = Pike_fp->pc;
     backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
     backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
 #ifdef _REENTRANT
@@ -971,38 +971,36 @@ void *dummy_label = NULL;
 
 #ifdef PIKE_DEBUG
 
-static void debug_instr_prologue (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr)
+static void debug_instr_prologue (PIKE_INSTR_T instr)
 {
-  low_debug_instr_prologue (pc, instr);
+  low_debug_instr_prologue (instr);
 }
 
 #define DEBUG_PROLOGUE(OPCODE, EXTRA) do {				\
     if (d_flag || t_flag > 2) {						\
-      debug_instr_prologue (Pike_fp->pc, (OPCODE) - F_OFFSET);		\
+      debug_instr_prologue ((OPCODE) - F_OFFSET);			\
       EXTRA;								\
     }									\
   } while (0)
 
 /* The following are intended to be called directly from generated
  * machine code. */
-void simple_debug_instr_prologue_0 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr)
+void simple_debug_instr_prologue_0 (PIKE_INSTR_T instr)
 {
   if (d_flag || t_flag > 2)
-    low_debug_instr_prologue (pc, instr);
+    low_debug_instr_prologue (instr);
 }
-void simple_debug_instr_prologue_1 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr,
-				    INT32 arg)
+void simple_debug_instr_prologue_1 (PIKE_INSTR_T instr, INT32 arg)
 {
   if (d_flag || t_flag > 2) {
-    low_debug_instr_prologue (pc, instr);
+    low_debug_instr_prologue (instr);
     DEBUG_LOG_ARG (arg);
   }
 }
-void simple_debug_instr_prologue_2 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr,
-				    INT32 arg1, INT32 arg2)
+void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
   if (d_flag || t_flag > 2) {
-    low_debug_instr_prologue (pc, instr);
+    low_debug_instr_prologue (instr);
     DEBUG_LOG_ARG (arg1);
     DEBUG_LOG_ARG2 (arg2);
   }
