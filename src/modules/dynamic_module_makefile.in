@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.45 1998/10/28 22:54:08 marcus Exp $
+# $Id: dynamic_module_makefile.in,v 1.46 1999/05/27 08:23:35 hubbe Exp $
 #
 
 
@@ -18,10 +18,13 @@ CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) @CCSHARED@" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
 
-all: subdirs dummy
+all: dummy
 
-subdirs:
-	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$? ; fi ; done
+force:
+	@:;
+
+$(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
+	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$?
 
 dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	@tmp="$(INSTALL_NAME)" ; \
