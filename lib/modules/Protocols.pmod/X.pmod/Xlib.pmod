@@ -950,7 +950,7 @@ class Display
   object Bell_req(int volume)
   {
     object req=Requests.Bell();
-    req->volume=volume;
+    req->percent=volume;
     return req;
   }
   

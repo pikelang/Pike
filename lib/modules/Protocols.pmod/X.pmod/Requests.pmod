@@ -745,9 +745,9 @@ class Bell {
   inherit request;
   constant reqType = 104;
   
-  int volume;
+  int percent;
 
-  string to_string() { return build_request("", volume); }
+  string to_string() { return build_request("", percent); }
 }
 
 class AllocColor
