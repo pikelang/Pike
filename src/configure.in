@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.352 2000/03/26 14:33:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.353 2000/03/26 20:57:27 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3384,6 +3384,9 @@ fi
 
 case "x$LD" in
   $CC*)
+    # Options in CFLAGS, no stuff needs to be added
+  ;;
+  \$\(CC\)*)
     # Options in CFLAGS, no stuff needs to be added
   ;;
   *)
