@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.600 2004/05/19 19:00:17 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.601 2004/06/30 18:21:29 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6829,7 +6829,7 @@ test_eq([[compile_string(#"
 string a() {return X(Y);}
 ")()->a()]], "z")
 test_compile_error([[
-#define Y(y) y
+#define Y(y,z) y
 #define X(x) x()
 X(Y)
 ]])
