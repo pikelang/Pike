@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.26 1997/11/29 21:33:35 grubba Exp $ */
+/* $Id: colortable.c,v 1.27 1997/11/29 22:47:39 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.26 1997/11/29 21:33:35 grubba Exp $
+**!	$Id: colortable.c,v 1.27 1997/11/29 22:47:39 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.26 1997/11/29 21:33:35 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.27 1997/11/29 22:47:39 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -258,7 +258,7 @@ static void stderr_print_entries(struct nct_flat_entry *src,int n)
 #define DIFF_R_MULT 3
 #define DIFF_G_MULT 4
 #define DIFF_B_MULT 3
-#define DIFF_GREY_MULT 3
+#define DIFF_GREY_MULT 4 /* should be bigger or equal or max of above */
 
 #define POSITION_DONT (-1.0)
 
@@ -336,7 +336,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
 
 #ifdef COLORTABLE_REDUCE_DEBUG
 	    fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d tot=%d\n",level,"",sum.r,sum.g,sum.b,tot);
-	    fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weidht=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
+	    fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weight=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
 #endif
 	    break;
          case NCT_REDUCE_WEIGHT:
@@ -357,6 +357,10 @@ static int reduce_recurse(struct nct_flat_entry *src,
 	    dest->color.b=max.b*position.b+min.b*(1-position.b);
 	    dest->weight=tot;
 	    dest->no=-1;
+#ifdef COLORTABLE_REDUCE_DEBUG
+	    fprintf(stderr,"COLORTABLE%*s min=%d,%d,%d max=%d,%d,%d position=%g,%g,%g\n",level,"",min.r,min.g,min.b,max.r,max.g,max.b,position.r,position.g,position.b);
+	    fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weight=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
+#endif
 	    break;
       }
       return 1;
@@ -391,7 +395,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
    fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d\n",level,"",sum.r,sum.g,sum.b);
 #endif
 
-   g=(sf.r*sum.r+sf.g*sum.g+sf.b*sum.b)/tot;
+   g=(sum.r*sf.r+sum.g*sf.g+sum.b*sf.b)/tot;
    sum.r/=tot;
    sum.g/=tot;
    sum.b/=tot;
@@ -408,15 +412,19 @@ static int reduce_recurse(struct nct_flat_entry *src,
       diff.r+=(sq(src[i].color.r-(INT32)sum.r)/8)*mul;
       diff.g+=(sq(src[i].color.g-(INT32)sum.g)/8)*mul;
       diff.b+=(sq(src[i].color.b-(INT32)sum.b)/8)*mul;
-      gdiff+=(sq(sf.r*src[i].color.r+sf.g*src[i].color.g+
-		 sf.b*src[i].color.b-g)/8)*mul;
+      gdiff+=(sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
+		 src[i].color.b*sf.b-g)/8)*mul;
       tot+=mul;
    }
+
+#ifdef COLORTABLE_REDUCE_DEBUG
+   fprintf(stderr,"COLORTABLE%*s pure diff=%d,%d,%d,%ld sort=?\n",level,"",diff.r,diff.g,diff.b,gdiff);
+#endif
 
    diff.r*=DIFF_R_MULT;
    diff.g*=DIFF_G_MULT;
    diff.b*=DIFF_B_MULT;
-   gdiff=gdiff*DIFF_GREY_MULT/sq(sf.r+sf.g+sf.b);
+   gdiff=(gdiff*DIFF_GREY_MULT)/(sq(sf.r+sf.g+sf.b));
 
    if (diff.r > diff.g)
       if (diff.r > diff.b)
