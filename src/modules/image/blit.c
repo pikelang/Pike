@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.7 1996/11/22 20:28:14 law Exp $ */
+/* $Id: blit.c,v 1.8 1996/12/05 22:53:23 law Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -106,13 +106,13 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 
    mod=THIS->xsize-(x2-x1)-1;
    foo=THIS->img+x1+y1*THIS->xsize;
-   end=THIS->img+x2+y2*THIS->xsize;
+   end=THIS->img+x1+y2*THIS->xsize;
    rgb=THIS->rgb;
 
    if (!THIS->alpha)
-      for (; foo<end; foo+=mod) for (x=x1; x<=x2; x++) *(foo++)=rgb;
+      for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++) *(foo++)=rgb;
    else
-      for (; foo<end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
+      for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
 	 set_rgb_group_alpha(*foo,rgb,THIS->alpha);
 }
 

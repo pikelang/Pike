@@ -1,21 +1,8 @@
-/* $Id: image.h,v 1.14 1996/12/03 21:58:39 law Exp $ */
+/* $Id: image.h,v 1.15 1996/12/05 22:53:26 law Exp $ */
 
 #define MAX_NUMCOL 32768
 
-#define QUANT_MAP_BITSR 4
-#define QUANT_MAP_SKIP_BITSR (8-(QUANT_MAP_BITSR))
-#define QUANT_MAP_THISR(X) ((X)>>QUANT_MAP_SKIP_BITSR)
-#define QUANT_MAP_REALR (1L<<QUANT_MAP_BITSR)
-#define QUANT_MAP_BITSG 4
-#define QUANT_MAP_SKIP_BITSG (8-(QUANT_MAP_BITSG))
-#define QUANT_MAP_THISG(X) ((X)>>QUANT_MAP_SKIP_BITSG)
-#define QUANT_MAP_REALG (1L<<QUANT_MAP_BITSG)
-#define QUANT_MAP_BITSB 4
-#define QUANT_MAP_SKIP_BITSB (8-(QUANT_MAP_BITSB))
-#define QUANT_MAP_THISB(X) ((X)>>QUANT_MAP_SKIP_BITSB)
-#define QUANT_MAP_REALB (1L<<QUANT_MAP_BITSB)
-
-#define QUANT_SELECT_CACHE 4
+#define QUANT_SELECT_CACHE 6
 
 #define COLOURTYPE unsigned char
 
@@ -52,19 +39,22 @@ struct image
 struct colortable
 {
    int numcol;
-   struct map_entry
-   {
-      unsigned char cl;
-      unsigned char used; 
-      struct map_entry *next;
-   } map[QUANT_MAP_REALR][QUANT_MAP_REALG][QUANT_MAP_REALB];
    struct rgb_cache
    {
       rgb_group index;
       int value;
    } cache[QUANT_SELECT_CACHE];
+   unsigned long *rgb_node;
+/*   bit
+     31..30          29..22   21..0
+     0=color         split    value
+     1=split red     on	this  
+     2=split green   =x       <=x     >x
+     3=split blue             value   value+1
+     It will fail for more than 2097152 colors. Sorry... *grin*
+ */
    rgb_group clut[1];
-};
+};  /* rgb_node follows, 2*numcol */
 
 
 /* colortable declarations - from quant */
@@ -147,3 +137,11 @@ void image_noise_init(void);
 /* dct.c */
 
 void image_dct(INT32 args);
+
+/* operator.c */
+
+void image_operator_minus(INT32 args);
+void image_operator_plus(INT32 args);
+void image_operator_multiply(INT32 args);
+void image_operator_maximum(INT32 args);
+void image_operator_minimum(INT32 args);

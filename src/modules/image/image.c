@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.31 1996/12/03 21:58:37 law Exp $ */
+/* $Id: image.c,v 1.32 1996/12/05 22:53:25 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.31 1996/12/03 21:58:37 law Exp $");
+RCSID("$Id: image.c,v 1.32 1996/12/05 22:53:25 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1396,34 +1396,40 @@ static void image_map_closest(INT32 args)
 {
    struct colortable *ct;
    long i;
-   rgb_group *rgb;
+   rgb_group *d,*s;
+   struct object *o;
 
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
       error("illegal argument to image->map_closest()\n");
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone(image_program,2);
       
    ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
    pop_n_elems(args);
 
    i=THIS->xsize*THIS->ysize;
-   rgb=THIS->img;
+   s=THIS->img;
+   d=((struct image*)(o->storage))->img;
    while (i--)
    {
-      *rgb=ct->clut[colortable_rgb(ct,*rgb)];
-      rgb++;
+      *d=ct->clut[colortable_rgb(ct,*s)];
+      d++; *s++;
    }
 
    colortable_free(ct);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   push_object(o);
 }
 
 static void image_map_fs(INT32 args)
 {
    struct colortable *ct;
    INT32 i,j;
-   rgb_group *rgb;
+   rgb_group *d,*s;
+   struct object *o;
    int *res,w;
    rgbl_group *errb;
    
@@ -1432,6 +1438,10 @@ static void image_map_fs(INT32 args)
        || sp[-args].type!=T_ARRAY)
       error("illegal argument to image->map_fs()\n");
 
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone(image_program,2);
+      
    res=(int*)xalloc(sizeof(int)*THIS->xsize);
    errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
       
@@ -1444,20 +1454,21 @@ static void image_map_fs(INT32 args)
       errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
 
    i=THIS->ysize;
-   rgb=THIS->img;
+   s=THIS->img;
+   d=((struct image*)(o->storage))->img;
    w=0;
    while (i--)
    {
-      image_floyd_steinberg(rgb,THIS->xsize,errb,w=!w,res,ct);
+      image_floyd_steinberg(s,THIS->xsize,errb,w=!w,res,ct);
       for (j=0; j<THIS->xsize; j++)
-	 *(rgb++)=ct->clut[res[j]];
+	 *(d++)=ct->clut[res[j]];
+      s+=THIS->xsize;
    }
 
    free(errb);
    free(res);
    colortable_free(ct);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   push_object(o);
 }
 
 void image_select_colors(INT32 args)
@@ -1632,6 +1643,17 @@ void init_image_programs()
 
    add_function("dct",image_dct,
 		"function(:object)",0);
+
+   add_function("`-",image_operator_minus,
+		"function(object:object)",0);
+   add_function("`+",image_operator_plus,
+		"function(object:object)",0);
+   add_function("`*",image_operator_multiply,
+		"function(object:object)",0);
+   add_function("`&",image_operator_minimum,
+		"function(object:object)",0);
+   add_function("`|",image_operator_maximum,
+		"function(object:object)",0);
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
