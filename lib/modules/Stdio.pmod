@@ -60,7 +60,7 @@ class FILE {
 
     int tell()
     {
-      return bpos;
+      return file::tell()-sizeof(b)+bpos;
     }
 
     int close(void|string mode)
