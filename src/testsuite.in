@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.701 2004/03/07 21:08:52 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.702 2004/03/07 22:22:25 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6310,6 +6310,16 @@ test_eval_error([[ function f=array_sscanf; f("hej","%s% ") ]])
 
 test_equal([[ array_sscanf("\x304b\x3066\x3044\x308a\x3087\x3046\x308a", "%[^\x3042\x3044\x3046\x3048\x304a]")[0] ]],
     [[ "\x304b\x3066" ]])
+
+test_equal( array_sscanf("xfoox", "%sfoo%s"), ({ "x", "x" }) )
+test_equal( array_sscanf("xfoox", "%sfo\400%s"), ({}) )
+test_equal( array_sscanf("xfoox", "%sfo\200000%s"), ({}) )
+test_equal( array_sscanf("xfo\400x", "%sfoo%s"), ({}) )
+test_equal( array_sscanf("xfo\400x", "%sfo\400%s"), ({ "x", "x" }) )
+test_equal( array_sscanf("xfo\400x", "%sfo\200000%s"), ({}) )
+test_equal( array_sscanf("xfo\200000x", "%sfoo%s"), ({}) )
+test_equal( array_sscanf("xfo\200000x", "%sfo\400%s"), ({}) )
+test_equal( array_sscanf("xfo\200000x", "%sfo\200000%s"), ({ "x", "x" }) )
 
 	
 test_any([[
