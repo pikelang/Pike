@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.17 2001/07/26 19:16:18 nilsson Exp $
+// $Id: Utils.pmod,v 1.18 2001/07/31 15:02:58 norlin Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -268,6 +268,32 @@ class ProfileCache (string db_name) {
       THROW("No search profile " + name + " found.\n");
 
     return srh_profile_names[(string)db_profile+"\n"+name] = (int)res[0]->id;
+  }
+
+  private int last_db_prof_stat = 0;  // 1970
+  array(string) list_db_profiles() {
+    if (time(1) - last_db_prof_stat < 5*60)
+      return indices(db_profile_names);
+    array res = get_db()->query("SELECT name, id FROM wf_profile WHERE parent=0");
+    db_profile_names = mkmapping(
+      res->name,
+      map(res->id, lambda(string s) { return (int) s; } ));
+    last_db_prof_stat = time(1) - 2;
+    return res->name;
+  }
+
+  private int last_srh_prof_stat = 0;  // 1970
+  array(string) list_srh_profiles(int db_profile) {
+    if (time(1) - last_srh_prof_stat >= 5*60) {
+      array res = get_db()->query("SELECT name, id, parent FROM wf_profile WHERE parent<>0");
+      srh_profile_names = mkmapping(
+        map(res, lambda(mapping m) { return (string) m->parent + "\n" + m->name; } ),
+        (array(int)) res->id
+      );
+      last_srh_prof_stat = time(1) - 2;
+    }
+    return map(filter(indices(srh_profile_names), has_prefix, (string) db_profile + "\n"),
+               lambda(string s) { return (s / "\n")[1]; } );
   }
 
   // Used when decoding text encoded pike data types.
