@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.55 2001/03/02 15:44:11 grubba Exp $
+ * $Id: pike_types.h,v 1.56 2001/03/02 21:46:29 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -126,8 +126,36 @@ PMOD_EXPORT extern struct pike_type *weak_type_string;
 
 #ifdef USE_PIKE_TYPE
 #define CONSTTYPE(X) make_pike_type(X)
+#ifdef DEBUG_MALLOC
+struct pike_type_location
+{
+  struct pike_type *t;
+  struct pike_type_location *next;
+};
+
+extern struct pike_type_location *all_pike_type_locations;
+
+#define MAKE_CONSTANT_TYPE(T, X) do {		\
+    static struct pike_type_location type_;	\
+    if (!type_.t} {				\
+      type_.t = CONSTTYPE(X);			\
+      type_.next = all_pike_type_locations;	\
+      all_pike_type_locations = &type_;		\
+    }						\
+    copy_type((T), type_.t);			\
+  } while(0)
+#else /* !DEBUG_MALLOC */
+#define MAKE_CONSTANT_TYPE(T, X) do {	\
+    static struct pike_type *type_;	\
+    if (!type_) {			\
+      type_ = CONSTTYPE(X);		\
+    }					\
+    copy_type((T), type_);		\
+  } while(0)
+#endif /* DEBUG_MALLOC */
 #else /* !USE_PIKE_TYPE */
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
+#define MAKE_CONSTANT_TYPE(T, X)	MAKE_CONSTANT_SHARED_STRING(T, X)
 #endif /* USE_PIKE_TYPE */
 
 #ifdef PIKE_DEBUG
