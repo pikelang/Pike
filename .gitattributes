@@ -2,7 +2,6 @@
 * text ident
 *.db binary
 *.gif binary
-*.gz binary
 *.ico binary
 *.pbm binary
 *.png binary
