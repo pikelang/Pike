@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.10 1999/01/24 01:14:29 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.11 1999/04/09 10:17:08 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -174,11 +174,16 @@ object(File) make_file(string filename)
    return f;
 }
 
-string synopsis_to_html(string s)
+string synopsis_to_html(string s,mapping huh)
 {
    string type,name,arg;
    if (sscanf(s,"%s%*[ \t]%s(%s",type,name,arg)!=4)
+   {
       sscanf(s,"%s(%s",name,arg),type="";
+      werror(huh->_line+": suspicios method %O\n",(s/"(")[0]);
+   }
+
+   if (!arg) arg="";
 
    return 
       type+" <b>"+name+"</b>("+
@@ -304,7 +309,7 @@ void document(string enttype,
    {
       f->write("<man_syntax>\n");
 
-      f->write(replace(htmlify(map(huh->decl,synopsis_to_html)*
+      f->write(replace(htmlify(map(huh->decl,synopsis_to_html,huh)*
 			       "<br>\n"),"\n","\n\t")+"\n");
 
       f->write("</man_syntax>\n\n");
