@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.21 2000/03/29 22:44:09 hubbe Exp $
+ * $Id: oracle.c,v 1.22 2000/03/30 19:48:40 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -41,7 +41,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.21 2000/03/29 22:44:09 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.22 2000/03/30 19:48:40 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -466,6 +466,9 @@ static sb4 output_callback(struct inout *inout,
 			   dvoid **indpp,
 			   ub2 **rcodepp)
 {
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s(%d)\n",__FUNCTION__,inout->ftype);
+#endif
   inout->has_output=1;
   *indpp = (dvoid *) &inout->indicator;
   *rcodepp=&inout->rcode;
@@ -473,6 +476,11 @@ static sb4 output_callback(struct inout *inout,
 
   switch(inout->ftype)
   {
+    default:
+#ifdef ORACLE_DEBUG
+      fprintf(stderr,"Unhandled data type in %s: %d\n",__FUNCTION__,inout->ftype);
+#endif
+
     case SQLT_CHR:
     case SQLT_STR:
     case SQLT_LBI:
@@ -512,7 +520,7 @@ static sb4 output_callback(struct inout *inout,
       *piecep = OCI_ONE_PIECE;
       return OCI_CONTINUE;
 
-    default: return 0;
+      return 0;
   }
 
 }
@@ -528,7 +536,7 @@ static sb4 define_callback(void *dbresultinfo,
 			   ub2 **rcodep)
 {
 #ifdef ORACLE_DEBUG
-/*  fprintf(stderr,"%s ..",__FUNCTION__); */
+  fprintf(stderr,"%s ..",__FUNCTION__);
 #endif
   return
     output_callback( &((struct dbresultinfo *)dbresultinfo)->data,
@@ -636,6 +644,11 @@ static void f_fetch_fields(INT32 args)
       if(rc != OCI_SUCCESS)
 	ora_error_handler(dbcon->error_handle, rc, errfunc);
 
+#ifdef ORACLE_DEBUG
+      fprintf(stderr,"FIELD: name=%s length=%d type=%d\n",name,size,type);
+#endif
+
+
       push_object( o=clone_object(dbresultinfo_program,0) );
       info= (struct dbresultinfo *)o->storage;
 
@@ -727,17 +740,14 @@ static void f_fetch_fields(INT32 args)
 			OCI_DYNAMIC_FETCH);
 
       if(rc != OCI_SUCCESS)
-	ora_error_handler(dbcon->error_handle, rc, 0);
+	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
-      if(data_size < 0)
-      {
-	rc=OCIDefineDynamic(info->define_handle,
-			    dbcon->error_handle,
-			    info,
-			    define_callback);
-	if(rc != OCI_SUCCESS)
-	  ora_error_handler(dbcon->error_handle, rc, 0);
-      }
+      rc=OCIDefineDynamic(info->define_handle,
+			  dbcon->error_handle,
+			  info,
+			  define_callback);
+      if(rc != OCI_SUCCESS)
+	ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
     }
     f_aggregate(dbquery->cols);
     add_ref( dbquery->field_info=sp[-1].u.array );
@@ -880,7 +890,7 @@ static void f_fetch_row(INT32 args)
   }
 
   if(rc != OCI_SUCCESS)
-    ora_error_handler(dbcon->error_handle, rc, 0);
+    ora_error_handler(dbcon->error_handle, rc, "OCIStmtFetch");
 
   check_stack(dbquery->cols);
 
