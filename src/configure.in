@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.690 2003/02/14 19:53:25 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.691 2003/02/16 04:23:19 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5861,7 +5861,7 @@ int main()
       else
         AC_MSG_WARN([
 Test failed to compile.
-Problems in rusage.c or threads.c with CONFIGURE_TEST is defined?
+Problems in port.c, rusage.c or threads.c with CONFIGURE_TEST is defined?
 ])
         pike_cv_thread_local_cpu_time="unknown (compilation failed)"
       fi

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.476 2003/02/15 17:33:33 grubba Exp $
+|| $Id: builtin_functions.c,v 1.477 2003/02/16 04:23:18 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.476 2003/02/15 17:33:33 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.477 2003/02/16 04:23:18 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3690,7 +3690,7 @@ TYPEP(f_floatp, "floatp", T_FLOAT, "float")
  *!   may get reordered.
  *!
  *! @seealso
- *!   @[reverse()]
+ *!   @[Array.sort_array], @[reverse()]
  */
 PMOD_EXPORT void f_sort(INT32 args)
 {
@@ -5961,7 +5961,7 @@ PMOD_EXPORT void f_master(INT32 args)
  *! The CPU time includes both user and system time, i.e. it's
  *! approximately the same thing you would get by adding together the
  *! "utime" and "stime" fields returned by @[System.getrusage] (but
- *! perhaps with better accurancy). It's however system dependent
+ *! perhaps with better accuracy). It's however system dependent
  *! whether or not it's the time consumed in all threads or in the
  *! current one only; @[System.CPU_TIME_IS_THREAD_LOCAL] tells which.
  *!

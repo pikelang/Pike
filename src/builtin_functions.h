@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.22 2002/10/11 01:39:29 nilsson Exp $
+|| $Id: builtin_functions.h,v 1.23 2003/02/16 04:23:19 mast Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -106,7 +106,6 @@ PMOD_EXPORT void f__refs(INT32 args);
 PMOD_EXPORT void f_replace_master(INT32 args);
 PMOD_EXPORT void f_master(INT32 args);
 PMOD_EXPORT void f_gethrvtime(INT32 args);
-PMOD_EXPORT void f_gethrtime(INT32 args);
 PMOD_EXPORT void f_gethrtime(INT32 args);
 PMOD_EXPORT void f_object_variablep(INT32 args);
 PMOD_EXPORT void f_splice(INT32 args);

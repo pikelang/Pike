@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.41 2003/01/26 11:04:49 mirar Exp $
+|| $Id: pike_memory.h,v 1.42 2003/02/16 04:23:19 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -49,6 +49,7 @@
     VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes));		\
   } while (0)
 
+/* Return true if a memchecker is in use. */
 #define PIKE_MEM_CHECKER() RUNNING_ON_VALGRIND
 
 #else
