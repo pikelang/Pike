@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.98 1999/02/01 03:09:32 per Exp $");
+RCSID("$Id: signal_handler.c,v 1.99 1999/02/04 07:21:16 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1515,7 +1515,7 @@ void f_create_process(INT32 args)
       }
       
       if((tmp = simple_mapping_string_lookup( optional, "cwd" )) &&
-         tmp->type == T_STRING && tmp->u.string->size_shift == 1)
+         tmp->type == T_STRING && !tmp->u.string->size_shift)
         tmp_cwd = tmp->u.string->str;
 
       if((tmp = simple_mapping_string_lookup( optional, "stdin" )) &&
