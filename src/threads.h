@@ -259,7 +259,7 @@ struct thread_state {
 #endif
 
 #ifndef th_hash
-#define th_hash(X) hashmem(&(X),sizeof(THREAD_T), 16)
+#define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
 /* Define to get a debug-trace of some of the threads operations. */
