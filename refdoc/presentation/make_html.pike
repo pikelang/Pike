@@ -38,21 +38,6 @@ string quote(string in) {
   return Parser.XML.Tree.text_quote(in);
 }
 
-Node get_tag(Node n, string name) {
-  foreach(n->get_children(), Node c)
-    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()==name)
-      return c;
-  return 0;
-}
-
-array(Node) get_tags(Node n, string name) {
-  array nodes = ({});
-  foreach(n->get_children(), Node c)
-    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()==name)
-      nodes += ({ c });
-  return nodes;
-}
-
 Node get_first_element(Node n) {
   foreach(n->get_children(), Node c)
     if(c->get_node_type()==XML_ELEMENT) {
@@ -64,24 +49,109 @@ Node get_first_element(Node n) {
   throw( ({ "Node had no element child.\n", backtrace() }) );
 }
 
+string low_parse_chapter(Node n, int chapter, void|int section, void|int subsection) {
+  string ret = "";
+  Node dummy = Node(XML_ELEMENT, "dummy", ([]), "");
+  foreach(n->get_elements(), Node c)
+    switch(c->get_any_name()) {
+
+    case "p":
+      dummy->replace_children( ({ c }) );
+      ret += parse_text(dummy);
+      break;
+
+    case "example":
+      ret += "<p><pre>" + c->get_text() + "</pre></p>\n";
+      break;
+
+    case "ul":
+    case "ol":
+    case "dl":
+      ret += (string)c;
+      break;
+
+    case "section":
+      if(subsection)
+	error("Section inside subsection.\n");
+      section = (int)c->get_attributes()->number;
+      ret += "</dd><dt>"
+	"<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+	"<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + chapter + "." + section +
+	". " + c->get_attributes()->title + "</font></td></tr></table><br />\n"
+	"</dt><dd>";
+      ret += low_parse_chapter(c, chapter, section);
+      section = 0;
+      break;
+
+    case "subsection":
+      if(!section)
+	error("Subsection outside section.\n");
+      if(subsection)
+	error("Subsection inside subsection.\n");
+      subsection = (int)c->get_attributes()->number;
+      ret += "</dd><dt>"
+	"<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+	"<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + chapter + "." + section + "." + subsection +
+	". " + c->get_attributes()->title + "</font></td></tr></table><br />\n"
+	"</dt><dd>";
+      ret += low_parse_chapter(c, chapter, section, subsection);
+      subsection = 0;
+      break;
+
+    case "docgroup":
+      ret += parse_docgroup(c);
+      break;
+
+    case "module":
+      ret += parse_module(c);
+      break;
+
+    case "class":
+      ret += parse_class(c);
+      break;
+
+    default:
+      error("Unknown element %O.\n", c->get_any_name());
+    }
+  return ret;
+}
+
+string parse_chapter(Node n, void|int noheader) {
+  string ret = "";
+  if(!noheader)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + n->get_attributes()->number +
+      ". " + n->get_attributes()->title + "</font></td></tr></table><br />\n"
+      "</dt><dd>";
+
+  ret += low_parse_chapter(n, (int)n->get_attributes()->number);
+
+  if(!noheader)
+    ret = ret + "</dd></dl>"; 
+
+  return ret;
+}
+
 string parse_appendix(Node n, void|int noheader) {
   string ret ="";
   if(!noheader)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; APPENDIX <b>" +
-      n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Appendix " +
+      (string)({ 64+(int)n->get_attributes()->number }) + ". " +
+      n->get_attributes()->name + "</font></td></tr></table><br />\n"
       "</dt><dd>";
 
-  Node c = get_tag(n, "doc");
+  Node c = n->get_first_element("doc");
   if(c)
     ret += parse_text(c);
   else
-    throw( ({ "No doc element in appendix.\n", backtrace() }) );
+    error( "No doc element in appendix.\n" );
 
 #ifdef DEBUG
-  if(sizeof(get_tags(n, "doc"))>1)
-    throw( ({ "More than one doc element in appendix node.\n", backtrace() }) );
+  if(sizeof(n->get_elements("doc"))>1)
+    error( "More than one doc element in appendix node.\n" );
 #endif
 
   if(!noheader)
@@ -95,16 +165,16 @@ string parse_module(Node n, void|int noheader) {
   if(!noheader)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; MODULE <b>" +
-      n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Module <b>" +
+      render_class_path(n) + n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
       "</dt><dd>";
 
-  Node c = get_tag(n, "doc");
+  Node c = n->get_first_element("doc");
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
 
 #ifdef DEBUG
-  if(sizeof(get_tags(n, "doc"))>1)
+  if(sizeof(n->get_elements("doc"))>1)
     throw( ({ "More than one doc element in module node.\n", backtrace() }) );
 #endif
 
@@ -124,24 +194,23 @@ string parse_class(Node n, void|int noheader) {
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; CLASS <b><font color='#005080'>" +
-      quote(reverse(n->get_ancestors(1)->get_attributes()->name)[2..]*".") +
+      render_class_path(n) + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
 
-  Node c = get_tag(n, "doc");
+  Node c = n->get_first_element("doc");
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
 
 #ifdef DEBUG
-  if(sizeof(get_tags(n, "doc"))>1)
+  if(sizeof(n->get_elements("doc"))>1)
     throw( ({ "More than one doc element in class node.\n", backtrace() }) );
 #endif
 
-  if(get_tag(n, "inherit")) {
+  if(n->get_first_element("inherit")) {
     ret += "<h3>Inherits</h3><ul>";
-    foreach(n->get_children(), Node c)
-      if(c->get_node_type()==XML_ELEMENT && c->get_any_name()=="inherit")
-	ret += "<li>" + quote(get_tag(c, "classname")[0]->get_text()) + "</li>\n";
+    foreach(n->get_elements("inherit"), Node c)
+      ret += "<li>" + quote(c->get_first_element("classname")[0]->get_text()) + "</li>\n";
     ret += "</ul>\n";
   }
 
@@ -193,12 +262,12 @@ string nicebox(array rows) {
 string build_box(Node n, string first, string second, function layout, void|string header) {
   array rows = ({});
   if(header) rows += ({ ({ header }) });
-  foreach(get_tags(n, first), Node d) {
+  foreach(n->get_elements(first), Node d) {
     array elems = ({});
-    foreach(get_tags(d, second), Node e)
+    foreach(d->get_elements(second), Node e)
       elems += ({ layout(e) });
-    if(get_tag(d, "text"))
-      rows += ({ ({ elems, parse_text(get_tag(d, "text")) }) });
+    if(d->get_first_element("text"))
+      rows += ({ ({ elems, parse_text(d->get_first_element("text")) }) });
     else
       rows += ({ ({ elems }) });
   }
@@ -255,7 +324,7 @@ string parse_text(Node n) {
       break;
 
     case "dl":
-      ret += "<dl>" + map(get_tags(c, "group"), parse_text)*"" + "</dl>";
+      ret += "<dl>" + map(c->get_elements("group"), parse_text)*"" + "</dl>";
       break;
 
     case "item":
@@ -270,15 +339,15 @@ string parse_text(Node n) {
     case "mapping":
       ret += build_box(c, "group", "member",
 		       lambda(Node n) {
-			 return "<font color='green'>" + parse_text(get_tag(n, "index")) +
-			   "</font> : " + parse_type(get_first_element(get_tag(n, "type"))); } );
+			 return "<font color='green'>" + parse_text(n->get_first_element("index")) +
+			   "</font> : " + parse_type(get_first_element(n->get_first_element("type"))); } );
       break;
 
     case "array":
       ret += build_box(c, "group", "elem",
 		       lambda(Node n) {
-			 return parse_type(get_first_element(get_tag(n, "type"))) +
-			   " <font color='green'>" + parse_text(get_tag(n, "index")) +
+			 return parse_type(get_first_element(n->get_first_element("type"))) +
+			   " <font color='green'>" + parse_text(n->get_first_element("index")) +
 			   "</font>"; }, "Array" );
       break;
 
@@ -286,8 +355,8 @@ string parse_text(Node n) {
       ret += build_box(c, "group", "value",
 		       lambda(Node n) {
 			 string tmp = "<font color='green'>";
-			 Node min = get_tag(n, "minvalue");
-			 Node max = get_tag(n, "maxvalue");
+			 Node min = n->get_first_element("minvalue");
+			 Node max = n->get_first_element("maxvalue");
 			 if(min || max) {
 			   if(min) tmp += parse_text(min);
 			   tmp += "..";
@@ -302,9 +371,9 @@ string parse_text(Node n) {
     case "mixed":
       ret += "<tt>" + c->get_attributes()->name + "</tt> can have any of the following types:<br />";
       rows = ({});
-      foreach(get_tags(c, "group"), Node d)
-	rows += ({ ({ ({ parse_type(get_first_element(get_tag(d, "type"))) }),
-		      parse_text(get_tag(d, "text")) }) });
+      foreach(c->get_elements("group"), Node d)
+	rows += ({ ({ ({ parse_type(get_first_element(d->get_first_element("type"))) }),
+		      parse_text(d->get_first_element("text")) }) });
       ret += nicebox(rows);
       break;
 
@@ -319,7 +388,7 @@ string parse_text(Node n) {
       ret += build_box(c, "group", "index",
 		       lambda(Node n) {
 			 return "<font color='green'>" +
-			   parse_text(get_tag(n, "value")) + "</font>";
+			   parse_text(n->get_first_element("value")) + "</font>";
 		       } );
       break;
 
@@ -459,20 +528,20 @@ string parse_type(Node n, void|string debug) {
 
   case "multiset":
     ret += "<font color='#202020'>multiset</font>";
-    c = get_tag(n, "indextype");
+    c = n->get_first_element("indextype");
     if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
 
   case "array":
     ret += "<font color='#202020'>array</font>";
-    c = get_tag(n, "valuetype");
+    c = n->get_first_element("valuetype");
     if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
 
   case "mapping":
     ret += "<font color='#202020'>mapping</font>";
-    c = get_tag(n, "indextype");
-    d = get_tag(n, "valuetype");
+    c = n->get_first_element("indextype");
+    d = n->get_first_element("valuetype");
     if(c && d)
       ret += "(" + parse_type( get_first_element(c) ) + ":" +
 	parse_type( get_first_element(d) ) + ")";
@@ -485,8 +554,8 @@ string parse_type(Node n, void|string debug) {
 
   case "function":
     ret += "<font color='#202020'>function</font>";
-    c = get_tag(n, "argtype");
-    d = get_tag(n, "returntype");
+    c = n->get_first_element("argtype");
+    d = n->get_first_element("returntype");
     // Doing different than the XSL here. Must both
     // argtype and returntype be defined?
     if(c || d) {
@@ -519,8 +588,8 @@ string parse_type(Node n, void|string debug) {
 
   case "int":
     ret += "<font color='#202020'>int</font>";
-    c = get_tag(n, "min");
-    d = get_tag(n, "max");
+    c = n->get_first_element("min");
+    d = n->get_first_element("max");
     if(c) c=c[0];
     if(d) d=d[0];
     if(c && d)
@@ -552,12 +621,21 @@ string parse_type(Node n, void|string debug) {
 
 string render_class_path(Node n) {
   array a = reverse(n->get_ancestors(0));
-  if(sizeof(a)<4) return "";
-  string ret = a[2..sizeof(a)-2]->get_attributes()->name * ".";
+  array b = a->get_any_name();
+  int root;
+  foreach( ({ "manual", "dir", "file", "chapter",
+	      "section", "subsection" }), string node)
+    root = max(root, search(b, node));
+  a = a[root+1..];
+  string ret = a->get_attributes()->name * ".";
+  if(n->get_any_name()=="class" || n->get_any_name()=="module")
+    return ret + ".";
   if(n->get_parent()->get_parent()->get_any_name()=="class")
     return ret + "()->";
   if(n->get_parent()->get_parent()->get_any_name()=="module")
     return ret + ".";
+
+  return " (could not resolve) ";
 #ifdef DEBUG
   throw( ({ "Parent module is " + n->get_parent()->get_any_name() + ".\n",
 	   backtrace() }) );
@@ -588,21 +666,21 @@ string parse_not_doc(Node n) {
     case "method":
       if(method++) ret += "<br />\n";
 #ifdef DEBUG
-      if(!get_tag(c, "returntype"))
+      if(!c->get_first_element("returntype"))
 	continue;
 	//	throw( ({ "No returntype element in method element.\n", backtrace() }) );
 #endif
-      ret += "<tt>" + parse_type(get_first_element(get_tag(c, "returntype"))); // Check for more children
+      ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
       ret += " ";
       ret += render_class_path(c);
       ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
-      ret += parse_not_doc( get_tag(c, "arguments") );
+      ret += parse_not_doc( c->get_first_element("arguments") );
       ret += "<b>)</b></tt>";
       break;
 
     case "argument":
       if(argument++) ret += ", ";
-      cc = get_tag(c, "value");
+      cc = c->get_first_element("value");
       if(cc) ret += "<font color='green'>" + cc[0]->get_text() + "</font>";
       else if( !c->count_children() );
       else if( get_first_element(c)->get_any_name()=="type" && c->get_attributes()->name) {
@@ -616,9 +694,9 @@ string parse_not_doc(Node n) {
     case "variable":
       if(variable++) ret += "<br />\n";
       ret += "<tt>";
-      cc = get_tag(c, "modifiers");
+      cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-      ret += parse_type(get_first_element(get_tag(c, "type")), "variable") + " " +
+      ret += parse_type(get_first_element(c->get_first_element("type")), "variable") + " " +
 	render_class_path(c) + "<b><font color='#F000F0'>" + c->get_attributes()->name +
 	"</font></b></tt>";
       break;
@@ -628,7 +706,7 @@ string parse_not_doc(Node n) {
       ret += "<tt>constant ";
       ret += render_class_path(c);
       ret += "<font color='#F000F0'>" + c->get_attributes()->name + "</font>";
-      cc = get_tag(c, "typevalue");
+      cc = c->get_first_element("typevalue");
       if(cc) ret += " = " + parse_type(get_first_element(cc));
       ret += "</tt>";
       break;
@@ -661,7 +739,7 @@ string parse_docgroup(Node n) {
       ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	"</b></font>\n";
     else
-      foreach(Array.uniq(get_tags(n, "method")->get_attributes()->name), string name)
+      foreach(Array.uniq(n->get_first_element("method")->get_attributes()->name), string name)
 	ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
   }
   else
@@ -673,35 +751,56 @@ string parse_docgroup(Node n) {
 
   ret += "</p></dd>\n";
 
-  foreach(n->get_children(), Node c)
-    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()=="doc")
-      ret += parse_doc(c);
+  foreach(n->get_elements("doc"), Node c)
+    ret += parse_doc(c);
 
   return ret + "</dl>\n";
 }
 
 string parse_children(Node n, string tag, function cb, mixed ... args) {
   string ret = "";
-  foreach(n->get_children(), Node c)
-    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()==tag)
-      ret += cb(c, @args);
+  foreach(n->get_elements(tag), Node c)
+    ret += cb(c, @args);
 
   return ret;
 }
 
-string start_parsing(Node n) {
-  werror("Layouting...\n");
-  string ret = "<html><head><title>Pike manual ?.?.?</title></head>\n"
-    "<body bgcolor='white' text='black'>\n";
-
-  ret += parse_children(n, "docgroup", parse_docgroup);
-  ret += parse_children(n, "module", parse_module);
-  ret += parse_children(n, "class", parse_class);
-  ret += parse_children(n, "appendix", parse_appendix);
-
-  return ret + "</body></html>\n";
+string manual_title = "Pike Reference Manual";
+string frame_html(string res, void|string title) {
+  title = title || manual_title;
+  return "<html><head><title>" + title + "</title></head>\n"
+    "<body bgcolor='white' text='black'>\n" + res +
+    "</body></html>";
 }
 
+string layout_toploop(Node n) {
+  string res = "";
+  foreach(n->get_elements(), Node c)
+    switch(c->get_any_name()) {
+
+    case "dir":
+      Stdio.mkdirhier(c->get_attributes()->name);
+      layout_toploop(c);
+      break;
+
+    case "file":
+      Stdio.write_file( c->get_attributes()->name,
+			frame_html(layout_toploop(c)) );
+      break;
+
+    case "appendix":
+      res += parse_appendix(c);
+      break;
+
+    case "chapter":
+      res += parse_chapter(c);
+      break;
+
+    default:
+      error("Unknown element %O.\n", c->get_any_name());
+    }
+  return res;
+}
 
 int main(int num, array args) {
 
@@ -730,7 +829,12 @@ int main(int num, array args) {
   // We are only interested in what's in the
   // module container.
   werror("Parsing %O...\n", args[-1]);
-  write(start_parsing( Parser.XML.Tree.parse_input(file)[0] ));
+  Node n = Parser.XML.Tree.parse_input(file);
+  werror("Layouting...\n");
+  n = n->get_first_element("manual");
+  mapping m = n->get_attributes();
+  manual_title = m->title || (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
+  layout_toploop(n);
   werror("Took %.1f seconds.\n", (gethrtime()-t)/1000000.0);
 
   return 0;
