@@ -644,6 +644,7 @@ int main(int argc, array argv)
   string types;
   string last_function;
   int skip_mode;
+  string type_switch="";
   do_docs = argc > 2;
   
   foreach( argv[2..], string w )
@@ -1342,7 +1343,6 @@ int main(int argc, array argv)
     foreach( indices( struct[q] ) , string f )
       if( f != "inherit"  && f)
         functions |= ({ f, function_type(struct[q][f]) });
-
   mapping q = ([]);
   // Do a stable sort, to avoid rebuilding pgtk.c all the time.
   
@@ -1350,7 +1350,6 @@ int main(int argc, array argv)
     q[strlen(f)] = (q[strlen(f)]||({})) | ({ f });
 
   functions = ({});
-
   foreach(sort(indices( q )), int i)
     functions += sort(q[i]);
 
@@ -1376,9 +1375,26 @@ int main(int argc, array argv)
 	    "                       (pgtk_"+w+"_program = end_program()), 0);"
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
+    string flop = replace(upper_case(w),
+			  ({ "GDK_", "GDK" }),
+			  ({ "GDK", "GDK_" }));
+    type_switch += "#ifdef GTK_TYPE_"+flop+"\n"
+      "  if(PGTK_CHECK_TYPE(widget, GTK_TYPE_"+flop+")) "
+      "return pgtk_"+w+"_program;\n#endif\n";
   }
-
   emit_nl("}\n\n");
+  pre +=
+    "#define PGTK_CHECK_TYPE(type_object, otype)       ( "
+    "((GtkTypeObject*) (type_object)) != NULL && "
+    "PGTK_CHECK_CLASS_TYPE (((GtkTypeObject*) (type_object))->klass, (otype)))\n"
+    "#define PGTK_CHECK_CLASS_TYPE(type_class, otype)  ("
+    "((GtkTypeClass*) (type_class)) != NULL && "
+    "(((GtkTypeClass*) (type_class))->type == (otype)))\n";
+  
+  emit_nl("\nstruct program *pgtk_type_to_program(GtkWidget *widget)\n{\n");
+  emit_nl(type_switch);
+  emit_nl("  return pgtk_widget_program;\n}\n\n");
+
   emit_nl("\nvoid pike_module_exit()\n{\n"+to_free+"}\n\n");
   files += "pgtk.c ";
   if(!do_docs)

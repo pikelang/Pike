@@ -1,3 +1,4 @@
 @pgtk_has_sheet@
 @pgtk_has_glarea@
 @have_gtk_120@
+@pgtk_has_libglade@

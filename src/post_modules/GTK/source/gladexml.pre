@@ -1,0 +1,305 @@
+COND_WIDGET(libglade);
+PROGRAM(GladeXML);
+#include <errno.h>
+#include "builtin_functions.h"
+#include <glade/glade.h>
+
+int glade_is_setup = 0;
+
+void pgtk__signal_connect(const gchar *handler_name,
+			  GtkObject *obj,
+			  const gchar *signal_name,
+			  const gchar *signal_data,
+			  GtkObject *connect_object,
+			  gboolean after,
+			  gpointer args)
+{
+  struct mapping *callbacks;
+  struct svalue *data;
+  int id;
+  struct signal_data *b;
+  struct svalue *cb;
+  struct pike_string *funname;
+  guint signal_id;
+#ifdef GLADE_CONNECT_DEBUG
+  fprintf(stderr, "Connecting handler %s, signal %s,\n data %s, "
+	  "after: %d\n",
+	  handler_name, signal_name, signal_data, after);
+#endif
+  get_all_args("GTK.GladeXML->_signal_connect",
+	       *(INT32 *)args, "%m%*", &callbacks, &data);
+
+  funname = make_shared_string(handler_name);
+  cb = low_mapping_string_lookup(callbacks, funname);
+  free_string(funname);
+  if(cb == NULL) {
+    fprintf(stderr, "** WARNING: Unknown function %s for signal %s\n",
+	    handler_name, signal_name);
+    return;
+  } else if(cb->type != T_FUNCTION) {
+    fprintf(stderr, "** WARNING: Value for handler %s for signal %s not a function\n.\n",
+	    handler_name, signal_name);
+    return;
+  }
+  b = malloc(sizeof(struct signal_data));
+  assign_svalue_no_free( &b->cb, cb);
+  assign_svalue_no_free( &b->args, data);
+  
+  signal_id = gtk_signal_lookup (signal_name, GTK_OBJECT_TYPE (obj));
+  if(!signal_id)
+  {
+    free(b);
+    fprintf(stderr,
+	    "** WARNING: Signal \"%s\" not defined in the `%s' "
+	    "class ancestry\n",
+	    signal_name, gtk_type_name (GTK_OBJECT_TYPE(obj)));
+  }
+  id = gtk_signal_connect_full(obj, signal_name, 0, 
+                               (void *)pgtk_signal_func_wrapper, b,
+			       (void *)pgtk_free_signal_data, FALSE, after);
+}
+
+FUNCTION(new_from_memory, "function(string,void|string,void|string:object)");
+NAME_ARGS(data, root, domain);
+RETURNS(GTK.GladeXML);
+// Creates a new GladeXML object (and the corresponding widgets) from
+// the string data. Optionally it will only build the interface from
+// the widget node root. This feature is useful if you only want to
+// build say a toolbar or menu from the XML document, but not the
+// window it is embedded in. The third optional argument is used to
+// specify a different translation domain from the default to be used.
+
+{
+  GladeXML *xml = 0;
+  struct pike_string *data = NULL;
+  char *root = NULL, *domain = NULL;
+  
+  if(THIS->obj)
+    error("GladeXML->new_from_memory(): Already initialized!\n");
+
+  switch(args)
+  {
+   case 3:
+    if(sp[-1].type == T_STRING) {
+      domain = sp[-1].u.string->str;
+      pop_n_elems(1);
+      args--;
+    } else
+      error("GladeXML->new_from_memory(): Invalid argument 3, expected string.\n");
+   case 2:
+    if(sp[-1].type == T_STRING) {
+      root = sp[-1].u.string->str;
+      pop_n_elems(1);
+      args--;
+    } else
+      error("GladeXML->new_from_memory(): Invalid argument 2, expected string.\n");
+    break;
+   case 1:
+    if(sp[-1].type == T_STRING) {
+      data = sp[-1].u.string;
+      pop_n_elems(1);
+      args--;
+    } else
+      error("GladeXML->new_from_memory(): Invalid argument 1, expected string.\n");
+
+    break;
+   default:
+    error("Invalid number or arguments to GladeXML->new_from_memory()\n");
+  }
+  xml = glade_xml_new_from_memory(data->str,
+				  data->len,
+				  root,
+				  domain);
+  THIS->obj =  (GtkObject *)xml;
+  ref_push_object(fp->current_object);
+}
+
+FUNCTION(new, "function(string,void|string,void|string:object)");
+RETURNS(GTK.GladeXML);
+NAME_ARGS(filename, root, domain);
+// Creates a new GladeXML object (and the corresponding widgets) from
+// the XML file filename. Optionally it will only build the interface
+// from the widget node root. This feature is useful if you only want
+// to build say a toolbar or menu from the XML file, but not the
+// window it is embedded in. Note also that the XML parse tree is
+// cached to speed up creating another GladeXML object for the same
+// file. The third optional argument is used to specify a different
+// translation domain from the default to be used.
+{
+  GladeXML *xml = 0;
+  char *data = NULL, *root = NULL, *domain = NULL;
+  
+  if(THIS->obj)
+    error("GladeXML->new: Already initialized!\n");
+
+  switch(args)
+  {
+   case 3:
+    if(sp[-1].type == T_STRING) {
+      domain = sp[-1].u.string->str;
+      pop_n_elems(1);
+      args--;
+    } else
+      error("GladeXML->new(): Invalid argument 3, expected string.\n");
+
+   case 2:
+    if(sp[-1].type == T_STRING) {
+      root = sp[-1].u.string->str;
+      pop_n_elems(1);
+      args--;
+    } else
+      error("GladeXML->new(): Invalid argument 2, expected string.\n");
+    break;
+   case 1:
+    if(sp[-1].type == T_STRING) {
+      data = sp[-1].u.string->str;
+      pop_n_elems(1);
+      args--;
+    } else
+      error("GladeXML->new(): Invalid argument 3, expected string.\n");
+    break;
+   default:
+    error("Invalid number or arguments to GladeXML->new().\n");
+  }
+  if(domain != NULL)
+    xml = glade_xml_new_with_domain(data, root, domain);
+  else
+    xml = glade_xml_new(data, root);
+  THIS->obj = (GtkObject *)xml;
+  ref_push_object(fp->current_object);
+}
+
+FUNCTION(create, "function(void|int:void)");
+// Create a new GladeXML object. 
+{
+  if(!glade_is_setup)
+  {
+    glade_init();
+#ifdef NEED_GNOMESUPPORT_H
+    if(args)
+    {
+      if(sp[-args].type == T_INT && sp[-1].u.integer != 0)
+	glade_gnome_init();
+    }
+#endif
+    glade_is_setup = 1;
+  }
+  pop_n_elems(args);
+  ref_push_object(fp->current_object);
+}
+
+
+FUNCTION(get_widget, "function(string:object)");
+NAME_ARGS(name);
+// This function is used to get get the widget
+// corresponding to name in the interface description. You would use
+// this if you have to do anything to the widget after loading.
+{
+  GtkWidget *widget = NULL;
+  GladeXML *xml;
+  if(!THIS->obj)
+    error("GladeXML->get_widget(): No widgets are loaded.\n");
+  xml = (GladeXML *)THIS->obj;
+  if(args == 1 && sp[-1].type == T_STRING) {
+    widget = glade_xml_get_widget(xml, sp[-1].u.string->str);
+    pop_n_elems(args);
+    push_gtkobjectclass( widget, pgtk_type_to_program(widget));
+  } else 
+    error("GladeXML->get_widget(): Invalid argument, expected string.\n");
+}
+
+
+FUNCTION(get_widget_by_long_name, "function(string:object)");
+NAME_ARGS(long_name);
+// This function is used to get the widget
+// corresponding to long_name in the interface description. You would
+// use this if you have to do anything to the widget after
+// loading. This function differs from GladeXML->get_widget, in that
+// you have to give the long form of the widget name, with all its
+// parent widget names, separated by periods.
+{
+  GtkWidget *widget = NULL;
+  GladeXML *xml;
+  if(!THIS->obj)
+    error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
+  xml = (GladeXML *)THIS->obj;
+  if(args == 1 && sp[-1].type == T_STRING) {
+    widget = glade_xml_get_widget_by_long_name(xml, sp[-1].u.string->str);
+    pop_n_elems(args);
+    push_gtkobjectclass( widget, pgtk_type_to_program(widget));
+  } else 
+    error("GladeXML->get_widget_by_long_name(): Invalid argument, expected string.\n");
+}
+
+FUNCTION(get_widget_long_name, "function(object:string)");
+NAME_ARGS(widget);
+ARGS(GTK.Widget);
+// Used to get the long name of a widget that was generated by a
+// GladeXML object.
+{
+  struct object *obj;
+  GtkWidget *widget = NULL;
+  const char *name;
+
+  get_all_args("GladeXML->get_widget_long_name", args, "%o", &obj);
+  widget = GTK_WIDGET(get_pgtkobject(obj, pgtk_widget_program));
+  if(!widget)
+    error("GladeXML->get_widget_long_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
+
+  name = glade_get_widget_long_name(widget);
+  pop_n_elems(args);
+  if(name != NULL)
+  {
+    struct pike_string *s;
+    s = make_shared_string(name);
+    fprintf(stderr, "name: %s\n", name);
+    push_string(s);
+  } else
+    push_int(0);  
+}
+
+
+FUNCTION(get_widget_name, "function(object:string)");
+NAME_ARGS(widget);
+ARGS(GTK.Widget);
+// Used to get the name of a widget that was generated by a
+// GladeXML object.
+{
+  struct object *obj;
+  GtkWidget *widget = NULL;
+  const char *name;
+
+  get_all_args("GladeXML->get_widget_name", args, "%o", &obj);
+  widget = GTK_WIDGET(get_pgtkobject(obj, pgtk_widget_program));
+  if(!widget)
+    error("GladeXML->get_widget_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
+
+  name = glade_get_widget_name(widget);
+  pop_n_elems(args);
+  if(name != NULL)
+  {
+    struct pike_string *s;
+    s = make_shared_string(name);
+    fprintf(stderr, "name: %s\n", name);
+    push_string(s);
+  } else
+    push_int(0);  
+}
+
+FUNCTION(signal_autoconnect, "function(mapping(string:function),mixed:void)");
+NAME_ARGS(callbacks,data);
+// Try to connect functions to all signals in the interface. The mapping should
+// consist of signal name - function name pairs. The data argument will be saved
+// and sent to all callbacks.
+{
+  GladeXML *xml;
+  if(args != 2 || sp[-args].type != T_MAPPING)
+    error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
+  if(!THIS->obj)
+    error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
+  xml = (GladeXML *)THIS->obj;  
+  glade_xml_signal_autoconnect_full(xml, pgtk__signal_connect, &args);
+  pop_n_elems(args);
+}
+
+END_COND_WIDGET(libglade);

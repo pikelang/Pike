@@ -22,7 +22,7 @@ struct my_pixel
 };
 
 extern int pigtk_is_setup;
-
+struct program *pgtk_type_to_program(GtkWidget *widget);
 void my_pop_n_elems( int n );
 void my_ref_push_object( struct object *o );
 void pgtk_return_this( int n );
