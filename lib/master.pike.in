@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.350 2004/06/17 16:01:40 mast Exp $
+// $Id: master.pike.in,v 1.351 2004/06/27 14:11:40 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -81,6 +81,8 @@ int compat_major=-1;
 //!
 int compat_minor=-1;
 
+//!
+int show_if_constant_errors = 0;
 
 // ---  Functions begin here.
 
@@ -341,10 +343,14 @@ mapping(string:int) load_time=([]);
 program compile_string(string source, void|string filename,
 		       object|void handler,
 		       void|program p,
-		       void|object o)
+		       void|object o,
+		       void|int _show_if_constant_errors)
 {
   return compile(cpp(source, filename||"-", 1, handler,
-		     compat_major, compat_minor),
+		     compat_major, compat_minor,
+		     (zero_type(_show_if_constant_errors)?
+		      show_if_constant_errors:
+		      _show_if_constant_errors)),
 		 handler,
 		 compat_major,
 		 compat_minor,
@@ -2368,6 +2374,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"ignore",         MAY_HAVE_ARG, ({"-Dqdatplr"}), 0, 1}),
       ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
       ({"run_tool",       NO_ARG,  ({"-x"}), 0, 0}),
+      ({"show_cpp_warn",  NO_ARG,  ({"--show-all-cpp-warnings"}), 0, 0}),
     }), 1);
 
     /* Parse -M and -I backwards */
@@ -2465,6 +2472,10 @@ void _main(array(string) orig_argv, array(string) env)
 
       case "run_tool":
 	run_tool = 1;
+	break;
+
+      case "show_cpp_warn":
+	show_if_constant_errors = 1;
 	break;
       }
     }
@@ -2635,9 +2646,14 @@ void _main(array(string) orig_argv, array(string) env)
       prog=(program)argv[0];
     };
 
-    if (err)
+    if (err) {
+      if( !file_stat(argv[0]) )
+	exit(1, "Could not find file %O.\n", argv[0]);
+      if( !file_stat(argv[0])->isreg )
+	exit(1, "File %O is not a regular file.\n", argv[0]);
       error( "Pike: Failed to compile script:\n"
 	     "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
+    }
   }
 
   if(!prog)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.136 2004/05/22 12:14:48 nilsson Exp $
+|| $Id: cpp.c,v 1.137 2004/06/27 14:11:15 nilsson Exp $
 */
 
 #include "global.h"
@@ -111,6 +111,7 @@ struct cpp
   int compat_major;
   int compat_minor;
   struct pike_string *data;
+  int warn_if_constant_throws;
 };
 
 struct define *defined_macro =0;
@@ -183,13 +184,21 @@ void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
   free_svalue(&thrown);
 }
 
-static void cpp_warning(struct cpp *this, const char *err)
+static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
+     ATTRIBUTE((format(printf,2,3)))
 {
+  char msg[8192];
+  va_list args;
+
+  va_start(args, cpp_warn_fmt);
+  VSNPRINTF(msg, sizeof(msg), cpp_warn_fmt, args);
+  va_end(args);
+
   if((this->handler && this->handler->prog) || get_master())
   {
     ref_push_string(this->current_file);
     push_int(this->current_line);
-    push_text(err);
+    push_text(msg);
     low_safe_apply_handler("compile_warning", this->handler,
 			   this->compat_handler, 3);
     pop_stack();
@@ -197,7 +206,7 @@ static void cpp_warning(struct cpp *this, const char *err)
     (void)fprintf(stderr, "%s:%ld: %s\n",
 		  this->current_file->str,
 		  (long)this->current_line,
-		  err);
+		  msg);
     fflush(stderr);
   }
 }
@@ -1375,7 +1384,7 @@ static void check_constant(struct cpp *this,
 	    MEMCPY(str, data.ptr, dlen);
 	    str[dlen] = 0;
 	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
-			       "when resolving '%s'.",
+			       "when resolving \"%s\".",
 			       get_name_of_type (Pike_sp[-1].type), str);
 	    free (str);
 	  }
@@ -1394,16 +1403,16 @@ static void check_constant(struct cpp *this,
 	  throw_value.type = T_INT;
 	  res = 0;
 	}
-	else {
+	else if(this->warn_if_constant_throws) {
 	  if (!data.shift) {
 	    char *str = malloc(dlen + 1);
 	    MEMCPY(str, data.ptr, dlen);
 	    str[dlen] = 0;
-	    cpp_handle_exception (this, "Error resolving '%s'.", str);
+	    cpp_warning (this, "Error resolving \"%s\".", str);
 	    free(str);
 	  }
 	  else
-	    cpp_handle_exception (this, "Error resolving identifier.");
+	    cpp_warning (this, "Error resolving identifier.");
 	  res = 0;
 	}
       }
@@ -1426,7 +1435,7 @@ static void check_constant(struct cpp *this,
 			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
       res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
     else {
-      cpp_handle_exception (this, "Error importing '.'.");
+      cpp_handle_exception (this, "Error importing \".\".");
       res = 0;
     }
   }
@@ -1539,11 +1548,11 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
       free_svalue (&throw_value);
       throw_value.type = T_INT;
     }
-    else {
+    else if(this->warn_if_constant_throws) {
       if (!s->size_shift)
-	cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
+	cpp_warning (this, "Error indexing module with \"%s\".", s->str);
       else
-	cpp_handle_exception (this, "Error indexing module in '.' operator.");
+	cpp_warning (this, "Error indexing module in \".\" operator.");
     }
     res = 0;
     push_undefined();
@@ -1689,7 +1698,8 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
 
 /*! @decl string cpp(string data, string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
- *!                  void|int compat_major, void|int compat_minor)
+ *!                  void|int compat_major, void|int compat_minor, @
+ *!                  void|int warn_if_constant_throws)
  *!
  *! Run a string through the preprocessor.
  *!
@@ -1740,19 +1750,21 @@ void f_cpp(INT32 args)
 
   struct object *handler = 0;
 
-  int compat_major, compat_minor;
+  int compat_major, compat_minor, wicit;
 
   ONERROR err;
 #ifdef PIKE_DEBUG
   ONERROR tmp;
 #endif /* PIKE_DEBUG */
 
-  get_all_args("cpp", args, "%t.%T%*%O%i%i", &data, &current_file,
-	       &charset_sv, &handler, &compat_major, &compat_minor);
+  get_all_args("cpp", args, "%t.%T%*%O%i%i%i", &data, &current_file,
+	       &charset_sv, &handler, &compat_major, &compat_minor,
+	       &wicit);
 
   this.current_line=1;
   this.compile_errors=0;
   this.defines=0;
+  this.warn_if_constant_throws=0;
 
   this.data = data;
   add_ref(data);
@@ -1798,6 +1810,8 @@ void f_cpp(INT32 args)
 
   if(args > 5)
     cpp_change_compat(&this, compat_major, compat_minor);
+  if(args > 6)
+    this.warn_if_constant_throws = wicit;
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */
