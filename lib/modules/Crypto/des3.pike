@@ -1,4 +1,4 @@
-/* des3.pike
+/* $Id: des3.pike,v 1.4 1997/05/31 22:03:46 grubba Exp $
  *
  */
 

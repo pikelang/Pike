@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+/* $Id: mkpeep.pike,v 1.5 1997/05/31 22:03:39 grubba Exp $ */
+
 import Simulate;
 
 #define JUMPBACK 3

@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+/* $Id: socktest.pike,v 1.3 1997/05/31 22:04:12 grubba Exp $ */
+
 import Stdio;
 import String;
 

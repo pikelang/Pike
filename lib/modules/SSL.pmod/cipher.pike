@@ -1,4 +1,4 @@
-/* cipher.pike
+/* $Id: cipher.pike,v 1.6 1997/05/31 22:03:52 grubba Exp $
  *
  */
 

@@ -1,4 +1,4 @@
-/* constants.pike
+/* $Id: constants.pike,v 1.3 1997/05/31 22:03:53 grubba Exp $
  *
  */
 

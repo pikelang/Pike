@@ -12,6 +12,19 @@ testfont binary
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
+/bin/export.pike foreign_ident
+/bin/htmlify_docs.pike foreign_ident
+/bin/httpd.pike foreign_ident
+/bin/mkpeep.pike foreign_ident
+/bin/test_pike.pike foreign_ident
+/lib/master.pike foreign_ident
+/lib/modules/ADT.pmod/queue.pike foreign_ident
+/lib/modules/ADT.pmod/struct.pike foreign_ident
+/lib/modules/Crypto/des3.pike foreign_ident
+/lib/modules/Crypto/des3_cbc.pike foreign_ident
+/lib/modules/Crypto/des_cbc.pike foreign_ident
+/lib/modules/Crypto/idea_cbc.pike foreign_ident
+/lib/modules/Crypto/rsa.pike foreign_ident
 /lib/modules/LR.pmod/Grammar_parser.pmod foreign_ident
 /lib/modules/LR.pmod/item.pike foreign_ident
 /lib/modules/LR.pmod/kernel.pike foreign_ident
@@ -21,7 +34,19 @@ testfont binary
 /lib/modules/LR.pmod/rule.pike foreign_ident
 /lib/modules/LR.pmod/scanner.pike foreign_ident
 /lib/modules/MIME.pmod foreign_ident
+/lib/modules/SSL.pmod/alert.pike foreign_ident
 /lib/modules/SSL.pmod/asn1.pmod foreign_ident
+/lib/modules/SSL.pmod/cipher.pike foreign_ident
+/lib/modules/SSL.pmod/connection.pike foreign_ident
+/lib/modules/SSL.pmod/constants.pike foreign_ident
+/lib/modules/SSL.pmod/context.pike foreign_ident
+/lib/modules/SSL.pmod/handshake.pike foreign_ident
+/lib/modules/SSL.pmod/https.pike foreign_ident
+/lib/modules/SSL.pmod/packet.pike foreign_ident
+/lib/modules/SSL.pmod/server.pike foreign_ident
+/lib/modules/SSL.pmod/session.pike foreign_ident
+/lib/modules/SSL.pmod/sslfile.pike foreign_ident
+/lib/modules/SSL.pmod/state.pike foreign_ident
 /lib/modules/Sql.pmod/mysql.pike foreign_ident
 /lib/modules/Sql.pmod/mysql_result.pike foreign_ident
 /lib/modules/Sql.pmod/sql.pike foreign_ident
@@ -54,6 +79,7 @@ testfont binary
 /src/modules/Image/lzw.c foreign_ident
 /src/modules/Image/lzw.h foreign_ident
 /src/modules/Image/matrix.c foreign_ident
+/src/modules/Image/mkdoc.pike foreign_ident
 /src/modules/Image/operator.c foreign_ident
 /src/modules/Image/pattern.c foreign_ident
 /src/modules/Image/pnm.c foreign_ident
@@ -84,9 +110,11 @@ testfont binary
 /src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident
 /src/modules/Yp/acconfig.h foreign_ident
+/src/modules/_Crypto/StdCrypt.pike foreign_ident
 /src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/crypto.c foreign_ident
 /src/modules/_Crypto/crypto.h foreign_ident
+/src/modules/_Crypto/crypto.pre.pike foreign_ident
 /src/modules/_Crypto/des.c foreign_ident
 /src/modules/_Crypto/des.pike foreign_ident
 /src/modules/_Crypto/idea.c foreign_ident
@@ -107,9 +135,12 @@ testfont binary
 /src/modules/_Crypto/md5.pike foreign_ident
 /src/modules/_Crypto/pipe.c foreign_ident
 /src/modules/_Crypto/rc4.c foreign_ident
+/src/modules/_Crypto/test_crypto.pike foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
+/src/modules/call_out/test_co.pike foreign_ident
 /src/modules/files/acconfig.h foreign_ident
 /src/modules/files/file.c foreign_ident
+/src/modules/files/socktest.pike foreign_ident
 /src/modules/readline/acconfig.h foreign_ident
 /src/modules/spider/accesseddb.h foreign_ident
 /src/modules/spider/dumudp.c foreign_ident

@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+/* $Id: test_co.pike,v 1.2 1997/05/31 22:04:11 grubba Exp $ */
+
 void verify();
 
 mapping fc=([]);

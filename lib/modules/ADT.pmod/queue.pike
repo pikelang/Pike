@@ -1,4 +1,4 @@
-/* queue.pike
+/* $Id: queue.pike,v 1.5 1997/05/31 22:03:44 grubba Exp $
  *
  * A simple FIFO queue. 
  */

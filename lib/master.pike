@@ -1,3 +1,8 @@
+/* $Id: master.pike,v 1.44 1997/05/31 22:03:42 grubba Exp $
+ *
+ * Master-file for Pike.
+ */
+
 #define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 

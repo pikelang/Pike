@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+/* $Id: test_pike.pike,v 1.4 1997/05/31 22:03:40 grubba Exp $ */
+
 #include <simulate.h>
 
 #if !efun(_verify_internals)

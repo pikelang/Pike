@@ -1,3 +1,5 @@
+/* $Id: mkdoc.pike,v 1.10 1997/05/31 22:04:04 grubba Exp $ */
+
 import Stdio;
 import Array;
 

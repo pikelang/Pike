@@ -1,3 +1,5 @@
+/* $Id: crypto.pre.pike,v 1.4 1997/05/31 22:04:08 grubba Exp $ */
+
 void create()
 {
   string module, name;

@@ -1,4 +1,4 @@
-/* Crypto.pike
+/* $Id: StdCrypt.pike,v 1.4 1997/05/31 22:04:07 grubba Exp $
  *
  * Cryptography module
  */

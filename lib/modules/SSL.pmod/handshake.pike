@@ -1,4 +1,4 @@
-/* handshake.pike
+/* $Id: handshake.pike,v 1.5 1997/05/31 22:03:56 grubba Exp $
  *
  */
 

@@ -1,4 +1,4 @@
-/* alert.pike
+/* $Id: alert.pike,v 1.2 1997/05/31 22:03:50 grubba Exp $
  *
  */
 

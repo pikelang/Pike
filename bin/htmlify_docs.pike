@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+/* $Id: htmlify_docs.pike,v 1.7 1997/05/31 22:03:37 grubba Exp $ */
+
 // Parse BMML (Black Magic Markup Language) to HTML
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML
 

@@ -1,4 +1,4 @@
-/* state.pike
+/* $Id: state.pike,v 1.4 1997/05/31 22:04:02 grubba Exp $
  *
  */
 

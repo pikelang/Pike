@@ -1,4 +1,4 @@
-/* struct.pike
+/* $Id: struct.pike,v 1.2 1997/05/31 22:03:44 grubba Exp $
  *
  * Read and write structures from strings.
  */

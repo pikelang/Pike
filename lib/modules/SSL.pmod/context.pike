@@ -1,4 +1,4 @@
-/* context.pike
+/* $Id: context.pike,v 1.4 1997/05/31 22:03:54 grubba Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.

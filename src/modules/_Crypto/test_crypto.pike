@@ -1,6 +1,6 @@
-#! /home/nisse/work/roxen/pike/src/pike
+#! /usr/local/bin/pike
 
-/* test_crypto.pike */
+/* $Id: test_crypto.pike,v 1.5 1997/05/31 22:04:10 grubba Exp $ */
 
 import Crypto;
 

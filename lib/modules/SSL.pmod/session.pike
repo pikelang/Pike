@@ -1,4 +1,4 @@
-/* session.pike
+/* $Id: session.pike,v 1.7 1997/05/31 22:04:00 grubba Exp $
  *
  */
 

@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+/* $Id: export.pike,v 1.5 1997/05/31 22:03:36 grubba Exp $ */
+
 #include <simulate.h>
 
 multiset except_modules  =(<>);

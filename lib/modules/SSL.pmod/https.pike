@@ -1,4 +1,4 @@
-/* https.pike
+/* $Id: https.pike,v 1.7 1997/05/31 22:03:58 grubba Exp $
  *
  * dummy https server
  */

@@ -1,4 +1,4 @@
-/* connection.pike
+/* $Id: connection.pike,v 1.5 1997/05/31 22:03:53 grubba Exp $
  *
  * SSL packet layer
  */

@@ -1,6 +1,7 @@
-/* packet.pike
+/* $Id: packet.pike,v 1.4 1997/05/31 22:03:59 grubba Exp $
  *
- * SSL Record Layer */
+ * SSL Record Layer
+ */
 
 inherit "constants";
 
