@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.30 1998/03/03 11:24:36 hubbe Exp $");
+RCSID("$Id: object.c,v 1.31 1998/03/03 22:30:23 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -33,7 +33,7 @@ void setup_fake_object(void)
   fake_object.refs=0xffffff;
 }
 
-struct object *low_clone(struct program *p)
+struct object *debug_low_clone(struct program *p)
 {
   int e;
   struct object *o;
@@ -65,6 +65,8 @@ struct object *low_clone(struct program *p)
 
   frame.current_object->refs++;
 
+  debug_malloc_touch(o);
+
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
@@ -95,6 +97,8 @@ struct object *low_clone(struct program *p)
       }
     }
 
+    debug_malloc_touch(o);
+
     if(frame.context.prog->init)
       frame.context.prog->init(o);
 
@@ -104,6 +108,7 @@ struct object *low_clone(struct program *p)
   free_object(frame.current_object);
   fp = frame.parent_frame;
 
+  debug_malloc_touch(o);
   return o;
 }
 
@@ -115,10 +120,19 @@ static void init_object(struct object *o, int args)
   pop_stack();
 }
 
+void do_free_object(struct object *o)
+{
+  free_object(o);
+}
+
 struct object *debug_clone_object(struct program *p, int args)
 {
+  ONERROR tmp;
   struct object *o=low_clone(p);
+  SET_ONERROR(tmp, do_free_object, o);
+  debug_malloc_touch(o);
   init_object(o,args);
+  UNSET_ONERROR(tmp);
   return o;
 }
 
@@ -156,6 +170,7 @@ struct object *get_master(void)
   pop_stack();
   
   inside = 0;
+  debug_malloc_touch(master_object);
   return master_object;
 }
 
@@ -164,6 +179,7 @@ struct object *master(void)
   struct object *o;
   o=get_master();
   if(!o) fatal("Couldn't load master object.\n");
+  debug_malloc_touch(o);
   return o;
 }
 
@@ -172,6 +188,8 @@ void destruct(struct object *o)
   int e;
   struct frame frame;
   struct program *p;
+
+  debug_malloc_touch(o);
 
 #ifdef DEBUG
   if(d_flag > 20) do_debug();
@@ -293,6 +311,7 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
+  debug_malloc_touch(o);
   if(o->prog && (o->prog->flags & PROG_DESTRUCT_IMMEDIATE))
   {
     o->refs++;

@@ -698,20 +698,25 @@ static int remove_memhdr(void *p)
   return 0;
 }
 
+void *debug_malloc_track(void *m, size_t s, const char *fn, int line)
+{
+  mt_lock(&debug_malloc_mutex);
+
+  if(m) make_memhdr(m, s, location_number(fn,line));
+
+  mt_unlock(&debug_malloc_mutex);
+  return m;
+}
+
 void *debug_malloc(size_t s, const char *fn, int line)
 {
   void *m;
 
-  mt_lock(&debug_malloc_mutex);
-
   m=malloc(s);
-  if(m)
-    make_memhdr(m, s, location_number(fn,line));
-
+  debug_malloc_track(m,s,fn,line);
   if(verbose_debug_malloc)
     fprintf(stderr, "malloc(%d) => %p  (%s:%d)\n", s, m, fn, line);
 
-  mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
@@ -747,14 +752,20 @@ void *debug_realloc(void *p, size_t s, const char *fn, int line)
   return m;
 }
 
-void debug_free(void *p, const char *fn, int line)
+
+void debug_malloc_untrack(void *p, const char *fn, int line)
 {
   mt_lock(&debug_malloc_mutex);
   remove_memhdr(p);
+  mt_unlock(&debug_malloc_mutex);
+}
+
+void debug_free(void *p, const char *fn, int line)
+{
+  debug_malloc_untrack(p,fn,line);
   free(p);
   if(verbose_debug_malloc)
     fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
-  mt_unlock(&debug_malloc_mutex);
 }
 
 char *debug_strdup(const char *s, const char *fn, int line)
@@ -785,6 +796,29 @@ void dump_memhdr_locations(struct memhdr *from,
     f=find_file_location(l->locnum);
     fprintf(stderr," *** %s:%d (%d times)\n",f->file,f->line,l->times);
   }
+}
+
+void dmalloc_dump_track(void *p)
+{
+  struct memhdr *m;
+  mt_lock(&debug_malloc_mutex);
+  if((m=find_memhdr(p)))
+  {
+    struct memloc *l;
+    fprintf(stderr, "LEAK: (%p) %d bytes\n",m->data, m->size);
+    for(l=m->locations;l;l=l->next)
+    {
+      struct fileloc *f=find_file_location(l->locnum);
+      fprintf(stderr,"  *** %s:%d (%d times) %s\n",
+	      f->file,
+	      f->line,
+	      l->times,
+	      find_location(&no_leak_memlocs, l->locnum) ? "" : " *");
+    }
+  }
+  
+  mt_unlock(&debug_malloc_mutex);
+  
 }
 
 void cleanup_memhdrs(void)

@@ -12,6 +12,8 @@
 #include "error.h"
 #include "gc.h"
 
+#include <ctype.h>
+
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
 
@@ -369,13 +371,50 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
   return tmp;
 }
 
+void debug_dump_pike_string(struct pike_string *s, INT32 max)
+{
+  INT32 e;
+  fprintf(stderr,"0x%p: %ld refs, len=%ld, hval=%lux (%lx)\n",
+	  s,
+	  (long)s->refs,
+	  (long)s->len,
+	  (unsigned long)s->hval,
+	  (unsigned long)StrHash(s->str, s->len));
+  fprintf(stderr," \"");
+  for(e=0;e<s->len && max>0;e++)
+  {
+    int c=EXTRACT_UCHAR(s->str+e);
+    switch(c)
+    {
+      case '\t': fprintf(stderr,"\\t"); max-=2; break;
+      case '\n': fprintf(stderr,"\\n"); max-=2; break;
+      case '\r': fprintf(stderr,"\\r"); max-=2; break;
+      case '\b': fprintf(stderr,"\\b"); max-=2; break;
+
+      default:
+	if(is8bitalnum(c) || c==' ' || isgraph(c))
+	{
+	  putc(c,stderr);
+	  max--;
+	}else{
+	  fprintf(stderr,"\\%03o",c);
+	  max-=4;
+	}
+    }
+  }
+  if(!max)
+    fprintf(stderr,"...\n");
+  else
+    fprintf(stderr,"\"\n");
+}
+
 void dump_stralloc_strings(void)
 {
   unsigned INT32 e;
   struct pike_string *p;
   for(e=0;e<htable_size;e++)
     for(p=base_table[e];p;p=p->next)
-      printf("%ld refs \"%s\"\n",(long)p->refs,p->str);
+      debug_dump_pike_string(p, 70);
 }
 
 #endif
@@ -583,6 +622,22 @@ void cleanup_shared_string_table(void)
 {
   unsigned INT32 e;
   struct pike_string *s,*next;
+
+#if defined(DEBUG) && defined(DEBUG_MALLOC)
+  if(verbose_debug_exit)
+  {
+    INT32 num,size;
+    count_memory_in_strings(&num,&size);
+    if(num)
+    {
+      fprintf(stderr,"Strings left: %d (%d bytes) (zapped)\n",num,size);
+      dump_stralloc_strings();
+    }
+  }
+#endif
+
+  if(!base_table) return;
+
   for(e=0;e<htable_size;e++)
   {
     for(s=base_table[e];s;s=next)
@@ -597,6 +652,8 @@ void cleanup_shared_string_table(void)
     base_table[e]=0;
   }
   free((char *)base_table);
+  base_table=0;
+  num_strings=0;
 }
 
 void count_memory_in_strings(INT32 *num, INT32 *size)

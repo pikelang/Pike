@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.36 1998/03/03 14:30:35 grubba Exp $");
+RCSID("$Id: lex.c,v 1.37 1998/03/03 22:30:22 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1281,9 +1281,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 #endif
 {
   int c;
-#ifdef MALLOC_DEBUG
-  check_sfltable();
-#endif
+
   while(1)
   {
     switch(c=GETC())

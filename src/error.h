@@ -50,6 +50,7 @@ extern struct svalue throw_value;
 
 #define SET_ONERROR(X,Y,Z) \
   do{ \
+     if(!recoveries) break; \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
      X.previous=recoveries->onerror; \
@@ -58,11 +59,12 @@ extern struct svalue throw_value;
 
 #ifdef DEBUG
 #define UNSET_ONERROR(X) do {\
+  if(!recoveries) break; \
   if(recoveries->onerror != &(X)) fatal("UNSET_ONERROR out of sync.\n"); \
   recoveries->onerror=(X).previous; \
   } while(0)
 #else
-#define UNSET_ONERROR(X) recoveries->onerror=X.previous
+#define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
 #endif
 
 /* Prototypes begin here */

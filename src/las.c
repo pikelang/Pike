@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.40 1998/03/03 11:24:32 hubbe Exp $");
+RCSID("$Id: las.c,v 1.41 1998/03/03 22:30:21 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -44,6 +44,7 @@ extern char *get_type_name(int);
 
 int car_is_node(node *n)
 {
+  check_node(n);
   switch(n->token)
   {
   case F_IDENTIFIER:
@@ -58,6 +59,7 @@ int car_is_node(node *n)
 
 int cdr_is_node(node *n)
 {
+  check_node(n);
   switch(n->token)
   {
   case F_IDENTIFIER:
@@ -75,6 +77,7 @@ INT32 count_args(node *n)
 {
   int a,b;
   if(!n) return 0;
+  check_node(n);
   switch(n->token)
   {
   case F_VAL_LVAL:
@@ -174,8 +177,10 @@ void free_all_nodes(void)
 	      else
 #endif
 	      {
+		check_node(tmp);
 		/* Free the node and be happy */
 		/* Make sure we don't free any nodes twice */
+		dmalloc_dump_track(tmp);
 		if(car_is_node(tmp)) CAR(tmp)=0;
 		if(cdr_is_node(tmp)) CDR(tmp)=0;
 		debug_malloc_touch(tmp->type);
@@ -203,9 +208,10 @@ void free_all_nodes(void)
   }
 }
 
-void free_node(node *n)
+void debug_free_node(node *n)
 {
   if(!n) return;
+  check_node(n);
   switch(n->token)
   {
   case USHRT_MAX:
@@ -222,6 +228,7 @@ void free_node(node *n)
   }
   n->token=USHRT_MAX;
   if(n->type) free_string(n->type);
+  dmalloc_untrack(n);
   CAR(n)=free_nodes;
   free_nodes=n;
 }
@@ -251,10 +258,11 @@ static node *mkemptynode(void)
   res->node_info=0;
   res->tree_info=0;
   res->parent=0;
+  dmalloc_track(res);
   return res;
 }
 
-node *mknode(short token,node *a,node *b)
+node *debug_mknode(short token,node *a,node *b)
 {
   node *res;
   res = mkemptynode();
@@ -323,6 +331,7 @@ node *mknode(short token,node *a,node *b)
     verify_shared_strings_tables();
 #endif
 
+  check_node(res);
   return res;
 }
 
@@ -337,6 +346,7 @@ node *mkstrnode(struct pike_string *str)
   res->u.sval.subtype = 0;
 #endif
   copy_shared_string(res->u.sval.u.string, str);
+  check_node(res);
   return res;
 }
 
@@ -352,6 +362,7 @@ node *mkintnode(int nr)
   res->u.sval.type = T_INT;
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
+  check_node(res);
   return res;
 }
 
@@ -365,6 +376,7 @@ node *mkfloatnode(FLOAT_TYPE foo)
   res->u.sval.subtype = 0;
 #endif
   res->u.sval.u.float_number = foo;
+  check_node(res);
   return res;
 }
 
@@ -385,6 +397,7 @@ node *mkefuncallnode(char *function, node *args)
   }
   n=mkapplynode(mksvaluenode(sp-1), args);
   pop_stack();
+  check_node(n);
   return n;
 }
 
@@ -407,6 +420,7 @@ node *mklocalnode(int var)
   CDR(res)=0;
 #endif
   res->u.number = var;
+  check_node(res);
   return res;
 }
 
@@ -430,6 +444,7 @@ node *mkidentifiernode(int i)
   CDR(res)=0;
 #endif
   res->u.number = i;
+  check_node(res);
   return res;
 }
 
@@ -451,16 +466,19 @@ node *mkcastnode(struct pike_string *type,node *n)
   CDR(res)=0;
 #endif
   n->parent=res;
+  check_node(res);
   return res;
 }
 
 void resolv_constant(node *n)
 {
   struct identifier *i;
+  check_node(n);
   if(!n)
   {
     push_int(0);
   }else{
+    check_node(n);
     switch(n->token)
     {
     case F_CONSTANT:
@@ -498,6 +516,7 @@ node *debug_index_node(node *n, struct pike_string * id)
 {
   node *ret;
   JMP_BUF tmp;
+  check_node(n);
   if(SETJMP(tmp))
   {
     ONERROR tmp;
@@ -1178,6 +1197,8 @@ void fix_type_field(node *n)
 {
   struct pike_string *type_a,*type_b;
 
+  check_node(n);
+
   if(n->type) return; /* assume it is correct */
 
   switch(n->token)
@@ -1211,6 +1232,7 @@ void fix_type_field(node *n)
     if(!check_indexing(type_a, type_b, n))
       my_yyerror("Indexing on illegal type.");
     n->type=index_type(type_a,n);
+    check_node(n);
     break;
 
   case F_ARROW:
@@ -1219,6 +1241,7 @@ void fix_type_field(node *n)
     if(!check_indexing(type_a, type_b, n))
       my_yyerror("Indexing on illegal type.");
     n->type=index_type(type_a,n);
+    check_node(n);
     break;
 
   case F_APPLY:
@@ -1257,6 +1280,7 @@ void fix_type_field(node *n)
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, name);
       }
+      check_node(n);
       copy_shared_string(n->type, mixed_type_string);
     }
     free_string(s);
@@ -1356,11 +1380,13 @@ void fix_type_field(node *n)
   default:
     copy_shared_string(n->type,mixed_type_string);
   }
+  check_node(n);
 }
 
 static void zapp_try_optimize(node *n)
 {
   if(!n) return;
+  check_node(n);
   n->node_info &=~ OPT_TRY_OPTIMIZE;
   n->tree_info &=~ OPT_TRY_OPTIMIZE;
   if(car_is_node(n)) zapp_try_optimize(CAR(n));
@@ -1371,6 +1397,7 @@ static void optimize(node *n)
 {
   node *tmp1, *tmp2, *tmp3;
   INT32 save_line = current_line;
+  check_node(n);
   do
   {
     if(car_is_node(n) && !(CAR(n)->node_info & OPT_OPTIMIZED))
@@ -1433,6 +1460,8 @@ static void optimize(node *n)
       print_tree(n);
     }
 #endif    
+
+    check_node(n);
 
     switch(n->token)
     {

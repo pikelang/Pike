@@ -80,8 +80,8 @@ int cdr_is_node(node *n);
 INT32 count_args(node *n);
 struct node_chunk;
 void free_all_nodes(void);
-void free_node(node *n);
-node *mknode(short token,node *a,node *b);
+void debug_free_node(node *n);
+node *debug_mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
 node *mkintnode(int nr);
 node *mkfloatnode(FLOAT_TYPE foo);
@@ -142,9 +142,16 @@ INT32 get_opt_info(void);
 extern dynamic_buffer areas[NUM_AREAS];
 
 #ifdef DEBUG_MALLOC
+#define check_node(N) do { if((N)->token == F_CONSTANT) check_svalue(&(N)->u.sval); debug_malloc_touch((N)->type); }while(0)
+
 #define index_node(X,Y) ((node *)debug_malloc_touch(debug_index_node((node *)debug_malloc_touch(X),(struct pike_string *)debug_malloc_touch(Y))))
+#define free_node(N) do { node *n_=(N); check_node(n_); debug_free_node(n_); } while(0)
+#define mknode(T,X,Y) ((node *)debug_malloc_touch(debug_mknode(T,(node *)debug_malloc_touch( (X)), (node *)debug_malloc_touch((Y)))))
 #else
+#define check_node(N)
 #define index_node debug_index_node
+#define free_node debug_free_node
+#define mknode debug_mknode
 #endif
 
 #endif

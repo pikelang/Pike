@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.28 1998/03/03 11:24:33 hubbe Exp $");
+RCSID("$Id: main.c,v 1.29 1998/03/03 22:30:23 hubbe Exp $");
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -300,6 +300,70 @@ void low_exit_main(void)
   do_gc();
 
   cleanup_callbacks();
+
+#if defined(DEBUG) && defined(DEBUG_MALLOC)
+  if(verbose_debug_exit)
+  {
+    INT32 num,size,recount=0;
+    fprintf(stderr,"Exited normally, counting bytes.\n");
+
+    count_memory_in_arrays(&num, &size);
+    if(num)
+    {
+      recount++;
+      fprintf(stderr,"Arrays left: %d (%d bytes) (zapped)\n",num,size);
+    }
+
+    zap_all_arrays();
+
+    count_memory_in_mappings(&num, &size);
+    if(num)
+    {
+      recount++;
+      fprintf(stderr,"Mappings left: %d (%d bytes) (zapped)\n",num,size);
+    }
+
+    zap_all_mappings();
+
+    count_memory_in_multisets(&num, &size);
+    if(num)
+      fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
+
+
+    if(recount)
+    {
+      fprintf(stderr,"Garbage collecting..\n");
+      do_gc();
+      
+      count_memory_in_arrays(&num, &size);
+      fprintf(stderr,"Arrays left: %d (%d bytes)\n",num,size);
+      count_memory_in_mappings(&num, &size);
+      fprintf(stderr,"Mappings left: %d (%d bytes)\n",num,size);
+      count_memory_in_multisets(&num, &size);
+      fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
+    }
+    
+
+    count_memory_in_programs(&num, &size);
+    if(num)
+      fprintf(stderr,"Programs left: %d (%d bytes)\n",num,size);
+
+    {
+      struct program *p;
+      for(p=first_program;p;p=p->next)
+      {
+	describe_something(p, T_PROGRAM);
+      }
+    }
+
+
+    count_memory_in_objects(&num, &size);
+    if(num)
+      fprintf(stderr,"Objects left: %d (%d bytes)\n",num,size);
+
+    cleanup_shared_string_table();
+  }
+#endif
   zap_all_arrays();
   zap_all_mappings();
 

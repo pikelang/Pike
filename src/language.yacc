@@ -157,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.51 1998/03/03 11:24:31 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.52 1998/03/03 22:30:20 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -371,8 +371,7 @@ optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
 
 program_ref: string_constant
   {
-    reference_shared_string($1);
-    push_string($1);
+    ref_push_string($1);
     push_string($1);
     reference_shared_string(current_file);
     push_string(current_file);

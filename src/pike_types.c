@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.28 1998/03/03 14:37:15 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.29 1998/03/03 22:30:25 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -969,6 +969,8 @@ static struct pike_string *low_index_type(char *t, node *n)
     push_finished_type(b);
     push_finished_type(a);
     push_type(T_OR);
+    free_string(a);
+    free_string(b);
     return pop_unfinished_type();
   }
 

@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.5 1997/11/29 21:33:36 grubba Exp $ */
+/* $Id: pnm.c,v 1.6 1998/03/03 22:30:29 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.5 1997/11/29 21:33:36 grubba Exp $
+**!	$Id: pnm.c,v 1.6 1998/03/03 22:30:29 hubbe Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.5 1997/11/29 21:33:36 grubba Exp $");
+RCSID("$Id: pnm.c,v 1.6 1998/03/03 22:30:29 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -305,6 +305,7 @@ struct program *image_pnm_module_program=NULL;
 
 void init_image_pnm(void)
 {
+  struct pike_string *s;
    start_new_program();
    
    add_function("encode",img_pnm_encode_binary,
@@ -319,7 +320,8 @@ void init_image_pnm(void)
 
    image_pnm_module_program=end_program();
    push_object(clone_object(image_pnm_module_program,0));
-   add_constant(make_shared_string("PNM"),sp-1,0);
+   add_constant(s=make_shared_string("PNM"),sp-1,0);
+   free_sstring(s);
    pop_stack();
 }
 

@@ -1139,10 +1139,7 @@ node *make_node_from_array(struct array *a)
     if(e == a->size)
     {
       return mkefuncallnode("allocate",
-			    mknode(F_ARG_LIST,
-				   mkintnode(a->size),
-				   mkstrnode(make_shared_string("mixed"))
-				   ));
+				   mkintnode(a->size));
     }
   }
   if(check_that_array_is_constant(a))

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.63 1998/02/11 00:56:34 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.64 1998/03/03 22:30:27 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -31,17 +31,17 @@ class c1 { inherit p1; inherit p2; };
 return c1()->foo();]],2);
 
 test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; object *o=Array.map(allocate(100),foo); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
-test_compile_error([[void foo() { return destruct(this_object()); }]])
+test_compile_error([[void foo0() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
 test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
-test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
+test_compile_error([[int foo2() { return 1} ; constant foo2=(["foo2":foo2]); return foo2->foo2();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
-test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
+test_eval_error(mixed *foo3=({}); return mkmapping(foo3,({1})); )
 test_true(time())
-test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
+test_compile_error([[mapping (string:array(string:string)) foo4=([]); ]])
 test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
 
 test_true(encode_value(0))
@@ -77,7 +77,7 @@ test_any([[float p=2.0; return p--;]],2.0);
 test_any([[float p=2.0; p--; return p;]],1.0);
 test_any([[float p=2.0; return --p;]],1.0);
 
-test_compile_error(int foo() { LJjjjjJJJ ; })
+test_compile_error(int foo5() { LJjjjjJJJ ; })
 test_true(clone(class { constant i=1; })->i)
 test_true(clone(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
 test_true(clone(class { constant i=1; mixed `->(string s) { return 0; }})["i"])
@@ -104,7 +104,7 @@ test_program(inherit test;)
 test_program(inherit test; int a() { return foo; } )
 test_define_program(test,[[class TEST { int a() { return 1; } }]])
 test_program(inherit test; inherit TEST; )
-test_compile_error(class { object(Stdio.File) foo; object(Regexp) bar=foo; })
+test_compile_error(class { object(Stdio.File) foo6; object(Regexp) bar=foo6; })
 test_do(class { object foo; object(Regexp) bar=foo; })
 test_do(class { object(Stdio.File) foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
@@ -126,7 +126,7 @@ test_any([[int e; return e--;]],0)
 test_any([[int e; return --e;]],-1)
 test_any([[int e; if(e--) return 0; return e;]],-1)
 
-test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
+test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo7() { return 17; }\",\"62\")))
 
 test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
 test_compile([[while(0)if(0)continue;else;]])
@@ -432,15 +432,15 @@ test_false(clone(class { int foo() { return 1; }})->bar)
 test_eq(clone(clone(class { program foo=class { int i=20; }; })->foo)->i,20)
 
 // type checks
-test_compile_error([[} int foo() { return]]);
-test_compile_error([[} void foo() { return 1]]);
+test_compile_error([[} int foo9() { return]]);
+test_compile_error([[} void foo10() { return 1]]);
 
 // Not yet cataloged
 test_any(int i=10; { int i; } return i, 10)
 test_program(void foo(int a ,int b); function(int,int:void) a() { return foo; })
 test_program(void foo(int a, int ... b); function(int,int ...:void) a() { return foo; })
 test_program(void foo(); function(:void) a() { return foo; })
-test_compile_error([[} void foo(); function(:string) a() { return foo;]])
+test_compile_error([[} void foo11(); function(:string) a() { return foo11;]])
 
 test_do(lambda(){return;}())
 test_equal( ({ lambda() { return 3; } , lambda() { return 7; }, lambda() { return 9; } })(), ({ 3,7,9 }))
