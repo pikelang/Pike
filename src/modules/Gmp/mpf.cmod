@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.14 2002/10/31 14:08:41 grubba Exp $
+|| $Id: mpf.cmod,v 1.15 2002/10/31 15:50:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.14 2002/10/31 14:08:41 grubba Exp $");
+RCSID("$Id: mpf.cmod,v 1.15 2002/10/31 15:50:03 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -424,9 +424,9 @@ PIKECLASS mpf
 
 
 #ifdef BIG_PIKE_INT
-#define TOOBIGTEST(X) || sp[X-args].u.integer>MAX_INT32 || sp[X-args].u.integer<0
+#define TOOBIGTEST(X) (sp[X-args].u.integer>MAX_INT32 || sp[X-args].u.integer<0)
 #else
-#define TOOBIGTEST(X) || sp[X-args].u.integer < 0
+#define TOOBIGTEST(X) (sp[X-args].u.integer < 0)
 #endif
 
   static int add_convert_args(INT32 args)
@@ -437,7 +437,7 @@ PIKECLASS mpf
 
       for(e=0; e<args; e++)
       {
-	if(sp[e-args].type != T_INT TOOBIGTEST(e))
+	if(sp[e-args].type != T_INT || TOOBIGTEST(e))
 	  tmp=mpf_get_prec( get_mpf(sp+e-args, 1, prec) );
 	else
 	  tmp=sizeof(sp[e-args].u.integer)*CHAR_BITS;
@@ -611,7 +611,7 @@ PIKECLASS mpf
 
       for(e=0; e<args; e++)
       {
-	if(sp[e-args].type != T_INT TOOBIGTEST(e))
+	if(sp[e-args].type != T_INT || TOOBIGTEST(e))
 	{
 	  MP_FLT *a=get_mpf(sp+e-args, 1, prec);
 	  tmp=mpf_get_prec(a);
@@ -677,7 +677,7 @@ PIKECLASS mpf
     }
 
 #define CMPOP(OP) 					\
-      ((q->type != T_INT TOOBIGTEST(0)) ?			\
+      ((q->type != T_INT || TOOBIGTEST(0)) ?		\
        mpf_cmp(THISMPF, get_mpf(q, 1, 0)) OP 0 :	\
        mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
 	
@@ -711,7 +711,7 @@ PIKECLASS mpf
   {
     MP_FLT *arg;
     /* FIXME: We need separate TOOBIGTEST for *_si and *_ui */
-    if(q->type == T_INT TOOBIGTEST(0))
+    if(q->type == T_INT && TOOBIGTEST(0))
       RETURN mpf_cmp_si(THISMPF, q->u.integer) == 0;
     arg=get_mpf(q, 0, 0);
     RETURN (arg && !mpf_cmp(THISMPF, arg));
@@ -721,7 +721,7 @@ PIKECLASS mpf
     flags ID_STATIC;
   {
     MP_FLT *arg;
-    if(q->type == T_INT TOOBIGTEST(0))
+    if(q->type == T_INT && TOOBIGTEST(0))
       RETURN mpf_cmp_si(THISMPF, q->u.integer) != 0;
     arg=get_mpf(q, 0, 0);
     RETURN (!arg || mpf_cmp(THISMPF, arg));
