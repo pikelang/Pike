@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.50 1998/04/10 22:24:20 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.51 1998/04/10 23:29:21 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -605,7 +605,7 @@ static int yylex2(YYSTYPE *yylval)
       if(p1>p2)
       {
 	lex.pos=p1;
-	yylval->fnum=(float)f;
+	yylval->fnum=(FLOAT_TYPE)f;
 	return F_FLOAT;
       }else{
 	lex.pos=p2;

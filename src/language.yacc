@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.72 1998/04/10 22:24:20 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.73 1998/04/10 23:23:08 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1298,7 +1298,7 @@ expr3: expr4
 
 expr4: string
   | F_NUMBER { $$=mkintnode($1); }
-  | F_FLOAT { $$=mkfloatnode($1); }
+  | F_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
   | catch
   | gauge
   | typeof
