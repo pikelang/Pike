@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.97 1999/11/06 00:08:45 grubba Exp $");
+RCSID("$Id: las.c,v 1.98 1999/11/06 01:38:12 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1930,6 +1930,22 @@ static void optimize(node *n)
       }
       break;
 
+    case F_CAST:
+      if (n->type == void_type_string) {
+	/* (void) const  ->   */
+	if (!CAR(n) || CAR(n)->token == F_CONSTANT)
+	  goto zap_node;
+
+	/* (void)(X, const)  ->  (void)X */
+	if (CAR(n)->token == F_COMMA_EXPR &&
+	    CDAR(n)->token == F_CONSTANT) {
+	  tmp1 = mkcastnode(void_type_string, CAAR(n));
+	  CAAR(n) = 0;
+	  goto use_tmp1;
+	}
+      }
+      break;
+
     case F_RANGE:
       /* X[Y..Z]
        * Warn if Z is a constant <= 0.
@@ -1952,27 +1968,11 @@ static void optimize(node *n)
       if (CAR(n)->token == F_CONSTANT) {
 	goto use_cdr;
       }
-      /* ((void) const) , X  ->  X */
-      if (CAR(n)->token == F_CAST &&
-	  CAR(n)->type == void_type_string &&
-	  CAAR(n)->token == F_CONSTANT) {
-	goto use_cdr;
-      }
       /* (X , const) , Y  ->  X , Y */
       if (CAR(n)->token == F_COMMA_EXPR &&
-	  CDAR(n)->token == F_CONSTANT) {
+	  CDAR(n) && CDAR(n)->token == F_CONSTANT) {
 	tmp1 = mknode(F_COMMA_EXPR, CAAR(n), CDR(n));
 	CAAR(n) = CDR(n) = 0;
-	goto use_tmp1;
-      }
-      /* ((void)(X, const)), Y  ->  ((void) X), Y */
-      if (CAR(n)->token == F_CAST &&
-	  CAR(n)->type == void_type_string &&
-	  CAAR(n)->token == F_COMMA_EXPR &&
-	  CDR(CAAR(n))->token == F_CONSTANT) {
-	tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, CAR(CAAR(n))),
-		      CDR(n));
-	CAR(CAAR(n)) = CDR(n) = 0;
 	goto use_tmp1;
       }
       /* FALL_THROUGH */
@@ -2051,17 +2051,19 @@ static void optimize(node *n)
 	CAAR(n)=CDDR(n)=CADR(n)=0;
 	goto use_tmp1;
       }
-      /* 0 ? Y : Z  ->  Z */
-      if (node_is_false(CAR(n))) {
-	tmp1 = CDDR(n);
-	CDDR(n) = 0;
-	goto use_tmp1;
-      }
-      /* 1 ? Y : Z  ->  Y */
-      if (node_is_true(CAR(n))) {
-	tmp1 = CADR(n);
-	CADR(n) = 0;
-	goto use_tmp1;
+      if (CDR(n)) {
+	/* 0 ? Y : Z  ->  Z */
+	if (node_is_false(CAR(n))) {
+	  tmp1 = CDDR(n);
+	  CDDR(n) = 0;
+	  goto use_tmp1;
+	}
+	/* 1 ? Y : Z  ->  Y */
+	if (node_is_true(CAR(n))) {
+	  tmp1 = CADR(n);
+	  CADR(n) = 0;
+	  goto use_tmp1;
+	}
       }
       break;
 
@@ -2349,13 +2351,20 @@ static void optimize(node *n)
       CDR(n)=0;
       goto use_tmp1;
 
+    zap_node:
+      tmp1 = 0;
+      goto use_tmp1;
+
     use_tmp1:
       if(CAR(n->parent) == n)
 	CAR(n->parent) = tmp1;
       else
 	CDR(n->parent) = tmp1;
       
-      if(tmp1) tmp1->parent = n->parent;
+      if(tmp1)
+	tmp1->parent = n->parent;
+      else
+	tmp1 = n->parent;
       free_node(n);
       n=tmp1;
 #ifdef PIKE_DEBUG
