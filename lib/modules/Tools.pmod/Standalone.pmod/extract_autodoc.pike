@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.22 2002/12/06 23:15:38 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.23 2002/12/09 15:14:47 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -7,13 +7,15 @@
  */
 
 array(string) find_root(string path) {
-  if(file_stat(path+"/.autodoc"))
-    return reverse((Stdio.read_file(path+"/.autodoc")/"\n")[0]/" ") - ({""});
+  if(file_stat(path+"/.autodoc")) {
+    return replace((Stdio.read_file(path+"/.autodoc")/"\n")[0],
+		   " ", ".")/"." - ({""});
+  }
+  if (!sizeof(path)) return ({});
   array(string) parts = path/"/";
   string name = parts[-1];
   sscanf(name, "%s.pmod", name);
-  return find_root(parts[..sizeof(parts)-2]*"/") +
-    ({ (parts[-1]/".")[0] });
+  return find_root(parts[..sizeof(parts)-2]*"/") + ({ name });
 }
 
 string imgsrc;
@@ -110,10 +112,7 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
     if( suffix == "c" )
       result = Tools.AutoDoc.ProcessXML.extractXML(filename);
     else {
-      array(string) parents;
-      if(catch(parents = rootless?({}):find_root(dirname(filename))) )
-	parents = ({});
-
+      array(string) parents = rootless?({}):find_root(dirname(filename));
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
       if(name == "master.pike")
