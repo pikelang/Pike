@@ -1,11 +1,11 @@
 /*
- * $Id: ia32.c,v 1.7 2001/07/22 21:31:07 grubba Exp $
+ * $Id: ia32.c,v 1.8 2001/07/22 22:06:01 grubba Exp $
  *
  * Machine code generator for IA32.
  *
  */
 
-#define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
+#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
 
 /* This is ugly, but since the code may be moved we cannot use
