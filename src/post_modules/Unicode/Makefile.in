@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.4 2002/01/27 00:54:02 mast Exp $
+# $Id: Makefile.in,v 1.5 2003/05/04 13:32:22 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=unicode_module.o normalize.o split.o buffer.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@

@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.1 2002/05/10 21:51:51 per Exp $
+# $Id: Makefile.in,v 1.2 2003/05/04 13:32:22 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..:.
+VPATH=@srcdir@
 OBJS=svg.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @SVG_LIBS@
 MODULE_CFLAGS=@SVG_CFLAGS@

@@ -1,6 +1,6 @@
 # This line is needed on some machines.
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..:.
+VPATH=@srcdir@
 MODNAME=GTK
 DEST=@prefix@/lib/pike/modules/
 OBJS=dummy.o

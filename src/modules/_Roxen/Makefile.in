@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.1 2000/08/12 06:18:22 per Exp $
+# $Id: Makefile.in,v 1.2 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=roxen.o
 MODULE_LDFLAGS=@LDFLAGS@
 #  streamed_parser.o

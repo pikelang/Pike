@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.4 2003/03/18 16:25:36 nisse Exp $
+# $Id: Makefile.in,v 1.5 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 
 OBJS = nettle.o hash.o cipher.o
 

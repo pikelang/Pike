@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.4 1999/11/18 08:02:34 hubbe Exp $
+# $Id: Makefile.in,v 1.5 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=image_xface.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 

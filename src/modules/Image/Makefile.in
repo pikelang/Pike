@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.37 2003/04/09 09:01:21 grubba Exp $
+# $Id: Makefile.in,v 1.38 2003/05/04 13:32:20 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS = image_module.o \
 	image.o font.o matrix.o blit.o pattern.o dct.o \
         operator.o colortable.o polyfill.o \

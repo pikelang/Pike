@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.1 2002/05/29 05:41:02 per Exp $
+# $Id: Makefile.in,v 1.2 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=Shuffler.o $(SOURCE_OBJS)
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@

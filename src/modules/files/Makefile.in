@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.12 2000/08/27 18:29:27 mirar Exp $
+# $Id: Makefile.in,v 1.13 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=file.o efuns.o socket.o termios.o sendfile.o udp.o stat.o
 MODULE_LDFLAGS=@LIBS@
 MODULE_TESTS=local_tests

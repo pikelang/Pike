@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.3 2002/06/25 16:14:57 grubba Exp $
+# $Id: Makefile.in,v 1.4 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 MODNAME=SDL
 OBJS=SDL.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@

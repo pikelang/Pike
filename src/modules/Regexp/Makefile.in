@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.7 1999/11/18 08:01:14 hubbe Exp $
+# $Id: Makefile.in,v 1.8 2003/05/04 13:32:21 mast Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=glue.o @REGEXP_OBJS@ 
 MODULE_LDFLAGS=@LDFLAGS@
 

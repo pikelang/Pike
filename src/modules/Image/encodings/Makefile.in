@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.37 2002/04/30 23:24:10 mast Exp $
+# $Id: Makefile.in,v 1.38 2003/05/04 13:33:07 mast Exp $
 
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../../..:../../..
+VPATH=@srcdir@
 OBJS = pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o wbf.o ras.o pvr.o tim.o dsi.o
 
 RANLIB=@RANLIB@

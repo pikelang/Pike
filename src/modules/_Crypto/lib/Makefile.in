@@ -1,9 +1,9 @@
-# $Id: Makefile.in,v 1.38 2003/03/19 17:22:48 nilsson Exp $
+# $Id: Makefile.in,v 1.39 2003/05/04 13:33:08 mast Exp $
 #
 # Makefile for low-level crypto library
 
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../include
+VPATH=@srcdir@
 RANLIB=@RANLIB@
 
 CRYPTO_INCLUDES=$(SRCDIR)/../include
