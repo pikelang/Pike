@@ -63,7 +63,7 @@ class Button
   {
     inside = 0;
     if (pressed && style)
-      redraw_callback(this_object(), 1, 0);
+      redraw_callback(this_object(), 0, 0);
     return 0;
   }
   
@@ -75,7 +75,7 @@ class Button
     window->SelectInput("Exposure",
 			"ButtonPress", "ButtonRelease",
 			"EnterWindow", "LeaveWindow");
-    window->GrabButton(b || 1, 0, "EnterWindow", "LeaveWindow");
+    // window->GrabButton(button, 0, "EnterWindow", "LeaveWindow");
     window->set_event_callback("Expose", button_exposed);
     window->set_event_callback("ButtonPress", button_pressed);
     window->set_event_callback("ButtonRelease", button_released);
