@@ -189,11 +189,9 @@ void f_filesystem_stat(INT32 args)
     push_int(st.f_blocks);
     push_text("bfree");
     push_int(st.f_bfree);
-    push_text("bavail");
 #ifdef HAVE_STATFS_F_BAVAIL
+    push_text("bavail");
     push_int(st.f_bavail);
-#else
-    push_int(st.f_bfree);
 #endif /* HAVE_STATFS_F_BAVAIL */
     push_text("files");
     push_int(st.f_files);
@@ -201,7 +199,11 @@ void f_filesystem_stat(INT32 args)
     push_int(st.f_ffree);
     push_text("favail");
     push_int(st.f_ffree);
+#ifdef HAVE_STATFS_F_BAVAIL
     f_aggregate_mapping(7*2);
+#else
+    f_aggregate_mapping(6*2);
+#endif /* HAVE_STATFS_F_BAVAIL */
 #else
 #ifdef HAVE_USTAT
     push_text("bfree");
