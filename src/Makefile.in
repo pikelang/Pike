@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.185 2000/03/26 15:17:33 grubba Exp $
+# $Id: Makefile.in,v 1.186 2000/04/03 06:18:50 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -516,6 +516,9 @@ manpages: wmml
 	  cat wmml/*.wmml; \
 	fi) | (cd wmml && $(RUNPIKE) $(TMP_BINDIR)/wmmltohtml2 \
 	  $(TMP_BINDIR)/manpages man/man)
+
+tutorial: wmml
+	( cd $(SRCDIR)/../tutorial/ ; $(MAKE) pike="$(RUNPIKE)" $(TARGET) )
 
 # Lobotomization...
 
