@@ -2,7 +2,7 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.2 2000/07/10 17:47:08 lange Exp $
+// $Id: extract.pike,v 1.3 2000/07/14 11:49:04 lange Exp $
 //
 
 
@@ -119,6 +119,40 @@ string quotemeta(string in) {
 }
 
 
+function get_encoder(string encoding) {
+  // If needed, returns a function which encodes a string
+  if(!encoding || encoding=="")
+    return 0;
+  switch(lower_case(encoding)) 
+    {
+    case "iso-8859-1":
+      // The normal, no decode needed
+      return 0;
+      
+    case "utf-8": case "utf8":
+      return lambda(string s) { 
+	       return string_to_utf8(s);
+	     };
+
+    case "utf-16": case "utf16":
+    case "unicode":
+      return lambda(string s) { 
+	       return string_to_unicode(s);
+	     };
+      
+    default:
+      object enc;
+      if(catch(enc = Locale.Charset.encoder( encoding ))) {
+	werror("\n* Error: Unknown encoding %O!\n", encoding);
+	exit(1);
+      }
+      return lambda(string s) { 
+	       return enc->clear()->feed(s)->drain();
+	     };
+    }
+}
+
+
 function get_decoder(string encoding) {
   // If needed, returns a function which decodes a string
   if(!encoding || encoding=="")
@@ -143,7 +177,7 @@ function get_decoder(string encoding) {
     default:
       object dec;
       if(catch(dec = Locale.Charset.decoder( encoding ))) {
-	werror("\n* Unknown encoding %O!\n", encoding);
+	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }
       return lambda(string s) { 
@@ -161,16 +195,36 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
   // Set parameter wipe_pass=1 to remove ids not in ids[] from file
   if(!filename || filename=="")
     return "";
-  Stdio.File in=Stdio.File();
+  Stdio.File in=Stdio.FILE();
   if(!in->open(filename, "r"))
     return "";
-  write("Opening %s", filename);
+  write("Reading %s", filename);
+  string line = in->gets();
   string indata = in->read();
   in->close();
-  if(!sizeof(indata)) {
+  if(!indata) {
     write("\n");
     return "";
-  }
+  } 
+
+  // Check encoding
+  if(!line)
+    line = indata;
+  sscanf(line, "%*sencoding=\"%s\"", string encoding);
+  if(encoding && encoding!="") {
+    if(!args->encoding)
+      // Keep encoding if not overrideed
+      args->encoding = encoding;
+    function decode = get_decoder(encoding);
+    if(decode && catch( indata = decode(indata) )) {
+      werror("\n* Error: unable to decode from %O in %O\n",
+	     encoding, filename);
+      exit(1);
+    }
+  } 
+  else if(line!=indata)
+    indata += line+"\n"+indata;
+
   if(wipe_pass)
     write(" - doing wipe pass...");
   else
@@ -181,7 +235,6 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
   mapping c_ids=([]); 
 
   Parser.HTML xml_parser = Parser.HTML();
-  function decode=0;
   function t_tag =  
     lambda(object foo, mapping m, string c) {
       if(!m->id||m->id=="") {
@@ -240,19 +293,6 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		      args->project=c;
 		    return "\b";
 		  });
-  xml_parser->
-    add_quote_tag("?xml",
-		  // Check encoding
-		  lambda(object foo, string c) {
-		    sscanf(c,"%*sencoding=\"%s\"", string encoding);
-		    if(encoding && encoding!="") {
-		      if(!args->encoding)
-			// Keep encoding if not overrideed
-			args->encoding = encoding;
-		      decode = get_decoder(encoding);
-		    }
-		    return "\b";
-		  }, "?");
   xml_parser->add_tag("added",
 		      // Make sure <add>-tags don't get added more than once
 		      lambda(object foo, mapping m) {
@@ -276,23 +316,18 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		      c = get_first_string(sprintf("%O",hits[0]));
 		    // Replace encoded entities
 		    c = replace(c,({"&lt;","&gt;","&amp;"}),({"<",">","&"}));
-		    if(decode)
-		      if(catch( c = decode(c) )) {
-			werror("\n* Warning: Decoding from %s failed for "+
-			       "comment with id %s\n", args->encoding,id);
-			return "\b";
-		      }
 		    if(id!="" && c!="")
 		      // Save text for use in the t_tag function
 		      c_ids[id]=c;
 		    return "\b";
 		  }, "--");
   // These tags will always be rewritten anyway, so remove them.
+  xml_parser->add_quote_tag("?xml", "\b", "?");
   xml_parser->add_containers( (["file"     : "\b",
 				"dumped"   : "\b",
 				"language" : "\b"]) );
   xml_parser->feed(indata)->finish();
-  
+
   // Remove markers and lines from removed tags
   string ret="";
   object RE = Regexp("^[\b \t\n]+$");
@@ -325,60 +360,20 @@ void write_xml_file(string out_name, string outdata) {
 
   write("Writing %s...",out_name);
 
-  // Default nilencoding
-  function encode=0;
-  object _enc;
-  if(args->encoding) {
-    // Set encoder function if encoding known.
-    switch(lower_case(args->encoding)) 
-      {
-      default:
-	if(catch(_enc = Locale.Charset.encoder( args->encoding ))) {
-	  werror("\n* Unknown encoding %O, using default", args->encoding);
-	  args->encoding=0;
-	  break;
-	}
- 	encode = lambda(string s) { 
-		   return _enc->clear()->feed(s)->drain();
-		 };
-	break;
-
-      case "utf-8": case "utf8":
-	encode = lambda(string s) { 
-		   return string_to_utf8(s);
-		 };
-	break;
-
-      case "utf-16": case "utf16":
-      case "unicode":
-	encode = lambda(string s) { 
-		   return string_to_unicode(s);
-		 };
-	break;
-      
-      case "":
-	args->encoding = 0;
-
-      case "iso-8859-1":
-	// No encoding needed
-      }
-  }
-
-  // Dump headers
-  out->write("<?xml version=\"1.0\" encoding=\""+
-	     (args->encoding||"ISO-8859-1")+"\"?>\n");
-  out->write("<locale version=\"1.0\">\n");
-  out->write("<project>"+args->project+"</project>\n");
-  out->write("<language>English</language>\n");
-  out->write("<dumped>"+time()+"</dumped>\n");
+  // Dump some headers
+  string newfile="";
+  newfile += "<locale version=\"1.0\">\n";
+  newfile += "<project>"+args->project+"</project>\n";
+  newfile += "<language>English</language>\n";
+  newfile += "<dumped>"+time()+"</dumped>\n";
 
   // List files included in the project
   foreach(files, string inname)
-    out->write("<file>"+inname+"</file>\n");
+    newfile += "<file>"+inname+"</file>\n";
 
   // List blocks added from the config
   foreach(indices(added)+indices(add), string blockname)
-    out->write("<added id=\""+blockname+"\"/>\n");
+    newfile += "<added id=\""+blockname+"\"/>\n";
 
   string tag="t";
   string info="";
@@ -400,7 +395,7 @@ void write_xml_file(string out_name, string outdata) {
       }
       string id=id_xml_order[i];
       string str=ids[id];
-      if(encode) str=encode(str);    // Encode and make parser-safe
+      // Make parser-safe
       str = replace(str, ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
       outdata = (outdata[0..n-1] +
 		 sprintf("<!-- [%s] %s\"%s\" -->\n<%s id=\"%s\"></%s>",
@@ -408,28 +403,47 @@ void write_xml_file(string out_name, string outdata) {
 		 outdata[n+sizeof(marker)..sizeof(outdata)-1]);
       i++;
     }
-    out->write(outdata);
+    newfile += outdata;
   }
 
   // Dump new strings
   while(i<sizeof(id_xml_order)) {
     string id=id_xml_order[i];
     string str=ids[id];
-    if(encode) str=encode(str);    // Encode and make parser-safe
+    // Make parser-safe
     str = replace(str, ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
-    out->write("\n<!-- [%s] %s\"%s\" -->\n<%s id=\"%s\"></%s>\n",
-	       id, info, str, tag, id, tag);
+    newfile += sprintf("\n<!-- [%s] %s\"%s\" -->\n<%s id=\"%s\"></%s>\n",
+		       id, info, str, tag, id, tag);
     i++;
   }
  
   // If any, add missing <add>-blocks from config
   foreach(indices(add), string blockname)
-    out->write("\n"+add[blockname]);
+    newfile += "\n"+add[blockname];
 
-  write("\n");
-  out->write("\n</locale>\n");
+  // Close locale tag
+  newfile += "\n</locale>\n";
+
+  // Determine encoding
+  if(!args->encoding || args->encoding=="") {
+    int width = String.width( newfile );
+    if(width==16)
+      args->encoding = "utf-8";
+    else if(width==32)
+      args->encoding = "utf-16";
+    else
+      args->encoding = "iso-8859-1";
+  }
+  function encode = get_encoder( args->encoding );
+  if(encode)
+    newfile = encode( newfile );
+  newfile = "<?xml version=\"1.0\" encoding=\""+args->encoding+"\"?>\n"+newfile;
+
+  out->write( newfile );
   out->truncate( out->tell() );
   out->close();
+  write("\n");
+
 }
 
 array(string) get_tokens(string in, mapping args, string filename) {
@@ -487,78 +501,77 @@ void update_pike_sourcefiles(array filelist) {
     string indata=file->read();
     file->close();
 
-    // Find the tokens
+    // Get locale tokens, tokenize pike file
     write(", parsing...");
     array tokens=get_tokens(indata, args, filename);
+    mixed pdata = Parser.Pike.split(indata);
+    pdata = Parser.Pike.tokenize(pdata);
+    pdata = Parser.Pike.hide_whitespaces(pdata);
 
-    // Replace tokens defined in indata with a suitable (unique) pattern
-    string presplit  = "\"\">>>";
-    string midsplit  = "<\"\"-\"\">";
-    string postsplit = "<<<\"\"";
-    object(Regexp) RE;
-    array hits;
     array id_pike_order=({});
-    foreach(tokens, string token) {
-      RE = Regexp("^#[ \t]*define[ \t\n]*"+token);
-      string newdata = "";
-      foreach(indata/"\n", string line) {
-	if(RE->match(line))
-	  newdata += ("#define " + token + "(X,Y...) "+
-		      presplit + "X" + midsplit + "Y" + postsplit + "\n");
-	else
-	  newdata += line + "\n";
-      }
+    string id, fstr, token;
+    for(int i=0; i<sizeof(pdata); i++) {
+      //// Search for tokens
+      foreach(tokens, token) 
+	if(token==pdata[i]) break;  // Loop tokens
+      if(token!=pdata[i]) continue; // Verify token
+      if(pdata[++i]!="(") continue; // Verify "("
 
-      // Preparse data to mark the strings
-      newdata = cpp(newdata);
-      // Use this regexp to find the strings
-      RE = Regexp(presplit+".*\"(.*)\".*"+midsplit+" (.*) "+postsplit);
-      string id, fstr;
-      foreach(newdata/"\n", string line) {
-	hits = RE->split(line);
-	if(hits && sizeof(hits)==2) {
-	  // String found: get id and decode cpp'ed string
-	  id = hits[0];
-	  fstr = get_first_string(hits[1]);
-	  if (fstr=="")
-	    continue;         // No need to store empty strings
-	  if(id == "") {
-	    if (r_ids[fstr])
-	      id = r_ids[fstr];   // Re-use old id with identical string
-	    else
-	      id = make_id();     // New string --> Get new id
-	    // New id for string --> file needs update, save info.
-	    id_pike_order += ({ ({id, token, quotemeta(hits[1])}) });
-	  } else {
-	    // Verify old id
-	    if(!id_origin[id]) {
-	      // Remove preread string in r_ids lookup, might be updated
-	      m_delete(r_ids, ids[id]);  
-	    } else {
-	      if(ids[id] && ids[id] != fstr) {
-		werror("\n* Error: inconsistant use of id.\n");
-		werror("    In file:%{ %s%}\n",id_origin[id]);
-		werror("     id %O -> string %O\n",id,ids[id]);
-		werror("    In file: %s\n",filename);
-		werror("     id %O -> string %O\n",id,fstr);
-		exit(1);
-	      }
-	    }
-	    if(r_ids[fstr] && r_ids[fstr]!=id && id_origin[r_ids[fstr]])
-	      werror("\n* Warning: %O has id %O in%{ %s%}, id %O in %s",
-		     fstr, r_ids[fstr], id_origin[r_ids[fstr]], id, filename);
+      //// Get id
+      id = (string)pdata[++i];      
+      if(id=="\"\"") 
+	id="";
+      else 
+	id = get_first_string(id);
+
+      //// Get string
+      string instr="";
+      i++;      // Skip ","
+      while(++i<sizeof(pdata) && pdata[i]!=")")
+	instr += (string)pdata[i];
+      if(fstr=="\"\"") {
+	if(id=="")
+	  continue;  // Neither string nor id, skip!
+	fstr="";     // Empty string with id, need to save id as used
+      } else
+	fstr = get_first_string(instr);
+
+      //// Check and store id and string
+      if(id == "") {
+	if (r_ids[fstr])
+	  id = r_ids[fstr];   // Re-use old id with identical string
+	else
+	  id = make_id();     // New string --> Get new id
+	// New id for string --> file needs update, save info.
+	id_pike_order += ({ ({id, token, quotemeta(instr)}) });
+      } else {
+	// Verify old id
+	if(!id_origin[id]) {
+	  // Remove preread string in r_ids lookup, might be updated
+	  m_delete(r_ids, ids[id]);  
+	} else {
+	  if(ids[id] && ids[id] != fstr) {
+	    werror("\n* Error: inconsistant use of id.\n");
+	    werror("    In file:%{ %s%}\n",id_origin[id]);
+	    werror("     id %O -> string %O\n",id,ids[id]);
+	    werror("    In file: %s\n",filename);
+	    werror("     id %O -> string %O\n",id,fstr);
+	    exit(1);
 	  }
-	  if(!has_value(id_xml_order,id))
-	    // Id not in xml-structure, add to list
-	    id_xml_order += ({id});
-	  id_origin[id] += ({filename}); // Remember origin
-	  ids[id] = fstr;                // Store id:text
-	  r_ids[fstr] = id;              // Store text:id
 	}
+	if(r_ids[fstr] && r_ids[fstr]!=id && id_origin[r_ids[fstr]])
+	  werror("\n* Warning: %O has id %O in%{ %s%}, id %O in %s",
+		 fstr, r_ids[fstr], id_origin[r_ids[fstr]], id, filename);
       }
+      if(!has_value(id_xml_order,id) && fstr!="")
+	// Id not in xml-structure, add to list
+	id_xml_order += ({id});
+      id_origin[id] += ({filename});  // Remember origin
+      ids[id] = fstr;                 // Store id:text
+      if(fstr!="") r_ids[fstr] = id;  // Store text:id
     }
 
-    // Rebuild sourcefile if needed
+    // Done parsing, rebuild sourcefile if needed
     if(!sizeof(id_pike_order)) {
       write("\n");  
       continue;
@@ -573,10 +586,11 @@ void update_pike_sourcefiles(array filelist) {
 
     foreach(id_pike_order, array id) {
       // Insert ids based on tokens and the now regexp-safe string
+      object(Regexp) RE;
       // RE = ^(.*TOKEN\( ")(", string \).*)$
       RE = Regexp("^(.*" + id[1] + "\\([ \n\t]*\")" + 
 		  "(\"[ ,\n\t]*"+id[2]+"[ \t\n]*\\).*)$");
-      hits = RE->split(indata);
+      array hits = RE->split(indata);
       if(hits)
 	indata = hits[0] + id[0] + hits[1];
       else
@@ -597,31 +611,39 @@ void update_xml_sourcefiles(array filelist) {
   // Updates ids, r_ids, id_xml_order with ids and strings
   // If new ids, updates the sourcefile or a copy
   foreach(filelist, string filename) {
-    Stdio.File file=Stdio.File();
+    Stdio.File file=Stdio.FILE();
     if(!file->open(filename, "r")) {
       werror("* Error: Could not open sourcefile %s.\n", filename);
       exit(1);
     }
     write("Reading %s",filename);
-    string indata=file->read();
+    string line = file->gets();
+    string data = file->read();
     file->close();
+    if(!data)
+      continue;
+
+    // Check encoding
+    if(!line)
+      line = data;
+    string encoding;
+    sscanf(line, "%*sencoding=\"%s\"", encoding);
+    if(encoding && encoding!="") {
+      function decode = get_decoder(encoding);
+      if(decode && catch( data = decode(data) )) {
+	werror("\n* Error: unable to decode from %O in %O\n",
+	       encoding, filename);
+	exit(1);
+      }
+    } 
+    else if(line!=data)
+      data = line+"\n"+data;
 
     write(", parsing...");
     int new = 0;
     int ignoretag=0;
-    function decode=0;
     Parser.HTML xml_parser = Parser.HTML();
     xml_parser->case_insensitive_tag(1);  
-    xml_parser->
-      add_quote_tag("?xml",
-		    // Check for encoding in <?xml?>
-		    lambda(object foo, string c) {
-		      sscanf(c,"%*sencoding=\"%s\"",string encoding);
-		      if(encoding && encoding!="") {
-			decode = get_decoder(encoding);
-		      }
-		      return 0;
-		    }, "?");
     xml_parser->
       add_tag("trans-reg",
 	      // Check the registertag for the right project
@@ -652,8 +674,6 @@ void update_xml_sourcefiles(array filelist) {
 			  return 0;
 		      string id = m->id||"";
 		      string fstr = c;
-		      if(decode)
-			fstr=decode(fstr);
 		      int updated = 0;
 		      if (fstr=="")
 			return 0;         // No need to store empty strings
@@ -700,13 +720,22 @@ void update_xml_sourcefiles(array filelist) {
 		      // Not updated, do not change
 		      return 0;
 		    });
-    xml_parser->feed(indata)->finish();
+    xml_parser->feed(data)->finish();
 
     // Rebuild sourcefile if needed
     if(!new) {
       write("\n");  
       continue;
     }
+    data = xml_parser->read();
+    if(encoding && encoding!="") {
+      function encode = get_encoder(encoding);
+      if(encode && catch( data = encode(data) )) {
+	werror("\n* Error: unable to encode data in %O\n", encoding);
+	exit(1);
+      }
+    } 
+
     if(!args->nocopy) 
       filename+=".new"; // Create new file instead of overwriting
     write("\n-> Writing %s with new ids: %d", filename, new);  
@@ -714,11 +743,11 @@ void update_xml_sourcefiles(array filelist) {
       werror("\n* Error: Could not open %s for writing\n", filename);
       exit(1);
     }
-    write("\n");
 
-    file->write( xml_parser->read() );
+    file->write( data );
     file->truncate( file->tell() );
     file->close();
+    write("\n");
   } 
 }
 
@@ -729,28 +758,33 @@ string parse_config(string filename) {
   // Returns name of outfile (ie project_eng.xml)
   if(!filename || filename=="")
     return "";
-  Stdio.File in=Stdio.File();
+  Stdio.File in=Stdio.FILE();
   if(!in->open(filename, "r"))
     return "";
+  string line = in->gets();
   string indata = in->read();
   in->close();
-  if(!sizeof(indata))
+  if(!indata)
     return "";
 
+  // Check encoding
+  if(!line)
+    line = indata;
+  sscanf(line, "%*sencoding=\"%s\"", string encoding);
+  if(encoding && encoding!="") {
+    function decode = get_decoder(encoding);
+    if(decode && catch( indata = decode(indata) )) {
+      werror("\n* Error: unable to decode from %O in %O\n",
+	     encoding, filename);
+      exit(1);
+    }
+  } 
+  else if(line!=indata)
+    indata = line+"\n"+indata;
+
   string xml_name="";
-  function decode=0;
   Parser.HTML xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);
-  xml_parser->
-    add_quote_tag("?xml",
-		  // Check for encoding in <?xml?>
-		  lambda(object foo, string c) {
-		    sscanf(c,"%*sencoding=\"%s\"",string encoding);
-		    if(encoding && encoding!="") {
-		      decode = get_decoder(encoding);
-		    }
-		    return 0;
-		  }, "?");
   xml_parser->
     add_container("project", 
 		  // Only read config for the right project, or the
@@ -758,10 +792,6 @@ string parse_config(string filename) {
 		  lambda(object foo, mapping m, string c) {
 		    if(!m->name || m->name=="") {
 		      werror("\n* Projectname missing in %s!\n", filename);
-		      exit(1);
-		    }
-		    if( decode && catch(c = decode(c)) ) {
-		      werror("\n* Failed to decode %O in config\n",m->name);
 		      exit(1);
 		    }
 		    if(args->project && args->project!="" &&
@@ -777,10 +807,6 @@ string parse_config(string filename) {
     add_container("out", 
 		  // Set outname (default: project_eng.xml)
 		  lambda(object foo, mapping m, string c) {
-		    if( decode && catch(c = decode(c)) ) {
-		      werror("\n* Failed to decode %O in config\n",m->name);
-		      exit(1);
-		    }
 		    c = String.trim_whites(c);
 		    if(c && c!="")
 		      xml_name = c;
@@ -790,10 +816,6 @@ string parse_config(string filename) {
     add_container("file", 
 		  // Add a file to be parsed
 		  lambda(object foo, mapping m, string c) {
-		    if( decode && catch(c = decode(c)) ) {
-		      werror("\n* Failed to decode %O in config\n",m->name);
-		      exit(1);
-		    }
 		    c = String.trim_whites(c);
 		    if(c && c!="")
 		      files += ({ c });
@@ -803,24 +825,19 @@ string parse_config(string filename) {
     add_container("encoding", 
 		  // Set default encoding
 		  lambda(object foo, mapping m, string c) {
-		    if( decode && catch(c = decode(c)) ) {
-		      werror("\n* Failed to decode %O in config\n",m->name);
-		      exit(1);
-		    }
+		    if(args->encoding=="")
+		      args->encoding = 0;
 		    c = String.trim_whites(c);
-		    if(c && c!="" && !args->encoding)
+		    if(c && c!="" && !args->encoding) {
 		      args->encoding = c;
+		      get_encoder( c );   // Check if known
+		    }
 		    return 0;
 		  });
   xml_parser->
     add_container("includepath", 
 		  // Add includepath needed for pikefiles
 		  lambda(object foo, mapping m, string c) {
-		    if( decode && catch(c = decode(c)) ) {
-		      werror("\n* Failed to decode %O in config\n",m->name);
-		      exit(1);
-		    }
-		    c = String.trim_whites(c);
 		    if(c && c!="")
 		      add_include_path(c);
 		    return 0;
@@ -831,10 +848,6 @@ string parse_config(string filename) {
 		  lambda(object foo, mapping m, string c) {
 		    if(!m->id || m->id=="") {
 		      werror("\n* Missing id in <add> in %s!\n", filename);
-		      exit(1);
-		    }
-		    if( decode && catch(c = decode(c)) ) {
-		      werror("\n* Failed to decode %O in config\n",m->name);
 		      exit(1);
 		    }
 		    add[m->id]=c;
@@ -898,7 +911,7 @@ int main(int argc, array(string) argv) {
     xml_name = filename;
 
   if(!sizeof(files) || args->help) {
-    sscanf("$Revision: 1.2 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.3 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
