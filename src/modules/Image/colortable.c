@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.15 1997/11/02 03:46:50 mirar Exp $ */
+/* $Id: colortable.c,v 1.16 1997/11/02 03:58:41 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.15 1997/11/02 03:46:50 mirar Exp $
+**!	$Id: colortable.c,v 1.16 1997/11/02 03:58:41 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.15 1997/11/02 03:46:50 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.16 1997/11/02 03:58:41 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -60,8 +60,8 @@ extern struct program *image_program;
 		 (COLORLOOKUPCACHEHASHB*(int)(b)))% \
 		COLORLOOKUPCACHEHASHSIZE) 
 
-#define SPACEFACTOR_R 2
-#define SPACEFACTOR_G 3
+#define SPACEFACTOR_R 3
+#define SPACEFACTOR_G 4
 #define SPACEFACTOR_B 1
 
 #define CUBICLE_DEFAULT_R 4
@@ -3007,7 +3007,7 @@ void image_colortable_map(INT32 args)
 **!	distance factors. This is used when comparing distances
 **!	in the colorspace and comparing grey levels.
 **!
-**!	Default factors are 2, 3 and 1; blue is much 
+**!	Default factors are 3, 4 and 1; blue is much 
 **!	darker than green. Compare with <ref>Image.image::grey</ref>().
 **!
 **! returns the called object
