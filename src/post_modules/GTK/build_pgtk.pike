@@ -866,7 +866,7 @@ int main(int argc, array argv)
       NUMBER_FUNCTION();
       if(fn == "create")
 	fin = " pgtk__init_object( fp->current_object );\n";
-
+      int last_was_optional;
       foreach(((types-" ")/"," - ({""})), string t)
       {
 	na++;
@@ -878,6 +878,7 @@ int main(int argc, array argv)
 	 case "callback":
 	   fundef += ",function,mixed";
 	   argument_list += ", function(mixed:mixed), mixed";
+           last_was_optional = 0;
 	   format_string += "%*%*";
 	   args += ("  struct signal_data *b;\n"
 	            "struct svalue *tmp1, *tmp2;\n");
@@ -890,6 +891,7 @@ int main(int argc, array argv)
 	 case "stringarray":
            if(!i_added++)
              args += "  int _i;\n";
+           last_was_optional = 0;
 	   fundef += ",array(string)";
 	   argument_list += ", array(string)";
 	   format_string += "%a";
@@ -914,6 +916,7 @@ int main(int argc, array argv)
              args += "  int _i;\n";
 	   fundef += ",array(float)";
 	   argument_list += ", array(float)";
+           last_was_optional = 0;
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gfloat *arg"+na+";\n";
@@ -936,6 +939,7 @@ int main(int argc, array argv)
            if(!i_added++)
              args += "  int _i;\n";
 	   fundef += ",array(int)";
+           last_was_optional = 0;
 	   argument_list += ", array(int)";
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
@@ -957,6 +961,7 @@ int main(int argc, array argv)
 	   break;
 	 case "int":
 	   argument_list += ", int";
+           last_was_optional = 0;
 	   fundef += ",mixed";
 	   format_string += "%D";
 	   args += "  int arg"+na+";\n";
@@ -964,6 +969,7 @@ int main(int argc, array argv)
 	   break;
 	 case "intp":
 	   argument_list += ", int";
+           last_was_optional = 0;
 	   fundef += ",mixed";
 	   format_string += "%D";
 	   args += "  int _arg"+na+", *arg"+na+"=&_arg"+na+";\n";
@@ -971,12 +977,14 @@ int main(int argc, array argv)
 	   break;
 	 case "float":
 	   argument_list += ", float";
+           last_was_optional = 0;
 	   fundef += ",mixed";
 	   format_string += "%F";
 	   args += "  float arg"+na+";\n";
 	   sargs += ", &arg"+na;
 	   break;
 	 case "string":
+           last_was_optional = 0;
 	   fundef += ","+t;
 	   argument_list += ", string";
 	   format_string += "%s";
@@ -1010,30 +1018,50 @@ int main(int argc, array argv)
 
            int star = sscanf(t, "*%s", t);
            int optional = sscanf(t, "?%s", t);
-	   fundef += ",object|int";
+           if( optional )
+             fundef += ",object|int|void";
+           else
+             fundef += ",object";
 	   argument_list+=", "+classname(String.capitalize(lower_case(t)));
            if(optional) 
-             argument_list += "|null";
+             argument_list += "|void";
+
            if(!optional)
+           {
+             last_was_optional = 0;
              format_string += "%o";
+           }
            else
+           {
+             last_was_optional = 1;
              format_string += "%O";
+           }
            if(sscanf( t, "Gdk%s", t ))
            {
              t = String.capitalize(lower_case(t));
-             args += "  struct object *_arg"+na+";\n";
-             args += "  Gdk"+t+" *arg"+na+";\n";
              sargs += ", &"+(star?"*":"")+"_arg"+na;
              post+=(" arg"+na+" = get_gdkobject( _arg"+na+", "+t+");\n");
              if(!optional)
+             {
                post +=("  if(!arg"+na+") error(\"Argument "+
                        na+": Wanted GDK object of type "+t+".\\n\");\n");
+              args += "  struct object *_arg"+na+";\n";
+              args += "  Gdk"+t+" *arg"+na+";\n";
+             } else {
+              args += "  struct object *_arg"+na+" = NULL;\n";
+              args += "  Gdk"+t+" *arg"+na+";\n";
+             }
            } else {
-             args += "  struct object *_arg"+na+";\n";
-             args += "  "+sillycaps(t)+" *arg"+na+";\n";
              sargs += ", &"+(star?"*":"")+"_arg"+na;
              if(optional)
+             {
+               args += "  struct object *_arg"+na+" = NULL;\n";
+               args += "  "+sillycaps(t)+" *arg"+na+" = NULL;\n";
                post += "  if(_arg"+na+")\n  ";
+             } else {
+               args += "  struct object *_arg"+na+";\n";
+               args += "  "+sillycaps(t)+" *arg"+na+";\n";
+             }
              post+=(" arg"+na+" = GTK_"+upper_case(t)+"(get_pgtkobject(_arg"+
                     na+", pgtk_"+lower_case(t)+"_program ) );\n");
              if(optional)
@@ -1073,6 +1101,14 @@ int main(int argc, array argv)
 	emit( args );
         if( fn == "create" )
           emit("  pgtk_verify_setup();\n");
+
+        if( last_was_optional )
+        {
+          string sfs = format_string[..sizeof(format_string)-3];
+          emit( "  if( args == "+(sizeof(sfs)/2)+" )\n"
+                "    get_all_args(\""+fn+"\", args, \""+sfs
+                +"\""+((sargs-"*")-zap)+");\n  else\n  ");
+        }
 	emit( "  get_all_args(\""+fn+"\", args, \""+
 	      format_string+"\""+((sargs-"*")-zap)+");\n");
 	sargs = replace(sargs,"&tmp1,&tmp2","(void *)pgtk_button_func_wrapper, b");
