@@ -1,3 +1,9 @@
+pike7.6 (7.6.9-2) unstable; urgency=low
+
+  * Added the full text of MPL 1.1 to the debian/copyright file
+
+ -- Marek Habersack <grendel@debian.org>  Thu, 27 May 2004 17:28:14 +0200
+
 pike7.6 (7.6.9-1) unstable; urgency=low
 
   * The latest cvs snapshot
