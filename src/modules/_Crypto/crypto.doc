@@ -13,3 +13,6 @@ string crypt(string);		/* Crypt the block with the current key */
 string pad(void);		/* Perform the needed padding */
 string unpad(string);		/* Unpad the string */
 string name(void);		/* Name of the algorithm */
+
+The padding method follows SSL, appending n random bytes,
+followed by n itself, where 0 <= n < block_size .

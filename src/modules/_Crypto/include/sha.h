@@ -20,7 +20,7 @@ struct sha_ctx {
 };
 
 void sha_init(struct sha_ctx *ctx);
-void sha_update(struct sha_ctx *ctx, unsigned INT8 *buffer, INT32 len);
+void sha_update(struct sha_ctx *ctx, unsigned INT8 *buffer, unsigned INT32 len);
 void sha_final(struct sha_ctx *ctx);
 void sha_digest(struct sha_ctx *ctx, INT8 *s);
 void sha_copy(struct sha_ctx *dest, struct sha_ctx *src);
