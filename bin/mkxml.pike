@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.1 2001/05/05 17:53:06 mirar Exp $ */
+/* $Id: mkxml.pike,v 1.2 2001/05/05 17:54:36 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -487,12 +487,11 @@ string doctype(string type,void|string indent)
 
    return nindent+"<object>"+type+"</object>";
 }
+
 void docdecl(string enttype,
 	     string decl,
 	     object f)
 {
-   f->write("<!-- "+decl+" -->\n");
-
    string rv,name,params=0;
    sscanf(decl,"%s %s(%s",rv,name,params);
 
