@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.12 2005/03/29 17:58:30 mast Exp $
+// $Id: module.pmod,v 1.13 2005/04/02 19:11:58 nilsson Exp $
 
 #include "ldap_globals.h"
 
@@ -510,6 +510,7 @@ constant syntax_decode_fns = ([
   SYNTAX_LDAP_SYNTAX_DESCR:		utf8_to_string,
   SYNTAX_DIT_STRUCTURE_RULE_DESCR:	utf8_to_string,
 ]);
+
 //! @decl constant mapping(string:function(string:string)) syntax_decode_fns;
 //!
 //! Mapping containing functions to decode charsets in syntaxes where
@@ -521,6 +522,7 @@ constant syntax_decode_fns = ([
 //! @[Protocols.LDAP.client.result] functions.
 
 constant syntax_encode_fns = ([]); // Filled in from syntax_decode_fns by create().
+
 //! @decl constant mapping(string:function(string:string)) syntax_encode_fns;
 //!
 //! Mapping containing the reverse functions from @[syntax_decode_fns].

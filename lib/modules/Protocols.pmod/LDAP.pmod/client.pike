@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.89 2005/03/29 17:40:00 mast Exp $
+// $Id: client.pike,v 1.90 2005/04/02 19:12:19 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -117,6 +117,7 @@ import Protocols.LDAP;
 
 static constant supported_extensions = (<"bindname">);
 
+//! @ignore
 static function(string:string) get_attr_decoder (string attr,
 						 DO_IF_DEBUG (void|int nowarn))
 {
@@ -137,6 +138,7 @@ static function(string:string) get_attr_decoder (string attr,
 #endif
   return 0;
 }
+//! @endignore
 
 static function(string:string) get_attr_encoder (string attr)
 {
@@ -495,7 +497,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.89 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.90 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1893,14 +1895,14 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
   //!  Where operation is one of the following:
   //!
   //!  @dl
-  //!  @item Protocols.LDAP.MODIFY_ADD (0)
+  //!  @item Protocols.LDAP.MODIFY_ADD
   //!    Add values listed to the given attribute, creating the
   //!    attribute if necessary.
-  //!  @item Protocols.LDAP.MODIFY_DELETE (1)
+  //!  @item Protocols.LDAP.MODIFY_DELETE
   //!    Delete values listed from the given attribute, removing the
   //!    entire attribute if no values are listed, or if all current
   //!    values of the attribute are listed for deletion.
-  //!  @item Protocols.LDAP.MODIFY_REPLACE (2)
+  //!  @item Protocols.LDAP.MODIFY_REPLACE
   //!    Replace all existing values of the given attribute with the
   //!    new values listed, creating the attribute if it did not
   //!    already exist. A replace with no value will delete the entire
