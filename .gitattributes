@@ -40,6 +40,7 @@ testfont binary
 /bin/unbug foreign_ident
 /bin/xenofarm.sh foreign_ident
 /lib/7.0/modules/Calendar.pmod/Stardate.pmod foreign_ident
+/lib/7.0/modules/__default.pmod foreign_ident
 /lib/7.2/modules/Gmp.pmod foreign_ident
 /lib/7.2/modules/LR.pmod/Grammar_parser.pmod foreign_ident
 /lib/7.2/modules/LR.pmod/item.pike foreign_ident
