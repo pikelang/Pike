@@ -2,6 +2,7 @@ Thu Feb 12 02:27:50 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* builtin_functions.c (f_diff, f_diff_compare_table,
  	f_diff_longest_sequence): Added functions to diff arrays.
+	(f_longest_ordered_sequence): Added Array.longest_ordered_sequence().
 
 Wed Feb 11 04:31:44 1998  Niels Möller  <nisse@idonex.se>
 
