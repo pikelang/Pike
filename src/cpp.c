@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.107 2002/11/23 15:11:04 mast Exp $
+|| $Id: cpp.c,v 1.108 2003/09/30 16:29:12 grubba Exp $
 */
 
 #include "global.h"
@@ -207,6 +207,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   if(sp[-1].type == T_OBJECT)
   {
     this->compat_handler=sp[-1].u.object;
+    dmalloc_touch_svalue(Pike_sp-1);
     sp--;
   }
   this->compat_major=major;
@@ -317,9 +318,20 @@ static void simple_add_define(struct cpp *this,
     case '\n':								\
       cpp_error(this,"Newline in string.");				\
       this->current_line++;						\
+      PUTNL();								\
       break;								\
     case '"': break;							\
-    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    case '\\':								\
+      if(data[pos]=='\n') {						\
+	this->current_line++;						\
+	PUTNL();							\
+      }									\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
+	this->current_line++;						\
+	pos++;								\
+	PUTNL();							\
+      }									\
+      pos++;								\
     default: continue;							\
     }									\
    break;								\
@@ -337,9 +349,20 @@ static void simple_add_define(struct cpp *this,
     {									\
     case '\n':								\
       this->current_line++;						\
+      PUTNL();								\
       continue;								\
     case '"': break;							\
-    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    case '\\':								\
+      if(data[pos]=='\n') {						\
+	this->current_line++;						\
+	PUTNL();							\
+      }									\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
+	this->current_line++;						\
+	pos++;								\
+	PUTNL();							\
+      }									\
+      pos++;								\
     default: continue;							\
     }									\
    break;								\
@@ -366,9 +389,20 @@ static void simple_add_define(struct cpp *this,
     case '\n':							\
       cpp_error(this,"Newline in char.");			\
       this->current_line++;					\
+      PUTNL();							\
       break;							\
     case '\'': break;						\
-    case '\\': if(data[++pos]=='\n') this->current_line++;	\
+    case '\\':							\
+      if(data[pos]=='\n') {					\
+	this->current_line++;					\
+	PUTNL();						\
+      }								\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {	\
+	this->current_line++;					\
+	pos++;							\
+	PUTNL();						\
+      }								\
+      pos++;							\
     default: continue;						\
     }								\
     break;							\
@@ -386,14 +420,47 @@ static void simple_add_define(struct cpp *this,
   } while(0)
 
 #define SKIPWHITE() do {					\
-    if(!WC_ISSPACE(data[pos])) break;				\
+    if(!WC_ISSPACE(data[pos])) {				\
+      if (data[pos] == '\\') {					\
+	if (data[pos+1] == '\n') {				\
+	  pos += 2;						\
+	  PUTNL();						\
+	  this->current_line++;					\
+	  continue;						\
+	} else if ((data[pos+1] == '\r') &&			\
+		   (data[pos+2] == '\n')) {			\
+	  pos += 3;						\
+	  PUTNL();						\
+	  this->current_line++;					\
+	  continue;						\
+	}							\
+      }								\
+      break;							\
+    }								\
     if(data[pos]=='\n') { PUTNL(); this->current_line++; }	\
     pos++;							\
   } while(1)
 
-#define SKIPSPACE() \
-  do { while(WC_ISSPACE(data[pos]) && data[pos]!='\n') pos++; \
-  } while (0)
+#define SKIPSPACE()						\
+  do {								\
+    while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {		\
+      pos++;							\
+    }								\
+    if (data[pos] == '\\') {					\
+      if (data[pos+1] == '\n') {				\
+	pos+=2;							\
+      } else if ((data[pos+1] == '\r') &&			\
+		 (data[pos+2] == '\n')) {			\
+	pos+=3;							\
+      } else {							\
+	break;							\
+      }								\
+    } else {							\
+      break;							\
+    }								\
+    PUTNL();							\
+    this->current_line++;					\
+  } while (1)
 
 #define SKIPCOMMENT()	do{				\
   	pos++;						\
@@ -1151,7 +1218,7 @@ static void check_constant(struct cpp *this,
       res=0;
     }
   }else{
-    /* Handle contant(.foo) */
+    /* Handle constant(.foo) */
     push_text(".");
     ref_push_string(this->current_file);
 
@@ -1431,7 +1498,7 @@ static int do_safe_index_call(struct pike_string *s)
  *!
  *! Preprocesses the string @[data] with Pike's builtin ANSI-C look-alike
  *! preprocessor. If the @[current_file] argument has not been specified,
- *! it will default to @tt{"-"@}. @[charset] defaults to @tt{"ISO-10646"@}.
+ *! it will default to @expr{"-"@}. @[charset] defaults to @expr{"ISO-10646"@}.
  *!
  *! @seealso
  *!   @[compile()]
@@ -1450,10 +1517,10 @@ void f_cpp(INT32 args)
 #endif /* PIKE_DEBUG */
 
   if(args<1)
-    Pike_error("Too few arguments to cpp()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("cpp", 1);
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to cpp()\n");
+    SIMPLE_BAD_ARG_ERROR("cpp", 1, "string");
 
   data = sp[-args].u.string;
 
@@ -1467,13 +1534,13 @@ void f_cpp(INT32 args)
     if(args > 5)
     {
       if(sp[4-args].type != T_INT)
-	Pike_error("Bad argument 5 to cpp()\n");
+	SIMPLE_BAD_ARG_ERROR("cpp", 5, "int");
       if(sp[5-args].type != T_INT)
-	Pike_error("Bad argument 6 to cpp()\n");
+	SIMPLE_BAD_ARG_ERROR("cpp", 6, "int");
     }
     if(sp[1-args].type != T_STRING) {
       free_string(data);
-      Pike_error("Bad argument 2 to cpp()\n");
+      SIMPLE_BAD_ARG_ERROR("cpp", 2, "string");
     }
     copy_shared_string(this.current_file, sp[1-args].u.string);
 
@@ -1494,7 +1561,7 @@ void f_cpp(INT32 args)
 	auto_convert = sp[2-args].u.integer;
       } else {
 	free_string(data);
-	Pike_error("Bad argument 3 to cpp()\n");
+	SIMPLE_BAD_ARG_ERROR("cpp", 3, "string|int");
       }
       if (args > 3) {
 	if (sp[3-args].type == T_OBJECT) {
@@ -1504,7 +1571,7 @@ void f_cpp(INT32 args)
 	} else if (sp[3-args].type != T_INT) {
 	  free_string(data);
 	  free_string(this.current_file);
-	  Pike_error("Bad argument 4 to cpp()\n");
+	  SIMPLE_BAD_ARG_ERROR("cpp", 4, "object");
 	}
       }
     }
