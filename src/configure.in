@@ -1,9 +1,9 @@
 AC_INIT(interpret.c)
 
-if test x${CLAGS-} != x ; then
-  cflags_is_set=yes
-else
+if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
+else
+  cflags_is_set=yes
 fi
 
 AC_PROG_CC
@@ -41,7 +41,10 @@ AC_MSG_RESULT($pike_cv_sys_os)
 
 #############################################################################
 
+
+WARN=""
 if test x${GCC-} != xyes -a $cflags_is_set = no; then
+  WARN="-g -W -Wformat"
   OLD_CFLAGS="$CFLAGS"
   OPTIMIZE="";
   
@@ -87,27 +90,24 @@ fi
 
 
 if test "$GCC" = "yes"; then
-  WARN="-g -W -Wformat"
+  if test $cflags_is_set = no; then
+    AC_MSG_CHECKING(-pipe)
+    AC_CACHE_VAL(pike_cv_option_pipe,
+    [
+      CFLAGS="$OLD_CFLAGS -pipe"
+      AC_TRY_LINK([],[ exit(0); ],pike_cv_option_pipe=yes,pike_cv_option_pipe=no)
+    ])
 
-  AC_MSG_CHECKING(-pipe)
-  AC_CACHE_VAL(pike_cv_option_pipe,
-  [
-    CFLAGS="$OLD_CFLAGS -pipe"
-    AC_TRY_LINK([],[ exit(0); ],pike_cv_option_pipe=yes,pike_cv_option_pipe=no)
-  ])
-
-  if test "$pike_cv_option_pipe" = "yes" ; then
-    CFLAGS="$OLD_CFLAGS -pipe"
-    OPTIMIZE="$OPTIMIZE -pipe"
-    AC_MSG_RESULT(-pipe found)
-  else
-    AC_MSG_RESULT(-pipe not found)
-    CFLAGS="$OLD_CFLAGS"
+    if test "$pike_cv_option_pipe" = "yes" ; then
+      CFLAGS="$OLD_CFLAGS -pipe"
+      OPTIMIZE="$OPTIMIZE -pipe"
+      AC_MSG_RESULT(-pipe found)
+    else
+      AC_MSG_RESULT(-pipe not found)
+      CFLAGS="$OLD_CFLAGS"
+    fi
   fi
-
-
 else
-  WARN=""
 #
 # Special hack for HP-UX stupid cc
 #
