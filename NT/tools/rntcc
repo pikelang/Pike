@@ -9,7 +9,7 @@ inherit "lib.pike";
 // frontend has been refined to where it does not require more
 // debugging.
 
-int verbose=1;
+int verbose=0;
 
 // Temporary variable
 int linking_failed;
