@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.72 2005/03/09 12:28:26 mast Exp $
+// $Id: client.pike,v 1.73 2005/03/10 17:46:20 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -410,7 +410,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.72 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.73 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -711,7 +711,7 @@ import SSL.Constants;
 
   } // delete
 
-  private int|string send_compare_op(string dn, array(string) aval) {
+  private int|string send_compare_op(string dn, string attr, string value) {
   // COMPARE
 
     object msgval;
@@ -719,8 +719,8 @@ import SSL.Constants;
     msgval = ASN1_APPLICATION_SEQUENCE(14, 
 		({ Standards.ASN1.Types.asn1_octet_string(dn),
 		Standards.ASN1.Types.asn1_sequence(
-		  ({ Standards.ASN1.Types.asn1_octet_string(aval[0]),
-		  Standards.ASN1.Types.asn1_octet_string(aval[1])
+		  ({ Standards.ASN1.Types.asn1_octet_string(attr),
+		  Standards.ASN1.Types.asn1_octet_string(value)
 		  }))
 		})
 	     );
@@ -730,21 +730,31 @@ import SSL.Constants;
 
 
   //!
-  //! Compares given attribute value with one in the directory.
+  //! Compares an attribute value with one in the directory.
   //!
   //! @param dn
-  //!  The distinguished name of compared entry.
+  //!  The distinguished name of the entry.
   //!
-  //! @param aval
-  //!  The mapping of compared attributes and theirs values.
+  //! @param attr
+  //!  The type (aka name) of the attribute to compare.
+  //!
+  //! @param value
+  //!  The value to compare with.
   //!
   //! @returns
-  //!  Returns @expr{1@} on success, @expr{0@} otherwise.
+  //!  Returns @expr{1@} if at least one of the values for the
+  //!  attribute in the directory is equal to @[value], @expr{0@}
+  //!  otherwise.
   //!
   //! @note
   //!   The API change: the returning code was changed in Pike 7.3+
   //!	to follow his logic better.
-  int compare (string dn, array(string) aval) {
+  //!
+  //! @note
+  //!   The equality matching rule for the attribute governs the
+  //!   comparison. There are attributes where the assertion syntax
+  //!   used here isn't the same as the attribute value syntax.
+  int compare (string dn, string attr, string value) {
 
     int id;
     mixed raw;
@@ -759,9 +769,9 @@ import SSL.Constants;
       return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
-      aval = Array.map(aval, string_to_utf8);
+      value = string_to_utf8 (value);
     }
-    if(intp(raw = send_compare_op(dn, aval))) {
+    if(intp(raw = send_compare_op(dn, attr, value))) {
       THROW(({error_string()+"\n",backtrace()}));
       return 0;
     }
@@ -769,7 +779,7 @@ import SSL.Constants;
    last_rv = result(({raw}));
    DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
    seterr(last_rv->error_number());
-   return !last_rv->error_number();
+   return last_rv->error_number() == LDAP_COMPARE_TRUE;
 
   } // compare
 
