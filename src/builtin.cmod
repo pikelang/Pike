@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.147 2004/02/13 23:09:25 nilsson Exp $
+|| $Id: builtin.cmod,v 1.148 2004/03/02 20:45:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -1099,7 +1099,7 @@ PIKEFUN float random(float f)
 		   
 }
 
-/*! @decl mixed random(array|multiset xa)
+/*! @decl mixed random(array|multiset x)
  *!   Returns a random element from @[x].
  */
 
