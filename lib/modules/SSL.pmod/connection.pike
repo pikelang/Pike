@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.9 1998/08/26 11:44:24 grubba Exp $
+/* $Id: connection.pike,v 1.10 1999/03/03 16:44:51 nisse Exp $
  *
  * SSL packet layer
  */
@@ -321,6 +321,7 @@ string|int got_data(string s)
   return res;
 }
 
+/* FIXME: Delete this function */
 void server()
 {
   handshake_state = STATE_server_wait_for_hello;
