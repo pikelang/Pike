@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.193 1999/12/29 21:22:47 mast Exp $");
+RCSID("$Id: program.c,v 1.194 1999/12/31 01:53:58 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -61,6 +61,8 @@ RCSID("$Id: program.c,v 1.193 1999/12/29 21:22:47 mast Exp $");
 #define DECLARE
 #include "compilation.h"
 
+
+struct pike_string *this_program_string=0;
 
 char *lfun_names[] = {
   "__INIT",
@@ -3221,6 +3223,9 @@ void init_program(void)
   int i;
   struct svalue key;
   struct svalue val;
+
+  MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
+
   lfun_types = allocate_mapping(NUM_LFUNS);
   key.type = T_STRING;
   val.type = T_TYPE;
@@ -3244,6 +3249,8 @@ void init_program(void)
 void cleanup_program(void)
 {
   int e;
+
+  free_string(this_program_string);
 
   free_mapping(lfun_types);
 #ifdef FIND_FUNCTION_HASHSIZE

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.74 1999/12/30 14:45:12 grubba Exp $
+ * $Id: program.h,v 1.75 1999/12/31 01:53:58 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -22,6 +22,8 @@
 #else
 #define PROGRAM_LINE_ARGS void
 #endif
+
+extern struct pike_string *this_program_string;
 
 #define LFUN___INIT 0
 #define LFUN_CREATE 1
