@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.226 2002/08/21 17:13:15 marcus Exp $");
+RCSID("$Id: signal_handler.c,v 1.227 2002/09/10 00:43:24 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -164,7 +164,7 @@ RCSID("$Id: signal_handler.c,v 1.226 2002/08/21 17:13:15 marcus Exp $");
   inside=1;
 
 #define SAFE_FIFO_DEBUG_END() inside=0; }while(0)
-#endif
+#endif /* DEBUG */
 
 #define DECLARE_FIFO(pre,TYPE) \
   static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER]; \
@@ -194,7 +194,7 @@ RCSID("$Id: signal_handler.c,v 1.226 2002/08/21 17:13:15 marcus Exp $");
      
 #define INIT_FIFO(pre,TYPE)
 
-#else
+#else /* NEED_SIGNAL_SAFE_FIFO */
 
 #define DECLARE_FIFO(pre,TYPE) \
   static int PIKE_CONCAT(pre,_fd)[2]; \
@@ -235,7 +235,7 @@ RCSID("$Id: signal_handler.c,v 1.226 2002/08/21 17:13:15 marcus Exp $");
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[1], 1);	\
 }while(0)
    
-#endif
+#endif /* else NEED_SIGNAL_SAFE_FIFO */
 
 #ifndef SAFE_FIFO_DEBUG_END
 #define SAFE_FIFO_DEBUG_BEGIN() do {
@@ -274,7 +274,7 @@ typedef struct wait_data_s {
 
 DECLARE_FIFO(wait, wait_data);
 
-#endif
+#endif /* USE_SIGCHILD */
 
 
 /*
@@ -586,7 +586,7 @@ void process_done(pid_t pid, char *from)
 #define process_done(PID,FROM)
 #define dump_process_history(PID)
 
-#endif
+#endif /* PIKE_DEBUG */
 
 
 static void register_signal(int signum)
@@ -3377,6 +3377,8 @@ void f_create_process(INT32 args)
  *!
  *!   This function is disabled when using threads.
  *!
+ *!   This function is not available on all platforms.
+ *!
  *!   The most common use for fork is to start sub programs, which is
  *!   better done with @[Process.create_process()].
  *!
@@ -3543,8 +3545,8 @@ void Pike_f_fork(INT32 args)
  *!   Note that you have to use signame to translate the name of a signal
  *!   to its number.
  *!
- *!   Note that all signals are not available on all platforms, and that
- *!   some platforms may have signals not listed here.
+ *!   Note that the kill function is not available on platforms that do not
+ *!   supports signals. Some platforms may also have signals not listed here.
  *!
  *! @seealso
  *!   @[signal()], @[signum()], @[signame()], @[fork()]
@@ -3602,6 +3604,10 @@ static void f_kill(INT32 args)
  */
 
 /*! @decl int kill(int signal)
+ *!
+ *! @note
+ *!   This function is only available on platforms that
+ *!   supports signals.
  */
 static void f_pid_status_kill(INT32 args)
 {
@@ -3770,6 +3776,10 @@ static void f_getpid(INT32 args)
  *!   scheduled alarm was due to be delivered, or zero if there was
  *!   no previously scheduled alarm.
  *!
+ *! @note
+ *!   This function is only available on platforms that supports
+ *!   signals.
+ *!
  *! @seealso
  *!   @[ualarm()], @[signal()], @[call_out()]
  */
@@ -3811,6 +3821,10 @@ static void f_alarm(INT32 args)
  *!   Returns the number of microseconds remaining until any previously
  *!   scheduled alarm was due to be delivered, or zero if there was
  *!   no previously scheduled alarm.
+ *!
+ *! @note
+ *!   This function is only available on platforms that supports
+ *!   signals.
  *!
  *! @seealso
  *!   @[alarm()], @[signal()], @[call_out()]
@@ -4028,18 +4042,17 @@ void init_signals(void)
   
 /* function(int,mixed|void:void) */
   ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tMix,tVoid),tMix),OPT_SIDE_EFFECT);
+
 #ifdef HAVE_KILL
-  
 /* function(int|object,int:int) */
   ADD_EFUN("kill",f_kill,tFunc(tOr(tInt,tObj) tInt,tInt),OPT_SIDE_EFFECT);
 #endif
+
 #ifdef HAVE_FORK
-  
 /* function(void:object) */
   ADD_EFUN("fork",Pike_f_fork,tFunc(tVoid,tObj),OPT_SIDE_EFFECT);
 #endif
 
-  
 /* function(int:string) */
   ADD_EFUN("signame",f_signame,tFunc(tInt,tStr),0);
   
@@ -4048,13 +4061,13 @@ void init_signals(void)
   
 /* function(:int) */
   ADD_EFUN("getpid",f_getpid,tFunc(tNone,tInt),0);
+
 #ifdef HAVE_ALARM
-  
 /* function(int:int) */
   ADD_EFUN("alarm",f_alarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
 #endif
+
 #if defined(HAVE_UALARM) || defined(HAVE_SETITIMER)
-  
 /* function(int:int) */
   ADD_EFUN("ualarm",f_ualarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
 #endif
