@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.43 2000/03/30 21:25:39 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.44 2000/03/31 22:29:43 hubbe Exp $ */
 
 import Stdio;
 
@@ -154,7 +154,7 @@ int main(int argc, array(string) argv)
     ({"no-watchdog",Getopt.NO_ARG,({"--no-watchdog"})}),
     ({"watchdog",Getopt.HAS_ARG,({"--watchdog"})}),
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
-    ({"verbose",Getopt.NO_ARG,({"-v","--verbose"})}),
+    ({"verbose",Getopt.MAY_HAVE_ARG,({"-v","--verbose"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
     ({"end",Getopt.HAS_ARG,({"--end-after"})}),
     ({"fail",Getopt.MAY_HAVE_ARG,({"-f","--fail"})}),
@@ -456,7 +456,8 @@ int main(int argc, array(string) argv)
 	    fname+=" (CRNL)";
 	    to_compile=replace(to_compile,"\n","\r\n");
 	  }
-	    
+	   
+	  if(verbose>9) bzot(to_compile);
 	  switch(type)
 	  {
 	    case "COMPILE":
