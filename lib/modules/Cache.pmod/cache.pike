@@ -2,13 +2,14 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.7 2002/02/14 17:23:12 nilsson Exp $
+ * $Id: cache.pike,v 1.8 2002/02/26 02:14:26 nilsson Exp $
  *
- * This module serves as a front-end to different kinds of caching system
- * It uses two helper objects to actually store data, and to determine
- * expiration policies. Mechanisms to allow for distributed caching systems
- * will be added in time, or at least this is the plan.
  */
+
+//! This module serves as a front-end to different kinds of caching systems.
+//! It uses two helper objects to actually store data, and to determine
+//! expiration policies. Mechanisms to allow for distributed caching systems
+//! will be added in time, or at least that is the plan.
 
 #pike __REAL_VERSION__
 
@@ -25,9 +26,9 @@ private int cleanup_cycle=DEFAULT_CLEANUP_CYCLE;
 static object(Cache.Storage.Base) storage;
 static object(Cache.Policy.Base) policy;
 
-//. Looks in the cache for an element with the given key and, if available,
-//. returns it. Returns 0 if the element is not available
 // TODO: check that Storage Managers return the appropriate zero_type
+//! Looks in the cache for an element with the given key and, if available,
+//! returns it. Returns 0 if the element is not available
 mixed lookup(string key) {
   if (!stringp(key)) key=(string)key; // paranoia.
   object(Cache.Data) tmp=storage->get(key);
@@ -62,11 +63,11 @@ private void no_results(string key, array req, mixed call_out_id) {
   req[0](key,0,@req[1]);        //invoke the callback with no data
 }
 
-//. asynchronously look the cache up.
-//. The callback will be given as arguments the key, the value, and then
-//. any user-supplied arguments.
-//. If the timeout (in seconds) expires before any data could be retrieved,
-//. the callback is called anyways, with 0 as value.
+//! Asynchronously look the cache up.
+//! The callback will be given as arguments the key, the value, and then
+//! any user-supplied arguments.
+//! If the timeout (in seconds) expires before any data could be retrieved,
+//! the callback is called anyways, with 0 as value.
 void alookup(string key,
               function(string,mixed,mixed...:void) callback,
               int|float timeout,
@@ -84,22 +85,23 @@ void alookup(string key,
     req[2]=call_out(no_results,timeout,key,req); //aliasing, gotta love it
 }
 
-//. Sets some value in the cache. Notice that the actual set operation
-//. might even not happen at all if the set data doesn't make sense. For
-//. instance, storing an object or a program in an SQL-based backend
-//. will not be done, and no error will be given about the operation not being
-//. performed.
-//. Notice that while max_life will most likely be respected (objects will
-//. be garbage-collected at pre-determined intervals anyways), the
-//. preciousness . is to be seen as advisory only for the garbage collector
-//. If some data was stored with the same key, it gets returned.
-//. Also notice that max_life is _RELATIVE_ and in seconds.
-//. dependants are not fully implemented yet. They are implemented after
-//. a request by Martin Stjerrholm, and their purpose is to have some
-//. weak form of referential integrity. Simply speaking, they are a list
-//. of keys which (if present) will be deleted when the stored entry is
-//. deleted (either forcibly or not). They must be handled by the storage 
-//. manager.
+//! Sets some value in the cache. Notice that the actual set operation
+//! might even not happen at all if the set data doesn't make sense. For
+//! instance, storing an object or a program in an SQL-based backend
+//! will not be done, and no error will be given about the operation not being
+//! performed.
+//!
+//! Notice that while max_life will most likely be respected (objects will
+//! be garbage-collected at pre-determined intervals anyways), the
+//! preciousness . is to be seen as advisory only for the garbage collector
+//! If some data was stored with the same key, it gets returned.
+//! Also notice that max_life is @b{relative@} and in seconds.
+//! dependants are not fully implemented yet. They are implemented after
+//! a request by Martin Stjerrholm, and their purpose is to have some
+//! weak form of referential integrity. Simply speaking, they are a list
+//! of keys which (if present) will be deleted when the stored entry is
+//! deleted (either forcibly or not). They must be handled by the storage 
+//! manager.
 void store(string key, mixed value, void|int max_life,
             void|float preciousness, void|multiset(string) dependants ) {
   if (!stringp(key)) key=(string)key; // paranoia
@@ -115,9 +117,10 @@ void store(string key, mixed value, void|int max_life,
                preciousness,rd);
 }
 
-//. Forcibly removes some key.
-//. If the 'hard' parameter is supplied and true, deleted objects will also
-//. be destruct()-ed upon removal by some backends (i.e. memory)
+//! Forcibly removes some key.
+//! If the 'hard' parameter is supplied and true, deleted objects will also
+//! have their @[lfun::destruct] method called upon removal by some
+//! backends (i.e. memory)
 void delete(string key, void|int(0..1)hard) {
   if (!stringp(key)) key=(string)key; // paranoia
   storage->delete(key,hard);
@@ -142,6 +145,7 @@ private void do_cleanup(function expiry_function, object storage) {
   cleanup_lock=0;
 }
 
+//!
 void start_cleanup_cycle() {
   if (master()->asyncp()) { //we're asynchronous. Let's use call_outs
     call_out(async_cleanup_cache,cleanup_cycle);
@@ -155,6 +159,7 @@ void start_cleanup_cycle() {
 #endif
 }
 
+//!
 void async_cleanup_cache() {
   mixed err=catch {
     do_possibly_threaded_call(do_cleanup,policy->expire,storage);
@@ -164,6 +169,7 @@ void async_cleanup_cache() {
     throw (err);
 }
 
+//!
 void threaded_cleanup_cycle() {
   while (1) {
     if (master()->asyncp()) {   // might as well use call_out if we're async
@@ -175,8 +181,8 @@ void threaded_cleanup_cycle() {
   }
 }
 
-//. Creates a new cache object. Required are a storage manager, and an
-//. expiration policy object.
+//! Creates a new cache object. Required are a storage manager, and an
+//! expiration policy object.
 void create(Cache.Storage.Base storage_mgr,
             Cache.Policy.Base policy_mgr,
             void|int cleanup_cycle_delay) {
