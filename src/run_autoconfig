@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.26 1998/10/22 05:02:23 hubbe Exp $
+# $Id: run_autoconfig,v 1.27 1999/05/19 01:20:32 peter Exp $
 #
 # Bootstrap script
 
@@ -37,8 +37,10 @@ find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
     # aclocal needs to be run before autoconf
     echo "Running aclocal in $dir"
     (cd $dir ; aclocal )
-    echo "Running automake in $dir"
-    (cd $dir ; automake )
+# GMP breaks with automake 1.4. libiodbc only works with 1.4+
+# Automake is evil and should die. Put generated files in CVS.
+#    echo "Running automake in $dir"
+#    (cd $dir ; automake )
   fi
 
   if [ -f $dir/acconfig.h -a $dir/configure.in ]; then
