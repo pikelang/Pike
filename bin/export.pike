@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.34 2001/01/08 16:07:10 distmaker Exp $ */
+/* $Id: export.pike,v 1.35 2001/01/16 11:08:34 hubbe Exp $ */
 
 import Stdio;
 
@@ -135,8 +135,9 @@ int main(int argc, string *argv)
 	  srcdir=opt[1];
 	  if(basename(srcdir)=="src")
 	    srcdir=dirname(srcdir);
-	  pike_base_name=basename(srcdir);
-	  cd(dirname(srcdir));
+	  pike_base_name=".";
+	  
+	  cd(srcdir);
 	  break;
 
 	case "rebuild":
@@ -157,12 +158,14 @@ int main(int argc, string *argv)
       werror("Use export.pike --srcdir=<dir> <except modules>.\n");
       exit(1);
     }
-    tmp=reverse(tmp[e+1..]);
-    cd(sizeof(tmp)<1 ? tmp*"/" : "/");
-    werror("Sourcedir = "+tmp*"/"+"/pike\n");
-    pike_base_name="pike";
+    tmp=reverse(tmp[e..]);
+    cd(sizeof(tmp) ? (tmp*"/") : "/");
+    werror("Sourcedir = "+tmp*"/"+"\n");
+    pike_base_name=".";
   }
 
+//  werror("pike_base_name=%s\n",pike_base_name);
+//  exit(0);
   if(rebuild)
   {
     werror("Not yet finished!\n");
@@ -181,8 +184,7 @@ int main(int argc, string *argv)
     string tag=replace(vpath,({"Pike-","."}),({"","_"}));
 
     werror("Creating tag "+tag+" in the background.\n");
-    cvs=Process.create_process(({"cvs","tag","-R","-F",tag}),
-			   (["cwd":pike_base_name]));
+    cvs=Process.create_process(({"cvs","tag","-R","-F",tag}));
   }else{
     vpath=replace(replace(getversion()," ","-"),"-release-",".");
   }
@@ -193,8 +195,8 @@ int main(int argc, string *argv)
     if(file_size(pike_base_name+"/src/modules/"+tmp) == -2)
       fix_configure("modules/"+tmp);
 
-    werror("vpath = %s  pwd = %s\n",vpath,getcwd());
-    symlink("pike",vpath);
+  werror("vpath = %s  pwd = %s\n",vpath,getcwd());
+  symlink(".",vpath);
 //    system("ln -s pike "+vpath);
 
   files=`+(({ vpath+"/README", vpath+"/ANNOUNCE" }),
