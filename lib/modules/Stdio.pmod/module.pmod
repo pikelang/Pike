@@ -1,10 +1,19 @@
-// $Id: module.pmod,v 1.111 2001/04/07 09:19:59 mirar Exp $
+// $Id: module.pmod,v 1.112 2001/04/19 01:12:23 mast Exp $
 #pike __REAL_VERSION__
 
 
 import String;
 
 inherit files;
+
+// TRACK_OPEN_FILES is a debug tool to track down where a file is
+// currently opened from (see report_file_open_places). It's used
+// primarily when debugging on NT since an opened file can't be
+// renamed or removed there.
+#ifndef TRACK_OPEN_FILES
+#define register_open_file(file, id, backtrace)
+#define register_close_file(id)
+#endif
 
 //! The Stdio.Stream API.
 //!
@@ -113,6 +122,10 @@ class BlockFile
 class File
 {
   inherit Fd_ref;
+  
+#ifdef TRACK_OPEN_FILES
+  static int open_file_id = next_open_file_id++;
+#endif
 
   int is_file;
 
@@ -217,6 +230,7 @@ class File
   int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
+    register_open_file (file, open_file_id, backtrace());
     is_file = 1;
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
@@ -437,6 +451,7 @@ class File
       case 0..0x7fffffff:
 	 if (!mode) mode="rw";
 	_fd=Fd(file,mode);
+	register_open_file ("fd " + file, open_file_id, backtrace());
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
@@ -444,6 +459,7 @@ class File
 
       default:
 	_fd=Fd();
+	register_open_file (file, open_file_id, backtrace());
 	is_file = 1;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
@@ -550,6 +566,7 @@ class File
       FREE_CB(write_oob_callback);
 #endif
       _fd=0;
+      register_close_file (open_file_id);
 #ifdef __STDIO_DEBUG
       __closed_backtrace=master()->describe_backtrace(backtrace());
 #endif
@@ -911,6 +928,7 @@ class File
       FREE_CB(write_oob_callback);
 #endif
     }
+    register_close_file (open_file_id);
   }
 };
 
@@ -1227,6 +1245,55 @@ class FILE
 };
 
 FILE stdin=FILE("stdin");
+
+#ifdef TRACK_OPEN_FILES
+static mapping(string|int:array) open_files = ([]);
+static int next_open_file_id = 1;
+
+static void register_open_file (string file, int id, array backtrace)
+{
+  file = combine_path (getcwd(), file);
+  open_files[id] =
+    ({file, describe_backtrace (backtrace[..sizeof (backtrace) - 2])});
+  if (!open_files[file]) open_files[file] = ({id});
+  else open_files[file] += ({id});
+}
+
+static void register_close_file (int id)
+{
+  if (open_files[id]) {
+    string file = open_files[id][0];
+    open_files[file] -= ({id});
+    if (!sizeof (open_files[file])) m_delete (open_files, file);
+    m_delete (open_files, id);
+  }
+}
+
+array(string) file_open_places (string file)
+{
+  file = combine_path (getcwd(), file);
+  if (array(int) ids = open_files[file])
+    return map (ids, lambda (int id) {
+		       if (array ent = open_files[id])
+			 return ent[1];
+		     }) - ({0});
+  return 0;
+}
+
+void report_file_open_places (string file)
+{
+  array(string) places = file_open_places (file);
+  if (places)
+    werror ("File " + file + " is currently opened from:\n" +
+	    map (places,
+		 lambda (string place) {
+		   return " * " +
+		     replace (place[..sizeof (place) - 2], "\n", "\n   ");
+		 }) * "\n\n" + "\n");
+  else
+    werror ("File " + file + " is currently not opened anywhere.\n");
+}
+#endif
 
 //! @decl string read_file(string filename)
 //! @decl string read_file(string filename, int start, int len)
