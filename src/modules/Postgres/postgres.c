@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.32 2003/09/10 15:21:58 mast Exp $
+|| $Id: postgres.c,v 1.33 2003/12/15 22:28:24 nilsson Exp $
 */
 
 /*
@@ -54,13 +54,13 @@
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
 #  define PQ_FETCH() PIKE_MUTEX_T *pg_mutex = &THIS->mutex;
-#  define PQ_LOCK() mt_lock(pg_mutex);
-#  define PQ_UNLOCK() mt_unlock(pg_mutex);
+#  define PQ_LOCK() mt_lock(pg_mutex)
+#  define PQ_UNLOCK() mt_unlock(pg_mutex)
 # else
 PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 #  define PQ_FETCH()
-#  define PQ_LOCK() mt_lock(&pike_postgres_mutex);
-#  define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex);
+#  define PQ_LOCK() mt_lock(&pike_postgres_mutex)
+#  define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
 # endif
 #else
 # define PQ_FETCH()
@@ -79,7 +79,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.32 2003/09/10 15:21:58 mast Exp $");
+RCSID("$Id: postgres.c,v 1.33 2003/12/15 22:28:24 nilsson Exp $");
 
 static void set_error (char * newerror)
 {
@@ -96,6 +96,9 @@ static void pgres_create (struct object * o) {
 	THIS->last_error=NULL;
 	THIS->notify_callback=(struct svalue*)xalloc(sizeof(struct svalue));
 	THIS->notify_callback->type=PIKE_T_INT;
+	THIS->docommit=0;
+	THIS->dofetch=0;
+	THIS->lastcommit=0;
 #ifdef PQ_THREADSAFE
 	mt_init(&THIS->mutex);
 #endif
@@ -435,7 +438,10 @@ static void f_big_query(INT32 args)
 	PGresult * res;
 	PGnotify * notification;
 	char *query;
+	int lastcommit,docommit,dofetch;
 	PQ_FETCH();
+	docommit=dofetch=0;
+	lastcommit=THIS->lastcommit;
 
 	check_all_args("Postgres->big_query",args,BIT_STRING,0);
 
@@ -450,7 +456,65 @@ static void f_big_query(INT32 args)
 	THREADS_ALLOW();
 	PQ_LOCK();
 	pgdebug("f_big_query(\"%s\")\n",query);
-	res=PQexec(conn,query);
+#define SELECTSTR"SELECT "
+#define LIMIT1STR"LIMIT 1"
+#define LIMIT1STRSCLIMIT1STR";"
+#define LIMITLENSC(sizeof(LIMIT1STRSC)-1)
+#define LIMITLEN(sizeof(LIMIT1STR)-1)
+	res = 0;
+	if(!strncmp(query,SELECTSTR,sizeof(SELECTSTR)-1))
+	{
+#define CURSORPREFIX"DECLARE "CURSORNAME" CURSOR FOR "
+#define CPREFLENsizeof(CURSORPREFIX)
+	  int qlen=strlen(query);
+	  char *nquery;
+	  if(qlen>LIMITLENSC && strcmp(query+qlen-LIMITLENSC,LIMIT1STRSC)
+	     && strcmp(query+qlen-LIMITLEN,LIMIT1STR)
+	     &&(nquery=malloc(CPREFLEN+qlen))) {
+	    strcpy(nquery,CURSORPREFIX);
+	    strcpy(nquery+CPREFLEN-1,query);
+	    if(lastcommit)
+	      goto yupbegin;
+	    res=PQexec(conn,nquery);
+	    if(PQstatus(conn) != CONNECTION_OK) {
+	      PQclear(res);
+	      PQreset(conn);
+	      res=PQexec(conn,nquery);
+	    }
+	    if(res)
+	      switch(PQresultStatus(res)) {
+	      case PGRES_FATAL_ERROR:
+		PQclear(res);
+yupbegin:       res=PQexec(conn,"BEGIN");
+		if(res && PQresultStatus(res)==PGRES_COMMAND_OK) {
+		  PQclear(res);
+		  res=PQexec(conn,nquery);
+		  if(res && PQresultStatus(res)==PGRES_COMMAND_OK)
+		    docommit=1;
+		  else {
+		    PQclear(res);
+		    res=PQexec(conn,"COMMIT");
+		    PQclear(res);
+		    res=0;
+		    break;
+		  }
+		} else
+		  break;
+	      case PGRES_COMMAND_OK:
+		dofetch=1;
+		PQclear(res);
+		res=PQexec(conn,FETCHCMD);
+		break;
+	      default:
+		PQclear(res);
+		res=0;
+	      }
+	    free(nquery);
+	  }
+	}
+	lastcommit=0;
+	if(!res)
+	  res=PQexec(conn,query);
 	/* A dirty hack to fix the reconnect bug.
 	 * we don't need to store the host/user/pass/db... etc..
 	 * PQreset() does all the job.
@@ -467,6 +531,9 @@ static void f_big_query(INT32 args)
 	notification=PQnotifies(conn);
 	PQ_UNLOCK();
 	THREADS_DISALLOW();
+	THIS->docommit=docommit;
+	THIS->dofetch=dofetch;
+	THIS->lastcommit=lastcommit;
 
 	pop_n_elems(args);
 	if (notification!=NULL) {
@@ -652,7 +719,9 @@ static void f_host_info (INT32 args)
 	check_all_args("Postgres->host_info",args,0);
 
 	if (PQstatus(THIS->dblink)!=CONNECTION_BAD) {
-		push_text("TCP/IP connection to ");
+		char buf[64];
+		sprintf(buf,"TCP/IP %p connection to ",THIS->dblink);
+		push_text(buf);
 		pgdebug("adding reason\n");
 		if(PQhost(THIS->dblink))
 			push_text(PQhost(THIS->dblink));

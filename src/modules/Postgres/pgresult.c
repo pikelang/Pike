@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.20 2002/10/21 17:06:22 marcus Exp $
+|| $Id: pgresult.c,v 1.21 2003/12/15 22:28:24 nilsson Exp $
 */
 
 /*
@@ -58,6 +58,8 @@
 
 #include <stdio.h>
 #include <libpq-fe.h>
+#include <server/postgres.h>
+#include <server/catalog/pg_type.h>
 
 /* Pike includes */
 #include "stralloc.h"
@@ -68,15 +70,23 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.20 2002/10/21 17:06:22 marcus Exp $");
+RCSID("$Id: pgresult.c,v 1.21 2003/12/15 22:28:24 nilsson Exp $");
 
 #ifdef _REENTRANT
-PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
+# ifdef PQ_THREADSAFE
+#  define PQ_FETCH() PIKE_MUTEX_T *pg_mutex = &THIS->pgod->mutex;
+#  define PQ_LOCK() mt_lock(pg_mutex)
+#  define PQ_UNLOCK() mt_unlock(pg_mutex)
+# else
+PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
+#  define PQ_FETCH()
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex)
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
+# endif
 #else
-#define PQ_LOCK() /**/
-#define PQ_UNLOCK() /**/
+# define PQ_FETCH()
+# define PQ_LOCK()
+# define PQ_UNLOCK()
 #endif
 
 #include "pg_types.h"
@@ -99,6 +109,20 @@ void result_create (struct object * o) {
 
 void result_destroy (struct object * o) {
 	pgdebug("result_destroy().\n");
+	if(THIS->pgod->docommit) {
+	  PGconn * conn = THIS->pgod->dblink;
+	  PGresult * res=THIS->result;
+	  PQ_FETCH();
+	  PQclear(res);
+	  THIS->pgod->docommit=0;
+	  THREADS_ALLOW();
+	  PQ_LOCK();
+	  res=PQexec(conn,"COMMIT");
+	  PQ_UNLOCK();
+	  THREADS_DISALLOW();
+	  THIS->result=res;
+	  THIS->pgod->lastcommit=1;
+	}
 	PQclear(THIS->result);
 }
 
@@ -128,7 +152,8 @@ static void f_create (INT32 args)
 	storage=get_storage(Pike_sp[-args].u.object,postgres_program);
 	if (!storage)
 		Pike_error ("I need a Postgres object or an heir of it.\n");
-	THIS->result=((struct pgres_object_data *)storage)->last_result;
+	THIS->result=
+	  (THIS->pgod=(struct pgres_object_data *)storage)->last_result;
 	((struct pgres_object_data *) Pike_sp[-args].u.object->storage)->last_result=NULL;
 	/* no fear of memory leaks, we've only moved the pointer from there to here */
 
@@ -148,12 +173,14 @@ static void f_create (INT32 args)
 
 static void f_num_rows (INT32 args)
 {
+        int rows;
 	check_all_args("postgres_result->num_rows",args,0);
 	if (PQresultStatus(THIS->result)!=PGRES_TUPLES_OK) {
 		push_int(0);
 		return;
 	}
-	push_int(PQntuples(THIS->result));
+	rows=PQntuples(THIS->result);
+	push_int(THIS->pgod->dofetch-1>rows?THIS->pgod->dofetch-1:rows);
 	return;
 }
 
@@ -272,26 +299,65 @@ static void f_fetch_row (INT32 args)
 	char * value;
 
 	check_all_args("postgres_result->fetch_row",args,0);
-	pgdebug("f_fectch_row(); cursor=%d.\n",THIS->cursor);
+	pgdebug("f_fetch_row(); cursor=%d.\n",THIS->cursor);
 	if (THIS->cursor>=PQntuples(THIS->result)) {
-		push_int(0);
-		return;
+	  PGresult * res=THIS->result;
+	  if(THIS->pgod->dofetch) {
+	    PGconn * conn = THIS->pgod->dblink;
+	    int docommit=THIS->pgod->docommit;
+	    int dofetch=1;
+	    PQ_FETCH();
+	    PQclear(res);
+	    THREADS_ALLOW();
+	    PQ_LOCK();
+	    res=PQexec(conn,FETCHCMD);
+	    if(!res || PQresultStatus(res)!=PGRES_TUPLES_OK
+	       || !PQntuples(res)) {
+	      if(!docommit) {
+		PQclear(res);
+		res=PQexec(conn,"CLOSE "CURSORNAME);
+	      }
+	      dofetch=0;
+	    }
+	    PQ_UNLOCK();
+	    THREADS_DISALLOW();
+	    THIS->result = res;
+	    if(!dofetch) {
+	      THIS->pgod->dofetch=0;
+	      goto badresult;
+	    }
+	    THIS->cursor=0;
+	  } else {
+badresult:
+	    push_int(0);
+	    return;
+	  }
 	}
 	numfields=PQnfields(THIS->result);
 	for (j=0;j<numfields;j++) {
+	        void*binbuf = 0;
+	        size_t binlen;
 		value=PQgetvalue(THIS->result,THIS->cursor,j);
+		k=PQgetlength(THIS->result,THIS->cursor,j);
+		switch(PQftype(THIS->result,j)) {
 #ifdef CUT_TRAILING_SPACES
-		/* damn! We need to cut the trailing whitespace... */
-		for (k=PQgetlength(THIS->result,THIS->cursor,j)-1;k>=0;k--)
-			if (value[k]!=' ')
-				break;
-		push_string(make_shared_binary_string(value,k+1));
-#else
-		push_text(value);
+		case BPCHAROID:
+		  for(;k>0 && value[k]==' ';k--);
+		  break;
 #endif
+		case BYTEAOID:
+		  if(binbuf=PQunescapeBytea(value,&binlen))
+		    value=binbuf,k=binlen;
+		  break;
+		}
+		push_string(make_shared_binary_string(value,k));
+		if(binbuf)
+		  free(binbuf);
 	}
 	f_aggregate(numfields);
 	THIS->cursor++;
+	if(THIS->pgod->dofetch)
+	  THIS->pgod->dofetch++;
 	return;
 }
 
