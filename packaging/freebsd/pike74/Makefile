@@ -12,11 +12,9 @@ CATEGORIES=	lang
 MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${DISTNAME}/ \
 		ftp://ftp.oav.net/pkg_freebsd/distfiles/ \
 		http://ftp.oav.net/pkg_freebsd/distfiles/ \
-		ftp://ftp.oav.net/pike/7.2/unofficial/ \
-		http://ftp.oav.net/pike/7.2/unofficial/ \
-		http://grendel.firewall.com/caudium-pkg/ \
-		ftp://ftp.caudium.net/caudium/snapshots/pike/7.2/unofficial/ \
-		http://ftp.caudium.net/caudium/snapshots/pike/7.2/unofficial/
+		ftp://ftp.oav.net/pike/7.4/export/ \
+		http://ftp.oav.net/pike/7.4/export/ \
+		http://grendel.firewall.com/caudium-pkg/ 
 DISTNAME=	pike-${PORTVERSION}
 
 MAINTAINER=	kiwi@caudium.net
@@ -26,11 +24,13 @@ BUILD_DEPENDS=	bison:${PORTSDIR}/devel/bison/
 BUILD_DEPENDS+=	nasm:${PORTSDIR}/devel/nasm/
 .endif
 
-LIB_DEPENDS=	gmp.6:${PORTSDIR}/math/libgmp4 \
-		jpeg.9:${PORTSDIR}/graphics/jpeg \
+LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 		tiff.4:${PORTSDIR}/graphics/tiff \
 		gdbm.2:${PORTSDIR}/databases/gdbm \
 		mird.1:${PORTSDIR}/databases/mird
+.if ${OSVERSION} >= 500000
+LIB_DEPENDS+=	gmp.6:${PORTSDIR}/math/libgmp4 \
+.endif
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
