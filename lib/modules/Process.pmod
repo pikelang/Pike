@@ -25,6 +25,13 @@ int exec(string file,string ... foo)
   return 69;
 }
 
+string sh_quote(string s)
+{
+  return replace(s,
+	({"\\", "'", "\"", " "}),
+	({"\\\\", "\\'", "\\\"","\\ "}));
+}
+
 string *split_quoted_string(string s)
 {
   s=replace(s, ({"\"","'","\\"," "}), ({"\0\"","\0'","\0\\","\0 "}));
