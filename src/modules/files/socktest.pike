@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.25 2003/10/06 15:07:39 grubba Exp $ */
+/* $Id: socktest.pike,v 1.26 2003/10/06 15:55:38 grubba Exp $ */
 
 
 import Stdio;
@@ -180,6 +180,8 @@ void die()
   werror("No callbacks for 20 seconds!\n");
   fd_fail();
 }
+
+int max_fds = 1024;
 
 int counter;
 int quiet;
@@ -370,14 +372,15 @@ void finish()
 	break;
 
       case 14..26:
-#if 0
-	/* These tests require mare than 64 open fds. */
-	tests=(_tests-2)*2;
-	werror("Testing "+(tests*2)+" sockets. ");
-	for(int e=0;e<tests;e++) stdtest();
-	stdtest();
-	break;
-#endif /* 0 */
+	if (max_fds > 64) {
+	  /* These tests require mare than 64 open fds. */
+	  tests=(_tests-2)*2;
+	  werror("Testing "+(tests*2)+" sockets. ");
+	  for(int e=0;e<tests;e++) stdtest();
+	  stdtest();
+	  break;
+	}
+	/* To few available fds; advance to the next set of tests. */
 	_tests = 27;
 	/* FALL_THROUGH */
 
@@ -469,6 +472,20 @@ int main()
      (has_value(testargs/" ", "-q") ||
       has_value(testargs/" ", "-quiet") ) )
     quiet=1;
+
+#if constant(System.getrlimit)
+  array(int) file_limit = System.getrlimit("nofile");
+  if (file_limit && (file_limit[0] > 0)) {
+    max_fds = file_limit[0];
+    if ((max_fds < 128) && (file_limit[0] < file_limit[1])) {
+      // Attempt to raise the limit.
+      if (System.setrlimit("nofile", file_limit[1], file_limit[1])) {
+	max_fds = file_limit[1];
+      }
+    }
+    werror("Available fds: %d\n", max_fds);
+  }
+#endif /* constant(System.getrlimit) */
 
   if(!port1::bind(0, accept_callback))
   {
