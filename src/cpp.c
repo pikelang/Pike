@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.26 1998/05/07 19:03:06 hubbe Exp $
+ * $Id: cpp.c,v 1.27 1998/05/07 19:52:23 grubba Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -328,7 +328,9 @@ static void simple_add_define(struct cpp *this,
   }						\
 }while (0)
 
-
+/* At entry pos points to the start-quote.
+ * At end pos points past the end-quote.
+ */
 #define READSTRING(nf)				\
 while(1)					\
 {						\
@@ -367,6 +369,9 @@ while(1)					\
   break;					\
 }
 
+/* At entry pos points past the start quote.
+ * At exit pos points past the end quote.
+ */
 #define FIXSTRING(nf,outp)	do {			\
 int trailing_newlines=0;				\
 if(outp) low_my_putchar('"', &nf);			\
@@ -393,7 +398,7 @@ while(1)						\
       this->current_line++;				\
       continue;						\
     }							\
-    if(outp) low_my_putchar(data[pos-1], &nf);	        \
+    if(outp) low_my_putchar('\\', &nf);		        \
     pos++;                                              \
 							\
   default:						\
