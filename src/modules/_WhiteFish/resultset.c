@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.16 2001/05/31 14:21:43 per Exp $");
+RCSID("$Id: resultset.c,v 1.17 2001/06/15 02:12:53 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -54,23 +54,35 @@ void wf_resultset_free( struct object *o )
 
 void wf_resultset_add( struct object *o, int document, int weight )
 {
-  int ind = T(o)->d->num_docs;
+  int ind;
+  ResultSet *d;
+
+  if( !(d=T(o)->d) )
+  {
+    wf_resultset_clear( o );
+    d = T(o)->d;
+  }
+  ind = d->num_docs;
+  
   if( T(o)->allocated_size == ind )
   {
-    T(o)->allocated_size *= 2;
-    T(o)->d = realloc( T(o)->d,
-		       4 + /* num_docs */
-		       4*T(o)->allocated_size*2 ); /* hits */
-    if( !T(o)->d )
+    T(o)->allocated_size += 2048;
+    d = T(o)->d = realloc( d, 4 + /* num_docs */
+			   4*T(o)->allocated_size*2 ); /* hits */
+    if( !d )
       Pike_error( "Out of memory" );
   }
-  T(o)->d->hits[ind].doc_id = document;
-  T(o)->d->hits[ind].ranking = weight;
-  T(o)->d->num_docs = ind+1;
+  d->hits[ind].doc_id = document;
+  d->hits[ind].ranking = weight;
+  d->num_docs = ind+1;
 }
 
 void wf_resultset_avg_ranking( struct object *o, int ind, int weight )
 {
+#ifdef PIKE_DEBUG
+  if( !T(o)->d )
+    fatal("Odd, indeed. Encountered empty resultset\n");
+#endif
   if( ind < 0 )
     ind = T(o)->d->num_docs-1;
 #ifdef PIKE_DEBUG
@@ -82,6 +94,10 @@ void wf_resultset_avg_ranking( struct object *o, int ind, int weight )
 
 void wf_resultset_add_ranking( struct object *o, int ind, int weight )
 {
+#ifdef PIKE_DEBUG
+  if( !T(o)->d )
+    fatal("Odd, indeed. Encountered empty resultset\n");
+#endif
   if( ind < 0 )
     ind = T(o)->d->num_docs-1;
 #ifdef PIKE_DEBUG
@@ -91,9 +107,27 @@ void wf_resultset_add_ranking( struct object *o, int ind, int weight )
   T(o)->d->hits[ind].ranking=(T(o)->d->hits[ind].ranking)+(weight);
 }
 
+
+void wf_resultset_empty( struct object *o )
+{
+  if( T(o)->d ) free( T(o)->d );
+  T(o)->allocated_size = 0;
+  T(o)->d = 0;
+}
+
+void wf_resultset_push( struct object *o )
+{
+  if( T(o)->d )
+  {
+    if( T(o)->d->num_docs == 0 )
+      wf_resultset_empty( o );
+  }
+  push_object( o );
+}
+
 void wf_resultset_clear( struct object *o )
 {
-  if( T(o)->allocated_size ) free( T(o)->d );
+  if( T(o)->d ) free( T(o)->d );
   T(o)->allocated_size = 256;
   T(o)->d = malloc( 4 + 8*256 );
   T(o)->d->num_docs = 0;
@@ -103,7 +137,7 @@ struct object *wf_resultset_new( )
 {
   struct object *o;
   o = clone_object( resultset_program, 0 );
-  wf_resultset_clear( WF_RESULTSET( o ) );
+  wf_resultset_empty( WF_RESULTSET( o ) );
   return o;
 }
 
@@ -143,16 +177,11 @@ static void f_resultset_cast( INT32 args )
 *! Only works when type == "array". Returns the resultset data as a array.
 */
 {
+  static void f_resultset_slice( INT32 args );
   pop_n_elems( args );
-  if( THIS->d )
-  {
-    static void f_resultset_slice( INT32 args );
-    push_int(0);
-    push_int( 0x7fffffff );
-    f_resultset_slice(2);
-  }
-  else
-    push_array( allocate_array( 0 ) );
+  push_int(0);
+  push_int( 0x7fffffff );
+  f_resultset_slice(2);
 }
 
 static void f_resultset_memsize( INT32 args )
@@ -256,7 +285,8 @@ static void f_resultset_sort( INT32 args )
 *!   Sort this ResultSet according to ranking.
 */
 {
-  fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_hits );
+  if(THIS->d)
+    fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_hits );
   RETURN_THIS();
 }
 
@@ -266,7 +296,8 @@ static void f_resultset_sort_docid( INT32 args )
 *!   Sort this ResultSet according to document id
 */
 {
-  fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_docid );
+  if(THIS->d)
+    fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_docid );
   RETURN_THIS();
 }
 
@@ -277,12 +308,15 @@ static void f_resultset_dup( INT32 args )
 */
 {
   struct object *o = clone_object( resultset_program, 0 );
-  ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
-  MEMCPY( d, THIS->d, THIS->d->num_docs * 8 + 4 );
-  T(o)->d = d;
-  T(o)->allocated_size = T(o)->d->num_docs;
+  if(THIS->d)
+  {
+    ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
+    MEMCPY( d, THIS->d, THIS->d->num_docs * 8 + 4 );
+    T(o)->d = d;
+    T(o)->allocated_size = T(o)->d->num_docs;
+  }
   pop_n_elems( args );
-  push_object( o );
+  wf_resultset_push( o );
 }
 
 
@@ -294,7 +328,10 @@ static void f_resultset__sizeof( INT32 args )
 */
 {
   pop_n_elems( args );
-  push_int( THIS->d->num_docs );
+  if( THIS->d )
+    push_int( THIS->d->num_docs );
+  else
+    push_int( 0 );
 }
 
 
@@ -308,8 +345,32 @@ static void f_resultset_overhead( INT32 args )
 */
 {
   pop_n_elems( args );
-  push_int( (THIS->allocated_size-THIS->d->num_docs)*8
-	    + sizeof(struct object) + 4 );
+  if( !THIS->d )
+    f_resultset_memsize( 0 );
+  else
+    push_int( (THIS->allocated_size-THIS->d->num_docs)*8
+	      + sizeof(struct object) + 4 );
+}
+
+static void duplicate_resultset( struct object *dest,
+				 struct object *src )
+{
+  if( src->refs == 1 )
+  {
+    /* Destructively move the data. */
+    T(dest)->d = T(src)->d;
+    T(dest)->allocated_size = T(src)->allocated_size;
+    T(src)->d = 0;
+    T(src)->allocated_size = 0;
+  }
+  else
+  {
+    /* Ok, we have to copy it. */
+    int size = 4+4*T(src)->allocated_size*2;
+    T(dest)->allocated_size = T(src)->allocated_size;
+    T(dest)->d              = malloc( size );
+    MEMCPY( (char *)T(dest)->d, (char *)T(src)->d, size );
+  }
 }
 
 static void f_resultset_or( INT32 args )
@@ -334,10 +395,28 @@ static void f_resultset_or( INT32 args )
 
   int left_doc=0, left_rank=0, right_doc=0, right_rank=0, last=-1;
   ResultSet *set_r, *set_l = T(left)->d;
+
   get_all_args( "or", args, "%o", &right );
 
   set_r = T( WF_RESULTSET(right) )->d;
 
+
+  if( !set_l )
+  {
+    if( set_r )
+      duplicate_resultset( res, right );
+    pop_n_elems(args);
+    wf_resultset_push( res );
+    return;
+  }
+
+  if( !set_r )
+  {
+    duplicate_resultset( res, left );
+    pop_n_elems(args);
+    wf_resultset_push( res );
+    return;
+  }
 
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
@@ -402,7 +481,7 @@ static void f_resultset_or( INT32 args )
     if(right_doc!=last)
       wf_resultset_add( res, (last = right_doc), right_rank );
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 static void f_resultset_intersect( INT32 args )
@@ -432,9 +511,17 @@ static void f_resultset_intersect( INT32 args )
 
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
+
+  if( !set_l || !set_r ) /* ({}) & X == ({}) && X & ({}) == ({}) */
+  {
+    pop_n_elems(args);
+    wf_resultset_push(res);
+    return;
+  }
+
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
-  
+
   while( left_left && right_left )
   {
     if( left_left && left_used ) /* New from left */
@@ -490,7 +577,7 @@ static void f_resultset_intersect( INT32 args )
     }
   }
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 static void f_resultset_add_ranking( INT32 args )
@@ -518,6 +605,22 @@ static void f_resultset_add_ranking( INT32 args )
 
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
+
+  if( !set_l ) /* add_ranking( ({}), X ) == ({}) */
+  {
+    pop_n_elems(args);
+    wf_resultset_push( res );
+    return;
+  }
+
+  if( !set_r ) /* add_ranking( X,({}) ) == X */
+  {
+    duplicate_resultset( res, left );
+    pop_n_elems(args);
+    wf_resultset_push(res);
+    return;
+  }
+  
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
   
@@ -574,7 +677,7 @@ static void f_resultset_add_ranking( INT32 args )
     if(left_doc!=last)
       wf_resultset_add( res, (last = left_doc), left_rank );
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 static void f_resultset_sub( INT32 args )
@@ -604,6 +707,23 @@ static void f_resultset_sub( INT32 args )
 
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
+
+
+  if( !set_l  ) /* ({}) - X == ({}) */
+  {
+    pop_n_elems(args);
+    wf_resultset_push(res);
+    return;
+  }
+
+  if( !set_r ) /*  X-({}) == X */
+  {
+    duplicate_resultset( res, left );
+    pop_n_elems(args);
+    wf_resultset_push(res);
+    return;
+  }
+  
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
   
@@ -657,7 +777,7 @@ static void f_resultset_sub( INT32 args )
     if(left_doc!=last)
       wf_resultset_add( res, (last = left_doc), left_rank );
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 void exit_resultset_program(void)
