@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.96 2000/06/12 23:00:31 mast Exp $");
+RCSID("$Id: gc.c,v 1.97 2000/06/16 23:43:49 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1125,6 +1125,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       if(l == (struct multiset *) x) goto on_gc_internal_lists;
     gc_fatal(x, 0, "gc_cycle_check() called for thing not on gc_internal lists.\n");
   on_gc_internal_lists:
+    ; /* We must have a least one expression after a label! - Hubbe */
   }
 #endif
 
