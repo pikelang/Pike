@@ -47,7 +47,7 @@ void main()
   }
   if( last_was )
   {
-    write( "   {0x%06x-0x%06x}\n", last_was, c  );
+    write( "  {0x%06x,0x%06x}\n", last_was, c );
     last_was=0;
   }
   write( "};\n");
