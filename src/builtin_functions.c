@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.293 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.294 2000/08/02 20:31:51 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1673,6 +1673,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
 #endif
   destruct(o);
   pop_n_elems(args);
+  destruct_objects_to_destruct();
 }
 
 PMOD_EXPORT void f_indices(INT32 args)

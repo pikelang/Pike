@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.158 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.159 2000/08/02 20:31:51 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1163,6 +1163,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
   {
     assign_svalue(save_sp,Pike_sp-1);
     pop_n_elems(Pike_sp-save_sp-1);
+
+    destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
   }
 
   if(save_sp+1 > Pike_sp)
