@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.28 2002/10/05 09:06:24 jonasw Exp $
+// $Id: HTML.pmod,v 1.29 2002/10/05 09:28:46 jonasw Exp $
 
 // Filter for text/html
 
@@ -86,6 +86,12 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     // the referenced document instead.
     if(m->title)
       dadd(" " + m->title + " ");
+    return ({ "" });
+  };
+
+  array(string) parse_a_noindex(Parser.HTML p, mapping m) {
+    //  Special version of parse_a which only cares about href
+    if(m->href) ladd( m->href );
     return ({ "" });
   };
 
@@ -185,7 +191,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     if(m->nofollow)
       return ({ "" });
     Parser.HTML parser = Parser.HTML();
-    parser->add_tags( (["a":parse_a,
+    parser->add_tags( (["a":parse_a_noindex,
 			"base": parse_base,
 			"link":parse_a,
 			"frame":parse_frame,
