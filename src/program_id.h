@@ -54,6 +54,10 @@
 #define     PROG_MODULE_MIME_ID					   0100
 #define     PROG_MODULE_FILES_ID				   0101
 
+#define	    PROG_BASIC_TOKENIZER_ID				   0110
+#define	    PROG_TOKEN_ID					   0111
+#define tObjImpl_TOKEN			      "\003\000\000\000\000\111"
+
 /* NOTE: 0144 == 100. */
 /* 100 - 300 reserverd for Image.Image */
 
