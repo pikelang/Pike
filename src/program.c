@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.185 1999/12/14 17:39:58 hubbe Exp $");
+RCSID("$Id: program.c,v 1.186 1999/12/15 19:42:11 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3544,5 +3544,38 @@ int implements(struct program *a, struct program *b)
 }
 
 
+/* returns 1 if a implements b */
+int yyexplain_not_implements(struct program *a, struct program *b)
+{
+  int e;
+  struct pike_string *s=findstring("__INIT");
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+      continue;		/* Skip static & hidden */
+    bid = ID_FROM_INT(b,e);
+    if(s == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      my_yyerror("Missing identifier \"%s\".", bid->name->str);
+      return 0;
+    }
+
+    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+      struct pike_string *s1,*s2;
+      my_yyerror("Type of identifier dentifier \"%s\" does not match.", bid->name->str);
+      s1=describe_type(ID_FROM_INT(a,i)->type);
+      s2=describe_type(bid->type);
+      my_yyerror("Expected: %s",s1->str);
+      my_yyerror("Got     : %s",s2->str);
+      free_string(s1);
+      free_string(s2);
+      return 0;
+    }
+  }
+  return 1;
+}
 
 

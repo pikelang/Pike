@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.71 1999/12/14 19:51:19 mast Exp $
+ * $Id: program.h,v 1.72 1999/12/15 19:42:12 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -457,6 +457,7 @@ int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 struct implements_cache_s;
 int implements(struct program *a, struct program *b);
+int yyexplain_not_implements(struct program *a, struct program *b);
 /* Prototypes end here */
 
 #define ADD_FUNCTION(NAME,FUNC,TYPE,FLAGS) \

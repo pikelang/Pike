@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.143 1999/12/15 17:02:35 grubba Exp $");
+RCSID("$Id: las.c,v 1.144 1999/12/15 19:42:08 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2428,6 +2428,7 @@ void fix_type_field(node *n)
 	if (!match_types(compiler_frame->current_return_type,CAR(n)->type))
 	{
 	  yyerror("Wrong return type.");
+	  yyexplain_nonmatching_types(compiler_frame->current_return_type, CAR(n)->type);
 	}
 	else if (lex.pragmas & ID_STRICT_TYPES)
 	{

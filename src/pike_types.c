@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.98 1999/12/15 17:04:13 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.99 1999/12/15 19:42:09 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -80,6 +80,9 @@ struct pike_string *any_type_string;
 struct pike_string *weak_type_string;	/* array|mapping|multiset|function */
 
 static struct pike_string *a_markers[10],*b_markers[10];
+
+static struct program *implements_a;
+static struct program *implements_b;
 
 static void clear_markers(void)
 {
@@ -1875,10 +1878,10 @@ static char *low_match_types2(char *a,char *b, int flags)
 #else /* !1 */
       if(EXTRACT_UCHAR(a+1))
       {
-	if(!implements(ap,bp))
+	if(!implements(implements_a=ap,implements_b=bp))
 	  return 0;
       }else{
-	if(!implements(bp,ap))
+	if(!implements(implements_a=bp,implements_b=ap))
 	  return 0;
       }
 #endif /* 1 */
@@ -2342,7 +2345,7 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
 	/* Shouldn't happen... */
 	return 0;
       }
-      return implements(ap, bp);
+      return implements(implements_a=ap, implements_b=bp);
     }
     break;
 
@@ -3227,4 +3230,30 @@ int type_may_overload(char *type, int lfun)
       return FIND_LFUN(p, lfun)!=-1;
     }
   }
+}
+
+
+void yyexplain_nonmatching_types(struct pike_string *type_a,
+				 struct pike_string *type_b)
+{
+  implements_a=0;
+  implements_b=0;
+
+  match_types(type_a,type_b);
+
+  if(!(implements_a && implements_b &&
+       type_a->str[0]==T_OBJECT &&
+       type_b->str[0]==T_OBJECT))
+  {
+    struct pike_string *s1,*s2;
+    s1=describe_type(type_a);
+    s2=describe_type(type_b);
+    my_yyerror("Expected: %s",s1->str);
+    my_yyerror("Got     : %s",s2->str);
+    free_string(s1);
+    free_string(s2);
+  }
+
+  if(implements_a && implements_b)
+    yyexplain_not_implements(implements_a,implements_b);
 }
