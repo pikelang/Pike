@@ -1847,6 +1847,7 @@ static void check_constant(struct cpp *this,
 			  struct define_argument *args,
 			  dynamic_buffer *tmp)
 {
+  struct svalue *save_stack=sp;
   struct svalue *sv;
   char *data=args[0].arg;
   int res,dlen,len=args[0].len;
@@ -1907,7 +1908,8 @@ static void check_constant(struct cpp *this,
       cpp_error(this, "Garbage characters in constant()\n");
     }
   }
-    
+
+  pop_n_elems(sp-save_stack);
 
   low_my_binary_strcat(res?" 1 ":" 0 ", 3,tmp);
 }
@@ -1917,6 +1919,7 @@ static int do_safe_index_call(struct pike_string *s)
 {
   int res;
   JMP_BUF recovery;
+  if(!s) return 0;
   
   if (SETJMP(recovery)) {
     res = 0;
