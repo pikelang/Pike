@@ -41,32 +41,11 @@ mapping(string:string|array(string))
 //! method string filename_to_type(string filename)
 //! method string extension_to_type(string extension)
 //!	Looks up the file extension in a table to return
-//!	a suitable MIME type. The table is located in the
-//!	[...]pike/lib/modules/Protocols.pmod/HTTP.pmod/Server.pmod/extensions.txt
-//!	file.
-
-mapping extensions=0;
+//!	a suitable MIME type.
 
 string extension_to_type(string extension)
 {
-   if (!extensions)
-   {
-      Stdio.File f=Stdio.FILE(
-	 combine_path(__FILE__,"..","extensions.txt"),"r");
-
-      mapping res=([]);
-
-      while (array a=f->ngets(1000))
-	 foreach (a,string l)
-	    if (sscanf(l,"%*[ \t]%[^ \t]%*[ \t]%[^ \t]",
-		       string ext,string type)==4 &&
-		ext!="" && ext[0]!='#')
-	       res[ext]=type;
-
-      extensions=res;
-   }
-
-   return extensions[extension] || "application/octet-stream";
+   return MIME.ext_to_media_type(extension) || "application/octet-stream";
 }
 
 string filename_to_type(string filename)
