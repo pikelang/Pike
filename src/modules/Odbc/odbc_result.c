@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.33 2002/10/21 17:06:20 marcus Exp $
+|| $Id: odbc_result.c,v 1.34 2002/11/06 17:58:03 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.33 2002/10/21 17:06:20 marcus Exp $");
+RCSID("$Id: odbc_result.c,v 1.34 2002/11/06 17:58:03 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -41,8 +41,8 @@ RCSID("$Id: odbc_result.c,v 1.33 2002/10/21 17:06:20 marcus Exp $");
 
 #include "precompiled_odbc.h"
 
-
-#define sp Pike_sp
+/* must be included last */
+#include "module_magic.h"
 
 #ifdef HAVE_ODBC
 
@@ -458,7 +458,12 @@ static void f_fetch_row(INT32 args)
 	      push_string(make_shared_binary_string(blob_buf, len));
 	      break;
 	    } else {
-	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
+	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_BINARY) {
+		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
+	      } else {
+		/* SQL_C_CHAR's are NUL-terminated... */
+		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
+	      }
 	    }
 	  }
 	}
