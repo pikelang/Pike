@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.200 2004/11/26 14:17:04 nilsson Exp $
+|| $Id: operators.c,v 1.201 2004/11/27 22:48:11 mast Exp $
 */
 
 #include "global.h"
@@ -1011,15 +1011,16 @@ COMPARISON(f_lt,"`<" , is_lt)
  *!   @expr{predef::`<=(a,b)@}.
  *!
  *! @returns
- *!   Returns @expr{1@} if the arguments are not strictly decreasing, and
- *!   @expr{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the test is successful, @expr{0@}
+ *!   otherwise.
  *!
- *!   This is the inverse of @[`>()].
+ *! @note
+ *!   For total orders, e.g. integers, this is the inverse of @[`>()].
  *!
  *! @seealso
  *!   @[`<()], @[`>()], @[`>=()]
  */
-COMPARISON(f_le,"`<=",!is_gt)
+COMPARISON(f_le,"`<=",is_le)
 
 /*! @decl int(0..1) `>(mixed arg1, mixed arg2, mixed ... extras)
  *!
@@ -1047,15 +1048,16 @@ COMPARISON(f_gt,"`>" , is_gt)
  *!   @expr{predef::`>=(a,b)@}.
  *!
  *! @returns
- *!   Returns @expr{1@} if the arguments are not strictly increasing, and
- *!   @expr{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the test is successful, @expr{0@}
+ *!   otherwise.
  *!
- *!   This is the inverse of @[`<()].
+ *! @note
+ *!   For total orders, e.g. integers, this is the inverse of @[`<()].
  *!
  *! @seealso
  *!   @[`<=()], @[`>()], @[`<()]
  */
-COMPARISON(f_ge,"`>=",!is_lt)
+COMPARISON(f_ge,"`>=",is_ge)
 
 
 #define CALL_OPERATOR(OP, args) do {					\
@@ -1719,10 +1721,13 @@ static node *optimize_not(node *n)
 
     TMP_OPT(f_eq, "`!=");
     TMP_OPT(f_ne, "`==");
+#if 0
+    /* The following only work on total orders. We can't assume that. */
     TMP_OPT(f_lt, "`>=");
     TMP_OPT(f_gt, "`<=");
     TMP_OPT(f_le, "`>");
     TMP_OPT(f_ge, "`<");
+#endif
 #undef TMP_OPT
     if((more_args = is_call_to(*first_arg, f_search)) &&
        (count_args(*more_args) == 2)) {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.176 2004/10/30 11:38:25 mast Exp $
+|| $Id: interpret_functions.h,v 1.177 2004/11/27 22:48:10 mast Exp $
 */
 
 /*
@@ -1186,9 +1186,9 @@ OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
 CJUMP(F_BRANCH_WHEN_EQ, "branch if ==", is_eq);
 CJUMP(F_BRANCH_WHEN_NE, "branch if !=", !is_eq);
 CJUMP(F_BRANCH_WHEN_LT, "branch if <", is_lt);
-CJUMP(F_BRANCH_WHEN_LE, "branch if <=", !is_gt);
+CJUMP(F_BRANCH_WHEN_LE, "branch if <=", is_le);
 CJUMP(F_BRANCH_WHEN_GT, "branch if >", is_gt);
-CJUMP(F_BRANCH_WHEN_GE, "branch if >=", !is_lt);
+CJUMP(F_BRANCH_WHEN_GE, "branch if >=", is_ge);
 
 OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
@@ -1574,9 +1574,9 @@ OPCODE0_ALIAS(F_RSH, ">>", I_UPDATE_SP, o_rsh);
 COMPARISON(F_EQ, "==", is_eq(Pike_sp-2,Pike_sp-1));
 COMPARISON(F_NE, "!=", !is_eq(Pike_sp-2,Pike_sp-1));
 COMPARISON(F_GT, ">", is_gt(Pike_sp-2,Pike_sp-1));
-COMPARISON(F_GE, ">=", !is_lt(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_GE, ">=", is_ge(Pike_sp-2,Pike_sp-1));
 COMPARISON(F_LT, "<", is_lt(Pike_sp-2,Pike_sp-1));
-COMPARISON(F_LE, "<=", !is_gt(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_LE, "<=", is_le(Pike_sp-2,Pike_sp-1));
 
 OPCODE0(F_ADD, "+", I_UPDATE_SP, {
   f_add(2);

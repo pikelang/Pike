@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.75 2004/11/05 16:21:23 grubba Exp $
+// $Id: treeopt.in,v 1.76 2004/11/27 22:48:11 mast Exp $
 //
 // The tree optimizer
 //
@@ -726,17 +726,19 @@ F_LAND(0 = +[node_is_false($$)], *):
 F_NOT(-, *):
   1;
 
-F_NOT(F_LT(0, 1), *):
-  F_GE($0, $1);
-
-F_NOT(F_GT(0, 1), *):
-  F_LE($0, $1);
-
-F_NOT(F_LE(0, 1), *):
-  F_GT($0, $1);
-
-F_NOT(F_GE(0, 1), *):
-  F_LT($0, $1);
+// The following only work on total orders. We can't assume that.
+//
+// F_NOT(F_LT(0, 1), *):
+//   F_GE($0, $1);
+// 
+// F_NOT(F_GT(0, 1), *):
+//   F_LE($0, $1);
+// 
+// F_NOT(F_LE(0, 1), *):
+//   F_GT($0, $1);
+// 
+// F_NOT(F_GE(0, 1), *):
+//   F_LT($0, $1);
 
 F_NOT(F_EQ(0, 1), *):
   F_NE($0, $1);

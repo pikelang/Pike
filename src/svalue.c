@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.206 2004/11/16 22:17:04 mast Exp $
+|| $Id: svalue.c,v 1.207 2004/11/27 22:48:11 mast Exp $
 */
 
 #include "global.h"
@@ -1086,6 +1086,12 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     case T_TYPE:
       return !pike_types_le(b->u.type, a->u.type);
   }
+}
+
+PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
+{
+  /* Can't optimize this to !is_gt (a, b) since that'd assume total order. */
+  return is_lt (a, b) || is_eq (a, b);
 }
 
 static void dsv_add_string_to_buf (struct pike_string *str)
