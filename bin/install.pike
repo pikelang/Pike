@@ -373,7 +373,9 @@ int main(int argc, string *argv)
 
     case "--export":
       string ver=replace(replace(version()," ","-"),"-release-",".");
-      export_base_name=sprintf("%s-%s",ver,uname()->sysname);
+      export_base_name=sprintf("%s-%s-%s",ver,
+			       uname()->sysname,
+			       uname()->machine);
 
       mkdirhier(export_base_name+".dir");
 
