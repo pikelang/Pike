@@ -257,7 +257,7 @@ modules/modlist.h:
 modules/modlist_headers.h: modules/modlist.h
 	touch modules/modlist_headers.h
 
-$(SRCDIR)/module.c: modules/modlist.h
+module.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in
 	cd $(SRCDIR) && autoconf

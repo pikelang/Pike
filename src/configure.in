@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.77 1997/04/11 03:45:27 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.78 1997/04/11 04:03:28 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -125,7 +125,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   AC_CACHE_VAL(pike_cv_option_$2,
   [
     CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_COMPILE([],[],pike_cv_option_$2=yes,pike_cv_option_$2=no)
+    AC_TRY_RUN([],[],pike_cv_option_$2=yes,pike_cv_option_$2=no)
   ])
   
   CFLAGS="[$]OLD_CFLAGS"
@@ -167,14 +167,16 @@ if test $cflags_is_set = no; then
   AC_SYS_COMPILER_FLAG(-fast,fast)
 
 dnl
-dnl This does not work with Digital UNIX CC/ld
-dnl (cc thinks it is ok, ld does not)
+dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
 dnl  
-dnl  AC_SYS_COMPILER_FLAG(-native,native)
-
-### Ok. This is for apcc...
-  AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt)
-  AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2)
+AC_SYS_COMPILER_FLAG(-native,native)
+dnl
+dnl ### Ok. This is for apcc...
+dnl
+dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
+dnl  
+AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt)
+AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2)
 
 
   AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc)

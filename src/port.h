@@ -163,6 +163,12 @@ static INLINE int EXTRACT_CHAR(char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #  define EXTRACT_WORD(p) (*(INT16 *)(p))
 #  define EXTRACT_INT(p) (*(INT32 *)(p))
 #else
+
+#define EXTRACT_UWORD(p) EXTRACT_UWORD_((unsigned char *)(p))
+#define EXTRACT_WORD(p) EXTRACT_WORD_((unsigned char *)(p))
+#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)(p))
+
+
 #ifdef DEBUG
 unsigned INT16 EXTRACT_UWORD(unsigned char *p);
 INT16 EXTRACT_WORD(unsigned char *p);
@@ -188,10 +194,6 @@ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
-#define EXTRACT_UWORD(p) EXTRACT_UWORD_((unsigned char *)(p))
-#define EXTRACT_WORD(p) EXTRACT_WORD_((unsigned char *)(p))
-#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)(p))
-
 #endif
 #endif
 

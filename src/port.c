@@ -509,21 +509,21 @@ int VFPRINTF(FILE *f,char *s,va_list args)
 #endif
 
 #if defined(DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
-unsigned INT16 EXTRACT_UWORD(unsigned char *p)
+unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-INT16 EXTRACT_WORD(unsigned char *p)
+INT16 EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-INT32 EXTRACT_INT(unsigned char *p)
+INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
   MEMCPY((char *)&a,p,sizeof(a));
