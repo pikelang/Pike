@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.28 2001/06/05 21:41:08 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.29 2001/06/06 11:14:11 stewa Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -31,6 +31,7 @@ static struct program *utf7_5_program = NULL, *utf7_5e_program = NULL;
 static struct program *euc_program = NULL, *sjis_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
+static struct program *std_big5_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 static struct program *std_16bite_program = NULL;
 
@@ -595,6 +596,7 @@ static void f_rfc1345(INT32 args)
 	case MODE_96: lowtrans=128; lo=160; hi=255; break;
 	case MODE_9494: lowtrans=lo=lo2=33; hi=hi2=126; break;
 	case MODE_9696: lowtrans=32; lo=lo2=160; hi=hi2=255; break;
+	case MODE_BIG5: lowtrans=32; lo=0xa1; lo2=0x40; hi=0xf9; hi2=0xfe; break;
 	default:
 	  fatal("Internal error in rfc1345\n");
 	}
@@ -638,6 +640,7 @@ static void f_rfc1345(INT32 args)
       case MODE_96: p = std_96_program; break;
       case MODE_9494: p = std_9494_program; break;
       case MODE_9696: p = std_9696_program; break;
+      case MODE_BIG5: p = std_big5_program; break;
       default:
 	fatal("Internal error in rfc1345\n");
       }
@@ -778,6 +781,32 @@ static ptrdiff_t feed_9696(const p_wchar0 *p, ptrdiff_t l,
 static void f_feed_9696(INT32 args)
 {
   f_std_feed(args, feed_9696);
+}
+
+static INT32 feed_big5(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+{
+  UNICHAR *table =
+    ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  while(l--) {
+    p_wchar0 y, x = (*p++);
+    if(x<0xa1 || x>0xf9 )
+      string_builder_putchar(&s->strbuild, x);
+    else if(l==0)
+      return 1;
+    else if((y=(*p))>=0x40 && y<=0xfe ) {
+      --l;
+      p++;
+      string_builder_putchar(&s->strbuild, table[(x-0xa1 )*(0xfe -0x40 +1)+(y-0x40 )]);
+    } else {
+      string_builder_putchar(&s->strbuild, x);
+    }
+  }
+  return 0;
+}
+
+static void f_feed_big5(INT32 args)
+{
+  f_std_feed(args, feed_big5);
 }
 
 static ptrdiff_t feed_8bit(const p_wchar0 *p, ptrdiff_t l,
@@ -1458,6 +1487,12 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_big5,tFunc(tStr,tObj), 0);
+  std_big5_program = end_program();
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
   std_misc_stor_offs = ADD_STORAGE(struct std_misc_stor);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_8bit,tFunc(tStr,tObj), 0);
@@ -1507,6 +1542,9 @@ void pike_module_exit(void)
 
   if(std_9696_program != NULL)
     free_program(std_9696_program);
+  
+  if(std_big5_program != NULL)
+    free_program(std_big5_program);
 
   if(std_8bit_program != NULL)
     free_program(std_8bit_program);

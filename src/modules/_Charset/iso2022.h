@@ -13,6 +13,7 @@ typedef p_wchar1 UNICHAR;
 #define MODE_96   1
 #define MODE_9494 2
 #define MODE_9696 3
+#define MODE_BIG5 4
 
 struct charset_def {
   char const *name;
