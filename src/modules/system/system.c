@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.164 2003/10/21 02:47:18 nilsson Exp $
+|| $Id: system.c,v 1.165 2003/12/01 20:13:37 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.164 2003/10/21 02:47:18 nilsson Exp $");
+RCSID("$Id: system.c,v 1.165 2003/12/01 20:13:37 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -1766,7 +1766,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
     for(p=res; p; p=p->ai_next)
       if(p->ai_addrlen > 0 && p->ai_addrlen <= sizeof(*addr))
 	break;
-    if(p)
+    if(p && p->ai_addr)
       MEMCPY((char *)addr, (char *)p->ai_addr, addr_len = p->ai_addrlen);
     freeaddrinfo(res);
     if(addr_len)
