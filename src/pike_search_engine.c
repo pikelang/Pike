@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine.c,v 1.10 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_search_engine.c,v 1.11 2003/04/23 13:43:08 jhs Exp $
 */
 
 /*
@@ -172,7 +172,7 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 
 #ifdef PIKE_DEBUG
   if(needlelen < 2)
-    Pike_fatal("boyer-boore-hubbe search does not work with single-character search strings!\n");
+    Pike_fatal("boyer-moore-hubbe search does not work with single-character search strings!\n");
 #endif
   
 #ifdef TUNAFISH
