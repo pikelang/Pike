@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.24 2002/02/15 13:57:24 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.25 2002/03/06 10:54:01 mast Exp $
  *
  */
 
@@ -315,10 +315,10 @@ class Node
 	my_name="<b>"+my_name+"</b>";
 
       if(node==this_object())
-	res += sprintf("%s· %s%s",
+	res += sprintf("%s·&nbsp;%s%s",
 		       a, my_name, b);
       else
-	res += sprintf("%s· <a href='%s'>%s</a>%s",
+	res += sprintf("%s·&nbsp;<a href='%s'>%s</a>%s",
 		       a, make_link(node), my_name, b);
     }
     return res;
