@@ -10,7 +10,7 @@ LD_PXDB=/dev/null
 export LD_PXDB
 
 #Special hack for SGI
-if test "${SGI_ABI:-}" = ""; then
+if test "x$SGI_ABI" = "x"; then
   SGI_ABI=-n32
 fi
 export SGI_API
