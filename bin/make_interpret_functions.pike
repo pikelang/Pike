@@ -21,7 +21,7 @@ array fixit2(array x)
     {
       if(objectp(x[e]) && ops[(string)x[e]])
       {
-	opcodes+=x[e..e+1];
+	opcodes+=x[e..e]+fixit2(x[e+1])[0];
 	array tmp=fixit2((x[e+1]/ ({ PC.Token(",") }) )[-1][0]);
 	
 	ret+=({ tmp[0] });
