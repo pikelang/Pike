@@ -40,12 +40,12 @@ int connect(string host, int port, void|int timeout)
   int end_time=time()+(timeout||60);
 
   if (closed)
-    error("Can't reopen a closed connection");
+    error("Can't reopen a closed connection.\n");
 
   DEBUGMSG("connecting to "+host+":"+port+"...\n");
 
   if(con)
-    error("Already connected to "+con->query_address());
+    error("Already connected to "+con->query_address()+".\n");
 
   con = Stdio.File();
   if(!con->connect(host, port))
@@ -94,7 +94,7 @@ void start_server(object c, object cx)
 
   DEBUGMSG("starting server\n");
   if(con)
-    error("Already connected to "+con->query_address());
+    error("Already connected to "+con->query_address()+".\n");
 
   con = c;
   con->write("Pike remote server "+PROTO_VERSION+"\n");
@@ -268,7 +268,7 @@ mixed get_result(int refno)
 {
   mixed r = finished_calls[refno];
   if (zero_type(r))
-    error("Tried to get a result too early");
+    error("Tried to get a result too early.\n");
   m_delete(finished_calls, refno);
   return r;
 }
@@ -364,7 +364,7 @@ void read_some(int ignore, string s)
     switch(data[0]) {
 
      case CTX_ERROR:
-       throw(({ "Remote error: "+data[1]+"\n", backtrace() }));
+       error( "Remote error: "+data[1]+"\n" );
       
      case CTX_CALL_SYNC:
      case CTX_CALL_ASYNC:
@@ -411,7 +411,7 @@ void read_some(int ignore, string s)
        break;
 
      default:
-       error("Unknown message");
+       error("Unknown message.\n");
     }
     if(sizeof(read_buffer) > 4) read_some(ignore,"");
   }
@@ -496,7 +496,7 @@ mixed call_sync(array data)
 {
   DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
   if(closed || want_close) {
-    error("Connection closed");
+    error("Connection closed.\n");
   }
   int refno = data[4];
 //   werror("call_sync["+con->query_address()+"]["+refno+"] starting\n");
@@ -519,7 +519,7 @@ mixed call_sync(array data)
     if (errors[refno]) {
       string e = errors[refno];
       m_delete (errors, refno);
-      throw (({"Remote error: " + e + "\n", backtrace()}));
+      error ("Remote error: " + e + ".\n");
     }
   };
   m_delete (pending_calls, refno);
@@ -542,7 +542,7 @@ mixed call_sync(array data)
     DEBUGMSG("connection closed in sync call " + refno + "\n");
     catch(get_result(refno));
     if (!nice)
-      error("Could not read");
+      error("Could not read.\n");
     else
       return UNDEFINED;
   }
@@ -557,7 +557,7 @@ void call_async(array data)
 {
   DEBUGMSG("call_async "+ctx->describe(data)+"\n");
   if(closed || want_close)
-    error("Connection closed");
+    error("Connection closed.\n");
   string s = encode_value(data);
   send(sprintf("%4c%s", sizeof(s), s));
 }

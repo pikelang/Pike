@@ -43,7 +43,7 @@ void got_connection(object f)
   object con = Connection(0, max_call_threads);
   object ctx = Context(gethostname()+"-"+portno);
   if (!c)
-    error("accept failed");
+    error("accept failed\n");
   con->start_server(c, ctx);
   ctx->set_server_context(sctx, con);
   connections += ({ con });
@@ -58,10 +58,10 @@ void create(string host, int p, void|int _max_call_threads)
   if(host)
   {
     if(!port->bind(p, got_connection, host))
-      throw(({"Failed to bind to port\n", backtrace()}));
+      error("Failed to bind to port\n");
   }
   else if(!port->bind(p, got_connection))
-    throw(({"Failed to bind to port\n", backtrace()}));
+    error("Failed to bind to port\n");
 
   DEBUGMSG("listening to " + host + ":" + p + "\n");
 

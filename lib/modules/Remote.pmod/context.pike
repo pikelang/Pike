@@ -136,7 +136,7 @@ mixed decode(array a)
   // werror(sprintf("decode(%O)\n", a));
   switch(a[0]) {
   case CTX_ERROR:
-    throw(({ "Remote error: "+a[1]+"\n", backtrace() }));
+    error( "Remote error: "+a[1]+"\n" );
   case CTX_OTHER:
     return a[1];
   case CTX_OBJECT:
@@ -160,26 +160,26 @@ array encode_call(object|string o, string|function f, array args, int type)
       return ({ type, encode(o), f, encode(args), counter++ });
     else
       error("If the first argument is an object, "
-	    "the second must be a string or zero");
+	    "the second must be a string or zero.\n");
   else if(stringp(o))
     if(stringp(f) || !f)
       return ({ type, ({ CTX_OBJECT, o }), f, encode(args), counter++ });
     else
       error("If the first argument is an object reference, "
-	    "the second must be a string or zero");
+	    "the second must be a string or zero.\n");
   else if(o)
-    error("Error in arguments");
+    error("Error in arguments.\n");
   else if(functionp(f)||programp(f))
     return ({ type, 0, encode(f), encode(args), counter++ });
   else if(stringp(f))
     return ({ type, 0, ({ CTX_FUNCTION, f }), encode(args), counter++ });
-  error("Error in arguments");
+  error("Error in arguments.\n");
 }
 
 function|object decode_call(array data)
 {
   if((data[0] != CTX_CALL_SYNC) && (data[0] != CTX_CALL_ASYNC))
-    error("This is not a call");
+    error("This is not a call.\n");
   if(data[1])
   {
     string id = data[1][1];
@@ -212,7 +212,7 @@ function|object decode_call(array data)
 int decode_existp(array data)
 {
   if(data[0] != CTX_EXISTS)
-    error("This is not an exists check");
+    error("This is not an exists check.\n");
   if(data[1])
   {
     string id = data[1][1];

@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.139 2002/03/12 13:54:10 grubba Exp $
+// $Id: module.pmod,v 1.140 2002/03/12 14:06:31 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -147,12 +147,10 @@ class File
 #define CHECK_OPEN()								\
     if(!_fd)									\
     {										\
-      throw(({									\
-	"Stdio.File(): line "+__LINE__+" on closed file.\n"+			\
-	  (__closed_backtrace ? 						\
+      error( "Stdio.File(): line "+__LINE__+" on closed file.\n" +		\
+	     (__closed_backtrace ? 						\
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :	\
-	   "This file has never been open.\n" ),				\
-	  backtrace()}));							\
+	   "This file has never been open.\n" ) );				\
       										\
     }
 #else
@@ -698,7 +696,7 @@ class File
 
 #if defined(__STDIO_DEBUG) && !defined(__NT__)
     if(!::peek())
-      throw( ({"Read callback with no data to read!\n",backtrace()}) );
+      error( "Read callback with no data to read!\n" );
 #endif
 
     string s=::read(8192,1);
@@ -1533,10 +1531,7 @@ string read_file(string filename,void|int start,void|int len)
   // Disallow devices and directories.
   Stat st;
   if (f->stat && (st = f->stat()) && !st->isreg) {
-    throw(({ sprintf("Stdio.read_file(): File %O is not a regular file!\n",
-		     filename),
-	     backtrace()
-    }));
+    error( "Stdio.read_file(): File %O is not a regular file!\n", filename );
   }
 
   switch(query_num_arg())
@@ -1588,10 +1583,7 @@ string read_bytes(string filename, void|int start,void|int len)
   // Disallow devices and directories.
   Stat st;
   if (f->stat && (st = f->stat()) && !st->isreg) {
-    throw(({sprintf("Stdio.read_bytes(): File \"%s\" is not a regular file!\n",
-		    filename),
-	    backtrace()
-    }));
+    error( "Stdio.read_bytes(): File \"%s\" is not a regular file!\n", filename );
   }
 
   switch(query_num_arg())
