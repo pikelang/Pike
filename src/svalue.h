@@ -137,6 +137,9 @@ struct svalue
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
+/* Pike 0.6 compatibility... */
+#define add_ref(X)	((X)->refs++)
+
 #define is_gt(a,b) is_lt(b,a)
 #define IS_ZERO(X) ((X)->type==T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
 
