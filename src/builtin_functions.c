@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.250 2000/04/07 19:07:55 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.251 2000/04/08 14:51:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5227,6 +5227,45 @@ void f_filter(INT32 args)
    }
 }
 
+/* map(), map_array() and filter() inherit sideeffects from their
+ * second argument.
+ */
+static node *fix_map_node_info(node *n)
+{
+  int argno;
+  node **cb_;
+  int node_info = 0;
+
+  /* Note: argument 2 has argno 1. */
+  for (argno = 1; cb_ = my_get_arg(&_CDR(n), argno); argno++) {
+    node *cb = *cb_;
+
+    if ((cb->token == F_CONSTANT) &&
+	(cb->u.sval.type == T_FUNCTION) &&
+	(cb->u.sval.subtype == FUNCTION_BUILTIN)) {
+      if (cb->u.sval.u.efun->optimize == fix_map_node_info) {
+	/* map(), map_array() or filter(). */
+	continue;
+      }
+      node_info = cb->u.sval.u.efun->flags & OPT_SIDE_EFFECT;
+    } else {
+      /* Could be anything. Assume worst case. */
+      node_info = OPT_SIDE_EFFECT;
+    }
+    break;
+  }
+
+  if (!cb_) {
+    yyerror("Too few arguments to map() or filter()!\n");
+    node_info = OPT_SIDE_EFFECT;
+  }
+
+  n->node_info |= node_info;
+  n->tree_info |= node_info;
+
+  return 0;	/* continue optimization */
+}
+
 void f_enumerate(INT32 args)
 {
    struct array *d;
@@ -6038,8 +6077,8 @@ void init_builtin_efuns(void)
         tFuncV(IN tInt0, tMix, OUTMIX), \
 	tFuncV(IN, tVoid, OUTMIX) )
 
-  ADD_EFUN("map",f_map,
-	   tOr7( tMapStuff(tArr(tSetvar(1,tMix)),tVar(1),
+  ADD_EFUN2("map", f_map,
+	    tOr7(tMapStuff(tArr(tSetvar(1,tMix)),tVar(1),
 			   tArr(tVar(2)),
 			   tArr(tInt01),
 			   tArr(tObj),
@@ -6079,14 +6118,14 @@ void init_builtin_efuns(void)
 		 tFuncV(tArr(tStringIndicable) tString,tMix,tMix),
 
 		 tFuncV(tObj,tMix,tMix) ),
-	   OPT_TRY_OPTIMIZE);
+	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
   
-  ADD_EFUN("filter",f_filter,
-	   tOr3( tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
+  ADD_EFUN2("filter", f_filter,
+	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
 			tMixed,tVar(1)),
 		 tFuncV(tOr(tProgram,tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
-	   OPT_TRY_OPTIMIZE);
+	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
 
   ADD_EFUN("enumerate",f_enumerate,
 	   tOr8(tFunc(tIntPos,tArr(tInt)),
