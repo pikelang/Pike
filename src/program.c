@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.37 1997/08/30 18:35:53 grubba Exp $");
+RCSID("$Id: program.c,v 1.38 1997/09/08 01:04:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -621,7 +621,7 @@ struct program *end_program(void)
       {
 	if(funp->flags & ID_PRIVATE) continue;
 	fun=ID_FROM_PTR(prog, funp);
-	if(fun->func.offset == -1) continue; /* prototype */
+	/* if(fun->func.offset == -1) continue; prototype */
 
 	/* check for multiple definitions */
 	for(t=0;t>=0 && t<(int)prog->num_identifier_references;t++)
@@ -632,7 +632,7 @@ struct program *end_program(void)
 	  if(t==i) continue;
 	  funpb=prog->identifier_references+t;
 	  if(funpb->flags & (ID_HIDDEN|ID_STATIC)) continue;
-	  if((funpb->flags & ID_INHERITED) && t<i) continue;
+	  if((funpb->flags & ID_INHERITED) && t>i) continue;
 	  funb=ID_FROM_PTR(prog,funpb);
 	  if(funb->func.offset == -1) continue; /* prototype */
 	  if(fun->name==funb->name) t=-10;
@@ -1315,10 +1315,18 @@ static int low_find_shared_string_identifier(struct pike_string *name,
       if(funp->flags & ID_INHERITED)
       {
         if(funp->flags & ID_PRIVATE) continue;
-	for(t=i+1; t>=0 && t<(int)prog->num_identifier_references; t++)
+	for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
 	{
-	  if(is_same_string(fun->name, ID_FROM_INT(prog, t)->name))
-	    t=-10;
+	  struct reference *funpb;
+	  struct identifier *funb;
+	  
+	  if(t==i) continue;
+	  funpb=prog->identifier_references+t;
+	  if(funpb->flags & (ID_HIDDEN|ID_STATIC)) continue;
+	  if((funpb->flags & ID_INHERITED) && t>i) continue;
+	  funb=ID_FROM_PTR(prog,funpb);
+	  /* if(funb->func.offset == -1) continue; * prototype */
+	  if(fun->name==funb->name) t=-10;
 	}
 	if(t < 0) continue;
       }
