@@ -24,7 +24,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.1 2000/03/26 20:43:08 kinkie Exp $");
+RCSID("$Id: sybase.c,v 1.2 2000/05/03 20:22:44 neotron Exp $");
 
 #ifdef HAVE_SYBASE
 
@@ -1231,7 +1231,7 @@ void pike_module_init (void) {
   add_function("affected_rows",f_affected_rows,"function(void:int)",0);
   add_function("fetch_fields",f_fetch_fields,
                "function(void:array(int|mapping(string:mixed)))",
-               0);q
+               0);
 #endif
 
   /* TODO */
