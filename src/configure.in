@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.728 2003/08/06 16:36:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.729 2003/08/12 20:38:43 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1316,9 +1316,6 @@ AC_ARG_WITH(ssleay,
 AC_ARG_WITH(mysql, MY_DESCR([--without-mysql],
 			    [disable support for the Mysql database]),
 	    [],[with_mysql=yes])
-AC_ARG_WITH(gif-rle, MY_DESCR([--with-gif-rle],
-			      [use kind-of-rle packing instead of lzw]))
-AC_ARG_WITH(rsaref, MY_DESCR([--with-rsaref=path],[Support for RSAREF]))
 AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
 	    [Support for running with valgrind]), [
   if test "x$with_valgrind" = "xyes"; then
@@ -1458,9 +1455,6 @@ else
   if test "x$with_copt" != "xno"; then
     PIKE_MSG_WARN([--without-copt is advisable when using valgrind!])
   fi
-
-  CFLAGS=" -mcpu=i486 -march=i486 ${CFLAGS-}";
-  PIKE_MSG_WARN([-mcpu=486 forced since valgrind is used])
 fi
 export VALGRIND VALGRINDARGS
 AC_SUBST(VALGRIND)
