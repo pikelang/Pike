@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.6 1998/05/09 22:38:58 noring Exp $
+// $Id: Table.pmod,v 1.7 1998/06/18 13:21:34 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -156,6 +156,7 @@ class table {
   object where(array(int|string)|int|string cs, function f, mixed ... args)
   {
     array t = ({});
+    f = f || lambda(mixed x) { return x; };
     cs = remap(arrayp(cs)?cs:({ cs }));
     foreach(table, mixed row)
       if(f(@rows(row, cs), @args))
