@@ -364,6 +364,18 @@ ObjectType parseObject() {
   return obj;
 }
 
+TypeType parseTypeType()
+{
+  eat("type");
+  TypeType t = TypeType();
+  if (peekToken() == "(") {
+    readToken();
+    t->subtype = parseType();
+    eat(")");
+  }
+  return t;
+}
+
 Type parseType() {
   string s = peekToken();
   switch(s) {
@@ -382,6 +394,9 @@ Type parseType() {
     case "void":
       eat("void");
       return VoidType();
+    case "zero":
+      eat("zero");
+      return ZeroType();
 
     case "array":
       return parseArray();
@@ -395,6 +410,8 @@ Type parseType() {
       return parseMultiset();
     case "object":
       return parseObject();
+    case "type":
+      return parseTypeType();
     case ".":
       return parseObject();
     default:
