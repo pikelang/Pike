@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.102 1998/05/22 11:49:29 grubba Exp $");
+RCSID("$Id: file.c,v 1.103 1998/05/27 20:55:35 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -713,7 +713,7 @@ static void PIKE_CONCAT(file_,X) (int fd, void *data)		\
 static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
 {								\
   if(!args)							\
-    error("Too few arguments to %s\n",#X);			\
+    error("Too few arguments to file_set_%s\n",#X);		\
   assign_svalue(& THIS->X, sp-args);				\
   if(IS_ZERO(sp-args))						\
   {								\
