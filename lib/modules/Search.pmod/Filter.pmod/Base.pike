@@ -1,5 +1,5 @@
 //! The MIME content types this class can filter.
-array(string) contenttypes = ({ });
+constant contenttypes = ({ });
 
 //! 
 void set_content(string);
