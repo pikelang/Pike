@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.15 2001/01/15 15:19:47 nilsson Exp $ */
+/* $Id: socktest.pike,v 1.16 2001/02/03 03:43:36 hubbe Exp $ */
 
 
 import Stdio;
@@ -337,7 +337,7 @@ void finish()
 	}
 	break;
 
-#if constant(Stdio.__HAVE_OOB__)
+#if Stdio.__OOB__ >= 3
     case 49:
       werror("Testing out-of-band data. ");
       start();

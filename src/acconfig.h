@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.75 2001/01/30 23:37:17 hubbe Exp $
+ * $Id: acconfig.h,v 1.76 2001/02/03 03:43:34 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -401,6 +401,15 @@
 #undef USE_FCNTL_O_NDELAY
 #undef USE_FCNTL_FNDELAY
 #undef USE_FCNTL_O_NONBLOCK
+
+/* How well is OOB TCP working?
+ * -1 = unknown
+ *  0 = doesn't seem to be working at all
+ *  1 = very limited functionality
+ *  2 = should be working as long as you are cautious
+ *  3 = works excellently
+ */
+#define PIKE_OOB_WORKS -1
 
 /* We want to use errno later */
 #ifdef _SGI_SPROC_THREADS
