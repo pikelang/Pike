@@ -4,27 +4,41 @@ array modules=({});
 array chapters=({});
 array tests=({});
 
+int mode=0;
+
 void finish_test()
 {
    if (!name) return;
    int m1,m2,m3;
-   write("void test_"+(m1=sizeof(modules))+
-	 "_"+(m2=sizeof(chapters))+
-	 "_"+(m3=sizeof(tests))+"()\n"
-	 "{\n"
-	 "   write(\"  test: "+name+"...\");\n"
-	 "   mixed err=catch {\n"+
-	 test+
-	 "   };\n"
-	 "   if (stringp(err))\n"
-	 "      write(err+\"\\n\");\n"
-	 "   else\n"
-	 "   {\n"
-	 "      failed++;\n"
-	 "      err=({err[0],err[1][sizeof(err[1])-2..]});\n"
-	 "      write(\"\\n\"+master()->describe_backtrace(err));\n"
-	 "   }\n"
-	 "}\n\n");
+
+   switch (mode)
+   {
+      case 0:
+	 write("void test_"+(m1=sizeof(modules))+
+	       "_"+(m2=sizeof(chapters))+
+	       "_"+(m3=sizeof(tests))+"()\n"
+	       "{\n"
+	       "   write(\"  test: "+name+"...\");\n"
+	       "   mixed err=catch {\n"+
+	       test+
+	       "   };\n"
+	       "   if (stringp(err))\n"
+	       "      write(err+\"\\n\");\n"
+	       "   else\n"
+	       "   {\n"
+	       "      failed++;\n"
+	       "      err=({err[0],err[1][sizeof(err[1])-2..]});\n"
+	       "      write(\"\\n\"+master()->describe_backtrace(err));\n"
+	       "   }\n"
+	       "}\n\n");
+	 break;
+      case 1:
+	 test=cpp("#define ok(S) return \"ok\"\n"
+		  "#define fail(S) return (S)\n"+
+		  replace(test,"ok()","ok(\"ok\")"));
+	 write("test_any([["+test+"]], \"ok\")\n");
+	 break;
+   }
    name=0;
 }
 
@@ -43,16 +57,19 @@ void finish_chapter()
    if (!chapter) return;
    finish_test();
    int m1,m2;
-   write("void test_chapter_"+(m1=sizeof(modules))
-	 +"_"+(m2=sizeof(chapters))+"()\n"
-	 "{\n"
-	 "   int infailed=failed,inisok=isok;\n"
-	 "   write(\" chapter: "+chapter+"\\n\");\n");
-   foreach (indices(tests),int n)
-      write("   test_"+m1+"_"+m2+"_"+(n+1)+"();\n");
-   write("   write(\" tests failed: \"+(failed-infailed)+\"\\n\"\n"
-	 "         \" tests ok:     \"+(isok-inisok)+\"\\n\");\n");
-   write("}\n\n");
+   if (!mode)
+   {
+      write("void test_chapter_"+(m1=sizeof(modules))
+	    +"_"+(m2=sizeof(chapters))+"()\n"
+	    "{\n"
+	    "   int infailed=failed,inisok=isok;\n"
+	    "   write(\" chapter: "+chapter+"\\n\");\n");
+      foreach (indices(tests),int n)
+	 write("   test_"+m1+"_"+m2+"_"+(n+1)+"();\n");
+      write("   write(\" tests failed: \"+(failed-infailed)+\"\\n\"\n"
+	    "         \" tests ok:     \"+(isok-inisok)+\"\\n\");\n");
+      write("}\n\n");
+   }
    tests=({});
    werror(" generating chapter: "+chapter+"\n");
 }
@@ -69,15 +86,18 @@ void finish_module()
    if (!module) return;
    finish_chapter();
    int m;
-   write("void test_module_"+(m=sizeof(modules))+"()\n"
-	 "{\n"
-	 "   int infailed=failed,inisok=isok;\n"
-	 "   write(\"module: "+module+"\\n\");\n");
-   foreach (indices(chapters),int n)
-      write("   test_chapter_"+m+"_"+(n+1)+"();\n");
-   write("   write(\"tests failed: \"+(failed-infailed)+\"\\n\"\n"
-	 "         \"tests ok:     \"+(isok-inisok)+\"\\n\");\n");
-   write("}\n\n");
+   if (!mode)
+   {
+      write("void test_module_"+(m=sizeof(modules))+"()\n"
+	    "{\n"
+	    "   int infailed=failed,inisok=isok;\n"
+	    "   write(\"module: "+module+"\\n\");\n");
+      foreach (indices(chapters),int n)
+	 write("   test_chapter_"+m+"_"+(n+1)+"();\n");
+      write("   write(\"tests failed: \"+(failed-infailed)+\"\\n\"\n"
+	    "         \"tests ok:     \"+(isok-inisok)+\"\\n\");\n");
+      write("}\n\n");
+   }
    chapters=({});
 }
 
@@ -90,12 +110,13 @@ void new_module(string name,string file,int line)
 
 int main(int ac,array am)
 {
-   int mode=0;
    int n;
+
+   if (ac>=2 && am[1]=="-t") mode=1,am=am[..0]+am[2..];
 
    if (ac<2) 
    {
-      werror("usage: mktests <file>\n");
+      werror("usage: mktests [-t] <file>\n");
       return 1;
    }
 
@@ -140,7 +161,7 @@ int main(int ac,array am)
 	 write("   test_module_"+(n+1)+"();\n");
       write("   write(\"total tests failed: \"+failed+\"\\n\"\n"
 	    "         \"total tests ok:     \"+isok+\"\\n\");\n"
-	    "   return !failed;\n"
+	    "   return !!failed;\n"
 	    "}\n\n");
    }
 }

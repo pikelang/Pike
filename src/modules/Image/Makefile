@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.9 1998/04/16 00:38:52 mirar Exp $
+# $Id: Makefile,v 1.10 1998/04/16 04:33:13 mirar Exp $
 
 DOCFILES = doc-header \
    image.c \
@@ -50,3 +50,11 @@ $(WMMLDOCPLACE): $(DOCFILES) mkwmml.pike Makefile
 
 wmml:	$(WMMLDOCPLACE)
 
+testsuite.in: testsuite.in.in mktests.pike
+	pike mktests.pike -t testsuite.in.in >testsuite.in
+
+tests.pike: testsuite.in.in mktests.pike
+	pike mktests.pike testsuite.in.in >tests.pike
+
+test:	tests.pike
+	pike tests.pike
