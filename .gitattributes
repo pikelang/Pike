@@ -20,6 +20,7 @@ testfont binary
 /bin/mkpeep.pike foreign_ident
 /bin/test_pike.pike foreign_ident
 /lib/master.pike foreign_ident
+/lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/ADT.pmod/queue.pike foreign_ident
 /lib/modules/ADT.pmod/struct.pike foreign_ident
