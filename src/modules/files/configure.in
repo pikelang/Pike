@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.47 1998/05/22 11:49:58 grubba Exp $
+# $Id: configure.in,v 1.48 1998/05/22 15:10:46 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -33,7 +33,7 @@ AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
 if test x$ac_cv_func_readdir_r = xyes ; then
   AC_MSG_CHECKING(if readdir_r takes 2(Solaris & HPUX) or 3(Posix) arguments)
   AC_CACHE_VAL(pike_cv_func_posix_readdir_r, [
-    AC_TRY_RUN([
+    AC_TRY_COMPILE([
 /* For _REENTRANT */
 #include "machine.h"
 #ifndef POSIX_SOURCE
@@ -58,14 +58,11 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 #ifdef HAVE_SYS_SYSPROTO_H
 #include <sys/sysproto.h>
 #endif
-
-int main()
-{
+], [
   exit(0);
 
   /* NOT REACHED */
   readdir_r((DIR *)0, (struct dirent *)0);
-}
 ],pike_cv_func_posix_readdir_r=no,pike_cv_func_posix_readdir_r=yes)
   ])
 
@@ -225,7 +222,7 @@ else :; fi
 if test x$ac_cv_func_statfs = xyes ; then
   AC_MSG_CHECKING(if statfs takes 2(BSD) or 4(SysV) arguments)
   AC_CACHE_VAL(pike_cv_func_sysv_statfs, [
-    AC_TRY_RUN([
+    AC_TRY_COMPILE([
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -251,9 +248,7 @@ if test x$ac_cv_func_statfs = xyes ; then
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif
-
-int main()
-{
+], [
   exit(0);
 
   /* NOT REACHED */
@@ -264,7 +259,6 @@ int main()
    *	/grubba 1998-05-17
    */
   statfs((char *)0, (struct statfs *)0, 0, 0);
-}
 ],pike_cv_func_sysv_statfs=yes,pike_cv_func_sysv_statfs=no)
   ])
   if test x$pike_cv_func_sysv_statfs = xyes ; then
