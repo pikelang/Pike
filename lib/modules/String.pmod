@@ -327,7 +327,7 @@ static private class _Elite
       "a":({"4"}),
       "b":({"8"}),
       "c":({"("}),
-      "d":({"|)"}),
+      "d":({"|)","|]"}),
       "e":({"3"}),
       "f":({}),
       "g":({"6"}),
@@ -364,6 +364,47 @@ static private class _Elite
       "0":({"()","O"}),
    ]);
 
+// 8 bit variants
+   mapping(string:array(string)) elite_char8=
+   ([
+      "!":"¡"/1,
+      "?":"¿"/1,
+      "0":"º"/1,
+      "1":"¹"/1,
+      "2":"²"/1,
+      "3":"³"/1,
+      "a":"àáâãäåª"/1,
+      "b":"şß"/1,
+      "c":"ç¢©"/1,
+      "d":"ğ"/1,
+      "e":"èéêë"/1,
+      "f":"£"/1,
+      "i":"ìíîï "/1,
+      "n":"ñ"/1,
+      "o":"òóôõöøº"/1,
+      "p":"ş"/1,
+      "r":"®"/1,
+      "s":"§"/1,
+      "u":"ùúûüµ"/1,
+      "x":"÷"/1,
+      "y":"ıÿ¥"/1,
+      "A":"ÀÁÂÃÄÅª"/1,
+      "B":"Şß"/1,
+      "C":"Ç¢©"/1,
+      "D":"Ğ"/1,
+      "E":"ÈÉÊË"/1,
+      "F":"£"/1,
+      "I":"ÌÍÎÏ "/1,
+      "N":"Ñ"/1,
+      "O":"ÒÓÔÕÖØº"/1,
+      "P":"Ş"/1,
+      "R":"®"/1,
+      "S":"§"/1,
+      "U":"ÙÚÛÜµ"/1,
+      "X":"÷"/1,
+      "Y":"İÿ¥"/1,
+   ]);
+
 // how do I mark up this correctly? It's String.Elite.foobar.
 
 // translates one word to 1337. The optional
@@ -373,13 +414,36 @@ static private class _Elite
 // for instance from "k" to "|<", but no language
 // translation (no "cool" to "kewl").
 
-   string elite_word(string in,void|int leetp)
+   string elite_word(string in,void|int leetp,void|int eightbit)
    {
       if (zero_type(leetp)) leetp=50; // aim for 50% leetness
       else if (!leetp) 
 	 return replace(in,"\1001\1002\1003"/1,"fpl"/1);
 
-      array v=rows(elite_char,lower_case(in)/1);
+      array v;
+      switch (eightbit)
+      {
+	 case 0:
+	    v=rows(elite_char,
+		   lower_case(in)/1);
+	    break;
+	 case 2:
+	    v=rows(elite_char8,
+		   lower_case(in)/1);
+	    break;
+	 case 1:
+	    v=map(in/1,
+		  lambda(string s)
+		  {
+		     return 
+			( elite_char[s]||({}) ) |
+			( elite_char8[s]||({}) );
+		  });
+	    break;
+	 default:
+	    error("argument 3: illegal value (expected eightbit 0..2)\n");
+      }
+		  
    
       multiset leet=(<>);
       multiset unleet=(<>);
@@ -427,7 +491,7 @@ static private class _Elite
 // (ok->k, dude->dood, -ers -> -orz), then
 // calls elite_word on the resulting words.
 
-   string elite_string(string in,void|int leetp)
+   string elite_string(string in,void|int leetp,void|int eightbit)
    {
       if (zero_type(leetp)) leetp=50; // aim for 50% leetness
 
@@ -466,7 +530,7 @@ static private class _Elite
 	 in=res+in;
       }
    
-      in=map(in/" "-({""}),elite_word,leetp)*" ";
+      in=map(in/" "-({""}),elite_word,leetp,eightbit)*" ";
 
       return in;
    }
