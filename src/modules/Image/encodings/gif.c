@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.42 1998/04/16 23:47:54 hubbe Exp $ */
+/* $Id: gif.c,v 1.43 1998/04/29 01:27:20 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.42 1998/04/16 23:47:54 hubbe Exp $
+**!	$Id: gif.c,v 1.43 1998/04/29 01:27:20 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.42 1998/04/16 23:47:54 hubbe Exp $");
+RCSID("$Id: gif.c,v 1.43 1998/04/29 01:27:20 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1595,13 +1595,6 @@ static void _gif_decode_lzw(unsigned char *s,
 {
    struct neo_colortable *nct;
 
-   struct lzwc
-   {
-      unsigned short prev;
-      unsigned short len;
-      unsigned short c;
-   } *c;
-
    rgb_group white={255,255,255},black={0,0,0};
 
    int bit=0,bits=obits+1;
@@ -1647,7 +1640,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
       bit-=bits; 
 
 #ifdef GIF_DEBUG
-      if (debug) fprintf(stderr,"code=%d 0x%x bits=%d\n",n,n,bits);
+      if (debug) fprintf(stderr,"code=%d 0x%02x bits=%d\n",n,n,bits);
 #endif
 
       if (n==m) 
@@ -2292,6 +2285,244 @@ void image_gif__encode(INT32 args)
    f_add(n); /* add the strings */
 }
 
+/** lzw stuff ***************************************************/
+
+static void image_gif_lzw_encode(INT32 args)
+{
+   struct gif_lzw lzw;
+
+   if (!args || sp[-args].type!=T_STRING)
+      error("Image.GIF.lzw_encode(): illegal argument\n");
+
+   image_gif_lzw_init(&lzw,8);
+   if (lzw.broken) error("out of memory\n");
+
+   if (args>=2 && !IS_ZERO(sp+1-args))
+      lzw.earlychange=1;
+
+   if (args>=3 && !IS_ZERO(sp+2-args))
+      lzw.reversebits=1;
+   
+   image_gif_lzw_add(&lzw,
+		     (unsigned char *)sp[-args].u.string->str,
+		     sp[-args].u.string->len);
+
+   image_gif_lzw_finish(&lzw);
+   
+   if (lzw.broken) error("out of memory\n");
+
+   pop_n_elems(args);
+   push_string(make_shared_binary_string((char*)lzw.out,lzw.outpos));
+}
+
+static void image_gif_lzw_decode(INT32 args)
+{
+   unsigned char *s,*dest0,*dest;
+   int earlychange=0;
+   unsigned long len,n;
+   signed long clearcode,endcode,last,q,bit,m,dlen,dlen0;
+   unsigned int mask;
+   struct lzwc *c;
+   signed long bits,obits=8;
+   signed long maxcode;
+   int reversebits=0;
+
+   if (!args || sp[-args].type!=T_STRING)
+      error("Image.GIF.lzw_encode(): illegal argument\n");
+
+   s=(unsigned char*)sp[-args].u.string->str;
+   len=(unsigned long)sp[-args].u.string->len;
+
+   if (args>=2 && !IS_ZERO(sp+1-args))
+      earlychange=1;
+   if (args>=3 && !IS_ZERO(sp+2-args))
+      reversebits=1;
+
+   if (len<1)
+   {
+      pop_n_elems(args);
+      push_string(make_shared_binary_string("",0));
+      return;
+   }
+
+   clearcode=(1<<obits);
+   endcode=clearcode+1;
+   bits=obits+1;
+   mask=(unsigned short)((1<<bits)-1);
+   m=endcode;
+   maxcode=(1<<bits);
+
+   last=clearcode;
+
+   c=(struct lzwc*)xalloc(sizeof(struct lzwc)*MAX_GIF_CODE);
+
+   dest0=(unsigned char*)malloc(dlen0=len*4);
+   if (!dest0)
+   {
+      free(c);
+      error("Image.GIF.lzw_decode: out of memory\n");
+   }
+   dest=dest0; dlen=dlen0;
+
+   for (n=0; n<clearcode; n++)
+      c[n].prev=0xffff,c[n].len=1,c[n].c=n;
+   c[clearcode].len=0; 
+   c[endcode].len=0;   
+
+   if (len>1)
+   {
+      if (reversebits) q=s[1]|(s[0]<<8);
+      else q=s[0]|(s[1]<<8);
+      bit=16;
+      s+=2; len-=2;
+   }
+   else
+   {
+      q=s[0];
+      bit=8;
+      s+=1; len-=1;
+   }
+
+   while (bit>0)
+   {
+      /* get next code */
+
+#ifdef GIF_DEBUG
+      fprintf(stderr,"q=0x%04x bit=%2d bits=%2d ... ",q,bit,bits);
+#endif
+
+      if (reversebits)
+	 n=(q>>(bit-bits))&mask; 
+      else
+      {
+	 n=q&mask; 
+	 q>>=bits;
+      }
+      bit-=bits; 
+
+#ifdef GIF_DEBUG
+      fprintf(stderr,"code=%3d 0x%02x bits=%d bit=%2d *s=0x%02x len=%d\n",n,n,bits,bit,*s,len);
+#endif
+
+      if (n==m) 
+      {
+	 c[n].prev=last;
+	 c[n].c=c[last].c;
+	 c[n].len=c[last].len+1;
+      }
+      else if (n>=m) 
+      {
+#ifdef GIF_DEBUG
+	 fprintf(stderr,"cancel; illegal code, %d>=%d at %lx\n",n,m,s);
+#endif
+	 break; /* illegal code */
+      }
+      if (!c[n].len) 
+	 if (n==clearcode) 
+	 {
+	    bits=obits+1;
+	    mask=(1<<bits)-1;
+	    m=endcode;
+	    last=clearcode;
+	    maxcode=1<<bits;
+	 }
+	 else 
+	 {
+	    /* endcode */
+#ifdef GIF_DEBUG
+	    fprintf(stderr,"endcode at %lx\n",s);
+#endif
+	    break; 
+	 }
+      else 
+      {
+	 struct lzwc *myc;
+	 unsigned char *d;
+	 unsigned short lc;
+	 myc=c+n;
+	 
+	 if (myc->len>dlen) 
+	 {
+	    signed long p;
+	    p=(dest-dest0);
+
+#ifdef GIF_DEBUG
+	    fprintf(stderr,"increase at dlen left=%lu p=%ld dlen0=%d\n",dlen,p,dlen0);
+#endif
+	    dest=realloc(dest0,dlen0*2);
+	    if (!dest)
+	    {
+	       dest=dest0+p;
+	       break; /* out of memory */
+	    }
+	    dest0=dest;
+	    dest=dest0+p;
+	    dlen+=dlen0;
+	    dlen0+=dlen0;
+
+#ifdef GIF_DEBUG
+	    fprintf(stderr,"increase at dlen left=%lu p=%ld dlen0=%d\n",dlen,dest-dest0,dlen0);
+#endif
+	 }
+
+	 d=(dest+=myc->len);
+	 dlen-=myc->len;
+	 
+	 for (;;)
+	 {
+	    lc=myc->c;
+	    *(--d)=(unsigned char)lc;
+	    if (myc->prev==0xffff) break;
+	    myc=c+myc->prev;
+	 }
+
+	 if (last!=clearcode)
+	 {
+	    c[m].prev=last;
+	    c[m].len=c[last].len+1;
+	    c[m].c=lc;
+	 }
+	 last=n;
+
+	 m++;
+	 if (m>=maxcode - earlychange) 
+	    if (m==MAX_GIF_CODE - earlychange)
+	    {
+#ifdef GIF_DEBUG
+	       fprintf(stderr,"too many codes at %lx\n",s);
+#endif
+	       m--;
+	       bits=12;
+	    }
+	    else 
+	    { 
+	       bits++; 
+	       mask=(1<<bits)-1;
+	       maxcode<<=1; 
+	       if (maxcode>MAX_GIF_CODE) 
+	       {
+#ifdef GIF_DEBUG
+		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
+#endif
+		  break; /* error! too much codes */
+	       }
+	    }
+      }
+
+      if (reversebits)
+	 while (bit<bits && len) 
+	    q=(q<<8)|(*s),bit+=8,s++,len--;
+      else
+	 while (bit<bits && len) 
+	    q|=((*s)<<bit),bit+=8,s++,len--;
+   }
+   free(c);
+
+   pop_n_elems(args);
+   push_string(make_shared_binary_string((char*)dest0,dest-dest0));
+   free(dest0);
+}
+
 /** module *******************************************/
 
 struct program *image_encoding_gif_program=NULL;
@@ -2333,6 +2564,11 @@ void init_image_gif(void)
 		"function(array:string)",0);
    add_function("_encode_extension",image_gif__encode_extension,
 		"function(array:string)",0);
+
+   add_function("lzw_encode",image_gif_lzw_encode,
+		"function(string,void|int,void|int:string)",0);
+   add_function("lzw_decode",image_gif_lzw_decode,
+		"function(string,void|int,void|int:string)",0);
 
    /** constants **/
 

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.4 1997/11/05 03:42:50 mirar Exp $
+**!	$Id: gif_lzw.c,v 1.5 1998/04/29 01:27:22 mirar Exp $
 */
 
 #include "global.h"
@@ -12,9 +12,6 @@
 
 static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 {
-   int bits,bitp;
-   unsigned char c;
-
    if (lzw->outpos+4>=lzw->outlen)
    {
       unsigned char *new;
@@ -23,31 +20,60 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
       lzw->out=new;
    }
 
-   bitp=lzw->outbit;
-   c=lzw->lastout;
-   bits=lzw->codebits;
-   if (bits>12) bits=12;
-
-   while (bits)
+   if (!lzw->reversebits)
    {
-      c|=(codeno<<bitp);
-      if (bits+bitp>=8)
+      int bits,bitp;
+      unsigned char c;
+
+      bitp=lzw->outbit;
+      c=(unsigned char)lzw->lastout;
+      bits=lzw->codebits;
+      if (bits>12) bits=12;
+
+      while (bits)
       {
-	 bits-=8-bitp;
-	 codeno>>=8-bitp;
-	 bitp=0;
-	 lzw->out[lzw->outpos++]=c;
-	 c=0;
+	 c|=(codeno<<bitp);
+	 if (bits+bitp>=8)
+	 {
+	    bits-=8-bitp;
+	    codeno>>=8-bitp;
+	    bitp=0;
+	    lzw->out[lzw->outpos++]=c;
+	    c=0;
+	 }
+	 else
+	 {
+	    lzw->outbit=bitp+bits;
+	    lzw->lastout=c;
+	    return;
+	 }
       }
-      else
+      lzw->lastout=0;
+      lzw->outbit=0;
+   }
+   else
+   {
+#ifdef GIF_DEBUG
+      fprintf(stderr,"codeno=%x lastout=%x outbit=%d codebits=%d\n",
+	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
+#endif
+      lzw->lastout=(lzw->lastout<<lzw->codebits)|codeno;
+      lzw->outbit+=lzw->codebits;
+#ifdef GIF_DEBUG
+      fprintf(stderr,"-> codeno=%x lastout=%x outbit=%d codebits=%d\n",
+	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
+#endif
+      while (lzw->outbit>8)
       {
-	 lzw->outbit=bitp+bits;
-	 lzw->lastout=c;
-	 return;
+	 lzw->out[lzw->outpos++] =
+	    (unsigned char)(lzw->lastout>>(lzw->outbit-8));
+	 lzw->outbit-=8;
+#ifdef GIF_DEBUG
+      fprintf(stderr,"(shiftout) codeno=%x lastout=%x outbit=%d codebits=%d\n",
+	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
+#endif
       }
    }
-   lzw->lastout=0;
-   lzw->outbit=0;
 }
 
 static INLINE void lzw_add(struct gif_lzw *lzw,int c)
@@ -103,7 +129,8 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw->code[lzw->current].firstchild=lno2;
 
    lzw->codes++;
-   if (lzw->codes>(unsigned long)(1L<<lzw->codebits)) lzw->codebits++;
+   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits)) 
+      lzw->codebits++;
 
    lzw->current=c;
 }
@@ -134,6 +161,8 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->current=LZWCNULL;
    lzw->outbit=0;
    lzw->lastout=0;
+   lzw->earlychange=0;
+   lzw->reversebits=0;
    lzw_output(lzw,1L<<bits);
 }
 
@@ -143,7 +172,12 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
       lzw_output(lzw,lzw->current);
    lzw_output( lzw, (1L<<lzw->bits)+1 ); /* GIF end code */
    if (lzw->outbit)
-      lzw->out[lzw->outpos++]=lzw->lastout;
+   {
+      if (lzw->reversebits)
+	 lzw->out[lzw->outpos++]=lzw->lastout<<(8-lzw->outbit);
+      else
+	 lzw->out[lzw->outpos++]=lzw->lastout;
+   }
 }
 
 void image_gif_lzw_free(struct gif_lzw *lzw)
