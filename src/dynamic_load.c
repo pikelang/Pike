@@ -6,10 +6,6 @@
 #  include "module.h"
 #  include "stralloc.h"
 #  include "pike_macros.h"
-#ifdef DEBUG
-#include "main.h"
-#endif /* DEBUG */
-
 #endif
 
 #if !defined(HAVE_DLOPEN) && defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
@@ -102,11 +98,7 @@ void f_load_module(INT32 args)
   module_name = sp[-args].u.string->str;
 
   module=dlopen(module_name, RTLD_NOW);
-#ifdef DEBUG
-  if (d_flag >= 1) {
-    fprintf(stderr, "dlopen() called.\n");
-  }
-#endif /* DEBUG */
+
   if(!module)
   {
     const char *err = dlerror();
