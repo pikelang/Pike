@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
-// #pragma strict_types
+#pragma strict_types
 
-// $Id: state.pike,v 1.19 2003/03/09 22:30:08 nilsson Exp $
+// $Id: state.pike,v 1.20 2004/01/27 22:11:34 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -10,14 +10,14 @@
 
 import .Constants;
 
-void create(object s)
+void create(.session s)
 {
   session = s;
   seq_num = Gmp.mpz(0);
 }
 
 //! Information about the used algorithms.
-object session;
+.session session;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;
@@ -30,7 +30,7 @@ object compress;
 //! 64-bit sequence number.
 Gmp.mpz seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
 
-constant Alert = SSL.alert;
+constant Alert = .alert;
 
 
 string tls_pad(string data, int blocksize) {
