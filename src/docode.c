@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.35 1998/04/06 03:51:54 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.36 1998/04/27 10:00:26 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -25,6 +25,8 @@ RCSID("$Id: docode.c,v 1.35 1998/04/06 03:51:54 hubbe Exp $");
 #include "operators.h"
 #include "object.h"
 
+static int do_docode2(node *n,int flags);
+
 INT32 current_break=-1;
 INT32 current_continue=-1;
 
@@ -44,48 +46,6 @@ INT32 read_int(int offset)
 }
 
 int store_linenumbers=1;
-
-/*
- * A mechanism to remember addresses on a stack.
- */
-int comp_stackp;
-INT32 comp_stack[COMPILER_STACK_SIZE];
-
-void push_address(void)
-{
- if (comp_stackp >= COMPILER_STACK_SIZE)
- {
-   yyerror("Compiler stack overflow");
-   comp_stackp++;
-   return;
- }
- comp_stack[comp_stackp++] = PC;
-}
-
-void push_explicit(INT32 address)
-{
-  if (comp_stackp >= COMPILER_STACK_SIZE)
-  {
-    yyerror("Compiler stack overflow");
-    comp_stackp++;
-    return;
-  }
-  comp_stack[comp_stackp++] = address;
-}
-
-INT32 pop_address(void)
-{
-  if (comp_stackp == 0)
-     fatal("Compiler stack underflow.\n");
-  if (comp_stackp > COMPILER_STACK_SIZE)
-  {
-    --comp_stackp;
-    return 0;
-  }
-  return comp_stack[--comp_stackp];
-}
-
-
 static int label_no=0;
 
 int alloc_label(void) { return ++label_no; }
@@ -96,8 +56,6 @@ int do_jump(int token,INT32 lbl)
   emit(token, lbl);
   return lbl;
 }
-
-static int do_docode2(node *n,int flags);
 
 #define ins_label(L) do_jump(F_LABEL, L)
 
@@ -124,7 +82,6 @@ int do_docode(node *n,INT16 flags)
   lex.current_line=save_current_line;
   return i;
 }
-
 
 static int is_efun(node *n, c_fun fun)
 {

@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.9 1998/04/24 00:32:08 hubbe Exp $
+ * $Id: compilation.h,v 1.10 1998/04/27 10:00:26 hubbe Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -87,7 +87,6 @@
   ZMEMBER(int,num_parse_error)
   ZMEMBER(struct compiler_frame *,compiler_frame)
   ZMEMBER(INT32,num_used_modules)
-  IMEMBER(int,comp_stackp)
   IMEMBER(int,compiler_pass)
   ZMEMBER(int,local_class_counter)
   ZMEMBER(int,catch_level)
