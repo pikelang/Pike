@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.43 2002/01/16 03:02:33 nilsson Exp $");
+RCSID("$Id: zlibmod.c,v 1.44 2002/04/07 14:23:13 leif Exp $");
 
 #include "zlib_machine.h"
 
@@ -34,8 +34,8 @@ RCSID("$Id: zlibmod.c,v 1.43 2002/01/16 03:02:33 nilsson Exp $");
 
 struct zipper
 {
-  char level;
-  char state;
+  int  level;
+  int  state;
   struct z_stream_s gz;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
