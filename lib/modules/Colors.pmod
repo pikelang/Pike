@@ -78,12 +78,12 @@ array(int) cmyk_to_rgb(array(int)|int c, int|void m, int|void y, int|void k)
 //! This function returns the RGB values that corresponds to the
 //! color that is provided by name to the function. It is
 //! essentially calling @[Image.Color.guess()], but returns the
-//! value for black if it failes.
+//! default value (or black if none is provided) if it failes.
 //!
-array(int(0..255)) parse_color(string name)
+array(int(0..255)) parse_color(string name, void|array(int) def)
 {
   Image.Color.Color color;
-  if(!name || !sizeof(name)) return ({ 0,0,0 }); // Odd color...
+  if(!name || !sizeof(name)) return def||({ 0,0,0 }); // Odd color...
 
   if(color=Image.Color.guess(name)) return color->rgb();
 
@@ -91,7 +91,7 @@ array(int(0..255)) parse_color(string name)
   if(color=Image.Color.guess(name)) return color->rgb();
 
   // Lets call it black and be happy..... :-)
-  return ({ 0,0,0 });
+  return def||({ 0,0,0 });
 }
 
 //! Tries to find a name to color described by  the provided RGB
