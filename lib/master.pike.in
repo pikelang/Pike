@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.60 1999/10/10 19:42:09 marcus Exp $
+/* $Id: master.pike.in,v 1.61 1999/10/15 23:07:40 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -1115,6 +1115,8 @@ string read_include(string f)
     return o->read();
 }
 
+int clipped=0;
+
 // FIXME
 string stupid_describe(mixed m, int maxlen)
 {
@@ -1133,6 +1135,7 @@ string stupid_describe(mixed m, int maxlen)
 	}
 	t = 0;
       }
+      clipped++;
       if(maxlen>10)
       {
 	return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
@@ -1142,7 +1145,11 @@ string stupid_describe(mixed m, int maxlen)
       
     case "array":
       if(!sizeof(m)) return "({})";
-      if(maxlen<5) return "array["+sizeof(m)+"]";
+      if(maxlen<5)
+      {
+	clipped++;
+	return "array["+sizeof(m)+"]";
+      }
       return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
       
     case "mapping":
@@ -1177,17 +1184,85 @@ string stupid_describe_comma_list(array x, int maxlen)
 {
   string ret="";
 
+  if(!sizeof(x)) return "";
   if(maxlen<0) return ",,,"+sizeof(x);
 
-  for(int pos=0;pos<sizeof(x);pos++)
-  {
-    string tmp=stupid_describe(x[pos],maxlen);
-    if(pos) ret+=",";
-    ret+=tmp;
+  int clip=min(maxlen/2,sizeof(x));
+  int len=maxlen;
 
-    if(sizeof(ret) >= maxlen)
-      return ret+",,,"+(sizeof(x)-pos);
+  while(1)
+  {
+//    werror("len=%d\n",len);
+    array(string) z=allocate(clip);
+    array(int) isclipped=allocate(clip);
+    for(int e=0;e<clip;e++)
+    {
+      clipped=0;
+      z[e]=stupid_describe(x[e],len);
+      isclipped[e]=clipped;
+    }
+
+    while(1)
+    {
+//      werror("clip=%d maxlen=%d\n",clip,maxlen);
+      string ret = z[..clip-1]*",";
+//      werror("sizeof(ret)=%d z=%O isclipped=%O\n",sizeof(ret),z[..clip-1],isclipped[..clip-1]);
+      if(sizeof(ret)<=maxlen+1)
+      {
+	int tmp=sizeof(x)-clip-1;
+//	werror("CLIPPED::::: %O\n",isclipped);
+	clipped=`+(0,@isclipped);
+	if(tmp>=0)
+	{
+	  clipped++;
+	  ret+=",,,"+tmp;
+	}
+	return ret;
+      }
+
+      int last_newlen=len;
+      int newlen;
+      int clipsuggest;
+      while(1)
+      {
+	int smallsize=0;
+	int num_large=0;
+	clipsuggest=0;
+
+	for(int e=0;e<clip;e++)
+	  {
+//	    werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
+
+	    if(sizeof(z[e])>=last_newlen || isclipped[e])
+	      num_large++;
+	    else
+	      smallsize+=sizeof(z[e]);
+
+	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
+	  }
+	
+//	werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
+	newlen=num_large ? (maxlen-smallsize)/num_large : 0;
+	
+//	werror("newlen=%d\n",newlen);
+
+	if(newlen<8 || newlen >= last_newlen) break;
+	last_newlen=newlen;
+//	werror("len decreased, retrying.\n");
+      }
+
+      if(newlen < 8 && clip)
+      {
+	clip-= (clip/4) || 1;
+	if(clip > clipsuggest) clip=clipsuggest;
+//	werror("clip decreased, retrying.\n");
+      }else{
+	len=newlen;
+	break;
+      }
+    }
   }
+
   return ret;
 }
 
@@ -1232,10 +1307,19 @@ string describe_program(program p)
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
  */
-string describe_backtrace(mixed trace)
+string describe_backtrace(mixed trace, void|int linewidth)
 {
   int e;
   string ret;
+
+  if(!linewidth)
+  {
+    linewidth=99999;
+    catch 
+    {
+      linewidth=_static_modules.files()->_stdin->tcgetattr()->columns;
+    };
+  }
 
   if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
      (objectp(trace) && trace->is_generic_error))
@@ -1259,32 +1343,18 @@ string describe_backtrace(mixed trace)
       mixed tmp;
       string row;
 
-      if (catch {
+      if (mixed err=catch {
 	tmp = trace[e];
 	if(stringp(tmp))
 	{
-	  row = tmp;
+	  row=tmp;
 	}
 	else if(arrayp(tmp))
 	{
-	  row="";
-	  if(sizeof(tmp)>=3)
-	  {
-	    if(functionp(tmp[2]))
-	      row = function_name(tmp[2]);
-	    else if (stringp(tmp[2])) {
-	      row = tmp[2];
-	    } else
-	      row="unknown function";
-	    
-	    row+="("+
-	      stupid_describe_comma_list(tmp[3..], BT_MAX_STRING_LEN)+
-	      ") in ";
-	  }
-	  
+	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
 	  {
-	    row+="line "+tmp[1]+" in "+trim_file_name(tmp[0]);
+	    pos=trim_file_name(tmp[0])+":"+tmp[1];
 	  }else{
 	    mixed desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
@@ -1296,7 +1366,30 @@ string describe_backtrace(mixed trace)
 		      desc=tmp;
 	      };
 	    }
-	    row+=desc;
+	    pos=desc;
+	  }
+	  
+	  string data;
+	  
+	  if(sizeof(tmp)>=3)
+	  {
+	    if(functionp(tmp[2]))
+	      data = function_name(tmp[2]);
+	    else if (stringp(tmp[2])) {
+	      data= tmp[2];
+	    } else
+	      data ="unknown function";
+	    
+	    data+="("+
+	      stupid_describe_comma_list(tmp[3..], BT_MAX_STRING_LEN)+
+	    ")";
+
+	    if(sizeof(pos)+sizeof(data) < linewidth-4)
+	    {
+	      row=sprintf("%s: %s",pos,data);
+	    }else{
+	      row=sprintf("%s:\n%s",pos,sprintf("    %*-/s",linewidth-6,data));
+	    }
 	  }
 	}
 	else
@@ -1304,7 +1397,7 @@ string describe_backtrace(mixed trace)
 	  row="Destructed object";
 	}
       }) {
-	row = sprintf("Error indexing backtrace line %d!", e);
+	row += sprintf("Error indexing backtrace line %d (%O)!", e, err[1]);
       }
       ret += row + "\n";
     }
