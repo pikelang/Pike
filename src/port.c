@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.26 2000/06/30 09:46:14 grubba Exp $");
+RCSID("$Id: port.c,v 1.27 2000/07/11 19:05:54 neotron Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -58,6 +58,10 @@ time_t TIME(time_t *t)
   return tv.tv_sec;
 }
 #endif
+
+#ifndef HUGE
+#define HUGE HUGE_VAL
+#endif /*!HUGE*/
 
 /*
  * This file defines things that may have to be changem when porting
