@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.64 1999/04/20 15:26:12 grubba Exp $
+# $Id: configure.in,v 1.65 1999/05/18 17:08:11 mirar Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -472,7 +472,7 @@ if test x$ac_cv_func_statvfs = xyes ; then
       ])
     ])
     AC_MSG_RESULT($pike_cv_struct_statvfs_f_basetype)
-    if test x$pike_cv_struct_statfs_f_bavail = xyes; then
+    if test x$pike_cv_struct_statfs_f_basetype = xyes; then
       AC_DEFINE(HAVE_STATVFS_F_BASETYPE)
     else :; fi
   else :; fi
