@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.138 1999/09/11 08:15:57 hubbe Exp $");
+RCSID("$Id: program.c,v 1.139 1999/09/14 20:17:16 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -863,6 +863,7 @@ void check_program(struct program *p)
   for(e=0;e<(int)p->num_strings;e++)
     check_string(p->strings[e]);
 
+  if(p->flags & PROGRAM_FINISHED)
   for(e=0;e<(int)p->num_identifiers;e++)
   {
     check_string(p->identifiers[e].name);
