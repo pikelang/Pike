@@ -9,7 +9,7 @@ CPPFLAGS= -I$(SRCDIR)/include -DPIKE
 # Create library of algorithms
 lib/algorithms.a:
 	cd lib; $(MAKE) \
-                  "EXTRA_CPP_FLAGS=-DPIKE -I$(SRCDIR)/../.. -I../../" \
+                  "EXTRA_CPP_FLAGS=-DPIKE -I$(SRCDIR)/../.. -I../../.." \
 	          algorithms.a
 
 @dependencies@
