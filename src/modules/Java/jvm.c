@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.43 2002/10/25 11:29:06 jonasw Exp $
+ * $Id: jvm.c,v 1.44 2002/10/25 12:22:52 jonasw Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -18,7 +18,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.43 2002/10/25 11:29:06 jonasw Exp $");
+RCSID("$Id: jvm.c,v 1.44 2002/10/25 12:22:52 jonasw Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -683,7 +683,8 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
       switch(sv->u.string->size_shift) {
       case 0:
 	{
-	  jchar *newstr = malloc(2*sv->u.string->len);
+	  /* Extra byte added to avoid zero length allocation */
+	  jchar *newstr = (jchar *) xalloc(2 * sv->u.string->len + 1);
 	  INT32 i;
 	  p_wchar0 *p = STR0(sv->u.string);
 	  for(i=sv->u.string->len; --i>=0; )
@@ -701,7 +702,8 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
       case 2:
 	{
 	  /* FIXME?: Does not make surrogates for plane 1-16 in group 0... */
-	  jchar *newstr = malloc(2*sv->u.string->len);
+	  /* Extra byte added to avoid zero length allocation */
+	  jchar *newstr = (jchar *) xalloc(2 * sv->u.string->len + 1);
 	  INT32 i;
 	  p_wchar2 *p = STR2(sv->u.string);
 	  for(i=sv->u.string->len; --i>=0; )
