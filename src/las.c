@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.282 2002/03/02 18:47:38 mast Exp $");
+RCSID("$Id: las.c,v 1.283 2002/03/04 16:02:37 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -127,6 +127,7 @@ void check_tree(node *n, int depth)
 	if (state) {
 	  struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	  if (id) {
+#if 0
 #ifdef PIKE_DEBUG
 	    /* FIXME: This test crashes on valid code because the type of the
 	     * identifier can change in pass 2 - Hubbe
@@ -142,6 +143,7 @@ void check_tree(node *n, int depth)
 
 	      fatal("Type of external node is not matching its identifier.\n");
 	    }
+#endif
 #endif
 	  }
 	}
@@ -452,6 +454,12 @@ static node *freeze_node(node *orig)
   size_t hash;
   node *n;
   int found = 0;
+
+  /* Defeat shared nodes since it messes up the line number info in
+   * e.g. backtraces, which can be extremely annoying. Done the ugly
+   * way for the time being since I've grown tired of waiting for the
+   * issue to be resolved one way or the other. /mast */
+  orig->tree_info |= OPT_NOT_SHARED;
 
   if (orig->tree_info & OPT_NOT_SHARED) {
     /* No need to have this node in the hash-table. */
@@ -1390,6 +1398,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 
   res=freeze_node(res);
 
+#if 0
 #ifdef PIKE_DEBUG
   /* FIXME: This test crashes on valid code because the type of the
    * identifier can change in pass 2 -Hubbe
@@ -1404,6 +1413,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
     
     fatal("Type of external node is not matching it's identifier.\n");
   }
+#endif
 #endif
 
   return res;
@@ -3549,6 +3559,7 @@ void fix_type_field(node *n)
 	    struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	    if (id && id->name) {
 	      name = id->name->str;
+#if 0
 #ifdef PIKE_DEBUG
 	      /* FIXME: This test crashes on valid code because the type of the
 	       * identifier can change in pass 2 -Hubbe
@@ -3563,6 +3574,7 @@ void fix_type_field(node *n)
 
 		fatal("Type of external node is not matching it's identifier.\n");
 	      }
+#endif
 #endif
 	    }
 	  }
