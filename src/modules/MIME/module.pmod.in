@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.4 1997/05/24 01:03:53 marcus Exp $
+ * $Id: module.pmod.in,v 1.5 1997/08/14 17:18:00 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -365,6 +365,8 @@ class Message {
       encoded_data = 0;
       decoded_data = parts[0][1..];
       body_parts = map(parts[1..sizeof(parts)-2], lambda(string part){
+	if(sizeof(part) && part[-1]=='\r')
+	  part = part[..sizeof(part)-2];
 	return object_program(this_object())(part[1..]);
       });
     }
