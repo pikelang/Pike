@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.34 2003/08/27 15:16:38 grubba Exp $
+ * $Id: Tree.pmod,v 1.35 2003/09/01 15:18:07 nilsson Exp $
  *
  */
 
@@ -109,6 +109,7 @@ void throw_error(mixed ...args)
 	error(sprintf(@args));
 }
 
+//! Namespace aware parser.
 class XMLNSParser {
   ADT.Stack namespace_stack = ADT.Stack();
 
