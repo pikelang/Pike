@@ -208,6 +208,7 @@ static void port_bind(INT32 args)
   }
 
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+  addr.sin_family = AF_INET;
 
   THREADS_ALLOW();
   tmp=bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(fd, 16384) < 0;
