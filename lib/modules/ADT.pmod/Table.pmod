@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.15 2001/01/05 15:19:04 grubba Exp $
+// $Id: Table.pmod,v 1.16 2001/01/05 19:42:20 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
@@ -384,7 +384,7 @@ class table {
   //! @[ADT.Table.ASCII.encode()]
   //!
   void create(array(array) table, array(string) column_names,
-	      array(mapping(string:string)|void column_types)
+	      array(mapping(string:string))|void column_types)
   {
     if(!arrayp(table))
       TABLE_ERR("Table not array");
