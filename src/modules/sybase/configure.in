@@ -46,13 +46,14 @@ AC_CACHE_VAL(pike_cv_sybase_include_dir,
         do
             for sybpath in $pike_sybase_reasonable_paths
             do
-                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
+dnl                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
                 if test -f $sybroot/$sybprefix/$sybpath/ctpublic.h; then
                     pike_cv_sybase_include_dir="$sybroot/$sybprefix/$sybpath"
-                    AC_MSG_RESULT("Found")
+dnl                    AC_MSG_RESULT("Found")
                     break 3;
                 else
-                    AC_MSG_RESULT("Not Found")
+dnl                    AC_MSG_RESULT("Not Found")
+                  :
                 fi
             done
         done
@@ -81,16 +82,16 @@ AC_CACHE_VAL(pike_cv_sybase_lib_dir,
         do
             for sybpath in $pike_sybase_reasonable_paths
             do
-                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
+dnl                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
                 for syblib in $pike_sybase_reasonable_libs_tosearch
                 do
                     if test -f $sybroot/$sybprefix/$sybpath/$syblib; then
                         pike_cv_sybase_lib_dir="$sybroot/$sybprefix/$sybpath"
-                        AC_MSG_RESULT("Found")
+dnl                        AC_MSG_RESULT("Found")
                         break 4;
                     fi
                 done
-            AC_MSG_RESULT("Not Found")
+dnl            AC_MSG_RESULT("Not Found")
             done
         done
     done
