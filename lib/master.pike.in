@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.222 2002/11/06 19:36:19 nilsson Exp $
+// $Id: master.pike.in,v 1.223 2002/11/15 03:34:19 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -965,7 +965,7 @@ class dirnode
     int ret;
     foreach( files, string s )
     {
-      if( search(s, index)!=-1 || search(index,s)!=-1 )
+      if( has_value(s, index) || has_value(index,s) )
       {
         ret=1;
         break;
@@ -1636,52 +1636,55 @@ void _main(array(string) orig_argv, array(string) env)
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
     tmp=resolv("Getopt");
+    int NO_ARG = tmp->NO_ARG;
+    int MAY_HAVE_ARG = tmp->MAY_HAVE_ARG;
+    int HAS_ARG = tmp->HAS_ARG;
 
     if (!tmp)
       _error("master.pike: Couldn't resolv Getopt module.\n"
 	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n");
 
     q=tmp->find_all_options(argv,({
-      ({"compat_version",tmp->HAS_ARG,({"-V","--compat"})}),
-      ({"version",tmp->NO_ARG,({"-v","--version"})}),
-      ({"help",tmp->NO_ARG,({"-h","--help"})}),
-      ({"features",tmp->NO_ARG,({"--features"})}),
-      ({"info",tmp->NO_ARG,({"--info"})}),
-      ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
-      ({"debug_without",tmp->HAS_ARG,({"--debug-without"})}),
-      ({"preprocess",tmp->HAS_ARG,({"-E","--preprocess"})}),
-      ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
-      ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
-      ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
-      ({"showpaths",tmp->NO_ARG,"--show-paths"}),
-      ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
-      ({"nowarnings",tmp->NO_ARG,({"-W", "--woff", "--no-warnings"})}),
-#ifdef PIKE_AUTORELOAD
-      ({"autoreload",tmp->NO_ARG,({"--autoreload"})}),
-#endif
-      ({"master",tmp->HAS_ARG,"-m"}),
-      ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
-      ({"assembler_debug",tmp->MAY_HAVE_ARG,"--assembler-debug"}),
-      ({"optimizer_debug",tmp->MAY_HAVE_ARG,"--optimizer-debug"}),
-      ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
-      ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
-      ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatplr",0,1}),
-      ({"ignore",tmp->HAS_ARG,"-s"}),
-      ({"run_tool",tmp->NO_ARG,"-x"}),
+      ({"compat_version", HAS_ARG, ({"-V", "--compat"}), 0, 0}),
+      ({"version",        NO_ARG,  ({"-v", "--version"}), 0, 0}),
+      ({"help",           NO_ARG,  ({"-h", "--help"}), 0, 0}),
+      ({"features",       NO_ARG,  ({"--features"}), 0, 0}),
+      ({"info",           NO_ARG,  ({"--info"}), 0, 0}),
+      ({"execute",        HAS_ARG, ({"-e", "--execute"}), 0, 0}),
+      ({"debug_without",  HAS_ARG, ({"--debug-without"}), 0, 0}),
+      ({"preprocess",     HAS_ARG, ({"-E", "--preprocess"}), 0, 0}),
+      ({"modpath",        HAS_ARG, ({"-M", "--module-path"}), 0, 0}),
+      ({"ipath",          HAS_ARG, ({"-I", "--include-path"}), 0, 0}),
+      ({"ppath",          HAS_ARG, ({"-P", "--program-path"}), 0, 0}),
+      ({"showpaths",      NO_ARG,  ({"--show-paths"}), 0, 0}),
+      ({"warnings",       NO_ARG,  ({"-w", "--warnings"}), 0, 0}),
+      ({"nowarnings",     NO_ARG,  ({"-W", "--woff", "--no-warnings"}), 0, 0}),
+      ({"autoreload",     NO_ARG,  ({"--autoreload"}), 0, 0}),
+      ({"master",         HAS_ARG, ({"-m"}), 0, 0}),
+      ({"compiler_trace", NO_ARG,  ({"--compiler-trace"}), 0, 0}),
+      ({"assembler_debug",MAY_HAVE_ARG, ({"--assembler-debug"}), 0, 0}),
+      ({"optimizer_debug",MAY_HAVE_ARG, ({"--optimizer-debug"}), 0, 0}),
+      ({"debug",          MAY_HAVE_ARG, ({"--debug"}), 0, 1}),
+      ({"trace",          MAY_HAVE_ARG, ({"--trace"}), 0, 1}),
+      ({"ignore",         MAY_HAVE_ARG, ({"-Dqdatplr"}), 0, 1}),
+      ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
+      ({"run_tool",       NO_ARG,  ({"-x"}), 0, 0}),
     }), 1);
     
     /* Parse -M and -I backwards */
-    for(i=sizeof(q)-1;i>=0;i--)
+    for(i=sizeof(q)-1; i>=0; i--)
     {
       switch(q[i][0])
       {
 	case "compat_version":
 	  sscanf(q[i][1],"%d.%d",compat_major,compat_minor);
 	  break;
+
 #ifdef PIKE_AUTORELOAD
       case "autoreload":
 	autoreload_on++;
 #endif
+
       case "debug_without":
         foreach( q[i][1]/",", string feature )
         {
@@ -1708,6 +1711,7 @@ void _main(array(string) orig_argv, array(string) env)
           }
         }
         break;
+
       case "debug":
 	debug+=(int)q[i][1];
 	break;
