@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.236 2001/01/22 21:49:13 mast Exp $
+# $Id: Makefile.in,v 1.237 2001/01/23 00:41:19 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -177,19 +177,14 @@ POBJ = las.o builtin_functions.o peep.o
 # Ouch.
 # It turns out that we really do need to do it this way.
 #
-# Ensure that we have a precompile.sh, so that we don't need to
-# have dependencies on it.
-#
-# Then compile the first pike, to generate the peep engine, and more
-# importantly, the lower_case() support, since that is needed by the
-# post_module.
+# First compile pike to generate the lower_case() support, since that
+# is needed by the post_module.
 #
 # Then relink pike once more, since the post modules might be
 # static modules, and thus have to be linked into pike.
 # 
 # No rest for the wicked.
 all: module_objects hilfe master.pike
-	@$(MAKE) precompile.sh
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
 	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
@@ -399,6 +394,7 @@ spotless: clean
 	-rm -f pike pike.old l.outa*
 	-rm -f modules/*/testsuite
 	-rm -f modules/static_module_makefile modules/dynamic_module_makefile
+	-rm -f precompile.sh precompile.sh-stamp
 	-rm -rf lib
 
 distclean: spotless
@@ -507,7 +503,11 @@ aclocal: $(SRCDIR)/aclocal.m4
 # Beware that export archive this includes bison/yacc/byacc source
 # and thus has to follow the rules stated in that code.
 
+# We touch the files that depend on language.h_src and
+# interpret_protos.h_src to ensure that the .h_src.h rule doesn't have
+# anything to do in the dist.
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h depend
+	touch $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" 
 
@@ -660,7 +660,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 #
 # This rule makes sure that builtin.c is created in the source dir.
 #
-$(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod $(TMP_BINDIR)/precompile.pike
+$(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c
@@ -730,6 +730,13 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 	CONFIG_FILES=precompile.sh CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
 	-@rm cfl.$@
+
+# A dependency on precompile.sh-stamp only ensures that precompile.sh
+# exists, not that it's older than the target. In source dists,
+# precompile.sh is almost always newer than the targets that depend on
+# it, e.g. builtin.c that comes with the dist.
+precompile.sh-stamp: precompile.sh
+	@touch -t 197001010000 precompile.sh-stamp
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
@@ -813,9 +820,9 @@ HFILES=						\
   version.protos                                    \
   builtin.protos
 
-$(HFILES): precompile.sh
+$(HFILES): precompile.sh-stamp
 
-import-stamp: $(HFILES) precompile.sh
+import-stamp: $(HFILES) precompile.sh-stamp
 	@./precompile.sh fake_dynamic_load.pike import_functions.tmp $(HFILES)
 	@cmp import_functions.tmp import_functions.h >/dev/null || mv import_functions.tmp import_functions.h
 	@echo hej >import-stamp
