@@ -9,7 +9,7 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID(desCode_hRcs, "$Id: desCode.h,v 1.1 1997/02/12 06:24:26 nisse Exp $");
+RCSID2(desCode_hRcs, "$Id: desCode.h,v 1.2 1997/03/15 04:51:31 nisse Exp $");
 
 extern unsigned INT32 des_keymap[], des_bigmap[];
 

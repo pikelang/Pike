@@ -4,14 +4,14 @@
 /* Taken from pike/src/global.h */
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-#define RCSID(name, X) \
+#define RCSID2(name, X) \
  static char *name __attribute__ ((unused)) =X
 #elif __GNUC__ == 2
-#define RCSID(X) \
+#define RCSID2(name, X) \
  static char *name = X; \
  static void *use_#name=(&use_rcsid, (void *)&name)
 #else
-#define RCSID(X) \
+#define RCSID2(name, X) \
  static char *name = X
 #endif
 

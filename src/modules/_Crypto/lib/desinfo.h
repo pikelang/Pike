@@ -8,7 +8,7 @@
  */
 
 #include "RCSID.h"
-RCSID(desinfo_hRcs, "$Id: desinfo.h,v 1.1 1997/02/12 06:25:06 nisse Exp $");
+RCSID2(desinfo_hRcs, "$Id: desinfo.h,v 1.2 1997/03/15 04:52:28 nisse Exp $");
 
 /* the initial permutation, E selection, and final permutation are hardwired */
 

@@ -11,10 +11,8 @@
 
 #include "crypto_types.h"
 
-#if 0
 #include "RCSID.h"
-RCSID(desCore_hRcs, "$Id: des.h,v 1.2 1997/02/12 06:16:26 nisse Exp $");
-#endif
+RCSID2(desCore_hRcs, "$Id: des.h,v 1.3 1997/03/15 04:51:08 nisse Exp $");
 
 #define DES_KEYSIZE 8
 #define DES_BLOCKSIZE 8

@@ -11,7 +11,7 @@
 #include	"desCode.h"
 
 #include "RCSID.h"
-RCSID(desdata_cRcs, "$Id: desdata.c,v 1.2 1997/02/13 02:46:14 nisse Exp $");
+RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.3 1997/03/15 04:52:21 nisse Exp $");
 
 /* list of weak and semi-weak keys
 
