@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.228 2003/09/08 20:05:20 mast Exp $
+|| $Id: gc.c,v 1.229 2003/09/08 21:31:32 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.228 2003/09/08 20:05:20 mast Exp $");
+RCSID("$Id: gc.c,v 1.229 2003/09/08 21:31:32 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1581,7 +1581,7 @@ int gc_mark_external (void *a, const char *place)
   if (gc_external_refs_zapped) {
     fprintf (stderr, "One external ref to %p found%s.\n",
 	     a, place ? place : "");
-    if (in) describe (in);
+    if (gc_found_in) describe (gc_found_in);
     return 0;
   }
 #endif
