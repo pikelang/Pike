@@ -30,6 +30,7 @@ Write an appendix about old functions, behaviors and keywords.
 predef::m_delete-behavior is missing. - Fixed by hubbe
 
 Missing funktions in the manual: (tab before function means fixed)
+has_prefix (is it supposed be global, or perhaps String.has_prefix? /Noring)
 UNDEFINED
 ( Stdio.append_path FIXED! /Hedda)
 Array.transpose
