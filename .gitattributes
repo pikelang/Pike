@@ -281,6 +281,9 @@ testfont binary
 /src/modules/Math/configure.in foreign_ident
 /src/modules/Math/math_matrix.c foreign_ident
 /src/modules/Math/math_module.c foreign_ident
+/src/modules/Mird/Makefile.in foreign_ident
+/src/modules/Mird/acconfig.h foreign_ident
+/src/modules/Mird/configure.in foreign_ident
 /src/modules/Msql/Makefile.in foreign_ident
 /src/modules/Msql/configure.in foreign_ident
 /src/modules/Msql/msql_config.h.in foreign_ident

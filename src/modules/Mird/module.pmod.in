@@ -1,0 +1,352 @@
+import ".";
+
+class Mird
+{
+   constant Glue=@module@;
+
+   object mird;
+
+#define TABLE2ID_TABLE 1
+#define ID2TABLE_TABLE 2
+#define NEXT_TABLE "_mird_magic_next_free_table"
+
+   mapping table2id=([]); 
+   mapping id2table=([]); 
+   int next_table;
+
+//! class Mird
+//!
+//! method void create(string filename,void|mapping options)
+
+   void create(string filename,void|mapping options)
+   {
+      mird=Glue.Mird(filename,options);
+
+      mixed err=catch 
+      { 
+	 next_table=(int)mird->fetch(TABLE2ID_TABLE,NEXT_TABLE); 
+      };
+      if (err || !next_table)
+      {
+	 next_table=max(ID2TABLE_TABLE,TABLE2ID_TABLE)+1;
+	 object mtr=Glue.Transaction(mird);
+	 mtr->new_stringkey_table(TABLE2ID_TABLE);
+	 mtr->new_hashkey_table(ID2TABLE_TABLE);
+	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)next_table);
+	 mtr->close();
+      }
+
+      call_out(sync_loop,60,60);
+   }
+
+//! method Table table(string name)
+
+   Table table(string name)
+   {
+      if (name==NEXT_TABLE) error("illegal name\n");
+      if (!table2id[name]) 
+      {
+	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 if (!d) error("no such table (%O)\n",name);
+	 table2id[name]=(int)d;
+      }
+      return Table(this_object(),table2id[name]);
+   }
+
+//! method table_name(int id)
+
+   string table_name(int id)
+   {
+      if (id2table[id]) return id2table[id];
+      string d=mird->fetch(ID2TABLE_TABLE,id);
+      if (!d) return 0;
+      return id2table[id]=d;
+   }
+
+//!
+//! method Table new_stringkey_table(string name)
+//! method Table new_hashkey_table(string name)
+//!
+
+   Table new_stringkey_table(string name)
+   {
+      object tr=transaction();
+      tr->new_stringkey_table(name);
+      tr->close();
+      return table(name);
+   }
+
+   Table new_hashkey_table(string name)
+   {
+      object tr=transaction();
+      tr->new_hashkey_table(name);
+      tr->close();
+      return table(name);
+   }
+
+//!
+//! method Transaction transaction()
+//! 	creates a new transaction
+
+   Transaction transaction()
+   {
+      return Transaction(this_object());
+   }
+
+//!
+//! method array(string) tables()
+//!
+
+   array(string) tables()
+   {
+      return indices(Table(this_object(),TABLE2ID_TABLE))-({NEXT_TABLE});
+   }
+
+//! method object sync()
+//! method object sync_please()
+//!	Syncs the database (syncs against disc and 
+//!	starts to reuse any space that is freed),
+//!	sync_please() does this when the last living
+//!	transaction is finished.
+//! method object sync_loop(int seconds)
+//!	Starts a call_out loop that will call sync_please
+//!	once every given interval. 0 or fewer seconds will
+//!	shut down the loop.
+//!	Default is 1 minute (60 seconds).
+
+   object sync()
+   {
+      gc(); // kill any leftover transactions
+      mird->sync();
+      return this_object();
+   }
+
+   object sync_please()
+   {
+      werror("sync %f\n",gauge {
+	 gc(); // kill any leftover transactions
+	 mird->sync_please();
+      });
+      return this_object();
+   }
+
+   object sync_loop(int seconds)
+   {
+      remove_call_out(sync_loop);
+      if (seconds<=0) return this_object();
+      if (_refs(this_object())>4) // otherwise, we're last -> close()
+	 call_out(sync_loop,seconds,seconds);
+      return sync_please();
+   }
+
+//! method void close()
+//! method void destroy()
+//!	syncs and closes the database
+
+   void close()
+   {
+      werror("close\n");
+      remove_call_out(sync_loop);
+      mird->close();
+   }
+
+   function destroy=close;
+
+//!
+//! subclass Table
+//!
+
+   class Table 
+   {
+      int table_id;
+      object parent;
+
+//! method void create(object parent,int table_id)
+      void create(object _parent,int _table_id)
+      {
+	 parent=_parent;
+	 table_id=_table_id;
+      }
+
+//! method string `[](int|string key)
+      string `[](int|string key)
+      {
+	 return parent->fetch(table_id,key);
+      }
+
+//! method string `[]=(int|string key)
+      string `[]=(int|string key,string value)
+      {
+	 if (parent->mtr)
+	 return parent->mtr->store(table_id,key,value);
+	 else
+	 {
+	    object tr=parent->transaction();
+	    tr->mtr->store(table_id,key,value);
+	    tr->close();
+	 }
+	 return value;
+      }
+
+//! method array(int|string) _indices()
+      array(int|string) _indices()
+      {
+	 array keys=({});
+	 object sc=Glue.Scanner(parent->mird,table_id);
+	 mapping m;
+	 while ( (m=sc->read(100)) ) keys+=indices(m);
+	 return keys;
+      }
+
+//! method array(int|string) _values()
+      array(int|string) _values()
+      {
+	 array values=({});
+	 object sc=Glue.Scanner(parent->mird,table_id);
+	 mapping m;
+	 while ( (m=sc->read(100)) ) values+=values(m);
+	 return values;
+      }
+
+//! method array|mapping cast("mapping"|"array")
+      array|mapping cast(string to)
+      {
+	 if (sscanf(to,"array%*s"))
+	 {
+	    array tupels=({});
+	    object sc=Glue.Scanner(parent,table_id);
+	    mapping m;
+	    while ( (m=sc->read(100)) ) tupels+=(array)m;
+	    return tupels;
+	 }
+	 if (sscanf(to,"mapping%*s"))
+	 {
+	    mapping tupels=([]);
+	    object sc=Glue.Scanner(parent,table_id);
+	    mapping m;
+	    while ( (m=sc->read(100)) ) tupels+=m;
+	    return tupels;
+	 }
+	 error("illegal argument 1 to cast\n");
+      }
+   }
+
+//!
+//! subclass Transaction
+//!
+
+   class Transaction
+   {
+      object parent;
+      object mird;
+      object mtr;
+      mapping table2id=([]);
+      int refresh_at_close=0;
+
+      void create(object _parent)
+      {
+	 parent=_parent;
+	 mird=parent->mird;
+	 mtr=Glue.Transaction(mird);
+      }
+
+//! method Table table(string name)
+//!	Creates a table object for that table,
+//!	which emulates a mapping and in which
+//!	you can make changes to the database or
+//!	do lookups.
+
+      Table table(string name)
+      {
+	 if (name==NEXT_TABLE) error("illegal name\n");
+	 int id;
+	 if (!(id=table2id[name]))
+	 {
+	    if (parent->table2id[name])
+	       id=table2id[name]=parent->table2id[name];
+	    else
+	    {
+	       string d=mtr->fetch(TABLE2ID_TABLE,name);
+	       if (!d) error("no such table (%O)\n",name);
+	       id=table2id[name]=(int)d;
+	    }
+	 }
+	 return Table(this_object(),id);
+      }
+
+//!
+//! method Table new_stringkey_table(string name)
+//! method Table new_hashkey_table(string name)
+//!	Creates a new table in the database.
+//!	A stringkey table is a mapping from string to string,
+//!	and a hashkey table is mapping from int to string.
+//!
+
+      Table new_stringkey_table(string name)
+      {
+	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 if (d) error("table already exist");
+	 int no=parent->next_table++;
+	 mtr->store(TABLE2ID_TABLE,name,(string)next_table);
+	 mtr->store(ID2TABLE_TABLE,next_table,name);
+	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)next_table);
+	 mtr->new_stringkey_table(no);
+	 refresh_at_close=1;
+	 return table(name);
+      }
+
+      Table new_hashkey_table(string name)
+      {
+	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 if (d) error("table already exist");
+	 int no=parent->next_table++;
+	 mtr->store(TABLE2ID_TABLE,name,(string)next_table);
+	 mtr->store(ID2TABLE_TABLE,next_table,name);
+	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)next_table);
+	 mtr->new_hashkey_table(no);
+	 refresh_at_close=1;
+	 return table(name);
+      }
+
+//!
+//! method array(string) tables()
+//! returns the names of the tables in the database.
+//!
+
+      array(string) tables()
+      {
+	 return indices(Table(this_object(),TABLE2ID_TABLE));
+      }
+
+//!
+//! method void close()
+//!	Finishes a transaction. This throws exceptions
+//!	if there were conflicts.
+//!
+
+      void close()
+      {
+	 mtr->close();
+	 if (refresh_at_close) 
+	    parent->table2id=parent->id2table=([]);
+      }
+
+//!
+//! method void cancel()
+//! method void destroy()
+//!	Cancels (rewinds) a transaction.
+//!
+
+      void cancel()
+      {
+	 mtr->cancel();
+      }
+
+      void destroy()
+      {
+	 mtr->destroy();
+      }
+   }
+}
+
+program _module_value=Mird;

@@ -1,0 +1,10 @@
+# $Id: Makefile.in,v 1.1 2000/04/12 11:16:31 mirar Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=mird_glue.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@

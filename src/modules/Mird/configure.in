@@ -1,0 +1,15 @@
+# $Id: configure.in,v 1.1 2000/04/12 11:16:31 mirar Exp $
+AC_INIT(mird_glue.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_CHECK_HEADERS(mird.h)
+AC_CHECK_LIB(mird,mird_sync)
+
+if test "x$ac_cv_header_mird_h" != "xyes" -o "x$ac_cv_lib_mird_mird_sync" != "xyes"; then
+    echo '*** Mird module failed to find libmird' >&2
+    echo '*** If you want Mird support, install libmird (http://www.mirar.org/mird)' >&2
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
