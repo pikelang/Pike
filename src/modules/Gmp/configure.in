@@ -1,22 +1,60 @@
-# $Id: configure.in,v 1.4 1998/09/20 08:30:58 hubbe Exp $
+# $Id: configure.in,v 1.5 1999/10/04 02:27:25 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
 
 AC_MODULE_INIT()
 
+define([AC_CHECK_GMP],
+[
+done=no
+AC_CHECK_HEADERS($2,[
+
+AC_MSG_CHECKING(working $1)
+AC_CACHE_VAL(pike_cv_working_$1,[
+OLDLIBS="${LIBS-}"
+LIBS="${LIBS-} -l$1"
+AC_TRY_RUN([
+#include <stdio.h>
+#include <$2>
+int main(int argc, char **argv)
+{
+ mpz_t tmp,tmp2;
+ char buffer[1000];
+ mpz_init(tmp);
+ mpz_init(tmp2);
+ mpz_set_ui(tmp ,1000000000);
+ mpz_set_ui(tmp2,1000000000);
+ mpz_mul(tmp,tmp,tmp2);
+ mpz_mul(tmp,tmp,tmp2);
+ mpz_mul(tmp,tmp,tmp2);
+ fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10));
+  exit( mpz_sizeinbase(tmp,10) !=  9*4+1 );
+}
+
+],pike_cv_working_gmp=yes,pike_cv_working_gmp=no)])
+
+if test "x$pike_cv_working_$1" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
+  LIBS="${LIBS-} -l$1"
+  done=yes
+else
+  AC_MSG_RESULT(no)
+fi
+])
+
+if test $done = no; then
+  $3
+  :
+fi
+
+])
+
 if test x$with_gmp = xyes ; then
-  AC_CHECK_HEADERS(gmp2/gmp.h)
-  AC_CHECK_LIB(gmp2, mpz_set_d)
-  if test "$ac_cv_header_gmp2_gmp_h$ac_cv_lib_gmp2_mpz_set_d" = "yesyes";
-  then
-    echo Using gmp2.
-  else
-    AC_CHECK_HEADERS(gmp.h)
-    if test $ac_cv_header_gmp_h = yes ; then
-      AC_CHECK_LIB(gmp, mpz_set_d)
-    fi
-  fi
+  AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
+    AC_CHECK_GMP(gmp,gmp.h)
+  ])
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
