@@ -66,7 +66,7 @@ char *MEMSET (char *s,int c,int n);
 #    define MEMCPY(X,Y,Z) bcopy(Y,X,Z)
 #    define __builtin_memcpy(X,Y,Z) bcopy(Y,X,Z)
 #  else
-char *MEMCPY(char *b,const char *a,int s);
+void MEMCPY(void *b,const void *a,int s);
 #    define __builtin_memcpy MEMCPY
 #  endif
 #else
@@ -74,13 +74,13 @@ char *MEMCPY(char *b,const char *a,int s);
 #endif
 
 #ifndef HAVE_MEMMOVE
-char *MEMMOVE(char *b,const char *a,int s);
+void MEMMOVE(void *b,const void *a,int s);
 #else
 #  define MEMMOVE memmove
 #endif
 
 #ifndef HAVE_MEMCMP
-int MEMCMP(const char *b,const char *a,int s);
+void MEMCMP(const void *b,const void *a,int s);
 #else
 #  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(Z))
 #endif

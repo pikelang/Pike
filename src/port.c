@@ -141,28 +141,30 @@ char *MEMSET(char *s,int c,int n)
 #endif
 
 #if !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
-char *MEMCPY(char *b,const char *a,int s)
+void MEMCPY(void *bb,const void *aa,int s)
 {
-  char *t;
-  for(t=b;s;s--) *(t++)=*(a++);
-  return b;
+  char *b=(char *)bb;
+  char *a=(char *)aa;
+  for(;s;s--) *(b++)=*(a++);
 }
 #endif
 
 #ifndef HAVE_MEMMOVE
-char *MEMMOVE(char *b,const char *a,int s)
+void MEMMOVE(void *b,const void *aa,int s)
 {
-  char *t;
-  if(a>b) for(t=b;s;s--) *(t++)=*(a++);
-  if(a<b) for(t=b+s,a+=s;s;s--) *(--t)=*(--a);
-  return b;
+  char *t=(char *)b;
+  a=(char *)aa;
+  if(a>b) for(;s;s--) *(t++)=*(a++);
+  if(a<b) for(t+=s,a+=s;s;s--) *(--t)=*(--a);
 }
 #endif
 
 
 #ifndef HAVE_MEMCMP
-int MEMCMP(const char *b,const char *a,int s)
+void MEMCMP(const void *bb,const void *aa,int s)
 {
+  char *a=(char *)aa;
+  char *b=(char *)bb;
   for(;s;s--,b++,a++)
   {
     if(*b!=*a)
@@ -171,7 +173,6 @@ int MEMCMP(const char *b,const char *a,int s)
       if(*b>*a) return 1;
     }
   }
-  return 0;
 }
 
 #endif
