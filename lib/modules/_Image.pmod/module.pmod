@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.27 2002/05/10 21:55:45 per Exp $
+// $Id: module.pmod,v 1.28 2002/07/10 20:17:35 nilsson Exp $
 
 //! @decl Image.Layer load()
 //! @decl Image.Image load(object file)
@@ -88,6 +88,7 @@ mapping _decode( string data, mixed|void tocolor )
   if(!i)
     foreach( ({ "ANY", "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
                 "XBM", "XPM", "TIFF", "ILBM", "PS", "PVR", "SVG",
+		"DWG",
        /* Image formats low on headers below this mark */
                 "DSI", "TIM", "HRZ", "AVS", "WBF",
        /* "XFace" Always succeds*/
