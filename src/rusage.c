@@ -16,6 +16,9 @@
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 static INT32 rusage_values[30];
 /*
