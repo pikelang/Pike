@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.47 2000/08/07 15:54:20 grubba Exp $
+ * $Id: global.h,v 1.48 2000/08/10 12:17:07 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -167,11 +167,11 @@ char *alloca ();
 #if SIZEOF_LONG >= 8
 #define INT64 long
 #else
-#if SIZEOF_LONG_LONG - 0 >= 8
-#define INT64 long long
-#else
 #if SIZEOF___INT64 - 0 >= 8
 #define INT64 __int64
+#else
+#if SIZEOF_LONG_LONG - 0 >= 8
+#define INT64 long long
 #endif
 #endif
 #endif
