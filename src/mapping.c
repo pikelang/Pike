@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.62 2000/02/06 01:49:54 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.63 2000/02/09 07:29:36 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -159,6 +159,9 @@ static void init_mapping(struct mapping *m, INT32 size)
   }
   add_ref(md);
   m->data=md;
+#ifdef PIKE_DEBUG
+  m->size = md->size;
+#endif
 }
 
 /* This function allocates an empty mapping with room for 'size' values
@@ -319,6 +322,8 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #ifdef PIKE_DEBUG
   if(m->data->size != tmp)
     fatal("Rehash failed, size not same any more.\n");
+
+  m->size = m->data->size;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -384,6 +389,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   if(md->hashsize)						\
   {								\
     h=h2 % md->hashsize;					\
+    DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
     if(md->ind_types & (1 << key->type))			\
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
@@ -406,6 +412,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   if(md->hashsize)						\
   {								\
     h=h2 % md->hashsize;					\
+    DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
     if(md->ind_types & (1 << key->type))			\
     {								\
       k2=omd->hash[h2 % md->hashsize];			        \
@@ -615,6 +622,9 @@ void low_mapping_insert(struct mapping *m,
   assign_svalue_no_free(& k->val, val);
   k->hval = h2;
   md->size++;
+#ifdef PIKE_DEBUG
+  m->size++;
+#endif
 
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
@@ -722,6 +732,9 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   md->ind_types |= 1 << key->type;
   md->val_types |= BIT_INT;
   md->size++;
+#ifdef PIKE_DEBUG
+  m->size++;
+#endif
 
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
@@ -794,6 +807,9 @@ void map_delete_no_free(struct mapping *m,
   k->next=md->free_list;
   md->free_list=k;
   md->size--;
+#ifdef PIKE_DEBUG
+  m->size--;
+#endif
   
   if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
   {
@@ -845,6 +861,9 @@ void check_mapping_for_destruct(struct mapping *m)
 	  k->next=md->free_list;
 	  md->free_list=k;
 	  md->size--;
+#ifdef PIKE_DEBUG
+	  m->size++;
+#endif
 	}else{
 	  val_types |= 1 << k->val.type;
 	  ind_types |= 1 << k->ind.type;
@@ -1554,6 +1573,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
     }
   }
 
+  if(d_flag > 1) check_mapping_type_fields(m);
   if(!((m->data->val_types | m->data->ind_types) & BIT_COMPLEX))
     return copy_mapping(m);
 
@@ -1678,6 +1698,9 @@ void check_mapping(struct mapping *m)
 
   if(m->next && m->next->prev != m)
     fatal("Mapping ->next->prev != mapping.\n");
+
+  if(m->size != md->size)
+    fatal("Mapping zapping detected!\n");
 
   if(m->prev)
   {
@@ -1881,6 +1904,9 @@ void gc_free_all_unreferenced_mappings(void)
 	    k->next=md->free_list;
 	    md->free_list=k;
 	    md->size--;
+#ifdef PIKE_DEBUG
+	    m->size++;
+#endif
 	  }else{
 	    prev=&k->next;
 	  }
@@ -1961,6 +1987,9 @@ void zap_all_mappings(void)
       }
     }
     md->size=0;
+#ifdef PIKE_DEBUG
+    m->size=0;
+#endif
     
     next=m->next;
     

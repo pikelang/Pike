@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.20 2000/02/01 23:51:48 hubbe Exp $
+ * $Id: mapping.h,v 1.21 2000/02/09 07:29:38 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -40,6 +40,9 @@ struct mapping
   INT32 refs;
 #ifdef PIKE_SECURITY
   struct object *prot;
+#endif
+#ifdef PIKE_DEBUG
+  INT32 size;
 #endif
   INT16 flags;
   struct mapping_data *data;
