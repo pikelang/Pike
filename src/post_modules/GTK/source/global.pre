@@ -203,7 +203,6 @@ void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 
   if( pigtk_is_setup )
     Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
-  pigtk_is_setup = 1;
 
   if(args)
     data = get_argv( &argc, args );
@@ -213,6 +212,7 @@ void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
     data[ 0 ] = "Pike GTK";
     argc=1;
   }
+  pigtk_is_setup = 1;
   gtk_set_locale();
   gtk_init( &argc, &data );
 
