@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.77 2002/11/29 19:47:05 jhs Exp $
+|| $Id: font.c,v 1.78 2003/03/23 14:33:25 marcus Exp $
 */
 
 #include "global.h"
 
 #define SPACE_CHAR 'i'
 
-extern unsigned char * image_default_font;
+extern const unsigned char image_default_font[];
 #define IMAGE_DEFAULT_FONT_SIZE 30596
 
 
