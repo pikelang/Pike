@@ -9,6 +9,15 @@ constant defined = __builtin.function_defined;
 //! with @ref{sscanf@} with @tt{"...%{...%}..."@} scan strings (which indeed
 //! was what it was invented for in the first place).
 //!
+//! @param args
+//!  The first arguments the function @tt{f@} expects
+//! @param f
+//!  The function to apply the arguments on
+//! @param extra
+//!  Optional extra arguments to send to @tt{f@}
+//! @returns
+//!  Whatever the supplied function @tt{f@} returns
+//!
 //! @example
 //!   @code{
 //!   class Product(string name, string version)
@@ -26,15 +35,6 @@ constant defined = __builtin.function_defined;
 //!	 Product(whitefish/0.1)
 //!   })
 //!   @}
-//!
-//! @param args
-//!  the first arguments the function @tt{f@} expects
-//! @param f
-//!  the function to apply the arguments on
-//! @param extra
-//!  optional extra arguments to send to @tt{f@}
-//! @returns
-//!  whatever the supplied function @tt{f@} returns
 mixed splice_call(array args, function f, mixed|void ... extra)
 {
   return f(@args, @extra);
