@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.291 2000/03/30 19:43:01 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.292 2000/03/30 20:05:24 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -130,15 +130,15 @@ test_compile_any([[
   mapping(int:string) foo = ([FOO: "foo"]);
 ]])
 
-test_compile_any([[
+test_compile_error([[
   function(...:int) foo;
 ]]);
 
-test_compile_any([[
+test_compile_error([[
   function(,...:int) foo;
 ]]);
 
-test_compile_any([[
+test_compile_error([[
   function(string,...:int) foo;
 ]]);
 
