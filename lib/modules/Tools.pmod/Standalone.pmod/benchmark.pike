@@ -1,4 +1,4 @@
-// $Id: benchmark.pike,v 1.6 2003/08/24 21:00:35 nilsson Exp $
+// $Id: benchmark.pike,v 1.7 2004/07/08 15:36:42 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -26,7 +26,7 @@ int(0..) main(int num, array(string) args)
    mapping(string:Tools.Shoot.Test) tests=([]);
    array results=({});
    
-   foreach (indices(Tools.Shoot);;string test)
+   foreach (indices(Tools.Shoot),string test)
    {
       program p;
       Tools.Shoot.Test t;
