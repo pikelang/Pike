@@ -152,7 +152,7 @@ things:
 Also, please beware that the word <b>program</b> is also a builtin pike
 data type.
 <HR NEWPAGE>
-<H1> Getting started</H1>
+<H1> Chapter 1, Getting started</H1>
 <p>
 First you need to have pike installed on your computer. See Appendix E
 "how to install Pike" if this is not already done. It is also vital
@@ -1533,7 +1533,8 @@ a <tt>program</tt> is the same as a <b>class</b> in C++. A <tt>program</tt>
 holds a table of what functions and variables are defined in that program.
 It also holds the code itself, debug information and references to other
 programs in the form of inherits. A <tt>program</tt> does not hold space
-to store any data however. All the information in a <tt>program</tt> is
+to store any data however.
+All the information in a <tt>program</tt> is
 gathered when a file or string is run through the Pike compiler. The variable
 space needed to execute the code in the program is stored in an <tt>object</tt>
 which is the next data type we will discuss. 
@@ -1606,6 +1607,9 @@ by calling <tt>record</tt>. This is called <b>cloning</b> and it
 allocates space to store the variables defined in the <tt>class record</tt>.
 <tt>Show_record</tt> takes a one of the records created in <tt>add_empty_record</tt> and shows the contents of it. As you can see, the arrow operator
 is used to access the data allocated in <tt>add_empty_record</tt>.
+If you do not understand this section I suggest you go on and read the
+next section about <tt>objects</tt> and then come back and read this
+section again.
 <p>
 
 <dl>
@@ -1817,6 +1821,68 @@ copy recursively, you can use the plus operator instead. For instance,
 to create a copy of an array you simply add an empty array to it, like this:
 <tt>copy_of_arr = arr + ({});</tt> If you need to copy a mapping you use
 an empty mapping, and for a multiset you use an empty multiset.
+<p>
+<h2>Writing data types</h2>
+When declaring a variable, you also have to specify what type of variable
+it is. For most types, such as <tt>int</tt> and <tt>string</tt> this is
+very easy. But there are much more interesting ways to declare variables
+than that, let's look at a few examples:
+<pre>
+	int x; // x is an integer
+	int|string x; // x is a string or an integer
+	array(string) x; // x is an array of strings
+	array x; // x is an array of mixed
+	mixed x; // x can be any type
+	string *x; // x is an array of strings
+	mapping(string:int) x; // x is a mapping mapping from int to string
+	object(Stdio.File) x; // x is a clone of Stdio.File
+
+	// x is a function that takes two integers arguments and returns a string
+	function(int,int:string) x;
+
+	// x is a function taking any amount of integer arguments and returns nothing.
+	function(int...:void) x;
+
+	// x is ... complicated
+	mapping(string:function(string|int...:mapping(string:string*))) x;
+</pre>
+As you can see there are some interesting ways to specify types.
+Here is a list of what is possible:
+<dl>
+<dt> <tt>mixed</tt>
+<dt> This means that the variable can contain any type.
+<dt> <tt>array( <i>type</i> )</tt>
+<dd> This means an array of <i>type</i>.
+<dt> <tt><i>type</i> *</tt>
+<dd> This also means an array of <i>type</i>.
+<dt> <tt>mapping( <i>key type</i> : <i>value type</i> )</tt>
+<dd> This is a mapping where the keys are of type <i>key type</i> and the
+      values of <i>value type</i>.
+<dt> <tt>multiset ( <i>type</i> )</tt>
+<dd> This means a multiset containing values of type <i>type</i>.
+<dt> <tt>object ( <i>program</i> )</tt>
+<dd> This means an object cloned from the specified program. The
+     <i>program</i> can be a class, a constant, or a string. If the program
+     is a string it will be casted to a program first. See the documentation
+     for <tt>inherit</tt> for more information about this casting.
+<dt> <tt>function( <i>argument types</i> : <i>return type</i> )</tt>
+<dd> This is a function taking the specified arguments and returning
+     <i>return type</i>. The <i>argument types</i> is a comma separated
+     list of types that specify the arguments. The argument list can also
+     end with <tt>...</tt> to signify that there can be any amount of the
+     last type.
+<dt> <tt><i>type1</i> | <i>type2</i></tt>
+<dd> This means either <i>type1</i> or <i>type2</i>
+<dt> <tt>void</tt>
+<dd> Void can only be used in certain places, if used as return type for a
+     function it means that the function does not return a value. If used
+     in the argument list for a function it means that that argument can
+     be omitted. Example: <tt>function(int|void:void)</tt> this means a
+     function that may or may not take an integer argument and does not
+     return a value.
+</dl>
+
+<!-- FIXME: insert some things for the reader to do here -->
 
 <p>
 <HR NEWPAGE>
@@ -10343,7 +10409,6 @@ returned. Otherwize zero_type will return zero.
 <ul>
   <li>garbage collection
   <li>int ... ars
-  <li>how to write types
   <li>data storage (local vs. global variables)
   <li>exception handling (catch, throw)
   <li>lambda
@@ -10355,7 +10420,6 @@ returned. Otherwize zero_type will return zero.
   <li>hilfe
   <li>{encode,decode}_value
   <li>replace_master
-  <li>overloading of sizeof, indices, values
   <li>mktime
   <li>socket->query_address()
   <li> scope for class {}
@@ -10611,17 +10675,17 @@ This is the BNF for Pike:
 
 <table>
 <tr valign=top><td>program</td><td>::=</td><td>{ definition }</td></tr>
-<tr valign=top><td>definition</td><td>::=</td><td>import | inheritace | function_declaration | function_definition | variables | constant | class_def</td></tr>
+<tr valign=top><td>definition</td><td>::=</td><td>import | inheritance | function_declaration | function_definition | variables | constant | class_def</td></tr>
 <tr valign=top><td>import</td><td>::=</td><td>modifiers <b>import</b> constant_identifier ";"</td></tr>
 <tr valign=top><td>inheritance</td><td>::=</td><td>modifiers <b>inherit</b> program_specifier [ ":" identifier ] ";" </td></tr>
 <tr valign=top><td>function_declaration</td><td>::=</td><td>modifiers type identifier "(" arguments ")" ";"</td></tr>
 <tr valign=top><td>function_definition</td><td>::=</td><td>modifiers type identifier "(" arguments ")" block </td></tr>
 <tr valign=top><td>variables</td><td>::=</td><td>modifiers type variable_names ";"</td></tr>
 <tr valign=top><td>variable_names</td><td>::=</td><td>variable_name { "," variable_name }</td></tr>
-<tr valign=top><td>variable_name</td><td>::=</td><td>{ "*" } identifier [ "=" expression ]</td></tr>
+<tr valign=top><td>variable_name</td><td>::=</td><td>{ "*" } identifier [ "=" expression2 ]</td></tr>
 <tr valign=top><td>constant</td><td>::=</td><td>modifiers <b>constant</b> constant_names ";" </td></tr>
 <tr valign=top><td>constant_names</td><td>::=</td><td>constant_name { "," constant_name }</td></tr>
-<tr valign=top><td>constant_name</td><td>::=</td><td>identifer "=" expression</td></tr>
+<tr valign=top><td>constant_name</td><td>::=</td><td>identifer "=" expression2</td></tr>
 <tr valign=top><td>class_def</td><td>::=</td><td>modifiers <b>class</b> [ ";" ] </td></tr>
 <tr valign=top><td>class</td><td>::=</td><td><b>class</b> [ identifier ] "{" program "}"</td></tr>
 <tr valign=top><td>modifiers</td><td>::=</td><td> { <b>static</b> | <b>private</b> | <b>nomask</b> | <b>public</b> | <b>protected</b> | <b>inline</b> }</td></tr>
@@ -10655,7 +10719,8 @@ This is the BNF for Pike:
 <tr valign=top><td>array</td><td>::=</td><td>"({" expression_list "})"</td></tr>
 <tr valign=top><td>multiset</td><td>::=</td><td>"(&lt;" expression_list "&gt;)"</td></tr>
 <tr valign=top><td>mapping</td><td>::=</td><td>"([" [ expression : expression { "," expression ":" expression } ] [ "," ] "])"</td></tr>
-<tr valign=top><td>arrow</td><td>::=</td><td>expressoin6 "-&gt;" identifier</td></tr>
+<tr valign=top><td>arrow</td><td>::=</td><td>expression6 "-&gt;" identifier</td></tr>
+<tr valign=top><td>parenthesis</td><td>::=</td><td>"(" expression ")"</td></tr>
 <tr valign=top><td>expression_list</td><td>::=</td><td> [ splice_expression { "," splice_expression } ] [ "," ]</td></tr>
 <tr valign=top><td>splice_expression</td><td>::=</td><td>[ "@" ] expression2</td></tr>
 <tr valign=top><td>type</td><td>::=</td><td> ( <b>int</b> | <b>string</b> | <b>float</b> | <b>program</b> | <b>object</b> [ "(" program_specifier ")" ] | mapping [ "(" type ":" type ")" | array [ "(" type ")" ] | multiset [ "(" type ")" ] | function [ function_type ] ) { "*" }</td></tr>
