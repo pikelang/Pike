@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.116 2004/05/13 09:54:11 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.117 2004/05/23 17:51:53 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -1393,6 +1393,10 @@ class Evaluator {
   {
     safe_write(version()+
 	      " running Hilfe v3.5 (Incremental Pike Frontend)\n");
+    int major = master()->compat_major;
+    int minor = master()->compat_minor;
+    if( major!=-1 || minor!=-1 )
+      safe_write("(running in Pike %d.%d compat mode)\n", major, minor);
   }
 
   //! Clears the current state, history and removes all locally
