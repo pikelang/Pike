@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.60 2002/01/13 18:44:37 marcus Exp $
+//! $Id: DNS.pmod,v 1.61 2004/09/15 20:10:11 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -521,12 +521,16 @@ class client
 					   "/locations/resolver",
 					   "nameserver")) {
 	    nameservers = map(nameservers, `-, "\n");
+	  } else {
+	    nameservers = ({});
 	  }
 	  
 	  if (domains = system->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
 	    domains = map(domains, `-, "\n");
+	  } else {
+	    domains = ({});
 	  }
 	} else {
 	  /* FIXME: Is this a good idea?
