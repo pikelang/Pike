@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.13 1999/02/13 18:04:05 grubba Exp $
+ * $Id: imap_server.pike,v 1.14 1999/03/12 23:53:05 grubba Exp $
  */
 
 constant unauth_commands =
@@ -25,7 +25,10 @@ constant auth_commands =
    "list" : .requests.list,
    "lsub" : .requests.lsub,
    "status" : .requests.status,
-   "append" : .requests.append
+   "append" : .requests.append,
+
+   /* IMAP2 compatibility for Pine */
+   "find" : .requests.find,
 ]);
 
 constant select_commands =
@@ -51,6 +54,9 @@ constant select_commands =
    "store" : .requests.store,
    "copy" : .requests.copy,
    "uid" : .requests.uid
+
+   /* IMAP2 compatibility for Pine */
+   "find" : .requests.find,
 ]);
 
 constant all_commands = unauth_commands | auth_commands | select_commands;
