@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.144 2003/04/22 16:06:07 marcus Exp $
+|| $Id: system.c,v 1.145 2003/04/22 22:41:29 marcus Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.144 2003/04/22 16:06:07 marcus Exp $");
+RCSID("$Id: system.c,v 1.145 2003/04/22 22:41:29 marcus Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1634,7 +1634,7 @@ static MUTEX_T gethostbyname_mutex;
 #define GETSERV_DECLARE \
     struct servent *ret; \
     struct servent result; \
-    struct setvent_data data
+    struct servent_data data
 
 #define CALL_GETSERVBYNAME(X,Y) \
     THREADS_ALLOW(); \
