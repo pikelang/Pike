@@ -1490,6 +1490,14 @@ class ParseBlock
 	array body=func[p];
 	array rest=func[p+1..];
 
+	// Not all versions of Pike allows Token objects
+	// to be indexed.
+	catch {
+	  foreach(proto, string t)
+	    if(has_prefix(t, "/*!"))
+	      body = ({t})+body;
+	};
+
 	p=parse_type(proto,0);
 	PikeType rettype=PikeType(proto[..p-1]);
 
