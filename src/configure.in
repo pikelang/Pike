@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.397 2000/08/18 17:36:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.398 2000/08/20 12:50:51 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -266,7 +266,11 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   [
     OLD_CFLAGS="[$]CFLAGS"
     CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
+    AC_TRY_RUN([int main(){exit(0);}],
+      pike_cv_option_$2=yes,
+      pike_cv_option_$2=no, [
+      AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
+    ])
     CFLAGS="[$]OLD_CFLAGS"
   ])
   
@@ -888,7 +892,7 @@ if test $cflags_is_set = no; then
   DO_IF_OS(Windows_NT,
   [
     # FIXME: The test below probably doesn't work.
-    if test "x$CC" = "xrntecl"; then
+    if echo "x$CC" | grep "rntecl" >/dev/null 2>&1; then
       # Some options used by ecl (Intel's IA64 compiler).
 
       # We want threads, and link libc statically.
@@ -898,7 +902,7 @@ if test $cflags_is_set = no; then
       AC_SYS_COMPILER_FLAG(-Qip,Qip,OPTIMIZE)
 
       # More warnings.
-      AC_SYS_COMPILER_FLAG(-W4,W4,WARN)
+      AC_SYS_COMPILER_FLAG(-W3,W3,WARN)
 
       if test x$with_rtldebug = xyes ; then
         # Initialize auto variables to 0xcc.
@@ -1959,7 +1963,37 @@ AC_CACHE_VAL(pike_cv_accept_size_t, [
 int accept(int, struct sockaddr *, size_t *);
   ], [
     /* EMPTY */
-  ], pike_cv_accept_size_t=size_t, pike_cv_accept_size_t=int)
+  ], pike_cv_accept_size_t=size_t, [
+    AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+/* NT */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+/* Here's the actual test: */
+SOCKET accept(SOCKET, struct sockaddr *, size_t *);
+    ], [
+      /* EMPTY */
+    ], pike_cv_accept_size_t=size_t, pike_cv_accept_size_t=int)
+  ])
 ])
 AC_MSG_RESULT($pike_cv_accept_size_t)
 AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
