@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.598 2004/04/23 19:31:52 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.599 2004/05/01 14:51:59 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7545,6 +7545,18 @@ test_eq([[combine_path_unix("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 test_eq([[combine_path_nt("a:/","/fo\1111/bar/gazonk/../../")]],"a:/fo\1111/")
 test_eq([[combine_path_nt("a:/", "/foo","bar")+combine_path_nt("/foo","bar")]],
 	  "a:/foo/bar/foo/bar")
+
+test_eq([[combine_path("foo", "../bar")]],"bar")
+test_eq([[combine_path("foo/", "../bar")]],"bar")
+test_eq([[combine_path("foo/", "../bar/")]],"bar/")
+test_eq([[combine_path("foo/.", "../bar")]],"bar")
+test_eq([[combine_path("foo", "..")]],".")
+test_eq([[combine_path("foo/", "..")]],".")
+test_eq([[combine_path("foo/.", "..")]],".")
+test_eq([[combine_path(".", "bar")]],"bar")
+test_eq([[combine_path("./", "bar")]],"bar")
+test_eq([[combine_path(".", "../bar")]],"../bar")
+test_eq([[combine_path("./", "../bar")]],"../bar")
 
 // - Stdio.append_path
 test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
