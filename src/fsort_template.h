@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.16 2003/06/30 17:06:08 mast Exp $
+|| $Id: fsort_template.h,v 1.17 2003/08/27 17:59:43 nilsson Exp $
 */
 
 #ifdef SORT_BY_INDEX
@@ -155,17 +155,32 @@ static void MKNAME(_do_sort)(register PTYPE bas,
 	}
 #endif
       }
+
       DEC(a);
-      SWAP(a,bas);
-      DEC(a);
+      if( a != bas ) {
+	SWAP(a,bas);
+	DEC(a);
       
-      if(  (char *)a - (char *)bas < (char *)last - (char *)b )
+	if(  (char *)a - (char *)bas < (char *)last - (char *)b )
+        {
+	  MKNAME(_do_sort)(bas,a,max_recursion XARGS);
+	  bas=b;
+	} else {
+	  MKNAME(_do_sort)(b,last,max_recursion XARGS);
+	  last=a;
+	}
+      }
+      else
       {
-	MKNAME(_do_sort)(bas,a,max_recursion XARGS);
-	bas=b;
-      } else {
-	MKNAME(_do_sort)(b,last,max_recursion XARGS);
-	last=a;
+	DEC(a);
+	if( -1 < (char *)last - (char *)b )
+	{
+	  MKNAME(_do_sort)(bas,a,max_recursion XARGS);
+	  bas=b;
+	} else {
+	  MKNAME(_do_sort)(b,last,max_recursion XARGS);
+	  last=a;
+	}
       }
     }
   }
