@@ -224,8 +224,7 @@ test_eq([[xCrypto.md4()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
 	[[xCrypto.hex_to_string("d79e1c308aa5bbcdeea8ed63df412da9")]])
 test_eq([[xCrypto.md4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[xCrypto.hex_to_string("043f8582f241db351ce627e153e7f0e4")]])
-test_eq([[xCrypto.md4()->update("123456789012345678901234567890123456789012345678901234567890123456
-78901234567890")->digest()]],
+test_eq([[xCrypto.md4()->update("12345678901234567890123456789012345678901234567890123456789012345678901234567890")->digest()]],
 	[[xCrypto.hex_to_string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
 
 // MD2

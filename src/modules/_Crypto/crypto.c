@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.47 2001/09/24 12:00:53 grubba Exp $
+ * $Id: crypto.c,v 1.48 2002/02/26 16:54:15 marcus Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -639,6 +639,7 @@ void pike_module_init(void)
 	       tOr(tFunc(tStr,tStr), tFunc(tStr tStr,tStr)), 0);
 
   pike_md2_init();
+  pike_md4_init();
   pike_md5_init();
   pike_sha_init();
   pike_crypto_init();
@@ -662,6 +663,7 @@ void pike_module_init(void)
 void pike_module_exit(void)
 {
   pike_md2_exit();
+  pike_md4_exit();
   pike_md5_exit();
   pike_sha_exit();
   pike_crypto_exit();

@@ -495,6 +495,7 @@ testfont binary
 /src/modules/_Crypto/include/des.h foreign_ident
 /src/modules/_Crypto/include/idea.h foreign_ident
 /src/modules/_Crypto/include/md2.h foreign_ident
+/src/modules/_Crypto/include/md4.h foreign_ident
 /src/modules/_Crypto/include/md5.h foreign_ident
 /src/modules/_Crypto/include/rc4.h foreign_ident
 /src/modules/_Crypto/include/rijndael.h foreign_ident
@@ -525,6 +526,7 @@ testfont binary
 /src/modules/_Crypto/lib/rijndael.c foreign_ident
 /src/modules/_Crypto/lib/sha.c foreign_ident
 /src/modules/_Crypto/md2.c foreign_ident
+/src/modules/_Crypto/md4.c foreign_ident
 /src/modules/_Crypto/md5.c foreign_ident
 /src/modules/_Crypto/md5.pike foreign_ident
 /src/modules/_Crypto/nt.c foreign_ident

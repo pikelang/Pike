@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.h,v 1.7 2001/04/30 00:33:41 lange Exp $
+ * $Id: crypto.h,v 1.8 2002/02/26 16:54:16 marcus Exp $
  *
  * Prototypes for some functions.
  *
@@ -10,6 +10,8 @@ extern void assert_is_crypto_module(struct object *);
 extern void pike_nt_init(void);
 extern void pike_md2_init(void);
 extern void pike_md2_exit(void);
+extern void pike_md4_init(void);
+extern void pike_md4_exit(void);
 extern void pike_md5_init(void);
 extern void pike_md5_exit(void);
 extern void pike_crypto_init(void);
