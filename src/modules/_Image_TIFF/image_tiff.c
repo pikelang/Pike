@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.35 2003/07/25 16:14:29 grubba Exp $
+|| $Id: image_tiff.c,v 1.36 2003/07/25 16:32:17 grubba Exp $
 */
 
 #include "global.h"
@@ -15,7 +15,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.35 2003/07/25 16:14:29 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.36 2003/07/25 16:32:17 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -874,9 +874,6 @@ static void image_tiff_encode( INT32 args )
   free( (char *) b.str );
 }
 
-
-#define TIFF_ERROR_BUF_SIZE	4096
-static char last_tiff_error[TIFF_ERROR_BUF_SIZE];
 
 /* Complies with the TIFFErrorHandler API */
 void my_tiff_warning_handler(const char *module, const char *fmt, va_list x){}
