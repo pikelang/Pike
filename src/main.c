@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.189 2004/01/31 16:20:51 marcus Exp $
+|| $Id: main.c,v 1.190 2004/03/10 09:40:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.189 2004/01/31 16:20:51 marcus Exp $");
+RCSID("$Id: main.c,v 1.190 2004/03/10 09:40:00 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -748,15 +748,6 @@ int dbm_main(int argc, char **argv)
 
   init_object();
 
-  TRACE((stderr, "Init modules...\n"));
-
-  init_modules();
-
-#ifdef TEST_MULTISET
-  /* A C-level testsuite for the low level stuff in multisets. */
-  test_multiset();
-#endif
-
   if(SETJMP(back))
   {
     if(throw_severity == THROW_EXIT)
@@ -784,6 +775,15 @@ int dbm_main(int argc, char **argv)
     }
   }else{
     back.severity=THROW_EXIT;
+
+    TRACE((stderr, "Init modules...\n"));
+
+    init_modules();
+
+#ifdef TEST_MULTISET
+    /* A C-level testsuite for the low level stuff in multisets. */
+    test_multiset();
+#endif
 
     TRACE((stderr, "Init master...\n"));
 
