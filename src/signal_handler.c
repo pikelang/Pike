@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.280 2003/11/21 14:21:23 grubba Exp $
+|| $Id: signal_handler.c,v 1.281 2003/11/21 17:41:18 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.280 2003/11/21 14:21:23 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.281 2003/11/21 17:41:18 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3536,8 +3536,19 @@ void f_create_process(INT32 args)
 	pop_n_elems(args);
 	push_int(0);
 	return;
+      } else if (e < 0) {
+	/* Something went wrong with our read(2). */
+#ifdef ENODEV
+	if (olderrno == ENODEV) {
+	  /* This occurrs sometimes on FreeBSD... */
+	  Pike_error("Process.create_process(): read(2) failed with ENODEV!\n"
+		     "Probable operating system bug.\n");
+	}
+#endif /* ENODEV */
+	Pike_error("Process.create_process(): read(2) failed with errno %d\n",
+		   olderrno);
       } else {
-	/* Something went wrong. */
+	/* Something went wrong in the child. */
 	switch(buf[0]) {
 	case PROCE_CHDIR:
 	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
@@ -3618,13 +3629,6 @@ void f_create_process(INT32 args)
 	case 0:
 	  /* read() probably failed. */
 	default:
-#ifdef ENODEV
-	  if ((e < 0) && (olderrno == ENODEV)) {
-	    /* This occurrs sometimes on FreeBSD... */
-	    Pike_error("Process.create_process(): read(2) failed with ENODEV!\n"
-		       "Probable operating system bug.\n");
-	  }
-#endif /* ENODEV */
 	  Pike_error("Process.create_process(): "
 		     "Child failed: %d, %d, %d, %d, %d!\n",
 		     buf[0], buf[1], buf[2], e, olderrno);
