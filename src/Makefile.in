@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.390 2004/11/02 10:39:51 grubba Exp $
+# $Id: Makefile.in,v 1.391 2004/11/02 11:31:07 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -450,7 +450,7 @@ Pike_actions.wxs: $(SRCDIR)/../packaging/windows/actions.wxs
 Pike_ui.wxs: $(SRCDIR)/../packaging/windows/wix_ui.wxs
 	@cp $(SRCDIR)/../packaging/windows/wix_ui.wxs Pike_ui.wxs
 
-Pike_module.wxs:
+Pike_module.wxs: force
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
