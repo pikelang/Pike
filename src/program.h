@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.183 2003/08/02 01:07:18 mast Exp $
+|| $Id: program.h,v 1.184 2003/08/03 01:02:04 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -12,6 +12,7 @@
 #include "global.h"
 #include "pike_types.h"
 #include "pike_macros.h"
+#include "pike_error.h"
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
@@ -164,10 +165,13 @@ union idptr
   ptrdiff_t offset;
 };
 
+#define IDENTIFIER_VARIABLE 0
 #define IDENTIFIER_PIKE_FUNCTION 1
 #define IDENTIFIER_C_FUNCTION 2
 #define IDENTIFIER_FUNCTION 3
 #define IDENTIFIER_CONSTANT 4
+#define IDENTIFIER_TYPE_MASK 7
+
 #define IDENTIFIER_VARARGS 8	/* Used for functions only. */
 #define IDENTIFIER_NO_THIS_REF 8 /* Used for variables only: Don't count refs to self. */
 #define IDENTIFIER_HAS_BODY 16  /* Function has a body (set already in pass 1). */
@@ -177,8 +181,9 @@ union idptr
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_PIKE_FUNCTION(X) ((X) & IDENTIFIER_PIKE_FUNCTION)
+#define IDENTIFIER_IS_C_FUNCTION(X) ((X) & IDENTIFIER_C_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
-#define IDENTIFIER_IS_VARIABLE(X) (!((X) & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
+#define IDENTIFIER_IS_VARIABLE(X) (!((X) & IDENTIFIER_TYPE_MASK))
 #define IDENTIFIER_IS_ALIAS(X)	((X) & IDENTIFIER_ALIAS)
 
 #define IDENTIFIER_MASK 255
@@ -266,6 +271,9 @@ struct reference
   /* ID_* flags - static, private etc.. */
   INT16 id_flags;
 };
+
+/* Magic value used as identifier reference integer to refer to this. */
+#define IDREF_MAGIC_THIS -1
 
 /* Magic values in inherit.parent_offset; see below. */
 #define OBJECT_PARENT -18
@@ -500,12 +508,24 @@ struct program
   INT16 lfuns[NUM_LFUNS];
 };
 
+#if 0
+static inline int CHECK_IDREF_RANGE (int x, const struct program *p)
+{
+  if (x < 0 || x >= p->num_identifier_references)
+    debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
+		 p->num_identifier_references - 1);
+  return x;
+}
+#else
+#define CHECK_IDREF_RANGE(X,P) (X)
+#endif
+
 #define INHERIT_FROM_PTR(P,X) (dmalloc_touch(struct program *,(P))->inherits + (X)->inherit_offset)
 #define PROG_FROM_PTR(P,X) (dmalloc_touch(struct program *,INHERIT_FROM_PTR(P,X)->prog))
 #define ID_FROM_PTR(P,X) (PROG_FROM_PTR(P,X)->identifiers+(X)->identifier_offset)
-#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P,(P)->identifier_references+(X))
-#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P,(P)->identifier_references+(X))
-#define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+(X))
+#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P,(P)->identifier_references+CHECK_IDREF_RANGE((X), (P)))
+#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P,(P)->identifier_references+CHECK_IDREF_RANGE((X), (P)))
+#define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+CHECK_IDREF_RANGE((X), (P)))
 
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
