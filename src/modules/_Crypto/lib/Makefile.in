@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.26 2000/10/02 19:35:03 grubba Exp $
+# $Id: Makefile.in,v 1.27 2001/01/16 16:01:40 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -65,7 +65,7 @@ sure:
 
 clean:
 	-rm -f *.o *.i *.x *.a ./desTest
-	-rm -f $(GC) $(GH) desdata
+	-rm -f $(GC) $(GH) desdata_yes desdata_no
 
 depend:
 
@@ -79,19 +79,17 @@ $(SO):		$(SRCDIR)/../include/des.h
 $(GI):		desCode.h $(SRCDIR)/../include/des.h Makefile
 desTest.o:	$(SRCDIR)/../include/des.h
 
-$(GH):		desdata
-		./desdata $@ > $@
-
-desdata:	desdata.@CROSS@
-		test -f ./desdata || ln -s desdata.@CROSS@ desdata
+$(GH):		desdata_@CROSS@
+		./desdata_@CROSS@ $@ > $@
 
 # Not cross-compiling
-desdata.no:	desdata.o
+desdata_no:	desdata.o
 		$(LINK.c) -o $@ desdata.o
 
 # Cross-compiling
-desdata.yes:	$(SRCDIR)/desdata.pike
-		test -f ./desdata.yes || ln -s $(SRCDIR)/desdata.pike desdata.yes
+desdata_yes:	$(SRCDIR)/desdata.pike
+		test -f ./desdata_yes || ln -s $(SRCDIR)/desdata.pike desdata_yes || cp $(SRCDIR)/desdate.pike desdata_yes
+		-@chmod a+x desdata_yes
 
 # new rules  (note: tr|sed|tr is NOT necessary,  just there so .i is readable)
 .c.i:
