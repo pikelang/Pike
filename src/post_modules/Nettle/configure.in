@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2003/08/26 15:09:08 nilsson Exp $
+# $Id: configure.in,v 1.7 2004/01/15 01:19:14 grendel Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -8,10 +8,10 @@ AC_MODULE_INIT()
 
 PIKE_FEATURE_OK(Nettle)
 
-AC_CHECK_LIB(nettle, nettle_md5_init,,
+AC_CHECK_LIB(nettle, md5_init,,
 	     AC_MSG_WARN([The nettle library not found.
 No crypto functions will be available.])
-	     PIKE_FEATURE_NODEP(Nettle))
+	     PIKE_FEATURE_NODEP(Nettle),-lgmp)
 
 AC_HAVE_FUNCS(nettle_md4_init)
 
