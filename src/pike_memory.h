@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.9 1999/02/27 21:53:44 grubba Exp $
+ * $Id: pike_memory.h,v 1.10 1999/03/10 02:41:18 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -60,6 +60,7 @@ struct generic_mem_searcher
 #define MEMCHR0 MEMCHR
 
 /* Prototypes begin here */
+char *strdup(const char *str);
 int pcharp_memcmp(PCHARP a, PCHARP b, int sz);
 INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e);
 INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e);
@@ -68,6 +69,7 @@ void reverse(char *memory, INT32 nitems, INT32 size);
 void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen);
 unsigned INT32 hashstr(const unsigned char *str,INT32 maxn);
+unsigned INT32 simple_hashmem(const unsigned char *str,INT32 len, INT32 maxn);
 void init_memsearch(struct mem_searcher *s,
 		    char *needle,
 		    SIZE_T needlelen,
@@ -94,6 +96,7 @@ void memfill(char *to,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
+
 /* Prototypes end here */
 
 #undef BLOCK_ALLOC
