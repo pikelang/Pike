@@ -1,7 +1,7 @@
 
 dnl --- Security
 
-cond([[ __builtin.security ]],[[
+cond([[ __builtin["security"] ]],[[
 test_true([[
 #pike 7.4
 functionp(call_with_creds)]])
