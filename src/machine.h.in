@@ -114,7 +114,7 @@
 #undef USE_IOCTL_FIONBIO
 #undef USE_FCNTL_O_NDELAY
 #undef USE_FCNTL_FNDELAY
-#undef USE_FCNTL_NONBLOCK
+#undef USE_FCNTL_O_NONBLOCK
 
 /* Define if you have index */
 #undef HAVE_STRTOL
