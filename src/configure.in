@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.245 1998/09/29 20:13:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.246 1998/10/23 17:20:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2302,7 +2302,7 @@ fi
 #############################################################################
 
 AC_MSG_CHECKING(for isgraph)
-AC_CACHE_VAL(pike_cv_func_isgraph, [ AC_TRY_COMPILE([
+AC_CACHE_VAL(pike_cv_func_isgraph, [ AC_TRY_LINK([
 #include <ctype.h>
 ], [
 return(!isgraph('A'));
