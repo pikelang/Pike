@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.250 2003/11/18 19:33:45 grubba Exp $
+|| $Id: object.c,v 1.251 2004/03/15 22:47:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.250 2003/11/18 19:33:45 grubba Exp $");
+RCSID("$Id: object.c,v 1.251 2004/03/15 22:47:15 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1599,28 +1599,6 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
   }
 
   return 1;
-}
-
-void cleanup_objects(void)
-{
-  struct object *o, *next;
-
-  for(o=first_object;o;o=next)
-  {
-    add_ref(o);
-    if(o != master_object &&	/* Wait with the master till last. */
-       o->prog)
-    {
-      debug_malloc_touch(o);
-      debug_malloc_touch(o->storage);
-      call_destroy(o,1);
-      destruct(o);
-    } else {
-      debug_malloc_touch(o);
-    }
-    SET_NEXT_AND_FREE(o,free_object);
-  }
-  destruct_objects_to_destruct();
 }
 
 PMOD_EXPORT struct array *object_indices(struct object *o)

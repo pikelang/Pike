@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.154 2004/03/15 22:23:14 mast Exp $
+|| $Id: array.c,v 1.155 2004/03/15 22:47:15 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.154 2004/03/15 22:23:14 mast Exp $");
+RCSID("$Id: array.c,v 1.155 2004/03/15 22:47:15 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2350,7 +2350,8 @@ void real_gc_cycle_check_array(struct array *a, int weak)
 {
   GC_CYCLE_ENTER(a, T_ARRAY, weak) {
 #ifdef PIKE_DEBUG
-    if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
+    if (!gc_destruct_everything &&
+	(a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array))
       Pike_fatal("Trying to gc cycle check some *_empty_array.\n");
 #endif
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.241 2004/03/15 22:23:14 mast Exp $
+|| $Id: gc.c,v 1.242 2004/03/15 22:47:15 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.241 2004/03/15 22:23:14 mast Exp $");
+RCSID("$Id: gc.c,v 1.242 2004/03/15 22:47:15 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -108,6 +108,11 @@ PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
+#ifdef DO_PIKE_CLEANUP
+int gc_destruct_everything = 0;
+#else
+#define gc_destruct_everything 0
+#endif
 
 struct gc_frame
 {
@@ -1396,6 +1401,8 @@ void debug_gc_touch(void *a)
 #ifdef PIKE_DEBUG
 	else if (m->flags & GC_MARKED)
 	  return;
+	else if (gc_destruct_everything)
+	  return;
 	else if (!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_XREFERENCED)
 	  gc_fatal(a, 3, "A thing with external references "
 		   "got missed by mark pass.\n");
@@ -2179,12 +2186,14 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     Pike_fatal("GC cycle push attempted in invalid pass.\n");
   if (gc_debug && !(m->flags & GC_PRETOUCHED))
     gc_fatal(x, 0, "gc_cycle_push() called for untouched thing.\n");
-  if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
-      *(INT32 *) x)
-    gc_fatal(x, 1, "Got a referenced marker to gc_cycle_push.\n");
-  if (m->flags & GC_XREFERENCED)
-    gc_fatal(x, 1, "Doing cycle check in externally referenced thing "
-	     "missed in mark pass.\n");
+  if (!gc_destruct_everything) {
+    if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
+	*(INT32 *) x)
+      gc_fatal(x, 1, "Got a referenced marker to gc_cycle_push.\n");
+    if (m->flags & GC_XREFERENCED)
+      gc_fatal(x, 1, "Doing cycle check in externally referenced thing "
+	       "missed in mark pass.\n");
+  }
   if (weak && gc_rec_last == &rec_list)
     gc_fatal(x, 1, "weak is %d when on top of stack.\n", weak);
   if (gc_debug > 1) {
@@ -2457,12 +2466,14 @@ static void gc_cycle_pop(void *a)
     Pike_fatal("GC cycle pop attempted in invalid pass.\n");
   if (!(m->flags & GC_CYCLE_CHECKED))
     gc_fatal(a, 0, "Marker being popped doesn't have GC_CYCLE_CHECKED.\n");
-  if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
-      *(INT32 *) a)
-    gc_fatal(a, 1, "Got a referenced marker to gc_cycle_pop.\n");
-  if (m->flags & GC_XREFERENCED)
-    gc_fatal(a, 1, "Doing cycle check in externally referenced thing "
-	     "missed in mark pass.\n");
+  if (!gc_destruct_everything) {
+    if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
+	*(INT32 *) a)
+      gc_fatal(a, 1, "Got a referenced marker to gc_cycle_pop.\n");
+    if (m->flags & GC_XREFERENCED)
+      gc_fatal(a, 1, "Doing cycle check in externally referenced thing "
+	       "missed in mark pass.\n");
+  }
 #endif
 #ifdef GC_CYCLE_DEBUG
   gc_cycle_indent -= 2;
@@ -2576,16 +2587,33 @@ int gc_do_free(void *a)
   m=find_marker(debug_malloc_pass(a));
   if (!m) return 0;		/* Object created after cycle pass. */
 
+  if (gc_destruct_everything) {
+    /* We don't actually free much in this mode, just destruct
+     * objects. So when we normally would return nonzero we just
+     * remove the extra ref again. */
+    if (!(m->flags & GC_LIVE)) {
+      if (*(INT32 *) a == 1)
+	return 1;
+      else {
+	gc_free_extra_ref (a);
+	--*(INT32 *) a;
+      }
+    }
+    return 0;
+  }
+
 #ifdef PIKE_DEBUG
   if (*(INT32 *) a > !!(m->flags & GC_GOT_EXTRA_REF)) {
-    if (!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED)
+    if (!gc_destruct_everything &&
+	(!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED))
       gc_fatal(a, 0, "gc_do_free() called for referenced thing.\n");
     if (gc_debug &&
 	(m->flags & (GC_PRETOUCHED|GC_MARKED|GC_IS_REFERENCED)) == GC_PRETOUCHED)
       gc_fatal(a, 0, "gc_do_free() called without prior call to "
 	       "gc_mark() or gc_is_referenced().\n");
   }
-  if((m->flags & (GC_MARKED|GC_XREFERENCED)) == GC_XREFERENCED)
+  if(!gc_destruct_everything &&
+     (m->flags & (GC_MARKED|GC_XREFERENCED)) == GC_XREFERENCED)
     gc_fatal(a, 1, "Thing with external reference missed in gc mark pass.\n");
   if ((m->flags & (GC_DO_FREE|GC_LIVE)) == GC_LIVE) live_ref++;
   m->flags |= GC_DO_FREE;
@@ -2797,30 +2825,36 @@ size_t do_gc(void *ignored, int explicit_call)
   gc_internal_program = first_program;
   gc_internal_object = first_object;
 
-  /* Next we mark anything with external references. Note that we can
-   * follow the same reference several times, e.g. with shared mapping
-   * data blocks. */
-  ACCEPT_UNFINISHED_TYPE_FIELDS {
-    gc_mark_all_arrays();
-    gc_mark_run_queue();
-    gc_mark_all_multisets();
-    gc_mark_run_queue();
-    gc_mark_all_mappings();
-    gc_mark_run_queue();
-    gc_mark_all_programs();
-    gc_mark_run_queue();
-    gc_mark_all_objects();
-    gc_mark_run_queue();
+  if (gc_destruct_everything) {
+    GC_VERBOSE_DO(fprintf(stderr,
+			  "| mark pass skipped - will destruct all objects\n"));
+  }
+  else {
+    /* Next we mark anything with external references. Note that we can
+     * follow the same reference several times, e.g. with shared mapping
+     * data blocks. */
+    ACCEPT_UNFINISHED_TYPE_FIELDS {
+      gc_mark_all_arrays();
+      gc_mark_run_queue();
+      gc_mark_all_multisets();
+      gc_mark_run_queue();
+      gc_mark_all_mappings();
+      gc_mark_run_queue();
+      gc_mark_all_programs();
+      gc_mark_run_queue();
+      gc_mark_all_objects();
+      gc_mark_run_queue();
 #ifdef PIKE_DEBUG
-    if(gc_debug) gc_mark_all_strings();
+      if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
-  } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
+    } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 
-  GC_VERBOSE_DO(fprintf(stderr,
-			"| mark: %u markers referenced, %u weak references freed,\n"
-			"|       %d things to free, "
-			"got %"PRINTSIZET"u tricky weak refs\n",
-			marked, weak_freed, delayed_freed, gc_ext_weak_refs));
+    GC_VERBOSE_DO(fprintf(stderr,
+			  "| mark: %u markers referenced, %u weak references freed,\n"
+			  "|       %d things to free, "
+			  "got %"PRINTSIZET"u tricky weak refs\n",
+			  marked, weak_freed, delayed_freed, gc_ext_weak_refs));
+  }
 
   {
 #ifdef PIKE_DEBUG
@@ -2987,7 +3021,8 @@ size_t do_gc(void *ignored, int explicit_call)
   /* Destruct the live objects in cycles, but first warn about any bad
    * cycles. */
   pre_kill_objs = num_objects;
-  if (last_cycle && Pike_interpreter.evaluator_stack) {
+  if (last_cycle && Pike_interpreter.evaluator_stack &&
+      !gc_destruct_everything) {
     objs -= num_objects;
     warn_bad_cycles();
     objs += num_objects;
@@ -3056,11 +3091,11 @@ size_t do_gc(void *ignored, int explicit_call)
 #ifdef PIKE_DEBUG
   if (gc_extra_refs) {
     size_t e;
-    struct marker *m;
     fprintf (stderr, "Lost track of %d extra refs to things in gc.\n"
 	     "Searching for marker(s) with extra refs:\n", gc_extra_refs);
-    for (e = 0; e < marker_hash_table_size; e++)
-      for (m = marker_hash_table[e]; m; m = m->next)
+    for (e = 0; e < marker_hash_table_size; e++) {
+      struct marker *s = marker_hash_table[e], *m;
+      for (m = s; m;) {
 	if (m->flags & GC_GOT_EXTRA_REF) {
 	  fprintf (stderr, "========================================\n"
 		   "Found marker with extra ref: ");
@@ -3068,6 +3103,14 @@ size_t do_gc(void *ignored, int explicit_call)
 	  fprintf (stderr, "Describing the thing pointed to:\n");
 	  describe (m->data);
 	}
+	m = m->next;
+	/* The marker might be moved to the head of the chain via
+	 * describe() above, so do this to avoid infinite recursion.
+	 * Some entries in the chain might be missed, but I don't want
+	 * to bother. */
+	if (m == s) break;
+      }
+    }
     fprintf (stderr, "========================================\n"
 	     "Done searching for marker(s) with extra refs.\n");
     Pike_fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.105 2003/09/23 20:06:28 mast Exp $
+|| $Id: gc.h,v 1.106 2004/03/15 22:47:15 mast Exp $
 */
 
 #ifndef GC_H
@@ -55,6 +55,9 @@ extern ptrdiff_t alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
 extern int gc_trace, gc_debug;
+#ifdef DO_PIKE_CLEANUP
+extern int gc_destruct_everything;
+#endif
 extern cpu_time_t auto_gc_time;
 
 extern struct callback *gc_evaluator_callback;

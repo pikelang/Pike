@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.191 2004/03/15 22:23:14 mast Exp $
+|| $Id: main.c,v 1.192 2004/03/15 22:47:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.191 2004/03/15 22:23:14 mast Exp $");
+RCSID("$Id: main.c,v 1.192 2004/03/15 22:47:15 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -906,8 +906,11 @@ void exit_main(void)
   /* Destruct all remaining objects before modules are shut down, so
    * that they don't get calls to object exit callbacks after their
    * module exit callback. The downside is that the leak report below
-   * will always report destructed objects. */
-  cleanup_objects();
+   * will always report destructed objects. We use the gc in a special
+   * mode for this to get a reasonably sane destruct order. */
+  gc_destruct_everything = 1;
+  do_gc (NULL, 1);
+  gc_destruct_everything = 0;
 
   /* Unload dynamic modules before static ones. */
   exit_dynamic_load();
