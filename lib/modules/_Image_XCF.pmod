@@ -53,7 +53,7 @@ array(Parasite) decode_parasites( string data )
     name = data[..slen-2];
     data = data[slen..];
     sscanf(data, "%4c%4c", flags, slen);
-    res += ({ Parasite( name,flags,data[8..slen+8-1] ) }); 
+    res += ({ Parasite( name,flags,data[8..slen+8-1] ) });
     data = data[slen+8..];
   }
   return res;
@@ -69,7 +69,7 @@ class Hierarchy
   int width;
   int height;
   int bpp;
-  
+
   Hierarchy set_image( int x, int y, int bp, array tiles, int compression,
                        Image.colortable cmap)
   {
@@ -124,7 +124,7 @@ class Hierarchy
 int iid;
 Hierarchy decode_image_data( mapping what, object i )
 {
-  Hierarchy h = 
+  Hierarchy h =
     Hierarchy( )->set_image(what->width, what->height, what->bpp,
                             what->tiles, i->compression, i->colormap );
   return h;
@@ -165,7 +165,7 @@ class Channel
        case PROP_COLOR:
          sscanf( p->data, "%c%c%c", r, g, b);
          break;
-         
+
        case PROP_PARASITES:
          parasites = decode_parasites( p->data );
          break;
@@ -348,7 +348,7 @@ class GimpImage
       {
        case PROP_COLORMAP:
          if(type == INDEXED)
-           meta_colormap = colormap = Image.colortable( p->data ); 
+           meta_colormap = colormap = Image.colortable( p->data );
          else
            meta_colormap = Image.colortable( p->data );
          break;
@@ -363,14 +363,14 @@ class GimpImage
          if (xres < 1e-5 || xres> 1e+5 || yres<1e-5 || yres>1e+5)
            xres = yres = 72.0;
          break;
-       case PROP_TATTOO:   
-         sscanf(p->data, "%4c", tattoo_state );     
+       case PROP_TATTOO:
+         sscanf(p->data, "%4c", tattoo_state );
          break;
        case PROP_PARASITES:
          parasites = decode_parasites( p->data );
          break;
        case PROP_UNIT:
-         sscanf(p->data, "%4c", res_unit );     
+         sscanf(p->data, "%4c", res_unit );
          break;
        case PROP_PATHS:
          paths = decode_paths( p->data );
@@ -436,19 +436,16 @@ array decode_layers( string|object|mapping what, mapping|void opts )
 
   if(!objectp( what ) )
     what = __decode( what );
-  
+
   mapping lopts = ([ "tiled":1, ]);
+  array layers = ({});
   if( opts->background )
   {
     lopts->image = Image.Image( 32, 32, opts->background );
     lopts->alpha = Image.Image( 32, 32, Image.Color.white );
     lopts->alpha_value = 1.0;
-  } else {
-    lopts->image = Image.Image( 32, 32, Image.Color.black );
-    lopts->alpha = Image.Image( 32, 32, Image.Color.black );
-    lopts->alpha_value = 0.0;
+    layers = ({ Image.Layer( lopts ) });
   }
-  array layers = ({ Image.Layer( lopts ) });
 
   foreach(what->layers, object l)
   {
@@ -458,6 +455,23 @@ array decode_layers( string|object|mapping what, mapping|void opts )
       Image.Layer lay = Image.Layer( h->img,
                                      h->alpha,
                                      translate_mode( l->mode ) );
+
+
+      /* Not really layer related */
+      lay->set_misc_value( "image_xres", l->parent->xres );
+      lay->set_misc_value( "image_yres", l->parent->yres );
+      lay->set_misc_value( "image_colormap", l->parent->colormap );
+      lay->set_misc_value( "image_guides", l->parent->guides );
+      lay->set_misc_value( "image_parasites", l->parent->parasites );
+
+      /* But these are. :) */
+      lay->set_misc_value( "name", l->name );
+      lay->set_misc_value( "tattoo", l->tattoo );
+      lay->set_misc_value( "parasites", l->parasites );
+      lay->set_misc_value( "visible", l->flags->visible );
+      if( l == l->parent->active_layer )
+        lay->set_misc_value( "active", 1 );
+
       h->img = 0; h->alpha = 0;
 
       lay->set_alpha_value( l->opacity / 255.0 );
@@ -473,7 +487,7 @@ array decode_layers( string|object|mapping what, mapping|void opts )
           a = l->mask->image;
         if( a->xsize() != l->image->img->xsize() ||
             a->ysize() != l->image->img->ysize() )
-          a = a->copy( 0,0, l->image->image->xsize(), 
+          a = a->copy( 0,0, l->image->image->xsize(),
                        l->image->image->ysize(), 255,255,255 );
         lay->set_alpha( a );
       }
@@ -489,7 +503,7 @@ mapping _decode( string|mapping what, mapping|void opts )
 
   GimpImage data = __decode( what );
   what = 0;
-  
+
   Image.Layer res = Image.lay(decode_layers( data, opts ),
                               0,0,data->width,data->height );
   Image.Image img = res->image();
@@ -532,7 +546,7 @@ mapping _decode( string|mapping what, mapping|void opts )
         img->line( x2,y1,x2,y2 );
         img->line( x2,y2,x1,y2 );
         img->line( x1,y2,x1,y1 );
-        if(alpha) 
+        if(alpha)
         {
           alpha->setcolor(0,0,255);
           alpha->line( x1,y1,x2,y1 );
@@ -543,7 +557,7 @@ mapping _decode( string|mapping what, mapping|void opts )
       }
     }
   }
-  
+
   if(opts->mark_layer_names)
   {
     foreach(data->layers, Layer l)
@@ -579,7 +593,7 @@ mapping _decode( string|mapping what, mapping|void opts )
       img->line( x2,y1,x2,y2 );
       img->line( x2,y2,x1,y2 );
       img->line( x1,y2,x1,y1 );
-      if(alpha) 
+      if(alpha)
       {
         alpha->setcolor(0,0,255);
         alpha->line( x1,y1,x2,y1 );
@@ -592,7 +606,7 @@ mapping _decode( string|mapping what, mapping|void opts )
 
   Array.map( data->layers, lambda(object o) { destruct(o); } );
   destruct( data );
-  return 
+  return
   ([
     "image":img,
     "alpha":alpha,
