@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.7 2002/05/24 14:36:28 grubba Exp $
+ * $Id: module.pmod,v 1.8 2002/05/24 15:35:15 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -180,7 +180,7 @@ class ErrorHandler
   //!   @value 1
   //!    Also notices.
   //! @endint
-  optional int verbose=1;
+  optional int(-1..1) verbose = 1;
 
   static constant severity_kind = ([ NOTICE:"Notice",
 				     WARNING:"Warning",
@@ -192,6 +192,20 @@ class ErrorHandler
     if (level > -verbose) {
       werror("%s: %s: "+msg+"\n",
 	     severity_kind[level], subsystem, @args);
+    }
+  }
+
+  //! Create a new error handler.
+  //!
+  //! @param verbosity
+  //!   Level of verbosity.
+  //!
+  //! @seealso
+  //!   @[verbose]
+  static void create(int(-1..1)|void verbosity)
+  {
+    if (!zero_type(verbosity)) {
+      verbose = verbosity;
     }
   }
 }
