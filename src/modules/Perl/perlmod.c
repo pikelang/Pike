@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.32 2002/11/26 14:22:47 nilsson Exp $
+|| $Id: perlmod.c,v 1.33 2003/09/05 21:38:12 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -17,6 +17,7 @@
 #include "threads.h"
 #include "mapping.h"
 #include "perl_machine.h"
+#include "security.h"
 
 
 #ifdef HAVE_PERL
@@ -357,7 +358,10 @@ static void perlmod_create(INT32 args)
 #endif
 #endif
     
-  if (args != 0) Pike_error("Perl->create takes no arguments.");
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->create: Permission denied.\n"));
+
+  if (args != 0) Pike_error("Perl->create takes no arguments.\n");
 
   if (!ps || !ps->perl) Pike_error("No perl interpreter available.\n");
 
@@ -401,6 +405,9 @@ static void perlmod_parse(INT32 args)
   fprintf(stderr, "[perlmod_parse, %d args]\n", args);
 #endif
     
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->parse: Permission denied.\n"));
+
   check_all_args("Perl->parse",args,BIT_ARRAY, BIT_MAPPING|BIT_VOID, 0);
   if(!ps->perl) Pike_error("No perl interpreter available.\n");
 
@@ -482,6 +489,9 @@ static void perlmod_run(INT32 args)
 {
   INT32 i;
   struct perlmod_storage *ps = _THIS;
+
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->run: Permission denied.\n"));
 
   if(!ps->perl) Pike_error("No perl interpreter available.\n");
   pop_n_elems(args);
@@ -580,7 +590,12 @@ static void _perlmod_eval(INT32 args, int perlflags)
  */
 
 static void perlmod_eval(INT32 args)
-  { _perlmod_eval(args, G_SCALAR); }
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->eval: Permission denied.\n"));
+
+  _perlmod_eval(args, G_SCALAR);
+}
 
 /*! @decl mixed eval_list(string expression)
  *!
@@ -590,7 +605,12 @@ static void perlmod_eval(INT32 args)
  */
 
 static void perlmod_eval_list(INT32 args)
-  { _perlmod_eval(args, G_ARRAY); }
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->eval_list: Permission denied.\n"));
+
+  _perlmod_eval(args, G_ARRAY);
+}
 
 static void _perlmod_call(INT32 args, int perlflags)
 {
@@ -727,7 +747,12 @@ static void _perlmod_call(INT32 args, int perlflags)
  */
 
 static void perlmod_call(INT32 args)
-  { _perlmod_call(args, G_SCALAR | G_EVAL);}
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->call: Permission denied.\n"));
+
+  _perlmod_call(args, G_SCALAR | G_EVAL);
+}
 
 /*! @decl mixed call_list(string name, mixed ... arguments)
  *!
@@ -745,7 +770,12 @@ static void perlmod_call(INT32 args)
  */
 
 static void perlmod_call_list(INT32 args)
-  { _perlmod_call(args, G_ARRAY | G_EVAL);}
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->call_list: Permission denied.\n"));
+
+  _perlmod_call(args, G_ARRAY | G_EVAL);
+}
 
 static void _perlmod_varop(INT32 args, int op, int type)
 /* To avoid excessive code duplication, this function does most of the
@@ -834,7 +864,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
  *!   Name of the scalar variable, as an 8-bit string.
  */
 static void perlmod_get_scalar(INT32 args)
-   { _perlmod_varop(args, 'R', 'S');}
+ { _perlmod_varop(args, 'R', 'S');}
 
 /*! @decl void set_scalar(string name, mixed value)
  *!
@@ -848,7 +878,12 @@ static void perlmod_get_scalar(INT32 args)
  *!   an error for unsupported value types. 
  */
 static void perlmod_set_scalar(INT32 args)
-   { _perlmod_varop(args, 'W', 'S');}
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->set_scalar: Permission denied.\n"));
+
+  _perlmod_varop(args, 'W', 'S');
+}
 
 /*! @decl mixed get_array_item(string name, int index)
  *!
@@ -884,7 +919,12 @@ static void perlmod_get_array_item(INT32 args)
  *!   thrown for unsupported value types.
  */
 static void perlmod_set_array_item(INT32 args)
-   { _perlmod_varop(args, 'W', 'A');}
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->create: Permission denied.\n"));
+
+  _perlmod_varop(args, 'W', 'A');
+}
 
 /*! @decl mixed get_hash_item(string name, mixed key)
  *!
@@ -918,7 +958,12 @@ static void perlmod_get_hash_item(INT32 args)
  *!   thrown for unsupported value types.
  */
 static void perlmod_set_hash_item(INT32 args)
-   { _perlmod_varop(args, 'W', 'H');}
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("Perl->set_hash_item: Permission denied.\n"));
+
+  _perlmod_varop(args, 'W', 'H');
+}
 
 /*! @decl int array_size(string name)
  *!
