@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.16 1997/11/11 01:26:17 grubba Exp $ */
+/* $Id: x.c,v 1.17 1998/01/04 21:09:25 per Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.16 1997/11/11 01:26:17 grubba Exp $");
+RCSID("$Id: x.c,v 1.17 1998/01/04 21:09:25 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -77,7 +77,7 @@ void image_to8bit(INT32 args) /* compat function */
 
   free_object(o);
 
-  pop_n_elems(args);
+/*   pop_n_elems(args); */
   push_string(end_shared_string(res));
 }
 
