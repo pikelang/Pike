@@ -373,6 +373,7 @@ static class _ymd_base
 // this should probably be called UK_en or something:
 
 constant cENGLISH=cISO;
+constant cENG=cISO;
 constant cEN=cISO;
 class cISO
 {
@@ -414,6 +415,7 @@ class cISO
 
 constant cSE_SV=cSWEDISH;
 constant cSV=cSWEDISH;
+constant cSWE=cSWEDISH;
 class cSWEDISH
 {
    inherit _ymd_base;
@@ -533,6 +535,7 @@ class cAUSTRIAN
 // source: book
 
 constant cCY=cWELSH;
+constant cCYM=cWELSH;
 class cWELSH
 {
    inherit _ymd_base;
@@ -565,6 +568,7 @@ class cWELSH
 // Julio César Gázquez <jgazquez@dld.net>
 
 constant cES=cSPANISH;
+constant cSPA=cSPANISH;
 class cSPANISH
 {
    inherit _ymd_base;
@@ -611,6 +615,7 @@ class cSPANISH
 // source: Sérgio Araújo <sergio@projecto-oasis.cx>
 
 constant cPT=cPORTUGESE; // Portugese (Brasil)
+constant cPOR=cPORTUGESE;
 class cPORTUGESE
 {
    inherit _ymd_base;
@@ -669,6 +674,7 @@ class cPORTUGESE
 // Csongor Fagyal <concept@conceptonline.hu>
 
 constant cHU=cHUNGARIAN;
+constant cHUN=cHUNGARIAN;
 class cHUNGARIAN
 {
    inherit _ymd_base;
@@ -705,6 +711,7 @@ class cHUNGARIAN
 // source: book
 
 constant cLA=cLATIN;
+constant cLAT=cLATIN;
 class cLATIN
 {
    inherit _ymd_base;
@@ -783,6 +790,7 @@ class cROMAN
 // source: anonymous unix locale file
 
 constant cKL=cGREENLANDIC; // Greenlandic 
+constant cKAL=cGREENLANDIC; 
 class cGREENLANDIC
 {
    inherit _ymd_base;
@@ -821,6 +829,7 @@ class cGREENLANDIC
 // source: anonymous unix locale file
 
 constant cIS=cICELANDIC; // Icelandic 
+constant cISL=cICELANDIC;
 class cICELANDIC
 {
    inherit _ymd_base;
@@ -859,6 +868,7 @@ class cICELANDIC
 // source: anonymous unix locale file
 
 constant cFA=cPERSIAN; // Persian (Iran)
+constant cFAS=cPERSIAN;
 class cPERSIAN
 {
    inherit _ymd_base;
@@ -897,6 +907,7 @@ class cPERSIAN
 // source: anonymous unix locale file
 
 constant cAF=cAFRIKAANS; // Afrikaans (South Africa)
+constant cAFR=cAFRIKAANS; 
 class cAFRIKAANS
 {
    inherit _ymd_base;
@@ -935,6 +946,7 @@ class cAFRIKAANS
 // source: anonymous unix locale file
 
 constant cGA=cIRISH; // Irish (Gaelic?) 
+constant cGLE=cIRISH;
 class cIRISH
 {
    inherit _ymd_base;
@@ -983,6 +995,7 @@ class cIRISH
 // source: anonymous unix locale file
 
 constant cEU=cBASQUE; // Basque (Spain)
+constant cEUS=cBASQUE;
 class cBASQUE
 {
    inherit _ymd_base;
@@ -1021,6 +1034,7 @@ class cBASQUE
 // source: anonymous unix locale file
 
 constant cNO=cNORWEGIAN; // Norwegian 
+constant cNOR=cNORWEGIAN;
 class cNORWEGIAN
 {
    inherit _ymd_base;
@@ -1061,6 +1075,7 @@ class cNORWEGIAN
 
 
 constant cNL=cDUTCH; // Dutch
+constant cNLD=cDUTCH;
 class cDUTCH
 {
    inherit _ymd_base;
@@ -1099,6 +1114,7 @@ class cDUTCH
 // source: anonymous unix locale file
 
 constant cPL=cPOLISH; // Polish 
+constant cPOL=cPOLISH;
 class cPOLISH
 {
    inherit _ymd_base;
@@ -1137,6 +1153,7 @@ class cPOLISH
 // source: anonymous unix locale file
 
 constant cTR=cTURKISH; // Turkish
+constant cTUR=cTURKISH; // Turkish
 class cTURKISH
 {
    inherit _ymd_base;
@@ -1177,6 +1194,7 @@ class cTURKISH
 
 
 constant cDE=cGERMAN; // German 
+constant cDEU=cGERMAN;
 class cGERMAN
 {
    inherit _ymd_base;
@@ -1215,6 +1233,7 @@ class cGERMAN
 // source: anonymous unix locale file
 
 constant cLV=cLATVIAN; // Latvian 
+constant cLAV=cLATVIAN;
 class cLATVIAN
 {
    inherit _ymd_base;
@@ -1253,6 +1272,7 @@ class cLATVIAN
 // source: anonymous unix locale file
 
 constant cFI=cFINNISH; // Finnish 
+constant cFIN=cFINNISH;
 class cFINNISH
 {
    inherit _ymd_base;
@@ -1291,6 +1311,7 @@ class cFINNISH
 // source: anonymous unix locale file
 
 constant cLT=cLITHUANIAN; // Lithuanian
+constant cLIT=cLITHUANIAN;
 class cLITHUANIAN
 {
    inherit _ymd_base;
@@ -1329,6 +1350,7 @@ class cLITHUANIAN
 // source: anonymous unix locale file
 
 constant cET=cESTONIAN; // Estonian 
+constant cEST=cESTONIAN;
 class cESTONIAN
 {
    inherit _ymd_base;
@@ -1364,6 +1386,7 @@ class cESTONIAN
 }
 
 constant cGL=cGALICIAN; // Galician (Spain)
+constant cGLG=cGALICIAN;
 class cGALICIAN
 {
    inherit _ymd_base;
@@ -1434,6 +1457,7 @@ class cINDONESIAN
 }
 
 constant cFR=cFRENCH; // French
+constant cFRA=cFRENCH;
 class cFRENCH
 {
    inherit _ymd_base;
@@ -1469,6 +1493,7 @@ class cFRENCH
 }
 
 constant cIT=cITALIAN; // Italian
+constant cITA=cITALIAN;
 class cITALIAN
 {
    inherit _ymd_base;
@@ -1504,6 +1529,7 @@ class cITALIAN
 }
 
 constant cCA=cCATALAN; // Catalan (Catalonia)
+constant cCAT=cCATALAN;
 class cCATALAN
 {
    inherit _ymd_base;
@@ -1539,6 +1565,7 @@ class cCATALAN
 }
 
 constant cSL=cSLOVENIAN; // Slovenian
+constant cSLV=cSLOVENIAN;
 class cSLOVENIAN
 {
    inherit _ymd_base;
@@ -1574,6 +1601,7 @@ class cSLOVENIAN
 }
 
 constant cFO=cFAROESE; // Faroese 
+constant cFAO=cFAROESE;
 class cFAROESE
 {
    inherit _ymd_base;
@@ -1609,6 +1637,7 @@ class cFAROESE
 }
 
 constant cRO=cROMANIAN; // Romanian
+constant cRON=cROMANIAN;
 class cROMANIAN
 {
    inherit _ymd_base;
@@ -1644,6 +1673,7 @@ class cROMANIAN
 }
 
 constant cHR=cCROATIAN; // Croatian
+constant cHRV=cCROATIAN; // Croatian
 class cCROATIAN
 {
    inherit _ymd_base;
@@ -1679,6 +1709,7 @@ class cCROATIAN
 }
 
 constant cDA=cDANISH; // Danish 
+constant cDAN=cDANISH;
 class cDANISH
 {
    inherit _ymd_base;
@@ -1714,6 +1745,7 @@ class cDANISH
 }
 
 constant cSR=cSERBIAN; // Serbian (Yugoslavia)
+constant cSRP=cSERBIAN;
 class cSERBIAN
 {
    inherit _ymd_base;
@@ -1917,3 +1949,5 @@ Ruleset.Language `[](string lang)
  zh Chinese 
  zu Zulu
 */
+
+

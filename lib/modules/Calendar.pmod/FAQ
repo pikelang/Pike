@@ -322,40 +322,40 @@ A:  <your country> uses the ISO calendar, with just different
       -------------------------------
       ISO                 (default, aka English)
      
-      Afrikaans   af      (South Africa),
+      Afrikaans   af afr   (South Africa),
       Austrian    de_AT
-      Basque      eu      (Spain)
-      Catalan     ca      (Catalonia)
-      Croatian    hr
-      Danish      da
-      Dutch       nl
-      English     en
-      Estonian    et
-      Faroese     fo
-      Finnish     fi
-      French      fr
-      Galician    gl      (Spain)
-      German      de
-      Greenlandic kl
-      Hungarian   hu
-      Icelandic   is
-      Irish       ga      (Gaelic)
-      Italian     it
-      Latvian     lv
-      Lithuanian  lt
-      Norwegian   no
-      Persian     fa      (Iran)
-      Polish      pl
-      Portugese   pt
-      Romanian    ro
-      Serbian     sr      (Yugoslavia)
-      Slovenian   sl
-      Spanish     es
-      Swedish     sv
-      Turkish     tr
-      Welsh       cy
+      Basque      eu eus   (Spain)
+      Catalan     ca cat   (Catalonia)
+      Croatian    hr hrv
+      Danish      da dan
+      Dutch       nl nld
+      English     en eng
+      Estonian    et est
+      Faroese     fo fao
+      Finnish     fi fin
+      French      fr fra
+      Galician    gl glg   (Spain)
+      German      de deu
+      Greenlandic kl kal
+      Hungarian   hu hun
+      Icelandic   is isl
+      Irish       ga gle   (Gaelic)
+      Italian     it ita
+      Latvian     lv lav
+      Lithuanian  lt lit
+      Norwegian   no nor
+      Persian     fa fas   (Iran)
+      Polish      pl pol
+      Portugese   pt por
+      Romanian    ro ron
+      Serbian     sr srp   (Yugoslavia)
+      Slovenian   sl slv
+      Spanish     es spa
+      Swedish     sv swe
+      Turkish     tr 
+      Welsh       cy cym
 
-      Latin       la
+      Latin       la lat
       Roman              (Roman Latin)
 
 -------------------------------------------------------------------------  
