@@ -1,11 +1,10 @@
-AC_REVISION("$Id: configure.in,v 1.667 2002/12/15 19:36:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.668 2002/12/19 15:47:44 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
 rm -f config.warnings 2>/dev/null
 
 if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
-  PIKE_MSG_WARN([configure script has been generated with autoconf 2.50 or later.])
   if test "x$cache_file" = "x/dev/null"; then
     cache_file=./config.cache
     if test -r "$cache_file"; then
@@ -16,6 +15,8 @@ if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
       > $cache_file
     fi
   fi
+else
+  PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
 fi
 
 # We want an absolute path to the source-dir.
