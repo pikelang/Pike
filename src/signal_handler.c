@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.252 2003/03/16 17:00:32 grubba Exp $
+|| $Id: signal_handler.c,v 1.253 2003/03/16 18:09:30 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.252 2003/03/16 17:00:32 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.253 2003/03/16 18:09:30 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3404,6 +3404,7 @@ void f_create_process(INT32 args)
       }
 #else
       THREADS_ALLOW();
+
 #ifdef PROC_DEBUG
       fprintf(stderr, "Parent: Wake up child.\n");
 #endif /* PROC_DEBUG */
@@ -3422,19 +3423,19 @@ void f_create_process(INT32 args)
       fprintf(stderr, "Parent: Wait for child...\n");
 #endif /* PROC_DEBUG */
       /* Wait for exec or error */
-      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR)) {
+      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
       /* Paranoia in case close() sets errno. */
       olderrno = errno;
 
       while(close(control_pipe[0]) < 0 && errno==EINTR);
+
+      THREADS_DISALLOW();
 #endif
 
 #ifdef PROC_DEBUG
       fprintf(stderr, "Parent: Child init done.\n");
 #endif /* PROC_DEBUG */
-
-      THREADS_DISALLOW();
 
       if (!e) {
 	/* OK! */
