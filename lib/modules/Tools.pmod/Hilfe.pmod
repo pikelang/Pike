@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.48 2002/03/21 00:47:10 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.49 2002/03/21 02:12:42 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -22,31 +22,50 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Tab completion of variable and module names.
 ";
 
+//! Abstract class for Hilfe commands.
+class Command {
 
-//! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.command_reset;
+  //! Returns a one line description of the command. This help should
+  //! be shorter than 54 characters.
+  string help();
+
+  //! A more elaborate documentation of the command. This should be
+  //! less than 68 characters per line.
+  string doc() { return help(); }
+
+  //! The actual command callback. Messages to the user should be
+  //! written out by using the write method in the @[Evaluator] object.
+  void exec(Evaluator, string, array(string));
+}
+
+//! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.CommandReset();
 //! in your .hilferc to have this command defined when you open Hilfe.
-void|string command_reset(int|Evaluator e, void|string line, void|array(string) tokens) {
-  if(!e) return "Undefines the given symbol.";
-  if(e==1) return #"
-Undefines any variable, constant, function or program, specified by
-name. Example: \"reset tmp\"";
-
-  string n = sizeof(tokens)>2 && tokens[2];
-  if(!n) {
-    e->write("No symbol given as argument to reset.\n");
-    return;
-  }
-  if(zero_type(e->variables[n]) && zero_type(e->constants[n]) &&
-     zero_type(e->functions[n]) && zero_type(e->programs[n])) {
-    e->write("Symbol %O not defined.\n", n);
-    return;
+class CommandReset {
+  inherit Command;
+  string help() { return "Undefines the given symbol."; }
+  string doc() {
+    return "Undefines any variable, constant, function or program, specified by\n"
+      "name. Example: \"reset tmp\"\n";
   }
 
-  m_delete(e->variables, n);
-  m_delete(e->types, n);
-  m_delete(e->constants, n);
-  m_delete(e->functions, n);
-  m_delete(e->programs, n);
+  void exec(Evaluator e, string line, array(string) tokens) {
+    string n = sizeof(tokens)>2 && tokens[2];
+    if(!n) {
+      e->write("No symbol given as argument to reset.\n");
+      return;
+    }
+    if(zero_type(e->variables[n]) && zero_type(e->constants[n]) &&
+       zero_type(e->functions[n]) && zero_type(e->programs[n])) {
+      e->write("Symbol %O not defined.\n", n);
+      return;
+    }
+
+    m_delete(e->variables, n);
+    m_delete(e->types, n);
+    m_delete(e->constants, n);
+    m_delete(e->functions, n);
+    m_delete(e->programs, n);
+  }
 }
 
 
@@ -54,285 +73,315 @@ name. Example: \"reset tmp\"";
 // Built in commands
 //
 
-private void|string command_set(int|Evaluator e, void|string line, void|array(string) tokens) {
-  if(e==0) return "Change Hilfe settings.";
-  if(e==1) return documentation_set;
+private class CommandSet {
+  inherit Command;
 
-  line = sizeof(tokens)>2 && tokens[2];
-  function write = e->write;
+  string help() { return "Change Hilfe settings."; }
+  string doc() { return documentation_set; }
 
-  if(!line) {
-    write("No setting to change given.\n");
-    return;
-  }
+  void exec(Evaluator e, string line, array(string) tokens) {
 
-  int(0..1) arg_check(string arg) {
-    if(line!=arg) return 0;
-    if(sizeof(tokens)<5) {
-      write("Not enough number of arguments to set %s\n", line);
-      line = "";
-      return 0;
+    line = sizeof(tokens)>2 && tokens[2];
+    function write = e->write;
+
+    if(!line) {
+      write("No setting to change given.\n");
+      return;
     }
-    return 1;
-  };
 
-  if(arg_check("trace")) {
-    e->trace_level = (int)tokens[4];
-    return;
-  }
+    int(0..1) arg_check(string arg) {
+      if(line!=arg) return 0;
+      if(sizeof(tokens)<5) {
+	write("Not enough number of arguments to set %s\n", line);
+	line = "";
+	return 0;
+      }
+      return 1;
+    };
 
-  if(arg_check("assembler_debug")) {
+    if(arg_check("trace")) {
+      e->trace_level = (int)tokens[4];
+      return;
+    }
+
+    if(arg_check("assembler_debug")) {
 #if constant(_assembler_debug)
-    e->assembler_debug_level = (int)tokens[4];
+      e->assembler_debug_level = (int)tokens[4];
 #else
-    write("Assembler debug not available.\n");
+      write("Assembler debug not available.\n");
 #endif
-    return;
-  }
+      return;
+    }
 
-  if(arg_check("compiler_trace")) {
+    if(arg_check("compiler_trace")) {
 #if constant(_compiler_trace)
-    e->compiler_trace_level = (int)tokens[4];
+      e->compiler_trace_level = (int)tokens[4];
 #else
-    write("Compiler trace not available.\n");
+      write("Compiler trace not available.\n");
 #endif
-    return;
-  }
+      return;
+    }
 
-  if(arg_check("debug")) {
+    if(arg_check("debug")) {
 #if constant(_debug)
-    e->debug_level = (int)tokens[4];
+      e->debug_level = (int)tokens[4];
 #else
-    write("Debug not available.\n");
+      write("Debug not available.\n");
 #endif
-    return;
-  }
+      return;
+    }
 
-  if(arg_check("history")) {
-    e->history->set_maxsize((int)tokens[4]);
-    return;
-  }
+    if(arg_check("history")) {
+      e->history->set_maxsize((int)tokens[4]);
+      return;
+    }
 
-  if(line=="") return;
-  write("No setting named %O exists.\n", line);
-  // Prompt (>/>>)
+    if(line=="") return;
+    write("No setting named %O exists.\n", line);
+    // Prompt (>/>>)
+  }
 }
 
-private void|string command_exit(int|Evaluator e, void|string line, void|array(string) tokens) {
-  if(intp(e)) return "Exit Hilfe.";
-  e->write("Exiting.\n");
-  destruct(e);
-  exit(0);
+private class CommandExit {
+  inherit Command;
+  string help() { return "Exit Hilfe."; }
+
+  void exec(Evaluator e, string line, array(string) tokens) {
+    e->write("Exiting.\n");
+    destruct(e);
+    exit(0);
+  }
 }
 
-private void|string command_help(int|Evaluator e, void|string line, void|array(string) tokens) {
-  if(intp(e)) return "Show help text.";
-  line = tokens[2..sizeof(tokens)-2]*"";
-  function write = e->write;
+private class CommandHelp {
+  inherit Command;
+  string help() { return "Show help text."; }
 
-  if(line == "me more") {
-    write( documentation_help_me_more );
-    return;
-  }
+  void exec(Evaluator e, string line, array(string) tokens) {
+    line = tokens[2..sizeof(tokens)-2]*"";
+    function write = e->write;
 
-  if(line == "hilfe todo") {
-    write(hilfe_todo);
-    return;
-  }
+    if(line == "me more") {
+      write( documentation_help_me_more );
+      return;
+    }
 
-  mapping(string:function|object) commands =
-    e->commands - (["hej":0, "look":0]);
+    if(line == "hilfe todo") {
+      write(hilfe_todo);
+      return;
+    }
 
-  if(line && commands[line]) {
-    write(commands[line](1)+"\n");
-    return;
-  }
+    if(line && e->commands[line]) {
+      string ret = e->commands[line]->doc();
+      if(ret) write(ret);
+      return;
+    }
 
-  write("\n");
-  e->print_version();
-  write( #"Hilfe is a tool to evaluate Pike interactively and incrementally.
+    write("\n");
+    e->print_version();
+    write( #"Hilfe is a tool to evaluate Pike interactively and incrementally.
 Any Pike function, expression or variable declaration can be
 entered at the command line. There are also a few extra commands:
 
 ");
 
-  array err = ({});
-  foreach(sort(indices(commands)), string cmd)
-    err += ({ catch(write(" %-10s - %s\n", cmd, e->commands[cmd]())) });
+    array err = ({});
+    foreach(sort(indices(e->commands)), string cmd) {
+      string ret;
+      err += ({ catch( ret = e->commands[cmd]->help() ) });
+      if(ret)
+	write(" %-10s - %s\n", cmd, ret);
+    }
 
-  write( #" .          - Abort current input batch.
+    write( #" .          - Abort current input batch.
 
 Enter \"help me more\" for further Hilfe help.
 ");
 
-  foreach(err-({0}), mixed err)
-    write(describe_backtrace(err)+"\n\n");
+    foreach(err-({0}), mixed err)
+      write(describe_backtrace(err)+"\n\n");
+  }
 }
 
-private constant usr_vector_a = ({
-  89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32,
-  72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108, 115, 32,
-  103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111, 117, 32, 115, 101, 101, 32 });
-private constant usr_vector_b = ({
-  32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97, 110, 121,
-  32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114, 111, 109, 32, 104,
-  101, 114, 101, 46 });
-private constant usr_vector_c = ({
-  32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110, 103, 32 });
-private constant usr_vector_d = usr_vector_c[..8] + ({
-  101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
+private class CommandDot {
+  inherit Command;
+  string help() { return 0; }
 
-private void|string command_look(Evaluator e, string line, array(string) tokens) {
-  string ret = (string)usr_vector_a;
+  private constant usr_vector_a = ({
+    89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32,
+    72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108, 115, 32,
+    103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111, 117, 32, 115, 101, 101, 32 });
+  private constant usr_vector_b = ({
+    32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97, 110, 121,
+    32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114, 111, 109, 32, 104,
+    101, 114, 101, 46 });
+  private constant usr_vector_c = ({
+    32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110, 103, 32 });
+  private constant usr_vector_d = usr_vector_c[..8] + ({
+    101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
-  array(string) thing(mixed thing, string what, void|string a, void|string b) {
+  private array(string) thing(mixed thing, string what, void|string a, void|string b) {
     if(!sizeof(thing)) return ({});
     return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
-  };
+  }
 
-  array tmp = ({});
-  tmp += thing(e->imports, "import");
-  tmp += thing(e->inherits, "inherit");
-  tmp += thing(e->history, "history entr", "y", "ies");
-  if(sizeof(tmp))
-    ret += String.implode_nicely(tmp) + ".";
-  else
-    ret += "nothing.";
+  void exec(Evaluator e, string line, array(string) tokens) {
+    string ret = (string)usr_vector_a;
 
-  tmp = ({});
-  tmp += thing(e->variables, "variable");
-  tmp += thing(e->constants, "constant");
-  tmp += thing(e->functions, "function");
-  tmp += thing(e->programs, "program");
-  if(sizeof(tmp))
-    ret += (string)usr_vector_c + String.implode_nicely(tmp) + ".";
-  else
-    ret += (string)usr_vector_d;
+    array tmp = ({});
+    tmp += thing(e->imports, "import");
+    tmp += thing(e->inherits, "inherit");
+    tmp += thing(e->history, "history entr", "y", "ies");
+    if(sizeof(tmp))
+      ret += String.implode_nicely(tmp) + ".";
+    else
+      ret += "nothing.";
 
-  ret += (string)usr_vector_b;
-  e->write("%-=67s\n", ret);
+    tmp = ({});
+    tmp += thing(e->variables, "variable");
+    tmp += thing(e->constants, "constant");
+    tmp += thing(e->functions, "function");
+    tmp += thing(e->programs, "program");
+    if(sizeof(tmp))
+      ret += (string)usr_vector_c + String.implode_nicely(tmp) + ".";
+    else
+      ret += (string)usr_vector_d;
+
+    ret += (string)usr_vector_b;
+    e->write("%-=67s\n", ret);
+  }
 }
 
-private object command_dump = class {
+class CommandDump {
+  inherit Command;
 
-    private function write;
+  private function write;
 
-    private string help() {
-      return documentation_dump;
+  string help() { return "Dump variables and other info."; }
+  string doc() { return documentation_dump; }
+
+  private void wrapper(Evaluator e) {
+    if(!e->last_compiled_expr) {
+      write("No wrapper compiled so far.\n");
+      return;
     }
-
-    private void wrapper(Evaluator e) {
-      if(!e->last_compiled_expr) {
-	write("No wrapper compiled so far.\n");
-	return;
-      }
-      write("Last compiled wrapper:\n");
-      int i;
-      string w = map(e->last_compiled_expr/"\n",
-		     lambda(string in) {
-		       return sprintf("%03d: %s", ++i, in);
-		     })*"\n";
-      write(w+"\n");
-    }
-
-    private string print_mapping(array(string) ind, array val) {
-      int m = max( @filter(map(ind, sizeof), `<, 20), 8 );
-      int i;
-      foreach(ind, string name)
-	write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i++]), "\n", "\n"+(" "*m)+"   "));
-    }
-
-    private void dump(Evaluator e) {
-      if(sizeof(e->constants)) {
-	write("\nConstants:\n");
-	array a=indices(e->constants), b=values(e->constants);
-	sort(a,b);
-	print_mapping(a,b);
-      }
-      if(sizeof(e->variables)) {
-	write("\nVariables:\n");
-	array a=indices(e->variables), b=values(e->variables);
-	sort(a,b);
-	a = map(a, lambda(string in) { return e->types[in] + " " + in; } );
-	print_mapping(a,b);
-      }
-      if(sizeof(e->functions)) {
-	write("\nFunctions:\n");
-	foreach(sort(indices(e->functions)), string name)
-	  write("%s\n", name);
-      }
-      if(sizeof(e->programs)) {
-	write("\nPrograms:\n");
-	foreach(sort(indices(e->programs)), string name)
-	  write("%s\n", name);
-      }
-      if(sizeof(e->inherits)) {
-	write("\nInherits:\n" + e->inherits*"\n" + "\n");
-      }
-      if(sizeof(e->imports)) {
-	write("\nImports:\n" + e->imports*"\n" + "\n");
-      }
-    }
-
-    void|string `()(int|Evaluator e, void|string line, void|array(string) tokens) {
-      if(!e) return "Dump variables and other info.";
-      if(e==1) return help();
-      write = e->write;
-
-      line = tokens[2..sizeof(tokens)-2]*"";
-      switch( line ) {
-      case "wrapper":
-	wrapper(e);
-	return;
-      case "state":
-	write(e->state->status());
-	return;
-      case "history":
-	write(e->history->status());
-	return;
-      case "":
-	dump(e);
-	return;
-      }
-      write("Unknown dump specifier.\n");
-      write(help()+"\n");
-    }
-  }();
-
-private void|string command_new(int|Evaluator e, void|string line, void|array(string) tokens) {
-  if(!e) return "Clears the Hilfe state.";
-  if(e==1) return documentation_new;
-
-  line = sizeof(tokens)>2 && tokens[2];
-  switch(line) {
-  case "variables":
-    e->variables = ([]);
-    e->types = ([]);
-    return;
-  case "constants":
-    e->constants = ([]);
-    return;
-  case "functions":
-    e->functions = ([]);
-    return;
-  case "programs":
-    e->programs = ([]);
-    return;
-  case "imports":
-    e->imports = ({});
-    return;
-  case "inherits":
-    e->inherits = ({});
-    return;
-  case "history":
-    e->history->flush();
-    return;
+    write("Last compiled wrapper:\n");
+    int i;
+    string w = map(e->last_compiled_expr/"\n",
+		   lambda(string in) {
+		     return sprintf("%03d: %s", ++i, in);
+		   })*"\n";
+    write(w+"\n");
   }
-  if(line) {
-    e->write("Unknown specifier %O.\n", line);
-    return;
+
+  private string print_mapping(array(string) ind, array val) {
+    int m = max( @filter(map(ind, sizeof), `<, 20), 8 );
+    int i;
+    foreach(ind, string name)
+      write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i++]), "\n", "\n"+(" "*m)+"   "));
   }
-  e->reset_evaluator();
+
+  private void dump(Evaluator e) {
+    if(sizeof(e->constants)) {
+      write("\nConstants:\n");
+      array a=indices(e->constants), b=values(e->constants);
+      sort(a,b);
+      print_mapping(a,b);
+    }
+    if(sizeof(e->variables)) {
+      write("\nVariables:\n");
+      array a=indices(e->variables), b=values(e->variables);
+      sort(a,b);
+      a = map(a, lambda(string in) { return e->types[in] + " " + in; } );
+      print_mapping(a,b);
+    }
+    if(sizeof(e->functions)) {
+      write("\nFunctions:\n");
+      foreach(sort(indices(e->functions)), string name)
+	write("%s\n", name);
+    }
+    if(sizeof(e->programs)) {
+      write("\nPrograms:\n");
+      foreach(sort(indices(e->programs)), string name)
+	write("%s\n", name);
+    }
+    if(sizeof(e->inherits)) {
+      write("\nInherits:\n" + e->inherits*"\n" + "\n");
+    }
+    if(sizeof(e->imports)) {
+      write("\nImports:\n" + e->imports*"\n" + "\n");
+    }
+  }
+
+  void  exec(Evaluator e, string line, array(string) tokens) {
+    write = e->write;
+
+    line = tokens[2..sizeof(tokens)-2]*"";
+    switch( line ) {
+    case "wrapper":
+      wrapper(e);
+      return;
+    case "state":
+      write(e->state->status());
+      return;
+    case "history":
+      write(e->history->status());
+      return;
+    case "":
+      dump(e);
+      return;
+    }
+    write("Unknown dump specifier.\n");
+    write(doc()+"\n");
+  }
+}
+
+private class CommandHej {
+  inherit Command;
+  string help() { return 0; }
+  void exec(Evaluator e, string line, array(string) tokens) {
+    if(line[0]=='.') e->write( (string)({ 84,106,97,98,97,33,10 }) );
+  }
+}
+
+private class CommandNew {
+  inherit Command;
+  string help() { return "Clears the Hilfe state."; }
+  string doc() { return documentation_new; }
+
+ void exec(Evaluator e, string line, array(string) tokens) {
+
+   line = sizeof(tokens)>2 && tokens[2];
+   switch(line) {
+   case "variables":
+     e->variables = ([]);
+     e->types = ([]);
+     return;
+   case "constants":
+     e->constants = ([]);
+     return;
+   case "functions":
+     e->functions = ([]);
+     return;
+   case "programs":
+     e->programs = ([]);
+     return;
+   case "imports":
+     e->imports = ({});
+     return;
+   case "inherits":
+     e->inherits = ({});
+     return;
+   case "history":
+     e->history->flush();
+     return;
+   }
+   if(line) {
+     e->write("Unknown specifier %O.\n", line);
+     return;
+   }
+   e->reset_evaluator();
+ }
 }
 
 
@@ -606,25 +655,9 @@ class Evaluator {
 
   //! This mapping contains the available Hilfe commands, including the
   //! built in ones (dump, exit, help, new, quit), so it is possible to
-  //! replace or remove them.
-  //!
-  //! A command is a function or an object with `() defined. The command
-  //! can be called in three different ways:
-  //! @ul
-  //!   @item
-  //!      (Evaluator e, string command_line, array(string) tokens)
-  //!      when commands are executed
-  //!   @item
-  //!      (0) when simple help is wanted
-  //!   @item
-  //!      (1) when extended help is wanted
-  //! @endul
-  //!
-  //! It is recommended that command names are less then 11 characters
-  //! long, that simple help is less than 54 characters long and that
-  //! the extended help is less than 68 characters per line (to keep
-  //! all presentation things like help etc look nice).
-  mapping(string:function|object) commands = ([]);
+  //! replace or remove them. The name of a command should be 10
+  //! characters or less.
+  mapping(string:Command) commands = ([]);
 
   //! Keeps the state, e.g. multiline input in process etc.
   ParserState state = ParserState();
@@ -660,14 +693,14 @@ class Evaluator {
   void create()
   {
     if(write) print_version();
-    commands->set = command_set;
-    commands->exit = command_exit;
-    commands->quit = command_exit;
-    commands->help = command_help;
-    commands->dump = command_dump;
-    commands->new = command_new;
-    commands->hej = lambda() { write("Tjabba!\n"); };
-    commands->look = command_look;
+    commands->set = CommandSet();
+    commands->exit = CommandExit();
+    commands->quit = CommandExit();
+    commands->help = CommandHelp();
+    commands->dump = CommandDump();
+    commands->new = CommandNew();
+    commands->hej = CommandHej();
+    commands->look = CommandDot();
     reset_evaluator();
   }
 
@@ -724,13 +757,13 @@ class Evaluator {
     if(commands[tokens[0]] && zero_type(constants[tokens[0]]) &&
        zero_type(variables[tokens[0]]) && zero_type(functions[tokens[0]]) &&
        (sizeof(tokens)==1 || tokens[1]!=";")) {
-      commands[tokens[0]](this_object(), s, tokens);
+      commands[tokens[0]]->exec(this_object(), s, tokens);
       return;
     }
 
     // See if the command is executed in overridden mode.
     if(sizeof(tokens)>1 && tokens[0]=="." && commands[tokens[1]]) {
-      commands[tokens[1]](this_object(), s, tokens);
+      commands[tokens[1]]->exec(this_object(), s, tokens);
       return;
     }
 
@@ -1271,6 +1304,11 @@ class Evaluator {
   }
 }
 
+
+//
+// Different wrappers the give the Hilfe a user interface
+//
+
 //! This is a wrapper containing a user interface to the Hilfe @[Evaluator]
 //! so that it can actually be used. This wrapper uses the @[Stdio.Readline]
 //! module to interface with the user. All input history is handled by
@@ -1447,6 +1485,10 @@ int main() {
   return 0;
 }
 
+
+//
+// Help texts for the built in commands.
+//
 
 constant documentation_set =
 #"Change Hilfe settings. Used as \"set <setting> <parameter>\".
