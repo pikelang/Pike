@@ -2707,7 +2707,7 @@ static void parse_xml(INT32 args)
 
   SET_ONERROR(e,free_xmldata, &data);
   low_parse_xml(&data,0,1);
-  UNSET_ONERROR(e);
+  CALL_AND_UNSET_ONERROR(e);
   tmp=*--sp;
   pop_n_elems(args);
   *sp++=tmp;
