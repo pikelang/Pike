@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.h,v 1.22 2003/04/01 19:41:13 mast Exp $
+|| $Id: main.h,v 1.23 2003/05/27 00:44:34 nilsson Exp $
 */
 
 #ifndef MAIN_H
@@ -16,7 +16,7 @@ PMOD_EXPORT extern int default_t_flag;
 
 #ifdef TRY_USE_MMX
 extern int try_use_mmx;
-#endif
+#endif /* TRY_USE_MMX */
 
 /* Debug options */
 #define DEBUG_SIGNALS 1
@@ -44,4 +44,4 @@ void init_main(void);
 void low_exit_main(void);
 /* Prototypes end here */
 
-#endif
+#endif /* !MAIN_H */
