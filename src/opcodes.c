@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.152 2003/09/10 09:42:05 grubba Exp $
+|| $Id: opcodes.c,v 1.153 2003/09/11 12:21:59 jhs Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.152 2003/09/10 09:42:05 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.153 2003/09/11 12:21:59 jhs Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -2214,22 +2214,133 @@ static INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
 
 /*! @decl int sscanf(string data, string format, mixed ... lvalues)
  *!
- *! The purpose of sscanf is to match one string against a format string and
- *! place the matching results into a list of variables. The list of @[lvalues]
- *! are destructively modified (which is only possible because sscanf really is
- *! an opcode, rather than a pike function) with the values extracted from the
- *! @[data] according to the @[format] specification. Only the variables up to
- *! the last matching directive of the format string are touched.
+ *! The purpose of sscanf is to match a string @[data] against a @[format]
+ *! string and place the matching results into a list of variables. The list
+ *! of @[lvalues] are destructively modified (which is only possible because
+ *! sscanf really is an opcode, rather than a pike function) with the values
+ *! extracted from the @[data] according to the @[format] specification. Only
+ *! the variables up to the last matching directive of the format string are
+ *! touched.
  *!
- *! Refer to the @[chapter::sscanf] chapter for the complete list of directives
- *! sscanf understands.
+ *! The @[format] string can contain strings separated by special matching
+ *! directives like @tt{%d@}, @tt{%s@} @tt{%c@} and @tt{%f@}. Every such
+ *! directive corresponds to one of the @[lvalues], in order they are listed.
+ *! An lvalue is the name of a variable, a name of a local variable, an index
+ *! in an array, mapping or object. It is because of these lvalues that sscanf
+ *! can not be implemented as a normal function.
+ *!
+ *! Whenever a percent character is found in the format string, a match is
+ *! performed, according to which operator and modifiers follow it:
+ *!
+ *! @string
+ *!   @value "%b"
+ *!     Reads a binary integer ("0101" makes 5)
+ *!   @value "%d"
+ *!     Reads a decimal integer ("0101" makes 101).
+ *!   @value "%o"
+ *!     Reads an octal integer ("0101" makes 65).
+ *!   @value "%x"
+ *!     Reads a hexadecimal integer ("0101" makes 257).
+ *!   @value "%D"
+ *!     Reads an integer that is either octal (leading zero),
+ *!     hexadecimal (leading 0x) or decimal. ("0101" makes 65).
+ *!   @value "%c"
+ *!     Reads one character and returns it as an integer
+ *!     ("0101" makes 48, or '0', leaving "101" for later directives).
+ *!     Using the field width and endianness modifiers, you can decode
+ *!     integers of any size and endianness.
+ *!   @value "%f"
+ *!     Reads a float ("0101" makes 101.0).
+ *!   @value "%F"
+ *!     Reads a float encoded according to the IEEE single precision binary
+ *!     format ("0101" makes 6.45e-10, approximately). Given a field width
+ *!     modifier of 8 (4 is the default), the data will be decoded according
+ *!     to the IEEE double precision binary format instead. (You will however
+ *!     still get a float, unless your pike was compiled with the configure
+ *!     argument @tt{--with-double-precision@}.)
+ *!   @value "%s"
+ *!     Reads a string. If followed by %d, %s will only read non-numerical
+ *!     characters. If followed by a %[], %s will only read characters not
+ *!     present in the set. If followed by normal text, %s will match all
+ *!     characters up to but not including the first occurrence of that text.
+ *!   @value "%[set]"
+ *!     Matches a string containing a given set of characters (those given
+ *!     inside the brackets). %[^set] means any character except those inside
+ *!     brackets. Ranges of characters can be defined by using a minus
+ *!     character between the first and the last character to be included in
+ *!     the range. Example: %[0-9H] means any number or 'H'. Note that sets
+ *!     that includes the character - must have it first in the brackets to
+ *!     avoid having a range defined. Sets including the character ']' must
+ *!     list this first (even before -) too, for natural reasons.
+ *!   @value "%{format%}"
+ *!     Repeatedly matches 'format' as many times as possible and assigns an
+ *!     array of arrays with the results to the lvalue.
+ *!   @value "%O"
+ *!     Match a Pike constant, such as string or integer (currently only
+ *!     integer, string and character constants are functional).
+ *!   @value "%%"
+ *!     Match a single percent character (hence this is how you quote the %
+ *!     character to just match, and not start an lvalue matcher directive).
+ *! @endstring
+ *!
+ *! Similar to @[sprintf], you may supply modifiers between the % character
+ *! and the operator, to slightly change its behaviour from the default:
+ *!
+ *! @string
+ *!   @value "*"
+ *!     The operator will only match its argument, without assigning any
+ *!     variable.
+ *!   @value "number"
+ *!     You may define a field width by supplying a numeric modifier. This
+ *!     means that the format should match that number of characters in the
+ *!     input data; be it a @i{number@} characters long string, integer or
+ *!     otherwise ("0101" using the format %2c would read an unsigned short
+ *!     12337, leaving the final "01" for later operators, for instance).
+ *!   @value "-"
+ *!     Supplying a minus sign toggles the decoding to read the data encoded
+ *!     in little-endian byte order, rather than the default network
+ *!     (big-endian) byte order.
+ *!   @value "+"
+ *!     Interpret the data as a signed entity. In other words, "%+1c" will
+ *!     read "\0xFF" as -1 instead of 255, as "%1c" would have.
+ *! @endstring
+ *!
+ *! @note
+ *! Sscanf does not use backtracking. Sscanf simply looks at the format string
+ *! up to the next % and tries to match that with the string. It then proceeds
+ *! to look at the next part. If a part does not match, sscanf immediately
+ *! returns how many % were matched. If this happens, the lvalues for % that
+ *! were not matched will not be changed.
+ *!
+ *! @example
+ *! // a will be assigned "oo" and 1 will be returned
+ *! sscanf("foo", "f%s", a);
+ *!
+ *! // a will be 4711 and b will be "bar", 2 will be returned
+ *! sscanf("4711bar", "%d%s", a, b);
+ *!
+ *! // a will be 4711, 2 will be returned
+ *! sscanf("bar4711foo", "%*s%d", a);
+ *!
+ *! // a will become "test", 2 will be returned
+ *! sscanf(" \t test", "%*[ \t]%s", a);
+ *!
+ *! // Remove "the " from the beginning of a string
+ *! // If 'str' does not begin with "the " it will not be changed
+ *! sscanf(str, "the %s", str);
+ *!
+ *! // It is also possible to declare a variable directly in the sscanf call;
+ *! // another reason for sscanf not to be an ordinary function:
+ *!
+ *! sscanf("abc def", "%s %s", string a, string b);
  *!
  *! @returns
  *!   The number of directives matched in the format string. Note that a string
- *!   directive (%s or %[]) always counts as a match, even when matching the
- *!   empty string.
+ *!   directive (%s or %[]) counts as a match even when matching just the empty
+ *!   string (which either may do).
  *! @seealso
- *!   @[array_sscanf()], @[chapter::sscanf]
+ *!   @[sprintf], @[array_sscanf]
+ *    @[parse_format]
  */
 void o_sscanf(INT32 args)
 {
@@ -2258,7 +2369,7 @@ void o_sscanf(INT32 args)
     int nonblock;
     if((nonblock=query_nonblocking(2)))
       set_nonblocking(2,0);
-    
+
     fprintf(stderr,"-    Matches: %ld\n",(long)i);
     if(nonblock)
       set_nonblocking(2,1);
