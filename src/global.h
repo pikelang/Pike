@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.102 2004/09/26 15:10:17 marcus Exp $
+|| $Id: global.h,v 1.103 2004/09/26 15:12:14 marcus Exp $
 */
 
 #ifndef GLOBAL_H
@@ -57,6 +57,11 @@
 #endif
 
 #endif /* __NT__ */
+
+#ifdef __amigaos__
+/* Avoid getting definitions of struct in_addr from <unistd.h>... */
+#define __USE_NETINET_IN_H
+#endif
 
 /*
  * We want to use __builtin functions.
