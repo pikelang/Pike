@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.15 1997/11/12 03:40:20 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.16 1997/12/22 23:26:50 hubbe Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -29,7 +29,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.15 1997/11/12 03:40:20 mirar Exp $
+**!	$Id: polyfill.c,v 1.16 1997/12/22 23:26:50 hubbe Exp $
 **! class image
 */
 
@@ -652,7 +652,7 @@ static void polyfill_some(struct image *img,
    int i;
 
    rgb_group *dest=img->img,rgb=img->rgb;
-   float *buf=alloca(sizeof(float)*(img->xsize+1));
+   float *buf=(float *)alloca(sizeof(float)*(img->xsize+1));
 
 
    if (!buf) error("out of stack, typ\n");

@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.10 1997/10/27 22:41:25 mirar Exp $ */
+/* $Id: matrix.c,v 1.11 1997/12/22 23:26:47 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.10 1997/10/27 22:41:25 mirar Exp $
+**!	$Id: matrix.c,v 1.11 1997/12/22 23:26:47 hubbe Exp $
 **! class image
 */
 
@@ -28,9 +28,6 @@
 extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
-
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)<(b)?(b):(a))
 
 #if 0
 #include <sys/resource.h>
@@ -115,7 +112,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 
 
 #define decimals(x) ((x)-(int)(x))
-#define testrange(x) max(min((x),255),0)
+#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 #define _scale_add_rgb(dest,src,factor) \
    ((dest)->r+=(src)->r*(factor), \
     (dest)->g+=(src)->g*(factor), \
@@ -208,9 +205,9 @@ CHRONO("transfer begin");
      s=new;
      y=newx*newy;
      while (y--) {
-       d->r=min((int)(s->r+0.5),255);
-       d->g=min((int)(s->g+0.5),255);
-       d->b=min((int)(s->b+0.5),255);
+       d->r=MINIMUM((int)(s->r+0.5),255);
+       d->g=MINIMUM((int)(s->g+0.5),255);
+       d->b=MINIMUM((int)(s->b+0.5),255);
        d++; s++;
      }
 

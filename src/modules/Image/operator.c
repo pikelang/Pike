@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.9 1997/10/27 22:41:26 mirar Exp $ */
+/* $Id: operator.c,v 1.10 1997/12/22 23:26:48 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.9 1997/10/27 22:41:26 mirar Exp $
+**!	$Id: operator.c,v 1.10 1997/12/22 23:26:48 hubbe Exp $
 **! class image
 */
 
@@ -30,8 +30,6 @@ extern struct program *image_program;
 #define THISOBJ (fp->current_object)
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)<(b)?(b):(a))
 
 #define STANDARD_OPERATOR_HEADER(what) \
    struct object *o;			   			\
@@ -152,17 +150,17 @@ void image_operator_plus(INT32 args)
 STANDARD_OPERATOR_HEADER("`+")
    while (i--)
    {
-      d->r=min(s1->r+s2->r,255);
-      d->g=min(s1->g+s2->g,255);
-      d->b=min(s1->b+s2->b,255);
+      d->r=MINIMUM(s1->r+s2->r,255);
+      d->g=MINIMUM(s1->g+s2->g,255);
+      d->b=MINIMUM(s1->b+s2->b,255);
       s1++; s2++; d++; 
    }
    else
    while (i--)
    {
-      d->r=min(s1->r+rgb.r,255);
-      d->g=min(s1->g+rgb.g,255);
-      d->b=min(s1->b+rgb.b,255);
+      d->r=MINIMUM(s1->r+rgb.r,255);
+      d->g=MINIMUM(s1->g+rgb.g,255);
+      d->b=MINIMUM(s1->b+rgb.b,255);
       s1++; d++;
    }
    THREADS_DISALLOW();
@@ -238,17 +236,17 @@ void image_operator_maximum(INT32 args)
 STANDARD_OPERATOR_HEADER("`| 'maximum'")
    while (i--)
    {
-      d->r=max(s1->r,s2->r);
-      d->g=max(s1->g,s2->g);
-      d->b=max(s1->b,s2->b);
+      d->r=MAXIMUM(s1->r,s2->r);
+      d->g=MAXIMUM(s1->g,s2->g);
+      d->b=MAXIMUM(s1->b,s2->b);
       s1++; s2++; d++; 
    }
    else
    while (i--)
    {
-      d->r=max(s1->r,rgb.r);
-      d->g=max(s1->g,rgb.g);
-      d->b=max(s1->b,rgb.b);
+      d->r=MAXIMUM(s1->r,rgb.r);
+      d->g=MAXIMUM(s1->g,rgb.g);
+      d->b=MAXIMUM(s1->b,rgb.b);
       s1++; s2++; d++; 
    }
    THREADS_DISALLOW();
@@ -278,17 +276,17 @@ void image_operator_minimum(INT32 args)
 STANDARD_OPERATOR_HEADER("`& 'minimum'")
    while (i--)
    {
-      d->r=min(s1->r,s2->r);
-      d->g=min(s1->g,s2->g);
-      d->b=min(s1->b,s2->b);
+      d->r=MINIMUM(s1->r,s2->r);
+      d->g=MINIMUM(s1->g,s2->g);
+      d->b=MINIMUM(s1->b,s2->b);
       s1++; s2++; d++; 
    }
    else
    while (i--)
    {
-      d->r=min(s1->r,rgb.r);
-      d->g=min(s1->g,rgb.g);
-      d->b=min(s1->b,rgb.b);
+      d->r=MINIMUM(s1->r,rgb.r);
+      d->g=MINIMUM(s1->g,rgb.g);
+      d->b=MINIMUM(s1->b,rgb.b);
       s1++; d++; 
    }
    THREADS_DISALLOW();

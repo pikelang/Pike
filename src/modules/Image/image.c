@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $ */
+/* $Id: image.c,v 1.70 1997/12/22 23:26:46 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $
+**!	$Id: image.c,v 1.70 1997/12/22 23:26:46 hubbe Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $");
+RCSID("$Id: image.c,v 1.70 1997/12/22 23:26:46 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -103,9 +103,7 @@ extern struct program *image_colortable_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)<(b)?(b):(a))
-#define testrange(x) max(min(((int)x),255),0)
+#define testrange(x) MAXIMUM(MINIMUM(((int)x),255),0)
 
 #define sq(x) ((x)*(x))
 
@@ -1296,32 +1294,32 @@ void image_tuned_box(INT32 args)
 	{
 	  image_tuned_box_leftright(topleft, bottomright, 
 				    this->img+x1+this->xsize*y1, 
-				    xw+1, min(xw+1, this->xsize-x1),  
-				    this->xsize, min(yw+1, this->ysize-y1));
+				    xw+1, MINIMUM(xw+1, this->xsize-x1),  
+				    this->xsize, MINIMUM(yw+1, this->ysize-y1));
 
 	} 
       else if(color_equal(topleft,topright) && color_equal(bottomleft,bottomright))
 	{
 	  image_tuned_box_topbottom(topleft, bottomleft, 
 				    this->img+x1+this->xsize*y1, 
-				    min(xw+1, this->xsize-x1), this->xsize, 
-				    yw+1, min(yw+1, this->ysize-y1));
+				    MINIMUM(xw+1, this->xsize-x1), this->xsize, 
+				    yw+1, MINIMUM(yw+1, this->ysize-y1));
 	} else 
 	  goto ugly;
     } else {  
     ugly:
       dxw = 1.0/(float)xw;
       dyw = 1.0/(float)yw;
-      ymax=min(yw,this->ysize-y1);
-      for (x=max(0,-x1); x<=xw && x+x1<this->xsize; x++)
+      ymax=MINIMUM(yw,this->ysize-y1);
+      for (x=MAXIMUM(0,-x1); x<=xw && x+x1<this->xsize; x++)
 	{
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
 	  float tfx1=tune_factor(x,dxw);
 	  float tfx2=tune_factor(xw-x,dxw);
 
-	  img=this->img+x+x1+this->xsize*max(0,y1);
+	  img=this->img+x+x1+this->xsize*MAXIMUM(0,y1);
 	  if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
-	    for (y=max(0,-y1); y<ymax; y++)
+	    for (y=MAXIMUM(0,-y1); y<ymax; y++)
 	      {
 		float tfy;
 		rgbda_group sum={0.0,0.0,0.0,0.0};
@@ -1345,7 +1343,7 @@ void image_tuned_box(INT32 args)
 		img+=this->xsize;
 	      }
 	  else
-	    for (y=max(0,-y1); y<ymax; y++)
+	    for (y=MAXIMUM(0,-y1); y<ymax; y++)
 	      {
 		float tfy;
 		rgbd_group sum={0,0,0};
@@ -1821,18 +1819,12 @@ exit_loop:
    push_object(o);
 }
 
-#ifndef MAX
-#define MAX(X,Y) ((X)>(Y)?(X):(Y))
-#endif
 #ifndef MAX3
-#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)
+#define MAX3(X,Y,Z) MAXIMUM(MAXIMUM(X,Y),Z)
 #endif
 
-#ifndef MIN
-#define MIN(X,Y) ((X)<(Y)?(X):(Y))
-#endif
 #ifndef MIN3
-#define MIN3(X,Y,Z) MIN(MIN(X,Y),Z)
+#define MIN3(X,Y,Z) MINIMUM(MINIMUM(X,Y),Z)
 #endif
 
 void image_rgb_to_hsv(INT32 args)
@@ -1982,7 +1974,7 @@ void isf_seek(int mode,int ydir,INT32 low_limit,INT32 x1,INT32 x2,INT32 y,
 #endif
 
 #define MARK_DISTANCE(_dest,_value) \
-      ((_dest).r=(_dest).g=(_dest).b=(max(1,255-(_value>>8))))
+      ((_dest).r=(_dest).g=(_dest).b=(MAXIMUM(1,255-(_value>>8))))
    if ( mode&ISF_LEFT ) /* scan left from x1 */
    {
       x=x1;
@@ -2113,7 +2105,7 @@ void image_select_from(INT32 args)
       if (sp[2-args].type!=T_INT)
 	 error("Illegal argument 3 (edge value) to Image.image->select_from()\n");
       else
-	 low_limit=max(0,sp[2-args].u.integer);
+	 low_limit=MAXIMUM(0,sp[2-args].u.integer);
    else
       low_limit=30;
    low_limit=low_limit*low_limit;

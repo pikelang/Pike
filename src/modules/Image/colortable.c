@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $ */
+/* $Id: colortable.c,v 1.29 1997/12/22 23:26:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $
+**!	$Id: colortable.c,v 1.29 1997/12/22 23:26:44 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,12 +21,14 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.29 1997/12/22 23:26:44 hubbe Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 #include <errno.h>
 #include <math.h> /* fabs() */
 

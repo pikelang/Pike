@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.21 1997/11/11 22:17:48 mirar Exp $ */
+/* $Id: font.c,v 1.22 1997/12/22 23:26:46 hubbe Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.21 1997/11/11 22:17:48 mirar Exp $
+**!	$Id: font.c,v 1.22 1997/12/22 23:26:46 hubbe Exp $
 **! class font
 **!
 **! note
@@ -106,7 +106,10 @@ Kerningtable types:
 #include <sys/fcntl.h>
 #endif
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
 #include <errno.h>
 
 #include "config.h"

@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.9 1997/11/02 18:49:11 grubba Exp $ */
+/* $Id: pattern.c,v 1.10 1997/12/22 23:26:49 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.9 1997/11/02 18:49:11 grubba Exp $
+**!	$Id: pattern.c,v 1.10 1997/12/22 23:26:49 hubbe Exp $
 **! class image
 */
 
@@ -28,9 +28,7 @@ extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)<(b)?(b):(a))
-#define testrange(x) max(min((x),255),0)
+#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 /**************** noise ************************/
 

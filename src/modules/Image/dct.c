@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.9 1997/10/27 22:41:19 mirar Exp $ */
+/* $Id: dct.c,v 1.10 1997/12/22 23:26:45 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.9 1997/10/27 22:41:19 mirar Exp $
+**!	$Id: dct.c,v 1.10 1997/12/22 23:26:45 hubbe Exp $
 **! class image
 */
 
@@ -28,9 +28,7 @@ extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)<(b)?(b):(a))
-#define testrange(x) max(min((x),255),0)
+#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 static const double c0=0.70710678118654752440;
 static const double pi=3.14159265358979323846;
@@ -96,8 +94,8 @@ void image_dct(INT32 args)
        && sp[-args].type==T_INT 
        && sp[1-args].type==T_INT)
    {
-      img->xsize=max(1,sp[-args].u.integer);
-      img->ysize=max(1,sp[1-args].u.integer);
+      img->xsize=MAXIMUM(1,sp[-args].u.integer);
+      img->ysize=MAXIMUM(1,sp[1-args].u.integer);
    }
    else error("Illegal arguments to image->dct()\n");
 

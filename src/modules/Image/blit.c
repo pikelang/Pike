@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.24 1997/11/24 16:11:55 mirar Exp $ */
+/* $Id: blit.c,v 1.25 1997/12/22 23:26:43 hubbe Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.24 1997/11/24 16:11:55 mirar Exp $
+**!	$Id: blit.c,v 1.25 1997/12/22 23:26:43 hubbe Exp $
 **! class image
 */
 
@@ -29,8 +29,6 @@ extern struct program *image_program;
 #define THISOBJ (fp->current_object)
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)<(b)?(b):(a))
 
 #if 0
 #include <sys/resource.h>
@@ -58,7 +56,7 @@ static void chrono(char *x)
 
 /***************** internals ***********************************/
 
-#define testrange(x) max(min((x),255),0)
+#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 #define apply_alpha(x,y,alpha) \
    ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
@@ -219,10 +217,10 @@ void img_crop(struct image *dest,
    dest->xsize=x2-x1+1;
    dest->ysize=y2-y1+1;
 
-   xp=max(0,-x1);
-   yp=max(0,-y1);
-   xs=max(0,x1);
-   ys=max(0,y1);
+   xp=MAXIMUM(0,-x1);
+   yp=MAXIMUM(0,-y1);
+   xs=MAXIMUM(0,x1);
+   ys=MAXIMUM(0,y1);
 
    if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
    if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
@@ -309,11 +307,11 @@ void image_paste(INT32 args)
      push_object(THISOBJ);
      return;
    }   
-   blitwidth=min(x2,THIS->xsize-1)-max(x1,0)+1;
-   blitheight=min(y2,THIS->ysize-1)-max(y1,0)+1;
+   blitwidth=MINIMUM(x2,THIS->xsize-1)-MAXIMUM(x1,0)+1;
+   blitheight=MINIMUM(y2,THIS->ysize-1)-MAXIMUM(y1,0)+1;
    
-   img_blit(THIS->img+max(0,x1)+(THIS->xsize)*max(0,y1),
-	    img->img+max(0,-x1)+(x2-x1+1)*max(0,-y1),
+   img_blit(THIS->img+MAXIMUM(0,x1)+(THIS->xsize)*MAXIMUM(0,y1),
+	    img->img+MAXIMUM(0,-x1)+(x2-x1+1)*MAXIMUM(0,-y1),
 	    blitwidth,
 	    blitheight,
 	    THIS->xsize,
@@ -463,15 +461,15 @@ CHRONO("image_paste_mask init");
    }
    else x1=y1=0;
 
-   x2=min(THIS->xsize-x1,min(img->xsize,mask->xsize));
-   y2=min(THIS->ysize-y1,min(img->ysize,mask->ysize));
+   x2=MINIMUM(THIS->xsize-x1,MINIMUM(img->xsize,mask->xsize));
+   y2=MINIMUM(THIS->ysize-y1,MINIMUM(img->ysize,mask->ysize));
 
 CHRONO("image_paste_mask begin");
 
-   s=img->img+max(0,-x1)+max(0,-y1)*img->xsize;
-   m=mask->img+max(0,-x1)+max(0,-y1)*mask->xsize;
-   d=THIS->img+max(0,-x1)+x1+(y1+max(0,-y1))*THIS->xsize;
-   x=max(0,-x1);
+   s=img->img+MAXIMUM(0,-x1)+MAXIMUM(0,-y1)*img->xsize;
+   m=mask->img+MAXIMUM(0,-x1)+MAXIMUM(0,-y1)*mask->xsize;
+   d=THIS->img+MAXIMUM(0,-x1)+x1+(y1+MAXIMUM(0,-y1))*THIS->xsize;
+   x=MAXIMUM(0,-x1);
    smod=img->xsize-(x2-x);
    mmod=mask->xsize-(x2-x);
    dmod=THIS->xsize-(x2-x);
@@ -479,9 +477,9 @@ CHRONO("image_paste_mask begin");
    q=1.0/255;
 
    THREADS_ALLOW();
-   for (y=max(0,-y1); y<y2; y++)
+   for (y=MAXIMUM(0,-y1); y<y2; y++)
    {
-      for (x=max(0,-x1); x<x2; x++)
+      for (x=MAXIMUM(0,-x1); x<x2; x++)
       {
 	 if (m->r==255) d->r=s->r;
 	 else if (m->r==0) {}
@@ -570,14 +568,14 @@ void image_paste_alpha_color(INT32 args)
    }
    else x1=y1=0;
    
-   x2=min(THIS->xsize-x1,mask->xsize);
-   y2=min(THIS->ysize-y1,mask->ysize);
+   x2=MINIMUM(THIS->xsize-x1,mask->xsize);
+   y2=MINIMUM(THIS->ysize-y1,mask->ysize);
 
 CHRONO("image_paste_alpha_color begin");
 
-   m=mask->img+max(0,-x1)+max(0,-y1)*mask->xsize;
-   d=THIS->img+max(0,-x1)+x1+(y1+max(0,-y1))*THIS->xsize;
-   x=max(0,-x1);
+   m=mask->img+MAXIMUM(0,-x1)+MAXIMUM(0,-y1)*mask->xsize;
+   d=THIS->img+MAXIMUM(0,-x1)+x1+(y1+MAXIMUM(0,-y1))*THIS->xsize;
+   x=MAXIMUM(0,-x1);
    mmod=mask->xsize-(x2-x);
    dmod=THIS->xsize-(x2-x);
 
@@ -586,9 +584,9 @@ CHRONO("image_paste_alpha_color begin");
    rgb=THIS->rgb;
 
    THREADS_ALLOW();
-   for (y=max(0,-y1); y<y2; y++)
+   for (y=MAXIMUM(0,-y1); y<y2; y++)
    {
-      for (x=max(0,-x1); x<x2; x++)
+      for (x=MAXIMUM(0,-x1); x<x2; x++)
       {
 	 if (m->r==255) d->r=rgb.r;
 	 else if (m->r==0) ;
@@ -620,7 +618,7 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
    if (x1<0) x1 = 0;
    if (y1<0) y1 = 0;
-   img_box_nocheck(max(x1,0),max(y1,0),min(x2,THIS->xsize-1),min(y2,THIS->ysize-1));
+   img_box_nocheck(MAXIMUM(x1,0),MAXIMUM(y1,0),MINIMUM(x2,THIS->xsize-1),MINIMUM(y2,THIS->ysize-1));
 }
 
 
