@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.35 1999/09/25 19:58:48 grubba Exp $
+**!	$Id: image.h,v 1.36 2000/06/02 05:02:29 per Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -9,6 +9,13 @@
 #endif
 
 #define PIKE_IMAGE_IMAGE_H
+
+/* Various X86 dialects. */
+#define IMAGE_MMX   1
+#define IMAGE_SSE   2
+#define IMAGE_3DNOW 4 
+#define IMAGE_EMMX  8 
+extern int image_cpuid;
 
 
 #define MAX_NUMCOL 32768
