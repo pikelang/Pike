@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.69 2005/01/24 12:45:12 grubba Exp $
+# $Id: configure.in,v 1.70 2005/01/24 14:24:37 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -70,7 +70,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
         setitimer getitimer mmap munmap \
 	gettimeofday settimeofday prctl inet_ntoa inet_ntop)
 
-if test "uname" = "aix"; then
+if test "uname" = "AIX"; then
   libc_ver="`lslpp -ql bos.rte.libc 2>/dev/null| awk '{ print $2 }'`"
 fi
 
