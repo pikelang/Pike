@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.10 1999/04/21 20:23:53 grubba Exp $
+ * $Id: sendfile.c,v 1.11 1999/04/21 20:36:22 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -662,13 +662,6 @@ static void sf_create(INT32 args)
       SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
     }
     sf.from_fd = sf.from->fd;
-    /* Fix offset */
-    if (sf.offset < 0) {
-      sf.offset = fd_lseek(sf.from_fd, 0, SEEK_CUR);
-      if (sf.offset < 0) {
-	sf.offset = 0;
-      }
-    }
   }
 
   /* Do some extra arg checking */
@@ -765,6 +758,14 @@ static void sf_create(INT32 args)
       /* set_blocking */
       set_nonblocking(sf.from_fd, 0);
       sf.from->open_mode &= ~FILE_NONBLOCKING;
+
+      /* Fix offset */
+      if (sf.offset < 0) {
+	sf.offset = fd_lseek(sf.from_fd, 0, SEEK_CUR);
+	if (sf.offset < 0) {
+	  sf.offset = 0;
+	}
+      }
     }
     /* set_blocking */
     set_nonblocking(sf.to_fd, 0);
