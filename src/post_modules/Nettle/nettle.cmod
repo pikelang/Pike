@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.6 2003/03/18 16:28:37 nisse Exp $");
+RCSID("$Id: nettle.cmod,v 1.7 2003/03/18 16:35:48 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -21,130 +21,13 @@ RCSID("$Id: nettle.cmod,v 1.6 2003/03/18 16:28:37 nisse Exp $");
 #include <stdio.h>
 #include <stdarg.h>
 
-/* #define sp Pike_sp */
-
 DECLARATIONS
 
 /*! @module Nettle
  */
 
-
-PIKECLASS aes
-{
-  CVAR struct aes_ctx ctx;
-  CVAR void (*f)(struct aes_ctx *, unsigned length,
-		 uint8_t *dst, const uint8_t *src);
-
-  PIKEFUN string name()
-    {
-      push_string(make_shared_string("aes"));
-    }
-  
-  PIKEFUN int key_size()
-    {
-      /* Recommended key size. */
-      push_int(AES_KEY_SIZE);
-    }
-
-  PIKEFUN int block_size()
-    {
-      push_int(AES_BLOCK_SIZE);
-    }
-
-  PIKEFUN object set_encrypt_key(string key)
-    {
-      NO_WIDE_STRING(key);
-
-      if ( (key->len < AES_MIN_KEY_SIZE)
-	   || (key->len > AES_MAX_KEY_SIZE) )
-	Pike_error("Invalid key size for aes.");
-
-      aes_set_encrypt_key(&THIS->ctx, key->len, key->str);
-
-      THIS->f = aes_encrypt;
-
-      push_object(this_object());
-    }
-
-  PIKEFUN object set_decrypt_key(string key)
-    {
-      NO_WIDE_STRING(key);
-
-      if ( (key->len < AES_MIN_KEY_SIZE)
-	   || (key->len > AES_MAX_KEY_SIZE) )
-	Pike_error("Invalid key size for aes.");
-      aes_set_decrypt_key(&THIS->ctx, key->len, key->str);
-
-      THIS->f = aes_decrypt;
-
-      push_object(this_object());
-    }
-
-  PIKEFUN string crypt(string data)
-    {
-      struct pike_string *s;
-      /* werror("aes->encrypt\n"); */
-
-#if 0
-      {
-	struct aes_ctx test_ctx;
-	const uint8_t clear[16] = "aaaaaaaaaaaaaaaa";
-	uint8_t cipher[16];
-
-	werror("tfoo\n");
-
-	aes_set_encrypt_key(&test_ctx, 16, "0123456789abcdef");
-	werror("tbar\n");
-
-	aes_encrypt(&test_ctx, 16, cipher, clear);
-
-	werror("tbaz\n");
-      }
-#endif
-      
-      if (!THIS->f)
-	Pike_error("Must install an encrypt or decrypt key first.");
-
-      // werror("foo\n");
-      
-      NO_WIDE_STRING(data);
-
-      // werror("bar\n");
-
-      if (data->len % AES_BLOCK_SIZE)
-	Pike_error("Data must be an integer number of blocks.");
-
-      // werror("baz\n");
-      
-      s = begin_shared_string(data->len);
-
-      // werror("bazz\n");
-
-// werror("ctx = %p, len = %d, dst = %p, src = %p\n",
-// 	     &THIS->ctx, data->len, s->str, data->str);
-      
-      THIS->f(&THIS->ctx, data->len, s->str, data->str);
-      /* aes_encrypt(&THIS->ctx, data->len, s->str, data->str); */
-
-      // werror("bazzz\n");
-
-      push_string(end_shared_string(s));
-
-      // werror("bazzzz\n");
-    }
-
-  INIT
-    {
-      /* werror("aes->INIT\n"); */
-      THIS->f = NULL;
-    }
-
-  EXIT
-    {
-      /* werror("aes->EXIT\n"); */
-      memset(&THIS->ctx, 0, sizeof(THIS->ctx));
-    }
-}
+/*! @endmodule
+ */
 
 #endif /* HAVE_LIBNETTLE */
 
@@ -165,6 +48,3 @@ PIKE_MODULE_EXIT
 #endif /* HAVE_LIBNETTLE */
   EXIT;
 }
-
-/*! @endmodule
- */
