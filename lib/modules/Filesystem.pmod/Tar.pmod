@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.12 2001/08/23 14:30:42 grubba Exp $
+ * $Id: Tar.pmod,v 1.13 2002/03/13 12:13:13 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -86,7 +86,7 @@ class _Tar  // filesystem
 			     "%"+((string)NAMSIZ)+"s%8s%8s%8s%12s%12s%8s"
 			     "%c%"+((string)NAMSIZ)+"s%8s"
 			     "%"+((string)TUNMLEN)+"s"
-			     "%"+((string)TGNMLEN)+"s%8s%8s");
+			     "%"+((string)TGNMLEN)+"s%8s%8s%167s");
       sscanf(a[0], "%s%*[\0]", arch_name);
       sscanf(a[1], "%o", mode);
       sscanf(a[2], "%o", uid);
@@ -98,10 +98,22 @@ class _Tar  // filesystem
       sscanf(a[8], "%s%*[\0]", arch_linkname);
       sscanf(a[9], "%s%*[\0]", magic);
 
-      if(magic=="ustar  ")
+      if((magic=="ustar  ") || (magic == "ustar"))
       {
+	// GNU ustar or POSIX ustar
 	sscanf(a[10], "%s\0", uname);
 	sscanf(a[11], "%s\0", gname);
+	if (a[9] == "ustar\0""00") {
+	  // POSIX ustar	(Version 0?)
+	  string long_path = "";
+	  sscanf(a[14], "%s\0", long_path);
+	  if (sizeof(long_path)) {
+	    arch_name = long_path + "/" + arch_name;
+	  }
+	} else if (arch_name == "././@LongLink") {
+	  // GNU tar
+	  // FIXME: Data contains full filename of next record.
+	}
       }
       else
 	uname = gname = 0;
