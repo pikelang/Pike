@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.29 2001/06/11 10:44:37 js Exp $
+// $Id: MySQL.pike,v 1.30 2001/06/11 13:38:11 js Exp $
 
 inherit .Base;
 
@@ -183,12 +183,16 @@ void set_metadata(Standards.URI|string uri, void|string language,
   if(!sizeof(md))
     return 0;
 
+  foreach(indices(md), string ind)
+    if(ind!="body")
+      md[ind]=string_to_utf8(md[ind];
+
   string s=map(Array.transpose( ({ map(indices(md),db->quote),
 				   map(values(md), db->quote) }) ),
 	       lambda(array a)
 	       {
 		 return sprintf("(%d,'%s','%s')", doc_id,
-				a[0], string_to_utf8(a[1]));
+				a[0], a[1]);
 	       }) * ", ";
   
   db->query("replace into metadata (doc_id, name, value) values "+s);
@@ -211,7 +215,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 		    doc_id);
   mapping md=mkmapping(a->name,a->value);
   if(md->body)
-    catch(md->body=utf8_to_string(Gz.inflate()->inflate(md->body)));
+    md->body=utf8_to_string(Gz.inflate()->inflate(md->body));
   return md;
 }
 
