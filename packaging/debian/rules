@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.49 2004/04/30 17:12:43 grendel Exp $
+# $Id: rules,v 1.50 2004/05/11 14:13:39 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -40,7 +40,7 @@ else
 MACHINE_OPTS=--without-machine-code
 endif
 
-VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
+VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9.]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
 BUILDDIR=build/$(OS)
 CFARGS=--without-rtldebug \
