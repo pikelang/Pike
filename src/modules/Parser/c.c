@@ -121,7 +121,7 @@ static void f_tokenize( INT32 args )
       break;
     case 2:
       left = tokenize2(&res,STR2(data), data->len);
-      left_s = make_shared_binary_string1(STR2(data)+left, data->len-left);
+      left_s = make_shared_binary_string2(STR2(data)+left, data->len-left);
       break;
 #ifdef PIKE_DEBUG
     default:
@@ -139,8 +139,8 @@ static void f_tokenize( INT32 args )
 
 void init_parser_c()
 {
-  ADD_FUNCTION("tokenize", f_tokenize,
-	       tFunc(tStr, tArr(tOr(tArr(tStr),tStr))), 0);
+  ADD_FUNCTION2("tokenize", f_tokenize,
+		tFunc(tStr, tArr(tOr(tArr(tStr),tStr))), 0, 0);
 }
 
 void exit_parser_c()
