@@ -164,9 +164,9 @@ node *mknode(short token,node *a,node *b)
     break;
 
   case F_APPLY:
-    if(a && a->token==F_CONSTANT &&
-       a->u.sval.type==T_FUNCTION &&
-       a->u.sval.subtype==-1)
+    if(a && a->token == F_CONSTANT &&
+       a->u.sval.type == T_FUNCTION &&
+       a->u.sval.subtype == -1)
     {
       res->node_info |= a->u.sval.u.efun->flags;
     }else{
@@ -1577,7 +1577,7 @@ void dooptcode(struct lpc_string *name,node *n, int args)
 {
 #ifdef DEBUG
   if(a_flag > 1)
-    fprintf(stderr,"Doing function: %s\n",name->str);
+    fprintf(stderr,"Doing function '%s' at %x\n",name->str,PC);
 #endif
   last_function_opt_info=OPT_SIDE_EFFECT;
   n=mknode(F_ARG_LIST,n,0);
