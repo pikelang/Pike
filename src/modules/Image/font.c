@@ -39,7 +39,7 @@
 **! see also: Image, Image.image
 */
 
-/* $Id: font.c,v 1.10 1997/05/19 22:50:25 hubbe Exp $ */
+/* $Id: font.c,v 1.11 1997/05/25 09:35:36 grubba Exp $ */
 
 #include "global.h"
 
@@ -159,7 +159,10 @@ static inline long file_size(int fd)
 {
   struct stat tmp;
   int res;
-  if(!fstat(fd, &tmp)) return res = tmp.st_size;
+  if((!fstat(fd, &tmp)) &&
+     (tmp.st_mode & S_IFREG)) {
+    return res = tmp.st_size;
+  }
   return -1;
 }
 
