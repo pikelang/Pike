@@ -214,7 +214,7 @@ class TTFont
     array(Image.Image) res = map( what, real->write );
 
     Image.Image rr = Image.Image( max(0,@res->xsize()),
-                                  abs(`+(0,res->ysize())));
+                                  abs(`+(0,@res->ysize())));
     
     int start = 0;
     foreach( res, object r )
