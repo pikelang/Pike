@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.407 2001/05/10 22:14:38 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.408 2001/05/15 04:47:32 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3763,6 +3763,9 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
   test_equal([[ ({ 0, 557239244978618154304871 }) ]],
              [[ array_sscanf("0x76000000000001234567", "%xx%x") ]])
+
+  test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
+	     [[ ({"foo \12345 bar " }) ]])
 
   test_equal(471100000000000000000000000000000000000000000000042,
              (int)(mixed)471100000000000000000000000000000000000000000000042)
