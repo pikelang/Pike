@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.191 1998/05/22 11:56:14 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.192 1998/05/22 13:09:31 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -410,6 +410,8 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
 else
   :
 fi
+
+CPPFLAGS="${CPPFLAGS} -I$srcdir"
 
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
