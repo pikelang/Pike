@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.36 2001/06/30 21:28:36 mast Exp $");
+RCSID("$Id: multiset.c,v 1.37 2001/07/01 20:02:44 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -75,8 +75,7 @@ PMOD_EXPORT void do_free_multiset(struct multiset *l)
 
 #define BEGIN() do{				\
   struct array *ind=l->ind;			\
-  INT32 is_weak = ind->flags &			\
-    (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK);	\
+  int flags = ind->flags;			\
   if(ind->refs > 1)				\
   {						\
     ind=copy_array(l->ind);			\
@@ -89,7 +88,10 @@ PMOD_EXPORT void do_free_multiset(struct multiset *l)
   if(l->ind != ind)				\
   {						\
     free_array(l->ind);				\
-    l->ind = array_set_flags(ind, is_weak);	\
+    if (ind->flags != flags)			\
+      l->ind = array_set_flags(ind, flags);	\
+    else					\
+      l->ind = ind;				\
   }else{					\
     free_array(ind);				\
   }						\
@@ -107,9 +109,7 @@ PMOD_EXPORT void order_multiset(struct multiset *l)
 #if 0
 
   order = get_set_order(ind);
-  flags = ind->flags;
   ind = order_array(ind, order);
-  ind->flags = flags;
   free((char *)order);
 #else
   {
@@ -137,9 +137,7 @@ PMOD_EXPORT void multiset_insert(struct multiset *l,
   i=set_lookup(ind, v);
   if(i < 0)
   {
-    int flags = ind->flags;
     ind=array_insert(ind, v, ~i);
-    ind->flags = flags;
   }
   END();
 }
@@ -159,9 +157,7 @@ PMOD_EXPORT void multiset_delete(struct multiset *l,struct svalue *v)
 
   if(i >= 0)
   {
-    int flags = ind->flags;
     ind=array_remove(ind, i);
-    ind->flags = flags;
   }
   END();
 }
@@ -172,10 +168,8 @@ PMOD_EXPORT void check_multiset_for_destruct(struct multiset *l)
   INT32 i;
   BEGIN();
   {
-    int flags = ind->flags;
     while( (i=array_find_destructed_object(ind)) >= 0)
       ind=array_remove(ind, i);
-    ind->flags = flags;
   }
   END();
 }
