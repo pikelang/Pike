@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.15 1997/01/30 03:51:36 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.16 1997/03/05 05:29:42 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1088,11 +1088,6 @@ struct pike_string *check_call(struct pike_string *args,
   }
 }
 
-void check_array_type(struct array *a)
-{
-  push_type(T_MIXED);
-}
-
 struct pike_string *get_type_of_svalue(struct svalue *s)
 {
   struct pike_string *ret;
@@ -1117,25 +1112,34 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     return ret;
        
   case T_ARRAY:
-    check_array_type(s->u.array);
+    type_stack_mark();
+    push_type(T_MIXED);
     push_type(T_ARRAY);
-    return pop_type();
+    return pop_unfinished_type();
 
   case T_MULTISET:
-    check_array_type(s->u.multiset->ind);
+    type_stack_mark();
+    push_type(T_MIXED);
     push_type(T_MULTISET);
-    return pop_type();
+    return pop_unfinished_type();
 
   case T_MAPPING:
+    type_stack_mark();
     push_type(T_MIXED);
     push_type(T_MIXED);
     push_type(T_MAPPING);
-    return pop_type();
+    return pop_unfinished_type();
 
   case T_OBJECT:
-    push_type_int(0);
+    type_stack_mark();
+    if(s->u.object->prog)
+    {
+      push_type_int(s->u.object->prog->id);
+    }else{
+      push_type_int(0);
+    }
     push_type(T_OBJECT);
-    return pop_type();
+    return pop_unfinished_type();
 
   case T_INT:
     if(s->u.integer)
@@ -1148,8 +1152,9 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     return ret;
 
   default:
+    type_stack_mark();
     push_type(s->type);
-    return pop_type();
+    return pop_unfinished_type();
   }
 }
 
