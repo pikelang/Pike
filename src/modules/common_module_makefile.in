@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.8 2003/10/28 04:24:56 nilsson Exp $
+# $Id: common_module_makefile.in,v 1.9 2003/10/29 19:46:11 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -107,7 +107,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.8 2003/10/28 04:24:56 nilsson Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.9 2003/10/29 19:46:11 bill Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
@@ -115,14 +115,23 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	    sed -e "s/@module@/$(MODULE_PROGRAM)/" \
 	      <"$(MODULE_PMOD_IN)" >module.pmod; \
 	  else \
+	   if [ -d "$(MODULE_PMOD_IN)" ]; then \
+	     find "$(MODULE_PMOD_IN)" -type d -print | sed -e "s/$(MODULE_PMOD_IN)/module.pmod/" | xargs -n 1 mkdir -p ;\
+	     for mi in `find "$(MODULE_PMOD_IN)" -type f -print | sed -e "s/$(MODULE_PMOD_IN)//"` ;\
+	     do \
+	       sed -e "s/@module@/$(MODULE_PROGRAM)/" \
+	         <"$(MODULE_PMOD_IN)/$$mi" > "module.pmod/$$mi" ; \
+	     done; \
+	  else \
 	    echo 'Missing source for module.pmod "$(MODULE_PMOD_IN)".' >&2; \
 	    exit 1; \
 	  fi ;\
+	fi; \
 	fi
 
 
-clean:
-	-rm -f *.o *.fail *.obj *.a *.so module.pmod linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA)
+clean:	
+	-rm -f *.o *.fail *.obj *.a *.so linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA); rm -rf module.pmod
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 

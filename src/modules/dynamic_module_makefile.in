@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.106 2003/10/28 21:25:16 bill Exp $
+# $Id: dynamic_module_makefile.in,v 1.107 2003/10/29 19:46:11 bill Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -35,7 +35,7 @@ Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)
 	@exit 1
 
 $(MODULE_TARGET): module.so
-	if test "x$(OBJS)" = "x" ; then \
+	@if test "x$(OBJS)" = "x" ; then \
 	  exit 0; \
 	fi; \
 	echo "Installing C component"; \
