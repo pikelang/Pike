@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bmp.c,v 1.43 2004/03/06 00:06:59 nilsson Exp $
+|| $Id: bmp.c,v 1.44 2004/05/19 00:05:06 nilsson Exp $
 */
 
 /*
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.43 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id: bmp.c,v 1.44 2004/05/19 00:05:06 nilsson Exp $");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -567,7 +567,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       else
       {
 	 struct pike_string *qs;
-	 MAKE_CONSTANT_SHARED_STRING(qs,"quality");
+	 MAKE_CONST_STRING(qs,"quality");
 	 parameter_int(sp+1-args,qs,&quality);
       }
    }
