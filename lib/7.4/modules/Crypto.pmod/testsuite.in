@@ -622,12 +622,16 @@ Crypto.arcfour()->name(),"ARCFOUR")
 test_eq(
 #pike 7.4
 Crypto.md5()->name(),"MD5")
+cond_resolv(Crypto.MD4.name, [[
 test_eq(
 #pike 7.4
 Crypto.md4()->name(),"MD4")
+]])
+cond_resolv(Crypto.MD2.name, [[
 test_eq(
 #pike 7.4
 Crypto.md2()->name(),"MD2")
+]])
 test_eq(
 #pike 7.4
 Crypto.sha()->name(),"SHA")
