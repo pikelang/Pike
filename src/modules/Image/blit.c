@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.40 2000/06/03 22:48:01 per Exp $ */
+/* $Id: blit.c,v 1.41 2000/06/11 21:07:21 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.40 2000/06/03 22:48:01 per Exp $
+**!	$Id: blit.c,v 1.41 2000/06/11 21:07:21 per Exp $
 **! class Image
 */
 
@@ -128,19 +128,6 @@ void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
   THREADS_ALLOW();
   if( ( rgb.r == rgb.g && rgb.r == rgb.b ) )
     MEMSET(dest, rgb.r, size*sizeof(rgb_group) );
-#ifdef ASSEMBLY_OK
-  else if( size > 512  && (image_cpuid & IMAGE_MMX) )
-  {
-    int *q = (int *)dest;
-    /* 8 pixels, 24 bytes */
-    dest[0] = rgb;  dest[1] = rgb; dest[2] = rgb;  dest[3] = rgb;
-    q[4] = q[0]; q[5] = q[1]; q[6] = q[2];
-    /* clear the rest the fast way.. */
-    image_clear_buffer_mmx_x86asm_from( dest, size/8 );
-    dest += size; size = size%8; dest -= size;
-    while(size--) *(dest++) = rgb;
-  }
-#endif
   else if(size)
   {
     int increment = 1;
