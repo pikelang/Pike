@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.4 1996/11/23 07:24:05 law Exp $ */
+/* $Id: matrix.c,v 1.5 1996/11/30 13:14:39 law Exp $ */
 
 #include "global.h"
 
@@ -25,20 +25,25 @@ struct program *image_program;
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)<(b)?(b):(a))
 
-#undef MATRIX_CHRONO
-#ifdef MATRIX_CHRONO
+#if 0
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X)
 
-void chrono(char *x)
+static void chrono(char *x)
 {
    struct rusage r;
+   static struct rusage rold;
    getrusage(RUSAGE_SELF,&r);
-   fprintf(stderr,"%s: %ld.%06ld %ld.%06ld %ld.%06ld\n",x,
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
 	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
-	   r.ru_stime.tv_sec,r.ru_stime.tv_usec,
-	   r.ru_stime.tv_sec+r.ru_utime.tv_sec,
-	   r.ru_stime.tv_usec+r.ru_utime.tv_usec);
+
+	   ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+	   +r.ru_utime.tv_sec-rold.ru_utime.tv_sec,
+           ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+           + r.ru_utime.tv_usec-rold.ru_utime.tv_usec
+	   );
+
+   rold=r;
 }
 #else
 #define CHRONO(X)
@@ -105,30 +110,42 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 #define decimals(x) ((x)-(int)(x))
 #define testrange(x) max(min((x),255),0)
 #define _scale_add_rgb(dest,src,factor) \
-   ((dest).r=testrange((dest).r+(int)((src).r*(factor)+0.5)), \
-    (dest).g=testrange((dest).g+(int)((src).g*(factor)+0.5)), \
-    (dest).b=testrange((dest).b+(int)((src).b*(factor)+0.5))) 
-#define scale_add_pixel(dest,dx,dy,dxw,src,sx,sy,sxw,factor) \
-   _scale_add_rgb(dest[(dx)+(dy)*(dxw)],src[(sx)+(sy)*(sxw)],factor)
+   ((dest)->r+=(src)->r*(factor), \
+    (dest)->g+=(src)->g*(factor), \
+    (dest)->b+=(src)->b*(factor)) 
+#define scale_add_pixel(dest,dx,src,sx,factor) \
+   _scale_add_rgb(dest,src,factor)
 
-static INLINE void scale_add_line(rgb_group *new,INT32 yn,INT32 newx,
+typedef struct
+{
+   double r,g,b;
+} rgbd_group;
+
+static INLINE void scale_add_line(rgbd_group *new,INT32 yn,INT32 newx,
 				  rgb_group *img,INT32 y,INT32 xsize,
 				  double py,double dx)
 {
    INT32 x,xd;
-   double xn;
-   for (x=0,xn=0; x<THIS->xsize; x++,xn+=dx)
+   double xn,xndxd;
+   new=new+yn*newx;
+   img=img+y*xsize;
+   for (x=0,xn=0; x<xsize; img++,x++,xn+=dx)
    {
       if ((INT32)xn<(INT32)(xn+dx))
       {
-         scale_add_pixel(new,(INT32)xn,yn,newx,img,x,y,xsize,py*(1.0-decimals(xn)));
-	 if ((xd=(INT32)(xn+dx)-(INT32)(xn))>1) 
+	 xndxd=py*(1.0-decimals(xn));
+	 if (xndxd)
+	    scale_add_pixel(new,(INT32)xn,img,x,xndxd);
+	 if (dx>=1.0 && (xd=(INT32)(xn+dx)-(INT32)(xn))>1) 
             while (--xd)
-               scale_add_pixel(new,(INT32)xn+xd,yn,newx,img,x,y,xsize,py);
-	 scale_add_pixel(new,(INT32)(xn+dx),yn,newx,img,x,y,xsize,py*decimals(xn+dx));
+               scale_add_pixel(new,(INT32)(xn+xd),img,x,py);
+	 xndxd=py*decimals(xn+dx);
+	 new++;
+	 if (xndxd)
+	    scale_add_pixel(new,(INT32)(xn+dx),img,x,xndxd);
       }
       else
-         scale_add_pixel(new,(int)xn,yn,newx,img,x,y,xsize,py*dx);
+         scale_add_pixel(new,(int)xn,img,x,py*dx);
    }
 }
 
@@ -136,17 +153,21 @@ void img_scale(struct image *dest,
 	       struct image *source,
 	       INT32 newx,INT32 newy)
 {
-   rgb_group *new;
+   rgbd_group *new,*s;
+   rgb_group *d;
    INT32 y,yd;
    double yn,dx,dy;
+
+CHRONO("scale begin");
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
 
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
-   new=malloc(newx*newy*sizeof(rgb_group) +1);
+   new=malloc(newx*newy*sizeof(rgbd_group) +1);
    if (!new) error("Out of memory!\n");
 
-   MEMSET(new,0,newx*newy*sizeof(rgb_group));
+   for (y=0; y<newx*newy; y++) 
+      new[y].r=new[y].g=new[y].b=0.0;
    
    dx=((double)newx-0.000001)/source->xsize; 
    dy=((double)newy-0.000001)/source->ysize; 
@@ -155,23 +176,41 @@ void img_scale(struct image *dest,
    {
       if ((INT32)yn<(INT32)(yn+dy))
       {
-	 scale_add_line(new,(INT32)(yn),newx,source->img,y,source->xsize,
-			(1.0-decimals(yn)),dx);
+	 if (1.0-decimals(yn))
+	    scale_add_line(new,(INT32)(yn),newx,source->img,y,source->xsize,
+			   (1.0-decimals(yn)),dx);
 	 if ((yd=(INT32)(yn+dy)-(INT32)(yn))>1) 
             while (--yd)
    	       scale_add_line(new,(INT32)yn+yd,newx,source->img,y,source->xsize,
 			      1.0,dx);
-	 scale_add_line(new,(INT32)(yn+dy),newx,source->img,y,source->xsize,
-			(decimals(yn+dy)),dx);
+	 if (decimals(yn+dy))
+	    scale_add_line(new,(INT32)(yn+dy),newx,source->img,y,source->xsize,
+			   (decimals(yn+dy)),dx);
       }
       else
 	 scale_add_line(new,(INT32)yn,newx,source->img,y,source->xsize,
 			dy,dx);
    }
 
-   dest->img=new;
+   dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
+   if (!d) error("Out of memory!\n");
+
+CHRONO("transfer begin");
+
+   s=new;
+   y=newx*newy;
+   while (y--)
+   {
+      d->r=min((int)(s->r+0.5),255);
+      d->g=min((int)(s->g+0.5),255);
+      d->b=min((int)(s->b+0.5),255);
+      d++; s++;
+   }
+
    dest->xsize=newx;
    dest->ysize=newy;
+
+CHRONO("scale end");
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -787,3 +826,125 @@ void image_rotate_expand(INT32 args)
    img_rotate(args,1);
 }
 
+void img_translate(INT32 args,int expand)
+{
+   float xt,yt;
+   int y,x;
+   struct object *o;
+   struct image *img;
+   rgb_group *s,*d;
+
+   if (args<2) error("illegal number of arguments to image->translate()\n");
+   
+   if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
+   else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;
+   else error("illegal argument 1 to image->translate()\n");
+
+   if (sp[1-args].type==T_FLOAT) yt=sp[1-args].u.float_number;
+   else if (sp[1-args].type==T_INT) yt=sp[1-args].u.integer;
+   else error("illegal argument 2 to image->translate()\n");
+
+   getrgb(THIS,2,args,"image->translate()\n");
+
+   xt-=floor(xt);
+   yt-=floor(yt);
+   
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+
+   img->xsize=THIS->xsize+(xt!=0);
+   img->ysize=THIS->ysize+(xt!=0);
+
+   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+
+   if (!xt)
+   {
+      memcpy(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+   }
+   else
+   {
+      float xn=1-xt;
+
+      d=img->img;
+      s=THIS->img;
+
+      for (y=0; y<img->ysize; y++)
+      {
+	 x=THIS->xsize-1;
+	 if (!expand)
+	    d->r=ROUND(THIS->rgb.r*xt+s->r*xn),
+	    d->g=ROUND(THIS->rgb.g*xt+s->g*xn),
+	    d->b=ROUND(THIS->rgb.b*xt+s->b*xn);
+	 else
+	    d->r=s->r, d->g=s->g, d->b=s->b;
+	 d++; s++;
+	 while (x--)
+	 {
+	    d->r=ROUND(s->r*xn+s[1].r*xt),
+	    d->g=ROUND(s->g*xn+s[1].g*xt),
+	    d->b=ROUND(s->b*xn+s[1].b*xt);
+	    d++; s++;
+	 }
+	 if (!expand)
+	    d->r=ROUND(s->r*xn+THIS->rgb.r*xt),
+	    d->g=ROUND(s->g*xn+THIS->rgb.g*xt),
+	    d->b=ROUND(s->b*xn+THIS->rgb.b*xt);
+	 else
+	    d->r=s->r, d->g=s->g, d->b=s->b;
+	 d++;
+      }
+   }
+
+   if (yt)
+   {
+      float yn=1-yt;
+      int xsz=img->xsize;
+
+      d=s=img->img;
+
+      for (x=0; x<img->xsize; x++)
+      {
+	 y=THIS->ysize-1;
+	 if (!expand)
+	    d->r=ROUND(THIS->rgb.r*yt+s->r*yn),
+	    d->g=ROUND(THIS->rgb.g*yt+s->g*yn),
+	    d->b=ROUND(THIS->rgb.b*yt+s->b*yn);
+	 else
+	    d->r=s->r, d->g=s->g, d->b=s->b;
+	 d+=xsz; s+=xsz;
+	 while (y--)
+	 {
+	    d->r=ROUND(s->r*yn+s[xsz].r*yt),
+	    d->g=ROUND(s->g*yn+s[xsz].g*yt),
+	    d->b=ROUND(s->b*yn+s[xsz].b*yt);
+	    d+=xsz; s+=xsz;
+	 }
+	 if (!expand)
+	    d->r=ROUND(s->r*yn+THIS->rgb.r*yt),
+	    d->g=ROUND(s->g*yn+THIS->rgb.g*yt),
+	    d->b=ROUND(s->b*yn+THIS->rgb.b*yt);
+	 else
+	    d->r=s->r, d->g=s->g, d->b=s->b;
+	 d-=xsz*(img->ysize-1)-1;
+	 s-=xsz*THIS->ysize-1;
+      }
+   }
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+
+void image_translate_expand(INT32 args)
+{
+   img_translate(args,1);
+}
+
+void image_translate(INT32 args)
+{
+   img_translate(args,0);
+}

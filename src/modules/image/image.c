@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.27 1996/11/23 07:24:03 law Exp $ */
+/* $Id: image.c,v 1.28 1996/11/30 13:14:35 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.27 1996/11/23 07:24:03 law Exp $");
+RCSID("$Id: image.c,v 1.28 1996/11/30 13:14:35 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -431,6 +431,58 @@ void image_copy(INT32 args)
    img_crop(img,THIS,
 	    sp[-args].u.integer,sp[1-args].u.integer,
 	    sp[2-args].u.integer,sp[3-args].u.integer);
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+static void image_change_color(INT32 args)
+
+{
+   /* ->change_color([int from-r,g,b,] int to-r,g,b); */
+   rgb_group from,to,*s,*d;
+   INT32 left;
+   struct object *o;
+   struct image *img;
+
+   if (!THIS->img) error("no image\n");
+   if (args<3) error("too few arguments to image->change_color()\n");
+
+   if (args<6)
+   {
+      to=THIS->rgb;   
+      getrgb(THIS,0,args,"image->change_color()");
+      from=THIS->rgb;
+   }
+   else
+   {
+      getrgb(THIS,0,args,"image->change_color()");
+      from=THIS->rgb;
+      getrgb(THIS,3,args,"image->change_color()");
+      to=THIS->rgb;
+   }
+   
+   o=clone(image_program,0);
+   img=(struct image*)(o->storage);
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1)))
+   {
+      free_object(o);
+      error("out of memory\n");
+   }
+
+   left=THIS->xsize*THIS->ysize;
+   s=THIS->img;
+   d=img->img;
+   while (left--)
+   {
+      if (s->r==from.r && s->g==from.g && s->b==from.b)
+         *d=to;
+      else
+         *d=*s;
+      d++; s++;
+   }
 
    pop_n_elems(args);
    push_object(o);
@@ -1096,7 +1148,7 @@ void image_select_from(INT32 args)
 {
    struct object *o;
    struct image *img;
-   INT32 low_limit;
+   INT32 low_limit=0;
 
    if (!THIS->img) error("no image\n");
 
@@ -1490,6 +1542,10 @@ void init_image_programs()
 		"function(:object)",0);
    add_function("scale",image_scale,
 		"function(int|float,int|float|void:object)",0);
+   add_function("translate",image_translate,
+		"function(int|float,int|float:object)",0);
+   add_function("translate_expand",image_translate_expand,
+		"function(int|float,int|float:object)",0);
 
    add_function("paste",image_paste,
 		"function(object,int|void,int|void:object)",0);
@@ -1519,6 +1575,8 @@ void init_image_programs()
 		"function("RGB_TYPE":object)",0);
    add_function("color",image_color,
 		"function("RGB_TYPE":object)",0);
+   add_function("change_color",image_change_color,
+		"function(int,int,int,"RGB_TYPE":object)",0);
    add_function("invert",image_invert,
 		"function("RGB_TYPE":object)",0);
    add_function("threshold",image_threshold,

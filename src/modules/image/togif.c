@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.17 1996/11/23 11:53:36 law Exp $ */
+/* $Id: togif.c,v 1.18 1996/11/30 13:14:41 law Exp $ */
 /*
 
 togif 
@@ -599,7 +599,7 @@ void image_gif_netscape_loop(INT32 args)
 
 static void img_gif_add(INT32 args,int fs,int lm)
 {
-   INT32 x,y,i;
+   INT32 x=0,y=0,i;
    struct lzw lzw;
    rgb_group *rgb;
    struct colortable *ct=NULL;
@@ -629,13 +629,15 @@ CHRONO("gif add init");
 
    if (args>2+!!ct)
    {
-      unsigned short delay;
+      unsigned short delay=0;
       if (sp[2+!!ct-args].type==T_INT) 
 	 delay=sp[2+!!ct-args].u.integer;
       else if (sp[2+!!ct-args].type==T_FLOAT) 
 	 delay=(unsigned short)(sp[2+!!ct-args].u.float_number*100);
       else 
-	 error("Illegal argument 3 to image->gif_add()\n");
+	 error("Illegal argument %d to image->gif_add()\n",3+!!ct);
+
+fprintf(stderr,"delay: %d\n",delay);
 
       low_my_putchar( '!', &buf ); /* extension block */
       low_my_putchar( 0xf9, &buf ); /* graphics control */
@@ -646,10 +648,13 @@ CHRONO("gif add init");
       low_my_putchar( 0, &buf ); /* terminate block */
    }
 
-   if (!ct) ct=colortable_quant(THIS,256);
+   ct=colortable_quant(THIS,256);
 
    colors=4; bpp=2;
    while (colors<ct->numcol) { colors<<=1; bpp++; }
+
+      
+
 
    low_my_putchar( ',', &buf ); /* image separator */
 

@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.10 1996/11/23 07:24:04 law Exp $ */
+/* $Id: image.h,v 1.11 1996/11/30 13:14:37 law Exp $ */
 
 #define MAX_NUMCOL 32768
 #define QUANT_MAP_BITS 4
@@ -104,6 +104,8 @@ void image_paste_alpha_color(INT32 args);
 /* matrix.c */
 
 void image_scale(INT32 args);
+void image_translate(INT32 args);
+void image_translate_expand(INT32 args);
 void image_skewx(INT32 args);
 void image_skewy(INT32 args);
 void image_skewx_expand(INT32 args);
