@@ -43,7 +43,7 @@ array children( );
 //!
 
 GTK.Container focus( int focus_direction );
-//! Emulate a focus event. direction is one of @[DIR_LEFT], @[DIR_DOWN], @[DIR_UP], @[DIR_TAB_BACKWARD], @[DIR_TAB_FORWARD] and @[DIR_RIGHT].
+//! Emulate a focus event. direction is one of @[DIR_DOWN], @[DIR_LEFT], @[DIR_RIGHT], @[DIR_TAB_BACKWARD], @[DIR_TAB_FORWARD] and @[DIR_UP].
 //!
 //!
 
@@ -76,6 +76,6 @@ GTK.Container set_focus_vadjustment( GTK.Adjustment adj );
 //!
 
 GTK.Container set_resize_mode( int mode );
-//! One of @[RESIZE_PARENT], @[RESIZE_QUEUE] and @[RESIZE_IMMEDIATE]
+//! One of @[RESIZE_IMMEDIATE], @[RESIZE_PARENT] and @[RESIZE_QUEUE]
 //!
 //!

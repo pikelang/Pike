@@ -9,7 +9,7 @@
 //! integers in the range 0 to 65,535, or integers in the range 0 to
 //! 255, depending on your needs.
 //!@code{ Gnome.ColorPicker();@}
-//!@xml{<image src='../images/gnome_colorpicker.png'/>@}
+//!@xml{<image>../images/gnome_colorpicker.png</image>@}
 //!
 //! 
 //!

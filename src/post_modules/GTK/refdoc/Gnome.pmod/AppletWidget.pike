@@ -133,7 +133,7 @@ string get_globcfgpath( );
 
 int get_panel_orient( );
 //! Gets the orientation of the panel this widget is on. it can be one
-//! of @[GNOME_Panel_ORIENT_RIGHT], @[GNOME_Panel_ORIENT_DOWN], @[GNOME_Panel_ORIENT_LEFT] and @[GNOME_Panel_ORIENT_UP]. This is not the position of the
+//! of @[GNOME_Panel_ORIENT_DOWN], @[GNOME_Panel_ORIENT_LEFT], @[GNOME_Panel_ORIENT_RIGHT] and @[GNOME_Panel_ORIENT_UP]. This is not the position of the
 //! panel, but rather the direction that the applet should be "reaching
 //! out". So any arrows should for example point in this direction. It
 //! will be OrientUp or OrientDown for horizontal panels and OrientLeft

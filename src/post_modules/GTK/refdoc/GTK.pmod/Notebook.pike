@@ -5,13 +5,13 @@
 //! display.
 //!
 //!@code{ GTK.Notebook( )->set_tab_pos( GTK.POS_LEFT )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))@}
-//!@xml{<image src='../images/gtk_notebook.png'/>@}
+//!@xml{<image>../images/gtk_notebook.png</image>@}
 //!
 //!@code{ GTK.Notebook( )->set_tab_pos( GTK.POS_TOP )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))@}
-//!@xml{<image src='../images/gtk_notebook_2.png'/>@}
+//!@xml{<image>../images/gtk_notebook_2.png</image>@}
 //!
 //!@code{ GTK.Notebook( )->set_tab_pos( GTK.POS_RIGHT )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))->next_page()->next_page()@}
-//!@xml{<image src='../images/gtk_notebook_3.png'/>@}
+//!@xml{<image>../images/gtk_notebook_3.png</image>@}
 //!
 //!
 //!
@@ -174,7 +174,7 @@ GTK.Notebook set_tab_label_text( GTK.Widget page, string title );
 //!
 
 GTK.Notebook set_tab_pos( int pos );
-//! One of @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP]
+//! One of @[POS_BOTTOM], @[POS_LEFT], @[POS_RIGHT] and @[POS_TOP]
 //!
 //!
 

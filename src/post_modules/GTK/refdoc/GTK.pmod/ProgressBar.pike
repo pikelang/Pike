@@ -1,16 +1,16 @@
 //! A simple progress bar. Useful when you are doing things that take a long
 //! time. Try to always have an 'abort' button whenever it makes sence.
 //!@code{ GTK.ProgressBar()->update(0.1)@}
-//!@xml{<image src='../images/gtk_progressbar.png'/>@}
+//!@xml{<image>../images/gtk_progressbar.png</image>@}
 //!
 //!@code{ GTK.ProgressBar()->set_show_text(1)->update(0.3)@}
-//!@xml{<image src='../images/gtk_progressbar_2.png'/>@}
+//!@xml{<image>../images/gtk_progressbar_2.png</image>@}
 //!
 //!@code{ GTK.ProgressBar()->update(0.6)@}
-//!@xml{<image src='../images/gtk_progressbar_3.png'/>@}
+//!@xml{<image>../images/gtk_progressbar_3.png</image>@}
 //!
 //!@code{ GTK.ProgressBar()->update(1.0)@}
-//!@xml{<image src='../images/gtk_progressbar_4.png'/>@}
+//!@xml{<image>../images/gtk_progressbar_4.png</image>@}
 //!
 //!
 //!

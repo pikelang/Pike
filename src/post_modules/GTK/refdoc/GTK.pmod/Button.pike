@@ -1,13 +1,13 @@
 //! A container that can only contain one child, and accepts events.
 //! draws a bevelbox around itself.
 //!@code{ GTK.Button("A button")@}
-//!@xml{<image src='../images/gtk_button.png'/>@}
+//!@xml{<image>../images/gtk_button.png</image>@}
 //!
 //!@code{ GTK.Button("A button\nwith multiple lines\nof text")@}
-//!@xml{<image src='../images/gtk_button_2.png'/>@}
+//!@xml{<image>../images/gtk_button_2.png</image>@}
 //!
 //!@code{ GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.image(100,40)->test())))@}
-//!@xml{<image src='../images/gtk_button_3.png'/>@}
+//!@xml{<image>../images/gtk_button_3.png</image>@}
 //!
 //!
 //!
@@ -56,7 +56,7 @@ GTK.Widget get_child( );
 //!
 
 int get_relief( );
-//! One of @[RELIEF_NORMAL], @[RELIEF_NONE] and @[RELIEF_HALF], set with set_relief()
+//! One of @[RELIEF_HALF], @[RELIEF_NONE] and @[RELIEF_NORMAL], set with set_relief()
 //!
 //!
 
@@ -76,6 +76,6 @@ GTK.Button released( );
 //!
 
 GTK.Button set_relief( int newstyle );
-//! One of @[RELIEF_NORMAL], @[RELIEF_NONE] and @[RELIEF_HALF]
+//! One of @[RELIEF_HALF], @[RELIEF_NONE] and @[RELIEF_NORMAL]
 //!
 //!

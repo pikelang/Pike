@@ -5,7 +5,7 @@
 //! standard arithmetic functions as well as trigonometric
 //! capabilities, exponents, factorials, nested equations, and others.
 //!@code{ Gnome.Calculator()@}
-//!@xml{<image src='../images/gnome_calculator.png'/>@}
+//!@xml{<image>../images/gnome_calculator.png</image>@}
 //!
 //! 
 //!

@@ -2,10 +2,10 @@
 //! example, a physical volume control on a stereo. Dial values can be
 //! changable or read-only for value reporting.
 //!@code{ GTK.Dial( GTK.Adjustment() );@}
-//!@xml{<image src='../images/gtk_dial.png'/>@}
+//!@xml{<image>../images/gtk_dial.png</image>@}
 //!
 //!@code{ GTK.Dial( GTK.Adjustment(10.0) )->set_percentage(0.4);@}
-//!@xml{<image src='../images/gtk_dial_2.png'/>@}
+//!@xml{<image>../images/gtk_dial_2.png</image>@}
 //!
 //!
 //!

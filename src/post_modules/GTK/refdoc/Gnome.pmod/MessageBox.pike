@@ -9,12 +9,12 @@
 //! with a stock icon.
 //! 
 //! The list of known types for message boxes are:
-//! @[GNOME_MESSAGE_BOX_GENERIC], @[GNOME_MESSAGE_BOX_WARNING], @[GNOME_MESSAGE_BOX_INFO], @[GNOME_MESSAGE_BOX_QUESTION] and @[GNOME_MESSAGE_BOX_ERROR].
+//! @[GNOME_MESSAGE_BOX_ERROR], @[GNOME_MESSAGE_BOX_GENERIC], @[GNOME_MESSAGE_BOX_INFO], @[GNOME_MESSAGE_BOX_QUESTION] and @[GNOME_MESSAGE_BOX_WARNING].
 //!@code{ Gnome.MessageBox( "This is a nice message", Gnome.MessageBoxInfo, Gnome.StockButtonOk,  Gnome.StockButtonCancel );@}
-//!@xml{<image src='../images/gnome_messagebox.png'/>@}
+//!@xml{<image>../images/gnome_messagebox.png</image>@}
 //!
 //!@code{ Gnome.MessageBox( "This is another not so nice message", Gnome.MessageBoxError, Gnome.StockButtonClose,  Gnome.StockButtonCancel );@}
-//!@xml{<image src='../images/gnome_messagebox_2.png'/>@}
+//!@xml{<image>../images/gnome_messagebox_2.png</image>@}
 //!
 //! 
 //!

@@ -3,7 +3,7 @@
 //! 
 //!  Example:
 //!@code{ GTK.Fixed()->put(GTK.Label("100,100"), 100, 100)->put(GTK.Label("0,0"), 0, 0)->set_usize(150,115)@}
-//!@xml{<image src='../images/gtk_fixed.png'/>@}
+//!@xml{<image>../images/gtk_fixed.png</image>@}
 //!
 //! 
 //!

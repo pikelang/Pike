@@ -3,7 +3,7 @@
 //!  button that will let the user bring up a calculator to fill in the
 //!  value of the entry widget.
 //!@code{ Gnome.NumberEntry("", "Select a number...");@}
-//!@xml{<image src='../images/gnome_numberentry.png'/>@}
+//!@xml{<image>../images/gnome_numberentry.png</image>@}
 //!
 //!
 //!

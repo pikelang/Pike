@@ -3,7 +3,7 @@
 //! different subwidgets directly.
 //! 
 //!@code{ GTK.ColorSelectionDialog("Select color")@}
-//!@xml{<image src='../images/gtk_colorselectiondialog.png'/>@}
+//!@xml{<image>../images/gtk_colorselectiondialog.png</image>@}
 //!
 //! 
 //!

@@ -164,7 +164,7 @@ GTK.Window set_policy( int allow_shrink, int allow_grow, int auto_shrink );
 //!
 
 GTK.Window set_position( int pos );
-//! one of @[WINDOW_DIALOG], @[WINDOW_POPUP], @[WIN_POS_NONE], @[WIN_POS_CENTER], @[WIN_POS_MOUSE] and @[WINDOW_TOPLEVEL]
+//! one of @[WIN_POS_CENTER], @[WIN_POS_MOUSE], @[WIN_POS_NONE], @[WINDOW_DIALOG], @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL]
 //!
 //!
 

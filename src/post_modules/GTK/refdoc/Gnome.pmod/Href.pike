@@ -2,10 +2,10 @@
 //! it invokes the configured browser for the URL you provided.
 //! 
 //!@code{ Gnome.Href( "http://www.gnome.org", "GNOME Web Site" )@}
-//!@xml{<image src='../images/gnome_href.png'/>@}
+//!@xml{<image>../images/gnome_href.png</image>@}
 //!
 //!@code{ Gnome.Href( "http://www.gnome.org" )@}
-//!@xml{<image src='../images/gnome_href_2.png'/>@}
+//!@xml{<image>../images/gnome_href_2.png</image>@}
 //!
 //! 
 //!

@@ -5,7 +5,7 @@
 //! load and save the history of the text.
 //!
 //!@code{ Gnome.Entry( "history" )@}
-//!@xml{<image src='../images/gnome_entry.png'/>@}
+//!@xml{<image>../images/gnome_entry.png</image>@}
 //!
 //!
 //!

@@ -28,7 +28,7 @@
 //! value, lower, upper, step_increment, page_increment, page_size
 //!
 //!@code{ GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)@}
-//!@xml{<image src='../images/gtk_spinbutton.png'/>@}
+//!@xml{<image>../images/gtk_spinbutton.png</image>@}
 //!
 //! 
 //!
@@ -110,7 +110,7 @@ GTK.SpinButton set_numeric( int numericp );
 //!
 
 GTK.SpinButton set_shadow_type( int type );
-//! Type is one of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
+//! Type is one of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 
@@ -154,7 +154,7 @@ GTK.SpinButton spin( int direction, float increment );
 //! If you want to alter the value of a Spin Value relative to its
 //! current value, then this ffunction can be used.
 //! 
-//! The direction paramenter is one of @[SPIN_PAGE_FORWARD], @[SPIN_END], @[SPIN_HOME], @[SPIN_PAGE_BACKWARD], @[SPIN_USER_DEFINED], @[SPIN_STEP_BACKWARD] and @[SPIN_STEP_FORWARD]
+//! The direction paramenter is one of @[SPIN_END], @[SPIN_HOME], @[SPIN_PAGE_BACKWARD], @[SPIN_PAGE_FORWARD], @[SPIN_STEP_BACKWARD], @[SPIN_STEP_FORWARD] and @[SPIN_USER_DEFINED]
 //! 
 //!  GTK.SpinStepForward and GTK.SpinStepBackward change the value
 //!  of the Spin Button by the amount specified by increment, unless

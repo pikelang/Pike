@@ -5,7 +5,7 @@
 //! makes a vertical division
 //!
 //!@code{ GTK.Vpaned()->add1(GTK.Label("Top Side Of Pane"))->add2(GTK.Label("Bottom"))->set_usize(100,100)@}
-//!@xml{<image src='../images/gtk_vpaned.png'/>@}
+//!@xml{<image>../images/gtk_vpaned.png</image>@}
 //!
 //!
 //!

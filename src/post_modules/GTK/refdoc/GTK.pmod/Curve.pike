@@ -1,5 +1,5 @@
 //!@code{ GTK.Curve()@}
-//!@xml{<image src='../images/gtk_curve.png'/>@}
+//!@xml{<image>../images/gtk_curve.png</image>@}
 //!
 //!
 //!
@@ -16,7 +16,7 @@ GTK.Curve reset( );
 //!
 
 GTK.Curve set_curve_type( int type );
-//! One of @[CURVE_TYPE_LINEAR], @[CURVE_TYPE_FREE] and @[CURVE_TYPE_SPLINE];
+//! One of @[CURVE_TYPE_FREE], @[CURVE_TYPE_LINEAR] and @[CURVE_TYPE_SPLINE];
 //!
 //!
 

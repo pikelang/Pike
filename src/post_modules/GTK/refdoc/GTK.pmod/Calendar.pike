@@ -1,9 +1,9 @@
 //! A calendar widget.
 //!@code{ GTK.Calendar();@}
-//!@xml{<image src='../images/gtk_calendar.png'/>@}
+//!@xml{<image>../images/gtk_calendar.png</image>@}
 //!
 //!@code{ GTK.Calendar()->select_day( 16 );@}
-//!@xml{<image src='../images/gtk_calendar_2.png'/>@}
+//!@xml{<image>../images/gtk_calendar_2.png</image>@}
 //!
 //!
 //!
@@ -36,7 +36,7 @@ static GTK.Calendar create( );
 //!
 
 GTK.Calendar display_options( int options );
-//! Bitwise or of one or more of @[CALENDAR_SHOW_WEEK_NUMBERS], @[CALENDAR_SHOW_HEADING], @[CALENDAR_WEEK_START_MONDAY], @[CALENDAR_SHOW_DAY_NAMES] and @[CALENDAR_NO_MONTH_CHANGE].
+//! Bitwise or of one or more of @[CALENDAR_NO_MONTH_CHANGE], @[CALENDAR_SHOW_DAY_NAMES], @[CALENDAR_SHOW_HEADING], @[CALENDAR_SHOW_WEEK_NUMBERS] and @[CALENDAR_WEEK_START_MONDAY].
 //!
 //!
 

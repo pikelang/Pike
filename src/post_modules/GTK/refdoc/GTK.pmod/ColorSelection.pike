@@ -12,7 +12,7 @@
 //! explicitly through set_color().
 //! 
 //!@code{ GTK.ColorSelection()@}
-//!@xml{<image src='../images/gtk_colorselection.png'/>@}
+//!@xml{<image>../images/gtk_colorselection.png</image>@}
 //!
 //!
 //!
@@ -43,7 +43,7 @@ GTK.ColorSelection set_color( array color );
 //!
 
 GTK.ColorSelection set_update_policy( int policy );
-//! one of @[UPDATE_IF_VALID], @[UPDATE_DELAYED], @[UPDATE_DISCONTINUOUS], @[UPDATE_ALWAYS] and @[UPDATE_CONTINUOUS].
+//! one of @[UPDATE_ALWAYS], @[UPDATE_CONTINUOUS], @[UPDATE_DELAYED], @[UPDATE_DISCONTINUOUS] and @[UPDATE_IF_VALID].
 //! 
 //! The default policy is GTK.UpdateContinuous which means that the
 //! current color is updated continuously when the user drags the

@@ -2,7 +2,7 @@
 //! loading/saving systemwide high scores in a secure way.
 //! 
 //!@code{ Gnome.Scores( 17, ({ "per" })*17, map((array(float))indices(allocate(17)),`*,42), map(indices(allocate(17)), `*, 10 ), 1 )@}
-//!@xml{<image src='../images/gnome_scores.png'/>@}
+//!@xml{<image>../images/gnome_scores.png</image>@}
 //!
 //! 
 //!

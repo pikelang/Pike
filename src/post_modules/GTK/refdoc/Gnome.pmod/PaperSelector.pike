@@ -1,5 +1,5 @@
 //!@code{ Gnome.PaperSelector()@}
-//!@xml{<image src='../images/gnome_paperselector.png'/>@}
+//!@xml{<image>../images/gnome_paperselector.png</image>@}
 //!
 //!
 //!

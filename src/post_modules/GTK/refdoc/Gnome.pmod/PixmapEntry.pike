@@ -4,7 +4,7 @@
 //! allows DND to be performed on the preview box. It also provides all
 //! the GnomeEntry functionality as well.
 //!@code{ Gnome.PixmapEntry("","browse...",1);@}
-//!@xml{<image src='../images/gnome_pixmapentry.png'/>@}
+//!@xml{<image>../images/gnome_pixmapentry.png</image>@}
 //!
 //!
 //!

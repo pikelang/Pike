@@ -2,7 +2,7 @@
 //!  display status, progress, hints for menu items or a minibuffer for
 //!  getting some sort of response. It has a stack for status messages
 //!@code{ Gnome.Appbar( 1, 1, Gnome.PreferencesUser )->set_progress( 0.4 );@}
-//!@xml{<image src='../images/gnome_appbar.png'/>@}
+//!@xml{<image>../images/gnome_appbar.png</image>@}
 //!
 //!
 //!

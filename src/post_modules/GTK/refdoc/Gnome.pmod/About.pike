@@ -5,7 +5,7 @@
 //! displayed.
 //! 
 //!@code{ Gnome.About( "Example", "1.0", "(c) Roxen IS 2000", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );@}
-//!@xml{<image src='../images/gnome_about.png'/>@}
+//!@xml{<image>../images/gnome_about.png</image>@}
 //!
 //! 
 //!

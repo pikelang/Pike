@@ -4,16 +4,16 @@
 //! the scrollbars.
 //! 
 //!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(100,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
-//!@xml{<image src='../images/gtk_scrolledwindow.png'/>@}
+//!@xml{<image>../images/gtk_scrolledwindow.png</image>@}
 //!
 //!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(70,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
-//!@xml{<image src='../images/gtk_scrolledwindow_2.png'/>@}
+//!@xml{<image>../images/gtk_scrolledwindow_2.png</image>@}
 //!
 //!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(80,80)@}
-//!@xml{<image src='../images/gtk_scrolledwindow_3.png'/>@}
+//!@xml{<image>../images/gtk_scrolledwindow_3.png</image>@}
 //!
 //!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)@}
-//!@xml{<image src='../images/gtk_scrolledwindow_4.png'/>@}
+//!@xml{<image>../images/gtk_scrolledwindow_4.png</image>@}
 //!
 //! 
 //!
@@ -50,7 +50,7 @@ GTK.Hscrollbar get_hscrollbar( );
 //!
 
 int get_hscrollbar_policy( );
-//! One of @[POLICY_NEVER], @[POLICY_AUTOMATIC] and @[POLICY_ALWAYS]
+//! One of @[POLICY_ALWAYS], @[POLICY_AUTOMATIC] and @[POLICY_NEVER]
 //!
 //!
 
@@ -70,7 +70,7 @@ GTK.Vscrollbar get_vscrollbar( );
 //!
 
 int get_vscrollbar_policy( );
-//! One of @[POLICY_NEVER], @[POLICY_AUTOMATIC] and @[POLICY_ALWAYS]
+//! One of @[POLICY_ALWAYS], @[POLICY_AUTOMATIC] and @[POLICY_NEVER]
 //!
 //!
 
@@ -81,7 +81,7 @@ int get_vscrollbar_visible( );
 
 int get_window_placement( );
 //! The location of the window relative to the scrollbars.
-//! One of @[CORNER_BOTTOM_LEFT], @[CORNER_TOP_RIGHT], @[CORNER_BOTTOM_RIGHT] and @[CORNER_TOP_LEFT]
+//! One of @[CORNER_BOTTOM_LEFT], @[CORNER_BOTTOM_RIGHT], @[CORNER_TOP_LEFT] and @[CORNER_TOP_RIGHT]
 //!
 //!
 
@@ -92,12 +92,12 @@ GTK.ScrolledWindow set_hadjustment( GTK.Adjustment hadjustment );
 
 GTK.ScrolledWindow set_placement( int window_corner_placement );
 //! The location of the window relative to the scrollbars.
-//! One of @[CORNER_BOTTOM_LEFT], @[CORNER_TOP_RIGHT], @[CORNER_BOTTOM_RIGHT] and @[CORNER_TOP_LEFT]
+//! One of @[CORNER_BOTTOM_LEFT], @[CORNER_BOTTOM_RIGHT], @[CORNER_TOP_LEFT] and @[CORNER_TOP_RIGHT]
 //!
 //!
 
 GTK.ScrolledWindow set_policy( int xpolicy, int ypolicy );
-//! vertical and horiz policy. Both are one of @[POLICY_NEVER], @[POLICY_AUTOMATIC] and @[POLICY_ALWAYS]
+//! vertical and horiz policy. Both are one of @[POLICY_ALWAYS], @[POLICY_AUTOMATIC] and @[POLICY_NEVER]
 //!
 //!
 

@@ -6,7 +6,7 @@
 //! as the second argument to GTK.RadioButton().
 //! 
 //!@code{ GTK.Radio_button("Button");@}
-//!@xml{<image src='../images/gtk_radiobutton.png'/>@}
+//!@xml{<image>../images/gtk_radiobutton.png</image>@}
 //!
 //!
 //!

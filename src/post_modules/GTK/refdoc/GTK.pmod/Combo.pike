@@ -9,7 +9,7 @@
 //! really care about: The W(entry) and the W(list).
 //! 
 //!@code{ GTK.Combo()@}
-//!@xml{<image src='../images/gtk_combo.png'/>@}
+//!@xml{<image>../images/gtk_combo.png</image>@}
 //!
 //!
 //!

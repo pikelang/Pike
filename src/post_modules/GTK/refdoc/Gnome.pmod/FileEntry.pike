@@ -3,7 +3,7 @@
 //! W(GtkFileSelection). It also accepts DND drops from the filemanager
 //! and other sources.
 //!@code{ Gnome.FileEntry("","")@}
-//!@xml{<image src='../images/gnome_fileentry.png'/>@}
+//!@xml{<image>../images/gnome_fileentry.png</image>@}
 //!
 //!
 //!

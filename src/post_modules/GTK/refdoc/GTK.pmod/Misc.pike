@@ -13,13 +13,13 @@
 //! 
 //!
 //!@code{ GTK.Vbox(0,0)->add(GTK.Label("Label"))->set_usize(100,20)@}
-//!@xml{<image src='../images/gtk_misc.png'/>@}
+//!@xml{<image>../images/gtk_misc.png</image>@}
 //!
 //!@code{ GTK.Vbox(0,0)->add(GTK.Label("Label")->set_alignment(1.0,0.0))->set_usize(100,20)@}
-//!@xml{<image src='../images/gtk_misc_2.png'/>@}
+//!@xml{<image>../images/gtk_misc_2.png</image>@}
 //!
 //!@code{ GTK.Vbox(0,0)->add(GTK.Label("Label")->set_alignment(0.0,0.0))->set_usize(100,20)@}
-//!@xml{<image src='../images/gtk_misc_3.png'/>@}
+//!@xml{<image>../images/gtk_misc_3.png</image>@}
 //!
 //!
 //!

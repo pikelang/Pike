@@ -6,13 +6,13 @@
 //! Used to visually group objects.
 //! 
 //!@code{ GTK.Frame("Title")->add(GTK.Label("Contents"))@}
-//!@xml{<image src='../images/gtk_frame.png'/>@}
+//!@xml{<image>../images/gtk_frame.png</image>@}
 //!
 //!@code{ GTK.Frame()->add(GTK.Label("Contents"))@}
-//!@xml{<image src='../images/gtk_frame_2.png'/>@}
+//!@xml{<image>../images/gtk_frame_2.png</image>@}
 //!
 //!@code{ GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)@}
-//!@xml{<image src='../images/gtk_frame_3.png'/>@}
+//!@xml{<image>../images/gtk_frame_3.png</image>@}
 //!
 //! 
 //!
@@ -39,6 +39,6 @@ GTK.Frame set_label_align( float xalign, float yalign );
 
 GTK.Frame set_shadow_type( int shadow_type );
 //! Set the shadow type for the Frame widget. The type is one of
-//! @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
+//! @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!

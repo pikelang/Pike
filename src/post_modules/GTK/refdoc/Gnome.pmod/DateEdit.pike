@@ -1,10 +1,10 @@
 //! The GnomeDateEdit widget provides a way to enter dates and times
 //! with a helper calendar to let the user select the date.
 //!@code{ Gnome.DateEdit(time(),1,1);@}
-//!@xml{<image src='../images/gnome_dateedit.png'/>@}
+//!@xml{<image>../images/gnome_dateedit.png</image>@}
 //!
 //!@code{ Gnome.DateEdit(time(),0,1);@}
-//!@xml{<image src='../images/gnome_dateedit_2.png'/>@}
+//!@xml{<image>../images/gnome_dateedit_2.png</image>@}
 //!
 //!
 //!

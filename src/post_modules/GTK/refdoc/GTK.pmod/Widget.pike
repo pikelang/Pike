@@ -224,12 +224,12 @@ GTK.Widget activate( );
 GTK.Widget add_accelerator( string signal, GTK.AccelGroup group, int key, int modifiers, int flags );
 //! Add an accelerator (keyboard shortcut).
 //! 
-//! Flag is one of @[ACCEL_VISIBLE], @[ACCEL_LOCKED] and @[ACCEL_SIGNAL_VISIBLE]
+//! Flag is one of @[ACCEL_LOCKED], @[ACCEL_SIGNAL_VISIBLE] and @[ACCEL_VISIBLE]
 //! 
 //! The signal is the signal to invoke when the accelerator key is pressed.
 //! 
 //! The modifiers is a bitwise or of one or more of GDK.ShiftMask,
-//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD4_MASK], @[GDK_MOD3_MASK], @[GDK_MOD2_MASK], @[GDK_MOD1_MASK] and @[GDK_MOD5_MASK].
+//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD1_MASK], @[GDK_MOD2_MASK], @[GDK_MOD3_MASK], @[GDK_MOD4_MASK] and @[GDK_MOD5_MASK].
 //! 
 //! The group is the accelerator group in which the accelerator should be added.
 //! 
@@ -271,11 +271,11 @@ GTK.Widget copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xs
 GTK.Widget drag_dest_set( int flags, array targets, int actions );
 //!     Register a drop site, and possibly add default behaviors.
 //!   arguments:
-//!     flags:     Which types of default drag behavior to use (one of @[DEST_DEFAULT_DROP], @[DEST_DEFAULT_MOTION], @[DEST_DEFAULT_ALL] and @[DEST_DEFAULT_HIGHLIGHT])
+//!     flags:     Which types of default drag behavior to use (one of @[DEST_DEFAULT_ALL], @[DEST_DEFAULT_DROP], @[DEST_DEFAULT_HIGHLIGHT] and @[DEST_DEFAULT_MOTION])
 //!     targets:   Table of targets that can be accepted
 //!            ({ ({ content_type(string), flags(int(try 0)), id(int) }), ...})
 //!       The id will be received in the signal handlers.
-//!     actions:   one of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT]
+//!     actions:   one of @[GDK_ACTION_ASK], @[GDK_ACTION_COPY], @[GDK_ACTION_DEFAULT], @[GDK_ACTION_LINK], @[GDK_ACTION_MOVE] and @[GDK_ACTION_PRIVATE]
 //!   results:
 //!
 //!
@@ -307,7 +307,7 @@ GTK.Widget drag_source_set( int flags, array targets, int actions );
 //!     targets:   Table of targets that can be accepted
 //!            ({ ({ content_type(string), flags(int(try 0)), id(int) }), ...})
 //!       The id will be received in the signal handlers.
-//!     actions:   one of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT]
+//!     actions:   one of @[GDK_ACTION_ASK], @[GDK_ACTION_COPY], @[GDK_ACTION_DEFAULT], @[GDK_ACTION_LINK], @[GDK_ACTION_MOVE] and @[GDK_ACTION_PRIVATE]
 //!   results:
 //!
 //!
@@ -344,7 +344,7 @@ int get_events( );
 //!
 
 int get_extension_events( );
-//! Returns one of @[GDK_EXTENSION_EVENTS_CURSOR], @[GDK_EXTENSION_EVENTS_NONE] and @[GDK_EXTENSION_EVENTS_ALL]
+//! Returns one of @[GDK_EXTENSION_EVENTS_ALL], @[GDK_EXTENSION_EVENTS_CURSOR] and @[GDK_EXTENSION_EVENTS_NONE]
 //!
 //!
 
@@ -482,7 +482,7 @@ GTK.Widget remove_accelerator( GTK.AccelGroup group, int key, int modifiers );
 //! Remove an accelerator (keyboard shortcut).
 //! 
 //! The modifiers is a bitwise or of one or more of GDK.ShiftMask,
-//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD4_MASK], @[GDK_MOD3_MASK], @[GDK_MOD2_MASK], @[GDK_MOD1_MASK] and @[GDK_MOD5_MASK].
+//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD1_MASK], @[GDK_MOD2_MASK], @[GDK_MOD3_MASK], @[GDK_MOD4_MASK] and @[GDK_MOD5_MASK].
 //! 
 //! The group is the accelerator group in which the accelerator should be added.
 //! 
@@ -680,7 +680,7 @@ GTK.Widget set_events( int events );
 //!
 
 GTK.Widget set_extension_events( int events );
-//! Events is one of @[GDK_EXTENSION_EVENTS_CURSOR], @[GDK_EXTENSION_EVENTS_NONE] and @[GDK_EXTENSION_EVENTS_ALL]
+//! Events is one of @[GDK_EXTENSION_EVENTS_ALL], @[GDK_EXTENSION_EVENTS_CURSOR] and @[GDK_EXTENSION_EVENTS_NONE]
 //!
 //!
 
@@ -717,7 +717,7 @@ GTK.Widget set_sensitive( int sensitivep );
 //!
 
 GTK.Widget set_state( int state );
-//! One of @[STATE_ACTIVE], @[STATE_NORMAL], @[STATE_SELECTED], @[STATE_PRELIGHT] and @[STATE_INSENSITIVE].
+//! One of @[STATE_ACTIVE], @[STATE_INSENSITIVE], @[STATE_NORMAL], @[STATE_PRELIGHT] and @[STATE_SELECTED].
 //! This function should normaly not be used directly.
 //!
 //!
@@ -741,7 +741,7 @@ GTK.Widget shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset );
 //! the supplied bitmap. Notice how the window behind the example
 //! window can be seen because of the rather odd shape the example window has.
 //!@code{ GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)@}
-//!@xml{<image src='../images/gtk_widget_shape_combine_mask.png'/>@}
+//!@xml{<image>../images/gtk_widget_shape_combine_mask.png</image>@}
 //!
 //! NOTE: The widget must be realized before this function can be used
 //!

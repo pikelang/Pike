@@ -11,7 +11,7 @@
 //! indicating that the tearoff menu can be reattached. Activating it
 //! will erase the tearoff menu window.
 //!@code{ GTK.TearoffMenuItem()->set_usize( 100,0 )@}
-//!@xml{<image src='../images/gtk_tearoffmenuitem.png'/>@}
+//!@xml{<image>../images/gtk_tearoffmenuitem.png</image>@}
 //!
 //! 
 //!

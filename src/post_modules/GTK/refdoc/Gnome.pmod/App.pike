@@ -47,7 +47,7 @@ Gnome.App add_docked( GTK.Widget widget, string name, int behavior, int placemen
 //!
 //! widget : Widget to be added to app's dock
 //! name : Name for the dock item that will contain toolbar
-//! behavior : Behavior for the new dock item. One of @[GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL], @[GNOME_DOCK_ITEM_BEH_NORMAL], @[GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL], @[GNOME_DOCK_ITEM_BEH_EXCLUSIVE], @[GNOME_DOCK_ITEM_BEH_LOCKED] and @[GNOME_DOCK_ITEM_BEH_NEVER_FLOATING]
+//! behavior : Behavior for the new dock item. One of @[GNOME_DOCK_ITEM_BEH_EXCLUSIVE], @[GNOME_DOCK_ITEM_BEH_LOCKED], @[GNOME_DOCK_ITEM_BEH_NEVER_FLOATING], @[GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL], @[GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL] and @[GNOME_DOCK_ITEM_BEH_NORMAL]
 //! placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating 
 //! band_num : Number of the band where the dock item should be placed 
 //! band_position : Position of the new dock item in band band_num 
@@ -65,7 +65,7 @@ Gnome.App add_toolbar( GTK.Toolbar toolbar, string name, int behavior, int place
 //!
 //! toolbar : Toolbar to be added to app's dock
 //! name : Name for the dock item that will contain toolbar
-//! behavior : Behavior for the new dock item. One or more of @[GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL], @[GNOME_DOCK_ITEM_BEH_NORMAL], @[GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL], @[GNOME_DOCK_ITEM_BEH_EXCLUSIVE], @[GNOME_DOCK_ITEM_BEH_LOCKED] and @[GNOME_DOCK_ITEM_BEH_NEVER_FLOATING]
+//! behavior : Behavior for the new dock item. One or more of @[GNOME_DOCK_ITEM_BEH_EXCLUSIVE], @[GNOME_DOCK_ITEM_BEH_LOCKED], @[GNOME_DOCK_ITEM_BEH_NEVER_FLOATING], @[GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL], @[GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL] and @[GNOME_DOCK_ITEM_BEH_NORMAL]
 //! placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating 
 //! band_num : Number of the band where the dock item should be placed
 //! band_position : Position of the new dock item in band band_num

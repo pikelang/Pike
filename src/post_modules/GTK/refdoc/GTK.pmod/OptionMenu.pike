@@ -4,7 +4,7 @@
 //! which allows the user to make a new choice.
 //! 
 //!@code{ GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));@}
-//!@xml{<image src='../images/gtk_optionmenu.png'/>@}
+//!@xml{<image>../images/gtk_optionmenu.png</image>@}
 //!
 //! 
 //!

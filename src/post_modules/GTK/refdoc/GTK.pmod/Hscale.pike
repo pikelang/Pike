@@ -10,7 +10,7 @@
 //! functions.
 //! 
 //!@code{ GTK.Hscale(GTK.Adjustment())->set_usize(300,30)@}
-//!@xml{<image src='../images/gtk_hscale.png'/>@}
+//!@xml{<image>../images/gtk_hscale.png</image>@}
 //!
 //!
 //!

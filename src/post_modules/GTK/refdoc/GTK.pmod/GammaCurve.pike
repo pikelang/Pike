@@ -8,7 +8,7 @@
 //! unique) output value specified.
 //! 
 //!@code{ GTK.GammaCurve()->set_usize(210,130)@}
-//!@xml{<image src='../images/gtk_gammacurve.png'/>@}
+//!@xml{<image>../images/gtk_gammacurve.png</image>@}
 //!
 //!
 //!

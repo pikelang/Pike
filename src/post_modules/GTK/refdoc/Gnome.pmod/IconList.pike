@@ -151,7 +151,7 @@ Gnome.IconList set_row_spacing( int pixels );
 //!
 
 Gnome.IconList set_selection_mode( int mode );
-//! One of @[SELECTION_EXTENDED], @[SELECTION_SINGLE], @[SELECTION_BROWSE] and @[SELECTION_MULTIPLE].
+//! One of @[SELECTION_BROWSE], @[SELECTION_EXTENDED], @[SELECTION_MULTIPLE] and @[SELECTION_SINGLE].
 //!
 //!
 

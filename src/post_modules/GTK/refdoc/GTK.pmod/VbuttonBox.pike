@@ -4,19 +4,19 @@
 //! normal button layouts.
 //!
 //!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_usize(100,300)@}
-//!@xml{<image src='../images/gtk_vbuttonbox.png'/>@}
+//!@xml{<image>../images/gtk_vbuttonbox.png</image>@}
 //!
 //!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_SPREAD)->set_usize(100,300)@}
-//!@xml{<image src='../images/gtk_vbuttonbox_2.png'/>@}
+//!@xml{<image>../images/gtk_vbuttonbox_2.png</image>@}
 //!
 //!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_EDGE)->set_usize(100,300)@}
-//!@xml{<image src='../images/gtk_vbuttonbox_3.png'/>@}
+//!@xml{<image>../images/gtk_vbuttonbox_3.png</image>@}
 //!
 //!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_START)->set_usize(100,300)@}
-//!@xml{<image src='../images/gtk_vbuttonbox_4.png'/>@}
+//!@xml{<image>../images/gtk_vbuttonbox_4.png</image>@}
 //!
 //!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_END)->set_usize(100,300)@}
-//!@xml{<image src='../images/gtk_vbuttonbox_5.png'/>@}
+//!@xml{<image>../images/gtk_vbuttonbox_5.png</image>@}
 //!
 //!
 //!

@@ -10,10 +10,10 @@
 //! not context identifier order.
 //!  
 //!@code{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()@}
-//!@xml{<image src='../images/gtk_statusbar.png'/>@}
+//!@xml{<image>../images/gtk_statusbar.png</image>@}
 //!
 //!@code{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()@}
-//!@xml{<image src='../images/gtk_statusbar_2.png'/>@}
+//!@xml{<image>../images/gtk_statusbar_2.png</image>@}
 //!
 //! 
 //!

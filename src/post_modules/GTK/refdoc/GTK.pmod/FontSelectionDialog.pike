@@ -19,7 +19,7 @@
 //! the 'Filter' page of the dialog.
 //! </font>@}
 //!@code{ GTK.FontSelectionDialog("Select a font")@}
-//!@xml{<image src='../images/gtk_fontselectiondialog.png'/>@}
+//!@xml{<image>../images/gtk_fontselectiondialog.png</image>@}
 //!
 //!
 //!

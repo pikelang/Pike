@@ -30,7 +30,7 @@ int get_orientation( );
 //!
 
 int get_shadow_type( );
-//! One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
+//! One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 
@@ -38,6 +38,6 @@ Gnome.DockItem set_orientation( int orientation );
 //!
 
 Gnome.DockItem set_shadow_type( int shadow_type );
-//! One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
+//! One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!

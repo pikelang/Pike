@@ -2,7 +2,7 @@
 //! between width and height. width/height == ratio
 //!
 //!@code{ GTK.Aspect_frame("Title",0.5,0.5,0.4,0)->add( GTK.Label("Wrong aspect"))->set_usize(200,200)@}
-//!@xml{<image src='../images/gtk_aspectframe.png'/>@}
+//!@xml{<image>../images/gtk_aspectframe.png</image>@}
 //!
 //!
 //!

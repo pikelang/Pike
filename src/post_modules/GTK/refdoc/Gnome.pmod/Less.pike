@@ -5,13 +5,13 @@
 //! stream or from the output of a Unix command.
 //!
 //!@code{ Gnome.Less()->show_string("Example string\nshown in this\nwidget")@}
-//!@xml{<image src='../images/gnome_less.png'/>@}
+//!@xml{<image>../images/gnome_less.png</image>@}
 //!
 //!@code{ Gnome.Less()->show_file("/usr/dict/words" );@}
-//!@xml{<image src='../images/gnome_less_2.png'/>@}
+//!@xml{<image>../images/gnome_less_2.png</image>@}
 //!
 //!@code{ Gnome.Less()->show_command( "psrinfo -v" )@}
-//!@xml{<image src='../images/gnome_less_3.png'/>@}
+//!@xml{<image>../images/gnome_less_3.png</image>@}
 //!
 //! 
 //!

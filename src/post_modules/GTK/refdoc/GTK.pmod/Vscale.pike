@@ -8,7 +8,7 @@
 //! functions.
 //! 
 //!@code{ GTK.Vscale(GTK.Adjustment())->set_usize(30,100)@}
-//!@xml{<image src='../images/gtk_vscale.png'/>@}
+//!@xml{<image>../images/gtk_vscale.png</image>@}
 //!
 //! 
 //!

@@ -20,7 +20,7 @@
 //! and images.
 //! 
 //!@code{ GTK.EventBox()->set_usize(100,100)@}
-//!@xml{<image src='../images/gtk_eventbox.png'/>@}
+//!@xml{<image>../images/gtk_eventbox.png</image>@}
 //!
 //!
 //!

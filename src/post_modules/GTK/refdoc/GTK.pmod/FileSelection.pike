@@ -19,7 +19,7 @@
 //! show_fileop_buttons().
 //! 
 //!@code{ GTK.FileSelection("File selector")@}
-//!@xml{<image src='../images/gtk_fileselection.png'/>@}
+//!@xml{<image>../images/gtk_fileselection.png</image>@}
 //!
 //! 
 //!

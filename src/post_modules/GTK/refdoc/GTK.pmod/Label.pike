@@ -1,15 +1,15 @@
 //! A simple text label.
 //!@code{ GTK.Label("A simple text label")@}
-//!@xml{<image src='../images/gtk_label.png'/>@}
+//!@xml{<image>../images/gtk_label.png</image>@}
 //!
 //!@code{ GTK.Label("Multi\nline text\nlabel here")@}
-//!@xml{<image src='../images/gtk_label_2.png'/>@}
+//!@xml{<image>../images/gtk_label_2.png</image>@}
 //!
 //!@code{ GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_LEFT)@}
-//!@xml{<image src='../images/gtk_label_3.png'/>@}
+//!@xml{<image>../images/gtk_label_3.png</image>@}
 //!
 //!@code{ GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_RIGHT)@}
-//!@xml{<image src='../images/gtk_label_4.png'/>@}
+//!@xml{<image>../images/gtk_label_4.png</image>@}
 //!
 //!
 //!
@@ -35,7 +35,7 @@ GTK.Label set( string text );
 //!
 
 GTK.Label set_justify( int justify );
-//! one of @[JUSTIFY_RIGHT], @[JUSTIFY_CENTER], @[JUSTIFY_FILL] and @[JUSTIFY_LEFT]
+//! one of @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
 //!
 //!
 

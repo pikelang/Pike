@@ -7,7 +7,7 @@
 //! applications that need to display fast changes in their data.
 //! 
 //!@code{   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;@}
-//!@xml{<image src='../images/gtk_databox.png'/>@}
+//!@xml{<image>../images/gtk_databox.png</image>@}
 //!
 //!
 //!
@@ -33,17 +33,17 @@ static GTK.Databox create( );
 //!
 
 int data_add_x( int nelems, array x, int shared_Y_index, GDK.Color color, int type, int dot_size );
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
+//! Type is one of @[DATABOX_BARS], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!
 
 int data_add_x_y( int nelems, array x, array y, GDK.Color color, int type, int dot_size );
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
+//! Type is one of @[DATABOX_BARS], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!
 
 int data_add_y( int nelems, array y, int shared_X_index, GDK.Color color, int type, int dot_size );
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
+//! Type is one of @[DATABOX_BARS], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!
 
@@ -87,7 +87,7 @@ int set_color( int index, GDK.Color color );
 //!
 
 int set_data_type( int index, int type, int dot_size );
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
+//! Type is one of @[DATABOX_BARS], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!
 

@@ -1,5 +1,5 @@
 //!@code{ GTK.FontSelection()@}
-//!@xml{<image src='../images/gtk_fontselection.png'/>@}
+//!@xml{<image>../images/gtk_fontselection.png</image>@}
 //!
 //!
 //!

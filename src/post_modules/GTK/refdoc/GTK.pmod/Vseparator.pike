@@ -1,6 +1,6 @@
 //! Simply creates a vertical separator. No bells or whistles.
 //!@code{ GTK.Vseparator()->set_usize(3,50)@}
-//!@xml{<image src='../images/gtk_vseparator.png'/>@}
+//!@xml{<image>../images/gtk_vseparator.png</image>@}
 //!
 //!
 //!

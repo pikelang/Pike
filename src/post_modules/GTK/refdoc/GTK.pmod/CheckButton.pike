@@ -4,7 +4,7 @@
 //! the text to the right of them. These are often used for toggling
 //! options on and off in applications.
 //!@code{ GTK.Check_button( "title" )@}
-//!@xml{<image src='../images/gtk_checkbutton.png'/>@}
+//!@xml{<image>../images/gtk_checkbutton.png</image>@}
 //!
 //!
 //!

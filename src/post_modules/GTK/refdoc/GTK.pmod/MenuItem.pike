@@ -48,7 +48,7 @@ int get_show_toggle_indicator( );
 //!
 
 int get_submenu_direction( );
-//! The direction the submenu will be shown in. One of @[DIR_LEFT], @[DIR_DOWN], @[DIR_UP], @[DIR_TAB_BACKWARD], @[DIR_TAB_FORWARD] and @[DIR_RIGHT]
+//! The direction the submenu will be shown in. One of @[DIR_DOWN], @[DIR_LEFT], @[DIR_RIGHT], @[DIR_TAB_BACKWARD], @[DIR_TAB_FORWARD] and @[DIR_UP]
 //!
 //!
 

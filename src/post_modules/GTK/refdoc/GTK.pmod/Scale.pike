@@ -15,7 +15,7 @@ int get_draw_value( );
 
 int get_value_pos( );
 //! The position in which the textual value is displayed, selected from
-//! @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP]
+//! @[POS_BOTTOM], @[POS_LEFT], @[POS_RIGHT] and @[POS_TOP]
 //!
 //!
 
@@ -38,6 +38,6 @@ GTK.Scale set_draw_value( int drawp );
 
 GTK.Scale set_value_pos( int where );
 //! Sets the position in which the current value is displayed. One of
-//! @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP]
+//! @[POS_BOTTOM], @[POS_LEFT], @[POS_RIGHT] and @[POS_TOP]
 //!
 //!

@@ -3,7 +3,7 @@
 //! See GDK.Image and GDK.Pixmap.
 //!
 //!@code{ GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );@}
-//!@xml{<image src='../images/gtk_image.png'/>@}
+//!@xml{<image>../images/gtk_image.png</image>@}
 //!
 //!
 //!

@@ -12,10 +12,10 @@
 //! Note, however, that the accuracy of the gtkclock widget is limited
 //! to 1 second.
 //!@code{ GTK.Clock( GTK.ClockRealtime );@}
-//!@xml{<image src='../images/gtk_clock.png'/>@}
+//!@xml{<image>../images/gtk_clock.png</image>@}
 //!
 //!@code{ GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();@}
-//!@xml{<image src='../images/gtk_clock_2.png'/>@}
+//!@xml{<image>../images/gtk_clock_2.png</image>@}
 //!
 //!
 //!
@@ -23,7 +23,7 @@
 inherit GTK.Label;
 
 static GTK.Clock create( int type );
-//! type is one of @[CLOCK_DECREASING], @[CLOCK_REALTIME] and @[CLOCK_INCREASING];
+//! type is one of @[CLOCK_DECREASING], @[CLOCK_INCREASING] and @[CLOCK_REALTIME];
 //!
 //!
 

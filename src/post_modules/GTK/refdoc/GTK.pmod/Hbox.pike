@@ -6,13 +6,13 @@
 //! on the call used.
 //!
 //!@code{ GTK.Hbox(0,0)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))@}
-//!@xml{<image src='../images/gtk_hbox.png'/>@}
+//!@xml{<image>../images/gtk_hbox.png</image>@}
 //!
 //!@code{ GTK.Hbox(1,0)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))@}
-//!@xml{<image src='../images/gtk_hbox_2.png'/>@}
+//!@xml{<image>../images/gtk_hbox_2.png</image>@}
 //!
 //!@code{ GTK.Hbox(1,40)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))@}
-//!@xml{<image src='../images/gtk_hbox_3.png'/>@}
+//!@xml{<image>../images/gtk_hbox_3.png</image>@}
 //!
 //!
 //!

@@ -5,10 +5,10 @@
 //! down.
 //! 
 //!@code{ GTK.ToggleButton("Toggle button")@}
-//!@xml{<image src='../images/gtk_togglebutton.png'/>@}
+//!@xml{<image>../images/gtk_togglebutton.png</image>@}
 //!
 //!@code{ GTK.ToggleButton("Toggle button")->set_active( 1 )@}
-//!@xml{<image src='../images/gtk_togglebutton_2.png'/>@}
+//!@xml{<image>../images/gtk_togglebutton_2.png</image>@}
 //!
 //! 
 //!

@@ -21,7 +21,7 @@
 //! }
 //! </font></pre>
 //!@code{ GTK.InputDialog()@}
-//!@xml{<image src='../images/gtk_inputdialog.png'/>@}
+//!@xml{<image>../images/gtk_inputdialog.png</image>@}
 //!
 //!
 //!

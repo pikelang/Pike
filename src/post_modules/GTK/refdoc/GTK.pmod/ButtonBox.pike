@@ -18,7 +18,7 @@ mapping get_child_size( );
 
 int get_layout( );
 //! Returns the currently configured layout.
-//! One of  @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_END], @[BUTTONBOX_DEFAULT_STYLE] and @[BUTTONBOX_SPREAD]
+//! One of  @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD] and @[BUTTONBOX_START]
 //!
 //!
 
@@ -38,7 +38,7 @@ GTK.ButtonBox set_child_size( int child_number, int child_size );
 //!
 
 GTK.ButtonBox set_layout( int layout );
-//! layout is one of @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_END], @[BUTTONBOX_DEFAULT_STYLE] and @[BUTTONBOX_SPREAD]
+//! layout is one of @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD] and @[BUTTONBOX_START]
 //!
 //!
 

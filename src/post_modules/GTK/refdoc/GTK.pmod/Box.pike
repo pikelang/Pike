@@ -48,7 +48,7 @@ GTK.Box set_child_packing( GTK.Widget child_widget, int expandp, int fillp, int 
 //! If exand is true, the widget will be expanded when the box is resized.
 //! If 'fill' is true, the widget will be resized to fill up all available
 //! space. Padding is the amount of padding to use, and pack_type is
-//! one of @[PACK_END], @[PACK_START] and @[PACK_EXPAND].
+//! one of @[PACK_END], @[PACK_EXPAND] and @[PACK_START].
 //! 
 //! You can emulate pack_start and pack_end with add and set_child_packing.
 //!

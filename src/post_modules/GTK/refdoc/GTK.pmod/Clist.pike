@@ -3,7 +3,7 @@
 //! can optionally have a title, which itself is optionally active,
 //! allowing us to bind a function to it's selection.
 //!@code{ GTK.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)@}
-//!@xml{<image src='../images/gtk_clist.png'/>@}
+//!@xml{<image>../images/gtk_clist.png</image>@}
 //!
 //!
 //!
@@ -131,7 +131,7 @@ GTK.Style get_cell_style( int row, int col );
 //!
 
 int get_cell_type( int row, int column );
-//! Return value is one of @[CELL_TEXT], @[CELL_EMPTY], @[CELL_WIDGET], @[CELL_PIXTEXT] and @[CELL_PIXMAP]
+//! Return value is one of @[CELL_EMPTY], @[CELL_PIXMAP], @[CELL_PIXTEXT], @[CELL_TEXT] and @[CELL_WIDGET]
 //!
 //!
 
@@ -156,7 +156,7 @@ int get_drag_button( );
 //!
 
 int get_flags( );
-//! Return the flags. A bitwise or of @[CLIST_ADD_MODE], @[CLIST_USE_DRAG_ICONS], @[CLIST_AUTO_SORT], @[CLIST_DRAW_DRAG_LINE], @[CLIST_IN_DRAG], @[CLIST_AUTO_RESIZE_BLOCKED], @[CLIST_DRAW_DRAG_RECT], @[CLIST_ROW_HEIGHT_SET], @[CLIST_SHOW_TITLES] and @[CLIST_REORDERABLE]
+//! Return the flags. A bitwise or of @[CLIST_ADD_MODE], @[CLIST_AUTO_RESIZE_BLOCKED], @[CLIST_AUTO_SORT], @[CLIST_DRAW_DRAG_LINE], @[CLIST_DRAW_DRAG_RECT], @[CLIST_IN_DRAG], @[CLIST_REORDERABLE], @[CLIST_ROW_HEIGHT_SET], @[CLIST_SHOW_TITLES] and @[CLIST_USE_DRAG_ICONS]
 //!
 //!
 
@@ -224,12 +224,12 @@ mapping get_selection_info( int x, int y );
 //!
 
 int get_selection_mode( );
-//! Return the selection mode. One of @[SELECTION_EXTENDED], @[SELECTION_SINGLE], @[SELECTION_BROWSE] and @[SELECTION_MULTIPLE]
+//! Return the selection mode. One of @[SELECTION_BROWSE], @[SELECTION_EXTENDED], @[SELECTION_MULTIPLE] and @[SELECTION_SINGLE]
 //!
 //!
 
 int get_shadow_type( );
-//! Return the curreent shadow type. One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
+//! Return the curreent shadow type. One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 
@@ -323,7 +323,7 @@ GTK.Clist set_background( int row, GDK.Color color );
 //!
 
 GTK.Clist set_button_actions( int button, int action );
-//! Action is a bitwise or of @[BUTTON_EXPANDS], @[BUTTON_SELECTS], @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_END], @[BUTTONBOX_DEFAULT_STYLE], @[BUTTON_IGNORED], @[BUTTONBOX_SPREAD] and @[BUTTON_DRAGS]
+//! Action is a bitwise or of @[BUTTON_DRAGS], @[BUTTON_EXPANDS], @[BUTTON_IGNORED], @[BUTTON_SELECTS], @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD] and @[BUTTONBOX_START]
 //! Button is the mouse button (normally 1-3, 4 and 5 sometimes beeing
 //! scroll wheel up and scroll wheel down)
 //!
@@ -340,7 +340,7 @@ GTK.Clist set_column_auto_resize( int column, int autoresizep );
 //!
 
 GTK.Clist set_column_justification( int column, int justification );
-//! justification is one of @[JUSTIFY_RIGHT], @[JUSTIFY_CENTER], @[JUSTIFY_FILL] and @[JUSTIFY_LEFT]
+//! justification is one of @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
 //!
 //!
 
@@ -451,12 +451,12 @@ GTK.Clist set_selectable( int row, int selectablep );
 //!
 
 GTK.Clist set_selection_mode( int mode );
-//! One of @[SELECTION_EXTENDED], @[SELECTION_SINGLE], @[SELECTION_BROWSE] and @[SELECTION_MULTIPLE]
+//! One of @[SELECTION_BROWSE], @[SELECTION_EXTENDED], @[SELECTION_MULTIPLE] and @[SELECTION_SINGLE]
 //!
 //!
 
 GTK.Clist set_shadow_type( int shadowtype );
-//! One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
+//! One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 

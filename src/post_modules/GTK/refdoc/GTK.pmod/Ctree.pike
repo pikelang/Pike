@@ -111,7 +111,7 @@ int get_expander_style( );
 //!
 
 int get_line_style( );
-//! The style of the lines, one of @[CTREE_LINES_NONE], @[CTREE_LINES_SOLID], @[CTREE_LINES_DOTTED] and @[CTREE_LINES_TABBED]
+//! The style of the lines, one of @[CTREE_LINES_DOTTED], @[CTREE_LINES_NONE], @[CTREE_LINES_SOLID] and @[CTREE_LINES_TABBED]
 //!
 //!
 
@@ -313,7 +313,7 @@ GTK.Ctree set_indent( int npixels );
 //!
 
 GTK.Ctree set_line_style( int style );
-//! Set the line style, one of @[CTREE_LINES_NONE], @[CTREE_LINES_SOLID], @[CTREE_LINES_DOTTED] and @[CTREE_LINES_TABBED]
+//! Set the line style, one of @[CTREE_LINES_DOTTED], @[CTREE_LINES_NONE], @[CTREE_LINES_SOLID] and @[CTREE_LINES_TABBED]
 //!
 //!
 
