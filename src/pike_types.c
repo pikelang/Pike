@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.242 2005/02/04 10:47:53 grubba Exp $
+|| $Id: pike_types.c,v 1.243 2005/02/05 20:54:25 grubba Exp $
 */
 
 #include "global.h"
@@ -343,6 +343,20 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   struct pike_type *t;
 
   /* PIKE_DEBUG code */
+  if (type & ~255) {
+    /* The bad type node on OSF/1 seems to be:
+     *
+     * type: 0xffff
+     * car:  valid pointer.
+     * cdr:  0x400000000
+     * next: 0x100000000
+     */
+    Pike_fatal("Attempt to create an invalid type node: %d(%s)\n"
+	       "  car: %p\n"
+	       "  cdr: %p\n",
+	       type, get_name_of_type(type),
+	       car, cdr);
+  }
   if (index >= pike_type_hash_size) {
     Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
 	       hash, index, pike_type_hash_size);
@@ -351,21 +365,34 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 
   for(t = pike_type_hash[index]; t; t = t->next) {
 #ifdef PIKE_EXTRA_DEBUG
-    if ((type == T_FUNCTION) && (car->type == T_STRING)) {
+    if ((type == T_FUNCTION) &&
+	(car->type == T_STRING) &&
+	(cdr->type == T_FUNCTION) &&
+	(cdr->car->type == T_STRING) &&
+	(cdr->cdr->type == T_MULTI) &&
+	(cdr->cdr->car->type == T_VOID) &&
+	(cdr->cdr->cdr->type == T_STRING)) {
       /* Attempt to detect why we get a core-dump on OSF/1
-       * when loading Unicode.so from test_resolv
+       * when loading Unicode.so from test_resolv.
+       *
+       * The problem triggs when the type for normalize() is created.
+       * function(string,string:string)
        *	/grubba 2005-02-04
        */
-      fprintf(stderr, "  %s:%d:PIKE_EXTRA_DEBUG:\n"
-	      "  t: %p\n",
+      fprintf(stderr,
+	      "  %s:%d:PIKE_EXTRA_DEBUG:\n"
+	      "    t: %p\n",
 	      __FILE__, __LINE__,
 	      t);
-      fprintf(stderr, "  t->type:%d (%s)\n"
-	      "t->car: %p (%p)\n"
-	      "t->cdr: %p (%p)\n",
+      fprintf(stderr,
+	      "    t->type:%d (%s)\n"
+	      "    t->car: %p (%p)\n"
+	      "    t->cdr: %p (%p)\n"
+	      "    t->next:%p\n",
 	      t->type, get_name_of_type(t->type),
 	      t->car, car,
-	      t->cdr, cdr);
+	      t->cdr, cdr,
+	      t->next);
     }
 #endif /* PIKE_EXTRA_DEBUG */
     if ((t->hash == hash) && (t->type == type) &&
