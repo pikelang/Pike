@@ -1,4 +1,4 @@
-array(Standards.URI) index_document(Search.Database.MySQL db,
+array(Standards.URI) index_document(Search.Database.Base db,
 				    string|Standards.URI uri,
 				    string|Stdio.File data,
 				    string content_type,
@@ -58,7 +58,7 @@ array(Standards.URI) index_document(Search.Database.MySQL db,
   return filteroutput->links;
 }
 
-array(Standards.URI) extract_links(Search.Database.MySQL db,
+array(Standards.URI) extract_links(Search.Database.Base db,
 				   string|Standards.URI uri,
 				   string|Stdio.File data,
 				   string content_type)
@@ -71,14 +71,14 @@ array(Standards.URI) extract_links(Search.Database.MySQL db,
   return filteroutput->links;
 }
 
-void remove_document(Search.Database.MySQL db,
+void remove_document(Search.Database.Base db,
 		     string|Standards.URI|string uri,
 		     void|string language)
 {
   db->remove_document(uri, language);
 }
 
-array(Standards.URI) test_index(Search.Database.MySQL db, string uri)
+array(Standards.URI) test_index(Search.Database.Base db, string uri)
 {
   object request=Protocols.HTTP.get_url(uri);
 

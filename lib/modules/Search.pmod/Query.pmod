@@ -1,6 +1,6 @@
 mapping blob_done=([]);
 
-static function(int:string) blobfeeder(Search.Database.MySQL db, array word_ids)
+static function(int:string) blobfeeder(Search.Database.Base db, array word_ids)
 {
   mapping state = mkmapping(word_ids,allocate(sizeof(word_ids)));
   return lambda( int word )
@@ -10,7 +10,7 @@ static function(int:string) blobfeeder(Search.Database.MySQL db, array word_ids)
 }
 
 
-Search.ResultSet do_query_or(Search.Database.MySQL db,
+Search.ResultSet do_query_or(Search.Database.Base db,
 			     array(string) words,
 			     Search.RankingProfile ranking)
 {
@@ -22,7 +22,7 @@ Search.ResultSet do_query_or(Search.Database.MySQL db,
 				blobfeeder(db, word_ids));
 }
 
-Search.ResultSet do_query_and(Search.Database.MySQL db,
+Search.ResultSet do_query_and(Search.Database.Base db,
 			      array(string) words,
 			      Search.RankingProfile ranking)
 {
@@ -34,7 +34,7 @@ Search.ResultSet do_query_and(Search.Database.MySQL db,
 				blobfeeder(db, word_ids));
 }
 
-Search.ResultSet do_query_phrase(Search.Database.MySQL db,
+Search.ResultSet do_query_phrase(Search.Database.Base db,
 				 array(string) words,
 				 Search.RankingProfile ranking)
 {
@@ -47,7 +47,7 @@ Search.ResultSet do_query_phrase(Search.Database.MySQL db,
 
 
 /* Test stuff */
-Search.ResultSet test_query(Search.Database.MySQL db, array(string) words)
+Search.ResultSet test_query(Search.Database.Base db, array(string) words)
 {
   array(int) field_ranking=allocate(66);
   field_ranking[0]=17;
@@ -64,7 +64,7 @@ Search.ResultSet test_query(Search.Database.MySQL db, array(string) words)
 				   blobfeeder(db, map(words,hash) ));
 }
 
-_WhiteFish.ResultSet test_query2(Search.Database.MySQL db, array(string) words)
+_WhiteFish.ResultSet test_query2(Search.Database.Base db, array(string) words)
 {
   array(int) field_ranking=allocate(66);
   field_ranking[0]=17;
