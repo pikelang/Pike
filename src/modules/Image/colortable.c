@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.12 1997/11/01 01:36:51 mirar Exp $ */
+/* $Id: colortable.c,v 1.13 1997/11/01 18:22:11 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.12 1997/11/01 01:36:51 mirar Exp $
+**!	$Id: colortable.c,v 1.13 1997/11/01 18:22:11 grubba Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.12 1997/11/01 01:36:51 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.13 1997/11/01 18:22:11 grubba Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2932,7 +2932,6 @@ int image_colortable_map_image(struct neo_colortable *nct,
 void image_colortable_index_8bit(INT32 args)
 {
    struct image *src;
-   struct object *o;
    struct pike_string *ps;
 
    if (args<1)
@@ -2949,7 +2948,6 @@ void image_colortable_index_8bit(INT32 args)
    if (!image_colortable_index_8bit_image(THIS,src->img,ps->str,
 					  src->xsize*src->ysize,src->xsize))
    {
-      free_object(o);
       error("colortable->index_8bit(): called colortable is not initiated\n");
    }
 
@@ -3316,7 +3314,9 @@ static int* ordered_calculate_errors(int dxs,int dys)
 	 case 4: errs=errors2x2; break;
 	 case 6: errs=errors3x2; break;
 	 case 9: errs=errors3x3; break;
-	 default: return; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
+	 default:
+	   fatal("impossible case in colortable ordered dither generator.\n");
+	   return NULL; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
       }
       
       sz=sxs*sys;
