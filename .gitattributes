@@ -183,6 +183,7 @@ testfont binary
 /src/modules/Gmp/gmp_machine.h.in foreign_ident
 /src/modules/Gmp/mpz_glue.c foreign_ident
 /src/modules/Gmp/my_gmp.h foreign_ident
+/src/modules/Gmp/my_mpz_xor.c foreign_ident
 /src/modules/Gmp/next_prime.c foreign_ident
 /src/modules/Gmp/prime_table.c foreign_ident
 /src/modules/Gmp/testsuite.in foreign_ident

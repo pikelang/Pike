@@ -1,4 +1,4 @@
-/* $Id: my_gmp.h,v 1.5 1999/08/08 13:06:58 grubba Exp $
+/* $Id: my_gmp.h,v 1.6 1999/11/01 16:53:38 mirar Exp $
  *
  * These functions or something similar will hopefully be included
  * with Gmp-2.1 .
@@ -23,5 +23,6 @@
 unsigned long mpz_small_factor(mpz_t n, int limit);
 
 void mpz_next_prime(mpz_t p, mpz_t n, int count, int prime_limit);
+void my_mpz_xor _PROTO ((mpz_ptr, mpz_srcptr, mpz_srcptr));
 
 #endif /* MY_GMP_H_INCLUDED */

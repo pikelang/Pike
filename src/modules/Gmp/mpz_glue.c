@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.64 1999/11/01 15:21:57 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.65 1999/11/01 16:53:37 mirar Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -901,6 +901,7 @@ static void name(INT32 args)				\
 
 BINFUN(mpzmod_and,mpz_and)
 BINFUN(mpzmod_or,mpz_ior)
+BINFUN(mpzmod_xor,my_mpz_xor)
 
 static void mpzmod_compl(INT32 args)
 {
@@ -1263,6 +1264,8 @@ void pike_module_exit(void)
   ADD_FUNCTION("``&",mpzmod_and,tMpz_binop_type,0);			\
   ADD_FUNCTION("`|",mpzmod_or,tMpz_binop_type,0);			\
   ADD_FUNCTION("``|",mpzmod_or,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`^",mpzmod_xor,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``^",mpzmod_xor,tMpz_binop_type,0);			\
   ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj),0);			\
 									\
   add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);			\
