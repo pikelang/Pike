@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.107 2000/09/24 15:20:14 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.108 2000/09/30 15:58:30 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1938,49 +1938,6 @@ void check_all_mappings(void)
 #endif
 
 
-static void gc_recurse_weak_mapping(struct mapping *m,
-				    TYPE_FIELD (*recurse_fn)(struct svalue *, size_t))
-{
-  INT32 e;
-  struct keypair *k,**prev;
-  TYPE_FIELD ind_types = 0, val_types = 0;
-  struct mapping_data *md=m->data;
-
-#ifdef PIKE_DEBUG
-  if(!(md->flags & MAPPING_FLAG_WEAK))
-    fatal("Mapping is not weak.\n");
-  if (MAPPING_DATA_IN_USE(md)) fatal("Mapping data is busy.\n");
-#endif
-
-  /* no locking required (no is_eq) */
-  for(e=0;e<md->hashsize;e++)
-  {
-    for(prev= md->hash + e;(k=*prev);)
-    {
-      int i, v;
-      if((i = recurse_fn(&k->ind, 1)) | (v = recurse_fn(&k->val, 1)))
-      {
-	*prev=k->next;
-	if (!i) free_svalue(&k->ind);
-	if (!v) free_svalue(&k->val);
-	k->next=md->free_list;
-	md->free_list=k;
-	md->size--;
-#ifdef MAPPING_SIZE_DEBUG
-	if(m->data ==md)
-	  m->debug_size--;
-#endif
-      }else{
-	val_types |= 1 << k->val.type;
-	ind_types |= 1 << k->ind.type;
-	prev=&k->next;
-      }
-    }
-  }
-  md->val_types = val_types;
-  md->ind_types = ind_types;
-}
-
 void gc_mark_mapping_as_referenced(struct mapping *m)
 {
 #ifdef PIKE_DEBUG
@@ -1991,7 +1948,6 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   if(gc_mark(m)) {
     struct mapping_data *md = m->data;
 
-    stealth_check_mapping_for_destruct(m);
     if (m == gc_mark_mapping_pos)
       gc_mark_mapping_pos = m->next;
     if (m == gc_internal_mapping)
@@ -2001,30 +1957,79 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
       DOUBLELINK(first_mapping, m); /* Linked in first. */
     }
 
-    if(gc_mark(md) && ((md->ind_types | md->val_types) & BIT_COMPLEX))
-    {
-      INT32 e;
-      struct keypair *k;
+    if(gc_mark(md)) {
+      if ((md->ind_types | md->val_types) & BIT_COMPLEX)
+      {
+	INT32 e;
+	struct keypair *k;
 
-      if (MAPPING_DATA_IN_USE(md)) {
-	/* Must leave destructed indices intact if the mapping data is busy. */
-	NEW_MAPPING_LOOP(md)
-	  if ((!IS_DESTRUCTED(&k->ind) && gc_mark_svalues(&k->ind, 1)) |
-	      gc_mark_svalues(&k->val, 1)) {
+	if (MAPPING_DATA_IN_USE(md)) {
+	  /* Must leave destructed indices intact if the mapping data is busy. */
+	  stealth_check_mapping_for_destruct(m);
+	  NEW_MAPPING_LOOP(md) {
+	    if (!IS_DESTRUCTED(&k->ind) && gc_mark_svalues(&k->ind, 1)) {
 #ifdef PIKE_DEBUG
-	    fatal("Didn't expect an svalue zapping now.\n");
+	      fatal("Didn't expect an svalue zapping now.\n");
 #endif
+	    }
+	    if (gc_mark_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	      fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
+#endif
+	    }
 	  }
+	  gc_assert_checked_as_nonweak(md);
+	}
+
+	else if (md->flags & MAPPING_FLAG_WEAK) {
+	  INT32 e;
+	  struct keypair *k,**prev;
+	  TYPE_FIELD ind_types = 0, val_types = 0;
+
+	  /* no locking required (no is_eq) */
+	  for(e=0;e<md->hashsize;e++)
+	  {
+	    for(prev= md->hash + e;(k=*prev);)
+	    {
+	      int i = gc_mark_weak_svalues(&k->ind, 1);
+	      int v = gc_mark_weak_svalues(&k->val, 1);
+	      if(i || v)
+	      {
+		*prev=k->next;
+		if (!i) free_svalue(&k->ind);
+		if (!v) free_svalue(&k->val);
+		k->next=md->free_list;
+		md->free_list=k;
+		md->size--;
+#ifdef MAPPING_SIZE_DEBUG
+		if(m->data ==md)
+		  m->debug_size--;
+#endif
+	      }else{
+		val_types |= 1 << k->val.type;
+		ind_types |= 1 << k->ind.type;
+		prev=&k->next;
+	      }
+	    }
+	  }
+	  md->val_types = val_types;
+	  md->ind_types = ind_types;
+
+	  gc_assert_checked_as_weak(md);
+	}
+
+	else {
+	  stealth_check_mapping_for_destruct(m);
+	  NEW_MAPPING_LOOP(md)
+	    if (gc_mark_svalues(&k->ind, 1) | gc_mark_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	      fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
+#endif
+	    }
+	  gc_assert_checked_as_nonweak(md);
+	}
       }
-      else if (md->flags & MAPPING_FLAG_WEAK)
-	gc_recurse_weak_mapping(m, gc_mark_weak_svalues);
-      else
-	NEW_MAPPING_LOOP(md)
-	  if (gc_mark_svalues(&k->ind, 1) | gc_mark_svalues(&k->val, 1)) {
-#ifdef PIKE_DEBUG
-	    fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
-#endif
-	  }
+      else stealth_check_mapping_for_destruct(m);
     }
   }
 }
@@ -2053,16 +2058,30 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
 	    fatal("Didn't expect an svalue zapping now.\n");
 #endif
 	  }
+	gc_assert_checked_as_nonweak(md);
       }
-      else if (md->flags & MAPPING_FLAG_WEAK)
-	gc_recurse_weak_mapping(m, gc_cycle_check_weak_svalues);
-      else
+      else if (md->flags & MAPPING_FLAG_WEAK) {
+	/* We don't remove any entries in this case, since weak
+	 * internal references are kept intact. */
 	NEW_MAPPING_LOOP(md)
-	  if (gc_cycle_check_svalues(&k->ind, 1) | gc_cycle_check_svalues(&k->val, 1)) {
+	  if (gc_cycle_check_weak_svalues(&k->ind, 1) |
+	      gc_cycle_check_weak_svalues(&k->val, 1)) {
 #ifdef PIKE_DEBUG
 	    fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
 #endif
 	  }
+	gc_assert_checked_as_weak(md);
+      }
+      else {
+	NEW_MAPPING_LOOP(md)
+	  if (gc_cycle_check_svalues(&k->ind, 1) |
+	      gc_cycle_check_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	    fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
+#endif
+	  }
+	gc_assert_checked_as_nonweak(md);
+      }
     }
   } GC_CYCLE_LEAVE;
 }
@@ -2086,6 +2105,7 @@ static void gc_check_mapping(struct mapping *m)
 	debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
 	debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
       }
+      gc_checked_as_weak(md);
     }
     else {
       NEW_MAPPING_LOOP(md)

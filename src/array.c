@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.88 2000/09/17 19:53:52 grubba Exp $");
+RCSID("$Id: array.c,v 1.89 2000/09/30 15:58:30 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1793,8 +1793,10 @@ static void gc_check_array(struct array *a)
 {
   if(a->type_field & BIT_COMPLEX)
   {
-    if (a->flags & ARRAY_WEAK_FLAG)
+    if (a->flags & ARRAY_WEAK_FLAG) {
       debug_gc_check_weak_svalues(ITEM(a), a->size, T_ARRAY, a);
+      gc_checked_as_weak(a);
+    }
     else
       debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
   }
@@ -1859,8 +1861,40 @@ void gc_mark_array_as_referenced(struct array *a)
 
     if (a->type_field & BIT_COMPLEX)
     {
-      if (a->flags & ARRAY_WEAK_FLAG)
-	gc_recurse_weak_array(a, gc_mark_weak_svalues);
+      if (a->flags & ARRAY_WEAK_FLAG) {
+	int e;
+	TYPE_FIELD t;
+
+	if(a->flags & ARRAY_WEAK_SHRINK) {
+	  int d=0;
+#ifdef PIKE_DEBUG
+	  if (a->refs != 1)
+	    fatal("Got %d refs to weak shrink array "
+		  "which we'd like to change the size on.\n", a->refs);
+#endif
+	  t = 0;
+	  for(e=0;e<a->size;e++)
+	    if (!gc_mark_weak_svalues(a->item+e, 1)) {
+	      a->item[d++]=a->item[e];
+	      t |= 1 << a->item[e].type;
+	    }
+	  a->size=d;
+	}
+	else
+	  if (!(t = gc_mark_weak_svalues(a->item, a->size)))
+	    t = a->type_field;
+
+	/* Ugly, but we are not allowed to change type_field
+	 * at the same time as the array is being built...
+	 * Actually we just need better primitives for building arrays.
+	 */
+	if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	  a->type_field = t;
+	else
+	  a->type_field |= t;
+
+	gc_assert_checked_as_weak(a);
+      }
       else {
 	TYPE_FIELD t;
 	if ((t = gc_mark_svalues(ITEM(a), a->size))) {
@@ -1869,6 +1903,7 @@ void gc_mark_array_as_referenced(struct array *a)
 	  else
 	    a->type_field |= t;
 	}
+	gc_assert_checked_as_nonweak(a);
       }
     }
   }
@@ -1884,8 +1919,14 @@ void real_gc_cycle_check_array(struct array *a, int weak)
 
     if (a->type_field & BIT_COMPLEX)
     {
-      if (a->flags & ARRAY_WEAK_FLAG)
-	gc_recurse_weak_array(a, gc_cycle_check_weak_svalues);
+      if (a->flags & ARRAY_WEAK_FLAG) {
+	if (gc_cycle_check_weak_svalues(ITEM(a), a->size)) {
+#ifdef PIKE_DEBUG
+	  fatal("Didn't expect an svalue zapping now.\n");
+#endif
+	}
+	gc_assert_checked_as_weak(a);
+      }
       else {
 	TYPE_FIELD t;
 	if ((t = gc_cycle_check_svalues(ITEM(a), a->size))) {
@@ -1894,6 +1935,7 @@ void real_gc_cycle_check_array(struct array *a, int weak)
 	  else
 	    a->type_field |= t;
 	}
+	gc_assert_checked_as_nonweak(a);
       }
     }
   } GC_CYCLE_LEAVE;
@@ -2008,13 +2050,16 @@ void debug_dump_type_field(TYPE_FIELD t)
 
 void debug_dump_array(struct array *a)
 {
-  fprintf(stderr,"Location=%p Refs=%d, next=%p, prev=%p, size=%d, malloced_size=%d\n",
+  fprintf(stderr,"Location=%p Refs=%d, next=%p, prev=%p, "
+	  "flags=0x%x, size=%d, malloced_size=%d%s\n",
 	  a,
 	  a->refs,
 	  a->next,
 	  a->prev,
+	  a->flags,
 	  a->size,
-	  a->malloced_size);
+	  a->malloced_size,
+	  a == &empty_array ? " (the empty_array)" : "");
   fprintf(stderr,"Type field = ");
   debug_dump_type_field(a->type_field);
   fprintf(stderr,"\n");
