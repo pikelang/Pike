@@ -1,6 +1,6 @@
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.1 2002/06/23 19:11:30 neotron Exp $");
+RCSID("$Id: SDL.cmod,v 1.2 2002/06/25 19:15:04 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -1406,6 +1406,23 @@ PIKEFUN void|object get_video_info()
     return;
   }
   push_int(0);
+}
+
+PIKEFUN void gl_set_attribute( int attribute, int value )
+{
+  SDL_GL_SetAttribute( attribute, value );
+}
+
+PIKEFUN int gl_get_attribute( int attribute )
+{
+  int res;
+  SDL_GL_GetAttribute( attribute, &res );
+  RETURN res;
+}
+
+PIKEFUN void gl_swap_buffers( )
+{
+  SDL_GL_SwapBuffers( );
 }
 
 PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
