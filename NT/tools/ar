@@ -1,12 +1,30 @@
 #!/bin/sh
 
+. $NTTOOLS
+
+set -e
+
+OPTIONS=$1
 shift
 OUTPUT=$1
 shift
 
-rm $OUTPUT 2>/dev/null 1>/dev/null || :
+XFILE=TMP$$.l
+
+rm $XFILE 2>/dev/null 1>/dev/null || :
+
+OPTS=
 for a in $*
 do
-  echo -n "$NTDRIVE$a " | sed -e 's@/@\\@g' >>$OUTPUT
+  OPTS="$OPTS +$a"
 done
 
+echo >$XFILE $OPTS
+
+do_cmd wlib -b -c $OUTPUT @$XFILE
+
+if [ $CLEANUP = yes ]; then
+  if [ -f $XFILE ]; then
+    rm $XFILE
+  fi
+fi

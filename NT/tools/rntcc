@@ -1,21 +1,8 @@
 #!/bin/sh
 
-CLEANUP=yes
-DEBUG=no 
-
-if [ $DEBUG = yes ]; then
-  set -x
-fi
+. $NTTOOLS
 
 set -e
-
-fixpath() {
-  echo "$*" | sed -e 's@/@\\@g'
-}
-
-fixabspath() {
-  echo "$*" | sed -e 's@/@\\@g'
-}
 
 OPTS=""
 CFLAGS=""
@@ -28,14 +15,14 @@ LDOPTS=""
 
 while test "$#" != 0; do
   case $1 in
+    -shared) ;;
     -E)  OPERATION=preprocessing ;;
     -c)  OPERATION=compiling  ;;
-    -g*) CFLAGS="$CFLAGS -d2" ;;
+    -g*) CFLAGS="$CFLAGS -d2 " ; LDOPTS="$LDOPTS DEBUG WATCOM ALL" ;;
     -O)  CFLAGS="$CFLAGS -ox" ;;
     -O2) CFLAGS="$CFLAGS -otexan" ;;
     *.c) SOURCES="$SOURCES $1" ;;
-    *.o) OBJECTS="$OBJECTS $1" ;;
-    *.a) OBJECTS="$OBJECTS `cat $a`" ;;
+    *.o | *.a) OBJECTS="$OBJECTS $1" ;;
      -o) OUTPUT="$2" ; shift ;;
 
     -I*)
@@ -97,24 +84,6 @@ do
   esac
 done
 
-do_cmd() {
-  echo DOING $*
-  BATFILE=TMP$$.bat
-  PWD=`pwd`
-  RPWD=`fixabspath $PWD`
-  if [ $DEBUG != yes ]; then
-    echo >$BATFILE "@echo off"
-  else
-    echo >$BATFILE 
-  fi
-  echo >>$BATFILE "$NTDRIVE"
-  echo >>$BATFILE "cd $RPWD"
-  echo >>$BATFILE "$*"
-  rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
-  if [ $CLEANUP = yes ]; then
-    rm $BATFILE || :
-  fi
-}
 
 ERRORFILE=TMP$$.err
 rm $ERRORFILE 2>/dev/null 1>/dev/null || :
@@ -172,14 +141,8 @@ fi
 
 if [ $OPERATION = linking ]; then
   echo  >$OUTPUT "#!/bin/sh"
-  echo >>$OUTPUT "BATFILE=TMP\$\$.bat"
-  echo >>$OUTPUT "echo >\$BATFILE @echo off"
-  echo >>$OUTPUT "echo >>\$BATFILE $NTDRIVE"
-  PWD=`pwd`
-  RPWD=`fixabspath $PWD`
-  echo >>$OUTPUT "echo >>\$BATFILE cd '$RPWD'"
-  echo >>$OUTPUT "echo >>\$BATFILE $TARGET \"\$@\""
-  echo >>$OUTPUT "rsh $NTHOST '$NTDRIVE$RPWD\\'\$BATFILE"
-  echo >>$OUTPUT "rm \$BATFILE"
+  echo >>$OUTPUT ". \$NTTOOLS"
+  echo >>$OUTPUT "set -e"
+  echo >>$OUTPUT "silent_do_cmd $TARGET \"\$@\""
   chmod +x $OUTPUT
 fi

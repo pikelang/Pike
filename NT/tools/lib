@@ -1,0 +1,37 @@
+CLEANUP=yes
+DEBUG=no 
+
+if [ $DEBUG = yes ]; then
+  set -x
+fi
+
+fixpath() {
+  echo "$*" | sed -e 's@/@\\@g'
+}
+
+fixabspath() {
+  echo "$*" | sed -e 's@/@\\@g'
+}
+
+silent_do_cmd() {
+  BATFILE=TMP$$.bat
+  PWD=`pwd`
+  RPWD=`fixabspath $PWD`
+  if [ x$DEBUG != xyes ]; then
+    echo >$BATFILE "@echo off"
+  else
+    echo >$BATFILE 
+  fi
+  echo >>$BATFILE "$NTDRIVE"
+  echo >>$BATFILE "cd $RPWD"
+  echo >>$BATFILE "$*"
+  rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
+  if [ x$CLEANUP = xyes ]; then
+    rm $BATFILE || :
+  fi
+}
+
+do_cmd() {
+  echo "DOING $*"
+  silent_do_cmd "$*"
+}
