@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.316 2001/04/28 19:32:55 mast Exp $");
+RCSID("$Id: program.c,v 1.317 2001/05/02 14:09:48 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1962,7 +1962,7 @@ static size_t add_xstorage(size_t size,
 
   /* Move all inherits to make room */
   available = Pike_compiler->new_program->inherits[0].storage_offset;
-  if(available < offset+size)
+  if(available < (ptrdiff_t)(offset+size))
   {
     available=
       DO_ALIGN( ((offset + size) - available), 
@@ -4003,17 +4003,20 @@ struct program *compile(struct pike_string *prog,
 
   if(placeholder)
   {
-    if(!p)
+    if(!p || (placeholder->storage))
     {
-      destruct(placeholder);
+      /* fprintf(stderr, "Destructing placeholder.\n"); */
+      if (placeholder->storage) {
+	yyerror("Placeholder already has storage!\n");
+	/* fprintf(stderr, "Placeholder already has storage!\n"
+	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
+	   placeholder, placeholder->storage, placeholder->prog, p); */
+	destruct(placeholder);
+      } else {
+	placeholder->prog = NULL;
+      }
       placeholder=0;
-    }
-    else if(placeholder->storage)
-    {
-      yyerror("Placeholder already has storage!\n");
-      destruct(placeholder);
-      placeholder=0;
-    }else{
+    } else {
       placeholder->storage=p->storage_needed ?
 	(char *)xalloc(p->storage_needed) :
 	(char *)0;
