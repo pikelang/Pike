@@ -280,7 +280,7 @@ array(array) find_all_options(array(string) argv,
 {
   // --- Initialize variables
 
-  mapping(string:array(string|int|array(string))) quick=([]);
+  mapping(string|int:array(string|int|array(string))) quick=([]);
 
   foreach(options; int i; array(array(string)|string|int) opt) {
     if(sizeof(opt)!=SIZE) {
@@ -291,11 +291,15 @@ array(array) find_all_options(array(string) argv,
     if(!arrayp(aliases)) aliases = ({[string]aliases});
 
     foreach([array(string)]aliases, string optname)
-      if(optname[0..1]=="--")
+      if(has_prefix(optname, "--"))
 	quick[optname]=opt;
-      else
-	foreach(optname[1..]/1,string optletter)
-	  quick["-"+optletter]=opt;
+      else if (has_prefix(optname, "-")) {
+	foreach(optname[1..]; ; int optletter)
+	  quick[optletter]=opt;
+      } else {
+	my_error(sprintf("Bad option alias for %O: %O; missing '-'.",
+			 opt[NAME], optname), throw_errors);
+      }
   }
 
   posix_me_harder = posix_me_harder!=-1 &&
@@ -304,9 +308,10 @@ array(array) find_all_options(array(string) argv,
   // --- Do the actual parsing of arguments.
 
   array(array) ret=({});
-  foreach(argv; int e; string opt) {
+  for (int e=1; e < sizeof(argv); e++) {
+    string opt;
+    if(!(opt = argv[e])) continue;
 
-    if(!e || !opt) continue;
     if(sizeof(opt)<2 || opt[0]!='-') {
       if(posix_me_harder) break;
       continue;
@@ -332,12 +337,11 @@ array(array) find_all_options(array(string) argv,
       }
     }
     else {
-      array(string) opts = opt/1;
-      foreach(opts; int j; string s_opt) {
-	s_opt = "-"+s_opt;
-
-	if(array option=quick[s_opt]) {
-	  opts[j]=0;
+      Iterator iter = get_iterator(opt);
+      iter->next();
+      foreach(iter; int j; int opt_letter) {
+	if(array option=quick[opt_letter]) {
+	  opt[j]=0;
 	  string arg;
 
 	  if(option[TYPE]!=NO_ARG) { // HAS_ARG or MAY_HAVE_ARG
@@ -345,25 +349,29 @@ array(array) find_all_options(array(string) argv,
 	      
 	    if(option[TYPE]==HAS_ARG && arg=="") {
 	      if(e==sizeof(argv)-1)
-		my_error( "No argument to option "+opt+".\n", throw_errors );
+		my_error( sprintf("No argument to option -%c.\n", opt_letter),
+			  throw_errors );
 
 	      arg = argv[e+1];
 	      argv[e+1] = 0;
 	    }
 	    else {
-	      arg = opts[j+1..]*"";
-	      opts = opts[..j];
+	      arg = opt[j+1..];
+	      opt = opt[..j];
 	    }
 	  }
 
 	  if (arg == "") arg = 0;
 	  ret+=({ ({ option[NAME], arg || option[DEF] || 1 }) });
-	  if(sizeof(opts)==j+1) break; // if opts=opts[..j] we're done.
+	  if(sizeof(opt)==j+1) break; // if opts=opts[..j] we're done.
 	}
       }
 
-      argv[e] = opts*"";
-      if(argv[e]=="-") argv[e]=0;
+      opt -= "\0";
+      if (opt != "-")
+	argv[e] = opt;
+      else 
+	argv[e] = 0;
     }
   }
 
