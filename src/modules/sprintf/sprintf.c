@@ -626,11 +626,21 @@ static string low_lpc_sprintf(char *format,
       }
 
       case 'c':
-	DO_OP();
-	fsp->b=(char *)alloca(1);
-	GET_INT(fsp->b[0]);
-	fsp->len=1;
+      {
+        INT32 l,tmp;
+        DO_OP();
+        l=1;
+        if(fsp->width > 0) l=fsp->width;
+	fsp->b=(char *)alloca(l);
+	GET_INT(tmp);
+        while(--l>=0)
+        {
+          fsp->b[l]=tmp & 0xff;
+          tmp>>=8;
+        }
+	fsp->len=l;
 	break;
+      }
 
       case 'o':
       case 'd':

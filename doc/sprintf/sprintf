@@ -7,50 +7,52 @@ SYNTAX
 DESCRIPTION
 	The format string is a string containing a description of how to
 	output the data in the rest of the arguments. This string should
-	generally speaking have one %<modifyers><operator> (examples:
+	generally speaking have one %<modifiers><operator> (examples:
 	%s, %0d, %-=20s) for each of the rest arguments.
 
-	Modifyers:
-	  0  Zero pad numbers (implies right justification)
-	  !  Toggle truncation
-	 ' ' (space) pad positive integers with a space
-	  +  pad positive integers with a plus sign
-	  -  left adjusted within field size (default is right)
-	  |  centered within field size
-	  =  column mode if strings are greater than field size
-	  /  Rough linebreak (break at exactly fieldsize instead of
-	     between words)
-	  #  table mode, print a list of '\n' separated word
-	     (top-to-bottom order)
-	  $  Inverse table mode (left-to-right order)
-	  n  (where n is a number or *) a number specifies field size
-	 .n  set precision
-	 :n  set field size & precision
-	 ;n  Set column width
-	  *  if n is a * then next argument is used
-	 'X' Set a pad string. ' cannot be a part of the pad_string (yet)
-	  <  Use same arg again
-	  ^  repeat this on every line produced
-	  @  do this format for each entry in argument array
-	  > Put the string at the bottom end of column instead of top
-	  _ Set width to the length of data
+	Modifiers:
+
+	0	Zero pad numbers (implies right justification)
+	!	Toggle truncation
+	' ' (space)	pad positive integers with a space
+	+	pad positive integers with a plus sign
+	-	left adjusted within field size (default is right)
+	|	centered within field size
+	=	column mode if strings are greater than field size
+	/	Rough linebreak (break at exactly fieldsize instead of
+		between words)
+	#	table mode, print a list of '\n' separated word
+		(top-to-bottom order)
+	$	Inverse table mode (left-to-right order)
+	n	(where n is a number or *) a number specifies field size
+	.n	set precision
+	:n	set field size & precision
+	;n	Set column width
+	*	if n is a * then next argument is used
+	'X'	Set a pad string. ' cannot be a part of the pad_string (yet)
+	<	Use same arg again
+	^	repeat this on every line produced
+	@	do this format for each entry in argument array
+	>	Put the string at the bottom end of column instead of top
+	_	Set width to the length of data
 
 	Operators:
-	  %% percent
-	  %d signed decimal int
-	  %u unsigned decimal int (doesn't really exist in lpc)
-	  %o unsigned octal int
-	  %x lowercase unsigned hexadecimal int
-	  %X uppercase unsigned hexadecimal int
-	  %c char
-	  %f float
-	  %g heruistically chosen representation of float
-	  %e exponential notation float
-	  %s string
-	  %O any type (debug style)
-	  %n nop
-	  %t type of argument
-	  %<modifyers>{format%}  do a format for every index in an array.
+
+	%%	percent
+	%d	signed decimal int
+	%u	unsigned decimal int (doesn't really exist in lpc)
+	%o	unsigned octal int
+	%x	lowercase unsigned hexadecimal int
+	%X	uppercase unsigned hexadecimal int
+	%c	char (or short with %2c, %3c gives 3 bytes etc.)
+	%f	float
+	%g	heruistically chosen representation of float
+	%e	exponential notation float
+	%s	string
+	%O	any type (debug style)
+	%n	nop
+	%t	type of argument
+	%<modifiers>{format%}	do a format for every index in an array.
 
 EXAMPLES
 	uLPC v1.0E-95 Running Hilfe v1.2 (Hubbe's Incremental LPC FrontEnd)
