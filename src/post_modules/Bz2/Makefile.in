@@ -1,0 +1,13 @@
+# $Id: Makefile.in,v 1.1 2003/01/22 14:53:29 finnman Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=libbzip2mod.o
+
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+libbzip2mod.o: $(SRCDIR)/libbzip2mod.c
+
+@dependencies@

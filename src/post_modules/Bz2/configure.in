@@ -1,0 +1,18 @@
+# $Id: configure.in,v 1.1 2003/01/22 14:53:29 finnman Exp $
+AC_INIT(libbzip2mod.cmod)
+AC_CONFIG_HEADER(libbzip2mod_config.h)
+AC_ARG_WITH(libbzip2mod,     [  --without-libbzip2mod       Disable libbzip2mod],[],[with_libbzip2mod=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(libbzip2mod)
+
+if test x$with_libbzip2mod = xyes ; then
+  AC_CHECK_LIB(bz2, bzCompressInit)
+  AC_CHECK_HEADERS(bzlib.h)
+  PIKE_FEATURE_NODEP(libbzip2mod)
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

@@ -1,0 +1,78 @@
+test_true([[Bz2.Deflate();]])
+test_true([[Bz2.Inflate();]])
+test_true([[Bz2.File();]])
+define(test_codec,[[
+  test_eq([[Bz2.Deflate()->finish($1)]],[[$2]])
+  test_eq([[Bz2.Inflate()->inflate($2)]],[[$1]])
+]])
+test_codec([[""]],[["BZh9\27rE8P\220\0\0\0\0"]])
+test_codec([["x"]],[["BZh91AY&SYwK\260\24\0\0\0\0\200\0@ \0!\30F\202\356H\247\n\22\16\351v\2\200"]])
+test_codec([["x"*10000]],[["BZh91AY&SY\270\b?\324\200\0\25\210\200\210\0\0@\0\b \0""0\314\5)\247\32\243b\243\305\334\221N\24$.\2\17\365\0"]])
+test_codec("x\0x",[["BZh91AY&SY\320Vo\310\0\0\0\300\200@\0\0@ \0!\0\202,]\311\24\341BCAY\277 "]])
+test_codec([[(string)enumerate(256)*3]],[["BZh91AY&SY\355\340k\314\200\0\1\177\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\260\1`\1/\377\365UH\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\23\t\200\0\0\0\0\0\0\0\0\0\0\0\0\0\23\0\211""0\0L\0\4\300\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\4\230\0&\0\2`\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\7\365\0\201\240\210*\14\203\241\bJ\24\205\241\210j\34\207\242\b\212$\211\242\210\252,\213\243\b\312""4\215\243\210\352<\217\244\t\nD\221\244\211*L\223\245\tJT\225\245\211j\\\227\246\t\212d\231\246\211\252l\233\247\t\312t\235\247\211\352|\237\250\n\n\204\241\250\212*\214\243\251\nJ\224\245\251\212j\234\247\252\n\212\244\251\252\212\252\254\253\253\n\312\264\255\253\212\352\274\257\254\13\n\304\261\254\213*\314\263\255\13J\324\265\300\240-\213j\334\267\256\13\212\344\271\256\213\252\354\273\257\13\312\364\275\257\213\352\374\277\277\306\1\201`\230""7\372\302""0\254""3\16\304""1,S\26\306""1\254s\36\310""2,\223&\312""2\254\263.\314""3,\323""6\316""3\254\363>\320""4-\23F\322""4\255""3N\324""5-SV\326""5\255s^\330""6-\223f\332""6\255\263n\334""7-\323v\336""7\255\363~\340""8.\23\206\342""8\256""3\216\344""9.S\226\346""9\256s\236\350:.\223\246\352:\256\263\256\354;.\323\266\356;\256\363\276\360</\23\306\362<\257""3\316\364=/S\326\366=\257s\336\370>/\223\346\372>\257\371\366}\337\207\345\372~\337\307\365\377\213\271\"\234(Hv\360""5\346\0"]])
+test_eq([[Bz2.BZ_RUN]],0)
+test_eq([[Bz2.BZ_FLUSH]],1)
+test_eq([[Bz2.BZ_FINISH]],2)
+
+test_any([[
+
+  string packed = "";
+  string in_data = "";
+  string out_data = "";
+  Bz2.Deflate defl = Bz2.Deflate();
+  Bz2.Inflate infl = Bz2.Inflate();
+  int defl_chunk_size = 75000;
+  int infl_chunk_size = 39324;
+  int flush_intervall = 7;
+  int i = 0;
+  int j = 0;
+  int flush_count = 0;
+
+  in_data = random_string(2000000);
+  
+  while(i + defl_chunk_size < sizeof(in_data)){
+    if(flush_count != 7){
+      defl->feed(in_data[i..i + defl_chunk_size - 1]);
+      flush_count++;
+    }
+    else{
+      packed += defl->read(in_data[i..i + defl_chunk_size - 1]);
+      flush_count = 0;
+    }
+    i += defl_chunk_size;
+  }
+  
+  packed += defl->finish(in_data[i..sizeof(in_data) - 1]);
+  
+  while(j + infl_chunk_size < sizeof(packed))
+  {
+    out_data += infl->inflate(packed[j..j + infl_chunk_size - 1]);
+    j += infl_chunk_size;
+  }
+  out_data += infl->inflate(packed[j..sizeof(packed)-1]);
+  
+  return(out_data == in_data);
+ 
+]],1)
+
+test_any([[
+
+  string in_data = "";
+  string out_data = "";
+  Bz2.File write_file = Bz2.File();
+  Bz2.File read_file = Bz2.File();
+  
+  in_data = "jglaksdjalsdkfjwoeiruwoiurbenrbwenrwikerhwkeurwhfksnASDFASJFKSDJFASIGHSFGAFD34535234523426FSFGSFDGSDRHTWGDASDFASDF";
+  in_data = in_data * 100000;
+  
+  write_file->write_open("test_data_tmp.bz2");
+  write_file->write(in_data);
+  write_file->close();
+
+  read_file->read_open("test_data_tmp.bz2");
+  out_data = read_file->read();
+  read_file->close();
+  Stdio.recursive_rm("test_data_tmp.bz2");
+  return(in_data == out_data);
+
+]],1)

@@ -1,0 +1,1139 @@
+#include "global.h"
+RCSID("$Id: libbzip2mod.cmod,v 1.1 2003/01/22 14:53:29 finnman Exp $");
+#include "interpret.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "program.h"
+#include "stralloc.h"
+#include "object.h"
+#include "pike_types.h"
+#include "threads.h"
+#include "dynamic_buffer.h"
+#include "module_support.h"
+#include "builtin_functions.h"
+#include "libbzip2mod_config.h"
+
+#include <stdio.h>
+#include <strings.h>
+
+#ifdef HAVE_BZLIB_H
+#include <bzlib.h>
+#endif
+
+
+/* This must be included last! */
+#include "module_magic.h"
+
+/* These constants are the default values that
+   are sent to a Bz2 stream when it is initialized */
+#define DEFAULT_COMPRESSION_RATE 9
+#define DEFAULT_WORK_FACTOR 30
+
+/* Constants used when keeping track of
+   the open mode of a file. They are added
+   only to make the code more easy to read */
+#define NO_FILE_MODE 0
+#define READ_MODE 1
+#define WRITE_MODE 2
+
+
+/* The initial amount of bytes that are allocated
+   as for deflate/inflate when memory is needed */
+#define DEFL_BUF_SIZE 500000
+#define INFL_BUF_SIZE 500000
+
+/*! @module Bz2
+ *!
+ *! The Bz2 module contains functions to compress and uncompress strings using
+ *! the same algorithm as the program @tt{bzip2@}. Compressing and decompressing
+ *! can be done in streaming mode feeding the compress and decompress objects 
+ *! with arbitrarily large pieces of data.
+ *! The Bz2 module consists of three classes; Bz2.Deflate,Bz2.Inflate. and Bz2.File
+ *! Bz2.Deflate is used to compress data
+ *! and Bz2.Inflate is used to uncompress data. (Think "inflatable boat")
+ *! Bz2.File is used to handle Bzip2 files.
+ *! @note
+ *!   Note that this module is only available if libbzip2 was
+ *!   available when Pike was compiled.
+ *!
+ *!   Note that although the functions in Inflate and Deflate use the same @i{algorithm@} as
+ *!   @tt{bzip2@}, they do not use the exact same format, so you can not directly
+ *!   zip files or unzip zip-files using those functions. That is why there exists a third 
+ *!   class for files.
+ */
+
+/*! @class Deflate
+ *!
+ *! Bz2.Deflate is a builtin program written in C. It interfaces the
+ *! packing routines in the bzlib library.
+ *!
+ *! @note
+ *! This program is only available if libz was available and found when
+ *! Pike was compiled.
+ *!
+ *! @seealso
+ *! @[Bz2.Inflate()]
+ */
+
+/*! @decl void create(int(1..9)|void block_size)
+ *!
+ *! If given, @[block_size] should be a number from 1 to 9 indicating the
+ *! block size used when doing compression. The actual block size will
+ *! be a 100000 times this number. Low numbers are considered 'fast', higher numbers
+ *! are considered 'slow' but give better packing. The parameter is set to 
+ *! 9 if it is omitted.
+ *!
+ *! This function can also be used to re-initialize a Bz2.Deflate object
+ *! so it can be re-used.
+ */
+
+#ifdef HAVE_LIBBZ2
+#ifdef HAVE_BZLIB_H
+PIKECLASS Deflate
+{
+  CVAR dynamic_buffer intern_buffer;
+  CVAR dynamic_buffer *internbuf;
+  CVAR bz_stream strm;
+  CVAR int total_out_previous_flush;
+  CVAR int total_out_previous_buf;
+  CVAR int compression_rate;
+  CVAR int work_factor;
+
+  PIKEFUN void create(int|void compression, int|void work){
+    int compression_rate = DEFAULT_COMPRESSION_RATE;
+    int work_factor = DEFAULT_WORK_FACTOR;
+    int retval;
+    bz_stream *s;
+    
+    switch(args){
+    case 0: 
+      break;
+    case 1:
+      if(compression->type != T_INT){
+	Pike_error("Wrong type of argument 1 in call to Bz2.Deflate()");
+      }
+      compression_rate = compression->u.integer;
+      break;
+    case 2:
+      if(work->type != T_INT){
+	Pike_error("Wrong type of argument 2 in call to Bz2.Deflate()");
+      }
+      compression_rate = compression->u.integer;
+      work_factor = work->u.integer;
+      break;
+    default: 
+      Pike_error("Wrong number of arguments in call to Bz2.Deflate()");
+    
+    }
+    if(work_factor < 1 || work_factor > 250){
+      Pike_error("work_factor out of range for Bz2.Deflate()");
+    }
+
+    if(compression_rate < 1 || compression_rate > 9){
+      Pike_error("compression_rate out of range for Bz2.Deflate()");
+    }
+  
+    s = &(THIS->strm);
+
+    if(THIS->internbuf != NULL){
+      toss_buffer(&(THIS->intern_buffer));
+      THIS->internbuf = NULL;
+      bzCompressEnd(s);
+    }
+    
+    s->bzalloc = NULL;
+    s->bzfree = NULL;
+    s->opaque = NULL;
+    s->next_in = NULL;
+    s->next_out = NULL;
+    s->avail_in = 0;
+    s->avail_out = 0;
+
+    THIS->total_out_previous_flush = 0;
+    THIS->total_out_previous_buf = 0;
+    THIS->compression_rate = compression_rate;
+    THIS->work_factor = work_factor;
+    
+    retval = bzCompressInit(s,compression_rate,0,work_factor);  
+    
+    switch(retval){
+    case BZ_PARAM_ERROR:
+      Pike_error("Parameter error when initializing Bz2.Deflate object");
+      break;
+    case BZ_MEM_ERROR:
+      Pike_error("Memory error when initialing Bz2.Deflate object");
+      break;
+    case BZ_OK:
+      break;
+    default:
+      Pike_error("Failed to initialize Bz2.Deflate object");
+    }
+    pop_n_elems(args);
+  }
+  /***********************************************************************************/
+
+  /*! @decl void feed(string data)
+   *!	
+   *! This function feeds the data to the internal buffers of 
+   *! the Deflate object. All data is buffered until a read or
+   *! a finish is done.
+   *! @seealso
+   *! @[Bz2.Deflate->read()]
+   *! @[Bz2.Deflate->finish()]
+   */
+  
+  PIKEFUN void feed(string data){
+
+    int retval = 0;
+    int i = 1; 
+    bz_stream *s;
+    char* tmp = NULL;
+    
+    /* I think CMOD is weird here, or shall we say inconsequent
+       since it does the type checking for string but not for
+       int|void */
+    if(args != 1){
+      Pike_error("Bad number of arguments in call to Bz2.Deflate->feed()");
+    }
+        
+    if (THIS->internbuf==NULL){
+      /*initialize the internal buffer needed, because libbzip2 is weird*/
+      initialize_buf(&(THIS->intern_buffer));
+      THIS->internbuf = &(THIS->intern_buffer);
+    }
+    
+    
+    s = &(THIS->strm);
+    s->next_in=(char *)data->str;
+    s->avail_in = data->len;
+    
+    
+    while(1){
+      /* need to have a loop here in 
+	 case the output-buffer is filled*/
+      /* allocate out buffer */
+      tmp = malloc(i * DEFL_BUF_SIZE);
+      if(tmp == NULL){
+	Pike_error("Failed to allocate memory in Bz2.Deflate->feed()");
+      }
+      s->next_out = tmp;
+      s->avail_out = i * DEFL_BUF_SIZE;
+      
+      retval = bzCompress(s, BZ_RUN);
+      if (retval != BZ_RUN_OK){
+	bzCompressEnd(s);
+	free(tmp);
+	Pike_error("Error when compressing in Bz2.feed()");
+      }
+      
+      if(s->total_out - THIS->total_out_previous_buf > 0){
+	/*if something was written to the outbuffer, then buffer it internally*/
+	low_my_binary_strcat(tmp, s->total_out - THIS->total_out_previous_buf,&(THIS->intern_buffer));
+	THIS->internbuf = &(THIS->intern_buffer);
+	THIS->total_out_previous_buf = s->total_out;
+      }
+      /*free the outbuffer*/
+      free(tmp);
+      if (s->avail_out > 0 || s->avail_in == 0){
+	break;
+      }
+      i = 2 * i;
+    }
+    pop_n_elems(args);
+    
+  }
+  
+  dynamic_buffer* do_deflate(struct pike_string *data, dynamic_buffer retbuf, int mode, INT32 args){
+    char *tmp = NULL;
+    int retval;
+    int total_out_old = 0;
+    int i = 1;
+    
+    bz_stream *s;
+    
+    s = &(THIS->strm);
+    
+    s->next_in = data->str;
+    s->avail_in = data->len;
+    s->next_out = retbuf.s.str;
+    s->avail_out = DEFL_BUF_SIZE;
+    
+    while(1){
+    
+      retval = bzCompress(s, mode);
+    
+      if(tmp != NULL){
+	low_my_binary_strcat(tmp,s->total_out-total_out_old,&retbuf);
+      free(tmp);
+      }
+      if(retval < 0){
+	fprintf(stderr,"\nRetval is %d", retval); 
+	bzCompressEnd(s);
+	toss_buffer(&retbuf);
+	Pike_error("Error when compressing data");
+      }
+      /* If all data has been finished or flushed then end this loop*/
+      if(retval == BZ_STREAM_END || ((retval == BZ_RUN_OK)&&(s->avail_in == 0))){
+	break;
+      }
+      /* If the output buffer is full, then allocate more space
+	 and go on compressing*/
+      if (s->avail_out == 0){
+	i = 2 * i;
+	tmp = malloc(i * DEFL_BUF_SIZE);
+	if(tmp == NULL){
+	  toss_buffer(&retbuf);
+	  Pike_error("Failed to allocate memory in Bz2.Deflate->read()/finish()");
+	}
+	s->next_out = tmp;
+	s->avail_out = i * DEFL_BUF_SIZE;
+	total_out_old = s->total_out;
+      }
+    }
+    return (&retbuf);
+  }
+  
+  /*! @decl string read(string data)
+   *!
+   *! This function feeds the data to the internal buffers of 
+   *! the Deflate object. Then it compresses all buffered data
+   *! and returns the compressed data as a string
+   *! @seealso
+   *! @[Bz2.Deflate->feed()]
+   *! @[Bz2.Deflate->finish()]
+   */
+
+  PIKEFUN string read(string data){
+    struct pike_string *retstr;
+    dynamic_buffer* ret;
+    dynamic_buffer retbuf;
+    bz_stream *s;
+    s = &(THIS->strm);
+    
+    initialize_buf(&retbuf);
+    low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
+    ret = do_deflate(data, retbuf,BZ_FLUSH, args);
+    
+    if(s->total_out - THIS->total_out_previous_flush > 0){
+      if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
+	low_my_binary_strcat(ret->s.str,s->total_out - THIS->total_out_previous_buf, &(THIS->intern_buffer));
+	retstr = make_shared_binary_string(THIS->intern_buffer.s.str, s->total_out - THIS->total_out_previous_flush);
+      }   
+      else{
+	retstr = make_shared_binary_string(ret->s.str,s->total_out-THIS->total_out_previous_flush);
+      }
+      if(THIS->internbuf != NULL){
+	toss_buffer(&THIS->intern_buffer);
+	THIS->internbuf = NULL;
+      }     
+      THIS->total_out_previous_flush = s->total_out;
+      THIS->total_out_previous_buf = s->total_out;
+    }
+    else{
+      retstr = make_shared_binary_string("",0);
+    }
+    
+    toss_buffer(ret);
+    RETURN(retstr);
+
+  }
+  
+
+  /*! @decl string finish(string data)
+   *!
+   *! This method feeds the data to the internal buffers of 
+   *! the Deflate object. Then it compresses all buffered data
+   *! adds a end of data marker ot it, returns the compressed 
+   *! data as a string, and reinitializes the deflate object.
+   *! @seealso
+   *! @[Bz2.Deflate->feed()]
+   *! @[Bz2.Deflate->read()]
+   */
+  
+  PIKEFUN string finish(string data){
+    struct pike_string *retstr;
+    int retval = 0;
+    dynamic_buffer retbuf;
+    dynamic_buffer *ret;
+    bz_stream *s;
+    s = &(THIS->strm);
+    initialize_buf(&retbuf);
+    low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
+    
+    ret = do_deflate(data, retbuf,BZ_FINISH, args);
+        
+    /*use perhaps a better check?*/
+    if(s->total_out - THIS->total_out_previous_flush > 0){
+      if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
+	low_my_binary_strcat(ret->s.str,s->total_out - THIS->total_out_previous_buf, &(THIS->intern_buffer));
+	retstr = make_shared_binary_string(THIS->intern_buffer.s.str, s->total_out - THIS->total_out_previous_flush);
+      }   
+      else{
+	retstr = make_shared_binary_string(ret->s.str,s->total_out-THIS->total_out_previous_flush);
+      }
+      
+      THIS->total_out_previous_flush = s->total_out;
+      THIS->total_out_previous_buf = s->total_out;
+    }
+    else{
+      /* something went wrong*/
+      retstr = NULL;
+    }
+    
+    toss_buffer(ret);
+    bzCompressEnd(s);
+    
+    if(THIS->internbuf != NULL){
+      toss_buffer(&(THIS->intern_buffer));
+      THIS->internbuf = NULL;
+    }
+    
+    s->bzalloc = NULL;
+    s->bzfree = NULL;
+    s->opaque = NULL;
+    s->next_in = NULL;
+    s->next_out = NULL;
+    s->avail_in = 0;
+    s->avail_out = 0;
+
+    THIS->total_out_previous_flush = 0;
+    THIS->total_out_previous_buf = 0;
+        
+    retval = bzCompressInit(s,THIS->compression_rate,0,THIS->work_factor);  
+    if(retval < 0){
+      Pike_error("Failed to reinitialize stream");
+    }
+
+    if(retstr != NULL){
+      RETURN(retstr);
+    }
+    else{
+      RETURN(0);
+    }
+  }
+
+  /*! @decl string deflate(string data, int(0..2)|void flush_mode)
+   *!
+   *! This function performs bzip2 style compression on a string @[data] and
+   *! returns the packed data. Streaming can be done by calling this
+   *! function several times and concatenating the returned data.
+   *!
+   *! The optional argument @[flush] should be one of the following:
+   *! @int
+   *!   @value Bz2.BZ_RUN
+   *!     Runs Bz2.Deflate->feed()
+   *!   @value Bz2.BZ_FLUSH
+   *!     Runs Bz2.Deflate->read()
+   *!   @value Bz2.BZ_FINISH
+   *!     Runs Bz2.Deflate->finish()
+   *! @endint
+   *!
+   *! @seealso
+   *! @[Bz2.Inflate->inflate()]
+   */
+  
+  PIKEFUN string deflate(string data, int|void mode){
+    struct pike_string *data;
+    int flush_mode;
+    
+    switch (args){
+    case 0:
+      Pike_error("Too few arguments to method Deflate->deflate()"); 
+      break; 
+    case 1:
+      flush_mode = BZ_FLUSH;
+      break;
+    case 2:
+    if(mode->type == T_INT){
+      flush_mode = mode->u.integer;
+    }
+    else{
+      Pike_error("Bad argument 2 in call to Bz2.Deflate->deflate()");
+    }
+    pop_n_elems(1);
+    break;
+    default:
+      Pike_error("Too many arguments to method Deflate->deflate()");
+      break;
+    }
+    
+    switch (flush_mode){
+    case BZ_FLUSH:
+      f_Deflate_read(1);
+      break;
+    case BZ_FINISH:
+      f_Deflate_finish(1);
+      break;
+    case BZ_RUN:
+      f_Deflate_feed(1);
+      push_string(make_shared_binary_string("",0));
+      break;
+    }
+  }
+
+  INIT
+    {
+      bz_stream *s;
+      THIS->internbuf = NULL;
+      s =&(THIS->strm);
+      s->bzalloc = NULL;
+      s->bzfree = NULL;
+      s->opaque = NULL;
+      s->next_in = NULL;
+      s->next_out = NULL;
+      s->avail_in = 0;
+      s->avail_out = 0;
+    }
+  EXIT
+    {
+      bzCompressEnd(&(THIS->strm));
+      if(THIS->internbuf != NULL){
+	toss_buffer(&(THIS->intern_buffer));
+      }
+    }  
+}
+
+
+/*! @endclass
+ */
+
+
+/*! @class Inflate
+ *!
+ *! Bz2.Inflate is a builtin program written in C. It interfaces the
+ *! unpacking routines in the libz library.
+ *!
+ *! @note
+ *! This program is only available if bzlib was available and found when
+ *! Pike was compiled.
+ *!
+ *! @seealso
+ *!   @[Deflate]
+ */
+
+
+
+PIKECLASS Inflate
+{
+  CVAR dynamic_buffer intern_buffer;
+  CVAR dynamic_buffer *internbuf;
+  CVAR bz_stream strm;
+  CVAR int total_out_previous_flush;
+  CVAR int total_out_previous_buf;
+
+  /*! @decl void create()
+   */
+  PIKEFUN void create(){
+     
+    int retval;
+    bz_stream *s;
+    
+    if(args > 0){
+      Pike_error("Bz2.Inflate() should be called with NO arguments");
+    }
+    s = &(THIS->strm);
+    
+    if(THIS->internbuf != NULL){
+      toss_buffer(&(THIS->intern_buffer));
+      THIS->internbuf = NULL;
+      bzDecompressEnd(s);
+    }
+    
+    s->bzalloc = NULL;
+    s->bzfree = NULL;
+    s->opaque = NULL;
+    
+    retval = bzDecompressInit(s, 0, 0);
+   
+    /* make more detailed*/
+    if(retval != BZ_OK){
+      Pike_error("Unexpected error in Bz2.Inflate()");
+    }
+    
+    s->next_in = NULL;
+    s->next_out = NULL;
+    s->avail_in = 0;
+    s->avail_out = 0;
+    
+    
+    /*reset the counted bytes*/
+    THIS->total_out_previous_flush = 0;
+    pop_n_elems(args);
+  }
+
+  /*! @decl string inflate(string data)
+   *!
+   *! This function performs bzip2 style decompression. It can do
+   *! decompression with arbitrarily large pieces of data. When fed with 
+   *! data, it decompresses as much as it can and buffers the rest.
+   *! @example
+   *! while(..){
+   *!   foo = compressed_data[i..i+9]; 
+   *!   uncompressed_concatenated_data += inflate_object->inflate(foo);
+   *!   i = i+10;
+   *! }
+   *!
+   *! @seealso
+   *! @[Bz2.Deflate->deflate()]
+   */
+  
+  PIKEFUN string inflate(string data){
+    struct pike_string *retstr;
+    int i = 1;
+    int retval=0;
+    int total_out_old = 0;
+    char *tmp = NULL;
+    char *tmp_internbuf = NULL;
+    dynamic_buffer ret_buffer;
+    dynamic_buffer *retbuf = &ret_buffer;
+    bz_stream *s;
+    s = &(THIS->strm);
+    
+    /*the incoming string has to be appended to the input buffer*/
+    
+    if (s->avail_in > 0){
+      tmp_internbuf = malloc(s->avail_in);
+      if(tmp_internbuf == NULL){
+	Pike_error("Failed to allocate memory in Bz2.Inflate->inflate()");
+      }
+      bcopy(s->next_in, tmp_internbuf, s->avail_in);
+    }
+    /* free buf space*/
+    if(THIS->internbuf != NULL){
+      toss_buffer(&(THIS->intern_buffer));
+    }
+    initialize_buf(&(THIS->intern_buffer));
+    
+    if(tmp_internbuf != NULL){
+      /*copying data that could not be unpacked in previous call*/
+      low_my_binary_strcat(tmp_internbuf,s->avail_in,&(THIS->intern_buffer));
+      free(tmp_internbuf);
+    }
+    /*appending the new data*/
+    low_my_binary_strcat(data->str,data->len,&(THIS->intern_buffer));
+    
+    THIS->internbuf = &(THIS->intern_buffer);
+    s->next_in = THIS->internbuf->s.str;
+    s->avail_in += data->len;
+    
+    /* the input buffer is now provided, provide an output buffer*/
+    
+    initialize_buf(retbuf);
+    
+    low_make_buf_space(INFL_BUF_SIZE, retbuf);
+    s->next_out = retbuf->s.str;
+    s->avail_out = INFL_BUF_SIZE;
+    
+    while(1){
+      /* This Loop runs bzDecompress and stores the result in retbuf, if retbuf is filled
+	 it makes retbuf bigger and calls decompress again until the whole input data string 
+	 has been unpacked*/
+      retval = bzDecompress(s); /* updates next_in, avail_in, total_in, next_out, avail_out, total_out*/
+      
+      if(tmp != NULL){
+	low_my_binary_strcat(tmp,s->total_out-total_out_old,&ret_buffer);
+	free(tmp);
+      }
+      /* errorcheck*/
+      if(retval == BZ_STREAM_END && s->avail_in > 0){
+	bzDecompressEnd(s);
+	toss_buffer(&ret_buffer);
+	Pike_error("No data may follow after end of stream"); 
+      }
+      if((retval != BZ_STREAM_END) && (retval != BZ_OK)){
+	bzDecompressEnd(s);
+	toss_buffer(&ret_buffer);
+	Pike_error("Error when decompressing, probably because inflate is fed with invalid data");
+      }    
+      
+      /* If outputbuffer is not full, or input buffer is empty, or end of stream has been detected
+	 then compression has been done as far as possible*/
+      if((s->avail_out > 0) || (s->avail_in == 0) || (retval == BZ_STREAM_END)){
+	break;
+      }
+      /* If output buffer is full then allocate more output space and call
+	 bzDecompress again*/
+      if (s->avail_out == 0){
+	i = i*2;
+	tmp = malloc(i * INFL_BUF_SIZE);
+	if(tmp == NULL){
+	  toss_buffer(&ret_buffer);
+	  Pike_error("Failed to allocate memory in Bz2.Inflate->inflate()");
+	}
+	s->next_out = tmp;
+	s->avail_out = i * INFL_BUF_SIZE;
+	total_out_old = s->total_out;
+      }
+    }
+    
+    /*return the bytes decompressed since the last time bytes were returned from this stream, in other
+      words, return a block*/
+    if((retval == BZ_OK) || (retval==BZ_STREAM_END)){
+      if(s->total_out - THIS->total_out_previous_flush > 0){
+	retstr = make_shared_binary_string(ret_buffer.s.str,s->total_out-THIS->total_out_previous_flush);
+      }
+      else{
+	retstr = make_shared_binary_string("",0);
+      }
+      THIS->total_out_previous_flush = s->total_out;
+      if(retval == BZ_STREAM_END){
+	bzDecompressEnd(s);
+	toss_buffer(&(THIS->intern_buffer));/*free the final buffer*/
+	
+	if(THIS->internbuf != NULL){
+	  toss_buffer(&(THIS->intern_buffer));
+	  THIS->internbuf = NULL;
+	}
+	
+	s->bzalloc = NULL;
+	s->bzfree = NULL;
+	s->opaque = NULL;
+	
+	retval = bzDecompressInit(s, 0, 0);
+	
+	/* make more detailed*/
+	if(retval != BZ_OK){
+	  Pike_error("Unexpected error in Bz2.Inflate()");
+	}
+	
+	s->next_in = NULL;
+	s->next_out = NULL;
+	s->avail_in = 0;
+	s->avail_out = 0;
+	
+	
+	/*reset the counted bytes*/
+	THIS->total_out_previous_flush = 0;
+      }
+      toss_buffer(&ret_buffer);
+      RETURN(retstr);
+    }
+    
+    else{
+      /* something went really wrong*/
+      toss_buffer(&ret_buffer);
+      RETURN(0);
+    }
+  }
+  
+  INIT
+    {
+      bz_stream *s;
+      THIS->internbuf = NULL;
+      s = &(THIS->strm);
+      s->bzalloc = NULL;
+      s->bzfree = NULL;
+      s->opaque = NULL;
+      s->next_in = NULL;
+      s->next_out = NULL;
+      s->avail_in = 0;
+      s->avail_out = 0;
+    }
+
+  EXIT
+    {
+      bzDecompressEnd(&(THIS->strm));
+      if(THIS->internbuf != NULL){
+	toss_buffer(&(THIS->intern_buffer));
+      }
+    }
+}
+/*! @end class
+*/
+
+/*! @class File
+ *! Low-level implementation of read/write support for Bzip2 files
+ */
+
+
+PIKECLASS File
+{
+  CVAR BZFILE *file;
+  CVAR FILE *fp;
+  CVAR int mode;
+  CVAR int small;
+  CVAR int bzerror;
+
+  /*! @decl int(0..1) close()
+   *! closes the file
+   */
+
+  PIKEFUN int close(){
+    if(args == 0){
+      switch(THIS->mode){
+      case READ_MODE:
+	bzReadClose(&(THIS->bzerror),THIS->file);
+	break;
+      case WRITE_MODE:
+	bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
+	break;
+      default:
+	Pike_error("This error can never occur");
+      }
+      fclose(THIS->fp);
+      THIS->fp = NULL;
+    }
+    else{
+      Pike_error("Too many arguments in call to Bz2.File()->close(), there should be none");
+    }
+    THIS->mode = NO_FILE_MODE;
+
+    if((THIS->bzerror)==BZ_OK){
+      RETURN(1);
+    }
+    else{
+      RETURN(0);
+    }
+
+  }
+
+  /*! @decl void create()
+   *! Creates a Bz2.File object
+   */
+
+
+  PIKEFUN void create(){
+    if(THIS->file != NULL){
+      f_File_close(0);
+    }
+    THIS->bzerror = 0;
+    THIS->mode = NO_FILE_MODE;
+    THIS->file = NULL;
+    THIS->fp = NULL;
+    
+    if(args != 0){
+      Pike_error("Bz2.File()must be called with NO arguments");
+    }
+    pop_n_elems(args);
+  }
+
+  
+  /*! @decl int(0..1) read_open(string file)
+   *! Opens a file for reading.
+   *! @param file
+   *! The name of the file to be opened
+   */
+  
+  PIKEFUN int read_open(string file_name){
+    FILE *tmp = NULL;
+    
+    if( THIS->mode == NO_FILE_MODE){
+      tmp = fopen(file_name->str,"rb");
+    }
+    if(tmp != NULL){
+      THIS->fp = tmp;
+      THIS->file = bzReadOpen(&(THIS->bzerror),tmp,0,0,NULL,0);
+      THIS->mode = READ_MODE;
+      
+      switch(THIS->bzerror){
+      case BZ_OK:
+	break;
+      case BZ_MEM_ERROR:
+	if(THIS->small == 0){
+	  bzReadClose(&(THIS->bzerror),THIS->file);
+	  THIS->small = 1;
+	  bzReadOpen(&(THIS->bzerror),tmp,1,0,NULL,0);
+	  if(THIS->bzerror != BZ_OK){
+	    Pike_error("Bz2.File->read_open() failed");
+	  }	    
+	}
+	else{
+	  Pike_error("Bz2.File->read_open() out of memory");
+	}
+	break;
+      default:
+	Pike_error("Error in Bz2.File()->read_open");
+      }
+    }
+    if(tmp==NULL){
+      RETURN(0);
+    }
+    else{
+      RETURN(1);
+    }
+  }
+
+  /*! @decl int(0..1) write_open(string file)
+   *! Opens a file for writing.
+   *! @param file
+   *! The name of the file to be opened
+   */
+  
+  PIKEFUN int write_open(string file_name, int|void compression, int|void work){
+    int work_factor = DEFAULT_WORK_FACTOR;
+    int compression_rate = DEFAULT_COMPRESSION_RATE;
+    FILE *tmp = NULL;
+    
+    if(args > 1){
+      if(work->type != T_INT){
+	Pike_error("Bad argument 2 in call to Bz2.File()->write_open()");
+      }
+      else{
+	compression_rate = compression->u.integer;
+      }
+      if(args == 3){
+	if(work->type != T_INT){
+	    Pike_error("Bad argument 3 in call to Bz2.File()->write_open()");
+	}
+	else{
+	  work_factor = work->u.integer;
+	  }
+      }
+    }
+    else if (args > 3){
+      Pike_error("Too many arguments in call to Bz2.File()->write_open()");
+    }
+    else if (args < 1){
+      Pike_error("Too few arguments in call to Bz2.File()->write_open()");
+    }
+    
+    if(compression_rate < 1 || compression_rate > 9){
+      Pike_error("compression rate out of range for Bz2.File()->write_open()");
+    }
+    if(work_factor < 1 || work_factor > 250){
+      Pike_error("work factor out of range for Bz2.File()->write_open()");
+    }
+    if (THIS->mode == NO_FILE_MODE){
+      tmp = fopen(file_name->str,"wb");
+    }
+    if(tmp != NULL){
+      THIS->fp = tmp;
+      THIS->file = bzWriteOpen(&(THIS->bzerror),tmp,compression_rate,0,work_factor);
+      
+      switch(THIS->bzerror){
+      case BZ_OK:
+	break;
+      default:
+	fclose(tmp);
+	Pike_error("Error in Bz2.File()->write_open");
+      }
+      THIS->mode = WRITE_MODE;
+    }
+    
+    if(tmp == NULL){
+      RETURN(0);
+    }
+    else{
+      RETURN(1);
+    }
+  }
+
+  /*! @decl int(0..1) open(string file, void|string mode)
+   *! Opens a file for I/O.
+   *! @param file
+   *! The name of the file to be opened
+   *! @param mode
+   *! Mode for the file operations. Can be either "r" (read)
+   *! or "w". Read is default.
+   */
+  
+  PIKEFUN int open(string filename, string|void mode){
+    struct pike_string *tmp;
+    
+    if (args == 1) {
+      f_File_read_open(1);
+      return;
+    }
+    else if(args == 2){
+      if(mode->type == T_STRING){
+	tmp = mode->u.string;
+	pop_n_elems(1);
+	if (strcmp(tmp->str, "w") == 0){
+	  f_File_write_open(1);
+	}
+	else if (strcmp(tmp->str, "r") == 0){
+	  f_File_read_open(1);
+	}
+	else{
+	  Pike_error("Unknown open mode for file, should be either 'w' or 'r'");
+	}
+	/* The integer is returned by the called functions f_File_... */
+      }
+      else{
+	Pike_error("Bad 2 argument in call to Bz2.File()->open()");
+      }
+    }
+    else{
+      Pike_error("Bad number of arguments in call to Bz2.File()->open()");
+    }
+  }
+  
+
+  /*! @decl int write(string data)
+   *! Writes the data to the file.
+   *! @returns 
+   *!  the number of bytes written to the file.
+   */
+
+  PIKEFUN int write(string data){
+    int len =  data->len;
+    
+    bzWrite(&(THIS->bzerror), THIS->file, data->str,len);
+    switch(THIS->bzerror){
+    case BZ_OK:
+      break;
+    default:
+      Pike_error("Error in Bz2.File()->write();");
+    }
+    
+    RETURN(len);
+  }
+  
+  /*! @decl int|string read(int len)
+   *! Reads len (uncompressed) bytes from the file.
+   *! If len is omitted the whole file is read.
+   *! If read is unsuccessful, 0 is returned.
+   */
+  
+  PIKEFUN string read(int|void bytes){
+    void *buf = NULL;
+    dynamic_buffer retbuf;
+    struct pike_string *retstr;
+    int to_be_read = 0;
+    int nr_of_bytes = 0;
+    int nr_of_bytes_old = 0;
+    int i = 1;
+
+    if(args == 1){
+      if(bytes->type == T_INT){
+	to_be_read = bytes->u.integer;
+      }
+      else{
+	Pike_error("Bad type of argument in call to Bz2.File()->read");
+      }
+    }
+    else if(args == 0){
+      /*do not know how long the file will be, think of a better 
+       way to set to_be_read */
+      to_be_read = INFL_BUF_SIZE;
+    }
+    else{
+      Pike_error("Bad number of arguments in call to Bz2.File->read");
+    }
+    
+
+	
+    initialize_buf(&retbuf);
+    THIS->bzerror = BZ_OK;
+    while((to_be_read > nr_of_bytes) && (THIS->bzerror != BZ_STREAM_END)){
+      buf = malloc(i * INFL_BUF_SIZE);
+      if(buf == NULL){
+	toss_buffer(&retbuf);
+	Pike_error("Failed to allocate memory in Bz2.File->read()");
+      }
+      nr_of_bytes = nr_of_bytes + bzRead ( &(THIS->bzerror), THIS->file, buf, to_be_read - nr_of_bytes);
+            
+      if((args == 0) && (to_be_read == nr_of_bytes)){
+	/*make sure that we do this loop until end_of_file is reached*/
+	to_be_read += i * INFL_BUF_SIZE;
+	i = i * 2;
+      }
+
+      low_my_binary_strcat(buf, nr_of_bytes - nr_of_bytes_old, &retbuf);
+      free(buf);
+      nr_of_bytes_old = nr_of_bytes;
+      
+      switch(THIS->bzerror){
+      case BZ_OK:
+	break;
+      case BZ_STREAM_END:
+	break;
+      default:
+	toss_buffer(&retbuf);
+	Pike_error("Error in Bz2.File()->read()");
+	}
+    }
+    
+    if(nr_of_bytes <= 0){
+      toss_buffer(&retbuf);
+      RETURN(0);
+    }
+    else{
+      retstr = (make_shared_binary_string(retbuf.s.str, nr_of_bytes));
+      toss_buffer(&retbuf);
+      RETURN(retstr);
+    }  
+  }
+  
+  /*! @decl int(0..1) eof()
+   *! @returns 
+   *!  1 if EOF has been reached,
+   *!  0 otherwise
+   */
+
+  PIKEFUN int(0..1)eof(){
+    if(args == 0){
+      if(THIS->bzerror == BZ_STREAM_END){
+	RETURN(1);
+      }
+      else{
+	RETURN(0);
+      }
+    }
+    else{
+      Pike_error("Too many arguments in call to Bz2.File()->eof()");
+    }  
+  }
+
+  INIT
+    {
+      THIS->file = NULL;
+      THIS->bzerror = 0;
+      THIS->mode = NO_FILE_MODE;
+      THIS->file = NULL;
+    }
+  
+  EXIT
+    {
+      if(THIS->fp != NULL){
+	switch(THIS->mode){
+	case READ_MODE:
+	  bzReadClose(&(THIS->bzerror),THIS->file);
+	  break;
+	case WRITE_MODE:
+	  bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
+	  break;
+	case NO_FILE_MODE:
+	  break;
+	default:
+	  Pike_error("This error can never occur");
+	}
+	fclose(THIS->fp);
+	THIS->fp = NULL;
+	THIS->mode = NO_FILE_MODE;
+      }
+    }
+}
+#endif
+#endif  /* end HAVE_LIBLIBZIP2 */
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+void pike_module_init(void)
+{
+#ifdef HAVE_LIBBZ2
+#ifdef HAVE_BZLIB_H
+  add_integer_constant("BZ_RUN", BZ_RUN, 0);
+  add_integer_constant("BZ_FLUSH", BZ_FLUSH, 0);
+  add_integer_constant("BZ_FINISH", BZ_FINISH, 0);
+  INIT
+#endif
+#endif
+}
+
+void pike_module_exit(void)
+{
+#ifdef HAVE_LIBBZ2
+#ifdef HAVE_BZLIB_H	
+  EXIT
+#endif
+#endif
+}
+
+
