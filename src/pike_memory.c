@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.131 2002/11/30 16:14:56 grubba Exp $
+|| $Id: pike_memory.c,v 1.132 2002/11/30 18:23:35 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.131 2002/11/30 16:14:56 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.132 2002/11/30 18:23:35 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -637,6 +637,14 @@ char *debug_qalloc(size_t size)
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
 
+/* #define DMALLOC_TRACE_MEMHDR ((struct memhdr *)0x4012b7d8) */
+/* #define DMALLOC_TRACE_MEMLOC ((struct memloc *)0x405500d8) */
+#ifdef DMALLOC_TRACE_MEMLOC
+#define DO_IF_TRACE_MEMLOC(X)	do { X; } while(0)
+#else /* !DMALLOC_TRACE_MEMLOC */
+#define DO_IF_TRACE_MEMLOC(X)
+#endif /* DMALLOC_TRACE_MEMLOC */
+
 #ifdef DMALLOC_TRACE
 /* this can be used to supplement debugger data
  * to find out *how* the interpreter got to a certain
@@ -1243,6 +1251,16 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
     if(mlhash[l]==ml) mlhash[l] = NULL;			\
 							\
     X->locations=ml->next;				\
+    DO_IF_TRACE_MEMLOC(					\
+      if (ml == DMALLOC_TRACE_MEMLOC) {			\
+        fprintf(stderr, "EXIT:Freeing memlock %p location "	\
+		"was %s memhdr: %p data: %p\n",		\
+		ml, ml->location, ml->mh, ml->mh->data);\
+    });							\
+    if (X->flags & MEM_TRACE) {				\
+      fprintf(stderr, "  0x%p: Freeing loc: %p:%s\n",	\
+	      X, ml, ml->location);			\
+    }							\
     really_free_memloc(ml);				\
   }							\
 }while(0)
@@ -1299,6 +1317,12 @@ static int find_location(struct memhdr *mh, LOCATION location)
   {
     if(ml->location==location)
     {
+#ifdef DMALLOC_TRACE_MEMLOC
+      if (ml == DMALLOC_TRACE_MEMLOC) {
+        fprintf(stderr, "find_loc: Found memlock %p location %s memhdr: %p data: %p\n",
+		ml, ml->location, ml->mh, ml->mh->data);
+      }
+#endif /* DMALLOC_TRACE_MEMLOC */
       mlhash[l]=ml;
       return 1;
     }
@@ -1316,6 +1340,17 @@ void merge_location_list(struct memhdr *mh)
     unsigned long l = lhash(mh, ml->location);
     mlhash[l] = ml;
 
+#ifdef DMALLOC_TRACE_MEMLOC
+    if (ml == DMALLOC_TRACE_MEMLOC) {
+      fprintf(stderr, "merge_loc: Found memlock %p location %s memhdr: %p data: %p\n",
+	      ml, ml->location, ml->mh, ml->mh->data);
+    }
+#endif /* DMALLOC_TRACE_MEMLOC */
+
+    if (ml->mh != mh) {
+      Pike_fatal("Non-owned memloc in location list!\n");
+    }
+
     prev=&ml->next;
     while((ml2=*prev))
     {
@@ -1323,12 +1358,21 @@ void merge_location_list(struct memhdr *mh)
       {
 	ml->times+=ml2->times;
 	*prev=ml2->next;
+#ifdef DMALLOC_TRACE_MEMLOC
+	if (ml2 == DMALLOC_TRACE_MEMLOC) {
+	  fprintf(stderr, "merge_loc: Freeing memlock %p location %s memhdr: %p data: %p\n",
+		  ml2, ml2->location, ml2->mh, ml2->mh->data);
+	}
+#endif /* DMALLOC_TRACE_MEMLOC */
 	really_free_memloc(ml2);
 #ifdef DMALLOC_PROFILE
 	add_location_duplicate++;
 #endif
       }else{
 	prev=&ml2->next;
+      }
+      if (ml2->mh != mh) {
+	Pike_fatal("Non-owned memloc in location list!\n");
       }
     }
   }
@@ -1343,15 +1387,21 @@ static int add_location_cleanup(struct memhdr *mh,
   struct memloc *ml;
   unsigned long l2;
   struct memloc **prev=&mh->locations;
+
+  mh->misses=0;
+
   while((ml=*prev))
   {
 #ifdef DMALLOC_PROFILE
     add_location_seek++;
 #endif
-    l2=lhash(mh, ml->location);
-    
+    if (ml->mh != mh) {
+      Pike_fatal("Non-owned memloc in location list!\n");
+    }
+
     if(ml->location == location)
     {
+      /* Found. */
       ml->times++;
       mlhash[l]=ml;
       prev=&ml->next;
@@ -1360,6 +1410,10 @@ static int add_location_cleanup(struct memhdr *mh,
       {
 	l2=lhash(mh, ml->location);
 	
+	if (ml->mh != mh) {
+	  Pike_fatal("Non-owned memloc in location list!\n");
+	}
+
 	if(mlhash[l2] && mlhash[l2]!=ml &&
 	   mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
 	{
@@ -1369,16 +1423,23 @@ static int add_location_cleanup(struct memhdr *mh,
 #endif
 	  mlhash[l2]->times+=ml->times;
 	  *prev=ml->next;
+#ifdef DMALLOC_TRACE_MEMLOC
+	  if (ml == DMALLOC_TRACE_MEMLOC) {
+	    fprintf(stderr, "add_loc: Freeing memlock %p location %s memhdr: %p data: %p\n",
+		    ml, ml->location, ml->mh, ml->mh->data);
+	  }
+#endif /* DMALLOC_TRACE_MEMLOC */
 	  really_free_memloc(ml);
 	}else{
 	  if (!mlhash[l2]) mlhash[l2] = ml;
 	  prev=&ml->next;
 	}
       }
-      mh->misses=0;
       return 1;
     }
-    
+
+    l2=lhash(mh, ml->location);
+        
     if(mlhash[l2] && mlhash[l2]!=ml &&
        mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
     {
@@ -1388,13 +1449,18 @@ static int add_location_cleanup(struct memhdr *mh,
 #endif
       mlhash[l2]->times+=ml->times;
       *prev=ml->next;
+#ifdef DMALLOC_TRACE_MEMLOC
+      if (ml == DMALLOC_TRACE_MEMLOC) {
+        fprintf(stderr, "add_loc: 2 Freeing memlock %p location %s memhdr: %p data: %p\n",
+		ml, ml->location, ml->mh, ml->mh->data);
+      }
+#endif /* DMALLOC_TRACE_MEMLOC */
       really_free_memloc(ml);
     }else{
       if (!mlhash[l2]) mlhash[l2] = ml;
       prev=&ml->next;
     }
   }
-  mh->misses=0;
 
   return 0;
 }
@@ -1428,7 +1494,7 @@ static inline void add_location(struct memhdr *mh,
 
   l=lhash(mh,location);
 
-  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->location==location)
+  if(mlhash[l] && (mlhash[l]->mh==mh) && (mlhash[l]->location==location))
   {
     if (mh->flags & MEM_TRACE) {
       fprintf(stderr, "Found in cache.\n");
@@ -1489,6 +1555,12 @@ static inline void add_location(struct memhdr *mh,
   mh->misses++;
 #endif
   mlhash[l]=ml;
+#ifdef DMALLOC_TRACE_MEMLOC
+  if (ml == DMALLOC_TRACE_MEMLOC) {
+    fprintf(stderr, "add_loc: Allocated memlock %p location %s memhdr: %p data: %p\n",
+	    ml, ml->location, ml->mh, ml->mh->data);
+  }
+#endif /* DMALLOC_TRACE_MEMLOC */
   return;
 }
 
@@ -1515,10 +1587,20 @@ static void remove_location(struct memhdr *mh, LOCATION location)
   prev=&mh->locations;
   while((ml=*prev))
   {
+    if (ml->mh != mh) {
+      Pike_fatal("Non-owned memloc in location list!\n");
+    }
+
     if(ml->location==location)
     {
       *prev=ml->next;
       mh->times -= ml->times;
+#ifdef DMALLOC_TRACE_MEMLOC
+      if (ml == DMALLOC_TRACE_MEMLOC) {
+        fprintf(stderr, "rem_loc: Freeing memlock %p location %s memhdr: %p data: %p\n",
+		ml, ml->location, ml->mh, ml->mh->data);
+      }
+#endif /* DMALLOC_TRACE_MEMLOC */
       really_free_memloc(ml);
 #ifndef DMALLOC_AD_HOC
       break;
@@ -1533,7 +1615,7 @@ LOCATION dmalloc_default_location=0;
 
 static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
 {
-  struct memhdr *mh=get_memhdr(p);
+  struct memhdr *mh=make_memhdr(p, ((size_t)p)%memhdr_hash_table_size);
   struct memloc *ml=alloc_memloc();
   unsigned long l=lhash(mh,location);
 
@@ -1550,6 +1632,20 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   ml->times=1;
   ml->mh=mh;
   mlhash[l]=ml;
+
+#ifdef DMALLOC_TRACE_MEMHDR
+  if (mh == DMALLOC_TRACE_MEMHDR) {
+    fprintf(stderr, "Allocated memhdr 0x%p\n", mh);
+    mh->flags |= MEM_TRACE;
+  }
+#endif /* DMALLOC_TRACE_MEMHDR */
+
+#ifdef DMALLOC_TRACE_MEMLOC
+  if (ml == DMALLOC_TRACE_MEMLOC) {
+    fprintf(stderr, "mk_mhdr: Allocated memlock %p location %s memhdr: %p data: %p\n",
+	    ml, ml->location, ml->mh, ml->mh->data);
+  }
+#endif /* DMALLOC_TRACE_MEMLOC */
 
   if(dmalloc_default_location)
     add_location(mh, dmalloc_default_location);
@@ -1611,7 +1707,12 @@ static int low_dmalloc_unregister(void *p, int already_gone)
     if(!already_gone) check_pad(mh,0);
     if(!(mh->flags & MEM_LOCS_ADDED_TO_NO_LEAKS))
        low_add_marks_to_memhdr(&no_leak_memlocs, mh);
-    remove_memhdr(p);
+    if (mh->flags & MEM_TRACE) {
+      fprintf(stderr, "Removing memhdr 0x%p\n", mh);
+    }
+    if (!remove_memhdr(p)) {
+      fprintf(stderr, "remove_memhdr(0x%p) returned false.\n", p);
+    }
     return 1;
   }
   return 0;
