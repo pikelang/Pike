@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.39 2002/01/17 10:25:31 grubba Exp $
+// $Id: Query.pike,v 1.40 2002/03/08 14:10:50 grubba Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -249,7 +249,7 @@ void async_got_host(string server,int port)
    con->async_connect(server, port,
 		      lambda(int success)
 		      {
-			if (status) {
+			if (success) {
 			  // Connect ok.
 #if constant(SSL.sslfile) 
 			  if(https) {
