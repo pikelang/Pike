@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.24 2003/12/20 15:17:18 grubba Exp $
+dnl $Id: configure.in,v 1.25 2004/10/28 17:21:11 mast Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -183,7 +183,7 @@ if test  x$ac_cv_lib_pq_PQclear != xyes; then
   LIBS=$OLD_LIBS
   echo "Postgres not found. We won't support it."
 else
-  echo "Postgres found, module configured. Thank you for your collaboration."
+  echo "Postgres found, module configured. Thank you for your cooperation."
   POSTGRES_SUPPORTED="yes"
   PIKE_FEATURE_OK(Postgres)
 fi
