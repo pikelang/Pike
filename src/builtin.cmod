@@ -219,7 +219,7 @@ PIKEFUN int program_inherits(program child, program parent)
   RETURN !!low_get_storage(parent, child);
 }
 
-/*! @decl string program defined(program p)
+/*! @decl string program_defined(program p)
  *!
  *! Returns a string with filename and linenumber describing where
  *! the program @[p] was defined.
