@@ -13,6 +13,7 @@ _WhiteFish.ResultSet test_query(Search.Database.MySQL db, array(string) words)
 {
   array(int) field_ranking=allocate(66);
   field_ranking[0]=17;
+  field_ranking[2]=47;
 
   array(int) prox_ranking=allocate(8);
   for(int i=0; i<8; i++)
