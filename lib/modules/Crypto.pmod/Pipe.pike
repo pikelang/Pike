@@ -5,11 +5,19 @@ static array ciphers = ({});
 static int _block_size = 1;
 static int(0..1) reversed;
 
+static int(0..1) is_crypto(object c) {
+  return c->block_size && c->key_size && c->set_encrypt_key &&
+    c->set_decrypt_key && c->crypt;
+}
+
 static void create(program|object|array(program|mixed) ... c) {
   if(!sizeof(c)) error("Too few arguments.\n");
   foreach(c, program|object|array cc) {
-    if(objectp(cc))
+    if(objectp(cc)) {
+      if(!is_crypto(cc) && callablep(cc)) cc = cc();
+      if(!is_crypto(cc)) error("Not a crypto object.\n");
       ciphers += ({ cc });
+    }
     else if(programp(cc))
       ciphers += ({ cc() });
     else {
@@ -38,7 +46,7 @@ static void create(program|object|array(program|mixed) ... c) {
 }
 
 string name() {
-  return "pipe(" + ciphers->name()*", "+ ")";
+  return "Pipe(" + ciphers->name()*", "+ ")";
 }
 
 int block_size() {
