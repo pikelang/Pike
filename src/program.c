@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.470 2003/01/03 14:56:17 grubba Exp $
+|| $Id: program.c,v 1.471 2003/01/09 18:59:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.470 2003/01/03 14:56:17 grubba Exp $");
+RCSID("$Id: program.c,v 1.471 2003/01/09 18:59:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -324,7 +324,7 @@ static char *raw_lfun_types[] = {
  *!
  *!   Object destruction callback.
  *!   
- *!   This function is called by @[destruct()] right before
+ *!   This function is called by @[predef::destruct()] right before
  *!   it will zero all the object variables, and destroy the object.
  *!
  *! @note
