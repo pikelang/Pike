@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.541 2002/09/24 11:20:16 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.542 2002/09/24 15:14:47 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8813,7 +8813,7 @@ test_program([[
 ]])
 
 // - throw
-test_eq(20,catch(int q=1; throw(a())))
+test_eq(20,catch(throw(a())))
 
 // - catch compile-errors
 test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res)||objectp(res); ]], 1)
