@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.328 2001/06/08 11:01:26 hubbe Exp $");
+RCSID("$Id: program.c,v 1.329 2001/06/10 16:10:58 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -777,7 +777,6 @@ static struct node_s *index_modules(struct pike_string *ident,
   return 0;
 }
 
-
 struct node_s *find_module_identifier(struct pike_string *ident,
 				      int see_inherit)
 {
@@ -861,19 +860,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	push_int(0);
       }
 
-      if(error_handler &&
-	 (i = find_identifier("resolv", error_handler->prog))!=-1)
-      {
-	safe_apply_low(error_handler, i, 3);
-      } else if(compat_handler &&
-		(i = find_identifier("resolv", compat_handler->prog))!=-1)
-      {
-	safe_apply_low(compat_handler, i, 3);
-      }
-      else
-      {
-	SAFE_APPLY_MASTER("resolv", 3);
-      }
+      safe_apply_handler("resolv", error_handler, compat_handler, 3);
 
       if(throw_value.type == T_STRING)
       {
@@ -1752,9 +1739,15 @@ void check_program(struct program *p)
 	  if(ID_FROM_INT(p,variable_positions[offset+q])->run_time_type !=
 	     i->run_time_type)
 	  {
-	    fatal("Variable '%s' and '%s' overlap\n",
-		  ID_FROM_INT(p,variable_positions[offset+q])->name->str,
-		  i->name->str);
+	    if (i->name) {
+	      fatal("Variable '%s' and '%s' overlap\n",
+		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
+		    i->name->str);
+	    } else {
+	      fatal("Variable '%s' and anonymous variable (%d) overlap\n",
+		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
+		    e);
+	    }
 	  }
 	}
 	variable_positions[offset+q]=e;
@@ -2656,7 +2649,7 @@ void simple_do_inherit(struct pike_string *s,
   reference_shared_string(s);
   push_string(s);
   ref_push_string(lex.current_file);
-  SAFE_APPLY_MASTER("handle_inherit", 2);
+  safe_apply_handler("handle_inherit", error_handler, compat_handler, 2);
 
   if(Pike_sp[-1].type != T_PROGRAM)
   {
@@ -4929,11 +4922,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
     push_int(lex.current_line);
     push_text(buf);
 
-    if (error_handler && error_handler->prog) {
-      safe_apply(error_handler, "compile_warning", 3);
-    } else {
-      SAFE_APPLY_MASTER("compile_warning",3);
-    }
+    safe_apply_handler("compile_warning", error_handler, compat_handler, 3);
     pop_stack();
   }
 }
@@ -4963,12 +4952,19 @@ static int low_implements(struct program *a, struct program *b)
       return 0;
     }
 
-    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 #if 0
-      fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
-	      bid->name->str);
+	fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
+		bid->name->str);
 #endif /* 0 */
-      return 0;
+	return 0;
+      } else {
+#if 0
+	fprintf(stderr, "Identifier \"%s\" is not strictly compatible.\n",
+		bid->name->str);
+#endif /* 0 */
+      }
     }
   }
   return 1;
@@ -4998,7 +4994,11 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
   /* Do it the tedious way */
   implements_cache[hval].aid=a->id;
   implements_cache[hval].bid=b->id;
-  implements_cache[hval].ret=low_implements(a,b);
+  implements_cache[hval].ret = 1;	/* Tentatively compatible. */
+  implements_cache[hval].ret = low_implements(a,b);
+  /* NOTE: If low_implements() returns 0, the cache may have received
+   *       some false positives. Those should be cleared.
+   */
   return implements_cache[hval].ret;
 }
 
@@ -5097,7 +5097,11 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
   /* Do it the tedious way */
   is_compatible_cache[hval].aid=aid;
   is_compatible_cache[hval].bid=bid;
-  is_compatible_cache[hval].ret=low_is_compatible(a,b);
+  is_compatible_cache[hval].ret = 1;	/* Tentatively compatible. */
+  is_compatible_cache[hval].ret = low_is_compatible(a,b);
+  /* NOTE: If low_is compatible() returns 0, the cache may have received
+   *       some false positives. Those should be cleared.
+   */
   return is_compatible_cache[hval].ret;
 }
 
@@ -5125,20 +5129,21 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
       return 0;
     }
 
-    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
       struct pike_string *s1,*s2;
-      my_yyerror("Type of identifier \"%s\" does not match.", bid->name->str);
       s1=describe_type(ID_FROM_INT(a,i)->type);
       s2=describe_type(bid->type);
-      if(flags & YYTE_IS_WARNING)
-      {
-	yywarning("Expected: %s",s1->str);
-	yywarning("Got     : %s",s2->str);
-      }else{
+      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+	my_yyerror("Type of identifier \"%s\" does not match.",
+		   bid->name->str);
 	my_yyerror("Expected: %s",s1->str);
 	my_yyerror("Got     : %s",s2->str);
+      } else {
+	yywarning("Type of identifier \"%s\" is not strictly compatible.",
+		  bid->name->str);
+	yywarning("Expected: %s",s1->str);
+	yywarning("Got     : %s",s2->str);
       }
-
       free_string(s1);
       free_string(s2);
       return 0;
@@ -5207,17 +5212,33 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
   {
     compat_handler = dmalloc_touch(struct object *, sp[-1].u.object);
     sp--;
-  
-    apply(compat_handler,"get_default_module",0);
-    
-    if(sp[-1].type == T_INT)
-    {
+
+    if (error_handler) {
+      apply(error_handler, "get_default_module", 0);
+    } else {
+      push_int(0);
+    }
+    if (Pike_sp[-1].type == T_INT) {
       pop_stack();
-      ref_push_mapping(get_builtin_constants());
+      apply(compat_handler, "get_default_module", 0);
+    
+      if(Pike_sp[-1].type == T_INT)
+      {
+	pop_stack();
+	ref_push_mapping(get_builtin_constants());
+      }
     }
   }else{
     pop_stack();
-    ref_push_mapping(get_builtin_constants());
+    if (error_handler) {
+      apply(error_handler, "get_default_module", 0);
+    } else {
+      push_int(0);
+    }
+    if (Pike_sp[-1].type == T_INT) {
+      pop_stack();
+      ref_push_mapping(get_builtin_constants());
+    }
   }
 
 
