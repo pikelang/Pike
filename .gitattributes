@@ -531,6 +531,7 @@ testfont binary
 /src/peep.in foreign_ident
 /src/peep_t.c foreign_ident
 /src/pike-module.in foreign_ident
+/src/pike_error.h foreign_ident
 /src/pike_macros.h foreign_ident
 /src/pike_memory.c foreign_ident
 /src/pike_memory.h foreign_ident
