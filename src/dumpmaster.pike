@@ -2,8 +2,18 @@
 
 string fr;
 
+array encoded=({});
+
 void handle_error(mixed err)
 {
+  foreach(encoded, mixed o)
+    {
+      werror("***Failed to encode %t: %O\n",o,o);
+#if constant(_describe)
+      _describe(o);
+#endif
+    }
+
   werror("%O\n",err);
 }
 
@@ -33,6 +43,7 @@ class Codec
   string nameof(string x)
   {
     if(mixed tmp=search(all_constants(),x))  return tmp;
+    encoded+=({x});
     return UNDEFINED;
   } 
 }
