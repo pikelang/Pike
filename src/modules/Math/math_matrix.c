@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.25 2001/04/18 19:02:47 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.26 2001/04/25 11:07:35 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -638,6 +638,68 @@ static void matrix_sub(INT32 args)
 	 *(d++)=-*(s1++);
 }
 
+/* 
+**! method Matrix sum()
+**!	Produces the sum of all the elements in the matrix.
+*/
+
+static void matrix_sum(INT32 args)
+{
+   double sum=0.0;
+   int n;
+   FTYPE *s;
+
+   pop_n_elems(args);
+
+   n=THIS->xsize*THIS->ysize;
+   s=THIS->m;
+   while (n--)
+      sum+=*(s++);
+   
+   push_float((FLOAT_TYPE)sum);
+}
+
+/* 
+**! method Matrix max()
+**! method Matrix min()
+**!	Produces the maximum or minimum value 
+**!	of all the elements in the matrix.
+*/
+
+static void matrix_max(INT32 args)
+{
+   double max;
+   int n;
+   FTYPE *s;
+
+   pop_n_elems(args);
+
+   n=THIS->xsize*THIS->ysize;
+   s=THIS->m;
+   if (!n) error("Cannot do max() from a zero-sized matrix\n");
+   max=*(s++);
+   while (--n) { if (*s>max) max=*s; s++; }
+   
+   push_float((FLOAT_TYPE)max);
+}
+
+static void matrix_min(INT32 args)
+{
+   double min;
+   int n;
+   FTYPE *s;
+
+   pop_n_elems(args);
+
+   n=THIS->xsize*THIS->ysize;
+   s=THIS->m;
+   if (!n) error("Cannot do min() from a zero-sized matrix\n");
+   min=*(s++);
+   while (--n) { if (*s<min) min=*s; s++; }
+   
+   push_float((FLOAT_TYPE)min);
+}
+
 /*
 **! method Matrix `*(object with)
 **! method Matrix ``*(object with)
@@ -812,7 +874,7 @@ static void matrix_convolve(INT32 args)
    INT32 ax,ay;
    INT32 axb,ayb;
    INT32 dxz,dyz,axz,ayz,bxz,byz;
-   double *bs,*as,*d;
+   FTYPE *bs,*as,*d;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`*",1);
@@ -876,9 +938,9 @@ static void matrix_convolve(INT32 args)
 #define DO_SOME_CONVOLVING(CHECK_X,CHECK_Y)				\
 	 do								\
 	 {								\
-	    double *a=as;						\
-	    double *b=bs;						\
-	    double sum=0.0;						\
+	    FTYPE *a=as;						\
+	    FTYPE *b=bs;						\
+	    FTYPE sum=0.0;						\
 	    INT32 yn=byz;						\
 	    INT32 y=ay;							\
             INT32 x=0;							\
@@ -1009,9 +1071,18 @@ void init_math_matrix(void)
    add_function("normv",matrix_normv,
 		"function(:object)",0);
 
+   add_function("sum",matrix_sum,
+		"function(:float)",0);
+   add_function("max",matrix_max,
+		"function(:float)",0);
+   add_function("min",matrix_min,
+		"function(:float)",0);
+
    add_function("add",matrix_add,
 		"function(object:object)",0);
    add_function("`+",matrix_add,
+		"function(object:object)",0);
+   add_function("sub",matrix_sub,
 		"function(object:object)",0);
    add_function("`-",matrix_sub,
 		"function(object:object)",0);
