@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.30 2000/05/15 21:26:40 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.31 2000/05/16 08:34:49 hubbe Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -236,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.30 2000/05/15 21:26:40 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.31 2000/05/16 08:34:49 hubbe Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -1095,6 +1095,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       } else {
 	res += indent;
       }
+      res+=
       sprintf("if ((CD%sR(n) == %s)\n"
 	      "#ifdef SHARED_NODES_MK2\n" + indent +
 	      "  || (CD%sR(n) && %s &&\n" + indent +
