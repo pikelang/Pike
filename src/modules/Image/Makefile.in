@@ -1,15 +1,17 @@
-# $Id: Makefile.in,v 1.15 1998/04/20 01:42:20 mirar Exp $
+# $Id: Makefile.in,v 1.16 1998/04/29 22:02:04 mirar Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image.o font.o togif.o matrix.o pnm.o blit.o \
 	pattern.o dct.o operator.o x.o colortable.o polyfill.o \
-	orient.o polygon.o
+	orient.o
 MODNAME=image
 MODULE_SUBDIRS=encodings
 MODULE_ARCHIVES=encodings/encodings.a
 MODULE_LDFLAGS=@LDFLAGS@
 
 @SET_MAKE@
+
+
 
 @dynamic_module_makefile@
 
