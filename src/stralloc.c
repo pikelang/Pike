@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.48 1998/10/23 02:40:25 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.49 1998/10/29 16:37:33 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -453,7 +453,7 @@ struct pike_string *end_shared_string(struct pike_string *s)
   switch(s->size_shift)
   {
     default:
-      fatal("ARGHEL!\n");
+      fatal("ARGHEL! size_shift:%d\n", s->size_shift);
 
     case 2:
       switch(find_magnitude2(STR2(s),s->len))
