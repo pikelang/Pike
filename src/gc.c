@@ -352,7 +352,7 @@ int gc_external_mark(void *a)
     if(a==check_for)
     {
       char *tmp=found_where;
-      found_where="externally";
+      found_where=" externally";
       gdb_gc_stop_here(a);
       found_where=tmp;
 
