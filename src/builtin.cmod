@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.115 2003/02/08 03:49:22 mast Exp $
+|| $Id: builtin.cmod,v 1.116 2003/02/10 18:57:21 grendel Exp $
 */
 
 #include "global.h"
@@ -743,9 +743,9 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
 /*! @decl mixed m_delete(object|mapping map, mixed index)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
- *! that function will be called with @[index] as the signle argument.
+ *! that function will be called with @[index] as its single argument.
  *!
- *! Other wise if @[map] is a mapping the entry with index @[index]
+ *! Otherwise if @[map] is a mapping the entry with index @[index]
  *! will be removed from @[map] destructively.
  *!
  *! If the mapping does not have an entry with index @[index], nothing is done.
