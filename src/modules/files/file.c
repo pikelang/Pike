@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.167 2000/03/27 12:38:09 grubba Exp $");
+RCSID("$Id: file.c,v 1.168 2000/03/27 12:38:28 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2754,8 +2754,8 @@ int pike_make_pipe(int *fds)
 {
   int res = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
   if (res < 0) return res;
-  if ((fds[0] > MAX_OPEN_FILEDESCRIPTORS) ||
-      (fds[1] > MAX_OPEN_FILEDESCRIPTORS)) {
+  if ((fds[0] >= MAX_OPEN_FILEDESCRIPTORS) ||
+      (fds[1] >= MAX_OPEN_FILEDESCRIPTORS)) {
     close(fds[0]);
     close(fds[1]);
 #ifdef EMFILE
