@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.221 1999/12/09 01:53:56 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.222 1999/12/11 23:36:46 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1267,6 +1267,20 @@ void f_this_object(INT32 args)
   }else{
     push_int(0);
   }
+}
+
+node *fix_this_object_type(node *n)
+{
+  free_string(n->type);
+  type_stack_mark();
+  push_type_int(new_program->id);
+  push_type(1);		/* We are rather sure that we contain ourselves... */
+  push_type(T_OBJECT);
+  n->type = pop_unfinished_type();
+  if (n->parent) {
+    n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+  }
+  return NULL;
 }
 
 void f_throw(INT32 args)
@@ -5446,7 +5460,8 @@ void init_builtin_efuns(void)
 	   tOr3(tFunc(tOr(tStr,tArray),tArr(tInt)),
 		tFunc(tOr(tMap(tSetvar(1,tMix),tMix),tSet(tSetvar(1,tMix))),
 		      tArr(tVar(1))),
-		tFunc(tOr(tObj,tPrg),tArr(tStr))),OPT_TRY_OPTIMIZE,fix_indices_type,0);
+		tFunc(tOr(tObj,tPrg),tArr(tStr))),
+	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
   
 /* function(mixed:int) */
   ADD_EFUN("intp", f_intp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
@@ -5566,7 +5581,8 @@ void init_builtin_efuns(void)
   ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);
   
 /* function(:object) */
-  ADD_EFUN("this_object", f_this_object,tFunc(tNone,tObj),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN2("this_object", f_this_object,tFunc(tNone,tObj),
+	    OPT_EXTERNAL_DEPEND, fix_this_object_type, 0);
   
 /* function(mixed:void) */
   ADD_EFUN("throw",f_throw,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);
