@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.17 1999/07/25 22:15:27 grubba Exp $ */
+/* $Id: bmp.c,v 1.18 1999/07/29 21:57:18 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.17 1999/07/25 22:15:27 grubba Exp $
+**!	$Id: bmp.c,v 1.18 1999/07/29 21:57:18 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.17 1999/07/25 22:15:27 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.18 1999/07/29 21:57:18 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -44,6 +44,13 @@ extern void f_add(INT32 args);
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
+
+/*
+ * Some popular strings.
+ */
+static struct pike_string *rle_string = NULL;
+static struct pike_string *bpp_string = NULL;
+static struct pike_string *colortable_string = NULL;
 
 static INLINE void push_ubo_32bit(unsigned long x)
 {
@@ -161,17 +168,13 @@ void img_bmp_encode(INT32 args)
       else if (sp[1-args].type==T_MAPPING)
       {
 	 struct svalue *v;
-	 struct pike_string *qs;
 
-	 MAKE_CONSTANT_SHARED_STRING(qs,"rle");	/* LEAK */
-	 if (parameter_int(sp+1-args,qs,&rle))
+	 if (parameter_int(sp+1-args, rle_string, &rle))
 	    rle=!!rle;
 
-	 MAKE_CONSTANT_SHARED_STRING(qs,"bpp");	/* LEAK */
-	 parameter_int(sp+1-args,qs,&bpp);
+	 parameter_int(sp+1-args, bpp_string, &bpp);
 
-	 MAKE_CONSTANT_SHARED_STRING(qs,"colortable");	/* LEAK */
-	 if (parameter(sp+1-args,qs,&v))
+	 if (parameter(sp+1-args, colortable_string, &v))
 	 {
 	    if (v->type!=T_OBJECT  ||
 		!(nct=(struct neo_colortable*)
@@ -439,6 +442,7 @@ void img_bmp_encode(INT32 args)
       stack_swap();
       pop_stack();
    }
+   if (oc) free_object(oc);
    stack_swap();
    pop_stack();  /* get rid of colortable & source objects */
 }
@@ -1019,6 +1023,10 @@ void img_bmp_decode(INT32 args)
 
 void init_image_bmp(void)
 {
+   rle_string = make_shared_string("rle");
+   bpp_string = make_shared_string("bpp");
+   colortable_string = make_shared_string("colortable");
+
    add_function("encode",img_bmp_encode,
 		"function(object,void|object|int|mapping:string)",0);
    add_function("_decode",img_bmp__decode,
@@ -1031,4 +1039,7 @@ void init_image_bmp(void)
 
 void exit_image_bmp(void)
 {
+   free_string(rle_string);
+   free_string(bpp_string);
+   free_string(colortable_string);
 }
