@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.39 1999/06/30 18:34:54 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.40 1999/08/15 18:23:27 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1129,6 +1129,8 @@ static void low_pike_sprintf(struct string_builder *r,
 	GET_STRING(s);
 	fsp->b=MKPCHARP_STR(s);
 	fsp->len=s->len;
+	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision < fsp->len)
+	  fsp->len = (fsp->precision < 0 ? 0 : fsp->precision);
 	break;
       }
       }
