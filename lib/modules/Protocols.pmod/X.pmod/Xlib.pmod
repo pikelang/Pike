@@ -238,7 +238,7 @@ class Display
     object w;
     array a;
     
-    werror(sprintf("Event: %s\n", event->type));
+//     werror(sprintf("Event: %s\n", event->type));
     if (event->wid && (w = lookup_id(event->wid))
 	&& (a = (w->event_callbacks[event->type])))
       {
@@ -414,7 +414,7 @@ class Display
 		    break;
 		  }
 #endif
-		werror(sprintf("Xlib: Received error %O\n", m));
+// 		werror(sprintf("Xlib: Received error %O\n", m));
 		return ({ ACTION_ERROR, m });
 	      }
 	    else if (type == "Reply")
