@@ -42,10 +42,10 @@ class FILE {
     /* Public functions. */
     string gets()
     {
-      int p,tmp=bpos;
-      while((p=search(b, "\n", tmp)) == -1)
+      int p,tmp=0;
+      while((p=search(b, "\n", bpos+tmp)) == -1)
       {
-	tmp=strlen(b);
+	tmp=strlen(b)-bpos;
 	if(!get_data()) return 0;
       }
       return extract(p-bpos, 1);
