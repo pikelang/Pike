@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.21 2003/11/04 22:24:39 bill Exp $
+// $Id: module.pike,v 1.22 2003/11/06 01:15:45 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.21 $"/" ")[1];
+constant version = ("$Revision: 1.22 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -20,6 +20,7 @@ string bin_path=combine_path(src_path,"../bin");
 #else
 string src_path=include_path;
 string bin_path=include_path;
+#endif
 
 // this is not the ideal location for all systems, but it's a start.
 string local_module_path="$$HOME/lib/pike/modules";
@@ -31,7 +32,6 @@ string system_module_path=master()->system_module_path[-1];
 // where do we install the documentation?
 string system_doc_path;
 
-#endif
 string run_pike;
 
 #define NOT 0
@@ -132,7 +132,8 @@ void do_make(array(string) cmd)
 
   if(search(cmd, "testsuite")!=-1)
     lmp="./plib/modules";
-  else lmp = local_module_path;
+  else
+    lmp = local_module_path;
 
   // we should try to find the core autodoc file
   if(file_stat(combine_path(system_module_path, "../../doc/src/core_autodoc.xml")))
