@@ -86,12 +86,13 @@ PIKECLASS FFT
 
 	  THIS->r_out = malloc(sizeof(fftw_real)*n);
 
-	  if (THIS->r_rc_plan!=n)
+	  if (THIS->r_rc_plan_size != n)
 	    {
-	      if (THIS->r_rc_plan>0)
+	      if (THIS->r_rc_plan_size > 0)
 		rfftw_destroy_plan(THIS->r_rc_plan);
-	      THIS->r_rc_plan = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
-	      THIS->r_rc_plan_size=n;
+	      THIS->r_rc_plan =
+		rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+	      THIS->r_rc_plan_size = n;
 	    };
 	  rfftw_one(THIS->r_rc_plan, THIS->r_in, THIS->r_out);
 
@@ -196,10 +197,11 @@ PIKECLASS FFT
 
       if (THIS->r_cr_plan_size!=n)
 	{
-	  if (THIS->r_cr_plan>0)
+	  if (THIS->r_cr_plan_size > 0)
 	    rfftw_destroy_plan(THIS->r_cr_plan);
-	  THIS->r_cr_plan = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);
-	  THIS->r_cr_plan_size=n;
+	  THIS->r_cr_plan =
+	    rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);
+	  THIS->r_cr_plan_size = n;
 	}
 
       rfftw_one(THIS->r_cr_plan, THIS->r_in, THIS->r_out);
