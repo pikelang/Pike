@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.61 2003/05/17 20:29:27 grubba Exp $
+|| $Id: jvm.c,v 1.62 2003/09/17 19:55:21 bill Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.61 2003/05/17 20:29:27 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.62 2003/09/17 19:55:21 bill Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3650,7 +3650,7 @@ PIKE_MODULE_INIT
   pike_add_function("get_version", f_get_version, "function(:int)", 0);
   pike_add_function("find_class", f_find_class, "function(string:object)", 0);
   pike_add_function("define_class", f_define_class,
-		    "function(object,string:object)", 0);
+		    "function(string,object,string:object)", 0);
   pike_add_function("exception_check", f_exception_check, "function(:int)", 0);
   pike_add_function("exception_occurred", f_exception_occurred,
 		    "function(:object)", 0);

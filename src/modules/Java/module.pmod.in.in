@@ -56,6 +56,112 @@ static array unwrap_args(array a)
 		      });
 }
 
+//!
+jobject JString(string s)
+{
+  return pkg["java/lang/String"]->
+    _constructor("(Ljava/lang/String;)V")(s);
+}
+
+//!
+jobject JBoolean(int i)
+{
+  if(i)
+   return pkg["java/lang/Boolean"]->_constructor("(Z)V")(1);
+  else
+   return pkg["java/lang/Boolean"]->_constructor("(Z)V")(0);
+}
+
+//!
+jobject JInteger(int i)
+{
+  return pkg["java/lang/Integer"](i);
+}
+
+//!
+jobject JFloat(float f)
+{
+  return pkg["java/lang/Float"]->_constructor("(F)V")(f);
+}
+
+//!
+jobject JHashMap(mapping m)
+{
+  object o=pkg["java/util/HashMap"]();
+  foreach(indices(m), string k)
+  {
+    function a,b;
+    if(intp(k))
+      a=JInteger;
+    else if(floatp(k))
+      a=JFloat;
+    else if(stringp(k))
+      a=lambda(string x){return x;};
+    else if(mappingp(k))
+      a=JHashMap;
+    else if(arrayp(k))
+      a=JArray;
+    else if(objectp(k))
+      a=lambda(object x){return x;};
+
+    if(intp(m[k]))
+      b=JInteger;
+    else if(floatp(m[k]))
+      b=JFloat;
+    else if(stringp(m[k]))
+      b=lambda(string x){return x;};
+    else if(arrayp(m[k]))
+      b=JArray;
+    else if(mappingp(m[k]))
+      b=JHashMap;
+    else if(objectp(k))
+      a=lambda(object x){return x;};
+
+    o->put(a(k), b(m[k]));
+  }
+  return o;
+}
+
+//!
+jobject JArray(array a)
+{
+  object t, o;
+
+  if(sizeof(a) && stringp(a[0]))
+    t=machine->find_class("java/lang/String");
+  else if(sizeof(a) && intp(a[0]))
+    t=machine->find_class("java/lang/Integer");
+  else if(sizeof(a) && floatp(a[0]))
+    t=machine->find_class("java/lang/Float");
+  else if(sizeof(a) && arrayp(a[0]))
+    t=machine->find_class("java/lang/reflect/Array");
+  else if(sizeof(a) && mappingp(a[0]))
+    t=machine->find_class("java/util/HashMap");
+  else if(sizeof(a) && objectp(a[0]))
+    t=machine->find_class("java/lang/Object");
+
+  o=pkg["java/lang/reflect/Array"]->newInstance(t, sizeof(a));
+
+  // let us set the value of each element now
+  for(int i=0; i<sizeof(a); i++)
+  {
+    if(stringp(a[i]))
+      o[i]=a[i];
+    else if(intp(a[i]))
+      o[i]=JInteger(a[i]);
+    else if(floatp(a[i]))
+      o[i]=JFloat(a[i]);
+    else if(mappingp(a[i]))
+      o[i]=JHashMap(a[i]);
+    else if(arrayp(a[i]))
+      o[i]=JArray(a[i]);
+    else if(objectp(a[i]))
+      o[i]=a[i];
+  }
+
+  return o;
+}
+
 static class jmethod {
 
   static object obj;
