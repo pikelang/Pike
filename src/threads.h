@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.114 2001/04/14 09:44:21 hubbe Exp $
+ * $Id: threads.h,v 1.115 2001/08/29 17:13:20 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -62,7 +62,11 @@ struct thread_state {
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;
 #ifdef PROFILING
+#if SIZEOF_LONG_LONG - 0 != 0
   long long time_base;
+#else
+  long time_base;
+#endif
 #endif /* PROFILING */
 };
 
