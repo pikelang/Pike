@@ -1,5 +1,5 @@
 /*
- * $Id: smartlink.c,v 1.1 1999/03/06 01:54:44 grubba Exp $
+ * $Id: smartlink.c,v 1.2 1999/03/06 02:18:43 grubba Exp $
  *
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.1 1999/03/06 01:54:44 grubba Exp $\n"
+	    "$Id: smartlink.c,v 1.2 1999/03/06 02:18:43 grubba Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
       *p = ':';		/* Make sure PATH isn't modified */
       strcat(buffer, "/");
       strcat(buffer, argv[1]);
-      fprintf(stderr, "Trying %s...\n", buffer);
+      /* fprintf(stderr, "Trying %s...\n", buffer); */
       if (!stat(buffer, &stat_buf)) {
 	/* Found. */
 	argv[1] = buffer;
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
       strcpy(buffer, path);
       strcat(buffer, "/");
       strcat(buffer, argv[1]);
-      fprintf(stderr, "Trying %s...\n", buffer);
+      /* fprintf(stderr, "Trying %s...\n", buffer); */
       if (!stat(buffer, &stat_buf)) {
 	/* Found */
 	argv[1] = buffer;
