@@ -531,9 +531,9 @@ string parse_text(Node n, void|String.Buffer ret) {
       foreach(c->get_elements("group"), Node c) {
 	ret->add("<li>");
 	array(Node) d = c->get_elements("item");
-	if(sizeof(d)) {
+	if(sizeof(d->get_attributes()->name-({0}))) {
 	  ret->add("<b>");
-	  ret->add( String.implode_nicely(d->get_attributes()->name) );
+	  ret->add( String.implode_nicely(d->get_attributes()->name-({0})) );
 	  ret->add("</b>");
 	}
 	Node e = c->get_first_element("text");
