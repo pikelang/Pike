@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.197 2003/01/14 19:20:24 mast Exp $
+|| $Id: gc.c,v 1.198 2003/01/15 21:41:28 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.197 2003/01/14 19:20:24 mast Exp $");
+RCSID("$Id: gc.c,v 1.198 2003/01/15 21:41:28 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -2438,6 +2438,7 @@ size_t do_gc(void *ignored, int explicit_call)
 
   if (gc_enabled <= 0 && (gc_enabled < 0 || !explicit_call)) {
     num_allocs = 0;
+    alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
     if (gc_evaluator_callback) {
       remove_callback (gc_evaluator_callback);
       gc_evaluator_callback = NULL;
@@ -2823,7 +2824,7 @@ size_t do_gc(void *ignored, int explicit_call)
 	last_non_gc_time * (1.0 - multiplier);
     }
     else last_non_gc_time = 0;
-    last_gc_end_time = internal_rusage();
+    last_gc_end_time = get_cpu_time();
     if (last_gc_end_time > gc_start_time) {
       last_gc_time = last_gc_end_time - gc_start_time;
       gc_time = gc_time * multiplier +
@@ -3025,8 +3026,8 @@ void dump_gc_info(void)
   fprintf(stderr,"Avg frees per gc           : %f\n",objects_freed);
   fprintf(stderr,"Garbage ratio in last gc   : %f\n", last_garbage_ratio);
 					     
-  fprintf(stderr,"Avg cpu ms between gc      : %f\n", non_gc_time);
-  fprintf(stderr,"Avg cpu ms in gc           : %f\n", gc_time);
+  fprintf(stderr,"Avg cpu "CPU_TIME_UNIT" between gc      : %f\n", non_gc_time);
+  fprintf(stderr,"Avg cpu "CPU_TIME_UNIT" in gc           : %f\n", gc_time);
   fprintf(stderr,"Avg time ratio in gc       : %f\n", gc_time / non_gc_time);
 
   fprintf(stderr,"Garbage strategy in last gc: %s\n",

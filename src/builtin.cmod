@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.107 2003/01/14 19:20:24 mast Exp $
+|| $Id: builtin.cmod,v 1.108 2003/01/15 21:41:28 mast Exp $
 */
 
 #include "global.h"
@@ -442,13 +442,12 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,
 			      "integer in the range -1..1 for 'enabled'");
       if (gc_enabled != set->u.integer) {
-	if (gc_enabled > 0) {
+	if (gc_enabled > 0)
 	  gc_enabled = set->u.integer;
-	  alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
-	}
 	else {
 	  gc_enabled = 1;
-	  alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
+	  if (alloc_threshold == GC_MAX_ALLOC_THRESHOLD)
+	    alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 	}
       }
     }, {
