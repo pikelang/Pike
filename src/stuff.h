@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stuff.h,v 1.17 2004/05/19 00:13:13 nilsson Exp $
+|| $Id: stuff.h,v 1.18 2004/05/31 23:51:27 nilsson Exp $
 */
 
 #ifndef STUFF_H
@@ -19,6 +19,6 @@ PMOD_EXPORT unsigned INT32 my_sqrt(unsigned INT32 n) ATTRIBUTE((const));
 unsigned long find_good_hash_size(unsigned long x) ATTRIBUTE((const));
 /* Prototypes end here */
 
-PMOD_EXPORT extern INT32 hashprimes[32];
+PMOD_EXPORT extern const INT32 hashprimes[32];
 
 #endif

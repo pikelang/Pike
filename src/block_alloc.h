@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.71 2004/04/03 15:55:15 mast Exp $
+|| $Id: block_alloc.h,v 1.72 2004/05/31 23:51:28 nilsson Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -528,7 +528,7 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
 									     \
 void PIKE_CONCAT3(low_init_,DATA,_hash)(size_t size)			     \
 {									     \
-  extern INT32 hashprimes[32];						     \
+  extern const INT32 hashprimes[32];					     \
   extern int my_log2(size_t x);					             \
   PIKE_CONCAT3(init_,DATA,_blocks)();                                        \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
@@ -591,7 +591,7 @@ LOW_PTR_HASH_ALLOC(DATA,BSIZE)                                               \
 static void PIKE_CONCAT(DATA,_rehash)()					     \
 {									     \
   /* Time to re-hash */							     \
-  extern INT32 hashprimes[32];						     \
+  extern const INT32 hashprimes[32];					     \
   struct DATA **old_hash;	                                 	     \
   struct DATA *p;							     \
   PIKE_HASH_T hval;							     \
