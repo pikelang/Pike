@@ -220,7 +220,7 @@ class Readline
     
     return s;
   }
-  
+
   static private string file_completion(string tab)
   {
     string text = gettext();
@@ -233,9 +233,9 @@ class Readline
 
     if(match_directories_only)
       files = Array.filter(files, lambda(string f, string p)
-				  { return (file_stat(p+f)||({0,0}))[1]==-2; },
+				  { return Stdio.is_dir(p + f); },
 			   path[..sizeof(path)-2]*"/"+"/");
-    
+
     switch(sizeof(files))
     {
     case 0:
@@ -243,7 +243,7 @@ class Readline
       break;
     case 1:
       insert(files[0][sizeof(path[-1])..], pos);
-      if((file_stat((path[..sizeof(path)-2]+files)*"/")||({0,0}))[1]==-2)
+      if( Stdio.is_dir( (path[..sizeof(path)-2]+files) * "/" ) )
 	insert("/", getcursorpos());
       break;
     default:
