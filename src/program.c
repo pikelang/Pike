@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.273 2000/09/26 00:17:47 hubbe Exp $");
+RCSID("$Id: program.c,v 1.274 2000/10/01 08:51:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4407,13 +4407,23 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
 PMOD_EXPORT void *parent_storage(int depth)
 {
   struct external_variable_context loc;
+  struct program *p;
+
 
   loc.o=Pike_fp->current_object;
-  if(!loc.o->prog)
-    error("Cannot access parent of destructed object.\n");
+  p=loc.o->prog;
+  if(!p)
+  {
+    /* magic fallback */
+    p=get_program_for_object_being_destructed(loc.o);
+    if(!p)
+    {
+      error("Cannot access parent of destructed object.\n");
+    }
+  }
 
   loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
+  loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);
   
   find_external_context(&loc, depth);
 
