@@ -3,3 +3,4 @@ language.c
 language.h
 peep_engine.c
 Makefile.in
+stamp-h
