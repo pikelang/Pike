@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.20 2003/03/22 22:34:13 mast Exp $
+|| $Id: ia32.h,v 1.21 2003/12/03 12:20:56 grubba Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -112,7 +112,7 @@ void ia32_decode_program(struct program *p);
 #define ENCODE_PROGRAM(P, BUF)	ia32_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	ia32_decode_program(p)
 
-INT32 ins_f_jump(unsigned int b);
+INT32 ins_f_jump(unsigned int b, int backward_jump);
 void update_f_jump(INT32 offset, INT32 to_offset);
 INT32 read_f_jump(INT32 offset);
 

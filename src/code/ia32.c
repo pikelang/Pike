@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.28 2003/12/02 13:49:59 grubba Exp $
+|| $Id: ia32.c,v 1.29 2003/12/03 12:20:56 grubba Exp $
 */
 
 /*
@@ -355,7 +355,7 @@ static void ia32_mark(void)
   PUSH_ADDR( & Pike_interpreter.mark_stack_pointer );
 }
 
-INT32 ins_f_jump(unsigned int b)
+INT32 ins_f_jump(unsigned int b, int backward_jump)
 {
   INT32 ret;
   if(b != F_BRANCH) return -1;
