@@ -69,16 +69,25 @@ object do_method(string method,
 {
   if(!con)
     con = Protocols.HTTP.Query();
-  
-  if(!request_headers)
-    request_headers = ([]);
-  
+
   if(stringp(url))
     url=Standards.URI(url);
 
   if(url->scheme!="http")
     error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	  url->scheme);
+
+  if(!request_headers)
+    request_headers = ([]);
+  mapping default_headers = ([
+    "user-agent" : "Mozilla/4.0 compatible (Pike HTTP client)",
+    "host" : url->host ]);
+
+  if(url->user || url->passwd)
+    default_headers->authorization = "Basic "
+				   + MIME.encode_base64(url->user + ":" +
+							(url->password || ""));
+  request_headers = default_headers | request_headers;
 
   string query=url->query;
   if(query_variables && sizeof(query_variables))
@@ -94,10 +103,7 @@ object do_method(string method,
 
   con->sync_request(url->host,url->port,
 		    method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
-		    ([
-		      "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
-		      "host":url->host
-		    ]) | request_headers, data);
+		    request_headers, data);
   
   if (!con->ok) return 0;
   return con;
