@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.72 1998/05/01 15:57:43 grubba Exp $");
+RCSID("$Id: threads.c,v 1.73 1998/07/05 13:51:50 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -158,16 +158,25 @@ struct thread_starter
 
 void exit_threads_disable(struct object *o)
 {
-  /* fprintf(stderr, "exit_threads_disable(): threads_disabled:%d\n", threads_disabled); */
-  if(threads_disabled)
-    if(!--threads_disabled)
+  THREADS_FPRINTF((stderr, "exit_threads_disable(): threads_disabled:%d\n",
+		   threads_disabled));
+  if(threads_disabled) {
+    if(!--threads_disabled) {
+      THREADS_FPRINTF((stderr, "_exit_threads_disable(): Wake up!\n"));
       co_broadcast(&threads_disabled_change);
+    }
+#ifdef DEBUG
+  } else {
+    fatal("exit_threads_disable() called too many times!\n");
+#endif /* DEBUG */
+  }
 }
 
 void init_threads_disable(struct object *o)
 {
   threads_disabled++;
-  /* fprintf(stderr, "init_threads_disable(): threads_disabled:%d\n", threads_disabled); */
+  THREADS_FPRINTF((stderr, "init_threads_disable(): threads_disabled:%d\n",
+		   threads_disabled));
   while (live_threads) {
     THREADS_FPRINTF((stderr,
 		     "_disable_threads(): Waiting for %d threads to finish\n",
