@@ -2,11 +2,13 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.31 2004/02/29 03:00:02 nilsson Exp $
+ * $Id: X509.pmod,v 1.32 2004/03/17 15:11:25 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
  */
+
+constant dont_dump_module = 1;
 
 #if constant(Standards.ASN1.Types.Sequence) && constant(Crypto.Hash)
 
