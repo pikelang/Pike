@@ -64,3 +64,15 @@ wmml1:
 wmml0:
 	echo Pike-GTK disabled.
 
+#
+# Many machines have problems compiling this file with full optimization.
+#
+
+pgtk.o: pgtk.c
+	@echo "Compiling $< with less optimization" ;\
+	if $(CC) $(NOOPT_CFLAGS) -O -c $< -o $@ ; then : ;\
+	else \
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
+	fi
