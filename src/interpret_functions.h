@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.181 2004/12/18 22:20:04 grubba Exp $
+|| $Id: interpret_functions.h,v 1.182 2004/12/18 22:24:15 grubba Exp $
 */
 
 /*
@@ -1145,7 +1145,8 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
     {
 /*      fprintf(stderr,"******OBJECT OVERLOAD IN TYPEP***** %s\n",get_name_of_type(arg1)); */
       push_text(get_name_of_type(arg1));
-      apply_low(o, fun + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
+      apply_low(o, fun +
+		o->prog->inherits[Pike_sp[-2].subtype].identifier_level, 1);
       arg1=UNSAFE_IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
       pop_stack();
     }
