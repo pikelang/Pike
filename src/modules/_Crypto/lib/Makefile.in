@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.27 2001/01/16 16:01:40 grubba Exp $
+# $Id: Makefile.in,v 1.28 2001/01/19 20:24:12 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -9,7 +9,7 @@ AR=ar
 
 # Reset VPATH
 SRCDIR=@srcdir@
-VPATH=$(SRCDIR):$(SRCDIR)/../include
+VPATH=@srcdir@:@srcdir@/../include
 
 CRYPTO_INCLUDES=$(SRCDIR)/../include
 
