@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.225 1999/12/22 00:26:37 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.226 1999/12/27 18:46:48 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2154,6 +2154,10 @@ void f_compile(INT32 args)
   } else {
     p = compile(sp[-args].u.string, NULL);
   }
+#ifdef PIKE_DEBUG
+  if(!(p->flags & PROGRAM_FINISHED))
+    fatal("Got unfinished program from internal compile().\n");
+#endif
   pop_n_elems(args);
   push_program(p);
 }
