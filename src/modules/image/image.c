@@ -680,6 +680,7 @@ void image_togif(INT32 args)
    char buf[80];
    struct pike_string *a,*b;
    rgb_group *transparent=NULL;
+   struct colortable *ct;
 
    if (args>=3)
    {
@@ -689,9 +690,9 @@ void image_togif(INT32 args)
 
    pop_n_elems(args);
    if (!THIS->img) { error("no image\n");  return; }
-
-   push_string( image_encode_gif( THIS,colortable_quant(THIS),
-				  transparent) );
+   ct=colortable_quant(THIS);
+   push_string( image_encode_gif( THIS,ct, transparent) );
+   colortable_free(ct);
 }
 
 void image_frompnm(INT32 args)

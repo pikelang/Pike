@@ -212,12 +212,11 @@ static void sort_tbl(rgb_hashtbl *ht, int start, int len,
 	      QUANT_MAP_THIS(upper.g), 
 	      QUANT_MAP_THIS(upper.b));
 #endif      
-      for (r = QUANT_MAP_THIS(lower.r); 
-	   r <= QUANT_MAP_THIS(upper.r); r++)
-	 for (g = QUANT_MAP_THIS(lower.g); 
-	      g <= QUANT_MAP_THIS(upper.g); g++)
-	    for (b = QUANT_MAP_THIS(lower.b); 
-		 b <= QUANT_MAP_THIS(upper.b); b++)
+      for(r = QUANT_MAP_THIS(lower.r); r <= QUANT_MAP_THIS(upper.r); r++)
+      {
+	 for(g = QUANT_MAP_THIS(lower.g); g <= QUANT_MAP_THIS(upper.g); g++)
+	 {
+	    for(b = QUANT_MAP_THIS(lower.b); b <= QUANT_MAP_THIS(upper.b); b++)
 	    {
 #ifdef QUANT_DEBUG
 	       fprintf(stderr,"[%d,%d,%d] = %d (%d,%d,%d)\n",r,g,b,idx,ct->clut[idx].r,ct->clut[idx].g,ct->clut[idx].b);
@@ -225,7 +224,7 @@ static void sort_tbl(rgb_hashtbl *ht, int start, int len,
 	       if (ct->map[r][g][b].used)
 	       {
 		  struct map_entry *me;
-		  me=malloc(sizeof(struct map_entry));
+		  me=(struct map_entry *)xalloc(sizeof(struct map_entry));
 		  me->used=1;
 		  me->cl=idx;
 		  me->next=ct->map[r][g][b].next;
@@ -238,69 +237,71 @@ static void sort_tbl(rgb_hashtbl *ht, int start, int len,
 		  ct->map[r][g][b].cl=idx;
 	       }
 	    }
+	 }
+      }
    }
 }
 
 
 struct colortable *colortable_quant(struct image *img)
 {
-   rgb_hashtbl *tbl;
-   INT32 i,j;
-   INT32 sz = img->xsize * img->ysize;
-   rgb_entry entry;
-   coltab *ct;
-   rgb_group black,white;
+  rgb_hashtbl *tbl;
+  INT32 i,j;
+  INT32 sz = img->xsize * img->ysize;
+  rgb_entry entry;
+  coltab *ct;
+  rgb_group black,white;
 
 #ifdef QUANT_DEBUG
-   fprintf(stderr,"img_quant called\n");
+  fprintf(stderr,"img_quant called\n");
 #endif
 
-   ct = malloc(sizeof(coltab));
+  ct = malloc(sizeof(coltab));
 
-   MEMSET(ct,0,sizeof(coltab));
+  if (!ct) error("Out of memory.\n");
 
-   if (!ct) error("Out of memory.\n");
+  MEMSET(ct,0,sizeof(coltab));
 
-   tbl = img_rehash(NULL, 8192 /*(img->xsize*img->ysize) / 6*/);
-   for (i=0;i<sz;i++)
-   {
-      entry.rgb = img->img[i];
-      entry.count = 0;
-      hash_enter(tbl, &entry);
-      if (tbl->entries > tbl->len * 3 / 4)
-	 tbl = img_rehash(tbl, tbl->len * 2);
-   }
+  tbl = img_rehash(NULL, 8192 /*(img->xsize*img->ysize) / 6*/);
+  for (i=0;i<sz;i++)
+  {
+    entry.rgb = img->img[i];
+    entry.count = 0;
+    hash_enter(tbl, &entry);
+    if (tbl->entries > tbl->len * 3 / 4)
+      tbl = img_rehash(tbl, tbl->len * 2);
+  }
 
-   /* Compact the hash table */
+  /* Compact the hash table */
 
 #ifdef QUANT_DEBUG
-   fprintf(stderr,"Compacting\n");
+  fprintf(stderr,"Compacting\n");
 #endif
-   i = tbl->len - 1;
-   j = 0;
-   while (i > tbl->entries)
-   {
-      while ((i >= tbl->entries) && tbl->tbl[i].count == 0) i--;
-      while ((j <  tbl->entries) && tbl->tbl[j].count != 0) j++;
-      if (j<i)
-      {
-	 tbl->tbl[j] = tbl->tbl[i];
-	 tbl->tbl[i].count = 0;
-      }
-   }
-   tbl->len = tbl->entries;
+  i = tbl->len - 1;
+  j = 0;
+  while (i > tbl->entries)
+  {
+    while ((i >= tbl->entries) && tbl->tbl[i].count == 0) i--;
+    while ((j <  tbl->entries) && tbl->tbl[j].count != 0) j++;
+    if (j<i)
+    {
+      tbl->tbl[j] = tbl->tbl[i];
+      tbl->tbl[i].count = 0;
+    }
+  }
+  tbl->len = tbl->entries;
 
-   white.r=white.g=white.b=255;
-   black.r=black.g=black.b=0;
+  white.r=white.g=white.b=255;
+  black.r=black.g=black.b=0;
 
-   sort_tbl(tbl, 0, tbl->len, 0, 0, ct, black, white);
+  sort_tbl(tbl, 0, tbl->len, 0, 0, ct, black, white);
 
 #ifdef QUANT_DEBUG
-   fprintf(stderr,"img_quant done, %d colors found\n", tbl->entries);
+  fprintf(stderr,"img_quant done, %d colors found\n", tbl->entries);
 #endif
 
-   free(tbl);
-   return ct;
+  free(tbl);
+  return ct;
 }
 
 #define sq(x) ((x)*(x))
@@ -348,15 +349,19 @@ void colortable_free(struct colortable *ct)
 {
    int r,g,b;
    for (r=0; r<QUANT_MAP_REAL; r++)
+   {
       for (g=0; g<QUANT_MAP_REAL; g++)
+      {
 	 for (b=0; b<QUANT_MAP_REAL; b++)
 	 {
 	    struct map_entry *me;
-	    if ( (me=ct->map[r][g][b].next) )
+	    while (me=ct->map[r][g][b].next)
 	    {
 	       ct->map[r][g][b].next=me->next;
-	       free(me);
+	       free((char *)me);
 	    }
 	 }
-   free(ct);
+      }
+   }
+   free((char *)ct);
 }
