@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.18 1998/03/19 23:49:37 grubba Exp $
+ * $Id: sql.pike,v 1.19 1998/03/20 21:55:14 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,8 +8,8 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.18 1998/03/19 23:49:37 grubba Exp $
-//. Author:	Henrik Grubbström (grubba@infovav.se)
+//. RCSID:	$Id: sql.pike,v 1.19 1998/03/20 21:55:14 grubba Exp $
+//. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
 //.
@@ -19,9 +19,6 @@
 //.
 
 #define throw_error(X)	throw(({ (X), backtrace() }))
-
-// import Array;
-// import Simulate;
 
 //. + master_sql
 //.   Object to use for the actual SQL-queries.
