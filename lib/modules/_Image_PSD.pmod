@@ -50,7 +50,7 @@ class Layer
 int foo;
 Layer decode_layer(mapping layer, mapping i)
 {
-  int stt = gethrtime();
+//   int stt = gethrtime();
   Layer l = Layer();
   int use_cmap;
   l->opacity = layer->opacity;
@@ -96,7 +96,7 @@ Layer decode_layer(mapping layer, mapping i)
        }
        if( mode )
        {
-         int st = gethrtime();
+//          int st = gethrtime();
          if( !sizeof(lays) )
            lays += ({ 
              Image.Layer(___decode_image_channel(l->width, l->height,
@@ -109,13 +109,13 @@ Layer decode_layer(mapping layer, mapping i)
              "mode":mode, 
            ]) )
            }));
-         werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+//          werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
          c->data = 0;
        }
      }
-     int st = gethrtime();
+//      int st = gethrtime();
      l->image = Image.lay( lays )->image();
-     werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+//      werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
      break;
 
    case CMYK:
@@ -138,7 +138,7 @@ Layer decode_layer(mapping layer, mapping i)
      })*24;
      break;
   }
-  int st = gethrtime();
+//   int st = gethrtime();
   foreach(layer->channels, mapping c)
   {
     object tmp;
@@ -191,8 +191,8 @@ Layer decode_layer(mapping layer, mapping i)
     }
     c->data = 0;
   }
-  werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
-  werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
+//   werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+//   werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
   return l;
 }
 
@@ -213,13 +213,18 @@ mapping __decode( mapping|string what, mapping|void options )
 }
 
 
-array(object) decode_background( mapping data, array bg )
+array(object) decode_background( mapping data )
 {
   object img;
+  if( data->depth == 1 &&
+      data->mode != Greyscale )
+    return ({ 0, 0 });
+
   if( data->image_data )
     img = ___decode_image_data(data->width,       data->height, 
                                data->channels,    data->mode,
                                data->compression, data->image_data,
+
                                data->color_data);
   return ({ img, 0 });
 }
@@ -272,18 +277,15 @@ array decode_layers( string|mapping what, mapping|void opts )
     what = __decode( what );
   
   mapping lopts = ([ "tiled":1, ]);
-  if( opts->background )
-  {
-    lopts->image = Image.Image( 32, 32, opts->background );
-    lopts->alpha = Image.Image( 32, 32, Image.Color.white );
-    lopts->alpha_value = 1.0;
-  } else {
-    lopts->image = Image.Image( 32, 32, Image.Color.black );
-    lopts->alpha = Image.Image( 32, 32, Image.Color.black );
-    lopts->alpha_value = 0.0;
-  }
 
-  [object img,object alpha] = decode_background( what, opts->background );
+   if( opts->background )
+   {
+     lopts->image = Image.Image( 32, 32, opts->background );
+     lopts->alpha = Image.Image( 32, 32, Image.Color.white );
+     lopts->alpha_value = 1.0;
+   }
+
+  [object img,object alpha] = decode_background( what );
   if( img )
   {
     lopts->image = img;
@@ -293,15 +295,17 @@ array decode_layers( string|mapping what, mapping|void opts )
       lopts->alpha = 0;
     lopts->alpha_value = 1.0;
   }
-  array layers = ({ Image.Layer( lopts ) });
+  array layers;
+  if( lopts->image )
+    layers = ({ Image.Layer( lopts ) });
+  else
+    layers = ({});
 
   foreach(reverse(what->layers), object l)
   {
     if( string m = translate_mode( l->mode ) )
     {
-      Image.Layer lay = Image.Layer( l->image,
-                                   l->alpha,
-                                   m );
+      Image.Layer lay = Image.Layer( l->image, l->alpha, m );
       l->image = 0; l->alpha = 0;
       lay->set_alpha_value( l->opacity / 255.0 );
       lay->set_offset( l->xoffset, l->yoffset );
