@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.327 2004/09/01 15:04:24 grubba Exp $
+|| $Id: file.c,v 1.328 2004/09/02 11:22:34 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.327 2004/09/01 15:04:24 grubba Exp $");
+RCSID("$Id: file.c,v 1.328 2004/09/02 11:22:34 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2792,7 +2792,10 @@ static void low_dup(struct object *toob,
   /* Enforce that stdin, stdout and stderr aren't closed during
    * normal operation.
    */
-  if (to->box.fd <= 2) to->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  if (to->box.fd <= 2) {
+    to->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+    dmalloc_accept_leak_fd(to->box.fd);
+  }
 
   /* Note: This previously enabled all events for which there were
    * callbacks instead of copying the event settings from the source
@@ -3946,16 +3949,22 @@ PIKE_MODULE_INIT
 
   o=file_make_object_from_fd(0, FILE_READ , fd_CAN_NONBLOCK);
   ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  dmalloc_register_fd(0);
+  dmalloc_accept_leak_fd(0);
   add_object_constant("_stdin",o,0);
   free_object(o);
 
   o=file_make_object_from_fd(1, FILE_WRITE, fd_CAN_NONBLOCK);
   ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  dmalloc_register_fd(1);
+  dmalloc_accept_leak_fd(1);
   add_object_constant("_stdout",o,0);
   free_object(o);
 
   o=file_make_object_from_fd(2, FILE_WRITE, fd_CAN_NONBLOCK);
   ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  dmalloc_register_fd(2);
+  dmalloc_accept_leak_fd(2);
   add_object_constant("_stderr",o,0);
   free_object(o);
 
