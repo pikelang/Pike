@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.43 2002/03/17 11:34:34 nilsson Exp $
+# $Id: Makefile,v 1.44 2002/03/18 00:10:53 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -117,6 +117,7 @@ build/src/post_modules/GTK/refdoc/images: build/src
 	@test -d build/src/post_modules/GTK/refdoc/images || \
 	  mkdir build/src/post_modules/GTK/refdoc/images
 
+
 # Development targets
 
 touch-mirardoc:
@@ -124,10 +125,6 @@ touch-mirardoc:
 	  uniq`
 	@touch `grep -r "//\! module" ../lib/modules/* | cut -d: -f1 | \
 	  uniq`
-
-nilsson:
-	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  build/modref.xml structure/modref.html modref
 
 
 # Cleanup
