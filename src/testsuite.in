@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.321 2000/08/18 19:36:30 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.322 2000/08/21 23:48:24 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -43,6 +43,14 @@ test_eval_error([[class Foo {
   void foo() {destruct(this_object());bar();}
 };
   Foo()->foo();
+]])
+
+test_do([[
+  void foo (int i) {
+    multiset res = (<>);
+    if (i) res = res;
+  };
+  foo (1);
 ]])
 
 test_any([[int a=0xffffffff; return a+17]], 0x100000010);
