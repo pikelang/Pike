@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.70 2001/09/24 16:58:33 grubba Exp $");
+RCSID("$Id: peep.c,v 1.71 2002/05/10 22:30:33 mast Exp $");
 
 static void asm_opt(void);
 
@@ -320,7 +320,7 @@ void assemble(void)
       break;
 
     default:
-      switch(instrs[c->opcode - F_OFFSET].flags)
+      switch(instrs[c->opcode - F_OFFSET].flags & I_IS_MASK)
       {
       case I_ISJUMP:
 #ifdef INS_F_JUMP
@@ -362,6 +362,11 @@ void assemble(void)
 #endif
       }
     }
+
+#ifdef ADJUST_PIKE_PC
+    if (instrs[c->opcode - F_OFFSET].flags & I_PC_AT_NEXT)
+      ADJUST_PIKE_PC (PIKE_PC);
+#endif
 
 #ifdef ALIGN_PIKE_JUMPS
     if(e+1 < length)
