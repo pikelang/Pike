@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.260 2001/08/16 04:38:51 mast Exp $");
+RCSID("$Id: language.yacc,v 1.261 2001/09/28 00:01:45 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3050,6 +3050,7 @@ expr4: string
   }
   | expr4 '(' error ';' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
   | expr4 '(' error '}' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
+  | expr4 '[' '*' ']'   { $$=mknode(F_AUTO_MAP_MARKER, $1, 0); }
   | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
   | expr4 '['  comma_expr_or_zero expected_dot_dot comma_expr_or_maxint ']'
   {

@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.93 2001/09/24 14:17:34 grubba Exp $
+ * $Id: interpret_functions.h,v 1.94 2001/09/28 00:01:44 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -196,6 +196,13 @@ OPCODE1(F_NEG_NUMBER, "push -int", {
 OPCODE1(F_CONSTANT, "constant", {
   push_svalue(& Pike_fp->context.prog->constants[arg1].sval);
   print_return_value();
+});
+
+OPCODE0(F_SWAP,"swap",{
+  struct svalue tmp;
+  tmp=Pike_sp[-2];
+  Pike_sp[-2]=Pike_sp[-1];
+  Pike_sp[-1]=tmp;
 });
 
 /* The rest of the basic 'push value' instructions */	

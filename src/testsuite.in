@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.453 2001/09/23 10:34:57 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.454 2001/09/28 00:01:45 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1976,6 +1976,31 @@ test_eq((["static":42])->static,42)
 
 test_compile_any(class A {}; class B { inherit A; })
 
+
+// Automap tests
+
+test_equal([[ ({10,20})[*] + 30  ]], [[ ({40, 50}) ]])
+test_equal([[ 30 + ({10,20})[*]  ]], [[ ({40, 50}) ]])
+test_equal([[ ({1,2})[*] + ({10,20})[*]  ]], [[ ({11, 22}) ]])
+
+
+test_equal([[ ({ ({10,20}), ({30,40}) })[*][*] + 5  ]],
+           [[ ({ ({15,25}), ({35,45}) }) ]])
+
+test_equal([[ 5 + ({ ({10,20}), ({30,40}) })[*][*] ]],
+           [[ ({ ({15,25}), ({35,45}) }) ]])
+
+test_any_equal([[
+  array a=({ ({10,20}), ({30,40}) });
+  a[*][*] += 5;
+  return a;
+]],
+[[ ({ ({15,25}), ({35,45}) }) ]])
+
+test_equal([[ "foo"[ ({ 2,0,1,2 })[*] ]  ]],
+           [[ ({ 'o', 'f', 'o', 'o' }) ]])
+
+// map tests
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); return map(a,`[],1);,
                ({0,1,1}))
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); map(a,`[]=,1,0); return a;,

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.132 2001/09/24 14:26:52 grubba Exp $");
+RCSID("$Id: docode.c,v 1.133 2001/09/28 00:01:44 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -454,6 +454,74 @@ int do_lfun_call(int id,node *args)
   return 1;
 }
 
+/*
+ * FIXME: this can be optimized, but is not really used
+ * enough to be worth it yet.
+ */
+static void emit_apply_builtin(char *func)
+{
+  INT32 tmp1;
+  struct pike_string *n1=make_shared_string(func);
+  node *n=find_module_identifier(n1,0);
+  free_string(n1);
+
+  switch(n?n->token:0)
+  {
+    case F_CONSTANT:
+      tmp1=store_constant(&n->u.sval,
+			  n->tree_info & OPT_EXTERNAL_DEPEND,
+			  n->name);
+      if(n->u.sval.type == T_FUNCTION &&
+	 n->u.sval.subtype == FUNCTION_BUILTIN)
+	emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
+      else
+	emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+      break;
+
+    default:
+      my_yyerror("docode: Failed to make call to %s",func);
+  }
+  free_node(n);
+}
+
+static int do_encode_automap_arg_list(node *n,
+				      INT16 flags)
+{
+  int stack_depth_save = current_stack_depth;
+  if(!n) return 0;
+  switch(n->token)
+  {
+    default:
+      return do_docode(n, flags);
+
+    case F_ARG_LIST:
+    {
+      int ret;
+      ret=do_encode_automap_arg_list(CAR(n), flags);
+      current_stack_depth=stack_depth_save + ret;
+      ret+=do_encode_automap_arg_list(CDR(n), flags);
+      current_stack_depth=stack_depth_save + ret;
+      return ret;
+    }
+
+    case F_AUTO_MAP_MARKER:
+    {
+      int depth=0;
+      while(n->token == F_AUTO_MAP_MARKER)
+      {
+	n=CAR(n);
+	depth++;
+      }
+      emit0(F_MARK);
+      code_expression(n, 0, "[*]");
+      emit1(F_NUMBER, depth);
+      emit_apply_builtin("__builtin.automap_marker");
+      return 1;
+    }
+  }
+}
+
+
 static int do_docode2(node *n, INT16 flags)
 {
   ptrdiff_t tmp1,tmp2,tmp3;
@@ -480,6 +548,7 @@ static int do_docode2(node *n, INT16 flags)
       case F_ARG_LIST:
       case F_COMMA_EXPR:
       case F_EXTERNAL:
+      case F_AUTO_MAP_MARKER:
 	  break;
       }
   }
@@ -654,54 +723,120 @@ static int do_docode2(node *n, INT16 flags)
     if(tmp1 != 2)
       fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
 #endif
+    
 
-    if(n->token == F_ADD_EQ && (flags & DO_POP))
+    if(CAR(n)->token == F_AUTO_MAP_MARKER ||
+       CDR(n)->token == F_AUTO_MAP_MARKER)
     {
-      code_expression(CDR(n), 0, "assignment");
-      emit0(F_ADD_TO_AND_POP);
-      return 0;
-    }
+      char *opname;
+      struct pike_string *opstr;
+      node *op;
 
-    if(match_types(CAR(n)->type, array_type_string) ||
-       match_types(CAR(n)->type, string_type_string) ||
-       match_types(CAR(n)->type, mapping_type_string) ||
-       match_types(CAR(n)->type, object_type_string))
-    {
-      code_expression(CDR(n), 0, "assignment");
-      emit0(F_LTOSVAL2);
+      emit0(F_MARK);
+      
+      if(CAR(n)->token == F_AUTO_MAP_MARKER)
+      {
+	int depth=0;
+	node *tmp=CAR(n);
+	while(tmp->token == F_AUTO_MAP_MARKER)
+	{
+	  depth++;
+	  tmp=CAR(tmp);
+	}
+	emit0(F_MARK);
+	emit0(F_LTOSVAL);
+	emit1(F_NUMBER,depth);
+	emit_apply_builtin("__builtin.automap_marker");
+      }else{
+	emit0(F_LTOSVAL);
+      }
+
+      switch(n->token)
+      {
+	case F_ADD_EQ: opname="`+"; break;
+	case F_AND_EQ: opname="`&"; break;
+	case F_OR_EQ:  opname="`|"; break;
+	case F_XOR_EQ: opname="`^"; break;
+	case F_LSH_EQ: opname="`<<"; break;
+	case F_RSH_EQ: opname="`>>"; break;
+	case F_SUB_EQ: opname="`-"; break;
+	case F_MULT_EQ:opname="`*"; break;
+	case F_MOD_EQ: opname="`%"; break;
+	case F_DIV_EQ: opname="`/"; break;
+	default:
+	  fatal("Really???\n");
+	  opname="`make gcc happy";
+      }
+
+      opstr=findstring(opname);
+      if(!opstr || !(op=find_module_identifier(opstr, 0)))
+      {
+	my_yyerror("Failed to find operator %s\n",opname);
+	do_pop(2);
+	return 1;
+      }
+      
+      code_expression(op, 0, "assignment");
+      free_node(op);
+      emit0(F_SWAP);
+
+      if(CDR(n)->token == F_AUTO_MAP)
+      {
+	do_encode_automap_arg_list(CDR(n), 0);
+      }else{
+	code_expression(CDR(n), 0, "assignment");
+      }
+      emit_apply_builtin("__automap__");
     }else{
-      emit0(F_LTOSVAL);
-      code_expression(CDR(n), 0, "assignment");
+      if(n->token == F_ADD_EQ && (flags & DO_POP))
+      {
+	code_expression(CDR(n), 0, "assignment");
+	emit0(F_ADD_TO_AND_POP);
+	return 0;
+      }
+      
+      if(CAR(n)->token != F_AUTO_MAP &&
+	 (match_types(CAR(n)->type, array_type_string) ||
+	  match_types(CAR(n)->type, string_type_string) ||
+	  match_types(CAR(n)->type, mapping_type_string) ||
+	  match_types(CAR(n)->type, object_type_string)))
+      {
+	code_expression(CDR(n), 0, "assignment");
+	emit0(F_LTOSVAL2);
+      }else{
+	emit0(F_LTOSVAL);
+	code_expression(CDR(n), 0, "assignment");
+      }
+      
+      
+      switch(n->token)
+      {
+	case F_ADD_EQ:
+	  if(CAR(n)->type == int_type_string &&
+	     CDR(n)->type == int_type_string)
+	  {
+	    emit0(F_ADD_INTS);
+	  }
+	  else if(CAR(n)->type == float_type_string &&
+		  CDR(n)->type == float_type_string)
+	  {
+	    emit0(F_ADD_FLOATS);
+	  }else{
+	    emit0(F_ADD);
+	  }
+	  break;
+	case F_AND_EQ: emit0(F_AND); break;
+	case F_OR_EQ:  emit0(F_OR);  break;
+	case F_XOR_EQ: emit0(F_XOR); break;
+	case F_LSH_EQ: emit0(F_LSH); break;
+	case F_RSH_EQ: emit0(F_RSH); break;
+	case F_SUB_EQ: emit0(F_SUBTRACT); break;
+	case F_MULT_EQ:emit0(F_MULTIPLY);break;
+	case F_MOD_EQ: emit0(F_MOD); break;
+	case F_DIV_EQ: emit0(F_DIVIDE); break;
+      }
     }
-
-
-    switch(n->token)
-    {
-      case F_ADD_EQ:
-	if(CAR(n)->type == int_type_string &&
-	   CDR(n)->type == int_type_string)
-	{
-	  emit0(F_ADD_INTS);
-	}
-	else if(CAR(n)->type == float_type_string &&
-		CDR(n)->type == float_type_string)
-	{
-	  emit0(F_ADD_FLOATS);
-	}else{
-	 emit0(F_ADD);
-	}
-	break;
-      case F_AND_EQ: emit0(F_AND); break;
-      case F_OR_EQ:  emit0(F_OR);  break;
-      case F_XOR_EQ: emit0(F_XOR); break;
-      case F_LSH_EQ: emit0(F_LSH); break;
-      case F_RSH_EQ: emit0(F_RSH); break;
-      case F_SUB_EQ: emit0(F_SUBTRACT); break;
-      case F_MULT_EQ:emit0(F_MULTIPLY);break;
-      case F_MOD_EQ: emit0(F_MOD); break;
-      case F_DIV_EQ: emit0(F_DIVIDE); break;
-    }
-
+    
     if(flags & DO_POP)
     {
       emit0(F_ASSIGN_AND_POP);
@@ -1904,7 +2039,20 @@ static int do_docode2(node *n, INT16 flags)
   case F_VAL_LVAL:
     return do_docode(CAR(n),flags) +
       do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
-    
+
+  case F_AUTO_MAP:
+    emit0(F_MARK);
+    code_expression(CAR(n), 0, "automap function");
+    do_encode_automap_arg_list(CDR(n),0);
+    emit_apply_builtin("__automap__");
+    return 1;
+
+  case F_AUTO_MAP_MARKER:
+    if(flags & DO_LVALUE) return do_docode(CAR(n), flags);
+    yyerror("[*] not supported here.\n");
+    emit0(F_CONST0);
+    return 1;
+
   default:
     fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
     return 0;			/* make gcc happy */

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.66 2001/09/24 16:46:34 grubba Exp $
+ * $Id: builtin.cmod,v 1.67 2001/09/28 00:01:43 hubbe Exp $
  */
 
 #include "global.h"
@@ -1938,6 +1938,117 @@ PIKECLASS single_string_replace
 
 /*! @endmodule
  */
+
+
+PIKECLASS automap_marker
+{
+  PIKEVAR array arg;
+  PIKEVAR int depth;
+
+  PIKEFUN void create(array a, int d)
+    {
+      if(THIS->arg) free_array(THIS->arg);
+      add_ref(THIS->arg=a);
+      THIS->depth=d;
+    }
+
+  PIKEFUN string _sprintf(int mode, mapping flags)
+    {
+      pop_n_elems(args);
+      push_text("%O%*'[*]'n");
+      if(THIS->arg)
+	ref_push_array(THIS->arg);
+      else
+	push_int(0);
+      push_int(THIS->depth*3);
+      f_sprintf(3);
+    }
+}
+
+
+static void low_automap(int d,
+			int depth,
+			struct svalue *fun,
+			struct svalue *real_args,
+			INT32 args)
+{
+  INT32 x,e,tmp,size=0x7fffffff;
+  struct svalue *tmpargs=Pike_sp - args;
+  struct array *ret;
+
+  for(e=0;e<args;e++)
+  {
+    if(real_args[e].type==T_OBJECT &&
+       real_args[e].u.object->prog == automap_marker_program &&
+       OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
+    {
+#ifdef PIKE_DEBUG
+      if(tmpargs[e].type != T_ARRAY)
+	fatal("Arg in automap is not array!\n");
+#endif
+      tmp=tmpargs[e].u.array->size;
+      if(tmp < size)
+	size=tmp;
+    }
+  }
+
+#ifdef PIKE_DEBUG
+   if(size == 0x7fffffff)
+    fatal("No automap markers found in low_automap\n");
+#endif
+
+  push_array(ret=allocate_array(size));
+
+  for(x=0;x<size;x++)
+  {
+    for(e=0;e<args;e++)
+    {
+      if(real_args[e].type==T_OBJECT &&
+	 real_args[e].u.object->prog == automap_marker_program &&
+	 OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
+      {
+#ifdef PIKE_DEBUG
+	if(x >= tmpargs[e].u.array->size)
+	  fatal("low_automap failed to determine size!\n");
+#endif
+	push_svalue(ITEM(tmpargs[e].u.array)+x);
+      }else{
+	push_svalue(tmpargs+e);
+      }
+    }
+    
+    if(d == depth)
+      apply_svalue(fun,args);
+    else
+      low_automap(d+1,depth,fun,real_args,args);
+    ITEM(ret)[x]=*--Pike_sp;
+  }
+  stack_unlink(args);
+}
+
+
+PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
+  efun;
+{
+  int e,depth=-1;
+  check_stack(args);
+
+  for(e=0;e<args-1;e++)
+  {
+    if(tmpargs[e].type==T_OBJECT &&
+       tmpargs[e].u.object->prog == automap_marker_program)
+    {
+      int tmp=OBJ2_AUTOMAP_MARKER(tmpargs[e].u.object)->depth;
+      if(tmp > depth) depth=tmp;
+      ref_push_array(OBJ2_AUTOMAP_MARKER(tmpargs[e].u.object)->arg);
+    }else{
+      push_svalue(tmpargs+e);
+    }
+  }
+  check_stack(depth * (args+1));
+  low_automap(1,depth,fun,tmpargs,args-1);
+  stack_unlink(args);
+}
 
 void init_builtin(void)
 {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.267 2001/09/24 17:01:41 grubba Exp $");
+RCSID("$Id: las.c,v 1.268 2001/09/28 00:01:45 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -851,9 +851,51 @@ static node *debug_mkemptynode(void)
 
 #define mkemptynode()	dmalloc_touch(node *, debug_mkemptynode())
 
+
+static int is_automap_arg_list(node *n)
+{
+  if(!n) return 0;
+  switch(n->token)
+  {
+    default: return 0;
+    case F_ARG_LIST:
+      return is_automap_arg_list(CAR(n)) ||
+	is_automap_arg_list(CDR(n));
+
+    case F_AUTO_MAP_MARKER: return 1;
+  }
+}
+
+
 node *debug_mknode(short token, node *a, node *b)
 {
   node *res;
+
+  switch(token)
+  {
+    case F_APPLY:
+      if(is_automap_arg_list(b))
+	token=F_AUTO_MAP;
+      break;
+
+    case F_INDEX:
+      switch((is_automap_arg_list(a) << 1) |
+	     is_automap_arg_list(b))
+      {
+	case 1:
+	  res=mkefuncallnode("rows",mknode(F_ARG_LIST,a,copy_node(CAR(b))));
+	  free_node(b);
+	  return res;
+
+	case 2:
+	  res=mkefuncallnode("column",mknode(F_ARG_LIST,copy_node(CAR(a)),b));
+	  free_node(a);
+	  return res;
+
+	case 3:
+	  return mkefuncallnode("`[]",mknode(F_ARG_LIST,a,b));
+      }
+  }
 
 #if defined(PIKE_DEBUG) && !defined(SHARED_NODES)
   if(b && a==b)
@@ -889,6 +931,7 @@ node *debug_mknode(short token, node *a, node *b)
     }
     break;
 
+  case F_AUTO_MAP:
   case F_APPLY:
     {
       unsigned INT16 opt_flags = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
@@ -1170,12 +1213,14 @@ node *debug_mkefuncallnode(char *function, node *args)
 {
   struct pike_string *name;
   node *n;
-  name = findstring(function);
+  name = make_shared_string(function);
   if(!name || !(n=find_module_identifier(name,0)))
   {
+    free_string(name);
     my_yyerror("Internally used efun undefined: %s",function);
     return mkintnode(0);
   }
+  free_string(name);
   n = mkapplynode(n, args);
   return n;
 }
@@ -1625,6 +1670,7 @@ node *recursive_add_call_arg(node *n, node *arg)
 #endif
       break;
 
+    case F_AUTO_MAP:
     case F_APPLY:
       if(CAR(n)->token == F_CONSTANT &&
 	 CAR(n)->u.sval.type == T_FUNCTION &&
@@ -2239,6 +2285,7 @@ node **is_call_to(node *n, c_fun f)
 {
   switch(n->token)
   {
+    case F_AUTO_MAP:
     case F_APPLY:
       if(CAR(n) &&
 	 CAR(n)->token == F_CONSTANT &&
@@ -2422,6 +2469,17 @@ static void low_print_tree(node *foo,int needlval)
     low_print_tree(_CDR(foo),0);
     return;
 
+  case F_AUTO_MAP:
+    fprintf(stderr, "__automap__ ");
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, "(");
+    low_print_tree(_CDR(foo),0);
+    fprintf(stderr, ")");
+    return;
+  case F_AUTO_MAP_MARKER:
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, "[*]");
+    return;
   case F_APPLY:
     low_print_tree(_CAR(foo),0);
     fprintf(stderr, "(");
@@ -2840,9 +2898,14 @@ static void find_written_vars(node *n,
     break;
 
   case F_APPLY:
+  case F_AUTO_MAP:
     if(n->tree_info & OPT_SIDE_EFFECT) {
       p->ext_flags = VAR_USED;
     }
+    break;
+
+  case F_AUTO_MAP_MARKER:
+    find_written_vars(CAR(n), p, lvalue);
     break;
 
   case F_INDEX:
@@ -3244,7 +3307,8 @@ void fix_type_field(node *n)
       fix_type_field(CDR(n));
       if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array */
-	if (CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
+	if (CDR(n)->token != F_INDEX &&
+	    CDR(n)->token != F_ARROW &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
 	  yytype_error("Bad type in assignment.",
 		       CDR(n)->type, CAR(n)->type, 0);
@@ -3284,6 +3348,21 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_AUTO_MAP_MARKER:
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      my_yyerror("Indexing a void expression.");
+      /* The optimizer converts this to an expression returning 0. */
+      copy_pike_type(n->type, zero_type_string);
+    } else {
+      type_a=CAR(n)->type;
+      if(!check_indexing(type_a, int_type_string, n))
+	if(!Pike_compiler->catch_level)
+	  my_yyerror("[*] on non-array.");
+      n->type=index_type(type_a, int_type_string, n);
+    }
+    break;
+
+  case F_AUTO_MAP:
   case F_APPLY:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Calling a void expression.");
@@ -3304,6 +3383,13 @@ void fix_type_field(node *n)
       if (f && (n->type = get_ret_type(f))) {
 	/* Type/argument-check OK. */
 	free_type(f);
+	if(n->token == F_AUTO_MAP)
+	{
+	  push_finished_type(n->type);
+	  push_type(T_ARRAY);
+	  free_type(n->type);
+	  n->type = pop_type();
+	}
 	break;
       }
 
@@ -3333,6 +3419,15 @@ void fix_type_field(node *n)
       if (n->type) {
 	/* Type/argument-check OK. */
 	free_type(s);
+
+	if(n->token == F_AUTO_MAP)
+	{
+	  push_finished_type(n->type);
+	  push_type(T_ARRAY);
+	  free_type(n->type);
+	  n->type = pop_type();
+	}
+
 	break;
       }
 
@@ -4031,6 +4126,7 @@ static void find_usage(node *n, unsigned char *usage,
       return;
     }
 
+  case F_AUTO_MAP:
   case F_APPLY:
     {
       int i;
@@ -4323,6 +4419,7 @@ static node *low_localopt(node *n,
     }
     break;
 
+  case F_AUTO_MAP:
   case F_APPLY:
     {
       int i;
@@ -4333,7 +4430,7 @@ static node *low_localopt(node *n,
       }
       cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
       car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return mknode(F_APPLY, car, cdr);
+      return mknode(n->token, car, cdr);
     }
 
   case F_LVALUE_LIST:
