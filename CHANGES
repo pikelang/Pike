@@ -297,8 +297,8 @@ o ADT.Relation.Binary
                   })
 
 o Audio.Codec and Audio.Format
-    Contain decoders/encoders and format parsers for audio.
-    Currently WAV and MP3.
+    Contain decoders/encoders and format parsers for audio using
+    Ffmpeg library. Currently WAV and MP3.
     Note: The API remains marked "unstable".
 
 o Crypto.md4
@@ -410,7 +410,7 @@ o Math
 
 o MIME
     Added method ext_to_media_type, which returns the MIME media type for
-    a given extension.
+    a given extension. The module know of 469 different file extensions.
 
 o Oracle
     The Oracle database glue now supports CLOBs and BLOBs.
@@ -447,6 +447,17 @@ o SDL
     functionality. Useful for writing games, movie players and other
     graphically intensive applications.
 
+o Shuffler
+    The shuffler module is what in aspect oriented and component based
+    programming is called a connector. This connector provides an easy
+    way to connect a data source to a file socket and transfer data
+    between them until the data source runs dry, when the connection
+    is closed. The transfer can be throttled according to arbitrarily
+    complex rules. All this with a minimum of attention. Currently the
+    shuffler can use ordinary 8-bit wide strings, System.Memory
+    objects, normal files, network sockets, named pipes, stdin and
+    pike objects adhering to the Stdio.File API as connector sources.
+
 o Standards.CIFF
     Experimental module to read Canon Camera Image File Format data.
 
@@ -477,18 +488,29 @@ o Standards.RDF
     format.
 
 o Stdio
-    Moved get_all_active_fd() from spider to Stdio.
-    Added methods to Stdio.File: sync(), line_iterator()
+    Two higher order filesystem methods has been added to Stdio,
+    simplify_path and file_equal. The first returns a canonic
+    representation of path without "/./", "/../", "//" and similar
+    path segments. The second is a speedy way to compare if two files
+    contains identical content.
 
-o Stdio.expand_symlinks(string path)
-    Expands all symlinks along a path (returns 0 for broken links).
-    (Only available on systems with readlink.)
+    On a slightly lower level the method expand_symlinks has been
+    added. It expands all symlinks along a path on systems with
+    readlink implemented.
+
+    Finally the get_all_active_fd() functions is moved from spider to
+    Stdio in our strive to deprecate the spider module.
 
 o Stdio.FakeFile
-    Wraps a string and exports a Stdio.File interface.
+    Wraps a string in an object that exports a Stdio.File interface.
 
-o Stdio.File->grantpt()
-    can now allocate a VTY on systems with /dev/ptmx support.
+o Stdio.File
+    This object has a few additions; With the sync method the file
+    object can be synchronized with the disk. The line_iterator
+    returns an iterator object that iterates over the lines in the
+    file. It is possible to open UNIX domain sockets with the new
+    connect_unix method. Finally grantpt can allocate a VTY on systems
+    with /dev/ptmx support.
 
     Minimal example:
       fd = Stdio.File("/dev/ptmx", "rw" );
@@ -496,6 +518,11 @@ o Stdio.File->grantpt()
       Process.create_process( ({ "/bin/bash" }), ([
         "stdin":fd2,  "stdout":fd2, "stderr":fd2, "setsid":fd2, 
       ]) );
+
+o Stdio.FILE.set_charset
+    It is possible to set the charset of a FILE object to get
+    streaming and transparent charset conversion of data to and from
+    the object.
 
 o String
     Added a few new methods: int2char, int2hex, int2roman, int2size, which
@@ -507,6 +534,10 @@ o String
       String.int2hex(42)    => "2a"
       String.int2roman(42)  => "XLII"
       String.int2size(4200) => "4.1 kb"
+
+   A soundex method is also added, which normalizes names according to
+   the soundex algorithm. The algorithm in itself is not very useful,
+   but some databases supports it.
 
 o String.Elite
     Contains methods that transfer ordinary readable text into
@@ -772,21 +803,28 @@ o --with-internal-profiling
     FIXME: Expand on this.
 
 o Module symbols not available from other modules.
-    FIXME: Expand on this.
+    To avoid clashes between modules their symbols are now no longer
+    available to eachother. FIXME: How to do now?
+
+o Pike valgrinded
+    Pike has been the subject to some Valgrind scrutiny. Some specific
+    Valgrind enhancements has been made to Pike to improve markup of
+    forbidden memory areas. While all Valgrind issues are not yet
+    resolved, partially due to Valgrind breakage, our confidence in
+    the quality of Pike has been reassured.
 
 
 Bugs fixed:
 -----------
 
+To browse all bug tickets, visit
+http://pike.ida.liu.se/development/bugs/
+
 o Reworked trampolines to cause less circular references. (solves 1937)
 
+o It is now possible to inherit Pike programs from C programs.
+
 o Works with Autoconf 2.50
-
-(To browse bug tickets, either visit
- http://community.roxen.com/crunch/ - or append the ticket id to
- "http://bugs.roxen.com/" for an address directly to the ticket
- itself.)
-
 
 
 Uncategorized misc changes:
@@ -797,12 +835,8 @@ o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
 o dont_dump_module *FIXME: grubba*
 o C modules can no longer call functions in other dynamic C modules directly
   FIXME: mast, grubba?
-o It is possible to inherit pike programs from C programs.
 o Separate weak flags for indices and values in mappings
-o Added low lowel glue for the Ffmpeg library.
 
-
-o Calendar.verify  *FIXME: remove?*
 
 System.usleep/nanosleep
    FIXME: per?
@@ -817,8 +851,6 @@ Pike.Backend
 Pike.Security
 Pike.BacktraceFrame
 Pike.WEAK_INDICES, WEAK_VALUES, WEAK
-
-o String.soundex
 
 o String.SplitIterator
     FIXME: grubba
@@ -835,8 +867,6 @@ o Protocols.SNMP
 o Protocols.X.KeySyms
     FIXME
 
-o Shuffler
-
 Array.common_prefix
 Array.count
 Array.greedy_diff
@@ -844,9 +874,4 @@ Array.oid_sort_func
 Array.arrayify
 Array.uniq2
 Array.sum
-
-Stdio.connect_unix
-Stdio.simplify_path
-Stdio.file_equal
-Stdio.FILE.set_charset
 
