@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.232 2003/09/10 15:21:57 mast Exp $
+|| $Id: gc.c,v 1.233 2003/09/23 22:27:50 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.232 2003/09/10 15:21:57 mast Exp $");
+RCSID("$Id: gc.c,v 1.233 2003/09/23 22:27:50 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1577,23 +1577,25 @@ void locate_references(void *a)
   
   check_for=a;
 
-  gc_check_all_arrays();
-  gc_check_all_multisets();
-  gc_check_all_mappings();
-  gc_check_all_programs();
-  gc_check_all_objects();
+  GC_ENTER (NULL, PIKE_T_UNKNOWN) {
+    gc_check_all_arrays();
+    gc_check_all_multisets();
+    gc_check_all_mappings();
+    gc_check_all_programs();
+    gc_check_all_objects();
 
 #ifdef PIKE_DEBUG
-  if(master_object)
-    gc_mark_external (master_object, " as master_object");
-  {
-    extern struct mapping *builtin_constants;
-    if(builtin_constants)
-      gc_mark_external (builtin_constants, " as builtin_constants");
-  }
+    if(master_object)
+      gc_mark_external (master_object, " as master_object");
+    {
+      extern struct mapping *builtin_constants;
+      if(builtin_constants)
+	gc_mark_external (builtin_constants, " as builtin_constants");
+    }
 #endif
   
-  call_callback(& gc_callbacks, NULL);
+    call_callback(& gc_callbacks, NULL);
+  } GC_LEAVE;
 
 #ifdef DEBUG_MALLOC
   {
