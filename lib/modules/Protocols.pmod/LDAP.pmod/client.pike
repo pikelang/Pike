@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.1 1999/04/24 16:43:28 js Exp $
+// $Id: client.pike,v 1.2 1999/08/16 00:47:16 peter Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -44,6 +44,8 @@
 //
 //	v1.11 1999-04-10 - search filter now processed multiple wild '*' chars
 //			   [ Escaping untested, yet ]
+//	v1.12 1999-06-26 - fixed bug in decoding search result, now correctly
+//			   returned also first attribute (Thx Marten Svanfeldt)
 //
 // Specifications:
 //
@@ -72,7 +74,7 @@
 #define ASN1_DECODE_ENTRIES(X)		_New_decode(X)
 #define ASN1_DECODE_DN(X)		(string)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value)
 #define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
-#define ASN1_GET_ATTR_ARRAY(X)		(array)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->elements[1..])
+#define ASN1_GET_ATTR_ARRAY(X)		(array)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->elements)
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 
   inherit .protocol;
@@ -452,6 +454,7 @@
     string atype;
     array(object) oatt = ({});
 
+DWRITE_HI(sprintf("client.ADD: DEB: %O\n", attrs));
     foreach(indices(attrs), atype) {
       string aval;
       array(object) ohlp = ({});
