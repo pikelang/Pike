@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.7 2003/02/14 13:59:13 marcus Exp $
+// $Id: module.pike,v 1.8 2003/02/20 22:30:00 marcus Exp $
 
 constant description = "Pike module installer.";
 
@@ -261,18 +261,23 @@ int main(int argc, array(string) argv)
 	  {
 	    Stdio.append_file("config.cache", "");
 	  }
-	run_or_fail((["env":getenv()|
-		     (["CC":specs->CC||"",
-		       "CFLAGS":specs->CFLAGS||"",
-		       "CPPFLAGS":specs->CPPFLAGS||"",
-		       "CPP":specs->CPP||"",
-		       "LDFLAGS":specs->LDFLAGS||"",
-		       "LDSHARED":specs->LDSHARED||"",
-		       "PIKE_SRC_DIR":src_path,
-		       "BUILD_BASE":include_path])]),
+	array(string) cfa = do_split_quoted_string(specs->configure_args||"");
+	mapping(string:string) cfa_env = ([]);
+	foreach(cfa; int i; string arg) {
+	  string key, val;
+	  if(2==sscanf(arg, "%[a-zA-Z0-9_]=%s", key, val)) {
+	    cfa_env[key] = val;
+	    cfa[i] = 0;
+	  }
+	}
+	run_or_fail((["env":getenv()|cfa_env|
+		      (specs & ({"CC","CFLAGS","CPPFLAGS","CPP",
+				 "LDFLAGS","LDSHARED"}))|
+		      (["PIKE_SRC_DIR":src_path,
+			"BUILD_BASE":include_path])]),
 		    srcdir+"/"+configure_command,
 		    "--cache-file=./config.cache",
-		    @do_split_quoted_string(specs->configure_args||""));
+		    @(cfa-({0})));
       }
     }
   }
