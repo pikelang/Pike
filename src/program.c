@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.295 2001/06/11 16:43:55 grubba Exp $");
+RCSID("$Id: program.c,v 1.296 2001/06/13 14:25:06 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3429,13 +3429,6 @@ struct program *compile(struct pike_string *prog,
 	  threads_disabled, saved_threads_disabled);
   }
 #endif /* PIKE_DEBUG */
-/*  threads_disabled = saved_threads_disabled + 1;   /Hubbe: UGGA! */
-
-  CDFPRINTF((stderr,
-	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(),threads_disabled, compilation_depth));
-
-  exit_threads_disable(NULL);
 
   free_string(lex.current_file);
   lex=save_lex;
@@ -3459,6 +3452,14 @@ struct program *compile(struct pike_string *prog,
   if (resolve_cache) fatal("resolve_cache not freed at end of compilation.\n");
 #endif
   resolve_cache = resolve_cache_save;
+
+/*  threads_disabled = saved_threads_disabled + 1;   /Hubbe: UGGA! */
+
+  CDFPRINTF((stderr,
+	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(),threads_disabled, compilation_depth));
+
+  exit_threads_disable(NULL);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
