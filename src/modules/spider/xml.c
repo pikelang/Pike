@@ -551,6 +551,9 @@ static int isChar(INT32 c)
   }else{
     /* FIXME: The test below is always false!
      * /grubba 1998-12-05
+     * 
+     * So? This function isn't used anyways...
+     * /Hubbe 1998-12-16
      */
     if(c <=0xffd)
     {
