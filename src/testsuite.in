@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.295 2000/04/17 18:19:52 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.296 2000/05/25 17:20:58 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -60,76 +60,78 @@ test_any([[ int a=0xffffffff; return a%17 ]],
 test_any([[ int a=0xffffffff; return a>>17 ]],
 	 [[ (0xffffffff == -1)?-1:0x7fff ]]);
 
-test_any([[return typeof(aggregate("foo"));]], "array(string)");
-test_any([[int a; return typeof(aggregate(a));]], "array(int)");
+test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string)");
+test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
 test_any([[int|string a;
-	   string s = typeof(aggregate(a));
+	   string s = sprintf("%O", typeof(aggregate(a)));
 	   return (< "array(string | int)", "array(int | string)" >)[s];]], 1);
-test_any([[return typeof(aggregate());]], "array(zero)");
+test_any([[return sprintf("%O", typeof(aggregate()));]], "array(zero)");
 test_any([[int i; return (< "int", "int | zero", "zero | int" >)
-                          [typeof(max(i,0))];]], 1)
+                          [sprintf("%O", typeof(max(i,0)))];]], 1)
 
-test_any([[array(string) a; return typeof(a[0]); ]], "string")
+test_any([[array(string) a; return sprintf("%O", typeof(a[0])); ]], "string")
 
 test_any([[class foo { string a; };
 	   object(foo) bar;
-	   return typeof(bar->a);]], "string");
+	   return sprintf("%O", typeof(bar->a));]], "string");
 
 test_any([[class foo { string a; };
 	   array(object(foo)) bar;
-	   return typeof(bar[0]->a);]], "string");
+	   return sprintf("%O", typeof(bar[0]->a));]], "string");
 
-test_any([[function(:string)|function(int:int) f; return typeof(f()); ]],
+test_any([[function(:string)|function(int:int) f;
+	   return sprintf("%O", typeof(f())); ]],
 	 "string")
 
-test_any([[function(:string)|function(int:int) f; return typeof(f(1)); ]],
+test_any([[function(:string)|function(int:int) f;
+	   return sprintf("%O", typeof(f(1))); ]],
 	 "int")
 
 test_any([[function(:string)|function(mixed, mixed...:int) f;
-	  return typeof(f()); ]],
+	  return sprintf("%O", typeof(f())); ]],
 	 "string")
 
 test_any([[function(:string)|function(mixed, mixed ...:int) f;
-	  return typeof(f(1)); ]],
+	  return sprintf("%O", typeof(f(1))); ]],
 	 "int")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return typeof(f[class{}()]); ]],
+	  return sprintf("%O", typeof(f[class{}()])); ]],
 	 "string")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return typeof(f[""]); ]],
+	  return sprintf("%O", typeof(f[""])); ]],
 	 "int")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return sort((typeof(f[0]) - " ")/"|")*"|"; ]],
+	  return sort((sprintf("%O", typeof(f[0])) - " ")/"|")*"|"; ]],
 	 "int|string")
 
 test_any([[class Foo { string `[](mixed y) {return "";} };
 	  object(Foo) foo;
-	  return typeof(foo[0]); ]],
+	  return sprintf("%O", typeof(foo[0])); ]],
 	 "string")
 
 test_any([[class Foo { array(int) _indices() {return ({0});} };
 	  object(Foo) foo;
-	  return typeof(indices(foo)); ]],
+	  return sprintf("%O", typeof(indices(foo))); ]],
 	 "array(int)")
 
 test_any([[class Foo { array(string) _values() {return ({""});} };
 	  object(Foo) foo;
-	  return typeof(values(foo)); ]],
+	  return sprintf("%O", typeof(values(foo))); ]],
 	 "array(string)")
 
 test_any([[mapping(string:int) foo;
 	  array(string) bar;
-	  return typeof(rows(foo, bar)); ]],
+	  return sprintf("%O", typeof(rows(foo, bar))); ]],
 	 "array(int)")
 
 test_any([[
   class Foo {
     constant zero = 0;
     mapping(string:array(int)) m;
-    string foo() { return typeof(m[""][zero]); }
+    string foo() { return sprintf("%O", typeof(m[""][zero])); }
   };
   return Foo()->foo();
 ]], "int")
@@ -2055,18 +2057,18 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 ]])
 
 // typeof
-test_eq(typeof(1),"int(1..1)")
-test_eq(typeof(""),"string")
-test_eq(typeof(""[0]),"int")
-test_eq(typeof(0.0),"float")
-test_eq(typeof(all_constants()["all_constants"]),"mixed")
+test_eq(sprintf("%O", typeof(1)),"int(1..1)")
+test_eq(sprintf("%O", typeof("")),"string")
+test_eq(sprintf("%O", typeof(""[0])),"int")
+test_eq(sprintf("%O", typeof(0.0)),"float")
+test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
 // _typeof
-test_eq(_typeof(1),"int(1..1)")
-test_eq(_typeof(""),"string")
-test_eq(_typeof("x"[0]),"int(120..120)")
-test_eq(_typeof(0.0),"float")
-test_eq(_typeof(this_object)-" ","function(:object)")
+test_eq(sprintf("%O", _typeof(1)),"int(1..1)")
+test_eq(sprintf("%O", _typeof("")),"string")
+test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
+test_eq(sprintf("%O", _typeof(0.0)),"float")
+test_eq(sprintf("%O", _typeof(this_object))-" ","function(:object)")
 
 
 // class
