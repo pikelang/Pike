@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.2 2003/03/07 17:43:32 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.3 2003/03/08 22:11:25 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -7,10 +7,23 @@
 
 import .Constants;
 
+class CipherAlgorithm {
+  this_program set_encrypt_key(string);
+  this_program set_decrypt_key(string);
+  int(0..) query_block_size();
+  optional string crypt(string);
+  optional string unpad(string);
+  optional string pad();
+}
+
+class MACAlgorithm {
+  string hash(object, Gmp.mpz);
+}
+
 class CipherSpec {
-  program bulk_cipher_algorithm;
+  program(CipherAlgorithm) bulk_cipher_algorithm;
   int cipher_type;
-  program mac_algorithm;
+  program(MACAlgorithm) mac_algorithm;
   int is_exportable;
   int hash_size;
   int key_material;
@@ -24,7 +37,7 @@ class CipherSpec {
 class mac_none
 {
   /* Dummy MAC algorithm */
-  string hash(string data, object seq_num) { return ""; }
+  string hash(string data, Gmp.mpz seq_num) { return ""; }
 }
 #endif
 
@@ -354,11 +367,7 @@ array lookup(int suite,int version)
   switch(algorithms[1])
   {
   case CIPHER_rc4_40:
-#if constant(Crypto.arcfour)
     res->bulk_cipher_algorithm = Crypto.arcfour;
-#else /* !constant(Crypto.arcfour) */
-    res->bulk_cipher_algorithm = Crypto.rc4;
-#endif /* constant(Crypto.arcfour) */
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
     res->key_material = 16;
@@ -383,11 +392,7 @@ array lookup(int suite,int version)
     break;
 #ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
-#if constant(Crypto.arcfour)
     res->bulk_cipher_algorithm = Crypto.arcfour;
-#else /* !constant(Crypto.arcfour) */
-    res->bulk_cipher_algorithm = Crypto.rc4;
-#endif /* constant(Crypto.arcfour) */
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 0;
     res->key_material = 16;
