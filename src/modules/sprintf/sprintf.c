@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.34 1999/06/17 18:01:54 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.35 1999/06/17 18:26:54 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1008,8 +1008,7 @@ static void low_pike_sprintf(struct string_builder *r,
 	if (fsp->width==SPRINTF_UNDECIDED) fsp->width=1;
 	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
 
-	x=(char *)xalloc(100+MAXIMUM(fsp->width,8)+
-			 MAXIMUM(abs(fsp->precision),3));
+	x=(char *)xalloc(100+MAXIMUM(fsp->width,8)+MAXIMUM(fsp->precision,3));
 	fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
