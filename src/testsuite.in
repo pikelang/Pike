@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.433 2001/07/03 13:39:20 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.434 2001/07/03 17:05:40 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -156,8 +156,10 @@ test_any([[{
     Foo b;
     string f() {return werror ("%O", typeof (b->m));}
   }
-  return Bar()->f();
-}]], "mixed")
+  Foo c;
+  Bar d;
+  return Bar()->f()+"$"+typeof(c->m)+"$"+typeof(d->m)+"$"+typeof(d->b->m);
+}]], "mixed$mixed$string$mixed")
 
 // type checks
 
