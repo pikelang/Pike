@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.63 2003/04/14 17:10:57 marcus Exp $
+|| $Id: zlibmod.c,v 1.64 2003/04/15 15:00:58 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.63 2003/04/14 17:10:57 marcus Exp $");
+RCSID("$Id: zlibmod.c,v 1.64 2003/04/15 15:00:58 marcus Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -39,6 +39,7 @@ struct zipper
   int  level;
   int  state;
   struct z_stream_s gz;
+  struct pike_string *epilogue;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
 #endif /* _REENTRANT */
@@ -308,12 +309,14 @@ static void init_gz_deflate(struct object *o)
   THIS->gz.opaque=(void *)THIS;
   THIS->state=0;
   deflateInit(& THIS->gz, THIS->level = Z_DEFAULT_COMPRESSION);
+  THIS->epilogue = NULL;
 }
 
 static void exit_gz_deflate(struct object *o)
 {
 /*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
+  do_free_string(THIS->epilogue);
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -519,11 +522,47 @@ static void gz_inflate(INT32 args)
   pop_n_elems(args);
 
   push_string(low_free_buf(&buf));
+
+  if(fail == Z_STREAM_END)
+  {
+    struct pike_string *old_epilogue = this->epilogue;
+    if(old_epilogue) {
+      push_string(old_epilogue);
+      this->epilogue = NULL;
+    }
+    push_string(make_shared_binary_string(this->gz.next_in,
+					  this->gz.avail_in));
+    if(old_epilogue)
+      f_add(2);
+    if(sp[-1].type == PIKE_T_STRING)
+      this->epilogue = (--sp)->u.string;
+    else
+      pop_stack();
+  }
+
   if(fail != Z_STREAM_END && fail!=Z_OK && !sp[-1].u.string->len)
   {
     pop_stack();
     push_int(0);
   }
+}
+
+/*! @decl string end_of_stream()
+ *!
+ *! This function returns 0 if the end of stream marker has not yet
+ *! been encountered, or a string (possibly empty) containg any extra data
+ *! received following the end of stream marker if the marker has been
+ *! encountered.  If the extra data is not needed, the result of this
+ *! function can be treated as a logical value.
+ */
+static void gz_end_of_stream(INT32 args)
+{
+  struct zipper *this=THIS;
+  pop_n_elems(args);
+  if(this->epilogue)
+    ref_push_string(this->epilogue);
+  else
+    push_int(0);
 }
 
 static void init_gz_inflate(struct object *o)
@@ -535,12 +574,14 @@ static void init_gz_inflate(struct object *o)
   THIS->gz.opaque=(void *)THIS;
   inflateInit(&THIS->gz);
   inflateEnd(&THIS->gz);
+  THIS->epilogue = NULL;
 }
 
 static void exit_gz_inflate(struct object *o)
 {
 /*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);
+  do_free_string(THIS->epilogue);
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -612,6 +653,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
   /* function(string:string) */
   ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
+  /* function(:string) */
+  ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr),0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
