@@ -34,3 +34,18 @@ void set_close_callback(function f)
   close_callback = f;
   con->add_close_callback(f);
 }
+
+void close()
+{
+  con->close();
+}
+
+int closed()
+{
+  return con->closed;
+}
+
+void destroy()
+{
+  catch (con->close());
+}
