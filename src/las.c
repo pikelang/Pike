@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.196 2000/08/27 19:10:24 grubba Exp $");
+RCSID("$Id: las.c,v 1.197 2000/08/27 19:59:41 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1998,6 +1998,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
       return NULL;	/* Make sure that the optimizer knows we exit here. */
     }
     MEMCPY(*dst, src, sizeof(struct scope_info));
+    src = src->next;
     dst = &((*dst)->next);
     *dst = NULL;
   }
@@ -2024,6 +2025,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
       return NULL;	/* Make sure that the optimizer knows we exit here. */
     }
     MEMCPY(*dst, src, sizeof(struct scope_info));
+    src = src->next;
     dst = &((*dst)->next);
     *dst = NULL;
   }
