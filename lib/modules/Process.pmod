@@ -34,6 +34,7 @@ string sh_quote(string s)
 
 array(string) split_quoted_string(string s)
 {
+  sscanf(s,"%*[ \n\t]%s",s);
   s=replace(s,
 	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n"}),
 	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n"}));
@@ -56,7 +57,7 @@ array(string) split_quoted_string(string s)
 
       case '\'':
       ret[-1]+=x[e][1..];
-      while(x[++e][0]!='\'') ret[-1]+=x[e];
+      while(x[++e][0]!='\'') ret[-1]+=x[e][1..];
       ret[-1]+=x[e][1..];
       break;
       
@@ -72,7 +73,8 @@ array(string) split_quoted_string(string s)
       case ' ':
       case '\t':
       case '\n':
-	while(strlen(x[e])==1 && (<' ','\t','\n'>) [x[e][0]] )
+	while(strlen(x[e])==1 && e+1 < sizeof(x) &&
+	      (<' ','\t','\n'>) [x[e+1][0]])
 	  if(++e >= sizeof(x))
 	    return ret;
 	ret+=({x[e][1..]});
