@@ -2577,7 +2577,7 @@ static void parse_xml(INT32 args)
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
   data.num_extra_args=args-2;
-  data.extra_arg_types=-1; /* FIXME */
+  data.extra_arg_types = 0xffff; /* FIXME */
   data.allow_pesmeg_everywhere=0;
 
   SET_ONERROR(e,free_xmldata, &data);
@@ -2630,7 +2630,7 @@ static void define_entity(INT32 args)
   data.func=sp+2-args;
   data.extra_args=sp+3-args;
   data.num_extra_args=args-3;
-  data.extra_arg_types=-1; /* FIXME */
+  data.extra_arg_types = 0xffff; /* FIXME */
   data.allow_pesmeg_everywhere=0;
     
   SET_ONERROR(e,free_xmldata, &data);
@@ -2669,7 +2669,7 @@ static void parse_dtd(INT32 args)
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
   data.num_extra_args=args-2;
-  data.extra_arg_types=-1; /* FIXME */
+  data.extra_arg_types = 0xffff; /* FIXME */
   data.allow_pesmeg_everywhere=1;
     
   SET_ONERROR(e,free_xmldata, &data);
