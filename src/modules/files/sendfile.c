@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.11 1999/04/21 20:36:22 grubba Exp $
+ * $Id: sendfile.c,v 1.12 1999/04/21 20:44:01 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -734,12 +734,24 @@ static void sf_create(INT32 args)
    */
   if ((sf.headers) && (sf.headers->refs > 1)) {
     struct array *a = copy_array(sf.headers);
+#ifdef PIKE_DEBUG
+    if ((sp[-args].type != T_ARRAY) || (sp[-args].u.array != sf.headers)) {
+      fatal("sendfile: Stack out of sync(3).\n");
+    }
+#endif /* PIKE_DEBUG */
     free_array(sf.headers);
+    sp[-args].u.array = a;
     sf.headers = a;
   }
   if ((sf.trailers) && (sf.trailers->refs > 1)) {
     struct array *a = copy_array(sf.trailers);
+#ifdef PIKE_DEBUG
+    if ((sp[4-args].type != T_ARRAY) || (sp[4-args].u.array != sf.headers)) {
+      fatal("sendfile: Stack out of sync(3).\n");
+    }
+#endif /* PIKE_DEBUG */
     free_array(sf.trailers);
+    sp[4-args].u.array = a;
     sf.trailers = a;
   }
 
