@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.72 1999/11/26 21:42:47 grubba Exp $
+/* $Id: master.pike.in,v 1.73 1999/11/26 21:51:46 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -257,6 +257,10 @@ static program low_findprog(string pname, string ext, object|void handler)
   if( (s=master_file_stat(fname))  && s[1]>=0 )
   {
     AUTORELOAD_BEGIN();
+
+    if (load_time[fname] > s[3])
+      if (ret=programs[fname]) return ret;
+
     switch(ext)
     {
     case "":
