@@ -2,20 +2,21 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.38 2003/12/01 20:19:58 nilsson Exp $
+|| $Id: image_tiff.c,v 1.39 2004/03/02 20:46:36 nilsson Exp $
 */
 
 #include "global.h"
 #include "module.h"
 #include "config.h"
-/*
-**! module Image
-**! submodule TIFF
-**!
-*/
+
+/*! @module Image
+ */
+
+/*! @module TIFF
+ */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.38 2003/12/01 20:19:58 nilsson Exp $");
+RCSID("$Id: image_tiff.c,v 1.39 2004/03/02 20:46:36 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -727,22 +728,76 @@ static void image_tiff_decode( INT32 args )
   push_object( res.img );
 }
 
-/*
-**! method object decode(string data)
-**! 	Decodes a TIFF image. 
-**!
-**! note
-**!	Throws upon error in data.
-*/
+/*! @decl object decode(string data)
+ *!   Decodes a TIFF image.
+ *!
+ *! @throws
+ *!   Throws upon error in data.
+ */
 
-/*
-**! method mapping _decode(string data)
-**! 	Decodes a TIFF image to a mapping with at least the members 
-**!     image and alpha. 
-**!
-**! note
-**!	Throws upon error in data.
-*/
+/*! @decl mapping(string:mixed) _decode(string data)
+ *! Decodes a TIFF image to a mapping with at least the members image
+ *! and alpha.
+ *!
+ *! @mapping
+ *!   @member Image.Image "image"
+ *!     The actual image.
+ *!   @member Image.Image "alpha"
+ *!     Image alpha channel.
+ *!   @member float "xres"
+ *!   @member float "yres"
+ *!     Resolution
+ *!   @member string "unit"
+ *!     @string
+ *!       @value "unitless"
+ *!       @value "pixels/inch"
+ *!       @value "pixels/cm"
+ *!     @endstring
+ *!   @member float "xdpy"
+ *!   @member float "ydpy"
+ *!     Resolution
+ *!   @member int "xposition"
+ *!   @member int "yposition"
+ *!
+ *!   @member string "photometric"
+ *!     Type of photometric. Can be @expr{"unknown"@}.
+ *!   @member array(int|string) "extra_samples"
+ *!     Array elements are either integers or any of
+ *!     @string
+ *!       @value "unspecified"
+ *!       @value "assoc-alpha"
+ *!       @value "unassoc-alpha"
+ *!     @endstring
+ *!   @member string "threshholding"
+ *!
+ *!   @member array(int) "halftone_hints"
+ *!     Array is always two elements.
+ *!   @member string "artist"
+ *!   @member string "datetime"
+ *!   @member string "hostcomputer"
+ *!   @member string "software"
+ *!   @member string "name"
+ *!   @member string "comment"
+ *!   @member string "make"
+ *!   @member string "model"
+ *!   @member string "page_name"
+ *!
+ *!   @member array(int) "page_number"
+ *!     Array is always two elements.
+ *!   @member array(array(int)) "colormap"
+ *!     Array of array of RGB values.
+ *!   @member array(int) "whitepoint"
+ *!     Array is always two elements.
+ *!   @member array(float) "primary_chromaticities"
+ *!     Array is always six elements.
+ *!   @member array(array(float)) "reference_black_white"
+ *!     Array of array of two elements.
+ *! @endmapping
+ *!
+ *! @throws
+ *!   Throws upon error in data.
+ */
+
 static void image_tiff__decode( INT32 args )
 {
   struct buffer buffer;
@@ -819,27 +874,27 @@ static int parameter_object(struct svalue *map,struct pike_string *what,
 }
 
 
-/*
-**! method string encode(object image)
-**! method string encode(object image, mapping options)
-**! method string _encode(object image)
-**! method string _encode(object image, mapping options)
-**! 	encode and _encode are identical.
-**!
-**!      The <tt>options</tt> argument may be a mapping
-**!	 containing zero or more encoding options:
-**!
-**!	<pre>
-**!	normal options:
-**!	    "compression":Image.TIFF.COMPRESSION_*,
-**!	    "name":"an image name",
-**!	    "comment":"an image comment",
-**!	    "alpha":An alpha channel,
-**!	    "dpy":Dots per inch (as a float),
-**!	    "xdpy":Horizontal dots per inch (as a float),
-**!	    "ydpy":Vertical dots per inch (as a float),
-**!	</pre>
-*/
+/*! @decl string encode(object image)
+ *! @decl string encode(object image, mapping options)
+ *! @decl string _encode(object image)
+ *! @decl string _encode(object image, mapping options)
+ *! Encode an image object into a TIFF file. [encode] and @[_encode]
+ *! are identical.
+ *!
+ *! The @[options] argument may be a mapping containing zero or more
+ *! encoding options. See @[_decode].
+ *!
+ *! @example
+ *!   Image.TIFF.encode(img, ([
+ *!	    "compression":Image.TIFF.COMPRESSION_LZW,
+ *!	    "name":"an image name",
+ *!	    "comment":"an image comment",
+ *!	    "alpha":An alpha channel,
+ *!	    "dpy":Dots per inch (as a float),
+ *!	    "xdpy":Horizontal dots per inch (as a float),
+ *!	    "ydpy":Vertical dots per inch (as a float),
+ *!   ]));
+ */
 static void image_tiff_encode( INT32 args )
 {
   struct imagealpha a;
@@ -902,6 +957,42 @@ void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
 }
 
 #endif /* HAVE_LIBTIFF */
+
+/*! @decl constant COMPRESSION_NONE
+ */
+
+/*! @decl constant COMPRESSION_CCITTRLE
+ */
+
+/*! @decl constant COMPRESSION_CCITTFAX3
+ */
+
+/*! @decl constant COMPRESSION_CCITTFAX4
+ */
+
+/*! @decl constant COMPRESSION_CCITTRLEW
+ */
+
+/*! @decl constant COMPRESSION_LZW
+ */
+
+/*! @decl constant COMPRESSION_JPEG
+ */
+
+/*! @decl constant COMPRESSION_NEXT
+ */
+
+/*! @decl constant COMPRESSION_PACKBITS
+ */
+
+/*! @decl constant COMPRESSION_THUNDERSCAN
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 PIKE_MODULE_INIT
 {
