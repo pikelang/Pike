@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.350 2000/03/22 00:55:36 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.351 2000/03/25 23:43:25 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2898,12 +2898,10 @@ int proc_fd;
 long tmp;
 char proc_name[20];
 prusage_t  pru;
-prstatus_t prs;
     ],[
       sprintf(proc_name, "/proc/%05d", getpid());
       proc_fd = open(proc_name, O_RDONLY);
       ioctl(proc_fd, PIOCUSAGE, &pru);
-      ioctl(proc_fd, PIOCSTATUS, &prs);
       tmp=pru.pr_utime.tv_sec;
     ],
       pike_cv_getrusage_procfs=yes
@@ -2915,6 +2913,43 @@ prstatus_t prs;
   if test "$pike_cv_getrusage_procfs" = yes; then
     AC_MSG_RESULT(yes)
     AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+#############################################################################
+
+if test "$ac_cv_getrusage_procfs" = "yes"; then
+  AC_MSG_CHECKING(prstatus_t contains pr_brksize and pr_stksize)
+  AC_CACHE_VAL(pike_cv_getrusage_procfs_prs, [
+    AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+#include <sys/procfs.h>
+#include <sys/fcntl.h>
+int proc_fd;
+long tmp;
+char proc_name[20];
+prstatus_t prs;
+    ],[
+      sprintf(proc_name, "/proc/%05d", getpid());
+      proc_fd = open(proc_name, O_RDONLY);
+      ioctl(proc_fd, PIOCSTATUS, &prs);
+      tmp=prs.pr_brksize + prs.pr_stksize;
+    ],
+      pike_cv_getrusage_procfs_prs=yes
+    ,
+      pike_cv_getrusage_procfs_prs=no
+    )
+  ])
+
+  if test "$pike_cv_getrusage_procfs_prs" = yes; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(GETRUSAGE_THROUGH_PROCFS_PRS)
   else
     AC_MSG_RESULT(no)
   fi

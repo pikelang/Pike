@@ -13,7 +13,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.11 1998/06/10 19:23:30 hubbe Exp $");
+RCSID("$Id: rusage.c,v 1.12 2000/03/25 23:43:25 hubbe Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -45,7 +45,9 @@ int proc_fd = -1;
 INT32 *low_rusage(void)
 {
   prusage_t  pru;
+#ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   prstatus_t prs;
+#endif
 
   while(proc_fd < 0)
   {
@@ -67,6 +69,7 @@ INT32 *low_rusage(void)
     return 0;
   }
 
+#ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   while(ioctl(proc_fd, PIOCSTATUS, &prs) < 0)
   {
     if(errno == EINTR)
@@ -74,6 +77,7 @@ INT32 *low_rusage(void)
 
     return 0;
   }
+#endif
 
   rusage_values[0] = get_time_int(&pru.pr_utime);  /* user time */
   rusage_values[1] = get_time_int(&pru.pr_stime);  /* system time */
@@ -102,8 +106,13 @@ INT32 *low_rusage(void)
   rusage_values[24] = get_time_int(&pru.pr_slptime);
   rusage_values[25] = get_time_int(&pru.pr_wtime);
   rusage_values[26] = get_time_int(&pru.pr_stoptime);
+#ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   rusage_values[27] = prs.pr_brksize;
   rusage_values[28] = prs.pr_stksize;
+#else
+  rusage_values[27] = 0;
+  rusage_values[28] = 0;
+#endif
 
   return & rusage_values[0];
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.54 2000/03/04 16:24:37 grubba Exp $
+ * $Id: acconfig.h,v 1.55 2000/03/25 23:43:25 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -109,6 +109,9 @@
 
 /* Solaris has rusage as an ioctl on procfs */
 #undef GETRUSAGE_THROUGH_PROCFS
+
+/* So has True64, but no useful information in prstatus_t */
+#undef GETRUSAGE_THROUGH_PROCFS_PRS
 
 /* Define if you have fork */
 #undef HAVE_FORK
