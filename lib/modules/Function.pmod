@@ -106,11 +106,9 @@ function curry(function f)
 //! @endcode
 //! (Approximately, since call_callback also calls handle_error
 //! if 0 were thrown.)
-
 void call_callback(function f,mixed ... args)
 {
    if (!f) return;
    mixed err=catch { f(@args); return; };
    master()->handle_error(err);
 }
-
