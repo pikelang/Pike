@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.9 1997/01/29 20:20:52 per Exp $
+# $Id: configure.in,v 1.10 1997/01/30 22:06:45 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -25,12 +25,14 @@ AC_SUBST(RANLIB)
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
 
+OLD_LIBS=$LIBS
+OLD_LDFLAGS=$LDFLAGS
+OLD_CPPFLAGS=$CPPFLAGS
+MYSQL_LIBS=""
+
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
 
 if test x$with_mysql = xyes; then
-  OLD_LDFLAGS=$LDFLAGS
-  OLD_CPPFLAGS=$CPPFLAGS
-  OLD_LIBS=$LIBS
 
   AC_MSG_CHECKING(Checking for Mysql lib-directory)
 
@@ -76,10 +78,12 @@ if test x$with_mysql = xyes; then
 
   AC_CHECK_LIB(mystrings, bchange, [
     LIBS="-lmystrings $LIBS"
+    MYSQL_LIBS="-lmystrings ${MYSQL_LIBS}"
     pike_cv_mysql="post3.20"
   ], [
     AC_CHECK_LIB(strings, bchange, [
       LIBS="-lstrings $LIBS"
+      MYSQL_LIBS="-lstrings ${MYSQL_LIBS}"
       pike_cv_mysql="pre3.20"
     ], [])
   ])
@@ -94,26 +98,69 @@ if test x$with_mysql = xyes; then
     LIBS=$OLD_LIBS
     CPPFLAGS=$OLD_CPPFLAGS
     LDFLAGS=$OLD_LDFLAGS
+    MYSQL_LIBS=""
   else
 
     # System libs which might be needed
 
-    AC_CHECK_LIB(socket, socket, [], [])
-    AC_CHECK_LIB(nsl, gethostbyname, [], [])
-    AC_CHECK_LIB(m, floor, [], [])
+    if echo $LIBS|grep -- -lsocket >&5 2>&5; then
+      :
+    else
+      AC_CHECK_LIB(socket, socket, [
+        LIBS="-lsocket $LIBS"
+        MYSQL_LIBS="-lsocket ${MYSQL_LIBS}"
+      ], [])
+    fi
+    if echo $LIBS|grep -- -lnsl >&5 2>&5; then
+      :
+    else
+      AC_CHECK_LIB(nsl, gethostbyname, [
+        LIBS="-lnsl $LIBS"
+        MYSQL_LIBS="-lnsl ${MYSQL_LIBS}"
+      ], [])
+    fi
+    if echo $LIBS|grep -- -lm >&5 2>&5; then
+      :
+    else
+      AC_CHECK_LIB(m, floor, [
+        LIBS="-lm $LIBS"
+        MYSQL_LIBS="-lm ${MYSQL_LIBS}"
+      ], [])
+    fi
 
     # Pthreads is still needed in 3.20.0.
-    # AC_CHECK_LIB(pthread, pthread_self, [], [])
-    # AC_CHECK_LIB(pthreads, pthread_self, [], [])
+    AC_CHECK_FUNC(pthread_self, [], [
+      AC_CHECK_LIB(pthread, pthread_self, [
+        LIBS="-lpthread $LIBS"
+	echo Warning added -lpthread to \$LIBS\!
+      ], [
+        AC_CHECK_LIB(pthreads, pthread_self, [
+	  LIBS="-lpthreads $LIBS"
+	  echo Warning added -lpthreads to \$LIBS\!
+	], [])
+      ])
+    ])
 
-    AC_CHECK_LIB(dbug, _db_doprnt_, [], [])
+    AC_CHECK_LIB(dbug, _db_doprnt_, [
+      LIBS="-ldbug $LIBS"
+      MYSQL_LIBS="-ldbug ${MYSQL_LIBS}"
+    ], [])
 
-    AC_CHECK_LIB(mysys, my_init, [], [])
+    AC_CHECK_LIB(mysys, my_init, [
+      LIBS="-lmysys $LIBS"
+      MYSQL_LIBS="-lmysys ${MYSQL_LIBS}"
+    ], [])
 
     if test x$pike_cv_mysql = xpost3.20; then
-      AC_CHECK_LIB(mysqllib, mysql_connect, [], [ pike_cv_mysql="no" ])
+      AC_CHECK_LIB(mysqllib, mysql_connect, [
+        LIBS="-lmysqllib $LIBS"
+	MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
+      ], [ pike_cv_mysql="no" ])
     else
-      AC_CHECK_LIB(mysql, mysql_connect, [], [ pike_cv_mysql="no" ])
+      AC_CHECK_LIB(mysql, mysql_connect, [
+        LIBS="-lmysql $LIBS"
+	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
+      ], [ pike_cv_mysql="no" ])
     fi
 
     if test x$pike_cv_mysql = xno; then
@@ -122,6 +169,7 @@ if test x$with_mysql = xyes; then
       LIBS=$OLD_LIBS
       CPPFLAGS=$OLD_CPPFLAGS
       LDFLAGS=$OLD_LDFLAGS
+      MYSQL_LIBS=""
     else
       AC_DEFINE(HAVE_MYSQL)
     fi
@@ -129,5 +177,7 @@ if test x$with_mysql = xyes; then
 else
   :
 fi
+
+AC_SUBST(MYSQL_LIBS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
