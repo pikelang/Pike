@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.755 2003/12/16 19:52:17 grendel Exp $")
+AC_REVISION("$Id: configure.in,v 1.756 2003/12/17 22:04:50 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -686,11 +686,11 @@ case "$pike_cv_sys_os" in
   FreeBSD*)
       # FreeBSD have other naming convention for gtk-config and sdl-config
       if test "x${GTK_CONFIG}" == "x"; then
-         GTK_CONFIG=`which gtk12-config`
+         GTK_CONFIG=`which ${ac_tool_prefix}gtk12-config`
          export GTK_CONFIG
       fi
       if test "x${SDL_CONFIG}" == "x"; then
-         SDL_CONFIG=`which sdl11-config`
+         SDL_CONFIG=`which ${ac_tool_prefix}sdl11-config`
 	 export SDL_CONFIG
       fi
    ;;
@@ -2765,7 +2765,7 @@ int main(int argc, char **argv)
         AC_MSG_RESULT(yes)
         using_threads="yes (freebsd)"
 
-        AC_PATH_PROG(PTHREAD_CONFIG,pthread-config,no)
+        AC_PATH_PROG(PTHREAD_CONFIG,${ac_tool_prefix}pthread-config,no)
         if test "x$PTHREAD_CONFIG" = xno ; then
           AC_SYS_COMPILER_FLAG(-pthread, pthread, CFLAGS, LIBS="$LIBS -lc_r")
           LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
@@ -2815,9 +2815,9 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
           fi
 
         else
-          CFLAGS="$CFLAGS `pthread-config --cflags`"
-          LIBS="$LIBS `pthread-config --libs`"
-          LDFLAGS="$CFLAGS `pthread-config --ldflags`"
+          CFLAGS="$CFLAGS `${ac_tool_prefix}pthread-config --cflags`"
+          LIBS="$LIBS `${ac_tool_prefix}pthread-config --libs`"
+          LDFLAGS="$CFLAGS `${ac_tool_prefix}pthread-config --ldflags`"
         fi
       fi
     ;;

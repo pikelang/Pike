@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.1 2002/05/10 21:51:51 per Exp $
+# $Id: configure.in,v 1.2 2003/12/17 22:04:50 marcus Exp $
 #
 AC_INIT(svg.c)
 
@@ -16,10 +16,10 @@ AC_SUBST(SVG_LIBS)
 if test x$with_svg = xyes ; then
   PIKE_FEATURE_NODEP(Image.SVG)
 
-  MY_AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-  if pkg-config librsvg-2.0 2>/dev/null ; then
-    SVG_CFLAGS="`pkg-config librsvg-2.0 --cflags`"
-    SVG_LIBS="`pkg-config librsvg-2.0 --libs`"
+  MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
+  if ${ac_tool_prefix}pkg-config librsvg-2.0 2>/dev/null ; then
+    SVG_CFLAGS="`${ac_tool_prefix}pkg-config librsvg-2.0 --cflags`"
+    SVG_LIBS="`${ac_tool_prefix}pkg-config librsvg-2.0 --libs`"
     AC_MSG_CHECKING(if librsvg actually works)
 
     OLDCPPFLAGS="$CPPFLAGS"

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2003/09/10 12:40:50 mirar Exp $
+# $Id: configure.in,v 1.7 2003/12/17 22:04:50 marcus Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
@@ -21,18 +21,18 @@ AC_ARG_ENABLE(sdltest, [  --disable-sdltest       Do not try to compile and run 
   if test x$sdl_exec_prefix != x ; then
      sdl_args="$sdl_args --exec-prefix=$sdl_exec_prefix"
      if test x${SDL_CONFIG+set} != xset ; then
-        SDL_CONFIG=$sdl_exec_prefix/bin/sdl-config
+        SDL_CONFIG=$sdl_exec_prefix/bin/${ac_tool_prefix}sdl-config
      fi
   fi
   if test x$sdl_prefix != x ; then
      sdl_args="$sdl_args --prefix=$sdl_prefix"
      if test x${SDL_CONFIG+set} != xset ; then
-        SDL_CONFIG=$sdl_prefix/bin/sdl-config
+        SDL_CONFIG=$sdl_prefix/bin/${ac_tool_prefix}sdl-config
      fi
   fi
 
   dnl AC_REQUIRE([AC_CANONICAL_TARGET])
-  AC_PATH_PROG(SDL_CONFIG, sdl-config, no)
+  AC_PATH_PROG(SDL_CONFIG, ${ac_tool_prefix}sdl-config, no)
   min_sdl_version=ifelse([$1], ,0.11.0,$1)
   AC_MSG_CHECKING(for SDL - version >= $min_sdl_version)
   no_sdl=""
