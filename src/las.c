@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.58 1998/04/10 04:35:20 hubbe Exp $");
+RCSID("$Id: las.c,v 1.59 1998/04/19 03:16:11 per Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -692,7 +692,8 @@ node *index_node(node *n, struct pike_string * id)
     switch(sp[-1].type)
     {
     case T_INT:
-      yyerror("Failed to index module (module doesn't exist?)");
+      if(!num_parse_error)
+	yyerror("Failed to index module (module doesn't exist?)");
       break;
 
     case T_PROGRAM:
@@ -2097,7 +2098,7 @@ int eval_low(node *n)
   }
 #endif
 
-  if(num_parse_error) return -1;
+  if(num_parse_error) return -1; 
 
   num_strings=new_program->num_strings;
   num_constants=new_program->num_constants;
