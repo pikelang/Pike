@@ -1,14 +1,12 @@
 /*
- * $Id: aes.pike,v 1.2 2001/08/21 20:55:56 grubba Exp $
+ * $Id: aes.pike,v 1.3 2001/11/08 01:45:38 nilsson Exp $
  *
- * Advanced Encryption Standard (AES).
- *
- * Henrik Grubbström 2000-10-03
  */
+
+//! Advanced Encryption Standard (AES), previously known as @[Crypto.rijndael].
 
 #pike __REAL_VERSION__
 
-//! Previously known as @[Crypto.rijndael].
 inherit Crypto.rijndael;
 
 //! Returns the string @tt{"AES"@}.

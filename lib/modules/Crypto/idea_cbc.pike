@@ -1,6 +1,11 @@
-/* $Id: idea_cbc.pike,v 1.4 2000/09/28 03:38:38 hubbe Exp $
+/* $Id: idea_cbc.pike,v 1.5 2001/11/08 01:45:39 nilsson Exp $
  *
  */
+
+//! IDEA CBC.
+//!
+//! @seealso
+//!   @[cbc], @[idea]
 
 #pike __REAL_VERSION__
 

@@ -1,13 +1,11 @@
-/* $Id: randomness.pmod,v 1.19 2001/04/27 13:35:23 grubba Exp $
+/* $Id: randomness.pmod,v 1.20 2001/11/08 01:45:39 nilsson Exp $
  */
 
-//!	Assorted stronger or weaker randomnumber generators.
-
-/* These devices try to collect entropy from the environment.
- * They differ in behaviour when they run low on entropy, /dev/random
- * will block if it can't provide enough random bits, while /dev/urandom
- * will degenerate into a reasonably strong pseudo random generator
- */
+//! Assorted stronger or weaker randomnumber generators.
+//! These devices try to collect entropy from the environment.
+//! They differ in behaviour when they run low on entropy, /dev/random
+//! will block if it can't provide enough random bits, while /dev/urandom
+//! will degenerate into a reasonably strong pseudo random generator
 
 #pike __REAL_VERSION__
 
@@ -89,10 +87,10 @@ private string some_entropy()
 }
 
 
-//!	A pseudo random generator based on the ordinary random() function.
+//! A pseudo random generator based on the ordinary random() function.
 class pike_random {
 
-  //!	Returns a string of length len with pseudo random values.
+  //! Returns a string of length len with pseudo random values.
   string read(int len)
   {
 #if 1 // major optimization /Hubbe
@@ -116,12 +114,12 @@ class pike_random {
 }
 
 #if constant(Crypto.arcfour)
-//!	A pseudo random generator based on the arcfour crypto.
+//! A pseudo random generator based on the arcfour crypto.
 class arcfour_random {
 
   inherit Crypto.arcfour : arcfour;
 
-  //!	Initialize and seed the arcfour random generator.
+  //! Initialize and seed the arcfour random generator.
   void create(string secret)
   {
     object hash = Crypto.sha();
@@ -130,8 +128,8 @@ class arcfour_random {
     arcfour::set_encrypt_key(hash->digest());
   }
 
-  //!	Return a string of the next len random characters from the
-  //!	arcfour random generator.
+  //! Return a string of the next len random characters from the
+  //! arcfour random generator.
   string read(int len)
   {
     if (len > 16384) return read(len/2)+read(len-len/2);
@@ -141,6 +139,7 @@ class arcfour_random {
 
 #endif /* constant(Crypto.arcfour) */
 
+//!
 object reasonably_random()
 {
   if (file_stat(PRANDOM_DEVICE))
@@ -164,6 +163,7 @@ object reasonably_random()
   throw( ({ "Crypto.randomness.reasonably_random: No source found\n", backtrace() }) );
 }
 
+//!
 object really_random(int|void may_block)
 {
   object res = Stdio.File();

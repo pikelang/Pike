@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.28 2001/01/20 19:28:56 marcus Exp $
+/* $Id: rsa.pike,v 1.29 2001/11/08 01:45:39 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -11,6 +11,8 @@
 #define BIGNUM (Gmp.mpz)
 
 #ifdef USE_RSA_WRAPPER
+
+//!
 static class rsa_wrapper
 {
   object _rsa_c;
@@ -24,6 +26,9 @@ static class rsa_wrapper
   string p = "p is not in the API";
   string q = "q is not in the API";
 
+  //! @appears Crypto.rsaset_public_key
+  //! @fixme
+  //!   Document this function.
   object set_public_key(bignum modulo, bignum pub)
   {
     _rsa_pike->set_public_key(modulo, pub);
@@ -40,6 +45,9 @@ static class rsa_wrapper
     return this_object();
   }
 
+  //! @appears Crypto.rsa.query_blocksize
+  //! @fixme
+  //!   Document this function.
   int query_blocksize()
   {
     int res1 = _rsa_pike->query_blocksize();
@@ -52,6 +60,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.rsa_pad
+  //! @fixme
+  //!   Document this function.
   bignum rsa_pad(string message, int type, mixed|void random)
   {
     bignum res1 = _rsa_pike->rsa_pad(message, type, random);
@@ -64,6 +75,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.rsa_unpad
+  //! @fixme
+  //!   Document this function.
   string rsa_unpad(bignum block, int type)
   {
     string res1 = _rsa_pike->rsa_unpad(block, type);
@@ -88,6 +102,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.cooked_sign
+  //! @fixme
+  //!   Document this function.
   string cooked_sign(string digest)
   {
     string res1 = _rsa_pike->cooked_sign(digest);
@@ -100,6 +117,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.raw_verify
+  //! @fixme
+  //!   Document this function.
   int raw_verify(string digest, bignum s)
   {
     int res1 = _rsa_pike->cooked_sign(digest, s);
@@ -112,6 +132,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.encrypt
+  //! @fixme
+  //!   Document this function.
   string encrypt(string s, mixed|void r)
   {
     string res1 = _rsa_pike->encrypt(s, r);
@@ -124,6 +147,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.decrypt
+  //! @fixme
+  //!   Document this function.
   string decrypt(string s)
   {
     string res1 = _rsa_pike->decrypt(s);
@@ -136,6 +162,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.rsa_size
+  //! @fixme
+  //!   Document this function.
   int rsa_size()
   {
     int res1 = _rsa_pike->rsa_size();
@@ -148,6 +177,9 @@ static class rsa_wrapper
     return res1;
   }
 
+  //! @appears Crypto.rsa.public_key_equal
+  //! @fixme
+  //!   Document this function.
   int public_key_equal(object rsa_wrapper)
   {
     int res1 = _rsa_pike->public_key_equal(rsa_wrapper->_rsa_pike);
@@ -227,6 +259,8 @@ static class rsa_wrapper
     _rsa_pike = ((program)"_rsa.pike")();
   }
 }
+
+//! @ignore
 inherit rsa_wrapper;
 #else /* !USE_RSA_WRAPPER */
 #ifdef USE_PIKE_RSA
@@ -235,24 +269,34 @@ inherit "_rsa.pike";
 inherit Crypto._rsa;
 #endif /* USE_PIKE_RSA */
 #endif /* !USE_RSA_WRAPPER */
+//! @endignore
 
 #if !defined(USE_PIKE_RSA) && !defined(USE_RSA_WRAPPER) && constant(_Crypto._rsa)
 // Only the cooked variant is implemented in C. */
+
+//! @fixme
+//!   Document this function.
 bignum raw_sign(string digest)
 {
   return BIGNUM(cooked_sign(digest), 256);
 }
 
+//! @fixme
+//!   Document this function.
 bignum get_n()
 {
   return BIGNUM(cooked_get_n(), 256);
 }
 
+//! @fixme
+//!   Document this function.
 bignum get_e()
 {
   return BIGNUM(cooked_get_e(), 256);
 }
 
+//! @fixme
+//!   Document this function.
 bignum get_d()
 {
   return BIGNUM(cooked_get_d(), 256);
@@ -264,26 +308,36 @@ bignum get_d()
 static bignum p;
 static bignum q;
 
+//! @fixme
+//!   Document this function.
 bignum get_p()
 {
   return p;
 }
 
+//! @fixme
+//!   Document this function.
 bignum get_q()
 {
   return q;
 }
 
+//! @fixme
+//!   Document this function.
 string cooked_get_p()
 {
   return p->digits(256);
 }
 
+//! @fixme
+//!   Document this function.
 string cooked_get_q()
 {
   return q->digits(256);
 }
 
+//! @fixme
+//!   Document this function.
 object set_private_key(bignum priv, array(bignum)|void extra)
 {
   if (extra) {
@@ -294,11 +348,15 @@ object set_private_key(bignum priv, array(bignum)|void extra)
 }
 #endif /* !USE_PIKE_RSA && !USE_RSA_WRAPPER && constant(_Crypto._rsa) */
 
+//! @fixme
+//!   Document this function.
 object sign(string message, program h)
 {
   return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h()));
 }
 
+//! @fixme
+//!   Document this function.
 int verify(string msg, program h, object sign)
 {
   // werror(sprintf("msg: '%s'\n", Crypto.string_to_hex(msg)));
@@ -307,6 +365,8 @@ int verify(string msg, program h, object sign)
   return raw_verify(s, sign);
 }
 
+//! @fixme
+//!   Document this function.
 string sha_sign(string message, mixed|void r)
 {
   object hash = Crypto.sha();
@@ -318,6 +378,8 @@ string sha_sign(string message, mixed|void r)
   return cooked_sign(s);
 }
   
+//! @fixme
+//!   Document this function.
 int sha_verify(string message, string signature)
 {
   object hash = Crypto.sha();
@@ -330,6 +392,8 @@ int sha_verify(string message, string signature)
   return raw_verify(s, BIGNUM(signature, 256));
 }
 
+//! @fixme
+//!   Document this function.
 string md5_sign(string message, mixed|void r)
 {
   object hash = Crypto.md5();
@@ -341,6 +405,8 @@ string md5_sign(string message, mixed|void r)
   return cooked_sign(s);
 }
 
+//! @fixme
+//!   Document this function.
 int md5_verify(string message, string signature)
 {
   object hash = Crypto.md5();
@@ -353,6 +419,8 @@ int md5_verify(string message, string signature)
   return raw_verify(s, BIGNUM(signature, 256));
 }
 
+//! @fixme
+//!   Document this function.
 bignum get_prime(int bits, function r)
 {
   int len = (bits + 7) / 8;
@@ -370,6 +438,8 @@ bignum get_prime(int bits, function r)
   return p;
 }
 
+//! @fixme
+//!   Document this function.
 object generate_key(int bits, function|void r)
 {
   if (!r)
@@ -414,6 +484,8 @@ object generate_key(int bits, function|void r)
 
 int encrypt_mode; /* For block cipher compatible functions */
 
+//! @fixme
+//!   Document this function.
 object set_encrypt_key(array(bignum) key)
 {
   set_public_key(key[0], key[1]);
@@ -421,6 +493,8 @@ object set_encrypt_key(array(bignum) key)
   return this_object();
 }
 
+//! @fixme
+//!   Document this function.
 object set_decrypt_key(array(bignum) key)
 {
   set_public_key(key[0], key[1]);
@@ -429,6 +503,8 @@ object set_decrypt_key(array(bignum) key)
   return this_object();
 }
 
+//! @fixme
+//!   Document this function.
 string crypt_block(string s)
 {
   return (encrypt_mode ? encrypt(s) : decrypt(s));

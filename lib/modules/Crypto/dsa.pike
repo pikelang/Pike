@@ -1,7 +1,5 @@
-/* dsa.pike
- *
- * The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
- */
+
+//! The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
 
 #pike __REAL_VERSION__
 
@@ -9,6 +7,7 @@
 
 #define bignum object(Gmp.mpz)
 
+// FIXME: Privatize these?
 bignum p; /* Modulo */
 bignum q; /* Group order */
 bignum g; /* Generator */
@@ -18,6 +17,8 @@ bignum x; /* Private key */
 
 function random;
 
+//! @fixme
+//!   Document this function.
 object set_public_key(bignum p_, bignum q_, bignum g_, bignum y_)
 {
   p = p_; q = q_; g = g_; y = y_;
@@ -35,38 +36,50 @@ object set_public_key(bignum p_, bignum q_, bignum g_, bignum y_)
   return this_object();
 }
 
+//! @fixme
+//!   Document this function.
 object set_private_key(bignum secret)
 {
   x = secret;
   return this_object();
 }
 
+//! @fixme
+//!   Document this function.
 object use_random(function r)
 {
   random = r;
 }
 
+//! @fixme
+//!   Document this function.
 bignum hash2number(string digest)
 {
   return Gmp.mpz(digest, 256) % q;
 }
 
+//! @fixme
+//!   Document this function.
 bignum dsa_hash(string msg)
 {
   return hash2number(Crypto.sha()->update(msg)->digest());
 }
   
-/* Generate a random number k, 0<=k<n */
+//! Generate a random number k, 0<=k<n
 bignum random_number(bignum n)
 {
   return Gmp.mpz(random( (q->size() + 10 / 8)), 256) % n;
 }
 
+//! @fixme
+//!   Document this function.
 bignum random_exponent()
 {
   return random_number(q - 1) + 1;
 }
 
+//! @fixme
+//!   Document this function.
 array(bignum) raw_sign(bignum h)
 {
   bignum k = random_exponent();
@@ -77,6 +90,8 @@ array(bignum) raw_sign(bignum h)
   return ({ r, s });
 }
 
+//! @fixme
+//!   Document this function.
 int raw_verify(bignum h, bignum r, bignum s)
 {
   bignum w;
@@ -91,6 +106,8 @@ int raw_verify(bignum h, bignum r, bignum s)
   return r == (g->powm(w * h % q, p) * y->powm(w * r % q, p) % p) % q;
 }
 
+//! @fixme
+//!   Document this function.
 string sign_rsaref(string msg)
 {
   [bignum r, bignum s] = raw_sign(dsa_hash(msg));
@@ -98,6 +115,8 @@ string sign_rsaref(string msg)
   return sprintf("%'\0'20s%'\0'20s", r->digits(256), s->digits(256));
 }
 
+//! @fixme
+//!   Document this function.
 int verify_rsaref(string msg, string s)
 {
   if (strlen(s) != 40)
@@ -108,6 +127,8 @@ int verify_rsaref(string msg, string s)
 		    Gmp.mpz(s[20..], 256));
 }
 
+//! @fixme
+//!   Document this function.
 string sign_ssl(string msg)
 {
   return Standards.ASN1.Types.asn1_sequence(
@@ -115,6 +136,8 @@ string sign_ssl(string msg)
 	      Standards.ASN1.Types.asn1_integer))->get_der();
 }
 
+//! @fixme
+//!   Document this function.
 int verify_ssl(string msg, string s)
 {
   object a = Standards.ASN1.Decode.simple_der_decode(s);
@@ -130,6 +153,8 @@ int verify_ssl(string msg, string s)
 		    a->elements[1]->value);
 }
 
+//! @fixme
+//!   Document this function.
 object set_public_test_key()
 {
   return set_public_key(Gmp.mpz("cc61a8f5a4f94e31f5412d462791e7b493e8360a2ad6e5288e67a106927feb0b3338f2b9e3d19d0056127f6aa2062d48ae0f41185633a3fc1b22ee34a2161e5a1885d99be7ba5cfa09a0abc4becf8598ea4ec2c81316d9e2c6d28385a53f2e03",
@@ -142,6 +167,8 @@ object set_public_test_key()
 				16));
 }
 
+//! @fixme
+//!   Document this function.
 object set_private_test_key()
 {
   return set_private_key(Gmp.mpz("403a09fa0820287c84f2e8459a1fccf4c48c32e1",
@@ -151,9 +178,8 @@ object set_private_test_key()
 #define SHA_LENGTH 20
 #define SEED_LENGTH 20
 
-/* The (slow) NIST method of generating DSA primes. Algorithm 4.56 of
- * Handbook of Applied Cryptography. */
-
+//! The (slow) NIST method of generating DSA primes. Algorithm 4.56 of
+//! Handbook of Applied Cryptography.
 string nist_hash(bignum x)
 {
   string s = x->digits(256);
@@ -161,7 +187,10 @@ string nist_hash(bignum x)
   return Crypto.sha()->update(s[strlen(s) - SEED_LENGTH..])->digest();
 }
 
-/* Returns ({ p, q }) */
+//! Returns ({ p, q })
+//!
+//! @fixme
+//!   Document this function.
 array(bignum) nist_primes(int l)
 {
   if ( (l < 0) || (l > 8) )
@@ -215,7 +244,9 @@ array(bignum) nist_primes(int l)
     }
   }
 }
-      
+
+//! @fixme
+//!   Document this function.
 bignum find_generator(bignum p, bignum q)
 {
   bignum e = (p - 1) / q;
@@ -233,6 +264,8 @@ bignum find_generator(bignum p, bignum q)
   return g;
 }
 
+//! @fixme
+//!   Document this function.
 object generate_parameters(int bits)
 {
   if (bits % 64)
@@ -255,6 +288,8 @@ object generate_parameters(int bits)
   return this_object();
 }
 
+//! @fixme
+//!   Document this function.
 object generate_key()
 {
   /* x in { 2, 3, ... q - 1 } */
@@ -264,6 +299,8 @@ object generate_key()
   return this_object();
 }
 
+//! @fixme
+//!   Document this function.
 int public_key_equal (object dsa)
 {
   return p == dsa->p && q == dsa->q && g == dsa->g && y == dsa->y;
