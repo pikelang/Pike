@@ -96,6 +96,25 @@ test_any_equal([[
       ([]), "x", ({}), 0, 0, 4711,
       "f", 4711}));
 
+// Current context functions
+test_any_equal([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->add_tag (
+    "t", lambda (object p, mapping a) {
+	   return ({"T(", p->current(), "|", p->tag_name(), ")"});
+	 });
+  p->add_container (
+    "c", lambda (object p, mapping a, string c) {
+	   return ({"C(", p->current(), "|", p->tag_name(), ")"});
+	 });
+  p->add_entity (
+    "e", lambda (object p) {
+	   return ({"E(", p->current(), "|", p->tag_name(), ")"});
+	 });
+  return p->finish ("<t a=&e; <t>> &e<c x=y -- >x</c> &e; ")->read();
+]], "T(<t a=&e; <t>>|t) E(&e|e)C(<c x=y -- >x</c>|c) E(&e;|e) ");
+
 // Argument quoting
 test_any([[
   object p = Parser.HTML();
@@ -274,9 +293,10 @@ test_any([[
 // Delimiters
 test_any([[
   object p = Parser.HTML();
+  p->lazy_entity_end (1);
   p->add_entity ("e", "x");
-  return p->finish("&e; &e<t> &e <t> a='&e&e' b=\"&e\" &e>")->read();
-]], "x x<t> &e <t> a='xx' b=\"x\" x>");
+  return p->finish("&e; &e<t> &e <t> a='&e&e' &e=f; b=\"&e\" &e>")->read();
+]], "x x<t> &e <t> a='xx' &e=f; b=\"x\" x>");
 
 // Recursive parsing in tags
 test_any([[

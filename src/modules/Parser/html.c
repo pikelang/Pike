@@ -95,6 +95,8 @@ struct feed_stack
    struct location pos;
 };
 
+enum types {type_tag, type_cont, type_entity, type_data};
+
 struct parser_html_storage
 {
 /*--- current state -----------------------------------------------*/
@@ -114,6 +116,9 @@ struct parser_html_storage
    /* start is also used to flag callback recursion */
    struct piece *start,*end;
    int cstart,cend;
+
+   /* the type of the current thing being parsed */
+   enum types type;
 
 /*--- user configurable -------------------------------------------*/
 
@@ -867,7 +872,7 @@ static INLINE void push_feed_range(struct piece *head,
       error("internal error: tail not found in feed (push_feed_range)\n");
    if (!n)
       ref_push_string(empty_string);
-   else
+   else if (n>1)
       f_add(n);
    DEBUG((stderr,"push len=%d\n",sp[-1].u.string->len));
 }
@@ -1499,7 +1504,8 @@ static void do_callback(struct parser_html_storage *this,
 			struct piece *start,
 			int cstart,
 			struct piece *end,
-			int cend)
+			int cend,
+			enum types type)
 {
    ONERROR uwp;
 
@@ -1507,6 +1513,7 @@ static void do_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
+   this->type=type;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1576,6 +1583,7 @@ static newstate entity_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
+   this->type=type_entity;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1644,6 +1652,7 @@ static newstate tag_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
+   this->type=type_tag;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1715,6 +1724,7 @@ static newstate container_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
+   this->type=type_cont;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1941,10 +1951,11 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d calling _data callback %p:%d..%p:%d\n",
 		      this->stack_count,this->stack_count,
 		      *feed,st->c,dst,cdst));
-	    
+
 	       do_callback(this,thisobj,
 			   &(this->callback__data),
-			   *feed,st->c,dst,cdst);
+			   *feed,st->c,dst,cdst,
+			   type_data);
 
 	       if ((res=handle_result(this,st,
 				      feed,&(st->c),dst,cdst)))
@@ -2106,7 +2117,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	    /* low-level tag call */
 	    do_callback(this,thisobj,
 			&(this->callback__tag),
-			*feed,st->c,dst,cdst+1);
+			*feed,st->c,dst,cdst+1,
+			type_tag);
 
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst+1)))
@@ -2164,6 +2176,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	    struct svalue *v;
 	    
 	    push_feed_range(*feed,st->c+1,dst,cdst);
+	    cdst+=entity_close;
 
 	    v=low_mapping_lookup(this->mapentity,sp-1);
 	    if (v) /* entity we want, do a callback */
@@ -2172,8 +2185,8 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	       /* low-level entity call */
 	       if ((res=entity_callback(this,thisobj,v,
-					*feed,st->c+1,dst,cdst,
-					st,feed,&(st->c),dst,cdst+entity_close)))
+					*feed,st->c,dst,cdst,
+					st,feed,&(st->c),dst,cdst)))
 	       {
 		  DEBUG((stderr,"%*d entity callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
@@ -2190,6 +2203,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	    }
 	    pop_stack();
 	 }
+	 else cdst+=entity_close;
 
 
 	 dmalloc_touch_svalue(&(this->callback__entity));
@@ -2203,10 +2217,11 @@ static int do_try_feed(struct parser_html_storage *this,
 	    /* low-level entity call */
 	    do_callback(this,thisobj,
 			&(this->callback__entity),
-			*feed,st->c+1,dst,cdst);
+			*feed,st->c+1,dst,cdst,
+			type_entity);
 
 	    if ((res=handle_result(this,st,
-				   feed,&(st->c),dst,cdst+entity_close)))
+				   feed,&(st->c),dst,cdst)))
 	    {
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
@@ -2218,8 +2233,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	 }
 	 else if (!this->callback__entity.u.integer)
 	 {
-	    put_out_feed_range(this,*feed,st->c,dst,cdst+entity_close);
-	    skip_feed_range(st,feed,&(st->c),dst,cdst+entity_close);
+	    put_out_feed_range(this,*feed,st->c,dst,cdst);
+	    skip_feed_range(st,feed,&(st->c),dst,cdst);
 	 }
 	 else {
 	   /* Send it to callback__data. */
@@ -2609,16 +2624,19 @@ static void html_current(INT32 args)
 **! method string tag_args()
 **! method array tag(mixed default_value)
 **! method string tag_args(mixed default_value)
-**!     This gives parsed information about the 
-**!	current tag. 
+**!     This gives parsed information about the current thing being
+**!     parsed, e.g. the current tag, container or entity.
 **!
-**!	<tt>tag_name</tt> gives the name of the current tag,
+**!	<tt>tag_name</tt> gives the name of the current tag. If used
+**!	from an entity callback, it gives the string inside the
+**!	entity.
 **!
 **!	<tt>tag_args</tt> gives the arguments of the current tag,
-**!	parsed to a convinient mapping consisting of key:value pairs.
-**!	default_value is used for arguments which have no value in the
-**!	tag. If default_value isn't given, the value is set to the
-**!	same string as the key.
+**!	parsed to a convenient mapping consisting of key:value pairs.
+**!	If the current thing isn't a tag, it gives zero. default_value
+**!	is used for arguments which have no value in the tag. If
+**!	default_value isn't given, the value is set to the same string
+**!	as the key.
 **!
 **!	<tt>tag()</tt> gives the equivalent of
 **!	<tt>({tag_name(),tag_args()})</tt>.
@@ -2725,8 +2743,32 @@ static void html_tag_name(INT32 args)
    /* get rid of arguments */
    pop_n_elems(args);
 
-   if (!THIS->start) error ("Parser.HTML: There's no current tag\n");
-   tag_name(THIS,THIS->start,THIS->cstart);
+   if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
+   switch (THIS->type) {
+     case type_tag:
+     case type_cont:
+       tag_name(THIS,THIS->start,THIS->cstart);
+       break;
+     case type_entity:
+       if (THIS->cend == 0) {
+	 push_feed_range(THIS->start,THIS->cstart+1,THIS->end,THIS->cend);
+	 if (sp[-1].u.string->len &&
+	     index_shared_string(sp[-1].u.string,sp[-1].u.string->len-1) ==
+	     THIS->entity_end) {
+	   struct pike_string *s=string_slice(sp[-1].u.string,0,sp[-1].u.string->len-1);
+	   pop_stack();
+	   push_string(s);
+	 }
+       }
+       else {
+	 int end=THIS->cend;
+	 if (index_shared_string(THIS->end->s,end-1) == THIS->entity_end) end--;
+	 push_feed_range(THIS->start,THIS->cstart+1,THIS->end,end);
+       }
+       break;
+     default:
+       push_int(0);
+   }
 }
 
 static void html_tag_args(INT32 args)
@@ -2736,13 +2778,21 @@ static void html_tag_args(INT32 args)
    if (args) assign_svalue_no_free(&def,sp-args);
    pop_n_elems(args);
 
-   if (!THIS->start) error ("Parser.HTML: There's no current tag\n");
-   if (args)
-   {
-     tag_args(THIS,THIS->start,THIS->cstart,&def);
-     free_svalue(&def);
+   if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
+
+   switch (THIS->type) {
+     case type_tag:
+     case type_cont:
+       if (args)
+       {
+	 tag_args(THIS,THIS->start,THIS->cstart,&def);
+	 free_svalue(&def);
+       }
+       else tag_args(THIS,THIS->start,THIS->cstart,NULL);
+       break;
+     default:
+       push_int(0);
    }
-   else tag_args(THIS,THIS->start,THIS->cstart,NULL);
 }
 
 static void html_tag(INT32 args)
