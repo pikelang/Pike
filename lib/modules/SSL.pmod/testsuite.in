@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2003/11/09 23:11:15 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2003/11/13 16:04:49 grubba Exp $
 
 test_any([[
 #pike 7.4
@@ -18,7 +18,7 @@ string _cert;
 
 void make_cert() {
   object rsa = Crypto.rsa();
-  rsa->generate_key( 1024, Crypto.Random.random_string );
+  rsa->generate_key( 1024, random_string );
   _key = Tools.PEM.simple_build_pem("RSA PRIVATE KEY",
     Standards.PKCS.RSA.private_key(rsa));
 
@@ -42,7 +42,7 @@ class Server {
 
   void create() {
     ctx = SSL.context();
-    ctx->random = Crypto.Random.random_string;
+    ctx->random = random_string;
 
     object msg = Tools.PEM.pem_msg()->init( _cert );
     object part = msg->parts["CERTIFICATE"];
