@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.3 2002/01/16 03:00:37 nilsson Exp $");
+RCSID("$Id: mpf.cmod,v 1.4 2002/04/25 08:55:05 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -119,6 +119,7 @@ PIKECLASS mpf
   /* FIXME: */
   PIKEFUN void create(void|string|int|float|object x, void|int precision, void|int base)
     type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
+    flags ID_STATIC;
   {
     int base=0;
 	
@@ -154,6 +155,7 @@ PIKECLASS mpf
   }
   
   PIKEFUN int __hash()
+    flags ID_STATIC;
     {
       /* from hash_svalue */
       RETURN 
@@ -255,6 +257,7 @@ PIKECLASS mpf
 		    
 
   PIKEFUN string _sprintf(int c, mapping flags)
+    flags ID_STATIC;
     {
       INT_TYPE precision, width, base = 0, mask_shift = 0;
       struct pike_string *s = 0;
@@ -283,12 +286,14 @@ PIKECLASS mpf
   
 
   PIKEFUN void _is_type(string arg)
+    flags ID_STATIC;
     {
       push_constant_text("float");
       f_eq(2);
     }
   
   PIKEFUN void cast(string s)
+    flags ID_STATIC;
   {
     add_ref(s);
       
@@ -456,6 +461,7 @@ PIKECLASS mpf
 
 
   PIKEFUN object `+(int|float|object ... a)
+    flags ID_STATIC;
     {
       struct object *res;
 
@@ -467,6 +473,7 @@ PIKECLASS mpf
     }
   
   PIKEFUN object ``+(int|float|object ... a)
+    flags ID_STATIC;
     {
       struct object *res;
 
@@ -480,6 +487,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN object `+=(int|float|object ... a)
+    flags ID_STATIC;
   {
     unsigned long int prec;
     prec=add_convert_args(args);
@@ -513,6 +521,7 @@ PIKECLASS mpf
     }
   
   PIKEFUN object `*(int|float|object ... a)
+    flags ID_STATIC;
     {
       struct object *res;
       res = get_mpf_with_prec( add_convert_args(args) );
@@ -523,6 +532,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN object ``*(int|float|object ... a)
+    flags ID_STATIC;
     {
       struct object *res;
 
@@ -534,6 +544,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN object `*=(int|float|object ... a)
+    flags ID_STATIC;
   {
     unsigned long int prec;
     prec=add_convert_args(args);
@@ -559,6 +570,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN object `-(int|float|object ... a)
+    flags ID_STATIC;
     {
       struct object *res;
       
@@ -576,6 +588,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN object ``-(int|float|object sv)
+    flags ID_STATIC;
     {
       struct object *res;
       MP_FLT *a=get_mpf(sv,1, 0);
@@ -586,6 +599,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN object `/(int|float|object ... a)
+    flags ID_STATIC;
     {
       INT32 e;
       struct object *res;
@@ -625,6 +639,7 @@ PIKECLASS mpf
 
   /* Working here */
   PIKEFUN object ``/(int|float|object sv)
+    flags ID_STATIC;
     {
       MP_FLT *a;
       struct object *res = NULL;
@@ -648,6 +663,7 @@ PIKECLASS mpf
   
   /* defined as -1-x */
   PIKEFUN object `~()
+    flags ID_STATIC;
     {
       struct object *o;
       o=get_mpf_with_prec(mpf_get_prec(THISMPF));
@@ -663,27 +679,32 @@ PIKECLASS mpf
        mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
 	
   PIKEFUN int `>(int|float|object q)
+    flags ID_STATIC;
     {
       RETURN CMPOP(>);
     }
 
   PIKEFUN int `<(int|float|object q)
+    flags ID_STATIC;
     {
       RETURN CMPOP(<);
     }
   
   PIKEFUN int `>=(int|float|object q)
+    flags ID_STATIC;
   {
     RETURN CMPOP(>=);
   }
   
   PIKEFUN int `<=(int|float|object q)
+    flags ID_STATIC;
   {
     RETURN CMPOP(<=);
   }
 
 
   PIKEFUN int `==(int|float|object q)
+    flags ID_STATIC;
   {
     MP_FLT *arg;
     /* FIXME: We need separate TOOBIGTEST for *_si and *_ui */
@@ -694,6 +715,7 @@ PIKECLASS mpf
   }
 
   PIKEFUN int `!=(int|float|object q)
+    flags ID_STATIC;
   {
     MP_FLT *arg;
     if(q->type == T_INT TOOBIGTEST(0))
@@ -708,6 +730,7 @@ PIKECLASS mpf
     }
 
   PIKEFUN int `!()
+    flags ID_STATIC;
     {
       RETURN !mpf_sgn(THISMPF);
     }
