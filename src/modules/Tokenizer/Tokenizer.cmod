@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.22 2004/09/02 14:35:28 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.23 2004/09/03 12:46:43 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -88,7 +88,8 @@ PIKECLASS compiler
    *! @seealso
    *!   @[SeverityLevel]
    */
-  PIKEFUN void report(int(0..3) severity, mapping(string:int|string) context,
+  PIKEFUN void report(int(0..3) severity,
+		      mapping(string:int|string)|void context,
 		      string subsystem, string msg, mixed ... extra_args)
   {
     if (args > 4) {
@@ -708,6 +709,11 @@ PIKECLASS Token
    */
   PIKEVAR mapping(string:string|int) context;
 
+  INIT
+  {
+    THIS->context = allocate_mapping(10);
+  }
+
   EXTRA
   {
     struct svalue tmp = {
@@ -725,10 +731,17 @@ PIKECLASS Token
       THIS->symbol = NULL;
     }
     copy_shared_string(THIS->symbol, symbol);
-    if (THIS->context) {
-      free_mapping(THIS->context);
+#ifdef PIKE_DEBUG
+    if (!THIS->context) {
+      Pike_fatal("create: old context is NULL.\n");
     }
-    add_ref(THIS->context = context);
+#endif /* PIKE_DEBUG */
+    free_mapping(THIS->context);
+    if (context) {
+      add_ref(THIS->context = context);
+    } else {
+      THIS->context = allocate_mapping(5);
+    }
   }
 
   PIKEFUN string _sprintf(int format, mapping(string:string|int)|void options)
@@ -742,11 +755,7 @@ PIKECLASS Token
       }
     } else {
       push_text("%O:%s");
-      if (THIS->context) {
-	ref_push_mapping(THIS->context);
-      } else {
-	push_int(0);
-      }
+      ref_push_mapping(THIS->context);
       if (THIS->symbol) {
 	ref_push_string(THIS->symbol);
       } else {
@@ -773,7 +782,7 @@ PIKECLASS IdentifierToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    tmp.u.string = MK_STRING("identifer");
+    tmp.u.string = MK_STRING("identifier");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_identifier", 1, 0);
   }
@@ -1199,6 +1208,7 @@ PIKECLASS TokenizingCompiler
 	pop_stack();
 	break;
       }
+      UNSET_ONERROR(err);
       push_string(finish_string_builder(&buf));
       stack_pop_n_elems_keep_top(args);
     }
@@ -1353,7 +1363,7 @@ PIKECLASS TokenizingCompiler
       args = 3;
 
       if (THIS->token_lookup) {
-	mapping_index_no_free(Pike_sp-3, THIS->token_lookup, Pike_sp-args);
+	mapping_index_no_free(Pike_sp-3, THIS->token_lookup, Pike_sp+1-args);
 	if (UNSAFE_IS_ZERO(Pike_sp-3)) {
 	  goto examine_symbol;
 	}
