@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.14 2000/12/16 16:27:02 mirar Exp $
+//! $Id: module.pmod,v 1.15 2000/12/16 17:55:34 mirar Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -20,7 +20,7 @@
 //! 	All data is read, ie nothing happens until the file is closed.
 //!	Throws upon error.
 
-mapping _decode( string data, mixed|void tocolor, void|int triedmac )
+mapping _decode( string data, mixed|void tocolor )
 {
   Image.image i, a;
   string format;
