@@ -141,6 +141,25 @@ test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
 test_do( add_constant("RSA") )
 
+// DSA
+test_do(
+#pike 7.4
+add_constant("DSA", Crypto.dsa()) )
+test_true( DSA->set_public_test_key() )
+test_true( DSA->set_private_test_key() )
+test_true( DSA->p->gcdext2 )
+test_true( DSA->q->gcdext2 )
+test_true( DSA->g->gcdext2 )
+test_true( DSA->x->gcdext2 )
+test_true( DSA->y->gcdext2 )
+test_true( DSA->hash2number )
+test_true( DSA->dsa_hash )
+test_true( DSA->random_number )
+test_true( DSA->random_exponent )
+test_true( DSA->nist_hash )
+test_true( DSA->find_generator )
+test_do( add_constant("DSA") )
+
 
 // DES
 test_true([[
