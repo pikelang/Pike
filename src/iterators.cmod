@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.5 2001/05/17 16:49:22 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.6 2001/05/17 18:31:18 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -465,6 +465,10 @@ PIKECLASS string_split_iterator
       }
       if (offset >= ssi->buffer->len) {
 	if (ssi->feed.type == T_INT) {
+	  if (!ssi->flags) {
+	    MAKE_CONSTANT_SHARED_STRING(ssi->current, "");
+	    ssi->index++;
+	  }
 	  free_string(ssi->buffer);
 	  ssi->buffer = NULL;
 	  ssi->offset = 0;
@@ -532,6 +536,10 @@ PIKECLASS string_split_iterator
       ssi->offset = end+1;
       ssi->current = Pike_sp[-1].u.string;
       Pike_sp--;
+      if ((!THIS->flags) && (ssi->offset > ssi->buffer->len)) {
+	free_string(THIS->buffer);
+	THIS->buffer = 0;
+      }
     }
   
   PIKEFUN string value()
@@ -668,8 +676,7 @@ PIKECLASS string_split_iterator
 	    fatal("Unsupported size shift!\n");
 	  }
 	}
-	off++;	/* Skip the end split character. */
-	if ((!THIS->flags) && (off == THIS->buffer->len)) {
+	if ((!THIS->flags) && (off == THIS->buffer->len-1)) {
 	  /* Ends with an empty segment. */
 	  res++;
 	  break;
