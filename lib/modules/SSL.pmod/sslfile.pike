@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.47 2002/07/03 14:53:56 per Exp $
+/* $Id: sslfile.pike,v 1.48 2002/09/17 14:19:08 nilsson Exp $
  *
  */
 
@@ -551,7 +551,7 @@ int errno()
 {
   // FIXME: The errno returned here might not be among the expected
   // types if we emulate blocking.
-  return socket ? socket->errno() : system.EBADF;
+  return socket ? socket->errno() : System.EBADF;
 }
 
 void create(object f, object c, int|void is_client, int|void is_blocking)
