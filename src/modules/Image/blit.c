@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.17 1997/11/06 19:25:50 mirar Exp $ */
+/* $Id: blit.c,v 1.18 1997/11/11 01:58:37 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.17 1997/11/06 19:25:50 mirar Exp $
+**!	$Id: blit.c,v 1.18 1997/11/11 01:58:37 grubba Exp $
 **! class image
 */
 
@@ -778,7 +778,7 @@ void image_add_layers(INT32 args)
 	    free(layer);
 	    error("Illegal array contents, layer %d (argument %d) (illegal method) to image->add_layers()\n",layers-i,args-i+1);
 	 }
-	 layer[j].method=a->item[3].u.integer;
+	 layer[j].method=(enum layer_method)a->item[3].u.integer;
       }
       else
 	 layer[j].method=LAYER_NOP;
