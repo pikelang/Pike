@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.56 2001/06/07 08:26:48 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.57 2001/06/07 21:46:13 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -452,7 +452,7 @@ OPCODE0(F_LTOSVAL3, "ltosval3")
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-3, Pike_sp-5);
 
-  /* this is so that foo+=bar (and similar things) will be faster, this
+  /* this is so that foo=foo[x..y] (and similar things) will be faster, this
    * is done by freeing the old reference to foo after it has been pushed
    * on the stack. That way foo can have only 1 reference if we are lucky,
    * and then the low array/multiset/mapping manipulation routines can be
