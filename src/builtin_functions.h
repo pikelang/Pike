@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.23 2003/07/21 23:34:01 mast Exp $
+|| $Id: builtin_functions.h,v 1.24 2004/03/31 14:28:21 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -120,5 +120,9 @@ void init_builtin(void);
 void exit_builtin(void);
 void f_werror (INT32 args);
 /* Prototypes end here */
+
+/* Prototypes from builtin.cmod. */
+void f_string_trim_all_whites(INT32 args);
+/* End prototypes from builtin.cmod. */
 
 #endif

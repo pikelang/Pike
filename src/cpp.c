@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.110 2004/03/23 13:41:56 grubba Exp $
+|| $Id: cpp.c,v 1.111 2004/03/31 14:28:22 grubba Exp $
 */
 
 #include "global.h"
@@ -207,7 +207,6 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
   }
 
   if (s && !s->size_shift) {
-    extern void f_string_trim_all_whites(INT32 args);
     ref_push_string(s);
     f_string_trim_all_whites(1);
     push_constant_text("\n");
