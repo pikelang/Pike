@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.11 2000/10/02 19:42:33 grubba Exp $
+# $Id: configure.in,v 1.12 2000/11/27 12:42:36 mirar Exp $
 AC_INIT(sha.c)
 
 MY_AC_PROG_CC
@@ -6,6 +6,10 @@ AC_PROG_CPP
 AC_PROG_RANLIB
 
 CROSS="$ac_cv_prog_cc_cross"
+# newer autoconf
+if test x"$CROSS" = x; then
+   CROSS="$cross_compiling"
+fi
 AC_SUBST(CROSS)
 
 AC_C_CONST
