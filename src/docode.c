@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.152 2002/11/06 16:16:34 grubba Exp $
+|| $Id: docode.c,v 1.153 2002/11/12 11:48:23 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.152 2002/11/06 16:16:34 grubba Exp $");
+RCSID("$Id: docode.c,v 1.153 2002/11/12 11:48:23 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2220,12 +2220,12 @@ INT32 do_code_block(node *n)
     /* generate code again, but this time it is inline */
     Pike_compiler->compiler_frame->is_inline=1;
 
-    /* This is a no-op, but prevents optimizer to delete the bytes below */
-    emit1(F_LABEL, -1);
+    /* NOTE: This is no ordinary label... */
+    low_insert_label(Pike_compiler->compiler_frame->recur_label);
     emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
     emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
+    emit0(F_ENTRY);
     emit0(F_START_FUNCTION);
-    low_insert_label(Pike_compiler->compiler_frame->recur_label);
     DO_CODE_BLOCK(n);
   }
   assemble();

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.116 2002/11/11 16:16:09 grubba Exp $
+|| $Id: interpret_functions.h,v 1.117 2002/11/12 11:48:20 grubba Exp $
 */
 
 /*
@@ -2079,6 +2079,10 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
   pop_stack();
 });
 
+#ifndef ENTRY_PROLOGUE_SIZE
+#define ENTRY_PROLOGUE_SIZE 0
+#endif /* !ENTRY_PROLOGUE_SIZE */
+
 #define DO_RECUR(XFLAGS) do{						   \
   PIKE_OPCODE_T *addr;							   \
   register struct pike_frame *new_frame;				   \
@@ -2094,13 +2098,16 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
 									   \
   Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);		   \
   addr = PROG_COUNTER+GET_JUMP();					   \
-  args=addr[-1];							   \
+									   \
+  new_frame->num_locals = READ_INCR_BYTE(addr);				   \
+  args = READ_INCR_BYTE(addr);						   \
+  addr += ENTRY_PROLOGUE_SIZE;						   \
 									   \
   new_frame->num_args = new_frame->args = args;				   \
   new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
   new_frame->save_mark_sp = new_frame->mark_sp_base = Pike_mark_sp;	   \
                                                                            \
-  push_zeroes((new_frame->num_locals = (ptrdiff_t)addr[-2]) - args);       \
+  push_zeroes(new_frame->num_locals - args);				   \
                                                                            \
   DO_IF_DEBUG({								   \
     if(t_flag > 3)							   \
@@ -2178,16 +2185,11 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", 0, {
 
   fast_check_threads_etc(6);
 
-  addr=PROG_COUNTER+GET_JUMP();
-  args=addr[-1];
-  num_locals=addr[-2];
+  addr = PROG_COUNTER+GET_JUMP();
+  num_locals = READ_INCR_BYTE(addr);
+  args = READ_INCR_BYTE(addr);
+  addr += ENTRY_PROLOGUE_SIZE;
 
-
-  DO_IF_DEBUG({
-    if(args != EXTRACT_UCHAR(addr-1))
-      Pike_fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",
-	    args, EXTRACT_UCHAR(addr-1));
-  });
 
   if(Pike_sp-args != Pike_fp->locals)
   {
