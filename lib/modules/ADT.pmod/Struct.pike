@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.2 2003/01/03 17:07:03 nilsson Exp $
+// $Id: Struct.pike,v 1.3 2003/01/03 18:35:38 nilsson Exp $
 //
 
 //! Implements a struct which can be used for serialization and
@@ -29,19 +29,23 @@
 //!   }
 
 static int item_counter;
-static array items;
+static array(Item) items = ({});
+static mapping(string:Item) names = ([]);
+static int(0..1) booted;
 
 //! @decl void create(void|string|Stdio.File data)
 //! @param data
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
 void create(void|string|object file) {
-  items = values(this_object());
-  items = filter(items, lambda(mixed i) {
-			    if(!objectp(i)) return 0;
-			    return i->is_item;
-			  } );
+  foreach(indices(this_object()), string index) {
+    mixed val = ::`[](index, 2);
+    if(objectp(val) && val->is_item) names[index]=val;
+  }
+  booted = 1;
+  items = values(names);
   sort(items->id, items);
+
   if(file) decode(file);
 }
 
@@ -64,24 +68,41 @@ string encode() {
 
 // --- LFUN overloading.
 
+//! @decl static mixed `[](string item)
+//! @decl static mixed `->(string item)
+//! The struct can be indexed by item name to get the
+//! associated value.
+
+//! @decl static mixed `[]=(string item)
+//! @decl static mixed `->=(string item)
+//! It is possible to assign a new value to a struct
+//! item by indexing it by name and assign a value.
+
 static mixed `[](string id) {
-  mixed x = ::`[](id, 2);
-  if(objectp(x) && x->is_item) return x->get();
-  return x;
+  if(names[id]) return names[id]->get();
+  return ::`[](id, 2);
 }
 
 static mixed `[]=(string id, mixed value) {
-  mixed x = ::`[](id, 2);
-  if(objectp(x) && x->is_item)
-    x->set(value);
-  else
-    ::`[]=(id,value);
+  if(names[id]) names[id]->set(value);
+  return id;
 }
 
 static function `-> = `[];
 static function `->= = `[]=;
 
-// _indices and _values would be nice, but I don't know how to do them.
+//! The indices of a struct is the name of the struct items.
+static array(string) _indices() {
+  if(!booted) return ::_indices(2);
+  array ret = indices(names);
+  sort(values(names)->id, ret);
+  return ret;
+}
+
+//! The values of a struct is the values of the struct items.
+static array _values() {
+  return items + ({});
+}
 
 //! The size of the struct object is the number of bytes
 //! allocated for the struct.
