@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.29 2003/04/01 19:12:48 mast Exp $
+|| $Id: pike_error.h,v 1.30 2003/04/02 00:55:09 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -11,6 +11,7 @@
 #ifdef CONFIGURE_TEST
 
 #include <stdio.h>
+#include <stdarg.h>
 
 static inline void Pike_fatal (const char *fmt, ...)
 {
@@ -30,8 +31,6 @@ static inline void Pike_fatal (const char *fmt, ...)
 #include <setjmp.h>
 #undef HAVE_SETJMP_H
 #endif
-
-#include <stdarg.h>
 
 #if 1
 PMOD_EXPORT extern const char msg_fatal_error[];

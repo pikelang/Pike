@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.41 2003/04/02 00:32:20 mast Exp $
+|| $Id: pike_threadlib.h,v 1.42 2003/04/02 00:55:09 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -17,9 +17,8 @@
 
 #ifndef CONFIGURE_TEST
 #include "machine.h"
-#endif
-
 #include "main.h"
+#endif
 
 /* Needed for the sigset_t typedef, which is needed for
  * the pthread_sigsetmask() prototype on Solaris 2.x.
@@ -107,6 +106,12 @@ PMOD_EXPORT void thread_low_error (int errcode);
     if (thread_errcode_) thread_low_error (thread_errcode_);		\
   } while (0)
 
+#ifdef CONFIGURE_TEST
+#define USE_ERRORCHECK_MUTEX 1
+#else
+#define USE_ERRORCHECK_MUTEX (debug_options & ERRORCHECK_MUTEXES)
+#endif
+
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
 
@@ -129,7 +134,7 @@ void th_atfork_child(void);
 
 #ifdef PIKE_MUTEX_ERRORCHECK
 #define mt_init(X) do {							\
-    if (debug_options & ERRORCHECK_MUTEXES) {				\
+    if (USE_ERRORCHECK_MUTEX) {						\
       pthread_mutexattr_t attr;						\
       pthread_mutexattr_init(&attr);					\
       pthread_mutexattr_settype(&attr, PIKE_MUTEX_ERRORCHECK);		\
@@ -559,7 +564,6 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
   } while (0)
 
 #define EXIT_THREAD_STATE(_tmp) do {					\
-    struct thread_state *_th_state = (_tmp);				\
     DO_IF_DEBUG (Pike_sp = (struct svalue *) (ptrdiff_t) -1);		\
   } while (0)
 
