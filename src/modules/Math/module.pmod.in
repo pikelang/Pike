@@ -342,7 +342,7 @@ class Angle {
 
 //! Calculate binomial koefficient @[n] choose @[k].
 //!
-//! This is equvivalent to @tt{@[n]!/(@[k]!*(@[n]-@[k])!).
+//! This is equvivalent to @tt{@[n]!/(@[k]!*(@[n]-@[k])!)@}.
 int choose(int n, int k)
 {
   if ((k < 0)||(k > n)) return 0;
