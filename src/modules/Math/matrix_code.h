@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.10 2005/01/20 10:50:31 nilsson Exp $
+|| $Id: matrix_code.h,v 1.11 2005/01/20 10:52:18 nilsson Exp $
 */
 
 /*
@@ -925,7 +925,7 @@ void Xmatrix(init_math_)(void)
 		tOr4( tFunc(tArr(tArr(tOr(tInt,tFloat))), tVoid),
 		      tFunc(tArr(tOr(tInt,tFloat)), tVoid),
 		      tFuncV(tStr, tMix, tVoid),
-		      tFunc(tInt1Plus tInt1Plus tOr4(tInt,tFloat,tString,tVoid), Void)), 0);
+		      tFunc(tInt1Plus tInt1Plus tOr4(tInt,tFloat,tString,tVoid), tVoid)), 0);
 
    ADD_FUNCTION("cast",matrixX(_cast),
 		tFunc(tStr, tArr(tArr(tFloat))), 0);
