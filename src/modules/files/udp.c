@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.47 2003/04/23 23:29:22 marcus Exp $
+|| $Id: udp.c,v 1.48 2003/04/23 23:50:38 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.47 2003/04/23 23:29:22 marcus Exp $");
+RCSID("$Id: udp.c,v 1.48 2003/04/23 23:50:38 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -162,7 +162,7 @@ struct udp_storage {
  */
 static void udp_bind(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int addr_len;
   int o;
   int fd,tmp;
@@ -394,7 +394,7 @@ void udp_wait(INT32 args)
 void udp_read(INT32 args)
 {
   int flags = 0, res=0, fd, e;
-  SOCKADDR from;
+  PIKE_SOCKADDR from;
   char buffer[UDP_BUFFSIZE];
   ACCEPT_SIZE_T fromlen = sizeof(from);
   
@@ -498,7 +498,7 @@ void udp_sendto(INT32 args)
 {
   int flags = 0, fd, e;
   ptrdiff_t res = 0;
-  SOCKADDR to;
+  PIKE_SOCKADDR to;
   int to_len;
   char *str;
   ptrdiff_t len;
@@ -683,7 +683,7 @@ static void udp_set_blocking(INT32 args)
  */
 static void udp_connect(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int addr_len;
   struct pike_string *dest_addr = NULL;
   struct svalue *dest_port = NULL;
@@ -737,7 +737,7 @@ static void udp_connect(INT32 args)
  */
 static void udp_query_address(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int i;
   int fd = THIS->fd;
   char buffer[496],*q;

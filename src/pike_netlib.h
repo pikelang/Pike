@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_netlib.h,v 1.2 2003/04/23 23:34:24 marcus Exp $
+|| $Id: pike_netlib.h,v 1.3 2003/04/23 23:50:37 marcus Exp $
 */
 
 #ifndef PIKE_NETLIB_H
@@ -27,7 +27,7 @@ typedef union {
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
   struct sockaddr_in6 ipv6;
 #endif
-} SOCKADDR;
+} PIKE_SOCKADDR;
 
 #define SOCKADDR_FAMILY(X) ((X).sa.sa_family)
 

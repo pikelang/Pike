@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.71 2003/04/23 23:29:22 marcus Exp $
+|| $Id: socket.c,v 1.72 2003/04/23 23:50:38 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.71 2003/04/23 23:29:22 marcus Exp $");
+RCSID("$Id: socket.c,v 1.72 2003/04/23 23:50:38 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -245,7 +245,7 @@ static void port_listen_fd(INT32 args)
  */
 static void port_bind(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int addr_len,fd,tmp;
 
   do_close(THIS,Pike_fp->current_object);
@@ -380,7 +380,7 @@ extern struct program *file_program;
 
 static void port_accept(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   struct port *this=THIS;
   int fd;
   struct object *o;
@@ -416,7 +416,7 @@ static void port_accept(INT32 args)
  */
 static void socket_query_address(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int i;
   char buffer[496],*q;
   ACCEPT_SIZE_T len;

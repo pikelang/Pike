@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.272 2003/04/23 23:29:22 marcus Exp $
+|| $Id: file.c,v 1.273 2003/04/23 23:50:37 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.272 2003/04/23 23:29:22 marcus Exp $");
+RCSID("$Id: file.c,v 1.273 2003/04/23 23:50:37 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2652,7 +2652,7 @@ static void file_open_socket(INT32 args)
   }
 
   if (args) {
-    SOCKADDR addr;
+    PIKE_SOCKADDR addr;
     int addr_len;
     char *name;
     int o;
@@ -2844,7 +2844,7 @@ static void file_connect_unix( INT32 args )
  */
 static void file_connect(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int addr_len;
   struct pike_string *dest_addr = NULL;
   struct pike_string *src_addr = NULL;
@@ -2963,7 +2963,7 @@ static int isipnr(char *s)
  */
 static void file_query_address(INT32 args)
 {
-  SOCKADDR addr;
+  PIKE_SOCKADDR addr;
   int i;
   char buffer[496],*q;
   /* XOPEN GROUP thinks this variable should be a size_t.
