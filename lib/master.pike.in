@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.151 2001/09/01 21:25:10 marcus Exp $
+ * $Id: master.pike.in,v 1.152 2001/11/09 14:06:49 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -747,7 +747,7 @@ class dirnode(string dirname, object|void handler)
   {
     if(module) 
     {
-      object o;
+      mixed o;
       if(!zero_type(o=module[index])) return o;
     }
 
@@ -778,14 +778,13 @@ class dirnode(string dirname, object|void handler)
   mixed `[](string index)
   {
     mixed ret;
-    if(!zero_type(ret=cache[index]))
-    {
-      // The check below is to (hopefully) avoid calling any function
-      // in ret (like `! or `==) in case it's an object.
-      if(!intp (ret) || ret) return ret;
+    if (!zero_type(ret = cache[index])) {
+      if (ret != ZERO_TYPE) return ret;
       return UNDEFINED;
     }
-    return cache[index]=ind(index);
+    ret = ind(index);
+    cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
+    return ret;
   }
 
   static int _cache_full;
@@ -831,13 +830,13 @@ class dirnode(string dirname, object|void handler)
   {
     // werror("indices(%O) called\n", dirname);
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return !intp (x) || x; }));
+    return indices(filter(cache, lambda(mixed x) {return cache[x] != ZERO_TYPE;}));
   }
   array(mixed) _values()
   {
     // werror("values(%O) called\n", dirname);
     fill_cache();
-    return values(cache)-({0});
+    return values(cache) - ({ZERO_TYPE});
   }
 
   string _sprintf(int as)
@@ -932,12 +931,12 @@ class joinnode
   array(string) _indices()
   {
     fill_cache();
-    return indices(cache);
+    return indices(filter(cache, lambda(mixed x) {return cache[x] != ZERO_TYPE;}));
   }
   array(mixed) _values()
   {
     fill_cache();
-    return values(cache);
+    return values(cache) - ({ZERO_TYPE});
   }
 };
 
