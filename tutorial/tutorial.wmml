@@ -12698,6 +12698,22 @@ sscanf
 </man_see>
 </function>
 
+<function name=rint title="round a number">
+<man_syntax>
+float rint(float <I>f</I>);
+</man_syntax>
+<man_description>
+This function is named <tt>round</tt> in Pike.
+</man_description>
+<man_note>
+This function does not exist! Use round!
+</man_note>
+<man_see>
+round
+</man_see>
+</function>
+
+
 
 
 <function name=rm title="remove file or directory">
@@ -12711,7 +12727,6 @@ Remove a file or directory, return 0 if it fails. Nonzero otherwise.
 mkdir
 </man_see>
 </function>
-
 
 <function name=round title="round a number">
 <man_syntax>
