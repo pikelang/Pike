@@ -832,8 +832,7 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
 // Find the file where the entity will have its documentation.
 static string findHref(mapping(string : Target|string) targets, array(string) ids) {
   for (;;) {
-    string ent = ids * ".";
-    object(Target)|string t = targets[ent];
+    object(Target)|string t = targets[mergeRef(ids)];
     if (t)
       return stringp(t) ? t : t->file;
     if (sizeof(ids) <= 1)

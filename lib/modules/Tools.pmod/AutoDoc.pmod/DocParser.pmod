@@ -41,7 +41,6 @@ mapping(string : int) keywordtype =
 ([
   "appears" : METAKEYWORD,
   "belongs" : METAKEYWORD,
-  "global" : METAKEYWORD,
   "class" : METAKEYWORD,
   "endclass" : METAKEYWORD,
   "module" : METAKEYWORD,
@@ -585,7 +584,6 @@ static class DocParserClass {
     tokens[0 .. i - 1];
     MetaData meta = MetaData();
     string scopeModule = 0;
-    int global = 0;
     foreach (tokens[0 .. i - 1], [string keyword, string arg])
       switch (keyword) {
         case "class":
@@ -642,22 +640,6 @@ static class DocParserClass {
             parseError("@decl's must have identical scope:: prefix");
           meta->decls += ({ p });
           }
-          break;
-
-        case "global":
-          if (meta->type == "class" || meta->type == "decl"
-              || meta->type == "module" || !meta->type)
-          {
-            if (global)
-              parseError("duplicate @global");
-            if (scopeModule)
-              parseError("@global combined with scope prefix");
-            .PikeParser ucko = .PikeParser(arg);
-            if (ucko->peekToken() != EOF)
-              parseError("expected end of line, got %O", arg);
-          }
-          else
-            parseError("@global not allowed here");
           break;
 
         case "appears":
@@ -718,8 +700,6 @@ static class DocParserClass {
     tokens = tokens[i ..];
     if (scopeModule)
       meta->belongs = scopeModule;
-    if (global)
-      meta->belongs = "predef::";
     return meta;
   }
 
