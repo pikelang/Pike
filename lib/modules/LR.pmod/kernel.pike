@@ -1,5 +1,5 @@
 /*
- * $Id: kernel.pike,v 1.6 1998/11/13 20:22:32 grubba Exp $
+ * $Id: kernel.pike,v 1.7 1998/11/13 21:05:35 grubba Exp $
  *
  * Implements a LR(1) state;
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	kernel.pike
-//. RCSID:	$Id: kernel.pike,v 1.6 1998/11/13 20:22:32 grubba Exp $
+//. RCSID:	$Id: kernel.pike,v 1.7 1998/11/13 21:05:35 grubba Exp $
 //. Author:	Henrik Grubbström
 //.
 //. Synopsis:	Implements an LR(1) state.
@@ -61,6 +61,5 @@ void add_item(object(item) i)
       symbol_items[symbol] = (< i >);
     }
   }
-  kernel_hash = 0;
 }
 
