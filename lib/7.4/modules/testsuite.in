@@ -6,4 +6,13 @@ Array.diff3_old(({"a"}),({"a","b"}),({"b","a"})) ]],
 	   ({({({   }),({"a"}),({   })}),
 	     ({({   }),({"a"}),({"b"})}),
 	     ({({"b"}),({"a"}),({   })})}) )
+
+test_true(
+#pike 7.4
+arrayp( rusage() ))
+
+test_eq(
+#pike 7.4
+hash("hello\12345"), hash_7_4("hello\12345"))
+
 END_MARKER
