@@ -474,12 +474,6 @@ static void html__set_entity_callback(INT32 args)
 **!	depending on what realm the function is called by.
 **!	<li><b>a string</b>. This tag/container/entity is then replaced
 **!	by the string.
-**	<li><b>an array</b> of functions (as above).
-**	The functions are called with each others result from element
-**	0 to the last element. Note that the _data_ will change,
-**	but the argument mapping will still be the same.
-**	(Ie, do destructive editing of the args mapping if you 
-**	want the next callback to read it - don't just return a new tag.)
 **!	</ul>
 **!
 **!     The callback function can return:
