@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.26 2004/08/19 12:52:53 noring Exp $");
+RCSID("$Id: resultset.c,v 1.27 2005/02/24 17:53:24 jonasw Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -210,13 +210,14 @@ static void f_resultset_create( INT32 args )
   push_int(0);
 }
 
+static void f_resultset_slice( INT32 args );
+
 static void f_resultset_cast( INT32 args )
 /*! @decl string cast( string type )
  *! Only works when type == @expr{"array"@}. Returns the resultset
  *! data as a array.
  */
 {
-  static void f_resultset_slice( INT32 args );
   pop_n_elems( args );
   push_int(0);
   push_int( 0x7fffffff );
