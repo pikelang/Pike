@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.552 2001/09/22 12:14:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.553 2001/09/23 00:39:59 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -440,7 +440,12 @@ AC_MSG_CHECKING(operating system)
 AC_CACHE_VAL(pike_cv_sys_os,
 [
 if test "$uname_prog" != "no"; then
-  pike_cv_sys_os="`uname`"
+  # uname on UNICOS doesn't work like other people's uname...
+  if getconf CRAY_RELEASE >/dev/null 2>&1; then
+    pike_cv_sys_os="UNICOS"
+  else
+    pike_cv_sys_os="`uname`"
+  fi
 
   case "$pike_cv_sys_os" in
     SunOS)
