@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.64 2001/08/17 16:07:14 nilsson Exp $
+// $Id: MySQL.pike,v 1.65 2001/08/17 22:56:42 js Exp $
 
 inherit .Base;
 
@@ -406,8 +406,8 @@ mapping(string|int:int) get_language_stats()
 
 int get_num_words()
 {
-  return (int)(db->query("select count(distinct word) as c from word_hit "
-			"group by word") + ({ (["c": 0]) }))[0]->c;
+  return (int)(db->query("select count(distinct word) as c from word_hit") +
+	       ({ (["c": 0]) }))[0]->c;
 }
 
 int get_database_size()
@@ -424,6 +424,11 @@ int get_num_deleted_documents()
 
 }
 
+static string my_denormalize(string in)
+{
+  return Unicode.normalize(utf8_to_string(in), "C");
+}
+
 array(array) get_most_common_words(void|int count)
 {
   array a =
@@ -433,7 +438,8 @@ array(array) get_most_common_words(void|int count)
   if(!sizeof(a))
     return ({ });
   else
-    return Array.transpose( ({ map(a->word, utf8_to_string), (array(int))a->c }) );
+    return Array.transpose( ({ map(a->word, my_denormalize),
+			       (array(int))a->c }) );
 }
 
 void clear()
