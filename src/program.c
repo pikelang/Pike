@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.293 2001/02/09 13:25:44 grubba Exp $");
+RCSID("$Id: program.c,v 1.294 2001/02/09 13:43:23 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -525,7 +525,7 @@ static char *raw_lfun_types[] = {
  *!   @[`+()], @[lfun::`+()]
  */
 
-/*! @decl int(0..1) _is_type(string arg)
+/*! @decl int(0..1) lfun::_is_type(string arg)
  *!
  *! Type comparison callback.
  *!
@@ -534,8 +534,8 @@ static char *raw_lfun_types[] = {
  *!   of the type, but migt in the future be a value of the type type.
  */
 
-/*! @decl string _sprintf(int conversion_type,
- *!                       mapping(string:int)|void params)
+/*! @decl string lfun::_sprintf(int conversion_type, @
+ *!                             mapping(string:int)|void params)
  *!
  *! Sprintf callback.
  *!
@@ -543,7 +543,7 @@ static char *raw_lfun_types[] = {
  *!    @[sprintf()]
  */
 
-/*! @decl int _equal(mixed arg)
+/*! @decl int lfun::_equal(mixed arg)
  *!
  *! Equal callback.
  *!
@@ -551,7 +551,7 @@ static char *raw_lfun_types[] = {
  *!   @[equal()], @[lfun::`==()]
  */
 
-/*! @decl mixed _m_delete(mixed arg)
+/*! @decl mixed lfun::_m_delete(mixed arg)
  *!
  *! Mapping delete callback.
  *!
