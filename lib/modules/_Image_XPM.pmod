@@ -1,19 +1,18 @@
 inherit Image._XPM;
 #if 0
-#define TE( X )  write("XPM profile: %-20s ... ", (X));
+# define TE( X )  werror("XPM profile: %-20s ... ", (X));
 int old_time,start_time;
-#define TI(X) start_time=old_time=gethrtime();TE(X)
-#define TD( X ) do{\
- write("%3.02f (%3.02f)\n", (gethrtime()-old_time)/1000000.0,(gethrtime()-start_time)/1000000.0);\
+# define TI(X) start_time=old_time=gethrtime();TE(X)
+# define TD( X ) do{\
+ werror("%3.02f (%3.02f)\n", (gethrtime()-old_time)/1000000.0,(gethrtime()-start_time)/1000000.0);\
  TE(X);  \
  old_time = gethrtime(); \
 } while(0);
 #else
-#define TI(X)
-#define TD(X)
-#define TE(X)
+# define TI(X)
+# define TD(X)
+# define TE(X)
 #endif
-
 
 mapping _decode( string what, void|mapping opts )
 {
@@ -84,6 +83,106 @@ mapping _decode( string what, void|mapping opts )
   retopts->alpha = a;
   return retopts;
 }
+
+
+
+array ok = ({
+  "`",  ".",  "+",  "@",  "#",  "$",  "%",  "*",  "=",  "-",  ";",  ">",  ",",
+  "'",  ")",  "!",  "~",  "{",  "]",  "^",  "/",  "(",  "_",  ":",  "<",  "[",
+  "}",  "|",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",  "0",  "a",
+  "b",  "c",  "d",  "e",  "f",  "g",  "h",  "i",  "j",  "k",  "l",  "m",  "n",
+  "o",  "p",  "q",  "r",  "s",  "t",  "u",  "v",  "w",  "x",  "y",  "z",  "A",
+  "B",  "C",  "D",  "E",  "F",  "G",  "H",  "I",  "J",  "K",  "L",  "M",  "N",
+  "O",  "P",  "Q",  "R",  "S",  "T",  "U",  "V",  "W",  "X",  "Y",  "Z",  " ",
+});
+
+array cmap_f, cmap_t;
+
+string encode( object what, mapping|void options )
+{
+  int x,y, q;
+  TI("Encode init");
+  if(!options) options = ([]);
+  if(!cmap_f)
+  {
+    cmap_f = allocate( 8100 );
+    cmap_t = allocate( 8100 );
+    for(x=0; x<90; x++)
+      for(y=0; y<90; y++)
+        cmap_t[q++] = ok[x]+ok[y];
+  }
+  TD("Encode CT");
+  if(!options->colortable)
+  {
+    options->colortable = Image.colortable( what, 8089 );
+    options->colortable->rigid( 25, 25, 25 );
+    options->colortable->floyd_steinberg();
+  }
+  if(!options->name)
+    options->name = "image";
+  int alpha_used;
+  TD("Encode map");
+  array rows=options->colortable->index(what)/what->xsize();
+
+  TD("Encode colors");
+  int ncolors;
+  array colors = ({});
+  int n;
+  foreach(((string)options->colortable)/3, mixed c)
+  {
+    colors += ({sprintf("%s c #%02x%02x%02x",cmap_t[n++],c[0],c[1],c[2])});
+    ncolors++;
+  }
+
+  TD("Encode alpha");
+  if(options->alpha)
+  {
+    object ac = Image.colortable( ({ Image.color.white, Image.color.black }) );
+    array q = ac->index( options->alpha )/what->xsize();
+    string alpha_color = " ";
+    string minus_ett = " ";
+    alpha_color[0] = ncolors;
+    minus_ett[0] = -1;
+    for(y=0; y<sizeof(q); y++)
+      rows[y]=replace(rows[y]|replace(q[y],"\1",minus_ett),minus_ett,alpha_color );
+  }
+  if(alpha_used)
+  {
+    colors += ({cmap_t[ncolors]+" c None"});
+    ncolors++;
+  }
+
+
+  TD("Encode color output");
+  string res = 
+    "/* XPM */\n"+
+    (options->comment?
+     "/* "+replace(options->comment, ({"/*", "*/"}), ({"/", "/"}))+" */\n":"")+
+    "static char* "+options->name+" = {\n"
+    "\""+what->xsize()+" "+what->ysize()+" "+ncolors+" 2\",\n";
+  foreach(colors, string c)
+    res += "\""+c+"\",\n";
+  TD(sprintf("Encode %d rows", sizeof(rows)));
+
+  int q = sizeof(rows);
+  foreach(rows, string row)
+  {
+    string r = "";
+    int i;
+    r += "\"";
+    for(i=0; i<strlen(row); i++)
+      r += cmap_t[row[i]];
+    res += r+"\",\n";
+  }
+
+  TD(sprintf("Encoded %d rows", sizeof(rows)));
+//   foreach(rows, string row)
+//     res += "\""+replace( row, cmap_f, cmap_t )+"\",\n";
+  res = res+"};\n";
+  TE("Done");
+  return res;
+}
+
 
 object decode( string what )
 {
