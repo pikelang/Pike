@@ -15,7 +15,7 @@ class GladeXML;
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.7 2000/07/07 21:52:25 marcus Exp $");
+RCSID("$Id: gladexml.pre,v 1.8 2000/10/13 06:35:42 per Exp $");
 
 %{
 /* This function is used by signal_autoconnect to handle signal
@@ -196,7 +196,7 @@ FUNCTION(create, "function(void|int:void)");
   if(!glade_is_setup)
   {
     glade_init();
-#ifdef NEED_GNOMESUPPORT_H
+#if defined(NEED_GNOMESUPPORT_H) && defined(HAVE_GLADE_GNOME_INIT)
     if(args)
     {
       if(Pike_sp[-args].type == PIKE_T_INT && Pike_sp[-1].u.integer != 0)
@@ -326,4 +326,4 @@ RETURNS(void);
   pop_n_elems(args);
 }
 
-// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.7 2000/07/07 21:52:25 marcus Exp $</i></font>
+// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.8 2000/10/13 06:35:42 per Exp $</i></font>
