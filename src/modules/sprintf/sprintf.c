@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.22 1998/07/17 22:31:10 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.23 1998/07/26 10:26:50 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -944,7 +944,7 @@ static string low_pike_sprintf(char *format,
 	switch(l) {
 	case 4:
 #ifdef FLOAT_IS_IEEE_BIG
-	  *((float*)fsp->b) = tf;
+	  MEMCPY(fsp->b, &tf, 4);
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
 	  fsp->b[0] = ((char *)&tf)[3];
@@ -958,7 +958,7 @@ static string low_pike_sprintf(char *format,
 	  break;
 	case 8:
 #ifdef DOUBLE_IS_IEEE_BIG
-	  *((double*)fsp->b) = (double)tf;
+	  MEMCPY(fsp->b, &tf, 8);
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
 	  td = (double)tf;
