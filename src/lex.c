@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.100 2001/07/27 15:02:05 grubba Exp $");
+RCSID("$Id: lex.c,v 1.101 2001/07/27 21:12:28 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -190,6 +190,13 @@ void exit_lex(void)
 #undef OPCODE1_TAILJUMP
 #undef OPCODE2_TAILJUMP
 
+#undef OPCODE0_RETURN
+#undef OPCODE1_RETURN
+#undef OPCODE2_RETURN
+#undef OPCODE0_TAILRETURN
+#undef OPCODE1_TAILRETURN
+#undef OPCODE2_TAILRETURN
+
 #else
 #define ADDR(X)
 #define NULLADDR
@@ -210,6 +217,13 @@ void exit_lex(void)
 #define OPCODE0_TAILJUMP(OP,DESC) { DESC, OP, I_ISJUMP ADDR(OP) },
 #define OPCODE1_TAILJUMP(OP,DESC) { DESC, OP, I_HASARG ADDR(OP) },
 #define OPCODE2_TAILJUMP(OP,DESC) { DESC, OP, I_TWO_ARGS ADDR(OP) },
+
+#define OPCODE0_RETURN(OP, DESC) OPCODE0(OP, DESC)
+#define OPCODE1_RETURN(OP, DESC) OPCODE1(OP, DESC)
+#define OPCODE2_RETURN(OP, DESC) OPCODE2(OP, DESC)
+#define OPCODE0_TAILRETURN(OP, DESC) OPCODE0_TAIL(OP, DESC)
+#define OPCODE1_TAILRETURN(OP, DESC) OPCODE1_TAIL(OP, DESC)
+#define OPCODE2_TAILRETURN(OP, DESC) OPCODE2_TAIL(OP, DESC)
 
 #define LEXER
 
