@@ -39,7 +39,17 @@
 #define tObjImpl_STDIO_STAT                   "\003\000\000\000\000\012"
 #define   tObjIs_STDIO_STAT                   "\003\001\000\000\000\012"
 
-#define     PROG_GMP_MPZ_ID                                         21
+#define     PROG_BACKTRACE_FRAME_ID				    013
+#define     PROG_BUFFER_ID					    014
+#define     PROG_MULTI_STRING_REPLACE_ID			    015
+#define     PROG_BACKEND_ID					    016
+#define     PROG_MAPPING_ITERATOR_ID				    017
+#define     PROG_ARRAY_ITERATOR_ID				    020
+#define     PROG_MULTISET_ITERATOR_ID				    021
+#define     PROG_STRING_ITERATOR_ID				    022
+#define     PROG_FILE_LINE_ITERATOR_ID				    023
+#define     PROG_STRING_SPLIT_ITERATOR_ID			    024
+#define     PROG_GMP_MPZ_ID                                         025
 
 /* 100 - 300 reserverd for Image.Image */
 
