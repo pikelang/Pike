@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.89 2000/12/05 21:08:35 per Exp $");
+RCSID("$Id: efuns.c,v 1.90 2001/01/31 21:02:19 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -109,6 +109,34 @@ struct array *encode_stat(struct stat *s)
   return a;
 }
 
+/*! @decl File.Stat file_stat(string path, void|int(0..1) symlink)
+ *!
+ *! Stat a file.
+ *!
+ *! If the argument @[symlink] is @tt{1@} symlinks will not be followed.
+ *!
+ *! @returns
+ *!   If the path specified by @[path] doesn't exist @tt{0@} (zero) will
+ *!   be returned.
+ *!
+ *!   Otherwise an object describing the properties of @[path] will be
+ *!   returned.
+ *!
+ *! FIXME: Describe the File.Stat class.
+ *!
+ *! @note
+ *!   In Pike 7.0 and earlier this function returned an array with 7 elements.
+ *!   The old behaviour can be simulated with the following function:
+ *!   @code{array(int) file_stat(string path, void|int(0..1) symlink)
+ *!         {
+ *!           File.Stat st = predef::file_stat(path, symlink);
+ *!           if (!st) return 0;
+ *!           return (array(int))st;
+ *!         }@}
+ *!
+ *! @seealso
+ *!   @[Stdio.File->stat()]
+ */
 void f_file_stat(INT32 args)
 {
   struct stat st;
@@ -151,6 +179,13 @@ void f_file_stat(INT32 args)
   }
 }
 
+/*! @decl int file_truncate(string file, int length)
+ *!
+ *! Truncates the file @[file] to the length specified in @[length].
+ *!
+ *! @returns
+ *!   Returns 1 if ok, 0 if failed.
+ */
 void f_file_truncate(INT32 args)
 {
 #ifdef HAVE_LSEEK64
@@ -207,6 +242,47 @@ void f_file_truncate(INT32 args)
   push_int(!res);
 }
 
+/*! @decl mapping(string:int) filesystem_stat(string path)
+ *!
+ *! Returns a mapping describing the properties of the filesystem
+ *! containing the path specified by @[path].
+ *!
+ *! @returns
+ *!   If a filesystem cannot be determined @tt{0@} (zero) will be returned.
+ *!
+ *!   Otherwise a mapping(string:int) with the following fields will be
+ *!   returned:
+ *!   @mapping
+ *!     @member int "blocksize"
+ *!       Size in bytes of the filesystem blocks.
+ *!     @member int "blocks"
+ *!       Size of the entire filesystem in blocks.
+ *!     @member int "bfree"
+ *!       Number of free blocks in the filesystem.
+ *!     @member int "bavail"
+ *!       Number of available blocks in the filesystem.
+ *!       This is usually somewhat less than the @{"bfree"} value, and
+ *!       can usually be adjusted with eg tunefs(1M).
+ *!     @member int "files"
+ *!       Total number of files (aka inodes) allowed by this filesystem.
+ *!     @member int "ffree"
+ *!       Number of free files in the filesystem.
+ *!     @member int "favail"
+ *!       Number of available files in the filesystem.
+ *!       This is usually the same as the @tt{"ffree"@} value, and can
+ *!       usually be adjusted with eg tunefs(1M).
+ *!     @member int "fsname"
+ *!       Name assigned to the filesystem.
+ *!     @member int "fstype"
+ *!       Type of filesystem (eg @tt{"nfs"@}).
+ *!   @endmapping
+ *!
+ *! @note
+ *!   Please note that not all members are present on all OSs.
+ *!
+ *! @seealso
+ *!   @[file_stat()]
+ */
 #ifdef __NT__
 
 void f_filesystem_stat( INT32 args )
@@ -438,6 +514,10 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
 #endif /* __NT__ */
 
+/*! @decl void werror(string, mixed ... args)
+ *!
+ *! Write to standard error.
+ */
 void f_werror(INT32 args)
 {
   if(!args)
@@ -457,6 +537,16 @@ void f_werror(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl int rm(string f)
+ *!
+ *! Remove a file or directory.
+ *!
+ *! @returns
+ *!   Returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
+ *!
+ *! @seealso
+ *!   @[mkdir()], @[Stdio.recursive_rm()]
+ */
 void f_rm(INT32 args)
 {
   struct stat st;
@@ -504,6 +594,19 @@ void f_rm(INT32 args)
   push_int(i);
 }
 
+/*! @decl int mkdir(string dirname, void|int mode)
+ *!
+ *! Create a directory.
+ *!
+ *! If @[mode] is specified, it's will be used for the new directory after
+ *! being @tt{&@}'ed with the current umask (on OS'es that support this).
+ *!
+ *! @returns
+ *!   @returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
+ *!
+ *! @seealso
+ *!   @[rm()], @[cd()], @[Stdio.mkdirhier()]
+ *!
 void f_mkdir(INT32 args)
 {
   struct pike_string *str;
@@ -599,6 +702,14 @@ void f_mkdir(INT32 args)
 #define HAVE_READDIR_R
 #endif
 
+/*! @decl array(string) get_dir(string dirname)
+ *!
+ *! Returns an array of all filenames in the directory @[dirname], or
+ *! @tt{0@} (zero) if the directory does not exist.
+ *!
+ *! @seealso
+ *!   @[mkdir()], @[cd()]
+ */
 void f_get_dir(INT32 args)
 {
   struct svalue *save_sp=sp;
@@ -784,6 +895,16 @@ void f_get_dir(INT32 args)
     push_int(0);
 }
 
+/*! @decl int cd(string s)
+ *!
+ *! Change the current directory for the whole Pike process.
+ *!
+ *! @returns
+ *!   Returns @tt{1@} for success, @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[getcwd()]
+ */
 void f_cd(INT32 args)
 {
   INT32 i;
@@ -812,6 +933,13 @@ void f_cd(INT32 args)
   push_int(i);
 }
 
+/*! @decl string getcwd()
+ *!
+ *! Returns the current working directory.
+ *!
+ *! @seealso
+ *!   @[cd()]
+ */
 void f_getcwd(INT32 args)
 {
   char *e;
@@ -849,6 +977,27 @@ void f_getcwd(INT32 args)
   free(e);
 }
 
+/*! @decl int exece(string file, array(string) args)
+ *! @decl int exece(string file, array(string) args,
+ *!                 mapping(string:string) env)
+ *!
+ *! This function transforms the Pike process into a process running
+ *! the program specified in the argument @[file] with the arguments @[args].
+ *!
+ *! If the mapping @[env] is present, it will completely replace all
+ *! environment variables before the new program is executed.
+ *!
+ *! This function only returns if something went wrong during exece(2),
+ *! and in that case it returns @tt[0@} (zero).
+ *!
+ *! @note
+ *!   The Pike driver _dies_ when this function is called. You must either
+ *!   use @[fork()] or @[Process.create_process()] if you wish to execute a
+ *!   program and still run the Pike runtime.
+ *!
+ *! @seealso
+ *!   @[Process.create_process()], @[fork()], @[Stdio.File->pipe()]
+ */
 void f_exece(INT32 args)
 {
   INT32 e;
@@ -962,6 +1111,19 @@ void f_exece(INT32 args)
   push_int(0);
 }
 
+/*! @decl int mv(string from, string to)
+ *!
+ *! Rename or move a file between directories. If the destination
+ *! file already exists, it will be overwritten.
+ *!
+ *! On most OSs this function will also handle renaming of directories.
+ *!
+ *! @returns
+ *!   Returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
+ *!
+ *! @seealso
+ *!   @[rm()]
+ */
 void f_mv(INT32 args)
 {
   INT32 i;
@@ -1001,6 +1163,14 @@ void f_mv(INT32 args)
   push_int(!i);
 }
 
+/*! @decl string strerror(int errno)
+ *!
+ *! This function returns a description of an error code. The error
+ *! code is usually obtained from eg @[Stdio.File->errno()].
+ *!
+ *! @note
+ *!   On some platforms the string returned can be somewhat nondescriptive.
+ */
 void f_strerror(INT32 args)
 {
   char *s;
@@ -1031,6 +1201,16 @@ void f_strerror(INT32 args)
   }
 }
 
+/*! @decl int errno()
+ *!
+ *! This function returns the system error from the last file operation.
+ *!
+ *! @note
+ *!   Note that you should normally use @[Stdio.File->errno()] instead.
+ *!
+ *! @seealso
+ *!   @[Stdio.File->errno()], @[strerror()]
+ */
 void f_errno(INT32 args)
 {
   pop_n_elems(args);
