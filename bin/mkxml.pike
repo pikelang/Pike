@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.29 2001/07/20 00:46:14 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.30 2001/07/20 04:18:18 nilsson Exp $ */
 
 string LENA_PATH = "../autodoc/image_ill.pnm";
 string makepic1;
@@ -600,8 +600,27 @@ void document(string enttype,
 	 f->write("<"+enttype+" name="+S(canname)+">\n");
 	 break;
       default:
-	 f->write("<docgroup homogen-type="+S(enttype)+
-		  " homogen-name="+S(canname)+">\n");
+	f->write("<docgroup homogen-type="+S(enttype));
+	if(huh->decl) {
+	  lambda() {
+	    string m,n;
+
+	    array decl;
+	    if(!arrayp(huh->decl))
+	      decl = ({ huh->decl });
+	    else
+	      decl = huh->decl;
+
+	    foreach(decl, string prot) {
+	      sscanf(prot, "%*s %s(", n);
+	      if(!m) { m=n; continue; }
+	      if(n!=m) return;
+	    }
+	    if(convname[m]) m=convname[m];
+	    f->write(" homogen-name="+S(m));
+	  }();
+	}
+	f->write(">\n");
 
 	 if (huh->decl)
 	 {
@@ -826,7 +845,7 @@ void make_doc_files()
 {
    html2xml=Parser.HTML();
    html2xml->add_tag("br",lambda(mixed...) { return ({"<br/>"}); });
-   html2xml->add_tag("wbr",lambda(mixed...) { return ({"<wbr/>"}); });
+   html2xml->add_tag("wbr",lambda(mixed...) { return ({"<br/>"}); });
 
    html2xml->add_tags( ([ "dl":tag_quote_args,
 			  "dt":tag_quote_args,
