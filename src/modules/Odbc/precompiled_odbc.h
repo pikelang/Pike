@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.4 1998/05/31 15:40:34 grubba Exp $
+ * $Id: precompiled_odbc.h,v 1.5 1998/10/19 00:56:29 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -17,7 +17,20 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#else /* !HAVE_WINDOWS_H */
+#ifdef HAVE_QEODBC_H
 #include <qeodbc.h>
+#else
+#ifdef HAVE_ODBC
+#undef HAVE_ODBC
+#endif /* HAVE_ODBC */
+#endif /* HAVE_QEODBC_H */
+#endif /* HAVE_WINDOWS_H */
+
+#ifdef HAVE_ODBC
+
 #ifdef HAVE_SQL_H
 #include <sql.h>
 #endif /* HAVE_SQL_H */
@@ -79,4 +92,5 @@ void odbc_error(const char *fun, const char *msg,
 void init_odbc_res_programs(void);
 void exit_odbc_res(void);
 
+#endif /* HAVE_ODBC */
 #endif /* PIKE_PRECOMPILED_ODBC_H */
