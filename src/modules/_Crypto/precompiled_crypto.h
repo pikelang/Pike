@@ -29,6 +29,14 @@
  * Structures
  */
 
+struct pike_crypto {
+  struct object *object;
+  INT32 block_size;
+  INT32 overflow_len;
+  unsigned char *iv;
+  unsigned char *overflow;
+};
+
 struct pike_md2 {
   MD2_CTX ctx;
   unsigned char checksum[MD2_DIGEST_LENGTH];
@@ -58,6 +66,8 @@ struct pike_des {
 /*
  * Defines
  */
+
+#define PIKE_CRYPTO	((struct pike_crypto *)(fp->current_storage))
 
 #define PIKE_MD2	((struct pike_md2 *)(fp->current_storage))
 #define PIKE_MD5	((struct pike_md5 *)(fp->current_storage))

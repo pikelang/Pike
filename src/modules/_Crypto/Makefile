@@ -2,10 +2,10 @@
 CC=gcc
 
 # You need the pike source somewhere
-PIKESRCDIR=../pike/src
+PIKESRCDIR=../../pike/src
 
 # And you need a dir where Pike was compiled (might be same as sourcedir)
-PIKEBUILDDIR=../pike/build/sol2.5
+PIKEBUILDDIR=../../pike/build/sol2.5
 
 # The SSLeay root is here
 SSLROOT=/usr/local/ssl/

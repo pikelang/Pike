@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.1.1.1 1996/11/05 15:10:09 grubba Exp $
+ * $Id: idea.c,v 1.2 1996/11/07 19:30:17 grubba Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -62,6 +62,24 @@ void exit_pike_idea(struct object *o)
 /*
  * efuns and the like
  */
+
+/* int query_block_size(void) */
+static void f_query_block_size(INT32 args)
+{
+  if (args) {
+    error("Too many arguments to idea->query_block_size()\n");
+  }
+  push_int(8);
+}
+
+/* int query_key_length(void) */
+static void f_query_key_length(INT32 args)
+{
+  if (args) {
+    error("Too many arguments to idea->query_key_length()\n");
+  }
+  push_int(16);
+}
 
 /* void set_key(string) */
 static void f_set_key(INT32 args)
@@ -232,6 +250,8 @@ void init_idea_programs(void)
   start_new_program();
   add_storage(sizeof(struct pike_idea));
 
+  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
   add_function("set_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("encrypt", f_encrypt, "function(string:string)", OPT_SIDE_EFFECT);
   add_function("decrypt", f_decrypt, "function(string:string)", OPT_SIDE_EFFECT);
