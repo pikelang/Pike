@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.76 2004/08/18 15:02:32 mast Exp $
+/* $Id: sslfile.pike,v 1.77 2004/08/18 15:08:03 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1265,6 +1265,14 @@ static int ssl_read_callback (int called_from_real_backend, string input)
       SSL3_DEBUG_MSG ("ssl_read_callback: "
 		      "Got abrupt remote close - simulating System.EPIPE\n");
       local_errno = cb_errno = System.EPIPE;
+
+      if (close_callback) {
+	// Call the close callback to report the error.
+	RESTORE;
+	close_callback (callback_id);
+	return -1;
+      }
+
       shutdown();
 
       // Make sure the local backend exits after this, so that the
@@ -1404,25 +1412,23 @@ static int ssl_close_callback (int called_from_real_backend)
 
     // Always signal an error and do a blunt shutdown here. That since
     // the connection has always been closed abruptly if we arrive
-    // here (a proper close arrives in the read callback). Thus a
-    // close callback should be called here - but we shouldn't hide
-    // truncation attacks (hence the errno), let the application decide
-    // if the error should be shown.
+    // here (a proper close arrives in the read callback).
     if (cb_errno)
       SSL3_DEBUG_MSG ("ssl_close_callback: Got errno from another callback\n");
     else {
       SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - simulating System.EPIPE\n");
-      function(void|mixed:int) old_close_callback = close_callback;
-      close_callback = 0;
-      if(old_close_callback)
-        old_close_callback (callback_id);
       cb_errno = System.EPIPE;
     }
-    shutdown();
+    local_errno = cb_errno;
 
-    // What about a nonblocking close? If we don't throw anything here
-    // then the error will go unnoticed for sure. But then again, if
-    // someone makes a nonblocking close that's probably what's wanted.
+    if (close_callback) {
+      // Call the close callback to report the error.
+      RESTORE;
+      close_callback (callback_id);
+      return -1;
+    }
+
+    shutdown();
   } LEAVE;
 
   // Make sure the local backend exits after this, so that the error
