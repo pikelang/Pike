@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.340 2003/11/25 22:13:58 mast Exp $
+|| $Id: interpret.c,v 1.341 2003/12/05 14:08:52 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.340 2003/11/25 22:13:58 mast Exp $");
+RCSID("$Id: interpret.c,v 1.341 2003/12/05 14:08:52 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1795,61 +1795,73 @@ void low_return_pop(void)
 void unlink_previous_frame(void)
 {
   struct pike_frame *current, *prev;
-  struct svalue *target, **smsp;
-  int freespace;
 
   current=Pike_interpreter.frame_pointer;
   prev=current->next;
 #ifdef PIKE_DEBUG
   {
     JMP_BUF *rec;
-    
+
+    /* Check if any recoveries belong to the frame we're
+     * about to unlink.
+     */
     if((rec=Pike_interpreter.recoveries))
     {
       while(rec->frame_pointer == current) rec=rec->previous;
+      /* FIXME: Wouldn't a simple return be ok? */
       if(rec->frame_pointer == current->next)
 	Pike_fatal("You can't touch this!\n");
     }
   }
 #endif
+  /* Save various fields from the previous frame.
+   */
+  current->save_sp=prev->save_sp;
+  current->save_mark_sp=prev->save_mark_sp;
+  current->flags=prev->flags;
 
+  /* Unlink the top frame temporarily. */
   Pike_interpreter.frame_pointer=prev;
 
-  target=prev->save_sp;
-  smsp=prev->save_mark_sp;
-  current->flags=prev->flags;
+  /* Unlink the frame. */
   POP_PIKE_FRAME();
-  
-  prev=current->next=Pike_interpreter.frame_pointer;
+
+  /* Hook our frame again. */
+  current->next=Pike_interpreter.frame_pointer;
   Pike_interpreter.frame_pointer=current;
 
-  current->save_sp=target;
-  current->save_mark_sp=smsp;
-
-  /* Move svalues down */
-  freespace=Pike_fp->locals - target;
-  if(freespace > ((Pike_sp - Pike_fp->locals)<<2) + 32)
+#if 0
+  /* FIXME: This code is questionable, and the Pike_sp
+   *        adjustment ought to modify the mark stack.
+   */
   {
-    assign_svalues(target,
-		   Pike_fp->locals,
-		   Pike_sp - Pike_fp->locals,
-		   BIT_MIXED);
+    int freespace;
+    /* Move svalues down */
+    freespace=current->locals - current->save_sp;
+    if(freespace > ((Pike_sp - current->locals)<<2) + 32)
+    {
+      assign_svalues(current->save_sp,
+		     current->locals,
+		     Pike_sp - current->locals,
+		     BIT_MIXED);
 
-    Pike_fp->locals-=freespace;
-    Pike_fp->expendible-=freespace;
-    pop_n_elems(freespace);
-  }
+      current->locals-=freespace;
+      current->expendible-=freespace;
+      pop_n_elems(freespace);
+    }
 
-  /* Move pointers down */
-  freespace=Pike_fp->mark_sp_base - smsp;
-  if(freespace > ((Pike_mark_sp - Pike_fp->mark_sp_base)<<2)+32)
-  {
-    MEMMOVE(smsp,
-	    Pike_fp->mark_sp_base,
-	    sizeof(struct svalue **)*(Pike_mark_sp - Pike_fp->mark_sp_base));
-    Pike_fp->mark_sp_base-=freespace;
-    Pike_mark_sp-=freespace;
+    /* Move pointers down */
+    freespace=current->mark_sp_base - current->save_mark_sp;
+    if(freespace > ((Pike_mark_sp - current->mark_sp_base)<<2)+32)
+    {
+      MEMMOVE(current->save_mark_sp,
+	      current->mark_sp_base,
+	      sizeof(struct svalue **)*(Pike_mark_sp - current->mark_sp_base));
+      current->mark_sp_base-=freespace;
+      Pike_mark_sp-=freespace;
+    }
   }
+#endif /* 0 */
 }
 
 
