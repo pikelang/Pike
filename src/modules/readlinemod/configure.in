@@ -1,0 +1,15 @@
+AC_INIT(readlinemod.c)
+AC_CONFIG_HEADER(readline_machine.h)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+
+AC_CHECK_HEADERS(readline.h)
+AC_CHECK_HEADERS(history.h)
+AC_CHECK_LIB(termcap, tputs)
+AC_CHECK_LIB(readline, readline)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

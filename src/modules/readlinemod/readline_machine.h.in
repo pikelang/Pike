@@ -1,0 +1,16 @@
+#ifndef GDBM_MACHINE_H
+#define GDBM_MACHINE_H
+
+/* Define this if you have <readline.h> */
+#undef HAVE_READLINE_H
+
+/* Define this if you have <history.h> */
+#undef HAVE_HISTORY_H
+
+/* Define this if you have -lreadline */
+#undef HAVE_LIBREADLINE
+
+/* Define this if you have -ltermcap */
+#undef HAVE_LIBTERMCAP
+
+#endif

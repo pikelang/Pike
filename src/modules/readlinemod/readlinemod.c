@@ -1,0 +1,90 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
+#include "global.h"
+#include "readline_machine.h"
+#include "types.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "array.h"
+#include "object.h"
+#include "macros.h"
+
+#if !defined(HAVE_READLINE_H) || !defined(HAVE_HISTORY_H)
+#undef HAVE_LIBREADLINE
+#endif
+
+#ifdef HAVE_LIBREADLINE
+
+#include <readline.h>
+#include <history.h>
+
+static void f_readline(INT32 args)
+{
+  char *r;
+  if(args < 1)
+    error("Too few arguments to readline().\n");
+
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to readline()\n");
+
+  r=readline(sp[-args].u.string->str);
+  pop_n_elems(args);
+  if(r)
+  {
+    if(*r) add_history(r);
+    push_string(make_shared_string(r));
+    free(r);
+  } else {
+    push_int(0);
+  }
+}
+
+#else
+
+#include <stdio.h>
+
+#define BLOCK 16384
+
+static void f_readline(INT32 args)
+{
+  char line[BLOCK];
+  char *r;
+  if(args < 1)
+    error("Too few arguments to readline().\n");
+
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to readline()\n");
+
+  puts(sp[-args].u.string->str);
+
+  pop_n_elems(args);
+  if(fgets(line,BLOCK,stdin))
+  {
+    INT32 len;
+    if(len=strlen(line))
+    {
+      if(line[len-1]=='\n')
+      {
+	push_string(make_shared_binary_string(line,len-1));
+	return;
+      }
+    }
+  }
+  push_int(0);
+}
+
+#endif
+
+void init_readlinemod_efuns(void)
+{
+  rl_bind_key('\t', rl_insert);
+  add_efun("readline",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
+}
+void exit_readlinemod(void) {}
+void init_readlinemod_programs(void) { }
+
+
