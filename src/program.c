@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.510 2003/07/31 14:28:50 tomas Exp $
+|| $Id: program.c,v 1.511 2003/08/02 01:10:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.510 2003/07/31 14:28:50 tomas Exp $");
+RCSID("$Id: program.c,v 1.511 2003/08/02 01:10:17 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2047,7 +2047,7 @@ void low_start_new_program(struct program *p,
     i.identifier_ref_offset=0;
     i.parent=0;
     i.parent_identifier=-1;
-    i.parent_offset=-18;
+    i.parent_offset=OBJECT_PARENT;
     i.name=0;
     add_to_inherits(i);
   }
@@ -2387,15 +2387,20 @@ void dump_program_tables (struct program *p, int indent)
 
   fprintf(stderr, "\n"
 	  "%*sInherit table:\n"
-	  "%*s  ####: Level id_level offset ref_offset\n",
+	  "%*s  ####: Level prog_id id_level storage_offs "
+	  "par_id par_offs par_obj_id id_ref_offs\n",
 	  indent, "", indent, "");
   for (d=0; d < p->num_inherits; d++) {
     struct inherit *inh = p->inherits + d;
 
-    fprintf(stderr, "%*s  %4d: %5d %8d %6d"/* %10d*/"\n",
+    fprintf(stderr, "%*s  %4d: %5d %7d %8d %12d %6d %8d %10d %11d\n",
 	    indent, "",
-	    d, inh->inherit_level, inh->identifier_level,
-	    inh->storage_offset /*, inh->identifier_ref_offset*/);
+	    d, inh->inherit_level,
+	    inh->prog ? inh->prog->id : -1,
+	    inh->identifier_level, inh->storage_offset,
+	    inh->parent_identifier, inh->parent_offset,
+	    inh->parent ? inh->parent->program_id : -1,
+	    inh->identifier_ref_offset);
   }
   fprintf(stderr, "\n"
 	  "%*sIdentifier table:\n"
@@ -2525,6 +2530,13 @@ void check_program(struct program *p)
        p->inherits[e].storage_offset + STORAGE_NEEDED(p->inherits[e].prog) >
        p->storage_needed)
       Pike_fatal("Not enough room allocated by inherit!\n");
+
+    if (p->inherits[e].inherit_level == 1 &&
+	p->inherits[e].identifier_level != p->inherits[e].identifier_ref_offset) {
+      dump_program_tables (p, 0);
+      Pike_fatal ("Unexpected difference between identifier_level "
+		  "and identifier_ref_offset in inherit %d.\n", e);
+    }
 
     if(e)
     {
@@ -3225,7 +3237,7 @@ static int locate_parent_state(struct program_state **state,
   if(depth<=0) return depth;
   while(depth-->0)
   {
-    if( (*i)->parent_offset != -17)
+    if( (*i)->parent_offset != INHERIT_PARENT)
     {
       int tmp=(*i)->parent_identifier;
       if( (*i)->parent_offset > 0)
@@ -3405,7 +3417,7 @@ void low_inherit(struct program *p,
 	}else{
 	  inherit.parent=parent;
 	  inherit.parent_identifier=parent_identifier;
-	  inherit.parent_offset=-17;
+	  inherit.parent_offset=INHERIT_PARENT;
 	}
       }else{
 	inherit.parent_offset=parent_offset;
@@ -3416,7 +3428,6 @@ void low_inherit(struct program *p,
       {
 	if(parent && parent->next != parent && inherit.parent_offset)
 	{
-	  /* Fake object */
 	  struct object *par=parent;
 	  int e,pid=parent_identifier;
 
@@ -3437,7 +3448,7 @@ void low_inherit(struct program *p,
 	      {
 		struct external_variable_context tmp;
 		struct inherit *in2=in;
-		while(in2->identifier_level >= in->identifier_level) in2--;
+		while(in2->inherit_level >= in->inherit_level) in2--;
 		tmp.o=par;
 		tmp.inherit=in2;
 		tmp.parent_identifier=pid;
@@ -3447,12 +3458,12 @@ void low_inherit(struct program *p,
 	      }
 	      break;
 
-	      case -17:
+	      case INHERIT_PARENT:
 		pid = in->parent_identifier;
 		par = in->parent;
 		break;
 
-	      case -18:
+	      case OBJECT_PARENT:
 		/* Ponder: Can we be sure that PROGRAM_USES_PARENT
 		 * doesn't get set later? /mast */
 		if(par->prog->flags & PROGRAM_USES_PARENT)
@@ -3467,7 +3478,7 @@ void low_inherit(struct program *p,
 	  }
 
 	  inherit.parent=par;
-	  inherit.parent_offset=-17;
+	  inherit.parent_offset=INHERIT_PARENT;
 	}
       }
     }
@@ -3481,6 +3492,7 @@ void low_inherit(struct program *p,
       }
       else if(inherit.name)
       {
+	/* FIXME: Wide string handling. */
 	struct pike_string *s;
 	s=begin_shared_string(inherit.name->len + name->len + 2);
 	MEMCPY(s->str,name->str,name->len);
@@ -3593,19 +3605,17 @@ void compiler_do_inherit(node *n,
 	  do_inherit(s,flags,name);
 	  return;
 	}else{
-	  p=s->u.program;
+	  low_inherit(s->u.program,
+		      0,
+		      numid,
+		      offset+42,
+		      flags,
+		      name);
 	}
       }else{
 	yyerror("Inherit identifier is not a constant program");
 	return;
       }
-
-      low_inherit(p,
-		  0,
-		  numid,
-		  offset+42,
-		  flags,
-		  name);
       break;
 
     default:
@@ -4047,7 +4057,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
     
     if(/* c && */ !svalues_are_constant(c,1,BIT_MIXED,0))
-      yyerror("Constant values may not have references this_object()");
+      yyerror("Constant values may not have references to this.");
     
   }while(0);
 
