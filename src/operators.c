@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.115 2000/12/15 21:37:44 grubba Exp $");
+RCSID("$Id: operators.c,v 1.116 2001/01/25 09:14:39 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2599,15 +2599,7 @@ static int generate_sizeof(node *n)
   return 1;
 }
 
-static int generate_call_function(node *n)
-{
-  node **arg;
-  emit0(F_MARK);
-  do_docode(CDR(n),DO_NOT_COPY);
-  emit0(F_CALL_FUNCTION);
-  return 1;
-}
-
+extern int generate_call_function(node *n);
 struct program *string_assignment_program;
 
 #undef THIS

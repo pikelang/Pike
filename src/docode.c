@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.100 2001/01/17 20:15:53 grubba Exp $");
+RCSID("$Id: docode.c,v 1.101 2001/01/25 09:14:38 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -380,6 +380,18 @@ static INT32 count_cases(node *n)
     if(cdr_is_node(n)) ret += count_cases(CDR(n));
     return ret;
   }
+}
+
+
+int generate_call_function(node *n)
+{
+  node **arg;
+  emit0(F_MARK);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+  do_docode(CDR(n),DO_NOT_COPY);
+  emit0(F_CALL_FUNCTION);
+  POP_AND_DONT_CLEANUP;
+  return 1;
 }
 
 static inline struct compiler_frame *find_local_frame(INT32 depth)
