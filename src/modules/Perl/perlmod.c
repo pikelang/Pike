@@ -1,4 +1,6 @@
-/* $Id: perlmod.c,v 1.18 2000/07/28 07:14:20 hubbe Exp $ */
+/* $Id: perlmod.c,v 1.19 2000/10/11 23:55:44 mast Exp $ */
+
+#define NO_PIKE_SHORTHAND
 
 #include "builtin_functions.h"
 #include "global.h"
@@ -73,19 +75,6 @@ struct perlmod_storage
 #define my_perl PERL
 #endif
 
-/* since both Perl and Pike likes to use "sp" as a stack pointer,
- * let's define some Pike macros as functions...
- *
- * Hubbe: Not true anymore, we should really define NO_PIKE_SHORTHAND
- */
-static void _push_int(INT32 i) { push_int(i);}
-static void _push_float(float f) { push_float(f);}
-static void _push_string(struct pike_string *s) { push_string(s);}
-static void _push_array(struct array *a) { push_array(a);}
-static void _pop_n_elems(int n) { pop_n_elems(n);}
-static void _pike_pop() { --Pike_sp;}
-#undef sp
-
 #define BLOCKING 1
 
 #ifndef BLOCKING
@@ -108,11 +97,11 @@ static void _push_zerotype()
 
 static SV * _pikev2sv(struct svalue *s)
 { switch (s->type)
-  { case T_INT:
+  { case PIKE_T_INT:
       return newSViv(s->u.integer); break;
-    case T_FLOAT:
+    case PIKE_T_FLOAT:
       return newSVnv(s->u.float_number); break;
-    case T_STRING:
+    case PIKE_T_STRING:
       if (s->u.string->size_shift) break;
       return newSVpv(s->u.string->str, s->u.string->len); break;
   }
@@ -123,36 +112,36 @@ static SV * _pikev2sv(struct svalue *s)
 static void _sv_to_svalue(SV *sv, struct svalue *sval)
 { if (sv && (SvOK(sv)))
   { if (SvIOKp(sv))
-    { sval->type = T_INT; sval->subtype = 0;
+    { sval->type = PIKE_T_INT; sval->subtype = 0;
       sval->u.integer = SvIV(sv);
       return;
     }
     else if (SvNOKp(sv))
-    { sval->type = T_FLOAT; sval->subtype = 0;
+    { sval->type = PIKE_T_FLOAT; sval->subtype = 0;
       sval->u.float_number = SvNV(sv);
       return;
     }
     else if (SvPOKp(sv))
-    { sval->type = T_STRING; sval->subtype = 0;
+    { sval->type = PIKE_T_STRING; sval->subtype = 0;
       sval->u.string = make_shared_binary_string(SvPVX(sv), SvCUR(sv));
       return;
     }
   }
-  sval->type = T_INT; sval->u.integer = 0;
+  sval->type = PIKE_T_INT; sval->u.integer = 0;
   sval->subtype = !sv; /* zero-type zero if NULL pointer */
 }
 
 static void _pikepush_sv(SV *sv)
 { if (!SvOK(sv))
-     _push_int(0);
+     push_int(0);
   else if (SvIOKp(sv))
-     _push_int(SvIV(sv));
+     push_int(SvIV(sv));
   else if (SvNOKp(sv))
-     _push_float((float)(SvNV(sv)));
+     push_float((float)(SvNV(sv)));
   else if (SvPOKp(sv))
-     _push_string(make_shared_binary_string(SvPVX(sv), SvCUR(sv)));
+     push_string(make_shared_binary_string(SvPVX(sv), SvCUR(sv)));
   else
-     _push_int(0);
+     push_int(0);
 }
 
 static int _perl_parse(struct perlmod_storage *ps,
@@ -483,7 +472,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
 
   MT_FORBID;
 
-  _pop_n_elems(args);
+  pop_n_elems(args);
 
 // #define sp _perlsp
   SPAGAIN;
@@ -504,7 +493,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
   { struct array *a = allocate_array(n);
     for(i = 0; i < n; ++i)
          _sv_to_svalue(POPs, &(a->item[(n-1)-i]));
-    _push_array(a);
+    push_array(a);
   }
   else if (n > 0)
   { for(; n > 1; --n) POPs;
@@ -537,7 +526,7 @@ static void _perlmod_call(INT32 args, int perlflags)
   if (args <   1) error("Too few arguments.\n");
   if (args > 201) error("Too many arguments.\n");
 
-  if (Pike_sp[-args].type != T_STRING ||
+  if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift)
        error("bad Perl function name (must be an 8-bit string)");
 
@@ -549,13 +538,13 @@ static void _perlmod_call(INT32 args, int perlflags)
   { struct svalue *s = &(Pike_sp[n-args]);
     char *msg;
     switch (s->type)
-    { case T_INT:
+    { case PIKE_T_INT:
         XPUSHs(sv_2mortal(newSViv(s->u.integer)));
         break;
-      case T_FLOAT:
+      case PIKE_T_FLOAT:
         XPUSHs(sv_2mortal(newSVnv((double)(s->u.float_number))));
         break;
-      case T_STRING:
+      case PIKE_T_STRING:
         if (s->u.string->size_shift)
         { PUTBACK; FREETMPS; LEAVE;
           error("widestrings not supported in Pike-to-Perl call interface");
@@ -563,13 +552,13 @@ static void _perlmod_call(INT32 args, int perlflags)
         }
         XPUSHs(sv_2mortal(newSVpv(s->u.string->str, s->u.string->len)));
         break;
-      case T_MAPPING:
+      case PIKE_T_MAPPING:
         msg = "Mapping argument not allowed here.\n"; if (0)
-      case T_OBJECT:
+      case PIKE_T_OBJECT:
         msg = "Object argument not allowed here.\n"; if (0)
-      case T_MULTISET:
+      case PIKE_T_MULTISET:
         msg = "Multiset argument not allowed here.\n"; if (0)
-      case T_ARRAY:
+      case PIKE_T_ARRAY:
         msg = "Array argument not allowed here.\n"; if (0)
       default:
         msg = "Unsupported argument type.\n";
@@ -589,7 +578,7 @@ static void _perlmod_call(INT32 args, int perlflags)
   MT_FORBID;
 // #define sp _perlsp
 
-  _pop_n_elems(args);
+  pop_n_elems(args);
 
   SPAGAIN;
 
@@ -622,7 +611,7 @@ static void _perlmod_call(INT32 args, int perlflags)
   { struct array *a = allocate_array(n);
     for(i = 0; i < n; ++i)
          _sv_to_svalue(POPs, &(a->item[(n-1)-i]));
-    _push_array(a);
+    push_array(a);
   }
   else if (n == 1)
      _pikepush_sv(POPs);
@@ -650,7 +639,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
   if (!(_THIS->perl)) error("No Perl interpreter available.\n");
 
   if (args != wanted_args) error("Wrong number of arguments.\n");
-  if (Pike_sp[-args].type != T_STRING ||
+  if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
        error("Variable name must be an 8-bit string.\n");
 
@@ -664,7 +653,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
   else if (type == 'A') /* array */
   { AV *av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
     SV **svp;
-    if (Pike_sp[1-args].type != T_INT || (i = Pike_sp[1-args].u.integer) < 0)
+    if (Pike_sp[1-args].type != PIKE_T_INT || (i = Pike_sp[1-args].u.integer) < 0)
           error("Array subscript must be a non-negative integer.\n");
     if (op == 'W')
          av_store(av, i, _sv_2mortal(_pikev2sv(Pike_sp+2-args)));
@@ -714,7 +703,7 @@ static void perlmod_set_hash_item(INT32 args)
 static void perlmod_array_size(INT32 args)
 { AV *av;
   if (args != 1) error("Wrong number of arguments.\n");
-  if (Pike_sp[-args].type != T_STRING ||
+  if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
       error("Array name must be given as an 8-bit string.\n");
 
@@ -723,13 +712,13 @@ static void perlmod_array_size(INT32 args)
   pop_n_elems(args);
   /* Return av_len()+1, since av_len() returns the value of the highest
    * index, which is 1 less than the size. */
-  _push_int(av_len(av)+1);
+  push_int(av_len(av)+1);
 }
 
 static void perlmod_get_whole_array(INT32 args)
 { AV *av; int i, n; struct array *arr;
   if (args != 1) error("Wrong number of arguments.\n");
-  if (Pike_sp[-args].type != T_STRING ||
+  if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
       error("Array name must be given as an 8-bit string.\n");
 
@@ -752,7 +741,7 @@ static void perlmod_get_whole_array(INT32 args)
 static void perlmod_get_hash_keys(INT32 args)
 { HV *hv; HE *he; SV *sv; int i, n; I32 len; struct array *arr;
   if (args != 1) error("Wrong number of arguments.\n");
-  if (Pike_sp[-args].type != T_STRING ||
+  if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
       error("Hash name must be given as an 8-bit string.\n");
 
@@ -779,7 +768,7 @@ static void perlmod_array_size_limit(INT32 args)
   { case 0:
       break;
     case 1:
-      if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer < 1)
+      if (Pike_sp[-args].type != PIKE_T_INT || Pike_sp[-args].u.integer < 1)
            error("Argument must be a integer in range 1 to 2147483647.");
       _THIS->array_size_limit = Pike_sp[-args].u.integer;
       break;
@@ -787,7 +776,7 @@ static void perlmod_array_size_limit(INT32 args)
       error("Wrong number of arguments.\n");
   }
   pop_n_elems(args);
-  _push_int(_THIS->array_size_limit);
+  push_int(_THIS->array_size_limit);
 }
 
 void pike_module_init(void)
