@@ -194,11 +194,13 @@ static int eval_instruction(unsigned char *pc)
 
       /* The not so basic 'push value' instructions */
       CASE(F_GLOBAL);
-      low_object_index_no_free(sp,
-			       fp->current_object,
-			       GET_ARG() + fp->context.identifier_level);
-      sp++;
-      print_return_value();
+      {
+	low_object_index_no_free(sp,
+				 fp->current_object,
+				 GET_ARG() + fp->context.identifier_level);
+	sp++;
+	print_return_value();
+      }
       break;
 
       CASE(F_EXTERNAL);
@@ -247,8 +249,30 @@ static int eval_instruction(unsigned char *pc)
 	  
 	  if(!(p=o->prog))
 	    error("Attempting to access variable in destructed object\n");
+
+#ifdef DEBUG_MALLOC
+	  if (p->refs == 0x55555555) {
+	    fprintf(stderr, "The program %p has been zapped!\n", p);
+	    debug_malloc_dump_references(p);
+	    fprintf(stderr, "Which taken from the object %p\n", o);
+	    debug_malloc_dump_references(o);
+	    fatal("Looks like the program %p has been zapped!\n", p);
+	  }
+#endif /* DEBUG_MALLOC */
 	  
 	  inherit=INHERIT_FROM_INT(p, i);
+	  
+#ifdef DEBUG_MALLOC
+	  if (inherit->storage_offset == 0x55555555) {
+	    fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
+	    debug_malloc_dump_references(inherit);
+	    fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
+	    debug_malloc_dump_references(p);
+	    fprintf(stderr, "Which was in turn taken from the object %p\n", o);
+	    debug_malloc_dump_references(o);
+	    fatal("Looks like the program %p has been zapped!\n", p);
+	  }
+#endif /* DEBUG_MALLOC */
 	  
 	  if(!accumulator) break;
 	  --accumulator;
