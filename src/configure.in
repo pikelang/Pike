@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.655 2003/02/03 17:25:06 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.656 2003/02/03 18:42:14 grendel Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1200,7 +1200,7 @@ Use --with-threads to force threads support.
      xOpenBSD*)
         if test "`uname -r|sed -e 's/\([[0-9]]*\).*/\1/'`" -lt 4 \
              -a "x`uname -m`" = "xalpha"; then
-           PIKE_MSG_WARN([
+           AC_MSG_WARN([
 OpenBSD/alpha <= 3.x detected, disabling threads.
 Use --with-threads to force threads support.
 ])
