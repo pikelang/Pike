@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.147 2002/04/20 15:07:39 jhs Exp $");
+RCSID("$Id: operators.c,v 1.148 2002/04/20 15:11:50 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2016,77 +2016,33 @@ static int generate_lsh(node *n)
 
 PMOD_EXPORT void o_rsh(void)
 {
-  switch(sp[-2].type)
+  if(sp[-2].type == T_STRING) /* s[..sizeof(s)-n-1] */
   {
-    case T_ARRAY: /* s[..sizeof(s)-n-1] */
+    struct pike_string *s;
+    ptrdiff_t len;
+    int args = 2;
+
+    if(sp[-1].type != T_INT)
+      SIMPLE_BAD_ARG_ERROR("`>>", 2, "int");
+
+    len = sp[-1].u.integer;
+    if(len <= 0) /* NOP */
     {
-      struct array *a;
-      if(to >= sp[-1].u.array->size-1)
-      {
-	to = sp[-1].u.array->size-1;
-
-	if(from>to+1) from=to+1;
-      }
-
-      a = slice_array(sp[-1].u.array, from, to+1);
-      free_array(sp[-1].u.array);
-      sp[-1].u.array=a;
-      break;
-    }
-
-    case T_STRING: /* s[..sizeof(s)-n-1] */
-    {
-      struct pike_string *s;
-      ptrdiff_t len;
-      int args = 2;
-
-      if(sp[-1].type != T_INT)
-	SIMPLE_BAD_ARG_ERROR("`>>", 2, "int");
-
-      len = sp[-1].u.integer;
-      if(len <= 0) /* NOP */
-      {
-	sp--;
-	return;
-      }
-      if(len > sp[-2].u.string->len)
-	len = sp[-2].u.string->len;
-      len = sp[-2].u.string->len - len;
-
-      s = string_slice(sp[-2].u.string, 0, len);
-      free_string(sp[-2].u.string);
       sp--;
-      sp[-1].u.string = s;
       return;
     }
+    if(len > sp[-2].u.string->len)
+      len = sp[-2].u.string->len;
+    len = sp[-2].u.string->len - len;
 
-    case T_INT:
-    {
-#ifdef AUTO_BIGNUM
-      if(INT_TYPE_RSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
-      {
-	sp--;
-	sp[-1].u.integer = 0;
-	return;
-      }
-#else /* !AUTO_BIGNUM */
-      if (sp[-1].u.integer > 31) {
-	sp--;
-	if (sp[-1].u.integer < 0) {
-	  sp[-1].u.integer = -1;
-	} else {
-	  sp[-1].u.integer = 0;
-	}
-	return;
-      }
-#endif /* AUTO_BIGNUM */
-
-      sp--;
-      sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
-      return;
-    }
+    s = string_slice(sp[-2].u.string, 0, len);
+    free_string(sp[-2].u.string);
+    sp--;
+    sp[-1].u.string = s;
+    return;
   }
-  if(sp[-1].type != T_INT || sp[-2].type != T_INT)
+
+  if(sp[-2].type != T_INT || sp[-1].type != T_INT)
   {
     int args = 2;
     if(call_lfun(LFUN_RSH, LFUN_RRSH))
@@ -2095,6 +2051,28 @@ PMOD_EXPORT void o_rsh(void)
       SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|string|object");
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int|object");
   }
+  
+#ifdef AUTO_BIGNUM
+  if(INT_TYPE_RSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+  {
+    sp--;
+    sp[-1].u.integer = 0;
+    return;
+  }
+#else /* !AUTO_BIGNUM */
+  if (sp[-1].u.integer > 31) {
+    sp--;
+    if (sp[-1].u.integer < 0) {
+      sp[-1].u.integer = -1;
+    } else {
+      sp[-1].u.integer = 0;
+    }
+    return;
+  }
+#endif /* AUTO_BIGNUM */
+  
+  sp--;
+  sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
 
 /*! @decl int `>>(int arg1, int arg2)
