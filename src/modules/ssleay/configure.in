@@ -6,33 +6,50 @@ AC_SUBST(RANLIB)
 
 AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 
-SSLEAY_FLAGS=
+pike_cv_ssleay="no";
 
 if test x$with_ssleay = xyes; then
-  AC_MSG_CHECKING(Checking for SSLeay)
+  AC_MSG_CHECKING(Checking for existance of SSLeay)
   
-  AC_CACHE_VAL(pike_cv_ssleay,
+  AC_CACHE_VAL(pike_cv_ssleay_exists,
   [
     if test -d /usr/local/ssl ; then
-      pike_cv_ssleay="yes"
+      pike_cv_ssleay_exists="yes"
     else
-      pike_cv_ssleay="no"
+      pike_cv_ssleay_exists="no"
     fi
   ])
   
-  AC_MSG_RESULT($pike_cv_ssleay)
+  AC_MSG_RESULT($pike_cv_ssleay_exists)
   
-  if test x$pike_cv_ssleay = xyes; then
+  if test x$pike_cv_ssleay_exists = xyes; then
     SSLEAY_FLAGS="-DHAVE_SSLEAY -I/usr/local/ssl/include -L/usr/local/ssl/lib"
-  fi
+  
+    if test -d /usr/local/ssl/lib ; then
+      echo Added /usr/local/ssl/lib to the library search path.
+      LDFLAGS="-L/usr/local/ssl/lib ${LDFLAGS}"
+    fi
 
-  if test -d /usr/local/ssl/lib ; then
-    echo Added /usr/local/ssl/lib to the library search path.
-    LDFLAGS="-L/usr/local/ssl/lib ${LDFLAGS}"
-  fi
+    AC_CHECK_LIB(crypto, ERR_print_errors_fp)
+    AC_CHECK_LIB(ssl, SSL_use_PrivateKey_file)
 
-  AC_CHECK_LIB(crypto, MD5_Init)
-  AC_CHECK_LIB(ssl, SSL_write)
+    AC_MSG_CHECKING(Supported version of SSLeay)
+
+    if test x$ac_cv_lib_crypto_ERR_print_errors_fp = xyes; then
+      if test x$ac_cv_lib_ssl_SSL_use_PrivateKey_file = xyes; then
+        pike_cv_ssleay="yes"
+      fi
+    fi
+
+    AC_MSG_RESULT($pike_cv_ssleay)
+
+  fi
+fi
+
+if test x$pike_cv_ssleay = xyes; then
+  SSLEAY_FLAGS="-DHAVE_SSLEAY -I/usr/local/ssl/include -L/usr/local/ssl/lib"
+else
+  SSLEAY_FLAGS=
 fi
 
 AC_SUBST(SSLEAY_FLAGS)
