@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.140 2000/10/03 23:49:15 mast Exp $");
+RCSID("$Id: threads.c,v 1.141 2000/11/01 23:39:08 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1181,6 +1181,127 @@ void f_thread_local_set(INT32 args)
   mapping_insert(m, &key, &Pike_sp[-1]);
 }
 
+/* Thread farm code by Per
+ * 
+ */
+static struct farmer {
+  struct farmer *neighbour;
+  void *field;
+  void (*harvest)(void *);
+  THREAD_T me;
+  COND_T harvest_moon;
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+  int euid, egid;
+#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
+} *farmers;
+
+static MUTEX_T rosie;
+
+
+static int _num_farmers, _num_idle_farmers;
+
+static TH_RETURN_TYPE farm(void *_a)
+{
+  struct farmer *me = (struct farmer *)_a;
+
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+  /* Work-around for Linux's pthreads not propagating the
+   * effective uid & gid.
+   */
+  if (!geteuid()) {
+    setegid(me->egid);
+    seteuid(me->euid);
+  }
+#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
+
+  do
+  {
+/*     if(farmers == me) fatal("Ouch!\n"); */
+/*     fprintf(stderr, "farm_begin %p\n",me ); */
+    me->harvest( me->field );
+/*     fprintf(stderr, "farm_end %p\n", me); */
+
+    me->harvest = 0;
+    mt_lock( &rosie );
+    if( ++_num_idle_farmers > 16 )
+    {
+      --_num_idle_farmers;
+      --_num_farmers;
+      mt_unlock( &rosie );
+      free( me );
+      return 0;
+    }
+    me->neighbour = farmers;
+    farmers = me;
+/*     fprintf(stderr, "farm_wait %p\n", me); */
+    while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
+    --_num_idle_farmers;
+    mt_unlock( &rosie );
+/*     fprintf(stderr, "farm_endwait %p\n", me); */
+  } while(1);
+  /* NOT_REACHED */
+  return 0;/* Keep the compiler happy. */
+}
+
+int th_num_idle_farmers(void)
+{
+  return _num_idle_farmers;
+}
+
+
+int th_num_farmers(void)
+{
+  return _num_farmers;
+}
+
+static struct farmer *new_farmer(void (*fun)(void *), void *args)
+{
+  struct farmer *me = malloc(sizeof(struct farmer));
+
+  if (!me) {
+    /* Out of memory */
+    fatal("new_farmer(): Out of memory!\n");
+  }
+
+  dmalloc_accept_leak(me);
+
+  _num_farmers++;
+  me->neighbour = 0;
+  me->field = args;
+  me->harvest = fun;
+  co_init( &me->harvest_moon );
+
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+  me->euid = geteuid();
+  me->egid = getegid();
+#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
+
+  th_create_small(&me->me, farm, me);
+  return me;
+}
+
+PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
+{
+  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
+  mt_lock( &rosie );
+  if(farmers)
+  {
+    struct farmer *f = farmers;
+    farmers = f->neighbour;
+    f->field = here;
+    f->harvest = fun;
+    mt_unlock( &rosie );
+    co_signal( &f->harvest_moon );
+    return;
+  }
+  mt_unlock( &rosie );
+  new_farmer( fun, here );
+}
+
+/*
+ * Glue code.
+ */
+
 void low_th_init(void)
 {
 #ifdef SGI_SPROC_THREADS
@@ -1200,8 +1321,10 @@ void low_th_init(void)
   mt_lock_interpreter();
   mt_init( & thread_table_lock);
   mt_init( & interleave_lock);
+  mt_init( & rosie);
   co_init( & live_threads_change);
   co_init( & threads_disabled_change);
+
   thread_table_init();
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
@@ -1383,120 +1506,4 @@ void th_cleanup(void)
   }
 }
 
-/* Thread farm code by Per
- * 
- */
-static struct farmer {
-  struct farmer *neighbour;
-  void *field;
-  void (*harvest)(void *);
-  THREAD_T me;
-  COND_T harvest_moon;
-#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  int euid, egid;
-#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-} *farmers;
-
-static MUTEX_T rosie STATIC_MUTEX_INIT;
-
-
-static int _num_farmers, _num_idle_farmers;
-
-static TH_RETURN_TYPE farm(void *_a)
-{
-  struct farmer *me = (struct farmer *)_a;
-
-#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  /* Work-around for Linux's pthreads not propagating the
-   * effective uid & gid.
-   */
-  if (!geteuid()) {
-    setegid(me->egid);
-    seteuid(me->euid);
-  }
-#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-
-  do
-  {
-/*     if(farmers == me) fatal("Ouch!\n"); */
-/*     fprintf(stderr, "farm_begin %p\n",me ); */
-    me->harvest( me->field );
-/*     fprintf(stderr, "farm_end %p\n", me); */
-
-    me->harvest = 0;
-    mt_lock( &rosie );
-    if( ++_num_idle_farmers > 16 )
-    {
-      --_num_idle_farmers;
-      --_num_farmers;
-      mt_unlock( &rosie );
-      free( me );
-      return 0;
-    }
-    me->neighbour = farmers;
-    farmers = me;
-/*     fprintf(stderr, "farm_wait %p\n", me); */
-    while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
-    --_num_idle_farmers;
-    mt_unlock( &rosie );
-/*     fprintf(stderr, "farm_endwait %p\n", me); */
-  } while(1);
-  /* NOT_REACHED */
-  return 0;/* Keep the compiler happy. */
-}
-
-int th_num_idle_farmers(void)
-{
-  return _num_idle_farmers;
-}
-
-
-int th_num_farmers(void)
-{
-  return _num_farmers;
-}
-
-static struct farmer *new_farmer(void (*fun)(void *), void *args)
-{
-  struct farmer *me = malloc(sizeof(struct farmer));
-
-  if (!me) {
-    /* Out of memory */
-    fatal("new_farmer(): Out of memory!\n");
-  }
-
-  dmalloc_accept_leak(me);
-
-  _num_farmers++;
-  me->neighbour = 0;
-  me->field = args;
-  me->harvest = fun;
-  co_init( &me->harvest_moon );
-
-#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  me->euid = geteuid();
-  me->egid = getegid();
-#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-
-  th_create_small(&me->me, farm, me);
-  return me;
-}
-
-PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
-{
-  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
-  mt_lock( &rosie );
-  if(farmers)
-  {
-    struct farmer *f = farmers;
-    farmers = f->neighbour;
-    mt_unlock( &rosie );
-    f->field = here;
-    f->harvest = fun;
-    co_signal( &f->harvest_moon );
-    return;
-  }
-  mt_unlock( &rosie );
-  new_farmer( fun, here );
-}
 #endif
