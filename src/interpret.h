@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.38 2000/03/24 01:24:49 hubbe Exp $
+ * $Id: interpret.h,v 1.39 2000/03/28 18:00:00 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -194,7 +194,6 @@ struct backlog;
 void dump_backlog(void);
 BLOCK_ALLOC(pike_frame,128)
 
-static void restore_creds(struct object *creds);
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void f_call_function(INT32 args);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
