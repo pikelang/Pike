@@ -11,49 +11,37 @@
 #include "stralloc.h"
 #include "memory.h"
 #include "interpret.h"
+#include "mapping.h"
 
-static struct hash_table *efun_hash = 0;
 static INT32 num_callable=0;
+static struct mapping *builtin_constants = 0;
 
-struct efun *lookup_efun(struct pike_string *name)
+struct mapping *get_builtin_constants()
 {
-  struct hash_entry *h;
+  if(!builtin_constants)
+    builtin_constants=allocate_mapping(20);
 
-  if(!efun_hash) return 0;
-  h=hash_lookup(efun_hash, name);
-  if(!h) return 0;
-  return BASEOF(h, efun, link);
+  return builtin_constants;
 }
 
 void low_add_efun(struct pike_string *name, struct svalue *fun)
 {
-  struct efun *parent;
-  
-  parent=lookup_efun(name);
+  struct svalue s;
 
-  if(!parent)
+  if(!builtin_constants)
+    builtin_constants=allocate_mapping(20);
+
+  s.type=T_STRING;
+  s.subtype=0;
+  s.u.string=name;
+
+  if(fun)
   {
-    if(!fun) return;
-
-    parent=ALLOC_STRUCT(efun);
-    copy_shared_string(parent->link.s,name);
-    efun_hash=hash_insert(efun_hash, &parent->link);
+    mapping_insert(builtin_constants, &s, fun);
   }else{
-    free_svalue(& parent->function);
-
-    /* Disable efun */
-    if(!fun)
-    {
-      efun_hash=hash_unlink(efun_hash, &parent->link);
-      free_string(parent->link.s);
-      free((char *)parent);
-      return;
-    }
+    map_delete(builtin_constants, &s);
   }
-
-  assign_svalue_no_free(& parent->function, fun);
 }
-
 
 struct callable *make_callable(c_fun fun,
 			       char *name,
@@ -107,55 +95,14 @@ void add_efun(char *name, c_fun fun, char *type, INT16 flags)
   add_efun2(name,fun,type,flags,0,0);
 }
 
-static void push_efun_entry(struct hash_entry *h)
-{
-  struct efun *f;
-  check_stack(1);
-  f=BASEOF(h, efun, link);
-  push_string(f->link.s);
-  f->link.s->refs++;
-  copy_svalues_recursively_no_free(sp,& f->function,1,0);
-  sp++;
-}
-
-void push_all_efuns_on_stack()
-{
-  if(efun_hash)
-    map_hashtable(efun_hash,push_efun_entry);
-}
-
-static void free_one_hashtable_entry(struct hash_entry *h)
-{
-  struct efun *f;
-  f=BASEOF(h, efun, link);
-  free_svalue(& f->function);
-  free((char *)f);
-}
-
 void cleanup_added_efuns()
 {
-  if(efun_hash)
+  if(builtin_constants)
   {
-    free_hashtable(efun_hash,free_one_hashtable_entry);
-    efun_hash=0;
+    free_mapping(builtin_constants);
+    builtin_constants=0;
   }
-  
 }
-
-void count_memory_in_constants(INT32 *num_, INT32 *size_)
-{
-  INT32 size=0, num=0;
-  if(efun_hash)
-  {
-    size=sizeof(struct hash_table) +
-      efun_hash->mask*sizeof(struct hash_entry)+
-    efun_hash->entries*sizeof(struct efun);
-    num=efun_hash->entries;
-  }
-  *num_=num;
-  *size_=size;
-}
-
 void count_memory_in_callables(INT32 *num_, INT32 *size_)
 {
   *num_=num_callable;
