@@ -1,9 +1,11 @@
 //
-// $Id: Identifiers.pmod,v 1.11 2003/01/27 02:54:02 nilsson Exp $
+// $Id: Identifiers.pmod,v 1.12 2003/11/11 11:01:07 grubba Exp $
 // Object identifiers
 
 #pike __REAL_VERSION__
 #pragma strict_types
+
+//! Various ASN.1 identifiers used by PKCS.
 
 /* Attributes (from http://leangen.uninett.no:29659/~hta/ietf/oid/2.5.4.html):
    (by 1999-01-25, a better URL is http://www.alvestrand.no/objectid/top.html)
