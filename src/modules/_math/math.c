@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.68 2003/11/14 10:26:43 mast Exp $
+|| $Id: math.c,v 1.69 2003/11/14 10:38:39 mast Exp $
 */
 
 #include "global.h"
@@ -36,7 +36,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.68 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: math.c,v 1.69 2003/11/14 10:38:39 mast Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -44,10 +44,13 @@ RCSID("$Id: math.c,v 1.68 2003/11/14 10:26:43 mast Exp $");
 
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
 #define FL(X) PIKE_CONCAT(X,l)
+#define FA(X) PIKE_CONCAT(X,l)
 #elif defined (WITH_DOUBLE_PRECISION_SVALUE)
 #define FL(X) X
+#define FA(X) X
 #else
 #define FL(X) PIKE_CONCAT(X,f)
+#define FA(X) X
 #endif
 
 #ifndef NO_MATHERR
@@ -209,11 +212,12 @@ void f_atan2(INT32 args)
  */
 void f_sinh(INT32 args)
 {
-  FLOAT_TYPE x;
+  FLOAT_ARG_TYPE x;
   ARG_CHECK("sinh");
   x=sp[-1].u.float_number;
 
-  sp[-1].u.float_number = 0.5*(FL(exp)(x)-FL(exp)(-x));
+  sp[-1].u.float_number =
+    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA(exp)(x)-FA(exp)(-x))));
 }
 
 /*! @decl float asinh(float f)
@@ -225,11 +229,12 @@ void f_sinh(INT32 args)
  */
 void f_asinh(INT32 args)
 {
-  FLOAT_TYPE x;
+  FLOAT_ARG_TYPE x;
   ARG_CHECK("asinh");
   x=sp[-1].u.float_number;
 
-  sp[-1].u.float_number = FL(log)(x+FL(sqrt)(1+x*x));
+  sp[-1].u.float_number =
+    DO_NOT_WARN ((FLOAT_TYPE) (FA(log)(x+FA(sqrt)(1+x*x))));
 }
 
 /*! @decl float cosh(float f)
@@ -241,11 +246,12 @@ void f_asinh(INT32 args)
  */
 void f_cosh(INT32 args)
 {
-  FLOAT_TYPE x;
+  FLOAT_ARG_TYPE x;
   ARG_CHECK("cosh");
   x=sp[-1].u.float_number;
 
-  sp[-1].u.float_number = 0.5*(FL(exp)(x)+FL(exp)(-x));
+  sp[-1].u.float_number =
+    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA(exp)(x)+FA(exp)(-x))));
 }
 
 /*! @decl float acosh(float f)
@@ -257,11 +263,12 @@ void f_cosh(INT32 args)
  */
 void f_acosh(INT32 args)
 {
-  FLOAT_TYPE x;
+  FLOAT_ARG_TYPE x;
   ARG_CHECK("acosh");
   x=sp[-1].u.float_number;
 
-  sp[-1].u.float_number = 2*FL(log)(FL(sqrt)(0.5*(x+1))+FL(sqrt)(0.5*(x-1)));
+  sp[-1].u.float_number =
+    DO_NOT_WARN ((FLOAT_TYPE) (2*FA(log)(FA(sqrt)(0.5*(x+1))+FA(sqrt)(0.5*(x-1)))));
 }
 
 /*! @decl float tanh(float f)
@@ -273,11 +280,12 @@ void f_acosh(INT32 args)
  */
 void f_tanh(INT32 args)
 {
-  FLOAT_TYPE x;
+  FLOAT_ARG_TYPE x;
   ARG_CHECK("tanh");
   x=sp[-1].u.float_number;
 
-  sp[-1].u.float_number = (FL(exp)(x)-FL(exp)(-x))/(FL(exp)(x)+FL(exp)(-x));
+  sp[-1].u.float_number =
+    DO_NOT_WARN ((FLOAT_TYPE) ((FA(exp)(x)-FA(exp)(-x))/(FA(exp)(x)+FA(exp)(-x))));
 }
 
 /*! @decl float atanh(float f)
@@ -289,11 +297,12 @@ void f_tanh(INT32 args)
  */ 
 void f_atanh(INT32 args)
 {
-  FLOAT_TYPE x;
+  FLOAT_ARG_TYPE x;
   ARG_CHECK("atanh");
   x=sp[-1].u.float_number;
 
-  sp[-1].u.float_number = 0.5*(FL(log)(1+x)-FL(log)(1-x));
+  sp[-1].u.float_number =
+    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA(log)(1+x)-FA(log)(1-x))));
 }
 
 #endif
