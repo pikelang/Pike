@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.3 1997/10/29 02:56:36 mirar Exp $
+**!	$Id: colortable.h,v 1.4 1997/11/01 01:36:53 mirar Exp $
 */
 
 #define COLORLOOKUPCACHEHASHSIZE 207
@@ -129,7 +129,10 @@ typedef void nct_dither_got_function(struct nct_dither *dith,
 typedef void nct_dither_line_function(struct nct_dither *dith,
 				      int *rowpos,
 				      rgb_group **s,
-				      rgb_group **d,
+				      rgb_group **drgb,
+				      unsigned char **d8bit,
+				      unsigned short **d16bit,
+				      long **d32bit,
 				      int *cd);
 
 struct nct_dither

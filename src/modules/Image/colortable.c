@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.11 1997/10/29 02:56:33 mirar Exp $ */
+/* $Id: colortable.c,v 1.12 1997/11/01 01:36:51 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.11 1997/10/29 02:56:33 mirar Exp $
+**!	$Id: colortable.c,v 1.12 1997/11/01 01:36:51 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.11 1997/10/29 02:56:33 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.12 1997/11/01 01:36:51 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -154,7 +154,7 @@ static void exit_colortable_struct(struct object *obj)
 
 /***************** internal stuff ******************************/
 
-#if 0
+#if 1
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X);
 
@@ -1532,7 +1532,10 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
 static void dither_floyd_steinberg_newline(struct nct_dither *dith,
 					   int *rowpos,
 					   rgb_group **s,
-					   rgb_group **d,
+					   rgb_group **drgb,
+					   unsigned char **d8bit,
+					   unsigned short **d16bit,
+					   long **d32bit,
 					   int *cd)
 {
    rgbd_group *er;
@@ -1557,12 +1560,18 @@ static void dither_floyd_steinberg_newline(struct nct_dither *dith,
       {
 	 case -1: /* switched from 1 to -1, jump rowlen-1 */
 	    (*s)+=dith->rowlen-1;
-	    (*d)+=dith->rowlen-1;
+	    if (drgb) (*drgb)+=dith->rowlen-1;
+	    if (d8bit) (*d8bit)+=dith->rowlen-1;
+	    if (d16bit) (*d16bit)+=dith->rowlen-1;
+	    if (d32bit) (*d32bit)+=dith->rowlen-1;
 	    (*rowpos)=dith->rowlen-1;
 	    break;
 	 case 1: /* switched from 1 to -1, jump rowlen+1 */
 	    (*s)+=dith->rowlen+1;
-	    (*d)+=dith->rowlen+1;
+	    if (drgb) (*drgb)+=dith->rowlen+1;
+	    if (d8bit) (*d8bit)+=dith->rowlen+1;
+	    if (d16bit) (*d16bit)+=dith->rowlen+1;
+	    if (d32bit) (*d32bit)+=dith->rowlen+1;
 	    (*rowpos)=0;
 	    break;
       }
@@ -1570,7 +1579,10 @@ static void dither_floyd_steinberg_newline(struct nct_dither *dith,
    else if (*cd==-1)
    {
       (*s)+=dith->rowlen*2;
-      (*d)+=dith->rowlen*2;
+      if (drgb) (*drgb)+=dith->rowlen*2;
+      if (d8bit) (*d8bit)+=dith->rowlen*2;
+      if (d16bit) (*d16bit)+=dith->rowlen*2;
+      if (d32bit) (*d32bit)+=dith->rowlen*2;
       (*rowpos)=dith->rowlen-1;
    }
    else
@@ -1582,7 +1594,10 @@ static void dither_floyd_steinberg_newline(struct nct_dither *dith,
 static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 					     int *rowpos,
 					     rgb_group **s,
-					     rgb_group **d,
+					     rgb_group **drgb,
+					     unsigned char **d8bit,
+					     unsigned short **d16bit,
+					     long **d32bit,
 					     int *cd)
 {
    rgbd_group *er;
@@ -1609,7 +1624,10 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
       dith->u.floyd_steinberg.currentdir=(*cd)=-1;
       (*rowpos)=dith->rowlen-1;
       (*s)+=dith->rowlen-1;
-      (*d)+=dith->rowlen-1;
+      if (drgb) (*drgb)+=dith->rowlen-1;
+      if (d8bit) (*d8bit)+=dith->rowlen-1;
+      if (d16bit) (*d16bit)+=dith->rowlen-1;
+      if (d32bit) (*d32bit)+=dith->rowlen-1;
    }
 }
 
@@ -1647,7 +1665,10 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 static void dither_ordered_newline(struct nct_dither *dith,
 				   int *rowpos,
 				   rgb_group **s,
-				   rgb_group **d,
+				   rgb_group **drgb,
+				   unsigned char **d8bit,
+				   unsigned short **d16bit,
+				   long **d32bit,
 				   int *cd)
 {
    dith->u.ordered.row++;
@@ -1791,6 +1812,11 @@ void image_colortable_free_dither(struct nct_dither *dith)
 	 break;
       case NCTD_RANDOMCUBE:
       case NCTD_RANDOMGREY:
+	 break;
+      case NCTD_ORDERED:
+         free(dith->u.ordered.rdiff);
+         free(dith->u.ordered.gdiff);
+         free(dith->u.ordered.bdiff);
 	 break;
    }
 }
@@ -2383,353 +2409,6 @@ void image_colortable_cubicles(INT32 args)
    push_object(THISOBJ); THISOBJ->refs++;
 }
 
-/*
-**! method object map(object image)
-**! method object `*(object image)
-**! method object ``*(object image)
-**!	Map colors in an image object to the colors in 
-**!     the colortable, and creates a new image with the
-**!     closest colors. 
-**!
-**!	<table><tr valign=center>
-**!	<td></td>
-**!	<td><illustration> object c=Image.colortable(lena(),2); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),4); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),8); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),16); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),32); return c*lena(); </illustration></td>
-**!	<td>no dither</td>
-**!	</tr><tr valign=center>
-**!	<td></td>
-**!	<td><illustration> object c=Image.colortable(lena(),2)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),4)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),8)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),32)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><ref>floyd_steinberg</ref> dither</td>
-**!	</tr><tr valign=center>
-**!	<td></td>
-**!	<td><illustration> object c=Image.colortable(lena(),2)->ordered(60,60,60); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),4)->ordered(45,45,45); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),8)->ordered(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),16)->ordered(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),32)->ordered(15,15,15); return c*lena(); </illustration></td>
-**!	<td><ref>ordered</ref> dither</td>
-**!	</tr><tr valign=center>
-**!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),2)->randomcube(60,60,60); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),4)->randomcube(45,45,45); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),8)->randomcube(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),16)->randomcube(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),32)->randomcube(15,15,15); return c*lena(); </illustration></td>
-**!	<td><ref>randomcube</ref> dither</td>
-**!	</tr><tr valign=center>
-**!	<td>original</td>
-**!	<td>2</td>
-**!	<td>4</td>
-**!	<td>8</td>
-**!	<td>16</td>
-**!	<td>32 colors</td>
-**!	</tr></table>
-**!
-**! returns a new image object
-**!
-**! note
-**!     Flat (not cube) colortable and not '<ref>full</ref>' method: 
-**!     this method does figure out the data needed for
-**!	the lookup method, which may take time the first
-**!	use of the colortable - the second use is quicker.
-**!
-**! see also: cubicles, full
-**/
-
-static void _img_nct_map_to_cube(rgb_group *s,
-				 rgb_group *d,
-				 int n,
-				 struct neo_colortable *nct,
-				 struct nct_dither *dith,
-				 int rowlen)
-{
-   int red,green,blue;
-   int hred,hgreen,hblue;
-   int redm,greenm,bluem;
-   float redf,greenf,bluef;
-   struct nct_cube *cube=&(nct->u.cube);
-   rgbl_group sf=nct->spacefactor;
-   int rowpos=0,cd=1,rowcount=0;
-   rgbl_group rgb;
-   nct_dither_encode_function *dither_encode=dith->encode;
-   nct_dither_got_function *dither_got=dith->got;
-   nct_dither_line_function *dither_newline=dith->newline;
-
-   red=cube->r; 	hred=red/2;      redm=red-1;
-   green=cube->g;	hgreen=green/2;  greenm=green-1;
-   blue=cube->b; 	hblue=blue/2;    bluem=blue-1;
-
-   redf=255.0/redm;
-   greenf=255.0/greenm;
-   bluef=255.0/bluem;
-
-   CHRONO("begin cube map");
-
-   if (!cube->firstscale && red && green && blue)
-   {
-      if (!dither_encode)
-	 while (n--)
-	 {
-	    d->r=((int)(((s->r*red+hred)>>8)*redf));
-	    d->g=((int)(((s->g*green+hgreen)>>8)*greenf));
-	    d->b=((int)(((s->b*blue+hblue)>>8)*bluef));
-
-	    d++;
-	    s++;
-	 }
-      else
-      {
-	 if (dith->firstline)
-	    (dith->firstline)(dith,&rowpos,&s,&d,&cd);
-	 while (n--)
-	 {
-	    rgb=dither_encode(dith,rowpos,*s);
-	    d->r=((int)(((rgb.r*red+hred)>>8)*redf));
-	    d->g=((int)(((rgb.g*green+hgreen)>>8)*greenf));
-	    d->b=((int)(((rgb.b*blue+hblue)>>8)*bluef));
-	    dither_got(dith,rowpos,*s,*d);
-	    s+=cd; d+=cd; rowpos+=cd;
-	    if (++rowcount==rowlen)
-	    {
-	       rowcount=0;
-	       if (dither_newline) 
-		  dither_newline(dith,&rowpos,&s,&d,&cd);
-	    }
-	 }
-      }
-   }
-   else
-   {
-      if (dith->firstline)
-	 (dith->firstline)(dith,&rowpos,&s,&d,&cd);
-
-      while (n--) /* similar to _find_cube_dist() */
-      {
-	 struct nct_scale *sc;
-	 int mindist;
-	 int i;
-	 int nc;
-	 int rgbr,rgbg,rgbb;
-	 struct lookupcache *lc;
-
-	 if (dither_encode)
-	 {
-	    rgbl_group val;
-	    val=dither_encode(dith,rowpos,*s);
-	    rgbr=val.r;
-	    rgbg=val.g;
-	    rgbb=val.b;
-	 }
-	 else
-	 {
-	    rgbr=s->r;
-	    rgbg=s->g;
-	    rgbb=s->b;
-	 }
-
-	 lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
-	 if (lc->index!=-1 &&
-	     lc->src.r==rgbr &&
-	     lc->src.g==rgbg &&
-	     lc->src.b==rgbb)
-	 {
-	    *d=lc->dest;
-	    goto done_pixel;
-	 }
-
-	 lc->src=*s;
-
-	 if (red && green && blue)
-	 {
-	    lc->dest.r=d->r=((int)(((rgbr*red+hred)>>8)*redf));
-	    lc->dest.g=d->g=((int)(((rgbg*green+hgreen)>>8)*greenf));
-	    lc->dest.b=d->b=((int)(((rgbb*blue+hblue)>>8)*bluef));
-
-	    i=((rgbr*red+hred)>>8)+
-	       ((rgbg*green+hgreen)>>8)*red+
-	       ((rgbb*blue+hblue)>>8)*red*green;
-
-	    mindist=sf.r*SQ(rgbr-d->r)+sf.g*SQ(rgbg-d->g)+sf.b*SQ(rgbb-d->b);
-	 }
-	 else
-	 {
-	    mindist=10000000;
-	    i=0;
-	 }
-
-	 if (mindist>=cube->disttrig)
-	 {
-	    /* check scales to get better distance if possible */
-
-	    nc=cube->r*cube->g*cube->b;
-	    sc=cube->firstscale;
-	    while (sc)
-	    {
-	       /* what step is closest? project... */
-
-	       i=(int)
-		  (( sc->steps *
-		     ( ((int)rgbr-sc->low.r)*sc->vector.r +
-		       ((int)rgbg-sc->low.g)*sc->vector.g +
-		       ((int)rgbb-sc->low.b)*sc->vector.b ) ) *
-		   sc->invsqvector);
-
-	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
-	       if (sc->no[i]>=nc) 
-	       {
-		  float f=i*sc->mqsteps;
-		  int drgbr=sc->low.r+(int)(sc->vector.r*f);
-		  int drgbg=sc->low.g+(int)(sc->vector.g*f);
-		  int drgbb=sc->low.b+(int)(sc->vector.b*f);
-
-		  int ldist=sf.r*SQ(rgbr-drgbr)+
-		     sf.g*SQ(rgbg-drgbg)+sf.b*SQ(rgbb-drgbb);
-
-	       
-		  if (ldist<mindist)
-		  {
-		     lc->dest.r=d->r=(unsigned char)drgbr;
-		     lc->dest.g=d->g=(unsigned char)drgbg;
-		     lc->dest.b=d->b=(unsigned char)drgbb;
-		     lc->index=i;
-		     mindist=ldist;
-		  }
-	       }
-	    
-	       nc+=sc->realsteps;
-	    
-	       sc=sc->next;
-	    }
-	 }
-done_pixel:
-	 if (dither_got)
-	 {
-	    dither_got(dith,rowpos,*s,*d);
-	    s+=cd; d+=cd; rowpos+=cd;
-	    if (++rowcount==rowlen)
-	    {
-	       rowcount=0;
-	       dither_newline(dith,&rowpos,&s,&d,&cd);
-	    }
-	 }
-	 else
-	 {
-	    d++;
-	    s++;
-	 }
-      }
-   }
-   CHRONO("end cube map");
-}
-
-static void _img_nct_map_to_flat_full(rgb_group *s,
-				      rgb_group *d,
-				      int n,
-				      struct neo_colortable *nct,
-				      struct nct_dither *dith,
-				      int rowlen)
-{
-   /* no need to build any data, we're using full scan */
-
-   rgbl_group sf=nct->spacefactor;
-   int mprim=nct->u.flat.numentries;
-   struct nct_flat_entry *feprim=nct->u.flat.entries;
-
-   nct_dither_encode_function *dither_encode=dith->encode;
-   nct_dither_got_function *dither_got=dith->got;
-   nct_dither_line_function *dither_newline=dith->newline;
-   int rowpos=0,cd=1,rowcount=0;
-
-   CHRONO("begin flat/full map");
-
-   if (dith->firstline)
-      (dith->firstline)(dith,&rowpos,&s,&d,&cd);
-
-   while (n--)
-   {
-      int rgbr,rgbg,rgbb;
-      int mindist;
-      int m;
-      struct nct_flat_entry *fe;
-      struct lookupcache *lc;
-	 
-      if (dither_encode)
-      {
-	 rgbl_group val;
-	 val=dither_encode(dith,rowpos,*s);
-	 rgbr=val.r;
-	 rgbg=val.g;
-	 rgbb=val.b;
-      }
-      else
-      {
-	 rgbr=s->r;
-	 rgbg=s->g;
-	 rgbb=s->b;
-      }
-
-      /* cached? */
-      lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
-      if (lc->index!=-1 &&
-	  lc->src.r==rgbr &&
-	  lc->src.g==rgbg &&
-	  lc->src.b==rgbb)
-      {
-	 *d=lc->dest;
-	 goto done_pixel;
-      }
-
-      lc->src=*s;
-
-      mindist=256*256*100; /* max dist is 256²*3 */
-      
-      fe=feprim;
-      m=mprim;
-      
-      while (m--)
-      {
-	 int dist=sf.r*SQ(fe->color.r-rgbr)+
-	          sf.g*SQ(fe->color.g-rgbg)+
-	          sf.b*SQ(fe->color.b-rgbb);
-	 
-	 if (dist<mindist)
-	 {
-	    lc->dest=*d=fe->color;
-	    mindist=dist;
-	    lc->index=fe->no;
-	 }
-	 
-	 fe++;
-      }
-
-done_pixel:
-      if (dither_got)
-      {
-	 dither_got(dith,rowpos,*s,*d);
-	 s+=cd; d+=cd; rowpos+=cd;
-	 if (++rowcount==rowlen)
-	 {
-	    rowcount=0;
-	    dither_newline(dith,&rowpos,&s,&d,&cd);
-	 }
-      }
-      else
-      {
-	 d++;
-	 s++;
-      }
-   }
-
-   CHRONO("end flat/full map");
-}
-
 static  int _cub_find_2cub_add(int *i,int *p,
 			       int *p2,int n2,
 			       struct nct_flat_entry *fe,
@@ -3053,152 +2732,229 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
       cub->index=p; /* out of memory, or wierd */
 }
 
-static void _img_nct_map_to_flat_cubicles(rgb_group *s,
-					  rgb_group *d,
-					  int n,
-					  struct neo_colortable *nct,
-					  struct nct_dither *dith,
-					  int rowlen)
+/*
+**! method object map(object image)
+**! method object `*(object image)
+**! method object ``*(object image)
+**!	Map colors in an image object to the colors in 
+**!     the colortable, and creates a new image with the
+**!     closest colors. 
+**!
+**!	<table><tr valign=center>
+**!	<td></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32); return c*lena(); </illustration></td>
+**!	<td>no dither</td>
+**!	</tr><tr valign=center>
+**!	<td></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><ref>floyd_steinberg</ref> dither</td>
+**!	</tr><tr valign=center>
+**!	<td></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->ordered(60,60,60); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->ordered(45,45,45); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->ordered(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->ordered(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->ordered(15,15,15); return c*lena(); </illustration></td>
+**!	<td><ref>ordered</ref> dither</td>
+**!	</tr><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->randomcube(60,60,60); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->randomcube(45,45,45); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->randomcube(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->randomcube(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->randomcube(15,15,15); return c*lena(); </illustration></td>
+**!	<td><ref>randomcube</ref> dither</td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>2</td>
+**!	<td>4</td>
+**!	<td>8</td>
+**!	<td>16</td>
+**!	<td>32 colors</td>
+**!	</tr></table>
+**!
+**! returns a new image object
+**!
+**! note
+**!     Flat (not cube) colortable and not '<ref>full</ref>' method: 
+**!     this method does figure out the data needed for
+**!	the lookup method, which may take time the first
+**!	use of the colortable - the second use is quicker.
+**!
+**! see also: cubicles, full
+**/
+
+/* begin instantiating from colortable_lookup.h */
+/* instantiate map functions */
+
+#define NCTLU_DESTINATION rgb_group
+#define NCTLU_CACHE_HIT_WRITE *d=lc->dest;
+#define NCTLU_DITHER_GOT *d
+#define NCTLU_FLAT_CUBICLES_NAME _img_nct_map_to_flat_cubicles
+#define NCTLU_FLAT_FULL_NAME _img_nct_map_to_flat_full
+#define NCTLU_CUBE_NAME _img_nct_map_to_cube
+#define NCTLU_LINE_ARGS (dith,&rowpos,&s,&d,NULL,NULL,NULL,&cd)
+
+#define NCTLU_CUBE_FAST_WRITE(SRC) \
+            d->r=((int)((((SRC)->r*red+hred)>>8)*redf)); \
+	    d->g=((int)((((SRC)->g*green+hgreen)>>8)*greenf)); \
+	    d->b=((int)((((SRC)->b*blue+hblue)>>8)*bluef));
+
+#define NCTLU_CUBE_FAST_WRITE_DITHER_GOT(SRC) \
+            dither_got(dith,rowpos,*s,*d)
+
+#include "colortable_lookup.h"
+
+#undef NCTLU_DESTINATION
+#undef NCTLU_CACHE_HIT_WRITE
+#undef NCTLU_DITHER_GOT
+#undef NCTLU_FLAT_CUBICLES_NAME
+#undef NCTLU_FLAT_FULL_NAME 
+#undef NCTLU_CUBE_NAME 
+#undef NCTLU_LINE_ARGS 
+#undef NCTLU_CUBE_FAST_WRITE
+#undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
+
+/* instantiate 8bit functions */
+
+#define NCTLU_DESTINATION unsigned char
+#define NCTLU_CACHE_HIT_WRITE *d=((unsigned char)(lc->index))
+#define NCTLU_DITHER_GOT lc->dest
+#define NCTLU_FLAT_CUBICLES_NAME _img_nct_index_8bit_flat_cubicles
+#define NCTLU_FLAT_FULL_NAME _img_nct_index_8bit_flat_full
+#define NCTLU_CUBE_NAME _img_nct_index_8bit_cube
+#define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,&d,NULL,NULL,&cd)
+
+#define NCTLU_CUBE_FAST_WRITE(SRC) \
+   *d=(((SRC)->r*red+hred)>>8)+ \
+      ((((SRC)->g*green+hgreen)>>8)+ \
+       (((SRC)->b*blue+hblue)>>8)*green)*red;
+
+#define NCTLU_CUBE_FAST_WRITE_DITHER_GOT(SRC) \
+   do \
+   { \
+      rgb_group tmp; \
+      tmp.r=((int)((((SRC)->r*red+hred)>>8)*redf)); \
+      tmp.g=((int)((((SRC)->g*green+hgreen)>>8)*greenf)); \
+      tmp.b=((int)((((SRC)->b*blue+hblue)>>8)*bluef)); \
+      dither_got(dith,rowpos,*s,tmp); \
+   } while (0)
+
+#include "colortable_lookup.h"
+
+#undef NCTLU_DESTINATION
+#undef NCTLU_CACHE_HIT_WRITE
+#undef NCTLU_DITHER_GOT
+#undef NCTLU_FLAT_CUBICLES_NAME
+#undef NCTLU_FLAT_FULL_NAME 
+#undef NCTLU_CUBE_NAME 
+#undef NCTLU_LINE_ARGS 
+#undef NCTLU_CUBE_FAST_WRITE
+#undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
+
+/* done instantiating from colortable_lookup.h */
+
+
+int image_colortable_index_8bit_image(struct neo_colortable *nct,
+				      rgb_group *s,
+				      unsigned char *d,
+				      int len,
+				      int rowlen)
 {
-   struct nctlu_cubicles *cubs;
-   struct nctlu_cubicle *cub;
-   int red,green,blue;
-   int hred,hgreen,hblue;
-   int redgreen;
-   struct nct_flat_entry *fe=nct->u.flat.entries;
-   int mindist;
-   rgbl_group sf=nct->spacefactor;
+   struct nct_dither dith;
+   image_colortable_initiate_dither(THIS,&dith,rowlen);
 
-   nct_dither_encode_function *dither_encode=dith->encode;
-   nct_dither_got_function *dither_got=dith->got;
-   nct_dither_line_function *dither_newline=dith->newline;
-   int rowpos=0,cd=1,rowcount=0;
-
-   cubs=&(nct->lu.cubicles);
-   if (!(cubs->cubicles))
+   switch (THIS->type)
    {
-      int n=cubs->r*cubs->g*cubs->b;
-
-CHRONO("init flat/cubicles");
-
-      cub=cubs->cubicles=malloc(sizeof(struct nctlu_cubicle)*n);
-      
-      if (!cub) error("out of memory\n");
-
-      while (n--) /* initiate all to empty */
-      {
-	 cub->n=0;
-	 cub->index=NULL;
-	 cub++;
-      } /* yes, could be faster with a memset... */
-   }
-
-CHRONO("begin flat/cubicles");
-
-   red=cubs->r;   hred=red/2;
-   green=cubs->g; hgreen=green/2;
-   blue=cubs->b;  hblue=blue/2;
-   redgreen=red*green;
-
-   if (dith->firstline)
-      (dith->firstline)(dith,&rowpos,&s,&d,&cd);
-
-   while (n--)
-   {
-      int rgbr,rgbg,rgbb;
-      int r,g,b;
-      struct lookupcache *lc;
-      int m;
-      int *ci;
-
-      if (dither_encode)
-      {
-	 rgbl_group val;
-	 val=(dither_encode)(dith,rowpos,*s);
-	 rgbr=val.r;
-	 rgbg=val.g;
-	 rgbb=val.b;
-      }
-      else
-      {
-	 rgbr=s->r;
-	 rgbg=s->g;
-	 rgbb=s->b;
-      }
-      
-      lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
-      if (lc->index!=-1 &&
-	  lc->src.r==rgbr &&
-	  lc->src.g==rgbg &&
-	  lc->src.b==rgbb)
-      {
-	 *d=lc->dest;
-	 goto done_pixel;
-      }
-
-      lc->src=*s;
-      
-      r=((rgbr*red+hred)>>8);
-      g=((rgbg*green+hgreen)>>8);
-      b=((rgbb*blue+hblue)>>8);
-
-      cub=cubs->cubicles+r+g*red+b*redgreen;
-      
-      if (!cub->index) /* need to build that cubicle */
-	 _build_cubicle(nct,r,g,b,red,green,blue,cub);
-
-      /* now, compare with the colors in that cubicle */
-
-      m=cub->n;
-      ci=cub->index;
-
-      mindist=256*256*100; /* max dist is 256²*3 */
-      
-      while (m--)
-      {
-	 int dist=sf.r*SQ(fe[*ci].color.r-rgbr)+
-	          sf.g*SQ(fe[*ci].color.g-rgbg)+
-	          sf.b*SQ(fe[*ci].color.b-rgbb);
-	 
-	 if (dist<mindist)
+      case NCT_CUBE:
+	 _img_nct_index_8bit_cube(s,d,len,THIS,&dith,rowlen);
+	 break;
+      case NCT_FLAT:
+         switch (THIS->lookup_mode)
 	 {
-	    lc->dest=*d=fe[*ci].color;
-	    mindist=dist;
-	    lc->index=*ci;
+	    case NCT_FULL:
+  	       _img_nct_index_8bit_flat_full(s,d,len,THIS,&dith,rowlen);
+	       break;
+	    case NCT_CUBICLES:
+  	       _img_nct_index_8bit_flat_cubicles(s,d,len,THIS,&dith,rowlen);
+	       break;
 	 }
-	 
-	 ci++;
-      }
-
-done_pixel:
-      if (dither_got)
-      {
-	 (dither_got)(dith,rowpos,*s,*d);
-	 s+=cd; d+=cd; rowpos+=cd;
-	 if (++rowcount==rowlen)
-	 {
-	    rowcount=0;
-	    if (dither_newline)
-	       (dither_newline)(dith,&rowpos,&s,&d,&cd);
-	 }
-      }
-      else
-      {
-	 d++;
-	 s++;
-      }
+	 break;
+      default:
+         image_colortable_free_dither(&dith);
+	 return 0;
    }
-
-CHRONO("end flat/cubicles");
+   image_colortable_free_dither(&dith);
+   return 1;
 }
 
-void image_colortable_get_index_line(struct neo_colortable *nct,
-				     rgb_group *s,
-				     unsigned char *buf,
-				     int len,
-				     struct nct_dither *dith)
+int image_colortable_map_image(struct neo_colortable *nct,
+			       rgb_group *s,
+			       rgb_group *d,
+			       int len,
+			       int rowlen)
 {
-   
+   struct nct_dither dith;
+   image_colortable_initiate_dither(THIS,&dith,rowlen);
+
+   switch (THIS->type)
+   {
+      case NCT_CUBE:
+	 _img_nct_map_to_cube(s,d,len,THIS,&dith,rowlen);
+	 break;
+      case NCT_FLAT:
+         switch (THIS->lookup_mode)
+	 {
+	    case NCT_FULL:
+  	       _img_nct_map_to_flat_full(s,d,len,THIS,&dith,rowlen);
+	       break;
+	    case NCT_CUBICLES:
+  	       _img_nct_map_to_flat_cubicles(s,d,len,THIS,&dith,rowlen);
+	       break;
+	 }
+	 break;
+      default:
+         image_colortable_free_dither(&dith);
+	 return 0;
+   }
+   image_colortable_free_dither(&dith);
+   return 1;
+}
+
+void image_colortable_index_8bit(INT32 args)
+{
+   struct image *src;
+   struct object *o;
+   struct pike_string *ps;
+
+   if (args<1)
+      error("too few arguments to colortable->map()\n");
+   if (sp[-args].type!=T_OBJECT ||
+       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("illegal argument 1 to colortable->map(), expecting image object\n");
+
+   if (!src->img) 
+      error("colortable->map(): source image is empty\n");
+
+   ps=begin_shared_string(src->xsize*src->ysize);
+
+   if (!image_colortable_index_8bit_image(THIS,src->img,ps->str,
+					  src->xsize*src->ysize,src->xsize))
+   {
+      free_object(o);
+      error("colortable->index_8bit(): called colortable is not initiated\n");
+   }
+
+   pop_n_elems(args);
+   push_string(ps);
 }
 
 void image_colortable_map(INT32 args)
@@ -3206,7 +2962,6 @@ void image_colortable_map(INT32 args)
    struct image *src;
    struct image *dest;
    struct object *o;
-   struct nct_dither dith;
 
    if (args<1)
       error("too few arguments to colortable->map()\n");
@@ -3228,35 +2983,13 @@ void image_colortable_map(INT32 args)
       error("colortable->map(): out of memory\n");
    }
 
-   image_colortable_initiate_dither(THIS,&dith,src->xsize);
-
-   switch (THIS->type)
+   if (!image_colortable_map_image(THIS,src->img,dest->img,
+				   src->xsize*src->ysize,src->xsize))
    {
-      case NCT_CUBE:
-	 _img_nct_map_to_cube(src->img,dest->img,
-			      src->xsize*src->ysize,THIS,&dith,src->xsize);
-	 break;
-      case NCT_FLAT:
-         switch (THIS->lookup_mode)
-	 {
-	    case NCT_FULL:
-  	       _img_nct_map_to_flat_full(src->img,dest->img,
-					 src->xsize*src->ysize,
-					 THIS,&dith,src->xsize);
-	       break;
-	    case NCT_CUBICLES:
-  	       _img_nct_map_to_flat_cubicles(src->img,dest->img,
-					     src->xsize*src->ysize,
-					     THIS,&dith,src->xsize);
-	       break;
-	 }
-	 break;
-      default:
-	 free_object(o);
-	 image_colortable_free_dither(&dith);
-	 error("colortable->map(): called colortable is not initiated\n");
+      free_object(o);
+      error("colortable->map(): called colortable is not initiated\n");
    }
-   image_colortable_free_dither(&dith);
+
    pop_n_elems(args);
    push_object(o);
 }
@@ -3515,7 +3248,7 @@ void image_colortable_randomgrey(INT32 args)
 {
    THIS->dither_type=NCTD_NONE;
 
-   if (args>=3)
+   if (args)
       if (sp[-args].type!=T_INT)
 	 error("Image.colortable->randomgrey(): illegal argument(s)\n");
       else
