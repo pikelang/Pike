@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.89 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: main.c,v 1.90 2000/05/20 02:22:20 per Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -453,6 +453,7 @@ int dbm_main(int argc, char **argv)
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
+#if 0
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   {
     struct rlimit lim;
@@ -468,6 +469,7 @@ int dbm_main(int argc, char **argv)
       setrlimit(RLIMIT_NOFILE, &lim);
     }
   }
+#endif
 #endif
   
   GETTIMEOFDAY(&current_time);
