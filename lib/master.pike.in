@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.56 1999/09/06 11:02:23 hubbe Exp $
+/* $Id: master.pike.in,v 1.57 1999/10/05 05:31:36 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -698,7 +698,7 @@ mixed handle_import(string what, string|void current_file)
   return fc[path]=dirnode(path);
 }
 
-mixed resolv(string identifier, string|void current_file)
+mixed resolv_base(string identifier, string|void current_file)
 {
   array(mixed) tmp = ({});
   foreach(pike_module_path, string path)
@@ -733,6 +733,14 @@ mixed resolv(string identifier, string|void current_file)
     return joinnode(tmp);
   }
   return UNDEFINED;
+}
+
+mixed resolv(string identifier, string|void current_file)
+{
+  array(string) tmp=identifier/".";
+  mixed ret=resolv_base(tmp[0]);
+  foreach(tmp[1..],string index) ret=ret[index];
+  return ret;
 }
 
 // These are useful if you want to start other Pike processes
