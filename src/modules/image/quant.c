@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.18 1996/12/08 23:59:59 law Exp $ */
+/* $Id: quant.c,v 1.19 1996/12/10 00:40:09 law Exp $ */
 
 /*
 
@@ -432,7 +432,7 @@ fprintf(stderr,"space: %d,%d,%d-%d,%d,%d  ",
 	 *rgb_node=
 	    ( (*rn_next)-ct->rgb_node )
 	    | ( ((unsigned long)split_on) << 22 )
-	    | ( (dir+1)<<30 );
+	    | ( (dir+1)<<30 ) & 0xffffffff;
 	 rgb_node=*rn_next;
 	 (*rn_next)+=2;
 

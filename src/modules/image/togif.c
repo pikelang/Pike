@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.20 1996/12/02 16:49:40 per Exp $ */
+/* $Id: togif.c,v 1.21 1996/12/10 00:40:11 law Exp $ */
 /*
 
 togif 
@@ -646,8 +646,6 @@ CHRONO("gif add init");
 	 delay=(unsigned short)(sp[2+!!ct-args].u.float_number*100);
       else 
 	 error("Illegal argument %d to image->gif_add()\n",3+!!ct);
-
-fprintf(stderr,"delay: %d\n",delay);
 
       low_my_putchar( '!', &buf ); /* extension block */
       low_my_putchar( 0xf9, &buf ); /* graphics control */

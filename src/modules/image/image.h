@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.16 1996/12/05 23:50:52 law Exp $ */
+/* $Id: image.h,v 1.17 1996/12/10 00:40:06 law Exp $ */
 
 #define MAX_NUMCOL 32768
 
@@ -20,7 +20,7 @@ typedef struct
 
 typedef struct
 {
-   signed long r,g,b;
+   INT32 r,g,b;
 } rgbl_group;
 
 typedef struct

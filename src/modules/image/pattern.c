@@ -1,4 +1,4 @@
-/* $Id: pattern.c,v 1.2 1996/11/14 12:35:02 law Exp $ */
+/* $Id: pattern.c,v 1.3 1996/12/10 00:40:08 law Exp $ */
 
 #include "global.h"
 
@@ -78,11 +78,11 @@ static double noise(double Vx,double Vy,unsigned short *noise_p)
 static double turbulence(double x,double y,int octaves)
 {
    double t=0;
+   double mul=1;
    while (octaves-->0)
    {
-      x/=2;
-      y/=2;
-      t=t/2+noise(x,y,noise_p1);
+      t+=noise(x*mul,y*mul,noise_p1)*mul;
+      mul*=0.5;
    }
    return t;
 }
