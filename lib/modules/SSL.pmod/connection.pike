@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: connection.pike,v 1.22 2002/03/20 16:40:00 nilsson Exp $
+/* $Id: connection.pike,v 1.23 2005/02/08 20:18:53 mast Exp $
  *
  * SSL packet layer
  */
@@ -18,7 +18,7 @@ string left_over;
 object packet;
 
 int dying;
-int closing;
+int closing; // Bitfield: 1 if a close is sent, 2 of one is received.
 
 function(object,int|object,string:void) alert_callback;
 
@@ -55,7 +55,7 @@ void set_alert_callback(function(object,int|object,string:void) callback)
   alert_callback = callback;
 }
 
-//! Low-level recieve handler. Returns a packet, an alert, or zero if
+//! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
 static object recv_packet(string data)
 {
@@ -97,6 +97,16 @@ static object recv_packet(string data)
 //! close_notifies.
 void send_packet(object packet, int|void priority)
 {
+  if (closing & 1) {
+#ifdef SSL3_DEBUG
+    werror("SSL.connection->send_packet: ignoring packet after close\n");
+#endif
+    return;
+  }
+
+  if (packet->content_type == PACKET_alert &&
+      packet->description == ALERT_close_notify)
+    closing |= 1;
 
 #ifdef SSL3_FRAGDEBUG
   werror(" SSL.connection->send_packet: strlen(packet)="+strlen(packet)+"\n");
@@ -112,7 +122,7 @@ void send_packet(object packet, int|void priority)
     werror(sprintf("SSL.connection->send_packet() called from:\n"
 		   "%s\n", describe_backtrace(backtrace())));
 #endif
-  werror(sprintf("SSL.connection->send_packet: type %d, %d, '%O'\n",
+  werror(sprintf("SSL.connection->send_packet: type %d, %d, %O\n",
 		 packet->content_type, priority,  packet->fragment[..5]));
 #endif
   switch (priority)
@@ -141,12 +151,11 @@ string|int to_write()
 {
   if (dying)
     return -1;
-  if (closing) {
-    return 1;
-  }
+
   object packet = alert::get() || urgent::get() || application::get();
-  if (!packet)
-    return "";
+  if (!packet) {
+    return closing ? 1 : "";
+  }
 
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.connection: writing packet of type %d, %O\n",
@@ -156,9 +165,6 @@ string|int to_write()
   {
     if (packet->level == ALERT_fatal)
       dying = 1;
-    else
-      if (packet->description == ALERT_close_notify)
-	closing = 1;
   }
   string res = current_write_state->encrypt_packet(packet,version[1])->send();
   if (packet->content_type == PACKET_change_cipher_spec)
@@ -196,8 +202,8 @@ int handle_alert(string s)
 #ifdef SSL3_DEBUG
     werror(sprintf("SSL.connection: Close notify  alert %d\n", description));
 #endif
-    return 0;
-//     return 1;			// looses data
+    closing |= 2;
+    return 1;
   }
   if (description == ALERT_no_certificate)
   {
@@ -252,6 +258,14 @@ string|int got_data(string|int s)
   if(!stringp(s)) {
     return s;
   }
+
+  if (closing & 2) {
+    return 1;
+  }
+  // If closing == 1 we continue to try to read a remote close
+  // message. That enables the caller to check for a clean close, and
+  // to get the leftovers after the SSL connection.
+
   /* If alert_callback is called, this data is passed as an argument */
   string alert_context = (left_over || "") + s;
 
@@ -292,7 +306,11 @@ string|int got_data(string|int s)
 
 	 alert_buffer = alert_buffer[i..];
 	 if (err)
-	   return err;
+	   if (err > 0 && sizeof (res))
+	     // If we get a close then we return the data we got so far.
+	     return res;
+	   else
+	     return err;
 	 break;
        }
       case PACKET_change_cipher_spec:
@@ -314,7 +332,7 @@ string|int got_data(string|int s)
        {
 	 if (expect_change_cipher)
 	 {
-	   /* No change_cipher message was recieved */
+	   /* No change_cipher message was received */
 	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			     version[1]));
 	   return -1;
@@ -359,6 +377,6 @@ string|int got_data(string|int s)
       }
     }
   }
-  return res;
+  return closing & 2 ? 1 : res;
 }
 
