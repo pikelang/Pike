@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.164 2001/08/15 23:01:00 mast Exp $
+ * $Id: master.pike.in,v 1.165 2001/08/16 00:07:05 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -439,11 +439,11 @@ static program low_findprog(string pname,
 	    if (handler) {
 	      handler->compile_warning(oname, 0,
 				       sprintf("Decode failed:\n"
-					       "\t%s", err[0]));
+					       "\t%s", describe_error(err)));
 	    } else {
 	      compile_warning(oname, 0,
 			      sprintf("Decode failed:\n"
-				      "\t%s", err[0]));
+				      "\t%s", describe_error(err)));
 	    }
 	  } else if (out_of_date_warning) {
 	    if (handler) {
@@ -467,8 +467,6 @@ static program low_findprog(string pname,
       {
 //	werror("-3: %O\n",fname);
 	ret=programs[fname]=0;
-        if(arrayp(e) && sizeof(e) && e[0] == "Compilation failed.\n")
-          e[1]=({});
         throw(e);
       }
       break;
