@@ -3,8 +3,8 @@
 
 #define MAJOR "7"
 #define MINOR "6"
-#define BUILD "13"
-#define INST  "7"
+#define BUILD "24"
+#define INST  "2"
 
 [Setup]
 InternalCompressLevel=ultra
@@ -90,8 +90,7 @@ Root: HKCR; Subkey: pike_module; ValueType: string; ValueData: Pike module file;
 ;Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_blue.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
-;#emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'.'+BUILD+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
-#emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
+#emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'.'+BUILD+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
 
 [Icons]
 Name: {group}\Pike; Filename: {app}\pike.exe; IconFilename: {app}\icons\icon_magenta.ico
