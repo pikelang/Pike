@@ -2592,6 +2592,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		
 	    }
 
+	    /*
 	    if(toplevel)
 	    {
 	      done=1;
@@ -2599,6 +2600,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	      if(!XMLEOF())
 		XMLERROR("All data must be in one top-level tag.\n");
 	    }
+	    */
 
 	}
     }
