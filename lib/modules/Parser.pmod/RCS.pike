@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.11 2002/03/12 14:11:05 jhs Exp $
+// $Id: RCS.pike,v 1.12 2002/03/12 18:42:22 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -48,7 +48,7 @@ string comment;
 string expand;
 string description;
 
-//! Maps from username to revision for users that have aquired locks
+//! Maps from username to revision for users that have acquired locks
 //! on this file.
 mapping(string:string) locks;	 // id:num
 
@@ -323,7 +323,7 @@ class Revision
   string author;
 
   //! when there are branches from this revision, an array of the
-  //! revisions where each branch starts, otherwise 0
+  //! revision numbers where each branch starts, otherwise 0
   array(string) branches;
 
   //! the state of the revision - typically "Exp" or "dead"
