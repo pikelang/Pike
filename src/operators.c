@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.58 1999/08/16 20:43:07 mast Exp $");
+RCSID("$Id: operators.c,v 1.59 1999/08/17 01:05:56 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1929,36 +1929,32 @@ void f_index_assign(INT32 args)
       PIKE_ERROR("`[]=", "Too few arguments.\n", sp, args);
       break;
     case 3:
-      switch (sp[-3].type) {
-	case T_STRING: {
-	  INT32 i, c;
-	  get_all_args ("`[]=", 2, "%i%i", &i, &c);
-	  modify_shared_string (sp[-3].u.string, i, c);
-	  break;
-	}
-	case T_OBJECT:
-	  object_set_index (sp[-3].u.object, sp-2, sp-1);
-	  break;
-	case T_ARRAY:
-	  simple_set_index (sp[-3].u.array, sp-2, sp-1);
-	  break;
-	case T_MAPPING:
-	  mapping_insert (sp[-3].u.mapping, sp-2, sp-1);
-	  break;
-	case T_MULTISET:
-	  if (svalue_is_true (sp-1))
-	    multiset_insert (sp[-3].u.multiset, sp-2);
-	  else
-	    multiset_delete (sp[-3].u.multiset, sp-2);
-	  break;
-	default:
-	  SIMPLE_BAD_ARG_ERROR ("`[]=", 1, "string|object|array|mapping|multiset");
-      }
+      if(sp[-2].type==T_STRING) sp[-2].subtype=0;
+      assign_lvalue (sp-3, sp-1);
       assign_svalue (sp-3, sp-1);
       pop_n_elems (args-1);
       break;
     default:
       PIKE_ERROR("`[]=", "Too many arguments.\n", sp, args);
+  }
+}
+
+void f_arrow_assign(INT32 args)
+{
+  switch (args) {
+    case 0:
+    case 1:
+    case 2:
+      PIKE_ERROR("`->=", "Too few arguments.\n", sp, args);
+      break;
+    case 3:
+      if(sp[-2].type==T_STRING) sp[-2].subtype=1;
+      assign_lvalue (sp-3, sp-1);
+      assign_svalue (sp-3, sp-1);
+      pop_n_elems (args-1);
+      break;
+    default:
+      PIKE_ERROR("`->=", "Too many arguments.\n", sp, args);
   }
 }
 
@@ -2064,11 +2060,16 @@ void init_operators(void)
   ADD_EFUN2("`->",f_arrow,tOr(tFunc(tArr(tOr4(tObj,tMapping,tMultiset,tArray)) tStr,tArr(tMix)),tFunc(tOr4(tObj,tMapping,tMultiset,tPrg) tStr,tMix)),OPT_TRY_OPTIMIZE,0,0);
 
   ADD_EFUN("`[]=", f_index_assign,
-	   tOr5(tFunc(tStr tInt tInt, tInt),
-		tFunc(tObj tStr tSetvar(0,tMix), tVar(0)),
+	   tOr4(tFunc(tObj tStr tSetvar(0,tMix), tVar(0)),
 		tFunc(tArr(tSetvar(1,tMix)) tInt tVar(1), tVar(1)),
 		tFunc(tMap(tSetvar(2,tMix), tSetvar(3,tMix)) tVar(2) tVar(3), tVar(3)),
 		tFunc(tSet(tSetvar(4,tMix)) tVar(4) tSetvar(5,tMix), tVar(5))),
+	   0); /* OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE); ? */
+
+  ADD_EFUN("`->=", f_arrow_assign,
+	   tOr3(tFunc(tArr(tOr4(tArray,tObj,tMultiset,tMapping)) tStr tSetvar(0,tMix), tVar(0)),
+		tFunc(tOr(tObj, tMultiset) tStr tSetvar(1,tMix), tVar(1)),
+		tFunc(tMap(tMix, tSetvar(2,tMix)) tStr tVar(2), tVar(2))),
 	   0); /* OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE); ? */
 
   /* function(mixed...:int) */
