@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.14 1999/03/12 23:53:05 grubba Exp $
+ * $Id: imap_server.pike,v 1.15 1999/03/13 00:03:13 grubba Exp $
  */
 
 constant unauth_commands =
@@ -53,7 +53,7 @@ constant select_commands =
    "fetch" : .requests.fetch,
    "store" : .requests.store,
    "copy" : .requests.copy,
-   "uid" : .requests.uid
+   "uid" : .requests.uid,
 
    /* IMAP2 compatibility for Pine */
    "find" : .requests.find,
