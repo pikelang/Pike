@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.79 1997/04/11 04:18:11 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.80 1997/04/11 21:55:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -236,7 +236,7 @@ if test ! -d modules/. ; then
   mkdir modules
 fi
 if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
-  for d in /usr/gnu /opt/gnu /usr/local /sw/gnu /sw
+  for d in /usr/gnu /opt/gnu /usr/local /sw/gnu /home/GNU /sw
   do
     if test -d "$d/lib" ; then
       echo Adding $d/lib to the library-path
