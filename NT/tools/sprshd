@@ -5,9 +5,12 @@ inherit Stdio.Port;
 void monitor(object(Stdio.File) io, object proc)
 {
   proc->wait();
-  io->close("rw");
-  io->close();
-  destruct(io);
+  if(io)
+  {
+    io->close("rw");
+    io->close();
+    destruct(io);
+  }
 }
 
 void handle_incoming_connection(object(Stdio.File) io)
@@ -94,7 +97,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 				   "cwd":dir,
 				   ]));
       };
-	destruct(p2);
+      destruct(p2);
       if(!err)
       {
 #if !constant(Stdio.PROP_IPC)
