@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.103 2000/09/30 19:40:39 mast Exp $");
+RCSID("$Id: main.c,v 1.104 2000/10/01 08:00:53 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -33,12 +33,8 @@ RCSID("$Id: main.c,v 1.103 2000/09/30 19:40:39 mast Exp $");
 #include "constants.h"
 #include "version.h"
 
-#ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
-#if defined(HAVE_DLOPEN)
-#ifdef HAVE_DLFCN_H
+#if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
-#endif
-#endif
 #endif
 
 #include "las.h"
@@ -434,17 +430,22 @@ int dbm_main(int argc, char **argv)
 	lim.rlim_cur=Pike_INITIAL_STACK_SIZE;
 #endif
 
+#if defined(__linux__) && defined(PIKE_THREADS)
+      /* This is a really really *stupid* limit in glibc 2.x
+       * which is not detectable since __pthread_initial_thread_bos
+       * went static. On a stupidity-scale from 1-10, this rates a
+       * solid 11. - Hubbe
+       */
+      if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
+#endif
+
       Pike_interpreter.stack_top += STACK_DIRECTION * lim.rlim_cur;
 
-#ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
-#if defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
-      /* FIXME: this code should be used on all linux glibc systems
-       * even those without __pthread_initial_thread_bos
-       * -Hubbe
-       */
+#if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
       {
 	char ** bos_location;
 	void *handle;
+	/* damn this is ugly -Hubbe */
 	if((handle=dlopen(0, RTLD_LAZY)))
 	{
 	  bos_location=dlsym(handle,"__pthread_initial_thread_bos");
@@ -452,11 +453,13 @@ int dbm_main(int argc, char **argv)
 
 	  if(bos_location && *bos_location &&
 	     (*bos_location - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
+	  {
 	    Pike_interpreter.stack_top=*bos_location;
+	  }
 	}
       }
 #else
-
+#ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
       {
 	extern char * __pthread_initial_thread_bos;
 	/* Linux glibc threads are limited to a 4 Mb stack
@@ -465,10 +468,13 @@ int dbm_main(int argc, char **argv)
 	
 	if(__pthread_initial_thread_bos && 
 	   (__pthread_initial_thread_bos - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
+	{
 	  Pike_interpreter.stack_top=__pthread_initial_thread_bos;
+	}
       }
-#endif
-#endif
+#endif /* HAVE_PTHREAD_INITIAL_THREAD_BOS */
+#endif /* __linux__ && HAVE_DLOPEN && HAVE_DLFCN_H */
+
       Pike_interpreter.stack_top -= STACK_DIRECTION * 8192 * sizeof(char *);
 
 #ifdef STACK_DEBUG
