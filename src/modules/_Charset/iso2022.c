@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.2 1998/11/06 02:27:20 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.3 1999/03/07 01:37:49 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -316,7 +316,7 @@ static void eat_string(struct pike_string *str, struct iso2022_stor *s)
     str = tmpstr;
   }
 
-  l = eat_chars(str->str, str->len, s);
+  l = eat_chars((unsigned char *)str->str, str->len, s);
 
   if(l>0)
     s->retain = make_shared_binary_string(str->str+str->len-l, l);
