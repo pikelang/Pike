@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.142 1999/05/31 00:08:29 grubba Exp $
+# $Id: Makefile.in,v 1.143 1999/06/01 13:33:22 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -411,7 +411,7 @@ tinstall: aclocal
 
 
 verify: module_testsuites testsuite tinstall
-	if test -f ./test-pike ; then ./test-pike $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite ; else sprsh `pwd`/test-install/pike/*/pike.exe $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite ; fi
+	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite ; else sprsh `pwd`/test-install/pike/*/pike.exe -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite ; fi
 
 verify_installed: module_testsuites testsuite master.pike
 	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
