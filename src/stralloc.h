@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.17 1998/09/18 21:33:07 hubbe Exp $
+ * $Id: stralloc.h,v 1.18 1998/10/09 17:56:33 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -22,7 +22,14 @@ struct pike_string
   INT32 len;
   unsigned INT32 hval;
   struct pike_string *next; 
+  int size_shift; /* 30 bit waste, but good for alignment... */
   char str[1];
+};
+
+struct string_builder
+{
+  struct pike_string *s;
+  int malloced;
 };
 
 #ifdef DEBUG
@@ -35,6 +42,15 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
 #define is_same_string(X,Y) ((X)==(Y))
 
+#ifdef DEBUG
+#define STR0(X) ((p_wchar0 *)debug_check_size_shift((X),0)->str)
+#define STR1(X) ((p_wchar1 *)debug_check_size_shift((X),1)->str)
+#define STR2(X) ((p_wchar2 *)debug_check_size_shift((X),2)->str)
+#else
+#define STR0(X) ((p_wchar0 *)(X)->str)
+#define STR1(X) ((p_wchar1 *)(X)->str)
+#define STR2(X) ((p_wchar2 *)(X)->str)
+#endif
 
 #ifdef DEBUG_MALLOC
 #define reference_shared_string(s) do { struct pike_string *S_=(s); debug_malloc_touch(S_); S_->refs++; }while(0)
@@ -72,16 +88,42 @@ extern struct shared_string_location *all_shared_string_locations;
 
 #endif
 
-
+#define CONVERT(X,Y,Z)
 
 /* Prototypes begin here */
+INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos);
+struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift);
+int generic_compare_strings(const void *a,int alen, int asize,
+			    const void *b,int blen, int bsize);
+CONVERT(1_to_0,INT16,char)
+CONVERT(2_to_0,INT32,char)
+CONVERT(2_to_1,INT32,INT16)
+CONVERT(0_to_1,char,INT16)
+CONVERT(0_to_2,char,INT32)
+CONVERT(1_to_2,INT16,INT32)
+
+
+
+
+
+
+
+
+
+static void pike_string_cpy(void *to,
+			    int to_shift,
+			    struct pike_string *from);
 struct pike_string *binary_findstring(const char *foo, INT32 l);
 struct pike_string *findstring(const char *foo);
 struct pike_string *debug_begin_shared_string(int len);
+struct pike_string *debug_begin_wide_shared_string(int len, int shift);
 struct pike_string *end_shared_string(struct pike_string *s);
 struct pike_string * debug_make_shared_binary_string(const char *str,int len);
+struct pike_string * debug_make_shared_binary_string1(const INT16 *str,int len);
+struct pike_string * debug_make_shared_binary_string2(const INT32 *str,int len);
 struct pike_string *debug_make_shared_string(const char *str);
-struct pike_string *make_shared_string2(const INT16 *str);
+struct pike_string *make_shared_string1(const INT16 *str);
+struct pike_string *make_shared_string2(const INT32 *str);
 void unlink_pike_string(struct pike_string *s);
 void really_free_string(struct pike_string *s);
 void debug_free_string(struct pike_string *s);
@@ -100,18 +142,28 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
 struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size);
 struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
-					 int c);
+					 INT32 c);
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
 struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 						struct pike_string *b);
+int string_search(struct pike_string *haystack,
+		  struct pike_string *needle,
+		  int start);
 struct pike_string *string_replace(struct pike_string *str,
-				     struct pike_string *del,
-				     struct pike_string *to);
+				   struct pike_string *del,
+				   struct pike_string *to);
 void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
 void count_memory_in_strings(INT32 *num, INT32 *size);
 void gc_mark_all_strings(void);
+void init_string_builder(struct string_builder *s, int mag);
+void string_build_mkspace(struct string_builder *s, int chars, int mag);
+void string_builder_putchar(struct string_builder *s, int ch);
+void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len);
+void string_builder_strcat(struct string_builder *s, char *str);
+void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
+struct pike_string *finish_string_builder(struct string_builder *s);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC
@@ -121,10 +173,15 @@ void gc_mark_all_strings(void);
  ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string((X),(Y)),__FILE__,__LINE__))
 #define begin_shared_string(X) \
  ((struct pike_string *)debug_malloc_update_location(debug_begin_shared_string(X),__FILE__,__LINE__))
+#define begin_wide_shared_string(X,Y) \
+ ((struct pike_string *)debug_malloc_update_location(debug_begin_wide_shared_string((X),(Y)),__FILE__,__LINE__))
 #else
 #define make_shared_string debug_make_shared_string
 #define make_shared_binary_string debug_make_shared_binary_string
 #define begin_shared_string debug_begin_shared_string
+#define begin_wide_shared_string debug_begin_wide_shared_string
 #endif
+
+#undef CONVERT(X,Y,Z)
 
 #endif /* STRALLOC_H */

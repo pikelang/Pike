@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.28 1998/08/12 05:19:30 hubbe Exp $
+ * $Id: cpp.c,v 1.29 1998/10/09 17:56:31 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -233,7 +233,7 @@ static void simple_add_define(struct cpp *this,
       break;							\
     }								\
 								\
-    if(e++>16)							\
+    if(e++>32)							\
     {								\
       cpp_error(this,"Too long character constant.");		\
       break;							\

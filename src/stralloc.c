@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.38 1998/09/18 21:33:07 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.39 1998/10/09 17:56:33 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -28,11 +28,136 @@ static unsigned INT32 full_hash_value;
 unsigned INT32 num_strings=0;
 
 /*** Main string hash function ***/
-static unsigned int StrHash(const char *s,int len)
+
+
+#define StrHash(s,len) low_do_hash(s,len,0)
+
+static unsigned int low_do_hash(const void *s, int len, int size_shift)
 {
-  full_hash_value=hashmem((unsigned char *)s, len, HASH_PREFIX);
+  full_hash_value=hashmem(s,len<<size_shift,HASH_PREFIX<<size_shift);
   return full_hash_value % htable_size;
 }
+
+static INLINE unsigned int do_hash(struct pike_string *s)
+{
+  return low_do_hash(s->str,s->len,s->size_shift);
+}
+
+
+static INLINE int find_magnitude1(const unsigned INT16 *s, int len)
+{
+  while(--len>=0)
+    if(s[len]>=256)
+      return 1;
+  return 0;
+}
+
+static INLINE int find_magnitude2(const unsigned INT32 *s, int len)
+{
+  while(--len>=0)
+  {
+    if(s[len]>=256)
+    {
+      do
+      {
+	if(s[len]>=65536)
+	  return 2;
+      }while(--len>=0);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static INLINE int min_magnitude(const unsigned INT32 c)
+{
+  if(c<256) return 0;
+  if(c<65536) return 1;
+  return 2;
+}
+
+static INLINE unsigned INT32 generic_extract (const void *str, int size, int pos)
+{
+  switch(size)
+  {
+    case 0: return ((unsigned char *)str)[pos];
+    case 1: return ((unsigned INT16 *)str)[pos];
+    case 2: return ((unsigned INT32 *)str)[pos];
+    default:
+      fatal("Illegal shift size!\n");
+  }
+}
+
+INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
+{
+#ifdef DEBUG
+  if(pos > s->len || pos<0)
+    fatal("string index out of range!\n");
+#endif
+  return generic_extract(s->str,s->size_shift,pos);
+}
+
+static INLINE void low_set_index(struct pike_string *s, int pos, int value)
+{
+#ifdef DEBUG
+  if(pos > s->len || pos<0)
+    fatal("string index out of range!\n");
+  
+  if(pos == s->len && value)
+    fatal("string zero termination foul!\n");
+#endif
+  switch(s->size_shift)
+  {
+    case 0: STR0(s)[pos]=value; break;
+    case 1: STR1(s)[pos]=value; break;
+    case 2: STR2(s)[pos]=value; break;
+    default:
+      fatal("Illegal shift size!\n");
+  }
+}
+
+#ifdef DEBUG
+struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift)
+{
+  if(a->size_shift != shift)
+    fatal("Wrong STRX macro used!\n");
+  return a;
+}
+#endif
+
+int generic_compare_strings(const void *a,int alen, int asize,
+			    const void *b,int blen, int bsize)
+{
+#define TWO_SIZES(X,Y) (((X)<<2)+(Y))
+  if(alen != blen) return 0;
+  if(asize==bsize)
+  {
+    return !MEMCPY(a,b,alen<<asize);
+  }else{
+    INT32 pos;
+    for(pos=0;pos< alen ;pos++)
+      if(generic_extract(a,asize,pos) != generic_extract(b,bsize,pos))
+	return 0;
+    return 1;
+  }
+}
+
+#define CONVERT(NAME,FROM,TO) \
+static INLINE void PIKE_CONCAT(convert_,NAME)(unsigned TO *to, const unsigned FROM *from, int len) \
+{ \
+  while(--len>=0) *(to++)=*(from++); \
+} \
+
+CONVERT(1_to_0,INT16,char)
+CONVERT(2_to_0,INT32,char)
+CONVERT(2_to_1,INT32,INT16)
+CONVERT(0_to_1,char,INT16)
+CONVERT(0_to_2,char,INT32)
+CONVERT(1_to_2,INT16,INT32)
+
+#define convert_0_to_0(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z))
+#define convert_1_to_1(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z)<<1)
+#define convert_2_to_2(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z)<<2)
 
 #ifdef DEBUG
 #ifdef DEBUG_MALLOC
@@ -40,6 +165,44 @@ static unsigned int StrHash(const char *s,int len)
 #else
 #define DM(X)
 #endif
+
+static void pike_string_cpy(void *to,
+			    int to_shift,
+			    struct pike_string *from)
+{
+  switch(TWO_SIZES(from->size_shift,to_shift))
+  {
+    case TWO_SIZES(0,0):
+      convert_0_to_0((p_wchar0 *)to,STR0(from),from->len);
+      break;
+    case TWO_SIZES(0,1):
+      convert_0_to_1((p_wchar1 *)to,STR0(from),from->len);
+      break;
+    case TWO_SIZES(0,2):
+      convert_0_to_2((p_wchar2 *)to,STR0(from),from->len);
+      break;
+
+    case TWO_SIZES(1,0):
+      convert_1_to_0((p_wchar0 *)to,STR1(from),from->len);
+      break;
+    case TWO_SIZES(1,1):
+      convert_1_to_1((p_wchar1 *)to,STR1(from),from->len);
+      break;
+    case TWO_SIZES(1,2):
+      convert_1_to_2((p_wchar2 *)to,STR1(from),from->len);
+      break;
+
+    case TWO_SIZES(2,0):
+      convert_2_to_0((p_wchar0 *)to,STR2(from),from->len);
+      break;
+    case TWO_SIZES(2,1):
+      convert_2_to_1((p_wchar1 *)to,STR2(from),from->len);
+      break;
+    case TWO_SIZES(2,2):
+      convert_2_to_2((p_wchar2 *)to,STR2(from),from->len);
+      break;
+  }
+}
 
 static void locate_problem(int (*isproblem)(struct pike_string *))
 {
@@ -76,18 +239,23 @@ static int has_zero_refs(struct pike_string *s)
 }
 static int wrong_hash(struct pike_string *s)
 {
-  return (s->hval % htable_size) != StrHash(s->str, s->len);
+  return (s->hval % htable_size) != do_hash(s);
 }
 static int improper_zero_termination(struct pike_string *s)
 {
-  return s->str[s->len];
+  return index_shared_string(s,s->len);
 }
 #else
 #define locate_problem(X)
 #endif
 
-/*** find a string in the shared string table. ***/
-static struct pike_string *internal_findstring(const char *s,int len,int h)
+/*\ find a string in the shared string table.
+||| This assumes that the string is minimized!!!! 
+\*/
+static struct pike_string *internal_findstring(const char *s,
+					       int len,
+					       int size_shift,
+					       int h)
 {
   struct pike_string *curr,**prev, **base;
 
@@ -104,6 +272,7 @@ static struct pike_string *internal_findstring(const char *s,int len,int h)
 
     if (full_hash_value == curr->hval &&
 	len==curr->len &&
+	size_shift==curr->size_shift &&
 	!MEMCMP(curr->str, s,len)) /* found it */
     {
       *prev = curr->next;
@@ -117,7 +286,7 @@ static struct pike_string *internal_findstring(const char *s,int len,int h)
 
 struct pike_string *binary_findstring(const char *foo, INT32 l)
 {
-  return internal_findstring(foo, l, StrHash(foo,l));
+  return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
 
 struct pike_string *findstring(const char *foo)
@@ -129,7 +298,8 @@ struct pike_string *findstring(const char *foo)
  * find a string that is already shared and move it to the head
  * of that list in the hastable
  */
-static struct pike_string *propagate_shared_string(const struct pike_string *s,int h)
+static struct pike_string *propagate_shared_string(const struct pike_string *s,
+						   int h)
 {
   struct pike_string *curr, **prev, **base;
 
@@ -201,6 +371,7 @@ struct pike_string *debug_begin_shared_string(int len)
   t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
   t->str[len]=0;
   t->len=len;
+  t->size_shift=0;
   return t;
 }
 
@@ -215,14 +386,66 @@ static void link_pike_string(struct pike_string *s, int h)
     rehash();
 }
 
+struct pike_string *debug_begin_wide_shared_string(int len, int shift)
+{
+  struct pike_string *t;
+#ifdef DEBUG
+  extern int d_flag;
+  if(d_flag>10)
+    verify_shared_strings_tables();
+#endif
+  t=(struct pike_string *)xalloc((len<<shift) + sizeof(struct pike_string));
+  t->len=len;
+  t->size_shift=shift;
+  low_set_index(t,len,0);
+  return t;
+}
+
 struct pike_string *end_shared_string(struct pike_string *s)
 {
   int len,h;
   struct pike_string *s2;
 
+  switch(s->size_shift)
+  {
+    default:
+      fatal("ARGHEL!\n");
+
+    case 2:
+      switch(find_magnitude2(STR2(s),s->len))
+      {
+	case 0:
+	  s2=begin_shared_string(s->len);
+	  convert_2_to_0(STR0(s2),STR2(s),s->len);
+	  free((char *)s);
+	  s=s2;
+	  break;
+
+	case 1:
+	  s2=begin_wide_shared_string(s->len,2);
+	  convert_2_to_1(STR1(s2),STR2(s),s->len);
+	  free((char *)s);
+	  s=s2;
+	  /* Fall though */
+      }
+      break;
+      
+    case 1:
+      if(!find_magnitude1(STR1(s),s->len))
+      {
+	s2=begin_shared_string(s->len);
+	convert_1_to_0(STR0(s2),STR1(s),s->len);
+	free((char *)s);
+	s=s2;
+      }
+      break;
+
+    case 0: break;
+  }
+
   len=s->len;
-  h=StrHash(s->str,len);
-  s2=internal_findstring(s->str,len,h);
+  h=do_hash(s);
+  s2=internal_findstring(s->str,len,s->size_shift,h);
 #ifdef DEBUG
   if(s2==s) 
     fatal("end_shared_string called twice! (or something like that)\n");
@@ -240,16 +463,80 @@ struct pike_string *end_shared_string(struct pike_string *s)
   return s;
 }
 
+
 struct pike_string * debug_make_shared_binary_string(const char *str,int len)
 {
   struct pike_string *s;
   int h=StrHash(str,len);
 
-  s = internal_findstring(str,len,h);
+  s = internal_findstring(str,len,0,h);
   if (!s) 
   {
     s=begin_shared_string(len);
     MEMCPY(s->str, str, len);
+    link_pike_string(s, h);
+  }
+
+  add_ref(s);
+
+  return s;
+}
+
+struct pike_string * debug_make_shared_binary_string1(const INT16 *str,int len)
+{
+  struct pike_string *s;
+  int h;
+
+  if(!find_magnitude1(str,len))
+  {
+    /* Wrong size, convert */
+    s=begin_shared_string(len);
+    convert_1_to_0(s->str,str,len);
+    return end_shared_string(s);
+  }
+
+  h=low_do_hash(str, len<<1, 1);
+
+  s = internal_findstring((char *)str,len,1,h);
+  if (!s) 
+  {
+    s=begin_wide_shared_string(len,1);
+    MEMCPY(s->str, str, len<<1);
+    link_pike_string(s, h);
+  }
+
+  add_ref(s);
+
+  return s;
+}
+
+struct pike_string * debug_make_shared_binary_string2(const INT32 *str,int len)
+{
+  struct pike_string *s;
+  int h;
+
+  switch(find_magnitude2(str,len))
+  {
+    case 0:
+      /* Wrong size, convert */
+      s=begin_shared_string(len);
+      convert_2_to_0(s->str,str,len);
+      return end_shared_string(s);
+
+    case 1:
+      /* Wrong size, convert */
+      s=begin_wide_shared_string(len,1);
+      convert_2_to_1(STR1(s),str,len);
+      return end_shared_string(s); /* not entirely optimal */
+  }
+
+  h=low_do_hash(str, len<<2, 2);
+
+  s = internal_findstring((char *)str,len,2,h);
+  if (!s) 
+  {
+    s=begin_wide_shared_string(len,2);
+    MEMCPY(s->str, str, len<<2);
     link_pike_string(s, h);
   }
 
@@ -263,14 +550,18 @@ struct pike_string *debug_make_shared_string(const char *str)
   return make_shared_binary_string(str, strlen(str));
 }
 
-struct pike_string *make_shared_string2(const INT16 *str)
+struct pike_string *make_shared_string1(const INT16 *str)
 {
-  INT32 e,len;
-  struct pike_string *s;
+  INT32 len;
   for(len=0;str[len];len++);
-  s=begin_shared_string(len);
-  for(e=0;e<len;e++) s->str[e]=str[e];
-  return end_shared_string(s);
+  return debug_make_shared_binary_string1(str,len);
+}
+
+struct pike_string *make_shared_string2(const INT32 *str)
+{
+  INT32 len;
+  for(len=0;str[len];len++);
+  return debug_make_shared_binary_string2(str,len);
 }
 
 /*** Free strings ***/
@@ -279,7 +570,7 @@ void unlink_pike_string(struct pike_string *s)
 {
   int h;
 
-  h=StrHash(s->str,s->len);
+  h=do_hash(s);
   propagate_shared_string(s,h);
   base_table[h]=s->next;
 #ifdef DEBUG
@@ -370,7 +661,7 @@ struct pike_string *add_string_status(int verbose)
 
 void check_string(struct pike_string *s)
 {
-  StrHash(s->str, s->len);
+  do_hash(s);
   if(full_hash_value != s->hval)
   {
     locate_problem(wrong_hash);
@@ -380,7 +671,7 @@ void check_string(struct pike_string *s)
   if(debug_findstring(s) !=s)
     fatal("Shared string not shared.\n");
 
-  if(s->str[s->len])
+  if(index_shared_string(s,s->len))
   {
     locate_problem(improper_zero_termination);
     fatal("Shared string is not zero terminated properly.\n");
@@ -415,7 +706,7 @@ void verify_shared_strings_tables(void)
 	fatal("Shared string didn't end with a zero.\n");
       }
 
-      if(StrHash(s->str, s->len) != e)
+      if(do_hash(s) != e)
       {
 	locate_problem(wrong_hash);
 	fatal("Shared string hashed to wrong place.\n");
@@ -615,17 +906,17 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size)
 {
   struct pike_string *r;
   r=(struct pike_string *)realloc((char *)a,
-					sizeof(struct pike_string)+size);
+					sizeof(struct pike_string)+((size+1)<<a->size_shift)); /* FIXME !! */
 	
   if(!r)
   {
     r=begin_shared_string(size);
-    MEMCPY(r->str, a->str, a->len);
+    MEMCPY(r->str, a->str, a->len<<a->size_shift);
     free((char *)a);
   }
 
   r->len=size;
-  r->str[size]=0;
+  low_set_index(r,size,0);
   return r;
 }
 
@@ -638,8 +929,8 @@ struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
     unlink_pike_string(a);
     return realloc_unlinked_string(a, size);
   }else{
-    r=begin_shared_string(size);
-    MEMCPY(r->str, a->str, a->len);
+    r=begin_wide_shared_string(size,a->size_shift);
+    MEMCPY(r->str, a->str, a->len<<a->size_shift);
     free_string(a);
     return r;
   }
@@ -648,34 +939,137 @@ struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
 /* Modify one index in a shared string
  * Not suitable for building new strings or changing multiple characters
  * within a string!
+ *
+ * Phew, this function become complicated when I inserted magic for wide
+ * characters...
  */
 struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
-					 int c)
+					 INT32 c)
 {
+  INT32 old_value;
 #ifdef DEBUG
   if(index<0 || index>=a->len)
     fatal("Index out of range in modify_shared_string()\n");
 #endif
 
-  if(EXTRACT_UCHAR(a->str+index)==c) return a;
 
+  old_value=index_shared_string(a,index);
+  if(old_value==c) return a;
+
+  /* First test if the string needs to be grown:
+   * ie; the new value does not fit in the char size of
+   * the old string
+   */
+
+  if(min_magnitude(c) > a->size_shift)
+  {
+    /* String must be grown */
+    struct pike_string *b;
+
+    switch(TWO_SIZES(min_magnitude(c),a->size_shift))
+    {
+      case TWO_SIZES(1,0):
+	b=begin_wide_shared_string(a->len,1);
+	convert_0_to_1(STR1(b),a->str,a->len);
+	STR1(b)[index]=c;
+	return end_shared_string(b);
+
+      case TWO_SIZES(2,0):
+	b=begin_wide_shared_string(a->len,2);
+	convert_0_to_2(STR2(b),a->str,a->len);
+	STR2(b)[index]=c;
+	return end_shared_string(b);
+
+      case TWO_SIZES(2,1):
+	b=begin_wide_shared_string(a->len,2);
+	convert_1_to_2(STR2(b),STR1(a),a->len);
+	STR2(b)[index]=c;
+	return end_shared_string(b);
+
+      default:
+	fatal("Odd wide string conversion!\n");
+    }
+  }
+
+
+  /* Next we test if the new string can be shrunk
+   * if all characters in the new string can fit in a string
+   * of a lower magnitude, it must be shrunk
+   */
+     
+  if(min_magnitude(old_value) == a->size_shift &&
+     min_magnitude(c) < min_magnitude(old_value))
+  {
+    /* We *might* need to shrink the string */
+    struct pike_string *b;
+    int size,tmp;
+
+    switch(a->size_shift)
+    {
+      case 0:
+	fatal("Unshrinkable!\n");
+
+      case 1:
+	/* Test if we *actually* can shrink it.. */
+	if(find_magnitude1(STR1(a),index)) break;
+	if(find_magnitude1(STR1(a)+index+1,a->len-index-1))
+	  break;
+	
+	b=begin_shared_string(a->len);
+	convert_1_to_0(b->str,STR1(a),a->len);
+	b->str[index]=c;
+	free_string(a);
+	return end_shared_string(b);
+
+      case 2:
+	/* Test if we *actually* can shrink it.. */
+	size=find_magnitude2(STR2(a),index);
+	if(size==2) break; /* nope */
+	tmp=find_magnitude2(STR2(a)+index+1,a->len-index-1);
+	if(tmp==2) break; /* nope */
+	size=MAXIMUM(MAXIMUM(size,tmp),min_magnitude(c));
+
+	switch(size)
+	{
+	  case 0:
+	    b=begin_shared_string(a->len);
+	    convert_2_to_0(b->str,STR2(a),a->len);
+	    b->str[index]=c;
+	    free_string(a);
+	    return end_shared_string(b);
+
+	  case 1:
+	    b=begin_wide_shared_string(a->len,1);
+	    convert_2_to_1((unsigned INT16 *)b->str,STR2(a),a->len);
+	    STR1(b)[index]=c;
+	    free_string(a);
+	    return end_shared_string(b);
+	}
+    }
+  }
+     
+
+  /* We now know that the string has the right character size */
   if(a->refs==1)
   {
+    /* One ref - destructive mode */
+
     if(index>=HASH_PREFIX && index<a->len-8)
     {
-      a->str[index]=c;
+      /* Doesn't change hash value - sneak it in there */
+      low_set_index(a,index,c);
       return a;
     }else{
       unlink_pike_string(a);
-      a->str[index]=c;
+      low_set_index(a,index,c);
       return end_shared_string(a);
     }
   }else{
     struct pike_string *r;
-    r=begin_shared_string(a->len);
-    MEMCPY(r->str, a->str, a->len);
-    r->str[index]=c;
+    r=begin_wide_shared_string(a->len,a->size_shift);
+    MEMCPY(r->str, a->str, a->len << a->size_shift);
+    low_set_index(r,index,c);
     free_string(a);
     return end_shared_string(r);
   }
@@ -685,35 +1079,67 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b)
 {
-  INT32 size;
   struct pike_string *ret;
-  char *buf;
+  int target_size=MAXIMUM(a->size_shift,b->size_shift);
 
-  size = a->len + b->len;
-
-  ret=begin_shared_string(size);
-  buf=ret->str;
-  MEMCPY(buf,a->str,a->len);
-  MEMCPY(buf+a->len,b->str,b->len);
-  ret=end_shared_string(ret);
-
-  return ret;
+  ret=begin_wide_shared_string(a->len+b->len,target_size);
+  pike_string_cpy(ret->str,ret->size_shift,a);
+  pike_string_cpy(ret->str+(a->len<<target_size),ret->size_shift,b);
+  return end_shared_string(ret);
 }
 
 struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 						struct pike_string *b)
 {
   INT32 alen=a->len;
-  a=realloc_shared_string(a,alen + b->len);
-  MEMCPY(a->str+alen,b->str,b->len);
-  free_string(b);
-  return end_shared_string(a);
+  if(a->size_shift == b->size_shift)
+  {
+    a=realloc_shared_string(a,alen + b->len);
+    MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
+    free_string(b);
+    return end_shared_string(a);
+  }else{
+    struct pike_string *ret=add_shared_strings(a,b);
+    free_string(a);
+    free_string(b);
+    return ret;
+  }
 }
+
+
+int string_search(struct pike_string *haystack,
+		  struct pike_string *needle,
+		  int start)
+{
+  struct generic_mem_searcher s;
+  char *r;
+
+  if(needle->size_shift > haystack->size_shift)
+    return -1;
+
+  init_generic_memsearcher(&s,
+			   needle->str,
+			   needle->len,
+			   needle->size_shift,
+			   haystack->len,
+			   haystack->size_shift);
+
+  
+  r=(char *)generic_memory_search(&s,
+				  haystack->str,
+				  haystack->len,
+				  haystack->size_shift);
+
+  if(!r) return -1;
+  return (r-haystack->str)>>haystack->size_shift;
+}
+
+/* WORK MARKER */
 
 /*** replace function ***/
 struct pike_string *string_replace(struct pike_string *str,
-				     struct pike_string *del,
-				     struct pike_string *to)
+				   struct pike_string *del,
+				   struct pike_string *to)
 {
   struct pike_string *ret;
   char *s,*tmp,*r,*end;
@@ -852,7 +1278,7 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
     for(p=base_table[e];p;p=p->next)
     {
       num_++;
-      size_+=sizeof(struct pike_string)+p->len;
+      size_+=sizeof(struct pike_string)+(p->len<<p->size_shift);
     }
   }
 #ifdef DEBUG
@@ -873,3 +1299,82 @@ void gc_mark_all_strings(void)
     for(p=base_table[e];p;p=p->next) gc_is_referenced(p);
   }
 }
+
+void init_string_builder(struct string_builder *s, int mag)
+{
+  s->malloced=256;
+  s->s=begin_wide_shared_string(256,mag);
+  s->s->len=0;
+}
+
+void string_build_mkspace(struct string_builder *s, int chars, int mag)
+{
+  if(mag > s->s->size_shift)
+  {
+    struct pike_string *n;
+    int l=s->s->len+chars+s->malloced;
+    n=begin_wide_shared_string(l,mag);
+    pike_string_cpy(n->str,mag,s->s);
+    n->len=s->s->len;
+    s->malloced=l;
+    free((char *)s->s);
+    s->s=n;
+  }
+  else if(s->s->len+chars > s->malloced)
+  {
+    int newlen=MAXIMUM(s->malloced*2,s->s->len+chars);
+
+    s->s=(struct pike_string *)realloc((char *)s->s,
+				       sizeof(struct pike_string)+
+				       ((newlen+1)<<s->s->size_shift));
+    if(!s->s)
+      fatal("Out of memory.\n");
+    s->malloced=newlen;
+  }
+}
+
+void string_builder_putchar(struct string_builder *s, int ch)
+{
+  INT32 i;
+  string_build_mkspace(s,1,min_magnitude(ch));
+  i=s->s->len++;
+  low_set_index(s->s,i,ch);
+}
+
+
+void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len)
+{
+  string_build_mkspace(s,len,1);
+  switch(s->s->size_shift)
+  {
+    case 0: convert_0_to_0(STR0(s->s)+s->s->len,str,len); break;
+    case 1: convert_0_to_1(STR1(s->s)+s->s->len,str,len); break;
+    case 2: convert_0_to_2(STR2(s->s)+s->s->len,str,len); break;
+    default:
+      fatal("Illegal magnitude!\n");
+  }
+  s->s->len+=len;
+}
+
+
+void string_builder_strcat(struct string_builder *s, char *str)
+{
+  string_builder_binary_strcat(s,str,strlen(str));
+}
+
+void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str)
+{
+  string_build_mkspace(s,str->len,s->s->size_shift);
+
+  pike_string_cpy(s->s->str + (s->s->len << s->s->size_shift),
+		  s->s->size_shift,
+		  str);
+  s->s->len+=str->len;
+}
+
+struct pike_string *finish_string_builder(struct string_builder *s)
+{
+  low_set_index(s->s,s->s->len,0);
+  return end_shared_string(s->s);
+}
+

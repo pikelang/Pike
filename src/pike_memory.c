@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.24 1998/04/24 00:02:45 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.25 1998/10/09 17:56:32 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -27,6 +27,20 @@ char *strdup(const char *str)
   return(res);
 }
 #endif /* !HAVE_STRDUP */
+
+INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e)
+{
+  e++;
+  while(--e >= 0) if(*(p++)==c) return p-1;
+  return (p_wchar1 *)0;
+}
+
+INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e)
+{
+  e++;
+  while(--e >= 0) if(*(p++)==c) return p-1;
+  return (p_wchar2 *)0;
+}
 
 void swap(char *a, char *b, INT32 size)
 {
@@ -308,7 +322,6 @@ void init_memsearch(struct mem_searcher *s,
     }
   }
 }
-		    
 
 char *memory_search(struct mem_searcher *s,
 		    char *haystack,
@@ -318,6 +331,8 @@ char *memory_search(struct mem_searcher *s,
 
   switch(s->method)
   {
+    default:
+      fatal("Don't know how to search like that!\n");
   case no_search:
     return haystack;
 
@@ -378,6 +393,100 @@ char *memory_search(struct mem_searcher *s,
   }
   return 0;
 }
+
+
+void init_generic_memsearcher(struct generic_mem_searcher *s,
+			      void *needle,
+			      SIZE_T needlelen,
+			      char needle_shift,
+			      SIZE_T estimated_haystack,
+			      char haystack_shift)
+{
+  s->needle_shift=needle_shift;
+  s->haystack_shift=haystack_shift;
+
+  if(needle_shift ==1 && haystack_shift ==1)
+  {
+    init_memsearch(& s->data.eightbit, (char *)needle, estimated_haystack,estimated_haystack);
+    return;
+  }
+
+  switch(needlelen)
+  {
+    case 0: s->data.other.method=no_search; break;
+    case 1:
+      s->data.other.method=use_memchr;
+      switch(s->needle_shift)
+      {
+	case 0: s->data.other.first_char=*(p_wchar0 *)needle; break;
+	case 1: s->data.other.first_char=*(p_wchar1 *)needle; break;
+	case 2: s->data.other.first_char=*(p_wchar2 *)needle; break;
+      }
+      break;
+
+    default:
+      s->data.other.method=memchr_and_memcmp;
+      switch(s->needle_shift)
+      {
+	case 0: s->data.other.first_char=*(p_wchar0 *)needle; break;
+	case 1: s->data.other.first_char=*(p_wchar1 *)needle; break;
+	case 2: s->data.other.first_char=*(p_wchar2 *)needle; break;
+      }
+      break;
+  }
+}
+
+void *generic_memory_search(struct generic_mem_searcher *s,
+			    void *haystack,
+			    SIZE_T haystacklen,
+			    char haystack_shift)
+{
+  if(s->needle_shift==1 && s->haystack_shift==1)
+  {
+    return memory_search(& s->data.eightbit, (char *)haystack, haystacklen);
+  }
+  switch((s->data.other.method<<2) + haystack_shift)
+  {
+
+#define GENERIC(X)							\
+    case (no_search << 2) + X:						\
+      return haystack;							\
+									\
+    case (use_memchr << 2) + X:						\
+      return PIKE_CONCAT(MEMCHR,X)((PIKE_CONCAT(p_wchar,X) *)haystack,	\
+				   s->data.other.first_char,		\
+				   haystacklen);			\
+									\
+    case (memchr_and_memcmp << 2) + X:					\
+    {									\
+      PIKE_CONCAT(p_wchar,X) *end,c,*needle,*hay;			\
+      SIZE_T needlelen;							\
+      									\
+      needle=(PIKE_CONCAT(p_wchar,X) *)s->data.other.needle;		\
+      hay=(PIKE_CONCAT(p_wchar,X) *)haystack;				\
+      needlelen=s->data.other.needlelen;				\
+      									\
+      end=hay + haystacklen - needlelen+1;				\
+      needle++;								\
+      needlelen--;							\
+      while((hay=PIKE_CONCAT(MEMCHR,X)(hay,				\
+				       s->data.other.first_char,	\
+				       end-hay)))			\
+	if(!MEMCMP(++hay,needle,needlelen))				\
+	  return (void *)(hay-1);					\
+									\
+      return 0;								\
+    }
+
+
+      GENERIC(0)
+      GENERIC(1)
+      GENERIC(2)
+
+#undef GENERIC
+  }
+}
+		    
 
 char *my_memmem(char *needle,
 		SIZE_T needlelen,

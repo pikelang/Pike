@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.55 1998/06/07 12:26:51 grubba Exp $");
+RCSID("$Id: lex.c,v 1.56 1998/10/09 17:56:32 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -362,10 +362,8 @@ static int char_const(void)
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7':
       c-='0';
-      if(LOOK()<'0' || LOOK()>'8') return c;
-      c=c*8+(GETC()-'0');
-      if(LOOK()<'0' || LOOK()>'8') return c;
-      c=c*8+(GETC()-'0');
+      while(LOOK()>='0' && LOOK()<='8')
+	c=c*8+(GETC()-'0');
       return c;
       
     case 'r': return '\r';
@@ -377,44 +375,43 @@ static int char_const(void)
       lex.current_line++;
       return '\n';
       
-      
     case 'x':
-      switch(LOOK())
+      c=0;
+      while(1)
       {
-	default: return c;
-	case '0': case '1': case '2': case '3':
-	case '4': case '5': case '6': case '7':
-	case '8': case '9':
-	  c=GETC()-'0';
-	  break;
-	  
-	case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	  c=GETC()-'a'+10;
-	  break;
-	  
-	case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	  c=GETC()-'A'+10;
-	  break;
+	switch(LOOK())
+	{
+	  default: return c;
+	  case '0': case '1': case '2': case '3':
+	  case '4': case '5': case '6': case '7':
+	  case '8': case '9':
+	    c=c*16+GETC()-'0';
+	    break;
+	    
+	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+	    c=c*16+GETC()-'a'+10;
+	    break;
+	    
+	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+	    c=c*16+GETC()-'A'+10;
+	    break;
+	}
       }
-      switch(LOOK())
+
+    case 'd':
+      c=0;
+      while(1)
       {
-	default: return c;
-	case '0': case '1': case '2': case '3':
-	case '4': case '5': case '6': case '7':
-	case '8': case '9':
-	  c=c*16+GETC()-'0';
-	  break;
-	  
-	case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	  c=c*16+GETC()-'a'+10;
-	  break;
-	  
-	case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	  c=c*16+GETC()-'A'+10;
-	  break;
+	switch(LOOK())
+	{
+	  default: return c;
+	  case '0': case '1': case '2': case '3':
+	  case '4': case '5': case '6': case '7':
+	  case '8': case '9':
+	    c=c*10+GETC()-'0';
+	    break;
+	}
       }
-      return c;
-    
   }
   return c;
 }
@@ -422,8 +419,8 @@ static int char_const(void)
 static struct pike_string *readstring(void)
 {
   int c;
-  dynamic_buffer tmp;
-  initialize_buf(&tmp);
+  struct string_builder tmp;
+  init_string_builder(&tmp,0);
   
   while(1)
   {
@@ -440,19 +437,19 @@ static struct pike_string *readstring(void)
       break;
       
     case '\\':
-      low_my_putchar(char_const(),&tmp);
+      string_builder_putchar(&tmp,char_const());
       continue;
       
     case '"':
       break;
       
     default:
-      low_my_putchar(c,&tmp);
+      string_builder_putchar(&tmp,c);
       continue;
     }
     break;
   }
-  return low_free_buf(&tmp);
+  return finish_string_builder(&tmp);
 }
 
 int yylex(YYSTYPE *yylval)

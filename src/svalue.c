@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.37 1998/09/18 21:31:41 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.38 1998/10/09 17:56:33 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -746,7 +746,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 
     case T_STRING:
       {
-	int i;
+	int i,j=0;
 #if 0
 	if (s->subtype) {
 	  sprintf(buf,"/* subtype:%ld */ ",(long)s->subtype);
@@ -756,7 +756,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
         my_putchar('"');
 	for(i=0; i < s->u.string->len; i++)
         {
-          switch(s->u.string->str[i])
+          switch(j=index_shared_string(s->u.string,i))
           {
 	  case '\n':
 	    my_putchar('\\');
@@ -782,22 +782,27 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
             case '"':
             case '\\':
               my_putchar('\\');
-              my_putchar(s->u.string->str[i]);
+              my_putchar(j);
 	      break;
 
             default:
-	      if(isprint(((unsigned char *)s->u.string->str)[i]))
+	      if(j>=0 && j<256 && isprint(j))
 	      {
-		my_putchar(s->u.string->str[i]);
+		my_putchar(j);
 		break;
 	      }
 
-	    case 0: case 1: case 2: case 3: case 4:
-	    case 5: case 6: case 7:
 	      my_putchar('\\');
-	      my_putchar(EXTRACT_UCHAR(s->u.string->str+i) / 64 + '0');
-	      my_putchar(((EXTRACT_UCHAR(s->u.string->str+i) / 8) & 7) + '0');
-	      my_putchar((EXTRACT_UCHAR(s->u.string->str+i) & 7) + '0');
+	      sprintf(buf,"%o",j);
+	      my_strcat(buf);
+
+	      switch(index_shared_string(s->u.string,i+1))
+	      {
+		case '0': case '1': case '2': case '3':
+		case '4': case '5': case '6': case '7':
+		  my_putchar('"');
+		  my_putchar('"');
+	      }
 	      break;
           } 
         }
