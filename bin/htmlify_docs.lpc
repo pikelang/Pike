@@ -10,6 +10,8 @@ mapping keywords = ([]);
 mapping subpages = ([]);
 
 string new_path;
+int writepages;
+
 
 /*
  * Implode an array of strings to an english 'list'
@@ -240,7 +242,7 @@ string short(string s)
 inherit "/precompiled/regexp":is_example;
 
 list(string) indexes_done=(<>);
-string mkindex(string topic, int head)
+string mkindex(string topic, int usehead)
 {
   string head;
   string a,ret;
@@ -250,12 +252,34 @@ string mkindex(string topic, int head)
 
   switch(topic)
   {
+  case "pages":
+    head="<b>All pages:</b>\n";
+    ret="<ul>\n";
+    foreach(sort_array(m_indices(pages)),a)
+      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+    
+    ret+="</ul>\n";
+    break;
+    
   case "programs":
     head="<b>Builtin programs:</b>\n";
     ret="<ul>\n";
     foreach(sort_array(m_indices(pages)),a)
     {
-      if(-1 == search(a,"/")) continue;
+      if(a[0]!='/') continue;
+      
+      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+    }
+    
+    ret+="</ul>\n";
+    break;
+
+  case "examples":
+    head="<b>examples:</b>\n";
+    ret="<ul>\n";
+    foreach(sort_array(m_indices(pages)),a)
+    {
+      if(search(a,"example")==-1) continue;
       
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
@@ -266,9 +290,13 @@ string mkindex(string topic, int head)
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(m_indices(pages) - `+(@m_values(keywords))),a)
+    foreach(sort_array(m_indices(pages) -
+		       map_array(`|(@m_values(keywords)),html_quote) -
+		       map_array(m_indices(all_efuns()),html_quote)),a)
     {
-      if(-1 != search(a,"/")) continue;
+      if(a[0]=='/') continue;
+      if(a[0..4]=="index") continue;
+      if(search(a,"example")!=-1) continue;
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
     ret+="</ul>\n";
@@ -284,7 +312,8 @@ string mkindex(string topic, int head)
       {
 	ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
       }else{
-	perror("Warning: no page for function: "+a+".\n");
+	if(writepages)
+	  perror("Warning: no page for function: "+a+".\n");
       }
     }
     ret+="</ul>\n";
@@ -302,7 +331,7 @@ string mkindex(string topic, int head)
     head+=short(topic);
     head+="</b>\n";
     ret="<ul>\n";
-    foreach(keywords[topic],a)
+    foreach(sort_array(keywords[topic]),a)
     {
       a=html_quote(a);
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+ short(a) +"\n";
@@ -311,12 +340,10 @@ string mkindex(string topic, int head)
     break;
   }
 
-  if(head) ret=head+ret;
+  if(usehead) ret=head+ret;
 
   return ret;
 }
-
-int writepages;
 
 /* Convert a page */
 string convert_page(string path, string fname)
@@ -402,7 +429,7 @@ string convert_page(string path, string fname)
 	  foreach(a,a)
 	  {
 	    // fixme!!
-	    keywords[a] = ( keywords[a] || ({}) ) + ({ name });
+	    keywords[a] = ( keywords[a] || ({}) ) | ({ name });
 	    b+=({ "<a href=index.html#"+a+">"+a+"</a>" });
 	  }
 	  rest=implode_nicely(b);
@@ -455,6 +482,12 @@ string convert_page(string path, string fname)
 	  smallcaps(type)+
 	    "<dd>\n"+rest+"\n<p>";
       }
+      if(keywords[part_name])
+      {
+	sections+=({"<dt>"+
+	  smallcaps("RELATED PAGES")+"\n"+
+	    mkindex(part_name,0)+"<p>"});
+      }
       parts[partno]="<dl>\n"+implode(sections,"\n")+"\n</dl>\n";
       if(part_name)
       {
@@ -479,15 +512,15 @@ string convert_page(string path, string fname)
     
     for(section=0;section<sizeof(sections);section++)
     {
-      string tmp,pre,a;
+      string tmp,pre,a,b;
       tmp=sections[section];
       sscanf(tmp,"%[\t ]",pre);
       
       switch(pre)
       {
       case "":
-	tmp="<h1><center>"+tmp+"</center></h1>";
 	title=tmp;
+	tmp="<h1><center>"+tmp+"</center></h1>";
 	break;
 	
       case " ":
@@ -510,11 +543,22 @@ string convert_page(string path, string fname)
 	  tmp=mkindex(a, 1);
 	  break;
 
+	case "KEYWORD_LIST":
+	  sscanf(a,"%s\n",a);
+	  tmp=mkindex(a, 0);
+	  break;
+
+	case "LINK":
+	  sscanf(a,"%s %s",a,b);
+	  tmp="<a href="+a+".html>"+b+"</a>";
+	  break;
+
 	default:
 	  perror("Unknown directive: "+pre+".\n");
 	}
 
       }
+      sections[section]=tmp;
     }
     cont=implode(sections,"\n<p>\n");
 
@@ -671,7 +715,7 @@ int main(int argc, string *argv)
   traversedir(".",scanfiles);
 
   write("Writing html files.\n");
-  writepages=0;
+  writepages=1;
   traversedir(".",scanfiles);
 
   foreach(indices(keywords) - indices(indexes_done),np)
