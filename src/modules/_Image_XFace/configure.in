@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2001/02/13 13:36:48 mirar Exp $
+# $Id: configure.in,v 1.8 2001/02/13 15:44:18 mirar Exp $
 AC_INIT(image_xface.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
       AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
       LIBS="${LIBS-} -l$1"
       done=yes
-      PIKE_FEATURE_OK(_Image_XFace,Image.XFace........)
+      PIKE_FEATURE_OK(Image.XFace)
     else
       AC_MSG_RESULT(no)
     fi
@@ -157,10 +157,10 @@ int main(int argc, char **argv)
   fi
 ])
 
-PIKE_FEATURE_WITHOUT(_Image_XFace,Image.XFace........)
+PIKE_FEATURE_WITHOUT(Image.XFace)
 
 if test x$with_gmp = xyes ; then
-  PIKE_FEATURE_NODEP(_Image_XFace,Image.XFace........)
+  PIKE_FEATURE_NODEP(Image.XFace)
   AC_CHECK_GMP(gmp2,gmp2/gmp.h,[AC_CHECK_GMP(gmp,gmp.h,[])])
 fi
 

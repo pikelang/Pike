@@ -172,27 +172,41 @@ define(PIKE_FEATURE_CLEAR,[
   rm pike_*.feature 2>/dev/null
 ])
 
-define(PIKE_FEATURE,[
+define(PIKE_FEATURE_RAW,[
   cat >pike_[$1].feature <<EOF
 [$2]
 EOF])
 
+dnl newer autoconf call substr m4_substr
+ifdef([substr], ,m4_copy(m4_substr,substr))
+
+define([PAD_FEATURE],[substr([$1][................................],0,22)])
+
+define(PIKE_FEATURE_3,[
+  cat >pike_[$1].feature <<EOF
+PAD_FEATURE([$2])[$3]
+EOF])
+
+define(PIKE_FEATURE,[
+  PIKE_FEATURE_3(translit([[$1]],[. ()],[____]),[$1],[$2])
+])
+
 define(PIKE_FEATURE_WITHOUT,[
-  PIKE_FEATURE([$1],[$2]no (forced without))
+  PIKE_FEATURE([$1],[no (forced without)])
 ])
 
 define(PIKE_FEATURE_NODEP,[
-  PIKE_FEATURE([$1],[$2]no (dependencies failed))
+  PIKE_FEATURE([$1],[no (dependencies failed)])
 ])
 
 define(PIKE_FEATURE_OK,[
-  PIKE_FEATURE([$1],[$2]yes)
+  PIKE_FEATURE([$1],[yes])
 ])
 
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.26 2001/02/13 13:05:32 mirar Exp $
+# $Id: aclocal.m4,v 1.27 2001/02/13 15:44:18 mirar Exp $
 
 MY_AC_PROG_CC
 

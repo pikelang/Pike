@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.23 2001/02/13 13:02:05 mirar Exp $
+# $Id: configure.in,v 1.24 2001/02/13 15:44:15 mirar Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
     ])
     LIBS="$OLDLIBS"
     if test "x$pike_cv_working_$1" = xyes; then
-      PIKE_FEATURE_OK(Gmp,Gmp (bignums)......)
+      PIKE_FEATURE_OK([Gmp (bignums)])
       AC_MSG_RESULT(yes)
       AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
       LIBS="${LIBS-} -l$1"
@@ -162,10 +162,10 @@ int main(int argc, char **argv)
   fi
 ])
 
-PIKE_FEATURE_WITHOUT(Gmp,Gmp (bignums)......)
+PIKE_FEATURE_WITHOUT([Gmp (bignums)])
 
 if test x$with_gmp = xyes -a "x$enable_binary" != "xno" ; then
-  PIKE_FEATURE_NODEP(Gmp,Gmp (bignums)......)
+  PIKE_FEATURE_NODEP([Gmp (bignums)])
   AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
     AC_CHECK_GMP(gmp,gmp.h,[
       if test "x$with_bignums" = xyes ; then

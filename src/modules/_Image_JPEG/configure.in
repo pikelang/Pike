@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.7 2001/02/13 13:02:06 mirar Exp $
+# $Id: configure.in,v 1.8 2001/02/13 15:44:17 mirar Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -7,16 +7,16 @@ AC_ARG_WITH(jpeglib,     [  --with(out)-jpeglib       Support JPEG (Image.JPEG)]
 
 AC_MODULE_INIT()
 
-PIKE_FEATURE_WITHOUT(_Image_JPEG,Image.JPEG.........)
+PIKE_FEATURE_WITHOUT(Image.JPEG)
 
 if test x$with_jpeglib = xyes ; then
-  PIKE_FEATURE_NODEP(_Image_JPEG,Image.JPEG.........)
+  PIKE_FEATURE_NODEP(Image.JPEG)
   AC_CHECK_HEADERS(jpeglib.h)
   if test $ac_cv_header_jpeglib_h = yes ; then
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress, [
       AC_DEFINE(HAVE_LIBJPEG) 
       LIBS="${LIBS-} -ljpeg"
-      PIKE_FEATURE_OK(_Image_JPEG,Image.JPEG.........)
+      PIKE_FEATURE_OK(Image.JPEG)
       ])
   fi
 fi

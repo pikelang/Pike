@@ -242,11 +242,11 @@ AC_INIT(new_build_pgtk.pike)
 AC_CONFIG_HEADER(config.h)
 
 
-PIKE_FEATURE_WITHOUT(GTK2,GTK2...............)
-PIKE_FEATURE_WITHOUT(GTK,GTK................)
-PIKE_FEATURE_WITHOUT(Gnome,Gnome..............)
-PIKE_FEATURE_WITHOUT(GTK.GladeXML,GTK.GladeXML.......)
-PIKE_FEATURE_WITHOUT(GTK.GlArea,GTK.GlArea.........)
+PIKE_FEATURE_WITHOUT(GTK2)
+PIKE_FEATURE_WITHOUT(GTK)
+PIKE_FEATURE_WITHOUT(Gnome)
+PIKE_FEATURE_WITHOUT(GTK.GladeXML)
+PIKE_FEATURE_WITHOUT(GTK.GlArea)
 
 AC_MODULE_INIT()
 
@@ -264,11 +264,11 @@ AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h )
 
 if test "x$with_GTK" = "xyes" ; then
   
-  PIKE_FEATURE_NODEP(GTK.GlArea,GTK.GlArea.........)
-  PIKE_FEATURE_NODEP(GTK,GTK................)
-  PIKE_FEATURE_NODEP(GTK.GladeXML,GTK.GladeXML.......)
+  PIKE_FEATURE_NODEP(GTK.GlArea)
+  PIKE_FEATURE_NODEP(GTK)
+  PIKE_FEATURE_NODEP(GTK.GladeXML)
   if test "x$with_GTK2" = "xyes" ; then
-    PIKE_FEATURE_NODEP(GTK2,GTK2...............)
+    PIKE_FEATURE_NODEP(GTK2)
     AC_PATH_PROG(PKG_CONFIG,pkg-config,no)
   else
      PKG_CONFIG=no
@@ -288,7 +288,7 @@ AC_SUBST(have_gtk_120)
    fi
  else
    if pkg-config gtk+-2.0 2>/dev/null ; then
-     PIKE_FEATURE_OK(GTK2,GTK2...............)
+     PIKE_FEATURE_OK(GTK2)
      GTK_CFLAGS="`pkg-config gtk+-2.0 --cflags`"
      GTK_LIBS="`pkg-config gtk+-2.0 --libs`"
      echo "**** WARNING: Using GTK 2.0"
@@ -343,7 +343,7 @@ dnl Not yet available with GTK 2.0 (Wait for gnome 2.0 etc.)
  fi
 
 if test "x$WITH_GTK" = x1 ; then
- PIKE_FEATURE_OK(GTK,GTK................)
+ PIKE_FEATURE_OK(GTK)
  AC_SUBST(WITH_GTK)
  AC_SUBST(pgtk_has_libglade)
  AM_PATH_LIBGLADE([
@@ -356,7 +356,7 @@ if test "x$WITH_GTK" = x1 ; then
   pgtk_has_libglade=nolibglade])
 
   if test "x$pgtk_has_libglade" = "xlibglade" ; then
-    PIKE_FEATURE_OK(GTK.GladeXML,GTK.GladeXML.......)
+    PIKE_FEATURE_OK(GTK.GladeXML)
   fi
 
  PGTK_CFLAGS="$GTK_CFLAGS"
@@ -384,7 +384,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  if test "x$with_gnome" = "xyes"; then
  
- PIKE_FEATURE_NODEP(Gnome,Gnome..............)
+ PIKE_FEATURE_NODEP(Gnome)
  AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
  
  if test "$GNOME_CONFIG" = "no"; then
@@ -409,7 +409,7 @@ if test "x$WITH_GTK" = x1 ; then
    pgtk_has_gnome=gnome
    AC_DEFINE(HAVE_GNOME)
    AC_MSG_RESULT(yes);
-   PIKE_FEATURE_OK(Gnome,Gnome..............)
+   PIKE_FEATURE_OK(Gnome)
  fi
  
  AC_MSG_CHECKING([gnome docklets])
@@ -623,7 +623,7 @@ if test "x$WITH_GTK" = x1 ; then
   AC_CHECK_LIB(gtkgl, main,,,`gtk-config --libs` $GL_LIBS)
   if test x$ac_cv_lib_gtkgl_main = xyes ; then
     pgtk_has_glarea=glarea
-    PIKE_FEATURE_OK(GTK.GlArea,GTK.GlArea.........)
+    PIKE_FEATURE_OK(GTK.GlArea)
     LIBS="$GL_LIBS $LIBS"
   else
     unset ac_cv_lib_gtkgl_main

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.18 2001/02/13 13:02:05 mirar Exp $
+# $Id: configure.in,v 1.19 2001/02/13 15:44:16 mirar Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -8,7 +8,7 @@ AC_CONFIG_SUBDIRS(encodings)
 
 AC_MODULE_INIT()
 
-PIKE_FEATURE_OK(Image,Image..............)
+PIKE_FEATURE_OK(Image)
 
 AC_FUNC_MMAP
 
