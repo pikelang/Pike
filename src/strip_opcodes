@@ -2,6 +2,9 @@
 
 # Avoid clever UTF-8 assumptions.
 LANG=C
+LC_CTYPE=C
+
+export LANG LC_CTYPE
 
 # Notes about limitations in SysV sed:
 #
