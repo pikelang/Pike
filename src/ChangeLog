@@ -1,3 +1,12 @@
+Sat Oct  5 02:53:14 1996  Fredrik Hubinette  <hubbe@teleute.infovav.se>
+
+	* /precompiled/fifo added (with #include <fifo.h>)
+	* sprintf now handles zeros in format string correctly
+
+Fri Oct  4 01:45:45 1996  Fredrik Hubinette  <hubbe@beldandy.infovav.se>
+
+	* Threads support added!
+
 Wed Sep 25 01:35:46 1996  Fredrik Hubinette  <hubbe@morpheus.infovav.se>
 
 	* mapping.c: destructed function/objectpointers might now be
