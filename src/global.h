@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.51 2000/08/17 18:20:18 grubba Exp $
+ * $Id: global.h,v 1.52 2000/08/17 20:40:43 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -140,10 +140,11 @@ void *alloca();
 #endif
 
 #ifdef HAVE_MALLOC_H
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(__NT__)
 /* FreeBSD has <malloc.h>, but it just contains a warning... */
+/* Windows 2000/IA64 has <malloc.h>, but it contains an #error in _WIN64. */
 #include <malloc.h>
-#endif /* !__FreeBSD__ */
+#endif /* !__FreeBSD__ && !__NT__ */
 #undef HAVE_MALLOC_H
 #endif
 
