@@ -11415,7 +11415,10 @@ generally speaking have one %&lt;modifiers&gt;&lt;operator&gt; (examples:
 <tr valign=top><td> %c </td><td> char (or short with %2c, %3c gives 3 bytes etc.) </td></tr>
 <tr valign=top><td> %f </td><td> float </td></tr>
 <tr valign=top><td> %g </td><td> heuristically chosen representation of float </td></tr>
+<tr valign=top><td> %G </td><td> like %g, but uses uppercase E for exponent </td></tr>
 <tr valign=top><td> %e </td><td> exponential notation float </td></tr>
+<tr valign=top><td> %E </td><td> like %e, but uses uppercase E for exponent </td></tr>
+<tr valign=top><td> %F </td><td> binary IEEE representation of float (%4F gives single precision, %8F gives double precision.) </td></tr>
 <tr valign=top><td> %s </td><td> string </td></tr>
 <tr valign=top><td> %O </td><td> any type (debug style) </td></tr>
 <tr valign=top><td> %n </td><td> nop </td></tr>
