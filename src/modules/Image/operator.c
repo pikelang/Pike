@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operator.c,v 1.43 2002/10/21 17:06:14 marcus Exp $
+|| $Id: operator.c,v 1.44 2003/11/14 06:26:56 mast Exp $
 */
 
 /*
@@ -546,7 +546,10 @@ void image_operator_equal(INT32 args)
    INT32 i;
    int res=1;
 
-   if (args && sp[-args].type==T_INT)
+   if (!args)
+     SIMPLE_TOO_FEW_ARGS_ERROR ("Image->`==", 1);
+
+   if (sp[-args].type==T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
@@ -559,7 +562,7 @@ void image_operator_equal(INT32 args)
 	 return;
       }
    }
-   else if (args && sp[-args].type==T_ARRAY
+   else if (sp[-args].type==T_ARRAY
        && sp[-args].u.array->size>=3
        && sp[-args].u.array->item[0].type==T_INT
        && sp[-args].u.array->item[1].type==T_INT
@@ -578,10 +581,14 @@ void image_operator_equal(INT32 args)
    }
    else
    {
-      if (args<1 || sp[-args].type!=T_OBJECT
-       || !sp[-args].u.object
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("`==: illegal argument 2\n");
+      if (sp[-args].type!=T_OBJECT
+       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program))) {
+	/* `== must be able to compare anything with anything -
+	 * shouldn't throw an error here. */
+	pop_n_elems (args);
+	push_int (0);
+	return;
+      }
 
       if (!oper->img || !THIS->img)
       {
@@ -660,7 +667,7 @@ void image_operator_lesser(INT32 args)
       if (args<1 || sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("`==: illegal argument 2\n");
+	 Pike_error("image->`<: illegal argument 2\n");
 
       if (!oper->img)
 	 Pike_error("image->`<: operator 2 has no image\n");
@@ -732,7 +739,7 @@ void image_operator_greater(INT32 args)
       if (args<1 || sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("`==: illegal argument 2\n");
+	 Pike_error("image->`>: illegal argument 2\n");
 
       if (!oper->img)
 	 Pike_error("image->`>: operator 2 has no image\n");
