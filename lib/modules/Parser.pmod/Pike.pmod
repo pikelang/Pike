@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.35 2004/04/25 15:04:56 grubba Exp $
+// $Id: Pike.pmod,v 1.36 2004/10/30 12:00:44 mast Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -29,7 +29,7 @@ static mapping(string : int) backquoteops =
    "==":2, "=":1,
    "()":2,
    "->=":3, "->":2,
-   "[]=":3, "[]":2 ]);
+   "[]=":3, "[]":2, "[..]":4 ]);
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
