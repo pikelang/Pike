@@ -156,6 +156,11 @@ class NSNode {
 	//        but is it according to the spec?
 	ns = element_ns;
 	m = name;
+	if (ns_attrs[ns] && !zero_type(ns_attrs[ns][m])) {
+	  // We have an explicit entry already,
+	  // so skip the implicit entry.
+	  continue;
+	}
       }
       if(!ns_attrs[ns])
 	ns_attrs[ns] = ([]);
