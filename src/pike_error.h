@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.24 2002/11/25 00:25:48 mast Exp $
+|| $Id: pike_error.h,v 1.25 2003/02/18 10:40:00 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -25,6 +25,10 @@ PMOD_EXPORT extern const char msg_fatal_error[];
 /* This is useful when debugging assembler code sometimes... -Hubbe */
 #define Pike_fatal \
  (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
+#endif
+
+#ifndef NO_PIKE_SHORTHAND
+#define fatal Pike_fatal
 #endif
 
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
