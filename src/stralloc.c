@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.51 1998/12/06 22:54:15 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.52 1998/12/20 09:24:26 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -122,7 +122,7 @@ INLINE void low_set_index(struct pike_string *s, int pos, int value)
 }
 
 #ifdef PIKE_DEBUG
-struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift)
+INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift)
 {
   if(a->size_shift != shift)
     fatal("Wrong STRX macro used!\n");
