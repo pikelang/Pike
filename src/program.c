@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.322 2001/05/23 12:19:16 grubba Exp $");
+RCSID("$Id: program.c,v 1.323 2001/05/23 12:22:22 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4009,7 +4009,7 @@ struct program *compile(struct pike_string *prog,
     {
       /* fprintf(stderr, "Destructing placeholder.\n"); */
       if (placeholder->storage) {
-	yyerror("Placeholder already has storage!\n");
+	yyerror("Placeholder already has storage!");
 	/* fprintf(stderr, "Placeholder already has storage!\n"
 	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
 	   placeholder, placeholder->storage, placeholder->prog, p); */
@@ -4106,7 +4106,6 @@ struct program *compile(struct pike_string *prog,
     if(placeholder)
     {
       if (placeholder->storage) {
-	yyerror("Placeholder already has storage!\n");
 	/* fprintf(stderr, "Placeholder already has storage!\n"
 	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
 	   placeholder, placeholder->storage, placeholder->prog, p); */
