@@ -3,7 +3,7 @@
 
 //! English language locale.
 
-// $Id: eng.pmod,v 1.1 2002/10/01 10:57:56 nilsson Exp $
+// $Id: eng.pmod,v 1.2 2002/11/24 23:11:05 agehall Exp $
 
 inherit "abstract";
 
@@ -90,7 +90,7 @@ string number(int num)
     return "minus "+number(-num);
   switch(num)
   {
-   case 0:  return "";
+   case 0:  return "zero";
    case 1:  return "one";
    case 2:  return "two";
    case 3:  return "three";
