@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.48 2001/09/24 11:51:51 grubba Exp $
+ * $Id: mysql.c,v 1.49 2001/10/28 18:33:43 nilsson Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.48 2001/09/24 11:51:51 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.49 2001/10/28 18:33:43 nilsson Exp $");
 
 /*! @module Mysql
  *!
@@ -100,7 +100,7 @@ RCSID("$Id: mysql.c,v 1.48 2001/09/24 11:51:51 grubba Exp $");
  *! Mysql is available from www.mysql.com.
  *!
  *! @seealso
- *!  @[Mysql.mysql], @[Mysql.result], @[Sql.sql]
+ *!  @[Mysql.mysql], @[Mysql.mysql_result], @[Sql.sql]
  */
 
 /*! @class mysql
@@ -1009,7 +1009,7 @@ static void f_protocol_info(INT32 args)
  *!
  *! @seealso
  *!   @[list_tables()], @[list_fields()], @[list_processes()],
- *!   @[Mysql.mysql_result]
+ *!   @[mysql_result]
  */
 static void f_list_dbs(INT32 args)
 {
@@ -1097,7 +1097,7 @@ static void f_list_dbs(INT32 args)
  *!
  *! @seealso
  *!   @[list_dbs()], @[list_fields()], @[list_processes()],
- *!   @[Mysql.mysql_result]
+ *!   @[mysql_result]
  */
 static void f_list_tables(INT32 args)
 {
@@ -1181,7 +1181,7 @@ static void f_list_tables(INT32 args)
  *! List all fields.
  *!
  *! Returns an array of mappings with information about the fields in the
- *! table named @[teble]. If the argument @[wild] is given, only those
+ *! table named @[table]. If the argument @[wild] is given, only those
  *! fields matching it will be returned
  *!
  *! The mappings contain the following entries:
@@ -1225,7 +1225,7 @@ static void f_list_tables(INT32 args)
  *!   @tt{show fields in 'table' like "wild"@}.
  *!
  *! @seealso
- *!   @[list_dbs()], @[list_tables()], @[list_processes()], @[fetch_fields()]
+ *!   @[list_dbs()], @[list_tables()], @[list_processes()], @[mysql_result.fetch_field()]
  */
 static void f_list_fields(INT32 args)
 {
