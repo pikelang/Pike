@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.69 2001/01/26 02:31:13 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.70 2001/06/10 22:54:37 grubba Exp $
 #
 
 
@@ -131,7 +131,17 @@ depend:
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
-	if test "x$(REAL_TESTSUITE)" != x ; then cp $(SRCDIR)/$(REAL_TESTSUITE) module_testsuite; else $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR); fi
+	if test "x$(REAL_TESTSUITE)" != x ; then \
+	  cp $(SRCDIR)/$(REAL_TESTSUITE) module_testsuite; \
+	else \
+	  if test "$$PIKE_PATH_TRANSLATE" = ""; then \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite \
+	      -DSRCDIR=$(SRCDIR); \
+	  else \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite \
+	      -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE`"; \
+	  fi; \
+	fi
 
 extra_tests: $(MODULE_TESTS)
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.244 2001/01/30 21:06:07 hubbe Exp $
+# $Id: Makefile.in,v 1.245 2001/06/10 22:54:37 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -772,7 +772,13 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	-@rm cfl.$@
 
 testsuite: $(SRCDIR)/testsuite.in
-	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite -DSRCDIR="$(SRCDIR)"
+	if test "$$PIKE_PATH_TRANSLATE" = ""; then \
+	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
+	    -DSRCDIR="$(SRCDIR)"; \
+	else \
+	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
+	    -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE`"; \
+	fi
 
 header_uncompress: $(SRCDIR)/uncompressor.c
 	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o header_uncompress -lz
