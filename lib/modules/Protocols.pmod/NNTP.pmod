@@ -111,7 +111,7 @@ class client
   {
     failsafe_command("group "+group);
     object o=Group();
-    o->grop=group;
+    o->group=group;
     sscanf(rest,"%d %d %d",int num,o->min,o->max);
     current_group=o;
     return o;
