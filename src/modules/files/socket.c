@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.89 2004/05/13 19:45:41 nilsson Exp $
+|| $Id: socket.c,v 1.90 2004/05/13 22:12:09 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -20,11 +20,12 @@
 #include "fd_control.h"
 #include "threads.h"
 #include "program_id.h"
+#include "module_support.h"
 
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.89 2004/05/13 19:45:41 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.90 2004/05/13 22:12:09 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -144,9 +145,7 @@ static void do_close(struct port *p)
  */
 static void port_set_id(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Port->set_id", 1);
-
+  check_all_args("Port->set_id", args, BIT_MIXED, 0);
   assign_svalue(& THIS->id, Pike_sp-args);
   pop_n_elems(args-1);
 }
@@ -193,16 +192,11 @@ static void port_errno(INT32 args)
 static void port_listen_fd(INT32 args)
 {
   struct port *p = THIS;
+  struct svalue *cb;
   int fd;
   do_close(p);
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind_fd", 1);
-
-  if(Pike_sp[-args].type != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Port->bind_fd", 1, "int");
-
-  fd=Pike_sp[-args].u.integer;
+  get_all_args("Port->bind_fd", args, "%d.%*", &fd, &cb);
 
   if(fd<0)
   {
@@ -221,13 +215,14 @@ static void port_listen_fd(INT32 args)
   }
 
   change_fd_for_box (&p->box, fd);
-  if(args > 1) assign_accept_cb (p, Pike_sp+1-args);
+  if(args > 1) assign_accept_cb (p, cb);
   p->my_errno=0;
   pop_n_elems(args);
   push_int(1);
 }
 
-/*! @decl int bind(int|string port, void|function accept_callback, void|string ip)
+/*! @decl int bind(int|string port, void|function accept_callback, @
+ *!                void|string ip)
  *!
  *! Bind opens a socket and binds it to port number on the local machine.
  *! If the second argument is present, the socket is set to nonblocking
@@ -336,23 +331,20 @@ static void unix_bind(INT32 args)
 {
   struct port *p = THIS;
   struct sockaddr_un addr;
+  struct pike_string *path;
+  struct svalue *cb;
   int addr_len,fd,tmp;
 
   do_close(p);
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
-
-  if((Pike_sp[-args].type != PIKE_T_STRING ||
-      Pike_sp[-args].u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "string (8bit)");
+  get_all_args("Port->bind_unix", args, "%s.%*", &path, &cb);
 
   tmp = sizeof(addr.sun_path);
 
-  if(Pike_sp[-args].u.string->len > tmp)
-    SIMPLE_BAD_ARG_ERROR("Port->Bind", 1, "path too long");
+  if(path->len > tmp)
+    SIMPLE_BAD_ARG_ERROR("Port->bind_unix", 1, "path too long");
 
-  strcpy(addr.sun_path, Pike_sp[-args].u.string->str);
+  strcpy(addr.sun_path, path->str);
   addr.sun_family = AF_UNIX;
 
   addr_len = sizeof(struct sockaddr_un);
@@ -370,7 +362,8 @@ static void unix_bind(INT32 args)
 #ifndef __NT__
   {
     int o=1;
-    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+    if(fd_setsockopt(fd, SOL_SOCKET,
+		     SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
     {
       p->my_errno=errno;
       while (fd_close(fd) && errno == EINTR) {}
@@ -385,7 +378,8 @@ static void unix_bind(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 ||
+    fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW_UID();
 
   if(tmp)
@@ -399,7 +393,7 @@ static void unix_bind(INT32 args)
   }
 
   change_fd_for_box (&p->box, fd);
-  if(args > 1) assign_accept_cb (p, Pike_sp+1-args);
+  if(args > 1) assign_accept_cb (p, cb);
   p->my_errno=0;
   pop_n_elems(args);
   push_int(1);
@@ -418,7 +412,8 @@ static void port_close (INT32 args)
 }
 
 /* @decl void create("stdin", void|function accept_callback)
- * @decl void create(int|string port, void|function accept_callback, void|string ip)
+ * @decl void create(int|string port, void|function accept_callback, @
+ *                   void|string ip)
  *
  * When create is called with 'stdin' as argument, a socket is created
  * out of the file descriptor 0. This is only useful if that actually
