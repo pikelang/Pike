@@ -1,4 +1,4 @@
-#define VERSION "Pike v0.4pl1"
+#define VERSION "Pike v0.4pl2"
 
 string describe_backtrace(mixed *trace);
 
@@ -200,8 +200,10 @@ void _main(string *argv, string *env)
   tmp=new(pike_library_path+"/include/getopt.pre.pike");
 
   foreach(tmp->find_all_options(argv,({
-    ({"version",({"-v","--version"})}),
-      ({"ignore","-Dmsdatp",0,0})}),1),mixed *opts)
+    ({"version",tmp->NO_ARG,({"-v","--version"})}),
+      ({"ignore",tmp->HAS_ARG,"-ms"}),
+	({"ignore",tmp->MAY_HAVE_ARG,"-Ddatp",0,1})}),1),
+	  mixed *opts)
     {
       switch(opts[0])
       {
