@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.23 2000/05/01 10:28:27 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.24 2000/06/20 23:31:25 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1024,6 +1024,15 @@ BREAK
 
       CASE(F_RETURN_LOCAL);
       instr=GET_ARG();
+#if defined(PIKE_DEBUG) && defined(GC2)
+      /* special case! mark_stack may be invalid at the time we
+       * call return -1, so we must call the callbacks here to
+       * prevent false alarms! /Hubbe
+       */
+      if(d_flag>3) do_gc();
+      if(d_flag>4) do_debug();
+      check_threads_etc();
+#endif
       if(Pike_fp->expendible <= Pike_fp->locals+instr)
       {
 	pop_n_elems(Pike_sp-1 - (Pike_fp->locals+instr));
@@ -1031,11 +1040,10 @@ BREAK
 	push_svalue(Pike_fp->locals+instr);
       }
       print_return_value();
-      goto do_return;
+      return -1;
 
       CASE(F_RETURN_IF_TRUE);
-      if(!IS_ZERO(Pike_sp-1))
-	goto do_return;
+      if(!IS_ZERO(Pike_sp-1)) goto do_return;
       pop_stack();
       break;
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.154 2000/06/09 22:45:08 mast Exp $");
+RCSID("$Id: interpret.c,v 1.155 2000/06/20 23:31:25 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1099,11 +1099,11 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	{
 	  struct svalue **save_mark_sp=mark_sp;
 	  tailrecurse=eval_instruction(pc);
+	  mark_sp=save_mark_sp;
 #ifdef PIKE_DEBUG
 	  if(mark_sp < save_mark_sp)
 	    fatal("Popped below save_mark_sp!\n");
 #endif
-	  mark_sp=save_mark_sp;
 	}
 #ifdef PIKE_DEBUG
 	if(sp<evaluator_stack)
@@ -1272,7 +1272,9 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   {
     ret=1;
   }else{
+    struct svalue **save_mark_sp=mark_sp;
     int tmp=eval_instruction(o->prog->program + offset);
+    mark_sp=save_mark_sp;
     if(tmp!=-1) mega_apply(APPLY_STACK, tmp, 0,0);
     
 #ifdef PIKE_DEBUG
