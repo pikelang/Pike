@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.72 2000/08/10 19:30:00 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.73 2000/08/17 18:41:20 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1250,7 +1250,8 @@ static void low_pike_sprintf(struct format_stack *fs,
         l=4;
         if(fs->fsp->width > 0) l=fs->fsp->width;
 	if(l != 4 && l != 8)
-	  sprintf_error(fs, "Invalid IEEE width %d.\n", l);
+	  sprintf_error(fs, "Invalid IEEE width %ld.\n",
+			PTRDIFF_T_TO_LONG(l));
 	x=(char *)alloca(l);
 	fs->fsp->b=MKPCHARP(x,0);
 	fs->fsp->len=l;

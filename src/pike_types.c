@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.135 2000/08/16 10:30:46 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.136 2000/08/17 19:00:25 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -114,7 +114,9 @@ void check_type_string(struct pike_string *s)
   if(type_length(s->str) != s->len)
   {
     stupid_describe_type(s->str,s->len);
-    fatal("Length of type is wrong. (should be %d, is %d)\n",type_length(s->str),s->len);
+    fatal("Length of type is wrong. (should be %ld, is %ld)\n",
+	  PTRDIFF_T_TO_LONG(type_length(s->str)),
+	  PTRDIFF_T_TO_LONG(s->len));
   }
 }
 #endif

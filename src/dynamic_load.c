@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.42 2000/08/10 09:04:42 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.43 2000/08/17 18:51:09 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -313,9 +313,9 @@ void f_load_module(INT32 args)
   (*(modfun)init)();
 #ifdef PIKE_DEBUG
   if(sp != save_sp)
-    fatal("load_module(%s) left %d droppings on stack!\n",
+    fatal("load_module(%s) left %ld droppings on stack!\n",
 	  module_name,
-	  sp-save_sp);
+	  PTRDIFF_T_TO_LONG(sp - save_sp));
   }
 #endif
 

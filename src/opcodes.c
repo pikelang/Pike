@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.89 2000/08/15 14:15:20 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.90 2000/08/17 19:06:30 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -88,8 +88,8 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 	if(what->u.string->len == 0)
 	  error("Attempt to index the empty string with %d.\n", i);
 	else
-	  error("Index %d is out of string range 0 - %d.\n",
-		i, what->u.string->len-1);
+	  error("Index %d is out of string range 0 - %ld.\n",
+		i, PTRDIFF_T_TO_LONG(what->u.string->len - 1));
       } else
 	i=index_shared_string(what->u.string,i);
       to->type=T_INT;
@@ -1284,8 +1284,8 @@ CHAROPT2(								 \
 	case 'F':							 \
 	  if(field_length == -1) field_length = 4;			 \
 	  if(field_length != 4 && field_length != 8)			 \
-	    error("Invalid IEEE width %d in sscanf format string.\n",	 \
-		  field_length);					 \
+	    error("Invalid IEEE width %ld in sscanf format string.\n",	 \
+		  PTRDIFF_T_TO_LONG(field_length));			 \
 	  if(eye+field_length > input_len)				 \
 	  {								 \
 	    chars_matched[0]=eye;					 \

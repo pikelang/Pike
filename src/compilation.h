@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.18 2000/07/10 18:21:33 grubba Exp $
+ * $Id: compilation.h,v 1.19 2000/08/17 19:10:05 grubba Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -94,7 +94,8 @@
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(Pike_compiler->Y < oLd->Y) \
-      fatal("Stack " #Y " shrunk %d steps compilation, currently: %p.\n",oLd->Y - Pike_compiler->Y,Pike_compiler->Y); )
+      fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+            PTRDIFF_T_TO_LONG(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
 
 #define SNAME(X,Y) { \
       struct X *oLd=Pike_compiler->previous;

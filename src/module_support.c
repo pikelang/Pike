@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.36 2000/08/16 10:27:34 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.37 2000/08/17 19:03:15 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -357,9 +357,9 @@ PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... )
 	ret+1,
 	expected_type,
 	0,
-	"Too few arguments to %s(). Expected %d arguments, got %d.\n"
-	    "The type of the next argument is expected to be %s\n",
-	    fname, strlen(format)/2, args, expected_type);
+	"Too few arguments to %s(). Expected %ld arguments, got %d.\n"
+	"The type of the next argument is expected to be %s\n",
+	fname, PTRDIFF_T_TO_LONG(strlen(format)/2), args, expected_type);
     }
   }
 }

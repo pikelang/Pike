@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.262 2000/08/16 10:25:52 grubba Exp $");
+RCSID("$Id: program.c,v 1.263 2000/08/17 19:08:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1200,7 +1200,9 @@ void check_program(struct program *p)
       if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
 	 (alignof_variable(p->identifiers[e].run_time_type)-1))
       {
-	fatal("Variable %s offset is not properly aligned (%d).\n",p->identifiers[e].name->str,p->identifiers[e].func.offset);
+	fatal("Variable %s offset is not properly aligned (%ld).\n",
+	      p->identifiers[e].name->str,
+	      PTRDIFF_T_TO_LONG(p->identifiers[e].func.offset));
       }
     }
   }

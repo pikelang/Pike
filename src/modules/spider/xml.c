@@ -664,8 +664,11 @@ ISWRAP(isHexChar)
 #define IF_XMLDEBUG(X)
 #endif
 
-#define PEEK(X)								  \
-( IF_XMLDEBUG(((X) > data->input.len)?(fatal("PEEK out of bounds (%d/%d)\n",(X),data->input.len),0):) \
+#define PEEK(X) \
+( IF_XMLDEBUG(((X) > data->input.len)? \
+    (fatal("PEEK out of bounds (%ld/%ld)\n", \
+           PTRDIFF_T_TO_LONG(X), \
+           PTRDIFF_T_TO_LONG(data->input.len)), 0):) \
   INDEX_PCHARP(data->input.datap,X) )
 
 #define SAFE_PEEK(X) ((X)>=data->input.len ? 0 : PEEK(X))
@@ -690,7 +693,9 @@ ISWRAP(isHexChar)
   if(data->input.to_free) free_string(data->input.to_free); 	\
   data->input=*i;						\
   really_free_xmlinput(i);					\
- IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n",data->input.datap.ptr,data->input.len,data->input.pos,data->input.to_free)); \
+ IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n", \
+                     data->input.datap.ptr, data->input.len, \
+                     data->input.pos, data->input.to_free)); \
 } while(0)
 
 static inline int xmlread(int z,struct xmldata *data, int line)
@@ -1112,7 +1117,9 @@ static int read_smeg_pereference(struct xmldata *data)
       XMLERROR("XML->__entities value is not a string!");
     }else{
       struct pike_string *s=sp[-1].u.string;
-      IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n",data->input.datap.ptr,data->input.len,data->input.pos,data->input.to_free));
+      IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
+			  data->input.datap.ptr, data->input.len,
+			  data->input.pos, data->input.to_free));
       PUSH(s);
       READ(0); /* autopop empty strings */
       pop_stack();
@@ -1361,7 +1368,8 @@ static void simple_read_attributes(struct xmldata *data,
     SIMPLE_READ_ATTVALUE(iscd);
 
 #ifdef VERBOSE_XMLDEBUG
-    fprintf(stderr,"Attribute %s = %s (iscd = %d)\n",sp[-2].u.string->str, sp[-1].u.string->str,iscd);
+    fprintf(stderr,"Attribute %s = %s (iscd = %d)\n",
+	    sp[-2].u.string->str, sp[-1].u.string->str,iscd);
 #endif
 
     assign_lvalue(sp-3, sp-1);
@@ -1922,7 +1930,8 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 		    comefrom_fixed:
 #ifdef VERBOSE_XMLDEBUG
-			fprintf(stderr,"READING ATTVALUE (is_cdata = %d)\n",is_cdata);
+			fprintf(stderr,"READING ATTVALUE (is_cdata = %d)\n",
+				is_cdata);
 #endif
 			SIMPLE_READ_ATTVALUE(is_cdata);
 			if(THIS->attributes && !already_seen)

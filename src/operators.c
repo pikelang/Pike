@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.99 2000/08/15 11:18:46 grubba Exp $");
+RCSID("$Id: operators.c,v 1.100 2000/08/17 19:07:13 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2489,7 +2489,8 @@ static void f_string_assignment_index(INT32 args)
   if(i<0)
     i+=THIS->s->len;
   if(i<0 || i>=THIS->s->len)
-    error("Index %d is out of range 0 - %d.\n", i, THIS->s->len-1);
+    error("Index %d is out of range 0 - %ld.\n",
+	  i, PTRDIFF_T_TO_LONG(THIS->s->len - 1));
   else
     i=index_shared_string(THIS->s,i);
   pop_n_elems(args);

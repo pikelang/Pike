@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.123 2000/08/16 22:03:40 mast Exp $");
+RCSID("$Id: gc.c,v 1.124 2000/08/17 18:57:37 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2141,8 +2141,8 @@ int do_gc(void)
   if (gc_extra_refs)
     fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
   if (gc_ext_weak_refs)
-    fatal("Still got %u external weak references to internal things in gc.\n",
-	  gc_ext_weak_refs);
+    fatal("Still got %lu external weak references to internal things in gc.\n",
+	  (unsigned long)PTRDIFF_T_TO_LONG(gc_ext_weak_refs));
 #endif
 
   Pike_in_gc=0;

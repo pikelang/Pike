@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.54 2000/08/15 16:16:14 grubba Exp $");
+RCSID("$Id: backend.c,v 1.55 2000/08/17 18:48:27 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -648,10 +648,10 @@ void do_debug(void)
       switch(errno)
       {
        case EBADF:
-	 fatal("Backend filedescriptor %d is bad.\n",poll_fds[e].fd);
+	 fatal("Backend filedescriptor %ld is bad.\n", (long)poll_fds[e].fd);
 	 break;
        case ENOENT:
-	 fatal("Backend filedescriptor %d is not.\n",poll_fds[e].fd);
+	 fatal("Backend filedescriptor %ld is not.\n", (long)poll_fds[e].fd);
 	 break;
       }
     }
@@ -866,9 +866,10 @@ void backend(void)
 #ifdef PIKE_DEBUG
 	num_active -= handled;
 	if (!handled && active_poll_fds[i].revents) {
-	  fprintf(stderr, "BACKEND: fd %d has revents 0x%08x, "
-		  "but hasn't been handled.\n", active_poll_fds[i].fd,
-		  active_poll_fds[i].revents);
+	  fprintf(stderr, "BACKEND: fd %ld has revents 0x%08lx, "
+		  "but hasn't been handled.\n",
+		  (long)active_poll_fds[i].fd,
+		  (long)active_poll_fds[i].revents);
 	}
 #endif /* PIKE_DEBUG */
       }
@@ -877,9 +878,10 @@ void backend(void)
 	fprintf(stderr, "BACKEND: %d more active fds than were handled.\n",
 		num_active);
 	for(i=0; i<active_num_in_poll; i++) {
-	  fprintf(stderr, "BACKEND: fd %d, events 0x%08x, revents 0x%08x\n",
-		  active_poll_fds[i].fd, active_poll_fds[i].events,
-		  active_poll_fds[i].revents);
+	  fprintf(stderr, "BACKEND: fd %ld, events 0x%08lx, revents 0x%08lx\n",
+		  (long)active_poll_fds[i].fd,
+		  (long)active_poll_fds[i].events,
+		  (long)active_poll_fds[i].revents);
 	}
       }
 #endif /* PIKE_DEBUG */

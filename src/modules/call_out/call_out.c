@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.38 2000/08/16 16:08:06 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.39 2000/08/17 18:32:46 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -23,6 +23,7 @@ RCSID("$Id: call_out.c,v 1.38 2000/08/16 16:08:06 grubba Exp $");
 #include "gc.h"
 #include "threads.h"
 #include "stuff.h"
+#include "bignum.h"
 
 #include "callback.h"
 

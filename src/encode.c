@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.67 2000/08/16 10:50:42 grubba Exp $");
+RCSID("$Id: encode.c,v 1.68 2000/08/17 18:50:32 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1700,7 +1700,8 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   default:
-    error("Format error. Unknown type tag %d:%d\n", i, t);
+    error("Format error. Unknown type tag %ld:%ld\n",
+	  PTRDIFF_T_TO_LONG(i), PTRDIFF_T_TO_LONG(t));
   }
 }
 
