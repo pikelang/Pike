@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.685 2003/02/10 17:10:39 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.686 2003/02/11 19:27:19 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5734,6 +5734,7 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
 
 #define CONFIGURE_TEST
 
+#include "port.c"
 #include "rusage.c"
 #include "threads.c"
 
@@ -5744,17 +5745,20 @@ cpu_time_t work_time, wait_time;
 
 TH_RETURN_TYPE work_thread (void *dummy)
 {
+  time_t rt_start, rt;
   cpu_time_t start;
   mt_lock (&m);
+  rt_start = TIME (0);
   start = get_cpu_time();
   do {
     cpu_time_t t = get_cpu_time();
+    rt = TIME (0);
     if (t == (cpu_time_t) -1) {
       work_time = t;
       break;
     }
     work_time = t - start;
-  } while (work_time < (CPU_TIME_TICKS / 10));
+  } while (work_time < (CPU_TIME_TICKS / 10) && rt < rt_start + 1);
   co_signal (&c);
   mt_unlock (&m);
 }
@@ -5786,6 +5790,12 @@ int main()
     fclose (res);
     return 4;
   }
+  if (work_time < (CPU_TIME_TICKS / 10)) {
+    fprintf (res, "unknown (get_cpu_time doesn't work - loop took only %lld)",
+	     (long long) work_time);
+    fclose (res);
+    return 5;
+  }
 
   if (work_time > wait_time)
     return 0; /* It's thread local. */
@@ -5800,7 +5810,7 @@ int main()
 int main()
 {
   FILE *res = fopen ("conftest.out.2", "w");
-  if (!res) return 5;
+  if (!res) return 6;
   fputs ("no", res);
   fclose (res);
   return 1;
