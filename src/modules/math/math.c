@@ -174,12 +174,12 @@ void f_sgn(INT32 args)
   check_all_args("sgn",args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
   if(args<2) push_int(0);
 
-  if(is_lt(sp-args,&zero))
+  if(is_lt(sp-2,sp-1))
   {
     pop_n_elems(2);
     push_int(-1);
   }
-  else if(is_gt(sp-1,&zero))
+  else if(is_gt(sp-2,sp-1))
   {
     pop_n_elems(2);
     push_int(1);
