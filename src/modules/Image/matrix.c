@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.46 2003/08/13 07:36:24 nilsson Exp $
+|| $Id: matrix.c,v 1.47 2003/08/13 09:10:09 grubba Exp $
 */
 
 /*
@@ -253,8 +253,8 @@ void img_scale2(struct image *dest, struct image *source)
 {
    rgb_group *new;
    INT32 x, y, newx, newy;
-   newx = source->xsize >> 1;
-   newy = source->ysize >> 1;
+   newx = (source->xsize+1) >> 1;
+   newy = (source->ysize+1) >> 1;
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
    if (!THIS->img || newx<0 || newy<0) return; /* no way */
@@ -270,8 +270,14 @@ void img_scale2(struct image *dest, struct image *source)
    dest->img=new;
    dest->xsize=newx;
    dest->ysize=newy;
-   for (y = 0; y < newy-1; y++)
-      for (x = 0; x < newx-1; x++)
+
+   /* Adjust for edge. */
+   newx -= source->xsize & 1;
+   newy -= source->ysize & 1;
+
+   /* The base case. */
+   for (y = 0; y < newy; y++)
+      for (x = 0; x < newx; x++)
       {
 	 pixel(dest,x,y).r = (COLORTYPE)
 	    (((INT32) pixel(source,2*x+0,2*y+0).r+
@@ -289,10 +295,38 @@ void img_scale2(struct image *dest, struct image *source)
 	      (INT32) pixel(source,2*x+0,2*y+1).b+
 	      (INT32) pixel(source,2*x+1,2*y+1).b) >> 2);
       }
-   for (y = 0; y < newy; y++)
-     pixel(dest,newx-1,y) = pixel(source,2*(newx-1),2*y);
-   for (x = 0; x < newx; x++)
-     pixel(dest,x,newy-1) = pixel(source,2*x,2*(newy-1));
+   /* X edge. */
+   if (source->xsize & 1) {
+     for (y = 0; y < newy; y++) {
+       pixel(dest,newx,y).r = (COLORTYPE)
+	 (((INT32) pixel(source,2*newx,2*y+0).r+
+	   (INT32) pixel(source,2*newx,2*y+1).r) >> 1);
+       pixel(dest,newx,y).g = (COLORTYPE)
+	 (((INT32) pixel(source,2*newx,2*y+0).g+
+	   (INT32) pixel(source,2*newx,2*y+1).g) >> 1);
+       pixel(dest,newx,y).g = (COLORTYPE)
+	 (((INT32) pixel(source,2*newx,2*y+0).b+
+	   (INT32) pixel(source,2*newx,2*y+1).b) >> 1);
+     }
+   }
+   /* Y edge. */
+   if (source->ysize & 1) {
+     for (x = 0; x < newx; x++) {
+       pixel(dest,x,newy).r = (COLORTYPE)
+	 (((INT32) pixel(source,2*x+0,2*newy).r+
+	   (INT32) pixel(source,2*x+1,2*newy).r) >> 1);
+       pixel(dest,x,newy).g = (COLORTYPE)
+	 (((INT32) pixel(source,2*x+0,2*newy).g+
+	   (INT32) pixel(source,2*x+1,2*newy).g) >> 1);
+       pixel(dest,x,newy).b = (COLORTYPE)
+	 (((INT32) pixel(source,2*x+0,2*newy).b+
+	   (INT32) pixel(source,2*x+1,2*newy).b) >> 1);
+     }
+   }
+   /* Last corner. */
+   if (source->xsize & source->ysize & 1) {
+     pixel(dest, newx, newy) = pixel(source, source->xsize-1, source->ysize-1);
+   }
    THREADS_DISALLOW();
 }
 
