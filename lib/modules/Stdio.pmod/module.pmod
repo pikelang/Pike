@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.212 2005/01/31 18:49:01 mast Exp $
+// $Id: module.pmod,v 1.213 2005/01/31 18:51:52 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -763,12 +763,11 @@ class File
     return ::write (s[..0]);
   }
 
-  int write_oob (string|array(string) s, mixed... args)
+  int write_oob (string s, mixed... args)
   {
     if (!(::mode() & PROP_IS_NONBLOCKING))
       return ::write_oob (s, @args);
 
-    if (arrayp (s)) s *= "";
     if (sizeof (args)) s = sprintf (s, @args);
     return ::write_oob (s[..0]);
   }
