@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.108 1999/05/03 18:20:13 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.109 1999/05/14 07:17:53 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1106,7 +1106,7 @@ static int set_priority( int pid, char *to )
     if(prilevel == 2)
     {
       class = SCHED_RR;
-      prilevel = -2; // lowest RR priority...
+      prilevel = -2; /* lowest RR priority... */
       param.sched_priority = sched_get_priority_min( class )+
         (sched_get_priority_max( class )-
          sched_get_priority_min( class ))/3 * (prilevel+2);
