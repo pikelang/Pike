@@ -305,29 +305,39 @@ static void file_write_callback(int fd, void *data)
 
 static void file_write(INT32 args)
 {
-  INT32 i;
+  INT32 written;
+  char *out;
+
   if(args<1 || sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
 
   if(FD < 0)
     error("File not open for write.\n");
-
-  i=write(FD, sp[-args].u.string->str, sp[-args].u.string->len);
-
-  if(i<0)
+  
+  written=0;
+  while(written < sp[-args].u.string->len)
   {
-    switch(errno)
-    {
-    default:
-      THIS->errno=errno;
-      pop_n_elems(args);
-      push_int(-1);
-      return;
+    i=write(FD, sp[-args].u.string->str, sp[-args].u.string->len);
 
-    case EINTR:
-    case EWOULDBLOCK:
-      i=0;
+    if(i<0)
+    {
+      switch(errno)
+      {
+      default:
+	THIS->errno=errno;
+	pop_n_elems(args);
+	push_int(-1);
+	return;
+
+      case EINTR:
+	continue;
+
+      case EWOULDBLOCK:
+	i=0;
+	break;
+      }
     }
+    written+=i;
   }
 
   if(!IS_ZERO(& THIS->write_callback))
