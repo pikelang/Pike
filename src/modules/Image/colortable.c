@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.34 1998/01/16 22:09:08 grubba Exp $ */
+/* $Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.34 1998/01/16 22:09:08 grubba Exp $
+**!	$Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.34 1998/01/16 22:09:08 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2342,7 +2342,7 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
 {
    struct pike_string *str;
    str=begin_shared_string(image_colortable_size(nct)*3);
-   image_colortable_write_rgb(nct,str->str);
+   image_colortable_write_rgb(nct,(unsigned char *)str->str);
    push_string(end_shared_string(str));
 }
 

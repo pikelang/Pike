@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.28 1998/01/20 15:53:17 grubba Exp $ */
+/* $Id: gif.c,v 1.29 1998/01/21 23:51:39 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.28 1998/01/20 15:53:17 grubba Exp $
+**!	$Id: gif.c,v 1.29 1998/01/21 23:51:39 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.28 1998/01/20 15:53:17 grubba Exp $");
+RCSID("$Id: gif.c,v 1.29 1998/01/21 23:51:39 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1303,7 +1303,7 @@ static void _decode_get_extension(unsigned char **s,
    {
       if ((*len)-1<sz) sz=(*len)-1;
 
-      push_string(make_shared_binary_string((*s)+1,sz));
+      push_string(make_shared_binary_string((char *)(*s)+1,sz));
       n++;
 
       (*len)-=(sz+1);
@@ -1363,7 +1363,7 @@ static void _decode_get_render(unsigned char **s,
    if ( ((*s)[9]&128) ) {
       if ((*len)>10+(unsigned long)(3<<bpp) )
       {
-	 push_string(make_shared_binary_string((*s)+10,3<<bpp));
+	 push_string(make_shared_binary_string((char *)(*s)+10,3<<bpp));
 	 (*s)+=10+(3<<bpp);
 	 (*len)-=10+(3<<bpp);
       }
@@ -1388,7 +1388,7 @@ static void _decode_get_render(unsigned char **s,
    {
       if ((*len)-1<sz) sz=(*len)-1;
 
-      push_string(make_shared_binary_string((*s)+1,sz));
+      push_string(make_shared_binary_string((char *)(*s)+1,sz));
       n++;
 
       (*len)-=(sz+1);
@@ -1417,7 +1417,7 @@ static void image_gif___decode(INT32 args)
       error("Image.GIF.__decode: illegal or illegal number of arguments\n");
 
    (str=sp[-args].u.string)->refs++;
-   s=str->str;
+   s=(unsigned char *)str->str;
    len=str->len;
    pop_n_elems(args);
 
@@ -1469,7 +1469,7 @@ static void image_gif___decode(INT32 args)
 
    if (globalpalette)
    {
-      push_string(make_shared_binary_string(s,3<<bpp));
+      push_string(make_shared_binary_string((char *)s,3<<bpp));
       s+=3<<bpp;
       len-=3<<bpp;
    }
@@ -1517,7 +1517,7 @@ static void image_gif___decode(INT32 args)
 	 case 0x2c: _decode_get_render(&s,&len); n++; break;
 	 case 0x3b: 
 	    push_int(GIF_ERROR_TOO_MUCH_DATA);
-	    push_string(make_shared_binary_string(s+1,len-1));
+	    push_string(make_shared_binary_string((char *)s+1,len-1));
 	    f_aggregate(2);
 	    s+=len;
 	    len=0;
@@ -1525,7 +1525,7 @@ static void image_gif___decode(INT32 args)
 	    break;
 	 default:
 	    push_int(GIF_ERROR_UNKNOWN_DATA);
-	    push_string(make_shared_binary_string(s,len));
+	    push_string(make_shared_binary_string((char *)s,len));
 	    f_aggregate(2);
 	    s+=len;
 	    len=0;
@@ -1921,7 +1921,8 @@ static void image_gif__decode(INT32 args)
 		  aimg=(struct image*)get_storage(o2,image_program);
 		  push_object(o2);
 		  if (lcto)
-		     _gif_decode_lzw(b->item[8].u.string->str, /* lzw string */
+		     _gif_decode_lzw((unsigned char *)
+				     b->item[8].u.string->str, /* lzw string */
 				     b->item[8].u.string->len, /* lzw len */
 				     b->item[7].u.integer,     /* lzw bits */
 				     lcto, /* colortable */
@@ -1934,7 +1935,8 @@ static void image_gif__decode(INT32 args)
 	       {
 		  push_int(0);
 		  if (lcto)
-		     _gif_decode_lzw(b->item[8].u.string->str, /* lzw string */
+		     _gif_decode_lzw((unsigned char *)
+				     b->item[8].u.string->str, /* lzw string */
 				     b->item[8].u.string->len, /* lzw len */
 				     b->item[7].u.integer,     /* lzw bits */
 				     lcto, /* colortable */
@@ -1978,7 +1980,7 @@ static void image_gif__decode(INT32 args)
 	       {
 		  case 0xf9: /* gce */
 		     if (b->item[2].u.string->len>=4)
-		     s=b->item[2].u.string->str;
+		     s=(unsigned char *)b->item[2].u.string->str;
 		     transparency=s[0]&1;
 		     user_input=!!(s[0]&2);
 		     disposal=(s[0]>>2)&7;
