@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.181 2001/12/13 15:51:35 grubba Exp $
+ * $Id: master.pike.in,v 1.182 2001/12/16 04:03:58 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -851,22 +851,17 @@ class dirnode
 #ifdef MODULE_TRACE
       werror("%*ndirnode(%O)->module_checker()->`!()\n",sizeof(backtrace()),dirname);
 #endif
-      if (mixed err = catch {
-	if(module=findmodule(dirname+"/module", handler))
-	{
-	  if(mixed tmp=module->_module_value)
-	    module=tmp;
+      if(module=findmodule(dirname+"/module", handler))
+      {
+	if(mixed tmp=module->_module_value)
+	  module=tmp;
 
-	  /* This allows for `[] to have side effects first time
-	   * it is called. (Specifically, the Calendar module uses
-	   * this
-	   */
-	  cache=([]);
-	  _cache_full=0;
-	}
-      }) {
-	if(!get_inhibit_compile_errors())
-	  throw(err);
+	/* This allows for `[] to have side effects first time
+	 * it is called. (Specifically, the Calendar module uses
+	 * this
+	 */
+	cache=([]);
+	_cache_full=0;
       }
 
       return !module;
