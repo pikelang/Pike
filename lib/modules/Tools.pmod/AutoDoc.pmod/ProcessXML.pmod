@@ -182,10 +182,13 @@ string moveImages(string docXMLFile,
 	    if(attr->name != "")
 	      parents += ({ "CHAPTER" + hash(attr->name) });
 
+	  case "namespace":
           case "class":
           case "module":
             if (attr["name"] != "")
               parents += ({ attr["name"] });
+	    // FALL_THROUGH
+	  case "autodoc":
             counter = 0;
             docgroupcounters += ({ 0 });
             break;
