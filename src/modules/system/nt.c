@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.43 2001/09/18 22:37:30 grubba Exp $
+ * $Id: nt.c,v 1.44 2001/09/19 12:41:22 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -266,7 +266,7 @@ static const HKEY hkeys[] = {
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[system.RegGetValues()], @[system.RegGetKeyNames()]
+ *!   @[RegGetValues()], @[RegGetKeyNames()]
  */
 void f_RegGetValue(INT32 args)
 {
@@ -329,7 +329,7 @@ static void do_regclosekey(HKEY key)
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[system.RegGetValue()], @[system.RegGetValues()]
+ *!   @[RegGetValue()], @[RegGetValues()]
  */
 void f_RegGetKeyNames(INT32 args)
 {
@@ -405,7 +405,7 @@ void f_RegGetKeyNames(INT32 args)
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[system.RegGetValue()], @[system.RegGetKeyNames()]
+ *!   @[RegGetValue()], @[RegGetKeyNames()]
  */
 void f_RegGetValues(INT32 args)
 {
@@ -1100,11 +1100,11 @@ HINSTANCE netapilib;
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserEnum()], @[system.NetGroupEnum()]
- *!   @[system.NetLocalGroupEnum()], @[system.NetUserGetGroups()],
- *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserEnum()], @[NetGroupEnum()]
+ *!   @[NetLocalGroupEnum()], @[NetUserGetGroups()],
+ *!   @[NetUserGetLocalGroups()], @[NetGroupGetUsers()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetUserGetInfo(INT32 args)
 {
@@ -1195,11 +1195,11 @@ void f_NetUserGetInfo(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetGroupEnum()]
- *!   @[system.NetLocalGroupEnum()], @[system.NetUserGetGroups()],
- *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetGroupEnum()]
+ *!   @[NetLocalGroupEnum()], @[NetUserGetGroups()],
+ *!   @[NetUserGetLocalGroups()], @[NetGroupGetUsers()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetUserEnum(INT32 args)
 {
@@ -1311,11 +1311,11 @@ void f_NetUserEnum(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetLocalGroupEnum()], @[system.NetUserGetGroups()],
- *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetLocalGroupEnum()], @[NetUserGetGroups()],
+ *!   @[NetUserGetLocalGroups()], @[NetGroupGetUsers()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetGroupEnum(INT32 args)
 {
@@ -1413,11 +1413,11 @@ void f_NetGroupEnum(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetUserGetGroups()],
- *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetUserGetGroups()],
+ *!   @[NetUserGetLocalGroups()], @[NetGroupGetUsers()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetLocalGroupEnum(INT32 args)
 {
@@ -1517,11 +1517,11 @@ void f_NetLocalGroupEnum(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
- *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetLocalGroupEnum()],
+ *!   @[NetUserGetLocalGroups()], @[NetGroupGetUsers()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetUserGetGroups(INT32 args)
 {
@@ -1628,11 +1628,11 @@ void f_NetUserGetGroups(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
- *!   @[system.NetUserGetGroups()], @[system.NetGroupGetUsers()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetLocalGroupEnum()],
+ *!   @[NetUserGetGroups()], @[NetGroupGetUsers()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetUserGetLocalGroups(INT32 args)
 {
@@ -1740,11 +1740,11 @@ void f_NetUserGetLocalGroups(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
- *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
- *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetLocalGroupEnum()],
+ *!   @[NetUserGetGroups()], @[NetUserGetLocalGroups()],
+ *!   @[NetLocalGroupGetMembers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetGroupGetUsers(INT32 args)
 {
@@ -1857,11 +1857,11 @@ void f_NetGroupGetUsers(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
- *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
- *!   @[system.NetGroupGetUsers()], @[system.NetGetDCName()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetLocalGroupEnum()],
+ *!   @[NetUserGetGroups()], @[NetUserGetLocalGroups()],
+ *!   @[NetGroupGetUsers()], @[NetGetDCName()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetLocalGroupGetMembers(INT32 args)
 {
@@ -1968,11 +1968,11 @@ void f_NetLocalGroupGetMembers(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
- *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
- *!   @[system.NetGroupGetUsers()], @[system.NetLocalGroupGetMembers()],
- *!   @[system.NetGetAnyDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetLocalGroupEnum()],
+ *!   @[NetUserGetGroups()], @[NetUserGetLocalGroups()],
+ *!   @[NetGroupGetUsers()], @[NetLocalGroupGetMembers()],
+ *!   @[NetGetAnyDCName()]
  */
 void f_NetGetDCName(INT32 args)
 {
@@ -2038,11 +2038,11 @@ void f_NetGetDCName(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
- *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
- *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
- *!   @[system.NetGroupGetUsers()], @[system.NetLocalGroupGetMembers()],
- *!   @[system.NetGetDCName()]
+ *!   @[NetUserGetInfo()], @[NetUserEnum()],
+ *!   @[NetGroupEnum()], @[NetLocalGroupEnum()],
+ *!   @[NetUserGetGroups()], @[NetUserGetLocalGroups()],
+ *!   @[NetGroupGetUsers()], @[NetLocalGroupGetMembers()],
+ *!   @[NetGetDCName()]
  */
 void f_NetGetAnyDCName(INT32 args)
 {
@@ -2536,7 +2536,7 @@ static void f_normalize_path(INT32 args)
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[system.SetFileAttributes()]
+ *!   @[SetFileAttributes()]
  */
 static void f_GetFileAttributes(INT32 args)
 {
@@ -2557,7 +2557,7 @@ static void f_GetFileAttributes(INT32 args)
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[system.GetFileAttributes()]
+ *!   @[GetFileAttributes()]
  */
 static void f_SetFileAttributes(INT32 args)
 {
@@ -2784,7 +2784,7 @@ static PACL decode_acl(struct array *arr)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.GetNamedSecurityInfo()]
+ *!   @[GetNamedSecurityInfo()]
  */
 static void f_SetNamedSecurityInfo(INT32 args)
 {
@@ -2863,7 +2863,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
  *!   This function is only available on some Win32 systems.
  *!
  *! @seealso
- *!   @[system.SetNamedSecurityInfo()]
+ *!   @[SetNamedSecurityInfo()]
  */
 static void f_GetNamedSecurityInfo(INT32 args)
 {
