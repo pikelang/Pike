@@ -42,6 +42,29 @@ class Tag
     return "pos "+pos+" in file "+file; 
   }
 
+
+  static mapping(string:array(string|object(Tag))) data_cache=([]);
+  static array(string|object(Tag)) last_data;
+
+  array(string|object(Tag)) find(string tag)
+    {
+      if(last_data != data)
+      {
+	data_cache=([]);
+	foreach(data, Tag t)
+	  {
+	    if(data_cache[t->tag])
+	    {
+	      data_cache[t->tag]+=({t});
+	    }else{
+	      data_cache[t->tag]=({t});
+	    }
+	  }
+	last_data=data;
+      }
+      return data_cache[tag];
+    }
+
   void create(string t,
 	      void|mapping p,
 	      void|int po, 
@@ -55,6 +78,10 @@ class Tag
     data=d;
     file=f;
   }
+};
+
+class PropTag
+{
 };
 
 #define TAG object(Tag)|string
