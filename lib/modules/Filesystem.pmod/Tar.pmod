@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.10 2001/01/20 14:14:17 jhs Exp $
+ * $Id: Tar.pmod,v 1.11 2001/06/19 16:49:08 wellhard Exp $
  */
 
 #pike __REAL_VERSION__
@@ -233,13 +233,13 @@ class _TarFS
 
   Filesystem.Stat stat(string file, void|int lstat)
   {
-    file = combine_path(wd, file);
+    file = combine_path_unix(wd, file);
     return tar->filename_to_entry[root+file];
   }
 
   array(string) get_dir(void|string directory, void|string|array globs)
   {
-    directory = combine_path(wd, (directory||""), "");
+    directory = combine_path_unix(wd, (directory||""), "");
 
     array f = glob(root+directory+"?*", tar->filenames);
     f -= glob(root+directory+"*/*", f); // stay here
@@ -261,7 +261,7 @@ class _TarFS
 
   Stdio.File open(string filename, string mode)
   {
-    filename = combine_path(wd, filename);
+    filename = combine_path_unix(wd, filename);
     return tar->filename_to_entry[root+filename] &&
 	   tar->filename_to_entry[root+filename]->open(mode);
   }
