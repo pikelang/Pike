@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.53 2003/03/26 02:24:50 nilsson Exp $
+# $Id: Makefile,v 1.54 2003/03/26 03:03:58 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -39,7 +39,7 @@ low_pelix_modref:
 	rm -rf pelix_modref || /bin/true
 	@mkdir pelix_modref
 	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  $(BUILDDIR)/modref.xml structure/pelix_modref.html pelix_modref
+	  $(BUILDDIR)/modref.xml structure/pelix_modref.html pelix_modref predef
 	@mkdir pelix_modref/images
 	cp $(BUILDDIR)/doc_build/images/* pelix_modref/images
 
