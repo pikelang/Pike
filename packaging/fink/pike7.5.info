@@ -1,6 +1,6 @@
 Package: pike7.5
-Version: 7.5.17
-Revision: 3
+Version: 7.5.21
+Revision: 0
 Description: Programming language with a C-like syntax
 DescDetail: <<
  Pike is an interpreted, object-oriented programming language. 
@@ -26,8 +26,8 @@ CustomMirror: <<
 Primary: ftp://ftp.oav.net/pike/7.5/export/
 Secondary-http: http://ftp.oav.net/pike/7.5/export/
 <<
-Source: mirror:custom:Pike-v%v-3.tar.gz
-Source-MD5: 178d5cd3b071beedf83c42128ada0048
+Source: mirror:custom:Pike-v%v.tar.gz
+Source-MD5: 877ba7a831656bb98b0b4369e94d2603
 BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev
 Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,dlcompat-shlibs,mysql12-shlibs
 SourceDirectory: Pike-v%v
