@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.38 2000/04/13 17:52:33 grubba Exp $ */
+/* $Id: blit.c,v 1.39 2000/06/03 21:00:43 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.38 2000/04/13 17:52:33 grubba Exp $
+**!	$Id: blit.c,v 1.39 2000/06/03 21:00:43 per Exp $
 **! class Image
 */
 
@@ -23,6 +23,11 @@
 #include "threads.h"
 
 #include "image.h"
+#include "image_machine.h"
+
+#ifdef ASSEMBLY_OK
+#include "assembly.h"
+#endif
 
 extern struct program *image_program;
 #ifdef THIS
@@ -121,23 +126,47 @@ void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
 {
   if(!size) return;
   THREADS_ALLOW();
+#ifdef ASSEMBLY_OK
+  if( size > 512 )
+  {
+    if( image_cpuid & IMAGE_MMX )
+    {
+      if( ( rgb.r == rgb.g && rgb.g == rgb.b ) )
+        image_clear_buffer_mmx_x86asm_eq( dest, size/8, rgb.g );
+      else 
+      {
+        /* clear a few bytes the slow way. */
+        /* 8 pixels */
+        dest[0] = rgb;  dest[1] = rgb; dest[2] = rgb;  dest[3] = rgb;
+        dest[4] = rgb;  dest[5] = rgb; dest[6] = rgb;  dest[7] = rgb;
+        /* clear the rest the fast way */
+        image_clear_buffer_mmx_x86asm_from( dest, size/8 );
+      }
+      dest += size; size = size%8; dest -= size;
+      while(size--) *(dest++) = rgb;
+      return;
+    }
+  }
+#endif
   if(!rgb.r && !rgb.b && !rgb.g)
     MEMSET(dest, 0, size*sizeof(rgb_group));
   else if((sizeof(rgb.r) == 1) && (rgb.r == rgb.b && rgb.b == rgb.g))
     MEMSET(dest, rgb.r, size*sizeof(rgb_group));
   else if(size)
   {
-    int increment = 1;
-    rgb_group *from = dest;
-    *(dest++)=rgb;
-    size -= 1;
-    while (size>increment) 
     {
-      MEMCPY(dest,from,increment*sizeof(rgb_group));
-      size-=increment,dest+=increment;
-      if (increment<1024) increment *= 2;
+      int increment = 1;
+      rgb_group *from = dest;
+      *(dest++)=rgb;
+      size -= 1;
+      while (size>increment) 
+      {
+        MEMCPY(dest,from,increment*sizeof(rgb_group));
+        size-=increment,dest+=increment;
+        if (increment<1024) increment *= 2;
+      }
+      if(size>0) MEMCPY(dest,from,size*sizeof(rgb_group));
     }
-    if(size>0) MEMCPY(dest,from,size*sizeof(rgb_group));
   }
   THREADS_DISALLOW();
 }
