@@ -1123,12 +1123,20 @@ void do_install()
     string master=combine_path(lib_prefix,"master.pike");
     mixed s1=file_stat(master);
     mixed s2=file_stat(master+".o");
+    mapping(string:mapping(string:string)) options = ([ 
+      "env":getenv()-([
+        "PIKE_PROGRAM_PATH":"",
+        "PIKE_MODULE_PATH":"",
+        "PIKE_INCLUDE_PATH":"",
+        "PIKE_MASTER":"",
+      ]) ]); 
     if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
     {
       Process.create_process( ({pike,"-m",
 				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
-				  @(vars->fakeroot? ({"--fakeroot="+vars->fakeroot}):({})),
-				  master}))->wait();
+				  @(vars->fakeroot?({"--fakeroot="+
+                                                     vars->fakeroot}):({})),
+				  master}), options)->wait();
     }
     
     if(sizeof(to_dump))
@@ -1141,13 +1149,16 @@ void do_install()
 	{
 	  write("    ");
 	  Process.create_process( ({pike,
-				      combine_path(vars->SRCDIR,"dumpmodule.pike"),
+				      combine_path(vars->SRCDIR,
+                                                   "dumpmodule.pike"),
 #if defined(USE_GTK) && constant(GTK.parse_rc)
 				      label1?"--distquiet":
 #endif
 	    "--quiet",
-				      @(vars->fakeroot? ({"--fakeroot="+vars->fakeroot}):({})),
-				      }) + to_dump)->wait();
+				      @(vars->fakeroot? 
+                                        ({"--fakeroot="+vars->fakeroot}):({})),
+                                  }) + to_dump,
+                                  options)->wait();
 	}
     }
 
