@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.104 2003/05/09 18:04:30 grubba Exp $
+|| $Id: sprintf.c,v 1.105 2003/05/10 15:56:18 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.104 2003/05/09 18:04:30 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.105 2003/05/10 15:56:18 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1415,12 +1415,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	char *x;
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
-	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
-
-	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
-	fs->fsp->fi_free_string=x;
-	fs->fsp->b=MKPCHARP(x,0);
-	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
 
 	/* Special casing for infinity and not a number,
@@ -1428,20 +1422,28 @@ static void low_pike_sprintf(struct format_stack *fs,
 	 */
 	if (tf && ((tf*2.0 == tf) || (tf != tf))) {
 	  /* Infinity or NaN. */
+	  fs->fsp->len = 3;
 	  if (tf > 0.0) {
 	    if (tf < 0.0) {
-	      sprintf(x, "nan");
+	      fs->fsp->b = MKPCHARP("nan", 0);
 	    } else {
-	      sprintf(x, "inf");
+	      fs->fsp->b = MKPCHARP("inf", 0);
 	    }
 	  } else if (tf < 0.0) {
-	    sprintf(x, "-inf");
+	    fs->fsp->b = MKPCHARP("-inf", 0);
+	    fs->fsp->len = 4;
 	  } else {
-	    sprintf(x, "nan");
+	    fs->fsp->b = MKPCHARP("nan", 0);
 	  }
-	  fs->fsp = strlen(x);
 	  break;
 	}
+
+	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
+
+	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
+	fs->fsp->fi_free_string=x;
+	fs->fsp->b=MKPCHARP(x,0);
+	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);

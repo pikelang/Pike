@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.165 2003/04/27 23:34:14 mast Exp $
+|| $Id: svalue.c,v 1.166 2003/05/10 15:56:44 grubba Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.165 2003/04/27 23:34:14 mast Exp $");
+RCSID("$Id: svalue.c,v 1.166 2003/05/10 15:56:44 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1572,8 +1572,25 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     }
 
     case T_FLOAT:
-      sprintf(buf,"%f",(double)s->u.float_number);
-      my_strcat(buf);
+      {
+	double d = s->u.float_number;
+	if (d && ((d == d*2.0) || (d != d))) {
+	  if (d > 0.0) {
+	    if (d < 0.0) {
+	      my_strcat("nan");
+	    } else {
+	      my_strcat("inf");
+	    }
+	  } else if (d < 0.0) {
+	    my_strcat("-inf");
+	  } else {
+	    my_strcat("nan");
+	  }
+	} else {
+	  sprintf(buf, "%f", d);
+	  my_strcat(buf);
+	}
+      }
       break;
 
     case T_ARRAY:
