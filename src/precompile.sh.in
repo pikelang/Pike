@@ -16,6 +16,13 @@ export LIBDIR_SRC
 export TMP_BUILDDIR
 export SRCDIR
 
+retries=.
+
+if test "@CROSS@" = "yes"; then
+  method="QQQQ"
+  retries="....."
+else :; fi
+
 if test -f "$TMP_BUILDDIR/precompile-method" ; then
   . "$TMP_BUILDDIR/precompile-method"
 else
@@ -23,13 +30,6 @@ else
 fi
 
 old_method="${method-}"
-
-retries=.
-
-if test "@CROSS@" = "yes"; then
-  method="QQQQ"
-  retries="....."
-else :; fi
 
 while test "$retries" != .......... ; do
 
@@ -107,16 +107,17 @@ echo "precompile: $RUNPIKE ./$SCRIPT $@ >$TARGET (method=$method)"
 if $RUNPIKE ./$SCRIPT "$@" >"$TARGET" ; then
 
 cat > "$TMP_BUILDDIR/precompile-method" <<EOF
-LAST_PIKE=$LAST_PIKE
-method=$method
+LAST_PIKE="$LAST_PIKE"
+method="$method"
+retries="$retries"
 EOF
 
 exit 0
 fi
 fi
 
-method=Q$method
-retries=.$retries
+method="Q$method"
+retries=".$retries"
 
 done # retry
 # Total failure
