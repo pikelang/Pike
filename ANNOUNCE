@@ -1,61 +1,13 @@
-Pike 0.6 BETA
-
-Pike 0.6 BETA is now available for public beta testing, though
-unfortunately it is not quite complete. Due to Swedish export
-restrictions we are unable to supply the cryptographic toolkit and the
-full library of algorithms.
-
-Pike version 0.6 BETA does not come with a manual yet, there is a manual
-for Pike 0.5, which will be updated to cover all new features in 0.6 as
-soon as possible. There are many changes from Pike 0.5 to Pike 0.6, but
-here are some of the most important ones you should be aware of:
-
-	o The compiler is now two-pass, which means that you can access
-	  variables and functions declared later in the source without
-	  having to use prototypes. The two-pass compiler also makes
-	  it possible to use the name of a class from inside itself.
-
-	o It is now possible to access variables and functions in the
-	  'parent' class. This greatly simplifies coding in many
-	  situations.
-
-	o The process handling has been changed to being object-
-	  oriented. For this purpose, a new function has been created:
-	  Process.create_process. The returned object can be used
-	  as an argument to kill, and has methods which will report
-	  the status of the child process.
-
-	o Similar to process handling, threads have been changed to use
-	  an object-oriented approach.
-
-	o The 'varargs' keyword has been removed.
-
-	o You can now 'import "dirname"'.
-
-	o The module system has been modified so that the current
-	  directory is no longer searched for modules. To use a module
-	  in the current directory, you must either use 'import "."'
-	  or specify the module as '.module' instead of just 'module'.
-
-	o Lots of bugs have been fixed. :)
-
-	o Implicit blocks have been implemented around if, switch, for,
-	  do-while and foreach, this means that the scope of variables
-	  such as 'x' in 'if(string x)' ends after the if construct.
-
-	o popen, system and spawn in the Process module have been changed
-	  to *NOT* execute /bin/sh on the given string. This is to ensure
-	  compatibility with Win32 systems.
-
+Pike 7.0 stable version
 
 While still young, Pike matured over the last few years, and
-development is now co-ordinated by a team at Idonex AB. Pike is still
-released under the GNU General Public License (GPL). It is, and will
-continue to be, freely distributed. Briefly, this means that you are
+development is co-ordinated by a team at Roxen Internet Software AB.
+Pike is released under the GNU General Public License (GPL). It is, and
+will continue to be, freely distributed. Briefly, this means that you are
 free to use and modify the source code in any way you please, see the
-file COPYING for details. Idonex maintains the right to the brand name
-and the copyright, guaranteeing that Pike will be continuously
-developed and enhanced, and remain free software.
+file COPYING for details. Roxen Internet Software maintains the right
+to the brand name and the copyright, guaranteeing that Pike will be
+continuously developed and enhanced, and remain free software.
 
 Pike is easily learned, and just as easily used to develop powerful
 applications. Pike is designed to be useful and powerful. As the
@@ -65,7 +17,7 @@ object-oriented language, powerful applications can be rapidly
 developed. Pike has evolved rather than been designed. The changes to
 Pike that have been made have been guided by its users' needs. In
 general, the better you get to know Pike, the more you will appreciate
-it, from a user's perspective.
+it, from a users perspective.
 
 Pike is just as suitable for intricate and large applications as for
 creating use-once scripts. When needed, you can also write
@@ -88,14 +40,13 @@ A list of pros and cons with Pike follows:
         + Portable - Platform independent and available on most flavors of Unix
 	  At present the following platforms are supported:
 	  
-	     Solaris 2.5 & 2.6 (Sun SPARC & Intel x86) 
-             Digital UNIX 4.0 
-             AIX 4.2.1
-             IRIX 6.3 
-             SCO UnixWare 
-             FreeBSD 2.2.2 
+	     Solaris 2.5.1 & up (Sun SPARC & Intel x86) 
+             Tru64
+             AIX 4.3
+             IRIX 6.5
+             FreeBSD 4.0
              HP-UX 10.20 
-             Linux Red Hat 4.2 (Intel x86) 
+             Linux Red Hat 4.2, 5.2, 6.1 and others (Intel x86) 
 
         + Powerful, Flexible and Efficient Data Types
         + Automatic Memory Management
@@ -112,14 +63,11 @@ How Pike relates to other programming languages:
         + C-like Syntax - Easy to learn
 
 Below you will find a list of some desired but missing features, or
-cons, of Pike. As indicated by the version number 0.5, Pike is still
-under development and the goal is to incorporate those in future
-versions.
+cons, of Pike. Pike is still under development and the goal is to
+incorporate those in future versions.
 
         - No Pike native compiler or debugger available
-        - Limited image format import and export support
         - Not optimal for heavy numeric processing jobs
-        - Not for GUI based applications
         - Limited range of special effect image filters for image
           processing
 
@@ -127,7 +75,7 @@ versions.
 Some successful applications using Pike include:
 
         + Network Applications - as Client/Server applications
-          e.g. the Roxen Challenger Server and a range of server extensions
+          e.g. the Roxen WebServer and a range of server extensions
 	       Mail Gateways
 	       Client/server Protocol Implementations
 	       Multi-User-Dungeons
@@ -151,15 +99,12 @@ performing any kind of drawing operation. Using the Image module, you
 can automate jobs that would otherwise have required tedious work in
 an interactive image processing program such as Adobe PhotoShop.
 
-Currently, the only input format is ppm. Output formats are ppm and
-gif.
-
 
 Sql - Interface to SQL Databases 
 
 The SQL interface makes it possible to use common SQL databases from
-within your applications. It includes support for mSQL, MySQL and
-Postgres. 
+within your applications. It includes support for mSQL, MySQL, Postgres,
+Oracle and ODBC.
 
 
 MIME - Multimedia Internet Mail Extension Module
