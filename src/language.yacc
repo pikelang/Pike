@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.192 2000/06/26 16:53:31 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.193 2000/06/26 18:30:55 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2377,8 +2377,16 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
     if ($1) {
-      int e = find_inherit(inherit_state->new_program->inherits[$1].prog,
-			   $2->u.sval.u.string);
+      int e = 0;
+#if 0
+      /* FIXME: The inherit modifiers aren't kept. */
+      if (!(inherit_state->new_program->inherits[$1].flags & ID_PRIVATE)) {
+#endif /* 0 */
+	e = find_inherit(inherit_state->new_program->inherits[$1].prog,
+			 $2->u.sval.u.string);
+#if 0
+      }
+#endif /* 0 */
       if (!e) {
 	if (inherit_state->new_program->inherits[$1].name) {
 	  my_yyerror("No such inherit %s::%s.",
