@@ -30,7 +30,7 @@ void doit(Stdio.File in, Stdio.File out)
     }
     if(s == "\0"*512) {
       written += out->write(s);
-      continue;
+      break;
     }
     array a =
       array_sscanf(s, "%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s");
@@ -38,9 +38,12 @@ void doit(Stdio.File in, Stdio.File out)
     sscanf(a[1], "%o", perm);
     sscanf(a[4], "%o", size);
     sscanf(a[6], "%o", csum);
+    //werror("%O (%d bytes, 0%03o) csum:%d\n", a[0], size, perm, csum);
     s=s[..147]+"        "+s[156..];
     if(`+(@values(s[..511])) != csum) {
-      werror("CHECKSUM ERROR on input!\n");
+      werror("CHECKSUM ERROR on input (got %d, expected %d(%s))!\n",
+	     `+(@values(s[..511])), csum, a[6]);
+      werror("%{  %{%02x %}\n%}", ({(((array)s)/16)[*]}));
       exit(1);
     }
     /* Normalize the permission flags. */
@@ -62,6 +65,17 @@ void doit(Stdio.File in, Stdio.File out)
     size = (size + 511) & -512;
     copydata(in, out, size);
     written += size;
+  }
+  // tar on AIX 5L 5.1.0.0/ia64 pads with junk
+  for(;;) {
+    string s = in->read(512);
+    if(s == "")
+      break;
+    if(sizeof(s) != 512) {
+      werror("READ ERROR on input\n");
+      exit(1);
+    }
+    written += out->write("\0"*512);
   }
   // GNU tar 1.14 complains if we don't pad to an even 20 of blocks.
   if (written % 10240) {
