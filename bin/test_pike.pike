@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.103 2004/08/31 13:45:48 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.104 2004/08/31 13:55:45 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -312,7 +312,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "help":
-	  stdout->write(doc);
+	  write(doc);
 	  return 0;
 
 	case "verbose": verbose+=foo(opt[1]); break;
