@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.387 2001/12/06 14:10:19 grubba Exp $");
+RCSID("$Id: program.c,v 1.388 2001/12/12 21:11:16 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1299,11 +1299,6 @@ void low_start_new_program(struct program *p,
 
   compilation_depth++;
 
-  CDFPRINTF((stderr, "th(%ld)  low_start_new_program() pass=%d: threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), compilation_depth,
-	     threads_disabled, Pike_compiler->compiler_pass));
-
-
   tmp.type=T_PROGRAM;
   if(!p)
   {
@@ -1358,6 +1353,11 @@ void low_start_new_program(struct program *p,
   p->flags &=~ PROGRAM_VIRGIN;
   Pike_compiler->parent_identifier=id;
   if(idp) *idp=id;
+
+  CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() "
+	     "pass=%d: threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), p, compilation_depth,
+	     threads_disabled, Pike_compiler->compiler_pass));
 
   init_type_stack();
 
@@ -1942,6 +1942,7 @@ void check_program(struct program *p)
 }
 #endif
 
+/* Note: This function is misnamed, since it's run after both passes. /mast */
 struct program *end_first_pass(int finish)
 {
   int e;
@@ -2039,9 +2040,12 @@ struct program *end_first_pass(int finish)
 
   toss_compilation_resources();
 
+#if 0
   CDFPRINTF((stderr,
-	     "th(%ld)  end_first_pass(): compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
+	     "th(%ld) end_first_pass(): "
+	     "compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
 	     (long)th_self(), compilation_depth, Pike_compiler->compiler_pass));
+#endif
 
   if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && resolve_cache)
   {
@@ -2059,8 +2063,10 @@ struct program *end_first_pass(int finish)
   exit_type_stack();
 
   CDFPRINTF((stderr,
-	     "th(%ld)  end_first_pass(%d): threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), finish, threads_disabled, compilation_depth));
+	     "th(%ld) %p end_first_pass(%d): "
+	     "threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), prog, finish,
+	     threads_disabled, compilation_depth));
 
   compilation_depth--;
 
@@ -4428,7 +4434,8 @@ extern void yyparse(void);
   struct svalue *save_sp=Pike_sp;			\
   yyparse();  /* Parse da program */			\
   if(save_sp != Pike_sp)				\
-    fatal("yyparse() left droppings on the stack!\n");	\
+    fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",	\
+	  Pike_sp - save_sp);						\
 }while(0)
 #else
 #define do_yyparse() yyparse()
@@ -4443,7 +4450,7 @@ struct supporter_marker
 {
   struct supporter_marker *next;
   void *data;
-  int level;
+  int level, verified;
 };
 
 #undef EXIT_BLOCK
@@ -4452,12 +4459,40 @@ struct supporter_marker
 #define COUNT_OTHER()
 
 #undef INIT_BLOCK
-#define INIT_BLOCK(X) do { (X)->level=0; }while(0)
+#define INIT_BLOCK(X) do { (X)->level = (X)->verified = 0; }while(0)
 PTR_HASH_ALLOC(supporter_marker, 128);
 
 static int supnum;
 
 #define SNUM(X) (get_supporter_marker((X))->level)
+
+static void mark_supporters(struct Supporter *s)
+{
+  struct supporter_marker *m;
+
+  if(!s) return;
+  debug_malloc_touch(s);
+  m=get_supporter_marker(s);
+
+  if(m->level) return;
+  m->level = -1;
+
+  if(s->magic != 0x500b0127)
+  {
+#ifdef DEBUG_MALLOC
+    describe(s);
+#endif
+    fatal("This is not a supporter (addr=%p, magic=%x)!\n",s,s->magic);
+  }
+
+  mark_supporters(s->dependants);
+  mark_supporters(s->next_dependant);
+
+  m->level=supnum++;
+
+  mark_supporters(s->previous);
+  mark_supporters(s->depends_on);
+}
 
 static void low_verify_supporters(struct Supporter *s)
 {
@@ -4467,19 +4502,20 @@ static void low_verify_supporters(struct Supporter *s)
   if(!s) return;
   debug_malloc_touch(s);
   m=get_supporter_marker(s);
-  if(m->level) return;
-  m->level=supnum++;
-  if(s->magic != 0x500b0127)
-  {
-#ifdef DEBUG_MALLOC
-    describe(s);
-#endif
-    fatal("This is not a supporter (addr=%p, magic=%x)!\n",s,s->magic);
-  }
+
+  if(m->verified) return;
+  m->verified = 1;
+
   low_verify_supporters(s->previous);
   low_verify_supporters(s->depends_on);
   low_verify_supporters(s->dependants);
   low_verify_supporters(s->next_dependant);
+
+#if 0
+  fprintf(stderr, "low_verify_supporters %p, level %d: "
+	  "previous %p, depends_on %p, dependants %p, next_dependant %p\n",
+	  s, m->level, s->previous, s->depends_on, s->dependants, s->next_dependant);
+#endif
 
   if(s->previous && SNUM(s->previous) <= m->level)
     fatal("Que, numbers out of whack1\n");
@@ -4487,7 +4523,7 @@ static void low_verify_supporters(struct Supporter *s)
   if(s->depends_on && SNUM(s->depends_on) <= m->level)
     fatal("Que, numbers out of whack2\n");
 
-  for(ss=s->dependants;ss;s=s->next_dependant)
+  for(ss=s->dependants;ss;ss=ss->next_dependant)
     if(SNUM(ss) >= m->level)
       fatal("Que, numbers out of whack3\n");
 }
@@ -4498,6 +4534,12 @@ void verify_supporters()
   {
     supnum=1;
     init_supporter_marker_hash();
+
+#if 0
+    fprintf(stderr, "verify_supporters start\n");
+#endif
+
+    mark_supporters(current_supporter);
     low_verify_supporters(current_supporter);
 #ifdef DO_PIKE_CLEANUP
     {
@@ -4509,6 +4551,10 @@ void verify_supporters()
     }
 #endif
     exit_supporter_marker_hash();
+
+#if 0
+    fprintf(stderr, "verify_supporters end\n");
+#endif
   }
 }
 #else
@@ -4579,7 +4625,7 @@ int report_compiler_dependency(struct program *p)
   verify_supporters();
   for(cc=current_supporter;cc;cc=cc->previous)
   {
-    if(cc->prog && 
+    if(cc->prog &&
        !(cc->prog->flags & PROGRAM_PASS_1_DONE))
     {
       c=cc->depends_on;
@@ -4764,8 +4810,10 @@ static int run_pass1(struct compilation *c)
   debug_malloc_touch(c);
   run_init(c);
 
+#if 0
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
+#endif
 
   if(c->placeholder && c->placeholder->prog != null_program)
     Pike_error("Placeholder object is not a null_program clone!\n");
@@ -4773,12 +4821,15 @@ static int run_pass1(struct compilation *c)
   if(c->target && !(c->target->flags & PROGRAM_VIRGIN))
     Pike_error("Placeholder program is not virgin!\n");
 
-  CDFPRINTF((stderr,
-	     "th(%ld) compile() Start: threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), threads_disabled, compilation_depth));
-
-
   low_start_new_program(c->target,0,0,0);
+  c->supporter.prog = Pike_compiler->new_program;
+
+  CDFPRINTF((stderr,
+	     "th(%ld) %p run_pass1() start: "
+	     "threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), Pike_compiler->new_program,
+	     threads_disabled, compilation_depth));
+
   Pike_compiler->compiler_pass=1;
   run_init2(c);
 
@@ -4796,9 +4847,10 @@ static int run_pass1(struct compilation *c)
     }
   }
 
-
+#if 0
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass\n",
 	     (long)th_self()));
+#endif
 
   do_yyparse();  /* Parse da program */
 
@@ -4811,8 +4863,8 @@ static int run_pass1(struct compilation *c)
 #endif
   }
 
-  CDFPRINTF((stderr, "th(%ld)   compile(): First pass done\n",
-	     (long)th_self()));
+  CDFPRINTF((stderr, "th(%ld) %p run_pass1() done for %s\n",
+	     (long)th_self(), Pike_compiler->new_program, lex.current_file->str));
 
   ret=unlink_current_supporter(& c->supporter);
 
@@ -4849,17 +4901,20 @@ void run_pass2(struct compilation *c)
   Pike_compiler->compiler_pass=2;
 
   run_init2(c);
-  
-  CDFPRINTF((stderr, "th(%ld)   compile(): Second pass\n",
-	     (long)th_self()));
-  
+
+  CDFPRINTF((stderr,
+	     "th(%ld) %p run_pass2() start: "
+	     "threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), Pike_compiler->new_program,
+	     threads_disabled, compilation_depth));
+
   verify_supporters();
 
   do_yyparse();  /* Parse da program */
-  
-  CDFPRINTF((stderr, "th(%ld)   compile(): Second pass done\n",
-	     (long)th_self()));
-  
+
+  CDFPRINTF((stderr, "th(%ld) %p run_pass2() done for %s\n",
+	     (long)th_self(), Pike_compiler->new_program, lex.current_file->str));
+
   verify_supporters();
 
   c->p=end_program();
@@ -4880,8 +4935,8 @@ static void run_cleanup(struct compilation *c, int delayed)
   exit_threads_disable(NULL);
 
   CDFPRINTF((stderr,
-	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(),threads_disabled, compilation_depth));
+	     "th(%ld) %p run_cleanup(): threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), c->p, threads_disabled, compilation_depth));
   if (!c->p)
   {
     /* fprintf(stderr, "Destructing placeholder.\n"); */
@@ -4922,7 +4977,10 @@ static void run_cleanup(struct compilation *c, int delayed)
 static void call_delayed_pass2(struct compilation *cc)
 {
   debug_malloc_touch(cc);
-  
+
+  CDFPRINTF((stderr, "th(%ld) %p continuing delayed compile.\n",
+	     (long) th_self(), cc->p));
+
   if(cc->p) run_pass2(cc);
   run_cleanup(cc,1);
   
@@ -4997,6 +5055,8 @@ struct program *compile(struct pike_string *aprog,
 
   if(delay)
   {
+    CDFPRINTF((stderr, "th(%ld) %p compile() finish later.\n",
+	       (long) th_self(), c->p));
     /* finish later */
     add_ref(c->p);
     verify_supporters();
