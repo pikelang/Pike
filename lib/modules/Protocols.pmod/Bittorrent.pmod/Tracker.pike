@@ -2,8 +2,8 @@
 #pike __REAL_VERSION__
 
 //! The query interval reported back to clients. Defaults to
-//! @expr{900@}.
-int(0..) interval = 900;
+//! @expr{1800@}.
+int(0..) interval = 1800;
 
 int(1..) default_numwants = 50;
 
@@ -30,6 +30,19 @@ class Client (string ip, int port) {
 class TorrentInfo {
   mapping(string:Client) clients = ([]);
   array(string) seeds = ({});
+  int completed;
+
+  int num_seeds() {
+    return sizeof(seeds);
+  }
+
+  int num_leechers() {
+    return sizeof(clients)-num_seeds();
+  }
+
+  int num_completed() {
+    return completed;
+  }
 
   Client get_client(string peer_id) {
     return clients[peer_id];
@@ -101,8 +114,8 @@ string report_failure(string why) {
   return .Bencoding.encode( ([ "failure reason" : why ]) );
 }
 
-//! Handles HTTP queries to the tracker.
-string query(string ip, mapping args) {
+//! Handles HTTP announce queries to the tracker.
+string announce(mapping args, string ip) {
 
   if( !args->info_hash )
     return report_failure( "No info_hash query variable." );
@@ -154,6 +167,9 @@ string query(string ip, mapping args) {
     }
     return "de"; // Don't bother compiling a proper directory.
   }
+  else if( args->event == "complete" ) {
+    torrent->completed++;
+  }
 
   // FIXME: Always treat as "started"?
   if( !c ) {
@@ -190,6 +206,30 @@ string query(string ip, mapping args) {
     m->peers = torrent->peerlist(peers);
 
   return .Bencoding.encode(m);
+}
+
+//! Returns the result of a scrape query.
+string scrape(mapping args) {
+  mapping res = ([ "files" : ([]) ]);
+
+  array ts;
+  if(args->info_hash) {
+    if( sizeof(args->info_hash)!=20 )
+      return report_failure( "Wrong size of info_hash data." );
+    if( !torrents[ args->info_hash ] )
+      return report_failure( "No such torrent tracked by this tracker." );
+    ts = ({ args->info_hash });
+  }
+  else
+    ts = indices(torrents);
+
+  foreach(ts, string hash) {
+    TorrentInfo t = torrents[hash];
+    mapping f = ([ "complete" : t->num_seeds(),
+		   "downloaded" : t->num_completed(),
+		   "incomplete" : t->num_leechers() ]);
+  }
+
 }
 
 void clean_torrents() {
