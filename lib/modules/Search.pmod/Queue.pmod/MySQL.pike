@@ -95,8 +95,10 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
       // and it's changed since the indexing started, setting the stage
       // to 0 here might be worthless, since it could be overwritten before
       // it's fetched again.
-      if(force)
+      if(force) {
 	set_stage(r, 0);
+	set_recurse(r, recurse);
+      }
     }
     else
       db->query( "insert into "+table+
@@ -108,8 +110,18 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
 
 void set_md5( Standards.URI uri, string md5 )
 {
+  if( extra_data[(string)uri] )
+    extra_data[(string)uri]->md5 = md5;
   db->query( "update "+table+
 	     " set md5=%s WHERE uri_md5=%s", md5, to_md5((string)uri) );
+}
+
+void set_recurse( Standards.URI uri, int recurse )
+{
+  if( extra_data[(string)uri] )
+    extra_data[(string)uri]->recurse = recurse;
+  db->query( "update "+table+
+	     " set recurse=%d WHERE uri_md5=%s", recurse, to_md5((string)uri));
 }
 
 mapping(string:mapping(string:string)) extra_data = ([]);
