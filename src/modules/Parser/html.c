@@ -1454,57 +1454,41 @@ static void html_current(INT32 args)
 **!	<tt>({tag_name(),tag_args()})</tt>.
 */
 
-static void html_tag_name(INT32 args)
+static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
 {
    struct piece *s1=NULL,*s2=NULL;
    int c1=0,c2=0;
-   int n;
-
-   /* get rid of arguments */
-   pop_n_elems(args);
 
    /* scan start of tag name */
-   scan_forward(THIS->start,THIS->cstart,&s1,&c1,
+   scan_forward(feed,c,&s1,&c1,
 		THIS->ws,-THIS->n_ws);
-   /* scan end of tag name */
-   scan_forward(s1,c1,&s2,&c2,
-		THIS->ws_or_endarg,
-		THIS->n_ws_or_endarg);
-   
-   DEBUG((stderr,"tag_name %p:%d .. %p:%d\n",s1,c1,s2,c2));
 
-   push_feed_range(s1,c1,s2,c2);
-   
-   n=0;
+   /* scan as argument and push*/
+   scan_forward_arg(this,s1,c1,&s2,&c2,1);
 }
 
-static void html_tag_args(INT32 args)
+static void tag_args(struct parser_html_storage *this,struct piece *feed,int c)
 {
    struct piece *s1=NULL,*s2=NULL;
    int c1=0,c2=0;
    p_wchar2 ch;
    int n=0;
 
-   /* get rid of arguments */
-   pop_n_elems(args);
-
    /* scan past tag name */
-   scan_forward(THIS->start,THIS->cstart,&s1,&c1,
-		THIS->ws,-THIS->n_ws);
-   scan_forward(s1,c1,&s2,&c2,
-		THIS->ws_or_endarg,
-		THIS->n_ws_or_endarg);
+   scan_forward(feed,c,&s1,&c1,
+		this->ws,-this->n_ws);
+   scan_forward_arg(this,s1,c1,&s2,&c2,0);
 
    for (;;)
    {
       /* skip whitespace */
-      scan_forward(s2,c2,&s1,&c1,THIS->ws,-THIS->n_ws);
+      scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
 
       /* end of tag? */
       if (c1==s1->s->len) /* end<tm> */
 	 break;
       ch=index_shared_string(s1->s,c1);
-      if (ch==THIS->tag_end) /* end */
+      if (ch==this->tag_end) /* end */
 	 break;
 
 new_arg:
@@ -1512,24 +1496,24 @@ new_arg:
       DEBUG_MARK_SPOT("html_tag_args arg start",s1,c1);
 
       /* scan this argument name and push*/
-      scan_forward_arg(THIS,s1,c1,&s2,&c2,1);
+      scan_forward_arg(this,s1,c1,&s2,&c2,1);
       n++;
 
       /* scan for '=', '>' or next argument */
       /* skip whitespace */
-      scan_forward(s2,c2,&s1,&c1,THIS->ws,-THIS->n_ws);
+      scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
       if (c1==s1->s->len) /* end<tm> */
       {
 	 stack_dup(); /* arg => arg=arg */
 	 break;
       }
       ch=index_shared_string(s1->s,c1);
-      if (ch==THIS->tag_end) /* end */
+      if (ch==this->tag_end) /* end */
       {
 	 stack_dup(); /* arg => arg=arg */
 	 break;
       }
-      if (ch!=THIS->arg_eq) /* end of _this_ argument */
+      if (ch!=this->arg_eq) /* end of _this_ argument */
       {
 	 stack_dup(); /* arg => arg=arg */
 	 goto new_arg;
@@ -1539,12 +1523,12 @@ new_arg:
       c1++; /* skip it */
       
       /* skip whitespace */
-      scan_forward(s1,c1,&s2,&c2,THIS->ws,-THIS->n_ws);
+      scan_forward(s1,c1,&s2,&c2,this->ws,-this->n_ws);
 
       DEBUG_MARK_SPOT("html_tag_args value start",s1,c1);
 
       /* scan the argument value */
-      scan_forward_arg(THIS,s2,c2,&s1,&c2,1);
+      scan_forward_arg(this,s2,c2,&s1,&c2,1);
       
       s1=s2;
       c1=c2;
@@ -1552,6 +1536,42 @@ new_arg:
    }
 
    f_aggregate_mapping(n*2);
+}
+
+static void html_tag_name(INT32 args)
+{
+   /* get rid of arguments */
+   pop_n_elems(args);
+
+   tag_name(THIS,THIS->start,THIS->cstart);
+}
+
+static void html_tag_args(INT32 args)
+{
+   /* get rid of arguments */
+   pop_n_elems(args);
+
+   tag_args(THIS,THIS->start,THIS->cstart);
+}
+
+static void html_parse_tag_args(INT32 args)
+{
+   struct piece feed;
+   check_all_args("parse_tag_args",args,BIT_STRING,0);
+   feed.s=sp[-args].u.string;
+   feed.next=NULL;
+   tag_args(THIS,&feed,0);
+   stack_pop_n_elems_keep_top(args);
+}
+
+static void html_parse_tag_name(INT32 args)
+{
+   struct piece feed;
+   check_all_args("parse_tag_name",args,BIT_STRING,0);
+   feed.s=sp[-args].u.string;
+   feed.next=NULL;
+   tag_name(THIS,&feed,0);
+   stack_pop_n_elems_keep_top(args);
 }
 
 /** debug *******************************************/
@@ -1704,6 +1724,13 @@ void init_parser_html(void)
    
    add_function("_inspect",html__inspect,
 		"function(:mapping)",0);
+
+   /* just useful */
+
+   ADD_FUNCTION("parse_tag_name",html_parse_tag_name,
+		tFunc(tStr,tStr),0);
+   ADD_FUNCTION("parse_tag_args",html_parse_tag_args,
+		tFunc(tStr,tStr),0);
 }
 
 
@@ -1759,10 +1786,6 @@ class Parse_HTML
    void _set_data_callback(function to_call);
    void _set_entity_callback(function to_call);
 
-   // just useful
-   string parse_get_tag_name(string tag);
-   mapping parse_get_tag_args(string tag);
-
    // entity quote
    void set_entity_quote(string start,string end); // "&",";"
 
@@ -1771,6 +1794,10 @@ class Parse_HTML
    // call to_call(this,string entity,...extra);
    void add_entity(string entity,function to_call);
    void add_glob_entity(string entity,function to_call);
+
+   // just useful
+   string parse_tag_name(string tag);
+   mapping parse_tag_args(string tag);
 }
 
 */
