@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.306 2001/03/28 10:02:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.307 2001/03/28 17:58:06 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2677,7 +2677,7 @@ int define_variable(struct pike_string *name,
       struct identifier *id;
       id=ID_FROM_INT(Pike_compiler->new_program,n);
       free_type(id->type);
-      copy_shared_string(id->type, type);
+      copy_type(id->type, type);
       return n;
     }
   }
@@ -3136,7 +3136,7 @@ INT32 define_function(struct pike_string *name,
       funp->opt_flags &= opt_flags;
 
       free_type(funp->type);
-      copy_shared_string(funp->type, type);
+      copy_type(funp->type, type);
     }else{
 
       if((ref.id_flags & ID_NOMASK)
