@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.156 2002/11/22 14:13:20 grubba Exp $
+|| $Id: encode.c,v 1.157 2002/11/22 14:45:57 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.156 2002/11/22 14:13:20 grubba Exp $");
+RCSID("$Id: encode.c,v 1.157 2002/11/22 14:45:57 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -278,7 +278,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	sval.subtype = 0;
 	sval.u.string = (void *)t->car;
 
-	encode_value2(&sval, encode_data);
+	encode_value2(&sval, data);
       }
       t=t->cdr;
       goto one_more_type;
