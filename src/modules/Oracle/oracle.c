@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.65 2002/01/31 13:10:38 stewa Exp $
+ * $Id: oracle.c,v 1.66 2002/02/07 16:20:36 stewa Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.65 2002/01/31 13:10:38 stewa Exp $");
+RCSID("$Id: oracle.c,v 1.66 2002/02/07 16:20:36 stewa Exp $");
 
 
 /* User-changable defines: */
@@ -586,8 +586,10 @@ static void exit_dbresultinfo_struct(struct object *o)
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
-  debug_malloc_touch(THIS_RESULTINFO->define_handle);
-  OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
+  if(THIS_RESULTINFO->define_handle) {
+    debug_malloc_touch(THIS_RESULTINFO->define_handle);
+    OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
+  }
   free_inout( & THIS_RESULTINFO->data);
 }
 
@@ -996,18 +998,19 @@ static void f_fetch_fields(INT32 args)
 	  type_name = "blob";
 	else
 	  type_name="clob";
-	if (OCIDescriptorAlloc(
-			       (dvoid *) get_oracle_environment(),
-			       (dvoid **) &info->data.lob, 
-			       (ub4)OCI_DTYPE_LOB, 
-			       (size_t) 0, 
-			       (dvoid **) 0))
+	if (rc = OCIDescriptorAlloc(
+				    (dvoid *) get_oracle_environment(),
+				    (dvoid **) &info->data.lob, 
+				    (ub4)OCI_DTYPE_LOB, 
+				    (size_t) 0, 
+				    (dvoid **) 0))
 	  {
 #ifdef ORACLE_DEBUG
 	    fprintf(stderr,"OCIDescriptorAlloc failed!\n");
 #endif
 	    info->data.lob = 0;
-	    /* FIXME: throw error */
+	    info->define_handle = 0;
+	    ora_error_handler(dbcon->error_handle, rc, "OCIDescriptorAlloc");
 	  }
 	data_size=sizeof(info->data.lob); /* ? */
 	break;
@@ -1116,6 +1119,7 @@ static void push_inout_value(struct inout *inout,
   sword rc;
   sb4 bsize=100;
   int rslt;
+  char *errfunc=0;
   
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s .. (type = %d, indicator = %d, len= %d)\n",__FUNCTION__,inout->ftype,inout->indicator, inout->xlen);
@@ -1185,43 +1189,48 @@ static void push_inout_value(struct inout *inout,
 
     case SQLT_CLOB:
     case SQLT_BLOB:
-      if(OCILobGetLength(dbcon->context, dbcon->error_handle,inout->lob, &loblen)) {
+    {
+      sword ret;
+      if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
+				inout->lob, &loblen)) != OCI_SUCCESS) {
 #ifdef ORACLE_DEBUG
 	fprintf(stderr,"OCILobGetLength failed.\n");
 #endif
-	/* FIXME: throw error here */
-	loblen = 0;
-      }
-      else {
+	errfunc = "OCILobGetLength";
+      } else {
 	amtp = loblen;
+	if(bufp = malloc(loblen)) {
+	  if((ret = OCILobRead(dbcon->context,
+			       dbcon->error_handle,
+			       inout->lob, 
+			       &amtp, 
+			       1, 
+			       (dvoid *) bufp,
+			       loblen, 
+			       (dvoid *)0, 
+			       (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
+			       (ub2) 0, 
+			       (ub1) SQLCS_IMPLICIT)) != OCI_SUCCESS) 
+	    {
+#ifdef ORACLE_DEBUG
+	      fprintf(stderr,"OCILobRead failed\n");
+#endif
+	      errfunc = "OCILobRead";
+	    }
+	}
+	else {
+	  ret = 1;
+	  errfunc = "malloc";
+	}
       }
 #ifdef ORACLE_DEBUG
       fprintf(stderr,"LOB length: %d\n",loblen);
 #endif
-      if(loblen && (bufp=malloc(loblen))) {
-	if(OCILobRead(dbcon->context,
-		      dbcon->error_handle,
-		      inout->lob, 
-		      &amtp, 
-		      1, 
-		      (dvoid *) bufp,
-		      loblen, 
-		      (dvoid *)0, 
-		      (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
-		      (ub2) 0, 
-		      (ub1) SQLCS_IMPLICIT)) 
-	  {
-	    /* FIXME: throw error here */
-#ifdef ORACLE_DEBUG
-	    fprintf(stderr,"OCILobRead failed\n");
-#endif
-	    loblen = 0;
-	  }
-      }
-      else {
-	loblen = 0;
-      }
-      push_string(make_shared_binary_string(loblen ? bufp : "",loblen));
+      if(ret == OCI_SUCCESS)
+	push_string(make_shared_binary_string(loblen ? bufp : "",loblen));
+      else
+	ora_error_handler(dbcon->error_handle, ret, errfunc);
+      
       if(bufp)
 	free(bufp);
 #if 0
@@ -1230,6 +1239,7 @@ static void push_inout_value(struct inout *inout,
       if(inout->lob)
 	OCIDescriptorFree((dvoid *) inout->lob, (ub4) OCI_DTYPE_LOB);
 #endif
+      }
       break;
 	
     case SQLT_ODT:
