@@ -45,6 +45,8 @@ void do_html_parse(struct lpc_string *ss,
 		   int *strings,int recurse_left,
 		   struct array *extra_args);
 
+extern void f_parse_tree(INT32 argc);
+
 void f_parse_accessed_database(INT32 args)
 {
   int cnum=0, i, num=0;
@@ -1008,13 +1010,11 @@ void init_spider_efuns(void)
   add_efun("discdate", f_discdate, "function(int:array)", 0);
   add_efun("stardate", f_stardate, "function(int,void|int:int)", 0);
 
+  add_efun("parse_tree", f_parse_tree, "function(string:array(string))", 0);
+
   add_efun("setuid", f_do_setuid, "function(int:void)", 0);
   add_efun("setgid", f_do_setgid, "function(int:void)", 0);
   add_efun("timezone",f_timezone,"function(:int)",0);
-#if 0
-  add_efun("exece",f_exece,"function(string,array(string),array(string):int)",
-	   OPT_SIDE_EFFECT);
-#endif
   add_efun("get_all_active_fd",f_get_all_active_fd,"function(:array(int))",0);
   add_efun("fd_info",f_fd_info,"function(int:string)",0);
   add_efun("mark_fd",f_mark_fd,"function(int,void|mixed:mixed)",0);
