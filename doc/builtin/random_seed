@@ -1,0 +1,31 @@
+NAME
+	random_seed - seed random generator
+
+SYNTAX
+	void random_seed(int seed);
+
+DESCRIPTION
+	This function sets the initial value for the random generator.
+
+EXAMPLE
+	uLPC v1.0E-13 Running Hilfe v1.2 (Hubbe's Incremental LPC FrontEnd)
+	> random_seed(17);
+	Result: 0
+	> random(1000);
+	Result: 732
+	> random(1000);
+	Result: 178
+	> random(1000);
+	Result: 94
+	> random_seed(17);
+	Result: 0
+	> random(1000);
+	Result: 732
+	> random(1000);
+	Result: 178
+	> random(1000);
+	Result: 94
+	>
+
+SEE ALSO
+	random
