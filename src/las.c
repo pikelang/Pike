@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.129 1999/11/23 22:04:17 grubba Exp $");
+RCSID("$Id: las.c,v 1.130 1999/11/24 00:59:11 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2123,13 +2123,17 @@ void fix_type_field(node *n)
 	} else if (lex.pragmas & ID_STRICT_TYPES) {
 	  struct pike_string *t1 = describe_type(CAR(n)->type);
 	  struct pike_string *t2 = describe_type(CDR(n)->type);
-	  print_tree(n);
+#ifdef PIKE_DEBUG
+	  if (l_flag > 0) {
+	    fprintf(stderr, "Warning: Invalid assignment: ");
+	    print_tree(n);
+	  }
+#endif /* PIKE_DEBUG */
 	  yywarning("An expression type %s cannot be assigned to "
 		    "a variable of type %s.",
 		    t1->str, t2->str);
 	  free_string(t2);
 	  free_string(t1);
-	  yywarning("Incompatible types in assignment.");
 	}
       }
     }
