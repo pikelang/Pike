@@ -278,6 +278,7 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
   length=sizeof(foo);
 
   foo+=({});
+//  perror(sprintf("DEBUG: %O\n",foo));
   bar=allocate(length);
 
   for(len=1;len<length;len*=2)
@@ -290,6 +291,8 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
       fooend=barp;
       barend=barp+len;
       if(barend > length) barend=length;
+      if(barend <= barp) 
+	error("OOPS");
       
       while(1)
       {
@@ -311,6 +314,7 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
 	}
       }
     }
+    while(start < length) bar[start]=foo[start++];
 
     tmp=foo;
     foo=bar;
@@ -375,7 +379,7 @@ void create()
   add_efun("sum_arrays",sum_arrays);
   add_efun("system",system);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.0E-10"; });
+  add_efun("version",lambda() { return "uLPC v1.0E-9"; });
   add_efun("write_file",write_file);
 }
 
