@@ -10,12 +10,12 @@
 
 struct callback;
 
-typedef void (*callback_func)(struct callback *, void *);
+typedef void (*callback_func)(struct callback *, void *,void *);
 
 /* Prototypes begin here */
 struct callback;
 struct callback_block;
-void call_callback(struct callback **ptr);
+void call_callback(struct callback **ptr, void *arg);
 struct callback *add_to_callback(struct callback **ptr,
 				 callback_func call,
 				 void *arg,

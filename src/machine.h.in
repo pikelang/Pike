@@ -161,6 +161,9 @@
 /* Define if you have getenv.  */
 #undef HAVE_GETENV
 
+/* Define if you have gettimeofday.  */
+#undef HAVE_GETTIMEOFDAY
+
 /* Does your unix have a putenv function? */
 #undef HAVE_PUTENV
 

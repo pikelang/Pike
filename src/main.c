@@ -157,7 +157,7 @@ void main(int argc, char **argv, char **env)
 
   init_modules_efuns();
   master();
-  call_callback(& post_master_callbacks);
+  call_callback(& post_master_callbacks, 0);
   free_callback(& post_master_callbacks);
   init_modules_programs();
 

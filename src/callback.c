@@ -33,7 +33,7 @@ static struct callback *get_free_callback()
     struct callback_block *tmp2;
     tmp2=ALLOC_STRUCT(callback_block);
 
-    for(e=0;e<sizeof(CALLBACK_CHUNK);e++)
+    for(e=0;e<(int)sizeof(CALLBACK_CHUNK);e++)
     {
       tmp2->callbacks[e].next=tmp;
       tmp=tmp2->callbacks+e;
@@ -43,21 +43,20 @@ static struct callback *get_free_callback()
   return tmp;
 }
 
-void call_callback(struct callback **ptr)
+void call_callback(struct callback **ptr, void *arg)
 {
   struct callback *l;
   while(l=*ptr)
   {
-    if(l->call) l->call(l,l->arg);
+    if(l->call) l->call(l,l->arg, arg);
 
     if(!l->call)
     {
       *ptr=l->next;
-      free((char *)l);
-    }else{
-      ptr=& l->next;
       l->next=free_callbacks;
       free_callbacks=l;
+    }else{
+      ptr=& l->next;
     }
   }
 }
@@ -92,7 +91,7 @@ void free_callback(struct callback **ptr)
   while(l=*ptr)
   {
     if(l->arg && l->free_func)
-      l->free_func(l, l->arg);
+      l->free_func(l, l->arg, 0);
     *ptr=l->next;
     l->next=free_callbacks;
     free_callbacks=l;
