@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.26 1997/01/31 23:54:34 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.27 1997/02/19 05:06:42 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1080,12 +1080,10 @@ void f_compile_string(INT32 args)
 void f_mkmapping(INT32 args)
 {
   struct mapping *m;
-  if(args<2)
-    error("Too few arguments to mkmapping.\n");
-  if(sp[-args].type!=T_ARRAY)
-    error("Bad argument 1 to mkmapping.\n");
-  if(sp[1-args].type!=T_ARRAY)
-    error("Bad argument 2 to mkmapping.\n");
+  struct array *a,*b;
+  get_all_args("mkmapping",args,"%a%a",&a,&b);
+  if(a->size != b->size)
+    error("mkmapping called on arrays of different sizes\n");
 
   m=mkmapping(sp[-args].u.array, sp[1-args].u.array);
   pop_n_elems(args);
