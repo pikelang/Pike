@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.769 2004/02/26 16:47:51 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.770 2004/02/26 17:02:11 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6892,7 +6892,7 @@ $bundle_info])
     # Clear the caches.
     for varname in `cat $bundle_info`; do
       unset $varname
-    fi
+    done
     # Rerun configure
     if "x$CONFIG_SHELL" = "x"; then
       CONFIG_SHELL=/bin/sh
