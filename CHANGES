@@ -1,0 +1,401 @@
+(to browse bug crunch tickets noted at the end of these notes, either
+visit http://community.roxen.com/crunch/ - or append the ticket id to
+"http://bugs.roxen.com/" for a address directly to the ticket itself)
+
+
+Changes since 2001-04-06 / Pike 7.2.30  (released separately):
+----------------------------------------------------------------------
+
+  o Modifier ranges added.
+
+    Makes it easier to provide a set of modifiers to several symbols.
+    Example:
+
+    static
+    {
+      int i;
+      Tools.PVImage image;
+    }
+
+    is synonymous to:
+
+    static int i;
+    static Tools.PVImage image;
+
+Improvement and bug tickets closed: 968, 1420, 1468, 1469, 1505, 1546,
+                                    1593, 1645, 1648, 1670, 1679,
+                                    1711, 1714, 1728, 1735, 1739,
+                                    1743, 1757, 1770, 1777, 1793,
+                                    1825, 1831, 1839, 1843
+
+Changes since before then; Pike 7.0
+----------------------------------------------------------------------
+
+  o #pike
+
+    Pike files can now be identified with which version of pike they
+    where written for with the preprocessor directive #pike. The Pike
+    interpreter can then use the apropriate compatibility features.
+
+    Note that this can also be used for older versions of Pike; a
+    Pike 7.0 or 0.6 script won't take offence just because you add a
+    #pike line in the beginning of it but it will give 7.2 or later
+    versions of pike a fair chance of running it witout complaining
+    about incompatible changes to pike that were introduced later. By
+    running the pike with a -V 7.0 (or 0.6 in the example given), you
+    explicitly tell the compiler to assume compatibility mode of the
+    given version, except where overridden by other #pike directives.
+
+  o --features
+
+    The pike binary can be started with the flag --features which will
+    make it return a list of all "features" available. The subjective
+    definition of a feature is something that depends on an external
+    library, special features in the OS/hardware or extra compile
+    options.
+
+  o --info
+
+    The --info flag shows, in addition to the feature list, some
+    version and environment information about the pike binary. An
+    example:
+
+      Software......Pike
+      Version.......Pike v7.2 release 30
+      WWW...........http://pike.idonex.se/
+      Main author...Fredrik Hübinette
+
+      pike binary.../export/d1/nilsson/pike/7.2.30/bin/pike
+      master.pike.../export/d1/nilsson/pike/7.2.30/lib/master.pike
+      Module path.../export/d1/nilsson/pike/7.2.30/lib/modules
+      Include path../export/d1/nilsson/pike/7.2.30/lib/include
+      Program path..
+
+      Features......dynamic_modules
+                    threads
+                    out-of-band_data
+                    Crypto
+                    GL
+                    GTK
+                    Gdbm
+                    Gmp
+                    Gz
+                    Image.JPEG
+                    Image.GIF
+                    Image.TIFF
+                    Image.TTF
+                    Image.PNG
+                    Java
+                    Mird
+                    Mysql
+
+  o All LFUNs may now be static.
+
+    Callbacks used for overloading may now be declared as static.
+
+  o Improved error diagnostics.
+
+    The Pike compiler will now provide better error messages,
+    i.e. more specific than "parse error" in many more cases than
+    before.
+
+  o Improved optimization of recursive functions.
+
+    Tail recursion optimization is now applied in more cases.
+
+  o Improved optimizer.
+
+    The global optimizer now has a tree optimizer that performs parse
+    tree transformations such as strength reduction optimization.
+
+  o Improved support for 64bit platforms.
+
+    The entire pike source has been audited and successfully compiled
+    on 64 bit architectures.
+
+  o Improved support for LFUNs in various efuns.
+
+    Overloading is now taken into account in more places than before.
+
+  o Improved type resolving.
+
+    Pike can better derive the proper type of complex expressions.
+
+  o Labeled break and continue.
+
+    Loops can now be labeled and referenced to from break and
+    continue. Example:
+
+        int a, b;
+      foo:
+        for (int i = 1; i <= 4; i++) {
+          a = i;
+          switch (1) {
+            case 1:
+              if (i >= 3) break foo;
+              if (i >= 2) continue foo;
+          }
+          b = i;
+        }
+        return ({a, b}); // Returns ({3, 1})
+
+  o Local variables at the same nesting depth may no longer overlap.
+
+    This is a return to the behavior of Pike 0.6. (We promise not to
+    change it again...) This may cause some compatibility problems
+    with Pike 7.0 code. (See the #pike feature above)
+
+  o More well-defined destruct order in the GC.
+
+    Yep. Actually most of the GC has been rewritten from scratch.
+
+  o New platforms supported.
+
+    MacOS X (Darwin 1.2), Linux 2.4 IA64, MS Windows 2000,
+    MS Windows XP, MS Windows XP 64bit.
+
+  o Optimized compiler.
+
+    The Pike compiler is now 50% faster than before.
+
+  o Optimized the search algorithms some more.
+
+    search() et al are now faster than before.
+
+  o Several headerfiles renamed to improve portability.
+
+  o Simulate is gone
+
+    If you actually need Simulate, use #pike 7.0 and it will appear.
+
+  o SQL sprintf style arguments
+
+    It is now possible to make sprintf style SQL queries with
+    automatic, database specific quoting. Example:
+
+    db->query("SELECT * FROM things WHERE id > %d AND name LIKE %s",
+              lowest, pattern);
+
+  o Support for Unix system calls.
+
+    Support for the Unix system calls setpgrp(), getsid() and
+    setsid(), setrlimit(), getrlimit() (all in the system module, see
+    below), support for setsid in Process.create_process().
+
+  o Support for cross-compilation.
+
+  o Support for implicit create().
+
+    The following two class definitions are equivalent:
+
+    class Foo {
+
+      int a;
+      string b;
+      static void create(int _a, string _b) {
+        a = _a;
+        b = _b;
+      }
+    }
+
+    class Foo(int a, string b) {
+    }
+
+  o Support for local constants.
+
+    Constants can now be defined inside functions.
+
+  o Support for the local::id syntax.
+
+    Makes it possible to resolve symbols in the local scope.
+    Example:
+
+    class A
+    {
+      int foo() { return 1; }
+      int bar() { return foo(); }
+      int baz() { return local::foo(); }
+    }
+
+    class B
+    {
+      inherit A;
+
+      int foo() { return 2; }
+    }
+
+    B()->bar() will return 2 while B()->baz() returns 1.
+
+  o type_of() and _type_of() now return the type type.
+
+    Example:
+
+      constant boolean = typeof(0)|typeof(1);
+      boolean flag = 1;
+
+      int main( int argc, array(string) argv )
+      {
+        flag = (argc>1)?(int)argv[1]:flag;
+        write( "Type of flag is %O\n", typeof(flag) );
+        write( "Value of flag is %O\n", flag );
+        return 0;
+      }
+
+   o typedef syntex added.
+
+     Example:
+
+      typedef int(0..1) boolean;
+      boolean flag = 1;
+
+      int main( int argc, array(string) argv )
+      {
+        flag = (argc>1)?(int)argv[1]:flag;
+        write( "Type of flag is %O\n", typeof(flag) );
+        write( "Value of flag is %O\n", flag );
+        return 0;
+      }
+
+    o enum syntax added.
+
+      Example:
+
+       enum boolean { false, true }
+       boolean flag = true;
+
+
+New modules
+-----------
+
+  o ADT.Stack
+
+    Previously known as Stack.
+
+  o Cache
+
+    Plugin-based generic caching system, supporting chain-deletion of
+    records. Currently supported storage areas are RAM, GDBM, Yabu or
+    MySQL databases, removal policies are explicit remove,
+    time-constrained, size-constrained, combined.
+
+  o Calendar
+
+    The new Calendar module. There is a big FAQ in its directory
+    describing many of its capabilities.
+
+  o Calendar_I
+
+    The old Calendar module. Available as Calendar when #pike 7.0 is
+    used.
+
+  o Crypto.aes / Crypto.rijndael
+
+    Rijndael is a block cipher, designed by Joan Daemen and Vincent
+    Rijmen, which was the winning candidate algorithm for the AES
+    (http://csrc.nist.gov/encryption/aes/). The cipher has a variable
+    block length and key length.
+
+  o Crypto.md2
+
+    The MD2 Message-Digest Algorithm, as defined in RFC 1319
+    (http://community.roxen.com/developers/idocs/rfc/rfc1319.html).
+
+  o Geography
+
+    Capable of converting between symbolic names for the countries to
+    the actual country name. It can convert between differnet kinds of
+    position systems such as longitude/latitude, UTM and Georef. The
+    conversion can be done on any type of ellipsoid. 18 of the most
+    common earth approximations are included.
+
+  o Image.FreeType
+
+    Support for FreeType 2.0.
+
+  o Math.Angle
+
+    For easy use of angles in computations. It can handle degrees,
+    radians and gons and conversion between them. You can reference a
+    degree angle with degrees, minutes and seconds. Includes methods
+    for normalization, trigonometrical calculations etc.
+
+  o Mird
+
+    Glue module to libmird, a free simple database with transactions,
+    see http://www.mirar.org/mird/
+
+  o PDF
+
+    This is a glue module to pdflib,a "half-free" PDF generating library.
+
+  o Parser.XML.DOM
+
+    An implementation of DOM Level 1. See http://www.w3.org/DOM/.
+
+  o Parser.XML.Tree
+
+    An easy to use, lightweight module to traverse and manipulate XML
+    trees.
+
+  o Protocols.HTTP
+
+    The API functions in Protocols.HTTP now take their URLs either as
+    strings or Standards.URI objects. You also no longer need to set
+    the authorization header on your own, if your URL contains
+    user:password information, e.g. http://user:password@some.host.com/.
+
+  o Protocols.IRC
+
+    A client implementation of the IRC (Internet Relay Chat) protocol.
+
+  o Protocols.SNMP
+
+    Implements SNMP v1, according to RFC 1157:
+    http://community.roxen.com/developers/idocs/rfc/rfc1157.html
+
+  o Standards.ISO639_2
+
+    A module providing mapping from ISO-639-2 language codes to
+    language names and vice versa.
+
+  o Standards.URI
+
+    Abstract class for URI:s (or URL:s) that both handles indexing
+    out/altering the various individual components of a URI and
+    correct resolving/reresolving of a URI with respect to another
+    base URI, all according with RFC 2396:
+    http://community.roxen.com/developers/idocs/rfc/rfc2396.html
+
+    Protocols.HTTP now also accepts Standards.URI objects as input to
+    all methods that previously used to accept only URL strings.
+
+  o Stdio.Stat
+
+    file_stat() now returns Stdio.Stat objects instead of
+    arrays. These objects emulate the behaviour of the previously used
+    arrays, but also provide an easier to use interface. (See the
+    #pike feature above)
+
+  o Tools.AutoDoc
+
+    Extracts the new inline documentation format. We will post more
+    information on this when this system has matured enough to build
+    working pike reference manuals. Some information is available in
+    files .autodoc_inlining and .autodoc_syntax in the top directory.
+
+  o system
+
+    A module housing various operating system calls made available to
+    pike that previously used to be provided as efuns (hardlink,
+    symlink, resolvepath, umask, chmod, chown, chroot stc.). Be
+    prepared to see these efuns disappear to compat mode only in the
+    future. They will, however, of course be available in the system
+    module.
+
+  o Added array Regexp match.
+
+    Example:
+
+      Regexp("[0-9]+")->match( ({ "hello", "12", "foo17" }) );
+
+    Returns ({ "12", "foo17" })
