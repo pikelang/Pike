@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.50 2002/03/22 19:28:11 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.51 2002/03/23 03:17:38 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -31,11 +31,11 @@ class Command {
 
   //! A more elaborate documentation of the command. This should be
   //! less than 68 characters per line.
-  string doc() { return help(); }
+  string doc(string with) { return help(); }
 
   //! The actual command callback. Messages to the user should be
   //! written out by using the write method in the @[Evaluator] object.
-  void exec(Evaluator e, string line, array(string) tokens);
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens);
 }
 
 //! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.CommandReset();
@@ -48,8 +48,8 @@ class CommandReset {
       "name. Example: \"reset tmp\"\n";
   }
 
-  void exec(Evaluator e, string line, array(string) tokens) {
-    string n = sizeof(tokens)>2 && tokens[2];
+  void exec(Evaluator e, string line, array(string) words) {
+    string n = sizeof(words)>1 && words[1];
     if(!n) {
       e->write("No symbol given as argument to reset.\n");
       return;
@@ -68,6 +68,14 @@ class CommandReset {
   }
 }
 
+//! Helper function that formats a time span in nanoseconds to
+//! something more human readable (ns, ms or s).
+string format_hr_time(int i) {
+  if(i<1000) return i+"ns";
+  if(i<1000000) return sprintf("%.2fms", i/1000.0);
+  return sprintf("%.2fs", i/1000000.0);
+}
+
 
 //
 // Built in commands
@@ -77,11 +85,38 @@ private class CommandSet {
   inherit Command;
 
   string help() { return "Change Hilfe settings."; }
-  string doc() { return documentation_set; }
+  string doc(string with) {
+    if(with=="format")
+      return documentation_set_format;
+    return documentation_set;
+  }
 
-  void exec(Evaluator e, string line, array(string) tokens) {
+  private void bench_reswrite(function w, string sres, int num, mixed res,
+			      int last_compile_time, int last_eval_time) {
+    w( "Result %d: %s\nCompilation: %s, Execution: %s\n",
+       num, replace(sres, "\n", "\n        "+(" "*sizeof(""+num))),
+       format_hr_time(last_compile_time),
+       format_hr_time(last_eval_time) );
+  }
 
-    line = sizeof(tokens)>2 && tokens[2];
+  private class Reswriter (string format) {
+    void `()(function w, string sres, int num, mixed res,
+	     int last_compile_time, int last_eval_time) {
+      mixed err = catch {
+	w(format, sres, num, res,
+	  format_hr_time(last_compile_time),
+	  format_hr_time(last_eval_time),
+	  last_compile_time, last_eval_time);
+      };
+      if(err)
+	w("Hilfe Error: Could not format result.\n%s\n",
+	  describe_backtrace(err));
+    }
+  }
+
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+
+    line = sizeof(words)>1 && words[1];
     function write = e->write;
 
     if(!line) {
@@ -91,7 +126,7 @@ private class CommandSet {
 
     int(0..1) arg_check(string arg) {
       if(line!=arg) return 0;
-      if(sizeof(tokens)<5) {
+      if(sizeof(words)<3) {
 	write("Not enough number of arguments to set %s\n", line);
 	line = "";
 	return 0;
@@ -100,13 +135,13 @@ private class CommandSet {
     };
 
     if(arg_check("trace")) {
-      e->trace_level = (int)tokens[4];
+      e->trace_level = (int)words[2];
       return;
     }
 
     if(arg_check("assembler_debug")) {
 #if constant(_assembler_debug)
-      e->assembler_debug_level = (int)tokens[4];
+      e->assembler_debug_level = (int)words[2];
 #else
       write("Assembler debug not available.\n");
 #endif
@@ -115,7 +150,7 @@ private class CommandSet {
 
     if(arg_check("compiler_trace")) {
 #if constant(_compiler_trace)
-      e->compiler_trace_level = (int)tokens[4];
+      e->compiler_trace_level = (int)words[2];
 #else
       write("Compiler trace not available.\n");
 #endif
@@ -124,7 +159,7 @@ private class CommandSet {
 
     if(arg_check("debug")) {
 #if constant(_debug)
-      e->debug_level = (int)tokens[4];
+      e->debug_level = (int)words[2];
 #else
       write("Debug not available.\n");
 #endif
@@ -132,7 +167,31 @@ private class CommandSet {
     }
 
     if(arg_check("history")) {
-      e->history->set_maxsize((int)tokens[4]);
+      e->history->set_maxsize((int)words[2]);
+      return;
+    }
+
+    if(arg_check("format")) {
+      switch(words[2]) {
+      case "default":
+	e->reswrite = e->std_reswrite;
+	return;
+      case "bench":
+	e->reswrite = bench_reswrite;
+	return;
+      case "sprintf":
+	string f;
+	foreach(tokens, string token)
+	  if(token[0]=='"') f=token;
+	if(!f)
+	  write("No formatting string given.\n");
+	else {
+	  f = replace(f, ([ "\\n":"\n", "\\\"":"\"" ]) );
+	  e->reswrite = Reswriter(f[1..sizeof(f)-2]);
+	}
+	return;
+      }
+      write("No result presentation format %O defined.\n", words[2]);
       return;
     }
 
@@ -146,7 +205,7 @@ private class CommandExit {
   inherit Command;
   string help() { return "Exit Hilfe."; }
 
-  void exec(Evaluator e, string line, array(string) tokens) {
+  void exec(Evaluator e) {
     e->write("Exiting.\n");
     destruct(e);
     exit(0);
@@ -157,10 +216,11 @@ private class CommandHelp {
   inherit Command;
   string help() { return "Show help text."; }
 
-  void exec(Evaluator e, string line, array(string) tokens) {
-    line = tokens[2..sizeof(tokens)-2]*"";
+  void exec(Evaluator e, string line, array(string) words) {
+    line = words[1..]*" ";
     function write = e->write;
 
+    write("%O\n", line);
     if(line == "me more") {
       write( documentation_help_me_more );
       return;
@@ -171,8 +231,8 @@ private class CommandHelp {
       return;
     }
 
-    if(line && e->commands[line]) {
-      string ret = e->commands[line]->doc();
+    if(sizeof(words)>1 && e->commands[words[1]]) {
+      string ret = e->commands[words[1]]->doc(words[2..]*"");
       if(ret) write(ret);
       return;
     }
@@ -225,7 +285,7 @@ private class CommandDot {
     return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
   }
 
-  void exec(Evaluator e, string line, array(string) tokens) {
+  void exec(Evaluator e) {
     string ret = (string)usr_vector_a;
 
     array tmp = ({});
@@ -313,10 +373,10 @@ class CommandDump {
     }
   }
 
-  void  exec(Evaluator e, string line, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words) {
     write = e->write;
 
-    line = tokens[2..sizeof(tokens)-2]*"";
+    line = words[1..]*"";
     switch( line ) {
     case "wrapper":
       wrapper(e);
@@ -339,7 +399,7 @@ class CommandDump {
 private class CommandHej {
   inherit Command;
   string help() { return 0; }
-  void exec(Evaluator e, string line, array(string) tokens) {
+  void exec(Evaluator e, string line) {
     if(line[0]=='.') e->write( (string)({ 84,106,97,98,97,33,10 }) );
   }
 }
@@ -349,9 +409,9 @@ private class CommandNew {
   string help() { return "Clears the Hilfe state."; }
   string doc() { return documentation_new; }
 
- void exec(Evaluator e, string line, array(string) tokens) {
+ void exec(Evaluator e, string line, array(string) words) {
 
-   line = sizeof(tokens)>2 && tokens[2];
+   line = sizeof(words)>1 && words[1];
    switch(line) {
    case "variables":
      e->variables = ([]);
@@ -543,19 +603,26 @@ private class ParserState {
     return ret;
   }
 
+  private string caught_error;
+
+  //! Prints out any error that might have occured while
+  //! @[push_string] was executed. The error will be
+  //! printed with the print function @[w].
+  void show_error(function w) {
+    if(!error) return;
+    w("Hilfe Error: %s", caught_error);
+    caught_error = 0;
+  }
+
   //! Sends the input @[line] to @[Parser.Pike] for tokanization,
   //! but keeps a state between each call to handle multiline
   //! /**/ comments and multiline #"" strings.
-  //!
-  //! @param w
-  //!   A function that will be called with an error string in
-  //!   the event of any error in the tokanization.
-  array(string) push_string(string line, function w) {
+  array(string) push_string(string line) {
     array(string) tokens;
     mixed err;
     if(err = catch( tokens = Parser.Pike.split(line, low_state) )) {
-      w("Hilfe Error: %s", err[0]);
-      return ({});
+      caught_error = err[0];
+      return 0;
     }
     return tokens;
   }
@@ -748,22 +815,25 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokanize the input
-    array tokens = state->push_string(s, write);
-
-    if(!sizeof(tokens))
-      return;
+    array tokens = state->push_string(s);
+    array words = s/" ";
 
     // See if first token is a command and not a defined entity.
-    if(commands[tokens[0]] && zero_type(constants[tokens[0]]) &&
-       zero_type(variables[tokens[0]]) && zero_type(functions[tokens[0]]) &&
-       (sizeof(tokens)==1 || tokens[1]!=";")) {
-      commands[tokens[0]]->exec(this_object(), s, tokens);
+    if(commands[words[0]] && zero_type(constants[words[0]]) &&
+       zero_type(variables[words[0]]) && zero_type(functions[words[0]]) &&
+       (sizeof(words)==1 || words[1]!=";")) {
+      commands[words[0]]->exec(this_object(), s, words, tokens);
       return;
     }
 
     // See if the command is executed in overridden mode.
-    if(sizeof(tokens)>1 && tokens[0]=="." && commands[tokens[1]]) {
-      commands[tokens[1]]->exec(this_object(), s, tokens);
+    if(commands[words[0][1..]]) {
+      commands[words[0][1..]]->exec(this_object(), s, words, tokens);
+      return;
+    }
+
+    if(!tokens) {
+      state->show_error(write);
       return;
     }
 
@@ -1082,6 +1152,12 @@ class Evaluator {
   //! The last created wrapper in which an expression was evaluated.
   string last_compiled_expr;
 
+  //! The last compile time;
+  int(0..) last_compile_time;
+
+  //! The last evaluation time;
+  int(0..) last_eval_time;
+
   //! The current trace level.
   int trace_level;
 #if constant(_assembler_debug)
@@ -1100,10 +1176,12 @@ class Evaluator {
   int debug_level;
 #endif
 
-  function reswrite = lambda(string sres, int num, mixed res) {
-			write( "Result %d: %s\n", num,
-			       replace(sres, "\n", "\n        ") );
-		      };
+  void std_reswrite(function w, string sres, int num, mixed res) {
+    w( "Result %d: %s\n", num,
+       replace(sres, "\n", "\n        ") );
+  }
+
+  function reswrite = std_reswrite;
 
   private class HilfeCompileHandler (int stack_level) {
     mapping(string:mixed) hilfe_symbols;
@@ -1219,7 +1297,9 @@ class Evaluator {
     program p;
     mixed err;
 
+    last_compile_time = gethrtime();
     err = catch(p=compile_string(prog, "HilfeInput", handler));
+    last_compile_time = gethrtime()-last_compile_time;
 
     if(err) {
       handler->show_warnings();
@@ -1260,6 +1340,7 @@ class Evaluator {
     if( o=hilfe_compile(a) )
     {
       mixed res;
+      last_eval_time = gethrtime();
       mixed err = catch{
 	res = o->___HilfeWrapper();
 	trace(0);
@@ -1273,6 +1354,7 @@ class Evaluator {
 	_debug(0);
 #endif
       };
+      last_eval_time = gethrtime()-last_eval_time;
 
       if( err || (err=catch(a=sprintf("%O", res))) )
       {
@@ -1290,7 +1372,8 @@ class Evaluator {
       else {
 	if(show_result) {
 	  history->push(res);
-	  reswrite( a, history->get_latest_entry_num(), res );
+	  reswrite( write, a, history->get_latest_entry_num(), res,
+		    last_compile_time, last_eval_time );
 	}
 	else
 	  write("Ok.\n");
@@ -1508,6 +1591,11 @@ debug
     Changes the level of debug used when evaluating expressions in
     Pike. Requires that Pike is compiled with RTL debug.
 
+format
+    Changes the formatting of the result values from evaluated
+    Pike expressions. Enter \"help set format\" for more
+    information.
+
 history
     Change the maximum number of entries that are kept in the
     result history. Default is 10.
@@ -1520,6 +1608,31 @@ trace
        2 Calls to buitin functions are printed.
        3 Every opcode interpreted is printed.
        4 Arguments to these opcodes are printed as well.
+";
+
+constant documentation_set_format =
+#"\"set format\" changes the formatting of the result values from
+evaluated Pike expressions. Currently the following set format
+parameters are available:
+
+default  The normal result formatting.
+bench    A result formatting extended with compilation and
+         evaluation times.
+sprintf  The result formatting will be decided by the succeeding
+         Pike string. The sprintf will be given the following
+         arguments:
+
+           0  The result as a string.
+           1  The result number in the history.
+           2  The result in its native type.
+           3  The compilation time as a string.
+           4  The evaluation time as a string.
+           5  The compilation time in nanoseconds as an int.
+           6  The evaluation time in nanoseconds as an int.
+
+         Usage examples:
+           set format sprintf \"%s (%[2]t)\\n\"
+           set format sprintf \"%s (%d/%[3]s/%[4]s)\\n\"
 ";
 
 constant documentation_help_me_more =
