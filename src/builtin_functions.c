@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.247 2000/03/26 01:55:11 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.248 2000/03/27 04:57:53 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5110,11 +5110,13 @@ void f_filter(INT32 args)
 
 	 push_svalue(sp-args);
 	 f_indices(1);
-	 sp[-args-3]=*--sp;
+	 sp--;
+	 sp[-args-2]=*sp;
 	 dmalloc_touch_svalue(sp);
 	 push_svalue(sp-args);
 	 f_values(1);
-	 sp[-args-2]=*--sp;
+	 sp--;
+	 sp[-args-1]=*sp;
 	 dmalloc_touch_svalue(sp);
 
 	 assign_svalue(sp-args,sp-args-1); /* loop values only */
