@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.115 1998/07/20 21:12:15 hubbe Exp $");
+RCSID("$Id: file.c,v 1.116 1998/07/26 10:25:45 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -796,6 +796,46 @@ CBFUNCS(write_callback)
 CBFUNCS(read_oob_callback)
 CBFUNCS(write_oob_callback)
 #endif
+
+static void file__enable_callbacks(INT32 args)
+{
+#define DO_TRIGGER(X) \
+  if(IS_ZERO(& THIS->X )) \
+  {								\
+    PIKE_CONCAT(set_,X)(FD, 0, 0);				\
+    check_internal_reference(THIS);                             \
+  }else{							\
+    PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
+    SET_INTERNAL_REFERENCE(THIS);                               \
+  }								
+
+DO_TRIGGER(read_callback)
+DO_TRIGGER(write_callback)
+#ifdef WITH_OOB
+DO_TRIGGER(read_oob_callback)
+DO_TRIGGER(write_oob_callback)
+#endif
+  pop_n_elems(args);
+  push_int(0);
+}
+
+static void file__disable_callbacks(INT32 args)
+{
+#define DO_DISABLE(X) \
+  PIKE_CONCAT(set_,X)(FD, 0, 0);  \
+  check_internal_reference(THIS);
+
+
+DO_DISABLE(read_callback)
+DO_DISABLE(write_callback)
+#ifdef WITH_OOB
+DO_DISABLE(read_oob_callback)
+DO_DISABLE(write_oob_callback)
+#endif
+
+  pop_n_elems(args);
+  push_int(0);
+}
 
 
 static void file_write(INT32 args)
