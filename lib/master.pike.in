@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.260 2003/03/07 17:16:45 grubba Exp $
+// $Id: master.pike.in,v 1.261 2003/03/08 17:23:22 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -531,7 +531,8 @@ static program low_findprog(string pname,
   {
     if(!zero_type (ret=programs[fname])) {
 #ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s returning cached (no autoreload)\n", fname);
+      werror ("low_findprog: %s returning cached (no autoreload)\n"
+	      "  %O\n", fname, ret);
 #endif
       return ret;
     }
@@ -608,7 +609,7 @@ static program low_findprog(string pname,
       }
       
 #ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s compiling\n", fname);
+      werror ("low_findprog: %s compiling, mkobj:%O\n", fname, mkobj);
 #endif
       programs[fname]=ret=__empty_program(0, fname);
       if ( mixed e=catch {
@@ -618,7 +619,8 @@ static program low_findprog(string pname,
 			 mkobj? (objects[ret]=__null_program()) : 0);
       } )
       {
-	ret=programs[fname]=0;
+	m_delete(objects, ret);
+	ret=programs[fname]=0;	// Negative cache.
         throw(e);
       }
       break;
@@ -1021,17 +1023,30 @@ class dirnode
     index = dirname+"/"+index;
 #ifdef MODULE_TRACE
     werror("%*nDirnode(%O) findmodule(%O)\n",
-	   sizeof(backtrace()), dirname, dirname+"/"+index);
+	   sizeof(backtrace()), dirname, index);
 #endif
-    if(object o=findmodule(index, handler))
+    object o;
+    if(objectp(o=findmodule(index, handler)))
     {
       if(mixed tmp=o->_module_value) o=tmp;
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) findmodule(%O) ==> %O\n",
+	     sizeof(backtrace()), dirname, index, o);
+#endif
       return o;
     }
     if (program p=cast_to_program( index, 0, handler ))
     {
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) cast_to_program(%O) ==> %O\n",
+	     sizeof(backtrace()), dirname, index, p);
+#endif
       return p;
     }
+#ifdef MODULE_TRACE
+    werror("%*nDirnode(%O)->`[](%O) FAILED\n",
+	   sizeof(backtrace()), dirname, index);
+#endif
     return UNDEFINED;
   }
 
@@ -1045,17 +1060,28 @@ class dirnode
     if(!zero_type(ret=cache[index]))
     {
 #ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) cache[%O] -> %O\n",
-	     sizeof(backtrace()),dirname,index, ret);
+      werror("%*nDirnode(%O) cache[%O] -> %O%s\n",
+	     sizeof(backtrace()),dirname,index, ret,
+	     (ret != ZERO_TYPE)?"":" (zero_type)");
 #endif
       if (ret != ZERO_TYPE) return ret;
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) ZERO_TYPE!\n",
+	     sizeof(backtrace()),dirname);
+#endif
       return UNDEFINED;
     }
     ret=ind(index);
 
     // We might have gotten placeholder objects in the first pass
     // which must not be cached to the second.
-    if(ret == predef::__placeholder_object) return ret;
+    if(ret == predef::__placeholder_object) {
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) PLACE_HOLDER.\n",
+	     sizeof(backtrace()),dirname);
+#endif
+      return ret;
+    }
 
     cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
     return ret;
@@ -1260,6 +1286,7 @@ object findmodule(string fullname, object|void handler)
   if(!zero_type(o=fc[fullname]))
   {
 //    werror("fc[%O] -> %O\n",fullname, o);
+    if (objectp(o)) return o;
     if (o == 0) return UNDEFINED;
     return o;
   }
