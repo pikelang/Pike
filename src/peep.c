@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.84 2002/11/12 11:40:08 grubba Exp $
+|| $Id: peep.c,v 1.85 2003/04/02 19:18:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.84 2002/11/12 11:40:08 grubba Exp $");
+RCSID("$Id: peep.c,v 1.85 2003/04/02 19:18:49 nilsson Exp $");
 
 static void asm_opt(void);
 
@@ -861,9 +861,7 @@ static void asm_opt(void)
   }
 #endif
 
-#ifndef IN_TPIKE
 #include "peep_engine.c"
-#endif /* IN_TPIKE */
 
 #ifdef PIKE_DEBUG
   if(a_flag > 4)

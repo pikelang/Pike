@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.334 2003/04/02 19:22:43 mast Exp $
+|| $Id: las.c,v 1.335 2003/04/02 19:24:20 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.334 2003/04/02 19:22:43 mast Exp $");
+RCSID("$Id: las.c,v 1.335 2003/04/02 19:24:20 nilsson Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4412,7 +4412,7 @@ static void zapp_try_optimize(node *n)
   n->parent = parent;
 }
 
-#if defined(SHARED_NODES) && !defined(IN_TPIKE)
+#if defined(SHARED_NODES)
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 static void find_usage(node *n, unsigned char *usage,
 		       unsigned char *switch_u,
@@ -5124,13 +5124,11 @@ static node *localopt(node *n)
   free_node(n);
   return n2;
 }
-#endif /* SHARED_NODES && !IN_TPIKE */
+#endif /* SHARED_NODES */
 
 static void optimize(node *n)
 {
-#ifndef IN_TPIKE
   node *tmp1, *tmp2, *tmp3;
-#endif /* !IN_TPIKE */
   struct pike_string *save_file = lex.current_file;
   INT32 save_line = lex.current_line;
 
@@ -5153,7 +5151,6 @@ static void optimize(node *n)
 
 #if defined(SHARED_NODES)
     if ((n->node_info & OPT_DEFROSTED) && (n->parent)) {
-#ifndef IN_TPIKE
       /* Add ref since both freeze_node() and use_tmp1 will free it. */
       ADD_NODE_REF(n);
       /* We don't want freeze_node() to find this node in the hash-table. */
@@ -5166,7 +5163,6 @@ static void optimize(node *n)
       }
       /* Remove the extra ref from n */
       free_node(n);
-#endif /* !IN_TPIKE */
       n->node_info &= ~OPT_DEFROSTED;
       if (n->node_info & OPT_OPTIMIZED) {
 	/* No need to check this node any more. */
@@ -5174,7 +5170,7 @@ static void optimize(node *n)
 	continue;
       }
     }
-#endif /* SHARED_NODES && !IN_TPIKE */
+#endif /* SHARED_NODES */
 
     lex.current_line = n->line_number;
     lex.current_file = n->current_file;
@@ -5273,7 +5269,6 @@ static void optimize(node *n)
     }
 #endif    
 
-#ifndef IN_TPIKE
     switch(n->token)
     {
 #include "treeopt.h"
@@ -5338,7 +5333,6 @@ static void optimize(node *n)
       continue;
 
     }
-#endif /* !IN_TPIKE */
     n->node_info |= OPT_OPTIMIZED;
     n=n->parent;
   }while(n);
@@ -5711,12 +5705,12 @@ int dooptcode(struct pike_string *name,
     }
 #endif
   }else{
-#if defined(SHARED_NODES) && !defined(IN_TPIKE) && 0
+#if defined(SHARED_NODES) && 0
     /* Try the local variable usage analyser. */
     n = localopt(check_node_hash(n));
     /* Try optimizing some more. */
     optimize(n);
-#endif /* SHARED_NODES && !IN_TPIKE */
+#endif /* SHARED_NODES && 0 */
     n = mknode(F_ARG_LIST,check_node_hash(n),0);
     
     if((foo=is_stupid_func(check_node_hash(n), args, vargs, type)))

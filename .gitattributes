@@ -270,7 +270,6 @@ testfont binary
 /src/builtin.cmod foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/builtin_functions.h foreign_ident
-/src/builtin_functions_t.c foreign_ident
 /src/callback.c foreign_ident
 /src/callback.h foreign_ident
 /src/code/bytecode.c foreign_ident
@@ -297,7 +296,6 @@ testfont binary
 /src/dmalloc.h foreign_ident
 /src/docode.c foreign_ident
 /src/docode.h foreign_ident
-/src/dummy_ci.h foreign_ident
 /src/dumpmaster.pike foreign_ident
 /src/dumpmodule.pike foreign_ident
 /src/dynamic_buffer.c foreign_ident
@@ -330,7 +328,6 @@ testfont binary
 /src/language.yacc foreign_ident
 /src/las.c foreign_ident
 /src/las.h foreign_ident
-/src/las_t.c foreign_ident
 /src/lex.c foreign_ident
 /src/lex.h foreign_ident
 /src/lexer.h foreign_ident
@@ -344,7 +341,6 @@ testfont binary
 /src/module_magic.h foreign_ident
 /src/module_support.c foreign_ident
 /src/module_support.h foreign_ident
-/src/module_t.c foreign_ident
 /src/modules/CommonLog/Makefile.in foreign_ident
 /src/modules/CommonLog/acconfig.h foreign_ident
 /src/modules/CommonLog/clf.c foreign_ident
@@ -761,7 +757,6 @@ testfont binary
 /src/peep.c foreign_ident
 /src/peep.h foreign_ident
 /src/peep.in foreign_ident
-/src/peep_t.c foreign_ident
 /src/pike-module.in foreign_ident
 /src/pike_cpulib.c foreign_ident
 /src/pike_cpulib.h foreign_ident

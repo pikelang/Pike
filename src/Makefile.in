@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.350 2003/03/25 21:19:05 nilsson Exp $
+# $Id: Makefile.in,v 1.351 2003/04/02 19:15:24 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -702,22 +702,16 @@ $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 
 peep.o: $(SRCDIR)/peep_engine.c
 
-peep_t.o: peep.c
-
 $(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
 	./precompile.sh $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
 	  <$(SRCDIR)/UnicodeData.txt
 
 builtin_functions.o: $(SRCDIR)/case_info.h $(SRCDIR)/combine_path.h
 
-builtin_functions_t.o: builtin_functions.c $(SRCDIR)/combine_path.h
-
 $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 	./precompile.sh $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
 
 las.o: $(SRCDIR)/treeopt.h
-
-las_t.o: las.c
 
 # This dependency is here to make sure that lexer[012].h are generated.
 # The reason for the split is that some compilers (read lc) generate
@@ -801,8 +795,6 @@ modules/modlist_headers.h: modules-stamp
 modules/linker_options: modules-stamp
 
 module.o:  modules/modlist_headers.h modules/modlist.h
-
-module_t.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
 	$(CPP) $(PREFLAGS) -DGEN_PROTOS $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
@@ -948,7 +940,6 @@ HFILES=						\
   pike_types.protos					\
   gc.protos						\
   port.protos					\
-  builtin_functions_t.protos				\
   callback.protos					\
   hashtable.protos					\
   program.protos					\
@@ -957,8 +948,6 @@ HFILES=						\
   language.protos					\
   queue.protos					\
   cpp.protos						\
-  las_t.protos						\
-  peep_t.protos                                     \
   rusage.protos					\
   cyclic.protos					\
   lex.protos						\

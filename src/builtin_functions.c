@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.481 2003/04/01 18:09:40 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.482 2003/04/02 19:16:03 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.481 2003/04/01 18:09:40 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.482 2003/04/02 19:16:03 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -308,11 +308,7 @@ struct case_info {
 #define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
 
 static const struct case_info case_info[] = {
-#ifdef IN_TPIKE
-#include "dummy_ci.h"
-#else /* !IN_TPIKE */
 #include "case_info.h"
-#endif /* IN_TPIKE */
   { 0x7fffffff, CIM_NONE, 0x0000, },	/* End sentinel. */
 };
 

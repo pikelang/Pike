@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.22 2003/03/26 18:52:04 nilsson Exp $
+|| $Id: module.c,v 1.23 2003/04/02 19:17:50 nilsson Exp $
 */
 
 #include "global.h"
@@ -21,11 +21,9 @@
 #include "lex.h"
 
 #include "modules/modlist_headers.h"
-#ifndef IN_TPIKE
 #include "post_modules/modlist_headers.h"
-#endif
 
-RCSID("$Id: module.c,v 1.22 2003/03/26 18:52:04 nilsson Exp $");
+RCSID("$Id: module.c,v 1.23 2003/04/02 19:17:50 nilsson Exp $");
 
 /* Define this to trace the initialization and cleanup of static modules. */
 /* #define TRACE_MODULE */
@@ -48,9 +46,7 @@ struct static_module
 static struct static_module module_list[] = {
   { "Builtin", low_init_main, low_exit_main }
 #include "modules/modlist.h"
-#ifndef IN_TPIKE
 #include "post_modules/modlist.h"
-#endif
 };
 
 void init_modules(void)
