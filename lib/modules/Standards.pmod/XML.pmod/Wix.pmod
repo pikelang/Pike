@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.14 2004/11/24 15:32:46 grubba Exp $
+// $Id: Wix.pmod,v 1.15 2004/11/24 17:46:05 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -193,7 +193,7 @@ class Directory
       File::name = name;
       File::source = source;
       File::id = id;
-      if (has_suffix(".ttf", lower_case(source))) {
+      if (has_suffix(lower_case(source), ".ttf")) {
 	if (catch {
 	  font_title = Image.TTF(source)->names()->full;
 	  }) {
