@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.24 1997/10/27 09:59:22 hubbe Exp $");
+RCSID("$Id: main.c,v 1.25 1997/11/01 23:05:29 grubba Exp $");
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -62,6 +62,13 @@ void main(int argc, char **argv, char **env)
   struct array *a;
 
   ARGV=argv;
+
+  /* Close extra fds (if any) */
+  for (e=3; e < MAX_OPEN_FILEDESCRIPTORS; e++) {
+    do {
+      num = close(e);
+    } while ((num < 0) && (errno == EINTR));
+  }
 
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
