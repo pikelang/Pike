@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.37 2000/04/29 00:11:31 kinkie Exp $
+ * $Id: sql.pike,v 1.38 2000/04/30 16:32:34 kinkie Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.37 2000/04/29 00:11:31 kinkie Exp $
+//. RCSID:	$Id: sql.pike,v 1.38 2000/04/30 16:32:34 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -323,6 +323,13 @@ string|object compile_query(string q)
   return(q);
 }
 
+//. - handle_extraargs
+//.   Handle sprintf-based quoted arguments
+private string handle_extraargs(string query, array(mixed) extraargs) {
+  return sprintf(query,@Array.map(extraargs,lambda(mixed s)
+                                            {return quote((string)s);}));
+}
+
 //. - query
 //.   Send an SQL query to the underlying SQL-server. The result is returned
 //.   as an array of mappings indexed on the name of the columns.
@@ -330,15 +337,30 @@ string|object compile_query(string q)
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
-//. > bindings
-//.   An optional mapping containing bindings of variables used in the query.
+//. > extraargs
+//.   This parameter, if specified, can be in two forms:
+//.   1) a mapping containing bindings of variables used in the query.
 //.   A variable is identified by a colon (:) followed by a name or number.
 //.   Each index in the mapping corresponds to one such variable, and the
-//.   value for that index is substituted into the query wherever the variable
-//.   is used.  Binary values (BLOBs) may need to be placed in multisets.
+//.   value for that index is substituted (quoted) into the query wherever
+//.   the variable is used.
+//.   (i.e. query("select foo from bar where gazonk=':baz'",
+//.         (["baz":"value"])) )
+//.   Binary values (BLOBs) may need to be placed in multisets. 
+//.   2) arguments as you would use in sprintf. They are automatically 
+//.   quoted.
+//.   (i.e. query("select foo from bar where gazonk='%s'","value") )
 array(mapping(string:mixed)) query(object|string q,
-				   mapping(string|int:mixed)|void bindings)
+                                   mixed ... extraargs)
 {
+  mapping(string|int:mixed) bindings=0;
+  if (extraargs && sizeof(extraargs)) {
+    if (mappingp(extraargs[0])) {
+      bindings=extraargs[0];
+    } else {
+      q=handle_extraargs(q,extraargs);
+    }
+  }
   if (functionp(master_sql->query)) {
     if (bindings) {
       return(master_sql->query(q, bindings));
@@ -358,18 +380,19 @@ array(mapping(string:mixed)) query(object|string q,
 //.   as a Sql.sql_result object. This allows for having results larger than
 //.   the available memory, and returning some more info about the result.
 //.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
-//. > q
-//.   Query to send to the SQL-server. This can either be a string with the
-//.   query, or a previously compiled query (see compile_query()).
-//. > bindings
-//.   An optional mapping containing bindings of variables used in the query.
-//.   A variable is identified by a colon (:) followed by a name or number.
-//.   Each index in the mapping corresponds to one such variable, and the
-//.   value for that index is substituted into the query wherever the variable
-//.   is used.  Binary values (BLOBs) may need to be placed in multisets.
-int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
+//.   For the other arguments, they are the same as the query() function.
+int|object big_query(object|string q, mixed ... extraargs)
 {
   object|array(mapping) pre_res;
+  mapping(string|int:mixed) bindings=0;
+  
+  if (extraargs && sizeof(extraargs)) {
+    if (mappingp(extraargs[0])) {
+      bindings=extraargs[0];
+    } else {
+      q=handle_extraargs(q,extraargs);
+    }
+  }  
 
   if (functionp(master_sql->big_query)) {
     if (bindings) {
