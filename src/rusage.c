@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.28 2003/02/08 03:40:00 mast Exp $
+|| $Id: rusage.c,v 1.29 2003/02/08 17:38:59 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.28 2003/02/08 03:40:00 mast Exp $");
+RCSID("$Id: rusage.c,v 1.29 2003/02/08 17:38:59 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -82,7 +82,6 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #else /* __NT__ */
 #ifdef GETRUSAGE_THROUGH_PROCFS
 #include <sys/procfs.h>
-#include "fdlib.h"
 
 static INLINE long get_time_int(timestruc_t * val)
 {
@@ -276,11 +275,11 @@ cpu_time_t get_cpu_time (void)
     unsigned __int64 ft_scalar;
     FILETIME ft_struct;
   } creationTime, exitTime, kernelTime, userTime;
-  if (GetProcessTimes(GetCurrentProcess(),
-                      &creationTime.ft_struct,
-                      &exitTime.ft_struct,
-                      &kernelTime.ft_struct,
-                      &userTime.ft_struct))
+  if (GetThreadTimes(GetCurrentThread(),
+		     &creationTime.ft_struct,
+		     &exitTime.ft_struct,
+		     &kernelTime.ft_struct,
+		     &userTime.ft_struct))
     return (userTime.ft_scalar + kernelTime.ft_scalar) * 100;
   else
     return 0;
