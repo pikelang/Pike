@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.60 2000/02/02 00:37:21 hubbe Exp $");
+RCSID("$Id: array.c,v 1.61 2000/02/17 18:57:36 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -455,11 +455,15 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
 
   check_destructed(s);
 
-  /* Why search for something that is not there? */
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
-  if(v->type_field & (1 << s->type))
+  /* Why search for something that is not there? 
+   * however, we must explicitly check for searches
+   * for destructed objects/functions
+   */
+  if((v->type_field & (1 << s->type))  ||
+     (IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))))
   {
     if(start)
     {
