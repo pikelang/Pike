@@ -141,6 +141,9 @@ all global functions are included (like threads and Stdio-stuff).
 If the Threads och Stdio-functions begin to work in the modules,
 this comment can be erased.
 
+
+Process.create_process ?
+
 --> 
 
 <firstpage>
@@ -6237,7 +6240,7 @@ Array.shuffle
 </man_see>
 </function>
 
-<function name=Array.reduce title="Iterativily applicate a function on an array">
+<function name=Array.reduce title="Iterativily apply a function on an array">
 <man_syntax>
 mixed reduce(function <i>f</i>, array <i>arr</i>, void|mixed <i>zero</i>);
 </man_syntax>
@@ -6250,22 +6253,24 @@ size 1 it will return the element in <i>arr</i>.
 
 </man_description> 
 <man_example> 
-Array.reduce(aggregate, indices(allocate(4)))  -><br>
-   ({ ({ ({ 0, 1 }), 2 }), 3 })<br>
-Array.reduce(`+, ({}), "FOO?")  -> <br> 
-   "FOO?"<br>
-Array.reduce(lambda(int a, int b) {<br>
-             while(b) { int t=b; b=a%b; a=t; }<br>
-             return a;<br>
-             }, ({7191,21573,64719,33694}))<br>
+<pre>
+Array.reduce(aggregate, indices(allocate(4)))  ->
+   ({ ({ ({ 0, 1 }), 2 }), 3 })
+Array.reduce(`+, ({}), "FOO?")  ->  
+   "FOO?"
+Array.reduce(lambda(int a, int b) {
+             while(b) { int t=b; b=a%b; a=t; }
+             return a;
+             }, ({7191,21573,64719,33694}))
   -> 17
+</pre>
 </man_example>
 <man_see>
 Array.rreduce
 </man_see>
 </function>
 
-<function name=Array.rreduce title="Iterativily applicate a function on an array backwards">
+<function name=Array.rreduce title="Iterativily apply a function on an array backwards">
 <man_syntax>
 mixed rreduce(function <i>f</i>, array <i>arr</i>, void|mixed <i>zero</i>);
 </man_syntax>
@@ -6278,8 +6283,10 @@ size 1 it will return the element in <i>arr</i>.
 
 </man_description> 
 <man_example> 
-Array.rreduce(aggregate, indices(allocate(4)))  -><br>
+<pre>
+Array.rreduce(aggregate, indices(allocate(4)))  ->
    ({ 0, ({ 1, ({ 2, 3 }) }) })
+</pre>
 </man_example>
 <man_see>
 Array.reduce
