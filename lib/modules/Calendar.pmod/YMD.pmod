@@ -997,7 +997,16 @@ class YMD
 // ----------------------------------------
 
    string nice_print();
-   string _sprintf(int t);
+   string _sprintf(int t,mapping m)
+   {
+      switch (t)
+      {
+	 case 't':
+	    return "Calendar."+calendar_name()+".YMD";
+	 default:
+	    return ::_sprintf(t,m);
+      }
+   }
 
    void create_julian_day(int|float jd);
    static TimeRange _move(int n,YMD step);
@@ -1114,7 +1123,7 @@ class cYear
    
 // ----------------
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1122,8 +1131,10 @@ class cYear
 	    if (n!=1) 
 	       return sprintf("Year(%s)",nice_print_period());
 	    return sprintf("Year(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Year";
 	 default:
-	    return 0;
+	    return ::sprintf(t,m);
       }
    }
 
@@ -1396,7 +1407,7 @@ class cMonth
       }
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    { 
 //        return sprintf("month y=%d yjd=%d m=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,m,jd,yd,n,number_of_days());
@@ -1406,8 +1417,10 @@ class cMonth
 	    if (n!=1) 
 	       return sprintf("Month(%s)",nice_print_period());
 	    return sprintf("Month(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Month";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1690,7 +1703,7 @@ class cWeek
       }
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    { 
 //        return sprintf("week y=%d yjd=%d w=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,w,jd,yd,n,number_of_days());
@@ -1700,8 +1713,10 @@ class cWeek
 	    if (n!=1) 
 	       return sprintf("Week(%s)",nice_print_period());
 	    return sprintf("Week(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Week";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -2044,7 +2059,7 @@ class cDay
       }	 
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -2052,8 +2067,10 @@ class cDay
 	    if (n!=1) 
 	       return sprintf("Day(%s)",nice_print_period());
 	    return sprintf("Day(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Day";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 

@@ -1148,6 +1148,13 @@ class cSuperTimeRange
       foreach (parts,TimeRange y) z+=y;
       return parts[0]->distance(z)->format_elapsed();
    }
+
+   string sprintf(int t,mapping m)
+   {
+      if (t=='t') 
+	 return "Calendar."+calendar_name()+".TimeofDay";
+      return ::sprintf(t,m);
+   }
 }
 
 class cNullTimeRange
@@ -1220,7 +1227,7 @@ class cHour
    }
 
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       if (catch {
       switch (t)
@@ -1233,8 +1240,10 @@ class cHour
 	    return sprintf("Hour(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Hour";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
       })
 	 return "error";
@@ -1328,7 +1337,7 @@ class cMinute
       return Minute("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1340,8 +1349,10 @@ class cMinute
 	    return sprintf("Minute(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Minute";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1423,7 +1434,7 @@ class cSecond
       return Second("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1435,8 +1446,10 @@ class cSecond
 	    return sprintf("Second(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Second";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1670,7 +1683,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1682,8 +1695,10 @@ class cFraction
 	    return sprintf("Fraction(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Fraction";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 

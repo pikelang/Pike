@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.17 2001/05/05 15:18:49 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.18 2001/06/09 15:00:50 mirar Exp $
 
 #pike __REAL_VERSION__
 
@@ -943,6 +943,20 @@ class TimeRange
    {
       return calendar_object;
    }
+
+
+   string _sprintf(int t,mapping m)
+   {
+      switch (t)
+      {
+	 case 'O':
+	    return "TimeRange()";
+	 case 't':
+	    return "Calendar."+calendar_name()+".TimeRange";
+	 default:
+	    return 0;
+      }
+   }
 }
 
 // ----------------------------------------------------------------
@@ -1125,15 +1139,18 @@ class cSuperTimeRange
       return predef::`+(@map(parts,"__hash"));
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
 	 case 'O':
 	    return "SuperTimeRange("+
 	       map(parts,"_sprintf",'O')*", "+")";
+	 case 't':
+	    return "SuperTimeRange("+
+	       map(parts,"_sprintf",'t')*", "+")";
       }
-      return 0;
+      return ::_sprintf(t,m);
    }
 
    TimeRange set_timezone(string|Timezone tz)
@@ -1242,12 +1259,13 @@ static class cNullTimeRange
       return 1;
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
 	 case 'O': return "NullTimeRange";
-	 default: return 0;
+	 case 't': return "Calendar."+calendar_name()+".NullTimeRange";
+	 default: return ::_sprintf(t,m);
       }
    }
 }
