@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.351 2004/06/02 00:09:48 nilsson Exp $
+|| $Id: interpret.c,v 1.352 2004/08/19 14:58:21 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.351 2004/06/02 00:09:48 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.352 2004/08/19 14:58:21 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -561,7 +561,14 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     Pike_fatal("No object\n");
 #endif
 
-  p = loc->o->prog;
+  if (!(p = loc->o->prog)) {
+    /* magic fallback */
+    p = get_program_for_object_being_destructed(loc->o);
+    if(!p)
+    {
+      Pike_error("Cannot access parent of destructed object.\n");
+    }
+  }
 
 #ifdef DEBUG_MALLOC
   if (loc->o->refs == 0x55555555) {
@@ -596,7 +603,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 
     TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
 	   (p->flags & PROGRAM_USES_PARENT) ?
-	   PARENT_INFO(loc->o)->parent_identifier : -1,
+	   LOW_PARENT_INFO(loc->o, p)->parent_identifier : -1,
 	   inh->identifier_level));
 
     switch(inh->parent_offset)
