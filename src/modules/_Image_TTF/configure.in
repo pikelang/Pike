@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 1999/02/09 16:10:20 grubba Exp $
+# $Id: configure.in,v 1.5 1999/03/06 02:05:00 grubba Exp $
 #
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)
@@ -30,6 +30,7 @@ if test x$with_ttflib = xyes ; then
 	pike_cv_tt_hh_reserved0=no
       ])
     ])
+    AC_MSG_RESULT($pike_cv_tt_hh_reserved0)
     if test "x$pike_cv_tt_hh_reserved0" = "xyes"; then
       AC_DEFINE(HAVE_TT_H_H_Reserved0)
     else :; fi
