@@ -293,9 +293,12 @@ array do_parse_simple_list(int max_depth, int terminator)
       buffer = buffer[1..];
       return a;
     }
-    mapping o = get_simple_list(max_depth);
-    if (!o)
+    mapping m = get_simple_list(max_depth);
+    if (!m) {
+      werror("get_simple_list(%d) failed\n");
       return 0;
+    }
+    /* FIXME: m is thrown away?! */
   }
 }
 
