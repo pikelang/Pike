@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.507 2003/06/06 14:35:48 grubba Exp $
+|| $Id: program.c,v 1.508 2003/06/09 16:36:39 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.507 2003/06/06 14:35:48 grubba Exp $");
+RCSID("$Id: program.c,v 1.508 2003/06/09 16:36:39 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1491,7 +1491,8 @@ void optimize_program(struct program *p)
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
-  MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
+  if (p->PIKE_CONCAT (num_, NAME))					\
+    MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
   PIKE_CONCAT(RELOCATE_,NAME)(p, (TYPE *)(data+size)); \
   dmfree(p->NAME); \
   p->NAME=(TYPE *)(data+size); \
@@ -3907,7 +3908,7 @@ int define_variable(struct pike_string *name,
 	  IDENTIFIER_NO_THIS_REF;
 	/* Hide the old variable. */
 	Pike_compiler->new_program->identifier_references[n].id_flags |=
-	  ID_STATIC|ID_PRIVATE;
+	  ID_HIDDEN;
 	return n2;
       }
     }
@@ -7115,7 +7116,6 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 {
   switch(s->type)
   {
-#if 0
     case T_OBJECT:
     {
       struct program *p = s->u.object->prog;
@@ -7137,7 +7137,6 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
       pop_stack();
       return p; /* We trust that there is a reference somewhere... */
     }
-#endif
 
   case T_FUNCTION:
     return program_from_function(s);
