@@ -180,11 +180,9 @@ AC_HAVE_FUNCS(
  clock \
  crypt \
  fchmod \
- getcwd \
  getenv \
  getrlimit \
  getrusage \
- getwd \
  index \
  memchr \
  memcpy \
@@ -475,7 +473,7 @@ else
 fi
 
 
-AC_MSG_CHECKING(if signals are oneshot or not)
+AC_MSG_CHECKING(if signal handlers reset automatically)
 AC_CACHE_VAL(lpc_cv_sys_signal_oneshot,
 [
 AC_TRY_RUN([
