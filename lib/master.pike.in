@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.26 1998/05/11 21:04:47 grubba Exp $
+/* $Id: master.pike.in,v 1.27 1998/05/11 23:25:21 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -592,6 +592,7 @@ void _main(string *orig_argv, string *env)
       ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
       ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
       ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
+      ({"showpaths",tmp->NO_ARG,"--show-paths"}),
       ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
       ({"master",tmp->HAS_ARG,"-m"}),
       ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
@@ -662,11 +663,22 @@ void _main(string *orig_argv, string *env)
 	       " -e --execute=<cmd>   : Run the given command instead of a script.\n"
 	       " -h --help            : see this message\n"
 	       " -v --version         : See what version of pike you have.\n"
+	       " --show-paths         : See the paths and master that pike uses.\n"
 	       " -s#                  : Set stack size\n"
 	       " -m <file>            : Use <file> as master object.\n"
 	       " -d -d#               : Increase debug (# is how much)\n"
 	       " -t -t#               : Increase trace level\n"
 	  );
+	exit(0);
+
+      case "showpaths":
+	werror("Include path : " + pike_include_path*"\n"
+	       "               " + "\n"
+	       "Module path  : " + pike_module_path*"\n"
+	       "               " + "\n"
+	       "Program path : " + pike_program_path*"\n"
+	       "               " + "\n"
+	       "Master file  : " + _master_file_name + "\n");
 	exit(0);
 	
       case "execute":
