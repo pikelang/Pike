@@ -1,6 +1,8 @@
 
 #pike __REAL_VERSION__
 
+#if constant(Gmp.mpz)
+
 //! A wrapper class that connects several cipher algorithms into one
 //! algorithm. E.g. triple DES can be emulated with
 //! @expr{Crypto.Pipe(Crypto.DES, Crypto.DES, Crypto.DES)@}.
@@ -97,3 +99,6 @@ string crypt(string data) {
     data = c->crypt(data);
   return data;
 }
+
+#endif
+
