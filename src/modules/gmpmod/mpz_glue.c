@@ -22,8 +22,8 @@
 #include <gmp.h>
 
 
-#define THIS (*(MP_INT **)(fp->current_storage))
-#define OBTOMPZ(o) (*(MP_INT **)(o->storage))
+#define THIS ((MP_INT *)(fp->current_storage))
+#define OBTOMPZ(o) ((MP_INT *)(o->storage))
 
 static struct program *mpzmod_program;
 
@@ -389,7 +389,7 @@ void init_gmpmod_programs(void)
 {
 #ifdef HAVE_GMP_H
   start_new_program();
-  add_storage(sizeof(MP_INT *));
+  add_storage(sizeof(MP_INT));
   
   add_function("create",mpzmod_create,"function(void|string|int|float|object:void)",0);
 
