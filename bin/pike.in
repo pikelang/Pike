@@ -1,0 +1,18 @@
+#!/bin/sh
+# Runs Pike from the build directory.
+
+PIKE_BASEDIR="BASEDIR"
+if test "$PIKE_BASEDIR" = BASEDIR; then
+  echo Run make in the parent directory to generate this script.
+  exit 1
+fi
+
+OS=${OS:-`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`}
+BUILDDIR=${BUILDDIR:-"build/$OS"}
+
+case "$BUILDDIR" in
+  /*) :;;
+  *) BUILDDIR="$PIKE_BASEDIR/$BUILDDIR";;
+esac
+
+exec "$BUILDDIR/pike" -DNOT_INSTALLED -m "$BUILDDIR/master.pike" "$@"

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.1 1999/02/05 05:22:48 mast Exp $
+# $Id: Makefile,v 1.2 1999/02/05 17:35:28 mast Exp $
 #
 # Meta Makefile
 #
@@ -11,7 +11,7 @@ OS=`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`
 BUILDDIR=build/$(OS)
 METATARGET=
 
-all: compile
+all: bin/pike compile
 
 src/configure: src/configure.in
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
@@ -45,30 +45,36 @@ compile: configure
 	  $(MAKE) all $$metatarget || ( test -f remake && $(MAKE) all $$metatarget ) \
 	)
 
+force:
+
+bin/pike: force
+	sed -e "s|\"BASEDIR\"|\"`pwd`\"|" < bin/pike.in > bin/pike
+	chmod a+x bin/pike
+
 install:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=install" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=install"
 
 verify:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify"
 
 verify_installed:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify_installed" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify_installed"
 
 check: verify
 
 sure: verify
 
 verbose_verify:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verbose_verify" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verbose_verify"
 
 gdb_verify:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=gdb_verify" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=gdb_verify"
 
 run_hilfe:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=run_hilfe" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=run_hilfe"
 
 feature_list:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=feature_list" compile
+	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=feature_list"
 
 clean:
 	-cd "$(BUILDDIR)" && $(MAKE) clean
