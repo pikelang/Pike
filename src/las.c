@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.81 1999/06/03 01:39:35 hubbe Exp $");
+RCSID("$Id: las.c,v 1.82 1999/07/07 01:02:38 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -662,9 +662,31 @@ void resolv_constant(node *n)
       return;
 
     default:
-      yyerror("Expected constant, got something else");
+    {
+      char fnord[1000];
+      if(is_const(n))
+      {
+	int args=eval_low(n);
+	if(args==1) return;
+
+	if(args!=-1)
+	{
+	  if(!args)
+	  {
+	    yyerror("Expected constant, got void expression");
+	  }else{
+	    yyerror("Possible internal error!!!");
+	    pop_n_elems(args-1);
+	    return;
+	  }
+	}
+      }
+	
+      sprintf(fnord,"Expected constant, got something else (%d)",n->token);
+      yyerror(fnord);
       push_int(0);
       return;
+    }
     }
 
     i=ID_FROM_INT(p, numid);
