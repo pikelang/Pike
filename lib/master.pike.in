@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.275 2003/05/03 15:27:24 grubba Exp $
+// $Id: master.pike.in,v 1.276 2003/05/07 10:49:23 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -67,9 +67,9 @@ int compat_minor=-1;
 
 // ---  Functions begin here.
 
-#define Stat _static_modules.files.Stat
+#define Stat _static_modules.___files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
-#define write(X ...) _static_modules.files()->_stdout->write(X)
+#define write(X ...) _static_modules.___files()->_stdout->write(X)
 
 #ifdef RESOLV_DEBUG
 
@@ -289,7 +289,7 @@ program compile_string(string source, void|string filename,
 //!
 string master_read_file(string file)
 {
-  object o=_static_modules.files()->Fd();
+  object o=_static_modules.___files()->Fd();
   if( ([function(string, string : int)]o->open)(fakeroot(file),"r") )
     return ([function(void : string)]o->read)();
   return 0;
@@ -873,7 +873,7 @@ void create()
       error("Function %O is missing from master.pike.\n", e);
 
   add_constant("strlen", sizeof);
-  add_constant("write", _static_modules.files()->_stdout->write);
+  add_constant("write", _static_modules.___files()->_stdout->write);
 
 #define CO(X)  add_constant(#X,_static_modules.Builtin.__backend->X)
   CO(call_out);
@@ -2806,7 +2806,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     linewidth=99999;
     catch 
     {
-      linewidth=[int]_static_modules.files()->_stdin->tcgetattr()->columns;
+      linewidth=[int]_static_modules.___files()->_stdin->tcgetattr()->columns;
     };
     if(linewidth<10) linewidth=99999;
   }
