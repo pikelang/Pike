@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.30 2000/06/27 15:11:53 grubba Exp $
+ * $Id: fdlib.h,v 1.31 2000/07/02 14:59:39 grubba Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -104,10 +104,11 @@ char *debug_fd_info(int fd);
 int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
+int debug_fd_stat(char *file, struct stat *buf);
 FD debug_fd_open(char *file, int open_mode, int create_mode);
 FD debug_fd_socket(int domain, int type, int proto);
 int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
-FD debug_fd_accept(FD fd, struct sockaddr *addr, int *addrlen);
+FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen);
 SOCKFUN2(bind, struct sockaddr *, int)
 int debug_fd_connect (FD fd, struct sockaddr *a, int len);
 SOCKFUN4(getsockopt,int,int,void*,int*)
