@@ -673,8 +673,11 @@ void f_crypt(INT32 args)
       
     saltp=sp[1-args].u.string->str;
   } else {
-    salt[0] = choise[my_rand()%strlen(choise)];
-    salt[1] = choise[my_rand()%strlen(choise)];
+    unsigned int foo; /* Sun CC want's this :( */
+    foo=my_rand();
+    salt[0] = choise[foo % (unsigned int) strlen(choise)];
+    foo=my_rand();
+    salt[1] = choise[foo % (unsigned int) strlen(choise)];
     saltp=salt;
   }
 #ifdef HAVE_CRYPT
