@@ -1,7 +1,7 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 
 /*
- * $Id: Grammar_parser.pmod,v 1.1 1997/03/03 23:50:14 grubba Exp $
+ * $Id: Grammar_parser.pmod,v 1.2 1997/03/28 14:42:43 grubba Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -151,7 +151,7 @@ private object(Stack.stack) id_stack = Stack.stack();
 
 private mapping(string:int) nonterminal_lookup = ([]);
 
-private object(parser) g=parser();
+private object(parser) g;
 
 private object master;
 
@@ -328,6 +328,17 @@ object(parser) make_parser(string str, object|void m)
   return (res);
 }
 
+int|object(parser) make_parser_from_file(string f, object|void m)
+{
+  object(files.file) f = files.file();
+  int|object(parser) g = 0;
+  if (f->open(argv[i], "r")) {
+    g = make_parser(f->read(0x7fffffff), m);
+    f->close();
+  }
+  return(g);
+}
+
 /*
  * Syntax-checks and compiles the grammar files
  */
@@ -339,12 +350,10 @@ int main(int argc, string *argv)
     int i;
 
     for (i=1; i < argc; i++) {
-      object(FILE) f = FILE();
-      object(parser) g;
-      f->open(argv[i], "r");
       werror(sprintf("Compiling \"%s\"...\n", argv[i]));
-      g = make_parser(f->read(0x7fffffff));
-      if (error) {
+
+      int|object(parser) g = make_parser_from_file(argv[i]);
+      if (error || !g) {
 	werror("Compilation failed\n");
       } else {
 	werror("Compilation done\n");
