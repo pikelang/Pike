@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.123 2004/04/05 16:03:03 mast Exp $
+|| $Id: backend.cmod,v 1.124 2004/04/05 16:07:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.123 2004/04/05 16:03:03 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.124 2004/04/05 16:07:09 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1858,21 +1858,20 @@ PIKECLASS Backend
    */
 
 #ifdef USE_POLL_DEVICE
-  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd)
+  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd, int wanted_events)
   {
     INT32 events = 0;
-    struct fd_callback_box *box = GET_ACTIVE_BOX (me, fd);
 
-    if (WANT_EVENT (box, READ)) {
+    if (wanted_events & PIKE_BIT_FD_READ) {
       events |= MY_POLLIN;
     }
-    if (WANT_EVENT (box, WRITE)) {
+    if (wanted_events & PIKE_BIT_FD_WRITE) {
       events |= MY_POLLOUT;
     }
-    if (WANT_EVENT (box, READ_OOB)) {
+    if (wanted_events & PIKE_BIT_FD_READ_OOB) {
       events |= MY_POLLEXCEPT;
     }
-    if (WANT_EVENT (box, WRITE_OOB)) {
+    if (wanted_events & PIKE_BIT_FD_WRITE_OOB) {
       events |= MY_POLLWREXCEPT;
     }
 
@@ -1882,16 +1881,17 @@ PIKECLASS Backend
   }
 #elif defined(USE_KQUEUE)
   /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
-  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd)
+  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd, int wanted_events)
   {
     struct kevent ev[2];
-    struct fd_callback_box *box = GET_ACTIVE_BOX (me, fd);
     int nev = 0;
-    if (WANT_EVENT(box, READ) || WANT_EVENT(box, READ_OOB)) {
+    if (wanted_events & PIKE_BIT_FD_READ ||
+	wanted_events & PIKE_BIT_FD_READ_OOB) {
       EV_SET(ev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
       nev++;
     }
-    if (WANT_EVENT(box, WRITE) || WANT_EVENT(box, WRITE_OOB)) {
+    if (wanted_events & PIKE_BIT_FD_WRITE ||
+	wanted_events & PIKE_BIT_FD_WRITE_OOB) {
       EV_SET(ev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
       nev++;
     }
@@ -1931,7 +1931,7 @@ PIKECLASS Backend
 
     /* Restore the poll-state for all the fds. */
     {FOR_EACH_ACTIVE_FD_BOX (me, box) {
-	UPDATE_BLACK_BOX (me, box->fd);
+	UPDATE_BLACK_BOX (me, box->fd, box->events);
       }}
   }
 
@@ -1991,7 +1991,7 @@ PIKECLASS Backend
 
 #ifdef USE_POLL_DEVICE
 
-      UPDATE_BLACK_BOX(me, fd);
+      UPDATE_BLACK_BOX(me, fd, new_events);
 
 #else  /* !USE_POLL_DEVICE */
 
