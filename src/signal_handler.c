@@ -259,7 +259,6 @@ static RETSIGTYPE receive_signal(int signum)
 #endif
 #endif
 #endif
-    fprintf(stderr,"pid %d died with code %d\n",(int)pid,status);
 
     if(pid>0)
     {
@@ -336,7 +335,6 @@ static void exit_pid_status(struct object *o)
 static void report_child(int pid,
 			 int status)
 {
-  fprintf(stderr,"pid %d exited with status %d\n",pid,status);
 
   if(pid_mapping)
   {
