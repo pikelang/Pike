@@ -1,6 +1,8 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.3 2003/01/18 04:43:35 nilsson Exp $
+// $Id: cgrep.pike,v 1.4 2003/01/18 15:26:02 nilsson Exp $
+
+constant description = "Context aware grep.";
 
 // Future expansions:
 // - We already stream files, so we should be able to stream from stdin.
@@ -192,7 +194,7 @@ int handle_file(string path, string fn) {
 }
 
 void usage() {
-  werror("Usage: tgrep [OPTION]... TEXT FILE...\n"
+  werror("Usage: cgrep [OPTION]... TEXT FILE...\n"
 	 "Try `grep --help' for more information.\n");
   exit(1);
 }
@@ -271,7 +273,7 @@ int main(int num, array(string) args) {
   return 0;
 }
 
-constant doc = #"Usage: tgrep [OPTION]... TEXT FILE...
+constant doc = #"Usage: cgrep [OPTION]... TEXT FILE...
 Search for TEXT in each FILE.
 Example: grep -i -s hello menu.h main.c prog.pike
 
@@ -297,7 +299,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"tgrep $Revision: 1.3 $
+constant version = #"cgrep $Revision: 1.4 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
