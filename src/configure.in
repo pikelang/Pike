@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.177 1998/04/17 20:36:29 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.178 1998/04/29 00:22:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1890,7 +1890,22 @@ then
 	case "$pike_cv_sys_os" in
 	AIX*)
          if test "$GCC" = yes ; then
-           LDSHARED="ld -G -bexpall"
+	   if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
+             LDSHARED="ld -G -bexpall"
+	   else if test "`uname -v`" -gt 4 ; then
+	       # Extra forward compatibility...
+	       # AIX 5+
+	       LDSHARED="ld -G -bexpall"
+	     else
+	       # AIX 4.1 and earlier don't have/have unreliable
+	       # handling of dlopen et al.
+	       #
+	       # Even AIX 4.2.1 has buggy dlopen -- NEVER attempt
+	       # to dlopen a file that hasn't been linked with -G.
+	       pike_cv_sys_dynamic_loading=no
+	       LDSHARED="ld"
+	     fi
+	   fi
          else
            # Dynamic linking turned off for AIX-cc
 	   #
