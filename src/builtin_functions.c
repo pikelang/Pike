@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.364 2002/10/15 13:51:39 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.365 2002/10/15 13:59:12 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4121,7 +4121,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   struct tm date;
   struct svalue s;
   struct svalue * r;
-  int retval, raw;
+  int retval;
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
 
@@ -4203,7 +4203,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   retval = mktime(&date);
   
-  if (raw == -1)
+  if (retval == -1)
     PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
 
 #if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
