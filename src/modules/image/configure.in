@@ -1,7 +1,9 @@
 AC_INIT(image.c)
+AC_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
 AC_PROG_RANLIB
+AC_FUNC_MMAP
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
 AC_SUBST_FILE(module_makefile)
