@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.299 2001/07/03 17:11:01 grubba Exp $");
+RCSID("$Id: program.c,v 1.300 2001/07/11 18:43:17 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -242,7 +242,10 @@ void ins_int(INT32 i, void (*func)(char tmp))
 void ins_short(INT16 i, void (*func)(char tmp))
 {
   int e;
-  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+  unsigned char *p = (unsigned char *)&i;
+  for(e=0;e<(long)sizeof(i);e++) {
+    func(p[e]);
+  }
 }
 
 void use_module(struct svalue *s)
