@@ -98,8 +98,8 @@ SourcePosition currentPosition = 0;
 
 static int parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
-  //  werror("parseError! \n");
-  werror(sprintf("%s\n", describe_backtrace(backtrace())));
+  // werror("parseError! \n");
+  // werror("%s\n", describe_backtrace(backtrace()));
   throw (AutoDocError(currentPosition, "PikeParser", message));
 }
 
