@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.45 2003/03/31 18:43:05 grubba Exp $
+ * $Id: jvm.c,v 1.46 2003/04/01 13:13:11 grubba Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -18,7 +18,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.45 2003/03/31 18:43:05 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.46 2003/04/01 13:13:11 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1797,6 +1797,7 @@ static void native_dispatch(struct native_method_context *ctx,
 	low_clone(thread_id_prog);
       call_c_initializers(Pike_interpreter.thread_id);
       SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id));
+      Pike_interpreter.thread_id = o;
       OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
       OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
       num_threads++;
