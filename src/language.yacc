@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.148 1999/12/16 21:28:34 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.149 1999/12/17 19:47:19 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -238,6 +238,7 @@ static void __yy_memcpy(char *to, char *from, int count);
   int number;
   FLOAT_TYPE fnum;
   struct node_s *n;
+  char *str;
 }
 
 %{
@@ -303,6 +304,11 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifiers
 %type <number> optional_dot_dot_dot
 %type <number> optional_stars
+
+%type <str> magic_identifiers
+%type <str> magic_identifiers1
+%type <str> magic_identifiers2
+%type <str> magic_identifiers3
 
 /* The following symbols return type information */
 
@@ -378,6 +384,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_program_ref
 %type <n> local_function
 %type <n> local_function2
+%type <n> magic_identifier
 %%
 
 all: program { YYACCEPT; }
@@ -836,6 +843,66 @@ modifier: F_NO_MASK    { $$ = ID_NOMASK; }
   | F_PUBLIC     { $$ = ID_PUBLIC; }
   | F_PROTECTED  { $$ = ID_PROTECTED; }
   | F_INLINE     { $$ = ID_INLINE; }
+  ;
+
+magic_identifiers1:
+    F_NO_MASK    { $$ = "nomask"; }
+  | F_FINAL_ID   { $$ = "final"; }
+  | F_STATIC     { $$ = "static"; }
+  | F_PRIVATE    { $$ = "private"; }
+  | F_LOCAL_ID   { $$ = "local"; }
+  | F_PUBLIC     { $$ = "public"; }
+  | F_PROTECTED  { $$ = "protected"; }
+  | F_INLINE     { $$ = "inline"; }
+  ;
+
+magic_identifiers2:
+    F_VOID_ID       { $$ = "void"; }
+  | F_MIXED_ID      { $$ = "mixed"; }
+  | F_ARRAY_ID      { $$ = "array"; }
+  | F_MAPPING_ID    { $$ = "mapping"; }
+  | F_MULTISET_ID   { $$ = "multiset"; }
+  | F_OBJECT_ID     { $$ = "object"; }
+  | F_FUNCTION_ID   { $$ = "function"; }
+  | F_PROGRAM_ID    { $$ = "program"; }
+  | F_STRING_ID     { $$ = "string"; }
+  | F_FLOAT_ID      { $$ = "float"; }
+  | F_INT_ID        { $$ = "int"; }
+  ;
+
+magic_identifiers3:
+    F_IF         { $$ = "if"; }
+  | F_DO         { $$ = "do"; }
+  | F_FOR        { $$ = "for"; }
+  | F_WHILE      { $$ = "while"; }
+  | F_ELSE       { $$ = "else"; }
+  | F_FOREACH    { $$ = "foreach"; }
+  | F_CATCH      { $$ = "catch"; }
+  | F_GAUGE      { $$ = "gauge"; }
+  | F_CLASS      { $$ = "class"; }
+  | F_BREAK      { $$ = "break"; }
+  | F_CASE       { $$ = "case"; }
+  | F_CONSTANT   { $$ = "constant"; }
+  | F_CONTINUE   { $$ = "continue"; }
+  | F_DEFAULT    { $$ = "default"; }
+  | F_IMPORT     { $$ = "import"; }
+  | F_INHERIT    { $$ = "inherit"; }
+  | F_LAMBDA     { $$ = "lambda"; }
+  | F_PREDEF     { $$ = "predef"; }
+  | F_RETURN     { $$ = "return"; }
+  | F_SSCANF     { $$ = "sscanf"; }
+  | F_SWITCH     { $$ = "switch"; }
+  | F_TYPEOF     { $$ = "typeof"; }
+  ;
+
+magic_identifiers: magic_identifiers1 | magic_identifiers2 | magic_identifiers3
+magic_identifier: magic_identifiers
+  {
+    struct pike_string *tmp=make_shared_string($1);
+    $$=mkstrnode(tmp);
+    free_string(tmp);
+  }
+  | F_IDENTIFIER
   ;
 
 modifiers: modifier_list
@@ -1998,7 +2065,7 @@ expr4: string
   }
   | F_MULTISET_START error ';' { $$=0; yyerror("Missing '>)'."); }
   | F_MULTISET_START error '}' { $$=0; yyerror("Missing '>)'."); }
-  | expr4 F_ARROW F_IDENTIFIER
+  | expr4 F_ARROW magic_identifier
   {
     $$=mknode(F_ARROW,$1,$3);
   }
