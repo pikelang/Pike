@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.12 1999/06/06 16:01:43 mast Exp $
+# $Id: Makefile,v 1.13 1999/08/12 16:58:53 mast Exp $
 #
 # Meta Makefile
 #
@@ -32,19 +32,19 @@ force_configure:
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
-	( \
+	{ \
 	  IFS='/'; dir=""; \
 	  for d in $$builddir; do \
 	    dir="$$dir$$d"; \
 	    test -z "$$dir" -o -d "$$dir" || mkdir "$$dir" || exit 1; \
 	    dir="$$dir/"; \
-	  done \
-	)
+	  done; \
+	}
 
 configure: src/configure builddir
 	@builddir="$(BUILDDIR)"; \
 	srcdir=`pwd`/src; \
-	cd "$$builddir" && ( \
+	cd "$$builddir" && { \
 	  if test -f .configureargs -a -z "$(CONFIGUREARGS)"; then \
 	    configureargs="`cat .configureargs`"; \
 	  else \
@@ -57,13 +57,13 @@ configure: src/configure builddir
 	     test "`cat .configureargs`" = "$$configureargs"; then :; \
 	  else \
 	    echo Running "$$srcdir"/configure $$configureargs in "$$builddir"; \
-	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && ( \
+	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && { \
 	      echo "$$configureargs" > .configureargs; \
 	      $(MAKE) "MAKE=$(MAKE)" clean > /dev/null; \
-	      : \
-	    ) \
-	  fi \
-	)
+	      :; \
+	    } \
+	  fi; \
+	}
 
 compile: configure
 	@builddir="$(BUILDDIR)"; \
@@ -72,9 +72,14 @@ compile: configure
 	cd "$$builddir" && for target in all $$metatarget; do \
 	  echo Making $$target in "$$builddir"; \
 	  rm -f remake; \
-	  $(MAKE) "MAKE=$(MAKE)" $$target || ( \
-	    test -f remake && $(MAKE) "MAKE=$(MAKE)" $$target \
-	  ) \
+	  $(MAKE) "MAKE=$(MAKE)" $$target || { \
+	    res=$$?; \
+	    if test -f remake; then \
+	      $(MAKE) "MAKE=$(MAKE)" $$target || exit $$?; \
+	    else \
+	      exit $$res; \
+	    fi; \
+	  } \
 	done
 
 bin/pike: force
