@@ -1,8 +1,21 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.14 2000/09/28 03:38:28 hubbe Exp $
+// $Id: Table.pmod,v 1.15 2001/01/05 15:19:04 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
+
+//! ADT.Table is a generic module for manipulating tables.
+//!
+//! Each table contains one or several columns.
+//! Each column is associated with a name, the column name.
+//! Optionally, one can provide a column type. The Table module can do a number
+//! of operations on a given table, like computing the sum of a column,
+//! grouping, sorting etc.
+//! 
+//! All column references are case insensitive. A column can be referred to by
+//! its position (starting from zero). All operations are non-destructive. That
+//! means that a new table object will be returned after, for example, a sort.
+
 
 class table {
   static private mapping fieldmap;
@@ -27,11 +40,15 @@ class table {
     return object_program(this_object())(tab||table,fie||fields,typ||types);
   }
 
+  //! This method returns a binary string representation of the table. It is
+  //! useful when one wants to store a the table, for example in a file.
   string encode()
   {
     return encode_value(([ "table":table,"fields":fields,"types":types ]));
   }
 
+  //! This method returns a table object from a binary string
+  //! representation of a table, as returned by @[encode()].
   object decode(string s)
   {
     mapping m = decode_value(s);
@@ -48,64 +65,83 @@ class table {
     }
   }
 
-  array _indices()
+  //! This method returns the column names for the table. The case used when
+  //! the table was created will be returned.
+  array(string) _indices()
   {
     return copy_value(fields);
   }  
 
-  array _values()
+  //! This method returns the contents of a table as a two dimensional array.
+  //! The format is an array of rows. Each row is an array of columns.
+  array(array) _values()
   {
     return copy_value(table);
   }  
-  
+
+  //! This method returns the number of rows in the table.
   int _sizeof()
   {
     return sizeof(table);
   }
 
+  //! This method reverses the rows of the table and returns a
+  //! new table object.
   object reverse()
   {
     return copy(predef::reverse(table), fields, types);
   }
   
-  array col(int|string c)
+  //! This method returns the contents of a given column as an array.
+  array col(int|string column)
   {
-    return copy_value(column(table, remap(c)));
+    return copy_value(local::column(table, remap(column)));
   }
 
-  array row(int r)
+  //! This method returns the contents of a given row as an array.
+  array row(int row_number)
   {
-    return copy_value(table[r]);
+    return copy_value(table[row_number]);
   }
 
-  array `[](int|string c)
+  //! Same as @[col()].
+  array `[](int|string column)
   {
     return col(c);
   }
 
-  int `==(object t)
+  //! This method compares two tables. They are equal if the contents
+  //! of the tables and the column names are equal. The column name
+  //! comparison is case insensitive.
+  int `==(object table)
   {
     return (equal(Array.map(fields, lower_case),
-		  Array.map(indices(t), lower_case)) &&
-	    equal(table, values(t)));
+		  Array.map(indices(table), lower_case)) &&
+	    equal(local::table, values(table)));
   }
 
-  object append_bottom(object t)
+  //! This method appends two tables. The table given as an argument will be
+  //! added at the bottom of the current table. Note, the column names must
+  //! be equal. The column name comparison is case insensitive.
+  object append_bottom(object table)
   {
-    if(!equal(Array.map(indices(t), lower_case),
+    if(!equal(Array.map(indices(table), lower_case),
 	      Array.map(fields, lower_case)))
       TABLE_ERR("Table fields are not equal.");
-    return copy(table+values(t), fields, types);
+    return copy(local::table+values(table), fields, types);
   }
 
-  object append_right(object t)
+  //! This method appends two tables. The table given as an argument will be
+  //! added on the right side of the current table. Note that the number of
+  //! rows in both tables must be equal.
+  object append_right(object table)
   {
-    if(sizeof(t) != sizeof(table))
+    if(sizeof(table) != sizeof(local::table))
       TABLE_ERR("Table sizes are not equal.");
-    array v = values(t);
-    for(int r = 0; r < sizeof(table); r++)
-      v[r] = table[r] + v[r];
-    return copy(v, fields+indices(t), types+t->all_types());
+    array v = values(table);
+    for(int r = 0; r < sizeof(local::table); r++)
+      v[r] = local::table[r] + v[r];
+    return copy(v, fields+indices(table), types+table->all_types());
   }
 
   static private mixed op_col(function f, int|string c, mixed ... args)
@@ -137,7 +173,8 @@ class table {
     return op_col(max, c);
   }
 
-  object select(int|string ... cs)
+  //! This method returns a new table object with the selected columns only.
+  object select(int|string ... columns)
   {
     array t = ({});
     cs = remap(cs);
@@ -146,22 +183,32 @@ class table {
     return copy(t, rows(fields, cs), rows(types, cs));
   }
 
-  object remove(int|string ... cs)
+  //! Like @[select()], but the given @[columns] will not be in the
+  //! resulting table.
+  object remove(int|string ... columns)
   {
-    return select(@remap(fields) - remap(cs, 1));
+    return select(@remap(fields) - remap(columns, 1));
   }
 
-  object where(array(int|string)|int|string cs, function f, mixed ... args)
+  //! This method calls the function for each row. If the function
+  //! returns zero, the row will be thrown away. If the function
+  //! returns something non-zero, the row will be kept. The result
+  //! will be returned as a new table object.
+  object where(array(int|string)|int|string columns, function f,
+	       mixed ... args)
   {
     array t = ({});
     f = f || lambda(mixed x) { return x; };
-    cs = remap(arrayp(cs)?cs:({ cs }));
+    columns = remap(arrayp(columns)?columns:({ columns }));
     foreach(table, mixed row)
-      if(f(@rows(row, cs), @args))
+      if(f(@rows(row, columns), @args))
 	t += ({ row });
     return copy(t, fields, types);
   }
 
+  //! This method calls the function @[f()] for each column each time a
+  //! non uniqe row will be joined. The table will be grouped by the
+  //! columns not listed. The result will be returned as a new table object.
   object group(mapping(int|string:function)|function f, mixed ... args)
   {
     if(!sizeof(table))
@@ -189,16 +236,21 @@ class table {
     return copy(values(m), fields, types);
   }
 
-  object sum(int|string ... cs)
+  //! This method sums all equal rows. The table will be grouped by the
+  //! columns not listed. The result will be returned as a new table object.
+  object sum(int|string ... columns)
   {
-    return group(`+, cs);
+    return group(`+, columns);
   }
 
-  object distinct(int|string ... cs)
+  //! This method groups by the given columns and returns a table with only
+  //! unique rows. When no columns are given, all rows will be unique. A new
+  //! table object will be returned.
+  object distinct(int|string ... columns)
   {
-    if(!sizeof(cs))
+    if(!sizeof(columns))
       return sum();
-    array f = remap(fields) - remap(cs);
+    array f = remap(fields) - remap(columns);
     mapping m = mkmapping(f, Array.map(f, lambda(mixed unused)
 					  { return lambda(mixed x1,
 							  mixed x2)
@@ -206,18 +258,23 @@ class table {
     return group(m);
   }
 
-  object map(function f, array(int|string)|int|string cs, mixed ... args)
+  //! This method calls the function @[f()] for all rows in the table.
+  //! The value returned will replace the values in the columns given
+  //! as argument to map. If the function returns an array, several
+  //! columns will be replaced. Otherwise the first column will be
+  //! replaced. The result will be returned as a new table object.
+  object map(function f, array(int|string)|int|string columns, mixed ... args)
   {
-    int ap = arrayp(cs);
+    int ap = arrayp(columns);
     array t = copy_value(table);
-    if(!catch(cs = remap(ap?cs:({ cs })))) {
+    if(!catch(columns = remap(ap?columns:({ columns })))) {
       for(int r = 0; r < sizeof(t); r++) {
-	mixed v = f(@rows(t[r], cs), @args);
+	mixed v = f(@rows(t[r], columns), @args);
 	if(arrayp(v))
 	  for(int i = 0; i < sizeof(v); i++)
-	    t[r][cs[i]] = v[i];
+	    t[r][columns[i]] = v[i];
 	else
-	  t[r][cs[0]] = v;
+	  t[r][columns[0]] = v;
       }
     }
     return copy(t, fields, types);
@@ -249,33 +306,51 @@ class table {
       copy(t, fields, types)->sort(@cs[0..(sizeof(cs)-2)]);
   }
 
-  object sort(int|string ... cs)
+  //! This method sorts the table in ascendent order on one or several columns
+  //! and returns a new table object. The left most column is sorted last. Note
+  //! that the sort is stable.
+  //!
+  //! @seealso
+  //! @[rsort()]
+  //!
+  object sort(int|string ... columns)
   {
-    return _sort(0, @cs);
+    return _sort(0, @columns);
   }
   
-  object rsort(int|string ... cs)
+  //! Like @[sort()], but in descending order.
+  object rsort(int|string ... columns)
   {
-    return _sort(1, @cs);
+    return _sort(1, @columns);
   }
-  
+
+  //! This method truncates the table to the first @[n] rows and returns
+  //! a new object.
   object limit(int n)
   {
     return copy(table[0..(n-1)], fields, types);
   }
 
+  //! This method renames the column named @[from] to @[to] and
+  //! returns a new table object. Note that @[from] can be the column
+  //! position.
   object rename(string|int from, string to)
   {
     array a = copy_value(fields);
     a[remap(from)] = to;
     return copy(table, a, types);
   }
-  
-  mapping type(int|string c, void|mapping m)
+
+  //! This method gives the type for the given @[column].
+  //!
+  //! If a second argument is given, the old type will be replaced
+  //! with @[type]. The column type is only used when the table is displayed.
+  //! The format is as specified in @[create()].
+  mapping type(int|string column, void|mapping type)
   {
     if(query_num_arg() == 2)
-      types[remap(c)] = copy_value(m);
-    return copy_value(types[remap(c)]);
+      types[remap(column)] = copy_value(type);
+    return copy_value(types[remap(column)]);
   }
 
   array all_types()
@@ -283,30 +358,56 @@ class table {
     return copy_value(types);
   }
 
-  void create(array(array) tab, array(string) fie, array|void typ)
+  //! The @[ADT.Table.table] class takes two or three arguments:
+  //!
+  //! @[table] is a two-dimensional array consisting of one array of
+  //! columns per row. All rows must have the same number of columns
+  //! as specified in @[column_names].
+  //!
+  //! @[column_names] is an array of column names associated with each
+  //! column in the table. References by column name are case insensitive.
+  //! The case used in @[column_names] will be used when the table is
+  //! displayed. A column can also be referred to by its position,
+  //! starting from zero.
+  //!
+  //! @[column_types] is an optional array of mappings. The column type
+  //! information is only used when displaying the table. Currently, only the
+  //! keyword @tt{"type"@} is recognized. The type can be specified as
+  //! @tt{"text"@} or @tt{"num"@} (numerical). Text columns are left
+  //! adjusted, whereas numerical columns are right adjusted. If a mapping
+  //! in the array is 0 (zero), it will be assumed to be a text column.
+  //! If @[column_types] is omitted, all columns will displayed as text.
+  //!
+  //! See @[ADT.Table.ASCII.encode()] on how to display a table.
+  //!
+  //! @seealso
+  //! @[ADT.Table.ASCII.encode()]
+  //!
+  void create(array(array) table, array(string) column_names,
+	      array(mapping(string:string)|void column_types)
   {
-    if(!arrayp(tab))
+    if(!arrayp(table))
       TABLE_ERR("Table not array");
-    if(!arrayp(fie))
+    if(!arrayp(column_names))
       TABLE_ERR("Fields not array");
-    if(sizeof(tab) && sizeof(tab[0]) != sizeof(fie))
+    if(sizeof(table) && sizeof(table[0]) != sizeof(column_names))
       TABLE_ERR("Table and field sizes differ");
-    foreach(fie, string s)
+    foreach(column_names, string s)
       if(!stringp(s))
 	TABLE_ERR("Field name not string");
 
-    table = copy_value(tab);
-    fields = copy_value(fie);
-    types = allocate(sizeof(fie));
+    local::table = copy_value(table);
+    fields = copy_value(column_names);
+    types = allocate(sizeof(column_names));
 
-    if(typ)
+    if(column_types)
       for(int i = 0; i < sizeof(fields); i++)
-	if(!typ[i] || mappingp(typ[i]))
-	  types[i] = copy_value(typ[i]);
+	if(!column_types[i] || mappingp(column_types[i]))
+	  types[i] = copy_value(column_types[i]);
 	else
 	  TABLE_ERR("Field type not mapping");
 
-    array a = indices(allocate(sizeof(fields)));
+    array(int) a = indices(allocate(sizeof(fields)));
     fieldmap = mkmapping(Array.map(fields, lower_case), a);
   }
 }
