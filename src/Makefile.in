@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.228 2001/01/12 01:40:04 mast Exp $
+# $Id: Makefile.in,v 1.229 2001/01/12 20:36:22 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -282,7 +282,10 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 
-.SUFFIXES: .c .h .o .cmod .pp .pph .protos
+.SUFFIXES: .c .h .o .cmod .pp .pph .protos .xml
+
+.c.xml: pike $(TMP_BINDIR)/autodoc.pike
+	@$(RUNPIKE) $(TMP_BINDIR)/autodoc.pike "$<" >"$@"
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -619,11 +622,11 @@ $(SRCDIR)/interpret_protos.h.src: $(SRCDIR)/interpret_functions.h
 	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >$(SRCDIR)/interpret_protos.h.src
 
 $(SRCDIR)/interpret_protos.h: $(SRCDIR)/interpret_protos.h.src
-	@if if test -f $@; then cmp -s $< $@; else  false; fi; then \
+	@if if test -f $@; then cmp -s $(SRCDIR)/interpret_protos.h.src $@; else  false; fi; then \
 	  echo "No changes in $@ - leaving old"; \
 	else \
-	  echo "cp $< $@"; \
-	  cp $< $@; \
+	  echo "cp $(SRCDIR)/interpret_protos.h.src $@"; \
+	  cp $(SRCDIR)/interpret_protos.h.src $@; \
 	fi
 
 lex.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
@@ -642,11 +645,11 @@ $(SRCDIR)/language.h.src: $(SRCDIR)/language.yacc
 	 mv y.tab.h language.h.src )
 
 $(SRCDIR)/language.h: $(SRCDIR)/language.h.src
-	@if if test -f $@; then cmp -s $< $@; else  false; fi; then \
+	@if if test -f $@; then cmp -s $(SRCDIR)/language.h.src $@; else  false; fi; then \
 	  echo "No changes in $@ - leaving old"; \
 	else \
-	  echo "cp $< $@"; \
-	  cp $< $@; \
+	  echo "cp $(SRCDIR)/language.h.src $@"; \
+	  cp $(SRCDIR)/language.h.src $@; \
 	fi
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h
