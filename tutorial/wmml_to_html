@@ -1,0 +1,274 @@
+#!/usr/local/bin/pike
+
+import Stdio;
+import spider;
+import Array;
+
+mapping(int:mapping) links=([]);
+
+string p1(string data);
+
+
+
+string *srt(string *foo)
+{
+  return sort_array(foo,
+		    lambda(string a,string b)
+		    {
+		      return lower_case(a) > lower_case(b);
+		    });
+}
+
+
+
+string code_params(mapping s)
+{
+  string ret="";
+  foreach(indices(s), string data)
+    ret+=" "+data+"=\""+s[data]+"\"";
+  return ret;
+}
+
+string leavetag(string x, mapping y, string data)
+{
+  return "<"+x+code_params(y)+">"+data+"</"+x+">";
+}
+
+/* Index handling */
+
+void _add_to(mapping foo, string bar, string full)
+{
+  mapping m;
+  if(!bar)
+  {
+    if(foo[0])
+    {
+      foo[0]|=({full});
+    }else{
+      foo[0]=({full});
+    }
+    return;
+  }
+  sscanf(bar,"%s.%s",bar,string rest);
+  if(!(m=foo[bar])) m=foo[bar]=([]);
+  _add_to(m, rest,full);
+}
+
+void add_to(string bar, string full)
+{
+  sscanf(lower_case(bar),"%*[_ ]%c",int c);
+  mapping m;
+  if(!(m=links[c])) m=links[c]=([]);
+  _add_to(m, bar, full);
+}
+
+
+string anchor(mixed a, mixed b, mixed c)
+{
+  if(b->name)
+  {
+//    werror("Anchor: "+b->name+".\n");
+    if(c[strlen(c)-10..]=="<!--END-->")
+      werror("Warning: Anchor not ended "+b->name+".\n");
+
+    add_to(b->name, b->name);
+    string *foo=b->name/".";
+    for(int e=1;e<sizeof(foo);e++)
+      add_to(foo[e], foo[..e]*".");
+  }
+//  return leavetag(a,b,parse_html(c,([]),(["a":anchor])));
+//  return leavetag(a,b,c);
+  return 0;
+}
+
+string mklink(string lnk) {   return "<a href=#"+lnk+">"+lnk+"</a>"; }
+
+string genindex(mapping m, string prefix)
+{
+  string ret="<dl>\n";
+  if(m[0])
+  {
+    foreach(srt(m[0]), string lnk)
+      ret+="<dt>"+mklink(lnk)+"\n";
+  }
+  m_delete(m,0);
+  foreach(srt(indices(m)), string ind)
+    {
+      if(m[ind][0] && sizeof(m[ind])==1 && sizeof(m[ind][0])==1 &&
+	m[ind][0][0]==prefix+ind)
+      {
+	foreach(srt(m[ind][0]), string lnk)
+	  ret+="<dt>"+mklink(lnk)+"\n";
+      }else{
+	ret+="<dt>"+prefix+ind+"\n"+
+	"<dd>\n"+
+	genindex(m[ind], prefix+ind+".");
+      }
+    }
+  ret+="</dl>\n";
+  return ret;
+}
+
+/* chapter handling */
+
+mixed *tod=({});
+string prefix="";
+
+string chapter(string tag, mapping params, string data);
+string section(string tag, mapping params, string data);
+string appendix(string tag, mapping params, string data);
+string appendixes(string tag, mapping params, string data);
+
+#define TAGS \
+  (["chapter":chapter,"section":section,\
+   "appendix":appendix,"appendixes":appendixes])
+
+string rtag(string name,
+	    string title,
+	    string outtitle,
+	    string xlink,
+	    string sectionname,
+	    string data)
+{
+  if(data[strlen(data)-10..]=="<!--END-->")
+    werror("Warning: "+name+" tag not ended "+title+".\n");
+
+  string *save=tod;
+  string save_prefix=prefix;
+  tod=({});
+  prefix+=xlink+".";
+  data+="\n<!--END-->";
+  data=parse_html(data,([]),TAGS);
+  prefix=save_prefix;
+  tod=save+({prefix+xlink,sectionname||(prefix+xlink),title,tod});
+
+  if(data[strlen(data)-10..]=="<!--END-->")
+    data=data[..strlen(data)-11];
+
+  string tmp;
+  if(sizeof(prefix/".") <2)
+  {
+    tmp="h1";
+  }else{
+    tmp="h2";
+  }
+
+  return
+    "<a name="+ prefix+xlink +">\n"+
+    "<"+tmp+">"+outtitle+"</"+tmp+">"+
+    data+"\n"+
+    "</a> <!-- "+name+" "+prefix+xlink+" -->\n"+
+    "<p>\n";
+}
+	    
+
+string section(string tag, mapping params, string data)
+{
+  int c = sizeof(tod)/4 +1;
+  return rtag("Section",
+	      params->title,
+	      prefix+c+" "+params->title,
+	      (string)c,
+	      0,
+	      data);
+}
+
+string chapter(string tag, mapping params, string data)
+{
+  int c = sizeof(tod)/4+1;
+  return rtag("Chapter",
+	      params->title,
+	      "Chapter "+prefix+c+", "+params->title,
+	      (string)c,
+	      0,
+	      data);
+}
+
+string appendixes(string tag, mapping params, string data)
+{
+  return rtag("Appendixes",
+	      "",
+	      "Appendixes",
+	      "Appendix",
+	      "Appendixes",
+	      data);
+
+}
+
+int appnum = 'A';
+
+string appendix(string tag, mapping params, string data)
+{
+  string c=sprintf("%c",appnum++);
+  return rtag("Appendix",
+	      params->title,
+	      "Appendix "+c+", "+params->title,
+	      c,
+	      "Appendix "+c,
+	      data);
+}
+
+
+string gencontents(mixed *tod)
+{
+  if(!sizeof(tod)) return "";
+  string ret="<dl>\n";
+  for(int e;e<sizeof(tod);e+=4)
+  {
+    ret+="<dt><b><a href=#"+tod[e]+">"+tod[e+1]+"</b> "+tod[e+2]+"</a>\n";
+
+    string tmp=gencontents(tod[e+3]);
+    if(strlen(tmp)) ret+="<dd>\n"+tmp;
+
+  }
+  ret+="</dl>";
+  return ret;
+}
+
+/* Stage 2 */
+mapping replacements=([]);
+
+string do_replace(string what)
+{
+  return replacements[lower_case(what)];
+}
+
+int main()
+{
+  string data=stdin->read(0x7fffffff);
+
+  data+="\n<!--END-->";
+
+  string data=parse_html(data,
+			 ([]) ,
+			 ([
+			   "a":anchor
+			   ]));
+
+
+  string data=parse_html(data,
+			 ([]) ,
+			 TAGS);
+
+  string index="<dl>\n";
+  foreach(sort(indices(links)), int letter)
+  {
+    index+="<dt><font size=+2>"+upper_case(sprintf("%c",letter))+"</font>\n"+
+      "<dd>\n"+
+      genindex(links[letter],"");
+  }
+  index+="</dl>\n";
+  
+  replacements->index=index;
+
+  replacements["table-of-contents"]=gencontents(tod);
+
+  write(parse_html(data,
+		   ([
+		     "index":do_replace,
+		     "table-of-contents":do_replace,
+		     ]),
+		   ([])));
+}
+
+
