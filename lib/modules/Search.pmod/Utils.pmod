@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.41 2003/09/30 12:14:31 anders Exp $
+// $Id: Utils.pmod,v 1.42 2004/03/08 17:57:14 anders Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -448,9 +448,10 @@ Scheduler get_scheduler(string db_name) {
 class Scheduler {
 
   private int next_run;
-  private mapping(int:int) entry_queue;
-  private mapping(int:int) crawl_queue;
-  private mapping(int:int) compact_queue;
+  private mapping(int:int) entry_queue = ([]);
+  private mapping(int:int) crawl_queue = ([]);
+  private mapping(int:int) compact_queue = ([]);
+  private array(int) priority_queue = ({});
   private mapping db_profiles;
   private object schedule_process;
 
@@ -459,24 +460,31 @@ class Scheduler {
     schedule();
   }
 
+  void check_priority_queue(int profile)
+  {
+    if (!has_value(priority_queue, profile))
+      priority_queue += ({ profile });
+  }
+
   //! Call this method to indicate that a new entry has been added
   //! to the queue. The scheduler will delay indexing with at most
   //! @[latency] minutes.
   void new_entry(int latency, array(int) profiles) {
     int would_be_indexed = time() + latency*60;
     foreach(profiles, int profile)
+    {
       entry_queue[profile] = 0;
-    WERR("New entry.  time: "+(would_be_indexed-time())+" profiles: "+(array(string))profiles*",");
+      check_priority_queue(profile);
+    }
+    WERR("New entry.  time: "+(would_be_indexed-time())+" profiles: "+
+	 (array(string))profiles*",");
     if(next_run && next_run<would_be_indexed && next_run>=time())
       return;
     next_run = would_be_indexed;
     reschedule();
   }
 
-  void schedule() {
-    entry_queue = ([]);
-    crawl_queue = ([]);
-    compact_queue = ([]);
+  void schedule(void|int quiet) {
 
     foreach(indices(db_profiles), int id) {
       object dbp = db_profiles[id];
@@ -485,22 +493,26 @@ class Scheduler {
 	m_delete(db_profiles, id);
 	continue;
       }
-      WERR("Scheduling for database profile "+dbp->name);
-      int next = dbp->next_crawl();
+      if(!quiet) WERR("Scheduling for database profile "+dbp->name);
+      int next = dbp->next_recrawl();
       if(next != -1) {
 	crawl_queue[dbp->id] = next;
-	WERR(" Crawl: "+(next-time()));
+	check_priority_queue(id);
+	if(!quiet) WERR(" Crawl: "+(next-time()));
       }
       next = dbp->next_compact();
       if(next != -1) {
 	compact_queue[dbp->id] = next;
-	WERR(" Compact: "+(next-time()));
+	if(!quiet) WERR(" Compact: "+(next-time()));
       }
-      WERR("");
+      if(!quiet) WERR("");
     }
 
-    if(!sizeof(crawl_queue) && !sizeof(compact_queue)) return;
-    next_run = min( @values(crawl_queue)+values(compact_queue)+values(entry_queue) );
+    if(!sizeof(crawl_queue) && !sizeof(compact_queue) && !sizeof(entry_queue))
+      return;
+    next_run = max( min( @values(crawl_queue) + values(compact_queue) +
+			 values(entry_queue) ),
+		    time() + 10 );
     reschedule();
   }
 
@@ -526,26 +538,39 @@ class Scheduler {
       schedule_process->stop();
     WERR("Running scheduler event.");
 
+    foreach(indices(db_profiles), int id) {
+      if (db_profiles[id]->is_running()) {
+	WERR("Postponing crawl start, profile "+id+" still running.");
+	schedule(1);
+	return;
+      }
+    }
+
     int t = time();
 
     WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
-    foreach(indices(crawl_queue), int id) {
+    foreach(priority_queue & indices(crawl_queue), int id) {
       if(crawl_queue[id]>t || !db_profiles[id]) continue;
       object dbp = db_profiles[id];
       if(dbp && dbp->ready_to_crawl()) {
 	WERR("Scheduler starts crawling "+id);
 	dbp->recrawl();
-	entry_queue = ([]);
+	m_delete(crawl_queue, id);
+	m_delete(entry_queue, id);
+	priority_queue -= ({ id });
       }
     }
 
     WERR(sizeof(entry_queue)+" profiles in entry queue.");
-    foreach(indices(entry_queue), int id) {
+    foreach(priority_queue & indices(entry_queue), int id) {
       if(entry_queue[id]>t || !db_profiles[id]) continue;
       object dbp = db_profiles[id];
       if(dbp && dbp->ready_to_crawl()) {
 	WERR("Scheduler starts crawling "+id);
 	dbp->start_indexer();
+	m_delete(entry_queue, id);
+	priority_queue -= ({ id });
+	break;
       }
     }
 
@@ -553,6 +578,7 @@ class Scheduler {
     foreach(indices(compact_queue), int id) {
       if(compact_queue[id]>t || !db_profiles[id]) continue;
       db_profiles[id]->start_compact();
+      m_delete(compact_queue, id);
     }
 
     schedule();
