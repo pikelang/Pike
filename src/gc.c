@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.189 2002/11/24 22:47:06 mast Exp $
+|| $Id: gc.c,v 1.190 2002/11/25 00:57:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.189 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: gc.c,v 1.190 2002/11/25 00:57:43 nilsson Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2835,7 +2835,8 @@ int do_gc(void)
   return objs;
 }
 
-/*! @decl mapping(string:int|float) _gc_status()
+/*! @decl mapping(string:int|float) gc_status()
+ *! @belongs Debug
  *!
  *! Get statistics from the garbage collector.
  *!
