@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.22 1999/01/24 00:47:36 mirar Exp $
+**!	$Id: image.h,v 1.23 1999/01/26 02:02:33 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -18,6 +18,21 @@
 #define COLORTYPE unsigned char
 #define COLORSIZE 1
 #define COLORMAX 255
+#define COLORLMAX 0x7fffffff
+#define COLORLBITS 31
+#define COLORBITS 8
+
+#define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
+#define COLOR_TO_COLORL(X) (((INT32)(X))*0x00808080)
+#define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
+#define COLORL_TO_FLOAT(X) (((float)(X))/(float)COLORLMAX)
+#define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
+#define FLOAT_TO_COLORL(X) /* stupid floats */ \
+	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
+
+#define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
+#define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
+
 
 #define FS_SCALE 1024
 

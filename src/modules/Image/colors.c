@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.6 1999/01/24 21:38:01 mirar Exp $
+**!	$Id: colors.c,v 1.7 1999/01/26 02:02:31 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.6 1999/01/24 21:38:01 mirar Exp $");
+RCSID("$Id: colors.c,v 1.7 1999/01/26 02:02:31 mirar Exp $");
 
 #include "config.h"
 
@@ -140,12 +140,15 @@ static struct pike_string *str_v;
 struct color_struct
 {
    rgb_group rgb;
+   rgbl_group rgbl;
    struct pike_string *name;
 };
 
 /* forward */
 static void image_make_rgb_color(INT32 args); 
 static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
+static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b); 
+static void _image_make_rgbf_color(float r,float g,float b);
 static void image_make_hsv_color(INT32 args); 
 static void image_make_cmyk_color(INT32 args);
 static void image_make_color(INT32 args);
@@ -163,7 +166,7 @@ struct html_color
  {128,0,0,"maroon",NULL}, {0,0,128,"navy",NULL}, 
  {255,0,0,"red",NULL}, {0,0,255,"blue",NULL},
  {128,0,128,"purple",NULL}, {0,128,128,"teal",NULL}, 
- {255,255,0,"fuchsia",NULL}, {0,255,255,"aqua",NULL}};
+ {255,0,255,"fuchsia",NULL}, {0,255,255,"aqua",NULL}};
 
 static void make_colors(void)
 {
@@ -196,6 +199,7 @@ static void make_colors(void)
       cs->rgb.r=(COLORTYPE)c[i].r;
       cs->rgb.g=(COLORTYPE)c[i].g;
       cs->rgb.b=(COLORTYPE)c[i].b;
+      RGB_TO_RGBL(cs->rgbl,cs->rgb);
       copy_shared_string(cs->name,c[i].pname);
    }
    f_aggregate_mapping(n*2);
@@ -260,6 +264,11 @@ static void try_find_name(struct color_struct *this)
       free_string(this->name);
       this->name=NULL;
    }
+
+   if (this->rgbl.r!=COLOR_TO_COLORL(this->rgb.r) ||
+       this->rgbl.g!=COLOR_TO_COLORL(this->rgb.g) ||
+       this->rgbl.b!=COLOR_TO_COLORL(this->rgb.b))
+      return; 
 
    image_colortable_map_image((struct neo_colortable*)colortable->storage,
 			      &(this->rgb),&d,1,1);
@@ -340,7 +349,7 @@ static void image_color_greylevel(INT32 args)
 
 #define MAX3(X,Y,Z) MAXIMUM(MAXIMUM(X,Y),Z)
 
-static void image_color_hsv(INT32 args)
+static void image_color_hsvf(INT32 args)
 {
    float max, min;
    float r,g,b, delta;
@@ -350,16 +359,16 @@ static void image_color_hsv(INT32 args)
 
    if((THIS->rgb.r==THIS->rgb.g) && (THIS->rgb.g==THIS->rgb.b)) 
    {
-      push_int(0);
-      push_int(0);
-      push_int(THIS->rgb.r);
+      push_float(0);
+      push_float(0);
+      push_float(COLORL_TO_FLOAT(THIS->rgbl.r));
       f_aggregate(3);
       return;
    }
   
-   r = (float)(THIS->rgb.r)/((float)COLORMAX); 
-   g = (float)(THIS->rgb.g)/((float)COLORMAX); 
-   b = (float)(THIS->rgb.b)/((float)COLORMAX);
+   r = COLORL_TO_FLOAT(THIS->rgbl.r);
+   g = COLORL_TO_FLOAT(THIS->rgbl.g);
+   b = COLORL_TO_FLOAT(THIS->rgbl.b);
    max = MAX3(r,g,b);
    min = -(MAX3(-r,-g,-b));
 
@@ -378,27 +387,47 @@ static void image_color_hsv(INT32 args)
    h *= 60; // now in degrees.
    if(h<0) h+=360;
 
-   push_int((int)((h/360.0)*COLORMAX+0.5));
-   push_int((int)(s*COLORMAX+0.5));
-   push_int((int)(v*COLORMAX+0.5));
+   push_float(h);
+   push_float(s);
+   push_float(v);
+   f_aggregate(3);
+}
+
+static void image_color_hsv(INT32 args)
+{
+   float h,s,v;
+   image_color_hsvf(args);
+   h=sp[-1].u.array->item[0].u.float_number;
+   s=sp[-1].u.array->item[1].u.float_number;
+   v=sp[-1].u.array->item[2].u.float_number;
+
+   pop_stack();
+   push_int(FLOAT_TO_COLOR(h/360.0));
+   push_int(FLOAT_TO_COLOR(s));
+   push_int(FLOAT_TO_COLOR(v));
    f_aggregate(3);
 }
 
 static void image_color_cmyk(INT32 args)
 {
    float c,m,y,k;
+   float r,g,b;
    pop_n_elems(args);
 
-   k=255.0-MAX3(THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
+   r=COLORL_TO_FLOAT(THIS->rgbl.r);
+   g=COLORL_TO_FLOAT(THIS->rgbl.g);
+   b=COLORL_TO_FLOAT(THIS->rgbl.b);
 
-   c=255.0-THIS->rgb.r-k;
-   m=255.0-THIS->rgb.g-k;
-   y=255.0-THIS->rgb.b-k;
+   k=1.0-MAX3(r,g,b);
 
-   push_float(c*100.0/255.0);
-   push_float(m*100.0/255.0);
-   push_float(y/255.0*100.0);
-   push_float(k/255.0*100.0);
+   c=1.0-r-k;
+   m=1.0-g-k;
+   y=1.0-b-k;
+
+   push_float(c*100.0);
+   push_float(m*100.0);
+   push_float(y*100.0);
+   push_float(k*100.0);
    f_aggregate(4);
 }
 
@@ -468,18 +497,23 @@ static void image_color_hex(INT32 args)
 		 i,THIS->rgb.g>>sh,i,THIS->rgb.b>>sh); 
       else
       {
-	 unsigned INT32 r=THIS->rgb.r;
-	 unsigned INT32 g=THIS->rgb.g;
-	 unsigned INT32 b=THIS->rgb.b;
-	 const int q=
-	    ((sizeof(COLORTYPE)==1)?0x01010101:
-	     (sizeof(COLORTYPE)==2)?0x00010001:1);
-	 sh=32-i*4;
-	 sprintf(buf,"#%0*x%0*x%0*x",i,(r*q)>>sh,i,(g*q)>>sh,i,(b*q)>>sh);
+	 unsigned INT32 r=THIS->rgbl.r;
+	 unsigned INT32 g=THIS->rgbl.g;
+	 unsigned INT32 b=THIS->rgbl.b;
+	 sh=COLORLBITS-i*4;
+	 if (sh<0) 
+	 {
+	    r=(r<<-sh)+(r>>(COLORLBITS+sh));
+	    g=(g<<-sh)+(g>>(COLORLBITS+sh));
+	    b=(b<<-sh)+(b>>(COLORLBITS+sh));
+	    sh=0;
+	 }
+	 sprintf(buf,"#%0*x%0*x%0*x",
+		 i,r>>sh,i,g>>sh,i,b>>sh);
       }
    }
    else
-      switch (sizeof(COLORTYPE))
+      switch (sizeof(COLORTYPE)) /* constant */
       {
 	 case 1: 
 	    sprintf(buf,"#%02x%02x%02x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b); 
@@ -647,9 +681,9 @@ static void image_color_equal(INT32 args)
       other=(struct color_struct*)
 	 get_storage(sp[-1].u.object,image_color_program);
       if (other&&
-	  other->rgb.r==THIS->rgb.r &&
-	  other->rgb.g==THIS->rgb.g &&
-	  other->rgb.b==THIS->rgb.b)
+	  other->rgbl.r==THIS->rgbl.r &&
+	  other->rgbl.g==THIS->rgbl.g &&
+	  other->rgbl.b==THIS->rgbl.b)
       {
 	 pop_stack();
 	 push_int(1);
@@ -751,53 +785,80 @@ static void image_color_equal(INT32 args)
 static void image_color_light(INT32 args)
 {
    pop_n_elems(args);
-   image_color_hsv(0);
+   image_color_hsvf(0);
    sp--;
    push_array_items(sp->u.array); /* frees */
-   sp[-1].u.integer+=50;
+   sp[-1].u.float_number+=+0.2;
    image_make_hsv_color(3);
 }
 
 static void image_color_dark(INT32 args)
 {
    pop_n_elems(args);
-   image_color_hsv(0);
+   image_color_hsvf(0);
    sp--;
    push_array_items(sp->u.array); /* frees */
-   sp[-1].u.integer-=50;
+   sp[-1].u.float_number-=0.2;
    image_make_hsv_color(3);
 }
 
 static void image_color_neon(INT32 args)
 {
    pop_n_elems(args);
-   image_color_hsv(0);
+   image_color_hsvf(0);
    sp--;
    push_array_items(sp->u.array); /* frees */
-   sp[-1].u.integer=255;
-   sp[-2].u.integer=255;
+
+   if (sp[-1].u.float_number==0.0 ||
+       sp[-2].u.float_number==0.0)
+   {
+      if (sp[-2].u.float_number<0.5)
+	 sp[-2].u.float_number=0.0;
+      else
+	 sp[-2].u.float_number=1.0;
+   }
+   else
+   {
+      sp[-1].u.float_number=1.0;
+      sp[-2].u.float_number=1.0;
+   }
    image_make_hsv_color(3);
 }
 
 static void image_color_dull(INT32 args)
 {
    pop_n_elems(args);
-   image_color_hsv(0);
+
+   image_color_hsvf(0);
    sp--;
    push_array_items(sp->u.array); /* frees */
-   sp[-2].u.integer-=50;
-   sp[-1].u.integer-=50;
+
+   if (sp[-1].u.float_number==0.0)
+   {
+      pop_n_elems(3);
+      ref_push_object(THISOBJ);
+      return;
+   }
+
+   sp[-2].u.float_number-=0.2;
    image_make_hsv_color(3);
 }
 
 static void image_color_bright(INT32 args)
 {
    pop_n_elems(args);
-   image_color_hsv(0);
+   image_color_hsvf(0);
    sp--;
    push_array_items(sp->u.array); /* frees */
-   sp[-2].u.integer+=50;
-   sp[-1].u.integer+=50;
+
+   if (sp[-1].u.float_number==0.0)
+   {
+      pop_n_elems(3);
+      ref_push_object(THISOBJ);
+      return;
+   }
+
+   sp[-2].u.float_number+=0.2;
    image_make_hsv_color(3);
 }
 
@@ -856,7 +917,7 @@ static int image_color_arg(INT32 args,rgb_group *rgb)
       }
       pop_stack();
    }
-   return NULL;
+   return 0;
 }
 
 static void image_color_add(INT32 args)
@@ -908,7 +969,7 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].u.string->len>=4 &&
 	     sp[-1].u.string->str[0]=='#')
 	 {
-	    /* #rgb, #rrggbb, #rrrgggbbb or #rrrrggggbbbb */
+	    /* #rgb, #rrggbb, #rrrgggbbb, etc */
 	 
 	    unsigned long i=sp[-1].u.string->len-1,j,k,rgb[3];
 	    unsigned char *src=sp[-1].u.string->str+1;
@@ -931,28 +992,27 @@ static void image_get_color(INT32 args)
 		  }
 		  switch (i)
 		  {
-		     case 1: z=(z<<12)+(z<<8)+(z<<4)+(z<<0); break;
-		     case 2: z=(z<<8)+(z<<0); break;
-		     case 3: z=(z<<4)+(z>>8); break;
+		     case 1: z=(z*0x11111111)>>(32-COLORLBITS); break;
+		     case 2: z=(z*0x01010101)>>(32-COLORLBITS); break;
+		     case 3: z=(z*0x00100100+(z>>8))>>(32-COLORLBITS); break;
 
-		     case 5: z=(z>>4); break;
-		     case 6: z=(z>>8); break;
-		     case 7: z=(z>>12); break;
-		     case 8: z=(z>>16); break;
-		  }
-		  switch (sizeof(COLORTYPE))
-		  {
-		     case 1: z>>=8; break;
-		     case 4: z<<=16; break;
+		     case 4:
+		     case 5: 
+		     case 6: 
+		     case 7: 
+		     case 8:
+			if (i*4<COLORLBITS)
+			   z=(z<<(COLORLBITS-i*4))+(z>>(i*8-COLORLBITS));
+			else
+			   z=z>>(i*4-COLORLBITS);
+			break;
 		  }
 		  rgb[j]=z;
 	       }
 	       pop_n_elems(args);
-	       push_int((INT32)rgb[0]);
-	       push_int((INT32)rgb[1]);
-	       push_int((INT32)rgb[2]);
-	       image_make_rgb_color(3);
-
+	       _image_make_rgbl_color((INT32)rgb[0],
+				      (INT32)rgb[1],
+				      (INT32)rgb[2]);
 	       return;
 	    }
 	 }
@@ -1013,6 +1073,25 @@ static void image_get_color(INT32 args)
 	    stack_swap();
 	    pop_stack();
 	    return;
+	 }
+	 if (sp[-1].u.string->len>=4 &&
+	     sp[-1].u.string->str[0]=='g')
+	 {
+	    /* greyx; x=0..99 */
+	    stack_dup();
+	    push_text("grey%f\n");
+	    f_sscanf(2);
+	    if (sp[-1].type==T_ARRAY &&
+		sp[-1].u.array->size==1)
+	    {
+	       float f;
+	       f=sp[-1].u.array->item[0].u.float_number;
+	       pop_stack();
+	       sp--;
+	       
+	       return;
+	    }
+	    pop_stack();
 	 }
       }
 
@@ -1097,6 +1176,34 @@ static void image_make_color(INT32 args)
 **! returns the created object.
 */
 
+static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
+{
+   struct color_struct *cs;
+
+   if (r<0) r=0; else if (r>COLORLMAX) r=COLORLMAX; /* >=2^31? no way... */
+   if (g<0) g=0; else if (g>COLORLMAX) g=COLORLMAX;
+   if (b<0) b=0; else if (b>COLORLMAX) b=COLORLMAX;
+
+   push_object(clone_object(image_color_program,0));
+
+   cs=(struct color_struct*)
+      get_storage(sp[-1].u.object,image_color_program);
+
+   cs->rgbl.r=(INT32)r;
+   cs->rgbl.g=(INT32)g;
+   cs->rgbl.b=(INT32)b;
+   RGBL_TO_RGB(cs->rgb,cs->rgbl);
+
+   try_find_name(cs);
+}
+
+static void _image_make_rgbf_color(float r,float g,float b)
+{
+#define FOO(X) FLOAT_TO_COLORL((X)<0.0?0.0:(X)>1.0?1.0:(X))
+   _image_make_rgbl_color(FOO(r),FOO(g),FOO(b));
+#undef FOO
+}
+
 static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 {
    struct color_struct *cs;
@@ -1113,6 +1220,7 @@ static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
    cs->rgb.r=(COLORTYPE)r;
    cs->rgb.g=(COLORTYPE)g;
    cs->rgb.b=(COLORTYPE)b;
+   RGB_TO_RGBL(cs->rgbl,cs->rgb);
 
    try_find_name(cs);
 }
@@ -1129,23 +1237,35 @@ static void image_make_rgb_color(INT32 args)
 static void image_make_hsv_color(INT32 args)
 {
    float h,s,v;
-   INT32 hi,si,vi;
    float r=0,g=0,b=0; /* to avoid warning */
 
-   get_all_args("Image.color.hsv()",args,"%i%i%i",
-		&hi,&si,&vi);
-   pop_n_elems(args);
+   if (args && sp[-args].type==T_INT)
+   {
+      INT32 hi,si,vi;
+      get_all_args("Image.color.hsv()",args,"%i%i%i",
+		   &hi,&si,&vi);
+      pop_n_elems(args);
 
-   if (hi<0) hi=(hi%COLORMAX)+COLORMAX; 
-   else if (hi>COLORMAX) hi%=COLORMAX; /* repeating */
-   if (si<0) si=0; else if (si>COLORMAX) si=COLORMAX;
-   if (vi<0) vi=0; else if (vi>COLORMAX) vi=COLORMAX;
+      if (hi<0) hi=(hi%COLORMAX)+COLORMAX; 
+      else if (hi>COLORMAX) hi%=COLORMAX; /* repeating */
+      if (si<0) si=0; else if (si>COLORMAX) si=COLORMAX;
+      if (vi<0) vi=0; else if (vi>COLORMAX) vi=COLORMAX;
    
-   h = (hi/((float)COLORMAX))*(360.0/60.0);
-   s = si/((float)COLORMAX);
-   v = vi/((float)COLORMAX);
+      h = (hi/((float)COLORMAX))*(360.0/60.0);
+      s = si/((float)COLORMAX);
+      v = vi/((float)COLORMAX);
+   }
+   else
+   {
+      get_all_args("Image.color.hsv()",args,"%f%f%f",
+		   &h,&s,&v);
+      pop_n_elems(args);
+      if (h<0) h=360+h-(((int)h/360)*360);
+      if (h>360.0) h-=(((int)h/360)*360);
+      h/=60;
+   }
      
-   if(s==0.0 || si==0)
+   if(s==0.0)
    {
       r = g = b = v;
    } else {
@@ -1163,6 +1283,7 @@ static void image_make_hsv_color(INT32 args)
 	 case 3: r = p;	 g = q;	 b = v;	 break;
 	 case 4: r = t;	 g = p;	 b = v;	 break;
 	 case 5: r = v;	 g = p;	 b = q;	 break;
+	 default: error("internal error\n");
       }
    }
 #undef i
@@ -1170,11 +1291,8 @@ static void image_make_hsv_color(INT32 args)
 #undef p
 #undef q
 #undef t
-#define FOO(X) ((int)((X)<0.0?0:(X)>1.0?COLORMAX:(int)((X)*((float)COLORMAX)+0.5)))
 
-   _image_make_rgb_color(FOO(r),FOO(g),FOO(b));
-
-#undef FOO
+   _image_make_rgbf_color(r,g,b);
 }
 
 static void image_make_cmyk_color(INT32 args)
@@ -1187,9 +1305,7 @@ static void image_make_cmyk_color(INT32 args)
    g=100-(m+k);
    b=100-(y+k);
 
-   _image_make_rgb_color((int)(r*255.4/100.0),
-			 (int)(g*255.4/100.0),
-			 (int)(b*255.4/100.0));
+   _image_make_rgbf_color(r*0.01,g*0.01,b*0.01);
 }
 
 static void image_make_greylevel_color(INT32 args)
@@ -1283,76 +1399,79 @@ void init_image_colors(void)
    /* color info methods */
 
    add_function("cast",image_color_cast,
-		"function(string:array|string)",OPT_TRY_OPTIMIZE);
+		"function(string:array|string)",/* opt */0);
    add_function("`[]",image_color_index,
-		"function(string|int:int|function)",OPT_TRY_OPTIMIZE);
+		"function(string|int:int|function)",/* opt */0);
    add_function("`->",image_color_index,
-		"function(string|int:int|function)",OPT_TRY_OPTIMIZE);
+		"function(string|int:int|function)",/* opt */0);
    add_function("`==",image_color_equal,
-		"function(object|int:int)",OPT_TRY_OPTIMIZE);
+		"function(object|int:int)",/* opt */0);
 
    add_function("name",image_color_name,
-		"function(:string)",OPT_TRY_OPTIMIZE);
+		"function(:string)",/* opt */0);
    add_function("hex",image_color_hex,
-		"function(:string)",OPT_TRY_OPTIMIZE);
+		"function(:string)",/* opt */0);
    add_function("html",image_color_html,
-		"function(:string)",OPT_TRY_OPTIMIZE);
+		"function(:string)",/* opt */0);
 
    add_function("rgb",image_color_rgb,
-		"function(:array)",OPT_TRY_OPTIMIZE);
+		"function(:array(int))",/* opt */0);
    add_function("hsv",image_color_hsv,
-		"function(:array)",OPT_TRY_OPTIMIZE);
+		"function(:array(int))",/* opt */0);
+   add_function("hsvf",image_color_hsvf,
+		"function(:array(float))",/* opt */0);
    add_function("cmyk",image_color_cmyk,
-		"function(:array)",OPT_TRY_OPTIMIZE);
+		"function(:array(float))",/* opt */0);
    add_function("greylevel",image_color_greylevel,
-		"function(:int)|function(int,int,int:int)",OPT_TRY_OPTIMIZE);
+		"function(:int)|function(int,int,int:int)",/* opt */0);
 
    /* color conversion methods */
 
    add_function("grey",image_color_grey,
 		"function(:object)|function(int,int,int:object)",
-		OPT_TRY_OPTIMIZE);
+		/* opt */0);
 
    add_function("light",image_color_light,
-		"function(:object)",OPT_TRY_OPTIMIZE);
+		"function(:object)",/* opt */0);
    add_function("dark",image_color_dark,
-		"function(:object)",OPT_TRY_OPTIMIZE);
+		"function(:object)",/* opt */0);
    add_function("neon",image_color_neon,
-		"function(:object)",OPT_TRY_OPTIMIZE);
+		"function(:object)",/* opt */0);
    add_function("bright",image_color_bright,
-		"function(:object)",OPT_TRY_OPTIMIZE);
+		"function(:object)",/* opt */0);
    add_function("dull",image_color_dull,
-		"function(:object)",OPT_TRY_OPTIMIZE);
+		"function(:object)",/* opt */0);
 
    add_function("`*",image_color_mult,
-		"function(float:object)",OPT_TRY_OPTIMIZE);
+		"function(float:object)",/* opt */0);
    add_function("`+",image_color_add,
-		"function(object:object)",OPT_TRY_OPTIMIZE);
+		"function(object:object)",/* opt */0);
 
    image_color_program=end_program();
    
    start_new_program();
    add_function("`[]",image_get_color,
-		"function(string:object)",OPT_TRY_OPTIMIZE);
+		"function(string:object)",/* opt */0);
    add_function("`()",image_make_color,
-		"function(string|int...:object)",OPT_TRY_OPTIMIZE);
+		"function(string|int...:object)",/* opt */0);
    add_function("rgb",image_make_rgb_color,
-		"function(int,int,int:object)",OPT_TRY_OPTIMIZE);
+		"function(int,int,int:object)",/* opt */0);
    add_function("hsv",image_make_hsv_color,
-		"function(int,int,int:object)",OPT_TRY_OPTIMIZE);
+		"function(int,int,int:object)|"
+		"function(float,float,float:object)",/* opt */0);
    add_function("cmyk",image_make_cmyk_color,
 		"function(int|float,int|float,int|float,int|float:object)",
-		OPT_TRY_OPTIMIZE);
+		/* opt */0);
    add_function("html",image_make_html_color,
-		"function(string:object)",OPT_TRY_OPTIMIZE);
+		"function(string:object)",/* opt */0);
    add_function("guess",image_guess_color,
-		"function(string:object)",OPT_TRY_OPTIMIZE);
+		"function(string:object)",/* opt */0);
    add_function("greylevel",image_make_greylevel_color,
-		"function(int:object)",OPT_TRY_OPTIMIZE);
+		"function(int:object)",/* opt */0);
    add_function("_indices",image_colors_indices,
-		"function(:array(string))",OPT_TRY_OPTIMIZE);
+		"function(:array(string))",/* opt */0);
    add_function("_values",image_colors_values,
-		"function(:array(object))",OPT_TRY_OPTIMIZE);
+		"function(:array(object))",/* opt */0);
 
    add_program_constant("color",image_color_program,0);
 
