@@ -532,6 +532,7 @@ class Type
 	/* fall-through */
       case "int":
       case "string":
+      case "string...":
       case "mixed":
       case "mapping":
       case "float": 
@@ -1309,6 +1310,7 @@ Type parse_type( mixed t )
    case "float":
    case "double":
    case "string":
+   case "string...":
    case "null":
    case "void":
    case "function":

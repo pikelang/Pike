@@ -10,9 +10,9 @@ inherit GTK.Window;
 signal clicked;
 signal close;
 
-member GTK.Widget vbox;
+member GTK.Vbox vbox;
 
-void create(string title, string buttons)
+void create(string title, string ... buttons)
 //! Creates a new Gnome.Dialog, with the given title, and any button
 //! names in the arg list. Buttons can be simple names, such as "My
 //! Button", or gnome-stock defines such as GNOME.StockButtonOK,
