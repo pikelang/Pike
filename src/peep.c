@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.72 2002/08/15 14:49:24 marcus Exp $");
+RCSID("$Id: peep.c,v 1.73 2002/08/30 14:59:41 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -148,18 +148,31 @@ void assemble(void)
   p_instr *c;
   int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 #ifdef PIKE_DEBUG
-  int synch_depth;
+  int synch_depth = 0;
 #endif
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
+
+#ifdef PIKE_DEBUG
+  for (e = 0; e < length; e++) {
+    if((a_flag > 1 && store_linenumbers) || a_flag > 2)
+    {
+      if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
+      fprintf(stderr, "~~~%4d %4lx %*s", c[e].line,
+	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
+      dump_instr(c+e);
+      fprintf(stderr,"\n");
+      if (c[e].opcode == F_SYNCH_MARK) synch_depth++;
+    }
+  }
+#endif
 
   max_label=-1;
   for(e=0;e<length;e++,c++)
     if(c->opcode == F_LABEL)
       if(c->arg > max_label)
 	max_label = c->arg;
-
 
   labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
   jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
@@ -175,9 +188,11 @@ void assemble(void)
     }
     
     c=(p_instr *)instrbuf.s.str;
+    length=instrbuf.s.len / sizeof(p_instr);
     for(e=0;e<length;e++)
-      if(c[e].opcode == F_LABEL && c[e].arg>=0)
+      if(c[e].opcode == F_LABEL && c[e].arg>=0) {
 	labels[c[e].arg]=DO_NOT_WARN((INT32)e);
+      }
     
     for(e=0;e<length;e++)
     {
@@ -246,7 +261,11 @@ void assemble(void)
     if(!reoptimize) break;
     
     asm_opt();
+#if 0
+    /* fprintf(stderr, "Rerunning optimizer.\n"); */
+#else /* !0 */
     reoptimize=0;
+#endif /* 0 */
   }
 
   c=(p_instr *)instrbuf.s.str;
@@ -263,6 +282,10 @@ void assemble(void)
   {
     int linenumbers_stored=0;
 #ifdef PIKE_DEBUG
+    if (c != (((p_instr *)instrbuf.s.str)+e)) {
+      Pike_fatal("Instruction loop deviates. 0x%04x != 0x%04x\n",
+		 e, DO_NOT_WARN((INT32)(c - ((p_instr *)instrbuf.s.str))));
+    }
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
@@ -405,8 +428,9 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	Pike_fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
-	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
+	Pike_fatal("Hyperspace error: unknown jump point %ld(%ld) at %d (pc=%x).\n",
+		   PTRDIFF_T_TO_LONG(e), PTRDIFF_T_TO_LONG(max_label),
+		   labels[e], jumps[e]);
 #endif
 #ifdef INS_F_JUMP
       if(jumps[e] < 0)
@@ -643,42 +667,48 @@ static void pop_n_opcodes(int n)
 static void do_optimization(int topop, ...)
 {
   va_list arglist;
-  int q=-1;
+  int q=0;
+  int oplen;
 
   DO_OPTIMIZATION_PREQUEL(topop);
 
   va_start(arglist, topop);
   
-  while(1)
+  while((oplen = va_arg(arglist, int)))
   {
     q++;
-    switch(va_arg(arglist, int))
+    switch(oplen)
     {
-      case 0:
+#ifdef PIKE_DEBUG
+      default:
+	Pike_fatal("Unsupported argument number: %d\n", oplen);
 	break;
+#endif /* PIKE_DEBUG */
+
       case 1:
-      {
-	int i=va_arg(arglist, int);
-	insopt0(i,cl,cf);
-	continue;
-      }
+	{
+	  int i=va_arg(arglist, int);
+	  insopt0(i,cl,cf);
+	}
+	break;
+
       case 2:
-      {
-	int i=va_arg(arglist, int);
-	int j=va_arg(arglist, int);
-	insopt1(i,j,cl,cf);
-	continue;
-      }
+	{
+	  int i=va_arg(arglist, int);
+	  int j=va_arg(arglist, int);
+	  insopt1(i,j,cl,cf);
+	}
+	break;
+
       case 3:
-      {
-	int i=va_arg(arglist, int);
-	int j=va_arg(arglist, int);
-	int k=va_arg(arglist, int);
-	insopt2(i,j,k,cl,cf);
-	continue;
-      }
+	{
+	  int i=va_arg(arglist, int);
+	  int j=va_arg(arglist, int);
+	  int k=va_arg(arglist, int);
+	  insopt2(i,j,k,cl,cf);
+	}
+	break;
     }
-    break;
   }
 
   va_end(arglist);
