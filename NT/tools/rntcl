@@ -1,4 +1,5 @@
 #!/usr/local/bin/pike
+// -*- Pike -*-
 
 // RNTCC, a front-end to MS VC++ with options similar to GCC
 // Written by Fredrik Hubinette.
@@ -38,6 +39,16 @@ string remove_ext(string file)
 }
 
 
+array|object paranoia_stat(string f)
+{
+  for (int i=0; i < 10; i++) {
+    array|object st = file_stat(f);
+    if (st) return st;
+    sleep(0.1);
+  }
+  return file_stat(f);
+}
+
 int main(int argc, string *argv)
 {
 //	werror("%O\n",argv);
@@ -46,6 +57,7 @@ int main(int argc, string *argv)
     "-Zm300",
     "-F8388608",
     "-Ge",
+    "-GR",
     "-D__WIN32__",
     "-D_WIN32",
     "-D__NT__",
@@ -122,7 +134,8 @@ int main(int argc, string *argv)
 
 	case "debug":
 	  cflags+=({
-	    "-Z7",
+	    // "-Z7",
+	    "-Zi",
 //	    "-Yd",
 	  });
 	  debug=1;
@@ -149,7 +162,7 @@ int main(int argc, string *argv)
 	  
 	  cflags+=({"-I"+fixpath(option[1])});
 	  break;
-	  
+
 	case "link":
 	  // -lm and -lc are automatically handled ?
 	  if(option[1]=="m" || option[1]=="c") break;
@@ -261,6 +274,8 @@ int main(int argc, string *argv)
 
 	
 	cmd+=({"-link",
+	       "-fixed:no",
+	       "-debug",
 //	  "-PDB:NONE",
 	  "-DEBUGTYPE:BOTH",
 	  "-DEBUG",
@@ -311,7 +326,7 @@ int main(int argc, string *argv)
 
   if(wantfile)
   {
-    if(!file_stat(wantfile))
+    if(!paranoia_stat(wantfile))
     {
       werror("RNTCL: output file not generated (%s).\n",wantfile);
       exit(1);
