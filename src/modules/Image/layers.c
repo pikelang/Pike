@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.59 2000/12/05 21:08:25 per Exp $
+**!	$Id: layers.c,v 1.60 2000/12/27 12:03:02 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.59 2000/12/05 21:08:25 per Exp $");
+RCSID("$Id: layers.c,v 1.60 2000/12/27 12:03:02 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -2257,6 +2257,8 @@ static INLINE void img_lay_stroke(struct layer *ly,
 				  rgb_group *da,
 				  int len)
 {
+   if (len<0) Pike_error("internal error: stroke len < 0\n");
+
    if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha)
    {
       lm_spec_burn_alpha(ly,l,la,s,sa,d,da,len);
