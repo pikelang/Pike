@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.185 2001/02/06 19:41:51 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.186 2001/02/27 01:20:28 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -36,6 +36,7 @@ RCSID("$Id: interpret.c,v 1.185 2001/02/06 19:41:51 grubba Exp $");
 
 #include <fcntl.h>
 #include <errno.h>
+#include <ctype.h>
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_SYS_TYPES_H
@@ -1677,6 +1678,232 @@ void slow_check_stack(void)
     }
   }
 }
+
+/*! Prints the Pike backtrace for the interpreter context in the given
+ *! thread to stderr, without messing in the internals (doesn't even
+ *! use dynamic_buffer).
+ *!
+ *! This function is intended only for convenient use inside a
+ *! debugger session; it can't be used from inside the code.
+ */
+void gdb_backtrace (
+#ifdef PIKE_THREADS
+  THREAD_T thread_id
+#endif
+)
+{
+  struct pike_frame *f, *of;
+
+#ifdef PIKE_THREADS
+  extern struct thread_state *gdb_thread_state_for_id(THREAD_T);
+  struct thread_state *ts = gdb_thread_state_for_id(thread_id);
+  if (!ts) {
+    fputs ("Not a Pike thread.\n", stderr);
+    return;
+  }
+  if (ts->swapped)
+    f = ts->state.frame_pointer;
+  else
+    f = Pike_fp;
+#else
+  f = Pike_fp;
+#endif
+
+  for (of = 0; f; f = (of = f)->next)
+    if (f->refs) {
+      int args, i;
+      char *file = 0;
+      INT32 line;
+
+      if (f->context.prog) {
+	if (f->pc)
+	  file = get_line (f->pc, f->context.prog, &line);
+	else
+	  file = get_line (f->context.prog->program, f->context.prog, &line);
+      }
+      if (file)
+	fprintf (stderr, "%s:%d: ", file, line);
+      else
+	fputs ("unknown program: ", stderr);
+
+      if (f->current_object && f->current_object->prog) {
+	/* FIXME: Wide string identifiers. */
+	fputs (ID_FROM_INT (f->current_object->prog, f->fun)->name->str, stderr);
+	fputc ('(', stderr);
+      }
+      else
+	fputs ("unknown function(", stderr);
+
+      if(!f->locals)
+      {
+	args=0;
+      }else{
+	args=f->num_args;
+	args = DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
+	if(of)
+	  args = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
+	args=MAXIMUM(args,0);
+      }
+
+      for (i = 0; i < args; i++) {
+	struct svalue *arg = f->locals + i;
+
+	switch (arg->type) {
+	  case T_LVALUE:
+	    fputs ("lvalue", stderr);
+	    break;
+
+	  case T_INT:
+	    fprintf (stderr, "%ld", (long) arg->u.integer);
+	    break;
+
+	  case T_TYPE:
+	    stupid_describe_type (arg->u.type->str, arg->u.type->len);
+	    break;
+
+	  case T_STRING: {
+	    int i,j=0;
+	    fputc ('"', stderr);
+	    for(i=0; i < arg->u.string->len && i < 100; i++)
+	    {
+	      switch(j=index_shared_string(arg->u.string,i))
+	      {
+		case '\n':
+		  fputc ('\\', stderr);
+		  fputc ('n', stderr);
+		  break;
+
+		case '\t':
+		  fputc ('\\', stderr);
+		  fputc ('t', stderr);
+		  break;
+
+		case '\b':
+		  fputc ('\\', stderr);
+		  fputc ('b', stderr);
+		  break;
+
+		case '\r':
+		  fputc ('\\', stderr);
+		  fputc ('r', stderr);
+		  break;
+
+
+		case '"':
+		case '\\':
+		  fputc ('\\', stderr);
+		  fputc (j, stderr);
+		  break;
+
+		default:
+		  if(j>=0 && j<256 && isprint(j))
+		  {
+		    fputc (j, stderr);
+		    break;
+		  }
+
+		  fputc ('\\', stderr);
+		  fprintf (stderr, "%o", j);
+
+		  switch(index_shared_string(arg->u.string,i+1))
+		  {
+		    case '0': case '1': case '2': case '3':
+		    case '4': case '5': case '6': case '7':
+		    case '8': case '9':
+		      fputc ('"', stderr);
+		      fputc ('"', stderr);
+		  }
+		  break;
+	      } 
+	    }
+	    fputc ('"', stderr);
+	    if (i < arg->u.string->len)
+	      fprintf (stderr, "+[%ld]", (long) (arg->u.string->len - i));
+	    break;
+	  }
+
+	  case T_FUNCTION:
+	    /* FIXME: Wide string identifiers. */
+	    if(arg->subtype == FUNCTION_BUILTIN)
+	      fputs (arg->u.efun->name->str, stderr);
+	    else if(arg->u.object->prog)
+	      fputs (ID_FROM_INT(arg->u.object->prog,arg->subtype)->name->str, stderr);
+	    else
+	      fputc ('0', stderr);
+	    break;
+
+	  case T_OBJECT: {
+	    struct program *p = arg->u.object->prog;
+	    if (p && p->num_linenumbers) {
+	      file = get_line (p->program, p, &line);
+	      fprintf (stderr, "object(%s:%d)", file, line);
+	    }
+	    else
+	      fputs ("object", stderr);
+	    break;
+	  }
+
+	  case T_PROGRAM: {
+	    struct program *p = arg->u.program;
+	    if (p->num_linenumbers) {
+	      file = get_line (p->program, p, &line);
+	      fprintf (stderr, "program(%s:%d)", file, line);
+	    }
+	    else
+	      fputs ("program", stderr);
+	    break;
+	  }
+
+	  case T_FLOAT:
+	    fprintf (stderr, "%f",(double) arg->u.float_number);
+	    break;
+
+	  case T_ARRAY:
+	    fprintf (stderr, "array[%ld]", (long) arg->u.array->size);
+	    break;
+
+	  case T_MULTISET:
+	    fprintf (stderr, "multiset[%ld]", (long) arg->u.multiset->ind->size);
+	    break;
+
+	  case T_MAPPING:
+	    fprintf (stderr, "mapping[%ld]", (long) m_sizeof (arg->u.mapping));
+	    break;
+
+	  default:
+	    fprintf (stderr, "<Unknown %d>", arg->type);
+	}
+
+	if (i < args - 1) fputs (", ", stderr);
+      }
+      fputs (")\n", stderr);
+    }
+    else
+      fputs ("frame with no references\n", stderr);
+}
+
+/*! Prints the Pike backtraces for the interpreter contexts in all
+ *! Pike threads to stderr, using @[gdb_backtrace].
+ *!
+ *! This function is intended only for convenient use inside a
+ *! debugger session; it can't be used from inside the program.
+ */
+void gdb_backtraces()
+{
+#ifdef PIKE_THREADS
+  extern INT32 gdb_next_thread_state(INT32, struct thread_state **);
+  INT32 i = 0;
+  struct thread_state *ts = 0;
+  while ((i = gdb_next_thread_state (i, &ts)), ts) {
+    fprintf (stderr, "\nTHREAD_ID %ld (swapped %s):\n",
+	     (long) ts->id, ts->swapped ? "out" : "in");
+    gdb_backtrace (ts->id);
+  }
+#else
+  gdb_backtrace();
+#endif
+}
+
 #endif
 
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
