@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.85 2001/05/29 16:48:20 grubba Exp $
+ * $Id: cpp.c,v 1.86 2001/05/29 17:17:48 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -84,7 +84,7 @@ struct define
   magic_define_fun magic;
   int args;
   ptrdiff_t num_parts;
-  short inside;
+  short inside;		/* 1 - Don't expand. 2 - In use. */
   short varargs;
   struct pike_string *first;
   struct define_part parts[1];
