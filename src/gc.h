@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.93 2002/11/25 00:20:47 mast Exp $
+|| $Id: gc.h,v 1.94 2003/01/11 01:30:21 mast Exp $
 */
 
 #ifndef GC_H
@@ -254,7 +254,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
-int do_gc(void);
+size_t do_gc(void);
 void f__gc_status(INT32 args);
 void cleanup_gc(void);
 /* Prototypes end here */
