@@ -362,12 +362,15 @@ struct lpc_string *string_replace(struct lpc_string *str,
   struct lpc_string *ret;
   INT32 delimeters;
   char *s,*tmp,*r,*end;
+  struct mem_searcher searcher;
 
   s=str->str;
   end=s+str->len;
   delimeters=0;
 
-  while((s=MEMMEM(del->str,del->len,s,end-s)))
+  init_memsearch(&searcher, del->str, del->len, str->len * 2);
+
+  while((s=memory_search(&searcher,s,end-s)))
   {
     delimeters++;
     s+=del->len;
@@ -383,7 +386,7 @@ struct lpc_string *string_replace(struct lpc_string *str,
   s=str->str;
   r=ret->str;
 
-  while((tmp=MEMMEM(del->str,del->len,s,end-s)))
+  while((tmp=memory_search(&searcher,s,end-s)))
   {
     MEMCPY(r,s,tmp-s);
     r+=tmp-s;
