@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.31 2004/09/16 00:13:33 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.32 2004/10/07 22:08:51 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -666,7 +666,7 @@ void f_DES3_Info_fix_parity(INT32);
 
 static void
 pike_des3_set_key(void *c,
-		  ptrdiff_t length, char *key,
+		  ptrdiff_t length, const char *key,
 		  int force)
 {
   struct des3_ctx *ctx = (struct des3_ctx *) c;
