@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Stack.pike,v 1.5 2002/03/20 16:39:52 nilsson Exp $
+// $Id: Stack.pike,v 1.6 2002/03/25 22:39:07 nilsson Exp $
 
 //! This class implements a simple stack. Instead of adding and removing
 //! elements to an array, and thus making it vary in size for every push
@@ -23,6 +23,8 @@ void push(mixed val)
 
 //! Returns the top element from the stack, without
 //! popping it.
+//! @throws
+//!   Throws an error if called on an empty stack.
 mixed top()
 {
   if (ptr) {
@@ -98,4 +100,9 @@ void reset(int|void initial_size)
 void create(int|void initial_size)
 {
   arr = allocate(initial_size || 32);
+}
+
+//!
+int _sizeof() {
+  return ptr;
 }
