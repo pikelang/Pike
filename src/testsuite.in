@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.98 1998/04/26 11:38:50 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.99 1998/04/27 09:58:03 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -307,7 +307,6 @@ test_any([[int e; --e; return e;]],-1)
 test_any([[int e; return e--;]],0)
 test_any([[int e; return --e;]],-1)
 test_any([[int e; if(e--) return 0; return e;]],-1)
-test_any([[string e=""; e--; return e;]],"-1")
 
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
@@ -693,6 +692,9 @@ test_equal(sort(indices(mtest_m2&mtest_m)),sort(mtest_i2&mtest_i))
 test_equal(sort(indices(mtest_m2-mtest_m)),sort(mtest_i2-mtest_i))
 test_equal(sort(indices(mtest_m2^mtest_m)),sort(mtest_i2^mtest_i))
 
+test_do(add_constant("mtest_m"); add_constant("mtest_i"); add_constant("mtest_v");)
+test_do(add_constant("mtest_m2"); add_constant("mtest_i2"); add_constant("mtest_v2");)
+
 define(MTEST,[[test_equal([[mkmapping(indices(allocate($1)),reverse(indices(allocate($1))))]],[[mkmapping(reverse(indices(allocate($1))),indices(allocate($1)))]])]])
 
 MTEST(0)
@@ -708,8 +710,14 @@ MTEST(55)
 
 define([[MTEST]])
 
-test_do(add_constant("mtest_m"); add_constant("mtest_i"); add_constant("mtest_v");)
-test_do(add_constant("mtest_m2"); add_constant("mtest_i2"); add_constant("mtest_v2");)
+test_equal([[ `+( ([1:2]) )]],[[ ([1:2]) ]])
+test_false( `+( ([1:2]) ) == ([1:2]) )
+test_equal([[ `+( ([1:2]), ([1:2])  )]],[[ ([1:2]) ]])
+test_equal([[ `+( ([1:2]), ([1:2]), ([2:3,4:5])  )]],[[ ([1:2,2:3,4:5]) ]])
+test_equal([[ `+( ([1:2]), ([1:2]), ([2:3,4:5]), ([6:7,1:2])  )]],[[ ([1:2,2:3,4:5,6:7]) ]])
+test_equal([[ `+( ([1:2]), ([1:2]), ([2:3,4:5]), ([6:7,1:2]),([8:9])  )]],[[ ([1:2,2:3,4:5,6:7,8:9]) ]] )
+
+test_any([[mapping m=([1:2,3:2]); return search(m,2,search(m,2))!=-1;]],1)
 
 // rows
 test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
@@ -1851,6 +1859,11 @@ return 1;
 // #include
 // FIXME add test for #include
 test_compile_any([[#include <simulate.h>
+]])
+
+// #error
+test_compile_error([[
+#error Gurgel
 ]])
 
 
