@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.12 2000/02/07 21:11:48 grubba Exp $
+ * $Id: rsa.c,v 1.13 2000/05/03 20:19:25 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -25,11 +25,13 @@
 #endif /* !HAVE_RSA_LIB */
 #endif /* HAVE_LIBCRYPTOCI */
 
+#define PIKE_RSA_DEBUG
+
 #ifdef HAVE_RSA_LIB
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.12 2000/02/07 21:11:48 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.13 2000/05/03 20:19:25 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -615,7 +617,7 @@ static void f_rsa_size(INT32 args)
   }
 
   pop_n_elems(args);
-  push_int(THIS->n->len);
+  push_int(THIS->n->len*8);
 }
 
 /* int public_key_equal (object rsa) */
