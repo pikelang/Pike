@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.44 2004/01/30 10:33:52 nilsson Exp $
+/* $Id: handshake.pike,v 1.45 2004/01/30 21:44:05 bill Exp $
  *
  */
 
@@ -311,12 +311,18 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
-    int len = `+(@ Array.map(context->authorities_cache,
+    int len; 
+
+    // we should never get to a point where we send an empty certificate request.
+    if(sizeof(context->authorities_cache))
+    {
+      len = `+(@ Array.map(context->authorities_cache,
 			     lambda(Tools.X509.TBSCertificate s)
        { return sizeof(s->subject->get_der());} ));
-    struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
-    foreach(context->authorities_cache, Tools.X509.TBSCertificate auth)
-      struct->put_var_string(auth->subject->get_der(), 2);
+      struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
+      foreach(context->authorities_cache, Tools.X509.TBSCertificate auth)
+        struct->put_var_string(auth->subject->get_der(), 2);
+    }
     send_packet(handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data()));
     certificate_state = CERT_requested;
@@ -543,6 +549,10 @@ string describe_type(int i)
 //
 int verify_certificate_chain(array(string) certs)
 {
+  // do we need to verify the certificate chain?
+  if(!context->verify_certificates)
+    return 1;
+
   int issuer_known = 0;
 
   // step one: see if the issuer of the certificate is acceptable.
@@ -550,18 +560,23 @@ int verify_certificate_chain(array(string) certs)
   string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
     ->get_der();
 
-  foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
+  // if we've got authorities, we need to check to see that the provided cert is authorized.
+  // is this useful for server connections???
+  if(sizeof(context->authorities_cache))
   {
-    if((r == (c->subject->get_der()))) // we have a trusted issuer
+    foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
     {
-      issuer_known = 1;
-      break;
+      if((r == (c->subject->get_der()))) // we have a trusted issuer
+      {
+        issuer_known = 1;
+        break;
+      }
     }
-  }
 
-  if(issuer_known==0)
-  {
-    return 0;
+    if(issuer_known==0)
+    {
+      return 0;
+    }
   }
 
   // ok, so we have a certificate chain whose client certificate is 
@@ -578,6 +593,7 @@ int verify_certificate_chain(array(string) certs)
   }
 
   mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
+
 
   if(result->verified)
   {
@@ -1035,7 +1051,19 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       while(!input->is_empty())
 	certs += ({ input->get_var_string(3) });
 
-      session->peer_certificate_chain = certs;
+      // we have the certificate chain in hand, now we must verify them.
+      if(!verify_certificate_chain(certs))
+      {
+        send_packet(Alert(ALERT_fatal, ALERT_bad_certificate, version[1],
+			  "SSL.session->handle_handshake: bad certificate\n",
+			  backtrace()));
+        error("Unable to verify peer certificate chain.\n");
+//  	return -1;
+      }
+      else
+      {
+        session->peer_certificate_chain = certs;
+      }
       
       mixed error=catch
       {

@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.27 2004/01/30 10:33:35 nilsson Exp $
+// $Id: context.pike,v 1.28 2004/01/30 21:44:05 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -38,6 +38,9 @@ void set_authorities(array(string) a)
 }
 
 //! When set, require the chain to be known, even if the root is self signed.
+//! 
+//! Note that if set, and certificates are set to be verified, trusted issuers must be
+//! provided, or no connections will be accepted.
 int require_trust=0;
 
 //! Get the list of allowed authorities. See @[set_authorities]. 
@@ -59,7 +62,8 @@ array(Tools.X509.TBSCertificate) authorities_cache = ({});
 //! certificate, which typically must be decoded using 
 //! @[MIME.decode_base64] or @[Tools.PEM.Msg] first.
 //! 
-//! If this array is left empty, any certificate will be presumed to be trusted.
+//! If this array is left empty, and the context is set to verify certificates,
+//! a certificate chain must have a root that is self signed.
 void set_trusted_issuers(array(array(string))  i)
 {
   trusted_issuers = i;
@@ -74,6 +78,10 @@ array(array(string)) get_trusted_issuers()
 
 static array(array(string)) trusted_issuers = ({});
 array(array(Tools.X509.TBSCertificate)) trusted_issuers_cache = ({});
+
+//! Determines whether certificates presented by the peer are verified, or 
+//! just accepted as being valid.
+int verify_certificates = 0;
 
 //! Temporary, non-certified, private keys, used with a
 //! server_key_exchange message. The rules are as follows:
