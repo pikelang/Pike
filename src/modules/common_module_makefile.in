@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.28 2004/04/17 16:00:41 marcus Exp $
+# $Id: common_module_makefile.in,v 1.29 2004/05/01 12:53:44 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -151,7 +151,7 @@ depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
 	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@for a in '' $(MODULE_SUBDIRS) ; do \
 	  if test "x$$a" = "x"; then :; else \
-	    echo making depend in $$a; \
+	    echo Making depend in $$a; \
 	    ( cd $$a && { \
 	      rm -f remake; \
 	      $(MAKE) $(MAKE_FLAGS) depend || \

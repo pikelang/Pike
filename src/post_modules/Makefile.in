@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.13 2003/12/07 16:14:34 marcus Exp $
+# $Id: Makefile.in,v 1.14 2004/05/01 12:53:44 mast Exp $
 
 @make_variables@
 
@@ -15,7 +15,7 @@ force:
 
 $(MODULES) no : force
 	@if [ "$@" = "no" ]; then :; else \
-	  echo Making $@; \
+	  echo Making post_modules/$@; \
 	  ( cd $@ && \
 	    (  rm remake >/dev/null 2>&1 || : ) && \
 	    ( $(MAKE) $(MAKE_FLAGS) || \

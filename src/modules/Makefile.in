@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.48 2003/12/07 16:14:34 marcus Exp $
+# $Id: Makefile.in,v 1.49 2004/05/01 12:53:44 mast Exp $
 
 @make_variables@
 
@@ -14,7 +14,7 @@ force:
 	@:
 
 $(MODULES): Makefile force
-	  @echo Making $@; \
+	  @echo Making modules/$@; \
 	  ( cd $@ && \
 	    (  rm remake >/dev/null 2>&1 || : ) && \
 	    ( $(MAKE) $(MAKE_FLAGS) || \
@@ -85,7 +85,7 @@ spotless: clean_here
 verify:
 	@for a in $(MODULES) ; do \
 	  ( cd $$a && \
-	    echo verifying $$a && \
+	    echo Verifying $$a && \
 	    ${MAKE} $(MAKE_FLAGS) verify \
 	  ) || exit $$? ; \
 	done
@@ -99,7 +99,7 @@ verbose_verify:
 
 fdtestsuites:
 	@for a in $(MODULES) ; do \
-	  echo $$a ; \
+	  echo Making testsuite in $$a ; \
 	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
 	done	
 
