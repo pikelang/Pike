@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.34 2002/02/28 02:29:59 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.35 2002/02/28 02:38:00 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -1002,8 +1002,8 @@ class Evaluator {
 	  int from = pos;
 	  int plevel;
 	  while((expr[pos]!="," && expr[pos]!=";") || plevel) {
-	    if(expr[pos]=="(") plevel++;
-	    if(expr[pos]==")") plevel--;
+	    if(expr[pos]=="(" || expr[pos]=="{") plevel++;
+	    if(expr[pos]==")" || expr[pos]=="}") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in variable handeling. Please report this!\n";
@@ -1169,8 +1169,7 @@ class Evaluator {
     err = catch(p=compile_string(prog, "HilfeInput", compile_handler));
     master()->set_inhibit_compile_errors(0);
 
-    if(err)
-    {
+    if(err) {
       e->show_warnings();
       e->show_errors();
       return 0;
