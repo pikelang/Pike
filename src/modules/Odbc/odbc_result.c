@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.5 1997/09/15 20:39:34 grubba Exp $
+ * $Id: odbc_result.c,v 1.6 1997/11/02 18:41:59 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.5 1997/09/15 20:39:34 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.6 1997/11/02 18:41:59 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -109,7 +109,7 @@ static void odbc_fix_fields(void)
     int size;
   } *odbc_fields = alloca(sizeof(struct odbc_field_info)*PIKE_ODBC_RES->num_fields);
   size_t buf_size = 1024;
-  char *buf = alloca(buf_size);
+  unsigned char *buf = alloca(buf_size);
   int membuf_size = 0;
   char *membuf = NULL;
 
@@ -147,7 +147,8 @@ static void odbc_fix_fields(void)
     odbc_fields[i].type = T_STRING;
     odbc_fields[i].size = precision+1;
     /* Create the mapping */
-    push_text("name"); push_string(make_shared_binary_string(buf, name_len));
+    push_text("name");
+    push_string(make_shared_binary_string((char *)buf, name_len));
     push_text("type");
     switch(sql_type) {
     case SQL_CHAR:

@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.5 1997/10/27 22:41:23 mirar Exp $ */
+/* $Id: lzw.c,v 1.6 1997/11/02 18:48:33 grubba Exp $ */
 
 /*
 
@@ -15,7 +15,7 @@ the existanse of #define GIF_LZW is for that purpose. :-)
 /*
 **! module Image
 **! note
-**!	$Id: lzw.c,v 1.5 1997/10/27 22:41:23 mirar Exp $
+**!	$Id: lzw.c,v 1.6 1997/11/02 18:48:33 grubba Exp $
 */
 
 #include "global.h"
@@ -312,7 +312,7 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
       else if (last==LZWCNULL)
       {
 	 last=current;
-	 if (last>end) break;
+	 if ((int)last>end) break;
 	 *(dest++)=(unsigned char)current;
 	 wrote++;
 	 first=current;
@@ -340,7 +340,7 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 	 dest2=dest;
 	 n=current;
 	 *--dest2=code[n].c;
-	 while (n>end)
+	 while ((int)n>end)
 	 {
 	    n=code[n].parent;
 	    *--dest2=code[n].c;
@@ -365,7 +365,7 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 	    code[used].len=code[last].len+1;
 	    used++;
 
-	    if (used>=(1<<cbits)) 
+	    if (((int)used)>=(1<<cbits)) 
 	    {
 	       cbits++;
 #ifdef UNPACK_DEBUG

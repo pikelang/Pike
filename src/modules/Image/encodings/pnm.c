@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.1 1997/11/02 03:42:38 mirar Exp $ */
+/* $Id: pnm.c,v 1.2 1997/11/02 18:50:31 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.1 1997/11/02 03:42:38 mirar Exp $
+**!	$Id: pnm.c,v 1.2 1997/11/02 18:50:31 grubba Exp $
 **! submodule PNM
 **!
 **!	This submodule keep the PNM encode/decode capabilities
@@ -34,7 +34,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.1 1997/11/02 03:42:38 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.2 1997/11/02 18:50:31 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -191,9 +191,9 @@ void img_pnm_decode(INT32 args)
 	       (unsigned char)((c*255L)/maxval);
 	    break;
 	 case '6':
-	    d->r=(unsigned char)((getnext(s,&pos)*255L)/maxval);
-	    d->g=(unsigned char)((getnext(s,&pos)*255L)/maxval);
-	    d->b=(unsigned char)((getnext(s,&pos)*255L)/maxval);
+	    d->r=(unsigned char)((((INT32)getnext(s,&pos))*255L)/maxval);
+	    d->g=(unsigned char)((((INT32)getnext(s,&pos))*255L)/maxval);
+	    d->b=(unsigned char)((((INT32)getnext(s,&pos))*255L)/maxval);
 	    break;
       }
       d++;

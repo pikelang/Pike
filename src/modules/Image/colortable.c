@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.16 1997/11/02 03:58:41 mirar Exp $ */
+/* $Id: colortable.c,v 1.17 1997/11/02 18:48:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.16 1997/11/02 03:58:41 mirar Exp $
+**!	$Id: colortable.c,v 1.17 1997/11/02 18:48:32 grubba Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.16 1997/11/02 03:58:41 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.17 1997/11/02 18:48:32 grubba Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2953,7 +2953,8 @@ void image_colortable_index_8bit(INT32 args)
 
    ps=begin_shared_string(src->xsize*src->ysize);
 
-   if (!image_colortable_index_8bit_image(THIS,src->img,ps->str,
+   if (!image_colortable_index_8bit_image(THIS,src->img,
+					  (unsigned char *)ps->str,
 					  src->xsize*src->ysize,src->xsize))
    {
       error("colortable->index_8bit(): called colortable is not initiated\n");

@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.6 1997/11/02 03:44:49 mirar Exp $ */
+/* $Id: gif.c,v 1.7 1997/11/02 18:50:30 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.6 1997/11/02 03:44:49 mirar Exp $
+**!	$Id: gif.c,v 1.7 1997/11/02 18:50:30 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -21,7 +21,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.6 1997/11/02 03:44:49 mirar Exp $");
+RCSID("$Id: gif.c,v 1.7 1997/11/02 18:50:30 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -240,7 +240,7 @@ void image_gif_header_block(INT32 args)
    if (globalpalette)
    {
       ps=begin_shared_string((1<<bpp)*3);
-      image_colortable_write_rgb(nct,ps->str);
+      image_colortable_write_rgb(nct,(unsigned char *)ps->str);
       MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
 
       if (alphaentry) 
@@ -474,18 +474,18 @@ void image_gif__render_block(INT32 args)
    THREADS_ALLOW();
 
    if (!interlace)
-      image_gif_lzw_add(&lzw,ips->str,ips->len);
+      image_gif_lzw_add(&lzw,(unsigned char *)ips->str,ips->len);
    else
    {
       int y;
       for (y=0; y<ys; y+=8)
-         image_gif_lzw_add(&lzw,ips->str+y*xs,xs); 
+         image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs); 
       for (y=4; y<ys; y+=8)
-         image_gif_lzw_add(&lzw,ips->str+y*xs,xs);
+         image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs);
       for (y=2; y<ys; y+=4)
-         image_gif_lzw_add(&lzw,ips->str+y*xs,xs);
+         image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs);
       for (y=1; y<ys; y+=2)
-         image_gif_lzw_add(&lzw,ips->str+y*xs,xs);
+         image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs);
    }
 
    image_gif_lzw_finish(&lzw);
@@ -745,14 +745,14 @@ void image_gif_render_block(INT32 args)
    }
 
    ps=begin_shared_string(img->xsize*img->ysize);
-   image_colortable_index_8bit_image(nct,img->img,ps->str,
+   image_colortable_index_8bit_image(nct,img->img,(unsigned char *)ps->str,
 				     img->xsize*img->ysize,img->xsize);
 
    if (alpha)
    {
       rgb_group *a=alpha->img;
       int n=img->xsize*img->ysize;
-      unsigned char *d=ps->str;
+      unsigned char *d=(unsigned char *)ps->str;
       while (n--)
       {
 	 if (a->r||a->g||a->b) 
@@ -775,7 +775,7 @@ void image_gif_render_block(INT32 args)
       int numcolors=image_colortable_size(nct);
 
       ps=begin_shared_string((1<<bpp)*3);
-      image_colortable_write_rgb(nct,ps->str);
+      image_colortable_write_rgb(nct,(unsigned char *)ps->str);
       MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
       if (alphaentry) 
       {
