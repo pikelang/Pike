@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.31 2003/01/11 00:01:20 mast Exp $
+|| $Id: multiset.h,v 1.32 2003/11/14 11:15:14 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -437,7 +437,7 @@ void test_multiset (void);
 
 #else  /* PIKE_NEW_MULTISETS */
 
-#include "las.h"
+#include "svalue.h"
 
 struct multiset
 {

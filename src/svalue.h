@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.125 2003/11/04 18:16:40 grubba Exp $
+|| $Id: svalue.h,v 1.126 2003/11/14 11:15:14 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -43,6 +43,12 @@ struct pike_string;
 #ifndef STRUCT_CALLABLE_DECLARED
 #define STRUCT_CALLABLE_DECLARED
 struct callable;
+#endif
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+struct node_s;
+typedef struct node_s node;
 #endif
 
 struct processing

@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.52 2003/04/28 18:32:38 mast Exp $
+|| $Id: array.h,v 1.53 2003/11/14 11:15:14 mast Exp $
 */
 
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include "las.h"
+#include "svalue.h"
 
 /* This debug tool writes out messages whenever arrays with unfinished
  * type fields are encountered. */

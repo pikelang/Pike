@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.50 2003/06/30 17:06:09 mast Exp $
+|| $Id: mapping.h,v 1.51 2003/11/14 11:15:14 mast Exp $
 */
 
 #ifndef MAPPING_H
 #define MAPPING_H
 
-#include "las.h"
+#include "svalue.h"
 #include "block_alloc_h.h"
 
 /* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
