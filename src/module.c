@@ -27,7 +27,7 @@ struct static_module
 };
 
 static struct static_module module_list[] = {
-  { "builtin", init_main, exit_main }
+  { "Builtin", init_main, exit_main }
 #include "modules/modlist.h"
 };
 

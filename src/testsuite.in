@@ -40,7 +40,7 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.18 1997/02/11 09:26:59 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.19 1997/02/12 05:33:50 hubbe Exp $"]])
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
@@ -115,8 +115,8 @@ cond([[all_constants()->thread_create]],
   test_do(thread_create(lambda() { }))
 
 // /precompiled/mutex
-  test_true(Mutex())
-  test_do(add_constant("_tmp_mutex",Mutex()))
+  test_true(Builtin.mutex())
+  test_do(add_constant("_tmp_mutex",Builtin.mutex()))
   test_true(_tmp_mutex->lock())
   test_true(_tmp_mutex->lock())
   test_true(_tmp_mutex->trylock())
@@ -124,9 +124,9 @@ cond([[all_constants()->thread_create]],
   test_do(add_constant("_tmp_mutex"))
 
 // /precompiled/condition
-  test_true(Condition())
-  test_do(Condition()->signal())
-  test_do(Condition()->broadcast())
+  test_true(Builtin.condition())
+  test_do(Builtin.condition()->signal())
+  test_do(Builtin.condition()->broadcast())
 
 // /precompiled/fifo
 test_any([[
