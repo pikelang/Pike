@@ -1,6 +1,8 @@
 pike7.4 (7.4.21-5) unstable; urgency=medium
 
   * Rebuilt with the new GDBM.
+  * Don't remove the specs file so that pike7.4 -x module works
+    correctly (closes: Bug#196738)
 
  -- Marek Habersack <grendel@debian.org>  Thu,  5 Jun 2003 19:17:03 +0200
 
