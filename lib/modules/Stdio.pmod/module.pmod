@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.127 2001/11/22 12:06:41 grubba Exp $
+// $Id: module.pmod,v 1.128 2001/11/22 18:54:52 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -515,7 +515,7 @@ class File
       if(___write_callback = _o->___write_callback)
 	_fd->_write_callback=__stdio_write_callback;
 
-      if ((___close_callback = _o->___close_callback) && (!___read_callback) {
+      if ((___close_callback = _o->___close_callback) && (!___read_callback)) {
 	_fd->_read_callback = __stdio_close_callback;
       }
 #if constant(files.__HAVE_OOB__)
