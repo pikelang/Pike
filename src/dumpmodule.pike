@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.35 2002/12/02 00:01:01 mast Exp $
+|| $Id: dumpmodule.pike,v 1.36 2002/12/14 16:53:02 nilsson Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -390,6 +390,7 @@ int main(int argc, array(string) argv)
   // inserting another value into the function_names mapping here.
   function_names[Image.Color]="resolv:Image.Color";
   function_names[Image.Color.white]="resolv:Image.Color.white";
+  function_names[Image.BMP]="resolv:Image.BMP";
   function_names[Image.PNM]="resolv:Image.PNM";
   function_names[Image.X]="resolv:Image.X";
   function_names[Stdio.stdin]="resolv:Stdio.stdin";
