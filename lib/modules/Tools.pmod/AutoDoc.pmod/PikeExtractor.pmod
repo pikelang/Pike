@@ -355,9 +355,10 @@ static private class Extractor {
           extractorError("documentation comment without destination");
         else {
           // the first stand-alone comment is allowed and is interpreted
-          // as documentation for the file(foo.pike or bar.pmod) _itself_.
-          doc->xml = parse->doc((["class" : "_class_file",
-                                  "module" : "_module_file"])[c->objtype]);
+          // as documentation for the class or module (foo.pike or bar.pmod)
+	  // _itself_.
+          doc->xml = parse->doc((["class" : "_class",
+                                  "module" : "_module"])[c->objtype]);
           filedoc = doc;
           doc = 0;
         }
