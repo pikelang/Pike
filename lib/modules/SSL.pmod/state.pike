@@ -1,4 +1,4 @@
-/* $Id: state.pike,v 1.4 1997/05/31 22:04:02 grubba Exp $
+/* $Id: state.pike,v 1.5 2000/05/29 12:23:58 grubba Exp $
  *
  */
 
@@ -12,7 +12,7 @@ object mac;
 object crypt;
 object compress;
 
-object(Gmp.mpz) seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
+object(Gmp.mpz)|int seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
 
 constant Alert = SSL.alert;
 
