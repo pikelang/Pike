@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.137 1999/06/10 07:16:13 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.138 1999/06/11 06:39:56 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -452,6 +452,87 @@ static struct sigdesc signal_desc []={
 };
 
 
+/* Process stuff */
+
+#if PIKE_DEBUG
+
+char process_info[65536];
+int last_pid_p;
+int last_pids[4096];
+
+#define P_NOT_STARTED 0
+#define P_RUNNING 1
+#define P_DONE 2
+#define P_RUNNING_AGAIN 3
+#define P_DONE_AGAIN 4
+
+void dump_process_history(pid_t pid)
+{
+  int e;
+  if(pid < 1 || pid > 65536)
+    fatal("Pid out of range: %ld\n",(long)pid);
+
+  fprintf(stderr,"Process history:");
+  for(e=MAXIMUM(-4095,-last_pid_p);e<0;e++)
+  {
+    fprintf(stderr," %d",last_pids[ (last_pid_p + e) & 4095]);
+  }
+
+  fprintf(stderr,"\nProblem pid = %d, status = %d\n",pid,process_info[pid]);
+}
+
+
+void process_started(pid_t pid)
+{
+  if(pid < 1 || pid > 65536)
+    fatal("Pid out of range: %ld\n",(long)pid);
+
+  last_pids[last_pid_p++ & 4095]=pid;
+
+  switch(process_info[pid])
+  {
+    case P_NOT_STARTED:
+    case P_DONE:
+      process_info[pid]++;
+      break;
+
+    case P_DONE_AGAIN:
+      process_info[pid]=P_RUNNING_AGAIN;
+      break;
+
+    default:
+      dump_process_history(pid);
+      fatal("Process debug: Pid %ld started without stopping! (status=%d)\n",(long)pid,process_info[pid]);
+  }
+}
+
+void process_done(pid_t pid, char *from)
+{
+  if(pid < 1 || pid > 65536)
+    fatal("Pid out of range in %s: %ld\n",from,(long)pid);
+  switch(process_info[pid])
+  {
+    case P_RUNNING:
+    case P_RUNNING_AGAIN:
+      process_info[pid]++;
+      break;
+
+    default:
+      dump_process_history(pid);
+      fatal("Process debug: Unknown child %ld in %s! (status=%d)\n",(long)pid,from,process_info[pid]);
+  }
+}
+
+
+#else
+
+#define process_started(PID)
+#define process_done(PID,FROM)
+#define dump_process_history(PID)
+
+#endif
+
+
 static void register_signal(int signum)
 {
   BEGIN_FIFO_PUSH(sig,char);
@@ -731,90 +812,6 @@ static void f_signame(int args)
   else
     push_int(0);
 }
-
-
-
-
-
-/* Process stuff */
-
-#if PIKE_DEBUG
-
-char process_info[65536];
-int last_pid_p;
-int last_pids[4096];
-
-#define P_NOT_STARTED 0
-#define P_RUNNING 1
-#define P_DONE 2
-#define P_RUNNING_AGAIN 3
-#define P_DONE_AGAIN 4
-
-void dump_process_history(pid_t pid)
-{
-  int e;
-  if(pid < 1 || pid > 65536)
-    fatal("Pid out of range: %ld\n",(long)pid);
-
-  fprintf(stderr,"Process history:");
-  for(e=MAXIMUM(-4095,-last_pid_p);e<0;e++)
-  {
-    fprintf(stderr," %d",last_pids[ (last_pid_p + e) & 4095]);
-  }
-
-  fprintf(stderr,"\nProblem pid = %d, status = %d\n",pid,process_info[pid]);
-}
-
-
-void process_started(pid_t pid)
-{
-  if(pid < 1 || pid > 65536)
-    fatal("Pid out of range: %ld\n",(long)pid);
-
-  last_pids[last_pid_p++ & 4095]=pid;
-
-  switch(process_info[pid])
-  {
-    case P_NOT_STARTED:
-    case P_DONE:
-      process_info[pid]++;
-      break;
-
-    case P_DONE_AGAIN:
-      process_info[pid]=P_RUNNING_AGAIN;
-      break;
-
-    default:
-      dump_process_history(pid);
-      fatal("Process debug: Pid %ld started without stopping! (status=%d)\n",(long)pid,process_info[pid]);
-  }
-}
-
-void process_done(pid_t pid, char *from)
-{
-  if(pid < 1 || pid > 65536)
-    fatal("Pid out of range in %s: %ld\n",from,(long)pid);
-  switch(process_info[pid])
-  {
-    case P_RUNNING:
-    case P_RUNNING_AGAIN:
-      process_info[pid]++;
-      break;
-
-    default:
-      dump_process_history(pid);
-      fatal("Process debug: Unknown child %ld in %s! (status=%d)\n",(long)pid,from,process_info[pid]);
-  }
-}
-
-
-#else
-
-#define process_started(PID)
-#define process_done(PID,FROM)
-#define dump_process_history(PID)
-
-#endif
 
 
 #ifdef HAVE_WAITPID
