@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.356 2004/07/04 17:23:02 srb Exp $
+// $Id: master.pike.in,v 1.357 2004/07/14 11:01:48 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -541,12 +541,16 @@ string getenv(string s)
 //! @appears putenv
 //! Sets the environment variable @[varname] to @[value].
 //!
-//! On NT the environment variable name is case insensitive.
+//! If @[value] is omitted or zero, the environment variable
+//! @[varname] will be removed.
+//!
+//! @note
+//!   On NT the environment variable name is case insensitive.
 //!
 //! @seealso
 //! @[getenv()]
 //!
-void putenv(string varname, string value)
+void putenv(string varname, string|void value)
 {
   string index = varname;
 #ifdef __NT__
@@ -554,7 +558,11 @@ void putenv(string varname, string value)
   if (environment[index] && environment[index][0])
     varname = environment[index][0];
 #endif
-  environment[index] = ({ varname, value });
+  if (value) {
+    environment[index] = ({ varname, value });
+  } else {
+    m_delete(environment, index);
+  }
 }
 
 //! @appears normalize_path
@@ -1153,6 +1161,9 @@ object low_cast_to_object(string oname, string current_file,
   if(!p) return 0;
   // NB: p might be a function in a fake_object...
   if(!objectp (o=objects[p])) o=objects[p]=p();
+  if (has_suffix(oname, "Identifiers.pmod")) {
+    werror(sprintf("short_name_ids:%O\n", o["short_name_ids"]));
+  }
   return o;
 }
 
