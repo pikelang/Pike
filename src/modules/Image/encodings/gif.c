@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.7 1997/11/02 18:50:30 grubba Exp $ */
+/* $Id: gif.c,v 1.8 1997/11/03 01:39:36 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.7 1997/11/02 18:50:30 grubba Exp $
+**!	$Id: gif.c,v 1.8 1997/11/03 01:39:36 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -21,7 +21,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.7 1997/11/02 18:50:30 grubba Exp $");
+RCSID("$Id: gif.c,v 1.8 1997/11/03 01:39:36 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -47,25 +47,6 @@ extern void f_add(INT32 args);
 
 goal:
 
-string encode(object img);
-string encode(object img,int colors);
-string encode(object img,object colortable);
-   Simply make a complete GIF file.
-
-string encode_transparent(object img,object alpha);
-string encode_transparent(object img,object alpha,int r,int g,int b);
-string encode_transparent(object img,int colors,int r,int g,int b);
-string encode_transparent(object img,int colors,object alpha,int r,int g,int b);
-string encode_transparent(object img,object colortable,object alpha);
-string encode_transparent(object img,object colortable,object alpha,int r,int g,int b);
-string encode_transparent(object img,object colortable,int transp_index);
-   Simply make a complete GIF file with transparency;
-   Transparency is taken from the given alpha mask 
-   (black=transparent), the color closest(!) to the given, or
-   by the given index in the colortable. The following r,g,b
-   values gives the possibility of setting the transparent color
-   (some decoders ignore the transparency).
-
 object decode(string data);
    Decode GIF data to one (!) image object.
 
@@ -75,17 +56,7 @@ object decode_alpha(string data);
 
 advanced:
 
-string header_block(int xsize,int ysize,int numcolors);
-string header_block(int xsize,int ysize,object colortable);
-string header_block(int xsize,int ysize,object colortable,int background_color_index);
-string end_block();
-string transparency_block(int no);
-string delay_block(int centiseconds);
 string netscape_loop_block(void|int number_of_loops);
-
-string image_block(int x,int y,object img,object colortable,int nolocalpalette,int transp_index);
-string image_block(int x,int y,object img,object colortable,object|int alpha,int nolocalpalette);
-string image_block(int x,int y,object img,object colortable,object|int alpha,int nolocalpalette,int r,int g,int b);
 
 string _function_block(int function,string data);
 
@@ -154,7 +125,7 @@ void image_gif_header_block(INT32 args)
    struct neo_colortable *nct=NULL;
    int globalpalette;
    int numcolors;
-   int bpp=0;
+   int bpp=1;
    char buf[20];
    struct pike_string *ps;
    rgb_group alphacolor={0,0,0};
@@ -321,7 +292,7 @@ void image_gif_end_block(INT32 args)
 **!	Most decoders just ignore some or all of these parameters.
 */
 
-void image_gif__gce_block(INT32 args)
+static void image_gif__gce_block(INT32 args)
 {
    char buf[20];
    if (args<5) 
@@ -382,7 +353,7 @@ void image_gif__gce_block(INT32 args)
 **!	please read about how GIFs file works.
 */
 
-void image_gif__render_block(INT32 args)
+static void image_gif__render_block(INT32 args)
 {
    int xpos,ypos,xs,ys,bpp,interlace;
    int localpalette=0;
@@ -468,7 +439,7 @@ void image_gif__render_block(INT32 args)
    push_string(make_shared_binary_string(buf,1));
    numstrings++;
    
-   image_gif_lzw_init(&lzw,bpp);
+   image_gif_lzw_init(&lzw,(bpp<2)?2:bpp);
    if (lzw.broken) error("out of memory\n");
 
    THREADS_ALLOW();
@@ -663,14 +634,14 @@ void image_gif_render_block(INT32 args)
 	 n=6;
       }
       else if (sp[5-args].type==T_OBJECT &&
-	       (alpha=(struct image*)get_storage(sp[-args].u.object,image_program)))
+	       (alpha=(struct image*)get_storage(sp[5-args].u.object,image_program)))
       {
 	 if (!alpha->img)
 	    error("Image.GIF.render_block(): given alpha channel has no image\n");
 	 else if (alpha->xsize != img->xsize ||
 		  alpha->ysize != img->ysize)
 	    error("Image.GIF.render_block(): given alpha channel differ in size from given image\n");
-	 alphaidx=0;
+	 alphaidx=numcolors;
 	 n=9;
 
 	 alphacolor.r=alphacolor.g=alphacolor.b=0;
@@ -684,7 +655,6 @@ void image_gif_render_block(INT32 args)
 	    alphacolor.g=(unsigned char)(sp[7-args].u.integer);
 	    alphacolor.b=(unsigned char)(sp[8-args].u.integer);
 
-	    alphaidx=numcolors; 
 	    /* note: same as transparent color index 
 	             in image_gif_header_block */
 	    alphaentry=1;
@@ -728,7 +698,6 @@ void image_gif_render_block(INT32 args)
 
    bpp=1;
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
-   if (alphaentry) alphaidx=(1<<bpp)-1;
 	 
 /*** write GCE if needed */
 
@@ -751,12 +720,12 @@ void image_gif_render_block(INT32 args)
    if (alpha)
    {
       rgb_group *a=alpha->img;
-      int n=img->xsize*img->ysize;
+      int n2=img->xsize*img->ysize;
       unsigned char *d=(unsigned char *)ps->str;
-      while (n--)
+      while (n2--)
       {
-	 if (a->r||a->g||a->b) 
-	    *d=alphaidx;
+	 if (!(a->r||a->g||a->b))
+	    *d=(unsigned char)alphaidx;
 	 d++;
 	 a++;
       }
@@ -772,8 +741,6 @@ void image_gif_render_block(INT32 args)
    push_string(ps);
    if (localpalette)
    {
-      int numcolors=image_colortable_size(nct);
-
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
       MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
@@ -803,6 +770,301 @@ void image_gif_render_block(INT32 args)
    push_string(ps);
 }
 
+/*
+**! method string encode(object img);
+**! method string encode(object img,int colors);
+**! method string encode(object img,object colortable);
+**!
+**! method string encode_trans(object img,object alpha);
+**! method string encode_trans(object img,int tr_r,int tr_g,int tr_b);
+**! method string encode_trans(object img,int colors,object alpha);
+**! method string encode_trans(object img,int colors,int tr_r,int tr_g,int tr_b);
+**! method string encode_trans(object img,int colors,object alpha,int tr_r,int tr_g,int tr_b);
+**! method string encode_trans(object img,object colortable,object alpha);
+**! method string encode_trans(object img,object colortable,int tr_r,int tr_g,int tr_b);
+**! method string encode_trans(object img,object colortable,object alpha,int a_r,int a_g,int a_b);
+**! method string encode_trans(object img,object colortable,int transp_index);
+**!     Create a complete GIF file.
+**!
+**!	The latter (<ref>encode_trans</ref>) functions 
+**!	adds transparency capabilities.
+**!
+**! arg object img
+**!	The image which to encode.
+**! arg int colors
+**! arg object colortable
+**!	These arguments decides what colors the image should
+**!	be encoded with. If a number is given, a colortable
+**!	with be created with (at most) that amount of colors.
+**!	Default is '256' (GIF maximum amount of colors).
+**! arg object alpha
+**!	Alpha channel image (defining what is transparent); black
+**!	color indicates transparency. GIF has only transparent
+**!	or nontransparent (no real alpha channel).
+**!	You can always dither a transparency channel:
+**!	<tt>Image.colortable(my_alpha, ({({0,0,0}),({255,255,255})}))->
+**!	    ->full() ->floyd_steinberg() ->map(my_alpha)</tt>
+**! arg int tr_r
+**! arg int tr_g
+**! arg int tr_b
+**!	Use this (or the color closest to this) color as transparent
+**!	pixels.
+**! arg int a_r
+**! arg int a_g
+**! arg int a_b
+**!	Encode transparent pixels (given by alpha channel image) 
+**!	to have this color. This option is for making GIFs for 
+**!	the decoders that doesn't support transparency.
+**! arg int transp_index
+**!	Use this color no in the colortable as transparent color.
+**!
+**! note
+**!	For advanced users:
+**!	<pre>Image.GIF.encode_trans(img,colortable,alpha);</pre>
+**!	is equivalent of using
+**!	<pre>Image.GIF.header_block(img->xsize(),img->ysize(),colortable)+
+**!	Image.GIF.render_block(img,colortable,0,0,0,alpha)+
+**!	Image.GIF.end_block();</pre>
+**!	and is actually implemented that way.
+*/
+
+static void _image_gif_encode(INT32 args,int fs)
+{
+   struct image *img=NULL;
+   struct object *imgobj=NULL;
+
+   struct object *nctobj=NULL;
+   struct neo_colortable *nct=NULL;
+
+   struct object *alphaobj=NULL;
+   struct image *alpha=NULL;
+
+   rgbl_group ac={0,0,0};
+   int alphaentry=0;
+   int trans=0;
+   int tridx=0;
+
+   int n=0;
+   int arg=2;
+
+   if (args<1)
+      error("Image.GIF.encode(): Too few arguments\n");
+
+   if (sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(imgobj=sp[-args].u.object,
+					image_program)))
+      error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
+   imgobj->refs++;
+   
+   if (args>=2)
+      if (sp[1-args].type==T_INT)
+      {
+	 n=sp[1-args].u.integer;
+	 if (n>256) n=256; if (n<2) n=2;
+
+	 imgobj->refs++;
+	 push_object(imgobj);
+	 if (alpha) push_int(n);
+	 nctobj=clone_object(image_colortable_program,2);
+	 nct=(struct neo_colortable*)
+	    get_storage(nctobj,image_colortable_program);
+	 if (!nct)
+	    error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+      }
+      else if (sp[1-args].type!=T_OBJECT)
+	 error("Image.GIF.encode(): Illegal argument 2 (expected image or colortable object or int)\n");
+      else if ((nct=(struct neo_colortable*)
+		get_storage(nctobj=sp[1-args].u.object,image_colortable_program)))
+      {
+	 nctobj->refs++;
+      }
+      else
+      {
+	 nctobj=NULL;
+	 arg=1;
+      }
+
+   /* check transparency arguments */
+   if (args-arg>0)
+      if (sp[arg-args].type==T_OBJECT &&
+	  (alpha=(struct image*)
+	   get_storage(alphaobj=sp[arg-args].u.object,image_program)))
+      {
+	 alphaobj->refs++;
+	 if (args-arg>1)
+	    if (args-arg<4 ||
+		sp[1+arg-args].type!=T_INT ||
+		sp[2+arg-args].type!=T_INT ||
+		sp[3+arg-args].type!=T_INT)
+	       error("Image.GIF.encode: Illegal arguments %d..%d (expected int)\n",arg+2,arg+4);
+	    else
+	    {
+	       ac.r=sp[1+arg-args].u.integer;
+	       ac.g=sp[2+arg-args].u.integer;
+	       ac.b=sp[3+arg-args].u.integer;
+	       alphaentry=1;
+	    }
+	 trans=1;
+	 if (!nct) tridx=255;
+	 else tridx=image_colortable_size(nct);
+      }
+      else if (args-arg<3 ||
+	       sp[arg-args].type!=T_INT ||
+	       sp[1+arg-args].type!=T_INT ||
+	       sp[2+arg-args].type!=T_INT)
+      {
+	 if (arg==2 &&
+	     sp[arg-args].type==T_INT)
+	    tridx=sp[arg-args].u.integer;
+	 else
+	    error("Image.GIF.encode(): Illegal argument %d or %d..%d\n",
+		  arg+1,arg+1,arg+3);
+	 trans=1;
+      }
+      else
+      {
+	 rgb_group tr;
+	 unsigned char trd;
+
+	 /* make a colortable if we don't have one */
+	 if (!nct)
+	 {
+	    imgobj->refs++;
+	    push_object(imgobj);
+	    push_int(256);
+	    nctobj=clone_object(image_colortable_program,2);
+	    nct=(struct neo_colortable*)
+	       get_storage(nctobj,image_colortable_program);
+	    if (!nct)
+	       error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	 }
+
+   
+	 tr.r=(unsigned char)sp[arg-args].u.integer;
+	 tr.g=(unsigned char)sp[1+arg-args].u.integer;
+	 tr.b=(unsigned char)sp[2+arg-args].u.integer;
+
+	 image_colortable_index_8bit_image(nct,&tr,&trd,1,1);
+
+	 tridx=trd;
+	 trans=2;
+      }
+
+   /* make a colortable if we don't have one */
+   if (!nct)
+   {
+      imgobj->refs++;
+      push_object(imgobj);
+      if (alpha) push_int(255); else push_int(256);
+      nctobj=clone_object(image_colortable_program,2);
+      nct=(struct neo_colortable*)
+	 get_storage(nctobj,image_colortable_program);
+      if (!nct)
+	 error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+   }
+
+   if (fs) image_colortable_internal_floyd_steinberg(nct);
+
+   pop_n_elems(args);
+
+   /* build header */
+
+   push_int(img->xsize);
+   push_int(img->ysize);
+   nctobj->refs++;
+   push_object(nctobj);
+   if (!trans)
+      image_gif_header_block(3);
+   else if (trans==1)
+   {
+      push_int(tridx); 
+      push_int(0);
+      push_int(0);
+      push_int(0);
+      push_int(ac.r);
+      push_int(ac.g);
+      push_int(ac.b);
+      image_gif_header_block(10);
+   }
+   else
+   {
+      push_int(tridx); 
+      image_gif_header_block(4);
+   }
+
+   /* build renderblock */
+
+   push_object(imgobj);
+   push_object(nctobj);
+   push_int(0);
+   push_int(0);
+   push_int(0);
+   if (!trans)
+      image_gif_render_block(5);
+   else
+      if (alpha)
+      {
+	 push_object(alphaobj);
+	 push_int(ac.r);
+	 push_int(ac.g);
+	 push_int(ac.b);
+	 image_gif_render_block(9);
+      }
+      else
+      {
+	 push_int(tridx);
+	 image_gif_render_block(6);
+      }
+
+   /* build trailer */
+
+   image_gif_end_block(0);
+
+   /* add them and return */
+
+   f_add(3);
+}
+
+void image_gif_encode(INT32 args)
+{
+   _image_gif_encode(args,0);
+}
+
+void image_gif_encode_fs(INT32 args)
+{
+   _image_gif_encode(args,1);
+}
+
+/*
+**! method string netscape_loop_block();
+**! method string netscape_loop_block(int number_of_loops);
+**!     Creates a application-specific extention block;
+**!	this block makes netscape and compatible browsers
+**!	loop the animation a certain amount of times.
+**! arg int number_of_loops
+**!	Number of loops. Max and default is 65535.
+*/
+
+void image_gif_netscape_loop_block(INT32 args)
+{
+   unsigned short loops=0;
+   char buf[30];
+   if (args)
+      if (sp[-args].type!=T_INT) 
+	 error("Image.GIF.netscape_loop_block: illegal argument (exected int)\n");
+      else
+	 loops=sp[-args].u.integer;
+   else
+      loops=65535;
+   pop_n_elems(args);
+
+   sprintf(buf,"%c%c%cNETSCAPE2.0%c%c%c%c%c",
+	   33,255,11,3,1,(loops>>8)&255,loops&255,0);
+
+   push_string(make_shared_binary_string(buf,19));
+}
+
+
 struct program *image_gif_module_program=NULL;
 
 void init_image_gif(void)
@@ -820,6 +1082,12 @@ void init_image_gif(void)
 		"function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
    add_function("end_block",image_gif_end_block,
 		"function(:string)",0);
+   add_function("encode",image_gif_encode,
+		"function(object,mixed...:string)",0);
+   add_function("encode_fs",image_gif_encode_fs,
+		"function(object,mixed...:string)",0);
+   add_function("netscape_loop_block",image_gif_netscape_loop_block,
+		"function(int|void:string)",0);
 
    image_gif_module_program=end_program();
    push_object(clone_object(image_gif_module_program,0));
