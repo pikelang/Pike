@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.30 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: operator.c,v 1.31 2000/08/07 13:38:01 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.30 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: operator.c,v 1.31 2000/08/07 13:38:01 grubba Exp $
 **! class Image
 */
 
@@ -40,7 +40,7 @@ extern struct program *image_program;
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 
-#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM(((int)x),255),0))
+#define testrange(x) (DOUBLE_TO_COLORTYPE(MAXIMUM(MINIMUM(((int)x),255),0)))
 
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
@@ -61,9 +61,9 @@ extern struct program *image_program;
    }									\
    else if (args && sp[-args].type==T_FLOAT)				\
    {									\
-      rgb.r=(long)(255*sp[-args].u.float_number);			\
-      rgb.g=(long)(255*sp[-args].u.float_number);			\
-      rgb.b=(long)(255*sp[-args].u.float_number);			\
+      rgb.r=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
+      rgb.g=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
+      rgb.b=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       oper=NULL;							\
    }									\
    else if (args && (sp[-args].type==T_ARRAY ||				\
