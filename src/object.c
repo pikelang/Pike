@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.102 2000/04/19 23:47:55 mast Exp $");
+RCSID("$Id: object.c,v 1.103 2000/04/20 00:03:10 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -580,6 +580,8 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
+  extern int Pike_in_gc;
+
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     add_ref(o);
@@ -597,7 +599,6 @@ void really_free_object(struct object *o)
 
   if(o->prog)
   {
-    extern int Pike_in_gc;
     o->next=objects_to_destruct;
     o->prev=0;
     objects_to_destruct=o;
