@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.9 2002/10/21 17:06:16 marcus Exp $
+|| $Id: transforms.cmod,v 1.10 2003/03/04 16:03:57 grubba Exp $
 */
 
 #include "global.h"
@@ -20,6 +20,12 @@
 #include "dynamic_buffer.h"
 #include "builtin_functions.h"
 #include "config.h"
+
+#if defined(HAVE_FFTW_H) && defined(HAVE_LIBFFTW) && defined(HAVE_RFFTW_H) && defined(HAVE_LIBRFFTW)
+#define HAVE_RFFTW
+#endif
+
+#ifdef HAVE_RFFTW
 
 #ifdef HAVE_FFTW_H
 #include <fftw.h>
@@ -40,8 +46,6 @@
 
 PIKECLASS FFT
 {
-
-#ifdef HAVE_RFFTW_H
   CVAR fftw_real *r_in;
   CVAR fftw_real *r_out;
   CVAR rfftw_plan r_cr_plan;
@@ -222,7 +226,6 @@ PIKECLASS FFT
       free(THIS->r_in);
       THIS->r_out = NULL;
     }
-#endif /* HAVE_RFFTW_H */
 
   /*! @decl void create(void|int n, void|int(0..1) exact)
    *!  Creates a new transform object. If n is specified, a plan
@@ -242,7 +245,6 @@ PIKECLASS FFT
     type function(void|int, void|int(0..1):void);
     flags ID_STATIC;
   {
-#ifdef HAVE_RFFTW_H
     int t = FFTW_ESTIMATE;
     int n = 0;
     switch(args)
@@ -266,11 +268,9 @@ PIKECLASS FFT
 	THIS->r_rc_plan = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, t);
 	THIS->r_cr_plan = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, t);
       }
-#endif /* HAVE_RFFTW_H */
     pop_n_elems(args);
   }
 
-#ifdef HAVE_RFFTW_H
   INIT
     {
       THIS->r_in=NULL;
@@ -288,7 +288,6 @@ PIKECLASS FFT
       if (THIS->r_out!=NULL)
 	free(THIS->r_in);
     }
-#endif /* HAVE_RFFTW_H */
 }
 
 /*! @endclass
@@ -300,12 +299,18 @@ PIKECLASS FFT
 /*! @endmodule
  */
 
+#endif /* HAVE_RFFTW */
+
 void init_math_transforms(void)
 {
+#ifdef HAVE_RFFTW
   INIT
+#endif /* HAVE_RFFTW */
 }
 
 void exit_math_transforms(void)
 {
+#ifdef HAVE_RFFTW
   EXIT
+#endif /* HAVE_RFFTW */
 }
