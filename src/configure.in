@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.108 1997/08/30 18:33:45 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.109 1997/09/05 00:16:25 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -179,11 +179,28 @@ if test $cflags_is_set = no; then
  else
 
 ### Non-gcc thingies. This should probably be enhanced...
-  AC_SYS_COMPILER_FLAG(-fast,fast)
+
+  # HP-UX
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_odataprefetch)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_ofailsafe)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_o3)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1)
+
+  # OSF/1
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-std,std)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos)
+
+  # IRIX
+  AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
+  AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3)
+  AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn)
+  AC_SYS_COMPILER_FLAG(-O2,o2)
+  if test x$with_debug = xyes ; then
+    AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw)
+  fi
 
 dnl
 dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
@@ -204,8 +221,9 @@ esac
   AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc)
   AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc)
 
-  case "${CFLAGS-}" in
+  case "${CFLAGS-} $OPTIMIZE" in
      *-O*) ;;
+     *+O*) ;;
      *-fast*) ;;
      *)
       AC_SYS_COMPILER_FLAG(-O,O)
