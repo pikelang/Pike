@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.33 1997/12/16 22:50:05 grubba Exp $");
+RCSID("$Id: lex.c,v 1.34 1997/12/20 19:36:48 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1860,8 +1860,8 @@ static void low_lex(void)
 	READBUF(isidchar(C));
 
 	push_text(buf);
-	if (sv = low_mapping_string_lookup(get_builtin_constants(),
-					   sp[-1].u.string)) {
+	if ((sv = low_mapping_string_lookup(get_builtin_constants(),
+					    sp[-1].u.string))) {
 	  pop_stack();
 	  push_svalue(sv);
 	  res = 1;
