@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.49 2002/03/21 02:12:42 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.50 2002/03/22 19:28:11 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -35,7 +35,7 @@ class Command {
 
   //! The actual command callback. Messages to the user should be
   //! written out by using the write method in the @[Evaluator] object.
-  void exec(Evaluator, string, array(string));
+  void exec(Evaluator e, string line, array(string) tokens);
 }
 
 //! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.CommandReset();
