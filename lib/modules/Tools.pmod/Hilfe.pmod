@@ -19,7 +19,7 @@ import Getopt;
 
   // #pragma all_inline
 
-  #define DEBUG
+  // #define DEBUG
 
   mapping variables=([]);
   mapping(string:mixed) constants=([]);
