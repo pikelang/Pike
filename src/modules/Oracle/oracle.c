@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.62 2001/09/29 12:25:15 hubbe Exp $
+ * $Id: oracle.c,v 1.63 2001/10/05 14:42:29 leif Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.62 2001/09/29 12:25:15 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.63 2001/10/05 14:42:29 leif Exp $");
 
 
 /* User-changable defines: */
@@ -423,6 +423,7 @@ static void init_dbcon_struct(struct object *o)
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
   THIS_DBCON->timeout_limit = 30; /* default value */
+  THIS_DBCON->resultobject_busy = 0;
 #ifdef LOCAL_ENV
   THIS_DBCON->env=0;
 #endif
