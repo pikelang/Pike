@@ -42,17 +42,17 @@ class cpEntry (Node target) {
 void enqueue_move(string source, Node target) {
   mapping bucket = queue;
   array path = source/".";
-  if(sizeof(path)>1)
+  if(source != "")
     foreach(path, string node) {
       if(!bucket[node])
 	bucket[node] = ([]);
       bucket = bucket[node];
     }
 
-  if(bucket[path[-1]])
-    error("Move source already allocated.\n");
+  if(bucket[0])
+    error("Move source already allocated (%s) %O.\n", source, bucket);
 
-  bucket[path[-1]] = mvEntry(target);
+  bucket[0] = mvEntry(target);
 }
 
 Node parse_file(string fn) {
@@ -113,16 +113,32 @@ void chapter_ref_expansion(Node n) {
     }
 }
 
+int filec;
 void ref_expansion(Node n, string dir, void|string file) {
-  foreach(n->get_elements(), Node c)
+  foreach(n->get_elements(), Node c) {
     switch(c->get_tag_name()) {
 
     case "file":
       if(file)
-	error("Nested file elements.\n");
+	error("Nested file elements (%O).\n", file);
       file = c->get_attributes()->name;
+      if(!file) {
+	if(sizeof(c->get_elements())==1) {
+	  string name = c->get_elements()[0]->get_tag_name();
+	  if(name == "chapter" || name == "chapter-ref")
+	    file = "chapter_" + (1+chapter);
+	  else if(name == "appendix" || name == "appendix-ref")
+	    file = "appendix_" + (string)({ 65+appendix });
+	  else
+	    file = "file_" + (++filec);
+	}
+	else
+	  file = "file_" + (++filec);
+	file += ".html";
+      }
       c->get_attributes()->name = dir + "/" + file;
       ref_expansion(c, dir, c->get_attributes()->name);
+      file = 0;
       break;
 
     case "dir":
@@ -161,6 +177,7 @@ void ref_expansion(Node n, string dir, void|string file) {
       c->get_attributes()->number = (string)++appendix;
       break;
     }
+  }
 }
 
 void move_appendices(Node n) {
@@ -188,6 +205,12 @@ void move_items(Node n, mapping jobs) {
   array ent = n->get_elements("module") +
     n->get_elements("class") +
     n->get_elements("docgroup");
+
+  if(jobs[0]) {
+    jobs[0](n);
+    m_delete(jobs, 0);
+  }
+
   foreach(ent, Node c) {
     mapping m = c->get_attributes();
     mapping|Entry e = jobs[ m->name || m["homogen-name"] ];
@@ -196,14 +219,20 @@ void move_items(Node n, mapping jobs) {
       move_items(c, e);
       if(!sizeof(e))
 	m_delete(jobs, m->name||m["homogen-name"]);
-      continue;
     }
-    e(c);
-    m_delete(jobs, m->name||m["homogen-name"]);
   }
 }
 
-void main(int num, array(string) args) {
+void report_failed_entries(mapping scope, string path) {
+  if(scope[0]) {
+    werror("Failed to move %s\n", path[1..]);
+    m_delete(scope, 0);
+  }
+  foreach(scope; string id; mapping next)
+    report_failed_entries(next, path + "." + id);
+}
+
+int(0..1) main(int num, array(string) args) {
 
   if(num<3)
     error("To few arguments\n");
@@ -221,12 +250,18 @@ void main(int num, array(string) args) {
   werror("Parsing autodoc file %O.\n", args[2]);
   Node m = parse_file(args[2]);
   m = m->get_first_element("module");
+
   werror("Moving appendices.\n");
   move_appendices(m);
-  werror("Executing node insetions.\n");
-  if(queue[""])
-    m_delete(queue, "")(m);
+
+  werror("Executing node insertions.\n");
   move_items(m, queue);
+  if(sizeof(queue)) {
+    report_failed_entries(queue, "");
+    return 1;
+  }
+
   werror("Writing final manual source file.\n");
   write( (string)n );
+  return 0;
 }
