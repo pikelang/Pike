@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.71 1999/03/22 19:36:00 grubba Exp $
+ * $Id: requests.pmod,v 1.72 1999/03/22 19:38:56 grubba Exp $
  */
 
 import .types;
@@ -578,7 +578,7 @@ class fetch
 
     werror("Options specified. "
 	   "wanted: %O, section:%O, atom: %O, raw: %O\n",
-	   wanted, section, atom, raw_wanted);
+	   wanted, section, atom, res->raw_wanted);
 
     /* Should requesting any part of the body really count as reading it? */
     if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
