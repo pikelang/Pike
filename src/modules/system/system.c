@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.172 2004/09/19 00:51:36 nilsson Exp $
+|| $Id: system.c,v 1.173 2004/10/15 15:19:02 grubba Exp $
 */
 
 /*
@@ -635,7 +635,7 @@ void f_setgroups(INT32 args)
 {
   static const gid_t safeguard[1] = { 65534 };
   struct array *arr = NULL;
-  gid_t *gids = NULL;
+  const gid_t *gids = NULL;
   INT32 i;
   INT32 size;
   int err;
@@ -648,6 +648,7 @@ void f_setgroups(INT32 args)
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
     gids = (gid_t *)alloca(arr->size * sizeof(gid_t));
+    if (!gids) Pike_error("setgroups(): Too large array (%d).\n", arr->size);
   } else {
     gids = safeguard;
   }
@@ -2557,7 +2558,7 @@ void f_system_setitimer(INT32 args)
 {
    FLOAT_TYPE interval;
    INT_TYPE what;
-   int res;
+   int res = 0;
    struct itimerval itimer,otimer;
 
    otimer.it_value.tv_usec=0;

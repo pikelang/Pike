@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.29 2004/09/18 20:50:57 nilsson Exp $
+|| $Id: memory.c,v 1.30 2004/10/15 15:19:45 grubba Exp $
 */
 
 /*! @module System
@@ -861,7 +861,7 @@ static void memory_index_write(INT32 args)
    if (args==2)
    {
       INT_TYPE pos,ch;
-      size_t rpos;
+      size_t rpos = 0;
       get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
       if (pos<0) 
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
