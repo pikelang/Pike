@@ -1109,10 +1109,10 @@ void peer_gained(.Peer peer)
 
 void peer_unchoked(.Peer peer)
 {
-   multiset m=(multiset)string2arr(peer->bitfield);
+   multiset mz=(multiset)string2arr(peer->bitfield);
 #ifdef TORRENT_PEERS_DEBUG
    werror("%O unchoked: %d blocks, we want %d of those\n",
-	  peer->ip,sizeof(m),sizeof(m&file_want));
+	  peer->ip,sizeof(mz),sizeof(mz&file_want));
 #endif
 
    download_more();

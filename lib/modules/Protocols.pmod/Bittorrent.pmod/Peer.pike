@@ -559,8 +559,8 @@ void got_message_from_peer(string msg)
 	 break;
       case MSG_BITFIELD:
 	 bitfield=msg[1..];
-	 parent->peer_gained(this_object());
 	 is_complete=(bitfield==parent->all_pieces_bits);
+	 parent->peer_gained(this_object());
 
 	 if (is_complete && !sizeof(parent->file_want))
 	    disconnect(); // we're complete, they're complete
@@ -720,7 +720,6 @@ void got_piece_from_peer(int piece,int offset,string data)
 
 void cancel_requests(int real)
 {
-   if (were_interested) show_uninterest();
    if (real) send_message(MSG_CANCEL,"");
    if (readbuf!="") cancelled=1; // expect one more without complaint
    piece_callback=([]);
@@ -831,12 +830,18 @@ void unstrangle()
 
 void show_interest()
 {
+#ifdef BT_PEER_DEBUG
+   werror("%O: interested\n",ip);
+#endif
    send_message(MSG_INTERESTED,""); 
    were_interested=1;
 }
 
 void show_uninterest()
 {
+#ifdef BT_PEER_DEBUG
+   werror("%O: uninterested\n",ip);
+#endif
    send_message(MSG_NOT_INTERESTED,""); 
    were_interested=0;
 }
