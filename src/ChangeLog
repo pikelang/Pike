@@ -1,3 +1,10 @@
+Sun Nov  2 01:03:08 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* main.c: Now closes all fd's except stdin, stdout and stderr at
+	start, since they aren't reachable anyway. This is good if pike is
+	started from an environment which has leaked fd's.
+	* backend.c,interpret.c: Added some missing set_close_on_exec()'s.
+
 Sun Sep 28 18:12:55 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* arr->identifier is now the same as column(arr,"identifier")
