@@ -181,10 +181,15 @@ string parse_text(Node n) {
       foreach(get_tags(c, "group"), Node d) {
 	foreach(get_tags(d, "value"), Node e) {
 	  ret += "<dt><tt><font color='green'>";
-	  if(get_tag(e, "minvalue"))
-	    ret += parse_text(get_tag(e, "minvalue")) + "..";
+	  Node min = get_tag(e, "minvalue");
+	  Node max = get_tag(e, "maxvalue");
+	  if(min || max) {
+	    if(min) ret += parse_text(min);
+	    ret += "..";
+	    if(max) ret += parse_text(max);
+	  }
 	  else
-	    ret += parse_text(get_tag(e, "value"));
+	    ret += parse_text(e);
 	  ret += "</font></tt></dt><dd></dd>\n";
 	}
        	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
@@ -267,11 +272,6 @@ string parse_text(Node n) {
 
 
     case "source-position":
-      break;
-
-    case "value": // Temporary kludge
-      werror("Warning: Multiple levels of value.\n");
-      ret += parse_text(c);
       break;
 
     default:
@@ -421,12 +421,18 @@ string parse_type(Node n, void|string debug) {
 
   case "int":
     ret += "<font color='#202020'>int</font>";
-    // min/max ...
-    break;
-
-  case "type": // Temporary kludge
-    werror("Warning: Multiple levels of type.\n");
-    ret += parse_type(n[0]);
+    c = get_tag(n, "min");
+    d = get_tag(n, "max");
+    if(c) c=c[0];
+    if(d) d=d[0];
+    if(c && d)
+      ret += "(" + c->get_text() + ".." + d->get_text() + ")";
+    else if(c)
+      ret += "(" + c->get_text() + "..)";
+#ifdef DEBUG
+    else if(d)
+      throw( ({ "max element without min element in int node.\n", backtrace() }) );
+#endif
     break;
 
   case "static": // Not in XSLT
