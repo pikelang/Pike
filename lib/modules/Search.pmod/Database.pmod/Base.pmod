@@ -21,3 +21,4 @@ void remove_document(string|Standards.URI uri, string language);
 
 int sync();
 string get_blob(int word_id, int num);
+int hash_word(string word);
