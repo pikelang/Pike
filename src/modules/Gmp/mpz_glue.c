@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.26 1998/01/30 12:39:52 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.27 1998/01/30 16:40:03 grubba Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -165,7 +165,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
   }
   else if (base == 256)
   {
-    INT32 i;
+    unsigned INT32 i;
 #if 0
     mpz_t tmp;
 #endif
@@ -268,56 +268,67 @@ static void mpzmod_size(INT32 args)
 
 static void mpzmod_cast(INT32 args)
 {
+  struct pike_string *s;
+
   if(args < 1)
     error("mpz->cast() called without arguments.\n");
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to mpz->cast().\n");
 
-  switch(sp[-args].u.string->str[0])
+  s = sp[-args].u.string;
+  s->refs++;
+
+  pop_n_elems(args);
+
+  switch(s->str[0])
   {
   case 'i':
-    if(!strcmp(sp[-args].u.string->str, "int"))
+    if(!strcmp(s->str, "int"))
     {
-      mpzmod_get_int(args);
+      free_string(s);
+      mpzmod_get_int(0);
       return;
     }
     break;
 
   case 's':
-    if(!strcmp(sp[-args].u.string->str, "string"))
+    if(!strcmp(s->str, "string"))
     {
-      mpzmod_get_string(args);
+      free_string(s);
+      mpzmod_get_string(0);
       return;
     }
     break;
 
   case 'f':
-    if(!strcmp(sp[-args].u.string->str, "float"))
+    if(!strcmp(s->str, "float"))
     {
-      mpzmod_get_float(args);
+      free_string(s);
+      mpzmod_get_float(0);
       return;
     }
     break;
 
   case 'o':
-    if(!strcmp(sp[-args].u.string->str, "object"))
+    if(!strcmp(s->str, "object"))
     {
-      pop_n_elems(args);
       push_object(this_object());
     }
     break;
 
   case 'm':
-    if(!strcmp(sp[-args].u.string->str, "mixed"))
+    if(!strcmp(s->str, "mixed"))
     {
-      pop_n_elems(args);
       push_object(this_object());
     }
     break;
     
   }
 
-  error("mpz->cast() to other type than string, int or float.\n");
+  push_string(s);	/* To get it freed when error() pops the stack. */
+
+  error("mpz->cast() to \"%s\" is other type than string, int or float.\n",
+	s->str);
 }
 
 #ifdef DEBUG_MALLOC
