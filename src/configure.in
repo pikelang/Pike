@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.486 2001/02/16 16:56:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.487 2001/02/16 16:59:32 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5150,7 +5150,7 @@ cat >>config.info <<EOF
 =========================================================
 $PIKE_VERSION_LONG configuration summary
 
-install information:" >>config.info
+install information:
 prefix........ $prefix
 pike binary... $prefix/bin/pike
 pike library.. $prefix/lib/${PIKE_VERSION}/
@@ -5158,7 +5158,7 @@ pike library.. $prefix/lib/${PIKE_VERSION}/
 system........ $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
 EOF
 
-uname -a >/dev/null 2>/dev/null && echo "   `uname -a`" >>config.info
+uname -a >/dev/null 2>/dev/null && echo "uname......... `uname -a`" >>config.info
 hostname >/dev/null 2>/dev/null && echo "hostname...... `hostname`" >>config.info
 
 cat >>config.info <<EOF
