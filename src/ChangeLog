@@ -1,3 +1,19 @@
+Wed Jan 15 16:56:09 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* main.c, master.pike: --version implemented
+	* mysql.c: now compiles even if you don't have mysql
+	* object.c, language.yacc, interpret.c, docode.c, etc.: 
+	  It is now possible to use `[] and `[]= to overload indexing
+ 	  and `-> and `->= to overload the arrow operator.
+	* signal_handler.c (f_signal): signals are now checked before
+	  any handlers are changed.
+	* language.yacc: master()->resolv(ident, file) now implemented
+	  in pike binary
+	* Makefile.src (install): now installs all .h files in
+	  /usr/local/include/pike/
+	* configure.in: Added test for -rdynamic on linux
+	* master.pike: version now 0.4pl1 (internal)
+
 Tue Jan 14 17:59:06 1997  Niels Möller  <nisse@beldandy.infovav.se>
 
 	* dynamic_load.c (f_load_module): Now strips filename extension,
