@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.169 1999/05/11 18:56:32 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.170 1999/05/12 04:40:08 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2614,6 +2614,9 @@ static struct array *longest_ordered_sequence(struct array *a)
   ONERROR tmp;
   ONERROR tmp2;
 
+  if(!a->size)
+    return allocate_array(0);
+
   stack = malloc(sizeof(int)*a->size);
   links = malloc(sizeof(int)*a->size);
 
@@ -2906,6 +2909,9 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    struct diff_magic_link **stack;
    char *marks;
 
+   if(!cmptbl->size)
+     return allocate_array(0);
+
    stack = malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
 
    if (!stack) {
@@ -2918,7 +2924,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    /* NB: marks is used for optimization purposes only */
    marks = calloc(blen, 1);
 
-   if (!marks) {
+   if (!marks && blen) {
      int args = 0;
      free(stack);
      SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence", blen);
