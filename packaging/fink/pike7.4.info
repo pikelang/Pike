@@ -1,6 +1,6 @@
 Package: pike7.4
 Version: 7.4.28
-Revision: 2
+Revision: 1
 Description: Programming language with a C-like syntax
 DescDetail: <<
  Pike is an interpreted, object-oriented programming language. 
