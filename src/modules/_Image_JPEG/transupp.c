@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transupp.c,v 1.11 2002/10/17 09:19:16 nilsson Exp $
+|| $Id: transupp.c,v 1.12 2003/04/30 17:46:38 grubba Exp $
 */
 
 #include "global.h"
@@ -53,6 +53,16 @@
 /* FAR is defined by windef.h and jmorecfg.h */
 #ifdef FAR
 #undef FAR
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#ifdef HAVE_WTYPES_H
+/* jconfig.h has probably been compiled without WIN32_LEAN_AND_MEAN...
+ * So we need this one to get the boolean typedef.
+ */
+#include <wtypes.h>
+#endif
 #endif
 
 #include <jerror.h>

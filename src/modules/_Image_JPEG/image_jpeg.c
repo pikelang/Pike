@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.60 2002/10/29 14:07:58 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.61 2003/04/30 17:36:05 grubba Exp $
 */
 
 #include "global.h"
@@ -34,6 +34,16 @@
 #undef FAR
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#ifdef HAVE_WTYPES_H
+/* jconfig.h has probably been compiled without WIN32_LEAN_AND_MEAN...
+ * So we need this one to get the boolean typedef.
+ */
+#include <wtypes.h>
+#endif
+#endif
+
 #include <jpeglib.h>
 #include "transupp.h" /* Support routines for jpeg transformations */
 
@@ -47,7 +57,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.60 2002/10/29 14:07:58 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.61 2003/04/30 17:36:05 grubba Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
