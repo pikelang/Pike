@@ -14,9 +14,16 @@ case "$1" in
   cc)
     shift
 
+    prog="a.out"
+    compile=""
+    source=""
+
     for option
     do
       case "$1" in
+        -c)
+	  compile=yes
+	  ;;
 	-o)
 	  shift
 	  prog="$1"
@@ -24,8 +31,20 @@ case "$1" in
 	-o*)
 	  prog=`echo $1 | sed -e's/^-o//'`
 	  ;;
+	-[ILRDUx])
+	  shift
+	-*)
+	  ;;
+	*)
+	  shift
+	  source="`echo \"$1\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
+	  ;;
       esac
     done
+
+    if [ yes = "$compile" -a a.out = "$prog" ]; then
+      prog="`echo \"$source\" | sed -e 's/\\..\$//'`.o"
+    fi
 
     test x"$prog" = x || {
       rm -f "$prog" 2>/dev/null
