@@ -31,4 +31,9 @@ object build_csr(object rsa, object name,
 					   ->digits(256)) }) );
 }
 
-			      
+#if 0
+object build_csr_dsa(object dsa, object name)
+{
+  object info = asn1_sequence( ({ asn1_integer }) );
+}
+#endif

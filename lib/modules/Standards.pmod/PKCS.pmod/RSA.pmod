@@ -1,4 +1,4 @@
-/* rsa.pmod
+/* RSA.pmod
  *
  * rsa operations and types as described in PKCS-1 */
 
@@ -82,3 +82,4 @@ object build_rsa_public_key(object rsa)
     asn1_bit_string(asn1_sequence(
       ({ asn1_integer(rsa->n), asn1_integer(rsa->e) }) )->get_der()) }) );
 }
+
