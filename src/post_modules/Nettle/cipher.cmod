@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.13 2003/08/25 02:54:17 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.14 2003/08/25 23:37:09 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -44,9 +44,12 @@ werror(const char *format, ...)
 /*! @module Nettle
  */
 
-/* Checks if a key is acceptable. STR can be NULL, in which case only
+/* Checks if a key is acceptable. str can be NULL, in which case only
  * the length is checked. */
 typedef int check_key_func(ptrdiff_t len, const char *str);
+
+/* Checks if a key is weak. str must not be NULL. */
+typedef int weak_key_func(ptrdiff_t len, const char *str);
 
 /*! @class CipherInfo
  *!
@@ -57,6 +60,7 @@ PIKECLASS CipherInfo
 {
   CVAR const struct nettle_cipher *meta;
   CVAR check_key_func *check_key;
+  CVAR weak_key_func *weak_key;
   
   /*! @decl string name(void)
    *!
@@ -114,6 +118,7 @@ PIKECLASS CipherInfo
     {
       THIS->meta = NULL;
       THIS->check_key = NULL;
+      THIS->weak_key = NULL;
     }
 }
 /*! @endclass
@@ -136,11 +141,11 @@ PIKECLASS CipherState
   /* FIXME: Create should copy state from the other object, if
    * provided. */
 
-  /*! @decl CipherState set_encrypt_key(string key)
+  /*! @decl CipherState set_encrypt_key(string key, void|int force)
    *!
    *! Initializes the object for encryption.
    */
-  PIKEFUN object set_encrypt_key(string key)
+  PIKEFUN object set_encrypt_key(string key, void|int force)
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
       assert(info);
@@ -151,7 +156,11 @@ PIKECLASS CipherState
       NO_WIDE_STRING(key);
       if (!info->check_key(key->len, key->str))
 	Pike_error("Invalid key.\n");
-      
+
+      if ( (!force || !force->u.integer) &&
+	   info->weak_key && info->weak_key(key->len, key->str))
+	Pike_error("Key is weak.\n");
+
       info->meta->set_encrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->encrypt;
       THIS->key_size = key->len;
@@ -159,11 +168,11 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
-  /*! @decl CipherState set_decrypt_key(string key)
+  /*! @decl CipherState set_decrypt_key(string key, void|int force)
    *!
    *! Initializes the object for decryption.
    */
-  PIKEFUN object set_decrypt_key(string key)
+  PIKEFUN object set_decrypt_key(string key, void|int force)
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
       assert(info);
@@ -175,6 +184,10 @@ PIKECLASS CipherState
       if (!info->check_key(key->len, key->str))
 	Pike_error("Invalid key.\n");
       
+      if ( (!force || !force->u.integer) &&
+	   info->weak_key && info->weak_key(key->len, key->str))
+	Pike_error("Key is weak.\n");
+
       info->meta->set_decrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->decrypt;
       THIS->key_size = key->len;
@@ -228,6 +241,7 @@ PIKECLASS CipherState
     {
       THIS->ctx = NULL;
       THIS->crypt = NULL;
+      THIS->key_size = NULL;
     }
 
   EXIT
@@ -348,6 +362,13 @@ BLOWFISH_check_key(ptrdiff_t len, const char *key)
   return (len>=BLOWFISH_MIN_KEY_SIZE && len<=BLOWFISH_MAX_KEY_SIZE);
 }
 
+static int
+BLOWFISH_weak_key(ptrdiff_t len, const char *key)
+{
+  /* FIXME: Check if key is weak. Assume yes for now. */
+  return 1;
+}
+
 const struct nettle_cipher nettle_blowfish =
   _NETTLE_CIPHER_FIX(blowfish, BLOWFISH, 448);
 
@@ -366,6 +387,7 @@ PIKECLASS BLOWFISH_Info
       {
 	CipherInfo->meta = &nettle_blowfish;
 	CipherInfo->check_key = &BLOWFISH_check_key;
+	CipherInfo->weak_key = &BLOWFISH_weak_key;
       }
     }
 }
