@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.154 2002/09/17 14:18:46 nilsson Exp $
+// $Id: module.pmod,v 1.155 2002/09/20 13:13:14 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2025,9 +2025,13 @@ int mkdirhier (string pathname, void|int mode)
 {
   if (zero_type (mode)) mode = 0777; // &'ed with umask anyway.
   if (!sizeof(pathname)) return 0;
-  string path;
-  if (pathname[0] == '/') pathname = pathname[1..], path = "/";
-  else path = "";
+  string path = "";
+#ifdef __NT__
+  pathname = replace(pathname, "\\", "/");
+  if (pathname[1..2] == ":/" && `<=("A", upper_case(pathname[..0]), "Z"))
+    path = pathname[..2], pathname = pathname[3..];
+#endif
+  while (pathname[..0] == "/") pathname = pathname[1..], path += "/";
   foreach (pathname / "/", string name) {
     path += name;
     if (!file_stat(path)) {
