@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.119 1999/04/06 07:20:32 per Exp $ */
+/* $Id: image.c,v 1.120 1999/04/06 11:36:41 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.119 1999/04/06 07:20:32 per Exp $
+**!	$Id: image.c,v 1.120 1999/04/06 11:36:41 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.119 1999/04/06 07:20:32 per Exp $");
+RCSID("$Id: image.c,v 1.120 1999/04/06 11:36:41 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3482,8 +3482,8 @@ extern void init_image_tga(void);
 extern void exit_image_tga(void);
 extern void init_image_pcx(void);
 extern void exit_image_pcx(void);
-extern void init_image_xpm(void);
-extern void exit_image_xpm(void);
+extern void init_image__xpm(void);
+extern void exit_image__xpm(void);
 extern void exit_image_xbm(void);
 extern void init_image_xbm(void);
 
@@ -3858,7 +3858,7 @@ void pike_module_init(void)
    init_image_tga();
    init_image_pcx();
    init_image_xbm();
-/*    init_image_xpm(); */
+   init_image__xpm();
    init_image_x();
 }
 
@@ -3880,7 +3880,7 @@ void pike_module_exit(void)
    exit_image_any();
    exit_image_tga();
    exit_image_pcx();
-/*    exit_image_xpm(); */
+   exit_image__xpm();
    exit_image_xbm();
    if (png_object) 
    {
