@@ -1,4 +1,4 @@
-/* $Id: _rsa.pike,v 1.1 2003/03/19 17:46:30 nilsson Exp $
+/* $Id: _rsa.pike,v 1.2 2003/03/23 22:44:03 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -7,40 +7,37 @@
 
 #if constant(Gmp.mpz)
 
-#define bignum object(Gmp.mpz)
-#define BIGNUM (Gmp.mpz)
-
-bignum n;  /* modulo */
-bignum e;  /* public exponent */
-bignum d;  /* private exponent (if known) */
+Gmp.mpz n;  /* modulo */
+Gmp.mpz e;  /* public exponent */
+Gmp.mpz d;  /* private exponent (if known) */
 int size;
 
 /* Extra info associated with a private key. Not currently used. */
    
-bignum p;
-bignum q;
+Gmp.mpz p;
+Gmp.mpz q;
 
-bignum get_n()
+Gmp.mpz get_n()
 {
   return n;
 }
 
-bignum get_e()
+Gmp.mpz get_e()
 {
   return e;
 }
 
-bignum get_d()
+Gmp.mpz get_d()
 {
   return d;
 }
 
-bignum get_p()
+Gmp.mpz get_p()
 {
   return p;
 }
 
-bignum get_q()
+Gmp.mpz get_q()
 {
   return q;
 }
@@ -70,30 +67,32 @@ string cooked_get_q()
   return q->digits(256);
 }
 
-object set_public_key(bignum modulo, bignum pub)
+object set_public_key(Gmp.mpz|int modulo, Gmp.mpz|int pub)
 {
-  n = modulo;
-  e = pub;
+  n = Gmp.mpz(modulo);
+  e = Gmp.mpz(pub);
   size = n->size(256);
   if (size < 12)
     error( "Crypto.rsa->set_public_key: Too small modulo.\n" );
   return this_object();
 }
 
-object set_private_key(bignum priv, array(bignum)|void extra)
+object set_private_key(Gmp.mpz|int priv, array(Gmp.mpz|int)|void extra)
 {
-  d = priv;
+  d = Gmp.mpz(priv);
   if (extra)
   {
-    p = extra[0];
-    q = extra[1];
+    p = Gmp.mpz(extra[0]);
+    q = Gmp.mpz(extra[1]);
+    n = p*q;
+    size = n->size(256);
   }
   return this_object();
 }
 
 int query_blocksize() { return size - 3; }
 
-bignum rsa_pad(string message, int type, mixed|void random)
+Gmp.mpz rsa_pad(string message, int type, mixed|void random)
 {
   string cookie;
   int len;
@@ -101,7 +100,7 @@ bignum rsa_pad(string message, int type, mixed|void random)
   len = size - 3 - sizeof(message);
   /*  write(sprintf("%d, %d, %d, %s", len, size, sizeof(message), message)); */
   if (len < 8)
-    error( "Crypto.rsa->rsa_pad: Too large block.\n" );
+    error( "Block too large. (%d,%d)\n", sizeof(message), size-3 );
 
   switch(type)
   {
@@ -120,10 +119,10 @@ bignum rsa_pad(string message, int type, mixed|void random)
   default:
     error( "Crypto.rsa->rsa_pad: Unknown type.\n" );
   }
-  return BIGNUM(sprintf("%c", type) + cookie + "\0" + message, 256);
+  return Gmp.mpz(sprintf("%c", type) + cookie + "\0" + message, 256);
 }
 
-string rsa_unpad(bignum block, int type)
+string rsa_unpad(Gmp.mpz block, int type)
 {
   string s = block->digits(256);
   int i = search(s, "\0");
@@ -155,7 +154,7 @@ string encrypt(string s, mixed|void r)
 
 string decrypt(string s)
 {
-  return rsa_unpad(BIGNUM(s, 256)->powm(d, n), 2);
+  return rsa_unpad(Gmp.mpz(s, 256)->powm(d, n), 2);
 }
 
 int rsa_size() { return n->size(); }
