@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.12 2004/05/02 18:30:04 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.13 2004/10/04 21:34:34 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -122,5 +122,12 @@ test_eq([[Standards.IDNA.Punycode.decode("b1abfaaepdrnnbgefbaDotcwatmq2g4l")]],
         [["\x43F\x43E\x447\x435\x43C\x443\x436\x435\x43E\x43D\x438"
           "\x43D\x435\x433\x43E\x432\x43E\x440\x44F\x442\x43F\x43E"
           "\x440\x443\x441\x441\x43A\x438"]]) // I
+
+// UUID
+
+test_eq(Standards.UUID.make_dns("www.widgets.com")->str(),
+        "e902893a-9d22-3c7e-a7b8-d6e313b71d9f")
+test_eq(Standards.UUID.make_null()->str(),
+        "00000000-0000-0000-0000-000000000000");
 
 END_MARKER
