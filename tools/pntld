@@ -1094,7 +1094,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.22 2003/01/01 12:25:33 peter Exp $\n"
+	 "$Id: pntld,v 1.23 2003/11/21 16:04:22 grubba Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1166,8 +1166,10 @@ int main(int argc, array(string) argv)
         dumpfile(file, 0, 0, filename);
         found=1;
         break;
+      } else {
+	werror("WARNING: Failed to read library file: %O (errno:%d).\n",
+	       filename, errno());
       }
-      
     }
     if(!found)
     {
