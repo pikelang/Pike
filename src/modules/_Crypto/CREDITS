@@ -9,10 +9,11 @@ idea.c     Original implementation by Xuejia Lai, heavily optimized by
            Colin Plumb. In the Public Domain (although the algorithm
            itself is patented)
 
-sha.c      Written by Peter Gutmann, somewhat hacket by Andrew
+sha.c      Written by Peter Gutmann, somewhat hacked by Andrew
            Kuchling. Public Domain.
+
+md5.c      Written by Colin Plumb. Also hacked by Andrew Kuchling.
 
 descore    Written by Dana L. How. GPL.
 
-
-
+cast.c     Written by Steve Reid <sreid@sea-to-sky.net>. Public Domain.

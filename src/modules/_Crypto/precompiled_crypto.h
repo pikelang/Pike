@@ -48,10 +48,15 @@ void MOD_INIT2(md5)(void);
 void MOD_INIT(md5)(void);
 void MOD_EXIT(md5)(void);
 
-/* /precompiled/crypto/md5 */
+/* /precompiled/crypto/idea */
 void MOD_INIT2(idea)(void);
 void MOD_INIT(idea)(void);
 void MOD_EXIT(idea)(void);
+
+/* /precompiled/crypto/cast */
+void MOD_INIT2(cast)(void);
+void MOD_INIT(cast)(void);
+void MOD_EXIT(cast)(void);
 
 /* /precompiled/crypto/des */
 void MOD_INIT2(des)(void);
