@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.264 2000/04/19 17:32:25 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.265 2000/04/19 20:37:51 neotron Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4553,7 +4553,31 @@ void f_object_variablep(INT32 args)
   push_int(!!ret);
 }
 
-
+/* uniqify an array while at the same time keeping the order intact */
+void f_uniq_array(INT32 args) {
+  struct array *a, *b;
+  struct svalue s;
+  struct mapping *m;
+  struct svalue one;
+  int i, j=0;
+  get_all_args("uniq", args, "%a", &a);
+  m = allocate_mapping(a->size);
+  one.type = T_INT;
+  one.u.integer = 1;
+  b = allocate_array(a->size);
+  for(i =0; i< a->size; i++)
+  {
+    s = ITEM(a)[i];
+    if(!low_mapping_lookup(m, &s)) {
+      mapping_insert(m, &s, &one);
+      assign_svalue(&(ITEM(b)[j++]), &s);
+    }
+  }
+  resize_array(b,  j);
+  free_mapping(m);
+  pop_n_elems(args);
+  push_array(b);
+}
 
 void f_splice(INT32 args)
 {
@@ -6016,6 +6040,9 @@ void init_builtin_efuns(void)
   /* function(array(0=mixed)...:array(0)) */
   ADD_FUNCTION("splice",f_splice,
 	       tFuncV(tNone,tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
+
+  /* function(array:array) */
+  ADD_FUNCTION("uniq_array", f_uniq_array, tFunc(tArray, tArray), 0);
   
 /* function(mixed:int) */
   ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);

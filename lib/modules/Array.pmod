@@ -10,7 +10,7 @@ constant sort = __builtin.sort;
 constant everynth = __builtin.everynth;
 constant splice = __builtin.splice;
 constant transpose = __builtin.transpose;
-
+constant uniq = __builtin.uniq_array;
 #if 1
 constant filter=predef::filter;
 constant map=predef::map;
@@ -253,11 +253,6 @@ array sort_array(array foo,function|void cmp, mixed ... args)
   }
 
   return foo;
-}
-
-array uniq(array a)
-{
-  return indices(mkmapping(a,a));
 }
 
 array columns(array x, array ind)
