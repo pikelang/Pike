@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
 
 //! This class implements URI parsing and resolving of relative references to
-//! absolute form, as defined in RFC 2396
+//! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.18 2005/03/30 18:25:42 grubba Exp $
+// $Id: URI.pike,v 1.19 2005/03/30 18:26:23 grubba Exp $
 
 #pragma strict_types
 
