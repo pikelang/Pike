@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.124 2003/02/15 17:33:33 grubba Exp $
+|| $Id: threads.h,v 1.125 2003/02/20 11:55:33 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -29,6 +29,7 @@ extern PIKE_MUTEX_T interleave_lock;
 
 struct thread_state {
   struct Pike_interpreter state;
+  struct object *thread_obj;	/* NOTE: Not ref-counted! */
   char swapped;
   char status;
   COND_T status_change;

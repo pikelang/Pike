@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.254 2003/02/15 17:33:34 grubba Exp $
+|| $Id: file.c,v 1.255 2003/02/20 11:55:33 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.254 2003/02/15 17:33:34 grubba Exp $");
+RCSID("$Id: file.c,v 1.255 2003/02/20 11:55:33 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3096,7 +3096,8 @@ struct file_lock_key_storage
   struct my_file *f;
   struct object *file;
 #ifdef _REENTRANT
-  struct object *owner;
+  struct thread_state *owner;
+  struct object *owner_obj;
 #endif
 };
 
@@ -3117,7 +3118,7 @@ static void low_file_lock(INT32 args, int flags)
   {
     if(THIS->key
 #ifdef _REENTRANT
-       && OB2KEY(THIS->key)->owner == Pike_interpreter.thread_obj
+       && OB2KEY(THIS->key)->owner == Pike_interpreter.thread_state
 #endif
       )
     {
@@ -3202,8 +3203,8 @@ static void init_file_lock_key(struct object *o)
 {
   THIS_KEY->f=0;
 #ifdef _REENTRANT
-  THIS_KEY->owner=Pike_interpreter.thread_obj;
-  add_ref(Pike_interpreter.thread_obj);
+  THIS_KEY->owner=Pike_interpreter.thread_state;
+  add_ref(THIS_KEY->owner_obj=Pike_interpreter.thread_state->thread_obj);
 #endif
 }
 
@@ -3233,10 +3234,11 @@ static void exit_file_lock_key(struct object *o)
     }while(err<0 && errno==EINTR);
 
 #ifdef _REENTRANT
-    if(THIS_KEY->owner)
+    THIS_KEY->owner = NULL;
+    if(THIS_KEY->owner_obj)
     {
-      free_object(THIS_KEY->owner);
-      THIS_KEY->owner=0;
+      free_object(THIS_KEY->owner_obj);
+      THIS_KEY->owner_obj = NULL;
     }
 #endif
     THIS_KEY->f->key = 0;
@@ -3251,7 +3253,7 @@ static void init_file_locking(void)
   off = ADD_STORAGE(struct file_lock_key_storage);
 #ifdef _REENTRANT
   map_variable("_owner","object",0,
-	       off + OFFSETOF(file_lock_key_storage, owner),
+	       off + OFFSETOF(file_lock_key_storage, owner_obj),
 	       PIKE_T_OBJECT);
 #endif
   map_variable("_file","object",0,

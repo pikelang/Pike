@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.54 2003/02/16 03:53:25 mast Exp $
+|| $Id: jvm.c,v 1.55 2003/02/20 11:55:33 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.54 2003/02/16 03:53:25 mast Exp $");
+RCSID("$Id: jvm.c,v 1.55 2003/02/20 11:55:33 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1841,12 +1841,14 @@ static void native_dispatch(struct native_method_context *ctx,
     }
   } else {
     /* Not a pike thread.  Create a temporary thread_id... */
+    struct object *thread_obj;
+
     mt_lock_interpreter();
     init_interpreter();
     Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     Pike_interpreter.recoveries = NULL;
-    Pike_interpreter.thread_obj = fast_clone_object(thread_id_prog);
-    INIT_THREAD_STATE((struct thread_state *)(Pike_interpreter.thread_obj->storage +
+    thread_obj = fast_clone_object(thread_id_prog);
+    INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
 					      thread_storage_offset));
     num_threads++;
     thread_table_insert(Pike_interpreter.thread_state);
@@ -1856,8 +1858,8 @@ static void native_dispatch(struct native_method_context *ctx,
     thread_table_delete(Pike_interpreter.thread_state);
     EXIT_THREAD_STATE(Pike_interpreter.thread_state);
     Pike_interpreter.thread_state=NULL;
-    free_object(Pike_interpreter.thread_obj);
-    Pike_interpreter.thread_obj=NULL;
+    free_object(thread_obj);
+    thread_obj = NULL;
     cleanup_interpret();
     num_threads--;
     mt_unlock_interpreter();

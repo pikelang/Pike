@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.32 2003/02/16 04:18:52 mast Exp $
+|| $Id: pike_threadlib.h,v 1.33 2003/02/20 11:55:32 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -631,7 +631,7 @@ extern void dumpmem(char *desc, void *x, int size);
 #define DEBUG_CHECK_THREAD() do { } while (0)
 #endif
 
-#define THREADSTATE2OBJ(X) ((X)->state.thread_obj)
+#define THREADSTATE2OBJ(X) ((X)->thread_obj)
 
 PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \

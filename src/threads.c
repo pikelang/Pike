@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.207 2003/02/16 15:05:07 mast Exp $
+|| $Id: threads.c,v 1.208 2003/02/20 11:55:32 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.207 2003/02/16 15:05:07 mast Exp $");
+RCSID("$Id: threads.c,v 1.208 2003/02/20 11:55:32 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -251,16 +251,6 @@ PMOD_EXPORT ptrdiff_t thread_storage_offset;
 #ifdef USE_CLOCK_FOR_SLICES
 PMOD_EXPORT clock_t thread_start_clock = 0;
 #endif
-
-struct thread_starter
-{
-  struct object *thread_obj;		/* Object holding the thread_state. */
-  struct thread_state *thread_state;	/* State of the thread. */
-  struct array *args;			/* Arguments passed to the thread. */
-#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  int euid, egid;
-#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-};
 
 struct thread_local
 {
@@ -639,8 +629,10 @@ void debug_list_all_threads(void)
 
   fprintf(stderr,"--Listing all threads--\n");
   dumpmem("Current thread: ",&self, sizeof(self));
-  fprintf(stderr,"Current thread obj: %p\n",Pike_interpreter.thread_obj);
   fprintf(stderr,"Current thread state: %p\n",Pike_interpreter.thread_state);
+  fprintf(stderr,"Current thread obj: %p\n",
+	  Pike_interpreter.thread_state?
+	  Pike_interpreter.thread_state->thread_obj:NULL);
   fprintf(stderr,"Current thread hash: %d\n",thread_table_hash(&self));
   fprintf(stderr,"Current stack pointer: %p\n",&self);
   for(x=0; x<THREAD_TABLE_SIZE; x++)
@@ -699,9 +691,21 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   DEBUG_CHECK_THREAD();
 }
 
+struct thread_starter
+{
+  struct thread_state *thread_state;	/* State of the thread. */
+  struct array *args;			/* Arguments passed to the thread. */
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+  int euid, egid;
+#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
+};
+
+/* Thread func starting new Pike-level threads. */
 TH_RETURN_TYPE new_thread_func(void *data)
 {
   struct thread_starter arg = *(struct thread_starter *)data;
+  struct object *thread_obj;
+  struct thread_state *thread_state;
   JMP_BUF back;
   INT32 tmp;
 
@@ -746,9 +750,11 @@ TH_RETURN_TYPE new_thread_func(void *data)
   Pike_interpreter.stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   Pike_interpreter.recoveries = NULL;
 
-  add_ref(Pike_interpreter.thread_obj = arg.thread_obj);
-  INIT_THREAD_STATE(arg.thread_state);
-  co_broadcast(& arg.thread_state->status_change);
+  add_ref(thread_obj = arg.thread_state->thread_obj);
+  INIT_THREAD_STATE(thread_state = arg.thread_state);
+
+  /* Inform the spawning thread that we are now running. */
+  co_broadcast(&thread_state->status_change);
 
   DEBUG_CHECK_THREAD();
 
@@ -763,7 +769,6 @@ TH_RETURN_TYPE new_thread_func(void *data)
       call_handle_error();
     if(throw_severity == THROW_EXIT)
     {
-      free((char *) data);
       pike_do_exit(throw_value.u.integer);
     }
   } else {
@@ -778,34 +783,41 @@ TH_RETURN_TYPE new_thread_func(void *data)
     pop_stack();
   }
 
+  UNSETJMP(back);
+
   DEBUG_CHECK_THREAD();
 
-  if(arg.thread_state->thread_local != NULL) {
-    free_mapping(arg.thread_state->thread_local);
-    arg.thread_state->thread_local = NULL;
+  if(thread_state->thread_local != NULL) {
+    free_mapping(thread_state->thread_local);
+    thread_state->thread_local = NULL;
   }
 
-  arg.thread_state->status = THREAD_EXITED;
-  co_broadcast(& arg.thread_state->status_change);
-
-  free((char *)data); /* Moved by per, to avoid some bugs.... */
-  UNSETJMP(back);
+  thread_state->status = THREAD_EXITED;
+  co_broadcast(&thread_state->status_change);
 
   THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p done\n",
 		      arg.thread_state));
 
+  /* This thread is now officially dead. */
+
   cleanup_interpret();
-  thread_table_delete(arg.thread_state);
-  EXIT_THREAD_STATE(arg.thread_state);
-  Pike_interpreter.thread_obj = NULL;
-  Pike_interpreter.thread_state = NULL;
+
+  thread_table_delete(thread_state);
+  EXIT_THREAD_STATE(thread_state);
+  Pike_interpreter.thread_state = thread_state = NULL;
+
+  /* Free ourselves.
+   * NB: This really ought to run in some other thread...
+   */
+  /* free_object(thread_obj); */
+  thread_obj = NULL;
+
   num_threads--;
   if(!num_threads && threads_evaluator_callback)
   {
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
-  free_object(arg.thread_obj);
 
 #ifdef INTERNAL_PROFILING
   fprintf (stderr, "Thread usage summary:\n");
@@ -850,7 +862,7 @@ int num_lwps = 1;
  */
 void f_thread_create(INT32 args)
 {
-  struct thread_starter *arg;
+  struct thread_starter arg;
   struct thread_state *thread_state =
     (struct thread_state *)Pike_fp->current_storage;
   ONERROR err;
@@ -860,29 +872,25 @@ void f_thread_create(INT32 args)
     Pike_error("Threads can not be restarted.\n");
   }
 
-  arg = ALLOC_STRUCT(thread_starter);
-  SET_ONERROR(err, free, arg);
-
-  arg->args = aggregate_array(args);
-  arg->thread_obj = Pike_fp->current_object;
-  arg->thread_state = thread_state;
+  arg.args = aggregate_array(args);
+  arg.thread_state = thread_state;
 
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  arg->euid = geteuid();
-  arg->egid = getegid();
+  arg.euid = geteuid();
+  arg.egid = getegid();
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
 
   do {
-    tmp = th_create(&arg->thread_state->id,
+    tmp = th_create(&thread_state->id,
 		    new_thread_func,
-		    arg);
+		    &arg);
     if (tmp == EINTR) check_threads_etc();
   } while( tmp == EINTR );
 
   if(!tmp)
   {
     num_threads++;
-    thread_table_insert(arg->thread_state);
+    thread_table_insert(thread_state);
 
     if(!threads_evaluator_callback)
     {
@@ -890,10 +898,14 @@ void f_thread_create(INT32 args)
 						 check_threads, 0,0);
       dmalloc_accept_leak(threads_evaluator_callback);
     }
-    UNSET_ONERROR(err);
-
     /* Wait for the thread to start properly.
      * so that we can avoid races.
+     *
+     * The main race is the one on current_object,
+     * since it at this point only has one reference.
+     *
+     * We also want the stuff in arg to be copied properly
+     * before we exit the function...
      */
     SWAP_OUT_CURRENT_THREAD();
     while (thread_state->status == THREAD_NOT_STARTED) {
@@ -901,15 +913,14 @@ void f_thread_create(INT32 args)
       low_co_wait_interpreter(&thread_state->status_change);
     }
     SWAP_IN_CURRENT_THREAD();
-
-    THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%08x\n",
-			(unsigned int)arg->thread_obj));
-    push_int(0);
   } else {
-    free_array(arg->args);
-    CALL_AND_UNSET_ONERROR(err);
+    free_array(arg.args);
     Pike_error("Failed to create thread (errno = %d).\n", tmp);
   }
+
+  THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%08x\n",
+		      (unsigned int)thread_state));
+  push_int(0);
 }
 
 /*! @endclass
@@ -944,7 +955,12 @@ void f_thread_set_concurrency(INT32 args)
 PMOD_EXPORT void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
-  ref_push_object(Pike_interpreter.thread_obj);
+  if (Pike_interpreter.thread_state) {
+    ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  } else {
+    /* Threads not enabled yet/anylonger */
+    push_undefined();
+  }
 }
 
 #define THIS_MUTEX ((struct mutex_storage *)(CURRENT_STORAGE))
@@ -966,7 +982,8 @@ struct key_storage
 {
   struct mutex_storage *mut;
   struct object *mutex_obj;
-  struct object *owner;
+  struct thread_state *owner;
+  struct object *owner_obj;
   int initialized;
 };
 
@@ -1039,7 +1056,7 @@ void f_mutex_lock(INT32 args)
 
     case 0:
     case 2:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_obj)
+      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
       {
 	THREADS_FPRINTF(0,
 			(stderr, "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
@@ -1127,7 +1144,7 @@ void f_mutex_trylock(INT32 args)
 		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_obj)
+      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
       {
 	Pike_error("Recursive mutex locks!\n");
       }
@@ -1173,7 +1190,7 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
   pop_n_elems(args);
 
   if (m->key && OB2KEY(m->key)->owner)
-    ref_push_object(OB2KEY(m->key)->owner);
+    ref_push_object(OB2KEY(m->key)->owner->thread_obj);
   else
     push_int(0);
 }
@@ -1222,7 +1239,8 @@ void init_mutex_key_obj(struct object *o)
 		      THIS_KEY, Pike_interpreter.thread_state));
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
-  add_ref(THIS_KEY->owner=Pike_interpreter.thread_obj);
+  THIS_KEY->owner = Pike_interpreter.thread_state;
+  add_ref(THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj);
   THIS_KEY->initialized=1;
 }
 
@@ -1241,8 +1259,11 @@ void exit_mutex_key_obj(struct object *o)
 #endif
     mut->key=0;
     if (THIS_KEY->owner) {
-      free_object(THIS_KEY->owner);
-      THIS_KEY->owner=0;
+      THIS_KEY->owner = NULL;
+    }
+    if (THIS_KEY->owner_obj) {
+      free_object(THIS_KEY->owner_obj);
+      THIS_KEY->owner_obj=0;
     }
     free_object (THIS_KEY->mutex_obj);
     THIS_KEY->mut=0;
@@ -1384,7 +1405,7 @@ void f_thread_backtrace(INT32 args)
 
   pop_n_elems(args);
 
-  if(foo->state.thread_obj == Pike_interpreter.thread_obj)
+  if(foo == Pike_interpreter.thread_state)
   {
     f_backtrace(0);
   }
@@ -1467,7 +1488,7 @@ static void f_thread_id_result(INT32 args)
 void init_thread_obj(struct object *o)
 {
   MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter));
-  THIS_THREAD->state.thread_obj = Pike_fp->current_object;
+  THIS_THREAD->thread_obj = Pike_fp->current_object;
   THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
   THIS_THREAD->result.type = T_INT;
@@ -1489,6 +1510,7 @@ void exit_thread_obj(struct object *o)
   }
   co_destroy(& THIS_THREAD->status_change);
   th_destroy(& THIS_THREAD->id);
+  THIS_THREAD->thread_obj = NULL;
 }
 
 /*! @endclass
@@ -1618,7 +1640,7 @@ void f_thread_local_set(INT32 args)
   else if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Thread.Local.set", 1);
 
-  if(Pike_interpreter.thread_obj == NULL)
+  if(Pike_interpreter.thread_state == NULL)
     Pike_error("Trying to set Thread.Local without thread!\n");
 
   if((m = Pike_interpreter.thread_state->thread_local) == NULL)
@@ -1800,6 +1822,8 @@ void low_th_init(void)
 #endif
 }
 
+static struct object *backend_thread_obj = NULL;
+
 void th_init(void)
 {
   ptrdiff_t mutex_key_offset;
@@ -1814,7 +1838,8 @@ void th_init(void)
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a thread to take over ownership of a key.
    */
-  PIKE_MAP_VARIABLE("_owner", mutex_key_offset + OFFSETOF(key_storage, owner),
+  PIKE_MAP_VARIABLE("_owner",
+		    mutex_key_offset + OFFSETOF(key_storage, owner_obj),
 		    tObjIs_THREAD_ID, T_OBJECT, 0);
   PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
 		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_STATIC|ID_PRIVATE);
@@ -1924,8 +1949,8 @@ void th_init(void)
   if(!mutex_key)
     Pike_fatal("Failed to initialize thread program!\n");
 
-  Pike_interpreter.thread_obj = fast_clone_object(thread_id_prog);
-  INIT_THREAD_STATE((struct thread_state *)(Pike_interpreter.thread_obj->storage +
+  backend_thread_obj = fast_clone_object(thread_id_prog);
+  INIT_THREAD_STATE((struct thread_state *)(backend_thread_obj->storage +
 					    thread_storage_offset));
   thread_table_insert(Pike_interpreter.thread_state);
 }
@@ -1939,11 +1964,11 @@ void th_cleanup(void)
     Pike_interpreter.thread_state = NULL;
   }
 
-  if(Pike_interpreter.thread_obj)
+  if(backend_thread_obj)
   {
-    destruct(Pike_interpreter.thread_obj);
-    free_object(Pike_interpreter.thread_obj);
-    Pike_interpreter.thread_obj = NULL;
+    destruct(backend_thread_obj);
+    free_object(backend_thread_obj);
+    backend_thread_obj = NULL;
     destruct_objects_to_destruct_cb();
   }
 
