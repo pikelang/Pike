@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.152 2001/02/06 16:10:47 grubba Exp $");
+RCSID("$Id: threads.c,v 1.153 2001/02/06 17:14:08 per Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1333,13 +1333,18 @@ static void thread_was_checked(struct object *o)
  *!   so it's always available.
  */
 
-/* FIXME: Why not use an init-callback? */
-PMOD_EXPORT void f_thread_local(INT32 args)
+void f_thread_local_create( INT32 args )
 {
   static INT32 thread_local_id = 0;
+  ((struct thread_local *)Pike_fp->current_object->storage)->id =
+    thread_local_id++;
+  pop_n_elems(args);
+  push_int(0);
+}
 
+PMOD_EXPORT void f_thread_local(INT32 args)
+{
   struct object *loc = clone_object(thread_local_prog,0);
-  ((struct thread_local *)loc->storage)->id = thread_local_id++;
   pop_n_elems(args);
   push_object(loc);
 }
@@ -1651,6 +1656,7 @@ void th_init(void)
   ADD_STORAGE(struct thread_local);
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
+  ADD_FUNCTION("create",f_thread_local_create,tFunc(tVoid,tVoid),0);
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
