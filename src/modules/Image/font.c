@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.81 2003/09/10 15:21:58 mast Exp $
+|| $Id: font.c,v 1.82 2003/10/07 16:21:01 mast Exp $
 */
 
 #include "global.h"
@@ -343,7 +343,7 @@ void font_load(INT32 args)
       size = (size_t) file_size(fd);
       if (size > 0)
       {
-	 new_font=THIS=(struct font *)xalloc(sizeof(struct font));
+	 new_font=(struct font *)xalloc(sizeof(struct font));
 
 	 THREADS_ALLOW();
 #ifdef HAVE_MMAP
@@ -372,6 +372,11 @@ void font_load(INT32 args)
 	 }
 #endif
 	 THREADS_DISALLOW();
+
+	 if (THIS)
+	   /* In case font_load got called again in the THREADS_ALLOW block. */
+	   free_font_struct(THIS);
+	 THIS = new_font;
 
 loading_default:
 
@@ -624,7 +629,13 @@ void font_write(INT32 args)
      {
       case 0:
 	to_write0 = STR0(sp[j-args].u.string);
-	THREADS_ALLOW();
+	/* THREADS_ALLOW(); */
+	/* Can't release the thread here; this would point to freed
+	 * memory if font_load gets called. We'd have to refcount font
+	 * structs to cope with that, but since the released window
+	 * typically is short and since this code isn't used much now
+	 * when we have Image.FreeType, I bluntly disable it instead.
+	 * /mast */
 	for (i = 0; i < to_write_len; i++)
         {
 	  c=*(to_write0++);
@@ -640,11 +651,11 @@ void font_write(INT32 args)
 	    xsize += char_space(this, c);
 	  }
 	}
-	THREADS_DISALLOW();
+	/* THREADS_DISALLOW(); */
 	break;
       case 1:
 	to_write1 = STR1(sp[j-args].u.string);
-	THREADS_ALLOW();
+	/* THREADS_ALLOW(); */
 	for (i = 0; i < to_write_len; i++)
         {
 	  c=*(to_write1++);
@@ -660,11 +671,11 @@ void font_write(INT32 args)
 	    xsize += char_space(this, c);
 	  }
 	}
-	THREADS_DISALLOW();
+	/* THREADS_DISALLOW(); */
 	break;
       case 2:
 	to_write2 = STR2(sp[j-args].u.string);
-	THREADS_ALLOW();
+	/* THREADS_ALLOW(); */
 	for (i = 0; i < to_write_len; i++)
         {
 	  c=*(to_write2++);
@@ -680,7 +691,7 @@ void font_write(INT32 args)
 	    xsize += char_space(this, c);
 	  }
 	}
-	THREADS_DISALLOW();
+	/* THREADS_DISALLOW(); */
 	break;
       default:
 	Pike_fatal("Illegal shift size!\n");
