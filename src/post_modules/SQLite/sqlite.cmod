@@ -36,6 +36,7 @@ PIKECLASS ResObj
   flags ID_PRIVATE | ID_STATIC;
 {
   CVAR struct object *dbobj;
+  CVAR struct mapping *bindings;
   CVAR sqlite3 *db;
   CVAR sqlite3_stmt *stmt;
   CVAR int eof;
@@ -121,12 +122,15 @@ PIKECLASS ResObj
     THIS->columns = -1;
     THIS->dbobj = NULL;
     THIS->stmt = NULL;
+    THIS->bindings = NULL;
   }
   EXIT {
     if(THIS->stmt)
       sqlite3_finalize(THIS->stmt);
     if(THIS->dbobj)
       free_object(THIS->dbobj);
+    if(THIS->bindings)
+      free_mapping(THIS->bindings);
   }
 }
 
@@ -150,7 +154,8 @@ PIKECLASS SQLite
     pop_stack();
   }
 
-  PIKEFUN object big_query(string query) {
+  PIKEFUN object big_query(string query,
+			   mapping(string|int:mixed)|void bindings) {
 
     struct object *res;
     sqlite3_stmt *stmt;
@@ -158,6 +163,7 @@ PIKECLASS SQLite
     struct ResObj_struct *store;
     struct pike_string *q;
 
+    if(args==2) stack_swap();
     f_string_to_utf8(1);
     q = Pike_sp[-1].u.string;
 
@@ -165,6 +171,7 @@ PIKECLASS SQLite
     if( tail[0] )
       Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
 		 tail);
+    pop_stack();
 
     res=fast_clone_object(ResObj_program);
     store = OBJ2_RESOBJ(res);
@@ -174,6 +181,69 @@ PIKECLASS SQLite
     /* Add a reference to the database to prevent it from being
        destroyed before the query object. */
     store->dbobj = this_object();
+
+    if(bindings) {
+      struct mapping_data *md = bindings->data;
+      INT32 e;
+      struct keypair *k;
+      NEW_MAPPING_LOOP(md) {
+	int idx;
+	switch(k->ind.type) {
+	case T_INT:
+	  idx = k->ind.u.integer;
+	  break;
+	case T_STRING:
+	  push_string(k->ind.u.string);
+	  f_string_to_utf8(1);
+	  idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
+	  pop_stack();
+	  if(!idx)
+	    Pike_error("Unknown bind index \"%s\".\n", k->ind.u.string->str);
+	  break;
+	default:
+	  Pike_error("Bind index is not int|string.\n");
+	}
+	switch(k->val.type) {
+	case T_INT:
+	  ERR( sqlite3_bind_int64(stmt, idx, k->val.u.integer) );
+	  break;
+	case T_STRING:
+	  {
+	    struct pike_string *s = k->val.u.string;
+	    switch(s->size_shift) {
+	    case 0:
+	      ERR( sqlite3_bind_blob(stmt, idx, s->str, s->len,
+				     SQLITE_STATIC) );
+	      break;
+	    case 1:
+	    case 2:
+	      push_string(s);
+	      f_string_to_unicode(1);
+	      s = Pike_sp[-1].u.string;
+	      ERR( sqlite3_bind_text16(stmt, idx, s->str, s->len,
+				       SQLITE_TRANSIENT) );
+	      pop_stack();
+	      break;
+#ifdef PIKE_DEBUG
+	    default:
+	      Pike_error("Unknown size_shift.\n");
+#endif
+	    }
+	  }
+	  break;
+	case T_FLOAT:
+	  ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number) );
+	  break;
+	default:
+	  Pike_error("Can only bind string|int|float.\n");
+	}
+      }
+
+      /* Add a reference so that the bound strings are kept, which in
+	 turn allows us to use SQLITE_STATIC. */
+      add_ref(bindings);
+      store->bindings = bindings;
+    }
 
     apply_low(res, f_ResObj_create_fun_num, 0);
     push_object(res);
