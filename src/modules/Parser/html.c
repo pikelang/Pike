@@ -465,21 +465,38 @@ static void html__set_entity_callback(INT32 args)
 **!
 **!	<tt>to_do</tt> can be:
 **!	<ul>
-**!	<li>a function to be called. The function is on the form
+**!	<li><b>a function</b> to be called. The function is on the form
 **!	<pre>
 **!     mixed tag_callback(object parser,mapping args,mixed ...extra)
 **!	mixed container_callback(object parser,mapping args,string cont,mixed ...extra)
 **!	mixed entity_callback(object parser,mixed ...extra)
 **!	</pre>
 **!	depending on what realm the function is called by.
-**!	<li>a string. This tag/container/entity is then replaced
+**!	<li><b>a string</b>. This tag/container/entity is then replaced
 **!	by the string.
-**!	<li>an array of functions (as above).
-**!	The functions are called with each others result from element
-**!	0 to the last element. Note that the _data_ will change,
-**!	but the argument mapping will still be the same.
-**!	(Ie, do destructive editing of the args mapping if you 
-**!	want the next callback to read it - don't just return a new tag.)
+**	<li><b>an array</b> of functions (as above).
+**	The functions are called with each others result from element
+**	0 to the last element. Note that the _data_ will change,
+**	but the argument mapping will still be the same.
+**	(Ie, do destructive editing of the args mapping if you 
+**	want the next callback to read it - don't just return a new tag.)
+**!	</ul>
+**!
+**!     The callback function can return:
+**!	<ul>
+**!	<li><b>a string</b>; this string will be pushed on the parser
+**!	stack and be parsed. Be careful not to return anything
+**!	in this way that could lead to a infinite recursion.
+**!	<li><b>an array of string(s)</b>; the element(s) of the array
+**!	is the result of the function. This will not be parsed.
+**!	This is useful for avoiding infinite recursion.
+**!	The array can be of any size, this means the empty array
+**!	is the most effective to return if you don't care about 
+**!	the result, and you don't have to concatenate any strings
+**!	yourself, if you have them in an array anyway.
+**!	<li><b>zero</b>; this means "don't do anything", ie the
+**!	item that generated the callback is left as it is, and
+**!	the parser continues.*
 **!	</ul>
 **!
 **! see also: tags, containers, entities
@@ -1866,6 +1883,49 @@ static void try_feed(int finished)
 
 /****** feed ****************************************/
 
+
+static void low_feed(struct pike_string *ps)
+{
+   f=malloc(sizeof(struct piece));
+   if (!f)
+      error("feed: out of memory\n");
+   copy_shared_string(f->s,ps);
+
+   f->next=NULL;
+
+   if (THIS->feed_end==NULL)
+   {
+      DEBUG((stderr,"  (new feed)\n"));
+      THIS->feed=THIS->feed_end=f;
+   }
+   else
+   {
+      DEBUG((stderr,"  (attached to feed end)\n"));
+      THIS->feed_end->next=f;
+      THIS->feed_end=f;
+   }
+}
+
+/*
+**! method object feed()
+**! method object feed(string s)
+**! method object feed(string s,int do_parse)
+**!	Feed new data to the <ref>Parser.HTML</ref>
+**!	object. This will start a scan and may result in
+**!	callbacks. Note that it's possible that all 
+**!	data feeded isn't processed - to do that, call
+**!	<ref>finish</ref>().
+**!
+**!	If the function is called without arguments,
+**!	no data is feeded, but the parser is run.
+**!
+**!	If the string argument is followed by a 0,
+**!	<tt>->feed(s,1);</tt>, the string is feeded,
+**!	but the parser isn't run.
+**! returns the called object
+**! see also: finish, read, feed_insert
+*/
+
 static void html_feed(INT32 args)
 {
    struct piece *f;
@@ -1877,26 +1937,8 @@ static void html_feed(INT32 args)
    if (args)
    {
       if (sp[-args].type!=T_STRING)
-	 error("feed: illegal arguments\n");
-
-      f=malloc(sizeof(struct piece));
-      if (!f)
-	 error("feed: out of memory\n");
-      copy_shared_string(f->s,sp[-args].u.string);
-
-      f->next=NULL;
-
-      if (THIS->feed_end==NULL)
-      {
-	 DEBUG((stderr,"  (new feed)\n"));
-	 THIS->feed=THIS->feed_end=f;
-      }
-      else
-      {
-	 DEBUG((stderr,"  (attached to feed end)\n"));
-	 THIS->feed_end->next=f;
-	 THIS->feed_end=f;
-      }
+	 SIMPLE_BAD_ARG_ERROR("feed",1,"string");
+      low_feed(sp[-args].u.string);
    }
 
    if (args<2 || sp[1-args].type!=T_INT || sp[1-args].u.integer)
@@ -1910,13 +1952,22 @@ static void html_feed(INT32 args)
    ref_push_object(THISOBJ);
 }
 
+/*
+**! method object feed_insert(string s)
+**!	This pushes a string on the parser stack.
+**!	(I'll write more about this mechanism later.)
+**! note: don't use
+*/
+
 static void html_feed_insert(INT32 args)
 {
    struct feed_stack *st2;
 
-   if (!args ||
-       sp[-args].type!=T_STRING)
-      error("feed_insert: illegal arguments\n");
+   if (!args)
+      SIMPLE_TOO_FEW_ARGS_ERROR("feed_insert",1);
+
+   if (!sp[-args].type!=T_STRING)
+      SIMPLE_BAD_ARG_ERROR("finish",1,"string");
 
    DEBUG((stderr,"html_feed_insert: "
 	  "pushing string (len=%d) on feedstack\n",
@@ -1952,12 +2003,35 @@ static void html_feed_insert(INT32 args)
    ref_push_object(THISOBJ);
 }
 
+/*
+**! method object finish()
+**! method object finish(string s)
+**!	Finish a parser pass. 
+**!
+**!	A string may be sent here, similar to feed().
+**!
+**! returns the called object
+*/
+
 static void html_finish(INT32 args)
 {
-   pop_n_elems(args);
+   if (args)
+   {
+      if (sp[-args].type!=T_STRING)
+	 SIMPLE_BAD_ARG_ERROR("finish",1,"string");
+      low_feed(sp[-args].u.string);
+   }
    if (THIS->feed || THIS->stack->prev) try_feed(1);
    ref_push_object(THISOBJ);
 }
+
+/*
+**! method string read()
+**! method string read(int chars)
+**!	Read parsed data from the parser object. 
+**!
+**! returns a string of parsed data
+*/
 
 static void html_read(INT32 args)
 {

@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.3 1999/06/14 13:11:23 mirar Exp $
+//  $Id: Session.pike,v 1.4 1999/07/01 12:57:26 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -16,7 +16,7 @@ object user; // logged in as this Person
 
 string server;
 
-int oldlevel; // level <10 protocol
+int protlevel; // level <10 protocol
 
 mapping(int:object) _text=([]);
 mapping(int:object) _person=([]);
@@ -45,7 +45,7 @@ void create(object|string _server,void|mapping options)
    {
       con        = _server->con;
       server     = _server->server;
-      oldlevel   = _server->oldlevel;
+      protlevel  = _server->protlevel;
       user       = _server->user;
       _person    = _server->_person;
       _conference= _server->_conference;
@@ -55,6 +55,8 @@ void create(object|string _server,void|mapping options)
    server=_server;
    con=Connection(_server,options);
    user=(options && options->login)?person(options->login):0;
+   protlevel=con->protocol_level;
+   werror("protocol_level is %d\n",protlevel);
 }
 
 
@@ -77,11 +79,35 @@ class MiscInfo
    array(object) foot_to=({});
    array(object) foot_in=({});
 
-   void create(array(int) a)
+   void create(void|mapping|array(int) a)
    {
       int i;
       object r;
-      for (i=0; i<sizeof(a);)
+      if (mappingp(a))
+      {
+	 if (!a->recpt) a->recpt=a->recipient;
+	 foreach (arrayp(a->recpt)?a->recpt:
+		  a->recpt?({a->recpt}):({}),object o)
+	    r=Recpt(),r->conf=o,recpt+=({r});
+	 foreach (arrayp(a->cc)?a->cc:
+		  a->cc?({a->cc}):({}),object o)
+	    r=Recpt(),r->conf=o,ccrecpt+=({r});
+	 foreach (arrayp(a->bcc)?a->bcc:
+		  a->bcc?({a->bcc}):({}),object o)
+	    r=Recpt(),r->conf=o,bccrecpt+=({r});
+
+	 if (a->comm_to)
+	    comm_to=(arrayp(a->comm_to)?a->comm_to:({a->comm_to}));
+	 if (a->foot_to)
+	    foot_to=(arrayp(a->foot_to)?a->foot_to:({a->foot_to}));
+	 /*
+	 if (a->comm_in)
+	    comm_in=(arrayp(a->comm_in)?a->comm_in:({a->comm_in}));
+	 if (a->foot_in)
+	    foot_in=(arrayp(a->foot_in)?a->foot_in:({a->foot_in}));
+	 */
+      }
+      else if (arrayp(a)) for (i=0; i<sizeof(a);)
       {
 	 switch (a[i++])
 	 {
@@ -106,6 +132,30 @@ class MiscInfo
 	       error("unexpected selection in misc_info: %d\n",a[i-1]);
 	 }
       }
+   }
+
+   array(string) encode()
+   {
+      array res=({});
+      foreach (recpt,object r)
+	 res+=({"0 "+r->conf->no});
+      foreach (ccrecpt,object r)
+	 res+=({"1 "+r->conf->no});
+      foreach (bccrecpt,object r)
+	 res+=({"15 "+r->conf->no});
+
+      foreach (comm_to,object t)
+	 res+=({"2 "+t->no});
+      foreach (foot_to,object t)
+	 res+=({"4 "+t->no});
+
+      /* *** this generates illegal-misc ***
+      foreach (comm_in,object t)
+	 res+=({"3 "+t->no});
+      foreach (foot_in,object t)
+	 res+=({"5 "+t->no});
+      */
+      return res;
    }
 }
 
@@ -155,14 +205,7 @@ class MiscInfo
    private void _got_##WHAT##1(mixed res)				\
    {									\
       if (objectp(res) && res->iserror)					\
-      {									\
-	 if (res->no==2)						\
-	 {								\
-	    oldlevel=1;							\
-	    fetch_##WHAT=con->async_cb_##CALL2(_got_##WHAT##2,ARGS);	\
-	 }								\
 	 err=res;							\
-      }									\
       else 								\
 	 VAR1=res;							\
       array m=fetch_##WHAT##_callbacks;					\
@@ -187,7 +230,7 @@ class MiscInfo
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
       if (!fetch_##WHAT)						\
-	 if (oldlevel)							\
+	 if (protlevel<10)						\
 	    fetch_##WHAT=con->async_cb_##CALL2(_got_##WHAT##2,ARGS);	\
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL1(_got_##WHAT##1,ARGS);	\
@@ -211,12 +254,6 @@ class MiscInfo
    {									\
       if (objectp(res) && res->iserror)					\
       {									\
-	 if (res->no==2)						\
-	 {								\
-	    oldlevel=1;							\
-	    fetch_##WHAT= \
-                 con->async_cb_##CALL##_old(_got_##WHAT##2,ARGS);	\
-	 }								\
 	 err=res;							\
       }									\
       else 								\
@@ -244,7 +281,7 @@ class MiscInfo
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
       if (!fetch_##WHAT)						\
-	 if (oldlevel)							\
+	 if (protlevel<10)						\
 	    fetch_##WHAT=con->async_cb_##CALL##_old(_got_##WHAT##2,ARGS); \
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL(_got_##WHAT##1,ARGS);	\
@@ -563,52 +600,81 @@ int(1..1) logout()
    return 1;
 }
 
-//! method object new_text(string subject,string body)
-//! method object new_text(string subject,string body,object|array(object) mottagare,object|array(object) comment_to,object|array(object) footnote_to,multiset flags)
-//! method void new_text(string subject,string body,object|array(object) mottagare,object|array(object) comment_to,object|array(object) footnote_to,multiset flags,function callback,mixed ...extra)
+//! method object create_text(string subject,string body,mapping options)
+//! method object create_text(string subject,string body,mapping options,function callback,mixed ...extra)
 //! 	Creates a new text. 
 //!
 //! 	if "callback" are given, this function will be called when the text 
-//! 	is created.
+//! 	is created, with the text as first argument. 
+//!	Otherwise, the new text is returned.
+//!
+//!	options is a mapping that may contain:
+//!	<data_description type=mapping>
+//!	<elem name=recpt type="Conference|array(Conference)">recipient conferences</elem>
+//!	<elem name=cc type="Conference|array(Conference)">cc-recipient conferences</elem>
+//!	<elem name=bcc type="Conference|array(Conference)">bcc-recipient conferences *</elem>
+//!	<elem></elem>
+//!	<elem name=comm_to type="Text|array(Text)">what text(s) is commented</elem>
+//!	<elem name=foot_to type="Text|array(Text)">what text(s) is footnoted</elem>
+//!	<elem></elem>
+//!	<elem name=anonymous type="int(0..1)">send text anonymously</elem>
+//!	</data-description>
+//!		
+//! note:
+//!	The above marked with a '*' is only available on a protocol 10
+//!	server. A LysKOM error will be thrown if the call fails.
+//!
+//! see also: Conference.create_text, Text.comment, Text.footnote
 
-object|void new_text(string subject,string body,
-		     object|array(object) mottagare,
-		     object|array(object) comment_to,
-		     object|array(object) footnote_to,
-		     multiset flags,
-		     function callback,
-		     mixed ...extra)
+object|void create_text(string subject,string body,
+			void|mapping options,
+			void|function callback,
+			void|mixed ...extra)
 {
+   string text=replace(subject,"\n"," ")+"\n"+body;
+   MiscInfo misc=MiscInfo(options);
+
+   if (!options) options=([]);
+   
+   return _create_text(text,misc,
+		       options->aux_info,
+		       options->anonymous,
+		       callback,@extra);
 }
 
-/*
+object|void _create_text(string textstring,
+			 MiscInfo misc,
+			 void|object aux_info,
+			 int anonymous,
+			 void|function callback,
+			 void|mixed ...extra)
+{
+   int|object res;
+   string call;
+   if (anonymous) 
+      call="create_anonymous_text";
+   else 
+      call="create_text";
 
-session->new_text(string subject,
-                  string message,
-                  void|object|array(object) mottagare,
-                  void|object|array(object) comment_to,
-                  void|object|array(object) footnote_to,
-                  void|multiset flags);
+   if (aux_info)
+      error("unimplemented\n");
 
-(conf)->new_text(string subject,
-                 string message,
-                 void|object|array(object) mottagare,
-                 void|object|array(object) comment_to,
-                 void|object|array(object) footnote_to,
-                 void|multiset flags);
+   if (protlevel<10) call+="_old";
 
-(text)->comment(string subject,
-                string message,
-                void|object|array(object) mottagare,
-                void|object|array(object) comment_to,
-                void|object|array(object) footnote_to,
-                void|multiset flags);
+   if (callback)
+   {
+      con["async_cb_"+call]
+	 (lambda(int|object res)
+	  {
+	     if (objectp(res)) return res;
+	     callback(text(res),@extra);
+	  },textstring,misc->encode());
+      return;
+   }
 
-(text)->footnote(string subject,
-                 string message,
-                 void|object|array(object) mottagare,
-                 void|object|array(object) comment_to,
-                 void|object|array(object) footnote_to,
-                 void|multiset flags);
+   res=con[call](textstring,misc->encode());
 
-*/
+   if (objectp(res)) return res;
+   return text(res);
+}
+
