@@ -34,6 +34,7 @@ void create()
     case '.':
     case ';':
     case ':':
+    case '`':
       break;
 
     default:
