@@ -23,6 +23,8 @@
 #include <assert.h>
 #include <math.h>
 #include <tchar.h>
+#include <interpret.h>
+#include <callback.h>
 
 /* In case we're compiling with NDEBUG */
 _CRTIMP void __cdecl _assert(void*, void*, unsigned);
@@ -183,7 +185,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.29 2002/02/05 19:08:52 mast Exp $");
+RCSID("$Id: dlopen.c,v 1.30 2002/02/11 01:55:50 marcus Exp $");
 
 #endif
 
