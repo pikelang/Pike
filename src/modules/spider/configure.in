@@ -6,10 +6,10 @@ sinclude(../module_configure.in)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
-AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h \
+AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h sys/protosw.h \
 	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h \
         sync.h sys/sockio.h sys/conf.h stropts.h \
-	sys/uio.h linux/mman.h)
+	sys/uio.h linux/mman.h sys/stream.h)
 
 AC_FUNC_MMAP
 
