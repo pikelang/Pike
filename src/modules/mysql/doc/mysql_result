@@ -8,10 +8,14 @@ DESCRIPTION
 
 	Mysql is available from http://www.tcx.se/ .
 
+KEYWORDS
+	sql, database, mysql
+
 SEE ALSO
 	/precompiled/mysql
 
-===========================================================================
+
+============================================================================
 NAME
 	create - make a new mysql_result object
 
@@ -38,13 +42,11 @@ DESCRIPTION
 	Creates a Mysql result table.
 
 SEE ALSO
-	query
-	list_dbs
-	list_tables
-	list_processes
-	/precompiled/mysql
+	mysql->query, mysql->list_dbs, mysql->list_tables,
+	mysql->list_processes, /precompiled/mysql
 
-===========================================================================
+
+============================================================================
 NAME
 	num_rows - number of rows in the result
 
@@ -57,9 +59,10 @@ DESCRIPTION
 	Returns the number of rows in the result.
 
 SEE ALSO
-	num_fields
+	mysql_result->num_fields
 
-===========================================================================
+
+============================================================================
 NAME
 	num_fields - number of fields in the result
 
@@ -72,9 +75,10 @@ DESCRIPTION
 	Returns the number of fields in the result.
 
 SEE ALSO
-	num_rows
+	mysql_result->num_rows
 
-===========================================================================
+
+============================================================================
 NAME
 	field_seek - skip to specified field (NOT USEFUL)
 
@@ -93,9 +97,10 @@ BUGS
 	affects which field fetch_field() starts with.
 
 SEE ALSO
-	fetch_field
+	mysql_result->fetch_field
 
-===========================================================================
+
+============================================================================
 NAME
 	eof - at end of result table
 
@@ -108,9 +113,10 @@ DESCRIPTION
 	Returns non-zero when all rows have been read.
 
 SEE ALSO
-	fetch_row
+	mysql_result->fetch_row
 
-===========================================================================
+
+============================================================================
 NAME
 	fetch_field - return specification of all fields
 
@@ -140,9 +146,6 @@ DESCRIPTION
 	"time", "longlong", "int24", "tiny blob", "medium blob",
 	"long blob", "var string", "string" or "unknown".
 
-SEE ALSO
-	field_seek
-
 BUGS
 	The "flags" entry should be parsed.
 
@@ -153,7 +156,11 @@ BUGS
 
 	Resets the field cursor to 0.
 
-===========================================================================
+SEE ALSO
+	mysql_result->field_seek
+
+
+============================================================================
 NAME
 	seek - skip ahead a number of rows
 
@@ -165,13 +172,14 @@ SYNTAX
 DESCRIPTION
 	Skips ahead the specified number of rows.
 
-SEE ALSO
-	fetch_row
-
 BUGS
 	Can only seek forward (limitation in Mysql).
 
-===========================================================================
+SEE ALSO
+	mysql_result->fetch_row
+
+
+============================================================================
 NAME
 	fetch_row - fetch the next row from the result
 
@@ -185,5 +193,6 @@ DESCRIPTION
 	Advances the row cursor to the next row. Returns 0 at end of table.
 
 SEE ALSO
-	seek
+	mysql_result->seek
+
 

@@ -6,7 +6,11 @@ DESCRIPTION
 	access to the Mysql database from within Pike. /precompiled/mysql
 	is a part of the mysql module.
 
-	Mysql is available from http://www.tcx.se/ .
+	Mysql is available from	http://www.tcx.se/ .
+
+KEYWORDS
+	sql, database, mysql
+
 
 ============================================================================
 NAME
@@ -27,8 +31,9 @@ DESCRIPTION
 	To access the Mysql database, you must first connect to it. This is
 	done with the function Mysql().
 
-	If you give no argument, or the "" as hostname it will connect with
+	If you give no argument, or "" as hostname it will connect with
 	a UNIX-domain socket, which is a big performance gain.
+
 
 ============================================================================
 NAME
@@ -41,6 +46,7 @@ SYNTAX
 
 DESCRIPTION
 
+
 ============================================================================
 NAME
 	insert_id - return the insert id
@@ -51,6 +57,7 @@ SYNTAX
 	int mysql->insert_id();
 
 DESCRIPTION
+
 
 ============================================================================
 NAME
@@ -64,6 +71,7 @@ SYNTAX
 DESCRIPTION
 	When a Mysql-method fails you can get a description of why with this
 	function.
+
 
 ============================================================================
 NAME
@@ -79,9 +87,8 @@ DESCRIPTION
 	you want to access with this function.
 
 SEE ALSO
-	create
-	create_db
-	drop_db
+	mysql->create, mysql->create_db, mysql->drop_db
+
 
 ============================================================================
 NAME
@@ -99,6 +106,7 @@ DESCRIPTION
 SEE ALSO
 	/precompiled/mysql_result
 
+
 ============================================================================
 NAME
 	create_db - create a new database
@@ -112,8 +120,8 @@ DESCRIPTION
 	This function creates a new database in the Mysql-server.
 
 SEE ALSO
-	select_db
-	drop_db
+	mysql->select_db, mysql->drop_db
+
 
 ============================================================================
 NAME
@@ -128,8 +136,8 @@ DESCRIPTION
 	This function drops a database from a Mysql-server.
 
 SEE ALSO
-	create_db
-	select_db
+	mysql->create_db, mysql->select_db
+
 
 ============================================================================
 NAME
@@ -144,7 +152,8 @@ DESCRIPTION
 	This function shuts down a running Mysql-server.
 
 SEE ALSO
-	reload
+	mysql->reload
+
 
 ============================================================================
 NAME
@@ -159,7 +168,8 @@ DESCRIPTION
 	This function causes the Mysql-server to reload its tables.
 
 SEE ALSO
-	shutdown
+	mysql->shutdown
+
 
 ============================================================================
 NAME
@@ -184,9 +194,8 @@ EXAMPLE
 	}
 
 SEE ALSO
-	server_info
-	host_info
-	protocol_info
+	mysql->server_info, mysql->host_info, mysql->protocol_info
+
 
 ============================================================================
 NAME
@@ -201,9 +210,8 @@ DESCRIPTION
 	This function returns the version number of the Mysql-server.
 
 SEE ALSO
-	statistics
-	host_info
-	protocol_info
+	mysql->statistics, mysql->host_info, mysql->protocol_info
+
 
 ============================================================================
 NAME
@@ -219,9 +227,8 @@ DESCRIPTION
 	the Mysql-server.
 
 SEE ALSO
-	statistics
-	server_info
-	protocol_info
+	mysql->statistics, mysql->server_info, mysql->protocol_info
+
 
 ============================================================================
 NAME
@@ -237,9 +244,8 @@ DESCRIPTION
 	Mysql-server uses.
 
 SEE ALSO
-	statistics
-	server_info
-	host_info
+	mysql->statistics, mysql->server_info, mysql->host_info
+
 
 ============================================================================
 NAME
@@ -258,10 +264,9 @@ DESCRIPTION
 	wild are returned.
 
 SEE ALSO
-	list_tables
-	list_fields
-	list_processes
+	mysql->list_tables, mysql->list_fields, mysql->list_processes,
 	/precompiled/mysql_result
+
 
 ============================================================================
 NAME
@@ -280,10 +285,9 @@ DESCRIPTION
 	returned.
 
 SEE ALSO
-	list_dbs
-	list_fields
-	list_processes
+	mysql->list_dbs, mysql->list_fields, mysql->list_processes,
 	/precompiled/mysql_result
+
 
 ============================================================================
 NAME
@@ -301,7 +305,12 @@ DESCRIPTION
 
 NOTA BENE
 	Michael Widenius recomends usage of the following query instead:
-		show fields in 'table' like "wild"
+	show fields in 'table' like "wild"
+
+SEE ALSO
+	mysql->list_dbs, mysql->list_tables, mysql->list_processes,
+	/precompiled/mysql_result
+
 
 ============================================================================
 NAME
@@ -317,8 +326,7 @@ DESCRIPTION
 	Mysql-server.
 
 SEE ALSO
-	list_dbs
-	list_fields
-	list_tables
+	mysql->list_dbs, mysql->list_tables, mysql->list_fields,
 	/precompiled/mysql_result
+
 
