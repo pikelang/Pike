@@ -1,9 +1,11 @@
 /*
- * $Id: oracle.c,v 1.21 2000/02/29 03:12:38 hubbe Exp $
+ * $Id: oracle.c,v 1.22 2000/03/24 01:22:17 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
- * Marcus Comstedt
+ * original design by Marcus Comstedt
+ * re-written for Oracle 8.x by Fredrik Hubinette
+ *
  */
 
 /*
@@ -28,18 +30,19 @@
 #include "mapping.h"
 #include "multiset.h"
 #include "builtin_functions.h"
+#include "opcodes.h"
 
 #ifdef HAVE_ORACLE
 
-#include <ocidfn.h>
-#include <ociapr.h>
+#include <oci.h>
+#include <math.h>
 
-
-RCSID("$Id: oracle.c,v 1.21 2000/02/29 03:12:38 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.22 2000/03/24 01:22:17 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
 
+/* #define ORACLE_DEBUG */
 #define ORACLE_USE_THREADS
 #define SERIALIZE_CONNECT
 
@@ -52,427 +55,822 @@ RCSID("$Id: oracle.c,v 1.21 2000/02/29 03:12:38 hubbe Exp $");
 
 #endif
 
+#define BLOCKSIZE 2048
+
+
 #if defined(SERIALIZE_CONNECT)
 DEFINE_MUTEX(oracle_serialization_mutex);
 #endif
 
-struct program *oracle_program = NULL, *oracle_result_program = NULL;
-
-struct dbcurs {
-  struct dbcurs *next;
-  Cda_Def cda;
-};
-
-struct dbcon {
-  Lda_Def lda;
-  ub4 hda[128];
-  struct dbcurs *cdas, *share_cda;
-  DEFINE_MUTEX(lock);
-};
-
-struct dbresult {
-  struct object *parent;
-  struct dbcon *dbcon;
-  struct dbcurs *curs;
-  Cda_Def *cda;
-  INT32 cols;
-  DEFINE_MUTEX(lock);
-};
 
 
-static void ora_error_handler(struct dbcon *dbcon, sword rc)
-{
-  static text msgbuf[512];
-  oerhms(&dbcon->lda, rc, msgbuf, sizeof(msgbuf));
-  error(msgbuf);
-}
+#define MY_START_CLASS(STRUCT) \
+  start_new_program(); \
+  offset=ADD_STORAGE(struct STRUCT); \
+  set_init_callback(PIKE_CONCAT3(init_,STRUCT,_struct));\
+  set_exit_callback(PIKE_CONCAT3(exit_,STRUCT,_struct));
 
+#define MY_END_CLASS(NAME) \
+  PIKE_CONCAT(NAME,_program) = end_program(); \
+  PIKE_CONCAT(NAME,_identifier) = add_program_constant(#NAME, PIKE_CONCAT(NAME,_program), 0);
 
-#define THIS ((struct dbresult *)(fp->current_storage))
+#ifdef ORACLE_DEBUG
+#define LOCK(X) do { \
+   fprintf(stderr,"Locking  " #X " ...  from %s:%d\n",__FUNCTION__,__LINE__); \
+   mt_lock( & (X) ); \
+   fprintf(stderr,"Locking  " #X " done from %s:%d\n",__FUNCTION__,__LINE__); \
+}while(0)
 
-static void init_dbresult_struct(struct object *o)
-{
-  memset(THIS, 0, sizeof(*THIS));
-}
+#define UNLOCK(X) do { \
+   fprintf(stderr,"unocking " #X "      from %s:%d\n",__FUNCTION__,__LINE__); \
+   mt_unlock( & (X) ); \
+}while(0)
 
-static void exit_dbresult_struct(struct object *o)
-{
-  struct dbresult *r = THIS;
-
-  if(r->curs) {
-    ocan(&r->curs->cda);
-    r->curs->next = r->dbcon->cdas;
-    r->dbcon->cdas = r->curs;
-  }
-
-/*  fprintf(stderr,"Unlocking dbcon\n"); */
-  mt_unlock(& r->dbcon->lock);
-
-  if(r->parent)
-    free_object(r->parent);
-}
-
-static void f_result_create(INT32 args)
-{
-  struct object *p;
-  struct dbcon *dbcon;
-  struct dbcurs *curs;
-  struct dbresult *r = THIS;
-  INT32 i;
-
-  get_all_args("Oracle.oracle_result->create", args, "%o", &p);
-
-  if(p  && !p->prog)
-    error("Bad argument 1 to Oracle.oracle_result->create(), destructd object!\n");
-
-  if(!(dbcon = (struct dbcon *)get_storage(p, oracle_program)))
-  {
-#if 0
-    describe(p);
-    dump_program_desc(p->prog);
-
-    describe(oracle_program);
-    dump_program_desc(oracle_program);
+#else
+#define LOCK(X) mt_lock( & (X) );
+#define UNLOCK(X) mt_unlock( & (X) );
 #endif
-    error("Bad argument 1 to Oracle.oracle_result->create(), not an oracle object\n");
-  }
 
-  if(!(curs = dbcon->share_cda))
-    error("Unititialized object as argument 1 to Oracle.oracle_result->create()\n");
+#ifndef ADD_FUNCTION
+#define ADD_FUNCTION add_function
+#define tNone ""
+#define tFunc(X,Y) 
+#define tInt "int"
+#define tStr "string"
+#define tStr "float"
+#define tObj "object"
+#define tVoid "void"
 
-  r->curs = curs;
-  dbcon->share_cda = NULL;
+#define tMap(X,Y) "mapping(" X ":" Y ")"
+#define tOr(X,Y) X "|" Y
+#define tArr(X) "array(" X ")"
+#define tFunc(X,Y) "function(" X ":" Y ")"
+#define tFuncV(X,Z,Y) "function(" X Z "...:" Y ")"
+#endif
 
-  add_ref(r->parent = p);
-  r->dbcon = dbcon;
-  r->cda = &curs->cda;
+#define THISOBJ dmalloc_touch(struct pike_frame *,fp)->current_object
+#define PARENTOF(X) ((X)->parent)
 
-  r->cols = 0;
-}
+#define THIS_DBCON ((struct dbcon *)(CURRENT_STORAGE))
+#define THIS_QUERY_DBCON ((struct dbcon *)(PARENTOF( THISOBJ )->storage))
+#define THIS_RESULT_DBCON ((struct dbcon *)(PARENTOF(PARENTOF( THISOBJ ))->storage))
+#define THIS_QUERY ((struct dbquery *)(CURRENT_STORAGE))
+#define THIS_RESULT_QUERY ((struct dbquery *)(PARENTOF(THISOBJ )->storage))
+#define THIS_RESULT ((struct dbresult *)(CURRENT_STORAGE))
+#define THIS_RESULTINFO ((struct dbresultinfo *)(CURRENT_STORAGE))
+#define THIS_DBDATE ((struct dbdate *)(CURRENT_STORAGE))
+#define THIS_DBNULL ((struct dbnull *)(CURRENT_STORAGE))
 
-static void f_num_fields(INT32 args)
+static struct program *oracle_program = NULL;
+static struct program *compile_query_program = NULL;
+static struct program *big_query_program = NULL;
+static struct program *dbresultinfo_program = NULL;
+static struct program *Date_program = NULL;
+static struct program *NULL_program = NULL;
+
+static int oracle_identifier;
+static int compile_query_identifier;
+static int big_query_identifier;
+static int dbresultinfo_identifier;
+static int Date_identifier;
+
+static struct object *nullstring_object;
+static struct object *nullfloat_object;
+static struct object *nullint_object;
+static struct object *nulldate_object;
+
+static OCIEnv *oracle_environment=0;
+
+static OCIEnv *get_oracle_environment(void)
 {
-  struct dbresult *r = THIS;
-
-  if(THIS->cols == 0) {
-    sword rc;
-    INT32 i;
-    sb4 siz;
-
-    THREADS_ALLOW();
-
-    mt_lock(& r->lock);
-
-    for(i=11; ; i+=10)
-      if((rc = odescr(r->cda, i, &siz, NULL, NULL, NULL, NULL,
-		      NULL, NULL, NULL)))
-	break;
-
-    if(r->cda->rc == 1007)
-      for(i-=10; ; i++)
-	if((rc = odescr(r->cda, i, &siz, NULL, NULL, NULL, NULL,
-			NULL, NULL, NULL)))
-	  break;
-
-    THREADS_DISALLOW();    
-
-    mt_unlock(& r->lock);
-
-    if(r->cda->rc != 1007)
-      ora_error_handler(r->dbcon, r->cda->rc);
-
-    THIS->cols = i-1;
-  }
-  pop_n_elems(args);
-  push_int(THIS->cols);
-}
-
-static void f_fetch_fields(INT32 args)
-{
-  struct dbresult *r = THIS;
-  INT32 i, nambufsz=64;
   sword rc;
-  text *nambuf=xalloc(nambufsz+1);
-
-  pop_n_elems(args);
-
-  for(i=0; i<r->cols || r->cols == 0; i++) {
-
-    sb4 siz, cbufl, dispsz;
-    sb2 typ, scale;
-
-    THREADS_ALLOW();
-      
-    mt_lock( & r->lock );
-
-    for(;;) {
-
-      cbufl = nambufsz;
-
-      rc = odescr(r->cda, i+1, &siz, &typ, nambuf, &cbufl, &dispsz,
-		  NULL, &scale, NULL);
-      
-
-      if(rc || cbufl < nambufsz) break;
-
-      free(nambuf);
-      nambuf = xalloc((nambufsz <<= 1)+1);
-    }
-
-    THREADS_DISALLOW();
-
-    mt_unlock(& r->lock);
-
-    if(rc) {
-      if(r->cda->rc == 1007)
-	break;
-      free(nambuf);
-      ora_error_handler(r->dbcon, r->cda->rc);
-    }
-
-    push_text("name");
-    push_string(make_shared_binary_string(nambuf, cbufl));
-    push_text("type");
-    switch(typ) {
-    case SQLT_CHR:
-      push_text("varchar2");
-      break;
-    case SQLT_NUM:
-      push_text("number");
-      break;
-    case SQLT_LNG:
-      push_text("long");
-      break;
-    case SQLT_RID:
-      push_text("rowid");
-      break;
-    case SQLT_DAT:
-      push_text("date");
-      break;
-    case SQLT_BIN:
-      push_text("raw");
-      break;
-    case SQLT_LBI:
-      push_text("long raw");
-      break;
-    case SQLT_AFC:
-      push_text("char");
-      break;
-    case SQLT_LAB:
-      push_text("mslabel");
-      break;
-    default:
-      push_int(0);
-      break;
-    }
-    push_text("length");
-    push_int(dispsz);
-    push_text("decimals");
-    push_int(scale);
-    f_aggregate_mapping(8);
+  if(!oracle_environment)
+  {
+    rc=OCIEnvInit(&oracle_environment, OCI_DEFAULT, 0, 0);
+    if(rc != OCI_SUCCESS)
+      error("Failed to initialize oracle environment.\n");
   }
-
-  free(nambuf);
-
-  if(r->cols == 0)
-    r->cols = i;
-
-  f_aggregate(r->cols);
+  return oracle_environment;
 }
 
-static void f_fetch_row(INT32 args)
+struct inout
 {
-  struct fetchslot {
-    struct fetchslot *next;
-    INT32 siz;
-    ub2 rsiz, rcode;
-    sb2 indp;
-    sword typ;
-    char data[1];
-  } *s, *s2, *slots = NULL;
-  struct dbresult *r = THIS;
-  sword rc;
-  INT32 i;
+  sb2 indicator;
+  ub2 rcode;
+  ub2 len; /* not really used? */
+  short has_output;
+  sword ftype;
 
-  pop_n_elems(args);
+  sb4 xlen;
+  struct string_builder output;
+  ub4 curlen;
 
-  THREADS_ALLOW();
+  union dbunion
+  {
+    double f;
+    int i;
+    char shortstr[32];
+    OCIDate date;
+  } u;
+};
 
-  mt_lock( & r->lock );
+static void free_inout(struct inout *i);
+static void init_inout(struct inout *i);
 
-  THREADS_DISALLOW();
+/****** connection ******/
+struct dbcon
+{
+  OCIError *error_handle;
+  OCISvcCtx *context;
 
-  for(i=0; i<r->cols || r->cols == 0; i++) {
-    sb4 siz, dsiz;
-    sb2 typ;
-
-    THREADS_ALLOW();
-
-    rc = odescr(r->cda, i+1, &siz, &typ, NULL, NULL, &dsiz,
-		NULL, NULL, NULL);
-
-    THREADS_DISALLOW();    
-
-    if(rc) {
-      if(r->cda->rc == 1007)
-	break;
-      while((s=slots)) {
-	slots=s->next;
-	free(s);
-      }
-
-      mt_unlock(& r->lock);
-      ora_error_handler(r->dbcon, r->cda->rc);
-    }
-
-    
-    s = (struct fetchslot *)xalloc(sizeof(struct fetchslot)+dsiz+4);
-
-    s->next = slots;
-    s->siz = dsiz+4;
-    slots = s;
-
-    THREADS_ALLOW();
-
-    s->rcode = 0;
-    s->indp = -1;
-
-    rc = odefin(r->cda, i+1, s->data, s->siz,
-		s->typ=((typ==SQLT_LNG || typ==SQLT_BIN || typ==SQLT_LBI)?
-			typ : SQLT_STR),
-		-1, &s->indp, NULL, -1, -1, &s->rsiz, &s->rcode);
-
-    THREADS_DISALLOW();
-
-    if(rc) {
-      while((s=slots)) {
-	slots=s->next;
-	free(s);
-      }
-
-      mt_unlock(& r->lock);
-      ora_error_handler(r->dbcon, r->cda->rc);
-    }
-  }
-
-  if(r->cols == 0)
-    r->cols = i;
-
-  /* Do link reversal */
-  for(s=NULL; slots; slots=s2) {
-    s2 = slots->next;
-    slots->next = s;
-    s = slots;
-  }
-  slots = s;
-
-  THREADS_ALLOW();
-
-  rc = ofetch(r->cda);
-
-  THREADS_DISALLOW();
-
-  /* no more threaded operations... */
-  mt_unlock( & r->lock );
-
-  if(rc) {
-    while((s=slots)) {
-      slots=s->next;
-      free(s);
-    }
-
-    if(r->cda->rc == 1403) {
-      push_int(0);
-      return;
-    } else ora_error_handler(r->dbcon, r->cda->rc);
-  }
-
-  for(s=slots, i=0; i<r->cols; i++) {
-    if(s->indp == -1)
-      push_int(0);
-    else if(s->rcode == 1406 && (s->typ == SQLT_LNG || s->typ == SQLT_LBI)) {
-      sb4 retl, offs=0;
-      sb1 *buf = xalloc(BLOB_FETCH_CHUNK);
-      struct pike_string *s1=make_shared_binary_string("", 0), *s2, *s3;
-      for(;;) {
-
-	retl=0;
-	oflng(r->cda, i+1, buf, BLOB_FETCH_CHUNK, s->typ, &retl, offs);
-	if(!retl)
-	  break;
-
-	s3 = add_shared_strings(s1, s2=make_shared_binary_string(buf, retl));
-	free_string(s1);
-	free_string(s2);
-	s1 = s3;
-	offs += retl;
-      }
-      free(buf);
-      push_string(s1);
-    } else if(s->rcode)
-      push_int(0);
-    else
-      push_string(make_shared_binary_string(s->data, s->rsiz));
-    s2=s->next;
-    free(s);
-    s=s2;
-  }
-
-  f_aggregate(r->cols);
-}
-
-#undef THIS
-#define THIS ((struct dbcon *)(fp->current_storage))
+  DEFINE_MUTEX(lock);
+};
 
 static void init_dbcon_struct(struct object *o)
 {
-  memset(THIS, 0, sizeof(*THIS));
-  mt_init( & THIS->lock );
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  THIS_DBCON->error_handle=0;
+  THIS_DBCON->context=0;
+  mt_init( & THIS_DBCON->lock );
 }
 
 static void exit_dbcon_struct(struct object *o)
 {
-  struct dbcon *dbcon = THIS;
-  struct dbcurs *curs;
-  ologof(&dbcon->lda);
-  while((curs = dbcon->cdas) != NULL) {
-    dbcon->cdas = curs->next;
-    free(curs);
-  }
-  mt_destroy( & THIS->lock );
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  OCILogoff(THIS_DBCON->context, THIS_DBCON->error_handle);
+  OCIHandleFree(THIS_DBCON->error_handle, OCI_HTYPE_ERROR);
+  mt_destroy( & THIS_DBCON->lock );
 }
 
-static struct dbcurs *make_cda(struct dbcon *dbcon)
+/****** query ******/
+
+struct dbquery
+{
+  OCIStmt *statement;
+  INT_TYPE query_type;
+  DEFINE_MUTEX(lock);
+
+  INT_TYPE cols;
+  struct array *field_info;
+  struct mapping *output_variables;
+};
+
+
+void init_dbquery_struct(struct object *o)
+{
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  THIS_QUERY->cols=-2;
+  THIS_QUERY->statement=0;
+  mt_init(& THIS_QUERY->lock);
+}
+
+void exit_dbquery_struct(struct object *o)
+{
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  OCIHandleFree(THIS_QUERY->statement, OCI_HTYPE_STMT);
+  mt_destroy(& THIS_QUERY->lock);
+}
+
+
+/****** dbresult ******/
+
+struct dbresult
+{
+  char dbcon_lock;
+  char dbquery_lock;
+};
+
+
+static void init_dbresult_struct(struct object *o)
+{
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  THIS_RESULT->dbcon_lock=0;
+  THIS_RESULT->dbquery_lock=0;
+}
+
+static void exit_dbresult_struct(struct object *o)
+{
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  /* Variables are freed automatically */
+  if(PARENTOF(THISOBJ) &&
+     PARENTOF(THISOBJ)->prog &&
+     THIS_RESULT->dbquery_lock)
+  {
+    struct dbquery *dbquery=THIS_RESULT_QUERY;
+    UNLOCK( dbquery->lock );
+    if(PARENTOF(PARENTOF(THISOBJ)) && 
+       PARENTOF(PARENTOF(THISOBJ)) -> prog  &&
+       THIS_RESULT->dbcon_lock)
+    {
+      struct dbcon *dbcon=THIS_RESULT_DBCON;
+      UNLOCK( dbcon->lock );
+    }
+  }
+#ifdef ORACLE_DEBUG
+  else
+  {
+    fprintf(stderr,"exit_dbresult_struct %p %p\n",
+	    PARENTOF(THISOBJ),
+	    PARENTOF(THISOBJ)?PARENTOF(THISOBJ)->prog:0);
+  }
+#endif
+}
+
+/****** dbresultinfo ******/
+
+struct dbresultinfo
+{
+  INT_TYPE length;
+  INT_TYPE decimals;
+  INT_TYPE real_type;
+  struct pike_string *name;
+  struct pike_string *type;
+
+  OCIDefine *define_handle;
+
+  struct inout data;
+};
+
+
+static void init_dbresultinfo_struct(struct object *o)
+{
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  THIS_RESULTINFO->define_handle=0;
+  init_inout(& THIS_RESULTINFO->data);
+}
+
+static void exit_dbresultinfo_struct(struct object *o)
+{
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+  OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
+  free_inout( & THIS_RESULTINFO->data);
+}
+
+static void protect_dbresultinfo(INT32 args)
+{
+  error("You may not change variables in dbresultinfo objects.\n");
+}
+
+/****** dbdate ******/
+
+struct dbdate
+{
+  OCIDate date;
+};
+
+static void init_dbdate_struct(struct object *o) {}
+static void exit_dbdate_struct(struct object *o) {}
+
+/****** dbnull ******/
+
+struct dbnull
+{
+  struct svalue type;
+};
+
+static void init_dbnull_struct(struct object *o) {}
+static void exit_dbnull_struct(struct object *o) {}
+
+/************/
+
+static void ora_error_handler(OCIError *err, sword rc, char *func)
+{
+  /* FIXME: we might need to do switch(rc) */
+  static text msgbuf[512];
+  ub4 errcode;
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
+  OCIErrorGet(err,1,0,&errcode,msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
+  if(func)
+    error("%s:code=%d:%s",func,rc,msgbuf);
+  else
+    error("Oracle:code=%d:%s",rc,msgbuf);
+}
+
+
+static OCIError *global_error_handle=0;;
+
+OCIError *get_global_error_handle(void)
 {
   sword rc;
-  struct dbcurs *curs=(struct dbcurs *)xalloc(sizeof(struct dbcurs));
+  rc=OCIHandleAlloc(get_oracle_environment(),
+		    (void **)& global_error_handle,
+		    OCI_HTYPE_ERROR,
+		    0,
+		    0);
 
-  memset(curs, 0, sizeof(*curs));
-
-  THREADS_ALLOW();
-
-  mt_lock( & dbcon->lock );
-
-  rc=oopen(&curs->cda, &dbcon->lda, NULL, -1, -1, NULL, -1);
-
-  THREADS_DISALLOW();
-
-  mt_unlock( & dbcon->lock );
-
-  if(rc) {
-    rc = curs->cda.rc;
-    free(curs);
-    ora_error_handler(dbcon, rc);
-  } else {
-    curs->next = dbcon->cdas;
-    dbcon->cdas = curs;
-  }
-  return curs;
+  if(rc != OCI_SUCCESS)
+    error("Failed to allocate error handle.\n");
+  
+  return global_error_handle;
 }
 
-static void f_create(INT32 args)
+
+
+static void f_num_fields(INT32 args)
 {
-  struct dbcon *dbcon = THIS;
+  struct dbresult *dbresult = THIS_RESULT;
+  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct dbcon *dbcon = THIS_RESULT_DBCON;
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
+  if(dbquery->cols == -2)
+  {
+    sword rc;
+    ub4 columns;
+
+    THREADS_ALLOW();
+
+/*    LOCK(dbcon->lock);  */
+
+    rc=OCIAttrGet(dbquery->statement,
+		  OCI_HTYPE_STMT,
+		  &columns,
+		  0,
+		  OCI_ATTR_PARAM_COUNT,
+		  dbcon->error_handle); // <- FIXME
+
+
+    THREADS_DISALLOW();
+/*    UNLOCK(dbcon->lock); */
+
+    if(rc != OCI_SUCCESS)
+      ora_error_handler(dbcon->error_handle, rc,"OCIAttrGet");
+
+    dbquery->cols = columns; /* -1 ? */
+  }
+  pop_n_elems(args);
+  push_int(dbquery->cols);
+}
+
+static sb4 output_callback(struct inout *inout,
+			   ub4 index,
+			   void **bufpp,
+			   ub4 **alenpp,
+			   ub1 *piecep,
+			   dvoid **indpp,
+			   ub2 **rcodepp)
+{
+  inout->has_output=1;
+  *indpp = (dvoid *) &inout->indicator;
+  *rcodepp=&inout->rcode;
+  *alenpp=&inout->xlen;
+
+  switch(inout->ftype)
+  {
+    case SQLT_CHR:
+    case SQLT_STR:
+    case SQLT_LBI:
+    case SQLT_LNG:
+      if(!inout->output.s)
+      {
+	init_string_builder(& inout->output,0);
+      }else{
+	inout->output.s->len+=inout->xlen-BLOCKSIZE;
+	inout->xlen=0;
+      }
+      
+      inout->xlen=BLOCKSIZE;
+      *bufpp=string_builder_allocate(& inout->output, inout->xlen, 0);
+      *piecep = OCI_NEXT_PIECE;
+#ifdef ORACLE_DEBUG
+      MEMSET(*bufpp, '#', inout->xlen);
+      ((char *)*bufpp)[inout->xlen-1]=0;
+#endif
+      return OCI_CONTINUE;
+
+    case SQLT_FLT:
+      *bufpp=&inout->u.f;
+      inout->xlen=sizeof(inout->u.f);
+      *piecep = OCI_ONE_PIECE;
+      return OCI_CONTINUE;
+
+    case SQLT_INT:
+      *bufpp=&inout->u.i;
+      inout->xlen=sizeof(inout->u.i);
+      *piecep = OCI_ONE_PIECE;
+      return OCI_CONTINUE;
+
+    case SQLT_ODT:
+      *bufpp=&inout->u.date;
+      inout->xlen=sizeof(inout->u.date);
+      *piecep = OCI_ONE_PIECE;
+      return OCI_CONTINUE;
+
+    default: return 0;
+  }
+
+}
+			   
+
+static sb4 define_callback(void *dbresultinfo,
+			   OCIDefine *def,
+			   ub4 iter,
+			   void **bufpp,
+			   ub4 **alenpp,
+			   ub1 *piecep,
+			   dvoid **indpp,
+			   ub2 **rcodep)
+{
+#ifdef ORACLE_DEBUG
+/*  fprintf(stderr,"%s ..",__FUNCTION__); */
+#endif
+  return
+    output_callback( &((struct dbresultinfo *)dbresultinfo)->data,
+		     iter,
+		     bufpp,
+		     alenpp,
+		     piecep,
+		     indpp,
+		     rcodep);
+}
+
+
+// FIXME: Threading...
+static void f_fetch_fields(INT32 args)
+{
+  struct dbresult *dbresult = THIS_RESULT;
+  struct dbquery *dbquery=THIS_RESULT_QUERY;
+  struct dbcon *dbcon=THIS_RESULT_DBCON;
+  INT32 i;
+  sword rc;
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
+  pop_n_elems(args);
+
+  if(!dbquery->field_info)
+  {
+    /* Get the number of rows */
+    if(dbquery->cols == -2)
+    {
+      f_num_fields(0);
+      pop_stack();
+    }
+
+    check_stack(dbquery->cols);
+    
+    for(i=0; i<dbquery->cols; i++)
+    {
+      char *errfunc=0;
+      OCIParam *column_parameter;
+      ub2 type;
+      ub4 size;
+      sb1 scale;
+      char *name;
+      ub4 namelen;
+      struct object *o;
+      struct dbresultinfo *info;
+      char *type_name;
+      int data_size;
+      
+/*      pike_gdb_breakpoint(); */
+      THREADS_ALLOW();
+/*      LOCK(dbcon->lock); */
+
+      do {
+	rc=OCIParamGet(dbquery->statement,OCI_HTYPE_STMT,
+		       dbcon->error_handle,
+		       (void **)&column_parameter,
+		       i+1);
+	
+	if(rc != OCI_SUCCESS) { errfunc="OciParamGet"; break; }
+	
+	rc=OCIAttrGet((void *)column_parameter,
+		      OCI_DTYPE_PARAM,
+		      &type,
+		      (ub4*)0,
+		      OCI_ATTR_DATA_TYPE,
+		      dbcon->error_handle);
+	
+	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_DATA_TYPE"; break;}
+	
+	rc=OCIAttrGet((void *)column_parameter,
+		      OCI_DTYPE_PARAM,
+		      &size,
+		      (ub4*)0,
+		      OCI_ATTR_DATA_SIZE,
+		      dbcon->error_handle);
+	
+	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_DATA_SIZE"; break;}
+	
+	rc=OCIAttrGet((void *)column_parameter,
+		      OCI_DTYPE_PARAM,
+		      &scale,
+		      (ub4*)0,
+		      OCI_ATTR_SCALE,
+		      dbcon->error_handle);
+	
+	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_SCALE"; break;}
+	
+	rc=OCIAttrGet((void *)column_parameter,
+		      OCI_DTYPE_PARAM,
+		      &name,
+		      &namelen,
+		      OCI_ATTR_NAME,
+		      dbcon->error_handle);
+
+	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_NAME"; break;}
+
+      }while(0);
+
+      THREADS_DISALLOW();
+/*      UNLOCK(dbcon->lock); */
+
+      if(rc != OCI_SUCCESS)
+	ora_error_handler(dbcon->error_handle, rc, errfunc);
+
+      push_object( o=clone_object(dbresultinfo_program,0) );
+      info= (struct dbresultinfo *)o->storage;
+
+      info->name=make_shared_binary_string(name, namelen);
+      info->length=size;
+      info->decimals=scale;
+      info->real_type=type;
+
+      data_size=0;
+
+      switch(type)
+      {
+	case SQLT_INT:
+	  type_name="int";
+	  data_size=sizeof(info->data.u.i);
+	  type=SQLT_INT;
+	  break;
+
+	case SQLT_NUM:
+	case SQLT_FLT:
+	  type_name="float";
+	  data_size=sizeof(info->data.u.f);
+	  break;
+
+	case SQLT_STR: /* string */
+	case SQLT_AFC: /* char */
+	case SQLT_AVC: /* charz */
+
+	case SQLT_CHR: /* varchar2 */
+	case SQLT_VCS: /* varchar */
+	case SQLT_LNG: /* long */
+	case SQLT_LVC: /* long varchar */
+	  type_name="char";
+	  data_size=-1;
+	  type=SQLT_LNG;
+	  break;
+
+	case SQLT_RID:
+	  type_name="rowid";
+	  data_size=-1;
+	  type=SQLT_LNG;
+	  break;
+
+	case SQLT_DAT:
+	case SQLT_ODT:
+	  type_name="date";
+	  data_size=sizeof(info->data.u.date);
+	  type=SQLT_ODT;
+	  break;
+
+	case SQLT_BIN: /* raw */
+	case SQLT_VBI: /* varraw */
+	case SQLT_LBI: /* long raw */
+	  type_name="raw"; 
+	  data_size=-1;
+	  type=SQLT_LBI;
+	  /*** dynamic ****/
+	  break;
+
+	case SQLT_LAB:
+	  type_name="mslabel";
+	  type=SQLT_LBI;
+	  data_size=-1;
+	  break;
+
+
+	default:
+	  type_name="unknown";
+	  type=SQLT_LBI;
+	  data_size=-1;
+          break;
+      }
+
+      info->data.ftype=type;
+
+      if(type_name)
+	info->type=make_shared_string(type_name);
+
+      rc=OCIDefineByPos(dbquery->statement,
+			&info->define_handle,
+			dbcon->error_handle,
+			i+1,
+			& info->data.u,
+			data_size<0? (0x7fffffff) :data_size,
+			type,
+			& info->data.indicator,
+			& info->data.len,
+			& info->data.rcode,
+			OCI_DYNAMIC_FETCH);
+
+      if(rc != OCI_SUCCESS)
+	ora_error_handler(dbcon->error_handle, rc, 0);
+
+      if(data_size < 0)
+      {
+	rc=OCIDefineDynamic(info->define_handle,
+			    dbcon->error_handle,
+			    info,
+			    define_callback);
+	if(rc != OCI_SUCCESS)
+	  ora_error_handler(dbcon->error_handle, rc, 0);
+      }
+    }
+    f_aggregate(dbquery->cols);
+    add_ref( dbquery->field_info=sp[-1].u.array );
+  }else{
+    ref_push_array( dbquery->field_info);
+  }
+}
+
+static void push_inout_value(struct inout *inout)
+{
+#ifdef ORACLE_DEBUG
+/*  fprintf(stderr,"%s ..",__FUNCTION__); */
+#endif
+
+  if(inout->indicator)
+  {
+    switch(inout->ftype)
+    {
+      case SQLT_BIN:
+      case SQLT_LBI:
+      case SQLT_AFC:
+      case SQLT_LAB:
+      case SQLT_LNG:
+      case SQLT_CHR:
+      case SQLT_STR:
+	ref_push_object(nullstring_object);
+	break;
+	
+      case SQLT_ODT:
+      case SQLT_DAT:
+	ref_push_object(nulldate_object);
+	push_object(low_clone(Date_program));
+	((struct dbdate *)sp[-1].u.object->storage)->date = inout->u.date;
+	break;
+	
+      case SQLT_INT:
+	ref_push_object(nullint_object);
+	break;
+	
+      case SQLT_FLT:
+	ref_push_object(nullfloat_object);
+	break;
+	
+      default:
+	error("Unknown data type.\n");
+	break;
+    }
+    return;
+  }
+
+  switch(inout->ftype)
+  {
+    case SQLT_BIN:
+    case SQLT_LBI:
+    case SQLT_AFC:
+    case SQLT_LAB:
+    case SQLT_LNG:
+    case SQLT_CHR:
+    case SQLT_STR:
+      inout->output.s->len+=inout->xlen-BLOCKSIZE;
+      if(inout->ftype == SQLT_STR) inout->output.s->len--;
+      inout->xlen=0;
+      push_string(finish_string_builder(& inout->output));
+      inout->output.s=0;;
+      break;
+
+    case SQLT_ODT:
+    case SQLT_DAT:
+      push_object(low_clone(Date_program));
+      ((struct dbdate *)sp[-1].u.object->storage)->date = inout->u.date;
+      break;
+      
+    case SQLT_INT:
+      push_int(inout->u.i);
+      break;
+      
+    case SQLT_FLT:
+      push_float(inout->u.f); /* We might need to push a Matrix here */
+      break;
+      
+    default:
+      error("Unknown data type.\n");
+      break;
+  }
+  free_inout(inout);
+}
+
+static void init_inout(struct inout *i)
+{
+  i->output.s=0;
+  i->has_output=0;
+  i->xlen=0;
+  i->len=0;
+  i->indicator=0;
+}
+
+static void free_inout(struct inout *i)
+{
+  if(i->output.s)
+  {
+    free_string_builder(& i->output);
+    init_inout(i);
+  }
+}
+
+
+static void f_fetch_row(INT32 args)
+{
+  int i;
+  sword rc;
+  struct dbresult *dbresult = THIS_RESULT;
+  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct dbcon *dbcon = THIS_RESULT_DBCON;
+
+#ifdef ORACLE_DEBUG
+/*  fprintf(stderr,"%s ..",__FUNCTION__); */
+#endif
+
+  pop_n_elems(args);
+
+  if(!dbquery->cols)
+  {
+    f_fetch_fields(0);
+    pop_stack();
+  }
+
+  THREADS_ALLOW();
+  rc=OCIStmtFetch(dbquery->statement,
+		  dbcon->error_handle,
+		  1,
+		  OCI_FETCH_NEXT,
+		  OCI_DEFAULT);
+  THREADS_DISALLOW();
+
+  if(rc==OCI_NO_DATA)
+  {
+    push_int(0);
+    return;
+  }
+
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, rc, 0);
+
+  check_stack(dbquery->cols);
+
+  for(i=0;i<dbquery->cols;i++)
+  {
+    if(dbquery->field_info->item[i].type == T_OBJECT &&
+       dbquery->field_info->item[i].u.object->prog == dbresultinfo_program)
+    {
+      struct dbresultinfo *info;
+      info=(struct dbresultinfo *)(dbquery->field_info->item[i].u.object->storage);
+
+      /* Extract data from 'info' */
+
+      push_inout_value(& info->data);
+    }
+  }
+  f_aggregate(dbquery->cols);
+}
+
+static void f_oracle_create(INT32 args)
+{
+  char *err=0;
+  struct dbcon *dbcon = THIS_DBCON;
   struct pike_string *uid, *passwd, *host, *database;
   sword rc;
 
@@ -490,260 +888,601 @@ static void f_create(INT32 args)
 
   THREADS_ALLOW();
 
-  mt_lock( & dbcon->lock );
-  mt_lock( & oracle_serialization_mutex );
+  LOCK(dbcon->lock);
+  LOCK(oracle_serialization_mutex);
 
-  rc = olog(&dbcon->lda, (ub1*)dbcon->hda, uid->str, uid->len,
-	    (passwd? passwd->str:NULL), (passwd? passwd->len:-1),
-	    (host? host->str:NULL), (host? host->len:-1),
-	    OCI_LM_DEF);
+  do  {
+    rc=OCIHandleAlloc(get_oracle_environment(),
+		      (void **)& dbcon->error_handle,
+		      OCI_HTYPE_ERROR,
+		      0,
+		      0);
+    if(rc != OCI_SUCCESS) break;
 
-  mt_unlock( & oracle_serialization_mutex );
-  mt_unlock( & dbcon->lock );
+#ifdef ORACLE_DEBUG
+    fprintf(stderr,"OCIHandleAlloc -> %p\n",dbcon->error_handle);
+#endif
+
+#if 0
+    if(OCIHandleAlloc(get_oracle_environment(),&THIS_DBCON->srvhp,
+		      OCI_HTYPE_SERVER, 0,0)!=OCI_SUCCESS)
+      error("Failed to allocate server handle.\n");
+    
+    if(OCIHandleAlloc(get_oracle_environment(),&THIS_DBCON->srchp,
+		      OCI_HTYPE_SVCCTX, 0,0)!=OCI_SUCCESS)
+      error("Failed to allocate service context.\n");
+#endif
+
+
+    rc=OCILogon(get_oracle_environment(),
+		dbcon->error_handle,
+		&dbcon->context,
+		uid->str, uid->len, 
+		(passwd? passwd->str:NULL), (passwd? passwd->len:-1),
+		(host? host->str:NULL), (host? host->len:-1));
+  
+  }while(0);
+
+  UNLOCK(oracle_serialization_mutex);
+  UNLOCK(dbcon->lock);
 
   THREADS_DISALLOW();
 
 
-  if(rc)
-    ora_error_handler(dbcon, dbcon->lda.rc);
-
-  make_cda(dbcon);
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, rc, 0);
 
   pop_n_elems(args);
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"oracle.create error_handle -> %p\n",dbcon->error_handle);
+#endif
+
   return;
 }
-
-static void f_big_query(INT32 args)
+static void f_compile_query_create(INT32 args)
 {
+  int rc;
   struct pike_string *query;
-  struct dbcurs *curs;
-  sword rc;
-  struct mapping *bnds;
-  struct dbcon *dbcon=THIS;
-  /*  INT32 cols=0; */
+  struct dbquery *dbquery=THIS_QUERY;
+  struct dbcon *dbcon=THIS_QUERY_DBCON;
+  char *errfunc=0;
 
-  if(args>1)
-    get_all_args("Oracle.oracle->big_query", args, "%S%m", &query, &bnds);
-  else {
-    get_all_args("Oracle.oracle->big_query", args, "%S", &query);
-    bnds = NULL;
-  }
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
 
-  if(!(curs = THIS->cdas))
-    curs = make_cda(THIS);
+  get_all_args("Oracle->compile_query", args, "%S", &query);
 
-  THIS->cdas = curs->next;
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"f_compile_query_create: dbquery: %p\n",dbquery);
+  fprintf(stderr,"         dbcon:   %p\n",dbcon);
+  fprintf(stderr,"  error_handle: %p\n",dbcon->error_handle);
+#endif
 
   THREADS_ALLOW();
+  LOCK(dbcon->lock);
+  
+  rc=OCIHandleAlloc(get_oracle_environment(),
+		    (void **)&dbquery->statement,
+		    OCI_HTYPE_STMT,
+		    0,0);
+  
+  if(rc == OCI_SUCCESS)
+  {
+    rc=OCIStmtPrepare(dbquery->statement,
+		      dbcon->error_handle,
+		      query->str,
+		      query->len,
+		      OCI_NTV_SYNTAX,
+		      OCI_DEFAULT);
 
-/*  fprintf(stderr,"Locking dbcon.\n"); */
-  mt_lock( & dbcon->lock );
-
-/*  fprintf(stderr,"ocan.\n"); */
-
-  ocan(&curs->cda);
-
-  rc = oparse(&curs->cda, query->str, query->len, 1, 2);
-
+    if(rc == OCI_SUCCESS)
+    {
+      ub2 query_type;
+      rc=OCIAttrGet(dbquery->statement,
+		    OCI_HTYPE_STMT,
+		    &query_type,
+		    0,
+		    OCI_ATTR_STMT_TYPE,
+		    dbcon->error_handle);
+      if(rc == OCI_SUCCESS)
+      {
+#ifdef ORACLE_DEBUG
+	fprintf(stderr,"     query_type: %d\n",query_type);
+#endif
+	dbquery->query_type = query_type;
+      }else{
+	errfunc="OCIAttrGet";
+      }
+    }else{
+      errfunc="OCIStmtPrepare";
+    }
+  }else{
+    errfunc="OCIHandleAlloc";
+  }
+  
   THREADS_DISALLOW();
-   
-  if(rc) {
-    curs->next = THIS->cdas;
-    THIS->cdas = curs;
+  UNLOCK(dbcon->lock);
 
-    mt_unlock( & dbcon->lock );
-    ora_error_handler(THIS, curs->cda.rc);
-  } else if(bnds != NULL) {
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, rc, 0);
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+struct bind
+{
+  OCIBind *bind;
+  struct svalue ind; /* The name of the input/output variable */
+
+  struct svalue val; /* The input value */
+  void *addr;
+  int len;
+  sb2 indicator;
+
+  struct inout data;
+};
+
+#define MAX_NUMBER_OF_BINDINGS 256
+
+struct bind_block
+{
+  struct bind bind[MAX_NUMBER_OF_BINDINGS];
+  int bindnum;
+};
+
+
+static sb4 input_callback(void *vbind_struct,
+			   OCIBind *bindp,
+			   ub4 iter,
+			   ub4 index,
+			   void **bufpp,
+			   ub4 *alenp,
+			   ub1 *piecep,
+			   dvoid **indpp)
+{
+  struct bind * bind = (struct bind *)vbind_struct;
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s %ld %ld\n",__FUNCTION__,(long)iter,(long)index);
+#endif
+
+  *bufpp = bind->addr;
+  *alenp = bind->len;
+  *indpp = (dvoid *) &bind->ind;
+  *piecep = OCI_ONE_PIECE;
+
+  return OCI_CONTINUE;
+}
+
+static sb4 bind_output_callback(void *vbind_struct,
+				OCIBind *bindp,
+				ub4 iter,
+				ub4 index,
+				void **bufpp,
+				ub4 **alenpp,
+				ub1 *piecep,
+				dvoid **indpp,
+				ub2 **rcodepp)
+{
+  struct bind * bind = (struct bind *)vbind_struct;
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"Output... %ld\n",(long)bind->data.xlen);
+#endif
+
+  output_callback( &bind->data,
+		   iter,
+		   bufpp,
+		   alenpp,
+		   piecep,
+		   indpp,
+		   rcodepp);
+  
+  return OCI_CONTINUE;
+}
+
+static void free_bind_block(struct bind_block *bind)
+{
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
+  while(bind->bindnum>=0)
+  {
+    free_svalue( & bind->bind[bind->bindnum].ind);
+    free_svalue( & bind->bind[bind->bindnum].val);
+    free_inout(& bind->bind[bind->bindnum].data);
+    bind->bindnum--;
+  }
+}
+
+/*
+ * FIXME: This function should probably lock the statement
+ * handle until it is freed...
+ */
+static void f_big_query_create(INT32 args)
+{
+  sword rc;
+  struct mapping *bnds=0;
+  struct dbresult *dbresult=THIS_RESULT;
+  struct dbquery *dbquery=THIS_RESULT_QUERY;
+  struct dbcon *dbcon=THIS_RESULT_DBCON;
+  ONERROR err;
+  INT32 autocommit=0;
+  int i,num;
+  struct object *new_parent=0;
+
+  struct bind_block bind;
+  bind.bindnum=-1;
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
+  check_all_args("Oracle.oracle.compile_query->big_query", args,
+		 BIT_VOID | BIT_MAPPING | BIT_INT, 
+		 BIT_VOID | BIT_INT,
+		 BIT_VOID | BIT_OBJECT,
+		 0);
+
+  switch(args)
+  {
+    default:
+      new_parent=sp[2-args].u.object;
+
+    case 2:
+      autocommit=sp[1-args].u.integer;
+
+    case 1:
+      if(sp[-args].type == T_MAPPING)
+	bnds=sp[-args].u.mapping;
+
+    case 0: break;
+  }
+
+  if(bnds && m_sizeof(bnds) > MAX_NUMBER_OF_BINDINGS)
+    error("Too many variables.\n");
+
+  destruct_objects_to_destruct();
+
+  /* Optimize me with trylock! */
+  THREADS_ALLOW();
+  LOCK(dbquery->lock);
+  dbresult->dbquery_lock=1;
+  THREADS_DISALLOW();
+
+  /* Time to re-parent if required */
+  if(new_parent && PARENTOF(PARENTOF(THISOBJ)) != new_parent)
+  {
+    if(new_parent->prog != oracle_program)
+      error("Bad argument 3 to big_query.\n");
+
+    /* We might need to check that there are no locks held here
+     * but I don't beleive that could happen, so just go with it...
+     */
+    free_object(PARENTOF(PARENTOF(THISOBJ)));
+    add_ref( PARENTOF(PARENTOF(THISOBJ)) = new_parent );
+  }
+
+  SET_ONERROR(err, free_bind_block, &bind);
+
+  if(bnds != NULL)
+  {
     INT32 e;
     struct keypair *k;
-    MAPPING_LOOP(bnds) {
+    MAPPING_LOOP(bnds)
+      {
+	struct svalue *value=&k->val;
+	OCIBind *bindp;
 	sword rc = 0;
-	ub1 *addr;
+	void *addr;
 	sword len, fty;
-	switch(k->val.type) {
-	case T_STRING:
-	  addr = (ub1 *)k->val.u.string->str;
-	  len = k->val.u.string->len;
-	  fty = SQLT_CHR;
-	  break;
-	case T_FLOAT:
-	  addr = (ub1 *)&k->val.u.float_number;
-	  len = sizeof(k->val.u.float_number);
-	  fty = SQLT_FLT;
-	  break;
-	case T_INT:
-	  addr = (ub1 *)&k->val.u.integer;
-	  len = sizeof(k->val.u.integer);
-	  fty = SQLT_INT;
-	  break;
-	case T_MULTISET:
-	  if(k->val.u.multiset->ind->size == 1 &&
-	     ITEM(k->val.u.multiset->ind)[0].type == T_STRING) {
-	    addr = (ub1 *)ITEM(k->val.u.multiset->ind)[0].u.string->str;
-	    len = ITEM(k->val.u.multiset->ind)[0].u.string->len;
-	    fty = SQLT_BIN;
+	int mode=OCI_DATA_AT_EXEC;
+	long rlen=0x7fffffff;
+	bind.bindnum++;
+	
+	assign_svalue_no_free(& bind.bind[bind.bindnum].ind, & k->ind);
+	assign_svalue_no_free(& bind.bind[bind.bindnum].val, & k->val);
+	bind.bind[bind.bindnum].indicator=0;
+
+	init_inout(& bind.bind[bind.bindnum].data);
+
+      retry:
+	switch(value->type)
+	{
+	  case T_OBJECT:
+	    if(value->u.object->prog == Date_program)
+	    {
+	      bind.bind[bind.bindnum].data.u.date=((struct dbdate *)(value->u.object->storage))->date;
+	      addr = &bind.bind[bind.bindnum].data.u.date;
+	      rlen = len = sizeof(bind.bind[bind.bindnum].data.u.date);
+	      fty=SQLT_ODT;
+	      break;
+	    }
+	    if(value->u.object->prog == NULL_program)
+	    {
+	      bind.bind[bind.bindnum].indicator=-1;
+	      value=& ((struct dbnull *)(value->u.object->storage))->type;
+	      goto retry;
+	    }
+	    error("Bad value type in argument 2 to "
+		  "Oracle.oracle->big_query()\n");
 	    break;
-	  }
-	default:
-	  ocan(&curs->cda);
-	  curs->next = THIS->cdas;
-	  THIS->cdas = curs;
 
-	  mt_unlock( & dbcon->lock );
-	  error("Bad value type in argument 2 to "
-		"Oracle.oracle->big_query()\n");
+	  case T_STRING:
+	    addr = (ub1 *)value->u.string->str;
+	    len = value->u.string->len;
+	    fty = SQLT_LNG;
+	    break;
+	    
+	  case T_FLOAT:
+	    addr = &value->u.float_number;
+	    rlen = len = sizeof(value->u.float_number);
+	    fty = SQLT_FLT;
+	    break;
+	    
+	  case T_INT:
+	    if(value->subtype)
+	    {
+#ifdef ORACLE_DEBUG
+	      fprintf(stderr,"NULL IN\n");
+#endif
+	      bind.bind[bind.bindnum].indicator=-1;
+	      addr = 0;
+	      len = 0;
+	      fty = SQLT_LNG;
+	    }else{
+	      bind.bind[bind.bindnum].data.u.i=value->u.integer;
+	      addr = &bind.bind[bind.bindnum].data.u.i;
+	      rlen = len = sizeof(bind.bind[bind.bindnum].data.u.i);
+	      fty = SQLT_INT;
+	    }
+	    break;
+	    
+	  case T_MULTISET:
+	    if(value->u.multiset->ind->size == 1 &&
+	       ITEM(value->u.multiset->ind)[0].type == T_STRING)
+	    {
+	      addr = (ub1 *)ITEM(value->u.multiset->ind)[0].u.string->str;
+	      len = ITEM(value->u.multiset->ind)[0].u.string->len;
+	      fty = SQLT_LBI;
+	      break;
+	    }
+	    
+	  default:
+	    error("Bad value type in argument 2 to "
+		  "Oracle.oracle->big_query()\n");
 	}
+	
+	bind.bind[bind.bindnum].addr=addr;
+	bind.bind[bind.bindnum].len=len;
+	bind.bind[bind.bindnum].data.ftype=fty;
+	bind.bind[bind.bindnum].bind=0;
+	bind.bind[bind.bindnum].data.curlen=1;
+	
+#ifdef ORACLE_DEBUG
+	fprintf(stderr,"BINDING... rlen=%ld\n",(long)rlen);
+#endif
 	if(k->ind.type == T_INT)
-	  rc = obndrn(&curs->cda, k->ind.u.integer, addr, len, fty,
-		      -1, NULL, NULL, -1, 0);
+	{
+	  rc = OCIBindByPos(dbquery->statement,
+			    & bind.bind[bind.bindnum].bind,
+			    dbcon->error_handle,
+			    k->ind.u.integer,
+			    addr,
+			    rlen,
+			    fty,
+			    & bind.bind[bind.bindnum].data.indicator,
+			    & bind.bind[bind.bindnum].data.len,
+			    & bind.bind[bind.bindnum].data.rcode,
+			    0,
+			    0,
+			    mode);
+	}
 	else if(k->ind.type == T_STRING)
-	  rc = obndrv(&curs->cda, k->ind.u.string->str, k->ind.u.string->len,
-		      addr, len, fty, -1, NULL, NULL, -1, 0);
-	else {
-	  ocan(&curs->cda);
-	  curs->next = THIS->cdas;
-	  THIS->cdas = curs;
-
-	  mt_unlock( & dbcon->lock );
+	{
+	  rc = OCIBindByName(dbquery->statement,
+			     & bind.bind[bind.bindnum].bind,
+			     dbcon->error_handle,
+			     k->ind.u.string->str,
+			     k->ind.u.string->len,
+			     addr,
+			     rlen,
+			     fty,
+			     & bind.bind[bind.bindnum].data.indicator,
+			     & bind.bind[bind.bindnum].data.len,
+			     & bind.bind[bind.bindnum].data.rcode,
+			     0,
+			     0,
+			     mode);
+	}
+	else
+	{
 	  error("Bad index type in argument 2 to "
 		"Oracle.oracle->big_query()\n");
 	}
-	if(rc) {
-	  rc = curs->cda.rc;
-	  ocan(&curs->cda);
-	  curs->next = THIS->cdas;
-	  THIS->cdas = curs;
+	if(rc)
+	{
+	  UNLOCK(dbcon->lock);
+	  ora_error_handler(dbcon->error_handle, rc, "OCiBindByName/Pos");
+	}
 
-	  mt_unlock( & dbcon->lock );
-	  ora_error_handler(THIS, rc);
+	if(mode == OCI_DATA_AT_EXEC)
+	{
+	  rc=OCIBindDynamic(bind.bind[bind.bindnum].bind,
+			    dbcon->error_handle,
+			    (void *)(bind.bind + bind.bindnum),
+			    input_callback,
+			    (void *)(bind.bind + bind.bindnum),
+			    bind_output_callback);
 	}
       }
   }
-
   THREADS_ALLOW();
+  LOCK(dbcon->lock);
+  dbresult->dbcon_lock=1;
 
-/*  fprintf(stderr,"oexec.\n"); */
-  rc = oexec(&curs->cda);
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"OCIExec query_type=%d\n",dbquery->query_type);
+#endif
+  rc = OCIStmtExecute(dbcon->context,
+		      dbquery->statement,
+		      dbcon->error_handle,
+		      dbquery->query_type == OCI_STMT_SELECT ? 0 : 1,
+		      0,
+		      0,0,
+		      autocommit?OCI_DEFAULT:OCI_COMMIT_ON_SUCCESS);
 
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"OCIExec done\n");
+#endif
   THREADS_DISALLOW();
 
-
-  if(rc) {
-    rc = curs->cda.rc;
-    ocan(&curs->cda);
-    curs->next = THIS->cdas;
-    THIS->cdas = curs;
-
-    mt_unlock(&dbcon->lock);
-    ora_error_handler(THIS, rc);
-  }
+  if(rc)
+    ora_error_handler(dbcon->error_handle, rc, 0);
 
   pop_n_elems(args);
 
-  if(curs->cda.ft != 4) {
-    ocan(&curs->cda);
-    curs->next = THIS->cdas;
-    THIS->cdas = curs;
-    push_int(0);
+  
+  for(num=i=0;i<=bind.bindnum;i++)
+    if(bind.bind[i].data.has_output)
+      num++;
 
-    /* NIL */
-/*    fprintf(stderr,"NIL\n"); */
-    mt_unlock(&dbcon->lock);
+  if(!num)
+  {
+    /* This will probably never happen, but better safe than sorry */
+    if(dbquery->output_variables)
+    {
+      free_mapping(dbquery->output_variables);
+      dbquery->output_variables=0;
+    }
+  }else{
+    if(!dbquery->output_variables)
+      dbquery->output_variables=allocate_mapping(num);
+
+    for(num=i=0;i<=bind.bindnum;i++)
+    {
+      if(bind.bind[i].data.has_output)
+      {
+	push_inout_value(& bind.bind[i].data);
+	mapping_insert(dbquery->output_variables, & bind.bind[i].ind, sp-1);
+	pop_stack();
+      }
+    }
+  }
+
+  CALL_AND_UNSET_ONERROR(err);
+}
+
+void dbdate_create(INT32 args)
+{
+  struct tm *tm;
+  time_t t;
+  sword rc;
+
+  check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
+  switch(sp[-args].type)
+  {
+    case T_STRING:
+      rc=OCIDateFromText(get_global_error_handle(),
+			 sp[-args].u.string->str,
+			 sp[-args].u.string->len,
+			 0,
+			 0,
+			 0,
+			 0,
+			 & THIS_DBDATE->date);
+      if(rc != OCI_SUCCESS)
+	ora_error_handler(get_global_error_handle(), rc,"OCIDateFromText");
+      break;
+
+    case T_INT:
+      t=sp[-1].u.integer;
+      tm=localtime(&t);
+      OCIDateSetDate(&THIS_DBDATE->date, tm->tm_year, tm->tm_mon, tm->tm_mday);
+      OCIDateSetTime(&THIS_DBDATE->date, tm->tm_hour, tm->tm_min, tm->tm_sec);
+      break;
+  }
+}
+
+void dbdate_sprintf(INT32 args)
+{
+  char buffer[100];
+  sword rc;
+  sb4 bsize=100;
+  rc=OCIDateToText(get_global_error_handle(),
+		   &THIS_DBDATE->date,
+		   0,
+		   0,
+		   0,
+		   0,
+		   &bsize,
+		   buffer);
+		
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(get_global_error_handle(), rc,"OCIDateToText");
+
+  pop_n_elems(args);
+  push_text(buffer);
+}
+void dbdate_cast(INT32 args)
+{
+  char *s;
+  get_all_args("Oracle.Date->cast",args,"%s",&s);
+  if(!strcmp(s,"int"))
+  {
+    struct tm *tm;
+    time_t t;
+    ub1 hour, min, sec, month,day;
+    sb2 year;
+
+    extern void f_mktime(INT32 args);
+
+    OCIDateGetDate(&THIS_DBDATE->date, &year, &month, &day);
+    OCIDateGetTime(&THIS_DBDATE->date, &hour, &min, &sec);
+
+    push_int(sec);
+    push_int(min);
+    push_int(hour);
+    push_int(day);
+    push_int(month);
+    push_int(year);
+    f_mktime(6);
     return;
   }
-
-  push_object(this_object());
-
-
-  curs->next = THIS->cdas;
-  THIS->cdas = curs;
-
-
-  THIS->share_cda = curs;
-
-  push_object(clone_object(oracle_result_program, 1));
-
-  THIS->cdas = curs->next;
-
+  if(!strcmp(s,"string"))
+  {
+    dbdate_sprintf(args);
+    return;
+  }
+  error("Cannot cast Oracle.Date to %s\n",s);
 }
 
-static void f_list_tables(INT32 args)
+void dbnull_create(INT32 args)
 {
-  struct pike_string *wild;
-  struct dbcurs *curs;
-  sword rc;
-  struct dbcon *dbcon=THIS;
-
-  if(args)
-    get_all_args("Oracle.oracle->list_tables", args, "%S", &wild);
-  else
-    wild = NULL;
-
-  if(!(curs = THIS->cdas))
-    curs = make_cda(THIS);
-
-  THIS->cdas = curs->next;
-
-  THREADS_ALLOW();
-
-  mt_lock( & dbcon->lock );
-
-  ocan(&curs->cda);
-
-  if(wild) {
-    rc = oparse(&curs->cda, "select tname from tab where tname like :wild",
-		-1, 1, 2);
-    if(!rc)
-      rc = obndrv(&curs->cda, ":wild", -1, wild->str, wild->len, SQLT_CHR,
-		  -1, NULL, NULL, -1, 0);
-  } else
-    rc = oparse(&curs->cda, "select tname from tab", -1, 1, 2);
-
-  THREADS_DISALLOW();
-   
-  if(rc) {
-    curs->next = THIS->cdas;
-    THIS->cdas = curs;
-
-    mt_unlock( & dbcon->lock );
-    ora_error_handler(THIS, curs->cda.rc);
-  }
-
-  THREADS_ALLOW();
-
-  rc = oexec(&curs->cda);
-
-  THREADS_DISALLOW();
-
-  if(rc) {
-    rc = curs->cda.rc;
-    ocan(&curs->cda);
-    curs->next = THIS->cdas;
-    THIS->cdas = curs;
-
-    mt_unlock( & dbcon->lock );
-    ora_error_handler(THIS, rc);
-  }
-
-  pop_n_elems(args);
-
-  push_object(this_object());
-
-  curs->next = THIS->cdas;
-  THIS->cdas = curs;
-  THIS->share_cda = curs;
-
-  push_object(clone_object(oracle_result_program, 1));
-
-  THIS->cdas = curs->next;
+  if(args<1) error("Too few arguments to Oracle.NULL->create\n");
+  assign_svalue(& THIS_DBNULL->type, sp-args);
 }
 
-#endif
+void dbnull_sprintf(INT32 args)
+{
+  switch(THIS_DBNULL->type.type)
+  {
+    case T_INT: push_text("Oracle.NULLint"); break;
+    case T_STRING: push_text("Oracle.NULLstring"); break;
+    case T_FLOAT: push_text("Oracle.NULLfloat"); break;
+    case T_OBJECT: push_text("Oracle.NULLdate"); break;
+
+  }
+
+}
+
 
 void pike_module_init(void)
 {
-#ifdef HAVE_ORACLE
-
+  long offset;
 #ifdef ORACLE_HOME
   if(getenv("ORACLE_HOME")==NULL)
     putenv("ORACLE_HOME="ORACLE_HOME);
@@ -753,65 +1492,146 @@ void pike_module_init(void)
     putenv("ORACLE_SID="ORACLE_SID);
 #endif
 
-#ifdef ORACLE_USE_THREADS
-  opinit(OCI_EV_TSF);
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+
+  if(OCIInitialize(
+    OCI_OBJECT | 
+#ifdef ORACLE_USE_THREADS
+    OCI_DEFAULT,
+#else
+    OCI_THREADED,
+#endif
+    0, 0, 0, 0) != OCI_SUCCESS)
+  {
+#ifdef ORACLE_DEBUG
+    fprintf(stderr,"OCIInitizlie failed\n");
+#endif
+    return;
+  }
 
   if(oracle_program)
     fatal("Oracle module initiated twice!\n");
 
-  start_new_program();
-  ADD_STORAGE(struct dbcon);
+  MY_START_CLASS(dbcon); {
 
-  /* function(string|void, string|void, string|void, string|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
-  /* function(string,mapping(int|string:int|float|string|multiset(string))|void:object) */
-  ADD_FUNCTION("big_query", f_big_query,tFunc(tStr tOr(tMap(tOr(tInt,tStr),tOr4(tInt,tFlt,tStr,tSet(tStr))),tVoid),tObj), ID_PUBLIC);
-  /* function(void|string:object) */
-  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
+    MY_START_CLASS(dbquery); {
+      add_function("create",f_compile_query_create,"function(string:void)",0);
+      map_variable("_type","int",0,offset+OFFSETOF(dbquery,query_type),T_INT);
+      map_variable("_cols","int",0,offset+OFFSETOF(dbquery, cols), T_INT);
+      map_variable("_field_info","array(object)",0,
+		   offset+OFFSETOF(dbquery, field_info),
+		   T_ARRAY);
+      map_variable("output_variables","mapping(string:mixed)",0,
+		   offset+OFFSETOF(dbquery, output_variables),
+		   T_MAPPING);
+      
+      
+/*      add_function("query_type",f_query_type,"function(:int)",0); */
 
-  set_init_callback(init_dbcon_struct);
-  set_exit_callback(exit_dbcon_struct);
-
-  oracle_program = end_program();
-  add_program_constant("oracle", oracle_program, 0);
-
-  start_new_program();
-  ADD_STORAGE(struct dbresult);
-
-  /* function(object, array(string|int):void) */
-  ADD_FUNCTION("create", f_result_create,tFunc(tObj tArr(tOr(tStr,tInt)),tVoid), ID_PUBLIC);
-  /* function(:int) */
-  ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
-  /* function(:array(mapping(string:mixed))) */
-  ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))), ID_PUBLIC);
-  /* function(:int|array(string|int)) */
-  ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
-
-  set_init_callback(init_dbresult_struct);
-  set_exit_callback(exit_dbresult_struct);
-  
-
-  oracle_result_program = end_program();
-  oracle_result_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
+      MY_START_CLASS(dbresult); {
+	ADD_FUNCTION("create", f_big_query_create,
+		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt) tOr(tVoid,tObj),tVoid), ID_PUBLIC);
+	
+	/* function(:int) */
+	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
+	
+	/* function(:array(mapping(string:mixed))) */
+	ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))), ID_PUBLIC);
+	
+	/* function(:int|array(string|int)) */
+	ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
+	
+	MY_END_CLASS(big_query);
+#ifdef PROGRAM_USES_PARENT
+	big_query_program->flags|=PROGRAM_USES_PARENT;
 #endif
+	big_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
+      }
+      
+      
+      MY_START_CLASS(dbresultinfo); {
+	map_variable("name","string",0,offset+OFFSETOF(dbresultinfo, name), T_STRING);
+	map_variable("type","string",0,offset+OFFSETOF(dbresultinfo, type), T_STRING);
+	map_variable("_type","int",0,offset+OFFSETOF(dbresultinfo, real_type), T_INT);
+	map_variable("length","int",0,offset+OFFSETOF(dbresultinfo, length), T_INT);
+	map_variable("decimals","int",0,offset+OFFSETOF(dbresultinfo, decimals), T_INT);
+	
+	ADD_FUNCTION("`->=",protect_dbresultinfo,tFunc(tStr tMix,tVoid),0);
+	ADD_FUNCTION("`[]=",protect_dbresultinfo,tFunc(tStr tMix,tVoid),0);
+	MY_END_CLASS(dbresultinfo);
+      }
+
+      MY_END_CLASS(compile_query);
+#ifdef PROGRAM_USES_PARENT
+      compile_query_program->flags|=PROGRAM_USES_PARENT;
+#endif
+    }
+
+    /* function(string|void, string|void, string|void, string|void:void) */
+    ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+    
+    /* function(string,mapping(int|string:int|float|string|multiset(string))|void:object) */
+    MY_END_CLASS(oracle);
+  }
+
+  MY_START_CLASS(dbdate); {
+    ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
+    ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),0);
+    ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
+  }
+  MY_END_CLASS(Date);
+
+  MY_START_CLASS(dbnull); {
+    ADD_FUNCTION("create",dbnull_create,tFunc(tOr(tStr,tInt),tVoid),0);
+    ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
+    map_variable("type","mixed",0,offset+OFFSETOF(dbnull, type), T_MIXED);
+  }
+  NULL_program=end_program();
+  add_program_constant("NULL", NULL_program, 0);
+
+  push_text("");
+  add_object_constant("NULLstring",nullstring_object=clone_object(NULL_program,1),0);
+
+  push_int(0);
+  add_object_constant("NULLint",nullint_object=clone_object(NULL_program,1),0);
+
+  push_float(0.0);
+  add_object_constant("NULLfloat",nullfloat_object=clone_object(NULL_program,1),0);
+
+  push_object(low_clone(Date_program));
+  add_object_constant("NULLdate",nulldate_object=clone_object(NULL_program,1),0);
 }
 
 static void call_atexits(void);
 
 void pike_module_exit(void)
 {
-#ifdef HAVE_ORACLE
-  if(oracle_program)
-  {
-    free_program(oracle_program);
-    oracle_program = NULL;
-  }
-  if (oracle_result_program) {
-    free_program(oracle_result_program);
-    oracle_result_program = NULL;
-  }
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+
+  if(global_error_handle)
+  {
+    OCIHandleFree(global_error_handle, OCI_HTYPE_ERROR);
+    global_error_handle=0;
+  }
+
+#define FREE_PROG(X) if(X) { free_program(X) ; X=NULL; }
+#define FREE_OBJ(X) if(X) { free_object(X) ; X=NULL; }
+  FREE_PROG(oracle_program);
+  FREE_PROG(compile_query_program);
+  FREE_PROG(big_query_program);
+  FREE_PROG(dbresultinfo_program);
+  FREE_PROG(Date_program);
+  FREE_PROG(NULL_program);
+
+  FREE_OBJ(nullstring_object);
+  FREE_OBJ(nullint_object);
+  FREE_OBJ(nullfloat_object);
+  FREE_OBJ(nulldate_object);
+
   call_atexits();
 }
 
@@ -830,6 +1650,10 @@ int atexit(void (*func)(void))
 
 static void call_atexits(void)
 {
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
   while(atexit_cnt)
     (*atexit_fnc[--atexit_cnt])();
 }
@@ -839,6 +1663,13 @@ static void call_atexits(void)
 static void call_atexits(void)
 {
 }
+
+#endif
+
+#else /* HAVE_ORACLE */
+
+void pike_modle_init(void)  {}
+void pike_modle_exit(void)  {}
 
 #endif
 

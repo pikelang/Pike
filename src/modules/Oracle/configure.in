@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.14 1999/06/01 21:09:03 marcus Exp $
+# $Id: configure.in,v 1.15 2000/03/24 01:22:17 hubbe Exp $
 #
 # Configure script for the oracle module
 #
@@ -107,14 +107,14 @@ if test x$with_oracle = xyes; then
 
   if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/rdbms/demo/ocidfn.h"; then
 
-    echo "$pike_cv_oracle_oracle_home/rdbms/demo" > conftest
+    echo "$pike_cv_oracle_oracle_home" > conftest
 
   else
     if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
       
       sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
         if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
-	  echo "$dir/rdbms/demo" > conftest
+	  echo "$dir" > conftest
 	  break
         else
 	  :
@@ -125,7 +125,7 @@ if test x$with_oracle = xyes; then
 
   oracle_include_dir="`cat conftest`"
 
-  AC_MSG_RESULT($oracle_include_dir)
+  AC_MSG_RESULT($oracle_include_dir/rdbms/demo/)
 
   AC_MSG_CHECKING(for sysliblist)
 
@@ -238,7 +238,7 @@ EOF
 
   if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
 
-    CPPFLAGS="-I$oracle_include_dir ${CPPFLAGS}"
+    CPPFLAGS="-I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public -I ${CPPFLAGS}"
     LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
 
     if test -f "$oracle_lib_dir/libcore4.a"; then
