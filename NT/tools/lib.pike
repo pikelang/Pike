@@ -178,7 +178,8 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 
       if(!f->connect(getenv("NTHOST"),(int)getenv("NTPORT")))
       {
-	werror("Failed to connect "+strerror(errno())+".\n");
+	werror("Failed to connect to "+getenv("NTHOST")+":"+getenv("NTPORT")
+               +"  "+strerror(errno())+".\n");
 	exit(1);
       }
 
