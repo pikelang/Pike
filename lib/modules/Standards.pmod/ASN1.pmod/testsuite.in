@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2004/02/22 17:13:51 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2004/02/22 20:24:25 nilsson Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 
@@ -18,3 +18,37 @@ test_eq(Standards.ASN1.Types.Identifier(2,100,3)->get_der(),
 dnl §8.21
 test_eq( Standards.ASN1.Types.VisibleString("Jones")->get_der(),
   "\32\5Jones" )
+
+test_eq( Standards.ASN1.Types.BitString()->
+  set_from_ascii("011011100101110111")->get_der(),
+  String.hex2string("0304066e5dc0") )
+
+test_eq( Standards.ASN1.Types.IA5String("test1@rsa.com")->get_der(),
+  String.hex2string("160d7465737431407273612e636f6d") )
+
+test_eq( Standards.ASN1.Types.Integer(0)->get_der(),
+  String.hex2string("020100") )
+test_eq( Standards.ASN1.Types.Integer(127)->get_der(),
+  String.hex2string("02017f") )
+test_eq( Standards.ASN1.Types.Integer(128)->get_der(),
+  String.hex2string("02020080") )
+test_eq( Standards.ASN1.Types.Integer(256)->get_der(),
+  String.hex2string("02020100") )
+test_eq( Standards.ASN1.Types.Integer(-128)->get_der(),
+  String.hex2string("020180") )
+test_eq( Standards.ASN1.Types.Integer(-129)->get_der(),
+  String.hex2string("0202ff7f") )
+
+test_eq(Standards.ASN1.Types.Identifier(1,2,840,113549)->get_der(),
+  String.hex2string("06062a864886f70d"))
+
+test_eq(Standards.ASN1.Types.OctetString(String.hex2string("0123456789abcdef"))
+  ->get_der(),
+  String.hex2string("04080123456789abcdef") )
+
+test_eq(Standards.ASN1.Types.PrintableString("Test User 1")->get_der(),
+  String.hex2string("130b5465737420557365722031"))
+
+test_eq(Standards.ASN1.Types.UTC("910506234540Z")->get_der(),
+  String.hex2string("170d3931303530363233343534305a"))
+
