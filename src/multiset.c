@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.64 2004/05/19 19:02:08 mast Exp $
+|| $Id: multiset.c,v 1.65 2004/06/13 14:24:30 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.64 2004/05/19 19:02:08 mast Exp $");
+RCSID("$Id: multiset.c,v 1.65 2004/06/13 14:24:30 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3649,7 +3649,6 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
   val_types = got_values ? 0 : BIT_INT;
   curr.pointer_b = (void *) new.l;
   add_ref (new.msd2 = msd);
-  node = low_multiset_first (msd);
   SET_ONERROR (uwp, free_tree_build_data, &new);
 
   node = low_multiset_first (msd);
@@ -3663,48 +3662,49 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
     new.node->i.ind.type = T_INT;
     if (got_values) new.node->iv.val.type = T_INT;
 
-    copy_svalues_recursively_no_free (&new.node->i.ind,
-				      low_use_multiset_index (node, ind),
-				      1, &curr);
-    ind_types |= 1 << new.node->i.ind.type;
+    low_use_multiset_index (node, ind);
+    if (!IS_DESTRUCTED (&ind)) {
+      copy_svalues_recursively_no_free (&new.node->i.ind, &ind, 1, &curr);
+      ind_types |= 1 << new.node->i.ind.type;
 
-    if (got_values) {
-      copy_svalues_recursively_no_free (&new.node->iv.val, &node->iv.val,
-					1, &curr);
-      val_types |= 1 << new.node->iv.val.type;
-    }
-
-    /* Note: Similar code in multiset_set_cmp_less and mkmultiset_2. */
-
-    while (1) {
-      RBSTACK_INIT (rbstack);
-
-      if (!new.msd->root) {
-	low_rb_init_root (HDR (new.msd->root = new.node));
-	goto node_added;
+      if (got_values) {
+	copy_svalues_recursively_no_free (&new.node->iv.val, &node->iv.val,
+					  1, &curr);
+	val_types |= 1 << new.node->iv.val.type;
       }
 
-      switch (low_multiset_track_le_gt (new.msd,
-					&new.node->i.ind, /* Not clobbered yet. */
-					&rbstack)) {
-	case FIND_LESS:
-	  low_rb_link_at_next (PHDR (&new.msd->root), rbstack, HDR (new.node));
-	  goto node_added;
-	case FIND_GREATER:
-	  low_rb_link_at_prev (PHDR (&new.msd->root), rbstack, HDR (new.node));
-	  goto node_added;
-	case FIND_DESTRUCTED:
-	  midflight_remove_node_faster (new.msd, rbstack);
-	  break;
-	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
-      }
-    }
+      /* Note: Similar code in multiset_set_cmp_less and mkmultiset_2. */
 
-  node_added:
+      while (1) {
+	RBSTACK_INIT (rbstack);
+
+	if (!new.msd->root) {
+	  low_rb_init_root (HDR (new.msd->root = new.node));
+	  goto node_added;
+	}
+
+	switch (low_multiset_track_le_gt (new.msd,
+					  &new.node->i.ind, /* Not clobbered yet. */
+					  &rbstack)) {
+	  case FIND_LESS:
+	    low_rb_link_at_next (PHDR (&new.msd->root), rbstack, HDR (new.node));
+	    goto node_added;
+	  case FIND_GREATER:
+	    low_rb_link_at_prev (PHDR (&new.msd->root), rbstack, HDR (new.node));
+	    goto node_added;
+	  case FIND_DESTRUCTED:
+	    midflight_remove_node_faster (new.msd, rbstack);
+	    break;
+	  default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+	}
+      }
+
+    node_added:
 #ifdef PIKE_DEBUG
-    new.node->i.ind.type |= MULTISET_FLAG_MARKER;
+      new.node->i.ind.type |= MULTISET_FLAG_MARKER;
 #endif
-    new.msd->size++;
+      new.msd->size++;
+    }
   } while ((node = low_multiset_next (node)));
   new.msd->ind_types = ind_types;
   new.msd->val_types = val_types;
@@ -5279,7 +5279,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.64 2004/05/19 19:02:08 mast Exp $");
+RCSID("$Id: multiset.c,v 1.65 2004/06/13 14:24:30 mast Exp $");
 
 struct multiset *first_multiset;
 
