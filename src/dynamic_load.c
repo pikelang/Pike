@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.50 2000/12/23 07:33:49 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.51 2002/07/16 11:52:07 mast Exp $");
 
 #endif /* !TESTING */
 
@@ -243,6 +243,7 @@ struct module_list
 {
   struct module_list * next;
   void *module;
+  struct program *module_prog;
   modfun init, exit;
 };
 
@@ -296,6 +297,16 @@ void f_load_module(INT32 args)
     }
   }
 
+  {
+    struct module_list *mp;
+    for (mp = dynamic_module_list; mp; mp = mp->next)
+      if (mp->module == module && mp->module_prog) {
+	pop_n_elems(args);
+	ref_push_program(mp->module_prog);
+	return;
+      }
+  }
+
   init = CAST_TO_FUN(dlsym(module, "pike_module_init"));
   if (!init) {
     init = CAST_TO_FUN(dlsym(module, "_pike_module_init"));
@@ -320,6 +331,7 @@ void f_load_module(INT32 args)
   new_module->next=dynamic_module_list;
   dynamic_module_list=new_module;
   new_module->module=module;
+  new_module->module_prog = NULL;
   new_module->init=init;
   new_module->exit=exit;
 
@@ -338,6 +350,7 @@ void f_load_module(INT32 args)
 
   pop_n_elems(args);
   push_program(end_program());
+  add_ref(new_module->module_prog = Pike_sp[-1].u.program);
 }
 
 #endif /* USE_DYNAMIC_MODULES */
@@ -360,8 +373,11 @@ void exit_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
   struct module_list *tmp;
-  for (tmp = dynamic_module_list; tmp; tmp = tmp->next)
+  for (tmp = dynamic_module_list; tmp; tmp = tmp->next) {
     (*tmp->exit)();
+    free_program(tmp->module_prog);
+    tmp->module_prog = NULL;
+  }
 #endif
 }
 
@@ -376,6 +392,7 @@ void free_dynamic_load(void)
 #ifndef DEBUG_MALLOC
     dlclose(tmp->module);
 #endif
+    if (tmp->module_prog) free_program(tmp->module_prog);
     free((char *)tmp);
   }
 #endif
