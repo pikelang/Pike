@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.546 2004/01/15 05:05:59 nilsson Exp $
+|| $Id: program.c,v 1.547 2004/01/16 00:51:40 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.546 2004/01/15 05:05:59 nilsson Exp $");
+RCSID("$Id: program.c,v 1.547 2004/01/16 00:51:40 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1160,10 +1160,11 @@ int get_small_number(char **q);
 /* So what if we don't have templates? / Hubbe */
 
 #ifdef PIKE_DEBUG
-#define CHECK_FOO(NUMTYPE,TYPE,NAME)				\
-  if(Pike_compiler->malloc_size_program-> PIKE_CONCAT(num_,NAME) < Pike_compiler->new_program-> PIKE_CONCAT(num_,NAME))	\
-    Pike_fatal("Pike_compiler->new_program->num_" #NAME " is out of order\n");	\
-  if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)			\
+#define CHECK_FOO(NUMTYPE,TYPE,NAME)				              \
+  if(Pike_compiler->malloc_size_program-> PIKE_CONCAT(num_,NAME) <            \
+       Pike_compiler->new_program-> PIKE_CONCAT(num_,NAME))	              \
+    Pike_fatal("Pike_compiler->new_program->num_" #NAME " is out of order\n");\
+  if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)		      \
     Pike_fatal("Tried to reallocate fixed program.\n")
 
 #else
@@ -1183,27 +1184,29 @@ int get_small_number(char **q);
 #define RELOCATE_constants(ORIG,NEW)
 #define RELOCATE_relocations(ORIG,NEW)
 
+/* Funny guys use the uppermost value for nonexistant variables and
+   the like. Hence -2 and not -1. Y2K. */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
 void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
                                     TYPE ARG) {				\
-  if(state->malloc_size_program->PIKE_CONCAT(num_,NAME) ==		\
-     state->new_program->PIKE_CONCAT(num_,NAME)) {			\
+  NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if(m == state->new_program->PIKE_CONCAT(num_,NAME)) {			\
     TYPE *tmp;								\
-    state->malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;		\
-    state->malloc_size_program->PIKE_CONCAT(num_,NAME)++;		\
+    if(m==(1<<(sizeof(NUMTYPE)*8))-2)					\
+      Pike_error("Too many " #NAME ".\n");				\
+    m = MIN(m*2+1,(1<<(sizeof(NUMTYPE)*8))-2);				\
     tmp = realloc((void *)state->new_program->NAME,			\
-		  sizeof(TYPE) *					\
-		  state->malloc_size_program->				\
-                  PIKE_CONCAT(num_,NAME));				\
+		  sizeof(TYPE) * m);					\
     if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
   state->new_program->							\
     NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
 }									\
 void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
-  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
   PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
 }
 
