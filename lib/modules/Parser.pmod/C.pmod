@@ -274,7 +274,7 @@ array(Token) tokenize(array(string) s, void|string file)
   return ret;
 }
 
-array group(array(string|Token) tokens, void|mapping groupings)
+array(Token) group(array(string|Token) tokens, void|mapping groupings)
 {
 #if constant(ADT.Stack)
   ADT.Stack stack=ADT.Stack();
@@ -302,12 +302,12 @@ array group(array(string|Token) tokens, void|mapping groupings)
 	if (!sizeof(ret) || !stack->ptr ||
 	    (groupings[(string)ret[0]] != (string)token)) {
 	  // Mismatch
-	  werror(sprintf("**** Grouping mismatch token=%O\n"
-			 "**** tokens: ({ %{%O, %}})\n"
-			 "**** ret: ({ %{%O, %}})\n"
-			 "**** stackdepth: %d\n",
-			 token->text, tokens->text,
-			 ret->text, stack->ptr));
+	  werror("**** Grouping mismatch token=%O\n"
+		 "**** tokens: ({ %{%O, %}})\n"
+		 "**** ret: ({ %{%O, %}})\n"
+		 "**** stackdepth: %d\n",
+		 token->text, tokens->text,
+		 ret->text, stack->ptr);
 	  return ret;
 	}
 	ret=stack->pop()+({ ret + ({token}) });
