@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.510 2003/09/08 19:51:33 mast Exp $
+|| $Id: builtin_functions.c,v 1.511 2003/09/11 12:26:45 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.510 2003/09/08 19:51:33 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.511 2003/09/11 12:26:45 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4555,9 +4555,9 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
   return i;
 }
 
-/*! @decl array parse_format(string fmt)
- *!
- *!   Parses a sprintf/sscanf-style format string
+/** @decl array parse_format(string fmt)
+ **
+ **   Parses a sprintf/sscanf-style format string
  */
 static void f_parse_format(INT32 args)
 {
