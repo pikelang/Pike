@@ -1,3 +1,11 @@
+pike7.4 (7.4.17-1) unstable; urgency=low
+
+  * Latest upstream version.
+  * Removed pike.el from the distribution. It will be moved to a separate
+    package with pike goodies common for all pikes.
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 25 Mar 2003 17:45:54 +0100
+
 pike7.4 (7.4.15-1) unstable; urgency=low
 
   * Latest upstream version.

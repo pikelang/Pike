@@ -26,20 +26,5 @@ are:
 /usr/local/share/pike/site_pike
 /usr/local/share/pike7.4/site_pike
 
-
-Pike mode helper for Emacsen
-----------------------------
-
-The /usr/share/emacs directory contains a file called pike.el which is
-a highlighting helper for the Pike mode (provided by the CC-Mode).
-Here's how to use that helper with your Emacs:
-
-Put the following in your ~/.emacs (or ~/.xemacs/init.el if using Xemacs21 
-and using the ~/.xemacs/ directory):
-
-(require 'pike)
-
-That should do the trick for the Emacsen provided with Debian.
-
 ----
-$Id: README.Debian,v 1.5 2002/12/29 23:56:11 grendel Exp $
+$Id: README.Debian,v 1.6 2003/03/25 16:47:41 grendel Exp $
