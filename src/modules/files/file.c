@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.92 1998/04/23 23:45:34 hubbe Exp $");
+RCSID("$Id: file.c,v 1.93 1998/05/01 15:41:03 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -37,6 +37,10 @@ RCSID("$Id: file.c,v 1.92 1998/04/23 23:45:34 hubbe Exp $");
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
+#endif /* HAVE_SYS_FILE_H */
 
 #ifdef HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
