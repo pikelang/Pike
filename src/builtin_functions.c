@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.240 2000/03/08 15:56:23 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.241 2000/03/13 20:32:36 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5545,6 +5545,8 @@ void f_string_width(INT32 args)
 
 void init_builtin_efuns(void)
 {
+  struct program *pike___master_program;
+
   ADD_EFUN("gethrtime", f_gethrtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
@@ -5561,16 +5563,52 @@ void init_builtin_efuns(void)
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
   ADD_EFUN("_leak",f__leak,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
   ADD_EFUN("_typeof",f__typeof,tFunc(tMix,tStr),0);
-  ADD_EFUN("replace_master",f_replace_master,
-	   tFunc(tObj,tVoid),OPT_SIDE_EFFECT);
+
+  /* class __master
+   * Used to prototype the master object.
+   */
+  start_new_program();
+  ADD_PROTOTYPE("cast_to_object", tFunc(tString tString, tObj), 0);
+  ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg), 0);
+  ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
+  ADD_PROTOTYPE("compile_warning", tFunc(tStr tInt tStr, tVoid), 0);
+  ADD_PROTOTYPE("decode_charset", tFunc(tStr tStr, tStr), 0);
+  ADD_PROTOTYPE("describe_backtrace", tFunc(tOr(tObj, tArr(tMix)), tStr), 0);
+  ADD_PROTOTYPE("handle_error", tFunc(tString, tVoid), 0);
+  ADD_PROTOTYPE("handle_import",
+		tFunc(tStr tOr(tStr, tVoid) tOr(tObj, tVoid), tMix), 0);
+  ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt, tStr), 0);
+  ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg), 0);
   
+  /* FIXME: Are these three actually supposed to be used?
+   * They are called by encode.c:rec_restore_value
+   *	/grubba 2000-03-13
+   */
+  ADD_PROTOTYPE("functionof", tFunc(tStr, tFunction), ID_OPTIONAL);
+  ADD_PROTOTYPE("objectof", tFunc(tStr, tObj), ID_OPTIONAL);
+  ADD_PROTOTYPE("programof", tFunc(tStr, tPrg), ID_OPTIONAL);
+
+  ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
+  ADD_PROTOTYPE("resolv", tFunc(tStr tOr(tStr, tVoid), tMix), 0);
+  pike___master_program = end_program();
+  add_program_constant("__master", pike___master_program, 0);
+
+  ADD_EFUN_DTYPE("replace_master", f_replace_master,
+		 dtFunc(dtObjImpl(pike___master_program), dtVoid),
+		 OPT_SIDE_EFFECT);
+
 /* function(:object) */
-  ADD_EFUN("master",f_master,tFunc(tNone,tObj),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN_DTYPE("master", f_master,
+		 dtFunc(dtNone, dtObjImpl(pike___master_program)),
+		 OPT_EXTERNAL_DEPEND);
+  
+  /* __master still contains a reference */
+  free_program(pike___master_program);
   
 /* function(string,void|mixed:void) */
-  ADD_EFUN("add_constant",f_add_constant,
+  ADD_EFUN("add_constant", f_add_constant,
 	   tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
-  
+
 /* function(0=mixed ...:array(0)) */
 #ifdef DEBUG_MALLOC
   ADD_EFUN("aggregate",_f_aggregate,
