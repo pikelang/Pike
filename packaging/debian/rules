@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.41 2003/02/05 00:24:52 grendel Exp $
+# $Id: rules,v 1.42 2003/03/19 12:43:55 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -214,7 +214,7 @@ install: build
 	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
 
 	ln -sf ../lib/pike/$(VERSION)/bin/pike $(CURDIR)/debian/$(PIKE)-core/usr/bin/$(PIKE)
-	mv $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/man/man1/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
+	install -m 644 -o root -g root  $(CURDIR)/man/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
 	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/man/
 
 	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/

@@ -1,3 +1,9 @@
+pike7.5 (7.5.3-2) unstable; urgency=low
+
+  * Latest upstream version.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 19 Mar 2003 13:42:44 +0100
+
 pike7.5 (7.5.3-1) unstable; urgency=low
 
   * Latest upstream version.
