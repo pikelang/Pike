@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.90 1997/04/22 03:36:28 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.91 1997/04/22 09:18:47 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -991,13 +991,16 @@ MY_CHECK_FUNCTION(frexp,
 int main()
 {
   double x,y;
-  int p=-7;
+  int p,e;
 
+  x=frexp(1.0, &e);
+  if(x * pow(2.0,(double)e) != 1.0) exit(3)
+
+  p=-7;
   for(x=3.0/4.0*pow(2.0,(double)p);x<50000.0;x*=2.0,p++)
   {
-    int e;
     if(frexp(x, &e)!=3.0/4.0) exit(1);
-    if(e!=p) exit(1);
+    if(e!=p) exit(2);
   }
   exit(0);
 }])
