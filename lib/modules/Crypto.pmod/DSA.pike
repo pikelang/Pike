@@ -19,10 +19,10 @@ function(int:string) random = .Random.random_string;
 // Accessors
 
 Gmp.mpz get_p() { return p; } //! Returns the modulo.
-Gmp.mpz get_q() { return p; } //! Returns the group order.
-Gmp.mpz get_g() { return p; } //! Returns the generator.
-Gmp.mpz get_y() { return p; } //! Returns the public key.
-Gmp.mpz get_x() { return p; } //! Returns the private key.
+Gmp.mpz get_q() { return q; } //! Returns the group order.
+Gmp.mpz get_g() { return g; } //! Returns the generator.
+Gmp.mpz get_y() { return y; } //! Returns the public key.
+Gmp.mpz get_x() { return x; } //! Returns the private key.
 
 
 //! Sets the public key in this DSA object.
@@ -50,16 +50,15 @@ this_program set_private_key(Gmp.mpz secret)
   return this;
 }
 
-//! @fixme
-//!   Document this function.
-this_program use_random(function(int:string) r)
+//! Sets the random function, used to generate keys and parameters, to
+//! the function @[r]. Default is @[Crypto.Random.random_string].
+this_program set_random(function(int:string) r)
 {
   random = r;
   return this;
 }
 
-//! @fixme
-//!   Document this function.
+//! Makes a DSA hash of the messge @[msg].
 Gmp.mpz dsa_hash(string msg)
 {
   return [object(Gmp.mpz)](Gmp.mpz(.SHA1.hash(msg), 256) % q);
@@ -75,8 +74,8 @@ static Gmp.mpz random_exponent()
   return [object(Gmp.mpz)](random_number([object(Gmp.mpz)](q - 1)) + 1);
 }
 
-//! @fixme
-//!   Document this function.
+//! Sign the message @[h]. Returns the signature as two @[Gmp.mpz]
+//! objects.
 array(Gmp.mpz) raw_sign(Gmp.mpz h)
 {
   Gmp.mpz k = random_exponent();
@@ -87,8 +86,7 @@ array(Gmp.mpz) raw_sign(Gmp.mpz h)
   return ({ r, s });
 }
 
-//! @fixme
-//!   Document this function.
+//! Verify the signature @[r],@[s] against the message @[h].
 int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 {
   Gmp.mpz w;
@@ -104,8 +102,7 @@ int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 	       y->powm( [object(Gmp.mpz)](w * r % q), p) % p) % q;
 }
 
-//! @fixme
-//!   Document this function.
+//! Make a RSA ref signature of message @[msg].
 string sign_rsaref(string msg)
 {
   [Gmp.mpz r, Gmp.mpz s] = raw_sign(dsa_hash(msg));
@@ -113,8 +110,7 @@ string sign_rsaref(string msg)
   return sprintf("%'\0'20s%'\0'20s", r->digits(256), s->digits(256));
 }
 
-//! @fixme
-//!   Document this function.
+//! Verify a RSA ref signature @[s] of message @[msg].
 int(0..1) verify_rsaref(string msg, string s)
 {
   if (sizeof(s) != 40)
@@ -125,8 +121,7 @@ int(0..1) verify_rsaref(string msg, string s)
 		    Gmp.mpz(s[20..], 256));
 }
 
-//! @fixme
-//!   Document this function.
+//! Make an SSL signatrue of message @[msg].
 string sign_ssl(string msg)
 {
   return Standards.ASN1.Types.asn1_sequence(
@@ -134,8 +129,7 @@ string sign_ssl(string msg)
 	      Standards.ASN1.Types.asn1_integer))->get_der();
 }
 
-//! @fixme
-//!   Document this function.
+//! Verify an SSL signature @[s] of message @[msg].
 int(0..1) verify_ssl(string msg, string s)
 {
 #define Object Standards.ASN1.Types.Object
