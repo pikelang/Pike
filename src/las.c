@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.242 2002/11/19 14:00:14 mast Exp $");
+RCSID("$Id: las.c,v 1.243 2003/03/21 12:23:28 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -835,11 +835,13 @@ static node *debug_mkemptynode(void)
 {
   node *res=alloc_node_s();
 
-#ifdef SHARED_NODES
+#if defined(SHARED_NODES) || defined(__CHECKER__)
   MEMSET(res, 0, sizeof(node));
+#ifdef SHARED_NODES
   res->hash = 0;  
   res->refs = 1;
 #endif /* SHARED_NODES */
+#endif /* SHARED_NODES || __CHECKER__ */
 
   res->token=0;
   res->line_number=lex.current_line;
@@ -2648,6 +2650,8 @@ static void find_written_vars(node *n,
     if(n->tree_info & OPT_SIDE_EFFECT) {
       p->ext_flags = VAR_USED;
     }
+    find_written_vars(CAR(n), p, 0);
+    find_written_vars(CDR(n), p, 0);
     break;
 
   case F_INDEX:
