@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.23 1999/08/17 18:22:35 grubba Exp $
+ * $Id: sendfile.c,v 1.24 1999/08/17 18:54:12 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -606,7 +606,7 @@ void worker(void *this_)
   mt_unlock(&interpreter_lock);
 
   /* Die */
-  return NULL;
+  return;
 }
 
 /*
