@@ -5,7 +5,6 @@ config.h.in
 config.log
 config.status
 configure
-dependencies
 desQuickCore.c
 desQuickFips.c
 desSmallCore.c
