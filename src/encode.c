@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.137 2002/02/13 13:35:36 grubba Exp $");
+RCSID("$Id: encode.c,v 1.138 2002/02/13 13:38:44 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1165,7 +1165,7 @@ static void free_encode_data(struct encode_data *data)
   free_mapping(data->encoded);
 }
 
-/*! @decl string encode_value(mixed value, object|void codec)
+/*! @decl string encode_value(mixed value, object|void codec, int|void trace)
  *!
  *! Code a value into a string.
  *!
@@ -1231,7 +1231,8 @@ void f_encode_value(INT32 args)
   push_string(low_free_buf(&data->buf));
 }
 
-/*! @decl string encode_value_canonic(mixed value)
+/*! @decl string encode_value_canonic(mixed value, object|void codec, @
+ *!                                   int|void trace)
  *!
  *! Code a value into a string on canonical form.
  *!
@@ -3043,7 +3044,8 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   }
 }
 
-/*! @decl mixed decode_value(string coded_value, object|void codec)
+/*! @decl mixed decode_value(string coded_value, object|void codec, @
+ *!                          int|void trace)
  *!
  *! Decode a value from a string.
  *!
