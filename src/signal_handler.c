@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.194 2001/04/29 16:33:08 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.195 2001/04/29 17:20:08 lange Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1835,7 +1835,7 @@ static void internal_add_limit( struct perishables *storage,
  *!  string containing the name of the group. (See @[setuid]
  *!  and @[getgrgid] for more info.)
  *!
- *! @mamber int(0..1) "setsid"
+ *! @member int(0..1) "setsid"
  *!  Set this to @tt{1@} to create a new session group.
  *!
  *! @member array(int|string) "setgroups"
