@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.50 2003/03/25 21:20:00 nilsson Exp $
+# $Id: Makefile,v 1.51 2003/03/25 23:21:36 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -24,7 +24,7 @@ low_modref:
 	@mkdir modref
 	@cp structure/modref.css modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  $(BUILDDIR)/modref.xml structure/modref.html modref
+	  $(BUILDDIR)/modref.xml structure/modref.html modref predef
 	@mkdir modref/images
 	cp $(BUILDDIR)/doc_build/images/* modref/images
 	@for file in pike_logo.gif next.gif prev.gif unit.gif \
