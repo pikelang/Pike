@@ -1,1 +1,1 @@
-import Fifo;
+import Thread;
