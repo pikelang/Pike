@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.76 1999/12/15 00:48:18 grubba Exp $");
+RCSID("$Id: operators.c,v 1.77 1999/12/15 00:52:31 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -845,7 +845,7 @@ void o_and(void)
     t = and_pike_types(sp[-2].u.string, sp[-1].u.string);
     pop_n_elems(2);
     push_string(t);
-    sp[-1].type = T_STRING;
+    sp[-1].type = T_TYPE;
     return;
   }
 
