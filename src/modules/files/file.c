@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.198 2000/08/27 19:23:38 grubba Exp $");
+RCSID("$Id: file.c,v 1.199 2000/08/27 22:36:00 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2607,11 +2607,14 @@ static void exit_file_locking(void)
 #define exit_file_locking()
 #endif /* HAVE_FD_FLOCK */
 
+void exit_files_stat(void);
 
 void pike_module_exit(void)
 {
   extern void exit_sendfile(void);
   extern void port_exit_program(void);
+
+  exit_files_stat();
 
   exit_sendfile();
 
@@ -2635,7 +2638,6 @@ void pike_module_exit(void)
 
 void init_files_efuns(void);
 void init_files_stat(void);
-void exit_files_stat(void);
 
 #define REF (*((struct object **)(Pike_fp->current_storage)))
 

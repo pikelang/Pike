@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.3 2000/08/27 22:00:20 grubba Exp $
+ * $Id: stat.c,v 1.4 2000/08/27 22:36:00 grubba Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.3 2000/08/27 22:00:20 grubba Exp $");
+RCSID("$Id: stat.c,v 1.4 2000/08/27 22:36:00 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -85,17 +85,24 @@ static void stat_index(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Stat `[]",1);
    else if (args==1)
    {
-      if (sp[-args].type==T_INT)
+      if (sp[-1].type==T_INT)
       {
-	 stat_push_compat(sp[-args].u.integer);
+	 int index = sp[-1].u.integer;
+	 pop_stack();
+	 stat_push_compat(index);
       }
-      else if (sp[-args].type==T_STRING)
+      else if (sp[-1].type==T_STRING)
       {
+	 INT_TYPE code;
+
 	 ref_push_mapping(stat_map);
 	 stack_swap();
 	 f_index(2);
+
+	 code = sp[-1].u.integer;	/* always integer there now */
+	 pop_stack();
 	 
-	 switch (sp[-1].u.integer) /* always integer there now */
+	 switch (code)
 	 {
 	    case STAT_DEV: push_int(THIS->s.st_dev); break;
 	    case STAT_INO: push_int(THIS->s.st_ino); break;
@@ -307,8 +314,6 @@ static void stat_index(INT32 args)
 	       f_add(10);
 
 	       break;
-	       
-	       
 	 }
       }
       else
@@ -316,9 +321,14 @@ static void stat_index(INT32 args)
    }
    else if (args>=2) /* range */
    {
-      INT_TYPE from,to,n=0;
+      INT_TYPE from, to, n=0;
 
-/* make in range 0..6 */
+      if (args > 2) {
+	pop_n_elems(args - 2);
+	args = 2;
+      }
+
+      /* make in range 0..6 */
       push_int(6);
       f_min(2);
       stack_swap();
@@ -327,12 +337,14 @@ static void stat_index(INT32 args)
       stack_swap();
       
       if (sp[-2].type!=T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int(0..6)");
+	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int(0..6)");
       if (sp[-1].type!=T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int(0..6)");
 
-      from=sp[-2].u.integer;
-      to=sp[-1].u.integer;
+      from = sp[-2].u.integer;
+      to = sp[-1].u.integer;
+
+      pop_n_elems(args);
       
       while (from<=to)
       {
@@ -341,8 +353,6 @@ static void stat_index(INT32 args)
       }
       f_aggregate(n);
    }
-
-   stack_pop_n_elems_keep_top(args);
 }
 
 static void stat_cast(INT32 args)
@@ -366,7 +376,7 @@ static void stat_cast(INT32 args)
 
 static void stat__sprintf(INT32 args)
 {
-   int n=0,x;
+   int n=0, x;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
@@ -471,6 +481,7 @@ void init_files_stat()
    f_aggregate_mapping(n*2);
    stat_map=sp[-1].u.mapping;
    sp--;
+   dmalloc_touch_svalue(sp);
 
    start_new_program();
    ADD_STORAGE(struct stat_storage);
@@ -498,4 +509,5 @@ void init_files_stat()
 void exit_files_stat()
 {
    free_program(stat_program);
+   free_mapping(stat_map);
 }
