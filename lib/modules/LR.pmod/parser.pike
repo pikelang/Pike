@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.17 1998/11/18 21:52:34 grubba Exp $
+ * $Id: parser.pike,v 1.18 1998/11/18 22:08:53 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.17 1998/11/18 21:52:34 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.18 1998/11/18 22:08:53 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -934,6 +934,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 			     i->r->pri->value, pri->value));
 	    }
 	    i->direct_lookahead = (<>);
+	    i->next_state = 0;
 	  } else if ((pri->assoc <= 0) &&
 		     (reduce_pri->value == pri->value)) {
 	    if (verbose) {
@@ -943,6 +944,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 			     symbol_to_string(symbol)));
 	    }
 	    i->direct_lookahead = (<>);
+	    i->next_state = 0;
 	  } else {
 	    if (verbose) {
 	      werror(sprintf("Kept item\n%s\n"
