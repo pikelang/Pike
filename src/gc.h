@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.66 2000/09/15 00:30:55 mast Exp $
+ * $Id: gc.h,v 1.67 2000/09/15 00:59:39 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -50,13 +50,29 @@ extern void *gc_svalue_location;
 #endif
 
 #ifdef PIKE_DEBUG
+
+/* Use this when freeing blocks that you've used any gc_check or
+ * gc_mark function on and that can't contain references. */
+#define GC_FREE_SIMPLE_BLOCK(PTR) do {					\
+  extern int d_flag;							\
+  if(d_flag) CHECK_INTERPRETER_LOCK();					\
+  if (Pike_in_gc == GC_PASS_CHECK)					\
+    fatal("No free is allowed in this gc pass.\n");			\
+  else									\
+    remove_marker(PTR);							\
+} while (0)
+
+/* Use this when freeing blocks that you've used any gc_check or
+ * gc_mark function on and that can contain references. */
 #define GC_FREE_BLOCK(PTR) do {						\
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     fatal("Freeing objects within gc is not allowed.\n");		\
 } while (0)
+
 #else
+#define GC_FREE_SIMPLE_BLOCK(PTR) do {} while (0)
 #define GC_FREE_BLOCK(PTR) do {} while (0)
 #endif
 
