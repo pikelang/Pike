@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.186 2000/05/17 19:30:59 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.187 2000/06/09 19:00:47 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1111,7 +1111,7 @@ opt_int_range: /* Empty */
   | '(' number_or_minint TOK_DOT_DOT number_or_maxint ')'
   {
     /* FIXME: Check that $4 is >= $2. */
-    if($2->token == F_CONSTANT && $2->u.sval.type == T_INT)
+    if($4->token == F_CONSTANT && $4->u.sval.type == T_INT)
     {
       push_type_int($4->u.sval.u.integer);
     }else{
