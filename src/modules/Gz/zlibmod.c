@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.20 1998/04/29 23:17:24 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.21 1998/05/07 23:51:43 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -39,6 +39,7 @@ struct zipper
 #define BUF 32768
 #define MAX_BUF	(64*BUF)
 
+#undef THIS
 #define THIS ((struct zipper *)(fp->current_storage))
 
 static void gz_deflate_create(INT32 args)
