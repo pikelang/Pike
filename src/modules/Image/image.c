@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $ */
+/* $Id: image.c,v 1.103 1998/04/20 01:42:21 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $
+**!	$Id: image.c,v 1.103 1998/04/20 01:42:21 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $");
+RCSID("$Id: image.c,v 1.103 1998/04/20 01:42:21 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -111,6 +111,7 @@ RCSID("$Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $");
 
 #include "image.h"
 #include "colortable.h"
+#include "polygon.h"
 #include "builtin_functions.h"
 
 struct program *image_program;
@@ -3783,6 +3784,7 @@ void pike_module_init(void)
 
    init_font_programs();
    init_colortable_programs();
+   init_polygon_programs();
 
    add_function("`[]",image_index_magic,
 		"function(string:object)",0);
@@ -3802,6 +3804,7 @@ void pike_module_exit(void)
   }
   exit_font();
   exit_colortable();
+  exit_polygon();
 
   exit_image_gif();
   exit_image_pnm();
