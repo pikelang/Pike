@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.205 1998/06/15 23:05:16 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.206 1998/06/16 00:32:04 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -799,7 +799,7 @@ int main()
 	# Threads on FreeBSD earlier than 1998-06-07 are broken.
         AC_MSG_CHECKING(if this version of FreeBSD may have working threads)
 	AC_CACHE_VAL(pike_cv_freebsd_threads, [
-	  AC_RUN([
+	  AC_TRY_RUN([
 #include <osreldate.h>
 
 int main(int argc, char **argv)
