@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.5 2000/12/18 17:53:59 per Exp $
+ * $Id: module.pmod.in,v 1.6 2001/03/18 19:48:13 per Exp $
  *
  * GTK glue code.
  */
@@ -21,7 +21,7 @@ inherit @module@;
 
 #define INDEX(x) predef::`->(this_object(),(x))
 
-array setup_gtk(array|string|void name, int|void norc)
+array(string) setup_gtk(array(string)|string|void name, int|void norc)
 {
   array res;
   if(stringp(name))
