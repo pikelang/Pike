@@ -174,10 +174,23 @@ main ()
     }
   return 1;
 }
-],, no_gtk=yes,[echo $ac_n "cross compiling; assumed OK... $ac_c"])
-       CFLAGS="$ac_save_CFLAGS"
-       LIBS="$ac_save_LIBS"
-     fi
+],, no_gtk=yes,[
+        # Cross-compiling
+        AC_TRY_LINK([
+#include <gtk/gtk.h>
+#include <stdio.h>
+        ], [
+  return ((gtk_major_version) || (gtk_minor_version) || (gtk_micro_version));
+        ], [
+          echo $ac_n "cross compiling; looks ok... $ac_c"
+        ], [
+          no_gtk=yes
+          echo $ac_n "cross compiling; linking failed... $ac_c"
+        ])
+      ])
+      CFLAGS="$ac_save_CFLAGS"
+      LIBS="$ac_save_LIBS"
+    fi
   fi
   if test "x$no_gtk" = x ; then
      AC_MSG_RESULT(yes)
