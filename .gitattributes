@@ -2,7 +2,6 @@
 * text ident
 *.gif binary
 *.gz binary
-*.ppm binary
 *.rs binary
 testfont binary
 
@@ -76,7 +75,6 @@ testfont binary
 /src/modules/Image/colortable.h foreign_ident
 /src/modules/Image/colortable_lookup.h foreign_ident
 /src/modules/Image/dct.c foreign_ident
-/src/modules/Image/doc/Image.html foreign_ident
 /src/modules/Image/encodings/gif.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.h foreign_ident
