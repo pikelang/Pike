@@ -15,7 +15,7 @@
  *! enabled with the configure-option @tt{--with-security@}.
  *! 
  *! The security system is based on attaching credential objects
- *! (@[__builtin.security.Creds]) to objects, programs, arrays,
+ *! (@[Pike.Security.Creds]) to objects, programs, arrays,
  *! mappings or multisets.
  *!
  *! A credential object in essence holds three values:
