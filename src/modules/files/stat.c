@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.13 2000/09/28 03:39:18 hubbe Exp $
+ * $Id: stat.c,v 1.14 2000/09/29 14:07:24 grubba Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.13 2000/09/28 03:39:18 hubbe Exp $");
+RCSID("$Id: stat.c,v 1.14 2000/09/29 14:07:24 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -248,7 +248,7 @@ static void stat_create (INT32 args)
 	  if (!int64_from_bignum (&val, ITEM(a)[i].u.object))
 	    error ("Stat create: Too big integer in stat array.\n");
 	}
-#endif
+#endif /* AUTO_BINUM */
 	else
 	  SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "array(int)");
 	stat_compat_set (i, val);
