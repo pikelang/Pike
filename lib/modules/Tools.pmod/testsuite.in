@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.9 2004/04/23 12:39:27 nilsson Exp $
+// $Id: testsuite.in,v 1.10 2004/04/25 15:16:37 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -140,6 +140,14 @@ test_hilfe([[ ({ "int i,j;", "mapping a=([1:2]);",
 
 test_hilfe("int i;","")
 test_hilfe("map(\"!\",lambda(mixed i){return i;});","\"!\"")
+
+test_hilfe("new","")
+test_hilfe("int a=sscanf(\"12\",\"%d\",int b);","")
+test_hilfe("b;","12")
+test_hilfe("for(int i;i<2;i++) sscanf(\"13\",\"%d\",int b);","Ok.\n")
+test_hilfe("b;","12")
+test_hilfe("for(int i;i<2;i++) sscanf(\"13\",\"%d\",b);","Ok.\n")
+test_hilfe("b;","13")
 
 // Clear history...
 test_do( add_constant("testhilfe") )
