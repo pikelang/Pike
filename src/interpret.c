@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.50 1997/10/14 03:10:10 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.51 1997/10/14 05:35:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -859,7 +859,7 @@ static void eval_instruction(unsigned char *pc)
 	  push_int(instr);
 	}else{
 	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  assign_svalue(sp,sp-1); sp++;
+	  assign_svalue_no_free(sp,sp-1); sp++;
 	  push_int(1);
 	  f_add(2);
 	  assign_lvalue(sp-4, sp-1);
@@ -879,7 +879,7 @@ static void eval_instruction(unsigned char *pc)
 	  push_int(instr);
 	}else{
 	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  assign_svalue(sp,sp-1); sp++;
+	  assign_svalue_no_free(sp,sp-1); sp++;
 	  push_int(1);
 	  o_subtract();
 	  assign_lvalue(sp-4, sp-1);
