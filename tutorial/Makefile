@@ -36,7 +36,7 @@ Math.wmml :
 Mysql.wmml : 
 	$(MKWMML) ../src/modules/Mysql/mysql.c >Mysql.wmml
 
-Parser.wmml : 
+Parser.wmml : ../src/modules/Parser/html.c
 	$(MKWMML) ../src/modules/Parser/*.pmod.in ../src/modules/Parser/*.c  >Parser.wmml
 
 Protocols.wmml :
