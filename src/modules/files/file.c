@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.171 2000/04/11 17:17:56 hubbe Exp $");
+RCSID("$Id: file.c,v 1.172 2000/04/14 16:38:36 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1355,15 +1355,6 @@ static void file_open(INT32 args)
 
      if(!fp->current_object->prog)
      {
-#ifdef DEBUG_MALLOC
-       extern int d_flag;
-       /* This is a temporary kluge */
-       if(d_flag)
-       {
-	 fprintf(stderr,"Possible gc() failiure detected in open()\n");
-	 describe(fp->current_object);
-       }
-#endif
        error("Object destructed in file->open()\n");
      }
 
@@ -2650,15 +2641,6 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
   struct object *o=REF;						\
   if(!o || !o->prog) { 						\
    /* This is a temporary kluge */                              \
-   DO_IF_DMALLOC(						\
-     extern int d_flag;                                         \
-     if(d_flag)							\
-     {								\
-       fprintf(stderr,"Possible gc() failiure detected\n");	\
-       describe(fp->current_object);				\
-       if(o) describe(o);					\
-     }								\
-   );								\
    error("Stdio.File(): not open.\n");				\
   }								\
   if(o->prog != file_program)					\
