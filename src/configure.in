@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.492 2001/02/21 00:54:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.493 2001/02/27 20:31:53 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4840,7 +4840,7 @@ if test -z "$LDSHARED" ; then
     UNIX_SV*) LDSHARED="ld -G";;
     UnixWare*)
       if test "$GCC" = yes ; then
-        LDSHARED="$CC -G"
+        LDSHARED="$CC -G -fPIC"
       else
         LDSHARED="$CC -G -KPIC -Wl,-Bexport"
       fi
