@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.486 2002/03/01 13:42:50 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.487 2002/03/01 15:34:26 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1200,36 +1200,71 @@ test_do([[
   Stdio.recursive_rm ("testsuite_test_dir.pmod");
 ]]);
 
-test_any_equal([[
-  // Problem 1: module.pmod is in pass 1 when it tries to resolve the
-  // .B.c constant and is therefore temparily interned as a
-  // placeholder object. The (<>) in B.pike is equivalent to
-  // aggregate_multiset, which due to the import is looked up in the
-  // placeholder object and therefore resolved as a placeholder
-  // object.
-  //
-  // Problem 2: The placeholder object isn't constant and is delayed
-  // to pass 2. The index operation in B.c will therefore try to index
-  // out an undefined constant which leads to a fatal.
+test_do([[
+  // Problem: The expression .B.c in module.pmod is resolved during
+  // compilation pass 1 of B.pike, but it's only declared then and
+  // doesn't yet have any value.
   Stdio.recursive_rm ("testsuite_test_dir.pmod");
   mkdir ("testsuite_test_dir.pmod");
 
   Stdio.write_file ("testsuite_test_dir.pmod/module.pmod", #"\
-    mixed x = .B.c;");
+    mixed x = .B.c;
+    class A {}");
+  Stdio.write_file ("testsuite_test_dir.pmod/B.pike", #"\
+    constant c = .A();"); // Should give a "not constant" compile error.
+
+  // Compilation handler that hides compilation errors.
+  class handler
+  {
+    void handle_error(array(mixed)|object trace) { }
+    void compile_error(string file, int line, string err) { } 
+    void compile_warning(string file, int line, string err) { } 
+  };
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  mixed err = catch {
+      compile_string (#"\
+	mixed foo() {return .testsuite_test_dir.A;}",
+        "test", handler());
+    };
+  replace_master (orig_master);
+  if (!err) error ("Expected compile error.\n");
+  if (!objectp (err) || !err->is_compilation_error) throw (err);
+
+  Stdio.recursive_rm("testsuite_test_dir.pmod");
+]]);
+
+test_any_equal([[
+  // Problem: module.pmod is in pass 1 when it tries to resolve the
+  // .B.c constant and is therefore temporarily interned as a
+  // placeholder object. The (<>) in B.pike is equivalent to
+  // aggregate_multiset, which due to the import is looked up in the
+  // placeholder object and therefore resolved as a nonconstant
+  // placeholder object.
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+  mkdir ("testsuite_test_dir.pmod");
+
+  Stdio.write_file ("testsuite_test_dir.pmod/module.pmod", #"\
+    mixed x = .B.C;
+    mixed foo() {return x->c;}");
   Stdio.write_file ("testsuite_test_dir.pmod/B.pike", #"\
     import \".\";
-    constant c = (<>);");
+    class C {
+      constant c = (<>);
+    }");
 
   object orig_master = master();
   replace_master (object_program (orig_master)());
   mixed res;
   mixed err = catch {
       res = compile_string (#"\
-	mixed foo() {return .testsuite_test_dir.B.c;}",
+	mixed foo() {return .testsuite_test_dir.foo();}",
         "test")()->foo();
     };
   replace_master (orig_master);
   if (err) throw (err);
+  Stdio.recursive_rm("testsuite_test_dir.pmod");
   return res;
 ]], (<>));
 
