@@ -97,7 +97,7 @@ $(OBJS) : \
  $(SRCDIR)/../../pike_types.h \
  $(SRCDIR)/../../interpret.h \
  $(SRCDIR)/../../module_support.h \
- $(SRCDIR)/../../error.h \
+ $(SRCDIR)/../../pike_error.h \
  $(SRCDIR)/../../array.h \
  $(SRCDIR)/../../backend.h \
  $(SRCDIR)/../../stralloc.h \
