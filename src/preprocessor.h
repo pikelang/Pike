@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.66 2004/06/30 17:56:27 grubba Exp $
+|| $Id: preprocessor.h,v 1.67 2004/09/18 21:02:22 marcus Exp $
 */
 
 /*
@@ -189,11 +189,11 @@ static void PUSH_STRING0(p_wchar0 *, ptrdiff_t, struct string_builder *);
 static void PUSH_STRING1(p_wchar1 *, ptrdiff_t, struct string_builder *);
 static void PUSH_STRING2(p_wchar2 *, ptrdiff_t, struct string_builder *);
 
-static ptrdiff_t calc_0(struct cpp *,p_wchar0 *,ptrdiff_t,ptrdiff_t);
-static ptrdiff_t calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t);
-static ptrdiff_t calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t);
+static ptrdiff_t calc_0(struct cpp *,p_wchar0 *,ptrdiff_t,ptrdiff_t, int);
+static ptrdiff_t calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t, int);
+static ptrdiff_t calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t, int);
 
-static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t);
+static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
 
 /*
  * Functions
@@ -364,7 +364,7 @@ static INLINE ptrdiff_t find_end_brace(struct cpp *this,
 }
 
 static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   FINDTOK();
 
@@ -373,7 +373,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
   switch(data[pos])
   {
   case '(':
-    pos=calc1(this,data,len,pos+1);
+    pos=calc1(this,data,len,pos+1,flags);
     FINDTOK();
     if(!GOBBLE(')'))
       cpp_error(this, "Missing ')'");
@@ -383,7 +383,9 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     if(data[pos+1]=='x' || data[pos+1]=='X')
     {
       PCHARP p;
-      push_int(STRTOL_PCHARP(MKPCHARP(data+pos+2, SHIFT), &p, 16));
+      long val = STRTOL_PCHARP(MKPCHARP(data+pos+2, SHIFT), &p, 16);
+      if(OUTP())
+	push_int(val);
       pos = ((WCHAR *)p.ptr) - data;
       break;
     }
@@ -401,10 +403,12 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     l = STRTOL_PCHARP(p, &p2, 0);
     if(COMPARE_PCHARP(p1,>,p2))
     {
-      push_float(DO_NOT_WARN((FLOAT_TYPE)f));
+      if(OUTP())
+	push_float(DO_NOT_WARN((FLOAT_TYPE)f));
       pos = ((WCHAR *)p1.ptr) - data;
     }else{
-      push_int(l);
+      if(OUTP())
+	push_int(l);
       pos = ((WCHAR *)p2.ptr) - data;
     }
     break;
@@ -417,7 +421,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     pos++;
     if(!GOBBLE('\''))
       cpp_error(this, "Missing end quote in character constant.");
-    push_int(tmp);
+    if(OUTP())
+      push_int(tmp);
     break;
   }
 
@@ -426,19 +431,130 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     struct string_builder s;
     init_string_builder(&s, 0);
     READSTRING(s);
-    push_string(finish_string_builder(&s));
+    if(OUTP())
+      push_string(finish_string_builder(&s));
+    else
+      free_string_builder(&s);
     break;
   }
   
   default:
     /* fprintf(stderr, "Bad char %c (%d)\n", data[pos], data[pos]); */
-#ifdef PIKE_DEBUG
-    if(WC_ISIDCHAR(data[pos]))
-      cpp_error(this, "Syntax error in #if (should not happen).");
-#endif
+    if(WC_ISIDCHAR(data[pos])) {
+      /* NOTE: defined() can not be handled here, 
+       *       since the argument must not be expanded.
+       */
+      static WCHAR efun_[] = { 'e','f','u','n' };
+      static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
+      const char *func_name = NULL;
+      void (*cpp_func)(struct cpp *this, INT32 args) = NULL;
+      int start = pos;
+      int end;
+
+      while (WC_ISIDCHAR(data[++pos]))
+	;
+      if((pos-start == 4 && !MEMCMP(efun_, data+start, 4<<SHIFT)) ||
+	 (pos-start == 8 && !MEMCMP(constant_, data+start, 8<<SHIFT)))
+      {
+	cpp_func = cpp_func_constant;
+	func_name = "constant";
+      }
+      
+      SKIPWHITE();
+
+      if (cpp_func)
+      {
+	int arg = 0;
+	int start_line;
+
+	if(!GOBBLE('('))
+	{
+	  if(OUTP())
+	    push_int(0);
+	  break;
+	}
+
+	start_line = this->current_line;
+
+	SKIPWHITE();
+
+	start = end = pos;
+	while (data[pos] != ')') {
+	  switch(data[pos++]) {
+	  case '(':
+	    pos = find_end_parenthesis(this, data, len, pos);
+	    break;
+	  case ',':
+#if (SHIFT == 0)
+	    push_string(make_shared_binary_string(data+start, end-start));
+#else /* SHIFT != 0 */
+#if (SHIFT == 1)
+	    push_string(make_shared_binary_string1(data+start, end-start));
+#else /* SHIFT != 1 */
+	    push_string(make_shared_binary_string2(data+start, end-start));
+#endif /* SHIFT == 1 */
+#endif /* SHIFT == 0 */
+	    arg++;
+	    start = pos;
+	    break;
+	  case '\0':
+	    if (pos > len) {
+	      int old_line = this->current_line;
+	      this->current_line = start_line;
+	      cpp_error_sprintf(this, "Missing ) in the meta function %s().",
+				func_name);
+	      this->current_line = old_line;
+	      return pos-1;
+	    }
+	    /* FALL_THROUGH */
+	  default:
+	    if (WC_ISSPACE(data[pos-1])) {
+	      SKIPWHITE();
+	      continue;
+	    }
+	    break;
+	  }
+	  end = pos;
+	}
+	
+	if (start != end) {
+#if (SHIFT == 0)
+	  push_string(make_shared_binary_string(data+start, end-start));
+#else /* SHIFT != 0 */
+#if (SHIFT == 1)
+	  push_string(make_shared_binary_string1(data+start, end-start));
+#else /* SHIFT != 1 */
+	  push_string(make_shared_binary_string2(data+start, end-start));
+#endif /* SHIFT == 1 */
+#endif /* SHIFT == 0 */
+	  arg++;
+	}
+
+	if(!GOBBLE(')')) {
+	  int old_line = this->current_line;
+	  this->current_line = start_line;
+	  if (func_name)
+	    cpp_error_sprintf(this, "Missing ) in the meta function %s().",
+			      func_name);
+	  else
+	    cpp_error(this, "Missing ) in meta function.");
+	  this->current_line = old_line;
+	}
+	/* NOTE: cpp_func MUST protect against errors. */
+	if(OUTP())
+	  cpp_func(this, arg);
+	else
+	  pop_n_elems(arg);
+      } else {
+	if(OUTP())
+	  push_int(0);
+      }
+      break;
+    }
 
     cpp_error_sprintf(this, "Syntax error in #if bad character %c (%d).",
 		      data[pos], data[pos]);
+    break;
   }
   
 
@@ -447,7 +563,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
   while(GOBBLE('['))
   {
     /* DUMPPOS("inside calcC"); */
-    pos=calc1(this,data,len,pos);
+    pos=calc1(this,data,len,pos,flags);
     f_index(2);
 
     FINDTOK();
@@ -459,28 +575,31 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 }
 
 static ptrdiff_t calcB(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calcB"); */
 
   FINDTOK();
   switch(data[pos])
   {
-    case '-': pos++; pos=calcB(this,data,len,pos); o_negate(); break;
-    case '!': pos++; pos=calcB(this,data,len,pos); o_not(); break;
-    case '~': pos++; pos=calcB(this,data,len,pos); o_compl(); break;
-    default: pos=calcC(this,data,len,pos);
+    case '-': pos++; pos=calcB(this,data,len,pos,flags);
+      if(OUTP()) o_negate(); break;
+    case '!': pos++; pos=calcB(this,data,len,pos,flags);
+      if(OUTP()) o_not(); break;
+    case '~': pos++; pos=calcB(this,data,len,pos,flags);
+      if(OUTP()) o_compl(); break;
+    default: pos=calcC(this,data,len,pos,flags);
   }
   /* DUMPPOS("after calcB"); */
   return pos;
 }
 
 static ptrdiff_t calcA(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calcA"); */
 
-  pos=calcB(this,data,len,pos);
+  pos=calcB(this,data,len,pos,flags);
   while(1)
   {
     /* DUMPPOS("inside calcA"); */
@@ -490,20 +609,23 @@ static ptrdiff_t calcA(struct cpp *this, WCHAR *data, ptrdiff_t len,
       case '/':
 	if(data[1]=='/' || data[1]=='*') return pos;
 	pos++;
-	pos=calcB(this,data,len,pos);
-	o_divide();
+	pos=calcB(this,data,len,pos,flags);
+	if(OUTP())
+	  o_divide();
 	continue;
 
       case '*':
 	pos++;
-	pos=calcB(this,data,len,pos);
-	o_multiply();
+	pos=calcB(this,data,len,pos,flags);
+	if(OUTP())
+	  o_multiply();
 	continue;
 
       case '%':
 	pos++;
-	pos=calcB(this,data,len,pos);
-	o_mod();
+	pos=calcB(this,data,len,pos,flags);
+	if(OUTP())
+	  o_mod();
 	continue;
     }
     break;
@@ -513,11 +635,11 @@ static ptrdiff_t calcA(struct cpp *this, WCHAR *data, ptrdiff_t len,
 }
 
 static ptrdiff_t calc9(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc9"); */
 
-  pos=calcA(this,data,len,pos);
+  pos=calcA(this,data,len,pos,flags);
 
   while(1)
   {
@@ -527,14 +649,16 @@ static ptrdiff_t calc9(struct cpp *this, WCHAR *data, ptrdiff_t len,
     {
       case '+':
 	pos++;
-	pos=calcA(this,data,len,pos);
-	f_add(2);
+	pos=calcA(this,data,len,pos,flags);
+	if(OUTP())
+	  f_add(2);
 	continue;
 
       case '-':
 	pos++;
-	pos=calcA(this,data,len,pos);
-	o_subtract();
+	pos=calcA(this,data,len,pos,flags);
+	if(OUTP())
+	  o_subtract();
 	continue;
     }
     break;
@@ -545,11 +669,11 @@ static ptrdiff_t calc9(struct cpp *this, WCHAR *data, ptrdiff_t len,
 }
 
 static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc8"); */
 
-  pos=calc9(this,data,len,pos);
+  pos=calc9(this,data,len,pos,flags);
 
   while(1)
   {
@@ -561,16 +685,18 @@ static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
     if(GOBBLEOP2(lsh_))
     {
       /* DUMPPOS("Found <<"); */
-      pos=calc9(this,data,len,pos);
-      o_lsh();
+      pos=calc9(this,data,len,pos,flags);
+      if(OUTP())
+	o_lsh();
       break;
     }
 
     if(GOBBLEOP2(rsh_))
     {
       /* DUMPPOS("Found >>"); */
-      pos=calc9(this,data,len,pos);
-      o_rsh();
+      pos=calc9(this,data,len,pos,flags);
+      if(OUTP())
+	o_rsh();
       break;
     }
 
@@ -580,11 +706,11 @@ static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
 }
 
 static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
-			ptrdiff_t pos)
+			ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc7b"); */
 
-  pos=calc8(this,data,len,pos);
+  pos=calc8(this,data,len,pos,flags);
 
   while(1)
   {
@@ -599,11 +725,13 @@ static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	pos++;
 	if(GOBBLE('='))
 	{
-	   pos=calc8(this,data,len,pos);
-	   f_le(2);
+	   pos=calc8(this,data,len,pos,flags);
+	   if(OUTP())
+	     f_le(2);
 	}else{
-	   pos=calc8(this,data,len,pos);
-	   f_lt(2);
+	   pos=calc8(this,data,len,pos,flags);
+	   if(OUTP())
+	     f_lt(2);
 	}
 	continue;
 
@@ -612,11 +740,13 @@ static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	pos++;
 	if(GOBBLE('='))
 	{
-	   pos=calc8(this,data,len,pos);
-	   f_ge(2);
+	   pos=calc8(this,data,len,pos,flags);
+	   if(OUTP())
+	     f_ge(2);
 	}else{
-	   pos=calc8(this,data,len,pos);
-	   f_gt(2);
+	   pos=calc8(this,data,len,pos,flags);
+	   if(OUTP())
+	     f_gt(2);
 	}
 	continue;
     }
@@ -626,11 +756,11 @@ static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
 }
 
 static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc7"); */
 
-  pos=calc7b(this,data,len,pos);
+  pos=calc7b(this,data,len,pos,flags);
 
   while(1)
   {
@@ -642,15 +772,17 @@ static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
     FINDTOK();
     if(GOBBLEOP2(eq_))
     {
-      pos=calc7b(this,data,len,pos);
-      f_eq(2);
+      pos=calc7b(this,data,len,pos,flags);
+      if(OUTP())
+	f_eq(2);
       continue;
     }
 
     if(GOBBLEOP2(ne_))
     {
-      pos=calc7b(this,data,len,pos);
-      f_ne(2);
+      pos=calc7b(this,data,len,pos,flags);
+      if(OUTP())
+	f_ne(2);
       continue;
     }
 
@@ -660,11 +792,11 @@ static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
 }
 
 static ptrdiff_t calc6(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc6"); */
 
-  pos=calc7(this,data,len,pos);
+  pos=calc7(this,data,len,pos,flags);
 
   FINDTOK();
   while(data[pos] == '&' && data[pos+1]!='&')
@@ -672,127 +804,136 @@ static ptrdiff_t calc6(struct cpp *this, WCHAR *data, ptrdiff_t len,
     /* DUMPPOS("inside calc6"); */
 
     pos++;
-    pos=calc7(this,data,len,pos);
-    o_and();
+    pos=calc7(this,data,len,pos,flags);
+    if(OUTP())
+      o_and();
   }
   return pos;
 }
 
 static ptrdiff_t calc5(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc5"); */
 
-  pos=calc6(this,data,len,pos);
+  pos=calc6(this,data,len,pos,flags);
 
   FINDTOK();
   while(GOBBLE('^'))
   {
     /* DUMPPOS("inside calc5"); */
 
-    pos=calc6(this,data,len,pos);
-    o_xor();
+    pos=calc6(this,data,len,pos,flags);
+    if(OUTP())
+      o_xor();
   }
   return pos;
 }
 
 static ptrdiff_t calc4(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc4"); */
 
-  pos=calc5(this,data,len,pos);
+  pos=calc5(this,data,len,pos,flags);
 
   FINDTOK();
   while(data[pos] == '|' && data[pos+1]!='|')
   {
     /* DUMPPOS("inside calc4"); */
     pos++;
-    pos=calc5(this,data,len,pos);
-    o_or();
+    pos=calc5(this,data,len,pos,flags);
+    if(OUTP())
+      o_or();
   }
   return pos;
 }
 
 static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   static WCHAR land_[] = { '&', '&' };
 
   /* DUMPPOS("before calc3"); */
 
-  pos=calc4(this,data,len,pos);
+  pos=calc4(this,data,len,pos,flags);
 
   FINDTOK();
   while(GOBBLEOP2(land_))
   {
     /* DUMPPOS("inside calc3"); */
 
-    check_destructed(Pike_sp-1);
-    if(UNSAFE_IS_ZERO(Pike_sp-1))
-    {
-      pos=calc4(this,data,len,pos);
-      pop_stack();
-    }else{
-      pop_stack();
-      pos=calc4(this,data,len,pos);
-    }
+    if(OUTP()) {
+      check_destructed(Pike_sp-1);
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pos=calc4(this,data,len,pos,flags|CPP_REALLY_NO_OUTPUT);
+      }else{
+	pop_stack();
+	pos=calc4(this,data,len,pos,flags);
+      }
+    } else
+      pos=calc4(this,data,len,pos,flags);
   }
   return pos;
 }
 
 static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   static WCHAR lor_[] = { '|', '|' };
 
   /* DUMPPOS("before calc2"); */
 
-  pos=calc3(this,data,len,pos);
+  pos=calc3(this,data,len,pos,flags);
 
   FINDTOK();
   while(GOBBLEOP2(lor_))
   {
     /* DUMPPOS("inside calc2"); */
 
-    check_destructed(Pike_sp-1);
-    if(!UNSAFE_IS_ZERO(Pike_sp-1))
-    {
-      pos=calc3(this,data,len,pos);
-      pop_stack();
-    }else{
-      pop_stack();
-      pos=calc3(this,data,len,pos);
-    }
+    if(OUTP()) {
+      check_destructed(Pike_sp-1);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pos=calc3(this,data,len,pos,flags|CPP_REALLY_NO_OUTPUT);
+      }else{
+	pop_stack();
+	pos=calc3(this,data,len,pos,flags);
+      }
+    } else
+      pos=calc3(this,data,len,pos,flags);
   }
   return pos;
 }
 
 static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos)
+		       ptrdiff_t pos, int flags)
 {
   /* DUMPPOS("before calc1"); */
 
-  pos=calc2(this,data,len,pos);
+  pos=calc2(this,data,len,pos,flags);
 
   FINDTOK();
 
   if(GOBBLE('?'))
   {
-    pos=calc1(this,data,len,pos);
+    int select = -1;
+    if(OUTP()) {
+      check_destructed(Pike_sp-1);
+      select = (UNSAFE_IS_ZERO(Pike_sp-1)?0:1);
+      pop_stack();
+    }
+    pos=calc1(this,data,len,pos,(select == 1? flags:(flags|CPP_REALLY_NO_OUTPUT)));
     if(!GOBBLE(':'))
       cpp_error(this, "Colon expected.");
-    pos=calc1(this,data,len,pos);
-
-    check_destructed(Pike_sp-3);
-    assign_svalue(Pike_sp-3,UNSAFE_IS_ZERO(Pike_sp-3)?Pike_sp-1:Pike_sp-2);
-    pop_n_elems(2);
+    pos=calc1(this,data,len,pos,(select == 0? flags:(flags|CPP_REALLY_NO_OUTPUT)));
   }
   return pos;
 }
 
 static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		      ptrdiff_t tmp)
+		      ptrdiff_t tmp, int flags)
 {
   JMP_BUF recovery;
   ptrdiff_t pos;
@@ -806,7 +947,7 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
     FIND_EOL();
     push_int(0);
   }else{
-    pos=calc1(this,data,len,tmp);
+    pos=calc1(this,data,len,tmp,flags);
     check_destructed(Pike_sp-1);
   }
   UNSETJMP(recovery);
@@ -901,16 +1042,15 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	if(flags & CPP_DO_IF)
 	{
 	  static WCHAR defined_[] = { 'd','e','f','i','n','e','d' };
+	  /* NOTE: defined() must be handled here, since it's argument
+	   *       must not be macro expanded.
+	   */
 	  static WCHAR efun_[] = { 'e','f','u','n' };
 	  static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
 
 	  if(pos-tmp == 7 && !MEMCMP(defined_, data+tmp, 7<<SHIFT))
 	  {
 	    d = defined_macro;
-	  } else if((pos-tmp == 4 && !MEMCMP(efun_, data+tmp, 4<<SHIFT)) ||
-		    (pos-tmp == 8 && !MEMCMP(constant_, data+tmp, 8<<SHIFT)))
-	  {
-	    d = constant_macro;
 	  } else {
 	    goto do_find_define;
 	  }
@@ -1206,12 +1346,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  free_string_builder(&tmp);
 	  break;
 	}else{
-	  if(flags & CPP_DO_IF)
-	  {
-	    STRCAT(" 0 ", 3);
-	  }else{
-	    WC_STRCAT(data+tmp, pos-tmp);
-	  }
+	  WC_STRCAT(data+tmp, pos-tmp);
 	}
       }else{
 	PUTC(data[pos-1]);
@@ -1568,13 +1703,13 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	if (!nflags) {
 	  switch(tmp.s->size_shift) {
 	  case 0:
-	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0);
+	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0, 0);
 	    break;
 	  case 1:
-	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0);
+	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0, 0);
 	    break;
 	  case 2:
-	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0);
+	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0, 0);
 	    break;
 	  default:
 	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
@@ -1699,13 +1834,13 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  
 	  switch(tmp.s->size_shift) {
 	  case 0:
-	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len,0);
+	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len,0,0);
 	    break;
 	  case 1:
-	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len,0);
+	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len,0,0);
 	    break;
 	  case 2:
-	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len,0);
+	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len,0,0);
 	    break;
 	  default:
 	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
