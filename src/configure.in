@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.328 1999/10/30 23:23:43 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.329 1999/11/07 01:41:00 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3286,7 +3286,7 @@ export LDFLAGS CFLAGS CPPFLAGS LIBS
 export prefix exec_prefix OTHERFLAGS
 export TMP_BINDIR DEFINES INSTALL
 
-AC_CONFIG_SUBDIRS(modules)
+AC_CONFIG_SUBDIRS(modules post_modules)
 
 default_master=$prefix/pike/%d.%d.%d/lib/master.pike
 AC_DEFINE_UNQUOTED(DEFAULT_MASTER,"$default_master")
@@ -3319,6 +3319,6 @@ fi
 
 AC_SUBST(dmmsrc)
 
-AC_OUTPUT(Makefile modules/static_module_makefile modules/dynamic_module_makefile:$dmmsrc,[echo foo >stamp-h])
+AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc,[echo foo >stamp-h])
 
 

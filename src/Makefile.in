@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.160 1999/10/27 13:51:57 grubba Exp $
+# $Id: Makefile.in,v 1.161 1999/11/07 01:40:48 per Exp $
 #
 
 # This line is needed on some machines.
@@ -140,6 +140,17 @@ OBJ= \
 #
 
 
+# Ouch.
+# It turns out that we really do need to do it this way.
+#
+# First compile pike, to generate the peep engine, and more
+# importantly, the lower_case() support, since that is needed by the
+# post_module.
+#
+# Then relink pike once more, since the post modules might be
+# static modules, and thus have to be linked into pike.
+# 
+# No rest for the wicked.
 all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
@@ -147,6 +158,15 @@ all: module_objects hilfe
 	    echo "Warning: No peep_engine." >&2; \
 	  else :; fi; \
 	  rm -f dummy_engine >/dev/null 2>&1
+#	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) new_peep_engine
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
+
+post_modules: force
+	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
+	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
