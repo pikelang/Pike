@@ -83,7 +83,8 @@ string make_absolute_path(string path, string|void cwd)
   return path;
 }
 
-//!
+//! A class keeping some methods and state to conveniently render
+//! ASCII progress bars to stdout.
 class ProgressBar
 {
   private int width = 45;
@@ -92,13 +93,13 @@ class ProgressBar
   private int max, cur;
   private string name;
 
-  //!
+  //! Change the amount of progress without updating on stdout.
   void set_current(int _cur)
   {
     cur = _cur;
   }
 
-  //!
+  //! Change the name of the progress bar without updating on stdout.
   void set_name(string _name)
   {
     name = _name;
@@ -142,9 +143,14 @@ class ProgressBar
 
   //! @decl void create(string name, int cur, int max, float|void phase_base,@
   //!                   float|void phase_size)
+  //! @param name
+  //! The name (printed in the first 13 columns of the row)
+  //! @param cur
+  //! How much progress has been made so far
+  //! @param max
+  //! The amount of progress signifying 100% done. Must be greater than zero.
   void create(string _name, int _cur, int _max,
 	      float|void _phase_base, float|void _phase_size)
-    /* NOTE: max must be greater than zero. */
   {
     name = _name;
     max = _max;
