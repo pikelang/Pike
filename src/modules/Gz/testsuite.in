@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.4 1998/03/28 14:49:35 grubba Exp $
+// $Id: testsuite.in,v 1.5 1999/06/10 23:45:53 peter Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -6,14 +6,23 @@ cond([[ master()->resolv("Gz")->deflate ]],
   test_true(Gz.deflate()->deflate)
   test_true(Gz.inflate())
   test_true(Gz.inflate()->inflate)
+
 define(dotest,[[
   test_true(Gz.deflate(1)->deflate($1))
   test_eq(Gz.inflate()->inflate(Gz.deflate(1)->deflate($1)),$1)
   test_eq(Gz.inflate()->inflate(Gz.deflate(9)->deflate($1)),$1)
   test_any([[object o=Gz.deflate(); return Gz.inflate()->inflate(o->deflate($1,o->PARTIAL_FLUSH) + o->deflate($1,o->FINISH))]], [[($1)+($1)]])
 ]])
+
   dotest("")
   dotest("foo")
   dotest(sprintf("%'fomp'1000n"))
   dotest(sprintf("%'fomp'100000n"))
+
+  cond([[ master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
+  [[
+    dotest(Crypto.randomness.pike_random()->read(32768))
+    dotest(Crypto.randomness.pike_random()->read(524288))
+    dotest(Crypto.randomness.pike_random()->read(8388608))
+  ]])
 ]])
