@@ -11,10 +11,13 @@
  * PIKECLASS fnord 
  *  attributes;
  * {
+ *   INHERIT bar
+ *     attributes;
+ *
  *   CVAR int foo;
  *   PIKEVAR mapping m;
  *
- *   DECLARE_STOARGE; // optional
+ *   DECLARE_STORAGE; // optional
  *
  *   PIKEFUN int function_name (int x, CTYPE char * foo)
  *    attribute;
@@ -29,17 +32,19 @@
  * All the begin_class/ADD_EFUN/ADD_FUNCTION calls will be inserted
  * instead of the word INIT in your code.
  *
+ * The corresponding cleanup code will be inserted instead of the word EXIT.
+ *
  * Currently, the following attributes are understood:
  *   efun;     makes this function a global constant (no value)
  *   flags;    ID_STATIC | ID_NOMASK etc.
  *   optflags; OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
  *   type;     tInt, tMix etc. use this type instead of automatically
- *             generating type from the prototype
+ *             generating a type from the prototype
  *             FIXME: this doesn't quite work
  *   errname;  The name used when throwing errors.
  *   name;     The name used when doing add_function.
  *
- * FUNCTION OVERLOADING
+ * POLYMORPHIC FUNCTION OVERLOADING
  *   You can define the same function several times with different
  *   types. This program will select the proper function whenever
  *   possible.
@@ -47,7 +52,7 @@
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
  *  o Not all Pike types are supported yet.
- *  o No support for functions that takes variable number of arguments yet.
+ *  o No support for functions that take a variable number of arguments yet.
  *  o RETURN; (void) doesn't work yet
  *  o need a RETURN_NULL; or something.. RETURN 0; might work but may
  *    be confusing as RETURN x; will not work if x is zero.
@@ -1222,10 +1227,8 @@ class ParseBlock
 	array proto=func[..p-1];
 	array body=func[p];
 	array rest=func[p+1..];
-	string name=(string)proto[-1];
-	mapping attributes=parse_attributes(proto[p+2..],
-					    proto[-1]->file+":"+
-					    proto[-1]->line);
+	string name=(string)proto[0];
+	mapping attributes=parse_attributes(proto[1..]);
 
 	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],name);
 	string program_var =mkname(name,"program");
@@ -1270,6 +1273,25 @@ class ParseBlock
 	ret+=rest;
       }
 
+      x=ret/({"INHERIT"});
+      ret = x[0];
+      for (int f = 1; f < sizeof(x); f++)
+      {
+	array inh=x[f];
+	int pos=search(inh,PC.Token(";",0),);
+	mixed name=inh[0];
+	array rest=inh[pos+1..];
+	string define=make_unique_name("inherit",name,base,"defined");
+	mapping attributes = parse_attributes(inh[1..pos]);
+	add_funcs +=
+	  IFDEF(define,
+		({
+		  sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
+			  mkname((string)name, "program"),
+			  attributes->flags || "0");
+	ret+=DEFINE(define);
+	ret+=rest;
+      }
 
       array thestruct=({});
       x=ret/({"PIKEVAR"});
