@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.82 1998/04/23 23:53:00 hubbe Exp $
+# $Id: Makefile.in,v 1.83 1998/04/24 18:23:06 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -205,7 +205,7 @@ install: pike hilfe
 	    chmod u+w "$(lib_prefix)/$$d/."; \
 	  fi; \
 	done
-	@for d in `cd "$(LIBDIR_SRC)"; find . -type d -print`; do \
+	@for d in `cd "$(LIBDIR_SRC)"; find . ! -name CVS -type d -print`; do \
 	  if [ -d "$(share_prefix)/$$d/." ]; then : ; else \
 	    echo "$(share_prefix)/$$d"; \
 	    mkdir "$(share_prefix)/$$d" || exit 1; \
@@ -248,7 +248,7 @@ install: pike hilfe
 	  chmod u+w $(prefix)/include/pike ; \
 	done
 	@echo ; echo "Installing modules written in Pike..."; \
-	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print`; do \
+	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print | grep -v '/CVS/'`; do \
 	  if cmp "$(share_prefix)/$$f" "$(LIBDIR_SRC)/$$f" >/dev/null 2>&1 ; \
 	  then : ; else \
 	    echo "$(share_prefix)/$$f"; \
