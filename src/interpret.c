@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.33 1997/03/11 03:56:26 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.34 1997/03/11 04:00:38 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1318,8 +1318,8 @@ void apply_low(struct object *o, int fun, int args)
 #ifdef DEBUG
     if(d_flag) check_threads_etc();
 #endif
-    fp->num_args=num_args;
-    new_frame.num_locals=num_args;
+    fp->num_args=args;
+    new_frame.num_locals=args;
     (*function->func.c_fun)(args);
   }else{
     int num_args;
