@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.229 2000/04/19 16:03:30 mast Exp $");
+RCSID("$Id: program.c,v 1.230 2000/04/19 16:05:19 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3504,7 +3504,9 @@ void gc_mark_program_as_referenced(struct program *p)
 static void gc_check_program(struct program *p)
 {
   int e;
+#ifdef PIKE_DEBUG
   extern void * check_for;
+#endif
   
   debug_malloc_touch(p);
 
@@ -3534,8 +3536,10 @@ static void gc_check_program(struct program *p)
 #endif
     }
 
+#ifdef PIKE_DEBUG
     if(d_flag && p->inherits[e].name && check_for != (void *)1)
       debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
+#endif
 
     if(e && p->inherits[e].prog)
       debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);

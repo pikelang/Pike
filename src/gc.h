@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.34 2000/04/19 13:57:35 mast Exp $
+ * $Id: gc.h,v 1.35 2000/04/19 16:05:19 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -110,6 +110,7 @@ void f__gc_status(INT32 args);
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
+#define LOW_GC_FREE() do {} while(0)
 #define GC_FREE() do { num_objects-- ; }while(0)
 #define GC_FREE_OBJ() do { num_objects-- ; }while(0)
 #endif
