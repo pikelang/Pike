@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.6 1997/04/03 07:00:43 mirar Exp $ 
+$Id: togif.c,v 1.7 1997/04/30 01:46:54 mirar Exp $ 
 
 */
 
@@ -882,10 +882,27 @@ CHRONO("done");
 **! method string gif_add_fs_nomap(int x,int y,array(array(int)) colors,int delay_cs)
 **! method string gif_add_fs_nomap(int x,int y,array(array(int)) colors,float delay_s)
 **!	Makes a GIF (sub)image data chunk, to be placed 
-**!	at the given position. The "fs" versions uses
-**!	floyd-steinberg dithering, and the "nomap" versions
-**!	have no local colormap.
-**! returns the GIF data
+**!	at the given position. 
+**!
+**!     The "fs" versions uses floyd-steinberg dithering, and the "nomap"
+**!     versions have no local colormap.
+**!
+**!	Example: 
+**!	<pre>
+**!	object img1 = Image(200,200); 
+**!	object img2 = Image(200,200); 
+**!     // load img1 and img2 with stuff
+**!     write(img1->gif_begin()+
+**!	      img1->gif_netscape_loop()+
+**!	      img1->gif_add(0,0,100)+
+**!	      img2->gif_add(0,0,100)+
+**!	      img1->gif_end());
+**!	// voila, a gif animation...
+**!
+**! note
+**!	I (Mirar) recommend reading about the GIF file format before 
+**!	experementing with these. 
+**! returns the GIF data chunk as a string
 **!
 **! arg int x
 **! arg int y
@@ -898,8 +915,7 @@ CHRONO("done");
 **!	number of colors to quantize to (default is 256) 
 **! arg array array(array(int)) colors
 **!	colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
-**! see also: gif_add, gif_end, gif_netscape_loop, togif
-*/
+**! see also: gif_add, gif_end, gif_netscape_loop, togif */
 
 void image_gif_add(INT32 args)
 {

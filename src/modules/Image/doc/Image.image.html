@@ -19,7 +19,8 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#setcolor>setcolor</a></tt>,
      <tt><a href=Image.image.html#setpixel>setpixel</a></tt>, 
      <tt><a href=Image.image.html#treshold>treshold</a></tt>,
-     <tt><a href=Image.image.html#tuned_box>tuned_box</a></tt>
+     <tt><a href=Image.image.html#tuned_box>tuned_box</a></tt>,
+     <tt><a href=Image.image.html#polyfill>polyfill</a></tt>
 
 <p>     operators: <tt><a href=Image.image.html#%60%26>`&amp;</a></tt>,
      <tt><a href=Image.image.html#%60*>`*</a></tt>,
@@ -339,12 +340,12 @@ Using the called object as base, adds layers using masks,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>array(int|object) layer0</tt>
+  <dd>image to paste
 <dt><tt>int x1</tt>
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-  <dd>image to paste
-     rectangle for cropping
+  <dd>rectangle for cropping
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -430,14 +431,14 @@ Applies a pixel-transform matrix, or filter, to the image.
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>array(array(int|array(int)))</tt>
+  <dd>the matrix; innermost is a value or an array with red, green, blue
+     values for red, green, blue separation.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>base level of result, default is zero
 <dt><tt>int|float div</tt>
-  <dd>the matrix; innermost is a value or an array with red, green, blue
-     values for red, green, blue separation.
-     base level of result, default is zero
-     division factor, default is 1.0.
+  <dd>division factor, default is 1.0.
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -470,16 +471,16 @@ Removes "unneccesary" borders around the image, adds one of
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int border</tt>
+  <dd>added border size in pixels
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>color of the new border
 <dt><tt>int left</tt>
 <dt><tt>int right</tt>
 <dt><tt>int top</tt>
 <dt><tt>int bottom</tt>
-  <dd>added border size in pixels
-     color of the new border
-     which borders to scan and cut the image; 
+  <dd>which borders to scan and cut the image; 
      a typical example is removing the top and bottom unneccesary
      pixels:
      <pre>img=img->autocrop(0, 0,0,1,1);</pre>
@@ -517,13 +518,13 @@ Draws a filled rectangle on the image.
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
+  <dd>box corners
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>color of the box
 <dt><tt>int alpha</tt>
-  <dd>box corners
-     color of the box
-     alpha value
+  <dd>alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -602,11 +603,11 @@ Changes one color (exakt match) to another.
 <dt><tt>int tor</tt>
 <dt><tt>int tog</tt>
 <dt><tt>int tob</tt>
+  <dd>destination color and next current color
 <dt><tt>int fromr</tt>
 <dt><tt>int fromg</tt>
 <dt><tt>int fromb</tt>
-  <dd>destination color and next current color
-     source color, default is current color
+  <dd>source color, default is current color
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -634,16 +635,16 @@ Draws a line on the image. The line is <i>not</i> antialiased.
 <blockquote><dl>
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
+  <dd>circle center
 <dt><tt>int rx</tt>
 <dt><tt>int ry</tt>
+  <dd>circle radius in pixels
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>color
 <dt><tt>int alpha</tt>
-  <dd>circle center
-     circle radius in pixels
-     color
-     alpha value
+  <dd>alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -672,9 +673,9 @@ gives a new, cleared image with the same size of drawing area
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-<dt><tt>int alpha</tt>
   <dd>color of the new image
-     new default alpha channel value
+<dt><tt>int alpha</tt>
+  <dd>new default alpha channel value
 </dl></blockquote>
 
 
@@ -703,17 +704,17 @@ Copies to or initialize a new image object.
 <blockquote><dl>
 <dt><tt>int xsize</tt>
 <dt><tt>int ysize</tt>
+  <dd>size of (new) image in pixels, called image
+     is cropped to that size
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-<dt><tt>int alpha</tt>
-  <dd>size of (new) image in pixels, called image
-     is cropped to that size
-     current color of the new image, 
+  <dd>current color of the new image, 
      default is black. 
      Will also be the background color if the cloned image
      is empty (no drawing area made).
-     new default alpha channel value
+<dt><tt>int alpha</tt>
+  <dd>new default alpha channel value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -755,9 +756,9 @@ Colorize an image.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-<dt><tt>int value</tt>
   <dd>red, green, blue factors
-     factor
+<dt><tt>int value</tt>
+  <dd>factor
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -797,13 +798,13 @@ Copies this part of the image. The requested area can
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
+  <dd>The requested new area. Default is the old image size.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>color of the new image
 <dt><tt>int alpha</tt>
-  <dd>The requested new area. Default is the old image size.
-     color of the new image
-     new default alpha channel value
+  <dd>new default alpha channel value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -815,11 +816,8 @@ a new image object
 
 <h4>NOTE</h4>
 <blockquote>
-     Copies this part of the image. The requested area can
-     be smaller, giving a cropped image, or bigger - 
-     the new area will be filled with the given or current color.
-
-
+<tt><a href=Image.image.html#clone>clone</a></tt>(void) and <tt><a href=Image.image.html#copy>copy</a></tt>(void) does the same 
+     operation
 </blockquote>
 
 
@@ -848,14 +846,14 @@ Initializes a new image object.
 <blockquote><dl>
 <dt><tt>int xsize</tt>
 <dt><tt>int ysize</tt>
+  <dd>size of (new) image in pixels
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-<dt><tt>int alpha</tt>
-  <dd>size of (new) image in pixels
-     background color (will also be current color),
+  <dd>background color (will also be current color),
      default color is black
-     default alpha channel value
+<dt><tt>int alpha</tt>
+  <dd>default alpha channel value
 </dl></blockquote>
 
 
@@ -923,6 +921,13 @@ Scales the image to a new size.
 
 <blockquote>
 the new image object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+Do NOT use this function if you don't know what 
+     you're dealing with! Read some signal theory first...
 </blockquote>
 
 <hr>
@@ -1110,29 +1115,49 @@ string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;co
 
 <blockquote>
 Makes a GIF (sub)image data chunk, to be placed 
-     at the given position. The "fs" versions uses
-     floyd-steinberg dithering, and the "nomap" versions
-     have no local colormap.
+     at the given position. 
+
+<p>     The "fs" versions uses floyd-steinberg dithering, and the "nomap"
+     versions have no local colormap.
+
+<p>     Example: 
+     <pre>
+     object img1 = Image(200,200); 
+     object img2 = Image(200,200); 
+     // load img1 and img2 with stuff
+     write(img1->gif_begin()+
+           img1->gif_netscape_loop()+
+           img1->gif_add(0,0,100)+
+           img2->gif_add(0,0,100)+
+           img1->gif_end());
+     // voila, a gif animation...
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-<dt><tt>int delay_cs</tt>
-<dt><tt>float delay_s</tt>
-<dt><tt>int num_colors</tt>
-<dt><tt>array array(array(int)) colors</tt>
   <dd>the location of this subimage
-     frame delay in centiseconds 
-     frame delay in seconds
-     number of colors to quantize to (default is 256) 
-     colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
+<dt><tt>int delay_cs</tt>
+  <dd>frame delay in centiseconds
+<dt><tt>float delay_s</tt>
+  <dd>frame delay in seconds
+<dt><tt>int num_colors</tt>
+  <dd>number of colors to quantize to (default is 256)
+<dt><tt>array array(array(int)) colors</tt>
+  <dd>colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
 </dl></blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
-the GIF data
+the GIF data chunk as a string
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+I (Mirar) recommend reading about the GIF file format before 
+     experementing with these.
 </blockquote>
 
 
@@ -1140,7 +1165,7 @@ the GIF data
 <blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
      <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
      <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>,
-     <tt><a href=Image.image.html#togif>togif</a></tt>
+     <tt><a href=Image.image.html#togif */>togif */</a></tt>
 </blockquote>
 
 <hr>
@@ -1311,13 +1336,13 @@ Draws a line on the image. The line is <i>not</i> antialiased.
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
+  <dd>line endpoints
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>color
 <dt><tt>int alpha</tt>
-  <dd>line endpoints
-     color
-     alpha value
+  <dd>alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1360,45 +1385,6 @@ the new image object
 <blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
      <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
      <tt><a href=Image.image.html#map_fs>map_fs</a></tt>
-</blockquote>
-
-<hr>
-<a name=map_closest> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>map_closest</b>(array(array(int))&nbsp;colors)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps all pixel colors to the colors given.
-
-<p>    Method to find the correct color is linear search
-    over the colors given, selecting the nearest in the
-    color cube. Slow...
-
-<p>    Floyd-steinberg error correction is added to create
-    a better-looking image, in many cases, anyway.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>array(array(int)) color</tt>
-  <dd>list of destination (available) colors
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
-     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>
 </blockquote>
 
 <hr>
@@ -1467,6 +1453,45 @@ the new image object
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
      <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
+</blockquote>
+
+<hr>
+<a name=map_fs> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>map_fs</b>(array(array(int))&nbsp;colors)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Maps all pixel colors to the colors given.
+
+<p>    Method to find the correct color is linear search
+    over the colors given, selecting the nearest in the
+    color cube. Slow...
+
+<p>    Floyd-steinberg error correction is added to create
+    a better-looking image, in many cases, anyway.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>array(array(int)) color</tt>
+  <dd>list of destination (available) colors
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the new image object
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
+     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>
 </blockquote>
 
 <hr>
@@ -1540,10 +1565,10 @@ Recolor an image from intensity values.
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>red, green, blue intensity factors
 <dt><tt>int|array(int) v1</tt>
 <dt><tt>int|array(int) vn</tt>
-  <dd>red, green, blue intensity factors
-     destination color
+  <dd>destination color
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1576,10 +1601,10 @@ Pastes a given image over the current image.
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
+  <dd>image to paste
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>image to paste
-     where to paste the image; default is 0,0
+  <dd>where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1617,12 +1642,12 @@ Pastes a given image over the current image, with
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
+  <dd>image to paste
 <dt><tt>int alpha</tt>
+  <dd>alpha channel value
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>image to paste
-     alpha channel value
-     where to paste the image; default is 0,0
+  <dd>where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1664,14 +1689,14 @@ Pastes a given color over the current image,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object mask</tt>
+  <dd>mask image
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>what color to paint with; default is current
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>mask image
-     what color to paint with; default is current
-     where to paste the image; default is 0,0
+  <dd>where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1710,12 +1735,12 @@ Pastes a given image over the current image,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
+  <dd>image to paste
 <dt><tt>object mask</tt>
+  <dd>mask image
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
-  <dd>image to paste
-     mask image
-     where to paste the image; default is 0,0
+  <dd>where to paste the image; default is 0,0
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1729,6 +1754,44 @@ the object called
 <blockquote>     <tt><a href=Image.image.html#paste>paste</a></tt>,
      <tt><a href=Image.image.html#paste_alpha>paste_alpha</a></tt>,
      <tt><a href=Image.image.html#paste_alpha_color>paste_alpha_color</a></tt>
+</blockquote>
+
+<hr>
+<a name=polygone> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>polygone</b>(array(int|float)&nbsp;...&nbsp;curve)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+fills an area with the current color
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>array(int|float) curve</tt>
+  <dd>curve(s), <tt>({x1,y1,x2,y2,...,xn,yn})</tt>,
+     automatically closed.
+
+<p>     If any given curve is inside another, it
+     will make a hole.
+
+<p> NOTE
+     This function is new (april-97) and rather untested.
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the current object
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#box>box</a></tt>,
+     <tt><a href=Image.image.html#setcolor>setcolor</a></tt>
 </blockquote>
 
 <hr>
@@ -1764,11 +1827,11 @@ Rotates an image a certain amount of degrees (360° is
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int|float angle</tt>
+  <dd>the number of degrees to rotate
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>the number of degrees to rotate
-    color to fill with; default is current
+  <dd>color to fill with; default is current
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1796,10 +1859,10 @@ scales the image with a factor,
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>float factor</tt>
+  <dd>factor to use for both x and y
 <dt><tt>float xfactor</tt>
 <dt><tt>float yfactor</tt>
-  <dd>factor to use for both x and y
-     separate factors for x and y
+  <dd>separate factors for x and y
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1901,9 +1964,9 @@ set the current color
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-<dt><tt>int alpha</tt>
   <dd>new color
-     new alpha value
+<dt><tt>int alpha</tt>
+  <dd>new alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1925,13 +1988,13 @@ object <b>setpixel</b>(int&nbsp;x, int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;
 <blockquote><dl>
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
+  <dd>position of the pixel
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
+  <dd>color
 <dt><tt>int alpha</tt>
-  <dd>position of the pixel
-     color
-     alpha value
+  <dd>alpha value
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -1971,16 +2034,16 @@ Skews an image an amount of pixels or a factor;
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int x</tt>
-<dt><tt>float yfactor</tt>
-<dt><tt>int r</tt>
-<dt><tt>int g</tt>
-<dt><tt>int b</tt>
   <dd>the number of pixels
      The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
      the given or current color.
-    best described as: x=yfactor*this->ysize()
-    color to fill with; default is current
+<dt><tt>float yfactor</tt>
+  <dd>best described as: x=yfactor*this->ysize()
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color to fill with; default is current
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -2026,13 +2089,13 @@ Skews an image an amount of pixels or a factor;
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int y</tt>
+  <dd>the number of pixels
 <dt><tt>float xfactor</tt>
+  <dd>best described as: t=xfactor*this->xsize()
 <dt><tt>int r</tt>
 <dt><tt>int g</tt>
 <dt><tt>int b</tt>
-  <dd>the number of pixels
-    best described as: t=xfactor*this->xsize()
-    color to fill with; default is current
+  <dd>color to fill with; default is current
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -2105,9 +2168,9 @@ Maps the image into a colorcube with the given
 <dt><tt>int red</tt>
 <dt><tt>int green</tt>
 <dt><tt>int blue</tt>
-<dt><tt>string map</tt>
   <dd>The sides of the colorcube. Not the number of bits!
-     Map this position in the colorcube to another value,
+<dt><tt>string map</tt>
+  <dd>Map this position in the colorcube to another value,
      ie: say we have position red=1,green=2,blue=3 in a colorcube of
      6×6×6, we have the index 1+2*6+3*6*6=121. If the 
      map-string contains 'å' in position 121, the resulting
@@ -2189,13 +2252,13 @@ Makes GIF data. The togif_fs variant uses floyd-steinberg
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>int num_colors</tt>
-<dt><tt>int trans_r</tt>
-<dt><tt>int trans_g</tt>
-<dt><tt>int trans_b</tt>
   <dd>number of colors to quantize to (default is 256) 
  array array(array(int)) colors
      colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
-     one color, that is to be transparent.
+<dt><tt>int trans_r</tt>
+<dt><tt>int trans_g</tt>
+<dt><tt>int trans_b</tt>
+  <dd>one color, that is to be transparent.
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -2306,9 +2369,9 @@ Draws a filled rectangle with colors (and alpha values) tuned
 <dt><tt>int y1</tt>
 <dt><tt>int x2</tt>
 <dt><tt>int y2</tt>
-<dt><tt>array(array(int)) corner_color</tt>
   <dd>rectangle corners
-     colors of the corners:
+<dt><tt>array(array(int)) corner_color</tt>
+  <dd>colors of the corners:
      <pre>
      ({x1y1,x2y1,x1y2,x2y2})
      </pre>

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.25 1997/04/19 22:57:01 grubba Exp $ */
+/* $Id: image.c,v 1.26 1997/04/30 01:46:40 mirar Exp $ */
 
 /*
 **! module Image
@@ -26,7 +26,8 @@
 **!	<ref>setcolor</ref>,
 **!	<ref>setpixel</ref>, 
 **!	<ref>treshold</ref>,
-**!	<ref>tuned_box</ref>
+**!	<ref>tuned_box</ref>,
+**!	<ref>polyfill</ref>
 **!
 **!	operators: <ref>`&</ref>,
 **!	<ref>`*</ref>,
@@ -97,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.25 1997/04/19 22:57:01 grubba Exp $");
+RCSID("$Id: image.c,v 1.26 1997/04/30 01:46:40 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -108,10 +109,13 @@ RCSID("$Id: image.c,v 1.25 1997/04/19 22:57:01 grubba Exp $");
 #include "array.h"
 #include "error.h"
 
+
 #include "image.h"
 #include "builtin_functions.h"
 
 struct program *image_program;
+extern struct program *colortable_program;
+
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
@@ -2176,7 +2180,7 @@ static void image_map_fast(INT32 args)
 }
 
 /*
-**! method object map_closest(array(array(int)) colors)
+**! method object map_fs(array(array(int)) colors)
 **!    Maps all pixel colors to the colors given.
 **!
 **!    Method to find the correct color is linear search
@@ -2387,6 +2391,8 @@ void pike_module_init()
 		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("tuned_box",image_tuned_box,
 		"function(int,int,int,int,array:object)",0);
+   add_function("polygone",image_polygone,
+		"function(array(float|int) ...:object)",0);
 
    add_function("gray",image_grey,
 		"function("RGB_TYPE":object)",0);

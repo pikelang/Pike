@@ -71,9 +71,8 @@ mapping keywords=
   "arg":lambda(string arg,int line)
 	  {
 	     if (!methodM) return complain("arg w/o method");
-	     if (nowM!=argM || !argM)
-	     { if (!methodM->args) methodM->args=({});
-	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])}); }
+	     if (!methodM->args) methodM->args=({});
+	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])}); 
 	     argM->args+=({arg}); descM=argM;
 	  },
   "note":lambda(string arg,int line)
@@ -185,7 +184,7 @@ string standard_doc(mapping info,string myprefix)
       res+="\n\n<blockquote>\n"+fixdesc(info->desc,myprefix)+
 	 "\n</blockquote>\n";
    
-   if (info->note)
+   if (info->note && info->note->desc)
       res+="\n\n<h4>NOTE</h4>\n<blockquote>\n"+
 	 fixdesc(info->note->desc,myprefix)+"\n</blockquote>\n";
    
@@ -277,9 +276,13 @@ void document_method(object(File) f,
       f->write("<h4>ARGUMENTS</h4>\n<blockquote><dl>\n");
       foreach (method->args,arg)
       {
-	 f->write("<dt><tt>"+arg->args*"</tt>\n<dt><tt>"+
-		  "</tt>\n  <dd>"+
-		  fixdesc(arg->desc,prefix)+"\n");
+	 if (arg->desc)
+	    f->write("<dt><tt>"+arg->args*"</tt>\n<dt><tt>"+
+		     "</tt>\n  <dd>"+
+		     fixdesc(arg->desc,prefix)+"\n");
+	 else
+	    f->write("<dt><tt>"+arg->args*"</tt>\n<dt><tt>"+
+		     "</tt>\n");
       }
       f->write("</dl></blockquote>\n");
    }
@@ -290,10 +293,10 @@ void document_method(object(File) f,
 	       "\n\n<blockquote>\n"+method->returns+"\n</blockquote>\n");
    }
 
-   if (method->note)
+   if (method->note && method->note->desc)
    {
       f->write("\n\n<h4>NOTE</h4>\n<blockquote>\n"+
-	       method->desc+"\n</blockquote>\n");
+	       fixdesc(method->note->desc,prefix)+"\n</blockquote>\n");
    }
 
    if (method["see also"])
@@ -324,8 +327,9 @@ void document_class(string title,
    string *method_names_arr,method_name;
    mapping method;
 
-   foreach (info->methods,method)
-      method_names|=(method->names=get_method_names(method->decl));
+   if (info->methods) 
+      foreach (info->methods,method)
+	 method_names|=(method->names=get_method_names(method->decl));
 
    method_names_arr=sort(indices(method_names));
 

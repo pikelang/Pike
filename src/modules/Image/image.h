@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.6 1997/03/23 14:32:00 mirar Exp $ */
+/* $Id: image.h,v 1.7 1997/04/30 01:46:47 mirar Exp $ */
 
 #define MAX_NUMCOL 32768
 
@@ -166,3 +166,8 @@ void image_tozbgr(INT32 args);
 void image_to8bit_rgbcube(INT32 args);
 void image_to8bit_rgbcube_rdither(INT32 args);
 void image_tobitmap(INT32 args);
+
+/* polyfill.c */
+
+void image_polygone(INT32 args);
+
