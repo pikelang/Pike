@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.26 1999/05/12 04:47:20 hubbe Exp $
+ * $Id: image_jpeg.c,v 1.27 2000/02/02 22:02:17 marcus Exp $
  */
 
 #include "global.h"
@@ -29,13 +29,15 @@
 #include <jpeglib.h>
 #undef size_t
 #undef FILE
+#undef _SIZE_T_DEFINED
+#undef _FILE_DEFINED
 
 #endif /* HAVE_JPEGLIB_H */
 
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.26 1999/05/12 04:47:20 hubbe Exp $");
+RCSID("$Id: image_jpeg.c,v 1.27 2000/02/02 22:02:17 marcus Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
