@@ -243,7 +243,8 @@ Typing <tt>pike hello_world.pike</tt> to run our program may seem a bit
 unpractical. Fortunately, Unix provides us with a way of automating this
 somewhat. If we modify hello_world.pike to look like this:
 <p>
-<example language=pike/local/bin/pike
+<example language=pike>
+	#!/usr/local/bin/pike
 
 	int main()
 	{
