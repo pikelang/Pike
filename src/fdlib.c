@@ -4,7 +4,7 @@
 #include <math.h>
 #include <tchar.h>
 
-RCSID("$Id: fdlib.c,v 1.49 2002/10/03 11:15:49 tomas Exp $");
+RCSID("$Id: fdlib.c,v 1.50 2002/10/03 14:00:18 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -25,120 +25,6 @@ int first_free_handle;
 #else
 #define FDDEBUG(X)
 #endif
-
-#ifdef _M_IX86
-/*
- * 386/486
- */
-#define REG1    register
-#define REG2    register
-#define REG3    register
-#define REG4
-#define REG5
-#define REG6
-#define REG7
-#define REG8
-#define REG9
-
-#elif (defined (_M_MRX000) || defined (_M_ALPHA) || defined (_M_PPC))
-/*
- * MIPS, ALPHA, or PPC
- */
-#define REG1    register
-#define REG2    register
-#define REG3    register
-#define REG4    register
-#define REG5    register
-#define REG6    register
-#define REG7    register
-#define REG8    register
-#define REG9    register
-
-#elif (defined (_M_M68K) || defined (_M_MPPC))
-/*
- * Macros defining the calling type of a function
- */
-
-#define _CALLTYPE1      __cdecl    /* old -- check source user visible functions */
-#define _CALLTYPE2      __cdecl    /* old -- check source user visible functions */
-#define _CALLTYPE3      illegal    /* old -- check source should not used*/
-#define _CALLTYPE4      __cdecl    /* old -- check source internal (static) functions */
-
-/*
- * Macros for defining the naming of a public variable
- */
-
-#define _VARTYPE1
-
-/*
- * Macros for register variable declarations
- */
-
-#define REG1
-#define REG2
-#define REG3
-#define REG4
-#define REG5
-#define REG6
-#define REG7
-#define REG8
-#define REG9
-
-#else  /* (defined (_M_M68K) || defined (_M_MPPC)) */
-
-#pragma message ("Machine register set not defined")
-
-/*
- * Unknown machine
- */
-
-#define REG1
-#define REG2
-#define REG3
-#define REG4
-#define REG5
-#define REG6
-#define REG7
-#define REG8
-#define REG9
-
-#endif  /* (defined (_M_M68K) || defined (_M_MPPC)) */
-
-/* DOS errno values for setting __doserrno in C routines */
-
-#define E_ifunc         1       /* invalid function code */
-#define E_nofile        2       /* file not found */
-#define E_nopath        3       /* path not found */
-#define E_toomany       4       /* too many open files */
-#define E_access        5       /* access denied */
-#define E_ihandle       6       /* invalid handle */
-#define E_arena         7       /* arena trashed */
-#define E_nomem         8       /* not enough memory */
-#define E_iblock        9       /* invalid block */
-#define E_badenv        10      /* bad environment */
-#define E_badfmt        11      /* bad format */
-#define E_iaccess       12      /* invalid access code */
-#define E_idata         13      /* invalid data */
-#define E_unknown       14      /* ??? unknown error ??? */
-#define E_idrive        15      /* invalid drive */
-#define E_curdir        16      /* current directory */
-#define E_difdev        17      /* not same device */
-#define E_nomore        18      /* no more files */
-#define E_maxerr2       19      /* unknown error - Version 2.0 */
-#define E_sharerr       32      /* sharing violation */
-#define E_lockerr       33      /* locking violation */
-#define E_maxerr3       34      /* unknown error - Version 3.0 */
-
-/* DOS file attributes */
-
-#define A_RO            0x1     /* read only */
-#define A_H             0x2     /* hidden */
-#define A_S             0x4     /* system */
-#define A_V             0x8     /* volume id */
-#define A_D             0x10    /* directory */
-#define A_A             0x20    /* archive */
-
-#define A_MOD   (A_RO+A_H+A_S+A_A)      /* changeable attributes */
 
 PMOD_EXPORT char *debug_fd_info(int fd)
 {
@@ -208,8 +94,43 @@ void fd_exit()
 }
 
 
-#define ISSLASH(a)  ((a) == _T('\\') || (a) == _T('/'))
+/* DOS errno values for setting __doserrno in C routines */
 
+#define E_ifunc         1       /* invalid function code */
+#define E_nofile        2       /* file not found */
+#define E_nopath        3       /* path not found */
+#define E_toomany       4       /* too many open files */
+#define E_access        5       /* access denied */
+#define E_ihandle       6       /* invalid handle */
+#define E_arena         7       /* arena trashed */
+#define E_nomem         8       /* not enough memory */
+#define E_iblock        9       /* invalid block */
+#define E_badenv        10      /* bad environment */
+#define E_badfmt        11      /* bad format */
+#define E_iaccess       12      /* invalid access code */
+#define E_idata         13      /* invalid data */
+#define E_unknown       14      /* ??? unknown error ??? */
+#define E_idrive        15      /* invalid drive */
+#define E_curdir        16      /* current directory */
+#define E_difdev        17      /* not same device */
+#define E_nomore        18      /* no more files */
+#define E_maxerr2       19      /* unknown error - Version 2.0 */
+#define E_sharerr       32      /* sharing violation */
+#define E_lockerr       33      /* locking violation */
+#define E_maxerr3       34      /* unknown error - Version 3.0 */
+
+/* DOS file attributes */
+
+#define A_RO            0x1     /* read only */
+#define A_H             0x2     /* hidden */
+#define A_S             0x4     /* system */
+#define A_V             0x8     /* volume id */
+#define A_D             0x10    /* directory */
+#define A_A             0x20    /* archive */
+
+#define A_MOD   (A_RO+A_H+A_S+A_A)      /* changeable attributes */
+
+#define ISSLASH(a)  ((a) == _T('\\') || (a) == _T('/'))
 
 #ifdef _UNICODE
 #define __tdtoxmode __wdtoxmode
@@ -266,8 +187,8 @@ static int IsRootUNCName(const _TSCHAR *path)
 }
 
 static int __cdecl low_stat (
-        REG1 const _TSCHAR *name,
-        REG2 struct stat *buf
+	const _TSCHAR *name,
+	struct stat *buf
         )
 {
         _TSCHAR *  path;
@@ -278,11 +199,13 @@ static int __cdecl low_stat (
 
         /* Don't allow wildcards to be interpreted by system */
 
+	if (
 #ifdef _UNICODE
-        if (wcspbrk(name, L"?*")) {
+	  wcspbrk(name, L"?*")
 #else  /* _UNICODE */
-        if (_mbspbrk(name, "?*")) {
+	  _mbspbrk(name, "?*")
 #endif  /* _UNICODE */
+	) {
             errno = ENOENT;
             _doserrno = E_nofile;
             return(-1);
@@ -303,11 +226,12 @@ static int __cdecl low_stat (
 
         /* Call Find Match File */
         findhandle = FindFirstFile((_TSCHAR *)name, &findbuf);
-        if ( findhandle == INVALID_HANDLE_VALUE ) {
+	if ( findhandle == INVALID_HANDLE_VALUE ) {
+	  if ( !(
 #ifdef _UNICODE
-            if ( !( wcspbrk(name, L"./\\") &&
+		 wcspbrk(name, L"./\\") &&
 #else  /* _UNICODE */
-            if ( !( _mbspbrk(name, "./\\") &&
+		 _mbspbrk(name, "./\\") &&
 #endif  /* _UNICODE */
                  (path = _tfullpath( pathbuf, name, _MAX_PATH )) &&
                  /* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
