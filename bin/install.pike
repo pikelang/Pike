@@ -1016,16 +1016,46 @@ int pre_install(array(string) argv)
 }
 
 // Create a master.pike with the correct lib_prefix
-void make_master(string dest, string master, string lib_prefix)
+void make_master(string dest, string master, string lib_prefix,
+		 string include_prefix)
 {
   status("Finalizing",master);
   string master_data=Stdio.read_file(master);
-  master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
+  master_data=replace(master_data,({"¤lib_prefix¤","¤include_prefix¤"}),
+		      ({replace(lib_prefix,"\\","\\\\"),
+			replace(include_prefix,"\\","\\\\")}));
   if((vars->PIKE_MODULE_RELOC||"") != "")
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
 			  "#define PIKE_MODULE_RELOC 1");
   Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
   status("Finalizing",master,"done");
+}
+
+// Create an aclocal.m4 with the correct include_prefix
+void make_aclocal(string src, string dest, string include_prefix)
+{
+  status("Finalizing",src);
+  string aclocal_data=Stdio.read_file(src);
+  aclocal_data =
+    "define(PIKE_INCLUDE_PATH,"+include_prefix+")\n" + aclocal_data;
+  Stdio.write_file(dest,aclocal_data);
+  status("Finalizing",dest,"done");
+}
+
+// Install file while fixing CC= w.r.t. smartlink
+void fix_smartlink(string src, string dest, string include_prefix)
+{
+  status("Finalizing",src);
+  string data=Stdio.read_file(src);
+  data = map(data/"\n", lambda(string s) {
+			  string cc;
+			  if(2==sscanf(s, "CC=%*s/smartlink %s", cc))
+			    return "CC="+include_prefix+"/smartlink "+cc;
+			  else
+			    return s;
+			})*"\n";
+  Stdio.write_file(dest,data);
+  status("Finalizing",dest,"done");
 }
 
 // dump modules (and master)
@@ -1223,7 +1253,7 @@ void do_install()
     }
     else
       make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master,
-		  lib_prefix);
+		  lib_prefix, include_prefix);
 
     install_dir(vars->TMP_LIBDIR,lib_prefix,1);
     install_dir(vars->LIBDIR_SRC,lib_prefix,1);
@@ -1233,10 +1263,20 @@ void do_install()
 			 combine_path(include_prefix,"code"));
     install_header_files(vars->TMP_BUILDDIR,include_prefix);
 
-    install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
-		 combine_path(include_prefix,"dynamic_module_makefile"));
-    install_file(combine_path(vars->TMP_BUILDDIR,"aclocal"),
-		 combine_path(include_prefix,"aclocal.m4"));
+    fix_smartlink(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
+		  combine_path(include_prefix,"dynamic_module_makefile"),
+		  include_prefix);
+    install_file(combine_path(vars->SRCDIR,"make_variables.in"),
+		 combine_path(include_prefix,"make_variables.in"));
+    make_aclocal(combine_path(vars->SRCDIR,"aclocal.m4"),
+		 combine_path(include_prefix,"aclocal.m4"), include_prefix);
+    fix_smartlink(combine_path(vars->TMP_BUILDDIR,"specs"),
+		  combine_path(include_prefix,"specs"), include_prefix);
+
+    foreach(({"install_module", "precompile.pike", "smartlink",
+	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
+      install_file(combine_path(vars->TMP_BINDIR,f),
+		   combine_path(include_prefix,f));
 
     if(file_stat(vars->MANDIR_SRC))
     {
