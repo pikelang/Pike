@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.167 2004/09/14 17:21:36 grubba Exp $
+|| $Id: builtin.cmod,v 1.168 2004/09/14 17:57:08 grubba Exp $
 */
 
 #include "global.h"
@@ -3089,10 +3089,14 @@ PIKECLASS List
 
   /* Suggestions for future functionality:
    *
+   *   o Pop tail
    *   o Join
    *   o Copy segment
    *   o Detach segment (requires new iterator implementation)
    *   o Iterator copy
+   *   o _equal() for iterators and lists.
+   *   o _values(), _search(), cast()
+   *   o _sizeof()?, _indices()??
    *   o Support for reverse(), filter() and map().
    *   o Initialization from array.
    */
@@ -3170,6 +3174,81 @@ PIKECLASS List
     while ((next = node->next)) {
       gc_recurse_svalues(&node->val, 1);
       node = next;
+    }
+  }
+
+  /*! @decl int(0..1) is_empty()
+   *!
+   *!   Check if the list is empty.
+   *!
+   *! @returns
+   *!   Returns @expr{1@} if the list is empty,
+   *!   and @expr{0@} (zero) if there are elements in the list.
+   */
+  PIKEFUN int(0..1) is_empty()
+  {
+    push_int(!THIS->head->next);
+  }
+
+  /*! @decl mixed head()
+   *!
+   *!   Get the element at the head of the list.
+   *!
+   *! @throws
+   *!   Throws an error if the list is empty.
+   *!
+   *! @seealso
+   *!   @[is_empty()], @[tail()], @[pop()]
+   */
+  PIKEFUN mixed head()
+  {
+    if (THIS->head->next) {
+      push_svalue(&THIS->head->val);
+    } else {
+      Pike_error("Empty list.\n");
+    }
+  }
+
+  /*! @decl mixed tail()
+   *!
+   *!   Get the element at the tail of the list.
+   *!
+   *! @throws
+   *!   Throws an error if the list is empty.
+   *!
+   *! @seealso
+   *!   @[is_empty()], @[head()], @[pop()]
+   */
+  PIKEFUN mixed tail()
+  {
+    if (THIS->tail->prev) {
+      push_svalue(&THIS->tail->val);
+    } else {
+      Pike_error("Empty list.\n");
+    }
+  }
+
+  /*! @decl mixed pop()
+   *!
+   *!   Pop the element at the head of the list from the list.
+   *!
+   *! @throws
+   *!   Throws an error if the list is empty.
+   *!
+   *! @seealso
+   *!   @[is_empty()], @[head()], @[tail()]
+   */
+  PIKEFUN mixed pop()
+  {
+    if (THIS->head->next) {
+      push_svalue(&THIS->head->val);
+      if (THIS->head->refs == 2) {
+	unlink_list_node(THIS->head);
+      } else {
+	detach_list_node(THIS->head);
+      }
+    } else {
+      Pike_error("Empty list.\n");
     }
   }
 
