@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.14 1999/11/27 21:13:32 js Exp $
+//  $Id: Session.pike,v 1.15 1999/11/27 21:24:33 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -921,5 +921,5 @@ object|void send_message(string textstring, mapping options)
 
 void register_async_message_callback(function(int,int,string:void) cb)
 {
-  s->con->con->add_async_callback("async-send-message", cb);
+  con->con->add_async_callback("async-send-message", cb);
 }
