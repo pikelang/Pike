@@ -62,7 +62,7 @@ o foreach(X; Y; Z)
     conveniently, a new syntax has been added to get both the index
     and the value in each iteration:
 
-    	foreach (something; index-expr; value-expr) ...
+        foreach (something; index-expr; value-expr) ...
 
     This iterates over something, assigning in turn each index to
     index-expr and each value to value-expr. The index and value
@@ -98,54 +98,87 @@ o Iterators
     which cannot be iterated over directly in any other way. For
     example, to get some arbitrary index in a mapping m:
 
-	mixed any_index = Mapping.Iterator(m)->index();
+        mixed any_index = Mapping.Iterator(m)->index();
 
 o Automap
     To perform per-element operations on arrays, there is now a convenience
     syntax for map(), that can make code more readable in some situations.
     Summing up two arrays element by element using automap looks like this:
 
-	a[*] + b[*]; // the result has as many elements as the shortest array
+        a[*] + b[*]; // the result has as many elements as the shortest array
 
     Multiplying all elements in a by a constant:
 
-	a[*] * 4711;
+        a[*] * 4711;
 
     Make an array of what sprintf("%O", a[n]) returns for all elements in a:
 
-	sprintf("%O", a[*]);
+        sprintf("%O", a[*]);
 
-o Implicit lambda.
+o Implicit lambda
     A convenient way to embed code that needs pre- and/or post-
-    initialization. 
+    initialization. If a statement starts with a function call
+    followed directly by a brace block, then the block is transformed
+    to a lambda function which is passed as the last argument to the
+    function being called.
 
-    FIXME: Not stable. mast type here.
+    The following example embeds OpenGL calls that modifies the matrix
+    in an implicit lambda that will save the matrix before execution
+    and restore it afterwards:
 
-    This example embeds OpenGL calls that modifies the matrix in an
-    implicit lambda that will save the matrix before execution and
-    restore it afterwards.
+       void PushPop( function f )
+       {
+         glPushMatrix();
+         mixed err = catch(f());
+         glPopMatrix();
+         if (err) throw(err);
+       }
 
-    void PushPop( function f )
-    {
-      GL.glPushMatrix();
-      mixed err = catch(f());
-      GL.glPopMatrix();
-    }
+       void do_something()
+       {
+         PushPop() {
+           glTranslate( ((1.0-0.08)-pcs)/2, 0.0, 0.0 );
+           draw_stuff();
+         };
+       }
 
-    PushPop() {
-      glTranslate( ((1.0-0.08)-pcs)/2, 0.0, 0.0 );
-      drawstuff();
-    };
+    Note that although useful, this feature has important
+    disadvantages and will probably be obsoleted by a better
+    alternative in the future. The problem is that the inner brace
+    block become a completely separate function instead of remaining a
+    block. The difference (apart from being slower) is shown by this
+    example:
 
+       void do_something()
+       {
+         PushPop() {
+           if (glError()) return;
+           glTranslate( ((1.0-0.08)-pcs)/2, 0.0, 0.0 );
+           draw_stuff();
+         };
+         draw_more_stuff();
+       }
 
-o Access to hidden variables in surrounding scopes.
+    Since the inner block is a separate function, the return statement
+    doesn't exit do_something() as one might expect, causing
+    draw_more_stuff() to be called even when there's a GL error.
+    Another effect is that break and continue can't be associated with
+    statements outside the implicit lambda block.
+
+    Another method that overcomes these problems will likely be
+    implemented. The problem is that it can give compatibility
+    problems to change old code that uses implicit lambdas to that
+    one, since e.g. return will work differently without giving any
+    sort of error.
+
+o Access to hidden variables in surrounding scopes
     Include the names of the surrounding classes themselves in the lookup for
     Foo::, to make it possible to adress hidden variables in the scopes of
     surrounding classes, e.g:
 
        class Foo {
          int i;
-	 void create (int i) {Foo::i = i;}
+         void create (int i) {Foo::i = i;}
        }
 
 o global::
@@ -174,17 +207,23 @@ o The Local module
     respectively adds and removes entries from the list of paths to
     inspect when resolving Local.* symbols.
 
+o The program type can be specialized
+    It's possible to specialize a program variable by adding a program
+    identifier, much like an object variable can be specialized. E.g:
+
+       program(Stdio.File) fd = Stdio.File;
+
 o enum reserved
     An enum construct similar to that in C has been introduced.
     For example:
 
-	enum AlphaMode
-	{
-	  Squares,
-	  Solid,
-	  None,
-	  AlphaOnly,
-	};
+        enum AlphaMode
+        {
+          Squares,
+          Solid,
+          None,
+          AlphaOnly,
+        };
 
 o enum and typedef have implicit local binding
 
@@ -202,15 +241,15 @@ o UNDEFINED
     globally available symbol UNDEFINED.
 
 o _m_delete
-    There is now an LFUN mixed _m_delete(mixed index) to overload in
-    your classes to imitate mappings. It gets invoked when m_delete
-    is performed on your object.
+    A class can now define a function mixed _m_delete(mixed index) to
+    make the objects work like mappings with m_delete(). (This feature
+    has been added to later 7.2 releases too.)
 
-o :: includes current class
-    class X {
-      int i;
-      void create (int i) {X::i = i;}
-    }
+o sprintf("%O", foo) is more descriptive
+    If foo is a program or an object then Pike will try to find the
+    resolved name instead of returning just "program" or "object".
+    However, if an object contains an _sprintf function it will still
+    be called in this case.
 
 
 New modules / classes / methods added:
@@ -226,30 +265,28 @@ o ADT.History
       > h[3];
       (2) Result: 19
 
-
 o ADT.Relation.Binary
     Handles binary relations. Hilfe example:
-      > object r=ADT.Relation.Binary("test");               
+      > object r=ADT.Relation.Binary("test");
       > r->add(1,2)->add(2,3)->add(3,5)->add(1,4)->add(4,5);
       (1) Result: ADT.Relation.Binary("test")
-      > r->find_shortest_path(1,5);                         
+      > r->find_shortest_path(1,5);
       (2) Result: ({ /* 3 elements */
-      		      1,
-      		      4,
-      		      5
-      		  })
-      > r->remove(1,4);                                     
+                      1,
+                      4,
+                      5
+                  })
+      > r->remove(1,4);
       (3) Result: ADT.Relation.Binary("test")
       > r->add(5,1);
       (4) Result: ADT.Relation.Binary("test")
-      > r->find_shortest_path(1,5);                         
+      > r->find_shortest_path(1,5);
       (5) Result: ({ /* 4 elements */
-      		      1,
-      		      2,
-      		      3,
-      		      5
-      		  })
-
+                      1,
+                      2,
+                      3,
+                      5
+                  })
 
 o Audio.Codec and Audio.Codec
     Contains decoders and encoders for audio. Currently WAV and MP3.
@@ -259,7 +296,7 @@ o Calendar.verify
 
 o Crypto.MD4
     Hash used for NT Lanmanager passwords.
-    
+
 o Crypto.crypt_md5
 
 o Debug.Tracer
@@ -319,10 +356,9 @@ o Image.Dims
     example:
       > Image.Dims.get(Stdio.File("test.gif"));
       (1) Result: ({ /* 2 elements */
-      		      1412,
-      		      1120
-      		  })
-
+                      1412,
+                      1120
+                  })
 
 o Image.Fonts
     High level API for font handling. Should be used instead of
@@ -333,6 +369,8 @@ o Image.DWG
 
 o Image.SVG
 
+o Shuffler
+
 o Gmp.mpq and Gmp.mpf
     Multi precision fractions.
 
@@ -341,6 +379,11 @@ o String.SplitIterator
 o Stdio.File.line_iterator
 
 o String.Replace, String.SingleReplace
+
+o Return value from catch blocks.
+    The return value from catch blocks that exit normally has been
+    changed from a normal zero (i.e. zero_type 0) to UNDEFINED (i.e.
+    zero_type 1).
 
 
 Optimizations:
@@ -423,7 +466,7 @@ o Identifier lookup
 
     Lookup of identifier "foo" in D():
 
-    D-+-B-+-foo          Pike 7.3.23 --- Pike 7.3.32
+    D-+-B-+-foo          (Pike 7.3.23 --- Pike 7.3.32)
       |   |
       |   +-A---foo
       |
@@ -508,6 +551,7 @@ o .build_lobotomize_crypto removed
     Use the Makefile target lobotomize_crypto to lobotomize Pike.
     Should preferably be executed in an unused tree straight from CVS.
 
+
 C level/development changes:
 ----------------------------
 
@@ -527,7 +571,6 @@ Bugs fixed:
 
 o Reworked trampolines to cause less circular references. (solves 1937)
 
-
 (To browse bug tickets, either visit
 http://community.roxen.com/crunch/ - or append the ticket id to
 "http://bugs.roxen.com/" for an address directly to the ticket
@@ -537,8 +580,6 @@ itself.)
 Uncategorized:
 --------------
 
-o --with-new-multisets
-o PIKE_RUN_UNLOCKED
 o Works with Autoconf 2.50
 o Saved 8 bytes per object for objects not using their parent scope
 o constant objects (Gmp.Bignum, Math.Matrix, Image.Color)
@@ -548,7 +589,7 @@ o dynamic loading
 o #pragma save_parent
 o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
 o dont_dump_module
-o modules can no longer call functions in other modules directly
+o C modules can no longer call functions in other dynamic C modules directly
 o it is possible to inherit pike programs from C programs.
 o separate weak flags for indices and values in mappings
 
@@ -574,4 +615,3 @@ system.get_netinfo_property (Max OS X)
 system.usleep/nanosleep
 system.Memory (a class to read/write from mmap'ed or allocated memory)
 SDL
-Shuffler
