@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.82 2001/07/26 19:59:34 grubba Exp $
+ * $Id: interpret_functions.h,v 1.83 2001/07/27 08:32:03 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -110,15 +110,15 @@
   {							\
     int f=Pike_fp->flags;				\
     low_return();					\
-    if (t_flag)						\
+    DO_IF_DEBUG(if (t_flag)				\
       fprintf(stderr, "Returning to 0x%p\n",		\
-	      Pike_fp->pc);				\
+	      Pike_fp->pc));				\
     if(f & PIKE_FRAME_RETURN_POP)			\
       pop_stack();					\
     DO_JUMP_TO(Pike_fp->pc);				\
   }							\
-  if (t_flag)						\
-    fprintf(stderr, "Inter return\n");			\
+  DO_IF_DEBUG(if (t_flag)				\
+    fprintf(stderr, "Inter return\n"));			\
   INTER_RETURN;						\
 }
 

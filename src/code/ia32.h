@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.9 2001/07/26 18:19:31 grubba Exp $
+ * $Id: ia32.h,v 1.10 2001/07/27 08:32:04 hubbe Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
@@ -27,6 +27,12 @@
     ins_pointer( (INT32)&(ADDR));			\
 }while(0)
 
+#define MOV2EDX(ADDR) do {				\
+    add_to_program(0x8b);  /* mov $xxxxx, %edx */	\
+    add_to_program(0x15);	                        \
+    ins_pointer( (INT32)&(ADDR));			\
+}while(0)
+
 
 #define SET_MEM_REL_EAX(OFFSET, VALUE) do {		\
   INT32 off_ = (OFFSET);				\
@@ -41,19 +47,46 @@
   ins_pointer(VALUE);					\
 }while(0)
 
+#define SET_MEM_REL_EDX(OFFSET, VALUE) do {		\
+  INT32 off_ = (OFFSET);				\
+  add_to_program(0xc7); /* movl $xxxxx, yy%(edx) */	\
+  if(off_) 						\
+  {							\
+    add_to_program(0x42);				\
+    add_to_program(OFFSET);				\
+  }else{						\
+    add_to_program(0x02);				\
+  }							\
+  ins_pointer(VALUE);					\
+}while(0)
+
 #define REG_IS_SP 1
 #define REG_IS_FP 2
+#define REG_IS_MARK_SP 3
 #define REG_IS_UNKNOWN -1
 
 extern int ia32_reg_eax;
+extern int ia32_reg_ecx;
+extern int ia32_reg_edx;
 
+#if 0
+/* For some reason, this does not work - Hubbe*/
 #define UPDATE_PC() do {				\
     INT32 tmp=PC;					\
-    if(ia32_reg_eax != REG_IS_FP)                           \
-      MOV2EAX(Pike_interpreter.frame_pointer);		\
-    ia32_reg_eax=REG_IS_FP;                                 \
-    SET_MEM_REL_EAX(OFFSETOF(pike_frame, pc), tmp);	\
+    if(ia32_reg_edx != REG_IS_FP)                      \
+      MOV2EDX(Pike_interpreter.frame_pointer);		\
+    ia32_reg_edx=REG_IS_FP;                             \
+    SET_MEM_REL_EDX(OFFSETOF(pike_frame, pc), tmp);	\
 }while(0)
+#else
+#define UPDATE_PC() do {				\
+   INT32 tmp=PC;					\
+   if(ia32_reg_eax != REG_IS_FP)                      \
+     MOV2EAX(Pike_interpreter.frame_pointer);		\
+   ia32_reg_eax=REG_IS_FP;                             \
+   SET_MEM_REL_EAX(OFFSETOF(pike_frame, pc), tmp);	\
+}while(0)
+#endif
 
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)

@@ -1,11 +1,12 @@
 /*
- * $Id: ia32.c,v 1.12 2001/07/24 12:37:13 grubba Exp $
+ * $Id: ia32.c,v 1.13 2001/07/27 08:32:03 hubbe Exp $
  *
  * Machine code generator for IA32.
  *
  */
 
 #include "operators.h"
+#include "constants.h"
 
 #define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
@@ -79,10 +80,14 @@ static void update_arg2(INT32 value)
 }
 
 int ia32_reg_eax=REG_IS_UNKNOWN;
+int ia32_reg_ecx=REG_IS_UNKNOWN;
+int ia32_reg_edx=REG_IS_UNKNOWN;
 
 void ia32_flush_code_generator(void)
 {
   ia32_reg_eax=REG_IS_UNKNOWN;
+  ia32_reg_ecx=REG_IS_UNKNOWN;
+  ia32_reg_edx=REG_IS_UNKNOWN;
 }
 
 void ia32_push_constant(struct svalue *tmp)
@@ -100,7 +105,175 @@ void ia32_push_constant(struct svalue *tmp)
   MOVEAX2(Pike_interpreter.stack_pointer);
 
   ia32_reg_eax = REG_IS_SP;
-//  ia32_reg_eax = -1;
+}
+
+/* This expects %edx to point to the svalue we wish to push */
+void ia32_push_svalue(void)
+{
+  int e;
+  if(ia32_reg_eax != REG_IS_SP)
+    MOV2EAX(Pike_interpreter.stack_pointer);
+
+  if(sizeof(struct svalue) > 8)
+  {
+    for(e=4;e<(int)sizeof(struct svalue);e++)
+    {
+      if( e ==  OFFSETOF(svalue,u.refs)) continue;
+
+      add_to_program(0x8b); /* mov 0x4(%edx), %ecx */
+      add_to_program(0x4a); 
+      add_to_program(e);
+      
+      add_to_program(0x89); /* mov %ecx,4(%eax) */
+      add_to_program(0x48); 
+      add_to_program(e);
+    }
+  }
+
+
+  add_to_program(0x8b); /* mov 0x4(%edx), %ecx */
+  add_to_program(0x4a); 
+  add_to_program(OFFSETOF(svalue,u.refs));
+
+  add_to_program(0x8b); /* mov (%edx),%edx */
+  add_to_program(0x12); 
+
+  add_to_program(0x89); /* mov %edx,(%eax) */
+  add_to_program(0x10); 
+
+  add_to_program(0x89); /* mov %ecx,4(%eax) */
+  add_to_program(0x48);
+  add_to_program(OFFSETOF(svalue,u.refs));
+
+  add_to_program(0x66); /* cmp $0x7,%dx */
+  add_to_program(0x83); 
+  add_to_program(0xfa); 
+  add_to_program(0x07); 
+
+  add_to_program(0x77); /* ja bork */
+  add_to_program(0x02);
+  
+  add_to_program(0xff); /* incl (%ecx) */
+  add_to_program(0x01);
+  /* bork: */
+
+  ADDB_EAX(sizeof(struct svalue));
+  MOVEAX2(Pike_interpreter.stack_pointer);
+
+  ia32_reg_eax = REG_IS_SP;
+  ia32_reg_ecx = REG_IS_UNKNOWN;
+  ia32_reg_edx = REG_IS_UNKNOWN;
+}
+
+void ia32_get_local_addr(INT32 arg)
+{
+#if 1
+  if(ia32_reg_edx == REG_IS_FP)
+  {
+    add_to_program(0x8b); /* movl $XX(%edx), %edx */
+    add_to_program(0x52);
+  }else{
+    switch(ia32_reg_eax)
+    {
+      case REG_IS_SP: /* use %edx */
+	MOV2EDX(Pike_interpreter.frame_pointer);
+
+	add_to_program(0x8b); /* movl $XX(%edx), %edx */
+	add_to_program(0x52);
+	break;
+
+      default: /* use %eax */
+	MOV2EAX(Pike_interpreter.frame_pointer);
+	ia32_reg_eax=REG_IS_FP;
+
+      case REG_IS_FP:
+	add_to_program(0x8b); /* movl $XX(%eax), %edx */
+	add_to_program(0x50);
+    }
+  }
+#else
+  MOV2EAX(Pike_interpreter.frame_pointer);
+  add_to_program(0x8b); /* movl $XX(%eax), %edx */
+  add_to_program(0x50);
+  ia32_reg_eax = REG_IS_UNKNOWN;
+#endif
+  add_to_program(OFFSETOF(pike_frame, locals));
+  /* EDX is now fp->locals */
+
+  add_to_program(0x81); /* add $xxxxx,%edx */
+  add_to_program(0xc2);
+  PUSH_INT(arg * sizeof(struct svalue));
+
+  /* EDX is now & ( fp->locals[arg] ) */
+  ia32_reg_edx=REG_IS_UNKNOWN;
+}
+
+void ia32_push_local(INT32 arg)
+{
+  ia32_get_local_addr(arg);
+  ia32_push_svalue();
+}
+
+void ia32_local_lvalue(INT32 arg)
+{
+  int e;
+  struct svalue tmp[2];
+  ia32_get_local_addr(arg);
+
+  MEMSET(tmp, 0, sizeof(tmp));
+  tmp[0].type=T_LVALUE;
+  tmp[0].u.lval=(struct svalue *)4711;
+  tmp[1].type=T_VOID;
+
+  if(ia32_reg_eax != REG_IS_SP)
+  {
+    MOV2EAX(Pike_interpreter.stack_pointer);
+    ia32_reg_eax=REG_IS_SP;
+  }
+  for(e=0;e<(int)sizeof(tmp)/4;e++)
+  {
+    INT32 t2=((INT32 *)&tmp)[e];
+    if(t2 == 4711)
+    {
+      add_to_program(0x89); /* movl %edx, xxx(%eax) */
+      add_to_program(0x50);
+      add_to_program(e*4);
+    }else{
+      SET_MEM_REL_EAX(e*4,t2);
+    }
+  }
+
+  ADDB_EAX(sizeof(struct svalue)*2);
+  MOVEAX2(Pike_interpreter.stack_pointer);
+}
+
+void ia32_mark(void)
+{
+  if(ia32_reg_eax != REG_IS_SP)
+  {
+    MOV2EAX(Pike_interpreter.stack_pointer);
+    ia32_reg_eax=REG_IS_SP;
+  }
+
+#if 0 
+  /* who keeps changing edx?? -Hubbe */
+  if(ia32_reg_edx == REG_IS_MARK_SP)
+#endif
+  {
+    MOV2EDX(Pike_interpreter.mark_stack_pointer);
+    ia32_reg_edx=REG_IS_MARK_SP;
+  }
+
+  add_to_program(0x89); /* movl %eax,(%edx) */
+  add_to_program(0x02);
+
+  add_to_program(0x83); /* addl $4, %edx */
+  add_to_program(0xc2);
+  add_to_program(sizeof(struct svalue *)); /*4*/
+  
+  add_to_program(0x89); /* movl %edx, mark_sp */
+  add_to_program(0x15);
+  PUSH_ADDR( & Pike_interpreter.mark_stack_pointer );
 }
 
 INT32 ins_f_jump(unsigned int b)
@@ -125,6 +298,15 @@ void ia32_push_int(INT32 x)
   tmp.subtype=0;
   tmp.u.integer=x;
   ia32_push_constant(&tmp);
+}
+
+void ia32_call_c_function(void *addr)
+{
+/*  CALL_ABSOLUTE(instrs[b].address); */
+  CALL_RELATIVE(addr);
+  ia32_reg_eax=REG_IS_UNKNOWN;
+  ia32_reg_ecx=REG_IS_UNKNOWN;
+  ia32_reg_edx=REG_IS_UNKNOWN;
 }
 
 void ins_f_byte(unsigned int b)
@@ -159,6 +341,12 @@ void ins_f_byte(unsigned int b)
   /* This is not very pretty */
   switch(b)
   {
+    case F_MARK2 - F_OFFSET:
+      ia32_mark();
+    case F_MARK - F_OFFSET:
+      ia32_mark();
+      return;
+
     case F_CONST0 - F_OFFSET:
       ia32_push_int(0);
       return;
@@ -185,11 +373,7 @@ void ins_f_byte(unsigned int b)
       break;
   }
 #endif
-  CALL_RELATIVE(addr);
-  ia32_reg_eax=REG_IS_UNKNOWN;
-/*  CALL_ABSOLUTE(instrs[b].address); */
-
-  return;
+  ia32_call_c_function(addr);
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
@@ -197,8 +381,23 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 #ifndef PIKE_DEBUG
   switch(a)
   {
+    case F_MARK_AND_LOCAL:
+      ia32_mark();
+
+    case F_LOCAL:
+      ia32_push_local(b);
+      return;
+
+    case F_LOCAL_LVALUE:
+      ia32_local_lvalue(b);
+      return;
+
     case F_NUMBER:
       ia32_push_int(b);
+      return;
+
+    case F_NEG_NUMBER:
+      ia32_push_int(-b);
       return;
 
     case F_CONSTANT:
@@ -211,6 +410,17 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
 	return;
       }
+      break;
+
+    case F_MARK_CALL_BUILTIN:
+      update_arg1(0);
+      ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
+      return;
+
+    case F_CALL_BUILTIN1:
+      update_arg1(1);
+      ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
+      return;
   }
 #endif
   update_arg1(b);
@@ -218,11 +428,21 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 }
 
 void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 c,
-			    unsigned INT32 b)
+			    unsigned INT32 b,
+			    unsigned INT32 c)
 {
-  update_arg1(c);
-  update_arg2(b);
+#ifndef PIKE_DEBUG
+  switch(a)
+  {
+    case F_2_LOCALS:
+      /* We could optimize this by delaying the sp+=8  -hubbe  */
+      ia32_push_local(b);
+      ia32_push_local(c);
+      return;
+  }
+#endif
+  update_arg1(b);
+  update_arg2(c);
   ins_f_byte(a);
 }
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.234 2001/07/26 21:04:13 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.235 2001/07/27 08:32:03 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -842,14 +842,14 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #endif /* PIKE_DEBUG */
 
 #ifdef __i386__
-  /* This code does not clobber %eax, but
+  /* This code does not clobber %eax, %ecx & %edx, but
    * the code jumped to does.
    */
   __asm__ __volatile__( "	sub $8,%%esp\n"
 			"	jmp *%0"
 			: "=m" (pc)
 			:
-			: "cc", "memory", "eax" );
+			: "cc", "memory", "eax", "ecx", "edx" );
 #elif defined(__ppc__) || defined(_POWER)
   __asm__ __volatile__( "       mtlr %0\n"
 			"	blr"
