@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.11 2001/02/02 08:42:07 mirar Exp $
+### $Id: regional,v 1.12 2001/05/05 15:16:45 mirar Exp $
 
 ### =====================================================================
 ###
@@ -2715,15 +2715,16 @@ Region "nc"
 
 
 # new zealand
-Region "new zealand"
+Region "nz"
   Add   "new year 2d"             - # "New Year"              Fixed Jan  1  2 days
-  Event "new zealand/waitangi"    -   "Waitangi Day"          Fixed Feb  6
+  Event "nz/waitangi"             h   "Waitangi Day"          Fixed Feb  6
   Add   "c/good friday"           - # "Good Friday"           Easter -2
   Add   "c/easter monday"         - # "Easter Monday"         Easter +1
-  Add   "anzac"                   - # "ANZAC Day"             Fixed Apr 25
+  Add "c/easter"                  h # "Easter"                Easter +0
+  Add   "anzac"                   h # "ANZAC Day"             Fixed Apr 25
   Add   "labor"                   - # "Labor Day"             Fixed May  1
-  Event "new zealand/queens"      -   "Queen's Birthday"      Fixed Jun  4
-  Event "new zealand/labor"       -   "Labor Day"             WDRel Oct Mon last
+  Event "nz/queens"               -   "Queen's Birthday"      Fixed Jun  4
+  Event "nz/labor"                -   "Labor Day"             WDRel Oct Mon last
   Add   "c/christmas"             - # "Christmas Day"         Fixed Dec 25
   Add   "c/boxing"                - # "Boxing Day"            Fixed Dec 26
 
