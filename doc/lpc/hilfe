@@ -39,17 +39,14 @@ DESCRIPTION
 	Evaluate a statement:
 	<statement> ;
 	Statements include the following examples:
-		for(e=0;e<10;e++) ;
-	
-		e=10;
 
-		write(e);
+	  for(e=0;e<10;e++) ;
 
-		if(foo) return bar; else return gazonk;
+	  e=10;
+
+	  write(e);
+
+	  if(foo) return bar; else return gazonk;
 
 	Statements beginning with for, while, switch, if, do or return will
 	not automatically return anything, and no result will be printed.
-
-
-SEE ALSO
-	script_mode
