@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.163 2003/09/01 14:43:16 mast Exp $
+|| $Id: html.c,v 1.164 2003/09/01 16:47:00 mast Exp $
 */
 
 #include "global.h"
@@ -2385,12 +2385,20 @@ static newstate handle_result(struct parser_html_storage *this,
 	 /* first skip this in local feed*/
 	 if (skip) skip_feed_range(st,head,c_head,tail,c_tail);
 
-	 DEBUG((stderr,"handle_result: pushing string (len=%d) on feedstack\n",
-		sp[-1].u.string->len));
-
-	 add_local_feed (this, sp[-1].u.string);
-	 pop_stack();
-	 return STATE_REREAD; /* please reread stack head */
+	 if (sp[-1].u.string->len) {
+	   DEBUG((stderr,"handle_result: pushing string (len=%d) on feedstack\n",
+		  sp[-1].u.string->len));
+	   add_local_feed (this, sp[-1].u.string);
+	   pop_stack();
+	   return STATE_REREAD; /* please reread stack head */
+	 }
+	 else {
+	   DEBUG((stderr,"handle_result: not pushing empty string on feedstack\n",
+		  sp[-1].u.string->len));
+	   if (this->stack != st) /* got more feed recursively - reread */
+	     return STATE_REREAD;
+	   return STATE_DONE; /* continue */
+	 }
 
       case T_INT:
 	 switch (sp[-1].u.integer)
