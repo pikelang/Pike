@@ -128,7 +128,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 #ifdef DEBUG
 #undef encode_value2
-#define encode_value2(X,Y) do { struct svalue *_=sp; encode_value2_(X,Y); if(sp!=_) fatal("encode_value2 failed!\n"); } while(0);
+#define encode_value2(X,Y) do { struct svalue *_=sp; encode_value2_(X,Y); if(sp!=_) fatal("encode_value2 failed!\n"); } while(0)
 #endif
 
 {
