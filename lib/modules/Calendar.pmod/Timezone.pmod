@@ -868,7 +868,7 @@ class Runtime_timezone_compiler
 	       FIXID(a[1]),-a[0],a[2]);
 	 else // simple timezone
 	    return sprintf(
-	       "Ruleset.Timezone(%d,%O)",
+	       "Ruleset()->Timezone(%d,%O)",
 	       -(roff+a[0]),a[2]);
       }
 
