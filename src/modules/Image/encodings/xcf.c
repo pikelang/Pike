@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.1 1999/04/11 05:38:22 per Exp $");
+RCSID("$Id: xcf.c,v 1.2 1999/04/11 05:48:51 per Exp $");
 
 #include "config.h"
 
@@ -1036,6 +1036,7 @@ void image_xcf_f__rle_decode( INT32 args )
 #define MIN(X,Y) ((X)<(Y)?(X):(Y))
 void image_xcf_f__decode_tiles( INT32 args )
 {
+  extern void check_signals();
   struct object *io,*ao, *cmapo;
   struct array *tiles;
   struct image *i, *a;
@@ -1076,8 +1077,8 @@ void image_xcf_f__decode_tiles( INT32 args )
     eheight = MIN(TILE_HEIGHT, i->ysize-y);
     tile->refs++;
 
-    fprintf(stderr, "       tile %d/%d [%dx%d]  %dbpp      \n",
-            l+1, tiles->size, ewidth, eheight,bpp);
+/*     fprintf(stderr, "       tile %d/%d [%dx%d]  %dbpp      \n", */
+/*             l+1, tiles->size, ewidth, eheight,bpp); */
 
     if(rle)
     {
@@ -1112,8 +1113,8 @@ void image_xcf_f__decode_tiles( INT32 args )
           span = ewidth*eheight;
         else
           span = 1;
-        if(cx+x > i->xsize)  continue;
-        if(cy+y > i->ysize)  continue;
+        if(cx+x > (unsigned)i->xsize)  continue;
+        if(cy+y > (unsigned)i->ysize)  continue;
 
         switch( bpp )
         {
