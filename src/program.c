@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.74 1998/04/10 04:49:55 hubbe Exp $");
+RCSID("$Id: program.c,v 1.75 1998/04/10 18:38:15 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -769,7 +769,7 @@ struct program *end_first_pass(int finish)
 
 
   /* Collect references to inherited __INIT functions */
-  for(e=new_program->num_inherits-1;e>1;e--)
+  for(e=new_program->num_inherits-1;e;e--)
   {
     int id;
     if(new_program->inherits[e].inherit_level!=1) continue;
