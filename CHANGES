@@ -111,9 +111,7 @@ o Fixes to compile with --without-bignums. Not recommended, but it should
   work again now.
 o Fixes to make the Mysql module load under Microsoft Windows even when
   compiled as a dynamically loadable module.
-o [Image/blit.c] "Backported fix for nesting bug from Pike 7.5." /
-  "Fixed bad nesting of THREADS_ALLOW()/THREADS_DISALLOW() in
-  img_box_nocheck()."
+o Fixed a threading bug in Image.Image()->box().
 o [pike_threadlib.h] "Backported some SWAP_OUT_THREAD() paranoia"
 o "More thread-related fixes."
   http://pike.ida.liu.se/development/cvs/pike.xml?v=7.4&build=217&between=2003-03-31%2017:39:42&and=2003-03-31%2019:34:43
