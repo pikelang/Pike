@@ -102,8 +102,10 @@ void f_load_module(INT32 args)
     current_module=tmp;
 
     res = 1;
-  } else
-    res = 0;
+  } else {
+    error("load_module(\"%s\") failed: %s\n",
+	  sp[-args].u.string->str, dlerror());
+  }
   pop_n_elems(args);
   push_int(res);
 }
