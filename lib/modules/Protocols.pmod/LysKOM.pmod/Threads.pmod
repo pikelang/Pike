@@ -19,13 +19,20 @@ class Thread
 
     string print(int depth)
     {
-      return sprintf("<table cellspacing=1 cellpadding=0 border=0><tr><td><img src=/internal-roxen-unit alt='' height=1 width=%d></td><td><a target=display href=\"%s\">%d</a> - %s (%s)</td></tr></table>",
-		     depth*18,
-		     "/text.html?id="+text->no,
-		     text->no,
-		     text->subject,
-		     text->author->name)+
-	children->print(depth+1)*"\n";      
+      int step = 18, i = 0, indent = 1;
+      while(i++ < depth)
+	indent += max(1, step--);
+      return sprintf("<nobr><a target=display onClick=mark_as_being_read(%d) href=\"%s\">"
+		     "<img width=%d height=14 border=0 src=/internal-roxen-unit alt=\"\">"
+		     "<img width=14 height=14 border=0 src=/internal-roxen-err_%d alt=\"\" name=m%d>"
+		     " : %d</a> %s (%s)</nobr><br>\n",
+		     text->no, "/text.html?id=" + text->no,
+		     indent,
+		     1, text->no, // 1 == unread,
+		                  // 2 == being read,
+		                  // 3 == read -- the images should of course be replaced
+		     text->no, text->subject, text->author->name) +
+	children->print(depth+1) * "";
     }
 
     Node possible_parent(int follow)
