@@ -2,30 +2,35 @@ all: tutorial.html tutorial_onepage.html
 
 # lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
 
-SRCFILES=tutorial.wmml Image.wmml
+SRCFILES=tutorial.wmml Image.wmml Mysql.wmml
+
+pike=pike
 
 .DUMMY: 
 
 tutorial.html: .DUMMY $(SRCFILES)
-	./wmmltohtml2 <tutorial.wmml html tutorial
+	$(pike) ./wmmltohtml2 <tutorial.wmml html tutorial
 
 tutorial_onepage.html: .DUMMY  $(SRCFILES)
-	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
+	$(pike) ./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
 tut.html: .DUMMY $(SRCFILES)
-	./wmmltohtml2 <tutorial.wmml sitebuilder tut
+	$(pike) ./wmmltohtml2 <tutorial.wmml sitebuilder tut
 
 manpages: .DUMMY $(SRCFILES)
-	./wmmltohtml2 <tutorial.wmml manpages man/man
+	$(pike) ./wmmltohtml2 <tutorial.wmml manpages man/man
 
 Image.wmml : 
-	(cd ../src/modules/Image; make wmml)
+	(cd ../src/modules/Image; make wmml pike="$(pike)")
+
+Mysql.wmml :
+	$(pike) ../bin/mkwmml.pike ../src/modules/Mysql/mysql.c >Mysql.wmml
 
 the_image_module_onepage.html: Image.wmml the_image_module.wmml
-	./wmmltohtml2 <the_image_module.wmml html_onepage the_image_module_onepage
+	$(pike) ./wmmltohtml2 <the_image_module.wmml html_onepage the_image_module_onepage
 
 the_image_module.html: Image.wmml the_image_module.wmml
-	./wmmltohtml2 <the_image_module.wmml html the_image_module
+	$(pike) ./wmmltohtml2 <the_image_module.wmml html the_image_module
 
 clean:
 	rm *.html *.md illustration_cache illustration*.gif 
