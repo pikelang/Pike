@@ -53,7 +53,7 @@ if test x$# != x0 ; then
     shift
   done
 
-  if test -f /usr/bin/uname && test x`/usr/bin/uname` = xSunOS ; then
+  if test -f /usr/bin/uname && /usr/bin/uname -sr | grep "SunOS 5" >/dev/null 2>&1 ; then
     LDOPTS="$LDOPTS -R$RPATH"
   else
     LD_LIBRARY_PATH="$LDOPTS"
