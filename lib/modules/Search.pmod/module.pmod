@@ -77,12 +77,12 @@ array(string) get_filter_mime_types()
   return indices(filters);
 }
 
-array(mapping) splitter(array(string) text, array(int) context, array(int) offset,
+array(mapping) splitter(array(string) text, array(int) context,
 			function(string:string) post_normalization,
 			function(mapping:int) ranking)
 {
-  if(sizeof(text)!=sizeof(context) ||
-     sizeof(text)!=sizeof(offset) ) return 0;
+  if(sizeof(text)!=sizeof(context))
+    return 0;
 
   array(mapping) result=({});
   for(int i=0; i<sizeof(text); i++)
@@ -97,7 +97,7 @@ array(mapping) splitter(array(string) text, array(int) context, array(int) offse
       if(!sizeof(word)) continue;
       mapping n_word=([ "word":word,
 			"type":context[i],
-			"offset":offset[i]+oldinc,
+			//			"offset":offset[i]+oldinc,
 			// This might be destroyed by pre_normalization
       ]);
       n_word->rank=ranking(n_word);

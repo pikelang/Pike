@@ -25,7 +25,7 @@ class Filter
 {
   array(string) content=({});
   array(int) context=({});
-  array(int) offset=({});
+  //  array(int) offset=({});
 
   string title;
 
@@ -50,7 +50,7 @@ class Filter
       {
 	content+=({ remove_slash(c[counter+1..]) });
 	context+=({ p_con });
-	offset+=({ counter });
+	//	offset+=({ counter });
 	break;
       }
 
@@ -58,7 +58,7 @@ class Filter
       {
 	content+=({ remove_slash(c[counter+1..next-1]) });
 	context+=({ p_con });
-	offset+=({ counter });
+	//	offset+=({ counter });
       }
 
       next++;
@@ -127,7 +127,7 @@ class Filter
 	  {
 	    content+=({ remove_slash(alt) });
 	    context+=({ T_ALT });
-	    offset+=({ next }); // Not true
+	    //	    offset+=({ next }); // Not true
 	  }
 	continue;
       }
@@ -146,14 +146,14 @@ class Filter
 	{
 	  content+=({ remove_slash(cont) });
 	  context+=({ T_DESC });
-	  offset+=({ next }); // Not true
+	  //	  offset+=({ next }); // Not true
 	  continue;
 	}
 	if(name=="keywords")
 	{
 	  content+=({ remove_slash(cont) });
 	  context+=({ T_KEYWORDS });
-	  offset+=({ next }); // Not true
+	  //	  offset+=({ next }); // Not true
 	  continue;
 	}
       }
@@ -164,12 +164,12 @@ class Filter
   {
     content+=({ (c) });
     context+=({ t });
-    offset+=({ offset[-1]+sizeof(content[-1]) });
+    //    offset+=({ offset[-1]+sizeof(content[-1]) });
   }
 			    
   array(array) get_filtered_content()
   {
-    return ({ content, context, offset });
+    return ({ content, context });
   }
 
   array get_anchors() { return 0; }

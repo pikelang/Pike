@@ -66,29 +66,29 @@ void insert_page(string uri, string title, string description, int last_changed,
 {
   // Find out our document id
   int doc_id;
-  if( catch( doc_id=(int)db->query(sprintf("SELECT id FROM document "
-					   "WHERE uri='%s'", db->quote(uri)))[0]->id ))
+  if( catch( doc_id=(int)db->query("SELECT id FROM document "
+				   "WHERE uri='%s'", uri)[0]->id ))
     doc_id=0;
 
 
   int new;
   if(!doc_id)
   {
-    db->query(sprintf("INSERT INTO document "
-		      "(uri, title, description, last_changed, size, mime_type)"
-		      " VALUES ('%s', '%s', '%s', %d, %d, %d)",
-		      db->quote(uri), title, description, last_changed, size, mime_type));
+    db->query("INSERT INTO document "
+	      "(uri, title, description, last_changed, size, mime_type)"
+	      " VALUES ('%s', '%s', '%s', %s, %s, %s)",
+	      uri, title, description, last_changed, size, mime_type);
     werror("uri: %O\n",uri);
-    doc_id = (int)db->query("SELECT id FROM document WHERE uri='%s'", db->quote(uri))[0]->id;
+    doc_id = db->master_sql->insert_id();
     new=1;
   }
   else
   {
     // Page was already indexed.
-    db->query(sprintf("UPDATE document SET title='%s', description='%s', "
-		      "last_changed='%d', size='%d', mime_type='%d'",
-		      title, description, last_changed, size, mime_type));
-    db->query(sprintf("DELETE FROM occurance WHERE document_id=%d", doc_id));
+    db->query("UPDATE document SET title='%s', description='%s', "
+	      "last_changed='%s', size='%s', mime_type='%s'",
+	      title, description, last_changed, size, mime_type);
+    db->query("DELETE FROM occurance WHERE document_id=%s", doc_id);
   }
 
   // Add word occurances.
@@ -106,12 +106,12 @@ void insert_page(string uri, string title, string description, int last_changed,
       word_ids[the_word]=word_id;
       array res = db->query("SELECT word FROM word WHERE id="+word_id);
       if(!sizeof(res))
-	db->query(sprintf("INSERT INTO word (id,word) VALUES (%d,'%s')",
-			  word_id, db->quote(the_word)));
+	db->query("INSERT INTO word (id,word) VALUES (%s,'%s')",
+		  word_id, the_word);
     }
-    db->query(sprintf("INSERT INTO occurance (word_id, document_id, word_position, "
-	      "ranking) VALUES (%d, %d, %d, %d)", word_id, doc_id,
-	      word_pos++, word->rank));
+    db->query("INSERT INTO occurance (word_id, document_id, word_position, "
+	      "ranking) VALUES (%s, %s, %s, %s)", word_id, doc_id,
+	      word_pos++, word->rank);
   }
 
 }
@@ -122,8 +122,8 @@ void remove_page(string uri)
   mixed error=catch( doc_id=db->query("SELECT id FROM document WHERE uri='%s'",
 				      db->quote(uri))[0]->id );
   if(error) return;
-  db->query("REMOVE FROM document WHERE id=%d", doc_id);
-  db->query("REMOVE FROM occurence WHERE document_id=%d", doc_id);
+  db->query("REMOVE FROM document WHERE id=%s", doc_id);
+  db->query("REMOVE FROM occurence WHERE document_id=%s", doc_id);
   removed++;
 }
 
@@ -146,7 +146,7 @@ void garbage_collect()
 }
 
 array lookup_word(string word) {
-  array documents=db->query("SELECT * FROM occurance WHERE word_id=%d",
+  array documents=db->query("SELECT * FROM occurance WHERE word_id=%s",
 			    hash_word(word));
   if(sizeof(documents)) return 0;
 
@@ -160,7 +160,7 @@ array lookup_words_or(array(string) words) {
   words=map(words, lambda(string in) {
 		   return "word_id="+hash_word(in);
 		 } );
-  sql += words*" && ";
+  sql += words*" || ";
 
   array documents=db->query(sql);
   if(sizeof(documents)) return 0;
