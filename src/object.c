@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.27 1997/10/17 02:31:40 hubbe Exp $");
+RCSID("$Id: object.c,v 1.28 1997/10/29 11:23:25 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -256,6 +256,10 @@ void destruct_objects_to_destruct(void)
 
   while((o=objects_to_destruct))
   {
+#ifdef DEBUG
+    if(o->refs)
+      fatal("Object to be destructed grew extra references.\n");
+#endif
     /* Link object back to list of objects */
     objects_to_destruct=o->next;
     
@@ -648,6 +652,11 @@ void verify_all_objects(void)
       fp = frame.parent_frame;
     }
   }
+
+  for(o=objects_to_destruct;o;o=o->next)
+    if(o->refs)
+      fatal("Object to be destructed has references.\n");
+
 }
 #endif
 
@@ -832,6 +841,7 @@ void gc_mark_object_as_referenced(struct object *o)
 void gc_check_all_objects(void)
 {
   struct object *o;
+
   for(o=first_object;o;o=o->next)
   {
     if(o->prog)
@@ -845,9 +855,9 @@ void gc_check_all_objects(void)
 	for(d=0;d<in.prog->num_identifiers;d++)
 	{
 	  struct identifier *i=in.prog->identifiers+d;
-
+	  
 	  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags)) continue;
-	
+	  
 	  if(i->run_time_type == T_MIXED)
 	  {
 	    debug_gc_check_svalues((struct svalue *)(base+i->func.offset),1, T_OBJECT, o);
