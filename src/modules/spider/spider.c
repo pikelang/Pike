@@ -307,7 +307,10 @@ void f_parse_html(INT32 args)
     return;
   }
 
-  sp[-args].type=T_INT;
+  ss->refs++;
+#if 0
+  sp[-args].type=T_INT;		/* ???? */
+#endif /* 0 */
 
   single=sp[1-args].u.mapping; 
   cont=sp[2-args].u.mapping; 
@@ -514,13 +517,19 @@ INLINE int tagsequal(char *s, char *t, int len, char *end)
 {
   if(s+len >= end)  return 0;
 
-  if(s[len] != '>' && s[len] != ' ')
-    return 0;
-
   while(len--) if(tolower(*(t++)) != tolower(*(s++)))
     return 0;
 
-  return 1;
+  switch(*s) {
+  case '>':
+  case ' ':
+  case '\t':
+  case '\n':
+  case '\r':
+    return 1;
+  default:
+    return 0;
+  }
 }
 
 int find_endtag(struct pike_string *tag, char *s, int len, int *aftertag)
@@ -534,6 +543,7 @@ int find_endtag(struct pike_string *tag, char *s, int len, int *aftertag)
     for (; i<len && s[i]!='<'; i++);
     if (i>=len) break;
     j=i++;
+    for(; i<len && (s[i]==' ' || s[i]=='\t' || s[i]=='\n' || s[i]=='\r'); i++);
     if (i>=len) break;
     if (s[i]=='/')
     {
