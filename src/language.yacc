@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.292 2002/08/27 12:38:57 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.293 2002/09/15 22:42:16 marcus Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2982,7 +2982,7 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
-  statements end_block
+  statements end_block expected_semicolon
   {
     struct pike_type *type;
     char buf[40];

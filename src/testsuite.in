@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.535 2002/09/07 01:03:19 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.536 2002/09/15 22:42:16 marcus Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2673,9 +2673,16 @@ test_any([[
 test_any([[
    int x=1;
    void for10(function f) { for(int e=0;e<10;e++) f(); };
-   for10() { x++; }
+   for10() { x++; };
    return x;
 ]], 11)
+
+test_compile_error([[
+   int x=1;
+   void for10(function f) { for(int e=0;e<10;e++) f(); };
+   for10() { x++; }
+   return x;
+]])
 
 test_any([[
   int x;
