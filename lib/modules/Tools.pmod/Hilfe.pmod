@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.41 2002/03/14 14:02:27 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.42 2002/03/14 14:19:18 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -1121,7 +1121,6 @@ class Evaluator {
 	  !trace->is_cpp_error && !trace->is_compilation_error) {
 	// Errors thrown directly by cpp() and compile() are normally not
 	// interesting; they've already been reported to compile_error.
-	errors += "Compiler Exception: " + describe_backtrace (trace);
 	catch {
 	  trace = ({trace[0], trace[1][stack_level + 1..]});
 	  if (trace[1][0][0] == "Optimizer")
@@ -1129,6 +1128,7 @@ class Evaluator {
 	    // somewhat odd frame "Optimizer:0 0()" at the top.
 	    trace[1] = trace[1][1..];
 	};
+	errors += "Compiler Exception: " + describe_backtrace (trace);
       }
       return 1;
     }
