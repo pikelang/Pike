@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.13 2002/12/14 03:36:55 nilsson Exp $
+# $Id: xenofarm.sh,v 1.14 2005/03/18 19:28:01 grubba Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -25,7 +25,7 @@ log_end() {
 
 xenofarm_build() {
   log_start compile
-  $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
+  $MAKE $MAKE_FLAGS "CONFIGUREARGS=$CONFIGUREARGS" >build/xenofarm/compilelog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
 }
