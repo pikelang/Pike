@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.35 1997/09/08 03:54:10 grubba Exp $");
+RCSID("$Id: threads.c,v 1.36 1997/09/08 19:36:53 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -14,11 +14,10 @@ int threads_disabled = 0;
 #include "constants.h"
 #include "program.h"
 
-
 struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
 
-MUTEX_T interpreter_lock /*= PTHREAD_MUTEX_INITIALIZER*/;
+MUTEX_T interpreter_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 #ifdef POSIX_THREADS
@@ -46,15 +45,17 @@ void *new_thread_func(void * data)
   JMP_BUF back;
   INT32 tmp;
 
+  THREADS_FPRINTF((stderr,"THREADS_DISALLOW() Thread %08x created...\n",
+		   (unsigned int)arg.id));
+  
   if((tmp=mt_lock( & interpreter_lock)))
     fatal("Failed to lock interpreter, errno %d\n",tmp);
-  THREADS_FPRINTF((stderr,"THREADS_DISALLOW() Thread created...\n"));
-  SWAP_OUT_THREAD(((struct thread_state *)thread_id->storage));
   init_interpreter();
   thread_id=arg.id;
   SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
   ((struct thread_state *)thread_id->storage)->swapped=0;
 
+  THREADS_FPRINTF((stderr,"THREAD %08x INITED\n",(unsigned int)thread_id));
   if(SETJMP(back))
   {
     ONERROR tmp;
@@ -75,18 +76,18 @@ void *new_thread_func(void * data)
   UNSETJMP(back);
 
   destruct(thread_id);
+  THREADS_FPRINTF((stderr,"THREADS_ALLOW() Thread %08x done\n",
+		   (unsigned int)thread_id));
 
   free_object(thread_id);
   thread_id=0;
-
   cleanup_interpret();
   num_threads--;
-  if(!num_threads)
+  if(!num_threads && threads_evaluator_callback)
   {
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
-  THREADS_FPRINTF((stderr,"THREADS_ALLOW() Thread done\n"));
   mt_unlock(& interpreter_lock);
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
@@ -112,7 +113,7 @@ void f_thread_create(INT32 args)
   {
     num_threads++;
 
-    if(num_threads == 1 && !threads_evaluator_callback)
+    if(!threads_evaluator_callback)
     {
       threads_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						 check_threads, 0,0);
@@ -123,11 +124,12 @@ void f_thread_create(INT32 args)
 #endif
     push_object(arg->id);
     arg->id->refs++;
+    THREADS_FPRINTF((stderr,"THREAD_CREATE -> t:%08x\n",(unsigned int)arg->id));
   } else {
     free_object(arg->id);
     free_array(arg->args);
     free((char *)arg);
-    push_int(0);
+    error("Failed to create thread.\n");
   }
 }
 
@@ -162,7 +164,6 @@ void f_this_thread(INT32 args)
 struct mutex_storage
 {
   COND_T condition;
-  MUTEX_T kludge;
   struct object *key;
 };
 
@@ -172,8 +173,6 @@ struct key_storage
   struct object *owner;
   int initialized;
 };
-
-static MUTEX_T mutex_kluge/* = PTHREAD_MUTEX_INITIALIZER*/;
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
@@ -188,26 +187,30 @@ void f_mutex_lock(INT32 args)
    * might use threads.
    */
   o=clone_object(mutex_key,0);
-  mt_lock(& m->kludge);
-  if(m->key && OB2KEY(m->key)->owner == thread_id)
+  if(!args && IS_ZERO(sp-args))
   {
-    THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
-		     (unsigned int)OB2KEY(m->key),
-		     (unsigned int)m,
-		     (unsigned int)OB2KEY(m->key)->mut,
-		     (unsigned int) thread_id));
-    mt_unlock(& m->kludge);
-    free_object(o);
-    error("Recursive mutex locks!\n");
+    if(m->key && OB2KEY(m->key)->owner == thread_id)
+    {
+      THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+		       (unsigned int)OB2KEY(m->key),
+		       (unsigned int)m,
+		       (unsigned int)OB2KEY(m->key)->mut,
+		       (unsigned int) thread_id));
+      free_object(o);
+      error("Recursive mutex locks!\n");
+    }
   }
 
-  THREADS_ALLOW();
-  while(m->key) co_wait(& m->condition, & m->kludge);
+  SWAP_OUT_CURRENT_THREAD();
+  while(m->key)
+  {
+    THREADS_FPRINTF((stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
+    co_wait(& m->condition, & interpreter_lock);
+  }
+  SWAP_IN_CURRENT_THREAD();
   m->key=o;
   OB2KEY(o)->mut=m;
-  
-  mt_unlock(&m->kludge);
-  THREADS_DISALLOW();
+
   THREADS_FPRINTF((stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		   (unsigned int)OB2KEY(o),
 		   (unsigned int)m,
@@ -226,17 +229,17 @@ void f_mutex_trylock(INT32 args)
   o=clone_object(mutex_key,0);
   m=THIS_MUTEX;
 
-
   /* No reason to release the interpreter lock here
    * since we aren't calling any functions that take time.
    */
 
-  mt_lock(& m->kludge);
-  if(m->key && OB2KEY(m->key)->owner == thread_id)
+  if(!args || IS_ZERO(sp-args))
   {
-    mt_unlock(&m->kludge);
-    free_object(o);
-    error("Recursive mutex locks!\n");
+    if(m->key && OB2KEY(m->key)->owner == thread_id)
+    {
+      free_object(o);
+      error("Recursive mutex locks!\n");
+    }
   }
   if(!m->key)
   {
@@ -244,7 +247,6 @@ void f_mutex_trylock(INT32 args)
     m->key=o;
     i=1;
   }
-  mt_unlock(&m->kludge);
   
   if(i)
   {
@@ -259,16 +261,15 @@ void f_mutex_trylock(INT32 args)
 void init_mutex_obj(struct object *o)
 {
   co_init(& THIS_MUTEX->condition);
-  mt_init(& THIS_MUTEX->kludge);
   THIS_MUTEX->key=0;
 }
 
 void exit_mutex_obj(struct object *o)
 {
+  THREADS_FPRINTF((stderr,"DESTROYING MUTEX m:%08x\n",(unsigned int)THIS_MUTEX));
   if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
   THIS_MUTEX->key=0;
   co_destroy(& THIS_MUTEX->condition);
-  mt_destroy(& THIS_MUTEX->kludge);
 }
 
 #define THIS_KEY ((struct key_storage *)(fp->current_storage))
@@ -292,7 +293,6 @@ void exit_mutex_key_obj(struct object *o)
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
-    mt_lock(& mut->kludge);
 #ifdef DEBUG
     if(mut->key != o)
       fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
@@ -305,7 +305,6 @@ void exit_mutex_key_obj(struct object *o)
     co_signal(& mut->condition);
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
-    mt_unlock(& mut->kludge);
   }
 }
 
@@ -334,32 +333,28 @@ void f_cond_wait(INT32 args)
     mut=OB2KEY(key)->mut;
     if(!mut) error("Bad argument 1 to condition->wait()\n");
 
-    mt_lock(&mut->kludge);
-    THREADS_ALLOW();
     /* Unlock mutex */
     mut->key=0;
     OB2KEY(key)->mut=0;
     co_signal(& mut->condition);
     
     /* Wait and allow mutex operations */
-    co_wait(c, &mut->kludge);
+    SWAP_OUT_CURRENT_THREAD();
+    co_wait(c, &interpreter_lock);
     
     if(OB2KEY(key)->initialized)
     {
       /* Lock mutex */
-      while(mut->key) co_wait(& mut->condition, &mut->kludge);
+      while(mut->key) co_wait(& mut->condition, &interpreter_lock);
       mut->key=key;
       OB2KEY(key)->mut=mut;
     }
-    mt_unlock(&mut->kludge);
-    THREADS_DISALLOW();
+    SWAP_IN_CURRENT_THREAD();
     pop_stack();
   } else {
-    THREADS_ALLOW();
-    mt_lock(&mutex_kluge);
-    co_wait(c, &mutex_kluge);
-    mt_unlock(&mutex_kluge);
-    THREADS_DISALLOW();
+    SWAP_OUT_CURRENT_THREAD();
+    co_wait(c, &interpreter_lock);
+    SWAP_IN_CURRENT_THREAD();
   }
 }
 
@@ -409,7 +404,6 @@ void th_init(void)
   THREADS_FPRINTF((stderr, "THREADS_DISALLOW() Initializing threads.\n"));
   mt_init( & interpreter_lock);
   mt_lock( & interpreter_lock);
-  mt_init( & mutex_kluge);
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
@@ -429,8 +423,8 @@ void th_init(void)
 
   start_new_program();
   add_storage(sizeof(struct mutex_storage));
-  add_function("lock",f_mutex_lock,"function(:object)",0);
-  add_function("trylock",f_mutex_trylock,"function(:object)",0);
+  add_function("lock",f_mutex_lock,"function(int|void:object)",0);
+  add_function("trylock",f_mutex_trylock,"function(int|void:object)",0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
