@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.22 1998/10/14 08:18:17 neotron Exp $
+ * $Id: stralloc.h,v 1.23 1998/10/21 19:47:41 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -276,6 +276,6 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
 #define begin_wide_shared_string debug_begin_wide_shared_string
 #endif
 
-#undef CONVERT(X,Y,Z)
+#undef CONVERT
 
 #endif /* STRALLOC_H */

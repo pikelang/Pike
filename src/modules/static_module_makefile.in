@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.37 1998/09/20 08:30:42 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.38 1998/10/21 19:54:44 hubbe Exp $
 #
 
 
@@ -7,6 +7,8 @@ CC=@CC@
 CPP=@CPP@
 AR=@AR@
 PIKE_SRC_DIR=$(SRCDIR)/../..
+BUILD_BASE=../..
+MODULE_BASE=..
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
