@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.138 2004/06/29 11:19:19 nilsson Exp $
+|| $Id: cpp.c,v 1.139 2004/06/29 16:58:07 grubba Exp $
 */
 
 #include "global.h"
@@ -33,11 +33,11 @@
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
-#define CPP_NO_OUTPUT 1
-#define CPP_EXPECT_ELSE 2
-#define CPP_EXPECT_ENDIF 4
-#define CPP_REALLY_NO_OUTPUT 8
-#define CPP_END_AT_NEWLINE 16
+#define CPP_NO_OUTPUT 1		/* Inside false section of #if/#else */
+#define CPP_EXPECT_ELSE 2	/* Expect #else/#elif/#elseif. */
+#define CPP_EXPECT_ENDIF 4	/* Expect #endif */
+#define CPP_REALLY_NO_OUTPUT 8	/* Entire preprocessor is in false section. */
+#define CPP_END_AT_NEWLINE 16	/* Halt at end of line. */
 #define CPP_DO_IF 32
 #define CPP_NO_EXPAND 64
 
@@ -53,6 +53,11 @@
 #define DEF_ARG_NOPOSTSPACE 0x400000
 #define DEF_ARG_MASK        0x0fffff
 
+#if 0
+#define CALC_DUMPPOS(X)	DUMPPOS(X)
+#else /* !0 */
+#define CALC_DUMPPOS(X)
+#endif /* 0 */
 
 struct pike_predef_s
 {
@@ -115,7 +120,9 @@ struct cpp
 };
 
 struct define *defined_macro =0;
-struct define *constant_macro =0;
+
+static struct pike_string *binary_findstring1(p_wchar1 *str, ptrdiff_t len);
+static struct pike_string *binary_findstring2(p_wchar2 *str, ptrdiff_t len);
 
 static void cpp_error(struct cpp *this, const char *err)
 {
@@ -370,6 +377,8 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
 /*! @endclass
  */
 
+/* #pike handling. */
+
 void cpp_change_compat(struct cpp *this, int major, int minor)
 {
   if(this->compat_major == major &&
@@ -400,6 +409,192 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   this->compat_major=major;
   this->compat_minor=minor;
 }
+
+/* #if macros and functions. */
+
+static void check_defined(struct cpp *this,
+			  struct define *def,
+			  struct define_argument *args,
+			  struct string_builder *tmp)
+{
+  struct pike_string *s = NULL;
+  switch(args[0].arg.shift) {
+  case 0:
+    s=binary_findstring((char *)args[0].arg.ptr, args[0].len);
+    break;
+  case 1:
+    s = binary_findstring1((p_wchar1 *)args[0].arg.ptr, args[0].len);
+    break;
+  case 2:
+    s = binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
+    break;
+  default:
+    Pike_fatal("cpp(): Symbol has unsupported shift: %d\n", args[0].arg.shift);
+    break;
+  }
+  if(s && find_define(s))
+  {
+    string_builder_binary_strcat(tmp, " 1 ", 3);
+  }else{
+    string_builder_binary_strcat(tmp, " 0 ", 3);
+  }
+}
+
+static int do_safe_index_call(struct cpp *this, struct pike_string *s)
+{
+  int res;
+  JMP_BUF recovery;
+  if(!s) return 0;
+
+  if (SETJMP_SP(recovery, 1)) {
+    if (CPP_TEST_COMPAT (this, 7, 4)) {
+      free_svalue (&throw_value);
+      throw_value.type = T_INT;
+    }
+    else {
+      if (!s->size_shift)
+	cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
+      else
+	cpp_handle_exception (this, "Error indexing module in '.' operator.");
+    }
+    res = 0;
+    push_undefined();
+  } else {
+    ref_push_string(s);
+    f_index(2);
+    
+    res=!(UNSAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+  }
+  UNSETJMP(recovery);
+  return res;
+}
+
+void cpp_func_constant(struct cpp *this, INT32 args)
+{
+  struct svalue *save_stack=sp;
+  struct array *arr;
+  int res = 0;
+  int n;
+
+  if (args != 1) {
+    cpp_error(this, "Bad number of arguments to constant().");
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+#ifdef PIKE_DEBUG
+  if (Pike_sp[-1].type != T_STRING) {
+    Pike_fatal("Bad argument 1 to constant(): %s (expected string).\n",
+	       get_name_of_type(Pike_sp[-1].type));
+  }
+#endif /* PIKE_DEBUG */
+  /* FIXME: Protection against errors. */
+  /* Remove extra whitespace. */
+  push_constant_text(" ");
+  o_subtract();
+  push_constant_text("\t");
+  o_subtract();
+  /* Split on . */
+  push_constant_text(".");
+  o_divide();
+#ifdef PIKE_DEBUG
+  if (Pike_sp[-1].type != T_ARRAY) {
+    Pike_fatal("Bad result from division in constant(): %s "
+	       "(expected array(string)).\n",
+	       get_name_of_type(Pike_sp[-1].type));
+  }
+#endif /* PIKE_DEBUG */
+  arr = Pike_sp[-1].u.array;
+#ifdef PIKE_DEBUG
+  if (!arr->size) {
+    Pike_fatal("Got an empty array from division in constant().\n");
+  }
+  if ((arr->type_field & ~BIT_STRING) &&
+      (array_fix_type_field(arr) & ~BIT_STRING)) {
+    Pike_fatal("Bad result from division in constant(): type_field: 0x%08x "
+	       "(expected array(string)).\n",
+	       arr->type_field & ~BIT_STRING);
+  }
+#endif /* PIKE_DEBUG */
+
+  if (arr->item[0].u.string->len) {
+    struct pike_string *str = arr->item[0].u.string;
+    struct svalue *sv;
+    if((sv=low_mapping_string_lookup(get_builtin_constants(), str)))
+    {
+      /* efun */
+      push_svalue(sv);
+      res=1;
+    } else if(get_master()) {
+      /* Module. */
+      ref_push_string(str);
+      ref_push_string(this->current_file);
+      if (this->handler) {
+	ref_push_object(this->handler);
+      } else {
+	push_int(0);
+      }
+
+      if (safe_apply_handler("resolv", this->handler,
+			     this->compat_handler, 3, 0)) {
+	if ((Pike_sp[-1].type == T_OBJECT &&
+	     Pike_sp[-1].u.object == placeholder_object) ||
+	    (Pike_sp[-1].type == T_PROGRAM &&
+	     Pike_sp[-1].u.program == placeholder_program)) {
+	  if (!str->size_shift) {
+	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
+			       "when resolving '%s'.",
+			       get_name_of_type(Pike_sp[-1].type),
+			       str->str);
+	  }
+	  else
+	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem).",
+			       get_name_of_type (Pike_sp[-1].type));
+	}
+	else
+	  res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+      }
+      else if (throw_value.type == T_STRING &&
+	       !throw_value.u.string->size_shift) {
+	cpp_error(this, throw_value.u.string->str);
+	free_svalue(&throw_value);
+	throw_value.type = T_INT;
+	res = 0;
+      } else if (!str->size_shift) {
+	cpp_handle_exception (this, "Error resolving '%s'.", str->str);
+      } else {
+	cpp_handle_exception (this, "Error resolving identifier.");
+      }
+    }
+  } else {
+    /* Handle constant(.foo) */
+    push_constant_text(".");
+    ref_push_string(this->current_file);
+
+    if (this->handler) {
+      ref_push_object(this->handler);
+    } else {
+      push_int(0);
+    }
+
+    if (safe_apply_handler("handle_import", this->handler,
+			   this->compat_handler, 3,
+			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
+      res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+    else {
+      cpp_handle_exception (this, "Error importing '.'.");
+    }
+  }
+
+  for (n = 1; res && (n < arr->size); n++) {
+    res = do_safe_index_call(this, arr->item[n].u.string);
+  }
+
+  pop_n_elems(args + sp - save_stack);
+  push_int(res);
+}
+
+/* Macro handling. */
 
 static struct mapping *initial_predefs_mapping()
 {
@@ -1297,273 +1492,6 @@ static void insert_current_major(struct cpp *this,
 }
 
 
-static void check_defined(struct cpp *this,
-			  struct define *def,
-			  struct define_argument *args,
-			  struct string_builder *tmp)
-{
-  struct pike_string *s = NULL;
-  switch(args[0].arg.shift) {
-  case 0:
-    s=binary_findstring((char *)args[0].arg.ptr, args[0].len);
-    break;
-  case 1:
-    s=binary_findstring1((p_wchar1 *)args[0].arg.ptr, args[0].len);
-    break;
-  case 2:
-    s=binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
-    break;
-  default:
-    Pike_fatal("cpp(): Symbol has unsupported shift: %d\n", args[0].arg.shift);
-    break;
-  }
-  if(s && find_define(s))
-  {
-    string_builder_binary_strcat(tmp, " 1 ", 3);
-  }else{
-    string_builder_binary_strcat(tmp, " 0 ", 3);
-  }
-}
-
-static int do_safe_index_call(struct cpp *this, struct pike_string *s);
-
-static void check_constant(struct cpp *this,
-			  struct define *def,
-			  struct define_argument *args,
-			  struct string_builder *tmp)
-{
-  struct svalue *save_stack=sp;
-  struct svalue *sv;
-  PCHARP data=args[0].arg;
-  int res;
-  ptrdiff_t dlen,len=args[0].len;
-  struct pike_string *s;
-  int c;
-
-  while(len && ((c = EXTRACT_PCHARP(data))< 256) && isspace(c)) {
-    INC_PCHARP(data, 1);
-    len--;
-  }
-
-  if(!len)
-    cpp_error(this,"#if constant() with empty argument.\n");
-
-  for(dlen=0;dlen<len;dlen++)
-    if(!isidchar(INDEX_PCHARP(data, dlen)))
-      break;
-
-  if(dlen)
-  {
-    s = begin_wide_shared_string(dlen, data.shift);
-    MEMCPY(s->str, data.ptr, dlen<<data.shift);
-    push_string(end_shared_string(s));
-#ifdef PIKE_DEBUG
-    s = NULL;
-#endif /* PIKE_DEBUG */
-    if((sv=low_mapping_string_lookup(get_builtin_constants(),
-				     sp[-1].u.string)))
-    {
-      pop_stack();
-      push_svalue(sv);
-      res=1;
-    }else if(get_master()) {
-      ref_push_string(this->current_file);
-      if (this->handler) {
-	ref_push_object(this->handler);
-      } else {
-	push_int(0);
-      }
-
-      if (safe_apply_handler("resolv", this->handler,
-			     this->compat_handler, 3, 0)) {
-	if ((Pike_sp[-1].type == T_OBJECT &&
-	     Pike_sp[-1].u.object == placeholder_object) ||
-	    (Pike_sp[-1].type == T_PROGRAM &&
-	     Pike_sp[-1].u.program == placeholder_program)) {
-	  if (!data.shift) {
-	    char *str = malloc(dlen + 1);
-	    MEMCPY(str, data.ptr, dlen);
-	    str[dlen] = 0;
-	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
-			       "when resolving \"%s\".",
-			       get_name_of_type (Pike_sp[-1].type), str);
-	    free (str);
-	  }
-	  else
-	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem).",
-			       get_name_of_type (Pike_sp[-1].type));
-	  res = 0;
-	}
-	else
-	  res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
-      }
-      else {
-	if (throw_value.type == T_STRING) {
-	  cpp_error_sprintf(this, "%S", throw_value.u.string);
-	  free_svalue(&throw_value);
-	  throw_value.type = T_INT;
-	  res = 0;
-	}
-	else if(this->warn_if_constant_throws) {
-	  if (!data.shift) {
-	    char *str = malloc(dlen + 1);
-	    MEMCPY(str, data.ptr, dlen);
-	    str[dlen] = 0;
-	    cpp_warning (this, "Error resolving \"%s\".", str);
-	    free(str);
-	  }
-	  else
-	    cpp_warning (this, "Error resolving identifier.");
-	  res = 0;
-	}
-      }
-    }else{
-      res=0;
-    }
-  }else{
-    /* Handle constant(.foo) */
-    push_text(".");
-    ref_push_string(this->current_file);
-
-    if (this->handler) {
-      ref_push_object(this->handler);
-    } else {
-      push_int(0);
-    }
-
-    if (safe_apply_handler("handle_import", this->handler,
-			   this->compat_handler, 3,
-			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
-      res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
-    else {
-      cpp_handle_exception (this, "Error importing \".\".");
-      res = 0;
-    }
-  }
-
-  while(1)
-  {
-    INC_PCHARP(data, dlen);
-    len-=dlen;
-  
-    while(len && ((c = EXTRACT_PCHARP(data)) < 256) && isspace(c)) {
-      INC_PCHARP(data, 1);
-      len--;
-    }
-
-    if(!len) break;
-
-    if(EXTRACT_PCHARP(data) == '.')
-    {
-      INC_PCHARP(data, 1);
-      len--;
-      
-      while(len && ((c = EXTRACT_PCHARP(data)) < 256) && isspace(c)) {
-	INC_PCHARP(data, 1);
-	len--;
-      }
-
-      if (INDEX_PCHARP(data, 0) == '`') {
-	/* LFUN */
-	for(dlen=0; dlen<len; dlen++) {
-	  int c;
-	  if ((c = INDEX_PCHARP(data, dlen)) != '`') {
-	    switch(c) {
-	    case '/': case '%': case '*': case '&':
-	    case '|': case '^': case '~':
-	      dlen++;
-	      break;
-	    case '+':
-	      if ((++dlen < len) && INDEX_PCHARP(data, dlen) == '=')
-		dlen++;
-	      break;
-	    case '-':
-	      if ((++dlen < len) && INDEX_PCHARP(data, dlen) == '>') {
-		dlen++;
-	      }
-	      break;
-	    case '>': case '<': case '!': case '=':
-	      {
-		/* We get a false match for the operator `!!, but that's ok. */
-		int c2;
-		if ((++dlen < len) &&
-		    (((c2 = INDEX_PCHARP(data, dlen)) == c) || (c2 == '='))) {
-		  dlen++;
-		}
-	      }
-	      break;
-	    case '(':
-	      if ((++dlen < len) && INDEX_PCHARP(data, dlen) == ')') {
-		dlen++;
-	      } else {
-		cpp_error(this, "Expected `().\n");
-	      }
-	      break;
-	    case '[':
-	      if ((++dlen < len) && INDEX_PCHARP(data, ++dlen) == ']') {
-		dlen++;
-	      } else {
-		cpp_error(this, "Expected `[].\n");
-	      }
-	      break;
-	    default:
-	      cpp_error(this, "Unrecognized ` identifier.\n");
-	      break;
-	    }
-	    break;
-	  }
-	}
-      } else {
-  	for(dlen=0; dlen<len; dlen++)
-  	  if(!isidchar(INDEX_PCHARP(data, dlen)))
-  	    break;
-      }
-
-      if(res)
-      {
-        struct pike_string *s = begin_wide_shared_string(dlen, data.shift);
-	MEMCPY(s->str, data.ptr, dlen<<data.shift);
-	s = end_shared_string(s);
-	res=do_safe_index_call(this, s);
-	free_string(s);
-      }
-    }else{
-      cpp_error(this, "Garbage characters in constant()\n");
-    }
-  }
-
-  pop_n_elems(sp-save_stack);
-
-  string_builder_binary_strcat(tmp, res?" 1 ":" 0 ", 3);
-}
-
-
-static int do_safe_index_call(struct cpp *this, struct pike_string *s)
-{
-  int res;
-  JMP_BUF recovery;
-  if(!s) return 0;
-
-  if (SETJMP_SP(recovery, 1)) {
-    if (CPP_TEST_COMPAT (this, 7, 4)) {
-      free_svalue (&throw_value);
-      throw_value.type = T_INT;
-    }
-    else if(this->warn_if_constant_throws) {
-	cpp_warning (this, "Error indexing module with %S.", s);
-    }
-    res = 0;
-    push_undefined();
-  } else {
-    ref_push_string(s);
-    f_index(2);
-    
-    res=!(UNSAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
-  }
-  UNSETJMP(recovery);
-  return res;
-}
-
 /*! @namespace predef:: */
 /*! @decl import cpp:: */
 /*! @endnamespace */
@@ -1984,10 +1912,6 @@ void init_cpp()
   defined_macro=alloc_empty_define(make_shared_string("defined"),0);
   defined_macro->magic=check_defined;
   defined_macro->args=1;
-
-  constant_macro=alloc_empty_define(make_shared_string("constant"),0);
-  constant_macro->magic=check_constant;
-  constant_macro->args=1;
 
   use_initial_predefs = 1;
 
