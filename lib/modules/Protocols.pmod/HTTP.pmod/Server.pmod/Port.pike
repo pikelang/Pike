@@ -21,9 +21,9 @@ void create(function(Request:void) _callback,
 	    void|int _portno,
 	    void|string _interface)
 {
+   portno=_portno;
    if (!portno) portno=80; // default HTTP port
 
-   portno=_portno;
    callback=_callback;
    interface=_interface;
 

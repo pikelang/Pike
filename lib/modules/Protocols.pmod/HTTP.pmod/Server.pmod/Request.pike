@@ -37,8 +37,6 @@ static void read_cb(mixed dummy,string s)
    array v=headerparser->feed(s);
    if (v)
    {
-      werror("headerparser says: %O\n",v);
-
       destruct(headerparser);
       headerparser=0;
 
@@ -131,7 +129,7 @@ static void read_cb_post(mixed dummy,string s)
 
 static void close_cb()
 {
-   werror("close\n");
+// closed by peer before request read
 }
 
 string _sprintf(int t)
@@ -176,8 +174,6 @@ string make_response_header(mapping m)
    if (!m->stat && m->file)
       m->stat=m->file->stat();
 
-   werror("%O\n",m);
-   
    if (m->modified)
       res+=({"Last-Modified: "+http_date(m->modified)});
    else if (m->stat)
@@ -239,7 +235,6 @@ void response_and_finish(mapping m)
    send_pos=0;
    my_fd->set_nonblocking(0,send_write,send_close);
 
-   werror("hmm: %O\n",m->file);
    m->file->read(1);
 
    if (m->file)
