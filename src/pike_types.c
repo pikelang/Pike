@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.156 2001/03/03 21:12:24 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.157 2001/03/03 21:18:19 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -32,6 +32,17 @@ RCSID("$Id: pike_types.c,v 1.156 2001/03/03 21:12:24 grubba Exp $");
 #endif /* PIKE_DEBUG */
 
 int max_correct_args;
+
+#ifdef PIKE_DEBUG
+void TYPE_STACK_DEBUG(const char *fun)
+{
+#if 0
+  fprintf(stderr, "%25s(): stack_depth:%ld   mark_stack_depth:%ld\n",
+	  fun, (long)(Pike_compiler->type_stackp - type_stack),
+	  (long)(Pike_compiler->pike_type_mark_stackp - pike_type_mark_stack));
+#endif /* 0 */
+}
+#endif /* PIKE_DEBUG */
 
 static void internal_parse_type(char **s);
 static ptrdiff_t type_length(char *t);
