@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.149 2002/06/11 17:12:52 mast Exp $
+// $Id: module.pmod,v 1.150 2002/06/23 20:56:28 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -488,7 +488,7 @@ class File
   //! @decl void create(int fd, string mode)
   //!
   //! There are four basic ways to create a Stdio.File object.
-  //! The first is calling it without any arguments, in which case the you
+  //! The first is calling it without any arguments, in which case the you'd
   //! have to call @[open()], @[connect()] or some other method which connects
   //! the File object with a stream.
   //!
