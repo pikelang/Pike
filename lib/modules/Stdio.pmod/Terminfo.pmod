@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.11 2000/09/28 03:39:13 hubbe Exp $
+// $Id: Terminfo.pmod,v 1.12 2001/10/23 20:10:12 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -143,13 +143,17 @@ static private class TermMachine {
 
 }
 
+//! Termcap terminal description object.
 class Termcap {
 
   inherit TermMachine;
 
+  //!
   array(string) aliases;
+
   static object(Termcap) parent;
 
+  //! Put termcap string
   string tputs(string s)
   {
     // Delay stuff completely ignored...
@@ -245,6 +249,7 @@ class Termcap {
     return clears;
   }
 
+  //!
   void create(string cap, object(TermcapDB)|void tcdb, int|void maxrecurse)
   {
     int i=0;
@@ -269,11 +274,12 @@ class Termcap {
 }
 
 
-
+//! Terminfo terminal description object
 class Terminfo {
 
   inherit TermMachine;
 
+  //!
   array(string) aliases;
 
   static private constant boolnames =
@@ -315,6 +321,8 @@ class Terminfo {
      "S1","S2","S3","S4","S5","S6","S7","S8","Xh","Xl","Xo","Xr","Xt","Xv",
      "sA","sL" });
 
+  //! @fixme
+  //!  Document this function
   string tputs(string s)
   {
     // Delay stuff completely ignored...
@@ -386,6 +394,7 @@ class Terminfo {
     return 1;
   }
 
+  //!
   void create(string filename)
   {
     object(Stdio.File) f = Stdio.File();
@@ -743,18 +752,37 @@ object(TerminfoDB) defaultTerminfoDB()
   return tidb;
 }
 
+//! Returns the terminal description object for @[term] from the
+//! systems termcap database. Returns 0 if not found.
+//!
+//! @seealso
+//!  Stdio.Terminfo.getTerm, Stdio.Terminfo.getTerminfo
 object(Termcap) getTermcap(string term)
 {
   object(TermcapDB) tcdb = defaultTermcapDB();
   return tcdb && tcdb[term];
 }
 
+//! Returns the terminal description object for @[term] from the
+//! systems terminfo database. Returns 0 if not found.
+//!
+//! @seealso
+//!  Stdio.Terminfo.getTerm, Stdio.Terminfo.getTermcap
 object(Terminfo) getTerminfo(string term)
 {
   object(TerminfoDB) tidb = defaultTerminfoDB();
   return tidb && tidb[term];
 }
 
+//! Returns an object describing the terminal term. If term is not specified, it will
+//! default to @[getenv("TERM")] or if that fails to "dumb".
+//!
+//! Lookup of terminal information will first be done in the systems terminfo
+//! database, and if that fails in the termcap database. If neither database exists, a
+//! hardcoded entry for "dumb" will be used.
+//!
+//! @seealso
+//!  Stdio.Terminfo.getTerminfo, Stdio.Terminfo.getTermcap, Stdio.getFallbackTerm
 object(Termcap) getTerm(string|void term)
 {
   if (!term) {
@@ -774,6 +802,11 @@ object(Termcap) getTerm(string|void term)
   return getTerminfo(term) || getTermcap(term) || getFallbackTerm(term);
 }
 
+//! Returns an object describing the fallback terminal for the terminal
+//! @[term]. This is usually equvivalent to @[Stdio.Terminfo.getTerm("dumb")].
+//!
+//! @seealso
+//!  Stdio.Terminfo.getTerm
 static object(Termcap) getFallbackTerm(string term)
 {
   return (term=="dumb"? Termcap("dumb:\\\n\t:am:co#80:do=^J:") :

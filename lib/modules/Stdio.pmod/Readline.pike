@@ -1,5 +1,6 @@
-// $Id: Readline.pike,v 1.39 2000/10/10 19:58:24 hubbe Exp $
+// $Id: Readline.pike,v 1.40 2001/10/23 20:10:12 nilsson Exp $
 #pike __REAL_VERSION__
+
 class OutputController
 {
   static private object(Stdio.File) outfd;
@@ -1094,21 +1095,29 @@ static private int hide = 0;
 static private array(string) kill_ring=({});
 static private int kill_ring_size=30;
 
+//! @fixme
+//!   Document this function
 object(OutputController) get_output_controller()
 {
   return output_controller;
 }
 
+//! @fixme
+//!   Document this function
 object(InputController) get_input_controller()
 {
   return input_controller;
 }
 
+//! @fixme
+//!   Document this function
 string get_prompt()
 {
   return prompt;
 }
 
+//! @fixme
+//!   Document this function
 string set_prompt(string newp, array(string)|void newattrs)
 {
 //  werror("READLINE: Set prompt: %O\n",newp);
@@ -1123,21 +1132,29 @@ string set_prompt(string newp, array(string)|void newattrs)
   return oldp;
 }
 
+//! @fixme
+//!   Document this function
 void set_echo(int onoff)
 {
   hide=!onoff;
 }
 
+//! @fixme
+//!   Document this function
 string gettext()
 {
   return text;
 }
 
+//! @fixme
+//!   Document this function
 int getcursorpos()
 {
   return cursorpos;
 }
 
+//! @fixme
+//!   Document this function
 int setcursorpos(int p)
 {
   if (p<0)
@@ -1159,6 +1176,8 @@ int setcursorpos(int p)
   return cursorpos;
 }
 
+//! @fixme
+//!   Document this function
 int setmark(int p)
 {
   if (p<0)
@@ -1168,11 +1187,15 @@ int setmark(int p)
   mark=p;
 }
 
+//! @fixme
+//!   Document this function
 int getmark()
 {
   return mark;
 }
 
+//! @fixme
+//!   Document this function
 void insert(string s, int p)
 {
   if (p<0)
@@ -1194,6 +1217,8 @@ void insert(string s, int p)
   if (mark>p) mark+=strlen(s);
 }
 
+//! @fixme
+//!   Document this function
 void delete(int p1, int p2)
 {
   if (p1<0)
@@ -1216,6 +1241,8 @@ void delete(int p1, int p2)
   setcursorpos(p1);
 }
 
+//! @fixme
+//!   Document this function
 array(int) pointmark() // returns point and mark in numeric order
 {
    int p1,p2;
@@ -1224,6 +1251,8 @@ array(int) pointmark() // returns point and mark in numeric order
    return ({p1,p2});
 }
 
+//! @fixme
+//!   Document this function
 string region(int ... args) /* p1, p2 or point-mark */
 {
    int p1,p2;
@@ -1232,6 +1261,8 @@ string region(int ... args) /* p1, p2 or point-mark */
    return text[p1..p2-1];
 }
 
+//! @fixme
+//!   Document this function
 void kill(int p1, int p2)
 {
   if (p1<0)
@@ -1244,18 +1275,24 @@ void kill(int p1, int p2)
   delete(p1,p2);
 }
 
+//! @fixme
+//!   Document this function
 void add_to_kill_ring(string s)
 {
    kill_ring+=({s});
    if (sizeof(kill_ring)>kill_ring_size) kill_ring=kill_ring[1..];
 }
 
+//! @fixme
+//!   Document this function
 string kill_ring_yank()
 {
    if (!sizeof(kill_ring)) return "";
    return kill_ring[-1];
 }
 
+//! @fixme
+//!   Document this function
 void history(int n)
 {
   if(historyobj) {
@@ -1265,12 +1302,16 @@ void history(int n)
   }
 }
 
+//! @fixme
+//!   Document this function
 void delta_history(int d)
 {
   if(historyobj)
     history(historyobj->get_history_num()+d);
 }
 
+//! @fixme
+//!   Document this function
 void redisplay(int clear, int|void nobackup)
 {
   int p = cursorpos;
@@ -1297,6 +1338,8 @@ void redisplay(int clear, int|void nobackup)
   setcursorpos(p);
 }
 
+//! @fixme
+//!   Document this function
 static private void initline()
 {
   text = "";
@@ -1305,6 +1348,8 @@ static private void initline()
     historyobj->initline();
 }
 
+//! @fixme
+//!   Document this function
 string newline()
 {
   setcursorpos(sizeof(text));
@@ -1320,6 +1365,8 @@ string newline()
     newline_func(data);
 }
 
+//! @fixme
+//!   Document this function
 void eof()
 {
   if (historyobj)
@@ -1329,7 +1376,8 @@ void eof()
     newline_func(0);    
 }
 
-
+//! @fixme
+//!   Document this function
 void message(string msg)
 {
   int p = cursorpos;
@@ -1343,6 +1391,8 @@ void message(string msg)
   setcursorpos(p);
 }
 
+//! @fixme
+//!   Document this function
 void write(string msg,void|int word_wrap)
 {
   int p = cursorpos;
@@ -1364,6 +1414,8 @@ void write(string msg,void|int word_wrap)
   setcursorpos(p);
 }
 
+//! @fixme
+//!   Document this function
 void list_completions(array(string) c)
 {
   message(sprintf("%-*#s",output_controller->get_number_of_columns(),
@@ -1376,6 +1428,8 @@ static private void read_newline(string s)
   readtext = s;
 }
 
+//! @fixme
+//!   Document this function
 void set_nonblocking(function f)
 {
   int p=cursorpos;
@@ -1398,11 +1452,15 @@ void set_nonblocking(function f)
   }
 }
 
+//! @fixme
+//!   Document this function
 void set_blocking()
 {
   set_nonblocking(0);
 }
 
+//! @fixme
+//!   Document this function
 string edit(string data, string|void local_prompt, array(string)|void attrs)
 {
   if(data && strlen(data) && input_controller->dumb)
@@ -1445,11 +1503,15 @@ string edit(string data, string|void local_prompt, array(string)|void attrs)
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
+//! @fixme
+//!   Document this function
 string read(string|void prompt, array(string)|void attrs)
 {
   return edit("", prompt, attrs);
 }
 
+//! @fixme
+//!   Document this function
 void enable_history(array(string)|object(History)|int hist)
 {
   if (objectp(hist))
@@ -1464,11 +1526,15 @@ void enable_history(array(string)|object(History)|int hist)
     historyobj = History(hist);
 }
 
+//! @fixme
+//!   Document this function
 History get_history()
 {
   return historyobj;
 }
 
+//! @fixme
+//!   Document this function
 void destroy()
 {
   if(input_controller)
@@ -1477,6 +1543,21 @@ void destroy()
     destruct(output_controller);
 }
 
+//! Creates a Readline object, that takes input from @[infd] and has output
+//! on @[outfd].
+//!
+//! @param infd
+//!   Defaults to @[Stdio.stdout].
+//!
+//! @param interm
+//!   Defaults to @[Stdio.Terminfo.getTerm()].
+//!
+//! @param outfd
+//!   Defaults to @[infd], unless @[infd] is 0, in which case
+//!   @[outfd] defaults to @[Stdio.stdout].
+//!
+//! @param outterm
+//!   Defaults to @[interm].
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
