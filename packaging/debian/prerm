@@ -3,7 +3,7 @@
 #
 # see: dh_installdeb(1)
 # 
-# $Id: prerm,v 1.2 2002/08/07 22:11:00 grendel Exp $
+# $Id: prerm,v 1.3 2002/08/08 12:33:15 grubba Exp $
 #
 
 set -e
@@ -24,7 +24,7 @@ PIKEBIN=pike${PIKE}
 
 cleanmods()
 {
-    PIKEVER=`/usr/bin/$PIKEBIN -e 'string v; int rel;sscanf(version(), "Pike v%s release %d", v, rel); write(v+"."+rel);'` || ""
+    PIKEVER=`/usr/bin/$PIKEBIN -e 'write("%d.%d.%d", __REAL_MAJOR__, __REAL_MINOR__, __BUILD__);'` || ""
     if [ -d /usr/lib/pike7.3/$PIKEVER/ ]; then
         rm -rf `find /usr/lib/pike7.3/$PIKEVER/ -name "*.o" -type f -print` 2> /dev/null
     fi
