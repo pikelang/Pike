@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.694 2003/02/20 16:36:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.695 2003/02/20 17:02:56 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2330,7 +2330,6 @@ AC_SUBST(YY_FROM_CONST)
 #############################################################################
 
 AC_C_CONST
-AC_C_CHAR_UNSIGNED
 
 # The above doesn't find IBM C's buggy const.
 
@@ -2355,6 +2354,8 @@ const int foo(int bar) { return bar; }
     :
   fi
 fi
+
+AC_C_CHAR_UNSIGNED
 
 AC_MSG_CHECKING(if we can cast void * to a function pointer)
 AC_CACHE_VAL(pike_cv_function_cast, [
