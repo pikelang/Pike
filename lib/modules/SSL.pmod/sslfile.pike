@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.78 2004/08/23 14:55:26 mast Exp $
+/* $Id: sslfile.pike,v 1.79 2004/10/13 23:53:21 bill Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -356,6 +356,8 @@ static void create (Stdio.File stream, SSL.context ctx,
     stream->set_close_callback (0);
     stream->set_id (1);
 
+    if(!ctx->random)
+      ctx->random = Crypto.Random.random_string;
     conn = SSL.connection (!is_client, ctx);
 
     if(is_blocking) {
