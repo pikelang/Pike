@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.2 1998/04/03 00:18:34 mirar Exp $");
+RCSID("$Id: image_xface.c,v 1.3 1998/04/05 21:14:10 mirar Exp $");
 
 #include "config.h"
 
@@ -32,7 +32,7 @@ RCSID("$Id: image_xface.c,v 1.2 1998/04/03 00:18:34 mirar Exp $");
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
 #else
-extern struct program *image_program=NULL; 
+extern struct program *image_program; 
 /* Image module is probably linked static too. */
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.14 1998/04/03 00:18:33 mirar Exp $
+ * $Id: image_jpeg.c,v 1.15 1998/04/05 21:14:09 mirar Exp $
  */
 
 #include "config.h"
@@ -22,7 +22,7 @@
 #undef HAVE_STDLIB_H
 #endif
 #include "global.h"
-RCSID("$Id: image_jpeg.c,v 1.14 1998/04/03 00:18:33 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.15 1998/04/05 21:14:09 mirar Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
@@ -43,7 +43,7 @@ RCSID("$Id: image_jpeg.c,v 1.14 1998/04/03 00:18:33 mirar Exp $");
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
 #else
-extern struct program *image_program=NULL; 
+extern struct program *image_program; 
 /* Image module is probably linked static too. */
 #endif
 
