@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.287 2000/03/26 01:56:54 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.288 2000/03/29 04:53:01 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4346,12 +4346,12 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
     return kill(o->pid(), 9);
   ]],0);
 
-  test_any([[ int e; for(e=0;e<1000;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;]],-1)
+  test_any([[ for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
 ]])
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
-  test_any([[return allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait() - ({-1})]],({}))
+  test_any([[return allocate(10,thread_create)(lambda() { for(int x=0;x<10;x++) { for(int e=0;e<50;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;})->wait() - ({-1})]],({}))
 ]])
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
@@ -4372,6 +4372,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
     for(int e=0;e<50;e++)  Stdio.Port()->bind(0);
     for(int e=0;e<10;e++) fifo->write(1);
     fnord->wait();
+    __signal_watchdog();
   }
   ]])
 ]])
@@ -4392,6 +4393,7 @@ int gnapp(int t)
       kill( o->pid(), 9 );
       o->wait();
     }
+    __signal_watchdog();
 //    werror("%d",t);
   }
   return -1;

@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.40 2000/03/27 20:29:45 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.41 2000/03/29 04:52:50 hubbe Exp $ */
 
 import Stdio;
 
@@ -83,6 +83,9 @@ array find_testsuites(string dir)
   return ret;
 }
 
+// 20 minutes should be enough..
+#define WATCHDOG_TIMEOUT 60*20
+
 #if constant(thread_create)
 #define WATCHDOG
 #define WATCHDOG_PIPE
@@ -98,6 +101,25 @@ object watchdog_pipe;
 #ifdef WATCHDOG
 object watchdog;
 int use_watchdog=1;
+int watchdog_time;
+
+void signal_watchdog()
+{
+#ifdef WATCHDOG
+  if(use_watchdog && time() - watchdog_time > 30)
+  {
+    watchdog_time=time();
+//	    werror("{WATCHDOG} Ping!\n");
+#ifdef WATCHDOG_PIPE
+    watchdog_pipe->write("x",1);
+#endif
+    
+#ifdef WATCHDOG_SIGNAL
+    watchdog->kill(signum("SIGQUIT"));
+#endif
+  }
+#endif
+}
 #endif
 
 int main(int argc, string *argv)
@@ -196,7 +218,7 @@ int main(int argc, string *argv)
 //	    werror("[WATCHDOG] t=%d\n",time()-last_time);
 
 	    /* I hope 30 minutes per test is enough for everybody */
-	    if(time() - last_time > 60 * 30)
+	    if(time() - last_time > WATCHDOG_TIMEOUT)
 	    {
 	      werror("\n[WATCHDOG] Pike testsuite timeout, sending SIGABRT.\n");
 	      kill(pid, signum("SIGABRT"));
@@ -289,6 +311,9 @@ int main(int argc, string *argv)
       backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
 #endif
   }
+  add_constant("__signal_watchdog",signal_watchdog);
+#else
+  add_constant("__signal_watchdog",lambda(){});
 #endif
 
   argv=Getopt.get_args(argv,1)+testsuites;
@@ -321,21 +346,7 @@ int main(int argc, string *argv)
       
 	for(e=start;e<sizeof(tests);e++)
 	{
-#ifdef WATCHDOG
-	  if(use_watchdog && time() - watchdog_time > 30)
-	  {
-	    watchdog_time=time();
-//	    werror("{WATCHDOG} Ping!\n");
-#ifdef WATCHDOG_PIPE
-	    watchdog_pipe->write("x",1);
-#endif
-
-#ifdef WATCHDOG_SIGNAL
-	    watchdog->kill(signum("SIGQUIT"));
-#endif
-	  }
-#endif
-
+	  signal_watchdog();
 
 	  int skip=0;
 	  string test,condition;
