@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.70 2003/04/23 15:31:19 marcus Exp $
+|| $Id: socket.c,v 1.71 2003/04/23 23:29:22 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.70 2003/04/23 15:31:19 marcus Exp $");
+RCSID("$Id: socket.c,v 1.71 2003/04/23 23:29:22 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -258,7 +258,14 @@ static void port_bind(INT32 args)
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "int|string (8bit)");
 
-  fd=fd_socket(AF_INET, SOCK_STREAM, 0);
+  addr_len = get_inet_addr(&addr, (args > 2 && Pike_sp[2-args].type==PIKE_T_STRING?
+				   Pike_sp[2-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_STRING?
+			    Pike_sp[-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_INT?
+			    Pike_sp[-args].u.integer : -1), 0);
+
+  fd=fd_socket(SOCKADDR_FAMILY(addr), SOCK_STREAM, 0);
 
   if(fd < 0)
   {
@@ -283,13 +290,6 @@ static void port_bind(INT32 args)
 #endif
 
   my_set_close_on_exec(fd,1);
-
-  addr_len = get_inet_addr(&addr, (args > 2 && Pike_sp[2-args].type==PIKE_T_STRING?
-				   Pike_sp[2-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_STRING?
-			    Pike_sp[-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_INT?
-			    Pike_sp[-args].u.integer : -1), 0);
 
   THREADS_ALLOW_UID();
   tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;

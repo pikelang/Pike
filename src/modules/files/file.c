@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.271 2003/04/23 15:31:19 marcus Exp $
+|| $Id: file.c,v 1.272 2003/04/23 23:29:22 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.271 2003/04/23 15:31:19 marcus Exp $");
+RCSID("$Id: file.c,v 1.272 2003/04/23 23:29:22 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2639,16 +2639,16 @@ static void file_dup(INT32 args)
 static void file_open_socket(INT32 args)
 {
   int fd;
+  int family=-1;
 
   close_fd();
   FD=-1;
-  fd=fd_socket(AF_INET, SOCK_STREAM, 0);
-  if(fd < 0)
-  {
-    ERRNO=errno;
+
+  if (args > 0 && Pike_sp[-args].type == PIKE_T_INT &&
+      Pike_sp[-args].subtype == 3) {
+    family = Pike_sp[-args].u.integer;
     pop_n_elems(args);
-    push_int(0);
-    return;
+    args = 0;
   }
 
   if (args) {
@@ -2660,13 +2660,11 @@ static void file_open_socket(INT32 args)
     if (Pike_sp[-args].type != PIKE_T_INT &&
 	(Pike_sp[-args].type != PIKE_T_STRING ||
 	 Pike_sp[-args].u.string->size_shift)) {
-      fd_close(fd);
       SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "int|string (8bit)");
     }
-    if (args > 1) {
+    if (args > 1 && !UNSAFE_IS_ZERO(&Pike_sp[1-args])) {
       if (Pike_sp[1-args].type != PIKE_T_STRING) {
-	fd_close(fd);
-	SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "string");
+	SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 2, "string");
       }
 
       name = Pike_sp[1-args].u.string->str;
@@ -2679,6 +2677,15 @@ static void file_open_socket(INT32 args)
 			     (Pike_sp[-args].type == PIKE_T_INT?
 			      Pike_sp[-args].u.integer : -1), 0);
 
+    fd=fd_socket((family<0? SOCKADDR_FAMILY(addr):family), SOCK_STREAM, 0);
+    if(fd < 0)
+    {
+      ERRNO=errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+
     o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
       ERRNO=errno;
@@ -2690,6 +2697,15 @@ static void file_open_socket(INT32 args)
     if (fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) {
       ERRNO=errno;
       fd_close(fd);
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+  } else {
+    fd=fd_socket((family<0? AF_INET:family), SOCK_STREAM, 0);
+    if(fd < 0)
+    {
+      ERRNO=errno;
       pop_n_elems(args);
       push_int(0);
       return;
@@ -2852,10 +2868,18 @@ static void file_connect(INT32 args)
      (src_port->type != PIKE_T_STRING || src_port->u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 4, "int|string (8bit)");
 
+  addr_len = get_inet_addr(&addr, dest_addr->str,
+			   (dest_port->type == PIKE_T_STRING?
+			    dest_port->u.string->str : NULL),
+			   (dest_port->type == PIKE_T_INT?
+			    dest_port->u.integer : -1), 0);
+
   if(FD < 0)
   {
     if (args < 4) {
-      file_open_socket(0);
+      push_int(SOCKADDR_FAMILY(addr));
+      Pike_sp[-1].subtype = 3;
+      file_open_socket(1);
     } else {
       push_svalue(src_port);
       ref_push_string(src_addr);
@@ -2865,12 +2889,6 @@ static void file_connect(INT32 args)
       Pike_error("Stdio.File->connect(): Failed to open socket.\n");
     pop_stack();
   }
-
-  addr_len = get_inet_addr(&addr, dest_addr->str,
-			   (dest_port->type == PIKE_T_STRING?
-			    dest_port->u.string->str : NULL),
-			   (dest_port->type == PIKE_T_INT?
-			    dest_port->u.integer : -1), 0);
 
   tmp=FD;
   THREADS_ALLOW();

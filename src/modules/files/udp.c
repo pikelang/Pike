@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.46 2003/04/23 15:31:19 marcus Exp $
+|| $Id: udp.c,v 1.47 2003/04/23 23:29:22 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.46 2003/04/23 15:31:19 marcus Exp $");
+RCSID("$Id: udp.c,v 1.47 2003/04/23 23:29:22 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -185,7 +185,14 @@ static void udp_bind(INT32 args)
     FD = -1;
   }
 
-  fd = fd_socket(AF_INET, THIS->type, THIS->protocol);
+  addr_len = get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
+				   Pike_sp[1-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_STRING?
+			    Pike_sp[-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_INT?
+			    Pike_sp[-args].u.integer : -1), 1);
+
+  fd = fd_socket(SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   if(fd < 0)
   {
     pop_n_elems(args);
@@ -230,13 +237,6 @@ static void udp_bind(INT32 args)
      if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&o, sizeof(int)))
 	Pike_error("UDP->bind: setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
-
-  addr_len = get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
-				   Pike_sp[1-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_STRING?
-			    Pike_sp[-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_INT?
-			    Pike_sp[-args].u.integer : -1), 1);
 
   THREADS_ALLOW_UID();
 
@@ -696,9 +696,15 @@ static void udp_connect(INT32 args)
      (dest_port->type != PIKE_T_STRING || dest_port->u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("UDP.connect", 2, "int|string (8bit)");
 
+  addr_len =  get_inet_addr(&addr, dest_addr->str,
+			    (dest_port->type == PIKE_T_STRING?
+			     dest_port->u.string->str : NULL),
+			    (dest_port->type == PIKE_T_INT?
+			     dest_port->u.integer : -1), 0);
+
   if(FD < 0)
   {
-     FD = fd_socket(AF_INET, SOCK_DGRAM, 0);
+     FD = fd_socket(SOCKADDR_FAMILY(addr), SOCK_DGRAM, 0);
      if(FD < 0)
      {
 	THIS->my_errno=errno;
@@ -706,12 +712,6 @@ static void udp_connect(INT32 args)
      }
      set_close_on_exec(FD, 1);
   }
-
-  addr_len =  get_inet_addr(&addr, dest_addr->str,
-			    (dest_port->type == PIKE_T_STRING?
-			     dest_port->u.string->str : NULL),
-			    (dest_port->type == PIKE_T_INT?
-			     dest_port->u.integer : -1), 0);
 
   tmp=FD;
   THREADS_ALLOW();
