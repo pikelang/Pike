@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.15 2003/03/19 16:42:28 nilsson Exp $
+# $Id: configure.in,v 1.16 2003/03/23 23:19:26 nilsson Exp $
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -8,49 +8,6 @@ AC_CONFIG_SUBDIRS(lib)
 
 AC_MODULE_INIT()
 
-AC_ARG_WITH(rsaref,     [  --with-rsaref[=path]      Support for RSAREF],[],[])
-
 PIKE_FEATURE_OK(Crypto)
-
-if test x$with_rsaref = x ; then
-  :
-else
-  AC_MSG_CHECKING(for RSA libraries)
-  pike_cv_rsa_dir="no"
-  for d in `echo ${with_rsaref} | sed 's/:/ /g'` \
-    `echo $prefix | sed "s@^NONE@$with_root/$ac_default_prefix@g"` \
-    $with_root/usr/local $with_root/sw/local $with_root/sw $srcdir `pwd`; do
-    echo "[" $d "]"
-    if test -d "$d/."; then
-      if test -d "$d/rsa/."; then
-        d="$d/rsa"
-      fi
-      if test -d "$d/cryptoci/."; then
-        d="$d/cryptoci"
-      fi
-      if test -d "$d/cryptoci.10/."; then
-        d="$d/cryptoci.10"
-      fi
-      if test -f "$d/library/include/bsafe.h"; then
-        pike_cv_rsa_dir="$d/library"
-	break
-      else :; fi
-    else :; fi
-  done
-
-if test "$pike_cv_rsa_dir" = "no"; then
-  AC_MSG_RESULT(no)
-  exit 1
-else
-  AC_MSG_RESULT(yes - $pike_cv_rsa_dir)
-
-  CPPFLAGS="$CPPFLAGS -I$pike_cv_rsa_dir/include"
-  LDFLAGS="$LDFLAGS -L$pike_cv_rsa_dir/lib -R$pike_cv_rsa_dir/lib"
-
-  AC_CHECK_LIB(cryptoci, b_rsa_public_key_type)
-
-  PIKE_FEATURE(Crypto,[yes (with rsaref)])
-fi
-fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

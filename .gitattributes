@@ -651,7 +651,6 @@ testfont binary
 /src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/_Crypto/rijndael.c foreign_ident
 /src/modules/_Crypto/rijndaeltest.pike foreign_ident
-/src/modules/_Crypto/rsa.c foreign_ident
 /src/modules/_Crypto/sha.c foreign_ident
 /src/modules/_Crypto/test_crypto.pike foreign_ident
 /src/modules/_Ffmpeg/Makefile.in foreign_ident

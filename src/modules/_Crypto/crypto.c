@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.c,v 1.53 2003/03/19 16:41:31 nilsson Exp $
+|| $Id: crypto.c,v 1.54 2003/03/23 23:19:26 nilsson Exp $
 */
 
 /*
@@ -658,7 +658,6 @@ PIKE_MODULE_INIT
   pike_des_init();
   pike_cast_init();
   pike_arcfour_init();
-  pike_rsa_init();
   pike_rijndael_init();
 }
 
@@ -677,6 +676,5 @@ PIKE_MODULE_EXIT
   pike_des_exit();
   pike_cast_exit();
   pike_arcfour_exit();
-  pike_rsa_exit();
   pike_rijndael_exit();
 }

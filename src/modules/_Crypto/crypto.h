@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.h,v 1.10 2002/10/11 01:39:51 nilsson Exp $
+|| $Id: crypto.h,v 1.11 2003/03/23 23:19:26 nilsson Exp $
 */
 
 /*
@@ -37,8 +37,6 @@ extern void pike_cbc_init(void);
 extern void pike_cbc_exit(void);
 extern void pike_rijndael_init(void);
 extern void pike_rijndael_exit(void);
-extern void pike_rsa_init(void);
-extern void pike_rsa_exit(void);
 extern void pike_pipe_init(void);
 extern void pike_pipe_exit(void);
 extern char *crypt_md5(const char *pw, const char *salt);
