@@ -41,3 +41,15 @@ constant NATIVE_MAX = __builtin.NATIVE_INT_MAX;
 //! @expr{--without-bignum@} (which is discouraged), then all
 //! arithmetic operations will instead silently wrap around at these
 //! limits.
+
+//! Swaps the upper and lower byte in a word.
+int(0..65535) swap_word(int(0..65535) i) {
+  return ((i&255)<<8) | ((i&(255<<8))>>8);
+}
+
+//! Swaps the upper and lower word in a longword, and the upper and
+//! lower bytes in the words. Simply put, the bytes are reversed.
+int(0..4294967295) swap_long(int(0..4294967295) i) {
+  return ((i&255)<<24) | ((i&(255<<8))<<8) |
+    ((i&(255<<16))>>8) | ((i&(255<<24))>>24);
+}
