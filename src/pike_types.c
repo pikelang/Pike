@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.148 2001/02/20 15:59:50 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.149 2001/02/23 14:44:20 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3448,12 +3448,12 @@ void cleanup_pike_types(void)
 }
 
 
-int type_may_overload(char *type, int lfun)
+static int low_type_may_overload(char *type, int lfun)
 {
   switch(EXTRACT_UCHAR(type++))
   {
     case T_ASSIGN:
-      return type_may_overload(type+1,lfun);
+      return low_type_may_overload(type+1,lfun);
       
     case T_FUNCTION:
     case T_ARRAY:
@@ -3463,15 +3463,15 @@ int type_may_overload(char *type, int lfun)
       return 0;
 
     case T_OR:
-      return type_may_overload(type,lfun) ||
-	type_may_overload(type+type_length(type),lfun);
+      return low_type_may_overload(type,lfun) ||
+	low_type_may_overload(type+type_length(type),lfun);
       
     case T_AND:
-      return type_may_overload(type,lfun) &&
-	type_may_overload(type+type_length(type),lfun);
+      return low_type_may_overload(type,lfun) &&
+	low_type_may_overload(type+type_length(type),lfun);
       
     case T_NOT:
-      return !type_may_overload(type,lfun);
+      return !low_type_may_overload(type,lfun);
 
     case T_MIXED:
       return 1;
@@ -3485,6 +3485,10 @@ int type_may_overload(char *type, int lfun)
   }
 }
 
+int type_may_overload(struct pike_type *type, int lfun)
+{
+  return low_type_may_overload(type->str, lfun);
+}
 
 void yyexplain_nonmatching_types(struct pike_type *type_a,
 				 struct pike_type *type_b,
@@ -3527,13 +3531,13 @@ struct pike_type *make_pike_type(char *t)
 }
 
 
-int pike_type_allow_premature_toss(char *type)
+static int low_pike_type_allow_premature_toss(char *type)
 {
  again:
   switch(EXTRACT_UCHAR(type++))
   {
     case T_NOT:
-      return !pike_type_allow_premature_toss(type);
+      return !low_pike_type_allow_premature_toss(type);
 
     case T_OBJECT:
     case T_MIXED:
@@ -3547,7 +3551,7 @@ int pike_type_allow_premature_toss(char *type)
 
     case T_OR:
     case T_MAPPING:
-      if(!pike_type_allow_premature_toss(type)) return 0;
+      if(!low_pike_type_allow_premature_toss(type)) return 0;
     case T_AND:
       type+=type_length(type);
     case T_ARRAY:
@@ -3562,4 +3566,9 @@ int pike_type_allow_premature_toss(char *type)
   }
   /* NOT_REACHED */
   return 0;
+}
+
+int pike_type_allow_premature_toss(struct pike_type *type)
+{
+  return low_pike_type_allow_premature_toss(type->str);
 }
