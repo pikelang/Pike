@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.38 1997/03/20 16:04:15 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.39 1997/03/24 02:08:34 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -785,6 +785,8 @@ static void eval_instruction(unsigned char *pc)
 	  error("Cannot access global variables in destructed object.\n");
 
 	i=ID_FROM_INT(fp->current_object->prog, tmp);
+	if(!IDENTIFIER_IS_VARIABLE(i->flags))
+	  error("Cannot assign functions or constants.\n");
 	if(i->run_time_type == T_MIXED)
 	{
 	  assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), sp-1);
@@ -804,6 +806,9 @@ static void eval_instruction(unsigned char *pc)
 	  error("Cannot access global variables in destructed object.\n");
 
 	i=ID_FROM_INT(fp->current_object->prog, tmp);
+	if(!IDENTIFIER_IS_VARIABLE(i->flags))
+	  error("Cannot assign functions or constants.\n");
+
 	if(i->run_time_type == T_MIXED)
 	{
 	  struct svalue *s=(struct svalue *)GLOBAL_FROM_INT(tmp);
