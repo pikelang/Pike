@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.21 2002/06/11 09:56:58 grubba Exp $
+ * $Id: udp.c,v 1.22 2003/11/03 20:38:53 mast Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.21 2002/06/11 09:56:58 grubba Exp $");
+RCSID("$Id: udp.c,v 1.22 2003/11/03 20:38:53 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -507,9 +507,10 @@ static void udp_read_callback( int fd, void *data )
 {
   if(IS_ZERO(&THIS_DATA->read_callback))
     set_read_callback(THIS_DATA->fd, 0, 0);
-  else
+  else {
     apply_svalue(& THIS_DATA->read_callback, 0);
-  pop_stack(); 
+    pop_stack();
+  }
   return;
 }
 
