@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.34 2003/03/14 15:50:43 grubba Exp $
+|| $Id: bignum.c,v 1.35 2003/03/25 19:07:48 mast Exp $
 */
 
 #include "global.h"
@@ -157,7 +157,7 @@ PMOD_EXPORT void push_int64(INT64 i)
 
 
     if(neg) {
-      apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
+      apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_SUBTRACT),0);
       stack_pop_n_elems_keep_top(1);
     }
   }
@@ -176,38 +176,37 @@ PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
   apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_LT), 1);
   if(sp[-1].type != T_INT)
     Pike_error("Result from Gmp.bignum->`< not an integer.\n");
-  dmalloc_touch_svalue(sp-1);
   neg = (--sp)->u.integer;
 
-  if(neg)
-    apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_COMPL), 0);
+  if(neg) {
+    apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_SUBTRACT), 0);
+    dmalloc_touch_svalue(sp-1);
+  }
+  else
+    ref_push_object(bignum);
 
   rshfun = FIND_LFUN(bignum->prog, LFUN_RSH);
   andfun = FIND_LFUN(bignum->prog, LFUN_AND);
-  
-  ref_push_object(bignum);
-    
+
   for(pos = 0; sp[-1].type != T_INT; )
   {
     push_int(BIGNUM_INT64_MASK);
     apply_low(sp[-2].u.object, andfun, 1);
     if(sp[-1].type != T_INT)
       Pike_error("Result from Gmp.bignum->`& not an integer.\n");
-    dmalloc_touch_svalue(sp-1);
     *i |= (INT64)(--sp)->u.integer << (INT64)pos;
     pos += BIGNUM_INT64_SHIFT;
     
     push_int(BIGNUM_INT64_SHIFT);
     apply_low(sp[-2].u.object, rshfun, 1);
-    stack_swap();
-    pop_stack();
+    stack_pop_n_elems_keep_top(1);
+    dmalloc_touch_svalue(sp-1);
   }
   
-  dmalloc_touch_svalue(sp-1);
   *i |= (INT64)(--sp)->u.integer << (INT64)pos;
 
   if(neg)
-    *i = ~*i;
+    *i = -*i;
   
   return 1;   /* We may someday return 0 if the conversion fails. */
 }
