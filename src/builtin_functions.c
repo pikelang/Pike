@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.185 1999/10/17 17:11:56 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.186 1999/10/18 17:04:28 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3776,7 +3776,8 @@ static void f_get_prof_info(INT32 args)
 
   pop_n_elems(args);
 
-  /* ({ num_clones, ([ "fun_name":({ num_calls }) ]) }) */
+  /* ({ num_clones, ([ "fun_name":({ num_calls, total_time, self_time }) ]) })
+   */
 
   push_int(prog->num_clones);
 
@@ -3784,8 +3785,7 @@ static void f_get_prof_info(INT32 args)
     if (prog->identifiers[i].num_calls)
     {
       num_functions++;
-      add_ref(prog->identifiers[i].name);
-      push_string(prog->identifiers[i].name);
+      ref_push_string(prog->identifiers[i].name);
 
       push_int(prog->identifiers[i].num_calls);
       push_int(prog->identifiers[i].total_time);
