@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.837 2004/09/27 21:47:23 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.838 2004/10/24 16:20:02 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1478,6 +1478,11 @@ AC_ARG_WITH(machine-code,
 Use --with-machine-code to force usage of machine code support.])
 	      with_machine_code="no"
 	    ;;
+	    xFreeBSD*)
+	      PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
+Use --with-machine-code to force usage of machine code support.])
+	      with_machine_code="no"
+            ;;
 	  esac
 	
 	  if test "x${with_machine_code-}" = x; then
