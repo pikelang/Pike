@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.88 2000/08/04 18:07:51 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.89 2000/08/08 19:21:55 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1751,7 +1751,7 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
   return end_shared_string(s->s);
 }
 
-PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
+PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 {
   switch(ptr.shift)
   {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.46 2000/08/04 18:07:52 grubba Exp $
+ * $Id: stralloc.h,v 1.47 2000/08/08 19:21:55 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -20,10 +20,10 @@
 struct pike_string
 {
   ptrdiff_t refs;
+  INT32 size_shift; /* 30 bit waste, but good for alignment... */
   ptrdiff_t len;
   size_t hval;
   struct pike_string *next; 
-  size_t size_shift; /* 30/62 bit waste, but good for alignment... */
   char str[1];
 };
 
@@ -241,7 +241,7 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
-PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len);
+PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len);
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
 PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 			     char * str,
