@@ -44,6 +44,8 @@ class `()
   //!   Document this function.
   void create(string passwd)
     {
+      if (sizeof(passwd) > B)
+	passwd = raw_hash(passwd);
       if (sizeof(passwd) < B)
 	passwd = passwd + "\0" * (B - sizeof(passwd));
 
