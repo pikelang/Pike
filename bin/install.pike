@@ -353,6 +353,29 @@ done
   exit(0);
 }
 
+string make_absolute_path(string path)
+{
+  if(sizeof(path) && path[0] == '~')
+  {
+    string user, newpath;
+    sscanf(path, "~%s/%s", user, newpath);
+    
+    if(user && sizeof(user))
+    {
+      array a = getpwnam(user);
+      if(a && sizeof(a) >= 7)
+	return combine_path(a[5], newpath);
+    }
+    
+    return combine_path(getenv("HOME"), path[2..]);
+  }
+  
+  if(!sizeof(path) || path[0] != '/')
+    return combine_path(getcwd(), "../", path);
+
+  return path;
+}
+
 class ReadInteractive
 {
   inherit Stdio.Readline;
@@ -368,11 +391,37 @@ class ReadInteractive
     ::destroy();
     signal(signum("SIGINT"));
   }
+
+  static private string file_completion(string tab)
+  {
+    string text = gettext();
+    int pos = getcursorpos();
+    
+    array(string) path = make_absolute_path(text[..pos-1])/"/";
+    array(string) files =
+      glob(path[-1]+"*",
+	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
+    switch(sizeof(files)) {
+    case 0:
+      get_output_controller()->beep();
+      break;
+    case 1:
+      insert(files[0][sizeof(path[-1])..], pos);
+      if((file_stat((path[..sizeof(path)-2]+files)*"/")||({0,0}))[1]==-2)
+	insert("/", getcursorpos());
+      break;
+    default:
+      list_completions(files);
+      break;
+    }
+  }
   
   void create(mixed ... args)
   {
     signal(signum("SIGINT"), trap_signal);
     ::create(@args);
+
+    get_input_controller()->bind("^I", file_completion);
   }
 }
 
@@ -415,22 +464,41 @@ int main(int argc, string *argv)
       break;
 
     case "--interactive":
-      write("\n");
-      write("   Welcome to the interactive "+version()+
+      write("\n"
+	    "   Welcome to the interactive "+version()+
 	    " installation script.\n");
-      write("\n");   
-      interactive=ReadInteractive();
-      if(!vars->prefix)
-	prefix=interactive->edit(prefix,"Install prefix: ");
-      if(!sizeof(prefix) || prefix[0] != '/')
-	prefix = combine_path(getcwd(), "../", prefix);
       
-      if(!vars->pike_name)
-	vars->pike_name=interactive->edit(
-	  combine_path(vars->exec_prefix || combine_path(prefix, "bin"),
-		       "pike"), "Pike binary name: ");
-      if(!sizeof(vars->pike_name) || vars->pike_name[0] != '/')
-	vars->pike_name = combine_path(getcwd(), "../", vars->pike_name);
+      interactive=ReadInteractive();
+
+      string confirm, bin_path = vars->pike_name;
+      do {
+	write("\n");
+	
+	if(!vars->prefix)
+	  prefix=interactive->edit(prefix,"Install prefix: ");
+	prefix = make_absolute_path(prefix);
+	
+	if(!vars->pike_name)
+	  bin_path=interactive->edit
+		   (combine_path(vars->exec_prefix ||
+				 combine_path(prefix, "bin"),
+				 "pike"), "Pike binary name: ");
+	bin_path = make_absolute_path(bin_path);
+	
+	write("\n");
+	confirm =
+	  lower_case(interactive->edit("",
+			 "Are the settings above correct [Y/n/quit]? "));
+	if(confirm == "quit")
+	{
+	  // Maybe clean up?
+	  destruct(interactive);
+	  exit(0);
+	}
+
+      } while(!(confirm == "" || confirm == "y"));
+
+      vars->pike_name = bin_path;
       
       destruct(interactive);
       install_type="--new-style";
