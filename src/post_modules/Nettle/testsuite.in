@@ -184,3 +184,12 @@ test_tests(
   }
 )
 ]])
+
+cond_resolv( Nettle.SHA1_State, [[
+test_tests(
+  array(int) a() {
+    string r = Process.popen(RUNPIKE+" \"SRCDIR/sha1test.pike\"");
+    return (array(int))(r/" ");
+  }
+)
+]])
