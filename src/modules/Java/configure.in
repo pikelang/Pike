@@ -78,8 +78,7 @@ if test "x$with_java" = xyes; then
         if test -d $tmp_java_home/.; then
           if ls "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
 	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
-	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
-	    ls "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
+	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	  else
 	    :
@@ -99,11 +98,7 @@ if test "x$with_java" = xyes; then
   AC_CACHE_VAL(pike_cv_java_lib_dir, [
     pike_cv_java_lib_dir=""
     if test -z "$pike_java_user_lib_directory"; then
-      if test -d "$pike_cv_java_java_home"/Libraries; then
-        tmp_java_lib_dir="$pike_cv_java_java_home"/Libraries
-      else
-        tmp_java_lib_dir="$pike_cv_java_java_home/lib"
-      fi
+      tmp_java_lib_dir="$pike_cv_java_java_home/lib"
     else
       tmp_java_lib_dir="$pike_java_user_lib_directory"
     fi
@@ -161,6 +156,19 @@ if test "x$with_java" = xyes; then
     CPPFLAGS="-I$pike_cv_java_include_dir -I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
   fi
 
+  AC_MSG_CHECKING([for JavaVM (MacOS X)])
+  AC_CACHE_VAL(pike_cv_java_javavm, [
+    pike_cv_java_javavm=no;
+    for tmp_java_javavm in ../.. .. .; do
+      if test -f "$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM; then
+        pike_cv_java_javavm="$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM
+      else
+        :
+      fi
+    done
+  ])
+  AC_MSG_RESULT($pike_cv_java_javavm)
+
   AC_CHECK_HEADERS(jni.h winbase.h setjmp.h)
 
   pike_cv_java=no
@@ -172,23 +180,52 @@ if test "x$with_java" = xyes; then
       JAVA_LIBS="${JAVA_LIBS} -lhpi"
     ], [])
 
-    AC_MSG_CHECKING([for JNI_CreateJavaVM in -ljvm])
-    AC_CACHE_VAL(ac_cv_lib_jvm_JNI_CreateJavaVM, [
-      ac_save_LIBS="$LIBS"
-      LIBS="-ljvm $LIBS"
-      AC_TRY_LINK([#include <jni.h>], dnl
-	[JNI_CreateJavaVM((JavaVM**)0,(void**)0,(void*)0);], dnl
-	[ac_cv_lib_jvm_JNI_CreateJavaVM=yes], dnl
-	[ac_cv_lib_jvm_JNI_CreateJavaVM=no])
-      LIBS="$ac_save_LIBS"
-    ])
-    if test x"$ac_cv_lib_jvm_JNI_CreateJavaVM" = xyes; then
-      LIBS="-ljvm $LIBS"
-      JAVA_LIBS="-ljvm ${JAVA_LIBS}"
-      pike_cv_java=yes;
-      AC_MSG_RESULT(yes)
+    if test x"$pike_cv_java_javavm" = xno; then
+      :
     else
-      AC_MSG_RESULT(no)
+      AC_MSG_CHECKING([for JNI_CreateJavaVM in "$pike_cv_java_javavm"])
+      AC_CACHE_VAL(ac_cv_lib_javavm_JNI_CreateJavaVM, [
+        ac_save_LIBS="$LIBS"
+        LIBS="$pike_cv_java_javavm $LIBS"
+        AC_TRY_LINK([#include <jni.h>], dnl
+	  [JNI_CreateJavaVM((JavaVM**)0,(void**)0,(void*)0);], dnl
+	  [ac_cv_lib_javavm_JNI_CreateJavaVM=yes], dnl
+	  [ac_cv_lib_javavm_JNI_CreateJavaVM=no])
+        LIBS="$ac_save_LIBS"
+      ])
+      if test x"$ac_cv_lib_javavm_JNI_CreateJavaVM" = xyes; then
+        LIBS="$pike_cv_java_javavm $LIBS"
+        JAVA_LIBS="$pike_cv_java_javavm ${JAVA_LIBS}"
+        pike_cv_java=yes;
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi      
+    fi
+
+    if test x"$pike_cv_java" = xyes; then
+      :
+    else
+
+      AC_MSG_CHECKING([for JNI_CreateJavaVM in -ljvm])
+      AC_CACHE_VAL(ac_cv_lib_jvm_JNI_CreateJavaVM, [
+        ac_save_LIBS="$LIBS"
+        LIBS="-ljvm $LIBS"
+        AC_TRY_LINK([#include <jni.h>], dnl
+	  [JNI_CreateJavaVM((JavaVM**)0,(void**)0,(void*)0);], dnl
+	  [ac_cv_lib_jvm_JNI_CreateJavaVM=yes], dnl
+	  [ac_cv_lib_jvm_JNI_CreateJavaVM=no])
+        LIBS="$ac_save_LIBS"
+      ])
+      if test x"$ac_cv_lib_jvm_JNI_CreateJavaVM" = xyes; then
+        LIBS="-ljvm $LIBS"
+        JAVA_LIBS="-ljvm ${JAVA_LIBS}"
+        pike_cv_java=yes;
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi
+
     fi
 
     if test "$pike_cv_java" = yes; then
