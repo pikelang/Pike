@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.26 2002/06/24 00:43:36 manual Exp $
+ * $Id: tree-split-autodoc.pike,v 1.27 2002/11/26 13:08:05 grubba Exp $
  *
  */
 
@@ -23,8 +23,8 @@ mapping profiling = ([]);
 string cquote(string n)
 {
   string ret="";
-  n = replace(n, ([ "&gt;":">", "&lt;":"<", "&amp;":"&" ]));
-  while(sscanf((string)n,"%[_a-zA-Z0-9]%c%s",string safe, int c, n)==3) {
+  // n = replace(n, ([ "&gt;":">", "&lt;":"<", "&amp;":"&" ]));
+  while(sscanf((string)n,"%[._a-zA-Z0-9]%c%s",string safe, int c, n)==3) {
     switch(c) {
     default:  ret += sprintf("%s_%02X",safe,c); break;
     case '+': ret += sprintf("%s_add",safe); break;
@@ -70,6 +70,12 @@ class Node
     PROFILE();
     data = get_parser()->finish( _data )->read();
     ENDPROFILE("Parsing");
+
+    if (_name == "`&amp;") {
+      werror("%s\n------------------\n",
+	     describe_backtrace(({"Node: Encoded name\n", backtrace()})));
+      
+    }
 
     string path = replace(make_class_path(), "()->", ".");
     if(has_suffix(path, "()"))
@@ -138,6 +144,9 @@ class Node
 
   array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
+    foreach(({"homogen-name", "belongs"}), string attr) {
+      if (m[attr]) m[attr] = Parser.parse_html_entities(m[attr]);
+    }
     if(m["homogen-type"]) {
       switch( m["homogen-type"] ) {
 
@@ -158,8 +167,10 @@ class Node
 	Parser.HTML parser = Parser.HTML();
 	parser->case_insensitive_tag(1);
 	parser->xml_tag_syntax(0);
-	parser->add_tag("method", lambda(Parser.HTML p, mapping m) {
-				    names += ({ m->name }); } );
+	parser->add_tag("method",
+			lambda(Parser.HTML p, mapping m) {
+			  names += ({ Parser.parse_html_entities(m->name) });
+			} );
 	parser->finish(c);
 	foreach(Array.uniq(names) - ({ 0, "" }), string name) {
 	  method_children +=
@@ -176,11 +187,11 @@ class Node
 	  Parser.HTML()->add_tags
 	    ( ([ "constant":
 		 lambda(Parser.HTML p, mapping m, string c) {
-		   consts[path + m->name] = 1;
+		   consts[path + Parser.parse_html_entities(m->name)] = 1;
 		 },
 		 "variable":
 		 lambda(Parser.HTML p, mapping m, string c) {
-		   consts[path + m->name] = 1;
+		   consts[path + Parser.parse_html_entities(m->name)] = 1;
 		 }
 	    ]) )->finish(c);
 	}
@@ -215,10 +226,10 @@ class Node
     if(type=="method")
       s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
-		  name, s);
+		  Parser.encode_html_entities(name), s);
     else
       s = sprintf("<%s name='%s'>\n%s\n</%s>\n",
-		  type, name, s, type);
+		  type, Parser.encode_html_entities(name), s, type);
     if(parent)
       return parent->make_faked_wrapper(s);
     else
@@ -257,18 +268,28 @@ class Node
 
   string my_resolve_reference(string _reference, mapping vars)
   {
+    string resolved = vars->resolved;
+
     if(vars->param)
       return "<font face='courier'>" + _reference + "</font>";
 
-    if(vars->resolved && refs[vars->resolved])
-      return create_reference(make_filename(), vars->resolved);
+    if (resolved) {
+      //resolved = cquote(resolved);
 
-    if(vars->resolved && consts[vars->resolved])
-      return "<font face='courier'>" + _reference + "</font>";
+      if(refs[resolved])
+	return create_reference(make_filename(), resolved);
 
-    if(!missing[vars->resolved] && !has_prefix(_reference, "lfun::") && make_class_path()!="GL")
-      werror("Missed reference %O (%O) in %s\n", _reference, vars->resolved,
-	     make_class_path());
+      if(consts[resolved])
+	return "<font face='courier'>" + _reference + "</font>";
+    }
+
+    if(!missing[vars->resolved] && !has_prefix(_reference, "lfun::"))
+      werror("Missed reference %O (%O) in %s\n"
+	     "Potential refs:%O\n",
+	     _reference, resolved, make_class_path(),
+	     sort(filter(indices(refs),
+			 glob(resolved[..sizeof(resolved)/2]+"*",
+			      indices(refs)[*]))));
     unresolved++;
     return "<font face='courier'>" + _reference + "</font>";
   }
@@ -308,7 +329,7 @@ class Node
     string res = "";
     foreach(children, Node node)
     {
-      string my_name=node->name;
+      string my_name = Parser.encode_html_entities(node->name);
       if(node->type=="method")
 	my_name+="()";
       else
@@ -335,10 +356,12 @@ class Node
       string my_class_path = (node->name!="")?node->make_class_path():"[Top]";
 
       if(node == this_object())
-	res += sprintf("<b>%s</b><br />\n", my_class_path);
+	res += sprintf("<b>%s</b><br />\n",
+		       Parser.encode_html_entities(my_class_path));
       else
 	res += sprintf("<a href='%s'><b>%s</b></a><br />\n",
-		       make_link(node), my_class_path);
+		       make_link(node),
+		       Parser.encode_html_entities(my_class_path));
     }
     return res;
   }
