@@ -1203,7 +1203,7 @@ is run.
 </section>
 </chapter>
 
-<chapter title="Data types">
+<chapter title="Data types" name=types>
 
 In this chapter we will discuss all the different ways to store data
 in Pike in detail. We have seen examples of many of these, but we haven't
@@ -2639,8 +2639,26 @@ Here is a list of all the combinations:
 </table>
 </center>
 <p>
-In all of the above expressions <i>variable</i> can also be an element from 
-an array, mapping or multiset. Example: <tt>foo["bar"]+=10;</tt>
+<anchor name=lvalues>
+In all of the above expressions <i>variable</i> can actually be any of type
+of assignable values. Assignable values are also known as <b>lvalues</b> and
+here is a list of <b>lvalues</b>:
+<p>
+<center>
+<table border=1>
+<tr><th>Lvalue type</th><th>Syntax</th><th>Valid assignment type</th></tr>
+<tr><td> a local or global variable </td><td> <i>identifier</i> </td> <td>same as variable</td></tr>
+<tr><td> an element in an array </td><td> <i>array</i> [ <i>int</i> ]</td><td>any type</td></tr>
+<tr><td> an element in an string </td><td> <i>string</i> [ <i>int</i> ]</td><td>integer</td></tr>
+<tr><td> an element in a mapping </td><td> <i>mapping</i>[<i>mixed</i>] or <i>mapping</i>-&gt;<i>identifier</i> </td><td>any type</td></tr>
+<tr><td> an element in a multiset </td><td> <i>multiset</i>[<i>mixed</i>] or <i>multiset</i>-&gt;<i>identifier</i> </td><td>true / false</td></tr>
+<tr><td> a variable in an object </td><td> <i>object</i>[<i>string</i>] or <i>object</i>-&gt;<i>identifier</i> </td> <td>same type as named variable</td></tr>
+<tr><td> a list of lvalues  </td><td> [ <i>lvalue</i>, <i>lvalue</i> ] </td><td> an array, first value in the array will be assigned to the first lvalue in the list, second value in the array to the second value in the list etc. </td></tr>
+
+</table>
+</center>
+
+</anchor>
 </section>
 
 <section title="The rest of the operators">
@@ -2698,6 +2716,7 @@ is after the operator has added/subtracted one to it. If the operator
 is after the variable (<tt><i>a</i>++</tt>) it will instead return the
 value of the variable before it was incremented/decremented.
 <p>
+<anchor name=cast>
 Casting is used to convert one type to another, not all casts are
 possible. Here is a list of all casts that actually _do_ anything:
 <p>
@@ -2726,6 +2745,7 @@ You can also use the cast operator to tell the compiler things.
 If <tt>a</tt> is a variable of type mixed  containing an int, then the
 expression <tt>(int)a</tt> can be used instead of <tt>a</tt> and that will
 tell the compiler that the type of that expression is <tt>int</tt>.
+</anchor>
 <p>
 Last, and in some respect least, is the comma operator. It doesn't do
 much. In fact, it simply evaluates the two arguments and then returns
@@ -2895,7 +2915,7 @@ will discuss further in the next chapter.
 <p>
 If you don't want to put each program in a separate file, you can use the
 <tt>class</tt> keyword to write all your classes in one file. We have
-already seen an example how this in chapter 4, but let's go over it in
+already seen an example how this in <ref to=types>, but let's go over it in
 more detail. The syntax looks like this:
 <example language=pike meta=class_name,class_definition>
 	class class_name {
@@ -3397,6 +3417,9 @@ is acceptable. If you use <tt>Stdio</tt> a lot you can put
 <tt>import Stdio;</tt> in the beginning of your program. This will import
 all the identifiers from the module Stdio into your program, making it
 possible to write just <tt>stdin</tt> instead of <tt>Stdio.stdin</tt>.
+It is also possible to import all modules in a directory with <tt>import</tt>
+by putting the directory name in doublequtes. So, to import all modules in
+the current directory, you would use <tt>import ".";</tt>.
 </section>
 
 <section title="Where do modules come from?">
@@ -3442,6 +3465,11 @@ like those created from directories, overload the index operator so that
 the identifiers in the module can be something other than those in the program.
 For directory modules, the index operator looks in the directory it was
 cloned for to find the identifiers.
+<p>
+You can also use the . operator without an identifier preceeding it to 
+access modules in the same directory as the program itself. For instance,
+<tt>.my_module.foo</tt> would mean 'the identifier <tt>foo</tt> in the module
+<tt>my_module</tt> in this directory.
 </section>
 
 <section title="How to write a module">
@@ -3455,12 +3483,12 @@ module like this:
 <example language=pike>
 	int main()
 	{
-	  write(sprintf("%f\n",Trig.cos2(Trig.PI));
+	  write(sprintf("%f\n",.Trig.cos2(.Trig.PI));
 	}
 </example>
 or like this:
 <example language=pike>
-	import Trig;
+	import .Trig;
 
 	int main() 
 	{
@@ -6339,7 +6367,7 @@ path the the program.<p>
 argument is <tt>0</tt>.
 
 <tt>fds</tt> is your stdin, stdout and stderr. Default
-is local pipes (see <link to=stdin>stdin</link> et al).
+is local pipes (see <link to=Stdio.stdin>stdin</link> et al).
 
 <tt>fds_to_close</tt> is file descriptors that are closed 
 in the forked branch when the program is executed (ie, the 
@@ -12943,7 +12971,7 @@ This is the BNF for Pike:
 <table>
 <tr valign=top><td>program</td><td>::=</td><td>{ definition }</td></tr>
 <tr valign=top><td>definition</td><td>::=</td><td>import | inheritance | function_declaration | function_definition | variables | constant | class_def</td></tr>
-<tr valign=top><td>import</td><td>::=</td><td>modifiers <b>import</b> constant_identifier ";"</td></tr>
+<tr valign=top><td>import</td><td>::=</td><td>modifiers <b>import</b> ( constant_identifier | string ) ";" </td></tr>
 <tr valign=top><td>inheritance</td><td>::=</td><td>modifiers <b>inherit</b> program_specifier [ ":" identifier ] ";" </td></tr>
 <tr valign=top><td>function_declaration</td><td>::=</td><td>modifiers type identifier "(" arguments ")" ";"</td></tr>
 <tr valign=top><td>function_definition</td><td>::=</td><td>modifiers type identifier "(" arguments ")" block </td></tr>
@@ -12980,9 +13008,9 @@ This is the BNF for Pike:
 <tr valign=top><td>gauge</td><td>::=</td><td><b>gauge</b> ( "(" expression ")" | block )</td></tr>
 <tr valign=top><td>sscanf</td><td>::=</td><td><b>sscanf</b> "(" expression2 "," expression2 { "," lvalue } ")" </td></tr>
 
-<tr valign=top><td>lvalue</td><td>::=</td><td><b>lambda</b> expression6 | type identifier </td></tr>
+<tr valign=top><td>lvalue</td><td>::=</td><td>expression6 | type identifier | "[" [ lvalue { "," lvalue } [ "," ] ] "]"</td></tr>
 <tr valign=top><td>lambda</td><td>::=</td><td><b>lambda</b> "(" arguments ")" block</td></tr>
-<tr valign=top><td>constant_identifier</td><td>::=</td><td>identifier { "." identifier }</td></tr>
+<tr valign=top><td>constant_identifier</td><td>::=</td><td>["."] identifier { "." identifier }</td></tr>
 <tr valign=top><td>call</td><td>::=</td><td>expression6 "(" expression_list ")" </td></tr>
 <tr valign=top><td>index</td><td>::=</td><td>expression6 "[" expression [ ".." expression ] "]"</td></tr>
 <tr valign=top><td>array</td><td>::=</td><td>"({" expression_list "})"</td></tr>
