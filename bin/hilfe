@@ -36,7 +36,6 @@ object eval(string f)
   object o;
   mixed err;
   prog=("#pragma unpragma_strict_types\n#pragma all_inline\n"+
-        "static object ___hilfe=previous_object();\n"+
 	"static mapping ___variables=___hilfe->query_variables();\n"+
 	map(indices(variables),lambda(string f)
 	    { return sprintf("mixed %s=___variables[\"%s\"];",f,f); })*"\n"+
@@ -49,12 +48,18 @@ object eval(string f)
 #ifdef DEBUG
   write("program:"+prog);
 #endif
-  if(err=catch(o=clone(compile_string(prog))))
+  program p;
+  if(err=catch(p=compile_string(prog)))
   {
 #ifdef DEBUG
     write(describe_backtrace(err));
     write("Couldn't compile expression.\n");
 #endif
+    return 0;
+  }
+  if(err=catch(o=clone(p)))
+  {
+    write(describe_backtrace(err));
     return 0;
   }
   return o;
@@ -526,6 +531,7 @@ void main(int argc,string *argv)
 {
   string s;
   add_efun("write",my_write);
+  add_efun("___hilfe",this_object());
 
   print_version();
   while(s=readline(strlen(input) ? ">> " : "> "))
