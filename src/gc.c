@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.143 2000/12/01 08:09:47 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.144 2000/12/14 07:24:37 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1237,6 +1237,32 @@ should_free:
   return 1;
 }
 
+void gc_delayed_free(void *a)
+{
+  struct marker *m;
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
+      Pike_in_gc != GC_PASS_ZAP_WEAK)
+    fatal("gc_delayed_free() called in invalid gc pass.\n");
+  if (gc_debug) {
+    if (!(m = find_marker(a)))
+      gc_fatal(a, 0, "gc_delayed_free() got unknown object (missed by pretouch pass).\n");
+  }
+  else m = get_marker(a);
+  if (*(INT32 *) a != 1)
+    fatal("gc_delayed_free() called for thing that haven't got a single ref.\n");
+  if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED))
+    gc_fatal(a, 1, "gc_delayed_free() got a thing marked as referenced.\n");
+  debug_malloc_touch(a);
+#else
+  m = get_marker(a);
+#endif
+
+  gc_add_extra_ref(a);
+  m->flags |= GC_GOT_DEAD_REF;
+}
+
 int gc_mark(void *a)
 {
   struct marker *m = get_marker(debug_malloc_pass(a));
@@ -2026,7 +2052,7 @@ int do_gc(void)
 
   Pike_in_gc=GC_PASS_MARK;
 
-  /* Anything after and including gc_internal_foo in the linked lists
+  /* Anything after and including gc_internal_* in the linked lists
    * are considered to lack external references. The mark pass move
    * externally referenced things in front of these pointers. */
   gc_internal_array = empty_array.next;
@@ -2151,6 +2177,15 @@ int do_gc(void)
 	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - num_objects));
   }
 
+  /* Add an extra reference to the stuff gc_internal_* point to, so we
+   * know they're still around when gc_free_all_unreferenced_* is
+   * about to be called. */
+  if (gc_internal_array != &empty_array) add_ref(gc_internal_array);
+  if (gc_internal_multiset) add_ref(gc_internal_multiset);
+  if (gc_internal_mapping) add_ref(gc_internal_mapping);
+  if (gc_internal_program) add_ref(gc_internal_program);
+  if (gc_internal_object) add_ref(gc_internal_object);
+
   /* Thread switches, object alloc/free and reference changes are
    * allowed again now. */
 
@@ -2160,23 +2195,40 @@ int do_gc(void)
   obj_count = num_objects;
 #endif
 
-  /* Now we free the unused stuff */
-  gc_free_all_unreferenced_arrays();
-  gc_free_all_unreferenced_multisets();
-  gc_free_all_unreferenced_mappings();
-  gc_free_all_unreferenced_programs();
-  gc_free_all_unreferenced_objects();
+  /* Now we free the unused stuff. The extra refs to gc_internal_*
+   * added above are removed just before the calls so we'll get the
+   * correct relative positions in them. */
+  if (gc_internal_array != &empty_array) {
+    FREE_AND_GET_REFERENCED(gc_internal_array, struct array, free_array);
+    gc_free_all_unreferenced_arrays();
+  }
+  if (gc_internal_multiset) {
+    FREE_AND_GET_REFERENCED(gc_internal_multiset, struct multiset, free_multiset);
+    gc_free_all_unreferenced_multisets();
+  }
+  if (gc_internal_mapping) {
+    FREE_AND_GET_REFERENCED(gc_internal_mapping, struct mapping, free_mapping);
+    gc_free_all_unreferenced_mappings();
+  }
+  if (gc_internal_program) {
+    FREE_AND_GET_REFERENCED(gc_internal_program, struct program, free_program);
+    gc_free_all_unreferenced_programs();
+  }
+  if (gc_internal_object) {
+    FREE_AND_GET_REFERENCED(gc_internal_object, struct object, free_object);
+    gc_free_all_unreferenced_objects();
+  }
 
   GC_VERBOSE_DO(fprintf(stderr, "| free: %d really freed, %u left with live references\n",
 			obj_count - num_objects, live_ref));
 
-  gc_internal_array = &empty_array;
-  gc_internal_multiset = 0;
-  gc_internal_mapping = 0;
-  gc_internal_program = 0;
-  gc_internal_object = 0;
-
 #ifdef PIKE_DEBUG
+  gc_internal_array = (struct array *) (ptrdiff_t) -1;
+  gc_internal_multiset = (struct multiset *) (ptrdiff_t) -1;
+  gc_internal_mapping = (struct mapping *) (ptrdiff_t) -1;
+  gc_internal_program = (struct program *) (ptrdiff_t) -1;
+  gc_internal_object = (struct object *) (ptrdiff_t) -1;
+
   if(fatal_after_gc) fatal("%s", fatal_after_gc);
 #endif
 
