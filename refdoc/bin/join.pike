@@ -1,5 +1,5 @@
 /*
- * $Id: join.pike,v 1.4 2002/03/09 16:06:28 nilsson Exp $
+ * $Id: join.pike,v 1.5 2002/03/11 20:10:07 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -13,7 +13,7 @@ int main(int n, array(string) args) {
   args -= ({ "--post-process" });
   if(post_process) {
     int mtime;
-    mtime = min( @map(args[2..], `[], 3) );
+    mtime = min( @map(args[2..], lambda(string f) { return file_stat(f)->mtime; } ) );
     Stdio.Stat stat = file_stat(args[1]);
     if(stat && stat->mtime > mtime) return 0;
     return join_files(args[2..], args[1], post_process);
