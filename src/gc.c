@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.217 2003/04/28 00:34:12 mast Exp $
+|| $Id: gc.c,v 1.218 2003/05/12 12:18:41 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.217 2003/04/28 00:34:12 mast Exp $");
+RCSID("$Id: gc.c,v 1.218 2003/05/12 12:18:41 nilsson Exp $");
 
 int gc_enabled = 1;
 
@@ -637,7 +637,9 @@ static void describe_marker(struct marker *m)
 
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 {
+#ifdef PIKE_DEBUG
   struct marker *m;
+#endif
   int orig_gc_pass = Pike_in_gc;
   va_list args;
 
@@ -1162,7 +1164,9 @@ void debug_gc_touch(void *a)
       break;
 
     case GC_PASS_MIDDLETOUCH: {
+#ifdef PIKE_DEBUG
       int extra_ref;
+#endif
       m = find_marker(a);
       if (!m)
 	gc_fatal(a, 1, "Found a thing without marker.\n");
@@ -1879,8 +1883,9 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
  * pos might be moved further down the stack to avoid mixing cycles or
  * breaking strong link sequences. */
 {
+#ifdef GC_STACK_DEBUG
   struct gc_frame *l;
-
+#endif
   CYCLE_DEBUG_MSG(find_marker(beg->data), "> rotate_rec_list, asked to begin at");
 
 #ifdef PIKE_DEBUG
@@ -2719,8 +2724,10 @@ size_t do_gc(void *ignored, int explicit_call)
 
   if (gc_debug) {
     unsigned n;
+#ifdef DEBUG_MALLOC
     size_t i;
     struct marker *m;
+#endif
     Pike_in_gc=GC_PASS_MIDDLETOUCH;
     n = gc_touch_all_arrays();
     n += gc_touch_all_multisets();
