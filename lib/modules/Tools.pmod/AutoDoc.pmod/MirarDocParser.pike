@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.22 2003/08/24 21:20:02 nilsson Exp $ */
+/* $Id: MirarDocParser.pike,v 1.23 2003/11/06 15:11:19 grubba Exp $ */
 
 #pike __REAL_VERSION__
 
@@ -264,6 +264,9 @@ multiset(string) get_method_names(array(string) decls)
    foreach (decls,decl)
    {
       sscanf(decl,"%*s%*[\t ]%s%*[\t (]%*s",name);
+      if (name == "`" && has_value(decl, "`()")) {
+	name = "`()";
+      }
       names[name]=1;
    }
    return names;
@@ -422,6 +425,11 @@ void docdecl(string enttype,
    string rv,name,params=0;
    sscanf(decl,"%s %s(%s",rv,name,params) == 3 ||
      sscanf(decl+"\n","%s %s\n",rv,name);
+
+   if (name == "`" && params && has_prefix(params, ")")) {
+     name = "`()";
+     sscanf(params[1..], "%*s(%s", params);
+   }
 
    if (convname[name]) name=convname[name];
 
