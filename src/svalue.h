@@ -129,6 +129,8 @@ struct svalue
 #define is_gt(a,b) is_lt(b,a)
 #define IS_ZERO(X) ((X)->type==T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
 
+#define IS_UNDEFINED(X) ((X)->type==T_INT&&!(X)->u.integer&&(X)->subtype==1)
+
 #define check_destructed(S) \
 do{ \
   struct svalue *_s=(S); \
