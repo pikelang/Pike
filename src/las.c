@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.176 2000/05/01 02:11:25 hubbe Exp $");
+RCSID("$Id: las.c,v 1.177 2000/05/07 00:39:17 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1230,14 +1230,16 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
     default:
     {
+      int c;
       DECLARE_CYCLIC();
-      if(BEGIN_CYCLIC(sp[-1].u.refs, id))
+      c=(int)BEGIN_CYCLIC(sp[-1].u.refs, id);
+      if(c>1)
       {
 	my_yyerror("Recursive module dependency in '%s'.",id->str);
 	pop_stack();
 	push_int(0);
       }else{
-	SET_CYCLIC_RET(1);
+	SET_CYCLIC_RET(c+1);
 	ref_push_string(id);
 	{
 	  struct svalue *save_sp = sp-2;
@@ -1271,8 +1273,8 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    my_yyerror("Index '%s' not present in module.", id->str);
 	  }
 	}
-	END_CYCLIC();
       }
+      END_CYCLIC();
     }
     }
   }

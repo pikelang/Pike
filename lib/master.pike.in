@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.116 2000/04/13 18:54:16 per Exp $
+ * $Id: master.pike.in,v 1.117 2000/05/07 00:39:52 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -589,17 +589,25 @@ object cast_to_object(string oname, string current_file)
 class dirnode
 {
   string dirname;
-  mixed module;
+  mixed module=module_checker();
   mapping(string:mixed) cache=([]);
   array(string) files;
 
   void create(string name)
   {
     dirname=name;
+  }
 
-    if(module=findmodule(dirname+"/module"))
-      if(mixed tmp=module->_module_value)
-	module=tmp;
+  class module_checker
+  {
+    int `!()
+    {
+      module=0;
+      if(module=findmodule(dirname+"/module"))
+	if(mixed tmp=module->_module_value)
+	  module=tmp;
+      return !module;
+    }
   }
 
   static mixed ind(string index)

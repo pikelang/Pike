@@ -1,7 +1,7 @@
 #include "global.h"
 #include "cyclic.h"
 
-RCSID("$Id: cyclic.c,v 1.3 1998/03/28 15:35:34 grubba Exp $");
+RCSID("$Id: cyclic.c,v 1.4 2000/05/07 00:39:17 hubbe Exp $");
 
 #define CYCLIC_HASH_SIZE 4711
 
@@ -45,6 +45,7 @@ void *begin_cyclic(CYCLIC *c,
 		   void *b)
 {
   unsigned int h;
+  void *ret=0;
   CYCLIC *p;
 
   h=(int)id;
@@ -58,8 +59,13 @@ void *begin_cyclic(CYCLIC *c,
   h%=CYCLIC_HASH_SIZE;
 
   for(p=cyclic_hash[h];p;p=p->next)
+  {
     if(a == p->a && b==p->b && id==p->id)
-      return p->ret;
+    {
+      ret=p->ret;
+      break;
+    }
+  }
 
   c->ret=(void *)1;
   c->a=a;
@@ -69,5 +75,5 @@ void *begin_cyclic(CYCLIC *c,
   c->next=cyclic_hash[h];
   cyclic_hash[h]=c;
   SET_ONERROR(c->onerr, low_unlink_cyclic, c);
-  return 0;
+  return ret;
 }

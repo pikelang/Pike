@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.272 2000/05/05 07:55:19 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.273 2000/05/07 00:39:17 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2748,12 +2748,12 @@ void f_column(INT32 args)
     for(e=0;e<a->size;e++)
       index_no_free(ITEM(a)+e, ITEM(tmp)+e, val);
 
-    END_CYCLIC();
     sp--;
     dmalloc_touch_svalue(sp);
     pop_n_elems(args);
     push_array(a);
   }
+  END_CYCLIC();
 }
 
 #ifdef PIKE_DEBUG

@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.74 2000/04/20 02:41:45 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.75 2000/05/07 00:39:17 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -502,8 +502,8 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  if(save_sp!=sp)
 	    fatal("o_cast left stack droppings.\n");
 #endif
-	  END_CYCLIC();
 	}
+	END_CYCLIC();
 	assign_svalue(sp-3,sp-1);
 	pop_stack();
       }
@@ -550,8 +550,8 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    fatal("o_cast left stack droppings.\n");
 #endif
 	  order_multiset(m);
-	  END_CYCLIC();
 	}
+	END_CYCLIC();
 	assign_svalue(sp-3,sp-1);
 	pop_stack();
       }
@@ -604,8 +604,8 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  if(save_sp!=sp)
 	    fatal("o_cast left stack droppings.\n");
 #endif
-	  END_CYCLIC();
 	}
+	END_CYCLIC();
 	assign_svalue(sp-4,sp-1);
 	pop_stack();
       }
