@@ -344,4 +344,3 @@ string describe_backtrace(mixed *trace)
 
   return ret;
 }
-
