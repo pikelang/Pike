@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.91 2001/03/17 00:02:08 grubba Exp $");
+RCSID("$Id: encode.c,v 1.92 2001/03/17 16:37:42 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -312,6 +312,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       t = t->cdr;
       goto one_more_type;
 
+    case T_TYPE:
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
@@ -404,6 +405,7 @@ one_more_type:
     case T_AND:
       t += low_encode_type(t, data);
 
+    case T_TYPE:
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
@@ -1197,6 +1199,7 @@ one_more_type:
       goto one_more_type;
 #endif /* USE_PIKE_TYPE */
 
+    case T_TYPE:
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
@@ -1248,7 +1251,6 @@ one_more_type:
     case '8':
     case '9':
     case T_FLOAT:
-    case T_TYPE:
     case T_STRING:
     case T_PROGRAM:
     case T_MIXED:

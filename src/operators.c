@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.129 2001/03/04 19:27:18 mirar Exp $");
+RCSID("$Id: operators.c,v 1.130 2001/03/17 16:37:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3409,7 +3409,8 @@ void init_operators(void)
 			tVar(0), tVar(0),tInt01),
 		 tFuncV(tOr3(tObj,tProgram,tFunction) tMix,tMix,tInt01),
 		 tFuncV(tMix tOr3(tObj,tProgram,tFunction),tMix,tInt01),
-		 tFuncV(tType tType,tOr3(tProgram,tFunction,tType),tInt01)),
+		 tFuncV(tType(tMix) tType(tMix),
+			tOr3(tProgram,tFunction,tType(tMix)),tInt01)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
   ADD_EFUN2("`!=",f_ne,
@@ -3419,7 +3420,8 @@ void init_operators(void)
 			tVar(0), tVar(0),tInt01),
 		 tFuncV(tOr3(tObj,tProgram,tFunction) tMix,tMix,tInt01),
 		 tFuncV(tMix tOr3(tObj,tProgram,tFunction),tMix,tInt01),
-		 tFuncV(tType tType,tOr3(tProgram,tFunction,tType),tInt01)),
+		 tFuncV(tType(tMix) tType(tMix),
+			tOr3(tProgram,tFunction,tType(tMix)),tInt01)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
@@ -3499,7 +3501,7 @@ multiset & mapping -> mapping
 		     F_AND_TYPE(tMapping),
 		     F_AND_TYPE(tMultiset),
 		     F_AND_TYPE(tString),
-		     F_AND_TYPE(tOr(tType,tPrg)) ),
+		     F_AND_TYPE(tOr(tType(tMix),tPrg)) ),
 
 	       tIfnot(tFuncV(tNone, tNot(tMapping), tMix),
 		      tFuncV(tNone,
@@ -3517,7 +3519,7 @@ multiset & mapping -> mapping
        tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
        tFuncV(tSetvar(5,tArray),tSetvar(6,tArray),tOr(tVar(5),tVar(6))),	\
        tFuncV(tString,tString,tString),						\
-       tFuncV(tOr(tType,tPrg),tOr(tType,tPrg),tType))
+       tFuncV(tOr(tType(tMix),tPrg),tOr(tType(tMix),tPrg),tType(tMix)))
 
   ADD_EFUN2("`|",f_or,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
 
@@ -3593,7 +3595,7 @@ multiset & mapping -> mapping
 		 tFunc(tInt,tInt),
 		 tFunc(tFlt,tFlt),
 		 tFunc(tStr,tStr),
-		 tFunc(tOr(tType,tProgram),tType)),
+		 tFunc(tOr(tType(tMix),tProgram),tType(tMix))),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int) */
   ADD_EFUN2("sizeof", f_sizeof,

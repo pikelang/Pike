@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.352 2001/03/11 22:50:36 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.353 2001/03/17 16:37:41 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2445,6 +2445,13 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
   t=first_arg[0]->type;
   if(!t || match_types(t, object_type_string))
   {
+#ifdef USE_PIKE_TYPE
+    /* Skip any name-nodes. */
+    while(t && t->type == PIKE_T_NAME) {
+      t = t->cdr;
+    }
+#endif /* USE_PIKE_TYPE */
+    /* FIXME: Ought to handle or-nodes here. */
     if(t && (
 #ifdef USE_PIKE_TYPE
 	     t->type
@@ -7451,7 +7458,7 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
   ADD_EFUN("_leak",f__leak,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
-  ADD_EFUN("_typeof",f__typeof,tFunc(tMix,tType),0);
+  ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
   /* class __master
    * Used to prototype the master object.

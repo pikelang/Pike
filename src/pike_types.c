@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.161 2001/03/05 21:32:52 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.162 2001/03/17 16:37:43 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -416,6 +416,11 @@ void push_scope_type(int level)
 
 void push_assign_type(int marker)
 {
+#ifdef PIKE_DEBUG
+  if ((marker < '0') || (marker > '9')) {
+    fatal("Bad assign marker: %d\n", marker);
+  }
+#endif /* PIKE_DEBUG */
   *Pike_compiler->type_stackp = mk_type(T_ASSIGN,
 					(void *)(ptrdiff_t)marker,
 					*Pike_compiler->type_stackp,
@@ -463,6 +468,7 @@ void push_type(unsigned INT16 type)
   case T_ARRAY:
   case T_MULTISET:
   case T_NOT:
+  case T_TYPE:
     /* Make a new type of the top type, and put it in car. */
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp, NULL,
@@ -481,7 +487,6 @@ void push_type(unsigned INT16 type)
 
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
@@ -531,6 +536,7 @@ void pop_type_stack(void)
   case T_ARRAY:
   case T_MULTISET:
   case T_NOT:
+  case T_TYPE:
     /* car */
     push_finished_type(top->car);
     break;
@@ -543,7 +549,6 @@ void pop_type_stack(void)
   case T_OBJECT:
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
@@ -831,7 +836,8 @@ static void internal_parse_typeA(char **_s)
 	push_reverse_type(T_TUPLE);
 	break;
       }
-      if(!strcmp(buf,"type")) { push_type(T_TYPE); break; }
+      /* FIXME: Handle type(T) */
+      if(!strcmp(buf,"type")) { push_type(T_MIXED); push_type(T_TYPE); break; }
       goto bad_type;
 
     case 'm':
@@ -1123,7 +1129,11 @@ void simple_describe_type(struct pike_type *s)
 	}
       case T_FLOAT: printf("float"); break;
       case T_STRING: printf("string"); break;
-      case T_TYPE: printf("type"); break;
+      case T_TYPE:
+	printf("type(");
+	simple_describe_type(s->car);
+	printf(")");
+	break;
       case T_PROGRAM: printf("program"); break;
       case T_OBJECT:
 	printf("object(%s %ld)",
@@ -1269,7 +1279,11 @@ static void low_describe_type(struct pike_type *t)
       break;
 
     case T_STRING: my_strcat("string"); break;
-    case T_TYPE: my_strcat("type"); break;
+    case T_TYPE:
+      my_strcat("type(");
+      my_describe_type(t->car);
+      my_strcat(")");
+      break;
 
     case PIKE_T_NAME:
       if (!((struct pike_string *)t->car)->size_shift) {
@@ -1643,7 +1657,6 @@ static int lower_and_pike_types(struct pike_type *t1, struct pike_type *t2)
     break;
   case T_PROGRAM:
   case T_STRING:
-  case T_TYPE:
   case T_FLOAT:
   case T_INT:
     even_lower_and_pike_types(t1, t2);
@@ -1675,7 +1688,6 @@ static int low_and_push_complex_pike_type(struct pike_type *type)
   case T_ZERO:
   case T_PROGRAM:
   case T_STRING:
-  case T_TYPE:
   case T_FLOAT:
   case T_INT:
     /* Simple type. Already handled. */
@@ -1751,7 +1763,6 @@ static void low_and_pike_types(struct pike_type *t1,
   }
   else if((t1->type == t2->type) &&
 	  ((t1->type == T_STRING) ||
-	   (t1->type == T_TYPE) ||
 	   (t1->type == T_FLOAT) ||
 	   (t1->type == T_PROGRAM)))
   {
@@ -2301,6 +2312,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   }
     
 
+  case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
     if(!low_match_types(a->car, b->car,
@@ -2308,7 +2320,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
@@ -2828,6 +2839,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   }
     
 
+  case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
     a = a->car;
@@ -2837,7 +2849,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
@@ -3740,6 +3751,12 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
     return pop_unfinished_type();
   }
 
+  case T_TYPE:
+    type_stack_mark();
+    push_finished_type(s->u.type);
+    push_type(T_TYPE);
+    return pop_unfinished_type();
+
   default:
     type_stack_mark();
     push_type(s->type);
@@ -3921,6 +3938,7 @@ static struct pike_type *low_make_pike_type(unsigned char *type_string,
 		   low_make_pike_type(*cont, cont), PT_COPY_BOTH);
   case T_ARRAY:
   case T_MULTISET:
+  case T_TYPE:
   case T_NOT:
     /* Single type */
     return mk_type(type, low_make_pike_type(type_string+1, cont), NULL,
@@ -3941,7 +3959,6 @@ static struct pike_type *low_make_pike_type(unsigned char *type_string,
 
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
@@ -4111,6 +4128,7 @@ one_more_type:
       
     case T_ARRAY:
     case T_MULTISET:
+    case T_TYPE:
     case T_NOT:
       goto one_more_type;
       
@@ -4126,7 +4144,6 @@ one_more_type:
     case '9':
     case T_FLOAT:
     case T_STRING:
-    case T_TYPE:
     case T_PROGRAM:
     case T_MIXED:
     case T_VOID:
@@ -4482,7 +4499,8 @@ static void internal_parse_typeA(char **_s)
 	push_type(T_TUPLE);
 	break;
       }
-      if(!strcmp(buf,"type")) { push_type(T_TYPE); break; }
+      /* FIXME: Support for type(T). */
+      if(!strcmp(buf,"type")) { push_type(T_MIXED); push_type(T_TYPE); break; }
       goto bad_type;
 
     case 'm':
@@ -4822,7 +4840,11 @@ static char *low_describe_type(char *t)
       /* Prog id */
       break;
     case T_STRING: my_strcat("string"); break;
-    case T_TYPE: my_strcat("type"); break;
+    case T_TYPE:
+      my_strcat("type(");
+      t = low_describe_type(t);
+      my_strcat(")");
+      break;
       
     case T_FUNCTION:
     {
@@ -5217,7 +5239,6 @@ static int lower_and_pike_types(char *t1, char *t2)
     break;
   case T_PROGRAM:
   case T_STRING:
-  case T_TYPE:
   case T_FLOAT:
   case T_INT:
     even_lower_and_pike_types(t1, t2);
@@ -5250,7 +5271,6 @@ static int low_and_push_complex_pike_type(char *type)
   case T_ZERO:
   case T_PROGRAM:
   case T_STRING:
-  case T_TYPE:
   case T_FLOAT:
   case T_INT:
     /* Simple type. Already handled. */
@@ -5328,7 +5348,6 @@ static void low_and_pike_types(char *t1, char *t2)
     push_type(T_SCOPE);
   }
   else if((EXTRACT_UCHAR(t1)==T_STRING && EXTRACT_UCHAR(t2)==T_STRING) ||
-	  (EXTRACT_UCHAR(t1)==T_TYPE && EXTRACT_UCHAR(t2)==T_TYPE) ||
 	  (EXTRACT_UCHAR(t1)==T_FLOAT && EXTRACT_UCHAR(t2)==T_FLOAT) ||
 	  (EXTRACT_UCHAR(t1)==T_PROGRAM && EXTRACT_UCHAR(t2)==T_PROGRAM))
   {
@@ -5867,13 +5886,13 @@ static char *low_match_types2(char *a,char *b, int flags)
   }
     
 
+  case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
     if(!low_match_types(++a,++b,flags & ~(A_EXACT|B_EXACT))) return 0;
 
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
@@ -6379,13 +6398,13 @@ static int low_pike_types_le2(char *a, char *b,
   }
     
 
+  case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
     if(!low_pike_types_le(++a, ++b, 0, flags)) return 0;
 
   case T_FLOAT:
   case T_STRING:
-  case T_TYPE:
   case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
@@ -7256,6 +7275,12 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
     return pop_unfinished_type();
   }
 
+  case T_TYPE:
+    type_stack_mark();
+    push_finished_type(s->u.type);
+    push_type(T_TYPE);
+    return pop_unfinished_type();
+
   default:
     type_stack_mark();
     push_type(s->type);
@@ -7461,7 +7486,7 @@ void init_types(void)
   multiset_type_string = CONSTTYPE(tMultiset);
   mapping_type_string = CONSTTYPE(tMapping);
   function_type_string = CONSTTYPE(tFunction);
-  type_type_string = CONSTTYPE(tType);
+  type_type_string = CONSTTYPE(tType(tMix));
   void_type_string = CONSTTYPE(tVoid);
   zero_type_string = CONSTTYPE(tZero);
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
