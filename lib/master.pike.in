@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.238 2002/12/09 22:19:13 mast Exp $
+// $Id: master.pike.in,v 1.239 2003/01/09 16:50:19 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -335,7 +335,8 @@ mapping (string:array(string)) environment=([]);
 //! @appears getenv
 //!
 //! When called with no arguments, a mapping with all current environment
-//! variables will be returned.
+//! variables will be returned. Destructive opreations on the mapping
+//! will not affect the internal environment representation.
 //!
 //! If the @[varname] argument has been given, the value of the environment
 //! variable with the name @[varname] will be returned. If no such
@@ -1360,7 +1361,7 @@ class CompatResolver
     m_delete (predefines, name);
   }
 
-  //!
+  //! Returns a mapping with the current predefines.
   mapping get_predefines()
   {
     return predefines;
@@ -1595,7 +1596,7 @@ void _main(array(string) orig_argv, array(string) env)
 	putenv(a, b);
       }else{
 	werror("Broken environment var %s\n",a);
-      }		
+      } 
     }
 
   void _error(string a, mixed ... b) {
@@ -1695,7 +1696,7 @@ void _main(array(string) orig_argv, array(string) env)
            case "threads":
              // not really 100% correct, but good enough for most things.
              no_resolv[ "Thread" ] = 1;
-             add_constant( "thread_create", UNDEFINED );
+             add_constant( "thread_create" );
              break;
            default:
              no_resolv[ feature ] = 1;
@@ -1807,7 +1808,7 @@ void _main(array(string) orig_argv, array(string) env)
 	argv = tmp->get_args(argv,1);
 	if(trace) predef::trace(trace);
 	compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
-			opts[1]+";}")(sizeof(argv),argv,env);
+		        opts[1]+";}")(sizeof(argv),argv,env);
 	exit(0);
 
       case "preprocess":
@@ -2413,6 +2414,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   // Begin by describing our parent.
   array(object) parent_obj = ({ 0 });
   string res = describe_module(function_object(parent_fun)||
+			       function_program(parent_fun)||
 			       object_program(parent_fun),
 			       parent_obj);
   // werror("So far: %O parent_obj:%O\n", res, parent_obj);
@@ -2464,7 +2466,8 @@ string describe_object(object|program o)
 
   /* Constant object? */
   catch {
-    object|program parent_obj = function_object(parent_fun);
+    object|program parent_obj =
+      (function_object(parent_fun) || function_program(parent_fun));
 
     if (objectp (parent_obj) || parent_obj) {
       /* Check if we have a constant object. */
@@ -2507,7 +2510,7 @@ string describe_program(program p)
   if(s=get_clean_program_path(p, "object_program(", ")", ""))
     return s;
 
-  if(mixed tmp=function_object(p))
+  if(mixed tmp=(function_object(p) || function_program(p)))
     if(s = function_name(p))
       {
 	return describe_module(tmp) + s;
