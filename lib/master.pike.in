@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.135 2000/11/20 01:26:26 mast Exp $
+ * $Id: master.pike.in,v 1.136 2000/12/02 16:21:36 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -469,7 +469,12 @@ void handle_error(array(mixed)|object trace)
     // tune up the STACK_MARGIN values in interpret.c then.
     werror("Error in handle_error in master object:\n");
     if(catch {
-      werror("%O\nOriginal error:\n%O\n",x,trace);
+      if (catch {
+	string msg = x[0];
+	array bt = x[1];
+	werror ("%s%O\nOriginal error:\n%O\n", msg, bt, trace);
+      })
+	werror("%O\nOriginal error:\n%O\n",x,trace);
     }) {
       werror("sprintf() failed to write error.\n");
     }
@@ -660,7 +665,9 @@ class dirnode
     mixed ret;
     if(!zero_type(ret=cache[index]))
     {
-      if(ret!=0) return ret;
+      // The check below is to (hopefully) avoid calling any function
+      // in ret (like `! or `==) in case it's an object.
+      if(!intp (ret) || ret) return ret;
       return UNDEFINED;
     }
     return cache[index]=ind(index);
@@ -709,7 +716,7 @@ class dirnode
   {
     // werror("indices(%O) called\n", dirname);
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return x!=0; }));
+    return indices(filter(cache, lambda(mixed x){ return !intp (x) || x; }));
   }
   array(mixed) _values()
   {
@@ -1754,7 +1761,8 @@ string describe_function (function f)
     if (catch (name = function_name (f))) name = "function";
 
   object o = function_object(f);
-  if(o != 0) { // Testing simply on o here could invoke a `!.
+  if(objectp (o)) { // Check if it's an object in a way that (hopefully) doesn't
+		    // call any functions in it (neither `== nor `!).
     string s;
     if (!catch (s = sprintf("%O",o)) && s != "object")
       return s+"->"+name;
