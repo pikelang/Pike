@@ -201,7 +201,6 @@ class Connection {
   //! both directions.
   void close()
   {
-    remove_call_out (enable_async);
     want_close = 1;
 #if constant(thread_create)
     calls->write(0);
@@ -240,6 +239,7 @@ class Connection {
       };
 #endif
       catch {con->set_blocking(); con->close();};
+      remove_call_out (enable_async);
 #if constant(thread_create)
       wb_lock = 0;
       fc_lock = 0;
