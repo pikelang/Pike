@@ -4,12 +4,12 @@ VPATH=@srcdir@:@srcdir@/../..:../..:.
 MODNAME=GTK
 DEST=@prefix@/lib/pike/modules/
 OBJS=dummy.o
-MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @PGTK_LIBS@ @LIBGLADE_LIBS@
-MODULE_CFLAGS=@PGTK_CFLAGS@ @LIBGLADE_CFLAGS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @PGTK_LIBS@ @GNOME_LIBS@ @LIBGLADE_LIBS@
+MODULE_CFLAGS=@PGTK_CFLAGS@ @GNOME_CFLAGS@ @LIBGLADE_CFLAGS@
 CONFIG_HEADERS=config.h
 
 # OK.. This is somewhat confusing
-# 
+#
 # WITH_GTK == 1
 #   override -> sources1 -> [SET OBJS] -> all
 #
@@ -94,4 +94,3 @@ $(OBJS) : \
  $(SRCDIR)/../../object.h \
  $(SRCDIR)/../../threads.h \
  $(SRCDIR)/../../operators.h
-

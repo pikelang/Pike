@@ -14,7 +14,7 @@ mapping signals = ([  ]);
 string glob_prototypes="";
 string line_id = "";
 
-int last_ended_with_nl, debug_mode=1, no_hashline;
+int last_ended_with_nl, debug_mode=0, no_hashline=1;
 void emit_nl(string what)
 {
   if(!no_hashline && debug_mode)
@@ -35,9 +35,25 @@ string classname( string what )
   if(sscanf(what, "Gdk_%s", what) ||
      sscanf(what, "Gdk%s", what))
     base = "GDK.";
+  if(sscanf(what, "gnome_%s", what) || sscanf(what, "GNOME_%s", what))
+    base = "Gnome.";
   if(what == "Atom")
     return "GDK._Atom";
   return base+sillycaps( what, 1 );
+}
+
+string funname( string f )
+{
+  if( sscanf( f, "gtk_gnome_%s", f ) )
+    return "gnome_"+f;
+  return f;
+}
+
+string castname( string f )
+{
+  if( sscanf( f, "GTK_GNOME_%s", f ) )
+    return "GNOME_"+f;
+  return f;
 }
 
 string sillycaps( string what, int|void nolower )
@@ -50,6 +66,7 @@ string sillycaps( string what, int|void nolower )
   while(sscanf(what, "%s_%s", a, what) == 2)
     what = a+String.capitalize(what);
   if(nolower) return what;
+  if( !search( what, "Gnome" ) )return what;
   return "Gtk"+what;
 }
 
@@ -718,6 +735,7 @@ string find_constants(string prefix)
 
 string gödsla_med_line(string s, string f)
 {
+  if( no_hashline ) return s;
   string line = "#line %d \""+f+"\"\n%s\n";
   int l;
   string res="";
@@ -955,7 +973,9 @@ int main(int argc, array argv)
       emit_proto("void pgtk_"+progname+"_get_"+line+"(int args)\n");
       emit("{\n");
       emit("  my_pop_n_elems(args);\n");
-      emit("  push_"+(type=="string"?"text":type)+"( GTK_"+upper_case( progname )+"( THIS->obj )->"+line+");\n");
+      emit("  push_"+(type=="string"?"text":type)+"( "+
+           castname("GTK_"+upper_case( progname ))
+           +"( THIS->obj )->"+line+");\n");
       emit("}\n");
     }
     else if(sscanf(line, "SETCLASSMEMBER(%[^,],%s)", line, string type))
@@ -983,9 +1003,9 @@ int main(int argc, array argv)
          ERR("Cannot setclassmember of type "+type+"!");
          exit(1);
       }
-      emit("  old = ( GTK_"+upper_case( progname )+
+      emit("  old = ( "+castname("GTK_"+upper_case( progname ))+
            "( THIS->obj )->"+line+");\n");
-      emit("  ( GTK_"+upper_case( progname )+
+      emit("  ( "+castname("GTK_"+upper_case( progname ))+
            "( THIS->obj )->"+line+") = to;\n");
 
       emit("  push_"+(type=="string"?"text":type)+"( old );\n");
@@ -1005,7 +1025,8 @@ int main(int argc, array argv)
       emit_proto("void pgtk_"+progname+"_"+line+"(int args)\n");
       emit("{\n");
       emit("  my_pop_n_elems(args);\n");
-      emit("  push_gtkobjectclass( GTK_"+upper_case( progname )+"( THIS->obj )->"+line+", pgtk_"+type+"_program );\n");
+      emit("  push_gtkobjectclass( "+castname("GTK_"+upper_case( progname ))
+           +"( THIS->obj )->"+line+", pgtk_"+type+"_program );\n");
       emit("}\n");
     }
     else if((sscanf(line, "%sCOMPLEX_FUNCTION(%[^,],%s)",
@@ -1022,7 +1043,8 @@ int main(int argc, array argv)
       string post = "", fin="", zap="";
       int na, i_added;
 
-      sscanf(rest, "%*[\t ]%[^ \t]", rest);
+      rest = String.trim_whites( rest );
+      fn = String.trim_whites( fn );
       if(!strlen(rest))
       {
         rest = 0;
@@ -1035,11 +1057,12 @@ int main(int argc, array argv)
       last_function=fn;
       NUMBER_FUNCTION();
       if(fn == "create")
-	fin = " pgtk__init_object( fp->current_object );\n";
+	fin = "  pgtk__init_object( fp->current_object );\n";
       int last_was_optional;
       foreach(((types-" ")/"," - ({""})), string t)
       {
 	na++;
+        last_was_optional=0;
 	switch(lower_case(t))
 	{
 	 case "null":
@@ -1048,7 +1071,6 @@ int main(int argc, array argv)
 	 case "callback":
 	   fundef += ",function,mixed";
 	   argument_list += ", function(mixed:mixed), mixed";
-           last_was_optional = 0;
 	   format_string += "%*%*";
 	   args += ("  struct signal_data *b;\n"
 	            "struct svalue *tmp1, *tmp2;\n");
@@ -1058,18 +1080,19 @@ int main(int argc, array argv)
 	   sargs += ",&tmp1,&tmp2";
 	   break;
 
-	 case "stringarray":
+         case "nullstringarray":
+           int null = 1;
+         case "stringarray":
            if(!i_added++)
              args += "  int _i;\n";
-           last_was_optional = 0;
 	   fundef += ",array(string)";
 	   argument_list += ", array(string)";
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
-	   args += "  char **arg"+na+";\n";
+	   args += "  gchar **arg"+na+";\n";
 	   sargs += ", &_arg"+na;
 	   fin += " free(arg"+na+");\n";
-	   post += ("  arg"+na+"=malloc(sizeof(char *)* (_arg"+na+"->size));\n"
+	   post += ("  arg"+na+"=malloc(sizeof(char *)* (_arg"+na+"->size+"+null+"));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
 		    "    if(_arg"+na+"->item[_i].type != T_STRING)\n"
@@ -1079,6 +1102,8 @@ int main(int argc, array argv)
 		    "    }\n"
 		    "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.string->str;\n"
 		    "  }\n");
+           if( null )
+             post += "  arg"+na+"[_i] = NULL;\n";
 	   break;
 	 case "floatarray":
 	   string size = ", ^^arg"+na+"->size";
@@ -1086,7 +1111,6 @@ int main(int argc, array argv)
              args += "  int _i;\n";
 	   fundef += ",array(float)";
 	   argument_list += ", array(float)";
-           last_was_optional = 0;
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gfloat *arg"+na+";\n";
@@ -1109,7 +1133,6 @@ int main(int argc, array argv)
            if(!i_added++)
              args += "  int _i;\n";
 	   fundef += ",array(int)";
-           last_was_optional = 0;
 	   argument_list += ", array(int)";
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
@@ -1129,36 +1152,38 @@ int main(int argc, array argv)
 		    "  }\n"
                     "  arg"+na+"[_i] = 0;\n");
 	   break;
+	 case "?int":
+           last_was_optional = 1;
 	 case "int":
-	   argument_list += ", int";
-           last_was_optional = 0;
-	   fundef += ",mixed";
+	   argument_list += ", int"+(last_was_optional?"|void":"");
+	   fundef += ",mixed"+(last_was_optional?"|void":"");
 	   format_string += "%D";
-	   args += "  int arg"+na+";\n";
+	   args += "  int arg"+na+(last_was_optional?" = 0":"")+";\n";
 	   sargs += ", &arg"+na;
 	   break;
 	 case "intp":
 	   argument_list += ", int";
-           last_was_optional = 0;
-	   fundef += ",mixed";
+	   fundef += ",mixed"+(last_was_optional?"|void":"");
 	   format_string += "%D";
 	   args += "  int _arg"+na+", *arg"+na+"=&_arg"+na+";\n";
 	   sargs += ", _arg"+na;
 	   break;
+	 case "?float":
+           last_was_optional = 1;
 	 case "float":
-	   argument_list += ", float";
-           last_was_optional = 0;
-	   fundef += ",mixed";
+	   argument_list += ", float"+(last_was_optional?"|void":"");
+	   fundef += ",mixed"+(last_was_optional?"|void":"");
 	   format_string += "%F";
-	   args += "  float arg"+na+";\n";
+	   args += "  float arg"+na+(last_was_optional?" = 0.0;":"")+";\n";
 	   sargs += ", &arg"+na;
 	   break;
+	 case "?string":
+           last_was_optional = 1;
 	 case "string":
-           last_was_optional = 0;
-	   fundef += ","+t;
-	   argument_list += ", string";
+	   fundef += ",string"+(last_was_optional?"|void":"");
+	   argument_list += ", string"+(last_was_optional?"|void":"");
 	   format_string += "%s";
-	   args += "  char *arg"+na+";\n";
+	   args += "  char *arg"+na+(last_was_optional?" = NULL":"")+";\n";
 	   sargs += ", &arg"+na;
 	   break;
 	 default:
@@ -1197,10 +1222,7 @@ int main(int argc, array argv)
              argument_list += "|void";
 
            if(!opt)
-           {
-             last_was_optional = 0;
              format_string += "%o";
-           }
            else
            {
              last_was_optional = 1;
@@ -1232,7 +1254,8 @@ int main(int argc, array argv)
                args += "  struct object *_arg"+na+";\n";
                args += "  "+sillycaps(t)+" *arg"+na+";\n";
              }
-             post+=(" arg"+na+" = GTK_"+upper_case(t)+"(get_pgtkobject(_arg"+
+             post+=(" arg"+na+" = "+castname("GTK_"+upper_case(t))+
+                    "(get_pgtkobject(_arg"+
                     na+", pgtk_"+lower_case(t)+"_program ) );\n");
              if(opt)
                post += " else\n    arg"+na+" = NULL;\n";
@@ -1287,8 +1310,8 @@ int main(int argc, array argv)
       if(fn == "create")
       {
         emit("  pgtk_verify_not_inited();\n");
-	emit("  THIS->obj = GTK_OBJECT( gtk_"+progname+"_new("+
-	     replace((sargs[1..]-"&")-"_","^^","_")+" ) );\n");
+	emit("  THIS->obj = GTK_OBJECT( "+funname("gtk_"+progname+"_new")+
+             "("+replace((sargs[1..]-"&")-"_","^^","_")+" ) );\n");
       }
       else
       {
@@ -1297,8 +1320,9 @@ int main(int argc, array argv)
           emit("  result = ");
         else
           emit( "  " );
-	emit("gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+
-	     "( THIS->obj )"+replace((sargs-"&")-"_","^^","_")+" );\n");
+	emit(funname("gtk_"+progname+"_"+fn)+"( "+
+             castname("GTK_"+upper_case(progname))+
+             "( THIS->obj )"+replace((sargs-"&")-"_","^^","_")+" );\n");
       }
       if(strlen(fin))
         emit(fin+"\n");
@@ -1352,7 +1376,8 @@ int main(int argc, array argv)
 	 true_types[progname+fn] = ({ classname(progname), "" });
 	 struct[progname][fn] = "\"function(void:object)\"";
          emit("  pgtk_verify_inited();\n");
-	 emit("  gtk_"+progname+"_"+fn+"(GTK_"+upper_case(progname)+"(THIS->obj));\n");
+	 emit("  "+funname("gtk_"+progname+"_"+fn)+"("+
+              castname("GTK_"+upper_case(progname))+"(THIS->obj));\n");
 	 break;
        case "_INT_":
 	 emit("  int i;\n");
@@ -1360,7 +1385,8 @@ int main(int argc, array argv)
 	 true_types[progname+fn] = ({ classname(progname), "int" });
          emit("  pgtk_verify_inited();\n");
 	 emit("  get_all_args(\""+fn+"\",args, \"%D\", &i);\n");
-	 emit("  gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+
+	 emit("  "+funname("gtk_"+progname+"_"+fn)+"( "+
+              castname("GTK_"+upper_case(progname))+
 	      "( THIS->obj ), i );\n");
 	 break;
        default:
@@ -1376,7 +1402,10 @@ int main(int argc, array argv)
 	 emit("  f = get_gtkobject( o );\n");
 	 emit("  if(!f)\n"
 	      "    error(\"Expected "+classname(line)+", got NULL\\n\");\n");
-	 emit("  gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+"( THIS->obj ), GTK_"+upper_case(line)+"( f ) );\n");
+	 emit("  "+funname("gtk_"+progname+"_"+fn)+"( "+
+              castname("GTK_"+upper_case(progname))+
+              "( THIS->obj ), "+castname("GTK_"+upper_case(line))
+              +"( f ) );\n");
       }
 
       emit("  RETURN_THIS();\n");

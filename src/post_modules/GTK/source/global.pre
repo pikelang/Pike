@@ -76,6 +76,68 @@ static void do_error( void *dom, int level, char *err, void *data )
 
 int pigtk_is_setup = 0;
 
+COND_WIDGET(gnome);
+FUNCTION(gnome_init, "function(string,string,array(string):void)" );
+NAME_ARGS( app_id, app_version, argv );
+// Initializes the application. This sets up all of the GNOME
+// internals and prepares them (imlib, gdk/gtk, session-management,
+// triggers, sound, user preferences)
+{
+  char **data;
+  char *id, *vers;
+  int argc;
+  struct array *a;
+  if( pigtk_is_setup )
+    error("Do not call the init funciton more than once!\n");
+  pigtk_is_setup = 1;
+  get_all_args("setup_gtk", args, "%s%s%a", &id, &vers, &a);
+  data = malloc(sizeof(char *)*(a->size+1));
+  for(argc=0; argc<a->size; argc++)
+  {
+    if(a->item[argc].type != T_STRING)
+    {
+      free(data);
+      error("Index %d in the array given as argument to setup_gtk "
+            "is not a string.\n", argc);
+    }
+    data[argc] = a->item[argc].u.string->str;
+  }
+  data[argc] = NULL;
+
+  atexit( (void (*)(void))_exit );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+  gtk_set_locale();
+  gnome_init( id, vers, argc, data );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+  atexit( (void (*)(void))_exit );
+
+  backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
+
+  my_pop_n_elems(args);
+  free(data);
+  push_int( 0 );
+}
+END_COND_WIDGET(gnome);
+
+
 FUNCTION(setup_gtk, "function(array|void,int|void:array)");
 NAME_ARGS(argv, do_not_parse_rc);
 // Initialize GTK, and all that comes with it.

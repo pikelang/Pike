@@ -32,10 +32,7 @@ NAME_ARGS(mode);
 COMPLEX_FUNCTION(set_active, int);
 NAME_ARGS(activep);
 // If activep is true, the toggle button will be activated.
-/* int COMPLEX_FUNCTION(get_active); */
 CLASSMEMBER(active, int);
 // returns 1 if the button is pressed, 0 otherwise.
 SIMPLE_FUNCTION(toggled);
 // emulate a 'toggle' of the button. This will emit a 'toggled' signal.
-
-/* CLASSMEMBER(draw_indicator,int); */

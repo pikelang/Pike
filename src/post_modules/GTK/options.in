@@ -2,3 +2,4 @@
 @pgtk_has_glarea@
 @have_gtk_120@
 @pgtk_has_libglade@
+@pgtk_has_gnome@

@@ -619,13 +619,13 @@ static int pgtk_push_object_param( GtkArg *a )
 static struct push_callback
 {
   int (*callback)(GtkArg *);
-  unsigned int id;
+  GtkType id;
   struct push_callback *next;
 } push_callbacks[100], *push_cbtable[63];
 
 static int last_used_callback = 0;
 
-static void insert_push_callback( unsigned int i, int (*cb)(GtkArg *) )
+static void insert_push_callback( GtkType i, int (*cb)(GtkArg *) )
 {
   struct push_callback *new = push_callbacks + last_used_callback++;
   struct push_callback *old = push_cbtable[ i%63 ];
@@ -640,32 +640,33 @@ static void insert_push_callback( unsigned int i, int (*cb)(GtkArg *) )
 static void build_push_callbacks( )
 {
 #define CB(X,Y)  insert_push_callback( X, Y );
-  CB( GTK_TYPE_INT,   pgtk_push_int_param );
-  CB( GTK_TYPE_ENUM,  pgtk_push_int_param );
-  CB( GTK_TYPE_FLAGS, pgtk_push_int_param );
-  CB( GTK_TYPE_BOOL,  pgtk_push_int_param );
-  CB( GTK_TYPE_UINT,  pgtk_push_int_param );
-  CB( GTK_TYPE_LONG,  pgtk_push_int_param );
-  CB( GTK_TYPE_CHAR,  pgtk_push_int_param );
-  CB( GTK_TYPE_ACCEL_FLAGS, pgtk_push_int_param );
-  CB( GTK_TYPE_GDK_MODIFIER_TYPE, pgtk_push_int_param );
-  CB( GTK_TYPE_FLOAT,  pgtk_push_float_param );
-  CB( GTK_TYPE_DOUBLE, pgtk_push_float_param );
-  CB( GTK_TYPE_STRING, pgtk_push_string_param );
-  CB( GTK_TYPE_OBJECT, pgtk_push_object_param );
-  CB( GTK_TYPE_SELECTION_DATA, pgtk_push_selection_data_param );
-  CB( GTK_TYPE_ACCEL_GROUP, pgtk_push_accel_group_param );
-  CB( GTK_TYPE_CTREE_NODE,  pgtk_push_ctree_node_param );
+  CB( GTK_TYPE_INT,              pgtk_push_int_param );
+  CB( GTK_TYPE_ENUM,             pgtk_push_int_param );
+  CB( GTK_TYPE_FLAGS,            pgtk_push_int_param );
+  CB( GTK_TYPE_BOOL,             pgtk_push_int_param );
+  CB( GTK_TYPE_UINT,             pgtk_push_int_param );
+  CB( GTK_TYPE_LONG,             pgtk_push_int_param );
+  CB( GTK_TYPE_CHAR,             pgtk_push_int_param );
+  CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
+  CB( GTK_TYPE_GDK_MODIFIER_TYPE,pgtk_push_int_param );
+  CB( GTK_TYPE_FLOAT,            pgtk_push_float_param );
+  CB( GTK_TYPE_DOUBLE,           pgtk_push_float_param );
+  CB( GTK_TYPE_STRING,           pgtk_push_string_param );
+  CB( GTK_TYPE_OBJECT,           pgtk_push_object_param );
+  CB( GTK_TYPE_SELECTION_DATA,   pgtk_push_selection_data_param );
+  CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
+  CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
   CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
-  CB( GTK_TYPE_GDK_EVENT, pgtk_push_gdk_event_param );
-  CB( GTK_TYPE_POINTER, NULL );
-  CB( GTK_TYPE_INVALID, NULL ); /* This might not be exactly what we want */
+  CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
+  CB( GTK_TYPE_POINTER,  NULL );
+  CB( GTK_TYPE_INVALID,  NULL ); /* This might not be exactly what we want */
 }
 
 static int push_param( GtkArg *param )
 {
-  unsigned int t = GTK_TYPE_SEQNO(param->type);
+  GtkType t = GTK_TYPE_SEQNO( param->type );
   struct push_callback *cb = push_cbtable[ t%63 ];
+
   while( cb && (cb->id != t) ) cb = cb->next;
   if( cb )
   {
@@ -676,9 +677,14 @@ static int push_param( GtkArg *param )
   else
   {
     char *s = gtk_type_name( t );
-    if(!s) s = "Unknown Type";
-    fprintf( stderr, "No push callback for %d (%s), "
-             "cannot handle that event type\n", t, s);
+    char *a = "";
+    if(!s)
+    {
+      a = "Unknown child of ";
+      s = gtk_type_name( GTK_FUNDAMENTAL_TYPE( t ) );
+    }
+    fprintf( stderr, "No push callback for type %d (%s%s), "
+             "cannot handle that event type\n", t, a, s);
     if( (t = gtk_type_parent( t )) && t != GTK_TYPE_SEQNO( param->type ) )
     {
       GtkArg p  = *param;

@@ -1,4 +1,5 @@
 PROGRAM(socket);
+#include <gdk/gdkx.h>
 // Together with W(Plug), GTK.Socket provides the ability to embed
 // widgets from one process into another process in a fashion that is
 // transparent to the user. One process creates a GTK.Socket widget
@@ -38,7 +39,7 @@ FUNCTION(has_plug, "function(void:int)");
 // Returns true if this socket is occupied
 {
   my_pop_n_elems( args );
-  if( GTK_SOCKET( THIS->obj )->plug_window 
+  if( GTK_SOCKET( THIS->obj )->plug_window
       || gtk_container_children( GTK_CONTAINER( THIS->obj )) )
     push_int( 1 );
   else

@@ -57,7 +57,7 @@ string indent(string what, int|void limit)
      case '>':
        if(!nobr)
        {
-	 if(strlen(line) >= limit) 
+	 if(strlen(line) >= limit)
 	 {
 	   if(strlen(line) > limit)
 	   {
@@ -112,7 +112,7 @@ void grab(object w)
                    file_name(source), i->togif_fs());
 #endif
   write(tags( source ));
-  
+
   exit(0);
 }
 
@@ -142,7 +142,10 @@ int main(int argc, array (string) argv)
     write(tags(argv[1]));
     exit(0);
   }
-  GTK.setup_gtk( "make_gtkexample", 1 );
+  if(search( argv[1], "Gnome" ) != -1 )
+    Gnome.init( "example", "1.0", ({ "example image" }) );
+  else
+    GTK.setup_gtk( "make_gtkexample", 1 );
 
   if(argv[2] != "TOP")
   {

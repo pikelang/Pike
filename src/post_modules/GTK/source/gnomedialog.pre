@@ -1,0 +1,129 @@
+COND_WIDGET(gnome);
+PROGRAM(gnome_dialog);
+INHERIT(window);
+// Gnome.Dialog gives dialogs a consistent look and feel, while making
+// them more convenient to program. Gnome.Dialog makes it easy to use
+// stock buttons, makes it easier to handle delete_event, and adds
+// some cosmetic touches (such as a separator above the buttons, and a
+// bevel around the edge of the window).
+
+SIGNAL("clicked", "");
+SIGNAL("close", "");
+
+SUBWIDGET( vbox, vbox );
+
+FUNCTION(create, "function(string, string ...:object)");
+NAME_ARGS(title, buttons);
+// Creates a new Gnome.Dialog, with the given title, and any button
+// names in the arg list. Buttons can be simple names, such as "My
+// Button", or gnome-stock defines such as GNOME.StockButtonOK,
+// etc. The last argument should be NULL to terminate the list.
+// <p>
+// Buttons passed to this function are numbered from left to right,
+// starting with 0. So the first button in the arglist is button 0,
+// then button 1, etc. These numbers are used throughout the
+// Gnome.Dialog API.
+{
+  char *title;
+  char **buttons;
+  int i;
+  get_all_args( "create", args, "%s", &title );
+  buttons = malloc( args*sizeof( char *) );
+  buttons[args-1] = NULL;
+  for( i = 1; i<args; i++ )
+    if( sp[-args+i].type != T_STRING )
+    {
+      free( buttons );
+      error( "Bad argument %d, should be string\n", i );
+    }
+    else
+      buttons[i-1] = sp[-args+i].u.string->str;
+  THIS->obj = GTK_OBJECT( gnome_dialog_newv( (const gchar *)title,
+                                             (const gchar **)buttons ) );
+  free( buttons );
+  pop_n_elems( args );
+  push_int( 0 );
+}
+
+COMPLEX_FUNCTION( set_parent, window );
+NAME_ARGS( parent );
+// Dialogs have "parents," usually the main application window which
+// spawned them. This function will let the window manager know about
+// the parent-child relationship. Usually this means the dialog must
+// stay on top of the parent, and will be minimized when the parent
+// is. Gnome also allows users to request dialog placement above the
+// parent window (vs. at the mouse position, or at a default window
+// manger location).
+
+COMPLEX_FUNCTION( button_connect, int, callback );
+NAME_ARGS( button, callback, data );
+// Simply a signal_connect to the "clicked" signal of the specified button.
+
+int COMPLEX_FUNCTION( run );
+// Blocks until the user clicks a button, or closes the dialog with
+// the window manager's close decoration (or by pressing Escape).
+// <p>
+// You need to set up the dialog to do the right thing when a button
+// is clicked or delete_event is received; you must consider both of
+// those possibilities so that you know the status of the dialog when
+// run() returns. A common mistake is to forget about Escape and the
+// window manager close decoration; by default, these call close(),
+// which by default destroys the dialog. If your button clicks do not
+// destroy the dialog, you don't know whether the dialog is destroyed
+// when run() returns. This is bad.
+// <p>
+// So you should either close the dialog on button clicks as well, or
+// change the close() behavior to hide instead of destroy. You can do
+// this with close_hides().
+
+int COMPLEX_FUNCTION( run_and_close );
+// See run(). The only difference is that this function calls close()
+// before returning, if the dialog was not already closed.
+
+COMPLEX_FUNCTION(set_default, int );
+NAME_ARGS( button );
+// The default button will be activated if the user just presses
+// return. Usually you should make the least-destructive button the
+// default. Otherwise, the most commonly-used button.
+
+
+COMPLEX_FUNCTION(set_sensitive, int, int );
+NAME_ARGS( button, sensitive );
+// Calls set_sensitive() on the specified button number.
+
+COMPLEX_FUNCTION(set_accelerator, int, int, int);
+NAME_ARGS(button, accelerator_key, accelerator_mods );
+
+COMPLEX_FUNCTION(close);
+// See also close_hides(). This function emits the "close" signal,
+// which either hides or destroys the dialog (destroy by default). If
+// you connect to the "close" signal, and your callback returns TRUE,
+// the hide or destroy will be blocked. You can do this to avoid
+// closing the dialog if the user gives invalid input, for example.
+// <p>
+// Using close() in place of hide() or destroy() allows you to easily
+// catch all sources of dialog closure, including delete_event and
+// button clicks, and handle them in a central location.
+
+COMPLEX_FUNCTION(set_close, int);
+NAME_ARGS(click_closes);
+// This is a convenience function so you don't have to connect
+// callbacks to each button just to close the dialog. By default,
+// Gnome.Dialog has this parameter set the FALSE and it will not close
+// on any click. (This was a design error.) However, almost all the
+// Gnome.Dialog subclasses, such as Gnome.MessageBox and
+// Gnome.PropertyBox, have this parameter set to TRUE by default.
+
+COMPLEX_FUNCTION(editable_enters, editable );
+// Normally if there's an editable widget (such as GtkEntry) in your
+// dialog, pressing Enter will activate the editable rather than the
+// default dialog button. However, in most cases, the user expects to
+// type something in and then press enter to close the dialog. This
+// function enables that behavior.
+
+COMPLEX_FUNCTION(append_button_with_pixmap, string, string );
+NAME_ARGS( name, pixmap_file );
+
+
+
+END_COND_WIDGET(gnome);

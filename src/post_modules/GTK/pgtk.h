@@ -1,3 +1,34 @@
+/* This is -*- c -*- code */
+/* Sort of unnessesary, and decreases code-size with 140Kb */
+#define GTK_NO_CHECK_CASTS
+
+#include "config.h"
+#include <program.h>
+#include <pike_types.h>
+#include <interpret.h>
+#include <module_support.h>
+#include <error.h>
+#include <array.h>
+#include <backend.h>
+#include <stralloc.h>
+#include <mapping.h>
+#include <object.h>
+#include <threads.h>
+#include <builtin_functions.h>
+#include <operators.h>
+#ifdef HAVE_GNOME
+# include <gnome.h>
+#else
+# include <gtk/gtk.h>
+#endif
+#include "prototypes.h"
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
 #include "../../modules/Image/image.h"
 
 struct object_wrapper

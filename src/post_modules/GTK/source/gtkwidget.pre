@@ -503,8 +503,8 @@ NAME_ARGS(events);
 int COMPLEX_FUNCTION(get_extension_events);
 // Returns one of CONST(GDK_EXTENSION_EVENT)
 
-/* TODO; GdkWindow COMPLEX_FUNCTION(get_parent_window); */
-/* TODO: Widget COMPLEX_FUNCTION(get_ancestor, int);  argument is widgettype*/
+/* TODO; GdkWindow complex_function(get_parent_window); */
+/* TODO: Widget complex_function(get_ancestor, int);  argument is widgettype*/
 Widget COMPLEX_FUNCTION(get_toplevel);
 // return the toplevel widget this widget is inside (or this widget if
 // it is the toplevel widget)
