@@ -16,12 +16,22 @@
 #include <threads.h>
 #include <builtin_functions.h>
 #include <operators.h>
-#ifdef HAVE_GNOME
+
+#ifdef HAVE_GTK_20
+/*
+#include <glib.h>
+#include <glib-object.h>
+*/
+#include <gtk/gtk.h>
+#else
+#if defined(HAVE_GNOME)
 # include <gnome.h>
 # include <libgnorba/gnorba.h>
 #else
 # include <gtk/gtk.h>
 #endif
+#endif
+
 #ifdef HAVE_GTKEXTRA_GTKEXTRA_H
 # include <gtkextra/gtkextra.h>
 #endif
@@ -197,5 +207,9 @@ int pgtk_is_float( struct svalue *s );
 int pgtk_last_event_time();
 
 #define PSTR (char*)__pgtk_string_data
-#define PGTK_CHECK_TYPE(type_object, otype) (((GtkTypeObject*)(type_object))!=NULL &&PGTK_CHECK_CLASS_TYPE(((GtkTypeObject*) (type_object))->klass, (otype)))
-#define PGTK_CHECK_CLASS_TYPE(type_class, otype) (((GtkTypeClass*) (type_class)) != NULL && (((GtkTypeClass*) (type_class))->type == (otype)))
+#ifdef HAVE_GTK_20
+#define PGTK_CHECK_TYPE(ob, t) g_type_instance_is_a((GTypeInstance *)(ob), t)
+#else
+# define PGTK_CHECK_TYPE(type_object, otype) (((GtkTypeObject*)(type_object))!=NULL &&PGTK_CHECK_CLASS_TYPE(((GtkTypeObject*) (type_object))->klass, (otype)))
+# define PGTK_CHECK_CLASS_TYPE(type_class, otype) (((GtkTypeClass*) (type_class)) != NULL && (((GtkTypeClass*) (type_class))->type == (otype)))
+#endif

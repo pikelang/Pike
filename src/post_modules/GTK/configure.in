@@ -1,20 +1,3 @@
-AC_INIT(new_build_pgtk.pike)
-AC_CONFIG_HEADER(config.h)
-
-AC_MODULE_INIT()
-
-AC_CHECK_FUNCS( gethrtime signal sigaction )
-
-dnl Force prototypes from X's headerfiles.
-AC_DEFINE(FUNCPROTO)
-
-AC_HEADER_STDC
-AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h )
-
-AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes])
-
-if test "x$with_GTK" = "xyes" ; then
-
 dnl AM_PATH_LIBGLADE([ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]])
 dnl Test to see if libglade is installed, and define LIBGLADE_CFLAGS, LIBS
 dnl
@@ -64,16 +47,7 @@ LIBS="$old_LIBS"
 CFLAGS="$old_CFLAGS"
 ])
 
-AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
-AC_PATH_PROG(GTK2_CONFIG, gtk-config-2.0,no)
 
-if test "$GTK2_CONFIG" = "no" ; then
-  :
-else
-  GTK_CONFIG="$GTK2_CONFIG"
-fi
-
-echo GTK_CONFIG: $GTK_CONFIG
 dnl Configure paths for GTK+
 dnl Owen Taylor     97-11-3
 
@@ -259,256 +233,320 @@ main ()
 ])
 
 
+
+
+
+
+dnl end of function defenitions, start of code.
+AC_INIT(new_build_pgtk.pike)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes])
+AC_ARG_WITH(GTK, [  --with-GTK2             Use GTK 2.0 if found GTK],[],[with_GTK2=no])
+
+AC_CHECK_FUNCS( gethrtime signal sigaction )
+
+dnl Force prototypes from X's headerfiles.
+AC_DEFINE(FUNCPROTO)
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h )
+
+
+if test "x$with_GTK" = "xyes" ; then
+  
+  if test "x$with_GTK2" = "xyes" ; then
+    AC_PATH_PROG(PKG_CONFIG,pkg-config,no)
+  else
+     PKG_CONFIG=no
+  fi
+
 dnl Must be before..
 AC_SUBST(have_gtk_20)
 AC_SUBST(have_gtk_120)
 
+ if test "$PKG_CONFIG" = "no" ; then
+   AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
+   AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
+   if test x$have_gtk_120 = xno_gtk_120 ; then
+     AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
+   else
+     WITH_GTK=1
+   fi
+ else
+   if pkg-config gtk+-2.0 2>/dev/null ; then
+     GTK_CFLAGS="`pkg-config gtk+-2.0 --cflags`"
+     GTK_LIBS="`pkg-config gtk+-2.0 --libs`"
+     echo "**** WARNING: Using GTK 2.0"
+     echo "**** THis is not recommended"
+     echo "LIBS: $GTK_LIBS"
+     echo "CFLAGS: $GTK_CFLAGS"
+     AC_CHECK_LIB(iconv,iconv,,,$GTK_LIBS)
+     WITH_GTK=2
+   else
+     AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
+     AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
+     if test x$have_gtk_120 = xno_gtk_120 ; then
+       AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
+     else
+       WITH_GTK=1
+     fi
+   fi
+ fi
 
-AM_PATH_GTK(1.3.0,[have_gtk_20=gtk_20],[have_gtk_20=no_gtk_20])
-if test x$have_gtk_20 = xno_gtk_20 ; then
-  AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
-  if test x$have_gtk_120 = xno_gtk_120 ; then
-    AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
-  else
-    WITH_GTK=1
-  fi
-else
-  AC_DEFINE(PGTK_AUTO_UTF8)
-  WITH_GTK=1
-  have_gtk_120=gtk_120
-fi
+ AC_SUBST(pgtk_has_libglade)
+ AC_SUBST(PGTK_CFLAGS)
+ AC_SUBST(PGTK_LIBS)
+ AC_SUBST(GNOME_CFLAGS)
+ AC_SUBST(GNOME_LIBS)
+ AC_SUBST(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL)
+ AC_SUBST(pgtk_defined_HAVE_PANEL_BIND_EVENTS)
+ AC_SUBST(pgtk_defined_HAVE_PANEL_PIXEL_SIZE)
+ AC_SUBST(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL)
+ AC_SUBST(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE)
+ AC_SUBST(pgtk_has_gnome)
+ AC_SUBST(pgtk_has_docklets)
+
+ if test "x$WITH_GTK" = x2 ; then
+   AC_DEFINE(PGTK_AUTO_UTF8)
+   have_gtk_120=gtk_120
+   have_gtk_20=gtk_20
+   AC_DEFINE(HAVE_GTK_20)
+   AC_SUBST(WITH_GTK)
+   AC_SUBST(pgtk_has_libglade)
+   AC_SUBST(PGTK_CFLAGS)
+   AC_SUBST(PGTK_LIBS)
+   PGTK_CFLAGS="$GTK_CFLAGS"
+   PGTK_LIBS="$GTK_LIBS"
+   CFLAGS="$CFLAGS $GTK_CFLAGS"
+   LIBS="$MODULE_LDFLAGS $LIBS"
+
+dnl Not yet available with GTK 2.0 (Wait for gnome 2.0 etc.)
+   pgtk_has_libglade=nolibglade
+   pgtk_has_gnome=nognome
+   pgtk_has_docklets=nodocklets
+   GNOME_CFLAGS=""
+   GNOME_LIBS=""
+ fi
 
 if test "x$WITH_GTK" = x1 ; then
-AC_SUBST(WITH_GTK)
-WITH_GTK=1
-
-AC_SUBST(pgtk_has_libglade)
-AM_PATH_LIBGLADE([
-pgtk_has_libglade=libglade], [
- echo "********************************************************************"
- echo "Support for libglade not being compiled in."
- echo "See http://glade.pn.org/ and http://www.daa.com.au/~james/gnome/"
- echo "for more information."
- echo "********************************************************************"
- pgtk_has_libglade=nolibglade])
-AC_SUBST(PGTK_CFLAGS)
-AC_SUBST(PGTK_LIBS)
-PGTK_CFLAGS="$GTK_CFLAGS"
-PGTK_LIBS="$GTK_LIBS"
-
-CFLAGS="$CFLAGS $GTK_CFLAGS"
-LIBS="$MODULE_LDFLAGS $LIBS"
-
-dnl Check for GL/MesaGL libraries
-AC_ARG_WITH(GL-prefix,  [  --with-GL-prefix=DIR    Prefix where GL/MesaGL is installed])
-AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
-AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
-
-if test "x$with_GL_prefix" = "x" ; then
- GL_LDOPTS=""
- GL_CFLAGS=""
-else
- GL_LDOPTS="-L$with_GL_prefix/lib"
- GL_CFLAGS="-I$with_GL_prefix/include"
-fi
-
-saved_LIBS="$LIBS"
-
-AC_ARG_WITH(gnome, [  --without-gnome         no support for gnome],[],[with_gnome=yes])
-
-if test "x$with_gnome" = "xyes"; then
-
-AC_SUBST(GNOME_CFLAGS)
-AC_SUBST(GNOME_LIBS)
-
-AC_SUBST(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL)
-AC_SUBST(pgtk_defined_HAVE_PANEL_BIND_EVENTS)
-AC_SUBST(pgtk_defined_HAVE_PANEL_PIXEL_SIZE)
-AC_SUBST(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL)
-AC_SUBST(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE)
-
-AC_SUBST(pgtk_has_gnome)
-AC_SUBST(pgtk_has_docklets)
-AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
-
-if test "$GNOME_CONFIG" = "no"; then
-  :
-else
-  case "`$GNOME_CONFIG --version`" in
-    gnome-libs\ 1.0.*)
-      GNOME_CONFIG=no
-      AC_MSG_WARN(Gnome 1.0.x not supported)
-    ;;
-  esac
-fi
-
-AC_MSG_CHECKING([gnome])
-
-if test "$GNOME_CONFIG" = "no"; then
-  pgtk_has_gnome=nognome
-  AC_MSG_RESULT(no);
-else
-  GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets`"
-  GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets`"
-  pgtk_has_gnome=gnome
-  AC_DEFINE(HAVE_GNOME)
-  AC_MSG_RESULT(yes);
-fi
-
-AC_MSG_CHECKING([gnome docklets])
-if test "$GNOME_CONFIG" = "no"; then
-  pgtk_has_docklets=nodocklets
-  AC_MSG_RESULT(no);
-else
-  GNOME_DOCKLETS_LIBS="`$GNOME_CONFIG --libs docklets 2>/dev/null`"
-  if test x"$GNOME_DOCKLETS_LIBS" = x ; then
-    pgtk_has_docklets=nodocklets
-    AC_MSG_RESULT(no);
-  else
-    pgtk_has_docklets=docklets
-    GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
-    GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
-    AC_MSG_RESULT(yes);
-  fi
-fi
-
-oCFLAG="$CFLAGS"
-CFLAGS="$GNOME_CFLAGS"
-
-AC_MSG_CHECKING([if HAVE_SAVE_SESSION_SIGNAL is defined in applet-widget.h])
-AC_CACHE_VAL(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL,[
-AC_TRY_LINK([
+ AC_SUBST(WITH_GTK)
+ AC_SUBST(pgtk_has_libglade)
+ AM_PATH_LIBGLADE([
+ pgtk_has_libglade=libglade], [
+  echo "********************************************************************"
+  echo "Support for libglade not being compiled in."
+  echo "See http://glade.pn.org/ and http://www.daa.com.au/~james/gnome/"
+  echo "for more information."
+  echo "********************************************************************"
+  pgtk_has_libglade=nolibglade])
+ PGTK_CFLAGS="$GTK_CFLAGS"
+ PGTK_LIBS="$GTK_LIBS"
+ 
+ CFLAGS="$CFLAGS $GTK_CFLAGS"
+ LIBS="$MODULE_LDFLAGS $LIBS"
+ 
+ dnl Check for GL/MesaGL libraries
+ AC_ARG_WITH(GL-prefix,  [  --with-GL-prefix=DIR    Prefix where GL/MesaGL is installed])
+ AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
+ AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
+ 
+ if test "x$with_GL_prefix" = "x" ; then
+  GL_LDOPTS=""
+  GL_CFLAGS=""
+ else
+  GL_LDOPTS="-L$with_GL_prefix/lib"
+  GL_CFLAGS="-I$with_GL_prefix/include"
+ fi
+ 
+ saved_LIBS="$LIBS"
+ 
+ AC_ARG_WITH(gnome, [  --without-gnome         no support for gnome],[],[with_gnome=yes])
+ 
+ if test "x$with_gnome" = "xyes"; then
+ 
+ AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
+ 
+ if test "$GNOME_CONFIG" = "no"; then
+   :
+ else
+   case "`$GNOME_CONFIG --version`" in
+     gnome-libs\ 1.0.*)
+       GNOME_CONFIG=no
+       AC_MSG_WARN(Gnome 1.0.x not supported)
+     ;;
+   esac
+ fi
+ 
+ AC_MSG_CHECKING([gnome])
+ 
+ if test "$GNOME_CONFIG" = "no"; then
+   pgtk_has_gnome=nognome
+   AC_MSG_RESULT(no);
+ else
+   GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets`"
+   GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets`"
+   pgtk_has_gnome=gnome
+   AC_DEFINE(HAVE_GNOME)
+   AC_MSG_RESULT(yes);
+ fi
+ 
+ AC_MSG_CHECKING([gnome docklets])
+ if test "$GNOME_CONFIG" = "no"; then
+   pgtk_has_docklets=nodocklets
+   AC_MSG_RESULT(no);
+ else
+   GNOME_DOCKLETS_LIBS="`$GNOME_CONFIG --libs docklets 2>/dev/null`"
+   if test x"$GNOME_DOCKLETS_LIBS" = x ; then
+     pgtk_has_docklets=nodocklets
+     AC_MSG_RESULT(no);
+   else
+     pgtk_has_docklets=docklets
+     GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
+     GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
+     AC_MSG_RESULT(yes);
+   fi
+ fi
+ 
+ oCFLAG="$CFLAGS"
+ CFLAGS="$GNOME_CFLAGS"
+ 
+ AC_MSG_CHECKING([if HAVE_SAVE_SESSION_SIGNAL is defined in applet-widget.h])
+ AC_CACHE_VAL(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL,[
+ AC_TRY_LINK([
 #include <applet-widget.h> 
-], 
-[
-  int i = HAVE_SAVE_SESSION_SIGNAL;
-  exit(0);
-], 
-[pgtk_defined_HAVE_SAVE_SESSION_SIGNAL='defined HAVE_SAVE_SESSION_SIGNAL'],
-[pgtk_defined_HAVE_SAVE_SESSION_SIGNAL=''])
-])
-if test "x$pgtk_defined_HAVE_SAVE_SESSION_SIGNAL" = "x" ; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT(yes)
-fi
-
-AC_MSG_CHECKING([if HAVE_APPLET_BIND_EVENTS is defined in applet-widget.h])
-AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_BIND_EVENTS,[
-AC_TRY_LINK([
+ ], 
+ [
+   int i = HAVE_SAVE_SESSION_SIGNAL;
+   exit(0);
+ ], 
+ [pgtk_defined_HAVE_SAVE_SESSION_SIGNAL='defined HAVE_SAVE_SESSION_SIGNAL'],
+ [pgtk_defined_HAVE_SAVE_SESSION_SIGNAL=''])
+ ])
+ if test "x$pgtk_defined_HAVE_SAVE_SESSION_SIGNAL" = "x" ; then
+   AC_MSG_RESULT(no)
+ else
+   AC_MSG_RESULT(yes)
+ fi
+ 
+ AC_MSG_CHECKING([if HAVE_APPLET_BIND_EVENTS is defined in applet-widget.h])
+ AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_BIND_EVENTS,[
+ AC_TRY_LINK([
 #include <applet-widget.h> 
-], 
-[
-  int i = HAVE_APPLET_BIND_EVENTS;
-  exit(0);
-], 
-[pgtk_defined_HAVE_APPLET_BIND_EVENTS='defined HAVE_APPLET_BIND_EVENTS'],
-[pgtk_defined_HAVE_APPLET_BIND_EVENTS=''])
-])
-if test "x$pgtk_defined_HAVE_APPLET_BIND_EVENTS" = "x" ; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT(yes)
-fi
-
-
-AC_MSG_CHECKING([if HAVE_PANEL_PIXEL_SIZE is defined in applet-widget.h])
-AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_PIXEL_SIZE,[
-AC_TRY_LINK([
+ ], 
+ [
+   int i = HAVE_APPLET_BIND_EVENTS;
+   exit(0);
+ ], 
+ [pgtk_defined_HAVE_APPLET_BIND_EVENTS='defined HAVE_APPLET_BIND_EVENTS'],
+ [pgtk_defined_HAVE_APPLET_BIND_EVENTS=''])
+ ])
+ if test "x$pgtk_defined_HAVE_APPLET_BIND_EVENTS" = "x" ; then
+   AC_MSG_RESULT(no)
+ else
+   AC_MSG_RESULT(yes)
+ fi
+ 
+ 
+ AC_MSG_CHECKING([if HAVE_PANEL_PIXEL_SIZE is defined in applet-widget.h])
+ AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_PIXEL_SIZE,[
+ AC_TRY_LINK([
 #include <applet-widget.h> 
-], 
-[
-  int i = HAVE_PANEL_PIXEL_SIZE;
-  exit(0);
-], 
-[pgtk_defined_HAVE_PANEL_PIXEL_SIZE='defined HAVE_PANEL_PIXEL_SIZE'],
-[pgtk_defined_HAVE_PANEL_PIXEL_SIZE=''])
-])
-if test "x$pgtk_defined_HAVE_PANEL_PIXEL_SIZE" = "x" ; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT(yes)
-fi
-
-AC_MSG_CHECKING([if HAVE_PANEL_DRAW_SIGNAL is defined in applet-widget.h])
-AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL,[
-AC_TRY_LINK([
+ ], 
+ [
+   int i = HAVE_PANEL_PIXEL_SIZE;
+   exit(0);
+ ], 
+ [pgtk_defined_HAVE_PANEL_PIXEL_SIZE='defined HAVE_PANEL_PIXEL_SIZE'],
+ [pgtk_defined_HAVE_PANEL_PIXEL_SIZE=''])
+ ])
+ if test "x$pgtk_defined_HAVE_PANEL_PIXEL_SIZE" = "x" ; then
+   AC_MSG_RESULT(no)
+ else
+   AC_MSG_RESULT(yes)
+ fi
+ 
+ AC_MSG_CHECKING([if HAVE_PANEL_DRAW_SIGNAL is defined in applet-widget.h])
+ AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL,[
+ AC_TRY_LINK([
 #include <applet-widget.h> 
-], 
-[
-  int i = HAVE_PANEL_DRAW_SIGNAL;
-  exit(0);
-], 
-[pgtk_defined_HAVE_PANEL_DRAW_SIGNAL='defined HAVE_PANEL_DRAW_SIGNAL'],
-[pgtk_defined_HAVE_PANEL_DRAW_SIGNAL=''])
-])
-if test "x$pgtk_defined_HAVE_PANEL_DRAW_SIGNAL" = "x" ; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT(yes)
-fi
-
-AC_MSG_CHECKING([if HAVE_APPLET_QUEUE_RESIZE is defined in applet-widget.h])
-AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE,[
-AC_TRY_LINK([
+ ], 
+ [
+   int i = HAVE_PANEL_DRAW_SIGNAL;
+   exit(0);
+ ], 
+ [pgtk_defined_HAVE_PANEL_DRAW_SIGNAL='defined HAVE_PANEL_DRAW_SIGNAL'],
+ [pgtk_defined_HAVE_PANEL_DRAW_SIGNAL=''])
+ ])
+ if test "x$pgtk_defined_HAVE_PANEL_DRAW_SIGNAL" = "x" ; then
+   AC_MSG_RESULT(no)
+ else
+   AC_MSG_RESULT(yes)
+ fi
+ 
+ AC_MSG_CHECKING([if HAVE_APPLET_QUEUE_RESIZE is defined in applet-widget.h])
+ AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE,[
+ AC_TRY_LINK([
 #include <applet-widget.h> 
-], 
-[
-  int i = HAVE_APPLET_QUEUE_RESIZE;
-  exit(0);
-], 
-[pgtk_defined_HAVE_APPLET_QUEUE_RESIZE='defined HAVE_APPLET_QUEUE_RESIZE'],
-[pgtk_defined_HAVE_APPLET_QUEUE_RESIZE=''])
-])
-if test "x$pgtk_defined_HAVE_APPLET_QUEUE_RESIZE" = "x" ; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT(yes)
-fi
+ ], 
+ [
+   int i = HAVE_APPLET_QUEUE_RESIZE;
+   exit(0);
+ ], 
+ [pgtk_defined_HAVE_APPLET_QUEUE_RESIZE='defined HAVE_APPLET_QUEUE_RESIZE'],
+ [pgtk_defined_HAVE_APPLET_QUEUE_RESIZE=''])
+ ])
+ if test "x$pgtk_defined_HAVE_APPLET_QUEUE_RESIZE" = "x" ; then
+   AC_MSG_RESULT(no)
+ else
+   AC_MSG_RESULT(yes)
+ fi
+ 
+ CFLAGS="$oCFLAGS"
+ 
+ AC_CHECK_HEADERS( X11/xpm.h )
+ AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
+ 
+ # End of gnome dependent stuff.
+ fi
+ 
+ AC_CHECK_LIB(gtkdatabox, main,,,`gtk-config --libs`)
+ AC_CHECK_HEADERS(gtkdatabox.h)
+ 
+ AC_SUBST(pgtk_have_gtkdatabox)
+ AC_SUBST(DATABOX_LIBS)
+ DATABOX_LIBS=""
+ AC_MSG_CHECKING([gtkdatabox support]);
+ if test x$ac_cv_lib_gtkdatabox_main = xyes ; then
+   if test x$ac_cv_header_gtkdatabox_h = xyes; then
+     AC_MSG_RESULT(yes)
+     DATABOX_LIBS=-lgtkdatabox
+     pgtk_has_gtkdatabox=gtkdatabox
+   else
+     AC_MSG_RESULT(no)
+     pgtk_has_gtkdatabox=nogtkdatabox
+     echo "*******************************************"
+     echo " Warning: Partial gtkdatabox installation  "
+     echo " Library found, but no header files.       "
+     echo " Databox support will be disabled.         "
+     echo " The widget is available from              "
+     echo " http://www.eudoxos.net/gtk/gtkdatabox/    "
+     echo "*******************************************"
+   fi
+ else
+   pgtk_has_gtkdatabox=nogtkdatabox
+ fi
 
-CFLAGS="$oCFLAGS"
 
-AC_CHECK_HEADERS( X11/xpm.h )
-AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
+ AC_MSG_CHECKING([OpenGL])
 
-# End of gnome dependent stuff.
-fi
+ LIBS="$saved_LIBS $GL_LDOPTS -lGL $GTK_LIBS"
+ AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_GL=yes, have_GL=no)
+ AC_MSG_RESULT($have_GL)
 
-AC_CHECK_LIB(gtkdatabox, main,,,`gtk-config --libs`)
-AC_CHECK_HEADERS(gtkdatabox.h)
-
-AC_SUBST(pgtk_have_gtkdatabox)
-AC_SUBST(DATABOX_LIBS)
-DATABOX_LIBS=""
-AC_MSG_CHECKING([gtkdatabox support]);
-if test x$ac_cv_lib_gtkdatabox_main = xyes ; then
-  if test x$ac_cv_header_gtkdatabox_h = xyes; then
-    AC_MSG_RESULT(yes)
-    DATABOX_LIBS=-lgtkdatabox
-    pgtk_has_gtkdatabox=gtkdatabox
-  else
-    AC_MSG_RESULT(no)
-    pgtk_has_gtkdatabox=nogtkdatabox
-    echo "*******************************************"
-    echo " Warning: Partial gtkdatabox installation  "
-    echo " Library found, but no header files.       "
-    echo " Databox support will be disabled.         "
-    echo " The widget is available from              "
-    echo " http://www.eudoxos.net/gtk/gtkdatabox/    "
-    echo "*******************************************"
-  fi
-else
-  pgtk_has_gtkdatabox=nogtkdatabox
-fi
-
-
-AC_MSG_CHECKING([OpenGL])
-
-LIBS="$saved_LIBS $GL_LDOPTS -lGL $GTK_LIBS"
-AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_GL=yes, have_GL=no)
-AC_MSG_RESULT($have_GL)
-
-if test "x$have_GL" = "xno" ; then
+ if test "x$have_GL" = "xno" ; then
   AC_MSG_CHECKING([Mesa])
   LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL $GTK_LIBS"
   AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_MesaGL=yes, have_MesaGL=no)
@@ -520,12 +558,12 @@ if test "x$have_GL" = "xno" ; then
    AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_MesaGL_pthread=yes, have_MesaGL_pthread=no)
    AC_MSG_RESULT($have_MesaGL_pthread)
   fi
-fi
+ fi
 
-LIBS="$saved_LIBS"
+ LIBS="$saved_LIBS"
 
 
-if test "x$with_lib_GL" = "xyes"; then
+ if test "x$with_lib_GL" = "xyes"; then
 
  if test "x$have_GL" = "xyes"; then
   GL_LIBS="$GL_LDOPTS  -lGL"
@@ -533,7 +571,7 @@ if test "x$with_lib_GL" = "xyes"; then
   AC_MSG_ERROR([Missing GL library])
  fi
 
-elif test "x$with_lib_MesaGL" = "xyes"; then
+ elif test "x$with_lib_MesaGL" = "xyes"; then
 
  if test "x$have_MesaGL" = "xyes"; then
   GL_LIBS="$GL_LDOPTS -lMesaGL"
@@ -543,7 +581,7 @@ elif test "x$with_lib_MesaGL" = "xyes"; then
   AC_MSG_ERROR([Missing MesaGL library])
  fi
 
-else
+ else
 
  if test "x$have_GL" = "xyes"; then
   GL_LIBS="$GL_LDOPTS -lGL"
@@ -554,15 +592,15 @@ else
  else
   have_GL=no
  fi
-fi
-fi
+ fi
+ fi
 
-CFLAGS="$GL_CFLAGS $CFLAGS"
+ CFLAGS="$GL_CFLAGS $CFLAGS"
 
-AC_SUBST(pgtk_has_glarea)
-pgtk_has_glarea=noglarea
+ AC_SUBST(pgtk_has_glarea)
+ pgtk_has_glarea=noglarea
 
-if test "x$have_GL" = "xyes" ; then
+ if test "x$have_GL" = "xyes" ; then
   AC_CHECK_LIB(gtkgl, main,,,`gtk-config --libs` $GL_LIBS)
   if test x$ac_cv_lib_gtkgl_main = xyes ; then
     pgtk_has_glarea=glarea
@@ -576,9 +614,8 @@ if test "x$have_GL" = "xyes" ; then
     echo " http://www.student.oulu.fi/~jlof/gtkglarea/ "
     echo "*********************************************"
   fi
-fi
+ fi
 else
   WITH_GTK=0
 fi
-
 AC_OUTPUT(Makefile options)

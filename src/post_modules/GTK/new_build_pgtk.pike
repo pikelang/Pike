@@ -703,7 +703,7 @@ class Type
               check = "PGTK_ISSTR(&_a%[0]d->item[_i%[0]d])";
               process = "PGTK_GETSTR(&_a%[0]d->item[_i%[0]d])";
               do_loopfree = 1;
-              lfree = "  PGTK_FREESTR(a%[0]d[i%[0]d])";
+              lfree = "  PGTK_FREESTR(a%[0]d[_i%[0]d])";
               break;
             case "int":
               array_type = parse_type( SPLIT("int","type") );
@@ -735,7 +735,7 @@ class Type
               break;
             case "double":
               array_type = parse_type( SPLIT("double","type") );
-              sub = "gfloat *a%[0]d;";
+              sub = "gdouble *a%[0]d;";
               pt = 0;
               check = "PGTK_ISFLT(&_a%[0]d->item[_i%[0]d])";
               process = "(gdouble)PGTK_GETFLT(&_a%[0]d->item[_i%[0]d])";

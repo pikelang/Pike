@@ -9,7 +9,8 @@ MODULE_CFLAGS=@PGTK_CFLAGS@ @GNOME_CFLAGS@ @LIBGLADE_CFLAGS@
 CONFIG_HEADERS=config.h
 MODULE_CLEAN_EXTRA=p*.c
 
-# OK.. This is somewhat confusing
+# WITH_GTK == 2
+#   override -> compile2 -> compile1 -> [SET OBJS] -> all
 #
 # WITH_GTK == 1
 #   override -> compile1 -> [SET OBJS] -> all
@@ -38,6 +39,7 @@ compile1:
                CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'`" \
                   all
 
+compile2: compile1
 #
 # Many machines have problems compiling this file with full optimization.
 # They should not have that any longer  /Per
@@ -51,7 +53,11 @@ compile1:
 #	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
 #	fi
 
+options: config.status
+	./config.status 
+
 # Some hand-made dependencies:
+
 $(OBJS) : pgtk.h \
  $(SRCDIR)/../../global.h \
  $(SRCDIR)/../../svalue.h \
