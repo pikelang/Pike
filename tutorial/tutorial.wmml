@@ -3338,6 +3338,9 @@ This will return the string <tt>"void"</tt> since exit is a function that
 returns void.
 It will not execute the function <tt>exit</tt> and exit the process as you
 might expect.
+<p>
+If you want to know the type after evaluation, use
+<tt>sprintf("%t", expr)</tt>.
 </section>
 </anchor>
 
