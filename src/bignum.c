@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.31 2003/01/27 10:16:58 mirar Exp $
+|| $Id: bignum.c,v 1.32 2003/01/27 10:18:25 mirar Exp $
 */
 
 #include "global.h"
@@ -47,7 +47,7 @@ PMOD_EXPORT void convert_stack_top_to_bignum(void)
   apply_svalue(&auto_bignum_program, 1);
 
   if(sp[-1].type != T_OBJECT)
-     if (auto_bignum_program.type!=T_INT)
+     if (auto_bignum_program.type!=T_PROGRAM)
 	Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
      else
 	Pike_error("Gmp.mpz conversion failed (unknown error).\n");
@@ -58,7 +58,7 @@ PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
   apply_svalue(&auto_bignum_program, 2);
 
   if(sp[-1].type != T_OBJECT)
-     if (auto_bignum_program.type!=T_INT)
+     if (auto_bignum_program.type!=T_PROGRAM)
 	Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
      else
 	Pike_error("Gmp.mpz conversion failed (unknown error).\n");
