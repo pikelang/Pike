@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.56 2000/03/20 20:56:11 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.57 2000/05/17 00:54:45 hubbe Exp $
 #
 
 
@@ -97,7 +97,9 @@ module.pmod: Makefile
 	  if [ -f ./module.pmod.in ]; then \
 	   sed -e "s/@module@/_static_modules.$(MODNAME)/" <./module.pmod.in >module.pmod ;\
 	  else \
-	    echo >module.pmod "inherit _static_modules.$(MODNAME);" ;\
+	    echo >module.pmod "#if constant(_static_modules.$(MODNAME));" ;\
+	    echo >>module.pmod "inherit _static_modules.$(MODNAME);" ;\
+	    echo >>module.pmod "#endif" ;\
 	  fi ;\
 	fi
 
