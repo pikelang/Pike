@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.140 1999/05/08 00:26:11 hubbe Exp $
+# $Id: Makefile.in,v 1.141 1999/05/13 23:55:51 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -359,7 +359,7 @@ clean: tidy
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
-	find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
+	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 #	-rm -f lib/master.pike
 
 # make _really_ clean
