@@ -11,6 +11,7 @@ array(string) to_dump=({});
 array(string) to_export=({});
 
 int export;
+int no_gui;
 
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
 
@@ -861,8 +862,11 @@ int pre_install(string *argv)
 
 #if constant(GTK.parse_rc) && defined(USE_GTK)
       catch  {
-	begin_wizard(argv);
-	return -1; 
+	if(!no_gui)
+	{
+	  begin_wizard(argv);
+	  return -1; 
+	}
       };
 #endif
 
@@ -1147,12 +1151,17 @@ int main(int argc, string *argv)
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
     ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
+    ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     )),array opt)
     {
       switch(opt[0])
       {
+	case "no-gui":
+	  no_gui=1;
+	  break;
+
 	case "help":
 	  werror(helptext);
 	  exit(0);
