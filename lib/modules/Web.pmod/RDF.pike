@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.34 2004/01/16 06:26:39 nilsson Exp $
+// $Id: RDF.pike,v 1.35 2004/01/16 22:23:10 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -73,44 +73,6 @@ class Resource {
 
   static int __hash() { return number; }
 }
-
-//! Resource used for RDF-technical reasons like reification.
-class RDFResource {
-  inherit Resource;
-  static string id;
-
-  //! The resource will be identified by the identifier @[rdf_id]
-  static void create(string rdf_id) {
-    id = rdf_id;
-  }
-
-  string get_n_triple_name() {
-    return "_:"+id;
-  }
-
-  string get_3_tuple_name() {
-    return "RDF:"+id;
-  }
-
-  string get_qname(void|string ns) {
-    if(!ns) ns = common_ns;
-    if(ns=rdf_ns) return id;
-    return "rdf:"+id;
-  }
-}
-
-RDFResource rdf_Statement = RDFResource("Statement");
-RDFResource rdf_predicate = RDFResource("predicate");
-RDFResource rdf_subject   = RDFResource("subject");
-RDFResource rdf_object    = RDFResource("object");
-RDFResource rdf_type      = RDFResource("type");
-
-RDFResource rdf_datatype  = RDFResource("datatype");
-
-RDFResource rdf_first     = RDFResource("first");
-RDFResource rdf_rest      = RDFResource("rest");
-RDFResource rdf_nil       = RDFResource("nil");
-
 
 //! Resource identified by literal.
 class LiteralResource {
@@ -197,6 +159,32 @@ class URIResource {
 
   string _sprintf(int t) { return __sprintf("URIResource", t); }
 }
+
+//! Resource used for RDF-technical reasons like reification.
+class RDFResource {
+  inherit URIResource;
+
+  //! The resource will be identified by the identifier @[rdf_id]
+  static void create(string rdf_id) {
+    ::create(rdf_ns + rdf_id);
+  }
+
+  string get_qname(void|string ns) {
+    if(!ns) ns = common_ns;
+    if(ns=rdf_ns) return id;
+    return "rdf:"+id;
+  }
+}
+
+RDFResource rdf_Statement = RDFResource("Statement");
+RDFResource rdf_predicate = RDFResource("predicate");
+RDFResource rdf_subject   = RDFResource("subject");
+RDFResource rdf_object    = RDFResource("object");
+RDFResource rdf_type      = RDFResource("type");
+
+RDFResource rdf_first     = RDFResource("first");
+RDFResource rdf_rest      = RDFResource("rest");
+RDFResource rdf_nil       = RDFResource("nil");
 
 static int(0..1) is_resource(mixed res) {
   if(!objectp(res)) return 0;
@@ -706,10 +694,18 @@ static Node add_xml_children(Node p, string rdfns) {
   // Handle subnodes
   foreach(p->get_elements(), Node c) {
     if(c->get_ns()==rdfns) {
-      if(c->get_any_name()=="type") {
+      string name = c->get_any_name();
+      if(name=="type") {
 	string obj_uri = c->get_ns_attributes(rdfns)->resource;
 	if(!obj_uri) error("rdf:type missing resource attribute.\n");
 	add_statement( subj, rdf_type, make_resource(obj_uri) );
+	continue;
+      }
+      else if(sscanf(name, "_%*d")) {
+	string obj_uri = c->get_ns_attributes(rdfns)->resource;
+	if(!obj_uri) error("rdf:_n missing resource attribute.\n");
+	add_statement( subj, make_resource(rdf_ns+name),
+		       make_resource(obj_uri) );
 	continue;
       }
       else {
@@ -841,7 +837,6 @@ static class XML {
     ind++;
     array group = ({});
     foreach(rel; Resource left; array(Resource) rights) {
-      add_ns(left);
       foreach(rights, Resource right) {
 	if(right->is_literal_resource) {
 	  if(ind) buf->add("  "*ind);
@@ -869,6 +864,7 @@ static class XML {
 	if(ind) buf->add("  "*ind);
 	buf->add("</", left->get_qname(), ">\n");
       }
+      add_ns(left); // We must add_ns after get_qname to fix_namespaces.
     }
   ind--;
   }
@@ -882,10 +878,10 @@ static class XML {
 	if(!right->is_literal_resource) continue;
 	if(right->datatype) continue;
 	if(has_value(right->get_xml(), "\n")) continue;
-	add_ns(left);
 	if(nl++)
 	  buf->add("\n", "  "*ind, " "*i2);
 	buf->add(left->get_qname(), "='", right->get_xml(), "'");
+	add_ns(left);
 	rights[p]=0;
       }
       rights -= ({ 0 });
@@ -910,8 +906,8 @@ static class XML {
       else
 	m_delete(rel, rdf_type);
       if(ind) buf->add("  "*ind);
-      add_ns(c);
       buf->add("<", c->get_qname());
+      add_ns(c);
       if(n->is_uri_resource) {
 	buf->add(" rdf:about='", n->get_uri(), "'");
 	make_prop_attr(rel, 1, sizeof(c->get_qname())+2);
@@ -937,12 +933,12 @@ static class XML {
       }
 
       if(!sizeof(rel)) {
-	buf->add(">\n");
+	buf->add("/>\n");
 	if(!ind) buf->add("\n");
 	return;
       }
 
-      buf->add("/>\n");
+      buf->add(">\n");
 
       low_add_Description(rel);
       if(ind) buf->add("  "*ind);
