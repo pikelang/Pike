@@ -744,6 +744,26 @@ test_parser([[
   p->add_tag ("b", "B");
   return p->finish("<b><a><b>" WIDENER)->read();
 ]], "BA<b>" WIDENER);
+test_parser([[{
+  object p = Parser.HTML();
+  p->ignore_unknown (1);
+  p->add_tag ("a", lambda (object p) {return ({"A"});});
+  p->_set_data_callback (lambda (object p, string s) {
+			   p->add_tag ("a", 0);
+			   return ({"[", s, "]"});
+			 });
+  return p->finish ("x<a>" WIDENER)->read();
+}]], "[x][<a>" WIDENER "]");
+test_parser([[{
+  object p = Parser.HTML();
+  p->ignore_unknown (1);
+  p->_set_tag_callback (lambda (object p) {return ({"A"});});
+  p->_set_data_callback (lambda (object p, string s) {
+			   p->_set_tag_callback (0);
+			   return ({"[", s, "]"});
+			 });
+  return p->finish ("x<a>" WIDENER)->read();
+}]], "[x][<a>" WIDENER "]");
 
 // Delimiters
 test_parser([[

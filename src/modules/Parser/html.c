@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.142 2001/06/06 01:15:57 mast Exp $ */
+/* $Id: html.c,v 1.143 2001/06/25 19:48:07 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -2574,80 +2574,83 @@ static newstate data_callback (struct parser_html_storage *this,
   return res;
 }
 
-#define CALL_CALLBACK(TYPESTR, PREPARE_SPEC) {					\
-   int args;									\
-   ONERROR uwp;									\
-   newstate res;								\
-										\
-   if (v->type == T_STRING) {							\
-     if (this->flags & FLAG_REPARSE_STRINGS) {					\
-       add_local_feed (this, v->u.string);					\
-       skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);			\
-       return STATE_REREAD;							\
-     }										\
-     else {									\
-       if (this->callback__data.type != T_INT && this->data_cb_feed &&		\
-	   (res = data_callback (this, thisobj, st)))				\
-	 return res;								\
-       put_out_feed(this,v);							\
-       skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);			\
-       return STATE_DONE;							\
-     }										\
-   }										\
-										\
-   if (this->callback__data.type != T_INT && this->data_cb_feed &&		\
-       (res = data_callback (this, thisobj, st)))				\
-     return res;								\
-										\
-   switch (v->type)								\
-   {										\
-      case T_FUNCTION:								\
-      case T_OBJECT:								\
-	 push_svalue(v);							\
-	 break;									\
-      case T_ARRAY:								\
-	 if (v->u.array->size)							\
-	 {									\
-	    push_svalue(v->u.array->item);					\
-	    break;								\
-	 }									\
-      default:									\
-	 Pike_error("Parser.HTML: illegal type found "				\
-		    "when trying to call " TYPESTR " callback\n");		\
-   }										\
-										\
-   this->start=*cutstart;							\
-   this->cstart=*ccutstart;							\
-   this->end=cutend;								\
-   this->cend=ccutend;								\
-										\
-   SET_ONERROR(uwp,clear_start,this);						\
-										\
-   ref_push_object(thisobj);							\
-   PREPARE_SPEC									\
-										\
-   if (v->type==T_ARRAY && v->u.array->size>1)					\
-   {										\
-      assign_svalues_no_free(sp,v->u.array->item+1,				\
-			     v->u.array->size-1,v->u.array->type_field);	\
-      sp+=v->u.array->size-1;							\
-      args+=v->u.array->size-1;							\
-   }										\
-										\
-   if (this->extra_args)							\
-   {										\
-      add_ref(this->extra_args);						\
-      push_array_items(this->extra_args);					\
-      args+=this->extra_args->size;						\
-   }										\
-										\
-   DEBUG((stderr,TYPESTR " callback args=%d\n",args));				\
-   f_call_function(args);							\
-										\
-   UNSET_ONERROR(uwp);								\
-   this->start=NULL;								\
-										\
-   return handle_result(this,st,cutstart,ccutstart,cutend,ccutend,1);		\
+#define CALL_CALLBACK(TYPESTR, PREPARE_SPEC) {				\
+   int args;								\
+   ONERROR uwp;								\
+   newstate res;							\
+									\
+   if (v->type == T_STRING) {						\
+     if (this->flags & FLAG_REPARSE_STRINGS) {				\
+       add_local_feed (this, v->u.string);				\
+       skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);		\
+       return STATE_REREAD;						\
+     }									\
+     else {								\
+       if (this->callback__data.type != T_INT && this->data_cb_feed) {	\
+	 res = data_callback (this, thisobj, st);			\
+	 return res ? res : STATE_REREAD;				\
+       }								\
+       put_out_feed(this,v);						\
+       skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);		\
+       return STATE_DONE;						\
+     }									\
+   }									\
+									\
+   if (this->callback__data.type != T_INT && this->data_cb_feed) {	\
+     res = data_callback (this, thisobj, st);				\
+     return res ? res : STATE_REREAD;					\
+   }									\
+									\
+   switch (v->type)							\
+   {									\
+      case T_FUNCTION:							\
+      case T_OBJECT:							\
+	 push_svalue(v);						\
+	 break;								\
+      case T_ARRAY:							\
+	 if (v->u.array->size)						\
+	 {								\
+	    push_svalue(v->u.array->item);				\
+	    break;							\
+	 }								\
+      default:								\
+	 Pike_error("Parser.HTML: illegal type found "			\
+		    "when trying to call " TYPESTR " callback\n");	\
+   }									\
+									\
+   this->start=*cutstart;						\
+   this->cstart=*ccutstart;						\
+   this->end=cutend;							\
+   this->cend=ccutend;							\
+									\
+   SET_ONERROR(uwp,clear_start,this);					\
+									\
+   ref_push_object(thisobj);						\
+   PREPARE_SPEC								\
+									\
+   if (v->type==T_ARRAY && v->u.array->size>1)				\
+   {									\
+      assign_svalues_no_free(sp,v->u.array->item+1,			\
+			     v->u.array->size-1,			\
+			     v->u.array->type_field);			\
+      sp+=v->u.array->size-1;						\
+      args+=v->u.array->size-1;						\
+   }									\
+									\
+   if (this->extra_args)						\
+   {									\
+      add_ref(this->extra_args);					\
+      push_array_items(this->extra_args);				\
+      args+=this->extra_args->size;					\
+   }									\
+									\
+   DEBUG((stderr,TYPESTR " callback args=%d\n",args));			\
+   f_call_function(args);						\
+									\
+   UNSET_ONERROR(uwp);							\
+   this->start=NULL;							\
+									\
+   return handle_result(this,st,cutstart,ccutstart,cutend,ccutend,1);	\
 }
 
 static newstate entity_callback(struct parser_html_storage *this,
@@ -3208,9 +3211,10 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       return STATE_WAIT; /* come again */
 	    }
 
-	    if (this->callback__data.type != T_INT && this->data_cb_feed &&
-		(res = data_callback (this, thisobj, st)))
-	      return res;
+	    if (this->callback__data.type != T_INT && this->data_cb_feed) {
+	      res = data_callback (this, thisobj, st);
+	      return res ? res : STATE_REREAD;
+	    }
 
 	    DEBUG((stderr,"%*d calling _tag callback %p:%d..%p:%d\n",
 		   this->stack_count,this->stack_count,
@@ -3257,9 +3261,10 @@ static newstate do_try_feed(struct parser_html_storage *this,
         ptrdiff_t c1 = cdst, c2, c3;
 	int pushed = 0;
 
-	if (this->callback__data.type != T_INT && this->data_cb_feed &&
-	    (res = data_callback (this, thisobj, st)))
-	  return res;
+	if (this->callback__data.type != T_INT && this->data_cb_feed) {
+	  res = data_callback (this, thisobj, st);
+	  return res ? res : STATE_REREAD;
+	}
 
 	/* NOTE: This somewhat duplicates tag_args(). */
 
@@ -3613,9 +3618,10 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	if (this->callback__entity.type!=T_INT && !ignore_tag_cb)
 	{
-	  if (this->callback__data.type != T_INT && this->data_cb_feed &&
-	      (res = data_callback (this, thisobj, st)))
-	    return res;
+	  if (this->callback__data.type != T_INT && this->data_cb_feed) {
+	    res = data_callback (this, thisobj, st);
+	    return res ? res : STATE_REREAD;
+	  }
 
 	  DEBUG((stderr,"%*d calling _entity callback %p:%d..%p:%d\n",
 		 this->stack_count,this->stack_count,
