@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.67 2005/01/26 15:06:44 mast Exp $
+// $Id: client.pike,v 1.68 2005/02/03 16:55:07 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.67 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.68 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -808,6 +808,64 @@ import SSL.Constants;
 
   } // add
 
+static object make_control (string control_type, void|string value,
+			    void|int critical)
+{
+  array(object) seq = ({Standards.ASN1.Types.asn1_octet_string (control_type),
+			ASN1_BOOLEAN (critical)});
+  if (value) seq += ({Standards.ASN1.Types.asn1_octet_string (value)});
+  return Standards.ASN1.Types.asn1_sequence (seq);
+}
+
+static multiset(string) supported_controls;
+
+multiset(string) get_supported_controls()
+//! Returns a multiset containing the controls supported by the
+//! server. They are returned as object identifiers on string form.
+//! A working connection is assumed.
+//!
+//! @seealso
+//!   @[search]
+{
+  if (!supported_controls) {
+    // We need to find out if controls are supported.
+    PROFILE("supported_controls", {
+	supported_controls = (<>);
+	object|int search_request =
+	  make_search_op("", 0, 0, 0, 0, 0,
+			 "(objectClass=*)", ({"supportedControl"}));
+	//werror("search_request: %O\n", search_request);
+	string|int raw;
+	if(intp(raw = do_op(search_request))) {
+	  THROW(({error_string()+"\n",backtrace()}));
+	  return 0;
+	}
+
+	do {
+	  object res = .ldap_privates.ldap_der_decode(raw);
+	  if (res->elements[1]->get_tag() == 5) break;
+	  //werror("res: %O\n", res);
+	  foreach(res->elements[1]->elements[1]->elements, object attr) {
+	    if (attr->elements[0]->value == "supportedControl") {
+	      supported_controls |= (<
+		@(attr->elements[1]->elements->value)
+	      >);
+	      //werror("supported_controls: %O\n", supported_controls);
+	    }
+	  }
+	  // NB: The msgid stuff is defunct in readmsg, so we can
+	  // just as well pass a zero there. :P
+	  if (intp(raw = readmsg(0))) {
+	    THROW(({error_string()+"\n",backtrace()}));
+	    return 0;
+	  }
+	} while (1);
+      });
+  }
+
+  return supported_controls;
+}
+
   /*private*/ object|int make_filter(string filter)
   {
 
@@ -1049,10 +1107,6 @@ import SSL.Constants;
 		})) ;
   }
 
-//! @ignore
-IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
-//! @endignore
-
   //! Search LDAP directory.
   //!
   //! @param filter
@@ -1065,6 +1119,27 @@ IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
   //! @param attrsonly
   //!   The flag causes server return only attribute name but not
   //!   the attribute values.
+  //!
+  //! @param controls
+  //!   Extra controls to send in the search query, to modify how the
+  //!   server executes the search in various ways. The value is a
+  //!   mapping with an entry for each control.
+  //!
+  //!   The mapping index is the object identifier in string form for
+  //!   the control type. The mapping value is an array where the
+  //!   first field is an integer flag and the second is the value of
+  //!   the control in string form.
+  //!
+  //!   The integer flag specifies whether the control is critical or
+  //!   not. If it is nonzero, the server returns an error if it
+  //!   doesn't understand the control. If it is zero, the server
+  //!   ignores it instead.
+  //!
+  //!   The value may also be zero if the control doesn't need any
+  //!   value at all.
+  //!
+  //!   There are constants in @[Protocols.LDAP] for the object
+  //!   identifiers for some known controls.
   //!
   //! @returns
   //!   Returns object @[LDAP.client.result] on success, @expr{0@}
@@ -1079,9 +1154,10 @@ IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
   //!	to follow his logic better.
   //!
   //! @seealso
-  //!  @[LDAP.client.result], @[LDAP.client.result.fetch]
+  //!  @[result], @[result.fetch], @[get_supported_controls]
   object|int search (string|void filter, array(string)|void attrs,
-  		     int|void attrsonly) {
+		     int|void attrsonly,
+		     void|mapping(string:array(int|string)) controls) {
 
     int id,nv;
     mixed raw;
@@ -1098,43 +1174,7 @@ IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
       filter = string_to_utf8(filter);
     }
 
-    object|int search_request;
-
-    IF_ELSE_PAGED_SEARCH({
-	if (!supported_controls) {
-	  // We need to find out if controls are supported.
-	  PROFILE("supported_controls", {
-	      supported_controls = (<>);
-	      search_request =
-		make_search_op("", 0, 0, 0, 0, 0,
-			       "(objectClass=*)", ({"supportedControl"}));
-	      //werror("search_request: %O\n", search_request);
-	      if(intp(raw = do_op(search_request))) {
-		THROW(({error_string()+"\n",backtrace()}));
-		return 0;
-	      }
-	      do {
-		object res = .ldap_privates.ldap_der_decode(raw);
-		if (res->elements[1]->get_tag() == 5) break;
-		//werror("res: %O\n", res);
-		foreach(res->elements[1]->elements[1]->elements, object attr) {
-		  if (attr->elements[0]->value == "supportedControl") {
-		    supported_controls |= (<
-		      @(attr->elements[1]->elements->value)
-		      >);
-		    //werror("supported_controls: %O\n", supported_controls);
-		  }
-		}
-		if (intp(raw = readmsg(id))) {
-		  THROW(({error_string()+"\n",backtrace()}));
-		  return 0;
-		}
-	      } while (0);
-	    });
-	}
-      },);
-
-    search_request =
+    object|int search_request =
       make_search_op(ldap_basedn, ldap_scope, ldap_deref,
 	ldap_sizelimit, ldap_timelimit, attrsonly, filter,
 	attrs||lauth->attributes);
@@ -1144,51 +1184,56 @@ IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
       return 0;
     }
 
+    array(object) common_controls;
+    if (controls) {
+      common_controls = allocate (sizeof (controls));
+      int i;
+      foreach (controls; string type; array(int|string) data)
+	common_controls[i++] =
+	  make_control (type, [string] data[1], [int] data[0]);
+    }
+    else common_controls = ({});
+
+#if 0
+    // Microsoft AD stuff that previously was added by default. There
+    // doesn't appear to be a good reason for it. It's now possible
+    // for the caller to do it, anyway. /mast
+    if (get_supported_controls()[Protocols.LDAP.LDAP_SERVER_DOMAIN_SCOPE_OID]) {
+      // LDAP_SERVER_DOMAIN_SCOPE_OID
+      // "Tells server not to generate referrals" (NtLdap.h)
+      common_controls += ({make_control (Protocols.LDAP.LDAP_SERVER_DOMAIN_SCOPE_OID)});
+    }
+#endif
+
+#ifdef ENABLE_PAGED_SEARCH
+    get_supported_controls();
+#endif
+
     object cookie = Standards.ASN1.Types.asn1_octet_string("");
     rawarr = ({});
     do {
       PROFILE("send_search_op", {
-	  IF_ELSE_PAGED_SEARCH(
-            array ctrls = ({});
-	    if (supported_controls["1.2.840.113556.1.4.1339"]) {
-	      // LDAP_SERVER_DOMAIN_SCOPE_OID
-	      // "Tells server not to generate referrals" (NtLdap.h)
-	      ctrls += ({
-		Standards.ASN1.Types.asn1_sequence(({
-						// controlType
-		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.1339"),
-		  ASN1_BOOLEAN(0),		// criticality (FALSE)
-						// controlValue
-		  Standards.ASN1.Types.asn1_octet_string(""),
-		  })),
-	      });
-	    }
-	    if (supported_controls["1.2.840.113556.1.4.319"]) {
+	  array ctrls = common_controls;
+	  IF_ELSE_PAGED_SEARCH (
+	    if (supported_controls[Protocols.LDAP.LDAP_PAGED_RESULT_OID_STRING]) {
 	      // LDAP Control Extension for Simple Paged Results Manipulation
 	      // RFC 2696.
-	      ctrls += ({
-		Standards.ASN1.Types.asn1_sequence(({
-						// controlType
-		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
-		  ASN1_BOOLEAN(sizeof(cookie->value)?0:0xff),	// criticality
-						// controlValue
-		  Standards.ASN1.Types.asn1_octet_string(
-		    Standards.ASN1.Types.asn1_sequence(({
-						// size
-		      Standards.ASN1.Types.asn1_integer(0x7fffffff),
-		      cookie,			// cookie
-		    }))->get_der()),
-		  })),
-	      });
-	    }
-	    object controls;
-	    if (sizeof(ctrls)) {
-	      controls = .ldap_privates.asn1_sequence(0, ctrls);
-	    }
-	    ,);
+	      ctrls += ({make_control (
+			   Protocols.LDAP.LDAP_PAGED_RESULT_OID_STRING,
+			   Standards.ASN1.Types.asn1_sequence(
+			     ({
+			       // size
+			       Standards.ASN1.Types.asn1_integer(0x7fffffff),
+			       cookie,			// cookie
+			     }))->get_der(),
+			   sizeof(cookie->value)?0:0xff)});
+	    },);
+	  object controls;
+	  if (sizeof(ctrls)) {
+	    controls = .ldap_privates.asn1_sequence(0, ctrls);
+	  }
 
-	  if(intp(raw = do_op(search_request,
-			      IF_ELSE_PAGED_SEARCH(controls, 0)))) {
+	  if(intp(raw = do_op(search_request, controls))) {
 	    THROW(({error_string()+"\n",backtrace()}));
 	    return 0;
 	  }
@@ -1220,7 +1265,8 @@ IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
 		// FIXME: Fail?
 		continue;
 	      }
-	      if (control->elements[0]->value != "1.2.840.113556.1.4.319") {
+	      if (control->elements[0]->value !=
+		  Protocols.LDAP.LDAP_PAGED_RESULT_OID_STRING) {
 		//werror("Unknown control %O\n", control->elements[0]->value);
 		// FIXME: Should look at criticallity flag.
 		continue;
