@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.5 1998/10/12 15:44:27 nisse Exp $
+ * $Id: Line.pmod,v 1.6 1998/10/16 00:08:11 nisse Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -167,7 +167,6 @@ class simple
     if (handle_data || sizeof(read_buffer) || sizeof(multi_line_buffer)) {
       werror("close_callback(): Unexpected close!\n");
     }
-    con->set_nonblocking(0,0,0);
     con->close();
     con = 0;
   }
@@ -219,7 +218,9 @@ class imap_style
   function handle_literal = 0;
   int literal_length;
 
+#if 0
   function timeout_handler = 0;
+#endif
   
   static void read_callback(mixed ignored, string data)
   {
@@ -255,6 +256,7 @@ class imap_style
     handle_literal = callback;
   }
 
+#if 0
   static void do_timeout()
   {
     if (timeout_handler)
@@ -272,4 +274,5 @@ class imap_style
     timeout_handler = callback;
     ::create(con_, timeout_);
   }
+#endif
 }
