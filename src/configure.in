@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.199 1998/06/06 12:43:11 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.200 1998/06/07 11:56:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -292,7 +292,7 @@ if test $cflags_is_set = no; then
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
   # The need for -ieee is not detected properly by the FPE tests below.
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-ieee,ieee,CFLAGS)
+  # AC_SYS_OS_COMPILER_FLAG(OSF1,-ieee,ieee,CFLAGS)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-readonly_strings,readonly_strings,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-assume trusted_short_alignment,
     assume_trusted_short_alignment,OPTIMIZE)
@@ -792,6 +792,15 @@ int main()
  
       xBSD/OS*)
         LIBS="${OLDLIBS}"
+      ;;
+
+      xFreeBSD*)
+        case `uname -r` in
+          [3-9].*)
+	    # Threads on FreeBSD 3.0 earlier than 1998-06-07 are broken.
+            LIBS="${OLDLIBS} -pthread"
+          ;;
+        esac
       ;;
 
       *)
@@ -1573,11 +1582,17 @@ AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe,
  AC_TRY_RUN([
 #include <math.h>
 
+float foo_float = 0.0;
+
 int main(int argc, char **argv)
 {
-  float x=2.0,y=-128.0;
-  x=pow(2.0,-128.0);
-  if(x==3.0) exit(1);
+  float x=2.0, y=-128.0;
+  x = pow(2.0, -128.0);
+  foo_float = x;
+  if (x == 2.0) exit(1);
+  x = pow(2.0, 1024.0);
+  foo_float = x;
+  if(x == 2.0) exit(1);
   exit(0);
 }
 ],pike_cv_sys_idiot_sigfpe=no,pike_cv_sys_idiot_sigfpe=yes)
@@ -1586,36 +1601,43 @@ int main(int argc, char **argv)
 if test $pike_cv_sys_idiot_sigfpe = yes ; then
   AC_MSG_RESULT(yes)
 
- IEEE_FLAG=no
- if test "x${GCC-}" = xyes ; then
+  IEEE_FLAG=no
+  if test "x${GCC-}" = xyes ; then
     AC_SYS_COMPILER_FLAG(-mieee, mieee, CFLAGS,[],IEEE_FLAG=yes)
- else
+  else
     AC_SYS_COMPILER_FLAG(-ieee, ieee, CFLAGS,[],IEEE_FLAG=yes)
- fi
- TEST_IGNORE_SIGFPE=yes
+  fi
+  TEST_IGNORE_SIGFPE=yes
 
- if test $IEEE_FLAG = yes; then
-AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe_with_ieee,
+  if test $IEEE_FLAG = yes; then
+    AC_MSG_CHECKING(if float conversion is still broken)
+    AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe_with_ieee,
 [
  AC_TRY_RUN([
 #include <math.h>
+
+float foo_float = 0.0;
+
 int main(int argc, char **argv)
 {
-
-  float x=2.0,y=-128.0;
-  x=pow(2.0,-128.0);
-  if(x==3.0) exit(1);
+  float x=2.0, y=-128.0;
+  x = pow(2.0, -128.0);
+  foo_float = x;
+  if (x == 2.0) exit(1);
+  x = pow(2.0, 1024.0);
+  foo_float = x;
+  if(x == 2.0) exit(1);
   exit(0);
 }
 ],pike_cv_sys_idiot_sigfpe_with_ieee=no,pike_cv_sys_idiot_sigfpe_with_ieee=yes)
 ])
    
-if test $pike_cv_sys_idiot_sigfpe_with_ieee = yes ; then
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-  TEST_IGNORE_SIGFPE=no
-fi
+  if test $pike_cv_sys_idiot_sigfpe_with_ieee = yes ; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+    TEST_IGNORE_SIGFPE=no
+  fi
 fi # IEEE_FLAG
 
 if test $TEST_IGNORE_SIGFPE = yes; then
@@ -1631,12 +1653,18 @@ RETSIGTYPE func(void)
  signal(SIGFPE,func);
 }
 
+float foo_float = 0.0;
+
 int main(int argc, char **argv)
 {
-  float x=2.0,y=-128.0;
+  float x=2.0, y=-128.0;
   signal(SIGFPE,func);
-  x=pow(2.0,-128.0);
-  if(x==3.0) exit(1);
+  x = pow(2.0, -128.0);
+  foo_float = x;
+  if (x == 2.0) exit(1);
+  x = pow(2.0, 1024.0);
+  foo_float = x;
+  if(x == 2.0) exit(1);
   exit(0);
 }
 ],pike_cv_sys_ignore_sigfpe=yes,pike_cv_sys_ignore_sigfpe=no)
@@ -2305,6 +2333,7 @@ echo "LINKFORSHARED: $LINKFORSHARED"
 echo "WARN:          $WARN"
 echo "OPTIMIZE:      $OPTIMIZE"
 echo "LDFLAGS:       $LDFLAGS"
+echo "LIBS:          $LIBS"
 echo
 
 #############################################################################
