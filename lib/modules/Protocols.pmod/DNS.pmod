@@ -465,6 +465,10 @@ class async_client
   inherit spider.dumUDP : udp;
   int id;
 
+#if constant(thread_create)
+  object lock = Thread.Mutex();
+#endif /* constant(thread_create) */
+
   class Request
   {
     string req;
@@ -507,18 +511,28 @@ class async_client
 		function(string,mapping,mixed...:void) callback,
 		mixed ... args)
   {
+#if constant(thread_create)
+    object key = lock->lock();
+#endif /* constant(thread_create) */
     id++;
     id&=65535;
-    string req=low_mkquery(id,domain,cl,type);
+    int lid = id;
 
-    if(requests[id])
+#if constant(thread_create)
+    key = 0;
+#endif /* constant(thread_create) */
+
+    if(requests[lid])
       throw(({"Cannot find an empty request slot.\n",backtrace()}));
+
+    string req=low_mkquery(lid,domain,cl,type);
+
     object r=Request();
     r->req=req;
     r->domain=domain;
     r->callback=callback;
     r->args=args;
-    requests[id]=r;
+    requests[lid]=r;
     udp::send(nameservers[0],53,r->req);
     call_out(retry,5,r,1);
   }
