@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.11 1998/01/13 22:59:24 hubbe Exp $ */
+/* $Id: pattern.c,v 1.12 1999/03/03 04:49:36 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.11 1998/01/13 22:59:24 hubbe Exp $
+**!	$Id: pattern.c,v 1.12 1999/03/03 04:49:36 mirar Exp $
 **! class image
 */
 
@@ -21,6 +21,7 @@
 #include "svalue.h"
 #include "array.h"
 #include "error.h"
+#include "threads.h"
 
 #include "image.h"
 
@@ -346,6 +347,61 @@ void image_turbulence(INT32 args)
       }
 
    pop_n_elems(args);
+   push_object(o);
+}
+
+/*
+**! method object random()
+**! method object random(int seed)
+**! 	Gives a randomized image;<br>
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->random()</illustration></td>
+**!	<td><illustration> return lena()->random(17)</illustration></td>
+**!	<td><illustration> return lena()->random(17)->grey()</illustration></td>
+**!	<td><illustration> return lena()->random(17)->color(255,0,0)</illustration></td>
+**!	<td><illustration> return lena()->random(17)->color(255,0,0)->grey(1,0,0)</illustration></td>
+**!	<td>original</td>
+**!	<td>->random()</td>
+**!	<td>->random(17)</td>
+**!	<td>greyed<br>(same again)</td>
+**!	<td>color(red)<br>(same again)</td>
+**!	<td>...red channel<br></td>
+**!	</tr></table>
+**!	</tr><tr>
+**!
+**!	Use with ->grey() or ->color() for one-color-results.
+**!
+**! returns a new image
+*/
+
+void image_random(INT32 args)
+{
+   struct object *o;
+   struct image *img;
+   rgb_group *d;
+   INT32 n;
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone_object(image_program,2);
+   img=(struct image*)get_storage(o,image_program);
+   d=img->img;
+   if (args) f_random_seed(args);
+
+   THREADS_ALLOW();
+
+   n=img->xsize*img->ysize;
+   while (n--)
+   {
+      d->r=(COLORTYPE)my_rand();
+      d->g=(COLORTYPE)my_rand();
+      d->b=(COLORTYPE)my_rand();
+      d++;
+   }
+
+   THREADS_DISALLOW();
+
    push_object(o);
 }
 

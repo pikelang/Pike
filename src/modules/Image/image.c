@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.114 1999/03/01 21:47:42 hedda Exp $ */
+/* $Id: image.c,v 1.115 1999/03/03 04:49:32 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.114 1999/03/01 21:47:42 hedda Exp $
+**!	$Id: image.c,v 1.115 1999/03/03 04:49:32 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.114 1999/03/01 21:47:42 hedda Exp $");
+RCSID("$Id: image.c,v 1.115 1999/03/03 04:49:32 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2018,7 +2018,6 @@ void image_threshold(INT32 args)
    push_object(o);
 }
 
-
 /*
 **! method object rgb_to_hsv()
 **! method object hsv_to_rgb()
@@ -3559,83 +3558,83 @@ void pike_module_init(void)
    add_function("clear",image_clear,
 		"function("RGB_TYPE":object)",0);
    /* function(:string) */
-  ADD_FUNCTION("toppm",image_toppm,tFunc(,tStr),0);
+   ADD_FUNCTION("toppm",image_toppm,tFunc(,tStr),0);
    /* function(string:object|string) */
-  ADD_FUNCTION("frompnm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
+   ADD_FUNCTION("frompnm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
    /* function(string:object|string) */
-  ADD_FUNCTION("fromppm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
+   ADD_FUNCTION("fromppm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
    /* function(:string) */
-  ADD_FUNCTION("togif",image_togif,tFunc(,tStr),0);
+   ADD_FUNCTION("togif",image_togif,tFunc(,tStr),0);
    /* function(:string) */
-  ADD_FUNCTION("togif_fs",image_togif_fs,tFunc(,tStr),0);
+   ADD_FUNCTION("togif_fs",image_togif_fs,tFunc(,tStr),0);
    /* function(int:string) */
-  ADD_FUNCTION("gif_begin",image_gif_begin,tFunc(tInt,tStr),0);
+   ADD_FUNCTION("gif_begin",image_gif_begin,tFunc(tInt,tStr),0);
    /* function(int|void,int|void,int|float:string)"
 		"|function(int|void,int|void,array(array(int)),int|float:string) */
-  ADD_FUNCTION("gif_add",image_gif_add,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
+   ADD_FUNCTION("gif_add",image_gif_add,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
    /* function(int|void,int|void,int|float:string)"
 		"|function(int|void,int|void,array(array(int)),int|float:string) */
-  ADD_FUNCTION("gif_add_fs",image_gif_add_fs,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
+   ADD_FUNCTION("gif_add_fs",image_gif_add_fs,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
    /* function(int|void,int|void,int|float:string)"
 		"|function(int|void,int|void,array(array(int)),int|float:string) */
-  ADD_FUNCTION("gif_add_nomap",image_gif_add_nomap,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
+   ADD_FUNCTION("gif_add_nomap",image_gif_add_nomap,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
    /* function(int|void,int|void,int|float:string)"
 		"|function(int|void,int|void,array(array(int)),int|float:string) */
-  ADD_FUNCTION("gif_add_fs_nomap",image_gif_add_fs_nomap,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
+   ADD_FUNCTION("gif_add_fs_nomap",image_gif_add_fs_nomap,tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
    /* function(:string) */
-  ADD_FUNCTION("gif_end",image_gif_end,tFunc(,tStr),0);
+   ADD_FUNCTION("gif_end",image_gif_end,tFunc(,tStr),0);
    /* function(:string) */
-  ADD_FUNCTION("gif_netscape_loop",image_gif_netscape_loop,tFunc(,tStr),0);
+   ADD_FUNCTION("gif_netscape_loop",image_gif_netscape_loop,tFunc(,tStr),0);
 
    /* function(string:string) */
-  ADD_FUNCTION("cast",image_cast,tFunc(tStr,tStr),0);
+   ADD_FUNCTION("cast",image_cast,tFunc(tStr,tStr),0);
    /* function(array(array(int)):string) */
-  ADD_FUNCTION("to8bit",image_to8bit,tFunc(tArr(tArr(tInt)),tStr),0);
+   ADD_FUNCTION("to8bit",image_to8bit,tFunc(tArr(tArr(tInt)),tStr),0);
    /* function(array(array(int)):string) */
-  ADD_FUNCTION("to8bit_closest",image_to8bit,tFunc(tArr(tArr(tInt)),tStr),0);
+   ADD_FUNCTION("to8bit_closest",image_to8bit,tFunc(tArr(tArr(tInt)),tStr),0);
    /* function(:string) */
-  ADD_FUNCTION("to8bit_fs",image_to8bit,tFunc(,tStr),0);
+   ADD_FUNCTION("to8bit_fs",image_to8bit,tFunc(,tStr),0);
    /* function(:string) */
-  ADD_FUNCTION("torgb",image_torgb,tFunc(,tStr),0);
+   ADD_FUNCTION("torgb",image_torgb,tFunc(,tStr),0);
    /* function(array(array(int)):string) */
-  ADD_FUNCTION("tozbgr",image_tozbgr,tFunc(tArr(tArr(tInt)),tStr),0);
+   ADD_FUNCTION("tozbgr",image_tozbgr,tFunc(tArr(tArr(tInt)),tStr),0);
    /* function(int,int,int,void|string:string) */
-  ADD_FUNCTION("to8bit_rgbcube",image_to8bit_rgbcube,tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
+   ADD_FUNCTION("to8bit_rgbcube",image_to8bit_rgbcube,tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
    /* function(:string) */
-  ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(,tStr),0);
+   ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(,tStr),0);
    /* function(int,int,int,void|string:string) */
-  ADD_FUNCTION("to8bit_rgbcube_rdither",image_to8bit_rgbcube_rdither,tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
+   ADD_FUNCTION("to8bit_rgbcube_rdither",image_to8bit_rgbcube_rdither,tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
 
 
    add_function("copy",image_copy,
 		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
    /* function(void|int ...:object) */
-  ADD_FUNCTION("autocrop",image_autocrop,tFuncV(,tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("autocrop",image_autocrop,tFuncV(,tOr(tVoid,tInt),tObj),0);
    /* function(int|float,int|float|void:object) */
-  ADD_FUNCTION("scale",image_scale,tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
+   ADD_FUNCTION("scale",image_scale,tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
    /* function(int|float,int|float:object) */
-  ADD_FUNCTION("translate",image_translate,tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);
+   ADD_FUNCTION("translate",image_translate,tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);
    /* function(int|float,int|float:object) */
-  ADD_FUNCTION("translate_expand",image_translate_expand,tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);
+   ADD_FUNCTION("translate_expand",image_translate_expand,tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);
 
    /* function(object,int|void,int|void:object) */
-  ADD_FUNCTION("paste",image_paste,tFunc(tObj tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
+   ADD_FUNCTION("paste",image_paste,tFunc(tObj tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
    /* function(object,int,int|void,int|void:object) */
-  ADD_FUNCTION("paste_alpha",image_paste_alpha,tFunc(tObj tInt tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
+   ADD_FUNCTION("paste_alpha",image_paste_alpha,tFunc(tObj tInt tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
    /* function(object,object,int|void,int|void:object) */
-  ADD_FUNCTION("paste_mask",image_paste_mask,tFunc(tObj tObj tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
+   ADD_FUNCTION("paste_mask",image_paste_mask,tFunc(tObj tObj tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
    /* function(object,void|int,void|int,void|int,int|void,int|void:object) */
-  ADD_FUNCTION("paste_alpha_color",image_paste_alpha_color,tFunc(tObj tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
+   ADD_FUNCTION("paste_alpha_color",image_paste_alpha_color,tFunc(tObj tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
 
    /* function(int|array|void ...:object) */
-  ADD_FUNCTION("add_layers",image_add_layers,tFuncV(,tOr3(tInt,tArray,tVoid),tObj),0);
+   ADD_FUNCTION("add_layers",image_add_layers,tFuncV(,tOr3(tInt,tArray,tVoid),tObj),0);
 
    /* function(int,int,int:object) */
-  ADD_FUNCTION("setcolor",image_setcolor,tFunc(tInt tInt tInt,tObj),0);
+   ADD_FUNCTION("setcolor",image_setcolor,tFunc(tInt tInt tInt,tObj),0);
    add_function("setpixel",image_setpixel,
 		"function(int,int,"RGB_TYPE":object)",0);
    /* function(int,int:array(int)) */
-  ADD_FUNCTION("getpixel",image_getpixel,tFunc(tInt tInt,tArr(tInt)),0);
+   ADD_FUNCTION("getpixel",image_getpixel,tFunc(tInt tInt,tArr(tInt)),0);
    add_function("line",image_line,
 		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("circle",image_circle,
@@ -3643,13 +3642,13 @@ void pike_module_init(void)
    add_function("box",image_box,
 		"function(int,int,int,int,"RGB_TYPE":object)",0);
    /* function(int,int,int,int,array:object) */
-  ADD_FUNCTION("tuned_box",image_tuned_box,tFunc(tInt tInt tInt tInt tArray,tObj),0);
+   ADD_FUNCTION("tuned_box",image_tuned_box,tFunc(tInt tInt tInt tInt tArray,tObj),0);
    /* function(array(int)|float ...:object) */
-  ADD_FUNCTION("gradients",image_gradients,tFuncV(,tOr(tArr(tInt),tFlt),tObj),0);
+   ADD_FUNCTION("gradients",image_gradients,tFuncV(,tOr(tArr(tInt),tFlt),tObj),0);
    /* function(array(float|int) ...:object) */
-  ADD_FUNCTION("polygone",image_polyfill,tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
+   ADD_FUNCTION("polygone",image_polyfill,tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
    /* function(array(float|int) ...:object) */
-  ADD_FUNCTION("polyfill",image_polyfill,tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
+   ADD_FUNCTION("polyfill",image_polyfill,tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
 
    add_function("gray",image_grey,
 		"function("RGB_TYPE":object)",0);
@@ -3667,38 +3666,38 @@ void pike_module_init(void)
 		"function("RGB_TYPE":object)",0);
 
    /* function(void:object) */
-  ADD_FUNCTION("rgb_to_hsv",image_rgb_to_hsv,tFunc(tVoid,tObj),0);
+   ADD_FUNCTION("rgb_to_hsv",image_rgb_to_hsv,tFunc(tVoid,tObj),0);
    /* function(void:object) */
-  ADD_FUNCTION("hsv_to_rgb",image_hsv_to_rgb,tFunc(tVoid,tObj),0);
+   ADD_FUNCTION("hsv_to_rgb",image_hsv_to_rgb,tFunc(tVoid,tObj),0);
 
    /* function(int,int:object) */
-  ADD_FUNCTION("select_from",image_select_from,tFunc(tInt tInt,tObj),0);
+   ADD_FUNCTION("select_from",image_select_from,tFunc(tInt tInt,tObj),0);
 
    /* function(array(array(int|array(int))), void|int ...:object) */
-  ADD_FUNCTION("apply_matrix",image_apply_matrix,tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("apply_matrix",image_apply_matrix,tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
    /* function(void|array(array(int)):object)"
                 "|function(array(array(int)),int,int,int,void|int:object)"
                 "|function(array(array(int)),int,int,int,int,int,int,void|int:object)"
                 "|function(int,int,int,void|int:object)"
                 "|function(int,int,int,int,int,int,void|int:object) */
-  ADD_FUNCTION("outline",image_outline,tOr5(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),tFunc(tArr(tArr(tInt)) tInt tInt tInt tOr(tVoid,tInt),tObj),tFunc(tArr(tArr(tInt)) tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tObj),tFunc(tInt tInt tInt tOr(tVoid,tInt),tObj),tFunc(tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tObj)),0);
+   ADD_FUNCTION("outline",image_outline,tOr5(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),tFunc(tArr(tArr(tInt)) tInt tInt tInt tOr(tVoid,tInt),tObj),tFunc(tArr(tArr(tInt)) tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tObj),tFunc(tInt tInt tInt tOr(tVoid,tInt),tObj),tFunc(tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tObj)),0);
    /* function(void|array(array(int)):object)"
                 "|function(array(array(int)),int,int,int:object) */
-  ADD_FUNCTION("outline_mask",image_outline_mask,tOr(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),tFunc(tArr(tArr(tInt)) tInt tInt tInt,tObj)),0);
+   ADD_FUNCTION("outline_mask",image_outline_mask,tOr(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),tFunc(tArr(tArr(tInt)) tInt tInt tInt,tObj)),0);
    /* function(int,int,int,int,int:object) */
-  ADD_FUNCTION("modify_by_intensity",image_modify_by_intensity,tFunc(tInt tInt tInt tInt tInt,tObj),0);
+   ADD_FUNCTION("modify_by_intensity",image_modify_by_intensity,tFunc(tInt tInt tInt tInt tInt,tObj),0);
    /* function(float|int:object)|"
                 "function(float|int,float|int,float|int:object) */
-  ADD_FUNCTION("gamma",image_gamma,tOr(tFunc(tOr(tFlt,tInt),tObj),tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
+   ADD_FUNCTION("gamma",image_gamma,tOr(tFunc(tOr(tFlt,tInt),tObj),tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
 
    /* function(:object) */
-  ADD_FUNCTION("rotate_ccw",image_ccw,tFunc(,tObj),0);
+   ADD_FUNCTION("rotate_ccw",image_ccw,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("rotate_cw",image_cw,tFunc(,tObj),0);
+   ADD_FUNCTION("rotate_cw",image_cw,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("mirrorx",image_mirrorx,tFunc(,tObj),0);
+   ADD_FUNCTION("mirrorx",image_mirrorx,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("mirrory",image_mirrory,tFunc(,tObj),0);
+   ADD_FUNCTION("mirrory",image_mirrory,tFunc(,tObj),0);
    add_function("skewx",image_skewx,
 		"function(int|float,"RGB_TYPE":object)",0);
    add_function("skewy",image_skewy,
@@ -3714,105 +3713,106 @@ void pike_module_init(void)
 		"function(int|float,"RGB_TYPE":object)",0);
 
    /* function(:int) */
-  ADD_FUNCTION("xsize",image_xsize,tFunc(,tInt),0);
+   ADD_FUNCTION("xsize",image_xsize,tFunc(,tInt),0);
    /* function(:int) */
-  ADD_FUNCTION("ysize",image_ysize,tFunc(,tInt),0);
+   ADD_FUNCTION("ysize",image_ysize,tFunc(,tInt),0);
 
    /* function(array(array(int)):object) */
-  ADD_FUNCTION("map_closest",image_map_compat,tFunc(tArr(tArr(tInt)),tObj),0);
+   ADD_FUNCTION("map_closest",image_map_compat,tFunc(tArr(tArr(tInt)),tObj),0);
    /* function(array(array(int)):object) */
-  ADD_FUNCTION("map_fast",image_map_compat,tFunc(tArr(tArr(tInt)),tObj),0);
+   ADD_FUNCTION("map_fast",image_map_compat,tFunc(tArr(tArr(tInt)),tObj),0);
    /* function(array(array(int)):object) */
-  ADD_FUNCTION("map_fs",image_map_fscompat,tFunc(tArr(tArr(tInt)),tObj),0);
+   ADD_FUNCTION("map_fs",image_map_fscompat,tFunc(tArr(tArr(tInt)),tObj),0);
    /* function(int:array(array(int))) */
-  ADD_FUNCTION("select_colors",image_select_colors,tFunc(tInt,tArr(tArr(tInt))),0);
+   ADD_FUNCTION("select_colors",image_select_colors,tFunc(tInt,tArr(tArr(tInt))),0);
 
    /* function(array(float|int|array(int)),float|void,float|void,float|void,float|void:object) */
-  ADD_FUNCTION("noise",image_noise,tFunc(tArr(tOr3(tFlt,tInt,tArr(tInt))) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
+   ADD_FUNCTION("noise",image_noise,tFunc(tArr(tOr3(tFlt,tInt,tArr(tInt))) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
    /* function(array(float|int|array(int)),int|void,float|void,float|void,float|void,float|void:object) */
-  ADD_FUNCTION("turbulence",image_turbulence,tFunc(tArr(tOr3(tFlt,tInt,tArr(tInt))) tOr(tInt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
+   ADD_FUNCTION("turbulence",image_turbulence,tFunc(tArr(tOr3(tFlt,tInt,tArr(tInt))) tOr(tInt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
+   ADD_FUNCTION("random",image_random,tFunc(tOr(tVoid,tInt),tObj),0);
 
    /* function(:object) */
-  ADD_FUNCTION("dct",image_dct,tFunc(,tObj),0);
+   ADD_FUNCTION("dct",image_dct,tFunc(,tObj),0);
 
    /* function(object|array(int)|int:object) */
-  ADD_FUNCTION("`-",image_operator_minus,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+   ADD_FUNCTION("`-",image_operator_minus,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    /* function(object|array(int)|int:object) */
-  ADD_FUNCTION("`+",image_operator_plus,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+   ADD_FUNCTION("`+",image_operator_plus,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    /* function(object|array(int)|int:object) */
-  ADD_FUNCTION("`*",image_operator_multiply,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+   ADD_FUNCTION("`*",image_operator_multiply,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    /* function(object|array(int)|int:object) */
-  ADD_FUNCTION("`&",image_operator_minimum,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+   ADD_FUNCTION("`&",image_operator_minimum,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    /* function(object|array(int)|int:object) */
-  ADD_FUNCTION("`|",image_operator_maximum,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+   ADD_FUNCTION("`|",image_operator_maximum,tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
 
    /* function(object|array(int)|int:int) */
-  ADD_FUNCTION("`==",image_operator_equal,tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
+   ADD_FUNCTION("`==",image_operator_equal,tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
    /* function(object|array(int)|int:int) */
-  ADD_FUNCTION("`<",image_operator_lesser,tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
+   ADD_FUNCTION("`<",image_operator_lesser,tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
    /* function(object|array(int)|int:int) */
-  ADD_FUNCTION("`>",image_operator_greater,tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
+   ADD_FUNCTION("`>",image_operator_greater,tFunc(tOr3(tObj,tArr(tInt),tInt),tInt),0);
 
    /* function(:array(int)) */
-  ADD_FUNCTION("min",image_min,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("min",image_min,tFunc(,tArr(tInt)),0);
    /* function(:array(int)) */
-  ADD_FUNCTION("max",image_max,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("max",image_max,tFunc(,tArr(tInt)),0);
    /* function(:array(int)) */
-  ADD_FUNCTION("sum",image_sum,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("sum",image_sum,tFunc(,tArr(tInt)),0);
    /* function(:array(int)) */
-  ADD_FUNCTION("sumf",image_sumf,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("sumf",image_sumf,tFunc(,tArr(tInt)),0);
    /* function(:array(int)) */
-  ADD_FUNCTION("average",image_average,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("average",image_average,tFunc(,tArr(tInt)),0);
   
    /* function(:array(int))|"
 		"function(int,int,int:array(int)) */
-  ADD_FUNCTION("find_min",image_find_min,tOr(tFunc(,tArr(tInt)),tFunc(tInt tInt tInt,tArr(tInt))),0);
+   ADD_FUNCTION("find_min",image_find_min,tOr(tFunc(,tArr(tInt)),tFunc(tInt tInt tInt,tArr(tInt))),0);
    /* function(:array(int))|"
 		"function(int,int,int:array(int)) */
-  ADD_FUNCTION("find_max",image_find_max,tOr(tFunc(,tArr(tInt)),tFunc(tInt tInt tInt,tArr(tInt))),0);
+   ADD_FUNCTION("find_max",image_find_max,tOr(tFunc(,tArr(tInt)),tFunc(tInt tInt tInt,tArr(tInt))),0);
 		
    /* function(:object) */
-  ADD_FUNCTION("read_lsb_rgb",image_read_lsb_rgb,tFunc(,tObj),0);
+   ADD_FUNCTION("read_lsb_rgb",image_read_lsb_rgb,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("write_lsb_rgb",image_write_lsb_rgb,tFunc(,tObj),0);
+   ADD_FUNCTION("write_lsb_rgb",image_write_lsb_rgb,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("read_lsb_grey",image_read_lsb_rgb,tFunc(,tObj),0);
+   ADD_FUNCTION("read_lsb_grey",image_read_lsb_rgb,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("write_lsb_grey",image_write_lsb_rgb,tFunc(,tObj),0);
+   ADD_FUNCTION("write_lsb_grey",image_write_lsb_rgb,tFunc(,tObj),0);
 
    /* function(:array(object)) */
-  ADD_FUNCTION("orient4",image_orient4,tFunc(,tArr(tObj)),0);
+   ADD_FUNCTION("orient4",image_orient4,tFunc(,tArr(tObj)),0);
    /* function(:object) */
-  ADD_FUNCTION("orient",image_orient,tFunc(,tObj),0);
+   ADD_FUNCTION("orient",image_orient,tFunc(,tObj),0);
   
    /* function(:object) */
-  ADD_FUNCTION("phaseh",image_phaseh,tFunc(,tObj),0);
+   ADD_FUNCTION("phaseh",image_phaseh,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("phasev",image_phasev,tFunc(,tObj),0);
+   ADD_FUNCTION("phasev",image_phasev,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("phasehv",image_phasehv,tFunc(,tObj),0);
+   ADD_FUNCTION("phasehv",image_phasehv,tFunc(,tObj),0);
    /* function(:object) */
-  ADD_FUNCTION("phasevh",image_phasevh,tFunc(,tObj),0);
+   ADD_FUNCTION("phasevh",image_phasevh,tFunc(,tObj),0);
    /* function(int|float,object:object)"
       "|function(int|float,object,object,object:object)"
       "|function(int|float,object,object,int:object)"
       "|function(int|float,object,object,object,object,int:object) */
-  ADD_FUNCTION("match_phase",image_match_phase,
-	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
-  ADD_FUNCTION("match_norm",image_match_norm,
-	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
-  ADD_FUNCTION("match_norm_corr",image_match_norm_corr,
-	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
-  ADD_FUNCTION("match",image_match,
-	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+   ADD_FUNCTION("match_phase",image_match_phase,
+		tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+   ADD_FUNCTION("match_norm",image_match_norm,
+		tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+   ADD_FUNCTION("match_norm_corr",image_match_norm_corr,
+		tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+   ADD_FUNCTION("match",image_match,
+		tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
   
    /* function(array(array(int|array(int))), void|int ...:object) */
-  ADD_FUNCTION("apply_max",image_apply_max,tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("apply_max",image_apply_max,tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
    /*  function(object,object,object,object,int|void,int|void:string) */
-  ADD_FUNCTION("make_ascii",image_make_ascii,tFunc(tObj tObj tObj tObj tOr(tInt,tVoid),tStr),0);
+   ADD_FUNCTION("make_ascii",image_make_ascii,tFunc(tObj tObj tObj tObj tOr(tInt,tVoid),tStr),0);
   
    /* function(void|int:object) */
-  ADD_FUNCTION("test",image_test,tFunc(tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("test",image_test,tFunc(tOr(tVoid,tInt),tObj),0);
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
@@ -3828,7 +3828,7 @@ void pike_module_init(void)
    init_image_colors();
 
    /* function(string:object) */
-  ADD_FUNCTION("`[]",image_index_magic,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("`[]",image_index_magic,tFunc(tStr,tObj),0);
 
    init_image_gif();
    init_image_pnm();
@@ -3839,31 +3839,31 @@ void pike_module_init(void)
 
 void pike_module_exit(void) 
 {
-  if(image_program)
-  {
-    free_program(image_program);
-    image_program=0;
-  }
-  exit_font();
-  exit_colortable();
-  exit_image_colors();
+   if(image_program)
+   {
+      free_program(image_program);
+      image_program=0;
+   }
+   exit_font();
+   exit_colortable();
+   exit_image_colors();
 
-  exit_image_gif();
-  exit_image_pnm();
-  exit_image_xwd();
-  exit_image_any();
-  if (png_object) 
-  {
-     free_object(png_object);
-     png_object=NULL;
-     exit_image_png();
-  }
-  exit_image_x();
+   exit_image_gif();
+   exit_image_pnm();
+   exit_image_xwd();
+   exit_image_any();
+   if (png_object) 
+   {
+      free_object(png_object);
+      png_object=NULL;
+      exit_image_png();
+   }
+   exit_image_x();
 
-  free_string(magic_PNG);
-  free_string(magic_JPEG);
-  free_string(magic_XFace);
-  free_string(magic_TTF);
+   free_string(magic_PNG);
+   free_string(magic_JPEG);
+   free_string(magic_XFace);
+   free_string(magic_TTF);
 }
 
 

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.24 1999/03/01 21:47:35 hedda Exp $
+**!	$Id: image.h,v 1.25 1999/03/03 04:49:34 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -132,6 +132,7 @@ void image_frompnm(INT32 args);
 
 void image_noise(INT32 args);
 void image_turbulence(INT32 args);
+void image_random(INT32 args);
 void image_noise_init(void);
 
 /* dct.c */
