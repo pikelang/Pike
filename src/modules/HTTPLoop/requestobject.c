@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.6 1999/12/12 21:55:00 per Exp $
+ * $Id: requestobject.c,v 1.7 2000/02/16 17:52:03 grubba Exp $
  */
 
 #include "global.h"
@@ -726,7 +726,7 @@ void actually_send(struct send_args *a)
       len = 0;
     }
 
-    if ((off = tell(a->from_fd)) < 0) {
+    if ((off = lseek(a->from_fd, 0, SEEK_CUR)) < 0) {
       /* Probably a pipe, so sendfile() will probably fail anyway,
        * but it doesn't hurt to try...
        */
