@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.681 2003/02/08 00:48:52 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.682 2003/02/08 02:28:40 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5720,6 +5720,112 @@ AC_CACHE_VAL(pike_cv_have_union_init, [
 AC_MSG_RESULT($pike_cv_have_union_init)
 if test "$pike_cv_have_union_init" = yes; then
   AC_DEFINE(HAVE_UNION_INIT)
+fi
+
+#######################################################################
+
+AC_MSG_CHECKING(if cpu time is thread local)
+AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
+  rm -f conftest.out.2 2>/dev/null
+  AC_TRY_RUN([
+#include <stdio.h>
+
+#ifdef PIKE_THREADS
+
+#define CONFIGURE_TEST
+
+#include "rusage.c"
+#include "threads.c"
+
+PIKE_MUTEX_T m;
+COND_T c;
+
+cpu_time_t work_time, wait_time;
+
+TH_RETURN_TYPE work_thread (void *dummy)
+{
+  int max = 1000000;
+  cpu_time_t start;
+  mt_lock (&m);
+  start = get_cpu_time();
+  do
+    work_time = get_cpu_time() - start;
+  while (work_time < (CPU_TIME_TICKS / 10) && --max);
+  co_signal (&c);
+  mt_unlock (&m);
+}
+
+int main()
+{
+  cpu_time_t start;
+  THREAD_T worker;
+  FILE *res = fopen ("conftest.out.2", "w");
+  if (!res) return 2;
+
+  really_low_th_init();
+
+  mt_init (&m);
+  co_init (&c);
+
+  mt_lock (&m);
+  if (th_create (&worker, work_thread, NULL)) {
+    fputs ("unknown (failed to create thread)", res);
+    fclose (res);
+    return 1;
+  }
+  start = get_cpu_time();
+  co_wait (&c, &m);
+  wait_time = get_cpu_time() - start;
+
+  if (work_time < (CPU_TIME_TICKS / 10)) {
+    fputs ("unknown (get_cpu_time doesn't work)", res);
+    fclose (res);
+    return 1;
+  }
+
+  if (work_time > wait_time)
+    return 0; /* It's thread local. */
+  else {
+    fputs ("no", res);
+    fclose (res);
+    return 1; /* It's not thread local. */
+  }
+}
+
+#else
+int main()
+{
+  FILE *res = fopen ("conftest.out.2", "w");
+  if (!res) return 2;
+  fputs ("no", res);
+  fclose (res);
+  return 1;
+}
+#endif
+    ], [
+      pike_cv_thread_local_cpu_time=yes
+    ], [
+      if test -f conftest.out.2; then
+        pike_cv_thread_local_cpu_time=`cat conftest.out.2`
+        rm -f conftest.out.2 2>/dev/null
+      else
+        AC_MSG_WARN([
+Test failed to compile.
+Problems in rusage.c or threads.c with CONFIGURE_TEST is defined?
+])
+        pike_cv_thread_local_cpu_time="unknown (compilation failed)"
+      fi
+    ], [
+      pike_cv_thread_local_cpu_time="unknown (cross compilation)"
+    ])
+])
+AC_MSG_RESULT($pike_cv_thread_local_cpu_time)
+if test "$pike_cv_thread_local_cpu_time" = yes; then
+  AC_DEFINE(CPU_TIME_IS_THREAD_LOCAL, YES)
+elif test "$pike_cv_thread_local_cpu_time" = no; then
+  AC_DEFINE(CPU_TIME_IS_THREAD_LOCAL, NO)
+else
+  AC_DEFINE(CPU_TIME_IS_THREAD_LOCAL, UNKNOWN)
 fi
 
 #######################################################################

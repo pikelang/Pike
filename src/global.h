@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.78 2003/01/26 11:09:00 mirar Exp $
+|| $Id: global.h,v 1.79 2003/02/08 02:31:57 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -62,7 +62,11 @@ struct svalue;
 struct timeval;
 #endif
 
+#ifndef CONFIGURE_TEST
+/* machine.h doesn't exist if we're included from a configure test
+ * program. In that case these defines will already be included. */
 #include "machine.h"
+#endif
 
 /*
  * Max number of local variables in a function.

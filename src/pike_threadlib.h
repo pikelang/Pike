@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.27 2003/02/03 16:31:49 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.28 2003/02/08 02:30:11 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -318,6 +318,36 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 
 #endif
 
+#ifndef TH_RETURN_TYPE
+#define TH_RETURN_TYPE void *
+#endif
+
+#ifndef TH_STDCALL
+#define TH_STDCALL
+#endif
+
+#ifndef th_destroy
+#define th_destroy(X)
+#endif
+
+#ifndef low_th_yield
+#ifdef HAVE_THR_YIELD
+#define low_th_yield() thr_yield()
+#else
+#define low_th_yield() 0
+#define HAVE_NO_YIELD
+#endif
+#endif
+
+#ifndef th_equal
+#define th_equal(X,Y) (!MEMCMP(&(X),&(Y),sizeof(THREAD_T)))
+#endif
+
+#ifndef th_hash
+#define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
+#endif
+
+#ifndef CONFIGURE_TEST
 
 struct interleave_mutex
 {
@@ -457,35 +487,6 @@ static INLINE int threads_disabled_wait(void)
     low_co_wait_interpreter(COND);					\
     if (threads_disabled) threads_disabled_wait();			\
   } while (0)
-
-#ifndef TH_RETURN_TYPE
-#define TH_RETURN_TYPE void *
-#endif
-
-#ifndef TH_STDCALL
-#define TH_STDCALL
-#endif
-
-#ifndef th_destroy
-#define th_destroy(X)
-#endif
-
-#ifndef low_th_yield
-#ifdef HAVE_THR_YIELD
-#define low_th_yield() thr_yield()
-#else
-#define low_th_yield() 0
-#define HAVE_NO_YIELD
-#endif
-#endif
-
-#ifndef th_equal
-#define th_equal(X,Y) (!MEMCMP(&(X),&(Y),sizeof(THREAD_T)))
-#endif
-
-#ifndef th_hash
-#define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
-#endif
 
 #ifdef INTERNAL_PROFILING
 PMOD_EXPORT extern unsigned long thread_yields;
@@ -692,6 +693,8 @@ PMOD_EXPORT extern int Pike_in_gc;
 #else
 #define ASSERT_THREAD_SWAPPED_IN()
 #endif
+
+#endif	/* !CONFIGURE_TEST */
 
 #endif /* PIKE_THREADS */
 

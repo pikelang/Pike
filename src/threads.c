@@ -2,16 +2,21 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.198 2003/01/26 11:09:01 mirar Exp $
+|| $Id: threads.c,v 1.199 2003/02/08 02:28:40 mast Exp $
 */
 
+#ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.198 2003/01/26 11:09:01 mirar Exp $");
+RCSID("$Id: threads.c,v 1.199 2003/02/08 02:28:40 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
+#endif	/* !CONFIGURE_TEST */
 
 #ifdef _REENTRANT
+
+#ifndef CONFIGURE_TEST
+
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
@@ -38,8 +43,14 @@ PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=256 * 1204;
 
+#else
+#include "pike_threadlib.h"
+#endif	/* !CONFIGURE_TEST */
+
 /* SCO magic... */
 int  __thread_sys_behavior = 1;
+
+#ifndef CONFIGURE_TEST
 
 #if !defined(HAVE_PTHREAD_ATFORK) && !defined(th_atfork)
 #include "callback.h"
@@ -73,6 +84,8 @@ void th_atfork_child(void)
   call_callback(& atfork_child_callback, 0);
 }
 #endif
+
+#endif	/* !CONFIGURE_TEST */
 
 #ifdef __NT__
 
@@ -179,6 +192,42 @@ PMOD_EXPORT int co_destroy(COND_T *c)
 
 #endif
 
+#ifdef POSIX_THREADS
+pthread_attr_t pattr;
+pthread_attr_t small_pattr;
+#endif
+
+static void really_low_th_init(void)
+{
+#ifdef SGI_SPROC_THREADS
+#error /* Need to specify a filename */
+  us_cookie = usinit("");
+#endif /* SGI_SPROC_THREADS */
+
+#ifdef POSIX_THREADS
+#ifdef HAVE_PTHREAD_INIT
+  pthread_init();
+#endif /* HAVE_PTHREAD_INIT */
+#endif /* POSIX_THREADS */
+
+#ifdef POSIX_THREADS
+  pthread_attr_init(&pattr);
+#ifndef CONFIGURE_TEST
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+  pthread_attr_setstacksize(&pattr, thread_stack_size);
+#endif
+#endif
+  pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
+
+  pthread_attr_init(&small_pattr);
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+  pthread_attr_setstacksize(&small_pattr, 4096*sizeof(char *));
+#endif
+  pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
+#endif
+}
+
+#ifndef CONFIGURE_TEST
 
 #define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
 
@@ -199,10 +248,6 @@ MUTEX_T thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
 PMOD_EXPORT struct program *thread_id_prog = 0;
 struct program *thread_local_prog = 0;
-#ifdef POSIX_THREADS
-pthread_attr_t pattr;
-pthread_attr_t small_pattr;
-#endif
 PMOD_EXPORT ptrdiff_t thread_storage_offset;
 #ifdef USE_CLOCK_FOR_SLICES
 PMOD_EXPORT clock_t thread_start_clock = 0;
@@ -1758,18 +1803,9 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 
 void low_th_init(void)
 {
-#ifdef SGI_SPROC_THREADS
-#error /* Need to specify a filename */
-  us_cookie = usinit("");
-#endif /* SGI_SPROC_THREADS */
-
   THREADS_FPRINTF(0, (stderr, "THREADS_DISALLOW() Initializing threads.\n"));
 
-#ifdef POSIX_THREADS
-#ifdef HAVE_PTHREAD_INIT
-  pthread_init();
-#endif /* HAVE_PTHREAD_INIT */
-#endif /* POSIX_THREADS */
+  really_low_th_init();
 
   mt_init( & interpreter_lock);
   low_mt_lock_interpreter();
@@ -1778,21 +1814,10 @@ void low_th_init(void)
   mt_init( & rosie);
   co_init( & live_threads_change);
   co_init( & threads_disabled_change);
-
   thread_table_init();
+
 #ifdef POSIX_THREADS
-  pthread_attr_init(&pattr);
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&pattr, thread_stack_size);
-#endif
-  pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
-
-  pthread_attr_init(&small_pattr);
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&small_pattr, 4096*sizeof(char *));
-#endif
-  pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
-
+  /* FIXME: Why set this only when POSIX_THREADS? /mast */
   th_running = 1;
 #endif
 }
@@ -1976,5 +2001,7 @@ void th_cleanup(void)
   free_callback_list(&atfork_child_callback);
 #endif
 }
+
+#endif	/* !CONFIGURE_TEST */
 
 #endif

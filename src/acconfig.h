@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.112 2003/01/16 20:00:35 neotron Exp $
+|| $Id: acconfig.h,v 1.113 2003/02/08 02:28:40 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -508,6 +508,10 @@
 
 /* Define to the page size (handled efficiently by malloc). */
 #undef PIKE_MALLOC_PAGE_SIZE
+
+/* YES if the number reported by get_cpu_time (rusage.c) is thread
+ * local, NO if it isn't, UNKNOWN if it couldn't be established. */
+#undef CPU_TIME_IS_THREAD_LOCAL
 
 @BOTTOM@
 
