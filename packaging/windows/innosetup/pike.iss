@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 [Setup]
-AppName=Pike 7.4
-AppVerName=Pike 7.4.10, and GTK+ support
+AppName=Pike 7.4 (Beta)
+AppVerName=(Beta) Pike 7.4.11, SDL, OpenGL, MySQL, Freetype, Gz and GTK+ support
 AppPublisherURL=http://pike.ida.liu.se/
 AppSupportURL=http://pike.ida.liu.se/
 AppUpdatesURL=http://pike.ida.liu.se/
@@ -20,7 +20,7 @@ LicenseFile=Y:\win32-pike\pikeinstaller\Copying.txt
 ;automatisk radering. Late note: Seems to fail on XP too. Gäller det 7.4 också tro?
 
 [Files]
-Source: "Y:\win32-pike\dists\Pike-v7.4.10-Win32-5.1.2600.exe"; DestDir: "{tmp}"; CopyMode: alwaysoverwrite; Flags: deleteafterinstall
+Source: "Y:\win32-pike\dists\Pike-v7.4.11-Win32-tsubasa-beta.exe"; DestDir: "{tmp}"; CopyMode: alwaysoverwrite; Flags: deleteafterinstall
 Source: "Y:\win32-pike\extras\pike.ico"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Attribs: hidden
 
 ; Begin GTK+ files
@@ -57,7 +57,7 @@ Source: "Y:\win32-pike\extras\pike.ico"; DestDir: "{app}"; CopyMode: alwaysoverw
 
 
 [Run]
-Filename: "{tmp}\Pike-v7.4.10-Win32-5.1.2600.exe"; Parameters: "--no-gui --traditional ""prefix={app}"""
+Filename: "{tmp}\Pike-v7.4.11-Win32-tsubasa-beta.exe"; Parameters: "--no-gui --traditional ""prefix={app}"""
 
 [Types]
 Name: "full"; Description: "Full installation"
@@ -76,7 +76,7 @@ Name: "pike"; Description: "Pike"; Types: full; Flags: fixed; ExtraDiskSpaceRequ
 Name: associate; Description: "Associate .pike and .pmod extensions with Pike"
 
 [Dirs]
-Name: "{app}\apps"; Flags: uninsneveruninstall
+;Name: "{app}\apps"; Flags: uninsneveruninstall
 
 [Registry]
 Root: HKCR; Subkey: ".pike"; ValueType: string; ValueData: "pike_file"; Tasks: associate
