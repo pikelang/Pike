@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.126 2003/06/02 16:35:28 mast Exp $");
+RCSID("$Id: mapping.c,v 1.127 2003/09/08 15:27:58 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1949,10 +1949,11 @@ void check_all_mappings(void)
   struct keypair *k;							\
   ind_types = md->ind_types;						\
   NEW_MAPPING_LOOP(md) {						\
-    if (!IS_DESTRUCTED(&k->ind) && recurse_fn(&k->ind, 1)) {		\
+    if (!IS_DESTRUCTED(&k->ind) &&					\
+	recurse_fn(&k->ind, 1, T_MAPPING, m)) {				\
       DO_IF_DEBUG(fatal("Didn't expect an svalue zapping now.\n"));	\
     }									\
-    recurse_fn(&k->val, 1);						\
+    recurse_fn(&k->val, 1, T_MAPPING, m);				\
     val_types |= 1 << k->val.type;					\
   }									\
 } while (0)
@@ -1991,35 +1992,35 @@ void check_all_mappings(void)
 } while (0)
 
 #define GC_REC_KP(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
-  if ((REMOVE = N_REC(&k->ind, 1)))					\
+  if ((REMOVE = N_REC(&k->ind, 1, T_MAPPING, m)))			\
     gc_free_svalue(&k->val);						\
   else									\
-    N_REC(&k->val, 1);							\
+    N_REC(&k->val, 1, T_MAPPING, m);					\
 } while (0)
 
 #define GC_REC_KP_IND(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
-  if ((REMOVE = W_REC(&k->ind, 1)))					\
+  if ((REMOVE = W_REC(&k->ind, 1, T_MAPPING, m)))			\
     gc_free_svalue(&k->val);						\
   else									\
-    N_REC(&k->val, 1);							\
+    N_REC(&k->val, 1, T_MAPPING, m);					\
 } while (0)
 
 #define GC_REC_KP_VAL(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
   if ((REMOVE = N_TST(&k->ind))) /* Don't recurse now. */		\
     gc_free_svalue(&k->val);						\
-  else if ((REMOVE = W_REC(&k->val, 1)))				\
+  else if ((REMOVE = W_REC(&k->val, 1, T_MAPPING, m)))			\
     gc_free_svalue(&k->ind);						\
   else									\
-    N_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+    N_REC(&k->ind, 1, T_MAPPING, m); /* Now we can recurse the index. */ \
 } while (0)
 
 #define GC_REC_KP_BOTH(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
   if ((REMOVE = W_TST(&k->ind))) /* Don't recurse now. */		\
     gc_free_svalue(&k->val);						\
-  else if ((REMOVE = W_REC(&k->val, 1)))				\
+  else if ((REMOVE = W_REC(&k->val, 1, T_MAPPING, m)))			\
     gc_free_svalue(&k->ind);						\
   else									\
-    W_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+    W_REC(&k->ind, 1, T_MAPPING, m); /* Now we can recurse the index. */ \
 } while (0)
 
 void gc_mark_mapping_as_referenced(struct mapping *m)
@@ -2045,25 +2046,25 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
       TYPE_FIELD ind_types = 0, val_types = 0;
       if (MAPPING_DATA_IN_USE(md)) {
 	/* Must leave the mapping data untouched if it's busy. */
-	GC_RECURSE_MD_IN_USE(md, gc_mark_svalues, ind_types, val_types);
+	GC_RECURSE_MD_IN_USE(md, debug_gc_mark_svalues, ind_types, val_types);
 	gc_assert_checked_as_nonweak(md);
       }
       else
 	switch (md->flags & MAPPING_WEAK) {
 	  case 0:
-	    GC_RECURSE(md, GC_REC_KP, gc_mark, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP, debug_gc_mark, ind_types, val_types);
 	    gc_assert_checked_as_nonweak(md);
 	    break;
 	  case MAPPING_WEAK_INDICES:
-	    GC_RECURSE(md, GC_REC_KP_IND, gc_mark, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP_IND, debug_gc_mark, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	  case MAPPING_WEAK_VALUES:
-	    GC_RECURSE(md, GC_REC_KP_VAL, gc_mark, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP_VAL, debug_gc_mark, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	  default:
-	    GC_RECURSE(md, GC_REC_KP_BOTH, gc_mark, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP_BOTH, debug_gc_mark, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	}
@@ -2087,25 +2088,25 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
       TYPE_FIELD ind_types = 0, val_types = 0;
       if (MAPPING_DATA_IN_USE(md)) {
 	/* Must leave the mapping data untouched if it's busy. */
-	GC_RECURSE_MD_IN_USE(md, gc_cycle_check_svalues, ind_types, val_types);
+	GC_RECURSE_MD_IN_USE(md, debug_gc_cycle_check_svalues, ind_types, val_types);
 	gc_assert_checked_as_nonweak(md);
       }
       else
 	switch (md->flags & MAPPING_WEAK) {
 	  case 0:
-	    GC_RECURSE(md, GC_REC_KP, gc_cycle_check, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP, debug_gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_nonweak(md);
 	    break;
 	  case MAPPING_WEAK_INDICES:
-	    GC_RECURSE(md, GC_REC_KP_IND, gc_cycle_check, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP_IND, debug_gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	  case MAPPING_WEAK_VALUES:
-	    GC_RECURSE(md, GC_REC_KP_VAL, gc_cycle_check, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP_VAL, debug_gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	  default:
-	    GC_RECURSE(md, GC_REC_KP_BOTH, gc_cycle_check, ind_types, val_types);
+	    GC_RECURSE(md, GC_REC_KP_BOTH, debug_gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	}
@@ -2227,7 +2228,7 @@ void gc_zap_ext_weak_refs_in_mappings(void)
     gc_mark_mapping_pos = m->next;
     gc_mark_mapping_as_referenced(m);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 void gc_free_all_unreferenced_mappings(void)

@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.154 2003/04/15 17:00:56 mast Exp $");
+RCSID("$Id: gc.c,v 1.155 2003/09/08 15:27:57 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -99,7 +99,6 @@ INT32 num_objects = 3;		/* Account for *_empty_array. */
 INT32 num_allocs =0;
 ptrdiff_t alloc_threshold = MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
-struct pike_queue gc_mark_queue;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
 
@@ -202,6 +201,10 @@ struct callback *debug_add_gc_callback(callback_func call,
 
 static void gc_cycle_pop(void *a);
 
+#ifdef GC_MARK_DEBUG
+#else
+struct pike_queue gc_mark_queue;
+#endif
 
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
@@ -226,6 +229,18 @@ static void gc_cycle_pop(void *a);
 #endif
 
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
+
+#if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
+static char *found_where="";
+static void *found_in=0;
+static int found_in_type=0;
+
+void debug_gc_set_where (TYPE_T type, void *data)
+{
+  found_in = data;
+  found_in_type = type;
+}
+#endif
 
 #ifdef PIKE_DEBUG
 
@@ -292,9 +307,6 @@ TYPE_T attempt_to_identify(void *something)
 }
 
 void *check_for =0;
-static char *found_where="";
-static void *found_in=0;
-static int found_in_type=0;
 void *gc_svalue_location=0;
 char *fatal_after_gc=0;
 
@@ -861,6 +873,135 @@ void debug_describe_svalue(struct svalue *s)
 }
 
 #endif	/* PIKE_DEBUG */
+
+#ifdef GC_MARK_DEBUG
+
+TYPE_FIELD debug_gc_mark_svalues (struct svalue *s, ptrdiff_t num,
+				  TYPE_T in_type, void *in)
+{
+  TYPE_FIELD res;
+  found_in = in;
+  found_in_type = in_type;
+  res = gc_mark_svalues (s, num);
+  found_in_type = PIKE_T_UNKNOWN;
+  found_in = NULL;
+  return res;
+}
+
+TYPE_FIELD debug_gc_mark_weak_svalues (struct svalue *s, ptrdiff_t num,
+				       TYPE_T in_type, void *in)
+{
+  TYPE_FIELD res;
+  found_in = in;
+  found_in_type = in_type;
+  res = gc_mark_weak_svalues (s, num);
+  found_in_type = PIKE_T_UNKNOWN;
+  found_in = NULL;
+  return res;
+}
+
+int debug_gc_mark_short_svalue (union anything *u, TYPE_T type,
+				TYPE_T in_type, void *in)
+{
+  int res;
+  found_in = in;
+  found_in_type = in_type;
+  res = gc_mark_short_svalue (u, type);
+  found_in_type = PIKE_T_UNKNOWN;
+  found_in = NULL;
+  return res;
+}
+
+int debug_gc_mark_weak_short_svalue (union anything *u, TYPE_T type,
+				     TYPE_T in_type, void *in)
+{
+  int res;
+  found_in = in;
+  found_in_type = in_type;
+  res = gc_mark_weak_short_svalue (u, type);
+  found_in_type = PIKE_T_UNKNOWN;
+  found_in = NULL;
+  return res;
+}
+
+/* Cut'n'paste from queue.c. */
+
+struct gc_queue_entry
+{
+  queue_call call;
+  void *data;
+  TYPE_T in_type;
+  void *in;
+};
+
+#define GC_QUEUE_ENTRIES 8191
+
+struct gc_queue_block
+{
+  struct gc_queue_block *next;
+  int used;
+  struct gc_queue_entry entries[GC_QUEUE_ENTRIES];
+};
+
+struct gc_queue_block *gc_mark_first = NULL, *gc_mark_last = NULL;
+
+void gc_mark_run_queue()
+{
+  struct gc_queue_block *b;
+
+  while((b=gc_mark_first))
+  {
+    int e;
+    for(e=0;e<b->used;e++)
+    {
+      debug_malloc_touch(b->entries[e].data);
+      b->entries[e].call(b->entries[e].data);
+    }
+
+    gc_mark_first=b->next;
+    free((char *)b);
+  }
+  gc_mark_last=0;
+}
+
+void gc_mark_discard_queue()
+{
+  struct gc_queue_block *b = gc_mark_first;
+  while (b)
+  {
+    struct gc_queue_block *next = b->next;
+    free((char *) b);
+    b = next;
+  }
+  gc_mark_first = gc_mark_last = 0;
+}
+
+void gc_mark_enqueue (queue_call call, void *data)
+{
+  struct gc_queue_block *b;
+
+  b=gc_mark_last;
+  if(!b || b->used >= GC_QUEUE_ENTRIES)
+  {
+    b = (struct gc_queue_block *) malloc (sizeof (struct gc_queue_block));
+    if (!b) fatal ("Out of memory in gc.\n");
+    b->used=0;
+    b->next=0;
+    if(gc_mark_first)
+      gc_mark_last->next=b;
+    else
+      gc_mark_first=b;
+    gc_mark_last=b;
+  }
+
+  b->entries[b->used].call=call;
+  b->entries[b->used].data=debug_malloc_pass(data);
+  b->entries[b->used].in_type = found_in_type;
+  b->entries[b->used].in = debug_malloc_pass (found_in);
+  b->used++;
+}
+
+#endif
 
 void debug_gc_touch(void *a)
 {
@@ -2100,15 +2241,15 @@ int do_gc(void)
    * follow the same reference several times, e.g. with shared mapping
    * data blocks. */
   gc_mark_all_arrays();
-  run_queue(&gc_mark_queue);
+  gc_mark_run_queue();
   gc_mark_all_multisets();
-  run_queue(&gc_mark_queue);
+  gc_mark_run_queue();
   gc_mark_all_mappings();
-  run_queue(&gc_mark_queue);
+  gc_mark_run_queue();
   gc_mark_all_programs();
-  run_queue(&gc_mark_queue);
+  gc_mark_run_queue();
   gc_mark_all_objects();
-  run_queue(&gc_mark_queue);
+  gc_mark_run_queue();
 #ifdef PIKE_DEBUG
   if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */

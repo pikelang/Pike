@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.318 2003/06/30 17:29:40 mast Exp $");
+RCSID("$Id: program.c,v 1.319 2003/09/08 15:27:58 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3971,7 +3971,7 @@ void gc_mark_program_as_referenced(struct program *p)
     }
 
     for(e=0;e<p->num_constants;e++)
-      gc_mark_svalues(& p->constants[e].sval, 1);
+      debug_gc_mark_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
 
     for(e=0;e<p->num_inherits;e++)
     {
@@ -4121,7 +4121,7 @@ void gc_zap_ext_weak_refs_in_programs(void)
     gc_mark_program_pos = p->next;
     gc_mark_program_as_referenced(p);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 void gc_free_all_unreferenced_programs(void)

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.76 2003/01/29 15:55:25 mast Exp $
+ * $Id: gc.h,v 1.77 2003/09/08 15:27:58 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -10,7 +10,8 @@
 #include "threads.h"
 #include "interpret.h"
 
-extern struct pike_queue gc_mark_queue;
+/* #define GC_MARK_DEBUG */
+
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern ptrdiff_t alloc_threshold;
@@ -154,6 +155,7 @@ void describe_location(void *real_memblock,
 		       int depth,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
+void debug_gc_set_where (TYPE_T type, void *data);
 void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere);
 void debug_gc_check_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data);
 void debug_gc_check_weak_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data);
@@ -189,7 +191,39 @@ int gc_do_free(void *a);
 int do_gc(void);
 void f__gc_status(INT32 args);
 void cleanup_gc(void);
-/* Prototypes end here */
+
+#ifdef GC_MARK_DEBUG
+
+TYPE_FIELD debug_gc_mark_svalues (struct svalue *s, ptrdiff_t num,
+				  TYPE_T in_type, void *in);
+TYPE_FIELD debug_gc_mark_weak_svalues (struct svalue *s, ptrdiff_t num,
+				       TYPE_T in_type, void *in);
+int debug_gc_mark_short_svalue (union anything *u, TYPE_T type,
+				TYPE_T in_type, void *in);
+int debug_gc_mark_weak_short_svalue (union anything *u, TYPE_T type,
+				     TYPE_T in_type, void *in);
+
+void gc_mark_enqueue (queue_call fn, void *data);
+void gc_mark_run_queue();
+void gc_mark_discard_queue();
+
+#else  /* !GC_MARK_DEBUG */
+
+#define debug_gc_mark_svalues(S, NUM, IN_TYPE, IN)			\
+  gc_mark_svalues ((S), (NUM))
+#define debug_gc_mark_weak_svalues(S, NUM, IN_TYPE, IN)			\
+  gc_mark_weak_svalues ((S), (NUM))
+#define debug_gc_mark_short_svalue(U, TYPE, IN_TYPE, IN)		\
+  gc_mark_short_svalue ((U), (TYPE))
+#define debug_gc_mark_weak_short_svalue(U, TYPE, IN_TYPE, IN)		\
+  gc_mark_weak_short_svalue ((U), (TYPE))
+
+extern struct pike_queue gc_mark_queue;
+#define gc_mark_enqueue(FN, DATA) enqueue (&gc_mark_queue, (FN), (DATA))
+#define gc_mark_run_queue() run_queue (&gc_mark_queue)
+#define gc_mark_discard_queue() discard_queue (&gc_mark_queue)
+
+#endif	/* !GC_MARK_DEBUG */
 
 #define gc_fatal \
   fprintf(stderr, "%s:%d: GC fatal:\n", __FILE__, __LINE__), debug_gc_fatal
@@ -249,6 +283,27 @@ void cleanup_gc(void);
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
 #define gc_recurse_object(V) GC_RECURSE_THING((V), object)
 #define gc_recurse_program(V) GC_RECURSE_THING((V), program)
+
+#define debug_gc_mark_without_recurse(S)				\
+  gc_mark_without_recurse(S)
+#define debug_gc_mark_weak_without_recurse(S)				\
+  gc_mark_weak_without_recurse(S)
+#define debug_gc_cycle_check_svalues(S, NUM, IN_TYPE, IN)		\
+  gc_cycle_check_svalues ((S), (NUM))
+#define debug_gc_cycle_check_weak_svalues(S, NUM, IN_TYPE, IN)		\
+  gc_cycle_check_weak_svalues ((S), (NUM))
+#define debug_gc_cycle_check_short_svalue(U, TYPE, IN_TYPE, IN)		\
+  gc_cycle_check_short_svalue ((U), (TYPE))
+#define debug_gc_cycle_check_weak_short_svalue(U, TYPE, IN_TYPE, IN)	\
+  gc_cycle_check_weak_short_svalue ((U), (TYPE))
+#define debug_gc_cycle_check_without_recurse(S)				\
+  gc_cycle_check_without_recurse(S)
+#define debug_gc_cycle_check_weak_without_recurse(S)			\
+  gc_cycle_check_weak_without_recurse(S)
+
+#if !defined (PIKE_DEBUG) && !defined (GC_MARK_DEBUG)
+#define debug_gc_set_where(IN_TYPE, IN)
+#endif
 
 #ifndef PIKE_DEBUG
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)

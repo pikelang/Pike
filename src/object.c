@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.165 2003/01/29 15:55:26 mast Exp $");
+RCSID("$Id: object.c,v 1.166 2003/09/08 15:27:58 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1313,8 +1313,11 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       
       LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-      if(pike_frame->context.prog->gc_recurse_func)
+      if(pike_frame->context.prog->gc_recurse_func) {
+	debug_gc_set_where (T_OBJECT, o);
 	pike_frame->context.prog->gc_recurse_func(o);
+	debug_gc_set_where (PIKE_T_UNKNOWN, NULL);
+      }
 
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
@@ -1326,7 +1329,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	  s=(struct svalue *)(pike_frame->current_storage +
 			      pike_frame->context.prog->identifiers[d].func.offset);
 	  dmalloc_touch_svalue(s);
-	  gc_mark_svalues(s, 1);
+	  debug_gc_mark_svalues(s, 1, T_OBJECT, o);
 	}else{
 	  union anything *u;
 	  TYPE_T rtt =
@@ -1336,7 +1339,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 #ifdef DEBUG_MALLOC
 	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
 #endif
-	  gc_mark_short_svalue(u, rtt);
+	  debug_gc_mark_short_svalue(u, rtt, T_OBJECT, o);
 	}
       }
       LOW_UNSET_FRAME_CONTEXT();
@@ -1369,8 +1372,11 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       
 	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-	if(pike_frame->context.prog->gc_recurse_func)
+	if(pike_frame->context.prog->gc_recurse_func) {
+	  debug_gc_set_where (T_OBJECT, o);
 	  pike_frame->context.prog->gc_recurse_func(o);
+	  debug_gc_set_where (PIKE_T_UNKNOWN, NULL);
+	}
 
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
@@ -1433,8 +1439,11 @@ static inline void gc_check_object(struct object *o)
       int q;
       LOW_SET_FRAME_CONTEXT(p->inherits[e]);
       
-      if(pike_frame->context.prog->gc_check_func)
+      if(pike_frame->context.prog->gc_check_func) {
+	debug_gc_set_where (T_OBJECT, o);
 	pike_frame->context.prog->gc_check_func(o);
+	debug_gc_set_where (PIKE_T_UNKNOWN, NULL);
+      }
       
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
@@ -1527,7 +1536,7 @@ void gc_zap_ext_weak_refs_in_objects(void)
     if (o->refs)
       gc_mark_object_as_referenced(o);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 void gc_free_all_unreferenced_objects(void)
