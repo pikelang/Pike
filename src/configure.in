@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.741 2003/10/25 02:59:28 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.742 2003/10/30 13:39:22 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4110,7 +4110,7 @@ AC_DEFINE_UNQUOTED(PIKE_BYTEORDER,$pike_cv_hardware_byteorder)
 
 ########################################################################
 
-AC_MSG_CHECKING(INT32 alignment)
+AC_MSG_CHECKING(pointer alignment)
 AC_CACHE_VAL(pike_cv_hardware_alignment,
 [
 if test "x$enable_binary" = "xno"; then
@@ -4119,25 +4119,21 @@ else
 AC_TRY_RUN([
 #include <stdio.h>
 
-#if SIZEOF_SHORT >= 4
-#define INT32 short
-#else
-#if SIZEOF_INT >= 4
-#define INT32 int
-#else
-#define INT32 long
-#endif
-#endif
+struct x { char a; void *b; };
 
-struct x { char a; INT32 b; };
+struct y { void *a; char b; };
 
 int main(int argc, char *argv[])
 {
-  FILE f;
-  struct x x;
+  FILE *f;
+  int align = (int)&(((struct x *)0)->b);
+  if (align > sizeof(struct y)-sizeof(void *))
+    align = sizeof(struct y) - sizeof(void *);
+
   if(!(f=fopen("conftest.out.2","w")))
     return 1;
-  fprintf(f, "%u\n", (unsigned int)(((char *)&x.b)-((char*)&x)));
+
+  fprintf(f, "%d\n", align);
   fclose(f);
   return 0;
 }],
@@ -4149,7 +4145,7 @@ fi
 ])
 
 AC_MSG_RESULT($pike_cv_hardware_alignment)
-AC_DEFINE_UNQUOTED(PIKE_INT32_ALIGNMENT,$pike_cv_hardware_alignment)
+AC_DEFINE_UNQUOTED(PIKE_POINTER_ALIGNMENT,$pike_cv_hardware_alignment)
 
 #############################################################################
 

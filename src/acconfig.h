@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.128 2003/10/23 12:34:02 grubba Exp $
+|| $Id: acconfig.h,v 1.129 2003/10/30 13:39:22 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -372,8 +372,8 @@
 /* The byteorder your machine use, most use 4321, PC use 1234 */
 #define PIKE_BYTEORDER 0
 
-/* What alignment do 32-bit integers need */
-#define PIKE_INT32_ALIGNMENT 4
+/* What alignment do pointers need */
+#define PIKE_POINTER_ALIGNMENT 4
 
 /* Assembler prefix for general purpose registers */
 #undef PIKE_CPU_REG_PREFIX

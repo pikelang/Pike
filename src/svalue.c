@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.176 2003/09/29 19:38:28 mast Exp $
+|| $Id: svalue.c,v 1.177 2003/10/30 13:39:22 grubba Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.176 2003/09/29 19:38:28 mast Exp $");
+RCSID("$Id: svalue.c,v 1.177 2003/10/30 13:39:22 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1759,7 +1759,7 @@ static void low_check_short_svalue(const union anything *u, TYPE_T type)
 void check_short_svalue(const union anything *u, TYPE_T type)
 {
   if(type<=MAX_REF_TYPE &&
-     ((PIKE_INT32_ALIGNMENT-1) & (ptrdiff_t)(u->refs)))
+     ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(u->refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p\n",type,u->refs);
 
   check_refs2(u,type);
@@ -1770,7 +1770,7 @@ void debug_check_svalue(const struct svalue *s)
 {
   check_type(s->type);
   if(s->type<=MAX_REF_TYPE &&
-     ((PIKE_INT32_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
+     ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
 
   check_refs(s);
