@@ -1,12 +1,12 @@
-#include <global.h>
-#include <svalue.h>
-#include <array.h>
-#include <stralloc.h>
-#include <interpret.h>
-#include <module_support.h>
-#include <threads.h>
-#include <mapping.h>
-#include <perl_machine.h>
+#include "global.h"
+#include "svalue.h"
+#include "array.h"
+#include "stralloc.h"
+#include "interpret.h"
+#include "module_support.h"
+#include "threads.h"
+#include "mapping.h"
+#include "perl_machine.h"
 
 #ifdef HAVE_PERL
 
