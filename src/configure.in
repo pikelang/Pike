@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.174 1998/04/08 14:51:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.175 1998/04/13 14:18:41 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -102,6 +102,8 @@ AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
 AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
 AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
+AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
+AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 
 #
 # Allow --with(out)-debug to toggle both cdebug and rtldebug, but
@@ -393,7 +395,7 @@ fi
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
   for d in `echo ${with_lib_path} | sed 's/:/ /g'` \
-    `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` \
+    `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$ac_default_prefix/lib@g"` \
     /usr/local/lib /sw/local/lib /sw/lib \
     /usr/gnu/lib /opt/gnu/lib /sw/gnu/lib /usr/freeware/lib \
     `echo /usr/X11*/lib | sort -r`
