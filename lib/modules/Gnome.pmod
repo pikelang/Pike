@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#if constant(GTK)
+#if constant(GTK.Widget)
 
 mixed `[](string what)
 {
@@ -13,12 +13,4 @@ array _indices()
   return glob( "GNOME_*", indices(GTK) ) + glob( "Gnome_*", indices(GTK) );
 }
 
-#else /* !constant(GTK) */
-
-static void create()
-{
-  /* Destroy ourselves. */
-  destruct();
-}
-
-#endif /* constant(GTK) */
+#endif /* constant(GTK.Widget) */

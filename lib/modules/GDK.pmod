@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#if constant(GTK)
+#if constant(GTK.Widget)
 
 #define INDEX(x) GTK[x]
 
@@ -49,12 +49,4 @@ mixed `[](string what)
 //   return  GDKSupport[what];
 }
 
-#else /* !constant(GTK) */
-
-static void create()
-{
-  /* Destroy ourselves. */
-  destruct();
-}
-
-#endif /* constant(GTK) */
+#endif /* constant(GTK.Widget) */
