@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.202 2004/10/15 15:29:56 grubba Exp $
+|| $Id: svalue.c,v 1.203 2004/11/05 16:21:38 grubba Exp $
 */
 
 #include "global.h"
@@ -1134,6 +1134,10 @@ static void dsv_add_string_to_buf (struct pike_string *str)
     }
 }
 
+
+/* FIXME: Ought to be rewritten to use string_builder.
+ * FIXME: Ought not to have global state.
+ */
 PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p)
 {
   char buf[50];
