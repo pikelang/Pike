@@ -1,5 +1,5 @@
 /*
- * $Id: smartlink.c,v 1.2 1999/03/06 02:18:43 grubba Exp $
+ * $Id: smartlink.c,v 1.3 1999/05/11 22:44:08 grubba Exp $
  *
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.2 1999/03/06 02:18:43 grubba Exp $\n"
+	    "$Id: smartlink.c,v 1.3 1999/05/11 22:44:08 grubba Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -140,12 +140,13 @@ int main(int argc, char **argv)
 
 #ifdef USE_Wl
   strcat(rpath, "-Wl,-rpath,");
-  rpath += strlen(rpath);
+#elif defined(USE_Wl_R)
+  strcat(rpath, "-Wl,-R");
 #elif defined(USE_R)
   strcat(rpath, "-R");
 #elif defined(USE_LD_LIBRARY_PATH)
   strcat(rpath, "LD_LIBRARY_PATH=");
-#endif /* defined(USE_Wl) || defined(USE_R) || defined(USE_LD_LIBRARY_PATH) */
+#endif /* defined(USE_Wl) || defined(USE_Wl_R) || defined(USE_R) || defined(USE_LD_LIBRARY_PATH) */
   rpath += strlen(rpath);
 
   new_argv[new_argc++] = argv[1];
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
     if (linking) {
       new_argv[new_argc++] = full_rpath;
     }
-#elif defined(USE_R)
+#elif defined(USE_R) || defined(USE_Wl_R)
     new_argv[new_argc++] = full_rpath;
 #elif defined(USE_LD_LIBRARY_PATH)
     if (putenv(full_rpath)) {
