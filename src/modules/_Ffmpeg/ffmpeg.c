@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.17 2003/04/07 17:22:36 nilsson Exp $
+|| $Id: ffmpeg.c,v 1.18 2003/12/24 17:13:13 mirar Exp $
 */
 
 /*
@@ -33,6 +33,7 @@
 #include <math.h>
 
 /* ffmpeg includes typedef's these */
+#ifdef FFMPEG_REDEFINES_UINT8
 #ifdef INT64
 #undef INT64
 #endif
@@ -56,6 +57,7 @@
 #endif
 #ifdef UINT8
 #undef UINT8
+#endif
 #endif
 
 #ifdef HAVE_FFMPEG_AVCODEC_H
@@ -82,6 +84,9 @@
 #define FF_FREE(x)	free(x)
 #endif
 
+#ifndef HAVE_UINT8_T
+#define uint8_t unsigned char
+#endif
 
 static struct program *ffmpeg_program;
 
@@ -90,7 +95,7 @@ typedef struct {
   AVCodecContext	 codec_context;
   AVCodecContext	*c;
   int			 encoder;
-  UINT8			*outbuf;
+  uint8_t		*outbuf;
 } ffmpeg_data;
 
 #define THIS	((ffmpeg_data *)Pike_fp->current_storage)
