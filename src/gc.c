@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.237 2003/09/29 19:41:23 mast Exp $
+|| $Id: gc.c,v 1.238 2004/01/13 09:24:18 grubba Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.237 2003/09/29 19:41:23 mast Exp $");
+RCSID("$Id: gc.c,v 1.238 2004/01/13 09:24:18 grubba Exp $");
 
 int gc_enabled = 1;
 
@@ -1557,6 +1557,10 @@ static void init_gc(void)
 
 static void exit_gc(void)
 {
+  if (gc_evaluator_callback) {
+    remove_callback(gc_evaluator_callback);
+    gc_evaluator_callback = NULL;
+  }
 #ifdef DEBUG_MALLOC
   if (!gc_keep_markers)
 #endif
