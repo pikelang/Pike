@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.36 2005/02/17 14:43:50 grubba Exp $
+|| $Id: iso2022.c,v 1.37 2005/02/17 16:37:50 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1005,7 +1005,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	       *   0x01de - 0x01ef
 	       */
 	      mode = MODE_96;
-	      index = 0x40;	/* latin_lap */
+	      index = 0x28;	/* latin_lap */
 	    } else {
 	      /* JIS_X0212_1990
 	       *   0x01cd - 0x01d6
@@ -1072,6 +1072,8 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    }
 	  } else if (c < 0x590) {
 	    /* Armenian */
+	  } else if (c < 0x600) {
+	    /* Hebrew */
 	    /* ISO_8859_8_1999
 	     *   0x05d0 - 0x05ea
 	     */
