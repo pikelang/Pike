@@ -1,12 +1,12 @@
-dnl $Id: testsuite.in,v 1.13 2003/10/10 19:56:57 nilsson Exp $
+dnl $Id: testsuite.in,v 1.14 2003/11/09 22:48:04 nilsson Exp $
 
 dnl Nettle.Yarrow
 
 cond([[ master()->resolv("Nettle") && master()->resolv("Nettle")["Yarrow"] ]], [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
-  test_eq( Nettle.Yarrow()->get_seed(), "")
+  test_eq( Nettle.Yarrow()->get_seed(), "\0"*32)
   test_eq( Nettle.Yarrow()->seed("\0"*32)->get_seed(),
-    String.hex2string("200fe7972e93822621682027def987291e977e546fd879bd86643e593212350701") )
+    String.hex2string("200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507") )
   test_eq( Nettle.Yarrow()->is_seeded(), 0)
   test_eq( Nettle.Yarrow()->seed("\0"*32)->is_seeded(), 1)
   test_do( Nettle.Yarrow()->seed("\0"*32)->force_reseed() )
