@@ -1,6 +1,6 @@
 #include <config.h>
 
-/* $Id: font.c,v 1.11 1997/01/27 07:56:11 per Exp $ */
+/* $Id: font.c,v 1.12 1997/01/30 14:24:55 law Exp $ */
 
 #include "global.h"
 
@@ -198,6 +198,10 @@ void font_load(INT32 args)
 	 {
 	    int i;
 
+#ifdef FONT_DEBUG
+	    fprintf(stderr,"FONT mapped ok\n");
+#endif
+
 	    struct file_head 
 	    {
 	       unsigned INT32 cookie;
@@ -218,8 +222,14 @@ void font_load(INT32 args)
 
 	    if (ntohl(fh->cookie)==0x464f4e54) /* "FONT" */
 	    {
+#ifdef FONT_DEBUG
+	       fprintf(stderr,"FONT cookie ok\n");
+#endif
 	       if (ntohl(fh->version)==1)
 	       {
+#ifdef FONT_DEBUG
+		  fprintf(stderr,"FONT version 1\n");
+#endif
 		  unsigned long i;
 		  struct font *new;
 
@@ -255,6 +265,10 @@ void font_load(INT32 args)
 		     }
 		     else /* illegal <tm> offset or illegal align */
 		     {
+#ifdef FONT_DEBUG
+			fprintf(stderr,"FONT failed on char %02xh %d '%c'\n",
+				i,i,i);
+#endif
 			free_font_struct(new);
 			THIS=NULL;
 			pop_n_elems(args);
@@ -268,15 +282,33 @@ void font_load(INT32 args)
 		  pop_n_elems(args);
 		  THISOBJ->refs++;
 		  push_object(THISOBJ);   /* success */
+#ifdef FONT_DEBUG
+		  fprintf(stderr,"FONT successfully loaded\n");
+#endif
 		  return;
 	       } /* wrong version */
+#ifdef FONT_DEBUG
+	       else fprintf(stderr,"FONT unknown version\n");
+#endif
 	    } /* wrong cookie */
+#ifdef FONT_DEBUG
+	    else fprintf(stderr,"FONT wrong cookie\n");
+#endif
 	 } /* mem failure */
+#ifdef FONT_DEBUG
+	 else fprintf(stderr,"FONT mem failure\n");
+#endif
 	 free_font_struct(THIS);
 	 THIS=NULL;
       } /* size failure */
+#ifdef FONT_DEBUG
+      else fprintf(stderr,"FONT size failure\n");
+#endif
       close(fd);
    } /* fd failure */
+#ifdef FONT_DEBUG
+   else fprintf(stderr,"FONT fd failure\n");
+#endif
 
    pop_n_elems(args);
    push_int(0);
