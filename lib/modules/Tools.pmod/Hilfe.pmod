@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.110 2004/04/08 14:50:43 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.111 2004/04/23 12:39:07 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1650,6 +1650,8 @@ class Evaluator {
 
       if( t=="{" )
 	error("HilfeError: Error in relocation parser (relocate:'}')");
+
+      if(t=="lambda") return p-1;
 
       if( !plevel && (t==safe_word || t==";") )
 	return p;
