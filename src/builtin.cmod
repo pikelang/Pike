@@ -8,7 +8,7 @@
 #include "object.h"
 #include "program.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
