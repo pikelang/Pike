@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.169 2001/03/27 22:07:55 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.170 2001/03/28 00:48:48 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -7755,7 +7755,7 @@ void init_types(void)
 void cleanup_pike_types(void)
 {
 #if defined(USE_PIKE_TYPE) && defined(DEBUG_MALLOC)
-  struct pike_type *t = all_pike_type_locations;
+  struct pike_type_location *t = all_pike_type_locations;
 
   while(t) {
     free_type(t->t);
