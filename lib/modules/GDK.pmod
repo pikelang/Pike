@@ -6,6 +6,8 @@
 
 //! @decl import GTK
 
+//! @decl constant Atom
+
 object Atom = class
 {
   mapping atoms = ([]);
