@@ -2,18 +2,19 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.276 2003/05/14 20:21:15 marcus Exp $
+|| $Id: file.c,v 1.277 2003/05/15 13:25:59 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.276 2003/05/14 20:21:15 marcus Exp $");
+RCSID("$Id: file.c,v 1.277 2003/05/15 13:25:59 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
+#include "mapping.h"
 #include "object.h"
 #include "pike_macros.h"
 #include "backend.h"
