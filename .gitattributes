@@ -99,6 +99,7 @@ testfont binary
 /lib/modules/Locale.pmod/Language.pmod/swe.pike foreign_ident
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Parser.pmod/C.pmod foreign_ident
+/lib/modules/Parser.pmod/MP3.pmod foreign_ident
 /lib/modules/Parser.pmod/Pike.pmod foreign_ident
 /lib/modules/Parser.pmod/RCS.pike foreign_ident
 /lib/modules/Parser.pmod/XML.pmod/Tree.pmod foreign_ident
