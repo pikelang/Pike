@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.804 2004/03/09 09:50:03 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.805 2004/03/09 13:42:22 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -164,13 +164,13 @@ else
   ldflags_is_set=yes
 fi
 
-if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
-  set >conftest.tmp
-  echo Using settings from /etc/make.conf...
-  . /etc/make.conf
-  set | diff -u conftest.tmp -  | grep '^+C'
-  PIKE_MSG_WARN([Using settings from /etc/make.conf.])
-fi
+# if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
+#   set >conftest.tmp
+#   echo Using settings from /etc/make.conf...
+#   . /etc/make.conf
+#   set | diff -u conftest.tmp -  | grep '^+C'
+#   PIKE_MSG_WARN([Using settings from /etc/make.conf.])
+# fi
 
 AC_ARG_WITH(cflags, MY_DESCR([--with-cflags=cflags],
 			     [specify extra c compiler flags]),
