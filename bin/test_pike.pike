@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.48 2000/05/16 08:35:06 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.49 2000/07/17 14:53:08 grubba Exp $ */
 
 import Stdio;
 
@@ -657,7 +657,7 @@ int main(int argc, array(string) argv)
 	  if(fail && errors)
 	    exit(1);
 
-	  if(!--end) exit(0);
+	  if(!--end) break;
 	
 	  a=b=0;
       }
