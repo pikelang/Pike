@@ -6,14 +6,11 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.19 2002/08/10 13:52:04 grendel Exp $
+# $Id: rules,v 1.20 2002/08/10 18:04:15 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
 #export DH_VERBOSE=1
-
-# This is the debhelper compatibility version to use.
-export DH_COMPAT=3
 
 PIKEV=7.3
 PIKE=pike$(PIKEV)
@@ -170,9 +167,6 @@ install: build
 		lib_prefix=/usr/lib/$(PIKE)/$(VERSION) \
 		INSTALLARGS=--traditional install
 
-	# re-dump modules (some of them fail to be dumped correctly for the first time)
-	$(MAKE) -C$(BUILDDIR)/ dump_modules
-
 	# temporary hack
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*.o
 	-$(CURDIR)/src/dumpmodule.pike $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
@@ -188,17 +182,14 @@ install: build
 	uudecode -o $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)/pike.png $(CURDIR)/debian/pike.png.uu
 
 	# install the docs
-	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
-	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference
-	cp -pr refdoc/traditional_manual/* $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-manual refdoc/traditional_manual/* usr/share/doc/$(PIKE)-doc/html/manual
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-manual debian/dhelp.manual usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
 
-	cp -pr refdoc/modref/* $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-reference refdoc/modref/* usr/share/doc/$(PIKE)-doc/html/reference
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-reference debian/dhelp.refdoc usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
 
 	mv $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike debian/$(PIKE)-core/usr/bin/$(PIKE)
-	rm $(CURDIR)/debian/$(PIKE)-core/usr/bin/hilfe
-	install -d $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/
+	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/hilfe
 	mv $(CURDIR)/debian/$(PIKE)-core/usr/man/man1/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
 	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/man/
 
@@ -207,11 +198,8 @@ install: build
 	   $(CURDIR)/debian/$(PIKE)-core/usr/include/$(PIKE) ; \
 	chmod 644 `find $(CURDIR)/debian/$(PIKE)-core/usr/include/$(PIKE)/ -type f -print`
 
-	install -m 755 -o root -g root $(CURDIR)/src/dumpmodule.pike \
-		      $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/
-	install -m 755 -d -o root -g root $(CURDIR)/debian/$(PIKE)-dev/usr/share/emacs
-	cp -p $(CURDIR)/debian/pike.el $(CURDIR)/debian/$(PIKE)-dev/usr/share/emacs
-        # Remove some files that shouldn't be there...
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-dev debian/pike.el usr/share/emacs
+  # Remove some files that shouldn't be there...
 
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/master.pike.in
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike-module
@@ -219,8 +207,7 @@ install: build
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike.syms
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/rsif
 
-        # Fix permissions
-
+  # Fix permissions
 	find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE) -type f -exec chmod -x '{}' ';'
 
 	for f in `find $(CURDIR)/debian/$(PIKE)-core/usr/bin -type f` \
@@ -233,6 +220,11 @@ install: build
             && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
 
+	# Create the documentation links to save space
+	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
+		dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$$f ; \
+	done
+
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
 
 # Build architecture-independent files here.
@@ -240,25 +232,12 @@ install: build
 binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
-#	dh_installdebconf -i
 	dh_installdocs -i
-#	dh_installexamples -i
-#	dh_installmenu -i
-#	dh_installlogrotate -i
-#	dh_installemacsen -i
-#	dh_installpam -i
-#	dh_installmime -i
-#	dh_installinit -i
-#	dh_installcron -i
-#	dh_installman -i
-#	dh_installinfo -i
-#	dh_undocumented -i
 	dh_installchangelogs  -i
 	dh_link -i
 	dh_compress -i
 	dh_fixperms -i
 	dh_installdeb -i
-#	dh_perl -i
 	dh_gencontrol -i
 	dh_md5sums -i
 	dh_builddeb -i
@@ -269,25 +248,14 @@ binary-arch: build install
 	dh_testroot -a
 #	dh_installdebconf -a
 	dh_installdocs -a
-#	dh_installexamples -a
-	dh_installmenu -a -p$(PIKE)
-#	dh_installlogrotate -a
-#	dh_installemacsen -a
-#	dh_installpam -a
-#	dh_installmime -a
-#	dh_installinit -a
-#	dh_installcron -a
+	dh_installmenu -a -p$(PIKE)-core
 	dh_installman -p$(PIKE)-core debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
-#	dh_installinfo -a
-#	dh_undocumented -a
 	dh_installchangelogs -a
 	dh_strip -a
 	dh_link -a
 	dh_compress -a
 	dh_fixperms -a
-#	dh_makeshlibs -a
 	dh_installdeb -a
-#	dh_perl -a
 	dh_shlibdeps -a
 	dh_gencontrol -a
 	dh_md5sums -a
