@@ -28,16 +28,10 @@ docompile5() {
   rm -rf test1
 }
 
-docompile4() {
-  docompile5 "$1"
-#  docompile5 "$1 -DDYNAMIC_STACK"
-#  docompile5 "$1 -DDYNAMIC_STACK -DREALLOC_STACK_ALWAYS"
-}
-
 docompile3() {
-  docompile4 "$1"
-  docompile4 "$1 -DFLAT_MAPPINGS"
-  docompile4 "$1 -DOLD_MAPPINGS"
+  docompile5 "$1"
+  docompile5 "$1 -DFLAT_MAPPINGS"
+  docompile5 "$1 -DOLD_MAPPINGS"
 }
 
 docompile2() {
