@@ -594,6 +594,16 @@ class Window
     display->send_request(Configure_req(m));
   }
 
+  void Raise()
+  {
+    Configure((["StackMode":0]));
+  }
+
+  void Lower()
+  {
+    Configure((["StackMode":1]));
+  }
+
   void set_event_callback(string type, function f)
   {
     event_callbacks[type] = (event_callbacks[type] || ({ }) )
