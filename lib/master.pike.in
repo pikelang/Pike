@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.258 2003/02/27 14:52:30 marcus Exp $
+// $Id: master.pike.in,v 1.259 2003/02/27 15:33:02 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -888,6 +888,7 @@ object low_cast_to_object(string oname, string current_file,
 
   p = low_cast_to_program(oname, current_file, current_handler, 1);
   if(!p) return 0;
+  // NB: p might be a function in a fake_object...
   if(!objectp (o=objects[p])) o=objects[p]=p();
   return o;
 }
@@ -943,19 +944,27 @@ class dirnode
       werror("%*ndirnode(%O)->module_checker()->`!()\n",
 	     sizeof(backtrace()),dirname);
 #endif
-      // Pretend not to exist for now...
-      // module=0;
-      if(module=findmodule(dirname+"/module", handler))
-      {
-	if(mixed tmp=module->_module_value)
-	  module=tmp;
+      if (catch {
+	if(module=findmodule(dirname+"/module", handler))
+	{
+	  if(mixed tmp=module->_module_value)
+	    module=tmp;
 
-	/* This allows for `[] to have side effects first time
-	 * it is called. (Specifically, the Calendar module uses
-	 * this
-	 */
-	cache=([]);
-	_cache_full=0;
+	  /* This allows for `[] to have side effects first time
+	   * it is called. (Specifically, the Calendar module uses
+	   * this
+	   */
+	  cache=([]);
+	  _cache_full=0;
+	}
+      }) {
+	// findmodule() failed. This can occur due to circularities
+	// between encode_value()'ed programs.
+	// The error will then typically be:
+	// "Cannot call functions in unfinished objects."
+
+	// Pretend not to exist for now...
+	return 1;
       }
 
       return !module;
