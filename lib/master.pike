@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.52 1997/10/06 07:51:38 hubbe Exp $
+/* $Id: master.pike,v 1.53 1997/10/20 22:49:10 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -324,7 +324,7 @@ class dirnode
     dirname=name;
     tm=the_master;
 
-    if(mixed module=tm->findmodule(dirname+"/module"))
+    if(module=tm->findmodule(dirname+"/module"))
       if(mixed tmp=module->_module_value)
 	module=tmp;
   }
