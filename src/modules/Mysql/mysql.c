@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.9 1997/11/05 14:50:00 grubba Exp $
+ * $Id: mysql.c,v 1.10 1997/11/05 20:06:01 hedda Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.9 1997/11/05 14:50:00 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.10 1997/11/05 20:06:01 hedda Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -596,7 +596,7 @@ static void f_server_info(INT32 args)
 
   if (!socket) {
     pike_mysql_reconnect();
-    socket = PIKE_MYSQL->socket();
+    socket = PIKE_MYSQL->socket;
   }
 
   pop_n_elems(args);
@@ -641,7 +641,7 @@ static void f_protocol_info(INT32 args)
 static void f_list_dbs(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  MYSQL_RES *result;
+  MYSQL_RES *result = NULL;
   char *wild = NULL;
 
   if (args) {
@@ -692,7 +692,7 @@ static void f_list_dbs(INT32 args)
 static void f_list_tables(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  MYSQL_RES *result;
+  MYSQL_RES *result = NULL;
   char *wild = NULL;
 
   if (args) {
@@ -743,7 +743,7 @@ static void f_list_tables(INT32 args)
 static void f_list_fields(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  MYSQL_RES *result;
+  MYSQL_RES *result = NULL;
   MYSQL_FIELD *field;
   int i = 0;
   char *table;
@@ -811,7 +811,7 @@ static void f_list_fields(INT32 args)
 static void f_list_processes(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  MYSQL_RES *result;
+  MYSQL_RES *result = NULL;
 
   pop_n_elems(args);
 
