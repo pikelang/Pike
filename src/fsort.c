@@ -7,9 +7,10 @@
 /* Optimized for minimum amount of compares */
 
 #include "global.h"
+#include "error.h"
 #include "fsort.h"
 
-RCSID("$Id: fsort.c,v 1.11 1998/04/28 15:36:41 grubba Exp $");
+RCSID("$Id: fsort.c,v 1.12 1999/04/30 07:25:07 hubbe Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
