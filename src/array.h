@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.33 2001/04/07 07:38:23 hubbe Exp $
+ * $Id: array.h,v 1.34 2001/04/30 17:31:29 mast Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -81,7 +81,7 @@ extern struct array *gc_internal_array;
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
 
-typedef int (*cmpfun)(struct svalue *,struct svalue *);
+typedef int (*cmpfun)(const struct svalue *, const struct svalue *);
 typedef int (*short_cmpfun)(union anything *, union anything *);
 typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
@@ -112,6 +112,7 @@ PMOD_EXPORT struct array *copy_array(struct array *v);
 PMOD_EXPORT void check_array_for_destruct(struct array *v);
 PMOD_EXPORT INT32 array_find_destructed_object(struct array *v);
 INT32 *get_order(struct array *v, cmpfun fun);
+int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT void sort_array_destructively(struct array *v);
 PMOD_EXPORT INT32 *get_set_order(struct array *a);
 PMOD_EXPORT INT32 *get_switch_order(struct array *a);
