@@ -1,3 +1,7 @@
+Tue May 28 17:17:58 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* small bug in gdbmmod.c fixed
+
 Mon May 27 03:39:20 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
 
 	* uLPC v1.0E-8 released
