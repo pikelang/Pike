@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.349 2004/05/21 16:30:16 grubba Exp $
+|| $Id: interpret.c,v 1.350 2004/05/21 19:02:49 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.349 2004/05/21 16:30:16 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.350 2004/05/21 19:02:49 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1939,7 +1939,7 @@ void unlink_previous_frame(void)
 
 #if defined(PROFILING) && defined(HAVE_GETHRTIME)
   current->children_base = Pike_interpreter.accounted_time;
-  current->start_time = gethrtime() - Pike_interpreter.unlocked_time;
+  current->start_time = gethrtime() - Pike_interpreter.time_base;
 #endif /* PROFILING && HAVE_GETHRTIME */
 
 #if 0
