@@ -228,8 +228,10 @@ string scrape(mapping args) {
     mapping f = ([ "complete" : t->num_seeds(),
 		   "downloaded" : t->num_completed(),
 		   "incomplete" : t->num_leechers() ]);
+    res->files[hash] = f;
   }
 
+  return .Bencoding.encode(res);
 }
 
 void clean_torrents() {
