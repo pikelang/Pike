@@ -187,6 +187,10 @@ o Stdio.FakeFile
 
 o Stdio.GZipFile
 
+o Stdio.expand_symlinks(string path)
+  Expands all symlinks along a path (returns 0 for broken links).
+  (Only available on systems with readlink.)
+
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
     picture on it and delivers a number of image inspection and
