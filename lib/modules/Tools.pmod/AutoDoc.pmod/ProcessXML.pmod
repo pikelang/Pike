@@ -203,7 +203,8 @@ static Node moduleFromDir(string moduleName, string directory) {
           if (file == "module.pmod") {
             // This will add any <doc></doc> nodes as well!!
             foreach(subModule->get_children(), Node node)
-              module->add_child(node);
+              if (node->get_node_type() == XML_ELEMENT)
+                module->add_child(node);
           }
           else
             module->add_child(subModule);
@@ -293,7 +294,7 @@ static array(ReOrganizeTask) tasks;
 
 // current is a <module>, <class> or <docgroup> node
 static void recurseAppears(Node root, Node current) {
-  mapping attr = current->get_attributes();
+  mapping attr = current->get_attributes() || ([]);
   if (attr["appears"] || attr["belongs"] || attr["global"]) {
     ReOrganizeTask t = ReOrganizeTask();
     if (string attrRef = attr["appears"]) {
@@ -338,9 +339,12 @@ void handleAppears(Node root) {
     if (type == "docgroup") {
       if (newName)
         foreach (n->get_children(), Node child)
-          if (child->get_attributes()["name"])
-            // this ought to happen only once in this loop...
-            child->get_attributes()["name"] = newName;
+          if (child->get_node_type() == XML_ELEMENT) {
+            mapping attributes = child->get_attributes();
+            if (attributes["name"])
+              // this ought to happen only once in this loop...
+              attributes["name"] = newName;
+          }
     }
     else if (type == "class" || type == "module") {
       if (newName)
@@ -441,22 +445,24 @@ static class ScopeStack {
 static void fixupRefs(ScopeStack scopes, Node node) {
   node->walk_preorder(
     lambda(Node n) {
-      // More cases than just "ref" ??
-      // Add them here if we decide that also references in e.g.
-      // object types should be resolved.
-      if (n->get_any_name() == "ref") {
-        mapping m = n->get_attributes();
-        if (m["resolved"])
-          return;
-        string ref = n->value_of_node();
-        //werror("いい resolving reference %O\n", ref);
-        //foreach (scopes->scopeArr, Scope s)
-        //  werror("いい    %O\n", s ? s->name : "NULL");
-        mapping resolved = scopes->resolveRef(n->value_of_node());
-        //werror("いい resolved to: %O\n", resolved);
-        //werror("いい m == %O\n", m);
-        foreach (indices(resolved), string i)
-          m[i] = resolved[i];
+      if (n->get_node_type() == XML_ELEMENT) {
+        // More cases than just "ref" ??
+        // Add them here if we decide that also references in e.g.
+        // object types should be resolved.
+        if (n->get_any_name() == "ref") {
+          mapping m = n->get_attributes();
+          if (m["resolved"])
+            return;
+          string ref = n->value_of_node();
+          //werror("いい resolving reference %O\n", ref);
+          //foreach (scopes->scopeArr, Scope s)
+          //  werror("いい    %O\n", s ? s->name : "NULL");
+          mapping resolved = scopes->resolveRef(n->value_of_node());
+          //werror("いい resolved to: %O\n", resolved);
+          //werror("いい m == %O\n", m);
+          foreach (indices(resolved), string i)
+            m[i] = resolved[i];
+        }
       }
     }
   );
@@ -466,61 +472,67 @@ static void fixupRefs(ScopeStack scopes, Node node) {
 static void resolveFun(ScopeStack scopes, Node node) {
   // first collect the names of all things inside the scope
   foreach (node->get_children(), Node child)
-    switch (child->get_any_name()) {
-      case "docgroup":
-        // add the names of all things documented
-        // in the docgroup.
-        foreach (child->get_children(), Node thing) {
-          string name = thing->get_attributes()["name"];
+    if (child->get_node_type() == XML_ELEMENT) {
+      switch (child->get_any_name()) {
+        case "docgroup":
+          // add the names of all things documented
+          // in the docgroup.
+          foreach (child->get_children(), Node thing)
+            if (child->get_node_type() == XML_ELEMENT) {
+              mapping attributes = thing->get_attributes() || ([]);
+              string name = attributes["name"];
+              if (name)
+                scopes->addName(name);
+            }
+          break;
+        case "module":
+        case "class":
+          // add the name of the submodule/subclass to the scope
+          string name = child->get_attributes()["name"];
           if (name)
             scopes->addName(name);
-        }
-        break;
-      case "module":
-      case "class":
-        // add the name of the submodule/subclass to the scope
-        string name = child->get_attributes()["name"];
-        if (name)
-          scopes->addName(name);
-        break;
-      default:
-        ; // do nothing (?)
+          break;
+        default:
+          ; // do nothing (?)
+      }
     }
   foreach (node->get_children(), Node child) {
-    string tag = child->get_any_name();
-    switch (tag) {
-      case "class":
-      case "module":
-        scopes->enter(tag, child->get_attributes()["name"]);
-        {
-          resolveFun(scopes, child);
-        }
-        scopes->leave();
-        break;
-      case "docgroup":
-        scopes->enter("params");
-        {
-          Node doc = 0;
-          foreach (child->get_children(), Node n)
-            if (n->get_any_name() == "doc")
-              doc = n;
-            else if (n->get_any_name() == "method") {
-              foreach (filter(n->get_children(),
-                              lambda (Node n) {
-                                return n->get_any_name() == "arguments";
-                              }), Node m)
-                foreach (m->get_children(), Node argnode)
-                  scopes->addName(argnode->get_attributes()["name"]);
-            }
-          fixupRefs(scopes, doc);
-        }
-        scopes->leave();
-        break;
-      case "doc":  // doc for the <class>/<module> itself
-        fixupRefs(scopes, child);
-        break;
-      default:
-        ; // do nothing
+    if (child->get_node_type() == XML_ELEMENT) {
+      string tag = child->get_any_name();
+      switch (tag) {
+        case "class":
+        case "module":
+          scopes->enter(tag, child->get_attributes()["name"]);
+          {
+            resolveFun(scopes, child);
+          }
+          scopes->leave();
+          break;
+        case "docgroup":
+          scopes->enter("params");
+          {
+            Node doc = 0;
+            foreach (child->get_children(), Node n)
+              if (n->get_any_name() == "doc")
+                doc = n;
+              else if (n->get_any_name() == "method") {
+                foreach (filter(n->get_children(),
+                                lambda (Node n) {
+                                  return n->get_any_name() == "arguments";
+                                }), Node m)
+                  foreach (m->get_children(), Node argnode)
+                    scopes->addName(argnode->get_attributes()["name"]);
+              }
+            fixupRefs(scopes, doc);
+          }
+          scopes->leave();
+          break;
+        case "doc":  // doc for the <class>/<module> itself
+          fixupRefs(scopes, child);
+          break;
+        default:
+          ; // do nothing
+      }
     }
   }
 }
