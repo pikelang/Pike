@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.67 2003/03/28 13:38:47 marcus Exp $
+|| $Id: port.c,v 1.68 2003/03/28 14:07:12 marcus Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.67 2003/03/28 13:38:47 marcus Exp $");
+RCSID("$Id: port.c,v 1.68 2003/03/28 14:07:12 marcus Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -105,7 +105,7 @@ static void slow_srand(INT32 seed)
 static unsigned INT32 rndbuf[ RNDBUF ];
 static int rnd_index;
 
-PMOD_EXPORT void my_srand(long seed)
+PMOD_EXPORT void my_srand(INT32 seed)
 {
   int e;
   unsigned INT32 mask;
