@@ -1,7 +1,8 @@
 Thu Jan  1 16:56:09 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* threads.c: new methods added: wait and status
-	* cpp.c: new file
+	* cpp.c: new file. Implements an ANSI-style preprocessor instead of
+ 	the old K&R-style preprecessor.
 
 Mon Dec 22 09:33:59 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
