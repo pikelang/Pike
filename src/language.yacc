@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.226 2001/04/03 12:15:29 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.227 2001/05/08 13:17:40 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1206,11 +1206,13 @@ type4: type4 '|' type8 { push_type(T_OR); }
   | type8
   ;
 
-type2: type2 '|' type3 { push_type(T_OR); }
-  | type3 
+type2: type2 '|' type8 { push_type(T_OR); }
+  | basic_type 
   ;
 
-type3: TOK_INT_ID  opt_int_range    { push_type(T_INT); }
+type8: basic_type | identifier_type ;
+
+basic_type: TOK_INT_ID  opt_int_range    { push_type(T_INT); }
   | TOK_FLOAT_ID    { push_type(T_FLOAT); }
   | TOK_PROGRAM_ID  { push_type(T_PROGRAM); }
   | TOK_VOID_ID     { push_type(T_VOID); }
@@ -1222,8 +1224,6 @@ type3: TOK_INT_ID  opt_int_range    { push_type(T_INT); }
   | TOK_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
   | TOK_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
   ;
-
-type8: type3 | identifier_type ;
 
 number_or_maxint: /* Empty */
   {
