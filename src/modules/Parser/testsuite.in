@@ -533,6 +533,16 @@ test_any([[{
   p->_set_tag_callback (lambda (object p, string s) {return ({"[",s,"]"});});
   return p->finish ("<t </bar>/>xab")->read();
 }]],"[<t </bar>/>]xab");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  return p->finish ("a<t>b<t/>c</t>d</t>e")->read();
+}]], "a[b<t/>c</t>d]e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  return p->finish ("a<t>b<t>c</t>d</t>e")->read();
+}]], "a[b<t>c</t>d]e");
 
 // Redefinition during parsing
 test_any([[
@@ -811,6 +821,36 @@ test_any([[{
   p->xml_tag_syntax (3);
   return p->finish ("a<t>b</t>c<t/>d</t>e")->read();
 }]], "a[b]c()d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b<t/>c</t>d</t>e")->read();
+}]], "a[b<t/>c]d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b<t>c</t>d</t>e")->read();
+}]], "a[b<t>c</t>d]e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b<x/>c</t>d</t>e")->read();
+}]], "a[b<x/>c]d</t>e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b<x>c</x>d</t>e")->read();
+}]], "a[b<x>c</x>d]e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
+  p->xml_tag_syntax (3);
+  return p->finish ("a<t>b<x>c</t>d</t>e")->read();
+}]], "a[b<x>c]d</t>e");
 
 // Misc
 test_any([[
