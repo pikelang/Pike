@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.179 2005/02/14 15:54:59 mast Exp $
+|| $Id: array.c,v 1.180 2005/04/06 18:43:39 grubba Exp $
 */
 
 #include "global.h"
@@ -106,7 +106,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   GC_ALLOC(v);
 
 
-  if (size)
+  if (size+extra_space)
     /* for now, we don't know what will go in here */
     v->type_field = BIT_MIXED | BIT_UNFINISHED;
   else
