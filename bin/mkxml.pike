@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.19 2001/05/09 11:50:38 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.20 2001/05/09 12:24:53 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -685,9 +685,9 @@ void document(string enttype,
 
    if (huh->returns)
    {
-      res+="<group><returns/>\n";
+      res+="<group><returns/><text>\n";
       res+=fixdesc(huh->returns,prefix,huh->_line)+"\n";
-      res+="</group>\n";
+      res+="</text></group>\n";
    }
 
 
@@ -695,18 +695,18 @@ void document(string enttype,
 
    if (huh->note && huh->note->desc)
    {
-      res+="<group><note/>\n";
+      res+="<group><note/><text>\n";
       res+=fixdesc(huh->note->desc,prefix,huh->_line)+"\n";
-      res+="</group>\n";
+      res+="</text></group>\n";
    }
 
 // [BUGS]
 
    if (huh->bugs && huh->bugs->desc)
    {
-      res+="<group><bugs/>\n";
+      res+="<group><bugs/><text>\n";
       res+=fixdesc(huh->bugs->desc,prefix,huh->_line)+"\n";
-      res+="</group>\n";
+      res+="</text></group>\n";
    }
 
 // [ADDED]
@@ -720,7 +720,7 @@ void document(string enttype,
 
    if (huh["see also"])
    {
-      res+="<group><seealso/>\n";
+      res+="<group><seealso/><text>\n";
       res+=fixdesc(
 	 map(huh["see also"],
 	       lambda(string s)
@@ -728,7 +728,7 @@ void document(string enttype,
 		  return "<ref>"+htmlify(s)+"</ref>";
 	       })*", ",
 	 prefix,0);
-      res+="</group>\n";
+      res+="</text></group>\n";
    }
 
    if (res!="")
