@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.56 1998/10/09 17:56:32 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.57 1998/11/16 22:14:53 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -176,6 +176,7 @@ struct keyword instr_names[]=
 { "mark sp-X",          F_MARK_X, I_HASARG },
 { "mark",               F_MARK },
 { "mark mark",          F_MARK2 },
+{ "pop mark",           F_POP_MARK },
 { "negative number",	F_NEG_NUMBER, I_HASARG },
 { "number",             F_NUMBER, I_HASARG },
 { "pop",		F_POP_VALUE },	

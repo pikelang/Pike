@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.40 1998/10/09 23:30:21 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.41 1998/11/16 22:14:49 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -534,6 +534,14 @@ static int do_docode2(node *n,int flags)
 
     tmp2=do_docode(CAR(n),DO_NOT_COPY);
     emit2(F_CONST0);
+#ifdef DEBUG
+    /* This is really ugly because there is always a chance that the bug
+     * will disappear when new instructions are added to the code, but
+     * think it is worth it.
+     */
+    if(d_flag)
+      emit2(F_MARK);
+#endif
     tmp3=do_jump(F_BRANCH,-1);
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
@@ -541,6 +549,11 @@ static int do_docode2(node *n,int flags)
     emit(F_LABEL,tmp3);
     do_jump(n->token,tmp1);
     ins_label(current_break);
+
+#ifdef DEBUG
+    if(d_flag)
+      emit2(F_POP_MARK);
+#endif
 
     current_switch_jumptable = prev_switch_jumptable;
     current_break=break_save;
@@ -563,6 +576,14 @@ static int do_docode2(node *n,int flags)
     current_continue=alloc_label();
 
     tmp2=do_docode(CAR(n),0);
+#ifdef DEBUG
+    /* This is really ugly because there is always a chance that the bug
+     * will disappear when new instructions are added to the code, but
+     * think it is worth it.
+     */
+    if(d_flag)
+      emit2(F_MARK);
+#endif
     tmp3=do_jump(F_BRANCH,-1);
     tmp1=ins_label(-1);
 
@@ -571,6 +592,10 @@ static int do_docode2(node *n,int flags)
     emit(F_LABEL,tmp3);
     do_jump(n->token,tmp1);
     ins_label(current_break);
+#ifdef DEBUG
+    if(d_flag)
+      emit2(F_POP_MARK);
+#endif
 
     current_switch_jumptable = prev_switch_jumptable;
     current_break=break_save;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.98 1998/11/13 01:28:43 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.99 1998/11/16 22:14:50 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -547,6 +547,9 @@ static int eval_instruction(unsigned char *pc)
 
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow).\n");
+
+      if(mark_sp > mark_stack && mark_sp[-1] > sp)
+	fatal("Stack error (underflow?)\n");
       
       if(d_flag > 9) do_debug();
 
@@ -1209,6 +1212,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_MARK2); *(mark_sp++)=sp;
       CASE(F_MARK); *(mark_sp++)=sp; break;
       CASE(F_MARK_X); *(mark_sp++)=sp-GET_ARG(); break;
+      CASE(F_POP_MARK); --mark_sp; break;
 
       CASE(F_CLEAR_STRING_SUBTYPE);
       if(sp[-1].type==T_STRING) sp[-1].subtype=0;
