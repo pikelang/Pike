@@ -1,8 +1,19 @@
 #include "global.h"
 #include "config.h"
+/*
+**! module Image
+**! submodule TIFF
+**!
+*/
+
+
+
+
+
+
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.2 1999/04/07 21:47:32 mirar Exp $");
+RCSID("$Id: image_tiff.c,v 1.3 1999/04/09 23:20:07 per Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -10,6 +21,7 @@ RCSID("$Id: image_tiff.c,v 1.2 1999/04/07 21:47:32 mirar Exp $");
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
+#include "builtin_functions.h"
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
@@ -30,9 +42,11 @@ RCSID("$Id: image_tiff.c,v 1.2 1999/04/07 21:47:32 mirar Exp $");
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
+static struct program *image_colortable_program=NULL;
 #else
 /* The image module is probably linked static too... */
 extern struct program *image_program; 
+extern struct program *image_colortable_program=NULL;
 #endif
 
 #ifndef MIN
@@ -170,7 +184,8 @@ static int unmap_buffer( struct buffer *buffer_handle, void *p, int len)
 struct options
 {
   int compression;
-  char *comment, *name;
+  char *name;
+  char *comment;
   float xdpy;
   float ydpy;
 };
@@ -179,7 +194,7 @@ struct options
 
 void low_image_tiff_encode( struct buffer *buf, 
                             struct imagealpha *img,
-                            struct options *opts )
+                            struct options *opts)
 {
   TIFF *tif;
   struct image *i, *a;
@@ -195,7 +210,7 @@ void low_image_tiff_encode( struct buffer *buf,
   if(!tif)
     error("\"open\" of TIF file failed!\n");
   
-  i = ((struct image *)get_storage(img->img,image_program));
+ i = ((struct image *)get_storage(img->img,image_program));
 
   if(!i)
     error("Image is not an image object.\n");
@@ -265,13 +280,26 @@ void low_image_tiff_encode( struct buffer *buf,
   TIFFClose (tif);
 }
 
+static const char *photoNames[] = {
+    "min-is-white",				/* PHOTOMETRIC_MINISWHITE */
+    "min-is-black",				/* PHOTOMETRIC_MINISBLACK */
+    "RGB color",				/* PHOTOMETRIC_RGB */
+    "palette color (RGB from colormap)",	/* PHOTOMETRIC_PALETTE */
+    "transparency mask",			/* PHOTOMETRIC_MASK */
+    "separated",				/* PHOTOMETRIC_SEPARATED */
+    "YCbCr",					/* PHOTOMETRIC_YCBCR */
+    "7 (0x7)",
+    "CIE L*a*b*",				/* PHOTOMETRIC_CIELAB */
+};
+
 void low_image_tiff_decode( struct buffer *buf, 
-                            struct imagealpha *res )
+                            struct imagealpha *res,
+                            int image_only)
 {
   TIFF *tif;
   unsigned int w, h, i;
   uint32 *raster,  *s;
-  rgb_group *di, *da;
+  rgb_group *di, *da=NULL;
   tif = TIFFClientOpen( "memoryfile", "r", buf,
                         (void*)read_buffer, (void*)write_buffer,
                         (void*)seek_buffer, (void*)close_buffer,
@@ -279,8 +307,6 @@ void low_image_tiff_decode( struct buffer *buf,
                         (void*)unmap_buffer );
   if(!tif)
     error("Failed to 'open' tiff image.\n");
-
-  
 
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
@@ -295,11 +321,14 @@ void low_image_tiff_decode( struct buffer *buf,
   push_int(w);
   push_int(h);
   res->img = clone_object(image_program, 2);
-  push_int(w);
-  push_int(h);
-  res->alpha = clone_object(image_program, 2);
+  if(!image_only)
+  {
+    push_int(w);
+    push_int(h);
+    res->alpha = clone_object(image_program, 2);
+    da = ((struct image *)get_storage(res->alpha,image_program))->img;
+  }
   di = ((struct image *)get_storage(res->img,image_program))->img;
-  da = ((struct image *)get_storage(res->alpha,image_program))->img;
   
   for(i=0; i<h*w; i++)
   {
@@ -307,18 +336,228 @@ void low_image_tiff_decode( struct buffer *buf,
     di->r = p&255;
     di->g = (p>>8) & 255;
     (di++)->b = (p>>16) & 255;
-    da->r = da->g = (da++)->b = (p>>24) & 255;
+    if(!image_only) 
+      da->r = da->g = (da++)->b = (p>>24) & 255;
     s++;
   }
   free(raster);
-  apply( res->alpha, "mirrory", 0);
-  free_object(res->alpha);
-  res->alpha = sp[-1].u.object;
-  sp--;
+  if(!image_only)
+  {
+    apply( res->alpha, "mirrory", 0);
+    free_object(res->alpha);
+    res->alpha = sp[-1].u.object;
+    sp--;
+  }
   apply( res->img, "mirrory", 0);
   free_object(res->img);
   res->img = sp[-1].u.object;
   sp--;
+  if(!image_only)
+  {
+    char *tmp;
+    TIFFDirectory *td = &tif->tif_dir;
+    if (TIFFFieldSet(tif,FIELD_RESOLUTION)) 
+    {
+      push_constant_text( "xres" );   push_float( td->td_xresolution );
+      push_constant_text( "yres" );   push_float( td->td_yresolution );
+      push_constant_text( "unit" );  
+      if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT)) 
+      {
+        switch(td->td_resolutionunit)
+        {
+         case RESUNIT_NONE:
+           push_constant_text("unitless");
+           break;
+         case RESUNIT_INCH:
+           push_constant_text("pixels/inch");
+           push_constant_text( "xdpy" );   push_float( td->td_xresolution );
+           push_constant_text( "ydpy" );   push_float( td->td_yresolution );
+           break;
+         case RESUNIT_CENTIMETER:
+           push_constant_text("pixels/cm");
+           push_constant_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
+           push_constant_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
+           break;
+        } 
+      } else
+        push_constant_text( "unitless" );  
+    }
+    if (TIFFFieldSet(tif,FIELD_POSITION))
+    {
+      push_constant_text("xposition"); push_int(td->td_xposition);
+      push_constant_text("yposition"); push_int(td->td_yposition);
+    }
+    if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC)) 
+    {
+      push_text("photometric");
+      if (td->td_photometric < (sizeof (photoNames) / sizeof (photoNames[0])))
+        push_text( photoNames[td->td_photometric] );
+      else 
+      {
+        switch (td->td_photometric) {
+         case PHOTOMETRIC_LOGL:
+           push_text("CIE Log2(L)");
+           break;
+         case PHOTOMETRIC_LOGLUV:
+           push_text("CIE Log2(L) (u',v')");
+           break;
+         default:
+           push_text("unkown");
+           break;
+        }
+      }
+    }
+
+    if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples) 
+    {
+      push_text( "extra_samples" );
+      for (i = 0; i < td->td_extrasamples; i++) 
+      {
+        switch (td->td_sampleinfo[i]) 
+        {
+         case EXTRASAMPLE_UNSPECIFIED:
+           push_text("unspecified");
+           break;
+         case EXTRASAMPLE_ASSOCALPHA:
+           push_text("assoc-alpha");
+           break;
+         case EXTRASAMPLE_UNASSALPHA:
+           push_text("unassoc-alpha");
+           break;
+         default:
+           push_int( td->td_sampleinfo[i] );
+           break;
+        }
+      }
+      f_aggregate( td->td_extrasamples );
+    }
+
+    if (TIFFFieldSet(tif,FIELD_THRESHHOLDING)) 
+    {
+      push_text( "threshholding" );
+      switch (td->td_threshholding) {
+       case THRESHHOLD_BILEVEL:
+         push_text( "bilevel art scan" );
+         break;
+       case THRESHHOLD_HALFTONE:
+         push_text( "halftone or dithered scan" );
+         break;
+       case THRESHHOLD_ERRORDIFFUSE:
+         push_text( "error diffused" );
+         break;
+       default:
+         push_text( "unknown" );
+         break;
+      }
+    }
+    if (TIFFFieldSet(tif,FIELD_HALFTONEHINTS))
+    {
+      push_text( "halftone_hints" );
+      push_int(td->td_halftonehints[0]);
+      push_int(td->td_halftonehints[1]);
+      f_aggregate(2);
+    }
+
+    if(td->td_artist)
+    {
+      push_text("artist");
+      push_text(td->td_artist);
+    }
+    if(td->td_datetime)
+    {
+      push_text("datetime");
+      push_text(td->td_datetime);
+    }
+    if(td->td_hostcomputer)
+    {
+      push_text("hostcomputer");
+      push_text(td->td_hostcomputer);
+    }
+    if(td->td_software)
+    {
+      push_text("software");
+      push_text(td->td_software);
+    }
+    if(td->td_documentname)
+    {
+      push_text("name");
+      push_text(td->td_documentname);
+    }
+
+    if(td->td_imagedescription)
+    {
+      push_text("comment");
+      push_text(td->td_imagedescription);
+    }
+
+    if(td->td_make)
+    {
+      push_text("make");
+      push_text(td->td_make);
+    }
+
+    if(td->td_model)
+    {
+      push_text("model");
+      push_text(td->td_model);
+    }
+
+    if(td->td_pagename)
+    {
+      push_text("page_name");
+      push_text(td->td_pagename);
+    }
+
+    if(TIFFFieldSet(tif,FIELD_PAGENUMBER))
+    {
+      push_text("page_number");
+      push_int(td->td_pagenumber[0]);
+      push_int(td->td_pagenumber[1]);
+      f_aggregate(2);
+    }
+
+    if (TIFFFieldSet(tif,FIELD_COLORMAP)) 
+    {
+      int l,n = 1L<<td->td_bitspersample;
+      for (l = 0; l < n; l++)
+      {
+        push_int( td->td_colormap[0][l] );
+        push_int( td->td_colormap[1][l] );
+        push_int( td->td_colormap[2][l] );
+        f_aggregate(3);
+      }
+      f_aggregate(1L<<td->td_bitspersample);
+      push_object(clone_object(image_colortable_program, 1 ));
+    }
+#ifdef COLORIMETRY_SUPPORT
+    if (TIFFFieldSet(tif,FIELD_WHITEPOINT))
+    {
+      push_text("whitepoint");
+      push_float(td->td_whitepoint[0]);
+      push_float(td->td_whitepoint[1]);
+      f_aggregate(2);
+    }
+    if (TIFFFieldSet(tif,FIELD_PRIMARYCHROMAS))
+    {
+      push_text("primary_chromaticities");
+      for(i=0;i<6;i++)
+        push_float(td->td_primarychromas[i]);
+      f_aggregate(6);
+    }
+    if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE)) 
+    {
+      push_text("reference_black_white");
+      for (i = 0; i < td->td_samplesperpixel; i++)
+      {
+        push_float(td->td_refblackwhite[2*i+0]);
+        push_float(td->td_refblackwhite[2*i+1]);
+        f_aggregate(2);
+      }
+      f_aggregate(td->td_samplesperpixel);
+    }
+#endif
+  }
+  TIFFClose(tif);
 }
 
 
@@ -337,38 +576,55 @@ static void image_tiff_decode( INT32 args )
   buffer.extendable = 0;
   buffer.offset = 0;
 
-  low_image_tiff_decode( &buffer, &res );
-
-  if(res.alpha)
-    free_object( res.alpha );
-
+  low_image_tiff_decode( &buffer, &res, 1 );
   pop_n_elems(args);
   push_object( res.img );
 }
 
+/*
+**! method object decode(string data)
+**! 	Decodes a TIFF image. 
+**!
+**! note
+**!	Throws upon error in data.
+*/
+
+/*
+**! method mapping _decode(string data)
+**! 	Decodes a TIFF image to a mapping with at least the members 
+**!     image and alpha. 
+**!
+**! note
+**!	Throws upon error in data.
+*/
 static void image_tiff__decode( INT32 args )
 {
   struct buffer buffer;
   struct imagealpha res;
+  struct svalue *osp=sp;
   if(!args) 
     error("Too few arguments to Image.TIFF.decode()\n");
-
   if(sp[-args].type != T_STRING)
     error("Invalid argument 1 to Image.TIFF.decode()\n");
 
+  MEMSET(&res, 0, sizeof(res));
   buffer.str = sp[-args].u.string->str;
   buffer.len = buffer.real_len = sp[-args].u.string->len;
   buffer.extendable = 0;
   buffer.offset = 0;
 
-  low_image_tiff_decode( &buffer, &res );
-
-  pop_n_elems(args);
+  low_image_tiff_decode( &buffer, &res, 0 );
   push_constant_text( "image" );
   push_object( res.img );
   push_constant_text( "alpha" );
   push_object( res.alpha );
-  f_aggregate_mapping( 4 );
+  f_aggregate_mapping( sp-osp );
+  {
+    struct mapping *tmp = sp[-1].u.mapping;
+    sp--;
+    pop_n_elems(args);
+    push_mapping( tmp );
+  }
 }
 
 static struct pike_string *opt_compression, *opt_alpha, *opt_dpy, *opt_xdpy;
@@ -416,6 +672,27 @@ static int parameter_object(struct svalue *map,struct pike_string *what,
 }
 
 
+/*
+**! method string encode(object image)
+**! method string encode(object image, mapping options)
+**! method string _encode(object image)
+**! method string _encode(object image, mapping options)
+**! 	encode and _encode are identical.
+**!
+**!      The <tt>options</tt> argument may be a mapping
+**!	 containing zero or more encoding options:
+**!
+**!	<pre>
+**!	normal options:
+**!	    "compression":Image.TIFF.COMPRESSION_*,
+**!	    "name":"an image name",
+**!	    "comment":"an image comment",
+**!	    "alpha":An alpha channel,
+**!	    "dpy":Dots per inch (as a float),
+**!	    "xdpy":Horizontal dots per inch (as a float),
+**!	    "ydpy":Vertical dots per inch (as a float),
+**!	</pre>
+*/
 static void image_tiff_encode( INT32 args )
 {
   struct imagealpha a;
@@ -476,20 +753,26 @@ void pike_module_init(void)
   extern void f_index(INT32);
 #ifdef HAVE_LIBTIFF
 #ifdef DYNAMIC_MODULE
-   push_string(make_shared_string("Image"));
-   push_int(0);
+   push_string(make_shared_string("Image")); push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
    if (sp[-1].type==T_OBJECT) 
    {
-      push_string(make_shared_string("image"));
-      f_index(2);
-      image_program=program_from_svalue(sp-1);
+     push_string(make_shared_string("image"));
+     f_index(2);
+     image_program=program_from_svalue(sp-1);
+     pop_stack();
+
+     push_string(make_shared_string("Image")); push_int(0);
+     SAFE_APPLY_MASTER("resolv",2);
+     push_string(make_shared_string("colortable"));
+     f_index(2);
+     image_colortable_program=program_from_svalue(sp-1);
+     pop_stack();
    }
-   pop_n_elems(1);
 #endif /* DYNAMIC_MODULE */
 
    TIFFSetWarningHandler( (void *)my_tiff_warning_handler );
-#if 0
+#if 1
    TIFFSetErrorHandler( (void *)my_tiff_error_handler );
 #endif
 
