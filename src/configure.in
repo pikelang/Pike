@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.157 1998/07/25 09:35:45 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.158 1998/09/27 19:37:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1056,9 +1056,9 @@ AC_CACHE_VAL(pike_cv_struct_tm_has_gmtoff,[
 AC_TRY_COMPILE([
 #ifdef TM_IN_SYS_TIME
 #include <sys/time.h>
-#endif
-#include <time.h>
 #else
+#include <time.h>
+#endif
 ],[
   int _tz;
   struct tm foo;
