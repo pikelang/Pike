@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.24 2003/01/20 17:44:00 nilsson Exp $
+// $Id: randomness.pmod,v 1.25 2003/03/07 17:41:48 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -7,6 +7,7 @@
 //! will degenerate into a reasonably strong pseudo random generator
 
 #pike __REAL_VERSION__
+// #pragma strict_types
 
 static constant RANDOM_DEVICE = "/dev/random";
 static constant PRANDOM_DEVICE = "/dev/urandom";
@@ -57,7 +58,7 @@ string some_entropy()
 #ifdef __NT__
   return nt_random_string(8192);
 #else /* !__NT__ */
-  mapping env = getenv();
+  mapping env = [mapping(string:string)]getenv();
   env->PATH = PATH;
 
   Stdio.File parent_pipe = Stdio.File();
@@ -111,7 +112,7 @@ class arcfour_random {
   //! Initialize and seed the arcfour random generator.
   void create(string secret)
   {
-    object hash = Crypto.sha();
+    Crypto.sha hash = Crypto.sha();
     hash->update(secret);
 
     arcfour::set_encrypt_key(hash->digest());
@@ -137,7 +138,7 @@ RandomSource reasonably_random()
 
   if (file_stat(PRANDOM_DEVICE))
   {
-    object res = Stdio.File();
+    Stdio.File res = Stdio.File();
     if (res->open(PRANDOM_DEVICE, "r"))
       return res;
   }
