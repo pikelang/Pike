@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.166 2004/03/13 15:44:13 grubba Exp $
+|| $Id: interpret_functions.h,v 1.167 2004/04/03 21:53:49 mast Exp $
 */
 
 /*
@@ -2110,11 +2110,14 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   int args=(ARGS);							 \
   struct svalue *expected_stack=Pike_sp-args;				 \
     struct svalue *s=&Pike_fp->context.prog->constants[arg1].sval;	 \
-  if(Pike_interpreter.trace_level>1)					 \
+  if(Pike_interpreter.trace_level)					 \
   {									 \
     dynamic_buffer save_buf;						 \
     init_buf(&save_buf);						 \
-    describe_svalue(s, 0,0);						 \
+    if (s->u.efun->name->size_shift)					 \
+      my_strcat ("[widestring function name]");				 \
+    else								 \
+      my_strcat (s->u.efun->name->str);					 \
     do_trace_call(args, &save_buf);					 \
   }									 \
   (*(s->u.efun->function))(args);					 \
@@ -2136,8 +2139,16 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
       Pike_fatal("Void function returned with a value on the stack: %s %d\n", \
 	    s->u.efun->name->str, s->u.efun->may_return_void);		 \
   }									 \
-  if(Pike_interpreter.trace_level>1 && Pike_sp>expected_stack)		 \
-    trace_return_value();						 \
+  if(Pike_interpreter.trace_level>1) {					 \
+    dynamic_buffer save_buf;						 \
+    init_buf(&save_buf);						 \
+    if (s->u.efun->name->size_shift)					 \
+      my_strcat ("[widestring function name]");				 \
+    else								 \
+      my_strcat (s->u.efun->name->str);					 \
+    my_strcat ("() ");							 \
+    do_trace_return (Pike_sp>expected_stack, &save_buf);		 \
+  }									 \
 }while(0)
 #else
 #define DO_CALL_BUILTIN(ARGS) \

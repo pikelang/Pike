@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.26 2003/12/10 13:06:58 jonasw Exp $
+|| $Id: apply_low.h,v 1.27 2004/04/03 21:53:48 mast Exp $
 */
 
     {
@@ -10,7 +10,7 @@
       struct reference *ref;
       struct pike_frame *new_frame;
       struct identifier *function;
-      
+
 #if 0
       /* This kind of fault tolerance is braindamaged. /mast */
       if(fun<0)
@@ -171,7 +171,10 @@
 	init_buf(&save_buf);
 	sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
 	my_strcat(buf);
-	my_strcat(function->name->str);
+	if (function->name->size_shift)
+	  my_strcat ("[widestring function name]");
+	else
+	  my_strcat(function->name->str);
 	do_trace_call(args, &save_buf);
       }
 

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.344 2004/03/24 20:34:44 grubba Exp $
+|| $Id: interpret.c,v 1.345 2004/04/03 21:53:49 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.344 2004/03/24 20:34:44 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.345 2004/04/03 21:53:49 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -101,8 +101,9 @@ PMOD_EXPORT unsigned long evaluator_callback_calls = 0;
 PMOD_EXPORT struct Pike_interpreter Pike_interpreter;
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
-static void trace_return_value(void);
 static void do_trace_call(INT32 args, dynamic_buffer *old_buf);
+static void do_trace_func_return (int got_retval, struct object *o, int fun);
+static void do_trace_return (int got_retval, dynamic_buffer *old_buf);
 
 void gdb_stop_here(void)
 {
@@ -1374,58 +1375,129 @@ static inline int eval_instruction(unsigned char *pc)
 
 #endif /* PIKE_USE_MACHINE_CODE */
 
-static void trace_return_value(void)
-{
-  char *s;
-  dynamic_buffer save_buf;
-
-  init_buf(&save_buf);
-  my_strcat("Return: ");
-  describe_svalue(Pike_sp-1,0,0);
-  s=simple_free_buf(&save_buf);
-  if((size_t)strlen(s) > (size_t)TRACE_LEN)
-  {
-    s[TRACE_LEN]=0;
-    s[TRACE_LEN-1]='.';
-    s[TRACE_LEN-2]='.';
-    s[TRACE_LEN-2]='.';
-  }
-  fprintf(stderr,"%-*s%s\n",4,"-",s);
-  free(s);
-}
-
 static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
 {
   struct pike_string *filep = NULL;
   char *file, *s;
   INT32 linep,e;
+
   my_strcat("(");
   for(e=0;e<args;e++)
   {
     if(e) my_strcat(",");
     describe_svalue(Pike_sp-args+e,0,0);
   }
-  my_strcat(")"); 
+  my_strcat(")");
+
   s=simple_free_buf(old_buf);
   if((size_t)strlen(s) > (size_t)TRACE_LEN)
   {
     s[TRACE_LEN]=0;
     s[TRACE_LEN-1]='.';
     s[TRACE_LEN-2]='.';
-    s[TRACE_LEN-2]='.';
+    s[TRACE_LEN-3]='.';
   }
+
   if(Pike_fp && Pike_fp->pc)
   {
     char *f;
     filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
-    file = filep->str;
-    while((f=STRCHR(file,'/')))
-      file=f+1;
+    if (filep->size_shift)
+      file = "...";
+    else {
+      file = filep->str;
+      while((f=STRCHR(file,'/')))
+	file=f+1;
+    }
   }else{
     linep=0;
     file="-";
   }
-  fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
+
+  {
+    char buf[40];
+    if (linep)
+      snprintf (buf, sizeof (buf), "%s:%ld:", file, (long)linep);
+    else
+      snprintf (buf, sizeof (buf), "%s:", file);
+    fprintf(stderr,"- %-20s %s\n",buf,s);
+  }
+
+  if (filep) {
+    free_string(filep);
+  }
+  free(s);
+}
+
+static void do_trace_func_return (int got_retval, struct object *o, int fun)
+{
+  dynamic_buffer save_buf;
+  init_buf (&save_buf);
+  if (fun >= 0) {
+    if (o->prog) {
+      struct identifier *id = ID_FROM_INT (o->prog, fun);
+      char buf[50];
+      sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+      my_strcat(buf);
+      if (id->name->size_shift)
+	my_strcat ("[widestring function name]");
+      else
+	my_strcat(id->name->str);
+      my_strcat ("() ");
+    }
+    else
+      my_strcat ("function in destructed object ");
+  }
+  do_trace_return (got_retval, &save_buf);
+}
+
+static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
+{
+  struct pike_string *filep = NULL;
+  char *file, *s;
+  INT32 linep;
+
+  if (got_retval) {
+    my_strcat ("returns: ");
+    describe_svalue(Pike_sp-1,0,0);
+  }
+  else
+    my_strcat ("returns with no value");
+
+  s=simple_free_buf(old_buf);
+  if((size_t)strlen(s) > (size_t)TRACE_LEN)
+  {
+    s[TRACE_LEN]=0;
+    s[TRACE_LEN-1]='.';
+    s[TRACE_LEN-2]='.';
+    s[TRACE_LEN-3]='.';
+  }
+
+  if(Pike_fp && Pike_fp->pc)
+  {
+    char *f;
+    filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
+    if (filep->size_shift)
+      file = "...";
+    else {
+      file = filep->str;
+      while((f=STRCHR(file,'/')))
+	file=f+1;
+    }
+  }else{
+    linep=0;
+    file="-";
+  }
+
+  {
+    char buf[40];
+    if (linep)
+      snprintf (buf, sizeof (buf), "%s:%ld:", file, (long)linep);
+    else
+      snprintf (buf, sizeof (buf), "%s:", file);
+    fprintf(stderr,"- %-20s %s\n",buf,s);
+  }
+
   if (filep) {
     free_string(filep);
   }
@@ -1515,7 +1587,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
   struct pike_frame *scope=0;
-  ptrdiff_t fun;
+  ptrdiff_t fun = -1;
   struct svalue *save_sp=Pike_sp-args;
 
 #if defined(PIKE_DEBUG) && defined(_REENTRANT)
@@ -1573,14 +1645,17 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
 #ifdef PIKE_DEBUG
 	struct svalue *expected_stack = Pike_sp-args;
+#endif
 	if(Pike_interpreter.trace_level>1)
 	{
 	  dynamic_buffer save_buf;
 	  init_buf(&save_buf);
-	  describe_svalue(s,0,0);
+	  if (s->u.efun->name->size_shift)
+	    my_strcat ("[widestring function name]");
+	  else
+	    my_strcat (s->u.efun->name->str);
 	  do_trace_call(args, &save_buf);
 	}
-#endif
 	check_threads_etc();
 	(*(s->u.efun->function))(args);
 
@@ -1621,28 +1696,24 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       break;
 
     case T_ARRAY:
-#ifdef PIKE_DEBUG
-      if(Pike_interpreter.trace_level>1)
+      if(Pike_interpreter.trace_level)
       {
 	dynamic_buffer save_buf;
 	init_buf(&save_buf);
 	describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
       }
-#endif
       apply_array(s->u.array,args);
       break;
 
     case T_PROGRAM:
-#ifdef PIKE_DEBUG
-      if(Pike_interpreter.trace_level>1)
+      if(Pike_interpreter.trace_level)
       {
 	dynamic_buffer save_buf;
 	init_buf(&save_buf);
 	describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
       }
-#endif
       push_object(clone_object(s->u.program,args));
       break;
 
@@ -1702,8 +1773,14 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
   if(save_sp+1 > Pike_sp)
   {
-    if(type != APPLY_SVALUE_STRICT)
+    if(type != APPLY_SVALUE_STRICT) {
       push_int(0);
+      if(Pike_interpreter.trace_level>1)
+	do_trace_func_return (1, o, fun);
+    }
+    else
+      if(Pike_interpreter.trace_level>1)
+	do_trace_func_return (0, o, fun);
   }else{
     if(save_sp+1 < Pike_sp)
     {
@@ -1712,7 +1789,8 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
       
     }
-    if(Pike_interpreter.trace_level>1) trace_return_value();
+    if(Pike_interpreter.trace_level>1)
+      do_trace_func_return (1, o, fun);
   }
   return 0;
 }
@@ -1755,6 +1833,15 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 void low_return(void)
 {
   struct svalue *save_sp = Pike_fp->save_sp;
+  int trace_level = Pike_interpreter.trace_level;
+  struct object *o;
+  int fun;
+
+  if (trace_level > 1) {
+    o = Pike_fp->current_object;
+    fun = Pike_fp->fun;
+  }
+
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
   /* If the function that returns is the only ref to the current
    * object and its program then the program would be freed in
@@ -1763,7 +1850,7 @@ void low_return(void)
    * stick around for a little while more to handle the returned
    * address. We therefore add a ref to the current object so that
    * it'll live through this function. */
-  struct object *o = Pike_fp->current_object;
+  o = Pike_fp->current_object;
   add_ref (o);
 #endif
 
@@ -1780,8 +1867,10 @@ void low_return(void)
       /* consider using a flag for immediate destruct instead... */
       destruct_objects_to_destruct();
     }
-    if(Pike_interpreter.trace_level>1) trace_return_value();
   }
+
+  if(trace_level>1)
+    do_trace_func_return (1, o, fun);
 
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
   free_object (o);
