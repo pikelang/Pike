@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.374 2001/06/07 16:20:29 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.375 2001/06/08 00:36:00 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1111,169 +1111,6 @@ PMOD_EXPORT void f_add_constant(INT32 args)
   pop_n_elems(args);
 }
 
-#ifndef __NT__
-#define IS_SEP(X) ( (X)=='/' )
-#define IS_ABS(X) (IS_SEP((X)[0])?1:0)
-#else   
-
-#define IS_SEP(X) ( (X) == '/' || (X) == '\\' )
-
-static int find_absolute(char *s)
-{
-  if(isalpha(s[0]) && s[1]==':' && IS_SEP(s[2]))
-    return 3;
-
-  if(IS_SEP(s[0]) && IS_SEP(s[1]))
-  {
-    int l;
-    for(l=2;isalpha(s[l]);l++);
-    return l;
-  }
-
-  return 0;
-}
-#define IS_ABS(X) find_absolute((X))
-
-#define IS_ROOT(X) (IS_SEP((X)[0])?1:0)
-#endif
-
-static void free_nonull(char **ptr)
-{
-  if(*ptr) free(*ptr);
-}
-
-static char *combine_path(char *cwd,char *file)
-{
-  /* cwd is supposed to be combined already */
-  char *ret;
-  register char *from,*to;
-  char *my_cwd;
-  char *cwdbuf = 0;
-  int tmp;
-  ONERROR err;
-
-  SET_ONERROR(err, free_nonull, &cwdbuf);
-  
-  if((tmp=IS_ABS(file)))
-  {
-    cwdbuf = (char *)xalloc(tmp+1);
-    MEMCPY(cwdbuf,file,tmp);
-    cwdbuf[tmp]=0;
-    cwd=cwdbuf;
-    file+=tmp;
-  }
-
-#ifdef IS_ROOT
-  else if(IS_ROOT(file))
-  {
-    if(cwd && (tmp=IS_ABS(cwd)))
-    {
-      cwdbuf = (char *)xalloc(tmp+1);
-      MEMCPY(cwdbuf,cwd,tmp);
-      cwdbuf[tmp]=0;
-      cwd=cwdbuf;
-      file+=IS_ROOT(file);
-    }else{
-      tmp = IS_ROOT(file);
-      cwdbuf = (char *)xalloc(tmp+1);
-      MEMCPY(cwdbuf,file,tmp);
-      cwdbuf[IS_ROOT(file)]=0;
-      cwd=cwdbuf;
-      file+=IS_ROOT(file);
-    }
-  }
-#endif
-
-#ifdef PIKE_DEBUG    
-  if(!cwd)
-    fatal("No cwd in combine_path!\n");
-#endif
-
-  if(!*cwd || IS_SEP(cwd[strlen(cwd)-1]))
-  {
-    ret=(char *)xalloc(strlen(cwd)+strlen(file)+1);
-    strcpy(ret,cwd);
-    strcat(ret,file);
-  }else{
-    ret=(char *)xalloc(strlen(cwd)+strlen(file)+2);
-    strcpy(ret,cwd);
-    strcat(ret,"/");
-    strcat(ret,file);
-  }
-
-  from=to=ret;
-
-
-#ifdef __NT__
-  if(IS_SEP(from[0]) && IS_SEP(from[1]))
-    *(to++)=*(from++);
-  else
-#endif
-
-  /* Skip all leading "./" */
-   while(from[0]=='.' && IS_SEP(from[1])) from+=2;
-  
-  while(( *to = *from ))
-  {
-    if(IS_SEP(*from))
-    {
-      while(to>ret && to[-1]=='/') to--;
-      if(from[1] == '.')
-      {
-	switch(from[2])
-	{
-	case '.':
-	  if(IS_SEP(from[3]) || !from[3])
-	  {
-	    char *tmp=to;
-	    while(--tmp>=ret)
-	      if(IS_SEP(*tmp))
-		break;
-	    tmp++;
-
-	    if(tmp[0]=='.' && tmp[1]=='.' && (IS_SEP(tmp[2]) || !tmp[2]))
-	      break;
-	    
-	    from+=3;
-	    to=tmp;
-	    continue;
-	  }
-	  break;
-
-	case 0:
-	case '/':
-#ifdef __NT__
-        case '\\':
-#endif
-	  from+=2;
-	  continue;
-	}
-      }
-    }
-    from++;
-    to++;
-  }
-
-  if(*ret && !IS_SEP(from[-1]) && IS_SEP(to[-1]))
-      *--to=0;
-
-  if(!*ret)
-  {
-    if(IS_SEP(*cwd))
-    {
-      ret[0]='/';
-      ret[1]=0;
-    }else{
-      ret[0]='.';
-      ret[1]=0;
-    }
-  }
-
-  CALL_AND_UNSET_ONERROR(err);
-  
-  return ret;
-}
-
 /*! @decl string combine_path(string absolute, string relative)
  *!
  *!   Concatenate a relative path to an absolute path and remove any
@@ -1283,43 +1120,13 @@ static char *combine_path(char *cwd,char *file)
  *! @seealso
  *!   @[getcwd()], @[Stdio.append_path()]
  */
-PMOD_EXPORT void f_combine_path(INT32 args)
-{
-  char *path=0;
-  int e,dofree=0;
-  struct pike_string *ret;
 
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("combine_path", 1);
+#define NT_COMBINE_PATH
+#include "combine_path.h"
 
-  if((Pike_sp[-args].type != T_STRING) ||
-     (Pike_sp[-args].u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("combine_path", 1, "string");
+#define UNIX_COMBINE_PATH
+#include "combine_path.h"
 
-  path=Pike_sp[-args].u.string->str;
-
-  for(e=1;e<args;e++)
-  {
-    char *newpath;
-    if((Pike_sp[e-args].type != T_STRING) ||
-       (Pike_sp[e-args].u.string->size_shift))
-    {
-      if(dofree) free(path);
-      SIMPLE_BAD_ARG_ERROR("combine_path", e+1, "string");
-      /* NOT_REACHED */
-    }
-
-    newpath=combine_path(path,Pike_sp[e-args].u.string->str);
-    if(dofree) free(path);
-    path=newpath;
-    dofree=1;
-  }
-    
-  ret=make_shared_string(path);
-  if(dofree) free(path);
-  pop_n_elems(args);
-  push_string(ret);
-}
 
 
 /*! @decl int zero_type(mixed a)
@@ -7691,7 +7498,13 @@ void init_builtin_efuns(void)
 
   
 /* function(string...:string) */
-  ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+#ifdef __NT__
+  ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
+#else
+  ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+#endif
   
   ADD_EFUN("compile", f_compile,
 	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid) ,tPrg(tObj)),
