@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.82 2001/03/23 03:14:41 hubbe Exp $
+ * $Id: svalue.h,v 1.83 2001/03/23 22:58:15 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -275,8 +275,8 @@ do{ \
 #define add_ref(X) pike_atomic_add_ref(&(X)->refs)
 #define sub_ref(X) pike_atomic_sub_ref(&(X)->refs)
 #else
-#define add_ref(X) (X)->refs++
-#define sub_ref(X) (X)->refs--
+#define add_ref(X) ((X)->refs++)
+#define sub_ref(X) (--(X)->refs)
 #endif
 
 
@@ -326,8 +326,8 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 #define add_ref(X) pike_atomic_add_ref((INT32 *)debug_malloc_pass( &((X)->refs)))
 #define sub_ref(X) pike_atomic_sub_ref((INT32 *)debug_malloc_pass( &((X)->refs)))
 #else
-#define add_ref(X) ((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++
-#define sub_ref(X) ((INT32 *)debug_malloc_pass( &((X)->refs)))[0]--
+#define add_ref(X) (((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++)
+#define sub_ref(X) (--((INT32 *)debug_malloc_pass( &((X)->refs)))[0])
 #endif
 
 
@@ -350,8 +350,8 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 #endif
 
 #define swap_svalues(X,Y) do { struct svalue *_a=(X),*_b=(Y),_tmp; _tmp=*_a; *_a=*_b; *_b=_tmp; }while(0)
-#define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(--*(_s->u.refs) <=0) { really_free_svalue(_s); } DO_IF_DMALLOC(_s->u.refs=(void *)-1;)  }}while(0)
-#define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(--*(_s->refs) <= 0) { really_free_short_svalue(_s,_t); } DO_IF_DMALLOC(_s->refs=(void *)-1;) }while(0)
+#define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); } DO_IF_DMALLOC(_s->u.refs=(void *)-1;)  }}while(0)
+#define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(sub_ref(_s->dummy) <= 0) { really_free_short_svalue(_s,_t); } DO_IF_DMALLOC(_s->refs=(void *)-1;) }while(0)
 #define add_ref_svalue(X) do { struct svalue *_tmp=(X); check_type(_tmp->type); check_refs(_tmp); if(_tmp->type <= MAX_REF_TYPE) { add_ref(_tmp->u.dummy); } }while(0)
 #define assign_svalue_no_free(X,Y) do { struct svalue _tmp, *_to=(X), *_from=(Y); check_type(_from->type); check_refs(_from);  *_to=_tmp=*_from; if(_tmp.type <= MAX_REF_TYPE) { add_ref(_tmp.u.dummy); } }while(0)
 #define assign_svalue(X,Y) do { struct svalue *_to2=(X), *_from2=(Y); if (_to2 != _from2) { free_svalue(_to2); assign_svalue_no_free(_to2, _from2); }  }while(0)
