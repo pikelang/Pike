@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.19 2000/09/05 13:16:53 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.20 2000/09/06 01:25:22 hubbe Exp $ */
 
 #define JUMPBACK 3
 
@@ -157,7 +157,7 @@ array(int|string|array(string)) split(string s)
   }
 
   /* Find the source/dest separator */
-  int i=search(b, ":");
+  i=search(b, ":");
   if(i==-1)
   {
     werror("Syntax error (%O).\n",b);
