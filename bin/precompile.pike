@@ -2,6 +2,8 @@
 
 #define FUNC_OVERLOAD
 
+// #define PRECOMPILE_OVERLOAD_DEBUG
+
 /*
  * This script is used to process *.cmod files into *.c files, it 
  * reads Pike style prototypes and converts them into C code.
@@ -1205,7 +1207,9 @@ int evaluate_method(mixed q)
 {
   int val=0;
   q=values(q) - ({ ({}) });
-//  werror("evaluate: %O\n",q);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("evaluate: %O\n",q);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
   for(int e=0;e<sizeof(q);e++)
   {
     if(q[e] && sizeof(q[e]))
@@ -1215,7 +1219,9 @@ int evaluate_method(mixed q)
       {
 	if(!sizeof(q[e] ^ q[d])) /* equal is broken in some Pikes */
 	{
-//	  werror("EQ, %d %d\n",e,d);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+	  werror("EQ, %d %d\n",e,d);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	  q[d]=0;
 	}
       }
@@ -1240,6 +1246,11 @@ array generate_overload_func_for(array(FuncData) d,
       ({ PC.Token(sprintf("%*nbreak;\n",indent)) });
   }
 
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("generate_overload_func_for(%O, %d, %d, %d, %O, %O)...\n",
+	 d, indent, min_possible_arg, max_possible_arg, name, attributes);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
+
   array out=({});
 
   /* This part should be recursive */
@@ -1248,7 +1259,11 @@ array generate_overload_func_for(array(FuncData) d,
   int max_args=0;
   foreach(d, FuncData q)
     {
-      for(int a=q->min_args;a<min(q->max_args,256);a++)
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+      werror("LOOP: q:%O, min_args:%O, max_args:%O\n",
+	     q, q->min_args, q->max_args);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
+      for(int a=q->min_args;a<=min(q->max_args,256);a++)
 	x[a]+=({q});
       min_args=min(min_args, q->min_args);
       max_args=max(max_args, q->max_args);
@@ -1257,8 +1272,10 @@ array generate_overload_func_for(array(FuncData) d,
   min_args=max(min_args, min_possible_arg);
   max_args=min(max_args, max_possible_arg);
 
-//  werror("MIN: %O\n",min_args);
-//  werror("MAX: %O\n",max_args);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("MIN: %O\n",min_args);
+  werror("MAX: %O\n",max_args);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 
   string argbase="-args";
 
@@ -1273,7 +1290,9 @@ array generate_overload_func_for(array(FuncData) d,
     {
       foreach(d, FuncData q)
 	{
-//	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	  foreach(q->args[a]->type()->basetypes(), string t)
 	    {
 	      if(!y[a][t]) y[a][t]=({});
@@ -1284,12 +1303,16 @@ array generate_overload_func_for(array(FuncData) d,
 
     best_method=-1;
     best_method_value=evaluate_method(x);
-//    werror("Value X: %d\n",best_method_value);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+    werror("Value X: %d\n",best_method_value);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
     
     for(int a=0;a<sizeof(y);a++)
     {
       int v=evaluate_method(y[a]);
-//      werror("Value %d: %d\n",a,v);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+      werror("Value %d: %d\n",a,v);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
       if(v>best_method_value)
       {
 	best_method=a;
@@ -1298,19 +1321,21 @@ array generate_overload_func_for(array(FuncData) d,
     }
   }
 
-//  werror("Best method=%d\n",best_method);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("Best method=%d\n",best_method);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 
   if(best_method == -1)
   {
     /* Switch on number of arguments */
     out+=({PC.Token(sprintf("%*nswitch(args) {\n",indent))});
-    for(int a=min_args;a<max_args;a++)
+    for(int a=min_args;a<=max_args;a++)
     {
       array tmp=x[a];
       if(tmp && sizeof(tmp))
       {
 	int d;
-	for(int d=a;d<sizeof(x);d++)
+	for(d=a;d<sizeof(x);d++)
 	{
 	  if(equal(tmp, x[d]) && !sizeof(tmp ^ x[d]))
 	  {
@@ -1320,10 +1345,13 @@ array generate_overload_func_for(array(FuncData) d,
 	    break;
 	  }
 	}
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+	werror("Generating code for %d..%d arguments.\n", a, d-1);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	out+=generate_overload_func_for(tmp,
 					indent+2,
 					a,
-					d,
+					d-1,
 					name,
 					attributes);
       }
@@ -1772,7 +1800,7 @@ class ParseBlock
 
 	string funcname=mkname("f",base,name);
 	string define=make_unique_name("f",base,name,"defined");
-	string func_num=mkname("f",base,name,"fun_num");
+	string func_num=mkname(base,name,"fun_num");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -2114,6 +2142,7 @@ class ParseBlock
 	    name=common_name;
 	    funcname=mkname("f",base,common_name);
 	    define=make_unique_name("f",base,common_name,"defined");
+	    func_num=mkname(base,funcname,"fun_num");
 	    array(string) defines=({});
 	  
 	    type=PikeType(PC.Token("|"), tmp->type);
@@ -2126,12 +2155,14 @@ class ParseBlock
 						 common_name,
 						 attributes);
 	  
+
 	    /* FIXME: This definition should be added
 	     * somewhere outside of all #ifdefs really!
 	     * -Hubbe
 	     */
 	    ret+=IFDEF(tmp->define, ({
 	      sprintf("#define %s\n",define),
+	      sprintf("ptrdiff_t %s = 0;\n", func_num),
 	      sprintf("void %s(INT32 args) ",funcname),
 	      "{\n",
 	    })+out+({
