@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.370 2000/05/01 18:16:46 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.371 2000/05/02 13:42:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -500,6 +500,7 @@ AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[]
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
 AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing instead of lzw],[],[])
+AC_ARG_WITH(rsaref,      [  --with-rsaref[=path]   Support for RSAREF],[],[])
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
