@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.15 2000/03/28 12:24:32 grubba Exp $
+/* $Id: randomness.pmod,v 1.16 2000/04/15 09:34:26 hubbe Exp $
  */
 
 //! module Crypto
@@ -94,6 +94,9 @@ class pike_random {
   //!	Returns a string of length len with pseudo random values.
   string read(int len)
   {
+#if 1 // major optimization /Hubbe
+      return random_string(len);
+#else
 #if 1 // 30% optimization /Hubbe
     string ret="";
     if(len>=16384)
@@ -106,6 +109,7 @@ class pike_random {
 #else
     if (len > 16384) return read(len/2)+read(len-len/2);
     return (string)allocate(len, random)(256);
+#endif
 #endif
   }
 }

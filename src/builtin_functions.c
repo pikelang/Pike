@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.257 2000/04/13 21:59:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.258 2000/04/15 09:34:14 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -361,6 +361,17 @@ void f_random(INT32 args)
   }
   pop_n_elems(args);
   push_int(i);
+}
+
+void f_random_string(INT32 args)
+{
+  struct pike_string *ret;
+  INT32 e,len;
+  get_all_args("random_string",args,"%i",&len);
+  ret = begin_shared_string(len);
+  for(e=0;e<len;e++) ret->str[e]=my_rand();
+  pop_n_elems(args);
+  push_string(end_shared_string(ret));
 }
 
 void f_random_seed(INT32 args)
@@ -5008,21 +5019,58 @@ void f_map(INT32 args)
 	 /* ret[i]=fun(arr[i],@extra); */
          push_array(d=allocate_array(n));
 	 d=sp[-1].u.array;
-	 for (i=0; i<n; i++)
+
+	 if(mysp[-2].type == T_FUNCTION &&
+	    mysp[-2].subtype == FUNCTION_BUILTIN)
 	 {
-	    push_svalue(a->item+i);
-	    if (splice) 
-	    {
+	   c_fun fun=mysp[-2].u.efun->function;
+	   struct svalue *spbase=sp;
+
+	   if(splice)
+	   {
+	     for (i=0; i<n; i++)
+	     {
+	       push_svalue(a->item+i);
+	       add_ref_svalue(mysp-1);
+	       push_array_items(mysp[-1].u.array);
+	       (* fun)(1+splice);
+	       if(sp>spbase)
+	       {
+		 dmalloc_touch_svalue(sp);
+		 d->item[i]=*--sp;
+		 pop_n_elems(sp-spbase);
+	       }
+	     }
+	   }else{
+	     for (i=0; i<n; i++)
+	     {
+	       push_svalue(a->item+i);
+	       (* fun)(1);
+	       if(sp>spbase)
+	       {
+		 dmalloc_touch_svalue(sp);
+		 d->item[i]=*--sp;
+		 pop_n_elems(sp-spbase);
+	       }
+	     }
+	   }
+	 }else{
+	   for (i=0; i<n; i++)
+	   {
+	     push_svalue(a->item+i);
+	     if (splice) 
+	     {
 	       add_ref_svalue(mysp-1);
 	       push_array_items(mysp[-1].u.array);
 	       apply_svalue(mysp-2,1+splice);
-	    }
-	    else
-	    {
+	     }
+	     else
+	     {
 	       apply_svalue(mysp-2,1);
-	    }
-	    d->item[i]=*--sp;
-	    dmalloc_touch_svalue(sp);
+	     }
+	     dmalloc_touch_svalue(sp);
+	     d->item[i]=*--sp;
+	   }
 	 }
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
@@ -5889,6 +5937,9 @@ void init_builtin_efuns(void)
 /* function(int:void) */
   ADD_EFUN("random_seed",f_random_seed,
 	   tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+
+  ADD_EFUN("random_string",f_random_string,
+	   tFunc(tInt,tString),0);
   
 /* function(string,string,string:string)|function(string,string*,string*:string)|function(0=array,mixed,mixed:0)|function(1=mapping,mixed,mixed:1) */
   ADD_EFUN("replace",f_replace,
