@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.80 1999/09/15 07:15:19 hubbe Exp $");
+RCSID("$Id: object.c,v 1.81 1999/09/16 05:14:33 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -85,7 +85,7 @@ struct object *low_clone(struct program *p)
 
   GC_ALLOC();
 
-  o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed+p->inherits[0].storage_offset);
+  o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
 
   o->prog=p;
   add_ref(p);

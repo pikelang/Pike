@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.148 1999/09/16 04:45:06 hubbe Exp $");
+RCSID("$Id: program.c,v 1.149 1999/09/16 05:14:31 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -873,7 +873,7 @@ void check_program(struct program *p)
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
 
-
+#if 0 /* nonworking test */
     if(e)
     {
       if(p->inherits[e-1].storage_offset > 
@@ -886,6 +886,7 @@ void check_program(struct program *p)
 	 p->inherits[e-1].prog->storage_needed > p->inherits[e].storage_offset)
 	fatal("Overlapping inherits!\n");
     }
+#endif
   }
 
   if(p->flags & PROGRAM_FINISHED)
@@ -937,8 +938,7 @@ void check_program(struct program *p)
       int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
       size=sizeof_variable(i->run_time_type);
 
-      if(offset+size - p->inherits[0].storage_offset >
-	 p->storage_needed || offset<0)
+      if(offset+size > p->storage_needed || offset<0)
 	fatal("Variable outside storage! (%s)\n",i->name->str);
 
       for(q=0;q<size;q++)
@@ -1108,8 +1108,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
     
 #endif
 
-  new_program->storage_needed = offset + size -
-    new_program->inherits[0].storage_offset;
+  new_program->storage_needed = offset + size;
 
   return (SIZE_T) offset;
 }
@@ -1329,9 +1328,9 @@ void low_inherit(struct program *p,
   inherit_offset = new_program->num_inherits;
 
   /* alignment magic */
-  storage_offset=(p->inherits[0].storage_offset + OFFSETOF(object,storage)) %
-    p->alignment_needed;
-  storage_offset=low_add_storage(p->storage_needed,
+  storage_offset=p->inherits[0].storage_offset % p->alignment_needed;
+  storage_offset=low_add_storage(p->storage_needed-
+				 p->inherits[0].storage_offset,
 				 p->alignment_needed,
 				 storage_offset);
 
