@@ -1,5 +1,5 @@
 /*
- * $Id: combine_path.h,v 1.4 2001/06/10 16:02:40 grubba Exp $
+ * $Id: combine_path.h,v 1.5 2001/06/10 16:34:57 grubba Exp $
  *
  * Combine path template.
  *
@@ -145,11 +145,11 @@ static void APPEND_PATH(struct string_builder *s,
 		tmp++;
 	      }
 	      
-	      if ((tmp+2 < s->s->len) &&
+	      if ((tmp+1 < s->s->len) &&
 		  (index_shared_string(s->s,tmp)=='.') &&
 		  (index_shared_string(s->s,tmp+1)=='.') && 
-		  ( IS_SEP(index_shared_string(s->s,tmp+2)) ||
-		    !index_shared_string(s->s,tmp+2)))
+		  ( (tmp+2 == s->s->len) ||
+		    IS_SEP(index_shared_string(s->s,tmp+2)))
 		break;
 
 	      
