@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.15 1999/03/07 17:47:34 marcus Exp $
+ * $Id: module.pmod.in,v 1.16 1999/03/07 18:01:22 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -234,7 +234,10 @@ class support {
 	  headers[hname=lower_case(hname)]
 	    = (headers[hname]||({}))+({hcontents});
 	else
-	  headers[lower_case(hname)] = hcontents;
+	  if(headers[lower_case(hname)])
+	    headers[lower_case(hname)] += "\0"+hcontents;
+	  else
+	    headers[lower_case(hname)] = hcontents;
       }
     }
     return ({ headers, body });
@@ -389,22 +392,19 @@ class Message {
 
     return map( indices(headers),
 		lambda(string hname){
-      if (stringp(headers[hname]))
-	return replace(map(hname/"-", String.capitalize)*"-", "Mime", "MIME")+
-	  ": "+headers[hname];
-      else
-	return map(headers[hname],
-		   lambda(string header,string hname) {
-	  return hname+": "+header;
-		   },
-	  replace(map(hname/"-", String.capitalize)*"-","Mime","MIME"))*"\r\n";
-    } )*"\r\n" + "\r\n\r\n" + data;
+		  return map(headers[hname]/"\0",
+			     lambda(string header,string hname) {
+			       return hname+": "+header;
+			     },
+			     replace(map(hname/"-",
+					 String.capitalize)*"-",
+				     "Mime","MIME"))*"\r\n";
+		} )*"\r\n" + "\r\n\r\n" + data;
   }
 
   void create(void | string message,
 	      void | mapping(string:string|array(string)) hdrs,
-	      void | array(object) parts,
-	      void | int use_multiple_headers)
+	      void | array(object) parts)
   {
     encoded_data = 0;
     decoded_data = 0;
@@ -422,24 +422,10 @@ class Message {
       decoded_data = message;
       if (hdrs)
 	foreach( indices(hdrs), hname )
-	  if (use_multiple_headers) {
-	    if (headers[lower_case(hname)]) {
-	      array(string)|string to_add;
-	      if (!arrayp(to_add = hdrs[hname]))
-		to_add = ({ to_add });
-	      if (!arrayp(headers[lower_case(hname)]))
-		headers[lower_case(hname)] = ({ headers[lower_case(hname)] }) +
-		  to_add;
-	      else
-		headers[lower_case(hname)] += to_add;
-	    } else
-	      headers[lower_case(hname)] = hdrs[hname];
-	  } else
-	    headers[lower_case(hname)] = hdrs[hname];
+	  headers[lower_case(hname)] = hdrs[hname];
       body_parts = parts;
     } else if (message) {
-      array(mapping(string:string)|string) h = 
-	parse_headers(message,use_multiple_headers);
+      array(mapping(string:string)|string) h = parse_headers(message);
       headers = h[0];
       encoded_data = h[1];
     }
