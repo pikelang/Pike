@@ -260,17 +260,16 @@ mapping get_simple_list(int max_depth)
   if (!strlen(buffer))
     return 0;
 
-  if (buffer[0] == '(')
-  {
+  if (buffer[0] == '(') {
     /* Recurse */
-    if (max_depth > 0)
-    {
+    if (max_depth > 0) {
       array a = do_parse_simple_list(max_depth - 1, ')');
       return a && ([ "type": "list",
 		     "list": a ]);
-    }
-    else
+    } else {
+      werror("get_simple_list(): Too deep recursion.\n");
       return 0;
+    }
   }
   return get_atom_options(max_depth);
 }
@@ -278,6 +277,8 @@ mapping get_simple_list(int max_depth)
 array do_parse_simple_list(int max_depth, int terminator)
 {
   array a = ({ });
+
+  werror(sprintf("do_parse_simple_list(%d, '%c')\n", max_depth, terminator));
       
   while(1)
   {
@@ -327,11 +328,8 @@ mapping get_atom_options(int max_depth)
       
   array options = do_parse_simple_list(max_depth - 1, ']');
 
-  if (strlen(buffer) && buffer[0] == ']') {
-    buffer = buffer[1..];
-  }
-
   if (!options) {
+    werror("get_atom_options(): No options.\n");
     res->raw = atom + "[]";
     res->options = ({ ([ "type":"atom", "atom":"" ]) });
     return res;

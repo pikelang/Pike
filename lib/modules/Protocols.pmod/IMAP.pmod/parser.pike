@@ -241,6 +241,8 @@ mapping get_any(int max_depth, int eol, int accept_options, function c)
 
   mapping t = line->get_token(eol, accept_options);
 
+  werror(sprintf("get_token(%O, %O): => %O\n", eol, accept_options, t));
+
   if (!t)
     return c(t);
   
