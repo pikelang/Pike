@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.614 2002/08/30 21:52:01 bill Exp $")
+AC_REVISION("$Id: configure.in,v 1.615 2002/08/31 00:31:35 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5894,15 +5894,12 @@ AC_SUBST(ac_configure_args)
 
 AC_SUBST(dmmsrc)
 
-AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc precompile.sh,[echo foo >stamp-h ; chmod +x preco
-mpile.sh])
+AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc precompile.sh,[echo foo >stamp-h ; chmod +x precompile.sh])
 
 # NOTE: M4 uses [] as quotes.
 
-PIKE_VERSION="`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/ver
-sion.h`"
-PIKE_VERSION_LONG="Pike v`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h` release `sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)
-/\1/p' <$srcdir/version.h`"
+PIKE_VERSION="`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`"
+PIKE_VERSION_LONG="Pike v`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h` release `sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`"
 
 
 cat >conftest.c <<EOF
