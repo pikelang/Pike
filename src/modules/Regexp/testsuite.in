@@ -1,6 +1,7 @@
-dnl $Id: testsuite.in,v 1.9 2003/08/08 00:54:09 nilsson Exp $
+dnl $Id: testsuite.in,v 1.10 2003/09/06 22:30:01 nilsson Exp $
 
 dnl - Here we try the Regexp module
+test_true(objectp(Regexp))
 test_true([[objectp(Regexp("foo"))]])
 test_any([[object o; o=Regexp(); destruct(o); return 1]],1)
 
@@ -56,3 +57,11 @@ test_eq([[Regexp.match("^[abc]$","-")]],0)
 test_eq([[Regexp.match("^[abc]$","a")]],1)
 test_equal([[Regexp.split("^(a*)[^a]*$","aaabbb")]],({"aaa"}))
 test_equal([[ Regexp.replace("(a)", "abrakadabra", "·") ]], "·br·k·d·br·")
+
+dnl Compat
+test_false([[
+#pike 0.6
+Regexp->replace ]])
+test_true([[
+#pike 7.4
+programp(Regexp) ]])
