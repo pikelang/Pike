@@ -6,8 +6,13 @@
 
 <define container='class'>
   <set variable='var.classname' value='&_.name;'/>
-  <h1>&_.name;</h1>
+  <title>PiGTK: &_.name;</title>
+  <body bgcolor='white' text='black' background='/pgtkdocs/bg.gif'>
+    <blockquote>
+  <gtext font='franklin_gothic_demi'>&_.name;</gtext><br />
   <contents/>
+    </blockquote>
+   </body>
 </define>
 
 <define tag='inherited'>
@@ -15,17 +20,17 @@
 </define>
 
 <define container='inherited-methods'>
-<h2>Inherited</h2>
-<blockquote><contents/></blockquote>
+</blockquote><h2>Inherited Methods</h2><blockquote>
+   <contents/>
 </define>
 
 <define container='inherited-signals'>
-<h2>Inherited</h2>
-<blockquote><contents/></blockquote>
+</blockquote><h2>Inherited Signals</h2><blockquote>
+   <contents/>
 </define>
 
-<define tag='inherits'>
-  <b>Inherits by <a href='&_.href;'>&_.class;</a></b><br />
+<define tag='inherit'>
+  <b>Inherits <a href='&_.href;'>&_.class;</a></b><p>
 </define>
 
 <define container='box'>
@@ -44,7 +49,7 @@
    <define container='doc'>
      <blockquote><contents/></blockquote>
    </define>
-  <h1>Signals</h1><blockquote>
+  <h2>Signals</h2><blockquote>
   <contents/></blockquote>
 </define>
 
@@ -74,8 +79,11 @@
 <blockquote><contents/></blockquote>
 </define>
 
+<define container='h2'>
+   <gtext font='franklin_gothic_demi' scale='0.8'><contents/></gtext>
+   <br />
+</define>
+
 <define container='tmpl'>
-  <body bgcolor='white' text='black'>
-    <contents/>
-   </body>
+     <contents/>
 </define>
