@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.17 2001/08/15 18:03:34 per Exp $
+//! $Id: module.pmod,v 1.18 2001/08/15 18:03:58 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -30,7 +30,8 @@ mapping _decode( string data, mixed|void tocolor )
 
   if( mappingp( tocolor ) )
   {
-    opts = tocolor;
+    if( sizeof( tocolor ) )
+      opts = tocolor;
     tocolor = 0;
   }
 
