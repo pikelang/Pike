@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.61 1998/03/20 22:53:31 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.62 1998/03/25 04:40:48 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -395,7 +395,7 @@ void f_thread_create(INT32 args)
     free_object(arg->id);
     free_array(arg->args);
     free((char *)arg);
-    error("Failed to create thread.\n");
+    error("Failed to create thread (errno = %d).\n",errno);
   }
 }
 
