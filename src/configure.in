@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.454 2001/01/19 13:49:55 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.455 2001/01/19 14:28:48 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -416,7 +416,7 @@ else
     AC_PATH_PROGS(SMARTBUILDCC,gcc cc egcs,gcc, $PATH:$EXTRA_PATH)
     echo Using $SMARTBUILDCC to compile smartlink.
   else
-    if "x$ac_cv_prog_cc_cross" = "xyes"; then
+    if test "x$ac_cv_prog_cc_cross" = "xyes"; then
       AC_MSG_WARN([Crosscompiler detected.])
       AC_PATH_PROGS(SMARTBUILDCC, gcc cc egcs, gcc, /usr/bin:/bin/:/usr/ccs/bin:/usr/local/bin:$PATH:$EXTRA_PATH)
       echo Using $SMARTBUILDCC to compile smartlink.
