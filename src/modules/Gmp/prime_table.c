@@ -70,9 +70,9 @@ write_table(char *program, unsigned long *primes, unsigned long *squares, int le
     {
       if (i % 10 == 0)
 	printf("\n   ");
-      printf("%d, ", primes[i]);
+      printf("%ld, ", (long)primes[i]);
     }
-  printf("%d };\n\n", primes[i]);
+  printf("%ld };\n\n", (long)primes[i]);
 
 #if 0
   printf("const unsigned long prime_squares[NUMBER_OF_PRIMES] = {");
