@@ -1,12 +1,11 @@
-// $Id: testsuite.in,v 1.21 2002/10/15 16:34:14 marcus Exp $
+dnl $Id: testsuite.in,v 1.22 2002/11/26 16:28:23 nilsson Exp $
 
-// mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
   test_true(programp(Gmp.mpz))
-  test_false(clone(Gmp.mpz))
+  test_false(Gmp.mpz())
   test_false(!Gmp.mpz(1))
-  test_do(destruct(clone(Gmp.mpz)))
+  test_do(destruct(Gmp.mpz()))
 
   test_eq(Gmp.mpz(10),10)
   test_eq(Gmp.mpz("10"),10)
@@ -40,25 +39,23 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_binop(17,&,18,16)
 
   test_eq([[`+(1,1,1,Gmp.mpz(1),1,1)]],6)
-  test_eq(-clone(Gmp.mpz,17),-17)
-  test_eq((~clone(Gmp.mpz,17)) & 255,238)
-  test_true(stringp((string)clone(Gmp.mpz,17)))
-  test_eq((string)clone(Gmp.mpz,17),"17")
-  test_true(intp((int)clone(Gmp.mpz,17)))
-  test_eq((int)clone(Gmp.mpz,17),17)
-  test_false(clone(Gmp.mpz,0))
-  test_true(clone(Gmp.mpz,1))
-  test_eq(clone(Gmp.mpz,17)->powm(12,4711),85)
-  test_eq((string)clone(Gmp.mpz,2)->powm(270,clone(Gmp.mpz,10)->pow(39)),"428761855001222473056385648716020711424")
+  test_eq(-Gmp.mpz(17),-17)
+  test_eq((~Gmp.mpz(17)) & 255,238)
+  test_true(stringp((string)Gmp.mpz(17)))
+  test_eq((string)Gmp.mpz(17),"17")
+  test_eq((int)Gmp.mpz(17),17)
+  test_false(Gmp.mpz(0))
+  test_true(Gmp.mpz(1))
+  test_eq(Gmp.mpz(17)->powm(12,4711),85)
+  test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")
 ]])
-
 
 cond( [[ master()->resolv("Gmp")->mpq ]],
 [[
   test_true(programp(Gmp.mpq))
-  test_false(clone(Gmp.mpq))
+  test_false(Gmp.mpq())
   test_false(!Gmp.mpq(1))
-  test_do(destruct(clone(Gmp.mpq)))
+  test_do(destruct(Gmp.mpq()))
 
   test_eq(Gmp.mpq(10),10)
   test_eq(Gmp.mpq(10,2),5)
@@ -88,21 +85,20 @@ cond( [[ master()->resolv("Gmp")->mpq ]],
   test_binop(66,-,11,55)
 
   test_eq([[`+(1,1,1,Gmp.mpq(1),1,1)]],6)
-  test_eq(-clone(Gmp.mpq,17),-17)
-  test_true(stringp((string)clone(Gmp.mpq,17)))
-  test_eq((string)clone(Gmp.mpq,17),"17/1")
-  test_true(intp((int)clone(Gmp.mpq,17)))
-  test_eq((int)clone(Gmp.mpq,17),17)
-  test_false(clone(Gmp.mpq,0))
-  test_true(clone(Gmp.mpq,1))
+  test_eq(-Gmp.mpq(17),-17)
+  test_true(stringp((string)Gmp.mpq(17)))
+  test_eq((string)Gmp.mpq(17),"17/1")
+  test_eq((int)Gmp.mpq(17),17)
+  test_false(Gmp.mpq(0))
+  test_true(Gmp.mpq(1))
 ]])
 
 cond( [[ master()->resolv("Gmp")->mpf ]],
 [[
   test_true(programp(Gmp.mpf))
-  test_false(clone(Gmp.mpf))
+  test_false(Gmp.mpf())
   test_false(!Gmp.mpf(1))
-  test_do(destruct(clone(Gmp.mpf)))
+  test_do(destruct(Gmp.mpf()))
 
   test_eq(Gmp.mpf(10),10)
   test_eq(Gmp.mpf("10"),10)
@@ -130,13 +126,12 @@ cond( [[ master()->resolv("Gmp")->mpf ]],
   test_binop(66,-,11,55)
 
   test_eq([[`+(1,1,1,Gmp.mpf(1),1,1)]],6)
-  test_eq(-clone(Gmp.mpf,17),-17)
-  test_true(stringp((string)clone(Gmp.mpf,17)))
-  test_eq((string)clone(Gmp.mpf,17),"17")
-  test_true(intp((int)clone(Gmp.mpf,17)))
-  test_eq((int)clone(Gmp.mpf,17),17)
-  test_false(clone(Gmp.mpf,0))
-  test_true(clone(Gmp.mpf,1))
+  test_eq(-Gmp.mpf(17),-17)
+  test_true(stringp((string)Gmp.mpf(17)))
+  test_eq((string)Gmp.mpf(17),"17")
+  test_eq((int)Gmp.mpf(17),17)
+  test_false(Gmp.mpf(0))
+  test_true(Gmp.mpf(1))
 ]])
 
   define([[mpz_test_cmp]],[[

@@ -1,13 +1,13 @@
-// $Id: testsuite.in,v 1.7 2000/12/13 16:27:07 noring Exp $
+dnl $Id: testsuite.in,v 1.8 2002/11/26 16:31:11 nilsson Exp $
 
-// - Here we try the Regexp module
+dnl - Here we try the Regexp module
 test_true([[objectp(Regexp("foo"))]])
-test_any([[object o; o=clone(Regexp); destruct(o); return 1]],1)
+test_any([[object o; o=Regexp(); destruct(o); return 1]],1)
 
-// Regexp->create
+dnl Regexp->create
 test_any([[object o; o=Regexp("^.*$"); destruct(o); return 1]],1)
 
-// Regexp->match
+dnl Regexp->match
 test_eq([[Regexp("^.*$")->match("")]],1)
 test_eq([[Regexp(".*")->match("foo")]],1)
 test_eq([[Regexp("^.*$")->match("a")]],1)
@@ -35,10 +35,10 @@ test_equal([[Regexp("x")->match(({ "a", "b", "c" }))]],({}))
 test_equal([[Regexp("a")->match(({ "a", "b", "c" }))]],({ "a" }))
 test_equal([[Regexp("c|a")->match(({ "a", "b", "c" }))]],({ "a", "c" }))
 
-// Regexp->split
+dnl Regexp->split
 test_equal([[Regexp("^(a*)[^a]*$")->split("aaabbb")]],({"aaa"}))
 
-// Regexp->replace
+dnl Regexp->replace
 test_equal([[ Regexp(".*")->replace("abrakadabra", "·") ]], "·")
 test_equal([[ Regexp("^ab")->replace("abrakadabra", "·") ]], "·rakadabra")
 test_equal([[ Regexp("(a)")->replace("abrakadabra", "·") ]], "·br·k·d·br·")
@@ -48,5 +48,5 @@ test_equal([[ Regexp("k|br")->replace("abrakadabra",
               lambda(string s) { return "["+upper_case(s)+"]"; }) ]],
                                                       "a[BR]a[K]ada[BR]a")
 
-// test non-crash
+dnl test non-crash
 test_do([[Regexp("^((.*)[ ]|)(.*)[ ]")->split("abcdef")]])
