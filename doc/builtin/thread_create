@@ -1,0 +1,19 @@
+NAME
+	thread_create - create a thread
+
+SYNTAX
+	int thread_create(function f, mixed ... args);
+
+DESCRIPTION
+	This function creates a new thread which will run simultaneously
+	to the rest of the program. The new thread will call the function
+	f with the arguments args. When f returns the thread will cease
+	to exist. All Pike functions are 'thread safe' meanting that running
+	a function at the same time from different threads will not corrupt
+	any internal data in the Pike process.
+
+NOTA BENE
+	This function is only available on systems with POSIX threads support.
+
+SEE ALSO
+	/precompiled/mutex, /precompiled/condition
