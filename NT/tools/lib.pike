@@ -180,8 +180,65 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       {
 	werror("Failed to connect "+strerror(errno())+".\n");
 	exit(1);
+      }
+
+
+      class SimpleInOut
+      {
+	object o=Stdio.File("stdin");
+	string read() {
+	  string s=o->read(1000,1);
+	  if(!strlen(s)) return 0;
+	  return s;
 	}
-      
+	int write(string s)
+	  {
+	    return Stdio.stdout->write(s);
+	  }
+      };
+
+      object inout;
+
+#if __VERSION__ > 0.699999 && constant(thread_create)
+      class RLInOut
+      {
+	Thread.Mutex m=Thread.Mutex();
+	object rl=Stdio.Readline();
+	string prompt="";
+
+	string read()
+	  {
+	    string tmp=rl->read();
+	    if(tmp)
+	    {
+	      tmp+="\n";
+	      prompt="";
+	    }
+	    return tmp;
+	  }
+
+	int write(string s)
+	  {
+	    s=prompt+s-"\r";
+	    array lines=s/"\n";
+	    rl->write(lines[..sizeof(s)-2]*"\n");
+	    rl->set_prompt(prompt=lines[-1]);
+	    return strlen(s);
+	  }
+
+	void create()
+	  {
+	    rl->enable_history(512);
+	  }
+      };
+
+      if(!silent && !!Stdio.stdin->tcgetattr())
+      {
+	inout=RLInOut();
+      }else
+#endif
+	inout=SimpleInOut();
+	
       f->write(sprintf("%4c",sizeof(cmd)));
       for(int e=0;e<sizeof(cmd);e++)
 	f->write(sprintf("%4c%s",strlen(cmd[e]),cmd[e]));
@@ -192,12 +249,26 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 //      werror("FNORD\n");
 	thread_create(lambda(object f)
 		      {
-			object stdin=Stdio.File("stdin");
-			while(string s=stdin->read(1000,1))
+			int killed;
+			void killme()
+			  {
+			    if(!killed)
+			    {
+			      werror("\r\n** Interupted\r\n");
+			      f->write_oob("x");
+			      killed=1;
+			    }
+			  };
+
+			if(f->write_oob)
 			{
-			  if(!strlen(s)) break;
-			  f->write(s);
+			  signal(signum("SIGINT"), killme);
 			}
+
+			while(string s=inout->read())
+			  f->write(s);
+
+			signal(signum("SIGINT"), 0);
 			f->close("w");
 		      },f);
 
@@ -212,8 +283,8 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	if(!len) break;
 	s=f->read(len);
 	s=replace(s,"\r\n","\n");
-	if(!silent) write(s);
-	ret+=s;
+	if(!silent) inout->write(s);
+	if(filter) ret+=s;
       }
       if(filter) filter(ret);
       sscanf(f->read(4),"%4c",int code);
