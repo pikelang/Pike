@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.22 2003/01/26 16:29:22 nilsson Exp $
+// $Id: Types.pmod,v 1.23 2003/01/26 16:33:55 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -24,27 +24,27 @@
 
 //! Combines tag and class as a single integer, in a somewhat arbitrary
 //! way. This works also for tags beyond 31 (although not for tags
-//! beyond 2^30. 
-//! 
+//! beyond 2^30.
+//!
 //! @param cls
 //!   ASN1 type class
 //! @param tag
 //!   ASN1 type tag
 //! @returns
 //!   combined tag
-//! @seealso 
+//! @seealso
 //!  @[Standards.ASN1.Types.extract_tag]
 //!  @[Standards.ASN1.Types.extract_cls]
 int make_combined_tag(int cls, int tag)
 { return MAKE_COMBINED_TAG(cls, tag); }
 
 //! extract ASN1 type tag from a combined tag
-//! @seealso 
+//! @seealso
 //!  @[Standards.ASN1.Types.make_combined_tag]
 int extract_tag(int i) { return i >> 2; }
 
 //! extract ASN1 type class from a combined tag
-//! @seealso 
+//! @seealso
 //!  @[Standards.ASN1.Types.make_combined_tag]
 int extract_cls(int i) { return i & 3; }
 
@@ -80,10 +80,10 @@ class Object
   int get_combined_tag() {
     return make_combined_tag(get_tag(), get_cls());
   }
-  
+
   string der;
-  
-  // Should be overridden by subclasses 
+
+  // Should be overridden by subclasses
   object decode_primitive(string contents);
   object begin_decode_constructed(string raw);
   object decode_constructed_element(int i, object e);
@@ -108,7 +108,7 @@ class Object
 
     return sprintf("%@c", reverse(digits));
   }
-  
+
   string encode_tag() {
     int tag = get_tag();
     int cls = get_cls();
@@ -127,7 +127,7 @@ class Object
       error("Max length exceeded.\n" );
     return sprintf("%c%s", sizeof(s) | 0x80, s);
   }
-  
+
   string build_der(string contents) {
     string data = encode_tag() + encode_length(sizeof(contents)) + contents;
     WERROR(sprintf("build_der: %O\n", data));
@@ -141,7 +141,7 @@ class Object
   string record_der_contents(string s) {
     record_der(build_der(s));
   }
-  
+
   //! Get the DER encoded version of this object.
   //!
   //! @returns
@@ -192,7 +192,7 @@ class Compound
     elements += ({ e });
     return this_object();
   }
-  
+
   this_program end_decode_constructed(int length) {
     if (length != sizeof(elements))
       error("Invalid length!\n");
@@ -260,7 +260,7 @@ class Boolean
 
   //! value of object
   int value;
-  
+
   this_program init(int x) { value = x; return this_object(); }
 
   string der_encode() { return build_der(value ? "\377" : "\0"); }
@@ -287,14 +287,14 @@ class Boolean
 #endif
 }
 
-//! Integer object 
+//! Integer object
 //! All integers are represented as bignums, for simplicity
 class Integer
 {
   inherit Object;
   constant tag = 2;
   constant type_name = "INTEGER";
-  
+
   //! value of object
   Gmp.mpz value;
 
@@ -306,7 +306,7 @@ class Integer
 
   string der_encode() {
     string s;
-      
+
     if (value < 0)
     {
       Gmp.mpz n = value + pow(256, (- value)->size(256));
@@ -320,7 +320,7 @@ class Integer
     }
     return build_der(s);
   }
-  
+
   this_object decode_primitive(string contents) {
     record_der_contents(contents);
     value = Gmp.mpz(contents, 256);
@@ -360,7 +360,7 @@ class BitString
   string value;
 
   int unused = 0;
-  
+
   this_program init(string s) { value = s; return this_object(); }
 
   string der_encode() {
@@ -381,7 +381,7 @@ class BitString
       value = "";
     }
   }
-  
+
   this_program decode_primitive(string contents) {
     record_der_contents(contents);
     if (!sizeof(contents))
@@ -423,7 +423,7 @@ class Null
   inherit Object;
   constant tag = 5;
   constant type_name = "NULL";
-  
+
   string der_encode() { return build_der(""); }
 
   this_program decode_primitive(string contents) {
@@ -442,7 +442,7 @@ class Identifier
   inherit Object;
   constant tag = 6;
   constant type_name = "OBJECT IDENTIFIER";
-  
+
   //! value of object
   array(int) id;
 
@@ -463,7 +463,7 @@ class Identifier
   this_program append(int ... args) {
     return object_program(this_object())(@id, @args);
   }
-  
+
   string der_encode() {
     return build_der(sprintf("%c%@s", 40 * id[0] + id[1],
 			     map(id[2..], to_base_128)));
@@ -533,7 +533,7 @@ class UTF8String
       value = utf8_to_string(contents);
     })
       return 0;
-      
+
     return this_object();
   }
 }
@@ -544,7 +544,7 @@ class Sequence
   inherit Compound;
   constant tag = 16;
   constant type_name = "SEQUENCE";
-  
+
   string der_encode() {
     WERROR(sprintf("ASN1.Sequence: elements = '%O\n",
 		   elements));
@@ -560,7 +560,7 @@ class Set
   inherit Compound;
   constant tag = 17;
   constant type_name = "SET";
-  
+
   int(-1..1) compare_octet_strings(string r, string s) {
     for(int i = 0;; i++) {
       if (i == sizeof(r))
@@ -1102,30 +1102,30 @@ class BMPString
 
 //! Meta-instances handle a particular explicit tag and set of types.
 //!
-//! @fixme 
+//! @fixme
 //!  document me!
 class MetaExplicit
 {
   int real_tag;
   int real_cls;
-  
+
   mapping valid_types;
 
   class `() {
     inherit Compound;
     constant type_name = "EXPLICIT";
     constant constructed = 1;
-      
+
     int get_tag() { return real_tag; }
     int get_cls() { return real_cls; }
-      
+
     Object contents;
 
     this_program init(Object o) {
       contents = o;
       return this_object();
     }
-    
+
     string der_encode() {
       WERROR(sprintf("asn1_explicit->der: contents = '%O\n",
 		     contents));
@@ -1163,7 +1163,7 @@ class MetaExplicit
     }
 #endif
   }
-  
+
   void create(int cls, int tag, mapping|void types) {
     real_cls = cls;
     real_tag = tag;

@@ -1,5 +1,5 @@
 //
-// $Id: Decode.pmod,v 1.14 2003/01/26 16:29:53 nilsson Exp $
+// $Id: Decode.pmod,v 1.15 2003/01/26 16:33:55 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -17,7 +17,7 @@ class primitive
   int combined_tag;
 
   string raw;
-  
+
   //! get raw encoded contents of object
   string get_der() { return raw; }
   int get_combined_tag() { return combined_tag; }
@@ -27,7 +27,7 @@ class primitive
 
   //! get class
   int get_cls() { return extract_cls(combined_tag); }
-  
+
   void create(int t, string r) {
     combined_tag = t;
     raw = r;
@@ -43,13 +43,13 @@ class constructed
 {
   constant constructed = 1;
   int combined_tag;
-  
+
   //! raw encoded  contents
   string raw;
 
   //! elements of object
   array elements;
-  
+
   string get_der() { return raw; }
   int get_combined_tag() { return combined_tag; }
 
@@ -69,16 +69,16 @@ class constructed
 //! @param data
 //!   an instance of ADT.struct
 //! @param types
-//!   a mapping from combined tag numbers to classes from or derived from 
-//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated using 
+//!   a mapping from combined tag numbers to classes from or derived from
+//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated using
 //!   @[Standards.ASN1.Types.make_combined_tag].
 //!
 //! @returns
-//!   an object from @[Standards.ASN1.Types] or 
+//!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.primitive] or
 //!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
 //!   Throws an exception if the data could not be decoded.
-//! 
+//!
 //! @fixme
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
@@ -98,12 +98,12 @@ object|mapping der_decode(ADT.struct data, mapping types)
   len = data->get_uint(1);
   if (len & 0x80)
     len = data->get_uint(len & 0x7f);
-    
+
 #ifdef ASN1_DEBUG
   werror("len : %d\n", len);
 #endif
   contents = data->get_fix_string(len);
-  
+
 #ifdef ASN1_DEBUG
   werror("contents: %O\n", contents);
 #endif
@@ -111,7 +111,7 @@ object|mapping der_decode(ADT.struct data, mapping types)
   int tag = make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
 
   program p = types[tag];
-  
+
   if (raw_tag & 0x20)
   {
     /* Constructed encoding */
@@ -122,7 +122,7 @@ object|mapping der_decode(ADT.struct data, mapping types)
 
     array(Object) elements = ({ });
     ADT.struct struct = ADT.struct(contents);
-    
+
     if (!p)
     {
 #ifdef ASN1_DEBUG
@@ -136,7 +136,7 @@ object|mapping der_decode(ADT.struct data, mapping types)
 
     object res = p();
     res->begin_decode_constructed(contents);
-    
+
     int i;
 
     // Ask object which types it expects for field i, decode it, and
@@ -188,7 +188,7 @@ mapping universal_types =
 //! @param data
 //!   a DER encoded object
 //! @returns
-//!   an object from @[Standards.ASN1.Types] or 
+//!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.primitive] or
 //!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
 object|mapping simple_der_decode(string data)
