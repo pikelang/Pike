@@ -64,16 +64,19 @@ static int valid_creds_object(struct object *o)
     OBJ2CREDS(o)->user;
 }
 
-/*: <pikedoc>
- *: <function name=call_with_creds title="call with credentials">
- *: <man_syntax>
- *: mixed call_with_creds(object(Creds) creds, mixed func, mixed ... args); 
- *: </man_syntax>
- *: <man_description>
- *: Sets the current credentials to <arg>creds</arg>, and calls
- *: <code language=pike><arg>func</arg>(@<arg>args</arg>)</code>.
- *: </man_description>
- *: </function>
+/*: <pikedoc type=txt>
+ *: FUNCTION call_with_creds call with credentials
+ *: SYNTAX
+ *: 	mixed call_with_creds(object(Creds) creds, mixed func, mixed ... args); 
+ *: DESCRIPTION
+ *: 	Sets the current credentials to <arg>creds</arg>, and calls
+ *: 	<code language=pike><arg>func</arg>(@<arg>args</arg>)</code>.
+ *: 	If <arg>creds</arg> is 0, the credentials from the current object
+ *: 	will be used.
+ *: NOTE
+ *: 	The current creds or the current object must have the allow bit
+ *: 	<code language=pike>BIT_SECURITY</code> set to allow calling with
+ *:	<arg>creds</arg> other than 0.
  *: </pikedoc>
  */
 static void f_call_with_creds(INT32 args)
@@ -86,6 +89,9 @@ static void f_call_with_creds(INT32 args)
       /* We might want allocate a bit for this so that we can
        * disallow this.
        * /hubbe
+       *
+       * Indeed. Consider the case when this function is used as a callback.
+       * /grubba 1999-07-12
        */
       o=fp->current_object->prot;
       break;
@@ -107,15 +113,13 @@ static void f_call_with_creds(INT32 args)
     error("call_with_creds: Not a valid creds object.\n");
   SET_CURRENT_CREDS(o);
 
-  /* FIXME: Does this work?
-   * Won't mega_apply2() force current_creds to func->prot anyway?
-   * If the function throws an error, won't o be freed once to many?
-   * /grubba 1999-07-09
+  /* NOTE: This only works on objects that have no credentials, or have
+   * the allow_bit BIT_NOT_SETUID. Otherwise mega_apply2() will restore
+   * the credentials to that of the object.
    */
   f_call_function(args-1);
 
-  /* FIXME: Shouldn't the original creds be restored here?
-   * /grubba 1999-07-09
+  /* NOTE: curent_creds will be restored by the mega_apply() that called us.
    */
 
   free_svalue(sp-2);
@@ -123,16 +127,13 @@ static void f_call_with_creds(INT32 args)
   sp--;
 }
 
-/*: <pikedoc>
- *: <function name=get_current_creds title="get the current credentials">
- *: <man_syntax>
- *: object(Creds) get_current_creds();
- *: </man_syntax>
- *: <man_description>
- *: Returns the credentials that are currently active.
- *: Returns 0 if no credentials are active.
- *: </man_description>
- *: </function>
+/*: <pikedoc type=txt>
+ *: FUNCTION get_current_creds get the current credentials
+ *: SYNTAX
+ *: 	object(Creds) get_current_creds();
+ *: DESCRIPTION
+ *: 	Returns the credentials that are currently active.
+ *: 	Returns 0 if no credentials are active.
  *: </pikedoc>
  */
 static void f_get_current_creds(INT32 args)
@@ -151,16 +152,13 @@ static void f_get_current_creds(INT32 args)
 /*: <pikedoc>
  *: <class name=Creds>
  *: The credentials object.
- *:
- *: <method name=get_default_creds title="get the default credentials">
- *: <man_syntax>
- *: object(Creds) get_default_creds();
- *: </man_syntax>
- *: <man_description>
- *: Returns the default credentials object if it has been set.
- *: Returns 0 if it has not been set.
- *: </man_description>
- *: </method>
+ *: </pikedoc><pikedoc type=txt>
+ *: METHOD get_default_creds get the default credentials
+ *: SYNTAX
+ *: 	object(Creds) get_default_creds();
+ *: DESCRIPTION
+ *: 	Returns the default credentials object if it has been set.
+ *: 	Returns 0 if it has not been set.
  *: </pikedoc>
  */
 static void get_default_creds(INT32 args)
@@ -172,19 +170,15 @@ static void get_default_creds(INT32 args)
     push_int(0);
 }
 
-/*: <pikedoc>
- *: <method name=set_default_creds title="set the default credentials">
- *: <man_syntax>
- *: void set_default_creds(object(Creds) creds);
- *: </man_syntax>
- *: <man_description>
- *: Set the default credentials.
- *: </man_description>
- *: <man_note>
- *: The current creds must have the allow bit
- *: <code language=pike>BIT_SECURITY</code>.
- *: </man_note>
- *: </method>
+/*: <pikedoc type=txt>
+ *: METHOD set_default_creds set the default credentials
+ *: SYNTAX
+ *: 	void set_default_creds(object(Creds) creds);
+ *: DESCRIPTION
+ *: 	Set the default credentials.
+ *: NOTE
+ *: 	The current creds must have the allow bit
+ *: 	<code language=pike>BIT_SECURITY</code> set.
  *: </pikedoc>
  */
 static void set_default_creds(INT32 args)
@@ -202,19 +196,15 @@ static void set_default_creds(INT32 args)
   pop_n_elems(args);
 }
 
-/*: <pikedoc>
- *: <method name=create title="initialize a new credentials object">
- *: <man_syntax>
- *: void create(object user, int allow_bits, int data_bits);
- *: </man_syntax>
- *: <man_description>
- *: Initialize a new credentials object.
- *: </man_description>
- *: <man_note>
- *: The current creds must have the allow bit
- *: <code language=pike>BIT_SECURITY</code>.
- *: </man_note>
- *: </method>
+/*: <pikedoc type=txt>
+ *: METHOD create initialize a new credentials object
+ *: SYNTAX
+ *: 	void create(object user, int allow_bits, int data_bits);
+ *: DESCRIPTION
+ *: 	Initialize a new credentials object.
+ *: NOTE
+ *: 	The current creds must have the allow bit
+ *: 	<code language=pike>BIT_SECURITY</code> set.
  *: </pikedoc>
  */
 static void creds_create(INT32 args)
