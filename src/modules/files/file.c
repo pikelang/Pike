@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.144 1999/04/02 02:07:40 hubbe Exp $");
+RCSID("$Id: file.c,v 1.145 1999/04/05 22:07:39 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1274,12 +1274,12 @@ static void file_open(INT32 args)
 	{
 	  case 0: /* return 0 */
 	    ERRNO=EPERM;
-	    pop_n_elems(args-1);
+	    pop_n_elems(args+1);
 	    push_int(0);
 	    return;
 	    
 	  case 1: /* return 1 */
-	    pop_n_elems(args-1);
+	    pop_n_elems(args+1);
 	    push_int(1);
 	    return;
 	    

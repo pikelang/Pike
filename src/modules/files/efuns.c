@@ -19,11 +19,12 @@
 #include "backend.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "security.h"
 
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.67 1999/03/12 20:30:11 mast Exp $");
+RCSID("$Id: efuns.c,v 1.68 1999/04/05 22:07:38 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -103,7 +104,6 @@ struct array *encode_stat(struct stat *s)
   return a;
 }
 
-
 void f_file_stat(INT32 args)
 {
   struct stat st;
@@ -115,8 +115,12 @@ void f_file_stat(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to file_stat()\n");
 
+  VALID_FILE_IO("file_stat","read");
+
   s = sp[-args].u.string->str;
   l = (args>1 && !IS_ZERO(sp+1-args))?1:0;
+
+
   THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
   if(l)
@@ -147,6 +151,8 @@ void f_filesystem_stat( INT32 args )
   char *p = _p;
   unsigned int free_sectors;
   unsigned int total_sectors;
+
+  VALID_FILE_IO("filesystem_stat","read");
 
   get_all_args( "filesystem_stat", args, "%s", &path );
 
@@ -381,6 +387,8 @@ void f_werror(INT32 args)
     args=1;
   }
 
+  VALID_FILE_IO("werror","werror");
+
   write_to_stderr(sp[-args].u.string->str, sp[-args].u.string->len);
   pop_n_elems(args);
 }
@@ -396,6 +404,8 @@ void f_rm(INT32 args)
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to rm().\n");
+
+  VALID_FILE_IO("rm","write");
 
   s = sp[-args].u.string->str;
   
@@ -441,6 +451,9 @@ void f_mkdir(INT32 args)
 
     mode = sp[1-args].u.integer;
   }
+
+  VALID_FILE_IO("mkdir","write");
+
   s=sp[-args].u.string->str;
 #if MKDIR_ARGS == 2
   THREADS_ALLOW_UID();
@@ -510,6 +523,8 @@ void f_get_dir(INT32 args)
   struct dirent *d;
   struct array *a=0;
   char *path;
+
+  VALID_FILE_IO("get_dir","read");
 
   get_all_args("get_dir",args,"%s",&path);
 
@@ -687,6 +702,8 @@ void f_cd(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to cd()\n");
 
+  VALID_FILE_IO("cd","status");
+
   i=chdir(sp[-args].u.string->str) != -1;
   pop_n_elems(args);
   push_int(i);
@@ -743,6 +760,12 @@ void f_exece(INT32 args)
 
   if(args < 2)
     error("Too few arguments to exece().\n");
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("exece: permission denied.\n");
+#endif
+
 
   e=0;
   en=0;
@@ -846,6 +869,8 @@ void f_mv(INT32 args)
 
   if(sp[-args+1].type != T_STRING)
     error("Bad argument 2 to mv().\n");
+
+  VALID_FILE_IO("mv","write");
 
   i=rename((char *)sp[-args].u.string->str, 
 	   (char *)sp[-args+1].u.string->str);

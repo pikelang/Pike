@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.63 1999/03/12 17:49:51 mast Exp $
+ * $Id: system.c,v 1.64 1999/04/05 22:07:59 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.63 1999/03/12 17:49:51 mast Exp $");
+RCSID("$Id: system.c,v 1.64 1999/04/05 22:07:59 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -34,6 +34,7 @@ RCSID("$Id: system.c,v 1.63 1999/03/12 17:49:51 mast Exp $");
 #include "builtin_functions.h"
 #include "constants.h"
 #include "pike_memory.h"
+#include "security.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -189,6 +190,8 @@ void f_hardlink(INT32 args)
   char *to;
   int err;
 
+  VALID_FILE_IO("hardlink","write");
+
   get_all_args("hardlink",args, "%s%s", &from, &to);
 
   THREADS_ALLOW_UID();
@@ -211,6 +214,8 @@ void f_symlink(INT32 args)
   char *from;
   char *to;
   int err;
+
+  VALID_FILE_IO("symlink","write");
 
   get_all_args("symlink",args, "%s%s", &from, &to);
 
@@ -235,6 +240,8 @@ void f_readlink(INT32 args)
   int buflen;
   char *buf;
   int err;
+
+  VALID_FILE_IO("readlink","read");
 
   get_all_args("readlink",args, "%s", &path);
 
@@ -282,6 +289,8 @@ void f_resolvepath(INT32 args)
   char *buf;
   int err;
 
+  VALID_FILE_IO("resolvepath","read");
+
   get_all_args("resolvepath", args, "%s", &path);
 
   buflen = 100;
@@ -316,6 +325,8 @@ void f_umask(INT32 args)
 {
   int oldmask;
 
+  VALID_FILE_IO("umask","status");
+
   if (args) {
     int setmask;
     get_all_args("umask", args, "%d", &setmask);
@@ -337,6 +348,8 @@ void f_chmod(INT32 args)
   int mode;
   int err;
 
+  VALID_FILE_IO("chmod","write");
+
   get_all_args("chmod", args, "%s%i", &path, &mode);
   THREADS_ALLOW_UID();
   do {
@@ -356,6 +369,8 @@ void f_chown(INT32 args)
   int uid;
   int gid;
   int err;
+
+  VALID_FILE_IO("chown","write");
 
   get_all_args("chown", args, "%s%i%i", &path, &uid, &gid);
   THREADS_ALLOW_UID();
@@ -377,6 +392,13 @@ void f_initgroups(INT32 args)
   char *user;
   int err;
   INT32 group;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("initgroups: permission denied.\n");
+#endif
+  
+  VALID_FILE_IO("initgroups","status");
   get_all_args("initgroups", args, "%s%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
@@ -392,6 +414,12 @@ void f_cleargroups(INT32 args)
 {
   static gid_t gids[1] = { 65534 };	/* To safeguard against stupid OS's */
   int err;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("cleargroups: permission denied.\n");
+#endif
+
   pop_n_elems(args);
   err = setgroups(0, gids);
   if (err < 0) {
@@ -409,6 +437,11 @@ void f_setgroups(INT32 args)
   INT32 i;
   INT32 size;
   int err;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("setgroups: permission denied.\n");
+#endif
 
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
@@ -477,6 +510,11 @@ void f_setuid(INT32 args)
 {
   INT32 id;
 
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("setuid: permission denied.\n");
+#endif
+
   get_all_args("setuid", args, "%i", &id);
  
   if(id == -1) {
@@ -497,6 +535,10 @@ void f_setgid(INT32 args)
 {
   int id;
 
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("setgid: permission denied.\n");
+#endif
   get_all_args("setgid", args, "%i", &id);
  
   if(id == -1) {
@@ -519,6 +561,10 @@ void f_seteuid(INT32 args)
   int id;
   int err;
 
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("seteuid: permission denied.\n");
+#endif
   get_all_args("seteuid", args, "%i", &id);
  
   if(id == -1) {
@@ -545,6 +591,11 @@ void f_setegid(INT32 args)
 {
   int id;
   int err;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("setegid: permission denied.\n");
+#endif
 
   get_all_args("setegid", args, "%i", &id);
 
@@ -623,6 +674,11 @@ f_get(f_getppid, getppid)
 void f_chroot(INT32 args)
 {
   int res;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("chroot: permission denied.\n");
+#endif
 
 #ifdef HAVE_FCHROOT
   check_all_args("chroot", args, BIT_STRING|BIT_OBJECT, 0);

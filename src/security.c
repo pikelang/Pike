@@ -2,8 +2,6 @@
 
 /* To do:
  * controls for file->pipe()
- * controls for kill/create_process/signal
- * controls for all/most functions in the system module
  * controls for all/most functions in spider
  * controls for threads
  */

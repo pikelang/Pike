@@ -21,9 +21,10 @@
 #include "module_support.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "security.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.120 1999/04/02 20:52:48 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.121 1999/04/05 22:07:12 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -507,6 +508,11 @@ static void f_signal(int args)
 {
   int signum;
   sigfunctype func;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("signal: permission denied.\n");
+#endif
 
   check_signals(0,0,0);
 
@@ -1029,6 +1035,10 @@ static void f_pid_status_set_priority(INT32 args)
 {
   char *to;
   int r;
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("pid_status_wait: permission denied.\n");
+#endif
   get_all_args("set_priority", args, "%s", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
@@ -1387,6 +1397,10 @@ void f_set_priority( INT32 args )
 {
   int pid;
   char *plevel;
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("set_priority: permission denied.\n");
+#endif
   if(args == 1)
   {
     pid = 0;
@@ -1527,6 +1541,11 @@ void f_create_process(INT32 args)
   struct mapping *optional=0;
   struct svalue *tmp;
   int e;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("Process.create_process: permission denied.\n");
+#endif
 
   check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
@@ -2120,11 +2139,14 @@ void f_create_process(INT32 args)
     storage.disabled = 1;
 #endif
 
+    do
+    {
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
-    pid=fork1();
+      pid=fork1();
 #else
-    pid=fork();
+      pid=fork();
 #endif
+    }while(pid == -1 && (errno==EAGAIN || errno==EINTR));
 
     UNSET_ONERROR(err);
 
@@ -2457,6 +2479,10 @@ void f_fork(INT32 args)
   if(num_threads >1)
     error("You cannot use fork in a multithreaded application.\n");
 #endif
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("fork: permission denied.\n");
+#endif
 
 /*   THREADS_ALLOW_UID(); */
 #if 0 && defined(HAVE_FORK1) && defined(_REENTRANT)
@@ -2518,6 +2544,11 @@ static void f_kill(INT32 args)
   int pid;
   int res;
 
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("kill: permission denied.\n");
+#endif
+
   if(args < 2)
     error("Too few arguments to kill().\n");
 
@@ -2552,6 +2583,11 @@ static void f_kill(INT32 args)
 void f_kill(INT32 args)
 {
   HANDLE proc=INVALID_HANDLE_VALUE;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("kill: permission denied.\n");
+#endif
 
   if(args < 2)
     error("Too few arguments to kill().\n");
@@ -2625,6 +2661,11 @@ static void f_alarm(INT32 args)
 {
   long seconds;
 
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("alarm: permission denied.\n");
+#endif
+
   if(args < 1)
     error("Too few arguments to signame()\n");
 
@@ -2645,6 +2686,11 @@ static void f_ualarm(INT32 args)
   struct itimerval new, old;
 #endif /* !HAVE_UALARM */
   long useconds;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("ualarm: permission denied.\n");
+#endif
 
   if(args < 1)
     error("Too few arguments to ualarm()\n");
