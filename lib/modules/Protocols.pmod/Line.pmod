@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.6 1998/10/16 00:08:11 nisse Exp $
+ * $Id: Line.pmod,v 1.7 1998/10/16 15:34:58 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -25,6 +25,9 @@ class simple
   static void do_timeout()
   {
     if (con) {
+      catch {
+	con->set_nonblocking(0,0,0);	// Make sure all callbacks are cleared.
+      };
       catch {
 	con->close();
       };
@@ -167,6 +170,7 @@ class simple
     if (handle_data || sizeof(read_buffer) || sizeof(multi_line_buffer)) {
       werror("close_callback(): Unexpected close!\n");
     }
+    con->set_nonblocking(0,0,0);	// Make sure all callbacks are cleared.
     con->close();
     con = 0;
   }
