@@ -1,5 +1,5 @@
 /*
- * $Id: join.pike,v 1.2 2002/02/24 23:22:06 nilsson Exp $
+ * $Id: join.pike,v 1.3 2002/02/26 02:07:50 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -31,7 +31,7 @@ int main(int n, array(string) args) {
 
 void recurse(string builddir, string save_to) {
   array files = ({});
-  int mtime = time();
+  int mtime;
 
   foreach(get_dir(builddir), string fn) {
     Stdio.Stat stat = file_stat(builddir+fn);
@@ -41,7 +41,7 @@ void recurse(string builddir, string save_to) {
     stat = file_stat(builddir+fn+"/sub_manual.xml");
     if(stat) {
       files += ({ builddir+fn+"/sub_manual.xml" });
-      mtime = min(mtime, stat->mtime);
+      mtime = max(mtime, stat->mtime);
     }
   }
 
@@ -49,9 +49,9 @@ void recurse(string builddir, string save_to) {
   foreach(filter(get_dir(builddir), has_suffix, ".xml"), string fn) {
     if(fn=="sub_manual.xml") continue;
     Stdio.Stat stat = file_stat(builddir+fn);
-    if(stat->isdir || !stat->size) continue;
+    if(stat->isdir || stat->size < 3) continue;
     files += ({ builddir+fn });
-    mtime = min(mtime, stat->mtime);
+    mtime = max(mtime, stat->mtime);
   }
 
   Stdio.Stat dstat = file_stat(save_to);
