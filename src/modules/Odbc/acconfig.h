@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 1997/03/10 19:01:50 grubba Exp $
+ * $Id: acconfig.h,v 1.2 2000/08/29 23:30:35 grubba Exp $
  *
  * Config-file for the Pike ODBC-module.
  *
@@ -10,9 +10,13 @@
 #define PIKE_ODBC_CONFIG_H
 
 @TOP@
-@BOTTOM@
+
+/* Define if you have SQLLEN */
+#undef HAVE_SQLLEN
 
 /* Define if you have ODBC */
 #undef HAVE_ODBC
+
+@BOTTOM@
 
 #endif /* PIKE_ODBC_CONFIG_H */
