@@ -65,10 +65,12 @@ class imap_atom_options
   array options;
   array range;
 
-  void create(string s, array o, array r)
+  void create(string s, string sec, array o, array r)
     {
       name = s;
-      options = imap_check_array(Array.map(o[0]->list->atom, imap_string));
+      options = (sec && ({ sec })) +
+	(o && ({ imap_list(imap_check_array(Array.map(o[0]->list->atom,
+						      imap_string))));
       range = r;
     }
 
