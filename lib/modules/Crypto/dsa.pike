@@ -17,6 +17,17 @@ function random;
 object set_public_key(bignum p_, bignum q_, bignum g_, bignum y_)
 {
   p = p_; q = q_; g = g_; y = y_;
+
+#if 0
+#define D(x) ((x) ? (x)->digits() : "NULL")
+  werror("dsa->set_public_key\n"
+	 "  p = %s,\n"
+	 "  q = %s,\n"
+	 "  g = %s,\n"
+	 "  y = %s,\n",
+	 D(p), D(q), D(g), D(y));
+#endif
+  
   return this_object();
 }
 
