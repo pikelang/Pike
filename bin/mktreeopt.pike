@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.11 1999/11/09 00:22:21 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.12 1999/11/09 01:20:15 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -112,7 +112,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.11 1999/11/09 00:22:21 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.12 1999/11/09 01:20:15 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -560,7 +560,7 @@ void parse_data()
       }
 
       action = fix_action(data[start..pos-1]);
-    } else {
+    } else if (data[pos] != ';') {
       object(node) n2 = read_node2();
       // werror(sprintf("\t%s;\n\n", n2));
       array(string) t = Array.uniq(n2->used_nodes());
@@ -572,6 +572,10 @@ void parse_data()
 		       "}",
 		       n2->generate_code(),
 		       sizeof(t)?("  " + (t * " = ") + " = 0;\n"):"");
+    } else {
+      // Null action.
+      // Used to force code generation for eg NULL-detection.
+      action = "";
     }
 
     while(n->cdr && (n->cdr->token != "-")) {
