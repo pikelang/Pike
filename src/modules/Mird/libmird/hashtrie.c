@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: hashtrie.c,v 1.1 2001/03/26 12:32:48 mirar Exp $
+** $Id: hashtrie.c,v 1.2 2001/03/26 16:11:22 mirar Exp $
 **
 */ 
 /* handles hashtrie nodes
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 static const char RCSID[]=
-   "$Id: hashtrie.c,v 1.1 2001/03/26 12:32:48 mirar Exp $";
+   "$Id: hashtrie.c,v 1.2 2001/03/26 16:11:22 mirar Exp $";
 
 #define TOO_DEEP_RECURSION 31 /* we can only shift down that */
 
@@ -625,7 +625,7 @@ static MIRD_RES mird_ht_find_no_key(struct mird *db,
    {
       if (!READ_BLOCK_LONG(buf,i))
       {
-	 dest_key[0]=orig_key&((1<<recur_level)-1)|(i<<recur_level);
+	 dest_key[0]=orig_key&(((1<<recur_level)-1)|(i<<recur_level));
 #ifdef HASHTRIE_DEBUG
 	 fprintf(stderr,"-n- %*s%lxh%ld %lxh is unused -> %lxh\n",
 		 (int)recur_level,"",
@@ -699,7 +699,7 @@ check_cell:
    min=READ_BLOCK_LONG(data,1);
    if (orig_key==min) 
    {
-      dest_key[0]=orig_key&((1<<recur_level)-1)|((key_left+1)<<recur_level);
+      dest_key[0]=orig_key&(((1<<recur_level)-1)|((key_left+1)<<recur_level));
       if (dest_key[0]==0) dest_key[0]=0xffffffff;
    }
    else
