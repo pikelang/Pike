@@ -107,7 +107,7 @@ string get_n_triples() {
 
   foreach(relations; Node n; ADT.Relation.Binary rel) {
     string rel_name = n->get_n_triple_name();
-    foreach(rel->Iterator(); Node left; Node right) {
+    foreach(rel; Node left; Node right) {
       ret += left->get_n_triple_name() + " " +
 	rel_name + " " + right->get_n_triple_name() + " .\n";
     }
