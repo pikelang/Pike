@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.36 2000/03/09 05:34:53 mast Exp $
+ * $Id: sql.pike,v 1.37 2000/04/29 00:11:31 kinkie Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.36 2000/03/09 05:34:53 mast Exp $
+//. RCSID:	$Id: sql.pike,v 1.37 2000/04/29 00:11:31 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -367,7 +367,7 @@ array(mapping(string:mixed)) query(object|string q,
 //.   Each index in the mapping corresponds to one such variable, and the
 //.   value for that index is substituted into the query wherever the variable
 //.   is used.  Binary values (BLOBs) may need to be placed in multisets.
-object big_query(object|string q, mapping(string|int:mixed)|void bindings)
+int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
   object|array(mapping) pre_res;
 
