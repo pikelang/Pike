@@ -1,12 +1,12 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.17 2001/07/04 20:42:20 nilsson Exp $
+// $Id: Query.pmod,v 1.18 2001/07/05 00:47:58 nilsson Exp $
 
-static function(string:string) blobfeeder(Search.Database.Base db, array words)
+static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
   mapping state = mkmapping(words,allocate(sizeof(words)));
-  return lambda( string word )
+  return lambda( string word, int foo )
 	 {
 	   return db->get_blob(word, state[word]++);
 	 };
@@ -24,41 +24,41 @@ Search.ResultSet do_query_or(Search.Database.Base db,
 			     array(string) words,
 			     Search.RankingProfile ranking)
 {
-//   Search.ResultSet result =
-//     _WhiteFish.do_query_or(words,
-//                            ranking->field_ranking,
-//                            ranking->proximity_ranking,
-//                            ranking->cutoff,
-//                            blobfeeder(db, words));
-//   werror("do_query_or(%{ %O %})     => %d hits\n", words, result->size());
-//   return result;
+  Search.ResultSet result =
+    _WhiteFish.do_query_or(words,
+                           ranking->field_ranking,
+                           ranking->proximity_ranking,
+                           ranking->cutoff,
+                           blobfeeder(db, words));
+  werror("do_query_or(%{ %O %})     => %d hits\n", words, result->size());
+  return result;
 }
 
 Search.ResultSet do_query_and(Search.Database.Base db,
 			      array(string) words,
 			      Search.RankingProfile ranking)
 {
-//   Search.ResultSet result =
-//     _WhiteFish.do_query_and(words,
-//                             ranking->field_ranking,
-//                             ranking->proximity_ranking,
-//                             ranking->cutoff,
-//                             blobfeeder(db, words));
-//   werror("do_query_and(%{ %O %})    => %d hits\n", words, result->size());
-//   return result;
+  Search.ResultSet result =
+    _WhiteFish.do_query_and(words,
+                            ranking->field_ranking,
+                            ranking->proximity_ranking,
+                            ranking->cutoff,
+                            blobfeeder(db, words));
+  werror("do_query_and(%{ %O %})    => %d hits\n", words, result->size());
+  return result;
 }
 
 Search.ResultSet do_query_phrase(Search.Database.Base db,
                                  array(string) words,
                                  Search.RankingProfile ranking)
 {
-//   Search.ResultSet result =
-//     _WhiteFish.do_query_phrase(words,
-//                                ranking->field_ranking,
-//                                //    ranking->cutoff,
-//                                blobfeeder(db, words));
-//   werror("do_query_phrase(%{ %O %}) => %d hits\n", words, result->size());
-//   return result;
+  Search.ResultSet result =
+    _WhiteFish.do_query_phrase(words,
+                               ranking->field_ranking,
+                               //    ranking->cutoff,
+                               blobfeeder(db, words));
+  werror("do_query_phrase(%{ %O %}) => %d hits\n", words, result->size());
+  return result;
 }
 
 //! @param query
