@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.11 1998/04/29 20:52:20 mirar Exp $
+# $Id: Makefile,v 1.12 1998/05/21 11:55:25 grubba Exp $
 
 DOCFILES = doc-header \
    image.c \
@@ -23,7 +23,6 @@ DOCFILES = doc-header \
    font.c \
    image.h \
    matrix.c \
-   myorient.c \
    operator.c \
    orient.c \
    pattern.c \
@@ -45,8 +44,9 @@ default:
 doc:	$(DOCFILES) mkdoc.pike Makefile
 	$(pike) mkdoc.pike $(DOCFILES)
 
-$(WMMLDOCPLACE): $(DOCFILES) mkwmml.pike Makefile
-	$(pike) mkwmml.pike --nonverbose $(DOCFILES) >$(WMMLDOCPLACE)
+$(WMMLDOCPLACE): $(DOCFILES) ../../../bin/mkwmml.pike Makefile
+	$(pike) ../../../bin/mkwmml.pike --nonverbose $(DOCFILES) \
+	  >$(WMMLDOCPLACE)
 
 wmml:	$(WMMLDOCPLACE)
 
