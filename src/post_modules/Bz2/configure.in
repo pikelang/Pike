@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2003/01/25 17:08:58 grubba Exp $
+# $Id: configure.in,v 1.7 2003/01/26 10:10:57 mirar Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])
@@ -31,6 +31,8 @@ if test x$with_bz2 = xyes ; then
       AC_MSG_CHECKING([if a bz_stream has the field total_out.])
       AC_CACHE_VAL([pike_cv_bz_stream_total_out],[
 	AC_TRY_COMPILE([
+/* bzlib.h needs stdio.h on some systems (for FILE) */
+#include <stdio.h>
 #include <bzlib.h>
 	],[
 	  extern bz_stream *s;
