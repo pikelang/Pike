@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.24 2001/01/06 19:58:21 grubba Exp $
+ * $Id: module.pmod.in,v 1.25 2001/01/07 16:04:43 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -514,18 +514,62 @@ class Message {
   mapping (string:string) disp_params;
 
 
+  //! This method tries to find a suitable filename should you want to save the
+  //! body data to disk.
+  //!
+  //! It will examine the @tt{filename@} attribute of the
+  //! @tt{Content-Disposition@} header, and failing that the @tt{name@}
+  //! attribute of the @tt{Content-Type@} header. If neither attribute is set,
+  //! the method returns 0.
+  //!
+  //! @note
+  //! An interactive application should always query the user for the actual
+  //! filename to use.  This method may provide a reasonable default though.
+  //!
   string get_filename( )
   {
     string fn = disp_params["filename"] || params["name"];
     return fn && decode_words_text_remapped(fn);
   }
-  
+
+  //! If this message is a part of a fragmented message (i.e. has a
+  //! Content-Type of @tt{message/partial@}), an array with three elements
+  //! is returned.
+  //!
+  //! The first element is an identifier string. This string should be used to
+  //! group this message with the other fragments of the message (which will
+  //! have the same id string).
+  //!
+  //! The second element is the sequence number of this fragment. The first
+  //! part will have number 1, the next number 2 etc.
+  //!
+  //! The third element of the array is either the total number of fragments
+  //! that the original message has been split into, or 0 of this information
+  //! is not available.
+  //!
+  //! If this method is called in a message that is not a part of a fragmented
+  //! message, it will return 0.
+  //!
+  //! @seealso
+  //! @[MIME.reconstruct_partial()]
+  //!
   array(string|int) is_partial( )
   {
     return (type == "message" && subtype == "partial") &&
       ({ params["id"], (int)params["number"], (int)(params["total"]||"0") });
   }
 
+  //! Replaces the body entity of the data with a new piece of raw data.
+  //!
+  //! The new data should comply to the format indicated by the
+  //! @[type] and @[subtype] attributes.
+  //!
+  //! @note
+  //! Do not use this method unless you know what you are doing.
+  //!
+  //! @seealso
+  //! @[getdata()]
+  //!
   void setdata( string data )
   {
     if (data != decoded_data) {
@@ -534,20 +578,47 @@ class Message {
     }
   }
 
+  //! This method returns the raw data of the message body entity.
+  //!
+  //! The @[type] and @[subtype] attributes indicate how this data should
+  //! be interpreted.
+  //!
+  //! @seealso
+  //! @[getencoded()]
+  //!
   string getdata( )
   {
     if (encoded_data && !decoded_data)
       decoded_data = decode( encoded_data, transfer_encoding );
     return decoded_data;
   }
-  
+
+  //! This method returns the data of the message body entity, encoded
+  //! using the current transfer encoding.
+  //!
+  //! You should never have to call this function.
+  //!
+  //! @seealso
+  //! @[getdata()]
+  //!
   string getencoded( )
   {
     if (decoded_data && !encoded_data)
       encoded_data = encode( decoded_data, transfer_encoding, get_filename() );
     return encoded_data;
   }
-  
+
+  //! Select a new transfer encoding for this message.
+  //!
+  //! The @tt{Content-Transfer-Encoding@} header will be modified accordingly,
+  //! and subsequent calls to @tt{getencoded@} will produce data encoded using
+  //! the new encoding.
+  //!
+  //! See @[MIME.encode()] for a list of valid encodings.
+  //!
+  //! @seealso
+  //! @[getencoded()], @[MIME.encode()]
+  //!
   void setencoding( string encoding )
   {
     if(encoded_data && !decoded_data)
@@ -556,7 +627,19 @@ class Message {
       lower_case( encoding );
     encoded_data = 0;
   }
-  
+
+  //! Set or modify the named parameter of the @tt{Content-Type@} header.
+  //!
+  //! Common parameters include @tt{charset@} for text messages, and
+  //! @tt{boundary@} for multipart messages.
+  //!
+  //! @note
+  //! It is not allowed to modify the @tt{Content-Type@} header directly,
+  //! please use this function instead.
+  //!
+  //! @seealso
+  //! @[setcharset()], @[setboundary()], @[setdisp_param()]
+  //!
   void setparam( string param, string value )
   {
     param = lower_case(param);
@@ -582,7 +665,19 @@ class Message {
 	      return ({ ';', param, '=', params[param] });
 	    })));
   }
-  
+
+  //! Set or modify the named parameter of the @tt{Content-Disposition@}
+  //! header.
+  //!
+  //! A common parameters is e.g. @tt{filename@}.
+  //!
+  //! @note
+  //! It is not allowed to modify the @tt{Content-Disposition@} header
+  //! directly, please use this function instead.
+  //!
+  //! @seealso
+  //! @[setparam()], @[get_filename()]
+  //!
   void setdisp_param( string param, string value )
   {
     param = lower_case( param );
@@ -602,17 +697,42 @@ class Message {
 	      return ({ ';', param, '=', disp_params[param] });
 	    })));
   }
-  
+
+  //! Sets the @tt{charset@} parameter of the @tt{Content-Type@} header.
+  //!
+  //! This is equivalent of calling @code{setparam("charset", @[charset])@}.
+  //!
+  //! @seealso
+  //! @[setparam()]
+  //!
   void setcharset( string charset )
   {
     setparam( "charset", charset );
   }
-  
+
+  //! Sets the @tt{boundary@} parameter of the @tt{Content-Type@} header.
+  //!
+  //! This is equivalent of calling @code{setparam("boundary", @[boundary])@}.
+  //!
+  //! @seealso
+  //! @[setparam()]
+  //!
   void setboundary( string boundary )
   {
     setparam( "boundary", boundary );
   }
-  
+
+  //! Casting the message object to a string will yield a byte stream suitable
+  //! for transmitting the message over protocols such as ESMTP and NNTP.
+  //!
+  //! The body will be encoded using the current transfer encoding, and
+  //! subparts of a multipart will be collected recursively. If the message
+  //! is a multipart and no boundary string has been set, one will be
+  //! generated using @[generate_boundary()].
+  //!
+  //! @seealso
+  //! @[create()]
+  //!
   string cast( string dest_type )
   {
     string data;
@@ -653,6 +773,34 @@ class Message {
 		} )*"\r\n" + "\r\n\r\n" + data;
   }
 
+  //! @decl void create()
+  //! @decl void create(string message)
+  //! @decl void create(string message,
+  //!                   mapping(string:string|array(string)) headers
+  //!                   array(object)|void parts)
+  //!
+  //! There are several ways to call the constructor of the Message class:
+  //!
+  //! @list
+  //!   @element
+  //!     With zero arguments, you will get a dummy message with neither
+  //!     headers nor body. Not very useful.
+  //!   @element
+  //!     With one argument, the argument is taken to be a byte stream
+  //!     containing a message in encoded form. The constructor will analyze
+  //!     the string and extract headers and body.
+  //!   @element
+  //!     With two or three arguments, the first argument is taken to be the
+  //!     raw body data, and the second argument a desired set of headers.
+  //!     The keys of this mapping are not case-sensitive.  If the given
+  //!     headers indicate that the message should be of type multipart,
+  //!     an array of Message objects constituting the subparts should be
+  //!     given as a third argument.
+  //! @endlist
+  //!
+  //! @seealso
+  //! @[cast()]
+  //!
   void create(void | string message,
 	      void | mapping(string:string|array(string)) hdrs,
 	      void | array(object) parts)
