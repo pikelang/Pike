@@ -44,7 +44,6 @@
  *                  FIXME: this doesn't quite work
  *   errname;       The name used when throwing errors.
  *   name;          The name used when doing add_function.
- *   inherit class; For PIKECLASS, a single superclass can be provided.
  *   prototype;     Ignore the function body, just add a prototype entry.
  *   program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
  *
@@ -61,7 +60,6 @@
  *  o need a RETURN_NULL; or something.. RETURN 0; might work but may
  *    be confusing as RETURN x; will not work if x is zero.
  *  o Comments does not work inside prototypes (?)
- *  o Allow INHERIT
  *
  * C ENVIRONMENT
  *  FIXME
@@ -1236,9 +1234,6 @@ class ParseBlock
 			  "  start_new_program();\n"
 			}))
 		})+
-		(attributes->inherit ?
-		 ({ sprintf("\n  ADD_INHERIT(%s_program, 0);\n",
-			    attributes->inherit) }) : ({}) )+
 		IFDEF("THIS_"+upper_case(name),
 		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
 		subclass->addfuncs+
