@@ -1,3 +1,18 @@
+string quote_filter_value (string s)
+//! Quote characters in the given string as necessary for use as a
+//! value in a search filter.
+//!
+//! @note
+//! Quoting is done according to section 4 in RFC 2254.
+//!
+//! @seealso
+//!   @[Protocols.LDAP.client.search]
+{
+  return replace (s,
+		  ({"*",    "(",    ")",    "\\",   "\0"}),
+		  ({"\\2a", "\\28", "\\29", "\\5c", "\\00"}));
+}
+
 // Constants to make more human readable names for some known
 // LDAP related object identifiers.
 

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.68 2005/02/03 16:55:07 mast Exp $
+// $Id: client.pike,v 1.69 2005/03/08 16:37:46 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.68 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.69 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1110,7 +1110,8 @@ multiset(string) get_supported_controls()
   //! Search LDAP directory.
   //!
   //! @param filter
-  //!   Search filter used when searching directory objects.
+  //!   Search filter used when searching directory objects. See RFC
+  //!   2254.
   //!
   //! @param attrs
   //!   The array of attribute names which will be returned by server.
@@ -1154,7 +1155,8 @@ multiset(string) get_supported_controls()
   //!	to follow his logic better.
   //!
   //! @seealso
-  //!  @[result], @[result.fetch], @[get_supported_controls]
+  //!  @[result], @[result.fetch], @[get_supported_controls],
+  //!  @[Protocols.LDAP.quote_filter_value]
   object|int search (string|void filter, array(string)|void attrs,
 		     int|void attrsonly,
 		     void|mapping(string:array(int|string)) controls) {
