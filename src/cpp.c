@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.24 1998/04/23 18:59:45 hubbe Exp $
+ * $Id: cpp.c,v 1.25 1998/05/06 05:15:53 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -137,7 +137,7 @@ void cpp_error(struct cpp *this,char *err)
     SAFE_APPLY_MASTER("compile_error",3);
     pop_stack();
   }else{
-    (void)fprintf(stderr, "%s:%ld: %s",
+    (void)fprintf(stderr, "%s:%ld: %s\n",
 		  this->current_file->str,
 		  (long)this->current_line,
 		  err);
@@ -349,6 +349,11 @@ while(1)					\
   case '\\':					\
   {						\
     int tmp;					\
+    if(data[pos+1]=='\n')			\
+    {						\
+      pos++;					\
+      continue;					\
+    }						\
     READCHAR(tmp);				\
     low_my_putchar(tmp, &nf);			\
     continue;					\
@@ -361,6 +366,44 @@ while(1)					\
   pos++;					\
   break;					\
 }
+
+#define FIXSTRING(nf,outp)	do {			\
+int trailing_newlines=0;				\
+if(outp) low_my_putchar('"', &nf);			\
+while(1)						\
+{							\
+  if(pos>=len)						\
+  {							\
+    cpp_error(this,"End of file in string.");		\
+    break;						\
+  }							\
+							\
+  switch(data[pos++])					\
+  {							\
+  case '\n':						\
+    cpp_error(this,"Newline in string.");		\
+    this->current_line++;				\
+    break;						\
+  case '"':  break;					\
+  case '\\':						\
+    if(data[pos]=='\n')					\
+    {							\
+      pos++;						\
+      trailing_newlines++;				\
+      this->current_line++;				\
+      continue;						\
+    }							\
+    if(outp) low_my_putchar(data[(pos++)-1], &nf);	\
+							\
+  default:						\
+    if(outp) low_my_putchar(data[pos-1], &nf);		\
+    continue;						\
+  }							\
+  break;						\
+}							\
+if(outp) low_my_putchar('"', &nf);			\
+while(trailing_newlines--) PUTNL();			\
+}while(0)
 
 #define READSTRING2(nf)				\
 while(1)					\
@@ -378,6 +421,11 @@ while(1)					\
   case '\\':					\
   {						\
     int tmp;					\
+    if(data[pos+1]=='\n')			\
+    {						\
+      pos++;					\
+      continue;					\
+    }						\
     READCHAR(tmp);				\
     low_my_putchar(tmp, &nf);			\
     continue;					\
@@ -774,9 +822,7 @@ static INT32 low_cpp(struct cpp *this,
       break;
 
     case '"':
-      tmp=pos-1;
-      FIND_END_OF_STRING();
-      STRCAT(data+tmp, pos-tmp);
+      FIXSTRING(this->buf,OUTP());
       break;
 
     case '\'':
@@ -1288,9 +1334,7 @@ static INT32 low_cpp(struct cpp *this,
 	      continue;
 	      
 	    case '"':
-	      tmp3=pos-1;
-	      FIND_END_OF_STRING();
-	      low_my_binary_strcat(data+tmp3, pos-tmp3, &str);
+	      FIXSTRING(str, 1);
 	      continue;
 	      
 	    case '\'':
