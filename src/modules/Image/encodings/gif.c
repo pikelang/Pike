@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.12 1997/11/06 21:12:50 mirar Exp $ */
+/* $Id: gif.c,v 1.13 1997/11/07 06:06:20 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.12 1997/11/06 21:12:50 mirar Exp $
+**!	$Id: gif.c,v 1.13 1997/11/07 06:06:20 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.12 1997/11/06 21:12:50 mirar Exp $");
+RCSID("$Id: gif.c,v 1.13 1997/11/07 06:06:20 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -82,6 +82,30 @@ array _decode(string data);
 string _encode(array data);
 
  */
+
+#if 0
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X);
+
+static void chrono(char *x)
+{
+   struct rusage r;
+   static struct rusage rold;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
+	   (long)r.ru_utime.tv_sec,(long)r.ru_utime.tv_usec,
+	   
+	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+		  +r.ru_utime.tv_sec-rold.ru_utime.tv_sec),
+	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+		  + r.ru_utime.tv_usec-rold.ru_utime.tv_usec)
+      );
+
+   rold=r;
+}
+#else
+#define CHRONO(X)
+#endif
 
 /*
 **! method string header_block(int xsize,int ysize,int numcolors);
@@ -376,6 +400,8 @@ static void image_gif__render_block(INT32 args)
    int i;
    int numstrings=0;
    
+CHRONO("gif _render_block begun");
+
    if (args<8)
       error("Image.GIF._render_block(): Too few arguments\n");
 
@@ -478,6 +504,8 @@ static void image_gif__render_block(INT32 args)
 
    if (lzw.broken) error("out of memory\n");
 
+CHRONO("gif _render_block push of packed data begin");
+
    for (i=0;;)
       if (lzw.outpos-i>=255)
       {
@@ -504,6 +532,8 @@ static void image_gif__render_block(INT32 args)
 	 break;
       }
 
+CHRONO("gif _render_block push of packed data end");
+
    image_gif_lzw_free(&lzw);
 
 /*** done */
@@ -514,6 +544,8 @@ static void image_gif__render_block(INT32 args)
 
    pop_n_elems(args+1);
    push_string(ps);
+
+CHRONO("gif _render_block end");
 }
 
 /*
@@ -612,6 +644,8 @@ void image_gif_render_block(INT32 args)
    int interlace=0;
    int bpp;
    struct pike_string *ps;
+
+CHRONO("gif render_block begin");
 
    if (args<2) 
       error("Image.GIF.render_block(): Too few arguments\n");
@@ -753,8 +787,10 @@ void image_gif_render_block(INT32 args)
    }
 
    ps=begin_shared_string(img->xsize*img->ysize);
+CHRONO("render_block index begin");
    image_colortable_index_8bit_image(nct,img->img,(unsigned char *)ps->str,
 				     img->xsize*img->ysize,img->xsize);
+CHRONO("render_block index end");
 
    if (alpha)
    {
@@ -780,6 +816,7 @@ void image_gif_render_block(INT32 args)
    push_string(ps);
    if (localpalette)
    {
+CHRONO("gif render_block write local colortable begin");
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
       MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
@@ -790,12 +827,15 @@ void image_gif_render_block(INT32 args)
 	 ps->str[3*alphaidx+2]=alphacolor.b;
       }
       push_string(end_shared_string(ps));
+CHRONO("gif render_block write local colortable end");
    }
    else
       push_int(0);
    push_int(interlace);
 
+CHRONO("gif render_block _render_block begin");
    image_gif__render_block(8);
+CHRONO("gif render_block _render_block end");
 
    numstrings++;
 
@@ -807,6 +847,8 @@ void image_gif_render_block(INT32 args)
 
    pop_n_elems(args+1);
    push_string(ps);
+
+CHRONO("gif render_block end");
 }
 
 /*
@@ -900,6 +942,7 @@ static void _image_gif_encode(INT32 args,int fs)
 					image_program)))
       error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
    imgobj->refs++;
+
    
    if (args>=2)
       if (sp[1-args].type==T_INT)

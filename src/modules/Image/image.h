@@ -1,9 +1,9 @@
-/* $Id: image.h,v 1.10 1997/10/27 22:41:22 mirar Exp $ */
+/* $Id: image.h,v 1.11 1997/11/07 06:06:12 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.10 1997/10/27 22:41:22 mirar Exp $
+**!	$Id: image.h,v 1.11 1997/11/07 06:06:12 mirar Exp $
 */
 
 #define MAX_NUMCOL 32768
@@ -42,51 +42,7 @@ struct image
    unsigned char alpha;
 };
 
-struct colortable
-{
-   int numcol;
-   struct rgb_cache
-   {
-      rgb_group index;
-      int value;
-   } cache[QUANT_SELECT_CACHE];
-   unsigned long *rgb_node; /* numcol*2 entries */
-/*   bit
-     31..30          29..22   21..0
-     0=color         split    value
-     1=split red     on	this  
-     2=split green   =x       <=x     >x
-     3=split blue             value   value+1
-     It will fail for more than 2097152 colors. Sorry... *grin*
- */
-   unsigned short *index; /* numcol entries */
-   rgb_group clut[1];
-}; 
-
-
-/* colortable declarations - from quant */
-
-struct colortable *colortable_quant(struct image *img,int numcol);
-int colortable_rgb(struct colortable *ct,rgb_group rgb);
-int colortable_rgb_nearest(struct colortable *ct,rgb_group rgb);
-void colortable_free(struct colortable *ct);
-struct colortable *colortable_from_array(struct array *arr,char *from);
-
-/* encoding of a gif - from togif */
-
-struct pike_string *
-   image_encode_gif(struct image *img,struct colortable *ct,
-		    rgb_group *transparent,
-		    int floyd_steinberg,
-		    int closest);
-void image_floyd_steinberg(rgb_group *rgb,int xsize,
-			   rgbl_group *errl,
-			   int way,int *res,
-			   struct colortable *ct,
-			   int closest);
-
-int image_decode_gif(struct image *dest,struct image *dest_alpha,
-		     unsigned char *src,unsigned long len);
+/* COMPAT: encoding of a gif - from togif */
 
 void image_togif(INT32 args);
 void image_togif_fs(INT32 args);

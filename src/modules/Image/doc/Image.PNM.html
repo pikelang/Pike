@@ -26,8 +26,8 @@ This submodule keep the PNM encode/decode capabilities
 
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.html>Image</a></tt>,
-     <tt><a href=Image.html>Image.image</a></tt>,
-     <tt><a href=Image.html>Image.GIF</a></tt>
+     <tt><a href=Image.image.html>Image.image</a></tt>,
+     <tt><a href=Image.GIF.html>Image.GIF</a></tt>
 </blockquote>
 
 <hr>
@@ -58,7 +58,7 @@ This function may throw errors upon illegal PNM data.
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.PNM.html#::encode>encode</a></tt>
+<blockquote>     <tt><a href=Image.PNM.html#encode>encode</a></tt>
 </blockquote>
 
 <hr>
@@ -78,11 +78,11 @@ string <b>encode_P6</b>(object&nbsp;image)</tt>
 <blockquote>
 Make a complete PNM file from an image.
 
-<p>     <tt><a href=Image.PNM.html#::encode_binary>encode_binary</a></tt>() and <tt><a href=Image.PNM.html#::encode_ascii>encode_ascii</a></tt>()
+<p>     <tt><a href=Image.PNM.html#encode_binary>encode_binary</a></tt>() and <tt><a href=Image.PNM.html#encode_ascii>encode_ascii</a></tt>()
      uses the most optimized encoding for this image (bitmap, grey
      or truecolor) - P4, P5 or P6 respective P1, P2 or P3.
 
-<p>     <tt><a href=Image.PNM.html#::encode>encode</a></tt>() maps to <tt><a href=Image.PNM.html#::encode_binary>encode_binary</a></tt>().
+<p>     <tt><a href=Image.PNM.html#encode>encode</a></tt>() maps to <tt><a href=Image.PNM.html#encode_binary>encode_binary</a></tt>().
 </blockquote>
 <h4>RETURNS</h4>
 
@@ -100,5 +100,5 @@ Currently only supports type P5 (binary grey) and
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.PNM.html#::decode>decode</a></tt>
+<blockquote>     <tt><a href=Image.PNM.html#decode>decode</a></tt>
 </blockquote>
