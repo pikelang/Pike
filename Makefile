@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.9 1999/05/10 18:58:27 mast Exp $
+# $Id: Makefile,v 1.10 1999/05/24 06:07:36 mast Exp $
 #
 # Meta Makefile
 #
@@ -67,13 +67,13 @@ compile: configure
 	@builddir="$(BUILDDIR)"; \
 	metatarget="$(METATARGET)"; \
 	test -f "$$builddir"/pike || metatarget="new_peep_engine pike $$metatarget"; \
-	cd "$$builddir" && ( \
-	  echo Making in "$$builddir"; \
+	cd "$$builddir" && for target in all $$metatarget; do \
+	  echo Making $$target in "$$builddir"; \
 	  rm -f remake; \
-	  $(MAKE) "MAKE=$(MAKE)" all $$metatarget || ( \
-	    test -f remake && $(MAKE) "MAKE=$(MAKE)" all $$metatarget \
+	  $(MAKE) "MAKE=$(MAKE)" $$target || ( \
+	    test -f remake && $(MAKE) "MAKE=$(MAKE)" $$target \
 	  ) \
-	)
+	done
 
 bin/pike: force
 	sed -e "s|\"BASEDIR\"|\"`pwd`\"|" < bin/pike.in > bin/pike
