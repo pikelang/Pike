@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.25 2001/10/05 01:30:12 hubbe Exp $
+ * $Id: compilation.h,v 1.26 2001/12/12 21:06:58 mast Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -149,7 +149,6 @@
   IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
   ZMEMBER(int, check_final, 0)
-  ZMEMBER(struct program_state *,depends_on,0)
   ZMEMBER(struct compilation *,compiler,0)
   SEND
 
