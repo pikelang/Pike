@@ -65,7 +65,7 @@ class imap_atom_options
   array options;
   array range;
 
-  void create(string s, srrsy(string) sec, array o, array r)
+  void create(string s, array(string) sec, array o, array r)
     {
       name = s;
       options = ({ sec && sizeof(sec) && sec[0],
