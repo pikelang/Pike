@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.116 1999/12/31 14:50:16 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.117 2000/01/02 23:36:44 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -485,7 +485,7 @@ static void internal_parse_typeA(char **_s)
 	  push_type(T_MIXED);
 	  push_type(T_OR);
 	  push_type(T_VOID);
-	  push_type(T_MIXED);
+	  push_type(T_ZERO);
 	  push_type(T_OR);
 	  push_type(T_MANY);
 	}
@@ -892,27 +892,27 @@ char *low_describe_type(char *t)
       int s;
       my_strcat("function");
       if(EXTRACT_UCHAR(t) == T_MANY &&
-	 (EXTRACT_UCHAR(t+1) == T_MIXED &&
-	  EXTRACT_UCHAR(t+2) == T_OR &&
-	  ((EXTRACT_UCHAR(t+3) == T_MIXED && EXTRACT_UCHAR(t+4) == T_VOID) ||
-	   (EXTRACT_UCHAR(t+4) == T_MIXED && EXTRACT_UCHAR(t+3) == T_VOID)))
-	 ||
-	 (EXTRACT_UCHAR(t+1) == T_OR
-	  &&
-	  ((EXTRACT_UCHAR(t+2) == T_MIXED && EXTRACT_UCHAR(t+3) == T_VOID) ||
-	   (EXTRACT_UCHAR(t+3) == T_MIXED && EXTRACT_UCHAR(t+2) == T_VOID))
-	  &&
-	  EXTRACT_UCHAR(t+4) == T_OR
-	  &&
-	  ((EXTRACT_UCHAR(t+5) == T_MIXED && EXTRACT_UCHAR(t+6) == T_VOID) ||
-	   (EXTRACT_UCHAR(t+6) == T_MIXED && EXTRACT_UCHAR(t+5) == T_VOID))))
+	 ((EXTRACT_UCHAR(t+1) == T_ZERO &&
+	   EXTRACT_UCHAR(t+2) == T_OR &&
+	   ((EXTRACT_UCHAR(t+3) == T_MIXED && EXTRACT_UCHAR(t+4) == T_VOID) ||
+	    (EXTRACT_UCHAR(t+4) == T_MIXED && EXTRACT_UCHAR(t+3) == T_VOID)))
+	  ||
+	  (EXTRACT_UCHAR(t+1) == T_OR
+	   &&
+	   ((EXTRACT_UCHAR(t+2) == T_ZERO && EXTRACT_UCHAR(t+3) == T_VOID) ||
+	    (EXTRACT_UCHAR(t+3) == T_ZERO && EXTRACT_UCHAR(t+2) == T_VOID))
+	   &&
+	   EXTRACT_UCHAR(t+4) == T_OR
+	   &&
+	   ((EXTRACT_UCHAR(t+5) == T_MIXED && EXTRACT_UCHAR(t+6) == T_VOID) ||
+	    (EXTRACT_UCHAR(t+6) == T_MIXED && EXTRACT_UCHAR(t+5) == T_VOID)))))
       {
 	/* done */
-	if (EXTRACT_UCHAR(t+1) == T_MIXED) {
-	  /* function(mixed...:mixed|void) */
+	if (EXTRACT_UCHAR(t+1) == T_ZERO) {
+	  /* function(zero...:mixed|void) */
 	  t += 5;
 	} else {
-	  /* function(mixed|void...mixed|void) */
+	  /* function(zero|void...mixed|void) */
 	  t += 7;
 	}
       } else {
@@ -3160,6 +3160,9 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
       type_stack_reverse();
       push_type(T_FUNCTION);
       return pop_unfinished_type();
+
+    case T_ARRAY:
+      return zzap_function_return(a+1,id);
   }
 /* This error is bogus /Hubbe
   fatal("zzap_function_return() called with unexpected value: %d\n",
@@ -3289,13 +3292,15 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     if(id>=0)
     {
       a=ID_FROM_INT(s->u.program, id)->type->str;
-    }else{
-      a=function_type_string->str;
+      if((tmp=zzap_function_return(a, s->u.program->id)))
+	return tmp;
+      tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
+      yywarning ("zzap_function_return() failed on the create() type: %s",
+		 tmp->str);
+      free_string(tmp);
     }
-    if((tmp=zzap_function_return(a, s->u.program->id)))
-      return tmp;
 
-    a=function_type_string->str;
+    a=tFunc(tVoid,tObj);
     if((tmp=zzap_function_return(a, s->u.program->id)))
       return tmp;
 
