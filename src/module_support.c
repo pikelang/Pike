@@ -11,7 +11,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.44 2002/05/13 22:14:04 mast Exp $");
+RCSID("$Id: module_support.c,v 1.45 2002/05/13 23:44:23 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -385,6 +385,7 @@ PMOD_EXPORT void pike_module_export_symbol(char *name,
   s.type=T_INT;
   s.subtype=4711;
   mapping_string_insert(exported_symbols, str, &s);
+  free_string(str);
 }
 
 PMOD_EXPORT void *pike_module_import_symbol(char *name,
