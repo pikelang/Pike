@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.12 2000/12/01 08:09:56 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.13 2001/01/23 13:47:31 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -252,6 +252,7 @@ static void gdbmmod_store(INT32 args)
 {
   struct gdbm_glue *this=THIS;
   datum key,data;
+  int method = GDBM_REPLACE;
   int ret;
   if(args<2)
     Pike_error("Too few arguments to gdbm->store()\n");
@@ -262,6 +263,15 @@ static void gdbmmod_store(INT32 args)
   if(sp[1-args].type != T_STRING)
     Pike_error("Bad argument 2 to gdbm->store()\n");
 
+  if (args > 2) {
+    if (sp[2-args].type != T_INT) {
+      Pike_error("Bad argument 3 to gdbm->store()\n");
+    }
+    if (sp[2-args].u.integer) {
+      method = GDBM_INSERT;
+    }
+  }
+
   if(!THIS->dbf)
     Pike_error("GDBM database not open.\n");
 
@@ -270,13 +280,15 @@ static void gdbmmod_store(INT32 args)
 
   THREADS_ALLOW();
   mt_lock(& gdbm_lock);
-  ret=gdbm_store(this->dbf, key, data, GDBM_REPLACE);
+  ret=gdbm_store(this->dbf, key, data, method);
   mt_unlock(& gdbm_lock);
   THREADS_DISALLOW();
 
-  if(ret == -1)
+  if(ret == -1) {
     Pike_error("GDBM database not open for writing.\n");
-
+  } else if (ret == 1) {
+    Pike_error("Duplicate key.\n");
+  }
   pop_n_elems(args);
   push_int(ret == 0);
 }
@@ -340,14 +352,17 @@ void pike_module_init(void)
   ADD_STORAGE(struct gdbm_glue);
   
   /* function(void|string,void|string:void) */
-  ADD_FUNCTION("create",gdbmmod_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid),0);
+  ADD_FUNCTION("create", gdbmmod_create,
+	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), ID_STATIC);
 
   /* function(:void) */
   ADD_FUNCTION("close",gdbmmod_close,tFunc(tNone,tVoid),0);
-  /* function(string,string:int) */
-  ADD_FUNCTION("store",gdbmmod_store,tFunc(tStr tStr,tInt),0);
-  /* function(string,string:int) */
-  ADD_FUNCTION("`[]=",gdbmmod_store,tFunc(tStr tStr,tInt),0);
+  /* function(string, string, int(0..1)|void: int) */
+  ADD_FUNCTION("store", gdbmmod_store,
+	       tFunc(tStr tStr tOr(tInt01, tVoid), tInt), 0);
+  /* function(string, string, int(0..1)|void: int) */
+  ADD_FUNCTION("`[]=", gdbmmod_store,
+	       tFunc(tStr tStr tOr(tInt01, tVoid), tInt), 0);
   /* function(string:string) */
   ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr),0);
   /* function(string:string) */
