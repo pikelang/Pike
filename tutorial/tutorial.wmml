@@ -2785,7 +2785,7 @@ Let's look at another example:
 	int main(int argc, string *argv)
 	{
 	  output::create("stdout");
-	  for(int e=1;e<sizeof(argv);e++)
+	  for(int e=1;e&lt;sizeof(argv);e++)
 	  {
 	    input::open(argv[e],"r");
             while(output::write(input::read(4096)) == 4096);
@@ -8024,6 +8024,44 @@ Neither can it be used to produce comments.
 </a>
 
 <hr newpage>
+<a name=MIME.reconstruct_partial>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>MIME.reconstruct_partial</tt> - Join a fragmented message to it's original form
+<p>
+<dt><encaps>SYNTAX</encaps><dd>
+<tt>int|object reconstruct_partial(array(object) <i>collection</i>);<br>
+</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+This function will attempt to reassemble a fragmented message from it's
+parts.  The array <i>collection</i> should contain <tt>MIME.Message</tt>
+objects forming a complete set of parts for a single fragmented message.
+The order of the messages in this array is not important, but every part
+must exist at least once.
+<p>
+Should the function succeed in reconstructing the original message, a
+new <tt>MIME.Message</tt> object is returned.  Note that this message may
+in turn be a part of another, larger, fragmented message.
+If the function fails to reconstruct an original message, it returns an
+integer indicating the reason for it's failure:
+<ul>
+<li>If an empty <i>collection</i> is passed in, or one that contains messages
+which are not of type <tt>message/partial</tt>, or parts of different
+fragmented messages, the function returns 0.
+<li>If more fragments are needed to reconstruct the entire message, the
+number of additional messages needed is returned.
+<li>If more fragments are needed, but the function can't tell exactly how
+many, -1 is returned.
+</ul>
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#MIME.Message.is_partial>MIME.Message-&gt;is_partial</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
 <a name=MIME.tokenize>
 <dl>
 <dt><encaps>NAME</encaps><dd>
@@ -8481,6 +8519,34 @@ the method returns 0.
 <dt><encaps>NOTA BENE</encaps><dd>
 An interactive application should always query the user for the actual
 filename to use.  This method may provide a reasonable default though.
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.is_partial>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>MIME.Message-&gt;is_partial</tt> - Identify <tt>message/partial</tt> message
+<p>
+<dt><encaps>SYNTAX</encaps><dd>
+<tt>array(string|int) is_partial();<br>
+</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+If this message is a part of a fragmented message (i.e. has a Content-Type
+of <tt>message/partial</tt>), an array with three elements is returned.
+The first element is an identifier string.  This string should be used to
+group this message with the other fragments of the message (which will have
+the same id string).  The second element is the sequence number of this
+fragment.  The first part will have number 1, the next number 2 etc.
+The third element of the array is either the total number of fragments
+that the original message has been split into, or 0 of this information
+was not available.  If this method is called in a message that is not
+a part of a fragmented message, it will return 0.
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#MIME.reconstruct_partial>MIME.reconstruct_partial</a>
 <p>
 </dl>
 </a>
