@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.284 2002/03/04 22:00:13 mast Exp $");
+RCSID("$Id: las.c,v 1.285 2002/04/09 17:11:56 nilsson Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1712,7 +1712,7 @@ node *recursive_add_call_arg(node *n, node *arg)
 
     case F_AUTO_MAP:
     case F_APPLY:
-      if(CAR(n)->token == F_CONSTANT &&
+      if(CAR(n) && CAR(n)->token == F_CONSTANT &&
 	 CAR(n)->u.sval.type == T_FUNCTION &&
 	 CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
 	 CAR(n)->u.sval.u.efun->name &&
