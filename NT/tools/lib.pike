@@ -354,6 +354,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	    case 0: /* Backwards compatibility */
 	    case 1:  inout->write(s); break; // stdout
 	    case 2:  inout->werr(s);  break; // stderr
+	    default: /* reserved for future use */
 	  }
 	}
 	if(filter) ret+=s;
