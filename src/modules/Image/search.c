@@ -64,6 +64,8 @@ static void chrono(char *x)
 /*
 **! method object phaseh()
 **! method object phasev()
+**! method object phasevh()
+**! method object phasehv()
 **!	Draws images describing the phase
 **!     of the current image. phaseh gives the
 **!     horizontal phase and phasev the vertical
@@ -126,17 +128,9 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 
 /*
 **! method object match(int|float scale, object needle)
-**! method object match(int|float scale, object needle,
-**!                     object haystack_cert, 
-**!                     object needle_cert)
-**! method object match(int|float scale, object needle,
-**!                     object haystack_avoid, 
-**!                     int foo)
-**! method object match(int|float scale, object needle,
-**!                     object haystack_cert, 
-**!                     object needle_cert,
-**!                     object haystack_avoid, 
-**!                     int foo)
+**! method object match(int|float scale, object needle, object haystack_cert, object needle_cert)
+**! method object match(int|float scale, object needle, object haystack_avoid, int foo)
+**! method object match(int|float scale, object needle, object haystack_cert, object needle_cert, object haystack_avoid, int foo)
 **!
 **!     This method creates an image that describes the
 **!     match in every pixel in the image and the 
@@ -219,11 +213,9 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 
 
 /*
-**! method object make_ascii(object orient1, object orient2, 
-**!                          object orient3, object orient4, 
-**!                          int|void xsize, int|void ysize)
+**! method string make_ascii(object orient1, object orient2, object orient3, object orient4, int|void xsize, int|void ysize)
 **!
-**!     This method creates a string that look like 
+**!     This method creates a string that looks like 
 **!     the image. Example:
 **!     <pre>
 **!        //Stina is an image with a cat.
