@@ -65,7 +65,7 @@ o sprintf("%O", foo) is more descriptive
 
 o basetype(foo)
     Returns a string with the basic type of foo as opposed to
-    typeof(foo) that returns the actual type. Also available as
+    _typeof(foo) that returns the actual type. Also available as
     sprintf("%t", foo).
 
 o getenv()/putenv()
@@ -601,9 +601,9 @@ o default_yp_domain
     Yp.default_domain.
 
 o clone/new
-    The functions clone and new has been removed. Instead of doing
-    clone(x) or new(x), do x() in the future if x is a program or
-    ((program)x)() if x is a string.
+    The functions clone and new have been removed. Instead of doing
+    clone(x) or new(x), now do x() if x is a program and ((program)x)()
+    if x is a string.
 
 o LR
     LR has been moved to Parser.LR and the API has been changed
