@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.22 1997/01/27 01:02:07 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.23 1997/01/28 02:47:54 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -631,14 +631,6 @@ void f_exit(INT32 args)
 
   UNSET_ONERROR(tmp);
   exit(i);
-}
-
-void f_query_host_name(INT32 args)
-{
-  char hostname[1000];
-  pop_n_elems(args);
-  gethostname(hostname,1000);
-  push_string(make_shared_string(hostname));
 }
 
 void f_time(INT32 args)
@@ -1350,6 +1342,74 @@ void f_localtime(INT32 args)
 }
 #endif
 
+#ifdef HAVE_MKTIME
+static void f_mktime (INT32 args)
+{
+  INT32 sec, min, hour, mday, mon, year, isdst, tz;
+  struct tm date;
+  struct svalue s;
+  struct svalue * r;
+  int retval;
+  if (args<1)
+    error ("Too few arguments to mktime().\n");
+
+  if(args == 1)
+  {
+    MEMSET(&date, 0, sizeof(date));
+
+    push_text("sec");
+    push_text("min");
+    push_text("hour");
+    push_text("mday");
+    push_text("mon");
+    push_text("year");
+    push_text("isdst");
+    push_text("timezone");
+    f_aggregate(8);
+    f_rows(2);
+    sp--;
+    push_array_items(sp->u.array);
+
+    args=8;
+  }
+
+  get_all_args("mktime","%i%i%i%i%i%i%i",
+	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+
+  
+  date.tm_sec=sec;
+  date.tm_min=min;
+  date.tm_hour=hour;
+  date.tm_mday=mday;
+  date.tm_mon=mon;
+  date.tm_year=year;
+  date.tm_isdst=isdst;
+
+#if STRUCT_TM_HAS_GMTOFF
+  date.tm_gmtoff=tz;
+  retval=mktime(&date);
+#else
+#ifdef HAVE_EXTERNAL_TIMEZONE
+  if(sp[8-args].subtype == NUMBER_NUMBER)
+  {
+    int save_timezone=timezone;
+    timezone=tz;
+    retval=mktime(&date);
+    timezone=save_timezone;
+  }
+#else
+  retval=mktime(&date);
+#endif
+#endif
+
+  if (retval == -1)
+    error ("mktime: Cannot convert.\n");
+   pop_n_elems(args);
+   push_int(retval);
+}
+
+#endif
+
 
 /* Check if the glob s[0..len[ matches the string m[0..mlen[ */
 static int does_match(char *s, int len, char *m, int mlen)
@@ -1640,7 +1700,6 @@ void init_builtin_efuns()
   add_efun("object_program",f_object_program,"function(mixed:program)",0);
   add_efun("objectp", f_objectp, "function(mixed:int)",0);
   add_efun("programp",f_programp,"function(mixed:int)",0);
-  add_efun("query_host_name",f_query_host_name,"function(:string)",0);
   add_efun("query_num_arg",f_query_num_arg,"function(:int)",OPT_EXTERNAL_DEPEND);
   add_efun("random",f_random,"function(int:int)",OPT_EXTERNAL_DEPEND);
   add_efun("random_seed",f_random_seed,"function(int:void)",OPT_SIDE_EFFECT);
@@ -1662,6 +1721,10 @@ void init_builtin_efuns()
 
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
+#endif
+
+#ifdef HAVE_MKTIME
+  add_efun("mktime",f_mktime,"function(int,int,int,int,int,int,int,int:int)|function(object|mapping:int)",OPT_TRY_OPTIMIZE);
 #endif
 
 #ifdef DEBUG
