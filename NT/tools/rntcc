@@ -8,10 +8,10 @@ OPTS=""
 CFLAGS=""
 SOURCES=""
 OBJECTS=""
-OUTPUT=
+OUTPUT=a.out
 OPERATION=linking
 INCLUDE_PATH=
-LDOPTS=""
+LDOPTS="OPTION STACK=8m"
 
 while test "$#" != 0; do
   case $1 in
@@ -88,14 +88,17 @@ done
 ERRORFILE=TMP$$.err
 rm $ERRORFILE 2>/dev/null 1>/dev/null || :
 
-CFLAGS="$CFLAGS -zq -i$IPATH -fr$ERRORFILE"
+CFLAGS="$CFLAGS -zq -hw -fr$ERRORFILE"
+
 if [ "x$OUTPUT" != x ]; then
-  CFLAGS="$CFLAGS -fo$OUTPUT"
+  OFLAGS="$OFLAGS -fo$OUTPUT"
+else
+  OFLAGS=
 fi
 
 case $OPERATION in
   compiling)
-    do_cmd wcc386 $CFLAGS `fixpath $SOURCES $OBJECTS`
+    do_cmd wcc386 $CFLAGS $OFLAGS `fixpath $SOURCES $OBJECTS`
     TARGET=$OUTPUT
   ;;
 
@@ -140,9 +143,10 @@ if [ "x$TARGET" != x ]; then
 fi
 
 if [ $OPERATION = linking ]; then
+  PWD=`pwd`
   echo  >$OUTPUT "#!/bin/sh"
   echo >>$OUTPUT ". \$NTTOOLS"
   echo >>$OUTPUT "set -e"
-  echo >>$OUTPUT "silent_do_cmd $TARGET \"\$@\""
+  echo >>$OUTPUT "silent_do_cmd '`fixpath $NTDRIVE$PWD/$TARGET`' \"\$@\""
   chmod +x $OUTPUT
 fi
