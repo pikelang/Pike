@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.71 1998/04/08 01:00:58 hubbe Exp $");
+RCSID("$Id: program.c,v 1.72 1998/04/08 01:32:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -665,7 +665,7 @@ static int alignof_variable(int run_time_type)
 #ifdef HAVE_ALIGNOF
       return ALIGNOF(struct svalue);
 #else
-      return ALIGNOF(union u);
+      return ALIGNOF(union anything);
 #endif
     case T_INT: return ALIGNOF(INT_TYPE);
     case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
