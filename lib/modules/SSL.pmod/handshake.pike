@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.31 2003/01/27 01:41:16 nilsson Exp $
+/* $Id: handshake.pike,v 1.32 2003/01/27 15:03:00 nilsson Exp $
  *
  */
 
@@ -16,7 +16,7 @@
 
 //#define SSL3_PROFILING
 
-inherit "cipher";
+import .Constants;
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -198,7 +198,7 @@ object server_key_exchange_packet()
     struct = Struct();
 
     /* werror("dh_params = %O\n", context->dh_params); */
-    dh_state = dh_key_exchange(context->dh_params);
+    dh_state = .Cipher.DHKeyExchange(context->dh_params);
     dh_state->new_secret(context->random);
     
     struct->put_bignum(context->dh_params->p);
@@ -337,15 +337,15 @@ object change_cipher_packet()
 
 string hash_messages(string sender)
 {
-
   if(version[1] == 0) {
-    return mac_md5(session->master_secret)->hash_master(handshake_messages + sender) +    
-      mac_sha(session->master_secret)->hash_master(handshake_messages + sender);
+    return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
+      .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
   }
   else if(version[1] == 1) {
-    return prf(session->master_secret,sender,mac_md5()->hash_raw(handshake_messages)+mac_sha()->hash_raw(handshake_messages),12);
+    return .Cipher.prf(session->master_secret, sender,
+		       .Cipher.MACmd5()->hash_raw(handshake_messages)+
+		       .Cipher.MACsha()->hash_raw(handshake_messages),12);
   }
-
 }
 
 object finished_packet(string sender)
@@ -455,8 +455,8 @@ string server_derive_master_secret(string data)
   }
   string res = "";
 
-  object sha = mac_sha();
-  object md5 = mac_md5();
+  .Cipher.MACsha sha = .Cipher.MACsha();
+  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
 
   if(version[1] == 0) {
     foreach( ({ "A", "BB", "CCC" }), string cookie)
@@ -465,7 +465,7 @@ string server_derive_master_secret(string data)
 					   + client_random + server_random));
   }
   else if(version[1] == 1) {
-    res=prf(premaster_secret,"master secret",client_random+server_random,48);
+    res=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
   
 #ifdef SSL3_DEBUG
@@ -478,8 +478,8 @@ string client_derive_master_secret(string premaster_secret)
 {
   string res = "";
 
-  object sha = mac_sha();
-  object md5 = mac_md5();
+  .Cipher.MACsha sha = .Cipher.MACsha();
+  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
 
 #ifdef SSL3_DEBUG
   werror("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
@@ -492,7 +492,7 @@ string client_derive_master_secret(string premaster_secret)
 					   + client_random + server_random));
   }
   else if(version[1] == 1) {
-    res+=prf(premaster_secret,"master secret",client_random+server_random,48);
+    res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
   
 #ifdef SSL3_DEBUG
@@ -511,8 +511,8 @@ mapping state_descriptions = lambda()
 
 mapping type_descriptions = lambda()
 {
-  array inds = glob("HANDSHAKE_*", indices(SSL.constants));
-  array vals = map(inds, lambda(string ind) { return SSL.constants()[ind]; });
+  array inds = glob("HANDSHAKE_*", indices(SSL.Constants));
+  array vals = map(inds, lambda(string ind) { return SSL.Constants()[ind]; });
   return mkmapping(vals, inds);
 }();
 
@@ -979,7 +979,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
 	if(public_key->type == "rsa")
 	  {
-	    object rsa = Crypto.rsa();
+	    Crypto.rsa rsa = Crypto.rsa();
 	    rsa->set_public_key(public_key->rsa->get_n(), public_key->rsa->get_e());
 	    context->rsa = rsa;
 	  }
@@ -993,8 +993,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
       };
 
-      if(error) 
-
+      if(error)
 	{
 	  werror("Failed to decode certificate!\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],

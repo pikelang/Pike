@@ -1,11 +1,12 @@
 #pike __REAL_VERSION__
 
-/* $Id: alert.pike,v 1.8 2003/01/27 01:41:16 nilsson Exp $
+/* $Id: alert.pike,v 1.9 2003/01/27 15:03:00 nilsson Exp $
  *
  */
 
 //! Alert package.
 
+import .Constants;
 inherit "packet" : packet;
 
 int level;

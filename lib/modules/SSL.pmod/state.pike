@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: state.pike,v 1.16 2003/01/27 01:41:17 nilsson Exp $
+/* $Id: state.pike,v 1.17 2003/01/27 15:03:00 nilsson Exp $
  *
  */
 
@@ -9,7 +9,7 @@
 //! stream of packets, and operates in either decryption or encryption
 //! mode.
 
-inherit "constants";
+import .Constants;
 
 //! Information about the used algorithms.
 object session;

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: session.pike,v 1.22 2003/01/27 01:41:17 nilsson Exp $
+/* $Id: session.pike,v 1.23 2003/01/27 15:03:00 nilsson Exp $
  *
  */
 
@@ -15,8 +15,7 @@
 //! It is also possible to change to a new session in the middle of a
 //! connection.
 
-
-inherit "cipher" : cipher;
+import .Constants;
 
 //! Identifies the session to the server
 string identity;
@@ -48,7 +47,7 @@ array(string) server_certificate_chain;
 //!
 void set_cipher_suite(int suite,int version)
 {
-  array res = cipher::lookup(suite,version);
+  array res = .Cipher.lookup(suite,version);
   cipher_suite = suite;
   ke_method = res[0];
   cipher_spec = res[1];
@@ -79,8 +78,8 @@ string generate_key_block(string client_random, string server_random,array(int) 
 	cipher_spec->iv_size)
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   );
-  object sha = mac_sha();
-  object md5 = mac_md5();
+  .Cipher.MACsha sha = .Cipher.MACsha();
+  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
   int i = 0;
   string key = "";
 
@@ -97,8 +96,7 @@ string generate_key_block(string client_random, string server_random,array(int) 
 					   server_random + client_random));
       }
   } else if(version[1]==1) {
-    key=prf(master_secret,"key expansion",server_random+client_random,required);
-
+    key=.Cipher.prf(master_secret,"key expansion",server_random+client_random,required);
   }
 #ifdef SSL3_DEBUG
   werror("key_block: %O\n", key);
@@ -119,7 +117,6 @@ void printKey(string name , string key) {
   res+="\n";
   werror(res);
 }
-
 #endif
 
 array generate_keys(string client_random, string server_random,array(int) version)
@@ -142,7 +139,7 @@ array generate_keys(string client_random, string server_random,array(int) versio
   {
     if(version[1]==0) {
       //SSL3.0
-      object md5 = mac_md5()->hash_raw;
+      .Cipher.MACmd5 md5 = .Cipher.MACmd5()->hash_raw;
       
       keys[2] = md5(key_data->get_fix_string(5) +
 		    client_random + server_random)
@@ -160,10 +157,13 @@ array generate_keys(string client_random, string server_random,array(int) versio
       //TLS1.0
       string client_wkey= key_data->get_fix_string(5);
       string server_wkey= key_data->get_fix_string(5);
-      keys[2] = prf(client_wkey,"client write key",client_random+server_random,cipher_spec->key_material);
-      keys[3] = prf(server_wkey,"server write key",client_random+server_random,cipher_spec->key_material);
+      keys[2] = .Cipher.prf(client_wkey, "client write key",
+			    client_random+server_random, cipher_spec->key_material);
+      keys[3] = .Cipher.prf(server_wkey, "server write key",
+			    client_random+server_random, cipher_spec->key_material);
       if(cipher_spec->iv_size) {
-	string iv_block=prf("","IV block",client_random+server_random,2*cipher_spec->iv_size);
+	string iv_block = .Cipher.prf("", "IV block", client_random+server_random,
+				      2*cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
 	werror("sizeof(keys[4]):"+sizeof(keys[4])+"   sizeof(keys[5]):"+sizeof(keys[4])+"\n");
@@ -215,8 +215,8 @@ array generate_keys(string client_random, string server_random,array(int) versio
 //!   @endarray
 array new_server_states(string client_random, string server_random,array(int) version)
 {
-  object write_state = State(this_object());
-  object read_state = State(this_object());
+  State write_state = State(this_object());
+  State read_state = State(this_object());
   array keys = generate_keys(client_random, server_random,version);
 
   if (cipher_spec->mac_algorithm)
@@ -256,8 +256,8 @@ array new_server_states(string client_random, string server_random,array(int) ve
 //!   @endarray
 array new_client_states(string client_random, string server_random,array(int) version)
 {
-  object write_state = State(this_object());
-  object read_state = State(this_object());
+  State write_state = State(this_object());
+  State read_state = State(this_object());
   array keys = generate_keys(client_random, server_random,version);
   
   if (cipher_spec->mac_algorithm)

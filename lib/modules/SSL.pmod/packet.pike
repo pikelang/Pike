@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: packet.pike,v 1.13 2003/01/27 01:41:17 nilsson Exp $
+/* $Id: packet.pike,v 1.14 2003/01/27 15:03:00 nilsson Exp $
  *
  * SSL Record Layer
  */
@@ -8,8 +8,7 @@
 //! SSL Record Layer. Handle formatting and parsing of packets.
 
 
-inherit "constants";
-
+import .Constants;
 
 constant SUPPORT_V2 = 1;
 

@@ -3,7 +3,7 @@
 
 // SSL Client example
 
-import SSL.constants;
+import SSL.Constants;
 
 SSL.sslfile sslfile;
 

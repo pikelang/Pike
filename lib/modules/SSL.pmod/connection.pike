@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: connection.pike,v 1.25 2003/01/27 01:41:16 nilsson Exp $
+/* $Id: connection.pike,v 1.26 2003/01/27 15:03:00 nilsson Exp $
  *
  * SSL packet layer
  */
@@ -22,7 +22,8 @@ int closing;
 
 function(object,int|object,string:void) alert_callback;
 
-inherit "constants";
+import .Constants;
+
 inherit "handshake";
 
 constant PRI_alert = 1;
