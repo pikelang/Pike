@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.1 2003/01/22 14:53:29 finnman Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.2 2003/01/22 15:04:01 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -21,10 +21,6 @@ RCSID("$Id: libbzip2mod.cmod,v 1.1 2003/01/22 14:53:29 finnman Exp $");
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
 #endif
-
-
-/* This must be included last! */
-#include "module_magic.h"
 
 /* These constants are the default values that
    are sent to a Bz2 stream when it is initialized */
@@ -1115,7 +1111,7 @@ PIKECLASS File
 /*! @endmodule
  */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBBZ2
 #ifdef HAVE_BZLIB_H
@@ -1127,7 +1123,7 @@ void pike_module_init(void)
 #endif
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBBZ2
 #ifdef HAVE_BZLIB_H	
