@@ -20,6 +20,11 @@
 #undef HAVE_PTHREAD_H
 #endif
 
+#ifdef SPROC_THREADS
+/* Not supported yet */
+#undef SPROC_THREADS
+#undef HAVE_SPROC
+#endif /* SPROC_THREADS */
 
 
 extern int num_threads;
@@ -44,20 +49,34 @@ extern struct object *thread_id;
  * threaded.
  */
 #define th_setconcurrency(X) 
+#ifdef HAVE_PTHREAD_YIELD
+#define th_yield()	pthread_yield()
+#else
 #define th_yield()
-
+#endif /* HAVE_PTHREAD_YIELD */
 
 #define th_create(ID,fun,arg) pthread_create(ID,&pattr,fun,arg)
 #define th_exit(foo) pthread_exit(foo)
 #define th_self() pthread_self()
 
+#ifdef HAVE_PTHREAD_COND_INIT
 #define COND_T pthread_cond_t
+
+#ifdef HAVE_PTHREAD_CONDATTR_DEFAULT
+#define co_init(X) pthread_cond_init((X), pthread_condattr_default)
+#else
 #define co_init(X) pthread_cond_init((X), 0)
+#endif /* HAVE_PTHREAD_CONDATTR_DEFAULT */
+
 #define co_wait(COND, MUTEX) pthread_cond_wait((COND), (MUTEX))
 #define co_signal(X) pthread_cond_signal(X)
 #define co_broadcast(X) pthread_cond_broadcast(X)
 #define co_destroy(X) pthread_cond_destroy(X)
-#endif
+#else
+#error No way to make cond-vars
+#endif /* HAVE_PTHREAD_COND_INIT */
+
+#endif /* POSIX_THREADS */
 
 
 
@@ -85,7 +104,36 @@ extern struct object *thread_id;
 #define co_signal(X) cond_signal(X)
 #define co_broadcast(X) cond_broadcast(X)
 #define co_destroy(X) cond_destroy(X)
-#endif
+
+
+#endif /* UNIX_THREADS */
+
+#ifdef SPROC_THREADS
+
+/*
+ * Not fully supported yet
+ */
+#define THREAD_T	int
+
+#define MUTEX_T		ulock_t
+#define mt_init(X)	(usinitlock(((*X) = usnewlock(/*********/))))
+#define mt_lock(X)	ussetlock(*X)
+#define mt_unlock(X)	usunsetlock(*X)
+#define mt_destroy(X)	usfreelock((*X), /*******/)
+
+#define th_setconcurrency(X)	/*******/
+
+#define PIKE_SPROC_FLAGS	(PR_SADDR|PR_SFDS|PR_SDIR|PS_SETEXITSIG)
+#define th_create(ID, fun, arg)	(((*(ID)) = sproc(fun, PIKE_SPROC_FLAGS, arg)) == -1)
+#define th_exit(X)	exit(X)
+#define th_self()	getpid()
+#define th_yield()	sginap(0)
+
+/*
+ * No cond_vars yet
+ */
+
+#endif /* SPROC_THREADS */
 
 extern MUTEX_T interpreter_lock;
 
@@ -173,8 +221,9 @@ void th_cleanup();
 #define th_init()
 #define th_cleanup()
 #define th_init_programs()
-#endif
+#endif /* _REENTRANT */
 
 
 extern int threads_disabled;
-#endif
+
+#endif /* THREADS_H */

@@ -130,6 +130,9 @@
 #undef _SGI_SPROC_THREADS
 #undef _SGI_MP_SOURCE
 
+/* Define this if your pthreads have pthread_condattr_default */
+#undef HAVE_PTHREAD_CONDATTR_DEFAULT
+
 @BOTTOM@
 
 /* How to set a socket non-blocking */
