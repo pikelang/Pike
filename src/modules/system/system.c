@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.96 2000/12/06 12:36:24 mirar Exp $
+ * $Id: system.c,v 1.97 2000/12/06 12:37:42 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.96 2000/12/06 12:36:24 mirar Exp $");
+RCSID("$Id: system.c,v 1.97 2000/12/06 12:37:42 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1658,8 +1658,6 @@ static void f_getrlimits(INT32 args)
    n+=2;
 #endif
    
-   fprintf(stderr,"n=%d\n",n);
-
    f_aggregate_mapping(n);
 }
 
