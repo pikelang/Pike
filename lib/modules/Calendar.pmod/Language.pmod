@@ -427,6 +427,7 @@ class cSWEDISH
       "Annunciation":		"Marie bebådelsedag",
       "Labor Day":		"Första maj",
       "Sweden's Flag Day":	"Svenska flaggans dag",
+      "National Day":		"Nationaldagen",
       "St. John the Baptist":	"Johannes Döpares dag",
       "Crown Princess' Birthday":"H K M Kronprinsessans födelsedag",
       "Queen's Nameday":	"H K M Drottningens namnsdag",
@@ -1935,6 +1936,31 @@ class cDANISH
       "lørdag",
       "søndag",
    });
+
+   static mapping events_translate=
+   ([
+      "2nd day of Christmas"		    :"2. juledag",			      
+      "Ascension"			    :"Kristi himmelfart",		      
+      "Birthday of Queen Margrethe II"	    :"Dronning Margrethes fødselsdag",   
+      "Carnival"			    :"Fastelavn",			      
+      "Christmas Day"			    :"1. juledag",			      
+      "Christmas Eve"			    :"Juleaften",			      
+      "Constitution Day"		    :"Grundlovsdag",		      
+      "Easter Monday"			    :"2. påskedag",			      
+      "Easter"                              :"Påske",			      
+      "Good Friday"			    :"Langfredag",
+      "Great Prayer Day"		    :"Store bededag",		      
+      "Holy Thursday"			    :"Skærtorsdag",		      
+      "Labor Day"			    :"1. Maj",			      
+      "New Year's Day"			    :"Nytårsdag",			      
+      "New Year's Eve"			    :"Nytårsaften",			      
+      "Palm Sunday"			    :"Palme søndag",		      
+      "Pentecost Monday"		    :"2. Pinsedag",			      
+      "Pentecost"			    :"Pinsedag",			      
+      "Prince Fredrik's Birthday"	    :"Kronprins Fredriks fødselsdag",    
+      "Epiphany"			    :"Hellig trekongers dag",
+      "Epiphany Eve" 			    :"Hellig trekongers aften",
+   ]);
 
    void create() { SETUPSTUFF; }
 }
