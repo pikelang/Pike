@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.297 2003/10/15 17:07:00 mast Exp $
+|| $Id: file.c,v 1.298 2003/10/15 17:10:37 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.297 2003/10/15 17:07:00 mast Exp $");
+RCSID("$Id: file.c,v 1.298 2003/10/15 17:10:37 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -280,12 +280,14 @@ static void close_fd_quietly(void)
   int fd=FD;
   if(fd<0) return;
 
-  set_read_callback(FD,0,0);
-  set_write_callback(FD,0,0);
+  set_read_callback(fd,0,0);
+  set_write_callback(fd,0,0);
 #ifdef WITH_OOB
-  set_read_oob_callback(FD,0,0);
-  set_write_oob_callback(FD,0,0);
+  set_read_oob_callback(fd,0,0);
+  set_write_oob_callback(fd,0,0);
 #endif /* WITH_OOB */
+  set_backend_for_fd(fd, NULL);
+
   check_internal_reference(THIS);
 
   FD=-1;
@@ -332,12 +334,14 @@ static void just_close_fd(void)
   int fd=FD;
   if(fd<0) return;
 
-  set_read_callback(FD,0,0);
-  set_write_callback(FD,0,0);
+  set_read_callback(fd,0,0);
+  set_write_callback(fd,0,0);
 #ifdef WITH_OOB
-  set_read_oob_callback(FD,0,0);
-  set_write_oob_callback(FD,0,0);
+  set_read_oob_callback(fd,0,0);
+  set_write_oob_callback(fd,0,0);
 #endif /* WITH_OOB */
+  set_backend_for_fd(fd, NULL);
+
   check_internal_reference(THIS);
 
   FD=-1;
