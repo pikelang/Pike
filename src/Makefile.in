@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.338 2002/11/27 11:58:28 marcus Exp $
+# $Id: Makefile.in,v 1.339 2003/02/04 17:32:19 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -82,7 +82,7 @@ OPTIMIZE=@OPTIMIZE@
 MAKE_PARALLEL=
 
 # Preprocessor flags.
-PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)
+PREFLAGS=-DPIKE_SRC_ROOT="$(BASEDIR)" -I. -I$(SRCDIR) $(DEFINES)
 OTHERFLAGS=@CFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
 NOOPTFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.467 2003/02/01 15:37:23 mast Exp $
+|| $Id: program.c,v 1.468 2003/02/04 17:32:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.467 2003/02/01 15:37:23 mast Exp $");
+RCSID("$Id: program.c,v 1.468 2003/02/04 17:32:20 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1817,8 +1817,15 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 {
   struct pike_string *save_file = lex.current_file;
   int save_line = lex.current_line;
-  lex.current_file = make_shared_string(file);
-  lex.current_line = line;
+
+  { /* Trim off the leading path of the compilation environment. */
+    const char *p = DEFINETOSTR(PIKE_SRC_ROOT), *f = file;
+    while (*p && *p == *f) p++, f++;
+    while (*f == '/' || *f == '\\') f++;
+
+    lex.current_file = make_shared_string(f);
+    lex.current_line = line;
+  }
 
   CDFPRINTF((stderr,
 	     "th(%ld) start_new_program(%d, %s): "
@@ -4892,6 +4899,8 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
 						      INT32 *linep)
 {
+  *linep = 0;
+
   if (prog->linenumbers) {
     char *cnt;
     size_t len = 0;
@@ -4910,7 +4919,6 @@ PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
       get_small_number(&cnt);	/* Ignore the offset */
       *linep = get_small_number(&cnt);
     }
-    else *linep = 0;
 
     if (file) {
       struct pike_string *str = begin_wide_shared_string(len, shift);
@@ -4951,6 +4959,7 @@ char *debug_get_program_line(struct program *prog,
   INT32 shift = 0;
   char *file = NULL;
   static char buffer[1025];
+  *linep = 0;
 
   if (!prog->linenumbers)
     return "stub";
@@ -4967,7 +4976,7 @@ char *debug_get_program_line(struct program *prog,
     get_small_number(&cnt);	/* Ignore the offset */
     *linep = get_small_number(&cnt);
   }
-  else *linep = 0;
+
   if (file) {
     if(shift)
     {
