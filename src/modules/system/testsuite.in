@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.9 1998/07/22 07:47:23 hubbe Exp $
+// $Id: testsuite.in,v 1.10 1998/08/04 23:22:00 grubba Exp $
 
 
 // system.c:
@@ -32,6 +32,7 @@ ifefun(getuid, [[ test_true(intp(getuid())) ]])
 // hardlink		HAVE_LINK
 // initgroups		HAVE_INITGROUPS
 // readlink		HAVE_READLINK
+// resolvepath		HAVE_RESOLVEPATH (|| HAVE_READLINK)
 // setegid		HAVE_SETEGID || HAVE_SETRESGID
 // seteuid		HAVE_SETEUID || HAVE_SETRESUID
 // setgid		HAVE_SETGID
