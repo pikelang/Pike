@@ -11,27 +11,27 @@
 
 static dynamic_buffer buff;
 
-char *low_make_buf_space(INT32 space,dynamic_buffer *buf)
+char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
 {
   char *ret;
 #ifdef DEBUG
   if(!buf->s.str) fatal("ARRRRGH! Deadly Trap!\n");
 #endif
 
-  if(buf->s.len+space>=buf->bufsize)
+  if(buf->s.len+space >= buf->bufsize)
   {
     if(!buf->bufsize) buf->bufsize=1;
 
     do{
       buf->bufsize*=2;
-    }while(buf->s.len+space>=buf->bufsize);
+    }while(buf->s.len+space >= buf->bufsize);
 
-    buf->s.str=(char *)realloc(buf->s.str,buf->bufsize);
+    buf->s.str=(char *)realloc(buf->s.str, buf->bufsize);
     if(!buf->s.str)
       error("Out of memory.\n");
   }
-  ret=buf->s.str + buf->s.len;
-  buf->s.len+=space;
+  ret = buf->s.str + buf->s.len;
+  buf->s.len += space;
   return ret;
 }
 
@@ -72,7 +72,7 @@ void low_reinit_buf(dynamic_buffer *buf)
   }
 }
 
-void low_init_buf_with_string(string s,dynamic_buffer *buf)
+void low_init_buf_with_string(string s, dynamic_buffer *buf)
 {
   if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; } 
   buf->s=s;
