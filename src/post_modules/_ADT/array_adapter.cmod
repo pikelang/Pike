@@ -1,0 +1,1026 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: array_adapter.cmod,v 1.1 2003/02/12 18:36:20 peta Exp $
+*/
+
+#include "global.h"
+#include "main.h"
+#include "object.h"
+//#include "mapping.h"
+//#include "multiset.h"
+#include "svalue.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "pike_error.h"
+#include "pike_memory.h"
+//#include "dynamic_buffer.h"
+#include "interpret.h"
+#include "las.h"
+#include "gc.h"
+#include "stralloc.h"
+//#include "security.h"
+#include "block_alloc.h"
+//#include "opcodes.h"
+#include "pike_error.h"
+#include "program.h"
+#include "operators.h"
+#include "builtin_functions.h"
+#include "constants.h"
+
+
+#include "program.h"
+#include "program_id.h"
+
+
+#include "fdlib.h"
+#include "fd_control.h"
+#include "backend.h"
+#include "module_support.h"
+#include "array_adapter.h"
+
+
+/*! @module ADT
+ */
+
+
+DECLARATIONS
+
+/*! @class ArrayAdapter
+ *! This adapter gives the possibillity to use normal arrays as collections.
+ *! 
+ */
+
+PIKECLASS ArrayAdapter
+{
+
+  CVAR int pos;
+  CVAR struct array *a;
+  CVAR struct array **aptr;
+
+  
+/*! @decl mixed `[](int index)
+ *! Index operator
+ *! 
+ *! @param index
+ *!   The index to get the value for, could be negative to index from the end.
+ *!
+ *! @returns
+ *!   The value at the index @[index]
+ *!
+ *! @throws 
+ *!   An error if the index is out of range.
+ */
+
+  PIKEFUN mixed `[](mixed index) {
+      
+    simple_array_index_no_free(Pike_sp, THIS->a, index);
+    Pike_sp++;
+  }
+  
+
+/*! @decl int `[]=(int index, mixed value)
+ *! Index assign operator
+ *! Set the value at the index @[index] to be @[value]
+ *! 
+ *! @param index 
+ *!   The index to set
+ *!
+ *! @param value
+ *!   The new value
+ *!
+ *! @returns
+ *!   The new value at the index @[index]
+ *!
+ */
+  
+  PIKEFUN int `[]=(mixed index, mixed value) {
+    should_copy();  	
+    simple_set_index(THIS->a, index, value);
+  } 
+
+
+/*! @decl ArrayAdapter `+(ArrayAdapter coll)
+ *! Addition operator
+ *! Append the content of this ArrayAdapter and @[coll] and return the results 
+ *! as a new @[ArrayAdapter].
+ *! 
+ *! @param coll 
+ *!   The adapter to apend to his adapter
+ *!
+ *! @returns
+ *!   The result of the append as a new @[ArrayAdapter]. 
+ */
+
+  PIKEFUN object `+(object coll)
+  {
+    //Should work  om collection classes too
+    if (coll->prog == ArrayAdapter_program)
+    {
+      ref_push_array(THIS->a);
+      ref_push_array(OBJ2_ARRAYADAPTER(coll)->a);
+      ref_push_array(add_arrays(Pike_sp-2, 2));
+  
+      push_object(clone_object(ArrayAdapter_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`+",1,"ADT.ArrayAdapter");
+    }
+  }
+
+  
+/*! @decl ArrayAdapter `-(ArrayAdapter coll)
+ *! Subtraction operator
+ *! Removes those values in this adapter that also are present in @[coll] 
+ *! and return the results as a new @[ArrayAdapter].
+ *! 
+ *! @param coll 
+ *!   The adapter to subtract from this adapter
+ *!
+ *! @returns
+ *!   The result of the subtraction as a new @[ArrayAdapter]. 
+ */
+
+  PIKEFUN object `-(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == ArrayAdapter_program)
+    {
+      ref_push_array(subtract_arrays(THIS->a, OBJ2_ARRAYADAPTER(coll)->a));
+  
+      push_object(clone_object(ArrayAdapter_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.ArrayAdapter");
+    }
+  }
+    
+  
+/*! @decl ArrayAdapter `&(ArrayAdapter coll)
+ *! And operator
+ *! Perform an and on this adapter and the @[coll] adapter by only returning 
+ *! those values that is present in both adapters as a new @[ArrayAdapter].
+ *! The remaning values is in the same order as they are in this adapter and
+ *! the values is compared using '==.
+ *!
+ *! @param coll 
+ *!   The adapter to and to his adapter
+ *!
+ *! @returns
+ *!   The result of the and as a new @[ArrayAdapter]. 
+ */
+
+  PIKEFUN object `&(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == ArrayAdapter_program)
+    {
+      ref_push_array(and_arrays(THIS->a, 
+				OBJ2_ARRAYADAPTER(coll)->a));
+  
+      push_object(clone_object(ArrayAdapter_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`&",1,"ADT.ArrayAdapter");
+    }
+  }
+
+  
+/*! @decl ArrayAdapter `|(ArrayAdapter coll)
+ *! Or operator
+ *! Perform an or on this adapter and the @[coll] adapter by returning 
+ *! those values that is present in both adapters as a new @[ArrayAdapter].
+ *! The values is compared using '==.
+ *!
+ *! @param coll 
+ *!   The adapter to or with his adapter
+ *!
+ *! @returns
+ *!   The result of the or as a new @[ArrayAdapter]. 
+ */
+
+  PIKEFUN object `|(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == ArrayAdapter_program)
+    {
+      ref_push_array(merge_array_with_order(THIS->a, 
+					    OBJ2_ARRAYADAPTER(coll)->a,
+					    PIKE_ARRAY_OP_OR));
+  
+      push_object(clone_object(ArrayAdapter_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`|",1,"ADT.ArrayAdapter");
+    }
+  }
+
+
+/*! @decl ArrayAdapter `^(ArrayAdapter coll)
+ *! Xor operator
+ *! Perform a xor on this adapter and the @[coll] adapter by returning 
+ *! those values that is present in one of the adpaters but not in both 
+ *! adapters as a new @[ArrayAdapter].
+ *! The values is compared using '==.
+ *!
+ *! @param coll 
+ *!   The adapter to xor with his adapter
+ *!
+ *! @returns
+ *!   The result of the xor as a new @[ArrayAdapter]. 
+ */
+
+  PIKEFUN object `^(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == ArrayAdapter_program)
+    {
+      ref_push_array(merge_array_with_order(THIS->a, 
+					    OBJ2_ARRAYADAPTER(coll)->a,
+					    PIKE_ARRAY_OP_XOR));
+  
+      push_object(clone_object(ArrayAdapter_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`^",1,"ADT.ArrayAdapter");
+    }
+  }
+
+
+  /*! @decl array _equal(mixed coll)
+   *!
+   *! @returns
+   *!   Returns @tt{true@} if the object @[coll] is and @[ArrayAdapter]
+   *!   and contains the same values in the same order.
+   */
+
+  PIKEFUN int _equal(mixed coll)
+  {
+    if (coll->type == T_OBJECT && 
+	coll->u.object->prog == ArrayAdapter_program)
+    {
+      struct ArrayAdapter_struct *adapter = OBJ2_ARRAYADAPTER(coll->u.object);
+      RETURN  (array_equal_p(THIS->a, adapter->a, 0));
+    }
+    RETURN 0;
+  }
+
+  /*! @decl array _indices()
+   *!
+   *! @returns
+   *!   The indices in this adapter as an array.
+   */
+
+  PIKEFUN array _indices()
+  {
+    ptrdiff_t size = THIS->a->size;
+    struct array *a;
+    
+    a=allocate_array_no_init(size,0);
+    while(--size>=0)
+    {
+      ITEM(a)[size].type=T_INT;
+      ITEM(a)[size].subtype=NUMBER_NUMBER;
+      ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
+    }
+    RETURN a;
+  }
+
+/*! @decl void _insert_element(int index, mixed value)
+ *! Insert an element in the adapter at the postion @[index], the value
+ *! at the position @[index] and all above will have thier index increased 
+ *! with one.
+ *! 
+ *! @param index 
+ *!   The index to insert the value at
+ *!
+ *! @param value
+ *!   The new value
+ *!
+ */
+
+  PIKEFUN void _insert_element(int index, mixed value)
+  {
+    if(index<0) index+=THIS->a->size;
+    if(index<0 || index>=THIS->a->size+1) {
+      if (THIS->a->size) {
+	Pike_error("Index %d is out of array range 0 - %d.\n", 
+		   index, 
+		   THIS->a->size-1);
+      } else {
+	Pike_error("Attempt to index the empty array with %d.\n", index);
+      }
+    }
+    
+    should_copy();
+    THIS->a = array_insert(THIS->a, value, index);
+   
+  }
+
+/*! @decl void _remove_element(int index)
+ *!  Remove the values at index @[index] from the adapter.
+ *! 
+ *! @param index 
+ *!   The index to remove
+ *!
+ *! @returns
+ *!   The removed value.
+ */
+
+  PIKEFUN mixed _remove_element(int index)
+  {
+    struct svalue s;
+    
+    if(index<0) index+=THIS->a->size;
+    if(index<0 || index>=THIS->a->size) {
+      if (THIS->a->size) {
+	Pike_error("Index %d is out of array range 0 - %d.\n", 
+		   index, 
+		   THIS->a->size-1);
+      } else {
+	Pike_error("Attempt to index the empty array with %d.\n", index);
+      }
+    }
+
+    s = *(THIS->a->item + index);    
+    should_copy();
+    THIS->a = array_remove(THIS->a, index);
+    push_svalue(&s);
+  }
+
+
+/*! @decl void _search(mixed value, void|int start)
+ *!   Search the adapter for a specific value. Return the index of the first 
+ *!   value that is equal to @[value]. If no value was found @tt{UNDEFINED@} 
+ *!   is returned insted
+ *! 
+ *! @param value
+ *!   The value to find
+ *!
+ *! @param int start
+ *!   If a start value is supplied it will start searching at the index 
+ *!   @[start].
+ *!
+ *! @returns
+ *!   Returns the index of the found value or @tt{UNDEFINED@}.
+ */
+
+  PIKEFUN int _search(mixed value, void|int start)
+  {
+    if(args == 2)
+    { 
+      if (start->type != PIKE_T_INT)
+      { 
+	SIMPLE_BAD_ARG_ERROR("_search",2,"int");
+      }
+      RETURN array_search(THIS->a, value, start->u.integer);
+    }
+    else 
+    {
+      RETURN array_search(THIS->a,value,0);
+    }
+  }
+  
+/*! @decl int _sizeof()
+ *!
+ *! @returns
+ *!   The number of elements in this adapter.
+ */
+
+  PIKEFUN int _sizeof()
+  {
+    RETURN THIS->a->size;
+  }
+
+  /*! @decl array _values()
+   *!
+   *! @returns
+   *!   The values in this adapter as an array.
+   */
+  
+  PIKEFUN array _values()
+  {
+    struct array *a;
+     a=copy_array(THIS->a);
+    RETURN a;
+  }
+
+  
+/*! @decl void add(mixed value)
+ *!   Add a value at the end of the adapter
+ *!
+ *! @param value
+ *!   The value to add
+ */
+
+  PIKEFUN void add(mixed value)
+  {
+    should_copy();
+    THIS->a=append_array(THIS->a, value);
+  }
+
+
+/*! @decl void cast('array')
+ *!   Cast the content of this adapter toan array.
+ *!
+ *! @returns
+ *!   An array with the contents of this adapter.
+ */
+
+  PIKEFUN mixed cast(string type)
+  {
+    struct pike_string *array_t;
+       MAKE_CONSTANT_SHARED_STRING( array_t, "array" ); 
+    
+    if (type == array_t)
+    {
+           push_array(copy_array(THIS->a));
+      
+    }
+    else
+    {
+      Pike_error("Cannot cast to %s\n", type->str );
+    }
+  }
+
+  /*! @decl void clear()
+   *!   Clear the contents of the adapter.
+   *!
+   */
+
+  PIKEFUN void clear()
+  {
+    should_copy();
+    THIS->a=resize_array(THIS->a, 0);
+  }   
+
+  /*! @decl int delete_value(mixed value)
+   *!   Remove the first occurrence of the value @[value] from the adapter.
+   *!
+   *! @param value
+   *!   The value to remove from the adapter.
+   *!
+   *! @returns
+   *!   The index of the removed element or -1 if there was no value to 
+   *!   remove
+   */
+  
+  PIKEFUN int delete_value(mixed value)
+  {
+    INT32 index = array_search(THIS->a, value, 0);
+    if (index > -1)
+    {
+      should_copy();
+      THIS->a = array_remove(THIS->a, index);
+    }
+    RETURN index;
+  }
+
+  /*! @decl int(0..1) is_empty()
+   *!
+   *! @returns
+   *!   Returns @tt{1@} if the adapter is empty otherwise @tt{0@}. 
+   */
+
+  PIKEFUN int is_empty()
+  {
+    RETURN !(THIS->a->size);
+  }
+
+  /*! @decl int max_size()
+   *!
+   *! @returns
+   *!   Returns -1.
+   */
+
+  PIKEFUN int max_size()
+  {
+    RETURN -1;
+  }
+
+  
+  /*! @decl void create(array a)
+   *!   Creates a new @[ArrayAdapter] around the array a.
+   */
+
+  PIKEFUN void create(array a) {
+    add_ref(THIS->a=a);
+    THIS->aptr = &a;
+  }
+
+
+  
+  /*! @decl ArrayAdapterIterator _get_iterator(void|int ind)
+   *!   Create and initiate a new ArrayAdapterIterator that could be used
+   *!   to iterate over this adapter.
+   *!
+   *! @param ind
+   *!   If an @[ind] value is supplied the iterator will be positioned at
+   *!   that index.
+   *!
+   *! @returns
+   *!   An iterator.
+   */
+
+
+  
+  /*! @decl ArrayAdapterIterator first()
+   *!   Create and initiate a new ArrayAdapterIterator that could be used
+   *!   to iterate over this adapter.
+   *!
+   *! @returns
+   *!   An iterator positioned at the first element in the adapter.
+   */
+
+  
+  /*! @decl ArrayAdapterIterator last()
+   *!   Create and initiate a new ArrayAdapterIterator that could be used
+   *!   to iterate over this adapter.
+   *!
+   *! @returns
+   *!   An iterator positioned after the last element in the adapter.
+   */
+
+
+  INIT 
+  {
+    THIS->a=0;
+    THIS->pos=0;
+  }
+
+  EXIT
+  {
+    free_array(THIS->a);
+  }
+
+  //if there is more than one reference to this array copy it.
+
+  inline void should_copy()
+  {
+    if (THIS->a->refs > 1)
+    {
+      free_array(THIS->a);
+      THIS->a = copy_array(THIS->a);
+    }
+  }    
+
+
+  /*! @class ArrayAdapterIterator
+   *!    This is the iterator for the ArrayAdapter. It implements the 
+   *!    IndexedIterator and the OutputIterator
+   */  
+  
+  PIKECLASS ArrayAdapterIterator
+  {
+    CVAR int pos;
+    CVAR struct ArrayAdapter_struct *adapter;
+    CVAR struct object *obj; 
+
+    
+  /*! @decl void create(object adapter, void|int start)
+   *!   Creates a new iterator for the adapter @[adapter]. If start is
+   *!   supplied it will try to position the iterater at @[start].
+   *! 
+   */
+
+    PIKEFUN void create(object adapter, void|int start) 
+    {
+      
+      if (adapter->prog != ArrayAdapter_program)
+      {
+	SIMPLE_BAD_ARG_ERROR("create",1,"ADT.ArrayAdapter");
+      
+      }
+      else
+      {
+	THIS->adapter = OBJ2_ARRAYADAPTER(adapter);
+	add_ref(THIS->obj = adapter);
+	if (args == 2) // if there was an start index supplied
+	{
+	  THIS->pos=start->u.integer;
+	  if (THIS->adapter->a && ((THIS->pos > THIS->adapter->a->size) 
+				   || (THIS->pos < 0)))
+	  {
+	      Pike_error("Index %d is out of array range 0 - %d.\n", 
+			 THIS->pos, 
+			 THIS->adapter->a->size);
+	  }
+	}
+	else
+	{
+	  THIS->pos = 0;
+	}
+      }
+      
+    }
+    
+    /*! @decl int index()
+     *!   
+     *! @returns
+     *!    The index at the current position.
+     */
+
+    PIKEFUN int index()
+    {
+      if(!THIS->adapter || 
+	 !THIS->adapter->a || 
+	 THIS->pos >= THIS->adapter->a->size) 
+      {
+	push_int(0);
+	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+      }
+      else
+      {
+      	RETURN THIS->pos;
+      }
+    }
+    
+    
+    /*! @decl mixed value()
+     *!   
+     *! @returns
+     *!    The value at the current position.
+     */
+
+    PIKEFUN mixed value()
+    {
+      if(!THIS->adapter || 
+	 !THIS->adapter->a || 
+	 THIS->pos >= THIS->adapter->a->size) 
+      {
+	push_int(0);
+	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+      }
+      else
+      {
+	push_svalue(THIS->adapter->a->item + THIS->pos);
+      }
+    }
+
+
+    /*! @decl ArrayAdapterIterator `+(int steps)
+     *!   Move the iterator @[steps] steps forward (negative value on @[steps]
+     *!   will cause the iterator to move backwards) and return the result
+     *!   as a new iterator.
+     *! @returns
+     *!    A new iterator positioned @[steps] steps forward.
+     */    
+
+    PIKEFUN object `+(int steps)
+    {
+      struct object *o=low_clone(ArrayAdapterIterator_program);
+      struct ArrayAdapterIterator_struct *new;
+      new = OBJ2_ARRAYADAPTERITERATOR(o);
+      new[0]=*THIS;
+      add_ref(THIS->obj);
+      new->pos+=steps;
+      if (new->pos < 0) 
+      { 
+	new->pos = 0;
+      }
+      else if (new->pos > new->adapter->a->size) 
+      { 
+	new->pos = new->adapter->a->size; 
+      }
+      RETURN o;
+    }    
+
+    /*! @decl ArrayAdapterIterator `+=(int steps)
+     *!   Move this iterator @[steps] steps forward (negative value on @[steps]
+     *!   will cause the iterator to move backwards) and return the result.
+     *!
+     *! @returns
+     *!    This iterator positioned @[steps] steps forward.
+     */    
+
+
+    PIKEFUN object `+=(int steps)
+    {
+      THIS->pos+=steps;
+      if (THIS->pos < 0) 
+      { 
+	THIS->pos = 0;
+      }
+      else if (THIS->pos > THIS->adapter->a->size) 
+      { 
+	THIS->pos = THIS->adapter->a->size; 
+      }
+      
+      REF_RETURN Pike_fp->current_object;
+    }
+
+    
+
+    /*! @decl ArrayAdapterIterator `-(int steps)
+     *!   Move the iterator @[steps] steps backwards (negative value on 
+     *!   @[steps] will cause the iterator to move forwars) and return 
+     *!   the result as a new iterator.
+     *! @returns
+     *!    A new iterator positioned @[steps] steps backwards.
+     */    
+
+    PIKEFUN object `-(int steps)
+    {
+      struct object *o=low_clone(ArrayAdapterIterator_program);
+      struct ArrayAdapterIterator_struct *new;
+      new = OBJ2_ARRAYADAPTERITERATOR(o);
+      new[0]=*THIS;
+      add_ref(THIS->obj);
+      new->pos-=steps;
+      if (new->pos < 0) 
+      { 
+	new->pos = 0;
+      }
+      else if (new->pos > new->adapter->a->size) 
+      { 
+	new->pos = new->adapter->a->size; 
+      }
+      RETURN o;
+    }
+
+    /*! @decl ArrayAdapterIterator `-=(int steps)
+     *!   Move this iterator @[steps] steps backwatds (negative value on 
+     *!   @[steps] will cause the iterator to move backwards) and return 
+     *!   the result as a new iterator.
+     *!
+     *! @returns
+     *!    This iterator positioned @[steps] steps forward.
+     */    
+
+    PIKEFUN object aa(int steps) //shall be `-=
+    {
+      THIS->pos-=steps;
+      if (THIS->pos < 0) 
+      { 
+	THIS->pos = 0;
+      }
+      else if (THIS->pos > THIS->adapter->a->size) 
+      { 
+	THIS->pos = THIS->adapter->a->size; 
+      }
+      REF_RETURN Pike_fp->current_object;
+    }
+
+    
+    /*! @decl int(0..1) has_next(void|int steps)
+     *! @returns
+     *!    Returns @tt{true@} if it is possible to move @[steps] steps
+     *!    forwards, if @[steps] wasn't supplied it check if it is
+     *!    possible to move one step forward.
+     */    
+
+    PIKEFUN int has_next(void|int steps)
+    {
+      if (args==0)
+      {
+	RETURN (THIS->adapter && THIS->adapter->a && 
+		(THIS->pos + 1) <= THIS->adapter->a->size);
+      }
+      else
+      {	
+	RETURN (THIS->adapter && THIS->adapter->a && 
+		(THIS->pos + steps->u.integer) >= 0 &&
+		(THIS->pos + steps->u.integer) <= THIS->adapter->a->size);
+      }
+    }
+    
+    
+    /*! @decl int(0..1) has_previous(void|int steps)
+     *! @returns
+     *!    Returns @tt{true@} if it is possible to move @[steps] steps
+     *!    backwards, if @[steps] wasn't supplied it check if it is
+     *!    possible to move one step backward.
+     */  
+
+    PIKEFUN int has_previous(void|int steps)
+    {
+      if (args==0)
+      {
+	RETURN (THIS->adapter && THIS->adapter->a &&
+		(THIS->pos) > 0);
+      }
+      else
+      {
+	RETURN (THIS->adapter && THIS->adapter->a &&
+		(THIS->pos - steps->u.integer) >= 0 &&
+		(THIS->pos - steps->u.integer) <= THIS->adapter->a->size);
+      }
+    }
+
+    
+    /*! @decl int(0..1) `!()
+     *! @returns
+     *!    Returns @tt{false@} if the iterator has reached the end.
+     */  
+
+    PIKEFUN int `!()
+    {
+      RETURN (THIS->adapter && THIS->adapter->a &&
+	      THIS->pos  == THIS->adapter->a->size);
+    }
+
+    
+    /*! @decl int(0..1) _equal(mixed iter)
+     *!    Compare this iterator with another iterator.
+     *! 
+     *! @param iter
+     *!    The iterator to compare with
+     *! @returns
+     *!    Returns @tt{true@} if both iterators iterates over the same
+     *!    objects and are positioned at the same spot.
+     */  
+
+    PIKEFUN int _equal(mixed iter)
+    {
+      if (iter->type == T_OBJECT && 
+	  iter->u.object->prog == ArrayAdapterIterator_program)
+      {
+	//to do: Check so that it is an ArrayAdapterIterator
+	struct ArrayAdapterIterator_struct *i = 
+	  OBJ2_ARRAYADAPTERITERATOR(iter->u.object);
+	RETURN (THIS->adapter == i->adapter && THIS->pos == i->pos);
+      }
+      else
+      {
+	RETURN 0;
+      }
+    }
+	
+    
+    /*! @decl int '<(object iter)
+     *!    Less then operator
+     *!
+     *! @returns
+     *!    Returns @tt{true@} if this iterator has a lower index
+     *!    then @[iter].
+     */  
+
+    PIKEFUN int `<(object iter)
+    {
+      if (iter->prog == ArrayAdapterIterator_program)
+      {
+	//to do: Check so that it is an ArrayAdapterIterator
+	struct ArrayAdapterIterator_struct *i = 
+	  OBJ2_ARRAYADAPTERITERATOR(iter);
+	RETURN (THIS->pos < i->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.ArrayAdapter.ArrayAdapterIterator");
+      }
+    }
+	
+
+    /*! @decl int '<(object iter)
+     *!    Greater then operator
+     *!
+     *! @returns
+     *!    Returns @tt{true@} if this iterator has a higher index
+     *!    then @[iter].
+     */  
+
+
+    PIKEFUN int `>(object iter)
+    {
+      if (iter->prog == ArrayAdapterIterator_program)
+      {
+	//to do: Check so that it is an ArrayAdapterIterator
+	struct ArrayAdapterIterator_struct *i = 
+	  OBJ2_ARRAYADAPTERITERATOR(iter);
+	RETURN (THIS->pos > i->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.ArrayAdapter.ArrayAdapterIterator");
+      }
+    }
+
+    
+    /*! @decl ArrayAdapter get_collection(
+     *!
+     *! @returns
+     *!    Returns the ArrayAdapter this iterator currently iterates over.
+     */  
+
+
+    PIKEFUN object get_collection()
+    {
+      REF_RETURN THIS->obj;
+    }
+
+    
+    /*! @decl int set_value(mixed val)
+     *!    Set the value at the current position.
+     *!
+     *! @param val
+     *!    The new value
+     *! @returns
+     *!    Returns the old value
+     */  
+
+
+    PIKEFUN mixed set_value(mixed val)
+    {
+      if (THIS->adapter && THIS->adapter->a &&
+	  THIS->pos < THIS->adapter->a->size)
+      {
+	struct svalue ind;
+	struct svalue retval;
+
+	//if there is someone else using the array but the adapter
+	if (THIS->adapter->a->refs > 1)
+	{
+	  //copy it
+	  free_array(THIS->adapter->a);
+	  THIS->adapter->a = copy_array(THIS->adapter->a);
+	}
+
+	ind.u.integer = THIS->pos;
+	ind.type = T_INT;
+	simple_array_index_no_free(&retval, THIS->adapter->a, &ind);
+	simple_set_index(THIS->adapter->a, &ind, val);
+	push_svalue(&retval);
+      }
+      else
+      {
+	push_int(0);
+	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+      }
+    }
+    
+    INIT 
+    {
+      THIS->adapter=0;
+      THIS->pos=0;
+    }
+
+    EXIT
+    {
+      free_object(THIS->obj);
+    }
+    
+  }
+
+  //End ArrayAdapterIterator
+  /*! @endclass
+  */
+  
+  PIKEFUN object _get_iterator(void|int ind)
+  {
+    ref_push_object(Pike_fp->current_object);
+    if (args > 0)
+    {
+      push_svalue(ind);
+    }
+    push_object(clone_object(ArrayAdapterIterator_program, args+1));
+  }
+
+  
+
+  PIKEFUN object first()
+  {
+    ref_push_object(Pike_fp->current_object);
+    push_object(clone_object(ArrayAdapterIterator_program, 1));
+  }
+
+
+
+  PIKEFUN object last()
+  {
+    struct svalue ind;
+    ind.u.integer=THIS_ARRAYADAPTER->a->size;
+    ind.type=T_INT;
+    ref_push_object(Pike_fp->current_object);
+    push_svalue(&ind);
+    push_object(clone_object(ArrayAdapterIterator_program, 2));
+  }
+
+  
+}	
+
+
+//End of ArrayAdapter
+/*! @endclass    
+  */
+
+/*! @endmodule
+ */
+
+
+void pike_init_ArrayAdapter_module(void)
+{
+  INIT;
+}
+
+void pike_exit_ArrayAdapter_module(void)
+{
+  EXIT
+} 
+
+    
