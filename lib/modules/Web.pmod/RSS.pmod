@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.2 2003/11/10 19:06:05 nilsson Exp $
+// $Id: RSS.pmod,v 1.3 2003/11/25 15:34:05 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -57,8 +57,14 @@ static class Thing {
       .RDF.Resource pred = r[1];
       if(pred==rdf->rdf_type) continue;
       if(pred->is_uri_resource && has_prefix(pred->get_uri(), ns)) {
+	string attr = pred->get_uri()[sizeof(ns)..];
+	if(r[2]->is_literal_resource)
+	  attributes[attr] = r[2]->get_literal();
+	//	else
+	//	  error("Nonliteral %O\n", r);
       }
-      error("Unknown stuff.\n");
+      else
+	error("Unknown stuff %O.\n", r);
     }
   }
 
@@ -149,7 +155,10 @@ class Channel {
 class Index {
   static .RDF rdf;
 
-  array(Channel) channels = ({});
+  array(Channel)   channels = ({});
+  array(Image)     images = ({});
+  array(Item)      items = ({});
+  array(Textinput) textinputs = ({});
 
   void create(.RDF _rdf) {
     rdf = _rdf;
@@ -157,7 +166,18 @@ class Index {
 				 rdf->make_resource(ns+"channel")),
 	    array r)
       channels += ({ Channel(rdf, r[0]) });
-
+    foreach(rdf->find_statements(0, rdf->rdf_type,
+				 rdf->make_resource(ns+"image")),
+	    array r)
+      images += ({ Image(rdf, r[0]) });
+    foreach(rdf->find_statements(0, rdf->rdf_type,
+				 rdf->make_resource(ns+"item")),
+	    array r)
+      items += ({ Item(rdf, r[0]) });
+    foreach(rdf->find_statements(0, rdf->rdf_type,
+				 rdf->make_resource(ns+"textinput")),
+	    array r)
+      textinputs += ({ Textinput(rdf, r[0]) });
   }
 }
 
