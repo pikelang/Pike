@@ -606,8 +606,10 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
       // TODO: parse the expression ???
       //   added parsing only of types...
       //   a constant value will just be ignored.
-      c->typedefType = parseOrType();
+      //c->typedefType = parseOrType();      // Disabled 2003-11-20 /grubba
     }
+    // FIXME: What about multiple constants (constant_list)?
+    //        Not that anyone uses the syntax, but...
     skipUntil( (< ";", EOF >) );
     return c;
   }
