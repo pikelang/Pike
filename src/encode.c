@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.171 2004/05/11 11:28:52 grubba Exp $
+|| $Id: encode.c,v 1.172 2004/05/11 11:36:40 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.171 2004/05/11 11:28:52 grubba Exp $");
+RCSID("$Id: encode.c,v 1.172 2004/05/11 11:36:40 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1301,9 +1301,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		}
 		id_dumped[ref->identifier_offset] = 1;
 
-		if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-		  /* Constant */
-
+		switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
+		case IDENTIFIER_CONSTANT:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding constant\n",
 			      data->depth, ""));
@@ -1325,9 +1324,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* run-time type */
 		  code_number(id->run_time_type, data);
-		} else if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags)) {
-		  /* Pike function */
+		  break;
 
+		case IDENTIFIER_PIKE_FUNCTION:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding function\n",
 			      data->depth, ""));
@@ -1352,14 +1351,16 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* opt_flags */
 		  code_number(id->opt_flags, data);
-		} else if (id->identifier_flags & IDENTIFIER_C_FUNCTION) {
-		  /* C Function */
+		  break;
+
+		case IDENTIFIER_C_FUNCTION:
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
 			     "(identifier='%s').\n",
 			     p->identifiers[d].name->str);
-		} else {
-		  /* Variable */
+		  break;
+
+		case IDENTIFIER_VARIABLE:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding variable\n",
 			      data->depth, ""));
@@ -1375,6 +1376,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  ref_push_type_value(id->type);
 		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
+		  break;
+
+		default:;
+#ifdef PIKE_DEBUG
+		  Pike_fatal ("Unknown identifier type.\n");
+#endif
 		}
 	      }
 
