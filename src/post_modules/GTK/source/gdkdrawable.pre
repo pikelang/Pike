@@ -146,7 +146,7 @@ NAME_ARGS(gc,font,x,y,text,forcewide);
   struct pike_string *s;
   char *swapped;
   get_all_args("draw_text",args, "%o%o%d%d%W",&g,&f,  &x, &y, &s);
-  if(swapped = get_swapped_string( s,args>5 ))
+  if( (swapped = get_swapped_string( s,args>5 )) )
   {
     gdk_draw_text( TWIN,get_gdkobject(f,Font), get_gdkobject(g,GC),
 		   x, y, swapped, s->len<<s->size_shift );
