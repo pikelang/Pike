@@ -1,0 +1,3 @@
+#!/usr/local/bin/pike
+#define WIN64
+#include "rntcl"

@@ -22,4 +22,3 @@ lib -text -crlf
 /src/modules/math/math.c foreign_ident
 /tools/install-sh foreign_ident
 /tools/pntld foreign_ident
-/tools/rntecl foreign_ident
