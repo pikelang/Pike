@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.174 2003/11/09 01:31:12 mast Exp $
+|| $Id: mapping.c,v 1.175 2003/11/12 09:31:51 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.174 2003/11/09 01:31:12 mast Exp $");
+RCSID("$Id: mapping.c,v 1.175 2003/11/12 09:31:51 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1366,6 +1366,47 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 #endif
 
+static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b)
+{
+  struct mapping *res;
+  struct keypair *k;
+  struct mapping_data *a_md = a->data;
+  struct mapping_data *b_md = b->data;
+  INT32 e;
+
+  /* First some special cases. */
+  if (!a_md->size || !b_md->size || !a_md->hashsize || !b_md->hashsize) {
+    return copy_mapping(a);
+  }
+  if (a_md == b_md) {
+    return allocate_mapping(0);
+  }
+  /* FIXME: The break-even point should probably be researched. */
+  if (a_md->size < b_md->size) {
+    /* Add the elements in a that aren't in b. */
+    res = allocate_mapping(a_md->size);
+    NEW_MAPPING_LOOP(a_md) {
+      size_t h = k->hval % b_md->hashsize;
+      struct keypair *k2;
+      for (k2 = b_md->hash[h]; k2; k2 = k2->next) {
+	if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
+	  break;
+	}
+      }
+      if (!k2) {
+	mapping_insert(res, &k->ind, &k->val);
+      }
+    }
+  } else {
+    /* Remove the elements in a that are in b. */
+    res = copy_mapping(a);
+    NEW_MAPPING_LOOP(b_md) {
+      map_delete(res, &k->ind);
+    }
+  }
+  return res;
+}
+
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 {
   ONERROR r1,r2,r3,r4;
@@ -1381,6 +1422,10 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   if(b->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
+
+  if (op == PIKE_ARRAY_OP_SUB) {
+    return subtract_mappings(a, b);
+  }
 
   ai=mapping_indices(a);
   SET_ONERROR(r1,do_free_array,ai);
