@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.318 2003/02/26 15:10:11 grubba Exp $
+|| $Id: language.yacc,v 1.319 2003/03/27 02:06:43 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.318 2003/02/26 15:10:11 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.319 2003/03/27 02:06:43 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -277,6 +277,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> optional_identifier
 %type <n> TOK_IDENTIFIER
 %type <n> assoc_pair
+%type <n> line_number_info
 %type <n> block
 %type <n> optional_block
 %type <n> failsafe_block
@@ -582,7 +583,7 @@ constant: modifiers TOK_CONSTANT constant_list ';' {}
 block_or_semi: block
   {
     $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
-    if ($1) $$->line_number = $1->line_number;
+    if ($1) COPY_LINE_NUMBER_INFO ($$, $1);
   }
   | ';' { $$ = NULL; }
   | TOK_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
@@ -651,8 +652,6 @@ push_compiler_frame0: /* empty */
       copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		Pike_compiler->compiler_frame->previous->current_type);
     }
-
-    $<number>$ = lex.current_line;
   }
   ;
 
@@ -1647,12 +1646,19 @@ new_local_name2: TOK_IDENTIFIER
   | bad_identifier '=' safe_expr0 { $$=$3; }
   ;
 
+line_number_info: /* empty */
+  {
+    /* Used to hold line-number info */
+    $$ = mkintnode(0);
+  }
+  ;
+
 block:'{'
   {
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   } 
-  empty
+  line_number_info
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -1662,16 +1668,14 @@ block:'{'
     else
       Pike_compiler->compiler_frame->last_block_level=$<number>2;
   }
-  {
-    $<number>$=lex.current_line;
-  }
   statements end_block
   {
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
-    if ($6) $6->line_number = $<number>5;
-    $$=$6;
+    if ($5) COPY_LINE_NUMBER_INFO ($5, $3);
+    free_node ($3);
+    $$=$5;
   }
   ;
 
@@ -1816,7 +1820,6 @@ statement: normal_label_statement
 
 labeled_statement: TOK_IDENTIFIER
   {
-    $<number>$ = lex.current_line;
     Pike_compiler->compiler_frame->opt_flags &= ~OPT_CUSTOM_LABELS;
   }
   ':' statement
@@ -1828,7 +1831,7 @@ labeled_statement: TOK_IDENTIFIER
     /* FIXME: This won't be correct if the node happens to be shared.
      * That's an issue to be solved with shared nodes in general,
      * though. */
-    $$->line_number = $<number>2;
+    COPY_LINE_NUMBER_INFO ($$, $1);
   }
   ;
 
@@ -1849,11 +1852,10 @@ continue: TOK_CONTINUE optional_label { $$=mknode(F_CONTINUE,$2,0); } ;
 push_compiler_frame1: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
-    $<number>$ = lex.current_line;
   }
   ;
 
-lambda: TOK_LAMBDA push_compiler_frame1
+lambda: TOK_LAMBDA line_number_info push_compiler_frame1
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
@@ -1872,12 +1874,14 @@ lambda: TOK_LAMBDA push_compiler_frame1
     char buf[80];
     int f,e;
     struct pike_string *name;
+    struct pike_string *save_file = lex.current_file;
     int save_line = lex.current_line;
-    lex.current_line = $<number>1;
+    lex.current_file = $2->current_file;
+    lex.current_line = $2->line_number;
 
-    debug_malloc_touch($6);
-    $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
-    type=find_return_type($6);
+    debug_malloc_touch($7);
+    $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($7);
 
     if(type) {
       push_finished_type(type);
@@ -1885,8 +1889,8 @@ lambda: TOK_LAMBDA push_compiler_frame1
     } else
       push_type(T_MIXED);
     
-    e=$4-1;
-    if($<number>5)
+    e=$5-1;
+    if($<number>6)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
@@ -1916,7 +1920,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
     if(Pike_compiler->compiler_pass == 2)
       Pike_compiler->compiler_frame->current_function_number=isidentifier(name);
     f=dooptcode(name,
-		$6,
+		$7,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
@@ -1934,6 +1938,8 @@ lambda: TOK_LAMBDA push_compiler_frame1
     free_string(name);
     free_type(type);
     lex.current_line = save_line;
+    lex.current_file = save_file;
+    free_node ($2);
     pop_compiler_frame();
   }
   | TOK_LAMBDA push_compiler_frame1 error
@@ -2384,20 +2390,20 @@ failsafe_program: '{' program end_block
 		}
                 ;
 
-class: modifiers TOK_CLASS optional_identifier
+class: modifiers TOK_CLASS line_number_info optional_identifier
   {
     extern int num_parse_error;
     int num_errors=Pike_compiler->num_parse_error;
-    if(!$3)
+    if(!$4)
     {
       struct pike_string *s;
       char buffer[42];
       sprintf(buffer,"__class_%ld_%ld_line_%d",
 	      (long)Pike_compiler->new_program->id,
 	      (long)Pike_compiler->local_class_counter++,
-	      (int) $<number>2);
+	      (int) $3->line_number);
       s=make_shared_string(buffer);
-      $3=mkstrnode(s);
+      $4=mkstrnode(s);
       free_string(s);
       $1|=ID_STATIC | ID_PRIVATE | ID_INLINE;
     }
@@ -2407,24 +2413,22 @@ class: modifiers TOK_CLASS optional_identifier
       if ($1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, $3->u.sval.u.string,
+      low_start_new_program(0, $4->u.sval.u.string,
 			    $1,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
-	 $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
+	 $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
-      if(lex.current_file)
-      {
-	store_linenumber($<number>2, lex.current_file);
-	debug_malloc_name(Pike_compiler->new_program, lex.current_file->str,
-			  $<number>2);
-      }
+      store_linenumber($3->line_number, $3->current_file);
+      debug_malloc_name(Pike_compiler->new_program,
+			$3->current_file->str,
+			$3->line_number);
     }else{
       int i;
       struct identifier *id;
       int tmp=Pike_compiler->compiler_pass;
-      i=isidentifier($3->u.sval.u.string);
+      i=isidentifier($4->u.sval.u.string);
       if(i<0)
       {
 	low_start_new_program(Pike_compiler->new_program,0,
@@ -2440,12 +2444,12 @@ class: modifiers TOK_CLASS optional_identifier
 	  if(s->type==T_PROGRAM)
 	  {
 	    low_start_new_program(s->u.program,
-				  $3->u.sval.u.string,
+				  $4->u.sval.u.string,
 				  $1,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
-	       $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
+	       $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
@@ -2480,9 +2484,10 @@ class: modifiers TOK_CLASS optional_identifier
       free_program(p);
     }
 
-    $$=mkidentifiernode($<number>4);
+    $$=mkidentifiernode($<number>5);
 
-    free_node($3);
+    free_node ($3);
+    free_node($4);
     check_tree($$,0);
   }
   ;
@@ -2666,7 +2671,7 @@ foreach: TOK_FOREACH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
-  empty
+  line_number_info
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2678,32 +2683,37 @@ foreach: TOK_FOREACH
       $$=mknode(F_FOREACH,
 		mknode(F_VAL_LVAL,$6,$7),
 		$9);
-      $$->line_number=$1;
     } else {
       /* Error in lvalue */
       free_node($6);
       $$=$9;
     }
+    COPY_LINE_NUMBER_INFO ($$, $3);
+    free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
 
-do: TOK_DO statement TOK_WHILE '(' safe_comma_expr end_cond expected_semicolon
+do: TOK_DO line_number_info statement
+  TOK_WHILE '(' safe_comma_expr end_cond expected_semicolon
   {
-    $$=mknode(F_DO,$2,$5);
-    $$->line_number=$1;
+    $$=mknode(F_DO,$3,$6);
+    COPY_LINE_NUMBER_INFO ($$, $2);
+    free_node ($2);
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
-  | TOK_DO statement TOK_WHILE TOK_LEX_EOF
+  | TOK_DO line_number_info statement TOK_WHILE TOK_LEX_EOF
   {
+    free_node ($2);
     $$=0;
     yyerror("Missing '(' in do-while loop.");
     yyerror("Unexpected end of file.");
   }
-  | TOK_DO statement TOK_LEX_EOF
+  | TOK_DO line_number_info statement TOK_LEX_EOF
   {
+    free_node ($2);
     $$=0;
     yyerror("Missing 'while' in do-while loop.");
     yyerror("Unexpected end of file.");
@@ -2773,7 +2783,7 @@ switch:	TOK_SWITCH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
-  empty
+  line_number_info
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2782,7 +2792,8 @@ switch:	TOK_SWITCH
   '(' safe_comma_expr end_cond statement
   {
     $$=mknode(F_SWITCH,$6,$8);
-    $$->line_number=$1;
+    COPY_LINE_NUMBER_INFO ($$, $3);
+    free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
@@ -3009,7 +3020,7 @@ expr3: expr4
  */
 
 optional_block: ';' /* EMPTY */ { $$=0; }
-  | '{' push_compiler_frame0
+  | '{' line_number_info push_compiler_frame0
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
@@ -3027,17 +3038,18 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     char buf[40];
     int f/*, e */;
     struct pike_string *name;
+    struct pike_string *save_file = lex.current_file;
     int save_line = lex.current_line;
-    lex.current_line = $<number>2;
+    lex.current_file = $2->current_file;
+    lex.current_line = $2->line_number;
 
     /* block code */
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
-    pop_local_variables($<number>3);
+    pop_local_variables($<number>4);
 
-    debug_malloc_touch($4);
-    $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
-
-    type=find_return_type($4);
+    debug_malloc_touch($5);
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($5);
 
     if(type) {
       push_finished_type(type);
@@ -3048,7 +3060,7 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     push_type(T_VOID);
     push_type(T_MANY);
 /*
-    e=$4-1;
+    e=$5-1;
     for(; e>=0; e--)
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 */
@@ -3067,7 +3079,7 @@ optional_block: ';' /* EMPTY */ { $$=0; }
 #endif /* LAMBDA_DEBUG */
     
     f=dooptcode(name,
-		$4,
+		$5,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
@@ -3078,6 +3090,8 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     }
 
     lex.current_line = save_line;
+    lex.current_file = save_file;
+    free_node ($2);
     free_string(name);
     free_type(type);
     pop_compiler_frame();
