@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.26 1997/09/01 00:59:33 per Exp $");
+RCSID("$Id: threads.c,v 1.27 1997/09/01 14:14:30 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -181,16 +181,19 @@ void f_mutex_lock(INT32 args)
 
   pop_n_elems(args);
   m=THIS_MUTEX;
-
+  o=clone_object(mutex_key,0);
+  mt_lock(& mutex_kluge);
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
-    push_int(0);
+    m->key->refs++;
+    push_object(m->key);
+    mt_unlock(&mutex_kluge);
     return;
+
+    mt_unlock(&mutex_kluge);
     error("Recursive mutex locks!\n");
   }
 
-  o=clone_object(mutex_key,0);
-  mt_lock(& mutex_kluge);
   THREADS_ALLOW();
   while(m->key) co_wait(& m->condition, & mutex_kluge);
   OB2KEY(o)->mut=m;
@@ -212,10 +215,13 @@ void f_mutex_trylock(INT32 args)
   o=clone_object(mutex_key,0);
   m=THIS_MUTEX;
 
-  if(m->key && OB2KEY(m->key)->owner == thread_id)
-    error("Recursive mutex locks!\n");
-
   mt_lock(& mutex_kluge);
+
+  if(m->key && OB2KEY(m->key)->owner == thread_id)
+  {
+    mt_unlock(&mutex_kluge);
+    error("Recursive mutex locks!\n");
+  }
   THREADS_ALLOW();
   if(!m->key)
   {
@@ -320,8 +326,10 @@ void f_cond_wait(INT32 args)
     THREADS_DISALLOW();
     pop_stack();
   } else {
+    mt_lock(&mutex_kluge);
     THREADS_ALLOW();
-    co_wait(c, 0);
+    co_wait(c, &mutex_kluge);
+    mt_unlock(&mutex_kluge);
     THREADS_DISALLOW();
   }
 }
