@@ -23,6 +23,7 @@ testfont binary
 /NT/tools/install-sh foreign_ident
 /NT/tools/pntld foreign_ident
 /NT/tools/rntecl foreign_ident
+/bin/autodoc.pike foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
 /bin/feature_list foreign_ident
