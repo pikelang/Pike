@@ -2,7 +2,7 @@
 
 import Stdio;
 
-// static private inherit File : file;
+program create_process = _static_modules.Builtin()->create_process;
 
 varargs int exec(string file,string ... foo)
 {
@@ -21,20 +21,67 @@ varargs int exec(string file,string ... foo)
   return 69;
 }
 
-varargs int spawn(string s,object stdin,object stdout,object stderr,
-		  function|void cleanup, mixed ... args)
+string *split_quoted_string(string s)
 {
-  int pid;
+  s=replace(s, ({"\"","'","\\"," "}), ({"\0\"","\0'","\0\\","\0 "}));
+  string *x=s/"\0";
+  string *ret=({x[0]});
+
+  for(int e=1;e<sizeof(x);e++)
+  {
+    switch(x[e][0])
+    {
+      case '"':
+      ret[-1]+=x[e][1..];
+      while(x[++e][0]!='"') ret[-1]+=x[e];
+      ret[-1]+=x[e][1..];
+      break;
+
+      case '\'':
+      ret[-1]+=x[e][1..];
+      while(x[++e][0]!='\'') ret[-1]+=x[e];
+      ret[-1]+=x[e][1..];
+      break;
+      
+      case '\\':
+      if(strlen(x[e])>1)
+      {
+	ret[-1]+=x[e][1..];
+      }else{
+	ret[-1]+=x[++e];
+      }
+      break;
+      
+      case ' ':
+	if(strlen(x[e]) > 1 || sizeof(x)==e+1 || x[e+1][0]!=' ')
+	  ret+=({x[e][1..]});
+      break;
+
+      default:
+	ret[-1]+="\0"+x[e];
+	break;
+    }
+  }
+  return ret;
+}
+
+varargs object spawn(string s,object stdin,object stdout,object stderr,
+		     function|void cleanup, mixed ... args)
+{
+#if 1
+  mapping data=([]);
+  if(stdin) data->stdin=stdin;
+  if(stdout) data->stdout=stdout;
+  if(stderr) data->stderr=stderr;
+  return create_process(split_quoted_string(s),data);
+#else
+
+  object pid;
 
 #if constant(fork)
   pid=fork();
-#else
-  pid=-1;
 #endif
   
-  if(pid==-1)
-    error("No more processes.\n");
-
   if(pid)
   {
     return pid;
@@ -54,6 +101,7 @@ varargs int spawn(string s,object stdin,object stdout,object stderr,
     exec("/bin/sh","-c",s);
     exit(69);
   }
+#endif
 }
 
 string popen(string s)
@@ -85,36 +133,12 @@ string popen(string s)
   return t;
 }
 
-#if constant(fork)
-void system(string s)
+int system(string s)
 {
-  object p;
-  int pid;
-  string t;
-  object f;
-
-  f = File();
-  if (!f) error("System failed.\n");
-
-  p=f->pipe();
-  if(!p) error("System() failed.\n");
-  p->set_close_on_exec(0);
-  if(pid=fork())
-  {
-    p->close();
-    destruct(p);
-    /* Nothing will ever be written here, we are just waiting for it
-     * to close
-     */
-    f->read(1);
-  }else{
-    f->close();
-    destruct(f);
-    exec("/bin/sh","-c",s);
-    exit(69);
-  }
+  return spawn(s)->wait();
 }
 
+#if constant(fork)
 constant fork = predef::fork;
 #endif
 
@@ -130,16 +154,16 @@ class Spawn
    object stderr;
    array(object) fd;
 
-   int pid;
+   object pid;
 
-   private int low_spawn(array(void|object(Stdio.File)) fdp,
-			 array(void|object(Stdio.File)) fd_to_close,
-			 string cmd, void|string *args, 
-			 void|mapping(string:string) env, 
-			 string|void cwd)
+   private object low_spawn(array(void|object(Stdio.File)) fdp,
+			    array(void|object(Stdio.File)) fd_to_close,
+			    string cmd, void|string *args, 
+			    void|mapping(string:string) env, 
+			    string|void cwd)
    {
       object(Stdio.File) pie,pied; /* interprocess communication */
-      int pid;
+      object pid;
 
       pie=Stdio.File();
       pied=pie->pipe();
@@ -219,14 +243,16 @@ class Spawn
       pid=low_spawn(fd,fds_to_close||({}),cmd,args,env,cwd);
    }
 
+#if constant(kill)
    int kill(int signal) 
    { 
       return predef::kill(pid,signal); 
    }
+#endif
 
-   void wait()
+   int wait()
    {
-      while (kill(0)) sleep(0.01);
+     return pid->wait();
    }
 
    // void set_done_callback(function foo,mixed ... args);
