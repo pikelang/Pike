@@ -1,3 +1,10 @@
+Wed Sep 25 01:35:46 1996  Fredrik Hubinette  <hubbe@morpheus.infovav.se>
+
+	* mapping.c: destructed function/objectpointers might now be
+	  handled correctly... :)
+	* mpz and readline configure files now check that both .h files
+	  and libraries exists...
+
 Mon Sep 23 01:20:00 1996  Fredrik Hubinette  <hubbe@morpheus.infovav.se>
 
 	* svalue.h: forgot to include BIT_FUNCTION in BIT_COMPLEX...
