@@ -74,6 +74,8 @@ static void exit_matrix(struct object *o)
 **! method void create(int n,int m)
 **! method void create(int n,int m,string type)
 **! method void create(int n,int m,float|int init)
+**! method void create("identity",int size)
+**! method void create("rotate",int size,float rads,int axis)
 **!
 **!	This method initializes the matrix.
 **!	It is illegal to create and hold an empty matrix.
@@ -92,6 +94,10 @@ static void exit_matrix(struct object *o)
 **!
 **!	The third use is to give all indices in the 
 **!	matrix the same value, for instance zero or 42.
+**!
+**!	The forth use is some special matrixes. First the
+**!	square identity matrix again, then the rotation
+**!	matrix. 
 */
 
 static void matrix_create(INT32 args)
@@ -255,7 +261,6 @@ done_made:
 	 if (axis==0) j=1;
 	 k=j+1; 
 	 while (k==axis) k++;
-	 r=r*M_PI/180.0;
 	 THIS->m[j+j*side]=cos(r);
 	 THIS->m[k+j*side]=-sin(r);
 	 THIS->m[j+k*side]=sin(r);
