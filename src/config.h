@@ -8,7 +8,7 @@
  * with DEBUG defined debugging becomes much easier.
  */
 
-#define DEBUG
+#undef DEBUG
 
 /*
  * Define the evaluator stack size, used for just about everything.
@@ -25,7 +25,7 @@
  * Max number of local variables in a function.
  * Currently there is no support for more than 256
  */
-#define MAX_LOCAL	256
+#define MAX_LOCAL	128
 
 /*
  * Define the size of the shared string hash table.
