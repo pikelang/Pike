@@ -1,49 +1,68 @@
-# $Id: configure.in,v 1.4 1999/11/15 19:29:56 neotron Exp $
+# $Id: configure.in,v 1.5 1999/11/21 20:29:19 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
 AC_SUBST(AUTO)
-AC_PATH_XTRA()
 AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],[without_GLUT=no])
 
 if test x$without_GLUT = xyes; then
   AUTO=""
 else
-CPPFLAGS="$X_CFLAGS"
-AC_CHECK_LIB(X11, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(Xmu, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(GL,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(OpenGL,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(MesaGL,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(MesaGLU,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(Xinput, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(Xi, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-AC_CHECK_LIB(Xext, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+  AC_PATH_XTRA()
 
-AC_CHECK_HEADERS(GL/glut.h)
+  # The variables from the PATH_EXTRA macro are missnamed...
+  #
+  #   Variable     Function	Contents
+  #   X_CFLAGS     CPPFLAGS	-I
+  #   X_LIBS       LDFLAGS	-L & -R
+  #   X_EXTRA_LIBS LIBS		-lsocket -lnsl
+  #   X_PRE_LIBS   LIBS  	-lSM -lICE
+  #
+  # /grubba 1999-11-21
+  echo "X_CFLAGS:     $X_CFLAGS"
+  echo "X_LIBS:       $X_LIBS"
+  echo "X_EXTRA_LIBS: $X_EXTRA_LIBS"
+  echo "X_PRE_LIBS:   $X_PRE_LIBS"
 
-oldLIBS="$LIBS"
-AC_MSG_CHECKING(for glutSolidTeapot in -lglut)
-AC_CACHE_VAL(pike_cv_lib_glut, [
-  LIBS="$oldLIBS -lglut"
-  AC_TRY_LINK([
+  CPPFLAGS="$CFLAGS $X_CFLAGS"
+  LIBS="$X_EXTRA_LIBS $LIBS"
+  LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
+  AC_CHECK_LIB(X11, XDrawPoint)
+  AC_CHECK_LIB(Xext, XShmPutImage)
+  AC_CHECK_LIB(Xmu, XmuStandardColormap)
+  AC_CHECK_LIB(GL, glOrtho)
+  AC_CHECK_LIB(OpenGL, glOrtho)
+  AC_CHECK_LIB(MesaGL, glOrtho)
+  AC_CHECK_LIB(GLU, gluCylinder)
+  AC_CHECK_LIB(MesaGLU, gluCylinder)
+  AC_CHECK_LIB(Xinput, XOpenDevice)
+  AC_CHECK_LIB(Xi, XOpenDevice)
+
+  AC_CHECK_HEADERS(GL/glut.h)
+
+  AC_MSG_CHECKING(for glutSolidTeapot in -lglut)
+  AC_CACHE_VAL(pike_cv_lib_glut, [
+    oldLIBS="$LIBS"
+    LIBS="-lglut $LIBS"
+    AC_TRY_LINK([
 #ifdef HAVE_GL_GLUT_H
 #include <GL/glut.h>
 #endif /* HAVE_GL_GLUT_H */
-], [ glutSolidTeapot(1.0) ], [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
-])
-LIBS="$oldLIBS"
-if test x"$pike_cv_lib_glut" = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
-  LIBS="-lglut $LIBS"
-  AUTO=auto.o
-else
-  AC_MSG_RESULT(no)
-  AUTO=""
-fi
+    ], [ glutSolidTeapot(1.0) ],
+       [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
+    LIBS="$oldLIBS"
+  ])
+  if test x"$pike_cv_lib_glut" = xyes; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
+    LIBS="-lglut $LIBS"
+    AUTO=auto.o
+  else
+    AC_MSG_RESULT(no)
+    AUTO=""
+  fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
