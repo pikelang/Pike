@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.363 2001/08/13 23:31:34 hubbe Exp $");
+RCSID("$Id: program.c,v 1.364 2001/08/15 20:58:43 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -760,8 +760,20 @@ static struct node_s *index_modules(struct pike_string *ident,
 
     if(SETJMP(tmp))
     {
-      call_handle_error();
-      yyerror("Couldn't index module.");
+      struct svalue s;
+      assign_svalue_no_free(&s, &throw_value);
+
+      if (!ident->size_shift) {
+	my_yyerror("Couldn't index module '%s'.", ident->str);
+      } else {
+	yyerror("Couldn't index module.");
+      }
+
+      push_svalue(&s);
+      safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+      if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+      pop_stack();
+      free_svalue(&s);
     } else {
       int e = num_used_modules;
       struct svalue *m = modules - num_used_modules;
@@ -3749,11 +3761,16 @@ int store_constant(struct svalue *foo,
 
   if(SETJMP(tmp2))
   {
-    struct svalue zero;
-
-    call_handle_error();
+    struct svalue zero, s;
+    assign_svalue_no_free(&s, &throw_value);
 
     yyerror("Couldn't store constant.");
+
+    push_svalue(&s);
+    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    pop_stack();
+    free_svalue(&s);
 
     zero.type = T_INT;
     zero.subtype = NUMBER_NUMBER;
@@ -4179,6 +4196,35 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 
   yyerror(buf);
   va_end(args);
+}
+
+void yy_describe_exception(struct svalue *thrown)
+{
+  /* FIXME: Doesn't handle wide string error messages. */
+  struct pike_string *s = 0;
+
+  if ((thrown->type == T_ARRAY) && thrown->u.array->size &&
+      (thrown->u.array->item[0].type == T_STRING)) {
+    /* Old-style backtrace */
+    s = thrown->u.array->item[0].u.string;
+  } else if (thrown->type == T_OBJECT) {
+    struct generic_error_struct *ge;
+    if ((ge = (struct generic_error_struct *)
+	 get_storage(thrown->u.object, generic_error_program))) {
+      s = ge->desc;
+    }
+  }
+
+  if (s && !s->size_shift) {
+    extern void f_string_trim_all_whites(INT32 args);
+    ref_push_string(s);
+    f_string_trim_all_whites(1);
+    push_constant_text("\n");
+    push_constant_text(" ");
+    f_replace(3);
+    my_yyerror(sp[-1].u.string->str);
+    pop_stack();
+  }
 }
 
 struct program *compile(struct pike_string *prog,

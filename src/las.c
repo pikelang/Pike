@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.262 2001/08/13 23:15:57 mast Exp $");
+RCSID("$Id: las.c,v 1.263 2001/08/15 20:58:44 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1691,26 +1691,18 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
   if(SETJMP(tmp))
   {
     struct svalue s;
-
     assign_svalue_no_free(&s, &throw_value);
-    call_handle_error();
 
     if (node_name) {
       my_yyerror("Couldn't index module '%s'.", node_name);
     } else {
       yyerror("Couldn't index module.");
     }
-    if ((s.type == T_ARRAY) && s.u.array->size &&
-	(s.u.array->item[0].type == T_STRING)) {
-      /* Old-style backtrace */
-      my_yyerror("Error: '%s'.", s.u.array->item[0].u.string->str);
-    } else if (s.type == T_OBJECT) {
-      struct generic_error_struct *ge;
-      if ((ge = (struct generic_error_struct *)
-	   get_storage(s.u.object, generic_error_program))) {
-	my_yyerror("Error: '%s'.", ge->desc->str);
-      }
-    }
+
+    push_svalue(&s);
+    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    pop_stack();
     free_svalue(&s);
   }else{
     resolv_constant(n);
