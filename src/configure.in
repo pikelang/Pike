@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.736 2003/10/03 13:45:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.737 2003/10/10 13:00:04 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2494,30 +2494,80 @@ AC_MY_CHECK_TYPE(pri_t, short)
 
 AC_CHECK_SIZEOF(off_t, 4)
 
+AC_MSG_CHECKING(for sizeof anything)
+if test "$ac_cv_sizeof_long_double" != 0 -a \
+	"x$with_long_double_precision" = xyes ; then
+  sizeof_float_type="$ac_cv_sizeof_long_double"
+elif test "x$with_double_precision" = xyes ; then
+  sizeof_float_type="$ac_cv_sizeof_double"
+else
+  sizeof_float_type="$ac_cv_sizeof_float"
+fi
+
+if test "$ac_cv_sizeof_long_long" != 0 -a \
+	"x$with_long_long_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof_long_long"
+elif test "$ac_cv_sizeof___int64" != 0 -a \
+	"x$with_long_long_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof___int64"
+elif test "x$with_long_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof_long"
+elif test "x$with_short_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof_short"
+elif test "x$with_unsigned_long_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof_long"
+elif test "$ac_cv_sizeof_long_long" != 0 -a \
+	  "x$with_unsigned_long_long_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof_long_long"
+elif test "$ac_cv_sizeof___int64" != 0 -a \
+	   "x$with_unsigned_long_long_int" = xyes ; then
+  sizeof_int_type="$ac_cv_sizeof___int64"
+else
+  sizeof_int_type="$ac_cv_sizeof_int"
+fi
+sizeof_anything="$ac_cv_sizeof_char_p"
+if test "$sizeof_float_type" -gt "$sizeof_anything"; then
+  sizeof_anything="$sizeof_float_type"
+fi
+if test "$sizeof_int_type" -gt "$sizeof_anything"; then
+  sizeof_anything="$sizeof_int_type"
+fi
+AC_MSG_RESULT($sizeof_anything)
+
+AC_MSG_CHECKING(for FLOAT_TYPE)
+
 if test "x$with_long_double_precision" = x -a \
 	"x$with_double_precision" = x ; then
   # Choose the longest available float that fits in a pointer.
-  if test $ac_cv_sizeof_long_double != 0 -a \
-	  $ac_cv_sizeof_long_double -le $ac_cv_sizeof_char_p ; then
+  if test "$ac_cv_sizeof_long_double" != 0 -a \
+	  "$ac_cv_sizeof_long_double" -le "$sizeof_anything" ; then
     with_long_double_precision=yes
-  elif test $ac_cv_sizeof_double -le $ac_cv_sizeof_char_p ; then
+  elif test "$ac_cv_sizeof_double" -le "$sizeof_anything" ; then
     with_double_precision=yes
   fi
 fi
 
-if test $ac_cv_sizeof_long_double != 0 -a \
+if test "$ac_cv_sizeof_long_double" != 0 -a \
 	"x$with_long_double_precision" = xyes ; then
+  AC_MSG_RESULT(long double)
   AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE)
   AC_DEFINE(FLOAT_TYPE, long double)
   AC_DEFINE(SIZEOF_FLOAT_TYPE, SIZEOF_LONG_DOUBLE)
+  sizeof_float_type="$ac_cv_sizeof_long_double"
 elif test "x$with_double_precision" = xyes ; then
+  AC_MSG_RESULT(double)
   AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE)
   AC_DEFINE(FLOAT_TYPE, double)
   AC_DEFINE(SIZEOF_FLOAT_TYPE, SIZEOF_DOUBLE)
+  sizeof_float_type="$ac_cv_sizeof_double"
 else
+  AC_MSG_RESULT(float)
   AC_DEFINE(FLOAT_TYPE, float)
   AC_DEFINE(SIZEOF_FLOAT_TYPE, SIZEOF_FLOAT)
+  sizeof_float_type="$ac_cv_sizeof_float"
 fi
+
+AC_MSG_CHECKING(for INT_TYPE)
 
 if test "x$with_long_long_int" = x -a \
 	"x$with_long_int" = x -a \
@@ -2534,36 +2584,55 @@ if test "x$with_long_long_int" = x -a \
 #    #with_long_long_int=yes
 #    :
 #  fi
-#  if test $ac_cv_sizeof_long -le $ac_cv_sizeof_char_p ; then
-#    with_long_int=yes
-#  else
-#    with_int_int=yes
-#  fi
+  if test "$ac_cv_sizeof_long" -le "$sizeof_anything" ; then
+    with_long_int=yes
+  else
+    with_int_int=yes
+  fi
   :
 fi
 
-if test $ac_cv_sizeof_long_long != 0 -a \
+if test "$ac_cv_sizeof_long_long" != 0 -a \
 	"x$with_long_long_int" = xyes ; then
+  AC_MSG_RESULT(long long)
   AC_DEFINE(WITH_LONG_LONG_INT)
   AC_DEFINE(INT_TYPE, long long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG_LONG)
+elif test "$ac_cv_sizeof___int64" != 0 -a \
+	  "x$with_long_long_int" = xyes ; then
+  AC_MSG_RESULT(__int64)
+  AC_DEFINE(WITH_LONG_LONG_INT)
+  AC_DEFINE(INT_TYPE, __int64)
+  AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF___INT64)
 elif test "x$with_long_int" = xyes ; then
+  AC_MSG_RESULT(long)
   AC_DEFINE(WITH_LONG_INT)
   AC_DEFINE(INT_TYPE, long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG)
 elif test "x$with_short_int" = xyes ; then
+  AC_MSG_RESULT(short)
   AC_DEFINE(WITH_SHORT_INT)
   AC_DEFINE(INT_TYPE, short)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_SHORT)
 elif test "x$with_unsigned_long_int" = xyes ; then
+  AC_MSG_RESULT(unsigned long)
   AC_DEFINE(WITH_UNSIGNED_LONG_INT)
   AC_DEFINE(INT_TYPE, unsigned long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG)
-elif test "x$with_unsigned_long_long_int" = xyes ; then
+elif test "$ac_cv_sizeof_long_long" != 0 -a \
+	  "x$with_unsigned_long_long_int" = xyes ; then
+  AC_MSG_RESULT(unsigned long long)
   AC_DEFINE(WITH_UNSIGNED_LONG_LONG_INT)
   AC_DEFINE(INT_TYPE, unsigned long long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG_LONG)
+elif test "$ac_cv_sizeof___int64" != 0 -a \
+	  "x$with_unsigned_long_long_int" = xyes ; then
+  AC_MSG_RESULT(unsigned __int64)
+  AC_DEFINE(WITH_UNSIGNED_LONG_LONG_INT)
+  AC_DEFINE(INT_TYPE, unsigned __int64)
+  AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF___INT64)
 else
+  AC_MSG_RESULT(int)
   AC_DEFINE(WITH_INT_INT)
   AC_DEFINE(INT_TYPE, int)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_INT)
@@ -5069,14 +5138,15 @@ int main()
 
   kill(getpid(), sig);
 #ifdef HAVE_POLL
-  while(!strlen((char *)sigrun)) poll(0,0,100);
+  struct pollfd sentinel;
+  while(!strlen((char *)sigrun)) poll(&sentinel,0,100);
 #else
   while(!strlen((char *)sigrun)) sleep(1);
 #endif
   sigrun[0]=0;
   kill(getpid(), sig);
 #ifdef HAVE_POLL
-  while(!strlen((char *)sigrun)) poll(0,0,100);
+  while(!strlen((char *)sigrun)) poll(&sentinel,0,100);
 #else
   while(!strlen((char *)sigrun)) sleep(1);
 #endif
