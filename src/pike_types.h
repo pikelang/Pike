@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.75 2002/01/16 02:54:18 nilsson Exp $
+ * $Id: pike_types.h,v 1.76 2002/05/15 14:48:29 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -304,6 +304,9 @@ int pike_types_le(struct pike_type *a, struct pike_type *b);
 struct pike_type *index_type(struct pike_type *type,
 			     struct pike_type *index_type,
 			     node *n);
+struct pike_type *range_type(struct pike_type *type,
+			     struct pike_type *index1_type,
+			     struct pike_type *index2_type);
 struct pike_type *array_value_type(struct pike_type *array_type);
 struct pike_type *key_type(struct pike_type *type, node *n);
 int check_indexing(struct pike_type *type,

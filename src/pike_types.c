@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.184 2002/01/16 02:54:18 nilsson Exp $");
+RCSID("$Id: pike_types.c,v 1.185 2002/05/15 14:48:29 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3444,6 +3444,164 @@ struct pike_type *index_type(struct pike_type *type,
   t = low_index_type(type, index_type, n);
   if(!t) {
     copy_pike_type(t, mixed_type_string);
+  }
+  return t;
+}
+
+#ifdef DEBUG_MALLOC
+#define low_range_type(X,Y,Z) ((struct pike_type *)debug_malloc_pass(debug_low_range_type((X),(Y),(Z))))
+#else
+#define low_range_type debug_low_range_type
+#endif
+
+/* FIXME, add the index
+ *
+ * FIXME: Is the above fixme valid for this function too?
+ */
+static struct pike_type *debug_low_range_type(struct pike_type *t,
+					      struct pike_type *index1_type,
+					      struct pike_type *index2_type)
+{
+  struct pike_type *tmp;
+  struct program *p;
+
+  while(t->type == PIKE_T_NAME) {
+    t = t->cdr;
+  }
+  while(index1_type->type == PIKE_T_NAME) {
+    index1_type = index1_type->cdr;
+  }
+  while(index2_type->type == PIKE_T_NAME) {
+    index2_type = index2_type->cdr;
+  }
+
+  switch(t->type)
+  {
+  case T_OBJECT:
+  {
+    p = id_to_program((ptrdiff_t)t->cdr);
+
+    if(p)
+    {
+      INT32 i;
+      if((i = FIND_LFUN(p, LFUN_INDEX)) != -1)
+      {
+	struct pike_type *call_type = NULL;
+	/* FIXME: function_type_string should be replaced with something
+	 * derived from type_string
+	 */
+	type_stack_mark();
+	push_finished_type(mixed_type_string);
+	push_finished_type(void_type_string);
+	push_type(T_OR);			/* Return type */
+	push_finished_type(void_type_string);	/* Many type */
+	push_type(T_MANY);
+	push_finished_type(index2_type);	/* arg2 type */
+	push_type(T_FUNCTION);
+	push_finished_type(index1_type);	/* arg1 type */
+	push_type(T_FUNCTION);
+	call_type = pop_unfinished_type();
+	
+	if((tmp = check_call(call_type, ID_FROM_INT(p, i)->type, 0))) {
+	  free_type(call_type);
+	  return tmp;
+	}
+
+	add_ref(mixed_type_string);
+	return mixed_type_string;
+      }
+      yywarning("Ranging object without index operator.");
+      return 0;
+    }
+    if (lex.pragmas & ID_STRICT_TYPES) {
+      yywarning("Ranging generic object.");
+    }
+    add_ref(mixed_type_string);
+    return mixed_type_string;    
+  }
+
+  case T_MIXED:
+    if (lex.pragmas & ID_STRICT_TYPES) {
+      yywarning("Ranging mixed.");
+    }
+    add_ref(mixed_type_string);
+    return mixed_type_string;    
+
+  case T_INT:
+  case T_ZERO:
+  case T_TYPE:
+  case PIKE_T_RING:
+  case T_VOID:
+  case T_FLOAT:
+  case T_MULTISET:
+  case T_MAPPING:
+    /* Illegal range operation. */
+    /* FIXME: Strict type warning. */
+    return 0;
+
+  case T_ARRAY:
+  case T_STRING:
+    /* Check that the index types are compatible with int. */
+    {
+      struct pike_type *a;
+
+      if (!low_match_types(int_type_string, index1_type, 0)) {
+	struct pike_string *s = describe_type(t);
+	yywarning("Bad argument 1 to range operator on %s.",
+		  s->str);
+	free_string(s);
+	yyexplain_nonmatching_types(int_type_string, index1_type,
+				    YYTE_IS_WARNING);
+	/* Bad index1 type. */
+	return 0;
+      }
+      if (!low_match_types(int_type_string, index2_type, 0)) {
+	struct pike_string *s = describe_type(t);
+	yywarning("Bad argument 2 to range operator on %s.",
+		  s->str);
+	free_string(s);
+	yyexplain_nonmatching_types(int_type_string, index2_type,
+				    YYTE_IS_WARNING);
+	/* Bad index2 type. */
+	return 0;
+      }
+    }
+    /* FALLTHROUGH */
+  default:
+    /* Identity. */
+    add_ref(t);
+    return t;
+
+  case T_OR:
+  {
+    struct pike_type *a,*b;
+    a = low_range_type(t->car, index1_type, index2_type);
+    b = low_range_type(t->cdr, index1_type, index2_type);
+    if(!b) return a;
+    if(!a) return b;
+    type_stack_mark();
+    low_or_pike_types(a,b,1);
+    free_type(a);
+    free_type(b);
+    return pop_unfinished_type();
+  }
+
+  case T_AND:
+    /* FIXME: Shouldn't both branches be looked at? */
+    return low_range_type(t->cdr, index1_type, index2_type);
+  }
+}
+
+struct pike_type *range_type(struct pike_type *type,
+			     struct pike_type *index1_type,
+			     struct pike_type *index2_type)
+{
+  struct pike_type *t;
+  clear_markers();
+  t = low_range_type(type, index1_type, index2_type);
+  if(!t) {
+    yyerror("Invalid range operation.");
+    copy_pike_type(t, type);
   }
   return t;
 }
