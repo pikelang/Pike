@@ -1,0 +1,11 @@
+dnl $Id: testsuite.in,v 1.1 2003/02/07 03:15:15 nilsson Exp $
+
+test_any([[
+#pike 7.4
+return SSL.constants && 1;
+]], 1)
+
+test_any([[
+#pike 7.4
+return SSL.cipher && 1;
+]], 1)
