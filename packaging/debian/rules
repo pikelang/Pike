@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.46 2003/12/09 16:04:12 grendel Exp $
+# $Id: rules,v 1.47 2003/12/19 02:44:46 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -260,6 +260,7 @@ install: build
 		dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$$f ; \
 	done
 
+	rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/doc
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
 
 # Build architecture-independent files here.
