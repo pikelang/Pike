@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.60 2003/02/14 19:52:00 mast Exp $
+dnl $Id: aclocal.m4,v 1.61 2003/02/19 23:58:20 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -263,7 +263,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.60 2003/02/14 19:52:00 mast Exp $
+# $Id: aclocal.m4,v 1.61 2003/02/19 23:58:20 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -311,16 +311,10 @@ AC_SUBST(CROSS)
 
 if test "x$enable_binary" = "xno"; then
   RUNPIKE="USE_PIKE"
-  RUNTPIKE="USE_PIKE"
-elif test "x$ac_cv_prog_cc_cross" = "xyes"; then
-  RUNPIKE="DEFAULT_RUNPIKE"
-  RUNTPIKE="USE_PIKE"
 else
   RUNPIKE="DEFAULT_RUNPIKE"
-  RUNTPIKE="USE_TPIKE"
 fi
 AC_SUBST(RUNPIKE)
-AC_SUBST(RUNTPIKE)
 ])
 
 

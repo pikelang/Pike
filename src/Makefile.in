@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.347 2003/02/10 21:04:23 nilsson Exp $
+# $Id: Makefile.in,v 1.348 2003/02/19 23:58:20 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -106,10 +106,8 @@ LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 
 DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
-USE_TPIKE=$(TMP_BUILDDIR)/precompile.sh
 USE_PIKE=pike $(PIKEOPTS)
 RUNPIKE=$(@RUNPIKE@)
-RUNTPIKE=$(@RUNTPIKE@)
 PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
 
 # Set to an appropriate invocation of valgrind (or similar)
@@ -166,7 +164,12 @@ OBJ= \
  queue.o \
  builtin.o \
  iterators.o \
- svalue.o @EXTRA_OBJS@
+ svalue.o \
+ las.o \
+ builtin_functions.o \
+ peep.o \
+ module.o \
+ @EXTRA_OBJS@
 
 MODULE_REQUIREMENTS= \
   machine.h \
@@ -183,19 +186,10 @@ SRC_TARGETS= \
  $(SRCDIR)/language.h \
  $(SRCDIR)/interpret_protos.h \
  $(SRCDIR)/interpret_functions_fixed.h \
- @PMOD_TARGETS@
-
-TPIKE_TARGETS= \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
  $(SRCDIR)/treeopt.h \
-
-#
-# The following objectfiles differ between tpike & pike:
-#
-
-TOBJ = las_t.o builtin_functions_t.o peep_t.o  module_t.o
-POBJ = las.o builtin_functions.o peep.o module.o
+ @PMOD_TARGETS@
 
 
 #
@@ -257,34 +251,11 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-tpike-real: $(SRC_TARGETS) $(OBJ) $(TOBJ) modules/linker_options
-	-@rm -f tpike || :
-	$(LD) $(LDFLAGS) $(OBJ) $(TOBJ) `cat modules/linker_options` $(LIBS) -o tpike
-
-# Only want tpike to exist when using $(RUNTPIKE); we don't want to
-# require it actually being up-to-date.
-#
-# If RUNPIKE has been overridden we don't bother to build tpike. The
-# precompile.sh script will then fall back to use RUNPIKE when it
-# doesn't find tpike, and we assume that RUNPIKE doesn't point to a
-# pike from the stone age.
-$(TMP_BUILDDIR)/tpike: precompile.sh-stamp
-	@if test "x$(RUNPIKE)" = "x$(DEFAULT_RUNPIKE)"; then \
-	  $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real; \
-	else :; fi
-
-# Make $(POBJ)s with a recursive make instead of depending on them.
-# This way, we make sure that all other objects shared with tpike are
-# up-to-date first. So if the $(POBJ)s, which depend on tpike, trigs
-# the recursive make of tpike-real above, that one will never start to
-# make the $(OBJ)s concurrently with this one. stamp-tpike-predep
-# records the $(POBJ) dependencies without tpike.
-pike: $(OBJ) master-stamp pike.syms modules/linker_options stamp-tpike-predep post_modules/linker_options
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
+pike: $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) stores absolute addresses to
 # global structs. That should probably be fixed in them so that dumped
@@ -292,19 +263,19 @@ pike: $(OBJ) master-stamp pike.syms modules/linker_options stamp-tpike-predep po
 	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) delete_dumped_modules; else :; fi
 
 # purify
-pure: $(OBJ) $(POBJ) master-stamp module_objects
+pure: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) $(POBJ) master-stamp module_objects
+cover: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) $(POBJ) master-stamp module_objects
+quant: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 atom: pike
 	atom pike -tool atom -env threads -g -v `find lib/modules -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
@@ -452,7 +423,7 @@ clean: tidy
 	-rm testsuite_test.pike testsuite.tmp
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe rsif master.pike compiler-warnings
-	-rm -f tpike stamp-tpike-predep import-stamp modules-stamp master-stamp
+	-rm -f import-stamp modules-stamp master-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
@@ -727,23 +698,23 @@ bin_export:
 #	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 #	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
-$(SRCDIR)/peep_engine.c: $(TMP_BUILDDIR)/tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( rm $(SRCDIR)/peep_engine.c ; exit 1 )
+$(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
+	./precompile.sh $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( rm $(SRCDIR)/peep_engine.c ; exit 1 )
 
 peep.o: $(SRCDIR)/peep_engine.c
 
 peep_t.o: peep.c
 
-$(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
+$(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
+	./precompile.sh $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
 	  <$(SRCDIR)/UnicodeData.txt
 
 builtin_functions.o: $(SRCDIR)/case_info.h $(SRCDIR)/combine_path.h
 
 builtin_functions_t.o: builtin_functions.c $(SRCDIR)/combine_path.h
 
-$(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
+$(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
+	./precompile.sh $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
 
 las.o: $(SRCDIR)/treeopt.h
 
@@ -773,12 +744,8 @@ interpreter_debug.h: interpreter.h
 
 interpret.o: interpreter_debug.h $(SRCDIR)/interpret_functions_fixed.h
 
-# All the $(POBJ) dependencies, except tpike. See blurb at pike target.
-stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike builtin_functions.c $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike las.c
-	@echo foo > stamp-tpike-predep
-
 # make dependencies
-depend: $(SRC_TARGETS) $(TPIKE_TARGETS)
+depend: $(SRC_TARGETS)
 	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(SRCDIR)" /dev/null
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \

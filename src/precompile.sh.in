@@ -90,30 +90,27 @@ case $method in
     RUNPIKE="$TMP_BUILDDIR/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
   ;;
   QQ)
-    RUNPIKE="$TMP_BUILDDIR/tpike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
-  ;;
-  QQQ)
     RUNPIKE=$TMP_BUILDDIR/test-pike
   ;;
-  QQQQ)
+  QQQ)
     if test x"$OLD_RUNPIKE" != x; then
       LAST_PIKE="$OLD_RUNPIKE"
-      method=QQQQQ
+      method=QQQQ
       RUNPIKE="$OLD_RUNPIKE"
     else
       RUNPIKE=""
     fi
   ;;
-  QQQQQ)
+  QQQQ)
     LAST_PIKE=pike
-    method=QQQQQQ
+    method=QQQQQ
     RUNPIKE="$LAST_PIKE"
+  ;;
+  QQQQQ)
+    RUNPIKE="$LAST_PIKE"
+    LAST_PIKE=pike
   ;;
   QQQQQQ)
-    RUNPIKE="$LAST_PIKE"
-    LAST_PIKE=pike
-  ;;
-  QQQQQQQ)
     ifs_save="${IFS- 	}"
     IFS=" :"
     for dir in $PATH
@@ -133,13 +130,13 @@ case $method in
         fi
       done
       if [ "x$RUNPIKE" != x ]; then
-        method=QQQQQQ
+	method=QQQQQ
         break
       fi
     done
     IFS="${ifs_save}"
   ;;
-  QQQQQQQQ)
+  QQQQQQQ)
     method=
   ;;
 esac
