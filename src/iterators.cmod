@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.48 2003/11/22 15:00:54 grubba Exp $
+|| $Id: iterators.cmod,v 1.49 2004/02/06 14:31:32 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.48 2003/11/22 15:00:54 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.49 2004/02/06 14:31:32 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -22,13 +22,13 @@ RCSID("$Id: iterators.cmod,v 1.48 2003/11/22 15:00:54 grubba Exp $");
 #include "gc.h"
 #include "stralloc.h"
 #include "security.h"
-#include "block_alloc.h"
 #include "opcodes.h"
 #include "pike_error.h"
 #include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "block_alloc.h"
 
 #define sp Pike_sp
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.16 2003/06/30 17:06:10 mast Exp $
+|| $Id: pike_search.c,v 1.17 2004/02/06 14:31:16 nilsson Exp $
 */
 
 /* New memory searcher functions */
@@ -11,12 +11,12 @@
 #include "stuff.h"
 #include "mapping.h"
 #include "object.h"
-#include "block_alloc.h"
 #include "pike_memory.h"
 #include "stralloc.h"
+#include "interpret.h"
+#include "block_alloc.h"
 #include "pike_error.h"
 #include "module_support.h"
-#include "interpret.h"
 #include "pike_macros.h"
 #include "pike_search.h"
 #include "bignum.h"
