@@ -127,7 +127,7 @@ if test "x$with_java" = xyes; then
       # autoconf's changequote doesn't work (and this is 
       # the only thing that breaks so far) /Mirar
 
-      java_home_guess="`java -verbose fnord.fnord.fnord 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.\(jar\|zip\)[] ].*$:\1:' -e t -e d | sed -e 's:^.* from /:/:' -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
+      java_home_guess="`java -verbose fnord.fnord.fnord 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e 's:^\[[^]/]*\(/.*\)/[^/]*\.zip[] ].*$:\1:' -e t -e d | sed -e 's:^.* from /:/:' -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
           if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
