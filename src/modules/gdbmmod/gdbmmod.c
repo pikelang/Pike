@@ -270,7 +270,7 @@ void init_gdbmmod_programs(void)
   start_new_program();
   add_storage(sizeof(struct gdbm_glue));
   
-  add_function("create",gdbmmod_create,"function(void|string:void)",0);
+  add_function("create",gdbmmod_create,"function(void|string,void|string:void)",0);
 
   add_function("close",gdbmmod_close,"function(:void)",0);
   add_function("store",gdbmmod_store,"function(string,string:int)",0);
