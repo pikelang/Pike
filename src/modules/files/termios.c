@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.7 2000/02/07 08:02:17 hubbe Exp $");
+RCSID("$Id: termios.c,v 1.8 2000/07/11 19:06:26 neotron Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -20,6 +20,13 @@ RCSID("$Id: termios.c,v 1.7 2000/02/07 08:02:17 hubbe Exp $");
 
 #include "file.h"
 
+/* Friendly BeOS fix */
+#if defined(CS5) && defined(CS6) && CS6 == CS5
+#undef CS5
+#endif
+#if defined(CS6) && defined(CS7) && CS7 == CS6
+#undef CS6
+#endif
 
 /*
 **! method mapping tcgetattr()
