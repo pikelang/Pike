@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.67 2000/03/07 18:32:49 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.68 2000/03/07 23:22:40 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1962,18 +1962,20 @@ void simple_describe_mapping(struct mapping *m)
 
 void debug_dump_mapping(struct mapping *m)
 {
-  fprintf(stderr,"Refs=%d, next=%p, prev=%p, size=%d, hashsize=%d\n",
-	  m->refs,
-	  m->next,
-	  m->prev,
-	  m->data->size,
-	  m->data->hashsize);
-  fprintf(stderr,"Indices type field = ");
-  debug_dump_type_field(m->data->ind_types);
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Values type field = ");
-  debug_dump_type_field(m->data->val_types);
-  fprintf(stderr,"\n");
+  fprintf(stderr, "Refs=%d, next=%p, prev=%p",
+	  m->refs, m->next, m->prev);
+  if (((int)m->data) & 3) {
+    fprintf(stderr, ", data=%p (unaligned)\n", m->data);
+  } else {
+    fprintf(stderr, ", size=%d, hashsize=%d\n",
+	    m->data->size, m->data->hashsize);
+    fprintf(stderr, "Indices type field = ");
+    debug_dump_type_field(m->data->ind_types);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Values type field = ");
+    debug_dump_type_field(m->data->val_types);
+    fprintf(stderr, "\n");
+  }
   simple_describe_mapping(m);
 }
 #endif
