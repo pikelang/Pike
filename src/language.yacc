@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.253 2001/06/30 22:06:37 mast Exp $");
+RCSID("$Id: language.yacc,v 1.254 2001/06/30 22:11:09 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -826,7 +826,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       {
 	int l = $10->line_number;
 #ifdef PIKE_DEBUG
-	char *f = $10->current_file;
+	struct pike_string *f = $10->current_file;
 #endif
 	if (check_args) {
 	  /* Prepend the arg checking code. */
