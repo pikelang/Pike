@@ -9,9 +9,143 @@ inherit Stdio.File : out;
 //  teTeX 1.0.*
 //  transfig 3.2.1
 
+// Todo:
+// replace $\\;$ with \hspace ?
+
+
 object html=.html();
 
 WMML global_data;
+
+string packages = 
+#"\\usepackage{epic}
+\\usepackage{eepic}
+\\usepackage{isolatin1}
+\\usepackage{latexsym}  % For $\Box$
+\\usepackage{amsmath}
+\\usepackage{longtable}
+\\usepackage{graphicx}
+";
+
+
+
+object wcache=.Cache("latex_wcache");
+
+array(float) find_max_width(array(SGML) data)
+{
+  array(string) keys=Array.map(data,Sgml.get_text);
+
+  foreach(keys, string key)
+    {
+      if(!wcache[key])
+	{
+	  string x="\\documentclass[twoside,a4paper]{book}\n"
+	  +packages+"\n"
+	  "\\begin{document}\n"
+	  "\\author{wmml to latex}\n"
+	  "\\setlength{\\unitlength}{1mm}\n"
+	  "{\\catcode`\\^^20=\\active\\catcode`\\^^0d=\\active%\n"
+	  "\\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%\n"
+	  "\\catcode`\\^^0d=\\active\\def^^0d{\\hskip0pt\\par\\noindent}%\n"
+	  "\\parskip=1pt\\tt}}\n"
+	  "\\begin{titlepage}\n"
+	  "\\newlength{\\gnapp}\n";
+
+	  foreach(data, SGML d)
+	    {
+	      x+=
+		"\\settowidth{\\gnapp}{"+convert_to_latex(d)+"}\n"
+		"\\message{length=\\number\\gnapp dots}\n";
+	    }
+
+	  x+="\\end{titlepage}\n"
+	    "\\end{document}\n";
+
+	  rm("___tmp.tex");
+	  Stdio.write_file("___tmp.tex",x);
+	  string tmp=Process.popen("latex '\\scrollmode\\input ___tmp.tex'");
+
+	  foreach(keys, key)
+	    {
+	      sscanf(tmp,"%*slength=%f%s",float w, tmp);
+	      wcache[key]=w / 65536; // convert to points
+	    }
+	  
+	  break;
+	}
+    }
+
+  return rows(wcache, keys);
+}
+
+
+// FIXME: improve this!!!
+array(float) find_min_width(array(SGML) datas)
+{
+  array(SGML) pieces=({});
+
+  foreach(datas, SGML data)
+  { 
+    SGML z=({});
+    
+    for(int e=0;e<sizeof(data);e++)
+    {
+      TAG tag=data[e];
+
+      if(stringp(tag))
+      {
+	foreach(tag/" ", string text)
+	  z+=({ ({text}) });
+
+      }else{
+	switch(tag->tag)
+	{
+//       FIXME
+//	  case "tt":
+//	  case "i":
+//	  case "b":
+
+	  case "hr":
+	    break;
+
+	  case "img":
+	  case "tt":
+	  case "image":
+	  case "illustration":
+	    z+=({ ({ tag }) });
+	    break;
+
+	  default:
+	    if(tag->data)
+	    {
+	      data+=tag->data;
+	      z+=({ ({ Sgml.Tag(tag->tag,tag->params,0,({})) }) });
+	    }
+	    else
+	    {
+	      z+=({ ({ Sgml.Tag(tag->tag,tag->params) }) });
+	    }
+	}
+      }
+    }
+
+    pieces+=({z});
+  }
+
+  array(float) widths=find_max_width(pieces * ({}));
+  int pos=0;
+  array(float) ret=allocate(sizeof(pieces));
+  for(int q=0;q<sizeof(pieces);q++)
+  {
+    int num=sizeof(pieces[q]);
+    ret[q]=max(0.0,@widths[pos..pos+num-1]);
+    pos+=num;
+  }
+//  werror("%O\n%O\n%O\n",widths,pieces,ret);
+  if(pos != sizeof(widths))
+    error("Major internal error!\n");
+  return ret;
+}
 
 string low_latex_quote(string text)
 {
@@ -28,7 +162,7 @@ string low_latex_quote(string text)
 		 ({"$<$","$>$",
 		     "\\{","\\}",
 		     "$\\mu$","\\&",
-		     "\\verb+ +","$\\backslash$",
+		     "$\\;$","$\\backslash$",
 		     "\\symbol{91}","\\symbol{93}",
 
 		     "\\#","\\%",
@@ -64,7 +198,7 @@ float weighted_strlen(string tag)
       '@': 0.2,
       ' ':-0.5,
       '\n':-1.0,
-      ]), indices(tag)));
+      ]), values(tag)));
 }
 
 float aproximate_length(SGML data)
@@ -77,6 +211,10 @@ float aproximate_length(SGML data)
       {
 	len+=weighted_strlen(tag);
       }else{
+	switch(tag->tag)
+	{
+	  case "li": len+=2.0; break;
+	}
 	len+=aproximate_length(tag->data);
       }
     }
@@ -101,12 +239,32 @@ string mkref(string label)
   }
 }
 
+// in points
+#define MAX_TABLE_SIZE 345.0
+
 string convert_table(TAG table)
 {
   SGML data=table->data;
   int rows,columns;
   int border=(int)table->params->border;
   array(float) column_data=allocate(100,1.0);
+
+
+  int cellpadding=3;
+  if(table->params->cellpadding)
+    cellpadding=(int)table->params->cellpadding;
+
+  int columns=0;
+
+  class Cell
+  {
+    TAG tag;
+    int cols;
+
+    void create(TAG t, int c) { tag=t; cols=c; }
+  };
+  
+  array(array(Cell)) table=({});
 
   foreach(data, TAG tag)
     {
@@ -124,8 +282,7 @@ string convert_table(TAG table)
 	  continue;
 	}
 	
-	rows++;
-	int row_cells=0;
+	array(Cell) row=({});
 	foreach(tag->data, TAG cell)
 	  {
 	    if(stringp(cell))
@@ -149,46 +306,234 @@ string convert_table(TAG table)
 
 		case "th":
 		case "td":
-		  column_data[row_cells]+=aproximate_length(cell->data);
-		  row_cells++;
+		{
+		  int cols=1;
+
+		  if(cell->colspan) 
+		    cols=(int)cell->colspan;
+
+		  row+=({ Cell(cell,cols) }) * cols;
+		}
 	      }
 	    }
 	  }
-	if(row_cells > columns)
-	  columns=row_cells;
+	table+=({row});
       }
     }
 
-  column_data=column_data[..columns-1];
-  for(int e=0;e<sizeof(column_data);e++) column_data[e]+=20.0*rows;
+  columns=max(0,@Array.map(table,sizeof));
 
+  for(int row=0;row<sizeof(table);row++)
+  {
+    table[row]+=({Cell(Sgml.Tag("td",0,0,({})),1)})*
+      ( columns - sizeof(table[row]));
+  }
+  
+
+  array(SGML) tmp=(table * ({}))->tag->data;
+
+//  werror("%O\n",tmp);
+
+  array(array(float)) maxwidths=find_max_width(tmp)/columns;
+  array(array(float)) minwidths=find_min_width(tmp)/columns;
+
+
+  array(float) column_data=allocate(columns,0.0);
+  array(float) column_max=allocate(columns,0.0);
+  
+  for(int row=0;row<sizeof(table);row++)
+  {
+    for(int col=0;col<columns;col++)
+    {
+      maxwidths[row][col]+=cellpadding;
+      minwidths[row][col]+=cellpadding;
+
+      column_data[col]+=maxwidths[row][col]/table[row][col]->cols;
+      column_max[col]=max(maxwidths[row][col]/table[row][col]->cols,
+			  column_max[col]);
+    }
+  }
+
+//  werror("%O %O\n",minwidths,maxwidths);
+
+  array(float) actual_widths=allocate(columns,0.0);
+  array(int) fixed=allocate(columns);
+  array(int) do_not_shrink=allocate(columns);
+
+  // FIXME: Try to avoid sizes which are close
+  // to column_max[e], it makes line breaking look silly
+	
+  int iteration;
+  while(1)
+  {
+    int adjusted=0;
+    float total=0.0;
+    float left=MAX_TABLE_SIZE;
+
+// #define TABLE_DEBUG
+
+#ifdef TABLE_DEBUG
+  werror("********* Table sizes, iteration %d\n",iteration++);
+  for(int e=0;e<columns;e++)
+    {
+      werror("%2d: data: %8f  actual: %8f fixed: %d  no shrink: %d\n",e,
+	     column_data[e],
+	     actual_widths[e],
+	     fixed[e],
+	     do_not_shrink[e]);
+    }
+  werror("********* Total width: %f\n",`+(0.0,@actual_widths));
+#define TD(X) X
+#else
+#define TD(X)
+#endif
+
+
+    for(int e=0;e<columns;e++)
+    {
+      if(!fixed[e])
+	total+=column_data[e];
+      else
+	left-=actual_widths[e];
+    }
+
+    TD(werror("left=%f\n",left));
+
+    if(total==0.0) break;
+
+    for(int e=0;e<columns;e++)
+      if(!fixed[e])
+	actual_widths[e]=left * column_data[e]/total;
+
+
+    // Enlarge if required
+    for(int row=0;row<sizeof(table);row++)
+    {
+      for(int col=0;col<columns;col+=table[row][col]->cols)
+      {
+	int cols=table[row][col]->cols;
+	if(cols > 1) continue;
+	
+	if(actual_widths[col] < minwidths[row][col])
+	{
+	  actual_widths[col]=minwidths[row][col];
+	  adjusted=1;
+	  fixed[col]=1;
+	}
+      }
+    }
+    if(adjusted) continue;
+    TD(werror("1-column columns are ok\n"));
+    
+    // Enlarge if required
+    for(int row=0;row<sizeof(table);row++)
+    {
+      for(int col=0;col<columns;col+=table[row][col]->cols)
+      {
+	int cols=table[row][col]->cols;
+	if(cols < 1) continue;
+	if(`+(0.0,@actual_widths[col..col+cols-1]) < minwidths[row][col])
+	{
+	  int num_unfixed=0;
+	  int tmp;
+	  float size=minwidths[row][col];
+	  for(int e=0;e<cols;e++)
+	  {
+	    if(fixed[col+e])
+	    {
+	      size-=actual_widths[col+e];
+	    }else{
+	      num_unfixed++;
+	      tmp=e;
+	    }
+	  }
+
+	  if(num_unfixed==1)
+	  {
+	    fixed[col+tmp]=1;
+	    actual_widths[col+tmp]=size;
+	    adjusted=1;
+	    continue;
+	  }
+
+
+	  if(do_not_shrink[col] < 40)
+	  {
+	    for(int e=0;e<cols;e++)
+	    {
+	      // This might not work if there is no more room in the
+	      // page...
+	      column_data[col+e]*=1.1;
+	      do_not_shrink[cols+e]++;
+	      adjusted=1;
+	    }
+	  }
+	}
+      }
+    }
+    
+    if(adjusted) continue;
+    TD(werror("multi-column columns are ok\n"));
+    
+    // Shrink columns whenever possible
+    for(int col=0;col<columns;col++)
+    {
+      if(do_not_shrink[col]) continue;
+      if(fixed[col]) continue;
+
+      if(actual_widths[col] > column_max[col])
+      {
+	actual_widths[col]=column_max[col];
+	fixed[col]=1;
+	adjusted=1;
+      }
+    }
+    
+    if(adjusted) continue;
+    TD(werror("everything is ok\n"));
+    
+    break;
+  }
+
+
+#if 1
+  werror("********* Table sizes:\n");
+  for(int e=0;e<columns;e++)
+    {
+      werror("%2d: data: %8f  actual: %8f\n",e,
+	     column_data[e],
+	     actual_widths[e]);
+    }
+  werror("********* Total width: %f\n",`+(0.0,@actual_widths));
+#endif
+  
   float total_data=`+(@column_data);
 
   string fmt=(border ? "|" : "") + ("l"+(border ? "|" : ""))*columns;
 
   string ret="\n\n\\begin{longtable}{"+ fmt +"}\n";
 
-  if(border) ret+="\\hline \\\\\n";
+  if(border) ret+="\\hline\n";
 
   in_table++;
-  foreach(data, TAG tag)
+
+  // FIXME: handle <th>
+  foreach(table, array(Cell) row)
     {
-      int c=0;
-      if(stringp(tag)) continue;
-      if(tag->tag != "tr") continue;
-      array(string) row=({});
-      foreach(tag->data, TAG cell)
-	{
-	  if(stringp(cell)) continue;
-	  if(cell->tag != "td" && cell->tag!="th") continue;
-	  row+=({
-	    "\\begin{minipage}{"+(  column_data[c] / total_data ) +" \\linewidth}\n"+
-	    convert_to_latex(cell->data)+
+      array(string) ltxrow=({});
+
+      for(int col=0;col<columns;col+=row[col]->cols)
+      {
+	int cols=row[col]->cols;
+	if(cols > 1) ltxrow+="\\multicolumn{"+cols+"}{l}{";
+	ltxrow+=({
+	    "\\begin{minipage}{"+actual_widths[col]+"pt}\n"+
+	    convert_to_latex(row[col]->tag->data)+
 	    "\\end{minipage}"
 	  });
-	  c++;
+	  if(cols > 1) ltxrow+="}";
 	}
-      ret+=row*" & "+"\\\\\n";
+      ret+=ltxrow*" & "+"\\\\\n";
       if(border) ret+="\\hline\n";
     }
   in_table--;
@@ -230,13 +575,13 @@ string *srt(string *x)
   return x;
 }
 
-string low_index_to_latex(INDEX data, string prefix, string indent)
+string low_index_to_latex(INDEX data, string prefix, int indent)
 {
 //  werror("%O\n",data);
   string ret="";
   foreach(srt(indices(data)-({0})),string key)
     {
-      ret+="\\item \\verb+"+indent+"+";
+      ret+="\\item "+"$\\;$$\\;$"*indent;
       
       if(data[key][0])
       {
@@ -251,7 +596,7 @@ string low_index_to_latex(INDEX data, string prefix, string indent)
 	foreach(srt(indices(data[key][0])), string key2)
 	  {
 	    if(key2==prefix+key) continue;
-	    ret+="\\item \\verb+"+indent+"  +";
+	    ret+="\\item "+"$\\;$$\\;$"*(indent+1);
 	    ret+=latex_quote(Html.unquote_param(key2));
 	    ret+=", \\pageref{"+quote_label(data[key][0][key2][0])+"}\n";
 	}
@@ -262,7 +607,7 @@ string low_index_to_latex(INDEX data, string prefix, string indent)
 	
       if(sizeof(data[key]) > !!data[key][0])
       {
-	ret+=low_index_to_latex(data[key],prefix+key+".",indent+"  ");
+	ret+=low_index_to_latex(data[key],prefix+key+".",indent+1);
       }
     }
 
@@ -294,7 +639,7 @@ string index_to_latex(INDEX foo)
 	  latex_quote(key)+
 	  "\\end{large}\n";
 
-	ret+=low_index_to_latex(data[key],"","  ");
+	ret+=low_index_to_latex(data[key],"",1);
       }
     }
   ret+="\\end{list}\n";
@@ -516,10 +861,10 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 	    
 	  case "dt": ret+="\n\\item "; break;
-	  case "dd": ret+="\n\\item \\verb+  +"; break;
+	  case "dd": ret+="\n\\item $\\;$$\\;$"; break;
 
 	  case "ex_indent":
-	    ret+="\\verb+  +";
+	    ret+="$\\;$$\\;$";
 	    break;
 	  case "ex_br":
 
@@ -538,7 +883,11 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 
 	  case "p":
-	    ret+="\n\n"+convert_to_latex(tag->data)+"\n\n";
+	    if(!pre) // FIXME: 
+	    {
+	      ret+="\n\n";
+	      if(tag->data) ret+=convert_to_latex(tag->data)+"\n\n";
+	    }
 	    break;
 
 	  case "hr":
@@ -661,7 +1010,7 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 
 	  default:
-	    werror("Latex: unknown tag <%s> (near %s)\n",tag->tag,tag->location());
+	    werror("Latex: unknown tag <%s> (near %s)\n",tag->tag,tag->location()||"");
 
 	    if(tag->data)
 	      ret+=convert_to_latex(tag->data);
@@ -682,16 +1031,10 @@ string package(string x)
 {
   return #"
 \\documentclass[twoside,a4paper]{book}
-\\usepackage{epic}
-\\usepackage{eepic}
-\\usepackage{isolatin1}
-\\usepackage{latexsym}  % For $\Box$
-\\usepackage{amsmath}
-\\usepackage{longtable}
-\\usepackage{graphicx}
-\\begin{document}
-\\author{html2latex}\n
-\\setlength{\\unitlength}{1mm}\n
+"+packages+
+#"\\begin{document}
+\\author{wmml to latex}
+\\setlength{\\unitlength}{1mm}
 
 {\\catcode`\\^^20=\\active\\catcode`\\^^0d=\\active%
 \\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%
@@ -708,11 +1051,6 @@ void output(string base, WMML data)
 {
   global_data=data;
   string x=convert_to_latex(data->data);
-
-  x=replace(x,
-	    "\\verb+  +\\verb+  +",
-	    "\\verb+    +"
-	    );
 
   x=package(x);
 

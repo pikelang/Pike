@@ -817,9 +817,6 @@ SGML convert(SGML data)
 	 }
 
 	 case "img":
-	    add_file_to_export_list(data->params->src);
-	    break;
-
 	 case "illustration":
 	 case "image":
 	   {

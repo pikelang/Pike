@@ -65,8 +65,8 @@ string package(string x)
 \\usepackage{longtable}
 \\usepackage[pdftex]{graphicx}
 \\begin{document}
-\\author{html2latex}\n
-\\setlength{\\unitlength}{1mm}\n
+\\author{wmml2pdflatex}
+\\setlength{\\unitlength}{1mm}
 
 {\\catcode`\\^^20=\\active\\catcode`\\^^0d=\\active%
 \\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%
