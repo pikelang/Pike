@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.27 2004/01/11 00:38:16 nilsson Exp $
+// $Id: Table.pmod,v 1.28 2004/09/25 02:51:20 nilsson Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")
@@ -298,6 +298,8 @@ class table {
 	  m[d] += ({ t[r] });
       }
       array i = indices(m), v = values(m);
+      if(types[c] && types[c]->type=="num")
+	i = (array(float))i;
       predef::sort(i, v);
       t = (is_reversed ? predef::reverse(v) : v)*({});
     }
