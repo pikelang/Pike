@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.105 2001/07/03 04:30:06 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.106 2001/07/03 08:04:59 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -748,6 +748,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	if(val->subtype != FUNCTION_BUILTIN)
 	{
+	  if(find_shared_string_identifier(ID_FROM_INT(val->u.object->prog, val->subtype)->name,
+					   val->u.object->prog)==val->subtype)
+	  {
 	    /* We have to remove ourself from the cache for now */
 	    struct svalue tmp=data->counter;
 	    tmp.u.integer--;
@@ -764,6 +767,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
 	    return;
+	  }
 	}
 	Pike_error("Failed to encode function.\n");
       }
@@ -863,6 +867,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  code_number(p->identifier_references[d].inherit_offset,data);
 	  code_number(p->identifier_references[d].identifier_offset,data);
 	  code_number(p->identifier_references[d].id_flags,data);
+	  EDB(fprintf(stderr,"IDREF%x > %d: { %d, %d, %d }\n",
+		      p->id,d,
+		      p->identifier_references[d].inherit_offset,
+		      p->identifier_references[d].identifier_offset,
+		      p->identifier_references[d].id_flags);)
 	}
 
 	for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
@@ -880,6 +889,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    ref_push_object(p->inherits[d].parent);
 	    Pike_sp[-1].subtype=p->inherits[d].parent_identifier;
 	    Pike_sp[-1].type=T_FUNCTION;
+	    EDB(fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
+			p->id, p->inherits[d].parent, p->inherits[d].parent_identifier);)
 	  }else if(p->inherits[d].prog){
 	    ref_push_program(p->inherits[d].prog);
 	  }else{
@@ -889,6 +900,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  pop_stack();
 
           adddata3(p->inherits[d].name);
+
+	  EDB(fprintf(stderr,"INHERIT%x > %d: %d id=%d\n",
+		      p->id,d,
+		      p->inherits[d].prog->num_identifiers,
+		      p->inherits[d].prog->id);)
 	}
 
 	for(d=0;d<p->num_identifiers;d++)
@@ -1898,6 +1914,12 @@ static void decode_value2(struct decode_data *data)
 	    }
 	    decode_number(p->identifier_references[d].identifier_offset,data);
 	    decode_number(p->identifier_references[d].id_flags,data);
+
+	    EDB(fprintf(stderr,"IDREF%x < %d: { %d, %d, %d }\n",
+			p->id,d,
+			p->identifier_references[d].inherit_offset,
+			p->identifier_references[d].identifier_offset,
+			p->identifier_references[d].id_flags); )
 	  }
 
 	  debug_malloc_touch(p);
@@ -1938,6 +1960,8 @@ static void decode_value2(struct decode_data *data)
 		if(Pike_sp[-1].subtype == FUNCTION_BUILTIN)
 		  Pike_error("Failed to decode parent.\n");
 
+		EDB( fprintf(stderr,"INHERIT%x = func { %x, %d} \n",p->id,Pike_sp[-1].u.object, Pike_sp[-1].subtype); )
+
 		p->inherits[d].parent_identifier=Pike_sp[-1].subtype;
 		p->inherits[d].prog=program_from_svalue(Pike_sp-1);
 		if(!p->inherits[d].prog)
@@ -1949,6 +1973,7 @@ static void decode_value2(struct decode_data *data)
 		break;
 
 	      case T_PROGRAM:
+		EDB( fprintf(stderr,"INHERIT%x = prog\n",p->id); )
 		p->inherits[d].prog=Pike_sp[-1].u.program;
 		Pike_sp--;
 		dmalloc_touch_svalue(Pike_sp);
@@ -1958,6 +1983,11 @@ static void decode_value2(struct decode_data *data)
 	    }
 
 	    getdata3(p->inherits[d].name);
+
+	    EDB( fprintf(stderr,"INHERIT%x < %d: %d id=%d\n",
+			 p->id,d,
+			 p->inherits[d].prog->num_identifiers,
+			 p->inherits[d].prog->id); )
 	  }
 
 	  debug_malloc_touch(dat);
