@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.206 2003/02/16 13:55:20 mast Exp $
+|| $Id: threads.c,v 1.207 2003/02/16 15:05:07 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.206 2003/02/16 13:55:20 mast Exp $");
+RCSID("$Id: threads.c,v 1.207 2003/02/16 15:05:07 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -805,7 +805,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
-  free_object(arg.thread_state);
+  free_object(arg.thread_obj);
 
 #ifdef INTERNAL_PROFILING
   fprintf (stderr, "Thread usage summary:\n");
