@@ -101,6 +101,7 @@ void f_nice(INT32 args)
 #ifdef HAVE_NICE
   int ta = sp[-1].u.integer;
   if(!args) error("You must supply an argument to nice(int)!\n");
+  pop_n_elems(args);
   push_int(nice(ta));
 #endif
 }
