@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.49 2000/10/03 12:16:51 grubba Exp $
+// $Id: treeopt.in,v 1.50 2000/10/10 12:28:16 grubba Exp $
 //
 // The tree optimizer
 //
@@ -166,8 +166,8 @@ F_POP_VALUE(-, *):
 F_POP_VALUE(0 = F_POP_VALUE, *):
   $0;
 
-// Casts don't have side-effects.
-F_POP_VALUE(F_CAST(0, *), *):
+// Casts usually don't have side-effects.
+F_POP_VALUE(F_CAST[!($$->node_info & OPT_SIDE_EFFECT)](0, *), *):
   F_POP_VALUE($0, -);
 
 // Don't push constants just to pop them.
