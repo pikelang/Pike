@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.20 2001/01/15 03:36:44 mast Exp $
+;;; $Id: pike.el,v 1.21 2001/02/12 23:35:45 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -192,9 +192,7 @@ The name is assumed to begin with a capital letter.")
 	 ;; Any constant expression is allowed.
 	 '("\\<case\\>\\s *\\(.*\\):"
 	   1 font-lock-reference-face)
-	 ;; Labels:
-	 `(,(concat pike-font-lock-identifier-regexp ":")
-	   0 font-lock-reference-face)
+	 ;; Labels in statements:
 	 `(,(concat "\\<\\(break\\|continue\\)\\>\\s *\\("
 		    pike-font-lock-identifier-regexp "\\)")
 	   2 font-lock-reference-face)))
@@ -288,7 +286,19 @@ The name is assumed to begin with a capital letter.")
 		    (goto-char (match-end 1))
 		    nil
 		    (1 font-lock-variable-name-face)))
-	    )))
+	    )
+
+	   ;; Labels. Do this after the type font locking above to
+	   ;; avoid highlighting "int" in "mapping(int:string)" as a
+	   ;; label.
+	   `((pike-font-lock-find-label
+	      0 font-lock-reference-face))
+	   ))
+
+    (setq pike-font-lock-keywords-1
+	  (append pike-font-lock-keywords-1
+		  `((pike-font-lock-find-label
+		     0 font-lock-reference-face))))
 
   ;; Modifier keywords
   (setq pike-font-lock-keywords-3
@@ -422,6 +432,14 @@ The name is assumed to begin with a capital letter.")
 	  (if (not (looking-at "\\s *("))
 	      (goto-char limit)
 	    t)))))))
+
+(defun pike-font-lock-find-label (limit)
+  (catch 'found
+    (while (re-search-forward (concat pike-font-lock-identifier-regexp ":[^:]") limit t)
+      (save-excursion
+	;; Don't format identifiers as indexes in mapping constants.
+	(condition-case nil (up-list -1) (error (throw 'found t)))
+	(if (not (eq (char-after) ?\[)) (throw 'found t))))))
 
 ;; XEmacs way.
 (put 'pike-mode 'font-lock-defaults 
