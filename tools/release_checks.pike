@@ -11,7 +11,8 @@ int test_constants() {
   if(allocated < consts*105/100) {
     // Overallocating by less than 5%.
     write("Consider increasing the size of the builtin_constants mapping "
-	  "to %d entries (currently %d).\n", consts*110/100, allocated);
+	  "to %d entries (currently %d/%d).\n", consts*110/100, allocated,
+	  consts);
   } else if (allocated > consts*115/100) {
     // Overallocating by more than 15% seems excessive.
     write("Consider decreasing the size of the builtin_constants mapping "
