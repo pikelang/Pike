@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.71 2003/11/15 23:42:16 mast Exp $
+|| $Id: math.c,v 1.72 2004/03/02 20:46:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -36,7 +36,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.71 2003/11/15 23:42:16 mast Exp $");
+RCSID("$Id: math.c,v 1.72 2004/03/02 20:46:11 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -321,7 +321,7 @@ void f_tanh(INT32 args)
  *! Returns the hyperbolic arcus tangent value for @[f].
  *!
  *! @seealso
- *!   @[tanh()], @[asinh()], @[acosh()], @[atan2h()]
+ *!   @[tanh()], @[asinh()], @[acosh()]
  */ 
 void f_atanh(INT32 args)
 {
