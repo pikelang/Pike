@@ -109,7 +109,7 @@ o XML.NSTree
 
 o HTTP.Server
 
-o X.KeySums
+o Protocols.X.KeySyms
 
 o Standards.CIFF
 
