@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.67 1999/05/23 17:46:39 mirar Exp $ */
+/* $Id: colortable.c,v 1.68 1999/05/24 13:02:05 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.67 1999/05/23 17:46:39 mirar Exp $
+**!	$Id: colortable.c,v 1.68 1999/05/24 13:02:05 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.67 1999/05/23 17:46:39 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.68 1999/05/24 13:02:05 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -894,6 +894,13 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
 	 bad_arg_error("Colortable", 
 		       0,0, 1, "array of colors or 0", 0,
 		       "Colortable(): bad element %d of colorlist\n",i);
+
+#if DEBUG
+      fprintf(stderr,"got %d: %02x%02x%02x\n",n,
+	      flat.entries[n].color.r,
+	      flat.entries[n].color.g,
+	      flat.entries[n].color.b);
+#endif
 
       flat.entries[n].weight=1;
       flat.entries[n].no=i;
