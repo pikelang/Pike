@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.146 1999/09/16 04:23:54 hubbe Exp $");
+RCSID("$Id: program.c,v 1.147 1999/09/16 04:38:30 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1107,7 +1107,8 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
     
 #endif
 
-  new_program->storage_needed = offset + size;
+  new_program->storage_needed = offset + size -
+    new_program->inherits[0].storage_offset;
 
   return (SIZE_T) offset;
 }
