@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.9 1998/04/20 18:46:52 grubba Exp $ */
+/* $Id: orient.c,v 1.10 1998/04/20 19:51:56 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.9 1998/04/20 18:46:52 grubba Exp $
+**!	$Id: orient.c,v 1.10 1998/04/20 19:51:56 mirar Exp $
 **! class image
 */
 
@@ -257,14 +257,9 @@ CHRONO("begin hsv...");
 CHRONO("end hsv...");
 THREADS_DISALLOW();
 
-  /* FIXME: This looks like a ref-counting bug to me.
-   *	/grubba 1998-04-20
-   */
-
-  o[4]->refs++;
-
   if (!w)
   {
+    o[4]->refs++;
     pop_n_elems(5);
     push_object(o[4]);
   }
