@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.108 2000/08/29 00:09:47 hubbe Exp $
+ * $Id: program.h,v 1.109 2000/08/30 21:58:17 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -146,8 +146,9 @@ struct identifier
 {
   struct pike_string *name;
   struct pike_string *type;
-  unsigned INT16 identifier_flags; /* IDENTIFIER_??? */
-  unsigned INT16 run_time_type;
+  unsigned INT8 identifier_flags;	/* IDENTIFIER_??? */
+  unsigned INT8 run_time_type;		/* PIKE_T_??? */
+  unsigned INT16 opt_flags;		/* OPT_??? */
 #ifdef PROFILING
   unsigned INT32 num_calls;
   unsigned INT32 total_time;
@@ -432,9 +433,10 @@ PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * ty
 PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
-		      INT16 flags,
-		      INT8 function_flags,
-		      union idptr *func);
+		      unsigned INT8 flags,
+		      unsigned INT8 function_flags,
+		      union idptr *func,
+		      unsigned INT16 opt_flags);
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
@@ -460,14 +462,16 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
 			struct object *handler);
-int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
+int pike_add_function2(char *name, void (*cfun)(INT32),
+		       char *type, unsigned INT8 flags,
+		       unsigned INT16 opt_flags);
 PMOD_EXPORT int quick_add_function(char *name,
-		       int name_length,
-		       void (*cfun)(INT32),
-		       char *type,
-		       int type_length,
-		       INT16 flags,
-		       int opt_flags);
+				   int name_length,
+				   void (*cfun)(INT32),
+				   char *type,
+				   int type_length,
+				   unsigned INT8 flags,
+				   unsigned INT16 opt_flags);
 void check_all_programs(void);
 void init_program(void);
 void cleanup_program(void);
@@ -499,11 +503,15 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags);
 void *parent_storage(int depth);
 /* Prototypes end here */
 
-#define ADD_FUNCTION(NAME,FUNC,TYPE,FLAGS) \
-  quick_add_function(NAME,CONSTANT_STRLEN(NAME),FUNC,TYPE,CONSTANT_STRLEN(TYPE),FLAGS,0)
+#define ADD_FUNCTION(NAME, FUNC, TYPE, FLAGS) \
+  quick_add_function(NAME, CONSTANT_STRLEN(NAME), FUNC, TYPE,\
+                     CONSTANT_STRLEN(TYPE), FLAGS, \
+                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
 
-#define ADD_PROTOTYPE(NAME,TYPE,FLAGS) \
-  quick_add_function(NAME,CONSTANT_STRLEN(NAME),0,TYPE,CONSTANT_STRLEN(TYPE),FLAGS,0)
+#define ADD_PROTOTYPE(NAME, TYPE, FLAGS) \
+  quick_add_function(NAME, CONSTANT_STRLEN(NAME), 0, TYPE, \
+                     CONSTANT_STRLEN(TYPE), FLAGS, \
+                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
 
 #define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
   quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
@@ -511,25 +519,31 @@ void *parent_storage(int depth);
 #define PIKE_MAP_VARIABLE(NAME,OFFSET,TYPE,RTTYPE,FLAGS) \
   quick_map_variable(NAME,CONSTANT_STRLEN(NAME),OFFSET,TYPE,CONSTANT_STRLEN(TYPE),RTTYPE,FLAGS)
 
-#define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {				\
-  DTYPE_START;									\
-  {DTYPE}									\
-  {										\
-    struct pike_string *_t;							\
-    DTYPE_END(_t);								\
-    quick_add_function(NAME,CONSTANT_STRLEN(NAME),FUN,_t->str,_t->len,FLAGS,0);	\
-    free_string(_t);								\
-  }										\
+#define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {		\
+  DTYPE_START;							\
+  {DTYPE}							\
+  {								\
+    struct pike_string *_t;					\
+    DTYPE_END(_t);						\
+    quick_add_function(NAME, CONSTANT_STRLEN(NAME), FUN,	\
+                        _t->str, _t->len, FLAGS,		\
+                       OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);	\
+    free_string(_t);						\
+  }								\
 } while (0)
+
+#define pike_add_function(NAME, CFUN, TYPE, FLAGS)	\
+  pike_add_function2(NAME, CFUN, TYPE, FLAGS,		\
+                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
 
 #ifndef NO_PIKE_SHORTHAND
 #define add_function pike_add_function
 #endif
 
 #define START_NEW_PROGRAM_ID(ID) do { \
-  start_new_program();  \
-  Pike_compiler->new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
- }while(0)
+    start_new_program();  \
+    Pike_compiler->new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
+  }while(0)
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))
@@ -557,3 +571,11 @@ void *parent_storage(int depth);
 
 
 #endif /* PROGRAM_H */
+
+/* Kludge... */
+#ifndef LAS_H
+/* FIXME: Needed for the OPT_??? macros.
+ * Maybe they should be moved here, since las.h includes this file anyway?
+ */
+#include "las.h"
+#endif /* !LAS_H */

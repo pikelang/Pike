@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.198 2000/08/28 10:29:47 grubba Exp $");
+RCSID("$Id: las.c,v 1.199 2000/08/30 21:58:16 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -617,16 +617,59 @@ node *debug_mknode(short token, node *a, node *b)
     break;
 
   case F_APPLY:
-    if(a && a->token == F_CONSTANT &&
-       a->u.sval.type == T_FUNCTION &&
-       a->u.sval.subtype == FUNCTION_BUILTIN)
     {
-      res->node_info |= a->u.sval.u.efun->flags;
-    }else{
-      res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
-      if(a) res->tree_info |= a->tree_info;
+      unsigned INT16 opt_flags = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+      struct identifier *i = NULL;
+
+      if (a) {
+	switch(a->token) {
+	case F_CONSTANT:
+	  if (a->u.sval.type == T_FUNCTION) {
+	    if (a->u.sval.subtype == FUNCTION_BUILTIN) {
+	      opt_flags = a->u.sval.u.efun->flags;
+	    } else if (a->u.sval.u.object->prog) {
+	      i = ID_FROM_INT(a->u.sval.u.object->prog, a->u.sval.subtype);
+	    } else {
+	      yyerror("Calling function in destructed module.");
+	    }
+	  }
+	  break;
+	case F_EXTERNAL:
+	  {
+	    struct program_state *state = Pike_compiler;
+	    int program_id = a->u.integer.a;
+	    while (state && (state->new_program->id != program_id)) {
+	      state = state->previous;
+	    }
+	    if (state) {
+	      i = ID_FROM_INT(state->new_program, a->u.integer.b);
+	    } else {
+	      yyerror("Parent has left.");
+	    }
+	  }
+	  break;
+	case F_LOCAL:
+	  /* FIXME: Should lookup functions in the local scope. */
+	default:
+	  res->tree_info |= a->tree_info;
+	}
+	if (i && IDENTIFIER_IS_FUNCTION(i->identifier_flags)) {
+#ifdef PIKE_DEBUG
+	  /* Temporary check to see that the flags aren't reset somewhere. */
+	  if (i->opt_flags != (OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND)) {
+	    my_yyerror("Identifier %s has opt_flags 0x%04x!",
+		       i->name->str, i->opt_flags);
+	  }
+#endif /* PIKE_DEBUG */
+	  res->node_info |= i->opt_flags;
+	} else {
+	  res->node_info |= opt_flags;
+	}
+      } else {
+	res->node_info |= opt_flags;
+      }
+      if(b) res->tree_info |= b->tree_info;
     }
-    if(b) res->tree_info |= b->tree_info;
     break;
 
   case F_POP_VALUE:
@@ -4368,7 +4411,8 @@ int dooptcode(struct pike_string *name,
 			      type,
 			      modifiers,
 			    IDENTIFIER_C_FUNCTION | vargs,
-			      &tmp);
+			      &tmp,
+			      foo->u.efun->flags);
 	  free_node(n);
 	  return ret;
 	}
@@ -4399,7 +4443,8 @@ int dooptcode(struct pike_string *name,
 		      type,
 		      modifiers,
 		      IDENTIFIER_PIKE_FUNCTION | vargs,
-		      &tmp);
+		      &tmp,
+		      Pike_compiler->compiler_frame->opt_flags);
 
 
 #ifdef PIKE_DEBUG

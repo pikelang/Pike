@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.208 2000/08/18 22:05:40 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.209 2000/08/30 21:58:15 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -711,7 +711,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 			check_node_hash($<n>$)->u.sval.u.string,
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION,
-			0);
+			0,
+			OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
       if ($1 & ID_VARIANT) {
 	fprintf(stderr, "Function number: %d\n",
@@ -728,6 +729,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       node *check_args = NULL;
       int save_line = lex.current_line;
       int num_required_args = 0;
+      struct identifier *i;
 #ifdef PIKE_DEBUG
       struct pike_string *save_file = lex.current_file;
       lex.current_file = $8->current_file;
@@ -785,7 +787,6 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       }
 
       if ($1 & ID_VARIANT) {
-	int i = isidentifier($4->u.sval.u.string);
 	struct pike_string *bad_arg_str;
 	MAKE_CONSTANT_SHARED_STRING(bad_arg_str,
 				    "Bad number of arguments!\n");
@@ -819,6 +820,9 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 		  check_node_hash($10),
 		  check_node_hash($<n>9)->u.sval.u.string,
 		  $1);
+
+      i = ID_FROM_INT(Pike_compiler->new_program, f);
+      i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
       if ($1 & ID_VARIANT) {
 	fprintf(stderr, "Function number: %d\n", f);
@@ -1729,7 +1733,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 		       type,
 		       0,
 		       IDENTIFIER_PIKE_FUNCTION,
-		       0);
+		       0,
+		       OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     n=0;
 #if 0
     if(Pike_compiler->compiler_pass > 1 &&
@@ -1756,6 +1761,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 	      $5,
 	      i->type,
 	      ID_STATIC | ID_PRIVATE | ID_INLINE);
+
+    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
     pop_compiler_frame();
     free_node($1);
@@ -1848,7 +1855,8 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 		       type,
 		       0,
 		       IDENTIFIER_PIKE_FUNCTION,
-		       0);
+		       0,
+		       OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     n=0;
 #if 0
     if(Pike_compiler->compiler_pass > 1 &&
@@ -1876,6 +1884,8 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 	      $6,
 	      i->type,
 	      ID_STATIC | ID_PRIVATE | ID_INLINE);
+
+    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
     pop_compiler_frame();
     free_node($2);
@@ -1983,7 +1993,8 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 
     Pike_compiler->compiler_frame->current_function_number=
       define_function(create_string, type,
-		      ID_STATIC, IDENTIFIER_PIKE_FUNCTION, 0);
+		      ID_STATIC, IDENTIFIER_PIKE_FUNCTION, 0,
+		      OPT_SIDE_EFFECT);
 
     /* Third: Generate the initialization code.
      *

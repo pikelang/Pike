@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.267 2000/08/28 19:35:04 hubbe Exp $");
+RCSID("$Id: program.c,v 1.268 2000/08/30 21:58:17 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2553,9 +2553,10 @@ PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags)
  */
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
-		      INT16 flags,
-		      INT8 function_flags,
-		      union idptr *func)
+		      unsigned INT8 flags,
+		      unsigned INT8 function_flags,
+		      union idptr *func,
+		      unsigned INT16 opt_flags)
 {
   struct identifier *funp,fun;
   struct reference ref;
@@ -2641,6 +2642,8 @@ INT32 define_function(struct pike_string *name,
 
       funp->identifier_flags=function_flags;
 
+      funp->opt_flags = opt_flags;
+
       free_string(funp->type);
       copy_shared_string(funp->type, type);
     }else{
@@ -2674,6 +2677,8 @@ INT32 define_function(struct pike_string *name,
 	fun.func = *func;
       else
 	fun.func.offset = -1;
+
+      fun.opt_flags = opt_flags;
 
       ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
       add_to_identifiers(fun);
@@ -2739,6 +2744,8 @@ make_a_new_def:
     fun.func = *func;
   else
     fun.func.offset = -1;
+
+  fun.opt_flags = opt_flags;
 
   i=Pike_compiler->new_program->num_identifiers;
 
@@ -3429,7 +3436,9 @@ struct program *compile(struct pike_string *prog,
   return p;
 }
 
-PMOD_EXPORT int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
+PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
+				   char *type, unsigned INT8 flags,
+				   unsigned INT16 opt_flags)
 {
   int ret;
   struct pike_string *name_tmp,*type_tmp;
@@ -3445,13 +3454,15 @@ PMOD_EXPORT int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT1
 			type_tmp,
 			flags,
 			IDENTIFIER_C_FUNCTION,
-			&tmp);
+			&tmp,
+			opt_flags);
   }else{
     ret=define_function(name_tmp,
 			type_tmp,
 			flags,
 			IDENTIFIER_C_FUNCTION,
-			0);
+			0,
+			opt_flags);
   }
   free_string(name_tmp);
   free_string(type_tmp);
@@ -3459,19 +3470,19 @@ PMOD_EXPORT int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT1
 }
 
 PMOD_EXPORT int quick_add_function(char *name,
-		       int name_length,
-		       void (*cfun)(INT32),
-		       char *type,
-		       int type_length,
-		       INT16 flags,
-		       int opt_flags)
+				   int name_length,
+				   void (*cfun)(INT32),
+				   char *type,
+				   int type_length,
+				   unsigned INT8 flags,
+				   unsigned INT16 opt_flags)
 {
   int ret;
   struct pike_string *name_tmp,*type_tmp;
   union idptr tmp;
 /*  fprintf(stderr,"ADD_FUNC: %s\n",name); */
-  name_tmp=make_shared_binary_string(name,name_length);
-  type_tmp=make_shared_binary_string(type,type_length);
+  name_tmp = make_shared_binary_string(name,name_length);
+  type_tmp = make_shared_binary_string(type,type_length);
 
   if(cfun)
   {
@@ -3480,13 +3491,15 @@ PMOD_EXPORT int quick_add_function(char *name,
 			type_tmp,
 			flags,
 			IDENTIFIER_C_FUNCTION,
-			&tmp);
+			&tmp,
+			opt_flags);
   }else{
     ret=define_function(name_tmp,
 			type_tmp,
 			flags,
 			IDENTIFIER_C_FUNCTION,
-			0);
+			0,
+			opt_flags);
   }
   free_string(name_tmp);
   free_string(type_tmp);
@@ -3921,6 +3934,7 @@ void push_compiler_frame(int lexical_scope)
   f->recur_label=-1;
   f->is_inline=0;
   f->num_args=-1;
+  f->opt_flags = OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND; /* FIXME: Should be 0. */
   Pike_compiler->compiler_frame=f;
 }
 

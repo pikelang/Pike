@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.41 2000/08/14 17:48:50 grubba Exp $
+ * $Id: las.h,v 1.42 2000/08/30 21:58:16 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -53,6 +53,7 @@ struct compiler_frame
   int current_function_number;
   int recur_label;
   int is_inline;
+  unsigned int opt_flags;
   struct local_variable variable[MAX_LOCAL];
 };
 
