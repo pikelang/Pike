@@ -8,11 +8,17 @@ test_true([[
 #pike 7.4
 programp(Crypto.invert)]])
 test_true([[programp(Crypto.md2)]])
-test_true([[programp(Crypto.md5)]])
+test_true([[
+#pike 7.4
+programp(Crypto.md5)]])
 test_true([[programp(Crypto.pipe)]])
-test_true([[programp(Crypto.sha)]])
+test_true([[programp(
+#pike 7.4
+Crypto.sha)]])
 
-test_true([[programp(Crypto.rijndael)]])
+test_true([[
+#pike 7.4
+programp(Crypto.rijndael)]])
 test_true([[programp(Crypto.des)]])
 test_true([[programp(Crypto.idea)]])
 test_true([[programp(Crypto.cast)]])
@@ -164,21 +170,37 @@ test_eq([[Crypto.arcfour()
 	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")]])
   
 // MD5
-test_true([[objectp(Crypto.md5())]])
-test_eq([[Crypto.md5()->update("")->digest()]],
+test_true([[
+#pike 7.4
+objectp(Crypto.md5())]])
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("")->digest()]],
 	[[Crypto.hex_to_string("d41d8cd98f00b204e9800998ecf8427e")]])
-test_eq([[Crypto.md5()->update("a")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("a")->digest()]],
 	[[Crypto.hex_to_string("0cc175b9c0f1b6a831c399e269772661")]])
-test_eq([[Crypto.md5()->update("abc")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("900150983cd24fb0d6963f7d28e17f72")]])
-test_eq([[Crypto.md5()->update("message digest")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("message digest")->digest()]],
 	[[Crypto.hex_to_string("f96b697d7cb7938d525a2f31aaf161d0")]])
-test_eq([[Crypto.md5()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
 	[[Crypto.hex_to_string("c3fcd3d76192e4007dfb496cca67e13b")]])
-test_eq([[Crypto.md5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			       "abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[Crypto.hex_to_string("d174ab98d277d9f5a5611c2c9f419d9f")]])
-test_eq([[Crypto.md5()->update("1234567890123456789012345678901234567890"
+test_eq([[
+#pike 7.4
+Crypto.md5()->update("1234567890123456789012345678901234567890"
 			       "1234567890123456789012345678901234567890")->digest()]],
 	[[Crypto.hex_to_string("57edf4a22be3c955ac49da2e2107b67a")]])
 
@@ -218,39 +240,69 @@ test_eq([[Crypto.md2()->update("1234567890123456789012345678901234567890"
 	[[Crypto.hex_to_string("d5976f79d83d3a0dc9806c3c66f3efd8")]])
 
 // SHA
-test_true([[objectp(Crypto.sha())]])
-test_eq([[Crypto.sha()->update("")->digest()]],
+test_true([[
+#pike 7.4
+objectp(Crypto.sha())]])
+test_eq([[
+#pike 7.4
+Crypto.sha()->update("")->digest()]],
 	[[Crypto.hex_to_string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
-test_eq([[Crypto.sha()->update("abc")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.sha()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
-test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*63)->digest()),
+test_eq(
+#pike 7.4
+Crypto.string_to_hex(Crypto.sha()->update("x"*63)->digest()),
         "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
-test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*64)->digest()),
+test_eq(
+#pike 7.4
+Crypto.string_to_hex(Crypto.sha()->update("x"*64)->digest()),
         "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
-test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*65)->digest()),
+test_eq(
+#pike 7.4
+Crypto.string_to_hex(Crypto.sha()->update("x"*65)->digest()),
         "78c741ddc482e4cdf8c474a0876347a0905b6233")
-test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*257)->digest()),
+test_eq(
+#pike 7.4
+Crypto.string_to_hex(Crypto.sha()->update("x"*257)->digest()),
         "0796067748b6b0c2af864656a399f7722ef9283a")
 
 // HMAC
-test_eq([[Crypto.hmac(Crypto.md5)("")("")]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.md5)("")("")]],
         [[Crypto.hex_to_string("74e6f7298a9c2d168935f58c001bad88")]])
 // Test vectors for md5 from RFC-2104
-test_eq([[Crypto.hmac(Crypto.md5)("\013" * 16)("Hi There")]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.md5)("\013" * 16)("Hi There")]],
 	[[Crypto.hex_to_string("9294727a3638bb1c13f48ef8158bfc9d")]])
-test_eq([[Crypto.hmac(Crypto.md5)("Jefe")("what do ya want for nothing?")]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.md5)("Jefe")("what do ya want for nothing?")]],
 	[[Crypto.hex_to_string("750c783e6ab0b503eaa86e310a5db738")]])
-test_eq([[Crypto.hmac(Crypto.md5)("\252" * 16)("\335" * 50)]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.md5)("\252" * 16)("\335" * 50)]],
 	[[Crypto.hex_to_string("56be34521d144c88dbb8c733f0e8b3f6")]])
 
 // Similar test vectors for sha; not verified with other implementations
-test_eq([[Crypto.hmac(Crypto.sha)("")("")]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.sha)("")("")]],
         [[Crypto.hex_to_string("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")]])
-test_eq([[Crypto.hmac(Crypto.sha)("\013" * 16)("Hi There")]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.sha)("\013" * 16)("Hi There")]],
 	[[Crypto.hex_to_string("675b0b3a1b4ddf4e124872da6c2f632bfed957e9")]])
-test_eq([[Crypto.hmac(Crypto.sha)("Jefe")("what do ya want for nothing?")]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.sha)("Jefe")("what do ya want for nothing?")]],
 	[[Crypto.hex_to_string("effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")]])
-test_eq([[Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
+test_eq([[
+#pike 7.4
+Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
 	[[Crypto.hex_to_string("d730594d167e35d5956fd8003d0db3d3f46dc7bb")]])
 
 // CRYPT_MD5
@@ -266,22 +318,33 @@ test_eq(
 #pike 7.4
 Crypto.invert()->name(),"INVERT")
 test_eq(Crypto.des()->name(),"DES")
-test_eq(Crypto.rijndael()->name(),"RIJNDAEL")
-test_eq(Crypto.aes()->name(),"AES")
+test_eq(
+#pike 7.4
+Crypto.rijndael()->name(),"RIJNDAEL")
+test_eq(
+#pike 7.4
+Crypto.aes()->name(),"AES")
 test_eq(Crypto.idea()->name(),"IDEA")
 test_eq(Crypto.cast()->name(),"CAST")
 test_eq(Crypto.arcfour()->name(),"ARCFOUR")
-test_eq(Crypto.md5()->name(),"MD5")
+test_eq(
+#pike 7.4
+Crypto.md5()->name(),"MD5")
 test_eq(Crypto.md4()->name(),"MD4")
 test_eq(Crypto.md2()->name(),"MD2")
-test_eq(Crypto.sha()->name(),"SHA")
+test_eq(
+#pike 7.4
+Crypto.sha()->name(),"SHA")
 
 // ->query_key_length
 test_eq(
 #pike 7.4
 Crypto.invert()->query_key_length(),0)
 test_eq(Crypto.des()->query_key_length(),8)
-test_eq(Crypto.aes()->query_key_length(),32)
+test_eq(
+#pike 7.4
+Crypto.aes()->query_key_length(),32)
+test_eq(Crypto.AES()->key_size(),32)
 test_eq(Crypto.idea()->query_key_length(),16)
 test_eq(Crypto.cast()->query_key_length(),16)
 test_eq(Crypto.arcfour()->query_key_length(),1)
@@ -291,28 +354,41 @@ test_eq(
 #pike 7.4
 Crypto.invert()->query_block_size(),8)
 test_eq(Crypto.des()->query_block_size(),8)
-test_eq(Crypto.aes()->query_block_size(),16)
+test_eq(
+#pike 7.4
+Crypto.aes()->query_block_size(),16)
+test_eq(Crypto.AES()->block_size(),16)
 test_eq(Crypto.idea()->query_block_size(),8)
 test_eq(Crypto.cast()->query_block_size(),8)
 test_eq(Crypto.arcfour()->query_block_size,0)
 
 // pipe
-test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+test_eq(
+#pike 7.4
+ Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
   Crypto.cast(), Crypto.arcfour() )->name(),
   "PIPE(DES, AES, IDEA, CAST, ARCFOUR)")
-test_equal( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+test_equal(
+#pike 7.4
+ Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
    Crypto.cast(), Crypto.arcfour() )->query_key_length(),
    ({ 8, 32, 16, 16, 1 }) )
-test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+test_eq(
+#pike 7.4
+ Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
    Crypto.cast(), Crypto.arcfour() )->query_block_size(), 16)
 test_eq( Crypto.pipe( Crypto.des(), Crypto.idea(), Crypto.cast(),
    Crypto.arcfour() )->query_block_size(), 8)
-test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+test_eq(
+#pike 7.4
+ Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
    Crypto.cast() )->
      set_encrypt_key( Crypto.des_parity("A"*8), "B"*32, "C"*16,
        "D"*16 )->crypt_block("F"*16),
        String.hex2string("fc222f3584addf1a5f974e104a3e2231") )
-test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+test_eq(
+#pike 7.4
+ Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
    Crypto.cast() )->
      set_decrypt_key( Crypto.des_parity("A"*8), "B"*32, "C"*16,
        "D"*16 )->

@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.8 2003/08/10 20:08:32 nilsson Exp $
+dnl $Id: testsuite.in,v 1.9 2003/08/25 03:27:23 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -177,8 +177,12 @@ test_do( RSB->set_private_key(RSA->get_d(),
 test_equal( RSA->get_d(), RSB->get_d() )
 test_equal( RSA->get_p(), RSB->get_p() )
 test_equal( RSA->get_q(), RSB->get_q() )
-test_true( RSA->verify("hej", Crypto.md5, RSB->sign("hej", Crypto.md5)) )
-test_false( RSA->verify("hoj", Crypto.md5, RSB->sign("hej", Crypto.md5)) )
+test_true([[
+#pike 7.4
+RSA->verify("hej", Crypto.md5, RSB->sign("hej", Crypto.md5)) ]])
+test_false([[
+#pike 7.4
+RSA->verify("hoj", Crypto.md5, RSB->sign("hej", Crypto.md5)) ]])
 test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
 test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
 test_true( RSA->md5_verify("hej", RSB->md5_sign("hej")) )
