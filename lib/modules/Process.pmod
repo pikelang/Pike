@@ -34,7 +34,9 @@ string sh_quote(string s)
 
 array(string) split_quoted_string(string s)
 {
-  s=replace(s, ({"\"","'","\\"," "}), ({"\0\"","\0'","\0\\","\0 "}));
+  s=replace(s,
+	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n"}),
+	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n"}));
   array(string) x=s/"\0";
   array(string) ret=({x[0]});
 
@@ -44,7 +46,11 @@ array(string) split_quoted_string(string s)
     {
       case '"':
       ret[-1]+=x[e][1..];
-      while(x[++e][0]!='"') ret[-1]+=x[e];
+      while(x[++e][0]!='"')
+      {
+	if(strlen(x[e])==1 && x[e][0]=='\\' && x[e+1][0]=='"') e++;
+	ret[-1]+=x[e];
+      }
       ret[-1]+=x[e][1..];
       break;
 
@@ -64,8 +70,12 @@ array(string) split_quoted_string(string s)
       break;
       
       case ' ':
-	if(strlen(x[e]) > 1 || sizeof(x)==e+1 || x[e+1][0]!=' ')
-	  ret+=({x[e][1..]});
+      case '\t':
+      case '\n':
+	while(strlen(x[e])==1 && (<' ','\t','\n'>) [x[e][0]] )
+	  if(++e >= sizeof(x))
+	    return ret;
+	ret+=({x[e][1..]});
       break;
 
       default:
