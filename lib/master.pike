@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.61 1998/01/17 01:05:20 hubbe Exp $
+/* $Id: master.pike,v 1.62 1998/01/17 17:32:55 mirar Exp $
  *
  * Master-file for Pike.
  */
@@ -183,9 +183,11 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 static program low_findprog(string pname, string ext)
 {
   program ret;
+  array s;
   string fname=pname+ext;
   if(ret=programs[fname]) return ret;
-  if(master_file_stat(fname))
+  if( (s=master_file_stat(fname)) 
+      && s[1]>=0 )
   {
     switch(ext)
     {
