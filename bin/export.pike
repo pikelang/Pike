@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.24 1999/07/02 14:16:54 grubba Exp $ */
+/* $Id: export.pike,v 1.25 1999/07/02 14:22:53 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -59,13 +59,18 @@ void fix_configure(string dir)
 
 string getversion()
 {
-  string s=Stdio.read_file("pike/src/version.c");
-  if(!sscanf(s,"%*spush_text(\"%s\")",s))
-  {
+  string s=Stdio.read_file("pike/src/version.h");
+
+  int maj, min, build;
+
+  if ((!sscanf(s, "%*sPIKE_MAJOR_VERSION %d", maj)) ||
+      (!sscanf(s, "%*sPIKE_MINOR_VERSION %d", min)) ||
+      (!sscanf(s, "%*sPIKE_BUILD_VERSION %d", build))) {
+
     werror("Failed to get Pike version.\n");
     exit(1);
   }
-  return s;
+  return sprintf("Pike v%d.%d release %d", maj, min, build);
 }
 
 void bump_version()
