@@ -4251,7 +4251,7 @@ from the file <I>from</I> followed by <I>trailers</I> to the file <I>to</I>.
 When completed <I>callback</I> is called with the total number of bytes sent
 as the first argument, followed by <I>args</I>.
 <p>
-Any of <I>headers</I>, <I>from<I> and <I>trailers</I> may be left out
+Any of <I>headers</I>, <I>from</I> and <I>trailers</I> may be left out
 by setting them to 0.
 <p>
 Setting <I>offset</I> to -1 means send from the current position in
