@@ -4,6 +4,8 @@
 //!
 //!   This module exists only for backward compatibility with Pike 7.0.
 
+#pike 7.0
+
 #define error(X) throw(({(X),backtrace()}))
 
 //! class time_unit

@@ -1,5 +1,7 @@
 // by Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
 
+#pike 7.0
+
 inherit Calendar.ISO:ISO;
 
 void create()

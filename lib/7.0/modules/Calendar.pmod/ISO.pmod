@@ -1,5 +1,7 @@
 // IS-8601, international standard
 
+#pike 7.0
+
 inherit Calendar.Gregorian:Gregorian;
 
 class Year

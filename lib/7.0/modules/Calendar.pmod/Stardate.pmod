@@ -2,6 +2,9 @@
 
 //!	Implements ST:TNG stardates.
 //!	Can be used as create argument to Day.
+
+#pike 7.0
+
 class TNGDate
 {
    inherit Calendar._TimeUnit;
