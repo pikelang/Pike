@@ -17,6 +17,7 @@
 #include <operators.h>
 #ifdef HAVE_GNOME
 # include <gnome.h>
+# include <libgnorba/gnorba.h>
 #else
 # include <gtk/gtk.h>
 #endif
