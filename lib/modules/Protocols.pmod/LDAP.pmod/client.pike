@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.75 2005/03/10 19:23:02 mast Exp $
+// $Id: client.pike,v 1.76 2005/03/10 19:27:33 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -454,7 +454,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.75 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.76 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -2191,7 +2191,8 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
   if (standard_attrs == 2)
     return 0;
 
-  if (!attr_type_descrs)
+  if (!attr_type_descrs) {
+    attr_type_descrs = ([]);
     if (mapping(string:array(string)) subschema =
 	query_subschema (ldap_basedn, ({"attributeTypes"})))
       if (array(string) attr_types = subschema->attributetypes) {
@@ -2200,7 +2201,6 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 	// Protocols.LDAP._standard_attr_type_descrs init.
 	array(mapping(string:mixed)) incomplete = ({});
 
-	attr_type_descrs = ([]);
 	foreach (attr_types, string attr_type) {
 	  mapping(string:mixed) descr = parse_schema_terms (
 	    utf8_to_string (attr_type),
@@ -2242,6 +2242,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 	foreach (incomplete, mapping(string:mixed) descr)
 	  complete (descr);
       }
+  }
 
   return attr_type_descrs[attr];
 }
