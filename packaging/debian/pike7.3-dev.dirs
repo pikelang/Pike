@@ -1,2 +1,3 @@
 usr/share/emacs/
-usr/bin
+usr/bin/
+usr/include/pike7.3/

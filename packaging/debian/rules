@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.28 2002/09/18 19:55:03 grendel Exp $
+# $Id: rules,v 1.29 2002/10/19 00:37:59 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -177,7 +177,7 @@ install: build
 
 	# temporary hack
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*.o
-	-$(CURDIR)/src/dumpmodule.pike $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
+	-$(RUNPIKE) $(CURDIR)/src/dumpmodule.pike $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
 
 	# Some cleaning
 	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/ -name ".autodoc" -type f -print`
@@ -229,6 +229,8 @@ install: build
 	    && chmod a+x $$f; \
 	  file $$f | grep "script" >/dev/null \
             && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/$(PIKE)@' $$f; \
+	  file $$f | grep "script" >/dev/null \
+            && perl -pi -e 's@#\!.*/usr/bin/env.*pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
 
 	# Create the documentation links to save space
