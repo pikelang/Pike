@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.7 1998/07/04 16:52:53 grubba Exp $
+ * $Id: passwords.c,v 1.8 1999/03/08 05:45:58 mast Exp $
  *
  * Password handling for Pike.
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.7 1998/07/04 16:52:53 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.8 1999/03/08 05:45:58 mast Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -75,7 +75,7 @@ static void push_pwent(struct passwd *ent)
 }
 #endif
 
-#if defined(HAVE_GETGRNAM) || defined(HAVE_GETGRUID) || defined(HAVE_GETGRENT)
+#if defined(HAVE_GETGRNAM) || defined(HAVE_GETGRGID) || defined(HAVE_GETGRENT)
 static void push_grent(struct group *ent)
 {
   if(!ent)
