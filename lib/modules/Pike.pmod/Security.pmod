@@ -34,7 +34,8 @@ class User {
   //!     to EPERM and an exception is thrown.
   //!   @value 1
   //!     Do nothing, i.e. valid_open has initilized the @[current]
-  //!     object with an open file.
+  //!     object with an open file. This can (natuarally) only be returned
+  //!     if a @[current] object was given, which is not always the case.
   //!   @value 2
   //!     The user was allowed to open the file and the open code proceeds.
   //!   @value 3
@@ -43,13 +44,13 @@ class User {
   //! @endint
   int(0..3)|string valid_open(string type, object current,
 			      string filename, string flags, int access) {
-    return 0;
+    return 3;
   }
 
   //! This callback gets called when I/O operations not performed on
   //! file objects are performed.
-  int(0..3)|string valid_io(string fun, string type, mixed ... args) {
-    return 0;
+  int(0..3)|array valid_io(string fun, string type, mixed ... args) {
+    return 3;
   }
 }
 
