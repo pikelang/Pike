@@ -228,6 +228,8 @@ void emit_program_block(mapping block, string cl)
 
   foreach(sort(indices(block)), string f)
   {
+    if( true_types[ cl+f ][ 2 ] )
+      emit( "#ifdef "+true_types[ cl+f ][ 2 ]+"\n");
     _num_functions++;
     string cfun = "pgtk_"+cl+"_"+f;
     switch(f)
@@ -265,6 +267,8 @@ void emit_program_block(mapping block, string cl)
        continue;
     }
     emit_function_def(f,cfun,block[f],0);
+    if( true_types[ cl+f ][ 2 ] )
+      emit( "#endif\n" );
   }
 }
 
@@ -323,8 +327,8 @@ void do_default_sprintf( int args, int offset, int len )
   my_pop_n_elems( args );
   push_string( make_shared_binary_string( _data+offset, len ) );
 }
-";
-  string signal_doc, current_require;
+"; 
+  string signal_doc, current_require, current_define;
 
   do_docs = argc > 2;
 
@@ -357,9 +361,33 @@ void do_default_sprintf( int args, int offset, int len )
 
     if((String.trim_whites(line)-";") == "endrequire")
     {
-      skip_mode=0;
-      current_require = 0;
+      if( current_define )
+        current_define = 0;
+      else
+      {
+        skip_mode=0;
+        current_require = 0; 
+      }
       continue;
+    }
+
+    if(sscanf(line, "require %s;", line))
+    {
+      line = String.trim_whites( line );
+      if( sscanf( line, "define %s", line ) )
+      {
+        current_define = line;
+        continue;
+      }
+      else
+      {
+        current_require = line;
+        if(!requires[current_require])
+          requires[current_require] = ({});
+        if(!has_cond_widget(line))
+          skip_mode=1;
+        continue;
+      }
     }
 
     if(skip_mode)
@@ -381,16 +409,7 @@ void do_default_sprintf( int args, int offset, int len )
       continue;
     }
 
-    if(sscanf(line, "require %s;", line))
-    {
-      line = String.trim_whites( line );
-      current_require = line;
-      if(!requires[current_require])
-        requires[current_require] = ({});
-      if(!has_cond_widget(line))
-        skip_mode=1;
-    }
-    else if(sscanf(line, "ADD_INCLUDE(%s);", line))
+    if(sscanf(line, "ADD_INCLUDE(%s);", line))
     {
       extra_cpp += line+"\n";
     }
@@ -427,15 +446,15 @@ void do_default_sprintf( int args, int offset, int len )
       struct[progname][fn] = line;
       string a,b;
       sscanf(line, "\"function(%s:%s)\"", a, b);
-      true_types[progname+fn] = ({ b, a });
+      true_types[progname+fn] = ({ b, a, current_define });
     }
     else if(sscanf(line, "signal %s;", string name))
     {
       signal_doc = name;
-      if(signals[progname])
+      if(signals[ progname ])
 	signals[progname][signal_doc] = "";
       else
-	signals[progname] = ([ name:"" ]);
+        signals[progname] = ([ name:"" ]);
     }
     else if(sscanf(line, "inherit %s;", line))
     {
@@ -514,9 +533,11 @@ void do_default_sprintf( int args, int offset, int len )
       last_function="get_"+line;
       NUMBER_FUNCTION();
       struct[progname]["get_"+line] = "\"function(void:array("+ptype+"))\"";
-      true_types[progname+last_function] = ({ "array("+type+")", "" });
+      true_types[progname+last_function] = ({ "array("+type+")", "", 
+                                              current_define });
       
       emit("/* "+oline+" */\n");
+      if( current_define ) emit( "#ifdef "+current_define+"\n");
       emit_proto("void pgtk_"+progname+"_get_"+line+"(int args)\n");
       emit("{\n");
       emit("  int n;\n");
@@ -546,6 +567,7 @@ void do_default_sprintf( int args, int offset, int len )
       }
       emit("  f_aggregate( "+size+" );\n");
       emit("}\n");
+      if( current_define ) emit( "#endif\n");
     }
     else if(sscanf(line, "member %s %s;", string type, line ) )
     {
@@ -567,9 +589,10 @@ void do_default_sprintf( int args, int offset, int len )
       }
       NUMBER_FUNCTION();
       struct[progname][last_function] = "\"function(void:"+ptype+")\"";
-      true_types[progname+last_function] = ({ type, "" });
+      true_types[progname+last_function] = ({ type, "", current_define });
 
       emit("/* "+oline+" */\n");
+      if( current_define ) emit( "#ifdef "+current_define+"\n");
       emit_proto("void pgtk_"+progname+"_get_"+line+"(int args)\n");
       emit("{\n");
       emit("  my_pop_n_elems(args);\n");
@@ -596,6 +619,7 @@ void do_default_sprintf( int args, int offset, int len )
         }
       }
       emit("}\n");
+      if( current_define ) emit( "#endif\n");
     }
     else if(sscanf(line, "setmember %s %s;", string type, line))
     {
@@ -605,9 +629,10 @@ void do_default_sprintf( int args, int offset, int len )
       last_function="set_"+line;
       NUMBER_FUNCTION();
       struct[progname]["set_"+line] = "\"function("+type+":"+type+")\"";
-      true_types[progname+"set_"+line] = ({ type, type+" to" });
+      true_types[progname+"set_"+line] = ({ type, type+" to", current_define });
 
       emit("/* "+oline+" */\n");
+      if( current_define ) emit( "#ifdef "+current_define+"\n");
       emit_proto("void pgtk_"+progname+"_set_"+line+"(int args)\n");
       emit("{\n");
       emit("  "+(type=="int"?"INT_TYPE":"FLOAT_TYPE")+" to, old;\n");
@@ -630,6 +655,7 @@ void do_default_sprintf( int args, int offset, int len )
 
       emit("  push_"+(type=="string"?"text":type)+"( old );\n");
       emit("}\n");
+      if( current_define ) emit( "#endif\n");
     }
     else if(sscanf(line, "subwidget %s %s;", string type, line))
     {
@@ -639,15 +665,17 @@ void do_default_sprintf( int args, int offset, int len )
       last_function=line;
       NUMBER_FUNCTION();
       struct[progname][line] = "\"function(void:object)\"";
-      true_types[progname+line] = ({ link_class( type ), "" });
+      true_types[progname+line] = ({ link_class( type ), "", current_define });
 
       emit("/* "+oline+" */\n");
+      if( current_define ) emit( "#ifdef "+current_define+"\n");
       emit_proto("void pgtk_"+progname+"_"+line+"(int args)\n");
       emit("{\n");
       emit("  my_pop_n_elems(args);\n");
       emit("  push_gtkobjectclass( "+castname("GTK_"+upper_case( progname ))
            +"( THIS->obj )->"+line+", pgtk_"+type+"_program );\n");
       emit("}\n");
+      if( current_define ) emit( "#endif\n");
     }
     else if(sscanf(line, "%[^ ] %s(%s);", rest, fn, types ) == 3)
     {
@@ -940,6 +968,7 @@ void do_default_sprintf( int args, int offset, int len )
       }
 
       emit( "/* "+oline+" */\n");
+      if( current_define ) emit( "#ifdef "+current_define+"\n");
       emit_proto("void pgtk_"+progname+"_"+fn+"(int args)\n");
       emit("{\n");
 
@@ -961,7 +990,7 @@ void do_default_sprintf( int args, int offset, int len )
                                    map((argument_list[2..]/","-({""})),
                                        lambda( string q ) {
                                          return q+(sizeof(tmp)>ti?" "+tmp[ti++]:"");
-                                       })*", " });
+                                       })*", ", current_define });
       named[progname+fn] = 1;
 //       werror("arguments: %O\n",true_types[progname+fn]);
       struct[progname][fn] = "\"function("+
@@ -1042,6 +1071,7 @@ void do_default_sprintf( int args, int offset, int len )
         }
       }
       emit("}\n\n");
+      if( current_define ) emit( "#endif\n");
     }
     else if(sscanf(line, "constant string %s;", line)==1)
     {
@@ -1049,8 +1079,10 @@ void do_default_sprintf( int args, int offset, int len )
       if(!sscanf(line, "GTK_%s", fn))
 	fn = line;
       constants_name += ({ fn });
+      if( current_define ) constants += ( "#ifdef "+current_define+"\n");
       constants += ("  add_string_constant((char*)_data+"+
                     data_offset(fn+"\0")+", "+line+", 0);\n");
+      if( current_define ) constants += ( "#endif\n");
     }
     else if(sscanf(line, "constant int %s;", line)==1 ||
             sscanf(line, "constant %[^ ];", line)==1)
@@ -1059,8 +1091,10 @@ void do_default_sprintf( int args, int offset, int len )
       if(!sscanf(line, "GTK_%s", fn))
 	fn = line;
       constants_name += ({ fn });
+      if( current_define ) constants += ( "#ifdef "+current_define+"\n");
       constants += ("  add_integer_constant((char*)_data+"+
                     data_offset(fn+"\0")+", "+line+", 0);\n");
+      if( current_define ) constants += ( "#endif\n");
     }
     else if(sscanf(line, "ARGS(%s);", line)==1)
     {
@@ -1156,7 +1190,7 @@ void do_default_sprintf( int args, int offset, int len )
           NUMBER_FUNCTION();
           struct[progname][fn] = line;
           sscanf(line, "\"function(%s:%s)\"", a, b);
-          true_types[progname+fn] = ({ b, a });
+          true_types[progname+fn] = ({ b, a, current_define });
         } else if(sscanf(line, "SIGNAL(%s\")", line)) {
           string name;
           string doc;
@@ -1205,7 +1239,7 @@ void do_default_sprintf( int args, int offset, int len )
           last_function=line;
           NUMBER_FUNCTION();
           struct[progname][line] = "\"function(void:object)\"";
-          true_types[progname+line] = ({ link_class( type ), "" });
+          true_types[progname+line] = ({ link_class( type ), "", current_define });
         } else if(sscanf(line, "ARGS(%s);", line)==1) {
           true_types[progname+last_function][1] = line;
         } else if(sscanf(line, "RETURNS(%s);", line)==1) {
