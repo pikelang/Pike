@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.3 1999/07/19 13:46:42 mirar Exp $
+//  $Id: Connection.pike,v 1.4 1999/09/28 02:07:43 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -73,7 +73,7 @@ void create(string server,void|mapping options)
       software_version=vi->software_version;
    };
    if (err)
-      if (err->no==2)
+      if (objectp(err) && err->no==2)
       {
 	 protocol_level=0;
 	 session_software=software_version="unknown";
