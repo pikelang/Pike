@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.99 1999/11/08 20:50:50 grubba Exp $");
+RCSID("$Id: las.c,v 1.100 1999/11/11 15:12:17 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -57,7 +57,7 @@ int car_is_node(node *n)
     return 0;
 
   default:
-    return !!CAR(n);
+    return !!_CAR(n);
   }
 }
 
@@ -74,7 +74,7 @@ int cdr_is_node(node *n)
     return 0;
 
   default:
-    return !!CDR(n);
+    return !!_CDR(n);
   }
 }
 
@@ -85,6 +85,8 @@ void check_tree(node *n, int depth)
   if(!n) return;
   if(n->token==USHRT_MAX)
     fatal("Free node in tree.\n");
+
+  check_node_hash(n);
 
   if(d_flag<2) return;
 
@@ -206,6 +208,80 @@ BLOCK_ALLOC(node_s, NODES);
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
 
+#ifdef SHARED_NODES
+
+struct node_hash_table node_hash;
+
+static unsigned INT32 hash_node(node *n)
+{
+  return hashmem((unsigned char *)&(n->token),
+		 sizeof(node) - OFFSETOF(node_s, token), sizeof(node));
+}
+
+static void add_node(node *n)
+{
+  unsigned INT32 hval = n->hash % node_hash.size;
+
+  n->next = node_hash.table[hval];
+  node_hash.table[hval] = n;
+}
+
+static void sub_node(node *n)
+{
+  node *prior;
+
+  if (!node_hash.size) {
+    return;
+  }
+
+  prior = node_hash.table[n->hash % node_hash.size];
+
+  if (!prior) {
+    return;
+  }
+  if (prior == n) {
+    node_hash.table[n->hash % node_hash.size] = n->next;
+  } else {
+    while(prior && (prior->next != n)) {
+      prior = prior->next;
+    }
+    if (!prior) {
+      return;
+    }
+    prior->next = n->next;
+  }
+}
+
+static node *freeze_node(node *orig)
+{
+  unsigned INT32 hash = hash_node(orig);
+  node *n = node_hash.table[hash % node_hash.size];
+
+  while (n) {
+    if ((n->hash == hash) &&
+	!MEMCMP(&(n->token), &(orig->token),
+		sizeof(node) - OFFSETOF(node_s, token))) {
+#if 0
+      fprintf(stderr, "Found node: ");
+      print_tree(n);
+#endif /* 0 */
+      free_node(orig);
+      n->refs++;
+      return n;
+    }
+    n = n->next;
+  }
+  orig->hash = hash;
+  add_node(orig);
+  return orig;
+}
+
+#else /* !SHARED_NODES */
+
+#define freeze_node(X)	(X)
+
+#endif /* SHARED_NODES */
+
 void free_all_nodes(void)
 {
   if(!compiler_frame)
@@ -220,7 +296,7 @@ void free_all_nodes(void)
 #endif
       
       for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next) e+=NODES;
-      for(tmp=free_node_ss;tmp;tmp=CAR(tmp)) e--;
+      for(tmp=free_node_ss;tmp;tmp=_CAR(tmp)) e--;
       if(e)
       {
 	int e2=e;
@@ -228,37 +304,44 @@ void free_all_nodes(void)
 	{
 	  for(e=0;e<NODES;e++)
 	  {
-	    for(tmp=free_node_ss;tmp;tmp=CAR(tmp))
+	    for(tmp=free_node_ss;tmp;tmp=_CAR(tmp))
 	      if(tmp==tmp2->x+e)
 		break;
 	    
 	    if(!tmp)
 	    {
 	      tmp=tmp2->x+e;
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG)
 	      if(!cumulative_parse_error)
 	      {
-		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",tmp, tmp->current_file->str, tmp->line_number, tmp->token);
+		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",
+			tmp, tmp->current_file->str, tmp->line_number,
+			tmp->token);
 
 		debug_malloc_dump_references(tmp);
 
 		if(tmp->token==F_CONSTANT)
 		  print_tree(tmp);
 	      }
-	      else
+	      /* else */
 #endif
 	      {
 		/* Free the node and be happy */
 		/* Make sure we don't free any nodes twice */
-		if(car_is_node(tmp)) CAR(tmp)=0;
-		if(cdr_is_node(tmp)) CDR(tmp)=0;
+		if(car_is_node(tmp)) _CAR(tmp)=0;
+		if(cdr_is_node(tmp)) _CDR(tmp)=0;
+#ifdef SHARED_NODES
+		tmp->hash = hash_node(tmp);
+		/* Force the node to be freed. */
+		tmp->refs = 1;
+#endif /* SHARED_NODES */
 		debug_malloc_touch(tmp->type);
 		free_node(tmp);
 	      }
 	    }
 	  }
 	}
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG)
 	if(!cumulative_parse_error)
 	  fatal("Failed to free %d nodes when compiling!\n",e2);
 #endif
@@ -268,6 +351,10 @@ void free_all_nodes(void)
 #endif
     free_all_node_s_blocks();
     cumulative_parse_error=0;
+
+#ifdef SHARED_NODES
+    MEMSET(node_hash.table, 0, sizeof(node *) * node_hash.size);
+#endif /* SHARED_NODES */
   }
 }
 
@@ -277,7 +364,27 @@ void free_node(node *n)
 #ifdef PIKE_DEBUG
   if(l_flag>9)
     print_tree(n);
-#endif
+
+#ifdef SHARED_NODES
+  {
+    unsigned INT32 hash;
+    if ((hash = hash_node(n)) != n->hash) {
+      fprintf(stderr, "Hash-value is bad 0x%08x != 0x%08x\n", hash, n->hash);
+#if 0
+      print_tree(n);
+      fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
+	    n->token, CAR(n), CDR(n), n->current_file->str, n->line_number);
+#endif /* 0 */
+    }
+  }
+#endif /* SHARED_NODES */
+#endif /* PIKE_DEBUG */
+
+#ifdef SHARED_NODES
+  if (--n->refs) {
+    return;
+  }
+#endif /* SHARED_NODES */
 
   switch(n->token)
   {
@@ -303,10 +410,27 @@ void free_node(node *n)
 }
 
 
+node *debug_check_node_hash(node *n)
+{
+#if defined(PIKE_DEBUG) && defined(SHARED_NODES)
+  if (n && (n->hash != hash_node(n))) {
+    fatal("Bad node hash!\n");
+  }
+#endif /* PIKE_DEBUG && SHARED_NODES */
+  return n;
+}
+
 /* here starts routines to make nodes */
 static node *mkemptynode(void)
 {
   node *res=alloc_node_s();
+
+#ifdef SHARED_NODES
+  MEMSET(res, 0, sizeof(node));
+  res->hash = 0;  
+  res->refs = 1;
+#endif /* SHARED_NODES */
+
   res->token=0;
   res->line_number=lex.current_line;
 #ifdef PIKE_DEBUG
@@ -320,25 +444,48 @@ static node *mkemptynode(void)
   return res;
 }
 
-node *mknode(short token,node *a,node *b)
+node *mknode(short token, node *a, node *b)
 {
   node *res;
-#ifdef PIKE_DEBUG
+
+#if defined(PIKE_DEBUG) && !defined(SHARED_NODES)
   if(a && a==b)
     fatal("mknode: a and be are the same!\n");
 #endif    
-    
 
   check_tree(a,0);
   check_tree(b,0);
+
   res = mkemptynode();
-  CAR(res) = a;
-  CDR(res) = b;
+  _CAR(res) = a;
+  _CDR(res) = b;
   res->node_info = 0;
   res->tree_info = 0;
-  if(a) a->parent = res;
-  if(b) b->parent = res;
+  if(a) {
+    a->parent = res;
+#ifdef SHARED_NODES
+    a->refs++;
+#endif /* SHARED_NODES */
+  }
+  if(b) {
+    b->parent = res;
+#ifdef SHARED_NODES
+    b->refs++;
+#endif /* SHARED_NODES */
+  }
 
+  res->token = token;
+  res->type = 0;
+
+#ifdef SHARED_NODES
+  {
+    node *res2 = freeze_node(res);
+
+    if (res2 != res) {
+      return res2;
+    }
+  }
+#endif /* SHARED_NODES */
 
   switch(token)
   {
@@ -395,18 +542,15 @@ node *mknode(short token,node *a,node *b)
     res->node_info |= OPT_ASSIGNMENT;
     break;
     
-    default:
-      /* We try to optimize most things, but argument lists are hard... */
-      if(token != F_ARG_LIST && (a || b))
-	res->node_info |= OPT_TRY_OPTIMIZE;
+  default:
+    /* We try to optimize most things, but argument lists are hard... */
+    if(token != F_ARG_LIST && (a || b))
+      res->node_info |= OPT_TRY_OPTIMIZE;
 
-      res->tree_info = res->node_info;
-      if(a) res->tree_info |= a->tree_info;
-      if(b) res->tree_info |= b->tree_info;
+    res->tree_info = res->node_info;
+    if(a) res->tree_info |= a->tree_info;
+    if(b) res->tree_info |= b->tree_info;
   }
-  res->token = token;
-  res->type = 0;
-
 
 #ifdef PIKE_DEBUG
   if(d_flag > 3)
@@ -439,7 +583,8 @@ node *mkstrnode(struct pike_string *str)
   res->u.sval.subtype = 0;
 #endif
   copy_shared_string(res->u.sval.u.string, str);
-  return res;
+
+  return freeze_node(res);
 }
 
 node *mkintnode(int nr)
@@ -451,6 +596,25 @@ node *mkintnode(int nr)
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
   res->type=get_type_of_svalue( & res->u.sval);
+
+  return freeze_node(res);
+}
+
+/* FIXME: Should probably have a flag on these nodes so they aren't reused. */
+node *mknewintnode(int nr)
+{
+  node *res = mkemptynode();
+  res->token = F_CONSTANT;
+  res->node_info = 0; 
+  res->u.sval.type = T_INT;
+  res->u.sval.subtype = NUMBER_NUMBER;
+  res->u.sval.u.integer = nr;
+  res->type=get_type_of_svalue( & res->u.sval);
+#ifdef SHARED_NODES
+  res->refs = 1;
+  res->hash = hash_node(res);
+#endif /* SHARED_NODES */
+
   return res;
 }
 
@@ -464,7 +628,8 @@ node *mkfloatnode(FLOAT_TYPE foo)
   res->u.sval.subtype = 0;
 #endif
   res->u.sval.u.float_number = foo;
-  return res;
+
+  return freeze_node(res);
 }
 
 
@@ -472,7 +637,10 @@ node *mkprgnode(struct program *p)
 {
   struct svalue s;
   s.u.program=p;
-  s.type=T_PROGRAM;
+  s.type = T_PROGRAM;
+#ifdef __CHECKER__
+  s.subtype = 0;
+#endif
   return mkconstantsvaluenode(&s);
 }
 
@@ -491,7 +659,7 @@ node *mkefuncallnode(char *function, node *args)
     my_yyerror("Internally used efun undefined: %s",function);
     return mkintnode(0);
   }
-  n=mkapplynode(n, args);
+  n = mkapplynode(n, args);
   return n;
 }
 
@@ -517,10 +685,19 @@ node *mklocalnode(int var, int depth)
   res->node_info = OPT_NOT_CONST;
   res->tree_info=res->node_info;
 #ifdef __CHECKER__
-  CDR(res)=0;
+  _CDR(res) = 0;
 #endif
   res->u.integer.a = var;
   res->u.integer.b = depth;
+
+#ifdef SHARED_NODES
+  /* FIXME: Not common-subexpression optimized. */
+  res->hash = hash_node(res);
+  res->refs = 1;
+
+  /* return freeze_node(res); */
+#endif /* SHARED_NODES */
+
   return res;
 }
 
@@ -540,9 +717,15 @@ node *mkidentifiernode(int i)
   res->tree_info=res->node_info;
 
 #ifdef __CHECKER__
-  CDR(res)=0;
+  CDR(res) = 0;
 #endif
-  res->u.number = i;
+  res->u.id.number = i;
+#ifdef SHARED_NODES
+  res->u.id.prog = new_program;
+#endif /* SHARED_NODES */
+
+  res = freeze_node(res);
+
   check_tree(res,0);
   return res;
 }
@@ -557,16 +740,17 @@ node *mkexternalnode(int level,
   copy_shared_string(res->type, id->type);
 
   /* FIXME */
-  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(parent_compilation(level), i)->identifier_flags))
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(parent_compilation(level),
+					i)->identifier_flags))
   {
     res->node_info = OPT_EXTERNAL_DEPEND;
   }else{
     res->node_info = OPT_NOT_CONST;
   }
-  res->tree_info=res->node_info;
+  res->tree_info = res->node_info;
 
 #ifdef __CHECKER__
-  CDR(res)=0;
+  _CDR(res) = 0;
 #endif
   res->u.integer.a = level;
   res->u.integer.b = i;
@@ -574,14 +758,20 @@ node *mkexternalnode(int level,
   /* Bzot-i-zot */
   new_program->flags |= PROGRAM_USES_PARENT;
 
-  return res;
+  return freeze_node(res);
 }
 
 node *mkcastnode(struct pike_string *type,node *n)
 {
   node *res;
+
   if(!n) return 0;
+
+#ifdef SHARED_NODES
+  n->refs++;
+#endif /* SHARED_NODES */
   if(type==n->type) return n;
+
   res = mkemptynode();
   res->token = F_CAST;
   copy_shared_string(res->type,type);
@@ -590,12 +780,18 @@ node *mkcastnode(struct pike_string *type,node *n)
      match_types(object_type_string, type))
     res->node_info |= OPT_SIDE_EFFECT;
 
-  CAR(res) = n;
+  _CAR(res) = n;
+#ifdef SHARED_NODES
+  _CDR(res) = (node *)type;
+#else /* !SHARED_NODES */
 #ifdef __CHECKER__
-  CDR(res)=0;
+  _CDR(res) = 0;
 #endif
+#endif /* SHARED_NODES */
+
   n->parent=res;
-  return res;
+
+  return freeze_node(res);
 }
 
 void resolv_constant(node *n)
@@ -629,7 +825,7 @@ void resolv_constant(node *n)
 
     case F_IDENTIFIER:
       p=new_program;
-      numid=n->u.number;
+      numid=n->u.id.number;
       break;
 
     case F_LOCAL:
@@ -872,7 +1068,7 @@ int node_is_eq(node *a,node *b)
       
   case F_IDENTIFIER:
   case F_TRAMPOLINE: /* FIXME, the context has to be the same! */
-    return a->u.number == b->u.number;
+    return a->u.id.number == b->u.id.number;
 
   case F_CAST:
     return a->type == b->type && node_is_eq(CAR(a), CAR(b));
@@ -893,18 +1089,22 @@ node *mkconstantsvaluenode(struct svalue *s)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   assign_svalue_no_free(& res->u.sval, s);
-  if(s->type == T_OBJECT || (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
+  if(s->type == T_OBJECT ||
+     (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
   {
     res->node_info|=OPT_EXTERNAL_DEPEND;
   }
   res->type = get_type_of_svalue(s);
-  return res;
+  return freeze_node(res);
 }
 
 node *mkliteralsvaluenode(struct svalue *s)
 {
   node *res = mkconstantsvaluenode(s);
 
+  /* FIXME: The following affects other instances of this node,
+   * but probably not too much.
+   */
   if(s->type!=T_STRING && s->type!=T_INT && s->type!=T_FLOAT)
     res->node_info|=OPT_EXTERNAL_DEPEND;
 
@@ -973,6 +1173,8 @@ node *mksvaluenode(struct svalue *s)
  * optimizer
  */
 
+#ifdef DEAD_CODE
+
 node *copy_node(node *n)
 {
   node *b;
@@ -983,11 +1185,16 @@ node *copy_node(node *n)
   case F_LOCAL:
   case F_IDENTIFIER:
   case F_TRAMPOLINE:
-    b=mkintnode(0);
+    b=mknewintnode(0);
     *b=*n;
     copy_shared_string(b->type, n->type);
     return b;
 
+  default:
+#ifdef SHARED_NODES
+    n->refs++;
+    return n;
+#else /* !SHARED_NODES */
   case F_CAST:
     b=mkcastnode(n->type,copy_node(CAR(n)));
     break;
@@ -1019,6 +1226,7 @@ node *copy_node(node *n)
       copy_shared_string(b->type, n->type);
     else
       b->type=0;
+#endif /* SHARED_NODES */
   }
   if(n->name)
   {
@@ -1033,6 +1241,8 @@ node *copy_node(node *n)
   b->tree_info = n->tree_info;
   return b;
 }
+
+#endif /* DEAD_CODE */
 
 
 int is_const(node *n)
@@ -1092,23 +1302,23 @@ node **last_cmd(node **a)
 {
   node **n;
   if(!a || !*a) return (node **)NULL;
-  if((*a)->token == F_CAST) return last_cmd(&CAR(*a));
+  if((*a)->token == F_CAST) return last_cmd(&_CAR(*a));
   if(((*a)->token != F_ARG_LIST) &&
      ((*a)->token != F_COMMA_EXPR)) return a;
   if(CDR(*a))
   {
     if(CDR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST &&
        CAR(*a)->token != F_COMMA_EXPR)
-      return &CDR(*a);
-    if((n=last_cmd(&CDR(*a))))
+      return &_CDR(*a);
+    if((n=last_cmd(&_CDR(*a))))
       return n;
   }
   if(CAR(*a))
   {
     if(CAR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST &&
        CAR(*a)->token != F_COMMA_EXPR)
-      return &CAR(*a);
-    if((n=last_cmd(&CAR(*a))))
+      return &_CAR(*a);
+    if((n=last_cmd(&_CAR(*a))))
       return n;
   }
   return 0;
@@ -1125,11 +1335,11 @@ static node **low_get_arg(node **a,int *nr)
       return NULL;
   }
   if(CAR(*a))
-    if((n=low_get_arg(&CAR(*a),nr)))
+    if((n=low_get_arg(&_CAR(*a),nr)))
       return n;
 
   if(CDR(*a))
-    if((n=low_get_arg(&CDR(*a),nr)))
+    if((n=low_get_arg(&_CDR(*a),nr)))
       return n;
 
   return 0;
@@ -1147,7 +1357,7 @@ node **is_call_to(node *n, c_fun f)
 	 CAR(n)->u.sval.type == T_FUNCTION &&
 	 CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
 	 CAR(n)->u.sval.u.efun->function == f)
-	return & CDR(n);
+	return &_CDR(n);
   }
   return 0;
 }
@@ -1158,43 +1368,55 @@ static void low_print_tree(node *foo,int needlval)
   if(!foo) return;
   if(l_flag>9)
   {
-    printf("/*%x*/",foo->tree_info);
+    fprintf(stderr, "/*%x*/",foo->tree_info);
   }
   switch(foo->token)
   {
+  case USHRT_MAX:
+    fprintf(stderr, "FREED_NODE");
+    break;
   case F_LOCAL:
-    if(needlval) putchar('&');
+    if(needlval) fputc('&', stderr);
     if(foo->u.integer.b)
     {
-      printf("$<%ld>%ld",(long)foo->u.integer.b,(long)foo->u.integer.a);
+      fprintf(stderr, "$<%ld>%ld",(long)foo->u.integer.b,(long)foo->u.integer.a);
     }else{
-      printf("$%ld",(long)foo->u.integer.a);
+      fprintf(stderr, "$%ld",(long)foo->u.integer.a);
     }
     break;
 
   case '?':
-    printf("(");
-    low_print_tree(CAR(foo),0);
-    printf(")?(");
-    low_print_tree(CADR(foo),0);
-    printf("):(");
-    low_print_tree(CDDR(foo),0);
-    printf(")");
+    fprintf(stderr, "(");
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, ")?(");
+    low_print_tree(_CADR(foo),0);
+    fprintf(stderr, "):(");
+    low_print_tree(_CDDR(foo),0);
+    fprintf(stderr, ")");
     break;
 
   case F_IDENTIFIER:
-    if(needlval) putchar('&');
-    printf("%s",ID_FROM_INT(new_program, foo->u.number)->name->str);
+    if(needlval) fputc('&', stderr);
+    if (new_program) {
+      fprintf(stderr, "%s",ID_FROM_INT(new_program, foo->u.id.number)->name->str);
+    } else {
+      fprintf(stderr, "unknown identifier");
+    }
     break;
 
   case F_TRAMPOLINE:
-    printf("trampoline<%s>",ID_FROM_INT(new_program, foo->u.number)->name->str);
+    if (new_program) {
+      fprintf(stderr, "trampoline<%s>",
+	      ID_FROM_INT(new_program, foo->u.id.number)->name->str);
+    } else {
+      fprintf(stderr, "trampoline<unknown identifier>");
+    }
     break;
 
   case F_ASSIGN:
-    low_print_tree(CDR(foo),1);
-    printf("=");
-    low_print_tree(CAR(foo),0);
+    low_print_tree(_CDR(foo),1);
+    fprintf(stderr, "=");
+    low_print_tree(_CAR(foo),0);
     break;
 
   case F_CAST:
@@ -1203,37 +1425,37 @@ static void low_print_tree(node *foo,int needlval)
     init_buf();
     low_describe_type(foo->type->str);
     s=simple_free_buf();
-    printf("(%s){",s);
+    fprintf(stderr, "(%s){",s);
     free(s);
-    low_print_tree(CAR(foo),0);
-    printf("}");
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, "}");
     break;
   }
 
   case F_COMMA_EXPR:
   case F_ARG_LIST:
-    low_print_tree(CAR(foo),0);
-    if(CAR(foo) && CDR(foo))
+    low_print_tree(_CAR(foo),0);
+    if(_CAR(foo) && _CDR(foo))
     {
-      if(CAR(foo)->type == void_type_string &&
-	 CDR(foo)->type == void_type_string)
-	printf(";\n");
+      if(_CAR(foo)->type == void_type_string &&
+	 _CDR(foo)->type == void_type_string)
+	fprintf(stderr, ";\n");
       else
-	putchar(',');
+	fputc(',', stderr);
     }
-    low_print_tree(CDR(foo),needlval);
+    low_print_tree(_CDR(foo),needlval);
     return;
 
     case F_ARRAY_LVALUE:
-      putchar('[');
-      low_print_tree(CAR(foo),1);
-      putchar(']');
+      fputc('[', stderr);
+      low_print_tree(_CAR(foo),1);
+      fputc(']', stderr);
       break;
 
   case F_LVALUE_LIST:
-    low_print_tree(CAR(foo),1);
-    if(CAR(foo) && CDR(foo)) putchar(',');
-    low_print_tree(CDR(foo),1);
+    low_print_tree(_CAR(foo),1);
+    if(_CAR(foo) && _CDR(foo)) fputc(',', stderr);
+    low_print_tree(_CDR(foo),1);
     return;
 
   case F_CONSTANT:
@@ -1242,41 +1464,41 @@ static void low_print_tree(node *foo,int needlval)
     init_buf();
     describe_svalue(& foo->u.sval, 0, 0);
     s=simple_free_buf();
-    printf("%s",s);
+    fprintf(stderr, "%s",s);
     free(s);
     break;
   }
 
   case F_VAL_LVAL:
-    low_print_tree(CAR(foo),0);
-    printf(",&");
-    low_print_tree(CDR(foo),0);
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, ",&");
+    low_print_tree(_CDR(foo),0);
     return;
 
   case F_APPLY:
-    low_print_tree(CAR(foo),0);
-    printf("(");
-    low_print_tree(CDR(foo),0);
-    printf(")");
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, "(");
+    low_print_tree(_CDR(foo),0);
+    fprintf(stderr, ")");
     return;
 
   default:
     if(!car_is_node(foo) && !cdr_is_node(foo))
     {
-      printf("%s",get_token_name(foo->token));
+      fprintf(stderr, "%s",get_token_name(foo->token));
       return;
     }
     if(foo->token<256)
     {
-      printf("%c(",foo->token);
+      fprintf(stderr, "%c(",foo->token);
     }else{
-      printf("%s(",get_token_name(foo->token));
+      fprintf(stderr, "%s(",get_token_name(foo->token));
     }
-    if(car_is_node(foo)) low_print_tree(CAR(foo),0);
+    if(car_is_node(foo)) low_print_tree(_CAR(foo),0);
     if(car_is_node(foo) && cdr_is_node(foo))
-      putchar(',');
-    if(cdr_is_node(foo)) low_print_tree(CDR(foo),0);
-    printf(")");
+      fputc(',', stderr);
+    if(cdr_is_node(foo)) low_print_tree(_CDR(foo),0);
+    fprintf(stderr, ")");
     return;
   }
 }
@@ -1285,7 +1507,7 @@ void print_tree(node *n)
 {
   check_tree(n,0);
   low_print_tree(n,0);
-  printf("\n");
+  fprintf(stderr, "\n");
   fflush(stdout);
 }
 
@@ -1336,8 +1558,8 @@ static int find_used_variables(node *n,
     goto set_pointer;
 
   case F_IDENTIFIER:
-    q=p->globals+n->u.number;
-    if(n->u.number > MAX_GLOBAL)
+    q=p->globals+n->u.id.number;
+    if(n->u.id.number > MAX_GLOBAL)
     {
       p->err=1;
       return 0;
@@ -1416,12 +1638,12 @@ static void find_written_vars(node *n,
   case F_IDENTIFIER:
      if(lvalue)
      {
-       if(n->u.number>=MAX_GLOBAL)
+       if(n->u.id.number>=MAX_GLOBAL)
        {
 	 p->err=1;
 	 return;
        }
-       p->globals[n->u.number]=VAR_USED;
+       p->globals[n->u.id.number]=VAR_USED;
      }
     break;
 
@@ -1691,7 +1913,7 @@ void fix_type_field(node *n)
 	case F_TRAMPOLINE;
 #endif
       case F_IDENTIFIER:
-	name=ID_FROM_INT(new_program, CAR(n)->u.number)->name->str;
+	name=ID_FROM_INT(new_program, CAR(n)->u.id.number)->name->str;
 	break;
 	
       case F_CONSTANT:
@@ -1885,7 +2107,14 @@ static void optimize(node *n)
 	 (CAR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
 	 CAR(n)->token != ':')
       {
-	CAR(n) = eval(CAR(n));
+#ifdef SHARED_NODES
+	sub_node(n);
+#endif /* SHARED_NODES */
+	_CAR(n) = eval(CAR(n));
+#ifdef SHARED_NODES
+	n->hash = hash_node(n);
+	add_node(n);
+#endif /* SHARED_NODES */
 	if(CAR(n)) CAR(n)->parent = n;
 	zapp_try_optimize(CAR(n)); /* avoid infinite loops */
 	continue;
@@ -1898,7 +2127,14 @@ static void optimize(node *n)
 	 (CDR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
 	 CDR(n)->token != ':')
       {
-	CDR(n) = eval(CDR(n));
+#ifdef SHARED_NODES
+	sub_node(n);
+#endif /* SHARED_NODES */
+	_CDR(n) = eval(CDR(n));
+#ifdef SHARED_NODES
+	n->hash = hash_node(n);
+	add_node(n);
+#endif /* SHARED_NODES */
 	if(CDR(n)) CDR(n)->parent = n;
 	zapp_try_optimize(CDR(n)); /* avoid infinite loops */
 	continue;
@@ -1921,12 +2157,16 @@ static void optimize(node *n)
 #include "treeopt.h"
     use_car:
       tmp1=CAR(n);
-      CAR(n)=0;
+#ifndef SHARED_NODES
+      _CAR(n) = 0;
+#endif /* !SHARED_NODES */
       goto use_tmp1;
 
     use_cdr:
       tmp1=CDR(n);
-      CDR(n)=0;
+#ifndef SHARED_NODES
+      _CDR(n) = 0;
+#endif /* !SHARED_NODES */
       goto use_tmp1;
 
     zap_node:
@@ -1934,17 +2174,28 @@ static void optimize(node *n)
       goto use_tmp1;
 
     use_tmp1:
+#ifdef SHARED_NODES
+      sub_node(n->parent);
+#endif /* SHARED_NODES */
+
       if(CAR(n->parent) == n)
 	CAR(n->parent) = tmp1;
       else
 	CDR(n->parent) = tmp1;
-      
+
+#ifdef SHARED_NODES      
+      n->parent->hash = hash_node(n->parent);
+      add_node(n->parent);
+#endif /* SHARED_NODES */
+	
       if(tmp1)
 	tmp1->parent = n->parent;
       else
 	tmp1 = n->parent;
+
       free_node(n);
-      n=tmp1;
+      n = tmp1;
+
 #ifdef PIKE_DEBUG
       if(l_flag > 3)
       {
@@ -2221,7 +2472,7 @@ int dooptcode(struct pike_string *name,
   int args, vargs, ret;
   struct svalue *foo;
 
-  check_tree(n,0);
+  check_tree(check_node_hash(n),0);
 
 #ifdef PIKE_DEBUG
   if(a_flag > 1)
@@ -2247,9 +2498,9 @@ int dooptcode(struct pike_string *name,
     }
 #endif
   }else{
-    n=mknode(F_ARG_LIST,n,0);
+    n=mknode(F_ARG_LIST,check_node_hash(n),0);
     
-    if((foo=is_stupid_func(n, args, vargs, type)))
+    if((foo=is_stupid_func(check_node_hash(n), args, vargs, type)))
     {
       if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
       {
@@ -2276,7 +2527,7 @@ int dooptcode(struct pike_string *name,
     if(a_flag > 2)
     {
       fprintf(stderr,"Coding: ");
-      print_tree(n);
+      print_tree(check_node_hash(n));
     }
 #endif
     if(!num_parse_error)
@@ -2284,7 +2535,7 @@ int dooptcode(struct pike_string *name,
       extern int remove_clear_locals;
       remove_clear_locals=args;
       if(vargs) remove_clear_locals++;
-      do_code_block(n);
+      do_code_block(check_node_hash(n));
       remove_clear_locals=0x7fffffff;
     }
   }
