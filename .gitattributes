@@ -172,7 +172,6 @@ testfont binary
 /lib/modules/SSL.pmod/Constants.pmod foreign_ident
 /lib/modules/SSL.pmod/TODO foreign_ident
 /lib/modules/SSL.pmod/alert.pike foreign_ident
-/lib/modules/SSL.pmod/cipher.pike foreign_ident
 /lib/modules/SSL.pmod/connection.pike foreign_ident
 /lib/modules/SSL.pmod/context.pike foreign_ident
 /lib/modules/SSL.pmod/handshake.pike foreign_ident
