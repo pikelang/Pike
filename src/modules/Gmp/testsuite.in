@@ -28,7 +28,7 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(clone(Gmp.mpz,17)&18,16)
   test_eq(clone(Gmp.mpz,17)|7,23)
   test_eq(-clone(Gmp.mpz,17),-17)
-  test_eq((~clone(Gmp.mpz,17)) & 255,0xf0)
+  test_eq((~clone(Gmp.mpz,17)) & 255,238)
   test_true(stringp((string)clone(Gmp.mpz,17)))
   test_eq((string)clone(Gmp.mpz,17),"17")
   test_true(intp((int)clone(Gmp.mpz,17)))
