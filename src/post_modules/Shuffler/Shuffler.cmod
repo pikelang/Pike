@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.24 2003/10/23 12:34:02 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.25 2003/11/16 16:01:06 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.24 2003/10/23 12:34:02 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.25 2003/11/16 16:01:06 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -710,7 +710,7 @@ PIKECLASS Shuffler
   
 
   PIKEFUN void set_backend( object b )
-    /*! @decl void set_backend( Backend b );
+    /*! @decl void set_backend( Pike.Backend b );
      *! Set the backend that will be used by all @[Shuffle] objects created
      *! from this shuffler.
      *! 
