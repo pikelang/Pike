@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.230 2001/01/11 23:32:29 mast Exp $");
+RCSID("$Id: las.c,v 1.231 2001/01/12 02:28:06 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -907,6 +907,7 @@ node *debug_mknode(short token, node *a, node *b)
       } else {
 	res->node_info |= opt_flags;
       }
+      res->node_info |= OPT_APPLY;
       if(b) res->tree_info |= b->tree_info;
     }
     break;

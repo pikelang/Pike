@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.54 2000/12/17 21:30:19 grubba Exp $
+// $Id: treeopt.in,v 1.55 2001/01/12 02:28:07 mast Exp $
 //
 // The tree optimizer
 //
@@ -363,15 +363,19 @@ F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
 F_COMMA_EXPR(F_COMMA_EXPR(0, +[node_is_tossable($$)]), 1 = +):
   F_COMMA_EXPR($0, $1);
 
-// Join adjacent F_POP_VALUE's.
+// Join adjacent F_POP_VALUE's, but not if it would cause the stack to
+// be deeper across an apply, since that could cause excessive stack
+// consumption, e.g. if the apply in some way recurses back into the
+// same function. With this limitation, it's doubtful whether this
+// optimization have any noticeable effect, however.
+//
 // NOTE: These two rules work only since F_RETURN, F_BREAK and F_CONTINUE
 // have been stripped of F_POP_VALUE by rules above.
-// FIXME: This optimization makes values stay on the stack longer,
-// which might not be a good idea.
-F_COMMA_EXPR(F_POP_VALUE(0, *), F_POP_VALUE(1, *)):
+F_COMMA_EXPR(F_POP_VALUE(0, *), F_POP_VALUE(1=+[!($$->tree_info & OPT_APPLY)], *)):
   F_POP_VALUE(F_COMMA_EXPR($0, $1), -);
 
-F_COMMA_EXPR(F_COMMA_EXPR(0, F_POP_VALUE(1, *)), F_POP_VALUE(2, *)):
+F_COMMA_EXPR(F_COMMA_EXPR(0, F_POP_VALUE(1, *)),
+		F_POP_VALUE(2=+[!($$->tree_info & OPT_APPLY)], *)):
   F_COMMA_EXPR($0, F_POP_VALUE(F_COMMA_EXPR($1, $2), -));
 
 // Remove initial casts in comma-expressions.
