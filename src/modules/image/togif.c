@@ -30,9 +30,9 @@ static void buf_word( unsigned short w, dynamic_buffer *buf )
 }
 
 #define FS_SCALE 1024
-#define WEIGHT_NEXT(X) (((X)*7)/16)
-#define WEIGHT_DOWNNEXT(X) (((X)*0)/20)
-#define WEIGHT_DOWN(X) (((X)*5)/16)
+#define WEIGHT_NEXT(X) (((X)*8)/20)
+#define WEIGHT_DOWNNEXT(X) (((X)*3)/20)
+#define WEIGHT_DOWN(X) (((X)*3)/20)
 #define WEIGHT_DOWNBACK(X) (((X)*0)/20)
 
 static int floyd_steinberg_add(rgbl_group *errl,

@@ -1278,6 +1278,16 @@ static INLINE void
    sum->alpha=testrange(sum->alpha+(INT32)(rgba.alpha*factor+0.5));
 }
 
+static INLINE void
+   add_to_rgb_sum_with_factor(rgb_group *sum,
+			      rgba_group rgba,
+			      float factor)
+{
+   sum->r=testrange(sum->r+(INT32)(rgba.r*factor+0.5));
+   sum->g=testrange(sum->g+(INT32)(rgba.g*factor+0.5));
+   sum->b=testrange(sum->b+(INT32)(rgba.b*factor+0.5));
+}
+
 void image_tuned_box(INT32 args)
 {
    INT32 x1,y1,x2,y2,xw,yw,x,y;
@@ -1326,19 +1336,35 @@ void image_tuned_box(INT32 args)
 
       ymax=min(yw,THIS->ysize-y1);
       img=THIS->img+x+x1+THIS->xsize*max(0,y1);
-      for (y=max(0,-y1); y<ymax; y++)
-      {
-	 float tfy;
-	 sum=sumzero;
+      if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
+	 for (y=max(0,-y1); y<ymax; y++)
+	 {
+	    float tfy;
+	    sum=sumzero;
 
-	 add_to_rgba_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,yw))*tfx1);
-	 add_to_rgba_sum_with_factor(&sum,topright,tfy*tfx2);
-	 add_to_rgba_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,yw))*tfx1);
-	 add_to_rgba_sum_with_factor(&sum,bottomright,tfy*tfx2);
+	    add_to_rgba_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,yw))*tfx1);
+	    add_to_rgba_sum_with_factor(&sum,topright,tfy*tfx2);
+	    add_to_rgba_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,yw))*tfx1);
+	    add_to_rgba_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
-	 set_rgb_group_alpha(*img, sum,sum.alpha);
-	 img+=THIS->xsize;
-      }
+	    set_rgb_group_alpha(*img, sum,sum.alpha);
+	    img+=THIS->xsize;
+	 }
+      else
+	 for (y=max(0,-y1); y<ymax; y++)
+	 {
+	    float tfy;
+	    rgb_group sum={0,0,0};
+
+	    add_to_rgb_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,yw))*tfx1);
+	    add_to_rgb_sum_with_factor(&sum,topright,tfy*tfx2);
+	    add_to_rgb_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,yw))*tfx1);
+	    add_to_rgb_sum_with_factor(&sum,bottomright,tfy*tfx2);
+
+	    *img=sum;
+	    img+=THIS->xsize;
+	 }
+	 
    }
 
    pop_n_elems(args);

@@ -276,13 +276,13 @@ static void sort_tbl(rgb_hashtbl *ht,
       }
 
       /* do this weighted, red=2 green=3 blue=1 */
-      if ((max.r-min.r)*2>(max.g-min.g)*3) /* r>g */
-	 if ((max.r-min.r)*2>(max.b-min.b)) /* r>g, r>b */
+      if ((max.r-min.r)*5>(max.g-min.g)*8) /* r>g */
+	 if ((max.r-min.r)*5>(max.b-min.b)) /* r>g, r>b */
 	    dir=0;
          else /* r>g, b>r */
 	    dir=2;
       else
-	 if ((max.g-min.g)*3>(max.b-min.b)) /* g>r, g>b */
+	 if ((max.g-min.g)*8>(max.b-min.b)) /* g>r, g>b */
 	    dir=1;
          else /* g>r, b>g */
 	    dir=2;
@@ -334,6 +334,7 @@ static void sort_tbl(rgb_hashtbl *ht,
 
       g1=gap>>1;
       if (pos+1<g1) g1=pos+1;
+      else if (len-pos-1<gap-g1) g1=pos+1;
       g2=gap-g1;
 
       sort_tbl(ht,start,pos+1,
