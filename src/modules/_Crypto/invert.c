@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.1 1996/11/08 22:28:42 grubba Exp $
+ * $Id: invert.c,v 1.2 1996/11/11 14:23:27 grubba Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -49,6 +49,15 @@ void exit_pike_invert(struct object *o)
  * efuns and the like
  */
 
+/* string name(void) */
+static void f_name(INT32 args)
+{
+  if (args) {
+    error("Too many arguments to invert->name()\n");
+  }
+  push_string(make_shared_string("INVERT"));
+}
+
 /* int query_block_size(void) */
 static void f_query_block_size(INT32 args)
 {
@@ -64,7 +73,7 @@ static void f_query_key_length(INT32 args)
   if (args) {
     error("Too many arguments to invert->query_key_length()\n");
   }
-  push_int(8);
+  push_int(0);
 }
 
 /* void set_key(string) */
@@ -80,33 +89,36 @@ static void f_set_key(INT32 args)
   pop_n_elems(args);
 }
 
-/* string encrypt(string) */
-/* string decrypt(string) */
-/* string dencrypt(string) */
-static void f_dencrypt(INT32 args)
+/* string crypt_block(string) */
+static void f_crypt_block(INT32 args)
 {
-  char buffer[8];
+  char *buffer;
   int i;
+  int len;
 
   if (args != 1) {
-    error("Wrong number of arguments to invert->dencrypt()\n");
+    error("Wrong number of arguments to invert->crypt_block()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to invert->dencrypt()\n");
+    error("Bad argument 1 to invert->crypt_block()\n");
   }
-  if (sp[-1].u.string->len != 8) {
-    error("Bad length of argument 1 to invert->dencrypt()\n");
+  if (sp[-1].u.string->len % 8) {
+    error("Bad length of argument 1 to invert->crypt_block()\n");
   }
 
-  for (i=0; i<8; i++) {
+  if (!(buffer = alloca(len = sp[-1].u.string->len))) {
+    error("invert->crypt_block(): Out of memory\n");
+  }
+
+  for (i=0; i<len; i++) {
     buffer[i] = ~sp[-1].u.string->str[i];
   }
 
   pop_n_elems(args);
 
-  push_string(make_shared_binary_string(buffer, 8));
+  push_string(make_shared_binary_string(buffer, len));
 
-  MEMSET(buffer, 0, 8);
+  MEMSET(buffer, 0, len);
 }
 
 /*
@@ -140,12 +152,12 @@ void init_invert_programs(void)
   /* /precompiled/crypto/invert */
   start_new_program();
 
+  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
   add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
   add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("encrypt", f_dencrypt, "function(string:string)", OPT_SIDE_EFFECT);
-  add_function("decrypt", f_dencrypt, "function(string:string)", OPT_SIDE_EFFECT);
-  add_function("dencrypt", f_dencrypt, "function(string:string)", OPT_SIDE_EFFECT);
+  add_function("set_encrypt_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("set_decrypt_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_SIDE_EFFECT);
 
   set_init_callback(init_pike_invert);
   set_exit_callback(exit_pike_invert);

@@ -1,6 +1,6 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 /*
- * $Id: idea.pike,v 1.2 1996/11/09 14:42:21 grubba Exp $
+ * $Id: idea.pike,v 1.3 1996/11/11 14:23:29 grubba Exp $
  *
  * An crypto using IDEA written in Pike
  * rename it to get it to use another crypto.
@@ -27,12 +27,14 @@ int main(int argc, string *argv)
   int hexkey = 0;
   int i;
   object crypto_object = ((program)"/precompiled/crypto")
-                         ((program)("/precompiled/crypto/" +
+                         ((program)"/precompiled/crypto/cbc",
+			  (program)("/precompiled/crypto/" +
 				    ((argv[0]/"/")[-1] / ".")[0]));
   object input = ((program)"/precompiled/file")("stdin");
   object output = ((program)"/precompiled/file")("stdout");
   string data = "";
   string outstr = "";
+  string key = "";
 
   for (i=1; i < argc; i++) {
     switch(argv[i]) {
@@ -43,11 +45,7 @@ int main(int argc, string *argv)
       encrypt=0;
       break;
     case "-k":
-      if (hexkey) {
-	crypto_object->set_key(hex_to_string(argv[i+1]));
-      } else {
-	crypto_object->set_key(argv[i+1]);
-      }
+      key = argv[i+1];
       i++;
       break;
     case "-h":
@@ -62,56 +60,32 @@ int main(int argc, string *argv)
     }
   }
   
+  if (hexkey) {
+    key = hex_to_string(key);
+  }
+  if (encrypt) {
+    crypto_object->set_encrypt_key(key);
+  } else {
+    crypto_object->set_decrypt_key(key);
+  }
+  
+  key="";
+
   while (1) {
     string newdata = input->read(1000000);
 
     if (stringp(newdata) && sizeof(newdata)) {
-      int len;
-
-      data += newdata;
-
-      /* Make blocks */
-      len = sizeof(data) & ~0x0f;
-
-      if (len) {
-	if (encrypt) {
-
-	  output->write(crypto_object->cbc_encrypt(data[0..len-1]));
-
-	} else {
-	  output->write(outstr);
-	  outstr = crypto_object->cbc_decrypt(data[0..len-1]);
-	}
-	data = data[len..];
+      if (encrypt) {
+	output->write(crypto_object->crypt(newdata));
+      } else {
+	output->write(outstr);
+	outstr = crypto_object->crypt(newdata);
       }
     } else {
       if (encrypt) {
-	int len = sizeof(data) & 0x0f;
-	
-	data += sprintf("%@c",
-			({ random(256), random(256), random(256), random(256),
-			   random(256), random(256), random(256), random(256),
-			   random(256), random(256), random(256), random(256),
-			   random(256), random(256), random(256), len })[len..]);
-	output->write(crypto_object->cbc_encrypt(data));
+	output->write(crypto_object->pad());
       } else {
-	if ((sizeof(data))||(outstr[-1] & ~0x0f)||(sizeof(outstr) & 0x0f)) {
-	  werror("Data didn't decrypt correctly\n");
-	  output->write(outstr);
-	  destruct(crypto_object);
-	  exit(1);
-	} else {
-	  int len = ((sizeof(outstr) & ~0x0f) | outstr[-1]) - 16;
-
-	  if ((len > sizeof(outstr)) || (len < 1)) {
-	    werror("Data didn't decrypt correctly\n");
-	    werror(sprintf("len:%d, %d\n", sizeof(outstr), len));
-	    destruct(crypto_object);
-	    exit(1);
-	  } else {
-	    output->write(outstr[0..len-1]);
-	  }
-	}
+	output->write(crypto_object->unpad(outstr));
       }
       break;
     }

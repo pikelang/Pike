@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.3 1996/11/08 22:44:50 grubba Exp $
+ * $Id: idea.c,v 1.4 1996/11/11 14:23:25 grubba Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -63,6 +63,15 @@ void exit_pike_idea(struct object *o)
  * efuns and the like
  */
 
+/* string name(void) */
+static void f_name(INT32 args)
+{
+  if (args) {
+    error("Too many arguments to idea->name()\n");
+  }
+  push_string(make_shared_string("IDEA"));
+}
+
 /* int query_block_size(void) */
 static void f_query_block_size(INT32 args)
 {
@@ -81,135 +90,68 @@ static void f_query_key_length(INT32 args)
   push_int(16);
 }
 
-/* void set_key(string) */
-static void f_set_key(INT32 args)
+/* void set_encrypt_key(string) */
+static void f_set_encrypt_key(INT32 args)
 {
   if (args != 1) {
-    error("Wrong number of args to idea->set_key()\n");
+    error("Wrong number of args to idea->set_encrypt_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->set_key()\n");
+    error("Bad argument 1 to idea->set_encrypt_key()\n");
   }
   if (sp[-1].u.string->len < 16) {
-    error("idea->set_key(): Too short key\n");
+    error("idea->set_encrypt_key(): Too short key\n");
   }
   idea_set_encrypt_key((unsigned char *)sp[-1].u.string->str,
-		       &PIKE_IDEA->e_key);
-  idea_set_decrypt_key(&PIKE_IDEA->e_key, &PIKE_IDEA->d_key);
-
-  MEMCPY(&(PIKE_IDEA->key), sp[-1].u.string->str, 8);
+		       &PIKE_IDEA->key);
 
   pop_n_elems(args);
 }
 
-/* string encrypt(string) */
-static void f_encrypt(INT32 args)
+/* void set_decrypt_key(string) */
+static void f_set_decrypt_key(INT32 args)
 {
-  unsigned char buffer[8];
+  IDEA_KEY_SCHEDULE key_tmp;
 
   if (args != 1) {
-    error("Wrong number of arguemnts to idea->encrypt()\n");
+    error("Wrong number of args to idea->set_decrypt_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->encrypt()\n");
+    error("Bad argument 1 to idea->set_decrypt_key()\n");
   }
-  if (sp[-1].u.string->len != 8) {
-    error("Bad length of argument 1 to idea->encrypt()\n");
+  if (sp[-1].u.string->len < 16) {
+    error("idea->set_decrypt_key(): Too short key\n");
   }
-
-  idea_ecb_encrypt((unsigned char *)sp[-1].u.string->str, buffer,
-		   &(PIKE_IDEA->e_key));
+  idea_set_encrypt_key((unsigned char *)sp[-1].u.string->str, &key_tmp);
+  idea_set_decrypt_key(&key_tmp, &PIKE_IDEA->key);
 
   pop_n_elems(args);
 
-  push_string(make_shared_binary_string((const char *)buffer, 8));
-
-  MEMSET(buffer, 0, 8);
+  MEMSET(&key_tmp, 0, sizeof(key_tmp));
 }
 
-/* string decrypt(string) */
-static void f_decrypt(INT32 args)
-{
-  unsigned char buffer[8];
-
-  if (args != 1) {
-    error("Wrong number of arguemnts to idea->decrypt()\n");
-  }
-  if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->decrypt()\n");
-  }
-  if (sp[-1].u.string->len != 8) {
-    error("Bad length of argument 1 to idea->decrypt()\n");
-  }
-
-  idea_ecb_encrypt((unsigned char *)sp[-1].u.string->str, buffer,
-		   &(PIKE_IDEA->d_key));
-
-  pop_n_elems(args);
-
-  push_string(make_shared_binary_string((const char *)buffer, 8));
-
-  MEMSET(buffer, 0, 8);
-}
-
-/* string cbc_encrypt(string) */
-static void f_cbc_encrypt(INT32 args)
+/* string crypt_block(string) */
+static void f_crypt_block(INT32 args)
 {
   unsigned char *buffer;
-  unsigned char iv[8];
   int len;
 
   if (args != 1) {
-    error("Wrong number of arguments to idea->cbc_encrypt()\n");
+    error("Wrong number of arguemnts to idea->crypt()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->cbc_encrypt()\n");
+    error("Bad argument 1 to idea->crypt()\n");
   }
-  
-  len = (sp[-1].u.string->len + 7) & ~7;
-
-  if (!(buffer = alloca(len))) {
-    error("Out of memory\n");
+  if (sp[-1].u.string->len % 8) {
+    error("Bad length of argument 1 to idea->crypt()\n");
   }
 
-  MEMCPY(iv, &(PIKE_IDEA->key), 8);
-
-  idea_cbc_encrypt((unsigned char *)sp[-1].u.string->str, buffer,
-		   sp[-1].u.string->len,
-		   &(PIKE_IDEA->e_key), iv, IDEA_ENCRYPT);
-
-  pop_n_elems(args);
-
-  push_string(make_shared_binary_string((const char *)buffer, len));
-
-  MEMSET(buffer, 0, len);
-}
-
-/* string cbc_decrypt(string) */
-static void f_cbc_decrypt(INT32 args)
-{
-  unsigned char *buffer;
-  unsigned char iv[8];
-  int len;
-
-  if (args != 1) {
-    error("Wrong number of arguments to idea->cbc_decrypt()\n");
-  }
-  if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->cbc_decrypt()\n");
-  }
-  
-  len = (sp[-1].u.string->len + 7) & ~7;
-
-  if (!(buffer = alloca(len))) {
-    error("Out of memory\n");
+  if (!(buffer = alloca(len = sp[-1].u.string->len))) {
+    error("idea->crypt(): Out of memory\n");
   }
 
-  MEMCPY(iv, &(PIKE_IDEA->key), 8);
-
-  idea_cbc_encrypt((unsigned char *)sp[-1].u.string->str, buffer,
-		   sp[-1].u.string->len,
-		   &(PIKE_IDEA->d_key), iv, IDEA_DECRYPT);
+  idea_ecb_encrypt((unsigned char *)sp[-1].u.string->str, buffer,
+		   &(PIKE_IDEA->key));
 
   pop_n_elems(args);
 
@@ -250,13 +192,12 @@ void init_idea_programs(void)
   start_new_program();
   add_storage(sizeof(struct pike_idea));
 
+  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
   add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
   add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("encrypt", f_encrypt, "function(string:string)", OPT_SIDE_EFFECT);
-  add_function("decrypt", f_decrypt, "function(string:string)", OPT_SIDE_EFFECT);
-  add_function("cbc_encrypt", f_cbc_encrypt, "function(string:string)", OPT_SIDE_EFFECT);
-  add_function("cbc_decrypt", f_cbc_decrypt, "function(string:string)", OPT_SIDE_EFFECT);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
 
   set_init_callback(init_pike_idea);
   set_exit_callback(exit_pike_idea);
