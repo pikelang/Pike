@@ -1,6 +1,6 @@
 <--! -*-html-*- -->
 
-<section title="The Pike Crypto Toolkit">
+<chapter title="The Pike Crypto Toolkit" name=crypto>
 
 <section title="Introduction">
 
@@ -122,7 +122,7 @@ To encrypt the block "Pike des" using the DES-key '0123456789abcdef'
 (in hex), use
 <example language=pike>
 Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-            ->crypt_block("Pike DES");
+            ->crypt_block("Pike DES")
 </example>
 
 although most applications will not use the Crypto.des class directly.
@@ -207,20 +207,147 @@ int o->query_digest_size();
 Returns the size, in octets, of the digests produced by this hash function.
 </man_description>
 
-<method name="create">
-<man_syntax>
-void o->create(void|object)
-All block ciphers have a common set of methods
+To get the md5 hash of a string s, you would use
 
-<example type=pike>
-<caption>Creating an object encrypting using IDEA in CBC-mode</caption>
-Crypto(CBC(IDEA)-&gt;set_iv(iv)-&gt;set_encrypt_key(key)
+<example language=pike>
+Crypto.md5()->update(s)->digest()
 </example>
-<p> There is a pike implementation of <link to=ssl type=used_by>SSL (Secure
-socket Layer)</link> built on top of the crypto toolkit.</p>
-</description>
 
-<future>
-Compatibility with standards such as RSA Inc's PKCS (Public Key
-Cryptography Standards) might be useful.
-</future>
+</section>
+<section title="Public key algorithms">
+
+The only public key algorithm currently in the toolkit is RSA. As the
+algorithm uses arithmetic on huge numbers, you must also have the GMP
+library and the corresponding Pike module installed in order to use
+RSA.
+
+<class name="Crypto.rsa">
+<method name=set_public_key>
+<man_syntax>
+object rsa->set_public_key(object(Gmp.mpz) modulo, object(Gmp.mpz) e)
+</man_syntax>
+<man_description>
+Sets the modulo and the public exponent. For convenience, returns the
+object itself.
+</man_description>
+
+<method name=set_private_key>
+<man_syntax>
+object rsa->set_public_key(object(Gmp.mpz) d)
+</man_syntax>
+<man_description>
+Sets the private exponent. For convenience, returns the object itself.
+</man_description>
+</method>
+
+<method name=generate_key>
+<man_syntax>
+object rsa->generate_key(int bits, function|void random)
+</man_syntax>
+
+<man_description>
+Generates a new rsa key pair, with a modulo of the given bitsize.
+<i>random</i> should be a function that takes one integer argument
+<i>n</i> and returns a string of </i>n</i> random octets. The default
+function is <i>Crypto.randomness.really_random()->read</i>. For
+convenience, this method returns the object itself.
+</man_description>
+</method>
+
+<method name=query_blocksize>
+<man_syntax>
+int rsa->query_block_size()
+</man_syntax>
+
+<man_description>
+Returns the length of the largest string that can be encrypted in one
+RSA-operation using the current key.
+</man_description>
+</method>
+
+<method name=encrypt>
+<man_syntax>
+string rsa->encrypt(string message, function|void random)
+</man_syntax>
+
+<man_description>
+Encrypts <i>message</i> using PKCS#1-style RSA encryption. The
+function <i>random</i> is used to generate random message padding.
+Padding does not require a strong random number generator. The default
+<i>random</i> function is derived from Pike's builting pseudorandom
+generator <i>predef::random</i>.
+</man_description>
+</method>
+
+<method name=decrypt>
+<man_syntax>
+string rsa->decrypt(string gibberish)
+</man_syntax>
+
+<man_description>
+Decrypts a PKCS#1-style RSA-encrypted message. This operation requires
+knowledge of the private key. Decryption may fail if the input is not
+a properly encrypted message for this key. In this case, the method
+returns zero. The PKCS#1 padding method used is vulnerable to a
+chosen-ciphertext attack discovered by Daniel Bleichenbacher.
+</man_description>
+</method>
+
+There are several methods for signature creation and verification. I
+don't quite like the interface, so it may very well change in some
+future version of the Toolkit. 
+
+<method name=sign>
+<man_syntax>
+object(Gmp.mpz) rsa->sign(string message, program hash)
+</man_syntax>
+<man_description>
+
+Creates a PKCS#1-style signature. This operation requires knowledge of
+the private key. <i>hash</i> should be a hash algorithm with an
+->identifier method which returns a DER-encoded ASN.1 Object
+Identifier for the hash algorithm. Currently, this is supported only
+by Crypto.md5. The function returns the signature as a bignum;
+applications can use
+
+<example language=pike>
+Standards.ASN1.Types.asn1_bit_string(rsa->sign(...))->get_der()
+</example>
+to convert it a DER-encoded ASN.1 bitstring.
+</man_description>
+</method>
+
+<method name=verify>
+<man_syntax>
+int verify(string message, program hash, object(Gmp.mpz) signature)
+</man_syntax>
+<man_description>
+Verifies a PKCS#1-style RSA signature. Returns 1 if the signature is
+valid, 0 if not.
+</man_description>
+
+<method name=sha_sign>
+<man_syntax>
+string rsa->sha_sign(string message)
+</man_syntax>
+<man_description>
+Creates an RSA signature using a simpler but non-standard convention.
+</man_description>
+</method>
+
+<method>
+<man_syntax>
+int sha_verify(string message, string signature)
+</man_syntax>
+<man_description>
+Verifies signatures created by sha_sign. Returns 1 if the signature is
+valid, 0 if not.
+</man_description>
+</method>
+
+</class>
+</section>
+
+<section title="Combining block cryptos">
+</section>
+</chapter>
