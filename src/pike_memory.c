@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.22 1998/04/16 21:30:09 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.23 1998/04/17 17:17:39 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -466,10 +466,13 @@ int verbose_debug_exit = 1;
 #define LHSIZE 1109891
 #define FLSIZE 8803
 #define DEBUG_MALLOC_PAD 8
-#define FREE_DELAY 256
+#define FREE_DELAY 1024
+#define MAX_UNFREE_MEM 1024*1024*16
 
 static void *blocks_to_free[FREE_DELAY];
 static unsigned int blocks_to_free_ptr=0;
+static unsigned long unfree_mem=0;
+static int exiting=0;
 
 struct fileloc
 {
@@ -831,17 +834,20 @@ void debug_free(void *p, const char *fn, int line)
   mt_lock(&debug_malloc_mutex);
   if(verbose_debug_malloc)
     fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
-  if((mh=find_memhdr(p)))
+  if(!exiting && (mh=find_memhdr(p)))
   {
     void *p2;
-    add_location(mh, location_number(fn,line));
     MEMSET(p, 0x55, mh->size);
-    mh->size = ~mh->size;
-    blocks_to_free_ptr++;
-    blocks_to_free_ptr%=FREE_DELAY;
-    p2=blocks_to_free[blocks_to_free_ptr];
-    blocks_to_free[blocks_to_free_ptr]=p;
-    p=p2;
+    if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
+    {
+      add_location(mh, location_number(fn,line));
+      mh->size = ~mh->size;
+      blocks_to_free_ptr++;
+      blocks_to_free_ptr%=FREE_DELAY;
+      p2=blocks_to_free[blocks_to_free_ptr];
+      blocks_to_free[blocks_to_free_ptr]=p;
+      p=p2;
+    }
   }
   if(remove_memhdr(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
   free(p);
@@ -895,8 +901,10 @@ void cleanup_memhdrs()
     {
       if(remove_memhdr(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
       free(p);
+      blocks_to_free[h]=0;
     }
   }
+  exiting=1;
 
   if(verbose_debug_exit)
   {
