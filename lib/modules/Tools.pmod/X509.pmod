@@ -25,7 +25,58 @@ object make_time(int t)
 			  m->sec));
 }
 
-object extension_sequence = meta_explicit(3);
+/* Returns a mapping similar to that returned by gmtime */
+mapping parse_time(object asn1)
+{
+  if ((asn1->tag_name != "UTCTime")
+      || (strlen(asn1->value) != 13))
+    return 0;
+
+  sscanf(asn1->value, "%[0-9]s%c", string s, int c);
+  if ( (strlen(s) != 12) && (c != 'Z') )
+    return 0;
+
+  mapping m = mkmapping( ({ "year", "mon", "mday", "hour", "min", "sec" }),
+			 (array(string)) (s/2));
+
+  if (m->year < 50)
+    m->year += 50;
+  if ( (m->mon <= 0 ) || (m->mon > 12) )
+    return 0;
+  m->mon--;
+  
+  if ( (m->mday <= 0) || (m->mday >= Calendar.ISO.Year(m->year + 1900)
+			  ->month(m->mon + 1)->number_of_days()))
+    return 0;
+
+  if ( (m->hour < 0) || (m->hour > 23))
+    return 0;
+
+  if ( (m->min < 0) || (m->min > 59))
+    return 0;
+
+  /* NOTE: Allows for lead seconds */
+  if ( (m->sec < 0) || (m->min > 60))
+    return 0;
+
+  return m;
+}
+
+int time_compare(mapping t1, mapping t2)
+{
+  foreach( ({ "year", "mon", "mday", "hour", "min", "sec" }), string name)
+    {
+      if (t1->name < t2->name)
+	return -1;
+      if (t1->name > t2->name)
+	return 1;
+    }
+  return 0;
+}
+
+	 
+object extension_sequence = meta_explicit(2, 3);
+object version_integer = meta_explicit(2, 0);
 
 object make_tbs(object issuer, object algorithm,
 		object subject, object keyinfo,
@@ -37,7 +88,7 @@ object make_tbs(object issuer, object algorithm,
 				      make_time(now + ttl) }) );
 
   return (extensions
-	  ? asn1_sequence( ({ 2, /* Version 3 */
+	  ? asn1_sequence( ({ version_integer(asn1_integer(2)), /* Version 3 */
 			      serial,
 			      algorithm,
 			      issuer,
@@ -88,7 +139,16 @@ string rsa_sign_digest(object rsa, object digest_id, string digest)
 					 asn1_octet_string(digest) }) );
   return rsa->raw_sign(digest_info->get_der())->digits(256);
 }
-  
+
+int rsa_verify_digest(object rsa, object digest_id, string digest, string s)
+{
+  object digest_info = asn1_sequence( ({ asn1_sequence( ({ digest_id,
+							   asn1_null() }) ),
+					 asn1_octet_string(digest) }) );
+
+  return rsa->raw_verify(digest_info->get_der(), Gmp.mpz(s, 256));
+}
+
 string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
 				       array|void extensions)
 {
@@ -120,3 +180,234 @@ string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
 				       ->digest())) }) )->get_der();
 }
 
+class rsa_verifier
+{
+  object rsa;
+
+  constant type = "rsa";
+
+  object init(string key)
+    {
+      rsa = RSA.parse_public_key(key);
+      return rsa && this_object();
+    }
+  
+  int verify(object algorithm, string msg, string signature)
+    {
+      {
+	if (algorithm->get_der() == Identifiers.rsa_md5_id)
+	  return rsa_verify_digest(rsa, Identifiers.md5_id,
+				   Crypto.md5()->update(msg)->digest(),
+				   signature);
+	else if (algorithm->get_der() == Identifiers.rsa_sha1_id)
+	  return rsa_verify_digest(rsa, Identifiers.sha1_id,
+				   Crypto.sha()->update(msg)->digest(),
+				   signature);
+	else
+	  return 0;
+      }
+    }
+}
+
+#if 0
+/* FIXME: This is a little more difficult, as the dsa-parameters are
+ * sometimes taken from the CA, and not present in the keyinfo. */
+class dsa_verifyer
+{
+  object dsa;
+
+  constant type = "dsa";
+
+  object init(string key)
+    {
+    }
+}
+#endif
+
+object make_verifier(object keyinfo)
+{
+  if ( (keyinfo->type_name != "SEQUENCE")
+       || (sizeof(keyinfo->elements) != 2)
+       || (keyinfo->elements[0]->type_name != "SEQUENCE")
+       || !sizeof(keyinfo->elements[0]->elements)
+       || (keyinfo->elements[1]->type_name != "BIT STRING")
+       || keyinfo->elements[1]->unused)
+    return 0;
+  
+  if (keyinfo->elements[0]->elements[0]->get_der()
+      == Identifiers.rsa_id->get_der())
+  {
+    if ( (sizeof(keyinfo->elements[0]->elements) != 2)
+	 || (keyinfo->elements[0]->elements[1]->get_der()
+	     != asn1_null()->get_der()))
+      return 0;
+    
+    return rsa_verifier(keyinfo->elements[1]->value);
+  }
+  else if (keyinfo->elements[0]->elements[0]->get_der()
+	   == Identifiers.dsa_sha_id->get_der())
+  {
+    /* FIXME: Not implemented */
+    return 0;
+  }
+}
+
+class TBSCertificate
+{
+  string der;
+  
+  int version;
+  object serial;
+  object algorithm;  /* Algorithm Identifier */
+  object issuer;
+  mapping not_after;
+  mapping not_before;
+
+  object subject;
+  object public_key;
+
+  /* Optional */
+  object issuer_id;
+  object subject_id;
+  object extensions;
+
+  object init(object asn1)
+    {
+      der = asn1->get_der();
+      if (asn1->type_name != "SEQUENCE")
+	return 0;
+
+      array a = asn1->elements;
+      if (sizeof(a) < 6)
+	return 0;
+
+      if (sizeof(a) > 6)
+      {
+	/* The optional version field must be present */
+	if (!a[0]->constructed
+	    || (a[0]->get_combinded_tag() != make_combined_tag(2, 0))
+	    || (sizeof(a[0]->elements) != 1)
+	    || (a[0]->elements[0]->tag_name != "INTEGER"))
+	  return 0;
+
+	version = (int) a[0]->elements[0]->value + 1;
+	if ( (version < 2) || (version > 3))
+	  return 0;
+	a = a[1..];
+      } else
+	version = 1;
+
+      if (a[0]->tag_name != "INTEGER")
+	return 0;
+      serial = a[0]->value;
+      
+      if ((a[1]->tag_name != "SEQUENCE")
+	  || !sizeof(a[1]->elements )
+	  || (a[1]->elements[0]->tag_name != "OBJECT IDENTIFIER"))
+	return 0;
+
+      algorithm = a[1];
+
+      if (a[2]->tag_name != "SEQUENCE")
+	return 0;
+      issuer = a[2];
+
+      if ((a[3]->tag_name != "SEQUENCE")
+	  || (sizeof(a[3]->elements) != 2))
+	return 0;
+
+      array validity = a[3]->elements;
+
+      not_before = parse_time(validity[0]);
+      if (!not_before)
+	return 0;
+      
+      not_after = parse_time(validity[0]);
+      if (!not_after)
+	return 0;
+      
+      subject = a[4];
+      public_key = make_verifier(a[5]);
+
+      if (!public_key)
+	return 0;
+      
+      int i = 6;
+      if (i == sizeof(a))
+	return this_object();
+
+      if (version < 2)
+	return 0;
+
+      if (! a[i]->constructed
+	  && (a[i]->combined_tag == make_combined_tag(2, 1)))
+      {
+	issuer_id = asn1_bit_string()->decode_primitive(a[i]->raw);
+	i++;
+	if (i == sizeof(a))
+	  return this_object();
+      }
+      if (! a[i]->constructed
+	  && (a[i]->combined_tag == make_combined_tag(2, 2)))
+      {
+	subject_id = asn1_bit_string()->decode_primitive(a[i]->raw);
+	i++;
+	if (i == sizeof(a))
+	  return this_object();
+      }
+      if (a[i]->constructed
+	  && (a[i]->combined_tag == make_combined_tag(2, 3)))
+      {
+	extensions = a[i];
+	i++;
+	if (i == sizeof(a))
+	  return this_object();
+      }
+      /* Too many fields */
+      return 0;
+    }
+}      
+  
+/* Decodes a certificate, checks the signature. Returns the
+ * TBSCertificate structure, or 0 if decoding or verification failes.
+ *
+ * Authorities is a mapping from (DER-encoded) names to a verifiers. */
+
+/* NOTE: This function allows self-signed certificates, and it doesn't
+ * check that names or extensions make sense. */
+
+object verify_certificate(string s, mapping authorities)
+{
+  object cert = Standards.ASN1.Decode.simple_der_decode(s);
+
+  if (!cert
+      || (cert->type_name != "SEQUENCE")
+      || (sizeof(cert->elements) != 3)
+      || (cert->elements[0]->type_name != "SEQUENCE")
+      || (cert->elements[1]->type_name != "SEQUENCE")
+      || (!sizeof(cert->elements[1]->elements))
+      || (cert->elements[1]->elements[0]->type_name != "OBJECT IDENTIFIER")
+      || (cert->elements[2]->type_name != "BIT STRING")
+      || cert->elements[2]->unused)
+    return 0;
+
+  object(TBSCertificate) tbs = TBSCertificate()->init(cert->elements[0]);
+
+  if (!tbs || cert->elements[1]->get_der() != tbs->algorithm->get_der())
+    return 0;
+
+  object v;
+  
+  if (tbs->issuer->get_der() == tbs->subject->get_der())
+  {
+    /* A self signed certificate */
+    v = tbs->public_key;
+  }
+  else
+    v = authorities[tbs->issuer->get_der()];
+
+  return v && v->verify(cert->elements[1],
+			cert->elements[0]->get_der(),
+			cert->elements[2]->value)
+    && tbs;
+}
