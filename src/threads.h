@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.58 1998/11/20 19:05:46 hubbe Exp $
+ * $Id: threads.h,v 1.59 1998/11/20 19:33:46 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -370,8 +370,6 @@ struct thread_state {
        (_tmp)->thread_id=thread_id;\
        DO_IF_PROFILING( (_tmp)->accounted_time=accounted_time; ) \
        DO_IF_PROFILING( (_tmp)->time_base = gethrtime() - time_base; ) \
-       DO_IF_DEBUG( DO_IF_PROFILING( if(accounted_time<0) fatal("Accounted time out of whack at swap out!\n");)) \
-       DO_IF_DEBUG( DO_IF_PROFILING( if((_tmp)->time_base<0) fatal("time base out of whack at swap out!\n");)) \
        SWAP_OUT_TRACE(_tmp); \
       } while(0)
 
@@ -389,8 +387,6 @@ struct thread_state {
        thread_id=(_tmp)->thread_id;\
        DO_IF_PROFILING( accounted_time=(_tmp)->accounted_time; ) \
        DO_IF_PROFILING(  time_base =  gethrtime() - (_tmp)->time_base; ) \
-       DO_IF_DEBUG( DO_IF_PROFILING( if(accounted_time<0) fatal("Accounted time out of whack at swap in!\n");)) \
-       DO_IF_DEBUG( DO_IF_PROFILING( if(time_base<0) fatal("time base out of whack at swap in!\n");)) \
        SWAP_IN_TRACE(_tmp); \
      } while(0)
 
