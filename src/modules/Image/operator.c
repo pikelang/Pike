@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operator.c,v 1.47 2004/05/15 18:15:49 jonasw Exp $
+|| $Id: operator.c,v 1.48 2004/05/15 19:13:23 jonasw Exp $
 */
 
 /*
@@ -171,9 +171,9 @@ STANDARD_OPERATOR_HEADER("`+")
        image_add_buffers_mmx_x86asm( d, s1, s2, (i*3)/8 );
        nleft = (i*3)%8;
        for( ; nleft; nleft-- )
-         ((unsigned char *)d)[i-nleft-1] = 
-                    MINIMUM((((unsigned char *)s1)[i-nleft-1] +
-                             ((unsigned char *)s2)[i-nleft-1]), 255 );
+         ((unsigned char *)d)[i * 3 - nleft] = 
+                    MINIMUM((((unsigned char *)s1)[i * 3 - nleft] +
+                             ((unsigned char *)s2)[i * 3 - nleft]), 255 );
      } else 
 #endif
      while (i--)
