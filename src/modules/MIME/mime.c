@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.30 2001/02/13 23:14:57 grubba Exp $
+ * $Id: mime.c,v 1.31 2001/07/01 16:07:25 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.30 2001/02/13 23:14:57 grubba Exp $");
+RCSID("$Id: mime.c,v 1.31 2001/07/01 16:07:25 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -73,6 +73,8 @@ unsigned char rfc822ctype[1<<CHAR_BIT];
 void pike_module_init( void )
 {
   int i;
+
+  Pike_compiler->new_program->id = PROG_MODULE_MIME_ID;
 
   /* Init reverse base64 mapping */
   memset( base64rtab, -1, sizeof(base64rtab) );

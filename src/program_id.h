@@ -51,6 +51,9 @@
 #define     PROG_STRING_SPLIT_ITERATOR_ID			    024
 #define     PROG_GMP_MPZ_ID                                         025
 
+#define     PROG_MODULE_MIME_ID					   0100
+
+/* NOTE: 0144 == 100. */
 /* 100 - 300 reserverd for Image.Image */
 
 
