@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.159 2003/11/17 14:39:47 grubba Exp $
+|| $Id: opcodes.c,v 1.160 2003/11/17 15:05:49 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: opcodes.c,v 1.159 2003/11/17 14:39:47 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.160 2003/11/17 15:05:49 grubba Exp $");
 #include "constants.h"
 #include "interpret.h"
 #include "opcodes.h"
@@ -401,7 +401,7 @@ void init_opcodes(void)
   }
 
 #ifdef PIKE_USE_MACHINE_CODE
-  instrs_checksum = hash_mem(instrs, sizeof(instrs), sizeof(instrs));
+  instrs_checksum = hashmem(instrs, sizeof(instrs), sizeof(instrs));
 #endif /* PIKE_USE_MACHINE_CODE */
 
 #ifdef PIKE_DEBUG
