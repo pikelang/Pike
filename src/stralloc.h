@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.15 1998/03/28 15:09:14 grubba Exp $
+ * $Id: stralloc.h,v 1.16 1998/05/25 10:38:46 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -99,7 +99,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
 struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size);
 struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
-					 char c);
+					 int c);
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
 struct pike_string *add_and_free_shared_strings(struct pike_string *a,

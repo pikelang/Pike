@@ -5,15 +5,18 @@
 \*/
 
 /*
- * $Id: docode.h,v 1.6 1998/04/27 10:00:27 hubbe Exp $
+ * $Id: docode.h,v 1.7 1998/05/25 10:38:45 hubbe Exp $
  */
 #ifndef DOCODE_H
 #define DOCODE_H
 
-
 #define DO_LVALUE 1
 #define DO_NOT_COPY 2
 #define DO_POP 4
+#define DO_INDIRECT 8
+#define DO_LVALUE_IF_POSSIBLE 16
+
+#define WANT_LVALUE (DO_LVALUE | DO_INDIRECT)
 
 extern int store_linenumbers;
 

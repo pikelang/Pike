@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.35 1998/04/24 00:09:35 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.36 1998/05/25 10:38:46 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -639,14 +639,14 @@ struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
  */
 struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
-					 char c)
+					 int c)
 {
 #ifdef DEBUG
   if(index<0 || index>=a->len)
     fatal("Index out of range in modify_shared_string()\n");
 #endif
 
-  if(a->str[index]==c) return a;
+  if(EXTRACT_UCHAR(a->str+index)==c) return a;
 
   if(a->refs==1)
   {
@@ -663,7 +663,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
     struct pike_string *r;
     r=begin_shared_string(a->len);
     MEMCPY(r->str, a->str, a->len);
-    a->str[index]=c;
+    r->str[index]=c;
     free_string(a);
     return end_shared_string(r);
   }

@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.113 1998/05/24 23:21:00 marcus Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.114 1998/05/25 10:38:47 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2375,6 +2375,21 @@ test_equal(Array.everynth("0123456789"/"",3,4),
 
 test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
 	({ ({1,4}), ({2,5}), ({3,6}) }))
+
+test_true(!Yabu.test()->main(1,({"test"})))
+test_do([[
+  string s;
+  for(s="foobar";strlen(s)<78;s+=s)
+  {
+    for(int e=0;e<strlen(s);e++)
+    {
+      s[e]++;
+    }
+  }
+]])
+
+test_any([[string s="foo"; s[2]='t'; s[0]--; return s;]],"eot")
+
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())

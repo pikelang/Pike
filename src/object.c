@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.51 1998/05/17 20:43:01 grubba Exp $");
+RCSID("$Id: object.c,v 1.52 1998/05/25 10:38:46 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -748,8 +748,15 @@ union anything *object_get_item_ptr(struct object *o,
   }
 
   f=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
+
   if(FIND_LFUN(p,f) != -1)
-    error("Cannot do incremental operations on overloaded index (yet).\n");
+  {
+    return 0;
+
+    /* error("Cannot do incremental operations on overloaded index (yet).\n");
+     */
+  }
+    
 
   switch(index->type)
   {

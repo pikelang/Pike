@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.32 1998/04/17 05:08:02 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.33 1998/05/25 10:38:46 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -24,6 +24,7 @@ RCSID("$Id: operators.c,v 1.32 1998/04/17 05:08:02 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "pike_types.h"
+#include "module_support.h"
 
 #define COMPARISON(ID,NAME,FUN)			\
 void ID(INT32 args)				\
@@ -1729,6 +1730,67 @@ static int generate_call_function(node *n)
   return 1;
 }
 
+struct program *string_assignment_program;
+
+#undef THIS
+#define THIS ((struct string_assignment_storage *)(fp->current_storage))
+static void f_string_assignment_index(INT32 args)
+{
+  INT32 i;
+  get_all_args("string[]",args,"%i",&i);
+  if(i<0) i+=THIS->s->len;
+  if(i<0)
+    i+=THIS->s->len;
+  if(i<0 || i>=THIS->s->len)
+    error("Index %d is out of range 0 - %d.\n", i, THIS->s->len-1);
+  else
+    i=EXTRACT_UCHAR(THIS->s->str + i);
+  pop_n_elems(args);
+  push_int(i);
+}
+
+static void f_string_assignment_assign_index(INT32 args)
+{
+  INT32 i,j;
+  union anything *u;
+  get_all_args("string[]=",args,"%i%i",&i,&j);
+  if((u=get_pointer_if_this_type(THIS->lval, T_STRING)))
+  {
+    free_string(THIS->s);
+    if(i<0) i+=u->string->len;
+    if(i<0 || i>=u->string->len)
+      error("String index out of range %ld\n",(long)i);
+    u->string=modify_shared_string(u->string,i,j);
+    copy_shared_string(THIS->s, u->string);
+  }else{
+    lvalue_to_svalue_no_free(sp,THIS->lval);
+    sp++;
+    if(sp[-1].type != T_STRING) error("string[]= failed.\n");
+    if(i<0) i+=sp[-1].u.string->len;
+    if(i<0 || i>=sp[-1].u.string->len)
+      error("String index out of range %ld\n",(long)i);
+    sp[-1].u.string=modify_shared_string(sp[-1].u.string,i,j);
+    assign_lvalue(THIS->lval, sp-1);
+    pop_stack();
+  }
+  pop_n_elems(args);
+  push_int(j);
+}
+
+
+static void init_string_assignment_storage(struct object *o)
+{
+  THIS->lval[0].type=T_INT;
+  THIS->lval[1].type=T_INT;
+  THIS->s=0;
+}
+
+static void exit_string_assignment_storage(struct object *o)
+{
+  free_svalues(THIS->lval, 2, BIT_MIXED);
+  if(THIS->s)
+    free_string(THIS->s);
+}
 
 void init_operators(void)
 {
@@ -1819,4 +1881,23 @@ void init_operators(void)
 
   /* This one should be removed */
   add_efun2("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
+
+
+  start_new_program();
+  add_storage(sizeof(struct string_assignment_storage));
+  add_function("`[]",f_string_assignment_index,"function(int:int)",0);
+  add_function("`[]=",f_string_assignment_assign_index,"function(int,int:int)",0);
+  set_init_callback(init_string_assignment_storage);
+  set_exit_callback(exit_string_assignment_storage);
+  string_assignment_program=end_program();
+}
+
+
+void exit_operators()
+{
+  if(string_assignment_program)
+  {
+    free_program(string_assignment_program);
+    string_assignment_program=0;
+  }
 }

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.52 1998/05/12 16:53:17 grubba Exp $");
+RCSID("$Id: main.c,v 1.53 1998/05/25 10:38:45 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -26,6 +26,7 @@ RCSID("$Id: main.c,v 1.52 1998/05/12 16:53:17 grubba Exp $");
 #include "mapping.h"
 #include "cpp.h"
 #include "main.h"
+#include "operators.h"
 
 #include <errno.h>
 
@@ -395,6 +396,7 @@ void do_exit(int num) ATTRIBUTE((noreturn))
 void low_init_main(void)
 {
   th_init();
+  init_operators();
   init_builtin_efuns();
   init_signals();
   init_dynamic_load();
@@ -424,6 +426,7 @@ void low_exit_main(void)
   exit_cpp();
   cleanup_interpret();
   cleanup_added_efuns();
+  exit_operators();
   cleanup_pike_types();
   cleanup_program();
   cleanup_compiler();

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.37 1998/05/17 20:06:43 grubba Exp $");
+RCSID("$Id: docode.c,v 1.38 1998/05/25 10:38:44 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -206,7 +206,7 @@ static int do_docode2(node *n,int flags)
 	emit(F_NUMBER,0);
 	emit(F_NUMBER,0);
 	return 2;
-
+	
       case F_ARRAY_LVALUE:
       case F_LVALUE_LIST:
       case F_LOCAL:
@@ -216,15 +216,23 @@ static int do_docode2(node *n,int flags)
       case F_ARROW:
       case F_ARG_LIST:
       case F_EXTERNAL:
-	break;
-    }
+	  break;
+      }
+  }
+
+  if(flags & DO_LVALUE_IF_POSSIBLE)
+  {
+    flags|=DO_INDIRECT;
+    flags &=~DO_LVALUE_IF_POSSIBLE;
+  }else{
+    flags &=~DO_INDIRECT;
   }
 
   switch(n->token)
   {
   case F_EXTERNAL:
     emit(F_LDA, n->u.integer.a);
-    if(flags & DO_LVALUE)
+    if(flags & WANT_LVALUE)
     {
       emit(F_EXTERNAL_LVALUE, n->u.integer.b);
       return 2;
@@ -686,7 +694,7 @@ static int do_docode2(node *n,int flags)
     }
 
   case F_ARG_LIST:
-    tmp1=do_docode(CAR(n),flags & ~DO_LVALUE);
+    tmp1=do_docode(CAR(n),flags & ~WANT_LVALUE);
     tmp1+=do_docode(CDR(n),flags);
     return tmp1;
 
@@ -944,7 +952,7 @@ static int do_docode2(node *n,int flags)
   case F_ARROW:
     if(CDR(n)->token != F_CONSTANT || CDR(n)->u.sval.type!=T_STRING)
       fatal("Bugg in F_ARROW, index not string.");
-    if(flags & DO_LVALUE)
+    if(flags & WANT_LVALUE)
     {
       /* FIXME!!!! ??? I wonder what needs fixing... /Hubbe */
       tmp1=do_docode(CAR(n), 0);
@@ -963,9 +971,20 @@ static int do_docode2(node *n,int flags)
     return tmp1;
 
   case F_INDEX:
-    if(flags & DO_LVALUE)
+    if(flags & WANT_LVALUE)
     {
-      tmp1=do_docode(CAR(n), 0);
+      int mklval=CAR(n) && match_types(CAR(n)->type, string_type_string);
+      tmp1=do_docode(CAR(n),
+		     mklval ? DO_LVALUE_IF_POSSIBLE : 0);
+      if(tmp1==2)
+      {
+#ifdef DEBUG
+	if(!mklval)
+	  fatal("Unwanted lvalue!\n");
+#endif
+	emit2(F_INDIRECT);
+      }
+      
       if(do_docode(CDR(n),0) != 1)
 	fatal("Internal compiler error, please report this (1).");
       if(CDR(n)->token != F_CONSTANT &&
@@ -975,7 +994,9 @@ static int do_docode2(node *n,int flags)
     }else{
       tmp1=do_docode(CAR(n), DO_NOT_COPY);
       code_expression(CDR(n), DO_NOT_COPY, "index");
+
       emit2(F_INDEX);
+
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
@@ -1046,7 +1067,7 @@ static int do_docode2(node *n,int flags)
   case F_LOCAL:
     if(n->u.number >= compiler_frame->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
-    if(flags & DO_LVALUE)
+    if(flags & WANT_LVALUE)
     {
       emit(F_LOCAL_LVALUE,n->u.number);
       return 2;
@@ -1058,14 +1079,14 @@ static int do_docode2(node *n,int flags)
   case F_IDENTIFIER:
     if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, n->u.number)->identifier_flags))
     {
-      if(flags & DO_LVALUE)
+      if(flags & WANT_LVALUE)
       {
 	yyerror("Cannot assign functions.\n");
       }else{
 	emit(F_LFUN,n->u.number);
       }
     }else{
-      if(flags & DO_LVALUE)
+      if(flags & WANT_LVALUE)
       {
 	emit(F_GLOBAL_LVALUE,n->u.number);
 	return 2;

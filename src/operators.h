@@ -5,20 +5,27 @@
 \*/
 
 /*
- * $Id: operators.h,v 1.4 1998/03/28 15:07:37 grubba Exp $
+ * $Id: operators.h,v 1.5 1998/05/25 10:38:46 hubbe Exp $
  */
 #ifndef OPERATORS_H
 #define OPERATORS_H
 
 #define COMPARISON(ID,NAME,X) void ID(INT32 num_arg);
 
+extern struct program *string_assignment_program;
+struct string_assignment_storage
+{
+  struct svalue lval[2];
+  struct pike_string *s;
+};
+
 /* Prototypes begin here */
-COMPARISON(f_eq,"`==", is_eq(sp-2,sp-1))
-COMPARISON(f_ne,"`!=",!is_eq(sp-2,sp-1))
-COMPARISON(f_lt,"`<" , is_lt(sp-2,sp-1))
-COMPARISON(f_le,"`<=",!is_gt(sp-2,sp-1))
-COMPARISON(f_gt,"`>" , is_gt(sp-2,sp-1))
-COMPARISON(f_ge,"`>=",!is_lt(sp-2,sp-1))
+void f_ne(INT32 args);
+COMPARISON(f_eq,"`==", is_eq)
+COMPARISON(f_lt,"`<" , is_lt)
+COMPARISON(f_le,"`<=",!is_gt)
+COMPARISON(f_gt,"`>" , is_gt)
+COMPARISON(f_ge,"`>=",!is_lt)
 
 void f_add(INT32 args);
 void o_subtract(void);
@@ -49,6 +56,7 @@ void f_index(INT32 args);
 void f_arrow(INT32 args);
 void f_sizeof(INT32 args);
 void init_operators(void);
+void exit_operators();
 /* Prototypes end here */
 
 #undef COMPARISON

@@ -64,6 +64,5 @@ int main(int argc, array argv)
   // Remove test database.
   db->purge();
 
-  write("Yabu test program says everything is A OK.\n");
-  return 1;
+  return 0;
 }

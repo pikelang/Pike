@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.110 1998/05/19 18:47:41 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.111 1998/05/25 10:38:44 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2919,8 +2919,6 @@ void f__locate_references(INT32 args)
 
 void init_builtin_efuns(void)
 {
-  init_operators();
-
   add_efun("gethrtime", f_gethrtime,"function(int|void:int)", OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_GETHRVTIME
