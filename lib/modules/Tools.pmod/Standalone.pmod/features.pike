@@ -6,6 +6,32 @@ void item(string name, int(0..1) check) {
   write(" [%s] %s\n", (check?"X":" "), name);
 }
 
+void test_ipv6()
+{
+  write("\nIPv6\n");
+
+  Stdio.Port port = Stdio.Port();
+  int check;
+  mixed err = catch {
+      // The following throws if the address isn't supported.
+      check = port->bind(0, 0, "::");
+    };
+  item("IPv6 addresses",
+       !err || !has_prefix(describe_error(err), "Invalid address"));
+
+  // The following fails on Linux machines which haven't
+  // been configured for IPv6 (EAFNOSUPPORT).
+  item("IPv6 binding", check);
+
+  if (check) {
+    // The following fails on Solaris machines which haven't
+    // been configured for IPv6 (ENETUNREACH).
+    int portno = array_sscanf(port->query_address(), "%*s %d")[0];
+    check = Stdio.File()->connect("::1", portno);
+  }
+  item("IPv6 connecting", check);
+}
+
 void f(string sym, void|string name) {
   int x = !zero_type(all_constants()[sym]) ||
     !zero_type(master()->resolv(sym));
@@ -28,6 +54,8 @@ int main() {
   f("__leak", "PIKE_DEBUG");
   f("get_profiling_info", "PROFILING");
   f("load_module", "USE_DYNAMIC_MODULES");
+
+  test_ipv6();
 
   write("\nBuiltin functions\n");
   F(__leak); // PIKE_DEBUG marker
