@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.63 1999/10/30 13:15:56 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.64 1999/11/01 15:21:57 mirar Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -109,7 +109,7 @@ static void get_mpz_from_digits(MP_INT *tmp,
     }
 
     if (mpz_set_str(tmp, digits->str + offset, base))
-      error("invalid digits, cannot convert to mpz");
+      error("invalid digits, cannot convert to mpz\n");
 
     if(offset == 3)
     {
@@ -192,10 +192,10 @@ static void mpzmod_create(INT32 args)
 
   case 2: /* Args are string of digits and integer base */
     if(sp[-args].type != T_STRING)
-      error("bad argument 1 for Mpz->create()");
+      error("bad argument 1 for Mpz->create()\n");
 
     if (sp[1-args].type != T_INT)
-      error("wrong type for base in Mpz->create()");
+      error("wrong type for base in Mpz->create()\n");
 
     get_mpz_from_digits(THIS, sp[-args].u.string, sp[1-args].u.integer);
     break;
@@ -338,6 +338,7 @@ static void mpzmod__sprintf(INT32 args)
 {
   INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
+  INT_TYPE flag_left;
   
   if(args < 1 || sp[-args].type != T_INT)
     error("Bad argument 1 for Mpz->_sprintf().\n");
@@ -348,17 +349,25 @@ static void mpzmod__sprintf(INT32 args)
   push_constant_text("precision");
   f_index(2);
   if(sp[-1].type != T_INT)
-    error("Precision argument to Mpz->_sprintf() is not an integer.\n");
+    error("\"precision\" argument to Mpz->_sprintf() is not an integer.\n");
   precision = (--sp)->u.integer;
   
   push_svalue(&sp[1-args]);
   push_constant_text("width");
   f_index(2);
   if(sp[-1].type != T_INT)
-    error("Width argument to Mpz->_sprintf() is not an integer.\n");
+    error("\"width\" argument to Mpz->_sprintf() is not an integer.\n");
   width_undecided = ((sp-1)->subtype != NUMBER_NUMBER);
   width = (--sp)->u.integer;
-  
+
+  push_svalue(&sp[1-args]);
+  push_constant_text("flag_left");
+  f_index(2);
+  if(sp[-1].type != T_INT)
+    error("\"flag_left\" argument to Mpz->_sprintf() is not an integer.\n");
+  flag_left=sp[-1].u.integer;
+  pop_stack();
+
   switch(sp[-args].u.integer)
   {
   case 'O':
@@ -430,21 +439,34 @@ static void mpzmod__sprintf(INT32 args)
       width = 1;
     
     s = begin_shared_string(width);
-
-    dst = (unsigned char *)STR0(s) + width;
+    
+    if (!flag_left)
+       dst = (unsigned char *)STR0(s) + width;
+    else
+       dst = (unsigned char *)STR0(s);
+       
     src = n->_mp_d;
 
     while(width > 0)
     {
       mp_limb_t x = (length-->0? *(src++) : 0);
-	
-      for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
-      {
-	*(--dst) = (neg ? ~x : x) & 0xff;
-	x >>= 8;
-	if(!--width)
-	  break;
-      }
+
+      if (!flag_left)
+	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
+	 {
+	    *(--dst) = (neg ? ~x : x) & 0xff;
+	    x >>= 8;
+	    if(!--width)
+	       break;
+	 }
+      else
+	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
+	 {
+	    *(dst++) = (neg ? ~x : x) & 0xff;
+	    x >>= 8;
+	    if(!--width)
+	       break;
+	 }
     }
     
     if(neg)
@@ -850,12 +872,12 @@ static void mpzmod_invert(INT32 args)
     error("Gmp.mpz->invert: wrong number of arguments.\n");
   modulo = get_mpz(sp-args, 1);
   if (!mpz_sgn(modulo))
-    error("divide by zero");
+    error("divide by zero\n");
   res = fast_clone_object(THIS_PROGRAM, 0);
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
     free_object(res);
-    error("Gmp.mpz->invert: not invertible");
+    error("Gmp.mpz->invert: not invertible\n");
   }
   pop_n_elems(args);
   PUSH_REDUCED(res);
