@@ -973,7 +973,7 @@ void f_create_process(INT32 args)
 
 	if((tmp=simple_mapping_string_lookup(optional, "cwd")))
 	  if(tmp->type == T_STRING)
-	    if(!chdir(tmp->u.string->str))
+	    if(chdir(tmp->u.string->str))
 	      exit(69);
 
 
