@@ -18,6 +18,10 @@ inherit "handshake";
 constant Queue = ADT.queue;
 constant State = SSL.state;
 
+constant PRI_alert = 1;
+constant PRI_urgent = 2;
+constant PRI_application = 3;
+
 inherit Queue : alert;
 inherit Queue : urgent;
 inherit Queue : application;
@@ -57,37 +61,33 @@ object recv_packet(string data)
   return res;
 }
 
-void send_packet(object packet, int|void fatal)
+/* Handshake and and change cipher must use the same priority,
+ * so must application data and close_notifies. */
+void send_packet(object packet, int|void priority)
 {
+  if (!priority)
+    priority = ([ PACKET_alert : PRI_alert,
+		  PACKET_change_cipher_spec : PRI_urgent,
+	          PACKET_handshake : PRI_urgent,
+		  PACKET_application_data : PRI_application ])[packet->content_type];
 #ifdef SSL3_DEBUG
-//  werror(sprintf("SSL.connection->send_packet: type %d, '%s'\n",
-//		 packet->content_type, packet->fragment));
+  werror(sprintf("SSL.connection->send_packet: type %d, %d, '%s'\n",
+		 packet->content_type, priority,  packet->fragment[..5]));
 #endif
-  switch (packet->content_type)
+  switch (priority)
   {
   default:
     throw( ({"SSL.connection->send_packet: internal error\n", backtrace() }) );
-  case PACKET_alert:
+  case PRI_alert:
     alert::put(packet);
-    if (packet->description == ALERT_close_notify)
-      {
-	if (packet->level == ALERT_fatal)
-	  fatal = 1;
-	else
-	  closing = 1;
-      }
     break;
-  case PACKET_application_data:
-    application::put(packet);
-    break;
-    /* Handshake and and change cipher must use the same queue */
-  case PACKET_change_cipher_spec:
-  case PACKET_handshake:
+  case PRI_urgent:
     urgent::put(packet);
     break;
+  case PRI_application:
+    application::put(packet);
+    break;
   }
-  if (fatal)
-    dying = 1;
 }
 
 /* Returns a string of data to be written, "" if there's no pending packets,
@@ -95,28 +95,36 @@ void send_packet(object packet, int|void fatal)
  * died unexpectedly. */
 string|int to_write()
 {
-  string res = 0;
-
-  object packet = alert::get();
+  if (dying)
+    return -1;
+  if (closing)
+    return 1;
+  
+  object packet = alert::get() || urgent::get() || application::get();
   if (!packet)
-  {
-    if (dying)
-      return closing ? 1 : -1;
-    packet = urgent::get() || application::get();
-  }
-  if (packet)
-  {
+    return "";
+  
 #ifdef SSL3_DEBUG
-    werror(sprintf("SSL.connection: writing packet of type %d, '%s'\n",
-		   packet->content_type, packet->fragment[..6]));
+  werror(sprintf("SSL.connection: writing packet of type %d, '%s'\n",
+		 packet->content_type, packet->fragment[..6]));
 #endif
-    res = current_write_state->encrypt_packet(packet)->send();
-    if (packet->content_type == PACKET_change_cipher_spec)
-      current_write_state = pending_write_state;
+  if (packet->content_type == PACKET_alert)
+  {
+    if (packet->level == ALERT_fatal)
+      dying = 1;
+    else
+      if (packet->description == ALERT_close_notify)
+	closing = 1;
   }
-  else
-    res = closing ? 1 : "";
+  string res = current_write_state->encrypt_packet(packet)->send();
+  if (packet->content_type == PACKET_change_cipher_spec)
+    current_write_state = pending_write_state;
   return res;
+}
+
+void send_close()
+{
+  send_packet(Alert(ALERT_warning, ALERT_close_notify), PRI_application);
 }
 
 int handle_alert(string s)
@@ -139,8 +147,7 @@ int handle_alert(string s)
   }
   if (description == ALERT_close_notify)
   {
-    closing = 1;
-    return 0;
+    return 1;
   }
   if (description == ALERT_no_certificate)
   {
@@ -179,7 +186,8 @@ string alert_buffer = "";
 string handshake_buffer = "";
 int handshake_finished = 0;
 
-/* Returns a string of application data, or -1 if a fatal error occured */
+/* Returns a string of application data, 1 if connection was closed, or
+ * -1 if a fatal error occured */
 string|int got_data(string s)
 {
   string res = "";
@@ -191,7 +199,7 @@ string|int got_data(string s)
     if (packet->is_alert)
     { /* Reply alert */
 #ifdef SSL3_DEBUG
-      werror("SSL.connection: Bad recieved packet\n");
+      werror("SSL.connection: Bad received packet\n");
 #endif
       send_packet(packet);
       if (packet->level == ALERT_fatal)
@@ -200,7 +208,7 @@ string|int got_data(string s)
     else
     {
 #ifdef SSL3_DEBUG
-      werror(sprintf("SSL.connection: recieved packet of type %d\n",
+      werror(sprintf("SSL.connection: received packet of type %d\n",
 		     packet->content_type));
 #endif
       switch (packet->content_type)
