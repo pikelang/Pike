@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.122 2004/04/05 02:54:07 mast Exp $
+|| $Id: backend.cmod,v 1.123 2004/04/05 16:03:03 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.122 2004/04/05 02:54:07 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.123 2004/04/05 16:03:03 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1885,7 +1885,7 @@ PIKECLASS Backend
   void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd)
   {
     struct kevent ev[2];
-    struct fd_callback_box *box = GET_BOX (me, fd);
+    struct fd_callback_box *box = GET_ACTIVE_BOX (me, fd);
     int nev = 0;
     if (WANT_EVENT(box, READ) || WANT_EVENT(box, READ_OOB)) {
       EV_SET(ev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
