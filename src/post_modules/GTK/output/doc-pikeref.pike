@@ -103,6 +103,19 @@ static string trim_xml( string what )
     what += " @enddl\n" + c;
   }
 
+  int table;
+  while( sscanf( what, "%s<table>%s</table>%s", a,b,c ) == 3 ) {
+    what = a + "@xml{<matrix>@}" + b + "@xml{</matrix>@}" + c;
+    table = 1;
+  }
+
+  if(table) {
+    while( sscanf( what, "%s<tr>%s</tr>%s", a,b,c ) == 3 )
+      what = a + "@xml{<r>@}" + b + "@xml{</r>@}" + c;
+    while( sscanf( what, "%s<td>%s</td>%s", a,b,c ) == 3 )
+      what = a + "@xml{<c>@}" + b + "@xml{</c>@}" + c;
+  }
+
   what = replace(what, "&nbsp;", " ");
 
   //  if(has_value(what,"<"))
