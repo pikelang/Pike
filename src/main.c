@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.131 2001/07/01 22:29:41 mast Exp $");
+RCSID("$Id: main.c,v 1.132 2001/07/02 00:46:28 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -789,6 +789,9 @@ void low_exit_main(void)
   void free_all_object_blocks(void);
   void free_all_program_blocks(void);
   void exit_builtin(void);
+  void exit_iterators(void);
+  void exit_backend(void);
+  void cleanup_pike_type_table(void);
 
 #ifdef AUTO_BIGNUM
   void exit_auto_bignum(void);
