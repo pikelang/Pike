@@ -1,3 +1,12 @@
+/*
+
+quant, used by image when making gif's (mainly)
+
+Pontus Hagland, law@infovav.se
+David Kågedal, kg@infovav.se
+
+*/
+
 #include <unistd.h>
 #include <stdio.h>
 
@@ -265,13 +274,15 @@ static void sort_tbl(rgb_hashtbl *ht,
 	 if (max.g<tbl[x].rgb.g) max.g=tbl[x].rgb.g;
 	 if (max.b<tbl[x].rgb.b) max.b=tbl[x].rgb.b;
       }
-      if (max.r-min.r>max.g-min.g) /* r>g */
-	 if (max.r-min.r>max.b-min.b) /* r>g, r>b */
+
+      /* do this weighted, red=2 green=3 blue=1 */
+      if ((max.r-min.r)*2>(max.g-min.g)*3) /* r>g */
+	 if ((max.r-min.r)*2>(max.b-min.b)) /* r>g, r>b */
 	    dir=0;
          else /* r>g, b>r */
 	    dir=2;
       else
-	 if (max.g-min.g>max.b-min.b) /* g>r, g>b */
+	 if ((max.g-min.g)*3>(max.b-min.b)) /* g>r, g>b */
 	    dir=1;
          else /* g>r, b>g */
 	    dir=2;

@@ -1,3 +1,15 @@
+/*
+
+lzw, used by togif
+
+Pontus Hagland, law@infovav.se
+
+this file can be used generally for lzw algoritms,
+the existanse of #define GIF_LZW is for that purpose. :-)
+/Pontus
+
+*/
+
 #include "global.h"
 
 #include "lzw.h"
