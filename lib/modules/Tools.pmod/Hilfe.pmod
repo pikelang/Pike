@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.119 2005/01/11 08:49:23 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.120 2005/01/27 18:44:22 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -144,10 +144,10 @@ private class CommandSet {
 	if(type=="b") {
 	  string s = sprintf("%b", res);
 	  s = "0"*(8-sizeof(s)%8) + s;
-	  w( s/8*" " + "\n" );
+	  w( "0b" + s/8*" " + "\n" );
 	}
 	else
-	  w("%"+type+"\n", res);
+	  w(type+"\n", res);
       }
       else
 	fallback(w, sres, num, res, last_compile_time, last_eval_time);
@@ -267,10 +267,10 @@ private class CommandSet {
 	e->reswrite = Intwriter("b", e->std_reswrite);
 	return;
       case "oct":
-	e->reswrite = Intwriter("o", e->std_reswrite);
+	e->reswrite = Intwriter("0%o", e->std_reswrite);
 	return;
       case "hex":
-	e->reswrite = Intwriter("x", e->std_reswrite);
+	e->reswrite = Intwriter("0x%x", e->std_reswrite);
 	return;
       case "sprintf":
 	string f;
@@ -2414,6 +2414,9 @@ parameters are available:
 default  The normal result formatting.
 bench    A result formatting extended with compilation and
          evaluation times.
+bin      Returns integers in binary form.
+hex      Returns integers in hexadecimal form.
+oct      Returns integers in octal form.
 sprintf  The result formatting will be decided by the succeeding
          Pike string. The sprintf will be given the following
          arguments:
