@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.156 2003/12/12 13:22:40 grubba Exp $
+|| $Id: sscanf.c,v 1.157 2004/03/05 23:30:47 nilsson Exp $
 */
 
 #include "global.h"
@@ -14,10 +14,11 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
+#include "bignum.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.156 2003/12/12 13:22:40 grubba Exp $");
+RCSID("$Id: sscanf.c,v 1.157 2004/03/05 23:30:47 nilsson Exp $");
 
 /* 
  * helper functions for sscanf %O

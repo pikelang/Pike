@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.79 2003/12/22 16:52:04 grubba Exp $
+|| $Id: mysql.c,v 1.80 2004/03/05 23:30:06 nilsson Exp $
 */
 
 /*
@@ -76,6 +76,7 @@
 #include "builtin_functions.h"
 #include "fd_control.h"
 #include "mapping.h"
+#include "bignum.h"
 
 /* System includes */
 #ifdef HAVE_STRING_H
@@ -96,7 +97,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.79 2003/12/22 16:52:04 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.80 2004/03/05 23:30:06 nilsson Exp $");
 
 /*! @module Mysql
  *!

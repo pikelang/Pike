@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.30 2003/04/30 10:35:03 grubba Exp $
+|| $Id: result.c,v 1.31 2004/03/05 23:30:07 nilsson Exp $
 */
 
 /*
@@ -62,6 +62,7 @@
 #include "las.h"
 #include "threads.h"
 #include "multiset.h"
+#include "bignum.h"
 
 /* Local includes */
 #include "precompiled_mysql.h"
@@ -89,7 +90,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.30 2003/04/30 10:35:03 grubba Exp $");
+RCSID("$Id: result.c,v 1.31 2004/03/05 23:30:07 nilsson Exp $");
 
 struct program *mysql_result_program = NULL;
 
