@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.211 2004/11/30 15:41:58 grubba Exp $
+|| $Id: svalue.c,v 1.212 2004/11/30 21:01:26 grubba Exp $
 */
 
 #include "global.h"
@@ -1100,7 +1100,7 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
     struct pike_type *a_type = NULL;
     struct pike_type *b_type = NULL;
     int res;
-    if ((a->type == b->type) && (a->u.ptr = b->u.ptr)) return 1;  /* eq */
+    if ((a->type == b->type) && (a->u.ptr == b->u.ptr)) return 1;  /* eq */
     if (a->type == T_TYPE) {
       add_ref(a_type = a->u.type);
     } else {
