@@ -80,6 +80,7 @@
 %token F_CLASS
 %token F_COLON_COLON
 %token F_COMMA
+%token F_CONSTANT
 %token F_CONTINUE 
 %token F_DEFAULT
 %token F_DIV_EQ
@@ -299,6 +300,7 @@ void fix_comp_stack(int sp)
 %type <n> for_expr
 %type <n> foreach
 %type <n> gauge
+%type <n> idents
 %type <n> lambda
 %type <n> local_name_list
 %type <n> lvalue
@@ -341,11 +343,97 @@ string_constant: low_string
 optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
   | { $$=0; }
   ;
-          
-inheritance: modifiers F_INHERIT string_constant optional_rename_inherit ';'
+
+program_ref: string_constant
   {
-    simple_do_inherit($3,$1,$4);
+    reference_shared_string($1);
+    push_string($1);
+    push_string($1);
+    reference_shared_string(current_file);
+    push_string(current_file);
+    SAFE_APPLY_MASTER("handle_inherit", 2);
+
+    if(sp[-1].type != T_PROGRAM)
+      my_yyerror("Couldn't cast program to string (%s)",$1->str);
   }
+  | idents
+  {
+    push_string(make_shared_string(""));
+    switch($1->token)
+    {
+    case F_CONSTANT:
+      if($1->u.sval.type == T_PROGRAM)
+      {
+	push_svalue(& $1->u.sval);
+      }else{
+	yyerror("Illegal program identifier");
+	push_int(0);
+      }
+      break;
+
+    case F_IDENTIFIER:
+      {
+	struct identifier *i;
+	setup_fake_program();
+	i=ID_FROM_INT(& fake_program, $1->u.number);
+
+	if(IDENTIFIER_IS_CONSTANT(i->flags))
+	{
+	  push_svalue(PROG_FROM_INT(&fake_program, $1->u.number)->constants +
+		      i->func.offset);
+	}else{
+	  yyerror("Illegal program identifier");
+	  push_int(0);
+	}
+	break;
+      }
+    }
+    free_node($1);
+  }
+  ;
+          
+inheritance: modifiers F_INHERIT program_ref optional_rename_inherit ';'
+  {
+    struct pike_string *s;
+    if(sp[-1].type == T_PROGRAM)
+    {
+      s=sp[-2].u.string;
+      if($4) s=$4;
+      do_inherit(sp[-1].u.program,$1,s);
+      if($4) free_string($4);
+    }
+    pop_n_elems(2);
+  }
+  ;
+
+constant_name: F_IDENTIFIER '=' expr0
+  {
+    int tmp;
+    /* This can be made more lenient in the future */
+    if(!is_const($3))
+    {
+      struct svalue tmp;
+      yyerror("Constant definition is not constant.");
+      tmp.type=T_INT;
+      tmp.u.integer=0;
+      add_constant($1,&tmp, current_modifiers);
+    } else {
+      tmp=eval_low($3);
+      if(tmp < 1)
+	yyerror("Error in constant definition.");
+      pop_n_elems(tmp-1);
+      add_constant($1,sp-1,current_modifiers);
+      free_string($1);
+      pop_stack();
+    }
+  }
+  ;
+
+constant_list: constant_name
+  | constant_list ',' constant_name
+  ;
+
+constant: F_CONSTANT modifiers constant_list ';'
   ;
 
 block_or_semi: block
@@ -458,6 +546,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
   }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
+  | constant {}
+  | class {}
   | error 
   {
     reset_type_stack();
@@ -471,7 +561,7 @@ optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
   ;
 
 optional_identifier: F_IDENTIFIER
-  | /* empty */ { $$=make_shared_string(""); }
+  | /* empty */ { $$=0; }
   ;
 
 
@@ -484,6 +574,7 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
       push_type(T_ARRAY);
       varargs=1;
     }
+    if(!$3) $3=make_shared_string("");
     if(islocal($3) >= 0)
       my_yyerror("Variable '%s' appear twice in argument list.",
 		 $3->str);
@@ -534,14 +625,23 @@ type2: type2 '|' type3 { push_type(T_OR); }
 type3: F_INT_ID      { push_type(T_INT); }
   | F_FLOAT_ID    { push_type(T_FLOAT); }
   | F_STRING_ID   { push_type(T_STRING); }
-  | F_OBJECT_ID   { push_type(T_OBJECT); }
   | F_PROGRAM_ID  { push_type(T_PROGRAM); }
   | F_VOID_ID     { push_type(T_VOID); }
   | F_MIXED_ID    { push_type(T_MIXED); }
+  | F_OBJECT_ID   opt_object_type { push_type(T_OBJECT); }
   | F_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
   | F_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
   | F_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
   | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
+  ;
+
+opt_object_type:  /* Empty */ { push_type_int(0); }
+  | '(' program_ref ')'
+  {
+    if(sp[-1].type == T_PROGRAM)
+      push_type_int(sp[-1].u.program->id);
+    pop_n_elems(2);
+  }
   ;
 
 opt_function_type: '('
@@ -786,7 +886,7 @@ lambda: F_LAMBDA
   }
   ;
 
-class: F_CLASS '{'
+class: F_CLASS optional_identifier '{'
   {
     start_new_program();
   }
@@ -803,6 +903,7 @@ class: F_CLASS '{'
       s.type=T_PROGRAM;
       s.subtype=0;
     }
+    if($2) add_constant($2, &s, 0);
     $$=mksvaluenode(&s);
     free_svalue(&s);
   }
@@ -1007,7 +1108,28 @@ expr4: string
   | sscanf
   | lambda
   | class
-  | F_IDENTIFIER
+  | idents
+  | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
+  | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
+  | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
+  {
+    $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
+  }
+  | '(' comma_expr2 ')' { $$=$2; }
+  | '(' '{' expr_list '}' ')'
+    { $$=mkefuncallnode("aggregate",$3); }
+  | '(' '[' m_expr_list ']' ')'
+    { $$=mkefuncallnode("aggregate_mapping",$3); };
+  | F_MULTISET_START expr_list F_MULTISET_END
+    { $$=mkefuncallnode("aggregate_multiset",$2); }
+  | expr4 F_ARROW F_IDENTIFIER
+  {
+    $$=mknode(F_INDEX,$1,mkstrnode($3));
+    free_string($3);
+  }
+  ;
+
+idents: F_IDENTIFIER
   {
     int i;
     struct efun *f;
@@ -1035,24 +1157,6 @@ expr4: string
     }else{
 	 $$=mksvaluenode(&f->function);
     }
-    free_string($3);
-  }
-  | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
-  | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
-  | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
-  {
-    $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
-  }
-  | '(' comma_expr2 ')' { $$=$2; }
-  | '(' '{' expr_list '}' ')'
-    { $$=mkefuncallnode("aggregate",$3); }
-  | '(' '[' m_expr_list ']' ')'
-    { $$=mkefuncallnode("aggregate_mapping",$3); };
-  | F_MULTISET_START expr_list F_MULTISET_END
-    { $$=mkefuncallnode("aggregate_multiset",$2); }
-  | expr4 F_ARROW F_IDENTIFIER
-  {
-    $$=mknode(F_INDEX,$1,mkstrnode($3));
     free_string($3);
   }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER

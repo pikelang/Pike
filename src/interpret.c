@@ -568,32 +568,13 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       /* The not so basic 'push value' instructions */
-      CASE(F_GLOBAL)
-      {
-	struct identifier *i;
-	INT32 tmp=GET_ARG() + fp->context.identifier_level;
-
-	if(!fp->current_object->prog)
-	  error("Cannot access global variables in destructed object.\n");
-
-	i=ID_FROM_INT(fp->current_object->prog, tmp);
-	if(i->run_time_type == T_MIXED)
-	{
-	  struct svalue *s;
-	  s=(struct svalue *)GLOBAL_FROM_INT(tmp);
-	  check_destructed(s);
-	  assign_svalue_no_free(sp,s);
-	}else{
-	  union anything *u;
-	  u=(union anything *)GLOBAL_FROM_INT(tmp);
-	  check_short_destructed(u,i->run_time_type);
-	  
-	  assign_from_short_svalue_no_free(sp,u, i->run_time_type);
-	}
-	sp++;
-	print_return_value();
-	break;
-      }
+      CASE(F_GLOBAL);
+      low_object_index_no_free(sp,
+			       fp->current_object,
+			       GET_ARG() + fp->context.identifier_level);
+      sp++;
+      print_return_value();
+      break;
 
       CASE(F_LOCAL);
       assign_svalue_no_free(sp++,fp->locals+GET_ARG());
@@ -656,7 +637,6 @@ static void eval_instruction(unsigned char *pc)
       fp->locals[instr].u.integer--;
       break;
 
-
       CASE(F_LTOSVAL);
       lvalue_to_svalue_no_free(sp,sp-2);
       sp++;
@@ -692,6 +672,10 @@ static void eval_instruction(unsigned char *pc)
 	  error("Cannot access global variables in destructed object.\n");
 
 	i=ID_FROM_INT(fp->current_object->prog, tmp);
+
+	if(!IDENTIFIER_IS_VARIABLE(i->flags))
+	  error("Cannot re-assign functions or constants.\n");
+
 	if(i->run_time_type == T_MIXED)
 	{
 	  sp[0].type=T_LVALUE;
@@ -1459,6 +1443,13 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
 
   case T_ARRAY:
     apply_array(s->u.array,args);
+    break;
+
+  case T_PROGRAM:
+    {
+      struct object *o=clone(s->u.program,args);
+      push_object(o);
+    }
     break;
 
   default:

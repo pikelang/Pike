@@ -262,21 +262,6 @@ void f_search(INT32 args)
   }
 }
 
-void f_clone(INT32 args)
-{
-  struct object *o;
-
-  if(args<1)
-    error("Too few arguments to clone.\n");
-
-  if(sp[-args].type != T_PROGRAM)
-    error("Bad argument 1 to clone.\n");
-
-  o=clone(sp[-args].u.program,args-1);
-  pop_stack();
-  push_object(o);
-}
-
 void f_call_function(INT32 args)
 {
   INT32 expected_stack=sp-args+2-evaluator_stack;
@@ -1454,7 +1439,7 @@ void init_builtin_efuns()
   add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
   add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
   add_efun("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
-  add_efun("clone",f_clone,"function(program,mixed...:object)",OPT_EXTERNAL_DEPEND);
+
   add_efun("column",f_column,"function(array,mixed:array)",0);
   add_efun("combine_path",f_combine_path,"function(string,string:string)",0);
   add_efun("compile_file",f_compile_file,"function(string:program)",OPT_EXTERNAL_DEPEND);

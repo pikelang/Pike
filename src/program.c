@@ -265,7 +265,7 @@ void check_program(struct program *p)
       fatal("Program ->prev == 0 but first_program != program.\n");
   }
 
-  if(p->id > current_program_id || p->id < 0)
+  if(p->id > current_program_id || p->id <= 0)
     fatal("Program id is wrong.\n");
 
   if(p->storage_needed < 0)
@@ -329,7 +329,7 @@ void check_program(struct program *p)
     check_string(p->identifiers[e].name);
     check_string(p->identifiers[e].type);
 
-    if(p->identifiers[e].flags & ~7)
+    if(p->identifiers[e].flags & ~15)
       fatal("Unknown flags in identifier flag field.\n");
 
     if(p->identifiers[e].run_time_type!=T_MIXED)
@@ -672,9 +672,13 @@ void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
     add_to_mem_block(A_INHERITS,(char *)&inherit,sizeof inherit);
-
+    
     low_my_binary_strcat((char *)&name,sizeof(name),&inherit_names);
-    name=0;
+    if(name)
+    {
+      reference_shared_string(name);
+      name=0;
+    }
   }
 
   for (e=0; e < (int)p->num_identifier_references; e++)
@@ -742,6 +746,7 @@ void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *na
     s=name;
   }
   do_inherit(sp[-1].u.program, flags, s);
+  free_string(s);
   pop_stack();
 }
 
@@ -811,6 +816,57 @@ int define_variable(struct pike_string *name,
     dummy.func.offset=add_storage(dummy.run_time_type == T_MIXED ?
 				  sizeof(struct svalue) :
 				  sizeof(union anything));
+
+    ref.flags=flags;
+    ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
+    ref.inherit_offset=0;
+
+    add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
+    fake_program.num_identifiers ++;
+
+    n=areas[A_IDENTIFIER_REFERENCES].s.len / sizeof ref;
+    add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
+    fake_program.num_identifier_references ++;
+
+  }
+
+  return n;
+}
+
+int add_constant(struct pike_string *name,
+		 struct svalue *c,
+		 INT32 flags)
+{
+  int n;
+
+#ifdef DEBUG
+  if(name!=debug_findstring(name))
+    fatal("define_variable on nonshared string.\n");
+#endif
+
+  setup_fake_program();
+  n = isidentifier(name);
+
+  if(n != -1)
+  {
+    setup_fake_program();
+
+    if (IDENTIFIERP(n)->flags & ID_NOMASK)
+      my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
+
+    if(PROG_FROM_INT(& fake_program, n) == &fake_program)
+      my_yyerror("Identifier '%s' defined twice.",name->str);
+  } else {
+    struct identifier dummy;
+    struct reference ref;
+
+    copy_shared_string(dummy.name, name);
+    dummy.type = get_type_of_svalue(c);
+    
+    dummy.flags = IDENTIFIER_CONSTANT;
+    dummy.run_time_type=c->type;
+    
+    dummy.func.offset=store_constant(c, 0);
 
     ref.flags=flags;
     ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
@@ -1221,8 +1277,6 @@ struct program *compile_file(struct pike_string *file_name)
   fd=open(file_name->str,O_RDONLY);
   if(fd < 0)
     error("Couldn't open file '%s'.\n",file_name->str);
-
-
 
 #define FILE_STATE
 #define PUSH

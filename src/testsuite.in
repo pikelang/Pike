@@ -1,3 +1,17 @@
+test_any([[object(File) o=File(); return objectp(o);]],1)
+test_any([[object o=Regexp("foo"); return objectp(o);]],1)
+test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
+test_any([[class Test {}; object(Test) o=Test(); return object_program(o);]],Test)
+test_define_program(/test,[[constant foo = 1; int a() { return foo; }]])
+test_true(new("/test")->a())
+test_program(inherit "/test";)
+test_program(inherit "/test"; int a() { return foo; } )
+test_define_program(/test,[[class TEST { int a() { return 1; } }]])
+test_program(inherit "/test"; inherit TEST; )
+test_compile_error(class { object(File) foo; object(Regexp) bar=foo; })
+test_do(class { object foo; object(Regexp) bar=foo; })
+test_do(class { object(File) foo; object bar=foo; })
+
 // ++
 test_any([[int e; e++; return e;]],1)
 test_any([[int e; ++e; return e;]],1)

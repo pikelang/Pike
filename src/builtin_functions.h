@@ -23,7 +23,6 @@ void f_random(INT32 args);
 void f_random_seed(INT32 args);
 void f_query_num_arg(INT32 args);
 void f_search(INT32 args);
-void f_clone(INT32 args);
 void f_call_function(INT32 args);
 void f_backtrace(INT32 args);
 void f_add_constant(INT32 args);

@@ -74,6 +74,11 @@ union idptr
 #define IDENTIFIER_C_FUNCTION 2
 #define IDENTIFIER_FUNCTION 3
 #define IDENTIFIER_VARARGS 4
+#define IDENTIFIER_CONSTANT 8
+
+#define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
+#define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
+#define IDENTIFIER_IS_VARIABLE(X) (!((X) & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
 
 struct identifier
 {
@@ -185,6 +190,9 @@ int isidentifier(struct pike_string *s);
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags);
+int add_constant(struct pike_string *name,
+		 struct svalue *c,
+		 INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,

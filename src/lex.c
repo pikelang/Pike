@@ -101,6 +101,7 @@ struct keyword reserved_words[] =
 { "catch",	F_CATCH, },
 { "class",	F_CLASS, },
 { "continue",	F_CONTINUE, },
+{ "constant",	F_CONSTANT, },
 { "default",	F_DEFAULT, },
 { "do",		F_DO, },
 { "predef",	F_PREDEF, },

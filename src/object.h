@@ -40,6 +40,9 @@ struct object *master();
 void destruct(struct object *o);
 void destruct_objects_to_destruct();
 void really_free_object(struct object *o);
+void low_object_index_no_free(struct svalue *to,
+			      struct object *o,
+			      INT32 f);
 void object_index_no_free(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index);

@@ -1,3 +1,11 @@
+Thu Nov  7 20:49:42 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* 'constant foo=<value>;' implemented on top level
+	* prog(); works now works like clone(prog)
+	* clone removed
+	* object(const) or object("prog") can now be used
+	* class foo {}; now works like constant foo = class {};
+
 Sat Nov  2 22:17:45 1996  Fredrik Hubinette  <hubbe@tymin.blarg.com>
 
 	* language.yacc: if(int a) implemente

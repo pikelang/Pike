@@ -424,9 +424,9 @@ static int do_docode2(node *n,int flags)
 	break;
 
       case F_IDENTIFIER:
-	if(ID_FROM_INT(& fake_program, CDR(n)->u.number)->flags & IDENTIFIER_FUNCTION)
+	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(& fake_program, CDR(n)->u.number)->flags))
 	{
-	  yyerror("Cannot assign functions.\n");
+	  yyerror("Cannot assign functions or constants.\n");
 	}else{
 	  if(do_docode(CAR(n),0)!=1) yyerror("RHS is void!");
 	  emit(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
@@ -677,7 +677,7 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
-	    ID_FROM_INT(& fake_program, CAR(n)->u.number)->flags & IDENTIFIER_FUNCTION)
+	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(& fake_program, CAR(n)->u.number)->flags))
     {
       emit2(F_MARK);
       do_docode(CDR(n),0);
@@ -992,7 +992,7 @@ static int do_docode2(node *n,int flags)
     }
 
   case F_IDENTIFIER:
-    if(ID_FROM_INT(& fake_program, n->u.number)->flags & IDENTIFIER_FUNCTION)
+    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(& fake_program, n->u.number)->flags))
     {
       if(flags & DO_LVALUE)
       {

@@ -70,7 +70,7 @@ struct object *clone(struct program *p, int args)
 
     for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
-      if(frame.context.prog->identifiers[d].flags & IDENTIFIER_FUNCTION) 
+      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].flags))
 	continue;
       
       if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
@@ -200,7 +200,7 @@ void destruct(struct object *o)
 
     for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
-      if(frame.context.prog->identifiers[d].flags & IDENTIFIER_FUNCTION) 
+      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].flags)) 
 	continue;
       
       if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
@@ -298,35 +298,53 @@ void really_free_object(struct object *o)
 }
 
 
-static void low_object_index_no_free(struct svalue *to,
-				     struct object *o,
-				     INT32 f)
+void low_object_index_no_free(struct svalue *to,
+			      struct object *o,
+			      INT32 f)
 {
   struct identifier *i;
   struct program *p=o->prog;
+  
+  if(!p)
+    error("Cannot access global variables in destructed object.\n");
 
   i=ID_FROM_INT(p, f);
 
-  if(i->flags & IDENTIFIER_FUNCTION)
+  switch(i->flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
   {
+  case IDENTIFIER_FUNCTION:
+  case IDENTIFIER_C_FUNCTION:
+  case IDENTIFIER_PIKE_FUNCTION:
     to->type=T_FUNCTION;
     to->subtype=f;
     to->u.object=o;
     o->refs++;
-  }
-  else if(i->run_time_type == T_MIXED)
-  {
-    struct svalue *s;
-    s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
-    check_destructed(s);
-    assign_svalue_no_free(to, s);
-  }
-  else
-  {
-    union anything *u;
-    u=(union anything *)LOW_GET_GLOBAL(o,f,i);
-    check_short_destructed(u,i->run_time_type);
-    assign_from_short_svalue_no_free(to, u, i->run_time_type);
+    break;
+
+  case IDENTIFIER_CONSTANT:
+    {
+      struct svalue *s;
+      s=PROG_FROM_INT(p,f)->constants + i->func.offset;
+      check_destructed(s);
+      assign_svalue_no_free(to, s);
+      break;
+    }
+
+  case 0:
+    if(i->run_time_type == T_MIXED)
+    {
+      struct svalue *s;
+      s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
+      check_destructed(s);
+      assign_svalue_no_free(to, s);
+    }
+    else
+    {
+      union anything *u;
+      u=(union anything *)LOW_GET_GLOBAL(o,f,i);
+      check_short_destructed(u,i->run_time_type);
+      assign_from_short_svalue_no_free(to, u, i->run_time_type);
+    }
   }
 }
 
@@ -399,9 +417,9 @@ static void object_low_set_index(struct object *o,
 
   i=ID_FROM_INT(p, f);
 
-  if(i->flags & IDENTIFIER_FUNCTION)
+  if(!IDENTIFIER_IS_VARIABLE(i->flags))
   {
-    error("Cannot assign functions.\n");
+    error("Cannot assign functions or constants.\n");
   }
   else if(i->run_time_type == T_MIXED)
   {
@@ -479,9 +497,9 @@ static union anything *object_low_get_item_ptr(struct object *o,
 
   i=ID_FROM_INT(p, f);
 
-  if(i->flags & IDENTIFIER_FUNCTION)
+  if(!IDENTIFIER_IS_VARIABLE(i->flags))
   {
-    error("Cannot assign functions.\n");
+    error("Cannot assign functions or constants.\n");
   }
   else if(i->run_time_type == T_MIXED)
   {
@@ -567,7 +585,7 @@ void verify_all_objects()
       {
 	struct identifier *i;
 	i=ID_FROM_INT(o->prog, e);
-	if(i->flags & IDENTIFIER_FUNCTION)
+	if(!IDENTIFIER_IS_VARIABLE(i->flags))
 	  continue;
 
 	if(i->run_time_type == T_MIXED)
@@ -625,7 +643,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
     {
       struct identifier *i;
       i=ID_FROM_INT(a->prog, e);
-      if(i->flags & IDENTIFIER_FUNCTION)
+      if(!IDENTIFIER_IS_VARIABLE(i->flags))
 	continue;
 
       if(i->run_time_type == T_MIXED)
@@ -718,7 +736,7 @@ void gc_mark_object_as_referenced(struct object *o)
 	
 	i=ID_FROM_INT(o->prog, e);
 	
-	if(i->flags & IDENTIFIER_FUNCTION) continue;
+	if(!IDENTIFIER_IS_VARIABLE(i->flags)) continue;
 	
 	if(i->run_time_type == T_MIXED)
 	{
@@ -747,7 +765,7 @@ void gc_check_all_objects()
 	
 	i=ID_FROM_INT(o->prog, e);
 	
-	if(i->flags & IDENTIFIER_FUNCTION) continue;
+	if(!IDENTIFIER_IS_VARIABLE(i->flags)) continue;
 	
 	if(i->run_time_type == T_MIXED)
 	{

@@ -93,11 +93,15 @@ static int type_length(char *t)
   case T_INT:
   case T_FLOAT:
   case T_STRING:
-  case T_OBJECT:
   case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
   case T_UNKNOWN:
+    break;
+
+
+  case T_OBJECT:
+    t+=sizeof(INT32);
     break;
   }
   return t-q;
@@ -161,6 +165,17 @@ void push_type(unsigned char tmp)
     yyerror("Type stack overflow.");
 }
 
+void push_type_int(unsigned INT32 i)
+{
+  if(type_stackp + sizeof(i)> type_stack + sizeof(type_stack))
+    yyerror("Type stack overflow.");
+
+  type_stack_mark();
+  MEMCPY(type_stackp, &i, sizeof(i));
+  type_stackp+=sizeof(i);
+  type_stack_reverse();
+}
+
 void push_unfinished_type(char *s)
 {
   int e;
@@ -217,7 +232,11 @@ static void internal_parse_typeA(char **_s)
   
   if(!strcmp(buf,"int")) push_type(T_INT);
   else if(!strcmp(buf,"float")) push_type(T_FLOAT);
-  else if(!strcmp(buf,"object")) push_type(T_OBJECT);
+  else if(!strcmp(buf,"object"))
+  {
+    push_type_int(0);
+    push_type(T_OBJECT);
+  }
   else if(!strcmp(buf,"program")) push_type(T_PROGRAM);
   else if(!strcmp(buf,"string")) push_type(T_STRING);
   else if(!strcmp(buf,"void")) push_type(T_VOID);
@@ -439,7 +458,10 @@ void stupid_describe_type(char *a,INT32 len)
     case T_FLOAT: printf("float"); break;
     case T_STRING: printf("string"); break;
     case T_PROGRAM: printf("program"); break;
-    case T_OBJECT: printf("object"); break;
+    case T_OBJECT:
+      printf("object(%ld)",(long)EXTRACT_INT(a+e+1));
+      e+=sizeof(INT32);
+      break;
     case T_FUNCTION: printf("function"); break;
     case T_ARRAY: printf("array"); break;
     case T_MAPPING: printf("mapping"); break;
@@ -475,7 +497,10 @@ char *low_describe_type(char *t)
   case T_INT: my_strcat("int"); break;
   case T_FLOAT: my_strcat("float"); break;
   case T_PROGRAM: my_strcat("program"); break;
-  case T_OBJECT: my_strcat("object"); break;
+  case T_OBJECT:
+    my_strcat("object");
+    /* Prog id */
+    break;
   case T_STRING: my_strcat("string"); break;
 
   case T_FUNCTION:
@@ -654,6 +679,13 @@ static char *low_match_types(char *a,char *b, int flags)
   /* 'mixed' matches anything */
   if(EXTRACT_UCHAR(a) == T_MIXED && !(flags & A_EXACT)) return a;
   if(EXTRACT_UCHAR(b) == T_MIXED && !(flags & B_EXACT)) return a;
+
+  /* Special case (tm) */
+  if(EXTRACT_UCHAR(a) == T_PROGRAM && EXTRACT_UCHAR(b)==T_FUNCTION)
+  {
+    return a;
+  }
+
   if(EXTRACT_UCHAR(a) != EXTRACT_UCHAR(b)) return 0;
 
   ret=a;
@@ -702,6 +734,13 @@ static char *low_match_types(char *a,char *b, int flags)
     if(!low_match_types(a+type_length(a),b+type_length(b),flags)) return 0;
     break;
 
+  case T_OBJECT:
+    a++;
+    b++;
+    if(!EXTRACT_INT(a) || !EXTRACT_INT(b)) break;
+    if(EXTRACT_INT(a) != EXTRACT_INT(b)) return 0;
+    break;
+
   case T_MULTISET:
   case T_ARRAY:
     if(!low_match_types(++a,++b,flags)) return 0;
@@ -709,7 +748,6 @@ static char *low_match_types(char *a,char *b, int flags)
   case T_INT:
   case T_FLOAT:
   case T_STRING:
-  case T_OBJECT:
   case T_PROGRAM:
   case T_VOID:
   case T_MIXED:
@@ -800,6 +838,11 @@ static int low_get_return_type(char *a,char *b)
       a++;
       a+=type_length(a);
       push_unfinished_type(a);
+      return 1;
+
+    case T_PROGRAM:
+      push_type_int(0);
+      push_type(T_OBJECT);
       return 1;
 
     default:
