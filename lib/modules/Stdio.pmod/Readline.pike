@@ -1,6 +1,7 @@
-// $Id: Readline.pike,v 1.48 2003/07/01 15:45:35 per Exp $
+// $Id: Readline.pike,v 1.49 2003/07/19 01:02:58 nilsson Exp $
 #pike __REAL_VERSION__
 
+//!
 class OutputController
 {
   static private .File outfd;
@@ -415,6 +416,7 @@ class OutputController
   }
 }
 
+//!
 class InputController
 {
   static private object infd, term;
@@ -771,6 +773,7 @@ class InputController
 
 }
 
+//!
 class DefaultEditKeys
 {
   static private multiset word_break_chars =
@@ -1088,6 +1091,7 @@ class DefaultEditKeys
 
 }
 
+//!
 class History
 {
   static private array(string) historylist;
