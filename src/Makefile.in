@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.357 2003/08/31 21:24:04 nilsson Exp $
+# $Id: Makefile.in,v 1.358 2003/09/08 16:22:55 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -654,7 +654,9 @@ pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(S
 # interpret_protos.h_src to ensure that the .h_src.h rule doesn't have
 # anything to do in the dist.
 source: depend
-	touch $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h
+	if test -f $(SRCDIR)/language.c; then touch $(SRCDIR)/language.c; else :; fi
+	if test -f $(SRCDIR)/language.h; then touch $(SRCDIR)/language.h; else :; fi
+	if test -f $(SRCDIR)/interpret_protos.h; then touch $(SRCDIR)/interpret_protos.h; else :; fi
 
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!
