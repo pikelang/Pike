@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.2 1997/05/19 09:52:32 hubbe Exp $
+ * $Id: module.pmod.in,v 1.3 1997/05/19 15:04:42 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -8,7 +8,7 @@
 
 class support {
 
-  inherit "MIME";
+  inherit @module@;
 
   string generate_boundary( )
   {
