@@ -9,7 +9,7 @@ static array(string) null_chars = ({});
 static int null_fq;
 
 static constant AZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1;
-static constant az = "abcdefghijklmnoprqstuvwxyz"/1;
+static constant az = "abcdefghijklmnopqrstuvwxyz"/1;
 
 static array(int) charify(array(string) x) {
   return map(x, lambda(string y) { return y[0]; });
