@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.20 1999/06/23 19:50:28 grubba Exp $
+ * $Id: sendfile.c,v 1.21 1999/07/24 11:38:49 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -290,7 +290,7 @@ int send_iov(int fd, struct iovec *iov, int iovcnt)
       sent += bytes;
 
       while (bytes) {
-	if (bytes >= iov->iov_len) {
+	if ((unsigned int)bytes >= iov->iov_len) {
 	  bytes -= iov->iov_len;
 	  iov++;
 	  iovcnt--;
@@ -327,7 +327,6 @@ TH_RETURN_TYPE worker(void *this_)
     struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
     SF_DFPRINTF((stderr, "sendfile: Using FreeBSD-style sendfile()\n"));
 
-    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
     if (this->hd_cnt) {
       hdtr.headers = this->hd_iov;
       hdtr.hdr_cnt = this->hd_cnt;
@@ -340,7 +339,6 @@ TH_RETURN_TYPE worker(void *this_)
 #else /* !HAVE_FREEBSD_SENDFILE */
     struct iovec hdtr[2] = { NULL, 0, NULL, 0 };
     SF_DFPRINTF((stderr, "sendfile: Using HP/UX-style sendfile()\n"));
-    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
 
     /* NOTE: hd_cnt/tr_cnt are always 0 or 1 since
      * we've joined the headers/trailers in sf_create().
