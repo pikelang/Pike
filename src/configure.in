@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.660 2002/12/11 12:02:35 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.661 2002/12/12 08:27:51 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1376,6 +1376,9 @@ else
   if test "x$with_copt" != "xno"; then
     PIKE_MSG_WARN([--without-copt is advisable when using valgrind!])
   fi
+
+  CFLAGS=" -mcpu=i486 -march=i486 ${CFLAGS-}";
+  PIKE_MSG_WARN([-mcpu=486 forced since valgrind is used])
 fi
 export VALGRIND VALGRINDARGS
 AC_SUBST(VALGRIND)
@@ -6255,6 +6258,7 @@ PAD_FEATURE([dmalloc])$with_dmalloc
 PAD_FEATURE([mmx])$with_mmx$mmx_reason
 PAD_FEATURE([byte code format])$byte_code_format
 PAD_FEATURE([module reloc])${with_relocatable_dumped_modules:-no}
+PAD_FEATURE([use machine code])$with_machine_code
 EOF
 
 touch confdefs.h 2>/dev/null
