@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.21 2004/07/08 14:02:43 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.22 2004/09/02 14:35:28 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -13,6 +13,7 @@
 #include "svalue.h"
 #include "object.h"
 #include "mapping.h"
+#include "constants.h"
 #include "interpret.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -22,14 +23,6 @@
 #include "module.h"
 
 DECLARATIONS
-
-/*
- * Convenience macro to apply functions in current object.
- */
-#define APPLY_SELF(REF_NO, ARGS)				\
-  apply_low(Pike_fp->current_object,				\
-	    Pike_fp->context.identifier_level + (REF_NO),	\
-	    (ARGS))
 
 /*! @module Tokenizer
  */
@@ -724,7 +717,7 @@ PIKECLASS Token
     add_constant(MK_STRING("token"), &tmp, 0);
   }
 
-  PIKEFUN void create(string symbol, mapping(string:string|int) context)
+  PIKEFUN void create(string symbol, mapping(string:string|int)|void context)
     flags ID_STATIC;
   {
     if (THIS->symbol) {
@@ -738,7 +731,7 @@ PIKECLASS Token
     add_ref(THIS->context = context);
   }
 
-  PIKEFUN string _sprintf(int format, mapping(string:string|int) options)
+  PIKEFUN string _sprintf(int format, mapping(string:string|int)|void options)
     flags ID_STATIC;
   {
     if (format == 's') {
@@ -749,7 +742,11 @@ PIKECLASS Token
       }
     } else {
       push_text("%O:%s");
-      ref_push_mapping(THIS->context);
+      if (THIS->context) {
+	ref_push_mapping(THIS->context);
+      } else {
+	push_int(0);
+      }
       if (THIS->symbol) {
 	ref_push_string(THIS->symbol);
       } else {
@@ -840,7 +837,7 @@ PIKECLASS LiteralToken
   {
     assign_svalue(&THIS->value, value);
     pop_stack();
-    APPLY_SELF(literal_token_inherited_create, 2);
+    apply_current(literal_token_inherited_create, 2);
   }
 }
 /*! @endclass
@@ -1015,7 +1012,7 @@ PIKECLASS TokenizingCompiler
       Pike_sp[-3].u.integer = SL_ERROR;
       Pike_sp++;
 
-      APPLY_SELF(tc_pt_inh_report, 4);
+      apply_current(tc_pt_inh_report, 4);
     }
 
     PIKEFUN void handle_pragma(string pragma, string rest)
@@ -1026,7 +1023,7 @@ PIKECLASS TokenizingCompiler
       ref_push_string(pragma);
       f_add(2);
       ref_push_string(rest);
-      APPLY_SELF(tc_pt_inh_set_context, 2);
+      apply_current(tc_pt_inh_set_context, 2);
       pop_n_elems(2);	/* Keep one element on the stack. */
     }
 
@@ -1038,7 +1035,7 @@ PIKECLASS TokenizingCompiler
 
       if (raw->len == 0) {
 	ref_push_string(MK_STRING("Empty string passed to parse_string()."));
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 1);
+	apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 1);
 	pop_stack();
 	return;	/* Return the empty string */
       }
@@ -1047,7 +1044,7 @@ PIKECLASS TokenizingCompiler
 	   index_shared_string(raw, raw->len-1))) {
 	ref_push_string(raw);
 	ref_push_string(MK_STRING("Unterminated string or character constant %s."));
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+	apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
 	pop_stack();
       }
 
@@ -1198,7 +1195,7 @@ PIKECLASS TokenizingCompiler
 	push_int(raw->size_shift);
 	ref_push_string(raw);
 	ref_push_string(MK_STRING("Unsupported string shift %d on string %O."));
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 3);
+	apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 3);
 	pop_stack();
 	break;
       }
@@ -1211,10 +1208,10 @@ PIKECLASS TokenizingCompiler
     {
       ref_push_string(MK_STRING("pike_major"));
       push_int(major);
-      APPLY_SELF(tc_pt_inh_set_context, 2);
+      apply_current(tc_pt_inh_set_context, 2);
       ref_push_string(MK_STRING("pike_minor"));
       push_int(minor);
-      APPLY_SELF(tc_pt_inh_set_context, 2);
+      apply_current(tc_pt_inh_set_context, 2);
       pop_n_elems(4-1);	/* Keep one element on the stack. */
     }
 
@@ -1237,7 +1234,7 @@ PIKECLASS TokenizingCompiler
       if (cmd == pragma_str) {
 	struct pike_string *format_str;
 	MAKE_CONST_STRING(format_str, "%[^ \t]%*[ \t]%s");
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_pragma_fun_num,
+	apply_current(f_TokenizingCompiler_pike_tokenizer_handle_pragma_fun_num,
 		   low_sscanf(extras, format_str));
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
@@ -1248,7 +1245,7 @@ PIKECLASS TokenizingCompiler
 	ref_push_string(MK_STRING("preprocessor"));
 	ref_push_string(MK_STRING("#error: %s"));
 	ref_push_string(extras);
-	APPLY_SELF(tc_pt_inh_report, 4);
+	apply_current(tc_pt_inh_report, 4);
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
 	return;
@@ -1258,13 +1255,13 @@ PIKECLASS TokenizingCompiler
 	ref_push_string(MK_STRING("preprocessor"));
 	ref_push_string(MK_STRING("#warning: %s"));
 	ref_push_string(extras);
-	APPLY_SELF(tc_pt_inh_report, 4);
+	apply_current(tc_pt_inh_report, 4);
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
 	return;
       } else if (cmd == pike_str) {
 	/* FIXME: Use more paranoid parsing of version? */
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_pike_compat_fun_num,
+	apply_current(f_TokenizingCompiler_pike_tokenizer_handle_pike_compat_fun_num,
 		   low_sscanf(extras, MK_STRING("%d.%d")));
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
@@ -1280,7 +1277,7 @@ PIKECLASS TokenizingCompiler
 	  ref_push_string(MK_STRING("preprocessor"));
 	  ref_push_string(MK_STRING("Bad directive: #line %s"));
 	  ref_push_string(extras);
-	  APPLY_SELF(tc_pt_inh_report, 4);
+	  apply_current(tc_pt_inh_report, 4);
 	  pop_n_elems(args);
 	  /* NOTE: We keep one argument on the stack. */
 	  return;
@@ -1304,22 +1301,22 @@ PIKECLASS TokenizingCompiler
 	  ref_push_string(MK_STRING("Bad directive: #line %s %s"));
 	  ref_push_string(cmd);
 	  ref_push_string(extras);
-	  APPLY_SELF(tc_pt_inh_report, 4);
+	  apply_current(tc_pt_inh_report, 4);
 	  pop_n_elems(args + res + 1);
 	  /* NOTE: We keep one argument on the stack. */
 	  return;
 	}
 	/* Set line_no. */
-	APPLY_SELF(tc_pt_inh_set_context, 2);
+	apply_current(tc_pt_inh_set_context, 2);
 	pop_stack();
 	if (extras->len) {
 	  /* NOTE: extras is always at the top of the stack here. */
-	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num,
+	  apply_current(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num,
 		     1);
 	  Pike_sp[0] = Pike_sp[-1];
 	  copy_shared_string(Pike_sp[-1].u.string, MK_STRING("file"));
 	  Pike_sp++;
-	  APPLY_SELF(tc_pt_inh_set_context, 2);
+	  apply_current(tc_pt_inh_set_context, 2);
 	}
 	pop_n_elems(args-1);
 	/* NOTE: We keep one argument on the stack. */
@@ -1344,7 +1341,7 @@ PIKECLASS TokenizingCompiler
       Pike_sp[-1].u.integer = 0;
       Pike_sp++;
 
-      APPLY_SELF(tc_pt_inh_get_context, 0);
+      apply_current(tc_pt_inh_get_context, 0);
 
       /* Stack is now:
        *
@@ -1370,12 +1367,12 @@ PIKECLASS TokenizingCompiler
 	  case '\'':
 	    /* String or character constant. */
 	    ref_push_string(symbol);
-	    APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num, 1);
+	    apply_current(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num, 1);
 	    if (index_shared_string(symbol, 0) == '\'') {
 	      if (!Pike_sp[-1].u.string->len) {
 		ref_push_string(MK_STRING("Zero-length character constant: %s"));
 		ref_push_string(Pike_sp[-2].u.string);
-		APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+		apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
 		pop_stack();
 		push_int(0);
 	      } else {
@@ -1383,7 +1380,7 @@ PIKECLASS TokenizingCompiler
 		if (Pike_sp[-1].u.string->len > 1) {
 		  ref_push_string(MK_STRING("Long character constant: %s"));
 		  ref_push_string(Pike_sp[-2].u.string);
-		  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+		  apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
 		  pop_stack();
 		}
 		val = index_shared_string(Pike_sp[-1].u.string, 0);
@@ -1425,7 +1422,7 @@ PIKECLASS TokenizingCompiler
 	      if (Pike_sp[-1].u.string->len) {
 		ref_push_string(MK_STRING("Strange numeric constant: %s"));
 		ref_push_string(symbol);
-		APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num,
+		apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num,
 			   2);
 		pop_stack();
 	      }
@@ -1453,10 +1450,14 @@ PIKECLASS TokenizingCompiler
 	  case '#':
 	    /* Preprocessor directive.
 	     */
-	    MAKE_CONST_STRING(format_str, "#%*[ \t]%[^ \t]%*[ \t]%s");
-	    APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_preprocess_fun_num,
-		       low_sscanf(symbol, format_str));
-	    pop_stack();
+	    {
+	      struct svalue *save_sp = Pike_sp;
+	      MAKE_CONST_STRING(format_str, "#%*[ \t]%[^ \t]%*[ \t]%s");
+	      low_sscanf(symbol, format_str);
+	      apply_current(f_TokenizingCompiler_pike_tokenizer_preprocess_fun_num,
+			    Pike_sp - save_sp);
+	      pop_stack();
+	    }
 	    /* FALL_THROUGH */
 
 	  case '/':
@@ -1486,7 +1487,7 @@ PIKECLASS TokenizingCompiler
       }
       push_int(0);	/* Return value. */
       while (1) {
-	APPLY_SELF(tc_pt_inh_scan, 0);
+	apply_current(tc_pt_inh_scan, 0);
 	pop_stack();
 	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
 				 Pike_fp->context.identifier_level +
@@ -1497,7 +1498,7 @@ PIKECLASS TokenizingCompiler
 	  return;
 	}
 
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_fun_num, 1);
+	apply_current(f_TokenizingCompiler_pike_tokenizer_handle_fun_num, 1);
 	if (Pike_sp[-1].type == T_OBJECT) {
 	  add_ref(THIS->current_token = Pike_sp[-1].u.object);
 	  pop_stack();
