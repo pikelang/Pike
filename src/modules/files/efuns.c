@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.123 2003/03/28 07:26:30 mast Exp $
+|| $Id: efuns.c,v 1.124 2003/03/28 11:03:43 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.123 2003/03/28 07:26:30 mast Exp $");
+RCSID("$Id: efuns.c,v 1.124 2003/03/28 11:03:43 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -84,6 +84,11 @@ RCSID("$Id: efuns.c,v 1.123 2003/03/28 07:26:30 mast Exp $");
 #ifdef __NT__
 
 #include <winbase.h>
+
+/* Old versions of the headerfiles don't have this constant... */
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
 
 /* Dynamic load of functions that doesn't exist in all Windows versions. */
 
