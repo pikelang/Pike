@@ -3,12 +3,12 @@ AC_INIT(spider.c)
 AC_PROG_CC
 AC_PROG_RANLIB
 
-AC_CHECK_LIB(thread, mutex_unlock)
+AC_CHECK_LIB(pthread, pthread_mutex_unlock)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
-if test x$ac_cv_lib_thread_mutex_unlock = xno ;  then
-  AC_CHECK_LIB(pthread, pthread_mutex_unlock)
+if test x$ac_cv_lib_pthread_pthread_mutex_unlock = xno ;  then
+  AC_CHECK_LIB(thread, mutex_unlock)
 fi
 
 AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
