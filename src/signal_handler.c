@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.190 2001/09/13 14:11:43 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.191 2001/09/28 11:54:08 tomas Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -469,6 +469,9 @@ static struct sigdesc signal_desc []={
 #endif
 #ifdef SIGTHAW
   { SIGTHAW, "SIGTHAW" },
+#endif
+#ifdef SIGBREAK
+  { SIGBREAK, "SIGBREAK" },
 #endif
 
   { -1, "END" } /* Notused */
@@ -3389,6 +3392,9 @@ void f_atexit(INT32 args)
 #endif
 #ifdef SIGINT
     set_default_signal_handler(SIGINT, do_signal_exit);
+#endif
+#ifdef SIGBREAK
+    set_default_signal_handler(SIGBREAK, do_signal_exit);
 #endif
 #ifdef SIGQUIT
     set_default_signal_handler(SIGQUIT, do_signal_exit);
