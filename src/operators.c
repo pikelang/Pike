@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.201 2004/11/27 22:48:11 mast Exp $
+|| $Id: operators.c,v 1.202 2004/12/18 19:04:04 grubba Exp $
 */
 
 #include "global.h"
@@ -225,7 +225,8 @@ void o_cast_to_int(void)
       {
 	struct object *o = sp[-1].u.object;
 	struct pike_string *s;
-	int f = FIND_LFUN(o->prog,LFUN_CAST);
+	struct program *p = o->prog->inherits[sp[-1].subtype].prog;
+	int f = FIND_LFUN(p, LFUN_CAST);
 	if(f == -1)
 	  Pike_error("No cast method in object.\n");
 	REF_MAKE_CONST_STRING(s, "int");
@@ -238,13 +239,15 @@ void o_cast_to_int(void)
       {
 	if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
 	{
-	  int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+	  struct object *o = sp[-1].u.object;
+	  int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog,
+			    LFUN__IS_TYPE);
 	  if( f != -1)
 	  {
 	    struct pike_string *s;
 	    REF_MAKE_CONST_STRING(s, "int");
 	    push_string(s);
-	    apply_low(sp[-2].u.object, f, 1);
+	    apply_low(o, f, 1);
 	    f=!UNSAFE_IS_ZERO(sp-1);
 	    pop_stack();
 	    if(f) return;
@@ -341,7 +344,7 @@ void o_cast_to_string(void)
       {
 	struct object *o = sp[-1].u.object;
 	struct pike_string *s;
-	int f = FIND_LFUN(o->prog,LFUN_CAST);
+	int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog, LFUN_CAST);
 	if(f == -1)
 	  Pike_error("No cast method in object.\n");
 	push_constant_text("string");
@@ -353,13 +356,15 @@ void o_cast_to_string(void)
       {
 	if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
 	{
-	  int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+	  struct object *o = sp[-1].u.object;
+	  int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog,
+			    LFUN__IS_TYPE);
 	  if( f != -1)
 	  {
 	    struct pike_string *s;
 	    REF_MAKE_CONST_STRING(s, "string");
 	    push_string(s);
-	    apply_low(sp[-2].u.object, f, 1);
+	    apply_low(o, f, 1);
 	    f=!UNSAFE_IS_ZERO(sp-1);
 	    pop_stack();
 	    if(f) return;
@@ -476,7 +481,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
     {
       struct object *o = sp[-1].u.object;
       struct pike_string *s;
-      int f = FIND_LFUN(o->prog,LFUN_CAST);
+      int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog, LFUN_CAST);
       if(f == -1)
 	Pike_error("No cast method in object.\n");
       push_string(describe_type(type));
@@ -627,6 +632,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	      stack_pop_keep_top();
 	    } else {
 	      Pike_sp[-1].type = T_OBJECT;
+	      Pike_sp[-1].subtype = 0;
 	    }
 	    break;
 
@@ -678,11 +684,12 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
   {
     if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
     {
-      int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+      struct object *o = sp[-1].u.object;
+      int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog, LFUN__IS_TYPE);
       if( f != -1)
       {
 	push_text(get_name_of_type(run_time_type));
-	apply_low(sp[-2].u.object, f, 1);
+	apply_low(o, f, 1);
 	f=!UNSAFE_IS_ZERO(sp-1);
 	pop_stack();
 	if(f) goto emulated_type_ok;
@@ -1066,7 +1073,8 @@ COMPARISON(f_ge,"`>=",is_ge)
     if(!o_->prog)							\
       bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
 		    "Called in destructed object.\n");			\
-    if((i = FIND_LFUN(o_->prog,OP)) == -1)				\
+    if((i = FIND_LFUN(o_->prog->inherits[sp[-args].subtype].prog,	\
+		      OP)) == -1)					\
       bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
 		    "Operator not in object.\n");			\
     apply_low(o_, i, args-1);						\
@@ -1165,23 +1173,28 @@ PMOD_EXPORT void f_add(INT32 args)
     }else{
       if(types & BIT_OBJECT)
       {
+	struct object *o;
+	struct program *p;
+	int i;
+
 	if (args == 1)
 	  return;
 
 	if(sp[-args].type == T_OBJECT && sp[-args].u.object->prog)
 	{
 	  /* The first argument is an object. */
-	  int i;
-	  if(sp[-args].u.object->refs==1 &&
-	     (i = FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD_EQ)) != -1)
+	  o = sp[-args].u.object;
+	  p = o->prog->inherits[sp[-args].subtype].prog;
+	  if(o->refs==1 &&
+	     (i = FIND_LFUN(p, LFUN_ADD_EQ)) != -1)
 	  {
-	    apply_low(sp[-args].u.object, i, args-1);
+	    apply_low(o, i, args-1);
 	    stack_pop_keep_top();
 	    return;
 	  }
-	  if((i = FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD)) != -1)
+	  if((i = FIND_LFUN(p, LFUN_ADD)) != -1)
 	  {
-	    apply_low(sp[-args].u.object, i, args-1);
+	    apply_low(o, i, args-1);
 	    free_svalue(sp-2);
 	    sp[-2]=sp[-1];
 	    sp--;
@@ -1192,15 +1205,14 @@ PMOD_EXPORT void f_add(INT32 args)
 
 	for(e=1;e<args;e++)
 	{
-	  int i;
 	  if(sp[e-args].type == T_OBJECT &&
-	     sp[e-args].u.object->prog &&
-	     (i = FIND_LFUN(sp[e-args].u.object->prog,LFUN_RADD)) != -1)
+	     (p = (o = sp[e-args].u.object)->prog) &&
+	     (i = FIND_LFUN(p->inherits[sp[e-args].subtype].prog,
+			    LFUN_RADD)) != -1)
 	  {
 	    /* There's an object with a lfun::``+() at argument @[e]. */
 	    if (e == args-1) {
 	      /* The object is the last argument. */
-	      struct object *o = Pike_sp[-1].u.object;
 	      ONERROR err;
 	      Pike_sp--;
 	      SET_ONERROR(err, do_free_object, o);
@@ -1236,12 +1248,12 @@ PMOD_EXPORT void f_add(INT32 args)
 	       */
 #ifdef PIKE_DEBUG
 	      if (Pike_sp[-args].type != T_OBJECT ||
-		  !Pike_sp[-args].u.object->prog ||
-		  FIND_LFUN(Pike_sp[-args].u.object->prog, LFUN_RADD) != i) {
+		  Pike_sp[-args].u.object != o ||
+		  !o->prog) {
 		Pike_fatal("`+() Lost track of object.\n");
 	      }
 #endif /* PIKE_DEBUG */
-	      apply_low(Pike_sp[-args].u.object, i, e);
+	      apply_low(o, i, e);
 	      args -= e;
 	      /* Replace the object with the result. */
 	      assign_svalue(Pike_sp-(args+1), Pike_sp-1);
@@ -1880,12 +1892,15 @@ static int float_promote(void)
 
 static int call_lfun(int left, int right)
 {
+  struct object *o;
+  struct program *p;
   int i;
+
   if(sp[-2].type == T_OBJECT &&
-     sp[-2].u.object->prog &&
-     (i = FIND_LFUN(sp[-2].u.object->prog,left)) != -1)
+     (p = (o = sp[-2].u.object)->prog) &&
+     (i = FIND_LFUN(p->inherits[sp[-2].subtype].prog, left)) != -1)
   {
-    apply_low(sp[-2].u.object, i, 1);
+    apply_low(o, i, 1);
     free_svalue(sp-2);
     sp[-2]=sp[-1];
     sp--;
@@ -1894,11 +1909,11 @@ static int call_lfun(int left, int right)
   }
 
   if(sp[-1].type == T_OBJECT &&
-     sp[-1].u.object->prog &&
-     (i = FIND_LFUN(sp[-1].u.object->prog,right)) != -1)
+     (p = (o = sp[-1].u.object)->prog) &&
+     (i = FIND_LFUN(p->inherits[sp[-1].subtype].prog, right)) != -1)
   {
     push_svalue(sp-2);
-    apply_low(sp[-2].u.object, i, 1);
+    apply_low(o, i, 1);
     free_svalue(sp-3);
     sp[-3]=sp[-1];
     sp--;
@@ -4329,7 +4344,8 @@ PMOD_EXPORT void o_range2 (int bound_types)
 		       ind, sp - ind, 1, "object", ind,
 		       "Cannot call `[..] in destructed object.\n");
 
-      if ((f = FIND_LFUN (o->prog, LFUN_RANGE)) != -1) {
+      if ((f = FIND_LFUN(o->prog->inherits[ind->subtype].prog,
+			 LFUN_RANGE)) != -1) {
 	struct svalue h;
 	if (!(bound_types & RANGE_HIGH_OPEN)) {
 	  move_svalue (&h, high);
@@ -4563,7 +4579,8 @@ PMOD_EXPORT void f_range(INT32 args)
 	SIMPLE_ARG_ERROR ("predef::`[..]", 1,
 			  "Cannot call `[..] in destructed object.\n");
 
-      if ((f = FIND_LFUN (o->prog, LFUN_RANGE)) != -1) {
+      if ((f = FIND_LFUN(o->prog->inherits[ind->subtype].prog,
+			 LFUN_RANGE)) != -1) {
 	apply_low (o, f, 4);
 	stack_pop_keep_top();
       }
