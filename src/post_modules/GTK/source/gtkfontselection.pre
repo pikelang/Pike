@@ -1,27 +1,27 @@
 class GTK.FontSelection;
 inherit GTK.Notebook;
 //! IMG: GTK.FontSelection()
-member GTK.Vbox main_vbox;
-member GTK.Label font_label;
-member GTK.Entry font_entry;
-member GTK.Clist font_clist;
-member GTK.Entry font_style_entry;
-member GTK.Clist font_style_clist;
-member GTK.Entry size_entry;
-member GTK.Clist size_clist;
-member GTK.Button pixels_button;
-member GTK.Button points_button;
-member GTK.Button filter_button;
-member GTK.Entry preview_entry;
-member GTK.Label message_label;
-member GTK.Vbox info_vbox;
-member GTK.Clist info_clist;
-member GTK.Label requested_font_name;
-member GTK.Label actual_font_name;
-member GTK.Vbox filter_vbox;
-member GTK.Button type_bitmaps_button;
-member GTK.Button type_scalable_button;
-member GTK.Button type_scaled_bitmaps_button;
+/* member GTK.Vbox main_vbox; */
+/* member GTK.Label font_label; */
+/* member GTK.Entry font_entry; */
+/* member GTK.Clist font_clist; */
+/* member GTK.Entry font_style_entry; */
+/* member GTK.Clist font_style_clist; */
+/* member GTK.Entry size_entry; */
+/* member GTK.Clist size_clist; */
+/* member GTK.Button pixels_button; */
+/* member GTK.Button points_button; */
+/* member GTK.Button filter_button; */
+/* member GTK.Entry preview_entry; */
+/* member GTK.Label message_label; */
+/* member GTK.Vbox info_vbox; */
+/* member GTK.Clist info_clist; */
+/* member GTK.Label requested_font_name; */
+/* member GTK.Label actual_font_name; */
+/* member GTK.Vbox filter_vbox; */
+/* member GTK.Button type_bitmaps_button; */
+/* member GTK.Button type_scalable_button; */
+/* member GTK.Button type_scaled_bitmaps_button; */
 GDK.Font get_font();
 string get_font_name();
 void set_font_name( string xlfd );
