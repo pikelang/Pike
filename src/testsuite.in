@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.733 2004/06/30 14:12:25 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.734 2004/06/30 14:24:37 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7552,7 +7552,7 @@ test_equal([[
 		 "constant val = TOSTR2(FOO);\n")()->val;
 ]], "")
 test_equal([[
-  compile_string(Locale.Charset("ebcdic-us")->
+  compile_string(Locale.Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
