@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.83 2003/03/28 01:27:33 mast Exp $
+# $Id: configure.in,v 1.84 2003/04/22 16:06:07 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -15,10 +15,11 @@ AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
 AC_HEADER_DIRENT
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname socketpair writev sendfile munmap madvise poll \
- setsockopt getprotobyname truncate64 ftruncate64)
+ setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa inet_ntop)
 
 AC_FUNC_MMAP
 

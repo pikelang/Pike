@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.268 2003/04/22 15:15:49 marcus Exp $
+|| $Id: file.c,v 1.269 2003/04/22 16:06:07 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.268 2003/04/22 15:15:49 marcus Exp $");
+RCSID("$Id: file.c,v 1.269 2003/04/22 16:06:07 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2965,10 +2965,13 @@ static void file_query_address(INT32 args)
     push_int(0);
     return;
   }
-
+#ifdef HAVE_INET_NTOP
+  inet_ntop(addr.sin_family, &addr.sin_addr, buffer, sizeof(buffer)-20);
+#else
   q=inet_ntoa(addr.sin_addr);
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
+#endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
 
   push_string(make_shared_string(buffer));

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.25 2002/10/25 18:59:58 nilsson Exp $
+|| $Id: requestobject.c,v 1.26 2003/04/22 16:06:07 marcus Exp $
 */
 
 #include "global.h"
@@ -468,7 +468,14 @@ void f_aap_index_op(INT32 args)
 
   if(s == s_remoteaddr)
   {
+#ifdef HAVE_INET_NTOP
+    char buffer[64];
+    push_text(inet_ntop(THIS->request->from.sin_family,
+			&THIS->request->from.sin_addr,
+			buffer, sizeof(buffer)) );
+#else
     push_text(inet_ntoa(THIS->request->from.sin_addr));
+#endif
     push_string(s_remoteaddr);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--;

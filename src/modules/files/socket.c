@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.68 2003/04/22 15:15:50 marcus Exp $
+|| $Id: socket.c,v 1.69 2003/04/22 16:06:07 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.68 2003/04/22 15:15:50 marcus Exp $");
+RCSID("$Id: socket.c,v 1.69 2003/04/22 16:06:07 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -434,9 +434,13 @@ static void socket_query_address(INT32 args)
     return;
   }
 
+#ifdef HAVE_INET_NTOP
+  inet_ntop(addr.sin_family, &addr.sin_addr, buffer, sizeof(buffer)-20);
+#else
   q=inet_ntoa(addr.sin_addr);
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
+#endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
 
   push_string(make_shared_string(buffer));

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.c,v 1.14 2002/10/21 17:06:13 marcus Exp $
+|| $Id: log.c,v 1.15 2003/04/22 16:06:07 marcus Exp $
 */
 
 #include "config.h"
@@ -79,7 +79,16 @@ static void push_log_entry(struct log_entry *le)
   lo->method = make_shared_binary_string(le->method.str, le->method.len);
   lo->protocol = le->protocol;
   le->protocol->refs++;
+#ifdef HAVE_INET_NTOP
+  {
+    char buffer[64];
+    lo->from = make_shared_string( inet_ntop(le->from.sin_family,
+					     &le->from.sin_addr,
+					     buffer, sizeof(buffer)) );
+  }
+#else
   lo->from = make_shared_string( inet_ntoa(le->from.sin_addr) );
+#endif
   push_object( o );
 }
 

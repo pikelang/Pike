@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 2000/07/28 07:12:28 hubbe Exp $
+# $Id: configure.in,v 1.6 2003/04/22 16:06:07 marcus Exp $
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -6,7 +6,11 @@ AC_SET_MAKE
 
 AC_MODULE_INIT()
 
-AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile signal)
+AC_CHECK_LIB(bind, __inet_ntoa)
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
+
+AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile signal inet_ntoa inet_ntop)
 
 AC_CHECK_HEADERS(poll.h sys/poll.h sys/socket.h netinet/in.h arpa/inet.h \
                  asm/unistd.h sys/uio.h sys/types.h)
