@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.299 2003/09/18 13:15:35 nilsson Exp $
+// $Id: master.pike.in,v 1.300 2003/09/18 17:00:10 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -81,9 +81,10 @@ int compat_minor=-1;
 
 #if constant (thread_local)
 static object resolv_msg_depth = thread_local();
-#define GET_RESOLV_MSG_DEPTH (resolv_msg_depth->get())
-#define INC_RESOLV_MSG_DEPTH() (resolv_msg_depth->set (resolv_msg_depth->get() + 1))
-#define DEC_RESOLV_MSG_DEPTH() (resolv_msg_depth->set (resolv_msg_depth->get() - 1))
+// NOTE: May be used before __INIT has completed.
+#define GET_RESOLV_MSG_DEPTH (resolv_msg_depth && resolv_msg_depth->get())
+#define INC_RESOLV_MSG_DEPTH() (resolv_msg_depth && resolv_msg_depth->set (resolv_msg_depth->get() + 1))
+#define DEC_RESOLV_MSG_DEPTH() (resolv_msg_depth && resolv_msg_depth->set (resolv_msg_depth->get() - 1))
 #else
 static int resolv_msg_depth;
 #define GET_RESOLV_MSG_DEPTH resolv_msg_depth
@@ -546,6 +547,9 @@ static mapping(mixed:string) rev_fc = ([]);
 string programs_reverse_lookup (program prog)
 //! Returns the path for @[prog] in @[programs], if it got any.
 {
+  // When running with trace, this function can get called
+  // before __INIT has completed.
+  if (!rev_programs) return UNDEFINED;
   if (sizeof (rev_programs) < sizeof (programs)) {
     foreach (programs; string path; program|NoValue prog)
       if (prog == no_value)
@@ -1025,32 +1029,95 @@ object cast_to_object(string oname, string current_file)
   return 0;
 }
 
+// Marker used for negative caching in module caches.
+// FIXME: Won't this cause problems when inheriting "/master"?
+static class ZERO_TYPE {};
+
+//! Module node representing a single directory.
+//!
+//! @seealso
+//!   @[joinnode]
 class dirnode
 {
   string dirname;
-  object|void handler;
+  object|void compilation_handler;
   constant is_resolv_dirnode = 1;
   // objectp() is intentionally not used on the module object, to
   // allow a module to deny its own existence with `!.
-  mixed module=module_checker();
+  mixed module;
   mapping(string:mixed) cache=([]);
-  array(string) files;
+  mapping(string:array(string)) file_paths = ([]);
 
-  void create(string d, object|void h)
-    {
-      resolv_debug ("dirnode(%O,%O) created\n",d,h);
-      dirname=d;
-      handler=h;
-      fc[dirname]=this_object();
-      if(has_suffix(dirname,".pmod"))
-	fc[dirname[..sizeof(dirname)-6]]=this_object();
+#ifdef __NT__
+#define FIX_CASE(X)	lower_case(X)
+#else
+#define FIX_CASE(X)	(X)
+#endif /* __NT__ */
+
+  static string base_from_filename(string fname)
+  {
+    fname = FIX_CASE(fname);
+    if (has_prefix(fname, ".#")) return 0;
+    if (has_suffix(fname, ".pike") ||
+	has_suffix(fname, ".pmod")) {
+      return fname[..sizeof(fname)-6];
     }
+    if (has_suffix(fname, ".so")) {
+      return fname[..sizeof(fname)-4];
+    }
+    return 0;
+  }
 
-  void get_files() {
-    if (!(files = get_dir(fakeroot(dirname)))) {
-      werror ("Error listing module directory %O: %s\n",
-	      dirname, strerror (errno()));
-      files = ({});
+  static int prio_from_filename(string fname)
+  {
+    fname = FIX_CASE(fname);
+    if (has_suffix(fname, ".pmod")) return 3;
+    if (has_suffix(fname, ".so")) return 2;
+    if (has_suffix(fname, ".pike")) return 1;
+
+    // FIXME: Warn here?
+    return 0;
+  }
+
+  static void create(string d, object|void h)
+  {
+    resolv_debug ("dirnode(%O,%O) created\n",d,h);
+    dirname=d;
+    compilation_handler=h;
+    fc[dirname]=this_object();
+    if(has_suffix(FIX_CASE(dirname),".pmod"))
+      fc[dirname[..sizeof(dirname)-6]]=this_object();
+    array(string) files = sort(get_dir(d)||({}));
+    if (!sizeof(d)) return;
+    array(string) bases = map(files, base_from_filename);
+    files = filter(files, bases);
+    bases = filter(bases, bases);
+    resolv_debug("dirnode(%O,%O) got %d files.\n",
+		 d, h, sizeof(bases));
+    if (!sizeof(files)) return;
+
+    foreach(files; int no; string fname) {
+      fname = combine_path(dirname, fname);
+      string base = bases[no];
+      if (base == "module") {
+	// We need a module_checker.
+	module = module_checker();
+      }
+      array(string) paths = file_paths[base];
+      if (!paths) {
+	// New entry.
+	file_paths[base] = ({ fname });
+	continue;
+      }
+
+      // Multiple files. Order according to prio_from_filename().
+      // Insert sort. Worst case is 3 filenames.
+      int prio = prio_from_filename(fname);
+      int index;
+      foreach(paths; index; string other_fname) {
+	if (prio_from_filename(other_fname) <= prio) break;
+      }
+      file_paths[base] = paths[..index-1] + ({ fname }) + paths[index..];
     }
   }
 
@@ -1060,22 +1127,20 @@ class dirnode
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
       INC_RESOLV_MSG_DEPTH();
-      if (mixed err = catch {
-	if(module=findmodule(dirname+"/module", handler))
-	{
-	  if(mixed tmp=module->_module_value)
-	    module=tmp;
 
+      if (mixed err = catch { 
+	// Look up module.
+	if (module = cache["module"] || low_ind("module", 1)) {
 	  /* This allows for `[] to have side effects first time
 	   * it is called. (Specifically, the Calendar module uses
-	   * this
+	   * this).
 	   */
 	  cache=([]);
 	  _cache_full=0;
 	}
 	DEC_RESOLV_MSG_DEPTH();
-	resolv_debug ("dirnode(%O)->module_checker()->`!() => %s\n",
-		      dirname, !module ? "doesn't exist" : "exists");
+	resolv_debug("dirnode(%O)->module_checker()->`!() => %s\n",
+		     dirname, !module ? "doesn't exist" : "exists");
 	return !module;
       }) {
 	//werror ("findmodule error: " + describe_backtrace (err));
@@ -1087,8 +1152,8 @@ class dirnode
 
 	// Pretend not to exist for now...
 	DEC_RESOLV_MSG_DEPTH();
-	resolv_debug ("dirnode(%O)->module_checker()->`!() => failure, doesn't exist\n",
-		      dirname);
+	resolv_debug("dirnode(%O)->module_checker()->`!() => failure, doesn't exist\n",
+		     dirname);
 	return 1;
       }
     }
@@ -1103,10 +1168,80 @@ class dirnode
     array _values() { if(module) return values(module); }
   }
 
+  static mixed low_ind(string index, int(0..1)|void set_module)
+  {
+    array(string) paths;
+
+    if (!(paths = file_paths[index])) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug("dirnode(%O)->ind(%O) => no file match\n",
+		   dirname, index);
+      return UNDEFINED;
+    }
+
+    foreach(paths, string fname) {
+      resolv_debug("dirnode(%O)->ind(%O) Trying file %O...\n",
+		   dirname, index, fname);
+      Stat stat = master_file_stat(fakeroot(fname));
+      if (!stat) {
+	resolv_debug("dirnode(%O)->ind(%O) file %O disappeared!\n",
+		     dirname, index, fname);
+	continue;
+      }
+      if (has_suffix(fname, ".pmod")) {
+	if (stat->isdir) {
+	  resolv_debug("dirnode(%O)->ind(%O) => found subdirectory %O\n",
+		       dirname, index, fname);
+	  return dirnode(fname, compilation_handler);
+	}
+	resolv_debug("dirnode(%O)->ind(%O) casting (object)%O\n",
+		     dirname, index, fname);
+	// FIXME: cast_to_program() and cast_to_object()
+	//        have lots of overhead to guess the proper
+	//        filename. This overhead isn't needed in
+	//        our cases, so we could make do with
+	//        low_findprog() and the caches.
+	mixed ret;
+	if (objectp(ret = cast_to_object(fname, 0, compilation_handler))) {
+	  // This assignment is needed for eg the Calendar module.
+	  if (set_module) module = ret;
+	  if(mixed tmp=ret->_module_value) ret=tmp;
+	  DEC_RESOLV_MSG_DEPTH();
+	  resolv_debug("dirnode(%O)->ind(%O) => found submodule %O:%O\n",
+		       dirname, index, fname, ret);
+	  return ret;
+	}
+      } else {
+	resolv_debug("dirnode(%O)->ind(%O) casting (program)%O\n",
+		     dirname, index, fname);
+	program ret;
+	if (ret = cast_to_program(fname, 0, compilation_handler)) {
+	  DEC_RESOLV_MSG_DEPTH();
+	  resolv_debug("dirnode(%O)->ind(%O) => found subprogram %O:%O\n",
+		       dirname, index, fname, ret);
+	  return ret;
+	}
+      }
+      resolv_debug("dirnode(%O)->ind(%O) => failure for file %O\n",
+		   dirname, index, fname);
+    }
+
+    resolv_debug("dirnode(%O)->ind(%O) => UNDEFINED\n",
+		 dirname, index);
+    return UNDEFINED;
+  }
+
   static mixed ind(string index)
   {
     resolv_debug ("dirnode(%O)->ind(%O)\n", dirname, index);
     INC_RESOLV_MSG_DEPTH();
+
+    if (_cache_full) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug("dirnode(%O)->ind(%O) => cache_full %O\n",
+		   dirname, index, cache[index]);
+      return cache[index];
+    }
 
     if(module)
     {
@@ -1119,47 +1254,13 @@ class dirnode
 		      dirname, index, o);
 	return o;
       }
-      resolv_debug ("dirnode(%O)->ind(%O) => not found in module\n", dirname, index);
+      resolv_debug ("dirnode(%O)->ind(%O) => not found in module\n",
+		    dirname, index);
     }
     else
       resolv_debug ("dirnode(%O)->ind(%O) => no module\n", dirname, index);
 
-    if(!files) get_files();
-
-    int(0..1) ret;
-    foreach( files, string s )
-      if( has_value(s, index) || has_value(index,s) )
-      {
-        ret=1;
-        break;
-      }
-    if(!ret) {
-      DEC_RESOLV_MSG_DEPTH();
-      resolv_debug ("dirnode(%O)->ind(%O) => no file match\n", dirname, index);
-      return UNDEFINED;
-    }
-
-    string fullname = dirname+"/"+index;
-    object o;
-    if(objectp(o=findmodule(fullname, handler)))
-    {
-      if(mixed tmp=o->_module_value) o=tmp;
-      DEC_RESOLV_MSG_DEPTH();
-      resolv_debug ("dirnode(%O)->ind(%O) => found submodule %O\n",
-		    dirname, index, o);
-      return o;
-    }
-    if (program p=cast_to_program( fullname, 0, handler ))
-    {
-      DEC_RESOLV_MSG_DEPTH();
-      resolv_debug ("dirnode(%O)->ind(%O) => found subprogram %O\n",
-		    dirname, index, p);
-      return p;
-    }
-    DEC_RESOLV_MSG_DEPTH();
-    resolv_debug ("dirnode(%O)->ind(%O) => not found\n",
-		  dirname, index);
-    return UNDEFINED;
+    return low_ind(index);
   }
 
   mixed `[](string index)
@@ -1199,6 +1300,18 @@ class dirnode
     return ret;
   }
 
+  mixed safe_index(string index)
+  {
+    mixed err;
+    if (err = catch { return `[](index); }) {
+      compile_warning(dirname+"."+fname, 0,
+		      sprintf("Compilation failed:\n"
+			      "%s\n",
+			      describe_backtrace(err)));
+    }
+    return UNDEFINED;
+  }
+
   static int(0..1) _cache_full;
   void fill_cache()
   {
@@ -1211,31 +1324,13 @@ class dirnode
       return;
     }
 
+    // NOTE: We rely on side effects in `[]() and safe_index()
+    //       to fill the cache.
     if (module) {
-      foreach(indices(module), string index) {
-	cache[index] = module[index];
-      }
+      map(indices(module), safe_index);
     }
 
-    if(!files) get_files();
-
-    foreach(files, string fname) {
-      mixed err = catch {
-	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
-	    !zero_type(`[](fname[..sizeof(fname)-6]))) {
-	  continue;
-	} else if ((fname[sizeof(fname)-3..] == ".so") &&
-	    !zero_type(`[](fname[..sizeof(fname)-4]))) {
-	  continue;
-	}
-      };
-      if (err) {
-	compile_warning(dirname+"."+fname, 0,
-			sprintf("Compilation failed:\n"
-				"%s\n",
-				describe_backtrace(err)));
-      }
-    }
+    map(indices(file_paths), safe_index);
     _cache_full = 1;
   }
 
@@ -1257,8 +1352,10 @@ class dirnode
 
   void delete_value (mixed val)
   {
-    if (string name = search (cache, val))
+    if (string name = search (cache, val)) {
       m_delete (cache, name);
+      _cache_full = 0;
+    }
   }
 
   static int(0..) _sizeof() {
@@ -1271,23 +1368,57 @@ class dirnode
   }
 }
 
-static class ZERO_TYPE {};
-
+//! Module node holding possibly multiple directories,
+//! and optionally falling back to another level.
+//!
+//! @seealso
+//!   @[dirnode]
 class joinnode
 {
   constant is_resolv_joinnode = 1;
   array(object|mapping) joined_modules;
   mapping(string:mixed) cache=([]);
 
-  string _sprintf(int as)
-    {
-      return as=='O' && sprintf("master()->joinnode(%O)",joined_modules);
-    }
+  object compilation_handler;
 
-  void create(array(object|mapping) _joined_modules)
+  // NOTE: Uses the empty mapping as the default fallback
+  // for simplified code.
+  joinnode|mapping(mixed:int(0..0)) fallback_module = ([]);
+
+  string _sprintf(int as)
+  {
+    return as=='O' && sprintf("master()->joinnode(%O)",joined_modules);
+  }
+
+  void create(array(object|mapping) _joined_modules,
+	      object|void _compilation_handler,
+	      joinnode|void _fallback_module)
   {
     joined_modules = _joined_modules;
+    compilation_handler = _compilation_handler;
+    fallback_module = _fallback_module || ([]);
     resolv_debug ("joinnode(%O) created\n", joined_modules);
+  }
+
+  void add_path(string path)
+  {
+    path = combine_path(getcwd(), path);
+    dirnode node = fc[path] ||
+      (fc[path] = dirnode(path, compilation_handler));
+    if (sizeof(joined_modules) &&
+	joined_modules[0] == node) return;
+    joined_modules = ({ node }) + (joined_modules - ({ node }));
+  }
+
+  void rem_path(string path)
+  {
+    path = combine_path(getcwd(), path);
+    joined_modules = filter(joined_modules,
+			    lambda(dirnode node) {
+			      return !objectp(node) ||
+				!node->is_resolv_dirnode ||
+				(node->dirname != path);
+			    });
   }
 
   static mixed ind(string index)
@@ -1301,43 +1432,31 @@ class joinnode
       mixed ret;
       if (!zero_type(ret = o[index])) 
       {
-	if (objectp(ret = o[index]) &&
+	if (objectp(ret) &&
 	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
         {
 	  // Only join directorynodes (or joinnodes).
-	  if (ret->is_resolv_joinnode)
-	    res += ret->joined_modules;
-	  else
-	    res += ({ ret });
-	} else if ( !zero_type(ret) ) {
+	  res += ({ ret });
+	} else {
 	  DEC_RESOLV_MSG_DEPTH();
 	  resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
 			joined_modules, index, ret);
 	  return (ret);
-	} else {
-	  // Ignore
-	  continue;
 	}
       }
     }
 
-    if (sizeof(res) > 1) {
+    if (sizeof(res)) {
       DEC_RESOLV_MSG_DEPTH();
-      resolv_debug ("joinnode(%O)->ind(%O) => new joinnode\n",
-		    joined_modules, index);
-      return joinnode(res);
-    }
-
-    else if (sizeof(res)) {
-      DEC_RESOLV_MSG_DEPTH();
-      resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
-		    joined_modules, index, res[0]);
-      return res[0];
+      resolv_debug("joinnode(%O)->ind(%O) => new joinnode, fallback: %O\n",
+		   joined_modules, index, fallback_module[index]);
+      return joinnode(res, compilation_handler, fallback_module[index]);
     }
 
     DEC_RESOLV_MSG_DEPTH();
-    resolv_debug ("joinnode(%O)->ind(%O) => not found\n", joined_modules, index);
-    return UNDEFINED;
+    resolv_debug ("joinnode(%O)->ind(%O) => not found. Trying fallback %O\n",
+		  joined_modules, index, fallback_module);
+    return fallback_module[index];
   }
 
   mixed `[](string index)
@@ -1434,6 +1553,52 @@ class joinnode
   }
 };
 
+joinnode handle_import(string path, string|void current_file,
+			object|void current_handler)
+{
+  array(string) tmp;
+  if(current_file)
+  {
+    tmp=EXPLODE_PATH(current_file);
+    tmp[-1] = path;
+    path=combine_path_with_cwd( tmp*"/");
+  } else {
+    path = combine_path_with_cwd(path);
+  }
+
+  // FIXME: Need caching!!!
+#if 0
+  // FIXME: This caching strategy could be improved,
+  //        since it ignores module_nodes from the
+  //        ordinary module tree.
+
+  if (module_node_cache[current_handler]) {
+    if (module_node_cache[current_handler][path]) {
+      return module_node_cache[current_handler][path];
+    }
+  } else {
+    module_node_cache[current_handler] = ([]);
+  }
+  module_node node = module_node_cache[current_handler][path] =
+    module_node("import::"+path, 0, current_handler);
+#endif /* 0 */
+  joinnode node = joinnode(({}), current_handler);
+#ifdef PIKE_MODULE_RELOC
+  // If we have PIKE_MODULE_RELOC enabled, 
+  // we might need to map to multiple directories.
+  if(path == "/${PIKE_MODULE_PATH}" ||
+     has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
+    string tmp = path[21..];
+    foreach(pike_module_path, string prefix) {
+      node->add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+    }
+  } else
+#endif /* PIKE_MODULE_RELOC */
+    node->add_path(path);
+  return node;
+}
+
+// Probably not used anymore.
 program|object findmodule(string fullname, object|void handler)
 {
   program|object o;
@@ -1486,6 +1651,7 @@ program|object findmodule(string fullname, object|void handler)
   return fc[fullname] = 0;
 }
 
+#if 0
 mixed handle_import(string what, string|void current_file, object|void handler)
 {
   array(string) tmp;
@@ -1538,7 +1704,7 @@ mixed handle_import(string what, string|void current_file, object|void handler)
 #endif /* PIKE_MODULE_RELOC */
   return fc[path] = dirnode(fakeroot(path), handler);
 }
-
+#endif /* 0 */
 
 
 multiset no_resolv = (<>);
@@ -1546,24 +1712,42 @@ multiset no_resolv = (<>);
 //!
 class CompatResolver
 {
-  array(string) pike_include_path=({});
+  //! Actual resolver
+  joinnode root_module = joinnode(({predef::_static_modules}));
+
+  //! Lookup from handler module to corresponding root_module.
+  mapping(object:joinnode) handler_root_modules = ([]);
+
   array(string) pike_module_path=({});
+  array(string) pike_include_path=({});
   array(string) pike_program_path=({});
   mapping(string:string) predefines = ([]);
   string ver;
 
-  //! If we fail to resolv, try our parent.
+  //! If we fail to resolv, try the fallback.
   //!
   //! Typical configuration:
   //! @pre{0.6->7.0->7.2->7.4->master@}
-  CompatResolver parent_resolver;
+  CompatResolver fallback_resolver;
 
   //! The CompatResolver is initialized with a value that can be
   //! casted into a "%d.%d" string, e.g. a version object.
-  void create(mixed version)
-    {
-      ver=(string)version;
+  //!
+  //! It can also optionally be initialized with a fallback resolver.
+  void create(mixed version, CompatResolver|void fallback_resolver)
+  {
+    resolv_debug("CompatResolver(%O, %O)\n", version, fallback_resolver);
+    ver=(string)version;
+#if 0
+    if (version) {
+      root_module->symbol = ver + "::";
     }
+#endif
+    if (CompatResolver::fallback_resolver = fallback_resolver) {
+      root_module->fallback_module = fallback_resolver->root_module;
+    }
+    predefines = initial_predefines;
+  }
 
   //! Add a directory to search for include files.
   //!
@@ -1606,8 +1790,8 @@ class CompatResolver
   void add_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
-      pike_module_path-=({tmp});
-      pike_module_path=({tmp})+pike_module_path;
+      root_module->add_path(tmp);
+      pike_module_path = ({ tmp }) + (pike_module_path - ({ tmp }));
     }
   
   //! Remove a directory to search for modules.
@@ -1620,7 +1804,8 @@ class CompatResolver
   void remove_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
-      pike_module_path-=({tmp});
+      root_module->rem_path(tmp);
+      pike_module_path -= ({ tmp });
     }
   
   //! Add a directory to search for programs.
@@ -1696,124 +1881,88 @@ class CompatResolver
       return x;
     }
 
+  // _static_modules -- default for global::
+  // current_handler->get_default_module()->_static_modules
+
+  joinnode get_root_module(object|void current_handler)
+  {
+    if (!root_module) {
+      error("get_root_module(%O): No default root module!\n",
+	    current_handler);
+    }
+    if (!current_handler) return root_module;
+    joinnode node = handler_root_modules[current_handler];
+    if (node) return node;
+
+    // Check for _static_modules.
+    mixed static_modules = _static_modules;
+    if (current_handler->get_default_module) {
+      mapping(string:mixed) default_module =
+	current_handler->get_default_module();
+      if (default_module) {
+	static_modules = default_module["_static_modules"] || ([]);
+      }
+    }
+
+    node = joinnode(({ static_modules,
+		       // Copy relevant stuff from the root module.
+		       @filter(root_module->joined_modules,
+			       lambda(mixed x) {
+				 return objectp(x) && x->is_resolv_dirnode;
+			       }) }),
+		    current_handler,
+		    root_module->fallback_module);
+
+    // FIXME: Is this needed?
+    // Kluge to get _static_modules to work at top level.
+    node->cache->_static_modules = static_modules;
+
+    return node;
+  }
+
   //!
   mixed resolv_base(string identifier, string|void current_file,
 		    object|void current_handler)
-    {
-//      werror("Resolv_base(%O)\n",identifier);
-      mapping(string:mixed)|object static_modules = _static_modules;
-      if (current_handler && current_handler->get_default_module) {
-	mapping(string:mixed) default_module =
-	  current_handler->get_default_module();
-	if (default_module) {
-	  static_modules = (default_module->_static_modules || ([]));
-	}
-      }
-      array(mixed) tmp = ({});
-
-      if (static_modules[identifier]) {
-	tmp += ({ static_modules[identifier] });
-      }
-      if (identifier == "_static_modules") {
-	tmp += ({ static_modules });
-      }
-
-      string dir=current_file ? dirname(current_file) : "/";
-
-      foreach(pike_module_path, string path)
-	{
-	  string file=combine_path(dir, path, identifier);
-	  mixed ret = findmodule(file, current_handler);
-	  if(objectp (ret) || programp(ret)) {
-	    // ret is either zero or an object or a program here.
-	    if (ret->is_resolv_dirnode || ret->is_resolv_joinnode) {
-	      if (mixed new_ret = ret->_module_value) {
-		ret = new_ret;
-	      }
-	      if (ret->is_resolv_joinnode)
-		tmp += ret->joined_modules;
-	      else
-		tmp += ({ ret });
-	    } else {
-	      if (mixed new_ret = ret->_module_value) {
-		ret = new_ret;
-	      }
-	      if (!sizeof(tmp)) {
-		return ret;
-	      } else {
-		// Ignore
-		werror( "Ignoring file %O: %t for identifier %O\n",
-			file, ret, identifier );
-		continue;
-	      }
-	    }
-	  }
-	}
-      if (sizeof(tmp)) {
-	if (sizeof(tmp) == 1) {
-	  return tmp[0];
-	}
-	return joinnode(tmp);
-      }
-      if (parent_resolver) {
-	return parent_resolver->resolv(identifier, current_file,
-				       current_handler);
-      }
-      return UNDEFINED;
-    }
-  
-  mapping resolv_cache = set_weak_flag( ([]), 1 );
+  {
+    //      werror("Resolv_base(%O)\n",identifier);
+    return get_root_module(current_handler)[identifier];
+  }
 
   //!
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
-    {
-      resolv_debug("resolv(%O, %O)\n",identifier, current_file);
-      INC_RESOLV_MSG_DEPTH();
+  {
+    resolv_debug("resolv(%O, %O)\n",identifier, current_file);
+    INC_RESOLV_MSG_DEPTH();
 
-      // FIXME: Support having the cache in the handler?
-      if( no_resolv[ identifier ] ) {
-	DEC_RESOLV_MSG_DEPTH();
-	resolv_debug("resolv(%O, %O) => excluded\n",identifier, current_file);
-	return UNDEFINED;
-      }
-
-      if (current_file && !stringp(current_file)) {
-	error( "resolv(%O, %O, %O): current_file is not a string!\n",
-	       identifier, current_file, current_handler,
-	       backtrace() );
-      }
-
-      mixed ret;
-      string id=identifier+":"+(current_file ? dirname(current_file) : "-");
-      if( zero_type (ret = resolv_cache[id]) != 1 )
-      {
-#ifdef RESOLV_DEBUG
-	DEC_RESOLV_MSG_DEPTH();
-	if (ret == ZERO_TYPE)
-	  resolv_debug("resolv(%O, %O) => not found (cached)\n",identifier, current_file);
-	else
-	  resolv_debug("resolv(%O, %O) => found %O (cached)\n",identifier, current_file, ret);
-#endif /* RESOLV_DEBUG */
-	return ret == ZERO_TYPE ? UNDEFINED : ret;
-      }
-
-      array(string) tmp=identifier/".";
-      ret=resolv_base(tmp[0], current_file, current_handler);
-      foreach(tmp[1..],string index) {
-	if (zero_type(ret)) break;
-	ret=ret[index];
-      }
-      resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
+    // FIXME: Support having the cache in the handler?
+    if( no_resolv[ identifier ] ) {
       DEC_RESOLV_MSG_DEPTH();
-#ifdef RESOLV_DEBUG
-      if (zero_type (ret))
-	  resolv_debug("resolv(%O, %O) => not found\n",identifier, current_file);
-	else
-	  resolv_debug("resolv(%O, %O) => found %O\n",identifier, current_file, ret);
-#endif /* RESOLV_DEBUG */
-      return ret;
+      resolv_debug("resolv(%O, %O) => excluded\n",identifier, current_file);
+      return UNDEFINED;
     }
+
+    if (current_file && !stringp(current_file)) {
+      error( "resolv(%O, %O, %O): current_file is not a string!\n",
+	     identifier, current_file, current_handler,
+	     backtrace() );
+    }
+
+    array(string) tmp=identifier/".";
+    mixed ret = resolv_base(tmp[0], current_file, current_handler);
+    foreach(tmp[1..],string index) {
+      if (zero_type(ret)) break;
+      ret = ret[index];
+    }
+    DEC_RESOLV_MSG_DEPTH();
+#ifdef RESOLV_DEBUG
+    if (zero_type (ret))
+      resolv_debug("resolv(%O, %O) => not found\n",identifier, current_file);
+    else
+      resolv_debug("resolv(%O, %O) => found %O\n",identifier, current_file, ret);
+#endif /* RESOLV_DEBUG */
+    return ret;
+  }
 
   //! This function is called whenever an #include directive is encountered
   //! it receives the argument for #include and should return the file name
@@ -1821,44 +1970,61 @@ class CompatResolver
   string handle_include(string f,
 			string current_file,
 			int local_include)
+  {
+    if(local_include)
     {
-      if(local_include)
-      {
-	array(string) tmp=EXPLODE_PATH(current_file);
-	tmp[-1]=f;
-	return combine_path_with_cwd(tmp*"/");
-      }
-      else
-      {
-	foreach(pike_include_path, string path)
-	{
-	  path=combine_path(path,f);
-	  if(master_file_stat(fakeroot(path)))
-	    return path;
-	}
-	if (parent_resolver) {
-	  return parent_resolver->handle_include(f, current_file,
-						 local_include);
-	}
-      }
-      // Failed.
-      return 0;
+      array(string) tmp=EXPLODE_PATH(current_file);
+      tmp[-1]=f;
+      return combine_path_with_cwd(tmp*"/");
     }
+    else
+    {
+      foreach(pike_include_path, string path)
+      {
+	path=combine_path(path,f);
+	if(master_file_stat(fakeroot(path)))
+	  return path;
+      }
+      if (fallback_resolver) {
+	return fallback_resolver->handle_include(f, current_file,
+						 local_include);
+      }
+    }
+    // Failed.
+    return 0;
+  }
 
   //!
   string read_include(string f)
-    {
-      AUTORELOAD_CHECK_FILE(f)
-	return master_read_file(f);
-    }
+  {
+    AUTORELOAD_CHECK_FILE(f)
+      return master_read_file(f);
+  }
 
   string _sprintf(int t)
-    {
-      return t=='O' && sprintf("CompatResolver(%O)",ver);
-    }
+  {
+    return t=='O' && sprintf("CompatResolver(%O)",ver);
+  }
 }
 
 inherit CompatResolver;
+
+class Pike06Resolver
+{
+  inherit CompatResolver;
+
+  //! In Pike 0.6 the current directory was implicitly searched.
+  mixed resolv_base(string identifier, string|void current_file,
+		    object|void current_handler)
+  {
+    if (current_file) {
+      joinnode node = handle_import(".", current_file, current_handler);
+      return node[identifier] ||
+	::resolv_base(identifier, current_file, current_handler);
+    }
+    return ::resolv_base(identifier, current_file, current_handler);
+  }
+}
 
 //! These are useful if you want to start other Pike processes
 //! with the same options as this one was started with.
@@ -1888,6 +2054,8 @@ object backend_thread()
 #endif
 
 
+mapping(string:string) initial_predefines = ([]);
+
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver
@@ -1900,7 +2068,8 @@ void _main(array(string) orig_argv, array(string) env)
   object tmp;
   string postparseaction=0;
 
-  predefines = _static_modules.Builtin()->_take_over_initial_predefines();
+  predefines = initial_predefines =
+    _static_modules.Builtin()->_take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
 #if constant(thread_create)
   _backend_thread = this_thread();
@@ -2152,7 +2321,7 @@ void _main(array(string) orig_argv, array(string) env)
 #if constant(_debug)
 	if(debug) _debug(debug);
 #endif
-	if(trace) predef::trace(trace);
+	if(trace) trace = predef::trace(trace);
 	mixed ret;
 	mixed err = catch {
 	    // One reason for this catch is to get a new call to
@@ -2164,7 +2333,7 @@ void _main(array(string) orig_argv, array(string) env)
 	    else
 	      ret = prog()->run(sizeof(argv),argv,getenv());
 	  };
-	if(trace) predef::trace(0);
+	predef::trace(trace);
 	if (err) {
 	  handle_error (err);
 	  ret = 10;
@@ -2268,7 +2437,7 @@ void _main(array(string) orig_argv, array(string) env)
 #if constant(_debug)
   if(debug) _debug(debug);
 #endif
-  if(trace) predef::trace(trace);
+  if(trace) trace = predef::trace(trace);
   mixed ret;
   mixed err = catch {
       // The main reason for this catch is actually to get a new call
@@ -2285,7 +2454,7 @@ void _main(array(string) orig_argv, array(string) env)
 	_error("Error: %s has no main().\n", argv[0]);
       ret=script->main(sizeof(argv),argv,env);
     };
-  if(trace) predef::trace(0);
+  predef::trace(trace);
   if (err) {
     handle_error (err);
     ret = 10;
@@ -3665,7 +3834,6 @@ class Decoder (void|string fname, void|int mkobj)
 	    else
 	      error ("Cannot get module object in thing that isn't "
 		     "a dirnode or unambiguous joinnode: %O\n", subres);
-
 	    break;
 
 	  case 'p':
@@ -3801,7 +3969,7 @@ class Version
 //! Version information about the current Pike version.
 Version currentversion=Version(__MAJOR__,__MINOR__);
 
-mapping(Version:CompatResolver) compat_handler_cache=set_weak_flag( ([]), 1);
+mapping(Version:CompatResolver) compat_handler_cache = set_weak_flag( ([]), 1);
 
 CompatResolver get_compilation_handler(int major, int minor)
 {
@@ -3882,10 +4050,13 @@ CompatResolver get_compilation_handler(int major, int minor)
     {
       CompatResolver compat_handler = compat_handler_cache[tmp];
       if (!compat_handler) {
-	compat_handler = CompatResolver(tmp);
-
-	// Fall back to the successor version.
-	compat_handler->parent_resolver = ret;
+	// Create a new compat handler, that
+	// falls back to the successor version.
+	if (tmp <= Version(0, 6)) {
+	  compat_handler = Pike06Resolver(tmp, ret);
+	} else {
+	  compat_handler = CompatResolver(tmp, ret);
+	}
 
 	string base;
 #if "¤lib_prefix¤"[0]!='¤'
@@ -3899,9 +4070,6 @@ CompatResolver get_compilation_handler(int major, int minor)
 	compat_handler->add_module_path(combine_path(base,"modules"));
 	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
-
-	if( tmp <= Version(0,6))
-	  ret->pike_module_path+=({"."});
 
 #ifndef RESOLVER_HACK
 	ret = compat_handler_cache[tmp] = compat_handler;
