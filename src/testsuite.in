@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.529 2002/08/19 16:01:26 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.530 2002/08/20 22:52:14 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9285,14 +9285,8 @@ return Fnord()->start()->wait()-({ -1 });
 ]],[[ ({}) ]])
 ]])
 
-// - Graphics
-test_true(!Graphics.Graph.test()->main(1,({"test"})))
-
 // - Yabu
 test_true(!Yabu.test()->main(1,({"test"})))
-
-// - Protocols.XMLRPC
-test_true(!Protocols.XMLRPC.test()->main(1,({"test"})))
 
 test_do([[
   string s;
