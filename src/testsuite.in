@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.509 2002/05/05 13:03:42 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.510 2002/05/05 16:31:08 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2143,7 +2143,19 @@ test_program([[
   int a() {return X()->Y()->f() == "XAYBB";}
 ]])
 
-// Testing global::
+test_program([[
+  class A {
+    string s = "A";
+  }
+  inherit A;
+  class X {
+    constant s = "X";
+    mixed f (string s) {return s + X::s + A::s;}
+  }
+  int a() {return X()->f("L") == "LXA";}
+]])
+
+// Testing 'global::'
 
 test_equal([[
   compile_string (#"
@@ -2176,6 +2188,45 @@ test_equal([[
       mixed f (int x) {return ({global::x, global::A::x, X::x, x});}
     }")()->X()->f (33);
 ]], ({23, 24, 32, 33}))
+
+// Testing 'global.'
+
+test_compile([[
+  mixed a() {return global.Parser.HTML;}
+]], 0);
+
+test_compile_error([[
+  #pike 7.2
+  mixed a() {return global.Parser.HTML;}
+]], 0);
+
+test_any([[
+  if (!programp (Parser.HTML)) error ("This test uses the existence of Parser.HTML.\n");
+  return compile_string (#"
+    class Parser {constant HTML = 1;}
+    mixed foo() {return programp (Parser.HTML);}")()->foo();
+]], 0);
+
+test_any([[
+  if (!programp (Parser.HTML)) error ("This test uses the existence of Parser.HTML.\n");
+  return compile_string (#"
+    mixed foo() {return programp (Parser.HTML);}
+    class Parser {constant HTML = 1;}")()->foo();
+]], 0);
+
+test_any([[
+  if (!programp (Parser.HTML)) error ("This test uses the existence of Parser.HTML.\n");
+  return compile_string (#"
+    class Parser {constant HTML = 1;}
+    mixed foo() {return programp (global.Parser.HTML);}")()->foo();
+]], 1);
+
+test_any([[
+  if (!programp (Parser.HTML)) error ("This test uses the existence of Parser.HTML.\n");
+  return compile_string (#"
+    mixed foo() {return programp (global.Parser.HTML);}
+    class Parser {constant HTML = 1;}")()->foo();
+]], 1);
 
 // testing virtual overloading
 test_any([[

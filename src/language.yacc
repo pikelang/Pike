@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.276 2002/05/05 13:03:42 mast Exp $");
+RCSID("$Id: language.yacc,v 1.277 2002/05/05 16:31:06 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3257,6 +3257,13 @@ idents: low_idents
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
     free_node($2);
+  }
+  | TOK_GLOBAL '.' TOK_IDENTIFIER
+  {
+    $$ = resolve_identifier ($3->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node ($3);
   }
   | idents '.' bad_identifier {}
   | idents '.' error {}

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.422 2002/05/01 21:25:55 mast Exp $");
+RCSID("$Id: program.c,v 1.423 2002/05/05 16:31:07 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -950,6 +950,8 @@ static struct node_s *index_modules(struct pike_string *ident,
   return 0;
 }
 
+struct node_s *resolve_identifier(struct pike_string *ident);
+
 struct node_s *find_module_identifier(struct pike_string *ident,
 				      int see_inherit)
 {
@@ -1013,6 +1015,13 @@ struct node_s *find_module_identifier(struct pike_string *ident,
     s.u.integer = 0;
     return mkconstantsvaluenode(&s);
   }
+
+  return resolve_identifier(ident);
+}
+
+struct node_s *resolve_identifier(struct pike_string *ident)
+{
+  struct node_s *ret;
 
   if(resolve_cache)
   {
@@ -3197,11 +3206,10 @@ PMOD_EXPORT int quick_map_variable(char *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
-    fprintf (stderr, "%.*sdefining variable (pass=%d): ",
-	     compilation_depth, "                ", Pike_compiler->compiler_pass);
-    push_string (describe_type (t));
-    print_svalue (stderr, Pike_sp - 1);
-    pop_stack();
+    struct pike_string *d = describe_type (t);
+    fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
+	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
+    free_string (d);
     push_string (n);
     print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
@@ -3228,11 +3236,10 @@ int define_variable(struct pike_string *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
-    fprintf (stderr, "%.*sdefining variable (pass=%d): ",
-	     compilation_depth, "                ", Pike_compiler->compiler_pass);
-    push_string (describe_type (type));
-    print_svalue (stderr, Pike_sp - 1);
-    pop_stack();
+    struct pike_string *d = describe_type (type);
+    fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
+	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
+    free_string (d);
     push_string (name);
     print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
