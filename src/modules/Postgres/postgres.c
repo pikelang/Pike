@@ -71,7 +71,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.22 2001/06/25 21:07:00 david%hedbor.org Exp $");
+RCSID("$Id: postgres.c,v 1.23 2001/09/06 18:47:30 nilsson Exp $");
 
 static void set_error (char * newerror)
 {
@@ -120,6 +120,109 @@ static void pgres_destroy (struct object * o)
 	mt_destroy(&THIS->mutex);
 #endif
 }
+
+/*! @module Postgres
+ *!
+ *! @class postgres
+ *!
+ *! This is an interface to the Postgres (Postgres95, pgsql) database server.
+ *! This module may or may not be availible on your Pike, depending
+ *! whether the appropriate include and library files 
+ *! could be found at compile-time. Note that you @b{do not@}
+ *! need to have a Postgres server running on your host to use this module:
+ *! you can connect to the database over a TCP/IP socket.
+ *!
+ *! Please notice that unless you wish to specifically connect to a Postgres
+ *! server, you'd better use the @[Sql.Sql], which is a server-independent
+ *! sql-server-class. The interfaces to all existing sql-classes
+ *! are consistent. Using @[Sql.Sql] ensures that your Pike
+ *! applications will run with any supported SQL server without changing
+ *! a single line of code, at least for most common (and simple) operations.
+ *!
+ *! The program @[Postgres.postgres] provides the @b{raw@} interface
+ *! to the database. Many functions are @b{not@} availible
+ *! for this program. Therefore, its use is DEPRECATED.
+ *! It is included in this documentation only for completeness' sake.
+ *! Use @[Sql.postgres] instead, or even better @[Sql.Sql]
+ *!
+ *! @note
+ *! There is no testsuite for this module, since to test anything would
+ *! require a working Postgres server. You can try to use the included scripts
+ *! in the "pike/src/modules/Postgres/extras" directory but you'll probably
+ *! have to patch them to reflect your site's settings.
+ *!
+ *! Also note that @b{this module uses blocking I/O@} I/O to connect to the server.
+ *! Postgres is quite slow, and so you might want to consider this
+ *! particular aspect. It is (at least should be) thread-safe, and so it can be used
+ *! in a multithread environment.
+ *!
+ *! The behavior of the Postgres C API also depends on certain environment variables
+ *! defined in the environment of the pike interpreter.
+ *!
+ *! @string
+ *!   @value "PGHOST"
+ *!     Sets the name of the default host to connect to. It defaults
+ *! 	to "localhost"
+ *!   @value "PGOPTIONS"
+ *!     Sets some extra flags for the frontend-backend connection.
+ *!     DO NOT SET unless you're sure of what you're doing.
+ *!   @value "PGPORT"
+ *!     Sets the default port to connect to, otherwise it will use
+ *!     compile-time defaults (that is: the time you compiled the postgres
+ *! 	library, not the Pike driver).
+ *!   @value "PGTTY"
+ *!     Sets the file to be used for Postgres frontend debugging.
+ *!     Do not use, unless you're sure of what you're doing.
+ *!   @value "PGDATABASE"
+ *!     Sets the default database to connect to.
+ *!   @value "PGREALM"
+ *!     Sets the default realm for Kerberos authentication. I never used
+ *!   	this, so I can't help you.
+ *! @endstring
+ *!
+ *! Refer to the Postgres documentation for further details.
+ *!
+ *! @seealso
+ *!   Sql.Sql, Sql.postgres, Sql.postgres_result
+ */
+
+/*! @decl string version
+ *!
+ *! Should you need to report a bug to the author, please submit along with
+ *! the report the driver version number, as returned by this call.
+ */
+
+/*! @decl void create()
+ *! @decl void create(string host, void|string database, void|int port)
+ *!
+ *! With no arguments, this function initializes (reinitializes if a connection
+ *! had been previously set up) a connection to the Postgres backend.
+ *! Since Postgres requires a database to be selected, it will try
+ *! to connect to the default database. The connection may fail however for a 
+ *! variety of reasons, in this case the most likely of all is because
+ *! you don't have enough authority to connect to that database.
+ *! So use of this particular syntax is discouraged.
+ *!
+ *! The host argument allows you to connect to databases residing on different
+ *! hosts. If it is 0 or "", it will try to connect to localhost.
+ *!
+ *! The database argument specifies the database to connect to. If 0 or "", it
+ *! will try to connect to the default database.
+ *!
+ *! @note
+ *! You need to have a database selected before using the sql-object, 
+ *! otherwise you'll get exceptions when you try to query it.
+ *! Also notice that this function @b{can@} raise exceptions if the db
+ *! server doesn't respond, if the database doesn't exist or is not accessible
+ *! by you.
+ *!
+ *! You don't need bothering about syncronizing the connection to the database:
+ *! it is automatically closed (and the database is sync-ed) when the
+ *! object is destroyed.
+ *!
+ *! @seealso
+ *!  	Sql.postgres, Sql.Sql, select_db
+ */
 
 /* create (host,database,username,password,port) */
 static void f_create (INT32 args)
@@ -226,6 +329,22 @@ static void f_create (INT32 args)
 	pop_n_elems(args);
 }
 
+
+/*! @decl void select_db (string dbname)
+ *!
+ *! This function allows you to connect to a database. Due to restrictions
+ *! of the Postgres frontend-backend protocol, you always have to be connected
+ *! to a database, so in fact this function just allows you to connect
+ *! to a different database on the same server.
+ *!
+ *! @note
+ *! This function @b{can@} raise exceptions if something goes wrong (backend process
+ *! not running, not enough permissions..)
+ *!
+ *! @seealso
+ *!   create
+ */
+
 static void f_select_db (INT32 args)
 {
 	char *host, *port, *options, *tty, *db;
@@ -279,6 +398,28 @@ static void f_select_db (INT32 args)
 	THIS->dblink=conn;
 	pop_n_elems(args);
 }
+
+/*! @decl object(Sql.postgres_result) big_query (string sqlquery)
+ *!
+ *! This is the only provided interface which allows you to query the
+ *! database. If you wish to use the simpler "query" function, you need to
+ *! use the Sql.sql generic sql-object.
+ *!
+ *! It returns a postgres_result object (which conforms to the Sql.sql_result
+ *! standard interface for accessing data). I recommend using query() for
+ *! simpler queries (because it is easier to handle, but stores all the result
+ *! in memory), and big_query for queries you expect to return huge amounts
+ *! of data (it's harder to handle, but fectches results on demand).
+ *!
+ *! @note
+ *! This function @b{can@} raise exceptions.
+ *!
+ *! The program @[Sql.postgres_result] is exactly
+ *! the same as @[Postgres.postgres_result].
+ *!
+ *! @seealso
+ *!  Sql.Sql, Sql.sql_result
+ */
 
 static void f_big_query(INT32 args)
 {
@@ -369,6 +510,18 @@ static void f_big_query(INT32 args)
 	Pike_error ("Internal error in postgresmodule.\n");
 }
 
+
+/*! @decl string error()
+ *!
+ *! This function returns the textual description of the last server-related
+ *! error. Returns 0 if no error has occurred yet. It is not cleared upon
+ *! reading (can be invoked multiple times, will return the same result
+ *! until a new error occurs).
+ *!
+ *! @seealso
+ *!   big_query
+ */
+
 static void f_error (INT32 args)
 {
 	check_all_args("Postgres->error",args,0);
@@ -379,6 +532,17 @@ static void f_error (INT32 args)
 		push_int(0);
 	return;
 }
+
+
+/*! @decl void reset()
+ *!
+ *! This function resets the connection to the backend. Can be used for
+ *! a variety of reasons, for example to detect the status of a connection.
+ *!
+ *! @note
+ *! This function is Postgres-specific, and thus it is not availible
+ *! through the generic SQL-interface.
+ */
 
 static void f_reset (INT32 args)
 {
@@ -423,6 +587,34 @@ static void f_trace (INT32 args)
 }
 #endif
 
+/*! @decl void _set_notify_callback()
+ *! @decl void _set_notify_callback(function f)
+ *!
+ *! With Postgres you can associate events and notifications to tables.
+ *! This function allows you to detect and handle such events.
+ *!
+ *! With no arguments, resets and removes any callback you might have
+ *! put previously, and any polling cycle.
+ *!
+ *! With one argument, sets the notification callback (there can be only
+ *! one for each sqlobject). 
+ *! 
+ *! The callback function must return no value, and takes a string argument,
+ *! which will be the name of the table on which the notification event
+ *! has occured. In future versions, support for user-specified arguments
+ *! will be added.
+ *!
+ *! @note
+ *! The @[Sql.postgres] program adds support for automatic delivery of
+ *! messages (see it for explanation on the inner workings of this feature).
+ *!
+ *! This function is Postgres-specific, and thus it is not availible
+ *! through the generic SQL-interface
+ *!
+ *! @seealso
+ *!   Sql.postgres
+ */
+
 static void f_callback(INT32 args)
 {
 	check_all_args("postgres->_set_notify_callback()",BIT_INT|BIT_FUNCTION,0);
@@ -439,6 +631,13 @@ static void f_callback(INT32 args)
 	assign_svalue(THIS->notify_callback,Pike_sp-args);
 	pop_n_elems(args);
 }
+
+
+/*! @decl string host_info()
+ *!
+ *! This function returns a string describing what host are we talking to,
+ *! and how (TCP/IP or UNIX sockets).
+ */
 
 static void f_host_info (INT32 args)
 {
@@ -458,6 +657,11 @@ static void f_host_info (INT32 args)
 	set_error(PQerrorMessage(THIS->dblink));
 	Pike_error ("Bad connection.\n");
 }
+
+/*! @endclass
+ *!
+ *! @endmodule
+ */
 
 void pike_module_init (void)
 {

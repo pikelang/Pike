@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.15 2000/12/01 08:10:20 hubbe Exp $
+ * $Id: pgresult.c,v 1.16 2001/09/06 18:47:30 nilsson Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -65,7 +65,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.15 2000/12/01 08:10:20 hubbe Exp $");
+RCSID("$Id: pgresult.c,v 1.16 2001/09/06 18:47:30 nilsson Exp $");
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
@@ -101,6 +101,23 @@ void result_destroy (struct object * o) {
 	PQclear(THIS->result);
 }
 
+/*! @module Postgres
+ *!
+ *! @class postgres_result
+ *!
+ *! Contains the result of a Postgres-query.
+ *!
+ *! @seealso
+ *!  Sql.postgres, Postgres.postgres, Sql.Sql, Sql.sql_result
+ */
+
+/*! @decl void create(object o)
+ *!
+ *! You can't create istances of this object yourself.
+ *! The only way to create it is via a big_query to a Postgres
+ *! database.
+ */
+
 static void f_create (INT32 args)
 {
 	char *storage;
@@ -122,6 +139,12 @@ static void f_create (INT32 args)
 #endif
 }
 
+
+/*! @decl int num_rows()
+ *!
+ *! Returns the number of rows in the result.
+ */
+
 static void f_num_rows (INT32 args)
 {
 	check_all_args("postgres_result->num_rows",args,0);
@@ -133,6 +156,12 @@ static void f_num_rows (INT32 args)
 	return;
 }
 
+
+/*! @decl int num_fields()
+ *!
+ *! Returns the number of fields in the result.
+ */
+
 static void f_num_fields (INT32 args)
 {
 	check_all_args("postgres_result->num_fields",args,0);
@@ -143,6 +172,31 @@ static void f_num_fields (INT32 args)
 	push_int(PQnfields(THIS->result));
 	return;
 }
+
+
+/*! @decl array(mapping(string:mixed)) fetch_fields()
+ *!
+ *! Returns an array with an entry for each field, each entry is
+ *! a mapping with the following fields:
+ *!
+ *! @mapping
+ *!   @member string "name"
+ *!     Name of the column
+ *!   @member int "type"
+ *!     The type ID of the field. This is the database's internal
+ *!     representation type ID.
+ *!   @member int|string "length"
+ *!     Can be an integer (the size of the contents in
+ *!     bytes) or the word "variable".
+ *! @endmapping
+ *!
+ *! @note
+ *! For char() fields, length is to be intended as the MAXIMUM length
+ *! of the field. This is not part of the interface specifications in fact,
+ *! but a driver-choice. In fact char() fields are for Postgres _FIXED_
+ *! length fields, and are space-padded. If CUT_TRAILING_SPACES is defined
+ *! when the driver is compiled (default behavior) it will cut such spaces.
+ */
 
 static void f_fetch_fields (INT32 args)
 {
@@ -174,6 +228,14 @@ static void f_fetch_fields (INT32 args)
 	return;
 }
 
+
+/*! @decl void seek()
+ *!
+ *! Moves the result cursor (ahead or backwards) the specified number of
+ *! rows. Notice that when you fetch a row, the cursor is automatically
+ *! moved forward one slot.
+ */
+
 static void f_seek (INT32 args)
 {
 	int howmuch;
@@ -187,6 +249,21 @@ static void f_seek (INT32 args)
 	THIS->cursor += howmuch;
 	return;
 }
+
+
+/*! @decl array(string) fetch_row()
+ *!
+ *! Returns an array with the contents of the next row in the result.
+ *! Advances the row cursor to the next row. Returns 0 at end of table.
+ *!
+ *! @bugs
+ *! Since there's no generic way to know whether a type is numeric
+ *! or not in Postgres, all results are returned as strings.
+ *! You can typecast them in Pike to get the numeric value.
+ *!
+ *! @seealso
+ *!   seek
+ */
 
 static void f_fetch_row (INT32 args)
 {
@@ -216,6 +293,11 @@ static void f_fetch_row (INT32 args)
 	THIS->cursor++;
 	return;
 }
+
+/*! @endclass
+ *!
+ *! @endmodule
+ */
 
 struct program * pgresult_program;
 
