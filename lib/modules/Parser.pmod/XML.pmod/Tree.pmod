@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.18 2002/10/16 10:09:25 nilsson Exp $
+ * $Id: Tree.pmod,v 1.19 2002/10/25 15:29:11 jonasw Exp $
  *
  */
 
@@ -47,17 +47,39 @@ constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
 					   XML_PI | XML_COMMENT | XML_ATTR)
 
-string text_quote(string data) {
-  data = replace(data, "&", "&amp;");
-  data = replace(data, "<", "&lt;");
-  data = replace(data, ">", "&gt;");
-  return data;
+//!  Quotes the string given in @[data] by escaping &, < and >. If
+//!  the flag @[preserve_roxen_entities] is set entities on the form
+//!  @tt{&foo.bar;@} will not be escaped.
+string text_quote(string data, void|int(0..1) preserve_roxen_entities)
+{
+  if (preserve_roxen_entities) {
+    string out = "";
+    int pos = 0;
+    while ((pos = search(data, "&")) >= 0) {
+      if ((sscanf(data[pos..], "&%[^ <>;&];", string entity) == 1) &&
+	  search(entity, ".") >= 0) {
+	out += text_quote(data[..pos - 1], 0) + "&" + entity + ";";
+	data = data[pos + strlen(entity) + 2..];
+      } else {
+	out += text_quote(data[..pos], 0);
+	data = data[pos + 1..];
+      }
+    }
+    return out + text_quote(data, 0);
+  } else {
+    data = replace(data, "&", "&amp;");
+    data = replace(data, "<", "&lt;");
+    data = replace(data, ">", "&gt;");
+    return data;
+  }
 }
 
-string attribute_quote(string data) {
-  data = replace(data, "&",  "&amp;");
-  data = replace(data, "<",  "&lt;");
-  data = replace(data, ">",  "&gt;");
+//!  Quotes the string given in @[data] by escaping &, <, >, ' and ".
+//!  If the flag @[preserve_roxen_entities] is set entities on the form
+//!  @tt{&foo.bar;@} will not be escaped.
+string attribute_quote(string data, void|int(0..1) preserve_roxen_entities)
+{
+  data = text_quote(data, preserve_roxen_entities);
   data = replace(data, "\"", "&quot;");
   data = replace(data, "'",  "&apos;");
   return data;
@@ -549,7 +571,10 @@ class Node {
   }
 
   // It doesn't produce html, and not of the node only.
-  string html_of_node() { return render_xml(); }
+  string html_of_node(void|int(0..1) preserve_roxen_entities)
+  {
+    return render_xml(preserve_roxen_entities);
+  }
 
   //! It is possible to cast a node to a string, which will return
   //! @[render_xml()] for that node.
@@ -559,8 +584,10 @@ class Node {
     error( "Can not case Node to "+to+".\n" );
   }
 
-  //! Creates an XML representation of the nodes sub tree.
-  string render_xml()
+  //! Creates an XML representation of the nodes sub tree. If the
+  //! flag @[preserve_roxen_entities] is set entities on the form
+  //! @tt{&foo.bar;@} will not be escaped.
+  string render_xml(void|int(0..1) preserve_roxen_entities)
   {
     String.Buffer data = String.Buffer();
 
@@ -568,8 +595,10 @@ class Node {
 		    lambda(Node n) {
 		      switch(n->get_node_type()) {
 		      case XML_TEXT:
-                        data->add(text_quote(n->get_text()));
+                        data->add(text_quote(n->get_text(),
+					     preserve_roxen_entities));
 			break;
+			
 		      case XML_ELEMENT:
 			if (!strlen(n->get_tag_name()))
 			  break;
@@ -577,12 +606,36 @@ class Node {
 			if (mapping attr = n->get_attributes()) {
                           foreach(indices(attr), string a)
                             data->add(" ", a, "='",
-				      attribute_quote(attr[a]), "'");
+				      attribute_quote(attr[a],
+					    preserve_roxen_entities), "'");
 			}
 			if (n->count_children())
 			  data->add(">");
 			else
 			  data->add("/>");
+			break;
+			
+		      case XML_HEADER:
+			data->add("<?xml");
+			if (mapping attr = n->get_attributes()) {
+                          foreach(indices(attr), string a)
+                            data->add(" ", a, "='",
+				      attribute_quote(attr[a],
+					    preserve_roxen_entities), "'");
+			}
+			data->add("?>\n");
+			break;
+
+		      case XML_PI:
+			data->add("<?", n->get_tag_name());
+			string text = n->get_text();
+			if (strlen(text))
+			  data->add(" ", text);
+			data->add("?>");
+			break;
+			
+		      case XML_COMMENT:
+			data->add("<!--", n->get_text(), "-->");
 			break;
 		      }
 		    },
@@ -647,7 +700,7 @@ class Node {
   }
 
   string _sprintf() {
-    return sprintf("Node(%d,%s)", get_node_type(), get_any_name());
+    return sprintf("Node(#%d:%d,%s)", mDocOrder, get_node_type(), get_any_name());
   }
 };
 
@@ -745,12 +798,19 @@ string report_error_context(string data, int ofs)
 }
 
 //! Takes a XML string and produces a node tree.
-Node parse_input(string data, void|int(0..1) no_fallback, void|int(0..1) force_lowercase)
+Node parse_input(string data, void|int(0..1) no_fallback,
+		 void|int(0..1) force_lowercase,
+		 void|mapping(string:string) predefined_entities)
 {
   object xp = spider.XML();
   Node mRoot;
   
   xp->allow_rxml_entities(1);
+  
+  //  Init parser with predefined entities
+  if (predefined_entities)
+    foreach(indices(predefined_entities), string entity)
+      xp->define_entity_raw(entity, predefined_entities[entity]);
   
   // Construct tree from string
   mixed err = catch
