@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.135 2003/01/11 03:06:54 mast Exp $
+|| $Id: array.c,v 1.136 2003/01/14 05:23:09 nilsson Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.135 2003/01/11 03:06:54 mast Exp $");
+RCSID("$Id: array.c,v 1.136 2003/01/14 05:23:09 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -853,7 +853,7 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	return 0;
 	
       case T_STRING:
-	return DO_NOT_WARN((int)my_strcmp(a->u.string, b->u.string));
+	return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
 	
       case T_ARRAY:
 	if(a==b) return 0;
