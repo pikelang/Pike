@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.21 1998/05/22 00:34:16 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.22 1998/11/17 05:12:41 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -119,6 +119,8 @@ static void verify_call_outs(void)
 
   if(num_pending_calls<0 || num_pending_calls>call_buffer_size)
     fatal("Error in call out tables.\n");
+
+  if(d_flag<2) return;
 
   for(e=0;e<num_pending_calls;e++)
   {
