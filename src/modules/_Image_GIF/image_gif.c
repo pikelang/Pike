@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $ */
+/* $Id: image_gif.c,v 1.4 2000/12/13 21:16:48 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $
+**!	$Id: image_gif.c,v 1.4 2000/12/13 21:16:48 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $");
+RCSID("$Id: image_gif.c,v 1.4 2000/12/13 21:16:48 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -53,6 +53,7 @@ RCSID("$Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $");
 #include "operators.h"
 #include "mapping.h"
 #include "bignum.h"
+#include "module_support.h"
 
 #include "gif_lzw.h"
 
@@ -63,10 +64,31 @@ RCSID("$Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $");
 static struct program *image_program = NULL;
 static struct program *image_colortable_program = NULL;
 static struct program *image_layer_program = NULL;
+
+#ifdef FAKE_DYNAMIC_LOAD
+
+/* These should really be cached in local, static variables */
+#define image_lay ((void(*)(INT32))PIKE_MODULE_IMPORT(Image,image_lay))
+
+#define image_colortable_write_rgb \
+ ((void(*)(struct neo_colortable *,unsigned char *))PIKE_MODULE_IMPORT(Image,image_colorable_write_rgb))
+
+#define image_colortable_size \
+  ((ptrdiff_t(*)(struct neo_colortable *))PIKE_MODULE_IMPORT(Image,image_colortable_size))
+
+#define image_colortable_index_8bit_image \
+  ((int(*)(struct neo_colortable *,rgb_group *,unsigned char *,int,int))PIKE_MODULE_IMPORT(Image,image_colortable_index_8bit_image))
+
+#define image_colortable_internal_floyd_steinberg \
+  ((void(*)(struct neo_colortable *))PIKE_MODULE_IMPORT(Image,image_colortable_internal_floyd_steinberg))
+
+#endif
+
 #else
 extern struct program *image_program;
 extern struct program *image_colortable_program;
 extern struct program *image_layer_program;
+
 #endif /* DYNAMIC_MODULE */
 
 enum 
@@ -2707,6 +2729,7 @@ struct program *image_encoding_gif_program=NULL;
 void pike_module_init(void)
 {
 #ifdef DYNAMIC_MODULE
+  /* These could be re-written to use PIKE_MODULE_IMPORT */
    push_string(make_shared_string("Image"));
    push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
