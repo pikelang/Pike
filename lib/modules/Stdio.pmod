@@ -219,12 +219,12 @@ class File
 
 class Port
 {
-  inherit port;
+  inherit _port;
   object(File) accept()
   {
     if(object x=::accept())
     {
-      object y=File();
+      object(File) y=File();
       y->_fd=x;
       return y;
     }
