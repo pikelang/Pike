@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.10 1999/02/06 22:40:55 grubba Exp $
+ * $Id: imap_server.pike,v 1.11 1999/02/13 15:50:06 grubba Exp $
  */
 
 mapping unauth_commands =
@@ -8,7 +8,7 @@ mapping unauth_commands =
    "capability" : .requests.capability,
    "logout" : .requests.logout,
    "login" : .requests.login,
-   // "authenticate" : .requests.authenticate
+   "authenticate" : .requests.authenticate
 ]);
 
 mapping auth_commands =
@@ -16,16 +16,16 @@ mapping auth_commands =
    "logout" : .requests.logout,
    "capability" : .requests.capability,
    "select" : .requests.select,
-//   "examine" : .requests.examine,
-//   "create" : .requests.create,
-//   "delete" : .requests.delete,
-//   "rename" : .requests.rename,
-//   "subscribe" : .requests.subscribe,
-//   "unsubscribe" : .requests.unsubscribe,
+   "examine" : .requests.examine,
+   "create" : .requests.create,
+   "delete" : .requests.delete,
+   "rename" : .requests.rename,
+   "subscribe" : .requests.subscribe,
+   "unsubscribe" : .requests.unsubscribe,
    "list" : .requests.list,
    "lsub" : .requests.lsub,
-//   "status" : .requests.status,
-//   "append" : .requests.append
+   "status" : .requests.status,
+   "append" : .requests.append
 ]);
 
 mapping select_commands =
@@ -33,23 +33,23 @@ mapping select_commands =
    "logout" : .requests.logout,
    "capability" : .requests.capability,
    "select" : .requests.select,
-//    "examine" : .requests.examine,
-//    "create" : .requests.create,
-//    "delete" : .requests.delete,
-//    "rename" : .requests.rename,
-//    "subscribe" : .requests.subscribe,
-//    "unsubscribe" : .requests.unsubscribe,
+   "examine" : .requests.examine,
+   "create" : .requests.create,
+   "delete" : .requests.delete,
+   "rename" : .requests.rename,
+   "subscribe" : .requests.subscribe,
+   "unsubscribe" : .requests.unsubscribe,
    "list" : .requests.list,
    "lsub" : .requests.lsub,
-//    "status" : .requests.status,
-//    "append" : .requests.append,
-//    "check" : .requests.check,
-//    "close" : .requests.close,
-//    "expunge" : .requests.expunge,
+   "status" : .requests.status,
+   "append" : .requests.append,
+   "check" : .requests.check,
+   "close" : .requests.close,
+   "expunge" : .requests.expunge,
    "search" : .requests.search,
    "fetch" : .requests.fetch,
-//    "store" : .requests.store,
-//    "copy" : .requests.copy,
+   "store" : .requests.store,
+   "copy" : .requests.copy,
    "uid" : .requests.uid
 ]);
 
