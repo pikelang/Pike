@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.86 2001/08/13 23:01:19 mast Exp $");
+RCSID("$Id: encode.c,v 1.87 2002/04/12 09:30:12 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
   
@@ -121,6 +121,13 @@ double LDEXP(double x, int exp)
 #define SIZE_SHIFT 6
 #define MAX_SMALL (1<<(8-SIZE_SHIFT))
 #define COUNTER_START -MAX_SMALL
+
+/* Entries used to encode the identifier_references table. */
+#define ID_ENTRY_EOT		-1
+#define ID_ENTRY_VARIABLE	0
+#define ID_ENTRY_FUNCTION	1
+#define ID_ENTRY_CONSTANT	2
+#define ID_ENTRY_INHERIT	3
 
 struct encode_data
 {
@@ -722,98 +729,351 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	if(p->init || p->exit || p->gc_recurse_func || p->gc_check_func ||
 	   (p->flags & PROGRAM_HAS_C_METHODS))
 	  Pike_error("Cannot encode C programs.\n");
-	code_entry(type_to_tag(val->type), 1,data);
+
+	EDB(1,
+	    fprintf(stderr, "%*sencode: encoding program\n",
+		    data->depth, ""));
+
+	/* Type 2 -- Portable encoding. */
+	code_entry(type_to_tag(val->type), 2, data);
+
+	/* version */
 	f_version(0);
 	encode_value2(Pike_sp-1,data);
 	pop_stack();
-	code_number(p->flags,data);
-	code_number(p->storage_needed,data);
-	code_number(p->alignment_needed,data);
-	code_number(p->timestamp.tv_sec,data);
-	code_number(p->timestamp.tv_usec,data);
 
+	/* Byte-order. */
+	code_number(PIKE_BYTEORDER, data);
+
+	/* flags */
+	code_number(p->flags,data);
+
+	/* num_* */
 #define FOO(X,Y,Z) \
 	code_number( p->PIKE_CONCAT(num_,Z), data);
 #include "program_areas.h"
 
-	adddata2(p->program, p->num_program);
-	adddata2(p->linenumbers, p->num_linenumbers);
+	/* Byte-code method
+	 *
+	 * (Forward compatibility)
+	 */
+	code_number(0, data);
 
-	for(d=0;d<p->num_identifier_index;d++)
-	  code_number(p->identifier_index[d],data);
-
-	for(d=0;d<p->num_variable_index;d++)
-	  code_number(p->variable_index[d],data);
-
-	for(d=0;d<p->num_identifier_references;d++)
-	{
-	  code_number(p->identifier_references[d].inherit_offset,data);
-	  code_number(p->identifier_references[d].identifier_offset,data);
-	  code_number(p->identifier_references[d].id_flags,data);
-	  EDB(3,fprintf(stderr,"IDREF%x > %d: { %d, %d, %d }\n",
-		      p->id,d,
-		      p->identifier_references[d].inherit_offset,
-		      p->identifier_references[d].identifier_offset,
-		      p->identifier_references[d].id_flags););
+	/* program */
+	for(d=0; d<p->num_program; d++) {
+	  code_number(p->program[d], data);
 	}
 
-	for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
+	/* relocations */
+	for(d=0; d<p->num_relocations; d++) {
+	  code_number(p->relocations[d], data);
+	}
 
-	for(d=0;d<p->num_inherits;d++)
+	/* linenumbers */
+	for(d=0; d<p->num_linenumbers; d++) {
+	  code_number(p->linenumbers[d], data);
+	}
+
 	{
-	  code_number(p->inherits[d].inherit_level,data);
-	  code_number(p->inherits[d].identifier_level,data);
-	  code_number(p->inherits[d].parent_offset,data);
-	  code_number(p->inherits[d].parent_identifier,data);
-	  code_number(p->inherits[d].storage_offset,data);
+	  struct svalue str_sval;
+	  str_sval.type = T_STRING;
+	  str_sval.subtype = 0;
+	  /* strings */
+	  for(d=0;d<p->num_strings;d++) {
+	    str_sval.u.string = p->strings[d];
+	    encode_value2(&str_sval, data);
+	  }
 
-	  if(p->inherits[d].parent)
+	  /* constants */
+	  for(d=0;d<p->num_constants;d++)
 	  {
-	    ref_push_object(p->inherits[d].parent);
-	    Pike_sp[-1].subtype=p->inherits[d].parent_identifier;
-	    Pike_sp[-1].type=T_FUNCTION;
-	    EDB(3,fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
-			p->id, p->inherits[d].parent, p->inherits[d].parent_identifier););
-	  }else if(p->inherits[d].prog){
-	    ref_push_program(p->inherits[d].prog);
-	  }else{
-	    Pike_error("Failed to encode inherit #%d\n", d);
-	    push_int(0);
-	  }
-	  encode_value2(Pike_sp-1,data);
-	  pop_stack();
+	    /* value */
+	    encode_value2(&p->constants[d].sval, data);
 
-          adddata3(p->inherits[d].name);
-
-	  EDB(3,fprintf(stderr,"INHERIT%x > %d: %d id=%d\n",
-		      p->id,d,
-		      p->inherits[d].prog->num_identifiers,
-		      p->inherits[d].prog->id););
-	}
-
-	for(d=0;d<p->num_identifiers;d++)
-	{
-	  adddata(p->identifiers[d].name);
-	  encode_type(p->identifiers[d].type->str, data);
-	  code_number(p->identifiers[d].identifier_flags,data);
-	  code_number(p->identifiers[d].run_time_type,data);
-	  code_number(p->identifiers[d].opt_flags,data);
-	  if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION)) {
-	    code_number(p->identifiers[d].func.offset,data);
-	  } else {
-	    Pike_error("Cannot encode functions implemented in C "
-		       "(identifier='%s').\n",
-		       p->identifiers[d].name->str);
+	    /* name */
+	    if (p->constants[d].name) {
+	      str_sval.u.string = p->constants[d].name;
+	      encode_value2(&str_sval, data);
+	    } else {
+	      push_int(0);
+	      encode_value2(Pike_sp-1, data);
+	      Pike_sp--;
+	    }
 	  }
 	}
 
-	for(d=0;d<NUM_LFUNS;d++)
-	  code_number(p->lfuns[d], data);
-
-	for(d=0;d<p->num_constants;d++)
+	EDB(5,
 	{
-	  encode_value2(& p->constants[d].sval, data);
-	  adddata3(p->constants[d].name);
+	  fprintf(stderr,
+		  "%*sencode: Reference table:\n"
+		  "%*s  ####: Flags Inherit Identifier\n",
+		  data->depth, "", data->depth, "");
+	  for (d=0; d < p->num_identifier_references; d++) {
+	    struct reference *ref = p->identifier_references + d;
+
+	    fprintf(stderr, "%*s  %4d: %5x %7d %7d\n",
+		    data->depth, "",
+		    d, ref->id_flags, ref->inherit_offset,
+		    ref->identifier_offset);
+	  }
+	  fprintf(stderr, "\n"
+		  "%*sencode: Inherit table:\n"
+		  "%*s  ####: Level id_level offset\n",
+		  data->depth, "", data->depth, "");
+	  for (d=0; d < p->num_inherits; d++) {
+	    struct inherit *inh = p->inherits + d;
+
+	    fprintf(stderr, "%*s  %4d: %5d %8d %6d\n",
+		    data->depth, "",
+		    d, inh->inherit_level, inh->identifier_level,
+		    inh->storage_offset);
+	  }
+	  fprintf(stderr, "\n"
+		  "%*sencode: Identifier table:\n"
+		  "%*s  ####: Flags Offset Type Name\n",
+		  data->depth, "", data->depth, "");
+	  for (d=0; d < p->num_identifiers; d++) {
+	    struct identifier *id = p->identifiers + d;
+
+	    fprintf(stderr, "%*s  %4d: %5x %6d %4d \"%s\"\n",
+		    data->depth, "",
+		    d, id->identifier_flags, id->func.offset,
+		    id->run_time_type, id->name->str);
+	  }
+	  fprintf(stderr, "\n"
+		  "%*sencode: Variable table:\n"
+		  "%*s  ####: Index\n",
+		  data->depth, "", data->depth, "");
+	  for (d = 0; d < p->num_variable_index; d++) {
+	    fprintf(stderr, "%*s  %4d: %5d\n",
+		    data->depth, "",
+		    d, p->variable_index[d]);
+	  }
+	  fprintf(stderr, "\n"
+		  "%*sencode: Constant table:\n"
+		  "%*s  ####: Type Name\n",
+		  data->depth, "", data->depth, "");
+	  for (d = 0; d < p->num_constants; d++) {
+	    struct program_constant *c = p->constants + d;
+	    fprintf(stderr, "%*s  %4d: %4d %s%s%s\n",
+		    data->depth, "",
+		    d, c->sval.type,
+		    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
+	  }
+	  fprintf(stderr, "\n");
+	});
+
+
+	/* Dump the identifiers in a portable manner... */
+	{
+	  int local_num_identifiers = 0;
+	  int local_num_variable_index = 0;
+	  int local_num_inherits = 0;
+	  struct svalue str_sval;
+	  str_sval.type = T_STRING;
+	  str_sval.subtype = 0;
+
+	  EDB(2,
+	      fprintf(stderr, "%*sencode: encoding references\n",
+		      data->depth, ""));
+
+	  /* NOTE: d is incremented by hand inside the loop. */
+	  for (d=0; d < p->num_identifier_references;)
+	  {
+	    struct reference *ref = p->identifier_references + d;
+	    struct inherit *inh = INHERIT_FROM_PTR(p, ref);
+	    struct identifier *id = ID_FROM_PTR(p, ref);
+
+	    EDB(3,
+		fprintf(stderr, "%*s  identifier_flags: %4x\n",
+			data->depth, "", id->identifier_flags));
+
+	    if (!inh->inherit_level) {
+	      /* Defined at scope 0. */
+	      /* Variable, constant or function. */
+	      if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+		/* Constant */
+		EDB(3,
+		    fprintf(stderr, "%*s  encode: encoding constant\n",
+			    data->depth, ""));
+
+		code_number(ID_ENTRY_CONSTANT, data);
+		code_number(ref->id_flags, data);
+
+		/* name */
+		str_sval.u.string = id->name;
+		encode_value2(&str_sval, data);
+
+		/* offset */
+		code_number(id->func.offset, data);
+
+		/* Verify that we can restore the id */
+		if (ref->identifier_offset != local_num_identifiers) {
+		  Pike_error("Constant identifier offset mismatch: %d != %d\n",
+			     ref->identifier_offset, local_num_identifiers);
+		}
+		local_num_identifiers++;
+	      } else if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags)) {
+		/* Pike function */
+		EDB(3,
+		    fprintf(stderr, "%*s  encode: encoding function\n",
+			    data->depth, ""));
+
+		code_number(ID_ENTRY_FUNCTION, data);
+		code_number(ref->id_flags, data);
+
+		/* name */
+		str_sval.u.string = id->name;
+		encode_value2(&str_sval, data);
+
+		/* type */
+		ref_push_string(id->type);
+		Pike_sp[-1].type = T_TYPE;
+		encode_value2(Pike_sp-1, data);
+		pop_stack();
+
+		/* func_flags (aka identifier_flags) */
+		code_number(id->identifier_flags, data);
+
+		/* func */
+		code_number(p->identifiers[d].func.offset, data);
+
+		/* opt_flags */
+		code_number(id->opt_flags, data);
+
+		/* Verify that we can restore the id */
+		if (ref->identifier_offset != local_num_identifiers) {
+		  Pike_error("Function identifier offset mismatch: %d != %d\n",
+			     ref->identifier_offset, local_num_identifiers);
+		}
+		local_num_identifiers++;
+	      } else if (id->identifier_flags & IDENTIFIER_C_FUNCTION) {
+		/* C Function */
+		/* Not supported. */
+		Pike_error("Cannot encode functions implemented in C "
+			   "(identifier='%s').\n",
+			   p->identifiers[d].name->str);
+	      } else {
+		/* Variable */
+		EDB(3,
+		    fprintf(stderr, "%*s  encode: encoding variable\n",
+			    data->depth, ""));
+
+		code_number(ID_ENTRY_VARIABLE, data);
+		code_number(ref->id_flags, data);
+
+		/* name */
+		str_sval.u.string = id->name;
+		encode_value2(&str_sval, data);
+
+		/* type */
+		ref_push_string(id->type);
+		Pike_sp[-1].type = T_TYPE;
+		encode_value2(Pike_sp-1, data);
+		pop_stack();
+
+		/* Verify that we can restore the id */
+		if (ref->identifier_offset != local_num_identifiers) {
+		  Pike_error("Variable identifier offset mismatch: %d != %d\n",
+			     ref->identifier_offset, local_num_identifiers);
+		}
+
+		if (p->variable_index[local_num_variable_index] !=
+		    local_num_identifiers) {
+		  Pike_error("Variable %d index offset mismatch: %d != %d\n",
+			     local_num_variable_index,
+			     p->variable_index[local_num_variable_index],
+			     local_num_identifiers);
+		}
+		local_num_identifiers++;
+		local_num_variable_index++;
+	      }
+	    } else {
+	      /* Inherit */
+	      INT16 inherit_flags_change = 0;
+	      int i;
+
+	      EDB(3,
+		  fprintf(stderr, "%*s  encode: encoding inherit\n",
+			  data->depth, ""));
+
+	      code_number(ID_ENTRY_VARIABLE, data);
+
+	      /* Calculate id_flags */
+	      for (i = 0; i < inh->prog->num_identifier_references; i++) {
+		inherit_flags_change |= ref[i].id_flags ^
+		  inh->prog->identifier_references[i].id_flags;
+	      }
+	      inherit_flags_change &= ~(ID_HIDDEN|ID_INHERITED);
+	      code_number(inherit_flags_change, data);
+
+	      /* name */
+	      str_sval.u.string = inh->name;
+	      encode_value2(&str_sval, data);
+
+	      /* prog */
+	      ref_push_program(inh->prog);
+	      encode_value2(Pike_sp-1, data);
+	      pop_stack();
+
+	      /* parent */
+	      ref_push_object(inh->parent);
+	      encode_value2(Pike_sp-1, data);
+	      pop_stack();
+
+	      /* parent_identifier */
+	      code_number(inh->parent_identifier, data);
+
+	      /* parent_offset */
+	      code_number(inh->parent_offset, data);
+
+	      d += inh->prog->num_identifier_references;
+	      continue;
+	    }
+	    d++;
+	  }
+#if 0
+	  while (next_inherit < p->num_inherits) {
+	    /* Some identifier-less inherits... */
+	    /* Inherit */
+	    INT16 inherit_flags_change = 0;
+	    int i;
+
+	    code_number(ID_ENTRY_VARIABLE, data);
+
+	    /* Calculate id_flags */
+	    for (i = 0; i < inh->prog->num_identifier_references; i++) {
+	      inherit_flags_change |= ref[i].id_flags ^
+		inh->prog->identifier_references[i].id_flags;
+	    }
+	    inherit_flags_change &= ~(ID_HIDDEN|ID_INHERITED);
+	    code_number(inherit_flags_change);
+
+	    /* name */
+	    str_sval.u.string = inh->name;
+	    encode_value2(&str_sval, data);
+
+	    /* prog */
+	    ref_push_program(inh->prog);
+	    encode_value2(Pike_sp-1, data);
+	    pop_stack();
+
+	    /* parent */
+	    ref_push_object(inh->parent);
+	    encode_value2(Pike_sp-1, data);
+	    pop_stack();
+
+	    /* parent_identifier */
+	    code_number(inh->parent_identifier);
+
+	    /* parent_offset */
+	    code_number(inh->parent_offset);
+
+	    d += inh->prog->num_identifier_references;
+	  }
+#endif /* 0 */
+	  /* End-marker */
+	  code_number(ID_ENTRY_EOT, data);
 	}
       }else{
 	code_entry(type_to_tag(val->type), 0,data);
@@ -841,12 +1101,8 @@ void f_encode_value(INT32 args)
   struct encode_data d, *data;
   data=&d;
 
-#ifdef ENCODE_DEBUG
   check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
 		 BIT_VOID | BIT_INT, 0);
-#else
-  check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
-#endif
 
   initialize_buf(&data->buf);
   data->canonic = 0;
@@ -881,12 +1137,8 @@ void f_encode_value_canonic(INT32 args)
   struct encode_data d, *data;
   data=&d;
 
-#ifdef ENCODE_DEBUG
   check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
 		 BIT_VOID | BIT_INT, 0);
-#else
-  check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
-#endif
 
   initialize_buf(&data->buf);
   data->canonic = 1;
@@ -1254,7 +1506,7 @@ static void decode_value2(struct decode_data *data)
 
 #ifdef PIKE_DEBUG
 #undef decode_value2
-#define decode_value2(X) do { struct svalue *_=Pike_sp; decode_value2_(X); if(Pike_sp!=_+1) fatal("decode_value2 failed!\n"); } while(0)
+#define decode_value2(X) do { struct svalue *_=Pike_sp; decode_value2_(X); if(Pike_sp!=_+1) fatal("decode_value2 failed!\n  Save_sp:%p\n  Result_sp:%p\n", _, Pike_sp); } while(0)
 #endif
 
 
@@ -1996,8 +2248,359 @@ static void decode_value2(struct decode_data *data)
 	  return;
 	}
 
-	default:
-	  Pike_error("Cannot decode program encoding type %d\n",num);
+      case 2:
+	{
+	  struct program *p;
+	  ONERROR err;
+	  int byteorder;
+	  int bytecode_method;
+	  int entry_type;
+	  INT16 id_flags;
+	  INT16 p_flags;
+#define FOO(NUMTYPE,Y,NAME)	\
+	  NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
+#include "program_areas.h"
+
+	  /* Check the version. */
+	  decode_value2(data);
+	  f_version(0);
+	  if(!is_eq(Pike_sp-1,Pike_sp-2))
+	    Pike_error("Cannot decode programs encoded with other pike version.\n");
+	  pop_n_elems(2);
+
+	  debug_malloc_touch(p);
+
+	  /* Decode byte-order. */
+	  decode_number(byteorder, data);
+
+	  if ((byteorder != PIKE_BYTEORDER)
+#if (PIKE_BYTEORDER == 1234)
+	      && (byteorder != 4321)
+#else
+#if (PIKE_BYTEORDER == 4321)
+	      && (byteorder != 1234)
+#endif
+#endif
+	      ) {
+	    Pike_error("Unsupported byte-order. Native:%d Encoded:%d\n",
+		       PIKE_BYTEORDER, byteorder);
+	  }
+
+	  /* Decode flags. */
+	  decode_number(p_flags,data);
+	  p_flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
+			PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
+	  p_flags |= PROGRAM_AVOID_CHECK;
+
+	  /* Start the new program. */
+	  low_start_new_program(NULL, NULL, p_flags, NULL);
+	  p = Pike_compiler->new_program;
+	  push_program(p);
+
+	  SET_ONERROR(err, end_first_pass, 0);
+
+	  debug_malloc_touch(p);
+	  tmp.type=T_PROGRAM;
+	  tmp.u.program=p;
+	  EDB(2,fprintf(stderr, "%*sDecoding a program to <%d>: ",
+		      data->depth, "", data->counter.u.integer);
+	      print_svalue(stderr, &tmp);
+	      fputc('\n', stderr););
+	  mapping_insert(data->decoded, & data->counter, &tmp);
+	  data->counter.u.integer++;
+
+	  debug_malloc_touch(p);
+
+	  /* Decode lengths. */
+#define FOO(X,Y,NAME)	decode_number(PIKE_CONCAT(local_num_, NAME), data);
+#include "program_areas.h"
+
+	  /* Byte-code method */
+	  decode_number(bytecode_method, data);
+	  if (bytecode_method) {
+	    Pike_error("Unsupported byte-code method: %d\n", bytecode_method);
+	  }
+
+	  /* Decode program */
+	  for (e=0; e<(int)local_num_program; e++) {
+	    unsigned INT8 opcode;
+	    decode_number(opcode, data);
+	    add_to_program(opcode);
+	  }
+
+	  /* Decode relocations */
+	  for (e=0; e<(int)local_num_relocations; e++) {
+	    size_t reloc;
+	    decode_number(reloc, data);
+	    if (reloc >= local_num_program-4) {
+	      Pike_error("Bad relocation: %d >= %d\n",
+			 reloc, local_num_program);
+	    }
+	    add_to_relocations(reloc);
+	  }
+
+	  /* Perform relocation. */
+	  if (byteorder != PIKE_BYTEORDER) {
+	    /* NOTE: Only 1234 <==> 4321 byte-order relocation supported. */
+	    for (e=0; e<(int)local_num_relocations; e++) {
+	      size_t reloc = p->relocations[e];
+	      unsigned INT8 tmp1;
+	      unsigned INT8 tmp2;
+	      tmp1 = p->program[reloc];
+	      tmp2 = p->program[reloc+1];
+	      p->program[reloc] = p->program[reloc+3];
+	      p->program[reloc+1] = p->program[reloc+2];
+	      p->program[reloc+3] = tmp1;
+	      p->program[reloc+2] = tmp2;
+	    }
+	  }
+
+	  /* Decode linenumbers */
+	  for (e=0; e<local_num_linenumbers; e++) {
+	    char lineno_info;
+	    decode_number(lineno_info, data);
+	    add_to_linenumbers(lineno_info);
+	  }
+
+	  /* identifier_index & variable_index are created by
+	   * fixate_program() and optimize_program().
+	   */
+
+	  /* Decode strings */
+	  for (e=0; e<local_num_strings; e++) {
+	    decode_value2(data);
+	    if (Pike_sp[-1].type != T_STRING) {
+	      Pike_error("Non strings in string table.\n");
+	    }
+	    add_to_strings(Pike_sp[-1].u.string);
+	    Pike_sp--;
+	  }
+
+	  /* Decode constants */
+	  for (e=0; e<local_num_constants; e++) {
+	    struct program_constant constant;
+	    /* value */
+	    decode_value2(data);
+	    constant.sval = Pike_sp[-1];
+	    /* name */
+	    decode_value2(data);
+	    if (Pike_sp[-1].type == T_STRING) {
+	      constant.name = Pike_sp[-1].u.string;
+	    } else if ((Pike_sp[-1].type == T_INT) &&
+		       !Pike_sp[-1].u.integer) {
+	      constant.name = NULL;
+	    } else {
+	      Pike_error("Non strings in string table.\n");
+	    }
+	    
+	    add_to_constants(constant);
+	    Pike_sp -= 2;
+	  }
+
+	  /* Decode identifier_references, inherits and identifiers. */
+	  decode_number(entry_type, data);
+	  while (entry_type != ID_ENTRY_EOT) {
+	    decode_number(id_flags, data);
+	    switch(entry_type) {
+	    case ID_ENTRY_VARIABLE:
+	      {
+		/* name */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_STRING) {
+		  Pike_error("Bad variable name (not a string)\n");
+		}
+
+		/* type */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_TYPE) {
+		  Pike_error("Bad variable type (not a type)\n");
+		}
+
+		/* Alters
+		 *
+		 * storage, variable_index, identifiers and
+		 * identifier_references
+		 */
+		define_variable(Pike_sp[-2].u.string, Pike_sp[-1].u.string,
+				id_flags);
+
+		pop_n_elems(2);
+	      }
+	      break;
+	    case ID_ENTRY_FUNCTION:
+	      {
+		union idptr func;
+		unsigned INT8 func_flags;
+		unsigned INT16 opt_flags;
+
+		/* name */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_STRING) {
+		  Pike_error("Bad function name (not a string)\n");
+		}
+
+		/* type */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_TYPE) {
+		  Pike_error("Bad function type (not a type)\n");
+		}
+
+		/* func_flags */
+		decode_number(func_flags, data);
+
+		/* func */
+		decode_number(func.offset, data);
+
+		/* opt_flags */
+		decode_number(opt_flags, data);
+
+		/* FIXME:
+		 *   Verify validity of func_flags, func.offset & opt_flags
+		 */
+
+		/* Alters
+		 *
+		 * identifiers, identifier_references
+		 */
+		define_function(Pike_sp[-2].u.string,
+				Pike_sp[-1].u.string,
+				id_flags, func_flags, &func, opt_flags);
+
+		pop_n_elems(2);
+	      }
+	      break;
+	    case ID_ENTRY_CONSTANT:
+	      {
+		struct identifier id;
+		struct reference ref;
+
+		/* name */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_STRING) {
+		  Pike_error("Bad function name (not a string)\n");
+		}
+		id.name = Pike_sp[-1].u.string;
+
+		/* identifier_flags */
+		id.identifier_flags = IDENTIFIER_CONSTANT;
+
+		/* offset */
+		decode_number(id.func.offset, data);
+
+		/* FIXME:
+		 *   Verify validity of func.offset
+		 */
+
+		/* type */
+		push_string(get_type_of_svalue(&p->constants[id.func.offset].sval));
+		id.type = Pike_sp[-1].u.string;
+
+		/* run_time_type */
+		id.run_time_type = p->constants[id.func.offset].sval.type;
+
+#ifdef PROFILING
+		id.self_time=0;
+		id.num_calls=0;
+		id.total_time=0;
+#endif
+
+		/* id_flags */
+		ref.id_flags = id_flags;
+
+		/* identifier_offset */
+		ref.identifier_offset =
+		  Pike_compiler->new_program->num_identifiers;
+
+		/* ref.inherit_offset */
+		ref.inherit_offset = 0;
+
+		/* Alters
+		 *
+		 * identifiers, identifier_references
+		 */
+		add_to_identifiers(id);
+		Pike_sp -= 2;
+
+		add_to_identifier_references(ref);
+	      }
+	      break;
+	    case ID_ENTRY_INHERIT:
+	      {
+		struct program *prog;
+		struct object *parent = NULL;
+		int parent_identifier;
+		int parent_offset;
+		struct pike_string *name = NULL;
+
+		/* name */
+		decode_value2(data);
+		if (Pike_sp[-1].type == T_STRING) {
+		  name = Pike_sp[-1].u.string;
+		} else if ((Pike_sp[-1].type != T_INT) ||
+			   Pike_sp[-1].u.integer) {
+		  Pike_error("Bad function name (not a string)\n");
+		}
+
+		/* prog */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_PROGRAM) {
+		  Pike_error("Bad inherit: Expected program, got %s\n",
+			     get_name_of_type(Pike_sp[-1].type));
+		}
+		prog = Pike_sp[-1].u.program;
+
+		/* parent */
+		decode_value2(data);
+		if (Pike_sp[-1].type == T_OBJECT) {
+		  parent = Pike_sp[-1].u.object;
+		} else if ((Pike_sp[-1].type != T_INT) ||
+			   Pike_sp[-1].u.integer) {
+		  Pike_error("Bad inherit: Parent isn't an object.\n");
+		}
+
+		/* parent_identifier */
+		decode_number(parent_identifier, data);
+
+		/* parent_offset */
+		decode_number(parent_offset, data);
+
+		/* Alters
+		 *
+		 * storage, inherits and identifier_references
+		 */
+		low_inherit(prog, parent, parent_identifier,
+			    parent_offset, id_flags, name);
+
+		pop_n_elems(3);
+	      }
+	      break;
+	    default:
+	      Pike_error("Unsupported id entry type: %d\n", entry_type);
+	    }
+	    decode_number(entry_type, data);
+	  }
+
+	  UNSET_ONERROR(err);
+
+	  /* Fixate & optimize
+	   *
+	   * lfuns and identifier_index
+	   */
+	  end_first_pass(2);
+
+	  /* Verify... */
+#define FOO(NUMTYPE,Y,NAME)						     \
+	  if (PIKE_CONCAT(local_num_, NAME) != p->PIKE_CONCAT(num_,NAME)) {  \
+	    Pike_error("Value mismatch for num_" TOSTR(NAME) ": %d != %d\n", \
+		       PIKE_CONCAT(local_num_, NAME),			     \
+		       p->PIKE_CONCAT(num_, NAME));			     \
+	  }
+#include "program_areas.h"
+	}
+	break;
+
+      default:
+	Pike_error("Cannot decode program encoding type %d\n",num);
       }
       break;
 

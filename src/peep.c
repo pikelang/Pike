@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.46 2001/08/15 15:29:23 mast Exp $");
+RCSID("$Id: peep.c,v 1.47 2002/04/12 09:30:12 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -351,7 +351,7 @@ void assemble(void)
       break;
 
     case F_DATA:
-      ins_int(c->arg, (void(*)(char))add_to_program);
+      add_relocated_int_to_program(c->arg);
       break;
 
     case F_LABEL:
@@ -377,7 +377,7 @@ void assemble(void)
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
 	tmp = DO_NOT_WARN((INT32)PIKE_PC);
-	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
+	add_relocated_int_to_program(jumps[c->arg]);
 	jumps[c->arg]=tmp;
 	break;
 

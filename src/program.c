@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.309 2002/02/06 17:26:15 grubba Exp $");
+RCSID("$Id: program.c,v 1.310 2002/04/12 09:30:13 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -246,6 +246,12 @@ void ins_short(INT16 i, void (*func)(char tmp))
   for(e=0;e<(long)sizeof(i);e++) {
     func(p[e]);
   }
+}
+
+void add_relocated_int_to_program(INT32 i)
+{
+  add_to_relocations(Pike_compiler->new_program->num_program);
+  ins_int(i, (void (*)(char))add_to_program);
 }
 
 void use_module(struct svalue *s)
@@ -1310,6 +1316,12 @@ void check_program(struct program *p)
 }
 #endif
 
+/* finish-states:
+ *
+ *   0: First pass.
+ *   1: Last pass.
+ *   2: Called from decode_value().
+ */
 struct program *end_first_pass(int finish)
 {
   int e;
@@ -1351,6 +1363,9 @@ struct program *end_first_pass(int finish)
 		function_type_string,
 		ID_STATIC);
     Pike_compiler->init_node=0;
+  } else if (finish == 2) {
+    /* Called from decode_value(). */
+    e = low_find_lfun(Pike_compiler->new_program, LFUN___INIT);
   }else{
     e=-1;
   }
@@ -3199,24 +3214,25 @@ void program_index_no_free(struct svalue *to, struct program *p,
 int get_small_number(char **q)
 {
   /* This is a workaround for buggy cc & Tru64 */
-  int ret;
-  ret=*(signed char *)*q;
-  (*q)++;
+  unsigned char *addr = (unsigned char *)*q;
+  int ret = *((signed char *)addr);
+  addr++;
   switch(ret)
   {
   case -127:
-    ret=EXTRACT_WORD((unsigned char*)*q);
-    *q+=2;
-    return ret;
+    ret = (((signed char *)addr)[0]<<8) | addr[1];
+    addr += 2;
+    break;
 
   case -128:
-    ret=EXTRACT_INT((unsigned char*)*q);
-    *q+=4;
-    return ret;
-
-  default:
-    return ret;
+    ret = (((signed char *)addr)[0]<<24) | (addr[1]<<16) |
+      (addr[2]<<8) | addr[3];
+    addr += 4;
+    break;
   }
+
+  *q = (char *)addr;
+  return ret;
 }
 
 void start_line_numbering(void)
@@ -3236,10 +3252,14 @@ static void insert_small_number(INT32 a)
     add_to_linenumbers(a);
   }else if(a>=-32768 && a<32768){
     add_to_linenumbers(-127);
-    ins_short(a, add_to_linenumbers);
+    add_to_linenumbers(a>>8);
+    add_to_linenumbers(a);
   }else{
     add_to_linenumbers(-128);
-    ins_int(a, add_to_linenumbers);
+    add_to_linenumbers(a>>24);
+    add_to_linenumbers(a>>16);
+    add_to_linenumbers(a>>8);
+    add_to_linenumbers(a);
   }
 }
 
