@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.702 2004/03/07 22:22:25 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.703 2004/03/08 09:30:20 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2712,13 +2712,28 @@ void low_generate(int depth,
     if(err)
     {
       errors++;
-      werror("\nTest failed:\n----------------------------------\n%s\n---------------------------------\nexpected answer: %O\nAnswer received: %O\n",test,ans,res);
+      werror("\nTest failed:\n"
+	     "----------------------------------\n"
+	     "%s\n"
+	     "---------------------------------\n"
+	     "expected answer: %O\n"
+	     "Answer received: %O\n",test,ans,res);
       if(!stringp(err) || !has_prefix(err, "Test failed"))
       {
 	string tmp=master()->describe_backtrace(err);
 	array s=tmp/"\n";
 	s=s[..20];
 	werror("%s\n",s*"\n");
+      }
+      if (res == "None") {
+        // Probable decode error; try to get some debug.
+	catch {
+	  werror("Encoding...\n");
+	  string encoded = ((function)encode_value)(tmp, Codec(), 6);
+	  werror("Decoding...\n");
+          tmp = ((function)decode_value)(encoded, Codec(), 6);
+	  werror("Strange... No error thrown...\n");
+        };
       }
       return;
     }
@@ -10623,7 +10638,21 @@ test_true(!sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!="ca
 test_do(remove_call_out(call_out_info()[-1][2]))
 test_do(add_constant("call_out_cb"))
 test_do(_do_call_outs())
-test_false(Process.system(RUNPIKE+" SRCDIR/test_co.pike"))
+test_any([
+  object pid = Process.create_process(RUNPIKE_ARRAY +
+				      ({ "SRCDIR/test_co.pike" }));
+  int i;
+  for (i=0; i < 60; i++) {
+    if (pid->status()>0) break;
+    __signal_watchdog();
+    sleep(1);
+  }
+  if (pid->status() <= 0) {
+    pid->kill(9);
+    return "Killed".
+  }
+  return pid->wait();
+], 0)
 test_do_([[ catch { _do_call_outs(); }]])
 
 // - varargs
