@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.304 2003/04/28 00:32:43 mast Exp $
+|| $Id: interpret.c,v 1.305 2003/06/06 13:04:56 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.304 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: interpret.c,v 1.305 2003/06/06 13:04:56 nilsson Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2362,8 +2362,8 @@ void gdb_backtraces()
   INT32 i = 0;
   struct thread_state *ts = 0;
   while ((i = gdb_next_thread_state (i, &ts)), ts) {
-    fprintf (stderr, "\nTHREAD_ID %ld (swapped %s):\n",
-	     (long) ts->id, ts->swapped ? "out" : "in");
+    fprintf (stderr, "\nTHREAD_ID %p (swapped %s):\n",
+	     (void *)ts->id, ts->swapped ? "out" : "in");
     gdb_backtrace (ts->id);
   }
 #else
