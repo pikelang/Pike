@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.132 1998/11/07 07:40:11 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.133 1998/11/09 07:23:18 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -24,6 +24,23 @@ test_eq([[#"foo
 bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
+
+test_any([[return class Z {
+string bonk() { return "oiff"; }
+
+class A
+{
+  string bonk_me() { return bonk(); }
+}
+
+class B { inherit A; }
+
+class C
+{
+  string oiff() { return "bonk"; }
+  class D { inherit B; }
+}
+}()->C()->D()->bonk_me()]],"oiff")
 
 test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"foo")]])
 test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"z")]])

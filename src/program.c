@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.102 1998/11/06 03:46:27 hubbe Exp $");
+RCSID("$Id: program.c,v 1.103 1998/11/09 07:23:16 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1217,6 +1217,8 @@ void low_inherit(struct program *p,
 	inherit.parent=par;
 	inherit.parent_identifier=pid;
 	inherit.parent_offset=0;
+      }else{
+	inherit.parent_offset+=parent_offset;
       }
     }
     if(inherit.parent) add_ref(inherit.parent);

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.96 1998/10/16 15:29:39 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.97 1998/11/09 07:23:15 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -390,7 +390,7 @@ void print_return_value(void)
 struct callback_list evaluator_callbacks;
 
 #ifdef DEBUG
-static char trace_buffer[100];
+static char trace_buffer[200];
 #define GET_ARG() (backlog[backlogp].arg=(\
   instr=prefix,\
   prefix=0,\
@@ -674,10 +674,25 @@ static int eval_instruction(unsigned char *pc)
 	{
 	  if(inherit->parent_offset)
 	  {
+#ifdef DEBUG
+	    if(t_flag>4)
+	    {
+	      sprintf(trace_buffer,"-   Following o->parent (accumulator+=%d)\n",inherit->parent_offset-1);
+	      write_to_stderr(trace_buffer,strlen(trace_buffer));
+	    }
+#endif
+
 	    i=o->parent_identifier;
 	    o=o->parent;
 	    accumulator+=inherit->parent_offset-1;
 	  }else{
+#ifdef DEBUG
+	    if(t_flag>4)
+	    {
+	      sprintf(trace_buffer,"-   Following inherit->parent (accumulator+=%d)\n",inherit->parent_offset-1);
+	      write_to_stderr(trace_buffer,strlen(trace_buffer));
+	    }
+#endif
 	    i=inherit->parent_identifier;
 	    o=inherit->parent;
 	  }
