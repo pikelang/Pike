@@ -17,6 +17,11 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 };
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;
+
+/* Some compilers (eg cl) don't like empty structs... */
+#undef EMPTY
+#define EMPTY ERR_VAR(INT_TYPE, int, PIKE_T_INT, ignored__)
+
 #endif /* ERR_EXT_DECLARE */
 
 #ifdef ERR_SETUP
