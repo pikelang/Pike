@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.136 1998/10/31 20:51:54 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.137 1998/10/31 21:31:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -826,7 +826,6 @@ void f_string_to_utf8(INT32 args)
       out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
       out->str[j++] = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x3ffffff)) {
-      /* This and onwards is extended UTF-8 encoding. */
       /* 26bit */
       out->str[j++] = 0xf8 | (c >> 24);
       out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
@@ -842,6 +841,7 @@ void f_string_to_utf8(INT32 args)
       out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
       out->str[j++] = 0x80 | (c & 0x3f);
     } else {
+      /* This and onwards is extended UTF-8 encoding. */
       /* 32 - 36bit */
       out->str[j++] = 0xfe;
       out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
@@ -870,8 +870,16 @@ void f_utf8_to_string(INT32 args)
   int len = 0;
   int shift = 0;
   int i,j;
+  int extended = 0;
 
   get_all_args("utf8_to_string", args, "%S", &in);
+
+  if (args > 1) {
+    if (sp[1-args].type != T_INT) {
+      error("utf8_to_string(): Bad argument 2, expected int|void.\n");
+    }
+    extended = sp[1-args].u.integer;
+  }
 
   for(i=0; i < in->len; i++) {
     unsigned int c = ((unsigned char *)in->str)[i];
@@ -910,6 +918,11 @@ void f_utf8_to_string(INT32 args)
 	  cont = 5;
 	} else if (c == 0xfe) {
 	  /* 36bit */
+	  if (!extended) {
+	    error("utf8_to_string(): "
+		  "Character 0xfe at index %d when not in extended mode.\n",
+		  i);
+	  }
 	  cont = 6;
 	} else {
 	  error("utf8_to_string(): "
@@ -3530,7 +3543,7 @@ void init_builtin_efuns(void)
   add_efun("string_to_unicode", f_string_to_unicode, "function(string:string)", OPT_TRY_OPTIMIZE);
   add_efun("unicode_to_string", f_unicode_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
   add_efun("string_to_utf8", f_string_to_utf8, "function(string,int|void:string)", OPT_TRY_OPTIMIZE);
-  add_efun("utf8_to_string", f_utf8_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
+  add_efun("utf8_to_string", f_utf8_to_string, "function(string,int|void:string)", OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
