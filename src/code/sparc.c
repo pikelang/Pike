@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.30 2002/11/10 19:44:37 grubba Exp $
+|| $Id: sparc.c,v 1.31 2002/11/11 12:34:17 grubba Exp $
 */
 
 /*
@@ -293,10 +293,19 @@ void sparc_ins_entry(void)
 void sparc_update_pc(void)
 {
   LOAD_PIKE_FP();
+#if 0
+  /* The ASR registers are implementation specific in Sparc V7 and V8. */
   /* rd %pc, %i0 */
   SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
   /* stw %pc, [ %pike_fp + pc ] */
   SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
+#else /* !0 */
+  /* call .+8 */
+  SPARC_CALL(8);
+  /* The new %o7 is available in the delay slot. */
+  /* stw %o7, [ %pike_fp + pc ] */
+  SPARC_STW(SPARC_REG_O7, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
+#endif /* 0 */
 }
 
 /*
@@ -448,14 +457,18 @@ void sparc_escape_catch(void)
 {
   LOAD_PIKE_FP();
   SPARC_FLUSH_UNSTORED();
+#if 0
+  /* The asr registers are implementation specific in Sparc V7 and V8. */
   /* rd %pc, %i0 */
   SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
-#if 0
   /* add %i0, 20, %i0 */
-  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 20, 1);
+  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 5*4, 1);
 #else /* !0 */
-  /* add %i0, 24, %i0 */
-  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 24, 1);
+  /* call .+8 */
+  SPARC_CALL(8);
+  /* The new %o7 is available in the delay slot. */
+  /* add %o7, 24, %i0 */
+  SPARC_ADD(SPARC_REG_I0, SPARC_REG_O7, 6*4, 1);
 #endif /* 0 */
   /* stw %i0, [ %pike_fp, %offset(pike_frame, pc) ] */
   SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP,
