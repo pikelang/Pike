@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.47 2001/07/04 20:42:21 nilsson Exp $
+// $Id: MySQL.pike,v 1.48 2001/07/04 20:46:32 nilsson Exp $
 
 inherit .Base;
 
@@ -318,7 +318,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
     string d = b->data();
     int w;
     sscanf( d, "%4c", w );
-    mixed err=catch(db->query("insert into word_hit (word_id,first_doc_id,hits) "
+    mixed err=catch(db->query("insert into word_hit (word,first_doc_id,hits) "
 			      "values (%s,%d,%s)", string_to_utf8(word), w, d ));
     if(err)
       werror("%O\n",describe_backtrace(err));
