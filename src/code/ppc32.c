@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.25 2002/10/16 23:27:07 marcus Exp $
+|| $Id: ppc32.c,v 1.26 2002/10/23 14:58:26 marcus Exp $
 */
 
 /*
@@ -40,9 +40,9 @@
       LWZ(0, 2, delta_);						\
     }									\
     /* mtlr r0 */							\
-    add_to_program(0x7c0803a6);						\
+    MTSPR(0, PPC_SPREG_LR);						\
     /* blrl */								\
-    add_to_program(0x4e800021);						\
+    BCLRL(20, 0);							\
   } while(0)
 #define ADD_LABEL_CALL(X) ADD_CALL(&(X))
 #else
@@ -53,12 +53,12 @@
       /* sigh.  this is so inefficient.  damn linux. */	\
       SET_REG(0, func_);				\
       /* mtlr r0 */					\
-      MTSPR(0, 8);					\
+      MTSPR(0, PPC_SPREG_LR);				\
       /* blrl */					\
-      add_to_program(0x4e800021);			\
+      BCLRL(20, 0);					\
     } else {						\
       /* bla func */					\
-      add_to_program(0x48000003|(func_&0x03fffffc));	\
+      BLA(func_);					\
     }							\
   } while(0)
 #define ADD_LABEL_CALL(X) ADD_CALL(X)
@@ -366,10 +366,10 @@ static void ppc32_escape_catch(void)
   LOAD_FP_REG();
   FLUSH_CODE_GENERATOR_STATE();
   /* bl .+4 */
-  add_to_program(0x48000005);
+  BL(4);
   pos_ = PIKE_PC;
   /* mflr pike_pc */
-  MFSPR(PPC_REG_PIKE_PC, 8);
+  MFSPR(PPC_REG_PIKE_PC, PPC_SPREG_LR);
   /* addi pike_pc,pike_pc,N */
   ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, 0);
   /* stw pike_pc,pc(pike_fp) */
@@ -556,7 +556,7 @@ INT32 ppc32_ins_f_jump(unsigned int b)
   if(b != F_BRANCH) return -1;
   FLUSH_CODE_GENERATOR_STATE();
   ret=DO_NOT_WARN( (INT32) PIKE_PC );
-  add_to_program(0x48000000);
+  B(0);
   return ret;
 }
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.17 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: ppc32.h,v 1.18 2002/10/23 14:58:26 marcus Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -10,9 +10,14 @@
 		     (((BD)&0x3fff)<<2)|((AA)<<1)|(LK))
 #define PPC_INSTR_D_FORM(OPCD,S,A,d)					\
       add_to_program(((OPCD)<<26)|((S)<<21)|((A)<<16)|((d)&0xffff))
+#define PPC_INSTR_I_FORM(OPCD,LI,AA,LK)				\
+      add_to_program(((OPCD)<<26)|((LI)&0x03fffffc)|((AA)<<1)|(LK))
 #define PPC_INSTR_M_FORM(OPCD,S,A,SH,MB,ME,Rc)				\
       add_to_program(((OPCD)<<26)|((S)<<21)|((A)<<16)|((SH)<<11)|	\
 		     ((MB)<<6)|((ME)<<1)|(Rc))
+#define PPC_INSTR_XL_FORM(OPCD,BO,BI,CRBB,XO,LK) \
+      add_to_program(((OPCD)<<26)|((BO)<<21)|((BI)<<16)|((CRBB)<<11)|	\
+		     ((XO)<<1)|(LK))
 #define PPC_INSTR_XFX_FORM(OPCD,S,SPR,XO)			\
       add_to_program(((OPCD)<<26)|((S)<<21)|((SPR)<<11)|((XO)<<1))
 
@@ -31,6 +36,11 @@
 
 #define MFSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),339)
 #define MTSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),467)
+
+#define BCLRL(BO,BI) PPC_INSTR_XL_FORM(19,BO,BI,0,16,1)
+#define B(LI) PPC_INSTR_I_FORM(18,LI,0,0)
+#define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
+#define BLA(LI) PPC_INSTR_I_FORM(18,LI,1,1)
 
 #define LOW_GET_JUMP()	(PROG_COUNTER[0])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
@@ -57,6 +67,8 @@
       }									  \
     }									  \
   } while(0)
+
+#define PPC_SPREG_LR 8
 
 #define PPC_REG_RET 0
 
@@ -142,9 +154,9 @@ void ppc32_flush_code_generator_state(void);
       }									\
     } else {								\
       /* bl .+4 */							\
-      add_to_program(0x48000005);					\
+      BL(4);								\
       /* mflr pike_pc */						\
-      MFSPR(PPC_REG_PIKE_PC, 8);					\
+      MFSPR(PPC_REG_PIKE_PC, PPC_SPREG_LR);				\
       /* addi pike_pc,pike_pc,-4 */					\
       ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, -sizeof(PIKE_OPCODE_T));	\
     }									\
