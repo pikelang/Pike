@@ -399,7 +399,7 @@ class YMD
       if (m==CALUNKNOWN) make_month();
       if (w==CALUNKNOWN) make_week();
       return sprintf("%04d-%02d-%02d (%s) -W%02d-%d (%s)",
-		     y,m,md,
+		     ((yd < 1)?y-1:y),m,md,
 		     month_shortname(),
 		     w,wd, // fixme - what weekday?
 		     week_day_shortname());
@@ -432,25 +432,25 @@ class YMD
 		 ("SunMonTueWedThuFriSat"/3)[compat_week_day(wd)],
 		 md,
 		 ("zzzJanFebMarAprMayJunJulAugSepOctNovDec"/3)[m],
-		 y);
+		 ((yd < 1)?y-1:y));
    }
 
    string format_ymd()
    {
       if (m==CALUNKNOWN) make_month();
-      return sprintf("%04d-%02d-%02d",y,m,md);
+      return sprintf("%04d-%02d-%02d",((yd < 1)?y-1:y),m,md);
    }
 
    string format_ymd_short()
    {
       if (m==CALUNKNOWN) make_month();
-      return sprintf("%04d%02d%02d",y,m,md);
+      return sprintf("%04d%02d%02d",((yd < 1)?y-1:y),m,md);
    }
 
    string format_ymd_xshort()
    {
       if (m==CALUNKNOWN) make_month();
-      return sprintf("%02d%02d%02d",y%100,m,md);
+      return sprintf("%02d%02d%02d",((yd < 1)?y-1:y)%100,m,md);
    }
 
    string format_iso_week()

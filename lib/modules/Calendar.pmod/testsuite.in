@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.5 2002/12/11 22:57:24 nilsson Exp $
+dnl $Id: testsuite.in,v 1.6 2003/02/11 15:59:58 jhs Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -102,3 +102,9 @@ test_day("2001-01-01 Mon 2001w01")
 
 test_day("2003-12-31 Wed 2004w01")
 test_day("2004-01-01 Thu 2004w01")
+
+test_eq([[ Calendar.ISO.Week(2001, 1)->format_ymd() ]], "2001-01-01")
+test_eq([[ Calendar.ISO.Week(2002, 1)->format_ymd() ]], "2001-12-31")
+test_eq([[ Calendar.ISO.Week(2003, 1)->format_ymd() ]], "2002-12-30")
+test_eq([[ Calendar.ISO.Week(2004, 1)->format_ymd() ]], "2003-12-29")
+test_eq([[ Calendar.ISO.Week(2005, 1)->format_ymd() ]], "2005-01-03")
