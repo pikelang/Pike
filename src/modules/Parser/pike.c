@@ -71,7 +71,7 @@ static void do_free_arrayptr( struct array **x )
 
 static void f_tokenize( INT32 args )
 {
-  struct array *res = allocate_array_no_init( 0, 128 );
+  struct array *res;
   struct pike_string *left_s = 0; /* Make gcc happy. */
   int left;
   ONERROR tmp;
@@ -79,6 +79,16 @@ static void f_tokenize( INT32 args )
   if( Pike_sp[-1].type != PIKE_T_STRING )
     Pike_error("Expected string argument\n");
 
+  if( Pike_sp[-1].u.string->len==0 )
+  {
+    pop_n_elems(args);
+    push_array(&empty_array);
+    push_string(empty_pike_string);
+    f_aggregate(2);
+    return;
+  }
+
+  res = allocate_array_no_init( 0, 128 );
   SET_ONERROR(tmp, do_free_arrayptr, &res);
   
   switch( Pike_sp[-1].u.string->size_shift )
