@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.183 1999/07/30 23:43:06 mast Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.184 1999/08/03 21:31:05 noring Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -523,6 +523,15 @@ test_true([[lambda(int x) { return lambda() { return x; };}]])
 test_eq([[lambda(int x) { return lambda() { return x; };}(4)()]],4)
 test_eq([[lambda(int x) { return lambda() { return x; };}(17)()]],17)
 test_eq([[lambda(int x) { return lambda() { return lambda() { return x; };};}(17)()()]],17)
+
+test_eq([[function f;
+	for(int i = 0; i < 2; i++)
+	  { {int _i = i; f = lambda(int j) { return _i+j; }; } }
+	return f(17);]],
+	[[function f;
+	for(int i = 0; i < 2; i++)
+	  { {int _i = i; f = lambda(int j) { return _i+j; }; } int FEL; }
+	return f(17);]]);
 
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
 test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
