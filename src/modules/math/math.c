@@ -12,6 +12,10 @@
 #include "module_support.h"
 #include "operators.h"
 
+#ifdef PC
+#undef PC
+#endif /* PC */
+
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
@@ -20,7 +24,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.14 1998/07/23 01:22:33 hubbe Exp $");
+RCSID("$Id: math.c,v 1.15 1998/08/07 16:28:25 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
