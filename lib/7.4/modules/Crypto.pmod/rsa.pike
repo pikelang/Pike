@@ -3,6 +3,8 @@
 
 //! @deprecated Crypto.RSA
 
+#if constant(Crypto.Hash)
+
 inherit Crypto.RSA;
 
 Gmp.mpz sign(string m, program|object h) {
@@ -14,3 +16,5 @@ int(0..1) verify(string m, program|object h, object s) {
   if(!h->hash) h=h();
   return ::verify(m,h,s);
 }
+
+#endif

@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.6 2004/02/19 14:28:10 nilsson Exp $
+/* $Id: RSA.pike,v 1.7 2004/02/28 14:57:10 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -6,7 +6,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#if constant(Gmp.mpz)
+#if constant(Gmp.mpz) && constant(Crypto.Hash)
 
 static Gmp.mpz n;  /* modulo */
 static Gmp.mpz e;  /* public exponent */

@@ -1,5 +1,6 @@
 #pike 7.6
 
+#if constant(Crypto.crypt_md5)
 //! From Pike 7.5 @[pw] and @[salt] are binary strings, so
 //! the result is different if any of these includes @expr{"\0"@}.
 //!
@@ -15,6 +16,7 @@ string crypt_md5(string pw, void|string salt) {
   sscanf(salt, "$1$%s$", salt);
   return Crypto.crypt_md5(pw,salt);
 }
+#endif
 
 //! @deprecated String.string2hex
 constant string_to_hex = __builtin.string2hex;
