@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.5 1998/01/11 20:50:34 mirar Exp $ */
+/* $Id: colortable_lookup.h,v 1.6 1999/04/07 22:22:15 mirar Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.5 1998/01/11 20:50:34 mirar Exp $
+**!	$Id: colortable_lookup.h,v 1.6 1999/04/07 22:22:15 mirar Exp $
 **! class colortable
 */
 
@@ -254,6 +254,89 @@ done_pixel:
    }
 
    CHRONO("end flat/full map");
+}
+
+static void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
+				  NCTLU_DESTINATION *d,
+				  int n,
+				  struct neo_colortable *nct,
+				  struct nct_dither *dith,
+				  int rowlen)
+{
+   rgbl_group sf=nct->spacefactor;
+   int mprim=nct->u.flat.numentries;
+   struct nct_flat_entry *feprim=nct->u.flat.entries;
+
+   nct_dither_encode_function *dither_encode=dith->encode;
+   nct_dither_got_function *dither_got=dith->got;
+   nct_dither_line_function *dither_newline=dith->newline;
+   int rowpos=0,cd=1,rowcount=0;
+   int *index;
+   int r,g,b;
+   int i;
+
+   if (!nct->lu.rigid.index)
+   {
+      CHRONO("init flat/rigid map");
+      build_rigid(nct);
+   }
+   index=nct->lu.rigid.index;
+   r=nct->lu.rigid.r;
+   g=nct->lu.rigid.g;
+   b=nct->lu.rigid.b;
+
+   CHRONO("begin flat/rigid map");
+
+   if (dith->firstline)
+      (dith->firstline)NCTLU_LINE_ARGS;
+
+   while (n--)
+   {
+      int rgbr,rgbg,rgbb;
+      int mindist;
+      int m;
+      struct nct_flat_entry *fe;
+      struct lookupcache lc;
+	 
+      if (dither_encode)
+      {
+	 rgbl_group val;
+	 val=dither_encode(dith,rowpos,*s);
+	 rgbr=val.r;
+	 rgbg=val.g;
+	 rgbb=val.b;
+      }
+      else
+      {
+	 rgbr=s->r;
+	 rgbg=s->g;
+	 rgbb=s->b;
+      }
+
+      i=index[((rgbr*r)>>8)+
+	     r*(((rgbg*g)>>8)+
+		((rgbb*b)>>8)*g)];
+      NCTLU_RIGID_WRITE;
+
+      if (dither_got)
+      {
+	 dither_got(dith,rowpos,*s,NCTLU_DITHER_RIGID_GOT);
+	 s+=cd; d+=cd; rowpos+=cd;
+	 if (++rowcount==rowlen)
+	 {
+	    rowcount=0;
+	    if (dither_newline) 
+	       (dither_newline)NCTLU_LINE_ARGS;
+	 }
+      }
+      else
+      {
+	 d++;
+	 s++;
+      }
+   }
+
+   CHRONO("end flat/rigid map");
 }
 
 static void NCTLU_CUBE_NAME(rgb_group *s,

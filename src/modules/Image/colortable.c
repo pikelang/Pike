@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.52 1999/03/22 09:33:37 mirar Exp $ */
+/* $Id: colortable.c,v 1.53 1999/04/07 22:22:11 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.52 1999/03/22 09:33:37 mirar Exp $
+**!	$Id: colortable.c,v 1.53 1999/04/07 22:22:11 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.52 1999/03/22 09:33:37 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.53 1999/04/07 22:22:11 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -36,6 +36,8 @@ RCSID("$Id: colortable.c,v 1.52 1999/03/22 09:33:37 mirar Exp $");
 #include "array.h"
 #include "threads.h"
 #include "builtin_functions.h"
+#include "../../error.h"
+#include "module_support.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -64,6 +66,10 @@ extern struct program *image_program;
 #define CUBICLE_DEFAULT_G 10
 #define CUBICLE_DEFAULT_B 10
 #define CUBICLE_DEFAULT_ACCUR 4
+
+#define RIGID_DEFAULT_R 16
+#define RIGID_DEFAULT_G 16
+#define RIGID_DEFAULT_B 16
 
 #ifndef MAX
 #define MAX(X,Y) ((X)>(Y)?(X):(Y))
@@ -95,6 +101,11 @@ static void colortable_free_lookup_stuff(struct neo_colortable *nct)
 	    free(nct->lu.cubicles.cubicles);
 	 }
 	 nct->lu.cubicles.cubicles=NULL;
+	 break;
+      case NCT_RIGID:
+	 if (nct->lu.rigid.index)
+	    free(nct->lu.rigid.index);
+	 nct->lu.rigid.index=NULL;
 	 break;
       case NCT_FULL:
          break;
@@ -213,6 +224,7 @@ static void _img_copy_colortable(struct neo_colortable *dest,
    switch (dest->lookup_mode)
    {
       case NCT_CUBICLES: dest->lu.cubicles.cubicles=NULL; break;
+      case NCT_RIGID:    dest->lu.rigid.index=NULL; break;
       case NCT_FULL:     break;
    }
    
@@ -2524,6 +2536,69 @@ void image_colortable_full(INT32 args)
 }
 
 /*
+**! method object rigid()
+**! method object rigid(int r,int g,int b)
+**!	Set the colortable to use the "rigid" method of
+**!     looking up colors. 
+**!	
+**!	This is a very simple way of finding the correct
+**!     color. The algorithm initializes a cube with
+**!	<tt>r</tt> x <tt>g</tt> x <tt>b</tt> colors,
+**!	where every color is chosen by closest match to
+**!	the corresponding coordinate.
+**!	
+**!	This format is not recommended for exact match,
+**!	but may be usable when it comes to quickly
+**!	view pictures on-screen.
+**!
+**!	It has a high init-cost and low use-cost.
+**!	The structure is initiated at first usage.
+**!
+**! returns the called object
+**!
+**! see also: cubicles, map, full
+**! note
+**!     Not applicable to colorcube types of colortable.
+**/
+
+void image_colortable_rigid(INT32 args)
+{
+   int r,g,b;
+
+   if (args)
+   {
+      get_all_args("Image.colortable->rigid()",args,"%i%i%i",&r,&g,&b);
+   }
+   else
+   {
+      r=RIGID_DEFAULT_R;
+      g=RIGID_DEFAULT_G;
+      b=RIGID_DEFAULT_B;
+   }
+
+   if (!(THIS->lookup_mode==NCT_RIGID &&
+	 THIS->lu.rigid.r == r &&
+	 THIS->lu.rigid.g == g &&
+	 THIS->lu.rigid.b == b))
+   {
+      colortable_free_lookup_stuff(THIS);
+      THIS->lookup_mode=NCT_RIGID;
+
+      if (r<1) SIMPLE_BAD_ARG_ERROR("Image.colortable->rigid",1,"integer >0");
+      if (g<1) SIMPLE_BAD_ARG_ERROR("Image.colortable->rigid",2,"integer >0");
+      if (b<1) SIMPLE_BAD_ARG_ERROR("Image.colortable->rigid",3,"integer >0");
+
+      THIS->lu.rigid.r=r;
+      THIS->lu.rigid.g=g;
+      THIS->lu.rigid.b=b;
+      THIS->lu.rigid.index=NULL;
+   }
+      
+   pop_n_elems(args);
+   ref_push_object(THISOBJ);
+}
+
+/*
 **! method object cubicles()
 **! method object cubicles(int r,int g,int b)
 **! method object cubicles(int r,int g,int b,int accuracy)
@@ -2600,11 +2675,8 @@ void image_colortable_full(INT32 args)
 
 void image_colortable_cubicles(INT32 args)
 {
-   if (THIS->lookup_mode!=NCT_CUBICLES) 
-   {
-      colortable_free_lookup_stuff(THIS);
-      THIS->lookup_mode=NCT_CUBICLES;
-   }
+   colortable_free_lookup_stuff(THIS);
+
    if (args) 
       if (args>=3 && 
 	  sp[-args].type==T_INT &&
@@ -2962,6 +3034,73 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
       cub->index=p; /* out of memory, or wierd */
 }
 
+void build_rigid(struct neo_colortable *nct)
+{
+   int *dist,*ddist;
+   int *index,*dindex;
+   int r=nct->lu.rigid.r;
+   int g=nct->lu.rigid.g;
+   int b=nct->lu.rigid.b;
+   int i,ri,gi,bi;
+   int rc,gc,bc;
+   int di,hdi,hhdi;
+
+   if (nct->lu.rigid.index) fatal("rigid is initialized twice");
+   
+
+   index=malloc(sizeof(int)*r*g*b);
+   dist=malloc(sizeof(int)*r*g*b);
+
+   if (!index||!dist)
+   {
+      if (index) free(index);
+      if (dist) free(dist);
+      resource_error(NULL,0,0,"memory",r*g*b*sizeof(int),"Out of memory.\n");
+   }
+   
+   for (i=0; i<nct->u.flat.numentries; i++)
+   {
+      rc=nct->u.flat.entries[i].color.r;
+      gc=nct->u.flat.entries[i].color.g;
+      bc=nct->u.flat.entries[i].color.b;
+
+      ddist=dist;
+      dindex=index;
+      for (bi=0; bi<r; bi++)
+      {
+	 hhdi=(bc-bi*COLORMAX/b)*(bc-bi*COLORMAX/b);
+	 for (gi=0; gi<r; gi++)
+	 {
+	    hdi=hhdi+(gc-gi*COLORMAX/g)*(gc-gi*COLORMAX/g);
+	    if (i==0)
+	       for (ri=0; ri<r; ri++)
+	       {
+		  *(ddist++)=hdi+(rc-ri*COLORMAX/r)*(rc-ri*COLORMAX/r);
+		  *(dindex++)=0;
+	       }
+	    else
+	       for (ri=0; ri<r; ri++)
+	       {
+		  di=hdi+(rc-ri*COLORMAX/r)*(rc-ri*COLORMAX/r);
+		  if (*ddist>di) 
+		  {
+		     *(ddist++)=di;
+		     *(dindex++)=i;
+		  }
+		  else
+		  {
+		     ddist++;
+		     dindex++;
+		  }
+	       }
+	 }
+      }
+   }
+
+   nct->lu.rigid.index=index;
+   free(dist);
+}
+
 /*
 **! method object map(object image)
 **! method object `*(object image)
@@ -3034,7 +3173,10 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #define NCTLU_FLAT_CUBICLES_NAME _img_nct_map_to_flat_cubicles
 #define NCTLU_FLAT_FULL_NAME _img_nct_map_to_flat_full
 #define NCTLU_CUBE_NAME _img_nct_map_to_cube
+#define NCTLU_FLAT_RIGID_NAME _img_nct_map_to_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,&d,NULL,NULL,NULL,&cd)
+#define NCTLU_RIGID_WRITE (d[0]=feprim[i].color)
+#define NCTLU_DITHER_RIGID_GOT (*d)
 
 #define NCTLU_CUBE_FAST_WRITE(SRC) \
             d->r=((int)(((int)((SRC)->r*red+hred)>>8)*redf)); \
@@ -3055,6 +3197,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #undef NCTLU_LINE_ARGS 
 #undef NCTLU_CUBE_FAST_WRITE
 #undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
+#undef NCTLU_RIGID_WRITE
+#undef NCTLU_FLAT_RIGID_NAME
+#undef NCTLU_DITHER_RIGID_GOT
 
 /* instantiate 8bit functions */
 
@@ -3064,7 +3209,10 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #define NCTLU_FLAT_CUBICLES_NAME _img_nct_index_8bit_flat_cubicles
 #define NCTLU_FLAT_FULL_NAME _img_nct_index_8bit_flat_full
 #define NCTLU_CUBE_NAME _img_nct_index_8bit_cube
+#define NCTLU_FLAT_RIGID_NAME _img_nct_index_8bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,&d,NULL,NULL,&cd)
+#define NCTLU_RIGID_WRITE (d[0]=(unsigned char)(feprim[i].no))
+#define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 
 #define NCTLU_CUBE_FAST_WRITE(SRC) \
    *d=(unsigned char) \
@@ -3093,6 +3241,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #undef NCTLU_LINE_ARGS 
 #undef NCTLU_CUBE_FAST_WRITE
 #undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
+#undef NCTLU_RIGID_WRITE
+#undef NCTLU_FLAT_RIGID_NAME
+#undef NCTLU_DITHER_RIGID_GOT
 
 /* instantiate 16bit functions */
 
@@ -3102,7 +3253,10 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #define NCTLU_FLAT_CUBICLES_NAME _img_nct_index_16bit_flat_cubicles
 #define NCTLU_FLAT_FULL_NAME _img_nct_index_16bit_flat_full
 #define NCTLU_CUBE_NAME _img_nct_index_16bit_cube
+#define NCTLU_FLAT_RIGID_NAME _img_nct_index_16bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,&d,NULL,&cd)
+#define NCTLU_RIGID_WRITE (d[0]=(unsigned short)(feprim[i].no))
+#define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 
 #define NCTLU_CUBE_FAST_WRITE(SRC) \
    *d=(unsigned short) \
@@ -3131,6 +3285,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #undef NCTLU_LINE_ARGS 
 #undef NCTLU_CUBE_FAST_WRITE
 #undef NCTLU_CUBE_FAST_WRITE_DITHER_GOT
+#undef NCTLU_RIGID_WRITE
+#undef NCTLU_FLAT_RIGID_NAME
+#undef NCTLU_DITHER_RIGID_GOT
 
 /* done instantiating from colortable_lookup.h */
 
@@ -3154,6 +3311,9 @@ int image_colortable_index_8bit_image(struct neo_colortable *nct,
 	 {
 	    case NCT_FULL:
   	       _img_nct_index_8bit_flat_full(s,d,len,nct,&dith,rowlen);
+	       break;
+	    case NCT_RIGID:
+  	       _img_nct_index_8bit_flat_rigid(s,d,len,nct,&dith,rowlen);
 	       break;
 	    case NCT_CUBICLES:
   	       _img_nct_index_8bit_flat_cubicles(s,d,len,nct,&dith,rowlen);
@@ -3188,6 +3348,9 @@ int image_colortable_index_16bit_image(struct neo_colortable *nct,
 	    case NCT_FULL:
   	       _img_nct_index_16bit_flat_full(s,d,len,nct,&dith,rowlen);
 	       break;
+	    case NCT_RIGID:
+  	       _img_nct_index_16bit_flat_rigid(s,d,len,nct,&dith,rowlen);
+	       break;
 	    case NCT_CUBICLES:
   	       _img_nct_index_16bit_flat_cubicles(s,d,len,nct,&dith,rowlen);
 	       break;
@@ -3221,6 +3384,9 @@ int image_colortable_map_image(struct neo_colortable *nct,
 	    case NCT_FULL:
   	       _img_nct_map_to_flat_full(s,d,len,nct,&dith,rowlen);
 	       break;
+	    case NCT_RIGID:
+  	       _img_nct_map_to_flat_rigid(s,d,len,nct,&dith,rowlen);
+	       break;
 	    case NCT_CUBICLES:
   	       _img_nct_map_to_flat_cubicles(s,d,len,nct,&dith,rowlen);
 	       break;
@@ -3236,7 +3402,7 @@ int image_colortable_map_image(struct neo_colortable *nct,
 
 void image_colortable_index_8bit(INT32 args)
 {
-   struct image *src;
+   struct image *src=NULL;
    struct pike_string *ps;
 
    if (args<1)
@@ -3264,7 +3430,7 @@ void image_colortable_index_8bit(INT32 args)
 
 void image_colortable_index_16bit(INT32 args)
 {
-   struct image *src;
+   struct image *src=NULL;
    struct pike_string *ps;
 
    if (args<1)
@@ -3292,7 +3458,7 @@ void image_colortable_index_16bit(INT32 args)
 
 void image_colortable_map(INT32 args)
 {
-   struct image *src;
+   struct image *src=NULL;
    struct image *dest;
    struct object *o;
 
@@ -4069,69 +4235,68 @@ void init_colortable_programs(void)
 		"function(array(array(int)):void)|"
 		"function(object,int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-  ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tArr(tInt)),tVoid),tFuncV(tObj tInt,tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tArr(tInt)),tVoid),tFuncV(tObj tInt,tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
    /* function(void:void)|"
 		"function(array(array(int)):void)|"
 		"function(object,int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-  ADD_FUNCTION("add",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tArr(tInt)),tVoid),tFuncV(tObj tInt,tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("add",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tArr(tInt)),tVoid),tFuncV(tObj tInt,tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
    /* function(int:object) */
-  ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
+   ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
 
    /* operators */
    /* function(object:object) */
-  ADD_FUNCTION("`+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
+   ADD_FUNCTION("`+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
    /* function(object:object) */
-  ADD_FUNCTION("``+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
+   ADD_FUNCTION("``+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
 
    /* cast to array */
    /* function(string:array) */
-  ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),0);
+   ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),0);
 
    /* info */
    /* function(:int) */
-  ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(,tInt),0);
+   ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(,tInt),0);
 
    /* lookup modes */
-   /* function(:object) */
-  ADD_FUNCTION("cubicles",image_colortable_cubicles,tFunc(,tObj),0);
-   /* function(:object) */
-  ADD_FUNCTION("full",image_colortable_full,tFunc(,tObj),0);
+   ADD_FUNCTION("cubicles",image_colortable_cubicles,tFunc(,tObj),0);
+   ADD_FUNCTION("rigid",image_colortable_rigid,tFunc(,tObj),0);
+   ADD_FUNCTION("full",image_colortable_full,tFunc(,tObj),0);
 
    /* map image */
    /* function(object:object)|function(string,int,int) */
 #define map_func_type tOr(tFunc(tObj,tObj),tFunc(tString tInt,tInt))
-  ADD_FUNCTION("map",image_colortable_map,map_func_type,0);
-  ADD_FUNCTION("`*",image_colortable_map,map_func_type,0);
-  ADD_FUNCTION("``*",image_colortable_map,map_func_type,0);
+   ADD_FUNCTION("map",image_colortable_map,map_func_type,0);
+   ADD_FUNCTION("`*",image_colortable_map,map_func_type,0);
+   ADD_FUNCTION("``*",image_colortable_map,map_func_type,0);
 
    /* function(object:object) */
-  ADD_FUNCTION("index_8bit",image_colortable_index_8bit,tFunc(tObj,tObj),0);
+   ADD_FUNCTION("index_8bit",image_colortable_index_8bit,tFunc(tObj,tObj),0);
    /* function(object:object) */
-  ADD_FUNCTION("index_16bit",image_colortable_index_16bit,tFunc(tObj,tObj),0);
+   ADD_FUNCTION("index_16bit",image_colortable_index_16bit,tFunc(tObj,tObj),0);
 
    /* dither */
    /* function(:object) */
-  ADD_FUNCTION("nodither",image_colortable_nodither,tFunc(,tObj),0);
+   ADD_FUNCTION("nodither",image_colortable_nodither,tFunc(,tObj),0);
    /* function(void|int:object)"
-		"|function(int,int|float,int|float,int|float,int|float:object) */
-  ADD_FUNCTION("floyd_steinberg",image_colortable_floyd_steinberg,tOr(tFunc(tOr(tVoid,tInt),tObj),tFunc(tInt tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt),tObj)),0);
+      "|function(int,int|float,int|float,int|float,int|float:object) */
+   ADD_FUNCTION("floyd_steinberg",image_colortable_floyd_steinberg,tOr(tFunc(tOr(tVoid,tInt),tObj),tFunc(tInt tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt),tObj)),0);
    /* function(:object)|function(int,int,int:object) */
-  ADD_FUNCTION("randomcube",image_colortable_randomcube,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
+   ADD_FUNCTION("randomcube",image_colortable_randomcube,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
    /* function(:object)|function(int:object) */
-  ADD_FUNCTION("randomgrey",image_colortable_randomgrey,tOr(tFunc(,tObj),tFunc(tInt,tObj)),0);
+   ADD_FUNCTION("randomgrey",image_colortable_randomgrey,tOr(tFunc(,tObj),tFunc(tInt,tObj)),0);
    /* function(:object)"
-		"|function(int,int,int:object) */
-  ADD_FUNCTION("ordered",image_colortable_ordered,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
+      "|function(int,int,int:object) */
+   ADD_FUNCTION("ordered",image_colortable_ordered,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
 
    /* function(:object) */
-  ADD_FUNCTION("image",image_colortable_image,tFunc(,tObj),0);
+   ADD_FUNCTION("image",image_colortable_image,tFunc(,tObj),0);
 
    /* tuning image */
    /* function(int,int,int:object) */
-  ADD_FUNCTION("spacefactors",image_colortable_spacefactors,tFunc(tInt tInt tInt,tObj),0);
+   ADD_FUNCTION("spacefactors",image_colortable_spacefactors,tFunc(tInt tInt tInt,tObj),0);
 
    set_exit_callback(exit_colortable_struct);
   
