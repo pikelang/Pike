@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.106 1998/08/02 12:05:21 grubba Exp $
+# $Id: Makefile.in,v 1.107 1998/08/02 15:20:14 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -291,17 +291,25 @@ clean: tidy
 	-( cd modules; ${MAKE} $(MAKE_FLAGS) clean )
 	-rm -f TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
-	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
+	-rm -f hilfe master.pike
+	find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 
 # make _really_ clean
 spotless: clean
-	rm -f Makefile machine.h
-	find . -type f '(' -name '*~' -o -name '.*~' -o -name core -o -name '.nfs*' -name '#*#' ')' -print | xargs rm -f
+	-(cd $(SRCDIR); find . -type f -name '*.h.in' -print) | \
+	  sed -e 's/\.in$$//' | xargs rm -f
+	find . -type f '(' -name 'Makefile' -o -name '*~' -o -name '.*~' -o \
+	  -name core -o -name '.nfs*' -name '#*#' -o -name '.pure' -o \
+	  -name 'conftest.*' ')' -exec rm -f \{\} \;
 	-rm -f lexical.c mon.out *.ln config.status
 	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/\#*\#
 	-rm -f pike pike.old l.outa*
 	-rm -f modules/*/testsuite
 	-rm -rf lib
+
+distclean: spotless
+	find . -type f '(' -name 'config.log' -o -name 'config.status' -o \
+	  -name 'config.cache' -name 'stamp-h' ')' -exec rm -f \{\} \;
 
 # create tags
 tags:
