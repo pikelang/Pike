@@ -1,6 +1,6 @@
 Package: pike7.6
 Version: 7.6.13
-Revision: 1
+Revision: 2
 Description: Programming language with a C-like syntax
 DescDetail: <<
  Pike is an interpreted, object-oriented programming language. 
@@ -27,8 +27,8 @@ Primary: ftp://ftp.oav.net/pike/7.6/
 <<
 Source: mirror:custom:pike-%v.tar.gz
 Source-MD5: 9a3eade39e89f58b8979a3b698ada5b7
-BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev,nettle
-Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,dlcompat-shlibs,mysql12-shlibs
+BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm3,pdflib,fftw3,dlcompat-dev,mysql12-dev,nettle
+Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm3-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw3-shlibs,dlcompat-shlibs,mysql12-shlibs
 SourceDirectory: pike-%v
 CompileScript: <<
 make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --without-perl --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
