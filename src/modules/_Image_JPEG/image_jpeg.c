@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.28 2000/03/09 14:05:03 jhs Exp $
+ * $Id: image_jpeg.c,v 1.29 2000/07/04 14:49:49 grubba Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,14 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.28 2000/03/09 14:05:03 jhs Exp $");
+RCSID("$Id: image_jpeg.c,v 1.29 2000/07/04 14:49:49 grubba Exp $");
+
+/* For some reason EXTERN can be defined here.
+ * This is not good, since it confuses compilation.h.
+ */
+#ifdef EXTERN
+#undef EXTERN
+#endif
 
 #include "pike_macros.h"
 #include "object.h"
