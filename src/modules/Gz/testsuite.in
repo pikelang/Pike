@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.14 2001/02/07 11:45:59 noring Exp $
+// $Id: testsuite.in,v 1.15 2001/02/16 12:17:38 noring Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -21,6 +21,8 @@ define(dotest,[[
   dotest(sprintf("%'fomp'1000n"))
   dotest(sprintf("%'fomp'100000n"))
 
+  test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
+  test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
 ]])
 
 cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
@@ -30,6 +32,3 @@ cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master
     dotest(Crypto.randomness.pike_random()->read(524288))
     dotest(Crypto.randomness.pike_random()->read(8388500))
 ]])
-
-test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
-test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
