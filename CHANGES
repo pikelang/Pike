@@ -166,6 +166,7 @@ o Fixes to make the Mysql module load under Microsoft Windows even when
 o Fixed a threading bug in Image.Image()->box().
 o Added more consistency checks to detect thread problems. This is
   enabled with the new -dT argument (--with-rtldebug is not necessary).
+o Fixed bug in foreach range optimization.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
