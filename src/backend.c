@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.19 1998/06/13 21:18:19 grubba Exp $");
+RCSID("$Id: backend.c,v 1.20 2001/04/07 15:52:58 grubba Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
