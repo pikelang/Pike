@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.12 1997/04/18 18:20:54 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.13 1997/04/18 20:05:25 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -45,7 +45,7 @@ static void get_mpz_from_digits(MP_INT *tmp,
   }
   else if(base == 256)
   {
-    unsigned i;
+    int i;
     mpz_t digit;
     
     mpz_init(digit);
