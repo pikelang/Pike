@@ -53,6 +53,14 @@ while test x$1 = x -a x$# != x0; do
   shift
 done
 
+if test -x /usr/bin/uname ; then
+  UNAME=`/usr/bin/uname -sr`
+elif test -x /bin/uname ; then
+  UNAME=`/bin/uname -sr`
+else
+  UNAME=unknown
+fi
+
 if test x$# != x0 ; then
 
   done="::$1:"
@@ -70,14 +78,6 @@ if test x$# != x0 ; then
     esac
     shift
   done
-
-  if test -x /usr/bin/uname ; then
-    UNAME=`/usr/bin/uname -sr`
-  elif test -x /bin/uname ; then
-    UNAME=`/bin/uname -sr`
-  else
-    UNAME=unknown
-  fi
 
   case "$LINKER $LDOPTS " in
     *\ -c\ * | cpp\ * | *\ -E\ *)
@@ -108,10 +108,18 @@ if test x$# != x0 ; then
   esac
 fi
 
-if test "x$NO_ULIMIT" = "x"; then
-  # Limit data segment size to 48MB.
-  ulimit -d 49152 >/dev/null 2>&1
-fi
+case "x$UNAME" in
+  AIX*)
+    # AIX cc doesn't work with ulimit set
+    :
+  ;;
+  *)
+    if test "x$NO_ULIMIT" = "x"; then
+      # Limit data segment size to 48MB.
+      ulimit -d 49152 >/dev/null 2>&1
+    fi
+  ;;
+esac
 
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
 # /grubba
