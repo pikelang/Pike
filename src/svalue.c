@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.151 2002/11/23 20:05:14 mast Exp $
+|| $Id: svalue.c,v 1.152 2002/11/28 01:56:44 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.151 2002/11/23 20:05:14 mast Exp $");
+RCSID("$Id: svalue.c,v 1.152 2002/11/28 01:56:44 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1318,8 +1318,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  }
 	  if(name)
 	    my_binary_strcat(name->str,name->len);
-	  else
+	  else if (!obj->prog)
 	    my_strcat("0");
+	  else
+	    my_strcat("function");
 	}else{
 	  my_strcat("0");
 	}
@@ -1327,8 +1329,11 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     case T_OBJECT:
-      if(s->u.object->prog && (s->u.object->prog->flags & PROGRAM_FINISHED))
-      {
+      if (!s->u.object->prog)
+	my_strcat("0");
+      else if (!(s->u.object->prog->flags & PROGRAM_FINISHED))
+	my_strcat("object");
+      else {
 	if(Pike_interpreter.evaluator_stack && !Pike_in_gc) {
 	  DECLARE_CYCLIC();
 	  int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
@@ -1445,8 +1450,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	}
 #endif
 	my_strcat("object");
-      } else {
-	my_strcat("0");
       }
       break;
 
