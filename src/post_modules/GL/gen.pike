@@ -124,8 +124,6 @@ array(string) gen_func(string name, string ty)
       got += "  arg"+i+"=sp["+(i-1)+"-args].u.float_number;\n";
       break;
     case '+':
-      if(ty[i+1..]=="FFFF")
-	continue;
       int mi, mx;
       switch(sizeof(ty[i+1..])) {
       case 3:
@@ -192,7 +190,7 @@ array(string) gen_func(string name, string ty)
 				       return "BIT_"+upper_case(t);
 				     })*"|";
 		  }))+
-       (r234?({"BIT_MANY|BIT_MIXED"}):({}))+({"0"}))*", "+");\n";
+       (r234?({"BIT_MANY|BIT_MIXED|BIT_VOID"}):({}))+({"0"}))*", "+");\n";
 
   if(sizeof(got))
     res += "\n"+got+"\n";

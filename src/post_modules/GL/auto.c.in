@@ -1,11 +1,11 @@
 /*
- * $Id: auto.c.in,v 1.2 1998/11/03 00:22:41 marcus Exp $
+ * $Id: auto.c.in,v 1.3 1998/11/03 00:29:43 marcus Exp $
  *
  */
 
 #include "global.h"
 
-RCSID("$Id: auto.c.in,v 1.2 1998/11/03 00:22:41 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.3 1998/11/03 00:29:43 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -159,6 +159,16 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
     }  
 
   return tt|(arr?ZT_ARRAY:0);
+}
+
+static void glClearColor3v(GLfloat *f)
+{
+  glClearColor(f[0], f[1], f[2], 0.0);
+}
+
+static void glClearColor4v(GLfloat *f)
+{
+  glClearColor(f[0], f[1], f[2], f[3]);
 }
 
 @@
