@@ -1,25 +1,32 @@
 /*
- * $Id: sparc.c,v 1.3 2001/07/20 16:21:32 grubba Exp $
+ * $Id: sparc.c,v 1.4 2001/07/20 19:44:59 grubba Exp $
  *
  * Machine code generator for sparc.
  *
  * Henrik Grubbström 20010720
  */
 
-#define CALL_ABSOLUTE(X) do {						\
+#define ADD_CALL(X, DELAY_OK) do {					\
     INT32 delta_;							\
     struct program *p_ = Pike_compiler->new_program;			\
     INT32 off_ = p_->num_program;					\
+    /* noop		*/						\
+    INT32 delay_ = 0x01000000;						\
+									\
+    if (DELAY_OK) {							\
+      /* Move the previous opcode to the delay-slot. */			\
+      delay_ = p_->program[--off_];					\
+    } else {								\
+      add_to_program(0); /* Placeholder... */				\
+    }									\
     /* call X	*/							\
-    add_to_program(0); /* Placeholder... */				\
     delta_ = ((PIKE_OPCODE_T *)(X)) - (p_->program + off_);		\
     p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
     add_to_relocations(off_);						\
-    /* noop		*/						\
-    add_to_program(0x01000000);						\
+    add_to_program(delay_);						\
   } while(0)
 
-void ins_f_byte(unsigned int b)
+static void low_ins_f_byte(unsigned int b, int delay_ok)
 {
 #ifdef PIKE_DEBUG
   if(store_linenumbers && b<F_MAX_OPCODE)
@@ -32,7 +39,7 @@ void ins_f_byte(unsigned int b)
     Pike_error("Instruction too big %d\n",b);
 #endif
     
-  do{
+  {
     static int last_prog_id=-1;
     static int last_num_linenumbers=-1;
     if(last_prog_id != Pike_compiler->new_program->id ||
@@ -41,17 +48,22 @@ void ins_f_byte(unsigned int b)
       last_prog_id=Pike_compiler->new_program->id;
       last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
       UPDATE_PC();
+      delay_ok = 1;
     }
-  }while(0);
+  }
   
-  CALL_ABSOLUTE(instrs[b].address);
-  return;
+  ADD_CALL(instrs[b].address, delay_ok);
+}
+
+void ins_f_byte(unsigned int opcode)
+{
+  low_ins_f_byte(opcode, 0);
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
   SET_REG(REG_O0, b);
-  ins_f_byte(a);
+  low_ins_f_byte(a, 1);
   return;
 }
 
@@ -61,7 +73,7 @@ void ins_f_byte_with_2_args(unsigned int a,
 {
   SET_REG(REG_O0, c);
   SET_REG(REG_O1, b);
-  ins_f_byte(a);
+  low_ins_f_byte(a, 1);
   return;
 }
 
@@ -114,5 +126,4 @@ void sparc_decode_program(struct program *p)
       (((prog[p->relocations[rel]] & 0x3fffffff) - delta) &
        0x3fffffff);
   }
-#endif /* sparc */
 }
