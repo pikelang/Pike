@@ -83,14 +83,18 @@ static struct sigdesc signal_desc []={
 #ifdef SIGKILL
   { SIGKILL, "SIGKILL" },
 #endif
+
+#if !defined(__linux__) || !defined(_REENTRANT)
 #ifdef SIGUSR1
   { SIGUSR1, "SIGUSR1" },
 #endif
-#ifdef SIGSEGV
-  { SIGSEGV, "SIGSEGV" },
-#endif
 #ifdef SIGUSR2
   { SIGUSR2, "SIGUSR2" },
+#endif
+#endif
+
+#ifdef SIGSEGV
+  { SIGSEGV, "SIGSEGV" },
 #endif
 #ifdef SIGPIPE
   { SIGPIPE, "SIGPIPE" },
@@ -316,7 +320,13 @@ static void f_signal(int args)
   }
 
   signum=sp[-args].u.integer;
-  if(signum <0 || signum >=MAX_SIGNALS)
+  if(signum <0 ||
+     signum >=MAX_SIGNALS
+#if defined(__linux__) && defined(_REENTRANT)
+     || signum == SIGUSR1
+     || signum == SIGUSR2
+#endif
+    )
   {
     error("Signal out of range.\n");
   }
