@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.65 2004/04/26 13:10:08 grubba Exp $ */
+/* $Id: export.pike,v 1.66 2004/04/30 18:53:45 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -113,7 +113,7 @@ void bump_version(int|void is_release)
 		"\n" +
 		"  * %s\n"
 		"\n"
-		" -- Pike build system <pike-devel@lists.lysator.liu.se>  %s\n"
+		" -- Marek Habersack <grendel@debian.org>  %s\n"
 		"\n"
 		"%s",
 		version[0], version[1],
