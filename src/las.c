@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.220 2000/10/02 14:16:01 grubba Exp $");
+RCSID("$Id: las.c,v 1.221 2000/10/03 18:18:29 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -973,7 +973,7 @@ node *debug_mknode(short token, node *a, node *b)
   }
 
   /* We try to optimize most things, but argument lists are hard... */
-  if(token != F_ARG_LIST && (a || b))
+  if((token != F_ARG_LIST) && (a || b))
     res->node_info |= OPT_TRY_OPTIMIZE;
 
   res->tree_info |= res->node_info;
@@ -984,7 +984,8 @@ node *debug_mknode(short token, node *a, node *b)
 #endif
 
   check_tree(res,0);
-  if(!Pike_compiler->num_parse_error && Pike_compiler->compiler_pass==2)
+  if(!Pike_compiler->num_parse_error && Pike_compiler->compiler_pass==2 &&
+     (res->node_info & OPT_TRY_OPTIMIZE))
   {
     optimize(res);
     check_tree(res,0);
