@@ -1,9 +1,20 @@
+Wed Jan 29 21:23:26 1997  Per Hedbor  <per@infovav.se>
+
+	* modules/files/file.c (file_write): Changed the file->write
+ 	function to _not_ loop over write unless EINTR is received. Why?
+  	Because write() only fails to write everything if the file is in
+ 	non-blocking mode. Immediately Writing again then will always
+ 	result in an EWOULDBLOCK error.  Thus: The extra syscall will slow
+ 	things down quite a lot but there is no extra gain.
+
+	(file_create): It is now possible to write File(filename,mode); to
+	open a new file-object.
+
 Tue Jan 28 15:47:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
-	* machine.h.in: now generated with autoheader
-	* configure.in: check for STACK_DIRECTION added, some silly tests
-	  removed.
-	* config.h: removed, merged into global.h and other files
+	* machine.h.in: now generated with autoheader * configure.in:
+ 	check for STACK_DIRECTION added, some silly tests removed.  *
+ 	config.h: removed, merged into global.h and other files
 
 Tue Jan 28 19:35:31 1997  Henrik Grubbström  <grubba@infovav.se>
 
