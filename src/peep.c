@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.43 2000/12/02 14:23:21 grubba Exp $");
+RCSID("$Id: peep.c,v 1.44 2000/12/02 14:24:45 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -477,7 +477,7 @@ static INLINE ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
   return insopt2(f,a,0,cl, cf);
 }
 
-statci INLINE ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
+static INLINE ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
