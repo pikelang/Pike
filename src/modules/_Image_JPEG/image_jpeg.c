@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.42 2001/03/12 17:20:10 mirar Exp $
+ * $Id: image_jpeg.c,v 1.43 2001/05/19 07:22:50 mirar Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.42 2001/03/12 17:20:10 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.43 2001/05/19 07:22:50 mirar Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -854,10 +854,13 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    /* we can only handle RGB or GRAYSCALE */
 
-   if (mds.cinfo.jpeg_color_space==JCS_GRAYSCALE)
-      mds.cinfo.out_color_space=JCS_GRAYSCALE;
-   else
-      mds.cinfo.out_color_space=JCS_RGB;
+/* don't know about this code; the jpeg library handles 
+   RGB destination for GRAYSCALE / Mirar 2001-05-19 */
+/*     if (mds.cinfo.jpeg_color_space==JCS_GRAYSCALE) */
+/*        mds.cinfo.out_color_space=JCS_GRAYSCALE; */
+/*     else */
+
+   mds.cinfo.out_color_space=JCS_RGB; 
 
    /* check configuration */
 
