@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.101 2000/04/12 18:40:12 hubbe Exp $");
+RCSID("$Id: object.c,v 1.102 2000/04/12 19:29:07 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1196,14 +1196,16 @@ static inline void gc_check_object(struct object *o)
   int e;
   struct program *p;
 
+  if(o->parent) {
 #ifdef PIKE_DEBUG
-  if(o->parent)
-    if(debug_gc_check(o->parent,T_OBJECT,o)==-2)
+    if(debug_gc_check(debug_malloc_pass(o->parent),T_OBJECT,
+		      debug_malloc_pass(o))==-2)
       fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);
 #else
-  if(o->parent)
-    gc_check(o->parent);
+    gc_check(debug_malloc_pass(o->parent));
 #endif
+  }
+
   if((p=o->prog))
   {
     PUSH_FRAME(o);
@@ -1225,12 +1227,15 @@ static inline void gc_check_object(struct object *o)
 	  struct svalue *s;
 	  s=(struct svalue *)(pike_frame->current_storage +
 			      pike_frame->context.prog->identifiers[d].func.offset);
-	  debug_gc_check_svalues(s,1,T_OBJECT,o);
+	  debug_gc_check_svalues(debug_malloc_pass(s),1,T_OBJECT,
+				 debug_malloc_pass(o));
 	}else{
 	  union anything *u;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
-	  debug_gc_check_short_svalue(u,pike_frame->context.prog->identifiers[d].run_time_type,T_OBJECT,o);
+	  debug_gc_check_short_svalue(debug_malloc_pass(u),
+				      pike_frame->context.prog->identifiers[d].run_time_type,
+				      T_OBJECT,debug_malloc_pass(o));
 	}
       }
     }
