@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.9 2003/05/23 12:41:40 peta Exp $
+|| $Id: sequence.cmod,v 1.10 2003/05/27 11:51:16 peta Exp $
 */
 
 #include "global.h"
@@ -504,12 +504,23 @@ PIKECLASS Sequence
   }
 
   
-  /*! @decl void create(array a)
-   *!   Creates a new @[Sequence] around the array a.
+  /*! @decl void create(array|int arg)
+   *!   Creates a new @[Sequence] around the array arg or a new
+   *!   @[Sequence] with thesize of arg.
    */
 
-  PIKEFUN void create(array a) {
-    add_ref(THIS->a=a);
+  PIKEFUN void create(array|int arg) 
+  {
+    if (arg->type == T_INT)
+    {
+      THIS->a =allocate_array_no_init(arg->u.integer, 0);
+      THIS->a->type_field = BIT_INT;
+    }
+    else if (arg->type == T_ARRAY)
+    {
+      add_ref(THIS->a=arg->u.array);
+    } 
+    pop_n_elems(args);
   }
 
 
@@ -865,6 +876,31 @@ PIKECLASS Sequence
       }
     }
 
+    
+    /*! @decl int distance(object iter)
+     *!
+     *! @param iter
+     *!    The iterator to measure the distance to.
+     *! @returns
+     *!    Returns distance between this iterator and @[iter].
+     *! @throws
+     *!    An error if the two iterator could not be compared.
+     */  
+
+    PIKEFUN int distance(object iter)
+    {
+      if (iter->prog == SequenceIterator_program)
+      {
+	
+	struct SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCEITERATOR(iter);
+	RETURN (i->pos - THIS->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.Sequence.SequenceIterator");
+      }
+    }
     
     /*! @decl Sequence get_collection()
      *!
