@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.395 2001/12/17 11:08:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.396 2001/12/20 12:52:02 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -567,6 +567,73 @@ static char *raw_lfun_types[] = {
  *!                             mapping(string:int)|void params)
  *!
  *!   Sprintf callback.
+ *!
+ *!   This method is called by @[sprintf()] to print objects. If it is
+ *!   not present printing of the object will not be supported for any
+ *!   conversion-type except for the @tt{%O@}-conversion-type, which
+ *!   will output @tt{"object"@}.
+ *!
+ *! @param conversion_type
+ *!   One of:
+ *!   @int
+ *!     @value 'b'
+ *!       Signed binary integer.
+ *!     @value 'd'
+ *!       Signed decimal integer.
+ *!     @value 'u'
+ *!       Unsigned decimal integer.
+ *!     @value 'o'
+ *!       Signed octal integer.
+ *!     @value 'x'
+ *!       Lowercase signed hexadecimal integer.
+ *!     @value 'X'
+ *!       Uppercase signed hexadecimal integer.
+ *!     @value 'c'
+ *!       Character. If a fieldsize has been specified this will output
+ *!       the low-order bytes of the integer in network byte order.
+ *!     @value 'f'
+ *!       Float.
+ *!     @value 'g'
+ *!       Heuristically chosen representation of float.
+ *!     @value 'G'
+ *!       Like @tt{%g@}, but uses uppercase @tt{E@} for exponent.
+ *!     @value 'e'
+ *!       Exponential notation float.
+ *!     @value 'E'
+ *!       Like @tt{%e@}, but uses uppercase @tt{E@} for exponent.
+ *!     @value 's'
+ *!       String.
+ *!     @value 'O'
+ *!       Any value (debug style).
+ *!     @value 't'
+ *!       Type of the argument.
+ *!   @endint
+ *!
+ *! @param params
+ *!   Conversion parameters. The following parameters may be supplied:
+ *!   @mapping
+ *!     @member int "precision"
+ *!       Precision.
+ *!     @member int "width"
+ *!       Field width.
+ *!     @member int(1..1) "flag_left"
+ *!       Indicates that the output should be left-aligned.
+ *!     @member int "indent"
+ *!       Indentation level in @tt{%O@}-mode.
+ *!   @endmapping
+ *!
+ *! @returns
+ *!   Is expected to return a string describing the object formatted
+ *!   according to @[conversion_type].
+ *!
+ *! @note
+ *!   The @[_sprintf()] is currently (Pike 7.3) not called for the following
+ *!   conversion-types:
+ *!   @int
+ *!     @value 'F'
+ *!       Binary IEEE representation of float (@tt{%4F@} gives 
+ *!       single precision, @tt{%8F@} gives double precision.)
+ *!   @endint
  *!
  *! @seealso
  *!    @[sprintf()]
