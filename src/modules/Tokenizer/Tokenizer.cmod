@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.31 2004/12/03 15:26:28 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.32 2004/12/09 17:30:37 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -95,6 +95,8 @@ PIKECLASS compiler
 		      mapping(string:int|string)|void context,
 		      string subsystem, string msg, mixed ... extra_args)
   {
+    fprintf(stderr, "report(%d, %p, %s, %s, %p)\n",
+	    severity, context, subsystem->str, msg->str, extra_args);
     if (args > 4) {
       f_sprintf(args-3);
       args = 4;
@@ -191,6 +193,8 @@ PIKECLASS compiler
 	add_ref(context->u.mapping = THIS->context);
 	context->type = T_MAPPING;
       }
+      fprintf(stderr, "apply_external(1, %d, %d)...\n",
+	      f_compiler_report_fun_num, args);
       apply_external(1, f_compiler_report_fun_num, args);
     }
 
@@ -560,17 +564,13 @@ PIKECLASS compiler
     MAKE_SCANNER(1)
     MAKE_SCANNER(2)
 
-    /*! @decl void scan()
+    /*! @decl int(0..1) scan()
      *!
      *!   Called to advance one token in the stream.
      *!
      *!   The new token is stored in @[current_symbol].
-     *!
-     *! @note
-     *!   This function is not callable directly, but may be overloaded.
      */
-    PIKEFUN void scan()
-      flags ID_STATIC;
+    PIKEFUN int(0..1) next()
     {
       if (THIS->current_symbol) {
 	free_string(THIS->current_symbol);
@@ -588,12 +588,18 @@ PIKECLASS compiler
 	  }
 	} else {
 	  /* No data. */
+	  pop_n_elems(args);
+	  push_int(0);
 	  return;
 	}
       }
       THIS->scanner(THIS);
+      pop_n_elems(args);
       if (THIS->current_symbol) {
 	THIS->token_num++;
+	push_int(1);
+      } else {
+	push_int(0);
       }
     }
 
@@ -628,7 +634,7 @@ PIKECLASS compiler
 
       THIS->scanner = NULL;
 
-      apply_current(f_compiler_basic_tokenizer_scan_fun_num, 0);
+      apply_current(f_compiler_basic_tokenizer_next_fun_num, 0);
       pop_stack();
     }
 
@@ -649,7 +655,7 @@ PIKECLASS compiler
       flags ID_STATIC;
     {
       while (n-- > 0) {
-	apply_current(f_compiler_basic_tokenizer_scan_fun_num, 0);
+	apply_current(f_compiler_basic_tokenizer_next_fun_num, 0);
 	pop_stack();
       }
       pop_n_elems(args);
@@ -900,9 +906,10 @@ PIKECLASS TokenizingCompiler
    *!   Pike tokenizer.
    */
   PIKECLASS pike_tokenizer
+    program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
   {
     static int tc_pt_inh_report = -1;
-    static int tc_pt_inh_scan = -1;
+    static int tc_pt_inh_next = -1;
     static int tc_pt_inh_current_symbol = -1;
     static int tc_pt_inh_set_context = -1;
     static int tc_pt_inh_get_context = -1;
@@ -927,9 +934,9 @@ PIKECLASS TokenizingCompiler
       tc_pt_inh_report =
 	really_low_reference_inherited_identifier(NULL, 1,
 						  f_compiler_basic_tokenizer_report_fun_num);
-      tc_pt_inh_scan =
+      tc_pt_inh_next =
 	really_low_reference_inherited_identifier(NULL, 1,
-						  f_compiler_basic_tokenizer_scan_fun_num);
+						  f_compiler_basic_tokenizer_next_fun_num);
       /* FIXME: Ought to save the identifier numbers for variables too. */
       tc_pt_inh_current_symbol =
 	low_reference_inherited_identifier(NULL, 1,
@@ -1456,23 +1463,21 @@ PIKECLASS TokenizingCompiler
       f_call_function(args);
     }
 
-    PIKEFUN void scan()
-      flags ID_STATIC;
+    PIKEFUN int(0..1) next()
     {
       if (THIS->current_token) {
 	free_object(THIS->current_token);
 	THIS->current_token = NULL;
       }
-      push_int(0);	/* Return value. */
       while (1) {
-	apply_current(tc_pt_inh_scan, 0);
+	apply_current(tc_pt_inh_next, 0);
+	if (UNSAFE_IS_ZERO(Pike_sp-1)) return;
 	pop_stack();
 	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
 				 Pike_fp->context.identifier_level +
 				 tc_pt_inh_current_symbol);
 	Pike_sp++;
 	if (SAFE_IS_ZERO(Pike_sp-1)) {
-	  pop_stack();
 	  return;
 	}
 
@@ -1480,6 +1485,7 @@ PIKECLASS TokenizingCompiler
 	if (Pike_sp[-1].type == T_OBJECT) {
 	  add_ref(THIS->current_token = Pike_sp[-1].u.object);
 	  pop_stack();
+	  push_int(1);
 	  return;
 	}
 	pop_stack();
