@@ -256,6 +256,10 @@ object(Decoder) decoder(string name)
       return EUCDec(sub);
   }
 
+  if( (< "extendedunixcodepackedformatforjapanese",
+	 "eucpkdfmtjapanese" >)[ name ] )
+    return EUCDec("x0208");
+
   object o = rfc1345(name);
 
   if(o)
@@ -416,6 +420,10 @@ object(Encoder) encoder(string name, string|void replacement,
     if(sub)
       return EUCEnc(sub, replacement, repcb);
   }
+
+  if( (< "extendedunixcodepackedformatforjapanese",
+	 "eucpkdfmtjapanese" >)[ name ] )
+    return EUCEnc("x0208", replacement, repcb);
 
   object o = rfc1345(name, 1, replacement, repcb);
 

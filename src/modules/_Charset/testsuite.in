@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.4 2003/04/06 15:25:28 nilsson Exp $
+// $Id: testsuite.in,v 1.5 2003/04/08 01:12:00 nilsson Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -266,8 +266,8 @@ dnl test_codec(GBK,CP936,MS936,windows-936)
 dnl test_codec(GB18030)
 dnl test_codec(JIS_Encoding,csJISEncoding)
 test_codec(Shift_JIS,MS_Kanji,csShiftJIS)
-dnl test_codec(Extended_UNIX_Code_Packed_Format_for_Japanese,dnl
-dnl csEUCPkdFmtJapanese,EUC-JP)
+test_codec(Extended_UNIX_Code_Packed_Format_for_Japanese,dnl
+csEUCPkdFmtJapanese,EUC-JP)
 dnl test_codec(Extended_UNIX_Code_Fixed_Width_for_Japanese,csEUCFixWidJapanese)
 dnl test_codec(ISO-10646-UCS-Basic,csUnicodeASCII)
 dnl test_codec(ISO-10646-Unicode-Latin1,csUnicodeLatin1,ISO-10646)
