@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.150 2001/04/18 17:34:19 mast Exp $");
+RCSID("$Id: gc.c,v 1.151 2001/05/19 05:30:18 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1986,6 +1986,7 @@ int do_gc(void)
   hrtime_t gcstarttime = 0;
 #endif
   unsigned destroy_count, obj_count;
+  ONERROR uwp;
 #endif
 
   if(Pike_in_gc) return 0;
@@ -1993,6 +1994,7 @@ int do_gc(void)
   Pike_in_gc=GC_PASS_PREPARE;
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
+  SET_ONERROR(uwp, fatal_on_error, "Shouldn't get an exception inside the gc.\n");
 #endif
 
   destruct_objects_to_destruct();
@@ -2353,6 +2355,7 @@ int do_gc(void)
   num_allocs=0;
 
 #ifdef PIKE_DEBUG
+  UNSET_ONERROR (uwp);
   if(GC_VERBOSE_DO(1 ||) t_flag)
   {
 #ifdef HAVE_GETHRTIME
