@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.65 1998/03/26 14:30:59 grubba Exp $");
+RCSID("$Id: threads.c,v 1.66 1998/04/06 04:12:05 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -804,6 +804,7 @@ void th_init(void)
     tmp = end_program();
     tmp->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
     add_global_program("_disable_threads", tmp);
+    free_program(tmp);
   }
 
   start_new_program();
