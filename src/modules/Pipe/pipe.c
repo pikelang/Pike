@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.35 2000/07/02 16:52:19 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.36 2000/07/07 13:59:28 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -102,8 +102,8 @@ static struct program *pipe_program, *output_program;
 #ifdef THIS
 #undef THIS
 #endif
-#define THIS ((struct pipe *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct pipe *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 struct input
 {
@@ -186,10 +186,10 @@ static INLINE void output_try_write_some(struct object *obj);
  */
 static void push_callback(int no)
 {
-  add_ref(sp->u.object=THISOBJ);
-  sp->subtype=no+fp->context.identifier_level;
-  sp->type=T_FUNCTION;
-  sp++;
+  add_ref(Pike_sp->u.object=THISOBJ);
+  Pike_sp->subtype=no+Pike_fp->context.identifier_level;
+  Pike_sp->type=T_FUNCTION;
+  Pike_sp++;
 }
 
 /* Allocate a new struct input, link it last in the linked list */
@@ -1211,7 +1211,7 @@ static void exit_output_struct(struct object *obj)
 {
   struct output *o;
   
-  o=(struct output *)(fp->current_storage);
+  o=(struct output *)(Pike_fp->current_storage);
   if (o->obj)
   {
     if(o->obj->prog)
@@ -1240,7 +1240,7 @@ static void exit_output_struct(struct object *obj)
 static void init_output_struct(struct object *ob)
 {
   struct output *o;
-  o=(struct output *)(fp->current_storage);
+  o=(struct output *)(Pike_fp->current_storage);
   o->obj=0;
 }
 
