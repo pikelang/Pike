@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.37 1998/05/12 23:49:52 hubbe Exp $");
+RCSID("$Id: array.c,v 1.38 1998/05/13 07:38:29 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -211,7 +211,7 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
   add_ref(v);
   check_destructed(s);
 
-  v->type_field = (v->type_field & ~BIT_UNFINISHED) | 1 << s->type;
+  v->type_field = (v->type_field & ~BIT_UNFINISHED) | (1 << s->type);
   assign_svalue( ITEM(v) + index, s);
   free_array(v);
 }
