@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.54 1998/07/02 18:59:29 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.55 1998/07/02 19:49:59 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -456,7 +456,11 @@ void f_get_dir(INT32 args)
 	if (!d) {
 	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
 	   */
-	  err = (errno == ENOENT)?0:errno;
+	  if (errno == ENOENT) {
+	    err = 0;
+	  } else {
+	    err = errno;
+	  }
 	  break;
 	}
 #elif defined(HAVE_HPUX_READDIR_R)
@@ -477,7 +481,16 @@ void f_get_dir(INT32 args)
 	/* POSIX readdir_r returns 0 on success, and ERRNO on failure.
 	 * at end of dir it sets the third arg to NULL.
 	 */
+	d = NULL;
 	if ((err = readdir_r(dir, tmp, &d)) || !d) {
+	  if (err == -1) {
+	    err = errno;
+	  }
+	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
+	   */
+	  if (err == ENOENT) {
+	    err = 0;
+	  }
 	  break;
 	}
 #else
@@ -498,7 +511,7 @@ void f_get_dir(INT32 args)
       }
       THREADS_DISALLOW();
       if ((!d) && err) {
-	error("get_dir(): readdir_r() failed: %d\n", err);
+	error("get_dir(): readdir_r(\"%s\") failed: %d\n", path, err);
       }
       for(e=0;e<num_files;e++)
       {
