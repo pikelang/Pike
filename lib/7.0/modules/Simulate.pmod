@@ -1,7 +1,7 @@
 #pike 7.1
 
-inherit Array;
-inherit String;
+local inherit Array;
+local inherit String;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
