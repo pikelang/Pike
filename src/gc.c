@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.190 2002/11/25 00:57:43 nilsson Exp $
+|| $Id: gc.c,v 1.191 2002/12/07 16:10:34 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.190 2002/11/25 00:57:43 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.191 2002/12/07 16:10:34 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2347,6 +2347,40 @@ static void free_obj_arr(void *oa)
   if (obj_arr) free_array(obj_arr);
   free(oa);
 }
+
+/*! @class MasterObject
+ */
+
+/*! @decl void runtime_warning(string subsystem, string msg, mixed|void data)
+ *!
+ *!   Called by the Pike runtime to warn about data inconsistencies.
+ *!
+ *! @param subsystem
+ *!   Runtime subsystem where the warning was generated.
+ *!   Currently the following subsystems may call this function:
+ *!   @string
+ *!     @value "gc"
+ *!       The garbage collector.
+ *!   @endstring
+ *!
+ *! @param msg
+ *!   Warning message.
+ *!   Currently the following messages may be generated:
+ *!   @string
+ *!     @value "bad_cycle"
+ *!       A cycle where the destruction order isn't deterministic
+ *!       was detected by the garbage collector.
+ *!
+ *!       @[data] will in this case contain an array of the elements
+ *!       in the cycle.
+ *!   @endstring
+ *!
+ *! @param data
+ *!   Optional data that further describes the warning specified by @[msg].
+ */
+
+/*! @endclass
+ */
 
 static void warn_bad_cycles()
 {
