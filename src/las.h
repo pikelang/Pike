@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.25 1999/11/12 01:00:50 grubba Exp $
+ * $Id: las.h,v 1.26 1999/11/12 18:20:51 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -75,6 +75,7 @@ extern struct node_hash_table node_hash;
 #define OPT_BREAK           0x100  /* contains break(s) */
 #define OPT_RETURN          0x200  /* contains return(s) */
 
+#define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
 #define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
 
 /* Prototypes begin here */
@@ -98,6 +99,7 @@ node *debug_mkefuncallnode(char *function, node *args);
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
+node *debug_mktrampolinenode(int i);
 node *debug_mkexternalnode(int level,
 			   int i,
 			   struct identifier *id);
@@ -145,6 +147,7 @@ void resolv_program(node *n);
 #define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
+#define mktrampolinenode(i) dmalloc_touch(node *, debug_mktrampolinenode(i))
 #define mkexternalnode(level, i, id) dmalloc_touch(node *, debug_mkexternalnode(level, i, id))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
 #define mkconstantsvaluenode(s) dmalloc_touch(node *, debug_mkconstantsvaluenode(dmalloc_touch(struct svalue *, s)))

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.103 1999/11/12 01:32:04 grubba Exp $");
+RCSID("$Id: las.c,v 1.104 1999/11/12 18:19:42 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -262,17 +262,10 @@ static node *freeze_node(node *orig)
   /* free_node() wants a correct hash */
   orig->hash = hash;
 
-#ifdef PIKE_DEBUG
-  if (orig->refs != 1) {
-    print_tree(orig);
-    fatal("Node to be frozen is already shared!\n");
-  }
-#endif /* PIKE_DEBUG */
-
   if (orig->node_info & OPT_NOT_SHARED) {
     /* No need to have this node in the hash-table. */
     /* add_node(orig); */
-    return dmalloc_touch(node *, orig);
+    return check_node_hash(dmalloc_touch(node *, orig));
   }
 
   while (n) {
@@ -286,12 +279,12 @@ static node *freeze_node(node *orig)
 #endif /* PIKE_DEBUG */
       free_node(dmalloc_touch(node *, orig));
       n->refs++;
-      return dmalloc_touch(node *, n);
+      return check_node_hash(dmalloc_touch(node *, n));
     }
     n = n->next;
   }
   add_node(dmalloc_touch(node *, orig));
-  return orig;
+  return check_node_hash(orig);
 }
 
 #else /* !SHARED_NODES */
@@ -433,6 +426,11 @@ node *debug_check_node_hash(node *n)
 {
 #if defined(PIKE_DEBUG) && defined(SHARED_NODES)
   if (n && (n->hash != hash_node(n))) {
+    fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
+	    n, n->current_file->str, n->line_number,
+	    n->token);
+    debug_malloc_dump_references(n);
+    print_tree(n);
     fatal("Bad node hash!\n");
   }
 #endif /* PIKE_DEBUG && SHARED_NODES */
@@ -747,6 +745,35 @@ node *debug_mkidentifiernode(int i)
   return res;
 }
 
+node *debug_mktrampolinenode(int i)
+{
+  node *res = mkemptynode();
+  res->token = F_TRAMPOLINE;
+  copy_shared_string(res->type, ID_FROM_INT(new_program, i)->type);
+
+  /* FIXME */
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(new_program, i)->identifier_flags))
+  {
+    res->node_info = OPT_EXTERNAL_DEPEND;
+  }else{
+    res->node_info = OPT_NOT_CONST;
+  }
+  res->tree_info=res->node_info;
+
+#ifdef __CHECKER__
+  _CDR(res) = 0;
+#endif
+  res->u.id.number = i;
+#ifdef SHARED_NODES
+  res->u.id.prog = new_program;
+#endif /* SHARED_NODES */
+
+  res = freeze_node(res);
+
+  check_tree(res,0);
+  return res;
+}
+
 node *debug_mkexternalnode(int level,
 		     int i,
 		     struct identifier *id)
@@ -803,7 +830,7 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
 #endif
 #endif /* SHARED_NODES */
 
-  n->parent=res;
+  n->parent = res;
 
   return freeze_node(res);
 }
@@ -2093,16 +2120,46 @@ static void optimize(node *n)
   INT32 save_line = lex.current_line;
   do
   {
-    if(car_is_node(n) && !(CAR(n)->node_info & OPT_OPTIMIZED))
+    if(car_is_node(n) &&
+       ((CAR(n)->node_info & (OPT_OPTIMIZED|OPT_DEFROSTED)) != OPT_OPTIMIZED))
     {
-      n=CAR(n);
+      CAR(n)->parent = n;
+      n = CAR(n);
       continue;
     }
-    if(cdr_is_node(n) && !(CDR(n)->node_info & OPT_OPTIMIZED))
+    if(cdr_is_node(n) &&
+       ((CDR(n)->node_info & (OPT_OPTIMIZED|OPT_DEFROSTED)) != OPT_OPTIMIZED))
     {
-      n=CDR(n);
+      CDR(n)->parent = n;
+      n = CDR(n);
       continue;
     }
+
+#if defined(SHARED_NODES)
+    if ((n->node_info & OPT_DEFROSTED) && (n->parent)) {
+#ifndef IN_TPIKE
+      /* Add ref since both freeze_node() and use_tmp1 will free it. */
+      ADD_NODE_REF(n);
+      /* We don't want freeze_node() to find this node in the hash-table. */
+      sub_node(n);
+      tmp1 = freeze_node(n);
+      if (tmp1 != n) {
+	/* n was a duplicate node. Use the original. */
+	goto use_tmp1;
+      }
+      /* Remove the extra ref from n */
+      free_node(n);
+#endif /* !IN_TPIKE */
+      /* The node is now frozen again. */
+      n->node_info &= ~OPT_DEFROSTED;
+      if (n->node_info & OPT_OPTIMIZED) {
+	/* No need to check this node any more. */
+	n = n->parent;
+	continue;
+      }
+    }
+#endif /* SHARED_NODES && !IN_TPIKE */
+
     lex.current_line = n->line_number;
 
 
@@ -2131,6 +2188,7 @@ static void optimize(node *n)
 	_CAR(n) = eval(CAR(n));
 #ifdef SHARED_NODES
 	n->hash = hash_node(n);
+	n->node_info |= OPT_DEFROSTED;
 	add_node(n);
 #endif /* SHARED_NODES */
 	if(CAR(n)) CAR(n)->parent = n;
@@ -2151,6 +2209,7 @@ static void optimize(node *n)
 	_CDR(n) = eval(CDR(n));
 #ifdef SHARED_NODES
 	n->hash = hash_node(n);
+	n->node_info |= OPT_DEFROSTED;
 	add_node(n);
 #endif /* SHARED_NODES */
 	if(CDR(n)) CDR(n)->parent = n;
@@ -2174,12 +2233,12 @@ static void optimize(node *n)
     {
 #include "treeopt.h"
     use_car:
-      tmp1=CAR(n);
+      tmp1 = CAR(n);
       ADD_NODE_REF(CAR(n));
       goto use_tmp1;
 
     use_cdr:
-      tmp1=CDR(n);
+      tmp1 = CDR(n);
       ADD_NODE_REF(CDR(n));
       goto use_tmp1;
 
@@ -2188,6 +2247,15 @@ static void optimize(node *n)
       goto use_tmp1;
 
     use_tmp1:
+#ifdef PIKE_DEBUG
+      if (l_flag > 4) {
+	fprintf(stderr, "Optimized: ");
+	print_tree(n);
+	fprintf(stderr, "Result:    ");
+	print_tree(tmp1);
+      }
+#endif /* PIKE_DEBUG */
+
 #ifdef SHARED_NODES
       sub_node(n->parent);
 #endif /* SHARED_NODES */
@@ -2200,6 +2268,7 @@ static void optimize(node *n)
 #ifdef SHARED_NODES      
       n->parent->hash = hash_node(n->parent);
       add_node(n->parent);
+      n->parent->node_info |= OPT_DEFROSTED;
 #endif /* SHARED_NODES */
 	
       if(tmp1)
@@ -2213,7 +2282,7 @@ static void optimize(node *n)
 #ifdef PIKE_DEBUG
       if(l_flag > 3)
       {
-	fprintf(stderr,"Result: ");
+	fprintf(stderr,"Result:    ");
 	print_tree(n);
       }
 #endif    
