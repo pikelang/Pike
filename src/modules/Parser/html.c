@@ -4624,6 +4624,7 @@ static void html_clone(INT32 args)
       p->extra_args=NULL;
 
    p->flags=THIS->flags;
+   p->max_stack_depth=THIS->max_stack_depth;
    p->stack->parse_tags = THIS->flags & FLAG_PARSE_TAGS;
 
    p->tag_start=THIS->tag_start;
@@ -4742,6 +4743,7 @@ static void html_splice_arg (INT32 args)
 **! method int ignore_unknown(void|int value)
 **! method int xml_tag_syntax(void|int value)
 **! method int ws_before_tag_name(void|int value)
+**! method int max_parse_depth(void|int value)
 **!	Functions to query or set flags. These set the associated flag
 **!	to the value if any is given and returns the old value.
 **!
@@ -4802,6 +4804,11 @@ static void html_splice_arg (INT32 args)
 **!
 **!	<li><b>ws_before_tag_name</b>: Allow whitespace between the
 **!	tag start character and the tag name.
+**!
+**!    <p><li><b>max_stack_depth</b>: Maximum recursion depth during parsing.
+**!    Recursion occurs when a tag/container/entity callback function returns
+**!    a string to be reparsed.  The default value is 10.
+**!
 **!   </ul> 
 **!
 **! note:
@@ -4961,6 +4968,17 @@ static void html_ws_before_tag_name(INT32 args)
    push_int(o);
 }
 
+static void html_max_stack_depth(INT32 args)
+{
+   int o=THIS->max_stack_depth;
+   check_all_args("max_stack_depth",args,BIT_VOID|BIT_INT,0);
+   if (args) {
+     THIS->max_stack_depth = sp[-args].u.integer;
+   } 
+   pop_n_elems(args);
+   push_int(o);
+}
+
 #ifdef DEBUG
 static void html_debug_mode(INT32 args)
 {
@@ -5079,6 +5097,8 @@ void init_parser_html(void)
 		tFunc(tOr(tVoid,tStr),tStr),0);
 
    ADD_FUNCTION("ignore_tags",html_ignore_tags,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("max_stack_depth",html_max_stack_depth,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("case_insensitive_tag",html_case_insensitive_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
