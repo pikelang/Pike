@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.519 2003/08/20 21:42:35 grubba Exp $
+|| $Id: program.c,v 1.520 2003/08/21 15:56:36 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.519 2003/08/20 21:42:35 grubba Exp $");
+RCSID("$Id: program.c,v 1.520 2003/08/21 15:56:36 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1017,6 +1017,10 @@ static void debug_add_to_identifiers (struct identifier id)
 	dump_program_tables (Pike_compiler->new_program, 0);
 	Pike_fatal ("Adding identifier twice, old at %d.\n", i);
       }
+    if (Pike_compiler->new_program->id == 65600) {
+      fprintf(stderr, "Adding \"%s\"\n",
+	      id.name?id.name->str:"NULL");
+    }
   }
   add_to_identifiers (id);
 }
@@ -3594,6 +3598,7 @@ void compiler_do_inherit(node *n,
     yyerror("Unable to inherit");
     return;
   }
+
   switch(n->token)
   {
     case F_IDENTIFIER:
@@ -4045,6 +4050,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     Pike_fatal("define_constant on nonshared string.\n");
 #endif
 
+  n = isidentifier(name);
+
   do {
     if(
 #if 1
@@ -4058,21 +4065,45 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
       struct identifier *id = p->identifiers + idref->identifier_offset;
       if(c->u.object->prog == Pike_compiler->new_program) {
+	/* Alias for a symbol in the current program.
+	 */
 	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
-	   id->func.offset != -1)
-	{
+	   id->func.offset != -1) {
 	  c=& p->constants[id->func.offset].sval;
 	}
-	else if (IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
-		 !idref->inherit_offset)
-	{
-	  return define_function(name,
-				 id->type,
-				 flags,
-				 id->identifier_flags | IDENTIFIER_ALIAS,
-				 & id->func,
-				 id->opt_flags);
-	  
+	else if (IDENTIFIER_IS_FUNCTION(id->identifier_flags) {
+	  if (!idref->inherit_offset) {
+	    /* Alias for a function defined in this program. */
+	    /* FIXME: Does this work for forward references? */
+	    return define_function(name,
+				   id->type,
+				   flags,
+				   id->identifier_flags | IDENTIFIER_ALIAS,
+				   & id->func,
+				   id->opt_flags);
+	  } else if (Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) {
+	    /* Alias for a function defined in an inherited program. */
+	    yyerror("Aliasing of inherited functions not supported yet.");
+	    return define_function(name,
+				   id->type,
+				   flags,
+				   id->identifier_flags | IDENTIFIER_ALIAS,
+				   NULL,
+				   id->opt_flags);	    
+	  } else {
+	    /* First pass.
+	     * Make a prototype for now.
+	     */
+	    return define_function(name,
+				   id->type,
+				   flags,
+				   id->identifier_flags | IDENTIFIER_ALIAS,
+				   NULL,
+				   id->opt_flags);
+	  }
+	} else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+	  yyerror("Attempt to make a constant of a variable.");
+	  c = NULL;
 	}
       }
     }
@@ -4085,8 +4116,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       yyerror("Constant values may not have references to this.");
     
   }while(0);
-
-  n = isidentifier(name);
 
   if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
