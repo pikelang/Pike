@@ -1,8 +1,11 @@
 #if constant(thread_create)
 
+constant Thread=__builtin.thread_id;
+constant MutexKey=__builtin.mutex_key;
 constant Mutex=__builtin.mutex;
 constant Condition=__builtin.condition;
-
+constant _Disabled=__builtin.threads_disabled;
+constant Local=__builtin.thread_local;
 
 class Fifo {
   inherit Condition : r_cond;
