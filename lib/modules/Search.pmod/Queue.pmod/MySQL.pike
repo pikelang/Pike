@@ -79,7 +79,7 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   // FIXME: Make these configurable?
   foreach( ({"index.xml", "index.html", "index.htm"}),
 	   string index)
-    if(search(rpath,reverse(index))==0)
+    if(search(rpath,reverse(index))==0 && rpath[sizeof(index)]=='/')
       rpath=rpath[sizeof(index)..];
   r->path=reverse(rpath);
 
