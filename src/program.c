@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.528 2003/10/20 13:12:18 mast Exp $
+|| $Id: program.c,v 1.529 2003/11/07 21:09:50 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.528 2003/10/20 13:12:18 mast Exp $");
+RCSID("$Id: program.c,v 1.529 2003/11/07 21:09:50 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4264,8 +4264,8 @@ PMOD_EXPORT int simple_add_constant(const char *name,
 }
 
 PMOD_EXPORT int add_integer_constant(const char *name,
-			 INT32 i,
-			 INT32 flags)
+				     INT_ARG_TYPE i,
+				     INT32 flags)
 {
   struct svalue tmp;
   tmp.u.integer=i;
@@ -4275,9 +4275,9 @@ PMOD_EXPORT int add_integer_constant(const char *name,
 }
 
 PMOD_EXPORT int quick_add_integer_constant(const char *name,
-			       int name_length,
-			       INT32 i,
-			       INT32 flags)
+					   int name_length,
+					   INT_ARG_TYPE i,
+					   INT32 flags)
 {
   struct svalue tmp;
   struct pike_string *id;
@@ -4293,14 +4293,32 @@ PMOD_EXPORT int quick_add_integer_constant(const char *name,
 }
 
 PMOD_EXPORT int add_float_constant(const char *name,
-			 double f,
-			 INT32 flags)
+				   FLOAT_ARG_TYPE f,
+				   INT32 flags)
 {
   struct svalue tmp;
   tmp.type=T_FLOAT;
-  tmp.u.float_number = DO_NOT_WARN((FLOAT_TYPE)f);
+  tmp.u.float_number = f;
   tmp.subtype=0;
   return simple_add_constant(name, &tmp, flags);
+}
+
+PMOD_EXPORT int quick_add_float_constant(const char *name,
+					 int name_length,
+					 FLOAT_ARG_TYPE f,
+					 INT32 flags)
+{
+  struct svalue tmp;
+  struct pike_string *id;
+  INT32 ret;
+
+  tmp.u.float_number=f;
+  tmp.type=T_FLOAT;
+  tmp.subtype=0;
+  id=make_shared_binary_string(name,name_length);
+  ret=add_constant(id, &tmp, flags);
+  free_string(id);
+  return ret;
 }
 
 PMOD_EXPORT int add_string_constant(const char *name,
