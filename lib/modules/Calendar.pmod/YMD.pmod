@@ -2325,6 +2325,7 @@ class cSuperTimeRange
 //!	%t short time (205314, 2053)
 //!	%z zone
 //!	%p "am" or "pm"
+//!	%n empty string (to be put at the end of formats)
 //!	</pre>
 //!
 //! returns 0 if format doesn't match data, or the appropriate time object.
@@ -2353,10 +2354,29 @@ class cSuperTimeRange
 //!	<ref>Ruleset.set_abbr2zone</ref>.
 
 
+// dwim time of day; needed to correct timezones
 // this API may change without further notice
+static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
+{
+   TimeRange tr=origin[whut](h,m,s);
+   if (tr->hour_no()!=h || tr->minute_no()!=m)
+   {
+      if (tr->hour_no()!=h)
+	 tr=tr->add(h-tr->hour_no(),Hour);
+      if (tr->minute_no()!=m)
+	 tr=tr->add(m-tr->minute_no(),Minute);
+      if (tr->second_no()!=s)
+	 tr=tr->add(s-tr->second_no(),Second);
+      if (tr->hour_no()!=h || tr->minute_no()!=m ||
+	  tr->second_no()!=s) return 0; // no such hour
+   }
+   return tr;
+}
 
-TimeRange dwim_zone(TimeRange origin,string zonename,
-		    string whut,int ...args)
+// dwim timezone and call dwim time of day above
+// this API may change without further notice
+static TimeRange dwim_zone(TimeRange origin,string zonename,
+			   string whut,int ...args)
 {
    if (zonename=="") return 0;
    if (origin->rules->abbr2zone[zonename])
@@ -2374,7 +2394,7 @@ TimeRange dwim_zone(TimeRange origin,string zonename,
       return 0;
    }
    else
-      return origin->set_timezone(zone)[whut](@args);
+      return dwim_tod(origin->set_timezone(zone),whut,@args);
 }
 
 TimeRange parse(string fmt,string arg)
@@ -2387,9 +2407,9 @@ TimeRange parse(string fmt,string arg)
 #define NUME "%[0-9]"
    nfmt=replace(nfmt,
 		({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
-		  "%t","%f","%d","%z",}),
+		  "%t","%f","%d","%z","%n"}),
 		({ALNU,ALNU,ALNU,"%d","%d","%d",ALNU,"%d","%d","%d",AMPM,
-		  NUME,NUME,NUME,"%[-+0-9A-Za-z/]"}));
+		  NUME,NUME,NUME,"%[-+0-9A-Za-z/]","%s"}));
    array q=Array.map(replace(fmt,({"%*","%%"}),({"",""}))/"%",
 		     lambda(string s){ return s[..0];})-({""});
    array res=array_sscanf(arg,nfmt);
@@ -2409,6 +2429,8 @@ TimeRange parse(string fmt,string arg)
 #else
       werror("%O\n",m);
 #endif
+      if (m->n && m->n!="") return 0;
+
       string x;
       if (m->Y) 
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
@@ -2534,7 +2556,7 @@ TimeRange parse(string fmt,string arg)
       if (m->z) // zone
 	 return dwim_zone(low,m->z,g,h,mi,s);
       else if (g)
-	 return low[g](h,mi,s);
+	 return dwim_tod(low,g,h,mi,s);
       else
 	 return low;
 #ifndef NOCATCH
@@ -2661,41 +2683,51 @@ TimeofDay dwim_time(string what)
    string a,h,m,s;
    TimeofDay t;
 
+// #define COLON "$*[ :]" 
+#define COLON ":" 
+
    foreach ( dwim_day_strings +
 	     ({""}),
 	     string dayformat )
       foreach ( ({ "%t %z",
 		   "T%t %z",
 		   "T%t",
-		   "%h:%*[ :]%m%*[ :]%s %p %z",
-		   "%h:%*[ :]%m%*[ :]%s %p",
-		   "%h:%*[ :]%m%*[ :]%s %z",
-		   "%h:%*[ :]%m%*[ :]%s%z",
-		   "%h:%*[ :]%m%*[ :]%s",
-		   "%h:%*[ :]%m %p %z",
-		   "%h:%*[ :]%m %p",
-		   "%h:%*[ :]%m %z",
-		   "%h:%*[ :]%m%z",
-		   "%h:%*[ :]%m",
+		   "%h"COLON"%m"COLON"%s %p %z",
+		   "%h"COLON"%m"COLON"%s %p",
+		   "%h"COLON"%m"COLON"%s %z",
+		   "%h"COLON"%m"COLON"%s%z",
+		   "%h"COLON"%m"COLON"%s",
+		   "%h"COLON"%m %p %z",
+		   "%h"COLON"%m %p",
+		   "%h"COLON"%m %z",
+		   "%h"COLON"%m%z",
+		   "%h"COLON"%m",
 		   "%h%*[ ]%p",
-		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p %z",
-		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p",
-		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %z",
-		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s%z",
-		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s",
-		   "%[a-zA-Z.] %h:%*[ :]%m %p %z",
-		   "%[a-zA-Z.] %h:%*[ :]%m %p",
-		   "%[a-zA-Z.] %h:%*[ :]%m %z",
-		   "%[a-zA-Z.] %h:%*[ :]%m%z",
-		   "%[a-zA-Z.] %h:%*[ :]%m",
+		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s %p %z",
+		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s %p",
+		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s %z",
+		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s%z",
+		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s",
+		   "%[a-zA-Z.] %h"COLON"%m %p %z",
+		   "%[a-zA-Z.] %h"COLON"%m %p",
+		   "%[a-zA-Z.] %h"COLON"%m %z",
+		   "%[a-zA-Z.] %h"COLON"%m%z",
+		   "%[a-zA-Z.] %h"COLON"%m",
  		   "%[a-zA-Z.] %h%*[ ]%p", }),
 		string todformat )
       {
 //  	 werror("try: %O\n     %O\n",
 //  		dayformat+"%*[ ,]"+todformat,
 //  		todformat+"%*[ ,]"+dayformat);
-	 if ( (t=parse(dayformat+"%*[ ,]"+todformat,what)) ) return t;
-	 if ( (t=parse(todformat+"%*[ ,]"+dayformat,what)) ) return t;
+	 if (dayformat=="") 
+	 {
+	    if ( (t=parse(todformat+"%*[ ]%n",what)) ) return t;
+	 }
+	 else
+	 {
+	    if ( (t=parse(dayformat+"%*[ ,]"+todformat,what)) ) return t;
+	    if ( (t=parse(todformat+"%*[ ,]"+dayformat,what)) ) return t;
+	 }
       }
 
    error("Failed to dwim time from %O\n",what);
