@@ -59,9 +59,19 @@ Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
 Description: Odbc module for Pike
  This Pike module provides glue to the iOdbc interface.
 
+Package: pike7.3-svg
+Architecture: any
+Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Suggests: pike7.3-image (=${Source-Version})
+Description: SVG format support for Pike
+ This module provides an SVG graphics format module. It has
+ been separated from the pike7.3-image module because of its
+ quite extensive dependencies.
+
 Package: pike7.3-image
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Suggests: pike7.3-svg (=${Source-Version})
 Description: Image module for Pike
  This module provides many powerful image processing functions to
  Pike programs.
