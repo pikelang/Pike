@@ -1,3 +1,7 @@
+Tue Apr 14 13:11:03 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* %o, %d and %x now accepts field lengths in sscanf()
+
 Fri Apr 10 15:05:11 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* language.yacc: it is now possible to use class names as types
