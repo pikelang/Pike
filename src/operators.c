@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.149 2002/05/11 00:29:58 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.150 2002/05/30 13:31:51 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -184,23 +184,21 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   and the result returned.
  *!
  *!   Otherwise if any of the other arguments is an object that has
- *!   an @[lfun::``+()] the first such function fill be called
+ *!   an @[lfun::``+()] the first such function will be called
  *!   with the arguments leading up to it, and @[`+()] be called recursively
- *!   with the result and the rest of the srguments.
+ *!   with the result and the rest of the arguments.
  *!
  *!   If there are two arguments the result will be:
  *!   @mixed arg1
  *!   	@type string
  *!   	  @[arg2] will be converted to a string, and the result the
  *!   	  strings concatenated.
- *!   	@type int
- *!   	@type float
+ *!   	@type int|float
  *!   	  @mixed arg2
  *!   	    @type string
  *!   	      @[arg1] will be converted to string, and the result the
  *!   	      strings concatenated.
- *!   	    @type int
- *!   	    @type float
+ *!   	    @type int|float
  *!   	      The result will be @code{@[arg1] + @[arg2]@}, and will
  *!   	      be a float if either @[arg1] or @[arg2] is a float.
  *!   	  @endmixed
@@ -1078,16 +1076,13 @@ PMOD_EXPORT void o_subtract(void)
  *!   	    @type array
  *!   	      The result will be @[arg1] with all occurrances of
  *!   	      @[arg2] removed.
- *!   	    @type multiset
- *!   	    @type mapping
+ *!   	    @type multiset|mapping
  *!   	      The result will be @[arg1] with all occurrences of
  *!   	      @code{@[indices](@[arg2])@} removed.
  *!   	  @endmixed
- *!   	@type array
- *!   	@type multiset
+ *!   	@type array|multiset
  *!   	  The result will be the elements of @[arg1] that are not in @[arg2].
- *!   	@type float
- *!   	@type int
+ *!   	@type float|int
  *!   	  The result will be @code{@[arg1] - @[arg2]@}, and will be a float
  *!   	  if either @[arg1] or @[arg2] is a float.
  *!   	@type string
@@ -1450,13 +1445,10 @@ static void speedup(INT32 args, void (*func)(void))
  *!   @mixed arg1
  *!   	@type int
  *!   	  The result will be the bitwise and of @[arg1] and @[arg2].
- *!   	@type array
- *!   	@type multiset
- *!   	@type mapping
+ *!   	@type array|multiset|mapping
  *!   	  The result will be the elements of @[arg1] and @[arg2] that
  *!   	  occurr in both.
- *!   	@type type
- *!   	@type program
+ *!   	@type type|program
  *!   	  The result will be the type intersection of @[arg1] and @[arg2].
  *!   	@type string
  *!   	  The result will be the string where the elements of @[arg1]
@@ -1659,15 +1651,13 @@ PMOD_EXPORT void o_or(void)
  *!   @mixed arg1
  *!   	@type int
  *!   	  The result will be the binary or of @[arg1] and @[arg2].
- *!   	@type mapping
- *!   	@type multiset
+ *!   	@type mapping|multiset
  *!   	  The result will be the join of @[arg1] and @[arg2].
  *!   	@type array
  *!   	  The result will be the concatenation of @[arg1] and @[arg2].
  *!   	@type string
  *!   	  The result will be the pairwise bitwose or of @[arg1] and @[arg2].
- *!   	@type type
- *!   	@type program
+ *!   	@type type|program
  *!   	  The result will be the type join of @[arg1] and @[arg2].
  *!   @endmixed
  *!
@@ -1870,15 +1860,12 @@ PMOD_EXPORT void o_xor(void)
  *!   @mixed arg1
  *!   	@type int
  *!   	  The result will be the bitwise xor of @[arg1] and @[arg2].
- *!   	@type mapping
- *!   	@type multiset
- *!   	@type array
+ *!   	@type mapping|multiset|array
  *!   	  The result will be the elements of @[arg1] and @[arg2] that
  *!   	  only occurr in one of them.
  *!   	@type string
  *!   	  The result will be the pairwise bitwise xor of @[arg1] and @[arg2].
- *!   	@type type
- *!   	@type program
+ *!   	@type type|program
  *!   	  The result will be the result of
  *!   	  @code{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
  *!   @endmixed
@@ -2336,18 +2323,15 @@ PMOD_EXPORT void o_multiply(void)
  *!   @mixed arg1
  *!   	@type array
  *!   	  @mixed arg2
- *!   	    @type int
- *!   	    @type float
+ *!   	    @type int|float
  *!   	      The result will be @[arg1] concatenated @[arg2] times.
- *!   	    @type string
- *!   	    @type array
+ *!   	    @type string|array
  *!   	      The result will be the elements of @[arg1] concatenated with
  *!   	      @[arg2] interspersed.
  *!   	  @endmixed
  *!   	@type string
  *!   	  The result will be @[arg1] concatenated @[arg2] times.
- *!   	@type int
- *!   	@type float
+ *!   	@type int|float
  *!   	  The result will be @code{@[arg1] * @[arg2]@}, and will be a
  *!   	  float if either @[arg1] or @[arg2] is a float.
  *!   @endmixed
@@ -2690,8 +2674,7 @@ PMOD_EXPORT void o_divide(void)
  *!   @mixed arg1
  *!   	@type string
  *!   	  @mixed arg2
- *!   	    @type int
- *!   	    @type float
+ *!   	    @type int|float
  *!   	      The result will be and array of @[arg1] split in segments
  *!   	      of length @[arg2]. If @[arg2] is negative the splitting
  *!   	      will start from the end of @[arg1].
@@ -2702,8 +2685,7 @@ PMOD_EXPORT void o_divide(void)
  *!   	  @endmixed
  *!   	@type array
  *!   	  @mixed arg2
- *!   	    @type int
- *!   	    @type float
+ *!   	    @type int|float
  *!   	      The result will be and array of @[arg1] split in segments
  *!   	      of length @[arg2]. If @[arg2] is negative the splitting
  *!   	      will start from the end of @[arg1].
@@ -2712,8 +2694,7 @@ PMOD_EXPORT void o_divide(void)
  *!   	      occurrence of @[arg2]. Note that the elements that
  *!   	      matched against @[arg2] will not be in the result.
  *!   	  @endmixed
- *!   	@type float
- *!   	@type int
+ *!   	@type float|int
  *!   	  The result will be @code{@[arg1] / @[arg2]@}. If both arguments
  *!   	  are int, the result will be truncated to an int. Otherwise the
  *!   	  result will be a float.
@@ -2878,14 +2859,12 @@ PMOD_EXPORT void o_mod(void)
  *!
  *!   Otherwise the result will be as follows:
  *!   @mixed arg1
- *!   	@type string
- *!   	@type array
+ *!   	@type string|array
  *!   	  If @[arg2] is positive, the result will be the last
  *!   	  @code{`%(@[sizeof](@[arg1]), @[arg2])@} elements of @[arg1].
  *!   	  If @[arg2] is negative, the result will be the first
  *!   	  @code{`%(@[sizeof](@[arg1]), -@[arg2])@} elements of @[arg1].
- *!   	@type int
- *!   	@type float
+ *!   	@type int|float
  *!   	  The result will be
  *!   	  @code{@[arg1] - @[arg2]*@[floor](@[arg1]/@[arg2])@}.
  *!   	  The result will be a float if either @[arg1] or @[arg2] is
@@ -3071,8 +3050,7 @@ PMOD_EXPORT void o_compl(void)
  *!   	  The bitwise inverse of @[arg] will be returned.
  *!   	@type float
  *!   	  The result will be @code{-1.0 - @[arg]@}.
- *!   	@type type
- *!   	@type program
+ *!   	@type type|program
  *!   	  The type inverse of @[arg] will be returned.
  *!   	@type string
  *!   	  If @[arg] only contains characters in the range 0 - 255 (8-bit),
@@ -3347,8 +3325,7 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *!   	@type object
  *!   	  The non-static (ie public) variable named @[index] will be looked up
  *!   	  in @[arg], and assigned @[val].
- *!   	@type array
- *!   	@type mapping
+ *!   	@type array|mapping
  *!   	  Index @[index] in @[arg] will be assigned @[val].
  *!   	@type multiset
  *!   	  If @[val] is @tt{0@} (zero), one occurrance of @[index] in
@@ -3397,8 +3374,7 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *!   	@type object
  *!   	  The non-static (ie public) variable named @[index] will be looked up
  *!   	  in @[arg], and assigned @[val].
- *!   	@type array
- *!   	@type mapping
+ *!   	@type array|mapping
  *!   	  Index @[index] in @[arg] will be assigned @[val].
  *!   	@type multiset
  *!   	  If @[val] is @tt{0@} (zero), one occurrance of @[index] in
@@ -3444,8 +3420,7 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
  *!   @mixed arg
  *!   	@type string
  *!   	  The number of characters in @[arg] will be returned.
- *!   	@type array
- *!   	@type multiset
+ *!   	@type array|multiset
  *!   	  The number of elements in @[arg] will be returned.
  *!   	@type mapping
  *!   	  The number of key-value pairs in @[arg] will be returned.
