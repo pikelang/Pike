@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.193 2000/08/27 12:57:06 grubba Exp $");
+RCSID("$Id: las.c,v 1.194 2000/08/27 14:29:09 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1736,6 +1736,26 @@ static void low_print_tree(node *foo,int needlval)
       fprintf(stderr, "%s",ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
     } else {
       fprintf(stderr, "unknown identifier");
+    }
+    break;
+
+  case F_EXTERNAL:
+    if(needlval) fputc('&', stderr);
+    {
+      struct program_state *state = Pike_compiler;
+      char *name = "external";
+      int program_id = foo->u.integer.a;
+      while(state && (state->new_program->id != program_id)) {
+	state = state->previous;
+      }
+      if (state) {
+	int id_no = foo->u.integer.b;
+	struct identifier *id = ID_FROM_INT(state->new_program, id_no);
+	if (id && id->name) {
+	  name = id->name->str;
+	}
+      }
+      fprintf(stderr, "%s", name);
     }
     break;
 
