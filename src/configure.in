@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.661 2002/12/12 08:27:51 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.662 2002/12/14 14:13:00 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -35,6 +35,7 @@ esac
 # Attempt to use bash instead of /bin/sh to run configure
 # since bash is usually several orders of magnitude faster
 # on machines that have a real /bin/sh.
+# Some OS's also have a seriously broken /bin/sh (eg NetBSD).
 if test "x$CONFIG_SHELL" = "x"; then 
   AC_PATH_PROG(bash_prog, bash, no)
   if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
@@ -50,6 +51,39 @@ If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.
     exit 17
   fi
 else :; fi
+
+AC_PROG_MAKE_SET
+
+if test -f main.c; then :; else
+  # Not building in source tree.
+  AC_MSG_CHECKING([whether ${MAKE-make} supports VPATH])
+  AC_CACHE_VAL(pike_cv_make_supports_VPATH, [
+    cat > conftestmake <<EOF
+VPATH=.:$srcdir
+conftest.out: main.c
+	cat "\$<" >"\$@"
+EOF
+    pike_cv_make_supports_VPATH=no
+    if ${MAKE-make} -f conftestmake conftest.out >/dev/null 2>&5; then
+      if test -f conftest.out; then
+        pike_cv_make_supports_VPATH=yes
+      else :; fi
+    else :; fi
+  ])
+  AC_MSG_RESULT($pike_cv_make_supports_VPATH)
+  if test "x$pike_cv_make_supports_VPATH" = "xno"; then
+    AC_MSG_WARN([Enabling VPATH symlink kludge])
+
+    # First duplicate the directory structure...
+    for d in `cd "$srcdir" && find . -type d -print`; do
+      test -d "$d/." || mkdir "$d"
+    done
+    # Then symlink all the files...
+    for f in `cd "$srcdir" && find . -type f -print`; do
+      test -f "$f" || ln -s "$srcdir/$f" "$f"
+    done
+  else :; fi
+fi
 
 AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
