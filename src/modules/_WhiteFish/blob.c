@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.11 2001/05/25 14:33:35 per Exp $");
+RCSID("$Id: blob.c,v 1.12 2001/05/25 14:37:44 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -292,12 +292,11 @@ static void f_blob_create( INT32 args )
 static void f_blob_remove( INT32 args )
 {
   int doc_id = sp[-1].u.integer;
+  int r = doc_id % HSIZE;
+  struct hash *h = THIS->hash[r], *p = 0;
 
   pop_n_elems(args);
 
-  int r = doc_id % HSIZE;
-  struct hash *h = THIS->hash[r], *p = 0;
-  
   while( h )
   {
     if( h->doc_id == doc_id )
@@ -342,7 +341,6 @@ static void f_blob_add( INT32 args )
       s = (3<<14) | ((field-2)<<6) | (off>63?63:off);
       break;
   }
-  printf( "append %d %d\n", docid, s );
   _append_hit( THIS, docid, s );
 
   pop_n_elems( args );
