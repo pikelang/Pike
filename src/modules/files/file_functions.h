@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.31 2003/10/27 23:25:14 mast Exp $
+|| $Id: file_functions.h,v 1.32 2004/03/10 19:19:53 nilsson Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -94,7 +94,7 @@ FILE_FUNC("connect",file_connect, tOr(tFunc(tStr tOr(tInt,tStr),tInt),tFunc(tStr
 FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt));
 #endif /* HAVE_SYS_UN_H */
 /* function(int|void:string) */
-FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt,tVoid),tStr));
+FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt01,tVoid),tStr));
 /* function(void|string,void|string:void) */
 FILE_FUNC("create",file_create, tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid));
 /* function(mixed:object) */
