@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.53 2004/02/29 02:58:12 nilsson Exp $
+// $Id: client.pike,v 1.54 2004/03/18 18:06:12 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.53 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.54 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -409,7 +409,7 @@ int _prof_gtim;
 #if constant(SSL.Cipher.CipherAlgorithm)
     if(lauth->scheme == "ldaps") {
       context->random = Crypto.Random.random_string;
-      ::create(SSL.sslfile(::_fd, context, 1,1));
+      ::create(SSL.sslfile(this, context, 1,1));
       info->tls_version = ldapfd->version;
     } else
       ::create(::_fd);
