@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.34 1999/03/04 06:05:12 hubbe Exp $
+ * $Id: stralloc.h,v 1.35 1999/06/30 18:33:13 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -58,14 +58,14 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
   ((SHIFT)==0?((p_wchar0 *)(PTR))[(IND)]:(SHIFT)==1?((p_wchar1 *)(PTR))[(IND)]:((p_wchar2 *)(PTR))[(IND)])
 
 #define SET_INDEX_CHARP(PTR,IND,SHIFT,VAL) \
-  ((SHIFT)==0?((p_wchar0 *)(PTR))[(IND)]=(VAL):(SHIFT)==1?((p_wchar1 *)(PTR))[(IND)]=(VAL):((p_wchar2 *)(PTR))[(IND)]=(VAL))
+  ((SHIFT)==0?(((p_wchar0 *)(PTR))[(IND)]=(VAL)):(SHIFT)==1?(((p_wchar1 *)(PTR))[(IND)]=(VAL)):(((p_wchar2 *)(PTR))[(IND)]=(VAL)))
 
 
 #define EXTRACT_CHARP(PTR,SHIFT) INDEX_CHARP((PTR),0,(SHIFT))
 #define CHARP_ADD(PTR,X,SHIFT) (PTR)+=(X)<<(SHIFT)
 
 #define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
-#define SET_INDEX_PCHARP(X,Y,Z) INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
+#define SET_INDEX_PCHARP(X,Y,Z) SET_INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
 #define EXTRACT_PCHARP(X) INDEX_CHARP((X).ptr,(0),(X).shift)
 #define INC_PCHARP(X,Y) (((X).ptr)+=(Y) << (X).shift)
 
