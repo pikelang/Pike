@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.142 2000/09/19 15:21:44 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.143 2000/10/01 08:55:03 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -446,7 +446,8 @@ void find_external_context(struct external_variable_context *loc,
 {
   struct program *p;
   INT32 e,off;
-  TRACE((4,"-find_external_context(%d, inherit=%d)\n",arg2,loc->inherit - loc->o->prog->inherits));
+  TRACE((4,"-find_external_context(%d, inherit=%d)\n",arg2,
+	 loc->o->prog ? loc->inherit - loc->o->prog->inherits :0));
 
   if(!loc->o)
     error("Current object is destructed\n");
@@ -454,7 +455,7 @@ void find_external_context(struct external_variable_context *loc,
   while(--arg2>=0)
   {
 #ifdef PIKE_DEBUG  
-    if(t_flag>8)
+    if(t_flag>8 && loc->o->prog)
       my_describe_inherit_structure(loc->o->prog);
 #endif
 

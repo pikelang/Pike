@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.108 2000/08/28 19:37:40 hubbe Exp $");
+RCSID("$Id: object.c,v 1.109 2000/10/01 08:55:03 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -428,9 +428,18 @@ struct destroy_called_mark
 {
   struct destroy_called_mark *next;
   void *data;
+  struct program *p; /* for magic */
 };
 
 PTR_HASH_ALLOC(destroy_called_mark,128)
+
+struct program *get_program_for_object_being_destructed(struct object * o)
+{
+  struct destroy_called_mark * tmp;
+  if(( tmp = find_destroy_called_mark(o)))
+    return tmp->p;
+  return 0;
+}
 
 static void call_destroy(struct object *o, int foo)
 {
@@ -462,7 +471,6 @@ void low_destruct(struct object *o,int do_free)
   add_ref(o);
 
   call_destroy(o,0);
-  remove_destroy_called_mark(o);
 
   /* destructed in destroy() */
   if(!(p=o->prog))
@@ -470,6 +478,8 @@ void low_destruct(struct object *o,int do_free)
     free_object(o);
     return;
   }
+
+  get_destroy_called_mark(o)->p=p;
 
   debug_malloc_touch(o);
   o->prog=0;
@@ -524,6 +534,7 @@ void low_destruct(struct object *o,int do_free)
   }
 
   free_program(p);
+  remove_destroy_called_mark(o);
 }
 
 void destruct(struct object *o)
