@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.68 2003/04/01 19:41:13 mast Exp $
+dnl $Id: aclocal.m4,v 1.69 2003/04/02 21:47:00 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -110,7 +110,7 @@ AC_CACHE_VAL(ac_cv_func_$1,
 /* This file contains __stub_ defines for broken functions. */
 #include <gnu/stubs.h>
 #endif
-extern int $1();
+char $1();
 ], [
 #if defined (__stub_$1) || defined (__stub___$1)
 #error stupidity are us...
@@ -320,7 +320,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.68 2003/04/01 19:41:13 mast Exp $
+# $Id: aclocal.m4,v 1.69 2003/04/02 21:47:00 mast Exp $
 
 MY_AC_PROG_CC
 
