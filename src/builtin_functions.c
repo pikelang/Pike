@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.503 2003/08/20 15:53:26 jhs Exp $
+|| $Id: builtin_functions.c,v 1.504 2003/09/04 15:03:11 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.503 2003/08/20 15:53:26 jhs Exp $");
+RCSID("$Id: builtin_functions.c,v 1.504 2003/09/04 15:03:11 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -604,6 +604,7 @@ void f_query_num_arg(INT32 args)
 /*! @decl int search(string haystack, string|int needle, int|void start)
  *! @decl int search(array haystack, mixed needle, int|void start)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
+ *! @decl mixed search(object haystack, mixed needle, mixed|void start)
  *!
  *!   Search for @[needle] in @[haystack]. Return the position of @[needle] in
  *!   @[haystack] or @expr{-1@} if not found.
@@ -611,16 +612,41 @@ void f_query_num_arg(INT32 args)
  *!   If the optional argument @[start] is present search is started at
  *!   this position.
  *!
- *!   When @[haystack] is a string @[needle] must be a string or an int,
- *!   and the first occurrence of the string or int is returned.
+ *!   @mixed haystack
+ *!     @type string
+ *!       When @[haystack] is a string @[needle] must be a string or an int,
+ *!       and the first occurrence of the string or int is returned.
  *!
- *!   When @[haystack] is an array, @[needle] is compared only to one value at
- *!   a time in @[haystack].
+ *!     @type array
+ *!       When @[haystack] is an array, @[needle] is compared only to
+ *!       one value at a time in @[haystack].
  *!
- *!   When @[haystack] is a mapping, @[search()] tries to find the index
- *!   connected to the data @[needle]. That is, it tries to lookup the mapping
- *!   backwards. If @[needle] isn't present in the mapping, zero is returned,
- *!   and zero_type() will return 1 for this zero.
+ *!     @type mapping
+ *!       When @[haystack] is a mapping, @[search()] tries to find the index
+ *!       connected to the data @[needle]. That is, it tries to lookup the
+ *!       mapping backwards. If @[needle] isn't present in the mapping, zero
+ *!       is returned, and zero_type() will return 1 for this zero.
+ *!
+ *!     @type object
+ *!       When @[haystack] is an object implementing @[lfun::_search()],
+ *!       the result of calling @[lfun::_search()] with @[needle] will
+ *!       be returned.
+ *!
+ *!       If @[haystack] is an object that doesn't implement @[lfun::_search()]
+ *!       it is assumed to be an @[Iterator], and implement
+ *!       @[Iterator()->index()], @[Iterator()->value()], and
+ *!       @[Iterator()->next()]. @[search()] will then start comparing
+ *!       elements with @[`==()] until a match with @[needle] is found.
+ *!       If @[needle] is found @[haystack] will be advanced to the element,
+ *!       and the iterator index will be returned. If @[needle] is not
+ *!       found, @[haystack] will be advanced to the end (and will thus
+ *!       evaluate to false), and a zero with zero_type 1 will be returned.
+ *!   @endmixed
+ *!
+ *! @note
+ *!   If @[start] is supplied to an iterator object without an
+ *!   @[lfun::_search()], @[haystack] will need to implement
+ *!   @[Iterator()->set_index()].
  *!
  *! @seealso
  *!   @[indices()], @[values()], @[zero_type()]
@@ -748,8 +774,60 @@ PMOD_EXPORT void f_search(INT32 args)
     pop_n_elems(args-1);
     return;
 
+  case T_OBJECT:
+    if (Pike_sp[-args].u.object->program) {
+      struct object *o = Pike_sp[-args].u.object;
+      struct program *p = o->program;
+      /* NOTE: Fake lfun! */
+      int id = low_find_lfun(p, LFUN__STATIC);
+      int next, ind;
+
+      /* First try lfun::_search(). */
+      if (id >= 0) {
+	apply_lfun(o, id, args-1);
+	stack_pop_n_elems_keep_top(1);
+	return;
+      }
+
+      /* Check if we have an iterator. */
+      if (((id = find_identifier(p, "value")) >= 0) &&
+	  ((next = find_identifier(p, "next")) >= 0) &&
+	  ((ind = find_identifier(p, "index")) >= 0)) {
+	/* We have an iterator. */
+
+	/* Set the start position if needed. */
+	if (args > 2) {
+	  apply(o, "set_index", args-2);
+	  pop_stack();
+	}
+
+	/* At this point we have two values on the stack. */
+
+	while(1) {
+	  apply_lfun(o, id, 0);
+	  if (is_eq(Pike_sp-2, Pike_sp-1)) {
+	    /* Found. */
+	    apply_lfun(o, ind, 0);
+	    stack_pop_n_elems_keep_top(3);
+	    return;
+	  }
+	  apply_lfun(o, next, 0);
+	  if (UNSAFE_IS_ZERO(Pike_sp-1)) {
+	    /* Not found. */
+	    pop_n_elems(4);
+	    /* FIXME: Should probably indicate not found in some other way.
+	     *        On the other hand, the iterator should be false now.
+	     */
+	    push_undefined();	
+	    return;
+	  }
+	  pop_n_elems(2);
+	}
+      }
+    }
+    /* FALL_THROUGH */
   default:
-    SIMPLE_BAD_ARG_ERROR("search", 1, "string|array|mapping");
+    SIMPLE_BAD_ARG_ERROR("search", 1, "string|array|mapping|object");
   }
 }
 
