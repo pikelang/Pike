@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.88 2001/02/24 22:41:11 grubba Exp $");
+RCSID("$Id: encode.c,v 1.89 2001/03/03 00:28:35 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -349,12 +349,11 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
     case T_OBJECT:
     {
-      INT32 x;
       addchar((ptrdiff_t)t->car);
 
       if(t->cdr)
       {
-	struct program *p=id_to_program(x);
+	struct program *p=id_to_program((ptrdiff_t)t->cdr);
 	if(p)
 	{
 	  ref_push_program(p);
@@ -1089,7 +1088,7 @@ static int my_extract_char(struct decode_data *data)
   }while(0)					\
 
 
-static void restore_type_stack(unsigned char *old_stackp)
+static void restore_type_stack(struct pike_type **old_stackp)
 {
 #if 0
   fprintf(stderr, "Restoring type-stack: %p => %p\n",
@@ -1103,7 +1102,7 @@ static void restore_type_stack(unsigned char *old_stackp)
   Pike_compiler->type_stackp = old_stackp;
 }
 
-static void restore_type_mark(unsigned char **old_type_mark_stackp)
+static void restore_type_mark(struct pike_type ***old_type_mark_stackp)
 {
 #if 0
   fprintf(stderr, "Restoring type-mark: %p => %p\n",
@@ -1138,11 +1137,35 @@ one_more_type:
       break;
 
     case T_ASSIGN:
+#ifdef USE_PIKE_TYPE
+      low_decode_type(data);
+      push_assign_type(GETC());
+      break;
+#else /* !USE_PIKE_TYPE */
       push_type(tmp);
       push_type(GETC());
       goto one_more_type;
+#endif /* USE_PIKE_TYPE */
 
     case T_FUNCTION:
+#ifdef USE_PIKE_TYPE
+      {
+	int narg = 0;
+
+	while (GETC() != T_MANY) {
+	  data->ptr--;
+	  low_decode_type(data);
+	  narg++;
+	}
+	low_decode_type(data);	/* Many */
+	low_decode_type(data);	/* Return */
+	push_reverse_type(T_MANY);
+	while(narg-- > 0) {
+	  push_reverse_type(T_FUNCTION);
+	}
+      }
+      break;
+#else /* !USE_PIKE_TYPE */
       push_type(tmp);
       while(GETC()!=T_MANY)
       {
@@ -1152,21 +1175,49 @@ one_more_type:
       push_type(T_MANY);
       low_decode_type(data);
       goto one_more_type;
+#endif /* USE_PIKE_TYPE */
 
     case T_MAPPING:
     case T_OR:
     case T_AND:
+#ifdef USE_PIKE_TYPE
+      low_decode_type(data);
+      low_decode_type(data);
+      push_reverse_type(tmp);
+      break;
+#else /* !USE_PIKE_TYPE */
       push_type(tmp);
       low_decode_type(data);
       goto one_more_type;
+#endif /* USE_PIKE_TYPE */
 
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
+#ifdef USE_PIKE_TYPE
+      low_decode_type(data);
+      push_type(tmp);
+      break;
+#else /* !USE_PIKE_TYPE */
       push_type(tmp);
       goto one_more_type;
+#endif /* USE_PIKE_TYPE */
 
     case T_INT:
+#ifdef USE_PIKE_TYPE
+      {
+	INT32 min=0, max=0;
+	min = GETC();
+	min = (min<<8)|GETC();
+	min = (min<<8)|GETC();
+	min = (min<<8)|GETC();
+	max = GETC();
+	max = (max<<8)|GETC();
+	max = (max<<8)|GETC();
+	max = (max<<8)|GETC();
+	push_int_type(min, max);
+      }
+#else /* !USE_PIKE_TYPE */
       {
 	int i;
 	push_type(tmp);
@@ -1177,6 +1228,7 @@ one_more_type:
 	  push_type(GETC());
 	}
       }
+#endif /* USE_PIKE_TYPE */
       break;
 
     case '0':
@@ -1243,6 +1295,14 @@ one_more_type:
   UNSET_ONERROR(err1);
 }
 
+#ifdef USE_PIKE_TYPE
+/* This really needs to disable threads.... */
+#define decode_type(X,data)  do {		\
+  type_stack_mark();				\
+  low_decode_type(data);			\
+  (X)=pop_unfinished_type();			\
+} while(0)
+#else /* !USE_PIKE_TYPE */
 /* This really needs to disable threads.... */
 #define decode_type(X,data)  do {		\
   type_stack_mark();				\
@@ -1251,6 +1311,7 @@ one_more_type:
   type_stack_reverse();				\
   (X)=pop_unfinished_type();			\
 } while(0)
+#endif /* USE_PIKE_TYPE */
 
 static void decode_value2(struct decode_data *data)
 
