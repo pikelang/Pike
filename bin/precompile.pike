@@ -353,7 +353,7 @@ class PikeType
 	case "array":
 	case "multiset":
 	case "mapping":
-	  
+
 	case "object":
 	case "program": return "struct "+btype+" *";
 	  
@@ -1717,8 +1717,10 @@ class ParseBlock
 
 	      case "program":
 		ret+=({
-		  PC.Token(sprintf("if(!( %s=program_from_svalue(Pike_sp%+d%s)))",
-				   arg->name(),argnum,check_argbase),
+		  PC.Token(sprintf("if(!(%sprogram_from_svalue(Pike_sp%+d%s)))",
+				   (arg->c_type() == "struct program *" ?
+				    arg->name() + "=" : ""),
+				   argnum,check_argbase),
 			   arg->line())
 		});
 		break;
@@ -1775,6 +1777,10 @@ class ParseBlock
 				     arg->name(),
 				     argnum,argbase,argnum,argbase),arg->line()),
 		  });
+		  break;
+
+		case "struct program *":
+		  // Program arguments are assigned directly in the check above.
 		  break;
 
 		default:
