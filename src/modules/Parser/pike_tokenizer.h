@@ -16,7 +16,8 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    pos++;
 	  break;
 	}
-	/* fallthrough. */
+	break;
+
       case '0':
 	if( data[pos+1]=='x' || data[pos+1]=='X' )
 	{
@@ -46,7 +47,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
       case '9':
 	while(pos<len && data[pos]>='0' && data[pos]<='9') pos++;
 	if( pos == len ) break;
-	if(data[pos]=='.')
+	if(data[pos]=='.' && data[pos+1]>='0' && data[pos+1]<='9')
 	{
 	  pos++;
 	  while(pos<len && data[pos]>='0' && data[pos]<='9') pos++;
@@ -71,19 +72,30 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	switch(data[pos+1]) {
 	case '<':
 	case '>':
-	  if(data[pos+2]==data[pos+1]) pos++;
+	  pos++;
+	  if(data[pos+1]==data[pos]) pos++;
 	  break;
 	case '-':
-	  if(data[pos+2]=='>') pos++;
+	  pos++;
+	  if(data[pos+1]=='>') pos++;
 	  break;
 	case '(':
-	  if(data[pos+2]==')') pos++;
+	  pos++;
+	  if(data[pos+1]==')') pos++;
 	  break;
 	case '[':
-	  if(data[pos+2]==']') pos++;
+	  pos++;
+	  if(data[pos+1]=='.') pos++;
+	  if(data[pos+1]=='.') pos++;
+	  if(data[pos+1]==']') pos++;
+	  break;
+	case '/': case '%': case '*': case '&': case '|':
+	case '^':
+        case '+': case '!':
+	  pos++;
 	  break;
 	}
-	if(data[pos+2]=='=') pos++;
+	if(data[pos+1]=='=') pos++;
 	break;
 
 
@@ -110,10 +122,14 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
       case '{': case '}':
       case '[': case ']':
       case '(': case ')':
-      case ';': case ':':
+      case ';':
       case ',': case '?':
       case '@': /* Hm. Pike specific if I ever saw one. */
 	break;  /* all done, one character token */
+
+      case ':':
+	if( data[pos+1] == ':' ) pos++;
+	break;
 
       case '<':
 	if( data[pos+1] == '<' ) pos++;
@@ -121,10 +137,10 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	break;
 
       case '-':
-	if( data[pos+1] == '>' ) pos++;
+	if( data[pos+1] == '-' ) pos++;
 	else
 	{
-	  if( data[pos+1] == '-' ) pos++;
+	  if( data[pos+1] == '>' ) pos++;
 	  if( data[pos+1] == '=' ) pos++;
 	}
 	break;
@@ -203,6 +219,9 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  NEWLINE();
 	}
 	break;
+
+      case 0:
+	goto failed_to_find_end;
 
       default:
 	if( m_isidchar( data[pos] ) )
