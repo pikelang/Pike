@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.53 2002/03/18 15:54:44 tomas Exp $
+ * $Id: Sql.pike,v 1.54 2002/06/12 16:38:33 anders Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -540,8 +540,11 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
       res = res_obj_to_array(res);
     }
     if (wild) {
-      res = filter(res, 
-		   Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+      res = filter(res, lambda(mapping row){
+			  return Regexp(replace(wild, ({"%", "_"}),
+						({".*", "."})))
+			    ->match(row->name);
+			});
     }
     return(res);
   }
