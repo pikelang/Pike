@@ -146,7 +146,7 @@ if test "x$with_java" = xyes; then
     CPPFLAGS="-I$pike_cv_java_include_dir -I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
   fi
 
-  AC_CHECK_HEADERS(jni.h winbase.h)
+  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h)
 
   pike_cv_java=no
 
@@ -207,6 +207,9 @@ if test "x$with_java" = xyes; then
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
+#ifdef HAVE_SETJMP_H
+#include <setjmp.h>
+#endif
 #include <stdio.h>
 #ifdef __NT__
 #include <windows.h>
@@ -222,6 +225,7 @@ static HINSTANCE jvmdll = NULL;
           JavaVMInitArgs vm_args;
           JavaVMOption vm_options[2];
 	  jint res;
+	  jmp_buf jbuf;
 #ifdef __NT__
 	  {
 	    char *libname="jvm";
@@ -279,6 +283,8 @@ static HINSTANCE jvmdll = NULL;
 	    fprintf(stderr, "JNI_CreateJavaVM failed code %d\\n", (int)res);
             exit(1);
 	  }
+	  if(!setjmp(jbuf))
+	    longjmp(jbuf,1);
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
