@@ -100,6 +100,8 @@ class Year
 	 (int)x==y;
    }
 
+   int hash() { return y*113; }
+
    int `>(object x)
    {
       return y>(int)x;
@@ -332,6 +334,8 @@ class Month
 	 x->y==y && x->m==m;
    }
 
+   int hash() { return y*4721+m; }
+
    int `>(object x)
    {
       return 
@@ -478,6 +482,8 @@ class Week
 	 object_program(x)==object_program(this) &&
 	 x->y==y && x->w==w;
    }
+
+   int hash() { return y*811+w; }
 
    int `>(object x)
    {
@@ -678,6 +684,8 @@ class Day
 	 (x->julian_day() == julian_day());
    }
 
+   int hash() { return y*3203+d; }
+
    int `>(object x)
    {
       return 
@@ -875,6 +883,8 @@ class Hour
 	 x->d==d && x->h==h;
    }
 
+   int hash() { return d->__hash()*31957+h; }
+
    int `>(object x)
    {
       return 
@@ -1055,6 +1065,8 @@ class Minute
 	 object_program(x)==object_program(this) &&
 	 x->h==h && x->m==m;
    }
+
+   int __hash() { return h->__hash()*101+m; }
 
    int `>(object x)
    {
@@ -1260,6 +1272,8 @@ class Second
 	 object_program(x)==object_program(this) &&
 	 x->m==m && x->s==s;
    }
+
+   int __hash() { return m->__hash()*101+s; }
 
    int `>(object x)
    {
