@@ -336,6 +336,25 @@ class Drawable
     object req = ImageText8_req(gc->id, x, y, str);
     display->send_request(req);    
   }
+
+  object ImageText16_req(int gc, int x, int y, string str)
+  {
+    object req = Requests.ImageText16();
+    req->drawable = id;
+    req->gc = gc;
+    req->x = x;
+    req->y = y;
+    req->str = str;
+    return req;
+  }
+
+  void ImageText16(object gc, int x, int y, string str)
+  {
+    if(sizeof(str)>510)
+      error("ImageText16: string to long\n");
+    object req = ImageText16_req(gc->id, x, y, str);
+    display->send_request(req);    
+  }
 }
 
 class Pixmap

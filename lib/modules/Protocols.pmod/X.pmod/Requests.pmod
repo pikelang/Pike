@@ -707,6 +707,23 @@ class ImageText8
   }
 }
 
+class ImageText16
+{
+  inherit request;
+  constant reqType = 77;
+
+  int drawable;
+  int gc;
+  int x, y;
+  string str;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%2c%2c%s",
+				 drawable, gc, x, y, str), sizeof(str)/2);
+  }
+}
+
 class CreateColormap
 {
   inherit request;
