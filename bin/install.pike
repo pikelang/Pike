@@ -1189,6 +1189,7 @@ void do_install()
     install_dir(vars->LIBDIR_SRC,lib_prefix,1);
     
     install_header_files(vars->SRCDIR,include_prefix);
+    install_header_files(combine_path(vars->SRCDIR,"code"), include_prefix);
     install_header_files(vars->TMP_BUILDDIR,include_prefix);
     
     install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
