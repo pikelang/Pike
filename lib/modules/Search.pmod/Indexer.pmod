@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.12 2001/06/22 01:28:35 nilsson Exp $
+// $Id: Indexer.pmod,v 1.13 2001/06/26 04:06:36 js Exp $
 
 void index_document(Search.Database.Base db,
 		    string|Standards.URI uri,
@@ -21,14 +21,14 @@ void index_document(Search.Database.Base db,
     }
   }
   // Tokenize any anchor fields
-  
-  int source_hash=hash((string)uri)&0xf;
-  foreach(indices(uri_anchors|| ({ })), string link_uri)
-  {
-    array(string) words=
-      Search.Utils.tokenize_and_normalize(uri_anchors[link_uri]);
-    db->insert_words(link_uri, 0, "anchor", words, source_hash);
-  }
+   
+//    int source_hash=hash((string)uri)&0xf;
+//    foreach(indices(uri_anchors|| ({ })), string link_uri)
+//    {
+//      array(string) words=
+//        Search.Utils.tokenize_and_normalize(uri_anchors[link_uri]);
+//      db->insert_words(link_uri, 0, "anchor", words, source_hash);
+//    }
 }
 
 
