@@ -560,7 +560,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2002 IDA, Linköping University
+#" Copyright (C) 1994-2003 IDA, Linköping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.
@@ -1283,6 +1283,7 @@ void do_install()
 		     "modules/dynamic_module_makefile"),
 	combine_path(vars->SRCDIR,"install-welcome"),
 	combine_path(vars->SRCDIR,"dumpmaster.pike"),
+	combine_path(vars->SRCDIR,"dumpmodule.pike"),
       });
 
       void basefile(string x) {
@@ -1377,6 +1378,10 @@ void do_install()
       }
       mkdirhier(fakeroot(dirname(lnk)));
       symlink(pike,fakeroot(lnk));
+      catch {
+	rm(fakeroot(lnk)+__MAJOR__+__MINOR__);
+	symlink(pike,fakeroot(lnk)+__MAJOR__+__MINOR__);
+      };
       status("Creating",lnk,"done");
     }
 #endif
