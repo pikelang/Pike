@@ -62,7 +62,11 @@ bignum hash2number(string digest)
 //!   Document this function.
 bignum dsa_hash(string msg)
 {
-  return hash2number(Crypto.sha()->update(msg)->digest());
+#if constant(Nettle.SHA1_State)
+  return hash2number(.SHA.hash(msg));
+#else
+  return hash2number(.sha()->update(msg)->digest());
+#endif
 }
   
 //! Generate a random number k, 0<=k<n
@@ -175,7 +179,6 @@ object set_private_test_key()
 				 16));
 }
 
-#define SHA_LENGTH 20
 #define SEED_LENGTH 20
 
 //! The (slow) NIST method of generating DSA primes. Algorithm 4.56 of
@@ -183,8 +186,12 @@ object set_private_test_key()
 string nist_hash(bignum x)
 {
   string s = x->digits(256);
-		       
-  return Crypto.sha()->update(s[sizeof(s) - SEED_LENGTH..])->digest();
+
+#if constant(Nettle.SHA1_State)
+  return .SHA.hash(s[sizeof(s) - SEED_LENGTH..]);
+#else
+  return .sha()->update(s[sizeof(s) - SEED_LENGTH..])->digest();
+#endif
 }
 
 //! Returns ({ p, q })
@@ -197,7 +204,7 @@ array(bignum) nist_primes(int l)
     error( "Crypto.dsa->nist_primes: Unsupported key size.\n" );
 
   int L = 512 + 64 * l;
-  
+
   int n = (L-1) / 160;
   int b = (L-1) % 160;
 
@@ -230,9 +237,9 @@ array(bignum) nist_primes(int l)
 
       buffer = buffer[sizeof(buffer) - L/8 ..];
       buffer = sprintf("%c%s", buffer[0] | 0x80, buffer[1..]);
-      
+
       bignum p = Gmp.mpz(buffer, 256);
-      
+
       p -= p % (2 * q) - 1;
 
       if (!p->small_factor() && p->probably_prime_p())
@@ -250,7 +257,7 @@ bignum find_generator(bignum p, bignum q)
 {
   bignum e = (p - 1) / q;
   bignum g;
-  
+
   do
   {
     /* A random number in { 2, 3, ... p - 2 } */
@@ -277,7 +284,7 @@ object generate_parameters(int bits)
 
   if (q->size() != 160)
     error( "Crypto.dsa->generate_key: Internal error.\n" );
-  
+
   g = find_generator(p, q);
 
   if ( (g == 1) || (g->powm(q, p) != 1))
