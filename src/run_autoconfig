@@ -1,0 +1,16 @@
+#!/bin/sh
+
+autoconf
+cd modules
+for a in *
+do
+  case $a in
+    CVS) ;;
+    RCS) ;;
+    *)
+      if [ -d $a ]; then
+        ( cd $a ; autoconf )
+      fi
+   ;;
+  esac
+done
