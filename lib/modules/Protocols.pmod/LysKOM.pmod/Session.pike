@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.4 1999/07/01 12:57:26 mirar Exp $
+//  $Id: Session.pike,v 1.5 1999/07/04 08:18:39 hubbe Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -618,7 +618,7 @@ int(1..1) logout()
 //!	<elem name=foot_to type="Text|array(Text)">what text(s) is footnoted</elem>
 //!	<elem></elem>
 //!	<elem name=anonymous type="int(0..1)">send text anonymously</elem>
-//!	</data-description>
+//!	</data_description>
 //!		
 //! note:
 //!	The above marked with a '*' is only available on a protocol 10
