@@ -4728,7 +4728,7 @@ This function is only available on systems with POSIX or UNIX threads support.
 
 <function name=this_thread title="return thread id">
 <man_syntax>
-object thread_id();<br>
+object this_thread();<br>
 </man_syntax>
 <man_description>
 This function returns the object that identifies this thread.
