@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.455 2002/11/07 17:03:27 marcus Exp $
+|| $Id: program.c,v 1.456 2002/11/14 14:48:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.455 2002/11/07 17:03:27 marcus Exp $");
+RCSID("$Id: program.c,v 1.456 2002/11/14 14:48:54 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2383,9 +2383,11 @@ struct program *end_first_pass(int finish)
 
   if(Pike_compiler->init_node)
   {
+    Pike_compiler->compiler_frame->current_function_number = -2;
     e=dooptcode(s,
 		mknode(F_COMMA_EXPR,
-		       Pike_compiler->init_node,mknode(F_RETURN,mkintnode(0),0)),
+		       Pike_compiler->init_node,
+		       mknode(F_RETURN,mkintnode(0),0)),
 		function_type_string,
 		ID_STATIC);
     Pike_compiler->init_node=0;
