@@ -9,9 +9,10 @@ static inherit "module.pmod";
 
 #define DEB werror("###%s:%d\n", __FILE__, __LINE__);
 static private void processError(string message, mixed ... args) {
-  throw ( ({ AutoDocError(0, "ProcessXML", sprintf(message, @args)),
+  throw ( ({ sprintf("ProcessXML: "+message, @args),
 	     backtrace() }) );
 }
+
 
 //========================================================================
 // From source file to XML
@@ -92,8 +93,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
 // IMAGES MOVED TO CANONICAL FILES
 //========================================================================
 
-// middot
-#define CONCAT_CHAR "·"
+#define CONCAT_CHAR "."
 
 //!   Copy all images to canonical files in a flat directory.
 //! @param docXMLFile
@@ -139,7 +139,7 @@ string moveImages(string docXMLFile,
             break;
   	  case "appendix":
 	    if(attr->name != "")
-	      parents += ({ CONCAT_CHAR + "APPENDIX" + hash(attr->name) });
+	      parents += ({ "APPENDIX" + hash(attr->name) });
 	    break;
           case "class":
           case "module":
@@ -225,11 +225,13 @@ static string getName(Node node) { return node->get_attributes()["name"]; }
 void mergeTrees(Node dest, Node source) {
   mapping(string : Node) dest_children = ([]);
   int dest_has_doc = 0;
+
   foreach(dest->get_children(), Node node)
     if (isClass(node) || isModule(node))
       dest_children[getName(node)] = node;
     else if (isDoc(node))
       dest_has_doc = 1;
+
   foreach(source->get_children(), Node node)
     switch(node->get_any_name()) {
       case "class":
@@ -369,6 +371,7 @@ void handleAppears(Node root) {
     }
 
     m_delete(n->get_attributes(), "belongs");
+    m_delete(n->get_attributes(), "appears");
 
     Node parent = n->get_parent();
     if (parent)
