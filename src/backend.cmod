@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.162 2005/01/20 18:26:46 grubba Exp $
+ * $Id: backend.cmod,v 1.163 2005/01/20 19:13:36 grubba Exp $
  *
  * Backend object.
  */
@@ -1866,6 +1866,17 @@ PIKECLASS Backend
     if (old != new) {
       if (box->fd >= 0) update_fd_set (old, box->fd, box->events, 0);
       remove_fd_box (box);
+      if (box->next) {
+	/* The box is active in the old backend. Unlink it. */
+	struct fd_callback_box *pred = box->next;
+	/* Find the predecessor. */
+	while (pred->next != box) {
+	  pred = pred->next;
+	}
+	pred->next = box->next;
+	box->next = NULL;
+	if (box->ref_obj) free_object(box->ref_obj);
+      }
       box->backend = new;
       add_fd_box (box);
       if (box->fd >= 0) update_fd_set (new, box->fd, 0, box->events);
