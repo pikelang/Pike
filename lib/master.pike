@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.46 1997/07/19 20:59:02 hubbe Exp $
+/* $Id: master.pike,v 1.47 1997/07/19 21:33:47 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -14,7 +14,13 @@ string *pike_include_path=({});
 string *pike_module_path=({});
 string *pike_program_path=({});
 
+string combine_path_with_cwd(string path)
+{
+  return combine_path(path[0]=='/'?"/":getcwd(),path);
+}
+
 mapping (string:string) environment=([]);
+
 
 varargs mixed getenv(string s)
 {
@@ -30,20 +36,20 @@ void putenv(string var, string val)
 
 void add_include_path(string tmp)
 {
-  tmp=combine_path(getcwd(),tmp);
+  tmp=combine_path_with_cwd(tmp);
   pike_include_path-=({tmp});
   pike_include_path=({tmp})+pike_include_path;
 }
 
 void remove_include_path(string tmp)
 {
-  tmp=combine_path(getcwd(),tmp);
+  tmp=combine_path_with_cwd(tmp);
   pike_include_path-=({tmp});
 }
 
 void add_module_path(string tmp)
 {
-  tmp=combine_path(getcwd(),tmp);
+  tmp=combine_path_with_cwd(tmp);
   pike_module_path-=({tmp});
   pike_module_path=({tmp})+pike_module_path;
 }
@@ -51,14 +57,14 @@ void add_module_path(string tmp)
 
 void remove_module_path(string tmp)
 {
-  tmp=combine_path(getcwd(),tmp);
+  tmp=combine_path_with_cwd(tmp);
   pike_module_path-=({tmp});
 }
 
 
 void add_program_path(string tmp)
 {
-  tmp=combine_path(getcwd(),tmp);
+  tmp=combine_path_with_cwd(tmp);
   pike_program_path-=({tmp});
   pike_program_path=({tmp})+pike_module_path;
 }
@@ -66,7 +72,7 @@ void add_program_path(string tmp)
 
 void remove_program_path(string tmp)
 {
-  tmp=combine_path(getcwd(),tmp);
+  tmp=combine_path_with_cwd(tmp);
   pike_program_path-=({tmp});
 }
 
@@ -249,28 +255,32 @@ class dirnode
   string dirname;
   mapping cache=([]);
   void create(string name) { dirname=name; }
-  object|program `[](string index)
+  object|program ind(string index)
   {
-    mixed ret;
-    if(zero_type(ret=cache[index]))
-    {
-      if(ret) return ret;
-      return UNDEFINED;
-    }
-
     object m=((object)"/master");
     if(mixed o=m->findmodule(dirname+"/module"))
     {
       if(mixed tmp=o->_module_value) o=tmp;
-      if(o=o[index]) return cache[index]=o;
+      if(o=o[index]) return o;
     }
     index = dirname+"/"+index;
     if(object o=((object)"/master")->findmodule(index))
     {
       if(mixed tmp=o->_module_value) o=tmp;
-      return cache[index]=o;
+      return o;
     }
-    return cache[index]=(program) index;
+    return (program) index;
+  }
+
+  object|program `[](string index)
+  {
+    mixed ret;
+    if(!zero_type(ret=cache[index]))
+    {
+      if(ret) return ret;
+      return UNDEFINED;
+    }
+    return cache[index]=ind(index);
   }
 };
 
@@ -311,7 +321,7 @@ varargs mixed resolv(string identifier, string current_file)
   {
     tmp=current_file/"/";
     tmp[-1]=identifier;
-    path=combine_path(getcwd(), tmp*"/");
+    path=combine_path_with_cwd( tmp*"/");
     ret=findmodule(path);
   }
 
@@ -536,7 +546,7 @@ string handle_include(string f,
   {
     tmp=current_file/"/";
     tmp[-1]=f;
-    path=combine_path(getcwd(),tmp*"/");
+    path=combine_path_with_cwd(tmp*"/");
     if(!file_stat(path)) return 0;
   }
   else
