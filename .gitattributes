@@ -78,6 +78,7 @@ testfont binary
 /src/modules/Image/dct.c foreign_ident
 /src/modules/Image/doc/Image.html foreign_ident
 /src/modules/Image/encodings/gif.c foreign_ident
+/src/modules/Image/encodings/gif.h foreign_ident
 /src/modules/Image/encodings/gif_lzw.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.h foreign_ident
 /src/modules/Image/encodings/pnm.c foreign_ident
