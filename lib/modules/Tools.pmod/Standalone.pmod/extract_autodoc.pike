@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.43 2004/02/19 17:05:23 vida Exp $
+ * $Id: extract_autodoc.pike,v 1.44 2004/04/23 13:41:10 per Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -186,14 +186,14 @@ string extract(string filename, string imgdest,
   if(!has_value(name_sans_suffix, "."))
     error("No suffix in file %O.\n", name_sans_suffix);
   suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
-  if( !(< "c", /* "cmod", */ "pike", "pmod", >)[suffix] )
+  if( !(< "c", "cpp",/* "cmod", */ "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
   name_sans_suffix =
     name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
 
   string result;
   mixed err = catch {
-    if( suffix == "c" /* || suffix == "cmod" */)
+    if( suffix == "c" || suffix == "cpp" /* || suffix == "cmod" */)
       result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
