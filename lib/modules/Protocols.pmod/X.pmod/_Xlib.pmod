@@ -246,3 +246,20 @@ array(string) visual_classes =
   "DirectColor",
 });
 
+array(string) amiwm_pens =
+({
+  "detail",             /* compatible Intuition rendering pens */
+  "block",              /* compatible Intuition rendering pens */
+  "text",               /* text on background                  */
+  "shine",              /* bright edge on 3D objects           */
+  "shadow",             /* dark edge on 3D objects             */
+  "fill",               /* active-window/selected-gadget fill  */
+  "filltext",           /* text over FILLPEN                   */
+  "background",         /* always color 0                      */
+  "highlighttext",      /* special color text, on background   */
+  /* New for V39, only present if DRI_VERSION >= 2: */
+  "bardetail",          /* text/detail in screen-bar/menus */
+  "barblock",           /* screen-bar/menus fill */
+  "bartrim",            /* trim under screen-bar */
+}); 
+  
