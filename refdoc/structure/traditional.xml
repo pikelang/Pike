@@ -5,17 +5,15 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.6 2001/10/28 18:30:43 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.7 2001/11/01 19:01:34 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
-<!--
   <file name="top.html">
-    <chapter title="Table of Contents">
+    <chapter title="Table of Contents" unnumbered="1">
       <contents/>
     </chapter>
   </file>
--->
   <file>
     <chapter-ref file="not_extracted/control_structures.xml"/>
   </file>
