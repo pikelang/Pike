@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.206 1999/11/14 18:48:13 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.207 1999/11/14 20:14:46 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1399,7 +1399,7 @@ void f_destruct(INT32 args)
 	   
     o=fp->current_object;
   }
-  if (o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
+  if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
     PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n", sp, args);
 #ifdef PIKE_SECURITY
   if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
