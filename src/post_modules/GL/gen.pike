@@ -285,7 +285,7 @@ array(string) gen_func(string name, string ty)
   }
 
   res += "  pop_n_elems(args);\n";
-  res += (vret? "  "+vret+"(res);\n":"  push_int(0);\n");
+  res += (vret? "  "+vret+"(res);\n":/*"  push_int(0);\n"*/"");
   res += "}\n\n";
   return ({res,prot});
 }
