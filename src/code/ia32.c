@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.19 2002/05/10 14:04:37 mast Exp $
+ * $Id: ia32.c,v 1.20 2002/05/10 22:16:59 mast Exp $
  *
  * Machine code generator for IA32.
  *
@@ -137,7 +137,7 @@ void ia32_update_absolute_pc(INT32 pc_offset)
 #endif
 }
 
-void ia32_push_constant(struct svalue *tmp)
+static void ia32_push_constant(struct svalue *tmp)
 {
   int e;
   if(tmp->type <= MAX_REF_TYPE)
@@ -155,7 +155,7 @@ void ia32_push_constant(struct svalue *tmp)
 }
 
 /* This expects %edx to point to the svalue we wish to push */
-void ia32_push_svalue(void)
+static void ia32_push_svalue(void)
 {
   int e;
   if(ia32_reg_eax != REG_IS_SP)
@@ -212,7 +212,7 @@ void ia32_push_svalue(void)
   ia32_reg_edx = REG_IS_UNKNOWN;
 }
 
-void ia32_get_local_addr(INT32 arg)
+static void ia32_get_local_addr(INT32 arg)
 {
 #if 1
   if(ia32_reg_edx == REG_IS_FP)
@@ -255,13 +255,13 @@ void ia32_get_local_addr(INT32 arg)
   ia32_reg_edx=REG_IS_UNKNOWN;
 }
 
-void ia32_push_local(INT32 arg)
+static void ia32_push_local(INT32 arg)
 {
   ia32_get_local_addr(arg);
   ia32_push_svalue();
 }
 
-void ia32_local_lvalue(INT32 arg)
+static void ia32_local_lvalue(INT32 arg)
 {
   int e;
   struct svalue tmp[2];
@@ -294,7 +294,7 @@ void ia32_local_lvalue(INT32 arg)
   MOVEAX2(Pike_interpreter.stack_pointer);
 }
 
-void ia32_mark(void)
+static void ia32_mark(void)
 {
   if(ia32_reg_eax != REG_IS_SP)
   {
@@ -343,7 +343,7 @@ INT32 read_f_jump(INT32 offset)
   return read_pointer(offset) + offset + 4;
 }
 
-void ia32_push_int(INT32 x)
+static void ia32_push_int(INT32 x)
 {
   struct svalue tmp;
   tmp.type=PIKE_T_INT;
@@ -361,6 +361,19 @@ static void ia32_call_c_function(void *addr)
   ia32_reg_edx=REG_IS_UNKNOWN;
 }
 
+static void maybe_update_pc(void)
+{
+  static int last_prog_id=-1;
+  static size_t last_num_linenumbers=-1;
+  if(last_prog_id != Pike_compiler->new_program->id ||
+     last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
+  {
+    last_prog_id=Pike_compiler->new_program->id;
+    last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
+    UPDATE_PC();
+  }
+}
+
 void ins_f_byte(unsigned int b)
 {
   void *addr;
@@ -374,19 +387,7 @@ void ins_f_byte(unsigned int b)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
-
-  do{
-    static int last_prog_id=-1;
-    static size_t last_num_linenumbers=-1;
-    if(last_prog_id != Pike_compiler->new_program->id ||
-       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
-    {
-      last_prog_id=Pike_compiler->new_program->id;
-      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
-      UPDATE_PC();
-    }
-  }while(0);
-
+  maybe_update_pc();
   addr=instrs[b].address;
 
 #ifdef PIKE_DEBUG
@@ -435,6 +436,8 @@ void ins_f_byte(unsigned int b)
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
+  maybe_update_pc();
+
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
@@ -498,6 +501,8 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    unsigned INT32 b,
 			    unsigned INT32 c)
 {
+  maybe_update_pc();
+
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
