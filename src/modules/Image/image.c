@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.40 1997/10/06 23:40:30 grubba Exp $ */
+/* $Id: image.c,v 1.41 1997/10/12 21:09:57 mirar Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.40 1997/10/06 23:40:30 grubba Exp $<br>
+**!	$Id: image.c,v 1.41 1997/10/12 21:09:57 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -28,7 +28,7 @@
 **!	<ref>setpixel</ref>, 
 **!	<ref>treshold</ref>,
 **!	<ref>tuned_box</ref>,
-**!	<ref>polyfill</ref>
+**!	<ref>polygone</ref>
 **!
 **!	operators: <ref>`&</ref>,
 **!	<ref>`*</ref>,
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.40 1997/10/06 23:40:30 grubba Exp $");
+RCSID("$Id: image.c,v 1.41 1997/10/12 21:09:57 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -169,8 +169,6 @@ static void chrono(char *x)
 
 
 /***************** init & exit *********************************/
-
-static int obj_counter=0;
 
 static void init_image_struct(struct object *obj)
 {
@@ -356,7 +354,7 @@ void img_apply_matrix(struct image *dest,
 {
    rgb_group *d,*ip,*dp;
    rgbd_group *mp;
-   int i,j,x,y,bx,by,ex,ey,xp,yp;
+   int i,j,x,y,bx,by,ex,ey,yp;
    double sumr,sumg,sumb;
    double qr,qg,qb;
    register double r=0,g=0,b=0;
@@ -475,6 +473,10 @@ THREADS_DISALLOW();
 **! arg int alpha
 **! 	default alpha channel value
 **! see also: copy, clone, Image.image
+**! bugs
+**!	SIGSEGS can be caused if the size is too big, due
+**!	to unchecked overflow - 
+**!	(xsize*ysize)&MAXINT is small enough to allocate.
 */
 
 void image_create(INT32 args)
@@ -1257,14 +1259,14 @@ void image_tuned_box(INT32 args)
 	 for (y=max(0,-y1); y<ymax; y++)
 	 {
 	    float tfy;
-	    rgb_group sum={0,0,0};
+	    rgb_group rgbsum={0,0,0};
 
-	    add_to_rgb_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
-	    add_to_rgb_sum_with_factor(&sum,topright,tfy*tfx2);
-	    add_to_rgb_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
-	    add_to_rgb_sum_with_factor(&sum,bottomright,tfy*tfx2);
+	    add_to_rgb_sum_with_factor(&rgbsum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
+	    add_to_rgb_sum_with_factor(&rgbsum,topright,tfy*tfx2);
+	    add_to_rgb_sum_with_factor(&rgbsum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
+	    add_to_rgb_sum_with_factor(&rgbsum,bottomright,tfy*tfx2);
 
-	    *img=sum;
+	    *img=rgbsum;
 	    img+=this->xsize;
 	 }
 	 
@@ -1326,7 +1328,7 @@ void image_ysize(INT32 args)
 
 void image_grey(INT32 args)
 {
-   INT32 x,y,div;
+   INT32 x,div;
    rgbl_group rgb;
    rgb_group *d,*s;
    struct object *o;
@@ -1404,7 +1406,7 @@ void image_grey(INT32 args)
 
 void image_color(INT32 args)
 {
-   INT32 x,y;
+   INT32 x;
    rgbl_group rgb;
    rgb_group *s,*d;
    struct object *o;
@@ -1472,7 +1474,7 @@ void image_color(INT32 args)
 
 void image_invert(INT32 args)
 {
-   INT32 x,y;
+   INT32 x;
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
@@ -1542,7 +1544,7 @@ void image_invert(INT32 args)
 
 void image_threshold(INT32 args)
 {
-   INT32 x,y;
+   INT32 x;
    rgb_group *s,*d,rgb;
    struct object *o;
    struct image *img;
@@ -2453,7 +2455,11 @@ void image_modify_by_intensity(INT32 args)
 **! returns the new image object
 **!
 **! arg array(array(int)) color
-**!    list of destination (available) colors
+**!     list of destination (available) colors
+**!
+**! note
+**!     this function may change slightly when <ref>Image::colortable</ref> 
+**!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors, map_fs
 */
@@ -2485,7 +2491,7 @@ static void image_map_closest(INT32 args)
    while (i--)
    {
       *d=ct->clut[colortable_rgb_nearest(ct,*s)];
-      d++; *s++;
+      d++; s++;
    }
    THREADS_DISALLOW();
 
@@ -2507,6 +2513,10 @@ static void image_map_closest(INT32 args)
 **!
 **! arg array(array(int)) color
 **!    list of destination (available) colors
+**!
+**! note
+**!     this function may change slightly when <ref>Image::colortable</ref> 
+**!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors
 */
@@ -2537,7 +2547,7 @@ static void image_map_fast(INT32 args)
    while (i--)
    {
       *d=ct->clut[colortable_rgb(ct,*s)];
-      d++; *s++;
+      d++; s++;
    }
    THREADS_DISALLOW();
 
@@ -2568,6 +2578,10 @@ static void image_map_fast(INT32 args)
 **!
 **! arg array(array(int)) color
 **!    list of destination (available) colors
+**!
+**! note
+**!     this function may change slightly when <ref>Image::colortable</ref> 
+**!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors, map_closest
 */
@@ -2643,6 +2657,10 @@ static void image_map_fs(INT32 args)
 **! arg int num_colors
 **!	number of colors to return
 **!
+**! note
+**!     this function may change somewhat when <ref>Image::colortable</ref>
+**!	is implemented (pike 0.6, probably)
+**!
 **! see also: map_fast, select_colors
 */
 
@@ -2677,6 +2695,7 @@ void image_select_colors(INT32 args)
 #define RGB_TYPE "int|void,int|void,int|void,int|void"
 
 void init_font_programs(void);
+void init_colortable_programs(void);
 void exit_font(void);
 
 void pike_module_init(void)
@@ -2729,7 +2748,9 @@ void pike_module_init(void)
    add_function("to8bit_closest",image_to8bit_closest,
 		"function(array(array(int)):string)",0);
    add_function("to8bit_fs",image_to8bit_fs,
-		"function(array(array(int)):string)",0);
+		"function(:string)",0);
+   add_function("torgb",image_torgb,
+		"function(:string)",0);
    add_function("tozbgr",image_tozbgr,
 		"function(array(array(int)):string)",0);
    add_function("to8bit_rgbcube",image_to8bit_rgbcube,
@@ -2871,6 +2892,7 @@ void pike_module_init(void)
       circle_sin_table[i]=(INT32)4096*sin(((double)i)*2.0*3.141592653589793/(double)CIRCLE_STEPS);
 
    init_font_programs();
+   init_colortable_programs();
 }
 
 void pike_module_exit(void) 

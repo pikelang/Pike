@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.14 1997/09/18 23:32:00 grubba Exp $ */
+/* $Id: blit.c,v 1.15 1997/10/12 21:09:56 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.14 1997/09/18 23:32:00 grubba Exp $<br>
+**!	$Id: blit.c,v 1.15 1997/10/12 21:09:56 mirar Exp $<br>
 **! class image
 */
 
@@ -511,7 +511,7 @@ CHRONO("image_paste_mask end");
 
 void image_paste_alpha_color(INT32 args)
 {
-   struct image *img,*mask;
+   struct image *mask;
    INT32 x1,y1,x,y,x2,y2;
    rgb_group rgb,*d,*m;
    INT32 mmod,dmod;
