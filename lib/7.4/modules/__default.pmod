@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.7 2003/04/02 20:04:30 nilsson Exp $
+// $Id: __default.pmod,v 1.8 2003/09/02 09:49:02 grubba Exp $
 
 #pike 7.5
 
@@ -136,5 +136,6 @@ mapping(string:mixed) all_constants()
 #if constant(System.getgrent)
   ret->setgrent = System.getgrent;
 #endif
+  ret->Regexp = Regexp.SimpleRegexp;
   return ret;
 }
