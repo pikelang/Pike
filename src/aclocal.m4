@@ -4,9 +4,8 @@ pushdef([AC_PROG_CC],
 
   AC_PROG_CC
 
-  case "$CC" in
-    *rntcc*) TCC="no" ;;
-    *tcc*) TCC="yes" ;;
+  case "`$CC -V 2>&1|head -1`" in
+    tcc*) TCC="yes" ;;
     *) TCC="no" ;;
   esac
 ])
@@ -27,7 +26,7 @@ pushdef([AC_CONFIG_HEADER],
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.6 1999/04/25 18:42:02 grubba Exp $
+# $Id: aclocal.m4,v 1.7 1999/04/25 18:44:07 grubba Exp $
 
 MY_AC_PROG_CC
 
