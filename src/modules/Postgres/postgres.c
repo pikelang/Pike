@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.37 2003/12/20 15:55:07 grubba Exp $
+|| $Id: postgres.c,v 1.38 2004/02/03 10:13:58 nilsson Exp $
 */
 
 /*
@@ -72,7 +72,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.37 2003/12/20 15:55:07 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.38 2004/02/03 10:13:58 nilsson Exp $");
 
 static void set_error (char * newerror)
 {
@@ -459,7 +459,7 @@ static void f_big_query(INT32 args)
 	{
 #define CURSORPREFIX	"DECLARE "CURSORNAME" CURSOR FOR "
 #define CPREFLEN	sizeof(CURSORPREFIX)
-	  int qlen=strlen(query);
+	  unsigned int qlen=strlen(query);
 	  char *nquery;
 	  if(qlen>LIMITLENSC && strcmp(query+qlen-LIMITLENSC,LIMIT1STRSC)
 	     && strcmp(query+qlen-LIMITLEN,LIMIT1STR)

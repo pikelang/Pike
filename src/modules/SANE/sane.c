@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.18 2003/10/13 17:42:08 grubba Exp $
+|| $Id: sane.c,v 1.19 2004/02/03 10:14:21 nilsson Exp $
 */
 
 #include "config.h"
@@ -39,7 +39,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.18 2003/10/13 17:42:08 grubba Exp $");
+RCSID("$Id: sane.c,v 1.19 2004/02/03 10:14:21 nilsson Exp $");
 
 /*! @module SANE
  *!
@@ -741,7 +741,8 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
     free( rsp );
     Pike_error("Failed to get select fd for scanning device!\n");
   }
-  set_read_callback( fd, nonblocking_row_scan_callback, (void*)rsp );
+  set_read_callback( fd, (file_callback)nonblocking_row_scan_callback,
+		     (void*)rsp );
   push_int( 0 );
 }
 
