@@ -3485,10 +3485,10 @@ The syntax for gauge is the same as the syntax for catch:
 <example language=pike meta=statements>
 gauge { statements }
 </example>
-However, gauge simply returns how many milliseconds the code took to execute.
+However, gauge simply returns how many seconds the code took to execute.
 This can be used to find out how fast your code actually is.. :)
 Only CPU time used by the Pike process is measured. This means that if it takes
-two seconds to execute but only uses 50% CPU, this function will return 1000.
+two seconds to execute but only uses 50 % CPU, this function will return 1.0.
 </section>
 </anchor>
 

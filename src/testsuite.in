@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.200 1999/10/04 20:47:53 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.201 1999/10/10 00:49:13 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -170,7 +170,7 @@ test_compile_error([[ int constant; ]])
 test_compile_error([[ int import; ]])
 test_compile_error([[ int inherit; ]])
 test_compile_error([[ int catch; ]])
-test_compile_error([[ int gauge; ]])
+test_compile_error([[ float gauge; ]])
 test_compile_error([[ int lambda; ]])
 test_compile_error([[ int sscanf; ]])
 test_compile_error([[ int switch; ]])
@@ -195,13 +195,13 @@ test_compile_error_low([[
 
 
 
-test_compile([[int x=(gauge { return; },1);]])
+test_compile([[float x=(gauge { return; },1.0);]])
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
   test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
 ]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
-test_compile([[int t=gauge { string foo; };]])
+test_compile([[float t=gauge { string foo; };]])
 test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 

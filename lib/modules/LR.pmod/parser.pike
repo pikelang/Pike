@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.19 1998/11/22 00:13:59 grubba Exp $
+ * $Id: parser.pike,v 1.20 1999/10/10 00:49:11 noring Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.19 1998/11/22 00:13:59 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.20 1999/10/10 00:49:11 noring Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -1127,7 +1127,7 @@ int compile()
   /* First make LR(0) states */
 
 #ifdef LR_PROFILE
-  werror(sprintf("LR0: %d\n", gauge {
+  werror(sprintf("LR0: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     while (state = s_q->next()) {
@@ -1154,7 +1154,7 @@ int compile()
   }
 
 #ifdef LR_PROFILE
-  werror(sprintf("Master items: %d\n", gauge {
+  werror(sprintf("Master items: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Mark Transition and Reduction master items */
@@ -1180,7 +1180,7 @@ int compile()
   /* Probably OK so far */
 
 #ifdef LR_PROFILE
-  werror(sprintf("LA sets: %d\n", gauge {
+  werror(sprintf("LA sets: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Calculate look-ahead sets (DR and relation) */
@@ -1216,7 +1216,7 @@ int compile()
 #endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Handle shift: %d\n", gauge {
+  werror(sprintf("Handle shift: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Handle SHIFT-conflicts */
@@ -1227,7 +1227,7 @@ int compile()
 #endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Check shift: %d\n", gauge {
+  werror(sprintf("Check shift: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Check the shift sets */
@@ -1249,7 +1249,7 @@ int compile()
 #endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Lookback sets: %d\n", gauge {
+  werror(sprintf("Lookback sets: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Compute lookback-sets */
@@ -1318,7 +1318,7 @@ int compile()
 #endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Handle follow: %d\n", gauge {
+  werror(sprintf("Handle follow: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Handle follow-conflicts */
@@ -1329,7 +1329,7 @@ int compile()
 #endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Compute LA: %d\n", gauge {
+  werror(sprintf("Compute LA: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Compute the lookahead (LA) */
@@ -1353,7 +1353,7 @@ int compile()
   /* Probably OK from this point onward */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Check conflicts: %d\n", gauge {
+  werror(sprintf("Check conflicts: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Check for conflicts */
@@ -1400,7 +1400,7 @@ int compile()
 #endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
-  werror(sprintf("Compile actions: %d\n", gauge {
+  werror(sprintf("Compile actions: %f\n", gauge {
 #endif /* LR_PROFILE */
 
     /* Compile action tables */
