@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.79 2003/06/30 17:06:09 mast Exp $
+|| $Id: object.h,v 1.80 2003/08/01 22:46:06 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -23,7 +23,7 @@ struct object
   struct object *next;
   struct object *prev;
 #if PIKE_DEBUG
-  long program_id;
+  INT32 program_id;
 #endif
   char *storage;
 };

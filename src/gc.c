@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.221 2003/07/16 14:10:12 mast Exp $
+|| $Id: gc.c,v 1.222 2003/08/01 22:46:06 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.221 2003/07/16 14:10:12 mast Exp $");
+RCSID("$Id: gc.c,v 1.222 2003/08/01 22:46:06 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -830,7 +830,7 @@ again:
       {
 	fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",PARENT_INFO( ((struct object *)a) )->parent_identifier);
       }
-      fprintf(stderr,"%*s**Program id: %ld\n",indent,"",((struct object *)a)->program_id);
+      fprintf(stderr,"%*s**Program id: %d\n",indent,"",((struct object *)a)->program_id);
 
       if (((struct object *)a)->next == ((struct object *)a))
 	fprintf(stderr, "%*s**The object is fake.\n",indent,"");
@@ -889,6 +889,10 @@ again:
       {
 	fprintf(stderr,"%*s**The program was written in C.\n",indent,"");
       }
+
+#if 0
+      dump_program_tables (p, indent + 2);
+#endif
 
       tmp = low_get_program_line_plain(p, &line, 1);
       if (tmp) {
