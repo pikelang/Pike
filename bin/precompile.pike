@@ -1283,7 +1283,7 @@ class ParseBlock
 	array rest=inh[pos+1..];
 	string define=make_unique_name("inherit",name,base,"defined");
 	mapping attributes = parse_attributes(inh[1..pos]);
-	add_funcs +=
+	addfuncs +=
 	  IFDEF(define,
 		({
 		  sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
