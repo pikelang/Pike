@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.48 2003/01/20 17:44:00 nilsson Exp $
+// $Id: Query.pike,v 1.49 2003/02/07 01:00:04 nilsson Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -30,7 +30,7 @@ int timeout=120; // seconds
 
 // internal
 #if constant(SSL.sslfile) 
- import SSL.constants;
+ import SSL.Constants;
  SSL.sslfile ssl;
 #endif
 int(0..1) https = 0;

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.46 2002/11/27 22:04:32 marcus Exp $
+// $Id: client.pike,v 1.47 2003/02/07 01:00:38 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -75,7 +75,7 @@
 #include "ldap_errors.h"
 
 #if constant(SSL.sslfile)
-import SSL.constants;
+import SSL.Constants;
 #endif
 
 #ifdef LDAP_PROTOCOL_PROFILE
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.46 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.47 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
