@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.4 1996/11/14 01:36:34 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.5 1997/01/18 22:01:26 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "types.h"
 #include "threads.h"
@@ -342,7 +342,9 @@ void init_gdbmmod_programs(void)
 
   add_function("close",gdbmmod_close,"function(:void)",0);
   add_function("store",gdbmmod_store,"function(string,string:int)",0);
+  add_function("`[]=",gdbmmod_store,"function(string,string:int)",0);
   add_function("fetch",gdbmmod_fetch,"function(string:string)",0);
+  add_function("`[]",gdbmmod_fetch,"function(string:string)",0);
   add_function("delete",gdbmmod_delete,"function(string:int)",0);
   add_function("firstkey",gdbmmod_firstkey,"function(:string)",0);
   add_function("nextkey",gdbmmod_nextkey,"function(string:string)",0);
