@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.46 2000/07/07 00:51:40 hubbe Exp $
+ * $Id: interpret.h,v 1.47 2000/07/07 00:59:21 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -248,6 +248,7 @@ extern struct Pike_interpreter Pike_interpreter;
 
 #define Pike_sp Pike_interpreter.stack_pointer
 #define Pike_fp Pike_interpreter.frame_pointer
+#define Pike_mark_sp Pike_interpreter.mark_sp
 #ifdef PIKE_THREADS
 #define Pike_thread_id Pike_interpreter.thread_id
 #endif
