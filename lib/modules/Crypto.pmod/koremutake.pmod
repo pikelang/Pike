@@ -1,4 +1,6 @@
-// $Id: koremutake.pmod,v 1.1 2003/04/07 15:15:24 nilsson Exp $
+// $Id: koremutake.pmod,v 1.2 2003/08/24 21:18:10 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 //! Quote from Koremutake home page @url{http://shorl.com/koremutake@}:
 //!

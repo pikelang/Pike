@@ -1,8 +1,10 @@
 /*
- * $Id: module.pmod.in,v 1.6 2001/03/18 19:48:13 per Exp $
+ * $Id: module.pmod.in,v 1.7 2003/08/24 21:24:02 nilsson Exp $
  *
  * GTK glue code.
  */
+
+#pike __REAL_VERSION__
 
 #if constant(@module@.parse_rc)
 

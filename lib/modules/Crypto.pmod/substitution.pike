@@ -2,6 +2,8 @@
 //! Implements a simple substitution crypto, ie. one of the first crypto
 //! systems ever invented and thus one of the least secure ones available.
 
+#pike __REAL_VERSION__
+
 static mapping(string:string|array(string)) enc_key = ([]);
 static mapping(string:string) dec_key = ([]);
 static int(0..1) is_expandable;

@@ -1,8 +1,10 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.6 2003/07/04 19:26:39 nilsson Exp $
+// $Id: Struct.pike,v 1.7 2003/08/24 21:17:28 nilsson Exp $
 //
+
+#pike __REAL_VERSION__
 
 //! Implements a struct which can be used for serialization and
 //! deserialization of data.

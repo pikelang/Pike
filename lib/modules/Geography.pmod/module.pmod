@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // ----------------------------------------------------------------
 
 // convert between latitude-longitude and Swedish RT38 map coordinates
