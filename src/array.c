@@ -37,9 +37,10 @@ struct array empty_array=
  * NOTE: the new array have zero references
  */
 
-struct array *allocate_array_no_init(INT32 size,INT32 extra_space)
+struct array *low_allocate_array(INT32 size,INT32 extra_space)
 {
   struct array *v;
+  INT32 e;
 
   if(size == 0)
   {
@@ -67,21 +68,14 @@ struct array *allocate_array_no_init(INT32 size,INT32 extra_space)
   empty_array.next=v;
   v->next->prev=v;
 
-  return v;
-}
-
-struct array *allocate_array(INT32 size)
-{
-  INT32 e;
-  struct array *a;
-  a=allocate_array_no_init(size,0);
-  for(e=0;e<a->size;e++)
+  for(e=0;e<v->size;e++)
   {
-    ITEM(a)[e].type=T_INT;
-    ITEM(a)[e].subtype=NUMBER_NUMBER;
-    ITEM(a)[e].u.integer=0;
+    ITEM(v)[e].type=T_INT;
+    ITEM(v)[e].subtype=NUMBER_NUMBER;
+    ITEM(v)[e].u.integer=0;
   }
-  return a;
+
+  return v;
 }
 
 /*

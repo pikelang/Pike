@@ -47,6 +47,8 @@ struct array
 
 #define free_array(V) do{ struct array *v_=(V); if(!--v_->refs) really_free_array(v_); }while(0)
 
+#define allocate_array(X) low_allocate_array((X),0)
+#define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
 
 typedef int (*cmpfun)(struct svalue *,struct svalue *);
 typedef int (*short_cmpfun)(union anything *, union anything *);
@@ -54,8 +56,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
 
 /* Prototypes begin here */
-struct array *allocate_array_no_init(INT32 size,INT32 extra_space);
-struct array *allocate_array(INT32 size);
+struct array *low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
