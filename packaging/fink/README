@@ -1,0 +1,27 @@
+Fink package for Darwin/MacOS X
+-------------------------------
+
+Just copy .info files into your /sw/fink/dists/local/main/finkinfo directory,
+after that, do a "fink index" and then a "fink install pike7.4" if you'd like
+to compile and install pike.
+
+It will install the needed dependency like gmp, freetype1, freetype2 etc...
+
+If you'd like to build only the package (for example deploying pike in
+thousands of mac), just do a "fink build pike7.4".
+
+This fink port install as well modref and traditional_manual in 
+/sw/share/doc/pike7.4/
+
+As always, any comments and suggestions are welcome.
+
+- Xavier Beaudouin <kiwi@caudium.net>
+
+Greats go to :
+
+ - Bertrand Lupart <bertrand@caudium.net>
+ - Bill Welliver <hww3@riverweb.com>
+
+That gave me some good ideas and start points to make this :)
+
+$Id: README,v 1.1 2003/01/21 03:06:52 kiwi Exp $
