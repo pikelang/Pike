@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.126 1999/02/01 02:41:39 hubbe Exp $
+# $Id: Makefile.in,v 1.127 1999/02/04 22:19:54 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -205,14 +205,14 @@ force :
 
 
 # install
-install: pike hilfe pike-module aclocal
+install: module_objects pike hilfe pike-module aclocal
 	@exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike
 
-old-install: pike hilfe pike-module aclocal
+old-install: module_objects pike hilfe pike-module aclocal
 	@echo
 	@echo Installing Pike...
 	@echo
