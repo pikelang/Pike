@@ -161,7 +161,8 @@ object delete_url(string|Standards.URI url,
 //!	Returns an array of @expr{({content_type,data})@} and just
 //!     the data string respective, 
 //!	after calling the requested server for the information.
-//!	0 is returned upon failure.
+//!	0 is returned upon failure. Redirects (HTTP 302) are
+//!     automatically followed.
 //!
 
 array(string) get_url_nice(string|Standards.URI url,
@@ -169,8 +170,17 @@ array(string) get_url_nice(string|Standards.URI url,
 			   void|mapping request_headers,
 			   void|Protocols.HTTP.Query con)
 {
-  object c = get_url(url, query_variables, request_headers, con);
-  return c && ({ c->headers["content-type"], c->data() });
+  .Query c;
+  multiset seen = (<>);
+  do {
+    if(!url) return 0;
+    if(seen[url] || sizeof(seen)>1000) return 0;
+    seen[url]=1;
+    c = get_url(url, query_variables, request_headers, con);
+    if(!c) return 0;
+    if(c->status==302) url = c->headers->location;
+  } while( c->status!=200 );
+  return ({ c->headers["content-type"], c->data() });
 }
 
 string get_url_data(string|Standards.URI url,
@@ -178,8 +188,8 @@ string get_url_data(string|Standards.URI url,
 		    void|mapping request_headers,
 		    void|Protocols.HTTP.Query con)
 {
-  object z = get_url(url, query_variables, request_headers, con);
-  return z && z->data();
+  array(string) z = get_url_nice(url, query_variables, request_headers, con);
+  return z && z[1];
 }
 
 //! @decl array(string) post_url_nice(string|Standards.URI url, @
