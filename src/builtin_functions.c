@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.54 1997/11/02 22:17:37 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.55 1997/11/07 05:36:02 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1727,7 +1727,6 @@ void f_master(INT32 args)
 }
 
 #ifdef HAVE_GETHRVTIME
-#if __STDC__ - 0 == 0 && !defined(_NO_LONGLONG)
 #include <sys/time.h>
 
 void f_gethrvtime(INT32 args)
@@ -1741,7 +1740,6 @@ void f_gethrtime(INT32 args)
   pop_n_elems(args);
   push_int((INT32)(gethrtime()/1000)); 
 }
-#endif /* __STDC__ == 0 && !defined(_NO_LONGLONG) */
 #endif /* HAVE_GETHRVTIME */
 
 #ifdef PROFILING
@@ -1809,10 +1807,8 @@ void init_builtin_efuns(void)
   init_operators();
 
 #ifdef HAVE_GETHRVTIME
-#if __STDC__ - 0 == 0 && !defined(_NO_LONGLONG)
   add_efun("gethrvtime",f_gethrvtime,"function(void:int)",OPT_EXTERNAL_DEPEND);
   add_efun("gethrtime", f_gethrtime,"function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif /* __STDC__ - 0 == 0 && !defined(_NO_LONGLONG) */
 #endif
   
 #ifdef PROFILING
