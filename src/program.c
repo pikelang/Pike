@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.297 2001/02/23 14:33:24 grubba Exp $");
+RCSID("$Id: program.c,v 1.298 2001/02/24 18:23:15 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -124,6 +124,7 @@ char *lfun_names[] = {
   "_sprintf",
   "_equal",
   "_m_delete",
+  "_get_iterator",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -177,6 +178,7 @@ static char *raw_lfun_types[] = {
   tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
   tFuncV(tMix,tVoid,tInt),	/* "_equal", */
   tFuncV(tMix,tVoid,tMix),	/* "_m_delete", */
+  tFuncV(tNone,tVoid,tObject),	/* "_get_iterator", */
 };
 
 /*! @decl void lfun::__INIT()
@@ -557,6 +559,27 @@ static char *raw_lfun_types[] = {
  *!
  *! @seealso
  *!   @[m_delete()]
+ */
+
+/*! @decl object lfun::_get_iterator()
+ *!
+ *! Iterator creation callback.
+ *!
+ *! Should return an object that implements the iterator API:
+ *! @ul
+ *!   @item
+ *!     @[lfun::`!()] should return @tt{1@} when not at end of stream,
+ *!     and @tt{0@} (zero) at end of stream.
+ *!   @item
+ *!     @[lfun::`+=()] should advance the specified number of steps.
+ *!   @item
+ *!     @[index()] should return the current index.
+ *!   @item
+ *!     @[value()] should return the current value.
+ *! @endul
+ *!
+ *! @seealso
+ *!   @[Iterator], @[foreach()]
  */
 
 struct program *first_program = 0;

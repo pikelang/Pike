@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.116 2001/02/19 23:50:03 grubba Exp $
+ * $Id: program.h,v 1.117 2001/02/24 18:23:15 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -79,8 +79,9 @@ extern struct pike_string *this_program_string;
 #define LFUN__SPRINTF 40
 #define LFUN__EQUAL 41
 #define LFUN__M_DELETE 42
+#define LFUN__GET_ITERATOR 43
 
-#define NUM_LFUNS 43
+#define NUM_LFUNS 44
 
 extern char *lfun_names[];
 
