@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.25 2004/03/20 16:30:11 grubba Exp $
+dnl $Id: testsuite.in,v 1.26 2004/04/06 13:25:56 nilsson Exp $
 
 dnl - Array
 
@@ -268,8 +268,6 @@ test_equal(Array.diff3(({"a","c","b","a"}),({"a","c"}),({"b","a","c"})),
 	   ({({({   }),({"a","c"}),({"b","a"})}),
 	     ({({   }),({"a","c"}),({       })}),
 	     ({({"b"}),({"a","c"}),({       })})}))
-
-dnl Array.diff3_old
 
 define(test_sort,[[
   test_eq(Array.$1($2,$3), -1)
