@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.32 1998/05/13 00:24:29 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.33 1998/05/14 21:45:21 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -23,13 +23,6 @@ RCSID("$Id: mapping.c,v 1.32 1998/05/13 00:24:29 hubbe Exp $");
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
 #define MAP_SLOTS(X) ((X)?((X)+((X)>>4)+8):0)
-#define LOOP(m) for(e=0;e<m->hashsize;e++) for(k=m->hash[e];k;k=k->next)
-
-struct keypair
-{
-  struct keypair *next;
-  struct svalue ind, val;
-};
 
 struct mapping *first_mapping;
 
@@ -46,7 +39,7 @@ static void check_mapping_type_fields(struct mapping *m)
 
   ind_types=val_types=0;
 
-  LOOP(m) 
+  MAPPING_LOOP(m) 
     {
       val_types |= 1 << k->val.type;
       ind_types |= 1 << k->ind.type;
@@ -137,7 +130,7 @@ void really_free_mapping(struct mapping *m)
     fatal("really free mapping on mapping with nonzero refs.\n");
 #endif
 
-  LOOP(m)
+  MAPPING_LOOP(m)
   {
     free_svalue(& k->val);
     free_svalue(& k->ind);
@@ -229,7 +222,7 @@ void mapping_fix_type_field(struct mapping *m)
 
   val_types = ind_types = 0;
 
-  LOOP(m)
+  MAPPING_LOOP(m)
     {
       val_types |= 1 << k->val.type;
       ind_types |= 1 << k->ind.type;
@@ -543,7 +536,7 @@ struct array *mapping_indices(struct mapping *m)
   a=allocate_array(m->size);
   s=ITEM(a);
 
-  LOOP(m) assign_svalue(s++, & k->ind);
+  MAPPING_LOOP(m) assign_svalue(s++, & k->ind);
 
   a->type_field = m->ind_types;
   
@@ -564,7 +557,7 @@ struct array *mapping_values(struct mapping *m)
   a=allocate_array(m->size);
   s=ITEM(a);
 
-  LOOP(m) assign_svalue(s++, & k->val);
+  MAPPING_LOOP(m) assign_svalue(s++, & k->val);
 
   a->type_field = m->val_types;
 
@@ -583,7 +576,7 @@ struct array *mapping_to_array(struct mapping *m)
   struct svalue *s;
   a=allocate_array(m->size);
   s=ITEM(a);
-  LOOP(m)
+  MAPPING_LOOP(m)
     {
       struct array *b=allocate_array(2);
       assign_svalue(b->item+0, & k->ind);
@@ -602,7 +595,7 @@ void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to)
   INT32 e;
   struct keypair *k;
 
-  LOOP(m)
+  MAPPING_LOOP(m)
     if(is_eq(& k->val, from))
       assign_svalue(& k->val, to);
 
@@ -641,7 +634,7 @@ struct mapping *copy_mapping(struct mapping *m)
 
   n=allocate_mapping(MAP_SLOTS(m->size));
 
-  LOOP(m) mapping_insert(n, &k->ind, &k->val);
+  MAPPING_LOOP(m) mapping_insert(n, &k->ind, &k->val);
   
   return n;
 }
@@ -702,7 +695,7 @@ struct mapping *add_mappings(struct svalue *argp, INT32 args)
   for(e=d=0;d<args;d++) e+=argp[d].u.mapping->size;
   ret=allocate_mapping(MAP_SLOTS(e));
   for(d=0;d<args;d++)
-    LOOP(argp[d].u.mapping)
+    MAPPING_LOOP(argp[d].u.mapping)
       mapping_insert(ret, &k->ind, &k->val);
   return ret;
 }
@@ -727,7 +720,7 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
   check_mapping_for_destruct(a);
   check_mapping_for_destruct(b);
   
-  LOOP(a)
+  MAPPING_LOOP(a)
   {
     struct svalue *s;
     if((s=low_mapping_lookup(b, & k->ind)))
@@ -770,7 +763,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
   q=0;
 
-  LOOP(m)
+  MAPPING_LOOP(m)
   {
     if(q)
     {
@@ -874,7 +867,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
 
   check_stack(2);
 
-  LOOP(m)
+  MAPPING_LOOP(m)
   {
     copy_svalues_recursively_no_free(sp,&k->ind, 1, p);
     sp++;
@@ -993,7 +986,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   {
     if((m->ind_types | m->val_types) & BIT_COMPLEX)
     {
-      LOOP(m)
+      MAPPING_LOOP(m)
       {
 	/* We do not want to count this key:index pair if
 	 * the index is a destructed object or function
@@ -1019,7 +1012,7 @@ void gc_check_all_mappings(void)
   {
     if((m->ind_types | m->val_types) & BIT_COMPLEX)
     {
-      LOOP(m)
+      MAPPING_LOOP(m)
       {
 	/* We do not want to count this key:index pair if
 	 * the index is a destructed object or function
