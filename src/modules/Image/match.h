@@ -208,7 +208,6 @@ THREADS_ALLOW();
    
 THREADS_DISALLOW();
     }
-  o->refs++;
   push_object(o);
 }
 #undef NAME
