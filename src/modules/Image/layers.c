@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.64 2001/03/26 21:15:22 mirar Exp $
+**!	$Id: layers.c,v 1.65 2001/03/27 12:30:22 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -216,7 +216,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.64 2001/03/26 21:15:22 mirar Exp $");
+RCSID("$Id: layers.c,v 1.65 2001/03/27 12:30:22 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -804,13 +804,13 @@ static INLINE void rgb_to_hls(rgb_group color,
 
    if (r > g)
    {
-      max = MAX (r, b);
-      min = MIN (g, b);
+      max = MAXIMUM(r, b);
+      min = MINIMUM(g, b);
    }
    else
    {
-      max = MAX (g, b);
-      min = MIN (r, b);
+      max = MAXIMUM(g, b);
+      min = MINIMUM(r, b);
    }
 
    l = (max + min) / 2.0;
