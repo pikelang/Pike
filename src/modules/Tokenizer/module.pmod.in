@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.26 2003/12/01 14:33:03 grubba Exp $
+// $Id: module.pmod.in,v 1.27 2003/12/28 15:50:03 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -10,336 +10,7 @@
 inherit @module@;
 //! @endignore
 
-typedef function(string, Position, CompilerContext: Token) TokenHandler;
-
-//! Filename-linenumber pair
-class Position(string filename, int line)
-{
-  static string _sprintf() {
-    return sprintf("%s:%d", filename||"-", line);
-  }
-};
-
-class CompilerContext
-{
-  mapping(string:mixed) pragmas = ([]);
-}
-
-class TokenizingCompiler
-{
-  //! @ignore
-  inherit compiler;
-  //! @endignore
-
-  //! Pike tokenizer.
-  class pike_tokenizer
-  {
-    inherit basic_tokenizer;
-
-#if 0
-    Token current_token;
-    string current_file = "-";
-#endif
-    CompilerContext context;
-
-    mapping(string:program(IdentifierToken)) token_lookup;
-#if 0
-    static Position pos;
-
-    void report(SeverityLevel severity, Position|int|string pos,
-		string subsystem, string msg, mixed ... extra_args)
-    {
-      if (intp(pos)) pos = pike_tokenizer::pos;
-      ::report(severity, pos, subsystem, msg, extra_args);
-    }
-#endif
-    static {
-      void yyerror(mixed ... args)
-      {
-	report(ERROR, pos, "scanner", @args);
-      }
-
-      void handle_pragma(string pragma, string args)
-      {
-	switch(pragma) {
-	case "all_inline":
-	case "all_nomask":
-	case "strict_types":
-	case "save_parent":
-	case "dont_save_parent":
-	  if (sizeof(args)) {
-	    yyerror("#pragma %s does not support options.", pragma);
-	  }
-	  context->pragmas[pragma] = 1;
-	  break;
-
-	default:
-	  // Unknown pragmas are silently ignored.
-	  break;
-	}
-      }
-
-      string parse_string(string raw)
-      {
-	int pos=1, i;
-	string s = "";
-	if (raw[-1] != raw[0]) {
-	  yyerror("Unterminated string or character constant.");
-	  // Attempt to terminate the constant.
-	  raw += raw[0..0];
-	}
-	for (pos = 1; ((i = search(raw, "\\", pos)) != -1); pos = i+2) {
-	  int num;
-	  string rest = "";
-	  s += raw[pos..i-1];
-	  switch(raw[i+1]) {
-	  case 'a': s += "\a"; break;	// Alert (BEL), 7
-	  case 'b': s += "\b"; break;	// Backspace (BS), 8
-	  case 't': s += "\t"; break;	// Tab (HT), 9
-	  case 'n': s += "\n"; break;	// Newline (LF), 10
-	  case 'v': s += "\v"; break;	// Vertical tab (VT), 11
-	  case 'f': s += "\f"; break;	// Form-feed (FF), 12
-	  case 'r': s += "\r"; break;	// Return (CR), 13
-	  case 'e': s += "\e"; break;	// Escape (ESC), 27
-
-	  case 'd':			// Decimal escape.
-	    if (!sscanf(rest = raw[i+2..], "%d%s", num, rest)) {
-	      yyerror("Bad decimal escape in string.");
-	    }
-	    s += sprintf("%c", num);
-	    i = sizeof(raw)-(2+sizeof(rest));
-	    break;
-
-	  case 'x':			// Hexadecimal escape.
-	    if (!sscanf(rest = raw[i+2..], "%x%s", num, rest)) {
-	      yyerror("Bad hexadecimal escape in string.");
-	    }
-	    s += sprintf("%c", num);
-	    i = sizeof(raw)-(2+sizeof(rest));
-	    break;
-
-	  case 'u':			// Length 4 unicode escape.
-	    sscanf(raw[i+2..i+5], "%4x%s", num, rest);
-	    if (sizeof(rest)) {
-	      yyerror("Bad unicode escape in string.");
-	      i += 4-sizeof(rest);
-	    } else if (sizeof(raw) < i+5) {
-	      yyerror("Bad unicode escape in string.");
-	      i = sizeof(raw)-2;
-	    } else {
-	      i+= 4;
-	    }
-	    s += sprintf("%c", num);
-	    break;
-
-	  case 'U':			// Length 8 unicode escape.
-	    sscanf(raw[i+2..i+9], "%4x%s", num, rest);
-	    if (sizeof(rest)) {
-	      yyerror("Bad unicode escape in string.");
-	      i += 8-sizeof(rest);
-	    } else if (sizeof(raw) < i+9) {
-	      yyerror("Bad unicode escape in string.");
-	      i = sizeof(raw)-2;
-	    } else {
-	      i+= 8;
-	    }
-	    s += sprintf("%c", num);
-	    break;
-
-	  case '0'..'7':			// Octal escape.
-	    if (!sscanf(rest = raw[i+2..], "%o%s", num, rest)) {
-	      yyerror("Bad octal escape in string.");
-	    }
-	    s += sprintf("%c", num);
-	    i = sizeof(raw)-(2+sizeof(rest));
-	    break;
-
-	  default:
-	    // FIXME: Warn?
-	  case '\\':
-	  case '\"':
-	  case '\'':
-	    i--;
-	    break;
-	  }
-	}
-	s += raw[pos..sizeof(raw)-2];
-	return s;
-      }
-
-      // Overload this.
-      void handle_pike_compat(int major, int minor);
-
-      void preprocess(string cmd, string args)
-      {
-	string rest = "";
-	switch(cmd) {
-	case "pragma":
-	  string pragma = "";
-	  sscanf(args, "%[^ \t]%*[ \t]%s", pragma, rest);
-	  handle_pragma(pragma, rest);
-	  return;
-
-	case "error":
-	  report(ERROR, pos, "preprocessor", "#error: %s", args);
-	  return;
-
-	case "warning":
-	  report(WARNING, pos, "preprocessor", "#warning: %s", args);
-	  return;
-
-	case "line":
-	  sscanf(args, "%[^ \t]%*[ \t]%s", cmd, rest);
-	  args = rest;
-	  rest="";
-	  break;
-
-	case "pike":
-	  string version="";
-	  sscanf(args, "%[^ \t]%*[ \t]%s", version, rest);	
-	  int major;
-	  int minor;
-	  string rest2="";
-	  sscanf(version, "%d.%d%s", major, minor, rest2);
-	  if (sizeof(rest2) || !sizeof(version)) {
-	    yyerror("Bad #pike version specification.");
-	    return;
-	  }
-	  handle_pike_compat(major, minor);
-	  return;
-	}
-	int no;
-	if (!sscanf(cmd, "%d%s", no, rest) || sizeof(rest)) {
-	  yyerror("Unknown preprocessor directive #%s", cmd);
-	  return;
-	}
-	if (sizeof(args)) {
-	  current_file = parse_string(args);
-	}
-	line_no = no-1;
-      }
-
-      Token handle(string symbol)
-      {
-	pos = Position(current_file, line_no);
-
-	if (token_lookup &&
-	    token_lookup[symbol]) {
-	  return token_lookup[symbol](symbol, pos);
-	}
-
-	string rest="";
-
-	switch (symbol[0]) {
-	case '\"':
-	  return StringToken(symbol, pos, parse_string(symbol));
-
-	case '\'':
-	  string s = parse_string(symbol);
-	  if (!sizeof(s)) {
-	    yyerror("Zero-length character constant.");
-	    return IntegerToken(symbol, pos, 0);
-	  }
-	  if (sizeof(s) > 1) {
-	    yyerror("Unterminated character constant.");
-	  }
-	  return IntegerToken(symbol, pos, s[0]);
-
-	case '0':
-	  if (symbol == "0") {
-	    return IntegerToken(symbol, pos, 0);
-	  }
-	  if ((symbol[1] == 'x') || (symbol[1] == 'X')) {
-	    // Hexadecimal constant.
-	    int val;
-	    sscanf(symbol[2..], "%x%s", val, rest);
-	    if (sizeof(rest)) {
-	      yyerror("Strange hexadecimal constant: %s", symbol);
-	    }
-	    return IntegerToken(symbol, pos, val);
-	  }
-	  if ((symbol[1] == 'b') || (symbol[1] == 'B')) {
-	    // Binary constant.
-	    int val;
-	    sscanf(symbol[2..], "%b%s", val, rest);
-	    if (sizeof(rest)) {
-	      yyerror("Strange binary constant: %s", symbol);
-	    }
-	    return IntegerToken(symbol, pos, val);
-	  }
-	  // FALL_THROUGH
-	case '1'..'9':
-	  int int_val;
-	  if (symbol[0] == '0') {
-	    // Octal constant or float.
-	    sscanf(symbol, "%o%s", int_val, rest);
-	    if (sizeof(rest) &&
-		((rest[0] == '8') || (rest[0] == '9'))) {
-	      string rest2="";
-	      sscanf(symbol, "%*d%s", rest2);
-	      if (!sizeof(rest2)) {
-		yyerror("Bad octal number: %s", symbol);
-		return IntegerToken(symbol, pos, int_val);
-	      }
-	    }
-	  } else {
-	    // Decimal constant or float.
-	    sscanf(symbol, "%d%s", int_val, rest);
-	  }
-	  if (!sizeof(rest)) {
-	    return IntegerToken(symbol, pos, int_val);
-	  }
-	  float float_val;
-	  string rest2="";
-	  sscanf(symbol, "%f%s", float_val, rest2);
-	  if (sizeof(rest2)) {
-	    yyerror("Strange numeric constant: %s", symbol);
-	    if (rest == rest2) {
-	      return IntegerToken(symbol, pos, int_val);
-	    }
-	  }
-	  return FloatToken(symbol, pos, float_val);
-
-	case '/':
-	  if ((sizeof(symbol) > 1) &&
-	      ((symbol[1] == '/') || (symbol[1] == '*'))) {
-	    // Comment.
-	    return 0;
-	  }
-	  break;
-
-	case '#':
-	  string cmd="";
-	  sscanf(symbol, "#%*[ \t]%[^ \t]%*[ \t]%s", cmd, rest);
-	  preprocess(cmd, rest);
-	  return 0;
-	}
-	return IdentifierToken(symbol, pos);
-      }
-
-      void scan()
-      {
-	current_token = 0;
-
-	do {
-	  ::scan();
-	} while (current_symbol && !(current_token = handle(current_symbol)));
-      }
-
-      void create(string data, CompilerContext|void context)
-      {
-	this_program::context = context || CompilerContext();
-	::create(data);
-      }
-    }
-
-    //! Return the current token.
-    Token value()
-    {
-      return current_token;
-    }
-  }
-}
+typedef function(string, mapping(string:int|string), CompilerContext: Token) TokenHandler;
 
 //! List of Tokens and Groups
 class TokenList
@@ -499,7 +170,7 @@ class GroupingCompiler
     }
     if (g->terminator) {
       while (g->group_terminator) {
-	report(ERROR, "EOF", "grouping",
+	report(ERROR, 0, "grouping",
 	       sprintf("Missing %O at end of file.\n",
 		       g->group_terminator));
 	g = group_stack->pop();
@@ -1228,11 +899,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", pos));
+      Group group = Group(OperatorToken("(", context));
       group->contents->tokens = ({ 
-	MixedType("mixed", pos),
+	MixedType("mixed", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1244,17 +915,17 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' '|' 'void' '...' ':' 'mixed' '|' 'void' ')'.
-      Group group = Group(OperatorToken("(", pos));
+      Group group = Group(OperatorToken("(", context));
       group->contents->tokens = ({ 
-	MixedType("mixed", pos),
-	OperatorToken("|", pos),
-	VoidType("void", pos),
-	OperatorToken("...", pos),
-	MixedType("mixed", pos),
-	OperatorToken("|", pos),
-	VoidType("void", pos),
+	MixedType("mixed", context),
+	OperatorToken("|", context),
+	VoidType("void", context),
+	OperatorToken("...", context),
+	MixedType("mixed", context),
+	OperatorToken("|", context),
+	VoidType("void", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1266,11 +937,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' '..' ')'.
-      Group group = Group(OperatorToken("(",pos));
+      Group group = Group(OperatorToken("(",context));
       group->contents->tokens = ({ 
-	OperatorToken("..", pos),
+	OperatorToken("..", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1282,13 +953,13 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ':' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", pos));
+      Group group = Group(OperatorToken("(", context));
       group->contents->tokens = ({ 
-	MixedType("mixed", pos),
-	OperatorToken(":", pos),
-	MixedType("mixed", pos),
+	MixedType("mixed", context),
+	OperatorToken(":", context),
+	MixedType("mixed", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1300,11 +971,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", pos));
+      Group group = Group(OperatorToken("(", context));
       group->contents->tokens = ({ 
-	MixedType("mixed", pos),
+	MixedType("mixed", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1316,11 +987,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", pos));
+      Group group = Group(OperatorToken("(", context));
       group->contents->tokens = ({ 
-	MixedType("mixed", pos),
+	MixedType("mixed", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1332,11 +1003,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'object' ')'.
-      Group group = Group(OperatorToken("(", pos));
+      Group group = Group(OperatorToken("(", context));
       group->contents->tokens = ({ 
-	ObjectType("object", pos),
+	ObjectType("object", context),
       });
-      group->group_end = OperatorToken(")", pos);
+      group->group_end = OperatorToken(")", context);
       return group;
     }
   }
@@ -1399,8 +1070,8 @@ class PikeCompiler
 
     static void redefinition_error(Token old, Token new, string msg)
     {
-      report(ERROR, new->pos, "parser", msg);
-      report(ERROR, old->pos, "parser", "Previously defined here.");
+      report(ERROR, new->context, "parser", msg);
+      report(ERROR, old->context, "parser", "Previously defined here.");
     }
 
     void redefine(Modifiers new_modifiers, Token new_meta)
@@ -1785,7 +1456,7 @@ class PikeCompiler
 	  token->parse_modifier(tokens_left);
 	  current_modifiers += token;
 	  if (!tokens_left) {
-	    report(ERROR, token->pos, "parser", "Syntax error");
+	    report(ERROR, token->context, "parser", "Syntax error");
 	    return;
 	  }
 	}
@@ -1794,7 +1465,7 @@ class PikeCompiler
 	    // Modifier scope.
 	    parse_class_body(token->contents, current_modifiers);
 	  } else {
-	    report(ERROR, token->pos, "parser", "Syntax error");
+	    report(ERROR, token->context, "parser", "Syntax error");
 	  }
 	  tokens_left->`+=(1);
 	} else {
@@ -1871,12 +1542,12 @@ class PikeCompiler
 	return;
       }
       if (token->group_start->symbol == "(") {
-	Lambda create_fun = Lambda("lambda", token->pos);
+	Lambda create_fun = Lambda("lambda", token->context);
 	create_fun->return_type =
-	  LiteralExpression(VoidType("void", token->pos));
-	create_fun->name = IdentifierToken("create", token->pos);
+	  LiteralExpression(VoidType("void", token->context));
+	create_fun->name = IdentifierToken("create", token->context);
 	this->add_meta_object(create_fun);
-	this->add_identifier(Modifiers(({Modifier("static", token->pos)})),
+	this->add_identifier(Modifiers(({Modifier("static", token->context)})),
 			     create_fun->name, create_fun);
 	parse_create_args(create_fun, token->contents);
 	tokens_left->`+=(1);
@@ -2075,7 +1746,7 @@ class PikeCompiler
 	// NOT REACHED.
       }
 
-      void create(string data, CompilerContext|void context)
+      void create(string data, mapping(string:string|int)|void context)
       {
 	// Default token_lookup.
 	token_lookup = compat_lookup[0][2];
