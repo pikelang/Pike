@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.134 2004/10/22 20:17:13 grubba Exp $
+|| $Id: error.c,v 1.135 2004/10/22 23:44:49 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -957,7 +957,7 @@ PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expe
   {
     bad_arg_error (name, Pike_sp-args, args, expected, NULL, NULL,
 		   "Too few arguments to %s(). Expected at least %d (got %d).\n",
-		   name, args, expected, args);
+		   name, expected, args);
   }else {
     bad_arg_error (name, Pike_sp-args, args, expected, NULL, NULL,
 		   "Too many arguments to %s(). Expected at most %d (got %d).\n",
