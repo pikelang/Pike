@@ -1,4 +1,4 @@
-/* $Id: packet.pike,v 1.6 2001/04/18 14:30:41 noy Exp $
+/* $Id: packet.pike,v 1.7 2001/06/14 13:48:48 noy Exp $
  *
  * SSL Record Layer
  */
@@ -45,6 +45,12 @@ object check_size(int|void extra)
 
 object|string recv(string data)
 {
+
+#ifdef SSL3_FRAGDEBUG
+  werror(" SSL.packet->recv: strlen(data)="+strlen(data)+"\n");
+#endif 
+
+
   buffer += data;
   while (strlen(buffer) >= needed_chars)
   {
@@ -61,7 +67,7 @@ object|string recv(string data)
 	if (SUPPORT_V2)
 	{
 #ifdef SSL3_DEBUG
-//	  werror(sprintf("SSL.packet: Receiving SSL2 packet '%s'\n", buffer[..4]));
+	  werror(sprintf("SSL.packet: Receiving SSL2 packet '%s'\n", buffer[..4]));
 #endif
 
 	  content_type = PACKET_V2;
@@ -125,3 +131,4 @@ string send()
   return sprintf("%c%c%c%2c%s", content_type, @protocol_version,
 		 strlen(fragment), fragment);
 }
+

@@ -1,7 +1,10 @@
-/* $Id: handshake.pike,v 1.22 2001/04/18 14:30:41 noy Exp $
+/* $Id: handshake.pike,v 1.23 2001/06/14 13:48:48 noy Exp $
  *
  */
 
+
+
+//#define SSL3_PROFILING
 
 inherit "cipher";
 
@@ -61,6 +64,18 @@ constant Session = SSL.session;
 constant Packet = SSL.packet;
 constant Alert = SSL.alert;
 
+
+#ifdef SSL3_PROFILING
+
+
+int timestamp;
+void addRecord(int t,int s) {
+  Stdio.stdout.write(sprintf("time: %.24f  type: %d sender: %d\n",time(timestamp),t,s));
+}
+#endif
+
+
+
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
 
@@ -68,6 +83,10 @@ string handshake_messages;
 
 object handshake_packet(int type, string data)
 {
+
+#ifdef SSL3_PROFILING
+  addRecord(type,1);
+#endif
   /* Perhaps one need to split large packages? */
   object packet = Packet();
   packet->content_type = PACKET_handshake;
@@ -511,7 +530,9 @@ string describe_type(int i)
 int handle_handshake(int type, string data, string raw)
 {
   object input = Struct(data);
-
+#ifdef SSL3_PROFILING
+  addRecord(type,0);
+#endif
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
   werror("SSL.handshake: state %s, type %s\n",
 	 describe_state(handshake_state), describe_type(type));
@@ -924,33 +945,38 @@ int handle_handshake(int type, string data, string raw)
 	certs += ({ input->get_var_string(3) });
 
       session->server_certificate_chain = certs;
-
-      if (catch
+      
+      mixed error=catch
       {
 	object public_key = Tools.X509.decode_certificate(
-	  session->server_certificate_chain[0])->public_key;
+                session->server_certificate_chain[0])->public_key;
+
 	if(public_key->type == "rsa")
-	{
-	  object rsa = Crypto.rsa();
-	  rsa->set_public_key(public_key->rsa->get_n(), public_key->rsa->get_e());
-	  context->rsa = rsa;
-	}
+	  {
+	    object rsa = Crypto.rsa();
+	    rsa->set_public_key(public_key->rsa->get_n(), public_key->rsa->get_e());
+	    context->rsa = rsa;
+	  }
 	else
+	  {
+	    werror("Other certificates than rsa not supported!\n");
+	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+			      "SSL.session->handle_handshake: unexpected message\n",
+			      backtrace()));
+	    return -1;
+	  }
+      };
+
+      if(error) 
+
 	{
-	  werror("Other certificates than rsa not supported!\n");
+	  werror("Failed to decode certificate!\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
 	  return -1;
 	}
-      })
-      {
-	werror("Failed to decode certificate!\n");
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			  "SSL.session->handle_handshake: unexpected message\n",
-			  backtrace()));
-	return -1;
-      }
+      
       certificate_state = CERT_received;
       break;
       }
@@ -1057,6 +1083,11 @@ int handle_handshake(int type, string data, string raw)
 
 void create(int is_server)
 {
+
+#ifdef SSL3_PROFILING
+  timestamp=time();
+  Stdio.stdout.write(sprintf("New...\n"));
+#endif 
   version=({0,0});
   auth_level = context->auth_level;
   if (is_server)

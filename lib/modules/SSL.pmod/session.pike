@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.13 2001/04/18 14:30:41 noy Exp $
+/* $Id: session.pike,v 1.14 2001/06/14 13:48:48 noy Exp $
  *
  */
 
@@ -221,20 +221,4 @@ array new_client_states(string client_random, string server_random,array(int) ve
   return ({ read_state, write_state });
 }
     
-#if 0
-void create(int is_s, int|void auth)
-{
-  is_server = is_s;
-  if (is_server)
-  {
-    handshake_state = STATE_SERVER_WAIT_FOR_HELLO;
-    auth_type = auth || AUTH_none;
-  }
-  else
-  {
-    handshake_state = STATE_CLIENT_WAIT_FOR_HELLO;
-    auth_type = auth || AUTH_require;
-  }
-  version={0,0};
-}
-#endif
+
