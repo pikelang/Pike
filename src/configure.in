@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.839 2004/11/08 18:17:53 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.840 2004/12/11 18:24:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1878,6 +1878,11 @@ if test "$cflags_is_set" = "no"; then
   [
     if $REALCC -V 2>&1 | head -1 | grep "Intel(R) C" >/dev/null; then
       # icc or ecc.
+
+      # Disable excessive warnings from Linux's header files:
+      #   warning #1292: attribute "__nothrow__" ignored
+      AC_SYS_COMPILER_FLAG(-wd1292,wd1292,WARN)
+
       AC_SYS_COMPILER_FLAG(-Ob2,Ob2,OPTIMIZE)
       AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
       AC_SYS_COMPILER_FLAG(-ipo,ipo,EXTRALDFLAGS)
