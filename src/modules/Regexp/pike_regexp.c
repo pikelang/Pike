@@ -123,7 +123,7 @@
 #define	OPEN	20		/* no	Mark this point in input as start of
 				 * #n. */
  /* OPEN+1 is number 1, etc. */
-#define	CLOSE	30		/* no	Analogous to OPEN. */
+#define	CLOSE	(OPEN+NSUBEXP)	/* no	Analogous to OPEN. */
 
 /*
  * Opcode notes:
@@ -957,59 +957,6 @@ char           *prog;
 	    break;
 	case BACK:
 	    break;
-	case OPEN + 1:
-	case OPEN + 2:
-	case OPEN + 3:
-	case OPEN + 4:
-	case OPEN + 5:
-	case OPEN + 6:
-	case OPEN + 7:
-	case OPEN + 8:
-	case OPEN + 9:{
-		register int    no;
-		register char  *save;
-
-		no = OP(scan) - OPEN;
-		save = reginput;
-
-		if (regmatch(nxt)) {
-		    /*
-		     * Don't set startp if some later invocation of the same
-		     * parentheses already has. 
-		     */
-		    if (regstartp[no] == (char *)NULL)
-			regstartp[no] = save;
-		    return (1);
-		} else
-		    return (0);
-	    }
-
-	case CLOSE + 1:
-	case CLOSE + 2:
-	case CLOSE + 3:
-	case CLOSE + 4:
-	case CLOSE + 5:
-	case CLOSE + 6:
-	case CLOSE + 7:
-	case CLOSE + 8:
-	case CLOSE + 9:{
-		register int    no;
-		register char  *save;
-
-		no = OP(scan) - CLOSE;
-		save = reginput;
-
-		if (regmatch(nxt)) {
-		    /*
-		     * Don't set endp if some later invocation of the same
-		     * parentheses already has. 
-		     */
-		    if (regendp[no] == (char *)NULL)
-			regendp[no] = save;
-		    return (1);
-		} else
-		    return (0);
-	    }
 
 	case BRANCH:{
 		register char  *save;
@@ -1061,6 +1008,45 @@ char           *prog;
 	    return (1);		/* Success! */
 
 	default:
+        if(OP(scan) >= OPEN && OP(scan)<OPEN+NSUBEXP)
+	{
+		register int    no;
+		register char  *save;
+
+		no = OP(scan) - OPEN;
+		save = reginput;
+
+		if (regmatch(nxt)) {
+		    /*
+		     * Don't set startp if some later invocation of the same
+		     * parentheses already has. 
+		     */
+		    if (regstartp[no] == (char *)NULL)
+			regstartp[no] = save;
+		    return (1);
+		} else
+		    return (0);
+	    }
+
+        if(OP(scan) >= CLOSE && OP(scan)<CLOSE+NSUBEXP)
+        {
+		register int    no;
+		register char  *save;
+
+		no = OP(scan) - CLOSE;
+		save = reginput;
+
+		if (regmatch(nxt)) {
+		    /*
+		     * Don't set endp if some later invocation of the same
+		     * parentheses already has. 
+		     */
+		    if (regendp[no] == (char *)NULL)
+			regendp[no] = save;
+		    return (1);
+		} else
+		    return (0);
+	    }
 	    regerror("memory corruption");
 	    return (0);
 
@@ -1263,34 +1249,24 @@ char           *op;
     case END:
 	p = "END";
 	break;
-    case OPEN + 1:
-    case OPEN + 2:
-    case OPEN + 3:
-    case OPEN + 4:
-    case OPEN + 5:
-    case OPEN + 6:
-    case OPEN + 7:
-    case OPEN + 8:
-    case OPEN + 9:
-	sprintf(buf + strlen(buf), "OPEN%d", OP(op) - OPEN);
-	p = (char *)NULL;
-	break;
-    case CLOSE + 1:
-    case CLOSE + 2:
-    case CLOSE + 3:
-    case CLOSE + 4:
-    case CLOSE + 5:
-    case CLOSE + 6:
-    case CLOSE + 7:
-    case CLOSE + 8:
-    case CLOSE + 9:
-	sprintf(buf + strlen(buf), "CLOSE%d", OP(op) - CLOSE);
-	p = (char *)NULL;
-	break;
+
     case STAR:
 	p = "STAR";
 	break;
+
     default:
+        if(OP(op) >= OPEN && OP(op) < OPEN+NSUBEXP)
+	{
+	  sprintf(buf + strlen(buf), "OPEN%d", OP(op) - OPEN);
+	  p = (char *)NULL;
+	  break;
+	}
+        if(OP(op) >= CLOSE && OP(op) < CLOSE+NSUBEXP)
+	{
+	  sprintf(buf + strlen(buf), "CLOSE%d", OP(op) - CLOSE);
+	  p = (char *)NULL;
+	  break;
+	}
 	regerror("corrupted opcode");
 	p=(char *)NULL;
 	break;
