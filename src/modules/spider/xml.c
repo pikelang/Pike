@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.58 2004/11/15 18:07:55 mast Exp $
+|| $Id: xml.c,v 1.59 2004/11/16 20:56:39 mast Exp $
 */
 
 #include "global.h"
@@ -2372,7 +2372,6 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	switch(PEEK(1))
 	{
 	  case '?': /* Ends with ?> */
-	    CHECK_TOPLEVEL_EPILOG;
 	    if(PEEK(2)=='x' &&
 	       PEEK(3)=='m' &&
 	       PEEK(4)=='l' &&
