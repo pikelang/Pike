@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.85 2003/06/02 18:15:05 mast Exp $ */
+/* $Id: test_pike.pike,v 1.86 2003/06/05 12:57:59 grubba Exp $ */
 
 import Stdio;
 
@@ -767,6 +767,16 @@ int main(int argc, array(string) argv)
 	      werror(sprintf("o->a(): %O\n",a));
 	      werror(sprintf("o->b(): %O\n",b));
 	      errors++;
+	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
+		  (sizeof(a) > 20)) {
+		werror("Differences at:\n");
+		int i;
+		for(i = 0; i < sizeof(a); i++) {
+		  if (a[i] != b[i]) {
+		    werror("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
+		  }
+		}
+	      }
 	    }
 	    else {
 	      successes++;
@@ -781,6 +791,16 @@ int main(int argc, array(string) argv)
 	      werror(sprintf("o->a(): %O\n",a));
 	      werror(sprintf("o->b(): %O\n",b));
 	      errors++;
+	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
+		  (sizeof(a) > 20)) {
+		werror("Differences at:\n");
+		int i;
+		for(i = 0; i < sizeof(a); i++) {
+		  if (a[i] != b[i]) {
+		    werror("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
+		  }
+		}
+	      }
 	    }
 	    else {
 	      successes++;
