@@ -9095,6 +9095,9 @@ updates accordingly.<p>
 <li>"t" - Transaction mode. The database now allows transactions.<p>
 <li>"C" - Compress mode. Provided the <link to=Gz>Gz module</link> is
 available, all records will be compressed before stored on to disk.<p>
+<li>"Q" - Quick recovery. Should be avoided if possible. This flag makes
+Yabu wait for a shorter period of time when it finds lost PID-files
+(which occurs when the database is not shut down properly).<p>
 </ul>
 </ol>
 </man_description>
@@ -9163,6 +9166,26 @@ This method lists all available tables.
 Yabu.db-&gt;table,
 Yabu.db-&gt;sync,
 Yabu.db-&gt;purge
+Yabu.db-&gt;_values
+</man_see>
+
+</method>
+
+
+
+<method name=Yabu.db-&gt;_values title="Get all tables">
+<man_syntax>
+array(Yabu.table) _values();<br>
+</man_syntax>
+<man_description>
+This method returns all available tables.
+</man_description>
+
+<man_see>
+Yabu.db-&gt;table,
+Yabu.db-&gt;sync,
+Yabu.db-&gt;purge
+Yabu.db-&gt;_indices
 </man_see>
 
 </method>
@@ -9273,6 +9296,27 @@ Yabu.table-&gt;set,
 Yabu.table-&gt;get,
 Yabu.table-&gt;delete,
 Yabu.table-&gt;purge
+Yabu.table-&gt;_values
+</man_see>
+
+</method>
+
+
+
+<method name=Yabu.table-&gt;_values title="Get all the records in a table">
+<man_syntax>
+array(mixed) _values();<br>
+</man_syntax>
+<man_description>
+This method returns all record names in the table.
+</man_description>
+
+<man_see>
+Yabu.table-&gt;set,
+Yabu.table-&gt;get,
+Yabu.table-&gt;delete,
+Yabu.table-&gt;purge
+Yabu.table-&gt;_indices
 </man_see>
 
 </method>
