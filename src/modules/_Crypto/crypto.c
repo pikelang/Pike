@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.41 2000/12/05 21:08:32 per Exp $
+ * $Id: crypto.c,v 1.42 2001/02/12 16:12:11 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -117,7 +117,16 @@ void assert_is_crypto_module(struct object *o)
  * efuns and the like
  */
 
-/* string string_to_hex(string) */
+/*! @module Crypto
+ */
+
+/*! @decl string string_to_hex(string data)
+ *!
+ *! Convert a string of binary data to a hexadecimal string.
+ *!
+ *! @seealso
+ *!   @[hex_to_string()]
+ */
 static void f_string_to_hex(INT32 args)
 {
   struct pike_string *s;
@@ -128,6 +137,9 @@ static void f_string_to_hex(INT32 args)
   }
   if (sp[-1].type != T_STRING) {
     Pike_error("Bad argument 1 to string_to_hex()\n");
+  }
+  if (sp[-1].u.string->size_shift) {
+    Pike_error("Bad argument 1 to string_to_hex(), expected 8-bit string.\n");
   }
 
   s = begin_shared_string(2 * sp[-1].u.string->len);
@@ -140,7 +152,13 @@ static void f_string_to_hex(INT32 args)
   push_string(end_shared_string(s));
 }
 
-/* string hex_to_string(string) */
+/*! @decl string hex_to_string(string hex)
+ *!
+ *! Convert a string of hexadecimal digits to binary data.
+ *!
+ *! @seealso
+ *!   @[string_to_hex()]
+ */
 static void f_hex_to_string(INT32 args)
 {
   struct pike_string *s;
@@ -202,6 +220,11 @@ static INLINE unsigned INT8 parity(unsigned INT8 c)
   return c & 1;
 }
 
+/*! @decl string des_parity(string raw)
+ *!
+ *! Adjust the parity for a string so that it is acceptable
+ *! according to DES.
+ */
 static void f_des_parity(INT32 args)
 {
   struct pike_string *s;
@@ -215,7 +238,8 @@ static void f_des_parity(INT32 args)
 
   s = begin_shared_string(sp[-1].u.string->len);
   MEMCPY(s->str, sp[-1].u.string->str, s->len);
-  
+
+  /* FIXME: Shouldn't it be the MSB that gets inverted? */
   for (i=0; i< s->len; i++)
     s->str[i] ^= ! parity(s->str[i]);
   pop_n_elems(args);
@@ -226,7 +250,16 @@ static void f_des_parity(INT32 args)
  * Crypto
  */
 
-/* void create(program|object, ...) */
+/*! @class crypto
+ *!
+ *! Buffer a block-crypto.
+ */
+
+/*! @decl void create(object cipher)
+ *! @decl void create(program prog, mixed ... args)
+ *!
+ *! Initialize a block-crypto buffer.
+ */
 static void f_create(INT32 args)
 {
   if (args < 1) {
@@ -268,20 +301,30 @@ static void f_create(INT32 args)
   MEMSET(THIS->backlog, 0, THIS->block_size);
 }
 
-/* int query_block_size(void) */
+/*! @decl int query_block_size()
+ *!
+ *! Get the block size of the contained block-crypto.
+ */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
   push_int(DO_NOT_WARN(THIS->block_size));
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ */
 static void f_query_key_length(INT32 args)
 {
   safe_apply(THIS->object, "query_key_length", args);
 }
 
-/* void set_encrypt_key(INT32 args) */
+/*! @decl void set_encrypt_key(string key)
+ *!
+ *! Set the encryption key.
+ *!
+ *! @note
+ *!   As a side-effect any buffered data will be cleared.
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   if (THIS->block_size) {
@@ -295,7 +338,13 @@ static void f_set_encrypt_key(INT32 args)
   push_object(this_object());
 }
 
-/* void set_decrypt_key(INT32 args) */
+/*! @decl void set_decrypt_key(string key)
+ *!
+ *! Set the decryption key.
+ *!
+ *! @note
+ *!   As a side-effect any buffered data will be cleared.
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   if (THIS->block_size) {
@@ -309,7 +358,14 @@ static void f_set_decrypt_key(INT32 args)
   push_object(this_object());
 }
 
-/* string crypt(string) */
+/*! @decl string crypt(string data)
+ *!
+ *! Encrypt some data.
+ *!
+ *! Adds data to be encrypted to the buffer. If there's enough
+ *! data to en/decrypt a block, that will be done, and the result
+ *! returned. Any uncrypted data will be left in the buffer.
+ */
 static void f_crypto_crypt(INT32 args)
 {
   unsigned char *result;
@@ -393,7 +449,13 @@ static void f_crypto_crypt(INT32 args)
   MEMSET(result, 0, roffset + len);
 }
 
-/* string pad(void) */
+/*! @decl string pad()
+ *!
+ *! Pad and de/encrypt any data left in the buffer.
+ *!
+ *! @seealso
+ *!   @[unpad()]
+ */
 static void f_pad(INT32 args)
 {
   ptrdiff_t i;
@@ -417,7 +479,15 @@ static void f_pad(INT32 args)
   safe_apply(THIS->object, "crypt_block", 1);
 }
 
-/* string unpad(string) */
+/*! @decl string unpad(string data)
+ *!
+ *! De/encrypt and unpad a block of data.
+ *!
+ *! This performs the reverse operation of @[pad()].
+ *!
+ *! @seealso
+ *!   @[pad()]
+ */
 static void f_unpad(INT32 args)
 {
   ptrdiff_t len;
@@ -445,6 +515,12 @@ static void f_unpad(INT32 args)
   push_string(make_shared_binary_string(str->str, len));
   free_string(str);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
