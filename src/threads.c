@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.139 2000/08/24 04:04:42 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.140 2000/10/03 23:49:15 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -866,7 +866,7 @@ void f_mutex_trylock(INT32 args)
   if(!args)
     type=0;
   else
-    get_all_args("mutex->lock",args,"%i",&type);
+    get_all_args("mutex->trylock",args,"%i",&type);
 
   switch(type)
   {
