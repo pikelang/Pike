@@ -17,3 +17,9 @@ hash_init(void);
 
 void
 hash_exit(void);
+
+void
+cipher_init(void);
+
+void
+cipher_exit(void);
