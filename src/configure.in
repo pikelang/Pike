@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.391 2000/08/06 18:36:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.392 2000/08/07 11:35:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -56,8 +56,23 @@ AC_PROG_CC
 AC_ISC_POSIX
 AC_PROG_CPP
 
-CROSS="ac_cv_prog_cc_cross"
+#
+# Some cross-compilation support
+#
+
+CROSS="$ac_cv_prog_cc_cross"
 AC_SUBST(CROSS)
+
+if test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  RUNTPIKE="USE_PIKE"
+else
+  RUNTPIKE="USE_TPIKE"
+fi
+AC_SUBST(RUNTPIKE)
+
+AC_PATH_PROG(pike_prog,pike,no)
+PIKE="$ac_cv_path_pike_prog"
+AC_SUBST(PIKE)
 
 #############################################################################
 
