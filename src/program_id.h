@@ -27,6 +27,9 @@
 #define     PROG_THREAD_DISABLE_THREADS_ID                            7
 #define tObjImpl_THREAD_DISABLE_THREADS       "\003\000\000\000\000\007"
 #define   tObjIs_THREAD_DISABLE_THREADS       "\003\001\000\000\000\007"
+#define     PROG_PARSER_HTML_ID                                     010
+#define tObjImpl_PARSER_HTML                  "\003\000\000\000\000\010"
+#define   tObjIs_PARSER_HTML                  "\003\001\000\000\000\010"
 
 
 #endif

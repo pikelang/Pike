@@ -1,10 +1,11 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.4 1999/06/19 20:25:22 hubbe Exp $");
+RCSID("$Id: parser.c,v 1.5 1999/12/30 20:42:03 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
+#include "program_id.h"
 #include "object.h"
 #include "operators.h"
 
@@ -14,7 +15,7 @@ RCSID("$Id: parser.c,v 1.4 1999/06/19 20:25:22 hubbe Exp $");
 
 /*#define DEBUG*/
 
-#define PARSER_CLASS(name,init,exit,prog) \
+#define PARSER_CLASS(name,init,exit,prog,id) \
     void init(void); void exit(void); struct program *prog;
 #define PARSER_SUBMODULE(name,init,exit)  \
     void init(void); void exit(void); 
@@ -30,6 +31,7 @@ static struct
    void (*init)(void);
    void (*exit)(void);
    struct program **dest;
+   int id;
 } initclass[]=
 {
 #undef PARSER_CLASS
@@ -38,7 +40,7 @@ static struct
 #undef PARSER_SUBMODMAG
 #define PARSER_SUBMODMAG(a,b,c) 
 #define PARSER_FUNCTION(a,b,c,d)
-#define PARSER_CLASS(name,init,exit,prog) { name,init,exit,&prog },
+#define PARSER_CLASS(name,init,exit,prog,id) { name,init,exit,&prog,id },
 #define PARSER_SUBMODULE(a,b,c)
 #include "initstuff.h"
 };
@@ -52,7 +54,7 @@ static struct
 {
 #undef PARSER_CLASS
 #undef PARSER_SUBMODULE
-#define PARSER_CLASS(name,init,exit,prog) 
+#define PARSER_CLASS(name,init,exit,prog,id)
 #define PARSER_SUBMODULE(name,init,exit) { name,init,exit },
 #include "initstuff.h"
   {0,0,0 }
@@ -158,6 +160,7 @@ void pike_module_init(void)
    for (i=0; i<(int)NELEM(initclass); i++)
    {
       start_new_program();
+      if (initclass[i].id) new_program->id = initclass[i].id;
 
 #ifdef DEBUG
       fprintf(stderr,"Parser: initiating class \"Parser.%s\"...\n",

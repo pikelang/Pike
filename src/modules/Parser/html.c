@@ -15,6 +15,7 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "gc.h"
+#include "program_id.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -3738,7 +3739,7 @@ static void html_debug_mode(INT32 args)
 /****** module init *********************************/
 
 #define tCbret tOr4(tZero,tInt1,tStr,tArr(tMixed))
-#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObj X,tCbret))
+#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObjImpl_PARSER_HTML X,tCbret))
 #define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArr(tCbfunc(X)))
 #define tTagargs tMap(tStr,tStr)
 
@@ -3753,19 +3754,23 @@ void init_parser_html(void)
    set_gc_check_callback(gc_check_html);
    set_gc_mark_callback(gc_mark_html);
 
-#define CBRET "string|array(string)" /* 0|string|({string}) */
-
    ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),0);
-   ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObj),0);
+   ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObjImpl_PARSER_HTML),0);
 
    /* feed control */
 
-   ADD_FUNCTION("feed",html_feed,tOr(tFunc(tNone,tObj),tFunc(tStr tOr(tVoid,tInt),tObj)),0);
-   ADD_FUNCTION("finish",html_finish,tFunc(tOr(tVoid,tStr),tObj),0);
-   ADD_FUNCTION("read",html_read,tFunc(tOr(tVoid,tInt),tOr(tStr,tArr(tMixed))),0);
+   ADD_FUNCTION("feed",html_feed,
+		tOr(tFunc(tNone,tObjImpl_PARSER_HTML),
+		    tFunc(tStr tOr(tVoid,tInt),tObjImpl_PARSER_HTML)),0);
+   ADD_FUNCTION("finish",html_finish,
+		tFunc(tOr(tVoid,tStr),tObjImpl_PARSER_HTML),0);
+   ADD_FUNCTION("read",html_read,
+		tFunc(tOr(tVoid,tInt),tOr(tStr,tArr(tMixed))),0);
 
-   ADD_FUNCTION("write_out",html_write_out,tFuncV(tNone,tOr(tStr,tMixed),tObj),0);
-   ADD_FUNCTION("feed_insert",html_feed_insert,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("write_out",html_write_out,
+		tFuncV(tNone,tOr(tStr,tMixed),tObjImpl_PARSER_HTML),0);
+   ADD_FUNCTION("feed_insert",html_feed_insert,
+		tFunc(tStr,tObjImpl_PARSER_HTML),0);
 
    /* query */
 
@@ -3787,21 +3792,21 @@ void init_parser_html(void)
    /* callback setup */
 
    ADD_FUNCTION("add_tag",html_add_tag,
-		tFunc(tStr tTodo(tTagargs),tObj),0);
+		tFunc(tStr tTodo(tTagargs),tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("add_container",html_add_container,
-		tFunc(tStr tTodo(tTagargs tStr),tObj),0);
+		tFunc(tStr tTodo(tTagargs tStr),tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("add_entity",html_add_entity,
-		tFunc(tStr tTodo(""),tObj),0);
+		tFunc(tStr tTodo(""),tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("add_quote_tag",html_add_quote_tag,
-		tOr(tFunc(tStr tTodo(tStr) tStr,tObj),
-		    tFunc(tStr tZero,tObj)),0);
+		tOr(tFunc(tStr tTodo(tStr) tStr,tObjImpl_PARSER_HTML),
+		    tFunc(tStr tZero,tObjImpl_PARSER_HTML)),0);
 
    ADD_FUNCTION("add_tags",html_add_tags,
-		tFunc(tMap(tStr,tTodo( tTagargs )),tObj),0);
+		tFunc(tMap(tStr,tTodo( tTagargs )),tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("add_containers",html_add_containers,
-		tFunc(tMap(tStr,tTodo( tTagargs tStr )),tObj),0);
+		tFunc(tMap(tStr,tTodo( tTagargs tStr )),tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("add_entities",html_add_entities,
-		tFunc(tMap(tStr,tTodo( "" )),tObj),0);
+		tFunc(tMap(tStr,tTodo( "" )),tObjImpl_PARSER_HTML),0);
 
    ADD_FUNCTION("tags",html_tags,
 		tFunc(tNone,tMap(tStr,tTodo( tTagargs ))),0);
@@ -3815,7 +3820,7 @@ void init_parser_html(void)
    /* setup */
 
    ADD_FUNCTION("set_extra",html_set_extra,
-		tFuncV(tNone,tMix,tObj),0);
+		tFuncV(tNone,tMix,tObjImpl_PARSER_HTML),0);
 
    ADD_FUNCTION("case_insensitive_tag",html_case_insensitive_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
@@ -3835,11 +3840,14 @@ void init_parser_html(void)
    /* special callbacks */
 
    ADD_FUNCTION("_set_tag_callback",html__set_tag_callback,
-		tFunc(tFuncV(tObj tStr,tMix,tCbret),tObj),0);
+		tFunc(tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		      tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("_set_data_callback",html__set_data_callback,
-		tFunc(tFuncV(tObj tStr,tMix,tCbret),tObj),0);
+		tFunc(tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		      tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("_set_entity_callback",html__set_entity_callback,
-		tFunc(tFuncV(tObj tStr,tMix,tCbret),tObj),0);
+		tFunc(tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		      tObjImpl_PARSER_HTML),0);
 
    /* debug, whatever */
    

@@ -1,12 +1,12 @@
 #ifndef PARSER_INITER
-#define PARSER_CLASS(a,b,c,what) extern struct program *what;
+#define PARSER_CLASS(a,b,c,what,id) extern struct program *what;
 #define PARSER_SUBMODULE(a,b,c) 
 #define PARSER_SUBMODMAG(a,b,c) 
 #define PARSER_FUNCTION(a,name,c,d) void name(INT32 args);
 #endif
 
 PARSER_CLASS("HTML", init_parser_html, exit_parser_html, 
-	    parser_html_program )
+	    parser_html_program, PROG_PARSER_HTML_ID )
 
    /*
 for documentation purpose:
