@@ -17,10 +17,7 @@ do
     *.pmod)
       if [ -d "$DIR" ]; then
          break
-      else
-         :
       fi
-
 
       if [ -f "$DIR" ]; then
         mv "$DIR" "$DIR-foo"
@@ -53,10 +50,23 @@ else
   :
 fi
 
-if [ -d "$BASE.pmod" ]; then
-  EXT=`echo $TO | sed -e 's@(\.[^.]$)@\1@/'`
-  TO="$BASE.pmod/module.$EXT"
+if [ -d "$BASE.pmod" -a -d "$FROM" ]; then
+# we are copying a dir module into a dir module.
+  FROM="$FROM/."
+elif [ -d "$BASE.pmod" ]; then
+  EXT=`echo $TO | sed -e 's@^.*\.\(.[^\.]*\)$@\1@'`
+	  TO="$BASE.pmod/module.$EXT"
 fi
 
+# Add proper flag to copy recursively if FROM is a directory module
 
-exec cp "$FROM" "$TO"
+CPFLAGS=""
+
+if [ -d "$FROM" ]; then
+  CPFLAGS="-r"
+fi
+
+pwd
+ cp $CPFLAGS "$FROM" "$TO"
+
+exit $?
