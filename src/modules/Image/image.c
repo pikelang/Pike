@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.45 1997/10/21 22:07:23 mirar Exp $ */
+/* $Id: image.c,v 1.46 1997/10/24 00:34:01 mirar Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.45 1997/10/21 22:07:23 mirar Exp $<br>
+**!	$Id: image.c,v 1.46 1997/10/24 00:34:01 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.45 1997/10/21 22:07:23 mirar Exp $");
+RCSID("$Id: image.c,v 1.46 1997/10/24 00:34:01 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2696,6 +2696,168 @@ void image_select_colors(INT32 args)
    colortable_free(ct);
 }
 
+/*
+**! method object write_lsb_rgb(string what)
+**! method object write_lsb_grey(string what)
+**! method string read_lsb_rgb()
+**! method string read_lsb_grey()
+**!    	These functions read/write in the least significant bit
+**!     of the image pixel values. The _rgb() functions
+**!	read/write on each of the red, green and blue values,
+**!	and the grey keeps the same lsb on all three.
+**!
+**!	The string is nullpadded or cut to fit.
+**!
+**! returns the current object or the read string
+**!
+**! arg string what
+**!	the hidden message
+*/
+
+void image_write_lsb_rgb(INT32 args)
+{
+   int n,l,b;
+   rgb_group *d;
+   char *s;
+
+   if (args<1
+       || sp[-args].type!=T_STRING)
+      error("Illegal argument to image::write_lowbit()\n");
+   
+   s=sp[-args].u.string->str;
+   l=sp[-args].u.string->len;
+
+   n=THIS->xsize * THIS->ysize;
+   d=THIS->img;
+
+   b=128;
+
+   if (d)
+   while (n--)
+   {
+      if (b==0) { b=128; l--; s++; }
+      if (l>0) d->r=(d->r&254)|(((*s)&b)?1:0); else d->r&=254; b>>=1;
+      if (b==0) { b=128; l--; s++; }
+      if (l>0) d->g=(d->r&254)|(((*s)&b)?1:0); else d->g&=254; b>>=1;
+      if (b==0) { b=128; l--; s++; }
+      if (l>0) d->b=(d->r&254)|(((*s)&b)?1:0); else d->b&=254; b>>=1;
+      d++;
+   }
+
+   pop_n_elems(args);
+   
+   THISOBJ->refs++;
+   push_object(THISOBJ);
+}
+
+void image_read_lsb_rgb(INT32 args)
+{
+   int n,b;
+   rgb_group *s;
+   char *d;
+   struct pike_string *ps;
+
+   ps=begin_shared_string((THIS->xsize*THIS->ysize*3+7)>>3);
+
+   d=ps->str;
+
+   n=THIS->xsize * THIS->ysize;
+   s=THIS->img;
+
+   b=128;
+
+   MEMSET(d,0,(THIS->xsize*THIS->ysize*3+7)>>3);
+
+   if (s)
+   while (n--)
+   {
+      if (b==0) { b=128; d++; }
+      *d|=(s->r&1)*b; b>>=1;
+      if (b==0) { b=128; d++; }
+      *d|=(s->g&1)*b; b>>=1;
+      if (b==0) { b=128; d++; }
+      *d|=(s->b&1)*b; b>>=1;
+      s++;
+   }
+
+   pop_n_elems(args);
+   push_string(end_shared_string(ps));
+}
+
+void image_write_lsb_grey(INT32 args)
+{
+   int n,l,b;
+   rgb_group *d;
+   char *s;
+
+   if (args<1
+       || sp[-args].type!=T_STRING)
+      error("Illegal argument to image::write_lowbit()\n");
+   
+   s=sp[-args].u.string->str;
+   l=sp[-args].u.string->len;
+
+   n=THIS->xsize * THIS->ysize;
+   d=THIS->img;
+
+   b=128;
+
+   if (d)
+   while (n--)
+   {
+      if (b==0) { b=128; l--; s++; }
+      if (l>0) 
+      {
+	 d->r=(d->r&254)|(((*s)&b)?1:0); 
+	 d->g=(d->g&254)|(((*s)&b)?1:0); 
+	 d->b=(d->b&254)|(((*s)&b)?1:0); 
+      }
+      else 
+      {
+	 d->r&=254;
+	 d->g&=254;
+	 d->b&=254;
+      }
+      b>>=1;
+      d++;
+   }
+
+   pop_n_elems(args);
+   
+   THISOBJ->refs++;
+   push_object(THISOBJ);
+}
+
+void image_read_lsb_grey(INT32 args)
+{
+   int n,b;
+   rgb_group *s;
+   char *d;
+   struct pike_string *ps;
+
+   ps=begin_shared_string((THIS->xsize*THIS->ysize+7)>>3);
+
+   d=ps->str;
+
+   n=THIS->xsize * THIS->ysize;
+   s=THIS->img;
+
+   b=128;
+
+   MEMSET(d,0,(THIS->xsize*THIS->ysize+7)>>3);
+
+   if (s)
+   while (n--)
+   {
+      if (b==0) { b=128; d++; }
+      *d|=(s->r&1)*b; b>>=1;
+      s++;
+   }
+
+   pop_n_elems(args);
+   push_string(end_shared_string(ps));
+}
+
 
 /***************** global init etc *****************************/
 
@@ -2890,6 +3052,15 @@ void pike_module_init(void)
    add_function("`|",image_operator_maximum,
 		"function(object|array(int):object)",0);
 		
+   add_function("read_lsb_rgb",image_read_lsb_rgb,
+		"function(:object)",0);
+   add_function("write_lsb_rgb",image_write_lsb_rgb,
+		"function(:object)",0);
+   add_function("read_lsb_grey",image_read_lsb_rgb,
+		"function(:object)",0);
+   add_function("write_lsb_grey",image_write_lsb_rgb,
+		"function(:object)",0);
+
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
   
