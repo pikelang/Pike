@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.69 2004/12/07 21:19:19 grubba Exp $
+|| $Id: las.h,v 1.70 2004/12/18 18:06:18 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -207,6 +207,7 @@ node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
 node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
 node *debug_mkexternalnode(struct program *prog, int i);
+node *debug_mkthisnode(struct program *parent_prog, int inherit_num);
 node *debug_mkcastnode(struct pike_type *type, node *n);
 node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
@@ -258,6 +259,7 @@ void resolv_program(node *n);
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
 #define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))
 #define mkexternalnode(parent_prog, i) dmalloc_touch(node *, debug_mkexternalnode(parent_prog, i))
+#define mkthisnode(parent_prog, i) dmalloc_touch(node *, debug_mkthisnode(parent_prog, i))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
 #define mksoftcastnode(type, n) dmalloc_touch(node *, debug_mksoftcastnode(type, dmalloc_touch(node *, n)))
 #define mktypenode(t)       dmalloc_touch(node *, debug_mktypenode(t))
