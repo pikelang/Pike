@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.23 1999/11/11 13:53:15 grubba Exp $
+ * $Id: pike_types.h,v 1.24 1999/11/20 21:58:20 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -25,9 +25,9 @@ struct node_s
   struct pike_string *type;
   struct pike_string *name;
   struct node_s *parent;
-  INT16 line_number;
-  INT16 node_info;
-  INT16 tree_info;
+  unsigned INT16 line_number;
+  unsigned INT16 node_info;
+  unsigned INT16 tree_info;
   /* The stuff from this point on is hashed. */
   unsigned INT16 token;
   union 
@@ -131,6 +131,8 @@ void simple_describe_type(struct pike_string *s);
 char *low_describe_type(char *t);
 struct pike_string *describe_type(struct pike_string *type);
 TYPE_T compile_type_to_runtime_type(struct pike_string *s);
+struct pike_string *or_pike_types(struct pike_string *a,
+				  struct pike_string *b);
 int match_types(struct pike_string *a,struct pike_string *b);
 struct pike_string *index_type(struct pike_string *type, node *n);
 struct pike_string *key_type(struct pike_string *type, node *n);
