@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.15 1997/11/23 05:28:29 per Exp $
+**!	$Id: image.h,v 1.16 1999/01/23 15:10:23 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -16,6 +16,7 @@
 #define QUANT_SELECT_CACHE 6
 
 #define COLOURTYPE unsigned char
+#define COLORTYPE COLOURTYPE
 
 #define FS_SCALE 1024
 
