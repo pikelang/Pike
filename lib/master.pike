@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.49 1997/09/09 03:40:28 hubbe Exp $
+/* $Id: master.pike,v 1.50 1997/09/16 00:30:15 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -253,18 +253,22 @@ object cast_to_object(string oname, string current_file)
 class dirnode
 {
   string dirname;
+  object tm;
   mapping cache=([]);
-  void create(string name) { dirname=name; }
+  void create(string name, object the_master)
+  {
+    dirname=name;
+    tm=the_master;
+  }
   object|program ind(string index)
   {
-    object m=((object)"/master");
-    if(mixed o=m->findmodule(dirname+"/module"))
+    if(mixed o=tm->findmodule(dirname+"/module"))
     {
       if(mixed tmp=o->_module_value) o=tmp;
       if(o=o[index]) return o;
     }
     index = dirname+"/"+index;
-    if(object o=((object)"/master")->findmodule(index))
+    if(object o=tm->findmodule(index))
     {
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
@@ -298,7 +302,7 @@ object findmodule(string fullname)
   if(mixed *stat=file_stat(fullname+".pmod"))
   {
     if(stat[1]==-2)
-      return fc[fullname]=dirnode(fullname+".pmod");
+      return fc[fullname]=dirnode(fullname+".pmod",this_object());
   }
 
   if(o=low_cast_to_object(fullname+".pmod","/."))
