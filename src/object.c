@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.242 2003/07/22 12:46:09 grubba Exp $
+|| $Id: object.c,v 1.243 2003/08/03 00:59:21 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.242 2003/07/22 12:46:09 grubba Exp $");
+RCSID("$Id: object.c,v 1.243 2003/08/03 00:59:21 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1001,14 +1001,14 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   struct program *p=o->prog;
   
   if(!p)
-    Pike_error("Cannot access global variables in destructed object.\n");
+    Pike_error("Cannot access variables in destructed object.\n");
 
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
   i=ID_FROM_INT(p, f);
 
-  switch(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
+  switch(i->identifier_flags & IDENTIFIER_TYPE_MASK)
   {
   case IDENTIFIER_PIKE_FUNCTION:
     if (i->func.offset == -1 && p->flags & PROGRAM_FINISHED) {
@@ -1024,7 +1024,8 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       to->u.integer=0;
       break;
     }
-  case IDENTIFIER_FUNCTION:
+    /* Fall through. */
+
   case IDENTIFIER_C_FUNCTION:
     to->type=T_FUNCTION;
     to->subtype = DO_NOT_WARN(f);
@@ -1050,7 +1051,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       break;
     }
 
-  case 0:
+  case IDENTIFIER_VARIABLE:
   {
     void *ptr=LOW_GET_GLOBAL(o,f,i);
     switch(i->run_time_type)
@@ -1091,7 +1092,13 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	break;
       }
     }
+    break;
   }
+
+  default:
+#ifdef PIKE_DEBUG
+    Pike_fatal ("Unknown identifier type.\n");
+#endif
   }
 }
 
@@ -1970,9 +1977,12 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   if(!loc.o) Pike_error("Illegal magic index call.\n");
 
   loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun);
-  
+  if (loc.o->prog)
+    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
   find_external_context(&loc, parent_level);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot index in destructed parent object.\n");
 
   magic=low_clone(type);
   add_ref(MAGIC_O2S(magic)->o=loc.o);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.151 2003/06/30 17:06:09 mast Exp $
+|| $Id: interpret_functions.h,v 1.152 2003/08/03 00:56:46 mast Exp $
 */
 
 /*
@@ -366,12 +366,9 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", 0, {
     struct external_variable_context loc;
 
     loc.o=Pike_fp->current_object;
-    if(!loc.o->prog)
-      Pike_error("Cannot access parent of destructed object.\n");
-
     loc.parent_identifier=Pike_fp->fun;
-    loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
-  
+    if (loc.o->prog)
+      loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
     find_external_context(&loc, arg2);
 
     DO_IF_DEBUG({
@@ -380,10 +377,16 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", 0, {
 	     loc.inherit->identifier_level));
     });
 
-    low_object_index_no_free(Pike_sp,
-			     loc.o,
-			     arg1 + loc.inherit->identifier_level);
-    Pike_sp++;
+    if (arg1 == IDREF_MAGIC_THIS)
+      /* Special treatment to allow doing Foo::this on destructed
+       * parent objects. */
+      ref_push_object (loc.o);
+    else {
+      low_object_index_no_free(Pike_sp,
+			       loc.o,
+			       arg1 + loc.inherit->identifier_level);
+      Pike_sp++;
+    }
     print_return_value();
   });
 });
@@ -393,20 +396,19 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", 0, {
   struct external_variable_context loc;
 
   loc.o=Pike_fp->current_object;
-  if(!loc.o->prog)
-    Pike_error("Cannot access parent of destructed object.\n");
-
   loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
-  
+  if (loc.o->prog)
+    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
   find_external_context(&loc, arg2);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot access variable in destructed parent object.\n");
 
   DO_IF_DEBUG({
     TRACE((5,"-   Identifier=%d Offset=%d\n",
 	   arg1,
 	   loc.inherit->identifier_level));
   });
-
 
   ref_push_object(loc.o);
   Pike_sp->type=T_OBJ_INDEX;
@@ -2271,8 +2273,6 @@ OPCODE0(F_BREAKPOINT, "breakpoint", 0, {
 });
 
 OPCODE1(F_THIS_OBJECT, "this_object", 0, {
-  if(Pike_fp)
-  {
     struct object *o = Pike_fp->current_object;
     int level = arg1;
     for (; level > 0; level--) {
@@ -2286,11 +2286,7 @@ OPCODE1(F_THIS_OBJECT, "this_object", 0, {
       o = PARENT_INFO(o)->parent;
     }
     ref_push_object(o);
-  }else{
-    /* Shouldn't this generate an error? /mast */
-    push_int(0);
-  }
-});
+  });
 
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
   if(Pike_sp[-1].type != T_INT)
