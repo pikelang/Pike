@@ -1583,7 +1583,7 @@ int main(int argc, array argv)
 
   emit_nl("\nstruct program *pgtk_type_to_program(GtkWidget *widget)\n{\n");
   emit_nl(type_switch);
-  emit_nl("  return pgtk_widget_program;\n}\n\n");
+  emit_nl("  return pgtk_object_program;\n}\n\n");
 
   emit_nl("\nvoid pike_module_exit()\n{\n"+to_free+"}\n\n");
   files = "pgtk.c "+files;
