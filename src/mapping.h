@@ -25,6 +25,7 @@ struct mapping
 
 /* Prototypes begin here */
 struct keypair;
+struct mapping *allocate_mapping(int size);
 void really_free_mapping(struct mapping *m);
 void mapping_fix_type_field(struct mapping *m);
 void mapping_insert(struct mapping *m,
@@ -38,6 +39,8 @@ void map_delete(struct mapping *m,
 void check_mapping_for_destruct(struct mapping *m);
 struct svalue *low_mapping_lookup(struct mapping *m,
 				  struct svalue *key);
+struct svalue *low_mapping_string_lookup(struct mapping *m,
+					 struct pike_string *p);
 void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
 			   struct svalue *key);
