@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.22 2001/03/03 00:28:54 grubba Exp $
+ * $Id: compilation.h,v 1.23 2001/09/27 04:29:59 hubbe Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -148,6 +148,7 @@
   ZMEMBER(INT32,parent_identifier,0)
   IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
+  IMEMBER(int, check_final, 0)
   SEND
 
 #undef PCODE
