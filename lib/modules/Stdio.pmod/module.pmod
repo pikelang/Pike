@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.128 2001/11/22 18:54:52 grubba Exp $
+// $Id: module.pmod,v 1.129 2001/11/22 19:59:46 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -118,7 +118,8 @@ class BlockFile
 
 //! This is the basic I/O object, it provides socket communication as well
 //! as file access. It does not buffer reads and writes or provide line-by-line
-//! reading, that is done with @[Stdio.FILE] object.
+//! reading, that is done with @[Stdio.FILE] object. All functions available
+//! in @[Fd] are available here as well.
 class File
 {
   inherit Fd_ref;
@@ -277,20 +278,24 @@ class File
   }
 
   //! This function connects a socket previously created with
-  //! @[open_socket()] to a remote socket. The @[host] argument is the
-  //! hostname or IP number for the remote machine.
+  //! @[open_socket()] to a remote socket through TCP/IP. The
+  //! @[host] argument is the hostname or IP number of the remote machine.
+  //! A local IP and port can be explicitly bound by specifying @[client]
+  //! and @[client_port].
   //!
   //! @returns
   //! This function returns 1 for success, 0 otherwise.
   //!
   //! @note
-  //! If the socket is in nonblocking mode, you have to wait for a write
+  //! In nonblocking mode @tt{0@} (zero) may be returned and @[errno()] set to
+  //! @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
+  //! as a connection failure. In nonblocking mode you need to wait for a write
   //! or close callback before you know if the connection failed or not.
   //!
   //! @seealso
   //! @[query_address()]
   //!
-  int connect(string host, int port)
+  int connect(string host, int port, void|string client, void|int client_port)
   {
     if(!_fd) _fd=Fd();
 #ifdef __STDIO_DEBUG
@@ -300,7 +305,8 @@ class File
     debug_file = "socket";
     debug_mode = host+":"+port; 
     debug_bits = 0;
-    return ::connect(host, port);
+    if(!client) return ::connect(host, port);
+    return ::connect(host, port, client, client_port);
   }
 
   static private function(int, mixed ...:void) _async_cb;
@@ -569,17 +575,17 @@ class File
 
 
   //! @decl int close()
-  //! @decl int close(string how)
+  //! @decl int close(string direction)
   //!
   //! Close the file. Optionally, specify "r", "w" or "rw" to close just
-  //! the read, just the write or both read and write part of the file
+  //! the read, just the write or both read and write directions of the file
   //! respectively.
   //!
   //! @note
   //! This function will not call the @tt{close_callback@}.
   //!
   //! @seealso
-  //! @[open]
+  //! @[open], @[open_socket]
   //!
   int close(void|string how)
   {
