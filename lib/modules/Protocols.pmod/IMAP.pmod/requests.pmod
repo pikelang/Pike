@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.46 1999/02/17 01:14:26 grubba Exp $
+ * $Id: requests.pmod,v 1.47 1999/02/17 15:47:12 grubba Exp $
  */
 
 import .types;
@@ -345,7 +345,7 @@ class copy
       send(tag, "OK");
       break;
     default:
-      throw(({ "Bad returncode from copy().", backtrace() }));
+      throw(({ "Bad returncode from copy().\n", backtrace() }));
       break;
     }
     return ([ "action" : "finished" ]);
@@ -358,10 +358,11 @@ class store
 
   constant arg_info = ({ ({ "set" }), ({ "string" }), ({ "list" }) });
 
-  mapping easy_process(object message_set, string data_item, mixed list)
+  mapping easy_process(object message_set, string data_item,
+		       array(string) list)
   {
     werror(sprintf("store->easy_process(X, %O, %O)\n", data_item, list));
-    throw(({ "Not implemented yet", backtrace() }));
+    throw(({ "Not implemented yet.\n", backtrace() }));
   }
 }
 
