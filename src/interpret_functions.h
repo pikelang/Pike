@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.58 2001/06/10 00:24:17 grubba Exp $
+ * $Id: interpret_functions.h,v 1.59 2001/06/16 17:07:44 per Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -475,6 +475,20 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop")
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
 
+  if( Pike_sp[-1].type == PIKE_T_INT &&
+      Pike_sp[-2].type == PIKE_T_INT  )
+  {
+#ifdef AUTO_BIGNUM
+    if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
+#endif
+    {
+      /* Optimization for a rather common case. Makes it 30% faster. */
+      Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
+      assign_lvalue(Pike_sp-4,Pike_sp-1);
+      Pike_sp-=4;  /* known integers and a lvalue */
+      goto add_and_pop_done;
+    }
+  }
   /* this is so that foo+=bar (and similar things) will be faster, this
    * is done by freeing the old reference to foo after it has been pushed
    * on the stack. That way foo can have only 1 reference if we are lucky,
@@ -493,6 +507,8 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop")
   f_add(2);
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   pop_n_elems(3);
+ add_and_pop_done:
+   ; /* make gcc happy */
 BREAK;
 
 OPCODE1(F_GLOBAL_LVALUE, "& global")
