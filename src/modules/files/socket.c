@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.35 1998/05/27 13:30:54 grubba Exp $");
+RCSID("$Id: socket.c,v 1.36 1998/07/15 23:26:59 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -345,7 +345,8 @@ static void port_accept(INT32 args)
 static void socket_query_address(INT32 args)
 {
   struct sockaddr_in addr;
-  int i,len;
+  int i;
+  size_t len;
   char buffer[496],*q;
 
   if(THIS->fd <0)

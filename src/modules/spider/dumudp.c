@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.38 1998/07/04 17:05:22 grubba Exp $
+ * $Id: dumudp.c,v 1.39 1998/07/15 23:27:25 hubbe Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.38 1998/07/04 17:05:22 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.39 1998/07/15 23:27:25 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -400,7 +400,8 @@ static void udp_set_blocking(INT32 args)
 static void udp_query_address(INT32 args)
 {
   struct sockaddr_in addr;
-  int i,len;
+  int i;
+  size_t len;
   char buffer[496],*q;
 
   if(THIS->fd <0)

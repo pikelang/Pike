@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.75 1998/07/12 23:15:23 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.76 1998/07/15 23:26:25 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -372,7 +372,11 @@ static RETSIGTYPE receive_signal(int signum)
      * SIGCHLD is the safest signal to substitute.
      *	/grubba 1998-05-19
      */
+#ifdef SIGCHLD
     signum = SIGCHLD;
+#else
+    signum = 0;
+#endif
   }
 
   tmp=firstsig+1;
