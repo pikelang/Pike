@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.49 1997/01/27 08:11:44 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.50 1997/01/28 02:51:10 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -39,6 +39,8 @@ if test x$with_debug = xyes ; then
 fi
 
 #############################################################################
+AC_AIX
+AC_MINIX
 
 # We need some special hacks when running slowaris
 AC_PATH_PROG(uname_prog,uname,no)
@@ -66,6 +68,7 @@ AC_MSG_RESULT($pike_cv_sys_os)
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   AC_MSG_CHECKING($1)
+  OLD_CFLAGS="[$]CFLAGS"
   AC_CACHE_VAL(pike_cv_option_$2,
   [
     CFLAGS="[$]OLD_CFLAGS $1"
@@ -104,7 +107,6 @@ if test $cflags_is_set = no; then
 
 ### Generic GCC options. O2 and -funroll-loops makes some code _much_ faster,
 ### especially the image module.
-  AC_SYS_COMPILER_FLAG(-O2,O2)
   AC_SYS_COMPILER_FLAG(-funroll-loops,unroll_loops)
  else
 
@@ -166,6 +168,7 @@ else
   fi
 fi
 
+if test $pike_cv_sys_os = "Solaris" ; then
 AC_MSG_CHECKING(if ld accepts setting the run-time path with -R)
 AC_CACHE_VAL(pike_cv_ld_accepts_r,
 [
@@ -195,6 +198,7 @@ if test x$pike_cv_ld_accepts_r = xyes ; then
   SET_RUN_PATH='`cat modules/lib_dirs`'
 else
   :
+fi
 fi
 
 #
@@ -563,6 +567,7 @@ AC_CHECK_FUNCS(
  memchr \
  memcpy \
  memset \
+ mktime \
  rindex \
  setlocale \
  setrlimit \
