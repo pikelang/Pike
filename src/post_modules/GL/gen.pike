@@ -425,7 +425,8 @@ string gen()
     res += "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
       prot[f]+")\", OPT_SIDE_EFFECT);\n";
   foreach(sort(indices(constants)), string co)
-    res += "  add_integer_constant(\""+co+"\", "+constants[co]+", 0);\n";
+    res += "  add_integer_constant(\""+co+"\", "+
+           (string)constants[co]+", 0);\n";
   res += "  post_init();\n";
   res += "}\n";
   return res;
