@@ -5383,6 +5383,9 @@ array(int) getgroups();<br>
 <man_description>
 Get the current supplemental group access list for this process.
 </man_description>
+<man_note>
+This function in not available in Pike 0.5 and earlier.
+</man_note>
 <man_see>
 initgroups, setgroups, getgid, setgid, getegid, setegid
 </man_see>
@@ -5648,6 +5651,9 @@ void getgroups(array(int) gids);<br>
 <man_description>
 Set the supplemental group access list for this process.
 </man_description>
+<man_note>
+This function is not available in Pike 0.5 and earlier.
+</man_note>
 <man_see>
 initgroups, getgroups, getgid, setgid, getegid, setegid
 </man_see>
