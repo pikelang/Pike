@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.71 2003/01/08 13:48:51 grubba Exp $
+|| $Id: stralloc.h,v 1.72 2003/02/08 03:44:32 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -117,29 +117,37 @@ struct shared_string_location
 
 extern struct shared_string_location *all_shared_string_locations;
 
-#define MAKE_CONSTANT_SHARED_STRING(var, text) do {	\
+#define MAKE_CONST_STRING(var, text) do {		\
   static struct shared_string_location str_;		\
   if(!str_.s) { 					\
-    str_.s=make_shared_binary_string((text),CONSTANT_STRLEN(text));			\
+    str_.s=make_shared_binary_string((text),CONSTANT_STRLEN(text)); \
     str_.next=all_shared_string_locations;		\
     all_shared_string_locations=&str_;			\
   }							\
- copy_shared_string((var),str_.s);			\
+  var = str_.s;						\
 }while(0)
-
 
 #else
 
 #define reference_shared_string(s) (s)->refs++
 #define copy_shared_string(to,s) ((to)=(s))->refs++
 
-#define MAKE_CONSTANT_SHARED_STRING(var, text)                                  \
+#define MAKE_CONST_STRING(var, text)						\
  do { static struct pike_string *str_;                                          \
     if(!str_) str_=make_shared_binary_string((text),CONSTANT_STRLEN(text));     \
-    copy_shared_string((var), str_);                                            \
+    var = str_;									\
  }while(0)
 
 #endif
+
+#define REF_MAKE_CONST_STRING(var, text) do {				\
+    MAKE_CONST_STRING(var, text);					\
+    reference_shared_string(var);					\
+  } while (0)
+
+/* Compatibility. */
+#define MAKE_CONSTANT_SHARED_STRING(var, text)				\
+  REF_MAKE_CONST_STRING(var, text)
 
 #define convert_0_to_0(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z))
 #define convert_1_to_1(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z)<<1)
