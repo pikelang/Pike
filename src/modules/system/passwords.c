@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.11 1998/04/16 22:56:52 grubba Exp $
+ * $Id: passwords.c,v 1.12 1998/04/19 15:02:44 marcus Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.11 1998/04/16 22:56:52 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.12 1998/04/19 15:02:44 marcus Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -274,6 +274,7 @@ void f_getpwent(INT32 args)
   THREADS_DISALLOW_UID();
   if(!foo)
   {
+    mt_unlock(&password_protection_mutex);
     push_int(0);
     return;
   }
