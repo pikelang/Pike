@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.99 2003/01/04 15:22:11 nilsson Exp $
+|| $Id: error.c,v 1.100 2003/01/05 00:58:02 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.99 2003/01/04 15:22:11 nilsson Exp $");
+RCSID("$Id: error.c,v 1.100 2003/01/05 00:58:02 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -813,9 +813,9 @@ PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expe
   char *msg;
   if(expected>args)
   {
-    msg="Too few arguments";
+    msg="Too few arguments.\n";
   }else{
-    msg="Too many arguments";
+    msg="Too many arguments.\n";
   }
 
   new_error(name, msg, Pike_sp-args, args, 0,0);
