@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.9 1997/05/22 16:17:20 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.10 1997/08/29 17:54:05 marcus Exp $");
 
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -135,6 +135,7 @@ struct pipe
   short done;
   struct input *firstinput,*lastinput;
   struct object *firstoutput;
+  unsigned long sent;
 };
 
 static int offset_input_read_callback;
@@ -559,6 +560,7 @@ static INLINE void output_try_write_some(struct object *obj)
       return;
     }
     out->pos+=ret;
+    THIS->sent+=ret;
 
 #ifdef INSISTANT_WRITE
   } while(ret == len);
@@ -851,6 +853,12 @@ static void pipe_start(INT32 args) /* force start */
     pop_n_elems(args-1);
 }
 
+static void f_bytes_sent(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->sent);
+}
+
 /********** callbacks *******************************************************/
 
 static void pipe_write_output_callback(INT32 args)
@@ -1036,6 +1044,7 @@ static void init_pipe_struct(struct object *o)
    THIS->id.type=T_INT;
    THIS->id.u.integer=0;
    THIS->living_outputs=0;
+   THIS->sent=0;
 }
 
 static void exit_pipe_struct(struct object *o)
@@ -1125,6 +1134,8 @@ void pike_module_init()
 
    add_function("version",pipe_version,"function(:string)",0);
    
+   add_function("bytes_sent",f_bytes_sent,"function(:int)",0);
+
    set_init_callback(init_pipe_struct);
    set_exit_callback(exit_pipe_struct);
    
