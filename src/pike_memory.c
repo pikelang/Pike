@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.30 1999/04/01 21:01:03 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.31 1999/05/08 00:58:57 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -575,7 +575,7 @@ char *debug_xalloc(long size)
   if(!size) return 0;
 
   ret=(char *)malloc(size);
-  if(ret) return ret;
+  if(ret || !size) return ret;
 
   error("Out of memory.\n");
   return 0;

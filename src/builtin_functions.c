@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.145 1999/03/25 16:16:49 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.146 1999/05/08 00:57:56 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2718,12 +2718,13 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
    stack = malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
 
-   if (!stack) error("diff_longest_sequence(): Out of memory\n");
+   if (!stack &&  cmptbl->size)
+     error("diff_longest_sequence(): Out of memory, tried to allocate %d bytes\n",sizeof(struct diff_magic_link*)*cmptbl->size);
 
    /* NB: marks is used for optimization purposes only */
    marks = calloc(blen,1);
 
-   if (!marks) {
+   if (!marks && blen) {
      free(stack);
      error("diff_longest_sequence(): Out of memory\n");
    }
@@ -2923,7 +2924,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   unsigned int l2 = 0;
 
   table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
-  if (!table) {
+  if (!table && off2) {
     error("diff_dyn_longest_sequence(): Out of memory");
   }
 
