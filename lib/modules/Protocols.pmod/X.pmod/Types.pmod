@@ -234,7 +234,7 @@ class Window
   object visual, colortable, parent;
   int currentInputMask;
 
-  mapping(string:function) event_callbacks = ([ ]);
+  mapping(string:array(function)) event_callbacks = ([ ]);
 
   int alt_gr, num_lock, shift, control, caps_lock;
   int meta, alt, super, hyper;
@@ -484,15 +484,18 @@ class Window
 
   void set_event_callback(string type, function f)
   {
-    event_callbacks[type] = f;
+    event_callbacks[type] = (event_callbacks[type] || ({ }) )
+      + ({ f });
   }
 
+#if 0
   function remove_event_callback(string type)
   {
     function f = event_callbacks[type];
     m_delete(event_callbacks, type);
   }
-
+#endif
+  
   object SelectInput_req()
   {
     object req = Requests.ChangeWindowAttributes();
@@ -526,6 +529,24 @@ class Window
 
     display->send_request(SelectInput_req());
     return currentInputMask;
+  }
+
+  object GrabButton_req(int button, int modifiers, array(string) types)
+  {
+    object req = Requests.GrabButton();
+    req->ownerEvents = 1;
+    req->grabWindow = id;
+    req->eventMask = event_mask_to_int(types);
+    req->button = button;
+    req->modifiers = modifiers || 0x8000;
+    
+    return req;
+  }
+
+  void GrabButton(int button, int modifiers, string ... types)
+  {
+    object req = GrabButton_req(button, modifiers, types);
+    display->send_request(req);
   }
 
   object Map_req()
