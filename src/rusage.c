@@ -4,7 +4,9 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/stat.h>
 #include "time_stuff.h"
 #include <fcntl.h>

@@ -77,7 +77,7 @@ char *MEMMOVE(char *b,const char *a,int s);
 #ifndef HAVE_MEMCMP
 int MEMCMP(const char *b,const char *a,int s);
 #else
-#  define MEMCMP memcmp
+#  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(char*)(Z))
 #endif
 
 #ifndef HAVE_MEMCHR

@@ -22,7 +22,10 @@
 #include "signal_handler.h"
 #include "pike_types.h"
 
+#ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
+#endif
+
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <errno.h>
@@ -48,6 +51,10 @@
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
+#endif
+
+#ifndef SEEK_SET
+#define SEEK_CUR 1
 #endif
 
 #ifndef SEEK_END

@@ -8,7 +8,9 @@
 #include "time_stuff.h"
 #include <ctype.h>
 #include <math.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <errno.h>
 #include <float.h>
 #include <string.h>

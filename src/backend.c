@@ -6,7 +6,9 @@
 #include "global.h"
 #include "backend.h"
 #include <errno.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/param.h>
 #include <string.h>
 #include "interpret.h"

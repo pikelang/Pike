@@ -16,6 +16,7 @@
 #include "object.h"
 #include "error.h"
 #include "pike_types.h"
+#include "memory.h"
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {

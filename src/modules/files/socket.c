@@ -17,7 +17,10 @@
 #include "file_machine.h"
 #include "file.h"
 
+#ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
+#endif
+
 #include <sys/param.h>
 #include <errno.h>
 #include <fcntl.h>

@@ -58,7 +58,7 @@
 #define SNAME(X,Y) { \
       struct X *oLd; \
       oLd=Y; Y=oLd->previous;
-#define SEND free(oLd); \
+#define SEND free((char *)oLd); \
     }
 #define PCODE(X) X
 #else

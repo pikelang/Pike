@@ -31,4 +31,10 @@
 
 #define FLOAT_TYPE float
 
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#undef HAVE_SYS_TYPES_H
+#endif
+
 #endif
