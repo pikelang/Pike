@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.8 1997/09/22 23:10:11 marcus Exp $
+ * $Id: module.pmod.in,v 1.9 1997/10/08 14:33:52 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -421,12 +421,12 @@ int|object reconstruct_partial(array(object) collection)
       }, parts)));
     foreach(indices(reconstructed->headers), string h) {
       if(h != "message-id" && h != "encrypted" && h != "mime-version" &&
-	 (strlen(h)<8 || h[0..7] != "content-"))
+	 h != "subject" && (strlen(h)<8 || h[0..7] != "content-"))
 	m_delete(reconstructed->headers, h);
     }
     foreach(indices(enclosing_headers), string h) {
       if(h != "message-id" && h != "encrypted" && h != "mime-version" &&
-	 (strlen(h)<8 || h[0..7] != "content-"))
+	 h != "subject" && (strlen(h)<8 || h[0..7] != "content-"))
 	reconstructed->headers[h] = enclosing_headers[h];
     }
     return reconstructed;
