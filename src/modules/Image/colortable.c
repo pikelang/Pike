@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.50 1999/03/19 11:11:36 hubbe Exp $ */
+/* $Id: colortable.c,v 1.51 1999/03/19 18:21:47 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.50 1999/03/19 11:11:36 hubbe Exp $
+**!	$Id: colortable.c,v 1.51 1999/03/19 18:21:47 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.50 1999/03/19 11:11:36 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.51 1999/03/19 18:21:47 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2233,7 +2233,7 @@ void image_colortable_reduce(INT32 args)
 void image_colortable_operator_plus(INT32 args)
 {
    struct object *o,*tmpo=NULL;
-   struct neo_colortable *dest,*src;
+   struct neo_colortable *dest,*src=NULL;
 
    int i;
 
@@ -2285,7 +2285,7 @@ void image_colortable_operator_plus(INT32 args)
 void image_colortable_operator_minus(INT32 args)
 {
    struct object *o;
-   struct neo_colortable *dest,*src;
+   struct neo_colortable *dest,*src=NULL;
 
    int i;
 
