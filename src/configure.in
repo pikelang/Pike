@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.194 1998/05/29 20:41:19 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.195 1998/06/02 17:16:59 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -290,6 +290,12 @@ if test $cflags_is_set = no; then
 
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-readonly_strings,readonly_strings,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-assume trusted_short_alignment,
+    assume_trusted_short_alignment,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-assume aligned_objects,
+    assume_aligned_objects,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-no_misalign,no_misalign,OPTIMIZE)
 
   if test "x$with_cdebug" = "xyes" ; then
     # FIXME:
