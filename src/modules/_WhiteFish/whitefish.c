@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.8 2001/05/23 11:48:40 per Exp $");
+RCSID("$Id: whitefish.c,v 1.9 2001/05/23 16:00:27 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -146,7 +146,7 @@ static void f_do_query_merge( INT32 args )
   for( i = 0; i<8; i++ )
     proximity_coefficients[i] = _prox->item[i].u.integer;
 
-  for( i = 0; i<48; i++ )
+  for( i = 0; i<68; i++ )
     field_coefficients[i] = _field->item[i].u.integer;
 
   push_object(low_do_query_merge(blobs,numblobs,
