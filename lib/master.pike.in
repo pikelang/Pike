@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.343 2004/04/17 16:28:53 marcus Exp $
+// $Id: master.pike.in,v 1.344 2004/04/17 19:33:20 marcus Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2001,17 +2001,36 @@ class CompatResolver
   //! are instantiated.
   static mapping(string:mixed) instantiate_static_modules(object|mapping static_modules)
   {
-    mapping(string:mixed) res = ([]);
+    mapping(string:mixed) res = ([]), joins = ([]);
     foreach(indices(static_modules), string name) {
       mixed val = static_modules[name];
       if (!val->_module_value)
 	val = val();
       if(mixed tmp=val->_module_value) val=tmp;
-      mapping(string:mixed) level = res;
-      string pfx;
-      while(2 == sscanf(name, "%s.%s", pfx, name))
-	level = (level[pfx] || (level[pfx] = ([])));
-      level[name] = val;
+      if(!has_value(name, '.'))
+	res[name] = val;
+      else {
+	mapping(string:mixed) level = joins;
+	string pfx;
+	while(2 == sscanf(name, "%s.%s", pfx, name))
+	  level = (level[pfx] || (level[pfx] = ([])));
+	level[name] = val;
+      }
+    }
+    joinnode joinify(mapping m)
+    {
+      foreach(m; string n; mixed v)
+	if(mappingp(v))
+	  m[n]=joinify(v);
+      return joinnode(({m}));
+    };
+    foreach(joins; string n; mixed v) {
+      if(mappingp(v))
+	v = joinify(v);
+      if(res[n])
+	res[n] = joinnode(({res[n], v}));
+      else
+	res[n] = v;
     }
     return res;
   }
