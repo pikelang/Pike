@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.290 2002/08/17 22:58:15 mast Exp $");
+RCSID("$Id: language.yacc,v 1.291 2002/08/27 12:37:09 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -134,6 +134,7 @@ RCSID("$Id: language.yacc,v 1.290 2002/08/17 22:58:15 mast Exp $");
 #include "main.h"
 #include "opcodes.h"
 #include "operators.h"
+#include "bignum.h"
 
 #define YYMAXDEPTH	1000
 
@@ -1344,14 +1345,32 @@ opt_int_range: /* Empty */
     INT32 max = MAX_INT32;
 
     /* FIXME: Check that $4 is >= $2. */
-    if($4->token == F_CONSTANT && $4->u.sval.type == T_INT)
-    {
-      max = $4->u.sval.u.integer;
+    if($4->token == F_CONSTANT) {
+      if ($4->u.sval.type == T_INT) {
+	max = $4->u.sval.u.integer;
+#ifdef AUTO_BIGNUM
+      } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
+	push_int(0);
+	if (is_lt(&$4->u.sval, Pike_sp-1)) {
+	  max = MIN_INT32;
+	}
+	pop_stack();
+#endif /* AUTO_BIGNUM */
+      }
     }
 
-    if($2->token == F_CONSTANT && $2->u.sval.type == T_INT)
-    {
-      min = $2->u.sval.u.integer;
+    if($2->token == F_CONSTANT) {
+      if ($2->u.sval.type == T_INT) {
+	min = $2->u.sval.u.integer;
+#ifdef AUTO_BIGNUM
+      } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
+	push_int(0);
+	if (is_lt(Pike_sp-1, &$4->u.sval)) {
+	  min = MAX_INT32;
+	}
+	pop_stack();
+#endif /* AUTO_BIGNUM */
+      }
     }
 
     push_int_type(min, max);
