@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.20 2000/08/08 11:10:24 grubba Exp $");
+RCSID("$Id: psd.c,v 1.21 2000/08/10 09:51:54 per Exp $");
 
 #include "image_machine.h"
 
@@ -381,7 +381,7 @@ static void f_decode_packbits_encoded(INT32 args)
 
 static void f_decode_image_channel( INT32 args )
 {
-  INT32 w, h, d;
+  INT_TYPE w, h, d;
   int y;
   struct pike_string *s;
   struct object *io;
@@ -415,7 +415,7 @@ static void f_decode_image_channel( INT32 args )
 
 static void f_decode_image_data( INT32 args )
 {
-  INT32 w, h, c, d, m;
+  INT_TYPE w, h, c, d, m;
   int y;
   struct pike_string *s, *ct;
   struct object *io;

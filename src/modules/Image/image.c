@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.172 2000/08/09 11:07:11 grubba Exp $ */
+/* $Id: image.c,v 1.173 2000/08/10 09:51:53 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.172 2000/08/09 11:07:11 grubba Exp $
+**!	$Id: image.c,v 1.173 2000/08/10 09:51:53 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.172 2000/08/09 11:07:11 grubba Exp $");
+RCSID("$Id: image.c,v 1.173 2000/08/10 09:51:53 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2389,11 +2389,11 @@ void image_invert(INT32 args)
 
 void image_threshold(INT32 args)
 {
-   INT32 x;
+   INT_TYPE x;
    rgb_group *s,*d,rgb;
    struct object *o;
    struct image *img;
-   int level=-1;
+   INT_TYPE level=-1;
 
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.85 2000/07/07 19:03:47 grubba Exp $
+ * $Id: system.c,v 1.86 2000/08/10 09:51:55 per Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.85 2000/07/07 19:03:47 grubba Exp $");
+RCSID("$Id: system.c,v 1.86 2000/08/10 09:51:55 per Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -354,7 +354,7 @@ void f_umask(INT32 args)
   VALID_FILE_IO("umask","status");
 
   if (args) {
-    int setmask;
+    INT_TYPE setmask;
     get_all_args("umask", args, "%d", &setmask);
     oldmask = umask(setmask);
   }
@@ -371,7 +371,7 @@ void f_umask(INT32 args)
 void f_chmod(INT32 args)
 {
   char *path;
-  int mode;
+  INT_TYPE mode;
   int err;
 
   VALID_FILE_IO("chmod","chmod");
@@ -392,8 +392,8 @@ void f_chmod(INT32 args)
 void f_chown(INT32 args)
 {
   char *path;
-  int uid;
-  int gid;
+  INT_TYPE uid;
+  INT_TYPE gid;
   int err;
 
 #ifdef PIKE_SECURITY
@@ -418,7 +418,7 @@ void f_chown(INT32 args)
 void f_utime(INT32 args)
 {
   char *path;
-  INT32 atime, mtime;
+  INT_TYPE atime, mtime;
   int err;
   /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
 #ifdef _UTIMBUF_DEFINED
@@ -453,7 +453,7 @@ void f_initgroups(INT32 args)
 {
   char *user;
   int err;
-  INT32 group;
+  INT_TYPE group;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -603,7 +603,7 @@ void f_innetgr(INT32 args)
 void f_setuid(INT32 args)
 {
   int err;
-  INT32 id;
+  INT_TYPE id;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -654,7 +654,7 @@ void f_setgid(INT32 args)
 /* int seteuid(int euid) */
 void f_seteuid(INT32 args)
 {
-  int id;
+  INT_TYPE id;
   int err;
 
 #ifdef PIKE_SECURITY
@@ -686,7 +686,7 @@ void f_seteuid(INT32 args)
 /* int setegid(int egid) */
 void f_setegid(INT32 args)
 {
-  int id;
+  INT_TYPE id;
   int err;
 
 #ifdef PIKE_SECURITY
@@ -748,7 +748,7 @@ void f_getpgrp(INT32 args)
 #ifdef HAVE_SETRESUID
 void f_setresuid(INT32 args)
 {
-  int ruid, euid,suid;
+  INT_TYPE ruid, euid,suid;
   int err;
 
 #ifdef PIKE_SECURITY
@@ -767,7 +767,7 @@ void f_setresuid(INT32 args)
 #ifdef HAVE_SETRESGID
 void f_setresgid(INT32 args)
 {
-  int rgid, egid,sgid;
+  INT_TYPE rgid, egid,sgid;
   int err;
 
 #ifdef PIKE_SECURITY

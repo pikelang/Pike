@@ -51,7 +51,7 @@ FUNCTION(point_in, "function(int,int:int)");
 NAME_ARGS(x,y);
 // Returns true if the given point resides in the given region
 {
-  int x, y;
+  INT_TYPE x, y;
   get_all_args( "point_in", args, "%d%d", &x, &y );
   my_pop_n_elems(args);
   push_int( gdk_region_point_in( (GdkRegion *)THIS->obj, x, y ) );
@@ -81,7 +81,7 @@ NAME_ARGS(dx,dy);
 RETURNS(GDK.Region);
 // Offset(move) the region by dx,dy pixels.
 {
-  int dx, dy;
+  INT_TYPE dx, dy;
   get_all_args( "offset", args, "%d%d", &dx, &dy );
   gdk_region_offset( (GdkRegion *)THIS->obj, dx, dy );
   RETURN_THIS();
@@ -96,7 +96,7 @@ RETURNS(GDK.Region);
 // specified amount.  Positive values shrink the size of the
 // region, and negative values expand the region.
 {
-  int dx, dy;
+  INT_TYPE dx, dy;
   get_all_args( "shrink", args, "%d%d", &dx, &dy );
   gdk_region_shrink( (GdkRegion *)THIS->obj, dx, dy );
   RETURN_THIS();

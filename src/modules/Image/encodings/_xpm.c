@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.13 2000/08/03 21:25:31 grubba Exp $");
+RCSID("$Id: _xpm.c,v 1.14 2000/08/10 09:51:54 per Exp $");
 
 #include "image_machine.h"
 
@@ -227,7 +227,7 @@ void f__xpm_write_rows( INT32 args )
   struct array *colors;
   struct image *iimg, *ialpha;
   rgb_group *dst, *adst;
-  int y,x,  bpc;
+  INT_TYPE y,x,  bpc;
 
   get_all_args("_xpm_write_rows",args,"%o%o%d%a%a",
                &img,&alpha,&bpc,&colors,&pixels);

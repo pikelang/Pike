@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.294 2000/08/02 20:31:51 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.295 2000/08/10 09:51:51 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -272,7 +272,7 @@ static struct case_info *find_ci_shift0(int c)
 
 PMOD_EXPORT void f_lower_case(INT32 args)
 {
-  INT32 i;
+  INT_TYPE i;
   struct pike_string *orig;
   struct pike_string *ret;
   get_all_args("lower_case", args, "%W", &orig);
@@ -311,7 +311,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
 PMOD_EXPORT void f_upper_case(INT32 args)
 {
-  INT32 i;
+  INT_TYPE i;
   struct pike_string *orig;
   struct pike_string *ret;
   int widen = 0;
@@ -397,7 +397,7 @@ PMOD_EXPORT void f_random(INT32 args)
 PMOD_EXPORT void f_random_string(INT32 args)
 {
   struct pike_string *ret;
-  INT32 e,len;
+  INT_TYPE len, e;
   get_all_args("random_string",args,"%i",&len);
   ret = begin_shared_string(len);
   for(e=0;e<len;e++) ret->str[e]=my_rand();
@@ -1588,7 +1588,7 @@ PMOD_EXPORT void f_time(INT32 args)
       tmp.tv_usec=0;
       my_subtract_timeval(&tmp,&current_time);
       pop_n_elems(args);
-      push_float( - (float)tmp.tv_sec - ((float)tmp.tv_usec)/1000000 );
+      push_float( - (FLOAT_TYPE)tmp.tv_sec-((FLOAT_TYPE)tmp.tv_usec)/1000000 );
       return;
     }
   }

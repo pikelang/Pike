@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.34 2000/08/09 17:42:13 grubba Exp $
+**!	$Id: colors.c,v 1.35 2000/08/10 09:51:53 per Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.34 2000/08/09 17:42:13 grubba Exp $");
+RCSID("$Id: colors.c,v 1.35 2000/08/10 09:51:53 per Exp $");
 
 #include "image_machine.h"
 
@@ -434,7 +434,7 @@ static void image_color_rgbf(INT32 args)
 
 static void image_color_greylevel(INT32 args)
 {
-   INT32 r,g,b;
+   INT_TYPE r,g,b;
    if (args==0)
    {
       r=87;
@@ -580,7 +580,7 @@ static void image_color_grey(INT32 args)
 static void image_color_hex(INT32 args)
 {
    char buf[80];
-   INT32 i=sizeof(COLORTYPE)*2;
+   INT_TYPE i=sizeof(COLORTYPE)*2;
 
    if (args)
       get_all_args("Image.Color.Color->hex()",args,"%i",&i);
@@ -1084,7 +1084,7 @@ static void image_color_bright(INT32 args)
 
 static void image_color_mult(INT32 args)
 {
-   float x=0.0;
+   FLOAT_TYPE x=0.0;
    get_all_args("Image.Color.Color->`*",args,"%f",&x);
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r*x),
@@ -1250,7 +1250,7 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].type==T_ARRAY &&
 	     sp[-1].u.array->size==3)
 	 {
-	    float h,s,v;
+            FLOAT_TYPE h,s,v;
 	    stack_swap();
 	    pop_stack();
 	    sp--;
@@ -1459,7 +1459,7 @@ void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 
 static void image_make_rgb_color(INT32 args)
 {
-   INT32 r=0,g=0,b=0;
+   INT_TYPE r=0,g=0,b=0;
 
    get_all_args("Image.Color.rgb()",args,"%i%i%i",&r,&g,&b);
 
@@ -1468,12 +1468,12 @@ static void image_make_rgb_color(INT32 args)
 
 static void image_make_hsv_color(INT32 args)
 {
-   double h,s,v;
-   double r=0,g=0,b=0; /* to avoid warning */
+   FLOAT_TYPE h,s,v;
+   FLOAT_TYPE r=0,g=0,b=0; /* to avoid warning */
 
    if (args && sp[-args].type==T_INT)
    {
-      INT32 hi,si,vi;
+      INT_TYPE hi,si,vi;
       get_all_args("Image.Color.hsv()",args,"%i%i%i",
 		   &hi,&si,&vi);
       pop_n_elems(args);
@@ -1530,7 +1530,7 @@ static void image_make_hsv_color(INT32 args)
 
 static void image_make_cmyk_color(INT32 args)
 {
-   float c,m,y,k,r,g,b;
+   FLOAT_TYPE c,m,y,k,r,g,b;
    get_all_args("Image.Color.cmyk()",args,"%F%F%F%F",&c,&m,&y,&k);
    pop_n_elems(args);
 
@@ -1543,7 +1543,7 @@ static void image_make_cmyk_color(INT32 args)
 
 static void image_make_greylevel_color(INT32 args)
 {
-   INT32 i;
+   INT_TYPE i;
 
    get_all_args("Image.Color.greylevel()",args,"%i",&i);
    pop_n_elems(args);

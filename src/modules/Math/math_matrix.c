@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.15 2000/08/09 19:04:07 grubba Exp $ */
+/* $Id: math_matrix.c,v 1.16 2000/08/10 09:51:54 per Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -384,7 +384,7 @@ void matrix_vect(INT32 args)
 void matrix__sprintf(INT32 args)
 {
    FTYPE *m=THIS->m;
-   int x,y,n=0;
+   INT_TYPE x,y,n=0;
    char buf[80]; /* no %6.6g is bigger */
 
    get_all_args("_sprintf",args,"%i",&x);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.253 2000/07/30 05:34:54 hubbe Exp $");
+RCSID("$Id: program.c,v 1.254 2000/08/10 09:51:52 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4015,7 +4015,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
   va_end(args);
 
   if(strlen(buf)>sizeof(buf))
-    fatal("Buffer overfloat in yywarning!\n");
+    fatal("Buffer overflow in yywarning!\n");
 
   if ((error_handler && error_handler->prog) || get_master()) {
     ref_push_string(lex.current_file);

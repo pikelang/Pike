@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.31 2000/08/10 07:46:36 grubba Exp $
+ * $Id: image_jpeg.c,v 1.32 2000/08/10 09:51:55 per Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.31 2000/08/10 07:46:36 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.32 2000/08/10 09:51:55 per Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -926,7 +926,7 @@ void image_jpeg_quant_tables(INT32 args)
 
    if (args)
    {
-      int q;
+      INT_TYPE q;
       get_all_args("Image.JPEG.quant_tables",args,"%i",&q);
       jpeg_set_quality(&cinfo,q,0);
    }

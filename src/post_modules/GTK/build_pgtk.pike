@@ -610,7 +610,7 @@ void do_default_sprintf( int args, int offset, int len )
       emit("/* "+oline+" */\n");
       emit_proto("void pgtk_"+progname+"_set_"+line+"(int args)\n");
       emit("{\n");
-      emit("  "+type+" to, old;\n");
+      emit("  "+(type=="int"?"INT_TYPE":"FLOAT_TYPE")+" to, old;\n");
       switch( type )
       {
        case "int":
@@ -829,14 +829,14 @@ void do_default_sprintf( int args, int offset, int len )
 	   argument_list += ", int"+(last_was_optional?"|void":"");
 	   fundef += ",mixed"+(last_was_optional?"|void":"");
 	   format_string += "%D";
-	   args += "  int arg"+na+(last_was_optional?" = 0":"")+";\n";
+	   args += "  INT_TYPE arg"+na+(last_was_optional?" = 0":"")+";\n";
 	   sargs += ", &arg"+na;
 	   break;
 	 case "intp":
 	   argument_list += ", int";
 	   fundef += ",mixed"+(last_was_optional?"|void":"");
 	   format_string += "%D";
-	   args += "  int _arg"+na+", *arg"+na+"=&_arg"+na+";\n";
+	   args += "  INT_TYPE _arg"+na+", *arg"+na+"=&_arg"+na+";\n";
 	   sargs += ", _arg"+na;
 	   break;
 	 case "?float":
@@ -845,7 +845,7 @@ void do_default_sprintf( int args, int offset, int len )
 	   argument_list += ", float"+(last_was_optional?"|void":"");
 	   fundef += ",mixed"+(last_was_optional?"|void":"");
 	   format_string += "%F";
-	   args += "  float arg"+na+(last_was_optional?" = 0.0;":"")+";\n";
+	   args += "  FLOAT_TYPE arg"+na+(last_was_optional?" = 0.0;":"")+";\n";
 	   sargs += ", &arg"+na;
 	   break;
 	 case "?string":
@@ -947,8 +947,8 @@ void do_default_sprintf( int args, int offset, int len )
       switch(rest)
       {
        case 0: srt = "object"; break;
-       case "float": srt="float"; emit("  float result;\n"); break;
-       case "int": srt="int";emit("  int result;\n"); break;
+       case "float": srt="float"; emit("  FLOAT_TYPE result;\n"); break;
+       case "int": srt="int";emit("  INT_TYPE result;\n"); break;
        case "string": srt="string"; emit("  gchar *result;\n"); break;
        default:
          emit("  void *result;  /* "+rest+" */\n");
@@ -1016,10 +1016,10 @@ void do_default_sprintf( int args, int offset, int len )
         switch(rest)
         {
          case "float":
-           emit( "  push_float( result );\n" );
+           emit( "  push_float( (FLOAT_TYPE)result );\n" );
            break;
          case "int":
-           emit( "  push_int( result );\n" );
+           emit( "  push_int( (INT_TYPE)result );\n" );
            break;
          case "void":
            emit( "  push_int( 0 );\n" );

@@ -42,7 +42,7 @@ ARGS(array(GTK.ListItem),int);
 NAME_ARGS(items,position);
 {
   struct array *a;
-  int p;
+  INT_TYPE p;
   GList *items = NULL;
   int i;
   get_all_args("insert_items", args, "%a%d", &a, &p);

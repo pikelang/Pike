@@ -13,7 +13,7 @@ NAME_ARGS(XWindowID|parent,void|atrributes);
   pgtk_verify_not_inited();
   if(Pike_sp[-args].type == PIKE_T_INT)
   {
-    int id;
+    INT_TYPE id;
     get_all_args( "GdkWindow", args, "%d", &id );
     THIS->obj = (void *)gdk_window_foreign_new( id );
     if( !THIS->obj )
@@ -139,7 +139,7 @@ NAME_ARGS(cursor_type);
 {
   GdkCursor *c;
   static GdkCursor *font_cursors[ 256 ];
-  int i;
+  INT_TYPE i;
 
   get_all_args("set_cursor", args, "%d", &i);
 
@@ -162,7 +162,7 @@ NAME_ARGS(source,mask,fg,bg,xhot,yhot);
 // upper left corner of the cursor image.
 {
   struct object *s, *m, *fg, *bg;
-  int xh, yh;
+  INT_TYPE xh, yh;
   get_all_args("set_bitmap_cursor", args, "%o%o%o%o%d%d",
 	       &s,&m,&fg,&bg,&xh,&yh);
   gdk_window_set_cursor(  (GdkWindow *)THIS->obj,
@@ -182,7 +182,7 @@ NAME_ARGS(mask,xoffset,yoffset);
 // the supplied bitmap.
 {
   struct object *m;
-  int x, y;
+  INT_TYPE x, y;
   get_all_args("shape_combine", args, "%o%d%d", &m, &x, &y);
   gdk_window_shape_combine_mask( (GdkWindow *)THIS->obj, get_gdkobject(m,Bitmap), x, y);
   RETURN_THIS();
@@ -275,7 +275,7 @@ NAME_ARGS(events);
 // GDK.ProximityOutMask and
 // GDK.AllEventsMask
 {
-  int a;
+  INT_TYPE a;
   get_all_args( "set_events", args, "%d", &a );
   gdk_window_set_events( (GdkWindow *)THIS->obj, a );
   RETURN_THIS();
@@ -341,7 +341,7 @@ NAME_ARGS(x,y,w,h);
 RETURNS(GDK.Window);
 // Move and resize the window in one call.
 {
-  gint x, y, w, h;
+  INT_TYPE x, y, w, h;
   get_all_args( "move_resize", args, "%d%d%d%d", &x, &y, &w, &h );
   gdk_window_move_resize( (GdkWindow *)THIS->obj, x,y,w,h );
   RETURN_THIS();
@@ -397,8 +397,8 @@ NAME_ARGS(property, offset, delete_when_done);
   GdkAtom actual_property_type;
   int actual_format_type, actual_length;
   struct object *o;
-  int offset = 0;
-  int delete_when_done = 0;
+  INT_TYPE offset = 0;
+  INT_TYPE delete_when_done = 0;
   if(args == 3)
     get_all_args( "get_property", args, "%o%d%d", &o, &offset, &delete_when_done );
   else if(args == 2)
@@ -455,7 +455,7 @@ RETURNS(GDK.Window);
 {
   struct object *o, *t;
   struct pike_string *s;
-  int m;
+  INT_TYPE m;
   get_all_args( "change_property", args, "%o%o%d%W", &o, &t, &m, &s );
 
   gdk_property_change( (GdkWindow*)THIS->obj, get_gdkatom( o ),

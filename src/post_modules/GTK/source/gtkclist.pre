@@ -142,7 +142,7 @@ FUNCTION(get_text, "function(int,int:string)");
 NAME_ARGS(row, column);
 // Return the text associated with a specific cell.
 {
-  int x, y;
+  INT_TYPE x, y;
   gchar *p = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
@@ -160,7 +160,7 @@ RETURNS(GTK.Clist);
 NAME_ARGS(row,column,image,mask);
 // Set the pixmap of the specified cell. The mask is optional
 {
-  int x, y;
+  INT_TYPE x, y;
   struct object *a, *b=0;
   GdkPixmap *img;
   GdkBitmap *mask = NULL;
@@ -181,7 +181,7 @@ FUNCTION(get_pixmap, "function(int,int:mapping)");
 NAME_ARGS(row, column);
 // Return the pixmap for the specified cell
 {
-  int x, y;
+  INT_TYPE x, y;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
@@ -214,10 +214,9 @@ NAME_ARGS(row,column,text,spacing,image,mask);
 // Set the pixmap and text of the specified cell. The mask is optional
 // The spacing is the number of pixels between the pixmap and the text.
 {
-  int x, y;
+  INT_TYPE x, y, s;
   struct object *a, *b=0;
   char *t;
-  int s;
   GdkPixmap *img;
   GdkBitmap *mask = NULL;
   if(args == 5)
@@ -238,11 +237,10 @@ NAME_ARGS(row, column);
 // Return the pixmap and text for the specified cell as a mapping:<br>
 // ([ "spacing":spacing, "text":text, "pixmap":pixmap ])
 {
-  int x, y;
+  INT_TYPE x, y, s;
   gchar *t = NULL;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
-  guint8 s = 0;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
   gtk_clist_get_pixtext( GTK_CLIST( THIS->obj ), x, y, &t, &s, &p, &b );
@@ -283,7 +281,7 @@ NAME_ARGS(row,color);
 // Set the foreground color of the specified row to the specified color
 {
   struct object *a;
-  int row;
+  INT_TYPE row;
   GdkColor *c;
   get_all_args( "set_foreground", args, "%d%o", &row, &a );
   c = get_gdkobject( a, Color );
@@ -299,7 +297,7 @@ NAME_ARGS(row,color);
 // Set the background color of the specified row the the specified color
 {
   struct object *a;
-  int row;
+  INT_TYPE row;
   GdkColor *c;
   get_all_args( "set_background", args, "%d%o", &row, &a );
   c = get_gdkobject( a, Color );
@@ -369,7 +367,7 @@ NAME_ARGS(row,data);
 // <p>
 // <b>You can only use objects as row data right now</b>
 {
-  int row;
+  INT_TYPE row;
   struct object *obj;
   get_all_args( "set_row_data", args, "%d%o", &row, &obj );
  add_ref(obj);
@@ -382,7 +380,7 @@ FUNCTION(get_row_data, "function(int:object)");
 NAME_ARGS(row);
 // Return the data associated with a row, or 0.
 {
-  int row;
+  INT_TYPE row;
   struct object *o;
   get_all_args( "get_row_data", args, "%d", &row );
 
@@ -427,7 +425,7 @@ RETURNS(mapping(string:int));
 // the returned values are only valid if the x and y coordinates
 // are relative to the clist window coordinates
 {
-  int r=-1, c=-1, x, y;
+  INT_TYPE r=-1, c=-1, x, y;
   get_all_args( "get_selection_info", args, "%d%d", &x, &y );
   gtk_clist_get_selection_info( GTK_CLIST( THIS->obj ), x, y, &r, &c );
 
@@ -456,7 +454,7 @@ NAME_ARGS(row);
   GtkCListRow *clist_row;
   GtkCList *clist = GTK_CLIST( THIS->obj );
   GtkStyle *style;
-  int row;
+  INT_TYPE row;
   get_all_args("get_foreground", args, "%d", &row );
   my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
@@ -486,7 +484,7 @@ NAME_ARGS(row);
   GtkCListRow *clist_row;
   GtkCList *clist = GTK_CLIST( THIS->obj );
   GtkStyle *style;
-  int row;
+  INT_TYPE row;
   get_all_args("get_background", args, "%d", &row );
   my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)

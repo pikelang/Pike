@@ -24,10 +24,10 @@ NAME_ARGS(widget,signal,key,modifiers,flags);
 // CONST(_MASK). Flags is one or more of CONST(GTK_ACCEL)
 {
   struct object *o;
-  int k;
+  INT_TYPE k;
   char *sig;
-  int mods;
-  int flags;
+  INT_TYPE mods;
+  INT_TYPE flags;
   get_all_args("add_accel", args, "%o%s%d%d", &o, &sig, &k, &mods, &flags );
   gtk_accel_group_add((void *)THIS->obj, k, mods, flags,
                       get_gtkobject( o ), sig );
@@ -40,7 +40,7 @@ RETURNS(GTK.AccelGroup);
 // Remove all bindings for the specified key/mask in the specified object.
 {
   struct object *o;
-  int k, mods;
+  INT_TYPE k, mods;
   get_all_args("remove", args, "%o%d%d", &o, &k, &mods );
   gtk_accel_group_remove((void *)THIS->obj, k,mods, get_gtkobject( o ));
   RETURN_THIS();

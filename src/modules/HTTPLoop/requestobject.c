@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.11 2000/08/09 11:04:18 grubba Exp $
+ * $Id: requestobject.c,v 1.12 2000/08/10 09:51:53 per Exp $
  */
 
 #include "global.h"
@@ -1018,7 +1018,7 @@ void f_aap_reply_with_cache(INT32 args)
 {
   struct cache_entry *ce;
   struct pike_string *reply;
-  int time_to_keep, t, freed=0;
+  INT_TYPE time_to_keep, t, freed=0;
   if(!THIS->request)
     error("Reply already called.\n");
 

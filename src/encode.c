@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.63 2000/08/10 09:01:00 grubba Exp $");
+RCSID("$Id: encode.c,v 1.64 2000/08/10 09:51:51 per Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -64,7 +64,7 @@ double FREXP(double x, int *exp)
 {
   double ret;
   *exp=(int)ceil(log(fabs(x))/log(2.0));
-  ret=(x*pow(2.0,(float)-*exp));
+  ret=(x*pow(2.0,(FLOAT_TYPE)-*exp));
   return ret;
 }
 #endif

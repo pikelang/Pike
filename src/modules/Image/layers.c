@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.52 2000/08/07 09:49:45 grubba Exp $
+**!	$Id: layers.c,v 1.53 2000/08/10 09:51:54 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.52 2000/08/07 09:49:45 grubba Exp $");
+RCSID("$Id: layers.c,v 1.53 2000/08/10 09:51:54 per Exp $");
 
 #include "image_machine.h"
 
@@ -268,10 +268,10 @@ typedef void lm_row_func(rgb_group *s,
 
 struct layer
 {
-   int xsize;            /* underlaying image size */
-   int ysize;
+   INT_TYPE xsize;            /* underlaying image size */
+   INT_TYPE ysize;
 
-   int xoffs,yoffs;      /* clip offset */
+   INT_TYPE xoffs,yoffs;      /* clip offset */
 
    struct object *image; /* image object */
    struct object *alpha; /* alpha object or null */
@@ -279,7 +279,7 @@ struct layer
    struct image *img;    /* image object storage */
    struct image *alp;    /* alpha object storage */
 
-   double alpha_value;    /* overall alpha value (1.0=opaque) */
+   FLOAT_TYPE alpha_value;    /* overall alpha value (1.0=opaque) */
 
    rgb_group fill;       /* fill color ("outside" the layer) */
    rgb_group fill_alpha; /* fill alpha */
@@ -287,11 +287,11 @@ struct layer
    rgb_group sfill[SNUMPIXS];       /* pre-calculated rows */
    rgb_group sfill_alpha[SNUMPIXS];
 
-   int tiled;            /* true if tiled */
+   INT_TYPE tiled;            /* true if tiled */
 
    lm_row_func *row_func;/* layer mode */
-   int optimize_alpha;
-   int really_optimize_alpha;
+   INT_TYPE optimize_alpha;
+   INT_TYPE really_optimize_alpha;
 
    struct mapping     *misc; /* Misc associated data. Added by per,
                                 rather useful for some things... */
@@ -856,7 +856,7 @@ static void image_layer_alpha(INT32 args)
 
 static void image_layer_set_alpha_value(INT32 args)
 {
-   float f;
+   FLOAT_TYPE f;
    get_all_args("Image.Layer->set_alpha_value",args,"%F",&f);
    if (f<0.0 || f>1.0)
       SIMPLE_BAD_ARG_ERROR("Image.Layer->set_alpha_value",1,"float(0..1)");
@@ -2559,8 +2559,7 @@ void image_lay(INT32 args)
    struct object *o;
    struct layer *dest;
    struct array *a;
-   int gotoffs;
-   int xoffset=0,yoffset=0,xsize=0,ysize=0;
+   INT_TYPE xoffset=0,yoffset=0,xsize=0,ysize=0;
 
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.lay",1);
@@ -2731,7 +2730,7 @@ static void image_layer_clone(INT32 args)
 static void image_layer_crop(INT32 args)
 {
    struct layer *l;
-   int x,y,xz,yz,xi,yi;
+   INT_TYPE x,y,xz,yz,xi,yi;
    int zot=0;
    struct image *img;
 
@@ -2837,8 +2836,8 @@ static void image_layer_crop(INT32 args)
 
 static void image_layer_find_autocrop(INT32 args)
 {
-   int x1=0,y1=0,x2=THIS->xsize-1,y2=THIS->ysize-1;
-   int l=1,r=1,t=1,b=1;
+   INT_TYPE x1=0,y1=0,x2=THIS->xsize-1,y2=THIS->ysize-1;
+   INT_TYPE l=1,r=1,t=1,b=1;
 
    if (args>3)
       get_all_args("find_autocrop",args,"%d%d%d%d",&l,&r,&t,&b);

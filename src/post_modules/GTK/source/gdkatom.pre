@@ -7,7 +7,7 @@ NAME_ARGS(atom_name, only_if_exists);
 // function directly. Use GDK.Atom[name] instead of GDK._Atom(name,0).
 {
   char *atom_name;
-  int only_if_exists;
+  INT_TYPE only_if_exists;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   get_all_args("GDK.Atom( string, int )",args,"%s%d",&atom_name,&only_if_exists);

@@ -32,7 +32,7 @@ NAME_ARGS(icon_width,flags);
 // "text_changed" signal will be emitted when an icon's text is
 // changed.
 {
-  int a, b;
+  INT_TYPE a, b;
   get_all_args( "create", args, "%d%d", &a, &b );
   pgtk_verify_gnome_setup();
   pgtk_verify_not_inited();
@@ -128,7 +128,7 @@ NAME_ARGS(icon,data);
 // <p>
 // <b>You can only use objects as icon data right now</b>
 {
-  int row;
+  INT_TYPE row;
   struct object *obj;
   get_all_args( "set_icon_data", args, "%d%o", &row, &obj );
   add_ref(obj);
@@ -141,7 +141,7 @@ FUNCTION(get_icon_data, "function(int:object)");
 NAME_ARGS(icon);
 // Return the data associated with a icon, or 0.
 {
-  int row;
+  INT_TYPE row;
   struct object *o;
   get_all_args( "get_row_data", args, "%d", &row );
 
@@ -156,7 +156,7 @@ NAME_ARGS(data);
 // Find a icon in the list that has the given user data.  If no icon is
 // found, -1 is returned.
 {
-  int row;
+  INT_TYPE row;
   struct object *o;
   get_all_args( "find_icon_from_data", args, "%o", &o );
   row = gnome_icon_list_find_icon_from_data( GNOME_ICON_LIST( THIS->obj ), o );

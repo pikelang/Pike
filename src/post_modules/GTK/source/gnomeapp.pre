@@ -227,7 +227,7 @@ RETURNS(Gnome.AppProgressKey);
 {
   struct signal_data * d  = malloc( sizeof(struct signal_data) );
   char *message;
-  int interval;
+  INT_TYPE interval;
   GnomeAppProgressKey k;
   struct object *res;
   get_all_args( "progress_timeout", args, "%s%d%*%*",

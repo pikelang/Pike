@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.133 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.134 2000/08/10 09:51:52 per Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -852,7 +852,7 @@ void f_mutex_trylock(INT32 args)
 {
   struct mutex_storage  *m;
   struct object *o;
-  int type;
+  INT_TYPE type;
   int i=0;
 
   /* No reason to release the interpreter lock here

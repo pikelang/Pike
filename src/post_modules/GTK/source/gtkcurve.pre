@@ -8,7 +8,7 @@ void set_range( float min_x, float max_x, float min_y, float max_y );
 FUNCTION(get_vector, "function(int:array(float))");
 NAME_ARGS(num_points);
 {
-  int num_points, q=0;
+  INT_TYPE num_points, q=0;
   gfloat *vector;
   get_all_args("get_vector", args, "%d", &num_points);
   my_pop_n_elems(args);

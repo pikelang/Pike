@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.5 2000/08/09 13:23:17 grubba Exp $
+ * $Id: nt.c,v 1.6 2000/08/10 09:51:55 per Exp $
  *
  * NT crypto stuff for Pike
  */
@@ -77,7 +77,7 @@ static void f_CryptGenRandom(INT32 args)
 static void f_CryptAcquireContext(INT32 args)
 {
   char *str1=NULL, *str2=NULL;
-  INT32 typ, flags, fake1, fake2;
+  INT_TYPE typ, flags, fake1, fake2;
   int nullflag=0;
   HCRYPTPROV prov;
 

@@ -31,7 +31,7 @@ RETURNS(GTK.Menu);
 NAME_ARGS(button_pressed_to_show_menu);
 // The default button is 3.
 {
-  int button = 3;
+  INT_TYPE button = 3;
   if( args )
     get_all_args( "popup", args, "%d", &button );
   gtk_menu_popup(GTK_MENU(THIS->obj), NULL,NULL,NULL,NULL, button, time(0));

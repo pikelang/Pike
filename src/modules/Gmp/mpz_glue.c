@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.80 2000/08/08 10:39:37 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.81 2000/08/10 09:51:52 per Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1120,7 +1120,7 @@ CMPEQU(mpzmod_nq, !=, 1)
 
 static void mpzmod_probably_prime_p(INT32 args)
 {
-  int count;
+  INT_TYPE count;
   if (args)
   {
     get_all_args("Gmp.mpz->probably_prime_p", args, "%i", &count);
@@ -1135,7 +1135,7 @@ static void mpzmod_probably_prime_p(INT32 args)
 
 static void mpzmod_small_factor(INT32 args)
 {
-  int limit;
+  INT_TYPE limit;
 
   if (args)
     {
@@ -1151,8 +1151,8 @@ static void mpzmod_small_factor(INT32 args)
 
 static void mpzmod_next_prime(INT32 args)
 {
-  INT32 count = 25;
-  INT32 limit = INT_MAX;
+  INT_TYPE count = 25;
+  INT_TYPE limit = INT_MAX;
   struct object *o;
 
   switch(args)

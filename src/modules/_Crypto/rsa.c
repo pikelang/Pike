@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.22 2000/07/28 07:15:16 hubbe Exp $
+ * $Id: rsa.c,v 1.23 2000/08/10 09:51:55 per Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -34,7 +34,7 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-RCSID("$Id: rsa.c,v 1.22 2000/07/28 07:15:16 hubbe Exp $");
+RCSID("$Id: rsa.c,v 1.23 2000/08/10 09:51:55 per Exp $");
 
 struct pike_rsa_data
 {
@@ -419,7 +419,7 @@ static void f_rsa_pad(INT32 args)
 /* string low_unpad(string block, int type) */
 static void f_low_unpad(INT32 args)
 {
-  INT32 type;
+  INT_TYPE type;
   int i = 0;
   struct pike_string *block = NULL;
   struct pike_string *res;
@@ -459,7 +459,7 @@ static void f_low_unpad(INT32 args)
 static void f_rsa_unpad(INT32 args)
 {
   struct object *block = NULL;
-  INT32 type;
+  INT_TYPE type;
   int i;
   struct pike_string *res;
 

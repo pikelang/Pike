@@ -23,7 +23,7 @@
 /* This must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: gettext.c,v 1.4 2000/07/28 07:12:00 hubbe Exp $");
+RCSID("$Id: gettext.c,v 1.5 2000/08/10 09:51:52 per Exp $");
 
 /*
 **! module Locale.Gettext
@@ -31,7 +31,7 @@ RCSID("$Id: gettext.c,v 1.4 2000/07/28 07:12:00 hubbe Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.4 2000/07/28 07:12:00 hubbe Exp $
+**!	$Id: gettext.c,v 1.5 2000/08/10 09:51:52 per Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -108,7 +108,7 @@ void f_dcgettext(INT32 args)
 {
   char *translated;
   struct pike_string *domain, *msg;
-  int category;
+  INT_TYPE category;
   get_all_args("Gettext.dcgettext", args, "%S%S%d", &domain, &msg, &category);
 
   translated = dcgettext(domain->str, msg->str, category);
@@ -257,7 +257,7 @@ void f_setlocale(INT32 args)
 {
   char *returnstring;
   struct pike_string *locale;
-  int category;
+  INT_TYPE category;
   get_all_args("Gettext.setlocale", args, "%d%S", &category, &locale);
 
   fprintf(stderr, "locale: %s, category: %d\n", locale->str, category);

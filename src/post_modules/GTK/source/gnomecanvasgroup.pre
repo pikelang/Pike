@@ -6,7 +6,7 @@ FUNCTION(create, "function(object,float,float:void)");
 NAME_ARGS(parent,x,y);
 {
   gdouble _x, _y;
-  float x, y;
+  FLOAT_TYPE x, y;
   struct object *o;
   get_all_args( "create", args, "%O%f%f", &o, &x, &y );
   pgtk_verify_gnome_setup();

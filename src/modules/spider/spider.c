@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.96 2000/08/09 21:22:54 grubba Exp $");
+RCSID("$Id: spider.c,v 1.97 2000/08/10 09:51:55 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1098,11 +1098,11 @@ struct thread_args
   struct thread_args *next;
   struct object *from;
   struct object *to;
-  int to_fd, from_fd;
+  INT_TYPE to_fd, from_fd;
   struct svalue cb;
   struct svalue args;
-  int len;
-  int sent;
+  INT_TYPE len;
+  INT_TYPE sent;
   char buffer[BUFFER];
 };
 

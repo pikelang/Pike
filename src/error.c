@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.56 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: error.c,v 1.57 2000/08/10 09:51:51 per Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -332,7 +332,7 @@ void f_error_cast(INT32 args)
 
 void f_error_index(INT32 args)
 {
-  int ind;
+  INT_TYPE ind;
   get_all_args("error->`[]",args,"%i",&ind);
 
   switch(ind)

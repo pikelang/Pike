@@ -166,7 +166,7 @@ NAME_ARGS(gc,xdest,ydest,source,xsource,ysource,width,height);
 {
   struct object *gc, *source;
   GdkWindow *win;
-  int xd, yd, xs, ys, w, h;
+  INT_TYPE xd, yd, xs, ys, w, h;
   get_all_args("copy_area",args, "%o%d%d%o%d%d%d%d",
 	       &gc, &xd, &yd, &source, &xs, &ys, &w, &h);
 
@@ -208,7 +208,7 @@ NAME_ARGS(shape, xoffset,yoffset);
 // <br>NOTE: The widget must be realized before this function can be used
 {
   struct object *m;
-  int x, y;
+  INT_TYPE x, y;
   get_all_args("shape_combine", args, "%o%d%d", &m, &x, &y);
   gtk_widget_shape_combine_mask( GTK_WIDGET( THIS->obj ),
 				 get_gdkobject(m,Bitmap), x, y);
@@ -395,7 +395,7 @@ NAME_ARGS(cursor_type, fg, bg);
 {
   GdkCursor *c;
   struct object *fg = NULL, *bg = NULL;
-  int i;
+  INT_TYPE i;
 
   if(!args)
     i = -1;
@@ -444,7 +444,7 @@ NAME_ARGS(source,mask,fg,bg,xhot,yhot);
 // Both bitmaps and both colors must be non-null.
 {
   struct object *s, *m, *fg, *bg;
-  int xh, yh;
+  INT_TYPE xh, yh;
   get_all_args("set_bitmap_cursor", args, "%o%o%o%o%d%d",
 	       &s,&m,&fg,&bg,&xh,&yh);
   gdk_window_set_cursor( TWIN,
@@ -684,7 +684,7 @@ NAME_ARGS(flags,targets,actions);
 //   results:
 RETURNS(GTK.Widget);
 {
-  int i, f, j;
+  INT_TYPE i, f, j;
   struct array *a;
   GtkTargetEntry *entries = NULL;
   get_all_args( "drag_dest_set", args, "%d%a%d", &i, &a, &f );
@@ -726,7 +726,7 @@ NAME_ARGS(flags,targets,actions);
 //   results:
 RETURNS(GTK.Widget);
 {
-  int i, f, j;
+  INT_TYPE i, f, j;
   struct array *a;
   GtkTargetEntry *entries = NULL;
   get_all_args( "drag_source_set", args, "%d%a%d", &i, &a, &f );
@@ -802,7 +802,7 @@ RETURNS(GTK.Widget);
 ARGS(GDK.DragContext,int);
 NAME_ARGS(context,time);
 {
-  int t;
+  INT_TYPE t;
   struct object *_ctx;
   GdkDragContext *ctx;
   get_all_args( "drag_get_data", args, "%o%d", &_ctx, &t );

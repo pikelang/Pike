@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.173 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.174 2000/08/10 09:51:52 per Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1597,7 +1597,7 @@ static int set_priority( int pid, char *to )
 
 void f_set_priority( INT32 args )
 {
-  int pid;
+  INT_TYPE pid;
   char *plevel;
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))

@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.29 2000/08/07 18:45:36 grubba Exp $
+ * $Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.29 2000/08/07 18:45:36 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -221,7 +221,7 @@ void push_grent(struct group *ent)
 /* array getgrgid(int gid) */
 void f_getgrgid(INT32 args)
 {
-  int gid;
+  INT_TYPE gid;
   struct group *foo;
   get_all_args("getgrgid", args, "%d", &gid);
 
@@ -283,7 +283,7 @@ void f_getpwnam(INT32 args)
 /* array getpwuid(int uid) */
 void f_getpwuid(INT32 args)
 {
-  int uid;
+  INT_TYPE uid;
   struct passwd *foo;
   
   get_all_args("getpwuid", args, "%i", &uid);

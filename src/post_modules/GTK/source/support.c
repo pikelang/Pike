@@ -136,7 +136,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 {
   GdkColormap *col = gdk_colormap_get_system();
   GdkVisual *vis = gdk_visual_get_system();
-  int x, y;
+  INT_TYPE x, y;
 
   /* 1a: create the actual image... */
   TIMER_INIT("Getting extents");

@@ -29,7 +29,7 @@ NAME_ARGS(gc,xdest,ydest,source,xsource,ysource,width,height);
 {
   struct object *gc, *source;
   GdkWindow *win;
-  int xd, yd, xs, ys, w, h;
+  INT_TYPE xd, yd, xs, ys, w, h;
   get_all_args("copy_area",args, "%o%d%d%o%d%d%d%d",
 	       &gc, &xd, &yd, &source, &xs, &ys, &w, &h);
 
@@ -47,7 +47,7 @@ NAME_ARGS(x,y,width,height);
 // Either clears the rectangle defined by the arguments, of if no
 // arguments are specified, the whole drawable.
 {
-  int x=0, y=0, w=0, h=0;
+  INT_TYPE x=0, y=0, w=0, h=0;
   if(args==4)
     get_all_args("clear", args, "%d%d%d%d", &x, &y, &w, &h);
 
@@ -69,7 +69,7 @@ NAME_ARGS(gc,x,y);
 // img_end
 {
   struct object *g;
-  int x, y;
+  INT_TYPE x, y;
   get_all_args("draw_point", args, "%o%d%d", &g, &x, &y);
 
   gdk_draw_point( TWIN, GC(g), x, y );
@@ -85,7 +85,7 @@ NAME_ARGS(gc,x1,y1,x2,y2);
 // img_end
 {
   struct object *g;
-  int x, y, x2, y2;
+  INT_TYPE x, y, x2, y2;
   get_all_args("draw_line", args, "%o%d%d%d%d", &g, &x, &y, &x2, &y2);
 
   gdk_draw_line( TWIN, GC(g), x, y, x2, y2 );
@@ -110,7 +110,7 @@ NAME_ARGS(gc,filledp,x1,y1,x2,y2);
 // img_end
 {
   struct object *g;
-  int f, x, y, x2, y2;
+  INT_TYPE f, x, y, x2, y2;
   get_all_args("draw_rectangle",args, "%o%d%d%d%d%d",&g, &f, &x, &y, &x2, &y2);
   gdk_draw_rectangle( TWIN, GC(g), f, x, y, x2, y2 );
   RETURN_THIS();
@@ -128,7 +128,7 @@ NAME_ARGS(gc,filledp,x1,y1,x2,y2,angle1,angle2);
 // it is truncated to 360 degrees.
 {
   struct object *g;
-  int f, x, y, x2, y2, a1, a2;
+  INT_TYPE f, x, y, x2, y2, a1, a2;
   get_all_args("draw_arc",args, "%o%d%d%d%d%d%d%d",&g, &f, &x, &y, &x2, &y2,
 	       &a1, &a2);
   gdk_draw_arc( TWIN, GC(g), f, x, y, x2, y2, a1, a2 );
@@ -143,7 +143,7 @@ NAME_ARGS(gc,font,x,y,text,forcewide);
 // using either unicode or some other 16 bit font.
 {
   struct object *g,*f;
-  int x, y, force_wide=0;
+  INT_TYPE x, y, force_wide=0;
   struct pike_string *s;
   char *swapped;
   get_all_args("draw_text",args, "%o%o%d%d%W",&g,&f,  &x, &y, &s);
@@ -166,7 +166,7 @@ NAME_ARGS(gc,pixmap,xsrc,ysrc,xdest,ydest,width,height);
 // GDK(Pixmap) at xdest,ydest in the destination drawable
 {
   struct object *g, *p;
-  int xs, ys, xd, yd, w, h;
+  INT_TYPE xs, ys, xd, yd, w, h;
   get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
 	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
   gdk_draw_pixmap(TWIN,GC(g),get_gdkobject(p,Drawable),xs,ys,xd,yd,w,h);
@@ -181,7 +181,7 @@ NAME_ARGS(gc,bitmap,xsrc,ysrc,xdest,ydest,width,height);
 // fixed in GTK 1.3
 {
   struct object *g, *p;
-  int xs, ys, xd, yd, w, h;
+  INT_TYPE xs, ys, xd, yd, w, h;
   get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
 	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
   /* Hm. gdk_draw_bitmap does not exist? Not that it matters. */
@@ -202,7 +202,7 @@ NAME_ARGS(gc,image,xsrc,ysrc,xdest,ydest,width,height);
 // GDK(Image) at xdest,ydest in the destination drawable
 {
   struct object *g, *p;
-  int xs, ys, xd, yd, w, h;
+  INT_TYPE xs, ys, xd, yd, w, h;
   get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
 	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
   gdk_draw_image(TWIN,GC(g),get_gdkobject(p,Image),xs,ys,xd,yd,w,h);

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.96 2000/08/09 15:07:34 grubba Exp $");
+RCSID("$Id: operators.c,v 1.97 2000/08/10 09:51:51 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2483,7 +2483,7 @@ struct program *string_assignment_program;
 #define THIS ((struct string_assignment_storage *)(CURRENT_STORAGE))
 static void f_string_assignment_index(INT32 args)
 {
-  INT32 i;
+  INT_TYPE i;
   get_all_args("string[]",args,"%i",&i);
   if(i<0) i+=THIS->s->len;
   if(i<0)
@@ -2498,7 +2498,7 @@ static void f_string_assignment_index(INT32 args)
 
 static void f_string_assignment_assign_index(INT32 args)
 {
-  INT32 i,j;
+  INT_TYPE i,j;
   union anything *u;
   get_all_args("string[]=",args,"%i%i",&i,&j);
   if((u=get_pointer_if_this_type(THIS->lval, T_STRING)))

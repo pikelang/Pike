@@ -574,8 +574,8 @@ static void f_accept_with_http_parse(INT32 nargs)
     struct svalue accept_callback;
     struct svalue id;
   };
-  int ms, dolog;
-  int to;
+  INT_TYPE ms, dolog;
+  INT_TYPE to;
   struct object *port;
   struct svalue *fun, *cb, *program;
   struct cache *c;
@@ -654,7 +654,7 @@ static void f_cache_status(INT32 args)
 
 void f_aap_add_filesystem( INT32 args )
 {
-  int nosyms = 0;
+  INT_TYPE nosyms = 0;
   struct pike_string *basedir, *mountpoint;
   struct array *noparse;
   struct pstring **skip_extensions;

@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.8 1998/09/17 21:48:09 grubba Exp $
+ * $Id: syslog.c,v 1.9 2000/08/10 09:51:55 per Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.8 1998/09/17 21:48:09 grubba Exp $");
+RCSID("$Id: syslog.c,v 1.9 2000/08/10 09:51:55 per Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -106,8 +106,8 @@ RCSID("$Id: syslog.c,v 1.8 1998/09/17 21:48:09 grubba Exp $");
 void f_openlog(INT32 args)
 {
   char *ident;
-  int p_option, p_facility;
-  int option=0, facility=0;
+  INT_TYPE p_option, p_facility;
+  INT_TYPE option=0, facility=0;
 
   get_all_args("openlog", args, "%s%i%i", &ident, &p_option, &p_facility);
 
@@ -153,7 +153,7 @@ void f_openlog(INT32 args)
 void f_syslog(INT32 args)
 {
   struct pike_string *s;
-  int pri=0, i;
+  INT_TYPE pri=0, i;
   char *message;
 
   get_all_args("syslog", args, "%i%S", &i, &s);

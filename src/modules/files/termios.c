@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.8 2000/07/11 19:06:26 neotron Exp $");
+RCSID("$Id: termios.c,v 1.9 2000/08/10 09:51:55 per Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -342,7 +342,7 @@ void file_tcflush(INT32 args)
 
 void file_tcsendbreak(INT32 args)
 {
-  int len=0;
+  INT_TYPE len=0;
 
   get_all_args("tcsendbreak", args, "%d", &len);
   pop_stack();

@@ -89,7 +89,7 @@ NAME_ARGS(widget,xoffset,yoffset,width,height);
 {
   GdkWindow *win = NULL;
   struct object *o;
-  int x, y, w, h;
+  INT_TYPE x, y, w, h;
 
   get_all_args("grab", args, "%o%d%d%d%d", &o, &x, &y, &w, &h);
 
@@ -124,7 +124,7 @@ NAME_ARGS(image|xsize,void|ysize);
     THIS->obj = (void *)gdkimage_from_pikeimage( img, THIS->extra_int,
 						 (void *)THIS->obj );
   } else {
-    int x, y;
+    INT_TYPE x, y;
     get_all_args("gdkImage", args, "%d%d", &x, &y);
     if(THIS->obj)
       gdk_image_destroy( (void *)THIS->obj );
@@ -143,7 +143,7 @@ NAME_ARGS(x,y);
 // It is usualy not very easy to convert this value to a
 // rgb triple. See get_pnm.
 {
-  int x, y;
+  INT_TYPE x, y;
   get_all_args("get_pixel", args, "%d%d", &x, &y);
   if(!THIS->obj) error("No image.\n");
   my_pop_n_elems(args);
@@ -156,7 +156,7 @@ NAME_ARGS(x,y,pixel);
 // is a X-pixel value, which is not easily gotten from a RGB color.
 // See get_pixel and set.
 {
-  int x, y, to;
+  INT_TYPE x, y, to;
   get_all_args("set_pixel", args, "%d%d%d", &x, &y, &to);
   if(!THIS->obj) error("No image.\n");
   gdk_image_put_pixel( (void *)THIS->obj, x, y, to );

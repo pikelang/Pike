@@ -111,7 +111,7 @@ ARGS(int,GDK.Color);
 NAME_ARGS(index,color);
 // Set the color to use to mark dates
 {
-  int n;
+  INT_TYPE n;
   struct object *o;
   get_all_args( "set_marked_date_color", args, "%d%o", &n, &o );
   if(!get_gdkobject(o, Color))

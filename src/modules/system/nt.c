@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.20 2000/07/03 19:33:08 grubba Exp $
+ * $Id: nt.c,v 1.21 2000/08/10 09:51:55 per Exp $
  *
  * NT system calls for Pike
  *
@@ -129,7 +129,7 @@ static void do_regclosekey(HKEY key)
 
 void f_RegGetKeyNames(INT32 args)
 {
-  INT32 hkey;
+  INT_TYPE hkey;
   char *key;
   int i,ret;
   HKEY new_key;
@@ -172,7 +172,7 @@ void f_RegGetKeyNames(INT32 args)
 
 void f_RegGetValues(INT32 args)
 {
-  INT32 hkey;
+  INT_TYPE hkey;
   char *key;
   int i,ret;
   HKEY new_key;
@@ -1861,7 +1861,7 @@ static void f_GetFileAttributes(INT32 args)
 static void f_SetFileAttributes(INT32 args)
 {
   char *file;
-  INT32 attr,ret;
+  INT_TYPE attr,ret;
   DWORD tmp;
   get_all_args("SetFileAttributes",args,"%s%d",&file,&attr);
   tmp=attr;

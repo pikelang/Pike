@@ -29,7 +29,7 @@ NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
 // value, lower, upper, step_increment, page_increment and page_size
 // All are floating point values. For most widgets the unit is pixels.
 {
-  float l=0.0, u=1.0, v=0.0, si=0.01, pi=0.01, ps=1.0;
+  FLOAT_TYPE l=0.0, u=1.0, v=0.0, si=0.01, pi=0.01, ps=1.0;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   if(args == 6 )

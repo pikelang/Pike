@@ -10,7 +10,7 @@ NAME_ARGS(image|xsize, void|ysize, void|xbitmapdata);
 // Create a new gdkBitmap object.
 // Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
 {
-  int x, y;
+  INT_TYPE x, y;
   char *d;
   pgtk_verify_setup();
   pgtk_verify_not_inited();

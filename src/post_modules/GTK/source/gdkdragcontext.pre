@@ -21,7 +21,7 @@ NAME_ARGS(success,del,time);
 // If del is true, the source should be deleted.
 // time is the current time.
 {
-  int a, b, t;
+  INT_TYPE a, b, t;
   get_all_args("drag_finish", args, "%d%d%d", &a, &b, &t );
   gtk_drag_finish(((GdkDragContext *)THIS->obj), a, b, t);
   RETURN_THIS();
@@ -42,7 +42,7 @@ NAME_ARGS(action);
 FUNCTION(drag_drop, "function(int:object)");
 NAME_ARGS(time);
 {
-  int t;
+  INT_TYPE t;
   get_all_args( "drop", args, "%d", &t );
   gdk_drag_drop( ((GdkDragContext *)THIS->obj), t);
   RETURN_THIS();
@@ -53,7 +53,7 @@ FUNCTION(drag_abort, "function(int:object)");
 NAME_ARGS(time);
 // Abort the drag
 {
-  int t;
+  INT_TYPE t;
   get_all_args( "abort", args, "%d", &t );
   gdk_drag_abort( ((GdkDragContext *)THIS->obj), t);
   RETURN_THIS();
@@ -62,7 +62,7 @@ NAME_ARGS(time);
 FUNCTION(drop_reply, "function(int,int:object)");
 NAME_ARGS(ok,time);
 {
-  int t, o;
+  INT_TYPE t, o;
   get_all_args( "reply", args, "%d%d", &o, &t );
   gdk_drop_reply( ((GdkDragContext *)THIS->obj), o, t);
   RETURN_THIS();
@@ -75,7 +75,7 @@ ARGS(GTK.Widget,int,int);
 // dragged around by the user during this drag.
 {
   struct object *_o;
-  int x, y;
+  INT_TYPE x, y;
   get_all_args( "drag_set_icon_window", args, "%o%d%d",
                 &_o, &x, &y);
   gtk_drag_set_icon_widget( ((GdkDragContext *)THIS->obj),

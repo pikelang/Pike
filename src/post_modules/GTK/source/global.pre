@@ -98,7 +98,7 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
 {
   char **data;
   char *id, *vers;
-  int argc, flags=0;
+  INT_TYPE argc, flags=0;
   struct array *a;
   if( pigtk_is_setup )
     error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
@@ -357,7 +357,7 @@ NAME_ARGS(block);
 // Run one iteration in the mainloop. If block is true, wait for an
 // event before returning.
 {
-  int n;
+  INT_TYPE n;
   get_all_args( "gtk_main_iteration_do", args, "%d", &n );
   gtk_main_iteration_do( n );
 }

@@ -10,7 +10,7 @@ NAME_ARGS(r|color,g,b);
 // If color is specified, it should be an Image.Color object, and the
 // only argument.
 {
-  int r,g,b;
+  INT_TYPE r,g,b;
   GdkColormap *col = gdk_colormap_get_system();
   GdkColor *c;
   pgtk_verify_setup();

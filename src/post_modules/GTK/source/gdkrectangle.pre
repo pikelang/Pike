@@ -6,11 +6,16 @@ NAME_ARGS(x,y,width,height);
 // NOIMG
 {
   GdkRectangle *r;
+  INT_TYPE x, y, w, h;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   THIS->obj = (void *)(r=malloc(sizeof(GdkRectangle)));
-  get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &r->x, &r->y,
-		&r->width, &r->height );
+  get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &x, &y, &w, &h );
+  r->x = x;
+  r->y = y;
+  r->width = w;
+  r->height = h;
+  RETURN_THIS();
 }
 
 FUNCTION(set, "function(int,int,int,int:object)");
@@ -19,8 +24,12 @@ NAME_ARGS(x,y,width,height);
 // Set the upper left corner and the size of the rectangle.
 {
   GdkRectangle *r = (GdkRectangle *)THIS->obj;
-  get_all_args( "GDK.Rectangle->set", args, "%d%d%d%d", &r->x, &r->y,
-		&r->width, &r->height );
+  INT_TYPE x, y, w, h;
+  get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &x, &y, &w, &h );
+  r->x = x;
+  r->y = y;
+  r->width = w;
+  r->height = h;
   RETURN_THIS();
 }
 

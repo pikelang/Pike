@@ -64,7 +64,7 @@ NAME_ARGS(x,y);
 RETURNS(GDK.GC);
 // Set the clip mask origin to the specified point.
 {
-  int x, y;
+  INT_TYPE x, y;
   get_all_args("set_clip_origin", args, "%d%d", &x, &y);
   gdk_gc_set_clip_origin((GdkGC*)THIS->obj, x, y );
   RETURN_THIS();
@@ -93,7 +93,7 @@ RETURNS(GDK.GC);
 // Set the function to the specified one. One of GDK.Xor,
 // GDK.Invert and GDK.Copy.
 {
-  int a;
+  INT_TYPE a;
   get_all_args("set_function", args, "%d", &a);
   gdk_gc_set_function( (GdkGC*)THIS->obj, a);
   RETURN_THIS();
@@ -105,7 +105,7 @@ RETURNS(GDK.GC);
 // If set, anything drawn with this GC will draw on subwindows as well
 // as the window in which the drawing is done.
 {
-  int a;
+  INT_TYPE a;
   get_all_args("set_subwindow", args, "%d", &a);
   gdk_gc_set_subwindow( (GdkGC*)THIS->obj, a );
   RETURN_THIS();

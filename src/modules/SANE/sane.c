@@ -32,7 +32,7 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: sane.c,v 1.6 2000/07/28 07:14:53 hubbe Exp $");
+RCSID("$Id: sane.c,v 1.7 2000/08/10 09:51:54 per Exp $");
 
 /*
 **! module SANE
@@ -41,7 +41,7 @@ RCSID("$Id: sane.c,v 1.6 2000/07/28 07:14:53 hubbe Exp $");
 **!     library from pike
 **!
 **! note
-**!	$Id: sane.c,v 1.6 2000/07/28 07:14:53 hubbe Exp $
+**!	$Id: sane.c,v 1.7 2000/08/10 09:51:54 per Exp $
 */
 
 static int sane_is_inited;
@@ -257,8 +257,8 @@ static void f_scanner_set_option( INT32 args )
 {
   char *name;
   int no;
-  SANE_Int int_value;
-  float float_value;
+  INT_TYPE int_value;
+  FLOAT_TYPE float_value;
   SANE_Int tmp;
   const SANE_Option_Descriptor *d;
   get_all_args( "set_option", args, "%s", &name );
