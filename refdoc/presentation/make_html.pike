@@ -3,6 +3,8 @@
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 #define DEBUG
 
+string image_prefix = "images/";
+
 string quote(string in) {
   if(in-" "-"\t"=="") return "";
   if(String.trim_all_whites(in)=="") return "\n";
@@ -183,7 +185,7 @@ string parse_text(Node n) {
 
     case "image": // Not in XSLT
       mapping m = c->get_attributes();
-      m->src = "images/" + m_delete(m, "file");
+      m->src = image_prefix + m_delete(m, "file");
       ret += sprintf("<img%{ %s='%s'%} />", (array)m);
       break;
 
@@ -516,10 +518,28 @@ string start_parsing(Node n) {
 }
 
 
-int main() {
+int main(int num, array args) {
 
   int t = gethrtime();
-  string file = Stdio.read_file("../manual.xml");
+
+  args = args[1..];
+  foreach(args, string arg) {
+    if(has_prefix(arg, "--img=")) {
+      image_prefix = arg[6..];
+      args -= ({ arg });
+    }
+    if(arg=="--help") {
+      write(#"make_html.pike [args] <input file>
+--img=<image path>
+");
+      return 0;
+    }
+  }
+
+  if(!sizeof(args))
+    throw( ({ "No input file given.\n", backtrace() }) );
+
+  string file = Stdio.read_file(args[-1]);
 
   // We are only interested in what's in the
   // module container.
