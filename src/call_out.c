@@ -13,6 +13,7 @@
 #include "error.h"
 #include "builtin_efuns.h"
 #include "memory.h"
+#include "main.h"
 
 call_out **pending_calls=0;      /* pointer to first busy pointer */
 int num_pending_calls;           /* no of busy pointers in buffer */
@@ -26,7 +27,9 @@ static void verify_call_outs()
 #ifdef DEBUG
   struct array *v;
   int e;
-  if(call_buffer) return;
+
+  if(!d_flag) return;
+  if(!call_buffer) return;
 
   if(num_pending_calls<0 || num_pending_calls>call_buffer_size)
     fatal("Error in call out tables.\n");
@@ -38,7 +41,7 @@ static void verify_call_outs()
   {
     if(e)
     {
-      if(pending_calls[e-1]>pending_calls[e])
+      if(pending_calls[e-1]->time>pending_calls[e]->time)
 	fatal("Error in call out order.\n");
     }
     
@@ -111,19 +114,17 @@ static int new_call_out(int num_arg,struct svalue *argp)
 
   /* time to link it into the buffer using binsearch */
   pos=pending_calls;
-  if(new->time>current_time+1) /* do we need to search where ?*/
+
+  e=num_pending_calls;
+  while(e>0)
   {
-    e=num_pending_calls;
-    while(e>0)
+    c=e/2;
+    if(new->time>pos[c]->time)
     {
-      c=e/2;
-      if(new->time>pos[c]->time)
-      {
-	pos+=c+1;
-	e-=c+1;
-      }else{
-	e=c;
-      }
+      pos+=c+1;
+      e-=c+1;
+    }else{
+      e=c;
     }
   }
   pos--;
@@ -132,6 +133,7 @@ static int new_call_out(int num_arg,struct svalue *argp)
   *pos=new;
   num_pending_calls++;
 
+  verify_call_outs();
   return 1;
 }
 

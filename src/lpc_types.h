@@ -17,6 +17,7 @@ extern struct lpc_string *list_type_string;
 extern struct lpc_string *mapping_type_string;
 extern struct lpc_string *mixed_type_string;
 extern struct lpc_string *void_type_string;
+extern struct lpc_string *any_type_string;
 
 /* Prototypes begin here */
 void init_types();

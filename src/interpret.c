@@ -1155,19 +1155,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
   case T_FUNCTION:
     if(s->subtype == -1)
     {
-      struct svalue *expected_sp=sp-args+1;
       (*(s->u.efun->function))(args);
-      if(sp > expected_sp)
-      {
-	pop_n_elems(sp-expected_sp);
-      }
-      else if(sp < expected_sp)
-      {
-	push_int(0);
-      }
-#ifdef DEBUG
-      if(sp < expected_sp) fatal("Stack underflow!\n");
-#endif
     }else{
       apply_low(s->u.object, s->subtype, args);
     }
@@ -1216,7 +1204,19 @@ void apply_svalue(struct svalue *s, INT32 args)
     pop_n_elems(args);
     push_int(0);
   }else{
+    struct svalue *expected_sp=sp-args+1;
     strict_apply_svalue(s,args);
+    if(sp > expected_sp)
+    {
+      pop_n_elems(sp-expected_sp);
+    }
+    else if(sp < expected_sp)
+    {
+      push_int(0);
+    }
+#ifdef DEBUG
+    if(sp < expected_sp) fatal("Stack underflow!\n");
+#endif
   }
 }
 

@@ -588,6 +588,20 @@ static void file_set_blocking(INT32 args)
   pop_n_elems(args);
 }
 
+static void file_set_close_on_exec(INT32 args)
+{
+  if(THIS->fd <0)
+    error("File not open.\n");
+
+  if(IS_ZERO(sp-args))
+  {
+    set_close_on_exec(THIS->fd,0);
+  }else{
+    set_close_on_exec(THIS->fd,1);
+  }
+  pop_n_elems(args-1);
+}
+
 static void file_set_id(INT32 args)
 {
   if(args < 1)
@@ -1168,6 +1182,7 @@ void init_files_programs()
   add_function("stat",file_stat,"function(:int *)",0);
   add_function("errno",file_errno,"function(:int)",0);
 
+  add_function("set_close_on_exec",file_set_close_on_exec,"function(int:void)",0);
   add_function("set_nonblocking",file_set_nonblocking,"function(mixed,mixed,mixed:void)",0);
   add_function("set_blocking",file_set_blocking,"function(:void)",0);
   add_function("set_id",file_set_id,"function(mixed:void)",0);

@@ -594,6 +594,10 @@ lambda: F_LAMBDA
 	{
 	  push_locals();
 	  $<number>$=comp_stackp;
+
+	  if(local_variables->current_return_type)
+	    free_string(local_variables->current_return_type);
+	  copy_shared_string(local_variables->current_return_type,any_type_string);
 	}
        '(' arguments ')' block
         {
