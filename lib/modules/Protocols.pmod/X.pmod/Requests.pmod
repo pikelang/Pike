@@ -31,11 +31,8 @@ class request
 
   string build_request(string req, void|int data)
   {
-    if (strlen(req) % 4)
-      {
-	werror("Xlib.request->build_request: padding.\n");
-	req += ({ "\0", "\0\0", "\0\0\0" })[strlen(req) % 4];
-      }
+    req = _Xlib.pad(req);
+    
     // Big requests extension. Will not work
     // if this extension is not present.
     if((strlen(req)+1) > (65535*4))
