@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 1997/11/07 19:33:42 grubba Exp $
+# $Id: configure.in,v 1.9 1997/11/18 19:41:10 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -167,7 +167,8 @@ if test x$with_oracle = xyes; then
 
   if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
 
-    CPPFLAGS="-I\"$oracle_include_dir\" ${CPPFLAGS} -L\"$oracle_lib_dir\""
+    CPPFLAGS="-I\"$oracle_include_dir\" ${CPPFLAGS}"
+    LDFLAGS="${LDFLAGS} -L\"$oracle_lib_dir\""
 
     ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
 
