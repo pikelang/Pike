@@ -34,51 +34,52 @@ object wcache=.Cache("latex_wcache");
 array(float) find_line_width(array(SGML) data)
 {
   array(string) keys=Array.map(data,Sgml.get_text);
+  array(float) ret=rows(wcache, keys);
 
-  foreach(keys, string key)
-    {
-      if(!wcache[key])
-	{
-	  string x="\\documentclass[twoside,a4paper]{book}\n"
-	  +packages+"\n"
-	  "\\begin{document}\n"
-	  "\\author{wmml to latex}\n"
-	  "\\setlength{\\unitlength}{1mm}\n"
-	  "{\\catcode`\\^^20=\\active\\catcode`\\^^0d=\\active%\n"
-	  "\\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%\n"
-	  "\\catcode`\\^^0d=\\active\\def^^0d{\\hskip0pt\\par\\noindent}%\n"
-	  "\\parskip=1pt\\tt}}\n"
-	  "\\begin{titlepage}\n"
-	  "\\newlength{\\gnapp}\n";
-
-	  foreach(data, SGML d)
-	    {
-	      x+=
-		"\\settowidth{\\gnapp}{"+convert_to_latex(d)+"}\n"
-		"\\message{length=\\number\\gnapp dots}\n";
-	    }
-
-	  x+="\\end{titlepage}\n"
-	    "\\end{document}\n";
-
-	  rm("___tmp.tex");
-	  Stdio.write_file("___tmp.tex",x);
-	  string tmp=Process.popen("latex '\\scrollmode\\input ___tmp.tex'");
-
-	  sscanf(tmp,"%{%*slength=%f%}",array(array(float)) lengths);
+  if(search(ret, 0) != -1)
+  {
+    string x="\\documentclass[twoside,a4paper]{book}\n"
+      +packages+"\n"
+      "\\begin{document}\n"
+      "\\author{wmml to latex}\n"
+      "\\setlength{\\unitlength}{1mm}\n"
+      "{\\catcode`\\^^20=\\active\\catcode`\\^^0d=\\active%\n"
+      "\\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%\n"
+      "\\catcode`\\^^0d=\\active\\def^^0d{\\hskip0pt\\par\\noindent}%\n"
+      "\\parskip=1pt\\tt}}\n"
+      "\\begin{titlepage}\n"
+      "\\newlength{\\gnapp}\n";
+    
+    foreach(data, SGML d)
+      {
+	x+=
+	  "\\settowidth{\\gnapp}{"+convert_to_latex(d)+"}\n"
+	  "\\message{length=\\number\\gnapp dots}\n";
+      }
+    
+    x+="\\end{titlepage}\n"
+      "\\end{document}\n";
+    
+    rm("___tmp.tex");
+    Stdio.write_file("___tmp.tex",x);
+    string tmp=Process.popen("latex '\\scrollmode\\input ___tmp.tex'");
+    
+    sscanf(tmp,"%{%*slength=%f%}",array lengths);
 //	  werror("%O\n",lengths);
 //	  werror("%O\n",keys);
-	  for(int e=0;e<sizeof(keys);e++)
-	    {
-	      wcache[keys[e]]=lengths[e][0] / 65536; // convert to points
+    
+    for(int e=0;e<sizeof(lengths);e++)
+    {
+      lengths[e]=lengths[e][0] / 65536; // convert to points
 //	      werror("Width of %s is %f\n",key, lengths[e][0]/65536);
-	    }
-	  
-	  break;
-	}
     }
+    
+    wcache->set_many(keys, lengths);
+    
+    ret=rows(wcache, keys);
+  }
 
-  return rows(wcache, keys);
+  return ret;
 }
 
 array(SGML) split_lines(SGML data)
@@ -167,13 +168,7 @@ array(SGML) split_lines(SGML data)
 
 array(float) find_max_width(array(SGML) datas)
 {
-  array(SGML) pieces=({});
-
-  foreach(datas, SGML data)
-  {
-    pieces+=({ split_lines(data)  });
-  }
-
+  array(SGML) pieces=Array.map(datas,split_lines);
   array(float) widths=find_line_width(pieces * ({}));
   int pos=0;
   array(float) ret=allocate(sizeof(pieces));
@@ -285,11 +280,7 @@ array(SGML) split_words(SGML data)
 
 array(float) find_min_width(array(SGML) datas)
 {
-  array(SGML) pieces=({});
-
-  foreach(datas, SGML data)
-    pieces+=({ split_words(data) });
-
+  array(SGML) pieces=Array.map(datas,split_words);
   array(float) widths=find_line_width(pieces * ({}));
   int pos=0;
   array(float) ret=allocate(sizeof(pieces));
@@ -331,7 +322,12 @@ string low_latex_quote(string text)
 
 string latex_quote(string text)
 {
-  return low_latex_quote( pre ? text : ((text/"\n") - ({""})) *"\n" );
+  if(!pre)
+  {
+    if(text[-1]=='\n') text[-1]=' ';
+    text= ((text/"\n") - ({""})) *"\n";
+  }
+  return low_latex_quote(text);
 }
 
 string quote_label(string s)
@@ -342,8 +338,6 @@ string quote_label(string s)
   ret+=s;
   return ret;
 }
-
-
 
 
 float weighted_strlen(string tag)
@@ -404,6 +398,12 @@ string convert_table(TAG table)
 {
   SGML data=table->data;
   int rows,columns;
+
+  // FIXME, nicer tables not supported (yet)
+  if(table->params->nicer)
+  {
+    table->params->border="1";
+  }
   int border=(int)table->params->border;
   array(float) column_data=allocate(100,1.0);
 
@@ -669,7 +669,7 @@ string convert_table(TAG table)
   }
 
 
-#if 1
+#if 0
   werror("********* Table sizes:\n");
   for(int e=0;e<columns;e++)
     {
@@ -768,6 +768,14 @@ string *srt(string *x)
   return x;
 }
 
+string fix_index_key(string key)
+{
+  return replace(latex_quote(Html.unquote_param(key)),
+		 ".",
+		 "\\discretionary{}{}{}.");
+
+}
+
 string low_index_to_latex(INDEX data, string prefix, int indent)
 {
 //  werror("%O\n",data);
@@ -778,7 +786,7 @@ string low_index_to_latex(INDEX data, string prefix, int indent)
       
       if(data[key][0])
       {
-	ret+=latex_quote(Html.unquote_param(key));
+	ret+=fix_index_key(key);
 	if(data[key][0][prefix+key])
 	{
 	  // FIXME: show all links
@@ -790,12 +798,12 @@ string low_index_to_latex(INDEX data, string prefix, int indent)
 	  {
 	    if(key2==prefix+key) continue;
 	    ret+="\\item "+"$\\;$$\\;$"*(indent+1);
-	    ret+=latex_quote(Html.unquote_param(key2));
+	    ret+=fix_index_key(key2);
 	    ret+=", \\pageref{"+quote_label(data[key][0][key2][0])+"}\n";
 	}
 
       }else{
-	ret+=latex_quote(Html.unquote_param(key))+"\n";
+	ret+=fix_index_key(key)+"\n";
       }
 	
       if(sizeof(data[key]) > !!data[key][0])
@@ -905,7 +913,8 @@ string convert_to_latex(SGML data, void|int flags)
 	  case "man_title":
 	    // FIXME encaps?
 	    // FIXME indentation
-	    ret+="\n\n"+latex_quote(tag->params->title)+"\\\\\n "+
+	    ret+="\n\n"+
+	      latex_quote(tag->params->title)+"\\\\\n "+
 	      convert_to_latex(tag->data)+
 	      "\n";
 	    break;
