@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.6 2003/03/12 17:01:52 nisse Exp $
+dnl $Id: testsuite.in,v 1.7 2003/04/07 15:27:20 mast Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -42,7 +42,17 @@ test_any([[
   s->add("abcde");
   return sizeof(s);
 ]], 5)
-dnl MISSING TEST: `+ not tested
+test_any([[
+  String.Buffer b = String.Buffer(), c = b;
+  string teststr = map (indices (allocate (3000)),
+			lambda (int i) {
+			  return "\1234" + i;
+			}) * ",";
+  b = b + teststr;
+  b = b + "end";
+  return teststr + "end" == b->get();
+]], 1)
+
 test_eval_error([[ String.Buffer()->add("x",0); ]])
 
 test_eq([[ String.count( "", "a" ) ]], 0)
