@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.36 2000/12/11 10:59:38 per Exp $ */
+/* $Id: operator.c,v 1.37 2000/12/27 19:27:34 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.36 2000/12/11 10:59:38 per Exp $
+**!	$Id: operator.c,v 1.37 2000/12/27 19:27:34 per Exp $
 **! class Image
 */
 
@@ -278,7 +278,8 @@ STANDARD_OPERATOR_HEADER("`*")
             (rgb.b < 256) )
    {
 #ifdef ASSEMBLY_OK
-     if( image_cpuid & IMAGE_MMX )
+     /* there is some overhead in setting this up */
+     if( (image_cpuid & IMAGE_MMX) && (i>40) )
      {
        image_mult_buffer_mmx_x86asm( d,s1,i/4,RGB2ASMCOL(rgb) );
        d += i;  s1 += i;
