@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.14 2000/08/08 18:23:15 sigge Exp $
+/* $Id: connection.pike,v 1.15 2000/10/11 15:43:33 sigge Exp $
  *
  * SSL packet layer
  */
@@ -171,7 +171,7 @@ int handle_alert(string s)
   }
   if (description == ALERT_close_notify)
   {
-    return 1;
+    return 0;
   }
   if (description == ALERT_no_certificate)
   {
