@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.11 2001/07/24 12:35:50 grubba Exp $
+ * $Id: ia32.c,v 1.12 2001/07/24 12:37:13 grubba Exp $
  *
  * Machine code generator for IA32.
  *
@@ -174,6 +174,14 @@ void ins_f_byte(unsigned int b)
     case F_ADD - F_OFFSET:
       update_arg1(2);
       addr=(void *)f_add;
+      break;
+
+    case F_MAKE_ITERATOR - F_OFFSET:
+      {
+	extern void f_Iterator(INT32);
+	update_arg1(1);
+	addr = (void *)f_Iterator;
+      }
       break;
   }
 #endif
