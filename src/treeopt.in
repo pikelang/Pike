@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.57 2001/02/28 04:21:10 hubbe Exp $
+// $Id: treeopt.in,v 1.58 2001/03/17 00:03:08 grubba Exp $
 //
 // The tree optimizer
 //
@@ -709,11 +709,27 @@ F_DO(-, 0 = +[node_is_true($$)]):
 // No body -- No reason to loop...
 F_FOREACH(F_VAL_LVAL(0, *), -):
   F_POP_VALUE($0, -);
-
+F_LOOP(0, -):
+  F_POP_VALUE($0, -);
 
 // forech(arr ; ; val) body; -> foreach(arr, val) body;
-F_FOREACH(F_VAL_LVAL(0[ $$->type == array_type_string ], ':'(-,1) ), 2):
+F_FOREACH(F_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
+		     ':'(-, 1) ), 2):
   F_FOREACH(F_VAL_LVAL($0, $1), $2);
+
+// foreach(arr, -) body;  ->  loop(sizeof(arr)) body;
+F_FOREACH(F_VAL_LVAL(0, -), 1):
+  {
+    $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
+  }
+  ;
+
+// foreach(X;;)  ->  loop(sizof(arr)) body;
+F_FOREACH(F_VAL_LVAL(0, ':'(-, -)), 1):
+  {
+    $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
+  }
+  ;
 
 F_FOR(-, *):
   -;
@@ -776,6 +792,18 @@ F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
 
 F_FOR(0, ':'(1, F_CAST[$$->type == void_type_string](2, *))):
   F_FOR($0, ':'($1, $2));
+
+// F_DEC_LOOP(F_VAL_LVAL(0, 1 = F_LOCAL),
+// 	      2 = +[!(($$->tree_info & OPT_BREAK) ||
+// 		      depend_p($$, $1) || depend_p($1, $$))]):
+// {
+//   /* FIXME: Assign $0 to $1 without reevaluating it. */
+//   $$ = mknode(F_COMMA_EXPR,
+// 		 mknode(F_LOOP,
+// 			mkopernode("`-", mknode(F_DEC, $1, NULL), $0), $2),
+// 			mknode(F_ASSIGN, $0, $1));
+// }
+// ;
 
 F_FOR(0 = F_APPLY(1 = F_CONSTANT
 		  [$$->u.sval.type == T_FUNCTION]
