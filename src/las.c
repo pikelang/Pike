@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.135 1999/12/07 09:40:56 hubbe Exp $");
+RCSID("$Id: las.c,v 1.136 1999/12/09 23:24:10 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -920,9 +920,17 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
   }
 #endif /* PIKE_DEBUG */
 
-  if (type == void_type_string) return mknode(F_POP_VALUE, n, 0);
+  if (type == void_type_string) {
+    yywarning("Soft cast to void.");
+    return mknode(F_POP_VALUE, n, 0);
+  }
 
-  if(type==n->type) return n;
+  if(type==n->type) {
+    struct pike_string *t1 = describe_type(type);
+    yywarning("Soft cast to %s is a noop.", t1->str);
+    free_string(t1);
+    return n;
+  }
 
   if (n->type) {
     if (!pike_types_le(type, n->type)) {
@@ -1135,10 +1143,13 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     case T_INT:
       if(!num_parse_error) {
 	if (node_name) {
-	  my_yyerror("Failed to index module '%s' (module doesn't exist?)",
-		     node_name);
+	  my_yyerror("Failed to index module '%s' with '%s' "
+		     "(module doesn't exist?)",
+		     node_name, id->str);
 	} else {
-	  yyerror("Failed to index module (module doesn't exist?)");
+	  my_yyerror("Failed to index module with '%s' "
+		     "(module doesn't exist?)",
+		     id->str);
 	}
       }
       break;
@@ -2403,6 +2414,31 @@ void fix_type_field(node *n)
     break;
 
   case F_SSCANF:
+    if (!CAR(n) || (CAR(n)->token != F_ARG_LIST) ||
+	!CAAR(n) || !CDAR(n)) {
+      yyerror("Too few arguments to sscanf().");
+    } else {
+      if (!pike_types_le(CAAR(n)->type, string_type_string)) {
+	if (!match_types(CAAR(n)->type, string_type_string)) {
+	  yyerror("Bad argument 1 to sscanf().");
+	} else if (lex.pragmas & ID_STRICT_TYPES) {
+	  struct pike_string *t = describe_type(CAAR(n)->type);
+	  yywarning("Argument 1 to sscanf() has bad type "
+		    "(%s expected string).", t->str);
+	  free_string(t);
+	}
+      }
+      if (!pike_types_le(CDAR(n)->type, string_type_string)) {
+	if (!match_types(CDAR(n)->type, string_type_string)) {
+	  yyerror("Bad argument 2 to sscanf().");
+	} else if (lex.pragmas & ID_STRICT_TYPES) {
+	  struct pike_string *t = describe_type(CAAR(n)->type);
+	  yywarning("Argument 2 to sscanf() has bad type "
+		    "(%s expected string).", t->str);
+	  free_string(t);
+	}
+      }
+    }
     MAKE_CONSTANT_SHARED_STRING(n->type, tIntPos);
     break;
 
@@ -2434,8 +2470,13 @@ void fix_type_field(node *n)
 	copy_shared_string(n->type,void_type_string);
       break;
     }
+    if (n->token == F_ARG_LIST) {
+      n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
+    } else {
+      copy_shared_string(n->type, CDR(n)->type);
+    }
+    break;
 
-    /* FALL_THROUGH */
   case F_MAGIC_INDEX:
   case F_MAGIC_SET_INDEX:
   case F_CATCH:
