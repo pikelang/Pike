@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.36 2003/08/15 16:51:20 grubba Exp $
+|| $Id: sparc.c,v 1.37 2003/09/23 17:52:53 grubba Exp $
 */
 
 /*
@@ -192,6 +192,7 @@
  *
  * L0	&Pike_interpreter
  * L1	Pike_fp
+ * L7	&d_flag
  *
  * O6	Stack Pointer
  * O7	Program Counter
@@ -203,6 +204,7 @@
 #define SPARC_REG_PIKE_SP	SPARC_REG_L2
 #define SPARC_REG_PIKE_MARK_SP	SPARC_REG_L3
 #define SPARC_REG_PIKE_OBJ	SPARC_REG_L4
+#define SPARC_REG_PIKE_DEBUG	SPARC_REG_L7
 #define SPARC_REG_SP		SPARC_REG_O6
 #define SPARC_REG_PC		SPARC_REG_O7
 
@@ -500,6 +502,62 @@ void sparc_escape_catch(void)
  *
  */
 
+#ifdef PIKE_DEBUG
+void sparc_debug_check_registers(int state,
+				 struct Pike_interpreter *cached_ip,
+				 struct pike_frame *cached_fp,
+				 struct svalue *cached_sp,
+				 struct svalue **cached_mark_sp)
+{
+  if (((state & SPARC_CODEGEN_IP_IS_SET) &&
+       (cached_ip != &Pike_interpreter)) ||
+      ((state & SPARC_CODEGEN_FP_IS_SET) &&
+       (cached_fp != Pike_interpreter.frame_pointer)) ||
+      ((state & SPARC_CODEGEN_SP_IS_SET) &&
+       (cached_sp != Pike_interpreter.stack_pointer)) ||
+      ((state & SPARC_CODEGEN_MARK_SP_IS_SET) &&
+       (cached_mark_sp != Pike_interpreter.mark_stack_pointer))) {
+    Pike_fatal("Bad machine code cache key (0x%04x):\n"
+	       "Cached: ip:0x%08x, fp:0x%08x, sp:0x%08x, m_sp:0x%08x\n"
+	       "  Real: ip:0x%08x, fp:0x%08x, sp:0x%08x, m_sp:0x%08x\n",
+	       state,
+	       (INT32)cached_ip, (INT32)cached_fp,
+	       (INT32)cached_sp, (INT32)cached_mark_sp,
+	       (INT32)&Pike_interpreter, (INT32)Pike_interpreter.frame_pointer,
+	       (INT32)Pike_interpreter.stack_pointer,
+	       (INT32)Pike_interpreter.mark_stack_pointer);
+  }
+}
+
+static void ins_sparc_debug()
+{
+  int state = sparc_codegen_state;
+  if (state & SPARC_CODEGEN_SP_NEEDS_STORE) {
+    state &= ~SPARC_CODEGEN_SP_IS_SET;
+  }
+  if (state & SPARC_CODEGEN_MARK_SP_NEEDS_STORE) {
+    state &= ~SPARC_CODEGEN_MARK_SP_IS_SET;
+  }
+  if (state &
+      (SPARC_CODEGEN_FP_IS_SET|SPARC_CODEGEN_SP_IS_SET|
+       SPARC_CODEGEN_IP_IS_SET|SPARC_CODEGEN_MARK_SP_IS_SET)) {
+    SET_REG(SPARC_REG_PIKE_DEBUG,
+	    ((INT32)(&d_flag)));
+    SPARC_LDUW(SPARC_REG_PIKE_DEBUG, SPARC_REG_PIKE_DEBUG, SPARC_REG_G0, 0);
+    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_PIKE_DEBUG, SPARC_REG_G0, 0);
+    SET_REG(SPARC_REG_O0, state);
+    SPARC_BE(6*4, 0);
+    SPARC_ADD(SPARC_REG_O1, SPARC_REG_PIKE_IP, SPARC_REG_G0, 0);
+    SPARC_ADD(SPARC_REG_O2, SPARC_REG_PIKE_FP, SPARC_REG_G0, 0);
+    SPARC_ADD(SPARC_REG_O3, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+    SPARC_ADD(SPARC_REG_O4, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
+    ADD_CALL(sparc_debug_check_registers, 1);
+  }
+}
+#else /* !PIKE_DEBUG */
+#define ins_sparc_debug()
+#endif /* PIKE_DEBUG */
+
 static void low_ins_call(void *addr, int delay_ok, int i_flags)
 {
   SPARC_FLUSH_UNSTORED();
@@ -637,11 +695,14 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
 void ins_f_byte(unsigned int opcode)
 {
+  ins_sparc_debug();
   low_ins_f_byte(opcode, 0);
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
+  ins_sparc_debug();
+
   switch(a) {
   case F_NUMBER:
     sparc_push_int(b, 0);
@@ -668,6 +729,8 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    unsigned INT32 c,
 			    unsigned INT32 b)
 {
+  ins_sparc_debug();
+
   SET_REG(SPARC_REG_O0, c);
   SET_REG(SPARC_REG_O1, b);
   low_ins_f_byte(a, 1);
