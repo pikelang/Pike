@@ -554,9 +554,69 @@ make_shared_string, make_shared_binary_string, begin_wide_shared_string
 </section> <!-- pike_string -->
 
 <section title="struct array">
+Internally Pike uses a <tt>struct array</tt> to represent the type
+<tt>array</tt>. As with strings, arrays are used in many different ways,
+so they have many supporting functions for making them easier to manipulate.
+Usually you will not have to construct array structures yourself, but it
+is often nessecary to read data from arrays.
+<p>
+A <tt>struct array</tt> has these members:
+<dl>
+<dt><tt>INT32 refs;</tt>
+<dd>The references to this array.
+<dt><tt>INT32 size;</tt>
+<dd>The number of elements in the array.
+<dt><tt>INT32 malloced_size;</tt>
+<dd>The number of elements there is room for in the array without re-allocating.
+<dt><tt>TYPE_FIELD type_field;</tt>
+<dd>This bit field contains one bit for each type present in the array.
+    Note that bits may be set that are not present in the array, but not
+    vice versa. See <link to=TYPE_FIELD> for more information. 
+<dt><tt>INT16 flags;</tt>
+<dd>ARRAY_* flags, you may set one or more of:
+	<dl>
+	<dt><tt>ARRAY_WEAK_FLAG</tt>
+	<dd>This will cause objects in this array to be freed by the garbage
+	    collector if there are no other references.
+	<dt><tt>ARRAY_WEAK_SHRINK</tt>
+	<dd>This will cause the array to shrink the array when objects in
+	    it are freed.
+	</dl>
+<dt><tt>struct svalue item[size];</tt>
+<dd>This is a variable-size array of svalues which contains the actual
+    values in this array.
+</dl>
+Here is an example function which will print the type of each value in
+an array:
+<example language=c>
+void prtypes(struct array *a)
+{
+  INT e;
+  for(e=0;e&lt;a->size;e++)
+    printf("Element %d is of type %d\n",e,a->item[e].type);
+}
+</example>
+
+<HR NEWPAGE>
+
+<function name=allocate_array></function>
+<function name=free_array></function>
+<function name=array_index></function>
+<function name=array_index_no_free></function>
+<function name=simple_array_index_no_free></function>
+<function name=array_set_index></function>
+<function name=push_array_items></function>
+<function name=aggregate_array></function>
+<function name=f_aggregate_array></function>
+<function name=append_array></function>
+<function name=explode></function>
+<function name=slice_array></function>
+<function name=add_arrays></function>
+
 </section> <!-- array -->
 
 <section title="struct mapping">
+
 </section> <!-- array -->
 
 <section title="struct object">
