@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.49 2000/04/08 02:01:09 hubbe Exp $
+ * $Id: svalue.h,v 1.50 2000/06/02 12:45:30 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -145,6 +145,8 @@ struct svalue
 #define tInt04 "\010\000\000\000\000\000\000\000\004"
 #define tInt05 "\010\000\000\000\000\000\000\000\005"
 #define tIntPos "\010\000\000\000\000\177\377\377\377"
+#define tInt1Plus "\010\000\000\000\001\177\377\377\377"
+#define tInt2Plus "\010\000\000\000\002\177\377\377\377"
 #define tByte "\010\000\000\000\000\000\000\000\377"
 #define tFlt "\011"
 #define tFloat "\011"
