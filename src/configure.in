@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.158 1998/09/27 19:37:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.159 1998/09/27 19:39:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1266,7 +1266,7 @@ int main()
   int p,e;
 
   x=frexp(1.0, &e);
-  if(x * pow(2.0,(double)e) != 1.0) exit(3)
+  if(x * pow(2.0,(double)e) != 1.0) exit(3);
 
   p=-7;
   for(x=3.0/4.0*pow(2.0,(double)p);x<50000.0;x*=2.0,p++)
