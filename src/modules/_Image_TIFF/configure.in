@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.11 2004/03/05 12:01:16 grubba Exp $
+# $Id: configure.in,v 1.12 2004/03/05 15:15:13 grubba Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -21,7 +21,17 @@ if test x$with_tifflib = xyes ; then
     AC_CACHE_VAL(pike_cv_working_tiff, [
       # Some tiff libraries are broken, and will thrash memory.
       # eg the one on RedHat 7.1/ia64.
-      cp -f "$srcdir/test_image.tiff" .
+
+      # Copy the test image to the build directory, so that our
+      # test program can find it.
+      if cmp "$srcdir/test_image.tiff" "test_image.tiff" 2>/dev/null; then
+	:
+      else
+        if test -f "test_image.tiff"; then
+	  rm -f "test_image.tiff"
+	fi
+	cp "$srcdir/test_image.tiff" "test_image.tiff"
+      fi
       AC_TRY_RUN([
 #ifdef INLINE
 #undef INLINE
