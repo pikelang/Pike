@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.37 1998/01/25 10:44:41 mirar Exp $ */
+/* $Id: colortable.c,v 1.38 1998/01/25 11:26:54 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.37 1998/01/25 10:44:41 mirar Exp $
+**!	$Id: colortable.c,v 1.38 1998/01/25 11:26:54 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.37 1998/01/25 10:44:41 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.38 1998/01/25 11:26:54 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -67,9 +67,9 @@ extern struct program *image_program;
 #define SPACEFACTOR_G 4
 #define SPACEFACTOR_B 1
 
-#define CUBICLE_DEFAULT_R 4
-#define CUBICLE_DEFAULT_G 5
-#define CUBICLE_DEFAULT_B 4
+#define CUBICLE_DEFAULT_R 10
+#define CUBICLE_DEFAULT_G 10
+#define CUBICLE_DEFAULT_B 10
 #define CUBICLE_DEFAULT_ACCUR 16
 
 #ifndef MAX
