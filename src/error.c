@@ -17,18 +17,32 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.24 1999/02/20 17:44:55 grubba Exp $");
+RCSID("$Id: error.c,v 1.25 1999/03/16 23:37:22 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
 JMP_BUF *recoveries=0;
 
+#ifdef PIKE_DEBUG
+void check_recovery_context(void)
+{
+  char foo;
+#define TESTILITEST ((((char *)recoveries)-((char *)&foo))*STACK_DIRECTION)
+  if(recoveries && TESTILITEST > 0)
+    fatal("Recoveries is out biking (recoveries=%p, sp=%p, %d)!\n",recoveries, &foo,TESTILITEST);
+
+  /* Add more stuff here when required */
+}
+#endif
+
 JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
 {
+  check_recovery_context();
 #ifdef PIKE_DEBUG
   r->line=line;
   r->file=file;
+  OED_FPRINTF((stderr, "init_recovery(%p) %s:%d\n", r, file, line));
 #endif
   r->fp=fp;
   r->sp=sp-evaluator_stack;
@@ -37,6 +51,7 @@ JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
   r->onerror=0;
   r->severity=THROW_ERROR;
   recoveries=r;
+  check_recovery_context();
   return r;
 }
 
@@ -221,7 +236,6 @@ void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
   va_end(args);
 }
 
-
 void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
@@ -250,3 +264,59 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
   fflush(stderr);
   abort();
 }
+
+#if 0
+
+struct mapping va_generic_error(const char *fmt, va_list args)
+{
+  char buf[8192];
+
+#ifdef HAVE_VSNPRINTF
+  vsnprintf(buf, sizeof(buf)-1, fmt, args);
+#else /* !HAVE_VSNPRINTF */
+  VSPRINTF(buf, fmt, args);
+
+  if((long)strlen(buf) >= (long)sizeof(buf))
+    fatal("Buffer overflow in error()\n");
+#endif /* HAVE_VSNPRINTF */
+
+  push_error(buf);
+  free_svalue(& throw_value);
+  throw_value = *--sp;
+  throw_severity=THROW_ERROR;
+
+  in_error=0;
+  pike_throw();  /* Hope someone is catching, or we will be out of balls. */
+  
+}
+
+struct generic_error
+{
+  struct pike_string *s;
+  struct array *backtrace;
+}
+
+struct program *generic_error_program;
+
+void init_error()
+{
+  start_new_program();
+  ADD_STORAGE(struct generic_error);
+  ADD_FUNCTION("describe",f_error_backtrace,tFunc(tVoid,tString),0);
+  ADD_FUNCTION("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0);
+  add_integer_constant("is_generic_error",1,0);
+  add_string_constant("error_type","generic_error",0);
+  generic_error_program=end_program();
+  
+  start_new_program();
+  do_inherit(generic_error, 0, 0, 0, 0, 0);
+  add_integer_constant("is_index_error",1,0);
+  add_string_constant("error_type", "index_error",0);
+  index_error_program=end_program();
+
+
+
+  start_new_program();
+  end_new_program();
+}
+#endif

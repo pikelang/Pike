@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.62 1999/03/12 04:30:10 hubbe Exp $");
+RCSID("$Id: object.c,v 1.63 1999/03/16 23:37:25 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -297,12 +297,13 @@ struct object *get_master(void)
 	push_string(s);
 	push_int(0);
 	f_decode_value(2);
+	UNSETJMP(tmp);
 
 	if(sp[-1].type == T_PROGRAM)
 	  goto compiled;
 
 	pop_stack();
-	  
+
       }
 #ifdef DEBUG
       if(d_flag)
