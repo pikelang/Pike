@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.42 2004/10/16 07:27:29 agehall Exp $
+|| $Id: rusage.c,v 1.43 2004/12/30 13:46:22 grubba Exp $
 */
 
 #include "global.h"
@@ -230,7 +230,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
   clock_t ret = times (&tms);
 
 #ifdef PIKE_DEBUG
-  if (!pike_clk_tck) error ("Called before dbm_main.\n");
+  if (!pike_clk_tck) error ("Called before init_pike.\n");
 #endif
 
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
@@ -369,7 +369,7 @@ cpu_time_t get_cpu_time (void)
 {
   struct tms tms;
 #if defined (PIKE_DEBUG) && !defined (CONFIGURE_TEST)
-  if (!pike_clk_tck) Pike_error ("Called before dbm_main.\n");
+  if (!pike_clk_tck) Pike_error ("Called before init_pike.\n");
 #endif
   if (times (&tms) == (clock_t) -1)
     return (cpu_time_t) -1;
