@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.28 2004/08/19 13:13:24 noring Exp $
+// $Id: Query.pmod,v 1.29 2004/08/19 14:46:43 noring Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -217,7 +217,9 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      t_high = year->next()->unix_time()-1;
 	    };
 	  
-	  if(!t_low || !t_high)
+	  if(t_low <= 0 || t_high <= 0 ||
+	     object_program(t_low) || object_program(t_high))
+	    // Guard against out-of-bounds and bignums.
 	  {
 	    push(_WhiteFish.DateSet());
 	    break;
