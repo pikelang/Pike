@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.59 1999/10/09 23:28:39 hubbe Exp $
+/* $Id: master.pike.in,v 1.60 1999/10/10 19:42:09 marcus Exp $
  * 
  * Master-file for Pike.
  *
@@ -573,12 +573,12 @@ class dirnode
   array(string) _indices()
   {
     fill_cache();
-    return indices(cache);
+    return indices(filter(cache, lambda(mixed x){ return x; }));
   }
   array(mixed) _values()
   {
     fill_cache();
-    return values(cache);
+    return values(cache)-({0});
   }
 };
 
