@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.152 2002/08/28 12:40:57 grubba Exp $
+// $Id: module.pmod,v 1.153 2002/08/28 12:46:34 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1670,11 +1670,16 @@ string read_bytes(string filename, void|int start,void|int len)
 //! Write the string @[str] onto the file @[filename]. Any existing
 //! data in the file is overwritten.
 //!
+//! For a description of @[access], see @[Stdio.File()->open()].
+//!
+//! @throws
+//!   Throws an error if @[filename] couldn't be opened for writing.
+//!
 //! @returns
-//! Returns number of bytes written.
+//!   Returns the number of bytes written.
 //!
 //! @seealso
-//! @[append_file()], @[read_bytes()]
+//!   @[append_file()], @[read_bytes()], @[Stdio.File()->open()]
 //!
 int write_file(string filename, string str, int|void access)
 {
@@ -1695,11 +1700,16 @@ int write_file(string filename, string str, int|void access)
 
 //! Append the string @[str] onto the file @[filename].
 //!
+//! For a description of @[access], see @[Stdio.File->open()].
+//!
+//! @throws
+//!   Throws an error if @[filename] couldn't be opened for writing.
+//!
 //! @returns
-//! Returns number of bytes written.
+//!   Returns the number of bytes written.
 //!
 //! @seealso
-//! @[write_file()], @[read_bytes()]
+//!   @[write_file()], @[read_bytes()], @[Stdio.File()->open()]
 //!
 int append_file(string filename, string str, int|void access)
 {
