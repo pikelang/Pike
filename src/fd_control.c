@@ -10,7 +10,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.30 2000/05/25 02:18:35 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.31 2000/07/07 15:23:06 grubba Exp $");
 
 #else /* TESTING */
 
@@ -162,7 +162,7 @@ void do_close_on_exec(void)
 {
   int i,ret;
   for(i=0; i < num_fds_to_close; i++) {
-    while( close(fds_to_close[i]) <0 && errno==EINTR) ;
+    while( fd_close(fds_to_close[i]) <0 && errno==EINTR) ;
   }
   num_fds_to_close = 0;
 }
