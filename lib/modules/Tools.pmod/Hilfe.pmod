@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.113 2004/04/25 13:38:18 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.114 2004/04/25 15:16:19 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -49,6 +49,11 @@ class Command {
 	    array(string) tokens);
 }
 
+
+//
+// Built in commands
+//
+
 //! Variable reset command. Put ___Hilfe->commands->reset =
 //! Tools.Hilfe.CommandReset(); in your .hilferc to have this command
 //! defined when you open Hilfe.
@@ -88,11 +93,6 @@ string format_hr_time(int i) {
   if(i<1000000) return sprintf("%.2fms", i/1000.0);
   return sprintf("%.2fs", i/1000000.0);
 }
-
-
-//
-// Built in commands
-//
 
 private class CommandSet {
   inherit Command;
@@ -804,23 +804,30 @@ private class Expression {
   private array(string) tokens;
   private mapping(int:int) positions;
   private array(int) depths;
+  private multiset(int) sscanf_depths;
 
   void create(array(string) t) {
     tokens = t;
 
     positions = ([]);
     int pos;
-    for(int i; i<sizeof(t); i++) {
-      if(whitespace[t[i][0]]) continue;
-      positions[pos++] = i;
-    }
 
     int depth;
     depths = allocate(sizeof(t));
-    for(int i; i<sizeof(t); i++) {
-      if(t[i]=="(") depth++;
-      else if(t[i]==")") depth--;
+
+    sscanf_depths = (<>);
+
+    foreach(t; int i; string t) {
+      if(!whitespace[t[0]])
+	positions[pos++] = i;
+
+      if(t=="(")
+	depth++;
+      else if(t==")")
+	depth--;
       depths[i]=depth;
+
+      if(t=="sscanf") sscanf_depths[depth+1]=1;
     }
   }
 
@@ -847,6 +854,10 @@ private class Expression {
 
   int depth(int f) {
     return depths[positions[f]];
+  }
+
+  int(0..1) in_sscanf(int f) {
+    return sscanf_depths[depth(f)];
   }
 
   // See if there are any forbidden modifiers used in the expression,
@@ -1633,16 +1644,10 @@ class Evaluator {
 	  }
 
 	  // Relocate symbols in the variable assignment.
-	  ADT.Stack sscanf_level = ADT.Stack();
-	  sscanf_level->push(-1);
 	  for(int i=from+1; i<pos; i++){
 	    string t = expr[i];
 
-	    if(t=="sscanf")
-	      sscanf_level->push(expr->depth(i)+1);
-	    else if(expr->depth(i)==sscanf_level->top()-1)
-	      sscanf_level->pop();
-	    else if(sscanf_level->top()==expr->depth(i)) {
+	    if(expr->in_sscanf(i)) {
 	      int nv = expr->endoftype(i);
 	      if(nv>=0) {
 		if(top) {
@@ -1716,6 +1721,26 @@ class Evaluator {
 
       if( !plevel && (t==safe_word || t==";") )
 	return p;
+
+      if(expr->in_sscanf(p)) {
+	int nv = expr->endoftype(p);
+	if(nv>=0) {
+	  if(top) {
+	    string var = expr[nv+1];
+	    types[var] = expr[p..nv];
+	    variables[var] = 0;
+	    symbols[var] = 1;
+	    for(int j=p; j<=nv; j++)
+	      expr[j]="";
+	    p=nv;
+	    continue;
+	  }
+	  else {
+	    p=nv+1;
+	    continue;
+	  }
+	}
+      }
 
       // Rewrite variable
       if(symbols[t]) {
