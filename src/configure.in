@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.147 1998/03/05 14:06:19 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.148 1998/05/29 02:16:17 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1541,6 +1541,8 @@ if test "$ac_cv_header_sys_procfs_h" = "yes"; then
 #include <sys/fcntl.h>
 int proc_fd;
 char proc_name[20];
+prusage_t  pru;
+prstatus_t prs;
     ],[
       sprintf(proc_name, "/proc/%05d", getpid());
       proc_fd = open(proc_name, O_RDONLY);
