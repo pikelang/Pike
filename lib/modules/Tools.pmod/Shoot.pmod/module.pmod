@@ -71,6 +71,14 @@ class ExecTest(string id,Test test)
       {
 	 nruns++;
 	 Stdio.File pipe=Stdio.File();
+#if 0
+	 werror("%O %s\n",
+	       runpike+
+	       ({ "-e","Tools.Shoot._shoot(\""+id+"\")" }),
+		(runpike+
+		 ({ "-e","Tools.Shoot._shoot(\""+id+"\")" }))*" ");
+#endif
+		
 	 object p=
 	    Process.create_process( 
 	       runpike+
@@ -106,8 +114,7 @@ class ExecTest(string id,Test test)
 	    memusage/1024,
 	    "("+nruns+")",
 	    test->present_n
-	    ?" ("+test->present_n(testntot,nruns,tseconds,
-				  useconds,memusage)+")"
+	    ?" ("+test->present_n(testntot,nruns,truns,tg,memusage)+")"
 	    :"");
       return 0;
    }
