@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.93 2002/09/14 15:53:39 grubba Exp $
+# $Id: Makefile,v 1.94 2002/09/15 23:07:09 marcus Exp $
 #
 # Meta Makefile
 #
@@ -111,10 +111,10 @@ compile: configure
 	  for target in $$metatarget; do \
 	    echo Making $$target in "$$builddir"; \
 	    rm -f remake; \
-	    $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || { \
+	    $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || { \
 	      res=$$?; \
 	      if test -f remake; then \
-		$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || \
+		$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || \
 		  exit $$?; \
 	      else \
 		exit $$res; \
