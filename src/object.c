@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.103 2000/04/20 00:03:10 mast Exp $");
+RCSID("$Id: object.c,v 1.104 2000/04/22 13:20:39 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -545,10 +545,6 @@ void destruct_objects_to_destruct(void)
 
   while((o=objects_to_destruct))
   {
-#ifdef PIKE_DEBUG
-    if(o->refs)
-      fatal("Object to be destructed grew extra references.\n");
-#endif
     /* Link object back to list of objects */
     objects_to_destruct=o->next;
     
@@ -580,8 +576,6 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
-  extern int Pike_in_gc;
-
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     add_ref(o);
@@ -595,14 +589,17 @@ void really_free_object(struct object *o)
     first_object=o->next;
 
   if(o->next) o->next->prev=o->prev;
-  if (Pike_in_gc) remove_marker(o);
 
   if(o->prog)
   {
     o->next=objects_to_destruct;
     o->prev=0;
     objects_to_destruct=o;
-    if (Pike_in_gc) return;	/* Done last in gc(). */
+    if (Pike_in_gc) {
+      remove_marker(o);
+      /* destruct_objects_to_destruct() done last in gc() instead. */
+      return;
+    }
     if(!destruct_object_evaluator_callback)
     {
       destruct_object_evaluator_callback=
@@ -622,7 +619,7 @@ void really_free_object(struct object *o)
     FREE_PROT(o);
 
     free((char *)o);
-    GC_FREE();
+    GC_FREE(o);
   }
 }
 

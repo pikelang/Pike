@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.55 2000/04/19 21:59:37 mast Exp $");
+RCSID("$Id: gc.c,v 1.56 2000/04/22 13:20:39 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -316,6 +316,17 @@ int debug_gc_check(void *x, TYPE_T t, void *data)
   return ret;
 }
 
+int debug_gc_check_nongarbed(void *x, TYPE_T t, void *data)
+{
+  int ret;
+  found_in=data;
+  found_in_type=t;
+  ret=gc_check_nongarbed(x);
+  found_in_type=T_UNKNOWN;
+  found_in=0;
+  return ret;
+}
+
 void low_describe_something(void *a, int t, int dm)
 {
   struct program *p=(struct program *)a;
@@ -523,10 +534,27 @@ INT32 real_gc_check(void *a)
     }
     return 0;
   }
+  if (m->flags & GC_NONGARBED)
+    fatal("Using gc_check() and gc_check_nongarbed() on the same object.\n");
 #endif
   m->flags |= GC_CHECKED;
 
   return add_ref(m);
+}
+
+INT32 real_gc_check_nongarbed(void *a)
+{
+  struct marker *m = get_marker(a);
+#ifdef PIKE_DEBUG
+  if (m->flags & GC_CHECKED)
+    fatal("Using gc_check_nongarbed() and gc_check() on the same object.\n");
+#endif
+  if (m->flags & GC_NONGARBED)
+    return 1;
+  else {
+    m->flags |= GC_NONGARBED;
+    return 0;
+  }
 }
 
 static void init_gc(void)
@@ -714,6 +742,8 @@ void do_gc(void)
   double multiplier;
 
   if(Pike_in_gc) return;
+
+  init_gc();
   Pike_in_gc=1;
 
   /* Make sure there will be no callback to this while we're in the gc. */
@@ -746,8 +776,6 @@ void do_gc(void)
   objects_freed += (double) num_objects;
 
 
-  init_gc();
-
   /* First we count internal references */
   gc_check_all_arrays();
   gc_check_all_multisets();
@@ -779,9 +807,10 @@ void do_gc(void)
   gc_free_all_unreferenced_objects();
 
   exit_gc();
-
-  destruct_objects_to_destruct();
+  Pike_in_gc=0;
   
+  destruct_objects_to_destruct();
+
   objects_freed -= (double) num_objects;
 
   tmp=(double)num_objects;
@@ -811,7 +840,6 @@ void do_gc(void)
 #else
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
-  Pike_in_gc=0;
 }
 
 

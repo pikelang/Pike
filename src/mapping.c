@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.71 2000/04/06 20:17:05 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.72 2000/04/22 13:20:39 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -63,7 +63,7 @@ DO_IF_DEBUG(								\
 									\
   if(m->next) m->next->prev = m->prev;					\
 									\
-  GC_FREE();
+  GC_FREE(m);
 
 
 #undef COUNT_OTHER
@@ -1840,10 +1840,11 @@ void gc_check_all_mappings(void)
       fatal("Zapped mapping in list of active mappings!\n");
     }
 #endif /* DEBUG_MALLOC */
+
+    if(gc_check_nongarbed(m->data)) continue;
+
     if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
     {
-      if(gc_check(m->data)) continue;
-
       MAPPING_LOOP(m)
       {
 	/* We do not want to count this key:index pair if

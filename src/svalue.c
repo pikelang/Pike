@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.65 2000/04/08 02:01:09 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.66 2000/04/22 13:20:40 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1226,7 +1226,7 @@ TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
       {
 	if(d_flag)
 	{
-	  if(!gc_check(s->u.efun))
+	  if(!gc_check_nongarbed(s->u.efun))
 	  {
 	    gc_check(s->u.efun->name);
 	    gc_check(s->u.efun->type);

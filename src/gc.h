@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.25 2000/04/14 15:53:07 grubba Exp $
+ * $Id: gc.h,v 1.26 2000/04/22 13:20:39 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -12,6 +12,7 @@ extern struct pike_queue gc_mark_queue;
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern INT32 alloc_threshold;
+extern int Pike_in_gc;
 
 extern struct callback *gc_evaluator_callback;
 extern struct callback_list evaluator_callbacks;
@@ -52,10 +53,12 @@ void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);
+int debug_gc_check_nongarbed(void *x, TYPE_T t, void *data);
 void describe_something(void *a, int t, int dm);
 void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 INT32 real_gc_check(void *a);
+INT32 real_gc_check_nongarbed(void *a);
 void locate_references(void *a);
 int debug_gc_is_referenced(void *a);
 int gc_external_mark(void *a);
@@ -69,15 +72,17 @@ void f__gc_status(INT32 args);
 #define gc_check_short_svalue(S,N) real_gc_check_short_svalue(debug_malloc_pass(S),N)
 #define gc_xmark_svalues(S,N) real_gc_xmark_svalues(debug_malloc_pass(S),N)
 #define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
+#define gc_check_nongarbed(VP) real_gc_check_nongarbed(debug_malloc_pass(VP))
 
 #ifdef PIKE_DEBUG
-#define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
+#define GC_FREE(OBJ) do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); if (Pike_in_gc) remove_marker(OBJ); }while(0)
 #else
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
-#define GC_FREE() do { num_objects-- ; }while(0)
+#define debug_gc_check_nongarbed(VP,T,V) gc_check_nongarbed((VP))
+#define GC_FREE(OBJ) do { num_objects-- ; if (Pike_in_gc) remove_marker(OBJ); }while(0)
 #endif
 
 
@@ -87,6 +92,7 @@ void f__gc_status(INT32 args);
 #define GC_REFERENCED 1
 #define GC_XREFERENCED 2
 #define GC_CHECKED 4
+#define GC_NONGARBED 8
 
 
 #ifdef PIKE_DEBUG

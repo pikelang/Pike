@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.81 2000/04/01 07:27:02 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.82 2000/04/22 13:20:40 mast Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -728,6 +728,7 @@ void really_free_string(struct pike_string *s)
 #endif
   unlink_pike_string(s);
   debug_free((char *)s,DMALLOC_LOCATION(),1);
+  if (Pike_in_gc) remove_marker(s);
 }
 
 void debug_free_string(struct pike_string *s)
