@@ -28,6 +28,10 @@ SYNTAX
 	or
 	object(Mysql_result) mysql->list_tables(string wild);
 	or
+	object(Mysql_result) mysql->list_fields(string table);
+	or
+	object(Mysql_result) mysql->list_fields(string table, string wild);
+	or
 	object(Mysql_result) mysql->list_processes();
 
 DESCRIPTION
@@ -123,6 +127,7 @@ DESCRIPTION
 
 	"name":string		The name of the field.
 	"table":string		The name of the table.
+	"default":string	The default value for the field (DISABLED).
 	"type":string		The type of the field.
 	"length":int		The length of the field.
 	"max_length":int	The width of the widest element in this
@@ -139,6 +144,10 @@ SEE ALSO
 	field_seek
 
 BUGS
+	The "flags" entry should be parsed.
+
+	The "default" value handling does not work correctly yet (DISABLED).
+
 	Is affected by field_seek. The resulting array is padded with
 	0's to reach mysql_result->num_fields entries.
 
