@@ -282,6 +282,27 @@ while(1)
   do_command(command);
 }
 </example>
+
+<p>When you want to break out of more than the innermost loop, you can tell
+break what loop to break free of using lables, as in:</p>
+
+<example>
+array arr1, arr2;
+while(1)
+{
+  // ...
+a:if(sizeof(arr1) >= sizeof(arr2))
+  {
+    int i = sizeof(b), j = sizeof(yb);
+    while(i)
+      if(b[--i] != yb[--j])
+        break a;
+    // the code here is only run when arr1
+    // and arr2 share some common suffix
+  }
+  // execution continues here
+}
+</example>
 </subsection>
 
 <subsection title="continue">
