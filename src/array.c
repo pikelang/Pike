@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.84 2000/08/16 15:54:07 grubba Exp $");
+RCSID("$Id: array.c,v 1.85 2000/08/16 21:39:07 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1811,6 +1811,11 @@ static void gc_recurse_weak_array(struct array *a,
 
   if(a->flags & ARRAY_WEAK_SHRINK) {
     int d=0;
+#ifdef PIKE_DEBUG
+    if (a->refs != 1)
+      fatal("Got %d refs to weak shrink array "
+	    "which we'd like to change the size on.\n", a->refs);
+#endif
     t = 0;
     for(e=0;e<a->size;e++)
       if (!recurse_fn(a->item+e, 1)) {
