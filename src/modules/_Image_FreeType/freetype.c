@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.20 2004/01/15 01:19:14 grendel Exp $
+|| $Id: freetype.c,v 1.21 2004/04/19 23:03:01 nilsson Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.20 2004/01/15 01:19:14 grendel Exp $");
+RCSID("$Id: freetype.c,v 1.21 2004/04/19 23:03:01 nilsson Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -102,7 +102,7 @@ static void image_ft_face_write_char( INT32 args )
   {
     int p = slot->bitmap.pitch;
     int g = slot->bitmap.num_grays;
-    char *s = slot->bitmap.buffer;
+    unsigned char *s = slot->bitmap.buffer;
     if( s )
       for( y = 0; y<i->ysize; y++ )
         for( x = 0; x<i->xsize; x++ )
