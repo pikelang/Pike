@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.71 1999/12/13 03:45:13 per Exp $
+// $Id: module.pmod,v 1.72 2000/01/07 21:51:26 grubba Exp $
 
 import String;
 
@@ -166,9 +166,9 @@ class File
 #endif
     if(query_num_arg()==0)
       how=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
-    if(object(Fd) fd=::pipe(how))
+    if(object(Fd) fd=[object(Fd)]::pipe(how))
     {
-      object o=File();
+      object(File) o=File();
       o->_fd=fd;
       return o;
     }else{
@@ -223,36 +223,37 @@ class File
     }
   }
 
-  int assign(object o)
+  int assign(object(File)|object(Fd) o)
   {
     if((program)Fd == (program)object_program(o))
     {
       _fd = o->dup();
     }else{
-      _fd = o->_fd;
-      if(___read_callback = o->___read_callback)
+      object(File) _o = [object(File)]o;
+      _fd = _o->_fd;
+      if(___read_callback = _o->___read_callback)
 	_fd->_read_callback=__stdio_read_callback;
 
-      if(___write_callback = o->___write_callback)
+      if(___write_callback = _o->___write_callback)
 	_fd->_write_callback=__stdio_write_callback;
 
-      ___close_callback = o->___close_callback;
+      ___close_callback = _o->___close_callback;
 #if constant(files.__HAVE_OOB__)
-      if(___read_oob_callback = o->___read_oob_callback)
+      if(___read_oob_callback = _o->___read_oob_callback)
 	_fd->_read_oob_callback = __stdio_read_oob_callback;
 
-      if(___write_oob_callback = o->___write_oob_callback)
+      if(___write_oob_callback = _o->___write_oob_callback)
 	_fd->_write_oob_callback = __stdio_write_oob_callback;
 #endif
-      ___id = o->___id;
+      ___id = _o->___id;
       
     }
     return 0;
   }
 
-  object dup()
+  object(File) dup()
   {
-    object to = File();
+    object(File) to = File();
     to->_fd = _fd;
     if(to->___read_callback = ___read_callback)
       _fd->_read_callback=to->__stdio_read_callback;
@@ -773,7 +774,7 @@ mixed `[](string index)
   if(x) return x;
   switch(index)
   {
-  case "readline": return master()->resolv("Stdio")["Readline"]->readline;
+  case "readline": return (master()->resolv("Stdio")["Readline"])->readline;
   default: return ([])[0];
   }
 }
@@ -785,12 +786,12 @@ constant cp=system.cp;
 int cp(string from, string to)
 {
   string data;
-  object tmp=File();
+  object(File) tmp=File();
   if(!tmp->open(from,"r")) return 0;
-  function r=tmp->read;
+  function(int,int|void:string) r=tmp->read;
   tmp=File();
   if(!tmp->open(to,"wct")) return 0;
-  function w=tmp->write;
+  function(string:int) w=tmp->write;
   do
   {
     data=r(BLOCK);
@@ -833,10 +834,10 @@ void async_cp(string from, string to,
 // FIXME: Support for timeouts?
 static class nb_sendfile
 {
-  static object from;
+  static object(File) from;
   static int len;
   static array(string) trailers;
-  static object to;
+  static object(File) to;
   static function(int, mixed ...:void) callback;
   static array(mixed) args;
 
@@ -1008,7 +1009,7 @@ static class nb_sendfile
 
     int bytes = to->write(to_write);
 
-    if (bytes > 0) {
+    if (bytes >= 0) {
       sent += bytes;
 
       int n;
@@ -1115,9 +1116,9 @@ static class nb_sendfile
   /* Starter */
 
   void create(array(string) hd,
-	      object f, int off, int l,
+	      object(File) f, int off, int l,
 	      array(string) tr,
-	      object t,
+	      object(File) t,
 	      function(int, mixed ...:void)|void cb,
 	      mixed ... a)
   {
