@@ -219,7 +219,7 @@ array(string) gen_func(string name, string ty)
       res += "  union zvalue16 zv16;\n  int r1n;\n";
       argt += arrfix[0];
       got += "  if(sp["+(a-1)+"-args].u.array->size != "+nn+")\n"
-	"    error(\""+name+": Array length is wrong (is %d, should be "+nn+
+	"    Pike_error(\""+name+": Array length is wrong (is %d, should be "+nn+
 	")\\n\", sp["+(a-1)+"-args].u.array->size);\n\n";
       got += "  r1n=check_1n_args(\""+name+"\", args-"+(a-1)+", "+
 	arrfix[1]+", "+arrfix[2]+", &zv16);\n";
