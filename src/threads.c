@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.242 2005/01/25 18:58:02 grubba Exp $
+|| $Id: threads.c,v 1.243 2005/03/31 02:19:46 nilsson Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -49,18 +49,19 @@ PMOD_EXPORT int threads_disabled = 0;
 #include <sys/time.h>
 #endif
 
-#ifndef PIKE_THREAD_C_STACK_SIZE
-#define PIKE_THREAD_C_STACK_SIZE (256 * 1024)
-#endif
-
 PMOD_EXPORT int live_threads = 0, disallow_live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
-PMOD_EXPORT size_t thread_stack_size=PIKE_THREAD_C_STACK_SIZE;
 
 #else
 #include "pike_threadlib.h"
 #endif	/* !CONFIGURE_TEST */
+
+#ifndef PIKE_THREAD_C_STACK_SIZE
+#define PIKE_THREAD_C_STACK_SIZE (256 * 1024)
+#endif
+
+PMOD_EXPORT size_t thread_stack_size=PIKE_THREAD_C_STACK_SIZE;
 
 PMOD_EXPORT void thread_low_error (int errcode, const char *cmd,
 				   const char *fname, int lineno)
