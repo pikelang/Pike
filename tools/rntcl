@@ -361,7 +361,7 @@ int main(int argc, string *argv)
 	       "-fixed:no",
 	       "-debug",
 //	  "-PDB:NONE",
-//	  "-DEBUGTYPE:BOTH",
+	  "-DEBUGTYPE:BOTH",  //FIXME: Should only be enabled for dynamic link
 	  "-DEBUG",
 	  })
 	  +ldopts;
