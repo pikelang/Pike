@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.146 2001/10/05 22:58:38 hubbe Exp $
+ * $Id: program.h,v 1.147 2001/11/08 23:34:30 nilsson Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -382,6 +382,7 @@ extern struct object *error_handler;
 extern struct object *compat_handler;
 
 extern struct program *first_program;
+extern struct program *null_program;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 extern struct program *placeholder_program;
@@ -401,6 +402,23 @@ extern int compilation_depth;
 
 #define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
 #include "program_areas.h"
+
+
+struct Supporter
+{
+#ifdef PIKE_DEBUG
+  int magic;
+#endif
+  struct Supporter *previous;
+  struct Supporter *depends_on;
+  struct Supporter *dependants;
+  struct Supporter *next_dependant;
+  void (*fun)(void *);
+  void *data;
+  struct program *prog;
+};
+
+
 
 /* Prototypes begin here */
 void ins_int(INT32 i, void (*func)(char tmp));
@@ -545,6 +563,14 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 void yy_describe_exception(struct svalue *thrown);
+struct supporter_marker;
+void verify_supporters();
+void init_supporter(struct Supporter *s,
+		    void (*fun)(void *),
+		    void *data);
+int unlink_current_supporter(struct Supporter *c);
+void call_dependants(struct Supporter *s);
+int report_compiler_dependency(struct program *p);
 struct compilation;
 void run_pass2(struct compilation *c);
 struct program *compile(struct pike_string *aprog,
@@ -552,7 +578,6 @@ struct program *compile(struct pike_string *aprog,
 			int amajor, int aminor,
 			struct program *atarget,
 			struct object *aplaceholder);
-int report_compiler_dependency(struct program *p);
 PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
 				   char *type, unsigned INT8 flags,
 				   unsigned INT16 opt_flags);

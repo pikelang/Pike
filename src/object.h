@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.64 2001/08/15 03:31:55 hubbe Exp $
+ * $Id: object.h,v 1.65 2001/11/08 23:34:29 nilsson Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -135,7 +135,7 @@ void check_all_objects(void);
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_object, (X), (WEAK))
 
 #define PIKE_OBJ_DESTRUCTED(o) (o->prog)
-#define PIKE_OBJ_INITED(o) (o->prog && (o->prog->flags & PROGRAM_PASS_1_DONE))
+#define PIKE_OBJ_INITED(o) (o->prog && (o->prog->flags & PROGRAM_PASS_1_DONE) && !((o->prog->flags & PROGRAM_AVOID_CHECK)))
 #define destruct_objects_to_destruct() do{ if(objects_to_destruct) low_destruct_objects_to_destruct(); }while(0)
 
 #endif /* OBJECT_H */

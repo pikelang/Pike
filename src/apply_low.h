@@ -38,7 +38,7 @@
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
 
-      if(!(p->flags & PROGRAM_PASS_1_DONE))
+      if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
 	PIKE_ERROR("__empty_program() -> function",
 	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
 	

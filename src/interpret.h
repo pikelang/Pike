@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.103 2001/09/01 11:12:20 grubba Exp $
+ * $Id: interpret.h,v 1.104 2001/11/08 23:34:29 nilsson Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -13,6 +13,7 @@
 #include "global.h"
 #include "program.h"
 #include "pike_error.h"
+#include "bignum.h"
 
 struct Pike_interpreter {
   /* Swapped variables */
