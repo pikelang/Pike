@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.60 2000/08/15 16:11:36 grubba Exp $");
+RCSID("$Id: error.c,v 1.61 2000/08/15 16:55:20 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -231,7 +231,7 @@ PMOD_EXPORT void check_recovery_context(void)
     fprintf(stderr, "Last recovery was added at %s:%d\n",
 	    Pike_interpreter.recoveries->file,
 	    Pike_interpreter.recoveries->line);
-    fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",
+    fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	  Pike_interpreter.recoveries, &foo,
 	  DO_NOT_WARN((long)TESTILITEST));
   }
@@ -736,11 +736,12 @@ PMOD_EXPORT void resource_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *resource_type,
-  size_t howmuch,
+  size_t howmuch_,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
+  INT_TYPE howmuch = DO_NOT_WARN((INT_TYPE)howmuch_);
   INIT_ERROR(resource);
-  ERROR_COPY(resource, DO_NOT_WARN((INT32)howmuch));
+  ERROR_COPY(resource, howmuch);
   ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);
   ERROR_DONE(generic);
 }
