@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.15 2000/03/24 02:35:47 hubbe Exp $
+# $Id: configure.in,v 1.16 2000/03/29 22:25:03 hubbe Exp $
 #
 # Configure script for the oracle module
 #
@@ -69,7 +69,9 @@ if test x$with_oracle = xyes; then
 
   echo no > conftest
       
-  if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/lib/libcommon.a"; then
+  if test x"$pike_cv_oracle_oracle_home" != xno && \
+      test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
+            -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
 
     echo "$pike_cv_oracle_oracle_home/lib" > conftest
 
@@ -77,7 +79,7 @@ if test x$with_oracle = xyes; then
     if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
 
       sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." -a -f "$dir/lib/libcommon.a"; then
+        if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o "$dir/lib/libcommon8.a"; then
 	  if test x"$pike_cv_oracle_oracle_home" = xno; then
             AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
 	  else
@@ -241,10 +243,14 @@ EOF
     CPPFLAGS="-I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public -I ${CPPFLAGS}"
     LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
 
-    if test -f "$oracle_lib_dir/libcore4.a"; then
-      ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+    if test -f "$oracle_lib_dir/libcore8.a"; then
+      ORACLE_LIBS="-lclntsh"
     else
-      ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+      if test -f "$oracle_lib_dir/libcore4.a"; then
+        ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+      else
+        ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+      fi
     fi
 
     OLDLIBS=LIBS
