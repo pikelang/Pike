@@ -126,7 +126,7 @@ static void sreplyfunc(char *reply, struct signal_data *d)
   apply_svalue( &d->cb, 2 );
   pop_stack();
   free( d );
-  g_free( reply ); // should we?
+  g_free( reply ); /* should we? */
 }
 
 static gdouble progressfunc(struct signal_data *d)
