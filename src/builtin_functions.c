@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.370 2001/05/31 22:16:37 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.371 2001/06/05 00:01:40 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3285,6 +3285,10 @@ node *optimize_replace(node *n)
     n->node_info |= OPT_SIDE_EFFECT;
     n->tree_info |= OPT_SIDE_EFFECT;
   }
+
+  free_type(array_zero);
+  free_type(mapping_zero);
+
   return NULL;
 }
 
@@ -3368,10 +3372,26 @@ PMOD_EXPORT void f_compile(INT32 args)
 
 
 /*! @decl array|mapping|multiset set_weak_flag(array|mapping|multiset m, @
- *!                                            int(0..1) state)
+ *!                                            int state)
  *!
- *!   Set the value @[m] to hold weak references if @[state] is @tt{1@}.
- *!   Reset to strong references otherwise.
+ *!   Set the value @[m] to use weak or normal references in its
+ *!   indices and/or values (whatever is applicable). @[state] is a
+ *!   bitfield built by using @tt{|@} between the following flags:
+ *!   
+ *!   @dl
+ *!   	@item @[Pike.WEAK_INDICES]
+ *!   	  Use weak references for indices. Only applicable for
+ *!   	  multisets and mappings.
+ *!   	@item @[Pike.WEAK_VALUES]
+ *!   	  Use weak references for values. Only applicable for arrays
+ *!   	  and mappings.
+ *!   	@item @[Pike.WEAK]
+ *!   	  Shorthand for @tt{Pike.WEAK_INDICES|Pike.WEAK_VALUES@}.
+ *!   @enddl
+ *!   
+ *!   If a flag is absent, the corresponding field will use normal
+ *!   references. @[state] can also be @tt{1@} as a compatibility
+ *!   measure; it's treated like @[Pike.WEAK].
  *!
  *! @returns
  *!   @[m] will be returned.
@@ -3385,19 +3405,22 @@ void f_set_weak_flag(INT32 args)
 
   get_all_args("set_weak_flag",args,"%*%i",&s,&ret);
 
+  if (ret == 1) ret = PIKE_WEAK_BOTH;
+
   switch(s->type)
   {
     case T_ARRAY:
-      SETFLAG(s->u.array->flags,ARRAY_WEAK_FLAG,ret);
+      SETFLAG(s->u.array->flags,ARRAY_WEAK_FLAG,ret & PIKE_WEAK_VALUES);
       break;
     case T_MAPPING: {
       int flags = mapping_get_flags(s->u.mapping);
-      SETFLAG(flags,MAPPING_FLAG_WEAK,ret);
+      flags = (flags & ~PIKE_WEAK_BOTH) | (ret & PIKE_WEAK_BOTH);
       mapping_set_flags(s->u.mapping, flags);
       break;
     }
     case T_MULTISET:
-      SETFLAG(s->u.multiset->ind->flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),ret);
+      SETFLAG(s->u.multiset->ind->flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),
+	      ret & PIKE_WEAK_INDICES);
       break;
     default:
       SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");
@@ -7767,7 +7790,10 @@ void init_builtin_efuns(void)
 /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,
 	   tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);
-  
+
+  ADD_INT_CONSTANT("PIKE_WEAK_INDICES", PIKE_WEAK_INDICES, 0);
+  ADD_INT_CONSTANT("PIKE_WEAK_VALUES", PIKE_WEAK_VALUES, 0);
+
 /* function(void|object:object) */
   ADD_EFUN("next_object",f_next_object,
 	   tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);
