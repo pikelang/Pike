@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.106 2003/11/19 03:35:59 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.107 2003/12/14 00:22:40 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -2007,24 +2007,12 @@ class StdinHilfe
   //! The readline object,
   Stdio.Readline readline;
 
-  private int(0..1) unsaved_history;
-
-  void destroy() {
-    //    readline->get_history()->pop();
-    save_history();
-  }
-
   //! Saves the user input history, if possible, when called.
-  void save_history()
-  {
-    if(!unsaved_history) return;
-    unsaved_history = 0;
+  void save_history() {
     catch {
-      if(string home=getenv("HOME")||getenv("USERPROFILE"))
-      {
+      if(string home=getenv("HOME")||getenv("USERPROFILE")) {
 	rm(home+"/.hilfe_history~");
-	if(object f=Stdio.File(home+"/.hilfe_history~","wct"))
-	{
+	if(object f=Stdio.File(home+"/.hilfe_history~","wct")) {
 	  f->write(readline->get_history()->encode());
 	  f->close();
 	}
@@ -2037,9 +2025,21 @@ class StdinHilfe
     };
   }
 
-  void signal_trap(int s)
-  {
-    save_history();
+  void load_history() {
+    catch {
+      if(string home=getenv("HOME")||getenv("USERPROFILE"))
+	if(string s=Stdio.read_file(home+"/.hilfe_history"))
+	  readline->enable_history(s/"\n");
+    };
+  }
+
+  void load_hilferc() {
+    if(string home=getenv("HOME")||getenv("USERPROFILE"))
+      if(string s=Stdio.read_file(home+"/.hilferc"))
+	map(s/"\n", add_buffer);
+  }
+
+  void signal_trap(int s) {
     exit(1);
   }
 
@@ -2050,41 +2050,25 @@ class StdinHilfe
     write=predef::write;
     ::create();
 
-    if(string home=getenv("HOME")||getenv("USERPROFILE"))
-    {
-      if(string s=Stdio.read_file(home+"/.hilferc"))
-	map(s/"\n", add_buffer);
-    }
-
+    load_hilferc();
     if(init) map(init, add_buffer);
 
     readline = Stdio.Readline();
-    array(string) hist;
-    catch{
-      if(string home=getenv("HOME")||getenv("USERPROFILE"))
-      {
-	if(string s=Stdio.read_file(home+"/.hilfe_history")) {
-	  hist=s/"\n";
-	  readline->enable_history(hist);
-	}
-      }
-    };
-    if(!hist)
+    load_history();
+    if(!readline->get_history())
       readline->enable_history(512);
     signal(signum("SIGINT"),signal_trap);
 
-    for(;;)
-    {
+    for(;;) {
       readline->set_prompt(state->finishedp() ? "> " : ">> ");
       string s=readline->read();
 
       if(!s)
 	break;
 
-      unsaved_history = 1;
+      save_history();
       add_input_line(s);
     }
-    save_history();
     destruct(readline);
     write("Terminal closed.\n");
   }
