@@ -221,9 +221,6 @@ static struct sigdesc signal_desc []={
   { SIGCKPT, "SIGCKPT" },
 #endif
 
-#ifdef SIGPTINTR
-  { SIGPTINTR, "SIGPTINTR" },
-#endif
 #ifdef SIGPTRESCHED
   { SIGPTRESCHED, "SIGPTRESCHED" },
 #endif
@@ -245,13 +242,6 @@ static struct sigdesc signal_desc []={
 #endif
 #ifdef SIGTHAW
   { SIGTHAW, "SIGTHAW" },
-#endif
-
-#ifdef SIGRTMIN
-  { SIGRTMIN, "SIGRTMIN" },
-#endif
-#ifdef SIGRTMAX
-  { SIGRTMAX, "SIGRTMAX" },
 #endif
 
   { -1, "END" } /* Notused */
