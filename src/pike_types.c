@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.204 2003/01/17 13:10:01 jhs Exp $
+|| $Id: pike_types.c,v 1.205 2003/01/26 11:09:01 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.204 2003/01/17 13:10:01 jhs Exp $");
+RCSID("$Id: pike_types.c,v 1.205 2003/01/26 11:09:01 mirar Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -516,7 +516,7 @@ struct pike_type *debug_peek_type_stack(void)
   return *(Pike_compiler->type_stackp);
 }
 
-void debug_push_int_type(INT32 min, INT32 max)
+void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 {
   *(++Pike_compiler->type_stackp) = mk_type(T_INT,
 					    (void *)(ptrdiff_t)min,

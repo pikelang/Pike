@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.312 2003/01/13 15:04:59 grubba Exp $
+|| $Id: language.yacc,v 1.313 2003/01/26 11:09:00 mirar Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.312 2003/01/13 15:04:59 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.313 2003/01/26 11:09:00 mirar Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1316,7 +1316,7 @@ identifier_type: idents
 
 number_or_maxint: /* Empty */
   {
-    $$ = mkintnode(MAX_INT32);
+    $$ = mkintnode(MAX_INT_TYPE);
   }
   | TOK_NUMBER
   | '-' TOK_NUMBER
@@ -1333,7 +1333,7 @@ number_or_maxint: /* Empty */
 
 number_or_minint: /* Empty */
   {
-    $$ = mkintnode(MIN_INT32);
+    $$ = mkintnode(MIN_INT_TYPE);
   }
   | TOK_NUMBER
   | '-' TOK_NUMBER
@@ -1357,12 +1357,12 @@ expected_dot_dot: TOK_DOT_DOT
 
 opt_int_range: /* Empty */
   {
-    push_int_type(MIN_INT32, MAX_INT32);
+    push_int_type(MIN_INT_TYPE, MAX_INT_TYPE);
   }
   | '(' number_or_minint expected_dot_dot number_or_maxint ')'
   {
-    INT32 min = MIN_INT32;
-    INT32 max = MAX_INT32;
+    INT_TYPE min = MIN_INT_TYPE;
+    INT_TYPE max = MAX_INT_TYPE;
 
     /* FIXME: Check that $4 is >= $2. */
     if($4->token == F_CONSTANT) {
@@ -1372,7 +1372,7 @@ opt_int_range: /* Empty */
       } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
 	push_int(0);
 	if (is_lt(&$4->u.sval, Pike_sp-1)) {
-	  max = MIN_INT32;
+	  max = MIN_INT_TYPE;
 	}
 	pop_stack();
 #endif /* AUTO_BIGNUM */
@@ -1386,7 +1386,7 @@ opt_int_range: /* Empty */
       } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
 	push_int(0);
 	if (is_lt(Pike_sp-1, &$2->u.sval)) {
-	  min = MAX_INT32;
+	  min = MAX_INT_TYPE;
 	}
 	pop_stack();
 #endif /* AUTO_BIGNUM */

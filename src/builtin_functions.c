@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.463 2003/01/16 16:10:11 mast Exp $
+|| $Id: builtin_functions.c,v 1.464 2003/01/26 11:09:00 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.463 2003/01/16 16:10:11 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.464 2003/01/26 11:09:00 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4500,7 +4500,7 @@ static void f_interleave_array(INT32 args)
       if (low > k->ind.u.integer) {
 	low = k->ind.u.integer;
 	if (low < 0) {
-	  Pike_error("interleave_array(): Index %d in mapping %d is negative!\n",
+	  Pike_error("interleave_array(): Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
 		low, i);
 	}
       }

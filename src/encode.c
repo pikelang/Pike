@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.161 2003/01/16 16:10:11 mast Exp $
+|| $Id: encode.c,v 1.162 2003/01/26 11:09:01 mirar Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.161 2003/01/16 16:10:11 mast Exp $");
+RCSID("$Id: encode.c,v 1.162 2003/01/26 11:09:01 mirar Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2985,7 +2985,7 @@ static void decode_value2(struct decode_data *data)
 	      (Pike_sp[-1].u.integer > 0)) {
 	    struct program *p = id_to_program(Pike_sp[-1].u.integer);
 	    if (!p) {
-	      Pike_error("Failed to decode program %d\n",
+	      Pike_error("Failed to decode program %"PRINTPIKEINT"d\n",
 			 Pike_sp[-1].u.integer);
 	    }
 	    pop_stack();

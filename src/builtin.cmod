@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.108 2003/01/15 21:41:28 mast Exp $
+|| $Id: builtin.cmod,v 1.109 2003/01/26 11:09:00 mirar Exp $
 */
 
 #include "global.h"
@@ -1075,7 +1075,7 @@ PIKECLASS backtrace_frame
   CVAR struct program *prog;	/* FIXME: Ought to be a private pikevar... */
   CVAR PIKE_OPCODE_T *pc;
   CVAR struct pike_string *filename;
-  CVAR INT_TYPE lineno;
+  CVAR INT32 lineno;
 
   INIT
   {

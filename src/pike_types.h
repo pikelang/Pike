@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.83 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_types.h,v 1.84 2003/01/26 11:09:01 mirar Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -225,7 +225,7 @@ void debug_pop_type_stack(unsigned INT16 expected);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
 struct pike_type *debug_peek_type_stack(void);
-void debug_push_int_type(INT32 min, INT32 max);
+void debug_push_int_type(INT_TYPE min, INT_TYPE max);
 void debug_push_object_type(int flag, INT32 id);
 void debug_push_object_type_backwards(int flag, INT32 id);
 void debug_push_type_name(struct pike_string *name);
