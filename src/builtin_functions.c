@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.117 1998/07/19 22:49:08 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.118 1998/07/22 10:22:22 hedda Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2852,7 +2852,7 @@ void f_everynth(INT32 args)
     default:
     case 3:
      start=sp[2-args].u.integer;
-     if(start<2) error("Third argument to everynth is negative.\n");
+     if(start<0) error("Third argument to everynth is negative.\n");
     case 2:
       n=sp[1-args].u.integer;
       if(n<1) error("Second argument to everynth is negative.\n");
