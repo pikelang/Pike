@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.50 2001/08/24 12:39:15 grubba Exp $
+ * $Id: Sql.pike,v 1.51 2001/09/06 18:52:55 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,17 +8,7 @@
 
 #pike __REAL_VERSION__
 
-//.
-//. File:	sql.pike
-//. RCSID:	$Id: Sql.pike,v 1.50 2001/08/24 12:39:15 grubba Exp $
-//. Author:	Henrik Grubbström (grubba@roxen.com)
-//.
-//. Synopsis:	Implements the generic parts of the SQL-interface.
-//.
-//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//.
-//. Implements those functions that need not be present in all SQL-modules.
-//.
+//! Implements those functions that need not be present in all SQL-modules.
 
 #define throw_error(X)	throw(({ (X), backtrace() }))
 
@@ -85,26 +75,33 @@ function(int:string) encode_datetime;
 
 function(string:int) decode_datetime;
 
-//!   Create a new generic SQL object.
+//! Create a new generic SQL object.
 //!
 //! @param host
-//!   object - Use this object to access the SQL-database.
-//!   string - Connect to the server specified.
-//!            The string should be on the format:
-//!              @tt{dbtype://[user[:password]@@]hostname[:port][/database]@}
-//!            Use the dbtype protocol to connect to the database server
-//!            on the specified host.
-//!            If the hostname is @tt{""@}, access through a UNIX-domain
-//!	       socket or similar.
-//!   zero   - Access through a UNIX-domain socket or similar.
+//!   @mixed
+//!     @type object
+//!       Use this object to access the SQL-database.
+//!     @type string
+//!       Connect to the server specified.
+//!       The string should be on the format:
+//!       @tt{dbtype://[user[:password]@@]hostname[:port][/database]@}
+//!       Use the dbtype protocol to connect to the database server
+//!       on the specified host.
+//!       If the hostname is @tt{""@}, access through a UNIX-domain
+//!	  socket or similar.
+//!     @type int(0..0)
+//!       Access through a UNIX-domain socket or similar.
+//!   @endmixed
 //!
 //! @param database
 //!   Select this database.
 //!
 //! @param user
 //!   User name to access the database as.
+//!
 //! @param password
 //!   Password to access the database.
+//!
 //! @note
 //!   In versions of Pike prior to 7.2 it was possible to leave out the
 //!   dbtype, but that has been deprecated, since it never worked well.
@@ -248,8 +245,7 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
   return 0;
 }
 
-//! - error
-//!   Return last error message.  
+//! Return last error message.
 int|string error()
 {
   if (functionp (master_sql->error))
@@ -257,18 +253,17 @@ int|string error()
   return "Unknown error";
 }
 
-//! - select_db
-//!   Select database to access.
+//! Select database to access.
 void select_db(string db)
 {
   master_sql->select_db(db);
 }
 
-//! - compile_query
-//!   Compiles the query (if possible). Otherwise returns it as is.
-//!   The resulting object can be used multiple times in query() and
-//!   big_query().
-//! > q
+//! Compiles the query (if possible). Otherwise returns it as is.
+//! The resulting object can be used multiple times in query() and
+//! big_query().
+//!
+//! @param q
 //!   SQL-query to compile.
 string|object compile_query(string q)
 {
@@ -278,8 +273,7 @@ string|object compile_query(string q)
   return(q);
 }
 
-//! - handle_extraargs
-//!   Handle sprintf-based quoted arguments
+//! Handle sprintf-based quoted arguments
 private array(string|mapping(string|int:mixed)) handle_extraargs(string query, array(mixed) extraargs) {
   array(mixed) args=allocate(sizeof(extraargs));
   mixed s;
@@ -302,26 +296,35 @@ private array(string|mapping(string|int:mixed)) handle_extraargs(string query, a
   return ({sprintf(query,@args), b});
 }
 
-//. - query
-//.   Send an SQL query to the underlying SQL-server. The result is returned
-//.   as an array of mappings indexed on the name of the columns.
-//.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
-//. > q
-//.   Query to send to the SQL-server. This can either be a string with the
-//.   query, or a previously compiled query (see compile_query()).
-//. > extraargs
-//.   This parameter, if specified, can be in two forms:
-//.   1) a mapping containing bindings of variables used in the query.
-//.   A variable is identified by a colon (:) followed by a name or number.
-//.   Each index in the mapping corresponds to one such variable, and the
-//.   value for that index is substituted (quoted) into the query wherever
-//.   the variable is used.
-//.   (i.e. query("select foo from bar where gazonk=:baz",
-//.         ([":baz":"value"])) )
-//.   Binary values (BLOBs) may need to be placed in multisets. 
-//.   2) arguments as you would use in sprintf. They are automatically 
-//.   quoted.
-//.   (i.e. query("select foo from bar where gazonk=%s","value") )
+//!   Send an SQL query to the underlying SQL-server. The result is returned
+//!   as an array of mappings indexed on the name of the columns.
+//!   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
+//!
+//! @param q
+//!   Query to send to the SQL-server. This can either be a string with the
+//!   query, or a previously compiled query (see compile_query()).
+//! @param extraargs
+//!   This parameter, if specified, can be in two forms:
+//!
+//!   @ol
+//!     @item
+//!     A mapping containing bindings of variables used in the query.
+//!     A variable is identified by a colon (:) followed by a name or number.
+//!     Each index in the mapping corresponds to one such variable, and the
+//!     value for that index is substituted (quoted) into the query wherever
+//!     the variable is used.
+//!
+//!     @code{ query("select foo from bar where gazonk=:baz",
+//!         ([":baz":"value"])) ) @}
+//!
+//!     Binary values (BLOBs) may need to be placed in multisets.
+//!
+//!     @item
+//!     Arguments as you would use in sprintf. They are automatically
+//!     quoted.
+//!
+//!     @code{ query("select foo from bar where gazonk=%s","value") ) @}
+//!   @endol
 array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
@@ -347,12 +350,11 @@ array(mapping(string:mixed)) query(object|string q,
   }
 }
 
-//! - big_query
-//!   Send an SQL query to the underlying SQL-server. The result is returned
-//!   as a Sql.sql_result object. This allows for having results larger than
-//!   the available memory, and returning some more info about the result.
-//!   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
-//!   For the other arguments, they are the same as the query() function.
+//! Send an SQL query to the underlying SQL-server. The result is returned
+//! as a Sql.sql_result object. This allows for having results larger than
+//! the available memory, and returning some more info about the result.
+//! Returns 0 if the query didn't return any result (e.g. INSERT or similar).
+//! For the other arguments, they are the same as the query() function.
 int|object big_query(object|string q, mixed ... extraargs)
 {
   object|array(mapping) pre_res;
@@ -380,26 +382,25 @@ int|object big_query(object|string q, mixed ... extraargs)
   return(pre_res && Sql.sql_result(pre_res));
 }
 
-//! - create_db
-//!   Create a new database.
-//! > db
+//! Create a new database.
+//!
+//! @param db
 //!   Name of database to create.
 void create_db(string db)
 {
   master_sql->create_db(db);
 }
 
-//! - drop_db
-//!   Drop database
-//! > db
+//! Drop database
+//!
+//! @param db
 //!   Name of database to drop.
 void drop_db(string db)
 {
   master_sql->drop_db(db);
 }
 
-//! - shutdown
-//!   Shutdown a database server.
+//! Shutdown a database server.
 void shutdown()
 {
   if (functionp(master_sql->shutdown)) {
@@ -409,8 +410,7 @@ void shutdown()
   }
 }
 
-//! - reload
-//!   Reload the tables.
+//! Reload the tables.
 void reload()
 {
   if (functionp(master_sql->reload)) {
@@ -420,8 +420,7 @@ void reload()
   }
 }
 
-//! - server_info
-//!   Return info about the current SQL-server.
+//! Return info about the current SQL-server.
 string server_info()
 {
   if (functionp(master_sql->server_info)) {
@@ -430,8 +429,7 @@ string server_info()
   return("Unknown SQL-server");
 }
 
-//! - host_info
-//!   Return info about the connection to the SQL-server.
+//! Return info about the connection to the SQL-server.
 string host_info()
 {
   if (functionp(master_sql->host_info)) {
@@ -440,9 +438,9 @@ string host_info()
   return("Unknown connection to host");
 }
 
-//! - list_dbs
-//!   List available databases on this SQL-server.
-//! > wild
+//! List available databases on this SQL-server.
+//!
+//! @param wild
 //!   Optional wildcard to match against.
 array(string) list_dbs(string|void wild)
 {
@@ -467,9 +465,9 @@ array(string) list_dbs(string|void wild)
   return(res);
 }
 
-//! - list_tables
-//!   List tables available in the current database.
-//! > wild
+//! List tables available in the current database.
+//!
+//! @param wild
 //!   Optional wildcard to match against.
 array(string) list_tables(string|void wild)
 {
@@ -494,11 +492,12 @@ array(string) list_tables(string|void wild)
   return(res);
 }
 
-//! - list_fields
-//!   List fields available in the specified table
-//! > table
+//! List fields available in the specified table
+//!
+//! @param table
 //!   Table to list the fields of.
-//! > wild
+//!
+//! @param wild
 //!   Optional wildcard to match against.
 array(mapping(string:mixed)) list_fields(string table, string|void wild)
 {
