@@ -1,14 +1,8 @@
 <!-- This file contains information telling the splitter how to -->
 <!-- turn the large manual.xml file into manageble pieces. -->
-<!-- $Id: structure.xml,v 1.6 2001/07/20 23:36:42 nilsson Exp $ -->
+<!-- $Id: structure.xml,v 1.7 2001/07/27 15:39:37 nilsson Exp $ -->
 
 <dir name="manual">
-  <file name="structure.xml">
-    <!-- Don't delete this file on us in the import stage... :) -->
-    <!-- This file is not touched at all by the splitter, since -->
-    <!-- there are no targets here; it's only used on the other -->
-    <!-- side, for dark purposes not fit for printing here. :-) -->
-  </file>
   <dir name="Process">
     <file name="create_process.xml">
       <!-- Only list create() and limit_value at -->
