@@ -33,7 +33,11 @@
 #include "module_support.h"
 #include "operators.h"
 
+#ifdef HAVE_POSTGRES_FE_H
+#include <postgres_fe.h>
+#else /* !HAVE_POSTGRES_FE_H */
 #include <postgres.h>
+#endif /* HAVE_POSTGRES_FE_H */
 #include <libpq-fe.h>
 
 #include "pgresult.h"
@@ -71,7 +75,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.23 2001/09/06 18:47:30 nilsson Exp $");
+RCSID("$Id: postgres.c,v 1.24 2001/11/14 14:49:36 grubba Exp $");
 
 static void set_error (char * newerror)
 {

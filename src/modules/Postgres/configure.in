@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.13 2001/06/25 21:07:00 david%hedbor.org Exp $
+dnl $Id: configure.in,v 1.14 2001/11/14 14:49:36 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(postgres.c)
@@ -84,12 +84,14 @@ dnl check it not to be a stale entry
   fi
 
 dnl final ckeck, just to be sure we didn't mess up
-  AC_CHECK_HEADERS(postgres.h)
-  AC_CHECK_HEADERS(libpq-fe.h)
+  AC_CHECK_HEADERS(postgres.h postgres_fe.h libpq-fe.h)
   if test x$ac_cv_header_libpq_fe_h$ac_cv_header_postgres_h != xyesyes ; then
-    ac_cv_header_libpq_fe_h=no
-    ac_cv_header_postgres_h=no
-    ac_pike_postgres_skip=yes
+    if test x$ac_cv_header_libpq_fe_h$ac_cv_header_postgres_fe_h != xyesyes ; then
+      ac_cv_header_libpq_fe_h=no
+      ac_cv_header_postgres_h=no
+      ac_cv_header_postgres_fe_h=no
+      ac_pike_postgres_skip=yes
+    fi
   fi
 
 dnl okay, now let's start working on the libraries
