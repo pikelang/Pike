@@ -1813,7 +1813,7 @@ int main(int argc, array(string) argv)
 
     x+=({
       "void pike_module_exit(void) {\n",
-      tmp->addfuncs,
+      tmp->exitfuncs,
       "}\n",
     });
 
