@@ -127,23 +127,52 @@ private void request_received(mapping rdata) {
 //!   the port number to listen for requests on
 //! @param addr
 //!   the address to bind to for listening
+//! @param usethreads
+//!   use threads for handler loop (if available)
 //!
 //! @note
 //!    only one agent may be bound to a port at one time
 //!    the agent does not currently support SMUX or AGENTX or other
 //!    agent multiplexing protocols.
-void create(int|void port, string|void addr) {
+void create(int|void port, string|void addr, int|void usethread) {
   int p=port||SNMP_DEFAULT_PORT;
 
   if(addr)
     ::create(0, 0, p, addr);
   else
     ::create(0, 0, p);
+#if constant(thread_create)
+  if(usethread)
+  {
+    run_handler_thread();
+  }
+  else
+  {
+#endif
+    ::set_read_callback(request_received);
+    ::set_nonblocking();
+#if constant (thread_create)
+  }
+#endif
+}
 
-  ::set_read_callback(request_received);
-  ::set_nonblocking();
+#if constant (thread_create)
+void run_handler_thread()
+{
+  thread_create(handler);
+}
+
+void handler()
+{
+   do
+   {
+     mixed r=read();
+     if(r) request_received(r);
+   }
+   while(1);
 
 }
+#endif
 
 //! enable manager access limits
 //!
