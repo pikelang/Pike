@@ -1,14 +1,14 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.20 2001/08/19 17:42:43 nilsson Exp $
+// $Id: HTML.pmod,v 1.21 2001/09/01 23:03:55 js Exp $
 
 // Filter for text/html
 
 inherit Search.Filter.Base;
 
 constant contenttypes = ({ "text/html" });
-constant fields = ({ "body", "title", "keywords", "description", "robots" });
+constant fields = ({ "body", "title", "keywords", "description", "robots", "headline" });
 
 string _sprintf()
 {
@@ -20,6 +20,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 	      mapping headers,
 	      string|void default_charset )
 {
+  function(string:void) dadd;
   Output res=Output();
 
 
@@ -80,7 +81,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     if(m->href) ladd( m->href );
     // FIXME: Push the value of m->title to the title field of
     // the referenced document instead.
-    if(m->title) return ({ " " + m->title + " " });
+    if(m->title)
+      dadd(m->title);
     return ({ "" });
   };
 
@@ -95,7 +97,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   // FIXME: This information should be pushed to the body field
   // of the image file, if it is indexed.
   array(string) parse_img(Parser.HTML p, mapping m)  {
-    if( m->alt ) return ({ " " + m->alt + " " });
+    if( m->alt )
+      dadd(m->alt);
     return ({ " " });
   };
 
@@ -143,7 +146,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     if( m->code ) ladd( m->code );
     if( m->codebase ) ladd( m->codebase );
     if( m->data ) ladd( m->data );
-    if( m->standby ) return ({ " " + m->standby + " " });
+    if( m->standby )
+      dadd(m->standby);
     return ({ " " });
   };
 
@@ -165,6 +169,14 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     return ({ " " });
   };
 
+  array(string) parse_headline(Parser.HTML p, mapping m, string c)
+  {
+    if(!res->fields->headline)
+      res->fields->headline = "";
+    res->fields->headline += " " + c;
+    return ({ " " });
+  };
+
   String.Buffer databuf=String.Buffer();
   Parser.HTML parser = Parser.HTML();
 
@@ -172,8 +184,11 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   parser->match_tag(0);
   //  parser->add_container("rank",parse_rank);
-  parser->add_container("title",parse_title);
-
+  parser->add_containers( ([ "title":parse_title,
+			     "h1": parse_headline,
+			     "h2": parse_headline,
+			     "h3": parse_headline, ]) );
+			     
   parser->add_tags( ([ "meta":parse_meta,
 		       "a":parse_a,
 		       "base": parse_base,
@@ -199,7 +214,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   constant ignore_tags = ({ "noindex", "script", "style", "no-index" });
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
-  function(string:void) dadd = databuf->add;
+  dadd = databuf->add;
   parser->_set_data_callback(lambda(object p, string data) {
 			       dadd(data);
 			     });
@@ -214,5 +229,6 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   res->links = Parser.parse_html_entities(lf->read()*"\0")/"\0";
   res->fields->body=Parser.parse_html_entities(databuf->get());
   res->fix_relative_links(uri);
+
   return res;
 }
