@@ -846,6 +846,7 @@ void f_create_process(INT32 args)
       int gid_request=0;
       int do_initgroups=1;
       struct passwd *pw=0;
+      ONERROR oe;
 
       char **argv;
 #ifdef DECLARE_ENVIRON
@@ -854,6 +855,8 @@ void f_create_process(INT32 args)
       char **env;
       extern void my_set_close_on_exec(int,int);
       extern void do_set_close_on_exec(void);
+
+      SET_ONERROR(oe, exit_on_error, "Error in create_process() child.");
 
 #ifdef _REENTRANT
       /* forked copy. there is now only one thread running, this one. */
@@ -1226,6 +1229,7 @@ static void f_kill(INT32 args)
 #else
 
 #ifdef __NT__
+#define HAVE_KILL
 void f_kill(INT32 args)
 {
   HANDLE proc=INVALID_HANDLE_VALUE;
@@ -1279,7 +1283,10 @@ void f_kill(INT32 args)
     }
       
     default:
-      error("Unknown signal %d\n",sp[1-args].u.integer);
+      errno=EINVAL;
+      pop_n_elems(args);
+      push_int(-1);
+      break;
   }
 }
 #endif
