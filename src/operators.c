@@ -183,6 +183,7 @@ void f_add(INT32 args)
       }
     }
     sp-=args-1;
+    sp[-1].type=T_FLOAT;
     sp[-1].u.float_number=sum;
     break;
   }
@@ -1022,7 +1023,7 @@ void init_operators()
 
   add_efun2("`/",f_divide,"function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",0,0,generate_divide);
 
-  add_efun2("`%",f_mod,"function(int,int:int)|function(float,float:float)",0,0,generate_mod);
+  add_efun2("`%",f_mod,"function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",0,0,generate_mod);
 
   add_efun2("`!",f_not,"function(mixed:int)",0,0,generate_not);
   add_efun2("`~",f_compl,"function(int:int)",0,0,generate_compl);
