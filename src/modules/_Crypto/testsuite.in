@@ -44,13 +44,6 @@ test_true([[programp(Crypto.des_cbc)]])
 test_true([[programp(Crypto.idea_cbc)]])
 dnl test_true([[programp(Crypto.rsa)]])
 
-// Randomness submodule
-test_true([[objectp(Crypto.randomness)]])
-test_true([[programp(Crypto.randomness.pike_random)]])
-test_true([[programp(Crypto.randomness.arcfour_random)]])
-test_true([[functionp(Crypto.randomness.reasonably_random)]])
-test_true([[functionp(Crypto.randomness.really_random)]])
-
 // DES
 test_true([[objectp(Crypto.des())]])
 test_eq([[xCrypto.string_to_hex(Crypto.des()->set_encrypt_key(xCrypto.hex_to_string("0101010101010180"))
