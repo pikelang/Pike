@@ -433,6 +433,9 @@ array strip_type_assignments(array data)
   return data;
 }
 
+// Workaround for bug in F_RECUR in some sub-versions of Pike 7.1.34.
+function(mixed,array,mixed ...:array) low_recursive = recursive;
+
 array recursive(mixed func, array data, mixed ... args)
 {
   array ret=({});
@@ -441,7 +444,7 @@ array recursive(mixed func, array data, mixed ... args)
     {
       if(arrayp(foo))
       {
-	ret+=({ recursive(func, foo, @args) });
+	ret+=({ low_recursive(func, foo, @args) });
       }else{
 	ret+=({ foo });
       }
