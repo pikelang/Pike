@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.31 1998/02/20 00:36:17 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.32 1998/02/27 18:16:44 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -247,7 +247,8 @@ static int do_docode2(node *n,int flags)
       default:
 	yyerror("Illegal lvalue.");
 	emit(F_NUMBER,0);
-	return 1;
+	emit(F_NUMBER,0);
+	return 2;
 
       case F_ARRAY_LVALUE:
       case F_LVALUE_LIST:
