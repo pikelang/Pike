@@ -4,6 +4,8 @@
 inherit _ADT;
 #endif /* _ADT */
 
+//! Various Abstract Data Types.
+
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
 class struct {

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.23 2003/11/14 10:26:43 mast Exp $
+|| $Id: mpq.cmod,v 1.24 2004/03/23 18:56:40 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.23 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: mpq.cmod,v 1.24 2004/03/23 18:56:40 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -52,6 +52,10 @@ RCSID("$Id: mpq.cmod,v 1.23 2003/11/14 10:26:43 mast Exp $");
  */
 
 /*! @class mpq
+ *! Rational number stored in canonical form. The canonical from means
+ *! that the denominator and the numerator have no common factors, and
+ *! that the denominator is positive. Zero has the unique
+ *! representation 0/1. All functions canonicalize their result.
  */
 
 /*  id PROG_GMP_MPQ_ID; */
@@ -66,7 +70,7 @@ PIKECLASS mpq
       p_wchar0 *str;
   
       if(digits->size_shift)
-	Pike_error("Illegal characters, cannot convert to Mpq.\n");
+	Pike_error("Illegal characters, cannot convert to mpq.\n");
       str=STR0(digits);
       
       get_mpz_from_digits(mpq_numref(tmp), digits, base);
@@ -266,6 +270,7 @@ PIKECLASS mpq
 #endif
 
   /*! @decl static void create(void|string|int|float|Gmp.mpz|Gmp.mpq x)
+   *! @decl static void create(int numerator, int denominator)
    *! @decl static void create(string x, int base)
    */
   PIKEFUN void create(void|string|int|float|object x, void|int base)

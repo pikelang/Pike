@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.160 2004/03/21 18:04:34 grubba Exp $
+|| $Id: mpz_glue.c,v 1.161 2004/03/23 18:56:25 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.160 2004/03/21 18:04:34 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.161 2004/03/23 18:56:25 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -238,11 +238,16 @@ overflow:
 #endif /* AUTO_BIGNUM */
 
 /*! @module Gmp
+ *! GMP is a free library for arbitrary precision arithmetic,
+ *! operating on signed integers, rational numbers, and floating point
+ *! numbers. There is no practical limit to the precision except the
+ *! ones implied by the available memory in the machine GMP runs on.
+ *! @url{http://www.swox.com/gmp/@}
  */
 
 /*! @class bignum
  *! This program is used by the internal auto-bignum conversion. It
- *! can be used to explicitly type integers that are to big to be
+ *! can be used to explicitly type integers that are too big to be
  *! INT_TYPE. Best is however to not use this program unless you
  *! really know what you are doing.
  *! @endclass

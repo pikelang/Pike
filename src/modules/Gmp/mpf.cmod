@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.27 2003/11/14 10:26:43 mast Exp $
+|| $Id: mpf.cmod,v 1.28 2004/03/23 18:56:57 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.27 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: mpf.cmod,v 1.28 2004/03/23 18:56:57 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -56,6 +56,53 @@ RCSID("$Id: mpf.cmod,v 1.27 2003/11/14 10:26:43 mast Exp $");
  */
 
 /*! @class mpf
+ *! GMP floating point number.
+ *!
+ *! The mantissa of each float has a user-selectable precision,
+ *! limited only by available memory. Each variable has its own
+ *! precision, and that can be increased or decreased at any time.
+ *!
+ *! The exponent of each float is a fixed precision, one machine word
+ *! on most systems. In the current implementation the exponent is a
+ *! count of limbs, so for example on a 32-bit system this means a
+ *! range of roughly 2^-68719476768 to 2^68719476736, or on a 64-bit
+ *! system this will be greater.
+ *!
+ *! Each variable keeps a size for the mantissa data actually in use.
+ *! This means that if a float is exactly represented in only a few
+ *! bits then only those bits will be used in a calculation, even if
+ *! the selected precision is high.
+ *!
+ *! All calculations are performed to the precision of the destination
+ *! variable. Each function is defined to calculate with "infinite
+ *! precision" followed by a truncation to the destination precision,
+ *! but of course the work done is only what's needed to determine a
+ *! result under that definition.
+ *!
+ *! The precision selected for a variable is a minimum value, GMP may
+ *! increase it a little to facilitate efficient calculation.
+ *! Currently this means rounding up to a whole limb, and then
+ *! sometimes having a further partial limb, depending on the high
+ *! limb of the mantissa. But applications shouldn't be concerned by
+ *! such details.
+ *!
+ *! The mantissa in stored in binary, as might be imagined from the
+ *! fact precisions are expressed in bits. One consequence of this is
+ *! that decimal fractions like 0.1 cannot be represented exactly. The
+ *! same is true of plain IEEE double floats. This makes both highly
+ *! unsuitable for calculations involving money or other values that
+ *! should be exact decimal fractions. (Suitably scaled integers, or
+ *! perhaps rationals, are better choices.)
+ *!
+ *! mpf functions and variables have no special notion of infinity or
+ *! not-a-number, and applications must take care not to overflow the
+ *! exponent or results will be unpredictable. This might change in a
+ *! future release.
+ *!
+ *! Note that the mpf functions are not intended as a smooth extension
+ *! to IEEE P754 arithmetic. In particular results obtained on one
+ *! computer often differ from the results on a computer with a
+ *! different word size.
  */
 
 /*  id PROG_GMP_MPF_ID; */
