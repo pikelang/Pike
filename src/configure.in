@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.325 1999/10/23 06:51:23 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.326 1999/10/23 13:04:36 noring Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -444,7 +444,7 @@ AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to
 
 if test "x$with_bignums" = xyes; then
   AC_DEFINE(AUTO_BIGNUM)
-  if test "x$with_gmp" == xno; then
+  if test "x$with_gmp" = xno; then
      AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
 Either install GMP on your system or run configure with
 the option --without-bignums.
