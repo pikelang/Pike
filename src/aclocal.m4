@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.41 2002/04/07 21:33:17 mast Exp $
+dnl $Id: aclocal.m4,v 1.42 2002/04/11 22:08:49 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -234,7 +234,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.41 2002/04/07 21:33:17 mast Exp $
+# $Id: aclocal.m4,v 1.42 2002/04/11 22:08:49 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -438,4 +438,70 @@ define(MY_AC_PATH_PROGS,[
   else
     AC_PATH_PROGS($1,$2,$3,$4)
   fi
+])
+
+dnl MY_AC_CHECK_PRINTF_INT_TYPE(type, alternatives, default, define, result message)
+define(MY_AC_CHECK_PRINTF_INT_TYPE, [
+  AC_MSG_CHECKING(how to printf $1)
+  AC_CACHE_VAL(pike_cv_printf_$1, [
+    found=no
+    for mod in $2 ; do
+      AC_TRY_RUN([
+#include <stddef.h>
+#include <stdio.h>
+#include "confdefs.h"
+int main() {
+  char buf[32];
+  if (sizeof($1)>4)
+  {
+    sprintf(buf, "%${mod}d,%d", (($1) 4711) << 32, 17);
+    return !!strcmp("20233590931456,17", buf);
+  }
+  else
+  {
+    sprintf(buf, "%${mod}d,%d", ($1) 4711, 17);
+    return !!strcmp("4711,17", buf);
+  }
+}], [pike_cv_printf_$1="${mod}"; found=yes])
+      test ${found} = yes && break
+    done
+    test ${found} = no && pike_cv_printf_$1=unknown
+  ])
+  if test x"${pike_cv_printf_$1}" = xunknown ; then
+    res=$3
+    AC_MSG_RESULT([none found, defaulting to $5])
+  else
+    res="${pike_cv_printf_$1}"
+    AC_MSG_RESULT([$5])
+  fi
+  AC_DEFINE_UNQUOTED($4, "${res}")
+])
+
+dnl MY_AC_CHECK_PRINTF_FLOAT_TYPE(type, alternatives, default, define, result message)
+define(MY_AC_CHECK_PRINTF_FLOAT_TYPE, [
+  AC_MSG_CHECKING(how to printf $1)
+  AC_CACHE_VAL(pike_cv_printf_$1, [
+    found=no
+    for mod in $2 ; do
+      AC_TRY_RUN([
+#include <stddef.h>
+#include <stdio.h>
+#include "confdefs.h"
+int main() {
+  char buf[32];
+  sprintf(buf, "%${mod}4.1f,%d",($1)17.0,17);
+  return !!strcmp("17.0,17",buf);
+}], [pike_cv_printf_$1="${mod}"; found=yes])
+      test ${found} = yes && break
+    done
+    test ${found} = no && pike_cv_printf_$1=unknown
+  ])
+  if test x"${pike_cv_printf_$1}" = xunknown ; then
+    res=$3
+    AC_MSG_RESULT([none found, defaulting to $5])
+  else
+    res="${pike_cv_printf_$1}"
+    AC_MSG_RESULT([$5])
+  fi
+  AC_DEFINE_UNQUOTED($4, "${res}")
 ])

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.97 2002/04/07 19:28:16 mast Exp $
+ * $Id: acconfig.h,v 1.98 2002/04/11 22:09:21 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -127,11 +127,23 @@
 /* define if you want to use long double precision floats */
 #undef WITH_LONG_DOUBLE_PRECISION_SVALUE
 
+/* define to the type of pike floats */
+#undef FLOAT_TYPE
+
+/* define to the size of pike floats */
+#undef SIZEOF_FLOAT_TYPE
+
 /* force this type upon ints */
 #undef WITH_LONG_INT
 #undef WITH_LONG_LONG_INT
 #undef WITH_SHORT_INT
 #undef WITH_INT_INT
+
+/* define to the type of pike primitive ints */
+#undef INT_TYPE
+
+/* define to the size of pike primitive ints */
+#undef SIZEOF_INT_TYPE
 
 /* If using the C implementation of alloca, define if you know the
  * direction of stack growth for your system; otherwise it will be

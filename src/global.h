@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.67 2002/04/09 21:14:11 mikael%unix.pp.se Exp $
+ * $Id: global.h,v 1.68 2002/04/11 22:08:49 mast Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -223,56 +223,6 @@ void *alloca();
 
 #define TYPE_T unsigned INT8
 #define TYPE_FIELD unsigned INT16
-
-#if SIZEOF_CHAR_P > SIZEOF_FLOAT
-#ifndef WITH_DOUBLE_PRECISION_SVALUE
-#define WITH_DOUBLE_PRECISION_SVALUE
-#endif /* !WITH_DOUBLE_PRECISION_SVALUE */
-#endif /* sizeof(char *) > sizeof(float) */
-
-#ifndef WITH_DOUBLE_PRECISION_SVALUE
-#define FLOAT_TYPE float
-#define SIZEOF_FLOAT_TYPE SIZEOF_FLOAT
-#else
-#ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
-#define FLOAT_TYPE long double
-#define SIZEOF_FLOAT_TYPE SIZEOF_LONG_DOUBLE
-#else
-#define FLOAT_TYPE double
-#endif /* long double */
-#endif /* double */
-
-#ifdef WITH_LONG_INT
-#define INT_TYPE long
-#define SIZEOF_INT_TYPE SIZEOF_LONG
-#else
-#ifdef WITH_LONG_LONG_INT
-#define INT_TYPE long long
-#define SIZEOF_INT_TYPE SIZEOF_LONG_LONG
-#else
-#ifdef WITH_SHORT_INT
-#define INT_TYPE short
-#define SIZEOF_INT_TYPE SIZEOF_SHORT
-#else
-#ifdef WITH_INT_INT
-#define INT_TYPE int
-#define SIZEOF_INT_TYPE SIZEOF_INT
-#else
-#if (SIZEOF_CHAR_P > 4) && 0
-/* This isn't a good idea on architectures where
- * sizeof(long int) < sizeof(LONGEST).
- * This is due to the gmp mpz api's using long int instead of
- * mp_limb_{signed_}t.
- */
-#define INT_TYPE LONGEST
-#else /* !(sizeof(char *) > 4) */
-#define INT_TYPE INT32
-#define SIZEOF_INT_TYPE 4
-#endif /* sizeof(char *) > 4 */
-#endif /* WITH_INT_INT */
-#endif /* WITH_SHORT_INT */
-#endif /* WITH_LONG_LONG_INT */
-#endif /* WITH_LONG_INT */
 
 #define B1_T char
 
