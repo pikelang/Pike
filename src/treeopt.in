@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.64 2001/05/26 17:13:23 grubba Exp $
+// $Id: treeopt.in,v 1.65 2001/09/07 03:15:07 hubbe Exp $
 //
 // The tree optimizer
 //
@@ -1182,8 +1182,6 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
       } else
 	goto next_for_opt;
     }
-    ADD_NODE_REF(*last);
-
     if(oper == F_NE)
     {
       if(inc)
@@ -1197,27 +1195,15 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	token = F_DEC_LOOP;
     }
 
+    tmp1=CAR(*last);
+    ADD_NODE_REF(CAR(*last));
     ADD_NODE_REF2(*arg1,
     ADD_NODE_REF2($3,
       tmp2 = mknode(token, mknode(F_VAL_LVAL, tmp3, *arg1), $3);
     ));
 
-#ifdef SHARED_NODES
-    sub_node(tmp1);
-#endif /* SHARED_NODES */
-    if(inc)
-    {
-      tmp1->token = F_DEC;
-    }else{
-      tmp1->token = F_INC;
-    }
-#ifdef SHARED_NODES
-    tmp1->hash = hash_node(tmp1);
-    tmp1->node_info |= OPT_DEFROSTED;
-    add_node(tmp1);
-#endif /* SHARED_NODES */
-
-    tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, tmp1), tmp2);
+    tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string,
+					   mknode(inc ? F_DEC : F_INC, tmp1, 0)), tmp2);
     goto use_tmp1;
   }
  next_for_opt:
