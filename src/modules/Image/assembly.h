@@ -17,4 +17,15 @@ void image_sub_buffer_mmx_x86asm( void *d, void *s,
                                   int npixels_div_4,
                                   int rgbr, int gbrg, int brgb );
 
+void image_clear_buffer_mmx_x86asm_eq( void *d, 
+                                       int npixels_div_8,
+                                       int colv );
+
+void image_clear_buffer_mmx_x86asm_from( void *d, int npixels_div_8 );
+
 void image_get_cpuid( int oper, void *cpuid1, void *cpuid2, void *cpuid3, void *d );
+
+
+
+#define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
+#define RGB2ASMCOL( _X ) MCcol(_X.r,_X.b,_X.g,_X.r),MCcol(_X.g,_X.r,_X.b,_X.g),MCcol(_X.b,_X.g,_X.r,_X.b) 
