@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.422 2001/06/08 00:36:01 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.423 2001/06/08 12:51:14 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6088,6 +6088,9 @@ test_eq(clone(compile_string("int foo() { return 17; }"))->foo(),17)
 
 // - combine_path
 test_eq([[combine_path("/foo/bar/gazonk/","..")]],"/foo/bar")
+test_eq([[combine_path("/foo/bar/gazonk","..")]],"/foo/bar")
+test_eq([[combine_path("/foo/bar/", "gazonk")]],"/foo/bar/gazonk")
+test_eq([[combine_path("/foo/bar", "gazonk")]],"/foo/bar/gazonk")
 test_eq([[combine_path("/.../","sune")]],"/.../sune")
 test_eq([[combine_path("/",".")]],"/")
 test_eq([[combine_path("/","foo/.../sune")]],"/foo/.../sune")
