@@ -18,8 +18,14 @@ Copyright © 1992 Dana L. How
 Emacs font lock definitions
 Copyright © 2002 Martin Stjernholm
 
+IDEA encryption and decryption code
+Copyright © Xuejia Lai
+
 JPEG transform code
 Copyright © 1991-1998, Thomas G. Lane, Independent JPEG Group
+
+MD5 password hash code
+Copyright © Poul-Henning Kamp
 
 Regular expression matching code
 Copyright © 1986 by University of Toronto.
