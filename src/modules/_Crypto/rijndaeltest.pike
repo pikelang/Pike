@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.3 2001/03/25 21:21:22 grubba Exp $
+ * $Id: rijndaeltest.pike,v 1.4 2001/03/25 21:26:01 grubba Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -179,13 +179,10 @@ int check_ecb_tbl()
 
   fail = run_test(raw_ecb_tbl, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      if (keysize) write("\n");
-      keysize = v->KEYSIZE;
+      write("Rijndael ECB encrypt/decrypt (%s)...\n", v->KEYSIZE);
       return;
     }
     if (!v->I) return;
-
-    write("Rijndael ECB encrypt/decrypt (%s): %s\r", keysize, v->I);
 
     string pt = Crypto.hex_to_string(v->PT);
     string ct = Crypto.hex_to_string(v->CT);
@@ -198,8 +195,6 @@ int check_ecb_tbl()
 
     return (ct != _ct) || (pt != _pt);
   });
-
-  write("\n");
   return fail;
 }
 
