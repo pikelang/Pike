@@ -84,14 +84,19 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       for(int e=0;e<sizeof(cmd);e++)
 	f->write(sprintf("%4c%s",strlen(cmd[e]),cmd[e]));
 
-      if(f->proxy)
-	f->proxy(Stdio.File("stdin"));
-      else
+//      if(f->proxy)
+//	f->proxy(Stdio.File("stdin"));
+//      else
+//      werror("FNORD\n");
 	thread_create(lambda(object f)
 		      {
 			object stdin=Stdio.File("stdin");
 			while(string s=stdin->read(1000,1))
+			{
+			  if(!strlen(s)) break;
 			  f->write(s);
+			}
+			f->close("w");
 		      },f);
 
       while(1)
@@ -107,7 +112,8 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       if(filter) filter(ret);
       sscanf(f->read(4),"%4c",int code);
       f->close("r");
-      f->close("w");
+//      f->close("w");
+//      werror("Closing stdout.\n");
       destruct(f);
       return code;
   }
