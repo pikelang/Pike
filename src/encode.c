@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.192 2003/07/30 18:52:15 mast Exp $
+|| $Id: encode.c,v 1.193 2003/08/03 00:53:20 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.192 2003/07/30 18:52:15 mast Exp $");
+RCSID("$Id: encode.c,v 1.193 2003/08/03 00:53:20 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1124,7 +1124,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
-	  if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION)) {
+	  if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
 	    code_number(p->identifiers[d].func.offset,data);
 	  } else {
 	    Pike_error("Cannot encode functions implemented in C "
@@ -1328,9 +1328,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		}
 		id_dumped[ref->identifier_offset] = 1;
 
-		if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-		  /* Constant */
-
+		switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
+		case IDENTIFIER_CONSTANT:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding constant\n",
 			      data->depth, ""));
@@ -1352,9 +1351,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* run-time type */
 		  code_number(id->run_time_type, data);
-		} else if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags)) {
-		  /* Pike function */
+		  break;
 
+		case IDENTIFIER_PIKE_FUNCTION:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding function\n",
 			      data->depth, ""));
@@ -1379,14 +1378,16 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* opt_flags */
 		  code_number(id->opt_flags, data);
-		} else if (id->identifier_flags & IDENTIFIER_C_FUNCTION) {
-		  /* C Function */
+		  break;
+
+		case IDENTIFIER_C_FUNCTION:
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
 			     "(identifier='%s').\n",
 			     p->identifiers[d].name->str);
-		} else {
-		  /* Variable */
+		  break;
+
+		case IDENTIFIER_VARIABLE:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding variable\n",
 			      data->depth, ""));
@@ -1402,6 +1403,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  ref_push_type_value(id->type);
 		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
+		  break;
+
+		default:
+#ifdef PIKE_DEBUG
+		  Pike_fatal ("Unknown identifier type.\n");
+#endif
 		}
 	      }
 
@@ -2954,7 +2961,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].identifier_flags,data);
 	    decode_number(p->identifiers[d].run_time_type,data);
 	    decode_number(p->identifiers[d].opt_flags,data);
-	    if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION))
+	    if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags))
 	    {
 	      decode_number(p->identifiers[d].func.offset,data);
 	    } else {
