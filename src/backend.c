@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.58 2000/08/29 13:40:13 mirar Exp $");
+RCSID("$Id: backend.c,v 1.59 2000/10/04 22:36:18 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -38,7 +38,13 @@ RCSID("$Id: backend.c,v 1.58 2000/08/29 13:40:13 mirar Exp $");
 #define SELECT_READ 1
 #define SELECT_WRITE 2
 
+/* #define POLL_DEBUG */
 
+#ifdef POLL_DEBUG
+#define IF_PD(x)	x
+#else /* !POLL_DEBUG */
+#define IF_PD(x)
+#endif /* POLL_DEBUG */
 
 struct cb_data
 {
@@ -133,6 +139,7 @@ int active_num_in_poll = 0;
 void POLL_FD_SET(int fd, short add)
 {
   int i;
+  IF_PD(fprintf(stderr, "BACKEND: POLL_FD_SET(%d, 0x%04x)\n", fd, add));
   for(i=0; i<num_in_poll; i++)
     if(poll_fds[i].fd == fd)
     {
@@ -154,6 +161,7 @@ void POLL_FD_SET(int fd, short add)
 void POLL_FD_CLR(int fd, short sub)
 {
   int i;
+  IF_PD(fprintf(stderr, "BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub));
   if(!poll_fds) return;
   for(i=0; i<num_in_poll; i++)
     if(poll_fds[i].fd == fd)
@@ -180,6 +188,8 @@ void switch_poll_set(void)
 {
   struct pollfd *tmp = active_poll_fds;
   int sz = active_poll_fd_size;
+
+  IF_PD(fprintf(stderr, "BACKEND: switch_poll_set()\n"));
 
   active_num_in_poll = num_in_poll;
 
@@ -287,6 +297,9 @@ void set_read_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set;
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: set_read_callback(%d, %p, %p)\n",
+		fd, cb, data));
+
   ASSURE_FDS_SIZE( fd );
 #ifdef HAVE_POLL
   was_set = (fds[fd].read.callback!=0);
@@ -310,8 +323,13 @@ void set_read_callback(int fd,file_callback cb,void *data)
     wake_up_backend();
   }else{
 #ifdef HAVE_POLL
+#if defined(WITH_OOB)
+    if (was_set && !fds[fd].read_oob.callback)
+      POLL_FD_CLR(fd, POLLRDNORM|POLLIN);
+#else /* !WITH_OOB */
     if(was_set)
       POLL_FD_CLR(fd, POLLRDNORM|POLLIN);
+#endif /* WITH_OOB */
 #else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
@@ -338,6 +356,9 @@ void set_write_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set;
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: set_write_callback(%d, %p, %p)\n",
+		fd, cb, data));
+
   ASSURE_FDS_SIZE( fd );
 #ifdef HAVE_POLL
   was_set = (fds[fd].write.callback!=0);
@@ -362,13 +383,13 @@ void set_write_callback(int fd,file_callback cb,void *data)
     wake_up_backend();
   } else {
 #ifdef HAVE_POLL
-#if defined(WITH_OOB) && (POLLWRBAND == POLLOUT)
+#if defined(WITH_OOB)
     if (was_set && !fds[fd].write_oob.callback)
       POLL_FD_CLR(fd, POLLOUT);
-#else /* POLLWRBAND != POLLOUT */
+#else /* !WITH_OOB */
     if(was_set)
       POLL_FD_CLR(fd, POLLOUT);
-#endif /* POLLWRBAND == POLLOUT */
+#endif /* WITH_OOB */
 #else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
@@ -401,6 +422,9 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set;
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: set_read_oob_callback(%d, %p, %p)\n",
+		fd, cb, data));
+
   ASSURE_FDS_SIZE( fd );
 #ifdef HAVE_POLL
   was_set = (fds[fd].read_oob.callback!=0);
@@ -415,7 +439,7 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
   if(cb)
   {
 #ifdef HAVE_POLL
-    POLL_FD_SET(fd, POLLRDBAND);
+    POLL_FD_SET(fd, POLLRDBAND|POLLRDNORM|POLLIN);
 #else
     my_FD_SET(fd, &selectors.except);
 #endif
@@ -423,8 +447,15 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
     wake_up_backend();
   }else{
 #ifdef HAVE_POLL
-    if(was_set)
-      POLL_FD_CLR(fd, POLLRDBAND);
+    if(was_set) {
+      if (!fds[fd].read.callback) {
+	POLL_FD_CLR(fd, POLLRDBAND|POLLRDNORM|POLLIN);
+      } else {
+#if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
+	POLL_FD_CLR(fd, POLLRDBAND);
+#endif /* (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN) */
+      }
+    }
 #else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
@@ -448,6 +479,9 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set;
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: set_write_oob_callback(%d, %p, %p)\n",
+		fd, cb, data));
+
   ASSURE_FDS_SIZE( fd );
 #ifdef HAVE_POLL
   was_set = (fds[fd].write_oob.callback!=0);
@@ -463,7 +497,7 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
   if(cb)
   {
 #ifdef HAVE_POLL
-    POLL_FD_SET(fd,POLLWRBAND);
+    POLL_FD_SET(fd, POLLWRBAND|POLLOUT);
 #else
     my_FD_SET(fd, &selectors.write);	/* FIXME:? */
 #endif
@@ -471,13 +505,15 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
     wake_up_backend();
   }else{
 #ifdef HAVE_POLL
-#if POLLWRBAND == POLLOUT
-    if (was_set && !fds[fd].write.callback)
-      POLL_FD_CLR(fd,POLLWRBAND);
-#else /* POLLWRBAND != POLLOUT */
-    if(was_set)
-      POLL_FD_CLR(fd,POLLWRBAND);
-#endif /* POLLWRBAND == POLLOUT */
+    if(was_set) {
+      if (!fds[fd].write.callback) {
+	POLL_FD_CLR(fd, POLLWRBAND|POLLOUT);
+      } else {
+#if POLLWRBAND != POLLOUT
+	POLL_FD_CLR(fd, POLLWRBAND);
+#endif /* POLLWRBAND != POLLOUT */
+      }
+    }
 #else /* !HAVE_POLL */
     /* FIXME:? */
     if(fd <= max_fd)
@@ -505,6 +541,7 @@ PMOD_EXPORT file_callback query_read_callback(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].read.callback;
 }
@@ -515,6 +552,7 @@ PMOD_EXPORT file_callback query_write_callback(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].write.callback;
 }
@@ -526,6 +564,7 @@ PMOD_EXPORT file_callback query_read_oob_callback(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
+  IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].read_oob.callback;
 }
@@ -536,7 +575,7 @@ PMOD_EXPORT file_callback query_write_oob_callback(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].write_oob.callback;
 }
@@ -548,7 +587,7 @@ PMOD_EXPORT void *query_read_callback_data(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].read.data;
 }
@@ -559,7 +598,7 @@ PMOD_EXPORT void *query_write_callback_data(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].write.data;
 }
@@ -571,7 +610,7 @@ PMOD_EXPORT void *query_read_oob_callback_data(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].read_oob.data;
 }
@@ -582,7 +621,7 @@ PMOD_EXPORT void *query_write_oob_callback_data(int fd)
   if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
   ASSURE_FDS_SIZE( fd );
   return fds[fd].write_oob.data;
 }
@@ -743,7 +782,10 @@ void backend(void)
 #ifdef HAVE_POLL
     {
       int msec = (next_timeout.tv_sec*1000) + next_timeout.tv_usec/1000;
+      IF_PD(fprintf(stderr, "BACKEND: poll(%p, %d, %ld)...",
+		    active_poll_fds, active_num_in_poll, msec));
       i = poll(active_poll_fds, active_num_in_poll, msec);
+      IF_PD(fprintf(stderr, " => %d\n", i));
     }
 #else
     /* FIXME: OOB? */
@@ -821,6 +863,9 @@ void backend(void)
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLRDBAND) &&
 	    fds[fd].read_oob.callback) {
+	  IF_PD(fprintf(stderr, "BACKEND: POLLRDBAND\n"));
+	  IF_PD(fprintf(stderr, "BACKEND: read_oob_callback(%d, %p)\n",
+			fd, fds[fd].read_oob.data));
 	  (*(fds[fd].read_oob.callback))(fd, fds[fd].read_oob.data);
 #ifdef PIKE_DEBUG
 	  handled = 1;
@@ -836,7 +881,10 @@ void backend(void)
 	    fprintf(stderr, "Got POLLERR on fd %d\n", i);
 	  }
 #endif /* PIKE_DEBUG */
+	  IF_PD(fprintf(stderr, "BACKEND: POLLHUP | POLLERR\n"));
 	  if (fds[fd].read.callback) {
+	    IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
+			  fd, fds[fd].read.data));
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  }
 	  /* We don't want to keep this fd anymore. */
@@ -847,7 +895,10 @@ void backend(void)
 	}
 
 	if(active_poll_fds[i].revents & (POLLRDNORM|POLLIN)) {
+	  IF_PD(fprintf(stderr, "BACKEND: POLLRDNORM|POLLIN\n"));
 	  if (fds[fd].read.callback) {
+	    IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
+			  fd, fds[fd].read.data));
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  } else {
 	    POLL_FD_CLR(fd, POLLRDNORM|POLLIN);
@@ -860,6 +911,9 @@ void backend(void)
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLWRBAND) &&
 	    fds[fd].write_oob.callback) {
+	  IF_PD(fprintf(stderr, "BACKEND: POLLWRBAND\n"));
+	  IF_PD(fprintf(stderr, "BACKEND: write_oob_callback(%d, %p)\n",
+			fd, fds[fd].write_oob.data));
 	  (*(fds[fd].write_oob.callback))(fd, fds[fd].write_oob.data);
 #ifdef PIKE_DEBUG
 	  handled = 1;
@@ -868,7 +922,10 @@ void backend(void)
 #endif /* WITH_OOB */
 
 	if(active_poll_fds[i].revents & POLLOUT) {
+	  IF_PD(fprintf(stderr, "BACKEND: POLLOUT\n"));
 	  if (fds[fd].write.callback) {
+	    IF_PD(fprintf(stderr, "BACKEND: write_callback(%d, %p)\n",
+			  fd, fds[fd].write.data));
 	    (*(fds[fd].write.callback))(fd, fds[fd].write.data);
 	  } else {
 	    POLL_FD_CLR(fd, POLLOUT);
