@@ -11,8 +11,6 @@
 
 #pike __REAL_VERSION__
 
-inherit Calendar.ISO:ISO;
-
 import ".";
 inherit ISO:ISO;
 
