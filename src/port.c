@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.61 2003/03/28 14:07:07 marcus Exp $
+|| $Id: port.c,v 1.62 2003/03/30 11:30:58 marcus Exp $
 */
 
 #define PORT_DO_WARN
@@ -23,7 +23,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.61 2003/03/28 14:07:07 marcus Exp $");
+RCSID("$Id: port.c,v 1.62 2003/03/30 11:30:58 marcus Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -643,7 +643,11 @@ PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args)
     case 'E':
     case 'g':
       *fmt2p=0;
+#if (SIZEOF_FLOAT_TYPE == SIZEOF_FLOAT)
+      sprintf(buf,fmt2,va_arg(args,double));
+#else
       sprintf(buf,fmt2,va_arg(args,FLOAT_TYPE));
+#endif
       buf+=strlen(buf);
       break;
     }
