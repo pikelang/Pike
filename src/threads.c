@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.172 2001/11/01 18:40:12 mast Exp $");
+RCSID("$Id: threads.c,v 1.173 2001/11/02 14:05:14 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -24,7 +24,7 @@ PMOD_EXPORT int threads_disabled = 0;
 
 #include <errno.h>
 
-PMOD_EXPORT int live_threads = 0;
+PMOD_EXPORT int live_threads = 0, disallow_live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=256 * 1204;
@@ -208,6 +208,9 @@ struct thread_local
 
 static volatile IMUTEX_T *interleave_list = NULL;
 
+/* This is a variant of init_threads_disable that blocks all other
+ * threads that might run pike code, but still doesn't block the
+ * THREADS_ALLOW_UID threads. */
 void low_init_threads_disable(void)
 {
   /* Serious black magic to avoid dead-locks */
@@ -270,18 +273,27 @@ void low_init_threads_disable(void)
 
 /*! @decl object(_disable_threads) _disable_threads()
  *!
- *! This function first posts a notice to all threads that it is time to stop.
- *! It then waits until all threads actually *have* stopped, and then then 
- *! returns an object. All other threads will be blocked from running until
- *! that object has been freed/destroyed.
+ *! This function first posts a notice to all threads that it is time
+ *! to stop. It then waits until all threads actually *have* stopped,
+ *! and then then returns a lock object. All other threads will be
+ *! blocked from running until that object has been freed/destroyed.
+ *!
+ *! It's mainly useful to do things that require a temporary uid/gid
+ *! change, since on many OS the effective user and group applies to
+ *! all threads.
  *!
  *! @note
- *! This function can completely block Pike if used incorrectly.
- *! Use with extreme caution.
+ *! You should make sure that the returned object is freed even if
+ *! some kind of error is thrown. That means in practice that it
+ *! should only have references (direct or indirect) from function
+ *! local variables. Also, it shouldn't be referenced from cyclic
+ *! memory structures, since those are only destructed by the periodic
+ *! gc. (This advice applies to mutex locks in general, for that
+ *! matter.)
  */
 void init_threads_disable(struct object *o)
 {
-  low_init_threads_disable();
+  disallow_live_threads = 1;
 
   if(live_threads) {
     SWAP_OUT_CURRENT_THREAD();
@@ -294,6 +306,8 @@ void init_threads_disable(struct object *o)
     }
     SWAP_IN_CURRENT_THREAD();
   }
+
+  low_init_threads_disable();
 }
 
 void exit_threads_disable(struct object *o)
@@ -316,6 +330,7 @@ void exit_threads_disable(struct object *o)
       mt_unlock(&interleave_lock);
 
       THREADS_FPRINTF(0, (stderr, "_exit_threads_disable(): Wake up!\n"));
+      disallow_live_threads = 0;
       co_broadcast(&threads_disabled_change);
 #ifdef PIKE_DEBUG
       threads_disabled_thread = 0;
@@ -589,9 +604,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
   THREADS_ALLOW();
   /* Allow other threads to run */
-#ifdef HAVE_THR_YIELD
-  thr_yield();
-#endif
+  th_yield();
   THREADS_DISALLOW();
 
 #ifdef DEBUG
