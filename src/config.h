@@ -36,7 +36,9 @@
 /*
  * Undefine this to disable garabge collection
  */
+#ifndef NO_GC
 #define GC2
+#endif
    
 
 /*

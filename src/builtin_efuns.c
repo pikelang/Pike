@@ -351,11 +351,13 @@ void f_backtrace(INT32 args)
 	ITEM(i)[0].subtype=NUMBER_NUMBER;
 	ITEM(i)[0].type=T_INT;
       }
+      i->type_field = BIT_FUNCTION | BIT_INT | BIT_STRING;
     }else{
       ITEM(a)[frames].type=T_INT;
       ITEM(a)[frames].u.integer=0;
     }
   }
+  a->type_field = BIT_ARRAY | BIT_INT;
 }
 
 void f_add_efun(INT32 args)
@@ -1202,6 +1204,7 @@ void f_sleep(INT32 args)
   }
 }
 
+#ifdef GC2
 void f_gc(INT32 args)
 {
   INT32 tmp;
@@ -1210,6 +1213,7 @@ void f_gc(INT32 args)
   do_gc();
   push_int(tmp - num_objects);
 }
+#endif
 
 #ifdef TYPEP
 #undef TYPEP
@@ -1295,7 +1299,9 @@ void init_builtin_efuns()
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
   add_efun("values",f_values,"function(string|list:int*)|function(array|mapping|object:mixed*)",0);
   add_efun("zero_type",f_zero_type,"function(int:int)",0);
+#ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
+#endif
 }
 
 
