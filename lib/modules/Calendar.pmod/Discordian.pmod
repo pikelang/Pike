@@ -140,6 +140,11 @@ class cYear
       return 73*n;
    }
 
+   int number_of_months()
+   {
+      return 5*n;
+   }
+
    TimeRange place(TimeRange what)
    {
       if (what->is_day)
