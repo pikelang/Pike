@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.224 1999/12/14 08:38:07 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.225 1999/12/22 00:26:37 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1809,6 +1809,31 @@ void f_object_program(INT32 args)
 
   pop_n_elems(args);
   push_int(0);
+}
+
+node *fix_object_program_type(node *n)
+{
+  /* Fix the type for a common case:
+   *
+   * object_program(object(is|implements foo))
+   */
+  node *nn;
+  struct pike_string *new_type = NULL;
+
+  if (!n->type) {
+    copy_shared_string(n->type, program_type_string);
+  }
+  if (!(nn = CDR(n))) return NULL;
+  if ((nn->token == F_ARG_LIST) && (!(nn = CAR(nn)))) return NULL;
+  if (!nn->type) return NULL;
+
+  /* Perform the actual conversion. */
+  new_type = object_type_to_program_type(nn->type);
+  if (new_type) {
+    free_string(n->type);
+    n->type = new_type;
+  }
+  return NULL;
 }
 
 void f_reverse(INT32 args)
@@ -5510,7 +5535,8 @@ void init_builtin_efuns(void)
 		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
   
 /* function(mixed:program) */
-  ADD_EFUN("object_program",f_object_program,tFunc(tMix,tPrg),0);
+  ADD_EFUN2("object_program", f_object_program,tFunc(tMix, tPrg),
+	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
   
 /* function(mixed:int) */
   ADD_EFUN("objectp", f_objectp,tFunc(tMix,tInt),0);
