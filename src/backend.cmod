@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.56 2003/10/24 14:53:46 mast Exp $
+|| $Id: backend.cmod,v 1.57 2003/10/24 15:11:45 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.56 2003/10/24 14:53:46 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.57 2003/10/24 15:11:45 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -34,9 +34,17 @@ RCSID("$Id: backend.cmod,v 1.56 2003/10/24 14:53:46 mast Exp $");
 
 /*
  * Things to do
+ *
  * o GC handling for call_out
+ *
+ *   Well, a call out can never be considered dead since it can always
+ *   get called. /mast
+ *
  * o what happens to callbacks on destruct?
+ *
  * o automatic callback assignment based on current thread
+ *
+ *   Sounds very odd to me. /mast
  */
 
 #ifdef HAVE_SYS_SELECT_H
@@ -1132,13 +1140,14 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-	  if ((me->active_set.poll_fds[i].revents & POLLRDBAND) &&
-	      me->fds[fd].read_oob.callback)
-	  {
+	  if (me->active_set.poll_fds[i].revents & POLLRDBAND) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND\n", me->id));
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			  me->id, fd, me->fds[fd].read_oob.data));
-	    (*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data);
+	    if (me->fds[fd].read_oob.callback)
+	    {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read_oob.data));
+	      (*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data);
+	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
@@ -1150,7 +1159,15 @@ PIKECLASS Backend
 	    /* Closed or error */
 #ifdef PIKE_DEBUG
 	    if (me->active_set.poll_fds[i].revents & POLLERR) {
-	      fprintf(stderr, "Got POLLERR on fd %d\n", i);
+	      /* Docs are very hazy on when this happens.. */
+	      int ret;
+	      PIKE_STAT_T tmp;
+	      do {
+		ret = fd_fstat (fd, &tmp);
+	      } while (ret < 0 && errno == EINTR);
+	      fprintf(stderr, "Got POLLERR on fd %d. "
+		      "A stat on it returns %d, errno %d\n",
+		      fd, ret, errno);
 	    }
 #endif /* PIKE_DEBUG */
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP | POLLERR\n", me->id));
@@ -1185,12 +1202,13 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-	  if ((me->active_set.poll_fds[i].revents & POLLWRBAND) &&
-	      me->fds[fd].write_oob.callback) {
+	  if (me->active_set.poll_fds[i].revents & POLLWRBAND) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND\n", me->id));
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			  me->id, fd, me->fds[fd].write_oob.data));
-	    (*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data);
+	    if (me->fds[fd].write_oob.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write_oob.data));
+	      (*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data);
+	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
@@ -2121,7 +2139,7 @@ PIKECLASS Backend
       me->backend_callbacks.callbacks=0;
       me->backend_callbacks.num_calls=0;
 
-      GETTIMEOFDAY(&current_time);
+      GETTIMEOFDAY(&current_time); /* Why? /mast */
 
       me->num_pending_calls=0;
       me->call_buffer=0;
