@@ -5251,6 +5251,9 @@ Result: ({ /* 4 elements */
     4
 })
 </man_example>
+<man_note>
+This function is only available in Pike 0.6 and later.
+</man_note>
 <man_see>
 Array.diff, Array.diff_compare_table
 </man_see>
