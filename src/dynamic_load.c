@@ -7,7 +7,7 @@
 #  include "stralloc.h"
 #  include "pike_macros.h"
 
-RCSID("$Id: dynamic_load.c,v 1.25 1998/03/28 15:32:46 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.26 1998/04/17 00:15:01 grubba Exp $");
 
 #endif
 
@@ -135,7 +135,7 @@ static void dlinit(void)
 #endif
 
 
-#endif /* HAVE_DLOPEN || USE_DLD */
+#endif /* !EMULATE_DLOPEN */
 
 #ifndef TESTING
 
