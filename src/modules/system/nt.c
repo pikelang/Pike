@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.70 2005/01/20 00:27:54 nilsson Exp $
+|| $Id: nt.c,v 1.71 2005/02/26 01:06:31 nilsson Exp $
 */
 
 /*
@@ -2379,7 +2379,7 @@ static void f_NetSessionEnum(INT32 args)
 	  a->item[pos]=sp[-1];
 	  sp--;
 	  pos++;
-	  if((unsigned int)pos>=a->size) break;
+	  if((INT32)pos>=a->size) break;
 	  ptr+=sizeof_session_info(level);
 	}
 	netapibufferfree(buf);
@@ -2457,7 +2457,7 @@ static void f_NetWkstaUserEnum(INT32 args)
           a->item[pos]=sp[-1];
           sp--;
           pos++;
-          if((unsigned int)pos>=a->size) break;
+          if((INT32)pos>=a->size) break;
           ptr+=sizeof_wkstauser_info(level);
         }
         netapibufferfree(buf);
@@ -2990,7 +2990,7 @@ static void f_nt_uname(INT32 args)
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
-      sprintf(buf, "i%d", sysinfo.dwProcessorType);
+      sprintf(buf, "i%ld", sysinfo.dwProcessorType);
       push_text(buf);
       machine = "i86pc";
       break;
@@ -3153,7 +3153,7 @@ static void f_nt_uname(INT32 args)
       break;
   }
 
-  sprintf(buf,"Windows %s %d.%d.%d",
+  sprintf(buf,"Windows %s %ld.%ld.%ld",
 	  version,
 	  osversion.dwMajorVersion,
 	  osversion.dwMinorVersion,
