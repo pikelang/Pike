@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.213 2004/05/04 01:06:46 nilsson Exp $
+|| $Id: image.c,v 1.214 2004/05/13 23:31:58 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.213 2004/05/04 01:06:46 nilsson Exp $");
+RCSID("$Id: image.c,v 1.214 2004/05/13 23:31:58 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -1591,16 +1591,16 @@ static INLINE int image_color_svalue_rgba(struct svalue *s,
    rgb_group rgb;
    if (s->type==T_ARRAY && s->u.array->size>=4)
    {
-      if (s->u.array->item[0].type!=T_INT) return 0;
-      else d->r=(COLORTYPE)s->u.array->item[0].u.integer; 
-      if (s->u.array->item[1].type!=T_INT) return 0;
-      else d->g=(COLORTYPE)s->u.array->item[1].u.integer; 
-      if (s->u.array->item[2].type!=T_INT) return 0;
-      else d->b=(COLORTYPE)s->u.array->item[2].u.integer; 
+     struct array *a = s->u.array;
+     if( (a->type_field!=BIT_INT) &&
+	 (array_fix_type_field(a)!=BIT_INT) )
+       return 0;
 
-      if (s->u.array->item[3].type!=T_INT) return 0;
-      else d->alpha=(COLORTYPE)s->u.array->item[3].u.integer; 
-      return 1;
+     d->r=(COLORTYPE)a->item[0].u.integer;
+     d->g=(COLORTYPE)a->item[1].u.integer;
+     d->b=(COLORTYPE)a->item[2].u.integer;
+     d->alpha=(COLORTYPE)a->item[3].u.integer;
+     return 1;
    }
    else if (image_color_svalue(s,&rgb))
    {
@@ -1978,7 +1978,7 @@ static void image_gradients(INT32 args)
       if (sp[-1].type!=T_ARRAY ||
 	  (a=sp[-1].u.array)->size!=5 ||
 	  ( (a->type_field & ~BIT_INT) &&
-	    (array_fix_type_field(a),a->type_field & ~BIT_INT) ))
+	    (array_fix_type_field(a) & ~BIT_INT) ))
       {
 	 while (first) { c=first; first=c->next; free(c); }
 	 bad_arg_error("Image.Image->gradients",sp-args,args,0,"",sp-args,
