@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.209 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: image.c,v 1.210 2004/05/03 23:33:26 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.209 2004/03/05 23:04:02 nilsson Exp $");
+RCSID("$Id: image.c,v 1.210 2004/05/03 23:33:26 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -822,6 +822,7 @@ void image_create_method(INT32 args)
       push_int(THIS->xsize-1); stack_swap();
       push_int(THIS->ysize-1); stack_swap();
       image_tuned_box(5);
+      return;
    }
    else 
       Pike_error("create_method: unknown method\n");
