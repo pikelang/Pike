@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.14 2001/04/20 17:26:45 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.15 2001/04/20 20:55:07 mirar Exp $
 
 #pike __REAL_VERSION__
 
@@ -498,7 +498,7 @@ class TimeRange
 //!      |-------A-------|    A preceeds B,  A succeeds B,
 //!          |---B---|        A overlaps B, A contains B, A touches B
 //!
-//!         |----A----|       A overlaps B, A touches B
+//!         |----A----|       A overlaps B, A touches B, A contains B
 //!         |----B----|       A equals B, A starts with B, A ends with B
 //!
 //!      |-------A-------|    A succeeds B, A starts with B
