@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.310 2002/12/10 18:53:15 mast Exp $
+|| $Id: language.yacc,v 1.311 2003/01/13 04:01:36 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.310 2002/12/10 18:53:15 mast Exp $");
+RCSID("$Id: language.yacc,v 1.311 2003/01/13 04:01:36 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3520,7 +3520,6 @@ comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
 
 gauge: TOK_GAUGE catch_arg
   {
-#ifdef HAVE_GETHRVTIME
     $$=mkefuncallnode("abs",
 		  mkopernode("`/", 
 			     mkopernode("`-", mkefuncallnode("gethrvtime",0),
@@ -3528,17 +3527,6 @@ gauge: TOK_GAUGE catch_arg
 					       mknode(F_POP_VALUE, $2, NULL),
 					       mkefuncallnode("gethrvtime",0))),
 			     mkfloatnode((FLOAT_TYPE)1000000.0)));
-#else
-  $$=mkefuncallnode("abs",
-	mkopernode("`/", 
-		mkopernode("`-",
-			 mknode(F_INDEX,mkefuncallnode("rusage",0),
-				mkintnode(GAUGE_RUSAGE_INDEX)),
-			   mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, $2, NULL),
-				mknode(F_INDEX,mkefuncallnode("rusage",0),
-				       mkintnode(GAUGE_RUSAGE_INDEX)))),
-		mkfloatnode((FLOAT_TYPE)1000.0)));
-#endif
   };
 
 typeof: TOK_TYPEOF '(' expr0 ')'
