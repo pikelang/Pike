@@ -1821,6 +1821,25 @@ section again.
 <dd> As with all data types <tt>==</tt> and <tt>!=</tt> can be used to
      see if two programs are the same or not.
 </dl>
+<p>
+The following operators and functions are important:
+<dl>
+<dt> cloning ( <tt><i>p</i> ( <i>args<i> )</tt> )
+<dd> Creates an object from a program. Discussed in the next section.
+
+<dt> indexing ( <tt><i>p</i> [ <i>string</i> ]</tt>, or
+                <tt><i>p</i> -> <i>identifier</i></tt> )
+<dd> Retreives the value of the named constant from a program.
+
+<dt> <tt>array(string) indices(program <i>p</i>)</tt>
+<dd> Returns an array with the names of all non-static constants in the
+     program.
+
+<dt> <tt>array(mixed) values(program <i>p</i>)</tt>
+<dd> Returns an array with the values of all non-static constants in the
+     program.
+</dl>
+
 </section>
 
 
@@ -2496,6 +2515,16 @@ can only be indexed on certain things as shown in this list:
   <i>object</i>-&gt;<i>identifier</i>=<i>mixed</i><br>
     </tt></td><td>Set the given identifier in the object to the mixed value. Only works if the identifier references a variable in the object.</td>
 </tr>
+
+
+<tr>
+<td><tt>
+  <i>program</i>[<i>string</i>]<br>
+  <i>program</i>-&gt;<i>identifier</i><br>
+    </tt></td><td>Returns the value of the named constant identifier
+                  in the program.</td>
+</tr>
+
 
 <tr>
 <td><tt><i>string</i>[<i>int</i>..<i>int</i>]</tt></td><td>Returns a piece of the string.</td>
