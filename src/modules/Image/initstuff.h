@@ -14,7 +14,7 @@ IMAGE_CLASS("Colortable", init_image_colortable, exit_image_colortable,
 IMAGE_CLASS("Layer",      init_image_layers,     exit_image_layers,
 	    image_layer_program )
 
-IMAGE_CLASS("font",       init_image_font,       exit_image_font,
+IMAGE_CLASS("Font",       init_image_font,       exit_image_font,
 	    image_font_program )
 
 IMAGE_SUBMODULE("Color", init_image_colors, exit_image_colors )
