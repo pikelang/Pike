@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.40 2003/11/07 17:55:26 nilsson Exp $
+// $Id: C.pmod,v 1.41 2003/12/08 00:23:03 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -123,6 +123,7 @@ array(string) split(string data, void|mapping state)
 	  if(data[pos]=='e' || data[pos]=='E')
 	  {
 	    pos++;
+	    if(data[pos]=='-') pos++;
 	    while(data[pos]>='0' && data[pos]<='9') pos++;
 	  }
 	  break;
