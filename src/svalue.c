@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "main.h"
 #include "svalue.h"
@@ -21,7 +22,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.42 2001/07/04 12:00:29 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.43 2001/11/14 10:53:43 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -787,7 +788,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	      break;
 
             default:
-	      if(j>=0 && j<256 && isprint(j))
+	      if(j>0 && j<256 && isprint(j))
 	      {
 		my_putchar(j);
 		break;
