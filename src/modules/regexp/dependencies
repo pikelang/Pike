@@ -1,0 +1,20 @@
+glue.o: glue.c \
+  global.h \
+  config.h machine.h \
+  port.h \
+  interpret.h \
+  program.h \
+  svalue.h \
+  stralloc.h \
+  array.h \
+  las.h \
+  dynamic_buffer.h \
+  object.h \
+  macros.h
+regexp.o: regexp.c \
+  global.h \
+  config.h machine.h \
+  port.h \
+  regexp.h \
+  error.h \
+  svalue.h

@@ -1,0 +1,8 @@
+math.o: math.c \
+  interpret.h \
+  program.h machine.h \
+  types.h \
+  config.h \
+  add_efun.h \
+  svalue.h \
+  hashtable.h

@@ -1,0 +1,22 @@
+# Generated automatically from Makefile.in by configure.
+SRCDIR=.
+VPATH=.:./../..:../..
+PREFLAGS=-I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
+
+FILES=sprintf.o
+
+sprintf.a: $(FILES)
+	-rm -f sprintf.a
+	ar cq sprintf.a $(FILES)
+	-ranlib sprintf.a
+
+clean:
+	-rm -f *.o *.a
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
+
+include ./dependencies
+
+

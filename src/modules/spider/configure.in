@@ -1,0 +1,40 @@
+AC_INIT(spider.c)
+AC_CONFIG_HEADER(spider.h)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+
+AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h netinet/in.h)
+AC_HAVE_FUNCS(syslog perror strerror)
+
+AC_SUBST(RANLIB)
+
+AC_MSG_CHECKING(how to find timezone)
+
+AC_CACHE_VAL(lpc_cv_timezone,
+[
+AC_TRY_LINK([
+#include <time.h>
+],[
+ int _tz;
+ time_t foo;
+ struct tm *g;
+ g=localtime(&foo);
+
+ _tz = g->tm_gmtoff;	
+],
+  lpc_cv_timezone='localtime'
+,
+  lpc_cv_timezone='int'
+)])
+
+if test "$lpc_cv_timezone" = int; then
+  AC_DEFINE(HAVE_INT_TIMEZONE)
+  AC_MSG_RESULT([int]);
+else
+  AC_MSG_RESULT([localtime])
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+
