@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.388 2004/10/29 00:51:17 mast Exp $
+# $Id: Makefile.in,v 1.389 2004/11/02 10:31:50 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -438,9 +438,23 @@ undump_modules: delete_dumped_modules
 	@test -d cab_cache || mkdir cab_cache
 	$(LIGHT) "$<" -cc cab_cache
 
-Pike.msi: Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj Pike_module.msm
+Pike.wxs: $(SRCDIR)/../packaging/windows/pike.wxs
+	@cp $(SRCDIR)/../packaging/windows/pike.wxs Pike.wxs
+
+Pike_actions.wxs: $(SRCDIR)/../packaging/windows/actions.wxs
+	@cp $(SRCDIR)/../packaging/windows/actions.wxs Pike_actions.wxs
+
+Pike_ui.wxs: $(SRCDIR)/../packaging/windows/wix_ui.wxs
+	@cp $(SRCDIR)/../packaging/windows/wix_ui.wxs Pike_ui.wxs
+
+Pike_module.msm: $(SRCDIR)/../bin/install.pike
+
+Pike.msi: Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp
 	@test -d cab_cache || mkdir cab_cache
 	$(LIGHT) Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
+
+Pike_banner.bmp: $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif
+	$(RUNPIKE) $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif >Pike_banner.bmp || rm Pike_banner.bmp
 
 force :
 	@:
