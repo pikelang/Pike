@@ -76,6 +76,7 @@ class oracle
       answer = big_typed_query(query, binds, autocommit);
       if (!answer) {
 	destruct();
+	return;
       }
       num_rows = answer->num_rows;
       num_fields = answer->num_fields;
