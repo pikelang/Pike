@@ -132,6 +132,10 @@ static private class Extractor {
         mapping(string:int) contexts = ([]);
         foreach (decls, PikeObject obj)
           contexts[obj->objtype] = 1;
+        if (contexts["inherit"] && sizeof(decls) > 1)
+          extractorErrorAt(token->sourcePos,
+                           "inherit can not be grouped"
+                           " with other declarations");
         string context;
         if (sizeof(indices(contexts)) == 1)
           context = "_" + indices(contexts)[0];
@@ -166,7 +170,8 @@ static private class Extractor {
           c->AddChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
-          foreach (([object(DocGroup)]a[1])->objects, PikeObject obj)
+          array(PikeObject) objects = ([object(DocGroup)]a[1])->objects;
+          foreach (objects, PikeObject obj)
             if (obj->objtype == "inherit")
               c->AddInherit(obj);
           c->AddGroup([object(DocGroup)]a[1]);

@@ -230,10 +230,14 @@ static private class Extractor {
         switch (obj->objtype) {
           case "inherit":
             c->AddInherit(obj);
+            if (doc && sizeof(decls) > 1)
+              extractorError("inherit can not be documented together"
+                             " with other declarations");
             // fall through
           default:
             contexts[obj->objtype] = 1;
         }
+
 
       if (doc) {
         if (wasClassOrModule) {
