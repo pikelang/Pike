@@ -8,7 +8,7 @@
 //! class 
 
 array(string) month_names=
-   ({"January","February","Mars","April","May","June","July","August",
+   ({"January","February","March","April","May","June","July","August",
      "September","October","November","December"});
 
 array(string) week_day_names=
