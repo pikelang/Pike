@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.10 2000/08/29 17:04:02 grubba Exp $
+ * $Id: stat.c,v 1.11 2000/08/30 21:14:20 mast Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.10 2000/08/29 17:04:02 grubba Exp $");
+RCSID("$Id: stat.c,v 1.11 2000/08/30 21:14:20 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -99,7 +99,11 @@ static struct mapping *stat_map=NULL;
 
 enum stat_query
 {STAT_DEV=1, STAT_INO, STAT_MODE, STAT_NLINK, STAT_UID, STAT_GID, STAT_RDEV, 
- STAT_SIZE, STAT_BLKSIZE, STAT_BLOCKS, STAT_ATIME, STAT_MTIME, STAT_CTIME,
+ STAT_SIZE,
+#if 0
+ STAT_BLKSIZE, STAT_BLOCKS,
+#endif
+ STAT_ATIME, STAT_MTIME, STAT_CTIME,
 /* is... */
  STAT_ISLNK, STAT_ISREG, STAT_ISDIR, STAT_ISCHR, 
  STAT_ISBLK, STAT_ISFIFO, STAT_ISSOCK,
@@ -223,8 +227,10 @@ static void stat_create (INT32 args)
       ASSIGN_INDEX (STAT_INO);
       ASSIGN_INDEX (STAT_NLINK);
       ASSIGN_INDEX (STAT_RDEV);
+#if 0
       ASSIGN_INDEX (STAT_BLKSIZE);
       ASSIGN_INDEX (STAT_BLOCKS);
+#endif
     }
 
     else if (sp[-1].type == T_ARRAY) {
@@ -276,10 +282,20 @@ static void stat_index(INT32 args)
 	 INT_TYPE code;
 
 	 ref_push_mapping(stat_map);
-	 stack_swap();
+	 push_svalue (sp-2);
 	 f_index(2);
-
 	 code = sp[-1].u.integer;	/* always integer there now */
+	 pop_stack();
+
+	 if (!code) {
+	   /* Fall back to a normal index on this object, in case
+	    * someone inherited us. */
+	   struct svalue res;
+	   object_index_no_free2 (&res, fp->current_object, sp-1);
+	   pop_stack();
+	   *sp++ = res;
+	   return;
+	 }
 	 pop_stack();
 	 
 	 switch (code)
@@ -426,8 +442,7 @@ static void stat_index(INT32 args)
 	       break;
 
 	   default:
-	     push_int (0);
-	     sp[-1].subtype = 1;
+	     fatal ("stat_index is not kept up-to-date with stat_map.\n");
 	 }
       }
       else
@@ -508,6 +523,15 @@ static void stat_index_set (INT32 args)
     f_index (2);
     code = sp[-1].u.integer;
     pop_stack();
+
+    if (!code) {
+      /* Fall back to a normal index set on this object, in case
+       * someone inherited us. */
+      object_set_index2 (fp->current_object, sp-2, sp-1);
+      stack_swap();
+      pop_stack();
+      return;
+    }
 
     switch (code) {
       case 0:
@@ -789,8 +813,10 @@ void init_files_stat()
    INIT_INDEX (STAT_GID, "gid");
    INIT_INDEX (STAT_RDEV, "rdev");
    INIT_INDEX (STAT_SIZE, "size");
+#if 0
    INIT_INDEX (STAT_BLKSIZE, "blksize");
    INIT_INDEX (STAT_BLOCKS, "blocks");
+#endif
    INIT_INDEX (STAT_ATIME, "atime");
    INIT_INDEX (STAT_MTIME, "mtime");
    INIT_INDEX (STAT_CTIME, "ctime");
