@@ -125,8 +125,73 @@ static function(:Ruleset.Timezone) _locale()
 #endif
 #endif
 
-   return localtime(); // default - use localtime
+   // run an expert system try on the localtime() rules, 
+   // default to localtime()
+   return expert(localtime()); 
 };
+
+// ----------------------------------------------------------------
+// expert system to pick out the correct timezone
+
+static Ruleset.Timezone timezone_expert_rec(Ruleset.Timezone try,
+					    mapping|array|string tree,
+					    object cal)
+{
+   int t=tree->test,uo;
+   if (t<0)
+   {
+      if (catch { uo=cal->Second(t)->set_timezone(try)
+		     ->utc_offset(); })
+	 return timezone_select(try,timezone_collect(tree),cal);
+   }
+   else 
+      uo=cal->Second(t)->set_timezone(try)->utc_offset();
+
+   if (!(tree=tree[uo]))
+      return try;
+
+   if (mappingp(tree))
+      return timezone_expert_rec(try,tree,cal);
+
+   if (arrayp(tree))
+      return timezone_select(try,tree,cal);
+   
+// stringp
+   return `[](tree);
+}
+
+static Ruleset.Timezone timezone_select(Ruleset.Timezone try,
+					array tree,
+					object cal)
+{
+#if constant(tzname)
+   array res=({});
+   multiset names=mkmultiset(tzname());
+   function f=cal->Second(970416317)->set_timezone;
+   foreach (tree,string tzn)
+      if (names[f(tzn)->tzname()]) res+=({tzn});
+   if (!sizeof(res)) return try;
+   tree=res;
+#endif
+// pick one
+   return `[](tree[0]);
+}
+
+static array timezone_collect(string|mapping|array tree)
+{
+   werror("bop\n");
+   if (arrayp(tree)) return tree;
+   else if (stringp(tree)) return ({tree});
+   else return `+(@map(values(tree-({"test"})),timezone_collect));
+}
+
+Ruleset.Timezone expert(Ruleset.Timezone try)
+{
+   object cal=master()->resolv("Calendar")["ISO_UTC"];
+   return timezone_expert_rec(try,TZnames.timezone_expert_tree,cal);
+}
+
+// ----------------------------------------------------------------
 
 class localtime
 {
@@ -875,7 +940,11 @@ class Runtime_timezone_compiler
 		"array(int) shifts=({"});
 	 foreach (rules[..sizeof(rules)-2],array a)
 	    res+=({a[5]+","});
-	 res+=({"});\n"});
+	 res+=({"});\n",
+		sprintf(
+		   "string _sprintf(int t) { return (t=='O')?"
+		   "%O:0; }\n"
+		   "string zoneid=%O;\n","Timezone("+id+")",id)});
 
 	 return res*"";
       }
@@ -1000,7 +1069,14 @@ class Runtime_timezone_compiler
       
       add_constant("__Calendar_mkzone",mkzonemod);
 
-      program p=compile_string(c);
+      program p;
+      mixed err=catch { p=compile_string(c); };
+      if (err) 
+      {
+	 int i=0; 
+	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
+	 throw(err);
+      }
       object zo=p();
       if (zo->thezone) zo=zo->thezone;
 
@@ -1229,8 +1305,6 @@ class Runtime_timezone_compiler
 	 return whatrule((jd-2440588)*86400-86400/2)->tz_jd(jd);
       }
 
-      string _sprintf(int t) { return (t=='O')?"Timezone("+name+")":0; }
-   
       int raw_utc_offset();
    }
 
