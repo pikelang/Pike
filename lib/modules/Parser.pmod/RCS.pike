@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.24 2002/09/27 20:18:13 nilsson Exp $
+// $Id: RCS.pike,v 1.25 2002/09/29 01:19:30 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -382,10 +382,10 @@ class DeltatextIterator
 		   revisions && sizeof(revisions), (this_no ? ", now at "+this_rev : ""));
   }
 
-  //! Drops the leading whitespace before next revision's deltatext
-  //! entry and sets this_rev to the revision number we're about to read.
   //  @note
   //  this method requires that @[raw] starts with a valid deltatext entry
+  //! Drops the leading whitespace before next revision's deltatext
+  //! entry and sets this_rev to the revision number we're about to read.
   static int(0..1) read_next()
   {
     raw = parse_deltatext_section(raw);
