@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.10 2002/10/04 15:18:01 marcus Exp $
+# $Id: configure.in,v 1.11 2002/10/07 10:40:54 kiwi Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -37,6 +37,25 @@ int main(int argc, char **argv)
       fi
       AC_CHECK_FUNCS(jcopy_sample_rows jcopy_block_row jzero_far)
     ])
+    AC_MSG_CHECKING([if jpeg_componment_info has the member height_in_blocks])
+    AC_CACHE_VAL(pike_cv_jpeg_height_in_blocks, [
+      AC_TRY_COMPILE([
+#include <jpeglib.h>
+      ],[
+  JDIMENSION block_test;
+  jpeg_component_info *compptr;
+
+  block_test = compptr->heigh_in_blocks;
+      ],[
+        pike_cv_jpeg_height_in_blocks=yes
+      ],[
+        pike_cv_jpeg_height_in_blocks=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_jpeg_height_in_blocks)
+    if test "x$pike_cv_jpeg_in_blocks" = "yes"; then
+      AC_DEFINE(HAVE_JPEG_HEIGHT_IN_BLOCKS)
+    else :; fi
   fi
 fi
 

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.3 2002/10/04 15:08:37 grubba Exp $
+ * $Id: acconfig.h,v 1.4 2002/10/07 10:40:54 kiwi Exp $
  */
 
 #ifndef GMP_MACHINE_H
@@ -14,5 +14,9 @@
 
 /* Define this if you have -ljpeg */
 #undef HAVE_LIBJPEG
+
+/* Define this if you have height_in_blocks member in struct 
+ * jpeg_component_info */
+#undef HAVE_JPEG_HEIGHT_IN_BLOCKS
 
 #endif
