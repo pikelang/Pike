@@ -1,5 +1,5 @@
 /*
- * $Id: join.pike,v 1.7 2002/05/23 22:09:36 manual Exp $
+ * $Id: join.pike,v 1.8 2002/11/27 19:33:13 marcus Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -13,56 +13,56 @@ int main(int n, array(string) args) {
 
   int post_process = has_value(args, "--post-process");
   args -= ({ "--post-process" });
-  if(post_process) {
-    int mtime;
-    mtime = min( @map(args[2..], lambda(string f) { return file_stat(f)->mtime; } ) );
-    Stdio.Stat stat = file_stat(args[1]);
-    if(stat && stat->mtime > mtime) return 0;
-    return join_files(args[2..], args[1], post_process);
-  }
 
-  if(n!=3) {
+  if(n<3) {
     write("%s <destination.xml> <builddir>\n", args[0]);
     return 1;
   }
 
-  string builddir = args[2];
-  if(builddir[-1]!='/') builddir += "/";
-  recurse( builddir, args[1] );
+  recurse( args[2..], args[1], post_process );
 }
 
-void recurse(string builddir, string save_to) {
+void recurse(array(string) sources, string save_to, int post_process) {
   array files = ({});
   int mtime;
 
-  // Adding all /*/sub_manual.xml files to the file queue.
-  foreach(get_dir(builddir), string fn) {
-    if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
-    Stdio.Stat stat = file_stat(builddir+fn);
-    if(!stat->isdir) continue;
-    recurse(builddir+fn+"/", builddir+fn+"/sub_manual.xml");
+  foreach(sources, string builddir) {
+    Stdio.Stat stat = file_stat(builddir);
+    if(stat->isdir) {
 
-    stat = file_stat(builddir+fn+"/sub_manual.xml");
-    if(stat) {
-      files += ({ builddir+fn+"/sub_manual.xml" });
+      if(builddir[-1]!='/') builddir += "/";
+
+      // Adding all /*/.cache.xml files to the file queue.
+      foreach(get_dir(builddir), string fn) {
+	if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
+	Stdio.Stat stat = file_stat(builddir+fn);
+	if(!stat->isdir) continue;
+	recurse(({builddir+fn+"/"}), builddir+fn+"/.cache.xml", 0);
+	
+	stat = file_stat(builddir+fn+"/.cache.xml");
+	if(stat) {
+	  files += ({ builddir+fn+"/.cache.xml" });
+	  mtime = max(mtime, stat->mtime);
+	}
+      }
+      
+      // Adding all *.xml files to the file queue
+      werror("Joining in %s\n", builddir);
+      foreach(filter(get_dir(builddir), has_suffix, ".xml"), string fn) {
+	if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
+	Stdio.Stat stat = file_stat(builddir+fn);
+	if(stat->isdir || stat->size < 3) continue;
+	files += ({ builddir+fn });
+	mtime = max(mtime, stat->mtime);
+      }
+    } else {
+      files += ({ builddir });
       mtime = max(mtime, stat->mtime);
     }
   }
-
-  // Adding all *.xml files to the file queue, except sub_manual.xml.
-  werror("Joining in %s\n", builddir);
-  foreach(filter(get_dir(builddir), has_suffix, ".xml"), string fn) {
-    if(fn=="sub_manual.xml") continue;
-    if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
-    Stdio.Stat stat = file_stat(builddir+fn);
-    if(stat->isdir || stat->size < 3) continue;
-    files += ({ builddir+fn });
-    mtime = max(mtime, stat->mtime);
-  }
-
   Stdio.Stat dstat = file_stat(save_to);
   if(dstat && dstat->mtime > mtime) return;
-  int res = join_files(files, save_to, 0);
+  int res = join_files(files, save_to, post_process);
   if(res) exit(res);
 }
 

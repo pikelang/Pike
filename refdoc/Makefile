@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.47 2002/06/24 00:41:27 manual Exp $
+# $Id: Makefile,v 1.48 2002/11/27 19:33:13 marcus Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -58,17 +58,11 @@ low_traditional:
 
 # Sub targets used by the above targets.
 
-build/autodoc.xml: build/src/sub_manual.xml build/lib/sub_manual.xml bin/join.pike
-	$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/sub_manual.xml \
-	  build/lib/sub_manual.xml
-
-build/src/sub_manual.xml: build/src build/images always
+build/autodoc.xml: build/src build/lib build/images images bin/join.pike always
 	$(PIKE) bin/extract.pike ../src/ build/src/ build/images/
-	$(PIKE) bin/join.pike build/src/sub_manual.xml build/src/
-
-build/lib/sub_manual.xml: build/lib build/images images always
 	$(PIKE) bin/extract.pike ../lib/ build/lib/ build/images/
-	$(PIKE) bin/join.pike build/lib/sub_manual.xml build/lib/
+	$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/ \
+	  build/lib/
 
 always:
 
