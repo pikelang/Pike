@@ -33,19 +33,19 @@
 //!
 //!
 
-inherit Container;
+inherit GTK.Container;
 
-Button clicked( );
+GTK.Button clicked( );
 //! Emulate a 'clicked' event (press followed by release).
 //!
 //!
 
-static Button create( string|void label_text );
+static GTK.Button create( string|void label_text );
 //! If a string is supplied, a W(Label) is created and added to the button.
 //!
 //!
 
-Button enter( );
+GTK.Button enter( );
 //! Emulate a 'enter' event.
 //!
 //!
@@ -56,26 +56,26 @@ GTK.Widget get_child( );
 //!
 
 int get_relief( );
-//! One of @[RELIEF_NONE], @[RELIEF_HALF] and @[RELIEF_NORMAL], set with set_relief()
+//! One of @[RELIEF_NORMAL], @[RELIEF_NONE] and @[RELIEF_HALF], set with set_relief()
 //!
 //!
 
-Button leave( );
+GTK.Button leave( );
 //! Emulate a 'leave' event.
 //!
 //!
 
-Button pressed( );
+GTK.Button pressed( );
 //! Emulate a 'press' event.
 //!
 //!
 
-Button released( );
+GTK.Button released( );
 //! Emulate a 'release' event.
 //!
 //!
 
-Button set_relief( int newstyle );
-//! One of @[RELIEF_NONE], @[RELIEF_HALF] and @[RELIEF_NORMAL]
+GTK.Button set_relief( int newstyle );
+//! One of @[RELIEF_NORMAL], @[RELIEF_NONE] and @[RELIEF_HALF]
 //!
 //!

@@ -8,25 +8,25 @@
 //!
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
-DrawingArea clear( int|void x, int|void y, int|void width, int|void height );
+GTK.DrawingArea clear( int|void x, int|void y, int|void width, int|void height );
 //! Either clears the rectangle defined by the arguments, of if no
 //! arguments are specified, the whole drawable.
 //!
 //!
 
-DrawingArea copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsource, int ysource, int width, int height );
+GTK.DrawingArea copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsource, int ysource, int width, int height );
 //! Copies the rectangle defined by xsource,ysource and width,height
 //! from the source drawable, and places the results at xdest,ydest in
 //! the drawable in which this function is called.
 //!
 //!
 
-static DrawingArea create( );
+static GTK.DrawingArea create( );
 //!
 
-DrawingArea draw_arc( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2, int angle1, int angle2 );
+GTK.DrawingArea draw_arc( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2, int angle1, int angle2 );
 //! Draws a single circular or elliptical arc.  Each arc is specified
 //! by a rectangle and two angles. The center of the circle or ellipse
 //! is the center of the rectangle, and the major and minor axes are
@@ -37,20 +37,20 @@ DrawingArea draw_arc( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2, in
 //!
 //!
 
-DrawingArea draw_bitmap( GDK.GC gc, GDK.Bitmap bitmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
+GTK.DrawingArea draw_bitmap( GDK.GC gc, GDK.Bitmap bitmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw a GDK(Bitmap) in this drawable.
 //! @b{NOTE:@} This drawable must be a bitmap as well. This will be
 //! fixed in GTK 1.3
 //!
 //!
 
-DrawingArea draw_image( GDK.GC gc, GDK.Image image, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
+GTK.DrawingArea draw_image( GDK.GC gc, GDK.Image image, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK(Image) at xdest,ydest in the destination drawable
 //!
 //!
 
-DrawingArea draw_line( GDK.GC gc, int x1, int y1, int x2, int y2 );
+GTK.DrawingArea draw_line( GDK.GC gc, int x1, int y1, int x2, int y2 );
 //! img_begin
 //! w = GTK.DrawingArea()->set_usize(100,100);
 //! delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
@@ -59,13 +59,13 @@ DrawingArea draw_line( GDK.GC gc, int x1, int y1, int x2, int y2 );
 //!
 //!
 
-DrawingArea draw_pixmap( GDK.GC gc, GDK.Pixmap pixmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
+GTK.DrawingArea draw_pixmap( GDK.GC gc, GDK.Pixmap pixmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK(Pixmap) at xdest,ydest in the destination drawable
 //!
 //!
 
-DrawingArea draw_point( GDK.GC gc, int x, int y );
+GTK.DrawingArea draw_point( GDK.GC gc, int x, int y );
 //! img_begin
 //! w = GTK.DrawingArea()->set_usize(10,10);
 //! delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
@@ -74,7 +74,7 @@ DrawingArea draw_point( GDK.GC gc, int x, int y );
 //!
 //!
 
-DrawingArea draw_rectangle( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2 );
+GTK.DrawingArea draw_rectangle( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2 );
 //! img_begin
 //!  w = GTK.DrawingArea()->set_usize(100,100);
 //! delay:  g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
@@ -91,7 +91,7 @@ DrawingArea draw_rectangle( GDK.GC gc, int filledp, int x1, int y1, int x2, int 
 //!
 //!
 
-DrawingArea draw_text( GDK.GC gc, GDK.Font font, int x, int y, string text, int forcewide );
+GTK.DrawingArea draw_text( GDK.GC gc, GDK.Font font, int x, int y, string text, int forcewide );
 //! y is used as the baseline for the text.
 //! If forcewide is true, the string will be expanded to a wide string
 //! even if it is not already one. This is useful when writing text
@@ -99,7 +99,7 @@ DrawingArea draw_text( GDK.GC gc, GDK.Font font, int x, int y, string text, int 
 //!
 //!
 
-DrawingArea size( int width, int height );
+GTK.DrawingArea size( int width, int height );
 //! This function is OBSOLETE
 //!
 //!

@@ -9,19 +9,19 @@
 //!
 //!
 
-inherit Container;
+inherit GTK.Container;
 
-static Fixed create( );
+static GTK.Fixed create( );
 //! Create a new fixed widget
 //!
 //!
 
-Fixed move( GTK.Widget widget, int new_xpos, int new_ypos );
+GTK.Fixed move( GTK.Widget widget, int new_xpos, int new_ypos );
 //! Move the widget to new_xpos,new_ypos from it's old location.
 //!
 //!
 
-Fixed put( GTK.Widget widget, int x, int y );
+GTK.Fixed put( GTK.Widget widget, int x, int y );
 //! Place the widget at xpos,ypos.
 //!
 //!

@@ -25,9 +25,9 @@
 //!
 //!
 
-inherit Bin;
+inherit GTK.Bin;
 
-static EventBox create( );
+static GTK.EventBox create( );
 //! Create a new event box widget
 //!
 //!

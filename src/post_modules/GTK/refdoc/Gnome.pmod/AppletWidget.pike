@@ -89,9 +89,9 @@
 //! @b{tooltip_state@}
 //!
 
-inherit Plug;
+inherit GTK.Plug;
 
-GnomeAppletWidget abort_load( );
+Gnome.AppletWidget abort_load( );
 //!  Abort the applet loading, once applet has been created, this is a
 //!  way to tell the panel to forget about us if we decide we want to
 //!  quit before we add the actual applet to the applet-widget. This is
@@ -99,7 +99,7 @@ GnomeAppletWidget abort_load( );
 //!
 //!
 
-GnomeAppletWidget add( GTK.Widget what );
+Gnome.AppletWidget add( GTK.Widget what );
 //! Add a child (widget) to the applet. This finishes the handshaking
 //! with the panel started in applet_widget_new. You should never call
 //! this function twice for the same applet. If you have already
@@ -108,12 +108,12 @@ GnomeAppletWidget add( GTK.Widget what );
 //!
 //!
 
-GnomeAppletWidget callback_set_sensitive( string name, int sensitive );
+Gnome.AppletWidget callback_set_sensitive( string name, int sensitive );
 //! Sets the sensitivity of a menu item in the applet's context menu.
 //!
 //!
 
-static GnomeAppletWidget create( string applet_name );
+static Gnome.AppletWidget create( string applet_name );
 //! Make a new applet and register us with the panel, if you decide to
 //! cancel the load before calling add, you should call
 //! abort_load.
@@ -133,7 +133,7 @@ string get_globcfgpath( );
 
 int get_panel_orient( );
 //! Gets the orientation of the panel this widget is on. it can be one
-//! of @[GNOME_Panel_ORIENT_DOWN], @[GNOME_Panel_ORIENT_LEFT], @[GNOME_Panel_ORIENT_RIGHT] and @[GNOME_Panel_ORIENT_UP]. This is not the position of the
+//! of @[GNOME_Panel_ORIENT_RIGHT], @[GNOME_Panel_ORIENT_DOWN], @[GNOME_Panel_ORIENT_LEFT] and @[GNOME_Panel_ORIENT_UP]. This is not the position of the
 //! panel, but rather the direction that the applet should be "reaching
 //! out". So any arrows should for example point in this direction. It
 //! will be OrientUp or OrientDown for horizontal panels and OrientLeft
@@ -151,14 +151,14 @@ int get_panel_pixel_size( );
 string get_privcfgpath( );
 //!
 
-GnomeAppletWidget register_callback( string name, string menutext, function,mixed callback );
+Gnome.AppletWidget register_callback( string name, string menutext, function callback_cb, mixed callback_arg );
 //! Adds a menu item to the applet's context menu. The name should be a
 //! path that is separated by '/' and ends in the name of this
 //! item. You need to add any submenus with register_callback_dir.
 //!
 //!
 
-GnomeAppletWidget register_callback_dir( string name, string menutext );
+Gnome.AppletWidget register_callback_dir( string name, string menutext );
 //! Adds a submenu to the applet's context menu. The name should be the
 //! full path of the new submenu with the name of the new submenu as
 //! the last part of the path. The name can, but doesn't have to be
@@ -166,25 +166,25 @@ GnomeAppletWidget register_callback_dir( string name, string menutext );
 //!
 //!
 
-GnomeAppletWidget register_stock_callback( string name, string stock_type, string menutext, function,mixed callback );
+Gnome.AppletWidget register_stock_callback( string name, string stock_type, string menutext, function callback_cb, mixed callback_arg );
 //! Adds a menu item to the applet's context menu with a stock GNOME
 //! pixmap. This works almost exactly the same as register_callback.
 //!
 //!
 
-GnomeAppletWidget register_stock_callback_dir( string name, string stock_type, string menutext );
+Gnome.AppletWidget register_stock_callback_dir( string name, string stock_type, string menutext );
 //! Adds a submenu to the applet's context menu with a stock GNOME
 //! pixmap. This is similiar to register_callback_dir.
 //!
 //!
 
-GnomeAppletWidget remove( );
+Gnome.AppletWidget remove( );
 //! Remove the plug from the panel, this will destroy the applet. You
 //! can only call this once for each applet.
 //!
 //!
 
-GnomeAppletWidget send_position( int enable );
+Gnome.AppletWidget send_position( int enable );
 //! If you need to get a signal everytime this applet changes position
 //! relative to the screen, you need to run this function with TRUE for
 //! enable and bind the change_position signal on the applet. This
@@ -193,19 +193,19 @@ GnomeAppletWidget send_position( int enable );
 //!
 //!
 
-GnomeAppletWidget set_tooltip( string to );
+Gnome.AppletWidget set_tooltip( string to );
 //! Set a tooltip on the entire applet that will follow the tooltip
 //! setting from the panel configuration.
 //!
 //!
 
-GnomeAppletWidget set_widget_tooltip( GTK.Widget widget, string text );
+Gnome.AppletWidget set_widget_tooltip( GTK.Widget widget, string text );
 //! Set a tooltip on the widget that will follow the tooltip setting
 //! from the panel configuration.
 //!
 //!
 
-GnomeAppletWidget sync_config( );
+Gnome.AppletWidget sync_config( );
 //! Tell the panel to save our session here (just saves, no
 //! shutdown). This should be done when you change some of your config
 //! and want the panel to save it's config, you should NOT call this in
@@ -220,14 +220,14 @@ GnomeAppletWidget sync_config( );
 //!
 //!
 
-GnomeAppletWidget unregister_callback( string name );
+Gnome.AppletWidget unregister_callback( string name );
 //! Remove a menu item from the applet's context menu. The name should
 //! be the full path to the menu item. This will not remove any
 //! submenus.
 //!
 //!
 
-GnomeAppletWidget unregister_callback_dir( string name );
+Gnome.AppletWidget unregister_callback_dir( string name );
 //! Removes a submenu from the applet's context menu. Use this instead
 //! of unregister_callback to remove submenus. The name can be, but
 //! doesn't have to be terminated with a '/'. If you have not removed

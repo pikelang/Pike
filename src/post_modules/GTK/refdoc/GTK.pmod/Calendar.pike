@@ -23,24 +23,24 @@
 //! @b{prev_year@}
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
-Calendar clear_marks( );
+GTK.Calendar clear_marks( );
 //! Remove all day markers
 //!
 //!
 
-static Calendar create( );
+static GTK.Calendar create( );
 //! Create a new calendar widget
 //!
 //!
 
-Calendar display_options( int options );
+GTK.Calendar display_options( int options );
 //! Bitwise or of one or more of @[CALENDAR_SHOW_WEEK_NUMBERS], @[CALENDAR_SHOW_HEADING], @[CALENDAR_WEEK_START_MONDAY], @[CALENDAR_SHOW_DAY_NAMES] and @[CALENDAR_NO_MONTH_CHANGE].
 //!
 //!
 
-Calendar freeze( );
+GTK.Calendar freeze( );
 //! Suspend all dynamic updating of the widget
 //!
 //!
@@ -51,13 +51,13 @@ mapping get_date( );
 //!
 //!
 
-array(array(int)) get_day( );
+array get_day( );
 //! Return an array of 6x7 days, representing the cells in the
 //! currently viewed calendar month.
 //!
 //!
 
-array(array(int)) get_day_month( );
+array get_day_month( );
 //! Return an array of 6x7 days, representing the cells in the
 //! currently viewed calendar month.  The value is the day of month.
 //!
@@ -83,7 +83,7 @@ int get_highlight_row( );
 //!
 //!
 
-array(int) get_marked_dates( );
+array get_marked_dates( );
 //! Returns an array (with 31 elements) with 1es and 0es.
 //!
 //!
@@ -108,12 +108,12 @@ int get_year( );
 //!
 //!
 
-Calendar mark_day( int day_of_month );
+GTK.Calendar mark_day( int day_of_month );
 //! Mark a day
 //!
 //!
 
-Calendar select_day( int day_of_month );
+GTK.Calendar select_day( int day_of_month );
 //! Select a certain day of the currently selected month
 //!
 //!
@@ -123,17 +123,17 @@ int select_month( int month, int year );
 //!
 //!
 
-Calendar set_marked_date_color( int index, GDK.Color color );
+GTK.Calendar set_marked_date_color( int index, GDK.Color color );
 //! Set the color to use to mark dates
 //!
 //!
 
-Calendar thaw( );
+GTK.Calendar thaw( );
 //! Resume dynamic updating of the widget
 //!
 //!
 
-Calendar unmark_day( int day_of_month );
+GTK.Calendar unmark_day( int day_of_month );
 //! Unmark a day
 //!
 //!

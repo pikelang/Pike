@@ -9,10 +9,10 @@
 //!
 //!
 
-Object destroy( );
+GTK.Object destroy( );
 //!
 
-Object signal_block( mixed signal_id );
+GTK.Object signal_block( mixed signal_id );
 //! Temporarily block a signal handler. No signals will be received
 //! while the hander is blocked.
 //! See signal connect for more info.
@@ -61,13 +61,13 @@ mixed signal_connect_new( string signal, function callback, mixed|void callback_
 //!
 //!
 
-Object signal_disconnect( mixed signal_id );
+GTK.Object signal_disconnect( mixed signal_id );
 //! Remove a signal formerly added by signal_connect. The argument is
 //! the return value of signal_connect(). See signal connect for more info.
 //!
 //!
 
-Object signal_emit( string signal_name );
+GTK.Object signal_emit( string signal_name );
 //! Halt the emit of the current named signal.
 //! Useful in signal handlers when you want to override the behaviour
 //! of some default signal handler (key press events, as an example)
@@ -75,7 +75,7 @@ Object signal_emit( string signal_name );
 //!
 //!
 
-Object signal_unblock( mixed signal_id );
+GTK.Object signal_unblock( mixed signal_id );
 //! Unblock a formerly blocked signal handler. See signal_block and
 //! signal_connect for more info.
 //!

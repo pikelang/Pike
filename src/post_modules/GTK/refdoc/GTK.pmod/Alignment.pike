@@ -17,9 +17,9 @@
 //!
 //!
 
-inherit Bin;
+inherit GTK.Bin;
 
-static Alignment create( float xalign, float yalign, float xscale, float yscale );
+static GTK.Alignment create( float xalign, float yalign, float xscale, float yscale );
 //! <table>
 //! <tr><td>xalign :</td>
 //! <td>the horizontal alignment of the child widget, from 0 (left) to 1 (right).</td></tr>
@@ -58,7 +58,7 @@ float get_yscale( );
 //!
 //!
 
-Alignment set( float xalign, float yalign, float xscale, float yscale );
+GTK.Alignment set( float xalign, float yalign, float xscale, float yscale );
 //! <table>
 //! <tr><td>xalign :</td>
 //! <td>the horizontal alignment of the child widget, from 0 (left) to 1 (right).</td></tr>

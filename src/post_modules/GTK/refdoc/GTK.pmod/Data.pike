@@ -4,5 +4,6 @@
 //!  Signals:
 //! @b{disconnect@}
 //!
-inherit Object;
+
+inherit GTK.Object;
 

@@ -11,14 +11,14 @@ int blue( );
 //!
 //!
 
-static GdkColor create( object|int color_or_r, int|void g, int|void b );
+static GDK.Color create( object|int color_or_r, int|void g, int|void b );
 //! r g and b are in the range 0 to 255, inclusive.
 //! If color is specified, it should be an Image.Color object, and the
 //! only argument.
 //!
 //!
 
-GdkColor destroy( );
+GDK.Color destroy( );
 //! Destroys the color object. Please note that this function does
 //! not free the color from the X-colormap (in case of pseudocolor)
 //! right now.
@@ -30,7 +30,7 @@ int green( );
 //!
 //!
 
-object(implements 200) image_color_object( );
+Image.Color.Color image_color_object( );
 //! Return a Image.Color.Color instance.
 //! This gives better precision than the rgb function.
 //!
@@ -46,7 +46,7 @@ int red( );
 //!
 //!
 
-array(int) rgb( );
+array rgb( );
 //! Returns the red green and blue color components as an array.
 //!
 //!

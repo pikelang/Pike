@@ -6,14 +6,14 @@
 //!
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
-Ruler draw_pos( );
+GTK.Ruler draw_pos( );
 //! draw the position
 //!
 //!
 
-Ruler draw_ticks( );
+GTK.Ruler draw_ticks( );
 //! draw the ticks
 //!
 //!
@@ -39,13 +39,13 @@ float get_upper( );
 //!
 //!
 
-Ruler set_metric( int unit );
+GTK.Ruler set_metric( int unit );
 //! Either GTK.Pixels, GTK.Centimers or GTK.Inches.
 //! The default measure is GTK.Pixels.
 //!
 //!
 
-Ruler set_range( float lower, float upper, float position, float max_size );
+GTK.Ruler set_range( float lower, float upper, float position, float max_size );
 //! The lower and upper arguments define the extent of the ruler, and
 //! max_size is the largest possible number that will be displayed.
 //! Position defines the initial position of the pointer indicator

@@ -4,27 +4,27 @@
 //!
 //!
 
-inherit DrawingArea;
+inherit GTK.DrawingArea;
 
-static Curve create( );
+static GTK.Curve create( );
 //!
 
-array(float) get_vector( int num_points );
+array get_vector( int num_points );
 //!
 
-Curve reset( );
+GTK.Curve reset( );
 //!
 
-Curve set_curve_type( int type );
-//! One of @[CURVE_TYPE_FREE], @[CURVE_TYPE_LINEAR] and @[CURVE_TYPE_SPLINE];
+GTK.Curve set_curve_type( int type );
+//! One of @[CURVE_TYPE_LINEAR], @[CURVE_TYPE_FREE] and @[CURVE_TYPE_SPLINE];
 //!
 //!
 
-Curve set_gamma( float gamma );
+GTK.Curve set_gamma( float gamma );
 //!
 
-Curve set_range( float min_x, float max_x, float min_y, float max_y );
+GTK.Curve set_range( float min_x, float max_x, float min_y, float max_y );
 //!
 
-Curve set_vector( int nelems, array(float) curve );
+GTK.Curve set_vector( int nelems, array curve );
 //!

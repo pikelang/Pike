@@ -13,9 +13,9 @@
 //!
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-static GammaCurve create( );
+static GTK.GammaCurve create( );
 //! Create a new gamma curve
 //!
 //!

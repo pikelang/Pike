@@ -41,45 +41,45 @@
 //!
 //!
 
-inherit Clist;
+inherit GTK.Clist;
 
-Ctree collapse( GTK.CTreeNode node );
+GTK.Ctree collapse( GTK.CTreeNode node );
 //! Collapse the node, hiding it's children.
 //! If no node is given, expand the toplevel of the tree
 //!
 //!
 
-Ctree collapse_recursive( GTK.CTreeNode node );
+GTK.Ctree collapse_recursive( GTK.CTreeNode node );
 //! Collapse the node, showing it's children, it's childrens children, etc.
 //! If no node is given, collapse the whole tree
 //!
 //!
 
-Ctree collapse_to_depth( GTK.CTreeNode node, int depth );
+GTK.Ctree collapse_to_depth( GTK.CTreeNode node, int depth );
 //! Collapse depth levels of the tree, starting with the specified node.
 //! If no node is given, start with the toplevel node.
 //!
 //!
 
-static Ctree create( int columns, int tree_column );
+static GTK.Ctree create( int columns, int tree_column );
 //! tree_column is the column that has the tree graphics (lines and
 //! expander buttons).
 //!
 //!
 
-Ctree expand( GTK.CTreeNode node );
+GTK.Ctree expand( GTK.CTreeNode node );
 //! Expand the node, showing it's children.
 //! If no node is given, expand the toplevel of the tree
 //!
 //!
 
-Ctree expand_recursive( GTK.CTreeNode node );
+GTK.Ctree expand_recursive( GTK.CTreeNode node );
 //! Expand the node, showing it's children, it's childrens children, etc.
 //! If no node is given, expand the whole tree
 //!
 //!
 
-Ctree expand_to_depth( GTK.CTreeNode node, int depth );
+GTK.Ctree expand_to_depth( GTK.CTreeNode node, int depth );
 //! Expand depth levels of the tree, starting with the specified node.
 //! If no node is given, start with the toplevel node.
 //!
@@ -93,7 +93,7 @@ int find( GTK.CTreeNode node, GTK.CTreeNode start );
 //!
 //!
 
-Ctree find_by_row_data( object data, GTK.CTreeNode root );
+GTK.Ctree find_by_row_data( object data, CTreeNode root );
 //! Find a node in the tree starting with root, that has the given user data.
 //! If no node is found, 0 is returned.
 //!
@@ -106,12 +106,12 @@ GTK.CTreeNode find_node_ptr( GTK.CTreeRow node );
 //!
 
 int get_expander_style( );
-//! The style of the expander buttons, one of @[CTREE_EXPANDER_CIRCULAR], @[CTREE_EXPANDER_SQUARE], @[CTREE_EXPANDER_NONE] and @[CTREE_EXPANDER_TRIANGLE]
+//! The style of the expander buttons, one of @[CTREE_EXPANDER_CIRCULAR], @[CTREE_EXPANDER_NONE], @[CTREE_EXPANDER_SQUARE] and @[CTREE_EXPANDER_TRIANGLE]
 //!
 //!
 
 int get_line_style( );
-//! The style of the lines, one of @[CTREE_LINES_SOLID], @[CTREE_LINES_DOTTED], @[CTREE_LINES_TABBED] and @[CTREE_LINES_NONE]
+//! The style of the lines, one of @[CTREE_LINES_NONE], @[CTREE_LINES_SOLID], @[CTREE_LINES_DOTTED] and @[CTREE_LINES_TABBED]
 //!
 //!
 
@@ -135,7 +135,7 @@ int get_tree_spacing( );
 //!
 //!
 
-Ctree insert_node( GTK.CTreeNode parent, GTK.CTreeNode sibling, array(string) text, int is_leaf, int expanded );
+GTK.Ctree insert_node( GTK.CTreeNode parent, GTK.CTreeNode sibling, array text, int is_leaf, int expanded );
 //! At least one of parent or sibling must be specified.
 //! If both are specified, sibling->parent() must be equal to parent.
 //! 
@@ -169,7 +169,7 @@ GTK.CTreeNode last( GTK.CTreeNode node );
 //!
 //!
 
-Ctree move( GTK.CTreeNode node, GTK.CTreeNode new_parent, GTK.CTreeNode new_sibling );
+GTK.Ctree move( GTK.CTreeNode node, GTK.CTreeNode new_parent, GTK.CTreeNode new_sibling );
 //! Move a node. Coordinates work as for insert.
 //!
 //!
@@ -184,7 +184,7 @@ int node_get_cell_type( GTK.CTreeNode node, int column );
 //!
 //!
 
-mapping node_get_pixmap( GTK.CTreeNode node, int column );
+mapping node_get_pixmap( CTreeNode node, int column );
 //! Returns the pixmap and mask of this node in a mapping:
 //! ([ "pixmap":the_pixmap, "mask":the_bitmap ])
 //!
@@ -221,7 +221,7 @@ int node_is_visible( GTK.CTreeNode node );
 //!
 //!
 
-Ctree node_moveto( GTK.CTreeNode row, int column, float row_align, float col_align );
+GTK.Ctree node_moveto( GTK.CTreeNode row, int column, float row_align, float col_align );
 //! Scroll the tree so a specified node (and column) is visible.
 //! If the node is folded, it's first visible parent will be shown.
 //!
@@ -232,32 +232,32 @@ GTK.CTreeNode node_nth( int row );
 //!
 //!
 
-Ctree node_set_background( GTK.CTreeNode node, GDK.Color color );
+GTK.Ctree node_set_background( GTK.CTreeNode node, GDK.Color color );
 //! Set the background of a row
 //!
 //!
 
-Ctree node_set_cell_style( GTK.CTreeNode node, int col, GTK.Style style );
+GTK.Ctree node_set_cell_style( GTK.CTreeNode node, int col, GTK.Style style );
 //! Set the style of a cell
 //!
 //!
 
-Ctree node_set_foreground( GTK.CTreeNode node, GDK.Color col );
+GTK.Ctree node_set_foreground( GTK.CTreeNode node, GDK.Color col );
 //! Set the foreground of a row
 //!
 //!
 
-Ctree node_set_pixmap( GTK.CTreeNode node, int column, GDK.Pixmap pixmap, GDK.Bitmap mask );
+GTK.Ctree node_set_pixmap( GTK.CTreeNode node, int column, GDK.Pixmap pixmap, GDK.Bitmap mask );
 //! Set the pixmap in a cell
 //!
 //!
 
-Ctree node_set_pixtext( GTK.CTreeNode node, int column, string text, int spacing, GDK.Pixmap pixmap, GDK.Bitmap mask );
+GTK.Ctree node_set_pixtext( GTK.CTreeNode node, int column, string text, int spacing, GDK.Pixmap pixmap, GDK.Bitmap mask );
 //! Set the pixmap and text in a cell
 //!
 //!
 
-Ctree node_set_row_data( GTK.CTreeNode node, object data );
+GTK.Ctree node_set_row_data( GTK.CTreeNode node, object data );
 //! Set the user data associated with the specified node.
 //! This data can be used to find nodes, and when a node is selected it
 //! can be easily retrieved using node_get_row_data.
@@ -266,58 +266,58 @@ Ctree node_set_row_data( GTK.CTreeNode node, object data );
 //!
 //!
 
-Ctree node_set_row_style( GTK.CTreeNode node, GTK.Style style );
+GTK.Ctree node_set_row_style( GTK.CTreeNode node, GTK.Style style );
 //! Set the style of a row
 //!
 //!
 
-Ctree node_set_selectable( GTK.CTreeNode node, int selectablep );
+GTK.Ctree node_set_selectable( GTK.CTreeNode node, int selectablep );
 //! Whether this node can be selected by the user.
 //!
 //!
 
-Ctree node_set_shift( GTK.CTreeNode node, int column, int vertical, int horizontal );
+GTK.Ctree node_set_shift( GTK.CTreeNode node, int column, int vertical, int horizontal );
 //! Shift the given cell the given amounts in pixels.
 //!
 //!
 
-Ctree node_set_text( GTK.CTreeNode node, int column, string text );
+GTK.Ctree node_set_text( GTK.CTreeNode node, int column, string text );
 //! Set the text in a cell
 //!
 //!
 
-Ctree remove_node( GTK.CTreeNode node );
+GTK.Ctree remove_node( GTK.CTreeNode node );
 //! Remove a node and it's subnodes from the tree.
 //! The nodes will be destroyed, so you cannot add them again.
 //!
 //!
 
-Ctree select( GTK.CTreeNode node );
+GTK.Ctree select( GTK.CTreeNode node );
 //! Select a node.
 //!
 //!
 
-Ctree select_recursive( GTK.CTreeNode node );
+GTK.Ctree select_recursive( GTK.CTreeNode node );
 //! Select a node and it's children.
 //!
 //!
 
-Ctree set_expander_style( int style );
-//! Set the expander style, one of @[CTREE_EXPANDER_CIRCULAR], @[CTREE_EXPANDER_SQUARE], @[CTREE_EXPANDER_NONE] and @[CTREE_EXPANDER_TRIANGLE]
+GTK.Ctree set_expander_style( int style );
+//! Set the expander style, one of @[CTREE_EXPANDER_CIRCULAR], @[CTREE_EXPANDER_NONE], @[CTREE_EXPANDER_SQUARE] and @[CTREE_EXPANDER_TRIANGLE]
 //!
 //!
 
-Ctree set_indent( int npixels );
+GTK.Ctree set_indent( int npixels );
 //! Set the indentation level
 //!
 //!
 
-Ctree set_line_style( int style );
-//! Set the line style, one of @[CTREE_LINES_SOLID], @[CTREE_LINES_DOTTED], @[CTREE_LINES_TABBED] and @[CTREE_LINES_NONE]
+GTK.Ctree set_line_style( int style );
+//! Set the line style, one of @[CTREE_LINES_NONE], @[CTREE_LINES_SOLID], @[CTREE_LINES_DOTTED] and @[CTREE_LINES_TABBED]
 //!
 //!
 
-Ctree set_node_info( GTK.CTreeNode node, string text, int spacing, GDK.Pixmap pixmap_closed, GDK.Bitmap mask_closed, GDK.Pixmap pixmap_opened, GDK.Bitmap mask_opened, int is_leaf, int expanded );
+GTK.Ctree set_node_info( GTK.CTreeNode node, string text, int spacing, GDK.Pixmap pixmap_closed, GDK.Bitmap mask_closed, GDK.Pixmap pixmap_opened, GDK.Bitmap mask_opened, int is_leaf, int expanded );
 //! <table>
 //! <tr><td> text :</td><td>The texts to be shown in each column.</td></tr>
 //! <tr><td>spacing :</td>
@@ -338,44 +338,44 @@ Ctree set_node_info( GTK.CTreeNode node, string text, int spacing, GDK.Pixmap pi
 //!
 //!
 
-Ctree set_show_stub( int stubp );
+GTK.Ctree set_show_stub( int stubp );
 //! If true, the 'stub' will be shown. The stub is the small line that
 //! goes horizontally from the expand or collapse button to the actual
 //! contents of the tree
 //!
 //!
 
-Ctree set_spacing( int npixels );
+GTK.Ctree set_spacing( int npixels );
 //! Set the spacing between the tree column and the other columns
 //!
 //!
 
-Ctree sort_node( GTK.CTreeNode node );
+GTK.Ctree sort_node( GTK.CTreeNode node );
 //! Sort the specified node.
 //!
 //!
 
-Ctree sort_recursive( GTK.CTreeNode node );
+GTK.Ctree sort_recursive( GTK.CTreeNode node );
 //! Sort the specified node and it's children.
 //!
 //!
 
-Ctree toggle_expansion( GTK.CTreeNode node );
+GTK.Ctree toggle_expansion( GTK.CTreeNode node );
 //! If the node is expanded, collapse it, and if it's collapsed, expand it.
 //!
 //!
 
-Ctree toggle_expansion_recursive( GTK.CTreeNode node );
+GTK.Ctree toggle_expansion_recursive( GTK.CTreeNode node );
 //! Toggle the expansion of the whole subtree, starting with node.
 //!
 //!
 
-Ctree unselect( GTK.CTreeNode node );
+GTK.Ctree unselect( GTK.CTreeNode node );
 //! Unselect a node.
 //!
 //!
 
-Ctree unselect_recursive( GTK.CTreeNode node );
+GTK.Ctree unselect_recursive( GTK.CTreeNode node );
 //! Unselect a node and it's children.
 //!
 //!

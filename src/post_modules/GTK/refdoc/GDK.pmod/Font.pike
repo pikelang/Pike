@@ -62,12 +62,12 @@ int char_width( int character );
 //!
 //!
 
-static GdkFont create( string|void font_name );
+static GDK.Font create( string|void font_name );
 //! Create a new font object. The string is the font XLFD.
 //!
 //!
 
-GdkFont destroy( );
+GDK.Font destroy( );
 //! Free the font, called automatically by pike when the object is destroyed.
 //!
 //!

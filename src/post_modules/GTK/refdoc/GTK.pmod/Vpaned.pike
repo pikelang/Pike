@@ -10,7 +10,7 @@
 //!
 //!
 
-inherit Paned;
+inherit GTK.Paned;
 
-static Vpaned create( );
+static GTK.Vpaned create( );
 //!

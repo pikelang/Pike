@@ -5,9 +5,9 @@
 //!
 //!
 
-inherit Separator;
+inherit GTK.Separator;
 
-static Vseparator create( );
+static GTK.Vseparator create( );
 //! Used to create a new vseparator widget.
 //!
 //!

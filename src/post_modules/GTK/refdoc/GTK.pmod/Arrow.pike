@@ -15,24 +15,24 @@
 //!
 //!
 
-inherit Misc;
+inherit GTK.Misc;
 
-static Arrow create( int arrow_type, int shadow_type );
-//! First argument is one of @[ARROW_LEFT], @[ARROW_DOWN], @[ARROW_UP] and @[ARROW_RIGHT], second one of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN].
+static GTK.Arrow create( int arrow_type, int shadow_type );
+//! First argument is one of @[ARROW_DOWN], @[ARROW_UP], @[ARROW_RIGHT] and @[ARROW_LEFT], second one of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT].
 //!
 //!
 
 int get_arrow_type( );
-//! Return the arrow type. One of @[ARROW_LEFT], @[ARROW_DOWN], @[ARROW_UP] and @[ARROW_RIGHT].
+//! Return the arrow type. One of @[ARROW_DOWN], @[ARROW_UP], @[ARROW_RIGHT] and @[ARROW_LEFT].
 //!
 //!
 
 int get_shadow_type( );
-//! Return the arrow type. One of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN].
+//! Return the arrow type. One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT].
 //!
 //!
 
-Arrow set( int arrow_type, int shadow_type );
-//! First argument is one of @[ARROW_LEFT], @[ARROW_DOWN], @[ARROW_UP] and @[ARROW_RIGHT], second one of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN].
+GTK.Arrow set( int arrow_type, int shadow_type );
+//! First argument is one of @[ARROW_DOWN], @[ARROW_UP], @[ARROW_RIGHT] and @[ARROW_LEFT], second one of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT].
 //!
 //!

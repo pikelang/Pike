@@ -14,14 +14,14 @@
 //!
 //!
 
-inherit Hbox;
+inherit GTK.Hbox;
 
-static Combo create( );
+static GTK.Combo create( );
 //! Create a new combo box
 //!
 //!
 
-Combo disable_activate( );
+GTK.Combo disable_activate( );
 //! This will disable the 'activate' signal for the entry widget in the
 //! combo box.
 //!
@@ -32,7 +32,7 @@ GTK.Entry get_entry( );
 //!
 //!
 
-Combo set_case_sensitive( int sensitivep );
+GTK.Combo set_case_sensitive( int sensitivep );
 //! set_case_sensitive() toggles whether or not GTK searches for
 //! entries in a case sensitive manner. This is used when the Combo
 //! widget is asked to find a value from the list using the current
@@ -46,17 +46,17 @@ Combo set_case_sensitive( int sensitivep );
 //!
 //!
 
-Combo set_item_string( GTK.Item item, string text );
+GTK.Combo set_item_string( GTK.Item item, string text );
 //! The item is one of the ones in the list subwidget.
 //!
 //!
 
-Combo set_popdown_strings( array(string) strings );
+GTK.Combo set_popdown_strings( array strings );
 //! Set the values in the popdown list.
 //!
 //!
 
-Combo set_use_arrows( int use_arrows );
+GTK.Combo set_use_arrows( int use_arrows );
 //! set_use_arrows() lets the user change the value in the entry using
 //! the up/down arrow keys. This doesn't bring up the list, but rather
 //! replaces the current text in the entry with the next list entry (up
@@ -70,7 +70,7 @@ Combo set_use_arrows( int use_arrows );
 //!
 //!
 
-Combo set_use_arrows_always( int always_arrows );
+GTK.Combo set_use_arrows_always( int always_arrows );
 //! set_use_arrows_always() allows the use the the up/down arrow keys
 //! to cycle through the choices in the dropdown list, just as with
 //! set_use_arrows, but it wraps around the values in the list,
@@ -79,7 +79,7 @@ Combo set_use_arrows_always( int always_arrows );
 //!
 //!
 
-Combo set_value_in_list( int value_must_be_in_list, int ok_if_empty );
+GTK.Combo set_value_in_list( int value_must_be_in_list, int ok_if_empty );
 //! If value_must_be_in_list is true, the user will not be able to
 //! enter any value that is not in the list. If ok_if_empty is true,
 //! empty values are possible as well as the values in the list.

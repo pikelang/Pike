@@ -24,9 +24,9 @@
 //! @b{text_pushed@}
 //!
 
-inherit Hbox;
+inherit GTK.Hbox;
 
-static Statusbar create( );
+static GTK.Statusbar create( );
 //! Create a new statusbar widget
 //!
 //!
@@ -38,7 +38,7 @@ int get_context_id( string context );
 //!
 //!
 
-Statusbar pop( int context );
+GTK.Statusbar pop( int context );
 //! Remove the topmost message.
 //!
 //!
@@ -49,7 +49,7 @@ int push( int context, string data );
 //!
 //!
 
-Statusbar remove( int context, int id );
+GTK.Statusbar remove( int context, int id );
 //! Remove the specified message (the message id is the second argument).
 //!
 //!

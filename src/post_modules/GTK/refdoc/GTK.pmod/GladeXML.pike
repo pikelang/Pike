@@ -38,7 +38,7 @@ string get_widget_name( GTK.Widget widget );
 //!
 //!
 
-GladeXML new( string filename, string|void root, string|void domain );
+GTK.GladeXML new( string filename, string|void root, string|void domain );
 //! Creates a new GladeXML object (and the corresponding widgets) from
 //! the XML file filename. Optionally it will only build the interface
 //! from the widget node root. This feature is useful if you only want
@@ -50,7 +50,7 @@ GladeXML new( string filename, string|void root, string|void domain );
 //!
 //!
 
-GladeXML new_from_memory( string data, string|void root, string|void domain );
+GTK.GladeXML new_from_memory( string data, string|void root, string|void domain );
 //! Creates a new GladeXML object (and the corresponding widgets) from
 //! the string data. Optionally it will only build the interface from
 //! the widget node root. This feature is useful if you only want to
@@ -60,11 +60,11 @@ GladeXML new_from_memory( string data, string|void root, string|void domain );
 //!
 //!
 
-GladeXML signal_autoconnect( mapping callbacks, mixed data );
+GTK.GladeXML signal_autoconnect( mapping callbacks, mixed data );
 //! Try to connect functions to all signals in the interface. The
 //! mapping should consist of handler name : function pairs. The
 //! data argument will be saved and sent as the first argument to all
 //! callback functions.
-//! <p align="right"><font size="2">@i{$Id: GladeXML.pike,v 1.2 2001/04/23 23:17:03 per Exp $@}</font>
+//! <p align="right"><font size="2">@i{$Id: GladeXML.pike,v 1.3 2001/04/24 21:08:32 grubba Exp $@}</font>
 //!
 //!

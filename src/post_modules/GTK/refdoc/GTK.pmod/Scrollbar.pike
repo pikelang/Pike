@@ -6,5 +6,6 @@
 //!  featureful.
 //!
 //!
-inherit Range;
+
+inherit GTK.Range;
 

@@ -14,26 +14,26 @@
 //!
 //!
 
-inherit MenuItem;
+inherit GTK.MenuItem;
 
-static CheckMenuItem create( string|void label );
+static GTK.CheckMenuItem create( string|void label );
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)
 //!
 //!
 
-CheckMenuItem set_active( int new_state );
+GTK.CheckMenuItem set_active( int new_state );
 //! State is either 1 or 0. If 1, the button will be 'pressed'.
 //!
 //!
 
-CheckMenuItem set_show_toggle( int togglep );
+GTK.CheckMenuItem set_show_toggle( int togglep );
 //! If true, the toggle indicator will be shown
 //!
 //!
 
-CheckMenuItem toggled( );
+GTK.CheckMenuItem toggled( );
 //! Emulate a toggled event
 //!
 //!

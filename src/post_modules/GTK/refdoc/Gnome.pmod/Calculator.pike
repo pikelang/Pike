@@ -16,15 +16,15 @@
 //!
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-GnomeCalculator clear( int reset );
+Gnome.Calculator clear( int reset );
 //! Resets the calculator back to zero. If reset is TRUE, results
 //! stored in memory and the calculator mode are cleared also.
 //!
 //!
 
-static GnomeCalculator create( );
+static Gnome.Calculator create( );
 //! Create a new calculator widget
 //!
 //!
@@ -34,7 +34,7 @@ float get_result( );
 //!
 //!
 
-GnomeCalculator set( float result );
+Gnome.Calculator set( float result );
 //! Sets the value stored in the calculator's result buffer to the
 //! given result.
 //!

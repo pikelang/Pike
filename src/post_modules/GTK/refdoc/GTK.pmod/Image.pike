@@ -9,9 +9,9 @@
 //!
 //!
 
-inherit Misc;
+inherit GTK.Misc;
 
-static Image create( GDK.Image image, GDK.Bitmap mask );
+static GTK.Image create( GDK.Image image, GDK.Bitmap mask );
 //! You can skip the mask. The mask is used to mask the drawing of the image
 //! on it's background. It will not make the container transparent, though.
 //! Use shape_combine_mask on the container with the mask for that.
@@ -23,7 +23,7 @@ mapping get( );
 //!
 //!
 
-Image set( GDK.Image image, GDK.Bitmap mask );
+GTK.Image set( GDK.Image image, GDK.Bitmap mask );
 //! Args: GDK.Image and GDK.Bitmap, respectively.
 //! You can skip the mask. The mask is used to mask the drawing of the image
 //! on it's background. It will not make the container transparent, though.

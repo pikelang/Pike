@@ -15,9 +15,9 @@
 //!
 //!
 
-inherit Progress;
+inherit GTK.Progress;
 
-static ProgressBar create( );
+static GTK.ProgressBar create( );
 //! Create a new progress bar.
 //! The default values are:
 //! Min 0.0, max 1.0, current 0.0
@@ -64,34 +64,34 @@ int get_orientation( );
 //!
 //!
 
-ProgressBar set_activity_blocks( int blocks );
+GTK.ProgressBar set_activity_blocks( int blocks );
 //! The number of activity blocks
 //!
 //!
 
-ProgressBar set_activity_step( int stepp );
+GTK.ProgressBar set_activity_step( int stepp );
 //! Include activity blocks (empty gaps in the progressbar, ala windows 98)
 //!
 //!
 
-ProgressBar set_bar_style( int style );
+GTK.ProgressBar set_bar_style( int style );
 //! One of GTK.ProgressContinuous or GTK.ProgressDiscrete
 //!
 //!
 
-ProgressBar set_discrete_blocks( int blocks );
+GTK.ProgressBar set_discrete_blocks( int blocks );
 //! The number of discrete blocks in the progress bar
 //!
 //!
 
-ProgressBar set_orientation( int style );
+GTK.ProgressBar set_orientation( int style );
 //! One of
 //! GTK.ProgressLeftToRight, GTK.ProgressRightToLeft,
 //! GTK.ProgressBottomToTop or GTK.ProgressTopToBottom
 //!
 //!
 
-ProgressBar update( float fraction );
+GTK.ProgressBar update( float fraction );
 //! 0.0 is the minimum value, 1.0 is the maximum value.
 //!
 //!

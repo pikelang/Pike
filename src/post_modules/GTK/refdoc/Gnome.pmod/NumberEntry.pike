@@ -8,9 +8,9 @@
 //!
 //!
 
-inherit Hbox;
+inherit GTK.Hbox;
 
-static GnomeNumberEntry create( string history_id, string calc_dialog_title );
+static Gnome.NumberEntry create( string history_id, string calc_dialog_title );
 //! Creates a new number entry widget, with a history id and title for
 //! the calculator dialog.
 //!
@@ -33,7 +33,7 @@ GTK.Entry gtk_entry( );
 //!
 //!
 
-GnomeNumberEntry set_title( string title );
+Gnome.NumberEntry set_title( string title );
 //! Set the title of the calculator dialog to calc_dialog_title. Takes
 //! effect the next time the calculator button is pressed.
 //!

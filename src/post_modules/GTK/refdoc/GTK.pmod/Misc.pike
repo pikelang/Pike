@@ -24,7 +24,7 @@
 //!
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
 float get_xalign( );
 //! The horizontal alignment, from 0 (left) to 1 (right).
@@ -46,13 +46,13 @@ int get_ypad( );
 //!
 //!
 
-Misc set_alignment( float xalign, float yalign );
+GTK.Misc set_alignment( float xalign, float yalign );
 //! Sets the alignment of the widget.
 //! 0.0 is left or topmost, 1.0 is right or bottommost.
 //!
 //!
 
-Misc set_padding( int xpad, int ypad );
+GTK.Misc set_padding( int xpad, int ypad );
 //! Sets the amount of space to add around the widget. xpand and ypad
 //! are specified in pixels.
 //!

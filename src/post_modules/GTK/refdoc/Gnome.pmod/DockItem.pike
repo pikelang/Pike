@@ -1,8 +1,8 @@
 //!
 
-inherit Bin;
+inherit GTK.Bin;
 
-static GnomeDockItem create( string name, int behavior );
+static Gnome.DockItem create( string name, int behavior );
 //! Create a new GnomeDockItem named name, with the specified behavior.
 //!  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. 
 //!  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. 
@@ -30,14 +30,14 @@ int get_orientation( );
 //!
 
 int get_shadow_type( );
-//! One of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN]
+//! One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
 //!
 //!
 
-GnomeDockItem set_orientation( int orientation );
+Gnome.DockItem set_orientation( int orientation );
 //!
 
-GnomeDockItem set_shadow_type( int shadow_type );
-//! One of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN]
+Gnome.DockItem set_shadow_type( int shadow_type );
+//! One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
 //!
 //!

@@ -2,11 +2,11 @@
 //!
 //!
 
-GnomeAppProgressKey destroy( );
+Gnome.AppProgressKey destroy( );
 //!
 
-GnomeAppProgressKey done( );
+Gnome.AppProgressKey done( );
 //!
 
-GnomeAppProgressKey set( float percent );
+Gnome.AppProgressKey set( float percent );
 //!

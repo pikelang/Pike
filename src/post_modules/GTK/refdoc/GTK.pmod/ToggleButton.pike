@@ -17,9 +17,9 @@
 //! @b{toggled@}
 //!
 
-inherit Button;
+inherit GTK.Button;
 
-static ToggleButton create( string|void label );
+static GTK.ToggleButton create( string|void label );
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 //!
@@ -30,17 +30,17 @@ int get_active( );
 //!
 //!
 
-ToggleButton set_active( int activep );
+GTK.ToggleButton set_active( int activep );
 //! If activep is true, the toggle button will be activated.
 //!
 //!
 
-ToggleButton set_mode( int mode );
+GTK.ToggleButton set_mode( int mode );
 //! If true, draw indicator
 //!
 //!
 
-ToggleButton toggled( );
+GTK.ToggleButton toggled( );
 //! emulate a 'toggle' of the button. This will emit a 'toggled' signal.
 //!
 //!

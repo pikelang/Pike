@@ -1,6 +1,6 @@
 //!
 
-Style apply_default_background( GDK.Window window, int set_bgp, int state_type, GDK.Rectangle area, int x, int y, int width, int height );
+GTK.Style apply_default_background( GDK.Window window, int set_bgp, int state_type, GDK.Rectangle area, int x, int y, int width, int height );
 //! Set the background of the specified window (or the subarea
 //! indicated by the rectangle) to the default background for the state
 //! specified by state_type.
@@ -24,27 +24,27 @@ GTK.Style copy( );
 //!
 //!
 
-Style destroy( );
+GTK.Style destroy( );
 //!
 
-Style detach( );
+GTK.Style detach( );
 //!  Undo a previous attach
 //!
 //!
 
-array(object(implements 1004)) get_base( );
+array get_base( );
 //!
 
-array(object(implements 1005)) get_base_gc( );
+array get_base_gc( );
 //!
 
-array(object(implements 1004)) get_bg( );
+array get_bg( );
 //!
 
-array(object(implements 1005)) get_bg_gc( );
+array get_bg_gc( );
 //!
 
-array(object(implements 1006)) get_bg_pixmap( );
+array get_bg_pixmap( );
 //!
 
 GDK.Color get_black( );
@@ -53,37 +53,37 @@ GDK.Color get_black( );
 GDK.GC get_black_gc( );
 //!
 
-array(object(implements 1004)) get_dark( );
+array get_dark( );
 //!
 
-array(object(implements 1005)) get_dark_gc( );
+array get_dark_gc( );
 //!
 
-array(object(implements 1004)) get_fg( );
+array get_fg( );
 //!
 
-array(object(implements 1005)) get_fg_gc( );
+array get_fg_gc( );
 //!
 
 GDK.Font get_font( );
 //!
 
-array(object(implements 1004)) get_light( );
+array get_light( );
 //!
 
-array(object(implements 1005)) get_light_gc( );
+array get_light_gc( );
 //!
 
-array(object(implements 1004)) get_mid( );
+array get_mid( );
 //!
 
-array(object(implements 1005)) get_mid_gc( );
+array get_mid_gc( );
 //!
 
-array(object(implements 1004)) get_text( );
+array get_text( );
 //!
 
-array(object(implements 1005)) get_text_gc( );
+array get_text_gc( );
 //!
 
 GDK.Color get_white( );

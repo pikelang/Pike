@@ -13,7 +13,7 @@
 //!
 //!
 
-inherit Paned;
+inherit GTK.Paned;
 
-static Hpaned create( );
+static GTK.Hpaned create( );
 //!

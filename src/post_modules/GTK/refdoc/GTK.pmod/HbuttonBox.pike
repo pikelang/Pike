@@ -21,9 +21,9 @@
 //!
 //!
 
-inherit ButtonBox;
+inherit GTK.ButtonBox;
 
-static HbuttonBox create( );
+static GTK.HbuttonBox create( );
 //! Create a new horizontal button box
 //!
 //!

@@ -16,9 +16,9 @@
 //!
 //!
 
-inherit Ruler;
+inherit GTK.Ruler;
 
-static Hruler create( );
+static GTK.Hruler create( );
 //! Used to create a new hruler widget.
 //!
 //!

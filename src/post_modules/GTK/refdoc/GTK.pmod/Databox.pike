@@ -25,25 +25,25 @@
 //! @b{zoomed@}
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-static Databox create( );
+static GTK.Databox create( );
 //! Create a new databox widget
 //!
 //!
 
-int data_add_x( int nelems, array(float) x, int shared_Y_index, GDK.Color color, int type, int dot_size );
-//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
+int data_add_x( int nelems, array x, int shared_Y_index, GDK.Color color, int type, int dot_size );
+//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
 //!
 //!
 
-int data_add_x_y( int nelems, array(float) x, array(float) y, GDK.Color color, int type, int dot_size );
-//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
+int data_add_x_y( int nelems, array x, array y, GDK.Color color, int type, int dot_size );
+//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
 //!
 //!
 
-int data_add_y( int nelems, array(float) y, int shared_X_index, GDK.Color color, int type, int dot_size );
-//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
+int data_add_y( int nelems, array y, int shared_X_index, GDK.Color color, int type, int dot_size );
+//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
 //!
 //!
 
@@ -53,49 +53,49 @@ int data_destroy( int index );
 int data_destroy_all( );
 //!
 
-array(mapping) data_get_extrema( );
+array data_get_extrema( );
 //!
 
 mapping data_get_value( int x, int y );
 //!
 
-array(mapping) data_get_visible_extrema( );
+array data_get_visible_extrema( );
 //!
 
-Databox disable_zoom( );
+GTK.Databox disable_zoom( );
 //!
 
-Databox enable_zoom( );
+GTK.Databox enable_zoom( );
 //!
 
-Databox hide_cross( );
+GTK.Databox hide_cross( );
 //!
 
-Databox hide_rulers( );
+GTK.Databox hide_rulers( );
 //!
 
-Databox hide_scrollbars( );
+GTK.Databox hide_scrollbars( );
 //!
 
-Databox rescale( );
+GTK.Databox rescale( );
 //!
 
-Databox rescale_with_values( float minx, float miny, float maxx, float maxy );
+GTK.Databox rescale_with_values( float minx, float miny, float maxx, float maxy );
 //!
 
 int set_color( int index, GDK.Color color );
 //!
 
 int set_data_type( int index, int type, int dot_size );
-//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
+//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_LINES] and @[DATABOX_BARS]
 //!
 //!
 
-Databox show_cross( );
+GTK.Databox show_cross( );
 //!
 
-Databox show_rulers( );
+GTK.Databox show_rulers( );
 //!
 
-Databox show_scrollbars( );
+GTK.Databox show_scrollbars( );
 //!

@@ -35,9 +35,9 @@
 //!
 //!
 
-inherit Dialog;
+inherit GTK.Dialog;
 
-static InputDialog create( );
+static GTK.InputDialog create( );
 //! Create a new input dialog window.
 //!
 //!

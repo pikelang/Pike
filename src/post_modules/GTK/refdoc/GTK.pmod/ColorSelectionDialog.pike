@@ -14,9 +14,9 @@
 //!
 //!
 
-inherit Window;
+inherit GTK.Window;
 
-static ColorSelectionDialog create( string title );
+static GTK.ColorSelectionDialog create( string title );
 //! Create a new color selection dialog with the specified title.
 //!
 //!

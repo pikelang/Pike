@@ -9,9 +9,9 @@
 //!
 //!
 
-inherit ToggleButton;
+inherit GTK.ToggleButton;
 
-static CheckButton create( string|void label );
+static GTK.CheckButton create( string|void label );
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)

@@ -34,14 +34,14 @@
 //!
 //!
 
-inherit Entry;
+inherit GTK.Entry;
 
-SpinButton configure( GTK.Adjustment range, float climb_rate, int precision );
+GTK.SpinButton configure( GTK.Adjustment range, float climb_rate, int precision );
 //! Adjustment (with the lower/upper/increse values), climb_rate and digits
 //!
 //!
 
-static SpinButton create( GTK.Adjustment range, float climb_rate, int precision );
+static GTK.SpinButton create( GTK.Adjustment range, float climb_rate, int precision );
 //!  The climb_rate argument take a value between 0.0 and 1.0 and
 //!  indicates the amount of acceleration that the Spin Button has. The
 //!  digits argument specifies the number of decimal places to which
@@ -92,36 +92,36 @@ int get_wrap( );
 //!
 //!
 
-SpinButton set_adjustment( GTK.Adjustment range );
+GTK.SpinButton set_adjustment( GTK.Adjustment range );
 //! Set a new adjustment.
 //!
 //!
 
-SpinButton set_digits( int precision );
+GTK.SpinButton set_digits( int precision );
 //! Set the number of digits to show to the user.
 //!
 //!
 
-SpinButton set_numeric( int numericp );
+GTK.SpinButton set_numeric( int numericp );
 //! If true, it is a numeric value.  This prevents a user from typing
 //! anything other than numeric values into the text box of a Spin
 //! Button
 //!
 //!
 
-SpinButton set_shadow_type( int type );
-//! Type is one of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN]
+GTK.SpinButton set_shadow_type( int type );
+//! Type is one of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
 //!
 //!
 
-SpinButton set_snap_to_ticks( int snapp );
+GTK.SpinButton set_snap_to_ticks( int snapp );
 //! Set the Spin Button to round the value to the nearest
 //! step_increment, which is set within the Adjustment object used with
 //! the Spin Button
 //!
 //!
 
-SpinButton set_update_policy( int policy );
+GTK.SpinButton set_update_policy( int policy );
 //! The possible values of policy are either GTK.UpdateAlways or
 //! GTK.UpdateIfValid.
 //! 
@@ -139,22 +139,22 @@ SpinButton set_update_policy( int policy );
 //!
 //!
 
-SpinButton set_value( float to );
+GTK.SpinButton set_value( float to );
 //! Set the value.
 //!
 //!
 
-SpinButton set_wrap( int wrapp );
+GTK.SpinButton set_wrap( int wrapp );
 //! If true, the spin button will wrap from the lowest to the highest
 //! value, and the highest to the lowest.
 //!
 //!
 
-SpinButton spin( int direction, float increment );
+GTK.SpinButton spin( int direction, float increment );
 //! If you want to alter the value of a Spin Value relative to its
 //! current value, then this ffunction can be used.
 //! 
-//! The direction paramenter is one of @[SPIN_END], @[SPIN_PAGE_FORWARD], @[SPIN_HOME], @[SPIN_PAGE_BACKWARD], @[SPIN_USER_DEFINED], @[SPIN_STEP_FORWARD] and @[SPIN_STEP_BACKWARD]
+//! The direction paramenter is one of @[SPIN_PAGE_FORWARD], @[SPIN_END], @[SPIN_HOME], @[SPIN_PAGE_BACKWARD], @[SPIN_USER_DEFINED], @[SPIN_STEP_BACKWARD] and @[SPIN_STEP_FORWARD]
 //! 
 //!  GTK.SpinStepForward and GTK.SpinStepBackward change the value
 //!  of the Spin Button by the amount specified by increment, unless
@@ -175,7 +175,7 @@ SpinButton spin( int direction, float increment );
 //!
 //!
 
-SpinButton update( );
+GTK.SpinButton update( );
 //! Explicitly request that the Spin Button updates itself
 //!
 //!

@@ -1,13 +1,13 @@
 //!
 
-static GdkRegion create( );
+static GDK.Region create( );
 //! Create a new (empty) region
 //!
 //! NOIMG
 //!
 //!
 
-GdkRegion destroy( );
+GDK.Region destroy( );
 //!
 
 int equal( GDK.Region victim );
@@ -22,7 +22,7 @@ GDK.Region intersect( GDK.Region victim );
 //!
 //!
 
-GdkRegion offset( int dx, int dy );
+GDK.Region offset( int dx, int dy );
 //! Offset(move) the region by dx,dy pixels.
 //!
 //!
@@ -37,7 +37,7 @@ int rect_in( GDK.Rectangle r );
 //!
 //!
 
-GdkRegion shrink( int dx, int dy );
+GDK.Region shrink( int dx, int dy );
 //! reduces the size of a region by a
 //! specified amount.  Positive values shrink the size of the
 //! region, and negative values expand the region.

@@ -21,9 +21,9 @@
 //!
 //!
 
-inherit ButtonBox;
+inherit GTK.ButtonBox;
 
-static VbuttonBox create( );
+static GTK.VbuttonBox create( );
 //! Create a new vertical button box
 //!
 //!

@@ -15,23 +15,23 @@
 //! @b{unselect_icon@}
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
-GnomeIconList append( string icon_filename, string text );
+Gnome.IconList append( string icon_filename, string text );
 //! Appends an icon to the specified icon list. The icon's image is
 //! loaded from the specified file, and it is inserted at the pos
 //! index.
 //!
 //!
 
-GnomeIconList clear( );
+Gnome.IconList clear( );
 //! Clears the contents for the icon list by removing all the icons. If
 //! destroy handlers were specified for any of the icons, they will be
 //! called with the appropriate data.
 //!
 //!
 
-static GnomeIconList create( int icon_widt, int flags );
+static Gnome.IconList create( int icon_widt, int flags );
 //! Creates a new icon list widget. The icon columns are allocated a
 //! width of icon_width pixels. Icon captions will be word-wrapped to
 //! this width as well.
@@ -49,7 +49,7 @@ int find_icon_from_data( object data );
 //!
 //!
 
-GnomeIconList freeze( );
+Gnome.IconList freeze( );
 //! Freezes an icon list so that any changes made to it will not be
 //! reflected on the screen until it is thawed with thaw(). It is
 //! recommended to freeze the icon list before inserting or deleting
@@ -74,7 +74,7 @@ object get_icon_data( int icon );
 //!
 //!
 
-array(int) get_selected_icons( );
+array get_selected_icons( );
 //! Return an array with the currently selected icons
 //!
 //!
@@ -84,14 +84,14 @@ int icon_is_visible( int pos );
 //!
 //!
 
-GnomeIconList insert( int pos, string icon_filename, string text );
+Gnome.IconList insert( int pos, string icon_filename, string text );
 //!  Inserts an icon in the specified icon list. The icon's image is
 //!  loaded from the specified file, and it is inserted at the pos
 //!  index.
 //!
 //!
 
-GnomeIconList moveto( int pos, float yalign );
+Gnome.IconList moveto( int pos, float yalign );
 //! Makes the icon whose index is pos be visible on the screen. The
 //! icon list gets scrolled so that the icon is visible. An alignment
 //! of 0.0 represents the top of the visible part of the icon list, and
@@ -100,37 +100,37 @@ GnomeIconList moveto( int pos, float yalign );
 //!
 //!
 
-GnomeIconList remove( int pos );
+Gnome.IconList remove( int pos );
 //! Removes the icon at index position pos. If a destroy handler was
 //! specified for that icon, it will be called with the appropriate
 //! data.
 //!
 //!
 
-GnomeIconList select_icon( int idx );
+Gnome.IconList select_icon( int idx );
 //! Selects the specified icon.
 //!
 //!
 
-GnomeIconList set_col_spacing( int pixels );
+Gnome.IconList set_col_spacing( int pixels );
 //! Sets the spacing to be used between columns of icons.
 //!
 //!
 
-GnomeIconList set_hadjustment( GTK.Adjustment hadj );
+Gnome.IconList set_hadjustment( GTK.Adjustment hadj );
 //!  Sets the adjustment to be used for horizontal scrolling.  This is
 //!  normally not required, as the icon list can be simply inserted in
 //!  a W(ScrolledWindow) and scrolling will be handled automatically.
 //!
 //!
 
-GnomeIconList set_icon_border( int pixels );
+Gnome.IconList set_icon_border( int pixels );
 //! Set the width of the border to be displayed around an icon's image.
 //! This is currently not implemented.
 //!
 //!
 
-GnomeIconList set_icon_data( int icon, object data );
+Gnome.IconList set_icon_data( int icon, object data );
 //! Set the user data associated with the specified icon.
 //! This data can be used to find icons, and when an icon is selected it
 //! can be easily retrieved using get_icon_data.
@@ -139,51 +139,51 @@ GnomeIconList set_icon_data( int icon, object data );
 //!
 //!
 
-GnomeIconList set_icon_width( int w );
+Gnome.IconList set_icon_width( int w );
 //! Sets the amount of horizontal space allocated to the icons,
 //! i.e. the column width of the icon list
 //!
 //!
 
-GnomeIconList set_row_spacing( int pixels );
+Gnome.IconList set_row_spacing( int pixels );
 //! Sets the spacing to be used between rows of icons.
 //!
 //!
 
-GnomeIconList set_selection_mode( int mode );
-//! One of @[SELECTION_EXTENDED], @[SELECTION_BROWSE], @[SELECTION_MULTIPLE] and @[SELECTION_SINGLE].
+Gnome.IconList set_selection_mode( int mode );
+//! One of @[SELECTION_EXTENDED], @[SELECTION_SINGLE], @[SELECTION_BROWSE] and @[SELECTION_MULTIPLE].
 //!
 //!
 
-GnomeIconList set_separators( string sep );
+Gnome.IconList set_separators( string sep );
 //! Set the characters that can be used as word separators when doing
 //! word-wrapping of the text captions.
 //!
 //!
 
-GnomeIconList set_text_spacing( int pixels );
+Gnome.IconList set_text_spacing( int pixels );
 //! Sets the spacing to be used between the icon and its caption
 //!
 //!
 
-GnomeIconList set_vadjustment( GTK.Adjustment hadj );
+Gnome.IconList set_vadjustment( GTK.Adjustment hadj );
 //!  Sets the adjustment to be used for vertical scrolling.  This is
 //!  normally not required, as the icon list can be simply inserted in
 //!  a W(ScrolledWindow) and scrolling will be handled automatically.
 //!
 //!
 
-GnomeIconList thaw( );
+Gnome.IconList thaw( );
 //! Unfreeze the icon list
 //!
 //!
 
-GnomeIconList unselect_all( );
+Gnome.IconList unselect_all( );
 //! Unselect all icons.
 //!
 //!
 
-GnomeIconList unselect_icon( int idx );
+Gnome.IconList unselect_icon( int idx );
 //! Unselects the specified icon.
 //!
 //!

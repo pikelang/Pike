@@ -13,5 +13,6 @@
 //!
 //! @b{prepare@}
 //!
-inherit Bin;
+
+inherit GTK.Bin;
 

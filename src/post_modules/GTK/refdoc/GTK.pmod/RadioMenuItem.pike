@@ -5,9 +5,9 @@
 //!
 //!
 
-inherit MenuItem;
+inherit GTK.MenuItem;
 
-static RadioMenuItem create( string|void title, GTK.RadioMenuItem groupmember );
+static GTK.RadioMenuItem create( string|void title, GTK.RadioMenuItem groupmember );
 //! object GTK.RadioMenuItem(string title) - First button (with label)
 //! object GTK.RadioMenuItem()->add(widget) - First button (with widget)
 //! object GTK.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)
@@ -15,7 +15,7 @@ static RadioMenuItem create( string|void title, GTK.RadioMenuItem groupmember );
 //!
 //!
 
-RadioMenuItem set_group( GTK.RadioMenuItem groupmember );
+GTK.RadioMenuItem set_group( GTK.RadioMenuItem groupmember );
 //! the argument is another radio menu item to whose group this button
 //! should be added to. It is prefereable to use the second argument to
 //! the constructor instead, but if you for some reason want to move

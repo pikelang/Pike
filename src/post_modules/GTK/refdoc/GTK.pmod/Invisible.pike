@@ -2,9 +2,9 @@
 //!
 //!
 
-inherit Bin;
+inherit GTK.Bin;
 
-static Invisible create( );
+static GTK.Invisible create( );
 //! Create a new invisible widget
 //!
 //!

@@ -11,9 +11,9 @@
 //!
 //!
 
-inherit Button;
+inherit GTK.Button;
 
-static GnomeHref create( string url, string|void label );
+static Gnome.Href create( string url, string|void label );
 //! Created a GNOME href object, a label widget with a clickable action
 //! and an associated URL. If label is set to 0, url is used as the
 //! label.
@@ -30,13 +30,13 @@ string get_url( );
 //!
 //!
 
-GnomeHref set_label( string label );
+Gnome.Href set_label( string label );
 //! Sets the internal label widget text (used to display a URL's link
 //! text) to the given value.
 //!
 //!
 
-GnomeHref set_url( string url );
+Gnome.Href set_url( string url );
 //! Sets the internal URL
 //!
 //!

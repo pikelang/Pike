@@ -17,9 +17,9 @@
 //!
 //!
 
-inherit MenuItem;
+inherit GTK.MenuItem;
 
-static TearoffMenuItem create( );
+static GTK.TearoffMenuItem create( );
 //! Create a new tear of menu item
 //!
 //!

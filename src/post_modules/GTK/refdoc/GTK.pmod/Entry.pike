@@ -5,14 +5,14 @@
 //!
 //!
 
-inherit Editable;
+inherit GTK.Editable;
 
-Entry append_text( string text );
+GTK.Entry append_text( string text );
 //! Append the specified string at the end of the entry
 //!
 //!
 
-static Entry create( );
+static GTK.Entry create( );
 //!
 
 string get_text( );
@@ -20,22 +20,22 @@ string get_text( );
 //!
 //!
 
-Entry prepend_text( string text );
+GTK.Entry prepend_text( string text );
 //! Prepend the specified string to the start of the entry
 //!
 //!
 
-Entry set_max_length( int maxlen );
+GTK.Entry set_max_length( int maxlen );
 //! text is truncated if needed
 //!
 //!
 
-Entry set_text( string text );
+GTK.Entry set_text( string text );
 //! Set the text to the specified string. The old text is dropped.
 //!
 //!
 
-Entry set_visibility( int visiblep );
+GTK.Entry set_visibility( int visiblep );
 //! 0 indicates invisible text (password boxes, as an example)
 //!
 //!

@@ -24,9 +24,9 @@
 //!
 //!
 
-inherit Window;
+inherit GTK.Window;
 
-static FontSelectionDialog create( string title );
+static GTK.FontSelectionDialog create( string title );
 //! Create a new font selection dialog with the specified window title
 //!
 //!

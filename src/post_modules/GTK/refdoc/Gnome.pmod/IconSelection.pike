@@ -1,25 +1,25 @@
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-GnomeIconSelection add_defaults( );
+Gnome.IconSelection add_defaults( );
 //! Adds the default pixmap directory into the selection widget.
 //!
 //!
 
-GnomeIconSelection add_directory( string dir );
+Gnome.IconSelection add_directory( string dir );
 //! Adds the icons from the directory dir to the selection widget.
 //!
 //!
 
-GnomeIconSelection clear( int|void not_shown );
+Gnome.IconSelection clear( int|void not_shown );
 //! Clear the currently shown icons, the ones that weren't shown yet
 //! are not cleared unless the not_shown parameter is given, in which
 //! case even those are cleared.
 //!
 //!
 
-static GnomeIconSelection create( );
+static Gnome.IconSelection create( );
 //! reates a new icon selection widget, it uses a W(GnomeIconList) for
 //! the listing of icons
 //!
@@ -32,13 +32,13 @@ string get_icon( int full_path );
 //!
 //!
 
-GnomeIconSelection select_icon( string filename );
+Gnome.IconSelection select_icon( string filename );
 //! Selects the icon filename. This icon must have already been added
 //! and shown
 //!
 //!
 
-GnomeIconSelection show_icons( );
+Gnome.IconSelection show_icons( );
 //! Shows the icons inside the widget that were added with add_defaults
 //! and add_directory. Before this function isf called the icons aren't
 //! actually added to the listing and can't be picked by the user.

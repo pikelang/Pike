@@ -3,7 +3,7 @@
 //!
 //!
 
-static Gdk_Atom create( string atom_name, int|void only_if_exists );
+static GDK._Atom create( string atom_name, int|void only_if_exists );
 //! Create a new low-level atom. You should normally not call this
 //! function directly. Use GDK.Atom[name] instead of GDK._Atom(name,0).
 //!

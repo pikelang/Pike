@@ -3,7 +3,7 @@
 //!
 //!
 
-GTK.CTreeNode child( );
+CTreeNode child( );
 //! Returns the first child node
 //!
 //!
@@ -23,7 +23,7 @@ int get_level( );
 //!
 //!
 
-GTK.CTreeNode next( );
+CTreeNode next( );
 //! Returns the next sibling (the next on the same  level)
 //!
 //!
@@ -33,7 +33,7 @@ GTK.CTreeNode parent( );
 //!
 //!
 
-object(implements 1001) prev( );
+CTreeNode prev( );
 //! Returns the previous sibling (the next on the same level)
 //!
 //!

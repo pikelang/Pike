@@ -14,9 +14,9 @@
 //!
 //!
 
-inherit Misc;
+inherit GTK.Misc;
 
-static Label create( string text );
+static GTK.Label create( string text );
 //! Creates a new label.
 //!
 //!
@@ -28,23 +28,23 @@ int parse_uline( string uline_string );
 //!
 //!
 
-Label set( string text );
+GTK.Label set( string text );
 //! @b{DEPRECATED@} Compatibility function to set the text in the label. Use
 //! set_text. This function can dissapear in the future.
 //!
 //!
 
-Label set_justify( int justify );
-//! one of @[JUSTIFY_RIGHT], @[JUSTIFY_FILL], @[JUSTIFY_CENTER] and @[JUSTIFY_LEFT]
+GTK.Label set_justify( int justify );
+//! one of @[JUSTIFY_RIGHT], @[JUSTIFY_CENTER], @[JUSTIFY_FILL] and @[JUSTIFY_LEFT]
 //!
 //!
 
-Label set_line_wrap( int wrapp );
+GTK.Label set_line_wrap( int wrapp );
 //! Should the label autolinewrap?
 //!
 //!
 
-Label set_pattern( string pattern_string );
+GTK.Label set_pattern( string pattern_string );
 //! A string with either spaces or underscores.
 //! It should be of the same length as the text.
 //! 
@@ -54,7 +54,7 @@ Label set_pattern( string pattern_string );
 //!
 //!
 
-Label set_text( string text );
+GTK.Label set_text( string text );
 //! Set the text in the label
 //!
 //!

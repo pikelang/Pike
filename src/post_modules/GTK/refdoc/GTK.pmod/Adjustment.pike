@@ -25,15 +25,15 @@
 //!
 //!
 
-inherit Data;
+inherit GTK.Data;
 
-Adjustment changed( );
+GTK.Adjustment changed( );
 //! Call this when you have modified anything except the value member
 //! of the adjustment.
 //!
 //!
 
-Adjustment clamp_page( float lower, float upper );
+GTK.Adjustment clamp_page( float lower, float upper );
 //! Updates the GTK.Adjustment value to ensure that the range between
 //! lower and upper is in the current page (i.e. between value and
 //! value + page_size). If the range is larger than the page size,
@@ -42,7 +42,7 @@ Adjustment clamp_page( float lower, float upper );
 //!
 //!
 
-static Adjustment create( float|void value, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
+static GTK.Adjustment create( float|void value, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
 //! The value argument is the initial value you want to give to the
 //! adjustment, usually corresponding to the topmost or leftmost
 //! position of an adjustable widget. The lower argument specifies the
@@ -116,7 +116,7 @@ float set_set_upper( );
 //!
 //!
 
-Adjustment set_value( float to );
+GTK.Adjustment set_value( float to );
 //! Set the value component.
 //!
 //!

@@ -25,9 +25,9 @@
 //!
 //!
 
-inherit Window;
+inherit GTK.Window;
 
-FileSelection complete( string pattern );
+GTK.FileSelection complete( string pattern );
 //! Will attempt to match pattern to a valid filename in the current
 //! directory. If a match can be made, the matched filename will appear
 //! in the text entry field of the file selection dialog. If a partial
@@ -36,7 +36,7 @@ FileSelection complete( string pattern );
 //!
 //!
 
-static FileSelection create( string window_title );
+static GTK.FileSelection create( string window_title );
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename
@@ -94,21 +94,21 @@ GTK.Button get_ok_button( );
 //!
 //!
 
-FileSelection hide_fileop_buttons( );
+GTK.FileSelection hide_fileop_buttons( );
 //! Hides the file operation buttons that normally appear at the top of
 //! the dialog. Useful if you wish to create a custom file selector,
 //! based on GTK.FileSelection.
 //!
 //!
 
-FileSelection set_filename( string fname );
+GTK.FileSelection set_filename( string fname );
 //! Sets a default path for the file requestor. If filename includes a
 //! directory path, then the requestor will open with that path as its
 //! current working directory.
 //!
 //!
 
-FileSelection show_fileop_buttons( );
+GTK.FileSelection show_fileop_buttons( );
 //! Shows the file operation buttons, if they have previously been
 //! hidden. The rest of the widgets in the dialog will be resized
 //! accordingly.

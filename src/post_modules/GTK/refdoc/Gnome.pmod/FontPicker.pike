@@ -11,21 +11,21 @@
 //! @b{font_set@}
 //!
 
-inherit Button;
+inherit GTK.Button;
 
-static GnomeFontPicker create( );
+static Gnome.FontPicker create( );
 //! Create a new font pick button
 //!
 //!
 
-GnomeFontPicker fi_set_show_size( int show_size );
+Gnome.FontPicker fi_set_show_size( int show_size );
 //! If show_size is TRUE, font size will be displayed along with font
 //! chosen by user. This only applies if current button mode is
 //! Gnome.FontPickerModeFontInfo.
 //!
 //!
 
-GnomeFontPicker fi_set_use_font_in_label( int use_font_in_label, int size );
+Gnome.FontPicker fi_set_use_font_in_label( int use_font_in_label, int size );
 //! If use_font_in_label is TRUE, font name will be written using font
 //! chosen by user and using size passed to this function. This only
 //! applies if current button mode is Gnome.FontPickerModeFontInfo.
@@ -57,24 +57,24 @@ int set_font_name( string fontname );
 //!
 //!
 
-GnomeFontPicker set_mode( int mode );
+Gnome.FontPicker set_mode( int mode );
 //! Set value of subsequent font picker button mode (or what to show).
-//! Mode is one of @[GNOME_FONT_PICKER_MODE_FONT_INFO], @[GNOME_FONT_PICKER_MODE_USER_WIDGET], @[GNOME_FONT_PICKER_MODE_UNKNOWN] and @[GNOME_FONT_PICKER_MODE_PIXMAP]
+//! Mode is one of @[GNOME_FONT_PICKER_MODE_UNKNOWN], @[GNOME_FONT_PICKER_MODE_PIXMAP], @[GNOME_FONT_PICKER_MODE_FONT_INFO] and @[GNOME_FONT_PICKER_MODE_USER_WIDGET]
 //!
 //!
 
-GnomeFontPicker set_preview_text( string text );
+Gnome.FontPicker set_preview_text( string text );
 //! Set preview text in font picker, and in font selection dialog if
 //! one is being displayed.
 //!
 //!
 
-GnomeFontPicker set_title( string title );
+Gnome.FontPicker set_title( string title );
 //! Sets the title for the font selection dialog.
 //!
 //!
 
-GnomeFontPicker uw_set_widget( GTK.Widget widget );
+Gnome.FontPicker uw_set_widget( GTK.Widget widget );
 //! Set the user-supplied widget as the inside of the font picker. This
 //! only applies with Gnome.FontPickerModeUserWidget.
 //!

@@ -4,9 +4,9 @@
 //!
 //!
 
-inherit Window;
+inherit GTK.Window;
 
-static Dialog create( );
+static GTK.Dialog create( );
 //! Create a new dialog widget.
 //!
 //!

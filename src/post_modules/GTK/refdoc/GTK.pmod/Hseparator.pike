@@ -5,9 +5,9 @@
 //!
 //!
 
-inherit Separator;
+inherit GTK.Separator;
 
-static Hseparator create( );
+static GTK.Hseparator create( );
 //! Used to create a new hseparator widget.
 //!
 //!

@@ -6,9 +6,9 @@
 //!
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-static GnomeIconEntry create( string history_id, string title );
+static Gnome.IconEntry create( string history_id, string title );
 //! Creates a new icon entry widget
 //!
 //!
@@ -35,7 +35,7 @@ GTK.Entry gtk_entry( );
 //!
 //!
 
-GnomeIconEntry set_pixmap_subdir( string subdir );
+Gnome.IconEntry set_pixmap_subdir( string subdir );
 //! Sets the subdirectory below gnome's default pixmap directory to use
 //! as the default path for the file entry.
 //!

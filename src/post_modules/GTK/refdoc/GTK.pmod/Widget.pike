@@ -211,9 +211,9 @@
 //!
 //!
 
-inherit Object;
+inherit GTK.Object;
 
-Widget activate( );
+GTK.Widget activate( );
 //! Activate the widget. This either activates the widget, if possible
 //! (as an example, buttons can be activated), or activates the default
 //! widget of it's parent (or it's parent, or it's parents parent
@@ -221,15 +221,15 @@ Widget activate( );
 //!
 //!
 
-Widget add_accelerator( string signal, GTK.AccelGroup group, int key, int modifiers, int flags );
+GTK.Widget add_accelerator( string signal, GTK.AccelGroup group, int key, int modifiers, int flags );
 //! Add an accelerator (keyboard shortcut).
 //! 
-//! Flag is one of @[ACCEL_VISIBLE], @[ACCEL_SIGNAL_VISIBLE] and @[ACCEL_LOCKED]
+//! Flag is one of @[ACCEL_VISIBLE], @[ACCEL_LOCKED] and @[ACCEL_SIGNAL_VISIBLE]
 //! 
 //! The signal is the signal to invoke when the accelerator key is pressed.
 //! 
 //! The modifiers is a bitwise or of one or more of GDK.ShiftMask,
-//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD1_MASK], @[GDK_MOD5_MASK], @[GDK_MOD4_MASK], @[GDK_MOD3_MASK] and @[GDK_MOD2_MASK].
+//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD4_MASK], @[GDK_MOD3_MASK], @[GDK_MOD2_MASK], @[GDK_MOD1_MASK] and @[GDK_MOD5_MASK].
 //! 
 //! The group is the accelerator group in which the accelerator should be added.
 //! 
@@ -237,7 +237,7 @@ Widget add_accelerator( string signal, GTK.AccelGroup group, int key, int modifi
 //!
 //!
 
-Widget add_events( int events );
+GTK.Widget add_events( int events );
 //! Events is one or more of:
 //! GDK.ExposureMask, GDK.PointerMotionMask,
 //! GDK.PointerMotion_HINTMask, GDK.ButtonMotionMask,
@@ -260,7 +260,7 @@ string class_path( );
 //!
 //!
 
-Widget copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsource, int ysource, int width, int height );
+GTK.Widget copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsource, int ysource, int width, int height );
 //! Copies the rectangle defined by xsource,ysource and width,height
 //! from the source widget, and places the results at xdest,ydest in
 //! the widget in which this function is called.
@@ -268,24 +268,24 @@ Widget copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsourc
 //!
 //!
 
-Widget drag_dest_set( int flags, array(array) targets, int actions );
+GTK.Widget drag_dest_set( int flags, array targets, int actions );
 //!     Register a drop site, and possibly add default behaviors.
 //!   arguments:
 //!     flags:     Which types of default drag behavior to use (one of @[DEST_DEFAULT_DROP], @[DEST_DEFAULT_MOTION], @[DEST_DEFAULT_ALL] and @[DEST_DEFAULT_HIGHLIGHT])
 //!     targets:   Table of targets that can be accepted
 //!            ({ ({ content_type(string), flags(int(try 0)), id(int) }), ...})
 //!       The id will be received in the signal handlers.
-//!     actions:   one of @[GDK_ACTION_MOVE], @[GDK_ACTION_COPY], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT]
+//!     actions:   one of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT]
 //!   results:
 //!
 //!
 
-Widget drag_dest_unset( );
+GTK.Widget drag_dest_unset( );
 //! Removes the drop support from this widget (see drag_dest_set)
 //!
 //!
 
-Widget drag_get_data( GDK.DragContext ctx, int time );
+GTK.Widget drag_get_data( GDK.DragContext ctx, int time );
 //! Get the data from a context and an integer timestamp (from an
 //! event), requesting it from the dropping client. This function
 //! should probably never be used directly.
@@ -295,40 +295,40 @@ Widget drag_get_data( GDK.DragContext ctx, int time );
 //!
 //!
 
-Widget drag_highlight( );
+GTK.Widget drag_highlight( );
 //! Highlight the widget. Not normaly used directly.
 //!
 //!
 
-Widget drag_source_set( int flags, array(array) targets, int actions );
+GTK.Widget drag_source_set( int flags, array targets, int actions );
 //!     Register a drop site, and possibly add default behaviors.
 //!   arguments:
 //!     buttons:     Which mouse buttons can be used to start the drag
 //!     targets:   Table of targets that can be accepted
 //!            ({ ({ content_type(string), flags(int(try 0)), id(int) }), ...})
 //!       The id will be received in the signal handlers.
-//!     actions:   one of @[GDK_ACTION_MOVE], @[GDK_ACTION_COPY], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT]
+//!     actions:   one of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT]
 //!   results:
 //!
 //!
 
-Widget drag_source_set_icon( GDK.Pixmap pm, GDK.Bitmap mask );
+GTK.Widget drag_source_set_icon( GDK.Pixmap pm, GDK.Bitmap mask );
 //! Set the icon that will be used (by default) for drags
 //! from this widget.
 //!
 //!
 
-Widget drag_source_unset( );
+GTK.Widget drag_source_unset( );
 //! Remove the drag support from this widget. See drag_source_set.
 //!
 //!
 
-Widget drag_unhighlight( );
+GTK.Widget drag_unhighlight( );
 //! Unhighlight the widget. Not normaly used directly.
 //!
 //!
 
-Widget ensure_style( );
+GTK.Widget ensure_style( );
 //! Ensure that the widget has a style associated with it.
 //!
 //!
@@ -344,7 +344,7 @@ int get_events( );
 //!
 
 int get_extension_events( );
-//! Returns one of @[GDK_EXTENSION_EVENTS_NONE], @[GDK_EXTENSION_EVENTS_ALL] and @[GDK_EXTENSION_EVENTS_CURSOR]
+//! Returns one of @[GDK_EXTENSION_EVENTS_CURSOR], @[GDK_EXTENSION_EVENTS_NONE] and @[GDK_EXTENSION_EVENTS_ALL]
 //!
 //!
 
@@ -375,12 +375,12 @@ GTK.Widget get_toplevel( );
 //!
 //!
 
-Widget grab_default( );
+GTK.Widget grab_default( );
 //! Make this widget the default action for the parent widget
 //!
 //!
 
-Widget grab_focus( );
+GTK.Widget grab_focus( );
 //! Grab the focus.
 //!
 //!
@@ -407,12 +407,12 @@ int has_set_flags( int mask );
 //!
 //!
 
-Widget hide( );
+GTK.Widget hide( );
 //! Hide this widget
 //!
 //!
 
-Widget hide_all( );
+GTK.Widget hide_all( );
 //! Hide this widget and all it's children
 //!
 //!
@@ -428,12 +428,12 @@ int is_ancestor( GTK.Widget of );
 //!
 //!
 
-Widget lock_accelerators( );
+GTK.Widget lock_accelerators( );
 //! Make it impossible to add new accelerators, or remove old ones
 //!
 //!
 
-Widget map( );
+GTK.Widget map( );
 //! Map the widget. Should normally not be called directly.
 //!
 //!
@@ -443,46 +443,46 @@ string path( );
 //!
 //!
 
-Widget popup( int xpos, int ypos );
+GTK.Widget popup( int xpos, int ypos );
 //! Map the widget at the specified coordinates.
 //!
 //!
 
-Widget queue_clear( );
+GTK.Widget queue_clear( );
 //! Force a clear (and subsequent redraw) of the widget
 //!
 //!
 
-Widget queue_clear_area( int x, int y, int width, int height );
+GTK.Widget queue_clear_area( int x, int y, int width, int height );
 //! Force a clear (and subsequent redraw) of part of the widget
 //!
 //!
 
-Widget queue_draw( );
+GTK.Widget queue_draw( );
 //! Force a redraw of the widget
 //!
 //!
 
-Widget queue_draw_area( int x, int y, int width, int height );
+GTK.Widget queue_draw_area( int x, int y, int width, int height );
 //! Force a redraw of part of the widget
 //!
 //!
 
-Widget queue_resize( );
+GTK.Widget queue_resize( );
 //! Force a allocation recalculation, followed by a redraw
 //!
 //!
 
-Widget realize( );
+GTK.Widget realize( );
 //! Realize this widget, and it's children, if nessesary
 //!
 //!
 
-Widget remove_accelerator( GTK.AccelGroup group, int key, int modifiers );
+GTK.Widget remove_accelerator( GTK.AccelGroup group, int key, int modifiers );
 //! Remove an accelerator (keyboard shortcut).
 //! 
 //! The modifiers is a bitwise or of one or more of GDK.ShiftMask,
-//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD1_MASK], @[GDK_MOD5_MASK], @[GDK_MOD4_MASK], @[GDK_MOD3_MASK] and @[GDK_MOD2_MASK].
+//! GDK.LockMask, GDK.ControlMask, @[GDK_MOD4_MASK], @[GDK_MOD3_MASK], @[GDK_MOD2_MASK], @[GDK_MOD1_MASK] and @[GDK_MOD5_MASK].
 //! 
 //! The group is the accelerator group in which the accelerator should be added.
 //! 
@@ -490,22 +490,22 @@ Widget remove_accelerator( GTK.AccelGroup group, int key, int modifiers );
 //!
 //!
 
-Widget reparent( GTK.Widget to );
+GTK.Widget reparent( GTK.Widget to );
 //! Change the parent of the widget.
 //!
 //!
 
-Widget reset_rc_styles( );
+GTK.Widget reset_rc_styles( );
 //! Reset all styles to their default value, recursively
 //!
 //!
 
-Widget restore_default_style( );
+GTK.Widget restore_default_style( );
 //! Reset all styles to their default value
 //!
 //!
 
-Widget selection_add_target( object|void selection, object|void target, int|void info );
+GTK.Widget selection_add_target( GDK.Atom|void selection, GDK.Atom|void target, int|void info );
 //! Supplying the selection is a bit more complicated than requesting
 //! it. You must register handlers that will be called when your
 //! selection is requested. For each selection/target pair you will
@@ -521,7 +521,7 @@ Widget selection_add_target( object|void selection, object|void target, int|void
 //!
 //!
 
-Widget selection_owner_set( object|void selection, int|void time );
+GTK.Widget selection_owner_set( GDK.Atom|void selection, int|void time );
 //! When prompted by the user, you claim ownership of the selection by
 //! calling this function.
 //!
@@ -533,7 +533,7 @@ Widget selection_owner_set( object|void selection, int|void time );
 //!
 //!
 
-int selecton_convert( object|void selection, object|void target, int|void time );
+int selecton_convert( GDK.Atom|void selection, GDK.Atom|void target, int|void time );
 //! Retrieving the selection is an asynchronous process. To start the
 //! process, you call this function.
 //!
@@ -556,32 +556,32 @@ int selecton_convert( object|void selection, object|void target, int|void time )
 //!
 //!
 
-Widget set_app_paintable( int paintablep );
+GTK.Widget set_app_paintable( int paintablep );
 //! Make it possible to draw directly in the widget using the low-level
 //! drawing functions.
 //!
 //!
 
-Widget set_background( GDK.Color background );
+GTK.Widget set_background( GDK.Color background );
 //! Set the background color or image.
 //! The argument is either a GDK.Pixmap or a GDK.Color object.
 //! NOTE: The widget must be realized before this function can be used
 //!
 //!
 
-Widget set_bitmap_cursor( GDK.Bitmap source, GDK.Bitmap mask, GDK.Color fg, GDK.Color bg, int xhot, int yhot );
+GTK.Widget set_bitmap_cursor( GDK.Bitmap source, GDK.Bitmap mask, GDK.Color fg, GDK.Color bg, int xhot, int yhot );
 //! xhot and yhot are the locations of the x and y hotspot relative to the
 //! upper left corner of the cursor image.
 //! Both the bitmaps and the colors must be specified.
 //!
 //!
 
-Widget set_composite_name( string name );
+GTK.Widget set_composite_name( string name );
 //! Like set name, but it is inherited by the children of this widget.
 //!
 //!
 
-Widget set_cursor( int|void cursor_type, GDK.Color fg, GDK.Color bg );
+GTK.Widget set_cursor( int|void cursor_type, GDK.Color fg, GDK.Color bg );
 //! Change the widget cursor.
 //! If no arguments are passed, restore the default cursor.
 //! Both fg and bg must be specified if either one is.
@@ -666,7 +666,7 @@ Widget set_cursor( int|void cursor_type, GDK.Color fg, GDK.Color bg );
 //!
 //!
 
-Widget set_events( int events );
+GTK.Widget set_events( int events );
 //! Events is one or more of:
 //! GDK.ExposureMask, GDK.PointerMotionMask,
 //! GDK.PointerMotion_HINTMask, GDK.ButtonMotionMask,
@@ -679,18 +679,18 @@ Widget set_events( int events );
 //!
 //!
 
-Widget set_extension_events( int events );
-//! Events is one of @[GDK_EXTENSION_EVENTS_NONE], @[GDK_EXTENSION_EVENTS_ALL] and @[GDK_EXTENSION_EVENTS_CURSOR]
+GTK.Widget set_extension_events( int events );
+//! Events is one of @[GDK_EXTENSION_EVENTS_CURSOR], @[GDK_EXTENSION_EVENTS_NONE] and @[GDK_EXTENSION_EVENTS_ALL]
 //!
 //!
 
-Widget set_flags( int flags );
+GTK.Widget set_flags( int flags );
 //! The flags that it makes sense to set are:
 //! GTK.CanFocus and GTK.CanDefault
 //!
 //!
 
-Widget set_name( string name );
+GTK.Widget set_name( string name );
 //! Set the name of the widget. The name is used when the rc-file is
 //! parsed, you can also parse your own resources by calling
 //! GTK.parse_rc() with a resource string. Example: 
@@ -698,7 +698,7 @@ Widget set_name( string name );
 //!
 //!
 
-Widget set_rc_style( );
+GTK.Widget set_rc_style( );
 //! Set the style from the .rc files
 //!
 //!
@@ -709,25 +709,25 @@ int set_scroll_adjustments( GTK.Adjustment hadjustment, GTK.Adjustment vadjustme
 //!
 //!
 
-Widget set_sensitive( int sensitivep );
+GTK.Widget set_sensitive( int sensitivep );
 //! True (1) or false (0). If true, the widget can receive events,
 //! otherwise the user cannot interact with the widget. Most widgets
 //! are drawn 'greyed' or more dim when they are unsensitive.
 //!
 //!
 
-Widget set_state( int state );
-//! One of @[STATE_INSENSITIVE], @[STATE_ACTIVE], @[STATE_NORMAL], @[STATE_PRELIGHT] and @[STATE_SELECTED].
+GTK.Widget set_state( int state );
+//! One of @[STATE_ACTIVE], @[STATE_NORMAL], @[STATE_SELECTED], @[STATE_PRELIGHT] and @[STATE_INSENSITIVE].
 //! This function should normaly not be used directly.
 //!
 //!
 
-Widget set_uposition( int xpos, int ypos );
+GTK.Widget set_uposition( int xpos, int ypos );
 //! Set the absolute coordinates of the widget relative to it's parent.
 //!
 //!
 
-Widget set_usize( int xsize, int ysize );
+GTK.Widget set_usize( int xsize, int ysize );
 //! Set the absolute size of the widget. It might resize itself anyway,
 //! but this size is used as is in most widgets. Beware of this
 //! function, it might produce unexpected results. 0 for any size means
@@ -736,7 +736,7 @@ Widget set_usize( int xsize, int ysize );
 //!
 //!
 
-Widget shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset );
+GTK.Widget shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset );
 //! Set the shape of the widget, or, rather, it's window, to that of
 //! the supplied bitmap. Notice how the window behind the example
 //! window can be seen because of the rather odd shape the example window has.
@@ -747,18 +747,18 @@ Widget shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset );
 //!
 //!
 
-Widget show( );
+GTK.Widget show( );
 //! Show the widget. Most (almost all) widgets must be shown to be
 //! visible on the screen.
 //!
 //!
 
-Widget show_all( );
+GTK.Widget show_all( );
 //! Show this widget and all it's children
 //!
 //!
 
-Widget show_now( );
+GTK.Widget show_now( );
 //! Show this widget and do not return until it is visible.
 //!
 //!
@@ -770,28 +770,28 @@ int text_width( string text );
 //!
 //!
 
-Widget unlock_accelerators( );
+GTK.Widget unlock_accelerators( );
 //! Make it possible to add new accelerators, and remove old ones,
 //! again. Use this after lock_accelerators()
 //!
 //!
 
-Widget unmap( );
+GTK.Widget unmap( );
 //! Unmap the widget. Should normally not be called directly.
 //!
 //!
 
-Widget unparent( );
+GTK.Widget unparent( );
 //! Remove this widget from it's parent
 //!
 //!
 
-Widget unrealize( );
+GTK.Widget unrealize( );
 //! Unrealize this widget, and it's children, if nessesary
 //!
 //!
 
-Widget unset_flags( int flags );
+GTK.Widget unset_flags( int flags );
 //! The flags that it makes sense to unset are:
 //! GTK.CanFocus and GTK.CanDefault
 //!

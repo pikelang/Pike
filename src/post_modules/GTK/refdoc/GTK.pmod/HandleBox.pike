@@ -15,9 +15,9 @@
 //!
 //!
 
-inherit Bin;
+inherit GTK.Bin;
 
-static HandleBox create( );
+static GTK.HandleBox create( );
 //! Create a new handle box widget.
 //!
 //!
@@ -33,7 +33,7 @@ int get_float_window_mapped( );
 //!
 
 int get_handle_position( );
-//! The position of the handle. One of @[POS_BOTTOM], @[POS_TOP], @[POS_RIGHT] and @[POS_LEFT]
+//! The position of the handle. One of @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP]
 //!
 //!
 
@@ -48,12 +48,12 @@ int get_shrink_on_detach( );
 //!
 
 int get_snap_edge( );
-//! The edge to snap to. One of @[POS_BOTTOM], @[POS_TOP], @[POS_RIGHT] and @[POS_LEFT], or -1 for unset.
+//! The edge to snap to. One of @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP], or -1 for unset.
 //!
 //!
 
-HandleBox set_handle_position( int pos );
-//! The position of the handle. One of @[POS_BOTTOM], @[POS_TOP], @[POS_RIGHT] and @[POS_LEFT]
+GTK.HandleBox set_handle_position( int pos );
+//! The position of the handle. One of @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP]
 //!
 //!
 
@@ -62,12 +62,12 @@ int set_set_shrink_on_detach( );
 //!
 //!
 
-HandleBox set_shadow_type( int shadow_type );
-//! One of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN]
+GTK.HandleBox set_shadow_type( int shadow_type );
+//! One of @[SHADOW_OUT], @[SHADOW_ETCHED_IN], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_ETCHED_OUT]
 //!
 //!
 
-HandleBox set_snap_edge( int pos );
-//! The edge to snap to. One of @[POS_BOTTOM], @[POS_TOP], @[POS_RIGHT] and @[POS_LEFT], or -1 for unset.
+GTK.HandleBox set_snap_edge( int pos );
+//! The edge to snap to. One of @[POS_RIGHT], @[POS_LEFT], @[POS_BOTTOM] and @[POS_TOP], or -1 for unset.
 //!
 //!

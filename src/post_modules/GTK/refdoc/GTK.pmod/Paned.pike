@@ -27,15 +27,15 @@
 //!
 //!
 
-inherit Container;
+inherit GTK.Container;
 
-Paned add1( GTK.Widget left_or_top );
+GTK.Paned add1( GTK.Widget left_or_top );
 //! Set the left or topmost item.
 //! This is equivalent to pack1(left_or_top,0,1)
 //!
 //!
 
-Paned add2( GTK.Widget right_or_bottom );
+GTK.Paned add2( GTK.Widget right_or_bottom );
 //! Set the right or bottommost item
 //! This is equivalent to pack2(left_or_top,0,1)
 //!
@@ -71,27 +71,27 @@ int get_min_position( );
 //!
 //!
 
-Paned pack1( GTK.Widget widget, int resize, int shrink );
+GTK.Paned pack1( GTK.Widget widget, int resize, int shrink );
 //! Add a child to the top or left pane.
 //!
 //!
 
-Paned pack2( GTK.Widget widget, int resize, int shrink );
+GTK.Paned pack2( GTK.Widget widget, int resize, int shrink );
 //! Add a child to the bottom or right pane.
 //!
 //!
 
-Paned set_gutter_size( int gsize );
+GTK.Paned set_gutter_size( int gsize );
 //! Set the width of the gutter. (The area between the two panes).
 //!
 //!
 
-Paned set_handle_size( int hsize );
+GTK.Paned set_handle_size( int hsize );
 //! The size of the handle in pixels
 //!
 //!
 
-Paned set_position( int position );
+GTK.Paned set_position( int position );
 //! Set the position of the separator, as if set by the user. If
 //! position is negative, the remembered position is forgotten, and
 //! the division is recomputed from the the requisitions of the

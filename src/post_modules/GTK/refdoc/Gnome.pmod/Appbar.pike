@@ -16,20 +16,20 @@
 //!
 //!
 
-inherit Hbox;
+inherit GTK.Hbox;
 
-GnomeAppbar clear_prompt( );
+Gnome.Appbar clear_prompt( );
 //! Remove any prompt.
 //!
 //!
 
-GnomeAppbar clear_stack( );
+Gnome.Appbar clear_stack( );
 //! Remove all status messages from appbar, and display default status
 //! message (if present).
 //!
 //!
 
-static GnomeAppbar create( int has_progress, int has_status, int interactivity );
+static Gnome.Appbar create( int has_progress, int has_status, int interactivity );
 //! Create a new GNOME application status bar. If has_progress is TRUE,
 //! a small progress bar widget will be created, and placed on the left
 //! side of the appbar. If has_status is TRUE, a status bar, possibly
@@ -61,42 +61,42 @@ string get_response( );
 //!
 //!
 
-GnomeAppbar pop( );
+Gnome.Appbar pop( );
 //! Remove current status message, and display previous status message,
 //! if any. It is OK to call this with an empty stack.
 //!
 //!
 
-GnomeAppbar push( string what );
+Gnome.Appbar push( string what );
 //! Push a new status message onto the status bar stack, and display it.
 //!
 //!
 
-GnomeAppbar refresh( );
+Gnome.Appbar refresh( );
 //! Reflect the current state of stack/default. Useful to force a
 //! set_status to disappear.
 //!
 //!
 
-GnomeAppbar set_default( string default_status );
+Gnome.Appbar set_default( string default_status );
 //! What to show when showing nothing else; defaults to "".
 //!
 //!
 
-GnomeAppbar set_progress( float percentage );
+Gnome.Appbar set_progress( float percentage );
 //! Sets progress bar to the given percentage. Pure sugar - with a bad
 //! name, in light of the get_progress name which is not the opposite
 //! of set_progress. Maybe this function should die.
 //!
 //!
 
-GnomeAppbar set_prompt( string prompt, int modal );
+Gnome.Appbar set_prompt( string prompt, int modal );
 //! Put a prompt in the appbar and wait for a response. When the user
 //! responds or cancels, a user_response signal is emitted.
 //!
 //!
 
-GnomeAppbar set_status( string status );
+Gnome.Appbar set_status( string status );
 //! Sets the status label without changing widget state; next set or
 //! push will destroy this permanently.
 //!

@@ -9,9 +9,9 @@
 //!
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-static GnomePixmapEntry create( string history_id, string browse_dialog_title, int do_preview );
+static Gnome.PixmapEntry create( string history_id, string browse_dialog_title, int do_preview );
 //! Creates a new pixmap entry widget, if do_preview is false, the
 //! preview is hidden but the files are still loaded so that it's easy
 //! to show it. For a pixmap entry without preview, use the
@@ -36,19 +36,19 @@ Gnome.FileEntry gnome_file_entry( );
 //!
 //!
 
-GnomePixmapEntry set_pixmap_subdir( string dir );
+Gnome.PixmapEntry set_pixmap_subdir( string dir );
 //! Sets the default path for the file entry. The new subdirectory
 //! should be specified relative to the default GNOME pixmap directory.
 //!
 //!
 
-GnomePixmapEntry set_preview( int do_preview );
+Gnome.PixmapEntry set_preview( int do_preview );
 //! Sets whether or not previews of the currently selected pixmap
 //! should be shown in the file selector.
 //!
 //!
 
-GnomePixmapEntry set_preview_size( int min_w, int min_h );
+Gnome.PixmapEntry set_preview_size( int min_w, int min_h );
 //! Sets the minimum size of the preview frame in pixels.
 //!
 //!

@@ -3,44 +3,44 @@
 //!
 //!
 
-inherit GnomeDruidPage;
+inherit Gnome.DruidPage;
 
-static GnomeDruidPageStart create( );
+static Gnome.DruidPageStart create( );
 //! Creates a new Gnome.DruidPageStart widget.
 //!
 //!
 
-GnomeDruidPageStart set_bg_color( GDK.Color color );
+Gnome.DruidPageStart set_bg_color( GDK.Color color );
 //! This will set the background color to be the specified color.
 //!
 //!
 
-GnomeDruidPageStart set_logo_bg_color( GDK.Color color );
+Gnome.DruidPageStart set_logo_bg_color( GDK.Color color );
 //! This will set the background color of the logo
 //!
 //!
 
-GnomeDruidPageStart set_text( string text );
+Gnome.DruidPageStart set_text( string text );
 //! Set the text
 //!
 //!
 
-GnomeDruidPageStart set_text_color( GDK.Color color );
+Gnome.DruidPageStart set_text_color( GDK.Color color );
 //! Set the text color
 //!
 //!
 
-GnomeDruidPageStart set_textbox_color( GDK.Color color );
+Gnome.DruidPageStart set_textbox_color( GDK.Color color );
 //! This will set the textbox color to be the specified color.
 //!
 //!
 
-GnomeDruidPageStart set_title( string title );
+Gnome.DruidPageStart set_title( string title );
 //! Set the title
 //!
 //!
 
-GnomeDruidPageStart set_title_color( GDK.Color color );
+Gnome.DruidPageStart set_title_color( GDK.Color color );
 //! Set the title color
 //!
 //!

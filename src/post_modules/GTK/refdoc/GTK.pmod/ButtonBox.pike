@@ -4,7 +4,7 @@
 //!
 //!
 
-inherit Box;
+inherit GTK.Box;
 
 mapping get_child_ipadding( );
 //! Return the default inter-child padding ([ "x":xpadding, "y":ypadding ])
@@ -18,7 +18,7 @@ mapping get_child_size( );
 
 int get_layout( );
 //! Returns the currently configured layout.
-//! One of  @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_END] and @[BUTTONBOX_SPREAD]
+//! One of  @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_END], @[BUTTONBOX_DEFAULT_STYLE] and @[BUTTONBOX_SPREAD]
 //!
 //!
 
@@ -27,22 +27,22 @@ int get_spacing( );
 //!
 //!
 
-ButtonBox set_child_ipadding( int child_number, int child_padding );
+GTK.ButtonBox set_child_ipadding( int child_number, int child_padding );
 //! Set the padding for a specific child.
 //!
 //!
 
-ButtonBox set_child_size( int child_number, int child_size );
+GTK.ButtonBox set_child_size( int child_number, int child_size );
 //! Set the size of a specified child
 //!
 //!
 
-ButtonBox set_layout( int layout );
-//! layout is one of @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_END] and @[BUTTONBOX_SPREAD]
+GTK.ButtonBox set_layout( int layout );
+//! layout is one of @[BUTTONBOX_EDGE], @[BUTTONBOX_START], @[BUTTONBOX_END], @[BUTTONBOX_DEFAULT_STYLE] and @[BUTTONBOX_SPREAD]
 //!
 //!
 
-ButtonBox set_spacing( int spacing );
+GTK.ButtonBox set_spacing( int spacing );
 //! in pixels
 //!
 //!

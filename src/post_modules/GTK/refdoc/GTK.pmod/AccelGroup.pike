@@ -5,27 +5,27 @@
 //!
 //!
 
-inherit Data;
+inherit GTK.Data;
 
-AccelGroup add_accel( GTK.Widget widget, string signal, int key, int modifiers, int flags );
+GTK.AccelGroup add_accel( GTK.Widget widget, string signal, int key, int modifiers, int flags );
 //! the widget is the one in which the signal specified by 'signal'
 //! recides.
 //! 
 //! The key is the character code (such as 'a' for the a key and '@@'
 //! for the @@ key), and modifiers is a bitmap of one or more bits, the
-//! bits are . Flags is one or more of @[ACCEL_VISIBLE], @[ACCEL_SIGNAL_VISIBLE] and @[ACCEL_LOCKED]
+//! bits are . Flags is one or more of @[ACCEL_VISIBLE], @[ACCEL_LOCKED] and @[ACCEL_SIGNAL_VISIBLE]
 //!
 //!
 
-static AccelGroup create( );
+static GTK.AccelGroup create( );
 //! Create a new accelerator group
 //!
 //!
 
-AccelGroup destroy( );
+GTK.AccelGroup destroy( );
 //!
 
-AccelGroup remove( GTK.Widget widget, int key, int modifiers );
+GTK.AccelGroup remove( GTK.Widget widget, int key, int modifiers );
 //! Remove all bindings for the specified key/mask in the specified object.
 //!
 //!

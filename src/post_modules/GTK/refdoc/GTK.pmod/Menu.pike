@@ -27,24 +27,24 @@
 //!
 //!
 
-inherit MenuShell;
+inherit GTK.MenuShell;
 
-Menu append( GTK.Widget widget );
+GTK.Menu append( GTK.Widget widget );
 //! Adds a new W(MenuItem) to the end of the menu's item list.
 //!
 //!
 
-Menu attach_to_widget( GTK.Widget widget );
+GTK.Menu attach_to_widget( GTK.Widget widget );
 //! Attach the menu to a widget
 //!
 //!
 
-static Menu create( );
+static GTK.Menu create( );
 //! Create a new GTK.Menu widget.
 //!
 //!
 
-Menu detach( );
+GTK.Menu detach( );
 //!  Detaches the menu from the widget to which it had been attached.
 //!
 //!
@@ -65,49 +65,49 @@ int get_torn_off( );
 //!
 //!
 
-Menu insert( GTK.Widget widget, int position );
+GTK.Menu insert( GTK.Widget widget, int position );
 //! Adds a new W(MenuItem) to the menu's item list at the position
 //! indicated by position.
 //!
 //!
 
-Menu popdown( );
+GTK.Menu popdown( );
 //! Removes the menu from the screen.
 //!
 //!
 
-Menu popup( int|void button_pressed_to_show_menu );
+GTK.Menu popup( int|void button_pressed_to_show_menu );
 //! The default button is 3.
 //!
 //!
 
-Menu prepend( GTK.Widget widget );
+GTK.Menu prepend( GTK.Widget widget );
 //! Adds a new W(MenuItem) to the start of the menu's item list.
 //!
 //!
 
-Menu reorder_child( GTK.Widget menuitem, int pos );
+GTK.Menu reorder_child( GTK.Widget menuitem, int pos );
 //! Moves a W(MenuItem) to a new position within the GTK.Menu.
 //!
 //!
 
-Menu reposition( );
+GTK.Menu reposition( );
 //! Repositions the menu according to its position function.
 //!
 //!
 
-Menu set_accel_group( GTK.AccelGroup accelerators );
+GTK.Menu set_accel_group( GTK.AccelGroup accelerators );
 //! Set the W(AccelGroup) which holds global accelerators for the menu.
 //!
 //!
 
-Menu set_active( int activep );
+GTK.Menu set_active( int activep );
 //! Selects the specified menu item within the menu. This is used by
 //! the W(OptionMenu).
 //!
 //!
 
-Menu set_tearoff_state( int torn_off );
+GTK.Menu set_tearoff_state( int torn_off );
 //! Changes the tearoff state of the menu. A menu is normally displayed
 //! as drop down menu which persists as long as the menu is active. It
 //! can also be displayed as a tearoff menu which persists until it is
@@ -115,7 +115,7 @@ Menu set_tearoff_state( int torn_off );
 //!
 //!
 
-Menu set_title( string new_title );
+GTK.Menu set_title( string new_title );
 //! Sets the title string for the menu. The title is displayed when the
 //! menu is shown as a tearoff menu.
 //!

@@ -10,9 +10,9 @@
 //!
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
-static Dial create( GTK.Adjustment adjustment );
+static GTK.Dial create( GTK.Adjustment adjustment );
 //!
 
 GTK.Adjustment get_adjustment( );
@@ -28,7 +28,7 @@ float get_value( );
 //!
 //!
 
-Dial set_adjustment( GTK.Adjustment pos );
+GTK.Dial set_adjustment( GTK.Adjustment pos );
 //! set_adjustment() does absolutely nothing if you pass it the
 //! adjustment that range is already using, regardless of whether you
 //! changed any of its fields or not. If you pass it a new Adjustment,
@@ -40,14 +40,14 @@ Dial set_adjustment( GTK.Adjustment pos );
 //!
 //!
 
-Dial set_percentage( float percent );
+GTK.Dial set_percentage( float percent );
 //! Sets the GTK.Dial's value to percent of
 //! dial->adjustment->upper. The upper value is set when the
 //! GtkAdjustment is created.
 //!
 //!
 
-Dial set_update_policy( int when );
+GTK.Dial set_update_policy( int when );
 //! The "update policy" of a range widget defines at what points during
 //! user interaction it will change the value field of its Adjustment
 //! and emit the "value_changed" signal on this Adjustment. The update
@@ -74,7 +74,7 @@ float set_value( float to );
 //!
 //!
 
-Dial set_view_only( int view_only );
+GTK.Dial set_view_only( int view_only );
 //! Specifies whether or not the user is to be able to edit the value
 //! represented by the dial widget. If view_only is TRUE, the dial will
 //! be set to view-only mode, and the user will not be able to edit

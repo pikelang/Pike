@@ -38,7 +38,7 @@
 //!
 //!
 
-inherit GnomeDialog;
+inherit Gnome.Dialog;
 
 int append_page( GTK.Widget child, GTK.Widget tab_label );
 //! Appends a new page to the Gnome.PropertyBox.
@@ -47,16 +47,16 @@ int append_page( GTK.Widget child, GTK.Widget tab_label );
 //!
 //!
 
-GnomePropertyBox changed( );
+Gnome.PropertyBox changed( );
 //! When a setting has changed, the code needs to invoke this routine
 //! to make the Ok/Apply buttons sensitive.
 //!
 //!
 
-static GnomePropertyBox create( );
+static Gnome.PropertyBox create( );
 //! Creates a new Gnome.PropertyBox widget.
 //!
 //!
 
-GnomePropertyBox set_state( int state );
+Gnome.PropertyBox set_state( int state );
 //!

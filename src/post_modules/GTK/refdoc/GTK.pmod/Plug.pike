@@ -8,9 +8,9 @@
 //!
 //!
 
-inherit Window;
+inherit GTK.Window;
 
-static Plug create( int socket_id );
+static GTK.Plug create( int socket_id );
 //! Create a new plug, the socket_id is the window into which this plug
 //! will be plugged.
 //!

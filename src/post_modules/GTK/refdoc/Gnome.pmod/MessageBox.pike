@@ -9,7 +9,7 @@
 //! with a stock icon.
 //! 
 //! The list of known types for message boxes are:
-//! @[GNOME_MESSAGE_BOX_GENERIC], @[GNOME_MESSAGE_BOX_QUESTION], @[GNOME_MESSAGE_BOX_WARNING], @[GNOME_MESSAGE_BOX_INFO] and @[GNOME_MESSAGE_BOX_ERROR].
+//! @[GNOME_MESSAGE_BOX_GENERIC], @[GNOME_MESSAGE_BOX_WARNING], @[GNOME_MESSAGE_BOX_INFO], @[GNOME_MESSAGE_BOX_QUESTION] and @[GNOME_MESSAGE_BOX_ERROR].
 //!@code{ Gnome.MessageBox( "This is a nice message", Gnome.MessageBoxInfo, Gnome.StockButtonOk,  Gnome.StockButtonCancel );@}
 //!@xml{<image src='../images/gnome_messagebox.png'/>@}
 //!
@@ -20,9 +20,9 @@
 //!
 //!
 
-inherit GnomeDialog;
+inherit Gnome.Dialog;
 
-static GnomeMessageBox create( string message, string messagebox_type, string buttons );
+static Gnome.MessageBox create( string message, string messagebox_type, string buttons );
 //! Creates a dialog box of type message_box_type with message. A
 //! number of buttons are inserted on it. You can use the GNOME stock
 //! identifiers to create gnome stock buttons.

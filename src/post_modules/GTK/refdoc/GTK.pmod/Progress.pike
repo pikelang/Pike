@@ -1,8 +1,8 @@
 //!
 
-inherit Widget;
+inherit GTK.Widget;
 
-Progress configure( float value, float min, float max );
+GTK.Progress configure( float value, float min, float max );
 //! Sets the current value, the minimum value and the maximum value.
 //! The default min and max are 0.0 and 1.0 respectively.
 //!
@@ -58,7 +58,7 @@ float get_y_align( );
 //!
 //!
 
-Progress set_activity_mode( int modep );
+GTK.Progress set_activity_mode( int modep );
 //! As well as indicating the amount of progress that has occured, the
 //! progress bar may be set to just indicate that there is some
 //! activity. This can be useful in situations where progress cannot be
@@ -70,12 +70,12 @@ Progress set_activity_mode( int modep );
 //!
 //!
 
-Progress set_adjustment( GTK.Adjustment adjustment );
+GTK.Progress set_adjustment( GTK.Adjustment adjustment );
 //! Sets the adjustment to use. See the adjustment documentation for more info
 //!
 //!
 
-Progress set_format_string( string format );
+GTK.Progress set_format_string( string format );
 //!
 //! More or less like sprintf.
 //! %[field width][character]
@@ -93,17 +93,17 @@ Progress set_format_string( string format );
 //!
 //!
 
-Progress set_percentage( float pct );
+GTK.Progress set_percentage( float pct );
 //! Sets the value (between 0.0 and 1.0). Uses the min and max values.
 //!
 //!
 
-Progress set_show_text( int textp );
+GTK.Progress set_show_text( int textp );
 //! If true, write a text in the progress bar.
 //!
 //!
 
-Progress set_text_alignment( float xalign, float yalign );
+GTK.Progress set_text_alignment( float xalign, float yalign );
 //! The location for the text in the progress bar.
 //! xalign is between 0.0 (leftmost) and 1.0 (rightmost)
 //! yalign is between 0.0 (topmost) and 1.0 (bottommost)
@@ -113,7 +113,7 @@ Progress set_text_alignment( float xalign, float yalign );
 //!
 //!
 
-Progress set_value( float value );
+GTK.Progress set_value( float value );
 //! Set the value.
 //!
 //!

@@ -4,9 +4,9 @@
 //!
 //!
 
-inherit Vbox;
+inherit GTK.Vbox;
 
-static GnomePaperSelector create( );
+static Gnome.PaperSelector create( );
 //!
 
 float get_bottom_margin( );

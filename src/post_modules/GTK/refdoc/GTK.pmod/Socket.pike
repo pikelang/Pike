@@ -21,9 +21,9 @@
 //!
 //!
 
-inherit Container;
+inherit GTK.Container;
 
-static Socket create( );
+static GTK.Socket create( );
 //!
 
 int get_same_app( );
@@ -43,7 +43,7 @@ int id( );
 //!
 //!
 
-Socket steal( int window_id );
+GTK.Socket steal( int window_id );
 //! Reparents a pre-existing toplevel window (not nessesarily a GTK
 //! window) into a socket.
 //!

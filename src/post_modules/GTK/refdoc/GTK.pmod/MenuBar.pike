@@ -9,19 +9,19 @@
 //!
 //!
 
-inherit MenuShell;
+inherit GTK.MenuShell;
 
-MenuBar append( GTK.Widget menu );
+GTK.MenuBar append( GTK.Widget menu );
 //!
 
-static MenuBar create( );
+static GTK.MenuBar create( );
 //!
 
-MenuBar insert( GTK.Widget menu, int position );
+GTK.MenuBar insert( GTK.Widget menu, int position );
 //!
 
-MenuBar prepend( GTK.Widget menu );
+GTK.MenuBar prepend( GTK.Widget menu );
 //!
 
-MenuBar set_shadow_type( int int );
+GTK.MenuBar set_shadow_type( int int );
 //!

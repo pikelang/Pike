@@ -1,8 +1,8 @@
 //!
 
-inherit Label;
+inherit GTK.Label;
 
-static TipsQuery create( );
+static GTK.TipsQuery create( );
 //!
 
 GTK.Widget get_caller( );
@@ -20,14 +20,14 @@ string get_label_no_tip( );
 GTK.Widget get_last_crossed( );
 //!
 
-TipsQuery set_caller( GTK.Widget caller_widget );
+GTK.TipsQuery set_caller( GTK.Widget caller_widget );
 //!
 
-TipsQuery set_labels( string label_inactive, string label_no_tip );
+GTK.TipsQuery set_labels( string label_inactive, string label_no_tip );
 //!
 
-TipsQuery start_query( );
+GTK.TipsQuery start_query( );
 //!
 
-TipsQuery stop_query( );
+GTK.TipsQuery stop_query( );
 //!

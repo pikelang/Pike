@@ -34,25 +34,25 @@
 //!
 //!
 
-inherit Container;
+inherit GTK.Container;
 
-MenuShell activate_item( GTK.Widget menu_item, int force_deactivate );
+GTK.MenuShell activate_item( GTK.Widget menu_item, int force_deactivate );
 //! Activates the menu item within the menu shell.
 //!
 //!
 
-MenuShell append( GTK.Widget what );
+GTK.MenuShell append( GTK.Widget what );
 //! Adds a new W(MenuItem) to the end of the menu shell's item
 //! list. Same as 'add'.
 //!
 //!
 
-array(object(implements 1003)) children( );
+array children( );
 //! This function returns all children of the menushell as an array.
 //!
 //!
 
-MenuShell deactivate( );
+GTK.MenuShell deactivate( );
 //! Deactivates the menu shell. Typically this results in the menu
 //! shell being erased from the screen.
 //!
@@ -63,18 +63,18 @@ int get_active( );
 //!
 //!
 
-MenuShell insert( GTK.Widget what, int where );
+GTK.MenuShell insert( GTK.Widget what, int where );
 //! Add a widget after the specified location
 //!
 //!
 
-MenuShell prepend( GTK.Widget what );
+GTK.MenuShell prepend( GTK.Widget what );
 //! Add a menu item to the start of the widget (for a menu: top, for a
 //! bar: left)
 //!
 //!
 
-MenuShell select_item( GTK.Widget menuitem );
+GTK.MenuShell select_item( GTK.Widget menuitem );
 //! Selects the menu item from the menu shell.
 //!
 //!

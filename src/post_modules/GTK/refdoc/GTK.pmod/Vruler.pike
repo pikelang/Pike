@@ -16,9 +16,9 @@
 //!
 //!
 
-inherit Ruler;
+inherit GTK.Ruler;
 
-static Vruler create( );
+static GTK.Vruler create( );
 //! Used to create a new vruler widget.
 //!
 //!

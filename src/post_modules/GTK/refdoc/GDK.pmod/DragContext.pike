@@ -6,54 +6,54 @@
 //!
 //!
 
-GdkDragContext drag_abort( int time );
+GDK.DragContext drag_abort( int time );
 //! Abort the drag
 //!
 //!
 
-GdkDragContext drag_drop( int time );
+GDK.DragContext drag_drop( int time );
 //!
 
-GdkDragContext drag_finish( int success, int del, int time );
+GDK.DragContext drag_finish( int success, int del, int time );
 //! If success is true, the drag succeded.
 //! If del is true, the source should be deleted.
 //! time is the current time.
 //!
 //!
 
-GdkDragContext drag_set_icon_default( );
+GDK.DragContext drag_set_icon_default( );
 //! Use the default drag icon associated with the source widget.
 //!
 //!
 
-GdkDragContext drag_set_icon_pixmap( GDK.Pixmap p, GDK.Bitmap b, int hot_x, int hot_y );
+GDK.DragContext drag_set_icon_pixmap( GDK.Pixmap p, GDK.Bitmap b, int hot_x, int hot_y );
 //! Set the drag pixmap, and optionally mask.
 //! The hot_x and hot_y coordinates will be the location of the mouse pointer,
 //! relative to the upper left corner of the pixmap.
 //!
 //!
 
-GdkDragContext drag_set_icon_widget( GTK.Widget widget, int hot_x, int hot_y );
+GDK.DragContext drag_set_icon_widget( GTK.Widget widget, int hot_x, int hot_y );
 //! Set the drag widget. This is a widget that will be shown, and then
 //! dragged around by the user during this drag.
 //!
 //!
 
-GdkDragContext drag_status( int action, int time );
+GDK.DragContext drag_status( int action, int time );
 //! Setting action to -1 means use the suggested action
 //!
 //!
 
-GdkDragContext drop_reply( int ok, int time );
+GDK.DragContext drop_reply( int ok, int time );
 //!
 
 int get_action( );
-//! One of @[GDK_ACTION_MOVE], @[GDK_ACTION_COPY], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
+//! One of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
 //!
 //!
 
 int get_actions( );
-//! A bitwise or of one or more of @[GDK_ACTION_MOVE], @[GDK_ACTION_COPY], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
+//! A bitwise or of one or more of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
 //!
 //!
 
@@ -78,6 +78,6 @@ int get_start_time( );
 //!
 
 int get_suggested_action( );
-//! One of @[GDK_ACTION_MOVE], @[GDK_ACTION_COPY], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
+//! One of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
 //!
 //!

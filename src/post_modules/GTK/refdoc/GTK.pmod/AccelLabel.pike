@@ -2,9 +2,9 @@
 //!
 //!
 
-inherit Label;
+inherit GTK.Label;
 
-static AccelLabel create( string text );
+static GTK.AccelLabel create( string text );
 //!
 
 int get_accel_width( );
@@ -13,5 +13,5 @@ int get_accel_width( );
 int refetch( );
 //!
 
-AccelLabel set_accel_widget( GTK.Widget accel_widget );
+GTK.AccelLabel set_accel_widget( GTK.Widget accel_widget );
 //!
