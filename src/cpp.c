@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.83 2001/02/08 23:53:29 grubba Exp $
+ * $Id: cpp.c,v 1.84 2001/05/14 03:20:39 hubbe Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -177,6 +177,7 @@ static struct define *alloc_empty_define(struct pike_string *name,
   def->num_parts=parts;
   def->first=0;
   def->link.s=name;
+  debug_malloc_touch(name);
   return def;
 }
 
