@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.67 2004/03/31 01:27:28 nilsson Exp $
+// $Id: Query.pike,v 1.68 2004/04/09 15:44:24 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -353,10 +353,14 @@ string headers_encode(mapping(string:array(string)|string) h)
 		 value, "\r\n" );
      else if(!value)
        continue;
-     else
+     else if (arrayp(value)) {
        foreach(value, string value)
 	 buf->add( String.capitalize(replace(name,"_","-")), ": ",
 		   value, "\r\n" );
+     } else {
+       werror("Protocols.HTTP.Query()->headers_encode(): Bad header: %O:%O.\n",
+	      name, value);
+     }
    return (string)buf;
 }
 
