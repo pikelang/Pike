@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.48 2001/02/19 23:50:02 grubba Exp $
+ * $Id: pike_types.h,v 1.49 2001/02/20 15:59:50 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -179,8 +179,9 @@ ptrdiff_t pop_stack_mark(void);
 void pop_type_stack(void);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
-void push_type_int(INT32 i);
-void push_type_int_backwards(INT32 i);
+void push_int_type(INT32 min, INT32 max);
+void push_object_type(int flag, INT32 id);
+void push_object_type_backwards(int flag, INT32 id);
 INT32 extract_type_int(char *p);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_type *type);
@@ -238,8 +239,8 @@ int pike_type_allow_premature_toss(char *type);
 #define dtMapping dtMap(dtMix,dtMix)
 #define dtSet(IND) {unsafe_push_type(PIKE_T_MULTISET); {IND}}
 #define dtMultiset dtSet(dtMix)
-#define dtObjImpl(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(0); push_type_int_backwards((PROGRAM)->id);}
-#define dtObjIs(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(1); push_type_int_backwards((PROGRAM)->id);}
+#define dtObjImpl(PROGRAM) {push_object_type_backwards(0, (PROGRAM)->id);}
+#define dtObjIs(PROGRAM) {push_object_type_backwards(1, (PROGRAM)->id);}
 #define dtObj dtStore(tObj)
 #define dtFuncV(ARGS,REST,RET) MagicdtFuncV(RET,REST,ARGS)
 #define dtFunc(ARGS,RET) MagicdtFunc(RET,ARGS)

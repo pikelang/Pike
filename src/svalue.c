@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.93 2001/01/24 22:37:52 marcus Exp $");
+RCSID("$Id: svalue.c,v 1.94 2001/02/20 15:59:51 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -785,9 +785,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
 	Pike_error("Bad argument to comparison.");
       }
       type_stack_mark();
-      push_type_int(aa.u.program->id);
-      push_type(0);
-      push_type(T_OBJECT);
+      push_object_type(0, aa.u.program->id);
       aa.u.string = pop_unfinished_type();
       aa.type = T_TYPE;
       res = is_lt(&aa, b);
@@ -803,9 +801,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
 	Pike_error("Bad argument to comparison.");
       }
       type_stack_mark();
-      push_type_int(bb.u.program->id);
-      push_type(0);
-      push_type(T_OBJECT);
+      push_object_type(0, bb.u.program->id);
       bb.u.string = pop_unfinished_type();
       bb.type = T_TYPE;
       res = is_lt(a, &bb);

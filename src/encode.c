@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.81 2001/02/01 15:54:08 grubba Exp $");
+RCSID("$Id: encode.c,v 1.82 2001/02/20 15:59:49 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1011,7 +1011,6 @@ static void low_decode_type(struct decode_data *data)
 
 one_more_type:
   tmp = GETC();
-  push_type(tmp);
   switch(tmp)
   {
     default:
@@ -1020,10 +1019,12 @@ one_more_type:
       break;
 
     case T_ASSIGN:
+      push_type(tmp);
       push_type(GETC());
       goto one_more_type;
 
     case T_FUNCTION:
+      push_type(tmp);
       while(GETC()!=T_MANY)
       {
 	data->ptr--;
@@ -1034,6 +1035,7 @@ one_more_type:
     case T_MAPPING:
     case T_OR:
     case T_AND:
+      push_type(tmp);
       low_decode_type(data);
 
     case T_ARRAY:
@@ -1044,6 +1046,7 @@ one_more_type:
     case T_INT:
       {
 	int i;
+	push_type(tmp);
 	/* FIXME: I assume the type is saved in network byte order. Is it?
 	 *	/grubba 1999-03-07
 	 */
@@ -1071,23 +1074,23 @@ one_more_type:
     case T_ZERO:
     case T_VOID:
     case PIKE_T_UNKNOWN:
+      push_type(tmp);
       break;
 
     case T_OBJECT:
     {
       INT32 x;
+      int flag = GETC();
 
-      push_type(GETC());
       decode_value2(data);
-      type_stack_mark();
       switch(Pike_sp[-1].type)
       {
 	case T_INT:
-	  push_type_int(0);
+	  push_object_type_backwards(flag, 0);
 	  break;
 
 	case T_PROGRAM:
-	  push_type_int(Pike_sp[-1].u.program->id);
+	  push_object_type_backwards(flag, Pike_sp[-1].u.program->id);
 	  break;
 
         case T_FUNCTION:
@@ -1100,7 +1103,7 @@ one_more_type:
 	    if (!prog) {
 	      Pike_error("Failed to decode object type.\n");
 	    }
-	    push_type_int(prog->id);
+	    push_object_type_backwards(flag, prog->id);
 	  }
 	  break;
 
@@ -1110,7 +1113,6 @@ one_more_type:
 		get_name_of_type(Pike_sp[-1].type));
       }
       pop_stack();
-      type_stack_reverse();
     }
   }
 

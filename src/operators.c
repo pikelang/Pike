@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.124 2001/02/20 13:02:12 grubba Exp $");
+RCSID("$Id: operators.c,v 1.125 2001/02/20 15:59:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1091,9 +1091,7 @@ PMOD_EXPORT void o_and(void)
 	      SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
 	   }
 	   type_stack_mark();
-	   push_type_int(p->id);
-	   push_type(0);
-	   push_type(T_OBJECT);
+	   push_object_type(0, p->id);
 	   free_svalue(sp - 2);
 	   sp[-2].u.string = pop_unfinished_type();
 	   sp[-2].type = T_TYPE;
@@ -1107,9 +1105,7 @@ PMOD_EXPORT void o_and(void)
 	      SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
 	   }
 	   type_stack_mark();
-	   push_type_int(p->id);
-	   push_type(0);
-	   push_type(T_OBJECT);
+	   push_object_type(0, p->id);
 	   free_svalue(sp - 1);
 	   sp[-1].u.string = pop_unfinished_type();
 	   sp[-1].type = T_TYPE;
@@ -1210,9 +1206,7 @@ PMOD_EXPORT void o_and(void)
       SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
     }    
     type_stack_mark();
-    push_type_int(p->id);
-    push_type(0);
-    push_type(T_OBJECT);
+    push_object_type(0, p->id);
     a = pop_unfinished_type();
 
     p = program_from_svalue(sp - 1);
@@ -1221,9 +1215,7 @@ PMOD_EXPORT void o_and(void)
       SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
     }    
     type_stack_mark();
-    push_type_int(p->id);
-    push_type(0);
-    push_type(T_OBJECT);
+    push_object_type(0, p->id);
     b = pop_unfinished_type();
 
     t = and_pike_types(a, b);
@@ -1438,9 +1430,7 @@ PMOD_EXPORT void o_or(void)
 	  SIMPLE_BAD_ARG_ERROR("`|", 1, "type");
 	}
 	type_stack_mark();
-	push_type_int(p->id);
-	push_type(0);
-	push_type(T_OBJECT);
+	push_object_type(0, p->id);
 	free_svalue(sp - 2);
 	sp[-2].u.string = pop_unfinished_type();
 	sp[-2].type = T_TYPE;
@@ -1452,9 +1442,7 @@ PMOD_EXPORT void o_or(void)
 	  SIMPLE_BAD_ARG_ERROR("`|", 2, "type");
 	}
 	type_stack_mark();
-	push_type_int(p->id);
-	push_type(0);
-	push_type(T_OBJECT);
+	push_object_type(0, p->id);
 	free_svalue(sp - 1);
 	sp[-1].u.string = pop_unfinished_type();
 	sp[-1].type = T_TYPE;
@@ -1527,9 +1515,7 @@ PMOD_EXPORT void o_or(void)
       SIMPLE_BAD_ARG_ERROR("`|", 1, "type");
     }
     type_stack_mark();
-    push_type_int(p->id);
-    push_type(0);
-    push_type(T_OBJECT);
+    push_object_type(0, p->id);
     a = pop_unfinished_type();
 
     p = program_from_svalue(sp - 1);
@@ -1538,9 +1524,7 @@ PMOD_EXPORT void o_or(void)
       SIMPLE_BAD_ARG_ERROR("`|", 2, "type");
     }
     type_stack_mark();
-    push_type_int(p->id);
-    push_type(0);
-    push_type(T_OBJECT);
+    push_object_type(0, p->id);
     b = pop_unfinished_type();
 
     t = or_pike_types(a, b, 0);
@@ -1656,9 +1640,7 @@ PMOD_EXPORT void o_xor(void)
 	  SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
 	}
 	type_stack_mark();
-	push_type_int(p->id);
-	push_type(0);
-	push_type(T_OBJECT);
+	push_object_type(0, p->id);
 	free_svalue(sp - 2);
 	sp[-2].u.string = pop_unfinished_type();
 	sp[-2].type = T_TYPE;
@@ -1670,9 +1652,7 @@ PMOD_EXPORT void o_xor(void)
 	  SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
 	}
 	type_stack_mark();
-	push_type_int(p->id);
-	push_type(0);
-	push_type(T_OBJECT);
+	push_object_type(0, p->id);
 	free_svalue(sp - 1);
 	sp[-1].u.string = pop_unfinished_type();
 	sp[-1].type = T_TYPE;
@@ -1732,9 +1712,7 @@ PMOD_EXPORT void o_xor(void)
       SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
     }
     type_stack_mark();
-    push_type_int(p->id);
-    push_type(0);
-    push_type(T_OBJECT);
+    push_object_type(0, p->id);
     pop_stack();
     push_string(pop_unfinished_type());
     sp[-1].type = T_TYPE;
@@ -1748,9 +1726,7 @@ PMOD_EXPORT void o_xor(void)
       SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
     }
     type_stack_mark();
-    push_type_int(p->id);
-    push_type(0);
-    push_type(T_OBJECT);
+    push_object_type(0, p->id);
     pop_stack();
     push_string(pop_unfinished_type());
     sp[-1].type = T_TYPE;
@@ -2872,9 +2848,7 @@ PMOD_EXPORT void o_compl(void)
 	PIKE_ERROR("`~", "Bad argument.\n", sp, 1);
       }
       type_stack_mark();
-      push_type_int(p->id);
-      push_type(0);
-      push_type(T_OBJECT);
+      push_object_type(0, p->id);
       push_type(T_NOT);
       pop_stack();
       push_string(pop_unfinished_type());

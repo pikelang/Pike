@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.224 2001/02/19 23:50:00 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.225 2001/02/20 15:59:49 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1168,13 +1168,7 @@ identifier_type: idents
 	break;
       }
 
-      if(p) {
-	push_type_int(p->id);
-      }else{
-	push_type_int(0);
-      }
-      push_type(0);
-      push_type(T_OBJECT);
+      push_object_type(0, p?(p->id):0);
     }
     pop_stack();
     free_node($1);
@@ -1189,13 +1183,13 @@ type2: type2 '|' type3 { push_type(T_OR); }
   | type3 
   ;
 
-type3: TOK_INT_ID  opt_int_range    { push_type(T_INT); }
+type3: TOK_INT_ID  opt_int_range    {}
   | TOK_FLOAT_ID    { push_type(T_FLOAT); }
   | TOK_PROGRAM_ID  { push_type(T_PROGRAM); }
   | TOK_VOID_ID     { push_type(T_VOID); }
   | TOK_MIXED_ID    { push_type(T_MIXED); }
   | TOK_STRING_ID { push_type(T_STRING); }
-  | TOK_OBJECT_ID   opt_object_type { push_type(T_OBJECT); }
+  | TOK_OBJECT_ID   opt_object_type {}
   | TOK_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
   | TOK_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
@@ -1247,32 +1241,32 @@ expected_dot_dot: TOK_DOT_DOT
 
 opt_int_range: /* Empty */
   {
-    push_type_int(MAX_INT32);
-    push_type_int(MIN_INT32);
+    push_int_type(MIN_INT32, MAX_INT32);
   }
   | '(' number_or_minint expected_dot_dot number_or_maxint ')'
   {
+    INT32 min = MIN_INT32;
+    INT32 max = MAX_INT32;
+
     /* FIXME: Check that $4 is >= $2. */
     if($4->token == F_CONSTANT && $4->u.sval.type == T_INT)
     {
-      push_type_int($4->u.sval.u.integer);
-    }else{
-      push_type_int(MAX_INT32);
+      max = $4->u.sval.u.integer;
     }
 
     if($2->token == F_CONSTANT && $2->u.sval.type == T_INT)
     {
-      push_type_int($2->u.sval.u.integer);
-    }else{
-      push_type_int(MIN_INT32);
+      min = $2->u.sval.u.integer;
     }
+
+    push_int_type(min, max);
 
     free_node($2);
     free_node($4);
   }
   ;
 
-opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
+opt_object_type:  /* Empty */ { push_object_type(0, 0); }
   | '(' program_ref ')'
   {
     /* NOTE: On entry, there are two items on the stack:
@@ -1280,10 +1274,8 @@ opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
      *   Pike_sp-1:	The resolved program (program|function|zero).
      */
     struct program *p=program_from_svalue(Pike_sp-1);
-    if(p)
-    {
-      push_type_int(p->id);
-    }else{
+
+    if(!p) {
       if (Pike_compiler->compiler_pass!=1) {
 	if ((Pike_sp[-2].type == T_STRING) && (Pike_sp[-2].u.string->len > 0) &&
 	    (Pike_sp[-2].u.string->len < 256)) {
@@ -1293,10 +1285,9 @@ opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
 	  yyerror("Not a valid program specifier.");
 	}
       }
-      push_type_int(0);
     }
+    push_object_type(0, p?(p->id):0);
     pop_n_elems(2);
-    push_type(0);
   }
   ;
 
