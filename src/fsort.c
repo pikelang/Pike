@@ -9,14 +9,11 @@
 #include "global.h"
 #include "fsort.h"
 
-RCSID("$Id: fsort.c,v 1.9 1998/03/28 15:29:54 grubba Exp $");
+RCSID("$Id: fsort.c,v 1.10 1998/04/27 22:33:17 hubbe Exp $");
 
-static fsortfun cmpfun;
-static long size;
-static char *tmp_area;
-
-#define SWAP(X,Y) { tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
-#define STEP(X,Y) (&((X)[(Y)]))
+#define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
+#define EXTRA_ARGS ,fsortfun cmpfun
+#define XARGS ,cmpfun
 
 #define ID fsort_1
 #define TYPE B1_T
@@ -58,9 +55,12 @@ static char *tmp_area;
 #undef TYPE
 #endif
 
-#undef SWAP
-#undef STEP
 
+#undef EXTRA_ARGS
+#undef XARGS
+
+#define EXTRA_ARGS ,fsortfun cmpfun,long size, char *tmp_area
+#define XARGS ,cmpfun,size,tmp_area
 
 #define SWAP(X,Y) do { \
     MEMCPY(tmp_area,X,size); \
@@ -71,11 +71,12 @@ static char *tmp_area;
 #define STEP(X,Y) ((X)+(Y)*size)
 #define TYPE char
 #define ID fsort_n
+#define TMP_AREA
 #include "fsort_template.h"
 #undef ID
 #undef TYPE
-#undef SWAP
-#undef STEP
+#undef EXTRA_ARGS
+#undef XARGS
 
 void fsort(void *base,
 	   long elms,
@@ -84,8 +85,6 @@ void fsort(void *base,
 {
 
   if(elms<=0) return;
-  cmpfun=cmpfunc;
-  size=elmSize;
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(elmSize)
@@ -93,22 +92,21 @@ void fsort(void *base,
   switch( (((unsigned long)base) % elmSize) ? 0 : size )
 #endif
   {
-  case  1:  fsort_1(( B1_T *)base,(elms-1)+( B1_T *)base); break;
+  case  1:  fsort_1(( B1_T *)base,(elms-1)+( B1_T *)base, cmpfunc); break;
 #ifdef B2_T
-  case  2:  fsort_2(( B2_T *)base,(elms-1)+( B2_T *)base); break;
+  case  2:  fsort_2(( B2_T *)base,(elms-1)+( B2_T *)base, cmpfunc); break;
 #endif
 #ifdef B4_T
-  case  4:  fsort_4(( B4_T *)base,(elms-1)+( B4_T *)base); break;
+  case  4:  fsort_4(( B4_T *)base,(elms-1)+( B4_T *)base, cmpfunc); break;
 #endif
 #ifdef B8_T
-  case  8:  fsort_8(( B8_T *)base,(elms-1)+( B8_T *)base); break;
+  case  8:  fsort_8(( B8_T *)base,(elms-1)+( B8_T *)base, cmpfunc); break;
 #endif
 #ifdef B16_T
-  case 16: fsort_16((B16_T *)base,(elms-1)+(B16_T *)base); break;
+  case 16: fsort_16((B16_T *)base,(elms-1)+(B16_T *)base, cmpfunc); break;
 #endif
   default:
-    tmp_area=(char *)alloca(elmSize);
-    fsort_n((char *)base,((char *)base) + size * (elms - 1));
+    fsort_n((char *)base,((char *)base) + elmSize * (elms - 1), cmpfunc, elmSize, (char *)alloca(elmSize));
   }
 
 }

@@ -1,19 +1,37 @@
 /*
- * $Id: fsort_template.h,v 1.3 1998/03/28 15:16:12 grubba Exp $
+ * $Id: fsort_template.h,v 1.4 1998/04/27 22:33:17 hubbe Exp $
  */
+
+#ifndef SWAP
+#define UNDEF_SWAP
+#define SWAP(X,Y) { tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
+#endif
+
+#ifndef STEP
+#define UNDEF_STEP
+#define STEP(X,Y) (&((X)[(Y)]))
+#endif
 
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
 #define SIZE ((long)(char *)STEP((TYPE *)0,1))
 
-static void ID(register TYPE *bas, register TYPE *last)
+static void ID(register TYPE *bas,
+	       register TYPE *last
+#ifdef EXTRA_ARGS
+	       EXTRA_ARGS
+#else
+#define UNDEF_XARGS
+#define XARGS
+#endif
+  )
 {
   register TYPE *a,*b, tmp;
   if(bas >= last) return;
   a = STEP(bas,1);
   if(a == last)
   {
-    if( (*cmpfun)((void *)bas,(void *)last) > 0) SWAP(bas,last); 
+    if( CMP(bas,last) > 0) SWAP(bas,last); 
   }else{
     b=STEP(bas,((((char *)last)-((char *)bas))/SIZE)>>1);
     SWAP(bas,b);
@@ -25,18 +43,18 @@ static void ID(register TYPE *bas, register TYPE *last)
       {
 	while(1)
 	{
-	  if(a<=b && (*cmpfun)((void *)a,(void *)bas) <= 0)
+	  if(a<=b && CMP(a,bas) <= 0)
 	    INC(a);
 	  else
 	  {
-	    while(a< b && (*cmpfun)((void *)bas,(void *)b) <= 0) DEC(b);
+	    while(a< b && CMP(bas,b) <= 0) DEC(b);
 	    break;
 	  }
-	  if(a< b && (*cmpfun)((void *)bas,(void *)b) <= 0)
+	  if(a< b && CMP(bas,b) <= 0)
 	    DEC(b);
 	  else
 	  {
-	    while(a<=b && (*cmpfun)((void *)a,(void *)bas) <= 0) INC(a);
+	    while(a<=b && CMP(a,bas) <= 0) INC(a);
 	    break;
 	  }
 	}
@@ -49,8 +67,8 @@ static void ID(register TYPE *bas, register TYPE *last)
 	}
       }
 #else
-      while(a<=b && (*cmpfun)((void *)a,(void *)bas) < 0) INC(a);
-      while(a< b && (*cmpfun)((void *)bas,(void *)b) < 0) DEC(b);
+      while(a<=b && CMP(a,bas) < 0) INC(a);
+      while(a< b && CMP(bas,b) < 0) DEC(b);
       if(a<b)
       {
         SWAP(a,b);
@@ -62,11 +80,25 @@ static void ID(register TYPE *bas, register TYPE *last)
     DEC(a);
     SWAP(a,bas);
     DEC(a);
-    ID(bas,a);
-    ID(b,last);
+    ID(bas,a XARGS);
+    ID(b,last XARGS);
   }
 }
 
 #undef INC
 #undef DEC
-#undef SIZE
+
+#ifdef UNDEF_XARGS
+#undef XARGS
+#undef UNDEF_XARGS
+#endif
+
+#ifdef UNDEF_SWAP
+#undef SWAP
+#undef UNDEF_SWAP
+#endif
+
+#ifdef UNDEF_STEP
+#undef STEP
+#undef UNDEF_STEP
+#endif

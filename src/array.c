@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.34 1998/04/23 23:58:52 hubbe Exp $");
+RCSID("$Id: array.c,v 1.35 1998/04/27 22:33:17 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -554,33 +554,43 @@ INT32 array_find_destructed_object(struct array *v)
   return -1;
 }
 
-static struct svalue *current_array_p;
-static cmpfun current_cmpfun;
-
-static int internal_cmpfun(INT32 *a,INT32 *b)
+static int internal_cmpfun(INT32 *a,
+			   INT32 *b,
+			   cmpfun current_cmpfun,
+			   struct svalue *current_array_p)
 {
   return current_cmpfun(current_array_p + *a, current_array_p + *b);
 }
 
+#define CMP(X,Y) internal_cmpfun((X),(Y),current_cmpfun, current_array_p)
+#define TYPE INT32
+#define ID get_order_fsort
+#define EXTRA_ARGS ,cmpfun current_cmpfun, struct svalue *current_array_p
+#define XARGS ,current_cmpfun, current_array_p
+#include "fsort_template.h"
+#undef CMP
+#undef TYPE
+#undef ID
+#undef EXTRA_ARGS
+#undef XARGS
+
 INT32 *get_order(struct array *v, cmpfun fun)
 {
   INT32 e, *current_order;
+  ONERROR tmp;
 
   if(!v->size) return 0;
 
-  current_cmpfun = fun;
   current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
+  SET_ONERROR(tmp, free, current_order);
   for(e=0; e<v->size; e++) current_order[e]=e;
 
-  if(current_array_p) free((char *)current_array_p);
-  current_array_p = ITEM(v);
-  current_cmpfun = fun;
-  fsort((char *)current_order,
-	v->size,
-	sizeof(INT32),
-	(fsortfun)internal_cmpfun);
+  get_order_fsort(current_order,
+		  current_order+v->size-1,
+		  fun,
+		  ITEM(v));
 
-  current_array_p=0;
+  UNSET_ONERROR(tmp);
   return current_order;
 }
 
@@ -673,13 +683,19 @@ static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
   return is_gt(a,b);
 }
 
+#define CMP(X,Y) alpha_svalue_cmpfun(X,Y)
+#define TYPE struct svalue
+#define ID low_sort_svalues
+#include "fsort_template.h"
+#undef CMP
+#undef TYPE
+#undef ID
+
+
 void sort_array_destructively(struct array *v)
 {
   if(!v->size) return;
-  fsort((char *)ITEM(v),
-	v->size,
-	sizeof(struct svalue),
-	(fsortfun)alpha_svalue_cmpfun);
+  low_sort_svalues(ITEM(v), ITEM(v)+v->size-1);
 }
 
 
