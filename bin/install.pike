@@ -18,8 +18,25 @@ void fail(string fmt, mixed ... args)
   exit(1);
 }
 
-string status(string doing, string file, string|void msg)
+int istty_cache;
+int istty()
 {
+#ifdef __NT__
+  return 1;
+#else
+  if(!istty_cache)
+  {
+    istty_cache=!!Stdio.stdin->tcgetattr();
+    if(!istty_cache) istty_cache=-1;
+  }
+  return istty_cache;
+#endif
+}
+
+void status(string doing, string file, string|void msg)
+{
+  if(!istty()) return;
+
   file=replace(file,"\n","\\n");
   if(strlen(file)>50)
     file="..."+file[strlen(file)-48..];
