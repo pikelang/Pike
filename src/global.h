@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.71 2002/08/13 17:29:26 grubba Exp $
+ * $Id: global.h,v 1.72 2002/08/14 15:28:27 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -52,9 +52,6 @@
 #endif
 
 /* Get more declarations from AIX libc. */
-#ifndef _ANSI_C_SOURCE
-#define _ANSI_C_SOURCE
-#endif
 #ifndef _ALL_SOURCE
 #define _ALL_SOURCE
 #endif
