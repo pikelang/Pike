@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: callback.h,v 1.12 2000/12/19 00:42:02 hubbe Exp $
+ * $Id: callback.h,v 1.13 2001/08/30 22:35:21 hubbe Exp $
  */
 #ifndef CALLBACK_H
 #define CALLBACK_H
@@ -28,7 +28,7 @@ typedef void (*callback_func)(struct callback *, void *,void *);
 /* Prototypes begin here */
 struct callback;
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
-PMOD_EXPORT void call_callback(struct callback_list *lst, void *arg);
+PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg);
 PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 						   callback_func call,
 						   void *arg,
@@ -40,5 +40,11 @@ void cleanup_callbacks(void);
 
 #define add_to_callback(LST,CALL,ARG,FF) \
   dmalloc_touch(struct callback *,debug_add_to_callback((LST),(CALL),(ARG),(FF)))
+
+#define call_callback(LST, ARG) do {			\
+  struct callback_list *lst_=(LST);			\
+  void *arg_=(ARG);					\
+  if(lst_->callbacks) low_call_callback(lst_, arg_);	\
+}while(0)
 
 #endif

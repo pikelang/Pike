@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.21 2000/12/01 08:09:44 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.22 2001/08/30 22:35:21 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -126,7 +126,7 @@ static void check_callback_chain(struct callback_list *lst)
 /* Traverse a linked list of callbacks and call all the active callbacks
  * in the list. Deactivated callbacks are freed and placed in the free list.
  */
-PMOD_EXPORT void call_callback(struct callback_list *lst, void *arg)
+PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
 {
   int this_call;
   struct callback *l,**ptr;

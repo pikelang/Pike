@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.99 2001/08/19 03:30:10 hubbe Exp $
+ * $Id: interpret.h,v 1.100 2001/08/30 22:35:22 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -413,7 +413,6 @@ PMOD_EXPORT extern int d_flag; /* really in main.c */
 PMOD_EXPORT extern int Pike_stack_size;
 PMOD_EXPORT struct callback;
 PMOD_EXPORT extern struct callback_list evaluator_callbacks;
-PMOD_EXPORT extern void call_callback(struct callback_list *, void *);
 
 /* Things to try:
  * we could reduce thread swapping to a pointer operation if
