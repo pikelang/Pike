@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.60 2002/02/14 01:43:57 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.61 2002/04/01 13:26:46 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -107,10 +107,13 @@ static void do_close(struct port *p, struct object *o)
   }
 }
 
-/*! @decl mixed set_id(mixed arg1)
+/*! @decl mixed set_id(mixed id)
  *!
- *! @fixme
- *!   Document this function.
+ *! This function sets the id used for accept_callback by this port.
+ *! The default id is @[this_object()].
+ *!
+ *! @seealso
+ *!   @[query_id]
  */
 static void port_set_id(INT32 args)
 {
@@ -123,8 +126,11 @@ static void port_set_id(INT32 args)
 
 /*! @decl mixed query_id()
  *!
- *! @fixme
- *!   Document this function.
+ *! This function returns the id for this port. The id is normally the
+ *! first argument to accept_callback.
+ *!
+ *! @seealso
+ *!   @[set_id]
  */
 static void port_query_id(INT32 args)
 {
@@ -134,14 +140,16 @@ static void port_query_id(INT32 args)
 
 /*! @decl int errno()
  *!
- *! @fixme
- *!   Doxument this function.
+ *! If the last call done on this port failed, errno will return an
+ *! integer describing what went wrong. Refer to your unix manual for
+ *! further information.
  */
 static void port_errno(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->my_errno);
 }
+
 
 static void port_accept_callback(int fd,void *data)
 {
@@ -160,10 +168,18 @@ static void port_accept_callback(int fd,void *data)
   return;
 }
 
-/*! @decl int listen_fd(int arg1, void|mixed arg2)
+/*! @decl int listen_fd(int fd, void|function accept_callback)
  *!
- *! @fixme
- *!   Document this function.
+ *! This function does the same as port->bind, except that instead
+ *! of creating a new socket and bind it to a port, it expects that
+ *! the filedescriptor 'fd' is an already open port.
+ *!
+ *! @note
+ *!  This function is only for the advanced user, and is generally used
+ *!  when sockets are passed to Pike at exec time.
+ *!
+ *! @seealso
+ *!   @[bind], @[accept]
  */
 static void port_listen_fd(INT32 args)
 {
@@ -212,10 +228,19 @@ static void port_listen_fd(INT32 args)
   push_int(1);
 }
 
-/*! @decl int bind(int arg1, void|mixed arg2, void|string arg3)
+/*! @decl int bind(int port, void|function accept_callback, void|string ip)
  *!
- *! @fixme
- *!   Document this function.
+ *! Bind opens a sockets and binds it to port number on the local machine.
+ *! If the second argument is present, the socket is set to nonblocking
+ *! and the callback funcition is called whenever something connects to
+ *! the socket. The callback will receive the id for this port as argument.
+ *! Bind returns 1 on success, and zero on failiure.
+ *! 
+ *! If the optional argument 'ip' is given, bind will try to bind to
+ *! this ip name or number.
+ *!
+ *! @seealso
+ *!   @[accept]
  */
 static void port_bind(INT32 args)
 {
@@ -299,6 +324,14 @@ static void port_bind(INT32 args)
   push_int(1);
 }
 
+/* @decl void create("stdin", void|function accept_callback)
+ * @decl void create(int port, void|function accept_callback, void|string ip)
+ *
+ * When create is called with 'stdin' as argument, a socket is created
+ * out of the file descriptor 0. This is only useful if that actually
+ * IS a socket to begin with. When create is called with an int as first
+ * argument, it does the same as bind() would do with the same arguments.
+ */
 static void port_create(INT32 args)
 {
   if(args)

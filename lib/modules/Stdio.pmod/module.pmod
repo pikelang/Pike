@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.142 2002/03/25 15:32:50 mast Exp $
+// $Id: module.pmod,v 1.143 2002/04/01 13:25:26 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1075,7 +1075,9 @@ class File
   }
 }
 
-//! Socket port
+//! Handles listening to socket ports. Whenever you need a bound
+//! socket that is open and listens for connections you should
+//! use this program.
 class Port
 {
   inherit _port;
