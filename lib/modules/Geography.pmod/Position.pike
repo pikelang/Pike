@@ -93,14 +93,14 @@ string prettyprint(float what,int n,string directions)
    {
       case -1: return sprintf("%.5g",what);
       case 1:
-	 return sprintf("%.5g°%s",what,directions);
+	 return sprintf("%.3f°%s",what,directions);
       case 3:
-	 return sprintf("%d°%d'%.3g\"%s",
+	 return sprintf("%d°%d'%.1f\"%s",
 			(int)floor(what),(int)floor(60*(what-floor(what))),
 			3600*(what-floor(60*what)/60),
 			directions);
       default:
-	 return sprintf("%d°%.5g'%s",
+	 return sprintf("%d°%.3f'%s",
 			(int)floor(what),60*(what-floor(what)),
 			directions);
    }
