@@ -118,11 +118,12 @@ if test "x$with_java" = xyes; then
 
   AC_MSG_CHECKING(for JAVA_HOME)
 
-  changequote({,})AC_CACHE_VAL(pike_cv_java_java_home, {
+  AC_CACHE_VAL(pike_cv_java_java_home, [
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
-
+]changequote({,}){
       java_home_guess="`java -verbose fnord.fnord.fnord 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e 's:^\[[^]/]*\(/.*\)/[^/]*\.zip[] ].*$:\1:' -e t -e d | sed -e 's:^.* from /:/:' -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
+}changequote([,])[
       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
           if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
@@ -149,7 +150,7 @@ if test "x$with_java" = xyes; then
         pike_cv_java_java_home="$JAVA_HOME"
       fi
     fi
-  })changequote([,])
+  ])
   AC_MSG_RESULT($pike_cv_java_java_home)
 
   AC_MSG_CHECKING(for Java libraries)
