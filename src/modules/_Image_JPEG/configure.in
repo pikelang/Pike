@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.9 2002/10/04 15:07:59 grubba Exp $
+# $Id: configure.in,v 1.10 2002/10/04 15:18:01 marcus Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -35,9 +35,7 @@ int main(int argc, char **argv)
       else
         AC_MSG_RESULT(no)
       fi
-      AC_CHECK_LIB(jpeg, jcopy_sample_rows)
-      AC_CHECK_LIB(jpeg, jcopy_block_row)
-      AC_CHECK_LIB(jpeg, jzero_far)
+      AC_CHECK_FUNCS(jcopy_sample_rows jcopy_block_row jzero_far)
     ])
   fi
 fi
