@@ -1,3 +1,4 @@
+START_MARKER
 dnl add_include_path
 dnl add_module_path
 dnl add_program_path
@@ -44,3 +45,5 @@ test_true( Process.system(RUNPIKE + " -e \"return 1;\"") )
 test_true( Process.system(RUNPIKE + " -e \"return NOT(0);\"") )
 test_true( Process.system(RUNPIKE + " -e \"return CHAR(A)==65;\"") )
 test_eq( Process.popen(RUNPIKE + " -e \"return (string)7;\""), "7\n" )
+
+END_MARKER
