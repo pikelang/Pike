@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.38 2003/04/12 22:52:26 grendel Exp $
+# $Id: configure.in,v 1.39 2003/04/13 02:49:39 grendel Exp $
 #
 # Configure script for the mysql-module
 #
@@ -365,7 +365,7 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
 
   fi
-fi
+ fi
 else
   AC_DEFINE(HAVE_MYSQL)
   # MySQL 4.x or newer
