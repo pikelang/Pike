@@ -194,7 +194,7 @@ void f_get_dir(INT32 args)
       int e;
       int num_files=0;
       char *bufptr=buffer;
-      int err;
+      int err = 0;
 
       THREADS_ALLOW();
 
