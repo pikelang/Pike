@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.29 2004/11/28 19:38:34 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.30 2004/12/03 13:47:49 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1516,6 +1516,7 @@ PIKECLASS Group
   INHERIT Token;
 
   static int group_token_inherited_create;
+  static int group_token_inherited__sprintf;
 
   CVAR struct object *contents;		/* ADT.List of tokens. */
   CVAR struct object *end_token;	/* Token */
@@ -1561,10 +1562,13 @@ PIKECLASS Group
   {
     simple_add_constant("token", MK_STRING_SVALUE("group"), 0);
     add_integer_constant("is_group", 1, 0);
-    /* We want to access the inherited create(). */
+    /* We want to access the inherited create() and _sprintf(). */
     group_token_inherited_create =
       really_low_reference_inherited_identifier(NULL, 1,
 						f_Token_create_fun_num);
+    group_token_inherited__sprintf =
+      really_low_reference_inherited_identifier(NULL, 1,
+						f_Token_cq__sprintf_fun_num);
   }
 
   PIKEFUN void set_end_token(object(Token) token)
@@ -1708,17 +1712,23 @@ PIKECLASS Group
 	cnt++;
       }
     }
-    /* FIXME: Start/End token? */
     push_constant_text("*/\n");
+    push_int(c);
+    apply_current(group_token_inherited__sprintf, 1);
     if (c == 'O') {
-      push_constant_text("%O");
+      push_constant_text(", %O, %O");
     } else {
-      push_constant_text("%s");
+      push_constant_text(", %s, %s");
     }
     ref_push_object(THIS->contents);
-    f_sprintf(2);
+    if (THIS->end_token) {
+      ref_push_object(THIS->end_token);
+    } else {
+      push_int(0);
+    }
+    f_sprintf(3);
     push_constant_text(")");
-    f_add(cnt+4);
+    f_add(cnt+5);
     stack_pop_n_elems_keep_top(args);
   }
 }
