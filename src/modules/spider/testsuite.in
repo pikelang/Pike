@@ -63,6 +63,9 @@ test_eq([[parse_html("f<bar>o", ([ "bar":lambda(){return "o";} ]), ([]))]], "foo
 test_eq([[parse_html("f<bar>o", ([ "bar":lambda(){return 0;} ]), ([]))]], "f<bar>o")
 test_eq([[parse_html("f<\nbar\rt\"a b\"=\no>o", ([ "bar":lambda(string s, mapping(string:string) attr){return attr["ta b"];} ]), ([]))]], "foo")
 test_eq([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":lambda(){return "o";}]))]], "foo")
+test_eq([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":lambda(){return ({"o"});}]))]], "foo")
+test_eq([[parse_html("f<bar rab>g</bar>o", ([]), ([ "bar":lambda(){return "o";}]))]], "foo")
+test_eq([[parse_html("f<bar rab>g</bar>o", ([]), ([ "bar":lambda(){return ({"o"});}]))]], "foo")
 test_eq([[parse_html("f<\nbar\rt\"a b\"=\no>g<\n/bar\r>o", ([]), ([ "bar":lambda(string s, mapping(string:string) attr, string g){return g=="g"?attr["ta b"]:"-";}]))]], "foo")
 test_eq([[parse_html("f<bar><foo>o</foo>o", (["bar":lambda(string s, mapping(string:string) attr) { return ""; }]), ([]))]], "f<foo>o</foo>o")
 dnl real_perror
