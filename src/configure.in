@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.202 1998/06/08 12:48:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.203 1998/06/10 13:29:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -797,7 +797,7 @@ int main()
 
       xFreeBSD*)
         case `uname -r` in
-          [3-9].*)
+          [[3-9]].*)
 	    # Threads on FreeBSD 3.0 earlier than 1998-06-07 are broken.
             LIBS="${OLDLIBS} -pthread"
           ;;
