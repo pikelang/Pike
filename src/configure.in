@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.203 1998/06/10 13:29:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.204 1998/06/10 19:22:11 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2014,6 +2014,10 @@ else
 fi
 
 ########################################################################
+# 
+# IRIX also has procfs support, but it it different, a separate test
+# should be made. /Hubbe
+#
 
 if test "$ac_cv_header_sys_procfs_h" = "yes"; then
   AC_MSG_CHECKING(getrusage() through procfs)
@@ -2027,6 +2031,7 @@ if test "$ac_cv_header_sys_procfs_h" = "yes"; then
 #include <sys/procfs.h>
 #include <sys/fcntl.h>
 int proc_fd;
+long tmp;
 char proc_name[20];
 prusage_t  pru;
 prstatus_t prs;
@@ -2035,6 +2040,7 @@ prstatus_t prs;
       proc_fd = open(proc_name, O_RDONLY);
       ioctl(proc_fd, PIOCUSAGE, &pru);
       ioctl(proc_fd, PIOCSTATUS, &prs);
+      tmp=pru.pr_utime.tv_sec;
     ],
       pike_cv_getrusage_procfs=yes
     ,
