@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.447 2001/08/02 22:24:11 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.448 2001/08/09 18:53:04 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6556,6 +6556,21 @@ test_true(get_weak_flag(copy_value(set_weak_flag(({17}), 1))))
 test_true(get_weak_flag(copy_value(set_weak_flag((<17>), 1))))
 test_true(get_weak_flag(copy_value(set_weak_flag(([17:17]), 1))))
 test_true(get_weak_flag(copy_value(set_weak_flag(([17:({17})]), 1))))
+test_any([[
+  array x = ({0});
+  x[0] = x;
+  return equal (copy_value (x), x);
+]], 1)
+test_any([[
+  mapping x = ([]);
+  x[x] = x;
+  return equal (copy_value (x), x);
+]], 1)
+test_any([[
+  multiset x = (<>);
+  x[x] = 1;
+  return equal (copy_value (x), x);
+]], 1)
 
 // - crypt
 test_true(stringp(crypt("hej")))
