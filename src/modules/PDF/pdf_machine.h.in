@@ -1,6 +1,6 @@
 /* pdf_machine.h.in.  Generated automatically from configure.in by autoheader.  */
 /*
- * $Id: pdf_machine.h.in,v 1.1 2001/01/13 18:35:18 mirar Exp $
+ * $Id: pdf_machine.h.in,v 1.2 2001/01/13 22:55:29 mirar Exp $
  */
 
 #ifndef PDF_MACHINE_H
