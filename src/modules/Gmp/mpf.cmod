@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.13 2002/10/21 17:06:12 marcus Exp $
+|| $Id: mpf.cmod,v 1.14 2002/10/31 14:08:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.13 2002/10/21 17:06:12 marcus Exp $");
+RCSID("$Id: mpf.cmod,v 1.14 2002/10/31 14:08:41 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -119,7 +119,8 @@ PIKECLASS mpf
     }
   
   /* FIXME: */
-  PIKEFUN void create(void|string|int|float|object x, void|int precision, void|int base)
+  PIKEFUN void create(void|string|int|float|object x, void|int precision,
+		      void|int base)
     type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
     flags ID_STATIC;
   {
@@ -723,7 +724,7 @@ PIKECLASS mpf
     if(q->type == T_INT TOOBIGTEST(0))
       RETURN mpf_cmp_si(THISMPF, q->u.integer) != 0;
     arg=get_mpf(q, 0, 0);
-    RETURN (arg && !mpf_cmp(THISMPF, arg));
+    RETURN (!arg || mpf_cmp(THISMPF, arg));
   }
 
   PIKEFUN int sgn()
