@@ -12,7 +12,7 @@ class NSNode {
 
   // New stuff
 
-  static string default_ns;
+  /* static */ string default_ns;
   static mapping(string:string) nss;
   static string element_ns;
   static mapping(string:mapping(string:string)) ns_attrs = ([]);
@@ -95,7 +95,8 @@ class NSNode {
 
   // Override old stuff
 
-  void create(int type, string name, mapping attr, string text, void|NSNode parent) {
+  void create(int type, string name, mapping attr, string text,
+	      void|NSNode parent) {
 
     // Get the parent namespace context.
     if(parent) {
@@ -216,7 +217,8 @@ class NSNode {
 
 			if (mapping attr = n->get_attributes()) { // FIXME
                           foreach(indices(attr), string a)
-                            data->add(" ", a, "='", attribute_quote(attr[a]), "'");
+                            data->add(" ", a, "='",
+				      attribute_quote(attr[a]), "'");
 			}
 			/*
 			mapping attr = n->get_ns_attrubutes();
@@ -257,8 +259,8 @@ class NSNode {
       if(!n || !sizeof(n))
 	return sprintf("%O(%s)", this_program,
 		       nt[get_node_type()] || "UNKNOWN");
-      return sprintf("%O(%s,%O)", this_program,
-		     nt[get_node_type()] || "UNKNOWN", n);
+      return sprintf("%O(%s,%O,%O)", this_program,
+		     nt[get_node_type()] || "UNKNOWN", n, get_ns());
     }
   }
 }
@@ -318,10 +320,11 @@ static NSNode|int(0..0) parse_xml_callback(string type, string name,
 }
 
 //! Takes a XML string @[data] and produces a namespace node tree.
+//! If @[default_ns] is given, it will be used as the default namespace.
 //! @throws
 //!   Throws an @[error] when an error is encountered during XML
 //!   parsing.
-NSNode parse_input(string data)
+NSNode parse_input(string data, void|string default_ns)
 {
   object xp = spider.XML();
   Node mRoot;
@@ -330,6 +333,7 @@ NSNode parse_input(string data)
   
   // Construct tree from string
   mRoot = NSNode(XML_ROOT, "", ([ ]), "");
+  mRoot->default_ns = default_ns;
   ADT.Stack s = ADT.Stack();
   s->push(mRoot);
   xp->parse(data, parse_xml_callback, s);
