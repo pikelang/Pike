@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.16 2003/02/11 15:17:24 mirar Exp $
+### $Id: regional,v 1.17 2003/09/25 18:07:56 mirar Exp $
 
 ### =====================================================================
 ###
@@ -1653,7 +1653,7 @@ Region "de"
   Event "de/waldchestag"            -   "Waldchestag"                Easter +53
   Add   "c/corpus christi"          h # "Corpus Christi"             (22-Jun 2000)
   Add   "c/assumption"              h # "Assumption Day"             (15-Aug 2000)
-  Add   "unity"                     h # "Unity Day (National)"       Fixed Oct  3
+  Event "reunion"                   h   "German Reuinion Day (Tag der deutschen Einheit)"       Fixed Oct  3
   Event "de/foundation"             -   "Foundation Day"             Fixed Oct  7
   Event "de/reformation"            h   "Reformation Day"            Fixed Oct 31
   Event "de/all saints"              h   "All Saint's Day"            Fixed Nov  1
