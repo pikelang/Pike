@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.86 2000/08/27 18:29:27 mirar Exp $");
+RCSID("$Id: efuns.c,v 1.87 2000/11/29 21:28:37 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -447,7 +447,6 @@ void f_werror(INT32 args)
 
   if(args> 1)
   {
-    extern void f_sprintf(INT32);
     f_sprintf(args);
     args=1;
   }
