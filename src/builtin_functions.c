@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.380 2001/06/21 12:27:59 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.381 2001/06/24 23:18:37 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7482,9 +7482,9 @@ void init_builtin_efuns(void)
 /* function(mixed:void) */
   ADD_EFUN("throw",f_throw,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);
   
-/* function(void|int:int|float) */
+/* function(void|int(0..1):int(2..))|function(int(2..):float) */
   ADD_EFUN("time",f_time,
-	   tOr(tFunc(tOr(tVoid,tInt01),tInt),
+	   tOr(tFunc(tOr(tVoid,tInt01),tInt2Plus),
 	       tFunc(tInt2Plus,tFlt)),
 	   OPT_EXTERNAL_DEPEND);
   
