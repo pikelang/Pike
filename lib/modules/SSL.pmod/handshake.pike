@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.9 1998/06/26 22:25:02 nisse Exp $
+/* $Id: handshake.pike,v 1.10 1998/08/26 07:10:36 nisse Exp $
  *
  */
 
@@ -30,7 +30,11 @@ constant CERT_received = 2;
 constant CERT_no_certificate = 3;
 int certificate_state;
 
-int expect_change_cipher; /* Reset to 0 if a change_cipher message is received */
+int expect_change_cipher; /* Reset to 0 if a change_cipher message is
+			   * received */
+
+object temp_key; /* Key used for session key exchange (if not the same
+		  * as the server's certified key) */
 
 int rsa_message_was_bad;
 
@@ -130,10 +134,40 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
       struct->put_var_string(cert, 3);
     send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
   }
-  if (0)
+  temp_key = (session->cipher_spec->is_exportable
+	      ? context->short_rsa
+	      : context->long_rsa);
+  if (temp_key)
   {
-    /* Send a ServerKeyExchange message. Not supported, so far. */
+    /* Send a ServerKeyExchange message. */
+
+#ifdef SSL3_DEBUG
+    werror(sprintf("Sending a server key exchange-message, "
+		   "with a %d-bits key.\n", temp_key->rsa_size()));
+#endif
+    object struct = Struct();
+    struct->put_bignum(temp_key->n);
+    struct->put_bignum(temp_key->e);
+
+    /* Exactly how is the signature process defined? */
+
+    string params = other_random + my_random + struct->contents();
+    string digest = Crypto.md5()->update(params)->digest()
+      + Crypto.sha()->update(params)->digest();    
+
+    object s = context->rsa->raw_sign(digest);
+#ifdef SSL3_DEBUG
+    werror(sprintf("  Digest: '%s'\n"
+		   "  Signature: '%s'\n",
+		   digest, s->digits(256)));
+#endif
+    
+    struct->put_bignum(s);
+    
+    send_packet(handshake_packet(HANDSHAKE_server_key_exchange,
+				 struct->pop_data()));
   }
+  
   if (context->auth_level >= AUTHLEVEL_ask)
   {
     /* Send a CertificateRequest message */
@@ -191,7 +225,7 @@ string server_derive_master_secret(string data)
      werror(sprintf("encrypted premaster_secret: '%s'\n", data));
 #endif
      // trace(1);
-     string s = context->rsa->decrypt(data);
+     string s = (temp_key || context->rsa)->decrypt(data);
 #ifdef SSL3_DEBUG
      werror(sprintf("premaster_secret: '%O'\n", s));
 #endif
@@ -252,6 +286,7 @@ int handle_handshake(int type, string data, string raw)
      /* Reset all extra state variables */
      expect_change_cipher = certificate_state = 0;
      rsa_message_was_bad = 0;
+     temp_key = 0;
      
      handshake_messages = raw;
      my_random = sprintf("%4c%s", time(), context->random(28));
