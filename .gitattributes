@@ -85,6 +85,7 @@ testfont binary
 /lib/modules/Yabu.pmod/module.pmod foreign_ident
 /lib/modules/_Image.pmod/module.pmod foreign_ident
 /lib/modules/error.pmod foreign_ident
+/lib/tools/pike.el foreign_ident
 /man/hilfe.1 foreign_ident
 /man/pike.1 foreign_ident
 /src/Makefile.in foreign_ident
