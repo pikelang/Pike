@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.6 1996/12/01 00:01:15 law Exp $ */
+/* $Id: matrix.c,v 1.7 1996/12/03 22:40:46 law Exp $ */
 
 #include "global.h"
 
@@ -188,7 +188,7 @@ CHRONO("scale begin");
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
-   if (!d) error("Out of memory!\n");
+   if (!d) { free(new); error("Out of memory!\n"); }
 
 CHRONO("transfer begin");
 
@@ -204,6 +204,8 @@ CHRONO("transfer begin");
 
    dest->xsize=newx;
    dest->ysize=newy;
+
+   free(new);
 
 CHRONO("scale end");
 }
