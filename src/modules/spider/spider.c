@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.84 1999/07/21 18:39:31 grubba Exp $");
+RCSID("$Id: spider.c,v 1.85 1999/08/13 14:10:58 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -148,18 +148,33 @@ void f_http_decode_string(INT32 args)
 void f_parse_accessed_database(INT32 args)
 {
   int cnum=0, i, num=0;
-
   struct array *arg;
-  if(args != 1)
-    error("Wrong number of arguments to parse_accessed_database(string)\n");
+  struct mapping *m;
+
+  if(!args) {
+    error("Wrong number of arguments to parse_accessed_database(string).\n");
+  }
+
+  if ((sp[-args].type != T_STRING) || (sp[-args].u.string->size_shift)) {
+    error("Bad argument 1 to parse_accessed_database(string(8)).\n");
+  }
+
+  /* Pop all but the first argument */
+  pop_n_elems(args-1);
 
   push_string(make_shared_string("\n"));
   f_divide(2);
-  add_ref(arg = sp[-1].u.array);
-  /* The initial string is gone, but the array is there now. */
-  pop_stack();
 
-  for (i = 0; i < arg->size; i++)
+  if (sp[-1].type != T_ARRAY) {
+    error("Expected array as result of string-division.\n");
+  }
+
+  /* The initial string is gone, but the array is there now. */
+  arg = sp[-1].u.array;
+
+  push_mapping(m = allocate_mapping(arg->size));
+
+  for(i = 0; i < arg->size; i++)
   {
     int j=0,k=0;
     char *s=0;
@@ -173,11 +188,12 @@ void f_parse_accessed_database(INT32 args)
       if(k>cnum)
 	cnum=k;
       push_int(k);
-      num++;
+      mapping_insert(m, sp-2, sp-1);
+      pop_n_elems(2);
     }
   }
-  free_array(arg);
-  f_aggregate_mapping(num*2);
+  stack_swap();
+  pop_stack();
   push_int(cnum);
   f_aggregate(2);
 }
