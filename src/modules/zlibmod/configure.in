@@ -5,6 +5,11 @@ AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[wi
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_SUBST(RANLIB)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+
+AC_SUBST_FILE(module_makefile)
+module_makefile=$srcdir/../module_makefile
 
 if test x$with_zlib = xyes ; then
   AC_CHECK_HEADERS(zlib.h)

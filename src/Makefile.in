@@ -98,6 +98,7 @@ OBJ= \
  stralloc.o \
  stuff.o \
  threads.o \
+ version.o \
  svalue.o @EXTRA_OBJS@
 
 #
@@ -249,10 +250,7 @@ $(SRCDIR)/configure: configure.in
 config.status: $(SRCDIR)/configure
 	./config.status --recheck
 
-$(SRCDIR)/Makefile.in: $(SRCDIR)/Makefile.src
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-
-Makefile: $(SRCDIR)/Makefile.in config.status
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
 	@echo "Run make again"
 	@exit 1
@@ -264,4 +262,4 @@ stamp-h: machine.h.in config.status
 testsuite: $(SRCDIR)/testsuite.in
 	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite
 
-
+@dependencies@

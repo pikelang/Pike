@@ -26,6 +26,8 @@ struct object
 extern struct object fake_object;
 extern struct object *first_object;
 extern struct object *objects_to_destruct;
+extern struct object *master_object;
+extern struct program *master_program;
 
 #define free_object(O) do{ struct object *o_=(O); if(!--o_->refs) really_free_object(o_); }while(0)
 
@@ -46,16 +48,16 @@ void really_free_object(struct object *o);
 void low_object_index_no_free(struct svalue *to,
 			      struct object *o,
 			      INT32 f);
-void object_index_no_free(struct svalue *to,
+void object_index_no_free2(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index);
-void object_index_no_free2(struct svalue *to,
+void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index);
-void object_set_index(struct object *o,
+void object_set_index2(struct object *o,
 		      struct svalue *index,
 		      struct svalue *from);
-void object_set_index2(struct object *o,
+void object_set_index(struct object *o,
 		       struct svalue *index,
 		       struct svalue *from);
 union anything *object_get_item_ptr(struct object *o,

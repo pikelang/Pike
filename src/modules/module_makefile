@@ -1,16 +1,5 @@
-SRCDIR=@srcdir@
-VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
-
-FILES=spider.o discdate.o stardate.o sdebug.o tree.o lock.o \
-      sharedmem.o streamed_parser.o encode_decode.o http_parse.o \
-      accesseddb.o dumudp.o
-
-spider.a: $(FILES)
-	-rm -f spider.a
-	ar cq spider.a $(FILES)
-	-@RANLIB@ spider.a
+PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I.
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 clean:
 	-rm -f *.o *.a
@@ -28,9 +17,8 @@ verify: module_testsuite
 verbose_verify: module_testsuite
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
 
-
 gdb_verify: module_testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
+	@echo >>.gdbinit run -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
 	gdb ../../pike
 	@rm .gdbinit

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.41 1997/01/16 04:59:28 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.42 1997/01/18 21:48:06 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1196,6 +1196,9 @@ AC_CONFIG_SUBDIRS(modules)
 my_libdir=`echo $prefix | sed "s@^NONE@$ac_default_prefix@g"`
 default_master=$my_libdir/lib/pike/master.pike
 AC_DEFINE_UNQUOTED(DEFAULT_MASTER,"$default_master")
+
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
 
 AC_SUBST(YACC)
 AC_SUBST(INSTALL)

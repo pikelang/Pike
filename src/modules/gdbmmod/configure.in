@@ -6,6 +6,10 @@ AC_ARG_WITH(gdbm,    [  --with(out)-gdbm       GNU database manager support ],[]
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_SUBST(RANLIB)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+AC_SUBST_FILE(module_makefile)
+module_makefile=$srcdir/../module_makefile
 
 if test x$with_gdbm = xyes; then
   AC_CHECK_HEADERS(gdbm.h)

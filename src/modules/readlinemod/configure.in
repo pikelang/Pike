@@ -6,6 +6,9 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+
 if test x$with_readline = xyes ; then
   AC_MSG_CHECKING(Checking for GNU directory)
 

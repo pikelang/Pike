@@ -1,10 +1,10 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. @CPPFLAGS@
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
-FILES=mpz_glue.o
-LIB=gmpmod.a
+FILES=readlinemod.o
+LIB=readlinemod.a
 
 $(LIB): $(FILES)
 	-rm -f $(LIB)
@@ -33,3 +33,5 @@ gdb_verify: module_testsuite
 	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
 	gdb ../../pike
 	@rm .gdbinit
+
+@dependencies@

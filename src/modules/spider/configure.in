@@ -29,6 +29,8 @@ if test x$ac_cv_lib_thread_mutex_unlock = xno ;  then
 fi
 
 AC_SUBST(RANLIB)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
 
 
 AC_MSG_CHECKING(for h_addr_list)

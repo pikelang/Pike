@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.src,v 1.1 1996/12/28 18:51:39 grubba Exp $
+# $Id: Makefile.in,v 1.1 1997/01/18 21:52:08 hubbe Exp $
 #
 
 SRCDIR=@srcdir@
@@ -30,3 +30,5 @@ clean:
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+
+@dependencies@

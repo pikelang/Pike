@@ -1,0 +1,17 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+
+FILES=gdbmmod.o
+LIB=gdbmmod.a
+
+all: $(LIB)
+
+@module_makefile@
+
+$(LIB): $(FILES)
+	-rm -f $(LIB)
+	ar cq $(LIB) $(FILES)
+	-@RANLIB@ $(LIB)
+	echo >linker_options @LIBS@
+
+@dependencies@

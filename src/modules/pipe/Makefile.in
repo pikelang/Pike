@@ -1,0 +1,15 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+
+FILES=pipe.o
+
+all: pipe.a
+
+@module_makefile@
+
+pipe.a: $(FILES)
+	-rm -f pipe.a
+	ar cq pipe.a $(FILES)
+	-@RANLIB@ pipe.a
+
+@dependencies@

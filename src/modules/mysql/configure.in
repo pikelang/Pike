@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.7 1997/01/11 20:55:12 grubba Exp $
+# $Id: configure.in,v 1.8 1997/01/18 21:52:09 hubbe Exp $
 #
 # Configure script for the mysql-module
 #
@@ -22,6 +22,8 @@ AC_INIT(mysql.c)
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_SUBST(RANLIB)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
 

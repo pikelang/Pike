@@ -59,7 +59,7 @@ testfont binary
 /src/modules/image/pnm.c foreign_ident
 /src/modules/image/quant.c foreign_ident
 /src/modules/image/togif.c foreign_ident
-/src/modules/mysql/Makefile.src foreign_ident
+/src/modules/mysql/Makefile.in foreign_ident
 /src/modules/mysql/configure.in foreign_ident
 /src/modules/mysql/mysql.c foreign_ident
 /src/modules/mysql/precompiled_mysql.h foreign_ident

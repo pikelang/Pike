@@ -1,0 +1,23 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+
+all: image.a
+
+@module_makefile@
+
+FILES =	image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o \
+	pattern.o dct.o operator.o
+
+image.a: $(FILES)
+	-rm -f image.a
+	ar cq image.a $(FILES)
+	-@RANLIB@ image.a
+
+pike: image.a
+	cd ../..; make
+
+pure: image.a
+	cd ../..; make pure
+
+
+@dependencies@

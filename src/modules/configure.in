@@ -1,4 +1,4 @@
-AC_INIT(module_dir_marker)
+AC_INIT(module_makefile)
 
 AC_SET_MAKE
 
@@ -17,6 +17,8 @@ do
 done
 
 AC_SUBST(MODULE_OBJS)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
 AC_CONFIG_SUBDIRS($dirs)
 
 AC_OUTPUT(Makefile,

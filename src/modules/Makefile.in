@@ -34,3 +34,5 @@ verify:
 
 verbose_verify:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) verbose_verify ) ; done
+
+@dependencies@

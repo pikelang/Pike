@@ -1,0 +1,15 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+FILES=file.o efuns.o socket.o
+
+all: files.a
+
+@module_makefile@
+
+files.a: $(FILES)
+	-rm -f files.a
+	ar cq files.a $(FILES)
+	-@RANLIB@ files.a
+	echo >linker_options @LIBS@
+
+@dependencies@

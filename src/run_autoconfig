@@ -8,16 +8,8 @@ fix()
     ( cd $1 ; autoconf )
   fi
 
-  if [ ! -f $1/Makefile.in ]; then
-    cp $1/Makefile.src $1/Makefile.in
-  elif [ -f $1/Makefile.src ]; then
-    if cmp $1/Makefile.src $1/Makefile.in >/dev/null; then
-      :
-    else
-      # This might not be strictly necessary, but you
-      # need to run 'make depend' afterwards anyway.
-      cp $1/Makefile.src $1/Makefile.in
-    fi
+  if [ ! -f $1/dependencies ]; then
+    echo >$1/dependencies
   fi
 }
 
