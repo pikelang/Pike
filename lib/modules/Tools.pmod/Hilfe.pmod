@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.105 2003/10/26 21:02:36 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.106 2003/11/19 03:35:59 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -2043,8 +2043,9 @@ class StdinHilfe
     exit(1);
   }
 
-  //!
-  void create()
+  //! Any hilfe statements given in the init array will be executed
+  //! once .hilferc has been executed.
+  void create(void|array(string) init)
   {
     write=predef::write;
     ::create();
@@ -2054,6 +2055,8 @@ class StdinHilfe
       if(string s=Stdio.read_file(home+"/.hilferc"))
 	map(s/"\n", add_buffer);
     }
+
+    if(init) map(init, add_buffer);
 
     readline = Stdio.Readline();
     array(string) hist;
