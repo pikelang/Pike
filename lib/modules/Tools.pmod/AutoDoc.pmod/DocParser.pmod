@@ -43,6 +43,7 @@ mapping(string : int) keywordtype =
   "i" : BRACEKEYWORD,
   "u" : BRACEKEYWORD,
   "tt" : BRACEKEYWORD,
+  "url" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
   "code" : BRACEKEYWORD,
