@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.16 2001/05/31 22:53:03 hubbe Exp $
+ * $Id: stat.c,v 1.17 2001/07/01 22:05:27 mast Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.16 2001/05/31 22:53:03 hubbe Exp $");
+RCSID("$Id: stat.c,v 1.17 2001/07/01 22:05:27 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -121,9 +121,9 @@ static struct pike_string *str_type_reg, *str_type_dir, *str_type_lnk,
 
 static void stat_index_set (INT32 args);
 
-static int stat_compat_set (size_t pos, INT64 val)
+static int stat_compat_set (INT_TYPE pos, INT64 val)
 {
-  if(pos<0) pos=7-pos;
+  if (pos < 0) pos += 7;
   switch (pos) {
     case 0: DO_NOT_WARN(THIS_STAT->s.st_mode = val); break;
     case 1:
@@ -153,8 +153,8 @@ static int stat_compat_set (size_t pos, INT64 val)
 
 static void stat_push_compat(INT_TYPE n)
 {
-  if(n<0) n=7-n;
-  switch (n)
+   if (n < 0) n += 7;
+   switch (n)
    {
       case 0: push_int(THIS_STAT->s.st_mode); break;
       case 1: 
@@ -237,7 +237,7 @@ static void stat_create (INT32 args)
 
     else if (sp[-1].type == T_ARRAY) {
       struct array *a = sp[-1].u.array;
-      size_t i;
+      int i;
       if (a->size != 7)
 	SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "stat array with 7 elements");
       for (i = 0; i < 7; i++) {
