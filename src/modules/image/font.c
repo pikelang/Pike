@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.9 1996/11/23 04:26:13 law Exp $ */
+/* $Id: font.c,v 1.10 1996/12/09 04:27:49 per Exp $ */
 
 #include "global.h"
 
@@ -48,12 +48,19 @@ struct font
 #endif
    void *mem;         /* pointer to mmaped/malloced memory */
    unsigned long chars;       /* number of characters */
+  float xspacing_scale; /* Fraction of spacing to use */
+  float yspacing_scale; /* Fraction of spacing to use */
+  enum {
+    J_LEFT,
+    J_RIGHT,
+    J_CENTER,
+  } justification;
    struct _char      
    {
       unsigned long width;   /* character rectangle has this width in pixels */
       unsigned long spacing; /* pixels to next character */
       unsigned char *pixels; /* character rectangle */
-   } charinfo [1];
+   } charinfo [1]; /* many!! */
 };
 
 /***************** init & exit *********************************/
@@ -223,6 +230,9 @@ void font_load(INT32 args)
 		  new->mmaped_size=THIS->mmaped_size;
 #endif
 		  new->chars=THIS->chars;
+		  new->xspacing_scale = 1.0;
+		  new->yspacing_scale = 1.0;
+		  new->justification = J_LEFT;
 		  free(THIS);
 		  THIS=new;
 
@@ -275,13 +285,17 @@ void font_write(INT32 args)
 {
    struct object *o;
    struct image *img;
-   INT32 xsize,i,maxwidth,c,maxwidth2,j;
+   INT32 xsize=0,i,maxwidth,c,maxwidth2,j;
+   int *width_of;
 
    if (!THIS)
       error("font->write: no font loaded\n");
 
    maxwidth2=0;
 
+   width_of=(int *)malloc((args+1)*sizeof(int));
+   if(!width_of)
+     error("Out of memory\n");
    for (j=0; j<args; j++)
    {
      if (sp[j-args].type!=T_STRING)
@@ -297,42 +311,53 @@ void font_write(INT32 args)
        {
 	 if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
 	   maxwidth = xsize + THIS->charinfo[c].width;
-	 xsize += THIS->charinfo[c].spacing;
+	 xsize+=(signed long)((float)THIS->charinfo[c].spacing
+			      *(float)THIS->xspacing_scale);
        }
      }
-
      if (xsize>maxwidth) maxwidth=xsize;
+     width_of[j]=maxwidth;
      if (maxwidth>maxwidth2) maxwidth2=maxwidth;
    }
    
    o = clone(image_program,0);
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
-   img->ysize = THIS->height * args;
+   if(args>1)
+     img->ysize = THIS->height+((double)THIS->height*(double)(args-1)*(double)THIS->yspacing_scale)+1;
+   else
+     img->ysize = THIS->height+1;
    img->rgb.r=img->rgb.g=img->rgb.b=255;
    img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group));
 
-   if (!img) { free_object(o); error("Out of memory\n"); }
+   if (!img) { free_object(o); free(width_of); error("Out of memory\n"); }
 
    MEMSET(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
 
    for (j=0; j<args; j++)
    {
-     xsize = 0;
+     switch(THIS->justification)
+     {
+      case J_LEFT: xsize = 0; break;
+      case J_RIGHT: xsize = img->xsize-width_of[j]-1; break;
+      case J_CENTER: xsize = img->xsize/2-width_of[j]/2-1; break;
+     }
+     if(xsize<0) xsize=0;
      for (i = 0; i < (int)sp[j-args].u.string->len; i++)
      {
        c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
        if ( c < (INT32)THIS->chars)
        {
 	 write_char(THIS->charinfo+c,
-		    img->img+xsize+img->xsize*j*THIS->height,
+		    (img->img+xsize)+(img->xsize*(int)(j*THIS->height
+						 *THIS->yspacing_scale)),
 		    img->xsize,
 		    THIS->height);
-	 xsize += THIS->charinfo[c].spacing;
+	 xsize += THIS->charinfo[c].spacing*THIS->xspacing_scale;
        }
      }
    }
-   
+   free(width_of);
    pop_n_elems(args);
    push_object(o);
 }
@@ -346,6 +371,71 @@ void font_height(INT32 args)
       push_int(0);
 }
 
+void font_text_extents(INT32 args)
+{
+  INT32 xsize,i,maxwidth,c,maxwidth2,j;
+
+  if (!THIS)
+    error("font->text_extents: no font loaded\n");
+
+  maxwidth2=0;
+
+  for (j=0; j<args; j++)
+  {
+    if (sp[j-args].type!=T_STRING)
+      error("font->text_extents: illegal argument(s)\n");
+    
+    xsize = 0;
+    maxwidth = 0;
+     
+    for (i = 0; i < sp[j-args].u.string->len; i++)
+    {
+      c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
+      if (c < (INT32)THIS->chars)
+      {
+	if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
+	  maxwidth = xsize + THIS->charinfo[c].width;
+	xsize += THIS->charinfo[c].spacing*THIS->xspacing_scale;
+      }
+    }
+    
+    if (xsize>maxwidth) maxwidth=xsize;
+    if (maxwidth>maxwidth2) maxwidth2=maxwidth;
+  }
+  push_int(maxwidth2);
+  push_int(args * THIS->height * THIS->yspacing_scale);
+}
+
+
+void font_set_xspacing_scale(INT32 args)
+{
+  if(!THIS) error("font->set_xspacing_scale(FLOAT): No font loaded.\n");
+  if(!args) error("font->set_xspacing_scale(FLOAT): No argument!\n");
+  if(sp[-args].type!=T_FLOAT)
+    error("font->set_xspacing_scale(FLOAT): Wrong type of argument!\n");
+
+  THIS->xspacing_scale = (double)sp[-args].u.float_number;
+/*fprintf(stderr, "Setting xspacing to %f\n", THIS->xspacing_scale);*/
+  if(THIS->xspacing_scale < 0.0)
+    THIS->xspacing_scale=0.1;
+  pop_stack();
+}
+
+
+void font_set_yspacing_scale(INT32 args)
+{
+  if(!THIS) error("font->set_yspacing_scale(FLOAT): No font loaded.\n");
+  if(!args) error("font->set_yspacing_scale(FLOAT): No argument!\n");
+  if(sp[-args].type!=T_FLOAT)
+    error("font->set_yspacing_scale(FLOAT): Wrong type of argument!\n");
+
+  THIS->yspacing_scale = (double)sp[-args].u.float_number;
+/*fprintf(stderr, "Setting yspacing to %f\n", THIS->yspacing_scale);*/
+  if(THIS->yspacing_scale <= 0.0)
+    THIS->yspacing_scale=0.1;
+  pop_stack();
+}
+
 void font_baseline(INT32 args)
 {
    pop_n_elems(args);
@@ -354,6 +444,25 @@ void font_baseline(INT32 args)
    else
       push_int(0);
 }
+
+void font_set_center(INT32 args)
+{
+  pop_n_elems(args);
+  if(THIS) THIS->justification=J_CENTER;
+}
+
+void font_set_right(INT32 args)
+{
+  pop_n_elems(args);
+  if(THIS) THIS->justification=J_RIGHT;
+}
+
+void font_set_left(INT32 args)
+{
+  pop_n_elems(args);
+  if(THIS) THIS->justification=J_LEFT;
+}
+
 
 /***************** global init etc *****************************/
 
@@ -383,6 +492,20 @@ void init_font_programs(void)
    add_function("baseline",font_baseline,
                 "function(:int)",0);
 		
+   add_function("extents",font_text_extents,
+                "function(string ...:array(int))",0);
+		
+   add_function("set_x_spacing",font_set_xspacing_scale,
+                "function(float:void)",0);
+
+   add_function("set_y_spacing",font_set_yspacing_scale,
+                "function(float:void)",0);
+
+   add_function("center", font_set_center, "function(void:void)", 0);
+   add_function("left", font_set_left, "function(void:void)", 0);
+   add_function("right", font_set_right, "function(void:void)", 0);
+
+   
    set_init_callback(init_font_struct);
    set_exit_callback(exit_font_struct);
   
