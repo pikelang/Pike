@@ -32,20 +32,14 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
   {
     return pid;
   }else{
-    if(stdin) {
-      stdin->dup2(File("stdin"));
-      stdin->close();
-    }
+    if(stdin ) stdin ->dup2(File("stdin"));
+    if(stdout) stdout->dup2(File("stdout"));
+    if(stderr) stderr->dup2(File("stderr"));
 
-    if(stdout) {
-      stdout->dup2(File("stdout"));
-      stdout->close();
-    }
+    if(stdin ) destruct(stdin);
+    if(stdout) destruct(stdout);
+    if(stderr) destruct(stderr);
 
-    if(stderr) {
-      stderr->dup2(File("stderr"));
-      stderr->close();
-    }
     ::close();
     exec("/bin/sh","-c",s);
     exit(69);
