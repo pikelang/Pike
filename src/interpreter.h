@@ -655,9 +655,12 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_DEC_AND_POP);
       {
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
-	if(u)
+	if(u
+#ifdef AUTO_BIGNUM
+	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
+#endif
+)
 	{
-	  /* FIXME: Bignum. */
 	  instr=-- u->integer;
 	  pop_n_elems(2);
 	}else{
@@ -985,7 +988,7 @@ static int eval_instruction(unsigned char *pc)
 	break;
       }
 
-      /* FIXME: Does this need bignum tests? */
+      /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       LOOP(F_INC_LOOP, 1, <, is_lt);
       LOOP(F_DEC_LOOP, -1, >, is_gt);
       LOOP(F_INC_NEQ_LOOP, 1, !=, !is_eq);
