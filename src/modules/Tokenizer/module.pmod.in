@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.32 2004/09/08 19:20:58 grubba Exp $
+// $Id: module.pmod.in,v 1.33 2004/11/28 19:39:24 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -15,6 +15,7 @@ inherit @module@;
 //! List of Tokens and Groups
 class TokenList
 {
+#if 0
   array(Token|Group) tokens = ({});
 
   TokenList `+=(mixed x)
@@ -96,8 +97,12 @@ class TokenList
       return sprintf("%{%O, %}", tokens);
     }
   }
+#else /* ! 0 */
+  inherit ADT.List;
+#endif /* 0 */
 }
 
+#if 0
 class Group
 {
   TokenList contents = TokenList();
@@ -134,7 +139,9 @@ class Group
     }
   }
 }
+#endif /* 0 */
 
+#if 0
 class GroupingCompiler
 {
   inherit TokenizingCompiler;
@@ -185,6 +192,7 @@ class GroupingCompiler
     return g->contents;
   }
 }
+#endif /* 0 */
 
 //!
 class PikeCompiler
@@ -954,11 +962,9 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", context));
-      group->contents->tokens = ({ 
-	MixedType("mixed", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -970,18 +976,16 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' '|' 'void' '...' ':' 'mixed' '|' 'void' ')'.
-      Group group = Group(OperatorToken("(", context));
-      group->contents->tokens = ({ 
-	MixedType("mixed", context),
-	OperatorToken("|", context),
-	VoidType("void", context),
-	OperatorToken("...", context),
-	OperatorToken(":", context),
-	MixedType("mixed", context),
-	OperatorToken("|", context),
-	VoidType("void", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(OperatorToken("|", context));
+      group->append(VoidType("void", context));
+      group->append(OperatorToken("...", context));
+      group->append(OperatorToken(":", context));
+      group->append(MixedType("mixed", context));
+      group->append(OperatorToken("|", context));
+      group->append(VoidType("void", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -993,11 +997,9 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' '..' ')'.
-      Group group = Group(OperatorToken("(",context));
-      group->contents->tokens = ({ 
-	OperatorToken("..", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(",context);
+      group->append(OperatorToken("..", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -1009,13 +1011,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ':' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", context));
-      group->contents->tokens = ({ 
-	MixedType("mixed", context),
-	OperatorToken(":", context),
-	MixedType("mixed", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(OperatorToken(":", context));
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -1027,11 +1027,9 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", context));
-      group->contents->tokens = ({ 
-	MixedType("mixed", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -1043,11 +1041,9 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(OperatorToken("(", context));
-      group->contents->tokens = ({ 
-	MixedType("mixed", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -1059,11 +1055,9 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'object' ')'.
-      Group group = Group(OperatorToken("(", context));
-      group->contents->tokens = ({ 
-	ObjectType("object", context),
-      });
-      group->group_end = OperatorToken(")", context);
+      Group group = Group("(", context);
+      group->append(ObjectType("object", context));
+      group->append(EndGroup(")", context));
       return group;
     }
   }
@@ -1782,8 +1776,8 @@ class PikeCompiler
 	"%":Token,
 	"&":Token,
 	"&&":Token,
-	"(":Token,
-	")":Token,
+	"(":Group,
+	")":EndGroup,
 	"*":Token,
 	"+":Token,
 	",":Token,
@@ -1803,13 +1797,13 @@ class PikeCompiler
 	">=":Token,
 	">>":Token,
 	"?":Token,
-	"[":Token,
-	"]":Token,
+	"[":Group,
+	"]":EndGroup,
 	"^":Token,
-	"{":Token,
+	"{":Group,
 	"|":Token,
 	"||":Token,
-	"}":Token,
+	"}":EndGroup,
 	"~":Token,
 	"array":ArrayType,
 	"break":BreakNoLabel,
