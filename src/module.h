@@ -8,24 +8,10 @@
 
 #include "types.h"
 
-typedef void (*fun)(void);
-
-struct module
-{
-  char *name;
-  fun init_efuns;  /* this one _might_ be called before the master is compiled */
-  fun init_programs; /* this one is called after the master is compiled */
-  fun exit;
-  INT32 refs;
-};
-
-#define UGLY_WORKAROUND []
-extern struct module *current_module;
-
 /* Prototypes begin here */
-void init_modules_efuns();
-void init_modules_programs();
-void exit_modules();
+struct static_module;
+void init_modules(void);
+void exit_modules(void);
 /* Prototypes end here */
 
 
