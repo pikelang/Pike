@@ -35,9 +35,10 @@ case "$1" in
 	  shift
 	  ;;
 	-*)
+          ;;
+        +*)
 	  ;;
 	*)
-	  shift
 	  source="`echo \"$1\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
 	  ;;
       esac
