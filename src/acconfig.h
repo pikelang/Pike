@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.111 2003/01/08 19:35:42 mast Exp $
+|| $Id: acconfig.h,v 1.112 2003/01/16 20:00:35 neotron Exp $
 */
 
 #ifndef MACHINE_H
@@ -89,6 +89,9 @@
 
 /* Define this if your ld uses -R, but your cc wants -Wl,-R */
 #undef USE_Wl_R
+
+/* Define this if your ld uses -rpath, but your cc -Qoption,ld,-rpath (icc) */
+#undef USE_Qoption
 
 /* Define this if your ld uses -YP, , but your cc wants -Xlinker -YP, */
 #undef USE_XLINKER_YP_

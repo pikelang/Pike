@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.14 2002/10/11 01:39:38 nilsson Exp $
+|| $Id: smartlink.c,v 1.15 2003/01/16 20:00:35 neotron Exp $
 */
 
 /*
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.14 2002/10/11 01:39:38 nilsson Exp $\n"
+	    "$Id: smartlink.c,v 1.15 2003/01/16 20:00:35 neotron Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -151,9 +151,11 @@ int main(int argc, char **argv)
   strcat(rpath, "-Wl,-R");
 #elif defined(USE_R)
   strcat(rpath, "-R");
+#elif defined(USE_Qoption)
+  strcat(rpath, "-Qoption,ld,-rpath,");
 #elif defined(USE_LD_LIBRARY_PATH)
   strcat(rpath, "LD_LIBRARY_PATH=");
-#endif /* defined(USE_Wl) || defined(USE_Wl_R) || defined(USE_R) || defined(USE_LD_LIBRARY_PATH) */
+#endif /* defined(USE_Wl) || defined(USE_Wl_R) || defined(USE_R) || defined(USE_LD_LIBRARY_PATH) || defined(USE_Qoption) */
   rpath += strlen(rpath);
 
   new_argv[new_argc++] = argv[1];
@@ -282,7 +284,7 @@ int main(int argc, char **argv)
       new_argv[new_argc++] = "-Xlinker";
       new_argv[new_argc++] = rpath;
     }
-#elif defined(USE_Wl)
+#elif defined(USE_Wl) || defined(USE_Qoption)
     if (linking) {
       new_argv[new_argc++] = full_rpath;
     }

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.674 2003/01/10 11:11:04 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.675 2003/01/16 20:00:35 neotron Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -726,7 +726,11 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
       fi
     ;;
     Linux\ 2.*)
-      pike_cv_run_path_method=wl
+      if test "x$ac_cv_prog_CC" = "xicc"; then
+        pike_cv_run_path_method=qoption
+      else
+        pike_cv_run_path_method=wl
+      fi
     ;;
     UnixWare\ 7.*|OpenUNIX\ 8.*)
       if test "$ac_cv_prog_gcc" = "yes"; then
@@ -768,6 +772,10 @@ case "$pike_cv_run_path_method" in
   wl)
     AC_DEFINE(USE_Wl)
     AC_MSG_RESULT([use -Wl,-rpath])
+  ;;
+  qoption)
+    AC_DEFINE(USE_Qoption)
+    AC_MSG_RESULT([use -Qoption,ld,-rpath])
   ;;
   ld_library_path|*)
     AC_DEFINE(USE_LD_LIBRARY_PATH)
@@ -838,6 +846,7 @@ fi #if test "x$enable_binary" != "xno"
 #############################################################################
 
 # Restore the -O2 that the default AC_PROG_CC adds.
+
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE, [
     AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
@@ -904,6 +913,11 @@ case "$pike_cv_sys_os" in
 	fi
       ;;
     esac
+  ;;
+  Linux*)
+    if test "x$ac_cv_prog_CC" = "xicc"; then
+      LC_REQ=""
+    fi
   ;;
 esac
 
@@ -1671,6 +1685,21 @@ if test "$cflags_is_set" = "no"; then
   fi
 
 ### Non-gcc thingies. This should probably be enhanced...
+
+  # Linux with Intel C++
+  DO_IF_OS(Linux,
+  [
+    if test "x$ac_cv_prog_CC" = "xicc"; then
+      AC_SYS_COMPILER_FLAG(-Ob2,Ob2,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-ipo,ipo,EXTRALDFLAGS)
+      AC_SYS_COMPILER_FLAG(-ipo_obj,ipo_obj,OPTIMIZE)
+      # arch dependent optimizations while maintaining
+      # i386 compatibility
+      AC_SYS_COMPILER_FLAG(-axKW,axKW,OPTIMIZE)
+    fi
+  ])
+
 
   # Solaris
   DO_IF_OS(Solaris,
