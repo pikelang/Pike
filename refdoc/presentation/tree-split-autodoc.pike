@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.19 2001/11/09 00:51:50 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.20 2001/11/23 21:52:05 nilsson Exp $
  *
  */
 
@@ -446,7 +446,7 @@ class Node
 	"$type$": String.capitalize(type),
 	"$title$": make_class_path(1),
 	"$style$": style,
-	"$dotdot$": extra_prefix,
+	"$dotdot$": sizeof(extra_prefix)?extra_prefix:".",
 	"$imagedir$":image_prefix(),
       ]));
 
