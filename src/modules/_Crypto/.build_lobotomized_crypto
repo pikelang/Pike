@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: .build_lobotomized_crypto,v 1.6 1998/03/28 14:29:35 grubba Exp $
+# $Id: .build_lobotomized_crypto,v 1.7 1998/03/28 14:32:16 grubba Exp $
 
 if [ ! -f cbc.c ]; then
     echo ".build_lobotomized_crypto should be run in pike/src/modules/_Crypto"
@@ -25,7 +25,7 @@ smartcopy() {
 
 echo "Copying source files..."
 for d in . include lib; do
-    for f in `cat $d/.exportable_files`; do
+    for f in `egrep -v '^#' $d/.exportable_files`; do
         echo $d/$f
 	smartcopy $d/$f ../_Lobotomized_Crypto/$d/$f
     done
