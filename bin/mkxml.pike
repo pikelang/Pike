@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.30 2001/07/20 04:18:18 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.31 2001/07/25 21:20:08 nilsson Exp $ */
 
 string LENA_PATH = "../autodoc/image_ill.pnm";
 string makepic1;
@@ -233,74 +233,15 @@ string make_nice_reference(string what,string prefix,string stuff)
    return "<ref to="+linkify(q)+">"+htmlify(stuff)+"</ref>";
 }
 
-array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
-  return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", p->tag_name(),
-		    (array)args, safe_newlines(p->clone()->finish(c)->read()),
-		    p->tag_name()) });
-}
+Parser.HTML parser;
 
 string fixdesc(string s,string prefix,void|string where)
 {
    s = stripws(replace(s, "<p>", "\n"));
 
-   Parser.HTML p = Parser.HTML();
+   parser->set_extra(where);
 
-   p->add_containers( ([ "pre":tag_preserve_ws,
-			 "table":tag_preserve_ws,
-			 "execute":tag_preserve_ws,
-			 "ul":tag_preserve_ws ]) );
-
-   p->add_container("illustration",
-     lambda(Parser.HTML p, mapping args, string c)
-     {
-       c = replace(c, ([ "&gt;":">" ]));
-       string name;
-       sscanf(where, "file='%s'", name);
-       name = (name/"/")[-1];
-       array err;
-       object g;
-       err = catch {
-	 g = compile_string(makepic1 + c +
-			    makepic2)(name+(illustration_counter++), args->type);
-       };
-       if(err) {
-	 werror("%O\n", where);
-	 throw(err);
-       }
-
-       return ({ g->make() });
-
-       //       return ({ sprintf("<illustration %s%{ %s='%s'%}>%s</illustration>",
-       //			 name, (array)args, replace(c, "lena()", "src")) });
-     });
-
-   p->add_container("data_description",
-      lambda(Parser.HTML p, mapping args, string c)
-      {
-	if(args->type=="mapping") {
-	  Parser.HTML i = Parser.HTML()->
-	    add_container("elem",
-              lambda(Parser.HTML p, mapping args, string c)
-	      {
-		if(!args->type)
-		  throw("mkxml: Type attribute missing on elem tag.");
-		if(args->type!="int" && args->type!="float" &&
-		   args->type!="string")
-		  throw("mkxml: Unknown type "+args->type+" in elem type attribute.\n");
-		if(!args->name)
-		  throw("mkxml: Name attribute missing on elem tag.");
-		return "<group>\n<member><type><" + args->type +
-		  "/></type><index>\"" + args->name + "\"</index></member>\n"
-		  "<text><p>" + c + "</p></text>\n</group>\n";
-	      });
-	  return ({ "<mapping>\n " +
-		    safe_newlines(i->finish(c)->read()) +
-		    "</mapping>\n " });
-	}
-	throw("mkxml: Unknown data_description type "+args->type+".\n");
-      });
-
-   s = p->finish(s)->read();
+   s = parser->finish(s)->read();
    s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
    s = htmlify(s);
 
@@ -526,13 +467,13 @@ void docdecl(string enttype,
 	 for (; i<sizeof(in); i++) {
 	   if(in[i]==')') {
 	     if(!sizeof(String.trim_all_whites(n)))
-	       throw( ({ "Empty argument name.\n", backtrace() }) );
+	       throw( ({ "Empty argument name. ("+in+")\n", backtrace() }) );
 	     return res + "<argument name=" + S(n) + "><type>" + t +
 	       "</type></argument>\n";
 	   }
 	   if(in[i]==',') {
 	     if(!sizeof(String.trim_all_whites(n)))
-		throw( ({ "Empty argument name.\n", backtrace() }) );
+		throw( ({ "Empty argument name. ("+in+")\n", backtrace() }) );
 	     res += "<argument name=" + S(n) + "><type>" + t +
 	       "</type></argument>\n";
 	     break;
@@ -563,8 +504,6 @@ void docdecl(string enttype,
 
    f->write("</"+enttype+">");
 }
-
-Parser.HTML html2xml;
 
 void document(string enttype,
 	      mapping huh,string name,string prefix,
@@ -745,7 +684,6 @@ void document(string enttype,
 
    if (res!="")
    {
-      res=html2xml->finish(res)->read();
       f->write("<doc>\n"+res+"\n</doc>\n");
    }
 
@@ -837,55 +775,8 @@ void document(string enttype,
    }
 }
 
-array(string) tag_quote_args(Parser.HTML p, mapping args) {
-  return ({ sprintf("<%s%{ %s='%s'%}>", p->tag_name(), (array)args) });
-}
-
 void make_doc_files()
 {
-   html2xml=Parser.HTML();
-   html2xml->add_tag("br",lambda(mixed...) { return ({"<br/>"}); });
-   html2xml->add_tag("wbr",lambda(mixed...) { return ({"<br/>"}); });
-
-   html2xml->add_tags( ([ "dl":tag_quote_args,
-			  "dt":tag_quote_args,
-			  "dd":tag_quote_args,
-			  "table":tag_quote_args,
-			  "tr":tag_quote_args,
-			  "th":tag_quote_args,
-			  "td":tag_quote_args,
-			  "a":tag_quote_args,
-			  "ref":tag_quote_args ]) );
-
-   html2xml->add_container(
-      "text",
-      lambda(Parser.HTML p,mapping args,string cont)
-      {
-	 cont=p->clone()->finish(cont)->read();
-	 string res="<text><p>"+cont+"</p></text>";
-	 string t;
-	 do
-	 {
-	    t=res;
-	    res=replace(res,"<p></p>","");
-	    res=replace(res,"<br/></p>","</p>");
-	 }
-	 while (t!=res);
-	 return ({res});
-      });
-
-   html2xml->add_container("link",
-      lambda(Parser.HTML p, mapping args, string c)
-      {
-	return ({ sprintf("<ref%{ %s=\"%s\"%}>%s</ref>", (array)args, c) });
-      });
-
-   html2xml->add_container("execute",
-      lambda(Parser.HTML p, mapping args, string c)
-      {
-	return ({ c });
-      });
-
    Stdio.stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
 
    Stdio.stdout->write("<module name=''>\n");
@@ -952,7 +843,124 @@ string safe_newlines(string in) {
   return in;
 }
 
+array(string) tag_quote_args(Parser.HTML p, mapping args) {
+  return ({ sprintf("<%s%{ %s='%s'%}>", p->tag_name(), (array)args) });
+}
+
+array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
+  return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", p->tag_name(),
+		    (array)args, safe_newlines(p->clone()->finish(c)->read()),
+		    p->tag_name()) });
+}
+
 void create() {
+
+  parser = Parser.HTML();
+
+  Parser.HTML p = Parser.HTML();
+
+  parser->add_containers( ([ "pre":tag_preserve_ws,
+			     "table":tag_preserve_ws,
+			     "execute":tag_preserve_ws,
+			     "ul":tag_preserve_ws ]) );
+
+  parser->add_container("illustration",
+    lambda(Parser.HTML p, mapping args, string c, string where)
+    {
+      c = replace(c, ([ "&gt;":">" ]));
+      string name;
+      sscanf(where, "file='%s'", name);
+      name = (name/"/")[-1];
+      array err;
+      object g;
+      err = catch {
+	g = compile_string(makepic1 + c +
+			   makepic2)(name+(illustration_counter++), args->type);
+      };
+      if(err) {
+	werror("%O\n", where);
+	array rows = (makepic1+c+makepic2)/"\n";
+	werror("******\n");
+	for(int i; i<sizeof(rows); i++)
+	  werror("%04d: %s\n", i, rows[i]);
+	werror("******\n");
+	throw(err);
+      }
+
+      return ({ g->make() });
+    });
+
+  parser->add_container("data_description",
+    lambda(Parser.HTML p, mapping args, string c)
+    {
+      if(args->type=="mapping") {
+	Parser.HTML i = Parser.HTML()->
+	  add_container("elem",
+	    lambda(Parser.HTML p, mapping args, string c)
+	    {
+	      if(!args->type)
+		throw("mkxml: Type attribute missing on elem tag.");
+	      if(args->type!="int" && args->type!="float" &&
+		 args->type!="string")
+		throw("mkxml: Unknown type "+args->type+" in elem type attribute.\n");
+	      if(!args->name)
+		throw("mkxml: Name attribute missing on elem tag.");
+	      return "<group>\n<member><type><" + args->type +
+		"/></type><index>\"" + args->name + "\"</index></member>\n"
+		"<text><p>" + c + "</p></text>\n</group>\n";
+	    });
+	return ({ "<mapping>\n " +
+		  safe_newlines(i->finish(c)->read()) +
+		  "</mapping>\n " });
+      }
+      throw("mkxml: Unknown data_description type "+args->type+".\n");
+    });
+
+  parser->add_tag("br",lambda(mixed...) { return ({"<br/>"}); });
+  parser->add_tag("wbr",lambda(mixed...) { return ({"<br/>"}); });
+
+  parser->add_tags( ([ "dl":tag_quote_args,
+		       "dt":tag_quote_args,
+		       "dd":tag_quote_args,
+		       "tr":tag_quote_args,
+		       "th":tag_quote_args,
+		       "td":tag_quote_args,
+		       "ref":tag_quote_args ]) );
+
+  parser->add_container(
+    "text",
+    lambda(Parser.HTML p,mapping args, string c)
+    {
+      c=p->clone()->finish(c)->read();
+      string res="<text><p>"+c+"</p></text>";
+      string t;
+      do
+      {
+	t=res;
+	res=replace(res,"<p></p>","");
+	res=replace(res,"<br/></p>","</p>");
+      }
+      while (t!=res);
+      return ({res});
+    });
+
+  parser->add_container("link",
+    lambda(Parser.HTML p, mapping args, string c)
+    {
+      return ({ sprintf("<ref%{ %s=\"%s\"%}>%s</ref>", (array)args, c) });
+    });
+
+  parser->add_container("a",
+    lambda(Parser.HTML p, mapping args, string c)
+    {
+      return ({ sprintf("<url%{ %s=\"%s\"%}>%s</url>", (array)args, c) });
+    });
+
+  parser->add_container("execute",
+    lambda(Parser.HTML p, mapping args, string c)
+    {
+      return ({ c });
+    });
 
   array tmp = __FILE__/"/";
   string file = tmp[..sizeof(tmp)-2]*"/";
@@ -978,17 +986,15 @@ void create() {
 
   makepic2 = #";
   }
+
   string make() {
     object|string o=render();
-    if(stringp(o)) {
-      Stdio.write_file(fn, o);
-      werror(\"Wrote %s\\n\", fn);
-      return \"<image>\"+fn+\"</image>\";
-    }
+    if(objectp(o))
+      o=Image.PNG.encode(o);
 
-    Stdio.write_file(fn, Image.PNG.encode(o));
+    Stdio.write_file(fn, o);
     werror(\"Wrote %s.\\n\", fn);
-    return \"<image width='\"+o->xsize()+\"' height='\"+o->ysize()+\"'>\"+fn+\"</image>\";
+    return \"<image>\"+fn+\"</image>\";
   }
 ";
 
