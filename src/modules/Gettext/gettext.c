@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.13 2002/10/21 17:06:12 marcus Exp $
+|| $Id: gettext.c,v 1.14 2002/11/26 20:54:02 grubba Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.13 2002/10/21 17:06:12 marcus Exp $");
+RCSID("$Id: gettext.c,v 1.14 2002/11/26 20:54:02 grubba Exp $");
 
 /*! @module Locale
  */
@@ -145,8 +145,7 @@ void f_dcgettext(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
-/*
- *! @decl string textdomain(void|string domain)
+/*! @decl string textdomain(void|string domain)
  *!
  *! The textdomain() function sets or queries the name of the
  *! current domain of the active @[LC_MESSAGES] locale category. The
@@ -189,24 +188,26 @@ void f_textdomain(INT32 args)
 
 /*! @decl string bindtextdomain(string|void domainname, string|void dirname)
  *!
- *! The bindtextdomain() function binds the path predicate for a
- *! message @[domain] domainname to the directory name contained in @[dirname]. If
- *! domainname is a non-empty string and has not been bound
- *! previously, bindtextdomain() binds domainname with dirname. 
+ *! Binds the path predicate for a message @[domainname] domainname to
+ *! the directory name specified by @[dirname]. If @[domainname] is a
+ *! non-empty string and has not been bound previously, bindtextdomain()
+ *! binds @[domainname] with @[dirname]. 
  *! 
- *! If domainname is a non-empty string and has been bound previously,
- *! bindtextdomain() replaces the old binding with dirname. The dirname
+ *! If @[domainname] is a non-empty string and has been bound previously,
+ *! bindtextdomain() replaces the old binding with @[dirname]. The @[dirname]
  *! argument can be an absolute or relative pathname being resolved when
- *! @[gettext()], @[dgettext()] or @[dcgettext()] are called. If domainname is
- *! zero or an empty string, bindtextdomain() returns 0.  User
- *! defined domain names cannot begin with the string "SYS_".  Domain names
- *! beginning with this string are reserved for system use.
+ *! @[gettext()], @[dgettext()] or @[dcgettext()] are called. If @[domainname]
+ *! is zero or an empty string, @[bindtextdomain()] returns 0.
  *!
- *! The return value from bindtextdomain() is a string containing
- *! dirname or the directory binding associated with domainname if
- *! dirname is void. If no binding is found, the default locale
- *! path is returned. If domainname is void or an empty string,
- *! bindtextdomain() takes no action and returns a 0.
+ *! User defined domain names cannot begin with the string @tt{"SYS_"@}.
+ *! Domain names beginning with this string are reserved for system use.
+ *!
+ *! @returns
+ *!   The return value from @[bindtextdomain()] is a string containing
+ *!   @[dirname] or the directory binding associated with @[domainname] if
+ *!   @[dirname] is unspecified. If no binding is found, the default locale
+ *!   path is returned. If @[domainname] is unspecified or is an empty string,
+ *!   @[bindtextdomain()] takes no action and returns a 0.
  *!
  *! @seealso
  *!   @[textdomain], @[gettext], @[setlocale], @[localeconv]
