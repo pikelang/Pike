@@ -1,40 +1,34 @@
 string decode_charset( string data, string charset )
 {
-  charset = String.trim_all_whites( charset );
-  switch( replace(lower_case( charset ),"-","_")-"-" )
+  switch( replace(lower_case( charset ),"-","_")-"_" )
   {
     case "iso88591":
-      werror("iso-8859-1\n");
       return data;
     case "ucs2":
     case "unicode":
-      werror("ucs2\n");
       return unicode_to_string( data );
       break;
     case "utf8":
-      werror("utf-8\n");
       return utf8_to_string( data );
 
     case "eucjp":
     case "euc":
     case "eucjapan":
     case "japanese":
-      werror("euc-jp\n");
       return Locale.Charset.decoder( "euc-jp" )->feed( data )->drain();
+
     case "xsjis":
     case "shiftjis":
     case "jis":
-      werror("shift-jis\n");
       return Locale.Charset.decoder("Shift_JIS")->feed(data)->drain();
       
     default:
-      werror(charset+"\n");
       catch {
 	return Locale.Charset.decoder( charset )
 	  ->feed( data )
 	  ->drain();
       };
-      werror("Warning: Unknown charset: '"+charset+"'\n");
+      werror("\n****** Warning: Unknown charset: '"+charset+"'\n");
       return data;
   }
 }
@@ -67,15 +61,16 @@ string decode_http( string data, mapping headers,
       }
     }
   };
-  
+
   Parser.HTML p = Parser.HTML()->add_tag( "meta", do_meta );
+  p->ignore_unknown(1);
+  p->match_tag(0);
   p->case_insensitive_tag(1);
   p->feed( data[..1024] );
   p->finish();
 
   if( done )
     return data;
-
 
   // 3: DWIM.
 

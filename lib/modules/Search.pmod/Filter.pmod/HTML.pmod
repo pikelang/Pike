@@ -65,6 +65,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   Parser.HTML parser = Parser.HTML();
 
   parser->case_insensitive_tag(1);
+  parser->ignore_unknown(1);
+  parser->match_tag(0);
   parser->add_tag("meta",parse_meta );
 
   parser->add_container("title",parse_title);
