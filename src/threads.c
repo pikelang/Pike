@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.88 1999/05/12 05:27:48 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.89 1999/07/01 01:43:06 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -650,6 +650,12 @@ void f_mutex_lock(INT32 args)
 
   if(m->key)
   {
+    if(threads_disabled)
+    {
+      free_object(o);
+      error("Cannot wait for mutexes when threads are disabled!\n");
+    }
+
     SWAP_OUT_CURRENT_THREAD();
     do
     {
@@ -785,6 +791,9 @@ void f_cond_wait(INT32 args)
     
     mut=OB2KEY(key)->mut;
     if(!mut) error("Bad argument 1 to condition->wait()\n");
+
+    if(threads_disabled)
+      error("Cannot wait for conditions when threads are disabled!\n");
 
     /* Unlock mutex */
     mut->key=0;
