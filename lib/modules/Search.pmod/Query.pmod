@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.26 2004/08/07 15:26:58 js Exp $
+// $Id: Query.pmod,v 1.27 2004/08/19 13:08:48 noring Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -190,38 +190,65 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
         case "date":
           _WhiteFish.DateSet global_dateset = db->get_global_dateset();
 
-          int t =  Calendar.ISO.dwim_day(q->date)->unix_time();
-
           if(!sizeof(global_dateset))
           {
             push(global_dateset);
             break;
           }
 
-          _WhiteFish.DateSet restriction;
-          switch(q->operator[1])
-          {
-            case "=":
-              break;
-            case "<>":
-              break;
-            case "!=":
-              //          restriction = global_dateset->...;
-              break;
-            case "<=":
-              restriction = global_dateset->before(t+1)->finalize();
-              break;
-            case ">=":
-              restriction = global_dateset->after(t-1)->finalize();
-              break;
-            case "<":
-              restriction = global_dateset->before(t)->finalize();
-            break;
-            case ">":
-              restriction = global_dateset->after(t)->finalize();
-            break;
-          }
-          push(restriction);
+          int t_low, t_high;
+	  catch {
+	    t_low = t_high = Calendar.ISO.dwim_day(q->date)->unix_time();
+	    t_high += 24*60*60-1;   // Add 24 h to end of the day.
+	  };
+
+	  // Fix to allow year-month "%04d-%02d" timerange.
+	  if(!t_low && sscanf(q->date, "%4d-%2d", int y, int m) == 2)
+	    catch {
+	      Calendar.ISO.Month month = Calendar.ISO.Month(y, m);
+	      t_low  = month->unix_time();
+	      t_high = month->next()->unix_time()-1;
+	    };
+	  // Fix to allow year "%04d" timerange.
+	  if(!t_low && sscanf(q->date, "%4d", int y))
+	    catch {
+	      Calendar.ISO.Year year = Calendar.ISO.Year(y);
+	      t_low  = year->unix_time();
+	      t_high = year->next()->unix_time()-1;
+	    };
+	  
+	  if(!t_low || !t_high)
+	  {
+	    push(_WhiteFish.DateSet());
+	    break;
+	  }
+	  
+	  _WhiteFish.DateSet restriction;
+	  switch(q->operator[1])
+	  {
+	    case "=":
+	      restriction =
+		global_dateset->between(t_low-1, t_high+1)->finalize();
+	      break;
+	    case "<>":
+	    case "!=":
+	      restriction =
+		global_dateset->not_between(t_low-1, t_high+1)->finalize();
+	      break;
+	    case "<=":
+	      restriction = global_dateset->before(t_high+1)->finalize();
+	      break;
+	    case ">=":
+	      restriction = global_dateset->after(t_low-1)->finalize();
+	      break;
+	    case "<":
+	      restriction = global_dateset->before(t_low)->finalize();
+	      break;
+	    case ">":
+	      restriction = global_dateset->after(t_high)->finalize();
+	      break;
+	  }
+	  push(restriction || _WhiteFish.DateSet());
           break;
           
         case "text":
