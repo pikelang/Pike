@@ -9,7 +9,7 @@
 /*
  * Define the evaluator stack size, used for just about everything.
  */
-#define EVALUATOR_STACK_SIZE	50000
+#define EVALUATOR_STACK_SIZE	100000
 
 /*
  * The compiler stack is used when compiling to keep track of data.
