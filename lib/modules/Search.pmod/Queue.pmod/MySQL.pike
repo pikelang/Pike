@@ -34,22 +34,19 @@ void create( Web.Crawler.Stats _stats,
 
 static void perhaps_create_table(  )
 {
-  catch {
-    db->query(
+  db->query(
 #"
-    create table "+table+#" (
+    create table IF NOT EXISTS "+table+#" (
         uri        blob not null,
         uri_md5    char(32) not null default '',
 	template   varchar(255) not null default '',
 	md5        char(32) not null default '',
 	recurse    tinyint not null,
 	stage      tinyint not null,
-	INDEX uri_ind (uri_md5),
+	UNIQUE(uri_md5),
 	INDEX stage   (stage)
 	)
-    "
-    );
-  };
+    ");
 }
   
 mapping hascache = ([]);
@@ -80,11 +77,20 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
       rpath=rpath[sizeof(index)..];
   r->path=reverse(rpath);
     
-  if( force || (check_link(uri, allow, deny) && !has_uri( r ) ))
+  if( (force || (check_link(uri, allow, deny))) && !has_uri( r ) )
+  {
+    mixed err = catch(
     db->query( "insert into "+table+
 	       " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
 	       string_to_utf8((string)r),
-	       to_md5((string)r), recurse, (template||"") );
+	       to_md5((string)r), recurse, (template||"") ) );
+    if(err)
+    {
+      werror("Error inserting %s into queue.\n", (string)r);
+      werror("hascache: %O\n", hascache);
+      throw(err);
+    }
+  }
 }
 
 void set_md5( Standards.URI uri, string md5 )
@@ -192,6 +198,7 @@ void done( Standards.URI uri,
 
 void clear()
 {
+  hascache = ([ ]);
   db->query("delete from "+table);
 }
 
