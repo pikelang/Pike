@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.88 2001/06/08 19:26:44 grubba Exp $
+ * $Id: cpp.c,v 1.89 2001/06/14 19:28:08 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1311,7 +1311,9 @@ void f_cpp(INT32 args)
       }
       if (args > 3) {
 	if (sp[3-args].type == T_OBJECT) {
-	  this.handler = sp[3-args].u.object;
+	  if ((this.handler = sp[3-args].u.object)) {
+	    add_ref(this.handler);
+	  }
 	} else if (sp[3-args].type != T_INT) {
 	  free_string(data);
 	  free_string(this.current_file);
@@ -1417,6 +1419,12 @@ void f_cpp(INT32 args)
   {
     free_object(this.compat_handler);
     this.compat_handler=0;
+  }
+
+  if (this.handler)
+  {
+    free_object(this.handler);
+    this.handler = 0;
   }
 
   free_string(this.current_file);
