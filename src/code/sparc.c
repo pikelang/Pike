@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.29 2002/11/10 18:33:56 grubba Exp $
+|| $Id: sparc.c,v 1.30 2002/11/10 19:44:37 grubba Exp $
 */
 
 /*
@@ -450,8 +450,13 @@ void sparc_escape_catch(void)
   SPARC_FLUSH_UNSTORED();
   /* rd %pc, %i0 */
   SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
+#if 0
   /* add %i0, 20, %i0 */
   SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 20, 1);
+#else /* !0 */
+  /* add %i0, 24, %i0 */
+  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 24, 1);
+#endif /* 0 */
   /* stw %i0, [ %pike_fp, %offset(pike_frame, pc) ] */
   SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP,
 	    OFFSETOF(pike_frame, pc), 1);
