@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.41 2002/11/04 20:00:25 nilsson Exp $
+|| $Id: lexer.h,v 1.42 2003/01/08 09:43:18 grubba Exp $
 */
 
 /*
@@ -492,7 +492,7 @@ static int low_yylex(YYSTYPE *yylval)
     case 0:
       lex.pos -= (1<<SHIFT);
       if(lex.end != lex.pos)
-	my_yyerror("Illegal character (NUL)");
+	yyerror("Illegal character (NUL)");
 
 #ifdef TOK_LEX_EOF
       return TOK_LEX_EOF;
@@ -629,12 +629,12 @@ static int low_yylex(YYSTYPE *yylval)
 	    my_yyerror("Unknown preprocessor directive #%s.", dir->str);
 #if (SHIFT != 0)
 	  } else {
-	    my_yyerror("Unknown preprocessor directive.");
+	    yyerror("Unknown preprocessor directive.");
 	  }
 #endif /* SHIFT != 0 */
 	  free_string(dir);
 	} else {
-	  my_yyerror("Unknown preprocessor directive.");
+	  yyerror("Unknown preprocessor directive.");
 	}
 	SKIPUPTO('\n');
 	continue;
@@ -730,7 +730,8 @@ static int low_yylex(YYSTYPE *yylval)
 	for(l=1;INDEX_CHARP(lex.pos, l, SHIFT)<='9' &&
 	      INDEX_CHARP(lex.pos, l, SHIFT)>='0';l++)
 	  if(INDEX_CHARP(lex.pos, l, SHIFT)>='8')
-	    yyerror("Illegal octal number.");
+	    my_yyerror("Illegal octal digit '%c'.",
+		       INDEX_CHARP(lex.pos, l, SHIFT));
 
       f=lex_strtod(lex.pos, &p1);
 
