@@ -201,6 +201,12 @@ int do_parse()
     if(!first_word)
     {
       int d;
+      if(!strlen(input) && pos)
+      {
+	werror("Error in optimizer.\n");
+	exit(1);
+      }
+
       d=input[pos];
       if(d==' ' && !pos)
       {
