@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.3 1999/01/24 00:47:33 mirar Exp $
+**!	$Id: colors.c,v 1.4 1999/01/24 01:14:19 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -44,12 +44,12 @@
 **!
 **!	The prefix_string method is a form for getting modified 
 **!	colors, it understands all modifiers
-**!	(<ref to=Image.color.color->light>light</ref>,
-**!	<ref to=Image.color.color->dark>dark</ref>,
-**!	<ref to=Image.color.color->bright>bright</ref>,
-**!	<ref to=Image.color.color->dull>dull</ref> and 
-**!	<ref to=Image.color.color->neon>neon</ref>). Simply  use
-**!	&lt;method&gt;&lt;color&gt; (as in <tt>lightgreen</tt>, 
+**!	(<link to=Image.color.color.light>light</link>,
+**!	<link to=Image.color.color.dark>dark</link>,
+**!	<link to=Image.color.color.bright>bright</link>,
+**!	<link to=Image.color.color.dull>dull</link> and 
+**!	<link to=Image.color.color.neon>neon</link>). Simply  use
+**!	"method"+"color"; (as in <tt>lightgreen</tt>, 
 **!	<tt>dullmagenta</tt>, <tt>lightdullorange</tt>).
 **!
 **! see also: Image.color.color->name, Image.color.color->rgb
@@ -86,7 +86,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.3 1999/01/24 00:47:33 mirar Exp $");
+RCSID("$Id: colors.c,v 1.4 1999/01/24 01:14:19 mirar Exp $");
 
 #include "config.h"
 
@@ -709,31 +709,31 @@ void image_color_equal(INT32 args)
 **!	<table>
 **!	<tr><th>method</th><th width=50%>effect</th>
 **!	<th>h</th><th>s</th><th>v</th><th>as</th></tr>
-**!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td>
+**!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td><td>+50</td>
 **!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light()->light())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light()->light()->light())</illustration></td></tr>
 **!
-**!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td>
+**!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td><td>-50</td>
 **!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark()->dark())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
 **!
-**!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+50</td>
+**!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+50</td><td>+50</td>
 **!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright()->bright())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
 **!
-**!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-50</td>
+**!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-50</td><td>-50</td>
 **!	<td><illustration>return Image.image(20,20,@(array)Image.color.red)</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull()->dull())</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull()->dull()->dull())</illustration></td></tr>
 **!
-**!	<tr><td>neon  </td><td>set to extreme   </td><td>±0</td><td>max</td>
+**!	<tr><td>neon  </td><td>set to extreme   </td><td>±0</td><td>max</td><td>max</td>
 **!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
 **!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->neon())</illustration></td></tr>
 **!
@@ -975,9 +975,8 @@ void image_make_color(INT32 args)
 **!	Creates a new color object from given red, green and blue,
 **!	hue, saturation and value, or greylevel.
 **!
-**!	The <ref>html</ref>()
-**!	method only understands the HTML color names,
-**!	or the <tt>#rrggbb</tt> form.
+**!	The <ref>html</ref>() method only understands the HTML color names,
+**!	or the <tt>#rrggbb</tt> form. It is case insensitive.
 **!
 **! returns the created object.
 */

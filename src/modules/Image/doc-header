@@ -15,6 +15,10 @@
 **!     <td align=left valign=top><ref>Image.colortable</ref></td>
 **!     <td align=left valign=top>Color reduction, quantisation and dither</td>
 **!	</tr>
+**!	<tr>
+**!     <td align=left valign=top><ref>Image.color</ref></td>
+**!     <td align=left valign=top>Color names, objects and conversion</td>
+**!	</tr>
 **!	<tr></tr><tr></tr><tr></tr>
 **!	<tr>
 **!	<td align=left valign=top></td>

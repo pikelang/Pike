@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.9 1998/07/04 15:57:14 mast Exp $ */
+/* $Id: mkwmml.pike,v 1.10 1999/01/24 01:14:29 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -113,6 +113,12 @@ mapping keywords=
 	     if (!lower_nowM()) 
 	        return complain("note w/o method, class or module");
 	     descM=nowM->note||(nowM->note=(["_line":line]));
+	  },
+  "added":lambda(string arg,string line)
+	  {
+	     if (!lower_nowM()) 
+	        return complain("added in: w/o method, class or module");
+	     descM=nowM->added||(nowM->added=(["_line":line]));
 	  },
   "bugs":lambda(string arg,string line)
 	  {
@@ -362,6 +368,22 @@ void document(string enttype,
       f->write("<man_note>\n");
       f->write(fixdesc(huh->note->desc,prefix,huh->_line)+"\n");
       f->write("</man_note>\n\n");
+   }
+
+// [BUGS]
+
+   if (huh->bugs && huh->bugs->desc)
+   {
+      f->write("<man_bugs>\n");
+      f->write(fixdesc(huh->bugs->desc,prefix,huh->_line)+"\n");
+      f->write("</man_bugs>\n\n");
+   }
+
+// [ADDED]
+
+   if (huh->added && huh->added->desc)
+   {
+      /* noop */
    }
 
 // [SEE ALSO]

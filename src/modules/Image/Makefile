@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.12 1998/05/21 11:55:25 grubba Exp $
+# $Id: Makefile,v 1.13 1999/01/24 01:14:18 mirar Exp $
 
 DOCFILES = doc-header \
    image.c \
@@ -30,6 +30,7 @@ DOCFILES = doc-header \
    polyfill.c \
    togif.c \
    x.c \
+   colors.c \
    doc-footer
 
 WMMLDOCPLACE = ../../../tutorial/Image.wmml
