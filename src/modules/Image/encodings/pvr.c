@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.18 2002/06/18 10:08:29 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.19 2002/06/20 14:51:52 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -71,6 +71,7 @@ extern struct program *image_program;
 **!	<pre>
 **!	   "alpha":object            - alpha channel
 **!	   "global_index":int	     - global index
+**!	   "vq":int(0..1)	     - Vector Quantification compression
 **!	</pre>
 */
 
@@ -96,6 +97,274 @@ extern struct program *image_program;
 
 static INT32 twiddletab[1024];
 static int twiddleinited=0;
+
+
+/* Generalized Lloyd's Algorithm for VQ compression */
+/* Implements the Reduced Comparison Search optimization by
+   Kaukoranta et al, IEEE Transactions on Image Processing Aug 2000 */
+
+
+#define GLA_RCS
+#undef GLA_DEBUG
+#undef GLA_RANDOM
+
+
+typedef unsigned char P_t, V_t;
+
+struct gla_state
+{
+  int K, M;
+  INT32 N;
+  P_t *P;
+  V_t *T, *C;
+  INT32 *P_cnt, *C_work;
+#ifdef GLA_RCS
+  V_t *old_C;
+  int n_moved;
+  unsigned char *moved_map;
+  P_t *moved_list;
+#endif
+};
+
+static inline INT32 d(V_t *x, V_t *y, int k)
+{
+  INT32 sum=0;
+  int i;
+  while(k--) {
+    int n = (*x++)-(*y++);
+    sum += n*n;
+  }
+  return sum;
+}
+
+static void generate_optimal_partition(struct gla_state *st)
+{
+  INT32 i, n=st->N;
+  int j, m=st->M, k=st->K;
+#ifdef GLA_RCS
+  int nm = st->n_moved;
+#endif
+  P_t *p = st->P;
+  V_t *t = st->T;
+  for(i=0; i<n; i++) {
+#ifdef GLA_RCS
+    if(st->moved_map[*p] && d(t, st->C+k**p, k)>=d(t, st->old_C+k**p, k)) {
+#endif
+      int optimal = 0;
+      V_t *c = st->C;
+      INT32 d_tmp, d_optimal = d(t, c, k);
+      for(j=1; j<m; j++) {
+	c += k;
+	if((d_tmp = d(t, c, k)) < d_optimal) {
+	  optimal = j;
+	  d_optimal = d_tmp;
+	}
+      }
+      *p++ = optimal;
+#ifdef GLA_RCS
+    } else {
+      int optimal = *p;
+      INT32 d_tmp, d_optimal = d(t, st->C+k*optimal, k);
+      P_t *m = st->moved_list;
+      for(j=0; j<nm; j++)
+	if((d_tmp = d(t, st->C+*m++*k, k) < d_optimal)) {
+	  optimal = m[-1];
+	  d_optimal = d_tmp;
+	}
+      *p++ = optimal;
+    }
+#endif
+    t += k;
+  }
+}
+
+static int generate_optimal_codebook(struct gla_state *st)
+{
+  INT32 i, n = st->N;
+  int j, m = st->M, k = st->K;
+  P_t *p = st->P;
+  V_t *t = st->T;
+#ifdef GLA_RCS
+  V_t *oc = st->C;
+  V_t *c = st->old_C;
+#else
+  V_t *c = st->C;
+#endif
+  INT32 *pcnt = st->P_cnt, *cw = st->C_work;
+  int n_empty = 0;
+
+#ifdef GLA_RCS
+  st->C = c;
+  st->old_C = oc;
+#endif
+  memset(cw, 0, m*k*sizeof(INT32));
+  memset(pcnt, 0, m*sizeof(INT32));
+#ifdef GLA_RCS
+  st->n_moved = 0;
+#endif
+
+  for(i=0; i<n; i++) {
+    int pp = *p++;
+    INT32 *c = cw+k*pp;
+    for(j=0; j<k; j++)
+      *c++ += *t++;
+    pcnt[pp]++;
+  }
+
+  for(j=0; j<m; j++) {
+    int pp = *pcnt++;
+    if(pp) {
+#ifdef GLA_RCS
+      int moved=0;
+#endif
+      for(i=0; i<k; i++) {
+	V_t c_new = *cw++ / pp;
+#ifdef GLA_RCS
+	if((*c++ = c_new) != *oc++)
+	  moved = 1;
+#else
+	*c++ = c_new;
+#endif
+      }
+#ifdef GLA_RCS
+      if(moved) {
+	st->moved_map[j] = 1;
+	st->moved_list[st->n_moved++] = j;
+      } else
+	st->moved_map[j] = 0;
+#endif
+    } else {
+      V_t *t = st->T+k*(rand()%n);
+      memcpy(c, t, k*sizeof(V_t));
+      n_empty++;
+#ifdef GLA_RCS
+      st->moved_map[j] = 1;
+      st->moved_list[st->n_moved++] = j;
+      oc += k;
+#endif
+      c += k;
+      cw += k;
+    }
+  }
+  return n_empty;
+}
+
+static INT32 dist(struct gla_state *st)
+{
+  INT32 i, sum=0;
+  V_t *t = st->T;
+  V_t *c = st->C;
+  P_t *p = st->P;
+  int k = st->K;
+  for(i=0; i<st->N; i++, t+=k)
+    if((sum += d(t, c+k**p++, k))<0)
+      return (1UL<<31)-1;
+  return sum/st->N;
+}
+
+static void generate_C0(struct gla_state *st)
+{
+#ifdef GLA_RANDOM
+  int i, k = st->K, m = st->M;
+  INT32 n = st->N;
+  V_t *c = st->C;
+  for(i=0; i<m; i++, c+=k) {
+    V_t *t = st->T+k*(rand()%n);
+    memcpy(c, t, k*sizeof(V_t));
+  }
+#else
+  if(st->N<=st->M) {
+    memcpy(st->C, st->T, st->K*st->M*sizeof(V_t));
+    if(st->N<st->M)
+      memset(st->C+st->K*st->M, 0, st->K*(st->M-st->N)*sizeof(V_t));
+  } else {
+    int i, k = st->K, m = st->M;
+    INT32 p=0, step=st->N/m;
+    V_t *c = st->C;
+    V_t *t = st->T;
+    for(i=0; i<m; i++, p+=step) {
+      memcpy(c, t+k*p, k*sizeof(V_t));
+      c += k;
+    }
+  }
+#endif
+}
+
+static void gla(struct gla_state *st, int max_iter)
+{
+  int i, improvement_detected;
+  INT32 C_dist;
+  generate_C0(st);
+#ifdef GLA_RCS
+  memcpy(st->old_C, st->C, sizeof(V_t)*st->K*st->M);
+  st->n_moved = st->M;
+  for(i=0; i<st->M; i++)
+    st->moved_list[i] = i;
+  memset(st->moved_map, ~0, st->M);
+#endif
+  memset(st->P, 0, sizeof(P_t)*st->N);
+  C_dist = dist(st);
+  i = 0;
+  do {
+    INT32 old_C_dist = C_dist;
+    int n_empty;
+#ifdef GLA_DEBUG
+    printf("Iteration %d, dist = %d\n", i, C_dist);
+#endif
+    generate_optimal_partition(st);
+    n_empty = generate_optimal_codebook(st);
+#ifdef GLA_DEBUG
+    printf("%d empty clusters\n", n_empty);
+#endif
+    C_dist = dist(st);
+    i++;
+    improvement_detected = C_dist < old_C_dist;
+  } while(improvement_detected && i<max_iter);
+#ifdef GLA_DEBUG
+  if(improvement_detected)
+    printf("Aborted @ max_iter, dist = %d\n", C_dist);
+  else
+    printf("Done, dist = %d\n", C_dist);
+#endif
+}
+
+static struct gla_state *alloc_gla(int K, int M, INT32 N)
+{
+  struct gla_state *st = xalloc(sizeof(struct gla_state));
+  st->K = K;
+  st->M = M;
+  st->N = N;
+#ifdef GLA_RCS
+  st->moved_list = xalloc(sizeof(P_t)*st->M);
+  st->moved_map = xalloc(st->M);
+  st->old_C = xalloc(sizeof(V_t)*st->K*st->M);
+#endif
+  st->T = xalloc(sizeof(V_t)*st->K*st->N);
+  st->P = xalloc(sizeof(P_t)*st->N);
+  st->C = xalloc(sizeof(V_t)*st->K*st->M);
+  st->C_work = xalloc(sizeof(INT32)*st->K*st->M);
+  st->P_cnt = xalloc(sizeof(INT32)*st->M);
+
+  return st;
+}
+
+static void free_gla(struct gla_state *st)
+{
+#ifdef GLA_RCS
+  free(st->moved_list);
+  free(st->moved_map);
+  free(st->old_C);
+#endif
+  free(st->T);
+  free(st->P);
+  free(st->C);
+  free(st->C_work);
+  free(st->P_cnt);
+  free(st);
+}
+
+/* End of GLA implementation */
+
 
 static void init_twiddletab(void)
 {
@@ -228,15 +497,91 @@ static void pvr_encode_alpha_twiddled(INT32 attr, rgb_group *src,
   }
 }
 
+static void pvr_encode_vq(rgb_group *src, V_t *d, unsigned int sz)
+{
+  unsigned int x, y;
+  for(y=0; y<sz; y++) {
+    for(x=0; x<sz; x++) {
+      V_t *dst = d+(((twiddletab[x]<<1)|twiddletab[y])*3);
+      *dst++=src->r;
+      *dst++=src->g;
+      *dst++=src->b;
+      src++;
+    }
+  }
+}
+
+static void pvr_encode_alpha_vq(rgb_group *src, rgb_group *alpha,
+				V_t *d, unsigned int sz)
+{
+  unsigned int x, y;
+  for(y=0; y<sz; y++) {
+    for(x=0; x<sz; x++) {
+      V_t *dst = d+(((twiddletab[x]<<1)|twiddletab[y])*4);
+      *dst++=src->r;
+      *dst++=src->g;
+      *dst++=src->b;
+      *dst++=alpha->g;
+      src++;
+      alpha++;
+    }
+  }
+}
+
+static void pvr_encode_codebook(INT32 attr, V_t *src, unsigned char *dst)
+{
+  int cnt = 256*4;
+  switch(attr&0xff) {
+   case MODE_RGB565:
+     while(cnt--) {
+       unsigned int p =
+	 ((src[0]&0xf8)<<8)|((src[1]&0xfc)<<3)|((src[2]&0xf8)>>3);
+       *dst++=p&0xff;
+       *dst++=(p&0xff00)>>8;
+       src+=3;
+     }
+     break;
+  }
+}
+
+static void pvr_encode_codebook_alpha(INT32 attr, V_t *src, unsigned char *dst)
+{
+  int cnt = 256*4;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+     while(cnt--) {
+       unsigned int p =
+	 ((src[0]&0xf8)<<7)|((src[1]&0xf8)<<2)|((src[2]&0xf8)>>3);
+       if(src[3]&0x80)
+	 p |= 0x8000;
+       *dst++=p&0xff;
+       *dst++=(p&0xff00)>>8;
+       src+=4;
+     }
+     break;
+   case MODE_ARGB4444:
+     while(cnt--) {
+       unsigned int p =
+	 ((src[3]&0xf0)<<8)|
+	 ((src[0]&0xf0)<<4)|(src[1]&0xf0)|((src[2]&0xf0)>>4);
+       *dst++=p&0xff;
+       *dst++=(p&0xff00)>>8;
+       src+=4;
+     }
+     break;
+  }
+}
+
 void image_pvr_f_encode(INT32 args)
 {
   struct object *imgo;
   struct mapping *optm = NULL;
   struct image *alpha = NULL, *img;
   INT32 gbix=0, sz, attr=0;
-  int has_gbix=0, twiddle=0;
+  int has_gbix=0, twiddle=0, compress = 0;
   struct pike_string *res;
   unsigned char *dst;
+  struct gla_state *gla_st = NULL;
 
   get_all_args("Image.PVR.encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
 					  "%o%m":"%o"), &imgo, &optm);
@@ -259,6 +604,9 @@ void image_pvr_f_encode(INT32 args)
       else
 	Pike_error("Image.PVR.encode: option (arg 2) \"global_index\" has illegal type\n");
     }
+    if((s = simple_mapping_string_lookup(optm, "vq"))!=NULL &&
+       !UNSAFE_IS_ZERO(s))
+      compress = 1;
   }
 
   if (!img->img)
@@ -269,7 +617,11 @@ void image_pvr_f_encode(INT32 args)
   if (alpha && (alpha->xsize != img->xsize || alpha->ysize != img->ysize))
     Pike_error("Image.PVR.encode: alpha and image size differ\n");
 
-  res = begin_shared_string(8+(sz=8+2*img->xsize*img->ysize)+(has_gbix? 12:0));
+  if(compress)
+    sz=8+256*4*2+(img->xsize>>1)*(img->ysize>>1);
+  else
+    sz=8+2*img->xsize*img->ysize;
+  res = begin_shared_string(8+sz+(has_gbix? 12:0));
   dst = STR0(res);
 
   switch(pvr_check_alpha(alpha)) {
@@ -291,6 +643,15 @@ void image_pvr_f_encode(INT32 args)
     twiddle = 1;
   } else
     attr |= MODE_RECTANGLE;
+
+  if(compress) {
+    if(twiddle)
+      attr ^= MODE_TWIDDLE^MODE_COMPRESSED;
+    else {
+      free_string(end_shared_string(res));
+      Pike_error("Image.PVR.encode: illegal image size for VQ compression\n");
+    }
+  }
 
   if(has_gbix) {
     *dst++ = 'G';
@@ -327,18 +688,40 @@ void image_pvr_f_encode(INT32 args)
   if(twiddle && !twiddleinited)
     init_twiddletab();
 
+  if(compress)
+    gla_st = alloc_gla((alpha? 16:12), 256, (img->xsize>>1)*(img->ysize>>1));
+
   if(alpha != NULL)
     if(twiddle)
-      pvr_encode_alpha_twiddled(attr, img->img, alpha->img, dst, img->xsize);
+      if(compress)
+	pvr_encode_alpha_vq(img->img, alpha->img, gla_st->T, img->xsize);
+      else
+	pvr_encode_alpha_twiddled(attr, img->img, alpha->img, dst, img->xsize);
     else
       pvr_encode_alpha_rect(attr, img->img, alpha->img, dst,
 			    img->ysize, img->xsize);
   else
     if(twiddle)
-      pvr_encode_twiddled(attr, img->img, dst, img->xsize);
+      if(compress)
+	pvr_encode_vq(img->img, gla_st->T, img->xsize);
+      else
+	pvr_encode_twiddled(attr, img->img, dst, img->xsize);
     else
       pvr_encode_rect(attr, img->img, dst, img->ysize, img->xsize);
 
+  if(compress) {
+    THREADS_ALLOW();
+    gla(gla_st, 30);
+    if(alpha != NULL)
+      pvr_encode_codebook_alpha(attr, gla_st->C, dst);
+    else
+      pvr_encode_codebook(attr, gla_st->C, dst);
+    memcpy(dst+256*4*2, gla_st->P, (img->xsize>>1)*(img->ysize>>1));
+    THREADS_DISALLOW();
+  }
+
+  if(gla_st)
+    free_gla(gla_st);
   pop_n_elems(args);
   push_string(end_shared_string(res));
 }
