@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.4 2003/09/20 21:38:29 nilsson Exp $
+|| $Id: pcre_glue.cmod,v 1.5 2003/09/21 09:56:55 mirar Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.4 2003/09/20 21:38:29 nilsson Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.5 2003/09/21 09:56:55 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -90,7 +90,6 @@ PIKECLASS _pcre
 	       get_all_args("pcre->create",args,"%S",&(THIS->pattern));
 	       break;
 	 }
-	 add_ref(THIS->pattern);
 	 add_ref(THIS->pattern);
 
 	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
@@ -318,6 +317,17 @@ PIKECLASS _pcre
 	 }
       }
 
+/*! @decl int get_stringnumber(string stringname)
+ *!    returns the number of a named subpattern
+ */
+
+   PIKEFUN int get_stringnumber(string stringname)
+      {
+	 if (stringname->size_shift)
+	    SIMPLE_BAD_ARG_ERROR("get_stringnumber",1,"string (8bit)");
+	 RETURN pcre_get_stringnumber(THIS->re,stringname->str);
+      }
+
    INIT
       {
 	 THIS->re=NULL;
@@ -329,19 +339,8 @@ PIKECLASS _pcre
       {
 	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
-	 if (THIS->pattern) free_string(THIS->pattern);
       }
 
-/*! @decl int get_stringnumber(string stringname)
- *!    returns the number of a named subpattern
- */
-
-   PIKEFUN int get_stringnumber(string stringname)
-      {
-	 if (stringname->size_shift)
-	    SIMPLE_BAD_ARG_ERROR("get_stringnumber",1,"string (8bit)");
-	 RETURN pcre_get_stringnumber(THIS->re,stringname->str);
-      }
 }
 
 /*! @endclass
