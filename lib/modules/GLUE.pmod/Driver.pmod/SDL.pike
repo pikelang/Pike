@@ -1,5 +1,5 @@
 //
-// $Id: SDL.pike,v 1.3 2004/01/26 09:57:23 grubba Exp $
+// $Id: SDL.pike,v 1.4 2004/04/08 21:52:50 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -31,6 +31,33 @@ static void event_handler()
   thread_create( low_handle_events );
 #endif
 }
+
+class MouseAbs
+{
+    inherit Event;
+    float xp, yp;
+
+    this_program dup()
+    {
+	object x = ::dup();
+	x->xp = xp;
+	x->yp = yp;
+	return x;
+    }
+
+    void create( int q, int pr, float _xp, float _yp  )
+    {
+	if( floatp(_xp) && floatp(_yp) )
+	{
+	    xp = _xp;
+	    yp = _yp;
+	}
+	::create( MOUSE_ABS, pr );
+    }
+}
+
+float mmx, mmy;
+int odx, ody;
 void low_handle_events()
 {
   while( 1 )
@@ -99,7 +126,19 @@ void low_handle_events()
 	  {
 	    int dx = evt->x - screen->w/2;
 	    int dy = evt->y - screen->h/2;
-	    if( nomove ) break;
+
+	    if( nomove ) {
+		odx=0;
+		ody=0;
+		break;
+	    }
+	    mmx += ((float)(dx-odx) / screen->w)*2.0;
+	    mmy += ((float)(dy-ody) / screen->h)*2.0;
+	    odx = dx; ody = dy;
+
+	    if( mmx > 1.0 ) mmx = 1.0; else if( mmx < 0.0 ) mmx = 0.0;
+	    if( mmy > 1.0 ) mmy = 1.0; else if( mmy < 0.0 ) mmy = 0.0;
+
 #define SC 30
 	    if( (abs(dx)>SC) || (abs(dy)>SC) )
 	    {
@@ -128,6 +167,13 @@ void low_handle_events()
 	      call_out(lambda(){nomove = 0;},0.01);
 	    }
 	  }
+	  else
+	  {
+	      mmx = evt->x/(float)screen->w;
+	      mmy = evt->y/(float)screen->h;
+	  }
+	  key_evt( MouseAbs( 0,1,mmx,mmy ) );
+	  key_evt( MouseAbs( 0,0,mmx,mmy ) );
 	  break;
 	case SDL.VIDEORESIZE:
 	  if( !is_full )
@@ -173,10 +219,10 @@ int set_mode( int fullscreen, int depth,
     SDL.gl_set_attribute( SDL.GL_BLUE_SIZE,  5 );
   }
   is_full = fullscreen;
-  if(fullscreen)
+//   if(fullscreen)
     hide_cursor();
-  else
-    show_cursor();
+//   else
+//     show_cursor();
   screen = SDL.set_video_mode( width, height, (bpp=depth),
 			       SDL.OPENGL|SDL.ANYFORMAT|
 			       (fullscreen*SDL.FULLSCREEN)|
