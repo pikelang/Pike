@@ -322,7 +322,7 @@ function call(string project, string lang, string name,
   if(!locale_object || !(f=locale_object->is_function(name))) 
     if(stringp(fb)) {
       locale_object = get_object(project, fb);
-      if(!(f=locale_object->is_function(name)))
+      if(!locale_object || !(f=locale_object->is_function(name)))
 	return 0;
     }
   return f || [function]fb;
