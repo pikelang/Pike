@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.193 2003/11/24 17:28:45 grubba Exp $
+|| $Id: program.h,v 1.194 2003/11/25 16:00:20 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -96,6 +96,7 @@ struct object;
 #include "compilation.h"
 
 /* Byte-code method identification. */
+#define PIKE_BYTECODE_PORTABLE	-1	/* Only used by the codec. */
 #define PIKE_BYTECODE_DEFAULT	0
 #define PIKE_BYTECODE_GOTO	1
 #define PIKE_BYTECODE_SPARC	2
