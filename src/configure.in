@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.415 2000/09/15 21:29:33 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.416 2000/09/15 21:43:32 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -879,7 +879,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-qro,qro,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(-qfold,qfold,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(-qwarn64,qwarn64,WARN)
-    AC_SYS_COMPILER_FLAG(-qflag=i,qflag_i,WARN)
+    AC_SYS_COMPILER_FLAG(-qflag=w,qflag_w,WARN)
     AC_DEFUN(AC_SYS_COMPILER_FLAG_QINFO, [
       AC_SYS_COMPILER_FLAG(-qinfo=$1,qinfo_$1,WARN)
     ])
