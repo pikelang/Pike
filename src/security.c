@@ -6,6 +6,37 @@
  * controls for threads
  */
 
+/*: <pikedoc>
+ *: <section title="Internal security">
+ *: Pike has an optional internal security system, which can be
+ *: enabled with the configure-option <code language=sh>--with-security</code>.
+ *: <p>
+ *: The security system is based on attaching credential objects
+ *: (<code language=pike>__builtin.security.Creds</code>) to objects,
+ *: programs, arrays, mappings or multisets.
+ *: <p>
+ *: A credential object in essence holds three values:
+ *: <ul>
+ *: <li><code language=pike>user</code> -- The owner.
+ *: <li><code language=pike>allow_bits</code> -- Global access permissions.
+ *: <li><code language=pike>data_bits</code> -- Data access permissions.
+ *: </ul>
+ *: <p>
+ *: The following security bits are currently defined:
+ *: <ul>
+ *: <li><code language=pike>BIT_INDEX</code> -- Allow indexing.
+ *: <li><code language=pike>BIT_SET_INDEX</code> -- Allow setting of indices.
+ *: <li><code language=pike>BIT_CALL</code> -- Allow calling of functions.
+ *: <li><code language=pike>BIT_SECURITY</code> -- Allow usage of security
+ *: related functions.
+ *: <li><code language=pike>BIT_NOT_SETUID</code> -- ??
+ *: <li><code language=pike>BIT_CONDITIONAL_IO</code> -- ??
+ *: <li><code language=pike>BIT_DESTRUCT</code> -- Allow use of
+ *: <code language=pike>destruct()</code>.
+ *: </ul>
+ *: </pikedoc>
+ */
+
 #ifdef PIKE_SECURITY
 
 #include "interpret.h"
@@ -32,7 +63,18 @@ static int valid_creds_object(struct object *o)
     OBJ2CREDS(o)->user;
 }
 
-/* mixed call_with_creds(object(Creds) creds, mixed func, mixed ... args) */
+/*: <pikedoc>
+ *: <function name=call_with_creds title="call with credentials">
+ *: <man_syntax>
+ *: mixed call_with_creds(object(Creds) creds, mixed func, mixed ... args); 
+ *: </man_syntax>
+ *: <man_description>
+ *: Sets the current credentials to <arg>creds</arg>, and calls
+ *: <code language=pike><arg>func</arg>(@<arg>args</arg>)</code>.
+ *: </man_description>
+ *: </function>
+ *: </pikedoc>
+ */
 static void f_call_with_creds(INT32 args)
 {
   struct object *o;
@@ -76,7 +118,17 @@ static void f_call_with_creds(INT32 args)
   sp--;
 }
 
-/* object(Creds) get_current_creds() */
+/*: <pikedoc>
+ *: <function name=get_current_creds title="get the current credentials">
+ *: <man_syntax>
+ *: object(Creds) get_current_creds();
+ *: </man_syntax>
+ *: <man_description>
+ *: Returns the credentials for the current thread.
+ *: </man_description>
+ *: </function>
+ *: </pikedoc>
+ */
 static void f_get_current_creds(INT32 args)
 {
   pop_n_elems(args);
@@ -90,7 +142,21 @@ static void f_get_current_creds(INT32 args)
  * should say what we can do with it.
  */
 
-/* object(Creds) creds->get_default_creds() */
+/*: <pikedoc>
+ *: <class name=Creds>
+ *: The credentials object.
+ *:
+ *: <method name=get_default_creds title="get the default credentials">
+ *: <man_syntax>
+ *: object(Creds) get_default_creds();
+ *: </man_syntax>
+ *: <man_description>
+ *: Returns the default credentials object if it has been set.
+ *: Returns 0 if it has not been set.
+ *: </man_description>
+ *: </method>
+ *: </pikedoc>
+ */
 static void get_default_creds(INT32 args)
 {
   pop_n_elems(args);
@@ -195,6 +261,11 @@ static void f_get_object_creds(INT32 args)
   }
 }
 
+/*: <pikedoc>
+ *: </class>
+ *: </pikedoc>
+ */
+
 static void init_creds_object(struct object *o)
 {
   THIS->user=0;
@@ -294,5 +365,10 @@ void exit_pike_security()
   }
 #endif
 }
+
+/*: <pikedoc>
+ *: </section>
+ *: </pikedoc>
+ */
 
 #endif
