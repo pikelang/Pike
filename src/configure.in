@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.829 2004/04/16 13:32:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.830 2004/05/04 20:47:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -873,7 +873,7 @@ else
   else
     if test "x$ac_cv_prog_cc_cross" = "xyes"; then
       PIKE_MSG_WARN([Crosscompiler detected.])
-      AC_PATH_PROGS(SMARTBUILDCC, gcc cc egcs, gcc, /usr/bin:/bin/:/usr/ccs/bin:/usr/local/bin:$PATH:$EXTRA_PATH)
+      AC_PATH_PROGS(SMARTBUILDCC, gcc cc egcs, gcc, /usr/bin:/bin/:/usr/ccs/bin:/usr/local/bin:/usr/sfw/bin:$PATH:$EXTRA_PATH)
       echo Using $SMARTBUILDCC to compile smartlink.
     fi
   fi
@@ -2087,7 +2087,7 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
     $with_root/usr/gnu/include $with_root/opt/gnu/include \
     $with_root/sw/gnu/include $with_root/sw/include \
     $with_root/usr/freeware/include $with_root/usr/pkg/include \
-    $with_root/opt/sfw/include \
+    $with_root/opt/sfw/include $with_root/usr/sfw/include \
     `echo $with_root/opt/gnome*/include | sort -r` \
     `echo $with_root/usr/X11*/include | sort -r`
   do
@@ -2145,7 +2145,8 @@ if test $ldflags_is_set = no ; then
     $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
     $with_root/usr/gnu/lib $with_root/opt/gnu/lib $with_root/sw/gnu/lib \
     $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
-    $with_root/opt/sfw/lib $with_root/opt/gnome-1.4/lib \
+    $with_root/opt/sfw/lib $with_root/usr/sfw/lib \
+    $with_root/opt/gnome-1.4/lib \
     `echo $with_root/usr/X11*/lib | sort -r`
   do
     if test "$dd" = "/lib"; then continue; fi
@@ -2200,7 +2201,7 @@ for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$
     "$with_root" $with_root/usr $with_root/usr/ccs $with_root/usr/vac \
     $with_root/usr/local $with_root/sw/local $with_root/usr/gnu \
     $with_root/opt/gnu $with_root/sw/gnu $with_root/sw \
-    $with_root/opt/sfw $with_root/opt/gnome-1.4 \
+    $with_root/opt/sfw $with_root/usr/sfw $with_root/opt/gnome-1.4 \
     $with_root/usr/freeware $with_root/usr/pkg
 do
   AC_MSG_CHECKING($d/bin)
