@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: mkpeep.pike,v 1.8 1998/04/27 09:53:47 hubbe Exp $ */
+/* $Id: mkpeep.pike,v 1.9 1998/05/13 07:35:45 hubbe Exp $ */
 
 import Simulate;
 
@@ -113,6 +113,30 @@ mixed split(string s)
     if(a[e][0]=='F')
       opcodes++;
 
+#if 0
+  /* It was a good idea, but it doesn't work */
+  mixed qqqq=copy_value(b);
+  i=0;
+  while(sizeof(b))
+  {
+    if(b[0] != a[i])
+      break;
+    
+    if(sizeof(b)>1 && b[1][0]!='F')
+    {
+      if(b[1] != sprintf("($%da)",i+1))
+	break;
+      b=b[2..];
+    }else{
+      b=b[1..];
+    }
+    i++;
+    opcodes--;
+  }
+  if(i)
+    werror("----------------------\n%d\n%O\n%O\n%O\n",opcodes,a,b,qqqq);
+#endif
+
   i=0;
   for(e=0;e<sizeof(a);e++)
   {
@@ -138,17 +162,14 @@ mixed split(string s)
   {
     if(a[e]=="!")
     {
-      a[e+1]=replace(a[e+1],"==","!=");
+      sscanf(a[e+1],"%s==%s",string op, string arg);
+      a[e+1]=sprintf("%s != %s && %s !=-1",op,arg,arg);
       a=a[..e-1]+a[e+1..];
       e--;
     }
   }
 
-#ifdef DEBUG
-  werror(sprintf("%O\n",({a,b})));
-#endif
-
-  return ({a,b,opcodes, line});
+  return ({a,b,opcodes, line,a});
 }
 
 /* Replace $[0-9]+(o|a) with something a C compiler can understand */
@@ -181,7 +202,6 @@ void dump2(mixed *data,int ind)
   int e,i,max,maxe;
   mixed a,b,d,tmp;
   string test;
-  int wrote_switch;
   mapping foo;
   mixed cons, var;
 
@@ -228,7 +248,6 @@ void dump2(mixed *data,int ind)
 
     test=m_indices(foo)[maxe];
     
-    wrote_switch++;
     write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
     write(sprintf("%*n{\n",ind));
 
@@ -260,9 +279,7 @@ void dump2(mixed *data,int ind)
       write("\n");
     }
 
-    if(sizeof(data))
-      write(sprintf("%*ndefault:\n",ind));
-    ind+=2;
+    write(sprintf("%*n}\n",ind));
   }
   
   /* Take care of whatever is left */
@@ -283,55 +300,6 @@ void dump2(mixed *data,int ind)
       }
       write(sprintf("%*n{\n",ind));
       ind+=2;
-#if 0
-
-      if(sizeof(d[1]))
-      {
-	write(sprintf("%*nstruct pike_string *cf;\n",ind));
-	write(sprintf("%*nINT32 cl=instr(0)->line;\n",ind));
-      }
-
-      for(i=0;i<sizeof(d[1]);i++)
-      {
-	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
-	{
-	  string tmp=d[1][i+1];
-	  tmp=treat(tmp[1..strlen(tmp)-2]);
-	  write(sprintf("%*nINT32 arg%d=%s;\n",ind,i,tmp));
-	  i++;
-	}
-      }
-
-      if(sizeof(d[1]))
-      {
-	write(sprintf("%*ncopy_shared_string(cf,instr(0)->file);\n",ind));
-      }
-
-      write(sprintf("%*npop_n_opcodes(%d);\n",ind,d[2]));
-
-      int q;
-
-      for(i=0;i<sizeof(d[1]);i++)
-      {
-	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
-	{
-	  write(sprintf("%*ninsopt(%s,arg%d,cl,cf);\n",ind,d[1][i],i));
-	  i++;
-	}else{
-	  write(sprintf("%*ninsopt2(%s,cl,cf);\n",ind,d[1][i]));
-	}
-	q++;
-      }
-      if(sizeof(d[1]))
-      {
-	if(q)
-	  write(sprintf("%*nfifo_len+=%d;\n",ind,q));
-	write(sprintf("%*nfree_string(cf);\n",ind));
-	write(sprintf("%*ndebug();\n",ind));
-      }
-      write(sprintf("%*nfifo_len+=%d;\n",ind,q+JUMPBACK));
-#else
-
       write("%*ndo_optimization(%d,\n",ind,d[2]);
 
       for(i=0;i<sizeof(d[1]);i++)
@@ -347,17 +315,10 @@ void dump2(mixed *data,int ind)
       }
       write("%*n                0);\n",ind);
 
-#endif
       write(sprintf("%*ncontinue;\n",ind));
       ind-=2;
       write(sprintf("%*n}\n",ind,test));
     }
-  }
-
-  while(wrote_switch--)
-  {
-    ind-=2;
-    write(sprintf("%*n}\n",ind));
   }
 }
   
@@ -394,7 +355,7 @@ int main(int argc, string *argv)
   write("  instrbuf.s.str=0;\n");
   write("  fifo_len=0;\n");
   write("  init_bytecode();\n\n");
-  write("  for(eye=0;eye<len;)\n  {\n");
+  write("  for(eye=0;eye<len || fifo_len;)\n  {\n");
   write("    INT32 current_line;\n");
   write("    struct pike_string *current_file;\n");
   write("\n");
