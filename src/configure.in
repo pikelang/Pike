@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.266 1999/03/06 02:36:16 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.267 1999/03/06 17:47:16 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -105,6 +105,7 @@ else
   UNAME=unknown
 fi
 
+# FIXME: Add proper tests
 case "$UNAME" in
   OSF1\ V4.*)
     AC_DEFINE(USE_RPATH)
@@ -132,8 +133,8 @@ REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
 # Fix a smartlink
 SMARTLINK="$BUILDDIR/smartlink"
 
-AC_MSG_CHECKING(if $SMARTLINK exists and works)
-if "$SMARTLINK" -v >/dev/null 2>&5; then
+AC_MSG_CHECKING(if $SMARTLINK exists is up to date and works)
+if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" | head -1 | grep "smartlink.$ac_ext" >/dev/null && "$SMARTLINK" -v >/dev/null 2>&5; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
