@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.824 2004/03/21 17:33:57 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.825 2004/04/03 19:46:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1383,8 +1383,6 @@ AC_ARG_WITH(thread_c_stack,
 	    [AC_DEFINE_UNQUOTED(PIKE_THREAD_C_STACK_SIZE,($withval))],
 	    [AC_DEFINE(PIKE_THREAD_C_STACK_SIZE,(256 * 1024))])
 
-AC_ARG_WITH(epoll, MY_DESCR([--with-epoll],
-			    [enable support for /dev/epoll (EXPERIMENTAL)]))
 AC_ARG_WITH(devpoll, MY_DESCR([--without-devpoll],
 			      [disable support for /dev/poll]),
 	    [],[with_devpoll=yes])
@@ -1529,11 +1527,6 @@ dnl else :; fi
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)
-else :; fi
-
-if test "x$with_epoll" = "xyes"; then
-  PIKE_MSG_WARN([Enabling experimental support for /dev/epoll.])
-  AC_DEFINE(WITH_EPOLL)
 else :; fi
 
 if test "x$with_valgrind" = "xno"; then
@@ -2552,28 +2545,30 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
-		 mach/mach_init.h sys/epoll.h syscall.h sys/syscall.h)
+		 mach/mach_init.h syscall.h sys/syscall.h)
 
 # Make it possible to disable use of /dev/poll.
-# It seems buggy on Solaris 7/x86.
 if test "x$with_devpoll" = "xno"; then :; else
-  AC_CHECK_HEADERS(sys/devpoll.h)
+  AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
 
-  if test "x$ac_cv_header_sys_devpoll_h" = "xyes"; then
-    AC_MSG_CHECKING(for poll device)
-    AC_CACHE_VAL(pike_cv_device_devpoll, [
-      pike_cv_poll_device="no"
-      for device in /dev/poll; do
-        if test -w "$device"; then
-          pike_cv_poll_device="$device"
-	  break
-	fi
-      done
-    ])
-    AC_MSG_RESULT($pike_cv_poll_device)
-    if test "x$pike_cv_poll_device" = "xno"; then :; else
-      AC_DEFINE_UNQUOTED(PIKE_POLL_DEVICE, "$pike_cv_poll_device")
-    fi
+  if :; then :; else
+    # The kqueue support isn't working yet.
+    AC_CHECK_FUNCS(kqueue)
+  fi
+
+  AC_MSG_CHECKING(for poll device)
+  AC_CACHE_VAL(pike_cv_device_devpoll, [
+    pike_cv_poll_device="no"
+    for device in /dev/poll /dev/epoll; do
+      if test -w "$device"; then
+        pike_cv_poll_device="$device"
+	break
+      fi
+    done
+  ])
+  AC_MSG_RESULT($pike_cv_poll_device)
+  if test "x$pike_cv_poll_device" = "xno"; then :; else
+    AC_DEFINE_UNQUOTED(PIKE_POLL_DEVICE, "$pike_cv_poll_device")
   fi
 fi
 
