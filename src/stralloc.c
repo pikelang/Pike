@@ -23,7 +23,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.62 1999/09/02 04:40:49 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.63 1999/09/06 12:31:31 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -31,7 +31,7 @@ RCSID("$Id: stralloc.c,v 1.62 1999/09/02 04:40:49 hubbe Exp $");
 /* Experimental dynamic hash length */
 #ifndef HASH_PREFIX
 static unsigned int HASH_PREFIX=32;
-static int need_more_hash_prefix=0;
+static unsigned int need_more_hash_prefix=0;
 #endif
 
 unsigned INT32 htable_size=0;
@@ -278,9 +278,9 @@ static int improper_zero_termination(struct pike_string *s)
 #define locate_problem(X)
 #endif
 
-/*\ find a string in the shared string table.
-||| This assumes that the string is minimized!!!! 
-\*/
+/* Find a string in the shared string table.
+ * This assumes that the string is minimized!!!! 
+ */
 static struct pike_string *internal_findstring(const char *s,
 					       int len,
 					       int size_shift,
@@ -318,7 +318,7 @@ static struct pike_string *internal_findstring(const char *s,
   }
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
-  if(depth > HASH_PREFIX && HASH_PREFIX<len)
+  if((depth > HASH_PREFIX) && (HASH_PREFIX < (unsigned int)len))
   {
     need_more_hash_prefix++;
 /*    fprintf(stderr,"depth=%d  num_strings=%d need_more_hash_prefix=%d  HASH_PREFIX=%d\n",depth,num_strings,need_more_hash_prefix,HASH_PREFIX); */
@@ -422,7 +422,7 @@ struct pike_string *debug_begin_shared_string(int len)
   return t;
 }
 
-static void link_pike_string(struct pike_string *s, int h)
+static void link_pike_string(struct pike_string *s, unsigned int h)
 {
   s->refs = 0;
   s->next = base_table[h];
@@ -451,7 +451,7 @@ static void link_pike_string(struct pike_string *s, int h)
       base_table[h]=0;
       while(tmp)
       {
-	int h2;
+	unsigned int h2;
 	struct pike_string *tmp2=tmp; /* First unlink */
 	tmp=tmp2->next;
 
@@ -1243,7 +1243,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   {
     /* One ref - destructive mode */
 
-    if(index>=HASH_PREFIX && index<a->len-8)
+    if((((unsigned int)index) >= HASH_PREFIX) && (index < a->len-8))
     {
       /* Doesn't change hash value - sneak it in there */
       low_set_index(a,index,c);
