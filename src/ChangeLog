@@ -1,3 +1,39 @@
+Mon Jan 27 09:03:40 1997  Per Hedbor  <per@infovav.se>
+
+	* configure.in: Added support for a number of optimization options
+   	  to gcc and other cc compilers.
+          With gcc:
+	    On all CPUs:
+	     -O2 and -funroll-loops are tried
+	     
+	    On sparclite (sun4c): -msparclite
+	    On microsparc (sun4m): -mv8
+	    On supersparcs and ultrasparcs (sun4d and sun4u): -msupersparc
+
+	    This is more or less equivavalent to the -native option in
+	    many cc compilers.
+
+	    The generated binary will work on all sparcs, but it will be
+	    optimized for the sparc it was compiled on. -mv8 gives an
+	    speed improvment of about 200% in the image module on a Sparc
+	    Station 4, and -msupersparc gives almost 300% on an ultra.
+
+	    There is no support in gcc for ultrasparc native code.
+
+	    If GCC had had v8 as a default sparc-instruction set, this
+	    hazzle would not really have been neccesary. It currently uses
+	    the v7 set, but there are not all that many v7's out there today.
+
+	  With other compilers:
+	    On all CPUs:
+	      -O, -fast and -native
+	     (for apcc): -XO=5, -Xcallmod=2
+            sun4m: -Xpipe=micro
+	    sun4d and sun4u: -Xpipe=super
+
+          There is probably a need for more optimization options for other
+	  CPUs than sparc. 
+
 Sun Jan 26 13:44:18 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* endode.c: encode_value and spinner compatible decode_value added
