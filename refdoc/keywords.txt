@@ -302,6 +302,25 @@ Examples:     You really look @i{italic@}! - You mean @i{Italian@}, don't you?
 XML:          <i>...</i>
 ________________________________________________________________________________
 
+Keyword:      @int - @endint
+Description:  Documentation of the different values an integer may have.
+Arguments:    -
+Children:     @value
+Examples:     @int
+                @value 0
+                  Ignore all zonks.
+                @value 1
+                  Transform zonks into flutter.
+                @value -1
+                  Remove all zonks.
+                @value 5..10
+                  Do something.
+                @value 17..
+                  Do something else.
+              @endit
+
+________________________________________________________________________________
+
 Keyword:      @item
 Description:  A definition term inside @dl
 Arguments:    <name>
@@ -376,6 +395,20 @@ Examples:
               @endsection
 
 XML:          <section name=" ... ">
+________________________________________________________________________________
+
+Keyword:      @string - @endstring
+Description:  Documentation of the layout of a mapping.
+Arguments:    -
+Children:     @value
+Examples:     @string
+                @value "GMT"
+                  Greenwich Mean Time
+                @value "CET"
+                  Central European Time
+              @endstring
+
+XML:          <string name=" ... "/>
 ________________________________________________________________________________
 
 Keyword:      @tt{ ... @}
