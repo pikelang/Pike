@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.68 2000/03/07 23:22:40 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.69 2000/03/07 23:27:56 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1975,8 +1975,8 @@ void debug_dump_mapping(struct mapping *m)
     fprintf(stderr, "Values type field = ");
     debug_dump_type_field(m->data->val_types);
     fprintf(stderr, "\n");
+    simple_describe_mapping(m);
   }
-  simple_describe_mapping(m);
 }
 #endif
 
