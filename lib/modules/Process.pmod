@@ -84,7 +84,11 @@ object spawn(string s,object|void stdin,object|void stdout,object|void stderr,
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
   if(stderr) data->stderr=stderr;
+#ifdef __NT__
   return create_process(split_quoted_string(s),data);
+#else /* !__NT__ */
+  return create_process(({ "/bin/sh", "-c", s }),data);
+#endif /* __NT__ */
 #else
 
   object pid;
