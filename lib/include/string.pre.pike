@@ -2,8 +2,8 @@
 void create()
 {
   master()->add_precompiled_program("/precompiled/string_buffer", class {
-    string *buffer;
-    int ptr;
+    string *buffer=allocate(BEGIN);
+    int ptr=0;
     
     static void fix()
     {
@@ -31,7 +31,7 @@ void create()
       return 0;
     }
 
-    void create()
+    void flush()
     {
       buffer=allocate(BEGIN);
       ptr=0;
