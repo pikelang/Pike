@@ -60,8 +60,8 @@ static void verify_call_outs()
     if(!(v=pending_calls[e]->args))
       fatal("No arguments to call\n");
 
-    if(v->refs!=1)
-      fatal("Array should exactly have one reference.\n");
+    if(v->refs < 1)
+      fatal("Array should have at least one reference.\n");
 
     if(v->malloced_size<v->size)
       fatal("Impossible array.\n");
