@@ -185,58 +185,36 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 #define SCALE_MODIFY(x) (x)
 #define NAME "match"
 #define INAME image_match
-#define NEEDLEAVRCODE 
-#define PIXEL_VALUE_DISTANCE(CO, CERT_PIXEL1, CERT_PIXEL2) { \
-       h=haystacki[j].CO; \
-       n=needlei[ny*nxs+nx].CO; \
-       sum+=abs(h-n) * MAXIMUM(CERT_PIXEL1, CERT_PIXEL2);} 
-#define NORMCODE 
+#define PIXEL_VALUE_DISTANCE(CO) \
+       (abs(haystacki[j].CO-needlei[ny*nxs+nx].CO))
 #include "match.h"
 
 #define NAME "match_phase"
 #define INAME image_match_phase
-#define PIXEL_VALUE_DISTANCE(CO, CERT_PIXEL1, CERT_PIXEL2)  \
-       if ((h=haystacki[j].CO)> \
-	   (n=needlei[ny*nxs+nx].CO)) \
-	 sum+=MINIMUM((h-n),(255-h+n)) * MAXIMUM(CERT_PIXEL1, CERT_PIXEL2); \
-       else \
-	 sum+=MINIMUM((n-h),(255-n+h)) * MAXIMUM(CERT_PIXEL1, CERT_PIXEL2); 
+#define PIXEL_VALUE_DISTANCE(CO)  \
+       (((h=haystacki[j].CO)> \
+	   (n=needlei[ny*nxs+nx].CO))? \
+	 MINIMUM((h-n),(255-h+n))\
+       : \
+	 MINIMUM((n-h),(255-n+h)))
 #include "match.h"
-#undef NORMCODE
-#undef NEEDLEAVRCODE
-
 
 #define NAME "match_norm"
 #define INAME image_match_norm
-#define NEEDLEAVRCODE needle_size=nxs*nys;\
-       for(x=0; x<needle_size; x++)\
-	 needle_average+=needlei[x].r+needlei[x].g+needlei[x].b;\
-       needle_average=(int)(((float)needle_average)/(3*needle_size));
-#define PIXEL_VALUE_DISTANCE(CO, CERT_PIXEL1, CERT_PIXEL2) { \
-       h=haystacki[j].CO-tempavr; \
-       n=needlei[ny*nxs+nx].CO-needle_average; \
-       sum+=abs(h-n) * MAXIMUM(CERT_PIXEL1, CERT_PIXEL2);} 
-#define NORMCODE for(ny=0; ny<nys; ny++) \
-	       for(nx=0; nx<nxs; nx++)  \
-		 { \
-		   int j=i+ny*xs+nx; \
-		   tempavr+=haystacki[j].r+haystacki[j].g+ \
-		       haystacki[j].b; \
-		 };
+#define NEEDLEAVRCODE 
+#define PIXEL_VALUE_DISTANCE(CO)  \
+ (abs(( haystacki[j].CO-tempavr )-( needlei[ny*nxs+nx].CO-needle_average)))
 #include "match.h"
 
 #define NAME "match_norm_corr"
 #define INAME image_match_norm_corr
 #undef SCALE_MODIFY 
 #define SCALE_MODIFY(x) (1.0/MAXIMUM(1,x))
-#define PIXEL_VALUE_DISTANCE(CO, CERT_PIXEL1, CERT_PIXEL2) { \
-       h=haystacki[j].CO-tempavr; \
-       n=needlei[ny*nxs+nx].CO-needle_average; \
-       sum+=h*n * MAXIMUM(CERT_PIXEL1, CERT_PIXEL2);} 
+#define PIXEL_VALUE_DISTANCE(CO)  \
+       (((haystacki[j].CO-tempavr)/2+128) \
+        * ( (needlei[ny*nxs+nx].CO-needle_average)/2+128 ))
 #include "match.h"
-#undef NORMCODE
 #undef NEEDLEAVRCODE
-
 #undef SUMCHECK
 
 

@@ -7,7 +7,8 @@ NAME The name of the match function. This is undef:ed at end of this file
 INAME The name of the match c-function. This is nudef:ed at end of this file
 PIXEL_VALUE_DISTANCE The inner loop code for each pixel. 
                      undef:ed at end of this file
-NEEDLEAVRCODE This code calculate needle_average. Not undef:ed at end
+NEEDLEAVRCODE If this is set, needle_average is calculated. 
+              Not undef:ed at end
 NORMCODE code used for normalizing in the haystack. Not undef:ed at end
 SCALE_MODIFY(x) This modifies the output in each pixel
 
@@ -17,8 +18,8 @@ SCALE_MODIFY(x) This modifies the output in each pixel
 void INAME(INT32 args)
 {
   struct object *o;
-  struct image *img,*needle=0, *haystack_cert=0, *haystack_avoid=0, *haystack=0, 
-    *needle_cert=0, *this;
+  struct image *img,*needle=0, *haystack_cert=0, *haystack_avoid=0, 
+    *haystack=0, *needle_cert=0, *this;
   rgb_group *imgi=0, *needlei=0, *haystack_certi=0, *haystack_avoidi=0, 
     *haystacki=0, *needle_certi=0, *thisi=0;
 
@@ -138,48 +139,71 @@ THREADS_ALLOW();
 
       /* This sets needle_average to something nice :-) */ 
       /* match and match_phase don't use this */
-      NEEDLEAVRCODE
+#ifdef NEEDLEAVRCODE
+      needle_size=nxs*nys;
+      for(x=0; x<needle_size; x++)
+	needle_average+=needlei[x].r+needlei[x].g+needlei[x].b;
+      needle_average=(int)(((float)needle_average)/(3*needle_size));
 
-#define DOUBLE_LOOP(IF_SOMETHING, CERTI1, CERTI2,R1,G1,B1)  \
+#define NORMCODE for(ny=0; ny<nys; ny++) \
+	       for(nx=0; nx<nxs; nx++)  \
+		 { \
+		   int j=i+ny*xs+nx; \
+		   tempavr+=haystacki[j].r+haystacki[j].g+ \
+		       haystacki[j].b; \
+                 }
+#else
+#define NORMCODE
+#endif
+
+#define DOUBLE_LOOP(AVOID_IS_TOO_BIG, CERTI1, CERTI2,R1,G1,B1)  \
       for(y=0; y<ys; y++) \
 	for(x=0; x<xs-nxs; x++) \
 	  { \
 	    int i=y*this->xsize+x;  \
 	    int sum=0; \
             int tempavr=0;\
-	    IF_SOMETHING \
+	    if (AVOID_IS_TOO_BIG) \
+              {\
+                int k=0; \
+                imgi[k=i+(nys/2)*xs+(nxs/2)].r=0;\
+                imgi[k].g=100; imgi[k].b=0;\
+              }\
+            else\
 	      {\
-	    NORMCODE\
+	    NORMCODE;\
 	    tempavr=(int)(((float)tempavr)/(3*needle_size)); \
 	    for(ny=0; ny<nys; ny++) \
 	      for(nx=0; nx<nxs; nx++)  \
 		{ \
 		  int j=i+ny*xs+nx; \
 		  { \
-		  int h,n; \
-		  PIXEL_VALUE_DISTANCE(r,CERTI1 R1, CERTI2 R1) \
-		  PIXEL_VALUE_DISTANCE(g,CERTI1 G1, CERTI2 G1) \
-		  PIXEL_VALUE_DISTANCE(b,CERTI1 B1, CERTI2 B1) \
+                  int h=0;\
+                  int n=0;\
+		  sum+= \
+                  (MAXIMUM(CERTI1 R1, CERTI1 R1) * PIXEL_VALUE_DISTANCE(r))+ \
+		  (MAXIMUM(CERTI1 G1, CERTI1 G1) * PIXEL_VALUE_DISTANCE(g))+ \
+		  (MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
 		  }} \
 	    imgi[i+(nys/2)*xs+(nxs/2)].r=\
               (int)(255.99/(1+((scale * SCALE_MODIFY(sum))))); \
               }\
 	  }
 
-#define IF_AVOID_IS_SMALL_ENOUGH if ((haystack_avoidi[i].r)>(foo)) { int k=0; imgi[k=i+(nys/2)*xs+(nxs/2)].r=0; imgi[k].g=100; imgi[k].b=0; } else
-	 /* FIXME imgi[k].g=100; ?!? */
+
+#define AVOID_IS_TOO_BIG ((haystack_avoidi[i].r)>(foo)) 
 
       if (type==1)
-	DOUBLE_LOOP(if (1),1,1, , , )
+	DOUBLE_LOOP(0,1,1, , , )
       else if (type==2)
-	DOUBLE_LOOP(if (1), haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)      
+	DOUBLE_LOOP(0, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
       else if (type==3)
-	DOUBLE_LOOP(IF_AVOID_IS_SMALL_ENOUGH,1,1, , , )
+	DOUBLE_LOOP(AVOID_IS_TOO_BIG,1,1, , , )
       else if (type==4)
-	DOUBLE_LOOP(IF_AVOID_IS_SMALL_ENOUGH, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
+	DOUBLE_LOOP(AVOID_IS_TOO_BIG, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
 
-
-#undef IF_AVOID_IS_SMALL_ENOUGH_THEN
+#undef NORMCODE
+#undef AVOID_IS_TOO_BIG
 #undef PIXEL_VALUE_DISTANCE
 #undef DOUBLE_LOOP
    
