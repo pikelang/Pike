@@ -379,7 +379,7 @@ void open_port()
 
 // helper functions
 
-private static inline string SHA1(string what)
+static inline string SHA1(string what)
 {
    return Crypto.sha()->update(what)->digest();
 }
@@ -1169,7 +1169,7 @@ void got_piece(int piece,string data)
 void destroy()
 {
 // some clean-up
-   map(targets,destruct);
+   if (targets) map(targets,destruct);
    map(peers_ordered,destruct);
    map(peers_unused,destruct);
 
