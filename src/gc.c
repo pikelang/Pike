@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.145 2001/06/06 02:22:35 mast Exp $");
+RCSID("$Id: gc.c,v 1.146 2001/06/11 19:58:24 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2180,9 +2180,9 @@ int do_gc(void)
   }
 
   /* Add an extra reference to the stuff gc_internal_* point to, so we
-   * know they're still around when gc_free_all_unreferenced_* is
+   * know they're still around when gc_free_all_unreferenced_* are
    * about to be called. */
-  if (gc_internal_array != &empty_array) add_ref(gc_internal_array);
+  if (gc_internal_array != &weak_empty_array) add_ref(gc_internal_array);
   if (gc_internal_multiset) add_ref(gc_internal_multiset);
   if (gc_internal_mapping) add_ref(gc_internal_mapping);
   if (gc_internal_program) add_ref(gc_internal_program);
@@ -2200,7 +2200,7 @@ int do_gc(void)
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the
    * correct relative positions in them. */
-  if (gc_internal_array != &empty_array) {
+  if (gc_internal_array != &weak_empty_array) {
     FREE_AND_GET_REFERENCED(gc_internal_array, struct array, free_array);
     gc_free_all_unreferenced_arrays();
   }
@@ -2233,8 +2233,6 @@ int do_gc(void)
 
   if(fatal_after_gc) fatal("%s", fatal_after_gc);
 #endif
-
-  /* Pike code may run again now. */
 
   Pike_in_gc=GC_PASS_KILL;
   /* Destruct the live objects in cycles, but first warn about any bad

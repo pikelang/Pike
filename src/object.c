@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.160 2001/01/22 15:06:09 mast Exp $");
+RCSID("$Id: object.c,v 1.161 2001/06/11 19:58:25 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -504,7 +504,7 @@ static void call_destroy(struct object *o, int foo)
     )
   {
 #ifdef PIKE_DEBUG
-    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
+    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
       fatal("Calling destroy() inside gc.\n");
 #endif
     if(check_destroy_called_mark_semafore(o))
@@ -646,7 +646,7 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
 
 #ifdef PIKE_DEBUG
   ONERROR uwp;
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
   SET_ONERROR(uwp, fatal_on_error,
 	      "Shouldn't get an exception in destruct_objects_to_destruct.\n");

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.186 2001/06/11 16:43:54 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.187 2001/06/11 19:58:25 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1273,7 +1273,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	unsigned char *pc;
 
 #ifdef PIKE_DEBUG
-	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
+	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
 	  fatal("Pike code called within gc.\n");
 #endif
 
