@@ -70,7 +70,7 @@ with a description of all control structures in Pike. It then continues with
 all the data types in chapter four and operators in chapter five. Chapter
 six deals with object orientation in Pike, which is slightly different than
 what you might be used to.
-<!-- FIX ME (finish this overview) -->
+<!-- FIXME (finish this overview) -->
 </section>
 
 <anchor name=uLPC>
@@ -369,10 +369,10 @@ We have already seen an example of the <tt>if</tt> statement:
 	else
 	   statement2;
 </example>
-<!-- FIX ME: should if have a capital letter or not? -->
+<!-- FIXME: should if have a capital letter or not? -->
 <tt>if</tt> simply evaluates the expression and if the result is true it
 executes <i>statement1</i>, otherwise it executes <i>statement2</i>. If you have no need for
-statement2 you can leave out the whole else<!-- FIX ME: tt/italics --> part like this:
+statement2 you can leave out the whole else<!-- FIXME: tt/italics --> part like this:
 <example language=pike meta=expression,statement1>
 	if( expression )
 	  statement1;
@@ -524,7 +524,7 @@ If you try to set an index in a mapping that isn't already present in the mappin
 </chapter>
 
 <chapter title="A more elaborate example">
-<!-- FIX ME: explain things AFTER showing the code? -->
+<!-- FIXME: explain things AFTER showing the code? -->
 To illustrate several of the fundamental points of Pike we will now
 introduce an example program, that will be extended as we go.
 We will build a database program that keeps track of a record
@@ -699,7 +699,7 @@ for more details. <!-- Does this link work? -->
 
 <section title="save()">
 First we clone a <tt>Stdio.File</tt> program to the object <tt>o</tt>.
-Then we use it to open the file whose<!-- FIX ME: which instead of whose? --> name is given in the string file_name for writing.
+Then we use it to open the file whose<!-- FIXME: which instead of whose? --> name is given in the string file_name for writing.
 We use the fact that if there is an error during opening, open() will return a false value which we can detect and act upon by exiting.
 The arrow operator (-&gt;) is what you use to access methods and variables in an object.
 If there is no error we use yet another control structure, <tt>foreach</tt>, to go through the mapping <tt>records</tt> one record at a time.
@@ -1124,7 +1124,7 @@ that is still missing is the ability to exit a loop in the middle of it.
 There are three ways to do this:
 
 <section title="break">
-<tt>Break</tt><!-- FIX ME: liten bokstav? --> exits a loop or switch statement immediately and continues
+<tt>Break</tt><!-- FIXME: liten bokstav? --> exits a loop or switch statement immediately and continues
 executing after the loop. <tt>Break</tt> can not be used outside of a loop or
 switch. It is quite useful in conjunction with <tt>while(1)</tt> to
 construct command parsing loops for instance:
@@ -1261,7 +1261,7 @@ Also note these functions:
 </section>
 
 <section title="float">
-<!-- FIX ME: Du borde skriva något om att float och int inte är kompatibla och ingen 
+<!-- FIXME: Du borde skriva något om att float och int inte är kompatibla och ingen 
 implicit casting sker som i C++ -->
 Although most programs only use integers, they are unpractical when doing
 trigonometric calculations, transformations or anything else where you
@@ -2154,7 +2154,7 @@ Here is a list of what is possible:
 
 </section>
 
-<!-- FIX ME: insert some things for the reader to do here -->
+<!-- FIXME: insert some things for the reader to do here -->
 
 </chapter>
 
@@ -2593,7 +2593,7 @@ arguments to a suitable range. This means that
 
 </section>
 
-<!-- FIX ME: tell more about indexing and ranges -->
+<!-- FIXME: tell more about indexing and ranges -->
 
 <section title="The assignment operators">
 There is really only one assignment operator, but it can be combined with
@@ -2833,7 +2833,7 @@ together with other programs by calling functions in those objects.
 The functions can be thought of as message carriers, TCP sockets or
 just a way for programs to communicate.
 
-<!-- FIX ME: do something about the following sentence? -->
+<!-- FIXME: do something about the following sentence? -->
 Now we have a running system with
 many running programs, each performing only the task it was designed for.
 <p>
@@ -2931,7 +2931,7 @@ inside classes you define later, like this:
 	};
 </example>
 
-<!-- FIX ME: tell more -->
+<!-- FIXME: tell more -->
 </section>
 
 <section title="Inherit">
@@ -3187,7 +3187,7 @@ expect, in which case you are better off not using operator overloading.
 	
 </ul>
 </box>
-<!-- FIX ME add more examples above -->
+<!-- FIXME add more examples above -->
 </section>
 </chapter>
 
@@ -3598,7 +3598,7 @@ Tries to read <i>nbytes</i> bytes of out-of-band data from the stream,
 and returns it as a string. If something goes wrong, zero is returned.
 <p>
 If a one is given as a second argument to <tt>read_oob()</tt>, only
-as many bytes of out-of-band data as is currently available will be
+as many bytes of out-of-band data as are currently available will be
 returned.
 <p>
 If no arguments are given, <tt>read_oob</tt> will read to the end of
@@ -3607,6 +3607,10 @@ the stream.
 <man_note>
 This function is only available if the option '--with-oob' was specified
 when Pike was compiled.
+<p>
+It is not guaranteed that all out-of-band data sent from the other end
+will be received. Most streams only allow for a single byte of out-of-band
+data at a time.
 </man_note>
 <man_see>Stdio.File-&gt;read,Stdio.File-&gt;write_oob</man_see>
 </method>
@@ -3637,8 +3641,12 @@ bytes were written.
 <man_note>
 This function is only available if the option '--with-oob' was specified
 when Pike was compiled.
+<p>
+It is not guaranteed that all out-of-band data will be received at the
+other end. Most streams only allow for a single byte of out-of-band data
+at a time. Some streams will send the rest of the data as ordinary data.
 </man_note>
-<man_see>Stdio.File-&gt;read,Stdio.File-&gt;write_oob</man_see>
+<man_see>Stdio.File-&gt;read_oob,Stdio.File-&gt;write</man_see>
 </method>
 
 
@@ -3706,12 +3714,18 @@ transfer speed when it does.
 </method>
 
 
-<!-- FIXME: Update to out-of-band data -->
 <method name=set_nonblocking title="make stream nonblocking">
 <man_syntax>
-void set_nonblocking(function read_callback,<br>
-<dl><dt><dd>function write_callback,<br>
-function close_callback);<br>
+void set_nonblocking(function(mixed, string:void) read_callback,<br>
+<dl><dt><dd>function(mixed:void) write_callback,<br>
+function(mixed:void) close_callback);<br>
+</dl>
+or<br>
+void set_nonblocking(function(mixed, string:void) read_callback,<br>
+<dl><dt><dd>function(mixed:void) write_callback,<br>
+function(mixed:void) close_callback,<br>
+function(mixed, string:void) read_oob_callback,<br>
+function(mixed:void) write_oob_callback);<br>
 </dl>
 or<br>
 void set_nonblocking();<br>
@@ -3721,13 +3735,23 @@ This function sets a stream to nonblocking mode. When data arrives on
 the stream, read_callback will be called with some or all of this data.
 When the stream has buffer space over for writing, write_callback is
 called so you can write more data to it. If the stream is closed at
-the other end, close_callback is called. All callbacks will have the
-id of file as first argument when called.
+the other end, close_callback is called. 
+<p>
+When out-of-band data arrives on the stream, read_oob_callback will
+be called with some or all of this data. When the stream allows
+out-of-band data to be sent, write_oob_callback is called so that
+you can write out-of-band data to it.
+<p>
+All callbacks will have the id of file as first argument when called.
 <p>
 If no arguments are given, the callbacks are not changed. The
 stream is just set to nonblocking mode.
 </man_description>
-<man_see>Stdio.File-&gt;set_blocking</man_see>
+<man_note>
+Out-of-band data is only supported if Pike was compiled with the option
+'--with-oob'.
+</man_note>
+<man_see>Stdio.File-&gt;set_blocking,Stdio.File-&gt;set_id</man_see>
 </method>
 
 <method name=set_read_callback title="set the read callback">
@@ -12206,7 +12230,7 @@ Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
 This function is only available in Pike 0.6.105 and later.
 </man_note>
 <man_see>
-Locale.Charset.decode,string_to_utf8,unicode_to_string,utf8_to_string
+Locale.Charset.decode, string_to_utf8, unicode_to_string, utf8_to_string
 </man_see>
 </function>
 
@@ -12230,7 +12254,7 @@ will also be accepted, and encoded using a non-standard UTF8 extension.
 This function is only available in Pike 0.6.105 and later.
 </man_note>
 <man_see>
-Locale.Charset.decode,string_to_unicode,unicode_to_string,utf8_to_string
+Locale.Charset.decode, string_to_unicode, unicode_to_string, utf8_to_string
 </man_see>
 </function>
 
@@ -12390,7 +12414,7 @@ This function does not decode surrogates.
 This function is only available in Pike 0.6.105 and later.
 </man_note>
 <man_see>
-Locale.Charset.decode,string_to_unicode,string_to_utf8,utf8_to_string
+Locale.Charset.decode, string_to_unicode, string_to_utf8, utf8_to_string
 </man_see>
 </function>
 
@@ -12428,7 +12452,7 @@ Accepts and decodes the extension used by
 This function is only available in Pike 0.6.105 and later.
 </man_note>
 <man_see>
-Locale.Charset.decode,string_to_unicode,string_to_utf8,unicode_to_string
+Locale.Charset.decode, string_to_unicode, string_to_utf8, unicode_to_string
 </man_see>
 </function>
 
