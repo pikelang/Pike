@@ -1,4 +1,4 @@
-// Msql module support stuff, (C) 1997 Francesco Chemolli <kinkie@comedia.it>
+// Msql module support stuff, (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 inherit Msql.msql;
 
