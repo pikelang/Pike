@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.127 1999/05/01 13:32:28 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.128 1999/05/01 13:37:08 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2186,11 +2186,12 @@ void f_create_process(INT32 args)
 
       error("Failed to start process.\n" "errno:%d\n", errno);
     } else if(pid) {
+      int olderrno;
+
       process_started(pid);  /* Debug */
       /*
        * The parent process
        */
-      int olderrno;
 
       /* Close our child's end of the pipe. */
       close(control_pipe[1]);
