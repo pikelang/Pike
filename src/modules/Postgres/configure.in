@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.18 2002/12/21 19:42:17 grendel Exp $
+dnl $Id: configure.in,v 1.19 2003/04/28 09:49:39 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -87,27 +87,23 @@ dnl check it not to be a stale entry
   fi
 
 dnl final ckeck, just to be sure we didn't mess up
-  AC_CHECK_HEADERS(postgres.h postgres_fe.h libpq-fe.h)
+  AC_CHECK_HEADERS(postgres.h postgres_fe.h \
+		   server/postgres.h server/postgres_fe.h \
+		   libpq-fe.h)
   
 dnl check whether we have Postgres 7.2 or newer
   HAVE_PG72=no
   if test -f $pike_cv_pgres_include_dir/pg_config.h; then
     case `grep 'PG_VERSION \"' $pike_cv_pgres_include_dir/pg_config.h | cut -d '"' -f 2` in
-       7.[[2-9]]*|8.*) HAVE_PG72=yes
+       7.[[2-9]]*|[8-9].*) HAVE_PG72=yes
              AC_DEFINE(HAVE_PG72) ;;
     esac
   fi
   
   echo "Have Postgres 7.2? $HAVE_PG72"
-  if test x$ac_cv_header_libpq_fe_h$HAVE_PG72 != xyesyes ; then
-    if test x$ac_cv_header_libpq_fe_h$ac_cv_header_postgres_h != xyesyes ; then
-      if test x$ac_cv_header_libpq_fe_h$ac_cv_header_postgres_fe_h != xyesyes ; then
-        ac_cv_header_libpq_fe_h=no
-        ac_cv_header_postgres_h=no
-        ac_cv_header_postgres_fe_h=no
-        ac_pike_postgres_skip=yes
-      fi
-    fi
+  if test "x$ac_cv_header_libpq_fe_h" = xno -o
+	  "x$HAVE_PG72$ac_cv_header_postgres_h$ac_cv_header_postgres_fe_h$ac_cv_header_server_postgres_h$ac_cv_header_server_postgres_fe_h" = xnonononono ; then
+    ac_pike_postgres_skip=yes
   fi
 
 dnl okay, now let's start working on the libraries
