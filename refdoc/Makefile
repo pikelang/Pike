@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.6 2001/02/26 14:12:19 grubba Exp $
+# $Id: Makefile,v 1.7 2001/04/18 15:12:37 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -10,9 +10,12 @@ PIKE=pike
 
 all: split
 
-split: join
+split: join manual
+	@$(PIKE) ../bin/split-autodoc.pike manual.xml structure.xml autodoc
 
 join: images
+	@$(PIKE) ../bin/join-autodoc.pike manual.xml \
+	  `find build -name '*.xml' -print`
 
 images: extract
 
@@ -36,6 +39,9 @@ build/lib: build
 
 build:
 	@test -d build || mkdir build
+
+manual:
+	@test -d manual || mkdir manual
 
 clean:
 	@rm -rf build || /bin/true
