@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+// $Id: feature_list,v 1.8 2000/01/19 19:23:24 grubba Exp $
+
 int main(int argc, string *argv)
 {
   write("Features: ");
@@ -15,10 +17,12 @@ int main(int argc, string *argv)
 	     "_Image_TIFF","_Image_TTF","MIME","Msql","Mysql","Odbc","Oracle",
 	     "Perl", "Postgres","Ssleay","WideValues","X","Yp" }),
 	  string modname) {
-    catch { if (sizeof(indices(master()->resolv(modname))))
-      if(modname[0] == '_')
-	modname = replace(modname[1..], "_", ".");;
-      write(modname+" ");
+    catch {
+      if (sizeof(indices(master()->resolv(modname) || ({})))) {
+	if(modname[0] == '_')
+	  modname = replace(modname[1..], "_", ".");
+	write(modname+" ");
+      }
     };
   }
 

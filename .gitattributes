@@ -22,6 +22,7 @@ testfont binary
 /Makefile foreign_ident
 /NT/tools/install-sh foreign_ident
 /bin/export.pike foreign_ident
+/bin/feature_list foreign_ident
 /bin/httpd.pike foreign_ident
 /bin/make_ci.pike foreign_ident
 /bin/mkpeep.pike foreign_ident
