@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.354 2004/12/18 18:06:45 grubba Exp $
+|| $Id: las.c,v 1.355 2004/12/18 21:48:31 grubba Exp $
 */
 
 #include "global.h"
@@ -1478,6 +1478,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 
 node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
 {
+  struct program_state *state;
   node *res;
 
 #ifdef PIKE_DEBUG
@@ -1498,6 +1499,14 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
 #endif
   res->u.integer.a = parent_prog->id;
   res->u.integer.b = inherit_num;
+
+  /* Bzot-i-zot */
+  state = Pike_compiler;
+  while(parent_prog != state->new_program)
+  {
+    state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+    state=state->previous;
+  }
 
   return freeze_node(res);
 }
