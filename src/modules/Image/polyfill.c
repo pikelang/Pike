@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.33 2000/08/07 14:03:35 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.34 2000/08/11 19:18:21 grubba Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -40,7 +40,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.33 2000/08/07 14:03:35 grubba Exp $
+**!	$Id: polyfill.c,v 1.34 2000/08/11 19:18:21 grubba Exp $
 **! class Image
 */
 
@@ -69,14 +69,14 @@ extern double floor(double);
 struct line_list
 {
    struct vertex *above,*below;
-   float dx,dy;
+   double dx, dy;
    struct line_list *next;
-   float xmin,xmax,yxmin,yxmax; /* temporary storage */
+   double xmin, xmax, yxmin, yxmax; /* temporary storage */
 };
 
 struct vertex
 {
-   float x,y;
+   double x, y;
    struct vertex *next;    /* total list, sorted downwards */
    struct line_list *below,*above; /* childs */
    int done;
@@ -84,7 +84,7 @@ struct vertex
 
 #define VY(V,X) ((V)->above->y+(V)->dy*((X)-(V)->above->x))
 
-static struct vertex *vertex_new(float x,float y,struct vertex **top)
+static struct vertex *vertex_new(double x, double y, struct vertex **top)
 {
    struct vertex *c;
    while (*top && (*top)->y<y) top=&((*top)->next);
@@ -108,7 +108,7 @@ static void vertex_connect(struct vertex *above,
 			   struct vertex *below)
 {
    struct line_list *c,*d;
-   float diff;
+   double diff;
 
    if (below==above) return;
 
@@ -136,7 +136,7 @@ static void vertex_connect(struct vertex *above,
    below->above = d;
 }
 
-static INLINE float line_xmax(struct line_list *v,float yp,float *ydest)
+static INLINE double line_xmax(struct line_list *v, double yp, double *ydest)
 {
    if (v->dx>0.0) 
       if (v->below->y>yp+1.0+1e-10)
@@ -154,7 +154,7 @@ static INLINE float line_xmax(struct line_list *v,float yp,float *ydest)
       return (*ydest=v->below->y),v->below->x;
 }
 
-static INLINE float line_xmin(struct line_list *v,float yp,float *ydest)
+static INLINE double line_xmin(struct line_list *v, double yp, double *ydest)
 {
    if (v->dx<0.0) 
       if (v->below->y>yp+1.0+1e-10)
@@ -174,7 +174,7 @@ static INLINE float line_xmin(struct line_list *v,float yp,float *ydest)
 
 static void add_vertices(struct line_list **first,
 			 struct line_list *what,
-			 float yp)
+			 double yp)
 {
    struct line_list **ins,*c;
 #ifdef POLYDEBUG
@@ -293,7 +293,7 @@ static void add_vertices(struct line_list **first,
 
 static void sub_vertices(struct line_list **first,
 			 struct vertex *below,
-			 float yp)
+			 double yp)
 {
    struct line_list **ins,*c;
 
@@ -325,9 +325,9 @@ static void sub_vertices(struct line_list **first,
    }
 }
 
-static INLINE void polyfill_row_add(float *buf,
-				    float xmin,float xmax,
-				    float add)
+static INLINE void polyfill_row_add(double *buf,
+				    double xmin, double xmax,
+				    double add)
 {
    int i;
    int xmin_i = DOUBLE_TO_INT(floor(xmin));
@@ -337,9 +337,9 @@ static INLINE void polyfill_row_add(float *buf,
       buf[xmin_i] += (xmax-xmin)*add;
    else if (xmin_i>=0)
    {
-      buf[xmin_i] += (1-(xmin-((float)xmin_i)))*add;
+      buf[xmin_i] += (1-(xmin-((double)xmin_i)))*add;
       for (i=xmin_i+1; i<xmax_i; i++) buf[i]+=add;
-      buf[xmax_i] += add*(xmax-((float)xmax_i));
+      buf[xmax_i] += add*(xmax-((double)xmax_i));
    }
    else
    {
@@ -348,11 +348,11 @@ static INLINE void polyfill_row_add(float *buf,
    }
 }
 
-static INLINE void polyfill_slant_add(float *buf,
-				      float xmin,float xmax,
-				      float lot,
-				      float y1,
-				      float dy)
+static INLINE void polyfill_slant_add(double *buf,
+				      double xmin, double xmax,
+				      double lot,
+				      double y1,
+				      double dy)
 {
    int i;
    int xmin_i = DOUBLE_TO_INT(floor(xmin));
@@ -360,40 +360,40 @@ static INLINE void polyfill_slant_add(float *buf,
 
    if (xmax_i<0) return;
    if (xmin_i == xmax_i) {
-      float dx = xmax - xmin;
+      double dx = xmax - xmin;
       buf[xmin_i] += lot*(y1+dy*dx/2)*dx;
    }
    else if (xmin_i>=0)
    {
-      float dx = DO_NOT_WARN(1.0 - (xmin-((float)xmin_i)));
+      double dx = DO_NOT_WARN(1.0 - (xmin-((double)xmin_i)));
       buf[xmin_i] += lot*(y1+dy*dx/2.0)*dx;
       y1 += dy*dx;
       for (i=xmin_i+1; i<xmax_i; i++) {
 	 buf[i] += lot*(y1+dy/2.0);
 	 y1 += dy;
       }
-      dx = (xmax-((float)xmax_i));
+      dx = (xmax-((double)xmax_i));
       buf[xmax_i] += lot*(y1+dy*dx/2.0)*dx;
    }
    else
    {
-      float dx;
+      double dx;
       y1 -= dy*xmin;	/* Adjust y1 for the first -xmin steps. */
       for (i=0; i<xmax_i; i++) {
 	 buf[i] += lot*(y1+dy/2.0);
 	 y1 += dy;
       }
-      dx = (xmax-((float)xmax_i));
+      dx = (xmax-((double)xmax_i));
       buf[xmax_i] += lot*(y1+dy*dx/2)*dx;
    }
 }
 
-static int polyfill_event(float xmin,
-			  float xmax,
+static int polyfill_event(double xmin,
+			  double xmax,
 			  struct line_list **pll,
 			  int tog,
-			  float yp,
-			  float *buf)
+			  double yp,
+			  double *buf)
 {
    struct line_list *c;
    struct line_list *ll=*pll;
@@ -481,9 +481,9 @@ static int polyfill_event(float xmin,
    {
       if (c->xmin<=xmin && c->xmax>=xmax)
       {
-	 float y1=VY(c,xmin);
+	 double y1 = VY(c,xmin);
 #ifdef POLYDEBUG
-	 float y2=VY(c,xmax);
+	 double y2 = VY(c,xmax);
 	 fprintf(stderr,"  use line %g,%g - %g,%g [%g,%g - %g,%g] : %g,%g - %g,%g = %+g\n",
 		 c->xmin,c->yxmin,c->xmax,c->yxmax,
 		 c->above->x,c->above->y,c->below->x,c->below->y,
@@ -504,11 +504,11 @@ static int polyfill_event(float xmin,
 
 static void polyfill_some(struct image *img,
 			  struct vertex *v,
-			  float *buf)
+			  double *buf)
 {
    struct line_list *ll=NULL;
    int y=0;
-   float ixmax=(float)img->xsize;
+   double ixmax = (double)img->xsize;
    struct vertex *to_add=v,*to_loose=v;
    /* beat row for row */
    
@@ -517,9 +517,9 @@ static void polyfill_some(struct image *img,
 
    while (y<img->ysize && (to_loose||to_add) )
    {
-      float yp=y;
+      double yp = y;
       struct line_list *c;
-      float xmin,xmax;
+      double xmin, xmax;
       int tog=0;
       int i;
       rgb_group *d;
@@ -715,7 +715,7 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
 #endif
    }
 
-#define POINT(A,N) (((A)->item[N].type==T_FLOAT)?((A)->item[N].u.float_number):((float)((A)->item[N].u.integer)))
+#define POINT(A,N) (((A)->item[N].type==T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
 
    last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
 			     DO_NOT_WARN(POINT(a,1)),
@@ -756,12 +756,12 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
 void image_polyfill(INT32 args)
 {
    struct vertex *v;
-   float *buf;
+   double *buf;
 
    if (!THIS->img)
       error("Image.Image->polyfill: no image\n");
 
-   buf=malloc(sizeof(float)*(THIS->xsize+1));
+   buf=malloc(sizeof(double)*(THIS->xsize+1));
    if (!buf)
       error("Image.Image->polyfill: out of memory\n");
 

@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.16 2000/08/09 17:32:57 grubba Exp $ */
+/* $Id: orient.c,v 1.17 2000/08/11 19:22:14 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.16 2000/08/09 17:32:57 grubba Exp $
+**!	$Id: orient.c,v 1.17 2000/08/11 19:22:14 grubba Exp $
 **! class Image
 */
 
@@ -243,15 +243,20 @@ CHRONO("begin hsv...");
 
      int z,w;
 
-     if (my_abs(h)>my_abs(j)) 
-	if (h) z=-(int)(32*(j/h)+(h>0)*128+64),w=my_abs(h);
+     if (my_abs(DOUBLE_TO_INT(h)) > my_abs(DOUBLE_TO_INT(j))) 
+	if (h) {
+	  z = -DOUBLE_TO_INT(32*(j/h)+(h>0)*128+64);
+	  w = my_abs(DOUBLE_TO_INT(h));
+	}
 	else z=0,w=0;
-     else 
-	z=-(int)(-32*(h/j)+(j>0)*128+128),w=my_abs(j);
+     else {
+	z = -DOUBLE_TO_INT(-32*(h/j)+(j>0)*128+128);
+	w = my_abs(DOUBLE_TO_INT(j));
+     }
 
      d->r=(COLORTYPE)z;
      d->g=255;     
-     d->b=(COLORTYPE)MINIMUM(w*mag,255);
+     d->b = MINIMUM(DOUBLE_TO_COLORTYPE(w*mag), 255);
 
      d++;
      s0++;

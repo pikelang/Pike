@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.90 2000/08/11 18:59:59 grubba Exp $ */
+/* $Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.90 2000/08/11 18:59:59 grubba Exp $
+**!	$Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.90 2000/08/11 18:59:59 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3025,7 +3025,7 @@ static INLINE ptrdiff_t _cub_find_full_add(int **pp,int *i,int *p,int n,
 }
 
 static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
-				   int n,struct nct_flat_entry *fe,
+				   ptrdiff_t n, struct nct_flat_entry *fe,
 				   int rp,int gp,int bp,
 				   int rd1,int gd1,int bd1,
 				   int rd2,int gd2,int bd2,
@@ -3166,7 +3166,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 	     (int)fe->color.g>=gmin && (int)fe->color.g<=gmax &&
 	     (int)fe->color.b>=bmin && (int)fe->color.b<=bmax)
 	 {
-	    *pp=fe->no;
+	    *pp = DO_NOT_WARN((int)fe->no);
 	    pp++; i++;
 	 }
 	 
@@ -3333,6 +3333,26 @@ void build_rigid(struct neo_colortable *nct)
 **! see also: cubicles, full
 **/
 
+/* Some functions to avoid warnings about losss of precision. */
+#ifdef __ECL
+static inline unsigned char TO_UCHAR(ptrdiff_t val)
+{
+  return DO_NOT_WARN((unsigned char)val);
+}
+static inline unsigned short TO_USHORT(ptrdiff_t val)
+{
+  return DO_NOT_WARN((unsigned short)val);
+}
+static inline unsigned INT32 TO_UINT32(ptrdiff_t val)
+{
+  return DO_NOT_WARN((unsigned INT32)val);
+}
+#else /* !__ECL */
+#define TO_UCHAR(x)	((unsigned char)x)
+#define TO_USHORT(x)	((unsigned short)x)
+#define TO_UINT32(x)	((unsigned INT32)x)
+#endif /* __ECL */
+
 /* begin instantiating from colortable_lookup.h */
 /* instantiate map functions */
 
@@ -3384,7 +3404,7 @@ void build_rigid(struct neo_colortable *nct)
 #define NCTLU_CUBE_NAME _img_nct_index_8bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_8bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,&d,NULL,NULL,&cd)
-#define NCTLU_RIGID_WRITE (d[0]=(unsigned char)(feprim[i].no))
+#define NCTLU_RIGID_WRITE (d[0] = TO_UCHAR(feprim[i].no))
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_8bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_8bit_image
@@ -3432,7 +3452,7 @@ void build_rigid(struct neo_colortable *nct)
 #define NCTLU_CUBE_NAME _img_nct_index_16bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_16bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,&d,NULL,&cd)
-#define NCTLU_RIGID_WRITE (d[0]=(unsigned short)(feprim[i].no))
+#define NCTLU_RIGID_WRITE (d[0] = TO_USHORT(feprim[i].no))
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_16bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_16bit_image
@@ -3480,7 +3500,7 @@ void build_rigid(struct neo_colortable *nct)
 #define NCTLU_CUBE_NAME _img_nct_index_32bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_32bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,NULL,&d,&cd)
-#define NCTLU_RIGID_WRITE (d[0]=(unsigned INT32)(feprim[i].no))
+#define NCTLU_RIGID_WRITE (d[0] = TO_UINT32(feprim[i].no))
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_32bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_32bit_image
@@ -4312,7 +4332,7 @@ void image_colortable_image(INT32 args)
    rgb_group *dest;
 
    pop_n_elems(args);
-   push_int(image_colortable_size(THIS));
+   push_int64(image_colortable_size(THIS));
    push_int(1);
    o=clone_object(image_program,2);
    push_object(o);

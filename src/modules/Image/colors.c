@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.37 2000/08/11 19:25:53 grubba Exp $
+**!	$Id: colors.c,v 1.38 2000/08/11 19:28:39 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.37 2000/08/11 19:25:53 grubba Exp $");
+RCSID("$Id: colors.c,v 1.38 2000/08/11 19:28:39 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1259,9 +1259,9 @@ static void image_get_color(INT32 args)
 	    push_array_items(sp->u.array);
 	    get_all_args("Image.Color()",3,"%f%f%f",&h,&s,&v);
 	    pop_n_elems(3);
-	    push_int((INT32)(h/360.0*256.0));
-	    push_int((INT32)(s/100.0*255.4));
-	    push_int((INT32)(v/100.0*255.4));
+	    push_int(DOUBLE_TO_INT(h/360.0*256.0));
+	    push_int(DOUBLE_TO_INT(s/100.0*255.4));
+	    push_int(DOUBLE_TO_INT(v/100.0*255.4));
 	    image_make_hsv_color(3);
 	    return;
 	 }
@@ -1288,7 +1288,7 @@ static void image_get_color(INT32 args)
 	 pop_stack();
       }
       for (n=0; (size_t)n<sizeof(callables)/sizeof(callables[0]); n++)
-	 if (sp[-1].u.string->len>(INT32)strlen(callables[n]) &&
+	 if (sp[-1].u.string->len>(ptrdiff_t)strlen(callables[n]) &&
 	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
 	 {
 	    push_int(DO_NOT_WARN(strlen(callables[n])));
@@ -1493,8 +1493,8 @@ static void image_make_hsv_color(INT32 args)
       get_all_args("Image.Color.hsv()",args,"%f%f%f",
 		   &h,&s,&v);
       pop_n_elems(args);
-      if (h<0) h=360+h-(((int)h/360)*360);
-      if (h>360.0) h-=(((int)h/360)*360);
+      if (h<0) h = 360 + h - ((DOUBLE_TO_INT(h)/360)*360);
+      if (h>360.0) h -= ((DOUBLE_TO_INT(h)/360)*360);
       h/=60;
    }
      
