@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $ */
+/* $Id: image.c,v 1.193 2002/03/08 13:03:58 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $
+**!	$Id: image.c,v 1.193 2002/03/08 13:03:58 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $");
+RCSID("$Id: image.c,v 1.193 2002/03/08 13:03:58 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -370,12 +370,12 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 }
 
 
-void img_apply_matrix(struct image *dest,
-		      struct image *img,
-		      int width,int height,
-		      rgbd_group *matrix,
-		      rgb_group default_rgb,
-		      double div)
+static void img_apply_matrix(struct image *dest,
+			     struct image *img,
+			     int width,int height,
+			     rgbd_group *matrix,
+			     double div,
+			     rgb_group default_rgb)
 {
    rgb_group *d,*ip,*dp;
    rgbd_group *mp;
@@ -3239,7 +3239,7 @@ CHRONO("apply_matrix, begin");
 
    if (THIS->img)
       img_apply_matrix((struct image*)o->storage,THIS,
-		       width,height,matrix,default_rgb,div);
+		       width,height,matrix,div,default_rgb);
 
 CHRONO("apply_matrix, end");
 
