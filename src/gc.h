@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.39 2000/04/27 02:13:28 hubbe Exp $
+ * $Id: gc.h,v 1.40 2000/05/04 03:14:31 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -101,7 +101,6 @@ void f__gc_status(INT32 args);
       fatal("Panic!! less than zero objects!\n");	\
   )							\
   num_objects-- ;					\
-  if(Pike_in_gc) remove_marker(X);			\
 }while(0)
 
 #define GC_FREE(X) do {						\
