@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.21 2004/01/11 00:46:34 nilsson Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.22 2004/01/11 12:19:15 jhs Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -223,7 +223,7 @@ class Target(string base,int length,int offset,void|array path)
 // 	     off-offset,off-offset+strlen(data),length);
       if (off>offset+length) return; // noop
       int end=off+strlen(data);
-      if (end<=off) return; // noop
+      if (end<=offset) return; // noop
 
       if (off<offset)
 	 data=data[offset-off..],off=offset;
