@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.31 1998/02/10 13:27:57 mirar Exp $ */
+/* $Id: gif.c,v 1.32 1998/02/11 00:31:42 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.31 1998/02/10 13:27:57 mirar Exp $
+**!	$Id: gif.c,v 1.32 1998/02/11 00:31:42 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.31 1998/02/10 13:27:57 mirar Exp $");
+RCSID("$Id: gif.c,v 1.32 1998/02/11 00:31:42 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2052,7 +2052,7 @@ void image_gif_decode(INT32 args)
 	    push_svalue(b->item+4);
 	    push_svalue(b->item+1);
 	    push_svalue(b->item+2);
-	    apply(o,"paste_alpha",4);
+	    apply(o,"paste_mask",4);
 	    pop_n_elems(1);
 	 }
 	 else
