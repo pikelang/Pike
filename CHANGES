@@ -7,6 +7,15 @@ Changes since xxxx-yy-zz / Pike u.v.w   (released                   ):
 ----------------------------------------------------------------------
 
 
+Changes since before then; Pike 7.4
+----------------------------------------------------------------------
+
+Compatibility changes:
+----------------------
+
+Protocols.LDAP.client - return code from all methods was changed
+ to follow Pike's loggic better. Now 1 is returned on success,
+ 0 otherwise. Compatibility code for Pike 7.2 was added.
 
 Changes since before then; Pike 7.2
 ----------------------------------------------------------------------
