@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.291 2003/10/05 19:50:51 grubba Exp $
+|| $Id: file.c,v 1.292 2003/10/06 09:01:21 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.291 2003/10/05 19:50:51 grubba Exp $");
+RCSID("$Id: file.c,v 1.292 2003/10/06 09:01:21 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2576,7 +2576,7 @@ static void file_pipe(INT32 args)
 
     my_set_close_on_exec(inout[1],1);
     my_set_close_on_exec(inout[0],1);
-    FD=inout[0];
+    FD=inout[1];
 
     ERRNO=0;
     push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
