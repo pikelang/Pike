@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.311 2003/11/18 11:03:45 mast Exp $
+// $Id: master.pike.in,v 1.312 2003/12/01 18:03:10 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2000,6 +2000,16 @@ class CompatResolver
   {
     //      werror("Resolv_base(%O)\n",identifier);
     return get_root_module(current_handler)[identifier];
+  }
+
+  //! Same as @[resolv], but throws an error instead of returning
+  //! @[UNDEFINED] if the resolv failed.
+  mixed resolv_or_error(string identifier, string|void current_file,
+			void|object current_handler)
+  {
+    mixed res = resolv(identifier, current_file, current_handler);
+    if(zero_type(res)) error("Could not resolv %s.\n", identifier);
+    return res;
   }
 
   //!
