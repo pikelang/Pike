@@ -30,7 +30,6 @@ testfont binary
 /README-CVS.txt foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
-/bin/httpd.pike foreign_ident
 /bin/make_ci.pike foreign_ident
 /bin/mklibtests.sh foreign_ident
 /bin/mkpeep.pike foreign_ident
