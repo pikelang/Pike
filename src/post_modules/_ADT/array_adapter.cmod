@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array_adapter.cmod,v 1.3 2003/02/14 12:58:14 grubba Exp $
+|| $Id: array_adapter.cmod,v 1.4 2003/02/21 16:19:14 mast Exp $
 */
 
 #include "global.h"
@@ -100,7 +100,7 @@ PIKECLASS ArrayAdapter
     {
       ref_push_array(THIS->a);
       ref_push_array(OBJ2_ARRAYADAPTER(coll)->a);
-      ref_push_array(add_arrays(Pike_sp-2, 2));
+      push_array(add_arrays(Pike_sp-2, 2));
   
       push_object(clone_object(ArrayAdapter_program, 1));
     }
@@ -128,7 +128,7 @@ PIKECLASS ArrayAdapter
     //Should work on collection classes too
     if (coll->prog == ArrayAdapter_program)
     {
-      ref_push_array(subtract_arrays(THIS->a, OBJ2_ARRAYADAPTER(coll)->a));
+      push_array(subtract_arrays(THIS->a, OBJ2_ARRAYADAPTER(coll)->a));
   
       push_object(clone_object(ArrayAdapter_program, 1));
     }
@@ -158,8 +158,8 @@ PIKECLASS ArrayAdapter
     //Should work on collection classes too
     if (coll->prog == ArrayAdapter_program)
     {
-      ref_push_array(and_arrays(THIS->a, 
-				OBJ2_ARRAYADAPTER(coll)->a));
+      push_array(and_arrays(THIS->a,
+			    OBJ2_ARRAYADAPTER(coll)->a));
   
       push_object(clone_object(ArrayAdapter_program, 1));
     }
@@ -188,9 +188,9 @@ PIKECLASS ArrayAdapter
     //Should work on collection classes too
     if (coll->prog == ArrayAdapter_program)
     {
-      ref_push_array(merge_array_with_order(THIS->a, 
-					    OBJ2_ARRAYADAPTER(coll)->a,
-					    PIKE_ARRAY_OP_OR));
+      push_array(merge_array_with_order(THIS->a, 
+					OBJ2_ARRAYADAPTER(coll)->a,
+					PIKE_ARRAY_OP_OR));
   
       push_object(clone_object(ArrayAdapter_program, 1));
     }
@@ -220,9 +220,9 @@ PIKECLASS ArrayAdapter
     //Should work on collection classes too
     if (coll->prog == ArrayAdapter_program)
     {
-      ref_push_array(merge_array_with_order(THIS->a, 
-					    OBJ2_ARRAYADAPTER(coll)->a,
-					    PIKE_ARRAY_OP_XOR));
+      push_array(merge_array_with_order(THIS->a, 
+					OBJ2_ARRAYADAPTER(coll)->a,
+					PIKE_ARRAY_OP_XOR));
   
       push_object(clone_object(ArrayAdapter_program, 1));
     }
@@ -425,7 +425,7 @@ PIKECLASS ArrayAdapter
   PIKEFUN mixed cast(string type)
   {
     struct pike_string *array_t;
-    MAKE_CONSTANT_SHARED_STRING( array_t, "array" ); 
+    MAKE_CONST_STRING( array_t, "array" );
     
     if (type == array_t)
     {
