@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.142 1999/03/31 23:29:12 grubba Exp $");
+RCSID("$Id: file.c,v 1.143 1999/04/01 15:20:27 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2030,10 +2030,15 @@ static void file_open_socket(INT32 args)
 static void file_set_keepalive(INT32 args)
 {
   int tmp, i;
-  check_all_args("file->set_keepalive",args, T_INT,0);
-  tmp=sp[-args].u.integer;
+  INT_TYPE t;
+
+  get_all_args("file->set_keepalive", args, "%i", &t);
+
+  /* In case int and INT_TYPE have different sizes */
+  tmp = t;
+
 #ifdef SO_KEEPALIVE
-  i=fd_setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
+  i = fd_setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
   if(i)
   {
     ERRNO=errno;
@@ -2042,7 +2047,7 @@ static void file_set_keepalive(INT32 args)
   }
 #else /* !SO_KEEPALIVE */
 #ifdef ENOTSUP
-  ERRNO=ENOTSUP;
+  ERRNO = ENOTSUP;
 #else /* !ENOTSUP */
 #ifdef ENOTTY
   ERRNO = ENOTTY;
