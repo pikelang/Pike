@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.34 2002/08/13 12:09:54 grubba Exp $
+# $Id: configure.in,v 1.35 2004/08/27 15:07:00 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -89,7 +89,8 @@ if test x$with_oracle = xyes; then
     if test x"$pike_cv_oracle_oracle_home" != xno && \
   	test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
   	     -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a" -o \
-  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon9.a"; then
+  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon9.a" -o \
+  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon10.a"; then
 
       echo "$pike_cv_oracle_oracle_home/lib" > conftest
 
@@ -100,7 +101,8 @@ if test x$with_oracle = xyes; then
           if test -d "$dir/." && \
 	     test -f "$dir/lib/libcommon.a" -o \
 		  -f "$dir/lib/libcommon8.a" -o \
-		  -f "$dir/lib/libcommon9.a"; then
+		  -f "$dir/lib/libcommon9.a" -o \
+		  -f "$dir/lib/libcommon10.a"; then
   	    if test x"$pike_cv_oracle_oracle_home" = xno; then
   	      AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
   	    else
@@ -139,11 +141,19 @@ if test x$with_oracle = xyes; then
 
       echo "$pike_cv_oracle_oracle_home" > conftest
 
+    elif test x"$pike_cv_oracle_oracle_home" != xno -a \
+      -f "$pike_cv_oracle_oracle_home/rdbms/public/ocidfn.h"; then
+
+      echo "$pike_cv_oracle_oracle_home" > conftest
+
     else
       if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
   	
   	sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
   	  if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
+  	    echo "$dir" > conftest
+  	    break
+  	  elif test -d "$dir/." -a -f "$dir/rdbms/public/ocidfn.h"; then
   	    echo "$dir" > conftest
   	    break
   	  else
@@ -158,8 +168,10 @@ if test x$with_oracle = xyes; then
 
   if test "$oracle_include_dir" = "no"; then
     AC_MSG_RESULT(no)
-  else
+  elif test -d "$oracle_include_dir/rdbms/demo/"; then
     AC_MSG_RESULT($oracle_include_dir/rdbms/demo/)
+  else
+    AC_MSG_RESULT($oracle_include_dir/rdbms/public/)
   fi
 
   AC_MSG_CHECKING(for sysliblist)
@@ -173,12 +185,20 @@ if test x$with_oracle = xyes; then
 
       echo "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist" > conftest
 
+    elif test x"$pike_cv_oracle_oracle_home" != xno -a \
+        -f "$pike_cv_oracle_oracle_home/lib/sysliblist"; then
+
+      echo "$pike_cv_oracle_oracle_home/lib/sysliblist" > conftest
+
     else
       if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
       
         sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
           if test -d "$dir/." -a -f "$dir/rdbms/lib/sysliblist"; then
   	    echo "$dir/rdbms/lib/sysliblist" > conftest
+	    break
+          elif test -d "$dir/." -a -f "$dir/lib/sysliblist"; then
+  	    echo "$dir/lib/sysliblist" > conftest
 	    break
           else
 	    :
@@ -215,7 +235,8 @@ if test x$with_oracle = xyes; then
       ORACLE_LIBS="-loci"
     else
       if test -f "$oracle_lib_dir/libcommon8.a" -o \
-              -f "$oracle_lib_dir/libcommon9.a"; then
+              -f "$oracle_lib_dir/libcommon9.a" -o \
+              -f "$oracle_lib_dir/libcommon10.a"; then
         ORACLE_LIBS="-lclntsh"
       else
         if test -f "$oracle_lib_dir/libcore4.a"; then
