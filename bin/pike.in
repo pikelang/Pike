@@ -52,12 +52,13 @@ $arg
 EOF`
     args="$args '$arg'"
   done
+  echo "set args $args" >> .gdbinit.$$
+  echo break pike_gdb_breakpoint >> .gdbinit.$$
   if test -f .gdbinit; then
+    cat .gdbinit >> .gdbinit.$$
     mv .gdbinit .gdbinit.orig
-    cp .gdbinit.orig .gdbinit
   fi
-  echo "set args $args" >> .gdbinit
-  echo break pike_gdb_breakpoint >> .gdbinit
+  mv .gdbinit.$$ .gdbinit
   gdbcmd=`expr "$gdb" : '--gdb=\(.*\)'`
   if test x"$gdbcmd" != x; then
     echo "$gdbcmd" >> .gdbinit
