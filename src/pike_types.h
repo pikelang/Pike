@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.79 2002/08/15 14:49:24 marcus Exp $
+ * $Id: pike_types.h,v 1.80 2002/09/11 14:03:50 marcus Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -255,7 +255,7 @@ int check_soft_cast(struct pike_type *to, struct pike_type *from);
 int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b);
 struct pike_type *index_type(struct pike_type *type,
-			     struct pike_type *index_type,
+			     struct pike_type *type_of_index,
 			     node *n);
 struct pike_type *range_type(struct pike_type *type,
 			     struct pike_type *index1_type,
@@ -263,7 +263,7 @@ struct pike_type *range_type(struct pike_type *type,
 struct pike_type *array_value_type(struct pike_type *array_type);
 struct pike_type *key_type(struct pike_type *type, node *n);
 int check_indexing(struct pike_type *type,
-		   struct pike_type *index_type,
+		   struct pike_type *type_of_index,
 		   node *n);
 int count_arguments(struct pike_type *s);
 int minimum_arguments(struct pike_type *s);

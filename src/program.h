@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.163 2002/06/11 17:48:11 mast Exp $
+ * $Id: program.h,v 1.164 2002/09/11 14:03:50 marcus Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -475,8 +475,8 @@ struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
 PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 				   ptrdiff_t modulo_orig);
-PMOD_EXPORT void set_init_callback(void (*init)(struct object *));
-PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *));
+PMOD_EXPORT void set_init_callback(void (*init_callback)(struct object *));
+PMOD_EXPORT void set_exit_callback(void (*exit_callback)(struct object *));
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 void pike_set_prog_event_callback(void (*cb)(int));

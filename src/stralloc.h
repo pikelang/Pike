@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.66 2002/08/15 14:49:25 marcus Exp $
+ * $Id: stralloc.h,v 1.67 2002/09/11 14:03:50 marcus Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -227,7 +227,7 @@ PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a,
 						      ptrdiff_t size);
 PMOD_EXPORT struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift);
 PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
-					 INT32 index,
+					 INT32 position,
 					 INT32 c);
 PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);

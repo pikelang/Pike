@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.118 2001/11/02 14:05:33 mast Exp $
+ * $Id: threads.h,v 1.119 2002/09/11 14:03:50 marcus Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -40,7 +40,7 @@ struct thread_state {
 
 
 /* Prototypes begin here */
-int low_nt_create_thread(unsigned Pike_stack_size,
+int low_nt_create_thread(unsigned stack_size,
 			 unsigned (TH_STDCALL *func)(void *),
 			 void *arg,
 			 unsigned *id);

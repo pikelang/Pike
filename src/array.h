@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.41 2002/08/15 14:49:19 marcus Exp $
+ * $Id: array.h,v 1.42 2002/09/11 14:03:50 marcus Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -92,15 +92,15 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
 PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);
-PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index);
+PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 ind);
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind);
-PMOD_EXPORT void array_free_index(struct array *v,INT32 index);
+PMOD_EXPORT void array_free_index(struct array *v,INT32 ind);
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
-PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index);
+PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 ind);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
 PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size);
-PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index);
+PMOD_EXPORT struct array *array_remove(struct array *v,INT32 ind);
 PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 				   ptrdiff_t start);
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
