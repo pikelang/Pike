@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.63 2000/01/04 01:29:11 grubba Exp $");
+RCSID("$Id: docode.c,v 1.64 2000/01/04 01:32:04 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -873,18 +873,20 @@ static int do_docode2(node *n,int flags)
     f_aggregate(cases);
     order=get_switch_order(sp[-1].u.array);
 
-    /* Check for cases inside a range */
-    for(e=0; e<cases-1; e++)
-    {
-      if(order[e] < cases-1)
+    if (!num_parse_error) {
+      /* Check for cases inside a range */
+      for(e=0; e<cases-1; e++)
       {
-	int o1=order[e]*2+2;
-	if(current_switch_jumptable[o1]==current_switch_jumptable[o1+1] &&
-	   current_switch_jumptable[o1]==current_switch_jumptable[o1+2])
+	if(order[e] < cases-1)
 	{
-	  if(order[e]+1 != order[e+1])
-	    yyerror("Case inside range.");
-          e++;
+	  int o1=order[e]*2+2;
+	  if(current_switch_jumptable[o1]==current_switch_jumptable[o1+1] &&
+	     current_switch_jumptable[o1]==current_switch_jumptable[o1+2])
+	  {
+	    if(order[e]+1 != order[e+1])
+	      yyerror("Case inside range.");
+	    e++;
+	  }
 	}
       }
     }
