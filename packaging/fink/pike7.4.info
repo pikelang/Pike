@@ -1,5 +1,5 @@
 Package: pike7.4
-Version: 7.4.28
+Version: 7.4.35
 Revision: 1
 Description: Programming language with a C-like syntax
 DescDetail: <<
@@ -23,13 +23,11 @@ DescDetail: <<
   Pike as well as in C or C++, and integrate them with the rest of Pike.
 <<
 CustomMirror: <<
-Primary: ftp://pike.ida.liu.se/pub/pike/all/
-Secondary-ftp: ftp://ftp.oav.net/pike/official_releases/
-Secondary-http: http://ftp.oav.net/pike/official_releases/
-Roxen: ftp://ftp.roxen.com/pub/pike/all/
+Primary: ftp://ftp.oav.net/pike/7.4/export/
+Secondary-http: http://ftp.oav.net/pike/7.4/export/
 <<
-Source: mirror:custom:%v/Pike-v%v.tar.gz
-Source-MD5: 98a7944cea94c7255a24f2cba7d15ec1
+Source: mirror:custom:Pike-v%v.tar.gz
+Source-MD5: 890adb7df4d41d56bfa7db811553110f
 BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev
 Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,dlcompat-shlibs,mysql12-shlibs
 SourceDirectory: Pike-v%v
