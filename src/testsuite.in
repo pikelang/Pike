@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.381 2001/02/08 04:04:39 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.382 2001/02/10 02:18:48 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -483,9 +483,8 @@ test_program([[
   }
   int a()
   {
-    ({monitor::lock(), catch {
+    foreach (({0, monitor::lock()}), mixed m)
       return f (1); // F_CALL_LFUN_AND_RETURN
-    }});
   };
 ]]);
 test_program([[
@@ -499,9 +498,8 @@ test_program([[
   mixed g = f;
   int a()
   {
-    ({monitor::lock(), catch {
+    foreach (({0, monitor::lock()}), mixed m)
       return g (1); // F_CALL_FUNCTION_AND_RETURN
-    }});
   }
 ]]);
 test_program([[
@@ -519,9 +517,8 @@ test_program([[
     return compile_string(#"
       int g()
       {
-	({monitor->lock(), catch {
+	foreach (({0, monitor->lock()}), mixed m)
 	  return f (1); // F_APPLY_AND_RETURN
-	}});
       }")()->g();
   }
 ]]);
@@ -537,9 +534,8 @@ test_program([[
     }
     else {
       iter = 1;
-      ({monitor::lock(), catch {
+      foreach (({0, monitor::lock()}), mixed m)
 	return a (1); // F_COND_RECUR
-      }});
     }
   }
 ]]);
@@ -559,9 +555,8 @@ test_program([[
     }
     else {
       iter = 2;
-      ({monitor::lock(), catch {
+      foreach (({0, monitor::lock()}), mixed m)
 	return a (1); // F_TAIL_RECUR
-      }});
     }
   }
 ]]);
@@ -582,10 +577,11 @@ test_program([[
     else {
       iter = 2;
       int res;
-      ({monitor::lock(), catch {
+      foreach (({0, monitor::lock()}), mixed m) {
 	res = a (1); // F_RECUR
-      }});
-      return res;
+	iter = random (res);
+	return res;
+      }
     }
   }
 ]]);
@@ -605,10 +601,10 @@ test_program([[
     }
     else {
       iter = 2;
-      ({monitor::lock(), catch {
+      foreach (({0, monitor::lock()}), mixed m) {
 	a (1); // F_RECUR_AND_POP
-      }});
-      return iter;
+	return iter;
+      }
     }
   }
 ]]);
