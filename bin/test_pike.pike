@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.67 2002/05/27 12:04:54 jhs Exp $ */
+/* $Id: test_pike.pike,v 1.68 2002/07/29 17:19:24 nilsson Exp $ */
 
 import Stdio;
 
@@ -21,12 +21,13 @@ int foo(string opt)
 int istty_cache;
 int istty()
 {
-#ifdef __NT__
-  return 1;
-#else
   if(!istty_cache)
   {
+#ifdef __NT__
+    istty_cache=1;
+#else
     istty_cache=!!Stdio.stdin->tcgetattr();
+#endif
     if(!istty_cache)
     {
       istty_cache=-1;
@@ -40,7 +41,6 @@ int istty()
     }
   }
   return istty_cache>0;
-#endif
 }
 
 mapping(string:int) cond_cache=([]);
@@ -224,7 +224,7 @@ void run_watchdog(int pid) {
 int main(int argc, array(string) argv)
 {
   int e, verbose, prompt, successes, errors, t, check;
-  int skipped, quiet;
+  int skipped;
   array(string) tests;
   program testprogram;
   int start, fail, mem;
@@ -265,7 +265,6 @@ int main(int argc, array(string) argv)
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.MAY_HAVE_ARG,({"-v","--verbose"})}),
     ({"prompt",Getopt.NO_ARG,({"-p","--prompt"})}),
-    ({"quiet",Getopt.NO_ARG,({"-q","--quiet"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
     ({"end",Getopt.HAS_ARG,({"-e","--end-after"})}),
     ({"fail",Getopt.NO_ARG,({"-f","--fail"})}),
@@ -301,7 +300,6 @@ int main(int argc, array(string) argv)
 
 	case "verbose": verbose+=foo(opt[1]); break;
 	case "prompt": prompt+=foo(opt[1]); break;
-        case "quiet": quiet=1; istty_cache=-1; break;
 	case "start": start=foo(opt[1]); start--; break;
 	case "end": end=foo(opt[1]); break;
 	case "fail": fail=1; break;
@@ -342,6 +340,8 @@ int main(int argc, array(string) argv)
 #endif
       }
     }
+
+  add_constant("_verbose", verbose);
 
 #ifdef WATCHDOG
   int watchdog_time=time();
@@ -429,7 +429,7 @@ int main(int argc, array(string) argv)
 	  
 	  if(tmp==-1)
 	  {
-	    if(verbose)
+	    if(verbose>1)
 	      werror("Not doing test "+(e+1)+"\n");
 	    successes++;
 	    skipped++;
@@ -455,7 +455,7 @@ int main(int argc, array(string) argv)
 	    pad_on_error = "                                        \r";
 	  }
 	}
-	else if(quiet){
+	else if(verbose){
 	  if(skip) {
 	    if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
 	    qmade=0;
@@ -510,11 +510,11 @@ int main(int argc, array(string) argv)
 	  }
 	}
 
-	if(verbose)
+	if(verbose>1)
 	{
 	  werror("Doing test %d (%d total) at %s:%d%s\n",
 		 testno, successes+errors+1, testfile, testline, extra_info);
-	  if(verbose>1) bzot(test);
+	  if(verbose>2) bzot(test);
 	}
 
 	if(check > 1) _verify_internals();
@@ -639,7 +639,7 @@ int main(int argc, array(string) argv)
 	  {
 	    _dmalloc_set_name();
 	    successes++;
-	    if(verbose>2)
+	    if(verbose>3)
 	      werror("Time in a(): %f\n",at);
 	  }
 	  else {
@@ -750,7 +750,7 @@ int main(int argc, array(string) argv)
 	    else {
 	      successes += a[0];
 	      errors += a[1];
-	      if (verbose)
+	      if (verbose>1)
 		if(a[1])
 		  werror("%d/%d tests failed.\n", a[1], a[0]+a[1]);
 		else
@@ -811,7 +811,7 @@ int main(int argc, array(string) argv)
       {
 	werror("                                        \r");
       }
-      else if(quiet) {
+      else if(verbose) {
 	if(!qskipp && !qmadep);
 	else if(!qskipp) werror("Made all tests\n");
 	else if(!qmadep) werror("Skipped all tests\n");
@@ -845,7 +845,7 @@ int main(int argc, array(string) argv)
 	     "Total", "", total );
     }
   }
-  if(errors || verbose)
+  if(errors || verbose>1)
   {
     werror("Failed tests: "+errors+".\n");
   }
@@ -885,14 +885,15 @@ Usage: test_pike [args] [testfiles]
 --verbose[=level]   Select the level of verbosity. Every verbose level includes
                     the printouts from the levels below.
                     0  No extra printouts.
-                    1  Some extra information about test that will or won't be
+                    1  Some additional information printed out after every
+                       finished block of tests.
+                    2  Some extra information about test that will or won't be
                        run.
-                    2  Every test is printed out.
-                    3  Time spent in individual tests are printed out.
+                    3  Every test is printed out.
+                    4  Time spent in individual tests are printed out.
                     10 The actual pike code compiled, including wrappers, is
                        printed.
 -p, --prompt        The user will be asked before every test is run.
--q, --quiet         Less outputs than normal.
 -sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
                     tests in every testsuite.
 -eX, --end-after=X  How many tests should be run.
