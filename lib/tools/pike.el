@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.13 2000/11/17 05:04:58 mast Exp $
+;;; $Id: pike.el,v 1.14 2000/11/17 06:16:05 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -69,7 +69,8 @@ overlaid over the `font-lock-comment-face'."
 overlaid over the `font-lock-reference-face'."
   :group 'pike-faces)
 (defface pike-font-lock-refdoc-error-face
-  '((((class color)) (:foreground "black" :background "hotpink"))
+  '((((class color) (background light)) (:foreground "red"))
+    (((class color)) (:foreground "hotpink"))
     (((background light)) (:foreground "white" :background "black"))
     (t (:foreground "black" :background "white")))
   "Face to use for invalid markup in Pike documentation comments."
