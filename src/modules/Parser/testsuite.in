@@ -183,6 +183,32 @@ test_any([[{
 }]], ("T(<t a=&e; <t>>|t|0|data) Q(<q <\"' &e; p>|q| <\"' &e; |data) "
       "&eC(<c x=y -- >x</c>|c|x|data) E(&e;|e|0|data) "
       "<x &e; q=E(&e;|e|0|arg)> <x q='E(&e;|e|0|')'> <x E(&e;|e|0|splice_arg)>"));
+test_any([[{
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->splice_arg ("::");
+  p->_set_tag_callback (
+    lambda (object p, string s) {
+      return ({"T(", p->current(), "|", p->tag_name(), "|",
+	       (string) p->tag_content(), "|", p->context(), ")"});
+    });
+  return p->finish ("<x &e; q=&f;> &g; "
+		    "<x q='&h;'/> <x ::='&i;'>")->read();
+}]], ("T(<x &e; q=&f;>|x|0|data) &g; "
+      "T(<x q='&h;'/>|x|0|data) T(<x ::='&i;'>|x|0|data)"));
+test_any([[{
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->splice_arg ("::");
+  p->_set_entity_callback (
+    lambda (object p, string s) {
+      return ({"E(", p->current(), "|", p->tag_name(), "|",
+	       (string) p->tag_content(), "|", p->context(), ")"});
+    });
+  return p->finish ("<x &e; q=&f;> &g; "
+		    "<x q='&h;'/> <x ::='&i;'>")->read();
+}]], ("<x &e; q=E(&f;|f|0|arg)> E(&g;|g|0|data) "
+      "<x q='E(&h;|h|0|')'/> <x E(&i;|i|0|splice_arg)>"));
 test_any_equal([[
   object p = Parser.HTML();
   array a = ({ });
