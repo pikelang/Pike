@@ -73,7 +73,7 @@ pike_atomic_compare_and_swap (INT32 *p, INT32 oldval, INT32 newval)
    * }
    */
   __asm__ __volatile__ ("casl %0, %3, %1"
-			: "=d" (oldval), "=m", (p)
+			: "=d" (oldval), "=m", (*p)
 			: "0" (oldval), "d" (newval), "0" (p)
 			: "memory");
   return oldval;
