@@ -1,10 +1,12 @@
-# $Id: Makefile.in,v 1.8 1998/03/28 14:52:28 grubba Exp $
+# $Id: Makefile.in,v 1.9 1999/04/24 12:56:47 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=mpz_glue.o next_prime.o
 
 PRIME_LIMIT=1024
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
