@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.10.2.1 1997/11/03 20:59:01 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.10.2.2 1997/11/03 21:21:39 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -24,12 +24,12 @@ extern double floor(double);
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-#undef POLYDEBUG
+#define POLYDEBUG
 
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.10.2.1 1997/11/03 20:59:01 mirar Exp $
+**!	$Id: polyfill.c,v 1.10.2.2 1997/11/03 21:21:39 mirar Exp $
 **! class image
 */
 
@@ -292,19 +292,21 @@ static int polygone_row_vertices(float *buf,
    while (v!=v2)
    {
 #ifdef POLYDEBUG
-      fprintf(stderr,"aa << %g,%g-%g,%g %g,%g-%g,%g fill=%d xofill=%d\n",
-       v->above->x,v->above->y,
-       v->below->x,v->below->y,
-       v->xmin,v->yxmin,
-       v->xmax,v->yxmax,
-	     fill,xofill);
+      fprintf(stderr,"aa << %g,%g-%g,%g %g,%g-%g,%g fill=%d xofill=%d xmin=%g xmax=%g xmin_i=%d xmax_i=%d\n",
+	      v->above->x,v->above->y,
+	      v->below->x,v->below->y,
+	      v->xmin,v->yxmin,
+	      v->xmax,v->yxmax,
+	      fill,xofill,
+	      xmin,xmax,xmin_i,xmax_i);
 #endif
 
       if (xmin!=xmax && v->xmin<xmax && v->xmax>xmin) 
       {
 #define CALC_AREA(FILL,X,Y1,Y2,YP) \
-	    ((FILL)*(X)*( 1.0-0.5*((Y1)+(Y2))+(YP) ))
-	/*	    (fprintf(stderr," [area: %d*%g*%g y1=%g y2=%g yp=%g]\n", FILL,X,( 1-0.5*(Y1+Y2)+YP ),Y1,Y2,YP), \*/
+	      (fprintf(stderr," [area: %d*%g*%g y1=%g y2=%g yp=%g]\n", FILL,X,( 1-0.5*(Y1+Y2)+YP ),Y1,Y2,YP), \
+		    ((FILL)*(X)*( 1.0-0.5*((Y1)+(Y2))+(YP) )))
+
 
 			 
 	 if (xmin_i == xmax_i)
@@ -357,7 +359,7 @@ static void polygone_row(struct image *img,
 			 int *pixmin,int *pixmax)
 {
    struct vertex_list *v,*v1;
-   float xmax,xmin,nxmax;
+   float xmax,xmin,nxmax,xminf;
    int fill=0,i;
    int ixmin,ixmax;
 
@@ -418,15 +420,13 @@ static void polygone_row(struct image *img,
 		xmin,xmax,nxmax);
 #endif
 
-      /* skip uninteresting, ends < v->xmin */
-      while (v1 && v1->xmax<xmin) v1=v1->next;
-      if (!v1) break;
-	 
+      if (!v) break; /* sanity check */
+
       /* get next start or end */
 
       v=v1;
       nxmax=0;
-      xmax=1e10;
+      xmax=v->xmax;
       /* known: v->xmin>=xmin */
       while (v)
       {
@@ -437,46 +437,67 @@ static void polygone_row(struct image *img,
 	     v->xmin,v->yxmin,
 	     v->xmax,v->yxmax,xmin,xmax,nxmax);
 #endif
-	 if (v->xmin>xmin && v->xmin<xmax) xmax=v->xmin;
-	 if (v->xmax>xmin && v->xmax<xmax) xmax=v->xmax;
-	 if (v->xmax>nxmax) nxmax=v->xmax;
+	 if (v->xmin>xmin && v->xmin<xmax) 
+	    xmax=v->xmin;
+	 if (v->xmax>xmin && v->xmax<xmax) 
+	    xmax=v->xmax;
+	 if (v->xmin<=xmax && v->xmax>nxmax) nxmax=v->xmax;
 
 #ifdef POLYDEBUG
 	 fprintf(stderr,"xmin=%g xmax=%g nxmax=%g\n",
-		xmin,xmax,nxmax);
+		 xmin,xmax,nxmax);
 #endif
 
 	 v=v->next;
       }
+
+      fprintf(stderr,"    xmax=%g nxmax=%g xmin=%g xmax=%g ixmax=%d fill=%d\n",
+	      xmax,nxmax,xmin,xmax,ixmax,fill);
       
-      if (xmax>nxmax) xmax=nxmax;
+      if (xminf>xmin) xmin=xminf;
       if (xmin>xmax) xmax=xmin;
       if (xmax>ixmax) xmax=ixmax;
-      
-      if (xmin==nxmax) break;
 
-      fill=polygone_row_vertices(buf,v1,v,xmin,xmax,yp,fill);
+      fprintf(stderr,"--> xmax=%g nxmax=%g xmin=%g xmax=%g ixmax=%d fill=%d\n",
+	      xmax,nxmax,xmin,xmax,ixmax,fill);
+      
+      if (xmin!=nxmax)
+	fill=polygone_row_vertices(buf,v1,v,xmin,xmax,yp,fill);
       
       if ((xmin=xmax)>=ixmax) break;
 
-      while (v1 && v1->xmax<xmin) v1=v1->next;
-      if (!v1) break;
       v=vertices;
       while (v) 
       {
 	 if (v->xmax==xmax && v->yxmax==yp) fill=!fill;
 	 v=v->next;
       }
+
+      /* skip uninteresting, ends < v->xmin */
+      while (v1 && v1->xmax<=xmin) v1=v1->next;
+      if (!v1) break;
       
-      if (v && xmax==nxmax && v->xmin>nxmax) /* jump */
+      fprintf(stderr,"v1=%lx xmax=%g nxmax=%g xmax==nxmax:%d\n",
+	      (unsigned long)v1,xmax,nxmax,xmax==nxmax);
+
+      if (v1 && xmax==nxmax) /* jump */
       {
+	 /* calculate next vector */
+	 xminf=ixmax;
+	 v=v1;
+	 while (v) 
+	 {
+	    if (xminf>v->xmin) xminf=v->xmin;
+	    v=v->next;
+	 }
+
+	 fprintf(stderr,"aa jump %g..%g fill %g\n",
+		 nxmax,xminf);
 	 xmin=v->xmin;
-	 if (nxmax>=ixmax) break;
 	 if (fill) 
-	    if (v->xmin>ixmax)
-	       polygone_row_fill(buf,nxmax,ixmax);
-	    else
-	       polygone_row_fill(buf,nxmax,v->xmin);
+	    polygone_row_fill(buf,nxmax,xminf);
+	 if (xminf==ixmax) break;
+	 xmin=xminf;
       }
    }
 }
@@ -506,6 +527,7 @@ static void polygone_some(struct image *img,
    while (next)
    {
 #ifdef POLYDEBUG
+      struct vertex_list *v1;
 fprintf(stderr,"\n\nrow y=%g..%g\n",yp,yp+1);
 #endif
 
@@ -550,7 +572,7 @@ fprintf(stderr,"\n\nrow y=%g..%g\n",yp,yp+1);
 
 	 polygone_row(img, buf, vertices,yp, &xmin,&xmax);
 
-#if POLYDEBUG
+#ifdef POLYDEBUG
 	 fprintf(stderr,"yp=%g dest=&%lx (&%lx..&%lx) xmin=%d xmax=%d;   ",
 		 yp,(int)dest,(int)img->img,
 		 (int)img->img+img->xsize*img->ysize,
@@ -659,7 +681,7 @@ void image_polygone(INT32 args)
    struct vertex *v;
 
    if (!THIS->img)
-      error("No image when calling Image.image->polygone()\n");
+      error("No image when calling image::polygone()\n");
 
    v=polygone_begin();
 
@@ -670,14 +692,14 @@ void image_polygone(INT32 args)
       if (sp[-1].type!=T_ARRAY)
       {
 	 polygone_free(v);
-	 error("Illegal argument %d to Image.image->polygone(), expected array\n",
+	 error("Illegal argument %d to image::polygone(), expected array\n",
 	       args);
       }
-      if ((v_tmp=polygone_add(v, sp[-1].u.array, args, "Image.image->polygone()"))) {
+      if ((v_tmp=polygone_add(v, sp[-1].u.array, args, "image::polygone()"))) {
 	 v = v_tmp;
       } else {
 	 polygone_free(v);
-	 error("Bad argument %d to Image.image->polygone(), bad vertice\n", args);
+	 error("Bad argument %d to image::polygone(), bad vertice\n", args);
       }
       args--;
       pop_stack();
