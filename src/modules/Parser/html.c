@@ -14,7 +14,6 @@
 #include "module_support.h"
 #include "mapping.h"
 #include "stralloc.h"
-#include "gc.h"
 #include "program_id.h"
 #include <ctype.h>
 
@@ -503,16 +502,7 @@ static void init_html_struct(struct object *o)
    THIS->ws_or_endarg=NULL;
    THIS->arg_break_chars=NULL;
 
-   THIS->maptag=NULL;
-   THIS->mapcont=NULL;
-   THIS->mapentity=NULL;
-   THIS->mapqtag=NULL;
-
-   THIS->splice_arg=NULL;
-
    THIS->flags=FLAG_MATCH_TAG|FLAG_PARSE_TAGS;
-
-   THIS->extra_args=NULL;
 
    /* initialize feed */
    THIS->feed=NULL;
@@ -520,14 +510,6 @@ static void init_html_struct(struct object *o)
    THIS->cond_out=NULL;
    THIS->stack=NULL;
    reset_feed(THIS);
-   
-   /* clear callbacks */
-   THIS->callback__tag.type=T_INT;
-   THIS->callback__tag.u.integer=0;
-   THIS->callback__data.type=T_INT;
-   THIS->callback__data.u.integer=0;
-   THIS->callback__entity.type=T_INT;
-   THIS->callback__entity.u.integer=0;
 
    /* settings */
    THIS->max_stack_depth=MAX_FEED_STACK_DEPTH;
@@ -557,20 +539,6 @@ static void exit_html_struct(struct object *o)
 
    reset_feed(THIS); /* frees feed & out */
 
-   if (THIS->maptag) free_mapping(THIS->maptag);
-   if (THIS->mapcont) free_mapping(THIS->mapcont);
-   if (THIS->mapentity) free_mapping(THIS->mapentity);
-   if (THIS->mapqtag) free_mapping(THIS->mapqtag);
-
-   if (THIS->splice_arg) free_string(THIS->splice_arg);
-
-   dmalloc_touch_svalue(&(THIS->callback__tag));
-   dmalloc_touch_svalue(&(THIS->callback__data));
-   dmalloc_touch_svalue(&(THIS->callback__entity));
-   free_svalue(&(THIS->callback__tag));
-   free_svalue(&(THIS->callback__data));
-   free_svalue(&(THIS->callback__entity));
-
    while ((fsp = THIS->stack)) {
      THIS->stack = fsp->prev;
      free(fsp);
@@ -580,8 +548,6 @@ static void exit_html_struct(struct object *o)
    if (THIS->ws) free(THIS->ws);
    if (THIS->ws_or_endarg) free(THIS->ws_or_endarg);
    if (THIS->arg_break_chars) free(THIS->arg_break_chars);
-
-   if (THIS->extra_args) free_array(THIS->extra_args);
 
    DEBUG((stderr,"exit_html_struct %p done\n",THIS));
 }
@@ -710,36 +676,6 @@ static void unwind_subparse_state (struct subparse_save *save)
   }
 
   free_object (save->thisobj);
-}
-
-static void gc_check_html(struct object *o)
-{
-   gc_check(THIS->maptag);
-   gc_check(THIS->mapcont);
-   gc_check(THIS->mapentity);
-   gc_check(THIS->mapqtag);
-
-   gc_check_svalues(&(THIS->callback__tag),1);
-   gc_check_svalues(&(THIS->callback__data),1);
-   gc_check_svalues(&(THIS->callback__entity),1);
-   
-   if (THIS->extra_args)
-      gc_check(THIS->extra_args);
-}
-
-static void gc_mark_html(struct object *o)
-{
-   gc_mark_mapping_as_referenced(THIS->maptag);
-   gc_mark_mapping_as_referenced(THIS->mapcont);
-   gc_mark_mapping_as_referenced(THIS->mapentity);
-   gc_mark_mapping_as_referenced(THIS->mapqtag);
-
-   gc_mark_svalues(&(THIS->callback__tag),1);
-   gc_mark_svalues(&(THIS->callback__data),1);
-   gc_mark_svalues(&(THIS->callback__entity),1);
-   
-   if (THIS->extra_args)
-      gc_mark_array_as_referenced(THIS->extra_args);
 }
 
 /****** setup callbacks *****************************/
@@ -4085,15 +4021,19 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
       scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
 
       /* end of tag? */
-      if (c1==s1->s->len) /* end<tm> */
-	 break;
+      if (c1==s1->s->len) { /* end<tm> */
+	DEBUG_MARK_SPOT("html_tag_args hard tag end (1)",s1,c1);
+	break;
+      }
       ch=index_shared_string(s1->s,c1);
       if ((flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) != FLAG_STRICT_TAGS &&
 	  ch==this->tag_fin) {
 	FORWARD_CHAR(s1, c1, s3, c3);
 	if ((c3==s3->s->len || index_shared_string(s3->s,c3)==this->tag_end) &&
-	    to_tag_end)
+	    to_tag_end) {
+	  DEBUG_MARK_SPOT("html_tag_args empty element tag end",s3,c3);
 	  break;
+	}
 	else if (n && s1==s2 && c1==c2) { /* previous arg value didn't really end */
 	  DEBUG_MARK_SPOT("html_tag_args arg val continues",s3,c3);
 	  push_string (make_shared_binary_string2 (&this->tag_fin, 1));
@@ -4102,8 +4042,10 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
 	  continue;
 	}
       }
-      else if (ch==this->tag_end && to_tag_end) /* end */
-	 break;
+      else if (ch==this->tag_end && to_tag_end) { /* end */
+	DEBUG_MARK_SPOT("html_tag_args soft tag end (1)",s1,c1);
+	break;
+      }
 
 new_arg:
 
@@ -4121,6 +4063,7 @@ new_arg:
 	scan_forward(s2,c2,&s3,&c3,this->ws,-this->n_ws);
 	if (c3==s3->s->len) /* end<tm> */
 	{
+	  DEBUG_MARK_SPOT("html_tag_args hard tag end (2)",s3,c3);
 	  tag_push_default_arg(def);
 	  goto done;
 	}
@@ -4144,6 +4087,7 @@ new_arg:
 
       if (ch==this->tag_end && to_tag_end) /* end */
       {
+	 DEBUG_MARK_SPOT("html_tag_args soft tag end (2)",s3,c3);
 	 tag_push_default_arg(def);
 	 break;
       }
@@ -4151,15 +4095,17 @@ new_arg:
       if (ch!=this->arg_eq) {
 	if (c1!=c3 || s1!=s3)	/* end of _this_ argument */
 	{
+	  DEBUG_MARK_SPOT("html_tag_args empty arg end",s3,c3);
 	  s1 = s3, c1 = c3;
 	  tag_push_default_arg(def);
 	  goto new_arg;
 	}
 	else {			/* a stray bogus character */
-	  s1 = s3, c1 = c3 + 1;
+	  DEBUG_MARK_SPOT("html_tag_args bogus char",s3,c3);
+	  s2 = s3, c2 = c3 + 1;
 	  pop_stack();
 	  n--;
-	  goto new_arg;
+	  continue;
 	}
       }
       
@@ -4173,6 +4119,8 @@ new_arg:
 
       /* scan the argument value */
       scan_forward_arg(this,s2,c2,&s1,&c1,SCAN_ARG_PUSH,1,NULL);
+
+      DEBUG_MARK_SPOT("html_tag_args value end",s1,c1);
 
       /* next argument in the loop */
       s2 = s1;
@@ -4961,14 +4909,42 @@ static void html_debug_mode(INT32 args)
 
 void init_parser_html(void)
 {
+   SIZE_T offset;
+
    empty_string = make_shared_binary_string("", 0);
 
-   ADD_STORAGE(struct parser_html_storage);
+   offset = ADD_STORAGE(struct parser_html_storage);
+
+   MAP_VARIABLE(" maptag", offset + OFFSETOF(parser_html_storage, maptag),
+		tMap(tStr,tTodo(tTagargs)),
+		T_MAPPING, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" mapcont", offset + OFFSETOF(parser_html_storage, mapcont),
+		tMap(tStr,tTodo(tTagargs tStr)),
+		T_MAPPING, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" mapentity", offset + OFFSETOF(parser_html_storage, mapentity),
+		tMap(tStr,tTodo(tNone)),
+		T_MAPPING, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" mapqtag", offset + OFFSETOF(parser_html_storage, mapqtag),
+		tMap(tStr,tTodo(tStr)),
+		T_MAPPING, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" callback__tag", offset + OFFSETOF(parser_html_storage, callback__tag),
+		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		T_MIXED, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" callback__data", offset + OFFSETOF(parser_html_storage, callback__data),
+		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		T_MIXED, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" callback__entity", offset + OFFSETOF(parser_html_storage, callback__entity),
+		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		T_MIXED, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" splice_arg", offset + OFFSETOF(parser_html_storage, splice_arg),
+		tString,
+		T_STRING, ID_STATIC|ID_PRIVATE);
+   MAP_VARIABLE(" extra_args", offset + OFFSETOF(parser_html_storage, extra_args),
+		tArray,
+		T_ARRAY, ID_STATIC|ID_PRIVATE);
 
    set_init_callback(init_html_struct);
    set_exit_callback(exit_html_struct);
-   set_gc_check_callback(gc_check_html);
-   set_gc_mark_callback(gc_mark_html);
 
    ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),ID_STATIC);
    ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObjImpl_PARSER_HTML),0);
