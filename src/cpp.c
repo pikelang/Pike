@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.139 2004/09/21 17:55:35 nilsson Exp $
+|| $Id: cpp.c,v 1.140 2004/10/31 22:43:17 mast Exp $
 */
 
 #include "global.h"
@@ -1034,7 +1034,7 @@ while(1)					\
 
 #define FINDTOK() 				\
   do {						\
-  SKIPSPACE();					\
+  SKIPWHITE();					\
   if(data[pos]=='/')				\
   {						\
     ptrdiff_t tmp;				\
