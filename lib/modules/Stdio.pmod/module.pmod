@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.174 2003/06/18 17:37:29 nilsson Exp $
+// $Id: module.pmod,v 1.175 2003/06/26 23:26:31 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1197,9 +1197,8 @@ File stdout=FILE("stdout");
 //!  {
 //!    int line;
 //!    while(string s=Stdio.stdin.gets())
-//! 	 write(sprintf("%5d: %s\n",line++,s));
+//! 	 write("%5d: %s\n", line++, s);
 //!  }
-
 FILE stdin=FILE("stdin");
 
 //! Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
@@ -1610,13 +1609,13 @@ string read_file(string filename,void|int start,void|int len)
   // Disallow devices and directories.
   Stat st;
   if (f->stat && (st = f->stat()) && !st->isreg) {
-    error( "Stdio.read_file(): File %O is not a regular file!\n", filename );
+    error( "File %O is not a regular file!\n", filename );
   }
 
   switch(query_num_arg())
   {
   case 1:
-    ret=f->read(0x7fffffff);
+    ret=f->read();
     break;
 
   case 2:
@@ -1669,7 +1668,7 @@ string read_bytes(string filename, void|int start,void|int len)
   // Disallow devices and directories.
   Stat st;
   if (f->stat && (st = f->stat()) && !st->isreg) {
-    error( "Stdio.read_bytes(): File \"%s\" is not a regular file!\n", filename );
+    error( "File \"%s\" is not a regular file!\n", filename );
   }
 
   switch(query_num_arg())
