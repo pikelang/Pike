@@ -1,9 +1,0 @@
-// tests for the yp module
-cond([[ master()->programs["/precompiled/ypDomain"] ]],
-
- test_true(programp((program)"/precompiled/ypDomain"))
- test_true(programp(YpDomain))
-
-// Well.. How to test the rest of it? It is impossible! 
-
-]])
