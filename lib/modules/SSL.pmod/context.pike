@@ -1,10 +1,8 @@
-#pike __REAL_VERSION__
+//
+// $Id: context.pike,v 1.19 2003/01/27 15:16:31 nilsson Exp $
 
-/* $Id: context.pike,v 1.18 2003/01/27 15:03:00 nilsson Exp $
- *
- * Keeps track of global data for an SSL server,
- * such as preferred encryption algorithms and session cache.
- */
+#pike __REAL_VERSION__
+#pragma strict_types
 
 //! Keeps the state that is shared by all SSL-connections for
 //! one server (or one port). It includes policy configuration, a server
@@ -31,8 +29,11 @@ Crypto.rsa rsa;
 Crypto.rsa long_rsa;
 Crypto.rsa short_rsa;
 
-Crypto.dsa dsa;  /* Servers dsa key */
-object dh_params; /* Parameters for dh keyexchange */
+//! Servers dsa key.
+Crypto.dsa dsa;
+
+//! Parameters for dh keyexchange.
+.Cipher.DHParameters dh_params;
 
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
@@ -51,6 +52,7 @@ array(int) preferred_auth_methods =
 //! Cipher suites we want the server to support, best first.
 array(int) preferred_suites;
 
+//! Set @[preferred_suites] to RSA based methods.
 void rsa_mode()
 {
 #ifdef SSL3_DEBUG
@@ -70,6 +72,7 @@ void rsa_mode()
   });
 }
 
+//! Set @[preferred_suites] to DSS based methods.
 void dhe_dss_mode()
 {
 #ifdef SSL3_DEBUG
@@ -97,25 +100,26 @@ int use_cache = 1;
 int session_lifetime = 600;
 
 /* Session cache */
-object active_sessions;  /* Queue of pairs (time, id), in cronological order */
-mapping(string:object) session_cache;
+ADT.Queue active_sessions;  /* Queue of pairs (time, id), in cronological order */
+mapping(string:.session) session_cache;
 
 int session_number; /* Incremented for each session, and used when constructing the
 		     * session id */
 
+// Remove sessions older than @[session_lifetime] from the session cache.
 void forget_old_sessions()
 {
   int t = time() - session_lifetime;
   array pair;
-  while ( (pair = active_sessions->peek())
+  while ( (pair = [array]active_sessions->peek())
 	  && (pair[0] < t))
-    session_cache[active_sessions->get()[1]] = 0;
+    session_cache[([array(string)]active_sessions->get())[1]] = 0;
 }
 
 //! Lookup a session identifier in the cache. Returns the
 //! corresponding session, or zero if it is not found or caching is
 //! disabled.
-object lookup_session(string id)
+.session lookup_session(string id)
 {
   if (use_cache)
   {
@@ -127,16 +131,16 @@ object lookup_session(string id)
 }
 
 //! Create a new session.
-object new_session()
+.session new_session()
 {
-  object s = SSL.session();
+  .session s = .session();
   s->identity = (use_cache) ? sprintf("%4cPikeSSL3%4c",
 				      time(), session_number++) : "";
   return s;
 }
 
 //! Add a session to the cache (if caching is enabled).
-void record_session(object s)
+void record_session(.session s)
 {
   if (use_cache && s->identity)
   {
