@@ -4,11 +4,11 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
-/* $Id: version.h,v 1.649 2002/06/25 09:43:01 distmaker Exp $ */
+/* $Id: version.h,v 1.650 2002/07/19 13:38:08 distmaker Exp $ */
 
 #define PIKE_MAJOR_VERSION 7
 #define PIKE_MINOR_VERSION 2
-#define PIKE_BUILD_VERSION 380
+#define PIKE_BUILD_VERSION 381
 
 /* Prototypes begin here */
 void f_version(INT32 args);
