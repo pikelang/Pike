@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.41 1997/04/23 20:11:49 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.42 1997/05/07 06:25:35 per Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -174,6 +174,7 @@ RCSID("$Id: language.yacc,v 1.41 1997/04/23 20:11:49 hubbe Exp $");
 #include "pike_macros.h"
 #include "error.h"
 #include "docode.h"
+#include "machine.h"
 
 #define YYMAXDEPTH	600
 
@@ -1274,14 +1275,23 @@ comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
 
 gauge: F_GAUGE catch_arg
   {
+#ifdef HAVE_GETHRVTIME
     $$=mkopernode("`-",
+		  mkopernode("`/", 
+			     mkopernode("`-", mkefuncallnode("gethrvtime",0),
+					mknode(F_ARG_LIST,$2,
+					       mkefuncallnode("gethrvtime",0))),
+			     mkintnode(1000)), 0);
+#else
+  $$=mkopernode("`-",
 		  mkopernode("`-",
 			     mknode(F_INDEX,mkefuncallnode("rusage",0),
 				    mkintnode(GAUGE_RUSAGE_INDEX)),
 			     mknode(F_ARG_LIST,$2,
 				    mknode(F_INDEX,mkefuncallnode("rusage",0),
 					   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
-  } ;
+#endif
+  };
 
 typeof: F_TYPEOF '(' expr0 ')'
   {
