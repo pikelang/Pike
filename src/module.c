@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "module.h"
 #include "pike_macros.h"
@@ -21,7 +22,7 @@
 #include "post_modules/modlist_headers.h"
 #endif
 
-RCSID("$Id: module.c,v 1.13 2001/02/01 10:27:29 hubbe Exp $");
+RCSID("$Id: module.c,v 1.14 2001/02/23 14:31:53 grubba Exp $");
 
 typedef void (*modfun)(void);
 

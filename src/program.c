@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.296 2001/02/21 21:38:47 grubba Exp $");
+RCSID("$Id: program.c,v 1.297 2001/02/23 14:33:24 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2496,7 +2496,7 @@ int low_define_variable(struct pike_string *name,
 #endif
 
   copy_shared_string(dummy.name, name);
-  copy_shared_string(dummy.type, type);
+  copy_type(dummy.type, type);
   dummy.identifier_flags = 0;
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
@@ -2692,8 +2692,8 @@ PMOD_EXPORT int simple_add_variable(char *name,
   INT32 ret;
   struct pike_string *name_s;
   struct pike_type *type_s;
-  name_s=make_shared_string(name);
-  type_s=parse_type(type);
+  name_s = make_shared_string(name);
+  type_s = parse_type(type);
 
   ret=define_variable(name_s, type_s, flags);
   free_string(name_s);
@@ -2797,8 +2797,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     dummy.func.offset=store_constant(c, 0, 0);
   }
   else {
-    reference_shared_string(mixed_type_string);
-    dummy.type = mixed_type_string;
+    copy_type(dummy.type, mixed_type_string);
     dummy.run_time_type=T_MIXED;
     dummy.func.offset=-1;
   }
@@ -3085,7 +3084,7 @@ INT32 define_function(struct pike_string *name,
 
       /* Otherwise we make a new definition */
       copy_shared_string(fun.name, name);
-      copy_shared_string(fun.type, type);
+      copy_type(fun.type, type);
 
       fun.run_time_type=T_FUNCTION;
 
@@ -3155,7 +3154,7 @@ make_a_new_def:
   /* define a new function */
 
   copy_shared_string(fun.name, name);
-  copy_shared_string(fun.type, type);
+  copy_type(fun.type, type);
 
   fun.identifier_flags=function_flags;
   fun.run_time_type=T_FUNCTION;

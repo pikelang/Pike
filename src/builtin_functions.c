@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.344 2001/02/20 15:59:48 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.345 2001/02/23 14:29:01 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1893,13 +1893,18 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
  */
 static void f_parse_pike_type( INT32 args )
 {
+  struct pike_type *t;
   struct pike_string *res;
-  if( Pike_sp[-1].type != T_STRING ||
+  if( !args || Pike_sp[-1].type != T_STRING ||
       Pike_sp[-1].u.string->size_shift )
     Pike_error( "__parse_pike_type requires a 8bit string as its first argument\n" );
-  res = parse_type( (char *)STR0(Pike_sp[-1].u.string) );
+  t = parse_type( (char *)STR0(Pike_sp[-1].u.string) );
   pop_stack();
-  push_string( res );
+
+  /* FIXME: */
+  /* Pike_error("Not supported yet!\n"); */
+  /* FIXME: Convert t to a string */
+  push_string( res = t );
 }
 
 /*! @decl mapping (string:mixed) all_constant()
@@ -2377,7 +2382,7 @@ PMOD_EXPORT void f_indices(INT32 args)
   push_array(a);
 }
 
-/* this should probably be moved to pike_constants.c or something */
+/* this should probably be moved to pike_types.c or something */
 #define FIX_OVERLOADED_TYPE(n, lf, X) fix_overloaded_type(n,lf,X,CONSTANT_STRLEN(X))
 /* FIXME: This function messes around with the implementation of pike_type,
  * and should probably be in pike_types.h instead.
@@ -2391,9 +2396,9 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
   t=first_arg[0]->type;
   if(!t || match_types(t, object_type_string))
   {
-    if(t && t->str[0]==T_OBJECT)
+    if(t && (t->str[0] == T_OBJECT))
     {
-      struct program *p=id_to_program(extract_type_int(t->str+2));
+      struct program *p = id_to_program(extract_type_int(t->str+2));
       if(p)
       {
 	int fun=FIND_LFUN(p, lfun);
@@ -2402,11 +2407,11 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
 	 * the arguments so that or:ed types are handled correctly
 	 */
 	if(fun!=-1 &&
-	   (t2=check_call(function_type_string , ID_FROM_INT(p, fun)->type,
-			  0)))
+	   (t2 = check_call(function_type_string, ID_FROM_INT(p, fun)->type,
+			    0)))
 	{
 	  free_type(n->type);
-	  n->type=t2;
+	  n->type = t2;
 	  return 0;
 	}
       }
@@ -2418,9 +2423,9 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
 #if 1
     if(deftype)
     {
-      t2=make_shared_binary_string(deftype, deftypelen);
-      t=n->type;
-      n->type=or_pike_types(t,t2,0);
+      t2 = make_shared_binary_string(deftype, deftypelen);
+      t = n->type;
+      n->type = or_pike_types(t,t2,0);
       free_type(t);
       free_type(t2);
     }
@@ -2503,6 +2508,7 @@ static node *fix_aggregate_mapping_type(node *n)
       if (arg->token == F_PUSH_ARRAY) {
 	/* FIXME: Should get the type from the pushed array. */
 	/* FIXME: Should probably be fixed in las.c:fix_type_field() */
+	/* FIXME: */
 	MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tMixed, tMixed));
 	goto set_type;
       }
@@ -2525,7 +2531,7 @@ static node *fix_aggregate_mapping_type(node *n)
 	  }
 #endif /* PIKE_DEBUG */
 	} else {
-	  copy_shared_string(types[argno], arg->type);
+	  copy_type(types[argno], arg->type);
 	}
 	argno = !argno;
 	/* Handle the special case where CAR & CDR are the same.
@@ -2541,6 +2547,7 @@ static node *fix_aggregate_mapping_type(node *n)
     }
 
     if (!types[0]) {
+      /* FIXME: */
       MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tZero, tZero));
       goto set_type;
     }
@@ -2551,6 +2558,7 @@ static node *fix_aggregate_mapping_type(node *n)
     push_type(T_MAPPING);
     new_type = pop_unfinished_type();
   } else {
+    /* FIXME: */
     MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tZero, tZero));
     goto set_type;
   }
@@ -3056,7 +3064,7 @@ static struct pike_string * replace_many(struct pike_string *str,
  *! If the first argument is a string, and the others array(string), a string
  *! with every occurrance of @[from][@i{i@}] in @[s] replaced with
  *! @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *! a mapping eqivivalent to mkmapping(from,to) can be used.
+ *! a mapping equvivalent to @code{@[mkmapping](@[from], @[to])@} can be used.
  *!
  *! If the first argument is an array or mapping, the values of @[a] which
  *! are @[`==()] with @[from] will be replaced with @[to] destructively.
@@ -5655,7 +5663,8 @@ PMOD_EXPORT void f__leak(INT32 args)
  */
 PMOD_EXPORT void f__typeof(INT32 args)
 {
-  struct pike_string *t;
+  struct pike_type *t;
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_typeof", 1);
 
@@ -7427,11 +7436,13 @@ void init_builtin_efuns(void)
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
 
+  /* FIXME: */
   ADD_EFUN_DTYPE("replace_master", f_replace_master,
 		 dtFunc(dtObjImpl(pike___master_program), dtVoid),
 		 OPT_SIDE_EFFECT);
 
-/* function(:object) */
+  /* function(:object) */
+  /* FIXME: */
   ADD_EFUN_DTYPE("master", f_master,
 		 dtFunc(dtNone, dtObjImpl(pike___master_program)),
 		 OPT_EXTERNAL_DEPEND);

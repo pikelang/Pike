@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.101 2001/02/21 18:25:25 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.102 2001/02/23 14:32:18 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -496,7 +496,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
       INT32 run_time_itype;
 
       push_type_value(itype = index_type(type, int_type_string, 0));
-      run_time_itype=compile_type_to_runtime_type(itype);
+      run_time_itype = compile_type_to_runtime_type(itype);
 
       if(run_time_itype != T_MIXED)
       {
@@ -541,7 +541,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
       INT32 run_time_itype;
 
       push_type_value(itype = key_type(type, 0));
-      run_time_itype=compile_type_to_runtime_type(itype);
+      run_time_itype = compile_type_to_runtime_type(itype);
 
       if(run_time_itype != T_MIXED)
       {
@@ -590,10 +590,10 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
       INT32 run_time_vtype;
 
       push_type_value(itype = key_type(type, 0));
-      run_time_itype=compile_type_to_runtime_type(itype);
+      run_time_itype = compile_type_to_runtime_type(itype);
 
       push_type_value(vtype = index_type(type, mixed_type_string, 0));
-      run_time_vtype=compile_type_to_runtime_type(vtype);
+      run_time_vtype = compile_type_to_runtime_type(vtype);
 
       if(run_time_itype != T_MIXED ||
 	 run_time_vtype != T_MIXED)

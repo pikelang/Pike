@@ -16,7 +16,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.26 2001/02/20 22:03:47 grubba Exp $");
+RCSID("$Id: constants.c,v 1.27 2001/02/23 14:29:35 grubba Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -90,7 +90,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 #ifdef PIKE_DEBUG
   {
     struct pike_type *z = check_call(function_type_string, type, 0);
-    f->may_return_void= z == void_type_string;
+    f->may_return_void = (z == void_type_string);
     if(!z) fatal("Gnapp!\n");
     free_type(z);
   }
@@ -105,7 +105,8 @@ PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			       optimize_fun optimize,
 			       docode_fun docode)
 {
-  return low_make_callable(fun,make_shared_string(name),parse_type(type),flags,optimize,docode);
+  return low_make_callable(fun, make_shared_string(name), parse_type(type),
+			   flags, optimize, docode);
 }
 
 PMOD_EXPORT struct callable *add_efun2(char *name,

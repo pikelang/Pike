@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.226 2001/02/20 22:03:48 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.227 2001/02/23 14:31:07 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -609,7 +609,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
-    Pike_compiler->compiler_frame->current_return_type=compiler_pop_type();
+    Pike_compiler->compiler_frame->current_return_type = compiler_pop_type();
     
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
@@ -762,7 +762,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	    } else {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_frame->variable[e].type != mixed_type_string)) {
+		  (Pike_compiler->compiler_frame->variable[e].type !=
+		   mixed_type_string)) {
 		node *local_node;
 
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
@@ -1538,11 +1539,13 @@ failsafe_block: block
 
 
 local_name_list: new_local_name
-  | local_name_list ',' { $<n>$=$<n>0; } new_local_name { $$=mknode(F_COMMA_EXPR,mkcastnode(void_type_string,$1),$4); }
+  | local_name_list ',' { $<n>$=$<n>0; } new_local_name
+    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
 local_name_list2: new_local_name2
-  | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name { $$=mknode(F_COMMA_EXPR,mkcastnode(void_type_string,$1),$4); }
+  | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name
+    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
 
@@ -1575,7 +1578,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
 	pop_stack();
       }
     }
-    if(!type) type=mixed_type_string;
+    if(!type) type = mixed_type_string;
     add_ref(type);
     low_add_local_name(Pike_compiler->compiler_frame, /*->previous,*/
 		       $1->u.sval.u.string,
@@ -1604,7 +1607,7 @@ local_constant: TOK_CONSTANT local_constant_list ';'
 statements: { $$=0; }
   | statements statement
   {
-    $$=mknode(F_COMMA_EXPR,$1,mkcastnode(void_type_string,$2));
+    $$ = mknode(F_COMMA_EXPR, $1, mkcastnode(void_type_string, $2));
   }
   ;
 
@@ -2277,7 +2280,7 @@ cond: TOK_IF
   {
     $$=mknode('?',$5,mknode(':',$7,$8));
     $$->line_number=$1;
-    $$=mkcastnode(void_type_string,$$);
+    $$=mkcastnode(void_type_string, $$);
     $$->line_number=$1;
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>3;
@@ -2373,7 +2376,7 @@ for: TOK_FOR
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string,$5),
+    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $5),
 	      mknode(F_FOR,$7,mknode(':',$11,$9)));
     lex.current_line=i;
     pop_local_variables($<number>2);
@@ -2469,10 +2472,10 @@ return: TOK_RETURN
   ;
 	
 unused: { $$=0; }
-  | safe_comma_expr { $$=mkcastnode(void_type_string,$1);  }
+  | safe_comma_expr { $$=mkcastnode(void_type_string, $1);  }
   ;
 
-unused2: comma_expr { $$=mkcastnode(void_type_string,$1);  } ;
+unused2: comma_expr { $$=mkcastnode(void_type_string, $1);  } ;
 
 optional_comma_expr: { $$=0; }
   | safe_comma_expr
@@ -2493,7 +2496,7 @@ comma_expr: comma_expr2
 comma_expr2: expr0
   | comma_expr2 ',' expr0
   {
-    $$ = mknode(F_COMMA_EXPR,mkcastnode(void_type_string,$1),$3); 
+    $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3); 
   }
   ;
 
