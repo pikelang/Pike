@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.3 2002/09/13 01:14:26 marcus Exp $
+// $Id: module.pike,v 1.4 2002/09/13 15:21:59 marcus Exp $
 
 // Source directory
 string srcdir;
@@ -8,7 +8,14 @@ string make="make";
 string make_flags="";
 string include_path=master()->include_prefix;
 string configure_command="configure";
-
+#ifdef NOT_INSTALLED
+string src_path=combine_path(__FILE__,"../../../../../src");
+string bin_path=combine_path(src_path,"../bin");
+#else
+string src_path=include_path;
+string bin_path=include_path;
+#endif
+string run_pike;
 
 #define NOT 0
 #define AUTO 1
@@ -108,13 +115,17 @@ void do_make(array(string) cmd)
     ({make})+
     do_split_quoted_string(make_flags)+
     ({"PIKE_INCLUDES=-I"+include_path,
-      "PIKE_SRC_DIR="+include_path,
+      "PIKE_SRC_DIR="+src_path,
       "BUILD_BASE="+include_path,
+#ifdef NOT_INSTALLED
+      "MODULE_BASE="+include_path+"/modules",
+#else
       "MODULE_BASE="+include_path,
-      "TMP_BINDIR="+include_path,
+#endif
+      "TMP_BINDIR="+bin_path,
       "SRCDIR="+fix("$src"),
       "TMP_MODULE_BASE=.",
-      "RUNPIKE="+master()->_pike_file_name,
+      "RUNPIKE="+run_pike,
     })+
     cmd);
 
@@ -138,6 +149,16 @@ void do_make(array(string) cmd)
 
 int main(int argc, array(string) argv)
 {
+  run_pike = master()->_pike_file_name;
+#ifdef NOT_INSTALLED
+  run_pike += " -DNOT_INSTALLED";
+#endif
+#ifdef PRECOMPILED_SEARCH_MORE
+  run_pike += " -DPRECOMPILED_SEARCH_MORE";
+#endif
+  if(master()->_master_file_name)
+    run_pike += " -m"+master()->_master_file_name;
+
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"autoconf",Getopt.NO_ARG,({"--autoconf"}) }),
     ({"configure",Getopt.NO_ARG,({"--configure"}) }),
@@ -215,7 +236,7 @@ int main(int argc, array(string) argv)
       if(run->autoconf==ALWAYS ||
 	 max_time_of_files("$src/configure") <= tmp1)
       {
-	run_or_fail((["dir":srcdir]),"autoconf","--localdir="+include_path);
+	run_or_fail((["dir":srcdir]),"autoconf","--localdir="+src_path);
       }
     }
   }
@@ -234,13 +255,16 @@ int main(int argc, array(string) argv)
 	  Stdio.cp(include_path+"/config.cache","config.cache");
 	}
 	run_or_fail(([]),srcdir+"/"+configure_command,
+		    "--cache-file=config.cache",
 		    @do_split_quoted_string(specs->configure_args||""),
 		    "CC="+(specs->CC||""),
 		    "CFLAGS="+(specs->CFLAGS||""),
 		    "CPPFLAGS="+(specs->CPPFLAGS||""),
 		    "CPP="+(specs->CPP||""),
 		    "LDFLAGS="+(specs->LDFLAGS||""),
-		    "LDSHARED="+(specs->LDSHARED||""));
+		    "LDSHARED="+(specs->LDSHARED||""),
+		    "PIKE_SRC_DIR="+src_path,
+		    "BUILD_BASE="+include_path);
       }
     }
   }
