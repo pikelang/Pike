@@ -263,7 +263,7 @@ array(string|int) convert_basic_type(array s, int pos)
 	  }
 	}
 	// NOTE! This piece of code KNOWS that PIKE_T_INT is 8!
-	res = sprintf("%O", sprintf("\8%4c%4c", low, high));
+	res = sprintf("%O", sprintf("\010%4c%4c", low, high));
       }
       break;
 

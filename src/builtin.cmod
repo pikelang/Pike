@@ -199,7 +199,7 @@ PIKEFUN int program_inherits(program child, program parent)
   errname Program.inherits;
   optflags OPT_TRY_OPTIMIZE;
 {
-  RETURN !!low_get_storage(child, parent);
+  RETURN !!low_get_storage(parent, child);
 }
 
 //! Returns a string with filename and linenumber describing where
