@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.750 2004/12/19 16:25:36 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.751 2005/01/17 15:36:32 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -454,6 +454,25 @@ test_type_error(object,float,17.23)
 test_type_error(object,array,({1,2,3}))
 test_type_error(object,mapping,([1:2,3:4]))
 test_type_error(object,multiset,(<1,2,3>))
+
+test_any([[
+  /* Detect bug in modify_shared_string().
+   *
+   * Note: For proper operation this test depends on HASH_PREFIX being
+   *       <= 128, and the initial string in test having a single ref.
+   */
+  string prefix = "A"*128;
+  string suffix = "B"*128;
+
+  string test = prefix + "C" + suffix;
+  string match = prefix + "D" + suffix;
+
+  if (test == match) return("Early match!");
+
+  test[128] = 'D';
+
+  if (test != match) return("Late mismatch!");
+]], 0)
 
 test_compile_error([[ string a="abcb"; a=a/"b"; ]])
 test_compile_error([[ string a="abcb"; a/="b"; ]])
