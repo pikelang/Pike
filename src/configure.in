@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.256 1998/12/03 21:08:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.257 1998/12/20 09:22:06 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -289,11 +289,15 @@ if test $cflags_is_set = no; then
  if test "x${GCC-}" = xyes ; then
   WARN="-W -Wall -Wpointer-arith -Wno-unused"
 
-  if test "x$with_cdebug" = "xno" ; then
-    AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
-  else
-    :
-  fi  
+  ##
+  ## -fomit-frame-pointer does not work with egcs 1.1.1
+  ## /Hubbe 1998-12-20
+  ##
+  #if test "x$with_cdebug" = "xno" ; then
+  #  AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
+  #else
+  #  :
+  #fi  
 
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
