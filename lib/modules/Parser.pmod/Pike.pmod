@@ -2,6 +2,20 @@
 
 inherit "C.pmod";
 
+#define UNKNOWN_TOKEN \
+  throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) )
+
+static mapping(string : int) backquoteops =
+(["/":1, "%":1, "*":1, "&":1, "|":1, "^":1, "~":1,
+   "+=":2, "+":1,
+   "<<":2, "<=":2, "<":1,
+   ">>":2, ">=":2, ">":1,
+   "!=":2, "!":1,
+   "==":2, "=":1,
+   "()":2,
+   "->=":3, "->":2, "-":1,
+   "[]=":3, "[]":2 ]);
+
 array(string) split(string data)
 {
   int start;
@@ -106,10 +120,24 @@ array(string) split(string data)
 	break;
 
       default:
-	throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) );
+        UNKNOWN_TOKEN;
 
       case  '`':
-	while(data[pos]=='`') data[pos]++;
+        {
+        int bqstart = pos;
+        while(data[pos]=='`')
+          ++pos;
+        if (pos - bqstart > 3) // max. three ```
+          UNKNOWN_TOKEN;
+        int chars = backquoteops[data[pos..pos+2]]
+          || backquoteops[data[pos..pos+1]]
+          || backquoteops[data[pos..pos]];
+        if (chars)
+          pos += chars;
+        else
+          UNKNOWN_TOKEN;
+        }
+        break;
 
       case '/':
       case '{': case '}':
