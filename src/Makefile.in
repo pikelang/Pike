@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.345 2003/02/04 17:29:19 mast Exp $
+# $Id: Makefile.in,v 1.346 2003/02/08 15:18:56 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -733,7 +733,8 @@ peep.o: $(SRCDIR)/peep_engine.c
 peep_t.o: peep.c
 
 $(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( rm $(SRCDIR)/case_info.h ; exit 1 )
+	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
+	  <$(SRCDIR)/UnicodeData.txt
 
 builtin_functions.o: $(SRCDIR)/case_info.h $(SRCDIR)/combine_path.h
 
