@@ -1,3 +1,10 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: multiset.c,v 1.53 2002/10/11 02:06:25 nilsson Exp $
+*/
+
 #include "global.h"
 
 #ifdef PIKE_NEW_MULTISETS
@@ -7,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.52 2002/10/08 20:22:23 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.53 2002/10/11 02:06:25 nilsson Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -5220,13 +5227,6 @@ void test_multiset (void)
 
 #else  /* PIKE_NEW_MULTISETS */
 
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: multiset.c,v 1.52 2002/10/08 20:22:23 nilsson Exp $
-\*/
-
 #include "global.h"
 #include "array.h"
 #include "multiset.h"
@@ -5240,7 +5240,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.52 2002/10/08 20:22:23 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.53 2002/10/11 02:06:25 nilsson Exp $");
 
 struct multiset *first_multiset;
 
