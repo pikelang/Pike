@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.172 1999/12/13 02:01:45 mast Exp $
+# $Id: Makefile.in,v 1.173 1999/12/19 17:07:12 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -196,7 +196,7 @@ tpike-real: $(OBJ) $(TOBJ) modules/linker_options
 
 # Only want tpike to exist when using $(RUNTPIKE); we don't want to
 # require it actually being up-to-date.
-tpike:
+$(TMP_BUILDDIR)/tpike:
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 # Make $(POBJ)s with a recursive make instead of depending on them.
@@ -442,21 +442,21 @@ new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
-$(SRCDIR)/peep_engine.c: tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
+$(SRCDIR)/peep_engine.c: $(TMP_BUILDDIR)/tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
 peep.o: $(SRCDIR)/peep_engine.c
 
 peep_t.o: peep.c
 
-$(SRCDIR)/case_info.h: tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
+$(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
 	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 builtin_functions.o: $(SRCDIR)/case_info.h
 
 builtin_functions_t.o: builtin_functions.c
 
-$(SRCDIR)/treeopt.h: tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
+$(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in
 
 las.o: $(SRCDIR)/treeopt.h
