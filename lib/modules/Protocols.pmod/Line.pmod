@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.11 2000/09/28 03:38:51 hubbe Exp $
+ * $Id: Line.pmod,v 1.12 2000/12/16 22:32:01 nilsson Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -11,6 +11,7 @@
 class simple
 {
   static object con;
+  static constant newline = "\r\n";
 
   function handle_data;
   void handle_command(string data);
@@ -69,7 +70,7 @@ class simple
   {
     if (handle_data) {
       if (line != ".") {
-	multi_line_buffer += line + "\r\n";
+	multi_line_buffer += line + newline;
       } else {
 	function handle = handle_data;
 	string data = multi_line_buffer;
@@ -86,12 +87,12 @@ class simple
 
   static string read_line()
   {
-    int i = search(read_buffer, "\r\n");
+    int i = search(read_buffer, newline);
     if (i == -1) {
       return 0;
     }
-    string data = read_buffer[..i-1];			// Not the "\r\n".
-    read_buffer = read_buffer[i+2..];
+    string data = read_buffer[..i-1];			// Not the newline.
+    read_buffer = read_buffer[i+sizeof(newline)..];
 
     return data;
   }
