@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.38 1997/09/05 16:51:56 grubba Exp $ */
+/* $Id: image.c,v 1.39 1997/10/06 23:26:47 grubba Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.38 1997/09/05 16:51:56 grubba Exp $<br>
+**!	$Id: image.c,v 1.39 1997/10/06 23:26:47 grubba Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.38 1997/09/05 16:51:56 grubba Exp $");
+RCSID("$Id: image.c,v 1.39 1997/10/06 23:26:47 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1221,7 +1221,7 @@ void image_tuned_box(INT32 args)
    this=THIS;
    THREADS_ALLOW();
 
-   for (x=max(0,-x1); x<=xw && x+x1<THIS->xsize; x++)
+   for (x=max(0,-x1); x<=xw && x+x1<this->xsize; x++)
    {
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
       INT32 ymax;
