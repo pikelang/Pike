@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.87 2001/12/09 19:58:36 mast Exp $
+ * $Id: gc.h,v 1.88 2001/12/10 01:09:31 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -146,27 +146,31 @@ struct marker
 /* The thing has been visited in the zap weak pass, which uses the
  * mark pass code to remove references to things that got nonweak
  * references but only weak external references. */
+#define GC_USER_1		0x0100
+#define GC_USER_2		0x0200
+/* Flags free for use in the gc callbacks for the specific data types.
+ * E.g. multisets use these flags on the multiset_data blocks. */
 
 #ifdef PIKE_DEBUG
-#define GC_PRETOUCHED		0x0100
+#define GC_PRETOUCHED		0x00010000
 /* The thing has been visited by debug_gc_touch() in the pretouch pass. */
-#define GC_MIDDLETOUCHED	0x0200
+#define GC_MIDDLETOUCHED	0x00020000
 /* The thing has been visited by debug_gc_touch() in the middletouch pass. */
-#define GC_IS_REFERENCED	0x0400
+#define GC_IS_REFERENCED	0x00040000
 /* The thing has been visited by gc_is_referenced() in the mark pass. */
-#define GC_XREFERENCED		0x0800
+#define GC_XREFERENCED		0x00080000
 /* The thing has been visited by gc_external_mark*() and thus has a
  * known external reference. Set in the check and locate passes. */
-#define GC_DO_FREE		0x1000
+#define GC_DO_FREE		0x00100000
 /* The thing has been visited by gc_do_free(). Set in the free pass. */
-#define GC_GOT_EXTRA_REF	0x2000
+#define GC_GOT_EXTRA_REF	0x00200000
 /* The thing has got an extra reference by the gc. */
-#define GC_WEAK_FREED		0x4000
+#define GC_WEAK_FREED		0x00400000
 /* The thing has only weak (external) references left and will be
  * freed. Set in the mark and zap weak passes. */
-#define GC_CHECKED_AS_WEAK	0x8000
+#define GC_CHECKED_AS_WEAK	0x00800000
 /* The thing has been visited by gc_checked_as_weak(). */
-#define GC_WATCHED		0x10000
+#define GC_WATCHED		0x01000000
 /* The thing has been set under watch by gc_watch(). */
 #endif
 
