@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.4 2000/03/25 22:41:47 hubbe Exp $");
+RCSID("$Id: tim.c,v 1.5 2000/04/09 03:19:44 peter Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -31,7 +31,8 @@ extern struct program *image_program;
 **! 	Handle decoding of TIM images.
 **! 
 **! 	TIM is the framebuffer format of the PSX game system.
-**! 	It is a simple, uncompressed, truecolor or CLUT format. 
+**! 	It is a simple, uncompressed, truecolor or CLUT format
+**!     with a one bit alpha channel.
 */
 
 /*
@@ -61,6 +62,7 @@ extern struct program *image_program;
 #define MODE_DC24               3
 #define MODE_MIXED              4
 #define FLAG_CLUT               8
+
 
 static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
 			    unsigned char *clut, unsigned int h,
@@ -111,18 +113,30 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
   }
 }
 
+#define ALPHA(a) if(!a)               /* Transparent */            \
+	           dst->b = dst->g = dst->r = 0;                  \
+                 else if(!(a&0x80))  /* Not transparent */        \
+	           dst->b = dst->g = dst->r = ~0;                 \
+                 else if(!(a&0x7f))  /* Non-transparent black */  \
+	           dst->b = dst->g = dst->r = ~0;                 \
+                 else                /* Semi transparent */       \
+	           dst->b = dst->g = dst->r = 127
+
+
 static void tim_decode_alpha_rect(INT32 attr, unsigned char *src,
 				  rgb_group *dst, unsigned char *clut, 
 				  unsigned int h, unsigned int w)
 {
+  /* Pixels rendereding on the PSX is made in one of two modes. One of
+     them has semi transparency, but what mode to use is not indicated
+     in the TIM as far as I know. Let's render everything in semi
+     transparent mode with .5 from source and .5 from destination. */
+
   INT32 cnt = h * w;
   switch(attr&7) {
    case MODE_DC15:
      while(cnt--) {
-       if(!(src[1]>>15))
-	 dst->b = dst->g = dst->r = ~0;
-       else
-	 dst->b = dst->g = dst->r = 0;
+       ALPHA(src[1]);
        src+=2;
        dst++;
      }
@@ -130,25 +144,16 @@ static void tim_decode_alpha_rect(INT32 attr, unsigned char *src,
    case MODE_CLUT4:
      cnt = cnt/2;
      while(cnt--) {
-       if(!(clut[(src[1]&0xf)*2]>>15))
-	 dst->b = dst->g = dst->r = ~0;
-       else
-	 dst->b = dst->g = dst->r = 0;
+       ALPHA( clut[(src[0]&0xf)*2] );
        dst++;
-       if(!(clut[(src[1]>>4)*2]>>15))
-	 dst->b = dst->g = dst->r = ~0;
-       else
-	 dst->b = dst->g = dst->r = 0;
+       ALPHA( clut[(src[0]>>4)*2] );
        src++;
        dst++;
      }
      break;
    case MODE_CLUT8:
      while(cnt--) {
-       if(!(clut[(src[1])*2]>>15))
-	 dst->b = dst->g = dst->r = ~0;
-       else
-	 dst->b = dst->g = dst->r = 0;
+       ALPHA( clut[(src[0])*2] );
        src++;
        dst++;
      }
