@@ -1,4 +1,7 @@
-dnl $Id: aclocal.m4,v 1.80 2003/10/14 16:47:27 grubba Exp $
+dnl $Id: aclocal.m4,v 1.81 2003/10/30 19:39:15 nilsson Exp $
+
+dnl Tell autoconf wrapper script to use 2.13.
+define([AC_PREREQ],[2.13])
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -351,7 +354,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.80 2003/10/14 16:47:27 grubba Exp $
+  # $Id: aclocal.m4,v 1.81 2003/10/30 19:39:15 nilsson Exp $
 
   MY_AC_PROG_CC
 
