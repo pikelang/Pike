@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.58 2003/10/23 14:11:59 grubba Exp $
+/* $Id: sslfile.pike,v 1.59 2003/10/24 11:09:22 jhs Exp $
  *
  */
 
@@ -47,7 +47,7 @@ private void ssl_write_callback(mixed id);
 void die(int status)
 {
 #ifdef SSL3_DEBUG
-  werror("SSL.sslfile->die: is_closed = %d\n", is_closed);
+  werror("SSL.sslfile->die(%d): is_closed = %d\n", status, is_closed);
 #endif
 
   if (status < 0)
@@ -155,7 +155,7 @@ void close()
 string read(int|void nbytes, int|void notall)
 {
 #ifdef SSL3_DEBUG
-  werror("sslfile.read called!, with args: %O \n",args);
+  werror("SSL.sslfile->read(%d, %d)\n", nbytes, notall);
 #endif
   
   string res="";
@@ -201,7 +201,7 @@ string read(int|void nbytes, int|void notall)
 
   if(leftToRead<0) {
     read_buffer=data[sizeof(data)+leftToRead..];
-    return res[0..args[0]-1];
+    return res[0..nbytes-1];
   } else {
     read_buffer="";
   }
@@ -565,7 +565,8 @@ void set_nonblocking(function|void rcb,
 		     function|void woobcb)
 {
 #ifdef SSL3_DEBUG
-  werror("SSL.sslfile->set_nonblocking(%O)\n", args);
+  werror( "SSL.sslfile->set_nonblocking(%O, %O, %O, %O, %O)\n",
+	  rcb, wcb, ccb, roobcb, woobcb );
 #endif
   if (is_closed || !socket) return;
 
