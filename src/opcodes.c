@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.88 2000/08/15 11:49:57 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.89 2000/08/15 14:15:20 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -981,7 +981,7 @@ static inline INT32 TO_INT32(ptrdiff_t x)
   return DO_NOT_WARN((INT32)x);
 }
 #else /* !__ECL */
-#define TO_INT32(x)	((INT32)x)
+#define TO_INT32(x)	((INT32)(x))
 #endif /* __ECL */
 
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
