@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.34 1997/06/10 20:02:17 hubbe Exp $");
+RCSID("$Id: program.c,v 1.35 1997/07/18 01:44:22 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -695,6 +695,15 @@ void set_exit_callback(void (*exit)(struct object *))
   fake_program.exit=exit;
 }
 
+/*
+ * This callback is called to allow the object to mark all internal
+ * structures as 'used'.
+ */
+void set_gc_mark_callback(void (*m)(struct object *))
+{
+  fake_program.gc_marked=m;
+}
+
 
 int low_reference_inherited_identifier(int e,struct pike_string *name)
 {
@@ -896,6 +905,53 @@ int isidentifier(struct pike_string *s)
   return -1;
 }
 
+int low_define_variable(struct pike_string *name,
+			struct pike_string *type,
+			INT32 flags,
+			INT32 offset,
+			INT32 run_time_type)
+{
+  int n;
+  struct identifier dummy;
+  struct reference ref;
+  
+  copy_shared_string(dummy.name, name);
+  copy_shared_string(dummy.type, type);
+  dummy.flags = 0;
+  dummy.run_time_type=run_time_type;
+  dummy.func.offset=offset;
+  
+  ref.flags=flags;
+  ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
+  ref.inherit_offset=0;
+
+  add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
+  fake_program.num_identifiers ++;
+
+  n=areas[A_IDENTIFIER_REFERENCES].s.len / sizeof ref;
+  add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
+  fake_program.num_identifier_references ++;
+
+  return n;
+}
+
+int map_variable(char *name,
+		 char *type,
+		 INT32 flags,
+		 INT32 offset,
+		 INT32 run_time_type)
+{
+  int ret;
+  struct pike_string *n,*t;
+  n=make_shared_string(name);
+  t=parse_type(type);
+  run_time_type=compile_type_to_runtime_type(t);
+  ret=low_define_variable(n,t,flags,offset,run_time_type);
+  free_string(n);
+  free_string(t);
+  return ret;
+}
+
 /* argument must be a shared string */
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
@@ -931,32 +987,14 @@ int define_variable(struct pike_string *name,
       my_yyerror("Illegal to redefine inherited variable with different type.");
 
   } else {
-    struct identifier dummy;
-    struct reference ref;
-
-    copy_shared_string(dummy.name, name);
-    copy_shared_string(dummy.type, type);
-    dummy.flags = 0;
-    dummy.run_time_type=compile_type_to_runtime_type(type);
-
-    if(dummy.run_time_type == T_FUNCTION)
-      dummy.run_time_type = T_MIXED;
-
-    dummy.func.offset=add_storage(dummy.run_time_type == T_MIXED ?
-				  sizeof(struct svalue) :
-				  sizeof(union anything));
-
-    ref.flags=flags;
-    ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
-    ref.inherit_offset=0;
-
-    add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
-    fake_program.num_identifiers ++;
-
-    n=areas[A_IDENTIFIER_REFERENCES].s.len / sizeof ref;
-    add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
-    fake_program.num_identifier_references ++;
-
+    int run_time_type=compile_type_to_runtime_type(type);
+    if(run_time_type == T_FUNCTION) run_time_type = T_MIXED;
+    
+    n=low_define_variable(name, type, flags,
+			  add_storage(run_time_type == T_MIXED ?
+				      sizeof(struct svalue) :
+				      sizeof(union anything)),
+			  run_time_type);
   }
 
   return n;

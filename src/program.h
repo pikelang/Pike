@@ -149,6 +149,7 @@ struct program
   char *linenumbers;
   void (*init)(struct object *);
   void (*exit)(struct object *);
+  void (*gc_marked)(struct object *);
 #ifdef DEBUG
   unsigned INT32 checksum;
 #endif
@@ -191,6 +192,7 @@ struct program *end_program();
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
+void set_gc_mark_callback(void (*m)(struct object *));
 int low_reference_inherited_identifier(int e,struct pike_string *name);
 int reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);

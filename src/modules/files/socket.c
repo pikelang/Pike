@@ -56,7 +56,7 @@ struct port
 
 #define THIS ((struct port *)(fp->current_storage))
 
-static void do_close(struct port *p)
+static void do_close(struct port *p, struct object *o)
 {
  retry:
   if(p->fd >= 0)
@@ -65,6 +65,8 @@ static void do_close(struct port *p)
       if(errno == EINTR)
 	goto retry;
 
+    if(query_read_callback(p->fd)==port_accept_callback)
+      o->refs--;
     set_read_callback(p->fd,0,0);
   }
   
@@ -109,7 +111,7 @@ static void port_accept_callback(int fd,void *data)
 static void port_listen_fd(INT32 args)
 {
   int fd;
-  do_close(THIS);
+  do_close(THIS,fp->current_object);
 
   if(args < 1)
     error("Too few arguments to port->bind_fd()\n");
@@ -138,9 +140,12 @@ static void port_listen_fd(INT32 args)
   if(args > 1)
   {
     assign_svalue(& THIS->accept_callback, sp+1-args);
-    if(!IS_ZERO(& THIS->accept_callback))
-      set_read_callback(fd, port_accept_callback, (void *)THIS);
     set_nonblocking(fd,1);
+    if(!IS_ZERO(& THIS->accept_callback))
+    {
+      fp->current_object->refs++;
+      set_read_callback(fd, port_accept_callback, (void *)THIS);
+    }
   }
 
   THIS->fd=fd;
@@ -155,7 +160,7 @@ static void port_bind(INT32 args)
   int o;
   int fd,tmp;
 
-  do_close(THIS);
+  do_close(THIS,fp->current_object);
 
   if(args < 1)
     error("Too few arguments to port->bind()\n");
@@ -221,7 +226,10 @@ static void port_bind(INT32 args)
   {
     assign_svalue(& THIS->accept_callback, sp+1-args);
     if(!IS_ZERO(& THIS->accept_callback))
+    {
+      fp->current_object->refs++;
       set_read_callback(fd, port_accept_callback, (void *)THIS);
+    }
     set_nonblocking(fd,1);
   }
 
@@ -256,7 +264,10 @@ static void port_create(INT32 args)
 	{
 	  assign_svalue(& THIS->accept_callback, sp+1-args);
 	  if(!IS_ZERO(& THIS->accept_callback))
+	  {
+	    fp->current_object->refs++;
 	    set_read_callback(THIS->fd, port_accept_callback, (void *)THIS);
+	  }
 	  set_nonblocking(THIS->fd,1);
 	}
       }
@@ -348,7 +359,7 @@ static void init_port_struct(struct object *o)
 
 static void exit_port_struct(struct object *o)
 {
-  do_close(THIS);
+  do_close(THIS,o);
   free_svalue(& THIS->id);
   free_svalue(& THIS->accept_callback);
   THIS->id.type=T_INT;
@@ -357,8 +368,11 @@ static void exit_port_struct(struct object *o)
 
 void port_setup_program()
 {
+  INT32 offset;
   start_new_program();
-  add_storage(sizeof(struct port));
+  offset=add_storage(sizeof(struct port));
+  map_variable("_accept_callback","mixed",offset+OFFSETOF(port,accept_callback),T_MIXED);
+  map_variable("_id","mixed",offset+OFFSETOF(port,id),T_MIXED);
   add_function("bind",port_bind,"function(int,void|mixed:int)",0);
   add_function("listen_fd",port_listen_fd,"function(int,void|mixed:int)",0);
   add_function("set_id",port_set_id,"function(mixed:mixed)",0);

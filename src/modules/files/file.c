@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.47 1997/07/03 02:36:16 grubba Exp $");
+RCSID("$Id: file.c,v 1.48 1997/07/18 01:44:26 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -91,7 +91,6 @@ static void file_write_callback(int fd, void *data);
 static void init_fd(int fd, int open_mode)
 {
   files[fd].refs=1;
-  files[fd].fd=fd;
   files[fd].open_mode=open_mode;
   files[fd].id.type=T_INT;
   files[fd].id.u.integer=0;
@@ -106,16 +105,29 @@ static void init_fd(int fd, int open_mode)
 static int close_fd(int fd)
 {
 #ifdef DEBUG
-  if(fd < 0)
+  if(fd < 0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("Bad argument to close_fd()\n");
 
-  if(files[fd].refs<0)
+  if(files[fd].refs<1)
     fatal("Wrong ref count in file struct\n");
 #endif
 
   files[fd].refs--;
   if(!files[fd].refs)
   {
+    set_read_callback(fd,0,0);
+    set_write_callback(fd,0,0);
+
+    free_svalue(& files[fd].id);
+    free_svalue(& files[fd].read_callback);
+    free_svalue(& files[fd].write_callback);
+    free_svalue(& files[fd].close_callback);
+    files[fd].id.type=T_INT;
+    files[fd].read_callback.type=T_INT;
+    files[fd].write_callback.type=T_INT;
+    files[fd].close_callback.type=T_INT;
+    files[fd].open_mode = 0;
+
     while(1)
     {
       int i;
@@ -150,19 +162,6 @@ static int close_fd(int fd)
       }
       break;
     }
-
-    set_read_callback(fd,0,0);
-    set_write_callback(fd,0,0);
-
-    free_svalue(& files[fd].id);
-    free_svalue(& files[fd].read_callback);
-    free_svalue(& files[fd].write_callback);
-    free_svalue(& files[fd].close_callback);
-    files[fd].id.type=T_INT;
-    files[fd].read_callback.type=T_INT;
-    files[fd].write_callback.type=T_INT;
-    files[fd].close_callback.type=T_INT;
-    files[fd].open_mode = 0;
   }
   return 0;
 }
@@ -1098,6 +1097,12 @@ static void exit_file_struct(struct object *o)
   ERRNO=-1;
 }
 
+static void (struct object *o)
+{
+  FD=-1;
+  ERRNO=-1;
+}
+
 static void file_dup(INT32 args)
 {
   struct object *o;
@@ -1534,6 +1539,7 @@ void pike_module_init()
 
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
+  set_gc_mark_callback(gc_mark_file_struct);
 
   file_program=end_program();
   add_program_constant("file",file_program,0);

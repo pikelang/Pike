@@ -26,7 +26,6 @@
 struct my_file
 {
   INT32 refs;
-  int fd;
   short open_mode;
   struct svalue id;
   struct svalue read_callback;

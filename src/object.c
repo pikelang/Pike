@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.19 1997/07/14 18:23:20 hubbe Exp $");
+RCSID("$Id: object.c,v 1.20 1997/07/18 01:44:19 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -766,27 +766,55 @@ void gc_mark_object_as_referenced(struct object *o)
 {
   if(gc_mark(o))
   {
-    if(o->prog)
+    int e;
+    struct frame frame;
+    struct program *p;
+
+    if(!o || !(p=o->prog)) return; /* Object already destructed */
+    o->refs++;
+
+    frame.parent_frame=fp;
+    frame.current_object=o;  /* refs already updated */
+    frame.locals=0;
+    frame.fun=-1;
+    frame.pc=0;
+    fp= & frame;
+
+    for(e=p->num_inherits-1; e>=0; e--)
     {
-      INT32 e;
+      int d;
       
-      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      frame.context=p->inherits[e];
+      frame.context.prog->refs++;
+      frame.current_storage=o->storage+frame.context.storage_offset;
+
+      if(frame.context.prog->gc_marked)
+	frame.context.prog->gc_marked(o);
+
+
+      for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
       {
-	struct identifier *i;
+	if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].flags)) 
+	  continue;
 	
-	i=ID_FROM_INT(o->prog, e);
-	
-	if(!IDENTIFIER_IS_VARIABLE(i->flags)) continue;
-	
-	if(i->run_time_type == T_MIXED)
+	if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
 	{
-	  gc_mark_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
+	  struct svalue *s;
+	  s=(struct svalue *)(frame.current_storage +
+			      frame.context.prog->identifiers[d].func.offset);
+	  gc_mark_svalues(s,1);
 	}else{
-	  gc_mark_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
-			       i->run_time_type);
+	  union anything *u;
+	  u=(union anything *)(frame.current_storage +
+			       frame.context.prog->identifiers[d].func.offset);
+	  gc_mark_short_svalue(u,frame.context.prog->identifiers[d].run_time_type);
 	}
       }
+      free_program(frame.context.prog);
     }
+    
+    free_object(frame.current_object);
+    fp = frame.parent_frame;
   }
 }
 
