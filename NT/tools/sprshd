@@ -109,8 +109,6 @@ void handle_incoming_connection(object(Stdio.File) io)
   string dir=cmd[0];
   cmd=cmd[1..];
 
-  write("Doing %s in %s\n",cmd*" ",dir);
-
   while(sscanf(cmd[0],"%s=%s",string key, string val))
   {
     // Magic
@@ -144,8 +142,11 @@ void handle_incoming_connection(object(Stdio.File) io)
     {
       env[key]=val;
     }
+    werror("%s = %s\n",key,env[key]);
     cmd=cmd[1..];
   }
+
+  write("Doing %s in %s\n",cmd*" ",dir);
 
   switch(lower_case(cmd[0]))
   {
