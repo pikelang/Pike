@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.123 2002/01/16 02:54:07 nilsson Exp $");
+RCSID("$Id: array.c,v 1.124 2002/03/06 11:01:59 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2378,8 +2378,14 @@ PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
 
 PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
 {
-  INT32 e,size;
+  INT32 e, size;
   struct array *ret;
+
+  if (!a->size) {
+    add_ref(a);
+    return a;
+  }
+
   size=0;
   for(e=0;e<a->size;e++)
   {
@@ -2411,7 +2417,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
   }
 #ifdef PIKE_DEBUG
   if(size != ret->size)
-    fatal("Implode_array failed miserably\n");
+    fatal("Implode_array failed miserably (%d != %d)\n", size, ret->size);
 #endif
   return ret;
 }
