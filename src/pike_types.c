@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.152 2001/02/26 00:10:48 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.153 2001/02/26 20:06:41 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3159,7 +3159,7 @@ INT32 get_max_args(struct pike_type *type)
 }
 
 
-struct pike_type *zzap_function_return(char *a, INT32 id)
+static struct pike_type *low_zzap_function_return(char *a, INT32 id)
 {
   switch(EXTRACT_UCHAR(a))
   {
@@ -3167,8 +3167,8 @@ struct pike_type *zzap_function_return(char *a, INT32 id)
     {
       struct pike_type *ar, *br, *ret=0;
       a++;
-      ar=zzap_function_return(a,id);
-      br=zzap_function_return(a+type_length(a),id);
+      ar = low_zzap_function_return(a,id);
+      br = low_zzap_function_return(a+type_length(a),id);
       if(ar && br) ret=or_pike_types(ar,br,0);
       if(ar) free_type(ar);
       if(br) free_type(br);
@@ -3200,17 +3200,22 @@ struct pike_type *zzap_function_return(char *a, INT32 id)
       return pop_unfinished_type();
 
     case T_ARRAY:
-      return zzap_function_return(a+1,id);
+      return low_zzap_function_return(a+1,id);
 
     case T_MIXED:
       /* I wonder when this occurrs, but apparently it does... */
-      return zzap_function_return(tFuncV(tVoid,tOr(tMix,tVoid),tObj), id);
+      return low_zzap_function_return(tFuncV(tVoid,tOr(tMix,tVoid),tObj), id);
   }
 /* This error is bogus /Hubbe
-  fatal("zzap_function_return() called with unexpected value: %d\n",
+  fatal("low_zzap_function_return() called with unexpected value: %d\n",
 	EXTRACT_UCHAR(a));
 */
   return NULL;
+}
+
+struct pike_type *zzap_function_return(struct pike_type *t, INT32 id)
+{
+  return low_zzap_function_return(t->str, id);
 }
 
 struct pike_type *get_type_of_svalue(struct svalue *s)
@@ -3221,19 +3226,18 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
   case T_FUNCTION:
     if(s->subtype == FUNCTION_BUILTIN)
     {
-      ret=s->u.efun->type;
+      copy_type(ret, s->u.efun->type);
     }else{
       struct program *p;
 
       p=s->u.object->prog;
       if(!p)
       {
-	ret=zero_type_string;
+	copy_type(ret, zero_type_string);
       }else{
-	ret=ID_FROM_INT(p,s->subtype)->type;
+	copy_type(ret, ID_FROM_INT(p,s->subtype)->type);
       }
     }
-    reference_shared_string(ret);
     return ret;
        
   case T_MULTISET:
@@ -3261,12 +3265,12 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       }
 #else /* !0 */
       if (a->size)
-	copy_shared_string(arg_type, mixed_type_string);
+	copy_type(arg_type, mixed_type_string);
       else
-	copy_shared_string(arg_type, zero_type_string);
+	copy_type(arg_type, zero_type_string);
 #endif /* 0 */
       type_stack_mark();
-      push_unfinished_type(arg_type->str);
+      push_finished_type(arg_type);
       free_type(arg_type);
       push_type(s->type);
       return pop_unfinished_type();
@@ -3293,9 +3297,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
 #ifdef AUTO_BIGNUM
       if(is_bignum_object(s->u.object))
       {
-	push_type_int(MAX_INT32);
-	push_type_int(MIN_INT32);
-	push_type(T_INT);
+	push_int_type(MIN_INT32, MAX_INT32);
       }
       else
 #endif
@@ -3316,20 +3318,16 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       type_stack_mark();
       /* Fixme, check that the integer is in range of MIN_INT32 .. MAX_INT32!
        */
-      push_type_int(s->u.integer);
-      push_type_int(s->u.integer);
-      push_type(T_INT);
+      push_int_type(s->u.integer, s->u.integer);
       return pop_unfinished_type();
     }else{
-      ret=zero_type_string;
+      copy_type(ret, zero_type_string);
     }
-    reference_shared_string(ret);
     return ret;
 
   case T_PROGRAM:
   {
-    char *a;
-    struct pike_type *tmp;
+    struct pike_type *t;
     int id;
 
     if(s->u.program->identifiers)
@@ -3337,24 +3335,27 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       id=FIND_LFUN(s->u.program,LFUN_CREATE);
       if(id>=0)
       {
-	a=ID_FROM_INT(s->u.program, id)->type->str;
-	if((tmp=zzap_function_return(a, s->u.program->id)))
-	  return tmp;
-	tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
+	struct pike_string *tmp;
+	t = ID_FROM_INT(s->u.program, id)->type;
+	if((t=zzap_function_return(t, s->u.program->id)))
+	  return t;
+	tmp = describe_type(ID_FROM_INT(s->u.program, id)->type);
 	/* yywarning("Failed to zzap function return for type: %s.", tmp->str);*/
 	free_string(tmp);
       }
     } else {
-      a=function_type_string->str;
-      if((tmp=zzap_function_return(a, s->u.program->id)))
-	return tmp;
+      t = function_type_string;
+      if((t = zzap_function_return(t, s->u.program->id)))
+	return t;
     }
 
-    a=tFunc( tNone ,tObj);
-    if((tmp=zzap_function_return(a, s->u.program->id)))
-      return tmp;
+    type_stack_mark();
+    push_object_type(1, s->u.program->id);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_FUNCTION);
 
-    fatal("Completely failed to zzap function return!\n");
+    return pop_unfinished_type();
   }
 
   default:
