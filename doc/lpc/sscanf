@@ -16,7 +16,9 @@ DESCRIPTION
 		hexadecimal (leading 0x) or decimal.
 	%f	gives a float
 	%c	matches one char and returns it as an integer
+	%2c	matches two chars and returns them as an integer (short)
 	%s	gives a string
+	%5s	gives a string of 5 characters (5 can be any number)
 	%[set]	matches a string containing a given set of characters.
 		(thos given inside the brackets) %[^set] means any character
 		ecept those inside brackets. %[0-9H] means any number or 'H'.
