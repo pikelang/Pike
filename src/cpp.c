@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.57 1999/12/08 16:23:35 grubba Exp $
+ * $Id: cpp.c,v 1.58 1999/12/28 02:22:22 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -1070,6 +1070,9 @@ void f_cpp(INT32 args)
   struct cpp this;
   int auto_convert = 0;
   struct pike_string *charset = NULL;
+#ifdef PIKE_DEBUG
+  ONERROR tmp;
+#endif /* PIKE_DEBUG */
 
   if(args<1)
     error("Too few arguments to cpp()\n");
@@ -1186,8 +1189,17 @@ void f_cpp(INT32 args)
 		    this.current_file->size_shift, &this.buf);
   string_builder_putchar(&this.buf, '\n');
 
+#ifdef PIKE_DEBUG
+  SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
+#endif /* PIKE_DEBUG */
+
   low_cpp(&this, data->str, data->len, data->size_shift,
 	  0, auto_convert, charset);
+
+#ifdef PIKE_DEBUG
+  UNSET_ONERROR(tmp);
+#endif /* PIKE_DEBUG */
+
   if(this.defines)
     free_hashtable(this.defines, free_one_define);
 
