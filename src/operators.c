@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.150 2002/05/30 13:31:51 grubba Exp $");
+RCSID("$Id: operators.c,v 1.151 2002/05/30 15:36:49 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -199,7 +199,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   	      @[arg1] will be converted to string, and the result the
  *!   	      strings concatenated.
  *!   	    @type int|float
- *!   	      The result will be @code{@[arg1] + @[arg2]@}, and will
+ *!   	      The result will be @expr{@[arg1] + @[arg2]@}, and will
  *!   	      be a float if either @[arg1] or @[arg2] is a float.
  *!   	  @endmixed
  *!   	@type array
@@ -211,7 +211,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   @endmixed
  *!
  *!   Otherwise if there are more than 2 arguments the result will be:
- *!     @code{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!     @expr{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
  *!
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
