@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.20 1999/06/09 17:34:32 marcus Exp $
+// $Id: Readline.pike,v 1.21 1999/06/09 18:03:14 hubbe Exp $
 
 class OutputController
 {
@@ -121,11 +121,10 @@ class OutputController
 	  l=strlen(line)-spos;
 	  outfd->write(line[..l-2]);
 	}
-//	while(l<strlen(s) && s[l]==' ') l++;
 	s=s[l..];
 	n-=l;
-//	if(l!=columns || !term->tgetflag("am"))
-	if(n)
+	xpos+=l;
+	if(xpos<columns || !term->tgetflag("am"))
 	  outfd->write((term->put("cr")||"")+(term->put("do")||"\n"));
 	xpos = 0;
       }
