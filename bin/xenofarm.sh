@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.24 2003/09/22 02:15:33 nilsson Exp $
+# $Id: xenofarm.sh,v 1.25 2003/12/24 18:13:43 mirar Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -72,7 +72,6 @@ log_start response_assembly
   # Basic stuff
   cp buildid.txt xenofarm_result/
   # Configuration
-  cp "$BUILDDIR/config.info" xenofarm_result/configinfo.txt || /bin/true
   (
     cd "$BUILDDIR"
     test -f config.log && cat config.log
@@ -84,6 +83,7 @@ log_start response_assembly
       cat "$f"
     done
   ) > xenofarm_result/configlogs.txt
+  cp "$BUILDDIR/config.info" xenofarm_result/configinfo.txt || /bin/true
   cp "$BUILDDIR/config.cache" xenofarm_result/configcache.txt || /bin/true;
   # Compilation
   if test "`find $BUILDDIR -name '*.fail' -print`" = ""; then :; else
