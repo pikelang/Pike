@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.3 1997/12/12 21:36:20 grubba Exp $
+ * $Id: sql_result.pike,v 1.4 1998/03/19 23:50:41 grubba Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql_result.pike
-//. RCSID:	$Id: sql_result.pike,v 1.3 1997/12/12 21:36:20 grubba Exp $
+//. RCSID:	$Id: sql_result.pike,v 1.4 1998/03/19 23:50:41 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic result of the SQL-interface.
@@ -28,7 +28,7 @@ object|array master_res;
 //.   If the result was an array, this is the current row.
 int index;
 
-import Array;
+// import Array;
 
 //. - create
 //.   Create a new Sql.sql_result object
