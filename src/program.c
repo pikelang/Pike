@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.532 2003/11/10 01:42:33 mast Exp $
+|| $Id: program.c,v 1.533 2003/11/14 00:11:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.532 2003/11/10 01:42:33 mast Exp $");
+RCSID("$Id: program.c,v 1.533 2003/11/14 00:11:44 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1322,22 +1322,11 @@ static struct node_s *index_modules(struct pike_string *ident,
 
     if(SETJMP(tmp))
     {
-      struct svalue thrown = throw_value;
-      throw_value.type = T_INT;
-
-      dmalloc_touch_svalue(&thrown);
-
       if (!ident->size_shift) {
-	my_yyerror("Couldn't index a module with '%s'.", ident->str);
+	handle_compile_exception ("Couldn't index a module with '%s'.", ident->str);
       } else {
-	yyerror("Couldn't index a module.");
+	handle_compile_exception ("Couldn't index a module.");
       }
-
-      push_svalue(&thrown);
-      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-      if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
-      pop_stack();
-      free_svalue(&thrown);
     } else {
       int e = num_used_modules;
       struct svalue *m = modules - num_used_modules;
@@ -1512,21 +1501,10 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	    throw_value.type = T_INT;
 	  }
 	  else {
-	    struct svalue thrown = throw_value;
-	    throw_value.type = T_INT;
-
-	    dmalloc_touch_svalue(&thrown);
-
 	    if (!ident->size_shift)
-	      my_yyerror("Error resolving '%s'.", ident->str);
+	      handle_compile_exception ("Error resolving '%s'.", ident->str);
 	    else
-	      yyerror("Error resolving identifier.");
-
-	    push_svalue(&thrown);
-	    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
-	    pop_stack();
-	    free_svalue(&thrown);
+	      handle_compile_exception ("Error resolving identifier.");
 	  }
 	}
     }
@@ -3906,16 +3884,7 @@ int call_handle_inherit(struct pike_string *s)
 	yyerror("Couldn't find program");
     }
   else {
-    struct svalue thrown = throw_value;
-    throw_value.type = T_INT;
-    dmalloc_touch_svalue(&thrown);
-
-    my_yyerror("Error finding program");
-    push_svalue(&thrown);
-    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
-    pop_stack();
-    free_svalue(&thrown);
+    handle_compile_exception ("Error finding program");
   }
 
   return 0;
@@ -5153,55 +5122,32 @@ int store_constant(struct svalue *foo,
 		   struct pike_string *constant_name)
 {
   struct program_constant tmp;
-  JMP_BUF tmp2;
+  unsigned int e;
 
-  if(SETJMP(tmp2))
+  for(e=0;e<Pike_compiler->new_program->num_constants;e++)
   {
-    struct svalue zero, thrown = throw_value;
-    throw_value.type = T_INT;
-
-    dmalloc_touch_svalue(&thrown);
-
-    yyerror("Couldn't store constant.");
-
-    push_svalue(&thrown);
-    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
-    pop_stack();
-    free_svalue(&thrown);
-
-    zero.type = T_INT;
-    zero.subtype = NUMBER_NUMBER;
-    zero.u.integer=0;
-
-    UNSETJMP(tmp2);
-    return store_constant(&zero, equal, constant_name);
-  }else{
-    unsigned int e;
-    for(e=0;e<Pike_compiler->new_program->num_constants;e++)
-    {
-      JMP_BUF tmp1;
+    JMP_BUF jmp;
+    if (SETJMP(jmp)) {
+      handle_compile_exception ("Error comparing constants.");
       /* Assume that if `==() throws an error, the svalues aren't equal. */
-      if (!SETJMP(tmp1)) {
-	struct program_constant *c= Pike_compiler->new_program->constants+e;
-	if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
-	   c->name == constant_name)
-	{
-	  UNSETJMP(tmp1);
-	  UNSETJMP(tmp2);
-	  return e;
-	}
-      }
-      UNSETJMP(tmp1);
     }
-    assign_svalue_no_free(&tmp.sval,foo);
-    if((tmp.name=constant_name)) add_ref(constant_name);
-
-    add_to_constants(tmp);
-
-    UNSETJMP(tmp2);
-    return e;
+    else {
+      struct program_constant *c= Pike_compiler->new_program->constants+e;
+      if(c->name == constant_name &&
+	 (equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)))
+      {
+	UNSETJMP(jmp);
+	return e;
+      }
+    }
+    UNSETJMP(jmp);
   }
+  assign_svalue_no_free(&tmp.sval,foo);
+  if((tmp.name=constant_name)) add_ref(constant_name);
+
+  add_to_constants(tmp);
+
+  return e;
 }
 
 /*
@@ -5830,20 +5776,24 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
   return NULL;
 }
 
-void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
+void va_yyerror(const char *fmt, va_list args)
 {
-  va_list args;
   char buf[8192];
-  va_start(args,fmt);
   VSNPRINTF (buf, sizeof (buf), fmt, args);
   yyerror(buf);
+}
+
+void my_yyerror(const char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
+{
+  va_list args;
+  va_start(args,fmt);
+  va_yyerror (fmt, args);
   va_end(args);
 }
 
-void yy_describe_exception(struct svalue *thrown)
+struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
 {
-  /* FIXME: Doesn't handle wide string error messages. */
-  struct pike_string *s = 0;
+  struct pike_string *s = NULL;
 
   if ((thrown->type == T_ARRAY) && thrown->u.array->size &&
       (thrown->u.array->item[0].type == T_STRING)) {
@@ -5857,16 +5807,44 @@ void yy_describe_exception(struct svalue *thrown)
     }
   }
 
-  if (s && !s->size_shift) {
+  if (s) {
     extern void f_string_trim_all_whites(INT32 args);
     ref_push_string(s);
     f_string_trim_all_whites(1);
     push_constant_text("\n");
     push_constant_text(" ");
     f_replace(3);
-    my_yyerror(sp[-1].u.string->str);
-    pop_stack();
+    s = (--sp)->u.string;
   }
+
+  return s;
+}
+
+void handle_compile_exception (const char *yyerror_fmt, ...)
+{
+  struct svalue thrown;
+  move_svalue (&thrown, &throw_value);
+  throw_value.type = T_INT;
+
+  if (yyerror_fmt) {
+    va_list args;
+    va_start (args, yyerror_fmt);
+    va_yyerror (yyerror_fmt, args);
+    va_end (args);
+  }
+
+  push_svalue(&thrown);
+  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+
+  if (SAFE_IS_ZERO(sp-1)) {
+    /* FIXME: Doesn't handle wide string error messages. */
+    struct pike_string *s = format_exception_for_error_msg (&thrown);
+    if (!s->size_shift) yyerror (s->str);
+    free_string (s);
+  }
+
+  pop_stack();
+  free_svalue(&thrown);
 }
 
 extern void yyparse(void);
@@ -6483,16 +6461,8 @@ static void run_cleanup(struct compilation *c, int delayed)
 #endif
 	if(SETJMP(rec))
 	{
-	  struct svalue thrown = throw_value;
+	  handle_compile_exception (NULL);
 	  debug_malloc_touch(c->placeholder);
-	  throw_value.type = T_INT;
-	  dmalloc_touch_svalue(&thrown);
-
-	  push_svalue(&thrown);
-	  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	  if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
-	  pop_stack();
-	  free_svalue(&thrown);
 	  zap_placeholder(c);
 	}else{
 	  debug_malloc_touch(c->placeholder);

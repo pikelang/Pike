@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.187 2003/11/07 21:09:50 mast Exp $
+|| $Id: program.h,v 1.188 2003/11/14 00:11:44 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -754,8 +754,11 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 						       int fun, INT32 *linep);
-void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
-void yy_describe_exception(struct svalue *thrown);
+void va_yyerror(const char *fmt, va_list args);
+void my_yyerror(const char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
+struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
+void handle_compile_exception (const char *yyerror_fmt, ...)
+  ATTRIBUTE((format(printf,1,2)));
 struct supporter_marker;
 void verify_supporters(void);
 void init_supporter(struct Supporter *s,
