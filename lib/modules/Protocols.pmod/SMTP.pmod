@@ -84,12 +84,13 @@ class client
   void simple_mail(string to, string subject, string from, string msg)
   {
     send_message(from, ({ to }),
-		 (string)MIME.Message(0, (["mime-version":"1.0",
-					   "subject":subject,
-					   "from":from,
-					   "to":to]),
-	    ({ MIME.Message(msg,
-			    (["content-type":"text/plain;charset=iso-8859-1",
-			      "content-transfer-encoding":"8bit"])) })));
+		 (string)MIME.Message(msg, (["mime-version":"1.0",
+					     "subject":subject,
+					     "from":from,
+					     "to":to,
+					     "content-type":
+					       "text/plain;charset=iso-8859-1",
+					     "content-transfer-encoding":
+					       "8bit"])));
   }
 }
