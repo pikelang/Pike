@@ -342,24 +342,24 @@ o Image.Layer modes modified
     (which is the behavior of the 'normal' mode.)
 
     Bug fixes in the above modes so that alpha r,g,b channels
-    are handled properly (separate).
-    
+    are handled properly (separately).
+
     Bug fixes in equal, not_equal, less, more, less_or_equal,
     more_or_equal modes so that the alpha channel is handled as
     documented (which is, in fact, as above; aD=aS).
-    
+
     Bug fix in divide, invdivide to actually do what the modes
     are supposed to do (rather then just black the layer).
-    
+
     And while on it, adding some modes:
-    
+
     'imultiply'  - D=(1-L)*S
     'idivide'    - D=S/(1-L)
     'invidivide' - D=L/(1-S)
-    
+
     'value_mul' - multiplying the source layer value
-    (as in h,s,v) with the curreny layer value to the destination layer
-    ("true burn").
+    (as in h,s,v) with the current layer value to the destination
+    layer ("true burn").
 
     NOTE: There is no backward compatibility functions added for use
     with #pike.
@@ -424,11 +424,11 @@ o basetype()
 o it is possible to change predefines without forking a new pike
 o dynamic loading
 o #pragma save_parent
-o #pragma dont_same_parent (overrides constant __pragma_save_parent__)
+o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
 o dont_dump_module
 o modules can no longer call functions in other modules directly
 o it is possible to inherit pike programs from C programs.
-o seperate weak flags for indices and values in mappings
+o separate weak flags for indices and values in mappings
 
 Math.inf
 Math.nan
@@ -457,5 +457,5 @@ system.get_netinfo_property (Max OS X)
 system.usleep/nanosleep
 system.Memory (a class to read/write from mmap'ed or allocated memory)
 SDL
-Suffler
+Shuffler
 Image.SVG
