@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.19 1999/12/02 01:06:58 hubbe Exp $
+ * $Id: nt.c,v 1.20 2000/04/13 20:05:09 leif Exp $
  *
  * NT system calls for Pike
  *
@@ -1530,6 +1530,56 @@ LINKFUNC(NET_API_STATUS,netsessionenum,
 	 (LPWSTR, LPWSTR, LPWSTR, DWORD, LPBYTE *,
 	  DWORD, LPDWORD,LPDWORD,LPDWORD));
 
+LINKFUNC(NET_API_STATUS,netwkstauserenum,
+	 (LPWSTR, DWORD, LPBYTE *,
+	  DWORD, LPDWORD,LPDWORD,LPDWORD));
+
+static void throw_nt_error(char *funcname, int err)
+{ char *msg;
+
+  switch (err)
+  {
+    case ERROR_ACCESS_DENIED:
+      msg = "Access denied.";
+      break;
+
+    case ERROR_LOGON_FAILURE:
+      msg = "Logon failure (access denied).";
+      break;
+
+    case ERROR_INVALID_PARAMETER:
+      msg = "Invalid parameter.";
+      break;
+
+    case ERROR_NOT_ENOUGH_MEMORY:
+      msg = "Out of memory.";
+      break;
+
+    case ERROR_INVALID_LEVEL:
+      msg = "Invalid level.";
+      break;
+        
+    case NERR_InvalidComputer:
+      msg = "Invalid computer.";
+      break;
+
+    case NERR_UserNotFound:
+      msg = "User not found.";
+      break;
+
+    case NERR_ClientNameNotFound:
+      msg = "Client name not found.";
+      break;
+
+    case NERR_Success:
+      msg = "Strange error (NERR_Success).";
+      break;
+
+    default:
+      error("%s: Unknown error 0x%ux\n", funcname, err);
+  }
+  error("%s: %s\n", funcname, msg);
+}
 
 static void low_encode_session_info_0(SESSION_INFO_0 *tmp)
 {
@@ -1618,6 +1668,37 @@ static int sizeof_session_info(int level)
   }
 }
 
+static void encode_wkstauser_info(BYTE *p, int level)
+{ if (level == 0)
+  { WKSTA_USER_INFO_0 *wp = (WKSTA_USER_INFO_0 *) p;
+
+    SAFE_PUSH_WSTR(wp->wkui0_username);
+    f_aggregate(1);
+  }
+  else if (level == 1)
+  { WKSTA_USER_INFO_1 *wp = (WKSTA_USER_INFO_1 *) p;
+
+    SAFE_PUSH_WSTR(wp->wkui1_username);
+    SAFE_PUSH_WSTR(wp->wkui1_logon_domain);
+    SAFE_PUSH_WSTR(wp->wkui1_oth_domains);
+    SAFE_PUSH_WSTR(wp->wkui1_logon_server);
+    f_aggregate(4);
+  }
+  else
+  {
+    error("Unsupported WKSTA_USER_INFO level.\n");
+  }
+}
+
+static int sizeof_wkstauser_info(int level)
+{ switch (level)
+  { case 0: return sizeof(WKSTA_USER_INFO_0);
+    case 1: return sizeof(WKSTA_USER_INFO_1);
+    default: return -1;
+  }
+}
+
+
 static void f_NetSessionEnum(INT32 args)
 {
   INT32 pos=0,e;
@@ -1638,17 +1719,12 @@ static void f_NetSessionEnum(INT32 args)
   user=get_wstring(sp-args+2);
   level=sp[3-args].u.integer;
 
-  switch(level)
-  {
+  switch (level)
+  { case 0: case 1: case 2: case 10: case 502:
+      /* valid levels */
+      break;
     default:
-    error("System.NetSessionEnum: Unsupported level.\n");
-
-    case 0:
-    case 1:
-    case 2:
-    case 10:
-    case 502:
-    break;
+      error("System.NetSessionEnum: Unsupported level: %d.\n", level);
   }
 
   
@@ -1664,7 +1740,7 @@ static void f_NetSessionEnum(INT32 args)
 		       user,
 		       level,
 		       &buf,
-		       0x10000,
+		       0x2000,
 		       &read,
 		       &total,
 		       &resume);
@@ -1675,29 +1751,6 @@ static void f_NetSessionEnum(INT32 args)
     
     switch(ret)
     {
-      case ERROR_ACCESS_DENIED:
-      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-	error("NetSessionEnum: Access denied.\n");
-	break;
-
-      case ERROR_INVALID_PARAMETER:
-	error("NetSessionEnum: Invalid parameter.\n");
-
-      case ERROR_NOT_ENOUGH_MEMORY:
-	error("NetSessionEnum: Out of memory.\n");
-	
-      case NERR_InvalidComputer:
-	error("NetSessionEnum: Invalid computer.\n");
-	break;
-
-      case NERR_UserNotFound:
-	error("NetSessionEnum: User not found\n");
-	break;
-
-      case NERR_ClientNameNotFound:
-	error("NetSessionEnum: Client name not found.\n");
-	break;
-
       case NERR_Success:
       case ERROR_MORE_DATA:
 	ptr=buf;
@@ -1716,13 +1769,77 @@ static void f_NetSessionEnum(INT32 args)
 	break;
 
       default:
-	error("NetUserEnum: Unknown error %d\n",ret);
+        throw_nt_error("NetSessionEnum", ret);
     }
     break;
   }
 }
 
-/* End netsessionenum */
+static void f_NetWkstaUserEnum(INT32 args)
+{
+  INT32 pos=0,e;
+  LPWSTR server;
+  DWORD level;
+  DWORD resume = 0;
+  struct array *a=0;
+
+  check_all_args("System.NetWkstaUserEnum",args,
+		 BIT_INT|BIT_STRING,
+		 BIT_INT,
+		 0);
+
+  server=get_wstring(sp-args);
+  level=sp[1-args].u.integer;
+
+  if (level != 0 && level != 1)
+      error("System.NetWkstaUserEnum: Unsupported level: %d.\n", level);
+  
+  while(1)
+  {
+    DWORD read=0, total=0;
+    NET_API_STATUS ret;
+    LPBYTE buf=0,ptr;
+
+    THREADS_ALLOW();
+    ret=netwkstauserenum(server,
+                         level,
+                         &buf,
+                         0x2000,
+                         &read,
+                         &total,
+                         &resume);
+    THREADS_DISALLOW();
+
+    if(!a)
+      push_array(a=allocate_array(total));
+    
+    switch(ret)
+    {
+      case NERR_Success:
+      case ERROR_MORE_DATA:
+        ptr=buf;
+        for(e=0;e<read;e++)
+        {
+          encode_wkstauser_info(ptr,level);
+          a->item[pos]=sp[-1];
+          sp--;
+          pos++;
+          if(pos>=a->size) break;
+          ptr+=sizeof_wkstauser_info(level);
+        }
+        netapibufferfree(buf);
+        if(ret==ERROR_MORE_DATA) continue;
+        if(pos < total) continue;
+	break;
+
+      default:
+        throw_nt_error("NetWkstaUserEnum", ret);
+    }
+    break;
+  }
+}
+
+/* End NetWkstaUserEnum */
 
 static void f_GetFileAttributes(INT32 args)
 {
@@ -2329,10 +2446,17 @@ void init_nt_system_calls(void)
       {
 	netsessionenum=(netsessionenumtype)proc;
 	
- 	add_function("NetSessionEnum",f_NetSessionEnum,"function(string,string,string,int:array(int|string))",0);
+ 	add_function("NetSessionEnum",f_NetSessionEnum,"function(string,string,string,int:array(mixed))",0);
 
         SIMPCONST(SESS_GUEST);
         SIMPCONST(SESS_NOENCRYPTION);
+      }
+
+      if(proc=GetProcAddress(netapilib, "NetWkstaUserEnum"))
+      {
+	netwkstauserenum=(netwkstauserenumtype)proc;
+	
+ 	add_function("NetWkstaUserEnum",f_NetWkstaUserEnum,"function(string,int:array(mixed))",0);
       }
     }
   }
