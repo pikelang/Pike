@@ -1,7 +1,7 @@
-#!/home/grubba/src/pike/build/sol2.5/pike
+#!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.1 1997/03/03 23:50:17 grubba Exp $
+ * $Id: lr.pike,v 1.2 1998/04/22 19:48:45 grubba Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -114,7 +114,7 @@ string a_init(string ... args)
 {
   if (sizeof(args)) {
     werror(sprintf("Reducing %s => \"%s\"\n",
-		   map(args, g->symbol_to_string) * ", ",
+		   Array.map(args, g->symbol_to_string) * ", ",
 		   args * ""));
     return (`+(@args));
   } else {
@@ -141,7 +141,7 @@ void create()
 {
   g = parser();
 
-  g->symbol_to_string = symbol_to_string;
+  g->set_symbol_to_string(symbol_to_string);
   
 #if 0
   foreach (g_init, array(string|int) i) {
@@ -203,9 +203,7 @@ int main(int argc, string *argv)
   werror(sprintf("Memory usage:\n%O\n", _memory_usage()));
 #endif
 
-  g->scanner=scanner;
-
-  result = g->parse();
+  result = g->parse(scanner->scan);
 
   werror(sprintf("Result of parsing: \"%s\"\n", result + ""));
 }
