@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.180 2004/05/11 14:50:30 grubba Exp $
+|| $Id: encode.c,v 1.181 2004/05/11 15:18:53 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.180 2004/05/11 14:50:30 grubba Exp $");
+RCSID("$Id: encode.c,v 1.181 2004/05/11 15:18:53 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -122,11 +122,18 @@ struct encode_data
   struct object *codec;
   struct svalue counter;
   struct mapping *encoded;
+  /* The encoded mapping maps encoded things to their entry IDs. A
+   * value less than COUNTER_START means that it's a forward reference
+   * to a thing not yet encoded. */
+  struct array *delayed;
   dynamic_buffer buf;
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
 };
+
+/* Convert to/from forward reference ID. */
+#define CONVERT_ENTRY_ID(ID) (-((ID) - COUNTER_START) - (-COUNTER_START + 1))
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
@@ -476,6 +483,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   };
   INT32 i;
   struct svalue *tmp;
+  struct svalue entry_id;
 
 #ifdef ENCODE_DEBUG
   data->depth += 2;
@@ -488,28 +496,50 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
-    EDB(1,fprintf(stderr, "%*sEncoding TAG_AGAIN from <%d>\n",
-		data->depth, "", tmp->u.integer));
-    code_entry(TAG_AGAIN, tmp->u.integer, data);
-#ifdef ENCODE_DEBUG
-    data->depth -= 2;
-#endif
-    return;
-  }else if (val->type != T_TYPE) {
-    EDB(1,fprintf(stderr, "%*sEncoding to <%d>: ",
-		data->depth, "", data->counter.u.integer);
-	if(data->debug == 1)
-        {
-	  fprintf(stderr,"TAG%d",val->type);
-	}else{
-	  print_svalue(stderr, val);
+    entry_id = *tmp;		/* It's always a small integer. */
+    if (entry_id.u.integer < COUNTER_START)
+      entry_id.u.integer = CONVERT_ENTRY_ID (entry_id.u.integer);
+    if (force_encode && tmp->u.integer < COUNTER_START) {
+      EDB(1,
+	  fprintf(stderr, "%*sEncoding delayed thing to <%d>: ",
+		  data->depth, "", entry_id.u.integer);
+	  if(data->debug == 1)
+	  {
+	    fprintf(stderr,"TAG%d",val->type);
+	  }else{
+	    print_svalue(stderr, val);
 	  
-	}
-	fputc('\n', stderr););
-    mapping_insert(data->encoded, val, &data->counter);
-    data->counter.u.integer++;
+	  }
+	  fputc('\n', stderr););
+      code_entry (TAG_DELAYED, entry_id.u.integer, data);
+      tmp->u.integer = entry_id.u.integer;
+    }
+    else {
+      EDB(1,fprintf(stderr, "%*sEncoding TAG_AGAIN from <%d>\n",
+		    data->depth, "", entry_id.u.integer));
+      code_entry(TAG_AGAIN, entry_id.u.integer, data);
+      goto encode_done;
+    }
+  }else {
+#ifdef PIKE_DEBUG
+    if (force_encode == 2)
+      Pike_fatal ("Didn't find old entry for delay encoded thing.\n");
+#endif
+    if (val->type != T_TYPE) {
+      entry_id = data->counter;	/* It's always a small integer. */
+      EDB(1,fprintf(stderr, "%*sEncoding to <%d>: ",
+		    data->depth, "", entry_id.u.integer);
+	  if(data->debug == 1)
+	  {
+	    fprintf(stderr,"TAG%d",val->type);
+	  }else{
+	    print_svalue(stderr, val);	  
+	  }
+	  fputc('\n', stderr););
+      mapping_insert(data->encoded, val, &entry_id);
+      data->counter.u.integer++;
+    }
   }
-
 
   switch(val->type)
   {
@@ -838,8 +868,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  if(Pike_sp[-1].subtype == NUMBER_UNDEFINED)
 	  {
 	    int to_change = data->buf.s.len;
-	    struct svalue tmp=data->counter;
-	    tmp.u.integer--;
+	    struct svalue tmp = entry_id;
 
 	    EDB(5,fprintf(stderr, "%*s(UNDEFINED)\n", data->depth, ""));
 
@@ -909,8 +938,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 					   val->u.object->prog)==val->subtype)
 	  {
 	    /* We have to remove ourself from the cache for now */
-	    struct svalue tmp=data->counter;
-	    tmp.u.integer--;
+	    struct svalue tmp = entry_id;
 	    map_delete(data->encoded, val);
 
 	    code_entry(TAG_FUNCTION, 1, data);
@@ -955,13 +983,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype == NUMBER_UNDEFINED)
       {
 	struct program *p=val->u.program;
+	pop_stack();
 	if( (p->flags & PROGRAM_HAS_C_METHODS) || p->event_handler )
 	{
 	  if(p->parent)
 	  {
-	    /* We have to remove ourself from the cache for now */
-	    struct svalue tmp=data->counter;
-	    tmp.u.integer--;
+	    /* We have to remove ourselves from the cache for now */
+	    struct svalue tmp = entry_id;
 	    map_delete(data->encoded, val);
 
 	    code_entry(TAG_PROGRAM, 2, data);
@@ -974,7 +1002,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      Pike_error("Cannot encode C programs.\n");
 	    encode_value2(Pike_sp-1, data, 0);
 
-	    pop_n_elems(3);
+	    pop_n_elems(2);
 
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
@@ -984,7 +1012,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    Pike_error("Cannot encode programs with event handlers.\n");
 	  Pike_error("Cannot encode C programs.\n");
 	}
-
 
 #ifdef OLD_PIKE_ENCODE_PROGRAM
 
@@ -1076,8 +1103,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  if(p->inherits[d].parent)
 	  {
 	    ref_push_object(p->inherits[d].parent);
-	    Pike_sp[-1].subtype=p->inherits[d].parent_identifier;
-	    Pike_sp[-1].type=T_FUNCTION;
+	    Pike_sp[-1].subtype = p->inherits[d].parent_identifier;
+	    Pike_sp[-1].type = T_FUNCTION;
 	    EDB(3,fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
 			p->id, p->inherits[d].parent, p->inherits[d].parent_identifier););
 	  }else if(p->inherits[d].prog){
@@ -1124,10 +1151,22 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 #else /* !OLD_PIKE_ENCODE_PROGRAM */
 
-	/* Type 4 -- Portable encoding. */
+	/* Portable encoding (4 and 5). */
+
+	if (!force_encode) {
+	  /* Encode later (5). */
+	  EDB(1, fprintf(stderr, "%*sencode: delayed encoding of program\n",
+			 data->depth, ""));
+	  code_entry (TAG_PROGRAM, 5, data);
+	  data->delayed = append_array (data->delayed, val);
+	  tmp = low_mapping_lookup (data->encoded, val);
+	  tmp->u.integer = CONVERT_ENTRY_ID (tmp->u.integer);
+	  goto encode_done;
+	}
+
 	EDB(1, fprintf(stderr, "%*sencode: encoding program in new style\n",
 		       data->depth, ""));
-	code_entry(type_to_tag(val->type), 4, data);
+	code_entry(TAG_PROGRAM, 4, data);
 
 	/* Byte-order. */
 	code_number(PIKE_BYTEORDER, data);
@@ -1504,8 +1543,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       }else{
 	code_entry(TAG_PROGRAM, 0, data);
 	encode_value2(Pike_sp-1, data, 0);
+	pop_stack();
       }
-      pop_stack();
       break;
     }
   }
@@ -1521,6 +1560,7 @@ static void free_encode_data(struct encode_data *data)
 {
   toss_buffer(& data->buf);
   free_mapping(data->encoded);
+  free_array(data->delayed);
 }
 
 /*! @decl string encode_value(mixed value, object|void codec)
@@ -1557,9 +1597,12 @@ void f_encode_value(INT32 args)
 {
   ONERROR tmp;
   struct encode_data d, *data;
+  int i;
   data=&d;
 
-  check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
+  check_all_args("encode_value", args,
+		 BIT_MIXED,
+		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
 		 /* This argument is only an internal debug helper.
 		  * It's intentionally not part of the function
@@ -1572,25 +1615,40 @@ void f_encode_value(INT32 args)
   initialize_buf(&data->buf);
   data->canonic = 0;
   data->encoded=allocate_mapping(128);
+  data->delayed = allocate_array (0);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
-  if(args > 1)
-  {
-    data->codec=Pike_sp[1-args].u.object;
-  }else{
-    data->codec=get_master();
-  }
+
 #ifdef ENCODE_DEBUG
   data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
   data->depth = -2;
 #endif
 
+  if(args > 1 && Pike_sp[1-args].type == T_OBJECT)
+  {
+    data->codec=Pike_sp[1-args].u.object;
+  }else{
+    data->codec=get_master();
+    if (!data->codec) {
+      /* Use a dummy if there's no master around yet, to avoid checks. */
+      push_object (clone_object (null_program, 0));
+      args++;
+      data->codec = Pike_sp[-1].u.object;
+    }
+  }
+
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
+
   encode_value2(Pike_sp-args, data, 1);
+
+  for (i = 0; i < data->delayed->size; i++)
+    encode_value2 (ITEM(data->delayed) + i, data, 2);
+
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
+  free_array (data->delayed);
 
   pop_n_elems(args);
   push_string(low_free_buf(&data->buf));
@@ -1618,9 +1676,12 @@ void f_encode_value_canonic(INT32 args)
 {
   ONERROR tmp;
   struct encode_data d, *data;
+  int i;
   data=&d;
 
-  check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
+  check_all_args("encode_value_canonic", args,
+		 BIT_MIXED,
+		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
 		 /* This argument is only an internal debug helper.
 		  * It's intentionally not part of the function
@@ -1633,25 +1694,40 @@ void f_encode_value_canonic(INT32 args)
   initialize_buf(&data->buf);
   data->canonic = 1;
   data->encoded=allocate_mapping(128);
+  data->delayed = allocate_array (0);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
-  if(args > 1)
-  {
-    data->codec=Pike_sp[1-args].u.object;
-  }else{
-    data->codec=get_master();
-  }
+
 #ifdef ENCODE_DEBUG
   data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
   data->depth = -2;
 #endif
 
+  if(args > 1 && Pike_sp[1-args].type == T_OBJECT)
+  {
+    data->codec=Pike_sp[1-args].u.object;
+  }else{
+    data->codec=get_master();
+    if (!data->codec) {
+      /* Use a dummy if there's no master around yet, to avoid checks. */
+      push_object (clone_object (null_program, 0));
+      args++;
+      data->codec = Pike_sp[-1].u.object;
+    }
+  }
+
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
+
   encode_value2(Pike_sp-args, data, 1);
+
+  for (i = 0; i < data->delayed->size; i++)
+    encode_value2 (ITEM(data->delayed) + i, data, 2);
+
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
+  free_array (data->delayed);
 
   pop_n_elems(args);
   push_string(low_free_buf(&data->buf));
@@ -2126,8 +2202,6 @@ static void decode_value2(struct decode_data *data)
 #endif
 
   DECODE("decode_value2");
-
-  check_stack(1);
 
   switch(what & TAG_MASK)
   {
@@ -2604,6 +2678,7 @@ static void decode_value2(struct decode_data *data)
 	      if(placeholder->prog != null_program)
 		Pike_error("Placeholder object is not a __null_program clone.\n");
 	      dmalloc_touch_svalue(Pike_sp-1);
+	      Pike_sp--;
 	    }
 	    else if (Pike_sp[-1].type != T_INT ||
 		     Pike_sp[-1].u.integer)
