@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.59 2003/07/07 15:08:24 grubba Exp $
+// $Id: Query.pike,v 1.60 2003/07/07 15:10:37 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -382,7 +382,7 @@ static mixed async_id;
 #endif
 
 // Check if it's time to clean up the async dns object.
-static void clean_async_id()
+static void clean_async_dns()
 {
   int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
   if (time_left >= 0) {
