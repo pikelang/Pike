@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.63 2001/07/02 16:25:29 mast Exp $
+ * $Id: global.h,v 1.64 2001/08/30 23:09:57 mast Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -45,6 +45,11 @@
 #ifndef __BUILTIN_VA_ARG_INCR
 #define __BUILTIN_VA_ARG_INCR	1
 #endif /* !__BUILTIN_VA_ARG_INCR */
+
+/* Get more declarations in GNU libc. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
 /*
  * Some structure forward declarations are needed.
