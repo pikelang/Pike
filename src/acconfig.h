@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.109 2002/11/24 22:37:50 mast Exp $
+|| $Id: acconfig.h,v 1.110 2003/01/05 14:29:54 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -396,6 +396,9 @@
 
 /* Define this if you have Windows NT threads */
 #undef NT_THREADS
+
+/* Define this if your THREAD_T type is a pointer type. */
+#undef PIKE_THREAD_T_IS_POINTER
 
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT

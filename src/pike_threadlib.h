@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.23 2002/12/22 17:18:55 mast Exp $
+|| $Id: pike_threadlib.h,v 1.24 2003/01/05 14:29:54 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -755,5 +755,12 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #define STATIC_COND_INIT
 #endif
 
+#ifndef THREAD_T_TO_PTR
+#ifdef PIKE_THREAD_T_IS_POINTER
+#define THREAD_T_TO_PTR(X)	((void *)(X))
+#else /* !PIKE_THREAD_T_IS_POINTER */
+#define THREAD_T_TO_PTR(X)	((void *)(ptrdiff_t)(X))
+#endif /* PIKE_THREAD_T_IS_POINTER */
+#endif /* !THREAD_T_TO_PTR */
 
 #endif /* PIKE_THREADLIB_H */

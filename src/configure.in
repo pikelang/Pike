@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.671 2003/01/04 15:04:36 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.672 2003/01/05 14:29:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2556,6 +2556,8 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
   AC_DEFINE(PIKE_THREADS)
   using_threads="yes (nt)"
 
+  pike_cv_thread_t_type=integer
+
 else
 
   # Test for POSIX threads
@@ -2918,6 +2920,23 @@ pthread_t gazonk;
       AC_DEFINE(HAVE_BROKEN_LINUX_THREAD_EUID)
     else :; fi
 
+    AC_MSG_CHECKING([behaviour of the pthread_t type])
+    AC_CACHE_VAL(pike_cv_thread_t_type, [
+      AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <pthread.h>
+extern pthread_t bar;
+      ], [
+	void *foo = (void *)(ptrdiff_t)bar;
+	return 0;
+      ], [ pike_cv_thread_t_type=integer ], [ pike_cv_thread_t_type=pointer ])
+    ])
+    AC_MSG_RESULT($pike_cv_thread_t_type)
+
   else
     AC_MSG_RESULT(no)
     LIBS="$OLDLIBS"
@@ -2998,11 +3017,18 @@ int main()
       #   :
       # fi
     fi # UNIX threads
+
+    pike_cv_thread_t_type=integer
   fi # POSIX threads
 fi  # NT
 else
   # Without threads
+  pike_cv_thread_t_type=integer
   :
+fi
+
+if test "x$pike_cv_thread_t_type" = "xpointer"; then
+  AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
 fi
 
 ########################################################################

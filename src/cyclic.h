@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.h,v 1.8 2002/12/01 17:36:03 mast Exp $
+|| $Id: cyclic.h,v 1.9 2003/01/05 14:29:54 grubba Exp $
 */
 
 #ifndef CYCLIC_H
@@ -31,7 +31,7 @@ typedef struct CYCLIC
   CYCLIC cyclic_struct__
 #define BEGIN_CYCLIC(A,B) \
    begin_cyclic(&cyclic_struct__, cyclic_identifier__, \
-                (void *)(ptrdiff_t)th_self(), (void *)(A), (void *)(B))
+                THREAD_T_TO_PTR(th_self()), (void *)(A), (void *)(B))
 
 #else  /* CYCLIC_DEBUG */
 
@@ -40,7 +40,7 @@ typedef struct CYCLIC
   CYCLIC cyclic_struct__
 #define BEGIN_CYCLIC(A,B) \
    begin_cyclic(&cyclic_struct__, &cyclic_identifier__, \
-                (void *)(ptrdiff_t)th_self(), (void *)(A), (void *)(B))
+                THREAD_T_TO_PTR(th_self()), (void *)(A), (void *)(B))
 
 #endif	/* !CYCLIC_DEBUG */
 
