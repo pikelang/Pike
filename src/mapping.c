@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.30 1998/04/24 00:01:32 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.31 1998/04/27 09:55:32 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -694,25 +694,16 @@ struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 
 struct mapping *add_mappings(struct svalue *argp, INT32 args)
 {
-  struct mapping *ret,*a,*b;
-  switch(args)
-  {
-  case 0: return allocate_mapping(0);
-  case 1: return copy_mapping(argp->u.mapping);
-  case 2: return merge_mappings(argp[0].u.mapping, argp[1].u.mapping, OP_ADD);
-  case 3:
-    a=merge_mappings(argp[0].u.mapping,argp[1].u.mapping,OP_ADD);
-    ret=merge_mappings(a,argp[2].u.mapping,OP_ADD);
-    free_mapping(a);
-    return ret;
-  default:
-    a=add_mappings(argp,args/2);
-    b=add_mappings(argp+args/2,args-args/2);
-    ret=merge_mappings(a,b,OP_ADD);
-    free_mapping(a);
-    free_mapping(b);
-    return ret;
-  }
+  INT32 e,d;
+  struct mapping *ret;
+  struct keypair *k;
+
+  for(e=d=0;d<args;d++) e+=argp[d].u.mapping->size;
+  ret=allocate_mapping(MAP_SLOTS(e));
+  for(d=0;d<args;d++)
+    LOOP(argp[d].u.mapping)
+      mapping_insert(ret, &k->ind, &k->val);
+  return ret;
 }
 
 int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
