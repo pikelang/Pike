@@ -1268,21 +1268,34 @@ struct array *explode(struct pike_string *str,
     
     s=str->str;
     end=s+str->len;
-    e=0;
+
+    ret=allocate_array(10);
+    ret->size=0;
     
     init_memsearch(&searcher, del->str, del->len, str->len);
     
     while((tmp=memory_search(&searcher, s, end-s)))
     {
-      check_stack(1);
-      push_string(make_shared_binary_string(s, tmp-s));
+      if(ret->size == ret->malloced_size)
+      {
+	e=ret->size;
+	ret=resize_array(ret, ret->size * 2);
+	ret->size=0;
+      }
+
+      ITEM(ret)[ret->size].u.string=make_shared_binary_string(s, tmp-s);
+      ITEM(ret)[ret->size].type=T_STRING;
+      ret->size++;
+
       s=tmp+del->len;
-      e++;
     }
-    check_stack(1);
-    push_string(make_shared_binary_string(s, end-s));
-    e++;
-    ret=aggregate_array(e);
+
+    if(ret->size == ret->malloced_size)
+      ret=resize_array(ret, ret->size * 2);
+
+    ITEM(ret)[ret->size].u.string=make_shared_binary_string(s, end-s);
+    ITEM(ret)[ret->size].type=T_STRING;
+    ret->size++;
   }
   ret->type_field=BIT_STRING;
   return ret;
