@@ -9,7 +9,7 @@ static inherit "module.pmod";
 
 #define DEB werror("###%s:%d\n", __FILE__, __LINE__);
 static private void processError(string message, mixed ... args) {
-  throw ( ({ sprintf("ProcessXML: "+message, @args),
+  throw ( ({ sprintf("ProcessXML: "+message+"\n", @args),
 	     backtrace() }) );
 }
 
@@ -54,7 +54,6 @@ static object makeWrapper(array(string) modules, object|void child)
 string extractXML(string filename, int|void pikeMode, string|void type,
                   string|void name, array(string)|void parentModules)
 {
-  werror("extracting file %O\n", filename);
   // extract the file...
   // check if there are C style doc comments in it,
   // because if there are, the CExtractor should be
@@ -64,29 +63,31 @@ string extractXML(string filename, int|void pikeMode, string|void type,
 
   string contents = Stdio.File(filename)->read();
 
-  if (pikeMode) {
-    if (search("/*!", contents)) {
-      array(string) a = Parser.Pike.split(contents);
-      // check if it _really_ is a C-style doc comment ...
-      foreach (a, string s)
-        if (strlen(s) >= strlen("/*!*/") && s[0..2] == "/*!")
-          styleC = 1;
-        else if (isDocComment(s))
-          stylePike = 1;
-      if (stylePike && styleC)
-        processError("both C and Pike style doc comments in file " + filename);
-    }
-  }
-  if (styleC) {
+  //  if (pikeMode && has_value(contents, "/*!")) {
+  //    array(string) a = Parser.Pike.split(contents);
+  //    // check if it _really_ is a C-style doc comment ...
+  //    foreach (a, string s)
+  //      if (strlen(s) >= strlen("/*!*/") && s[0..2] == "/*!")
+  //	styleC = 1;
+  //      else if (isDocComment(s))
+  //	stylePike = 1;
+  //    if (stylePike && styleC)
+  //      processError("both C and Pike style doc comments in file " + filename);
+  //  }
+
+  if (styleC && has_value(contents, "/*!")) {
     object m = .CExtractor.extract(contents, filename);
     return m->xml();
   }
-  else {
+  else if(stylePike && has_value(contents, "//!")) {
+    if(has_suffix(filename, ".pmod.in"))
+      contents = replace(contents, "@module@", "\"___"+parentModules*"."+"\"");
     object m = (type == "module")
       ? .PikeExtractor.extractModule(contents, filename, name)
       : .PikeExtractor.extractClass(contents, filename, name);
     return makeWrapper(parentModules, m)->xml();
   }
+  return "";
 }
 
 //========================================================================
@@ -122,6 +123,7 @@ string moveImages(string docXMLFile,
       if (n->get_node_type() == XML_ELEMENT) {
         mapping(string : string) attr = n->get_attributes();
         switch (n->get_any_name()) {
+
           case "docgroup":
             ++docgroupcounters[-1];
             if (attr["homogen-name"])
@@ -137,10 +139,16 @@ string moveImages(string docXMLFile,
             }
             counter = 0;
             break;
+
   	  case "appendix":
 	    if(attr->name != "")
 	      parents += ({ "APPENDIX" + hash(attr->name) });
 	    break;
+
+	  case "chapter":
+	    if(attr->name != "")
+	      parents += ({ "CHAPTER" + hash(attr->name) });
+
           case "class":
           case "module":
             if (attr["name"] != "")
@@ -148,6 +156,7 @@ string moveImages(string docXMLFile,
             counter = 0;
             docgroupcounters += ({ 0 });
             break;
+
           case "image":
             array(Node) children = n->get_children();
             if (sizeof(children || ({})) != 1
@@ -497,17 +506,12 @@ static void fixupRefs(ScopeStack scopes, Node node) {
         // More cases than just "ref" ??
         // Add them here if we decide that also references in e.g.
         // object types should be resolved.
-        if (n->get_any_name() == "ref") {
+	string name = n->get_any_name();
+        if (name == "ref") {
           mapping m = n->get_attributes();
           if (m["resolved"])
             return;
-          //string ref = n->value_of_node();
-          //werror("いい resolving reference %O\n", ref);
-          //foreach (scopes->scopeArr, Scope s)
-          //  werror("いい    %O\n", s ? s->name : "NULL");
           mapping resolved = scopes->resolveRef(n->value_of_node());
-          //werror("いい resolved to: %O\n", resolved);
-          //werror("いい m == %O\n", m);
           foreach (indices(resolved), string i)
             m[i] = resolved[i];
         }
@@ -584,6 +588,15 @@ static void resolveFun(ScopeStack scopes, Node node) {
         case "doc":  // doc for the <class>/<module> itself
           fixupRefs(scopes, child);
           break;
+        case "inherit":
+	  break;
+          mapping m = child->get_attributes();
+          if (m["resolved"])
+            return;
+          mapping resolved = scopes->resolveRef(child->value_of_node());
+          foreach (indices(resolved), string i)
+            m[i] = resolved[i];
+	  break;
         default:
           ; // do nothing
       }
