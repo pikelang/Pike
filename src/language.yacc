@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.315 2003/02/08 03:49:22 mast Exp $
+|| $Id: language.yacc,v 1.316 2003/02/08 16:58:44 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.315 2003/02/08 03:49:22 mast Exp $");
+RCSID("$Id: language.yacc,v 1.316 2003/02/08 16:58:44 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3501,13 +3501,17 @@ comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
 
 gauge: TOK_GAUGE catch_arg
   {
-    $$=mkefuncallnode("abs",
-		  mkopernode("`/", 
-			     mkopernode("`-", mkefuncallnode("gethrvtime",0),
+    $$=mkopernode("`/",
+		  mkopernode("`-",
+			     mkopernode("`-",
+					mkefuncallnode("gethrvtime",
+						       mkintnode(1)),
 					mknode(F_COMMA_EXPR,
 					       mknode(F_POP_VALUE, $2, NULL),
-					       mkefuncallnode("gethrvtime",0))),
-			     mkfloatnode((FLOAT_TYPE)1000000.0)));
+					       mkefuncallnode("gethrvtime",
+							      mkintnode(1)))),
+			     NULL),
+		  mkfloatnode((FLOAT_TYPE)1e9));
   };
 
 typeof: TOK_TYPEOF '(' expr0 ')'
