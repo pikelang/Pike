@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.8 1997/01/27 01:12:53 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.9 1997/01/29 00:31:12 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -77,8 +77,7 @@ INT32 read_int(int offset)
 int store_linenumbers=1;
 
 /*
- * A mechanism to remember addresses on a stack. The size of the stack is
- * defined in config.h.
+ * A mechanism to remember addresses on a stack.
  */
 int comp_stackp;
 INT32 comp_stack[COMPILER_STACK_SIZE];
