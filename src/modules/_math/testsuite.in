@@ -1,35 +1,52 @@
-dnl $Id: testsuite.in,v 1.8 2002/10/21 15:55:21 nilsson Exp $
+dnl $Id: testsuite.in,v 1.9 2003/01/05 05:52:17 nilsson Exp $
+
+define(exarg,[[test_any([[
+  function x=$1;
+  return x(0.5, 0.0);
+]], $1(0.5)) ]])
+
+define(exarg2,[[test_any([[
+  function x=$1;
+  return x(0.5, 0.4, 0.0);
+]], $1(0.5, 0.4)) ]])
 
 dnl - tan
 test_true(floatp(tan(0.5)))
 test_true(`<=(-0.0000001, 0.5-tan(atan(0.5)), 0.0000001))
 test_true(`<=(-0.0000001, 0.5-atan(tan(0.5)), 0.0000001))
+exarg(tan)
 
 dnl - asin
 test_true(floatp(asin(0.7)))
 test_true(`<=(-0.0000001, asin(0.0), 0.0000001))
+exarg(asin)
 
 dnl - atan
 test_true(floatp(atan(0.7)))
 test_true(3.1415 < 4.0*atan(1.0))
 test_true(3.1416 > 4.0*atan(1.0))
+exarg(atan)
 
 dnl - atan2
 test_eq(atan(7.0/10.0), atan2(7.0, 10.0))
+exarg2(atan2)
 
 dnl - sin
 test_true(floatp(sin(1.2)))
 test_true(sin(atan(1.0))>0.707)
 test_true(sin(atan(1.0))<0.708)
+exarg(sin)
 
 dnl - acos
 test_true(acos(0.7) > 0.795)
 test_true(acos(0.7) < 0.796)
+exarg(acos)
 
 dnl - cos
 test_true(floatp(cos(1.2)))
 test_true(cos(atan(1.0))>0.707)
 test_true(cos(atan(1.0))<0.708)
+exarg(cos)
 
 dnl - sqrt
 test_eq(4,sqrt(16))
@@ -37,22 +54,38 @@ test_eq(4,sqrt(17))
 test_eq(4,sqrt(24))
 test_eq(sqrt(0x7fffffff),46340)
 test_eq(4.0,sqrt(16.0))
-test_any([[int e,i; for(e=0;e<100000;e++) { i=sqrt(e); if(i*i>e || (i+1)*(i+1)<e) return e; } return -1;]],-1)
+test_any([[
+  int e,i;
+  for(e=0;e<100000;e++) {
+    i=sqrt(e);
+    if(i*i>e || (i+1)*(i+1)<e)
+      return e;
+  }
+  return -1;
+]],-1)
+test_any([[
+  class A { int _sqrt() { return 17; } };
+  return sqrt(A());
+]], 17)
+exarg(sqrt)
 
 dnl - floor
 test_eq(17.0,floor(17.0))
 test_eq(17.0,floor(17.1))
 test_eq(17.0,floor(17.7))
+exarg(floor)
 
 dnl - ceil
 test_eq(17.0,ceil(17.0))
 test_eq(18.0,ceil(17.1))
 test_eq(18.0,ceil(17.7))
+exqrg(ceil)
 
 dnl - round
 test_eq(round(17.0),17.0)
 test_eq(round(17.4),17.0)
 test_eq(round(17.5),18.0)
+exarg(round)
 
 dnl - exp
 dnl - log
@@ -60,6 +93,8 @@ test_true(2.70001>exp(log(2.7)))
 test_true(2.69999<exp(log(2.7)))
 test_true(2.70001>log(exp(2.7)))
 test_true(2.69999<log(exp(2.7)))
+exarg(log)
+exarg(exp)
 
 dnl - pow
 test_eq(pow(10.0,10.0),10000000000.0)
@@ -88,6 +123,7 @@ test_true(floatp(pow(2.0,2)))
 test_true(intp(pow(2,2)))
 test_eq(pow(Gmp.mpz(2),2),4)
 test_eq(pow(Gmp.mpz(2),Gmp.mpz(2)),4)
+exarg2(pow)
 
 dnl - max
 test_eq(max(5),5)
@@ -95,6 +131,7 @@ test_eq(max(5,6,7,8,9,4,5,5),9)
 test_eq(max(5.0,6.0,5.9),6.0)
 test_eq(max("foo","bar","gazonk"),"gazonk")
 test_eq(max(1,2.0,3),3)
+test_eq(max(),0)
 
 dnl - min
 test_eq(min(5),5)
@@ -102,6 +139,7 @@ test_eq(min(5,6,7,8,9,4,5,5),4)
 test_eq(min(5.0,6.0,5.9),5.0)
 test_eq(min("foo","bar","gazonk"),"bar")
 test_eq(min(1,2.0,3),1)
+test_eq(min(),0)
 
 dnl - abs
 test_eq(abs(5),5)
