@@ -9699,6 +9699,7 @@ prints.
  -->
 
 <include file=Mysql.wmml>
+<include file=crypto.wmml>
 
 </chapter>
 
