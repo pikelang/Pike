@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.17 2004/09/25 02:51:20 nilsson Exp $
+dnl $Id: testsuite.in,v 1.18 2004/12/14 23:48:13 nilsson Exp $
 
 dnl - ADT.BitBuffer
 
@@ -40,6 +40,14 @@ test_eq( B->drain(), "\17" )
 test_eq( sizeof(B), 0 )
 test_eq( B->drain(), "" )
 test_eval_error( B->get(1) )
+
+test_eq( B->feed("bar"), B )
+test_eq( B->read(2), "ba" )
+test_eq( B->put(1,2), B )
+test_eq( B->read(5), "r" )
+test_eq( B->put(9839,14), B )
+test_eq( B->read(2), "fo" )
+test_eq( sizeof(B), 0 )
 
 test_do( add_constant( "B" ) )
 
