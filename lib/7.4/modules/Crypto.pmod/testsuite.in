@@ -567,6 +567,9 @@ Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
 
 // CRYPT_MD5
 cond_resolv(Crypto.crypt_md5, [[
+test_true([[
+#pike 7.4
+Crypto.crypt_md5("")]])
 test_eq([[
 #pike 7.4
 Crypto.crypt_md5("","")]],
