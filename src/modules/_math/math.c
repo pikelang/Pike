@@ -6,7 +6,6 @@
 /**/
 #include "global.h"
 #include "config.h"
-#include <math.h>
 #include "interpret.h"
 #include "constants.h"
 #include "svalue.h"
@@ -15,6 +14,8 @@
 #include "operators.h"
 #include "bignum.h"
 #include "opcodes.h"
+
+#include <math.h>
 
 #ifdef PC
 #undef PC
@@ -28,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.32 2000/08/28 20:56:12 grubba Exp $");
+RCSID("$Id: math.c,v 1.33 2000/08/28 20:56:58 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
