@@ -276,11 +276,15 @@ class Connection {
      shutdown_fd();
    }
    
-   static void outcode(int code)
+   static void outcode(int code, void|string internal_error)
    {
-     fd->write("%d %s\r\n", code, replycodes[code]);
+     string msg = sprintf("%d %s", code, replycodes[code]);
+     if(internal_error)
+       msg += ". Problem due to the internal error: " + internal_error;
+     msg += "\r\n";
+     fd->write(msg);
 #ifdef SMTP_DEBUG
-     log("%d %s\r\n", code, replycodes[code]);
+     log(msg);
 #endif
    }
 
@@ -422,12 +426,17 @@ class Connection {
          mixed err;
       	 int check;
          err = catch(check = cb_mailfrom(email));
-         if(err || !check)
+         if(err)
          {
-           outcode(451);
+           outcode(451, err[0]);
            log(describe_backtrace(err));
            return;
          }
+	 if(!check)
+	 {
+	   outcode(451);
+	   return;
+	 }
          if(check/100 == 2)
 	 {
 	   mailfrom = email;
@@ -536,9 +545,8 @@ class Connection {
      mixed err = catch (message = MIME.Message(content, 0, 0, 1));
      if(err)
      {
-       outcode(554);
+       outcode(554, err[0]);
        log(describe_backtrace(err));
-       log("content is %O\n", content);
        return 0;
      }
      err = catch {
@@ -546,7 +554,7 @@ class Connection {
      };
      if(err)
      {
-       outcode(554);
+       outcode(554, err[0]);
        log(describe_backtrace(err));
        return 0;
      }
@@ -557,7 +565,7 @@ class Connection {
      if(sizeof(content) > maxsize)
      {
         outcode(552);
-        return 0;
+        return;
      }
      MIME.Message message = low_message(content);
      if(!message) return;
@@ -570,10 +578,15 @@ class Connection {
        err = catch(check = cb_data(message, mailfrom, mailto, content));
      else
        err = catch(check = cb_data(message, mailfrom, mailto));
-     if(err || !check)
+     if(err)
+     {
+       outcode(554, err[0]);
+       log(describe_backtrace(err));
+       return;
+     }
+     if(check)
      {
        outcode(554);
-       log(describe_backtrace(err));
        return;
      }
      outcode(check);
@@ -643,7 +656,7 @@ class Connection {
        if(err)
        {
          log("error while executing command %O", _command);
-	 outcode(554);
+	 outcode(554, err[0]);
        }
      }
    }
