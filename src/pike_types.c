@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.39 1998/04/14 22:10:49 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.40 1998/04/16 01:23:02 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1062,6 +1062,16 @@ static char *low_match_types(char *a,char *b, int flags)
     break;
 
   case T_OBJECT:
+#if 0
+    if(EXTRACT_INT(a+2) || EXTRACT_INT(b+2))
+    {
+      fprintf(stderr,"Type match1: ");
+      stupid_describe_type(a,type_length(a));
+      fprintf(stderr,"Type match2: ");
+      stupid_describe_type(b,type_length(b));
+    }
+#endif
+
     /* object(* 0) matches any object */
     if(!EXTRACT_INT(a+2) || !EXTRACT_INT(b+2)) break;
 
@@ -1081,11 +1091,11 @@ static char *low_match_types(char *a,char *b, int flags)
 
     {
       struct program *ap,*bp;
-      ap=id_to_program(EXTRACT_UCHAR(a+2));
-      bp=id_to_program(EXTRACT_UCHAR(b+2));
+      ap=id_to_program(EXTRACT_INT(a+2));
+      bp=id_to_program(EXTRACT_INT(b+2));
 
       if(!ap || !bp) break;
-      
+
       if(EXTRACT_UCHAR(a+1))
       {
 	if(!implements(ap,bp))
