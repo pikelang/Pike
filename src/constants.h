@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.9 1999/04/15 04:08:10 hubbe Exp $
+ * $Id: constants.h,v 1.10 1999/12/07 09:40:55 hubbe Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -54,21 +54,20 @@ struct callable *make_callable(c_fun fun,
 			       INT16 flags,
 			       optimize_fun optimize,
 			       docode_fun docode);
-void add_efun2(char *name,
-	       c_fun fun,
-	       char *type,
-	       INT16 flags,
-	       optimize_fun optimize,
-	       docode_fun docode);
-void add_efun(char *name, c_fun fun, char *type, INT16 flags);
-void quick_add_efun(char *name, int name_length,
-		    c_fun fun,
-		    char *type, int type_length,
-		    INT16 flags,
-		    optimize_fun optimize,
-		    docode_fun docode);
+struct callable *add_efun2(char *name,
+			    c_fun fun,
+			    char *type,
+			    INT16 flags,
+			    optimize_fun optimize,
+			    docode_fun docode);
+struct callable *add_efun(char *name, c_fun fun, char *type, INT16 flags);
+struct callable *quick_add_efun(char *name, int name_length,
+				c_fun fun,
+				char *type, int type_length,
+				INT16 flags,
+				optimize_fun optimize,
+				docode_fun docode);
 void cleanup_added_efuns(void);
-void count_memory_in_callables(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
 

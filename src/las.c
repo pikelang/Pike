@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.134 1999/12/05 19:40:41 mast Exp $");
+RCSID("$Id: las.c,v 1.135 1999/12/07 09:40:56 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2114,7 +2114,7 @@ void fix_type_field(node *n)
     {
       copy_shared_string(n->type,CDR(n)->type);
     }else{
-      n->type = or_pike_types(CAR(n)->type, CDR(n)->type);
+      n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
     }
     break;
 
@@ -2173,7 +2173,7 @@ void fix_type_field(node *n)
       if(!check_indexing(type_a, type_b, n))
 	if(!catch_level)
 	  my_yyerror("Indexing on illegal type.");
-      n->type=index_type(type_a,n);
+      n->type=index_type(type_a, type_b,n);
     }
     break;
 
@@ -2295,7 +2295,7 @@ void fix_type_field(node *n)
       break;
     }
 
-    n->type = or_pike_types(CADR(n)->type, CDDR(n)->type);
+    n->type = or_pike_types(CADR(n)->type, CDDR(n)->type, 0);
     break;
 
   case F_AND_EQ:

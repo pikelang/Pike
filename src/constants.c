@@ -15,7 +15,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.18 1999/05/02 08:11:37 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.19 1999/12/07 09:40:54 hubbe Exp $");
 
 static struct mapping *builtin_constants = 0;
 
@@ -107,39 +107,42 @@ struct callable *make_callable(c_fun fun,
   return low_make_callable(fun,make_shared_string(name),parse_type(type),flags,optimize,docode);
 }
 
-void add_efun2(char *name,
-	       c_fun fun,
-	       char *type,
-	       INT16 flags,
-	       optimize_fun optimize,
-	       docode_fun docode)
+struct callable *add_efun2(char *name,
+			    c_fun fun,
+			    char *type,
+			    INT16 flags,
+			    optimize_fun optimize,
+			    docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n;
+  struct callable *ret;
 
   n=make_shared_string(name);
   s.type=T_FUNCTION;
   s.subtype=FUNCTION_BUILTIN;
-  s.u.efun=make_callable(fun, name, type, flags, optimize, docode);
+  ret=s.u.efun=make_callable(fun, name, type, flags, optimize, docode);
   low_add_efun(n, &s);
   free_svalue(&s);
   free_string(n);
+  return ret;
 }
 
-void add_efun(char *name, c_fun fun, char *type, INT16 flags)
+struct callable *add_efun(char *name, c_fun fun, char *type, INT16 flags)
 {
-  add_efun2(name,fun,type,flags,0,0);
+  return add_efun2(name,fun,type,flags,0,0);
 }
 
-void quick_add_efun(char *name, int name_length,
-		    c_fun fun,
-		    char *type, int type_length,
-		    INT16 flags,
-		    optimize_fun optimize,
-		    docode_fun docode)
+struct callable *quick_add_efun(char *name, int name_length,
+				c_fun fun,
+				char *type, int type_length,
+				INT16 flags,
+				optimize_fun optimize,
+				docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n,*t;
+  struct callable *ret;
 
   n=make_shared_binary_string(name,name_length);
   t=make_shared_binary_string(type,type_length);
@@ -149,10 +152,11 @@ void quick_add_efun(char *name, int name_length,
   s.type=T_FUNCTION;
   s.subtype=FUNCTION_BUILTIN;
   add_ref(n);
-  s.u.efun=low_make_callable(fun, n, t, flags, optimize, docode);
+  ret=s.u.efun=low_make_callable(fun, n, t, flags, optimize, docode);
   low_add_efun(n, &s);
   free_svalue(&s);
   free_string(n);
+  return ret;
 }
 
 void cleanup_added_efuns(void)

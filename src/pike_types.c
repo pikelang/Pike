@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.84 1999/11/30 07:49:28 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.85 1999/12/07 09:40:59 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -372,6 +372,10 @@ static void internal_parse_typeA(char **_s)
   
   switch(buf[0])
   {
+    case 'z':
+      if(!strcmp(buf,"zero")) { push_type(T_MIXED); break; }
+      goto bad_type;
+
     case 'i':
       if(!strcmp(buf,"int"))
       {
@@ -608,6 +612,7 @@ static void internal_parse_typeB(char **s)
     internal_parse_type(s);
     while(ISSPACE(**((unsigned char **)s))) ++*s;
     if(**s != ')') error("Expecting ')'.\n");
+    ++*s;
     break;
     
   default:
@@ -812,25 +817,46 @@ char *low_describe_type(char *t)
     case T_FUNCTION:
     {
       int s;
-      my_strcat("function(");
-      s=0;
-      while(EXTRACT_UCHAR(t) != T_MANY)
+      my_strcat("function");
+      if(EXTRACT_UCHAR(t) == T_MANY &&
+	 (EXTRACT_UCHAR(t+1) == T_MIXED &&
+	  EXTRACT_UCHAR(t+2) == T_OR &&
+	  ((EXTRACT_UCHAR(t+3) == T_MIXED && EXTRACT_UCHAR(t+4) == T_VOID) ||
+	   (EXTRACT_UCHAR(t+4) == T_MIXED && EXTRACT_UCHAR(t+3) == T_VOID)))
+	 ||
+	 (EXTRACT_UCHAR(t+1) == T_OR
+	  &&
+	  ((EXTRACT_UCHAR(t+2) == T_MIXED && EXTRACT_UCHAR(t+3) == T_VOID) ||
+	   (EXTRACT_UCHAR(t+3) == T_MIXED && EXTRACT_UCHAR(t+2) == T_VOID))
+	  &&
+	  EXTRACT_UCHAR(t+4) == T_OR
+	  &&
+	  ((EXTRACT_UCHAR(t+5) == T_MIXED && EXTRACT_UCHAR(t+6) == T_VOID) ||
+	   (EXTRACT_UCHAR(t+6) == T_MIXED && EXTRACT_UCHAR(t+5) == T_VOID))))
       {
-	if(s++) my_strcat(", ");
-	t=low_describe_type(t);
-      }
-      t++;
-      if(EXTRACT_UCHAR(t) == T_VOID)
-      {
+	/* done */
+	;
+      } else {
+	my_strcat("(");
+	s=0;
+	while(EXTRACT_UCHAR(t) != T_MANY)
+	{
+	  if(s++) my_strcat(", ");
+	  t=low_describe_type(t);
+	}
 	t++;
-      }else{
-	if(s++) my_strcat(", ");
+	if(EXTRACT_UCHAR(t) == T_VOID)
+	{
+	  t++;
+	}else{
+	  if(s++) my_strcat(", ");
+	  t=low_describe_type(t);
+	  my_strcat(" ...");
+	}
+	my_strcat(" : ");
 	t=low_describe_type(t);
-	my_strcat(" ...");
+	my_strcat(")");
       }
-      my_strcat(" : ");
-      t=low_describe_type(t);
-      my_strcat(")");
       break;
     }
     
@@ -977,7 +1003,7 @@ static void very_low_or_pike_types(char *to_push, char *not_push)
   }
 }
 
-static void low_or_pike_types(char *t1, char *t2)
+static void low_or_pike_types(char *t1, char *t2, int zero_implied)
 {
   if(!t1)
   {
@@ -987,19 +1013,16 @@ static void low_or_pike_types(char *t1, char *t2)
       push_unfinished_type(t2);
   }
   else if((!t2)
-#if 0
-	  || (EXTRACT_UCHAR(t2) == T_ZERO)
-#endif
+	  || (EXTRACT_UCHAR(t2) == T_ZERO && zero_implied)
+
     )
   {
     push_unfinished_type(t1);
   }
-#if 0
-  else if (EXTRACT_UCHAR(t1) == T_ZERO)
+  else if (EXTRACT_UCHAR(t1) == T_ZERO && zero_implied)
   {
     push_unfinished_type(t2);
   }
-#endif
   else if(EXTRACT_UCHAR(t1)==T_MIXED || EXTRACT_UCHAR(t2)==T_MIXED)
   {
     push_type(T_MIXED);
@@ -1029,16 +1052,18 @@ static void low_or_pike_types(char *t1, char *t2)
 }
 
 static void medium_or_pike_types(struct pike_string *a,
-				 struct pike_string *b)
+				 struct pike_string *b,
+				 int zero_implied)
 {
-  low_or_pike_types( a ? a->str : 0 , b ? b->str : 0 );
+  low_or_pike_types( a ? a->str : 0 , b ? b->str : 0 , zero_implied);
 }
 
 struct pike_string *or_pike_types(struct pike_string *a,
-				  struct pike_string *b)
+				  struct pike_string *b,
+				  int zero_implied)
 {
   type_stack_mark();
-  medium_or_pike_types(a,b);
+  medium_or_pike_types(a,b,zero_implied);
   return pop_unfinished_type();
 }
 
@@ -1353,7 +1378,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	tmp=pop_unfinished_type();
 
 	type_stack_mark();
-	medium_or_pike_types(a_markers[m], tmp);
+	medium_or_pike_types(a_markers[m], tmp, 0);
 	if(a_markers[m]) free_string(a_markers[m]);
 	free_string(tmp);
 	a_markers[m]=pop_unfinished_type();
@@ -1438,7 +1463,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	tmp=pop_unfinished_type();
 
 	type_stack_mark();
-	medium_or_pike_types(b_markers[m], tmp);
+	medium_or_pike_types(b_markers[m], tmp, 0);
 	if(b_markers[m]) free_string(b_markers[m]);
 	free_string(tmp);
 	b_markers[m]=pop_unfinished_type();
@@ -1788,7 +1813,7 @@ static int low_pike_types_le2(char *a,char *b)
       tmp=pop_unfinished_type();
 
       type_stack_mark();
-      medium_or_pike_types(a_markers[m], tmp);
+      medium_or_pike_types(a_markers[m], tmp, 0);
       if(a_markers[m]) free_string(a_markers[m]);
       free_string(tmp);
       a_markers[m]=pop_unfinished_type();
@@ -1853,7 +1878,7 @@ static int low_pike_types_le2(char *a,char *b)
       tmp=pop_unfinished_type();
       
       type_stack_mark();
-      medium_or_pike_types(b_markers[m], tmp);
+      medium_or_pike_types(b_markers[m], tmp, 0);
       if(b_markers[m]) free_string(b_markers[m]);
       free_string(tmp);
       b_markers[m]=pop_unfinished_type();
@@ -2123,7 +2148,7 @@ static int low_get_return_type(char *a,char *b)
 
       if(!o1 && !o2) return 0;
 
-      medium_or_pike_types(o1,o2);
+      medium_or_pike_types(o1,o2, 0);
 
       if(o1) free_string(o1);
       if(o2) free_string(o2);
@@ -2193,15 +2218,26 @@ int pike_types_le(struct pike_string *a,struct pike_string *b)
 
 
 #ifdef DEBUG_MALLOC
-#define low_index_type(X,Y) ((struct pike_string *)debug_malloc_touch(debug_low_index_type((X),(Y))))
+#define low_index_type(X,Y,Z) ((struct pike_string *)debug_malloc_touch(debug_low_index_type((X),(Y),(Z))))
 #else
 #define low_index_type debug_low_index_type
 #endif
 
 /* FIXME, add the index */
-static struct pike_string *debug_low_index_type(char *t, node *n)
+static struct pike_string *debug_low_index_type(char *t,
+						char *index_type,
+						node *n)
 {
+  struct pike_string *tmp;
   struct program *p;
+  switch(low_check_indexing(t, index_type, n))
+  {
+    case 0: return 0;
+    case -1:
+      reference_shared_string(zero_type_string);
+      return zero_type_string;
+  }
+
   switch(EXTRACT_UCHAR(t++))
   {
   case T_OBJECT:
@@ -2211,23 +2247,36 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
   comefrom_int_index:
     if(p && n)
     {
+      INT32 i;
       if(n->token == F_ARROW)
       {
-	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
+	/* FIXME: make this stricter */
+	if((i=FIND_LFUN(p,LFUN_ARROW))!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
 	{
+	  /* FIXME: function_type_string should be replaced with something
+	   * derived from type_string
+	   */
+	  if(i!=-1 && (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type)))
+	    return tmp;
+
 	  reference_shared_string(mixed_type_string);
 	  return mixed_type_string;
 	}
       }else{
-	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
+	if((i=FIND_LFUN(p,LFUN_INDEX)) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
 	{
+	  /* FIXME: function_type_string should be replaced with something
+	   * derived from type_string
+	   */
+	  if(i!=-1 && (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type)))
+	    return tmp;
+
 	  reference_shared_string(mixed_type_string);
 	  return mixed_type_string;
 	}
       }
       if(CDR(n)->token == F_CONSTANT && CDR(n)->u.sval.type==T_STRING)
       {
-	INT32 i;
 	i=find_shared_string_identifier(CDR(n)->u.sval.u.string, p);
 	if(i==-1)
 	{
@@ -2273,20 +2322,20 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
   case T_OR:
   {
     struct pike_string *a,*b;
-    a=low_index_type(t,n);
+    a=low_index_type(t,index_type,n);
     t+=type_length(t);
-    b=low_index_type(t,n);
+    b=low_index_type(t,index_type,n);
     if(!b) return a;
     if(!a) return b;
     type_stack_mark();
-    medium_or_pike_types(a,b);
+    medium_or_pike_types(a,b,1);
     free_string(a);
     free_string(b);
     return pop_unfinished_type();
   }
 
   case T_AND:
-    return low_index_type(t+type_length(t),n);
+    return low_index_type(t+type_length(t),index_type,n);
 
   case T_STRING: /* always int */
   case T_MULTISET: /* always int */
@@ -2303,7 +2352,7 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
 	(CDR(n)->u.sval.type == T_STRING) :
 	!!low_match_types(string_type_string->str,CDR(n)->type->str,0)))
     {
-      struct pike_string *a=low_index_type(t,n);
+      struct pike_string *a=low_index_type(t,index_type,n);
       if(!a)
 	return make_shared_binary_string(t, type_length(t));
 	
@@ -2323,11 +2372,13 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
   }
 }
 
-struct pike_string *index_type(struct pike_string *type, node *n)
+struct pike_string *index_type(struct pike_string *type,
+			       struct pike_string *index_type,
+			       node *n)
 {
   struct pike_string *t;
   clear_markers();
-  t=low_index_type(type->str,n);
+  t=low_index_type(type->str,index_type->str,n);
   if(!t) copy_shared_string(t,mixed_type_string);
   return t;
 }
@@ -2386,7 +2437,7 @@ static struct pike_string *debug_low_key_type(char *t, node *n)
     if(!b) return a;
     if(!a) return b;
     type_stack_mark();
-    medium_or_pike_types(a,b);
+    medium_or_pike_types(a,b,1);
     free_string(a);
     free_string(b);
     return pop_unfinished_type();
@@ -2430,7 +2481,7 @@ static int low_check_indexing(char *type, char *index_type, node *n)
       low_check_indexing(type+type_length(type),index_type,n);
 
   case T_NOT:
-    return !low_check_indexing(type,index_type,n);
+    return low_check_indexing(type,index_type,n)!=1;
 
   case T_ARRAY:
     if(low_match_types(string_type_string->str, index_type,0) &&
@@ -2461,12 +2512,7 @@ static int low_check_indexing(char *type, char *index_type, node *n)
 
   case T_MULTISET:
   case T_MAPPING:
-#if 0
-    return !!low_match_types(type,index_type,0);
-#else
-    /* FIXME: Compiler warning here!!!! */
-    return 1;
-#endif
+    return low_match_types(type,index_type,0) ? 1 : -1;
 
 #ifdef AUTO_BIGNUM
     case T_INT:
@@ -2627,7 +2673,7 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
       a++;
       ar=zzap_function_return(a,id);
       br=zzap_function_return(a+type_length(a),id);
-      if(ar && br) ret=or_pike_types(ar,br);
+      if(ar && br) ret=or_pike_types(ar,br,0);
       if(ar) free_string(ar);
       if(br) free_string(br);
       return ret;

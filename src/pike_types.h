@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.27 1999/11/24 01:16:40 grubba Exp $
+ * $Id: pike_types.h,v 1.28 1999/12/07 09:41:00 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -138,12 +138,15 @@ char *low_describe_type(char *t);
 struct pike_string *describe_type(struct pike_string *type);
 TYPE_T compile_type_to_runtime_type(struct pike_string *s);
 struct pike_string *or_pike_types(struct pike_string *a,
-				  struct pike_string *b);
+				  struct pike_string *b,
+				  int zero_implied);
 struct pike_string *and_pike_types(struct pike_string *a,
 				   struct pike_string *b);
 int match_types(struct pike_string *a,struct pike_string *b);
 int pike_types_le(struct pike_string *a,struct pike_string *b);
-struct pike_string *index_type(struct pike_string *type, node *n);
+struct pike_string *index_type(struct pike_string *type,
+			       struct pike_string *index_type,
+			       node *n);
 struct pike_string *key_type(struct pike_string *type, node *n);
 int check_indexing(struct pike_string *type,
 		   struct pike_string *index_type,
@@ -153,6 +156,7 @@ int minimum_arguments(struct pike_string *s);
 struct pike_string *check_call(struct pike_string *args,
 			       struct pike_string *type);
 INT32 get_max_args(struct pike_string *type);
+struct pike_string *zzap_function_return(char *a, INT32 id);
 struct pike_string *get_type_of_svalue(struct svalue *s);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);

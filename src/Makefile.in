@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.170 1999/11/26 03:50:11 mast Exp $
+# $Id: Makefile.in,v 1.171 1999/12/07 09:40:52 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -340,7 +340,7 @@ just_verify: module_testsuites testsuite master.pike
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
-tinstall: aclocal master.pike
+tinstall: aclocal master.pike aclocal
 	rm -rf test-install
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --new-style pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)"
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.177 1999/12/05 15:36:28 grubba Exp $");
+RCSID("$Id: program.c,v 1.178 1999/12/07 09:41:01 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -235,14 +235,17 @@ int low_find_shared_string_identifier(struct pike_string *name,
 
 
 
-static struct node_s *index_modules(struct pike_string *ident)
+static struct node_s *index_modules(struct pike_string *ident,
+				    struct mapping **module_index_cache,
+				    int num_used_modules,
+				    struct svalue *modules)
 {
   struct node_s *ret;
   JMP_BUF tmp;
 
-  if(module_index_cache)
+  if(*module_index_cache)
   {
-    struct svalue *tmp=low_mapping_string_lookup(module_index_cache,ident);
+    struct svalue *tmp=low_mapping_string_lookup(*module_index_cache,ident);
     if(tmp)
     {
       if(!(IS_ZERO(tmp) && tmp->subtype==1))
@@ -264,9 +267,8 @@ static struct node_s *index_modules(struct pike_string *ident)
     UNSET_ONERROR(tmp);
     yyerror("Couldn't index module.");
   }else{
-    struct svalue *modules=(struct svalue *)used_modules.s.str;
-    int e=used_modules.s.len / sizeof(struct svalue);
-
+    int e=num_used_modules;
+    modules-=num_used_modules;
     while(--e>=0)
     {
       push_svalue(modules+e);
@@ -276,9 +278,9 @@ static struct node_s *index_modules(struct pike_string *ident)
       if(!IS_UNDEFINED(sp-1))
       {
 	UNSETJMP(tmp);
-	if(!module_index_cache)
-	  module_index_cache=allocate_mapping(10);
-	mapping_string_insert(module_index_cache, ident, sp-1);
+	if(!*module_index_cache)
+	  *module_index_cache=allocate_mapping(10);
+	mapping_string_insert(*module_index_cache, ident, sp-1);
 	ret=mksvaluenode(sp-1);
 	pop_stack();
 	return ret;
@@ -293,12 +295,19 @@ static struct node_s *index_modules(struct pike_string *ident)
   return 0;
 }
 
+
 struct node_s *find_module_identifier(struct pike_string *ident)
 {
   struct node_s *ret;
 
-  if((ret=index_modules(ident))) return ret;
+  struct svalue *modules=(struct svalue *)
+    (used_modules.s.str + used_modules.s.len);
 
+  if((ret=index_modules(ident,
+			&module_index_cache,
+			num_used_modules,
+			modules))) return ret;
+  modules-=num_used_modules;
      
   {
     struct program_state *p=previous_program_state;
@@ -314,6 +323,16 @@ struct node_s *find_module_identifier(struct pike_string *ident)
 	id=ID_FROM_INT(p->new_program, i);
 	return mkexternalnode(n, i, id);
       }
+
+      if((ret=index_modules(ident,
+			    &p->module_index_cache,
+			    p->num_used_modules,
+			    modules))) return ret;
+      modules-=p->num_used_modules;
+#ifdef PIKE_DEBUG
+      if( ((char *)modules ) < used_modules.s.str)
+	fatal("Modules out of whack!\n");
+#endif
     }
   }
 
@@ -2763,16 +2782,6 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 #endif
 
   num_used_modules=0;
-  initialize_buf(&used_modules);
-  {
-    struct svalue tmp;
-    tmp.type=T_MAPPING;
-#ifdef __CHECKER__
-    tmp.subtype=0;
-#endif /* __CHECKER__ */
-    tmp.u.mapping=get_builtin_constants();
-    use_module(& tmp);
-  }
 
   save_lex=lex;
 
@@ -2802,6 +2811,18 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   }
 
   low_start_new_program(0,0,0);
+
+  initialize_buf(&used_modules);
+  {
+    struct svalue tmp;
+    tmp.type=T_MAPPING;
+#ifdef __CHECKER__
+    tmp.subtype=0;
+#endif /* __CHECKER__ */
+    tmp.u.mapping=get_builtin_constants();
+    use_module(& tmp);
+  }
+
   if(lex.current_file)
   {
     store_linenumber(lex.current_line, lex.current_file);
@@ -2835,6 +2856,16 @@ struct program *compile(struct pike_string *prog, struct object *handler)
     compiler_pass=2;
     lex.pos=prog->str;
 
+    {
+      struct svalue tmp;
+      tmp.type=T_MAPPING;
+#ifdef __CHECKER__
+      tmp.subtype=0;
+#endif /* __CHECKER__ */
+      tmp.u.mapping=get_builtin_constants();
+      use_module(& tmp);
+    }
+
     CDFPRINTF((stderr, "compile(): Second pass\n"));
 
     yyparse();  /* Parse da program again */
@@ -2858,7 +2889,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   free_string(lex.current_file);
   lex=save_lex;
 
-  unuse_modules(1);
+/*  unuse_modules(1); */
 #ifdef PIKE_DEBUG
   if(num_used_modules)
     fatal("Failed to pop modules properly.\n");

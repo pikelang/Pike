@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.217 1999/12/06 21:03:18 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.218 1999/12/07 09:40:53 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1469,6 +1469,64 @@ void f_indices(INT32 args)
   }
   pop_n_elems(args);
   push_array(a);
+}
+
+/* this should probably be moved to pike_constants.c or something */
+#define FIX_OVERLOADED_TYPE(n, lf, X) fix_overloaded_type(n,lf,X,CONSTANT_STRLEN(X))
+static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int deftypelen)
+{
+  node **first_arg;
+  struct pike_string *t,*t2;
+  first_arg=my_get_arg(&_CDR(n), 0);
+  if(!first_arg) return 0;
+  t=first_arg[0]->type;
+  if(!t || match_types(t, object_type_string))
+  {
+    if(t && t->str[0]==T_OBJECT)
+    {
+      struct program *p=id_to_program(extract_type_int(t->str+2));
+      if(p)
+      {
+	int fun=FIND_LFUN(p, lfun);
+
+	/* FIXME: function type string should really be compiled from
+	 * the arguments so that or:ed types are handled correctly
+	 */
+	if(fun!=-1 && (t2=check_call(function_type_string , ID_FROM_INT(p, fun)->type)))
+	{
+	  free_string(n->type);
+	  n->type=t2;
+	  return 0;
+	}
+      }
+    }
+
+    /* If it is an object, it *may* be overloaded, we or with 
+     * the deftype....
+     */
+#if 1
+    if(deftype)
+    {
+      t2=make_shared_binary_string(deftype, deftypelen);
+      t=n->type;
+      n->type=or_pike_types(t,t2,0);
+      free_string(t);
+      free_string(t2);
+    }
+#endif
+  }
+  
+  return 0; /* continue optimization */
+}
+
+static node *fix_indices_type(node *n)
+{
+  return FIX_OVERLOADED_TYPE(n, LFUN__INDICES, tArray);
+}
+
+static node *fix_values_type(node *n)
+{
+  return FIX_OVERLOADED_TYPE(n, LFUN__VALUES, tArray);
 }
 
 void f_values(INT32 args)
@@ -5235,11 +5293,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
   
 /* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
-  ADD_EFUN("indices",f_indices,
+  ADD_EFUN2("indices",f_indices,
 	   tOr3(tFunc(tOr(tStr,tArray),tArr(tInt)),
 		tFunc(tOr(tMap(tSetvar(1,tMix),tMix),tSet(tSetvar(1,tMix))),
 		      tArr(tVar(1))),
-		tFunc(tOr(tObj,tPrg),tArr(tStr))),0);
+		tFunc(tOr(tObj,tPrg),tArr(tStr))),OPT_TRY_OPTIMIZE,fix_indices_type,0);
   
 /* function(mixed:int) */
   ADD_EFUN("intp", f_intp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
@@ -5378,12 +5436,12 @@ void init_builtin_efuns(void)
   ADD_EFUN("upper_case",f_upper_case,tFunc(tStr,tStr),0);
   
 /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
-  ADD_EFUN("values",f_values,
+  ADD_EFUN2("values",f_values,
 	   tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),
 	       tFunc(tOr4(tArr(tSetvar(0,tMix)),
 			  tMap(tMix,tSetvar(0,tMix)),
 			  tObj,tPrg),
-		     tArr(tVar(0)))),0);
+		     tArr(tVar(0)))),0,fix_values_type,0);
   
 /* function(mixed:int) */
   ADD_EFUN("zero_type",f_zero_type,tFunc(tMix,tInt01),0);
