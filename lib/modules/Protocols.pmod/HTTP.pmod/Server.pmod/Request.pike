@@ -15,9 +15,12 @@ string not_query;
 string query;
 string protocol;
 
-mapping(string:string|array(string)) headers=([]);
+mapping(string:string|array(string)) request_headers=([]);
 
 mapping(string:string|array(string)) variables=([]);
+mapping(string:string) cookies=([]);
+
+mapping misc=([]); // external use only
 
 function(this_program:void) request_callback;
 
@@ -41,7 +44,7 @@ static void read_cb(mixed dummy,string s)
       headerparser=0;
 
       buf=v[0];
-      headers=v[2];
+      request_headers=v[2];
       request_raw=v[1];
       parse_request();
 
@@ -84,6 +87,11 @@ static void parse_request()
    }
    query="";
    sscanf(not_query=full_query,"%s?%s",not_query,query);
+
+   if (request_headers->cookie)
+      foreach (Array.arrayify(request_headers->cookie);;string cookie)
+	 if (sscanf(cookie,"%s=%s",string a,string b)==2)
+	    cookies[a]=b;
 }
 
 static int parse_variables()
@@ -92,9 +100,9 @@ static int parse_variables()
       http_decode_urlencoded_query(query,variables);
 
    if (request_type=="POST" &&
-       headers["content-type"]=="application/x-www-form-urlencoded")
+       request_headers["content-type"]=="application/x-www-form-urlencoded")
    {
-      if ((int)headers["content-length"]<=strlen(buf))
+      if ((int)request_headers["content-length"]<=strlen(buf))
       {
 	 parse_post();
 	 return 1;
@@ -108,7 +116,7 @@ static int parse_variables()
 
 static void parse_post()
 {
-   int n=(int)headers["content-length"];
+   int n=(int)request_headers["content-length"];
    string s=buf[..n-1];
    buf=buf[n..];
 
@@ -118,7 +126,7 @@ static void parse_post()
 static void read_cb_post(mixed dummy,string s)
 {
    buf+=strlen(s);
-   if (strlen(buf)<=(int)headers["content-length"] ||
+   if (strlen(buf)<=(int)request_headers["content-length"] ||
        strlen(buf)>MAXIMUM_REQUEST_SIZE)
    {
       my_fd->set_blocking();
