@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.157 2001/05/31 22:51:53 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.158 2001/06/20 23:16:32 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1366,7 +1366,7 @@ static void thread_was_checked(struct object *o)
 void f_thread_local_create( INT32 args )
 {
   static INT32 thread_local_id = 0;
-  ((struct thread_local *)Pike_fp->current_object->storage)->id =
+  ((struct thread_local *)CURRENT_STORAGE)->id =
     thread_local_id++;
   pop_n_elems(args);
   push_int(0);

@@ -39,7 +39,7 @@
 /*! @class HeaderParser
  */
 
-#define THP ((struct header_buf *)Pike_fp->current_object->storage)
+#define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
 {
   char headers[8192];
