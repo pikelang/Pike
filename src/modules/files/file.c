@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.31 1997/03/17 03:12:04 hubbe Exp $");
+RCSID("$Id: file.c,v 1.32 1997/03/27 01:44:39 grubba Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1186,6 +1186,7 @@ static void file_dup2(INT32 args)
   push_int(1);
 }
 
+/* file->open_socket(int|void port, string|void addr) */
 static void file_open_socket(INT32 args)
 {
   int fd;
@@ -1206,6 +1207,42 @@ static void file_open_socket(INT32 args)
     pop_n_elems(args);
     push_int(0);
     return;
+  }
+
+  if (args) {
+    struct sockaddr_in addr;
+    int o;
+
+    if (sp[-args].type != T_INT) {
+      close(fd);
+      error("Bad argument 1 to open_socket(), expected int\n");
+    }
+    if (args > 2) {
+      if (sp[2-args].type != T_STRING) {
+	close(fd);
+	error("Bad argument 2 to open_socket(), expected string\n");
+      }
+      get_inet_addr(&addr, sp[2-args].u.string->str);
+    } else {
+      addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+    addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+
+    o=1;
+    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
+      ERRNO=errno;
+      close(fd);
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+    if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+      ERRNO=errno;
+      close(fd);
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
   }
 
   init_fd(fd, FILE_READ | FILE_WRITE);
@@ -1452,7 +1489,7 @@ void pike_module_init()
   add_function("pipe",file_pipe,"function(:object)",0);
 
   add_function("set_buffer",file_set_buffer,"function(int,string|void:void)",0);
-  add_function("open_socket",file_open_socket,"function(:int)",0);
+  add_function("open_socket",file_open_socket,"function(int|void,string|void:int)",0);
   add_function("connect",file_connect,"function(string,int:int)",0);
   add_function("query_address",file_query_address,"function(int|void:string)",0);
   add_function("create",file_create,"function(void|string:void)",0);
