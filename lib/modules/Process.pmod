@@ -6,16 +6,18 @@ static private inherit File : file;
 
 varargs int exec(string file,string ... foo)
 {
-  string path;
-  if(search(file,"/"))
-    return exece(combine_path(getcwd(),file),foo,getenv());
+  if (sizeof(file)) {
+    string path;
 
-  path=getenv("PATH");
+    if(search(file,"/") >= 0)
+      return exece(combine_path(getcwd(),file),foo,getenv());
 
-  foreach((path?(path/":"):({})),path)
-    if(file_stat(path=combine_path(path,file)))
-      return exece(path, foo,getenv());
+    path=getenv("PATH")||({});
 
+    foreach(path, path)
+      if(file_stat(path=combine_path(path,file)))
+	return exece(path, foo,getenv());
+  }
   return 69;
 }
 
