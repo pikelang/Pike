@@ -1077,6 +1077,11 @@ void dump_modules()
 	offset += sizeof(delta_dump);
       }
       
+    if(progress_bar)
+      /* The last files copied does not really count (should
+	 really be a third phase)... */
+      progress_bar->set_phase(1.0, 0.0);
+    
     status_clear(1);
   }
 }
@@ -1184,12 +1189,6 @@ void do_install()
     do_export();
   }else{
     dump_modules();
-    
-
-    if(progress_bar)
-      /* The last files copied does not really count (should
-	 really be a third phase)... */
-      progress_bar->set_phase(1.0, 0.0);
     
     // Delete any .pmod files that would shadow the .so
     // files that we just installed. For a new installation
