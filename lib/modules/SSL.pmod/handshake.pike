@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.30 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: handshake.pike,v 1.31 2003/01/27 01:41:16 nilsson Exp $
  *
  */
 
@@ -19,9 +19,9 @@
 inherit "cipher";
 
 #ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG werror
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
 #else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG
+#define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
 /* For client authentication */
@@ -85,7 +85,7 @@ constant Alert = SSL.alert;
 #ifdef SSL3_PROFILING
 int timestamp;
 void addRecord(int t,int s) {
-  Stdio.stdout.write(sprintf("time: %.24f  type: %d sender: %d\n",time(timestamp),t,s));
+  Stdio.stdout.write("time: %.24f  type: %d sender: %d\n",time(timestamp),t,s);
 }
 #endif
 
@@ -130,7 +130,7 @@ object server_hello_packet()
 
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.handshake: Server hello: '%O'\n", data));
+  werror("SSL.handshake: Server hello: '%O'\n", data);
 #endif
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
@@ -156,7 +156,7 @@ SSL.packet client_hello()
   string data = struct->pop_data();
 
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.handshake: Client hello: '%O'\n", data));
+  werror("SSL.handshake: Client hello: '%O'\n", data);
 #endif
 
   return handshake_packet(HANDSHAKE_client_hello, data);
@@ -297,7 +297,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
     
     int len = `+( @ Array.map(context->certificates, sizeof));
 #ifdef SSL3_DEBUG
-//    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
+//    werror("SSL.handshake: certificate_message size %d\n", len);
 #endif
     struct->put_uint(len + 3 * sizeof(context->certificates), 3);
     foreach(context->certificates, string cert)
@@ -361,13 +361,12 @@ string server_derive_master_secret(string data)
   string premaster_secret;
   
 #ifdef SSL3_DEBUG
-  werror(sprintf("server_derive_master_secret: ke_method %d\n",
-		 session->ke_method));
+  werror("server_derive_master_secret: ke_method %d\n", session->ke_method);
 #endif
   switch(session->ke_method)
   {
   default:
-    error( "SSL.handshake: internal error\n" );
+    error( "Internal error\n" );
 #if 0
     /* What is this for? */
   case 0:
@@ -412,7 +411,7 @@ string server_derive_master_secret(string data)
    {
      /* Decrypt the premaster_secret */
 #ifdef SSL3_DEBUG
-     werror(sprintf("encrypted premaster_secret: '%O'\n", data));
+     werror("encrypted premaster_secret: '%O'\n", data);
 #endif
      if(version[1] == 1) {
        if(sizeof(data)-2 != data[0]*256+data[1]) {
@@ -424,7 +423,7 @@ string server_derive_master_secret(string data)
 
      premaster_secret = (temp_key || context->rsa)->decrypt(data);
 #ifdef SSL3_DEBUG
-     werror(sprintf("premaster_secret: '%O'\n", premaster_secret));
+     werror("premaster_secret: '%O'\n", premaster_secret);
 #endif
      if (!premaster_secret
 	 || (sizeof(premaster_secret) != 48)
@@ -470,7 +469,7 @@ string server_derive_master_secret(string data)
   }
   
 #ifdef SSL3_DEBUG
-  werror(sprintf("master: '%O'\n", res));
+  werror("master: '%O'\n", res);
 #endif
   return res;
 }
@@ -497,7 +496,7 @@ string client_derive_master_secret(string premaster_secret)
   }
   
 #ifdef SSL3_DEBUG
-  werror(sprintf("bahmaster: '%O'\n", res));
+  werror("bahmaster: '%O'\n", res);
 #endif
   return res;
 }
@@ -537,7 +536,7 @@ string describe_type(int i)
     int data=buf[i];
     res+=sprintf("%02x ",data&0xff);
   } 
-  res+=sprintf("\n");
+  res+="\n";
   werror(res);
 }
 #endif
@@ -565,7 +564,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
   switch(handshake_state)
   {
   default:
-    error( "SSL.handshake: internal error\n" );
+    error( "Internal error\n" );
   case STATE_server_wait_for_hello:
    {
      array(int) cipher_suites;
@@ -623,17 +622,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		 "extra data in hello message ignored\n");
       
 	if (version[1] > 1)
-	  werror(sprintf("SSL.handshake->handle_handshake: "
-			 "Version %d.%d hello detected\n", @version));
+	  werror("SSL.handshake->handle_handshake: "
+		 "Version %d.%d hello detected\n", @version);
 	
 	if (sizeof(id))
-	  werror(sprintf("SSL.handshake: Looking up session %O\n", id));
+	  werror("SSL.handshake: Looking up session %O\n", id);
 #endif
 	session = sizeof(id) && context->lookup_session(id);
 	if (session)
 	  {
 #ifdef SSL3_DEBUG
-	    werror(sprintf("SSL.handshake: Reusing session %O\n", id));
+	    werror("SSL.handshake: Reusing session %O\n", id);
 #endif
 	    /* Reuse session */
 	  reuse = 1;
@@ -685,8 +684,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	|| (version[0] != 3))
 	{
 #ifdef SSL3_DEBUG
-	  werror(sprintf("SSL.handshake: Error decoding SSL2 handshake:\n"
-			 "%s\n", describe_backtrace(err)));
+	  werror("SSL.handshake: Error decoding SSL2 handshake:\n"
+		 "%s\n", describe_backtrace(err));
 #endif /* SSL3_DEBUG */
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
@@ -696,8 +695,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
 #ifdef SSL3_DEBUG
 	if (version[1] > 1)
-	  werror(sprintf("SSL.connection->handle_handshake: "
-			 "Version %d.%d hello detected\n", @context->version));
+	  werror("SSL.connection->handle_handshake: "
+		 "Version %d.%d hello detected\n", @context->version);
 #endif
 
 	string challenge;
@@ -827,7 +826,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	pending_write_state = res[1];
 	
 #ifdef SSL3_DEBUG
-	werror(sprintf("certificate_state: %d\n", certificate_state));
+	werror("certificate_state: %d\n", certificate_state);
 #endif
       }
       if (certificate_state != CERT_received)
@@ -1057,7 +1056,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     
 	int len = `+( @ Array.map(context->certificates, sizeof));
 #ifdef SSL3_DEBUG
-	//    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
+	//    werror("SSL.handshake: certificate_message size %d\n", len);
 #endif
 	struct->put_uint(len + 3 * sizeof(context->certificates), 3);
 	foreach(context->certificates, string cert)
@@ -1101,7 +1100,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     }
   }
 #ifdef SSL3_DEBUG
-//  werror(sprintf("SSL.handshake: messages = '%O'\n", handshake_messages));
+//  werror("SSL.handshake: messages = '%O'\n", handshake_messages);
 #endif
   return 0;
 }
@@ -1111,7 +1110,7 @@ void create(int is_server)
 
 #ifdef SSL3_PROFILING
   timestamp=time();
-  Stdio.stdout.write(sprintf("New...\n"));
+  Stdio.stdout.write("New...\n");
 #endif 
   version=({0,0});
   auth_level = context->auth_level;

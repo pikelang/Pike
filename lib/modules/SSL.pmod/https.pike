@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.13 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: https.pike,v 1.14 2003/01/27 01:41:17 nilsson Exp $
  *
  * dummy https server
  */
@@ -117,14 +117,14 @@ void my_accept_callback(object f)
 int main()
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("Cert: '%s'\n", Crypto.string_to_hex(my_certificate)));
-  werror(sprintf("Key:  '%s'\n", Crypto.string_to_hex(my_key)));
-//  werror(sprintf("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1()));
+  werror("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
+  werror("Key:  '%s'\n", Crypto.string_to_hex(my_key));
+//  werror("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1());
 #endif
 #if 0
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
 #ifdef SSL3_DEBUG
-  werror(sprintf("Decoded key: %O\n", key));
+  werror("Decoded key: %O\n", key);
 #endif
   object n = key[1][1];
   object e = key[2][1];
@@ -132,8 +132,8 @@ int main()
   object p = key[4][1];
   object q = key[5][1];
 
-  werror(sprintf("n =  %s\np =  %s\nq =  %s\npq = %s\n",
-		 n->digits(), p->digits(), q->digits(), (p*q)->digits()));
+  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
+	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
 
   rsa = Crypto.rsa();
   rsa->set_public_key(n, e);

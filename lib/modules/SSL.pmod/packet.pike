@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: packet.pike,v 1.12 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: packet.pike,v 1.13 2003/01/27 01:41:17 nilsson Exp $
  *
  * SSL Record Layer
  */
@@ -60,8 +60,8 @@ object|string recv(string data, int version)
   while (sizeof(buffer) >= needed_chars)
   {
 #ifdef SSL3_DEBUG
-//    werror(sprintf("SSL.packet->recv: needed = %d, avail = %d\n",
-//		     needed_chars, sizeof(buffer)));
+//    werror("SSL.packet->recv: needed = %d, avail = %d\n",
+//	     needed_chars, sizeof(buffer));
 #endif
     if (needed_chars == HEADER_SIZE)
     {
@@ -72,7 +72,7 @@ object|string recv(string data, int version)
 	if (SUPPORT_V2)
 	{
 #ifdef SSL3_DEBUG
-	  werror(sprintf("SSL.packet: Receiving SSL2 packet '%s'\n", buffer[..4]));
+	  werror("SSL.packet: Receiving SSL2 packet '%s'\n", buffer[..4]);
 #endif
 
 	  content_type = PACKET_V2;
@@ -82,7 +82,7 @@ object|string recv(string data, int version)
 	  length = ((buffer[0] & 0x7f) << 8 | buffer[1]
 		    - 3);
 #ifdef SSL3_DEBUG
-//	  werror(sprintf("SSL2 length = %d\n", length));
+//	  werror("SSL2 length = %d\n", length);
 #endif
 	  protocol_version = values(buffer[3..4]);
 	}
@@ -101,8 +101,8 @@ object|string recv(string data, int version)
 			     protocol_version[0]), backtrace());
 #ifdef SSL3_DEBUG
       if (protocol_version[1] > 0)
-	werror(sprintf("SSL.packet->recv: received version %d.%d packet\n",
-		       @ protocol_version));
+	werror("SSL.packet->recv: received version %d.%d packet\n",
+	       @ protocol_version);
 #endif
 
       needed_chars += length;
@@ -120,18 +120,17 @@ object|string recv(string data, int version)
 string send()
 {
   if (! PACKET_types[content_type] )
-    error( "SSL.packet->send: invalid type" );
+    error( "Invalid type" );
   
   if (protocol_version[0] != 3)
-    error( "SSL.packet->send: Version %d is not supported\n",
-	   protocol_version[0] );
+    error( "Version %d is not supported\n", protocol_version[0] );
   if (protocol_version[1] > 0)
 #ifdef SSL3_DEBUG
-    werror(sprintf("SSL.packet->send: received version %d.%d packet\n",
-		   @ protocol_version));
+    werror("SSL.packet->send: received version %d.%d packet\n",
+	   @ protocol_version);
 #endif
   if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))
-    error( "SSL.packet->send: maximum packet size exceeded\n" );
+    error( "Maximum packet size exceeded\n" );
 
   return sprintf("%c%c%c%2c%s", content_type, @protocol_version,
 		 sizeof(fragment), fragment);

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.51 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: sslfile.pike,v 1.52 2003/01/27 01:41:17 nilsson Exp $
  *
  */
 
@@ -12,12 +12,7 @@ inherit "connection" : connection;
 #define SSL3_DEBUG
 #endif /* SSL3_DEBUG_TRANSPORT */
 
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG werror
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG
-#endif /* SSL3_DEBUG */
-object(Stdio.File) socket;
+Stdio.File socket;
 
 static object context;
 
@@ -49,7 +44,7 @@ private void ssl_write_callback(mixed id);
 void die(int status)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->die: is_closed = %d\n", is_closed));
+  werror("SSL.sslfile->die: is_closed = %d\n", is_closed);
 #endif
   if (status < 0)
   {
@@ -82,19 +77,19 @@ private int queue_write()
 {
   int|string data = to_write();
 #ifdef SSL3_DEBUG_TRANSPORT
-  werror(sprintf("SSL.sslfile->queue_write: '%O'\n", data));
+  werror("SSL.sslfile->queue_write: '%O'\n", data);
 #else
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->queue_write: '%O'\n", stringp(data)?(string)sizeof(data):data));
+  werror("SSL.sslfile->queue_write: '%O'\n", stringp(data)?(string)sizeof(data):data);
 #endif
 #endif
   if (stringp(data))
     write_buffer += data;
 #ifdef SSL3_DEBUG_TRANSPORT
-  werror(sprintf("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer));
+  werror("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer);
 #else
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->queue_write: buffer = %O\n", sizeof(write_buffer)));
+  werror("SSL.sslfile->queue_write: buffer = %O\n", sizeof(write_buffer));
 #endif
 #endif
 
@@ -156,7 +151,7 @@ void close()
 string|int read(string|int ...args) {
 
 #ifdef SSL3_DEBUG
-  werror(sprintf("sslfile.read called!, with args: %O \n",args));
+  werror("sslfile.read called!, with args: %O \n",args);
 #endif
   
   int nbytes;
@@ -189,7 +184,7 @@ string|int read(string|int ...args) {
 
   default:
 
-    error( "SSL.sslfile->read: Wrong number of arguments\n" );
+    error( "Wrong number of arguments\n" );
   }
   
   string res="";
@@ -323,13 +318,13 @@ private void write_blocking() {
 private void ssl_read_callback(mixed id, string s)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->ssl_read_callback, connected=%d, handshake_finished=%d\n", connected, handshake_finished));
+  werror("SSL.sslfile->ssl_read_callback, connected=%d, handshake_finished=%d\n", connected, handshake_finished);
 #endif
   string|int data = got_data(s);
   if (stringp(data))
   {
 #ifdef SSL3_DEBUG
-    werror(sprintf("SSL.sslfile->ssl_read_callback: application_data: '%O'\n", data));
+    werror("SSL.sslfile->ssl_read_callback: application_data: '%O'\n", data);
 #endif
     if (!connected && handshake_finished)
       {
@@ -374,9 +369,9 @@ private void ssl_read_callback(mixed id, string s)
 private void ssl_write_callback(mixed id)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->ssl_write_callback: handshake_finished = %d\n"
-		 "blocking = %d, write_callback = %O\n",
-		 handshake_finished, blocking, write_callback));
+  werror("SSL.sslfile->ssl_write_callback: handshake_finished = %d\n"
+	 "blocking = %d, write_callback = %O\n",
+	 handshake_finished, blocking, write_callback);
 #endif
 
   if (sizeof(write_buffer))
@@ -403,7 +398,7 @@ private void ssl_write_callback(mixed id)
   }
   int res = queue_write();
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslport->ssl_write_callback: res = '%O'\n", res));
+  werror("SSL.sslport->ssl_write_callback: res = '%O'\n", res);
 #endif
   
   if (sizeof(write_buffer))
@@ -501,7 +496,7 @@ function query_close_callback() { return close_callback; }
 void set_nonblocking(function ...args)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslfile->set_nonblocking(%O)\n", args));
+  werror("SSL.sslfile->set_nonblocking(%O)\n", args);
 #endif
   if (is_closed || !socket) return;
 
@@ -518,7 +513,7 @@ void set_nonblocking(function ...args)
     }
     break;
   default:
-    error( "SSL.sslfile->set_nonblocking: Wrong number of arguments\n" );
+    error( "Wrong number of arguments\n" );
   }
   blocking = 0;
   if (!socket) return;

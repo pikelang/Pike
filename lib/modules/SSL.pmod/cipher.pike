@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: cipher.pike,v 1.21 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: cipher.pike,v 1.22 2003/01/27 01:41:16 nilsson Exp $
  *
  */
 
@@ -48,13 +48,13 @@ class mac_sha
   string hash_raw(string data)
   {
 #ifdef SSL3_DEBUG_CRYPT
-    werror(sprintf("SSL.cipher: hash_raw(%O)\n", data));
+    werror("SSL.cipher: hash_raw(%O)\n", data);
 #endif
     
     object h = algorithm();
     string res = h->update(data)->digest();
 #ifdef SSL3_DEBUG_CRYPT
-    werror(sprintf("SSL.cipher: hash_raw->%O\n",res));
+    werror("SSL.cipher: hash_raw->%O\n",res);
 #endif
     
     return res;
@@ -67,7 +67,7 @@ class mac_sha
 		       packet->content_type, sizeof(packet->fragment),
 		       packet->fragment);
 #ifdef SSL3_DEBUG_CRYPT
-//    werror(sprintf("SSL.cipher: hashing %O\n", s));
+//    werror("SSL.cipher: hashing %O\n", s);
 #endif
     return hash_raw(secret + pad_2 +
 		    hash_raw(secret + pad_1 + s));
@@ -200,9 +200,9 @@ object rsa_sign(object context, string cookie, object struct)
       
   object s = context->rsa->raw_sign(digest);
 #ifdef SSL3_DEBUG_CRYPT
-  werror(sprintf("  Digest: '%O'\n"
-		 "  Signature: '%O'\n",
-		 digest, s->digits(256)));
+  werror("  Digest: '%O'\n"
+	 "  Signature: '%O'\n",
+	 digest, s->digits(256));
 #endif
   
   struct->put_bignum(s);
@@ -281,8 +281,7 @@ class dh_parameters
 #endif
 	break;
       default:
-	error( "SSL.cipher.dh_parameters->create: "
-	       "Wrong number of arguments.\n" );
+	error( "Wrong number of arguments.\n" );
       }
     }
 }
@@ -348,7 +347,7 @@ array lookup(int suite,int version)
     res->sign = anon_sign;
     break;
   default:
-    error( "SSL.cipher.pike: Internal error.\n" );
+    error( "Internal error.\n" );
   }
 
   switch(algorithms[1])

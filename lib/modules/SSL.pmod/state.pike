@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: state.pike,v 1.15 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: state.pike,v 1.16 2003/01/27 01:41:17 nilsson Exp $
  *
  */
 
@@ -70,7 +70,7 @@ string tls_unpad(string data ) {
 object decrypt_packet(object packet,int version)
 {
 #ifdef SSL3_DEBUG_CRYPT
-  werror(sprintf("SSL.state->decrypt_packet: data = %O\n", packet->fragment));
+  werror("SSL.state->decrypt_packet: data = %O\n", packet->fragment);
 #endif
   
   if (crypt)
@@ -78,7 +78,7 @@ object decrypt_packet(object packet,int version)
     string msg;
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying decrypt..\n");
-    //    werror("SSL.state: The encrypted packet is:"+sprintf("%O\n",packet->fragment));
+    //    werror("SSL.state: The encrypted packet is:%O\n",packet->fragment);
     werror("sizeof of the encrypted packet is:"+sizeof(packet->fragment)+"\n");
 #endif
     msg=packet->fragment;
@@ -98,7 +98,7 @@ object decrypt_packet(object packet,int version)
   }
   
 #ifdef SSL3_DEBUG_CRYPT
-  werror(sprintf("SSL.state: Decrypted_packet %O\n", packet->fragment));
+  werror("SSL.state: Decrypted_packet %O\n", packet->fragment);
 #endif
 
   if (mac)

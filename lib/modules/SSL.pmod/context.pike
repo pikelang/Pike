@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: context.pike,v 1.16 2002/11/25 05:51:05 nilsson Exp $
+/* $Id: context.pike,v 1.17 2003/01/27 01:41:16 nilsson Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -149,7 +149,7 @@ void record_session(object s)
 void purge_session(object s)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.context->purge_session: %O\n", s->identity || ""));
+  werror("SSL.context->purge_session: %O\n", s->identity || "");
 #endif
   if (s->identity)
     session_cache[s->identity] = 0;

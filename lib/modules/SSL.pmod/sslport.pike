@@ -33,12 +33,12 @@ void ssl_callback(mixed id)
 #if 0
 void set_id(mixed id)
 {
-  error( "SSL.sslport->set_id: Not supported\n" );
+  error( "Not supported\n" );
 }
 
 mixed query_id()
 {
-  error( "SSL.sslport->query_id: Not supported\n" );
+  error( "Not supported\n" );
 }
 #endif
 

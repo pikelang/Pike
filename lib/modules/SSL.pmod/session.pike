@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: session.pike,v 1.21 2003/01/20 17:44:01 nilsson Exp $
+/* $Id: session.pike,v 1.22 2003/01/27 01:41:17 nilsson Exp $
  *
  */
 
@@ -53,8 +53,8 @@ void set_cipher_suite(int suite,int version)
   ke_method = res[0];
   cipher_spec = res[1];
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.session: cipher_spec %O\n",
-		 mkmapping(indices(cipher_spec), values(cipher_spec))));
+  werror("SSL.session: cipher_spec %O\n",
+	 mkmapping(indices(cipher_spec), values(cipher_spec)));
 #endif
 }
 
@@ -62,7 +62,7 @@ void set_cipher_suite(int suite,int version)
 void set_compression_method(int compr)
 {
   if (compr != COMPRESSION_null)
-    error( "SSL.session->set_compression_method: Method not supported\n" );
+    error( "Method not supported\n" );
   compression_algorithm = compr;
 }
 
@@ -90,7 +90,7 @@ string generate_key_block(string client_random, string server_random,array(int) 
 	i++;
 	string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
 #ifdef SSL3_DEBUG
-	werror(sprintf("cookie %O\n", cookie));
+	werror("cookie %O\n", cookie);
 #endif
 	key += md5->hash_raw(master_secret +
 			     sha->hash_raw(cookie + master_secret +
@@ -101,7 +101,7 @@ string generate_key_block(string client_random, string server_random,array(int) 
 
   }
 #ifdef SSL3_DEBUG
-  werror(sprintf("key_block: %O\n", key));
+  werror("key_block: %O\n", key);
 #endif
   return key;
 }
@@ -116,7 +116,7 @@ void printKey(string name , string key) {
     int d=key[i];
     res+=sprintf("%02x ",d&0xff);
   }
-  res+=sprintf("\n");
+  res+="\n";
   werror(res);
 }
 
@@ -128,8 +128,8 @@ array generate_keys(string client_random, string server_random,array(int) versio
   array keys = allocate(6);
 
 #ifdef SSL3_DEBUG
-  werror(sprintf("client_random: %O\nserver_random: %O\n",
-		client_random, server_random));
+  werror("client_random: %O\nserver_random: %O\n",
+	 client_random, server_random);
 #endif
   /* client_write_MAC_secret */
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
