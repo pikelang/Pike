@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.3 2002/08/05 17:30:57 kiwi Exp $
+ * $Id: ffmpeg.c,v 1.4 2002/08/05 21:09:10 kiwi Exp $
  *
  */
 
@@ -429,7 +429,13 @@ void pike_module_init() {
 
   add_function("list_codecs", f_list_codecs, "function(:array|int)", 0);
 
+#ifdef LIBAVCODEC_VERSION
   add_string_constant("lib_version", LIBAVCODEC_VERSION, 0);
+#else
+#ifdef FFMPEG_VERSION
+  add_string_constant("lib_version", FFMPEG_VERSION, 0);
+#endif
+#endif
 #ifdef LIBAVCODEC_BUILD_STR
   add_string_constant("lib_build", LIBAVCODEC_BUILD_STR, 0);
 #endif
@@ -443,15 +449,25 @@ void pike_module_init() {
   add_integer_constant("CODEC_ID_H263", CODEC_ID_H263, 0);
   add_integer_constant("CODEC_ID_RV10", CODEC_ID_RV10, 0);
   add_integer_constant("CODEC_ID_MP2", CODEC_ID_MP2, 0);
+#ifdef CODEC_ID_MP3LAME
   add_integer_constant("CODEC_ID_MP3LAME", CODEC_ID_MP3LAME, 0);
+#endif
   add_integer_constant("CODEC_ID_AC3", CODEC_ID_AC3, 0);
   add_integer_constant("CODEC_ID_MJPEG", CODEC_ID_MJPEG, 0);
   add_integer_constant("CODEC_ID_MPEG4", CODEC_ID_MPEG4, 0);
   add_integer_constant("CODEC_ID_RAWVIDEO", CODEC_ID_RAWVIDEO, 0);
+#ifdef CODEC_ID_MSMPEG4V1
   add_integer_constant("CODEC_ID_MSMPEG4V1", CODEC_ID_MSMPEG4V1, 0);
+#endif
+#ifdef CODEC_ID_MSMPEG4V2
   add_integer_constant("CODEC_ID_MSMPEG4V2", CODEC_ID_MSMPEG4V2, 0);
+#endif
+#ifdef CODEC_ID_MSMPEG4V3
   add_integer_constant("CODEC_ID_MSMPEG4V3", CODEC_ID_MSMPEG4V3, 0);
+#endif
+#ifdef CODEC_ID_WMV1
   add_integer_constant("CODEC_ID_WMV1", CODEC_ID_WMV1, 0);
+#endif
   add_integer_constant("CODEC_ID_H263I", CODEC_ID_H263I, 0);
   add_integer_constant("CODEC_ID_H263P", CODEC_ID_H263P, 0);
 #ifdef CODEC_ID_WMV2
@@ -460,14 +476,30 @@ void pike_module_init() {
 #ifdef CODEC_ID_SVQ1
   add_integer_constant("CODEC_ID_SVQ1", CODEC_ID_SVQ1, 0);
 #endif
+#ifdef CODEC_ID_PCM_S16LE
   add_integer_constant("CODEC_ID_PCM_S16LE", CODEC_ID_PCM_S16LE, 0);
+#endif
+#ifdef CODEC_ID_PCM_S16BE
   add_integer_constant("CODEC_ID_PCM_S16BE", CODEC_ID_PCM_S16BE, 0);
+#endif
+#ifdef CODEC_ID_PCM_U16LE
   add_integer_constant("CODEC_ID_PCM_U16LE", CODEC_ID_PCM_U16LE, 0);
+#endif
+#ifdef CODEC_ID_PCM_U16BE
   add_integer_constant("CODEC_ID_PCM_U16BE", CODEC_ID_PCM_U16BE, 0);
+#endif
+#ifdef CODEC_ID_PCM_S8
   add_integer_constant("CODEC_ID_PCM_S8", CODEC_ID_PCM_S8, 0);
+#endif
+#ifdef CODEC_ID_PCM_U8
   add_integer_constant("CODEC_ID_PCM_U8", CODEC_ID_PCM_U8, 0);
+#endif
+#ifdef CODEC_ID_PCM_MULAW
   add_integer_constant("CODEC_ID_PCM_MULAW", CODEC_ID_PCM_MULAW, 0);
+#endif
+#ifdef CODEC_ID_PCM_ALAW
   add_integer_constant("CODEC_ID_PCM_ALAW", CODEC_ID_PCM_ALAW, 0);
+#endif
 #ifdef CODEC_ID_ADPCM_MS
   add_integer_constant("CODEC_ID_ADPCM_MS", CODEC_ID_ADPCM_MS, 0);
 #endif

@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 2002/08/05 17:30:57 kiwi Exp $
+# $Id: configure.in,v 1.5 2002/08/05 21:09:10 kiwi Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -14,9 +14,20 @@ if test x$with_ffmpeg = xyes ; then
   AC_CHECK_HEADERS(avcodec.h)
   AC_CHECK_HEADERS(libffmpeg/avcodec.h)
   AC_CHECK_HEADERS(libavcodec/avcodec.h)
-  AC_CHECK_LIB( ffmpeg, avcodec_init )
-  AC_CHECK_LIB( avcodec, avcodec_init )
-  PIKE_FEATURE(FFmpeg)
+  AC_CHECK_LIB( ffmpeg, avcodec_init, [
+    AC_DEFINE(HAVE_LIBFFMPEG)
+    LIBS="${LIBS-} -lffmpeg"
+
+    PIKE_FEATURE(FFmpeg,[yes (using libffmpeg)])
+    ])
+dnl ffmpeg and avcodec are the same libs... with 2 differents..
+dnl don't ask me why.
+  AC_CHECK_LIB( avcodec, avcodec_init, [
+    AC_DEFINE(HAVE_LIBFFMPEG)
+    LIBS="${LIBS-} -lavcodec"
+ 
+    PIKE_FEATURE(FFmpeg,[yes (using libavcodec)])
+    ])
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

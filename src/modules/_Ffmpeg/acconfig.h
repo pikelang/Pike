@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 2002/07/23 12:14:25 hop Exp $
+ * $Id: acconfig.h,v 1.2 2002/08/05 21:09:10 kiwi Exp $
  *
  * config file for Pike Ffmpeg glue module
  *
@@ -11,5 +11,11 @@
 
 @TOP@
 @BOTTOM@
+
+/* Define if you have the avcodec library (-lavcodec).  */
+#undef HAVE_LIBAVCODEC
+
+/* Define if you have the ffmpeg library (-lffmpeg).  */
+#undef HAVE_LIBFFMPEG
 
 #endif
