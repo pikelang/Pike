@@ -442,7 +442,7 @@ Font open_font( string fontname, int size, int flags, int|void force )
 	    int t;
 	    if( (t=((m->style & BLACK) == (flags&BLACK)) +
 		 ((m->style & ITALIC) == (flags&ITALIC)))
-		< best )
+		> best )
 	    {
 	      best = t;
 	      res = m;
