@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.250 2001/06/25 11:54:09 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.251 2001/06/30 01:32:42 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -745,10 +745,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       int save_line = lex.current_line;
       int num_required_args = 0;
       struct identifier *i;
-#ifdef PIKE_DEBUG
       struct pike_string *save_file = lex.current_file;
       lex.current_file = $8->current_file;
-#endif /* PIKE_DEBUG */
       lex.current_line = $8->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
@@ -827,11 +825,6 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	$10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
       }
 
-      lex.current_line = save_line;
-#ifdef PIKE_DEBUG
-      lex.current_file = save_file;
-#endif /* PIKE_DEBUG */
-
       f=dooptcode(check_node_hash($4)->u.sval.u.string,
 		  check_node_hash($10),
 		  check_node_hash($<n>9)->u.sval.u.type,
@@ -855,6 +848,9 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	fatal("define_function screwed up! %d != %d\n",
 	      f, Pike_compiler->compiler_frame->current_function_number);
 #endif
+
+      lex.current_line = save_line;
+      lex.current_file = save_file;
     }
     pop_compiler_frame();
     free_node($4);
