@@ -6,6 +6,7 @@
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 
+extern int max_correct_args;
 extern struct pike_string *string_type_string;
 extern struct pike_string *int_type_string;
 extern struct pike_string *float_type_string;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.9 1996/11/18 20:56:25 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.10 1996/11/25 21:31:54 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -18,6 +18,8 @@ RCSID("$Id: pike_types.c,v 1.9 1996/11/18 20:56:25 hubbe Exp $");
 #include "mapping.h"
 #include "macros.h"
 #include "error.h"
+
+int max_correct_args;
 
 static void internal_parse_type(char **s);
 static int type_length(char *t);
@@ -649,6 +651,7 @@ TYPE_T compile_type_to_runtime_type(struct pike_string *s)
  */
 static char *low_match_types(char *a,char *b, int flags)
 {
+  int correct_args;
   char *ret;
   if(a == b) return a;
 
@@ -712,6 +715,7 @@ static char *low_match_types(char *a,char *b, int flags)
   switch(EXTRACT_UCHAR(a))
   {
   case T_FUNCTION:
+    correct_args=0;
     a++;
     b++;
     while(EXTRACT_UCHAR(a)!=T_MANY || EXTRACT_UCHAR(b)!=T_MANY)
@@ -734,6 +738,8 @@ static char *low_match_types(char *a,char *b, int flags)
       }
 
       if(!low_match_types(a_tmp, b_tmp, flags)) return 0;
+      if(++correct_args > max_correct_args)
+	max_correct_args=correct_args;
     }
     /* check the 'many' type */
     a++;
@@ -999,11 +1005,12 @@ int count_arguments(struct pike_string *s)
 }
 
 struct pike_string *check_call(struct pike_string *args,
-				 struct pike_string *type)
+			       struct pike_string *type)
 {
   CHECK_TYPE(args);
   CHECK_TYPE(type);
   reset_type_stack();
+  max_correct_args=0;
   if(low_get_return_type(type->str,args->str))
   {
     return pop_type();
