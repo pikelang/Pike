@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.8 1996/11/22 20:28:17 law Exp $ */
+/* $Id: lzw.c,v 1.9 1997/01/07 00:41:42 law Exp $ */
 
 /*
 
@@ -21,7 +21,54 @@ the existanse of #define GIF_LZW is for that purpose. :-)
 #define STDLZWCODES 8192
 #endif
 
-static void lzw_output(struct lzw *lzw,lzwcode_t codeno);
+static INLINE void lzw_output(struct lzw *lzw,lzwcode_t codeno)
+{
+   int bits,bitp;
+   unsigned char c;
+
+/*
+   fprintf(stderr,"%03x bits=%d codes %d %c\n",
+           codeno,lzw->codebits,lzw->codes+1,
+	   (codeno==lzw->codes+1) ? '=' : ' ');
+	   */
+#if 0
+   fprintf(stderr,"\nwrote %4d<'",codeno);
+   lzw_recurse_find_code(lzw,codeno);
+   fprintf(stderr,"' ");
+#endif
+
+   if (lzw->outpos+4>=lzw->outlen)
+      lzw->out=realloc(lzw->out,lzw->outlen*=2);
+
+   bitp=lzw->outbit;
+   c=lzw->lastout;
+   bits=lzw->codebits;
+#ifdef GIF_LZW
+   if (bits>12) bits=12;
+#endif
+
+   while (bits)
+   {
+      c|=(codeno<<bitp);
+      if (bits+bitp>=8)
+      {
+	 bits-=8-bitp;
+	 codeno>>=8-bitp;
+	 bitp=0;
+	 lzw->out[lzw->outpos++]=c;
+	 c=0;
+      }
+      else
+      {
+	 lzw->outbit=bitp+bits;
+	 lzw->lastout=c;
+	 return;
+      }
+   }
+   lzw->lastout=0;
+   lzw->outbit=0;
+}
+
 
 void lzw_init(struct lzw *lzw,int bits)
 {
@@ -91,54 +138,6 @@ static void lzw_recurse_find_code(struct lzw *lzw,lzwcode_t codeno)
    }
 }
 #endif
-
-static INLINE void lzw_output(struct lzw *lzw,lzwcode_t codeno)
-{
-   int bits,bitp;
-   unsigned char c;
-
-/*
-   fprintf(stderr,"%03x bits=%d codes %d %c\n",
-           codeno,lzw->codebits,lzw->codes+1,
-	   (codeno==lzw->codes+1) ? '=' : ' ');
-	   */
-#if 0
-   fprintf(stderr,"\nwrote %4d<'",codeno);
-   lzw_recurse_find_code(lzw,codeno);
-   fprintf(stderr,"' ");
-#endif
-
-   if (lzw->outpos+4>=lzw->outlen)
-      lzw->out=realloc(lzw->out,lzw->outlen*=2);
-
-   bitp=lzw->outbit;
-   c=lzw->lastout;
-   bits=lzw->codebits;
-#ifdef GIF_LZW
-   if (bits>12) bits=12;
-#endif
-
-   while (bits)
-   {
-      c|=(codeno<<bitp);
-      if (bits+bitp>=8)
-      {
-	 bits-=8-bitp;
-	 codeno>>=8-bitp;
-	 bitp=0;
-	 lzw->out[lzw->outpos++]=c;
-	 c=0;
-      }
-      else
-      {
-	 lzw->outbit=bitp+bits;
-	 lzw->lastout=c;
-	 return;
-      }
-   }
-   lzw->lastout=0;
-   lzw->outbit=0;
-}
 
 void lzw_write_last(struct lzw *lzw)
 {

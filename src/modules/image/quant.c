@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.20 1996/12/12 20:03:46 law Exp $ */
+/* $Id: quant.c,v 1.21 1997/01/07 00:41:45 law Exp $ */
 
 /*
 
@@ -14,6 +14,7 @@ David Kågedal, kg@infovav.se
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#include "threads.h"
 #endif
 
 #include "types.h"
@@ -500,6 +501,7 @@ struct colortable *colortable_quant(struct image *img,int numcol)
    INT32 entries=0;
    unsigned long *next_free_rgb_node;
 
+   THREADS_ALLOW();
 #ifdef QUANT_DEBUG
    fprintf(stderr,"img_quant called\n");
 #endif
@@ -589,6 +591,7 @@ struct colortable *colortable_quant(struct image *img,int numcol)
 
    free(tbl);
    CHRONO("really done");
+   THREADS_DISALLOW();
    return ct;
 }
 
@@ -604,6 +607,7 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
    struct svalue s,s2;
    unsigned long *next_free_rgb_node;
 
+   THREADS_ALLOW();
 #ifdef QUANT_DEBUG
    fprintf(stderr,"ctfa called\n");
 #endif
@@ -656,6 +660,7 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
 	 ct->cache[i].value=j;
 
    CHRONO("really done");
+   THREADS_DISALLOW();
    return ct;
 }
 

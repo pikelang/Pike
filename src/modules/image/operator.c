@@ -1,4 +1,4 @@
-/* $Id: operator.c,v 1.3 1996/12/10 01:42:47 law Exp $ */
+/* $Id: operator.c,v 1.4 1997/01/07 00:41:44 law Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -14,6 +14,7 @@
 #include "svalue.h"
 #include "array.h"
 #include "error.h"
+#include "threads.h"
 
 #include "image.h"
 
@@ -72,6 +73,7 @@ struct program *image_program;
    d=img->img;		   		   			\
 		   		   		   		\
    i=img->xsize*img->ysize;			   		\
+   THREADS_ALLOW();                                             \
    if (oper)
 
 
@@ -93,6 +95,7 @@ STANDARD_OPERATOR_HEADER("'-")
       d->b=absdiff(s1->b,rgb.b);
       s1++; d++;
    }
+   THREADS_DISALLOW();
 }
 
 void image_operator_plus(INT32 args)
@@ -113,6 +116,7 @@ STANDARD_OPERATOR_HEADER("'+")
       d->b=max(s1->b+rgb.b,255);
       s1++; d++;
    }
+   THREADS_DISALLOW();
 }
 
 void image_operator_multiply(INT32 args)
@@ -134,6 +138,7 @@ STANDARD_OPERATOR_HEADER("'+")
       d->b=floor(s1->b*rgb.b*q+0.5);
       s1++; d++; 
    }
+   THREADS_DISALLOW();
 }
 
 void image_operator_maximum(INT32 args)
@@ -154,6 +159,7 @@ STANDARD_OPERATOR_HEADER("'| 'maximum'")
       d->b=max(s1->b,rgb.b);
       s1++; s2++; d++; 
    }
+   THREADS_DISALLOW();
 }
 
 void image_operator_minimum(INT32 args)
@@ -174,6 +180,7 @@ STANDARD_OPERATOR_HEADER("'& 'minimum'")
       d->b=min(s1->b,rgb.b);
       s1++; d++; 
    }
+   THREADS_DISALLOW();
 }
 
 

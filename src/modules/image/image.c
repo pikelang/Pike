@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.35 1996/12/13 03:22:08 law Exp $ */
+/* $Id: image.c,v 1.36 1997/01/07 00:41:41 law Exp $ */
 
 #include "global.h"
 
@@ -7,13 +7,14 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.35 1996/12/13 03:22:08 law Exp $");
+RCSID("$Id: image.c,v 1.36 1997/01/07 00:41:41 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
+#include "threads.h"
 #include "array.h"
 #include "error.h"
 
@@ -37,6 +38,33 @@ static INT32 circle_sin_table[CIRCLE_STEPS];
 
 #define circle_sin_mul(x,y) ((circle_sin(x)*(y))/4096)
 #define circle_cos_mul(x,y) ((circle_cos(x)*(y))/4096)
+
+
+
+#if 1
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X)
+
+static void chrono(char *x)
+{
+   struct rusage r;
+   static struct rusage rold;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
+	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
+
+	   ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+	   +r.ru_utime.tv_sec-rold.ru_utime.tv_sec,
+           ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+           + r.ru_utime.tv_usec-rold.ru_utime.tv_usec
+	   );
+
+   rold=r;
+}
+#else
+#define CHRONO(X)
+#endif
+
 
 /***************** init & exit *********************************/
 
@@ -168,7 +196,7 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 					    int width,int height,
 					    rgbd_group *matrix,
 					    rgb_group default_rgb,
-					    INT32 div)
+					    double div)
 {
    rgb_group res;
    int i,j,bx,by,xp,yp;
@@ -217,11 +245,16 @@ void img_apply_matrix(struct image *dest,
 		      int width,int height,
 		      rgbd_group *matrix,
 		      rgb_group default_rgb,
-		      INT32 div)
+		      double div)
 {
-   rgb_group *d;
+   rgb_group *d,*ip,*dp;
+   rgbd_group *mp;
    int i,j,x,y,bx,by,ex,ey,xp,yp;
    int sumr,sumg,sumb;
+   double qr,qg,qb;
+   register double r=0,g=0,b=0;
+
+THREADS_ALLOW();
 
    sumr=sumg=sumb=0;
    for (i=0; i<width; i++)
@@ -232,9 +265,9 @@ void img_apply_matrix(struct image *dest,
 	 sumb+=matrix[i+j*width].b;
       }
 
-   if (!sumr) sumr=1; sumr*=div;
-   if (!sumg) sumg=1; sumg*=div;
-   if (!sumb) sumb=1; sumb*=div;
+   if (!sumr) sumr=1; sumr*=div; qr=1.0/sumr;
+   if (!sumg) sumg=1; sumg*=div; qg=1.0/sumg;
+   if (!sumb) sumb=1; sumb*=div; qb=1.0/sumb;
 
    bx=width/2;
    by=height/2;
@@ -245,17 +278,23 @@ void img_apply_matrix(struct image *dest,
 
    if(!d) error("Out of memory.\n");
    
-   for (x=bx; x<img->xsize-ex; x++)
+CHRONO("apply_matrix, one");
+
+   for (y=by; y<img->ysize-ey; y++)
    {
-      for (y=by; y<img->ysize-ey; y++)
+      dp=d+y*img->xsize+by;
+      for (x=bx; x<img->xsize-ex; x++)
       {
-	 long r=0,g=0,b=0;
-	 for (xp=x-bx,i=0; i<width; i++,xp++)
-	    for (yp=y-by,j=0; j<height; j++,yp++)
+	 r=g=b=0;
+	 mp=matrix;
+	 for (yp=y-by,j=0; j<height; j++,yp++)
+	 {
+	    ip=img->img+(x-bx)+yp*img->xsize;
+	    for (i=0; i<width; i++)
 	    {
-	       r+=matrix[i+j*width].r*img->img[xp+yp*img->xsize].r;
-	       g+=matrix[i+j*width].g*img->img[xp+yp*img->xsize].g;
-	       b+=matrix[i+j*width].b*img->img[xp+yp*img->xsize].b;
+	       r+=ip->r*mp->r;
+ 	       g+=ip->g*mp->g;
+ 	       b+=ip->b*mp->b;
 #ifdef MATRIX_DEBUG
 	       fprintf(stderr,"%d,%d ->%d,%d,%d\n",
 		       i,j,
@@ -263,16 +302,21 @@ void img_apply_matrix(struct image *dest,
 		       img->img[x+i+(y+j)*img->xsize].g,
 		       img->img[x+i+(y+j)*img->xsize].b);
 #endif
+	       mp++;
+	       ip++;
 	    }
+	 }
 #ifdef MATRIX_DEBUG
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
 #endif
-	 d[x+y*img->xsize].r=testrange(default_rgb.r+r/sumr);
-	 d[x+y*img->xsize].g=testrange(default_rgb.g+g/sumg);
-	 d[x+y*img->xsize].b=testrange(default_rgb.b+b/sumb);
+	 r=default_rgb.r+(int)(r*qr+0.5); dp->r=testrange(r);
+	 g=default_rgb.g+(int)(g*qg+0.5); dp->g=testrange(g);
+	 b=default_rgb.b+(int)(b*qb+0.5); dp->b=testrange(b);
+	 dp++;
       }
    }
 
+CHRONO("apply_matrix, two");
 
    for (y=0; y<img->ysize; y++)
    {
@@ -294,9 +338,13 @@ void img_apply_matrix(struct image *dest,
 					       matrix,default_rgb,div);
    }
 
+CHRONO("apply_matrix, three");
+
    if (dest->img) free(dest->img);
    *dest=*img;
    dest->img=d;
+
+THREADS_DISALLOW();
 }
 
 /***************** methods *************************************/
@@ -748,6 +796,7 @@ void image_tuned_box(INT32 args)
    INT32 x1,y1,x2,y2,xw,yw,x,y;
    rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
    rgb_group *img;
+   struct image *this;
 
    if (args<5||
        sp[-args].type!=T_INT||
@@ -781,6 +830,10 @@ void image_tuned_box(INT32 args)
 
    xw=x2-x1;
    yw=y2-y1;
+
+   this=THIS;
+   THREADS_ALLOW();
+
    for (x=max(0,-x1); x<=xw && x+x1<THIS->xsize; x++)
    {
 #define tune_factor(a,aw) (1.0-((float)(a)/(aw)))
@@ -788,8 +841,8 @@ void image_tuned_box(INT32 args)
       float tfx1=tune_factor(x,xw);
       float tfx2=tune_factor(xw-x,xw);
 
-      ymax=min(yw,THIS->ysize-y1);
-      img=THIS->img+x+x1+THIS->xsize*max(0,y1);
+      ymax=min(yw,this->ysize-y1);
+      img=this->img+x+x1+this->xsize*max(0,y1);
       if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
 	 for (y=max(0,-y1); y<ymax; y++)
 	 {
@@ -802,7 +855,7 @@ void image_tuned_box(INT32 args)
 	    add_to_rgba_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
 	    set_rgb_group_alpha(*img, sum,sum.alpha);
-	    img+=THIS->xsize;
+	    img+=this->xsize;
 	 }
       else
 	 for (y=max(0,-y1); y<ymax; y++)
@@ -816,10 +869,11 @@ void image_tuned_box(INT32 args)
 	    add_to_rgb_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
 	    *img=sum;
-	    img+=THIS->xsize;
+	    img+=this->xsize;
 	 }
 	 
    }
+   THREADS_DISALLOW();
 
    pop_n_elems(args);
    THISOBJ->refs++;
@@ -867,16 +921,18 @@ void image_gray(INT32 args)
 
    d=img->img;
    s=THIS->img;
-   for (x=0; x<THIS->xsize; x++)
-      for (y=0; y<THIS->ysize; y++)
-      {
-	 d->r=d->g=d->b=
-	    testrange( ((((long)s->r)*rgb.r+
-			 ((long)s->g)*rgb.g+
-			 ((long)s->b)*rgb.b)/div) );
-	 d++;
-	 s++;
-      }
+   x=THIS->xsize*THIS->ysize;
+   THREADS_ALLOW();
+   while (x--)
+   {
+      d->r=d->g=d->b=
+	 testrange( ((((long)s->r)*rgb.r+
+		      ((long)s->g)*rgb.g+
+		      ((long)s->b)*rgb.b)/div) );
+      d++;
+      s++;
+   }
+   THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -913,15 +969,19 @@ void image_color(INT32 args)
 
    d=img->img;
    s=THIS->img;
-   for (x=0; x<THIS->xsize; x++)
-      for (y=0; y<THIS->ysize; y++)
-      {
-	 d->r=testrange( (((long)rgb.r*s->r)/255) );
-	 d->g=testrange( (((long)rgb.g*s->g)/255) );
-	 d->b=testrange( (((long)rgb.b*s->b)/255) );
-	 d++;
-	 s++;
-      }
+
+   x=THIS->xsize*THIS->ysize;
+
+   THREADS_ALLOW();
+   while (x--)
+   {
+      d->r=testrange( (((long)rgb.r*s->r)/255) );
+      d->g=testrange( (((long)rgb.g*s->g)/255) );
+      d->b=testrange( (((long)rgb.b*s->b)/255) );
+      d++;
+      s++;
+   }
+   THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -948,15 +1008,17 @@ void image_invert(INT32 args)
    d=img->img;
    s=THIS->img;
 
-   for (x=0; x<THIS->xsize; x++)
-      for (y=0; y<THIS->ysize; y++)
-      {
-	 d->r=testrange( 255-s->r );
-	 d->g=testrange( 255-s->g );
-	 d->b=testrange( 255-s->b );
-	 d++;
-	 s++;
-      }
+   x=THIS->xsize*THIS->ysize;
+   THREADS_ALLOW();
+   while (x--)
+   {
+      d->r=testrange( 255-s->r );
+      d->g=testrange( 255-s->g );
+      d->b=testrange( 255-s->b );
+      d++;
+      s++;
+   }
+   THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -965,7 +1027,7 @@ void image_invert(INT32 args)
 void image_threshold(INT32 args)
 {
    INT32 x,y;
-   rgb_group *s,*d;
+   rgb_group *s,*d,rgb;
    struct object *o;
    struct image *img;
 
@@ -984,20 +1046,23 @@ void image_threshold(INT32 args)
 
    d=img->img;
    s=THIS->img;
+   rgb=THIS->rgb;
 
-   for (x=0; x<THIS->xsize; x++)
-      for (y=0; y<THIS->ysize; y++)
-      {
-	 if (s->r>=THIS->rgb.r &&
-	     s->g>=THIS->rgb.g &&
-	     s->b>=THIS->rgb.b)
-   	    d->r=d->g=d->b=255;
-	 else
-            d->r=d->g=d->b=0;
+   x=THIS->xsize*THIS->ysize;
+   THREADS_ALLOW();
+   while (x--)
+   {
+      if (s->r>=rgb.r &&
+	  s->g>=rgb.g &&
+	  s->b>=rgb.b)
+	 d->r=d->g=d->b=255;
+      else
+	 d->r=d->g=d->b=0;
 
-	 d++;
-	 s++;
-      }
+      d++;
+      s++;
+   }
+   THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -1027,6 +1092,7 @@ void image_distancesq(INT32 args)
    s=THIS->img;
    rgb=THIS->rgb;
 
+   THREADS_ALLOW();
    i=img->xsize*img->ysize;
    while (i--)
    {
@@ -1035,6 +1101,7 @@ void image_distancesq(INT32 args)
       d->r=d->g=d->b=testrange(DISTANCE(*s,rgb)>>8);
       d++; s++;
    }
+   THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -1202,7 +1269,9 @@ void image_apply_matrix(INT32 args)
    rgbd_group *matrix;
    rgb_group default_rgb;
    struct object *o;
-   INT32 div;
+   double div;
+
+CHRONO("apply_matrix");
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
@@ -1225,14 +1294,20 @@ void image_apply_matrix(INT32 args)
       default_rgb.g=0;
       default_rgb.b=0;
    }
+
    if (args>4 
        && sp[4-args].type==T_INT)
    {
       div=sp[4-args].u.integer;
       if (!div) div=1;
    }
-   else
-      div=1;
+   else if (args>4 
+	    && sp[4-args].type==T_FLOAT)
+   {
+      div=sp[4-args].u.float_number;
+      if (!div) div=1;
+   }
+   else div=1;
    
    height=sp[-args].u.array->size;
    width=-1;
@@ -1290,9 +1365,13 @@ void image_apply_matrix(INT32 args)
 
    o=clone(image_program,0);
 
+CHRONO("apply_matrix, begin");
+
    if (THIS->img)
       img_apply_matrix((struct image*)o->storage,THIS,
 		       width,height,matrix,default_rgb,div);
+
+CHRONO("apply_matrix, end");
 
    free(matrix);
 
@@ -1376,16 +1455,20 @@ void image_modify_by_intensity(INT32 args)
 
    d=img->img;
    s=THIS->img;
-   for (x=0; x<THIS->xsize; x++)
-      for (y=0; y<THIS->ysize; y++)
-      {
-	 i= testrange( ((((long)s->r)*rgb.r+
-			 ((long)s->g)*rgb.g+
-			 ((long)s->b)*rgb.b)/div) );
-	 *d=list[i];
-	 d++;
-	 s++;
-      }
+
+
+   x=THIS->xsize*THIS->ysize;
+   THREADS_ALLOW();
+   while (x--)
+   {
+      i= testrange( ((((long)s->r)*rgb.r+
+		      ((long)s->g)*rgb.g+
+		      ((long)s->b)*rgb.b)/div) );
+      *d=list[i];
+      d++;
+      s++;
+   }
+   THREADS_DISALLOW();
 
    free(list);
 
@@ -1415,11 +1498,13 @@ static void image_map_closest(INT32 args)
    i=THIS->xsize*THIS->ysize;
    s=THIS->img;
    d=((struct image*)(o->storage))->img;
+   THREADS_ALLOW();
    while (i--)
    {
       *d=ct->clut[colortable_rgb_nearest(ct,*s)];
       d++; *s++;
    }
+   THREADS_DISALLOW();
 
    colortable_free(ct);
    push_object(o);
@@ -1447,11 +1532,13 @@ static void image_map_fast(INT32 args)
    i=THIS->xsize*THIS->ysize;
    s=THIS->img;
    d=((struct image*)(o->storage))->img;
+   THREADS_ALLOW();
    while (i--)
    {
       *d=ct->clut[colortable_rgb(ct,*s)];
       d++; *s++;
    }
+   THREADS_DISALLOW();
 
    colortable_free(ct);
    push_object(o);
@@ -1460,7 +1547,7 @@ static void image_map_fast(INT32 args)
 static void image_map_fs(INT32 args)
 {
    struct colortable *ct;
-   INT32 i,j;
+   INT32 i,j,xs;
    rgb_group *d,*s;
    struct object *o;
    int *res,w;
@@ -1490,13 +1577,16 @@ static void image_map_fs(INT32 args)
    s=THIS->img;
    d=((struct image*)(o->storage))->img;
    w=0;
+   xs=THIS->xsize;
+   THREADS_ALLOW();
    while (i--)
    {
-      image_floyd_steinberg(s,THIS->xsize,errb,w=!w,res,ct);
+      image_floyd_steinberg(s,xs,errb,w=!w,res,ct);
       for (j=0; j<THIS->xsize; j++)
 	 *(d++)=ct->clut[res[j]];
-      s+=THIS->xsize;
+      s+=xs;
    }
+   THREADS_DISALLOW();
 
    free(errb);
    free(res);

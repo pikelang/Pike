@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.8 1996/12/05 23:50:53 law Exp $ */
+/* $Id: matrix.c,v 1.9 1997/01/07 00:41:43 law Exp $ */
 
 #include "global.h"
 
@@ -14,6 +14,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
+#include "threads.h"
 #include "error.h"
 
 #include "image.h"
@@ -156,6 +157,7 @@ void img_scale(struct image *dest,
    INT32 y,yd;
    double yn,dx,dy;
 
+   THREADS_ALLOW();
 CHRONO("scale begin");
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
@@ -211,6 +213,7 @@ CHRONO("transfer begin");
    free(new);
 
 CHRONO("scale end");
+   THREADS_DISALLOW();
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -221,6 +224,7 @@ void img_scale2(struct image *dest, struct image *source)
    newx = source->xsize >> 1;
    newy = source->ysize >> 1;
    
+   THREADS_ALLOW();
    if (dest->img) { free(dest->img); dest->img=NULL; }
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
    new=malloc(newx*newy*sizeof(rgb_group) +1);
@@ -248,6 +252,7 @@ void img_scale2(struct image *dest, struct image *source)
 			      (INT32) pixel(source,2*x+0,2*y+1).b+
 			      (INT32) pixel(source,2*x+1,2*y+1).b) >> 2);
      }
+   THREADS_DISALLOW();
 }
 
 
@@ -310,7 +315,7 @@ void image_scale(INT32 args)
 
 void image_ccw(INT32 args)
 {
-   INT32 i,j;
+   INT32 i,j,xs,ys;
    rgb_group *src,*dest;
    struct object *o;
    struct image *img;
@@ -329,16 +334,20 @@ void image_ccw(INT32 args)
    }
    img->xsize=THIS->ysize;
    img->ysize=THIS->xsize;
-   i=THIS->xsize;
+   i=xs=THIS->xsize;
+   ys=THIS->ysize;
    src=THIS->img+THIS->xsize-1;
    dest=img->img;
+
+   THREADS_ALLOW();
    while (i--)
    {
-      j=THIS->ysize;
-      while (j--) *(dest++)=*(src),src+=THIS->xsize;
+      j=ys;
+      while (j--) *(dest++)=*(src),src+=xs;
       src--;
-      src-=THIS->xsize*THIS->ysize;
+      src-=xs*ys;
    }
+   THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -358,6 +367,7 @@ static void img_cw(struct image *is,struct image *id)
    i=is->xsize;
    src=is->img+is->xsize-1;
    dest=id->img;
+   THREADS_ALLOW();
    while (i--)
    {
       j=is->ysize;
@@ -365,6 +375,7 @@ static void img_cw(struct image *is,struct image *id)
       src--;
       src-=is->xsize*is->ysize;
    }
+   THREADS_DISALLOW();
 }
 
 void img_ccw(struct image *is,struct image *id)
@@ -382,6 +393,7 @@ void img_ccw(struct image *is,struct image *id)
    i=is->xsize;
    src=is->img+is->xsize-1;
    dest=id->img+is->xsize*is->ysize;
+   THREADS_ALLOW();
    while (i--)
    {
       j=is->ysize;
@@ -389,11 +401,12 @@ void img_ccw(struct image *is,struct image *id)
       src--;
       src-=is->xsize*is->ysize;
    }
+   THREADS_DISALLOW();
 }
 
 void image_cw(INT32 args)
 {
-   INT32 i,j;
+   INT32 i,j,xs,ys;
    rgb_group *src,*dest;
    struct object *o;
    struct image *img;
@@ -410,18 +423,20 @@ void image_cw(INT32 args)
       free_object(o);
       error("Out of memory\n");
    }
-   img->xsize=THIS->ysize;
-   img->ysize=THIS->xsize;
-   i=THIS->xsize;
+   ys=img->xsize=THIS->ysize;
+   i=xs=img->ysize=THIS->xsize;
+
    src=THIS->img+THIS->xsize-1;
    dest=img->img+THIS->xsize*THIS->ysize;
+   THREADS_ALLOW();
    while (i--)
    {
-      j=THIS->ysize;
-      while (j--) *(--dest)=*(src),src+=THIS->xsize;
+      j=ys;
+      while (j--) *(--dest)=*(src),src+=xs;
       src--;
-      src-=THIS->xsize*THIS->ysize;
+      src-=xs*ys;
    }
+   THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -431,7 +446,7 @@ void image_mirrorx(INT32 args)
    rgb_group *src,*dest;
    struct object *o;
    struct image *img;
-   INT32 i,j;
+   INT32 i,j,xs;
 
    pop_n_elems(args);
 
@@ -449,12 +464,15 @@ void image_mirrorx(INT32 args)
    i=THIS->ysize;
    src=THIS->img+THIS->xsize-1;
    dest=img->img;
+   xs=THIS->xsize;
+   THREADS_ALLOW();
    while (i--)
    {
-      j=THIS->xsize;
+      j=xs;
       while (j--) *(dest++)=*(src--);
-      src+=THIS->xsize*2;
+      src+=xs*2;
    }
+   THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -464,7 +482,7 @@ void image_mirrory(INT32 args)
    rgb_group *src,*dest;
    struct object *o;
    struct image *img;
-   INT32 i,j;
+   INT32 i,j,xs;
 
    pop_n_elems(args);
 
@@ -482,12 +500,15 @@ void image_mirrory(INT32 args)
    i=THIS->ysize;
    src=THIS->img+THIS->xsize*(THIS->ysize-1);
    dest=img->img;
+   xs=THIS->xsize;
+   THREADS_ALLOW();
    while (i--)
    {
-      j=THIS->xsize;
+      j=xs;
       while (j--) *(dest++)=*(src++);
-      src-=THIS->xsize*2;
+      src-=xs*2;
    }
+   THREADS_DISALLOW();
 
    push_object(o);
  
@@ -506,6 +527,7 @@ static void img_skewx(struct image *src,
    rgb_group *s,*d;
    rgb_group rgb;
 
+   THREADS_ALLOW();
    if (dest->img) free(dest->img);
    if (diff<0) 
       dest->xsize=ceil(-diff)+src->xsize,x0=-diff;
@@ -566,6 +588,7 @@ static void img_skewx(struct image *src,
       while (j--) *(d++)=rgb;
       x0+=xmod;
    }
+   THREADS_DISALLOW();
 
    CHRONO("skewx end\n");
 }
@@ -580,6 +603,7 @@ static void img_skewy(struct image *src,
    rgb_group *s,*d;
    rgb_group rgb;
 
+   THREADS_ALLOW();
    if (dest->img) free(dest->img);
    if (diff<0) 
       dest->ysize=ceil(-diff)+src->ysize,y0=-diff;
@@ -642,6 +666,7 @@ CHRONO("skewy begin\n");
       d-=dest->ysize*xsz-1;
       y0+=ymod;
    }
+   THREADS_DISALLOW();
 
 CHRONO("skewy end\n");
 

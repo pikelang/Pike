@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.8 1996/12/05 22:53:23 law Exp $ */
+/* $Id: blit.c,v 1.9 1997/01/07 00:41:40 law Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -14,6 +14,7 @@
 #include "svalue.h"
 #include "array.h"
 #include "error.h"
+#include "threads.h"
 
 #include "image.h"
 
@@ -56,9 +57,9 @@ static void chrono(char *x)
    ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
 
 #define set_rgb_group_alpha(dest,src,alpha) \
-   ((dest).r=apply_alpha((dest).r,(src).r,alpha), \
-    (dest).g=apply_alpha((dest).g,(src).g,alpha), \
-    (dest).b=apply_alpha((dest).b,(src).b,alpha))
+   (((dest).r=apply_alpha((dest).r,(src).r,alpha)), \
+    ((dest).g=apply_alpha((dest).g,(src).g,alpha)), \
+    ((dest).b=apply_alpha((dest).b,(src).b,alpha)))
 
 #define pixel(_img,x,y) ((_img)->img[(x)+(y)*(_img)->xsize])
 
@@ -96,24 +97,32 @@ static INLINE void getrgb(struct image *img,
 
 void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
 {
+   THREADS_ALLOW();
    while (size--) *(dest++)=rgb;
+   THREADS_DISALLOW();
 }
 
 void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 {
    INT32 x,mod;
    rgb_group *foo,*end,rgb;
+   struct image *this;
 
-   mod=THIS->xsize-(x2-x1)-1;
-   foo=THIS->img+x1+y1*THIS->xsize;
-   end=THIS->img+x1+y2*THIS->xsize;
-   rgb=THIS->rgb;
+   this=THIS;
+   
+   THREADS_ALLOW();
+   mod=this->xsize-(x2-x1)-1;
+   foo=this->img+x1+y1*this->xsize;
+   end=this->img+x1+y2*this->xsize;
+   rgb=this->rgb;
 
-   if (!THIS->alpha)
+
+   if (!this->alpha)
       for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++) *(foo++)=rgb;
    else
       for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
-	 set_rgb_group_alpha(*foo,rgb,THIS->alpha);
+	 set_rgb_group_alpha(*foo,rgb,this->alpha);
+   THREADS_DISALLOW();
 }
 
 
@@ -122,12 +131,14 @@ void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
 {
 CHRONO("image_blit begin");
 
+   THREADS_ALLOW();
    while (lines--)
    {
       MEMCPY(dest,src,sizeof(rgb_group)*width);
       dest+=moddest;
       src+=modsrc;
    }
+   THREADS_DISALLOW();
 CHRONO("image_blit end");
 
 }
@@ -152,7 +163,9 @@ void img_crop(struct image *dest,
       new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
       if (!new) 
 	error("Out of memory.\n");
+      THREADS_ALLOW();
       MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
+      THREADS_DISALLOW();
       dest->img=new;
       return;
    }
@@ -191,7 +204,9 @@ void img_clone(struct image *newimg,struct image *img)
    if (newimg->img) free(newimg->img);
    newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (!newimg->img) error("Out of memory!\n");
+   THREADS_ALLOW();
    MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
+   THREADS_DISALLOW();
    newimg->xsize=img->xsize;
    newimg->ysize=img->ysize;
    newimg->rgb=img->rgb;
@@ -267,6 +282,8 @@ void image_paste_alpha(INT32 args)
    }
    else x1=y1=0;
 
+/* tråda här nåndag */
+
    for (x=0; x<img->xsize; x++)
       for (y=0; y<img->ysize; y++)
       {
@@ -330,6 +347,7 @@ CHRONO("image_paste_mask begin");
 
    q=1.0/255;
 
+   THREADS_ALLOW();
    for (y=max(0,-y1); y<y2; y++)
    {
       for (x=max(0,-x1); x<x2; x++)
@@ -347,6 +365,7 @@ CHRONO("image_paste_mask begin");
       }
       s+=smod; m+=mmod; d+=dmod;
    }
+   THREADS_DISALLOW();
 CHRONO("image_paste_mask end");
 
    pop_n_elems(args);
@@ -408,6 +427,7 @@ CHRONO("image_paste_alpha_color begin");
 
    rgb=THIS->rgb;
 
+   THREADS_ALLOW();
    for (y=max(0,-y1); y<y2; y++)
    {
       for (x=max(0,-x1); x<x2; x++)
@@ -425,6 +445,7 @@ CHRONO("image_paste_alpha_color begin");
       }
       m+=mmod; d+=dmod;
    }
+   THREADS_DISALLOW();
 CHRONO("image_paste_alpha_color end");
 
    pop_n_elems(args);
