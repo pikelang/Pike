@@ -48,7 +48,6 @@ private int queue_write()
   int|string data = to_write();
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslfile->queue_write: '%O'\n", data));
-  werror(master()->describe_backtrace(backtrace()));
 #endif
   if (stringp(data))
     write_buffer += data;
