@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.150 1999/08/30 06:23:48 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.151 1999/08/30 08:15:14 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -497,7 +497,7 @@ void process_started(pid_t pid)
 
   last_pids[last_pid_p++ & 4095]=pid;
 
-  if(pid<MY_MAX_PID)
+  if(pid>=MY_MAX_PID)
     return;
 
   switch(process_info[pid])
@@ -522,7 +522,7 @@ void process_done(pid_t pid, char *from)
   if(pid < 1)
     fatal("Pid out of range in %s: %ld\n",from,(long)pid);
 
-  if(pid<MY_MAX_PID)
+  if(pid>=MY_MAX_PID)
     return;
 
   switch(process_info[pid])
