@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.90 1999/11/16 17:26:41 grubba Exp $");
+RCSID("$Id: object.c,v 1.91 1999/12/14 23:54:28 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -604,9 +604,15 @@ void low_object_index_no_free(struct svalue *to,
 
   switch(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
   {
+  case IDENTIFIER_PIKE_FUNCTION:
+    if (i->func.offset == -1) {	/* prototype */
+      to->type=T_INT;
+      to->subtype=NUMBER_UNDEFINED;
+      to->u.integer=0;
+      break;
+    }
   case IDENTIFIER_FUNCTION:
   case IDENTIFIER_C_FUNCTION:
-  case IDENTIFIER_PIKE_FUNCTION:
     to->type=T_FUNCTION;
     to->subtype=f;
     to->u.object=o;
