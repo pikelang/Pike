@@ -1,5 +1,7 @@
 Sun Jun  1 00:05:00 1997  Henrik Grubbström  <grubba@infovav.se>
 
+	* modules/files/efuns.c (f_filesystem_stat): Added function.
+
 	* *.pike: All pike-files now contain an Id-string.
 
 Sun May 25 18:17:36 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
