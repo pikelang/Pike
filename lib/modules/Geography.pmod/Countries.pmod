@@ -271,7 +271,7 @@ class Country
 
    int former=0;
 
-   void create(string _iso2,string _name,mapping opts)
+   void create(string _iso2,string _name,mapping|void opts)
    {
       iso2=_iso2;
       name=_name;
