@@ -222,11 +222,11 @@ string int2size( int size )
   int no;
   int val = size;
   while (size & mask) {
+    if (++no == sizeof(prefix))
+      return sprintf("%d %s", val, prefix[-1]);
     oldmask = mask;
     mask <<= 10;
     val >>= 10;
-    if (++no == sizeof(prefix))
-      return sprintf("%d %s", val, prefix[-1]);
   }
 
   int decimal;
