@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.107 2000/09/26 10:04:33 hedda Exp $");
+RCSID("$Id: operators.c,v 1.108 2000/10/03 13:42:44 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -594,14 +594,15 @@ static node *optimize_binary(node *n)
 	 CAR(*first_arg)->token == F_CONSTANT &&
 	 is_eq(& CAR(*first_arg)->u.sval, & CAR(n)->u.sval))
       {
-	ret=mknode(F_APPLY,
-		   CAR(n),
-		   mknode(F_ARG_LIST,
-			  CDR(*first_arg),
-			  *second_arg));
-	ADD_NODE_REF(CAR(n));
-	ADD_NODE_REF(CDR(*first_arg));
-	ADD_NODE_REF(*second_arg);
+	ADD_NODE_REF2(CAR(n),
+	ADD_NODE_REF2(CDR(*first_arg),
+	ADD_NODE_REF2(*second_arg,
+		      ret = mknode(F_APPLY,
+				   CAR(n),
+				   mknode(F_ARG_LIST,
+					  CDR(*first_arg),
+					  *second_arg))
+	)));
 	return ret;
       }
       
@@ -609,14 +610,15 @@ static node *optimize_binary(node *n)
 	 CAR(*second_arg)->token == F_CONSTANT &&
 	 is_eq(& CAR(*second_arg)->u.sval, & CAR(n)->u.sval))
       {
-	ret=mknode(F_APPLY,
-		   CAR(n),
-		   mknode(F_ARG_LIST,
-			  *first_arg,
-			  CDR(*second_arg)));
-	ADD_NODE_REF(CAR(n));
-	ADD_NODE_REF(*first_arg);
-	ADD_NODE_REF(CDR(*second_arg));
+	ADD_NODE_REF2(CAR(n),
+	ADD_NODE_REF2(*first_arg,
+	ADD_NODE_REF2(CDR(*second_arg),
+		      ret = mknode(F_APPLY,
+				   CAR(n),
+				   mknode(F_ARG_LIST,
+					  *first_arg,
+					  CDR(*second_arg)))
+	)));
 	return ret;
       }
     }
