@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.7 1997/05/05 21:35:10 mirar Exp $ */
+/* $Id: x.c,v 1.8 1997/05/07 23:07:16 per Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.7 1997/05/05 21:35:10 mirar Exp $");
+RCSID("$Id: x.c,v 1.8 1997/05/07 23:07:16 per Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -370,6 +370,7 @@ void image_to8bit_rgbcube_rdither(INT32 args)
        int r=(s->r*red)+(tal&255);
        int g=(s->g*green)+((tal>>8)&255);
        int b=(s->b*blue+((tal>>16)&255));
+
        if(r>rmax) r=rmax; if(g>gmax) g=gmax; if(b>bmax) b=bmax;
        *(d++)= (unsigned char)((r>>8)+(g>>8)*red+(b>>8)*redgreen);
        s++;
@@ -382,6 +383,7 @@ void image_to8bit_rgbcube_rdither(INT32 args)
        int r=(s->r*red)+(tal&255);
        int g=(s->g*green)+((tal>>8)&255);
        int b=(s->b*blue+((tal>>16)&255));
+
        if(r>rmax) r=rmax; if(g>gmax) g=gmax; if(b>bmax) b=bmax;
        *(d++)= map[ (r>>8)+(g>>8)*red+(b>>8)*redgreen ];
        s++;

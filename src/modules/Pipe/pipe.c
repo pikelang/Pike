@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.6 1997/04/16 03:11:06 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.7 1997/05/07 23:07:17 per Exp $");
 
 #include "stralloc.h"
 #include "types.h"
@@ -592,9 +592,10 @@ static void pipe_input(INT32 args)
 
      if (fd != -1 && fstat(fd,&s)==0)
      {
+       int filep=lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
        if(S_ISREG(s.st_mode)	/* regular file */
-	  && ((long)(m=(char *)mmap(0,s.st_size,PROT_READ,
-				    MAP_FILE|MAP_SHARED,fd,0))!=-1))
+	  && ((long)(m=(char *)mmap(0,s.st_size - filep,PROT_READ,
+				    MAP_FILE|MAP_SHARED,fd,filep))!=-1))
        {
 	 mmapped += s.st_size;
 

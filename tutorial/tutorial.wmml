@@ -65,7 +65,7 @@ examples and explanations about some of the basics.
 <a name=uLPC> <!-- FIXME replace uLPC with (micro)LPC -->
 In the beginning, there was Zork. Then a bunch of people decided to make
 multiplayer adventure games. One of those people was Lars Pensjö at the
-Chalmers university in Gothemburg, Sweden. For his game he needed simple,
+Chalmers university in Gothenburg, Sweden. For his game he needed a simple,
 memory-efficient language, and thus LPC (Lars Pensjö C) was born. About a
 year later I started playing one of these games and found that the language
 was the most easy-to-use language I had ever encountered. I liked the language
@@ -415,7 +415,7 @@ you could simply put: <tt>sqr(17)</tt> and that would return the integer value
 As the example above shows that <tt>return</tt> is used to specify the
 return value of a function. The value after <tt>return</tt> must be of the
 type specified before the function name. If the function is specified to
-return <tt>void</tt> nothing at all should be written after <tt>return</tt>.
+return <tt>void</tt>, nothing at all should be written after <tt>return</tt>.
 Note that when a return statement is executed, the function will finish
 immediately. Any statements following the return will be ignored.
 <p>
@@ -976,7 +976,7 @@ This would call show_record with the values 1, 2, 3 and 4.
 
 <section title="for">
 
-<tt>For</tt> is simply an extention of <tt>while</tt> it provides an
+<tt>For</tt> is simply an extention of <tt>while</tt>. It provides an
 even shorter and more compact way of writing loops. The syntax looks
 like this:
 <pre>
@@ -1185,7 +1185,7 @@ constant can be written in several ways:
 </pre>
 All of the above represent the number 78. Octal notation means that
 each digit is worth 8 times as much as the one after. Hexadecimal notation
-means that each digit is wirth 16 times as much as the one after.
+means that each digit is worth 16 times as much as the one after.
 Hexadecimal notation uses the letters a, b, c, d, e and f to represent the
 numbers 10, 11, 12, 13, 14 and 15. The ASCII notation gives the ASCII
 value of the character between the single quotes. In this case the character
@@ -1293,7 +1293,7 @@ of how:
 	s=s[..5]+"w"+s[7..];
 </pre>
 <p>
-All the comparison operators plus those listed here can be used on strings:
+All the comparison operators plus the operators listed here can be used on strings:
 <dl>
 <dt> Summation
 <dd> Adding strings together will simply concatenate them.
@@ -1313,7 +1313,7 @@ All the comparison operators plus those listed here can be used on strings:
      character. For instance if you do <tt>"foobargazonk" / "o"</tt> the
      result would be <tt>({"f","","bargaz","nk"})</tt>.
 <dt> Multiplication
-<dd> The opposit of the division operator can be accoplished by multiplying
+<dd> The reverse of the division operator can be accoplished by multiplying
      an array with a string. So if you evaluate
      <tt>({"f","","bargaz","nk"}) * "o"</tt> the result would be
      <tt>"foobargazonk"</tt>.
@@ -1430,7 +1430,7 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
      return <tt>({1,2,3,5})</tt>.
 
 <dt> Xor (<tt><i>a</i> ^ <i>b</i></tt>)
-<dd>  This is also called symmetric differance. It returns an array with all
+<dd>  This is also called symmetric difference. It returns an array with all
      elements present in <i>a</i> or <i>b</i> but the element must NOT
      be present in both. Example: <tt>({1,3,5,6}) ^ ({4,5,6,7})</tt> will
      return <tt>({1,3,4,7})</tt>.
@@ -1459,7 +1459,7 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
 <dt><tt>int equal(mixed <i>a</i>, mixed <i>b</i>)</tt>
 <dd> This function returns 1 if if <i>a</i> and <i>b</i> look the same. They
      do not have to be pointers to the same array, as long as they are the same
-     size and containi equal data.
+     size and contain equal data.
 
 <dt><tt>array filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
 <dd> <tt>filter</tt> returns every element in <i>a</i> for which <i>func</i> returns <b>true</b> when called with that element as first argument, and <i>args</i> for the second, third, etc. arguments.
@@ -1526,7 +1526,7 @@ Writing a constant mapping is easy:
 <pre>
 	([ ])       // Empty mapping
 	([ 1:2 ])   // Mapping with one index-value pair, the 1 is the index
-	([ "one":1, "two" ]) // Mapping which maps words to numbers
+	([ "one":1, "two":2 ]) // Mapping which maps words to numbers
 	([ 1:({2.0}), "":([]), ]) // Mapping with lots of different types
 </pre>
 <p>
@@ -1767,12 +1767,12 @@ better to write it like this:
 	  string artist;
 	  array(string) songs;
 
-	  void show_record()
+	  void show()
 	  {
 	    write("Record name: "+title+"\n");
 	    write("Artist: "+artist+"\n");
             write("Songs:\n");
-            foreach(rec-&gt;songs, string song)
+            foreach(songs, string song)
 	      write("   "+song+"\n");
 	  }
 	}
@@ -1786,10 +1786,10 @@ better to write it like this:
 
 	void show_record(object rec)
 	{
-	  rec-&gt;show_record();
+	  rec-&gt;show();
 	}
 </pre>
-Here we can clearly see how the function <tt>show_record</tt> prints the
+Here we can clearly see how the function <tt>show</tt> prints the
 contents of the variables in that object. In essence, instead of accessing
 the data in the object with the <tt>-&gt;</tt> operator, we call a function
 in the object and have it write the information itself. This type of
@@ -1800,12 +1800,12 @@ the <tt>record</tt> program.
 Functions and operators relevant to objects:
 <dl>
 <dt> indexing
-<dd> Objects can be indexed on strings access identifiers. If the identifier
+<dd> Objects can be indexed on strings to access identifiers. If the identifier
      is a variable, the value can also be set using indexing. If the identifier
      is a function, a pointer to that function will be returned. If the
      identifier is a constant, the value of that constant will be returned.
      Note that the <tt>-&gt;</tt> operator is actually the same as indexing.
-     This means that <tt>o-&gt;foo</tt> is the same as to <tt>o["foo"]</tt>
+     This means that <tt>o-&gt;foo</tt> is the same as <tt>o["foo"]</tt>
 <dt> cloning
 <dd> As discussed in the section about programs, cloning a program can be done
      in two different ways:
@@ -1820,8 +1820,8 @@ Functions and operators relevant to objects:
 <dd> This function invalidates all references to the object <i>o</i> and
      frees all variables in that object. This function is also called when
      <i>o</i> runs out of references. If there is a function named
-     <tt>destroy</tt> in the object, it will be called before actually
-     destructing the object.
+     <tt>destroy</tt> in the object, it will be called before the actually
+     destruction of the object.
 <dt> <tt>array(string) indices(object <i>o</i>)</tt>
 <dd> This function returns a list of all identifiers in the object <i>o</i>.
 <dt> <tt>program object_program(object <i>o</i>)</tt>
@@ -1851,6 +1851,7 @@ in the object a <tt>function</tt> is returned. Despite is name, a
   <img src=function.gif><br>
 fig 4.6
 </center>
+
 When the function pointer is called, the interpreter sets
 <tt>this_object()</tt> to the object in which the function is located and
 procedes to execute the function it points to. Also note that function pointers
@@ -1913,7 +1914,7 @@ As mention in the beginning of this chapter, the assignment operator
 (<tt>=</tt>) does not copy anything when you use it on a pointer type.
 Instead it just creates another reference to the memory object.
 In most situations this does not present a problem, and it speeds up
-Pike performance. However, you must be aware of this when programming.
+Pikes performance. However, you must be aware of this when programming.
 This can be illustrated with an example:
 <pre>
 	int main(int argc, array(string) argv)
@@ -1968,7 +1969,8 @@ As you can see there are some interesting ways to specify types.
 Here is a list of what is possible:
 <dl>
 <dt> <tt>mixed</tt>
-<dt> This means that the variable can contain any type.
+<dt> This means that the variable can contain any type, or the
+	function return any value
 <dt> <tt>array( <i>type</i> )</tt>
 <dd> This means an array of <i>type</i>.
 <dt> <tt><i>type</i> *</tt>
@@ -2172,7 +2174,7 @@ the complete list of combinations of types you can use with these operators:
 </center>
 </section>
 
-<section title="Comparing operators">
+<section title="Comparison operators">
 The arithmetic operators would be hard to use for something interesting
 without the ability to compare them to each other. For this purpose there
 are six comparison operators:
@@ -5414,7 +5416,7 @@ show up in the future.
 <section title="String">
 The module <tt>String</tt> contains some extra string functionality which
 is not always used. These functions are mostly implemented in Pike as a
-compliment to those written in C.
+complement to those written in C.
 
 <hr noshade size=1>
 <a name=String.implode_nicely>
@@ -5640,7 +5642,7 @@ return res;<br>
 This function sorts an array after a compare-function 'fun'
 which takes two arguments and should return 1 if the first argument
 is larger then the second. The rest of the arguments 'args' will be
-sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is unsed
+sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is used
 instead.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>

@@ -26,6 +26,7 @@
 #include "global.h"
 #include "types.h"
 #include "pike_macros.h"
+#include "machine.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
@@ -1193,6 +1194,28 @@ void f__dump_obj_table(INT32 args)
   f_aggregate(n);
 }
 
+#ifndef MIN
+#define MIN(A,B) ((A)<(B)?(A):(B))
+#endif
+
+#if 0
+extern char **ARGV;
+void f_name_process(INT32 args)
+{
+  char *title;
+  int len, i;
+#ifdef SOLARIS
+  int fd;
+#endif
+  get_all_args("name_process", args, "%s", &title);
+
+  len = MIN(strlen(ARGV[0]),strlen(title));
+  for(i=0; i<len; i++) ARGV[0][i]=title[i];
+  
+  pop_n_elems(args);
+}
+#endif
+
 #include "streamed_parser.h"
 
 static struct program *streamed_parser;
@@ -1241,6 +1264,9 @@ void pike_module_init(void)
 
   add_efun("timezone",f_timezone,"function(:int)",0);
   add_efun("get_all_active_fd",f_get_all_active_fd,"function(:array(int))",0);
+#if 0
+  add_efun("name_process",f_name_process,"function(string:void)",0);
+#endif
   add_efun("fd_info",f_fd_info,"function(int:string)",0);
   add_efun("mark_fd",f_mark_fd,"function(int,void|mixed:mixed)",0);
 
@@ -1258,17 +1284,19 @@ void pike_module_init(void)
   init_udp();
   init_accessdb_program(); /* Accessed database */
 
+  /*
   start_new_program();
   add_storage( sizeof (struct streamed_parser) );
   add_function( "init", streamed_parser_set_data,
 		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );
-   add_function( "parse", streamed_parser_parse, "function(string,mixed:string)", 0 );
-   add_function( "finish", streamed_parser_finish, "function(void:string)", 0 );
-   set_init_callback( streamed_parser_init );
-   set_exit_callback( streamed_parser_destruct );
+  add_function( "parse", streamed_parser_parse, "function(string,mixed:string)", 0 );
+  add_function( "finish", streamed_parser_finish, "function(void:string)", 0 );
+  set_init_callback( streamed_parser_init );
+  set_exit_callback( streamed_parser_destruct );
    
-   streamed_parser = end_program();
-   add_program_constant("streamed_parser", streamed_parser,0);
+  streamed_parser = end_program();
+  add_program_constant("streamed_parser", streamed_parser,0);
+  */
 }
 
 

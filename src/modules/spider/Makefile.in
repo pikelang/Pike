@@ -1,6 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=spider.o discdate.o stardate.o dumudp.o streamed_parser.o accesseddb.o
+OBJS=spider.o discdate.o stardate.o dumudp.o accesseddb.o
+#  streamed_parser.o
 
 @dynamic_module_makefile@
 @dependencies@

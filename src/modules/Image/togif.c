@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.9 1997/05/05 21:35:06 mirar Exp $ 
+$Id: togif.c,v 1.10 1997/05/07 23:07:14 per Exp $ 
 
 */
 
@@ -751,12 +751,11 @@ CHRONO("gif add init");
       low_my_putchar( 0, &buf ); /* terminate block */
    }
 
-   ct=colortable_quant(THIS,256);
+   if(!ct)
+     ct=colortable_quant(THIS,256);
 
    colors=4; bpp=2;
    while (colors<ct->numcol) { colors<<=1; bpp++; }
-
-      
 
 
    low_my_putchar( ',', &buf ); /* image separator */
