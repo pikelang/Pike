@@ -17,11 +17,6 @@ hilfe
   Alias for pike without arguments, which starts Hilfe,
   the incremental Pike frontend.
 
-httpd.pike
-  A very small httpd capable of fetching files only.
-  [FIXME: Should be removed since there is a better
-   server within Pike]
-
 install_module
   Installs a Pike module into a pike module directory.
   [FIXME: Doesn't appear to be fully functional]
