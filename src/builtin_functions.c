@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.350 2001/03/07 21:00:38 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.351 2001/03/08 16:33:21 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7180,7 +7180,7 @@ static void f_buf_create( INT32 args )
 {
   struct buffer_str *str = THB;
   if( args && Pike_sp[-1].type == PIKE_T_INT )
-    str->initial = Pike_sp[-1].u.integer;
+    str->initial = MAXIMUM(Pike_sp[-1].u.integer,512);
   else
     str->initial = INITIAL_BUF_LEN;
 }
@@ -7224,6 +7224,8 @@ static void f_buf_nullfun( INT32 args )
   pop_n_elems( args );
   push_int( 0 );
 }
+/* The size of the 'str' member of the pike_string struct. */
+#define PIKE_STRING_STR_SIZE 4
 
 static void f_buf_add( INT32 args )
 /*! @decl void add(string data)
@@ -7247,15 +7249,16 @@ static void f_buf_add( INT32 args )
   if( !str->size )
   {
     str->shift = a->size_shift;
-    str->size  = str->initial + sizeof( struct pike_string );
+    str->size  = str->initial +
+      (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
     str->data  = xalloc( str->size );
-    str->len   = sizeof( struct pike_string );
+    str->len   = (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
   }
   else if( str->shift < a->size_shift )
   {
     static void f_buf_get( INT32 args );
     /* This will not win the "most optimal code of the year"
-       award, but it works. */
+       award, but it works, and is rather fast. */
     f_buf_get( 0 );
     f_add( 2 );
     f_buf_add( 1 );
@@ -7312,7 +7315,7 @@ static void f_buf_get( INT32 args )
  */
 {
   struct buffer_str *str = THB;
-  int len = str->len-sizeof(struct pike_string);
+  int len = str->len-(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
   if( len <= 0 )
   {    
     push_text("");
@@ -7321,7 +7324,7 @@ static void f_buf_get( INT32 args )
 
   if( str->len < 64 )
   {
-    char *d = str->data+sizeof(struct pike_string);
+    char *d = str->data+(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
     switch( str->shift )
     {
       case 0:
