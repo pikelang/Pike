@@ -1,3 +1,8 @@
+Tue Apr  8 23:01:15 1997  David Kågedal  <kg@infovav.se>
+
+	* encode.c (frexp,FREXP): Return the right value instead of a
+ 	nonexistant variable.
+
 Tue Apr  1 02:43:16 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* configure.in: Now tries to convert $srcdir to an absolute path.
