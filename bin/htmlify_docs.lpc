@@ -245,6 +245,11 @@ inherit "/precompiled/regexp":is_example;
 list(string) indexes_done=(<>);
 list(string) pages_done=(<>);
 
+void done(string a)
+{
+  pages_done[a]=1;
+}
+
 string mkindex(string topic, int usehead)
 {
   string head;
@@ -272,8 +277,7 @@ string mkindex(string topic, int usehead)
     foreach(sort_array(m_indices(pages)),a)
     {
       if(a[0]!='/') continue;
-      
-      pages_done[a]=1;
+      done(a);
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
     
@@ -286,9 +290,7 @@ string mkindex(string topic, int usehead)
     foreach(sort_array(m_indices(pages)),a)
     {
       if(search(a,"example")==-1) continue;
-
-      pages_done[a]=1;
-      
+      done(a);
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
     
@@ -298,6 +300,8 @@ string mkindex(string topic, int usehead)
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
+//    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
+//    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
     foreach(sort_array(m_indices(pages) - indices(pages_done) ),a)
     {
       if(a[0..4]=="index") continue;
@@ -312,9 +316,9 @@ string mkindex(string topic, int usehead)
     foreach(sort_array(m_indices(all_efuns())),a)
     {
       a=html_quote(a);
+      done(a);
       if(pages[a])
       {
-	pages_done[a]=1;
 	ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
       }else{
 	if(writepages)
@@ -327,7 +331,8 @@ string mkindex(string topic, int usehead)
   default:
     if(!keywords[topic])
     {
-      perror("Unknown keyword "+topic+".\n");
+      if(writepages)
+	perror("Unknown keyword "+topic+".\n");
       return "";
     }
 
@@ -339,7 +344,7 @@ string mkindex(string topic, int usehead)
     foreach(sort_array(keywords[topic]),a)
     {
       a=html_quote(a);
-      pages_done[a]=1;
+      done(a);
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+ short(a) +"\n";
     }
     ret+="</ul></a>\n";
@@ -564,13 +569,13 @@ string convert_page(string path, string fname)
 
 	case "LINK":
 	  sscanf(a,"%s %s",a,b);
-	  pages_done[(a/"/")[-1]]=1;
+	  done((a/"/")[-1]);
 	  tmp="<a href="+fippel_path(a)+">"+b+"</a>";
 	  break;
 
 	case "TAG":
 	  pages[a]=fippel_path(path)+"#"+a;
-	  pages_done[a]=1;
+	  done(a);
 	  tmp="<a name="+a+">";
 	  break;
 
