@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.364 2001/08/15 20:58:43 mast Exp $");
+RCSID("$Id: program.c,v 1.365 2001/08/15 23:00:12 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4516,7 +4516,8 @@ struct program *compile(struct pike_string *prog,
       placeholder=0;
     }
 
-    Pike_error("Compilation failed.\n");
+    throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+		       "Compilation failed.\n");
   }
 
   if (placeholder) {
