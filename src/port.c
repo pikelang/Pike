@@ -4,6 +4,8 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /**/
+#define PORT_DO_WARN
+
 #include "global.h"
 #include "pike_macros.h"
 #include "time_stuff.h"
@@ -20,7 +22,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.48 2001/09/28 09:34:50 tomas Exp $");
+RCSID("$Id: port.c,v 1.49 2001/12/18 17:57:42 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));

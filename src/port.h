@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.40 2001/08/13 21:47:58 hubbe Exp $
+ * $Id: port.h,v 1.41 2001/12/18 17:57:42 mast Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -283,7 +283,11 @@ long long gethrtime(void);
 #ifdef HUGE_VAL
 #define MAKE_INF(s) ((s)*HUGE_VAL)
 #else
+#ifdef PORT_DO_WARN
+/* Only warn when compiling port.c; might get here when using
+ * --disable-binary. */
 #warning Don´t know how to create Inf on the system!
+#endif
 #define MAKE_INF(s) ((s)*LDEXP(1.0, 1024))
 #endif /* HUGE_VAL */
 #endif /* HAVE_INFNAN */
@@ -295,7 +299,9 @@ long long gethrtime(void);
 /* C99 provides a portable way of generating NaN */
 #define MAKE_NAN() (nan(""))
 #else
+#ifdef PORT_DO_WARN
 #warning Don´t know how to create NaN on this system!
+#endif
 #define MAKE_NAN() (0.0)
 #endif /* HAVE_NAN */
 #endif /* HAVE_INFNAN */
