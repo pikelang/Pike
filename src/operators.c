@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.167 2003/11/10 01:22:15 mast Exp $
+|| $Id: operators.c,v 1.168 2003/11/12 19:01:29 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.167 2003/11/10 01:22:15 mast Exp $");
+RCSID("$Id: operators.c,v 1.168 2003/11/12 19:01:29 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -587,6 +587,38 @@ PMOD_EXPORT void f_add(INT32 args)
     pop_n_elems(args);
     push_mapping(m);
     break;
+  }
+
+  case BIT_MULTISET|BIT_INT:
+  {
+    if(IS_UNDEFINED(sp-args))
+    {
+      int e;
+      struct multiset *a;
+
+      for(e=1;e<args;e++)
+	if(sp[e-args].type != T_MULTISET)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "multiset");
+
+      a=add_multisets(sp-args+1,args-1);
+      pop_n_elems(args);
+      push_multiset(a);
+      return;
+    }
+    if (sp[-args].type == T_INT) {
+      int e;
+      for(e=1;e<args;e++)
+	if (sp[e-args].type != T_INT)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "int");
+    } else {
+      int e;
+      for(e=0;e<args;e++)
+	if (sp[e-args].type != T_MULTISET)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "multiset");
+    }
+    /* Probably not reached, but... */
+    bad_arg_error("`+", sp-args, args, 1, "multiset", sp-args,
+		  "Trying to add integers and multisets.\n");
   }
 
   case BIT_MULTISET:
