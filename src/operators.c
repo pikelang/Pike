@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.192 2004/08/24 14:05:22 grubba Exp $
+|| $Id: operators.c,v 1.193 2004/08/24 14:34:06 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.192 2004/08/24 14:05:22 grubba Exp $");
+RCSID("$Id: operators.c,v 1.193 2004/08/24 14:34:06 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1553,8 +1553,8 @@ static int generate_sum(node *n)
     {
       emit0(F_ADD_FLOATS);
     }
-    else if(first_arg[0]->type == int_type_string &&
-       second_arg[0]->type == int_type_string)
+    else if(pike_types_le(first_arg[0]->type, int_type_string) &&
+	    pike_types_le(second_arg[0]->type, int_type_string))
     {
       emit0(F_ADD_INTS);
     }
