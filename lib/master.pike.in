@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.294 2003/08/19 10:49:57 nilsson Exp $
+// $Id: master.pike.in,v 1.295 2003/08/22 00:52:21 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1735,7 +1735,7 @@ class CompatResolver
 	}
       if (sizeof(tmp)) {
 	if (sizeof(tmp) == 1) {
-	  return(tmp[0]);
+	  return tmp[0];
 	}
 	return joinnode(tmp);
       }

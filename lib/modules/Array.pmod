@@ -76,7 +76,7 @@ array shuffle(array arr)
       arr[j] = tmp;
     }
   }
-  return(arr);
+  return arr;
 }
 
 //! @[search_array()] works like @[map()], only it returns the index
