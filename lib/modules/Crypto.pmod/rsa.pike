@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.2 2003/03/23 23:08:24 nilsson Exp $
+/* $Id: rsa.pike,v 1.3 2003/03/24 17:08:24 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -259,7 +259,7 @@ Gmp.mpz get_prime(int bits, function r)
 this_program generate_key(int bits, function|void r)
 {
   if (!r)
-    r = Crypto.randomness.really_random()->read;
+    r = Crypto.randomness.reasonably_random()->read;
   if (bits < 128)
     error( "Ridicously small key.\n" );
 
