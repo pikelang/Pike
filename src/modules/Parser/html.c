@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.174 2004/09/19 00:50:12 nilsson Exp $
+|| $Id: html.c,v 1.175 2004/10/15 14:55:37 grubba Exp $
 */
 
 #include "global.h"
@@ -570,7 +570,7 @@ static void calculate_chars (
    size_t n,i,j,k;
    int check_fin = (FLAGS & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) != FLAG_STRICT_TAGS;
    p_wchar2 *ws_or_endarg;
-   int n_ws_or_endarg;
+   ptrdiff_t n_ws_or_endarg;
 
    /* prepare look for start of argument quote or end of tag */
    CC->look_for_start[0] = TAG_END (this);
@@ -630,7 +630,7 @@ found_start:
 #endif
 
    n = check_fin ? 4 : 3;
-   n_ws_or_endarg = DO_NOT_WARN((int)(N_WS (this) + n));
+   n_ws_or_endarg = (ptrdiff_t)(N_WS(this) + n);
    ws_or_endarg=alloca(sizeof(p_wchar2)*n_ws_or_endarg);
    if (!ws_or_endarg) Pike_error ("Out of stack.\n");
    MEMCPY(ws_or_endarg+n, WS (this), N_WS (this) * sizeof(p_wchar2));
@@ -1652,7 +1652,7 @@ static int scan_forward(struct piece *feed,
 			struct piece **destp,
 			ptrdiff_t *d_p,
 			const p_wchar2 *look_for,
-			int num_look_for) /* negative = skip those */
+			ptrdiff_t num_look_for) /* negative = skip those */
 {
    int rev=0;
 
@@ -2447,7 +2447,8 @@ static newstate handle_result(struct parser_html_storage *this,
 		 ptrdiff_t cpos;
 		 if (this->flags & FLAG_WS_BEFORE_TAG_NAME)
 		   scan_forward (*head, *c_head + 1, &pos, &cpos,
-				 WS (this), -N_WS (this));
+				 WS(this),
+				 -(ptrdiff_t)N_WS(this));
 		 else pos = *head, cpos = *c_head + 1;
 		 scan_forward_arg (this, pos, cpos, &pos, &cpos,
 				   SCAN_ARG_ONLY, 1, NULL);
@@ -2803,7 +2804,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
       /* scan ws to start of tag name */
       if (this->flags & FLAG_WS_BEFORE_TAG_NAME) {
-	if (!scan_forward(s1,c1+1,&s2,&c2,WS(this),-N_WS(this))) {
+	if (!scan_forward(s1,c1+1,&s2,&c2,WS(this),
+			  -(ptrdiff_t)N_WS(this))) {
 	  DEBUG_MARK_SPOT("find_end_of_cont : wait at pre tag ws",s2,c2);
 	  return STATE_WAIT; /* come again */
 	}
@@ -3079,7 +3081,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 /* skip ws to start of tag name */
 	 if (flags & FLAG_WS_BEFORE_TAG_NAME) {
 	   if (!scan_forward(*feed,st->c+1,&dst,&cdst,
-			     WS (this), -N_WS (this)) && !finished)
+			     WS(this),
+			     -(ptrdiff_t)N_WS(this)) && !finished)
 	   {
 	     st->ignore_data=1;
 	     return STATE_WAIT; /* come again */
@@ -3323,7 +3326,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       this->stack_count,this->stack_count));
 
 	/* Skip ws. */
-	if (!scan_forward (s1, c1, &s2, &c2, WS (this), -N_WS (this)))
+	if (!scan_forward (s1, c1, &s2, &c2, WS(this),
+			   -(ptrdiff_t)N_WS(this)))
 	  return STATE_WAIT;
 
 	while (1) {
@@ -3358,7 +3362,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	  if (this->splice_arg) pushed++;
 
 	  /* Skip ws. */
-	  scan_forward (s3, c3, &s1, &c1, WS (this), -N_WS (this));
+	  scan_forward (s3, c3, &s1, &c1, WS(this),
+			-(ptrdiff_t)N_WS(this));
 	  if (c1 == s1->s->len) {
 	    pop_n_elems (pushed);
 	    return STATE_WAIT;
@@ -3420,7 +3425,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	  }
 
 	  /* Skip ws. */
-	  if (!scan_forward (s1, c1, &s2, &c2, WS (this), -N_WS (this))) {
+	  if (!scan_forward (s1, c1, &s2, &c2, WS(this),
+			     -(ptrdiff_t)N_WS(this))) {
 	    pop_n_elems (pushed);
 	    return STATE_WAIT;
 	  }
@@ -3432,7 +3438,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    pop_stack();
 
 	    if (ctx == CTX_TAG_ARG) { /* Got an arg value to splice. */
-	      if (!scan_forward (s1, c1, &s1, &c1, WS (this), -N_WS (this)) ||
+	      if (!scan_forward (s1, c1, &s1, &c1, WS(this),
+				 -(ptrdiff_t)N_WS(this)) ||
 		  !scan_forward_arg (this, s1, c1, &s2, &c2,
 				     SCAN_ARG_PUSH, finished, NULL)) {
 		DEBUG((stderr,"%*d do_try_feed wait in splice arg at %p:%d\n",
@@ -3535,7 +3542,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       this->stack_count,this->stack_count));
 
 	/* Skip ws. */
-	if (!scan_forward (dst, cdst, &dst, &cdst, WS (this), -N_WS (this)))
+	if (!scan_forward (dst, cdst, &dst, &cdst, WS(this),
+			   -(ptrdiff_t)N_WS(this)))
 	  return STATE_WAIT;
 
       continue_in_arg:
@@ -4199,8 +4207,8 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,
 
    /* scan ws to start of tag name */
    if (this->flags & FLAG_WS_BEFORE_TAG_NAME)
-     scan_forward(feed,c,&s1,&c1,
-		  WS (this), -N_WS (this));
+     scan_forward(feed,c,&s1,&c1, WS(this),
+		  -(ptrdiff_t)N_WS(this));
    else
      s1 = feed, c1 = c;
 
@@ -4236,8 +4244,8 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
    if (skip_name) {
      /* scan past tag name */
      if (flags & FLAG_WS_BEFORE_TAG_NAME)
-       scan_forward(feed,c,&s1,&c1,
-		    WS (this), -N_WS (this));
+       scan_forward(feed,c,&s1,&c1, WS(this),
+		    -(ptrdiff_t)N_WS(this));
      else
        s1 = feed, c1 = c;
      scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_ONLY,1,NULL);
@@ -4247,7 +4255,8 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
    for (;;)
    {
       /* skip whitespace */
-      scan_forward(s2,c2,&s1,&c1,WS(this),-N_WS(this));
+      scan_forward(s2,c2,&s1,&c1,WS(this),
+		   -(ptrdiff_t)N_WS(this));
 
 new_arg:
 #ifdef PIKE_DEBUG
@@ -4299,7 +4308,8 @@ new_arg:
       do {
 	/* scan for '=', '>' or next argument */
 	/* skip whitespace */
-	scan_forward(s2,c2,&s3,&c3,WS(this),-N_WS(this));
+	scan_forward(s2,c2,&s3,&c3,WS(this),
+		     -(ptrdiff_t)N_WS(this));
 	if (c3==s3->s->len) /* end<tm> */
 	{
 	  DEBUG_MARK_SPOT("html_tag_args hard tag end (2)",s3,c3);
@@ -4354,7 +4364,8 @@ new_arg:
       c3++; /* skip it */
       
       /* skip whitespace */
-      scan_forward(s3,c3,&s2,&c2,WS(this),-N_WS(this));
+      scan_forward(s3,c3,&s2,&c2,WS(this),
+		   -(ptrdiff_t)N_WS(this));
 
       DEBUG_MARK_SPOT("html_tag_args value start",s2,c2);
 
@@ -4406,7 +4417,7 @@ static void html_tag_name(INT32 args)
        ptrdiff_t cbeg;
        if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME)
 	 scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg,
-		       WS (THIS), -N_WS (THIS));
+		       WS(THIS), -(ptrdif_t)N_WS(THIS));
        else
 	 beg = THIS->start, cbeg = THIS->cstart + 1;
        quote_tag_lookup (THIS, beg, cbeg, &beg, &cbeg, 1, &v);
@@ -4453,7 +4464,8 @@ static void html_tag_content(INT32 args)
   if (!THIS->start) Pike_error ("Parser.HTML: There's no current range.\n");
 
   if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME &&
-      !scan_forward (beg, cbeg, &beg, &cbeg, WS (THIS), -N_WS (THIS))) {
+      !scan_forward (beg, cbeg, &beg, &cbeg, WS(THIS),
+		     -(ptrdiff_t)N_WS(THIS))) {
     push_int(0);
     return;
   }
