@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.113 1999/03/07 17:54:27 neotron Exp $");
+RCSID("$Id: signal_handler.c,v 1.114 1999/03/07 18:07:49 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2624,15 +2624,22 @@ static RETSIGTYPE fatal_signal(int signum)
 void init_signals(void)
 {
   int e;
-  THREAD_T dummy;
 #ifdef USE_SIGCHLD
   my_signal(SIGCHLD, receive_sigchild);
 #endif
 
 #ifdef USE_WAIT_THREAD
+  /* FIXME: Isn't it required that SIGCHLD hasn't been set to SIGIGN
+   *        for wait() et al to work? (The process that started pike
+   *        may have set it to SIGIGN).
+   *	/grubba 1999-03-07
+   */
   co_init(& process_status_change);
   co_init(& start_wait_thread);
-  th_create_small(&dummy,wait_thread,0);
+  {
+    THREAD_T dummy;
+    th_create_small(&dummy,wait_thread,0);
+  }
 #endif
 
 #ifdef SIGPIPE
