@@ -1,8 +1,6 @@
 
 /*
 **! module Image
-**! note
-**!	Experimental functions.
 **! class Image
 */
 #include "global.h"

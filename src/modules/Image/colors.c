@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.57 2001/09/24 11:30:25 grubba Exp $
+**!	$Id: colors.c,v 1.58 2001/11/07 21:37:34 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -40,11 +40,11 @@
 **!	
 **!	The prefix_string method is a form for getting modified 
 **!	colors, it understands all modifiers
-**!	(<link to=Image.Color.Color.light>light</link>,
-**!	<link to=Image.Color.Color.dark>dark</link>,
-**!	<link to=Image.Color.Color.bright>bright</link>,
-**!	<link to=Image.Color.Color.dull>dull</link> and 
-**!	<link to=Image.Color.Color.neon>neon</link>). Simply  use
+**!	(<link to=Color.light>light</link>,
+**!	<link to=Color.dark>dark</link>,
+**!	<link to=Color.bright>bright</link>,
+**!	<link to=Color.dull>dull</link> and
+**!	<link to=Color.neon>neon</link>). Simply  use
 **!	"method"+"color"; (as in <tt>lightgreen</tt>, 
 **!	<tt>dullmagenta</tt>, <tt>lightdullorange</tt>).
 **!
@@ -85,7 +85,6 @@
 **!	sure you get all variants.
 **!	
 **! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
-**!
 **!
 **! appendix Image.Color colors
 **!
@@ -188,7 +187,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.57 2001/09/24 11:30:25 grubba Exp $");
+RCSID("$Id: colors.c,v 1.58 2001/11/07 21:37:34 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -408,8 +407,10 @@ static void try_find_name(struct color_struct *this)
 */
 /*
 **! method array(int) rgb()
+**! method array(float) rgbf()
 **! method array(int) hsv()
-**! method array(int) cmyk()
+**! method array(float) hsvf()
+**! method array(float) cmyk()
 **! method int greylevel()
 **! method int greylevel(int r, int g, int b)
 **!	This is methods of getting information from an
@@ -769,11 +770,6 @@ static void image_color_cast(INT32 args)
    }
    Pike_error("Image.Color.Color->cast(): Can't cast to that\n");
 }
-
-/*
-**! method _sprintf(string s, mapping flags)
-**!	
-*/
 
 static void image_color__sprintf(INT32 args)
 {
@@ -1803,4 +1799,3 @@ void exit_image_colors(void)
 
    free_string(no_name);
 }
-
