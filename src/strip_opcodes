@@ -42,8 +42,10 @@ sed -e '
     s/¤\n//
     b loop
   }
-  # Put empty lines in hold, and start the next cycle.
+  # Add empty lines to hold, and start the next cycle.
   /^[ 	]*$/{
+    # We are only interrested in the newline...
+    s/.//g
     H
     d
   }
@@ -56,10 +58,10 @@ sed -e '
 
   # Print hold except for a possible initial newline.
   x
-  s/^\
-//
+  s/^\n//
   p
 
   # Clear hold.
   s/.//g
+  s/\n//g
   x'
