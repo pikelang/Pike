@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.667 2003/08/10 19:26:24 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.668 2003/08/10 19:32:01 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9677,12 +9677,6 @@ cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
-
-// Loading these ensures correct load order of the
-// Calendar module. Should not be needed in a perfect world.
-test_true(objectp(Calendar.ISO_UTC))
-test_true(functionp(Calendar.dwim_time))
-test_true(programp(Calendar.Day))
 
 test_program([[
 int ok=1;
