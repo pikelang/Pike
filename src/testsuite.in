@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.370 2001/01/15 18:53:24 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.371 2001/01/16 09:36:31 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -154,6 +154,11 @@ test_compile_any([[
 
 test_compile_any([[
   class { ; constant c = 0; }
+]])
+
+test_compile_any([[
+  class { void a() {  constant c = 17; }
+	  void b() {  constant c = 17; }  }
 ]])
 
 test_compile_any([[

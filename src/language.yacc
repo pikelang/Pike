@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.221 2001/01/10 20:00:23 mast Exp $");
+RCSID("$Id: language.yacc,v 1.222 2001/01/16 09:36:30 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1589,7 +1589,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
     }
     if(!type) type=mixed_type_string;
     add_ref(type);
-    low_add_local_name(Pike_compiler->compiler_frame->previous,
+    low_add_local_name(Pike_compiler->compiler_frame, /*->previous,*/
 		       $1->u.sval.u.string,
 		       type, $3);
     free_node($1);
