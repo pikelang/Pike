@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.200 2004/09/25 19:23:50 grubba Exp $
+|| $Id: svalue.c,v 1.201 2004/09/25 19:27:19 grubba Exp $
 */
 
 #include "global.h"
@@ -731,6 +731,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
   {
   case T_OBJECT:
     if (a->u.object == b->u.object) return 1;
+    /* FIXME: What if both have lfun::`==(), and they disagree? */
     if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       goto a_is_obj;
 
