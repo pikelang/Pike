@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.89 2001/02/04 00:38:45 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.90 2001/02/04 02:08:13 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -269,7 +269,7 @@ void f_add(INT32 args)
     }
     r->len=SUBTRACT_PCHARP(buf,MKPCHARP_STR(r));
     low_set_index(r,r->len,0);
-    r=end_shared_string(r);
+    r=low_end_shared_string(r);
     pop_n_elems(args);
     push_string(r);
     break;
