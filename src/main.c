@@ -132,6 +132,9 @@ void main(int argc, char **argv, char **env)
   }
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
+#ifndef RLIM_INFINITY
+#define RLIM_INFINITY 0x7fffffff
+#endif
   {
     struct rlimit lim;
     int tmp;
