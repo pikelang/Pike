@@ -1,4 +1,4 @@
-// $Id: Readline.pmod,v 1.2 1999/03/14 01:33:20 marcus Exp $
+// $Id: Readline.pmod,v 1.3 1999/03/14 01:42:24 marcus Exp $
 
 class OutputController
 {
@@ -863,6 +863,25 @@ class Readline
       newline_func(0);    
   }
 
+  void message(string msg)
+  {
+    int p = cursorpos;
+    setcursorpos(strlen(text));
+    output_controller->newline();
+    foreach(msg/"\n", string l) {
+      output_controller->write(l);
+      output_controller->newline();
+    }
+    redisplay(0, 1);
+    setcursorpos(p);
+  }
+
+  void list_completions(array(string) c)
+  {
+    message(sprintf("%-"+output_controller->get_number_of_columns()+"#s",
+		    c*"\n"));
+  }
+
   static private void read_newline(string s)
   {
     input_controller->disable();
@@ -957,16 +976,8 @@ string readline(string prompt, function|void complete_callback)
 		     rl->setcursorpos(point-sizeof(word)+sizeof(compl[0]));
 		     break;
 		   default:
-		     rl->setcursorpos(strlen(rl->gettext()));
-		     rl->get_output_controller()->newline();
-		     foreach(sprintf("%-"+rl->get_output_controller()->
-				     get_number_of_columns()+"#s", compl*"\n")
-			     /"\n", string l) {
-		       rl->get_output_controller()->write(l);
-		       rl->get_output_controller()->newline();
-		     }
-		     rl->redisplay(0, 1);
-		     rl->setcursorpos(point);
+		     rl->list_completions(compl);
+		     break;
 		   }
 		 });
   string res = rl->read();
