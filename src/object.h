@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.58 2001/03/20 02:45:51 hubbe Exp $
+ * $Id: object.h,v 1.59 2001/03/20 19:27:33 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -131,6 +131,9 @@ void check_all_objects(void);
 
 #define gc_cycle_check_object(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_object, (X), (WEAK))
+
+#define PIKE_OBJ_DESTRUCTED(o) (o->prog)
+#define PIKE_OBJ_INITED(o) (o->prog && (o->prog->flags & PROGRAM_PASS_1_DONE))
 
 #endif /* OBJECT_H */
 

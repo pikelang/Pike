@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.164 2001/03/20 02:45:50 hubbe Exp $");
+RCSID("$Id: object.c,v 1.165 2001/03/20 19:27:33 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1266,6 +1266,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
     if(o->parent)
       gc_mark_object_as_referenced(o->parent);
 
+    if(!PIKE_OBJ_INITED(o)) return;
+
     LOW_PUSH_FRAME(o);
 
     for(e=p->num_inherits-1; e>=0; e--)
@@ -1310,6 +1312,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 {
   if(o->next == o) return; /* Fake object used by compiler */
+  if(!PIKE_OBJ_INITED(o)) return;
 
   GC_CYCLE_ENTER_OBJECT(o, weak) {
     int e;
@@ -1383,7 +1386,7 @@ static inline void gc_check_object(struct object *o)
 #endif
   }
 
-  if((p=o->prog))
+  if((p=o->prog) && PIKE_OBJ_INITED(o))
   {
     debug_malloc_touch(p);
 
