@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.178 1999/12/07 09:41:01 hubbe Exp $");
+RCSID("$Id: program.c,v 1.179 1999/12/13 00:56:14 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3446,22 +3446,20 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
 /* returns 1 if a implements b */
 static int low_implements(struct program *a, struct program *b)
 {
-  int e,num=0;
+  int e;
   struct pike_string *s=findstring("__INIT");
   for(e=0;e<b->num_identifier_references;e++)
   {
     struct identifier *bid=ID_FROM_INT(b,e);
     int i;
-    if(s==bid->name) continue;
-    i=find_shared_string_identifier(bid->name,a);
-    if(i!=-1)
-    {
-      if(!match_types(ID_FROM_INT(a,i)->type, bid->type))
-	return 0;
-      num++;
-    }
+    if(s == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) return 0;
+
+    if(!match_types(ID_FROM_INT(a,i)->type, bid->type))
+      return 0;
   }
-  return num;
+  return 1;
 }
 
 #define IMPLEMENTS_CACHE_SIZE 4711
