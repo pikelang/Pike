@@ -68,7 +68,7 @@
       <p>First of all your module needs a Makefile.in file. It need not be
          more complicated than the following example:
 <pre>
-# $Id: modules.xml,v 1.4 2002/05/25 17:21:29 nilsson Exp $
+# &#36;Id&#36;
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=
@@ -80,12 +80,12 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 @dependencies@
 </pre></p>
 
-      <p>A few customizations must however be done. The OBJS variable should
+      <p>A few customizations must however be done. The <tt>OBJS</tt> variable should
          contain all the object files produced in your module. You should
-         add to the MODULE_LDFLAGS variable all the needed -L&lt;libdir&gt; -R&lt;libdir&gt;
-         options followed by all the needed -l&lt;lib&gt; options. If you want your
-         module to always be linked statically, change @dynamic_module_makefile@
-         to @static_module_makefile@. Normally you do not need to manually add
+         add to the <tt>MODULE_LDFLAGS</tt> variable all the needed <tt>-L&lt;libdir&gt; -R&lt;libdir&gt;</tt>
+         options followed by all the needed <tt>-l&lt;lib&gt;</tt> options. If you want your
+         module to always be linked statically, change <tt>@dynamic_module_makefile@</tt>
+         to <tt>@static_module_makefile@</tt>. Normally you do not need to manually add
          any dependencies to Makefile.in.</p>
 
      <p>There must be a testsuite.in file in the modules directory, even if it
@@ -96,8 +96,8 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
         to do thing for you. Further, your configure.in should contain the line
         <tt>sinclude(../module_configuration.in)</tt>.</p>
 
-     <p>All C/C++ files should include "global.h" as the first included file. It
-        is also good if they contain RCSID($Id: modules.xml,v 1.4 2002/05/25 17:21:29 nilsson Exp $).</p>
+     <p>All C/C++ files should include <tt>"global.h"</tt> as the first included file. It
+        is also good if they contain <tt>RCSID(&#36;Id&#36;)</tt>.</p>
 
      <p>When building your module for the first time you need to:
         <ol>
