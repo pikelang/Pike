@@ -136,6 +136,7 @@ void f_rm(INT32 args)
 
 void f_mkdir(INT32 args)
 {
+  char *s;
   INT32 i;
   if(!args)
     error("Too few arguments to mkdir()\n");
@@ -152,8 +153,9 @@ void f_mkdir(INT32 args)
 
     i=sp[1-args].u.integer;
   }
+  s=sp[-args].u.string->str;
   THREADS_ALLOW();
-  i=mkdir(_tmp.sp[-args].u.string->str, i) != -1;
+  i=mkdir(s, i) != -1;
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(i);
