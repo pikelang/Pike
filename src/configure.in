@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.390 2000/08/06 18:23:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.391 2000/08/06 18:36:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -58,14 +58,6 @@ AC_PROG_CPP
 
 CROSS="ac_cv_prog_cc_cross"
 AC_SUBST(CROSS)
-
-AC_MSG_CHECKING([for a fallback compiler])
-if test "x$FALLBACK_CC" = "x"; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT($FALLBACK_CC)
-fi
-AC_SUBST(FALLBACK_CC)
 
 #############################################################################
 
@@ -231,6 +223,18 @@ pike_cv_prog_CC="$CC"
 AC_SUBST(SMARTLINK)
 AC_SUBST(REALCC)
 export REALCC SMARTLINK
+
+AC_MSG_CHECKING([for a fallback compiler])
+# Strip smartlink from $FALLBACK_CC
+FALLBACK_CC="`echo $FALLBACK_CC|sed -e 's/.*smartlink //'`"
+if test "x$FALLBACK_CC" = "x"; then
+  AC_MSG_RESULT(no)
+else
+  FALLBACK_CC="$SMARTLINK $FALLBACK_CC"
+  AC_MSG_RESULT($FALLBACK_CC)
+fi
+AC_SUBST(FALLBACK_CC)
+export FALLBACK_CC
 
 #############################################################################
 
