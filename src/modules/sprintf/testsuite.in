@@ -1,5 +1,6 @@
 // - sprintf module
 test_true(stringp(sprintf("")))
+test_true(sprintf("--real %1.20f --imaginary %1.20f --scale %1.20f\n",-0.9,-0.9,-0.9))
 test_eq(sprintf("%d",1),"1")
 test_eq(sprintf("%%"),"%")
 test_eq(sprintf("%d",1),"1")

@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.12 1997/06/12 01:35:40 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.13 1997/07/20 23:56:32 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -106,6 +106,7 @@ RCSID("$Id: sprintf.c,v 1.12 1997/06/12 01:35:40 hubbe Exp $");
 #include "constants.h"
 #include "interpret.h"
 #include "pike_memory.h"
+#include "pike_macros.h"
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING
@@ -714,7 +715,8 @@ static string low_pike_sprintf(char *format,
       case 'f':
       case 'g':
 	DO_OP();
-	fsp->b=(char *)xalloc(fsp->width+10);
+	fsp->b=(char *)xalloc(100+MAXIMUM(fsp->width,8)+
+			      MAXIMUM(fsp->precision,3));
 	sprintf(buffer,"%%*.*%c",*a);
 	GET_FLOAT(tf);
 	sprintf(fsp->b,buffer,
