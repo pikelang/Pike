@@ -1,6 +1,8 @@
 #!/usr/local/bin/pike
 
-/* $Id: mkpeep.pike,v 1.10 1999/03/13 02:06:56 marcus Exp $ */
+#pragma strict_types
+
+/* $Id: mkpeep.pike,v 1.11 1999/11/25 16:56:30 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -41,7 +43,7 @@ int find_end(string s)
 
 
 /* Splitline into components */
-mixed split(string s)
+array(int|string|array(string)) split(string s)
 {
   string *a,*b,tmp;
   int i,e,opcodes;
@@ -198,9 +200,10 @@ string treat(string expr)
 void dump2(mixed *data,int ind)
 {
   int e,i,max,maxe;
-  mixed a,b,d,tmp;
+  mixed a,b,tmp;
   string test;
-  mapping foo;
+  mapping(string:array(string)) d;
+  mapping(string:mapping(string:array(string))) foo;
   mixed cons, var;
 
   foo=([]);
