@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.30 2004/09/07 16:15:12 grubba Exp $
+// $Id: module.pmod.in,v 1.31 2004/09/07 17:01:30 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -594,6 +594,7 @@ class PikeCompiler
       }
       token = token->group_start;
       SYNTAX_ERROR("Unexpected grouping.");
+      tokens_left->`+(1);
       return 0;
     } else {
       switch(token->token) {
@@ -602,6 +603,16 @@ class PikeCompiler
       case "identifier":
 	return parse_identifier_expression(tokens_left);
       case "string_constant":
+	Token res = token;
+	do {
+	  // Perform adjacent string concat.
+	  tokens_left->`+=(1);
+	  if (!tokens_left ||
+	      (token = tokens_left->value())->token != "string_constant")
+	    break;
+	  res->value += token->value;
+	} while (1);
+	return LiteralExpression(token);
       case "int_constant":
       case "float_constant":
 	tokens_left->`+=(1);
@@ -611,6 +622,7 @@ class PikeCompiler
 	       "token->token: %O\n",
 	       token, token->token);
 	SYNTAX_ERROR("Unsupported basic expression.");
+	tokens_left->`+(1);
 	return 0;
       }
     }
@@ -870,6 +882,18 @@ class PikeCompiler
   }
 
   // Start of metaprograms.
+
+  class ColonColon
+  {
+    inherit Token;
+    constant token = "::";
+  }
+
+  class Dot
+  {
+    inherit Token;
+    constant token = ".";
+  }
 
   class LiteralType
   {
@@ -1732,11 +1756,11 @@ class PikeCompiler
 	"+":Token,
 	",":Token,
 	"-":Token,
-	".":Token,
+	".":Dot,
 	"/":Token,
 	":":Token,
 	":":Token,
-	"::":Token,
+	"::":ColonColon,
 	";":Token,
 	"<":Token,
 	"<<":Token,
