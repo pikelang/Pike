@@ -7,7 +7,7 @@ string read(Stdio.File f) {
 
 int main(int c, array(string) args) {
 
-  if(c<2) exit(1, "No burk file argument.\n");
+  if(c<2) { werror("No burk file argument.\n"); exit(1); }
 
   Stdio.File f = Stdio.File(args[1]);
 
@@ -46,7 +46,8 @@ int main(int c, array(string) args) {
       return 0;
 
     default:
-      exit(1, "Unknown symbol '%s'\n", cmd);
+      werror("Unknown symbol '%s'\n", cmd);
+      exit(1);
     }
   }
 }
