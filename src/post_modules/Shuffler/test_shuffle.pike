@@ -6,12 +6,26 @@ class Throttler
 		int amount,
 		function(int:void) callback )
   {
-    call_out( callback, 0.1, 10 );
+    call_out( callback, 0.01, 10 );
   }
 
   void give_back( Shuffler.Shuffle s, int amount )
   {
   }
+}
+
+void shuffle_http( Shuffler.Shuffler s )
+{
+  Shuffler.Shuffle sf = s->shuffle( Stdio.stderr );
+
+  Stdio.File fd = Stdio.File();
+  fd->connect( "www.animenfo.com", 80 );
+  fd->write("GET /animefansub/animebydate.php HTTP/1.0\r\n"
+	    "Host: www.animenfo.com\r\n"
+	    "User-Agent: Pike\r\n"
+	    "\r\n");
+  sf->add_source( fd );
+  sf->start();
 }
 
 int main(int argc, array argv)
@@ -30,7 +44,7 @@ int main(int argc, array argv)
       sf->add_source( x+": No such file\n" );
   }
 
-  sf->set_done_callback( lambda(){ exit(0); } );
+  sf->set_done_callback( lambda(){shuffle_http(s);} );
   sf->start();
 
   return -1;
