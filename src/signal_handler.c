@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.125 1999/04/22 23:16:02 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.126 1999/04/22 23:47:49 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -817,6 +817,10 @@ static void report_child(int pid,
 	  }
 	}
       }
+      /* FIXME: Is this a good idea?
+       * Shouldn't this only be done if p->state is PROCESS_EXITED?
+       *	/grubba 1999-04-23
+       */
       map_delete(pid_mapping, &key);
     }else{
       fprintf(stderr,"report_child on unknown child: %d,%d\n",pid,status);
@@ -983,7 +987,8 @@ static void f_pid_status_wait(INT32 args)
 	s=low_mapping_lookup(pid_mapping, &key);
 	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
-	  error("Operating system failiuer: Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+	  error("Operating system failure: "
+		"Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
 
 	}
 	else
