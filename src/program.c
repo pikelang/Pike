@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.201 2000/02/07 04:46:43 per Exp $");
+RCSID("$Id: program.c,v 1.202 2000/02/10 17:58:08 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -870,12 +870,14 @@ void dump_program_desc(struct program *p)
   int e,d,q;
 /*  fprintf(stderr,"Program '%s':\n",p->name->str); */
 
-
   fprintf(stderr,"All inherits:\n");
   for(e=0;e<p->num_inherits;e++)
   {
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"%3d:\n",e);
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"inherited program: %d\n",p->inherits[e].prog->id);
 
     if(p->inherits[e].name)
     {
@@ -3544,7 +3546,17 @@ int low_get_storage(struct program *o, struct program *p)
 
 char *get_storage(struct object *o, struct program *p)
 {
-  int offset= low_get_storage(o->prog, p);
+  int offset;
+
+#ifdef _REENTRANT
+#ifndef __NT__
+  if(d_flag)
+    if(!mt_trylock(& interpreter_lock))
+      fatal("get_storage running unlocked!\n");
+#endif
+#endif
+
+  offset= low_get_storage(o->prog, p);
   if(offset == -1) return 0;
   return o->storage + offset;
 }
