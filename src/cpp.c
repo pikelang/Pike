@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.151 2004/11/12 12:59:18 grubba Exp $
+|| $Id: cpp.c,v 1.152 2004/11/14 13:00:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -1389,9 +1389,7 @@ static void insert_current_line(struct cpp *this,
 				struct define_argument *args,
 				struct string_builder *tmp)
 {
-  char buf[20];
-  sprintf(buf," %ld ",(long)this->current_line);
-  string_builder_binary_strcat(tmp, buf, strlen(buf));
+  string_builder_sprintf(tmp, "%ld", (long)this->current_line);
 }
 
 static void insert_current_file_as_string(struct cpp *this,
@@ -1437,9 +1435,8 @@ static void insert_current_version(struct cpp *this,
 				   struct define_argument *args,
 				   struct string_builder *tmp)
 {
-  char buf[50];
-  sprintf(buf," %d.%d ",this->compat_major, this->compat_minor);
-  string_builder_binary_strcat(tmp, buf, strlen(buf));
+  string_builder_sprintf(tmp, "%d.%d", this->compat_major,
+			 this->compat_minor);
 }
 
 
@@ -1448,9 +1445,7 @@ static void insert_current_minor(struct cpp *this,
 				 struct define_argument *args,
 				 struct string_builder *tmp)
 {
-  char buf[20];
-  sprintf(buf," %d ",this->compat_minor);
-  string_builder_binary_strcat(tmp, buf, strlen(buf));
+  string_builder_sprintf(tmp, "%d", this->compat_minor);
 }
 
 
@@ -1459,9 +1454,7 @@ static void insert_current_major(struct cpp *this,
 				 struct define_argument *args,
 				 struct string_builder *tmp)
 {
-  char buf[20];
-  sprintf(buf," %d ",this->compat_major);
-  string_builder_binary_strcat(tmp, buf, strlen(buf));
+  string_builder_sprintf(tmp, "%d", this->compat_major);
 }
 
 
