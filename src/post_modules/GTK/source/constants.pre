@@ -112,9 +112,10 @@ constant int GDK_WINDOW_TOPLEVEL;
 constant int GDK_WINDOW_CHILD;
 constant int GDK_WINDOW_DIALOG;
 constant int GDK_WINDOW_TEMP;
-constant int GDK_WINDOW_PIXMAP;
 constant int GDK_WINDOW_FOREIGN;
-
+/*
+ constant int GDK_WINDOW_PIXMAP;
+*/
 
 constant int GTK_WINDOW_TOPLEVEL;
 constant int GTK_WINDOW_DIALOG;
@@ -377,13 +378,14 @@ constant int GDK_DRAG_PROTO_MOTIF;
 constant int GDK_DRAG_PROTO_XDND;
 constant int GDK_DRAG_PROTO_ROOTWIN;
 
-constant int GTK_FONT_METRIC_PIXELS;
-constant int GTK_FONT_METRIC_POINTS;
-
-constant int GTK_FONT_BITMAP;
-constant int GTK_FONT_SCALABLE;
-constant int GTK_FONT_SCALABLE_BITMAP;
-constant int GTK_FONT_ALL;
+/*
+ constant int GTK_FONT_METRIC_PIXELS;
+ constant int GTK_FONT_METRIC_POINTS;
+ constant int GTK_FONT_BITMAP;
+ constant int GTK_FONT_SCALABLE;
+ constant int GTK_FONT_SCALABLE_BITMAP;
+ constant int GTK_FONT_ALL;
+*/
 
 constant int GTK_SORT_ASCENDING;
 constant int GTK_SORT_DESCENDING;
@@ -418,7 +420,6 @@ constant int GTK_UPDATE_IF_VALID;
 constant int GTK_CLIST_IN_DRAG;
 constant int GTK_CLIST_ROW_HEIGHT_SET;
 constant int GTK_CLIST_SHOW_TITLES;
-constant int GTK_CLIST_CHILD_HAS_FOCUS;
 constant int GTK_CLIST_ADD_MODE;
 constant int GTK_CLIST_AUTO_SORT;
 constant int GTK_CLIST_AUTO_RESIZE_BLOCKED;
