@@ -26,8 +26,12 @@ test_true([[
 programp(Crypto.rijndael)]])
 test_true([[programp(Crypto.des)]])
 test_true([[programp(Crypto.idea)]])
-test_true([[programp(Crypto.cast)]])
-test_true([[programp(Crypto.arcfour)]])
+test_true([[
+#pike 7.4
+programp(Crypto.cast)]])
+test_true([[
+#pike 7.4
+programp(Crypto.arcfour)]])
 
 // Functions
 test_true([[functionp(Crypto.des_parity)]])
@@ -92,54 +96,80 @@ test_eq([[Crypto.idea()
 	[[Crypto.hex_to_string("2011aacef6f4bc7f")]])
 
 // CAST
-test_true([[objectp(Crypto.cast())]])
+test_true([[
+#pike 7.4
+objectp(Crypto.cast())]])
 // encryption
-test_eq([[Crypto.cast()
+test_eq([[
+#pike 7.4
+Crypto.cast()
           ->set_encrypt_key(Crypto.hex_to_string("0123456712345678"
 						 "234567893456789A"))
 	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
 	[[Crypto.hex_to_string("238B4FE5847E44B2")]])
-test_eq([[Crypto.cast()
+test_eq([[
+#pike 7.4
+Crypto.cast()
           ->set_encrypt_key(Crypto.hex_to_string("0123456712345678"
 						 "2345"))
 	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
 	[[Crypto.hex_to_string("EB6A711A2C02271B")]])
-test_eq([[Crypto.cast()
+test_eq([[
+#pike 7.4
+Crypto.cast()
           ->set_encrypt_key(Crypto.hex_to_string("0123456712"))
 	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
 	[[Crypto.hex_to_string("7AC816D16E9B302E")]])
 // decryption
-test_eq([[Crypto.cast()
+test_eq([[
+#pike 7.4
+Crypto.cast()
           ->set_decrypt_key(Crypto.hex_to_string("0123456712345678"
 						 "234567893456789A"))
 	  ->crypt_block(Crypto.hex_to_string("238B4FE5847E44B2"))]],
 	[[Crypto.hex_to_string("0123456789ABCDEF")]])
-test_eq([[Crypto.cast()
+test_eq([[
+#pike 7.4
+Crypto.cast()
           ->set_decrypt_key(Crypto.hex_to_string("0123456712345678"
 						 "2345"))
 	  ->crypt_block(Crypto.hex_to_string("EB6A711A2C02271B"))]],
 	[[Crypto.hex_to_string("0123456789ABCDEF")]])
-test_eq([[Crypto.cast()
+test_eq([[
+#pike 7.4
+Crypto.cast()
           ->set_decrypt_key(Crypto.hex_to_string("0123456712"))
 	  ->crypt_block(Crypto.hex_to_string("7AC816D16E9B302E"))]],
 	[[Crypto.hex_to_string("0123456789ABCDEF")]])
 
 // ARCFOUR
-test_true([[objectp(Crypto.arcfour())]])
-test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
+test_true([[
+#pike 7.4
+objectp(Crypto.arcfour())]])
+test_eq([[
+#pike 7.4
+Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
 		->crypt(Crypto.hex_to_string("0123456789abcdef"))]],
 	[[Crypto.hex_to_string("75b7878099e0c596")]])
-test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
+test_eq([[
+#pike 7.4
+Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
 		->crypt(Crypto.hex_to_string("0000000000000000"))]],
 	[[Crypto.hex_to_string("7494c2e7104b0879")]])
-test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0000000000000000"))
+test_eq([[
+#pike 7.4
+Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0000000000000000"))
 		->crypt(Crypto.hex_to_string("0000000000000000"))]],
 	[[Crypto.hex_to_string("de188941a3375d3a")]])
-test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("ef012345"))
+test_eq([[
+#pike 7.4
+Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("ef012345"))
 		->crypt(Crypto.hex_to_string("00000000000000000000"))]],
 	[[Crypto.hex_to_string("d6a141a7ec3c38dfbd61")]])
 
-test_eq([[Crypto.arcfour()
+test_eq([[
+#pike 7.4
+Crypto.arcfour()
   ->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
   ->crypt(Crypto.hex_to_string(
 	"0101010101010101010101010101010101010101010101010101010101010101"
@@ -366,8 +396,12 @@ test_eq(
 #pike 7.4
 Crypto.aes()->name(),"AES")
 test_eq(Crypto.idea()->name(),"IDEA")
-test_eq(Crypto.cast()->name(),"CAST")
-test_eq(Crypto.arcfour()->name(),"ARCFOUR")
+test_eq(
+#pike 7.4
+Crypto.cast()->name(),"CAST")
+test_eq(
+#pike 7.4
+Crypto.arcfour()->name(),"ARCFOUR")
 test_eq(
 #pike 7.4
 Crypto.md5()->name(),"MD5")
@@ -394,8 +428,12 @@ cond([[ Crypto["AES"] ]],[[
   test_eq(Crypto.AES()->key_size(),0)
 ]])
 test_eq(Crypto.idea()->query_key_length(),16)
-test_eq(Crypto.cast()->query_key_length(),16)
-test_eq(Crypto.arcfour()->query_key_length(),1)
+test_eq(
+#pike 7.4
+Crypto.cast()->query_key_length(),16)
+test_eq(
+#pike 7.4
+Crypto.arcfour()->query_key_length(),1)
 
 // ->query_block_size
 test_eq(
@@ -409,8 +447,12 @@ cond([[ Crypto["AES"] ]],[[
   test_eq(Crypto.AES()->block_size(),16)
 ]])
 test_eq(Crypto.idea()->query_block_size(),8)
-test_eq(Crypto.cast()->query_block_size(),8)
-test_eq(Crypto.arcfour()->query_block_size,0)
+test_eq(
+#pike 7.4
+Crypto.cast()->query_block_size(),8)
+test_eq(
+#pike 7.4
+Crypto.arcfour()->query_block_size,0)
 
 // pipe
 test_eq(
@@ -427,7 +469,9 @@ test_eq(
 #pike 7.4
  Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
    Crypto.cast(), Crypto.arcfour() )->query_block_size(), 16)
-test_eq( Crypto.pipe( Crypto.des(), Crypto.idea(), Crypto.cast(),
+test_eq(
+#pike 7.4
+ Crypto.pipe( Crypto.des(), Crypto.idea(), Crypto.cast(),
    Crypto.arcfour() )->query_block_size(), 8)
 test_eq(
 #pike 7.4
