@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.668 2003/10/28 13:13:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.669 2003/11/10 22:02:24 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6000,6 +6000,9 @@ esac
 # Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
 # (because otherwise the tests will not be accurate) we have to remove all
 # OPTIMIZE flags from the regular CFLAGS...
+# (also some other misc work on the flags)
+
+INTERPRET_DEOPTIMIZE=
 
 NEW_CFLAGS=
 for opt in ${CFLAGS-}
@@ -6009,12 +6012,23 @@ do
      *)
        case "$opt" in
          -O2|-pipe|-O) OPTIMIZE="${OPTIMIZE-} $opt" ;;
+	 -f*) 
+	   if test "x$opt" = "x-fomit-frame-pointer" -a \
+		   "x$with_machine_code" = xyes; then
+	      INTERPRET_DEOPTIMIZE=-fno-omit-frame-pointer
+	      AC_MSG_WARN([-fno-omit-frame-pointer used for interpret.c,
+since the use of machine code is broken by -fomit-frame-pointer.])
+	   fi
+	   NEW_CFLAGS="$NEW_CFLAGS $opt"
+	   ;;
           *)  NEW_CFLAGS="$NEW_CFLAGS $opt" ;;
        esac
      ;;
    esac
 done
 CFLAGS="$NEW_CFLAGS"
+
+AC_SUBST(INTERPRET_DEOPTIMIZE)
 
 #############################################################################
 if test "x$with_copt" = xno ; then
