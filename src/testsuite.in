@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.390 2002/04/18 10:46:55 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.391 2002/10/15 12:12:49 anders Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1970,6 +1970,13 @@ cond([[all_constants()->localtime && all_constants()->mktime]],
 [[
   test_any([[int x=time(); return mktime(localtime(x)) == x;]], 1)
   test_any([[int x=time(); for(int y=0;y<100;y++) if(mktime(localtime(x+y)) != x+y) return x+y; return 0;]], 0)
+]])
+
+cond([[all_constants()->gmtime && all_constants()->mktime]],
+[[
+  test_any([[
+  // http://community.roxen.com/crunch/show_bug.cgi?id=3270
+  int x=time(); return mktime(gmtime(x)) == x;]], 1)
 ]])
 
 cond([[all_constants()->_verify_internals]],
