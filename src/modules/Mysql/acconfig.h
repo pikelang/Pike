@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.3 2001/01/17 23:46:14 grubba Exp $
+ * $Id: acconfig.h,v 1.4 2001/02/08 12:12:38 tomas Exp $
  *
  * Config-file for the Pike mySQL-module.
  *
@@ -20,6 +20,18 @@
 
 /* Return type of mysql_fetch_lengths(). Usually unsigned long. */
 #undef FETCH_LENGTHS_TYPE
+
+/* Define if you have mysql_fetch_lengths(). */
+#undef HAVE_MYSQL_FETCH_LENGTHS
+
+/* Define if you have mysql_real_query(). */
+#undef HAVE_MYSQL_REAL_QUERY
+
+/* Define if you have the mysql_port variable. */
+#undef HAVE_MYSQL_PORT
+
+/* Define if you have the mysql_unix_port variable. */
+#undef HAVE_MYSQL_UNIX_PORT
 
 #endif /* PIKE_THREADS */
 
