@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.239 2004/11/05 16:21:23 grubba Exp $
+|| $Id: pike_types.c,v 1.240 2004/12/30 13:52:54 grubba Exp $
 */
 
 #include "global.h"
@@ -3249,14 +3249,17 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
       if (!ap || !bp) {
 	/* Shouldn't happen... */
+	/* fprintf(stderr, "ap:%p bp:%p\n", ap, bp); */
 	return 0;
       }
       if ((flags & LE_WEAK_OBJECTS) &&
 	  (!TEST_COMPAT(7,4) || (!a->car))) {
 	implements_mode = 0;
+	/* fprintf(stderr, "is_compat(%p, %p)\n", ap, bp); */
 	return is_compatible(implements_a=ap, implements_b=bp);
       }
       implements_mode = 1;
+      /* fprintf(stderr, "implements(%p, %p)\n", ap, bp); */
       return implements(implements_a=ap, implements_b=bp);
     }
     break;
