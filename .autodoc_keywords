@@ -152,6 +152,11 @@ Examples:
               //! @deprecated IO.initPrinter, IO.sendPrinterCommand
               //! @deprecated predef::search
 
+XML:          `@deprecated Foo, Bar' => 
+              <deprecated>
+                <name>Foo</name>
+                <name>Bar</name>
+              </deprecated>
 ________________________________________________________________________________
 
 Keyword:      @example
@@ -165,6 +170,7 @@ Examples:
                 if (sizeof(a) > MAX)      // security check
                   exit(1);
 
+XML:          <example/>
 ________________________________________________________________________________
 
 Keyword:      @note
@@ -177,6 +183,7 @@ Examples:
                 Do not call this function unless you know what you are doing.
                 No bounds/sanity checking on arguments is performed!
 
+XML:          <note/>
 ________________________________________________________________________________
 
 Keyword:      @param
@@ -194,6 +201,8 @@ Examples:
               @param name
                 The name of the thing.
 
+XML:          `@param Foo' => 
+              <param name="Foo"/>
 ________________________________________________________________________________
 
 Keyword:      @returns
@@ -206,6 +215,7 @@ Examples:
               @returns
                 The square root of the sum of the cubes of the inverse numbers.
 
+XML:          <returns/>
 ________________________________________________________________________________
 
 Keyword:      @seealso
@@ -216,6 +226,7 @@ Groups with:  -
 Examples:     //! @seealso
               //!  @[calc_checksum_w()] is used for wide strings.
 
+XML:          <seealso/>
 ________________________________________________________________________________
 ================================================================================
 
@@ -233,6 +244,8 @@ Examples:     @array
                   All elements are of type mixed.
               @endarray
 
+XML:          `@array Foo' =>
+              <array name="Foo">
 ________________________________________________________________________________
 
 Keyword:      @dl - @enddl
@@ -247,6 +260,7 @@ Examples:     @dl
                   One of the best tennis players in the universe.
               @enddl
 
+XML:          <dl>
 ________________________________________________________________________________
 
 Keyword:      @elem
@@ -272,6 +286,12 @@ Examples:     @elem int 0
               @elem array(string) MIN..MAX
                 The elements at these positions are themselves arrays.
 
+XML:          `@elem string 1..2' => 
+              <elem>
+                <type><string/></type>
+                <minindex>1</minindex>
+                <maxindex>2</maxindex>
+              </elem>
 ________________________________________________________________________________
 
 Keyword:      @i{ ... @}
@@ -279,6 +299,7 @@ Description:  Italics.
 Children:     Text that will be rendered in italics.
 Examples:     You really look @i{italic@}! - You mean @i{Italian@}, don't you?
 
+XML:          <i>...</i>
 ________________________________________________________________________________
 
 Keyword:      @item
@@ -290,6 +311,7 @@ Children:     Text (with markup)
 Groups with:  @item
 Examples:
 
+XML:          <item name="..."/>
 ________________________________________________________________________________
 
 Keyword:      @mapping - @endmapping
@@ -303,6 +325,7 @@ Examples:     @mapping
                   The name of the host.
               @endmapping
 
+XML:          <mapping name="..."/>
 ________________________________________________________________________________
 
 Keyword:      @member
