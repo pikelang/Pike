@@ -1,4 +1,8 @@
-/* $Id: mkxml.pike,v 1.25 2001/07/17 08:38:24 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.26 2001/07/18 19:01:36 nilsson Exp $ */
+
+string LENA_PATH = "../autodoc/image_ill.pnm";
+string makepic1;
+string makepic2;
 
 mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
@@ -231,25 +235,44 @@ string make_nice_reference(string what,string prefix,string stuff)
 
 array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
   return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", p->tag_name(),
-		    (array)args, safe_newlines(c), p->tag_name()) });
+		    (array)args, safe_newlines(p->clone()->finish(c)->read()),
+		    p->tag_name()) });
 }
 
-string fixdesc(string s,string prefix,string where)
+string fixdesc(string s,string prefix,void|string where)
 {
-   s=htmlify(stripws(replace(s, "<p>", "\n")));
+   s = stripws(replace(s, "<p>", "\n"));
 
    Parser.HTML p = Parser.HTML();
-   p->add_container("illustration",
-     lambda(Parser.HTML p, mapping args, string c)
-     {
-       return ({ sprintf("<illustration %s%{ %s='%s'%}>%s</illustration>",
-			 where, (array)args, replace(c, "lena()", "src")) });
-     });
 
    p->add_containers( ([ "pre":tag_preserve_ws,
 			 "table":tag_preserve_ws,
 			 "execute":tag_preserve_ws,
 			 "ul":tag_preserve_ws ]) );
+
+   p->add_container("illustration",
+     lambda(Parser.HTML p, mapping args, string c)
+     {
+       c = replace(c, ([ "&gt;":">" ]));
+       string name;
+       sscanf(where, "file='%s'", name);
+       name = (name/"/")[-1];
+       array err;
+       object g;
+       err = catch {
+	 g = compile_string(makepic1 + c +
+			    makepic2)(name+(illustration_counter++), args->type);
+       };
+       if(err) {
+	 werror("%O\n", where);
+	 throw(err);
+       }
+
+       return ({ g->make() });
+
+       //       return ({ sprintf("<illustration %s%{ %s='%s'%}>%s</illustration>",
+       //			 name, (array)args, replace(c, "lena()", "src")) });
+     });
 
    p->add_container("data_description",
       lambda(Parser.HTML p, mapping args, string c)
@@ -277,11 +300,9 @@ string fixdesc(string s,string prefix,string where)
 	throw("mkxml: Unknown data_description type "+args->type+".\n");
       });
 
-
-
-
    s = p->finish(s)->read();
    s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
+   s = htmlify(s);
 
    if (where)
       return "<source-position " + where + file_version + "/>\n"+s;
@@ -526,6 +547,10 @@ void document(string enttype,
    string canname=v[-1];
    sscanf(canname,"%s->",canname);
    sscanf(canname,"%s()",canname);
+
+   string presname = replace(sort(names)[0],
+			     ([ ".":"_", ">":"_" ]) );
+
 
    if (convname[canname]) canname=convname[canname];
 
@@ -872,59 +897,45 @@ string safe_newlines(string in) {
   return in;
 }
 
-int main(int ac,string *files)
-{
-   string s,t,currentfile;
-   int line;
-   array(string) ss=({""});
-   object f;
+void create() {
 
-   nowM=parse;
+  array tmp = __FILE__/"/";
+  string file = tmp[..sizeof(tmp)-2]*"/";
+  LENA_PATH = combine_path(file, LENA_PATH);
 
-   files=files[1..];
+  makepic1 = #"
+  string fn;
 
-   report("reading files...");
+  void create(string _fn, void|string type) {
+    fn = _fn;
+    string ext;
+    if(type==\"image/gif\") ext=\"gif\";
+    fn += \".\" + (ext||\"png\");
+  }
 
-   for (;;)
-   {
-      int i;
+  object lena() {
+    object i = Image.load(\"" + LENA_PATH + #"\");
+    return i;
+  }
 
-      if (!f) 
-      {
-	 if (!sizeof(files)) break;
-	 file_version = "";
-	 f=Stdio.File();
-	 currentfile=files[0];
-	 files=files[1..];
-	 if (!f->open(currentfile,"r")) { f=0; continue; }
-	 t=0;
-	 ss=({""});
-	 line=0;
-      }
+  object|string render() {
+";
 
-      if (sizeof(ss)<2)
-      {
-	 if (t=="") { f=0; continue; }
-	 t=f->read(8192);
-	 if (!t) 
-	 {
-	    report(sprintf("failed to read %O",currentfile));
-	    f=0;
-	    continue;
-	 }
-	 s=ss[0];
-	 ss=t/"\n";
-	 ss[0]=s+ss[0];
-      }
-      s=ss[0]; ss=ss[1..];
+  makepic2 = #";
+  }
+  string make() {
+    object|string o=render();
+    if(stringp(o)) {
+      Stdio.write_file(fn, o);
+      werror(\"Wrote %s\\n\", fn);
+      return \"<image>\"+fn+\"</image>\";
+    }
 
-      line++;
-      process_line(s,currentfile,line);
-   }
+    Stdio.write_file(fn, Image.PNG.encode(o));
+    werror(\"Wrote %s.\\n\", fn);
+    return \"<image width='\"+o->xsize()+\"' height='\"+o->ysize()+\"'>\"+fn+\"</image>\";
+  }
+";
 
-   report("making docs...\n");
-
-   make_doc_files();
-
-   return 0;
+  nowM = parse;
 }
