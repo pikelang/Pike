@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.68 2003/10/29 18:20:37 mast Exp $
+|| $Id: backend.cmod,v 1.69 2003/10/29 18:21:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.68 2003/10/29 18:20:37 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.69 2003/10/29 18:21:57 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -750,7 +750,7 @@ PIKECLASS Backend
 	  if (!me->fds[fd].write.callback) {
 	    MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
 	  } else {
-#ifdef WRBAND_ISPECIAL
+#ifdef WRBAND_IS_SPECIAL
 	    MY_FD_CLR(&me->set, fd, MY_POLLWRBAND);
 #endif
 	  }
@@ -1254,7 +1254,7 @@ PIKECLASS Backend
 	      if (!me->fds[fd].write.callback) {
 		MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
 	      } else {
-#ifdef WRBAND_ISPECIAL
+#ifdef WRBAND_IS_SPECIAL
 		MY_FD_CLR(&me->set, fd, MY_POLLWRBAND);
 #endif
 	      }
