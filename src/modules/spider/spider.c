@@ -1954,6 +1954,7 @@ void init_spider_programs()
    streamed_parser->refs++;
 
    init_parse_program(); /* HTTP parser */
+   init_accessdb_program(); /* Accessed database */
 }
 
 void exit_spider(void)
