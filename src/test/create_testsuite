@@ -66,6 +66,70 @@ define(ifefun,[[cond([[all_efuns()->$1]],[[$2]])]])
 
 define(TESTNO,0)
 
+// testing < > <= >=
+define([[test_cmp]],[[
+test_true($1<$2)
+test_false($1>$2)
+test_true($2>$1)
+test_false($2<$1)
+test_true($1<=$2)
+test_false($1>=$2)
+test_true($2>=$1)
+test_false($2<=$1)
+test_true($2<=$2)
+test_true($1>=$1) ]])
+
+// mpz
+cond( [[ master()->programs["/precompiled/mpz"] ]],
+[[
+  define([[MPZ]],[[(program)"/precompiled/mpz"]])
+  test_true(programp(MPZ))
+  test_false(clone(MPZ))
+  test_do(destruct(clone(MPZ)))
+  test_eq(clone(MPZ,99)+1,100)
+  test_eq(clone(MPZ,100)*10,1000)
+  test_eq(clone(MPZ,"100")*10.0,1000)
+  test_eq(clone(MPZ,100.0)*clone(MPZ,3),300)
+  test_eq(clone(MPZ,100.0)/4,25)
+  test_eq(clone(MPZ,42)%10,2)
+  test_eq(clone(MPZ,10)<<1,20)
+  test_eq(clone(MPZ,10)>>1,5)
+  test_eq(clone(MPZ,66)+11,77)
+  test_eq(clone(MPZ,66)-11,55)
+  test_eq(clone(MPZ,17)&18,16)
+  test_eq(clone(MPZ,17)|7,31)
+  test_eq(-clone(MPZ,17),17)
+  test_eq((~clone(MPZ,17)) & 255,0xf0)
+  test_true(stringp((string)clone(MPZ,17)))
+  test_eq((string)clone(MPZ,17),"17")
+  test_true(intp((int)clone(MPZ,17)))
+  test_eq((int)clone(MPZ,17),17)
+  test_false(clone(MPZ,0))
+  test_true(clone(MPZ,1))
+
+  define([[mpz_test_cmp]],[[
+    test_cmp(clone(MPZ,$1), $2)
+    test_cmp($1, clone(MPZ,$2))
+    test_cmp(clone(MPZ, $1), clone(MPZ, $2))
+  ]])
+
+  define([[mpz_test_type1]],[[
+    mpz_test_cmp($1,$2)
+    mpz_test_cmp($1.0,$2)
+    mpz_test_cmp("$1",$2)
+  ]])
+
+  define([[mpz_test_type2]],[[
+    mpz_test_type1($1,$2)
+    mpz_test_type1($1,$2.0)
+    mpz_test_type1($1,"$2")
+  ]])
+
+  mpz_test_type2(1,2)
+  mpz_test_type2(-2,1)
+
+]]);
+
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
 test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
@@ -73,6 +137,33 @@ test_compile([[while(0)if(0)continue;else;]])
 test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
 test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
 test_any([[ array a="foo bar"/" "; return sizeof(a & ({"foo"}))]],1)
+
+// glob
+test_false(glob("foo","bar"))
+test_true(glob("foo","foo"))
+test_true(glob("f?o","foo"))
+test_true(glob("f??","foo"))
+test_true(glob("?o?","foo"))
+test_true(glob("f*","foo"))
+test_true(glob("*o","foo"))
+test_false(glob("*f","foo"))
+test_false(glob("o*","foo"))
+test_false(glob("?f?","foo"))
+test_equal([[glob("?f?",({"ff","ffff","off","fff",""}))]],[[({"off","fff"})]])
+test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fooar"}))]],[[({"foobar","foofoobar"})]])
+
+// localtime
+cond([[all_efuns()->localtime]],
+[[
+test_true(mappingp(localtime(0)))
+]])
+
+// strerror
+cond([[all_efuns()->strerror]],
+[[
+test_do(strerror(1))
+test_true(stringp(strerror(-2)||""))
+]])
 
 
 // sort
@@ -287,6 +378,8 @@ cond( [[ master()->programs["/precompiled/gdbm"] ]],
   ]])
 
   GDBMTESTS
+
+  test_do(rm("test.gdbm"))
 ]])
 
 test_eq("\377"[0],255)
@@ -429,20 +522,6 @@ test_true(1!=2)
 test_true(!(1==2))
 test_true(!(""!=""))
 test_true(""!="foo")
-
-// testing < > <= >=
-define(test_cmp,[[
-test_true($1<$2)
-test_true(!($1>$2))
-test_true($2>$1)
-test_true(!($2<$1))
-test_true($1<=$2)
-test_true(!($1>=$2))
-test_true($2>=$1)
-test_true(!($2<=$1))
-test_true($2<=$2)
-test_true($1>=$1) ]])
-
 
 test_cmp(1,2)
 test_cmp(1.0,2.0)
@@ -1807,6 +1886,7 @@ test_eq(sizeof((<8,7,6,5,4,7>)),6)
 
 // - sleep
 test_do(sleep(1))
+test_do(sleep(0.5))
 
 // - sum
 test_eq(sum(1,1),2)
@@ -1857,6 +1937,7 @@ test_eq(zero_type(([])[7]),1)
 
 // - call_out, call_out_info, remove_call_out, find_call_out
 test_do(call_out(a,100000))
+test_do(call_out(lambda() {},1000.0))
 test_true(arrayp(call_out_info()))
 test_true(sizeof(call_out_info()) > 0)
 test_true(call_out_info()[-1][0] > 1)
