@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.103 2003/02/01 15:37:22 mast Exp $
+|| $Id: builtin.cmod,v 1.104 2003/02/24 21:44:30 mast Exp $
 */
 
 #include "global.h"
@@ -1251,6 +1251,7 @@ PIKECLASS backtrace_frame
 
 void low_backtrace(struct Pike_interpreter *i)
 {
+  struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;
   int size = 0;
   struct array *res = NULL;
@@ -1304,7 +1305,7 @@ void low_backtrace(struct Pike_interpreter *i)
 
     if (f->locals) {
       INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
-						  i->stack_pointer - f->locals));
+						  stack_top - f->locals));
       INT32 varargs = 0;
 
       if(of) {
@@ -1317,7 +1318,7 @@ void low_backtrace(struct Pike_interpreter *i)
 
       /* Handle varargs... */
       if (function && (function->identifier_flags & IDENTIFIER_VARARGS) &&
-	  (f->locals + numargs < i->stack_pointer) &&
+	  (f->locals + numargs < stack_top) &&
 	  (f->locals[numargs].type == T_ARRAY)) {
 	varargs = f->locals[numargs].u.array->size;
       }
