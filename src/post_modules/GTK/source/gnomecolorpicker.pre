@@ -1,0 +1,88 @@
+COND_WIDGET(gnome);
+PROGRAM(gnome_color_picker);
+INHERIT(button);
+SIGNAL("color-set","This signal is emitted when the user changes the color on the color selector. The values passed to this signal are the red, green, blue and alpha channels selected in integer form in the range 0 to 65535.");
+// This widget provides color selection facilities to your
+// application. The widget appears as a button which contains a "color
+// swatch" of the currently selected color. When the button is
+// pressed, the widget presents the user with a color selection dialog
+// where the color can be selected.
+// <p>
+// You can select the color to be displayed in a number of ways:
+// floating point values for the red, green and blue channels,
+// integers in the range 0 to 65,535, or integers in the range 0 to
+// 255, depending on your needs.
+// IMG: Gnome.ColorPicker();
+
+COMPLEX_FUNCTION(create);
+// Creates a new GNOME color picker widget. This returns a widget in
+// the form of a small button containing a swatch representing the
+// current selected color. When the button is clicked, a
+// color-selection dialog will open, allowing the user to select a
+// color. The swatch will be updated to reflect the new color when the
+// user finishes.
+
+COMPLEX_FUNCTION(set_d, float, float, float, float );
+NAME_ARGS(r,g,b,a);
+// Set color shown in the color picker widget using floating point values.
+// The values range between 0.0 and 1.0.
+
+COMPLEX_FUNCTION(set_i8, int, int, int, int );
+NAME_ARGS(r,g,b,a);
+// Set color shown in the color picker widget using integer values.
+// The values range between 0 and 255.
+
+COMPLEX_FUNCTION(set_i16, int, int, int, int );
+NAME_ARGS(r,g,b,a);
+// Set color shown in the color picker widget using integer values.
+// The values range between 0 and 65535.
+
+COMPLEX_FUNCTION(set_dither, int);
+NAME_ARGS(dither);
+// Sets whether the picker should dither the color sample or just
+// paint a solid rectangle.
+
+COMPLEX_FUNCTION(set_use_alpha, int );
+NAME_ARGS(use_alpha);
+// Sets whether or not the picker should use the alpha channel.
+
+COMPLEX_FUNCTION(set_title, string);
+// Sets the title for the color selection dialog
+
+FUNCTION(get, "function(void:mapping)");
+// Returns a mapping ([ "d":([ "r":rvalue, "g":gvalue, "b":bvalue,
+// "a":avalue ]), "i8":([ ... ]), "i16":([ .. ]) ]);
+{
+  guint8 r8, g8, b8, a8;
+  gdouble r, g, b, a;
+  gushort r16, g16, b16, a16;
+
+  gnome_color_picker_get_d( GNOME_COLOR_PICKER( THIS->obj ),
+                            &r, &g, &b, &a );
+  gnome_color_picker_get_i8( GNOME_COLOR_PICKER( THIS->obj ),
+                             &r8, &g8, &b8, &a8 );
+  gnome_color_picker_get_i16( GNOME_COLOR_PICKER( THIS->obj ),
+                              &r16, &g16, &b16, &a16 );
+
+  pop_n_elems( args );
+  push_text( "d" );
+  push_text( "r" ); push_float( r );
+  push_text( "g" ); push_float( g );
+  push_text( "b" ); push_float( b );
+  push_text( "a" ); push_float( a );
+  f_aggregate_mapping( 8 );
+  push_text( "i8" );
+  push_text( "r" ); push_int( r8 );
+  push_text( "g" ); push_int( g8 );
+  push_text( "b" ); push_int( b8 );
+  push_text( "a" ); push_int( a8 );
+  f_aggregate_mapping( 8 );
+  push_text( "i16" );
+  push_text( "r" ); push_int( r16 );
+  push_text( "g" ); push_int( g16 );
+  push_text( "b" ); push_int( b16 );
+  push_text( "a" ); push_int( a16 );
+  f_aggregate_mapping( 8 );
+  f_aggregate_mapping( 6 );
+}
+END_COND_WIDGET(gnome);

@@ -1,0 +1,55 @@
+COND_WIDGET(gnome);
+PROGRAM(gnome_font_picker);
+INHERIT(button);
+//  GnomeFontPicker - Button that displays current font; click to select new font.
+// IMG: Gnome.FontPicker();
+// IMG: Gnome.FontPicker()->set_mode( Gnome.FontPickerModePixmap );
+// IMG: Gnome.FontPicker()->set_mode( Gnome.FontPickerModeFontInfo );
+
+SIGNAL("font-set", "");
+
+COMPLEX_FUNCTION(create);
+COMPLEX_FUNCTION(set_title, string);
+NAME_ARGS(title);
+// Sets the title for the font selection dialog.
+
+int COMPLEX_FUNCTION(get_mode);
+// Returns current font picker button mode (or what to show).
+
+COMPLEX_FUNCTION( set_mode, int );
+NAME_ARGS( mode );
+// Set value of subsequent font picker button mode (or what to show).
+// Mode is one of CONST(GNOME_FONT_PICKER_MODE)
+
+COMPLEX_FUNCTION(fi_set_use_font_in_label, int, int);
+NAME_ARGS(use_font_in_label, size);
+// If use_font_in_label is TRUE, font name will be written using font
+// chosen by user and using size passed to this function. This only
+// applies if current button mode is Gnome.FontPickerModeFontInfo.
+
+COMPLEX_FUNCTION(fi_set_show_size, int);
+NAME_ARGS(show_size);
+// If show_size is TRUE, font size will be displayed along with font
+// chosen by user. This only applies if current button mode is
+// Gnome.FontPickerModeFontInfo.
+
+COMPLEX_FUNCTION(uw_set_widget, widget);
+NAME_ARGS(widget);
+// Set the user-supplied widget as the inside of the font picker. This
+// only applies with Gnome.FontPickerModeUserWidget.
+
+string COMPLEX_FUNCTION(get_font_name);
+// Retrieve name of font from font selection dialog.
+GDK.Font COMPLEX_FUNCTION(get_font);
+// Retrieves the font from the font selection dialog.
+int COMPLEX_FUNCTION(set_font_name, string);
+NAME_ARGS(fontname);
+// Set or update the currently displayed font in the font picker dialog
+string COMPLEX_FUNCTION(get_preview_text);
+// Retrieve preview text from font selection dialog if available.
+COMPLEX_FUNCTION(set_preview_text, string);
+NAME_ARGS(text);
+// Set preview text in font picker, and in font selection dialog if
+// one is being displayed.
+
+END_COND_WIDGET(gnome);

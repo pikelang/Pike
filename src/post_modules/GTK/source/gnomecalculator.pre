@@ -1,0 +1,29 @@
+COND_WIDGET(gnome);
+PROGRAM(gnome_calculator);
+INHERIT(vbox);
+SIGNAL("result-changed", "This signal is emited by the widget when the result has been changed. ");
+// This widget provides a simple calculator that you can embed in your
+// applications for doing quick computations.
+// <p>
+// The widget consists of a fully functional calculator including
+// standard arithmetic functions as well as trigonometric
+// capabilities, exponents, factorials, nested equations, and others.
+// IMG: Gnome.Calculator()
+
+COMPLEX_FUNCTION( create );
+// Create a new calculator widget
+
+COMPLEX_FUNCTION(clear, int);
+NAME_ARGS(reset);
+// Resets the calculator back to zero. If reset is TRUE, results
+// stored in memory and the calculator mode are cleared also.
+
+COMPLEX_FUNCTION(set, float);
+NAME_ARGS(result);
+// Sets the value stored in the calculator's result buffer to the
+// given result.
+
+float COMPLEX_FUNCTION(get_result);
+// Value currently stored in calculator buffer.
+
+END_COND_WIDGET(gnome);

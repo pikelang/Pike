@@ -1,0 +1,25 @@
+COND_WIDGET(gnome);
+PROGRAM(gnome_date_edit);
+INHERIT(hbox);
+SIGNAL("date-changed", "");
+SIGNAL("time-changed", "");
+
+// The GnomeDateEdit widget provides a way to enter dates and times
+// with a helper calendar to let the user select the date.
+// IMG: Gnome.DateEdit(time(),1,1);
+// IMG: Gnome.DateEdit(time(),0,1);
+COMPLEX_FUNCTION(create, int, int, int );
+NAME_ARGS(the_time, show_time, use_24_format);
+// Creates a new GnomeDateEdit widget which can be used to provide an
+// easy to use way for entering dates and times.
+COMPLEX_FUNCTION(set_time, int);
+NAME_ARGS(the_time);
+// Changes the displayed date and time in the GnomeDateEdit widget to
+// be the one represented by the_time.
+COMPLEX_FUNCTION(set_popup_range, int,int);
+NAME_ARGS(low_hour, high_hour);
+// Sets the range of times that will be provide by the time popup
+// selectors.
+
+int COMPLEX_FUNCTION(get_date);
+END_COND_WIDGET();

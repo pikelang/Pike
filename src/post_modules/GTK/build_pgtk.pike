@@ -1041,7 +1041,7 @@ int main(int argc, array argv)
       string args="";
       string sargs="", pre_call="";
       string post = "", fin="", zap="";
-      int na, i_added;
+      int na, i_added, free_res;
 
       rest = String.trim_whites( rest );
       fn = String.trim_whites( fn );
@@ -1049,8 +1049,14 @@ int main(int argc, array argv)
       {
         rest = 0;
         return_type = classname(progname);
-      } else
+      } else {
+        if( rest == "fstring" )
+        {
+          free_res = 1;
+          rest = rest[1..];
+        }
         return_type = rest;
+      }
 
       if(rest == "/*" || rest == "*")
         continue;
@@ -1344,6 +1350,8 @@ int main(int argc, array argv)
            break;
          case "string":
            emit( "  if(result) push_text( result ); else push_int( 0 );\n" );
+           if( free_res )
+             emit( "  if( result ) g_free( result );\n");
            break;
          default:
            if(sscanf( rest, "GDK.%s", rest ))
@@ -1454,7 +1462,9 @@ int main(int argc, array argv)
   emit_nl("static void _2()\n{\n");
   _inits += ({ "_2" });
   foreach(sort(indices(`+(@values(signals)))), string s)
-    emit_nl("  add_string_constant( (char*)_data+"+data_offset("s_"+s+"\0")+
+    emit_nl("  add_string_constant( (char*)_data+"+data_offset("s_"+
+                                                               replace(s,"-","_")
+                                                               +"\0")+
             ", (char*)_data+"+data_offset(s+"\0")+", 0 );\n");
 
   emit_program_block( struct->global, "global" );
