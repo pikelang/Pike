@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.72 2004/03/02 20:46:11 nilsson Exp $
+|| $Id: math.c,v 1.73 2004/03/06 01:58:57 nilsson Exp $
 */
 
 #include "global.h"
@@ -14,6 +14,7 @@
 #include "module_support.h"
 #include "operators.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include <math.h>
 
@@ -36,7 +37,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.72 2004/03/02 20:46:11 nilsson Exp $");
+RCSID("$Id: math.c,v 1.73 2004/03/06 01:58:57 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -468,11 +469,27 @@ void f_pow(INT32 args)
     case T_INT * 16 + T_OBJECT:
     case T_OBJECT * 16 + T_INT:
     case T_OBJECT * 16 + T_FLOAT:
+#ifdef AUTO_BIGNUM
       stack_swap();
       push_constant_text("pow");
       f_index(2);
       stack_swap();
       f_call_function(2);
+#else
+      ref_push_type_value(float_type_string);
+      stack_swap();
+      f_cast();
+      stack_swap();
+
+      ref_push_type_value(float_type_string);
+      stack_swap();
+      f_cast();
+
+      stack_swap();
+      f_pow(2);
+
+      o_cast_to_int();
+#endif
       return;
 
     case T_FLOAT * 16 + T_INT:
