@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.436 2000/12/05 17:43:07 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.437 2000/12/13 21:22:47 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -409,24 +409,24 @@ if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | he
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
+  SMARTBUILDCC="${REALCC-cc}"
 
   if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
     echo Warning: rntcc/rntcl/rnticl/rntecl detected.
-    echo Using the smartlink /bin/sh script.
-    SMARTLINK="$BINDIR/smartlink"
+    AC_PATH_PROGS(SMARTBUILDCC,gcc cc egcs,gcc, $PATH:$EXTRA_PATH)
+    echo Using $SMARTBUILDCC to compile smartlink.
+  fi
+
+  rm -f "$SMARTLINK"
+
+  AC_MSG_CHECKING(whether smartlink compiles)
+
+  link_cmd='${SMARTBUILDCC-cc} -o smartlink${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/smartlink.$ac_ext $LIBS 2>&5'
+  if { (eval echo Compiling smartlink: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/smartlink" -v >/dev/null 2>&5; then
+    AC_MSG_RESULT(yes)
   else
-    rm -f "$SMARTLINK"
-
-    AC_MSG_CHECKING(whether smartlink compiles)
-
-    link_cmd='${REALCC-cc} -o smartlink${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/smartlink.$ac_ext $LIBS 2>&5'
-    if { (eval echo Compiling smartlink: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/smartlink" -v >/dev/null 2>&5; then
-      AC_MSG_RESULT(yes)
-    else
-      AC_MSG_RESULT(no - use the sh script)
-
-      SMARTLINK="$BINDIR/smartlink"
-    fi
+    AC_MSG_RESULT(no - use the sh script)
+    SMARTLINK="$BINDIR/smartlink"
   fi
 fi
 
@@ -1081,7 +1081,8 @@ if test "$cflags_is_set" = "no"; then
       fi
     else :; fi
 
-    if test x$with_dynamic_modules != xno ; then
+    # Only do this explicitly
+    if test x$with_dynamic_modules == xyes ; then
       AC_MSG_WARN([Enabling dynamic modules for Win32])
       EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
       EXTRA_OBJS="${EXTRA_OBJS} export_functions.o"
@@ -3855,7 +3856,7 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 #define USE_IOCTLSOCKET_FIONBIO
 #include "fd_control.c"
 ], pike_cv_sys_nonblock=USE_IOCTLSOCKET_FIONBIO,
-unset pike_cv_sys_nonblock,
+pike_cv_sys_nonblock=UNKNOWN,
 unset pike_cv_sys_nonblock),
 unset pike_cv_sys_nonblock),
 unset pike_cv_sys_nonblock),
@@ -4162,18 +4163,31 @@ fi
 # be given automatically by $(CC) $(CFLAGS)
 # /Hubbe
 #
-
-case "x$LD" in
-  $CC*)
+if test "$ldflags_is_set" = no ; then
+case "x$LD $LDFLAGS" in
+  *\$\(CFLAGS\)*)
     # Options in CFLAGS, no stuff needs to be added
   ;;
-  \$\(CC\)*)
-    # Options in CFLAGS, no stuff needs to be added
+  x$CC*|x\$\(CC\)*)
+    LD="$LD \$(CFLAGS)"
   ;;
   *)
-    LD="${LD} ${LD_FALLBACK_FLAGS-}"
+    LD="$LD ${LD_FALLBACK_FLAGS-}"
   ;;
 esac
+
+case "x$LDSHARED $LDFLAGS" in
+  *\$\(CFLAGS\)*)
+    # Options in CFLAGS, no stuff needs to be added
+  ;;
+  x$CC*|x\$\(CC\)*)
+    LDSHARED="$LDSHARED \$(CFLAGS)"
+  ;;
+  *)
+    LDSHARED="$LDSHARED ${LD_FALLBACK_FLAGS-}"
+  ;;
+esac
+fi
 
 #######################################################################
 # Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
