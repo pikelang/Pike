@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.76 1999/12/01 09:14:04 mast Exp $
+ * $Id: master.pike.in,v 1.77 1999/12/05 15:38:21 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1370,12 +1370,17 @@ string describe_object(object o)
 {
   string s;
   if(!o) return 0;
+  /*
+  // This seems broken. Maybe objects should be programs here, but
+  // that's essentially what the call to describe_program() below
+  // does. /mast
   if(s=search(objects,object_program(o)))
   {
     if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
       return EXPLODE_PATH(reverse(rest))[-1];
     return s;
   }
+  */
   if(( s=describe_program(object_program(o)) ))
     return s+"()";
   return 0;
