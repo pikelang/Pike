@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.135 2004/10/22 23:44:49 nilsson Exp $
+|| $Id: error.c,v 1.136 2004/10/30 11:41:08 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -736,9 +736,8 @@ static void f_error_create(INT32 args)
   do_free_string(GENERIC_ERROR_THIS->error_message);
   copy_shared_string(GENERIC_ERROR_THIS->error_message, msg);
   f_backtrace(0);
-  push_int (0);
-  push_int (Pike_sp[-2].u.array->size-2);
-  o_range ();
+  push_int (1);
+  o_range2 (RANGE_LOW_OPEN|RANGE_HIGH_FROM_END);
   assign_to_short_svalue ((union anything *)&GENERIC_ERROR_THIS->error_backtrace,
 			  PIKE_T_ARRAY, Pike_sp-1);
   pop_n_elems(args+1);
