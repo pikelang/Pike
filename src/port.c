@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.22 1999/11/23 07:07:05 hubbe Exp $");
+RCSID("$Id: port.c,v 1.23 2000/06/08 22:10:51 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -115,7 +115,6 @@ unsigned long my_rand(void)
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
 }
 
-#if !defined(HAVE_STRTOL) || !defined(HAVE_WORKING_STRTOL)
 #define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
 			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
@@ -164,7 +163,6 @@ long STRTOL(char *str,char **ptr,int base)
     *ptr = str;
   return (neg ? val : -val);
 }
-#endif
 
 #ifndef HAVE_STRCASECMP
 int STRCASECMP(const char *a,const char *b)
@@ -377,7 +375,6 @@ char *STRTOK(char *s1,char *s2)
 }
 #endif
 
-#ifndef HAVE_STRTOD
 /* Convert NPTR to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
 double STRTOD(char * nptr, char **endptr)
@@ -527,7 +524,6 @@ double STRTOD(char * nptr, char **endptr)
     *endptr = (char *) nptr;
   return 0.0;
 }
-#endif
 
 #ifndef HAVE_VSPRINTF
 int VSPRINTF(char *buf,char *fmt,va_list args)
