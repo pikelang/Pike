@@ -133,6 +133,7 @@ fi
 
 LIBOBJS="${OLD_LIBOBJS}"
 
+AC_CHECK_LIB(crypt, crypt)
 
 AC_HAVE_FUNCS(
  _crypt \
