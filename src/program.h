@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.189 2003/11/14 00:35:11 mast Exp $
+|| $Id: program.h,v 1.190 2003/11/14 00:36:22 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -77,11 +77,6 @@ extern struct pike_string *this_program_string;
 extern char *lfun_names[];
 
 extern struct pike_string *lfun_strings[];
-
-#ifndef STRUCT_SVALUE_DECLARED
-#define STRUCT_SVALUE_DECLARED
-struct svalue;
-#endif
 
 #ifndef STRUCT_NODE_S_DECLARED
 #define STRUCT_NODE_S_DECLARED
