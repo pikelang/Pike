@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.63 1998/05/17 21:39:48 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.64 1998/05/19 11:07:15 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1209,7 +1209,10 @@ void f_create_process(INT32 args)
 #else
     pid=fork();
 #endif
-    if(pid==-1) error("Failed to start process.\n");
+    if(pid==-1) {
+      error("Failed to start process.\n"
+	    "errno:%d\n", errno());
+    }
     if(pid)
     {
       UNSET_ONERROR(err);
@@ -1441,7 +1444,10 @@ void f_fork(INT32 args)
 #endif
   THREADS_DISALLOW_UID();
 
-  if(pid==-1) error("Fork failed\n");
+  if(pid==-1) {
+    error("Fork failed\n"
+	  "errno: %d\n", errno());
+  }
 
   if(pid)
   {
