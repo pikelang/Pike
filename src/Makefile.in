@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.216 2000/11/25 16:32:31 grubba Exp $
+# $Id: Makefile.in,v 1.217 2000/11/27 00:03:00 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -539,13 +539,13 @@ las_t.o: las.c
 lex.o: lexer0.h lexer1.h lexer2.h
 
 lexer0.h: lexer.h
-	cp "$<" "$@"
+	cp "$(SRCDIR)/lexer.h" "$@"
 
 lexer1.h: lexer.h
-	cp "$<" "$@"
+	cp "$(SRCDIR)/lexer.h" "$@"
 
 lexer2.h: lexer.h
-	cp "$<" "$@"
+	cp "$(SRCDIR)/lexer.h" "$@"
 
 # All the $(POBJ) dependencies, except tpike. See blurb at pike target.
 stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike builtin_functions.c $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike las.c
