@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include <math.h>
 #include "interpret.h"
@@ -24,7 +25,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.19 1999/08/06 12:01:12 hedda Exp $");
+RCSID("$Id: math.c,v 1.20 1999/08/06 14:57:17 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -202,6 +203,13 @@ void f_round(INT32 args)
 {
   if(args<1) error("Too few arguments to round()\n");
   if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to round()\n");
+  sp[-args].u.float_number=rint(sp[-args].u.float_number + 0.5);
+}
+
+void f_rint(INT32 args)
+{
+  if(args<1) error("Too few arguments to rint()\n");
+  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to rint()\n");
   sp[-args].u.float_number=rint(sp[-args].u.float_number);
 }
 
@@ -309,6 +317,9 @@ void pike_module_init(void)
 
 /* function(float:float) */
   ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
+
+/* function(float:float) */
+  ADD_EFUN("rint",f_rint,tFunc(tFlt,tFlt),0);
 
 #define CMP_TYPE \
   "!function(!object...:mixed)&function(mixed...:mixed)|" \
