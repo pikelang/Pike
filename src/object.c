@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.228 2003/03/14 15:50:45 grubba Exp $
+|| $Id: object.c,v 1.229 2003/03/27 02:19:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.228 2003/03/14 15:50:45 grubba Exp $");
+RCSID("$Id: object.c,v 1.229 2003/03/27 02:19:44 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -263,7 +263,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 	    default: u->refs=0; break;
 	  }
 	}
-	debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
       }
     }
     if(prog->event_handler)
@@ -780,11 +780,11 @@ void destruct(struct object *o)
 	if ((s->type != T_OBJECT && s->type != T_FUNCTION) ||
 	    s->u.object != o ||
 	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
-	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
+	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
 	  free_svalue(s);
 #ifdef DEBUG_MALLOC
 	} else {
-	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
 	  dmalloc_touch_svalue(s);
 #endif /* DEBUG_MALLOC */
 	}
@@ -796,11 +796,11 @@ void destruct(struct object *o)
 #endif
 	if (rtt != T_OBJECT || u->object != o ||
 	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
-	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
+	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
 	  free_short_svalue(u, rtt);
 #ifdef DEBUG_MALLOC
 	} else {
-	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
 #endif /* DEBUG_MALLOC */
 	}
 	DO_IF_DMALLOC(u->refs=(void *)-1);
@@ -1164,7 +1164,14 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
       if(report_compiler_dependency(p))
       {
 #if 0
-	fprintf(stderr,"Placeholder deployed for %p\n", p);
+	struct svalue tmp;
+	fprintf(stderr,"Placeholder deployed for %p when indexing ", p);
+	tmp.type = T_OBJECT;
+	tmp.u.object = o;
+	print_svalue (stderr, &tmp);
+	fputs (" with ", stderr);
+	print_svalue (stderr, index);
+	fputc ('\n', stderr);
 #endif
 	add_ref(to->u.object=placeholder_object);
 	to->type=T_OBJECT;
@@ -1222,11 +1229,11 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
 	to->u.object != o ||
 	!(id_flags & IDENTIFIER_NO_THIS_REF)) {
-      debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
+      (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
       free_svalue(to);
 #ifdef DEBUG_MALLOC
     } else {
-      debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+      (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
       dmalloc_touch_svalue (to);
 #endif /* DEBUG_MALLOC */
     }
@@ -1236,16 +1243,16 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 	(to->u.object != o) ||
 	!(id_flags & IDENTIFIER_NO_THIS_REF)) {
       if(to->type <= MAX_REF_TYPE) {
-	debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
 	add_ref(to->u.dummy);
 #ifdef DEBUG_MALLOC
       } else {
-	debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
 #endif /* DEBUG_MALLOC */
       }
 #ifdef DEBUG_MALLOC
     } else {
-      debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
+      (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
       dmalloc_touch_svalue (to);
 #endif /* DEBUG_MALLOC */
     }
