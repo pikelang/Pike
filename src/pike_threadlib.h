@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.8 2001/11/01 18:14:42 mast Exp $
+ * $Id: pike_threadlib.h,v 1.9 2001/11/01 18:19:11 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -22,6 +22,11 @@
 /* Needed for pthread_t on OSF/1 */
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
+
+extern int threads_disabled;
+PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
+PMOD_EXPORT extern struct program *thread_id_prog;
+
 #ifdef PIKE_THREADS
 
 /* The fp macro conflicts with Solaris's <pthread.h>. */
@@ -311,6 +316,9 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 extern int th_running;
 
 PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
+
+PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
+PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
 /* Define to get a debug-trace of some of the threads operations. */
 /* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
@@ -633,10 +641,6 @@ PMOD_EXPORT extern int Pike_in_gc;
 PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #endif
 #endif
-
-extern int threads_disabled;
-PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
-PMOD_EXPORT extern struct program *thread_id_prog;
 
 #ifndef NO_PIKE_SHORTHAND
 #define MUTEX_T PIKE_MUTEX_T

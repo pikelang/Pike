@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.115 2001/08/29 17:13:20 mast Exp $
+ * $Id: threads.h,v 1.116 2001/11/01 18:19:11 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -11,9 +11,6 @@
 #include "pike_threadlib.h"
 
 #ifdef PIKE_THREADS
-
-PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
-PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
 struct svalue;
 struct pike_frame;
