@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.148 1999/08/20 05:08:23 hubbe Exp $
+# $Id: Makefile.in,v 1.149 1999/08/24 23:09:15 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -497,7 +497,7 @@ full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 all_exports: full_export
 	( cd .. ; $(TMP_BINDIR)/makedists )
 
-bin_export:
+bin_export: aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
