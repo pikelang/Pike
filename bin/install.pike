@@ -16,6 +16,7 @@ array(string) to_export=({});
 
 int export;
 int no_gui;
+int no_autodoc;
 
 Tools.Install.ProgressBar progress_bar;
 
@@ -1341,9 +1342,11 @@ void do_install()
     install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
 		 combine_path(include_prefix,"precompile.sh"));
 
-    // install the core extracted autodocs
-    install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
-		 combine_path(doc_prefix, "src", "core_autodoc.xml"));
+    if (!no_autodoc) {
+      // install the core extracted autodocs
+      install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
+		   combine_path(doc_prefix, "src", "core_autodoc.xml"));
+    }
 
     // create a directory for extracted module documentation
     if(!export)
@@ -1442,6 +1445,7 @@ int main(int argc, array(string) argv)
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
     ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
+    ({"no-autodoc",Getopt.NO_ARG,({"--no-autodoc","--no-refdoc"})}),
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
@@ -1449,6 +1453,10 @@ int main(int argc, array(string) argv)
     {
       switch(opt[0])
       {
+        case "no-autodoc":
+	  no_autodoc = 1;
+	  break;
+
 	case "no-gui":
 	  no_gui=1;
 	  break;
