@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.32 2000/09/25 23:41:33 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.33 2000/12/01 03:19:00 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -872,6 +872,36 @@ OPCODE1(F_SWITCH, "switch")
   pop_stack();
 }
 BREAK;
+
+OPCODE1(F_SWITCH_ON_INDEX, "switch on index")
+{
+  INT32 tmp;
+  struct svalue s;
+  index_no_free(&s,Pike_sp-2,Pike_sp-1);
+  Pike_sp++[0]=s;
+
+  tmp=switch_lookup(Pike_fp->context.prog->
+		    constants[arg1].sval.u.array,Pike_sp-1);
+  pop_n_elems(3);
+  pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+  pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+  if(*(INT32*)pc < 0) fast_check_threads_etc(7);
+  pc+=*(INT32*)pc;
+}
+BREAK;
+
+OPCODE2(F_SWITCH_ON_LOCAL, "switch on local")
+{
+  INT32 tmp;
+  tmp=switch_lookup(Pike_fp->context.prog->
+		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
+  pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+  pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+  if(*(INT32*)pc < 0) fast_check_threads_etc(7);
+  pc+=*(INT32*)pc;
+}
+BREAK;
+
 
       /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       LOOP(F_INC_LOOP, 1, <, is_lt);

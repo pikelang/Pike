@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.219 2000/11/30 20:13:38 grubba Exp $
+# $Id: Makefile.in,v 1.220 2000/12/01 03:19:00 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -611,9 +611,11 @@ module_objects: $(MODULE_REQUIREMENTS)
 	touch modules/modlist.h
 
 interpret_protos.h: $(SRCDIR)/interpret_functions.h
-	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >interpret_protos.h
+	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >$(SRCDIR)/interpret_protos.h
 
 lex.o: $(SRCDIR)/lex.c interpret_protos.h
+
+interpret.o: $(SRCDIR)/lex.c interpret_protos.h
 
 lex_t.o: $(SRCDIR)/lex_t.c interpret_protos.h
 
