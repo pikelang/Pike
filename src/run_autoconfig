@@ -1,16 +1,25 @@
 #!/bin/sh
 
-autoconf
-cd modules
-for a in *
+# Bootstrap script
+
+fix()
+{
+  if [ -d $1 ]; then
+    ( cd $1 ; autoconf )
+  fi
+
+  if [ ! -f $1/Makefile.in ]; then
+    cp $1/Makefile.src $1/Makefile.in
+  fi
+}
+
+
+fix .
+for a in modules/*
 do
   case $a in
-    CVS) ;;
-    RCS) ;;
-    *)
-      if [ -d $a ]; then
-        ( cd $a ; autoconf )
-      fi
-   ;;
+    modules/CVS) ;;
+    modules/RCS) ;;
+    *) fix $a ;;
   esac
 done
