@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.62 2000/12/05 21:08:15 per Exp $");
+RCSID("$Id: backend.c,v 1.63 2001/03/04 21:20:25 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -880,6 +880,10 @@ void backend(void)
 	    IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
 			  fd, fds[fd].read.data));
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
+	  } else if (fds[fd].write.callback) {
+	    IF_PD(fprintf(stderr, "BACKEND: write_callback(%d, %p)\n",
+			  fd, fds[fd].write.data));
+	    (*(fds[fd].write.callback))(fd, fds[fd].write.data);
 	  }
 	  /* We don't want to keep this fd anymore. */
 	  POLL_FD_CLR(fd, ~0);
