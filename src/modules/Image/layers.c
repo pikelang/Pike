@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.69 2001/06/03 09:07:46 mirar Exp $
+**!	$Id: layers.c,v 1.70 2001/07/16 23:49:00 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -10,14 +10,14 @@
 **!
 **! <add_appendix name="layers" title="Image.Layer modes">
 **! <dl compact>
-**! <dt><i>The variables in the expression:</i>
-**! <dt>L<dd><i>The active layer</i>
-**! <dt>S<dd><i>The source layer (the sum of the layers below)</i>
-**! <dt>D<dd><i>The destintion layer (the result)</i>
-**! <dt>Xrgb<dd><i>Layer red (<b>Xr</b>), green (<b>Xg</b>) or blue channel (<b>Xb</b>) </i>
-**! <dt>Xhsv<dd><i>Layer hue (<b>Xh</b>), saturation (<b>Xs</b>) or value channel (<b>Xv</b>) (virtual channels)</i>
-**! <dt>Xhls<dd><i>Layer hue (<b>Xh</b>), lightness channel (<b>Xl</b>) or saturation (<b>Xs</b>) (virtual channels)</i>
-**! <dt>aX<dd><i>Layer alpha, channel in layer alpha</i>
+**! <dt><i>The variables in the expression:</i></dt>
+**! <dt>L</dt><dd><i>The active layer</i></dd>
+**! <dt>S</dt><dd><i>The source layer (the sum of the layers below)</i></dd>
+**! <dt>D</dt><dd><i>The destintion layer (the result)</i></dd>
+**! <dt>Xrgb</dt><dd><i>Layer red (<b>Xr</b>), green (<b>Xg</b>) or blue channel (<b>Xb</b>) </i></dd>
+**! <dt>Xhsv</dt><dd><i>Layer hue (<b>Xh</b>), saturation (<b>Xs</b>) or value channel (<b>Xv</b>) (virtual channels)</i></dd>
+**! <dt>Xhls</dt><dd><i>Layer hue (<b>Xh</b>), lightness channel (<b>Xl</b>) or saturation (<b>Xs</b>) (virtual channels)</i></dd>
+**! <dt>aX</dt><dd><i>Layer alpha, channel in layer alpha</i></dd>
 **! </dl>
 **! <i>All channels are calculated separately, if nothing else is specified.</i>
 **! <execute>
@@ -216,7 +216,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.69 2001/06/03 09:07:46 mirar Exp $");
+RCSID("$Id: layers.c,v 1.70 2001/07/16 23:49:00 nilsson Exp $");
 
 #include "image_machine.h"
 
