@@ -185,7 +185,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.154 1999/12/19 01:30:15 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.155 1999/12/27 22:45:46 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -330,6 +330,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> assoc_pair
 %type <n> block
 %type <n> failsafe_block
+%type <n> close_paren_or_missing
 %type <n> block_or_semi
 %type <n> break
 %type <n> case
@@ -606,9 +607,15 @@ type_or_error: simple_type
   ;
 
 close_paren_or_missing: ')'
+  {
+    /* Used to hold line-number info */
+    $$ = mkintnode(0);
+  }
   | /* empty */
   {
     yyerror("Missing ')'.");
+    /* Used to hold line-number info */
+    $$ = mkintnode(0);
   }
   ;
 
@@ -696,6 +703,12 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     {
       int f;
       node *check_args = NULL;
+      int save_line = lex.current_line;
+#ifdef PIKE_DEBUG
+      struct pike_string *save_file = lex.current_file;
+      lex.current_file = $8->current_file;
+#endif /* PIKE_DEBUG */
+      lex.current_line = $8->line_number;
 
       for(e=0; e<$7; e++)
       {
@@ -733,6 +746,11 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
 	$10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
       }
 
+      lex.current_line = save_line;
+#ifdef PIKE_DEBUG
+      lex.current_file = save_file;
+#endif /* PIKE_DEBUG */
+
       f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($10),
 		  check_node_hash($<n>9)->u.sval.u.string, $1);
 #ifdef PIKE_DEBUG
@@ -745,6 +763,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     }
     pop_compiler_frame();
     free_node($4);
+    free_node($8);
     free_node($<n>9);
   }
   | modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
@@ -834,8 +853,12 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
   }
   ;
 
-func_args: '(' arguments close_paren_or_missing { $$=$2; }
-         ;
+func_args: '(' arguments close_paren_or_missing
+  {
+    free_node($3);
+    $$=$2;
+  }
+  ;
 
 arguments: /* empty */ optional_comma { $$=0; }
   | arguments2 optional_comma
