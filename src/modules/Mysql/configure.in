@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.32 2002/07/16 19:46:28 per Exp $
+# $Id: configure.in,v 1.33 2003/02/07 11:28:30 agehall Exp $
 #
 # Configure script for the mysql-module
 #
@@ -306,6 +306,8 @@ fi
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
+
+    AC_CHECK_LIB(mysqlclient, mysql_ssl_set, [ AC_DEFINE(HAVE_MYSQL_SSL) ])
 
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)

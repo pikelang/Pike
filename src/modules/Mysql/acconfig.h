@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.9 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: acconfig.h,v 1.10 2003/02/07 11:28:30 agehall Exp $
 */
 
 /*
@@ -19,6 +19,9 @@
 
 /* Define if you have mySQL */
 #undef HAVE_MYSQL
+
+/* Define if you have SSL support in MySQL */
+#undef HAVE_MYSQL_SSL
 
 /* Return type of mysql_fetch_lengths(). Usually unsigned long. */
 #undef FETCH_LENGTHS_TYPE

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.63 2002/11/26 21:31:14 grubba Exp $
+|| $Id: mysql.c,v 1.64 2003/02/07 11:28:30 agehall Exp $
 */
 
 /*
@@ -73,6 +73,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fd_control.h"
+#include "mapping.h"
 
 /* System includes */
 #ifdef HAVE_STRING_H
@@ -82,6 +83,9 @@
 #include <memory.h>
 #endif
 
+#ifdef HAVE_MYSQL_SSL
+#include <openssl/ssl.h>
+#endif
 
 #define sp Pike_sp
 
@@ -94,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.63 2002/11/26 21:31:14 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.64 2003/02/07 11:28:30 agehall Exp $");
 
 /*! @module Mysql
  *!
@@ -212,13 +216,63 @@ static void exit_mysql_struct(struct object *o)
 
   DESTROY_MYSQL_LOCK();
 }
+void pike_mysql_set_ssl(struct mapping *options) {
+
+#ifdef HAVE_MYSQL_SSL
+    char *ssl_key = NULL;
+    char *ssl_cert = NULL;
+    char *ssl_ca = NULL;
+    char *ssl_capath = NULL;
+    char *ssl_cipher = NULL;
+    struct svalue *val = NULL;
+
+    if ((val = simple_mapping_string_lookup(options, "ssl-key")) &&
+	(val->type == T_STRING) &&
+	(!val->u.string->size_shift))
+      ssl_key = val->u.string->str;
+
+    if ((val = simple_mapping_string_lookup(options, "ssl-cert")) &&
+	(val->type == T_STRING) &&
+	(!val->u.string->size_shift))
+      ssl_cert = val->u.string->str;
+
+    if ((val = simple_mapping_string_lookup(options, "ssl_ca")) &&
+	(val->type == T_STRING) &&
+	(!val->u.string->size_shift))
+      ssl_ca = val->u.string->str;
+
+    if ((val = simple_mapping_string_lookup(options, "ssl-capath")) &&
+	(val->type == T_STRING) &&
+	(!val->u.string->size_shift))
+      ssl_capath = val->u.string->str;
+
+    if ((val = simple_mapping_string_lookup(options, "ssl-cipher")) &&
+	(val->type == T_STRING) &&
+	(!val->u.string->size_shift))
+      ssl_cipher = val->u.string->str;
+
+    if (ssl_key || ssl_cert || ssl_ca || ssl_capath || ssl_cipher)
+      mysql_ssl_set(PIKE_MYSQL->mysql,
+		    ssl_key,
+		    ssl_cert,
+		    ssl_ca,
+		    ssl_capath,
+		    ssl_cipher);
+#endif /* HAVE_MYSQL_SSL */
+}
 
 static void pike_mysql_set_options(struct mapping *options)
 {
   struct svalue *val;
 
+  if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
+		  val->u.string->str);
+  }
 #ifdef HAVE_MYSQL_OPTIONS
 #ifdef MYSQL_READ_DEFAULT_FILE
+  printf("\n\n\nREADING MYSQL DEFAULTS FILE\n\n\n");
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_FILE,
@@ -226,11 +280,6 @@ static void pike_mysql_set_options(struct mapping *options)
   }
 #endif /* MYSQL_READ_DEFAULT_FILE */
 #ifdef MYSQL_READ_DEFAULT_GROUP
-  if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
-    mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
-		  val->u.string->str);
-  }
 #endif /* MYSQL_READ_DEFAULT_GROUP */
 #ifdef MYSQL_INIT_COMMAND
   if ((val = simple_mapping_string_lookup(options, "init_command")) &&
@@ -302,6 +351,8 @@ static void pike_mysql_reconnect(void)
   char *saved_unix_port = NULL;
   unsigned int port = 0;
   unsigned int saved_port = 0;
+  unsigned int options = 0;
+  struct svalue *val;
 
   if (PIKE_MYSQL->host) {
     hostptr = strdup(PIKE_MYSQL->host->str);
@@ -355,8 +406,13 @@ static void pike_mysql_reconnect(void)
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
 #ifdef HAVE_MYSQL_REAL_CONNECT
+  if ((val = simple_mapping_string_lookup((struct mapping *)PIKE_MYSQL->options, "connect_options")) &&
+      (val->type == T_INT) && (val->u.integer)) {
+    options = (unsigned int)val->u.integer;
+  }
+
   socket = mysql_real_connect(mysql, host, user, password,
-                              NULL, port, portptr, 0);
+                              NULL, port, portptr, options);
 #else
   socket = mysql_connect(mysql, host, user, password);
 #endif /* HAVE_MYSQL_REAL_CONNECT */
@@ -471,11 +527,35 @@ static void pike_mysql_reconnect(void)
  *!
  *!     @member string "mysql_charset_name"
  *!       Change charset name.
+ *!
+ *!     @member string "ssl-key"
+ *!       Path to SSL-key for use in SSL-communication.
+ *!
+ *!     @member string "ssl-cert"
+ *!       Path to SSL-cert for use in SSL-communication.
+ *!
+ *!     @member string "ssl-ca"
+ *!       Path to SSL-CA for use in SSL-communication.
+ *!
+ *!     @member string "ssl-capath"
+ *!       Path to SSL-CAPATH for use in SSL-communication.
+ *!
+ *!     @member int "connect_options"
+ *!       Options used when connecting to the server. See mysql documentation
+ *!       for more information.
+ *!
  *!   @endmapping
  *!
  *! @note
  *!   Some options may not be implemented. Unimplemented options are
  *!   silently ignored.
+ *!
+ *!   To use SSL-connections, set the SSL-parameters correctly. They corespond to
+ *!   the parameters given to the mysql-client with the same name so make sure that
+ *!   the mysql-client works with SSL and set these parameters to the same values and
+ *!   everything should work.
+ *!   If SSL-options are loaded from a config-file, one may set the connect_options to
+ *!   include CLIENT_SSL.
  */
 static void f_create(INT32 args)
 {
@@ -521,6 +601,7 @@ static void f_create(INT32 args)
 	    if (sp[4-args].type != T_MAPPING) {
 	      Pike_error("Bad argument 5 to mysql()\n");
 	    }
+	    add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
 	    pike_mysql_set_options(sp[4-args].u.mapping);
 	  }
 	}
@@ -529,6 +610,8 @@ static void f_create(INT32 args)
   }
 
   pop_n_elems(args);
+
+  pike_mysql_set_ssl(PIKE_MYSQL->options);
 
   pike_mysql_reconnect();
 }
@@ -563,9 +646,18 @@ static void mysql__sprintf(INT32 args)
       info = mysql_get_host_info(socket);
       MYSQL_DISALLOW();
 
-      push_text("mysql(/* %s */)");
+      push_text("mysql(/* %s %s*/)");
       push_text(info);
-      f_sprintf(2);
+#ifdef HAVE_MYSQL_SSL
+      if (PIKE_MYSQL->mysql->options.use_ssl) {
+	push_text("using SSL");
+      }
+      else push_text("");
+#else
+      push_text("");
+#endif /* HAVE_MYSQL_SSL */
+
+      f_sprintf(3);
 
       res = Pike_sp[-1].u.string;
       Pike_sp--;
@@ -1676,6 +1768,17 @@ PIKE_MODULE_INIT
 
   /* function(void:int) */
   ADD_FUNCTION("binary_data", f_binary_data,tFunc(tVoid,tInt), ID_PUBLIC);
+
+  add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, 0);
+  add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, 0);
+  add_integer_constant( "CLIENT_IGNORE_SPACE", CLIENT_IGNORE_SPACE, 0);
+  add_integer_constant( "CLIENT_INTERACTIVE", CLIENT_INTERACTIVE, 0);
+  add_integer_constant( "CLIENT_NO_SCHEMA", CLIENT_NO_SCHEMA, 0);
+  add_integer_constant( "CLIENT_ODBC", CLIENT_ODBC, 0);
+
+#ifdef HAVE_MYSQL_SSL
+  add_integer_constant( "CLIENT_SSL", CLIENT_SSL, 0);
+#endif
 
   set_init_callback(init_mysql_struct);
   set_exit_callback(exit_mysql_struct);

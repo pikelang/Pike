@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_mysql.h,v 1.15 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: precompiled_mysql.h,v 1.16 2003/02/07 11:28:30 agehall Exp $
 */
 
 /*
@@ -58,6 +58,7 @@ struct precompiled_mysql {
 
   MYSQL		*mysql, *socket;
   struct pike_string	*host, *database, *user, *password;	/* Reconnect */
+  struct mapping   *options;
 };
 
 struct precompiled_mysql_result {
