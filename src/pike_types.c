@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.97 1999/12/15 15:44:27 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.98 1999/12/15 17:04:13 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -72,6 +72,7 @@ struct pike_string *program_type_string;
 struct pike_string *array_type_string;
 struct pike_string *multiset_type_string;
 struct pike_string *mapping_type_string;
+struct pike_string *type_type_string;
 struct pike_string *mixed_type_string;
 struct pike_string *void_type_string;
 struct pike_string *zero_type_string;
@@ -124,6 +125,7 @@ void init_types(void)
   multiset_type_string=CONSTTYPE(tMultiset);
   mapping_type_string=CONSTTYPE(tMapping);
   function_type_string=CONSTTYPE(tFunction);
+  type_type_string=CONSTTYPE(tType);
   void_type_string=CONSTTYPE(tVoid);
   zero_type_string=CONSTTYPE(tZero);
   any_type_string=CONSTTYPE(tOr(tVoid,tMix));
@@ -3181,6 +3183,7 @@ void cleanup_pike_types(void)
   free_string(array_type_string);
   free_string(multiset_type_string);
   free_string(mapping_type_string);
+  free_string(type_type_string);
   free_string(mixed_type_string);
   free_string(void_type_string);
   free_string(zero_type_string);

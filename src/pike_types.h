@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.31 1999/12/14 19:51:57 mast Exp $
+ * $Id: pike_types.h,v 1.32 1999/12/15 17:05:03 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -73,6 +73,7 @@ extern struct pike_string *program_type_string;
 extern struct pike_string *array_type_string;
 extern struct pike_string *list_type_string;
 extern struct pike_string *mapping_type_string;
+extern struct pike_string *type_type_string;
 extern struct pike_string *mixed_type_string;
 extern struct pike_string *void_type_string;
 extern struct pike_string *zero_type_string;
