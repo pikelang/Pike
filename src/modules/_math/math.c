@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.61 2003/05/13 15:54:16 nilsson Exp $
+|| $Id: math.c,v 1.62 2003/06/02 22:09:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.61 2003/05/13 15:54:16 nilsson Exp $");
+RCSID("$Id: math.c,v 1.62 2003/06/02 22:09:43 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -509,10 +509,6 @@ void f_abs(INT32 args)
  */
 void f_sgn(INT32 args)
 {
-  struct svalue zero;
-  zero.type=T_INT;
-  zero.u.integer=0;
-
   TRIM_STACK(2);
   check_all_args("sgn",args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
   if(args<2)
