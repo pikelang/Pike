@@ -10,6 +10,7 @@
 #define DL_INTERNAL
 #include "pike_dlfcn.h"
 #include "pike_memory.h"
+#include "pike_error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,7 +80,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.16 2001/09/13 15:57:21 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.17 2001/09/13 21:57:03 marcus Exp $");
 
 #endif
 
