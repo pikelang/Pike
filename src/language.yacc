@@ -33,7 +33,7 @@
 %token F_BRANCH_IF_NOT_LOCAL_ARROW
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
-%token F_RECUR F_TAIL_RECUR
+%token F_RECUR F_TAIL_RECUR F_COND_RECUR
 
 %token F_LEXICAL_LOCAL F_LEXICAL_LOCAL_LVALUE
 
@@ -171,6 +171,8 @@
 %token F_POINTER
 %token F_LABEL
 %token F_DATA
+%token F_START_FUNCTION
+%token F_BYTE
 
 %token F_MAX_INSTR
 
@@ -193,7 +195,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.181 2000/04/25 09:32:46 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.182 2000/05/01 02:11:25 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

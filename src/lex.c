@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.78 2000/04/25 09:32:46 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.79 2000/05/01 02:11:25 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -154,9 +154,8 @@ struct keyword instr_names[]=
 { "foreach",		F_FOREACH, I_ISJUMP },
 { "pointer",		F_POINTER, I_ISPOINTER },
 { "data",		F_DATA, I_DATA },
+{ "byte",		F_BYTE, I_DATA },
 
-{ "local function call",F_CALL_LFUN, I_HASARG },
-{ "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
 { "lvalue_list",	F_LVALUE_LIST,0 },	
 { "return",		F_RETURN,0 },
 { "return 0",		F_RETURN_0,0 },
@@ -171,8 +170,7 @@ struct keyword instr_names[]=
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },
 { "nop",                F_NOP,0 },
-{ "mark & call",        F_MARK_APPLY, I_HASARG },
-{ "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
+{ "function start",     F_START_FUNCTION,0 },
 { "apply and return",   F_APPLY_AND_RETURN, I_HASARG },
 { "call function",      F_CALL_FUNCTION, 0 },
 { "call function & return", F_CALL_FUNCTION_AND_RETURN, 0 },

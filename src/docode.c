@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.70 2000/04/30 23:15:16 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.71 2000/05/01 02:11:25 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -205,14 +205,22 @@ int do_lfun_call(int id,node *args)
 #if 1
   if(id == compiler_frame->current_function_number)
   {
-    if(new_program->identifier_references[id].id_flags & ID_INLINE)
+    int n=count_args(args);
+    if(n == compiler_frame->num_args)
     {
-      int n=count_args(args);
-      if(n == count_arguments(ID_FROM_INT(new_program, id) -> type))
+      if(compiler_frame->is_inline)
       {
 	emit0(F_MARK);
 	do_docode(args,0);
-	emit1(F_RECUR,0); /* 0 is label at beginning of function */
+	compiler_frame->recur_label=do_jump(F_RECUR,
+					    compiler_frame->recur_label);
+	return 1;
+      }else{
+	emit0(F_MARK);
+	do_docode(args,0);
+	emit1(F_COND_RECUR,id);
+	compiler_frame->recur_label=do_jump(F_POINTER,
+					    compiler_frame->recur_label);
 	return 1;
       }
     }
@@ -1296,8 +1304,40 @@ void do_code_block(node *n)
 {
   init_bytecode();
   label_no=1;
+
+  emit1(F_BYTE,compiler_frame->max_number_of_locals);
+  emit1(F_BYTE,compiler_frame->num_args);
+  emit0(F_START_FUNCTION);
   emit1(F_LABEL,0);
+  if(new_program->identifier_references[compiler_frame->
+				       current_function_number].id_flags &
+     ID_INLINE)
+  {
+    compiler_frame->recur_label=0;
+    compiler_frame->is_inline=1;
+  }
+
   DO_CODE_BLOCK(n);
+
+  if(compiler_frame->recur_label > 0)
+  {
+#ifdef PIKE_DEBUG
+    if(l_flag)
+    {
+      fprintf(stderr,"Generating inline recursive function.\n");
+    }
+#endif
+    /* generate code again, but this time it is inline */
+    compiler_frame->is_inline=1;
+
+    /* This is a no-op, but prevents optimizer to delete the bytes below */
+    emit1(F_LABEL,-1);
+    emit1(F_BYTE,compiler_frame->max_number_of_locals);
+    emit1(F_BYTE,compiler_frame->num_args);
+    emit0(F_START_FUNCTION);
+    emit1(F_LABEL,compiler_frame->recur_label);
+    DO_CODE_BLOCK(n);
+  }
   assemble();
 }
 

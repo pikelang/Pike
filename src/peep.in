@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.34 2000/04/30 23:15:16 hubbe Exp $
+// $Id: peep.in,v 1.35 2000/05/01 02:11:25 hubbe Exp $
 //
 
 NOP :
@@ -35,9 +35,13 @@ NEGATE CONST1 SUBTRACT : COMPL
 CONST0 ASSIGN_LOCAL_AND_POP : CLEAR_LOCAL($2a)
 
 // Remove clearing of locals from the beginning of functions
-CLEAR_LOCAL [(fifo_len == (long)instrbuf.s.len / (long)sizeof(p_instr)) && $1a>=remove_clear_locals] : 
-CLEAR_2_LOCAL [(fifo_len == (long)instrbuf.s.len / (long)sizeof(p_instr)) && $1a>=remove_clear_locals] : 
-CLEAR_4_LOCAL [(fifo_len == (long)instrbuf.s.len / (long)sizeof(p_instr)) && $1a>=remove_clear_locals] : 
+START_FUNCTION LABEL(0) CLEAR_LOCAL : LABEL(0)
+START_FUNCTION LABEL(0) CLEAR_2_LOCAL : LABEL(0)
+START_FUNCTION LABEL(0) CLEAR_4_LOCAL : LABEL(0)
+
+START_FUNCTION CLEAR_LOCAL :
+START_FUNCTION CLEAR_2_LOCAL :
+START_FUNCTION CLEAR_4_LOCAL :
 
 CLEAR_LOCAL NUMBER(0) ASSIGN_LOCAL_AND_POP ($1a) : CLEAR_LOCAL($1a)
 CLEAR_LOCAL NUMBER(0) ASSIGN_LOCAL_AND_POP ($1a+1) : CLEAR_2_LOCAL($1a)
@@ -297,7 +301,9 @@ TRAMPOLINE POP_VALUE :
 
 
 RECUR RETURN: TAIL_RECUR ($1a)
-MARK TAIL_RECUR : BRANCH ($1a)
+
+// This doesn't really work
+// MARK TAIL_RECUR : BRANCH ($1a)
 
 ASSIGN_LOCAL BRANCH_WHEN_ZERO 2_LOCALS(,$1a) BRANCH_WHEN_EQ : ASSIGN_LOCAL($1a) BRANCH_AND_POP_WHEN_ZERO($2a) LOCAL($3a) BRANCH_WHEN_EQ($4a)
 ASSIGN_LOCAL BRANCH_WHEN_ZERO 2_LOCALS(,$1a) BRANCH_WHEN_NE : ASSIGN_LOCAL($1a) BRANCH_AND_POP_WHEN_ZERO($2a) LOCAL($3a) BRANCH_WHEN_NE($4a)

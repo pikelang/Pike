@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.18 2000/04/30 23:15:16 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.19 2000/05/01 02:11:25 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1429,27 +1429,27 @@ OPCODE1(F_SSCANF, "sscanf")
   o_sscanf(arg1);
 BREAK;
 
-      CASE(F_CALL_LFUN);
-      apply_low(Pike_fp->current_object,
-		GET_ARG()+Pike_fp->context.identifier_level,
-		Pike_sp - *--Pike_mark_sp);
-      break;
+OPCODE1(F_CALL_LFUN,"call lfun")
+  apply_low(Pike_fp->current_object,
+	    arg1+Pike_fp->context.identifier_level,
+	    Pike_sp - *--Pike_mark_sp);
+BREAK;
 
-      CASE(F_CALL_LFUN_AND_POP);
-      apply_low(Pike_fp->current_object,
-		GET_ARG()+Pike_fp->context.identifier_level,
-		Pike_sp - *--Pike_mark_sp);
-      pop_stack();
-      break;
+OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
+  apply_low(Pike_fp->current_object,
+            arg1+Pike_fp->context.identifier_level,
+            Pike_sp - *--Pike_mark_sp);
+  pop_stack();
+BREAK;
 
-    CASE(F_MARK_APPLY);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), 0);
-      break;
+OPCODE1(F_MARK_APPLY,"mark apply")
+ strict_apply_svalue(Pike_fp->context.prog->constants + arg1, 0);
+BREAK;
 
-    CASE(F_MARK_APPLY_POP);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), 0);
-      pop_stack();
-      break;
+OPCODE1(F_MARK_APPLY_POP,"mark, apply & pop")
+  strict_apply_svalue(Pike_fp->context.prog->constants + arg1, 0);
+  pop_stack();
+BREAK;
 
     CASE(F_APPLY);
       strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), Pike_sp - *--Pike_mark_sp );
@@ -1503,11 +1503,11 @@ OPCODE0_JUMP(F_RECUR,"recur")
   save_mark_sp=mark_sp;
 
   addr=pc+EXTRACT_INT(pc);
-  num_locals=EXTRACT_UCHAR(addr-1);
+  num_locals=EXTRACT_UCHAR(addr-2);
 
 #ifdef PIKE_DEBUG
-  if(args != EXTRACT_UCHAR(addr-2))
-    fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-2));
+  if(args != EXTRACT_UCHAR(addr-1))
+    fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-1));
 #endif
 
   clear_svalues(sp, num_locals - args);
@@ -1533,6 +1533,61 @@ OPCODE0_JUMP(F_RECUR,"recur")
 BREAK
 
 /* Assume that the number of arguments is correct */
+OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
+{
+  int x,num_locals,args;
+  char *addr;
+
+  struct svalue *expendible=fp->expendible;
+  struct svalue *locals=fp->locals;
+  struct svalue *save_sp, **save_mark_sp;
+
+  if(fp->current_object->prog != fp->context.prog)
+  {
+    apply_low(Pike_fp->current_object,
+	      arg1+Pike_fp->context.identifier_level,
+	      Pike_sp - *--Pike_mark_sp);
+  }else{
+    fast_check_threads_etc(6);
+    check_c_stack(8192);
+    check_stack(256);
+    
+    save_sp=fp->expendible=fp->locals=*--Pike_mark_sp;
+    args=sp-fp->locals;
+    save_mark_sp=mark_sp;
+    
+    addr=pc+EXTRACT_INT(pc);
+    num_locals=EXTRACT_UCHAR(addr-2);
+    
+#ifdef PIKE_DEBUG
+    if(args != EXTRACT_UCHAR(addr-1))
+      fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-1));
+#endif
+    
+    clear_svalues(sp, num_locals - args);
+    sp += num_locals - args;
+    
+    x=eval_instruction(addr);
+    mark_sp=save_mark_sp;
+    if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
+    pc+=sizeof(INT32);
+    if(save_sp+1 < sp)
+    {
+      assign_svalue(save_sp,sp-1);
+      pop_n_elems(sp-save_sp-1);
+    }
+    fp->expendible=expendible;
+    fp->locals=locals;
+    print_return_value();
+#ifdef PIKE_DEBUG
+    if(sp != save_sp+1)
+      fatal("Stack whack in F_RECUR sp=%p, expected=%p\n",sp,save_sp+1);
+#endif
+  }
+}
+BREAK
+
+/* Assume that the number of arguments is correct */
 OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 {
   int x,num_locals;
@@ -1542,12 +1597,12 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
   fast_check_threads_etc(6);
 
   addr=pc+EXTRACT_INT(pc);
-  num_locals=EXTRACT_UCHAR(addr-1);
+  num_locals=EXTRACT_UCHAR(addr-2);
 
 
 #ifdef PIKE_DEBUG
-  if(args != EXTRACT_UCHAR(addr-2))
-    fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",args,EXTRACT_UCHAR(addr-2));
+  if(args != EXTRACT_UCHAR(addr-1))
+    fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",args,EXTRACT_UCHAR(addr-1));
 #endif
 
   if(sp-args != fp->locals)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.175 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: las.c,v 1.176 2000/05/01 02:11:25 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3930,8 +3930,7 @@ int dooptcode(struct pike_string *name,
     }
 
     tmp.offset=PC;
-    add_to_program(compiler_frame->max_number_of_locals);
-    add_to_program(args);
+    compiler_frame->num_args=args;
   
 #ifdef PIKE_DEBUG
     if(a_flag > 2)

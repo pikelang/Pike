@@ -14,7 +14,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.31 2000/04/21 00:29:48 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.32 2000/05/01 02:11:25 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -246,7 +246,7 @@ void assemble(void)
 
   c=(p_instr *)instrbuf.s.str;
   for(e=0;e<length;e++)
-    if(c[e].opcode == F_LABEL)
+    if(c[e].opcode == F_LABEL && c[e].arg>=0)
       labels[c[e].arg]=e;
 
   for(e=0;e<length;e++)
@@ -320,9 +320,15 @@ void assemble(void)
 
     switch(c->opcode)
     {
-    case F_NOP: break;
+    case F_NOP:
+    case F_START_FUNCTION:
+      break;
     case F_ALIGN:
       while(PC % c->arg) add_to_program(0);
+      break;
+
+    case F_BYTE:
+      add_to_program(c->arg);
       break;
 
     case F_DATA:
@@ -330,6 +336,7 @@ void assemble(void)
       break;
 
     case F_LABEL:
+      if(c->arg == -1) break;
 #ifdef PIKE_DEBUG
       if(c->arg > max_label || c->arg < 0)
 	fatal("max_label calculation failed!\n");
@@ -385,7 +392,7 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	fatal("Hyperspace error: unknown jump point %d at %d (%d).\n",e,labels[e],jumps[e]);
+	fatal("Hyperspace error: unknown jump point %d at %d (pc=%x).\n",e,labels[e],jumps[e]);
 #endif
       tmp=read_int(jumps[e]);
       upd_int(jumps[e], tmp2 - jumps[e]);
