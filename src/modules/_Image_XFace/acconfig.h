@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.2 2000/11/14 19:26:43 marcus Exp $
+ * $Id: acconfig.h,v 1.3 2001/09/06 19:28:45 marcus Exp $
  */
 
 @TOP@
@@ -19,4 +19,10 @@
 
 /* Define if your cpp supports K&R-style concatenation */
 #undef HAVE_KR_CONCAT
+
+/* Define if you have the <gmp2/gmp.h> header file.  */
+#undef HAVE_GMP2_GMP_H
+
+/* Define if you have the <gmp.h> header file.  */
+#undef HAVE_GMP_H
 
