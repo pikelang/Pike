@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.67 2002/04/11 15:44:17 mast Exp $
+ * $Id: oracle.c,v 1.68 2002/08/06 18:58:16 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.67 2002/04/11 15:44:17 mast Exp $");
+RCSID("$Id: oracle.c,v 1.68 2002/08/06 18:58:16 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -1227,7 +1227,7 @@ static void push_inout_value(struct inout *inout,
       fprintf(stderr,"LOB length: %d\n",loblen);
 #endif
       if(ret == OCI_SUCCESS)
-	push_string(make_shared_binary_string(loblen ? bufp : "",loblen));
+	push_string(make_shared_binary_string(bufp, loblen));
       else
 	ora_error_handler(dbcon->error_handle, ret, errfunc);
       
