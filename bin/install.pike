@@ -510,7 +510,7 @@ done
     exit(1);
   }
 
-  string *parts=(script/"/");
+  array(string) parts=(script/"/");
   mkdirhier( parts[..sizeof(parts)-2]*"/");
   Stdio.write_file(script,"");
 
@@ -790,7 +790,7 @@ int next()
   return 1;
 }
 
-void begin_wizard(string *argv)
+void begin_wizard(array(string) argv)
 {
   // FIXME:
   // We should display the GPL licence and make the user
@@ -864,7 +864,7 @@ object interactive;
 string install_type="--interactive";
 
 
-int pre_install(string *argv)
+int pre_install(array(string) argv)
 {
   
   prefix=vars->prefix || "/usr/local";
@@ -1192,7 +1192,7 @@ void do_install()
   status1("Installation completed successfully.");
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
