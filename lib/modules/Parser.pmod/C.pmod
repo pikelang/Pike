@@ -49,7 +49,7 @@ array(string) split(string data)
       case '.':
 	if(data[start..start+2]=="...")
 	{
-	  pos+=2;
+	  pos+=3;
 	  break;
 	}
 
@@ -85,7 +85,7 @@ array(string) split(string data)
 	break;
 
       default:
-	werror("Unknown token %s\n",data[pos..pos+5]);
+	werror("Unknown token %O\n",data[pos..pos+5]);
 	exit(1);
 
       case  '`':
@@ -136,6 +136,7 @@ array(string) split(string data)
       case '\n':
       case '\r':
       case '\t':
+      case '\14':
 	while(1)
 	{
 	  switch(data[pos])
@@ -144,6 +145,7 @@ array(string) split(string data)
 	    case '\n':
 	    case '\r':
 	    case '\t':
+	    case '\14':
 	      pos++;
 	      continue;
 	  }
@@ -233,7 +235,6 @@ class Token
 }
 
 /* FIXME:
- * Check for #line statements
  */
 array(Token) tokenize(array(string) s, void|string file)
 {
@@ -242,19 +243,25 @@ array(Token) tokenize(array(string) s, void|string file)
   for(int e=0;e<sizeof(s);e++)
   {
     ret[e]=Token(s[e],line,file);
+    if(s[e][0]=='#')
+    {
+      sscanf(s[e],"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file);
+      sscanf(s[e],"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file);
+      line--;
+    }
     line+=sizeof(s[e]/"\n")-1;
   }
   return ret;
 }
 
-array group(array(Token) tokens, void|mapping groupings)
+array group(array(string|Token) tokens, void|mapping groupings)
 {
   array(Token) ret=({});
   if(!groupings) groupings=global_groupings;
   foreach(tokens, Token token)
   {
     ret+=({ token });
-    if(string rev=groupings [ token->text ])
+    if(string rev=groupings [ (string)token ])
     {
       for(int q=sizeof(ret)-1;q>=0;q--)
       {
@@ -267,6 +274,26 @@ array group(array(Token) tokens, void|mapping groupings)
     }
   }
   return ret;
+}
+
+/* FIXME:
+ * This actually strips all preprocessing tokens
+ */
+array strip_line_statements(array tokens)
+{
+  array(Token) ret=({});
+  foreach(tokens, array|object(Token) t)
+    {
+      if(arrayp(t))
+      {
+	ret+=({ strip_line_statements(t) });
+      }else{
+	if( ((string)t) [0] != '#')
+	  ret+=({t});
+      }
+    }
+  return ret;
+  
 }
 
 array hide_whitespaces(array tokens)
@@ -282,6 +309,7 @@ array hide_whitespaces(array tokens)
 	{
 	  case ' ':
 	  case '\t':
+	  case '\14':
 	  case '\n':
 	    mixed tmp=ret[-1];
 	    while(arrayp(tmp)) tmp=tmp[-1];
