@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.82 2004/04/15 00:09:47 nilsson Exp $
+|| $Id: oracle.c,v 1.83 2004/08/31 18:13:21 grubba Exp $
 */
 
 /*
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.82 2004/04/15 00:09:47 nilsson Exp $");
+RCSID("$Id: oracle.c,v 1.83 2004/08/31 18:13:21 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -2128,7 +2128,9 @@ static void dbdate_cast(INT32 args)
   }
   if(!strcmp(s,"string"))
   {
-    dbdate_sprintf(args);
+    pop_n_elems(args);
+    push_int('s');
+    dbdate_sprintf(1);
     return;
   }
   Pike_error("Cannot cast Oracle.Date to %s\n",s);
