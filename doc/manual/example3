@@ -64,7 +64,7 @@
 
 	  int offset=0;
 
-  Then ther is a global variable called offset which is initalized to zero.
+  Then there is a global variable called offset which is initalized to zero.
   (each instance of this class will have it's own instance of this variable,
    so it is not truly global, but..) 
   Note that the initalization is done when the class is cloned. (or

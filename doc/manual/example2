@@ -114,7 +114,7 @@
 
 		file_contents=replace(file_contents,argv[1],argv[2]);
 
-  Call the builtin function replace and replace oall occurances of the 'from'
+  Call the builtin function replace and replace all occurances of the 'from'
   string with the 'to' string and assign the new result to the variable
   'file_contents'.
 

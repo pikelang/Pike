@@ -126,9 +126,9 @@
   other than zero. Otherwise what's between the second set of brackets will
   be executed. Let's look at that expression:
 
-	argc > 2 && argv[1] == "--traditional"
+	argc > 1 && argv[1] == "--traditional"
 
-  Loosely translated, this means: argc is greater than two and the second
+  Loosely translated, this means: argc is greater than one and the second
   element in the array argv is equal to the string "--traditional".
 
   Also note the comments:
