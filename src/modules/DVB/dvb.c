@@ -3,7 +3,11 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: dvb.c,v 1.3 2002/09/09 21:32:30 hop Exp $
+ * $Id: dvb.c,v 1.4 2002/09/24 08:26:00 hop Exp $
+ *
+ * + Tuner zapping code based on 'szap' app from linux DVB driver
+ *   package [ szap.c: (c) 2001 Johannes Stezenbach js@convergence.de ]
+ * + TS parsing code based on 'mgcam' app [ by badfish :]
  *
  * Distro: aconfig.h (automake-> config.h.in), configure.in, Makefile.in
  *
