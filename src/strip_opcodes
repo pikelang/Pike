@@ -9,7 +9,8 @@
 #  o Character ranges may not contain literal newlines.
 
 sed -e '
-  # First convert #line directives.
+  # First pass-through and convert #line directives.
+  /^#line/b
   s/^# \([0-9]* "[^"]*"\).*$/#line \1/
   s/^# \([0-9]*\).*$/#line \1/
   t
@@ -21,7 +22,7 @@ sed -e '
 
   # Stupid IRIX cpp turns --- into -- -
   # SysV sed does not support multi-character *-expressions,
-  # so we use % instead.
+  # so we use ½ instead.
   s/ -- \{0,1\}- / ½ /g
 
   # Make sure the substitute flag is cleared.
@@ -43,6 +44,8 @@ sed -e '
   # Keep only the newlines.
 : keepnl
   s/.//g' | sed -e '
+  # Redundant or extra newline and #line removal.
+
   # Remove newlines that were inserted by p.
 : loop
   /¤$/{
@@ -55,6 +58,11 @@ sed -e '
     # We are only interrested in the newline...
     s/.//g
     H
+    x
+    # RLE encode newlines so that we can avoid overflowing hold.
+    s/\n\{16,16\}/¤/
+    s/¤\{16,16\}/½/
+    x
     d
   }
   # Clear hold, and put #line directives there,
@@ -66,6 +74,25 @@ sed -e '
 
   # Print hold except for a possible initial newline.
   x
+  # Unpack the RLE.
+  s/½/¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤/g
+  s/¤/\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+/g
   s/^\n//
   p
 
