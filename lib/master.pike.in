@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.192 2002/03/01 02:01:59 mast Exp $
+ * $Id: master.pike.in,v 1.193 2002/03/08 04:24:49 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -508,7 +508,7 @@ static program low_findprog(string pname,
 				      "\t%s", describe_error(err)));
 	    }
 	  } else if (out_of_date_warning) {
-	    if (handler) {
+	    if (handler && handler->compile_warning) {
 	      handler->compile_warning(oname, 0,
 				       "Compiled file is out of date\n");
 	    } else {
