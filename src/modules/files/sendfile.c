@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.46 2000/10/06 21:11:24 grubba Exp $
+ * $Id: sendfile.c,v 1.47 2000/10/07 13:12:12 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -202,6 +202,8 @@ static size_t writev(int fd, struct iovec *iov, int n)
 
 static void sf_call_callback(struct pike_sendfile *this)
 {
+  debug_malloc_touch(this->args);
+
   if (this->callback.type != T_INT) {
     int sz = this->args->size;
 
