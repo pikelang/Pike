@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.169 2000/08/06 14:43:02 grubba Exp $ */
+/* $Id: image.c,v 1.170 2000/08/08 11:16:03 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.169 2000/08/06 14:43:02 grubba Exp $
+**!	$Id: image.c,v 1.170 2000/08/08 11:16:03 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.169 2000/08/06 14:43:02 grubba Exp $");
+RCSID("$Id: image.c,v 1.170 2000/08/08 11:16:03 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -325,7 +325,7 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
    rgb_group res;
    int i,j,bx,by,xp,yp;
    int sumr,sumg,sumb,r,g,b;
-   float qdiv=1.0/div;
+   double qdiv=1.0/div;
 
   /* NOTE:
    *	This code MUST be MT-SAFE!
@@ -1743,7 +1743,7 @@ static void image_tuned_box(INT32 args)
   rgb_group *img;
   INT32 ymax;
   struct image *this;
-  float dxw, dyw;
+  double dxw, dyw;
 
   if (args<5||
       sp[-args].type!=T_INT||
@@ -1823,34 +1823,36 @@ static void image_tuned_box(INT32 args)
       ymax=MINIMUM(yw,this->ysize-y1-1);
       for (x=MAXIMUM(0,-x1); x<=xw && x+x1<this->xsize; x++)
 	{
-#define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
-	  float tfx1=tune_factor(x,dxw);
-	  float tfx2=tune_factor(xw-x,dxw);
+#define tune_factor(a,aw) (1.0-((double)(a)*(aw)))
+	  double tfx1 = tune_factor(x,dxw);
+	  double tfx2 = tune_factor(xw-x,dxw);
 
 	  img=this->img+x+x1+this->xsize*MAXIMUM(0,y1);
 	  if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
 	    for (y=MAXIMUM(0,-y1); y<=ymax; y++)
 	      {
-		float tfy;
+		double tfy;
 		rgbda_group sum={0.0,0.0,0.0,0.0};
 		rgbd_group rgb;
 
-		add_to_rgbda_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
-		add_to_rgbda_sum_with_factor(&sum,topright,tfy*tfx2);
-		add_to_rgbda_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
-		add_to_rgbda_sum_with_factor(&sum,bottomright,tfy*tfx2);
+		add_to_rgbda_sum_with_factor(&sum, topleft,
+					     (tfy=tune_factor(y,dyw))*tfx1);
+		add_to_rgbda_sum_with_factor(&sum, topright, tfy*tfx2);
+		add_to_rgbda_sum_with_factor(&sum, bottomleft,
+					     (tfy=tune_factor(yw-y,dyw))*tfx1);
+		add_to_rgbda_sum_with_factor(&sum, bottomright, tfy*tfx2);
 
 		sum.alpha*=(1.0/255.0);
 
-		rgb.r=sum.r*(1.0-sum.alpha)+img->r*sum.alpha;
-		rgb.g=sum.g*(1.0-sum.alpha)+img->g*sum.alpha;
-		rgb.b=sum.b*(1.0-sum.alpha)+img->b*sum.alpha;
+		rgb.r = DO_NOT_WARN(sum.r*(1.0-sum.alpha)+img->r*sum.alpha);
+		rgb.g = DO_NOT_WARN(sum.g*(1.0-sum.alpha)+img->g*sum.alpha);
+		rgb.b = DO_NOT_WARN(sum.b*(1.0-sum.alpha)+img->b*sum.alpha);
 
-		img->r=testrange(rgb.r+0.5);
-		img->g=testrange(rgb.g+0.5);
-		img->b=testrange(rgb.b+0.5);
+		img->r = testrange(rgb.r+0.5);
+		img->g = testrange(rgb.g+0.5);
+		img->b = testrange(rgb.b+0.5);
 
-		img+=this->xsize;
+		img += this->xsize;
 	      }
 	  else
 	    for (y=MAXIMUM(0,-y1); y<=ymax; y++)
@@ -4296,7 +4298,9 @@ void init_image_image(void)
 {
    int i;
    for (i=0; i<CIRCLE_STEPS; i++) 
-      circle_sin_table[i]=(INT32)4096*sin(((double)i)*2.0*3.141592653589793/(double)CIRCLE_STEPS);
+      circle_sin_table[i]=DOUBLE_TO_INT(4096*sin(((double)i)*2.0*
+						 3.141592653589793/
+						 (double)CIRCLE_STEPS));
 
    ADD_STORAGE(struct image);
 

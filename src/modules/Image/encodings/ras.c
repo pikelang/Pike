@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.8 2000/08/03 21:25:32 grubba Exp $ */
+/* $Id: ras.c,v 1.9 2000/08/08 11:11:16 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.8 2000/08/03 21:25:32 grubba Exp $
+**!	$Id: ras.c,v 1.9 2000/08/08 11:11:16 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.8 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: ras.c,v 1.9 2000/08/08 11:11:16 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -122,7 +122,7 @@ void img_ras_decode(INT32 args)
    unsigned char *src, *tmpdata=NULL;
    ptrdiff_t len;
    INT32 x, y;
-   unsigned int numcolors = 0;
+   size_t numcolors = 0;
    struct nct_flat_entry *entries = NULL;
 
    get_all_args("Image.RAS.decode", args, "%S", &str);

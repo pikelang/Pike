@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.19 2000/08/08 11:08:36 grubba Exp $");
+RCSID("$Id: psd.c,v 1.20 2000/08/08 11:10:24 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -208,7 +208,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
   unsigned int *q;
   struct layer *layer = NULL;
   int i;
-  int exp_offset;
+  ptrdiff_t exp_offset;
   if(!src->len) 
     return;
 
@@ -322,7 +322,7 @@ packbitsdecode(struct buffer src,
     }
   }
   if(dst.len)
-    fprintf(stderr, "%d bytes left to write! (should be 0)\n", dst.len);
+    fprintf(stderr, "%ld bytes left to write! (should be 0)\n", dst.len);
   return src;
 }
 
@@ -559,7 +559,7 @@ void push_layer( struct layer  *l)
     f_aggregate_mapping( 4 );
   }
   f_aggregate( l->num_channels );
-  f_aggregate_mapping( sp-osp);
+  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
 }
 
 
@@ -584,8 +584,8 @@ void push_psd_image( struct psd_image *i )
     push_layer( l );
     l = l->next;
   }
-  f_aggregate( sp-tsp );
-  f_aggregate_mapping( sp - osp );
+  f_aggregate(DO_NOT_WARN(sp - tsp));
+  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
 }
 
 static void image_f_psd___decode( INT32 args )
