@@ -1,9 +1,10 @@
-dnl $Id: aclocal.m4,v 1.56 2002/12/19 15:47:44 marcus Exp $
+dnl $Id: aclocal.m4,v 1.57 2003/02/01 16:57:33 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
-dnl newer autoconf call substr m4_substr
-ifdef([substr], ,m4_copy(m4_substr,substr))
-
+dnl newer Autoconf calls substr m4_substr
+ifdef([substr], ,m4_copy([m4_substr],[substr]))
+dnl Autoconf 2.53+ hides their version numbers in m4_PACKAGE_VERSION.
+ifdef([AC_ACVERSION], ,m4_copy([m4_PACKAGE_VERSION],[AC_ACVERSION]))
 
 pushdef([AC_PROG_CC_WORKS],
 [
@@ -157,10 +158,10 @@ EOF
 ])
 
 define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
-pushdef([AC_CHECK_HEADERS],
+define([AC_CHECK_HEADERS],
 [
   if test "x$enable_binary" != "xno"; then
-    ORIG_CHECK_HEADERS($1,$2,$3)
+    ORIG_CHECK_HEADERS($1,$2,$3,$4)
   else
     for ac_hdr in $1
     do
@@ -262,7 +263,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.56 2002/12/19 15:47:44 marcus Exp $
+# $Id: aclocal.m4,v 1.57 2003/02/01 16:57:33 grubba Exp $
 
 MY_AC_PROG_CC
 
