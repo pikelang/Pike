@@ -343,6 +343,7 @@ class _Class_or_Module {
     string contents = standardTags();
     if (documentation && documentation->xml != "")
       contents += xmltag("doc", documentation->xml);
+    children -= ({ 0 }); // FIXME
     foreach (children, _Class_or_Module c)
       contents += c->xml();
     foreach (inherits, Inherit in)
@@ -382,7 +383,7 @@ class _Class_or_Module {
   static string _sprintf(int c)
   {
     if (c == 's') return xml();
-    return print();
+    return sprintf("_Class_or_Module(%O)", name);
   }
 }
 
