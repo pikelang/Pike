@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.34 2001/06/08 19:00:21 mast Exp $
+;;; $Id: pike.el,v 1.35 2001/07/16 15:17:29 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -125,7 +125,12 @@ The name is assumed to begin with a capital letter.")
 (let ((non-ws-sem-ws
        (concat "//[^\n\r]*[\n\r]"	; Line comment.
 	       "\\|"
-	       "/\\*\\([^*]\\|\\*[^/]\\)*\\*/" ; Block comment.
+	       ;; Block comment. We intentionally don't allow line
+	       ;; breaks in them to avoid going very far and risk
+	       ;; running out of regexp stack; this regexp is intended
+	       ;; to handle only short comments that might be put in
+	       ;; the middle of limited constructs like declarations.
+	       "/\\*\\([^*\n\r]\\|\\*[^/]\\)*\\*/"
 	       "\\|"
 	       "\\\\[\n\r]"		; Macro continuation.
 	       "\\|"
@@ -145,6 +150,15 @@ The name is assumed to begin with a capital letter.")
   (concat "\\([ \t\n\r]*\\(\\.[ \t\n\r]*\\)?" ; 1 2
 	  pike-font-lock-identifier-regexp ; 3
 	  "\\)+"))
+
+(defconst pike-font-lock-maybe-type-end
+  (concat "\\(\\.\\.\\.\\|[\]\)]\\)"	; 1
+	  pike-font-lock-semantic-whitespace ; 2-4
+	  "\\(\\w\\|[\(`\"'0-9]\\)" ; 5
+	  "\\|"
+	  "\\(\\w\\)"			; 6
+ 	  pike-font-lock-non-null-semantic-whitespace ; 7 8
+	  "\\(\\w\\|\\<\\s_\\|[`\"'0-9]\\)")) ; 9
 
 (defun pike-font-lock-hack-file-coding-system-perhaps ( foo )
   (interactive)
@@ -230,15 +244,6 @@ Otherwise t is returned."
 			  nil))))
 	(setq pos (point))
 	(forward-comment -20)))))
-
-(defconst pike-font-lock-maybe-type-end
-  (concat "\\(\\.\\.\\.\\|[\]\)]\\)"	; 1
-	  pike-font-lock-semantic-whitespace ; 2-4
-	  "\\(\\<\\w\\|[\(`\"'0-9]\\)" ; 5
-	  "\\|"
-	  "\\(\\w\\)"			; 6
-	  pike-font-lock-non-null-semantic-whitespace ; 7 8
-	  "\\(\\<\\w\\|\\<\\s_\\|[`\"'0-9]\\)")) ; 9
 
 (defvar pike-font-lock-last-type-start nil)
 (defvar pike-font-lock-last-type-end nil)
@@ -604,8 +609,8 @@ reposition the cursor to fontify more identifiers."
 	    ;; #define
 	    (,(concat "^\\s *#\\s *define\\s +"
 		      "\\("		; 1
-		      (concat "\\(\\w+\\)\(\\|" ; 2
-			      "\\(\\w+\\)\\(\\s \\|$\\)") ; 3 4
+		      (concat pike-font-lock-identifier-regexp "\(\\|" ; 2
+			      pike-font-lock-identifier-regexp "\\(\\s \\|$\\)") ; 3 4
 		      "\\)")
 	     (2 font-lock-function-name-face nil t)
 	     (3 font-lock-variable-name-face nil t))
@@ -613,12 +618,17 @@ reposition the cursor to fontify more identifiers."
 	    ;; Fontify symbol names in #if ...defined 
 	    ;; etc preprocessor directives.
 	    ("^[ \t]*#[ \t]*\\(el\\)?if\\>"
-	     ("\\<\\(defined\\|efun\\|constant\\)\\>[ \t]*(?\\(\\w+\\)?"
+	     (,(concat "\\<\\(defined\\|efun\\|constant\\)\\>[ \t]*" ; 1
+		       "(?" pike-font-lock-identifier-regexp "?") ; 2
 	      nil nil
 	      (1 ,font-lock-preprocessor-face)
 	      (2 font-lock-variable-name-face nil t)))
 
-	    ("^[ \t]*\\(#[ \t]*[a-z]+\\)\\>[ \t]*\\([^0-9\n\r]*\\)?"
+	    (,(concat "^[ \t]*#[ \t]*ifdef[ \t]+"
+		      pike-font-lock-identifier-regexp)
+	     (1 font-lock-variable-name-face))
+
+	    ("^[ \t]*\\(#[ \t]*[a-z]+\\)\\>"
 	     (1 ,font-lock-preprocessor-face)
 	     (2 font-lock-variable-name-face nil t)))
 
