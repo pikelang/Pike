@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.38 2000/08/16 15:59:28 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.39 2000/08/16 22:54:24 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -442,7 +442,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 
 PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len)
 {
-  SDWORD ret;
+  DWORD ret;
   long handle;
   mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr,"Writing %d bytes to %d (%d)\n",len,fd,da_handle[fd]));
