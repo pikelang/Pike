@@ -463,6 +463,7 @@ int verbose_debug_exit = 1;
 #define HSIZE 1109891
 #define LHSIZE 1109891
 #define FLSIZE 8803
+#define DEBUG_MALLOC_PAD 8
 
 struct fileloc
 {
@@ -498,6 +499,59 @@ static struct memhdr *hash[HSIZE];
 
 static struct memhdr no_leak_memlocs;
 static int file_location_number=0;
+
+#if DEBUG_MALLOC_PAD - 0 > 0
+char *do_pad(char *mem, size_t size)
+{
+  long q,e;
+  mem+=DEBUG_MALLOC_PAD;
+  q= (((long)mem) ^ 0x555555) + (size * 9248339);
+  
+/*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
+#if 1
+  for(e=0;e< DEBUG_MALLOC_PAD; e++)
+  {
+    char tmp=q|1;
+    q=(q<<13) ^ ~(q>>5);
+    mem[e-DEBUG_MALLOC_PAD] = tmp;
+    mem[size+e] = tmp;
+  }
+#endif
+  return mem;
+}
+
+void check_pad(struct memhdr *mh)
+{
+  long q,e;
+  char *mem=mh->data;
+  size_t size=mh->size;
+  q= (((long)mem) ^ 0x555555) + (size * 9248339);
+
+/*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
+#if 1
+  for(e=0;e< DEBUG_MALLOC_PAD; e++)
+  {
+    char tmp=q|1;
+    q=(q<<13) ^ ~(q>>5);
+    if(mem[e-DEBUG_MALLOC_PAD] != tmp)
+    {
+      fprintf(stderr,"Pre-padding overwritten for block at %p (size %d) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
+      dump_memhdr_locations(mh, 0);
+      abort();
+    }
+    if(mem[size+e] != tmp)
+    {
+      fprintf(stderr,"Post-padding overwritten for block at %p (size %d) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
+      dump_memhdr_locations(mh, 0);
+      abort();
+    }
+  }
+#endif
+}
+#else
+#define do_pad(X,Y) (X)
+#define check_pad(M)
+#endif
 
 static int location_number(const char *file, int line)
 {
@@ -599,6 +653,7 @@ static struct memhdr *find_memhdr(void *p)
       *prev=mh->next;
       mh->next=hash[h];
       hash[h]=mh;
+      check_pad(mh);
       return mh;
     }
   }
@@ -679,7 +734,7 @@ static void make_memhdr(void *p, int s, int locnum)
   mlhash[l]=ml;
 }
 
-static int remove_memhdr(void *p)
+static int remove_memhdr(void *p, int already_gone)
 {
   struct memhdr **prev,*mh;
   unsigned long h=(long)p;
@@ -688,6 +743,8 @@ static int remove_memhdr(void *p)
   {
     if(mh->data==p)
     {
+      if(!already_gone) check_pad(mh);
+
       *prev=mh->next;
       low_add_marks_to_memhdr(&no_leak_memlocs, mh);
       free_memhdr(mh);
@@ -700,13 +757,16 @@ static int remove_memhdr(void *p)
 
 void *debug_malloc(size_t s, const char *fn, int line)
 {
-  void *m;
+  char *m;
 
   mt_lock(&debug_malloc_mutex);
 
-  m=malloc(s);
+  m=(char *)malloc(s + DEBUG_MALLOC_PAD*2);
   if(m)
+  {
+    m=do_pad(m, s);
     make_memhdr(m, s, location_number(fn,line));
+  }
 
   if(verbose_debug_malloc)
     fprintf(stderr, "malloc(%d) => %p  (%s:%d)\n", s, m, fn, line);
@@ -718,28 +778,31 @@ void *debug_malloc(size_t s, const char *fn, int line)
 
 void *debug_calloc(size_t a, size_t b, const char *fn, int line)
 {
-  void *m;
-  int locnum;
-  mt_lock(&debug_malloc_mutex);
-  m=calloc(a, b);
-
-  if(m) make_memhdr(m, a*b, location_number(fn,line));
+  void *m=debug_malloc(a*b,fn,line);
+  if(m)
+    MEMSET(m, 0, a*b);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "calloc(%d,%d) => %p  (%s:%d)\n", a, b, m, fn, line);
 
-  mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
 void *debug_realloc(void *p, size_t s, const char *fn, int line)
 {
-  void *m;
+  char *m,*base;
   mt_lock(&debug_malloc_mutex);
-  m=realloc(p, s);
+
+  base=find_memhdr(p) ?  (void *)(((char *)p)-DEBUG_MALLOC_PAD): p;
+  m=realloc(base, s+DEBUG_MALLOC_PAD*2);
+
   if(m) {
-    if(p) remove_memhdr(p);
-    make_memhdr(m, s, location_number(fn,line));
+    m=do_pad(m, s);
+    if(m != base)
+    {
+      if(p) remove_memhdr(p,1);
+      make_memhdr(m, s, location_number(fn,line));
+    }
   }
   if(verbose_debug_malloc)
     fprintf(stderr, "realloc(%p,%d) => %p  (%s:%d)\n", p, s, m, fn,line);
@@ -750,7 +813,7 @@ void *debug_realloc(void *p, size_t s, const char *fn, int line)
 void debug_free(void *p, const char *fn, int line)
 {
   mt_lock(&debug_malloc_mutex);
-  remove_memhdr(p);
+  if(remove_memhdr(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
   free(p);
   if(verbose_debug_malloc)
     fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
@@ -760,14 +823,14 @@ void debug_free(void *p, const char *fn, int line)
 char *debug_strdup(const char *s, const char *fn, int line)
 {
   char *m;
-  mt_lock(&debug_malloc_mutex);
-  m=strdup(s);
-
-  if(m) make_memhdr(m, strlen(s)+1, location_number(fn,line));
+  long length;
+  length=strlen(s);
+  m=(char *)debug_malloc(length+1,fn,line);
+  MEMCPY(m,s,length+1);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "strdup(\"%s\") => %p  (%s:%d)\n", s, m, fn, line);
-  mt_unlock(&debug_malloc_mutex);
+
   return m;
 }
 
@@ -776,6 +839,7 @@ void dump_memhdr_locations(struct memhdr *from,
 			   struct memhdr *notfrom)
 {
   struct memloc *l;
+  if(!from) return;
   for(l=from->locations;l;l=l->next)
   {
     struct fileloc *f;
