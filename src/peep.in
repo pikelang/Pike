@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.67 2003/04/07 19:33:46 grubba Exp $
+// $Id: peep.in,v 1.68 2003/12/03 17:12:51 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -325,7 +325,7 @@ NEG_NUMBER MARK_X [$2a>0] : MARK_X($2a-1) NEG_NUMBER($1a)
 GLOBAL MARK_X [$2a>0] : MARK_X($2a-1) GLOBAL($1a)
 MARK_APPLY MARK_X [$2a>0] : MARK_X($2a-1) MARK_APPLY($1a)
 CONSTANT MARK_X [$2a>0] : MARK_X($2a-1) CONSTANT($1a)
-FLOAT MARK_X [$2a>0] : MARK_X($2a-1) FLOAT($1a)
+   //FLOAT MARK_X [$2a>0] : MARK_X($2a-1) FLOAT($1a)
 LFUN MARK_X [$2a>0] : MARK_X($2a-1) LFUN($1a)
 LTOSVAL MARK_X [$2a>0] : MARK_X($2a-1) LTOSVAL
 LOCAL_LVALUE MARK_X [$2a>1] : MARK_X($2a-2) LOCAL_LVALUE($1a)
@@ -378,7 +378,7 @@ CLEAR_LOCAL INC_LOCAL_AND_POP($1a) : CONST1 ASSIGN_LOCAL_AND_POP($1a)
 
 NUMBER POP_VALUE :
 STRING POP_VALUE :
-FLOAT POP_VALUE :
+//FLOAT POP_VALUE :
 CONSTANT POP_VALUE :
 LOCAL POP_VALUE :
 IDENTIFIER POP_VALUE :
