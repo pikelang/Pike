@@ -2,9 +2,9 @@ typedef struct _Blob
 {
   struct svalue *feed;
 
-  int word;
-  int docid;
-  int eof;
+  unsigned int word;
+  unsigned int docid;
+  unsigned int eof;
   
   struct buffer *b;
 } Blob;

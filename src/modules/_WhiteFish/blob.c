@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.12 2001/05/25 14:37:44 per Exp $");
+RCSID("$Id: blob.c,v 1.13 2001/05/25 15:55:20 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -31,8 +31,10 @@ int wf_blob_next( Blob *b )
 {
   /* Find the next document ID */
   if( b->eof )
+  {
     return -1;
-  b->docid = -1;
+  }
+  b->docid = 0;
   if( b->b->rpos >= b->b->size )
   {
     if( !b->feed )
@@ -134,7 +136,7 @@ int wf_blob_docid( Blob *b )
 {
   if( b->eof )
     return -1;
-  if( b->docid >= 0 )
+  if( b->docid > 0 )
     return b->docid;
   else
   {

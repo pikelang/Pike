@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.15 2001/05/25 15:00:04 js Exp $");
+RCSID("$Id: whitefish.c,v 1.16 2001/05/25 15:55:20 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -44,7 +44,7 @@ static void free_stuff( void *_t )
 #define OFFSET(X) \
  (X.type == HIT_BODY?X.u.body.pos:X.type==HIT_FIELD?(X.u.field.pos):(X.u.anchor.pos))
 
-#define DOFF(X)  MINIMUM((int)sqrt(X),7)
+#define DOFF(X)  MINIMUM((int)X,7)
 #define MOFF(X)  (X.type==HIT_BODY?0:X.type==HIT_FIELD?X.u.field.type+2:1)
 
 static void handle_hit( Blob **blobs,
@@ -52,7 +52,8 @@ static void handle_hit( Blob **blobs,
 			struct object *res,
 			int docid,
 			double *field_c[66],
-			double *prox_c[8] )
+			double *prox_c[8],
+			double mc, double mp)
 {
   int i, j, k, end = 0;
   Hit *hits = malloc( nblobs * sizeof(Hit) );
@@ -61,6 +62,7 @@ static void handle_hit( Blob **blobs,
 
   int matrix[66][8];
 
+  MEMSET(matrix, 0, sizeof(matrix) );
   MEMSET(hits, 0, nblobs * sizeof(Hit) );
   MEMSET(pos, 0, nblobs );
 
@@ -75,14 +77,22 @@ static void handle_hit( Blob **blobs,
     {
       hits[i] = wf_blob_hit( blobs[i], j );
       matrix[MOFF(hits[i])][0]++;
+/*       printf("Absolute hit %d -> %d\n", hits[i].raw, MOFF(hits[i]) ); */
       /* forward the other positions */
       for( k = 0; k<nblobs; k++ )
-	if( k != j &&  pos[ k ] < nhits[ k ] )
+	if( k != i &&  pos[ k ] < nhits[ k ] )
 	{
 	  while( (hits[k].raw < hits[i].raw) && (pos[ k ] < nhits[ k ]))
 	    hits[k] = wf_blob_hit( blobs[k], pos[k]++ );
 	  if( (pos[ k ] < nhits[ k ]) && hits[k].type == hits[i].type )
-	    matrix[MOFF(hits[i])][DOFF(OFFSET(hits[i])-OFFSET(hits[k]))]+=2;
+	  {
+/* 	    printf("Pair hit %d-%d: %x -> [%d][%d]\n", */
+/* 		   OFFSET(hits[i]),  OFFSET(hits[k]), */
+/* 		   hits[i].raw, */
+/* 		   MOFF(hits[i]), */
+
+	    matrix[MOFF(hits[i])][DOFF(OFFSET(hits[k])-OFFSET(hits[i]))]+=2;
+	  }
 	}
     }
   }
@@ -90,19 +100,27 @@ static void handle_hit( Blob **blobs,
 
   /* Now we have our nice matrix. Time to do some multiplication */
 
+/*   printf("matrix:\n"); */
+/*   for( i = 0; i<3; i++ ) */
+/*   { */
+/*     for( j = 0; j<8; j++ ) */
+/*       printf( "%4d ", matrix[i][j] ); */
+/*     printf("\n"); */
+/*   } */
+  
   {
     double accum = 0.0, fc, pc;
     int accum_i;
     for( i = 0; i<66; i++ )
-      if( (fc = *field_c[i]) != 0.0 )
+      if( (fc = (*field_c)[i]) != 0.0 )
 	for( j = 0; j<8; j++ )
-	  if( (pc = *prox_c[j]) != 0.0 )
-	    accum += matrix[i][j] * fc * pc;
+	  if( (pc = (*prox_c)[j]) != 0.0 )
+	    accum += (matrix[i][j]*fc*pc) / (mc*mp);
 
     /* Limit */
     if( accum > 32000.0 )
       accum = 32000.0;
-    accum_i = (int)(accum * 65535); 
+    accum_i = (int)(accum *100 ); 
     if( accum_i > 0 )
       wf_resultset_add( res, docid, accum_i );
   }
@@ -115,6 +133,7 @@ static struct object *low_do_query_merge( Blob **blobs,
 {
   struct object *res = wf_resultset_new();
   struct tofree *__f = malloc( sizeof( struct tofree ) );
+  double max_c=0.0, max_p=0.0;
   ONERROR e;
   int i, j, end=0;
   Blob **tmp;
@@ -128,40 +147,48 @@ static struct object *low_do_query_merge( Blob **blobs,
   SET_ONERROR( e, free_stuff, __f );
 
 
-  /* Time to do the real work. :-) */
-  for( i = 0; i<nblobs; i++ ) /* Forward to first element */
-    wf_blob_next( blobs[i] );  
+  for( i = 0; i<66; i++ )
+    if( field_c[i] > max_c )
+      max_c = field_c[i];
+  
+  for( i = 0; i<8; i++ )
+    if( prox_c[i] > max_p )
+      max_p = prox_c[i];
 
-
-  /* Main loop: Find the smallest element in the blob array. */
-  while( !end )
+  if( max_p != 0.0 && max_c != 0.0 )
   {
-    int min = blobs[0]->docid;
+    /* Time to do the real work. :-) */
+    for( i = 0; i<nblobs; i++ ) /* Forward to first element */
+      wf_blob_next( blobs[i] );  
+
+    /* Main loop: Find the smallest element in the blob array. */
+    while( !end )
+    {
+      unsigned int min = 0x7ffffff;
     
-    for( i = 1; i<nblobs; i++ )
-      if( !blobs[i]->eof && blobs[i]->docid < min )
-	min = blobs[i]->docid;
+      for( i = 0; i<nblobs; i++ )
+	if( !blobs[i]->eof && ((unsigned int)blobs[i]->docid) < min )
+	  min = blobs[i]->docid;
 
-    for( j = 0, i = 0; i < nblobs; i++ )
-      if( blobs[i]->docid == min && !blobs[i]->eof )
-	tmp[j++] = blobs[i];
-
-    handle_hit( tmp, j, res, min, &field_c, &prox_c );
-    
-    /* Step the 'min' blobs */
-    for( i = 0; i<j; i++ )
-      wf_blob_next( tmp[i] );
-
-    /* Are we done? */
-    end = 1;
-    for( i=0; i<nblobs; i++ )
-      if( !blobs[i]->eof )
-      {
-	end = 0;
+      if( min == 0x7ffffff )
 	break;
-      }
-  }
 
+/*       printf( "hit in %d: ", min ); */
+
+      for( j = 0, i = 0; i < nblobs; i++ )
+	if( blobs[i]->docid == min && !blobs[i]->eof )
+	{
+	  tmp[j++] = blobs[i];
+/* 	  printf( "%8x ", blobs[i]->word ); */
+	}
+/*       printf( "\n"); */
+      handle_hit( tmp, j, res, min, &field_c, &prox_c, max_c, max_p );
+    
+      /* Step the 'min' blobs */
+      for( i = 0; i<j; i++ )
+	wf_blob_next( tmp[i] );
+    }
+  }
   /* Free workarea and return the result. */
 
   UNSET_ONERROR( e );
@@ -251,10 +278,10 @@ static void f_do_query_merge( INT32 args )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
 
   for( i = 0; i<8; i++ )
-    proximity_coefficients[i] = (double)_prox->item[i].u.integer/65535.0;
+    proximity_coefficients[i] = (double)_prox->item[i].u.integer;
 
   for( i = 0; i<66; i++ )
-    field_coefficients[i] = (double)_field->item[i].u.integer/65535.0;
+    field_coefficients[i] = (double)_field->item[i].u.integer;
 
   res = low_do_query_merge(blobs,numblobs,
 			   field_coefficients,
