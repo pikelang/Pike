@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.523 2003/12/18 21:22:23 marcus Exp $
+|| $Id: builtin_functions.c,v 1.524 2004/01/11 01:16:08 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.523 2003/12/18 21:22:23 marcus Exp $");
+RCSID("$Id: builtin_functions.c,v 1.524 2004/01/11 01:16:08 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2138,13 +2138,16 @@ PMOD_EXPORT void f_throw(INT32 args)
   pike_throw();
 }
 
-/*! @decl void exit(int returncode)
+/*! @decl void exit(int returncode, void|stirng fmt, mixed ... extra)
  *!
  *!   Exit the whole Pike program with the given @[returncode].
  *!
  *!   Using @[exit()] with any other value than @expr{0@} (zero) indicates
  *!   that something went wrong during execution. See your system manuals
  *!   for more information about return codes.
+ *!
+ *!   The arguments after the @[returncode] will be used for a call to
+ *!   @[werror] to output a message on stderr.
  *!
  *! @seealso
  *!   @[_exit()]
@@ -2162,6 +2165,9 @@ PMOD_EXPORT void f_exit(INT32 args)
 
   if(in_exit) Pike_error("exit already called!\n");
   in_exit=1;
+
+  if(args>1)
+    f_werror(args-1);
 
   assign_svalue(&throw_value, Pike_sp-args);
   throw_severity=THROW_EXIT;
@@ -8038,7 +8044,8 @@ void init_builtin_efuns(void)
 		      tArr(tVar(0))), 0, OPT_TRY_OPTIMIZE);
   
 /* function(int:void) */
-  ADD_EFUN("exit",f_exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("exit",f_exit,tFuncV(tInt tOr(tVoid,tStr),tOr(tVoid,tMix),tVoid),
+	   OPT_SIDE_EFFECT);
   
 /* function(int:void) */
   ADD_EFUN("_exit",f__exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
