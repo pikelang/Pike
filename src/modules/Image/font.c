@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.45 1999/04/25 19:58:22 grubba Exp $ */
+/* $Id: font.c,v 1.46 1999/04/25 20:00:57 grubba Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.45 1999/04/25 19:58:22 grubba Exp $
+**!	$Id: font.c,v 1.46 1999/04/25 20:00:57 grubba Exp $
 **! class Font
 **!
 **! note
@@ -279,12 +279,12 @@ static INLINE int my_read(int from, void *t, int towrite)
 }
 #endif
 
-static INLINE long file_size(int fd)
+static INLINE size_t file_size(int fd)
 {
   struct stat tmp;
   if((!fd_fstat(fd, &tmp)) &&
      (tmp.st_mode & S_IFREG)) 
-     return (long)tmp.st_size;
+     return (size_t)tmp.st_size;
   return -1;
 }
 
