@@ -6,6 +6,7 @@
 object line; /* Current line */
 
 // FIXME: Propagete 0:s (errors) through the continuation functions
+// Fixed now, I think.
 
 void create(object l)
 {
@@ -97,7 +98,7 @@ mapping get_astring(function c)
   if (line)
   {
     string|object s = line->get_astring();
-    if (stringp(s))
+    if (!s || stringp(s))
       return c(s);
 
     line = 0;
@@ -132,7 +133,7 @@ class handle_literal
     }
   mixed `()(string s)
     {
-      return handler( ([ "type" : "string", "string" : s ]) );
+      return s && handler( ([ "type" : "string", "string" : s ]) );
     }
 }
 
@@ -150,7 +151,7 @@ class handle_list
 
   mixed `()(array l)
     {
-      return c( ([ "type" : "list", "list" : l ]) );
+      return c(l && ([ "type" : "list", "list" : l ]) );
     }
 }
 
@@ -174,6 +175,9 @@ class collect_list
     
   mapping append(mapping value)
     {
+      if (!value)
+	return c(0);
+      
       if (value->eol)
 	return c(l);
       l += ({ value });
@@ -201,6 +205,9 @@ class handle_options
 
   mixed `()(array l)
     {
+      if (!l)
+	return c(0);
+      
       value->options = l;
       /* line cannot be NULL, as the last token parsed is always ']',
        * not a literal */
