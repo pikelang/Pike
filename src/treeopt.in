@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.71 2002/11/18 16:37:08 grubba Exp $
+// $Id: treeopt.in,v 1.72 2002/12/20 15:26:20 grubba Exp $
 //
 // The tree optimizer
 //
@@ -1275,7 +1275,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 			    OPT_CASE|OPT_CONTINUE|
 			    OPT_BREAK|OPT_RETURN)) ],
        F_ADD_EQ(1 = +[ !depend_p($$, $$) ],
-		2 = +[ !depend_p($$, $1) ]
+		2 = +[ !depend_p($$, $1) ] [ !depend_p($$, $$) ]
 		[ !($$->tree_info & OPT_SIDE_EFFECT) ]
 		[ ((($$->type == int_type_string) &&
 		    ($1->type == int_type_string)) ||
