@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.17 2002/09/09 14:59:57 bill Exp $
+ * $Id: extract.pike,v 1.18 2002/11/27 01:13:31 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -30,9 +30,9 @@ int main(int n, array(string) args) {
     exit(1);
   }
 
-  string srcdir = args[1];
-  string builddir = args[2];
-  imgdir = args[3];
+  string srcdir = combine_path(getcwd(), args[1]);
+  string builddir = combine_path(getcwd(), args[2]);
+  imgdir = combine_path(getcwd(), args[3]);
   if(srcdir[-1]!='/') srcdir += "/";
   if(builddir[-1]!='/') builddir += "/";
   if(imgdir[-1]!='/') imgdir += "/";
