@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.8 2003/07/29 03:48:48 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.9 2003/07/29 04:10:12 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -294,6 +294,59 @@ PIKECLASS SHA1_State
     }
 }
 /*! @endclass SHA1_State */
+
+/*! @class SHA256_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with HashInfo. */
+
+PIKECLASS SHA256_Info
+{
+  INIT
+    {
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
+
+      werror("SHA256_Info->INIT\n");
+      
+      if (HashInfo && !HashInfo->meta)
+	HashInfo->meta = &nettle_sha256;
+      else {
+	/* Can't call Pike_error here. 
+	 * Pike_error("Can't initialize this object.\n"); */
+	werror("SHA256_Info->INIT failed\n");
+      }
+    }
+}
+
+/*! @endclass SHA256_Info */
+
+/*! @class SHA256_State
+ *!
+ *! State for SHA256 hashing.
+ */
+
+PIKECLASS SHA256_State
+{
+  INHERIT SHA256_Info;
+  INHERIT HashState;
+  CVAR struct sha256_ctx sha256;
+
+  INIT
+    {
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
+      werror("SHA256_State->INIT\n");
+
+      assert(instance);
+
+      sha256_init(&THIS->sha256);
+      instance->ctx = &THIS->sha256;
+    }
+}
+/*! @endclass SHA256_State */
 
 /*! @endmodule Nettle */
 
