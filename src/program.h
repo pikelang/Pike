@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.194 2003/11/25 16:00:20 grubba Exp $
+|| $Id: program.h,v 1.195 2003/11/28 15:44:27 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -628,6 +628,9 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 void pike_set_prog_event_callback(void (*cb)(int));
 void pike_set_prog_optimize_callback(node *(*opt)(node *));
+int really_low_reference_inherited_identifier(struct program_state *q,
+					      int e,
+					      int i);
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name,
