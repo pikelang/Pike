@@ -16,7 +16,7 @@ char *automatic_fatal;
 JMP_BUF *recoveries=0;
 ONERROR *onerror_stack=0;
 
-jmp_buf *init_recovery(JMP_BUF *r)
+my_jmp_buf *init_recovery(JMP_BUF *r)
 {
   r->fp=fp;
   r->sp=sp;
