@@ -77,19 +77,19 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
       rpath=rpath[sizeof(index)..];
   r->path=reverse(rpath);
     
-  if( (force || (check_link(uri, allow, deny))) && !has_uri( r ) )
+  if( force || check_link(uri, allow, deny) )
   {
-    mixed err = catch(
-    db->query( "insert into "+table+
-	       " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
-	       string_to_utf8((string)r),
-	       to_md5((string)r), recurse, (template||"") ) );
-    if(err)
+    if(has_uri(r))
     {
-      werror("Error inserting %s into queue.\n", (string)r);
-      werror("hascache: %O\n", hascache);
-      throw(err);
+      int stage = get_stage(r);
+      if(stage!=5 && stage!=6)
+	set_stage(r, 0);
     }
+    else
+      db->query( "insert into "+table+
+		 " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
+		 string_to_utf8((string)r),
+		 to_md5((string)r), recurse, (template||"") ) );
   }
 }
 
@@ -227,4 +227,13 @@ void set_stage( Standards.URI uri,
 {
   db->query( "update "+table+" set stage=%d where uri_md5=%s",stage,
 	     to_md5((string)uri));
+}
+
+int get_state( Standards.URI uri )
+{
+  array a = db->query( "select state from "+table+" where uri_md5=%s", to_md5((string)uri));
+  if(sizeof(a))
+    return (int)a[0]->state;
+  else
+    return -1;
 }
