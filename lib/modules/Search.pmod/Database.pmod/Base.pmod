@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.12 2001/08/07 15:17:32 js Exp $
+// $Id: Base.pmod,v 1.13 2001/08/07 15:33:07 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -82,6 +82,10 @@ void set_metadata(Standards.URI|string uri,
 mapping(string:string) get_metadata(int|Standards.URI|string uri,
 				    void|string language,
 				    void|array(string) wanted_fields);
+
+// FIXME: docs
+mapping(int:string) get_special_metadata(array(int) doc_ids,
+					  string wanted_field);
 
 //! Remove a document from the database. 
 //! @param uri

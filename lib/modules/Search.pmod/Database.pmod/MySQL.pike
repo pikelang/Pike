@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.53 2001/08/07 15:17:32 js Exp $
+// $Id: MySQL.pike,v 1.54 2001/08/07 15:33:07 js Exp $
 
 inherit .Base;
 
@@ -245,6 +245,14 @@ void set_metadata(Standards.URI|string uri, void|string language,
   db->query("replace into metadata (doc_id, name, value) values "+s);
 }
 
+static string make_fields_sql(void|array(string) wanted_fields)
+{
+  if(wanted_fields && sizeof(wanted_fields))
+    return " and name IN ('"+map(wanted_fields,db->quote)*"','"+"')";
+  else
+    return "";
+}
+
 mapping(string:string) get_metadata(int|Standards.URI|string uri,
 				    void|string language,
 				    void|array(string) wanted_fields)
@@ -254,11 +262,8 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
     doc_id=uri;
   else
     doc_id = get_document_id((string)uri, language);
-  string s="";
-  if(wanted_fields && sizeof(wanted_fields))
-    s=" and name IN ('"+map(wanted_fields,db->quote)*"','"+"')";
-			      
-  array a=db->query("select name,value from metadata where doc_id=%d"+s,
+  array a=db->query("select name,value from metadata where doc_id=%d"+
+		    make_fields_sql(wanted_fields),
 		    doc_id);
   mapping md=mkmapping(a->name,a->value);
   if(md->body)
@@ -268,6 +273,16 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
     md[field] = utf8_to_string(md[field]);
 
   return md;
+}
+
+mapping(int:string) get_special_metadata(array(int) doc_ids,
+					  string wanted_field)
+{
+  array a=db->query("select doc_id,value from metadata where doc_id IN ("+
+		    ((array(string))doc_ids)*","+") and name = %s",
+		    wanted_field);
+
+  return mkmapping( a->doc_id, a->value);
 }
 
 mapping get_uri_and_language(int|array(int) doc_id)
