@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.150 2004/03/12 21:56:52 mast Exp $
+|| $Id: builtin.cmod,v 1.151 2004/03/17 12:58:41 mast Exp $
 */
 
 #include "global.h"
@@ -420,7 +420,6 @@ PIKEFUN int trace(int level, void|string facility, void|int all_threads)
   }
   else {
     old_level = Pike_interpreter.trace_level;
-    gc_trace = level;
 #ifdef PIKE_THREADS
     if (!all_threads || UNSAFE_IS_ZERO (all_threads))
       Pike_interpreter.trace_level = level;
