@@ -2,7 +2,7 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.7 1999/06/22 20:10:20 grubba Exp $
+ * $Id: postgres.pike,v 1.8 2000/04/29 00:10:38 kinkie Exp $
  *
  */
 
@@ -124,6 +124,14 @@ mapping(string:array(mixed)) list_fields (string table, void|string wild) {
 	}
 	return ret;
 }
+
+int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
+{  
+  if (!bindings)
+    return ::big_query(q);
+  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+}
+
 #else /* !constant(Postgres.postgres) */
 #error "Postgres support not available.\n"
 #endif /* constant(Postgres.postgres) */

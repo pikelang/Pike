@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.2 1999/07/01 20:25:38 grubba Exp $
+ * $Id: sql_util.pmod,v 1.3 2000/04/29 00:10:59 kinkie Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	sql_util.pmod
-//. RCSID:	$Id: sql_util.pmod,v 1.2 1999/07/01 20:25:38 grubba Exp $
+//. RCSID:	$Id: sql_util.pmod,v 1.3 2000/04/29 00:10:59 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Some SQL utility functions
@@ -32,4 +32,27 @@ string quote(string s)
 void fallback()
 {
   throw(({ "Function not supported in this database.", backtrace() }));
+}
+
+//. - build a raw SQL query, given the cooked query and the variable bindings
+//.   It's meant to be used as an emulation engine for those drivers not
+//.   providing such a behaviour directly (i.e. Oracle).
+//.   The raw query can contain some variables (identified by prefixing
+//.   a colon to a name or a number(i.e. :var, :2). They will be
+//.   replaced by the corresponding value in the mapping.
+//. > query
+//.   The query
+//. > bindings
+//.   Optional mapping containing the variable bindings. Make sure that
+//.   no confusion is possible in the query. If necessary, change the
+//.   variables' names
+string emulate_bindings(string query, mapping(string|int:mixed)|void bindings)
+{
+  array(string)k, v;
+  if (!bindings)
+    return query;
+  v=Array.map(values(bindings),
+              lambda(mixed m) {return (stringp(m)?m:(string)m);});
+  k=Array.map(indices(bindings),lambda(string s){return ":"+s;});
+  return replace(query,k,v);
 }

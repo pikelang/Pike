@@ -12,6 +12,14 @@ mapping(string:mapping(string:mixed)) list_fields(string table, string|void wild
 	return mkmapping(a,Array.map(a,lambda(string s, mapping m) 
 			{return m[s];},result));
 }
+
+array(mapping(string:mixed)) query(string q,
+                                   mapping(string|int:mixed)|void bindings) {
+  if (!bindings)
+    return ::query(q);
+  return ::query(.sql_util.emulate_bindings(q,bindings));
+}
+
 #else /* !constant(Msql.msql) */
 #error "mSQL support not available.\n"
 #endif /* constant(Msql.msql) */

@@ -1,12 +1,12 @@
 /*
- * $Id: mysql.pike,v 1.7 1999/06/14 23:08:37 grubba Exp $
+ * $Id: mysql.pike,v 1.8 2000/04/29 00:10:21 kinkie Exp $
  *
  * Glue for the Mysql-module
  */
 
 //.
 //. File:	mysql.pike
-//. RCSID:	$Id: mysql.pike,v 1.7 1999/06/14 23:08:37 grubba Exp $
+//. RCSID:	$Id: mysql.pike,v 1.8 2000/04/29 00:10:21 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the glue to the Mysql-module.
@@ -126,6 +126,13 @@ int decode_datetime (string timestr)
     else
       return decode_date (timestr);
   }
+}
+
+int|object big_query(string q, mapping(string|int:mixed)|void bindings)
+{
+  if (!bindings)
+    return ::big_query(q);
+  return ::big_query(.sql_util.emulate_bindings(q,bindings));
 }
 
 #else /* !constant(Mysql.mysql) */

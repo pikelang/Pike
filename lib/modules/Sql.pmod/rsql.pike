@@ -154,8 +154,11 @@ string quote(string s)
   return do_request('q');
 }
 
-object big_query(string q)
+int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings);
+
   mixed qid = do_request('Q', q);
   return qid && class {
 

@@ -3,7 +3,7 @@
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  * (C) Roxen IS
  * 
- * $Id: sybase.pike,v 1.1 2000/03/26 20:49:06 kinkie Exp $
+ * $Id: sybase.pike,v 1.2 2000/04/29 00:11:09 kinkie Exp $
  *
  */
 
@@ -95,6 +95,12 @@ void create(void|string host, void|string db, void|string user,
   if (db && stringp(db) && sizeof(db)) {
     mo::big_query("use "+db);
   }
+}
+
+int|object big_query(string q, mapping(string|int:mixed)|void bindings) {
+  if (!bindings)
+    return ::big_query(q);
+  return ::big_query(.sql_util.emulate_bindings(q,bindings));
 }
 
 #else
