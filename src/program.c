@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.342 2001/07/02 00:41:16 mast Exp $");
+RCSID("$Id: program.c,v 1.343 2001/07/02 17:40:28 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1771,13 +1771,33 @@ void check_program(struct program *p)
 	     i->run_time_type)
 	  {
 	    if (i->name) {
-	      fatal("Variable '%s' and '%s' overlap\n",
+	      fatal("Variable '%s' and '%s' overlap\n"
+		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
 		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
-		    i->name->str);
+		    i->name->str,
+		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
+		    storage_offset +
+		    ID_FROM_INT(p, variable_positions[offset+q])->func.offset,
+		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
+		    storage_offset +
+		    ID_FROM_INT(p, variable_positions[offset+q])->func.offset +
+		    sizeof_variable(ID_FROM_INT(p, variable_positions[offset+q]
+						)->run_time_type),
+		    offset, offset+size-1);
 	    } else {
-	      fatal("Variable '%s' and anonymous variable (%d) overlap\n",
+	      fatal("Variable '%s' and anonymous variable (%d) overlap\n"
+		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
 		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
-		    e);
+		    e,
+		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
+		    storage_offset +
+		    ID_FROM_INT(p, variable_positions[offset+q])->func.offset,
+		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
+		    storage_offset +
+		    ID_FROM_INT(p, variable_positions[offset+q])->func.offset +
+		    sizeof_variable(ID_FROM_INT(p, variable_positions[offset+q]
+						)->run_time_type),
+		    offset, offset+size-1);
 	    }
 	  }
 	}
