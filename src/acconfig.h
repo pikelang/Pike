@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.121 2003/03/27 14:43:32 grubba Exp $
+|| $Id: acconfig.h,v 1.122 2003/03/29 01:45:22 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -506,12 +506,6 @@
 
 /* set this to the modifier type string to print INT64 if that type exists */
 #undef PRINTINT64
-
-/* set this to the modifier type string to print INT_TYPE, like "" or "ll" */
-#undef PRINTPIKEINT
-
-/* set this to the modifier type string to print FLOAT_TYPE, like "L" or "" */
-#undef PRINTPIKEFLOAT
 
 /* Define if the compiler understand union initializations. */
 #undef HAVE_UNION_INIT
