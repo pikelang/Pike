@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.12 2003/05/30 14:42:34 grubba Exp $
+// $Id: module.pmod.in,v 1.13 2003/05/31 15:55:23 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -37,7 +37,10 @@ class TokenizingCompiler
   {
     if (sizeof(extra_args))
       msg = sprintf(msg, @extra_args);
-    werror("%O:%O:%O:%O\n", severity, pos, subsystem, msg);
+    werror("%s:%O:%O:%O\n",
+	   ([NOTICE:"NOTICE", WARNING:"WARNING",
+	     ERROR:"ERROR", FATAL:"FATAL"])[severity],
+	   pos, subsystem, msg);
   }
 
   // Placeholder token classes.
@@ -604,7 +607,7 @@ class PikeCompiler
 
     static string _sprintf()
     {
-      return sprintf("(%s)%s(%s)", operand1, operator, operand2);
+      return sprintf("(%s)%s(%s)", operand1||"", operator, operand2||"");
     }
   }
 
@@ -691,6 +694,27 @@ class PikeCompiler
 			   parse_ ## BASE ## _expression(tokens_left));	\
       }									\
       return expr;							\
+    }
+#define OPTIONAL_ARGS(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Token token;							\
+      Expression expr;							\
+      if (!tokens_left ||						\
+	  !SYMS[(token = tokens_left->value())->symbol]) {		\
+        expr = parse_ ## BASE ## _expression(tokens_left);		\
+	if (!tokens_left ||						\
+	    !SYMS[(token = tokens_left->value())->symbol]) {		\
+	  return expr;							\
+	}								\
+      }									\
+      tokens_left->`+=(1);						\
+      if (!tokens_left || (tokens_left->value()->symbol == ",")) {	\
+	return BinaryExpression(token, expr, 0);			\
+      }									\
+      return								\
+	BinaryExpression(token, expr,					\
+			 parse_ ## BASE ## _expression(tokens_left));	\
     }
 
   Expression parse_argument_list(array(Token) tokens)
@@ -885,6 +909,11 @@ class PikeCompiler
       if ((token = tokens_left->value())->group_start) {
 	if (token->group_start->symbol == "{") {
 	  // Implicit lambda.
+	  Lambda implicit_lambda = Lambda("lambda", "lambda", "lambda",
+					  token->group_start->pos);
+	  implicit_lambda->parse_lambda_body(tokens_left);
+	  expr = BinaryExpression(token->group_start, expr, implicit_lambda);
+	  // FIXME: Ought to register the new lambda somewhere...
 	}
       } else if (potential_cast &&
 		 (<"identifier", "int_constant", "float_constant",
@@ -935,7 +964,10 @@ class PikeCompiler
   }
 
   RIGHT_ASSOC(assign, cond, (<"=", "+=", "-=", "*=", "/=">));
-  LEFT_ASSOC(pair, assign, (<":", "..">));
+
+  //LEFT_ASSOC(pair, assign, (<":", "..">));
+  OPTIONAL_ARGS(pair, assign, (<":", "..">));
+
   LEFT_ASSOC(comma, pair, (<",">));
 
   Expression parse_expression(Iterator tokens_left)
@@ -978,7 +1010,7 @@ class PikeCompiler
 	  tokens_left = 0;	// Force loop to stop.
 	}
       } else {
-	current_scope->add_variable(current_modifiers, type, name);
+	current_scope->add_variable(current_modifiers, name, type);
       }
       sub_expression = LiteralExpression(name);
       if (tokens_left && (token = tokens_left->value())->symbol == "=") {
@@ -1015,7 +1047,7 @@ class PikeCompiler
 	token->group_start->symbol == "{") {
       tokens_left->`+=(1);
       BlockStatement block = BlockStatement();
-      block->parse_meta_program(scope, Iterator(token->contents),
+      block->parse_meta_program(scope, get_iterator(token->contents),
 				current_modifiers);
       scope->add_statement(block);
       return;
@@ -1061,6 +1093,11 @@ class PikeCompiler
     // FIXME!
   }
 
+  class Statement
+  {
+    // FIXME!
+  }
+
   class Scope
   {
     mapping(string:Definition) identifiers = ([]);
@@ -1074,13 +1111,20 @@ class PikeCompiler
 
     void add_variable(Modifiers modifiers, Token name, Expression type)
     {
+      werror("add_variable(%O, %O, %O)\n", modifiers, name, type);
       identifiers[name->symbol] = VariableDefinition(modifiers, name, type);
     }
 
     void add_function(Modifiers modifiers, Token name, Expression definition)
     {
+      werror("add_function(%O, %O, %O)\n", modifiers, name, definition);
       identifiers[name->symbol] =
 	FunctionDefinition(modifiers, name, definition);
+    }
+
+    void add_statement(Statement statement)
+    {
+      werror("add_statement(%O)\n", statement);
     }
   }
 
@@ -1109,20 +1153,24 @@ class PikeCompiler
     inherit Scope;
 
     Expression return_type;
-    array(string) parameter_names = ({});
+    array(Expression) parameter_types = ({});
+    array(Token) parameter_names = ({});
     BlockStatement function_body;
 
     void add_parameter(Expression type, Token name)
     {
       // FIXME!
       // Should modify the function type by adding one parameter at a time.
-      add_variable(0, type, name);
+      parameter_types += ({ type });
+      parameter_names += ({ name });
+      add_variable(0, name, type);
     }
 
     // Parse list of parameters.
     static void parse_param_list(TokenList tokens)
     {
-      Iterator tokens_left = Iterator(tokens);
+      werror("parse_param_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
 
       while(tokens_left) {
 	Expression type = parse_expression(tokens_left);
@@ -1145,8 +1193,27 @@ class PikeCompiler
     }
 
     // Called at
-    //   lambda · '(' arguments ')' '{' class_body '}'
-    //   type name · '(' arguments ')' '{' class_body '}'
+    //   lambda '(' arguments ')' · '{' function_body '}'
+    //   type name '(' arguments ')' · '{' function_body '}'
+    //   implicit_lambda_call · '{' function_body '}'
+    void parse_lambda_body(Iterator tokens_left)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->group_start) ||
+	  (token->group_start->symbol != "{")) {
+	SYNTAX_ERROR("Expected function body.");
+	return;
+      }
+      function_body = BlockStatement();
+      function_body->parse_meta_program(this, get_iterator(token->contents),
+					0);
+      tokens_left->`+=(1);
+    }
+
+    // Called at
+    //   lambda · '(' arguments ')' '{' function_body '}'
+    //   type name · '(' arguments ')' '{' function_body '}'
     //   lambda · '(' arguments ')' ';'
     //   type name · '(' arguments ')' ';'
     void parse_meta_program(Scope scope, Iterator tokens_left,
@@ -1166,10 +1233,7 @@ class PikeCompiler
 	  (token->group_start->symbol != "{")) {
 	return;
       }
-      function_body = BlockStatement();
-      function_body->parse_meta_program(this, get_iterator(token->contents),
-					0);
-      tokens_left->`+=(1);
+      parse_lambda_body(tokens_left);
     }
   }
 
@@ -1177,6 +1241,8 @@ class PikeCompiler
   {
     inherit IdentifierToken;
     inherit Scope;
+
+    Lambda create_fun;
 
     // Called at
     //   class name '{' · class_body '}'
@@ -1224,6 +1290,43 @@ class PikeCompiler
       }
     }
 
+    // Parse list of parameters.
+    static void parse_create_args(TokenList tokens)
+    {
+      Iterator tokens_left = get_iterator(tokens);
+
+      while(tokens_left) {
+	Modifiers modifiers = Modifiers();
+	Token token;
+	while((token = tokens_left->value()) && token->parse_modifier) {
+	  tokens_left->`+=(1);
+	  token->parse_modifier(tokens_left);
+	  modifiers += token;
+	  if (!tokens_left) {
+	    SYNTAX_ERROR("Expected type and identifier after modifier list.");
+	    return;
+	  }
+	}
+	Expression type = parse_expression(tokens_left);
+	if (!tokens_left ||
+	    !(token = tokens_left->value())->is_identifier) {
+	  SYNTAX_ERROR("Expected an identifier.");
+	  return;
+	}
+	tokens_left->`+=(1);
+	create_fun->add_parameter(type, token);
+	add_variable(modifiers, token, type);
+	// FIXME: Generate code for create()...
+	if (tokens_left) {
+	  if ((token = tokens_left->value())->symbol != ",") {
+	    SYNTAX_ERROR("Expected a ','.");
+	    return;
+	  }
+	  tokens_left->`+=(1);
+	}
+      }
+    }
+
     // Called at
     //   class · [name] [ '(' create_args ')' ] '{' class_body '}'
     void parse_meta_program(Class current_class, Iterator tokens_left,
@@ -1245,7 +1348,10 @@ class PikeCompiler
 	return;
       }
       if (token->group_start->symbol == "(") {
-	// FIXME: create_args.
+	create_fun = Lambda("lambda", "lambda", "lambda", token->pos);
+	create_fun->return_type =
+	  LiteralExpression(Token("void", "void", "void", token->pos));
+	parse_create_args(token->contents);
 	tokens_left->`+=(1);
 	token = tokens_left->value();
 	if (!token->group_start) {
