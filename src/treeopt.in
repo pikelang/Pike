@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.42 2000/09/23 15:58:39 grubba Exp $
+// $Id: treeopt.in,v 1.43 2000/09/25 15:26:16 grubba Exp $
 //
 // The tree optimizer
 //
@@ -80,13 +80,39 @@ F_APPLY(0 = F_CONSTANT
       print_tree(n);
     }
 #endif /* PIKE_DEBUG */
-    n = arglist;
     continue;
   }
   ;
 
-// Similar rule for `*() disabled, since the type for '*() isn't
-// correct for all cases.
+// `*(`*(a,b),c)  =>  `*(a, b, c)
+// NOTE: We do some ugly stuff here to avoid
+//	 resolving the resulting type multiple times.
+// NOTE: In this case we also need to do this since
+//	 typeof(`*) isn't permissive enough.
+F_APPLY(0 = F_CONSTANT
+	[$$->u.sval.type == T_FUNCTION]
+	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[$$->u.sval.u.efun->function == f_multiply],
+	2 = F_ARG_LIST(3 = F_APPLY($0, 1), *)):
+  {
+    node *arglist = $2;
+    node *old_apply = $3;
+    ADD_NODE_REF2($1, _CAR(arglist) = $1);
+#ifdef SHARED_NODES
+    arglist->hash = hash_node(arglist);
+    arglist->node_info |= OPT_DEFROSTED;
+#endif /* SHARED_NODES */
+    free_node(old_apply);
+#ifdef PIKE_DEBUG
+    if (l_flag > 4) {
+      fprintf(stderr, "Result:    ");
+      print_tree(n);
+    }
+#endif /* PIKE_DEBUG */
+    continue;
+  }
+  ;
+
 
 F_POP_VALUE(-, *):
   -;
