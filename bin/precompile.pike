@@ -226,8 +226,9 @@ class PikeType
 	  return args[1]->basetype();
 
 	case "|":
-	  array(string) tmp=args->basetype();
-	  if(`==(@tmp)) return tmp[0];
+	  array(string) tmp=args->basetype() - ({"void"});
+	  if(sizeof (tmp) == 1 || (sizeof (tmp) > 1 && `==(@tmp)))
+	    return tmp[0];
 	  return "mixed";
 
 	case "=":
@@ -341,7 +342,8 @@ class PikeType
 
   string c_storage_type(int|void is_struct_entry)
     {
-      switch(string btype=basetype())
+      string btype = may_be_void() ? "mixed" : basetype();
+      switch (btype)
       {
 	case "void": return "void";
 	case "int": return "INT_TYPE";
@@ -1723,6 +1725,7 @@ class ParseBlock
 
 	      case "mixed":
 	      }
+
 	    switch(arg->basetype())
 	    {
 	    default:
@@ -1749,16 +1752,16 @@ class ParseBlock
 	    }
 
 	    else {
-	      switch(arg->basetype())
+	      switch(arg->c_type())
 	      {
-		case "int":
+		case "INT_TYPE":
 		  ret+=({
 		    sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
 			    argnum,argbase)
 		  });
 		  break;
 
-		case "float":
+		case "FLOAT_TYPE":
 		  ret+=({
 		    sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
 			    arg->name(),
@@ -1766,7 +1769,7 @@ class ParseBlock
 		  });
 		  break;
 
-		case "mixed":
+		case "struct svalue *":
 		  ret+=({
 		    PC.Token(sprintf("%s=Pike_sp%+d%s; dmalloc_touch_svalue(Pike_sp%+d%s);\n",
 				     arg->name(),
