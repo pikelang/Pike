@@ -167,7 +167,7 @@ static INT32 hashprimes[] =
   2147483647,/* ~ 2^31 = 2147483648 */
 };
 
-void do_gc()
+void do_gc(void)
 {
   double tmp;
   INT32 tmp2;

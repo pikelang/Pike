@@ -91,7 +91,7 @@ void va_error(char *fmt, va_list args)
     abort();
   }
 
-  if(strlen(buf) >= sizeof(buf))
+  if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in error()\n");
   
   push_string(make_shared_string(buf));
