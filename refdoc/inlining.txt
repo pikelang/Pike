@@ -236,3 +236,33 @@ handle:
   {
     ... body ...
   }
+
+It a portion of the code is unextractable because it contains too much
+preprocessor macros and stuff, you can make the extractor skip it by using
+@ignore:
+
+  //! @ignore
+  
+  HERE_ARE_SOME_STRANGE_THINGS
+  #ifdef A
+  A
+  #endif
+  
+  //! @endignore
+
+All @ignore-@endignore sections of the file are removed before any extraction
+is done, so they can cross class boundaries and the like. You can nest @ignore
+inside eachother. Another application for @ignore is to hide actual class
+boundaries from the extractor:
+
+  //! @ignore
+  class C {
+  //! @endignore
+
+    //! To the parser, this function appears to be on the top level
+    int f() { ... }
+
+  //! @ignore
+  }
+  //! @endignore
+
