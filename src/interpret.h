@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.71 2000/12/13 21:27:56 hubbe Exp $
+ * $Id: interpret.h,v 1.72 2000/12/28 15:34:08 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -90,7 +90,8 @@ PMOD_EXPORT const char *Pike_check_stack_errmsg;
 
 #define check_stack(X) do { \
   if(low_stack_check(X)) \
-    Pike_error(Pike_check_stack_errmsg, \
+    ((void (*)(const char *, ...))Pike_error)( \
+               Pike_check_stack_errmsg, \
 	       PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack), \
 	       PTRDIFF_T_TO_LONG(Pike_stack_size), \
 	       PTRDIFF_T_TO_LONG(X)); \
@@ -99,8 +100,8 @@ PMOD_EXPORT const char *Pike_check_stack_errmsg;
 PMOD_EXPORT const char *Pike_check_mark_stack_errmsg;
 
 #define check_mark_stack(X) do {		\
-  if(Pike_mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size)	\
-    Pike_error(Pike_check_mark_stack_errmsg);		\
+  if(Pike_mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size) \
+    ((void (*)(const char*, ...))Pike_error)(Pike_check_mark_stack_errmsg); \
   }while(0)
 
 PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
@@ -111,7 +112,7 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
     Pike_interpreter.stack_top ;					\
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
-    low_error(Pike_check_c_stack_errmsg);				\
+    ((void (*)(const char*, ...))low_error)(Pike_check_c_stack_errmsg);	\
   }while(0)
 
 #define fatal_check_c_stack(X) do { 			\
