@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.15 1999/05/11 18:28:28 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.16 1999/05/30 20:30:00 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -39,7 +39,7 @@ module : mapping <- moduleM
 				"args" : array of mappings <- argM
 					"args" : array of args names and types
 					"desc" : description
-				"names" : multiset of method name(s)
+				"names" : multiset of method name(s) 
 
 Quoting: Only '<' must be quoted as '&lt;'.
 
@@ -49,6 +49,8 @@ mapping moduleM, classM, methodM, argM, nowM, descM;
 
 mapping focM(mapping dest,string name,string line)
 {
+   if (!dest->_order) dest->_order=({});
+   if (-1==search(dest->_order,name)) dest->_order+=({name});
    return dest[name] || (dest[name]=(["_line":line]));
 }
 
@@ -81,8 +83,8 @@ mapping keywords=
 (["module":lambda(string arg,string line) 
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line); 
 	    methodM=0; 
-	    if (!nowM->classes) nowM->classes=([]); 
-	    if (!nowM->modules) nowM->modules=([]); 
+	    if (!nowM->classes) nowM->classes=(["_order":({})]); 
+	    if (!nowM->modules) nowM->modules=(["_order":({})]); 
 	    report("module "+arg); },
   "class":lambda(string arg,string line) 
 	  { if (!moduleM) return complain("class w/o module");
@@ -92,8 +94,8 @@ mapping keywords=
 	  { if (!moduleM) return complain("submodule w/o module");
 	    classM=descM=nowM=moduleM=focM(moduleM->modules,stripws(arg),line);
 	    methodM=0;
-	    if (!nowM->classes) nowM->classes=([]); 
-	    if (!nowM->modules) nowM->modules=([]); 
+	    if (!nowM->classes) nowM->classes=(["_order":({})]); 
+	    if (!nowM->modules) nowM->modules=(["_order":({})]); 
 	    report("submodule "+arg); },
   "method":lambda(string arg,string line)
 	  { if (!classM) return complain("method w/o class");
@@ -415,7 +417,7 @@ void document(string enttype,
 	 foreach (huh->methods,method)
 	    method_names|=(method->names=get_method_names(method->decl));
 
-      method_names_arr=nice_order(indices(method_names));
+       method_names_arr=nice_order(indices(method_names));
 
       // alphabetically
 
@@ -436,7 +438,7 @@ void document(string enttype,
 
    if (huh->classes)
    {
-      foreach(nice_order(indices(huh->classes)),string n)
+      foreach(huh->classes->_order,string n)
       {
 	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
 	 document("class",huh->classes[n],
@@ -447,7 +449,7 @@ void document(string enttype,
 
    if (huh->modules)
    {
-      foreach(nice_order(indices(huh->modules)),string n)
+      foreach(huh->modules->_order,string n)
       {
 	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
 	 document("module",huh->modules[n],
@@ -457,14 +459,15 @@ void document(string enttype,
    }
 // end ANCHOR
 
-   f->write("</"+enttype+">\n\n");
+   f->write("</"+enttype+" name="+
+	    linkify(names*",")+">\n");
 }
 
 void make_doc_files()
 {
    stderr->write("modules: "+sort(indices(parse))*", "+"\n");
    
-   foreach (sort(indices(parse)),string module)
+   foreach (sort(indices(parse)-({"_order"})),string module)
       document("module",parse[module],module,module+".",stdout);
 }
 
@@ -516,7 +519,7 @@ int main(int ac,string *files)
       s=ss[0]; ss=ss[1..];
 
       line++;
-      if ((i=search(s,"**!"))!=-1)
+      if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
       {
 	 string kw,arg;
 
