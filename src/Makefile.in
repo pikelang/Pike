@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.175 2000/01/01 00:42:23 hubbe Exp $
+# $Id: Makefile.in,v 1.176 2000/01/10 00:52:49 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -280,7 +280,7 @@ install: pike hilfe pike-module aclocal
 
 install_interactive: pike hilfe pike-module aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
-	exec_prefix="$(exec_prefix)"  \
+	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)"
 
@@ -433,11 +433,20 @@ all_exports: full_export
 	( cd .. ; $(TMP_BINDIR)/makedists )
 
 bin_export: aclocal
+	@rm -f *.burk
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name)
+	@case " $(CC)" in \
+	  *\ rntc*) \
+	    $(MAKE) $(MAKE_FLAGS) uncompress_header ;\
+	    filename=`echo *.burk | sed 's@\.burk$$@@g'`.exe ;\
+	    ( cat uncompress_header.exe ; gzip -9 -c *.burk ) > $$filename ;\
+	  ;; \
+	esac
+
 
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
@@ -577,6 +586,14 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 
 testsuite: $(SRCDIR)/testsuite.in
 	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite -DSRCDIR="$(SRCDIR)"
+
+header_uncompress: $(SRCDIR)/uncompressor.c
+	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o header_uncompress -lz
+
+uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
+	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o uncompress_header -lz -DSEEK_TO=`wc -c header_uncompress|sed 's/[^0-9]//g'`
+	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
+
 
 @dependencies@
 
