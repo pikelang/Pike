@@ -18,6 +18,12 @@ constant NATIVE_MAX = __builtin.NATIVE_INT_MAX;
 //! this range (they typically say something like "Expected integer,
 //! got object").
 //!
+//! @[NATIVE_MIN] is not greater than @expr{-2147483648@}
+//! (@expr{-0x80000000@}).
+//!
+//! @[NATIVE_MAX] is not less than @expr{2147483647@}
+//! (@expr{0x7fffffff@}).
+//!
 //! @note
 //! The size of the native integers can be controlled when Pike is
 //! compiled with the configure flags @expr{--with-int-int@},

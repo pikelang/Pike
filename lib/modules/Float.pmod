@@ -1,4 +1,4 @@
-// $Id: Float.pmod,v 1.2 2003/11/07 21:55:45 mast Exp $
+// $Id: Float.pmod,v 1.3 2003/11/08 16:08:49 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -15,18 +15,22 @@ constant EPSILON = __builtin.FLOAT_EPSILON;
 //! @item DIGITS_10
 //!   The number of decimal digits that can be represented. Any number
 //!   with this many decimal digits can be stored in a float and
-//!   converted back to decimal form without change.
+//!   converted back to decimal form without change. @[DIGITS_10] is
+//!   not less than @expr{6@}.
 //! @item MIN_10_EXP
 //! @item MAX_10_EXP
 //!   Limits of the exponent in decimal base. 10 raised to any number
 //!   within this range can be represented in normalized form.
+//!   @[MIN_10_EXP] is not greater than @expr{-37@}. @[MAX_10_EXP] is
+//!   not less than @expr{37@}.
 //! @item MIN
-//!   The smallest normalized float greater than zero.
+//!   The smallest normalized float greater than zero. It's not
+//!   greater than @expr{1e-37@}.
 //! @item MAX
-//!   The largest finite float.
+//!   The largest finite float. It's not less than @expr{1e37@}.
 //! @item EPSILON
 //!   The difference between 1 and the smallest value greater than 1
-//!   that can be represented.
+//!   that can be represented. It's not greater than @expr{1e-5@}.
 //! @enddl
 //!
 //! @note
