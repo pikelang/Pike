@@ -12,7 +12,7 @@ MADEFILES=Image.wmml Mysql.wmml ProtocolsLysKOM.wmml \
 
 SRCFILES=tutorial.wmml $(MADEFILES)
 
-pike=pike
+pike=/home/hedda/pike07_/install/bin/pike
 DESTINATION=/usr/local/share/pike/tutorial/
 
 .DUMMY: 
