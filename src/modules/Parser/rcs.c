@@ -36,7 +36,7 @@ static void tokenize( struct pike_string *s )
 {
     int in_string = 0;
     unsigned int ts=0, i, len=s->len;
-    const char *data = (const char *)s->str;
+    const char *data = s->str;
     struct svalue *osp = Pike_sp;
     struct svalue *ots = Pike_sp;
 
