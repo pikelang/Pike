@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.100 1998/05/22 11:37:59 grubba Exp $");
+RCSID("$Id: file.c,v 1.101 1998/05/22 11:44:47 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1685,6 +1685,7 @@ static void file_set_keepalive(INT32 args)
   int tmp, i;
   check_all_args("file->set_keepalive",args, T_INT,0);
   tmp=sp[-args].u.integer;
+#ifdef SO_KEEPALIVE
   i=fd_setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
   if(i)
   {
@@ -1692,6 +1693,17 @@ static void file_set_keepalive(INT32 args)
   }else{
     ERRNO=0;
   }
+#else /* !SO_KEEPALIVE */
+#ifdef ENOTSUP
+  ERRNO=ENOTSUP;
+#else /* !ENOTSUP */
+#ifdef ENOTTY
+  ERRNO = ENOTTY;
+#else /* !ENOTTY */
+  ERRNO = EIO;
+#endif /* ENOTTY */
+#endif /* ENOTSUP */
+#endif /* SO_KEEPALIVE */
   pop_n_elems(args);
   push_int(!i);
 }
