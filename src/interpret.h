@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.74 2001/01/20 21:35:05 mast Exp $
+ * $Id: interpret.h,v 1.75 2001/01/24 01:36:34 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -329,7 +329,6 @@ PMOD_EXPORT extern struct Pike_interpreter Pike_interpreter;
 #ifndef NO_PIKE_SHORTHAND
 
 /* Shouldn't this be in Pike_interpreter? - Hubbe */
-#define stack_size Pike_stack_size
 #define sp Pike_sp
 #define fp Pike_fp
 #define mark_sp Pike_mark_sp
