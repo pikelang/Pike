@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.25 2000/10/17 20:07:20 per Exp $");
+RCSID("$Id: xcf.c,v 1.26 2000/10/19 13:28:10 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1330,12 +1330,14 @@ void image_xcf_f__decode_tiles( INT32 args )
        {
          LOOP_INIT();
          pix = colortable[s[ind]];
+	 apix.r = apix.g = apix.b = 255;
          LOOP_EXIT();
        } 
        else
        {
          LOOP_INIT();
          pix.r = pix.g = pix.b = s[ind];
+	 apix.r = apix.g = apix.b = 255;
          LOOP_EXIT();
        }
        break;
@@ -1360,9 +1362,10 @@ void image_xcf_f__decode_tiles( INT32 args )
        pix.r = s[ind];
        pix.g = s[ind+span];
        pix.b = s[ind+span*2];
+       apix.r = apix.g = apix.b = 255;
        LOOP_EXIT();
        break;
-     case 4: /* rgb */
+     case 4: /* rgba */
        LOOP_INIT();
        pix.r = s[ind];
        pix.g = s[ind+span];
