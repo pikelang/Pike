@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.140 1999/09/16 00:03:22 hubbe Exp $");
+RCSID("$Id: program.c,v 1.141 1999/09/16 03:13:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -914,7 +914,7 @@ void check_program(struct program *p)
       int q, num;
       /* Variable */
       int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
-      num=i->run_time_type==T_MIXED?sizeof(struct svalue):sizeof(union anything);
+      num=sizeof_variable(i->run_time_type);
       for(q=0;q<num;q++)
       {
 	if(offset+q >= NELEM(variable_positions)) break;
@@ -1058,14 +1058,15 @@ struct program *debug_end_program(void)
  */
 SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo)
 {
-  SIZE_T offset;
+  long offset;
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
     fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %d\n",alignment);
 #endif
-  offset=DO_ALIGN(OFFSETOF(object,storage)+
-		  new_program->storage_needed,
-		  alignment)+modulo-OFFSETOF(object,storage);
+  modulo+=OFFSETOF(object,storage);
+  modulo%=alignment;
+
+  offset=DO_ALIGN(new_program->storage_needed-modulo,alignment)+modulo;
 
   if(!new_program->storage_needed)
     new_program->inherits[0].storage_offset=offset;
@@ -1073,12 +1074,18 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo)
   if(new_program->alignment_needed<alignment)
     new_program->alignment_needed=alignment;
 
-  new_program->storage_needed = offset + size;
 #ifdef PIKE_DEBUG
-  if(new_program->storage_needed<0)
+  if(offset < new_program->storage_needed)
     fatal("add_storage failed horribly!\n");
+
+  if( (offset + OFFSETOF(object,storage) - modulo ) % alignment )
+    fatal("add_storage failed horribly(2)!\n");
+    
 #endif
-  return offset;
+
+  new_program->storage_needed = offset + size;
+
+  return (SIZE_T) offset;
 }
 
 
@@ -1296,10 +1303,11 @@ void low_inherit(struct program *p,
   inherit_offset = new_program->num_inherits;
 
   /* alignment magic */
-  storage_offset=p->inherits[0].storage_offset % p->alignment_needed;
+  storage_offset=(p->inherits[0].storage_offset + OFFSETOF(object,storage)) %
+    p->alignment_needed;
   storage_offset=low_add_storage(p->storage_needed,
 				 p->alignment_needed,
-				 storage_offset)-storage_offset;
+				 storage_offset);
 
   for(e=0; e<(int)p->num_inherits; e++)
   {
