@@ -328,9 +328,6 @@ void f_parse_html(INT32 args)
   }
 
   ss->refs++;
-#if 0
-  sp[-args].type=T_INT;		/* ???? */
-#endif /* 0 */
 
   single=sp[1-args].u.mapping; 
   cont=sp[2-args].u.mapping; 
@@ -685,7 +682,7 @@ void do_html_parse(struct pike_string *ss,
 	  free_svalue(&sval2);
 	  free_svalue(&sval1);
 	  push_text("");
-	  f_multiply(1);
+	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
