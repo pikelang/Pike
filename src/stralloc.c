@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.132 2001/09/04 19:26:54 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.133 2001/09/05 01:42:47 hubbe Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -1003,21 +1003,30 @@ struct pike_string *add_string_status(int verbose)
 /*** PIKE_DEBUG ***/
 #ifdef PIKE_DEBUG
 
+static long last_stralloc_verify=0;
+extern long current_do_debug_cycle;
+
 PMOD_EXPORT void check_string(struct pike_string *s)
 {
-  if(do_hash(s) != s->hval)
+  if(current_do_debug_cycle == last_stralloc_verify)
   {
-    locate_problem(wrong_hash);
-    fatal("Hash value changed?\n");
-  }
+    if(debug_findstring(s) !=s)
+      fatal("Shared string not shared.\n");
+  }else{
+    if(do_hash(s) != s->hval)
+    {
+      locate_problem(wrong_hash);
+      fatal("Hash value changed?\n");
+    }
+    
+    if(debug_findstring(s) !=s)
+      fatal("Shared string not shared.\n");
 
-  if(debug_findstring(s) !=s)
-    fatal("Shared string not shared.\n");
-
-  if(index_shared_string(s,s->len))
-  {
-    locate_problem(improper_zero_termination);
-    fatal("Shared string is not zero terminated properly.\n");
+    if(index_shared_string(s,s->len))
+    {
+      locate_problem(improper_zero_termination);
+      fatal("Shared string is not zero terminated properly.\n");
+    }
   }
 }
 
@@ -1025,6 +1034,8 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 {
   unsigned INT32 e, h, num=0;
   struct pike_string *s;
+
+  last_stralloc_verify=current_do_debug_cycle;
 
   for(e=0;e<htable_size;e++)
   {

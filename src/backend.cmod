@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.16 2001/07/18 20:46:56 hubbe Exp $");
+RCSID("$Id: backend.cmod,v 1.17 2001/09/05 01:42:47 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -824,12 +824,12 @@ PIKECLASS Backend
       extern void slow_check_stack(void);
       extern int do_gc(void);
       
+      verify_shared_strings_tables();
       slow_check_stack();
       check_all_arrays();
       check_all_mappings();
       check_all_programs();
       check_all_objects();
-      verify_shared_strings_tables();
       
       call_callback(& do_debug_callbacks, 0);
       backend_verify_call_outs(me);
@@ -2097,10 +2097,15 @@ void do_call_outs(void)
 }
 
 #ifdef PIKE_DEBUG
+long do_debug_cycle=1;
+long current_do_debug_cycle=0;
 void do_debug(void)
 {
+  if(current_do_debug_cycle) return;
+  current_do_debug_cycle=++do_debug_cycle;
   if(default_backend)
     backend_do_debug(default_backend);
+  current_do_debug_cycle=0;
 }
 #endif /* PIKE_DEBUG */
 
