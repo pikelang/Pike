@@ -9,27 +9,26 @@ created from the same source code. Parts of other
 copyrighted works are included in Pike, in accordance
 with their respective conditions for distribution.
 
-The Unicode Character Database is
+Unicode Character Database
 Copyright © 1991-2001 Unicode, Inc.
 
-The TrueVision Targa code is
+TrueVision Targa code
 Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit
 
-DES encryption and decryption code is 
+DES encryption and decryption code
 Copyright © 1992 Dana L. How
 
-Rijndael encryption and decryption code is
+Rijndael encryption and decryption code
 Copyright © 2000 Joan Daemen
 
-Secure Hash Algorithm code is
+Secure Hash Algorithm code
 Copyright © 1995, A.M. Kuchling
 
-Regular expression matching code is
+Regular expression matching code
 Copyright © 1986 by University of Toronto.
 
-Zlib detection and verification code is
+Zlib detection and verification code
 Copyright © 1995-1998 Jean-loup Gailly and Mark Adler
 
 The Pike source is distributed under GPL, see the file
 COPYING for more details.
-
