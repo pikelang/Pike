@@ -87,6 +87,16 @@ int sha_verify(string message, string signature)
   return s == rsa_unpad(BIGNUM(signature, 256)->powm(e, n), 1);
 }
 
+string encrypt(string s, mixed|void r)
+{
+  return rsa_pad(msg, 2, r)->powm(e, n)->digits(256);
+}
+
+string decrypt(string s)
+{
+  return rsa_unpad(BIGNUM(msg, 256)->powm(d, n), 2));
+}
+
 object set_encrypt_key(array(bignum) key)
 {
   set_public_key(key[0], key[1]);
@@ -104,7 +114,5 @@ object set_decrypt_key(array(bignum) key)
 
 object crypt_block(string msg)
 {
-  return (encrypt_mode ?
-	  rsa_pad(msg, 2)->powm(e, n)->digits(256)
-	  : rsa_unpad(BIGNUM(msg, 256)->powm(d, n), 2));
+  return (encrypt_mode ? encrypt(s) : decrypt(s));
 }
