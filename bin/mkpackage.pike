@@ -45,18 +45,18 @@ class Package
      "echo '  -a, --add <component>   Add a component to the package and exit.'\n"
      "echo\n"
      "echo 'When no arguments are given, the installation script will be started.'\n"
-     "exit",
+     "EXIT=yes",
      ({ "-v", "--version" }):
      "echo 'Package version unknown.'\n"
-     "exit",
+     "EXIT=yes",
      ({ "-a", "--add" }):
      "shift\n"
      "(cd `dirname \"$1\"` &&\n"
      " tar rf \"$TARFILE\" `basename \"$1\"`)\n"
-     "exit",
+     "EXIT=yes",
      ({ "-l", "--list" }):
      "echo \"$CONTENTS\"\n"
-     "exit" ]);
+     "EXIT=yes" ]);
   static private array(string) packages = ({});
   
   static private string unique_name(int c)
@@ -79,7 +79,7 @@ class Package
       // Remove final newline since echo will provide it.
       features = features[..sizeof(features)-2];
     options[({ "--features" })] =
-      (sizeof(features) ? "echo \""+features+"\"\n" : "") + "exit";
+      (sizeof(features) ? "echo \""+features+"\"\n" : "") + "EXIT=yes";
 
     string setup = ("#!/bin/sh\n"
 		    "TARFILE=\"$1\"; shift; ARGS=''\n"
@@ -96,6 +96,7 @@ class Package
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
+		    "  EXIT=no\n"
 		    "  case \"$1\" in\n"
 		    +Array.map(sort(indices(options)),
 			       lambda(array(string) flags)
@@ -103,6 +104,11 @@ class Package
 				 return flags*"|"+") "+options[flags]+" ;;\n";
 			       })*""+
 		    "  esac\n"
+		    "  if [ $EXIT = yes ]\n"
+		    "  then\n"
+		    "    rm -f "+setup_filename+"\n"
+		    "    exit\n"
+		    "  fi\n"
 		    "  ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\"\n"
 		    "  shift\n"
 		    "done\n"
