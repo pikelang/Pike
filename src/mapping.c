@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.31 1998/04/27 09:55:32 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.32 1998/05/13 00:24:29 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -590,6 +590,7 @@ struct array *mapping_to_array(struct mapping *m)
       assign_svalue(b->item+1, & k->val);
       s->u.array=b;
       s->type=T_ARRAY;
+      s++;
     }
   a->type_field = BIT_ARRAY;
 
