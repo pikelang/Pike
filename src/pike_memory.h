@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.47 2003/11/13 02:09:11 mast Exp $
+|| $Id: pike_memory.h,v 1.48 2004/03/07 22:55:27 nilsson Exp $
 */
 
 #ifndef MEMORY_H
@@ -99,30 +99,7 @@ struct mem_searcher
 };
 
 
-#if 1
-/* use new searching stuff */
-
 #include "pike_search.h"
-
-#else
-struct generic_mem_searcher
-{
-  char needle_shift;
-  char haystack_shift;
-  union data_u
-  {
-    struct mem_searcher eightbit;
-    struct other_search_s
-    {
-      enum methods method;
-      void *needle;
-      size_t needlelen;
-      int first_char;
-    } other;
-  } data;
-};
-
-#endif
 
 #include "block_alloc_h.h"
 #define MEMCHR0 MEMCHR

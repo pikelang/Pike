@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.19 2004/03/07 21:07:47 nilsson Exp $
+|| $Id: pike_search.c,v 1.20 2004/03/07 22:56:04 nilsson Exp $
 */
 
 /* New memory searcher functions */
@@ -156,6 +156,9 @@ PMOD_EXPORT void pike_init_memsearch(struct pike_mem_searcher *s,
       init_memsearch2(s,(p_wchar2*)needle.ptr, needlelen, max_haystacklen);
       return;
   }
+#ifdef PIKE_DEBUG
+  Pike_fatal("Illegal shift\n");
+#endif
 }
 
 PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
@@ -172,7 +175,9 @@ PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
     case 2:
       return compile_memsearcher2((p_wchar2*)needle.ptr, needlelen, max_haystacklen,hashkey);
   }
+#ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift\n");
+#endif
 }
 
 PMOD_EXPORT SearchMojt simple_compile_memsearcher(struct pike_string *str)
@@ -195,34 +200,6 @@ PMOD_EXPORT char *my_memmem(char *needle,
   init_memsearch0(&tmp, needle, (ptrdiff_t)needlelen, (ptrdiff_t)haystacklen);
   return tmp.mojt.vtab->func0(tmp.mojt.data, haystack, (ptrdiff_t)haystacklen);
   /* No free required - Hubbe */
-}
-
-/* Compatibility: All functions using these two functions
- * should really be updated to use compile_memsearcher instead.
- * -Hubbe
- * These two functions are thread-safe.
- */
-PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
-			      void *needle,
-			      size_t needlelen,
-			      int needle_shift,
-			      size_t estimated_haystack,
-			      int haystack_shift)
-{
-  pike_init_memsearch(s,
-		      MKPCHARP(needle, needle_shift),
-		      (ptrdiff_t)needlelen,
-		      estimated_haystack);
-}
-
-void *generic_memory_search(struct generic_mem_searcher *s,
-			    void *haystack,
-			    size_t haystacklen,
-			    int haystack_shift)
-{
-  return ( s->mojt.vtab->funcN(s->mojt.data,
-			       MKPCHARP(haystack, haystack_shift),
-			       (ptrdiff_t)haystacklen) ).ptr;
 }
 
 void init_pike_searching(void)

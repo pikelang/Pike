@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.h,v 1.7 2003/04/02 19:22:43 mast Exp $
+|| $Id: pike_search.h,v 1.8 2004/03/07 22:55:49 nilsson Exp $
 */
 
 #ifndef PIKE_SEARCH_H
@@ -12,8 +12,6 @@
 #define BMLEN 768
 #define CHARS 256
 #define TUNAFISH
-
-#define generic_mem_searcher pike_mem_searcher
 
 struct hubbe_search_link
 {
@@ -96,16 +94,6 @@ PMOD_EXPORT char *my_memmem(char *needle,
 			    size_t needlelen,
 			    char *haystack,
 			    size_t haystacklen);
-PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
-			      void *needle,
-			      size_t needlelen,
-			      int needle_shift,
-			      size_t estimated_haystack,
-			      int haystack_shift);
-PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
-			    void *haystack,
-			    size_t haystacklen,
-			    int haystack_shift);
 void init_pike_searching(void);
 void exit_pike_searching(void);
 /* Prototypes end here */
