@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.20 2004/03/07 22:56:04 nilsson Exp $
+|| $Id: pike_search.c,v 1.21 2004/03/08 18:16:32 grubba Exp $
 */
 
 /* New memory searcher functions */
@@ -206,6 +206,9 @@ void init_pike_searching(void)
 {
   start_new_program();
   pike_search_struct_offset=ADD_STORAGE(struct pike_mem_searcher);
+  map_variable("__s","string",0,
+	       pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s),
+	       PIKE_T_STRING);
   pike_search_program=end_program();
   add_program_constant("Search",pike_search_program,ID_STATIC);
 
