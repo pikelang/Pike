@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.118 2003/01/05 14:10:19 nilsson Exp $
+|| $Id: efuns.c,v 1.119 2003/02/26 10:09:41 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.118 2003/01/05 14:10:19 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.119 2003/02/26 10:09:41 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -900,10 +900,11 @@ void f_get_dir(INT32 args)
 #else
 #error Unknown readdir_r variant
 #endif
+	/* Filter "." and ".." from the list. */
 	if(d->d_name[0]=='.')
 	{
-	  if(!d->d_name[1]) continue;
-	  if(d->d_name[1]=='.' && !d->d_name[2]) continue;
+	  if(NAMLEN(d)==1) continue;
+	  if(d->d_name[1]=='.' && NAMLEN(d)==2) continue;
 	}
 	if(num_files >= FPR) break;
 	lens[num_files]=NAMLEN(d);
