@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.398 2001/12/20 14:23:35 grubba Exp $");
+RCSID("$Id: program.c,v 1.399 2001/12/20 15:06:58 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -403,11 +403,11 @@ static char *raw_lfun_types[] = {
  *!   the type described by @[requested_type].
  *!
  *! @note
- *!   The argument is currently (Pike 7.3) a string with the name
+ *!   The argument is currently a string with the name
  *!   of the type, but might in the future be a value of the type type.
  *!
  *! @note
- *!   Currently (Pike 7.3) casting between object types is a noop.
+ *!   Currently casting between object types is a noop.
  *!
  *! @note
  *!   If the returned value is not deemed to be of the requested type
@@ -627,10 +627,10 @@ static char *raw_lfun_types[] = {
  *!
  *! @returns
  *!   Expected to return @tt{1@} if the object is to be regarded as a
- *!   simulation of the type specified by @[basic_type@].
+ *!   simulation of the type specified by @[basic_type].
  *!
  *! @note
- *!   The argument is currently (Pike 7.2) a string with the name
+ *!   The argument is currently a string with the name
  *!   of the type, but might in the future be a value of the type type.
  */
 
@@ -698,7 +698,7 @@ static char *raw_lfun_types[] = {
  *!   according to @[conversion_type].
  *!
  *! @note
- *!   @[_sprintf()] is currently (Pike 7.3) not called for the following
+ *!   @[_sprintf()] is currently not called for the following
  *!   conversion-types:
  *!   @int
  *!     @value 'F'
