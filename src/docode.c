@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.153 2002/11/12 11:48:23 grubba Exp $
+|| $Id: docode.c,v 1.154 2002/11/14 12:36:42 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.153 2002/11/12 11:48:23 grubba Exp $");
+RCSID("$Id: docode.c,v 1.154 2002/11/14 12:36:42 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -431,23 +431,42 @@ static inline struct compiler_frame *find_local_frame(INT32 depth)
   return f;
 }
 
-int do_lfun_call(int id,node *args)
+/* Emit code for a function call to the identifier reference #id,
+ * with the arguments specified by args.
+ */
+int do_lfun_call(int id, node *args)
 {
 #if 1
-  if(id == Pike_compiler->compiler_frame->current_function_number)
+  struct reference *ref =
+    Pike_compiler->new_program->identifier_references + id;
+
+  /* NB: The second part handles use of local::fun(). */
+  if((id == Pike_compiler->compiler_frame->current_function_number) ||
+     ((!ref->inherit_offset) &&
+      (ref->identifier_offset ==
+       Pike_compiler->new_program->
+       identifier_references[Pike_compiler->compiler_frame->
+			     current_function_number].identifier_offset)))
   {
     int n=count_args(args);
     if(n == Pike_compiler->compiler_frame->num_args)
     {
       do_docode(args,0);
-      if(Pike_compiler->compiler_frame->is_inline)
+      if(Pike_compiler->compiler_frame->is_inline ||
+	 (ref->id_flags & ID_INLINE))
       {
-	Pike_compiler->compiler_frame->recur_label=do_jump(F_RECUR,
-					    Pike_compiler->compiler_frame->recur_label);
-      }else{
+	/* Identifier is declared inline/local
+	 * or in inlining pass.
+	 */
+	Pike_compiler->compiler_frame->
+	  recur_label=do_jump(F_RECUR,
+			      Pike_compiler->compiler_frame->recur_label);
+      } else {
+	/* Recur if not overloaded. */
 	emit1(F_COND_RECUR,id);
-	Pike_compiler->compiler_frame->recur_label=do_jump(F_POINTER,
-					    Pike_compiler->compiler_frame->recur_label);
+	Pike_compiler->compiler_frame->
+	  recur_label=do_jump(F_POINTER,
+			      Pike_compiler->compiler_frame->recur_label);
       }
       return 1;
     }
@@ -1436,7 +1455,7 @@ static int do_docode2(node *n, INT16 flags)
 	  return 1;
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
-	    return do_lfun_call(CAR(n)->u.sval.subtype,CDR(n));
+	    return do_lfun_call(CAR(n)->u.sval.subtype, CDR(n));
        	}
       }
 
@@ -1453,12 +1472,12 @@ static int do_docode2(node *n, INT16 flags)
     }
     else if(CAR(n)->token == F_IDENTIFIER)
     {
-      return do_lfun_call(CAR(n)->u.id.number,CDR(n));
+      return do_lfun_call(CAR(n)->u.id.number, CDR(n));
     }
     else if(CAR(n)->token == F_EXTERNAL &&
 	    CAR(n)->u.integer.a == Pike_compiler->new_program->id)
     {
-      return do_lfun_call(CAR(n)->u.integer.b,CDR(n));
+      return do_lfun_call(CAR(n)->u.integer.b, CDR(n));
     }
     else if(CAR(n)->token == F_ARROW)
     {
@@ -2192,18 +2211,19 @@ INT32 do_code_block(node *n)
 #endif
 
   ret=PIKE_PC;
+  /* NOTE: This is no ordinary label... */
+  Pike_compiler->compiler_frame->recur_label=0;
+  low_insert_label(0);
   emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
   emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
   emit0(F_ENTRY);
   emit0(F_START_FUNCTION);
-  low_insert_label(0);
 
   if(Pike_compiler->compiler_frame->current_function_number >= 0 &&
      (Pike_compiler->new_program->identifier_references[
        Pike_compiler->compiler_frame->current_function_number].id_flags &
       ID_INLINE))
   {
-    Pike_compiler->compiler_frame->recur_label=0;
     Pike_compiler->compiler_frame->is_inline=1;
   }
 
