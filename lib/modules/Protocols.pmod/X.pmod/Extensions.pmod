@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.12 2002/01/15 22:32:42 nilsson Exp $
+ * $Id: Extensions.pmod,v 1.13 2002/06/13 20:21:17 bill Exp $
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -154,3 +154,105 @@ class Shape
 }
 
 
+class XTEST
+{
+  inherit extension;
+  constant name="XTEST";
+
+  mapping event_op = (["KeyPress": 2, "KeyRelease": 3, "ButtonPress": 4,
+	"ButtonRelease": 5, "MotionNotify": 6]);
+
+  //! @decl void create()
+  //!
+  //! Create object.
+
+  void create() {}
+
+  //! @decl int init(object display)
+  //!
+  //! Initialize the XTEST extension. Returns 1 if successful.
+  //!
+  //! @param display
+  //!  Protocols.X.Display object
+  //!
+
+  int init(object display)
+  {
+    return ::init(display);
+  }
+
+
+  void XTestGetVersion()
+  {
+
+  }
+  
+  void XTestCompareCursor(object window, int cursor)
+  {
+    
+  }
+
+  //! @decl int XTestFakeInput(string event_type, int detail, int delay, object|void window, int|void xloc, int|void yloc)
+  //!
+  //! Send a synthetic event to an X server.
+  //!
+  //! @param event_type
+  //!   Type of event to send. Possible values: KeyPress: 2, KeyRelease: 3, 
+  //!   ButtonPress: 4, ButtonRelease: 5, MotionNotify: 6
+  //!
+  //! @param detail
+  //!   Button (for Button events) or Keycode (for Key events) to send
+  //! @param delay
+  //!   Delay before the X server simulates event. 0 indicates zero delay.
+  //! @param window
+  //!   Window object that a motion event occurrs in. If no window is provided, the root window will be used.
+  //! @param xloc
+  //!   For motion events, this is the relative X distance or absolute X coordinates.
+  //! @param yloc
+  //!   For motion events, this is the relative Y distance or absolute Y coordinates.
+  //!
+
+  void XTestFakeInput(string event_type, int detail, int delay, 
+	object|void window, int|void xloc, int|void yloc)
+  {
+
+    int e=event_op[event_type];
+    int id=0;
+    if(window && objectp(window)) id=window->id;
+
+    object req = .Requests.ExtensionRequest( major, 0, 0 );
+    req->code=2;
+
+    req->data = sprintf("%c%c\0\0%4c%4c\0\0\0\0\0\0\0\0%2c%2c\0\0\0\0\0\0\0\0",
+	e, detail, delay, id, xloc, yloc);
+    dpy->send_request( req );
+
+  }
+
+  //! @decl int XTestGrabControl(int impervious)
+  //!
+  //! Cause the executing client to become impervious to server grabs.
+  //! That is, it can continue to execute requests even if another client 
+  //! grabs the server.
+  //!
+  //! @param impervious 
+  //!   A true (non zero) value causes the client to perform as 
+  //!   described above. If false (zero), server returns to the normal 
+  //!   state of  being susceptible to server grabs.
+  //!
+
+  void XTestGrabControl(int impervious)
+  {
+
+    object req = .Requests.ExtensionRequest( major, 0, 0 );
+    req->code=3;
+
+    if(impervious!=0) impervious=1; // if not false, then it's true.
+
+    req->data = sprintf("%c\0\0\0", impervious);
+    dpy->send_request( req );
+
+
+  }
+
+}

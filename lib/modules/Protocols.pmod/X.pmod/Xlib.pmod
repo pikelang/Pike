@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.45 2002/03/20 14:44:08 nilsson Exp $
+ * $Id: Xlib.pmod,v 1.46 2002/06/13 20:21:17 bill Exp $
  */
 
 /*
@@ -196,7 +196,7 @@ class Display
 
 #ifdef DEBUG
   mapping debug_requests = ([ ]);
-# define DEBUGREQ(X) ((X)&0xfff)
+  #define DEBUGREQ(X) ((X)&0xfff)
 #endif
   
   void create()

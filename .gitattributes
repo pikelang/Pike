@@ -136,6 +136,7 @@ testfont binary
 /lib/modules/Protocols.pmod/X.pmod/Atom.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Auth.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Extensions.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/KeySyms.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Requests.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Types.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/XImage.pmod foreign_ident
