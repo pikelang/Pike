@@ -1131,6 +1131,33 @@ void image_setpixel(INT32 args)
    push_object(THISOBJ);
 }
 
+void image_getpixel(INT32 args)
+{
+   INT32 x,y;
+   rgb_group rgb;
+
+   if (args<2||
+       sp[-args].type!=T_INT||
+       sp[1-args].type!=T_INT)
+      error("Illegal arguments to image->getpixel()\n");
+
+   if (!THIS->img) error("No image.\n");
+
+   x=sp[-args].u.integer;
+   y=sp[1-args].u.integer;
+   if (!THIS->img) return;
+   if(x<0||y<0||x>=THIS->xsize||y>=THIS->ysize)
+      rgb=THIS->rgb;
+   else
+      rgb=pixel(THIS,x,y);
+
+   pop_n_elems(args);
+   push_int(rgb.r);
+   push_int(rgb.g);
+   push_int(rgb.b);
+   f_aggregate(3);
+}
+
 void image_line(INT32 args)
 {
    if (args<4||
@@ -2239,6 +2266,8 @@ void init_image_programs()
 		"function(int,int,int:object)",0);
    add_function("setpixel",image_setpixel,
 		"function(int,int,"RGB_TYPE":object)",0);
+   add_function("getpixel",image_getpixel,
+		"function(int,int:array(int))",0);
    add_function("line",image_line,
 		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("circle",image_circle,
