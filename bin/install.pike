@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.119 2004/12/01 16:37:27 grubba Exp $
+// $Id: install.pike,v 1.120 2004/12/01 17:14:27 grubba Exp $
 
 #define USE_GTK
 
@@ -537,7 +537,7 @@ void do_export()
     module_node->
       add_child(WixNode("CustomAction", ([
 			  "Id":"SetFinalizePike",
-			  "Property":"FinalizePike"
+			  "Property":"FinalizePike",
 			  "Value":"[TARGETDIR]",
 			  "Execute":"immediate",
 			])))->
@@ -545,7 +545,7 @@ void do_export()
       add_child(WixNode("CustomAction", ([
 			  "Id":"FinalizePike",
 			  "BinaryKey":"PikeInstaller",
-			  "VBScriptCall":"FinalizePike"
+			  "VBScriptCall":"FinalizePike",
 			  "Execute":"deferred",
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
