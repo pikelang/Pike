@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.19 2002/11/26 21:28:11 grubba Exp $
+ * $Id: Line.pmod,v 1.20 2002/11/26 21:39:51 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -52,7 +52,7 @@ class simple
   //! Queue some data to send.
   //!
   //! @seealso
-  //! @[handle_commend()], @[handle_data()], @[disconnect()]
+  //! @[handle_command()], @[handle_data()], @[disconnect()]
   //!
   static void send(string s)
   {
