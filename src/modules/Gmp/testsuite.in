@@ -11,6 +11,10 @@ cond( [[ master()->resolv("Gmp") ]],
   test_eq(Gmp.mpz("10",8),8)
   test_eq(Gmp.mpz("0",256),'0')
 
+  test_eq(Gmp.mpz("17") == "foo", 0)
+  test_eq(Gmp.mpz("17") != "foo", 1)
+  test_true(catch(Gmp.mpz("17") < "foo"))
+
   test_eq(clone(Gmp.mpz,99)+1,100)
   test_eq(clone(Gmp.mpz,100)*10,1000)
   test_eq(clone(Gmp.mpz,"100")*10.0,1000)
@@ -22,8 +26,8 @@ cond( [[ master()->resolv("Gmp") ]],
   test_eq(clone(Gmp.mpz,66)+11,77)
   test_eq(clone(Gmp.mpz,66)-11,55)
   test_eq(clone(Gmp.mpz,17)&18,16)
-  test_eq(clone(Gmp.mpz,17)|7,31)
-  test_eq(-clone(Gmp.mpz,17),17)
+  test_eq(clone(Gmp.mpz,17)|7,23)
+  test_eq(-clone(Gmp.mpz,17),-17)
   test_eq((~clone(Gmp.mpz,17)) & 255,0xf0)
   test_true(stringp((string)clone(Gmp.mpz,17)))
   test_eq((string)clone(Gmp.mpz,17),"17")
@@ -31,7 +35,7 @@ cond( [[ master()->resolv("Gmp") ]],
   test_eq((int)clone(Gmp.mpz,17),17)
   test_false(clone(Gmp.mpz,0))
   test_true(clone(Gmp.mpz,1))
-  test_eq(clone(Gmp.mpz,17)->powm(2,4711),290)
+  test_eq(clone(Gmp.mpz,17)->powm(12,4711),85)
 
   define([[mpz_test_cmp]],[[
     test_cmp(clone(Gmp.mpz,$1), $2)
