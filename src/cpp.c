@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.31 1998/11/23 00:50:29 marcus Exp $
+ * $Id: cpp.c,v 1.32 1999/03/25 01:22:47 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -1444,6 +1444,11 @@ static INT32 low_cpp(struct cpp *this,
       goto unknown_preprocessor_directive;
 
     case 'p': /* pragma */
+      if(WGOBBLE("pike"))
+      {
+	FIND_EOL();
+	break;
+      }
       if(WGOBBLE("pragma"))
 	{
 	  if(OUTP())
