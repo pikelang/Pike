@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.491 2002/04/07 15:22:17 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.492 2002/10/19 10:06:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1385,13 +1385,19 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
                AC_MSG_RESULT(already added)
             ;;
             *)
-              AC_MSG_RESULT(added)
+	      OLD_CPPFLAGS="${CPPFLAGS}"
               CPPFLAGS="${CPPFLAGS} -I$d"
-              if test "x$REALDIR" != xUNKNOWN; then
-                real_include_dirs="${real_include_dirs} -I$REALDIR"
-              else
-                :
-              fi
+	      AC_TRY_CPP([include <stdio.h>], [
+                AC_MSG_RESULT(added)
+                if test "x$REALDIR" != xUNKNOWN; then
+                  real_include_dirs="${real_include_dirs} -I$REALDIR"
+                else
+                  :
+                fi
+	      ], [
+	        AC_MSG_RESULT(fails)
+		CPPFLAGS="${OLD_CPPFLAGS}"
+	      ])
             ;;
           esac
         else
