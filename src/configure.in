@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.574 2002/04/06 18:51:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.575 2002/04/06 19:40:01 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1711,7 +1711,7 @@ if test $ldflags_is_set = no ; then
     $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
     `echo $with_root/usr/X11*/lib | sort -r`
   do
-    for suff in '' 32 64; do
+    for suff in '' 32 64 '/64'; do
       d="$dd$suff"
       AC_MSG_CHECKING($d)
       if test -d "$d/." ; then
