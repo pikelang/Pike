@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2003/11/13 00:25:49 mast Exp $
+# $Id: Makefile.in,v 1.13 2003/12/07 16:14:34 marcus Exp $
 
 @make_variables@
 
@@ -58,7 +58,7 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 	@exit 1
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
+	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig --no-recursion .
 
 config.status: $(SRCDIR)/configure
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck

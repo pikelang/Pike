@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.373 2003/11/14 09:14:42 mast Exp $
+# $Id: Makefile.in,v 1.374 2003/12/07 16:14:34 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -864,8 +864,9 @@ backend.o: $(SRCDIR)/backend.c
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf
+$(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/aclocal.m4 $(SRCDIR)/acconfig.h
+	cd $(SRCDIR) && ./run_autoconfig --no-recursion .
+	echo foo > $(SRCDIR)/stamp-h.in
 
 config.status: $(SRCDIR)/configure
 	./config.status --recheck
@@ -940,10 +941,6 @@ $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
 	  rm $(SRCDIR)/stamp-h.in; $(MAKE) $(SRCDIR)/stamp-h.in; \
 	fi
-
-$(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
-	cd $(SRCDIR) && autoheader
-	echo foo > $(SRCDIR)/stamp-h.in
 
 machine.h: stamp-h
 	@if test -f machine.h; then :; else \

@@ -1,6 +1,6 @@
 # Makefile for builtin Pike libmird
 
-# $Id: Makefile.in,v 1.7 2003/05/04 13:33:07 mast Exp $
+# $Id: Makefile.in,v 1.8 2003/12/07 16:14:34 marcus Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@
 
@@ -64,10 +64,7 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	@exit 1
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
-	if [ -f $(SRCDIR)/acconfig.h ]; then \
-	  cd $(SRCDIR) && autoheader; \
-	else :; fi
+	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig .
 
 config.status: $(SRCDIR)/configure
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
