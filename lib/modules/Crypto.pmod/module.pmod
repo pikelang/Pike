@@ -11,7 +11,7 @@ class HashAlgorithm
 {
   inherit HashInfo;
 
-  HashState `();
+  HashState `()();
   
   string hash(string data)
   {
