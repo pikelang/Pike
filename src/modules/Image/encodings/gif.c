@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.8 1997/11/03 01:39:36 mirar Exp $ */
+/* $Id: gif.c,v 1.9 1997/11/03 01:53:49 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.8 1997/11/03 01:39:36 mirar Exp $
+**!	$Id: gif.c,v 1.9 1997/11/03 01:53:49 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -21,7 +21,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.8 1997/11/03 01:39:36 mirar Exp $");
+RCSID("$Id: gif.c,v 1.9 1997/11/03 01:53:49 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -508,8 +508,8 @@ static void image_gif__render_block(INT32 args)
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,int transp_index);
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,object alpha);
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,object alpha,int r,int g,int b);
-**! method string render_block(object img,object colortable,int x,int y,int localpalette,int transp_index,int interlace,int delay,int user_input,int disposal);
-**! method string render_block(object img,object colortable,int x,int y,int localpalette,object alpha,int r,int g,int b,int interlace,int delay,int user_input,int disposal);
+**! method string render_block(object img,object colortable,int x,int y,int localpalette,int delay,int transp_index,int interlace,int user_input,int disposal);
+**! method string render_block(object img,object colortable,int x,int y,int localpalette,object alpha,int r,int g,int b,int delay,int interlace,int user_input,int disposal);
 **!
 **!     This function gives a image block for placement in a GIF file,
 **!	with or without transparency.
@@ -517,27 +517,27 @@ static void image_gif__render_block(INT32 args)
 **!	the first with graphic control extensions for such things
 **!	as delay or transparency.
 **!
-**! object img
+**! arg object img
 **!	The image.
-**! object colortable
+**! arg object colortable
 **!	Colortable with colors to use and to write as palette.
 **! arg int x
 **! arg int y
 **!	Position of this image.
-**! int localpalette
+**! arg int localpalette
 **!	If set, writes a local palette. 
-**! int transp_index
-**!	Index of the transparent color in the colortable.
-**!	<tt>-1</tt> indicates no transparency.
-**! object alpha
+**! arg object alpha
 **!	Alpha channel image; black is transparent.
-**! int r
-**! int g
-**! int b
+**! arg int r
+**! arg int g
+**! arg int b
 **!	Color of transparent pixels. Not all decoders understands
 **!	transparency. This is ignored if localpalette isn't set.
 **! arg int delay
 **!	View this image for this many centiseconds. Default is zero.
+**! arg int transp_index
+**!	Index of the transparent color in the colortable.
+**!	<tt>-1</tt> indicates no transparency.
 **! arg int user_input
 **!	If set: wait the delay or until user input. If delay is zero,
 **!	wait indefinitely for user input. May sound the bell
@@ -624,17 +624,8 @@ void image_gif_render_block(INT32 args)
    else localpalette=0;
    if (args>=6)
    {
-      if (sp[5-args].type==T_INT)
-      {
-	 alphaidx=sp[5-args].u.integer;
-	 alpha=0;
-	 alphaentry=0;
-	 if (alphaidx!=-1 && numcolors<=alphaidx)
-	    error("Image.GIF.render_block(): illegal index to transparent color\n");
-	 n=6;
-      }
-      else if (sp[5-args].type==T_OBJECT &&
-	       (alpha=(struct image*)get_storage(sp[5-args].u.object,image_program)))
+      if (sp[5-args].type==T_OBJECT &&
+	  (alpha=(struct image*)get_storage(sp[5-args].u.object,image_program)))
       {
 	 if (!alpha->img)
 	    error("Image.GIF.render_block(): given alpha channel has no image\n");
@@ -662,6 +653,10 @@ void image_gif_render_block(INT32 args)
 	       error("Image.GIF.render_block(): too many colors in colortable (255 is max, need one for transparency)\n");
 	 }
       }
+      else if (sp[5-args].type==T_INT)
+      {
+	 n=5;
+      }
       else
 	 error("Image:GIF.render_block(): Illegal argument 6 (expected int or image object)\n");
       if (alphaidx!=-1) transparency=1; else transparency=0;
@@ -672,13 +667,29 @@ void image_gif_render_block(INT32 args)
 	    if (sp[n-args].type!=T_INT)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
-	       interlace=!!sp[n-args].u.integer;
+	       delay=sp[n-args].u.integer;
 	 n++;
+	 if (!alpha)
+	 {
+	    if (args>n)
+	    if (sp[n-args].type!=T_INT)
+	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	    else
+	    {
+	       alphaidx=sp[n-args].u.integer;
+	       alpha=0;
+	       alphaentry=0;
+	       if (alphaidx!=-1 && numcolors<=alphaidx)
+		  error("Image.GIF.render_block(): illegal index to transparent color\n");
+	       n=6;
+	    }
+	    n++;
+	 }
 	 if (args>n)
 	    if (sp[n-args].type!=T_INT)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
-	       delay=sp[n-args].u.integer;
+	       interlace=!!sp[n-args].u.integer;
 	 n++;
 	 if (args>n)
 	    if (sp[n-args].type!=T_INT)
@@ -691,6 +702,7 @@ void image_gif_render_block(INT32 args)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       disposal=sp[n-args].u.integer&7;
+
       }
    }
    else 
@@ -1012,8 +1024,9 @@ static void _image_gif_encode(INT32 args,int fs)
       }
       else
       {
+	 push_int(0);
 	 push_int(tridx);
-	 image_gif_render_block(6);
+	 image_gif_render_block(7);
       }
 
    /* build trailer */
