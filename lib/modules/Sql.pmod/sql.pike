@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.22 1998/06/17 12:58:34 grubba Exp $
+ * $Id: sql.pike,v 1.23 1998/06/17 13:01:36 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.22 1998/06/17 12:58:34 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.23 1998/06/17 13:01:36 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -320,8 +320,7 @@ object big_query(object|string q, mapping(string|int:mixed)|void bindings)
     } else {
       pre_res = master_sql->big_query(q);
     }
-  }
-  if (bindings) {
+  } else if (bindings) {
     pre_res = master_sql->query(q, bindings);
   } else {
     pre_res = master_sql->query(q);
