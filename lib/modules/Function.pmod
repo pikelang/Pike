@@ -87,3 +87,30 @@ function curry(function f)
 		  };
 	 };
 }
+
+
+//! Call a callback function, but send throws from the callback
+//! function (ie, errors) to master()->handle_error.
+//! Also accepts if f is zero (0) without error.
+//!
+//! @example
+//! @code
+//!   Functions.call_callback(the_callback,some,arguments);   
+//! @endcode
+//! equals 
+//! @code
+//!   {
+//!      mixed err=catch { if (the_callback) the_callback(some,arguments); };
+//!      if (err) master()->handle_error(err);
+//!   }
+//! @endcode
+//! (Approximately, since call_callback also calls handle_error
+//! if 0 were thrown.)
+
+void call_callback(function f,mixed ... args)
+{
+   if (!f) return;
+   mixed err=catch { f(@args); return; };
+   master()->handle_error(err);
+}
+
