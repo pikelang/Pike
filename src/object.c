@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.180 2001/08/15 03:31:55 hubbe Exp $");
+RCSID("$Id: object.c,v 1.181 2001/08/23 13:41:54 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1775,6 +1775,11 @@ void init_object(void)
 
 void exit_object(void)
 {
+  if (destruct_object_evaluator_callback) {
+    remove_callback(destruct_object_evaluator_callback);
+    destruct_object_evaluator_callback = NULL;
+  }
+
   if(magic_index_program)
   {
     free_program(magic_index_program);
