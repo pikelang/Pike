@@ -38,8 +38,18 @@ lambda()
       res+=({"-m"+master()->_master_file_name});
    foreach (master()->pike_module_path;;string path)
       res+=({"-M"+path});
-   if (sizeof(res) && !has_value(res[0],"/"))
-      res[0]=locate_binary(getenv("PATH")/":",res[0]);
+   if (sizeof(res) && !has_value(res[0],"/")
+#ifdef __NT__
+       && !has_value(res[0], "\\")
+#endif /* __NT__ */
+       )
+      res[0] = locate_binary(getenv("PATH")/
+#if defined(__NT__) || defined(__amigaos__)
+			   ";"
+#else
+			   ":"
+#endif
+			   ,res[0]);
    return res;
 }();
 
