@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
-
 constant diff = __builtin.diff;
 constant diff_longest_sequence = __builtin.diff_longest_sequence;
 constant diff_compare_table = __builtin.diff_compare_table;
@@ -83,7 +81,7 @@ array shuffle(array arr)
 //! @seealso
 //!   @[sum()], @[map()]
 //!
-int search_array(array arr, mixed fun, mixed ... args)
+int search_array(array arr, string|function|int fun, mixed ... args)
 {
   int e;
 
@@ -108,13 +106,11 @@ int search_array(array arr, mixed fun, mixed ... args)
 	return e;
     return -1;
   }
-  else
-  {
-    error("Bad argument 2 to filter().\n");
-  }
+
+  error("Bad argument 2 to search_array().\n");
 }
 
-array sum_arrays(function sum, array(mixed) ... args)
+array sum_arrays(function sum, mixed ... args)
 {
   array ret;
   int e,d;
