@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.9 1997/03/18 17:36:19 mirar Exp $ */
+/* $Id: image.c,v 1.10 1997/03/18 18:17:44 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.9 1997/03/18 17:36:19 mirar Exp $");
+RCSID("$Id: image.c,v 1.10 1997/03/18 18:17:44 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1749,6 +1749,35 @@ static void image_to8bit_fs(INT32 args)
 }
 
 
+static void image_tozbgr(INT32 args)
+{
+   unsigned char *d;
+   rgb_group *s;
+   unsigned long i;
+   struct pike_string *sres = begin_shared_string(THIS->xsize*THIS->ysize*4);
+   
+   if (!THIS->img) error("no image\n");
+   pop_n_elems(args);
+
+   i=THIS->ysize*THIS->xsize;
+   s=THIS->img;
+   d=sres->str;
+
+   THREADS_ALLOW();
+   while (i--)
+   {
+      *(d++)=0;
+      *(d++)=s.b;
+      *(d++)=s.g;
+      *(d++)=s.r;
+      s++;
+   }
+   THREADS_DISALLOW();
+
+   push_string(end_shared_string(sres));
+}
+
+
 /***************** global init etc *****************************/
 
 #define RGB_TYPE "int|void,int|void,int|void,int|void"
@@ -1807,7 +1836,8 @@ void pike_module_init()
 		"function(array(array(int)):string)",0);
    add_function("to8bit_fs",image_to8bit_fs,
 		"function(array(array(int)):string)",0);
-
+   add_function("tozbgr",image_tozbgr,
+		"function(array(array(int)):string)",0);
 
    add_function("copy",image_copy,
 		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
