@@ -13,6 +13,10 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #ifdef NSIG
 #define MAX_SIGNALS NSIG
 #else
@@ -369,6 +373,22 @@ static void f_getpid(INT32 args)
   push_int(getpid());
 }
 
+static void f_alarm(INT32 args)
+{
+  long seconds;
+
+  if(args < 1)
+    error("Too few arguments to signame()\n");
+
+  if(sp[-args].type != T_INT)
+    error("Bad argument 1 to signame()\n");
+
+  seconds=sp[-args].u.integer;
+
+  pop_n_elems(args);
+  push_int(alarm(seconds));
+}
+
 void init_signals()
 {
   int e;
@@ -386,6 +406,7 @@ void init_signals()
   add_efun("signame",f_signame,"function(int:string)",0);
   add_efun("signum",f_signum,"function(string:int)",0);
   add_efun("getpid",f_getpid,"function(:int)",0);
+  add_efun("alarm",f_alarm,"function(int:int)",OPT_SIDE_EFFECT);
 }
 
 void exit_signals()
