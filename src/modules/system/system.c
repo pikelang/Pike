@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.60 1998/08/06 05:31:51 hubbe Exp $
+ * $Id: system.c,v 1.61 1999/01/21 09:15:55 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.60 1998/08/06 05:31:51 hubbe Exp $");
+RCSID("$Id: system.c,v 1.61 1999/01/21 09:15:55 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -416,7 +416,7 @@ void f_setgroups(INT32 args)
     if (size) {
       free(gids);
     }
-    report_error("cleargroups");
+    report_error("setgroups");
   }
 }
 #endif /* HAVE_SETGROUPS */

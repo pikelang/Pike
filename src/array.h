@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.14 1998/11/22 11:02:32 hubbe Exp $
+ * $Id: array.h,v 1.15 1999/01/21 09:14:57 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -15,6 +15,9 @@
 struct array
 {
   INT32 refs;		/* Reference count */
+#ifdef PIKE_SECURITY
+  struct object *prot;
+#endif
   struct array *next;	/* we need to keep track of all arrays */
   struct array *prev;	/* Another pointer, so we don't have to search
 			 * when freeing arrays */

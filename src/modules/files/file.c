@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.132 1999/01/01 01:03:34 hubbe Exp $");
+RCSID("$Id: file.c,v 1.133 1999/01/21 09:15:41 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -18,6 +18,7 @@ RCSID("$Id: file.c,v 1.132 1999/01/01 01:03:34 hubbe Exp $");
 #include "module_support.h"
 #include "gc.h"
 #include "opcodes.h"
+#include "security.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -1099,11 +1100,34 @@ static void file_open(INT32 args)
     access = sp[2-args].u.integer;
   } else
     access = 00666;
-      
+
   str=sp[-args].u.string;
   
   flags=parse(sp[1-args].u.string->str);
 
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+  {
+    if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
+      error("Permission denied.\n");
+
+    push_text("open");
+    ref_push_string(str);
+    
+    if(flags && (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
+    {
+      push_int(1);
+    }else{
+      push_int(0);
+    }
+
+    SAFE_APPLY_MASTER("check_security",3);
+    if(IS_ZERO(sp-1))
+      error("Permission denied.\n");
+    pop_stack();
+  }
+#endif
+      
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     error("Must open file for at least one of read and write.\n");
 

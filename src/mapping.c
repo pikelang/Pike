@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.37 1998/11/22 11:03:02 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.38 1999/01/21 09:15:05 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -19,6 +19,7 @@ RCSID("$Id: mapping.c,v 1.37 1998/11/22 11:03:02 hubbe Exp $");
 #include "las.h"
 #include "gc.h"
 #include "stralloc.h"
+#include "security.h"
 
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
@@ -106,6 +107,7 @@ struct mapping *allocate_mapping(int size)
 
   m=ALLOC_STRUCT(mapping);
 
+  INITIALIZE_PROT(m);
   init_mapping(m,size);
 
   m->next = first_mapping;
@@ -129,6 +131,8 @@ void really_free_mapping(struct mapping *m)
   if(m->refs)
     fatal("really free mapping on mapping with nonzero refs.\n");
 #endif
+
+  FREE_PROT(m);
 
   MAPPING_LOOP(m)
   {

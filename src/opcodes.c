@@ -21,12 +21,20 @@
 #include "cyclic.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.34 1999/01/01 01:10:28 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.35 1999/01/21 09:15:11 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
   INT32 i;
+
+#ifdef PIKE_SECURITY
+  if(what->type <= MAX_COMPLEX)
+    if(!CHECK_DATA_SECURITY(what->u.array, SECURITY_BIT_INDEX))
+      error("Index permission denied.\n");
+#endif
+
   switch(what->type)
   {
   case T_ARRAY:
@@ -121,6 +129,9 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 
     switch(run_time_type)
     {
+      default:
+	error("Cannot perform cast to that type.\n");
+	
       case T_MIXED:
 	return;
 	

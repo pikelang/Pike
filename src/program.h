@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.46 1998/11/22 11:03:15 hubbe Exp $
+ * $Id: program.h,v 1.47 1999/01/21 09:15:15 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -187,6 +187,9 @@ struct inherit
 struct program
 {
   INT32 refs;
+#ifdef PIKE_SECURITY
+  struct object *prot;
+#endif
   INT32 id;             /* used to identify program in caches */
   INT32 flags;
   INT32 storage_needed; /* storage needed in the object struct */

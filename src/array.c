@@ -18,12 +18,16 @@
 #include "pike_memory.h"
 #include "gc.h"
 #include "main.h"
+#include "security.h"
 
-RCSID("$Id: array.c,v 1.42 1998/11/22 11:02:31 hubbe Exp $");
+RCSID("$Id: array.c,v 1.43 1999/01/21 09:14:56 hubbe Exp $");
 
 struct array empty_array=
 {
   1,                     /* Never free */
+#ifdef PIKE_SECURITY
+  0,
+#endif
   &empty_array,          /* Next */
   &empty_array,          /* previous (circular) */
   0,                     /* Size = 0 */
@@ -70,6 +74,8 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
   empty_array.next=v;
   v->next->prev=v;
 
+  INITIALIZE_PROT(v);
+
   for(e=0;e<v->size;e++)
   {
     ITEM(v)[e].type=T_INT;
@@ -103,7 +109,6 @@ static void array_free_no_free(struct array *v)
  */
 void really_free_array(struct array *v)
 {
-
 #ifdef PIKE_DEBUG
   if(v == & empty_array)
     fatal("Tried to free the empty_array.\n");
@@ -114,6 +119,7 @@ void really_free_array(struct array *v)
 #endif
 
   add_ref(v);
+  FREE_PROT(v);
   free_svalues(ITEM(v), v->size, v->type_field);
   v->refs--;
   array_free_no_free(v);

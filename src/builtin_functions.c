@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.144 1999/01/16 02:57:05 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.145 1999/01/21 09:14:58 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -353,7 +353,7 @@ void f_backtrace(INT32 args)
 
 void f_add_constant(INT32 args)
 {
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("add_constant: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("add_constant: permission denied.\n"));
   if(args<1)
     PIKE_ERROR("add_constant", "Too few arguments.\n", sp, args);
 
@@ -1086,7 +1086,7 @@ void f_throw(INT32 args)
 
 void f_exit(INT32 args)
 {
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("exit: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("exit: permission denied.\n"));
   if(args < 1)
     PIKE_ERROR("exit", "Too few arguments.\n", sp, args);
 
@@ -1100,7 +1100,7 @@ void f_exit(INT32 args)
 
 void f__exit(INT32 args)
 {
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
   if(args < 1)
     PIKE_ERROR("_exit", "Too few arguments.\n", sp, args);
 
@@ -1451,13 +1451,81 @@ void f_reverse(INT32 args)
 
 struct tupel
 {
-  struct pike_string *ind,*val;
+  int prefix;
+  struct pike_string *ind;
+  struct pike_string *val;
 };
 
-static int replace_sortfun(void *a,void *b)
+static int replace_sortfun(struct tupel *a,struct tupel *b)
 {
-  return my_quick_strcmp( ((struct tupel *)a)->ind, ((struct tupel *)b)->ind);
+  return my_quick_strcmp(a->ind,b->ind);
 }
+
+/* Magic, magic and more magic */
+static int find_longest_prefix(char *str,
+			       INT32 len,
+			       int size_shift,
+			       struct tupel *v,
+			       INT32 a,
+			       INT32 b)
+{
+  INT32 tmp,c,match=-1;
+  while(a<b)
+  {
+    c=(a+b)/2;
+    
+    tmp=generic_quick_binary_strcmp(v[c].ind->str,
+				    v[c].ind->len,
+				    v[c].ind->size_shift,
+				    str,
+				    MINIMUM(len,v[c].ind->len),
+				    size_shift);
+    if(tmp<0)
+    {
+      INT32 match2=find_longest_prefix(str,
+				       len,
+				       size_shift,
+				       v,
+				       c+1,
+				       b);
+      if(match2!=-1) return match2;
+
+      while(1)
+      {
+	if(v[c].prefix==-2)
+	{
+	  v[c].prefix=find_longest_prefix(v[c].ind->str,
+					  v[c].ind->len,
+					  v[c].ind->size_shift,
+					  v,
+					  0 /* can this be optimized? */,
+					  c);
+	}
+	c=v[c].prefix;
+	if(c<a || c<match) return match;
+
+	if(!generic_quick_binary_strcmp(v[c].ind->str,
+					v[c].ind->len,
+					v[c].ind->size_shift,
+					str,
+					MINIMUM(len,v[c].ind->len),
+					size_shift))
+	   return c;
+      }
+    }
+    else if(tmp>0)
+    {
+      b=c;
+    }
+    else
+    {
+      a=c+1; /* There might still be a better match... */
+      match=c;
+    }
+  }
+  return match;
+}
+			       
 
 static struct pike_string * replace_many(struct pike_string *str,
 					struct array *from,
@@ -1501,6 +1569,7 @@ static struct pike_string * replace_many(struct pike_string *str,
 
     v[num].ind=ITEM(from)[e].u.string;
     v[num].val=ITEM(to)[e].u.string;
+    v[num].prefix=-2; /* Uninitialized */
     num++;
   }
 
@@ -1524,7 +1593,7 @@ static struct pike_string * replace_many(struct pike_string *str,
 
   for(s=0;length > 0;)
   {
-    INT32 a,b,c,ch;
+    INT32 a,b,ch;
 
     ch=index_shared_string(str,s);
     if(ch<(INT32)NELEM(set_end)) b=set_end[ch]; else b=num;
@@ -1533,36 +1602,17 @@ static struct pike_string * replace_many(struct pike_string *str,
     {
       if(ch<(INT32)NELEM(set_start)) a=set_start[ch]; else a=0;
 
-      while(a<b)
-      {
-	c=(a+b)/2;
+      a=find_longest_prefix(str->str+(s << str->size_shift),
+			    length,
+			    str->size_shift,
+			    v, a, b);
 
-	if(generic_quick_binary_strcmp(v[c].ind->str,
-				       v[c].ind->len,
-				       v[c].ind->size_shift,
-				       str->str+(s << str->size_shift),
-				       length,
-				       str->size_shift) <=0)
-	{
-	  if(a==c) break;
-	  a=c;
-	}else{
-	  b=c;
-	}
-      }
-      if(a<num &&
-	 length >= v[a].ind->len &&
-	 !generic_quick_binary_strcmp(v[a].ind->str,
-				      v[a].ind->len,
-				      v[a].ind->size_shift,
-				      str->str+(s<<str->size_shift),
-				      v[a].ind->len,
-				      str->size_shift))
+      if(a!=-1)
       {
-	c=v[a].ind->len;
-	if(!c) c=1;
-	s+=c;
-	length-=c;
+	ch=v[a].ind->len;
+	if(!ch) ch=1;
+	s+=ch;
+	length-=ch;
 	string_builder_shared_strcat(&ret,v[a].val);
 	continue;
       }
@@ -1906,7 +1956,7 @@ void f_column(INT32 args)
 void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_verify_internals: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_verify_internals: permission denied.\n"));
   d_flag=0x7fffffff;
   do_debug();
   d_flag=tmp;
@@ -1917,7 +1967,7 @@ void f__verify_internals(INT32 args)
 void f__debug(INT32 args)
 {
   INT32 i=d_flag;
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_debug: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_debug: permission denied.\n"));
   get_all_args("_debug",args,"%i",&d_flag);
   pop_n_elems(args);
   push_int(i);
@@ -1929,7 +1979,7 @@ void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT32 i = yydebug;
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_compiler_trace: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_compiler_trace: permission denied.\n"));
   get_all_args("_compiler_trace", args, "%i", &yydebug);
   pop_n_elems(args);
   push_int(i);
@@ -3265,7 +3315,7 @@ void f__next(INT32 args)
 {
   struct svalue tmp;
 
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_next: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_next: permission denied.\n"));
 
   if(!args)
     PIKE_ERROR("_next", "Too few arguments.\n", sp, args);
@@ -3296,7 +3346,7 @@ void f__prev(INT32 args)
 {
   struct svalue tmp;
 
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_prev: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_prev: permission denied.\n"));
 
   if(!args)
     PIKE_ERROR("_prev", "Too few arguments.\n", sp, args);
@@ -3352,7 +3402,7 @@ void f__typeof(INT32 args)
 
 void f_replace_master(INT32 args)
 {
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
 
   if(!args)
     PIKE_ERROR("replace_master", "Too few arguments.\n", sp, 0);
@@ -3618,7 +3668,7 @@ void f_transpose(INT32 args)
 #ifdef DEBUG_MALLOC
 void f__reset_dmalloc(INT32 args)
 {
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
   pop_n_elems(args);
   reset_debug_malloc();
 }
@@ -3627,7 +3677,7 @@ void f__reset_dmalloc(INT32 args)
 #ifdef PIKE_DEBUG
 void f__locate_references(INT32 args)
 {
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
   if(args)
     locate_references(sp[-args].u.refs);
   pop_n_elems(args-1);

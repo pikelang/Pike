@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.24 1998/11/22 11:02:54 hubbe Exp $
+ * $Id: interpret.h,v 1.25 1999/01/21 09:15:02 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -22,10 +22,10 @@ struct frame
   struct frame *parent_frame;
   struct svalue *locals;
   struct svalue *expendible;
-  INT32 args;
   struct object *current_object;
   struct inherit context;
   char *current_storage;
+  INT32 args;
   INT32 fun;
   INT16 num_locals;
   INT16 num_args;
@@ -39,6 +39,24 @@ struct frame
 #define check__positive(X,Y)
 #define debug_check_stack() 
 #endif
+
+#define check_stack(X) do {			\
+  if(sp - evaluator_stack + (X) >= stack_size)	\
+    error("Stack overflow.\n");			\
+  }while(0)
+
+#define check_mark_stack(X) do {		\
+  if(mark_sp - mark_stack + (X) >= stack_size)	\
+    error("Mark stack overflow.\n");		\
+  }while(0)
+
+#define check_c_stack(X) do { 			\
+  long x_= ((char *)&x_) + STACK_DIRECTION * (X) - stack_top ;	\
+  x_*=STACK_DIRECTION;							\
+  if(x_>0)								\
+    error("C stack overflow.\n");					\
+  }while(0)
+
 
 #define pop_stack() do{ free_svalue(--sp); debug_check_stack(); }while(0)
 
@@ -126,8 +144,6 @@ do{ \
 void push_sp_mark(void);
 int pop_sp_mark(void);
 void init_interpreter(void);
-void check_stack(INT32 size);
-void check_mark_stack(INT32 size);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 void assign_lvalue(struct svalue *lval,struct svalue *from);
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);

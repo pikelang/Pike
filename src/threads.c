@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.85 1998/11/22 11:03:22 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.86 1999/01/21 09:15:19 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -501,7 +501,7 @@ void *new_thread_func(void * data)
   }
 
    ((struct thread_state *)(thread_id->storage))->status=THREAD_EXITED;
-   co_signal(& ((struct thread_state *)(thread_id->storage))->status_change);
+   co_broadcast(& ((struct thread_state *)(thread_id->storage))->status_change);
 
   free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.111 1998/11/22 11:02:53 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.112 1999/01/21 09:15:01 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -28,6 +28,7 @@ RCSID("$Id: interpret.c,v 1.111 1998/11/22 11:02:53 hubbe Exp $");
 #include "threads.h"
 #include "callback.h"
 #include "fd_control.h"
+#include "security.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -194,25 +195,6 @@ use_malloc:
 #endif
 }
 
-void check_stack(INT32 size)
-{
-  if(sp - evaluator_stack + size >= stack_size)
-    error("Stack overflow.\n");
-}
-
-void check_mark_stack(INT32 size)
-{
-  if(mark_sp - mark_stack + size >= stack_size)
-    error("Mark stack overflow.\n");
-}
-
-void check_c_stack(INT32 size)
-{
-  long x=((char *)&size) + STACK_DIRECTION * size - stack_top ;
-  x*=STACK_DIRECTION;
-  if(x>0)
-    error("C stack overflow.\n");
-}
 
 
 static int eval_instruction(unsigned char *pc);
@@ -230,6 +212,11 @@ static int eval_instruction(unsigned char *pc);
 
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 {
+#ifdef PIKE_SECURITY
+  if(lval->type <= MAX_COMPLEX)
+    if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_INDEX))
+      error("Index permission denied.\n");
+#endif
   switch(lval->type)
   {
     case T_ARRAY_LVALUE:
@@ -289,6 +276,12 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 
 void assign_lvalue(struct svalue *lval,struct svalue *from)
 {
+#ifdef PIKE_SECURITY
+  if(lval->type <= MAX_COMPLEX)
+    if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
+      error("Assign index permission denied.\n");
+#endif
+
   switch(lval->type)
   {
     case T_ARRAY_LVALUE:
@@ -342,6 +335,12 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
 
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 {
+#ifdef PIKE_SECURITY
+  if(lval->type <= MAX_COMPLEX)
+    if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
+      error("Assign index permission denied.\n");
+#endif
+
   switch(lval->type)
   {
     case T_ARRAY_LVALUE:
@@ -1797,12 +1796,26 @@ static void do_trace_call(INT32 args)
   free(s);
 }
 
+#ifdef PIKE_SECURITY
+static void restore_creds(struct object *creds)
+{
+  if(current_creds) free_object(current_creds);
+  current_creds=creds;
+}
 
-void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+/* Magic trick */
+static
+
+#else
+#define mega_apply2 mega_apply
+#endif
+
+void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
   int fun, tailrecurse=-1;
   struct svalue *save_sp=sp-args;
+
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
   long long children_base = accounted_time;
@@ -1940,7 +1953,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	push_int(0);
 	return;
       }
-      
+
       check_stack(256);
       check_mark_stack(256);
       check_c_stack(8192);
@@ -1977,6 +1990,14 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame.context = p->inherits[ ref->inherit_offset ];
 
       function = new_frame.context.prog->identifiers + ref->identifier_offset;
+
+#ifdef PIKE_SECURITY
+      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL, ("Function call permission denied.\n"));
+
+      if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
+	SET_CURRENT_CREDS(o->prot);
+#endif
+
 
 #ifdef PROFILING
       function->num_calls++;
@@ -2159,7 +2180,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if(new_frame.context.parent) free_object(new_frame.context.parent);
       free_object(new_frame.current_object);
       free_program(new_frame.context.prog);
-      
+
       fp = new_frame.parent_frame;
       
       if(tailrecurse>=0)
@@ -2185,6 +2206,19 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     if(t_flag>1) trace_return_value();
   }
 }
+
+#ifdef PIKE_SECURITY
+void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+{
+  ONERROR tmp;
+  if(current_creds)
+    add_ref(current_creds);
+
+  SET_ONERROR(tmp, restore_creds, current_creds);
+  mega_apply2(type,args,arg1,arg2);
+  CALL_AND_UNSET_ONERROR(tmp);
+}
+#endif
 
 
 /* Put catch outside of eval_instruction, so

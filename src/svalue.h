@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.19 1998/11/22 11:03:21 hubbe Exp $
+ * $Id: svalue.h,v 1.20 1999/01/21 09:15:17 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -132,6 +132,8 @@ struct svalue
 #define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING)
 #define BIT_COMPLEX (BIT_ARRAY|BIT_MULTISET|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING|BIT_FUNCTION)
 
+/* Max type which contains svalues */
+#define MAX_COMPLEX T_PROGRAM
 /* Max type with ref count */
 #define MAX_REF_TYPE T_STRING
 /* Max type handled by svalue primitives */

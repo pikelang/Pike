@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.60 1998/11/22 11:03:01 hubbe Exp $");
+RCSID("$Id: main.c,v 1.61 1999/01/21 09:15:03 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -27,6 +27,7 @@ RCSID("$Id: main.c,v 1.60 1998/11/22 11:03:01 hubbe Exp $");
 #include "cpp.h"
 #include "main.h"
 #include "operators.h"
+#include "security.h"
 
 #include <errno.h>
 
@@ -468,6 +469,7 @@ void do_exit(int num) ATTRIBUTE((noreturn))
 
 void low_init_main(void)
 {
+  init_pike_security();
   th_init();
   init_operators();
   init_builtin_efuns();

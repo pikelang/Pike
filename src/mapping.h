@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.12 1998/05/14 21:45:22 hubbe Exp $
+ * $Id: mapping.h,v 1.13 1999/01/21 09:15:06 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -20,7 +20,11 @@ struct keypair
 
 struct mapping
 {
-  INT32 refs, size, hashsize;
+  INT32 refs;
+#ifdef PIKE_SECURITY
+  struct object *prot;
+#endif
+  INT32 size, hashsize;
   TYPE_FIELD ind_types, val_types;
   struct mapping *next, *prev;
   struct keypair **hash;

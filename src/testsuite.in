@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.138 1999/01/07 13:43:24 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.139 1999/01/21 09:15:18 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1473,6 +1473,7 @@ test_true([[(array(array))([]) ]])
 test_true([[(array(array))([1:2]) ]])
 test_true([[(array(array))([1:2,3:4]) ]])
 test_true([[(array(array))([1:2,3:4,5:6]) ]])
+test_eval_error([[(mapping)""]])
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
@@ -2427,10 +2428,84 @@ test_eq([[random_seed(18),random(20000)]],[[random_seed(18),random(20000)]])
 test_eq([[random_seed(19),random(20000)]],[[random_seed(19),random(20000)]])
 
 // - replace
+test_eq([[replace("11013",({"1","100","108","13","1069","1067","106","10"}),
+	({"A","B","C","D","E","F","G","H"}))]],"AHD")
+test_eq([[replace("1264412124",({"126","124","12","122","1260"}),
+         ({"13333","13335","883","13329","226709"}))]],"133334488313335")
 test_eq(replace("foobargazonk","o","-"),"f--bargaz-nk")
 test_eq(replace("foobargazonk",({"o","a"}),({"()","<>"})),"f()()b<>rg<>z()nk")
 test_eq(replace("f--barf--",({"f--","f--bar"}),({"f--bar","f--"})),"f--f--bar")
 test_eq(replace("f--barf--",({"f--bar","f--"}),({"f--","f--bar"})),"f--f--bar")
+test_eq(replace("test\ntest\n\ntest\ntest",({"\n","\n\n"}),({" ","<p>"})),"test test<p>test test")
+test_eq(replace("test\ntest\n\ntest\ntest",({"\n\n","\n"}),({"<p>"," "})),"test test<p>test test")
+
+test_any([[
+function reference=lambda(string x, string *a, string *b)
+{
+  string ret="";
+  for(int pos=0;pos<strlen(x);)
+  {
+    int best=-1;
+    int bestlen=-1;
+    for(int e=0;e<sizeof(a);e++)
+    {
+      if(strlen(a[e])>bestlen)
+      {
+	if(x[pos..pos+strlen(a[e])-1] == a[e])
+	{
+	  best=e;
+	  bestlen=strlen(a[e]);
+	}
+      }
+    }
+
+    if(best==-1)
+    {
+      ret+=x[pos..pos];
+      pos++;
+    }else{
+      ret+=b[best];
+      pos+=bestlen;
+    }
+  }
+  return ret;
+};
+
+  for(int e=0;e<10000;e++)
+  {
+    string *base=(array(string)) ( (({random})*(1+random(10)))(20) );
+
+    for(int d=0;d<random(random(40));d++)
+      base+=({ base[ random(sizeof(base))] + random(10) });
+
+    base=Array.uniq(base);
+    string *to=(array(string))Array.map(base,hash);
+
+    string text="";
+    for(int d=0;d<1+random(random(50));d++)
+    {
+      if(random(2))
+	text+=base[ random(sizeof(base))];
+      else
+	text+=sprintf("%2d",random(100));
+    }
+
+    string r1=replace(text,base,to);
+    string r2=reference(text,base,to);
+
+    if(r1 != r2)
+    {
+      werror("\nFailiure:\n");
+      werror("Text: %O\n",text);
+      werror("From: %O\n",base);
+      werror("To  : %O\n",to);
+      werror("Builtin: %O\n",r1);
+      werror("Ref    : %O\n",r2);
+      return -1;
+    }
+  }
+  return 1;
+]],1)
 
 test_eq(replace("f\777\777bargaz\777nk","\777","-"),"f--bargaz-nk")
 test_eq(replace("f\777\777bargaz\777nk",({"\777","a"}),({"()","<>"})),"f()()b<>rg<>z()nk")
@@ -2743,6 +2818,9 @@ test_equal(Array.everynth("0123456789"/"",3,4),
 
 test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
 	({ ({1,4}), ({2,5}), ({3,6}) }))
+
+test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
+	   [[ ({ ({ "", 2 }) }) ]])
 
 test_true(!Yabu.test()->main(1,({"test"})))
 test_do([[

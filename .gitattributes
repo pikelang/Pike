@@ -379,7 +379,6 @@ testfont binary
 /src/opcodes.h foreign_ident
 /src/operators.c foreign_ident
 /src/operators.h foreign_ident
-/src/otable.h foreign_ident
 /src/peep.c foreign_ident
 /src/peep.h foreign_ident
 /src/peep.in foreign_ident
