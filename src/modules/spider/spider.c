@@ -79,13 +79,13 @@ void do_html_parse(struct pike_string *ss,
 		   struct mapping *cont,struct mapping *single,
 		   int *strings,int recurse_left,
 		   struct array *extra_args);
-#if 0
+
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
 			 struct array *extra_args,
 			 int line);
-#endif
+
 
 extern void f_parse_tree(INT32 argc);
 
@@ -338,7 +338,7 @@ void f_parse_html(INT32 args)
     push_text("");
 }
 
-#if 0
+
 void f_parse_html_lines(INT32 args)
 {
   struct pike_string *ss;
@@ -387,7 +387,6 @@ void f_parse_html_lines(INT32 args)
   free_mapping(single);
   f_add(strings);
 }
-#endif
 
 char start_quote_character = '\000';
 char end_quote_character = '\000';
@@ -758,7 +757,7 @@ void do_html_parse(struct pike_string *ss,
   }
 }
 
-#if 0
+
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -975,7 +974,7 @@ void do_html_parse_lines(struct pike_string *ss,
     free_string(ss);
   }
 }
-#endif
+
 
 static int does_match(char *s,int len,char *m,int mlen)
 {
@@ -1001,7 +1000,7 @@ static int does_match(char *s,int len,char *m,int mlen)
 }
 
 
-#if !HAVE_INT_TIMEZONE
+#ifndef HAVE_INT_TIMEZONE
 int _tz;
 #else
 extern long int timezone;
@@ -1010,7 +1009,7 @@ extern long int timezone;
 void f_timezone(INT32 args)
 {
   pop_n_elems(args);
-#if !HAVE_INT_TIMEZONE
+#ifndef HAVE_INT_TIMEZONE
   push_int(_tz);
 #else
   push_int(timezone);
@@ -1070,7 +1069,7 @@ void f_mark_fd(INT32 args)
 {
   int fd;
   struct pike_string *s;
-  if (args<1 
+  if (args<1
       || sp[-args].type!=T_INT 
       || (args>2 && sp[-args+1].type!=T_STRING))
     error("Illegal argument(s) to mark_fd(int,void|string)\n");
@@ -1080,7 +1079,6 @@ void f_mark_fd(INT32 args)
   if (args<2)
   {
     int len;
-    struct sockaddr_in addr;
     char *tmp;
     char buf[20];
     struct stat fs;
@@ -1096,27 +1094,6 @@ void f_mark_fd(INT32 args)
       } else {
 	push_text("");
       }
-      
-      len=sizeof(addr);
-      if(! getsockname(fd, (struct sockaddr *) &addr, &len))
-      {
-	tmp=inet_ntoa(addr.sin_addr);
-	push_string(make_shared_string(" Local:"));
-	push_string(make_shared_string(tmp));
-	sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
-	push_string(make_shared_string(buf));
-	f_add(4);
-      }
-
-      if(! getpeername(fd, (struct sockaddr *) &addr, &len))
-      {
-	push_string(make_shared_string(" Remote:"));
-	tmp=inet_ntoa(addr.sin_addr);
-	push_string(make_shared_string(tmp));
-	sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
-	push_string(make_shared_string(buf));
-	f_add(4);
-      }
       return;
     } else {
       if(fd_marks[fd])
@@ -1128,8 +1105,6 @@ void f_mark_fd(INT32 args)
       return;
     }
   }
-  
-  
   
   s=sp[-args+1].u.string;
   s->refs++;
@@ -1168,6 +1143,43 @@ void f_fcgi_create_listen_socket(INT32 args)
 }
 #endif
 
+static void program_name(struct program *p)
+{
+  char *f;
+  p->refs++;
+  push_program(p);
+  APPLY_MASTER("program_name", 1);
+  if(sp[-1].type == T_STRING)
+    return;
+  pop_stack();
+  f=(char *)(p->linenumbers+1);
+
+  if(!p->linenumbers || !strlen(f))
+    push_text("Unknown program");
+
+  push_text(f);
+}
+
+void f__dump_obj_table(INT32 args)
+{
+  struct object *o;
+  int n=0;
+  pop_n_elems(args);
+  o=first_object;
+  while(o) 
+  { 
+    if(o->prog)
+      program_name(o->prog);
+    else 
+      push_string(make_shared_binary_string("No program (Destructed?)",24));
+    push_int(o->refs);
+    f_aggregate(2);
+    ++n;
+    o=o->next;
+  }
+  f_aggregate(n);
+}
+
 void init_spider_efuns(void) 
 {
 #if 0
@@ -1177,20 +1189,6 @@ void init_spider_efuns(void)
   
   add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
 	   OPT_TRY_OPTIMIZE);
-
-#if 0 /* these have been moved to ../system /Hubbe */
-#ifdef HAVE_GETPWNAM
-  add_efun("getpwnam", f_getpwnam, "function(string:array)", 
-	   OPT_EXTERNAL_DEPEND);
-  add_efun("getpwuid", f_getpwuid, "function(int:array)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_SETPWENT
-  add_efun("getpwent", f_getpwent, "function(void:array)",
-	   OPT_EXTERNAL_DEPEND);
-  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif
-#endif
 
   add_efun("set_start_quote",f_set_start_quote,"function(int:int)",OPT_EXTERNAL_DEPEND);
 
@@ -1211,11 +1209,9 @@ void init_spider_efuns(void)
 	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
 	   0);
 
-#if 0
   add_efun("parse_html_lines",f_parse_html_lines,
 	   "function(string,mapping(string:function(string,mapping(string:string),int,mixed ...:string)),mapping(string:function(string,mapping(string:string),string,int,mixed ...:string)),mixed ...:string)",
 	   0);
-#endif
   
 #ifdef HAVE_PERROR
   add_efun("real_perror",f_real_perror, "function(:void)",OPT_EXTERNAL_DEPEND);
@@ -1235,7 +1231,7 @@ void init_spider_efuns(void)
     struct tm *g;
 
     g=localtime(&foo);
-#if !HAVE_INT_TIMEZONE
+#ifndef HAVE_INT_TIMEZONE
     _tz = g->tm_gmtoff;
 #endif
   }
