@@ -5,12 +5,12 @@ string objectid;
 string name;
 object con;
 object ctx;
-int is_async;
+int _async;
 
 mixed `() (mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, is_async);
-  if (is_async)
+  mixed data = ctx->encode_call(objectid, name, args, _async);
+  if (_async)
     con->call_async(data);
   else
     return con->call_sync(data);
@@ -19,14 +19,24 @@ mixed `() (mixed ... args)
 
 mixed sync(mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, is_async);
+  mixed data = ctx->encode_call(objectid, name, args, _async);
   return con->call_sync(data);
 }
 
 void async(mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, is_async);
+  mixed data = ctx->encode_call(objectid, name, args, _async);
   con->call_async(data);
+}
+
+int is_async()
+{
+  return _async;
+}
+
+void set_async(int a)
+{
+  _async = a;
 }
 
 void create(string oid, string n, object cn, object ct, int a)
@@ -35,5 +45,5 @@ void create(string oid, string n, object cn, object ct, int a)
   name = n;
   con = cn;
   ctx = ct;
-  is_async = a;
+  _async = a;
 }
