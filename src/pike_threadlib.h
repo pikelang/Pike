@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.30 2004/04/21 17:57:20 mast Exp $
+|| $Id: pike_threadlib.h,v 1.31 2004/05/10 08:31:44 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -736,8 +736,12 @@ PMOD_EXPORT extern int Pike_in_gc;
 
 #define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
   struct thread_state *_tmp=thread_state_for_id(th_self());	\
-  HIDE_GLOBAL_VARIABLES();					\
-  THREADS_DISALLOW()
+  if (_tmp) {							\
+    do {	/* Undone by THREADS_DISALLOW(). */		\
+      HIDE_GLOBAL_VARIABLES();					\
+      THREADS_DISALLOW();					\
+    }								\
+  } while(0)
 
 #ifdef PIKE_DEBUG
 #define ASSERT_THREAD_SWAPPED_IN() do {				\
