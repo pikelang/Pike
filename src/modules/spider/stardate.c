@@ -10,7 +10,9 @@
 #include "array.h"
 #include "builtin_efuns.h"
 #include "spider.h"
+#include <sys/time.h>
 #define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
+
 
 #define MAXPRECISION       7
 #define OUTPUTFORMAT       "%%%03d.%df"
