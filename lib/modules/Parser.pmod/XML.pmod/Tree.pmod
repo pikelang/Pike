@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.40 2004/04/20 19:25:22 grubba Exp $
+ * $Id: Tree.pmod,v 1.41 2004/04/20 19:34:43 grubba Exp $
  *
  */
 
@@ -895,9 +895,12 @@ class Node {
     // Then set the short namespaces for any attributes.
     foreach(indices(attrs), string attr_name) {
       if (!has_prefix(attr_name, "xmlns:")) {
-	int i = search(attr_name, ":");
-	int j = search(attr_name, "/");
-	if (j > i) {
+	int i = -1;
+	int j;
+	while ((j = search(attr_name, ":", i)) >= 0) {
+	  i = j;
+	}
+	while ((j = search(attr_name, "/", i)) >= 0) {
 	  i = j;
 	}
 	if (i >= 0) {
