@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.25 2004/03/22 22:37:09 mast Exp $
+# $Id: common_module_makefile.in,v 1.26 2004/04/01 17:20:55 grubba Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -108,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.25 2004/03/22 22:37:09 mast Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.26 2004/04/01 17:20:55 grubba Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod '#if constant ($(MODULE_PROGRAM))'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
@@ -248,3 +248,5 @@ module_modref.xml: plib/autodoc.xml $(SYSTEM_DOC_PATH)/src/structure/module_modr
 	  $(RUNPIKE) -x assemble_autodoc $(SYSTEM_DOC_PATH)/src/structure/module_modref.xml \
 	  plib/autodoc.xml >plib/module_modref.xml
 
+examine_module: $(MODULE_TARGET)
+	-nm $(MODULE_TARGET)
