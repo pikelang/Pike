@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.157 1999/10/08 16:35:15 noring Exp $
+# $Id: Makefile.in,v 1.158 1999/10/15 23:37:52 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -287,7 +287,8 @@ module_testsuites:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
 
 just_verify: module_testsuites testsuite master.pike
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike -a
+	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
 tinstall: aclocal master.pike
 	rm -rf test-install
