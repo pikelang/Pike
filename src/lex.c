@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.31 1997/12/16 22:31:25 grubba Exp $");
+RCSID("$Id: lex.c,v 1.32 1997/12/16 22:48:14 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1848,40 +1848,24 @@ static void low_lex(void)
 
       if(!strcmp("efun",my_yylval.str) || !strcmp("constant",my_yylval.str))
       {
+	int res = 0;
+	struct svalue *oldsp = sp;
+	struct svalue *sv;
+
 	SKIPWHITE();
-	if(!GOBBLE('('))
-	{
+	if (!GOBBLE('(')) {
 	  yyerror("Missing '(' in #if constant().\n");
 	  return;
 	}
 	READBUF(isidchar(C));
-	if(!GOBBLE(')'))
-	{
-	  yyerror("Missing ')' in #if constant().\n");
-	  return;
-	}
-	s=findstring(buf);
 
-	if(s && low_mapping_string_lookup(get_builtin_constants(), s))
-	  UNGETSTR(" 1 ",3);
-	else
-	  UNGETSTR(" 0 ",3);
-
-	continue;
-      } else if (!strcmp("resolv", my_yylval.str)) {
-	int res = 0;
-	struct svalue *oldsp = sp;
-
-	SKIPWHITE();
-	if (!GOBBLE('(')) {
-	  yyerror("Missing '(' in #if resolv().\n");
-	  return;
-	}
-	READBUF(isidchar(C));
-
-	/* code from low_idents here */
-	if (get_master) {
-	  push_text(buf);
+	push_text(buf);
+	if (sv = low_mapping_string_lookup(get_builtin_constants(),
+					   sp[-1].u.string)) {
+	  pop_stack();
+	  push_svalue(sv);
+	  res = 1;
+	} else if (get_master) {
 	  current_file->refs++;
 	  push_string(current_file);
 
@@ -1891,8 +1875,6 @@ static void low_lex(void)
 	      (!(IS_ZERO(sp-1) && sp[-1].subtype == 1))) {
 	    res = 1;
 	  }
-	} else {
-	  res = 0;
 	}
 
 	while(GOBBLE('.')) {
@@ -1918,7 +1900,7 @@ static void low_lex(void)
 	}
 	
 	if (!GOBBLE(')')) {
-	  yyerror("Missing ')' in #if resolv().\n");
+	  yyerror("Missing ')' in #if constant().\n");
 	  return;
 	}
 
