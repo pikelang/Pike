@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.17 1999/06/04 21:26:29 hubbe Exp $
+// $Id: Readline.pike,v 1.18 1999/06/06 09:05:48 mirar Exp $
 
 class OutputController
 {
@@ -746,28 +746,56 @@ class DefaultEditKeys
     _readline->setcursorpos(backward_find_word());
   }
 
-  void delete_word()
+  void kill_word()
   {
-    _readline->delete(_readline->getcursorpos(), forward_find_word());
+    _readline->kill(_readline->getcursorpos(), forward_find_word());
   }
   
-  void backward_delete_word()
+  void backward_kill_word()
   {
     int sp = backward_find_word();
     int ep = _readline->getcursorpos();
     if((ep - sp) == 0)
       sp--;
-    _readline->delete(sp, ep);
+    _readline->kill(sp, ep);
   }
 
   void kill_line()
   {
-    _readline->delete(_readline->getcursorpos(), strlen(_readline->gettext()));
+    _readline->kill(_readline->getcursorpos(), strlen(_readline->gettext()));
   }
 
   void kill_whole_line()
   {
-    _readline->delete(0, strlen(_readline->gettext()));
+    _readline->kill(0, strlen(_readline->gettext()));
+  }
+
+  void yank()
+  {
+    _readline->setmark(_readline->getcursorpos());
+    _readline->insert(_readline->kill_ring_yank(),_readline->getcursorpos());
+  }
+
+  void kill_ring_save()
+  { 
+    _readline->add_to_kill_ring(_readline->region());
+  }
+
+  void kill_region()
+  { 
+    _readline->kill(@_readline->pointmark());
+  }
+
+  void set_mark()
+  {
+    _readline->setmark(_readline->getcursorpos());
+  }
+
+  void swap_mark_and_point()
+  {
+    int p=_readline->getcursorpos();
+    _readline->setcursorpos(_readline->getmark());
+    _readline->setmark(p);
   }
 
   void redisplay()
@@ -791,14 +819,17 @@ class DefaultEditKeys
     ({ "^[u", upcase_word }),
     ({ "^[L", downcase_word }),
     ({ "^[l", downcase_word }),
-    ({ "^[D", delete_word }),
-    ({ "^[^H", backward_delete_word }),
-    ({ "^[^?", backward_delete_word }),
-    ({ "^[d", delete_word }),
+    ({ "^[D", kill_word }),
+    ({ "^[^H", backward_kill_word }),
+    ({ "^[^?", backward_kill_word }),
+    ({ "^[d", kill_word }),
     ({ "^[F", forward_word }),
     ({ "^[B", backward_word }),
     ({ "^[f", forward_word }),
     ({ "^[b", backward_word }),
+    ({ "^[w", kill_ring_save }),
+    ({ "^[W", kill_ring_save }),
+    ({ "^0", set_mark }),
     ({ "^A", beginning_of_line }),
     ({ "^B", backward_char }),
     ({ "^D", delete_char_or_eof }),
@@ -815,11 +846,14 @@ class DefaultEditKeys
     ({ "^T", transpose_chars }),
     ({ "^U", kill_whole_line }),
     ({ "^V", quoted_insert }),
+    ({ "^W", kill_region }),
+    ({ "^Y", yank }),
     ({ "^?", backward_delete_char }),
     ({ "\\!ku", up_history }),
     ({ "\\!kd", down_history }),
     ({ "\\!kr", forward_char }),
     ({ "\\!kl", backward_char }),
+    ({ "^X^X", swap_mark_and_point }),
   });
 
   static void set_default_bindings()
@@ -914,8 +948,12 @@ static private string prompt="";
 static private string text="", readtext;
 static private function(string:void) newline_func;
 static private int cursorpos = 0;
+static private int mark = 0;
 static private object(History) historyobj = 0;
 static private int hide = 0;
+
+static private array(string) kill_ring=({});
+static private int kill_ring_size=30;
 
 object(OutputController) get_output_controller()
 {
@@ -989,6 +1027,20 @@ int setcursorpos(int p)
   return cursorpos;
 }
 
+int setmark(int p)
+{
+  if (p<0)
+    p = 0;
+  if (p>strlen(text))
+    p = strlen(text);
+  mark=p;
+}
+
+int getmark()
+{
+  return mark;
+}
+
 void insert(string s, int p)
 {
   if (p<0)
@@ -1005,6 +1057,8 @@ void insert(string s, int p)
     output_controller->move_backward(rest);
   }
   text = text[..p-1]+s+rest;
+
+  if (mark>p) mark+=strlen(s);
 }
 
 void delete(int p1, int p2)
@@ -1019,8 +1073,52 @@ void delete(int p1, int p2)
   output_controller->write(text[p2..],0,0,hide);
   output_controller->erase(text[p1..p2-1]);
   text = text[..p1-1]+text[p2..];
+
+  if (mark>p2) mark-=(p2-p1);
+  else if (mark>p1) mark=p1;
+
   cursorpos = strlen(text);
   setcursorpos(p1);
+}
+
+array(int) pointmark() // returns point and mark in numeric order
+{
+   int p1,p2;
+   p1=getcursorpos(),p2=getmark();   
+   if (p1>p2) return ({p2,p1});
+   return ({p1,p2});
+}
+
+string region(int ... args) /* p1, p2 or point-mark */
+{
+   int p1,p2;
+   if (sizeof(args)) [p1,p2]=args;
+   else [p1,p2]=pointmark();
+   return text[p1..p2-1];
+}
+
+void kill(int p1, int p2)
+{
+  if (p1<0)
+    p1 = 0;
+  if (p2>strlen(text))
+    p2 = strlen(text);
+  if (p1>=p2)
+    return;
+  add_to_kill_ring(text[p1..p2-1]);
+  delete(p1,p2);
+}
+
+void add_to_kill_ring(string s)
+{
+   kill_ring+=({s});
+   if (sizeof(kill_ring)>kill_ring_size) kill_ring=kill_ring[1..];
+}
+
+string kill_ring_yank()
+{
+   if (!sizeof(kill_ring)) return "";
+   return kill_ring[-1];
 }
 
 void history(int n)
