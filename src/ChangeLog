@@ -1,3 +1,8 @@
+Sun Jan  5 20:21:29 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
+
+	* master.pike (add_precompiled_program): Added support for
+	hierarchial /precompiled/ constant names.
+
 Fri Jan  3 22:10:49 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* Version 0.4 released
