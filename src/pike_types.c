@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.198 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_types.c,v 1.199 2002/10/28 13:02:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.198 2002/10/11 01:39:35 nilsson Exp $");
+RCSID("$Id: pike_types.c,v 1.199 2002/10/28 13:02:27 nilsson Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3572,8 +3572,6 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   case T_STRING:
     /* Check that the index types are compatible with int. */
     {
-      struct pike_type *a;
-
       if (!low_match_types(int_type_string, index1_type, 0)) {
 	struct pike_string *s = describe_type(t);
 	yywarning("Bad argument 1 to range operator on %s.",

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.206 2002/10/11 01:39:34 nilsson Exp $
+|| $Id: object.c,v 1.207 2002/10/28 13:03:42 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.206 2002/10/11 01:39:34 nilsson Exp $");
+RCSID("$Id: object.c,v 1.207 2002/10/28 13:03:42 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1987,7 +1987,7 @@ static void f_magic_values (INT32 args)
   struct program *prog;
   struct inherit *inherit;
   struct array *res;
-  int type = 0, e, f, i;
+  int type = 0, e, i;
 
   if (args >= 1) {
     if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");

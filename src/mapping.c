@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.153 2002/10/27 16:35:05 nilsson Exp $
+|| $Id: mapping.c,v 1.154 2002/10/28 13:03:16 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.153 2002/10/27 16:35:05 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.154 2002/10/28 13:03:16 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1674,7 +1674,6 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
     /* no mapping locking required (I hope) */
     NEW_MAPPING_LOOP(m->data) {
-      struct svalue *tmp;
       if (notfirst) my_strcat(",\n");
       else notfirst = 1;
       for(d = 0; d < indent; d++)

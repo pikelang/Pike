@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pvr.c,v 1.22 2002/10/21 17:06:15 marcus Exp $
+|| $Id: pvr.c,v 1.23 2002/10/28 12:59:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.22 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.23 2002/10/28 12:59:28 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -134,7 +134,6 @@ struct gla_state
 static inline INT32 d(V_t *x, V_t *y, int k)
 {
   INT32 sum=0;
-  int i;
   while(k--) {
     int n = (*x++)-(*y++);
     sum += n*n;

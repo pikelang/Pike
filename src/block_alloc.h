@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.46 2002/10/11 13:18:26 grubba Exp $
+|| $Id: block_alloc.h,v 1.47 2002/10/28 13:01:07 nilsson Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -267,7 +267,6 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
 {									\
   INT32 num=0, size=0;							\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
-  struct DATA *tmp2;							\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)			\
   {									\

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.125 2002/10/11 01:39:34 nilsson Exp $
+|| $Id: opcodes.c,v 1.126 2002/10/28 13:04:09 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.125 2002/10/11 01:39:34 nilsson Exp $");
+RCSID("$Id: opcodes.c,v 1.126 2002/10/28 13:04:09 nilsson Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1755,7 +1755,7 @@ void o_sscanf(INT32 args)
 #ifdef PIKE_DEBUG
   extern int t_flag;
 #endif
-  INT32 e, i=0;
+  INT32 i=0;
   int x;
   ptrdiff_t matched_chars;
   struct svalue *save_sp=sp;
@@ -1891,7 +1891,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 #ifdef PIKE_DEBUG
   extern int t_flag;
 #endif
-  INT32 e,i;
+  INT32 i;
   int x;
   ptrdiff_t matched_chars;
   struct svalue *save_sp=sp;

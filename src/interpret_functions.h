@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.110 2002/10/11 01:39:32 nilsson Exp $
+|| $Id: interpret_functions.h,v 1.111 2002/10/28 13:01:31 nilsson Exp $
 */
 
 /*
@@ -209,7 +209,6 @@ OPCODE1(F_CONSTANT, "constant", 0, {
  * swaps the arg1 top values with the arg2 values beneath
  */
 OPCODE2(F_REARRANGE,"rearrange",0,{
-  int e;
   check_stack(arg2);
   MEMCPY(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
   MEMMOVE(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
