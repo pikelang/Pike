@@ -575,26 +575,45 @@ class cSPANISH
    }
 }
 
-// portugese; don't know other then the holidays
+// portugese
 // source: Sérgio Araújo <sergio@projecto-oasis.cx>
 
 class cPORTUGESE
 {
    inherit _ymd_base;
 
-//     static private constant month_names=
-//     ({"enero","febrero","marzo","abril","mayo","junio",
-//       "julio","agosto","setiembre","octubre","noviembre","diciembre"});
+   static private constant month_names=
+   ({
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+   });
 
-//     static private constant week_day_names=
-//     ({"lunes","martes","miércoles","jueves",
-//       "viernes","sábado","domingo"});
+   static private constant week_day_names=
+   ({
+      "Segunda-feira", // -feira is removed for the short version
+      "Terça-feira",   // don't know how it's used
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira",
+      "Sábado",
+      "Domingo",
+   });
 
 // contains argentina for now
    static mapping events_translate=
    ([
       "New Year's Day":"Ano Novo",
-      "Sexta-Feira Santa":"Sexta-Feira Santa",
+      "Good Friday":"Sexta-Feira Santa",
       "Liberty Day":"Dia da Liberdade",
       "Labor Day":"Dia do Trabalhador",
       "Portugal Day":"Dia de Portugal",
@@ -607,10 +626,10 @@ class cPORTUGESE
       "Christmas":"Natal"
    ]);
 
-//     void create()
-//     {
-//        SETUPSTUFF;
-//     }
+   void create()
+   {
+      SETUPSTUFF;
+   }
 }
 
 // Hungarian
