@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.190 2004/05/29 18:21:05 grubba Exp $
+|| $Id: operators.c,v 1.191 2004/08/11 14:37:22 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.190 2004/05/29 18:21:05 grubba Exp $");
+RCSID("$Id: operators.c,v 1.191 2004/08/11 14:37:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1149,6 +1149,7 @@ PMOD_EXPORT void f_add(INT32 args)
   INT_TYPE e,size;
   TYPE_FIELD types;
 
+ tail_recurse:
   types=0;
   for(e=-args;e<0;e++) types|=1<<sp[e].type;
     
@@ -1166,6 +1167,7 @@ PMOD_EXPORT void f_add(INT32 args)
 
 	if(sp[-args].type == T_OBJECT && sp[-args].u.object->prog)
 	{
+	  /* The first argument is an object. */
 	  int i;
 	  if(sp[-args].u.object->refs==1 &&
 	     (i = FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD_EQ)) != -1)
@@ -1192,23 +1194,57 @@ PMOD_EXPORT void f_add(INT32 args)
 	     sp[e-args].u.object->prog &&
 	     (i = FIND_LFUN(sp[e-args].u.object->prog,LFUN_RADD)) != -1)
 	  {
-	    struct svalue *tmp=sp+e-args;
-	    check_stack(e);
-	    assign_svalues_no_free(sp, sp-args, e, -1);
-	    sp+=e;
-	    apply_low(tmp->u.object, i, e);
-	    if(args - e > 1)
-	    {
-	      assign_svalue(tmp, sp-1);
+	    /* There's an object with a lfun::``+() at argument @[e]. */
+	    if (e == args-1) {
+	      /* The object is the last argument. */
+	      struct object *o = Pike_sp[-1].u.object;
+	      ONERROR err;
+	      Pike_sp--;
+	      SET_ONERROR(err, do_free_object, o);
+	      apply_low(o, i, e);
+	      CALL_AND_UNSET_ONERROR(err);
+	      return;
+	    } else {
+	      /* Rotate the stack, so that the @[e] first elements come last.
+	       */
+	      struct svalue *tmp;
+	      if (e*2 < args) {
+		tmp = xalloc(e*sizeof(struct svalue));
+		memcpy(tmp, Pike_sp-args, e*sizeof(struct svalue));
+		memmove(Pike_sp-args, (Pike_sp-args)+e,
+			(args-e)*sizeof(struct svalue));
+		memcpy(Pike_sp-e, tmp, e*sizeof(struct svalue));
+	      } else {
+		tmp = xalloc((args-e)*sizeof(struct svalue));
+		memcpy(tmp, (Pike_sp-args)+e, (args-e)*sizeof(struct svalue));
+		memmove(Pike_sp-e, Pike_sp-args, e*sizeof(struct svalue));
+		memcpy(Pike_sp-args, tmp, (args-e)*sizeof(struct svalue));
+	      }
+	      free(tmp);
+	      /* Now the stack is:
+	       *
+	       * -args	object with lfun::``+()
+	       *  ...
+	       *  ...	other arguments
+	       *  ...
+	       *   -e	first argument.
+	       *  ...
+	       *   -1	last argument before the object.
+	       */
+#ifdef PIKE_DEBUG
+	      if (Pike_sp[-args].type != T_OBJECT ||
+		  !Pike_sp[-args].u.object->prog ||
+		  FIND_LFUN(Pike_sp[-args].u.object->prog, LFUN_RADD) != i) {
+		Pike_fatal("`+() Lost track of object.\n");
+	      }
+#endif /* PIKE_DEBUG */
+	      apply_low(Pike_sp[-args].u.object, i, e);
+	      args -= e;
+	      /* Replace the object with the result. */
+	      assign_svalue(Pike_sp-(args+1), Pike_sp-1);
 	      pop_stack();
-	      f_add(args - e);
-	      assign_svalue(sp-e-1,sp-1);
-	      pop_n_elems(e);
-	    }else{
-	      assign_svalue(sp-args-1,sp-1);
-	      pop_n_elems(args);
+	      goto tail_recurse;
 	    }
-	    return;
 	  }
 	}
       }
