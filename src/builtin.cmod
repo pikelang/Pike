@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.20 2001/06/21 00:25:15 per Exp $
+ * $Id: builtin.cmod,v 1.21 2001/06/21 01:21:50 per Exp $
  */
 
 #include "global.h"
@@ -544,10 +544,15 @@ PIKECLASS Buffer
     */
   {
     struct Buffer_struct *str = THIS;
-    struct pike_string *s = finish_string_builder( &str->str );
-    str->str.malloced = 0;
-    str->str.s = 0;
-    RETURN s;
+    if( str->str.s )
+    {
+      struct pike_string *s = finish_string_builder( &str->str );
+      str->str.malloced = 0;
+      str->str.s = 0;
+      RETURN s;
+    }
+    pop_n_elems(args);
+    push_text("");
   }
 
   INIT
