@@ -21,9 +21,6 @@ MODULE_CLEAN_EXTRA=p*.c
 
 MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
 
-depend:
-	:
-
 override:  compile@WITH_GTK@
 	@:
 
@@ -66,6 +63,10 @@ compile2: compile1
 
 options: config.status
 	./config.status 
+
+# Do not re-generate the 'dependencies' file in this directory.
+depend: 
+	@:
 
 # Some hand-made dependencies:
 
