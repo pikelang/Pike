@@ -122,7 +122,7 @@ New modules / classes / methods added:
 --------------------------------------
 
 o ADT.History
-    Alfons Åberg.
+    Leaking stack.
 
 o ADT.Relation.Binary
     Handles binary relations.
