@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.18 1997/06/19 20:59:44 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.19 1997/08/03 09:54:43 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -761,6 +761,9 @@ static int do_docode2(node *n,int flags)
     INT32 prev_switch_default = current_switch_default;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     INT32 break_save = current_break;
+#ifdef DEBUG
+    struct svalue *save_sp=sp;
+#endif
 
     if(do_docode(CAR(n),0)!=1)
       fatal("Internal compiler error, time to panic\n");
@@ -787,6 +790,11 @@ static int do_docode2(node *n,int flags)
     current_switch_jumptable[current_switch_case++]=-1;
 
     DO_CODE_BLOCK(CDR(n));
+
+#ifdef DEBUG
+    if(sp-save_sp != cases)
+      fatal("Count cases is wrong!\n");
+#endif
     
     f_aggregate(cases);
     order=get_switch_order(sp[-1].u.array);
@@ -831,6 +839,10 @@ static int do_docode2(node *n,int flags)
     emit(F_LABEL, current_break);
 
     current_break=break_save;
+#ifdef DEBUG
+    if(recoveries && sp-evaluator_stack < recoveries->sp)
+      fatal("Stack error after F_SWITCH (underflow)\n");
+#endif
     return 0;
   }
 
@@ -847,7 +859,8 @@ static int do_docode2(node *n,int flags)
       if(tmp1<1)
       {
 	yyerror("Error in case label.");
-	return 0;
+	push_int(0);
+	tmp1=1;
       }
       pop_n_elems(tmp1-1);
       current_switch_values_on_stack++;
@@ -869,9 +882,9 @@ static int do_docode2(node *n,int flags)
 	tmp1=eval_low(CDR(n));
 	if(tmp1<1)
 	{
-	  pop_stack();
-	  yyerror("Error in case label.");
-	  return 0;
+	  yyerror("Error in second half of case label.");
+	  push_int(0);
+	  tmp1=1;
 	}
 	pop_n_elems(tmp1-1);
 	current_switch_values_on_stack++;
