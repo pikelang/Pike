@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.221 2002/04/26 11:18:28 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.222 2002/05/10 22:20:21 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1593,7 +1593,6 @@ extern int pike_make_pipe(int *);
 #endif /* !__NT__ && !__amigaos__ */
 
 #ifdef HAVE___PRIOCNTL
-#undef PC
 # include <sys/priocntl.h>
 # include <sys/rtpriocntl.h>
 # include <sys/tspriocntl.h>
