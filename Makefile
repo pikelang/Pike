@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.21 1999/11/13 18:04:13 mast Exp $
+# $Id: Makefile,v 1.22 1999/12/02 18:36:37 mast Exp $
 #
 # Meta Makefile
 #
@@ -95,6 +95,10 @@ compile: configure
 bin/pike: force
 	sed -e "s|\"BASEDIR\"|\"`pwd`\"|" < bin/pike.in > bin/pike
 	chmod a+x bin/pike
+
+# This skips the modules.
+pike: force
+	@$(MAKE) "METATARGET=pike"
 
 install:
 	@$(MAKE) "METATARGET=install"
