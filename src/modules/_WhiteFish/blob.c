@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.22 2001/05/29 23:58:09 per Exp $");
+RCSID("$Id: blob.c,v 1.23 2001/05/30 23:51:09 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -172,12 +172,10 @@ Blob *wf_blob_new( struct svalue *feed, int word )
 
 void wf_blob_free( Blob *b )
 {
-  if( b->b )  wf_buffer_free( b->b );
+  if( b->b )
+    wf_buffer_free( b->b );
   free( b );
 }
-
-
-
 
 
 
@@ -252,7 +250,8 @@ static void free_hash( struct hash *h )
   while( h )
   {
     struct hash *n = h->next;
-    if( h->data ) wf_buffer_free( h->data );
+    if( h->data )
+      wf_buffer_free( h->data );
     free( h );
     h = n;
   }
@@ -289,16 +288,6 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
     wf_buffer_rewind_w( h->data, -1 );
     wf_buffer_memcpy( h->data, b, nhits*2+5 );    
   }
-/*   { */
-/*     int docid = wf_buffer_rint( b ); */
-/*     int nhits = wf_buffer_rbyte( b ); */
-/*     struct hash *h = find_hash( d, docid ); */
-/*     int i; */
-/*     if( ohits + nhits > 255 ) */
-/*       nhits = 255-ohits; */
-/*     h->data->data[4] = nhits+ohits; */
-/*     wf_buffer_memcpy( h->data, b, nhits*2+5 ); */
-/*   } */
   wf_buffer_free( b );
 }
 
@@ -475,11 +464,15 @@ static void f_blob__cast( INT32 args )
 #endif
     if((nh = zipp[i].b->data[4]) > 1 )
     {
+#ifdef HANDLES_UNALIGNED_READ
+      fsort( zipp[i].b->data+5, nh, 2, (void *)cmp_hit );
+#else
       short *data = (short *)malloc( nh * 2 );
       MEMCPY( data,  zipp[i].b->data+5, nh * 2 );
       fsort( data, nh, 2, (void *)cmp_hit );
       MEMCPY( zipp[i].b->data+5, data, nh * 2 );
       free( data );
+#endif
     }
   }
   res = wf_buffer_new();
@@ -487,22 +480,11 @@ static void f_blob__cast( INT32 args )
   wf_buffer_set_empty( res );
 
   for( i = 0; i<zp; i++ )
-  {
-    int j;
     wf_buffer_append( res, zipp[i].b->data, zipp[i].b->size );
-/*     for( j = 0; j<4; j++ ) */
-/*       printf( "%02x", ((unsigned char *)zipp[i].b->data)[j] ); */
-/*     printf( " %02x ", ((unsigned char *)zipp[i].b->data)[4] ); */
-/*     for( j = 5; j<zipp[i].b->size; j+=2 ) */
-/*       printf( " %02x%02x", ((unsigned char*)zipp[i].b->data)[j], */
-/* 	      ((unsigned char *)zipp[i].b->data)[j+1] ); */
-/*     printf("\n"); */
-  }
+
   free( zipp );
 
-  /*exit_blob_struct();*/
-
-
+  exit_blob_struct(); /* Clear this buffer */
   pop_n_elems( args );
   push_string( make_shared_binary_string( res->data, res->size ) );
   wf_buffer_free( res );

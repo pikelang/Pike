@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.6 2001/05/28 20:44:26 per Exp $");
+RCSID("$Id: buffer.c,v 1.7 2001/05/30 23:52:01 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -29,23 +29,37 @@ RCSID("$Id: buffer.c,v 1.6 2001/05/28 20:44:26 per Exp $");
 #include <inttypes.h>
 #endif
 
+static INLINE int range( int n, int m )
+{
+  if( n < (m>>3) )    return (m>>3);
+  else if( n < 32 )   return 32;
+  else if( n < 64 )   return 64;
+  else if( n < 128 )  return 128;
+  else if( n < 256 )  return 256;
+  else if( n < 512 )  return 512;
+  else if( n < 1024 ) return 1024;
+  else if( n < 2048 ) return 2048;
+  else return n;
+}
+
 static INLINE void wf_buffer_make_space( struct buffer *b, int n )
 {
 #ifdef PIKE_DEBUG
-  if( b->read_only )  fatal("Oops\n");
+  if( b->read_only )
+    fatal("Oops\n");
 #endif
-  while( b->allocated_size-n < b->size )
+  if( b->allocated_size-b->size < n )
   {
-    b->allocated_size++;
-    b->allocated_size *= 2;
-    b->data = realloc( b->data, b->allocated_size );
+    b->allocated_size += range(n,b->allocated_size);
+    b->data =realloc(b->data,b->allocated_size);
   }
 }
 
 void wf_buffer_wbyte( struct buffer *b,
 		      unsigned char s )
 {
-  wf_buffer_make_space( b, 1 );
+  if( b->allocated_size == b->size )
+    wf_buffer_make_space( b, 1 );
   b->data[b->size++] = s;
 }
 
@@ -134,7 +148,8 @@ void wf_buffer_seek( struct buffer *b, int pos )
   
 void wf_buffer_clear( struct buffer *b )
 {
-  if( !b->read_only && b->data )  free( b->data );
+  if( !b->read_only && b->data )
+    free( b->data );
   if( b->read_only && b->str )    free_string( b->str );
   MEMSET(b, 0, sizeof(struct buffer));
 }
