@@ -21,16 +21,16 @@ static Filesystem.Base parent; // parent filesystem
 static string root = ""; // Note: Can now include leading "/"
 static string wd;        // never trailing "/"
 
-//! @decl void create(void|string directory, void|string _root, void|int fast, void|Filesystem.Base parent)
+//! @decl void create(void|string directory, void|string root, void|int fast, void|Filesystem.Base parent)
 //! Instanciate a new object representing the filesystem.
 //! @param directory
 //! The directory (in the real filesystem) that should become
 //! the root of the filesystemobject.
-//! @param _root
+//! @param root
 //! Internal
 //! @param fast
 //! Internal
-//! @param _parent
+//! @param parent
 //! Internal
 static void create(void|string directory,  // default: cwd
 		   void|string _root,   // internal: root
