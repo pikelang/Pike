@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.6 2003/01/19 17:41:21 nilsson Exp $
+// $Id: Binary.pike,v 1.7 2003/03/31 16:44:32 nilsson Exp $
 // An abstract data type for binary relations.
 
 private mapping val   = ([]);
@@ -147,6 +147,8 @@ mixed `&(mixed rel)
                        { return rel->contains(left, right);});
 }
 
+//! @decl mixed `+(mixed rel)
+//! @decl mixed `|(mixed rel)
 //! The expression `rel1 | rel2' and `rel1 + rel2' returns a new
 //! relation which has all the relation entries present in rel1,
 //! or rel2, or both.
