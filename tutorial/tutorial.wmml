@@ -6624,7 +6624,9 @@ array uniq(array <I>a</I>);
 </man_syntax>
 <man_description>
 This function returns an copy of the array <i>a</i> with all duplicate
-values removed. The order of the values in the result is undefined.
+values removed. The order of the values in the result is same as the order
+in the original array. Ie Array.uniq( ({ 1,4,1,2 }) ) would always result in
+({ 1,4,2 }).
 </man_description>
 </function>
 
