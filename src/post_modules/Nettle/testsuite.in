@@ -46,5 +46,47 @@ cond([[ Nettle->AES_State ]], [[
   	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
   	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
 ]])
+
+cond([[ Nettle->CBC ]], [[
+  test_eval_error( Nettle.CBC( class{} ) )
+  test_eval_error( object o=class{}(); Nettle.CBC(o); )
+  test_eval_error([[
+    class A {
+      int block_size() { return 0; }
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      string crypt(string data) {}
+    };
+    Nettle.CBC(A);
+  ]])
+  test_do([[
+    class A {
+      int block_size() { return 512; }
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      string crypt(string data) {}
+    };
+    Nettle.CBC(A);
+  ]])
+  test_eq( Nettle.CBC(Crypto.AES())->block_size(), 16)
+  test_eq( Nettle.CBC(Crypto.AES())->key_size(), 0)
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return cbc->key_size();]], 32)
+  test_eval_error([[
+    object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    cbc->crypt("123");
+  ]])
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return String.string2hex(cbc->crypt("0123456789abcdef"));
+  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
+  
+]])
 	  
 dnl test_false(Process.system(RUNPIKE+" SRCDIR/rijndaeltest.pike --quick"))
