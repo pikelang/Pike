@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.22 1997/02/27 08:09:46 hubbe Exp $");
+RCSID("$Id: las.c,v 1.23 1997/02/27 10:34:46 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -497,9 +497,14 @@ node *index_node(node *n, struct pike_string * id)
     push_int(0);
   }else{
     resolv_constant(n);
-    push_string(id);
-    reference_shared_string(id);
-    f_index(2);
+    if(sp[-1].type==T_INT)
+    {
+      yyerror("Failed to index module (module doesn't exist?)");
+    }else{
+      push_string(id);
+      reference_shared_string(id);
+      f_index(2);
+    }
   }
   UNSETJMP(tmp);
   ret=mkconstantsvaluenode(sp-1);
