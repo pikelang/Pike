@@ -20,6 +20,8 @@ if test "x$with_freetype" = "xyes" ; then
     CPPFLAGS="`$FT_CONFIG --cflags` $CPPFLAGS"
     LIBS="`$FT_CONFIG --libs` $LIBS"
     AC_MSG_CHECKING(if freetype actually works)
+    
+    # The below test works only for freetype2 < 2.1.6
     AC_TRY_LINK([
 #include <freetype/freetype.h> 
 ], 
@@ -29,6 +31,24 @@ if test "x$with_freetype" = "xyes" ; then
 ], 
 [ft_ok=yes], 
 [ft_ok=no])
+
+    # The test below works for freetype2 >= 2.1.6
+    if test no = "$ft_ok" ; then
+      AC_TRY_LINK([
+#include <ft2build.h>
+#include FT_FREETYPE_H
+], 
+[
+  FT_Library library;
+  FT_Init_FreeType( &library );
+], 
+[
+ ft_ok=yes
+ AC_DEFINE(HAVE_FT_FT2BUILD)
+],
+[ft_ok=no])
+    fi
+    
     if test yes = "$ft_ok" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)

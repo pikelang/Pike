@@ -2,17 +2,22 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.14 2003/01/15 16:57:16 marcus Exp $
+|| $Id: freetype.c,v 1.15 2004/02/28 00:01:21 mast Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.14 2003/01/15 16:57:16 marcus Exp $");
+RCSID("$Id: freetype.c,v 1.15 2004/02/28 00:01:21 mast Exp $");
 #include "module.h"
 #include "pike_error.h"
 
 #ifdef HAVE_LIBFT2
+#ifndef HAVE_FT_FT2BUILD
 #include <freetype/freetype.h>
+#else
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#endif
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -2,10 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.4 2003/01/15 19:31:40 grubba Exp $
+|| $Id: acconfig.h,v 1.5 2004/02/28 00:01:15 mast Exp $
 */
 
 #undef HAVE_LIBFT2
+#undef HAVE_FT_FT2BUILD
 @TOP@
 @BOTTOM@
 
