@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.154 2001/05/24 18:14:28 grubba Exp $
+ * $Id: master.pike.in,v 1.155 2001/05/31 22:50:30 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -181,6 +181,92 @@ string master_read_file(string file)
   return 0;
 }
 
+#ifdef GETCWD_CACHE
+string current_path;
+int cd(string s)
+{
+  current_path=0;
+  return predef::cd(s);
+}
+
+string getcwd()
+{
+  return current_path || (current_path=predef::getcwd());
+}
+#endif
+
+string combine_path_with_cwd(string path)
+{
+  return combine_path(IS_ABSOLUTE_PATH(path)?"/":getcwd(),path);
+}
+
+#define Stat _static_modules.files.Stat
+#ifdef FILE_STAT_CACHE
+
+#define FILE_STAT_CACHE_TIME 20
+
+int invalidate_time;
+mapping(string:multiset(string)) dir_cache = ([]);
+
+Stat master_file_stat(string x)
+{
+  string file, dir=combine_path_with_cwd(x);
+
+  file=BASENAME(dir);
+  dir=DIRNAME(dir);
+
+  multiset(string) d;
+  if(time() > invalidate_time)
+  {
+    dir_cache=([]);
+    invalidate_time=time()+FILE_STAT_CACHE_TIME;
+  }
+  if(zero_type(d=dir_cache[dir]))
+  {
+    if(array(string) tmp=get_dir(dir))
+    {
+#ifdef __NT__
+      tmp=map(tmp, lower_case);
+#endif
+      d=dir_cache[dir]=aggregate_multiset(@tmp);
+    }else{
+      dir_cache[dir]=0;
+    }
+  }
+  
+#ifdef __NT__
+  file=lower_case(file);
+#endif
+  if(d && !d[file]) return 0;
+
+  return predef::file_stat(x);
+}
+#else
+#define master_file_stat file_stat
+#endif
+
+mapping (string:string) environment=([]);
+
+
+
+//! @global
+//! @decl string getenv(string varname)
+//! @decl mapping(string:string) getenv()
+//!
+//! When called with no arguments, a mapping with all current envrionment
+//! variables will be returned.
+//!
+//! If the @[varname] argument has been given, the value of the environment
+//! variable with the name @[varname] will be returned. If no such
+//! environment variable exists, @tt{0@} (zero) will be returned.
+//!
+string|mapping(string:string) getenv(string|void s)
+{
+  if(!s) return environment + ([]);
+  return environment[s];
+}
+
+
 //! @global
 //! Compile the Pike code contained in the file @[filename] into a program.
 //!
@@ -211,83 +297,6 @@ program compile_file(string filename,
 }
 
 
-#ifdef GETCWD_CACHE
-string current_path;
-int cd(string s)
-{
-  current_path=0;
-  return predef::cd(s);
-}
-
-string getcwd()
-{
-  return current_path || (current_path=predef::getcwd());
-}
-#endif
-
-string combine_path_with_cwd(string path)
-{
-  return combine_path(IS_ABSOLUTE_PATH(path)?"/":getcwd(),path);
-}
-
-#ifdef FILE_STAT_CACHE
-
-#define FILE_STAT_CACHE_TIME 20
-
-int invalidate_time;
-mapping(string:multiset(string)) dir_cache = ([]);
-
-#define Stat _static_modules.files.Stat
-Stat master_file_stat(string x)
-{
-  string file, dir=combine_path_with_cwd(x);
-
-  file=BASENAME(dir);
-  dir=DIRNAME(dir);
-
-  multiset(string) d;
-  if(time() > invalidate_time)
-  {
-    dir_cache=([]);
-    invalidate_time=time()+FILE_STAT_CACHE_TIME;
-  }
-  if(zero_type(d=dir_cache[dir]))
-  {
-    if(array(string) tmp=get_dir(dir))
-    {
-      d=dir_cache[dir]=aggregate_multiset(@tmp);
-    }else{
-      dir_cache[dir]=0;
-    }
-  }
-  
-  if(d && !d[file]) return 0;
-
-  return predef::file_stat(x);
-}
-#else
-#define master_file_stat file_stat
-#endif
-
-mapping (string:string) environment=([]);
-
-
-//! @global
-//! @decl string getenv(string varname)
-//! @decl mapping(string:string) getenv()
-//!
-//! When called with no arguments, a mapping with all current envrionment
-//! variables will be returned.
-//!
-//! If the @[varname] argument has been given, the value of the environment
-//! variable with the name @[varname] will be returned. If no such
-//! environment variable exists, @tt{0@} (zero) will be returned.
-//!
-string|mapping(string:string) getenv(string|void s)
-{
-  if(!s) return environment + ([]);
-  return environment[s];
-}
 
 #if 0
 variant mapping(string:string) getenv()
