@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.35 2002/03/07 13:10:49 js Exp $
+// $Id: Utils.pmod,v 1.36 2003/02/18 10:33:13 mattias Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -451,6 +451,7 @@ class Scheduler {
   private mapping(int:int) crawl_queue;
   private mapping(int:int) compact_queue;
   private mapping db_profiles;
+  private object schedule_process;
 
   void create(mapping _db_profiles) {
     db_profiles = _db_profiles;
@@ -469,16 +470,6 @@ class Scheduler {
       return;
     next_run = would_be_indexed;
     reschedule();
-  }
-
-  private void reschedule() {
-    remove_call_out(do_scheduled_stuff);
-    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
-    call_out(do_scheduled_stuff, next_run-time());
-  }
-
-  void unschedule() {
-    remove_call_out(do_scheduled_stuff);
   }
 
   void schedule() {
@@ -505,18 +496,33 @@ class Scheduler {
       }
       WERR("\n");
     }
-
+    
     if(!sizeof(crawl_queue) && !sizeof(compact_queue)) return;
     next_run = min( @values(crawl_queue)+values(compact_queue) );
     reschedule();
   }
+#if constant (roxen)
+  private void reschedule() {
+    if( schedule_process )
+      schedule_process->stop();
+    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
+    schedule_process = 
+      roxen.BackgroundProcess(next_run-time(), do_scheduled_stuff);
+  }
+
+  void unschedule() {
+    if( schedule_process )
+      schedule_process->stop();
+  }
+
 
   private void do_scheduled_stuff() {
-    remove_call_out(do_scheduled_stuff);
+    if( schedule_process )
+      schedule_process->stop();
     WERR("Running scheduler event.");
-
+    
     int t = time();
-
+    
     WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
     foreach(indices(crawl_queue), int id) {
       if(crawl_queue[id]>t || !db_profiles[id]) continue;
@@ -532,9 +538,47 @@ class Scheduler {
       if(compact_queue[id]>t || !db_profiles[id]) continue;
       db_profiles[id]->start_compact();
     }
-
+    
     schedule();
   }
+  
+#else
+  private void reschedule() {
+    remove_call_out(do_scheduled_stuff);
+    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
+    call_out(do_scheduled_stuff, next_run-time());
+  }
+  
+  void unschedule() {
+    remove_call_out(do_scheduled_stuff);
+  }
+
+  private void do_scheduled_stuff() {
+    remove_call_out(do_scheduled_stuff);
+    WERR("Running scheduler event.");
+    
+    int t = time();
+    
+    WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
+    foreach(indices(crawl_queue), int id) {
+      if(crawl_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->start_indexer();
+      }
+    }
+    
+    WERR(sizeof(compact_queue)+" profiles in compact queue.");
+    foreach(indices(compact_queue), int id) {
+      if(compact_queue[id]>t || !db_profiles[id]) continue;
+      db_profiles[id]->start_compact();
+    }
+    
+    schedule();
+  }
+
+#endif
 
   string info() {
     string res = "<table border='1' cellspacing='0' cellpadding='2'>"

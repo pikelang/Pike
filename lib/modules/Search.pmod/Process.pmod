@@ -188,7 +188,7 @@ class Compactor {
 	report_notice("Compactor: All OK\n");
       return 0;
     }
-    call_out( is_perchance_done, 10 );
+    roxen.background_run( 10, is_perchance_done );
   }
 
   void create( string db, string log_db, int id, function done )
