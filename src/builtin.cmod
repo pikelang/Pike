@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.164 2004/09/12 15:29:11 grubba Exp $
+|| $Id: builtin.cmod,v 1.165 2004/09/14 15:09:46 grubba Exp $
 */
 
 #include "global.h"
@@ -3069,6 +3069,7 @@ PIKECLASS List
   CVAR struct list_node *tail;		/* Always NULL. */
   CVAR INT32 tail_sentinel_refs;
   CVAR struct list_node *tail_pred;
+  CVAR INT32 num_iterators;
 
 #define HEAD_SENTINEL(this)	((struct list_node *)(&this->head))
 #define TAIL_SENTINEL(this)	((struct list_node *)(&this->tail))
@@ -3099,6 +3100,7 @@ PIKECLASS List
     THIS->head = TAIL_SENTINEL(THIS);
     THIS->tail_pred = HEAD_SENTINEL(THIS);
     THIS->head_sentinel_refs = THIS->tail_sentinel_refs = 1;
+    THIS->num_iterators = 0;
   }
 
   EXIT
@@ -3117,15 +3119,44 @@ PIKECLASS List
     }
   }
 
+  /* These two functions perform the same thing,
+   * but are optimized to minimize recursion.
+   */
+  static void gc_check_list_node_backward(struct list_node *node,
+					  const char *msg);
+  static void gc_check_list_node_forward(struct list_node *node,
+					 const char *msg)
+  {
+    while (node && !debug_gc_check(&node->refs, msg)) {
+      if (node->next)
+	debug_gc_check_svalues(&node->val, 1,  " as a list node value");
+      gc_check_list_node_backward(node->prev, msg);
+      node = node->next;
+    }
+  }
+
+  static void gc_check_list_node_backward(struct list_node *node,
+					  const char *msg)
+  {
+    while (node && !debug_gc_check(&node->refs, msg)) {
+      if (node->prev)
+	debug_gc_check_svalues(&node->val, 1, " as a list node value");
+      gc_check_list_node_forward(node->next, msg);
+      node = node->prev;
+    }
+  }
+
   /* Called at gc_check time. */
   GC_CHECK
   {
-    struct list_node *node = THIS->head;
-    struct list_node *next;
-    while ((next = node->next)) {
-      debug_gc_check_svalues(&node->val, 1, " as member of a list");
-      node = next;
+    if (THIS->num_iterators) {
+      /* The iterators will take care of checking the list for us. */
+      return;
     }
+    /* Kludge. */
+    THIS->head_sentinel_refs++;
+    gc_check_list_node_backward(HEAD_SENTINEL(THIS), " as a list node");
+    THIS->head_sentinel_refs--;
   }
 
   /* Called at gc_mark time */
@@ -3219,6 +3250,7 @@ PIKECLASS List
       parent = (struct List_struct *)(loc.o->storage +
 				      loc.inherit->storage_offset);
       add_ref(THIS->cur = parent->head);
+      parent->num_iterators++;
       THIS->ind = 0;
     }
 
@@ -3233,25 +3265,95 @@ PIKECLASS List
     /* Called at gc_check time. */
     GC_CHECK
     {
-      if (!THIS->cur->next || !THIS->cur->prev) return;
-      if (THIS->cur->next->prev == THIS->cur) {
+      gc_check_list_node_forward(THIS->cur, " held by an iterator");
+    }  
+
+    /* These two functions perform the same thing,
+     * but are optimized to minimize recursion.
+     */
+    static void gc_recurse_list_node_tree_backward(struct list_node *node,
+						   struct list_node *back);
+    static void gc_recurse_list_node_tree_forward(struct list_node *node,
+						  struct list_node *back)
+    {
+      if (!node || !node->next) return;
+      if (node->next->prev == node) {
+	/* List member. Recursed from the list recurse code. */
 #ifdef PIKE_DEBUG
-	if (THIS->cur->prev->next != THIS->cur) {
+	if (node->prev->next != node) {
 	  Pike_fatal("Partially detached node.\n");
 	}
 #endif /* PIKE_DEBUG */
 	return;
       }
 #ifdef PIKE_DEBUG
-      if (THIS->cur->prev->next == THIS->cur) {
+      if (node->prev->next == node) {
 	Pike_fatal("Partially detached node.\n");
       }
 #endif /* PIKE_DEBUG */
-      /* Detached node. */
-      debug_gc_check_svalues(&THIS->cur->val, 1,
-			     " as current position for a list iterator");
-      /* FIXME: The node can hold other detached nodes alive! */
-    }  
+      while (1) {
+	gc_recurse_svalues(&node->val, 1);
+	if (node->prev != back)
+	  gc_recurse_list_node_tree_backward(node->prev, node->next);
+	back = node->prev;
+	node = node->next;
+	if (!node->next || (node->next->prev == node)) {
+	  /* List member. Recursed from the list recurse code. */
+#ifdef PIKE_DEBUG
+	  if (node->prev->next != node) {
+	    Pike_fatal("Partially detached node.\n");
+	  }
+#endif /* PIKE_DEBUG */
+	  break;
+	}
+#ifdef PIKE_DEBUG
+	if (node->prev->next == node) {
+	  Pike_fatal("Partially detached node.\n");
+	}
+#endif /* PIKE_DEBUG */
+      }
+    }
+
+    static void gc_recurse_list_node_tree_backward(struct list_node *node,
+						   struct list_node *next)
+    {
+      if (!node || !node->prev) return;
+      if (node->prev->next == node) {
+	/* List member. Checked from the list check code. */
+#ifdef PIKE_DEBUG
+	if (node->next->prev != node) {
+	  Pike_fatal("Partially detached node.\n");
+	}
+#endif /* PIKE_DEBUG */
+	return;
+      }
+#ifdef PIKE_DEBUG
+      if (node->next->prev == node) {
+	Pike_fatal("Partially detached node.\n");
+      }
+#endif /* PIKE_DEBUG */
+      while (1) {
+	gc_recurse_svalues(&node->val, 1);
+	if (node->next != next)
+	  gc_recurse_list_node_tree_forward(node->next, node->prev);
+	next = node->next;
+	node = node->prev;
+	if (!node->prev || (node->prev->next == node)) {
+	  /* List member. Recursed from the list recurse code. */
+#ifdef PIKE_DEBUG
+	  if (node->next->prev != node) {
+	    Pike_fatal("Partially detached node.\n");
+	  }
+#endif /* PIKE_DEBUG */
+	  break;
+	}
+#ifdef PIKE_DEBUG
+	if (node->next->prev == node) {
+	  Pike_fatal("Partially detached node.\n");
+	}
+#endif /* PIKE_DEBUG */
+      }
+    }
 
     /* Called at gc_mark time */
     GC_RECURSE
@@ -3272,7 +3374,8 @@ PIKECLASS List
 #endif /* PIKE_DEBUG */
       /* Detached node. */
       gc_recurse_svalues(&THIS->cur->val, 1);
-      /* FIXME: The node can hold other detached nodes alive! */
+      gc_recurse_list_node_tree_forward(THIS->cur->next, THIS->cur->prev);
+      gc_recurse_list_node_tree_backward(THIS->cur->next, THIS->cur->prev);
     }
 
     PIKEFUN int(0..1) `!()
@@ -3518,10 +3621,12 @@ PIKECLASS List
 
 void init_builtin(void)
 {
+  init_list_node_blocks();
 INIT
 }
 
 void exit_builtin(void)
 {
 EXIT
+  free_all_list_node_blocks();
 }
