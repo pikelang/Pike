@@ -84,9 +84,10 @@ inherit plug;
 #include <applet-widget.h>
 signal change_orient;
 signal change_pixel_size;
+require define HAVE_SAVE_SESSION_SIGNAL;
 signal save_session;
+endrequire;
 signal back_change;
-signal do_draw;
 signal tooltip_state;
 signal change_position;
 
@@ -102,10 +103,16 @@ void add( widget what );
 // created an applet widget, but need to cancel the loading of the
 // applet, use abort_load.
 
+require define HAVE_PANEL_BIND_EVENTS;
 void add_full( widget what, int bind_events );
 // As add, but this function is only for special applets and you
 // should use bind_events on some internal widget if bind_events was
 // FALSE. Normally you'll just want to use add.
+void bind_events( widget to );
+// Binds the 2nd and 3rd button clicks over this widget. Normally this
+// is done during add, but if you need to bind events over a widget
+// which you added later, use this function.
+endrequire;
 
 void abort_load();
 //  Abort the applet loading, once applet has been created, this is a
@@ -115,10 +122,6 @@ void abort_load();
 void remove();
 // Remove the plug from the panel, this will destroy the applet. You
 // can only call this once for each applet.
-void bind_events( widget to );
-// Binds the 2nd and 3rd button clicks over this widget. Normally this
-// is done during add, but if you need to bind events over a widget
-// which you added later, use this function.
 
 void set_tooltip( string to );
 // Set a tooltip on the entire applet that will follow the tooltip
@@ -141,6 +144,14 @@ int get_panel_orient();
 // will be OrientUp or OrientDown for horizontal panels and OrientLeft
 // or OrientRight for vertical panels
 
+require define HAVE_PANEL_PIXEL_SIZE;
+constant int PIXEL_SIZE_TINY;
+constant int PIXEL_SIZE_SMALL;
+constant int PIXEL_SIZE_STANDARD;
+constant int PIXEL_SIZE_LARGE;
+constant int PIXEL_SIZE_HUGE;
+endrequire;
+
 int get_panel_pixel_size();
 // Gets the width of the panel in pixels. This is not the actual size,
 // but the recomended one. The panel may be streched if the applets
@@ -159,12 +170,14 @@ void send_position( int enable );
 // signal can be quite CPU/bandwidth consuming so only applets which
 // need it should use it. By default change_position is not sent.
 
+require define HAVE_PANEL_DRAW_SIGNAL;
+signal do_draw;
 void send_draw( int enable );
 // If you are using rgb background drawing, call this function with
 // TRUE for enable, and then bind the do_draw signal. Inside that
 // signal you can get an RGB buffer to draw on with get_rgb_bg. The
 // do_draw signal will only be sent when the RGB truly changed.
-
+endrequire;
 
 void register_callback( string name, string menutext, callback callback);
 // Adds a menu item to the applet's context menu. The name should be a
@@ -214,8 +227,13 @@ void sync_config();
 // the user kills the session without logging out properly, since the
 // panel will always save your session when it exists.
 
+require define HAVE_APPLET_QUEUE_RESIZE;
 void queue_resize();
 // For shared library applets this calls gtk_widget_queue_resize on
 // the internal panel eventbox, for external applets this just calls
 // this on the AppletWidget itself, but in both cases it forces a
 // resize of the socket on the panel
+endrequire;
+
+member string privcfgpath;
+member string globcfgpath;
