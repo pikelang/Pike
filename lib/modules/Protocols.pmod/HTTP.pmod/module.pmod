@@ -4,32 +4,44 @@
 //! submodule HTTP
 //! method object(Protocols.HTTP.Query) get_url(string url)
 //! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables)
-//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables, mapping request_headers)
+//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Sends a HTTP GET request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
-//!	0 is returned upon failure.
+//!	0 is returned upon failure. If a query object having
+//!	request_headers->Connection=="Keep-Alive" from a previous request is
+//!	provided and the already established server connection can be used for
+//!	the next request, you may gain some performance.
 //!
 //! method object(Protocols.HTTP.Query) put_url(string url)
 //! method object(Protocols.HTTP.Query) put_url(string url,string file)
 //! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables)
-//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables, mapping request_headers)
+//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Sends a HTTP PUT request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
-//!	0 is returned upon failure.
+//!	0 is returned upon failure. If a query object having
+//!	request_headers->Connection=="Keep-Alive" from a previous request is
+//!	provided and the already established server connection can be used for
+//!	the next request, you may gain some performance.
 //!
 //! method object(Protocols.HTTP.Query) delete_url(string url)
 //! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables)
-//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables, mapping request_headers)
+//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Sends a HTTP DELETE request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
-//!	0 is returned upon failure.
+//!	0 is returned upon failure. If a query object having
+//!	request_headers->Connection=="Keep-Alive" from a previous request is
+//!	provided and the already established server connection can be used for
+//!	the next request, you may gain some performance.
 //!
-//! method array(string) get_url_nice(string url)
 //! method array(string) get_url_nice(string url,mapping query_variables)
-//! method array(string) get_url_nice(string url,mapping query_variables, mapping request_headers)
-//! method string get_url_data(string url)
+//! method array(string) get_url_nice(string url,mapping query_variables,mapping request_headers)
+//! method array(string) get_url_nice(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! method string get_url_data(string url,mapping query_variables)
-//! method string get_url_data(string url,mapping query_variables, mapping request_headers)
+//! method string get_url_data(string url,mapping query_variables,mapping request_headers)
+//! method string get_url_data(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //!	Returns an array of ({content_type,data}) and just the data
 //!	string respective, 
 //!	after calling the requested server for the information.
@@ -37,21 +49,26 @@
 //!
 //!
 //! method array(string) post_url_nice(string url,mapping query_variables)
-//! method array(string) post_url_nice(string url,mapping query_variables, mapping request_headers)
+//! method array(string) post_url_nice(string url,mapping query_variables,mapping request_headers)
+//! method array(string) post_url_nice(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! method string post_url_data(string url,mapping query_variables)
-//! method string post_url_data(string url,mapping query_variables, mapping request_headers)
+//! method string post_url_data(string url,mapping query_variables,mapping request_headers)
+//! method string post_url_data(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables)
-//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables, mapping request_headers)
-//! 	Similar to the <ref>get_url</ref> class of functions, except that the 
+//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! 	Similar to the <ref>get_url</ref> class of functions, except that the
 //!	query variables is sent as a post request instead of a get.
 //!
 
 object get_url(string url,
 	       void|mapping query_variables,
-	       void|mapping request_headers)
+	       void|mapping request_headers,
+	       void|Protocols.HTTP.Query con)
 {
-   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
-   
+   if(!con)
+      con = Protocols.HTTP.Query();
+
    string prot="http",host;
    int port=80;
    string query;
@@ -90,10 +107,12 @@ object get_url(string url,
 object put_url(string url,
 	       void|string file,
 	       void|mapping query_variables,
-	       void|mapping request_headers)
+	       void|mapping request_headers,
+	       void|Protocols.HTTP.Query con)
 {
-   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
-   
+   if(!con)
+      con = Protocols.HTTP.Query();
+
    string prot="http",host;
    int port=80;
    string query;
@@ -132,10 +151,12 @@ object put_url(string url,
 
 object delete_url(string url,
 		  void|mapping query_variables,
-		  void|mapping request_headers)
+		  void|mapping request_headers,
+		  void|Protocols.HTTP.Query con)
 {
-   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
-   
+   if(!con)
+      con = Protocols.HTTP.Query();
+
    string prot="http",host;
    int port=80;
    string query;
@@ -172,22 +193,32 @@ object delete_url(string url,
    return con;
 }
 
-array(string) get_url_nice(string url,void|mapping query_variables, void|mapping request_headers)
+array(string) get_url_nice(string url,
+			   void|mapping query_variables,
+			   void|mapping request_headers,
+			   void|Protocols.HTTP.Query con)
 {
-   object c=get_url(url,query_variables, request_headers);
-   return c && ({c->headers["content-type"],c->data()});
+  object c = get_url(url, query_variables, request_headers, con);
+  return c && ({ c->headers["content-type"], c->data() });
 }
 
-string get_url_data(string url,void|mapping query_variables, void|mapping request_headers)
+string get_url_data(string url,
+		    void|mapping query_variables,
+		    void|mapping request_headers,
+		    void|Protocols.HTTP.Query con)
 {
-   object z=get_url(url,query_variables, request_headers);
-   return z && z->data();
+  object z = get_url(url, query_variables, request_headers, con);
+  return z && z->data();
 }
 
-object post_url(string url,mapping query_variables, void|mapping request_headers)
+object post_url(string url,
+		mapping query_variables,
+		void|mapping request_headers,
+		void|Protocols.HTTP.Query con)
 {
-   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
-   
+   if(!con)
+      con = Protocols.HTTP.Query();
+
    string prot="http",host;
    int port=80;
    string query;
@@ -221,18 +252,20 @@ object post_url(string url,mapping query_variables, void|mapping request_headers
 
 array(string) post_url_nice(string url,
 			    mapping query_variables,
-			    void|mapping request_headers)
+			    void|mapping request_headers,
+			    void|Protocols.HTTP.Query con)
 {
-   object c=post_url(url,query_variables, request_headers);
-   return c && ({c->headers["content-type"],c->data()});
+  object c = post_url(url, query_variables, request_headers, con);
+  return c && ({ c->headers["content-type"], c->data() });
 }
 
 string post_url_data(string url,
 		     mapping query_variables,
-		     void|mapping request_headers)
+		     void|mapping request_headers,
+		     void|Protocols.HTTP.Query con)
 {
-   object z=post_url(url,query_variables, request_headers);
-   return z && z->data();
+  object z = post_url(url, query_variables, request_headers, con);
+  return z && z->data();
 }
 
 //!
