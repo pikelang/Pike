@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.11 1998/04/06 14:26:03 mirar Exp $");
+RCSID("$Id: png.c,v 1.12 1998/04/08 03:43:55 mirar Exp $");
 
 #include "config.h"
 
@@ -684,17 +684,15 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (!trns)
 		  while (n)
 		  {
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
+		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
 		     s++;
-		     if (n<8) break;
-		     n-=8;
 		     if (!x) x=width;
 		  }
 	       else
@@ -729,16 +727,14 @@ static int _png_write_rgb(rgb_group *w1,
 	    case 2:
 	       if (n>len*4) n=len*4;
 	       x=width;
-	       if (trns)
+	       if (!trns)
 		  while (n)
 		  {
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
+		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
+		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
+		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
+		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
 		     s++;
-		     if (n<4) break;
-		     n-=4;
 		     if (!x) x=width;
 		  }
 	       else
@@ -765,22 +761,20 @@ static int _png_write_rgb(rgb_group *w1,
 			}
 		     }
 		     s++;
-		     if (n<8) break;
-		     n-=8;
+		     if (n<4) break;
+		     n-=4;
 		     if (!x) x=width;
 		  }
 	       break;
 	    case 4:
 	       if (n>len*2) n=len*2;
 	       x=width;
-	       if (trns)
+	       if (!trns)
 		  while (n)
 		  {
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
-		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
+		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
+		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
 		     s++;
-		     if (n<2) break;
-		     n--;
 		     if (!x) x=width;
 		  }
 	       else
@@ -807,15 +801,15 @@ static int _png_write_rgb(rgb_group *w1,
 			}
 		     }
 		     s++;
-		     if (n<8) break;
-		     n-=8;
+		     if (n<2) break;
+		     n-=2;
 		     if (!x) x=width;
 		  }
 	       break;
 	    case 8:
 	       if (n>len) n=len;
 
-	       if (trns)
+	       if (!trns)
 		  while (n)
 		  {
 		     *(d1++)=ct->u.flat.entries[CUTPLTE(*s,mz)].color;
@@ -1026,20 +1020,19 @@ static void image_png__decode(INT32 args)
          case 0x504c5445: /* PLTE */
 	    /* palette info, 3×n bytes */
 
-	    push_string(b->item[1].u.string);
-	    b->item[1].u.string->refs++;
+	    ref_push_string(b->item[1].u.string);
 	    push_object(clone_object(image_colortable_program,1));
 
 	    if (ihdr.type==3)
 	    {
 	       ct=(struct neo_colortable*)
 		  get_storage(sp[-1].u.object,image_colortable_program);
-	       push_string(param_palette); param_palette->refs++;
+	       ref_push_string(param_palette);
 	       mapping_insert(m,sp-1,sp-2);
 	    }
 	    else
 	    {
-	       push_string(param_spalette); param_spalette->refs++;
+	       ref_push_string(param_spalette);
 	       mapping_insert(m,sp-1,sp-2);
 	    }
 	    pop_n_elems(2);
@@ -1051,8 +1044,7 @@ static void image_png__decode(INT32 args)
 	       error("Image.PNG._decode: unknown compression (%d)\n",
 		     ihdr.compression);
 
-	    push_string(b->item[1].u.string);
-	    b->item[1].u.string->refs++;
+	    ref_push_string(b->item[1].u.string);
 	    n++;
 	    if (n>32) { f_add(n); n=1; }
 	    break;
@@ -1113,7 +1105,7 @@ static void image_png__decode(INT32 args)
 		  break;
 	    }
 	    f_aggregate(3);
-	    push_string(param_background); param_background->refs++;
+	    ref_push_string(param_background);
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1282,7 +1274,7 @@ static void image_png__decode(INT32 args)
    
    /* --- done, store in mapping --- */
 
-   push_string(param_image); param_image->refs++;
+   ref_push_string(param_image);
    push_object(clone_object(image_program,0));
    img=(struct image*)get_storage(sp[-1].u.object,image_program);
    if (img->img) free(img->img); /* protect from memleak */
@@ -1294,7 +1286,7 @@ static void image_png__decode(INT32 args)
    
    if (wa1)
    {
-      push_string(param_alpha); param_alpha->refs++;
+      ref_push_string(param_alpha);
       push_object(clone_object(image_program,0));
       img=(struct image*)get_storage(sp[-1].u.object,image_program);
       if (img->img) free(img->img); /* protect from memleak */
@@ -1305,11 +1297,11 @@ static void image_png__decode(INT32 args)
       pop_n_elems(2);
    }
 
-   push_string(param_type); param_type->refs++;
+   ref_push_string(param_type);
    push_int(ihdr.type);
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
-   push_string(param_bpp); param_bpp->refs++;
+   ref_push_string(param_bpp);
    push_int(ihdr.bpp);
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
@@ -1357,8 +1349,9 @@ static void image_png_encode(INT32 args)
 {
    struct image *img,*alpha=NULL;
    rgb_group *s,*sa=NULL;
+   struct neo_colortable *ct=NULL;
 
-   int n=0,y,x;
+   int n=0,y,x,bpp;
    char buf[20];
    
    if (!args)
@@ -1378,7 +1371,7 @@ static void image_png_encode(INT32 args)
 	 error("Image.PNG.encode: illegal argument 2\n");
       
       push_svalue(sp+1-args);
-      push_string(param_alpha); param_alpha->refs++;
+      ref_push_string(param_alpha);
       f_index(2);
       if (!(sp[-1].type==T_INT 
 	    && sp[-1].subtype==NUMBER_UNDEFINED))
@@ -1386,12 +1379,26 @@ static void image_png_encode(INT32 args)
 	     !(alpha=(struct image*)
 	       get_storage(sp[-1].u.object,image_program)))
 	    error("Image.PNG.encode: option (arg 2) \"alpha\" has illegal type\n");
+      pop_stack();
+
       if (alpha &&
 	  (alpha->xsize!=img->xsize ||
 	   alpha->ysize!=img->ysize))
 	 error("Image.PNG.encode option (arg 2) \"alpha\"; images differ in size\n");
       if (alpha && !alpha->img)
 	 error("Image.PNG.encode option (arg 2) \"alpha\"; no image\n");
+
+      push_svalue(sp+1-args);
+      ref_push_string(param_palette); 
+      f_index(2);
+      if (!(sp[-1].type==T_INT 
+	    && sp[-1].subtype==NUMBER_UNDEFINED))
+	 if (sp[-1].type!=T_OBJECT ||
+	     !(ct=(struct neo_colortable*)
+	       get_storage(sp[-1].u.object,image_colortable_program)))
+	    error("Image.PNG.encode: option (arg 2) \"palette\" has illegal type\n");
+      pop_stack();
+
    }
    
    sprintf(buf,"%c%c%c%c%c%c%c%c",
@@ -1399,13 +1406,28 @@ static void image_png_encode(INT32 args)
    push_string(make_shared_binary_string(buf,8));
    n++;
 
+   if (ct)
+   {
+      int sz;
+      sz=image_colortable_size(ct);
+      if (sz>256)
+	 error("Image.PNG.encode: palette size to large; "
+	       "PNG doesn't support bigger palettes then 256 colors\n");
+      if (sz>16) bpp=8;
+      else if (sz>4) bpp=4;
+      else if (sz>2) bpp=2;
+      else bpp=1;
+   }
+   else
+      bpp=8;
+
    sprintf(buf,"%c%c%c%c%c%c%c%c%c%c%c%c%c",
 	   (img->xsize>>24)&255,(img->xsize>>16)&255,
 	   (img->xsize>>8)&255,(img->xsize)&255,
 	   (img->ysize>>24)&255,(img->ysize>>16)&255,
 	   (img->ysize>>8)&255,(img->ysize)&255,
-	   8 /* bpp */,
-	   alpha?6:2 /* type (RGBA/RGB) */,
+	   bpp /* bpp */,
+	   ct?3:(alpha?6:2) /* type (P/(RGBA/RGB)) */,
 	   0 /* compression */,
 	   0 /* filter */,
 	   0 /* interlace */);
@@ -1414,37 +1436,90 @@ static void image_png_encode(INT32 args)
    push_png_chunk("IHDR",NULL);
    n++;
 	      
+   if (ct)
+   {
+      struct pike_string *ps;
+      ps=begin_shared_string(3<<bpp);
+      MEMSET(ps->str,0,3<<bpp);
+      image_colortable_write_rgb(ct,(unsigned char*)ps->str);
+      push_string(end_shared_string(ps));
+      push_png_chunk("PLTE",NULL);
+      n++;
+   }
+
    y=img->ysize;
    s=img->img;
    if (alpha) sa=alpha->img;
-   while (y--)
-   {
-      struct pike_string *ps;
-      unsigned char *d;
-      ps=begin_shared_string(img->xsize*(3+!!alpha)+1);
-      d=(unsigned char*)ps->str;
-      x=img->xsize;
-      *(d++)=0; /* filter */
+   if (ct)
       if (alpha)
-	 while (x--)
-	 {
-	    *(d++)=s->r;
-	    *(d++)=s->g;
-	    *(d++)=s->b;
-	    *(d++)=(sa->r+sa->g*2+sa->b)>>2;
-	    s++;
-	    sa++;
-	 }
+	 error("Image.PNG.encode: colortable and alpha channel not supported at the same time\n");
       else
-	 while (x--)
+      {
+	 unsigned char *tmp=malloc(img->xsize*img->ysize),*ts;
+
+	 if (!tmp)
+	    error("Image.PNG.encode: out of memory\n");
+	 image_colortable_index_8bit_image(ct,img->img,tmp,
+					   img->xsize*img->ysize,img->xsize);
+	 ts=tmp;
+	 while (y--)
 	 {
-	    *(d++)=s->r;
-	    *(d++)=s->g;
-	    *(d++)=s->b;
-	    s++;
+	    unsigned char *d;
+	    struct pike_string *ps;
+	    ps=begin_shared_string((img->xsize*bpp+7)/8+1);
+	    d=(unsigned char*)ps->str;
+	    x=img->xsize;
+	    *(d++)=0; /* filter */
+	    if (bpp==8)
+	    {
+	       MEMCPY(d,ts,img->xsize);
+	       ts+=img->xsize;
+	    }
+	    else
+	    {
+	       int bit=8-bpp;
+	       *d=0;
+	       while (x--)
+	       {
+		  *d|=(*ts)<<bit;
+		  if (!bit) { bit=8-bpp; *++d=0; }
+		  else bit-=bpp;
+		  ts++;
+	       }
+	    }
+	    push_string(end_shared_string(ps));
 	 }
-      push_string(end_shared_string(ps));
-   }
+	 free(tmp);
+      }
+   else
+      while (y--)
+      {
+	 struct pike_string *ps;
+	 unsigned char *d;
+	 ps=begin_shared_string(img->xsize*(3+!!alpha)+1);
+	 d=(unsigned char*)ps->str;
+	 x=img->xsize;
+	 *(d++)=0; /* filter */
+	 if (alpha)
+	    while (x--)
+	    {
+	       *(d++)=s->r;
+	       *(d++)=s->g;
+	       *(d++)=s->b;
+	       *(d++)=(sa->r+sa->g*2+sa->b)>>2;
+	       s++;
+	       sa++;
+	    }
+	 else
+	    while (x--)
+	    {
+	       *(d++)=s->r;
+	       *(d++)=s->g;
+	       *(d++)=s->b;
+	       s++;
+	    }
+	 push_string(end_shared_string(ps));
+      }
    f_add(img->ysize);
    png_compress(0);
    push_png_chunk("IDAT",NULL);
@@ -1503,7 +1578,7 @@ static void image_png_decode_alpha(INT32 args)
       push_string(make_shared_string("xsize"));
       f_index(2);
       push_svalue(&s);
-      push_string(make_shared_string("ysize"));
+      ref_push_string(make_shared_string("ysize"));
       f_index(2);
       push_int(255);
       push_int(255);
