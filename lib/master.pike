@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.48 1997/08/18 15:47:43 grubba Exp $
+/* $Id: master.pike,v 1.49 1997/09/09 03:40:28 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -201,7 +201,6 @@ void create()
   add_constant("remove_module_path",remove_module_path);
   add_constant("add_program_path",add_program_path);
   add_constant("remove_program_path",remove_program_path);
-  add_constant("master",lambda() { return this_object(); });
   add_constant("describe_backtrace",describe_backtrace);
   add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
   add_constant("strlen",sizeof);
