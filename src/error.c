@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.74 2001/08/15 22:18:00 mast Exp $");
+RCSID("$Id: error.c,v 1.75 2001/08/15 22:58:36 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -369,7 +369,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *!   The only supported type to cast to is @tt{"array"@}, which
  *!   generates and old-style error.
  */
-void f_error_cast(INT32 args)
+static void f_error_cast(INT32 args)
 {
   char *s;
   get_all_args("error->cast",args,"%s",&s);
@@ -403,7 +403,7 @@ void f_error_cast(INT32 args)
  *! @seealso
  *!   @[backtrace()]
  */
-void f_error_index(INT32 args)
+static void f_error_index(INT32 args)
 {
   INT_TYPE ind;
   get_all_args("error->`[]",args,"%i",&ind);
@@ -432,7 +432,7 @@ void f_error_index(INT32 args)
  *! @note
  *!   Uses @[describe_backtrace()] to generate the message.
  */
-void f_error_describe(INT32 args)
+static void f_error_describe(INT32 args)
 {
   pop_n_elems(args);
   ref_push_object(Pike_fp->current_object);
@@ -446,10 +446,25 @@ void f_error_describe(INT32 args)
  *! @seealso
  *!   @[predef::backtrace()]
  */
-void f_error_backtrace(INT32 args)
+static void f_error_backtrace(INT32 args)
 {
   pop_n_elems(args);
   ref_push_array(GENERIC_ERROR_THIS->backtrace);
+}
+
+/*! @decl string _sprintf()
+ */
+static void f_error__sprintf(INT32 args)
+{
+  struct program *p = Pike_fp->current_object->prog;
+  int i = find_identifier("error_type", p);
+  struct identifier *id = ID_FROM_INT(p, i);
+  pop_n_elems(args);
+  push_svalue(&PROG_FROM_INT(p, i)->constants[id->func.offset].sval);
+  push_constant_text("(%O)");
+  ref_push_string(GENERIC_ERROR_THIS->desc);
+  f_sprintf(2);
+  f_add(2);
 }
 
 /*! @endclass

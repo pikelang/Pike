@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.13 2001/08/15 22:18:00 mast Exp $
+ * $Id: pike_error.h,v 1.14 2001/08/15 22:58:36 mast Exp $
  */
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
@@ -193,10 +193,6 @@ PMOD_EXPORT void exit_on_error(void *msg);
 PMOD_EXPORT void fatal_on_error(void *msg);
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
-void f_error_cast(INT32 args);
-void f_error_index(INT32 args);
-void f_error_describe(INT32 args);
-void f_error_backtrace(INT32 args);
 void DECLSPEC(noreturn) generic_error_va(struct object *o,
 		      char *func,
 		      struct svalue *base_sp,  int args,
