@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.25 2003/03/14 15:51:14 grubba Exp $
+|| $Id: ia32.c,v 1.26 2003/03/20 16:29:09 mast Exp $
 */
 
 /*
@@ -97,48 +97,76 @@ void ia32_flush_code_generator(void)
   ia32_prev_stored_pc = -1;
 }
 
-void ia32_update_absolute_pc(INT32 pc_offset)
+void ia32_update_pc(void)
 {
-  /* Assumes eax contains Pike_interpreter.frame_pointer */
-#if 1
-  /* Store the negated pointer to make the relocation displacements
-   * work in the right direction. */
-  ia32_reg_edx = REG_IS_UNKNOWN;
-  add_to_program(0xba);		/* mov $xxxxxxxx, %edx */
-  ins_pointer(0);
-  add_to_relocations(PIKE_PC - 4);
-  upd_pointer(PIKE_PC - 4, - (INT32) (pc_offset + Pike_compiler->new_program->program));
-  add_to_program(0xf7);		/* neg %edx */
-  add_to_program(0xda);
-  add_to_program(0x89);		/* mov %edx, yy(%eax) */
-  if (OFFSETOF(pike_frame, pc)) {
-    add_to_program(0x50);
-    add_to_program(OFFSETOF(pike_frame, pc));
-  }
-  else
-    add_to_program(0x10);
-#else
-  INT32 displacement;
-  add_to_program(0xe8);		/* call near, relative to next instruction */
-  add_to_program(0);
-  add_to_program(0);
-  add_to_program(0);
-  add_to_program(0);
-  displacement = PIKE_PC - pc_offset;
-  ia32_reg_edx = REG_IS_UNKNOWN;
-  add_to_program(0x8f);		/* pop %edx */
-  add_to_program(0xc2);
-  add_to_program(0x83);		/* sub $nn, %edx */
-  add_to_program(0xea);
-  add_to_program(displacement);
-  add_to_program(0x89);		/* mov %edx, yy(%eax) */
-  if (OFFSETOF(pike_frame, pc)) {
-    add_to_program(0x50);
-    add_to_program(OFFSETOF(pike_frame, pc));
-  }
-  else
-    add_to_program(0x10);
+  INT32 tmp = PIKE_PC, disp;
+
+  if (ia32_prev_stored_pc < 0) {
+    if(ia32_reg_eax != REG_IS_FP) {
+      MOV2EAX(Pike_interpreter.frame_pointer);
+      ia32_reg_eax=REG_IS_FP;
+    }
+
+#ifdef PIKE_DEBUG
+    if (a_flag >= 60)
+      fprintf (stderr, "pc %d  update pc absolute\n", tmp);
 #endif
+
+    /* Store the negated pointer to make the relocation displacements
+     * work in the right direction. */
+    ia32_reg_edx = REG_IS_UNKNOWN;
+    add_to_program(0xba);		/* mov $xxxxxxxx, %edx */
+    ins_pointer(0);
+    add_to_relocations(PIKE_PC - 4);
+    upd_pointer(PIKE_PC - 4, - (INT32) (tmp + Pike_compiler->new_program->program));
+    add_to_program(0xf7);		/* neg %edx */
+    add_to_program(0xda);
+    add_to_program(0x89);		/* mov %edx, yy(%eax) */
+    if (OFFSETOF(pike_frame, pc)) {
+      add_to_program(0x50);
+      add_to_program(OFFSETOF(pike_frame, pc));
+    }
+    else
+      add_to_program(0x10);
+  }
+
+  else if ((disp = tmp - ia32_prev_stored_pc)) {
+    if(ia32_reg_eax != REG_IS_FP) {
+      MOV2EAX(Pike_interpreter.frame_pointer);
+      ia32_reg_eax=REG_IS_FP;
+    }
+
+#ifdef PIKE_DEBUG
+    if (a_flag >= 60)
+      fprintf (stderr, "pc %d  update pc relative: %d\n", tmp, disp);
+#endif
+
+    if (-128 <= disp && disp <= 127)
+      /* Add sign-extended imm8 to r/m32. */
+      add_to_program(0x83); /* addl $nn, yy(%eax) */
+    else
+      /* Add imm32 to r/m32. */
+      add_to_program(0x81); /* addl $nn, yy(%eax) */
+    if (OFFSETOF(pike_frame, pc)) {
+      add_to_program(0x40);
+      add_to_program(OFFSETOF(pike_frame, pc));
+    }
+    else
+      add_to_program(0x0);
+    if (-128 <= disp && disp <= 127)
+      add_to_program(disp);
+    else
+      PUSH_INT(disp);
+  }
+
+  else {
+#ifdef PIKE_DEBUG
+    if (a_flag >= 60)
+      fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp);
+#endif
+  }
+
+  ia32_prev_stored_pc = tmp;
 }
 
 static void ia32_push_constant(struct svalue *tmp)
@@ -378,6 +406,56 @@ static void maybe_update_pc(void)
   }
 }
 
+#ifdef PIKE_DEBUG
+static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
+{
+  int flags = instrs[instr].flags;
+
+  if (flags & I_HASARG2) {
+    add_to_program (0xc7);	/* movl $xxxx, 0xc(%esp) */
+    add_to_program (0x44);
+    add_to_program (0x24);
+    add_to_program (0x0c);
+    PUSH_INT (arg2);
+  }
+  if (flags & I_HASARG) {
+    add_to_program (0xc7);	/* movl $xxxx, 0x8(%esp) */
+    add_to_program (0x44);
+    add_to_program (0x24);
+    add_to_program (0x08);
+    PUSH_INT (arg1);
+  }
+  add_to_program (0xc7);	/* movl $xxxx, 0x4(%esp) */
+  add_to_program (0x44);
+  add_to_program (0x24);
+  add_to_program (0x04);
+  PUSH_INT (instr);
+
+  if(ia32_reg_eax != REG_IS_FP)
+    MOV2EAX(Pike_interpreter.frame_pointer);
+
+  add_to_program (0x8b);	/* mov yy(%eax),%eax */
+  if (OFFSETOF (pike_frame, pc)) {
+    add_to_program (0x40);
+    add_to_program (OFFSETOF (pike_frame, pc));
+  }
+  else
+    add_to_program (0x00);
+  add_to_program (0x89);	/* mov %eax,(%esp) */
+  add_to_program (0x04);
+  add_to_program (0x24);
+
+  if (flags & I_HASARG2)
+    ia32_call_c_function (simple_debug_instr_prologue_2);
+  else if (flags & I_HASARG)
+    ia32_call_c_function (simple_debug_instr_prologue_1);
+  else
+    ia32_call_c_function (simple_debug_instr_prologue_0);
+}
+#else  /* !PIKE_DEBUG */
+#define ins_debug_instr_prologue(instr, arg1, arg2) 0
+#endif
+
 void ins_f_byte(unsigned int b)
 {
   void *addr;
@@ -394,7 +472,6 @@ void ins_f_byte(unsigned int b)
   maybe_update_pc();
   addr=instrs[b].address;
 
-#ifndef DEBUG_MALLOC
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
@@ -402,28 +479,45 @@ void ins_f_byte(unsigned int b)
   switch(b)
   {
     case F_MARK2 - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_mark();
+      ia32_mark();
+      return;
+
     case F_MARK - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_mark();
       return;
 
     case F_MARK_AND_CONST0 - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_mark();
+      ia32_push_int(0);
+      return;
+
     case F_CONST0 - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_push_int(0);
       return;
 
     case F_MARK_AND_CONST1 - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_mark();
+      ia32_push_int(1);
+      return;
+
     case F_CONST1 - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_push_int(1);
       return;
 
     case F_CONST_1 - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       ia32_push_int(-1);
       return;
 
     case F_ADD - F_OFFSET:
+      ins_debug_instr_prologue (b, 0, 0);
       update_arg1(2);
       addr=(void *)f_add;
       break;
@@ -431,12 +525,13 @@ void ins_f_byte(unsigned int b)
     case F_MAKE_ITERATOR - F_OFFSET:
       {
 	extern void f_Iterator(INT32);
+	ins_debug_instr_prologue (b, 0, 0);
 	update_arg1(1);
 	addr = (void *)f_Iterator;
       }
       break;
   }
-#endif /* !DEBUG_MALLOC */
+
   ia32_call_c_function(addr);
 }
 
@@ -444,28 +539,34 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
   maybe_update_pc();
 
-#ifndef DEBUG_MALLOC
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
   switch(a)
   {
     case F_MARK_AND_LOCAL:
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       ia32_mark();
+      ia32_push_local(b);
+      return;
 
     case F_LOCAL:
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       ia32_push_local(b);
       return;
 
     case F_LOCAL_LVALUE:
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       ia32_local_lvalue(b);
       return;
 
     case F_NUMBER:
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       ia32_push_int(b);
       return;
 
     case F_NEG_NUMBER:
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       ia32_push_int(-b);
       return;
 
@@ -476,6 +577,7 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
        */
       if(Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE)
       {
+	ins_debug_instr_prologue (a - F_OFFSET, b, 0);
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
 	return;
       }
@@ -489,6 +591,7 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     case F_MARK_CALL_BUILTIN:
       if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
 	break;
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       update_arg1(0);
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
@@ -496,11 +599,12 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     case F_CALL_BUILTIN1:
       if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
 	break;
+      ins_debug_instr_prologue (a - F_OFFSET, b, 0);
       update_arg1(1);
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
   }
-#endif /* !DEBUG_MALLOC */
+
   update_arg1(b);
   ins_f_byte(a);
 }
@@ -511,19 +615,19 @@ void ins_f_byte_with_2_args(unsigned int a,
 {
   maybe_update_pc();
 
-#ifndef DEBUG_MALLOC
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
   switch(a)
   {
     case F_2_LOCALS:
+      ins_debug_instr_prologue (a - F_OFFSET, b, c);
       /* We could optimize this by delaying the sp+=8  -hubbe  */
       ia32_push_local(b);
       ia32_push_local(c);
       return;
   }
-#endif /* !DEBUG_MALLOC */
+
   update_arg1(b);
   update_arg2(c);
   ins_f_byte(a);

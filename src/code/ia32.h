@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.18 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: ia32.h,v 1.19 2003/03/20 16:29:09 mast Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -72,43 +72,9 @@ extern int ia32_reg_ecx;
 extern int ia32_reg_edx;
 extern ptrdiff_t ia32_prev_stored_pc;
 
-void ia32_update_absolute_pc(INT32 pc_offset);
+void ia32_update_pc(void);
 
-#define UPDATE_PC() do {						\
-    INT32 tmp = PIKE_PC;						\
-    if(ia32_reg_eax != REG_IS_FP)					\
-      MOV2EAX(Pike_interpreter.frame_pointer);				\
-    ia32_reg_eax=REG_IS_FP;						\
-    if (ia32_prev_stored_pc < 0) {					\
-      DO_IF_DEBUG(							\
-	if (a_flag >= 60)						\
-	  fprintf (stderr, "pc %d  update pc absolute\n", tmp);		\
-      );								\
-      ia32_update_absolute_pc(tmp);					\
-    }									\
-    else if (tmp - ia32_prev_stored_pc) {				\
-      DO_IF_DEBUG(							\
-	if (a_flag >= 60)						\
-	  fprintf (stderr, "pc %d  update pc relative: %d\n", tmp,	\
-		   tmp - ia32_prev_stored_pc);				\
-      );								\
-      add_to_program(0x83); /* addl $nn, yy(%eax) */			\
-      if (OFFSETOF(pike_frame, pc)) {					\
-	add_to_program(0x40);						\
-	add_to_program(OFFSETOF(pike_frame, pc));			\
-      }									\
-      else								\
-	add_to_program(0x0);						\
-      add_to_program(tmp - ia32_prev_stored_pc);			\
-    }									\
-    else {								\
-      DO_IF_DEBUG(							\
-	if (a_flag >= 60)						\
-	  fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp); \
-      );								\
-    }									\
-    ia32_prev_stored_pc = tmp;						\
-  } while(0)
+#define UPDATE_PC() ia32_update_pc()
 
 #define ADJUST_PIKE_PC(pc) do {						\
     ia32_prev_stored_pc = pc;						\
