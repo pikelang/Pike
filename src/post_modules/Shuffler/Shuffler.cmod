@@ -1,6 +1,6 @@
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.10 2002/07/04 09:17:29 per Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.11 2002/07/04 14:33:19 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -419,7 +419,7 @@ PIKECLASS Shuffle
     {
       push_string( make_shared_binary_string(
 		     t->leftovers.data+t->leftovers.off,
-		     t->leftovers.len ) );
+		    MINIMUM(amount,t->leftovers.len) ) );
       apply( t->file_obj, "write", 1 );
       if( Pike_sp[-1].type == PIKE_T_INT )
 	sent = Pike_sp[-1].u.integer;
