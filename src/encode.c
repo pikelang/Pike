@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.110 2001/07/12 23:41:20 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.111 2001/07/15 21:16:04 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -745,13 +745,16 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  if(Pike_sp[-1].subtype == NUMBER_UNDEFINED)
 	  {
 	    int to_change = data->buf.s.len;
-	    pop_stack();
-	    push_svalue(val);
-	    f_object_program(1);
+	    struct svalue tmp=data->counter;
+	    tmp.u.integer--;
 
 	    /* We have to remove ourself from the cache */
 	    map_delete(data->encoded, val);
 	    
+	    pop_stack();
+	    push_svalue(val);
+	    f_object_program(1);
+
 	    /* Code the program */
 	    code_entry(TAG_OBJECT, 3,data);
 	    encode_value2(Pike_sp-1, data);
@@ -765,12 +768,18 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	     */
 	    if(!low_mapping_lookup(data->encoded, val))
 	    {
+	      EDB(1,fprintf(stderr, "%*sZapping 3 -> 1 in TAG_OBJECT\n",
+			    data->depth, ""));
+	      
 	      /* This causes the code_entry above to
 	       * become: code_entry(TAG_OBJECT, 1, data);
 	       * -Hubbe
 	       */
 	      data->buf.s.str[to_change] = 99;
 	      apply(data->codec,"encode_object",1);
+
+	      /* Put value back in cache for future reference -Hubbe */
+	      mapping_insert(data->encoded, val, &tmp);
 	    }
 	    break;
 	  }

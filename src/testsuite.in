@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.444 2001/07/12 23:56:04 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.445 2001/07/15 21:16:04 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1836,6 +1836,36 @@ class Test
 };
   return Test()->main();
 ]],"foo")
+
+test_any([[
+class Test
+{
+    class Codec
+    {
+      mixed nameof (mixed what)
+      {
+	return ([])[0];
+      }
+    }
+
+    int main()
+    {
+      object o = compile_string (#"
+	constant x = ({0});
+	int f() {return 17;}
+	int g() {return x[0]();}
+      ")();
+      o->x[0] = o->f;
+      function e=encode_value;
+      function d=decode_value;
+      o = d (e (o, Codec()), Codec());
+      return function_object (o->x[0]) == o;
+    }
+};
+  return Test()->main();
+]],1);
+
+
 
 test_any([[mixed s="foo"; return s++;]],"foo")
 test_any([[mixed s="foo"; s++; return s;]],"foo1")
