@@ -1,0 +1,28 @@
+#!/bin/sh
+
+. $NTTOOLS
+
+for a in "$@"
+do
+  case "$a" in
+    --version)
+      echo "1.2.3"
+      exit 0
+    ;;
+
+    --cflags)
+      echo ""
+      exit 0
+    ;;
+
+    --libs)
+      echo "-lsdl"
+      exit 0
+    ;;
+
+    *)
+      echo "Unknown option $a"
+      exit 1
+    ;;
+   esac
+done
