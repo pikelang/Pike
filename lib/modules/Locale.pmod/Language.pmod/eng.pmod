@@ -3,7 +3,7 @@
 
 //! English language locale.
 
-// $Id: eng.pmod,v 1.3 2002/11/25 11:27:31 grubba Exp $
+// $Id: eng.pmod,v 1.4 2002/11/25 11:29:52 grubba Exp $
 
 inherit "abstract";
 
@@ -112,15 +112,14 @@ string number(int num)
    case 19: return "nineteen";
    case 20: return "twenty";
    case 30: return "thirty";
+   case 40: return "forty";
+   case 50: return "fifty";
    case 80: return "eighty";
-   case 40:
-    return "forty";
    case 60: case 70: case 90:
      return number(num/10)+"ty";
-   case 50: return "fifty";
-   case 21..29: case 31..39:
+   case 21..29: case 31..39: case 41..49:
    case 51..59: case 61..69: case 71..79:
-   case 81..89: case 91..99: case 41..49:
+   case 81..89: case 91..99:
      return number((num/10)*10)+number(num%10);
    case 100: case 200: case 300: case 400: case 500:
    case 600: case 700: case 800: case 900:
