@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.523 2001/06/08 00:37:27 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.524 2001/06/12 14:22:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1854,7 +1854,7 @@ thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
 socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
-windows.h errno.h stddef.h mmx.h)
+windows.h float.h errno.h stddef.h mmx.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
@@ -2680,6 +2680,13 @@ MY_CHECK_FUNCTION(infnan,
   double ninf = infnan(-ERANGE);
   double nan = infnan(EDOM);
   exit(!(isinf(pinf)>0 && isinf(ninf)<0 && isnan(nan)));
+])
+#############################################################################
+MY_CHECK_FUNCTION(_isnan,
+[
+#include <float.h>
+], [
+  exit(_isnan(0.0));
 ])
 #############################################################################
 
