@@ -1,0 +1,82 @@
+<chapter title="Writing Pike Modules">
+  <p>
+    This chapter will discuss how to extend Pike by writing
+    modules. There are two major ways to write modules, either they
+    can be written in Pike, or they can be written in C. Generally,
+    modules can be seen as a collection of pike programs and
+    functions. This is, obviously, handy for grouping related programs
+    and functions.
+  </p>
+
+  <p>
+    A pike module is actually a pike program which is cloned by the
+    pike compiler during compilation of programs. This means that all
+    lfuns that can be used in a pike program also can be used in a
+    module. This is, for instance, useful for overloading the
+    operators of a module to obtain a certain behaviour. Bear in mind
+    that variables defined on a module-wide bases are shared among all
+    clones of programs in the module.
+  </p>
+
+  <p>
+    Pike searches for modules in the module path as defined during the
+    compilation of a pike program. The module-path defaults to contain
+    the directory where all standard pike modules are installed. This
+    can be altered using
+    <ref>/master.CompatResolver()->add_module_path()</ref> in a
+    program or by letting the environment variable
+    <b>PIKE_MODULE_PATH</b> contain a colon-separated list of
+    directories to be searched for modules before looking at the
+    default location. 
+  </p>
+
+  <section title="Writing Modules in Pike">
+    <p>
+      Writing modules in pike is by far the easiest way to extend
+      pike. They are also useful for structuring a larger programming
+      project into different source files.
+    </p>
+
+    <p>
+      There are two ways of create a pike module written in
+      pike. Either create a file named as the module will be called
+      with the extension <expr>.pmod</expr> and place all program and
+      function definitions in it. The other way, which usually is more
+      flexible, is to create a directory named as the module with the
+      extension <expr>.pmod</expr> and place all program definitions
+      (<expr>.pike</expr>-files) within this directory. If a file called
+      <expr>module.pmod</expr> is placed in the directory de function and
+      program definitions within it will be merged with the programs
+      found in the directory. This file could, as an example, be used
+      to specify functions residing in the module, while programs in
+      the module are placed in <expr>.pike</expr>-files.
+    </p>
+
+  </section>
+  
+  <section title="Writing Modules in C">
+   <p> FIXME: to be written.</p>
+  </section>
+  
+  <section title="Special Module Variables and functions">
+    There are a few variables and functions that have a special
+    meaning in a module. 
+    
+    <subsection title="_module_value">
+      <p>
+	If <expr>_module_value</expr> is non-zero it will be used as
+	the value of the module. <expr>_module_value</expr> has to be of
+	a type which is indicable, ie. an object, mapping och
+	multiset.
+      </p>
+    </subsection>
+    
+    <subsection title="The indexing operator">
+      <p>
+	If a <ref>lfun::`[]</ref> is defined in a module it will be
+	called when the module is indexed using the .-operator. 
+      </p>
+    </subsection>
+  </section>
+  
+</chapter>

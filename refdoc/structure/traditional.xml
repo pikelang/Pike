@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.9 2001/12/20 15:22:29 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.10 2002/02/15 00:18:06 mikael%unix.pp.se Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -92,6 +92,9 @@
       <insert-move entity="GDK"/>
       <insert-move entity="Gnome"/>
     </chapter>
+  </file>
+  <file>
+    <chapter-ref file="not_extracted/modules.xml"/>
   </file>
   <file>
     <chapter title="The rest">
