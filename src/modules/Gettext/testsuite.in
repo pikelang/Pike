@@ -1,4 +1,6 @@
 
+cond([[ Gettext.gettext ]],[[
+
 test_eq(Gettext.gettext(""),"")
 test_eq(Gettext.gettext("hej"),"hej")
 test_eq(Gettext.gettext("",""),"")
@@ -49,3 +51,5 @@ test_true( intp(Gettext.LC_MESSAGES) )
 test_true( intp(Gettext.LC_MONETARY) )
 test_true( intp(Gettext.LC_NUMERIC) )
 test_true( intp(Gettext.LC_TIME) )
+
+]])
