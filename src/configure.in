@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.275 1999/04/25 18:45:11 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.276 1999/04/25 18:55:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -565,6 +565,7 @@ esac
       fi
      ;;
   esac
+ fi
  fi
 fi
 
