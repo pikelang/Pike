@@ -3,8 +3,6 @@
 #define GTK_NO_CHECK_CASTS
 
 #include "config.h"
-#include <gtk/gtk.h>
-#include <gdk/gdkx.h>
 #include <program.h>
 #include <pike_types.h>
 #include <interpret.h>
@@ -18,6 +16,8 @@
 #include <threads.h>
 #include <builtin_functions.h>
 #include <operators.h>
+#include <gtk/gtk.h>
+#include <gdk/gdkx.h>
 #include "prototypes.h"
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
