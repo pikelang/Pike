@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.101 2000/08/14 20:09:58 grubba Exp $
+ * $Id: program.h,v 1.102 2000/08/14 20:19:20 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -201,7 +201,7 @@ struct inherit
   INT16 identifier_level;
   INT16 parent_identifier;
   INT16 parent_offset;
-  INT32 storage_offset;
+  ptrdiff_t storage_offset;
   struct object *parent;
   struct program *prog;
   struct pike_string *name;
@@ -264,7 +264,7 @@ struct program
    * the first inherit[0].storage_offset bytes are not used and are
    * subtracted when inheriting.
    */
-  INT32 storage_needed; /* storage needed in the object struct */
+  ptrdiff_t storage_needed; /* storage needed in the object struct */
   INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
   struct timeval timestamp;
@@ -352,7 +352,8 @@ int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
-PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment, int modulo_orig);
+PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
+				   ptrdiff_t modulo_orig);
 PMOD_EXPORT void set_init_callback(void (*init)(struct object *));
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *));
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));

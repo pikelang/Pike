@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.84 2000/08/13 19:34:34 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.85 2000/08/14 20:29:14 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -666,13 +666,13 @@ struct sscanf_set
 
 
 #define MKREADSET(SIZE)						\
-static int PIKE_CONCAT(read_set,SIZE) (				\
+static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   PIKE_CONCAT(p_wchar,SIZE) *match,				\
-  int cnt,							\
+  ptrdiff_t cnt,						\
   struct sscanf_set *set,					\
-  int match_len)						\
+  ptrdiff_t match_len)						\
 {								\
-  unsigned long e,last=0;					\
+  size_t e, last = 0;						\
   CHAROPT( int set_size=0; )					\
 								\
   if(cnt>=match_len)						\
@@ -717,15 +717,15 @@ static int PIKE_CONCAT(read_set,SIZE) (				\
 	error("Error in sscanf format string.\n");		\
 								\
 CHAROPT(							\
-      if(last < (unsigned long)sizeof(set->c))			\
+      if(last < (size_t)sizeof(set->c))				\
       {								\
-	if(match[cnt] < (unsigned long)sizeof(set->c))		\
+	if(match[cnt] < (size_t)sizeof(set->c))			\
 	{							\
 )								\
 	  for(e=last;e<=match[cnt];e++) set->c[e]=1;		\
 CHAROPT(							\
 	}else{							\
-	  for(e=last;e<(unsigned long)sizeof(set->c);e++)	\
+	  for(e=last;e<(size_t)sizeof(set->c);e++)		\
             set->c[e]=1;					\
 								\
 	  check_stack(2);					\
@@ -742,12 +742,12 @@ CHAROPT(							\
       continue;							\
     }								\
     last=match[cnt];						\
-    if(last < (unsigned long)sizeof(set->c))			\
+    if(last < (size_t)sizeof(set->c))				\
       set->c[last]=1;						\
 CHAROPT(							\
     else{							\
       if(set_size &&						\
-	 ((unsigned long)sp[-1].u.integer) == last-1)		\
+	 ((size_t)sp[-1].u.integer) == last-1)			\
       {								\
 	sp[-1].u.integer++;					\
       }else{							\
@@ -766,7 +766,7 @@ CHAROPT(							\
     INT32 *order;						\
     set->a=aggregate_array(set_size*2);				\
     order=get_switch_order(set->a);				\
-    for(e=0;e<(unsigned long)set->a->size;e+=2)			\
+    for(e=0;e<(size_t)set->a->size;e+=2)			\
     {								\
       if(order[e]+1 != order[e+1])				\
       {								\
@@ -940,7 +940,7 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 	      ((char *)&d)[5] = *((INPUT)+5);		\
 	      ((char *)&d)[6] = *((INPUT)+6);		\
 	      ((char *)&d)[7] = *((INPUT)+7);		\
-	      (SVAL).u.float_number = (float)d;		\
+	      (SVAL).u.float_number = (FLOAT_TYPE)d;	\
 	    } while(0)
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
@@ -955,7 +955,7 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 	      ((char *)&d)[2] = *((INPUT)+5);		\
 	      ((char *)&d)[1] = *((INPUT)+6);		\
 	      ((char *)&d)[0] = *((INPUT)+7);		\
-	      (SVAL).u.float_number = (float)d;		\
+	      (SVAL).u.float_number = (FLOAT_TYPE)d;	\
 	    } while(0)
 #else
 #define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
@@ -985,8 +985,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 {									 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
-  ptrdiff_t cnt, eye, e;						 \
-  int no_assign = 0, field_length = 0, minus_flag = 0;			 \
+  ptrdiff_t cnt, eye, e, field_length = 0;				 \
+  int no_assign = 0, minus_flag = 0;					 \
   struct sscanf_set set;						 \
   struct svalue *argp;							 \
 									 \
