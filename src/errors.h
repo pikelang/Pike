@@ -106,6 +106,9 @@ DECLARE_ERROR(permission,
 	      ERR_INHERIT(generic),
   ERR_VAR(struct pike_string *,string,PIKE_T_STRING,permission_type)
 )
+
+DECLARE_ERROR(cpp, ERR_INHERIT(generic), EMPTY)
+
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
 #undef ERR_VAR

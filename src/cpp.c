@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.91 2001/07/28 14:08:23 nilsson Exp $
+ * $Id: cpp.c,v 1.92 2001/08/15 22:18:41 mast Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1557,7 +1557,8 @@ void f_cpp(INT32 args)
   if(this.compile_errors)
   {
     free_string_builder(&this.buf);
-    Pike_error("Cpp() failed\n");
+    throw_error_object(low_clone(cpp_error_program), 0, 0, 0,
+		       "Cpp() failed\n");
   }else{
     pop_n_elems(sp - save_sp);
     push_string(finish_string_builder(&this.buf));
