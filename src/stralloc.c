@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.151 2003/02/26 12:31:57 mast Exp $
+|| $Id: stralloc.c,v 1.152 2003/02/26 22:42:29 mast Exp $
 */
 
 #include "global.h"
@@ -24,11 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-#ifndef HUGE
-#define HUGE HUGE_VAL
-#endif /*!HUGE*/
-
-RCSID("$Id: stralloc.c,v 1.151 2003/02/26 12:31:57 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.152 2003/02/26 22:42:29 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -2183,15 +2179,17 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 {
-  register long val;
-  register int c;
-  int xx, neg = 0;
+  /* Note: Code duplication in STRTOL and pcharp_to_svalue_inumber. */
+
+  unsigned long val, mul_limit;
+  int c;
+  int xx, neg = 0, add_limit, overflow = 0;
 
   if (ptr)  *ptr = str;
   if (base < 0 || base > MBASE)  return 0;
   if (!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
-    while (ISSPACE(c))
+    while (WIDE_ISSPACE(c))
     {
       INC_PCHARP(str,1);
       c=EXTRACT_PCHARP(str);
@@ -2224,16 +2222,41 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
     INC_PCHARP(str,2);
     c = EXTRACT_PCHARP(str);		/* skip over leading "0x" or "0X" */
   }
-  val=-DIGIT(c);
+
+  if (neg) {
+    mul_limit = (unsigned long) LONG_MIN / base;
+    add_limit = (int) ((unsigned long) LONG_MIN % base);
+  }
+  else {
+    mul_limit = LONG_MAX / base;
+    add_limit = (int) (LONG_MAX % base);
+  }
+
+  val=DIGIT(c);
   while(1)
   {
     INC_PCHARP(str,1);
     c=EXTRACT_PCHARP(str);
     if(!(WIDE_ISALNUM(c)  && (xx=DIGIT(c)) < base)) break;
-    val = base * val - xx;
+    if (val > mul_limit || (val == mul_limit && xx > add_limit))
+      overflow = 1;
+    else
+      val = base * val + xx;
   }
+
   if (ptr) *ptr = str;
-  return (neg ? val : -val);
+  if (overflow) {
+    errno = ERANGE;
+    return neg ? LONG_MIN : LONG_MAX;
+  }
+  else {
+    if (neg)
+      return val > (unsigned long) LONG_MAX ?
+	-(long) (val - (unsigned long) LONG_MAX) - LONG_MAX :
+	-(long) val;
+    else
+      return (long) val;
+  }
 }
 
 PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
@@ -2275,11 +2298,13 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 int base,
 					 ptrdiff_t maxlength)
 {
+  /* Note: Code duplication in STRTOL and STRTOL_PCHARP. */
+
   PCHARP str_start;
   
-  INT_TYPE xx, neg = 0, is_bignum = 0, implicit_base = 0;
-  INT_TYPE val;
-  INT_TYPE c;
+  unsigned INT_TYPE val, mul_limit;
+  int c;
+  int xx, neg = 0, add_limit, overflow = 0;
 
   maxlength--;   /* max_length <= 0 means no max length. */
   str_start = str;
@@ -2315,8 +2340,6 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   
   if(base == 0)
   {
-    implicit_base = 1;
-    
     if(c != '0')
       base = 10;
     else if(INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X')
@@ -2345,45 +2368,35 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     c=EXTRACT_PCHARP(str);
   }
   str_start=str;
+
+  if (neg) {
+    mul_limit = (unsigned INT_TYPE) MIN_INT_TYPE / base;
+    add_limit = (int) ((unsigned INT_TYPE) MIN_INT_TYPE % base);
+  }
+  else {
+    mul_limit = MAX_INT_TYPE / base;
+    add_limit = (int) (MAX_INT_TYPE % base);
+  }
   
-  for(val = -DIGIT(c);
+  for(val = DIGIT(c);
       (INC_PCHARP(str,1), WIDE_ISALNUM(c = EXTRACT_PCHARP(str) )) &&
 	(xx = DIGIT(c)) < base &&
 	0 != maxlength--; )
   {
-#ifdef AUTO_BIGNUM
-    if(INT_TYPE_MUL_OVERFLOW(val, base))
-      is_bignum = 1;
-#endif /* AUTO_BIGNUM */
-    val = base * val;
-    /* Accumulating a negative value avoids surprises near MIN_TYPE_INT. */
-#ifdef AUTO_BIGNUM
-    if(INT_TYPE_SUB_OVERFLOW(val, xx))
-      is_bignum = 1;
-#endif /* AUTO_BIGNUM */
-    val -= xx;
+    if (val > mul_limit || (val == mul_limit && xx > add_limit))
+      overflow = 1;
+    else
+      val = base * val + xx;
   }
   
   if(ptr != 0)
     *ptr = str;
 
-  if(neg)
-    r->u.integer = val;
-  else
-  {
+  if (overflow) {
 #ifdef AUTO_BIGNUM
-    if(INT_TYPE_NEG_OVERFLOW(val))
-      is_bignum = 1;
-#endif /* AUTO_BIGNUM */
-    r->u.integer = -val;
-  }
-
-#ifdef AUTO_BIGNUM
-  if(is_bignum)
-  {
     push_string(make_shared_binary_pcharp(str_start,
 					  SUBTRACT_PCHARP(str,str_start)));
-    /* Note that this can concievably throw errors()
+    /* Note that this can conceivably throw errors()
      * in some situations that might not be desirable...
      * take care.
      * /Hubbe
@@ -2395,9 +2408,20 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     if(neg) o_negate();
     
     *r = *--Pike_sp;
+    dmalloc_touch_svalue (r);
+#else  /* !AUTO_BIGNUM */
+    r->u.integer = neg ? MIN_INT_TYPE : MAX_INT_TYPE;
+#endif
   }
-#endif /* AUTO_BIGNUM */
-  
+  else {
+    if (neg)
+      r->u.integer = val > (unsigned INT_TYPE) MAX_INT_TYPE ?
+	-(INT_TYPE) (val - (unsigned INT_TYPE) MAX_INT_TYPE) - MAX_INT_TYPE :
+	-(INT_TYPE) val;
+    else
+      r->u.integer = (INT_TYPE) val;
+  }
+
   return 1;
 }
 
@@ -2552,7 +2576,7 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
  overflow:
   /* Return an overflow error.  */
   errno = ERANGE;
-  return HUGE * sign;
+  return HUGE_VAL * sign;
 
  underflow:
   /* Return an underflow error.  */
