@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.99 2000/09/26 10:22:11 mirar Exp $ */
+/* $Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.99 2000/09/26 10:22:11 mirar Exp $
+**!	$Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.99 2000/09/26 10:22:11 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -4423,7 +4423,6 @@ void image_colortable_corners(INT32 args)
 
 static void image_colortable__sprintf( INT32 args )
 {
-  extern void f_sprintf( INT32 args );
   int x;
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
