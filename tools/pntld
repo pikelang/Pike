@@ -12,7 +12,7 @@
 //   Rename sections
 //   Support section symbols (used by pthread.lib)
 
-#define DEBUG
+//#define DEBUG
 
 class Reloc
 {
@@ -1094,7 +1094,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.21 2002/10/24 14:39:06 marcus Exp $\n"
+	 "$Id: pntld,v 1.22 2003/01/01 12:25:33 peter Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1182,7 +1182,15 @@ int main(int argc, array(string) argv)
     output_machine = 0;
 
   foreach(argv[1..],string file)
-    dumpfile(Stdio.read_file(file),0,0,file+":"+file);
+  {
+#if 0
+    werror("file: "+file+"\n");
+    werror("cwd:  "+getcwd()+"\n");
+    werror("stat: %O\n",file_stat( file ) );
+#endif
+    string data = Stdio.read_file( file );
+    dumpfile(data,0,0,file+":"+file);
+  }
 
   if(strip)
   {
