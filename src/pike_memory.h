@@ -5,13 +5,15 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.24 2000/09/11 18:47:02 grubba Exp $
+ * $Id: pike_memory.h,v 1.25 2000/10/10 00:02:52 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
 
 #include "global.h"
 #include "stralloc.h"
+
+
 
 #define MEMSEARCH_LINKS 512
 
@@ -40,6 +42,13 @@ struct mem_searcher
   struct link *set[MEMSEARCH_LINKS];
 };
 
+
+#if 1
+/* use new searching stuff */
+
+#include "pike_search.h"
+
+#else
 struct generic_mem_searcher
 {
   char needle_shift;
@@ -56,6 +65,8 @@ struct generic_mem_searcher
     } other;
   } data;
 };
+
+#endif
 
 #include "block_alloc_h.h"
 #define MEMCHR0 MEMCHR

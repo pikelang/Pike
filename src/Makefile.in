@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.209 2000/10/08 19:03:21 grubba Exp $
+# $Id: Makefile.in,v 1.210 2000/10/10 00:02:50 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -127,6 +127,7 @@ OBJ= \
  lex.o \
  multiset.o \
  signal_handler.o \
+ pike_search.o \
  pike_types.o \
  main.o \
  mapping.o \

@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.89 2000/10/04 05:12:13 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.90 2000/10/10 00:02:51 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -274,6 +274,7 @@ size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn)
 }
 
 
+#ifndef PIKE_SEARCH_H
 /*
  * a quick memory search function.
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
@@ -573,6 +574,8 @@ PMOD_EXPORT char *my_memmem(char *needle,
   init_memsearch(&tmp, needle, needlelen, haystacklen);
   return memory_search(&tmp, haystack, haystacklen);
 }
+
+#endif
 
 void memfill(char *to,
 	     INT32 tolen,
