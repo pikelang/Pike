@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.45 1999/04/08 22:18:21 hubbe Exp $
+/* $Id: master.pike.in,v 1.46 1999/04/09 04:46:16 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -708,7 +708,19 @@ void _main(string *orig_argv, string *env)
 
   _pike_file_name = orig_argv[0];
 
-  foreach(env,a) if(sscanf(a,"%s=%s",a,b)) environment[a]=b;
+  foreach(env,a)
+    {
+      if(sscanf(a,"%s=%s",a,b))
+      {
+	if(a=="") // Special hack for NT
+	{
+	  sscanf(b,"%s=%s",a,b);
+	  a="="+a;
+	}
+	environment[a]=b;
+      }
+    }
+
 
 #if "¤share_prefix¤"[0]!='¤'
   // add path for architecture-dependant files
