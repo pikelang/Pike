@@ -6,7 +6,7 @@
 
 class request
 {
-  constant type = 0;
+  constant reqType = 0;
 //   constant expect_reply = 0;
 
   array build_value_list(mapping m, array(string) fields)
@@ -32,21 +32,24 @@ class request
   string build_request(string req, void|int data)
   {
     if (strlen(req) % 4)
-      error("Xlib.request: internal error!\n");
+      {
+	werror("Xlib.request->build_request: padding.\n");
+	req += ({ "\0", "\0\0", "\0\0\0" })[strlen(req) % 4];
+      }
     // Big requests extension. Will not work
     // if this extension is not present.
     if((strlen(req)+1) > (65535*4))
-      return sprintf("%c%c\0\0%4c%s", type, data, 1 + strlen(req) / 4, req);
-    return sprintf("%c%c%2c%s", type, data, 1 + strlen(req) / 4, req);
+      return sprintf("%c%c\0\0%4c%s", reqType, data, 1 + strlen(req) / 4, req);
+    return sprintf("%c%c%2c%s", reqType, data, 1 + strlen(req) / 4, req);
   }
 
-  mixed handle_reply(string reply)
+  mixed handle_reply(mapping reply)
   {
     error("Xlib.request: unexpected reply!\n");
     return 0;
   }
 
-  mixed handle_error(string reply)
+  mixed handle_error(mapping reply)
   {
     error("Xlib.request: unexpected reply!\n");
     return 0;
@@ -67,7 +70,7 @@ class ResourceReq
 class CreateWindow
 {
   inherit request;
-  constant type = 1;
+  constant reqType = 1;
 
   int depth;
   
@@ -99,7 +102,7 @@ class CreateWindow
 class ChangeWindowAttributes
 {
   inherit request;
-  constant type = 2;
+  constant reqType = 2;
 
   int window;
   mapping attributes = ([ ]);
@@ -116,13 +119,13 @@ class ChangeWindowAttributes
 class MapWindow
 {
   inherit ResourceReq;
-  constant type = 8;
+  constant reqType = 8;
 }
 
 class GetKeyboardMapping
 {
   inherit request;
-  constant type = 101;
+  constant reqType = 101;
   int first=0;
   int num=0;
 
@@ -169,7 +172,7 @@ class GetKeyboardMapping
 class ConfigureWindow
 {
   inherit request;
-  constant type = 12;
+  constant reqType = 12;
 
   int window;
   mapping attributes;
@@ -183,10 +186,240 @@ class ConfigureWindow
   }
 }
 
+class InternAtom
+{
+  inherit request;
+  constant reqType = 16;
+
+  int onlyIfExists;
+  string name;
+
+  string to_string()
+  {
+    return build_request(sprintf("%2c\0\0%s", strlen(name), name),
+			 onlyIfExists);
+  }
+
+  mixed handle_reply(mapping reply)
+  {
+    int id;
+    sscanf(reply->rest, "%4c", id);
+    return id;
+  }
+
+  mixed handle_error(mapping reply)
+  {
+    switch(reply->errorCode)
+      {
+      case "Value":
+      case "Alloc":
+	return reply;
+      default:
+	error(sprintf("Requests.InternAtom->handle_error: "
+		      "Unexpected error '%s'\n", reply->errorCode));
+      }
+  }
+}
+
+class GetAtomName
+{
+  inherit request;
+  constant reqType = 17;
+
+  int atom;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c", atom));
+  }
+
+  string handle_reply(mapping reply)
+  {
+    string name;
+    int length;
+    sscanf(reply->rest, "%2c", length);
+    return reply->rest[24..23+length];
+  }
+
+  mapping handle_error(mapping reply)
+  {
+    if (reply->errorCode != "Atom")
+      error(sprintf("Requests.GetAtomName->handle_error: "
+			"Unexpected error '%s'\n", reply->errorCode));
+    return reply;
+  }
+}
+
+class ChangeProperty
+{
+  inherit request;
+  constant reqType = 18;
+
+  int mode = 0;
+  int window;
+  int property;
+  int type;
+  int format;
+  string|array(int) data;
+
+  string to_string()
+  {
+    string p;
+    switch(format)
+      {
+      case 8:
+	p = data;
+	break;
+      case 16:
+	p = sprintf("%@2c", data);
+	break;
+      case 32:
+	p = sprintf("%@4c", data);
+	break;
+      default:
+	error(sprintf("Requests.ChangeProperty: Unexpected format %d\n",
+			 format));
+      }
+    return build_request(sprintf("%4c%4c%4c" "%c\0\0\0" "%4c%s",
+				 window, property, type,
+				 format,
+				 sizeof(data), p),
+			 mode);
+  }
+}
+
+class DeleteProperty
+{
+  inherit request;
+  constant reqType = 19;
+
+  int window;
+  int property;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c", window, property));
+  }
+}
+
+class GetProperty
+{
+  inherit request;
+  constant reqType = 20;
+
+  int delete;
+  int window;
+  int property;
+  int type;
+  int longOffset;
+  int longLength;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%4c" "4c%4c",
+				 window, property, type,
+				 longOffset, longLength),
+			 delete);
+  }
+
+  mapping handle_reply(mapping reply)
+  {
+    mapping m = ([ "format" : reply->data1 ]);
+    int length;
+    
+    sscanf(reply->rest, "%4c%4c%4c",
+	   m->type, m->bytesAfter, length);
+    switch(m->format)
+      {
+      case 8:
+	m->data = reply->rest[24..23+length];
+	break;
+      case 16:
+	{
+	  m->data = allocate(length);
+	  for (int i = 0; i<length; i++)
+	    sscanf(reply->rest[24+2*i..25+2*i], "%2c", m->data[i]);
+	  break;
+	}
+      case 32:
+	{
+	  m->data = allocate(length);
+	  for (int i = 0; i<length; i++)
+	    sscanf(reply->rest[24+4*i..27+2*i], "%4c", m->data[i]);
+	  break;
+	}
+      default:
+	error(sprintf("Requests.GetProperty->handle_reply: "
+		     "Unexpected format %d\n",
+		     reply->data1));
+      }
+    return m;
+  }
+
+  mixed handle_error(mapping reply)
+  {
+    /* If the propert is non-existant, of
+     * unexpected type, or too short, return 0 */
+    switch (reply->errorCode)
+      {
+      case "Property":
+      case "Match":
+      case "Value":
+	return 0;
+      case "Atom":
+      case "Window":
+	return reply;
+      default:
+	error(sprintf("Requests.GetProperty->handle_error: "
+		      "Unexpected error '%s'\n",
+		      reply->errorCode));
+	
+      }
+  }
+}
+
+class ListProperties
+{
+  inherit request;
+  constant reqType = 21;
+
+  int window;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c", window));
+  }
+
+  array handle_reply(mapping reply)
+  {
+    int length;
+    sscanf(reply->rest, "%2c", length);
+
+    array a = allocate(length);
+    for (int i = 0; i<length; i++)
+      sscanf(reply->rest[24+4*i..27+4*i], "%4c", a[i]);
+
+    return a;
+  }
+
+  mapping handle_error(mapping reply)
+  {
+    switch (reply->errorCode)
+      {
+      case "Window":
+	return reply;
+      default:
+	error(sprintf("Requests.ListProperties->handle_reply: "
+		      "Unexpected error '%s'\n",
+		      reply->errorCode));
+      }
+  }
+}
+
 class CreateGC
 {
   inherit request;
-  constant type = 55;
+  constant reqType = 55;
 
   int gc;
   int drawable;
@@ -203,7 +436,7 @@ class CreateGC
 class ChangeGC
 {
   inherit request;
-  constant type = 56;
+  constant reqType = 56;
 
   int gc;
   mapping attributes;
@@ -219,7 +452,7 @@ class ChangeGC
 class PolyPoint
 {
   inherit request;
-  constant type = 64;
+  constant reqType = 64;
 
   int coordMode;
   int drawable;
@@ -236,13 +469,13 @@ class PolyPoint
 class PolyLine
 {
   inherit PolyPoint;
-  constant type = 65;
+  constant reqType = 65;
 }
 
 class FillPoly
 {
   inherit request;
-  constant type = 69;
+  constant reqType = 69;
 
   int drawable;
   int gc;
@@ -262,7 +495,7 @@ class FillPoly
 class PolyFillRectangle
 {
   inherit request;
-  constant type = 70;
+  constant reqType = 70;
 
   int drawable;
   int gc;
@@ -279,7 +512,7 @@ class PolyFillRectangle
 class PutImage
 {
   inherit request;
-  constant type = 72;
+  constant reqType = 72;
   int drawable;
   int gc;
 
@@ -315,7 +548,7 @@ class PutImage
 class CreateColormap
 {
   inherit request;
-  constant type = 78;
+  constant reqType = 78;
 
   int cid;
   int alloc;
@@ -332,7 +565,7 @@ class CreateColormap
 class AllocColor
 {
   inherit request;
-  constant type = 84;
+  constant reqType = 84;
   
   int red, green, blue;
   int colormap;
@@ -359,7 +592,7 @@ class AllocColor
 class QueryExtension
 {
   inherit request;
-  constant type = 98;
+  constant reqType = 98;
   string name;
 
   void create(string n)
