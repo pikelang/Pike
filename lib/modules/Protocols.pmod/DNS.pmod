@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.57 2001/04/09 16:51:09 jonasw Exp $
+//! $Id: DNS.pmod,v 1.58 2001/04/09 19:50:04 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -581,7 +581,7 @@ class client
 	      break;
 	  }
 	}
-      }
+
       if(domain)
 	domains = ({ domain }) + domains;
 #endif
