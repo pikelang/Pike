@@ -1,3 +1,10 @@
+Sun Aug 31 02:06:06 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* *.{c,h,yacc}: Fixed valid prototypes for functions taking no
+ 	arguments.
+
+	* configure.in: Added compiler options for OSF/1 cc.
+
 Tue Aug 26 19:37:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* builtin_functions.c (combine_path): Fixed so combine_path now
