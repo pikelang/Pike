@@ -56,7 +56,7 @@ string explain(int code)
   string res="";
   switch(code & 0xc0000000) {
   case 0x00000000:
-    res = "Sucess:";
+    res = "Success:";
     break;
   case 0x40000000:
     res = "Informational:";
