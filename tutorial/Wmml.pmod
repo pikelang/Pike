@@ -54,100 +54,104 @@ static private int verify_any(SGML data,
       }
       switch(x->tag)
       {
-      default:
-	werror("Unknown tag "+x->tag+" near "+x->location()+".\n");
-	werror(in->dump());
-	i=0;
-	break;
+	 default:
+	    werror("Unknown tag "+x->tag+" near "+x->location()+".\n");
+	    werror(in->dump());
+	    i=0;
+	    break;
 
-      case "font":
-      case "firstpage":
-      case "preface":
-      case "introduction":
+	 case "font":
+	 case "firstpage":
+	 case "preface":
+	 case "introduction":
 
-      case "chapter":
-      case "appendix":
-      case "i":
-      case "b":
-      case "a":
-      case "anchor":
-      case "tt":
-      case "pre":
-      case "tr":
-      case "td":
-      case "table":
-      case "box":
-      case "h1":
-      case "h2":
-      case "h3":
-      case "dl":
-      case "ul":
-      case "section":
-      case "center":
-      case "ol":
-      case "encaps":
-      case "th":
-      case "illustration":
-      case "strong":
-      case "link":
+	 case "chapter":
+	 case "appendix":
+	 case "i":
+	 case "b":
+	 case "a":
+	 case "anchor":
+	 case "tt":
+	 case "pre":
+	 case "tr":
+	 case "td":
+	 case "table":
+	 case "h1":
+	 case "h2":
+	 case "h3":
+	 case "dl":
+	 case "ul":
+	 case "section":
+	 case "center":
+	 case "ol":
+	 case "encaps":
+	 case "th":
+	 case "illustration":
+	 case "link":
 
-	case "man_nb":
-	case "module":
-	case "class":
-	case "method":
-        case "variable":
-	case "function":
-        case "constant":
-	case "man_description":
-	case "man_see":
-	case "man_syntax":
-	case "man_bugs":
-	case "man_example":
-	case "man_title":
-	case "man_arguments":
-	case "man_returns":
-	case "man_note":
+	 case "exercises":
+	 case "exercise":
 
-      case "ex_identifier":
-      case "ex_keyword":
-      case "ex_string":
-      case "ex_comment":
-      case "ex_meta":
-      case "example":
+	 case "man_nb":
+	 case "module":
+	 case "class":
+	 case "method":
+	 case "variable":
+	 case "function":
+	 case "constant":
+	 case "man_description":
+	 case "man_see":
+	 case "man_syntax":
+	 case "man_bugs":
+	 case "man_example":
+	 case "man_title":
+	 case "man_arguments":
+	 case "man_returns":
+	 case "man_note":
+
+	 case "ex_identifier":
+	 case "ex_keyword":
+	 case "ex_string":
+	 case "ex_comment":
+	 case "ex_meta":
+	 case "example":
+
+	 case "data_description":
+	 case "elem": // in data_description
 	 
-      case "aargdesc":
-      case "aarg":
-      case "adesc":
-	if(!x->data)
-	{
-	  werror("Tag "+x->tag+" not closed near "+x->location()+".\n");
-	  werror(in->dump());
-	  i=0;
-	}
+	 case "aargdesc": // in man_arguments
+	 case "aarg":	  // in man_arguments
+	 case "adesc":    // in man_arguments
+	    if(!x->data)
+	    {
+	       werror("Tag "+x->tag+" not closed near "+x->location()+".\n");
+	       werror(in->dump());
+	       i=0;
+	    }
 
-	break;
+	    break;
 
-      case "ex_indent":
-      case "ex_br":
-      case "include":
-      case "dt":
-      case "dd":
-      case "li":
-      case "ref":
-      case "hr":
-      case "br":
-      case "img":
-      case "image":
-      case "table-of-contents":
-      case "index":
-	if(x->data)
-	{
-	  werror("Tag "+x->tag+" should not be closed near "+x->location()+"\n");
-	  werror(in->dump());
-	  i=0;
-	}
-      case "p":
-      case "wbr":
+	 case "ex_indent":
+	 case "ex_br":
+	 case "include":
+	 case "dt":
+	 case "dd":
+	 case "li":
+	 case "ref":
+	 case "hr":
+	 case "br":
+	 case "img":
+	 case "image":
+	 case "table-of-contents":
+	 case "index":
+	    if(x->data)
+	    {
+	       werror("Tag "+x->tag+" should not be closed near "+x->location()+"\n");
+	       werror(in->dump());
+	       i=0;
+	    }
+	 case "p":
+	 case "wbr":
       }
 
       if(x->data)

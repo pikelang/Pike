@@ -863,24 +863,36 @@ to do as you continue to read this book. The complete listing of this example ca
 </section>
 
 <section title="Simple exercises">
-<box>
-<ul>
-<li> Make a program which writes hello world 10 times.
-<li> Modify hello_world.pike to write the first argument to the program.
-<li> Make a program that writes a hello_world program to stdout
-     when executed.
-<li> Modify the register program to store data about programs and diskettes
-     instead of songs and records.
-<li> Add code to the register program that checks that the user typed
-     an argument when required. The program should notify the user and
-     wait to receive more commands instead of exiting with an error message.
-<li> Add code to the register program to check that the arguments to
-     <tt>show_record</tt> and <tt>delete_records</tt> are numbers. Also
-     make sure that the number isn't less than one or bigger than the
-     available number of records.
-<li> Rewrite the register program and put all the code in main().
-</ul>
-</box>
+<exercises>
+<exercise>
+    Make a program which writes hello world 10 times.
+</exercise>
+<exercise>
+    Modify hello_world.pike to write the first argument to the program.
+</exercise>
+<exercise>
+    Make a program that writes a hello_world program to stdout
+    when executed.
+</exercise>
+<exercise>
+    Modify the register program to store data about programs and diskettes
+    instead of songs and records.
+</exercise>
+<exercise>
+    Add code to the register program that checks that the user typed
+    an argument when required. The program should notify the user and
+    wait to receive more commands instead of exiting with an error message.
+</exercise>
+<exercise>
+    Add code to the register program to check that the arguments to
+    <tt>show_record</tt> and <tt>delete_records</tt> are numbers. Also
+    make sure that the number isn't less than one or bigger than the
+    available number of records.
+</exercise>
+<exercise>
+    Rewrite the register program and put all the code in main().
+</exercise>
+</exercises>
 </section>
 </chapter>
 
@@ -1184,22 +1196,28 @@ is run.
 </section>
 
 <section title=Exercises>
-
-<box>
-<ul>
-<li> End all functions in the examples in chapter two with a return statement.
-<li> Change all <tt>foreach</tt> loops to <tt>for</tt> or <tt>while</tt> loops.
-<li> Make the <tt>find_song</tt> function in chapter 2 return when the first
+<exercises>
+<exercise>
+     End all functions in the examples in chapter two with a return statement.
+</exercise><exercise>
+     Change all <tt>foreach</tt> loops to <tt>for</tt> or <tt>while</tt> loops.
+</exercise><exercise>
+     Make the <tt>find_song</tt> function in chapter 2 return when the first
      matching song is found.
-<li> Make the <tt>find_song</tt> function write the number of the record
+</exercise><exercise>
+     Make the <tt>find_song</tt> function write the number of the record
      the song is on.
-<li> If you failed to get the program to work properly in the last exercise
+</exercise><exercise>
+     If you failed to get the program to work properly in the last exercise
      of chapter 2, try it again now.
-<li> Make a program that writes all the numbers from 1 to 1000.
-<li> Modify the program in the previous exercise to NOT write numbers divisible by 3, 7 or 17.
-<li> Make a program that writes all the prime numbers between 1 and 1000.
-</ul>
-</box>
+</exercise><exercise>
+     Make a program that writes all the numbers from 1 to 1000.
+</exercise><exercise>
+     Modify the program in the previous exercise to NOT write numbers divisible by 3, 7 or 17.
+</exercise><exercise>
+     Make a program that writes all the prime numbers between 1 and 1000.
+</exercise>
+</exercises>
 </section>
 </chapter>
 
@@ -3178,12 +3196,16 @@ expect, in which case you are better off not using operator overloading.
 </section>
 
 <section title="Simple exercises">
-<box>
-<ul>
-<li> Make a program that clones 10 hello world and then runs main() in
+<exercises>
+<exercise>
+     Make a program that clones 10 hello world and then runs main() in
      each one of them.
-<li> Modify the register program to use an object for each record.
-<li> Modify the register program to use the following search function:
+
+</exercise><exercise>
+     Modify the register program to use an object for each record.
+
+</exercise><exercise>
+     Modify the register program to use the following search function:
 <example language=pike>
 	void find_song(string title)
 	{
@@ -3204,9 +3226,8 @@ expect, in which case you are better off not using operator overloading.
 	  if(!hits) write("Not found.\n");
 	}
 </example>
-	
-</ul>
-</box>
+</exercise>
+</exercises>	
 <!-- FIXME add more examples above -->
 </section>
 </chapter>
@@ -3501,21 +3522,28 @@ or like this:
 </section>
 
 <section title="Simple exercises">
-<box>
-<ul>
-<li> Save the hello_world.pike program as hello_world.pike.pmod, then make
+<exercises>
+<exercise>
+     Save the hello_world.pike program as hello_world.pike.pmod, then make
      a program that loads this module and calls its main().
-<li> Make a directory called <tt>Programs.pmod</tt> and put all the examples you
+
+</exercise><exercise>
+     Make a directory called <tt>Programs.pmod</tt> 
+     and put all the examples you
      have written so far in it. Make a program that runs one of those
      programs. Make sure the program can be modified to run another of
      your examples by changing what module it loads.
-<li> Copy the file hello_world.pike.pmod to programs/module.pike.pmod and
+
+</exercise><exercise>
+     Copy the file hello_world.pike.pmod to programs/module.pike.pmod and
      then write a program that runs hello_world without actually using the
      identifier <tt>hello_world</tt>.
-<li> Try putting <tt>Programs.pmod</tt> in another directory and then try to
+
+</exercise><exercise>
+     Try putting <tt>Programs.pmod</tt> in another directory and then try to
      run the programs from the last two examples. 
-</ul>
-</box>
+</exercise>
+</exercises>
 </section>
 </chapter>
 
@@ -11198,21 +11226,20 @@ array(int) file-&gt;stat();
 <man_description>
 file_stat returns an array of integers describing some properties<br>
 about the file. Currently file_stat returns 7 entries:<br>
-<pre>
+
 <data_description type=array(int)>
 <elem value=mode>file mode, protection bits etc. etc. </elem>
 <elem value=size>file size for regular files, <br>
-      	    -2 for dirs,<br>
-      	    -3 for links,<br>
-      	    -4 for otherwise </elem>
+-2 for dirs,<br>
+-3 for links,<br>
+-4 for otherwise </elem>
 <elem value=atime>last access time </elem>
 <elem value=mtime>last modify time </elem>
 <elem value=ctime>last status time change </elem>
 <elem value=uid>The user who owns this file</elem>
 <elem value=gid>The group this file belongs to</elem>
 </data_description>
-</pre>
-</tt>
+
 If you give 1 as a second argument, file_stat does not follow links.<br>
 You can never get -3 as size if you don't give a second argument.<br>
 
@@ -11845,13 +11872,12 @@ first object in this list, and next_object(o) the next object in the
 list after o.
 </man_description>
 <man_example>
-<pre>
+<example language=pike>
 /* This example calls shutting_down() in all cloned objects */
 object o;
 for(o=next_object();o;o=next_object(o))
 o-&gt;shutting_down();<br>
-</pre>
-</dl>
+</example>
 </man_example>
 <man_see>
 clone, destruct

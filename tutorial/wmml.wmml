@@ -100,8 +100,8 @@ wbr
 
 <section title="reference markup tags">
 
-method name= title= 
 module name= title= mansuffix= 
+method name= title= 
 class name= title=
 constant name= title=
 function name= fullpath= title=

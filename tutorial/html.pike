@@ -335,6 +335,82 @@ int cpos;
 
 SGML wmml_to_html(SGML data);
 
+SGML preify(SGML in,int id)
+{
+   array r=({});
+   foreach (in,TAG z)
+      if (!stringp(z))
+	 if (z->tag=="br")
+	    r+=({"\n"+" "*id});
+	 else
+	 {
+	    z->data=preify(z->data,id);
+	    r+=({z});
+	 }
+      else 
+	 r+=({replace(z,"\n","")});
+   return r;
+}
+
+SGML data_description(mapping arg,int pos,array(object) data,
+		      object orig)
+{
+   array d=({}); 
+   //    ({ type, name, value, pos, desc })
+   // or ({ ?,    0,    0,     pos, group description })
+
+   string type=arg->type||"",subtype="";
+   sscanf(type,"%s(%s)",type,subtype);
+
+   foreach (data,TAG data)
+      if (!stringp(data))
+	 switch (data->tag)
+	 {
+	    case "elem":
+	       d+=({({data->params->type||subtype, /* 0 */
+		      data->params->name,          /* 1 */
+		      data->params->value,         /* 2 */
+		      data->pos,                   /* 3 */
+		      data->data})});              /* 4 */
+	       break;
+	    default:
+	       werror("Warning: Found tag "+data->tag+" in data_description"
+		      +" (near "+data->location()+")\n");
+	 }
+   switch (type)
+   {
+      case "array":
+      {
+	 SGML ret=({});
+	 int ns,id,nl,ins,n=0;
+	 ins=strlen(""+sizeof(column(d,2)-({0})))+2;
+	 ns=max(@Array.map(d,
+			   lambda(array z)
+			   {
+			      return strlen(z[0]||"")+strlen(z[2]||"");
+			   }))+1;
+	 if (ns>30) id=8,nl=1; else id=ns+5+ins,nl=0;
+	 foreach (d,array t)
+	    if (t[2])
+	    {
+	       ret+=({sprintf("   %-*s %*s ",
+			      ns,t[0]+" "+t[2],ins,"["+n+"]")});
+	       ret+=({Sgml.Tag("i",([]),t[3],
+			       (nl?({"\n"+" "*id}):({}))+
+			       preify(t[4],id)),"\n"});
+	       n++;
+	    }
+	    else /* group title */
+	       ret+=({"   ",Sgml.Tag("b",([]),t[3],preify(t[4],id)),"\n"});
+	 return ({Sgml.Tag("pre",([]),pos,({"({\n"})+ret+({"})\n"}))});
+      }
+      default:
+	 werror("Warning: Illegal/unimplemented data type %O"
+		" (near "+orig->location()+")\n",type);
+   }
+   return ({});
+}
+
 /* Partially destructive! */
 SGML convert(SGML data)
 {
@@ -416,6 +492,17 @@ SGML convert(SGML data)
 	 case "aarg":
 	    ret+=convert(({Sgml.Tag("tt",([]),data->pos,data->data),
 			   Sgml.Tag("br")}));
+	    continue;
+
+	 case "exercises":
+	    ret+=convert(({Sgml.Tag("box",([]),data->pos,data->data)}));
+	    continue;
+	 case "exercise":
+	    ret+=convert(({Sgml.Tag("li",([]),data->pos,data->data)}));
+	    continue;
+
+	 case "data_description":
+	    ret+=data_description(data->params,data->pos,data->data,data);
 	    continue;
 
 	 case "ref":
