@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.41 2004/02/27 15:17:09 nilsson Exp $
+// $Id: RDF.pike,v 1.42 2004/04/05 22:52:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -719,7 +719,7 @@ static Node add_xml_children(Node p, string rdfns, string base) {
 
   // Handle subnodes
   foreach(p->get_elements(), Node c) {
-    if(c->get_ns()==rdfns) {
+    if(c->get_ns()==rdf_ns) {
       string name = c->get_any_name();
       if(name=="type" || name=="first") {
 	string obj_uri = c->get_ns_attributes(rdfns)->resource;
