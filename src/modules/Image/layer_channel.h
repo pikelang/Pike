@@ -21,23 +21,43 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    L_CHANNEL_DO(*s,*l,*d,*la);
-	    l++; s++; la++; d++;
+	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
+	       L_CHANNEL_DO(*s,*l,*d,*la);
+	    else if (la->r==0 && la->g==0 && la->b==0)
+	    {
+	       *d=*s;
+	       *da=*sa;
+	    }
+	    else
+	    {
+	       L_CHANNEL_DO(*s,*l,*d,*la);
+	       ALPHA_ADD(s,d,d,sa,la,da,r);
+	       ALPHA_ADD(s,d,d,sa,la,da,g);
+	       ALPHA_ADD(s,d,d,sa,la,da,b);
+	    }
+
+	    l++; s++; la++; d++; sa++; da++;
 	 }
    }
    else
    {
-      if (!la)  /* no layer alpha => full opaque */
+      if (!la)  /* no layer alpha => alpha opaque */
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    l++; s++; d++;
+	    ALPHA_ADD(s,d,d,sa,la,da,r);
+	    ALPHA_ADD(s,d,d,sa,la,da,g);
+	    ALPHA_ADD(s,d,d,sa,la,da,b);
+	    l++; s++; d++; sa++; da++;
 	 }
       else
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    l++; s++; la++; d++;
+	    ALPHA_ADD(s,d,d,sa,la,da,r);
+	    ALPHA_ADD(s,d,d,sa,la,da,g);
+	    ALPHA_ADD(s,d,d,sa,la,da,b);
+	    l++; s++; la++; d++; sa++; da++;
 	 }
    }
 }

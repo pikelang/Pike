@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.25 1999/07/01 02:16:55 per Exp $
+**!	$Id: layers.c,v 1.26 1999/07/02 21:19:34 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -31,24 +31,16 @@
 **! 			     "tiled":1,
 **! 			     "mode":"normal"]));
 **! 
-**!    object circle=
-**! 	  PNM.decode(
-**! 	     Stdio.read_bytes("/home/mirar/pike7/tutorial/circle50.pnm"));
-**! 
-**!    object image_test=
-**! 	  PNM.decode(
-**! 	     Stdio.read_bytes("/home/mirar/pike7/tutorial/image_ill.pnm"));
-**! 
-**!    mapping ryoki=
-**! 	  (mapping)
-**! 	  PNG._decode(
-**! 	     Stdio.read_bytes("/home/mirar/pike7/tutorial/ryoki_carrot.png"));
+**!    object circle=load("circle50.pnm");
+**!    object image_test=load("image_ill.pnm");
+**!    object ryoki=load_layer("ryoki_carrot.png");
 **! 
 **!    object lc1=
-**! 	  Layer((["image":circle->clear(255,0,0),
-**! 		  "alpha":circle,
-**! 		  "xoffset":5,
-**! 		  "yoffset":5]));
+**! 	     Layer((["image":circle->clear(255,0,0),
+**! 		     "alpha":circle,
+**! 		     "xoffset":5,
+**! 		     "yoffset":5]));
+**!
 **!    object lc2=
 **! 	  Layer((["image":circle->clear(0,0,255),
 **! 		  "alpha":circle,
@@ -66,8 +58,8 @@
 **! 		  "xoffset":10,
 **! 		  "yoffset":5]));
 **!    object lr2=
-**! 	  Layer((["image":ryoki->image,
-**! 		  "alpha":ryoki->alpha,
+**! 	  Layer((["image":ryoki->image(),
+**! 		  "alpha":ryoki->alpha(),
 **! 		  "xoffset":5,
 **! 		  "yoffset":20]));
 **! 
@@ -96,21 +88,66 @@
 **! 
 **!    Layer li2b=Layer(li2->image()->clear(255,255,255),li2->image());
 **! 
+**!    object lzo0=
+**! 	  lay( ({ 
+**! 	     Layer(Image(4,10)
+**! 		   ->tuned_box(0,0,3,8,({({255,255,255}),({255,255,255}),
+**! 					 ({0,0,0}),({0,0,0})}))
+**! 		   ->scale(40,80))
+**! 	     ->set_offset(0,0),
+**! 	     Layer(Image(40,80)
+**! 		   ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
+**! 					  ({0,0,0}),({0,0,0})})))
+**! 	     ->set_offset(40,0),
+**! 	     Layer(Image(80,80)
+**! 		   ->tuned_box(0,0,80,80,({({255,0,0}),({255,255,0}),
+**! 					  ({0,0,255}),({0,255,0})})))
+**! 	     ->set_offset(80,0),
+**! 	  }) );
+**!    
+**!    object scale=
+**! 	  Image(4,80)
+**! 	  ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
+**! 				  ({0,0,0}),({0,0,0})}));
+**!    object lzo1=
+**! 	  lay( ({ 
+**! 	     Layer(scale)->set_offset(2,0),
+**! 	     Layer(scale->invert())->set_offset(6,0),
+**! 	     Layer(Image(26,80)->test())->set_offset(12,0),
+**! 	     Layer(scale)->set_offset(42,0),
+**! 	     Layer(scale->invert())->set_offset(46,0),
+**! 	     Layer(Image(26,80)->test())->set_offset(52,0),
+**! 	     Layer(scale)->set_offset(82,0),
+**! 	     Layer(scale->invert())->set_offset(86,0),
+**! 	     Layer(Image(26,80)->test())->set_offset(92,0),
+**! 	     Layer(scale)->set_offset(122,0),
+**! 	     Layer(scale->invert())->set_offset(126,0),
+**! 	     Layer(Image(26,80,"white"),
+**! 		   Image(26,80)->test())->set_offset(132,0),
+**! 	  }));
+**! 
+**!    object lca1;
+**!
 **!    object a=
-**! 	  lay( ({ lay(({lc1}),0,0,80,80),
+**! 	  lay( ({ lca1=lay(({Layer((["fill":"white"])),
+**!                          lc1}),0,0,80,80),
 **! 		  lay(({lc1}),0,0,80,80)->set_offset(80,0),
 **! 		  lay(({li1}),0,0,80,80)->set_offset(160,0),
 **! 		  lay(({li1}),0,0,80,80)->set_offset(240,0),
-**! 		  lay(({lr1}),0,0,80,80)->set_offset(320,0) }),
-**! 	       0,0,400,80);
+**! 		  lay(({lr1}),0,0,80,80)->set_offset(320,0),
+**! 		  lzo0->set_offset(400,0)}),
+**! 	       0,0,560,80);
 **! 
 **!    object b=
 **! 	  lay( ({ lay(({lc2}),0,0,80,80),
 **! 		  lay(({lc2b}),0,0,80,80)->set_offset(80,0),
 **! 		  lay(({li2}),0,0,80,80)->set_offset(160,0),
 **! 		  lay(({li2b}),0,0,80,80)->set_offset(240,0),
-**! 		  lay(({lr2}),0,0,80,80)->set_offset(320,0) }),
-**! 	       0,0,400,80);
+**! 		  lay(({lr2}),0,0,80,80)->set_offset(320,0),
+**! 		  lzo1->set_offset(400,0)}),
+**! 	       0,0,560,80);
+**!
+**    xv(a); xv(b);
 **! 
 **!    begin_tag("table",(["cellspacing":"0","cellpadding":"1"]));
 **! 
@@ -123,19 +160,21 @@
 **!    write_image("top layer","b",lay(({ltrans,b}))->image());
 **!    write_image("bottom layer","a",lay(({ltrans,a}))->image());
 **! 
-**!    write(mktag("tr",0,mktag("td",0,"<hr>")));
+**!    write(mktag("tr",0,mktag("td",0,mktag("hr"))));
 **! 
 **!    foreach (Layer()->available_modes(),string mode)
 **!    {
-**! 	  ({lc2,lc2b,li2,li2b,lr2})->set_mode(mode);
+**! 	  ({lc2,lc2b,li2,li2b,lr2,lzo1})->set_mode(mode);
 **! 
 **! 	  object r=
-**! 	     lay( ({ lay(({lc1,lc2}),0,0,80,80),
+**! 	     lay( ({ lay(({lca1,lc2}),0,0,80,80),
 **! 		     lay(({lc1,lc2b}),0,0,80,80)->set_offset(80,0),
 **! 		     lay(({li1,li2}),0,0,80,80)->set_offset(160,0),
 **! 		     lay(({li1,li2b}),0,0,80,80)->set_offset(240,0),
-**! 		     lay(({lr1,lr2}),0,0,80,80)->set_offset(320,0) }),
-**! 		  0,0,400,80);
+**! 		     lay(({lr1,lr2}),0,0,80,80)->set_offset(320,0),
+**! 		     lay(({lzo0,lzo1}),400,0,160,80) }),
+**! 		  0,0,560,80);
+**       xv(r);
 **! 
 **! 	  write_image(mode,mode,lay(({ltrans,r}))->image());
 **!    }
@@ -152,7 +191,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.25 1999/07/01 02:16:55 per Exp $");
+RCSID("$Id: layers.c,v 1.26 1999/07/02 21:19:34 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -970,7 +1009,7 @@ static void image_layer_tiled(INT32 args)
 **! method void create(object image,object alpha,string mode)
 **! method void create(mapping info)
 **! method void create()
-**!
+**
 **! method void create(int xsize,int ysize,object color)
 **! method void create(object color)
 **!	The Layer construct either three arguments,
@@ -1663,12 +1702,10 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    else if (alpha==1.0)
    {
       if (!la)  /* no layer alpha => full opaque */
-	 while (len--) /* 50 % */
-	 {
-	    if (my_rand()&1) *d=*l,*da=white;
-	    else *d=*s,*da=*sa;
-	    l++; s++; sa++; da++; d++;
-	 }
+      {
+	 MEMCPY(d,l,sizeof(rgb_group)*len);
+	 smear_color(da,white,len);
+      }
       else
 	 while (len--)
 	 {
@@ -2305,6 +2342,8 @@ static INLINE struct layer *clone_this_layer()
 }
 
 /*
+**! module Image
+**! class Layer
 **! method object crop(int xoff,int yoff,int xsize,int ysize)
 **!	Crops this layer at this offset and size.
 **!	Offset is not relative the layer offset, so this
@@ -2423,8 +2462,7 @@ static void image_layer_crop(INT32 args)
 **!	<tt>left</tt>...<tt>bottom</tt> arguments can be used
 **!	to tell what sides cropping are ok on.
 **!
-**! see also:
-**!	crop, Image.Image->autocrop
+**! see also: crop, Image.Image->autocrop
 */
 
 static void image_layer_find_autocrop(INT32 args)
