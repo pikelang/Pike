@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: signal_handler.h,v 1.9 1999/06/03 06:10:01 hubbe Exp $
+ * $Id: signal_handler.h,v 1.10 2000/03/22 00:56:14 hubbe Exp $
  */
 #ifndef SIGNAL_H
 #define SIGNAL_H
@@ -26,7 +26,7 @@ struct plimit;
 struct perishables;
 void f_set_priority( INT32 args );
 void f_create_process(INT32 args);
-void f_fork(INT32 args);
+void Pike_f_fork(INT32 args);
 void f_atexit(INT32 args);
 void init_signals(void);
 void exit_signals(void);

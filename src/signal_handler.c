@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.166 2000/03/07 21:23:13 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.167 2000/03/22 00:56:14 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2837,7 +2837,7 @@ void f_create_process(INT32 args)
 }
 
 #ifdef HAVE_FORK
-void f_fork(INT32 args)
+void Pike_f_fork(INT32 args)
 {
   struct object *o;
   pid_t pid;
@@ -3320,7 +3320,7 @@ void init_signals(void)
 #ifdef HAVE_FORK
   
 /* function(void:object) */
-  ADD_EFUN("fork",f_fork,tFunc(tVoid,tObj),OPT_SIDE_EFFECT);
+  ADD_EFUN("fork",Pike_f_fork,tFunc(tVoid,tObj),OPT_SIDE_EFFECT);
 #endif
 
   
