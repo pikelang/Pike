@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.38 2000/08/11 23:57:46 per Exp $
+ * $Id: sendfile.c,v 1.39 2000/09/18 11:03:00 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -104,6 +104,14 @@
 
 #undef THIS
 #define THIS	((struct pike_sendfile *)(fp->current_storage))
+
+/*
+ * Disable use of sendfile(2) on all OS's, since it's usually broken.
+ */
+
+#ifndef HAVE_BROKEN_SENDFILE
+#define HAVE_BROKEN_SENDFILE
+#endif /* !HAVE_BROKEN_SENDFILE */
 
 /*
  * Disable any use of sendfile(2) if HAVE_BROKEN_SENDFILE is defined.
