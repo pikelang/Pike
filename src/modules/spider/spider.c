@@ -42,7 +42,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.56 1998/06/26 19:47:36 grubba Exp $");
+RCSID("$Id: spider.c,v 1.57 1998/07/13 15:40:47 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -447,7 +447,7 @@ void f_set_start_quote(INT32 args)
 #define STARTQUOTE(C) do{PUSH();j=i+1;inquote = 1;endquote=(C);}while(0)
 #define ENDQUOTE() do{PUSH();j++;inquote=0;endquote=0;}while(0)       
 
-int extract_word(char *s, int i, int len)
+int extract_word(char *s, int i, int len, int is_SSI_tag)
 {
   int inquote = 0;
   char endquote = 0;
@@ -465,9 +465,17 @@ int extract_word(char *s, int i, int len)
     {
     case ' ':  case '\t': case '\n':
     case '\r': case '>':  case '=':
-     if(!inquote)
-       goto done;
-     break;
+      if(!inquote) {
+	if (is_SSI_tag && (s[i] == '>') && (i-j == 2) &&
+	    (s[j] == '-') && (s[j+1] == '-')) {
+	  /* SSI tag that ends with "-->",
+	   * don't add the "--" to the attribute.
+	   */
+	  j = i;	/* Skip */
+	}
+	goto done;
+      }
+      break;
 
      case '"':
      case '\'':
@@ -516,6 +524,12 @@ int push_parsed_tag(char *s,int len)
 {
   int i=0;
   struct svalue *oldsp;
+  int is_SSI_tag;
+
+  /* NOTE: At entry sp[-1] is the tagname */
+  is_SSI_tag = (sp[-1].type == T_STRING) &&
+    (!strncmp(sp[-1].u.string->str, "!--", 3));
+
   /* Find X=Y pairs. */
   oldsp = sp;
 
@@ -523,7 +537,7 @@ int push_parsed_tag(char *s,int len)
   {
     int oldi;
     oldi = i;
-    i = extract_word(s, i, len);
+    i = extract_word(s, i, len, is_SSI_tag);
     f_lower_case(1);            /* Since SGML wants us to... */
     if (i+1 >= len || (s[i] != '='))
     {
@@ -536,7 +550,7 @@ int push_parsed_tag(char *s,int len)
 	pop_stack();
       }
     } else {
-      i = extract_word(s, i+1, len);
+      i = extract_word(s, i+1, len, is_SSI_tag);
     }
     if(oldi == i) break;
   }
