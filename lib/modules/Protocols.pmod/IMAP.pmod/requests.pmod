@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.72 1999/03/22 19:38:56 grubba Exp $
+ * $Id: requests.pmod,v 1.73 1999/03/24 19:26:41 grubba Exp $
  */
 
 import .types;
@@ -572,7 +572,8 @@ class fetch
 
     string wanted = lower_case(atom->atom);
     mapping res = ([ "wanted" : wanted ]);
-    string section = atom->options && atom->options[0]->raw;
+    string section = atom->options && sizeof(atom->options) &&
+      atom->options[0]->raw;
 
     res->raw_wanted = atom->raw || atom->atom;
 
