@@ -1469,11 +1469,13 @@ void init_spider_efuns(void)
 	   "function(int:int)", OPT_SIDE_EFFECT);
 	   
 
+#if 0
   add_efun("encode_value", f_encode_value, "function(mixed:string)", 
 	   OPT_TRY_OPTIMIZE);
 
   add_efun("decode_value", f_decode_value, "function(string:mixed)",
 	   OPT_TRY_OPTIMIZE);
+#endif
 
   add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
 	   OPT_TRY_OPTIMIZE);
