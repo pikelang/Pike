@@ -9,7 +9,57 @@ mapping options;
 
 mapping channels=([]);
 
-void create(string _server,void|mapping _options)
+//! @decl void create(string server, void|mapping(string:mixed) options)
+//! @param server
+//!   The IRC server to connect to.
+//! @param options
+//!   An optional mapping with additional IRC client options.
+//!   @mapping
+//!     @member int "port"
+//!       Defaults to 6667.
+//!     @member string "user"
+//!       Defaults to @expr{"unknown"@} on systems without @[getpwuid] and
+//!       @[getuid] and to @expr{getpwuid(getuid())[0]@} on systems with.
+//!     @member string "nick"
+//!       Defaults to @expr{"Unknown"@} on systems without @[getpwuid] and
+//!       @[getuid] and to @expr{String.capitalize(getpwuid(getuid())[0])@}
+//!       on systems with.
+//!     @member string "realname"
+//!       Defaults to @expr{"Mr. Anonymous"@} on systems without @[getpwuid]
+//!       and @[getuid] and to @expr{getpwuid(getuid())[4]@} on systems with.
+//!     @member string "host"
+//!       Defaults to @expr{"localhost"@} on systems without @[uname] and
+//!       to @expr{uname()->nodename@} on systems with.
+//!     @member int "ping_interval"
+//!       Defaults to 120.
+//!     @member int "ping_timeout"
+//!       Defaults to 120.
+//!     @member function(void:void) "connection_lost"
+//!       This function is called when the connection to the IRC server is
+//!       lost or when a ping isn't answered with a pong within the time
+//!       set by the @tt{ping_timeout@} option. The default behaviour is
+//!       to complain on stderr and self destruct.
+//!     @member function(mixed ...:void) "error_notify"
+//!       This function is called when a KILL or ERROR command is recieved
+//!       from the IRC server.
+//!     @member function(string,void|string:void) "system_notify"
+//!
+//!     @member function(string,void|string:void) "motd_notify"
+//!
+//!     @member function(string) "error_nickinuse"
+//!
+//!     @member function(string,string,string,string,string) "generic_notify"
+//!       The arguments are from, type, to, message and extra.
+//!     @member function(string,string) "quit_notify"
+//!       The arguments are who and why.
+//!     @member function(Person,string,string) "privmsg_notify"
+//!       The arguments are originator, message and to.
+//!     @member function(Person,string,string) "notice_notify"
+//!       The arguments are originator, message and to.
+//!     @member function(Person,string) "nick_notify"
+//!       The arguments are originator and to.
+//!   @endmapping
+void create(string _server,void|mapping(string:mixed) _options)
 {
    options=
       ([
@@ -52,6 +102,7 @@ void create(string _server,void|mapping _options)
    call_out(da_ping,options->ping_interval || 60);
 }
 
+//! Closes the connection to the server.
 void close()
 {
    if (raw->con) raw->con->close();
@@ -66,7 +117,7 @@ void da_ping()
    call_out(da_ping,options->ping_interval || 120);
    call_out(no_ping_reply,options->ping_timeout || 120); // timeout
    cmd->ping(expecting_pong=
-	     options->host+" "+Array.shuffle("pike""IRC""client"/"")*"");
+	     options->host+" "+Array.shuffle("pikeIRCclient"/1)*"");
 }
 
 void no_ping_reply()
@@ -125,7 +176,7 @@ void got_notify(string from,string type,
       return;
    }
 
-   object originator=person(@(from/"!"));
+   Person originator=person(@(from/"!"));
 
    switch (type)
    {
@@ -224,7 +275,8 @@ void got_notify(string from,string type,
 	 if ((c=channels[lower_case(to||"")]))
 	 {
 	    // who, mode, by
-	    c->not_mode(extra[0]?person(extra[0]):originator,message+( ({""})+extra)*" ",originator);
+	    c->not_mode(extra[0]?person(extra[0]):originator,
+			message+( ({""})+extra)*" ",originator);
 	    return;
 	 }
 	 break;
