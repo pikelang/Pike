@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.100 2002/10/15 15:15:42 nilsson Exp $
+# $Id: Makefile,v 1.101 2002/10/21 12:55:02 grubba Exp $
 #
 # Meta Makefile
 #
@@ -272,9 +272,13 @@ xenofarm:
 	    cp $$builddir/$$f build/xenofarm/configlog`echo $$f|tr '[/]' '[_]'`.txt; \
 	  done; \
 	else :; fi
-	-if test ! -f "build/xenofarm/exportlog.txt"; then \
+	-if test -f "build/xenofarm/exportlog.txt"; then \
+	  if test -f "$(BUILDDIR)/Pike-v"*; then \
+	    cp "$(BUILDDIR)/Pike-v"* build/xenofarm/; \
+	  else :; fi; \
+	else \
 	  cp "$(BUILDDIR)/testsuite" build/xenofarm/testsuite.txt; \
-	else :; fi
+	fi
 	-find . -name "core" -exec \
 	  gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$(BUILDDIR)/pike" {} >> \
 	  build/xenofarm/_core.txt ";"
