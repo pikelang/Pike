@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.564 2002/11/16 14:51:05 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.565 2002/11/21 18:47:42 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3564,18 +3564,6 @@ cond([[0]],
 
 ]])
 
-
-  test_true(Getopt.find_option(({"","--foo"}),"p","foo"))
-  test_eq(Getopt.find_option(({"","--foo=bar"}),"p","foo",0,0),"bar")
-  test_eq(Getopt.find_option(({"","--foo","bar"}),"p","foo",0,0),"bar")
-  test_eq(Getopt.find_option(({"","--","--foo=bar"}),"p","foo",0,0),0)
-
-  test_true(Getopt.find_option(({"","-p"}),"p","foo"))
-  test_eq(Getopt.find_option(({"","-pbar"}),"p","foo",0,0),"bar")
-  test_eq(Getopt.find_option(({"","-p","bar"}),"p","foo",0,0),"bar")
-  test_eq(Getopt.find_option(({"","--","--p","bar"}),"p","foo",0,0),0)
-
-  test_equal(Getopt.get_args(({"",0,0,"sune","--","-foo"})),({"","sune","-foo"}))
 
 // m_delete
 test_any_equal([[ mapping m=([1:1]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
@@ -9836,3 +9824,57 @@ test_do(add_constant("call_out_cb"))
 test_do(_do_call_outs())
 test_false(Process.system(RUNPIKE+" SRCDIR/test_co.pike"))
 test_do_([[ catch { _do_call_outs(); }]])
+
+// - varargs
+test_any_equal([[
+  mixed test(int a, mixed ... b) {
+    return b;
+  };
+  return test(1);
+]],[[ ({}) ]])
+test_any_equal([[
+  mixed test(int a, mixed ... b) {
+    return b;
+  };
+  return test(1,2);
+]],[[ ({2}) ]])
+test_any_equal([[
+  mixed test(int a, mixed ... b) {
+    return b;
+  };
+  return test(1,2,3);
+]],[[ ({2,3}) ]])
+test_any_equal([[
+  mixed test(int a, mixed ... b) {
+    return b;
+  };
+  return test(1,2,3);
+]],[[ ({2,3}) ]])
+test_compile_error([[
+  mixed test(int a, mixed ... b) {
+    return b;
+  };
+  return test();
+]])
+test_any_equal([[
+  mixed test(void|int a, mixed ... b) {
+    return b;
+  };
+  return test();
+]],[[ ({}) ]])
+test_any_equal([[
+  mixed test(int a, mixed ... b) {
+    if(a) return test(0);
+    return b; 
+  };
+  return test(1,2);
+]],[[ ({}) ]])
+test_any_equal([[
+  class X {
+    mixed test(int a, mixed ... b) {
+      if(a) return test(0);
+      return b;
+    }
+  }
+  return X()->test(1,2);
+]],[[ ({}) ]])
