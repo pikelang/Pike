@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.46 1997/01/26 22:47:50 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.47 1997/01/26 23:46:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -154,7 +154,8 @@ AC_CACHE_VAL(pike_cv_ld_accepts_r,
   for test_path in . .. /lib /usr/lib .:.. /lib:/usr/lib; do
     if test x$ac_cv_prog_gcc ; then
       #
-      # On Linux -R apparently only causes a gcc warning otherwise
+      # On Linux -R apparently causes gcc to warn, but it doesn't fail,
+      # so we force the -R option to the linker.
       #
       LDFLAGS="$OLD_LDFLAGS -Xlinker -R$test_path"
       AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no; break ])
@@ -405,18 +406,17 @@ fi
 
 if test x$with_threads = xyes ; then
 
-OLDLIBS="$LIBS"
+  OLDLIBS="$LIBS"
 
-AC_MSG_CHECKING(unix threads)
-case "x$pike_cv_sys_os" in
-  *)
-     LIBS="${LIBS} -lthread"
-  ;;
-esac
+  AC_MSG_CHECKING(unix threads)
+  case "x$pike_cv_sys_os" in
+    *)
+      LIBS="${LIBS} -lthread"
+    ;;
+  esac
 
-AC_CACHE_VAL(pike_cv_unix_threads,
-[
-AC_TRY_RUN([
+  AC_CACHE_VAL(pike_cv_unix_threads, [
+    AC_TRY_RUN([
 #define _REENTRANT
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS
@@ -435,37 +435,33 @@ int main()
   thr_join(gazonk,0,&sune);
   exit(0);
 }
-],pike_cv_unix_threads=yes,pike_cv_unix_threads=no)
-])
+    ],pike_cv_unix_threads=yes,pike_cv_unix_threads=no)
+  ])
 
-if test $pike_cv_unix_threads = yes ; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(_REENTRANT)
-  AC_DEFINE(_THREAD_SAFE)
-  AC_DEFINE(_UNIX_THREADS)
-else
-  AC_MSG_RESULT(no)
-  LIBS="$OLDLIBS"
-fi
+  if test x$pike_cv_unix_threads = xyes ; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(_REENTRANT)
+    AC_DEFINE(_THREAD_SAFE)
+    AC_DEFINE(_UNIX_THREADS)
+  else
+    AC_MSG_RESULT(no)
 
-if test  $pike_cv_unix_threads = "no" ; then
- AC_MSG_CHECKING(posix threads)
+    # Test for POSIX threads instead
 
- OLDLIBS="$LIBS"
+    AC_MSG_CHECKING(posix threads)
 
- case "x$pike_cv_sys_os" in
-   xOSF1)
-      LIBS="${LIBS} -lpthread -lmach -lexc -lc"
-   ;;
+    case "x$pike_cv_sys_os" in
+      xOSF1)
+        LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
+      ;;
  
-   *)
-      LIBS="${LIBS} -lpthread"
-   ;;
- esac
+      *)
+        LIBS="${OLDLIBS} -lpthread"
+      ;;
+    esac
 
- AC_CACHE_VAL(pike_cv_posix_threads,
- [
-AC_TRY_RUN([
+    AC_CACHE_VAL(pike_cv_posix_threads, [
+      AC_TRY_RUN([
 #define _REENTRANT
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS
@@ -484,21 +480,40 @@ int main()
   pthread_join(gazonk,&sune);
   exit(0);
 }
-],pike_cv_posix_threads=yes,pike_cv_posix_threads=no)
-])
+      ],pike_cv_posix_threads=yes,pike_cv_posix_threads=no)
+    ])
 
-if test $pike_cv_posix_threads = yes ; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(_REENTRANT)
-  AC_DEFINE(_THREAD_SAFE)
-  AC_DEFINE(_MIT_POSIX_THREADS)
-  AC_CHECK_FUNCS(pthread_attr_setstacksize)
+    if test $pike_cv_posix_threads = yes ; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(_REENTRANT)
+      AC_DEFINE(_THREAD_SAFE)
+      AC_DEFINE(_MIT_POSIX_THREADS)
+      AC_CHECK_FUNCS(pthread_attr_setstacksize)
+    else
+      AC_MSG_RESULT(no)
+      LIBS="$OLDLIBS"
+
+      # Now we've sunk really low -- test for proprietary threads
+
+      # SGI old-style shared group processes
+      AC_CHECK_FUNCS(sproc oserror)
+
+      AC_MSG_CHECKING(Fallback to sproc)
+
+      if test x$ac_cv_func_sproc$ac_cv_func_oserror = xyesyes; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(_REENTRANT)
+	AC_DEFINE(_THREAD_SAFE)
+	AC_DEFINE(_SGI_SPROC_THREADS)
+      else
+        AC_MSG_RESULT(no)
+        :
+      fi
+    fi
+  fi
 else
-  AC_MSG_RESULT(no)
-  LIBS="$OLDLIBS"
-fi
-
-fi
+  # Without threads
+  :
 fi
 
 ########################################################################
