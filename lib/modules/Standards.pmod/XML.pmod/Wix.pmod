@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.12 2004/11/23 16:27:04 grubba Exp $
+// $Id: Wix.pmod,v 1.13 2004/11/23 17:13:19 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -225,7 +225,7 @@ class Directory
 
     static void create(string name, string directory, string id,
 		       string|void target, string|void arguments,
-		       string|void working_dir)
+		       string|void working_dir, string|void show)
     {
       Shortcut::name = name;
       Shortcut::directory = directory;
@@ -233,6 +233,7 @@ class Directory
       Shortcut::target = target;
       Shortcut::arguments = arguments;
       Shortcut::working_dir = working_dir;
+      if (show) Shortcut::show = show;
     }
 
     WixNode gen_xml()
@@ -289,7 +290,7 @@ class Directory
 
   void low_add_shortcut(string dest, string directory, string|void id,
 			string|void target, string|void arguments,
-			string|void working_dir)
+			string|void working_dir, string|void show)
   {
     if (!id) {
       id = "_" +
@@ -297,7 +298,7 @@ class Directory
 	"-";
     }
     other_entries[directory + "\\" + dest] =
-      Shortcut(dest, directory, id, target, arguments, working_dir);
+      Shortcut(dest, directory, id, target, arguments, working_dir, show);
   }
 
   void merge_module(string dest, string module, string id,
