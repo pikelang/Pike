@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.20 2001/07/04 07:01:50 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.21 2001/07/18 11:39:05 grubba Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -247,7 +247,7 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
 void PIKE_CONCAT3(init_,DATA,_hash)(void)				     \
 {									     \
   extern INT32 hashprimes[32];						     \
-  extern int my_log2(size_t x);					     \
+  extern int my_log2(unsigned INT32 x);					     \
   PIKE_CONCAT(DATA,_hash_table_size)=hashprimes[my_log2(BSIZE)];	     \
 									     \
   PIKE_CONCAT(DATA,_hash_table)=(struct DATA **)			     \
