@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pikecode.h,v 1.10 2003/03/22 17:37:17 grubba Exp $
+|| $Id: pikecode.h,v 1.11 2003/03/22 23:08:16 mast Exp $
 */
 
 /*
@@ -46,9 +46,5 @@ void ins_f_byte_with_2_args(unsigned int a,
 #ifndef CHECK_RELOC
 #define CHECK_RELOC(REL, PROG_SIZE)
 #endif /* !CHECK_RELOC */
-
-#ifndef EXIT_MACHINE_CODE
-#define EXIT_MACHINE_CODE()
-#endif
 
 #endif /* CODE_PIKECODE_H */

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.299 2003/03/22 13:38:42 mast Exp $
+|| $Id: interpret.c,v 1.300 2003/03/22 23:08:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.299 2003/03/22 13:38:42 mast Exp $");
+RCSID("$Id: interpret.c,v 1.300 2003/03/22 23:08:17 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -953,7 +953,7 @@ void *dummy_label = NULL;
 #endif /* !CALL_MACHINE_CODE */
 
 #ifndef EXIT_MACHINE_CODE
-#define EXIT_MACHINE_CODE
+#define EXIT_MACHINE_CODE()
 #endif
 
 #ifdef PIKE_DEBUG
