@@ -196,14 +196,22 @@ class line_buffer
 	    buffer = buffer[1..];
 	    return a;
 	  }
-	array|string o = get_simple_list(max_depth);
+	mapping o = get_simple_list(max_depth);
 	if (!o)
 	  return 0;
       }
     }
 
   /* Reads an atom, optionally followd by a list enclosed in square
-   * brackets. Naturally, the atom itself cannot contain any brackets. */
+   * brackets. Naturally, the atom itself cannot contain any brackets.
+   *
+   * Returns a mapping
+   *    type : "type",
+   *    atom : name,
+   *    raw : name[options]
+   *    options : parsed options,
+   *    range : ({ start, size })
+   */
   mapping get_atom_options(int max_depth)
     {
       string atom = get_atom(1);
@@ -213,22 +221,28 @@ class line_buffer
       mapping res = ([ "type" : "atom",
 		       "atom" : atom ]);
       if (!strlen(buffer) || (buffer[0] != '['))
+      {
+	res->raw = atom;
 	return res;
-
-      /* Parse options */ 
-      array options = do_get_simple_list(max_depth - 1, ']');
+      }
+      
+      /* Parse options */
+      string option_start = buffer;
+      
+      array options = do_parse_simple_list(max_depth - 1, ']');
       if (!options)
 	return 0;
 
       res->options = options;
+      res->raw = option_start[..sizeof(option_start) - sizeof(buffer) - 1];
       
-      if (!strlen[buffer] || (buffer[0] != '<'))
-	retun res;
+      if (!strlen(buffer) || (buffer[0] != '<'))
+	return res;
 
       /* Parse <start.size> suffix */
       buffer = buffer[1..];
 
-      start = get_number();
+      int start = get_number();
       if ((start < 0) || !strlen(buffer) || (buffer[0] != '.'))
 	return 0;
 

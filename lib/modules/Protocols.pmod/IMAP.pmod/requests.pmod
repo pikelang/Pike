@@ -381,9 +381,24 @@ class fetch
       default:
 	throw( ({ "Internal error!\n", backtrace() }) );
       }
-	
-      array info = server->select(session, message_set, fetch_attrs);
-      
+
+      array info;
+
+      /* If the arguments are invalid, fetch() can throw a string,
+       * which is returned to the client as an error message. */
+      mixed e = catch {
+	info = server->fetch(session, message_set, fetch_attrs);
+      };
+
+      if (e)
+      {
+	if (stringp(e))
+	{
+	  send(tag, "BAD", e);
+	  return "finished";
+	}
+	else throw(e);
+      }
       if (info)
       {
 	foreach(info, array a)
@@ -395,22 +410,35 @@ class fetch
       return "finished";
     }
 
-  string|mapping process_fetch_attr(mapping atom)
+  mapping process_fetch_attr(mapping atom)
     {
       if (atom->type != atom)
 	return 0;
 
       string wanted = lower_case(atom->atom);
+      mapping res = ([ "wanted" : wanted });
+
+      /* Should requesting any part of the body realy vount as reading it? */
+      if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
+	res->mark_as_read = 1;
+
       switch(wanted)
       {
       case "body":
+	if (!atom->options)
+	{
+	  res->wanted = "bodystructure";
+	  res->no_extention_data = 1;
+	  return res;
+	}
+	/* Fall through */
       case "body.peek":
 	if (!atom->options)
-	  return wanted;
-
-	if (!sizeof(atom->options)
-	   || (atom->options[0]->type != atom)
-	   || (atom->options[0]->options))
+	  return 0;
+	
+	if (sizeof(atom->options)
+	    && ( (atom->options[0]->type != atom)
+		 || (atom->options[0]->options)))
 	  return 0;
 	
 	array path = atom->options[0]->atom / ".";
@@ -426,12 +454,13 @@ class fetch
 	    break;
 	  part_number += ({ n });
 	}
-	
-	return ([ "wanted" : wanted,
-		  "section" : path[i..],
-		  "part" : part_number,
-		  "options" : atom->options[1..],
-		  "partial" : atom->range ]);
+
+	res->section = path[i..];
+	res->part = part_number;
+	res->options = atom->options[1..];
+	res->partial = atom->range;
+
+	return res;
       default:
 	/* Handle below */
       }
@@ -446,6 +475,6 @@ class fetch
 		"rfc822.header", "rfc822.size", "rfc822.text",
 		"bodystructure",
 		"uid" >)[wanted]
-	&& wanted;
+	&& res;
     }
 }
