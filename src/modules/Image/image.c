@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.113 1999/02/24 03:18:03 mirar Exp $ */
+/* $Id: image.c,v 1.114 1999/03/01 21:47:42 hedda Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.113 1999/02/24 03:18:03 mirar Exp $
+**!	$Id: image.c,v 1.114 1999/03/01 21:47:42 hedda Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.113 1999/02/24 03:18:03 mirar Exp $");
+RCSID("$Id: image.c,v 1.114 1999/03/01 21:47:42 hedda Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3763,7 +3763,7 @@ void pike_module_init(void)
   ADD_FUNCTION("sumf",image_sumf,tFunc(,tArr(tInt)),0);
    /* function(:array(int)) */
   ADD_FUNCTION("average",image_average,tFunc(,tArr(tInt)),0);
-
+  
    /* function(:array(int))|"
 		"function(int,int,int:array(int)) */
   ADD_FUNCTION("find_min",image_find_min,tOr(tFunc(,tArr(tInt)),tFunc(tInt tInt tInt,tArr(tInt))),0);
@@ -3784,7 +3784,33 @@ void pike_module_init(void)
   ADD_FUNCTION("orient4",image_orient4,tFunc(,tArr(tObj)),0);
    /* function(:object) */
   ADD_FUNCTION("orient",image_orient,tFunc(,tObj),0);
-
+  
+   /* function(:object) */
+  ADD_FUNCTION("phaseh",image_phaseh,tFunc(,tObj),0);
+   /* function(:object) */
+  ADD_FUNCTION("phasev",image_phasev,tFunc(,tObj),0);
+   /* function(:object) */
+  ADD_FUNCTION("phasehv",image_phasehv,tFunc(,tObj),0);
+   /* function(:object) */
+  ADD_FUNCTION("phasevh",image_phasevh,tFunc(,tObj),0);
+   /* function(int|float,object:object)"
+      "|function(int|float,object,object,object:object)"
+      "|function(int|float,object,object,int:object)"
+      "|function(int|float,object,object,object,object,int:object) */
+  ADD_FUNCTION("match_phase",image_match_phase,
+	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+  ADD_FUNCTION("match_norm",image_match_norm,
+	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+  ADD_FUNCTION("match_norm_corr",image_match_norm_corr,
+	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+  ADD_FUNCTION("match",image_match,
+	       tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
+  
+   /* function(array(array(int|array(int))), void|int ...:object) */
+  ADD_FUNCTION("apply_max",image_apply_max,tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
+   /*  function(object,object,object,object,int|void,int|void:string) */
+  ADD_FUNCTION("make_ascii",image_make_ascii,tFunc(tObj tObj tObj tObj tOr(tInt,tVoid),tStr),0);
+  
    /* function(void|int:object) */
   ADD_FUNCTION("test",image_test,tFunc(tOr(tVoid,tInt),tObj),0);
 

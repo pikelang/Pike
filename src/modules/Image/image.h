@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.23 1999/01/26 02:02:33 mirar Exp $
+**!	$Id: image.h,v 1.24 1999/03/01 21:47:35 hedda Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -180,3 +180,18 @@ void image_polyfill(INT32 args);
 
 void image_orient(INT32 args);
 void image_orient4(INT32 args);
+
+/* search.c */
+
+void image_match_phase(INT32 args);
+void image_match_norm(INT32 args);
+void image_match_norm_corr(INT32 args);
+void image_match(INT32 args);
+
+void image_phaseh(INT32 args);
+void image_phasev(INT32 args);
+void image_phasehv(INT32 args);
+void image_phasevh(INT32 args);
+void image_apply_max(INT32 args);
+
+void image_make_ascii(INT32 args);
