@@ -36,6 +36,17 @@ class FakeStream
   }
 }
 
+class FakeFile
+{
+  string q = "This is the fake file";
+  string read( int len )
+  {
+    string x = q[..len-1];
+    q = q[len..];
+    return x;
+  }
+}
+
 void shuffle_http( Shuffler.Shuffler s )
 {
   Shuffler.Shuffle sf = s->shuffle( Stdio.stderr );
@@ -50,6 +61,8 @@ void shuffle_http( Shuffler.Shuffler s )
   sf->add_source( fd );
   sf->add_source( "A faked stream\n" );
   sf->add_source( FakeStream() );
+  sf->add_source( "A faked file\n" );
+  sf->add_source( FakeFile() );
   sf->start();
 }
 
@@ -59,7 +72,6 @@ int main(int argc, array argv)
 
   s->set_throttler( Throttler() );
   Shuffler.Shuffle sf = s->shuffle( Stdio.stdout );
-
   foreach( argv[1..], string x )
   {
     Stdio.File fd = Stdio.File( );
@@ -68,7 +80,6 @@ int main(int argc, array argv)
     else
       sf->add_source( x+": No such file\n" );
   }
-
   sf->set_done_callback( lambda(){shuffle_http(s);} );
   sf->start();
 
