@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.18 1999/06/16 22:04:44 marcus Exp $
+ * $Id: module.pmod.in,v 1.19 1999/07/26 17:23:13 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -293,7 +293,8 @@ class Message {
 
   string get_filename( )
   {
-    return disp_params["filename"] || params["name"];
+    string fn = disp_params["filename"] || params["name"];
+    return fn && decode_words_text_remapped(fn);
   }
   
   array(string|int) is_partial( )
