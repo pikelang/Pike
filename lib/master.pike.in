@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.228 2002/11/24 18:20:09 grubba Exp $
+// $Id: master.pike.in,v 1.229 2002/11/26 12:56:01 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -728,16 +728,16 @@ void handle_error(array(mixed)|object trace)
 //! @decl object new(string|program prog, mixed ... args)
 //! @appears new
 //!
-//! Instantiate a program.
+//!   Instantiate a program.
 //!
-//! A new instance of the class @[prog] will be created.
-//! All global variables in the new object be initialized, and
-//! then @[create()] will be called with @[args] as arguments.
+//!   A new instance of the class @[prog] will be created.
+//!   All global variables in the new object be initialized, and
+//!   then @[lfun::create()] will be called with @[args] as arguments.
 //!
 //! @note
-//! These two functions are considered obsolete, use
-//! @code{((program)@[prog])(@@@[args])@}
-//! instead.
+//!   These two functions are considered obsolete, use
+//!   @code{((program)@[prog])(@@@[args])@}
+//!   instead.
 //!
 //! @seealso
 //! @[destruct()], @[compile_string()], @[compile_file()]
@@ -756,6 +756,11 @@ object new(string|program prog, mixed ... args)
 
 //! @decl object clone(string|program prog, mixed ... args)
 //! @appears clone
+//!
+//!   Alternate name for the function @[new()].
+//!
+//! @note
+//!   Considered obsolete.
 //!
 //! @seealso
 //! @[new()]
