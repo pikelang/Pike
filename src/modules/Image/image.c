@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $ */
+/* $Id: image.c,v 1.70 1998/02/13 00:57:09 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $
+**!	$Id: image.c,v 1.70 1998/02/13 00:57:09 hubbe Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $");
+RCSID("$Id: image.c,v 1.70 1998/02/13 00:57:09 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2549,10 +2549,7 @@ void _image_map_compat(INT32 args,int fs) /* compat function */
   struct neo_colortable *nct;
   struct object *o,*co;
   struct image *this = THIS;
-  struct pike_string *res = begin_shared_string((this->xsize*this->ysize));
   rgb_group *d;
-
-  if(!res) error("Out of memory\n");
 
   co=clone_object(image_colortable_program,args);
   nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
