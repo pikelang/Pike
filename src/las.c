@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.205 2000/09/11 22:10:38 grubba Exp $");
+RCSID("$Id: las.c,v 1.206 2000/09/12 14:02:42 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -94,18 +94,26 @@ int node_is_leaf(node *n)
 }
 
 #ifdef PIKE_DEBUG
-/* FIXME: Ought to use parent pointer to avoid recursion. */
 void check_tree(node *n, int depth)
 {
+  node *orig_n = n;
+  node *parent;
+
   if(!d_flag) return;
-  if(!n) return;
-  if(n->token==USHRT_MAX)
-    fatal("Free node in tree.\n");
 
-  check_node_hash(n);
+  if (!n) return;
 
-  switch(n->token)
-  {
+  parent = n->parent;
+  n->parent = NULL;
+
+  while(n) {
+    if(n->token==USHRT_MAX)
+      fatal("Free node in tree.\n");
+
+    check_node_hash(n);
+
+    switch(n->token)
+    {
     case F_EXTERNAL:
       if(n->type)
       {
@@ -136,43 +144,84 @@ void check_tree(node *n, int depth)
 	  }
 	}
       }
-  }
-
-  if(d_flag<2) return;
-
-  if (!(depth & 63)) {
-    /* 512 bytes/stack frame should be enough... */
-    check_c_stack(32768);
-
-    if(!(depth & 1023))
-    {
-      node *q;
-      for(q=n->parent;q;q=q->parent)
-	if(q->parent==n)
-	  fatal("Cyclic node structure found.\n");
     }
-  }
-  depth++;
 
-  if(car_is_node(n))
-  {
-#ifndef SHARED_NODES
-    if(CAR(n)->parent != n)
-      fatal("Parent is wrong.\n");
+    if(d_flag<2) break;
+
+    if (!(depth & 63)) {
+      /* 512 bytes/stack frame should be enough... */
+      check_c_stack(32768);
+
+      if(!(depth & 1023))
+      {
+	node *q;
+	for(q=n->parent;q;q=q->parent)
+	  if(q->parent==n)
+	    fatal("Cyclic node structure found.\n");
+      }
+    }
+
+    if(car_is_node(n))
+    {
+      /* Check CAR */
+#ifdef SHARED_NODES
+      CAR(n)->parent = n;
+#else /* !SHARED_NODES */
+      if(CAR(n)->parent != n)
+	fatal("Parent is wrong.\n");
+#endif /* SHARED_NODES */
+
+      depth++;
+      n = CAR(n);
+      continue;
+    }
+
+    if(cdr_is_node(n))
+    {
+      /* Check CDR */
+#ifdef SHARED_NODES
+      CDR(n)->parent = n;
+#else /* !SHARED_NODES */
+      if(CDR(n)->parent != n)
+	fatal("Parent is wrong.\n");
 #endif /* !SHARED_NODES */
 
-    check_tree(CAR(n),depth);
-  }
+      depth++;
+      n = CDR(n);
+      continue;
+    }
 
-  if(cdr_is_node(n))
-  {
-#ifndef SHARED_NODES
-    if(CDR(n)->parent != n)
-      fatal("Parent is wrong.\n");
+    while(n->parent &&
+	  (!cdr_is_node(n->parent) || (CDR(n->parent) == n))) {
+      /* Backtrack */
+      n = n->parent;
+      depth--;
+    }
+
+    if (n->parent && cdr_is_node(n->parent)) {
+      /* Jump to the sibling */
+#ifdef SHARED_NODES
+      CDR(n->parent)->parent = n->parent;
+#else /* !SHARED_NODES */
+      if(CDR(n->parent)->parent != n->parent)
+	fatal("Parent is wrong.\n");
 #endif /* !SHARED_NODES */
-
-    check_tree(CDR(n),depth);
+      n = CDR(n->parent);
+      continue;
+    }
+    break;
   }
+
+  if (n != orig_n) {
+    fprintf(stderr, "check_tree() lost track.\n");
+    d_flag = 0;
+    fprintf(stderr, "n:");
+    print_tree(n);
+    fprintf(stderr, "orig_n:");
+    print_tree(orig_n);
+    fatal("check_tree() lost track.\n");
+  }
+  n->parent = parent;
 }
 #endif
 
@@ -220,7 +269,7 @@ INT32 count_args(node *n)
     int tmp1,tmp2;
     tmp1=count_args(CADR(n));
     tmp2=count_args(CDDR(n));
-    if(tmp1==-1 || tmp2==-2) return -1;
+    if(tmp1==-1 || tmp2==-1) return -1;
     if(tmp1 < tmp2) return tmp1;
     return tmp2;
   }
