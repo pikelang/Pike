@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2001/02/13 15:44:18 mirar Exp $
+# $Id: configure.in,v 1.9 2001/09/25 00:56:00 hubbe Exp $
 AC_INIT(image_xface.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -79,7 +79,13 @@ __MPN(PiKe)
       AC_MSG_RESULT($PIKE_PREFIX_NAME)
       AC_DEFINE_UNQUOTED(PIKE_MPN_PREFIX, $PIKE_PREFIX_NAME)
     fi
-    undefine(PIKE_PREFIX_NAME)
+
+dnl 
+dnl  Autoconf 2.52 seems to barf on this undefine for
+dnl  some unknown reason. This file should work just
+dnl  as well without it.
+dnl
+dnl    undefine(PIKE_PREFIX_NAME)
 
     AC_MSG_CHECKING(working <$2>)
     AC_CACHE_VAL(pike_cv_working_$1,[
