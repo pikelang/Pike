@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.18 2000/08/29 23:30:58 grubba Exp $
+# $Id: configure.in,v 1.19 2000/08/30 11:15:39 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -20,176 +20,176 @@ OLD_CPPFLAGS=$CPPFLAGS
 AC_ARG_WITH(odbc,  [  --without-odbc       no support for ODBC databases],[],[with_odbc=yes])
 
 if test x$with_odbc = xyes; then
- if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
-   AC_CHECK_HEADERS(windows.h sql.h sqlext.h)
+  if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
+    AC_CHECK_HEADERS(windows.h sql.h sqlext.h)
 
-   if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
-     AC_DEFINE(HAVE_ODBC)
-     LIBS="-lodbc32 $LIBS"
-     pike_cv_odbc=yes
-     cat <<EOF
+    if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
+      AC_DEFINE(HAVE_ODBC)
+      LIBS="-lodbc32 $LIBS"
+      pike_cv_odbc=yes
+      cat <<EOF
 
 ODBC support enabled.
 
 EOF
     fi
- else
-
-  pike_cv_odbc=no;
-
-  AC_MSG_CHECKING(for the ODBC include-directory)
-
-  AC_CACHE_VAL(pike_cv_odbc_include_dir, [
-    if test "x$INFORMIXDIR" = "x" ; then 
-      foodir=''
-    else
-      foodir=$INFORMIXDIR/cli/include
-    fi
-
-    pike_cv_odbc_include_dir=''
-
-    # MIMER doesn't include the odbc header files.
-
-    for bardir in $foodir /opt/*odbc/*/include \
-        /usr/opt/*odbc/*/include /opt/*odbc/include /usr/opt/*odbc/include \
-        /usr/local/include /usr/local/odbc/include /usr/local/include/odbc \
-	/usr/local/mysql/include /usr/local/mysql/include/mysql \
-        /usr/odbc/include /usr/include/odbc /usr/include \
-	/include/odbc /include; do
-      if test -d $bardir/.; then
-        if ls $bardir/qeodbc.h >/dev/null 2>&1; then
-          pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
-	else
-	  if ls $bardir/isql.h >/dev/null 2>&1; then
-	    pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
-	  else
-	    :
-	  fi
- 	fi
-      else
-	:
-      fi
-    done
-  ])
-
-  AC_MSG_RESULT($pike_cv_odbc_include_dir)
-
-  if test "x$pike_cv_odbc_include_dir" = x; then :; else
-    for bardir in $pike_cv_odbc_include_dir; do
-      echo Adding $bardir to the include search path.
-      CPPFLAGS="-I$bardir ${CPPFLAGS}"
-    done
-  fi
-
-  AC_MSG_CHECKING(for ODBC library-directory)
-
-  AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
-
-    pike_cv_odbc_lib_dir=''
-
-    # ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} does not work with stupid sh
-    # /Hubbe
-
-    if test "x$INFORMIXDIR" = "x" ; then 
-      foodir=''
-    else
-      foodir=$INFORMIXDIR/cli/dlls
-    fi
-
-    for bardir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
-        /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib /usr/local/odbc/lib \
-        /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib \
-        /lib/odbc /lib; do
-      if test -d $bardir/.; then
-        if ls $bardir/*odbc* >/dev/null 2>&1 ; then
-	  pike_cv_odbc_lib_dir="$bardir $pike_cv_odbc_lib_dir"
-	else
-	  :
-	fi
-      else
-        :
-      fi
-    done
-  ])
-
-  AC_MSG_RESULT($pike_cv_odbc_lib_dir)
-
-  if test "x$pike_cv_odbc_lib_dir" = x; then :; else
-    for bardir in $pike_cv_odbc_lib_dir; do
-      echo Adding $bardir to the library search path.
-      LDFLAGS="-L$bardir -R$bardir ${LDFLAGS}"
-    done
-  fi
-
-  AC_CHECK_HEADERS(isql.h isqlext.h)
-
-  pike_cv_odbc=no;
-
-  if test "$ac_cv_header_isql_h$ac_cv_header_isqlext_h" = "yesyes"; then
-
-    AC_CHECK_LIB(iodbc, SQLConnect, [
-      LIBS="-liodbc $LIBS"
-      pike_cv_odbc=yes;
-    ], [])
-
   else
-    :
-  fi
-
-  if test "x$pike_cv_odbc" = xyes; then
-    :
-  else
-
-    # Header file
-
-    AC_CHECK_HEADERS(windows.h qeodbc.h sql.h sqlext.h)
-
-    if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
-
-      # System libs which might be needed
-
-      if echo $LIBS|grep -- -lsocket >&5 2>&5; then
-        :
+  
+    pike_cv_odbc=no;
+  
+    AC_MSG_CHECKING(for the ODBC include-directory)
+  
+    AC_CACHE_VAL(pike_cv_odbc_include_dir, [
+      if test "x$INFORMIXDIR" = "x" ; then 
+  	foodir=''
       else
-        AC_CHECK_LIB(socket, socket, [
-          LIBS="-lsocket $LIBS"
-        ], [])
+  	foodir=$INFORMIXDIR/cli/include
       fi
-      if echo $LIBS|grep -- -lnsl >&5 2>&5; then
-        :
+  
+      pike_cv_odbc_include_dir=''
+  
+      # MIMER doesn't include the odbc header files.
+  
+      for bardir in $foodir /opt/*odbc/*/include \
+  	  /usr/opt/*odbc/*/include /opt/*odbc/include /usr/opt/*odbc/include \
+  	  /usr/local/include /usr/local/odbc/include /usr/local/include/odbc \
+  	  /usr/local/mysql/include /usr/local/mysql/include/mysql \
+  	  /usr/odbc/include /usr/include/odbc /usr/include \
+  	  /include/odbc /include; do
+  	if test -d $bardir/.; then
+  	  if ls $bardir/qeodbc.h >/dev/null 2>&1; then
+  	    pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
+  	  else
+  	    if ls $bardir/isql.h >/dev/null 2>&1; then
+  	      pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
+  	    else
+  	      :
+  	    fi
+  	  fi
+  	else
+  	  :
+  	fi
+      done
+    ])
+  
+    AC_MSG_RESULT($pike_cv_odbc_include_dir)
+  
+    if test "x$pike_cv_odbc_include_dir" = x; then :; else
+      for bardir in $pike_cv_odbc_include_dir; do
+  	echo Adding $bardir to the include search path.
+  	CPPFLAGS="-I$bardir ${CPPFLAGS}"
+      done
+    fi
+  
+    AC_MSG_CHECKING(for ODBC library-directory)
+  
+    AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
+  
+      pike_cv_odbc_lib_dir=''
+  
+      # ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} does not work with stupid sh
+      # /Hubbe
+  
+      if test "x$INFORMIXDIR" = "x" ; then 
+  	foodir=''
       else
-        AC_CHECK_LIB(nsl, gethostbyname, [
-          LIBS="-lnsl $LIBS"
-        ], [])
+  	foodir=$INFORMIXDIR/cli/dlls
       fi
-      if echo $LIBS|grep -- -lm >&5 2>&5; then
-        :
-      else
-        AC_CHECK_LIB(m, floor, [
-          LIBS="-lm $LIBS"
-        ], [])
-      fi
-
-      AC_CHECK_LIB(odbc, SQLConnect, [
-        LIBS="-lodbc $LIBS"
-        pike_cv_odbc=yes;
+  
+      for bardir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
+  	  /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib \
+          /usr/local/odbc/lib /usr/local/lib/odbc /usr/odbc/lib \
+          /usr/lib/odbc /usr/lib /lib/odbc /lib; do
+  	if test -d $bardir/.; then
+  	  if ls $bardir/*odbc* >/dev/null 2>&1 ; then
+  	    pike_cv_odbc_lib_dir="$bardir $pike_cv_odbc_lib_dir"
+  	  else
+  	    :
+  	  fi
+  	else
+  	  :
+  	fi
+      done
+    ])
+  
+    AC_MSG_RESULT($pike_cv_odbc_lib_dir)
+  
+    if test "x$pike_cv_odbc_lib_dir" = x; then :; else
+      for bardir in $pike_cv_odbc_lib_dir; do
+  	echo Adding $bardir to the library search path.
+  	LDFLAGS="-L$bardir -R$bardir ${LDFLAGS}"
+      done
+    fi
+  
+    AC_CHECK_HEADERS(isql.h isqlext.h)
+  
+    pike_cv_odbc=no;
+  
+    if test "$ac_cv_header_isql_h$ac_cv_header_isqlext_h" = "yesyes"; then
+  
+      AC_CHECK_LIB(iodbc, SQLConnect, [
+  	LIBS="-liodbc $LIBS"
+  	pike_cv_odbc=yes;
       ], [])
+  
     else
       :
     fi
 
-  fi
+    if test "x$pike_cv_odbc" = xyes; then
+      :
+    else
+  
+      # Header file
+  
+      AC_CHECK_HEADERS(windows.h qeodbc.h sql.h sqlext.h)
+  
+      if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
+  
+  	# System libs which might be needed
+  
+  	if echo $LIBS|grep -- -lsocket >&5 2>&5; then
+  	  :
+  	else
+  	  AC_CHECK_LIB(socket, socket, [
+  	    LIBS="-lsocket $LIBS"
+  	  ], [])
+  	fi
+  	if echo $LIBS|grep -- -lnsl >&5 2>&5; then
+  	  :
+  	else
+  	  AC_CHECK_LIB(nsl, gethostbyname, [
+  	    LIBS="-lnsl $LIBS"
+  	  ], [])
+  	fi
+  	if echo $LIBS|grep -- -lm >&5 2>&5; then
+  	  :
+  	else
+  	  AC_CHECK_LIB(m, floor, [
+  	    LIBS="-lm $LIBS"
+  	  ], [])
+  	fi
+  
+  	AC_CHECK_LIB(odbc, SQLConnect, [
+  	  LIBS="-lodbc $LIBS"
+  	  pike_cv_odbc=yes;
+  	], [])
+      else
+  	:
+      fi
+  
+    fi
 
-  if test x$pike_cv_odbc = xno; then
-    # Restore variables, so we don't link with unnecessary libs
+    if test x$pike_cv_odbc = xno; then
+      # Restore variables, so we don't link with unnecessary libs
 
-    LIBS=$OLD_LIBS
-    CPPFLAGS=$OLD_CPPFLAGS
-    LDFLAGS=$OLD_LDFLAGS
-  else
-    AC_DEFINE(HAVE_ODBC)
+      LIBS=$OLD_LIBS
+      CPPFLAGS=$OLD_CPPFLAGS
+      LDFLAGS=$OLD_LDFLAGS
+    else
+      AC_DEFINE(HAVE_ODBC)
 
-    cat <<EOF
+      cat <<EOF
 
 ODBC support enabled.
 
@@ -202,6 +202,10 @@ so that libodbc.so finds the appropriate files.
 
 EOF
 
+    fi
+  fi
+
+  if test "x$pike_cv_odbc" = "xyes"; then
     AC_CHECKING(if the typedef SQLLEN exists.)
     AC_CACHE_VAL(pike_cv_have_SQLLEN, [
       AC_TRY_COMPILE([
@@ -239,8 +243,7 @@ EOF
     else
       AC_MSG_RESULT(no - try using SQLINTEGER)
     fi
-  fi
- fi
+  else :; fi
 else
   :
 fi
