@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.276 2000/02/11 19:26:54 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.277 2000/02/13 05:09:05 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4448,17 +4448,17 @@ int a()
 
 test_compile_any(class A {int v;} class B {inherit A; int v;})
 test_compile_error_low(class A {int v;} class B {inherit A; float v;})
-test_compile_error_low(class A {int v;} class B {inherit A; mixed v;})
-test_compile_error_low(class A {mixed v;} class B {inherit A; int v;})
-test_compile_error_low(class A {public int v;} class B {inherit A; mixed v;})
-test_compile_error_low(class A { public { int v; } } class B {inherit A; mixed v;})
-test_compile_error_low(class A {public mixed v;} class B {inherit A; int v;})
+dnl test_compile_error_low(class A {int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_low(class A {mixed v;} class B {inherit A; int v;})
+dnl test_compile_error_low(class A {public int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_low(class A { public { int v; } } class B {inherit A; mixed v;})
+dnl test_compile_error_low(class A {public mixed v;} class B {inherit A; int v;})
 test_compile_error_low(class A {static int v;} class B {inherit A; float v;})
-test_compile_error_low(class A {static int v;} class B {inherit A; mixed v;})
-test_compile_error_low(class A {static mixed v;} class B {inherit A; int v;})
+dnl test_compile_error_low(class A {static int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_low(class A {static mixed v;} class B {inherit A; int v;})
 test_compile_any(class A {private int v;} class B {inherit A; float v;})
-test_compile_any(class A {private int v;} class B {inherit A; mixed v;})
-test_compile_any(class A {private mixed v;} class B {inherit A; int v;})
+dnl test_compile_any(class A {private int v;} class B {inherit A; mixed v;})
+dnl test_compile_any(class A {private mixed v;} class B {inherit A; int v;})
 test_compile_error_low(class A {final int v;} class B {inherit A; int v;})
 test_compile_error_low(class A {final int v;} class B {inherit A; final int v;})
 test_compile_error_low(class A {nomask int v;} class B {inherit A; int v;})
