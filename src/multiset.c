@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.74 2003/06/30 17:06:09 mast Exp $
+|| $Id: multiset.c,v 1.75 2003/07/01 15:09:11 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.74 2003/06/30 17:06:09 mast Exp $");
+RCSID("$Id: multiset.c,v 1.75 2003/07/01 15:09:11 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -4231,8 +4231,10 @@ static void check_low_msnode (struct multiset_data *msd,
     Pike_fatal ("Node outside storage for multiset.\n");
   if ((char *) node - (char *) msd->nodes !=
       (msd->flags & MULTISET_INDVAL ?
-       (&node->iv - &msd->nodes->iv) * sizeof (struct msnode_indval) :
-       (&node->i - &msd->nodes->i) * sizeof (struct msnode_ind)))
+       (&node->iv - &msd->nodes->iv) *
+       (ptrdiff_t) sizeof (struct msnode_indval) :
+       (&node->i - &msd->nodes->i) *
+       (ptrdiff_t) sizeof (struct msnode_ind)))
     Pike_fatal ("Unaligned node in storage for multiset.\n");
 
   switch (node->i.ind.type) {
@@ -5290,7 +5292,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.74 2003/06/30 17:06:09 mast Exp $");
+RCSID("$Id: multiset.c,v 1.75 2003/07/01 15:09:11 mast Exp $");
 
 struct multiset *first_multiset;
 
