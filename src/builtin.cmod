@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.73 2001/12/21 14:09:20 grubba Exp $
+ * $Id: builtin.cmod,v 1.74 2002/01/01 21:50:06 nilsson Exp $
  */
 
 #include "global.h"
@@ -1303,7 +1303,7 @@ PIKECLASS Buffer
   void f_Buffer_add( INT32 args );
 
 
-  /*! @decl void create()
+  /*! @decl void create(int initial_size)
    *!
    *!   Initializes a new buffer.
    *!
