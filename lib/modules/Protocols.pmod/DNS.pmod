@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.85 2005/01/03 12:50:09 grubba Exp $
+// $Id: DNS.pmod,v 1.86 2005/03/01 16:25:39 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -591,8 +591,6 @@ class client
     return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
   }
 
-  static private mapping etc_hosts;
-
 #ifdef __NT__
   array(string) get_tcpip_param(string val, void|string fallbackvalue)
   {
@@ -625,45 +623,66 @@ class client
     return sizeof(res) ? res : ({ fallbackvalue });
   }
 #endif
-  
+
+  static private mapping(string:string) etc_hosts;
+
+  static private string read_etc_file(string fname)
+  {
+    array(string) paths;
+    string res;
+#ifdef __NT__
+    paths = get_tcpip_param("DataBasePath");
+#else
+    paths = ({ "/etc", "/amitcp/db" });
+#endif
+    foreach(paths, string path) {
+      string raw = Stdio.read_file(path + "/" + fname);
+      if (raw && sizeof(raw = replace(raw, "\r", "\n"))) {
+	if (res) {
+	  if (sizeof(res) && (res[-1] != '\n')) {
+	    // Avoid confusion...
+	    res += "\n";
+	  }
+	  res += raw;
+	} else {
+	  res = raw;
+	}
+      }
+    }
+    return res;
+  }
+
   static private string match_etc_hosts(string host)
   {
     if (!etc_hosts) {
-      array(string) paths;
-#ifdef __NT__
-      paths = get_tcpip_param("DataBasePath");
-#else
-      paths = ({ "/etc", "/amitcp/db" });
-#endif
-
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
 	
-      foreach(paths, string path) {
-	string raw = Stdio.read_file(path + "/hosts");
+      string raw = read_etc_file("hosts");
 	
-	if (raw && sizeof(raw)) {
-	  foreach(raw/"\n"-({""}), string line) {
-	    // Handle comments, and split the line on white-space
-	    line = lower_case(replace((line/"#")[0], "\t", " "));
-	    array arr = (line/" ") - ({ "" });
+      if (raw && sizeof(raw)) {
+	foreach(raw/"\n"-({""}), string line) {
+	  // Handle comments, and split the line on white-space
+	  line = lower_case(replace((line/"#")[0], "\t", " "));
+	  array arr = (line/" ") - ({ "" });
 	    
-	    if (sizeof(arr) > 1) {
-	      if (is_ip(arr[0])) {
-		foreach(arr[1..], string name) {
-		  etc_hosts[name] = arr[0];
-		}
-	      } else {
-		// Bad /etc/hosts entry ignored.
+	  if (sizeof(arr) > 1) {
+	    if (is_ip(arr[0])) {
+	      foreach(arr[1..], string name) {
+		etc_hosts[name] = arr[0];
 	      }
+	    } else {
+	      // Bad /etc/hosts entry ignored.
 	    }
 	  }
-	} else {
-	  // Couldn't read /etc/hosts.
 	}
+      } else {
+	// Couldn't read or no  /etc/hosts.
       }
     }
     return etc_hosts[lower_case(host)];
   }
+
+  // FIXME: Read hosts entry in /etc/nswitch.conf?
 
   //! @decl void create()
   //! @decl void create(void|string|array server, void|int|array domain)
@@ -845,6 +864,24 @@ class client
     // Failure.
     return 0;
   }
+
+  static mapping low_gethostbyname(string s, int type)
+  {
+    mapping m;
+    if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
+      mapping m = do_sync_query(mkquery(s, C_IN, type));
+      if(!m || !m->an || !sizeof(m->an))
+	foreach(domains, string domain)
+	{
+	  m = do_sync_query(mkquery(s+"."+domain, C_IN, type));
+	  if(m && m->an && sizeof(m->an))
+	    break;
+	}
+      return m;
+    } else {
+      return do_sync_query(mkquery(s, C_IN, type));
+    }
+  }
   
   //! @decl array gethostbyname(string hostname)
   //!	Queries the host name from the default or given
@@ -863,35 +900,53 @@ class client
   //!       DNS name(s).
   //!	@endarray
   //!
+  //! @note
+  //!   Prior to Pike 7.7 this function only returned IPv4 addresses.
+  //!
   array gethostbyname(string s)
   {
-    mapping m;
-    if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
-      m = do_sync_query(mkquery(s, C_IN, T_A));
-      if(!m || !m->an || !sizeof(m->an))
-	foreach(domains, string domain)
-	{
-	  m = do_sync_query(mkquery(s+"."+domain, C_IN, T_A));
-	  if(m && m->an && sizeof(m->an))
-	    break;
-	}
-    } else {
-      m = do_sync_query(mkquery(s, C_IN, T_A));
-    }
+    mapping a_records    = low_gethostbyname(s, T_A);
+    mapping a6_records   = low_gethostbyname(s, T_A6);
+    mapping aaaa_records = low_gethostbyname(s, T_AAAA);
 
-    if (!m) {
-      return ({ 0, ({}), ({}) });
-    }
+#if 1
+    werror("a_records: %O\n"
+	   "a6_records: %O\n"
+	   "aaaa_records: %O\n",
+	   a_records, a6_records, aaaa_records);
+#endif /* 0 */
 
     array(string) names=({});
     array(string) ips=({});
-    foreach(m->an, mapping x)
-    {
-      if(x->name)
-	names+=({x->name});
-      if(x->a)
-	ips+=({x->a});
+    if (a_records) {
+      foreach(a_records->an, mapping x)
+      {
+	if(x->name)
+	  names+=({x->name});
+	if(x->a)
+	  ips+=({x->a});
+      }
     }
+    // Prefer a6 to aaaa.
+    if (a6_records) {
+      foreach(a6_records->an, mapping x)
+      {
+	if(x->name)
+	  names+=({x->name});
+	if(x->a6)
+	  ips+=({x->a6});
+      }
+    }
+    if (aaaa_records) {
+      foreach(aaaa_records->an, mapping x)
+      {
+	if(x->name)
+	  names+=({x->name});
+	if(x->aaaa)
+	  ips+=({x->aaaa});
+      }
+    }
+    
     return ({
       sizeof(names)?names[0]:0,
       ips,
