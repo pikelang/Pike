@@ -124,12 +124,12 @@ class Year
 
    object next()
    {
-      return vYear(y);
+      return vYear(y+1);
    }
 
    object prev()
    {
-      return vYear(y);
+      return vYear(y-1);
    }
 
    object `+(int n)
@@ -214,7 +214,7 @@ class Year
       if (n<0)
 	 return vMonth(y,13+n);
       else
-	 return vMonth(y,n);
+	 return vMonth(y,n||1);
    }
 
    array(mixed) months()
@@ -225,7 +225,7 @@ class Year
    object week(int n)
    {
       if (n<0)
-	 return vWeek(y,this->number_of_weeks+n+1);
+	 return vWeek(y,this->number_of_weeks()+n+1);
       else
 	 return vWeek(y,n||1);
    }
@@ -308,8 +308,15 @@ class Month
    int `==(object x)
    {
       return 
+	 objectp(x) &&
 	 object_program(x)==object_program(this) &&
 	 x->y==y && x->m==m;
+   }
+
+   int `!=(object x)
+   {
+      write("foo\n");
+      return !(this==x);
    }
 
    int `>(object x)
@@ -516,7 +523,7 @@ class Week
    int yday()
    {
       return 
-	 ({-1,-2,-3,-4,5,6,7})[this->year()->julian_day(0)%7]
+	 ({0,-1,-2,-3,3,2,1})[this->year()->julian_day(0)%7]
          +7*(w-1);
    }
 
@@ -564,10 +571,10 @@ class Week
       if (n<0) n=8+n;
       else if (!n) n=1;
       n+=yday()-1;
-      if (n<0) return vYear(y-1)->day(n+1);
-      if (n+1>this->year()->number_of_days()) 
+      if (n<0) return vYear(y-1)->day(n);
+      if (n>=this->year()->number_of_days()) 
  	 return vYear(y+1)->day(n-this->year()->number_of_days());
-      return vDay(y,n+1);
+      return vDay(y,n);
    }
 
    array(mixed) days()
@@ -746,11 +753,11 @@ class Day
    {
       int n;
       object ye=this->year();
-      n=(-({-1,-2,-3,-4,5,6,7})[this->year()->julian_day(0)%7]+d-1)/7+1;
+      n=(-({0,-1,-2,-3,3,2,1})[this->year()->julian_day(0)%7]+d)/7+1;
       if (n>ye->number_of_weeks())
-	 return vWeek(y+1,1);
+	 return ye->next()->week(1);
       else if (n<=0)
-	 return vWeek(y-1,ye->prev()->number_of_weeks());
+	 return ye->prev()->week(-1);
       return vWeek(y,n);
    }
 };
