@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.3 1999/06/09 23:44:33 marcus Exp $
+ * $Id: jvm.c,v 1.4 1999/06/11 20:26:15 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.3 1999/06/09 23:44:33 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.4 1999/06/11 20:26:15 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1328,7 +1328,7 @@ struct cpu_context {
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
-			   void (*dispatch)())
+			   void (*dispatch)(), int args)
 {
   unsigned INT32 *p = ctx->code;
 
@@ -1377,7 +1377,7 @@ struct cpu_context {
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
-			   void (*dispatch)())
+			   void (*dispatch)(), int args)
 {
   unsigned char *p = ctx->code;
 
@@ -1402,7 +1402,12 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   *p++ = 0xff; *p++ = 0xd0;  /* call  *%eax          */
   *p++ = 0x8b; *p++ = 0xe5;  /* movl  %ebp, %esp     */
   *p++ = 0x5d;               /* popl  %ebp           */
+#ifdef __NT__
+  *p++ = 0xc2;               /* ret   n              */
+  *((unsigned INT16 *)p) = (unsigned INT16)(args<<2); p+=2;
+#else /* !__NT__ */
   *p++ = 0xc3;               /* ret                  */
+#endif /* __NT__ */
 
   return ctx->code;
 }
@@ -1575,86 +1580,87 @@ static void native_dispatch(struct native_method_context *ctx,
   }
 }
 
-static jboolean native_dispatch_z(struct native_method_context *ctx,
-				  JNIEnv *env, jobject obj, void *args)
+static jboolean JNICALL native_dispatch_z(struct native_method_context *ctx,
+					  JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.z;
 }
 
-static jbyte native_dispatch_b(struct native_method_context *ctx,
-			       JNIEnv *env, jobject obj, void *args)
+static jbyte JNICALL native_dispatch_b(struct native_method_context *ctx,
+				       JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.b;
 }
 
-static jchar native_dispatch_c(struct native_method_context *ctx,
-			       JNIEnv *env, jobject obj, void *args)
+static jchar JNICALL native_dispatch_c(struct native_method_context *ctx,
+				       JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.c;
 }
 
-static jshort native_dispatch_s(struct native_method_context *ctx,
-				JNIEnv *env, jobject obj, void *args)
+static jshort JNICALL native_dispatch_s(struct native_method_context *ctx,
+					JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.s;
 }
 
-static jint native_dispatch_i(struct native_method_context *ctx,
-			      JNIEnv *env, jobject obj, void *args)
+static jint JNICALL native_dispatch_i(struct native_method_context *ctx,
+				      JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.i;
 }
 
-static jlong native_dispatch_j(struct native_method_context *ctx,
-			       JNIEnv *env, jobject obj, void *args)
+static jlong JNICALL native_dispatch_j(struct native_method_context *ctx,
+				       JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.j;
 }
 
-static jfloat native_dispatch_f(struct native_method_context *ctx,
-				JNIEnv *env, jobject obj, void *args)
+static jfloat JNICALL native_dispatch_f(struct native_method_context *ctx,
+					JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.f;
 }
 
-static jdouble native_dispatch_d(struct native_method_context *ctx,
-				 JNIEnv *env, jobject obj, void *args)
+static jdouble JNICALL native_dispatch_d(struct native_method_context *ctx,
+					 JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.d;
 }
 
-static jobject native_dispatch_l(struct native_method_context *ctx,
-				 JNIEnv *env, jobject obj, void *args)
+static jobject JNICALL native_dispatch_l(struct native_method_context *ctx,
+					 JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
   return v.l;
 }
 
-static void native_dispatch_v(struct native_method_context *ctx,
-			      JNIEnv *env, jobject obj, void *args)
+static void JNICALL native_dispatch_v(struct native_method_context *ctx,
+				      JNIEnv *env, jobject obj, void *args)
 {
   jvalue v;
   native_dispatch(ctx, env, obj, args, &v);
 }
 
-static void make_stub(struct cpu_context *ctx, void *data, int statc, int rt)
+static void make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
+		      int args)
 {
   void *disp = native_dispatch_v;
 
@@ -1673,7 +1679,7 @@ static void make_stub(struct cpu_context *ctx, void *data, int statc, int rt)
     disp = native_dispatch_v;
   }
 
-  low_make_stub(ctx, data, statc, disp);
+  low_make_stub(ctx, data, statc, disp, args);
 }
 
 static void build_native_entry(JNIEnv *env, jclass cls,
@@ -1682,7 +1688,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
 			       struct pike_string *name,
 			       struct pike_string *sig)
 {
-  int statc;
+  int statc, args=0;
   char *p = sig->str;
 
   if((*env)->GetMethodID(env, cls, name->str, sig->str))
@@ -1704,8 +1710,24 @@ static void build_native_entry(JNIEnv *env, jclass cls,
   jnm->name = name->str;
   jnm->signature = sig->str;
   jnm->fnPtr = (void*)&con->cpu;
-  while(*p && *p++ != ')');
-  make_stub(&con->cpu, con, statc, *p);
+  while(*p && *p != ')')
+    switch(*p++) {
+    case '(':
+      break;
+    case 'J': case 'D':
+      args += 2;
+      break;
+    case '[':
+      if(!*p)
+	break;
+      if(*p++ != 'L') { args++; break; }
+    case 'L':
+      while(*p && *p++!=';');
+    default:
+      args++;
+    }
+  if(*p) p++;
+  make_stub(&con->cpu, con, statc, *p, args+2);
 }
 
 static void init_natives_struct(struct object *o)
@@ -2697,7 +2719,7 @@ void pike_module_init(void)
       return;
     }
   }
-#endif /* __NT___ */
+#endif /* __NT__ */
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
