@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.102 2003/01/08 13:59:24 grubba Exp $
+|| $Id: builtin.cmod,v 1.103 2003/02/01 15:37:22 mast Exp $
 */
 
 #include "global.h"
@@ -31,6 +31,7 @@
 #include "builtin_functions.h"
 #include "fsort.h"
 #include "port.h"
+#include "gc.h"
 
 /*! @decl array(array(int|string)) describe_program(program p)
  *! @belongs Debug
@@ -329,13 +330,33 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *!
  *! See the @tt{-t@} command-line option for more information.
  */
-PIKEFUN int trace(int t)
+PIKEFUN int trace(int level, void|string facility)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
-  pop_n_elems(args);
-  push_int(t_flag);
-  t_flag=t;
+  INT32 old_level;
+  if (facility) {
+    struct pike_string *gc_str;
+    if (facility->type != T_STRING)
+      SIMPLE_BAD_ARG_ERROR("trace", 2, "void|string");
+    MAKE_CONSTANT_SHARED_STRING(gc_str, "gc");
+    if (facility->u.string == gc_str) {
+      free_string(gc_str);
+      old_level = gc_trace;
+      gc_trace = level;
+    }
+    else {
+      free_string(gc_str);
+      bad_arg_error("trace", Pike_sp-args, args, 2,
+		   "trace facility identifier", Pike_sp-args+1,
+                   "Bad argument 2 to trace(). Unknown trace facility.");
+    }
+  }
+  else {
+    old_level = t_flag;
+    t_flag = gc_trace = level;
+  }
+  RETURN old_level;
 }
 
 /*! @decl string ctime(int timestamp)

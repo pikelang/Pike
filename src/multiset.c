@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $
+|| $Id: multiset.c,v 1.61 2003/02/01 15:37:23 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: multiset.c,v 1.61 2003/02/01 15:37:23 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3703,7 +3703,6 @@ PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n)
 #define GC_MSD_GOT_NODE_REFS GC_USER_1
 #define GC_MSD_VISITED GC_USER_2
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_multisets (void)
 {
   unsigned n = 0;
@@ -3718,7 +3717,6 @@ unsigned gc_touch_all_multisets (void)
   }
   return n;
 }
-#endif
 
 void gc_check_all_multisets (void)
 {
@@ -5252,7 +5250,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: multiset.c,v 1.61 2003/02/01 15:37:23 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -5600,7 +5598,6 @@ void real_gc_cycle_check_multiset(struct multiset *l, int weak)
   } GC_CYCLE_LEAVE;
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_multisets(void)
 {
   unsigned n = 0;
@@ -5615,7 +5612,6 @@ unsigned gc_touch_all_multisets(void)
   }
   return n;
 }
-#endif
 
 void gc_check_all_multisets(void)
 {

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.157 2002/12/01 00:16:54 mast Exp $
+|| $Id: mapping.c,v 1.158 2003/02/01 15:37:23 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.157 2002/12/01 00:16:54 mast Exp $");
+RCSID("$Id: mapping.c,v 1.158 2003/02/01 15:37:23 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2319,7 +2319,6 @@ static void gc_check_mapping(struct mapping *m)
   }
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_mappings(void)
 {
   unsigned n = 0;
@@ -2334,7 +2333,6 @@ unsigned gc_touch_all_mappings(void)
   }
   return n;
 }
-#endif
 
 void gc_check_all_mappings(void)
 {
