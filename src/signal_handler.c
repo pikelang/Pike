@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.243 2003/03/01 16:33:34 grubba Exp $
+|| $Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.243 2003/03/01 16:33:34 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1019,6 +1019,7 @@ static RETSIGTYPE receive_sigchild(int signum)
 #define PROCESS_STOPPED		1
 #define PROCESS_EXITED		2
 
+
 #define PROCESS_FLAG_TRACED	0x01
 
 #undef THIS
@@ -1181,6 +1182,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
   {
     WAITSTATUSTYPE status;
     int pid;
+    int err;
 
 #ifdef PROC_DEBUG
     fprintf(stderr, "wait_thread: getting the lock.\n");
@@ -1188,8 +1190,10 @@ static TH_RETURN_TYPE wait_thread(void *data)
 
     mt_lock(&wait_thread_mutex);
     pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
+
+    err = errno;
     
-    if(pid < 0 && errno==ECHILD)
+    if(pid < 0 && err == ECHILD)
     {
 #ifdef PROC_DEBUG
       fprintf(stderr, "wait_thread: sleeping\n");
@@ -1233,14 +1237,14 @@ static TH_RETURN_TYPE wait_thread(void *data)
 
     if(pid == -1)
     {
-      switch(errno)
+      switch(err)
       {
 	case EINTR:
 	case ECHILD:
 	  break;
 
 	default:
-	  fprintf(stderr,"Wait thread: waitpid returned error: %d\n",errno);
+	  fprintf(stderr,"Wait thread: waitpid returned error: %d\n",err);
       }
     }
   }
@@ -1276,11 +1280,6 @@ static void f_pid_status_wait(INT32 args)
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
-  /* NB: This function also implements TraceProcess()->wait(). */
-  wait_for_stopped = THIS->flags & PROCESS_FLAG_TRACED;
-
-  pop_n_elems(args);
-
 #ifdef __NT__
   {
     int err=0;
@@ -1305,9 +1304,14 @@ static void f_pid_status_wait(INT32 args)
     THREADS_DISALLOW();
     if(err)
       Pike_error("Failed to get status of process.\n");
+
+    pop_n_elems(args);
     push_int(xcode);
   }
 #else
+
+  /* NB: This function also implements TraceProcess()->wait(). */
+  wait_for_stopped = THIS->flags & PROCESS_FLAG_TRACED;
 
 #ifdef USE_WAIT_THREAD
 
@@ -1339,7 +1343,6 @@ static void f_pid_status_wait(INT32 args)
 	   * for receive_sigchild to put the entry into the wait_data
 	   * fifo. In either case we just loop and try again. */
 	  pid = -1;
-	  errno = ECHILD;
 #ifdef PROC_DEBUG
 	  fprintf(stderr, "wait(%d): Child isn't reaped yet, looping.\n", pid);
 #endif
@@ -1351,6 +1354,7 @@ static void f_pid_status_wait(INT32 args)
       else {
 	THREADS_ALLOW();
 	pid = WAITPID(pid, &status, 0|WUNTRACED);
+	if (pid < 0) err = errno;
 	THREADS_DISALLOW();
       }
 
@@ -1360,10 +1364,9 @@ static void f_pid_status_wait(INT32 args)
       }
       else
       {
-	
 	if(pid<0)
 	{
-	  switch(errno)
+	  switch(err)
 	  {
 	    case EINTR: break;
 	      
@@ -1437,7 +1440,6 @@ static void f_pid_status_wait(INT32 args)
 #endif /* _REENTRANT */
 
 	    default:
-	      err=errno;
 	      break;
 	  }
 	}else{
@@ -1451,6 +1453,8 @@ static void f_pid_status_wait(INT32 args)
     }
   }
 #endif
+  pop_n_elems(args);
+
   if (THIS->state == PROCESS_STOPPED) {
     push_int(-2);
   } else {
@@ -2715,6 +2719,7 @@ void f_create_process(INT32 args)
     char *priority = NULL;
     int *fds;
     int num_fds = 3;
+    int errnum = 0;
 
     stds[0] = stds[1] = stds[2] = -1;
     cterm = -1;
@@ -3101,7 +3106,8 @@ void f_create_process(INT32 args)
 	pid=fork();
 #endif
 	if (pid == -1) {
-	  if (errno == EAGAIN) {
+	  errnum = errno;
+	  if (errnum == EAGAIN) {
 #ifdef PROC_DEBUG
 	    fprintf(stderr, "Fork failed with EAGAIN\n");
 #endif /* PROC_DEBUG */
@@ -3121,7 +3127,7 @@ void f_create_process(INT32 args)
 	      /* Try again */
 	      continue;
 	    }
-	  } else if (errno == EINTR) {
+	  } else if (errnum == EINTR) {
 #ifdef PROC_DEBUG
 	    fprintf(stderr, "Fork failed with EINTR\n");
 #endif /* PROC_DEBUG */
@@ -3129,12 +3135,12 @@ void f_create_process(INT32 args)
 	    continue;
 #ifdef PROC_DEBUG
 	  } else {
-	    fprintf(stderr, "Fork failed with errno:%d\n", errno);
+	    fprintf(stderr, "Fork failed with errno:%d\n", errnum);
 #endif /* PROC_DEBUG */
 	  }
 	}
 #ifdef PROC_DEBUG
-	if (pid) {
+	else if (pid) {
 	  fprintf(stderr, "Fork ok pid:%d\n", pid);
 	} else {
 	  write(2, "Fork ok pid:0\n", 14);
@@ -3181,7 +3187,6 @@ void f_create_process(INT32 args)
     }
 
     if(pid == -1) {
-      int e = errno;
       /*
        * fork() failed
        */
@@ -3191,18 +3196,18 @@ void f_create_process(INT32 args)
 
       free_perishables(&storage);
 
-      if (e == EAGAIN) {
+      if (errnum == EAGAIN) {
 	Pike_error("Process.create_process(): fork() failed with EAGAIN.\n"
-	      "Process table full?\n");
+		   "Process table full?\n");
       }
 #ifdef ENOMEM
-      if (e == ENOMEM) {
+      if (errnum == ENOMEM) {
 	Pike_error("Process.create_process(): fork() failed with ENOMEM.\n"
-	      "Out of memory?\n");
+		   "Out of memory?\n");
       }
 #endif /* ENOMEM */
       Pike_error("Process.create_process(): fork() failed. errno:%d\n",
-	    e);
+		 errnum);
     } else if(pid) {
       int olderrno;
 
@@ -3253,27 +3258,27 @@ void f_create_process(INT32 args)
 #if 0
       {
 	int gnapp=0;
-      while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
-	;
-      THREADS_ALLOW();
-      if(e!=1) {
-	/* Paranoia in case close() sets errno. */
-	olderrno = errno;
-	while(close(control_pipe[0]) < 0 && errno==EINTR);
-	gnapp=1;
-      } else {
-        /* Wait for exec or error */
-        while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
+	while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
 	  ;
-        /* Paranoia in case close() sets errno. */
-        olderrno = errno;
+	THREADS_ALLOW();
+	if(e!=1) {
+	  /* Paranoia in case close() sets errno. */
+	  olderrno = errno;
+	  while(close(control_pipe[0]) < 0 && errno==EINTR);
+	  gnapp=1;
+	} else {
+	  /* Wait for exec or error */
+	  while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
+	    ;
+	  /* Paranoia in case close() sets errno. */
+	  olderrno = errno;
 
-        while(close(control_pipe[0]) < 0 && errno==EINTR);
-      }
-      THREADS_DISALLOW();
-      if(gnapp)
-	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
-	      e ,olderrno);
+	  while(close(control_pipe[0]) < 0 && errno==EINTR);
+	}
+	THREADS_DISALLOW();
+	if(gnapp)
+	  Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
+		     e ,olderrno);
       }
 #else
       while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
@@ -3283,7 +3288,7 @@ void f_create_process(INT32 args)
 	olderrno = errno;
 	while(close(control_pipe[0]) < 0 && errno==EINTR);
 	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
-	      e ,olderrno);
+		   e ,olderrno);
       }
 
       /* Wait for exec or error */
@@ -3306,11 +3311,11 @@ void f_create_process(INT32 args)
 	switch(buf[0]) {
 	case PROCE_CHDIR:
 	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
-		buf[1]);
+		     buf[1]);
 	  break;
 	case PROCE_DUP:
 	  Pike_error("Process.create_process(): dup() failed. errno:%d\n",
-		buf[1]);
+		     buf[1]);
 	  break;
 	case PROCE_DUP2:
 	  if (buf[1] == EINVAL) {
@@ -3322,34 +3327,34 @@ void f_create_process(INT32 args)
 	  break;
 	case PROCE_SETGID:
 	  Pike_error("Process.create_process(): setgid(%d) failed. errno:%d\n",
-		buf[2], buf[1]);
+		     buf[2], buf[1]);
 	  break;
 #ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
 	  if (buf[1] == EINVAL) {
 	    Pike_error("Process.create_process(): setgroups() failed with EINVAL.\n"
-		  "Too many supplementary groups (%d)?\n",
-		  storage.num_wanted_gids);
+		       "Too many supplementary groups (%d)?\n",
+		       storage.num_wanted_gids);
 	  }
 	  Pike_error("Process.create_process(): setgroups() failed. errno:%d\n",
-		buf[1]);
+		     buf[1]);
 	  break;
 #endif
 	case PROCE_GETPWUID:
 	  Pike_error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
-		buf[2], buf[1]);
+		     buf[2], buf[1]);
 	  break;
 	case PROCE_INITGROUPS:
 	  Pike_error("Process.create_process(): initgroups() failed. errno:%d\n",
-		buf[1]);
+		     buf[1]);
 	  break;
 	case PROCE_SETUID:
 	  if (buf[1] == EINVAL) {
 	    Pike_error("Process.create_process(): Invalid uid: %d.\n",
-		  (int)wanted_uid);
+		       (int)wanted_uid);
 	  }
 	  Pike_error("Process.create_process(): setuid(%d) failed. errno:%d\n",
-		buf[2], buf[1]);
+		     buf[2], buf[1]);
 	  break;
 	case PROCE_SETSID:
           Pike_error("Process.create_process(): setsid() failed.\n");
@@ -3381,7 +3386,7 @@ void f_create_process(INT32 args)
 	  break;
 	case PROCE_CLOEXEC:
 	  Pike_error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
-		buf[1]);
+		     buf[1]);
 	  break;
 	case 0:
 	  /* read() probably failed. */
@@ -3394,8 +3399,8 @@ void f_create_process(INT32 args)
 	  }
 #endif /* ENODEV */
 	  Pike_error("Process.create_process(): "
-		"Child failed: %d, %d, %d, %d, %d!\n",
-		buf[0], buf[1], buf[2], e, olderrno);
+		     "Child failed: %d, %d, %d, %d, %d!\n",
+		     buf[0], buf[1], buf[2], e, olderrno);
 	  break;
 	}
       }
@@ -4328,7 +4333,7 @@ void init_signals(void)
 
     if (th_create_small(&foo,wait_thread,0)) {
       Pike_fatal("wait thread: Failed to create thread!\n"
-	    "errno: %d\n", errno);
+		 "errno: %d\n", errno);
     }
     num_threads++;    /* We use the interpreter lock */
 
