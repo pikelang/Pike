@@ -2,7 +2,7 @@
 
 import Stdio;
 
-static private inherit File : file;
+// static private inherit File : file;
 
 varargs int exec(string file,string ... foo)
 {
@@ -21,7 +21,8 @@ varargs int exec(string file,string ... foo)
   return 69;
 }
 
-varargs int spawn(string s,object stdin,object stdout,object stderr)
+varargs int spawn(string s,object stdin,object stdout,object stderr,
+		  function|void cleanup, mixed ... args)
 {
   int pid;
 
@@ -42,7 +43,10 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
     if(stdout) destruct(stdout);
     if(stderr) destruct(stderr);
 
-    ::close();
+    if (cleanup) {
+      cleanup(@args);
+    }
+
     exec("/bin/sh","-c",s);
     exit(69);
   }
@@ -52,22 +56,27 @@ string popen(string s)
 {
   object p;
   string t;
+  object f = File();
 
-  p=file::pipe();
+  if (!f) error("Popen failed. (couldn't create pipe)\n");
+
+  p=f->pipe();
   if(!p) error("Popen failed. (couldn't create pipe)\n");
-  spawn(s,0,p,0);
+  spawn(s,0,p,0, destruct, f);
   p->close();
   destruct(p);
 
-  t=read(0x7fffffff);
+  t=f->read(0x7fffffff);
   if(!t)
   {
     int e;
-    e=errno();
-    close();
+    e=f->errno();
+    f->close();
+    destruct(f);
     error("Popen failed with error "+e+".\n");
-  }else{
-    close();
+  } else {
+    f->close();
+    destruct(f);
   }
   return t;
 }
@@ -77,18 +86,25 @@ void system(string s)
   object p;
   int pid;
   string t;
+  object f;
 
-  p=file::pipe();
+  f = File();
+  if (!f) error("System failed.\n");
+
+  p=f->pipe();
   if(!p) error("System() failed.\n");
   p->set_close_on_exec(0);
   if(pid=fork())
   {
+    p->close();
     destruct(p);
     /* Nothing will ever be written here, we are just waiting for it
      * to close
      */
-    file::read(1);
+    f->read(1);
   }else{
+    f->close();
+    destruct(f);
     exec("/bin/sh","-c",s);
     exit(69);
   }
