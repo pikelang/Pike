@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.350 2001/07/09 11:37:19 grubba Exp $");
+RCSID("$Id: program.c,v 1.351 2001/07/11 18:12:37 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -674,7 +674,10 @@ void ins_int(INT32 i, void (*func)(char tmp))
 void ins_short(INT16 i, void (*func)(char tmp))
 {
   int e;
-  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+  unsigned char *p = (unsigned char *)&i;
+  for(e=0;e<(long)sizeof(i);e++) {
+    func(p[e]);
+  }
 }
 
 void use_module(struct svalue *s)
@@ -3876,6 +3879,9 @@ void start_line_numbering(void)
 
 static void insert_small_number(INT32 a)
 {
+#ifdef PIKE_DEBUG
+  int start = Pike_compiler->new_program->num_linenumbers;
+#endif /* PIKE_DEBUG */
   if(a>-127 && a<127)
   {
     add_to_linenumbers(a);
@@ -3886,6 +3892,19 @@ static void insert_small_number(INT32 a)
     add_to_linenumbers(-128);
     ins_int(a, add_to_linenumbers);
   }
+#ifdef PIKE_DEBUG
+  {
+    unsigned char *tmp = Pike_compiler->new_program->linenumbers + start;
+    INT32 res = get_small_number(&tmp);
+    if (a != res) {
+      tmp = Pike_compiler->new_program->linenumbers + start;
+      fprintf(stderr, "0x%p: %02x %02x %02x %02x %02x\n",
+	      tmp, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4]);	      
+      fatal("insert_small_number failed: %d (0x%08x) != %d (0x%08x)\n",
+	    a, a, res, res);
+    }
+  }
+#endif /* PIKE_DEBUG */
 }
 
 void store_linenumber(INT32 current_line, struct pike_string *current_file)
@@ -4015,8 +4034,8 @@ PMOD_EXPORT char *get_line(PIKE_OPCODE_T *pc,struct program *prog,INT32 *linep)
       cnt=file+strlen(file)+1;
     }
     off+=get_small_number(&cnt);
-  fromold:
     if(off > offset) break;
+  fromold:
     line+=get_small_number(&cnt);
   }
   linep[0]=line;
