@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.106 1998/11/20 08:35:09 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.107 1998/11/20 08:38:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2119,13 +2119,13 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #ifdef DEBUG
 	if(self_time < 0 || children_base <0 || accounted_time <0)
 	  fatal("Time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  accounted_time=%ld!\n  time_base=%ld\n  start_time=%ld\n",
-		(long)(self_time/1000),
-		(long)(time_passed/1000),
-		(long)(time_in_children/1000),
-		(long)(children_base/1000),
-		(long)(accounted_time/1000),
-		(long)(time_base/1000),
-		(long)(start_time/1000)
+		(long)(self_time/100000),
+		(long)(time_passed/100000),
+		(long)(time_in_children/100000),
+		(long)(children_base/100000),
+		(long)(accounted_time/100000),
+		(long)(time_base/100000),
+		(long)(start_time/100000)
 		);
 #endif
 	function->total_time=self_time_base + (INT32)(time_passed /1000);
