@@ -1,4 +1,4 @@
-/* encode.pmod
+/* Types.pmod
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -97,7 +97,7 @@ class asn1_object
     {
       string data = encode_tag() + encode_length(strlen(contents)) + contents;
       // WERROR(sprintf("build_der: '%s'\n", Crypto.string_to_hex(data)));
-      WERROR(sprintf("build_der: '%s'\n", data));
+      WERROR(sprintf("build_der: %O\n", data));
       return data;
     }
 
@@ -352,31 +352,6 @@ class asn1_octet_string
   constant type_name = "OCTET STRING";
 }
 
-#if constant(string_to_utf8)
-class asn1_utf8_string
-{
-  inherit asn1_string;
-  constant tag = 12;
-  constant type_name = "UTF8String";
-
-  string der_encode()
-    {
-      return build_der(string_to_utf8(value));
-    }
-
-  object decode_primitive(string contents)
-    {
-      record_der_contents(contents);
-      if (catch {
-	value = utf8_to_string(contents);
-      })
-	return 0;
-      
-      return this_object();
-    }
-}  
-#endif /* constant(string_to_utf8) */
-
 class asn1_null
 {
   inherit asn1_object;
@@ -458,6 +433,37 @@ class asn1_identifier
     }
 }
 
+int asn1_utf8_valid (string s)
+{
+  return 1;
+}
+
+class asn1_utf8_string
+{
+  // Character set: ISO/IEC 10646-1 (compatible with Unicode).
+  // Variable width encoding, see rfc2279.
+
+  inherit asn1_string;
+  constant tag = 12;
+  constant type_name = "UTF8String";
+
+  string der_encode()
+    {
+      return build_der(string_to_utf8(value));
+    }
+
+  object decode_primitive(string contents)
+    {
+      record_der(contents);
+      if (catch {
+       value = utf8_to_string(contents);
+      })
+       return 0;
+      
+      return this_object();
+    }
+}  
+
 class asn1_sequence
 {
   inherit asn1_compound;
@@ -505,6 +511,25 @@ class asn1_set
     }
 }
 
+static int wide_string (string s)
+{
+  int i, m;
+  for (int i = 0; i < sizeof (s); i += 500)
+    m = max (m, @values (s[i..i + 499]));
+  if (m < 256) return 0;
+  else if (m < 65536) return 1;
+  else return 2;
+}
+
+object(Regexp) asn1_printable_invalid_chars =
+  Regexp ("([^-A-Za-z0-9 '()+,./:=?])");
+
+int asn1_printable_valid (string s)
+{
+  if (wide_string (s)) return 0;
+  return !asn1_printable_invalid_chars->match (s);
+}
+
 class asn1_printable_string
 {
   inherit asn1_string;
@@ -512,17 +537,436 @@ class asn1_printable_string
   constant type_name = "PrintableString";
 }
 
-/* Often used for latin1 */
-/* Aka T61String */
+object(Regexp) asn1_teletex_invalid_chars =
+  Regexp ("([\\\\{}\240®©¬¦\255Ð])");
+
+int asn1_teletex_valid (string s)
+{
+  if (wide_string (s))
+    // T.61 encoding of wide strings not implemented.
+    return 0;
+  return !asn1_teletex_invalid_chars->match (s);
+}
+
 class asn1_teletex_string
 {
+  // Avoid this one; it seems to be common that this type is used
+  // label strings encoded with the ISO 8859-1 character set (use
+  // asn1_broken_teletex_string for that). From
+  // http://www.mindspring.com/~asn1/nlsasn.htm:
+  //
+  // /.../ Types GeneralString, VideotexString, TeletexString
+  // (T61String), and GraphicString exist in earlier versions
+  // [pre-1994] of ASN.1. They are considered difficult to use
+  // correctly by applications providing national language support.
+  // Varying degrees of application support for T61String values seems
+  // to be most common in older applications. Correct support is made
+  // more difficult, as character values available in type T61String
+  // have changed with the addition of new register entries from the
+  // 1984 through 1997 versions.
+  //
+  // This implementation is based on the description of T.61 and T.51
+  // in "Some functions for representing T.61 characters from the
+  // X.500 Directory Service in ISO 8859 terminals (Version 0.2. July
+  // 1994.)" by Enrique Silvestre Mora (mora@si.uji.es), Universitat
+  // Jaume I, Spain, found in the package
+  // ftp://pereiii.uji.es/pub/uji-ftp/unix/ldap/iso-t61.translation.tar.Z
+  //
+  // The translation is only complete for 8-bit latin 1 strings. It
+  // encodes strictly to T.61, but decodes from the superset T.51.
+
   inherit asn1_string;
   constant tag = 20;
-  constant type_name = "TeletexString";
+  constant type_name = "TeletexString";	// Alias: T61String
+
+#define ENC_ERR(char) char
+#define DEC_ERR(str) str
+#define DEC_COMB_MARK "\300"
+
+#define GR(char) "\301" char	/* Combining grave accent */
+#define AC(char) "\302" char	/* Combining acute accent */
+#define CI(char) "\303" char	/* Combining circumflex accent */
+#define TI(char) "\304" char	/* Combining tilde */
+#define MA(char) "\305" char	/* Combining macron */
+#define BR(char) "\306" char	/* Combining breve */
+#define DA(char) "\307" char	/* Combining dot above */
+#define DI(char) "\310" char	/* Combining diaeresis */
+#define RA(char) "\312" char	/* Combining ring above */
+#define CE(char) "\313" char	/* Combining cedilla */
+#define UN(char) "\314" char	/* Combining underscore (note 6) */
+#define DO(char) "\315" char	/* Combining double acute accent */
+#define OG(char) "\316" char	/* Combining ogonek */
+#define CA(char) "\317" char	/* Combining caron */
+
+  constant encode_from = ({
+    /*"#", "$",*/ "¤",		// Note 3
+    "\\", "{", "}",		// Note 7
+    "\240",			// No-break space (note 7)
+    "×",			// Multiplication sign
+    "÷",			// Division sign
+    "¹",			// Superscript one
+    "®",			// Registered sign (note 7)
+    "©",			// Copyright sign (note 7)
+    "¬",			// Not sign (note 7)
+    "¦",			// Broken bar (note 7)
+    "Æ",			// Latin capital ligature ae
+    "ª",			// Feminine ordinal indicator
+    "Ø",			// Latin capital letter o with stroke
+    "º",			// Masculine ordinal indicator
+    "Þ",			// Latin capital letter thorn
+    "æ",			// Latin small ligature ae
+    "ð",			// Latin small letter eth
+    "ø",			// Latin small letter o with stroke
+    "ß",			// Latin small letter sharp s
+    "þ",			// Latin small letter thorn
+    "\255",			// Soft hyphen (note 7)
+    "Ð",			// Latin capital letter eth (no equivalent)
+    // Combinations
+    "^", "`", "~",		// Note 4
+    "´", "¨", "¯", "¸",
+    "À", "Á", "Â", "Ã", "Ä", "Å",
+    "à", "á", "â", "ã", "ä", "å",
+    "Ç",
+    "ç",
+    "È", "É", "Ê", "Ë",
+    "è", "é", "ê", "ë",
+    "Ì", "Í", "Î", "Ï",
+    "ì", "í", "î", "ï",
+    "Ñ",
+    "ñ",
+    "Ò", "Ó", "Ô", "Õ", "Ö",
+    "ò", "ó", "ô", "õ", "ö",
+    "Ù", "Ú", "Û", "Ü",
+    "ù", "ú", "û", "ü",
+    "Ý",
+    "ý",
+  });
+
+  constant encode_to = ({
+    /*"#", "$",*/ "\250",	// Note 3
+    ENC_ERR("\\"), ENC_ERR("{"), ENC_ERR("}"), // Note 7
+    ENC_ERR("\240"),		// No-break space (note 7)
+    "\264",			// Multiplication sign
+    "\270",			// Division sign
+    "\321",			// Superscript one
+    ENC_ERR("®"),		// Registered sign (note 7)
+    ENC_ERR("©"),		// Copyright sign (note 7)
+    ENC_ERR("¬"),		// Not sign (note 7)
+    ENC_ERR("¦"),		// Broken bar (note 7)
+    "\341",			// Latin capital ligature ae
+    "\343",			// Feminine ordinal indicator
+    "\351",			// Latin capital letter o with stroke
+    "\353",			// Masculine ordinal indicator
+    "\354",			// Latin capital letter thorn
+    "\361",			// Latin small ligature ae
+    "\363",			// Latin small letter eth
+    "\371",			// Latin small letter o with stroke
+    "\373",			// Latin small letter sharp s
+    "\374",			// Latin small letter thorn
+    ENC_ERR("\255"),		// Soft hyphen (note 7)
+    ENC_ERR("Ð"),		// Latin capital letter eth (no equivalent)
+    // Combinations
+    CI(" "), GR(" "), TI(" "),	// Note 4
+    AC(" "), DI(" "), MA(" "), CE(" "),
+    GR("A"), AC("A"), CI("A"), TI("A"), DI("A"), RA("A"),
+    GR("a"), AC("a"), CI("a"), TI("a"), DI("a"), RA("a"),
+    CE("C"),
+    CE("c"),
+    GR("E"), AC("E"), CI("E"), DI("E"),
+    GR("e"), AC("e"), CI("e"), DI("e"),
+    GR("I"), AC("I"), CI("I"), DI("I"),
+    GR("i"), AC("i"), CI("i"), DI("i"),
+    TI("N"),
+    TI("n"),
+    GR("O"), AC("O"), CI("O"), TI("O"), DI("O"),
+    GR("o"), AC("o"), CI("o"), TI("o"), DI("o"),
+    GR("U"), AC("U"), CI("U"), DI("U"),
+    GR("u"), AC("u"), CI("u"), DI("u"),
+    GR("Y"),
+    GR("y"),
+  });
+
+  constant decode_from = ({
+    /*"#", "$",*/ "\244", "\246", "\250", // Note 3
+    /*"^", "`", "~",*/		// Note 4
+    "\251",			// Left single quotation mark (note 7)
+    "\252",			// Left double quotation mark (note 7)
+    "\254",			// Leftwards arrow (note 7)
+    "\255",			// Upwards arrow (note 7)
+    "\256",			// Rightwards arrow (note 7)
+    "\257",			// Downwards arrow (note 7)
+    "\264",			// Multiplication sign
+    "\270",			// Division sign
+    "\271",			// Right single quotation mark (note 7)
+    "\272",			// Right double quotation mark (note 7)
+    "\300",			// Note 5
+    GR(""),			// Combining grave accent
+    AC(""),			// Combining acute accent
+    CI(""),			// Combining circumflex accent
+    TI(""),			// Combining tilde
+    MA(""),			// Combining macron
+    BR(""),			// Combining breve
+    DA(""),			// Combining dot above
+    DI(""),			// Combining diaeresis
+    "\311",			// Note 5
+    RA(""),			// Combining ring above
+    CE(""),			// Combining cedilla
+    UN(""),			// Combining underscore (note 6)
+    DO(""),			// Combining double acute accent
+    OG(""),			// Combining ogonek
+    CA(""),			// Combining caron
+    "\320",			// Em dash (note 7)
+    "\321",			// Superscript one
+    "\322",			// Registered sign (note 7)
+    "\323",			// Copyright sign (note 7)
+    "\324",			// Trade mark sign (note 7)
+    "\325",			// Eighth note (note 7)
+    "\326",			// Not sign (note 7)
+    "\327",			// Broken bar (note 7)
+    "\330", "\331", "\332", "\333", // Note 2
+    "\334",			// Vulgar fraction one eighth (note 7)
+    "\335",			// Vulgar fraction three eighths (note 7)
+    "\336",			// Vulgar fraction five eighths (note 7)
+    "\337",			// Vulgar fraction seven eighths (note 7)
+    "\340",			// Ohm sign
+    "\341",			// Latin capital ligature ae
+    "\342",			// Latin capital letter d with stroke
+    "\343",			// Feminine ordinal indicator
+    "\344",			// Latin capital letter h with stroke
+    "\345",			// Note 2
+    "\346",			// Latin capital ligature ij
+    "\347",			// Latin capital letter l with middle dot
+    "\350",			// Latin capital letter l with stroke
+    "\351",			// Latin capital letter o with stroke
+    "\352",			// Latin capital ligature oe
+    "\353",			// Masculine ordinal indicator
+    "\354",			// Latin capital letter thorn
+    "\355",			// Latin capital letter t with stroke
+    "\356",			// Latin capital letter eng
+    "\357",			// Latin small letter n preceded by apostrophe
+    "\360",			// Latin small letter kra
+    "\361",			// Latin small ligature ae
+    "\362",			// Latin small letter d with stroke
+    "\363",			// Latin small letter eth
+    "\364",			// Latin small letter h with stroke
+    "\365",			// Latin small letter dotless i
+    "\366",			// Latin small ligature ij
+    "\367",			// Latin small letter l with middle dot
+    "\370",			// Latin small letter l with stroke
+    "\371",			// Latin small letter o with stroke
+    "\372",			// Latin small ligature oe
+    "\373",			// Latin small letter sharp s
+    "\374",			// Latin small letter thorn
+    "\375",			// Latin small letter t with stroke
+    "\376",			// Latin small letter eng
+    "\377",			// Soft hyphen (note 7)
+  });
+
+  constant decode_to = ({
+    /*"#", "$",*/ "$", "#", "\244", // Note 3
+    /*"^", "`", "~",*/		// Note 4
+    DEC_ERR("\251"),		// Left single quotation mark (note 7)
+    DEC_ERR("\252"),		// Left double quotation mark (note 7)
+    DEC_ERR("\254"),		// Leftwards arrow (note 7)
+    DEC_ERR("\255"),		// Upwards arrow (note 7)
+    DEC_ERR("\256"),		// Rightwards arrow (note 7)
+    DEC_ERR("\257"),		// Downwards arrow (note 7)
+    "×",			// Multiplication sign
+    "÷",			// Division sign
+    DEC_ERR("\271"),		// Right single quotation mark (note 7)
+    DEC_ERR("\272"),		// Right double quotation mark (note 7)
+    DEC_ERR("\300"),		// Note 5
+    DEC_COMB_MARK GR(""),	// Combining grave accent
+    DEC_COMB_MARK AC(""),	// Combining acute accent
+    DEC_COMB_MARK CI(""),	// Combining circumflex accent
+    DEC_COMB_MARK TI(""),	// Combining tilde
+    DEC_COMB_MARK MA(""),	// Combining macron
+    DEC_COMB_MARK BR(""),	// Combining breve
+    DEC_COMB_MARK DA(""),	// Combining dot above
+    DEC_COMB_MARK DI(""),	// Combining diaeresis
+    DEC_ERR("\311"),		// Note 5
+    DEC_COMB_MARK RA(""),	// Combining ring above
+    DEC_COMB_MARK CE(""),	// Combining cedilla
+    DEC_COMB_MARK UN(""),	// Combining underscore (note 6)
+    DEC_COMB_MARK DO(""),	// Combining double acute accent
+    DEC_COMB_MARK OG(""),	// Combining ogonek
+    DEC_COMB_MARK CA(""),	// Combining caron
+    DEC_ERR("\320"),		// Em dash (note 7)
+    "¹",			// Superscript one
+    "®",			// Registered sign (note 7)
+    "©",			// Copyright sign (note 7)
+    DEC_ERR("\324"),		// Trade mark sign (note 7)
+    DEC_ERR("\325"),		// Eighth note (note 7)
+    "¬",			// Not sign (note 7)
+    "¦",			// Broken bar (note 7)
+    DEC_ERR("\330"), DEC_ERR("\331"), DEC_ERR("\332"), DEC_ERR("\333"), // Note 2
+    DEC_ERR("\334"),		// Vulgar fraction one eighth (note 7)
+    DEC_ERR("\335"),		// Vulgar fraction three eighths (note 7)
+    DEC_ERR("\336"),		// Vulgar fraction five eighths (note 7)
+    DEC_ERR("\337"),		// Vulgar fraction seven eighths (note 7)
+    DEC_ERR("\340"),		// Ohm sign
+    "Æ",			// Latin capital ligature ae
+    DEC_ERR("\342"),		// Latin capital letter d with stroke
+    "ª",			// Feminine ordinal indicator
+    DEC_ERR("\344"),		// Latin capital letter h with stroke
+    DEC_ERR("\345"),		// Note 2
+    DEC_ERR("\346"),		// Latin capital ligature ij
+    DEC_ERR("\347"),		// Latin capital letter l with middle dot
+    DEC_ERR("\350"),		// Latin capital letter l with stroke
+    "Ø",			// Latin capital letter o with stroke
+    DEC_ERR("\352"),		// Latin capital ligature oe
+    "º",			// Masculine ordinal indicator
+    "Þ",			// Latin capital letter thorn
+    DEC_ERR("\355"),		// Latin capital letter t with stroke
+    DEC_ERR("\356"),		// Latin capital letter eng
+    DEC_ERR("\357"),		// Latin small letter n preceded by apostrophe
+    DEC_ERR("\360"),		// Latin small letter kra
+    "æ",			// Latin small ligature ae
+    DEC_ERR("\362"),		// Latin small letter d with stroke
+    "ð",			// Latin small letter eth
+    DEC_ERR("\364"),		// Latin small letter h with stroke
+    DEC_ERR("\365"),		// Latin small letter dotless i
+    DEC_ERR("\366"),		// Latin small ligature ij
+    DEC_ERR("\367"),		// Latin small letter l with middle dot
+    DEC_ERR("\370"),		// Latin small letter l with stroke
+    "ø",			// Latin small letter o with stroke
+    DEC_ERR("\372"),		// Latin small ligature oe
+    "ß",			// Latin small letter sharp s
+    "þ",			// Latin small letter thorn
+    DEC_ERR("\375"),		// Latin small letter t with stroke
+    DEC_ERR("\376"),		// Latin small letter eng
+    "\255",			// Soft hyphen (note 7)
+  });
+
+  constant decode_comb = ([
+    GR(" "): "`",
+    AC(" "): "´",
+    CI(" "): "^",
+    TI(" "): "~",
+    DI(" "): "¨",
+    // RA(" "): DEC_ERR(RA(" ")),
+    MA(" "): "¯",
+    // BR(" "): DEC_ERR(BR(" ")),
+    // DA(" "): DEC_ERR(DA(" ")),
+    CE(" "): "¸",
+    // DO(" "): DEC_ERR(DO(" ")),
+    // OG(" "): DEC_ERR(OG(" ")),
+    // CA(" "): DEC_ERR(CA(" ")),
+    GR("A"): "À", AC("A"): "Á", CI("A"): "Â", TI("A"): "Ã", DI("A"): "Ä", RA("A"): "Å",
+    GR("a"): "à", AC("a"): "á", CI("a"): "â", TI("a"): "ã", DI("a"): "ä", RA("a"): "å",
+    CE("C"): "Ç",
+    CE("c"): "ç",
+    GR("E"): "È", AC("E"): "É", CI("E"): "Ê", DI("E"): "Ë",
+    GR("e"): "è", AC("e"): "é", CI("e"): "ê", DI("e"): "ë",
+    GR("I"): "Ì", AC("I"): "Í", CI("I"): "Î", DI("I"): "Ï",
+    GR("i"): "ì", AC("i"): "í", CI("i"): "î", DI("i"): "ï",
+    TI("N"): "Ñ",
+    TI("n"): "ñ",
+    GR("O"): "Ò", AC("O"): "Ó", CI("O"): "Ô", TI("O"): "Õ", DI("O"): "Ö",
+    GR("o"): "ò", AC("o"): "ó", CI("o"): "ô", TI("o"): "õ", DI("o"): "ö",
+    GR("U"): "Ù", AC("U"): "Ú", CI("U"): "Û", DI("U"): "Ü",
+    GR("u"): "ù", AC("u"): "ú", CI("u"): "û", DI("u"): "ü",
+    GR("Y"): "Ý",
+    GR("y"): "ý",
+  ]);
+
+  /* Notes from Moras paper:
+
+     (1) All characters in 0xC0-0xCF are non-spacing characters.  They are
+     all diacritical marks.  To be represented stand-alone, they need to
+     be followed by a SPACE (0x20).  They can appear, also, before
+     letters if the couple is one of the defined combinations.
+
+     (2) Reserved for future standardization.
+
+     (3) Current terminals may send and receive 0xA6 and 0xA4 for the NUMBER
+     SIGN and DOLLAR SIGN, respectively.  When receiving codes 0x23 and
+     0x24, they may interpret them as NUMBER SIGN and CURRENCY SIGN,
+     respectively.  Future applications should code the NUMBER SIGN,
+     DOLLAR SIGN and CURRENCY SIGN as 0x23, 0x24 and 0xA8, respectively.
+
+     (4) Terminals should send only the codes 0xC1, 0xC3 and 0xC4, followed
+     by SPACE (0x20) for stand-alone GRAVE ACCENT, CIRCUMFLEX ACCENT and
+     TILDE, respectively.  Nevertheless the terminal shall interpret the
+     codes 0x60, 0x5E and 0x7E as GRAVE, CIRCUMFLEX and TILDE,
+     respectively.
+
+     (5) This code position is reserved and shall not be used.
+
+     (6) It is recommended to implement the "underline" function by means of
+     the control function SGR(4) instead of the "non-spacing underline"
+     graphic character.
+
+     (7) Not used in current teletex service (Recommendation T.61).
+  */
+
+#undef GR
+#undef AC
+#undef CI
+#undef TI
+#undef MA
+#undef BR
+#undef DA
+#undef DI
+#undef RA
+#undef CE
+#undef UN
+#undef DO
+#undef OG
+#undef CA
+
+  string der_encode()
+  {
+    return build_der (replace (value, encode_from, encode_to));
+  }
+
+  object decode_primitive (string contents)
+  {
+    record_der (contents);
+
+    array(string) parts =
+      replace (contents, decode_from, decode_to) / DEC_COMB_MARK;
+    value = parts[0];
+    foreach (parts[1..], string part)
+      value += (decode_comb[part[..1]] || DEC_ERR(part[..1])) + part[2..];
+
+    return this_object();
+  }
+
+#undef ENC_ERR
+#undef DEC_ERR
+#undef DEC_COMB_MARK
+}
+
+int asn1_broken_teletex_valid (string s)
+{
+  return !wide_string (s);
+}
+
+class asn1_broken_teletex_string
+{
+  // Encodes and decodes latin1, but labels it TeletexString, as is
+  // common in many broken programs (e.g. Netscape 4.0X).
+
+  inherit asn1_string;
+  constant tag = 20;
+  constant type_name = "TeletexString";	// Alias: T61String
+}
+
+object(Regexp) asn1_IA5_invalid_chars =
+  Regexp ("([\180-\377])");
+
+int asn1_IA5_valid (string s)
+{
+  if (wide_string (s)) return 0;
+  return !asn1_printable_invalid_chars->match (s);
 }
 
 class asn1_IA5_string
 {
+  // Character set: ASCII. Fixed width encoding with 1 octet per
+  // character.
+
   inherit asn1_string;
   constant tag = 22;
   constant type_name = "IA5STRING";
@@ -533,6 +977,66 @@ class asn1_utc
   inherit asn1_string;
   constant tag = 23;
   constant type_name = "UTCTime";
+}
+
+int asn1_universal_valid (string s)
+{
+  return 1;
+}
+
+class asn1_universal_string
+{
+  // Character set: ISO/IEC 10646-1 (compatible with Unicode).
+  // Fixed width encoding with 4 octets per character.
+
+  // FIXME: The encoding is very likely UCS-4, but that's not yet
+  // verified.
+
+  inherit asn1_octet_string;
+  constant tag = 28;
+  constant type_name = "UniversalString";
+
+  string der_encode()
+  {
+    throw (({"asn1_universal_string: Encoding not implemented\n",
+	     backtrace()}));
+  }
+
+  object decode_primitive (string contents)
+  {
+    throw (({"asn1_universal_string: Decoding not implemented\n",
+	     backtrace()}));
+  }
+}
+
+int asn1_bmp_valid (string s)
+{
+  return wide_string (s) <= 1;
+}
+
+class asn1_bmp_string
+{
+  // Character set: ISO/IEC 10646-1 (compatible with Unicode).
+  // Fixed width encoding with 2 octets per character.
+
+  // FIXME: The encoding is very likely UCS-2, but that's not yet
+  // verified.
+
+  inherit asn1_octet_string;
+  constant tag = 30;
+  constant type_name = "BMPString";
+
+  string der_encode()
+  {
+    return build_der (string_to_unicode (value));
+  }
+
+  object decode_primitive (string contents)
+  {
+    record_der (contents);
+    value = unicode_to_string (contents);
+    return this_object();
+  }
 }
 
 class meta_explicit
@@ -603,4 +1107,3 @@ class meta_explicit
       valid_types = types;
     }
 }
-      

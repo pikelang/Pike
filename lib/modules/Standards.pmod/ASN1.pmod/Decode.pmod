@@ -155,14 +155,15 @@ mapping universal_types =
    U(6) : asn1_identifier,
    // U(9) : asn1_real,
    // U(10) : asn1_enumerated,
-#if constant(asn1_utf8_string)
    U(12) : asn1_utf8_string,
-#endif
    U(16) : asn1_sequence,
    U(17) : asn1_set,
    U(19) : asn1_printable_string,
-   U(20) : asn1_teletex_string,
-   U(23) : asn1_utc
+   U(20) : asn1_teletex_string,	// or asn1_broken_teletex_string?
+   U(22) : asn1_IA5_string,
+   U(23) : asn1_utc,
+   U(28) : asn1_universal_string,
+   U(30) : asn1_bmp_string,
   ]);
 
 object|mapping simple_der_decode(string data)
