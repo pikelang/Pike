@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.157 2001/06/28 19:25:38 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.158 2001/06/29 01:21:52 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -651,7 +651,7 @@ void low_describe_something(void *a,
 
   if(depth<0) return;
 
-  if (Pike_in_gc && (m = find_marker(a))) {
+  if (marker_hash_table && (m = find_marker(a))) {
     fprintf(stderr,"%*s**Got gc ",indent,"");
     describe_marker(m);
   }
@@ -902,16 +902,17 @@ void debug_gc_touch(void *a)
 {
   struct marker *m;
   if (!a) fatal("Got null pointer.\n");
-  m = find_marker(a);
 
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
+      m = find_marker(a);
       if (m && !(m->flags & GC_PRETOUCHED))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
       get_marker(a)->flags |= GC_PRETOUCHED;
       break;
 
     case GC_PASS_MIDDLETOUCH:
+      m = find_marker(a);
       if (!m)
 	gc_fatal(a, 1, "Found a thing without marker.\n");
       else if (!(m->flags & GC_PRETOUCHED))
@@ -920,6 +921,7 @@ void debug_gc_touch(void *a)
       break;
 
     case GC_PASS_POSTTOUCH:
+      m = find_marker(a);
       if (!*(INT32 *) a)
 	gc_fatal(a, 1, "Found a thing without refs.\n");
       if (m) {
@@ -1141,7 +1143,17 @@ void locate_references(void *a)
 
 void debug_gc_add_extra_ref(void *a)
 {
-  struct marker *m = get_marker(a);
+  struct marker *m;
+
+  if (gc_debug) {
+    m = find_marker(a);
+    if ((!m || !(m->flags & GC_PRETOUCHED)) &&
+	!safe_debug_findstring((struct pike_string *) a))
+      gc_fatal(a, 0, "Doing gc_add_extra_ref() on invalid object.\n");
+    if (!m) m = get_marker(a);
+  }
+  else m = get_marker(a);
+
   if (m->flags & GC_GOT_EXTRA_REF)
     gc_fatal(a, 0, "Thing already got an extra gc ref.\n");
   m->flags |= GC_GOT_EXTRA_REF;
@@ -1151,7 +1163,17 @@ void debug_gc_add_extra_ref(void *a)
 
 void debug_gc_free_extra_ref(void *a)
 {
-  struct marker *m = get_marker(a);
+  struct marker *m;
+
+  if (gc_debug) {
+    m = find_marker(a);
+    if ((!m || !(m->flags & GC_PRETOUCHED)) &&
+	!safe_debug_findstring((struct pike_string *) a))
+      gc_fatal(a, 0, "Doing gc_add_extra_ref() on invalid object.\n");
+    if (!m) m = get_marker(a);
+  }
+  else m = get_marker(a);
+
   if (!(m->flags & GC_GOT_EXTRA_REF))
     gc_fatal(a, 0, "Thing haven't got an extra gc ref.\n");
   m->flags &= ~GC_GOT_EXTRA_REF;
