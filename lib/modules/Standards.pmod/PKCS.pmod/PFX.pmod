@@ -1,7 +1,10 @@
-#if 0 // Doesn't load, uncommented by hubbe
+//
+// $Id: PFX.pmod,v 1.8 2003/01/27 01:47:55 nilsson Exp $
+//
 
-/* PFX.pmod
- *
+#if 0 // This code is broken. (Missing mac identifier for sha)
+
+/*
  * M$ Personal Exchange Syntax and Protocol Standard, aka PKCS#12
  *
  * Subsets of PKCS#12 and PKCS#7 needed to import keys and
@@ -9,9 +12,9 @@
  *
  */
 
-#pike __REAL_VERSION__
+import Standards.ASN1.Types;
 
-import Standards.ASN1;
+#pike __REAL_VERSION__
 
 object pkcs_7_id = .Identifiers.pkcs_id->append(7);
 object data_id = pkcs_7_id->append(1);
@@ -55,18 +58,18 @@ class ContentInfo_meta
 
   class `()
     {
-      inherit asn1_sequence;
+      inherit Standards.ASN1.Types.Sequence;
   
       mapping element_types(int i, mapping t)
 	{
 	  switch(i)
 	  {
 	  case 0:
-	    return ([ 6 : asn1_identifier ]);
+	    return ([ 6 : Identifier ]);
 	  case 1:
 	    return ([ 0 : content_types[elements[0]->get_der()] ]);
 	  default:
-	    error("ContentInfo->element_types: Bad index\n");
+	    error("Bad index\n");
 	  }
 	}
       
@@ -86,7 +89,7 @@ class ContentInfo_meta
 #if 0
       object decode_constructed(array contents, string raw)
 	{
-	  asn1_sequence::decode_constructed(contents, raw);
+	  Sequence::decode_constructed(contents, raw);
 	  if (!sizeof(elements)
 	      || (elements[0] != "Identifier")
 	      || (sizeof(elements) > 2))
@@ -251,15 +254,15 @@ class ContentInfo_meta
 /* Same as PKCS#8 PrivateKeyInfo */
 class KeyBag
 {
-  inherit asn1_sequence;
+  inherit Sequence;
 
   object init(object algorithm_id, string|object key,
 	      void|object attr)
     {
       if (stringp(key))
-	key = asn1_octet_string(key);
+	key = OctetString(key);
 
-      array a = ({ asn1_integer(0), algorithm_id, key });
+      array a = ({ Integer(0), algorithm_id, key });
       if (attr)
 	a += ({ attr });
 
@@ -274,47 +277,42 @@ class KeyBag
 
 class PFX
 {
-  inherit asn1_sequence;
+  inherit Sequence;
 
   object safes;
   string passwd; /* Assumed to be latin1 */
 
-  object init(object s)
-    {
-      safes = s;
-      return this_object();
-    }
+  this_program init(object s) {
+    safes = s;
+    return this_object();
+  }
 
-  object set_signature_key(object key)
-    {
-      error("pfx->sign: Not implemented\n");
-    }
+  object set_signature_key(object key) {
+    error("Not implemented\n");
+  }
 
-  string latin1_to_bmp(string s)
-    {
-      /* String of 16 bit characters in big-endian order, terminated
-       * by a null character */
-      return "\0" + (s/"") * "\0" + "\0\0";
-    }
+  string latin1_to_bmp(string s) {
+    /* String of 16 bit characters in big-endian order, terminated
+     * by a null character */
+    return "\0" + (s/"") * "\0" + "\0\0";
+  }
   
   /* passwd is assumed to be latin 1 */
-  object set_passwd(string s)
-    {
-      passwd = latin1_to_bmp(passwd);
-    }
+  void set_passwd(string s) {
+    passwd = latin1_to_bmp(passwd);
+  }
 
-  string string_pad(string d, int block_size)
-    {
-      int s = sizeof(d);
+  string string_pad(string d, int block_size) {
+    int s = sizeof(d);
 
-      if (s)
-      { /* Extend to a multiple of the block soze */
-	int n = (s + 63) / block_size; // number of blocks 
-	int k = (n+s-1) / s;
-	d = (d * k) [..n*block_size-1];
-      }
-      return d;
+    if (s)
+    { /* Extend to a multiple of the block soze */
+      int n = (s + 63) / block_size; // number of blocks
+      int k = (n+s-1) / s;
+      d = (d * k) [..n*block_size-1];
     }
+    return d;
+  }
   
   string generate_key(string salt, int id, int count, int needed)
     { /* Supports only SHA-1 */
@@ -345,17 +343,17 @@ class PFX
   string der_encode()
     {
       elements = allocate(2 + !!passwd);
-      elements[0] = asn1_integer(3); // version
+      elements[0] = Integer(3); // version
       elements[1] = safes;
       if (passwd)
       {	/* Password-integrity mode */
 	salt = Crypto.randomness.reasonably_random()->read(SALT_SIZE);
 
-	elements[2] = asn1_sequence(
-	  ({ asn1_sequence(
+	elements[2] = Sequence(
+	  ({ Sequence(
 	    ({ Identifiers.sha_id,
-	       asn1_octet_string(get_hmac(salt, MAC_COUNT)) }) ),
-	     asn1_octet_string(salt)
+	       OctetString(get_hmac(salt, MAC_COUNT)) }) ),
+	     OctetString(salt)
 	     /* , optional count, default = 1 */
 	  }) );
 	
@@ -384,52 +382,41 @@ class PFX
     }
 }
 
-class SafeBag_meta
-{
-  object type; /* Object identifier */
-
-  class
-/* PrivateKeyInfo (pkcs#8), aka KeyBag (pkcs#12) */
-
 /* Note that the ASN.1 type is a sequence of the structure this
  * function creates */
-object make_key_info(object id, string key)
+Sequence make_key_info(object id, string key)
 {
-  return asn1_sequence( ({ asn1_integer(0),
-			   id, asnt_octet_string(key) }) );
+  return Sequence( ({ Integer(0), id, OctetString(key) }) );
 }
 
-object make safe_bag(object id, object contents, object|void attributes)
+Sequence make_safe_bag(object id, object contents, object|void attributes)
 {
-  return asn1_sequence( ({ id, contents })
-			+ (attributes ? ({ attributes }) : ({ }) ));
+  return Sequence( ({ id, contents })
+		   + (attributes ? ({ attributes }) : ({ }) ));
 }
   
 /* A SafeBag instance, with type of KeyBag */
-object make_key_bag(array keys, object|void attributes)
+Sequence make_key_bag(array keys, object|void attributes)
 {
-  return make_safe_bag(keybag_id, asn1_sequence(keys), attributes);
+  return make_safe_bag(keybag_id, Sequence(keys), attributes);
 }
 
 /* A safe bag of type certBag, containing a certBag of type x509Certificate */
-object make x509_cert_bag(string cert, object|void attributes)
+Sequence make_x509_cert_bag(string cert, object|void attributes)
 {
-  return asn1_sequence(certbag_id,
-		       asn1_sequence( ({ x509Certificate_id, cert }) ),
-		       attributes);
+  return Sequence(certbag_id,
+		  Sequence( ({ x509Certificate_id, cert }) ),
+		  attributes);
 }
 
-object make_safecontents(object ...bags)
-{
-  return asn1_sequence(
 /* Makes a PFX of unencrypted bags */
-object simple_make_pfx(array bags, string passwd)
+PFX simple_make_pfx(array bags, string passwd)
 {
-  object safe_contents = asn1_sequence(bags);
+  Sequence safe_contents = Sequence(bags);
   
-  object pfx = PFX(ContentInfo_meta()(data_id,
-				      asn1_string(safes->get_der())));
+  PFX pfx = PFX(ContentInfo_meta()(data_id, String(safes->get_der())));
   pfx->set_passwd(passwd);
+  return pfx;
 }
 
 #endif
