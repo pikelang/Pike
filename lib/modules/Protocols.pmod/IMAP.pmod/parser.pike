@@ -239,7 +239,7 @@ mapping get_any(int max_depth, int eol, int accept_options, function c)
     return ([ "action" : "expect_line",
 	      "handler" : line_handler(get_any, max_depth, eol, accept_options, c) ]);
 
-  mapping t = line->get_token(eol);
+  mapping t = line->get_token(eol, accept_options);
 
   if (!t)
     return c(t);
