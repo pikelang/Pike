@@ -3,7 +3,7 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id: LPD.pmod,v 1.3 1998/07/03 20:30:19 grubba Exp $
+// $Id: LPD.pmod,v 1.4 1999/08/20 05:01:58 hubbe Exp $
 //
 
 class client {
@@ -73,7 +73,11 @@ class client {
     // werror("sent send data command\n");
     string control="";
     control+="H"+gethostname()+"\n";
-    control+="P"+(getpwuid(getuid())[0]||"nobody");
+#if constant(getuid) && constant(getpwuid)
+    control+="P"+(getpwuid(getuid())[0]||"nobody")+"\n";
+#else
+    /* Should there be a P-1 here? /Hubbe */
+#endif
     control+=(jobtype||"l")+"dfA"+ sprintf("%3d%s", jobnum, gethostname())+"\n";
     if(jobname)
       control+="J" + jobname + "\n";
@@ -103,7 +107,11 @@ class client {
     if(!conn->connect(host, port))
       return 0;
 
+#if constant(getpwuid) && constant(getuid)
     string agent=(getpwuid(getuid())[0]||"nobody");
+#else
+    string agent="nobody";
+#endif
 
     if(job)
       conn->write(sprintf("%c%s %s %d\n", 05, queue, agent, job));

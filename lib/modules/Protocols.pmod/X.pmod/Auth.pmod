@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.4 1998/04/20 01:49:35 nisse Exp $
+ * $Id: Auth.pmod,v 1.5 1999/08/20 05:06:33 hubbe Exp $
  */
 
 /*
@@ -91,7 +91,11 @@ class lock_key
 
   int my_hardlink(string from, string to)
   {
+#if constant(hardlink)
     return !catch(hardlink(from, to));
+#else
+    return 0; // Failed, hubbe
+#endif
   }
 
 
