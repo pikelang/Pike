@@ -140,7 +140,7 @@ array(Country) countries=
    Country("ML","Mali"),
    Country("MM","Myanmar"),
    Country("MN","Mongolia"),
-   Country("MO","Macau"),
+   Country("MO","Macao"),
    Country("MP","Northern Mariana Islands"),
    Country("MQ","Martinique"),
    Country("MR","Mauritania"),
