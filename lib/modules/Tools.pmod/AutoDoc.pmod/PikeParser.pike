@@ -155,12 +155,17 @@ string eat(multiset(string) | string token) {
   return readToken();
 }
 
+// Also ::ident, predef::ident
 string eatIdentifier() {
+  string predeF = peekToken() == "predef" ? readToken() : "";
+  string scope = peekToken() == "::" ? readToken() : "";
+  if (predeF != "" && scope == "")
+    parseError("predef must be followed by ::");
   string s = peekToken();
   if (!isIdent(s))
     parseError("expected identifier, got %O", s);
   readToken();
-  return s;
+  return predeF + scope + s;
 }
 
 Type|void parseOrType() {
@@ -245,10 +250,10 @@ IntType parseInt() {
   return i;
 }
 
-// also parses stuff preceded by "predef::"
+// also parses stuff preceded by "predef::" or "::"
 string|void parseIdents() {
   string result = "";
-  if (peekToken() == ".")
+  if (peekToken() == "." || peekToken() == "::")
     result = readToken();
   else if (peekToken() == "predef") {
     result = readToken();
