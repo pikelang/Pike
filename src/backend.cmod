@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.39 2004/10/18 15:10:16 mast Exp $
+|| $Id: backend.cmod,v 1.40 2004/10/19 16:59:56 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.39 2004/10/18 15:10:16 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.40 2004/10/19 16:59:56 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -612,7 +612,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("Fd %d doesn't belong to this backend (%d).\n", fd, me->id);
+#endif
 	if(!was_set)
 	{
 	  MY_FD_SET(&me->set, fd, MY_POLLIN);
@@ -655,7 +658,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("Fd %d doesn't belong to this backend (%d).\n", fd, me->id);
+#endif
 	if(!was_set)
 	{
 	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
@@ -696,7 +702,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("Fd %d doesn't belong to this backend (%d).\n", fd, me->id);
+#endif
 	MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
 	backend_wake_up_backend(me);
       }else{
@@ -737,7 +746,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("Fd %d doesn't belong to this backend (%d).\n", fd, me->id);
+#endif
 	MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
 	backend_wake_up_backend(me);
       }else{
@@ -1485,25 +1497,40 @@ PIKECLASS Backend
       int fd=fd_from_object(f);
       struct Backend_struct *old;
       if(fd<0) Pike_error("Backend->add_file() on nonopen file.\n");
-      if((old=get_backend_for_fd(fd)))
+      old=get_backend_for_fd(fd);
+      if (old == THIS) {
+	IF_PD (fprintf (stderr, "BACKEND[%d]: add_file(%d) -> "
+			"already in this backend\n", THIS->id, fd));
+	return;
+      }
+      set_backend_for_fd(fd, THIS);
+      if(old)
       {
+	IF_PD (fprintf (stderr, "BACKEND[%d]: add_file(%d) -> "
+			"moving from backend %d\n", THIS->id, fd, old->id));
 	backend_set_read_callback(THIS, fd,
 			  backend_query_read_callback(old, fd),
 			  backend_query_read_callback_data(old, fd));
+	backend_set_read_callback (old, fd, NULL, NULL);
 	backend_set_write_callback(THIS, fd,
 			  backend_query_write_callback(old, fd),
 			  backend_query_write_callback_data(old, fd));
+	backend_set_write_callback (old, fd, NULL, NULL);
 #ifdef WITH_OOB
 	backend_set_read_oob_callback(THIS, fd,
 			  backend_query_read_oob_callback(old, fd),
 			  backend_query_read_oob_callback_data(old, fd));
+	backend_set_read_oob_callback (old, fd, NULL, NULL);
 	backend_set_write_oob_callback(THIS, fd,
 			  backend_query_write_oob_callback(old, fd),
 			  backend_query_write_oob_callback_data(old, fd));
+	backend_set_write_oob_callback (old, fd, NULL, NULL);
 #endif
-			  
       }
-      set_backend_for_fd(fd, THIS);
+      else {
+	IF_PD (fprintf (stderr, "BACKEND[%d]: add_file(%d) -> "
+			"backend set\n", THIS->id, fd));
+      }
     }
 
 
@@ -2223,6 +2250,7 @@ PIKECLASS Backend
 
       set_nonblocking(THIS->wakeup_pipe[0],1);
       set_nonblocking(THIS->wakeup_pipe[1],1);
+      set_backend_for_fd(THIS->wakeup_pipe[0], THIS);
       backend_set_read_callback(THIS,
 				THIS->wakeup_pipe[0],
 				wakeup_callback,
