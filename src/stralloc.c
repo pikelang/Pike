@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.97 2000/08/11 13:52:17 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.98 2000/08/15 11:41:28 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1857,11 +1857,11 @@ PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 }
 
 PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
-				  void * str,
-				  void **ptr,
-				  int base,
-				  int maxlength,
-				  int shift)
+					      void * str,
+					      void **ptr,
+					      int base,
+					      ptrdiff_t maxlength,
+					      int shift)
 {
   PCHARP tmp;
   int ret=pcharp_to_svalue_inumber(r,
@@ -1874,10 +1874,10 @@ PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
 }
 
 PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
-			     PCHARP str,
-			     PCHARP *ptr,
-			     int base,
-			     int maxlength)
+					 PCHARP str,
+					 PCHARP *ptr,
+					 int base,
+					 ptrdiff_t maxlength)
 {
   PCHARP str_start;
   

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.54 2000/08/10 18:23:30 grubba Exp $
+ * $Id: stralloc.h,v 1.55 2000/08/15 11:41:45 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -255,16 +255,16 @@ PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 			     int base,
 			     int maxlength);
 PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
-				  void * str,
-				  void **ptr,
-				  int base,
-				  int maxlength,
-				  int shift);
+					      void * str,
+					      void **ptr,
+					      int base,
+					      ptrdiff_t maxlength,
+					      int shift);
 PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
-			     PCHARP str,
-			     PCHARP *ptr,
-			     int base,
-			     int maxlength);
+					 PCHARP str,
+					 PCHARP *ptr,
+					 int base,
+					 ptrdiff_t maxlength);
 PMOD_EXPORT int convert_stack_top_string_to_inumber(int base);
 PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr);
 PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,

@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.86 2000/08/14 20:31:17 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.87 2000/08/15 11:38:23 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -752,8 +752,8 @@ CHAROPT(							\
 	sp[-1].u.integer++;					\
       }else{							\
 	check_stack(2);						\
-	push_int(last);						\
-	push_int(last);						\
+	push_int64(last);					\
+	push_int64(last);					\
 	set_size++;						\
       }								\
     }								\
@@ -974,6 +974,16 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 #endif
 #endif
 
+/* Avoid some warnings about loss of precision */
+#ifdef __ECL
+static inline int TO_INT32(ptrdiff_t x)
+{
+  return DO_NOT_WARN((int)x);
+}
+#else /* !__ECL */
+#define TO_INT32(x)	((int)x)
+#endif /* __ECL */
+
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
                          PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	 \
@@ -1101,7 +1111,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 &yes);						 \
 	    if(yes && tmp)						 \
 	    {								 \
-	      f_aggregate(sp-save_sp);					 \
+	      f_aggregate(TO_INT32(sp-save_sp));			 \
 	      sval.u.array=append_array(sval.u.array,sp-1);		 \
 	      pop_stack();						 \
 	      eye+=tmp;							 \
@@ -1497,7 +1507,7 @@ CHAROPT2(								 \
 	case 'n':							 \
 	  sval.type=T_INT;						 \
 	  sval.subtype=NUMBER_NUMBER;					 \
-	  sval.u.integer=eye;						 \
+	  sval.u.integer=TO_INT32(eye);					 \
 	  break;							 \
 									 \
 	default:							 \
