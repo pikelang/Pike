@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.220 2002/04/24 15:20:39 jonasw Exp $");
+RCSID("$Id: signal_handler.c,v 1.221 2002/04/26 11:18:28 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -123,6 +123,11 @@ RCSID("$Id: signal_handler.c,v 1.220 2002/04/24 15:20:39 jonasw Exp $");
 #define WEXITSTATUS(x)	(((x)>>8)&0xff)
 #endif /* HAVE_UNION_WAIT */
 #endif /* !WEXITSTATUS */
+
+/* Number of EBADF's before the set_close_on_exec() loop terminates. */
+#ifndef PIKE_BADF_LIMIT
+#define PIKE_BADF_LIMIT	1024
+#endif /* !PIKE_BADF_LIMIT */
 
 /* #define PROC_DEBUG */
 
@@ -3126,7 +3131,7 @@ void f_create_process(INT32 args)
 
       /* Perform fd remapping */
       {
-        int fd, max_fds;
+        int fd;
 	/* Note: This is O(n²), but that ought to be ok. */
 	for (fd=0; fd<num_fds; fd++) {
 	  int fd2;
@@ -3161,19 +3166,30 @@ void f_create_process(INT32 args)
 #ifdef _SC_OPEN_MAX
 	/* Close unknown fds which have been created elsewhere (e.g. in
 	   the Java environment) */
-	max_fds = sysconf(_SC_OPEN_MAX);
-	for (fd = num_fds; fd < max_fds; fd++)
-	  if (fd != control_pipe[1]) {
+	{
+	  int num_fail = 0;
+	  int max_fds = sysconf(_SC_OPEN_MAX);
+	  for (fd = num_fds; fd < max_fds; fd++) {
+	    int code = 0;
+	    if (fd != control_pipe[1]) {
 #ifdef HAVE_BROKEN_F_SETFD
-	    /* In this case set_close_on_exec is not fork1(2) safe. */
-	    close(fd);
+	      /* In this case set_close_on_exec is not fork1(2) safe. */
+	      code = close(fd);
 #else /* !HAVE_BROKEN_F_SETFD */
-	    /* Delay close to actual exec */
-	    set_close_on_exec(fd, 1);
+	      /* Delay close to actual exec */
+	      code = set_close_on_exec(fd, 1);
 #endif /* HAVE_BROKEN_F_SETFD */
-	  }
+	    }
 #endif
-	
+	    if (code == -1) {
+	      if (++num_fail >= PIKE_BADF_LIMIT) {
+		break;
+	      }
+	    } else {
+	      num_fail = 0;
+	    }
+	  }
+	}
 	/* FIXME: Map the fds as not close on exec? */
       }
 
