@@ -1,6 +1,6 @@
 Package: pike7.5
 Version: 7.5.17
-Revision: 1
+Revision: 3
 Description: Programming language with a C-like syntax
 DescDetail: <<
  Pike is an interpreted, object-oriented programming language. 
@@ -26,21 +26,21 @@ CustomMirror: <<
 Primary: ftp://ftp.oav.net/pike/7.5/export/
 Secondary-http: http://ftp.oav.net/pike/7.5/export/
 <<
-Source: mirror:custom:Pike-v%v.tar.gz
-Source-MD5: 372930fb2f24b26162657551c16fecdd
+Source: mirror:custom:Pike-v%v-3.tar.gz
+Source-MD5: 178d5cd3b071beedf83c42128ada0048
 BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev
 Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,dlcompat-shlibs,mysql12-shlibs
 SourceDirectory: Pike-v%v
 CompileScript: <<
-make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-dumped-modules --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --without-perl --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade --without-poll"
+make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --without-perl --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
 <<
 InstallScript: <<
  cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"`
  make install prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ include_path=%p/inclide/pike74/ INSTALLARGS=--traditional
-# make doc
-# mkdir -p %i/share/doc/%n
-# cp -rf refdoc/modref %i/share/doc/%n/
-# cp -rf refdoc/traditional_manual %i/share/doc/%n/
+ make doc
+ mkdir -p %i/share/doc/%n
+ cp -rf refdoc/modref %i/share/doc/%n/
+ cp -rf refdoc/traditional_manual %i/share/doc/%n/
  mv %i/bin/pike %i/bin/pike75
  mv %i/bin/hilfe %i/bin/hilfe75
  mv %i/share/man/man1/pike.1 %i/share/man/man1/pike75.1
