@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.55 2003/01/05 01:18:38 nilsson Exp $
+|| $Id: math.c,v 1.56 2003/01/05 05:51:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -28,13 +28,13 @@
 
 
 #define sp Pike_sp
-#define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X))
+#define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X));
 #define ARG_CHECK(X) if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(X, 1); \
   TRIM_STACK(1); \
-  if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
+  if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.55 2003/01/05 01:18:38 nilsson Exp $");
+RCSID("$Id: math.c,v 1.56 2003/01/05 05:51:49 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -84,8 +84,8 @@ int matherr(struct exception *exc)
 void f_sin(INT32 args)
 {
   ARG_CHECK("sin");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)sin(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)sin(sp[-1].u.float_number));
 }
 
 /*! @decl float asin(float f)
@@ -99,8 +99,8 @@ void f_sin(INT32 args)
 void f_asin(INT32 args)
 {
   ARG_CHECK("asin");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)asin(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)asin(sp[-1].u.float_number));
 }
 
 /*! @decl float cos(float f)
@@ -114,8 +114,8 @@ void f_asin(INT32 args)
 void f_cos(INT32 args)
 {
   ARG_CHECK("cos");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)cos(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)cos(sp[-1].u.float_number));
 }
 
 /*! @decl float acos(float f)
@@ -129,8 +129,8 @@ void f_cos(INT32 args)
 void f_acos(INT32 args)
 {
   ARG_CHECK("acos");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)acos(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)acos(sp[-1].u.float_number));
 }
 
 /*! @decl float tan(float f)
@@ -146,14 +146,14 @@ void f_tan(INT32 args)
   double f;
   ARG_CHECK("tan");
 
-  f = (sp[-args].u.float_number-M_PI/2) / M_PI;
+  f = (sp[-1].u.float_number-M_PI/2) / M_PI;
   if(f==floor(f+0.5))
   {
     Pike_error("Impossible tangent.\n");
     return;
   }
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)tan(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)tan(sp[-1].u.float_number));
 }
 
 /*! @decl float atan(float f)
@@ -167,8 +167,8 @@ void f_tan(INT32 args)
 void f_atan(INT32 args)
 {
   ARG_CHECK("atan");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)atan(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)atan(sp[-1].u.float_number));
 }
 
 /*! @decl float atan2(float f1, float f2)
@@ -185,13 +185,13 @@ void f_atan2(INT32 args)
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("atan2", 1);
   TRIM_STACK(2);
-  if(sp[-args].type!=T_FLOAT)
+  if(sp[-2].type!=T_FLOAT)
     SIMPLE_BAD_ARG_ERROR("atan2", 1, "float");
-  if(sp[-args+1].type!=T_FLOAT)
+  if(sp[-1].type!=T_FLOAT)
     SIMPLE_BAD_ARG_ERROR("atan2", 2, "float");
-  sp[-args].u.float_number=
-    DO_NOT_WARN((FLOAT_TYPE)atan2(sp[-args].u.float_number,
-				  sp[-args+1].u.float_number));
+  sp[-2].u.float_number=
+    DO_NOT_WARN((FLOAT_TYPE)atan2(sp[-2].u.float_number,
+				  sp[-1].u.float_number));
   pop_stack();
 }
 
@@ -210,7 +210,7 @@ void f_sqrt(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("sqrt", 1);
   TRIM_STACK(1);
 
-  if(sp[-args].type==T_INT)
+  if(sp[-1].type==T_INT)
   {
     /* Note: This algorithm is also implemented in src/stuff.c */
     unsigned INT32 n, b, s, y=0;
@@ -218,8 +218,8 @@ void f_sqrt(INT32 args)
 
     /* FIXME: Note: Regards i as an unsigned value. */
     
-    if(sp[-args].u.integer<0) Pike_error("math: sqrt(x) with (x < 0)\n");
-    n=sp[-args].u.integer;
+    if(sp[-1].u.integer<0) Pike_error("math: sqrt(x) with (x < 0)\n");
+    n=sp[-1].u.integer;
 
     for(b=1<<(sizeof(INT32)*8-2); b; b>>=2)
     {
@@ -229,22 +229,21 @@ void f_sqrt(INT32 args)
 	x|=1; y|=b; n-=s;
       }
     }
-    sp[-args].u.integer=x;
+    sp[-1].u.integer=x;
   }
-  else if(sp[-args].type==T_FLOAT)
+  else if(sp[-1].type==T_FLOAT)
   {
-    if (sp[-args].u.float_number< 0.0)
+    if (sp[-1].u.float_number< 0.0)
     {
       Pike_error("math: sqrt(x) with (x < 0.0)\n");
       return;
     }
-    sp[-args].u.float_number =
-      DO_NOT_WARN((FLOAT_TYPE)sqrt(sp[-args].u.float_number));
+    sp[-1].u.float_number =
+      DO_NOT_WARN((FLOAT_TYPE)sqrt(sp[-1].u.float_number));
   }
 #ifdef AUTO_BIGNUM
-  else if(sp[-args].type == T_OBJECT)
+  else if(sp[-1].type == T_OBJECT)
   {
-    pop_n_elems(args-1);
     stack_dup();
     push_constant_text("_sqrt");
     o_index();
@@ -273,11 +272,11 @@ void f_sqrt(INT32 args)
 void f_log(INT32 args)
 {
   ARG_CHECK("log");
-  if(sp[-args].u.float_number <=0.0)
+  if(sp[-1].u.float_number <=0.0)
     Pike_error("Log on number less or equal to zero.\n");
 
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)log(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)log(sp[-1].u.float_number));
 }
 
 /*! @decl float exp(float f)
@@ -333,8 +332,8 @@ void f_pow(INT32 args)
     case T_FLOAT * 17:
     {
       FLOAT_TYPE x,y;
-      get_all_args("pow",args,"%F%F",&x,&y);
-      pop_n_elems(args);
+      get_all_args("pow",2,"%F%F",&x,&y);
+      pop_n_elems(2);
       push_float(pow((double)x, (double)y));
       return;
     }
@@ -358,8 +357,8 @@ void f_pow(INT32 args)
 void f_floor(INT32 args)
 {
   ARG_CHECK("floor");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)floor(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)floor(sp[-1].u.float_number));
 }
 
 /*! @decl float ceil(float f)
@@ -376,8 +375,8 @@ void f_floor(INT32 args)
 void f_ceil(INT32 args)
 {
   ARG_CHECK("ceil");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)ceil(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)ceil(sp[-1].u.float_number));
 }
 
 /*! @decl float round(float f)
@@ -394,8 +393,8 @@ void f_ceil(INT32 args)
 void f_round(INT32 args)
 {
   ARG_CHECK("round");
-  sp[-args].u.float_number =
-    DO_NOT_WARN((FLOAT_TYPE)RINT(sp[-args].u.float_number));
+  sp[-1].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)RINT(sp[-1].u.float_number));
 }
 
 /*! @decl int|float|object min(int|float|object ... args)
@@ -499,8 +498,10 @@ void f_sgn(INT32 args)
   zero.type=T_INT;
   zero.u.integer=0;
 
+  TRIM_STACK(2);
   check_all_args("sgn",args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
-  if(args<2) push_int(0);
+  if(args<2)
+    push_int(0);
 
   if(is_lt(sp-2,sp-1))
   {
