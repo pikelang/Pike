@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.365 2001/05/03 17:05:59 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.366 2001/05/05 23:25:13 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -60,16 +60,16 @@ RCSID("$Id: builtin_functions.c,v 1.365 2001/05/03 17:05:59 grubba Exp $");
 
 /*! @decl int equal(mixed a, mixed b)
  *!
- *! This function checks if the values @[a] and @[b] are equal.
+ *!   This function checks if the values @[a] and @[b] are equal.
  *!
- *! For all types but arrays, multisets and mappings, this operation is
- *! the same as doing @code{@[a] == @[b]@}.
- *! For arrays, mappings and multisets however, their contents are checked
- *! recursively, and if all their contents are the same and in the same
- *! place, they are considered equal.
+ *!   For all types but arrays, multisets and mappings, this operation is
+ *!   the same as doing @code{@[a] == @[b]@}.
+ *!   For arrays, mappings and multisets however, their contents are checked
+ *!   recursively, and if all their contents are the same and in the same
+ *!   place, they are considered equal.
  *!
  *! @seealso
- *! @[copy_value()]
+ *!   @[copy_value()]
  */
 PMOD_EXPORT void f_equal(INT32 args)
 {
@@ -84,18 +84,18 @@ PMOD_EXPORT void f_equal(INT32 args)
 
 /*! @decl array aggregate(mixed ... elements)
  *!
- *! Construct an array with the arguments as indices.
+ *!   Construct an array with the arguments as indices.
  *!
- *! This function could be written in Pike as:
- *! @code{array aggregate(mixed ... elems) { return elems; }@}
+ *!   This function could be written in Pike as:
+ *!   @code{array aggregate(mixed ... elems) { return elems; }@}
  *!
  *! @note
- *! Arrays are dynamically allocated there is no need to declare them
- *! like int a[10]=allocate(10); (and it isn't possible either) like
- *! in C, just array(int) a=allocate(10); will do.
+ *!   Arrays are dynamically allocated there is no need to declare them
+ *!   like @code{int a[10]=allocate(10);@} (and it isn't possible either) like
+ *!   in C, just @code{array(int) a=allocate(10);@} will do.
  *!
  *! @seealso
- *! @[sizeof()], @[arrayp()], @[allocate()]
+ *!   @[sizeof()], @[arrayp()], @[allocate()]
  */
 PMOD_EXPORT void debug_f_aggregate(INT32 args)
 {
@@ -111,9 +111,9 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 /*! @decl int compat_hash(string s)
  *! @decl int compat_hash(string s, int max)
  *!
- *! This function will return an @tt{int@} derived from the string @[s].
- *! The same string will always hash to the same value.
- *! If @[max] is given, the result will be >= 0 and <= @[max].
+ *!   This function will return an @tt{int@} derived from the string @[s].
+ *!   The same string will always hash to the same value.
+ *!   If @[max] is given, the result will be >= 0 and <= @[max].
  *!
  *! @note
  *!   This function is provided for backward compatibility reasons.
@@ -155,9 +155,9 @@ void f_compat_hash( INT32 args )
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
  *!
- *! This function will return an @tt{int@} derived from the string @[s].
- *! The same string will always hash to the same value.
- *! If @[max] is given, the result will be >= 0 and <= @[max].
+ *!   This function will return an @tt{int@} derived from the string @[s].
+ *!   The same string will always hash to the same value.
+ *!   If @[max] is given, the result will be >= 0 and <= @[max].
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.1. If you want a hash
@@ -196,17 +196,17 @@ void f_hash(INT32 args)
 
 /*! @decl mixed copy_value(mixed value)
  *!
- *! Copy a value recursively.
+ *!   Copy a value recursively.
  *!
- *! If the result value is changed destructively (only possible for
- *! multisets, arrays and mappings) the copied value will not be changed.
+ *!   If the result value is changed destructively (only possible for
+ *!   multisets, arrays and mappings) the copied value will not be changed.
  *!
- *! The resulting value will always be equal to the copied (as tested with
- *! the function @[equal()]), but they may not the the same value (as tested
- *! with @[`==()]).
+ *!   The resulting value will always be equal to the copied (as tested with
+ *!   the function @[equal()]), but they may not the the same value (as tested
+ *!   with @[`==()]).
  *!
  *! @seealso
- *! @[equal()]
+ *!   @[equal()]
  */
 PMOD_EXPORT void f_copy_value(INT32 args)
 {
@@ -355,13 +355,14 @@ static struct case_info *find_ci_shift0(int c)
 
 /*! @decl string lower_case(string s)
  *!
- *! Convert a string to lower case.
+ *!   Convert a string to lower case.
  *!
- *! Returns a copy of the string @[s] with all upper case characters
- *! converted to lower case.
+ *! @returns
+ *!   Returns a copy of the string @[s] with all upper case characters
+ *!   converted to lower case.
  *!
  *! @seealso
- *! @[upper_case()]
+ *!   @[upper_case()]
  */
 PMOD_EXPORT void f_lower_case(INT32 args)
 {
@@ -404,13 +405,14 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
 /*! @decl string upper_case(string s)
  *!
- *! Convert a string to upper case.
+ *!   Convert a string to upper case.
  *!
- *! Returns a copy of the string @[s] with all lower case characters
- *! converted to upper case.
+ *! @returns
+ *!   Returns a copy of the string @[s] with all lower case characters
+ *!   converted to upper case.
  *!
  *! @seealso
- *! @[lower_case()]
+ *!   @[lower_case()]
  */
 PMOD_EXPORT void f_upper_case(INT32 args)
 {
@@ -474,10 +476,10 @@ PMOD_EXPORT void f_upper_case(INT32 args)
 
 /*! @decl int random(int max)
  *!
- *! This function returns a random number in the range 0 - @[max]-1.
+ *!   This function returns a random number in the range 0 - @[max]-1.
  *!
  *! @seealso
- *! @[random_seed()]
+ *!   @[random_seed()]
  */
 PMOD_EXPORT void f_random(INT32 args)
 {
@@ -506,7 +508,7 @@ PMOD_EXPORT void f_random(INT32 args)
 
 /*! @decl string random_string(int len)
  *!
- *! Returns a string of random characters 0-255 with the length @[len].
+ *!   Returns a string of random characters 0-255 with the length @[len].
  */
 PMOD_EXPORT void f_random_string(INT32 args)
 {
@@ -521,10 +523,10 @@ PMOD_EXPORT void f_random_string(INT32 args)
 
 /*! @decl void random_seed(int seed)
  *!
- *! This function sets the initial value for the random generator.
+ *!   This function sets the initial value for the random generator.
  *!
  *! @seealso
- *! @[random()]
+ *!   @[random()]
  */
 PMOD_EXPORT void f_random_seed(INT32 args)
 {
@@ -546,13 +548,13 @@ PMOD_EXPORT void f_random_seed(INT32 args)
 
 /*! @decl int query_num_arg()
  *!
- *! Returns the number of arguments given when the previous function was
- *! called.
+ *!   Returns the number of arguments given when the previous function was
+ *!   called.
  *!
- *! This is useful for functions that take a variable number of arguments.
+ *!   This is useful for functions that take a variable number of arguments.
  *!
  *! @seealso
- *! @[call_function()]
+ *!   @[call_function()]
  */
 void f_query_num_arg(INT32 args)
 {
@@ -564,25 +566,25 @@ void f_query_num_arg(INT32 args)
  *! @decl int search(array haystack, mixed needle, int|void start)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
  *!
- *! Search for @[needle] in @[haystack]. Return the position of @[needle] in
- *! @[haystack] or @tt{-1@} if not found.
+ *!   Search for @[needle] in @[haystack]. Return the position of @[needle] in
+ *!   @[haystack] or @tt{-1@} if not found.
  *!
- *! If the optional argument @[start] is present search is started at
- *! this position.
+ *!   If the optional argument @[start] is present search is started at
+ *!   this position.
  *!
- *! When @[haystack] is a string @[needle] must be a string or an int,
- *! and the first occurrence of the string or int is returned.
+ *!   When @[haystack] is a string @[needle] must be a string or an int,
+ *!   and the first occurrence of the string or int is returned.
  *!
- *! When @[haystack] is an array, @[needle] is compared only to one value at
- *! a time in @[haystack].
+ *!   When @[haystack] is an array, @[needle] is compared only to one value at
+ *!   a time in @[haystack].
  *!
- *! When @[haystack] is a mapping, @[search()] tries to find the index
- *! connected to the data @[needle]. That is, it tries to lookup the mapping
- *! backwards. If @[needle] isn't present in the mapping, zero is returned,
- *! and zero_type() will return 1 for this zero.
+ *!   When @[haystack] is a mapping, @[search()] tries to find the index
+ *!   connected to the data @[needle]. That is, it tries to lookup the mapping
+ *!   backwards. If @[needle] isn't present in the mapping, zero is returned,
+ *!   and zero_type() will return 1 for this zero.
  *!
  *! @seealso
- *! @[indices()], @[values()], @[zero_type()]
+ *!   @[indices()], @[values()], @[zero_type()]
  */
 PMOD_EXPORT void f_search(INT32 args)
 {
@@ -711,8 +713,8 @@ PMOD_EXPORT void f_search(INT32 args)
 
 /*! @decl int has_prefix(string s, string prefix)
  *!
- *! Returns @tt{1@} if the string @[s] starts with @[prefix],
- *! returns @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if the string @[s] starts with @[prefix],
+ *!   returns @tt{0@} (zero) otherwise.
  */
 PMOD_EXPORT void f_has_prefix(INT32 args)
 {
@@ -772,8 +774,8 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
 
 /*! @decl int has_suffix(string s, string suffix)
  *!
- *! Returns @tt{1@} if the string @[s] ends with @[suffix],
- *! returns @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if the string @[s] ends with @[suffix],
+ *!   returns @tt{0@} (zero) otherwise.
  */
 PMOD_EXPORT void f_has_suffix(INT32 args)
 {
@@ -836,22 +838,23 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
  *! @decl int has_index(array haystack, int index)
  *! @decl int has_index(mapping haystack, mixed index)
  *!
- *! Search for @[index] in @[haystack].
+ *!   Search for @[index] in @[haystack].
  *!
- *! Returns @tt{1@} if @[index] is in the index domain of @[haystack],
- *! or @tt{0@} (zero) if not found.
+ *! @returns
+ *!   Returns @tt{1@} if @[index] is in the index domain of @[haystack],
+ *!   or @tt{0@} (zero) if not found.
  *!
- *! This function is equivalent to (but sometimes faster than):
+ *!   This function is equivalent to (but sometimes faster than):
  *!
- *! @code{search(indices(haystack), index) != -1@}
+ *!   @code{search(indices(haystack), index) != -1@}
  *!
  *! @note
- *! A negative index in strings and arrays as recognized by the
- *! index operators @tt{`[]()@} and @tt{`[]=()@} is not considered
- *! a proper index by @[has_index()]
+ *!   A negative index in strings and arrays as recognized by the
+ *!   index operators @tt{`[]()@} and @tt{`[]=()@} is not considered
+ *!   a proper index by @[has_index()]
  *!
  *! @seealso
- *! @[has_value()], @[indices()], @[search()], @[values()], @[zero_type()]
+ *!   @[has_value()], @[indices()], @[search()], @[values()], @[zero_type()]
  */
 PMOD_EXPORT void f_has_index(INT32 args)
 {
@@ -921,22 +924,23 @@ PMOD_EXPORT void f_has_index(INT32 args)
  *! @decl int has_value(array haystack, int value)
  *! @decl int has_value(mapping haystack, mixed value)
  *!
- *! Search for @[value] in @[haystack].
+ *!   Search for @[value] in @[haystack].
  *!
- *! Returns @tt{1@} if @[value] is in the value domain of @[haystack],
- *! or @tt{0@} (zero) if not found.
+ *! @returns
+ *!   Returns @tt{1@} if @[value] is in the value domain of @[haystack],
+ *!   or @tt{0@} (zero) if not found.
  *!
- *! This function is in all cases except when both arguments are strings
- *! equivalent to (but sometimes faster than):
+ *!   This function is in all cases except when both arguments are strings
+ *!   equivalent to (but sometimes faster than):
  *!
- *! @code{search(values(@[haystack]), @[value]) != -1@}
+ *!   @code{search(values(@[haystack]), @[value]) != -1@}
  *!
- *! If both arguments are strings, @[has_value()] is equivalent to:
+ *!   If both arguments are strings, @[has_value()] is equivalent to:
  *!
- *! @code{search(@[haystack], @[value]) != -1@}
+ *!   @code{search(@[haystack], @[value]) != -1@}
  *!
  *! @seealso
- *! @[has_index()], @[indices()], @[search()], @[values()], @[zero_type()]
+ *!   @[has_index()], @[indices()], @[search()], @[values()], @[zero_type()]
  */
 PMOD_EXPORT void f_has_value(INT32 args)
 {
@@ -989,36 +993,36 @@ PMOD_EXPORT void f_has_value(INT32 args)
 
 /*! @decl array(array) backtrace()
  *!
- *! Get a description of the current call stack.
+ *!   Get a description of the current call stack.
  *!
- *! The description is returned as an array with one entry for each call
- *! frame on the stack.
+ *!   The description is returned as an array with one entry for each call
+ *!   frame on the stack.
  *!
- *! Each entry has this format:
- *! @array
- *!   @elem string file
- *!     A string with the filename if known, else zero.
- *!   @elem int line
- *!     An integer containing the linenumber if known, else zero.
- *!   @elem function fun
- *!     The function that was called at this level.
- *!   @elem mixed|void ... args
- *!     The arguments that the function was called with.
- *! @endarray
+ *!   Each entry has this format:
+ *!   @array
+ *!     @elem string file
+ *!       A string with the filename if known, else zero.
+ *!     @elem int line
+ *!       An integer containing the linenumber if known, else zero.
+ *!     @elem function fun
+ *!       The function that was called at this level.
+ *!     @elem mixed|void ... args
+ *!       The arguments that the function was called with.
+ *!   @endarray
  *!
- *! The current call frame will be last in the array.
+ *!   The current call frame will be last in the array.
  *!
  *! @note
- *! Please note that the frame order may be reversed in a later version
- *! (than 7.1) of Pike to accomodate for deferred backtraces.
+ *!   Please note that the frame order may be reversed in a later version
+ *!   (than 7.1) of Pike to accomodate for deferred backtraces.
  *!
- *! Note that the arguments reported in the backtrace are the current
- *! values of the variables, and not the ones that were at call-time.
- *! This can be used to hide sensitive information from backtraces
- *! (eg passwords).
+ *!   Note that the arguments reported in the backtrace are the current
+ *!   values of the variables, and not the ones that were at call-time.
+ *!   This can be used to hide sensitive information from backtraces
+ *!   (eg passwords).
  *!
  *! @seealso
- *! @[catch()], @[throw()]
+ *!   @[catch()], @[throw()]
  */
 PMOD_EXPORT void f_backtrace(INT32 args)
 {
@@ -1104,21 +1108,21 @@ PMOD_EXPORT void f_backtrace(INT32 args)
 /*! @decl void add_constant(string name, mixed value)
  *! @decl void add_constant(string name)
  *!
- *! Add a new predefined constant.
+ *!   Add a new predefined constant.
  *!
- *! This function is often used to add builtin functions.
- *! All programs compiled after @[add_constant()] function has been called
- *! can access @[value] by the name @[name].
+ *!   This function is often used to add builtin functions.
+ *!   All programs compiled after the @[add_constant()] function has been
+ *!   called can access @[value] by the name @[name].
  *!
- *! If there is a constant called @[name] already, it will be replaced by
- *! by the new definition. This will not affect already compiled programs.
+ *!   If there is a constant called @[name] already, it will be replaced by
+ *!   by the new definition. This will not affect already compiled programs.
  *!
- *! Calling add_constant without a value will remove that name from the list
- *! of constants. As with replacing, this will not affect already compiled
- *! programs.
+ *!   Calling @[add_constant()] without a value will remove that name from
+ *!   the list of constants. As with replacing, this will not affect already
+ *!   compiled programs.
  *!
  *! @seealso
- *! @[all_constants()]
+ *!   @[all_constants()]
  */
 PMOD_EXPORT void f_add_constant(INT32 args)
 {
@@ -1304,12 +1308,12 @@ static char *combine_path(char *cwd,char *file)
 
 /*! @decl string combine_path(string absolute, string relative)
  *!
- *! Concatenate a relative path to an absolute path and remove any
- *! @tt{"//"@}, @tt{"/.."@} or @tt{"/."@} to produce a straightforward
- *! absolute path as a result.
+ *!   Concatenate a relative path to an absolute path and remove any
+ *!   @tt{"//"@}, @tt{"/.."@} or @tt{"/."@} to produce a straightforward
+ *!   absolute path as result.
  *!
  *! @seealso
- *! @[getcwd()], @[Stdio.append_path()]
+ *!   @[getcwd()], @[Stdio.append_path()]
  */
 PMOD_EXPORT void f_combine_path(INT32 args)
 {
@@ -1349,24 +1353,25 @@ PMOD_EXPORT void f_combine_path(INT32 args)
 
 /*! @decl int zero_type(mixed a)
  *!
- *! Return the type of zero.
+ *!   Return the type of zero.
  *!
- *! There are many types of zeros out there, or at least there are two.
- *! One is returned by normal functions, and one returned by mapping
- *! lookups and find_call_out() when what you looked for wasn't there.
- *! The only way to separate these two kinds of zeros is @[zero_type()].
+ *!   There are many types of zeros out there, or at least there are two.
+ *!   One is returned by normal functions, and one returned by mapping
+ *!   lookups and @[find_call_out()] when what you looked for wasn't there.
+ *!   The only way to separate these two kinds of zeros is @[zero_type()].
  *!
- *! When doing a @[find_call_out()] or mapping lookup, @[zero_type()] on
- *! this value will return @tt{1@} if there was no such thing present in
- *! the mapping, or no such @tt{call_out@} could be found.
+ *! @returns
+ *!   When doing a @[find_call_out()] or mapping lookup, @[zero_type()] on
+ *!   this value will return @tt{1@} if there was no such thing present in
+ *!   the mapping, or if no such @tt{call_out@} could be found.
  *!
- *! If the argument to @[zero_type()] is a destructed object or a function
- *! in a destructed object, @tt{2@} will be returned.
+ *!   If the argument to @[zero_type()] is a destructed object or a function
+ *!   in a destructed object, @tt{2@} will be returned.
  *!
- *! In all other cases @[zero_type()] will return @tt{0@} (zero).
+ *!   In all other cases @[zero_type()] will return @tt{0@} (zero).
  *!
  *! @seealso
- *! @[fund_call_out()]
+ *!   @[fund_call_out()]
  */
 PMOD_EXPORT void f_zero_type(INT32 args)
 {
@@ -1397,18 +1402,18 @@ PMOD_EXPORT void f_zero_type(INT32 args)
 
 /*! @decl string string_to_unicode(string s)
  *!
- *! Converts a string into an UTF16 compliant byte-stream.
+ *!   Converts a string into an UTF16 compliant byte-stream.
  *!
  *! @note
- *! Throws an error if characters not legal in an UTF16 stream are encountered.
- *! Valid characters are in the range 0x00000 - 0x10ffff, except for characters
- *! 0xfffe and 0xffff.
+ *!   Throws an error if characters not legal in an UTF16 stream are
+ *!   encountered. Valid characters are in the range 0x00000 - 0x10ffff,
+ *!   except for characters 0xfffe and 0xffff.
  *!
- *! Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
+ *!   Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
  *!
  *! @seealso
- *! @[Locale.Charset.decode()], @[string_to_utf8()], @[unicode_to_string()],
- *! @[utf8_to_string()]
+ *!   @[Locale.Charset.decode()], @[string_to_utf8()], @[unicode_to_string()],
+ *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_string_to_unicode(INT32 args)
 {
@@ -1535,14 +1540,14 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 
 /*! @decl string unicode_to_string(string s)
  *!
- *! Converts an UTF16 byte-stream into a string.
+ *!   Converts an UTF16 byte-stream into a string.
  *!
  *! @note
- *! This function did not decode surrogates in Pike 7.2 and earlier.
+ *!   This function did not decode surrogates in Pike 7.2 and earlier.
  *!
  *! @seealso
- *! @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
- *! @[utf8_to_string()]
+ *!   @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_unicode_to_string(INT32 args)
 {
@@ -1695,18 +1700,18 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 /*! @decl string string_to_utf8(string s)
  *! @decl string string_to_utf8(string s, int extended)
  *!
- *! Converts a string into an UTF8 compliant byte-stream.
+ *!   Converts a string into an UTF8 compliant byte-stream.
  *!
  *! @note
- *! Throws an error if characters not valid in an UTF8 stream are encountered.
- *! Valid characters are in the range 0x00000000 - 0x7fffffff.
+ *!   Throws an error if characters not valid in an UTF8 stream are
+ *!   encountered. Valid characters are in the range 0x00000000 - 0x7fffffff.
  *!
- *! If @[extended] is 1, characters in the range 0x80000000-0xfffffffff
- *! will also be accepted, and encoded using a non-standard UTF8 extension.
+ *!   If @[extended] is 1, characters in the range 0x80000000-0xfffffffff
+ *!   will also be accepted, and encoded using a non-standard UTF8 extension.
  *!
  *! @seealso
- *! @[Locale.Charset.decode()], @[string_to_unicode()], @[unicode_to_string()]
- *! @[utf8_to_string()]
+ *!   @[Locale.Charset.decode()], @[string_to_unicode()],
+ *!   @[unicode_to_string()], @[utf8_to_string()]
  */
 void f_string_to_utf8(INT32 args)
 {
@@ -1829,17 +1834,17 @@ void f_string_to_utf8(INT32 args)
 /*! @decl string utf8_to_string(string s)
  *! @decl string utf8_to_string(string s, int extended)
  *!
- *! Converts an UTF8 byte-stream into a string.
+ *!   Converts an UTF8 byte-stream into a string.
  *!
  *! @note
- *! Throws an error if the stream is not a legal UFT8 byte-stream.
+ *!   Throws an error if the stream is not a legal UFT8 byte-stream.
  *!
- *! Accepts and decodes the extension used by @[string_to_utf8()], if
- *! @[extended] is @tt{1@}.
+ *!   Accepts and decodes the extension used by @[string_to_utf8()], if
+ *!   @[extended] is @tt{1@}.
  *!
  *! @seealso
- *! @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
- *! @[unicode_to_string()]
+ *!   @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[unicode_to_string()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)
 {
@@ -2000,11 +2005,11 @@ static void f_parse_pike_type( INT32 args )
 
 /*! @decl mapping (string:mixed) all_constant()
  *!
- *! Returns a mapping containing all global constants, indexed on the name
- *! of the constant, and with the value of the constant as value.
+ *!   Returns a mapping containing all global constants, indexed on the name
+ *!   of the constant, and with the value of the constant as value.
  *!
  *! @seealso
- *! @[add_constant()]
+ *!   @[add_constant()]
  */
 PMOD_EXPORT void f_all_constants(INT32 args)
 {
@@ -2015,10 +2020,10 @@ PMOD_EXPORT void f_all_constants(INT32 args)
 /*! @decl array allocate(int size)
  *! @decl array allocate(int size, mixed zero)
  *!
- *! Allocate an array of @[size] elements and initialize them to @[zero].
+ *!   Allocate an array of @[size] elements and initialize them to @[zero].
  *!
  *! @seealso
- *! @[sizeof()], @[aggregate()], @[arrayp()]
+ *!   @[sizeof()], @[aggregate()], @[arrayp()]
  */
 PMOD_EXPORT void f_allocate(INT32 args)
 {
@@ -2047,82 +2052,83 @@ PMOD_EXPORT void f_allocate(INT32 args)
 
 /*! @decl array(int) rusage()
  *!
- *! Return resource usage.
+ *!   Return resource usage.
  *!
- *! Returns an array of ints describing how much resources the interpreter
- *! process has used so far. This array will have at least 29 elements, of
- *! which those values not available on this system will be zero.
+ *! @returns
+ *!   Returns an array of ints describing how much resources the interpreter
+ *!   process has used so far. This array will have at least 29 elements, of
+ *!   which those values not available on this system will be zero.
  *!
- *! The elements are as follows:
- *! @array
- *!   @elem int user_time
- *!     Time in seconds spent in user code.
- *!   @elem int system_time
- *!     Time in seconds spent in system calls.
- *!   @elem int maxrss
- *!     Maximum resident size.
- *!   @elem int ixrss
- *!     ?
- *!   @elem int idrss
- *!     Integral resident size.
- *!   @elem int isrss
- *!     ?
- *!   @elem int minor_page_faults
- *!     Minor page faults (TLB misses).
- *!   @elem int major_page_faults
- *!     Major page faults (paging required).
- *!   @elem int swaps
- *!     Number of full swaps.
- *!   @elem int block_input_op
- *!     Number of block input operations.
- *!   @elem int block_output_op
- *!     Number of block output operations.
- *!   @elem int messages_sent
- *!     Number of messsages sent.
- *!   @elem int messages_received
- *!     Number of messsages received.
- *!   @elem int signals_received
- *!     Number of signals received.
- *!   @elem int voluntary_context_switches
- *!     Number of voluntary context switches.
- *!   @elem int involuntary_context_switches
- *!     Number of preemptions.
- *!   @elem int sysc
- *!     Number of system calls.
- *!   @elem int ioch
- *!     ?
- *!   @elem int rtime
- *!     ?
- *!   @elem int ttime
- *!     ?
- *!   @elem int tftime
- *!     ?
- *!   @elem int dftime
- *!     ?
- *!   @elem int kftime
- *!     ?
- *!   @elem int ltime
- *!     ?
- *!   @elem int slptime
- *!     ?
- *!   @elem int wtime
- *!     ?
- *!   @elem int stoptime
- *!     ?
- *!   @elem int brksize
- *!     Heap size.
- *!   @elem int stksize
- *!     Stack size.
- *! @endarray
+ *!   The elements are as follows:
+ *!   @array
+ *!   	@elem int user_time
+ *!   	  Time in seconds spent in user code.
+ *!   	@elem int system_time
+ *!   	  Time in seconds spent in system calls.
+ *!   	@elem int maxrss
+ *!   	  Maximum resident size.
+ *!   	@elem int ixrss
+ *!   	  ?
+ *!   	@elem int idrss
+ *!   	  Integral resident size.
+ *!   	@elem int isrss
+ *!   	  ?
+ *!   	@elem int minor_page_faults
+ *!   	  Minor page faults (TLB misses).
+ *!   	@elem int major_page_faults
+ *!   	  Major page faults (paging required).
+ *!   	@elem int swaps
+ *!   	  Number of full swaps.
+ *!   	@elem int block_input_op
+ *!   	  Number of block input operations.
+ *!   	@elem int block_output_op
+ *!   	  Number of block output operations.
+ *!   	@elem int messages_sent
+ *!   	  Number of messsages sent.
+ *!   	@elem int messages_received
+ *!   	  Number of messsages received.
+ *!   	@elem int signals_received
+ *!   	  Number of signals received.
+ *!   	@elem int voluntary_context_switches
+ *!   	  Number of voluntary context switches.
+ *!   	@elem int involuntary_context_switches
+ *!   	  Number of preemptions.
+ *!   	@elem int sysc
+ *!   	  Number of system calls.
+ *!   	@elem int ioch
+ *!   	  ?
+ *!   	@elem int rtime
+ *!   	  ?
+ *!   	@elem int ttime
+ *!   	  ?
+ *!   	@elem int tftime
+ *!   	  ?
+ *!   	@elem int dftime
+ *!   	  ?
+ *!   	@elem int kftime
+ *!   	  ?
+ *!   	@elem int ltime
+ *!   	  ?
+ *!   	@elem int slptime
+ *!   	  ?
+ *!   	@elem int wtime
+ *!   	  ?
+ *!   	@elem int stoptime
+ *!   	  ?
+ *!   	@elem int brksize
+ *!   	  Heap size.
+ *!   	@elem int stksize
+ *!   	  Stack size.
+ *!   @endarray
  *!
- *! The values will not be further explained here; read your system manual
- *! for more information.
+ *!   The values will not be further explained here; read your system manual
+ *!   for more information.
  *!
  *! @note
- *! All values may not be present on all systems.
+ *!   All values may not be present on all systems.
  *!
  *! @seealso
- *! @[time()]
+ *!   @[time()]
  */
 void f_rusage(INT32 args)
 {
@@ -2148,7 +2154,7 @@ void f_rusage(INT32 args)
 
 /*! @decl object this_object();
  *!
- *! Returns the object we are currently evaluating in.
+ *!   Returns the object we are currently evaluating in.
  */
 void f_this_object(INT32 args)
 {
@@ -2179,18 +2185,18 @@ node *fix_this_object_type(node *n)
 
 /*! @decl void throw(mixed value)
  *!
- *! Throw @[value] to a waiting @[catch].
+ *!   Throw @[value] to a waiting @[catch].
  *!
- *! If no @[catch] is waiting the global error handling will send the
- *! value to @[master()->handle_error()].
+ *!   If no @[catch] is waiting the global error handling will send the
+ *!   value to @[master()->handle_error()].
  *!
- *! If you throw an array with where the first index contains an error
- *! message and the second index is a backtrace, (the output from
- *! @[backtrace()]) then it will be treated exactly like a real error
- *! by overlying functions.
+ *!   If you throw an array with where the first index contains an error
+ *!   message and the second index is a backtrace, (the output from
+ *!   @[backtrace()]) then it will be treated exactly like a real error
+ *!   by overlying functions.
  *!
  *! @seealso
- *! @[catch]
+ *!   @[catch]
  */
 PMOD_EXPORT void f_throw(INT32 args)
 {
@@ -2204,14 +2210,14 @@ PMOD_EXPORT void f_throw(INT32 args)
 
 /*! @decl void exit(int returncode)
  *!
- *! Exit the whole Pike program with the given @[returncode].
+ *!   Exit the whole Pike program with the given @[returncode].
  *!
- *! Using @[exit()] with any other value than @tt{0@} (zero) indicates that
- *! something went wrong during execution. See your system manuals for
- *! more information about return codes.
+ *!   Using @[exit()] with any other value than @tt{0@} (zero) indicates that
+ *!   something went wrong during execution. See your system manuals for
+ *!   more information about return codes.
  *!
  *! @seealso
- *! @[_exit()]
+ *!   @[_exit()]
  */
 PMOD_EXPORT void f_exit(INT32 args)
 {
@@ -2233,15 +2239,15 @@ PMOD_EXPORT void f_exit(INT32 args)
 
 /*! @decl void _exit(int returncode)
  *!
- *! This function does the same as @[exit], but doesn't bother to clean
- *! up the Pike interpreter before exiting. This means that no destructors
- *! will be called, caches will not be flushed, file locks might not be
- *! released, and databases might not be closed properly.
+ *!   This function does the same as @[exit], but doesn't bother to clean
+ *!   up the Pike interpreter before exiting. This means that no destructors
+ *!   will be called, caches will not be flushed, file locks might not be
+ *!   released, and databases might not be closed properly.
  *!
- *! Use with extreme caution.
+ *!   Use with extreme caution.
  *!
  *! @seealso
- *! @[exit()]
+ *!   @[exit()]
  */
 void f__exit(INT32 args)
 {
@@ -2259,17 +2265,17 @@ void f__exit(INT32 args)
  *! @decl int time(int(1..1) one)
  *! @decl float time(int(2..) t)
  *!
- *! This function returns the number of seconds since 1 Jan 1970.
+ *!   This function returns the number of seconds since 1 Jan 1970.
  *!
- *! The second syntax does not call the system call @tt{time()@} as often,
- *! but is only updated in the backed (when Pike code isn't running).
+ *!   The second syntax does not call the system call @tt{time()@} as often,
+ *!   but is only updated in the backed (when Pike code isn't running).
  *!
- *! The third syntax can be used to measure time more preciely than one second.
- *! It return how many seconds has passed since @[t]. The precision of this
- *! function varies from system to system.
+ *!   The third syntax can be used to measure time more preciely than one
+ *!   second. It return how many seconds has passed since @[t]. The precision
+ *!   of this function varies from system to system.
  *!
  *! @seealso
- *! @[ctime()], @[localtime()], @[mktime()], @[gmtime()]
+ *!   @[ctime()], @[localtime()], @[mktime()], @[gmtime()]
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
@@ -2296,15 +2302,15 @@ PMOD_EXPORT void f_time(INT32 args)
 /*! @decl string crypt(string password)
  *! @decl int(0..1) crypt(string typed_password, string crypted_password)
  *!
- *! This function crypts and verifies a short string (only the first
- *! 8 characters are significant).
+ *!   This function crypts and verifies a short string (only the first
+ *!   8 characters are significant).
  *!
- *! The first syntax crypts the string @[password] into something that
- *! is hopefully hard to decrypt.
+ *!   The first syntax crypts the string @[password] into something that
+ *!   is hopefully hard to decrypt.
  *!
- *! The second syntax is used to verify @[typed_password] against
- *! @[crypted_password], and returns @tt{1@} if they match, and @tt{0@}
- *! (zero) otherwise.
+ *!   The second syntax is used to verify @[typed_password] against
+ *!   @[crypted_password], and returns @tt{1@} if they match, and @tt{0@}
+ *!   (zero) otherwise.
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
@@ -2362,12 +2368,12 @@ PMOD_EXPORT void f_crypt(INT32 args)
 
 /*! @decl void destruct(object o)
  *!
- *! Mark an object as destructed.
+ *!   Mark an object as destructed.
  *!
- *! Calls @tt{o->destroy()@}, and then clears all varaibles in the object.
+ *!   Calls @tt{o->destroy()@}, and then clears all varaibles in the object.
  *!
- *! All pointers and function pointers to this object will become zero.
- *! The destructed object will be freed from memory as soon as possible.
+ *!   All pointers and function pointers to this object will become zero.
+ *!   The destructed object will be freed from memory as soon as possible.
  */ 
 PMOD_EXPORT void f_destruct(INT32 args)
 {
@@ -2397,18 +2403,18 @@ PMOD_EXPORT void f_destruct(INT32 args)
 
 /*! @decl array indices(string|array|mapping|multiset|object x)
  *!
- *! Return an array of all valid indices for the value @[x].
+ *!   Return an array of all valid indices for the value @[x].
  *!
- *! For strings and arrays this is simply an array of ascending numbers.
+ *!   For strings and arrays this is simply an array of ascending numbers.
  *!
- *! For mappings and multisets, the array may contain any value.
+ *!   For mappings and multisets, the array may contain any value.
  *!
- *! For objects which define @[_indices()] that return value will be used.
+ *!   For objects which define @[_indices()] that return value will be used.
  *!
- *! For other objects an array with all non-static symbols will be returned.
+ *!   For other objects an array with all non-static symbols will be returned.
  *!
  *! @seealso
- *! @[values()]
+ *!   @[values()]
  */
 PMOD_EXPORT void f_indices(INT32 args)
 {
@@ -2706,24 +2712,24 @@ static node *fix_aggregate_mapping_type(node *n)
 
 /*! @decl array values(string|array|mapping|multiset|object x)
  *!
- *! Return an array of all possible values from indexing the value @[x].
+ *!   Return an array of all possible values from indexing the value @[x].
  *!
- *! For strings an array of int with the ISO10646 codes of the characters in
- *! the string is returned.
+ *!   For strings an array of int with the ISO10646 codes of the characters in
+ *!   the string is returned.
  *!
- *! For a multiset an array filled with ones (@tt{1@}) is returned.
+ *!   For a multiset an array filled with ones (@tt{1@}) is returned.
  *!
- *! For arrays a single-level copy of @[x] is returned.
+ *!   For arrays a single-level copy of @[x] is returned.
  *!
- *! For mappings the array may contain any value.
+ *!   For mappings the array may contain any value.
  *!
- *! For objects which define @[_values()] that return value will be used.
+ *!   For objects which define @[_values()] that return value will be used.
  *!
- *! For other objects an array with the values of all non-static symbols
- *! will be returned.
+ *!   For other objects an array with the values of all non-static symbols
+ *!   will be returned.
  *!
  *! @seealso
- *! @[indices()]
+ *!   @[indices()]
  */
 PMOD_EXPORT void f_values(INT32 args)
 {
@@ -2795,21 +2801,22 @@ PMOD_EXPORT void f_values(INT32 args)
 /*! @decl object next_object(object o)
  *! @decl object next_object()
  *!
- *! Returns the next object from the list of all objects.
+ *!   Returns the next object from the list of all objects.
  *!
- *! All objects are stored in a linked list.
- *! 
- *! If no arguments have been given @[next_object()] will return the first
- *! object from the list.
+ *!   All objects are stored in a linked list.
  *!
- *! If @[o] has been specified the object after @[o] on the list will be
- *! returned.
+ *! @returns
+ *!   If no arguments have been given @[next_object()] will return the first
+ *!   object from the list.
+ *!
+ *!   If @[o] has been specified the object after @[o] on the list will be
+ *!   returned.
  *!
  *! @note
- *! This function is not recomended to use.
+ *!   This function is not recomended to use.
  *!
  *! @seealso
- *! @[destruct()]
+ *!   @[destruct()]
  */
 PMOD_EXPORT void f_next_object(INT32 args)
 {
@@ -2834,10 +2841,10 @@ PMOD_EXPORT void f_next_object(INT32 args)
 
 /*! @decl program object_program(mixed o)
  *!
- *! Return the program from which @[o] was instantiated.
+ *!   Return the program from which @[o] was instantiated.
  *!
- *! If @[o] is not an object or has been destructed @tt{0@} (zero)
- *! will be returned.
+ *!   If @[o] is not an object or has been destructed @tt{0@} (zero)
+ *!   will be returned.
  */
 PMOD_EXPORT void f_object_program(INT32 args)
 {
@@ -2904,16 +2911,16 @@ node *fix_object_program_type(node *n)
  *! @decl array reverse(array a)
  *! @decl int reverse(int i)
  *!
- *! Reverses a string, array or int.
+ *!   Reverses a string, array or int.
  *!
- *! This function reverses a string, char by char, an array, value
- *! by value or an int, bit by bit and returns the result.
+ *!   This function reverses a string, char by char, an array, value
+ *!   by value or an int, bit by bit and returns the result.
  *!
- *! Reversing strings can be particularly useful for parsing difficult
- *! syntaxes which require scanning backwards.
+ *!   Reversing strings can be particularly useful for parsing difficult
+ *!   syntaxes which require scanning backwards.
  *!
  *! @seealso
- *! @[sscanf()]
+ *!   @[sscanf()]
  */
 PMOD_EXPORT void f_reverse(INT32 args)
 {
@@ -3167,27 +3174,28 @@ static struct pike_string * replace_many(struct pike_string *str,
  *! @decl array replace(array a, mixed from, mixed to)
  *! @decl mapping replace(mapping a, mixed from, mixed to)
  *!
- *! Generic replace function.
+ *!   Generic replace function.
  *!
- *! This function can do several kinds replacement operations, the
- *! different syntaxes do different things as follows:
+ *!   This function can do several kinds replacement operations, the
+ *!   different syntaxes do different things as follows:
  *! 
- *! If all the arguments are strings, a copy of @[s] with every
- *! occurrence of @[from] replaced with @[to] will be returned.
- *! Special case: @[to] will be inserted between every character in
- *! @[s] if @[from] is the empty string.
+ *!   If all the arguments are strings, a copy of @[s] with every
+ *!   occurrence of @[from] replaced with @[to] will be returned.
+ *!   Special case: @[to] will be inserted between every character in
+ *!   @[s] if @[from] is the empty string.
  *!
- *! If the first argument is a string, and the others array(string), a string
- *! with every occurrance of @[from][@i{i@}] in @[s] replaced with
- *! @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *! a mapping equvivalent to @code{@[mkmapping](@[from], @[to])@} can be used.
+ *!   If the first argument is a string, and the others array(string), a string
+ *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
+ *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
+ *!   a mapping equvivalent to @code{@[mkmapping](@[from], @[to])@} can be
+ *!   used.
  *!
- *! If the first argument is an array or mapping, the values of @[a] which
- *! are @[`==()] with @[from] will be replaced with @[to] destructively.
- *! @[a] will then be returned.
+ *!   If the first argument is an array or mapping, the values of @[a] which
+ *!   are @[`==()] with @[from] will be replaced with @[to] destructively.
+ *!   @[a] will then be returned.
  *!
  *! @note
- *! Note that @[replace()] on arrays and mappings is a destructive operation.
+ *!   Note that @[replace()] on arrays and mappings is a destructive operation.
  */
 PMOD_EXPORT void f_replace(INT32 args)
 {
@@ -3261,28 +3269,28 @@ PMOD_EXPORT void f_replace(INT32 args)
 /*! @decl program compile(string source, object|void handler, @
  *!                       int|void major, int|void minor)
  *!
- *! Compile a string to a program.
+ *!   Compile a string to a program.
  *!
- *! This function takes a piece of Pike code as a string and
- *! compiles it into a clonable program.
+ *!   This function takes a piece of Pike code as a string and
+ *!   compiles it into a clonable program.
  *!
- *! The optional argument @[handler] is used to specify an alternative
- *! error handler. If it is not specified the current master object will
- *! be used.
+ *!   The optional argument @[handler] is used to specify an alternative
+ *!   error handler. If it is not specified the current master object will
+ *!   be used.
  *!
- *! The optional arguments @[major] and @[minor] are used to tell the compiler
- *! to attempt to be compatible with Pike @[major].@[minor].
+ *!   The optional arguments @[major] and @[minor] are used to tell the
+ *!   compiler to attempt to be compatible with Pike @[major].@[minor].
  *!
  *! @note
- *! Note that @[source] must contain the complete source for a program.
- *! It is not possible to compile a single expression or statement.
+ *!   Note that @[source] must contain the complete source for a program.
+ *!   It is not possible to compile a single expression or statement.
  *!
- *! Also note that @[compile()] does not preprocess the program.
- *! To preprocess the program you can use @[compile_string()] or
- *! call the preprocessor manually by calling @[cpp()].
+ *!   Also note that @[compile()] does not preprocess the program.
+ *!   To preprocess the program you can use @[compile_string()] or
+ *!   call the preprocessor manually by calling @[cpp()].
  *!
  *! @seealso
- *! @[compile_string()], @[compile_file()], @[cpp()], @[master()]
+ *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()]
  */
 PMOD_EXPORT void f_compile(INT32 args)
 {
@@ -3340,8 +3348,8 @@ PMOD_EXPORT void f_compile(INT32 args)
 /*! @decl array|mapping|multiset set_weak_flag(array|mapping|multiset m, @
  *!                                            int(0..1) state)
  *!
- *! Set the value @[m] to hold weak references if @[state] is @tt{1@}.
- *! Reset to strong references otherwise.
+ *!   Set the value @[m] to hold weak references if @[state] is @tt{1@}.
+ *!   Reset to strong references otherwise.
  *!
  *! @returns
  *!   @[m] will be returned.
@@ -3377,11 +3385,11 @@ void f_set_weak_flag(INT32 args)
 
 /*! @decl int objectp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is an object, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is an object, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[functionp()],
- *! @[multisetp()], @[floatp()], @[intp()]
+ *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[functionp()],
+ *!   @[multisetp()], @[floatp()], @[intp()]
  */
 PMOD_EXPORT void f_objectp(INT32 args)
 {
@@ -3403,11 +3411,11 @@ PMOD_EXPORT void f_objectp(INT32 args)
 
 /*! @decl int functionp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a function, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a function, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
- *! @[multisetp()], @[floatp()], @[intp()]
+ *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
+ *!   @[multisetp()], @[floatp()], @[intp()]
  */
 PMOD_EXPORT void f_functionp(INT32 args)
 {
@@ -3423,11 +3431,11 @@ PMOD_EXPORT void f_functionp(INT32 args)
 
 /*! @decl int callablep(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a callable, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a callable, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
- *! @[multisetp()], @[floatp()], @[intp()]
+ *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
+ *!   @[multisetp()], @[floatp()], @[intp()]
  */
 PMOD_EXPORT void f_callablep(INT32 args)
 {
@@ -3460,13 +3468,13 @@ PMOD_EXPORT void f_callablep(INT32 args)
 
 /*! @decl void sleep(int|float s)
  *!
- *! This function makes the program stop for @[s] seconds.
+ *!   This function makes the program stop for @[s] seconds.
  *!
- *! Only signal handlers can interrupt the sleep. Other callbacks are
- *! not called during sleep.
+ *!   Only signal handlers can interrupt the sleep. Other callbacks are
+ *!   not called during sleep.
  *!
  *! @seealso
- *! @[signal()]
+ *!   @[signal()]
  */
 PMOD_EXPORT void f_sleep(INT32 args)
 {
@@ -3566,17 +3574,17 @@ PMOD_EXPORT void f_sleep(INT32 args)
 
 /*! @decl int gc()
  *!
- *! Force garbage collection.
+ *!   Force garbage collection.
  *!
- *! This function checks all the memory for cyclic structures such
- *! as arrays containing themselves and frees them if appropriate.
- *! It also frees up destructed objects. It then returns how many
- *! arrays/objects/programs/etc. it managed to free by doing this.
+ *!   This function checks all the memory for cyclic structures such
+ *!   as arrays containing themselves and frees them if appropriate.
+ *!   It also frees up destructed objects. It then returns how many
+ *!   arrays/objects/programs/etc. it managed to free by doing this.
  *!
- *! Normally there is no need to call this function since Pike will
- *! call it by itself every now and then. (Pike will try to predict
- *! when 20% of all arrays/object/programs in memory is 'garbage'
- *! and call this routine then.)
+ *!   Normally there is no need to call this function since Pike will
+ *!   call it by itself every now and then. (Pike will try to predict
+ *!   when 20% of all arrays/object/programs in memory is 'garbage'
+ *!   and call this routine then.)
  */
 void f_gc(INT32 args)
 {
@@ -3630,11 +3638,11 @@ void ID(INT32 args) \
 
 /*! @decl int programp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a program, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a program, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[mappingp()], @[intp()], @[arrayp()], @[stringp()], @[objectp()],
- *! @[multisetp()], @[floatp()], @[functionp()]
+ *!   @[mappingp()], @[intp()], @[arrayp()], @[stringp()], @[objectp()],
+ *!   @[multisetp()], @[floatp()], @[functionp()]
  */
 PMOD_EXPORT void f_programp(INT32 args)
 {
@@ -3663,56 +3671,56 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int intp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is an int, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is an int, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
- *! @[multisetp()], @[floatp()], @[functionp()]
+ *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
+ *!   @[multisetp()], @[floatp()], @[functionp()]
  */
 
 /*! @decl int mappingp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a mapping, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a mapping, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[intp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
- *! @[multisetp()], @[floatp()], @[functionp()]
+ *!   @[intp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
+ *!   @[multisetp()], @[floatp()], @[functionp()]
  */
 
 /*! @decl int arrayp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is an array, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is an array, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[intp()], @[programp()], @[mappingp()], @[stringp()], @[objectp()],
- *! @[multisetp()], @[floatp()], @[functionp()]
+ *!   @[intp()], @[programp()], @[mappingp()], @[stringp()], @[objectp()],
+ *!   @[multisetp()], @[floatp()], @[functionp()]
  */
 
 /*! @decl int multisetp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a multiset, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a multiset, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[intp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
- *! @[mappingp()], @[floatp()], @[functionp()]
+ *!   @[intp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
+ *!   @[mappingp()], @[floatp()], @[functionp()]
  */
 
 /*! @decl int stringp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a string, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a string, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[intp()], @[programp()], @[arrayp()], @[multisetp()], @[objectp()],
- *! @[mappingp()], @[floatp()], @[functionp()]
+ *!   @[intp()], @[programp()], @[arrayp()], @[multisetp()], @[objectp()],
+ *!   @[mappingp()], @[floatp()], @[functionp()]
  */
 
 /*! @decl int floatp(mixed arg)
  *!
- *! Returns @tt{1@} if @[arg] is a float, @tt{0@} (zero) otherwise.
+ *!   Returns @tt{1@} if @[arg] is a float, @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[intp()], @[programp()], @[arrayp()], @[multisetp()], @[objectp()],
- *! @[mappingp()], @[stringp()], @[functionp()]
+ *!   @[intp()], @[programp()], @[arrayp()], @[multisetp()], @[objectp()],
+ *!   @[mappingp()], @[stringp()], @[functionp()]
  */
 
 #ifdef AUTO_BIGNUM
@@ -3733,30 +3741,30 @@ TYPEP(f_floatp, "floatp", T_FLOAT)
 
 /*! @decl array sort(array(mixed) index, array(mixed) ... data)
  *!
- *! Sort arrays destructively.
+ *!   Sort arrays destructively.
  *!
- *! This function sorts the array @[index] destructively. That means
- *! that the array itself is changed and returned, no copy is created.
+ *!   This function sorts the array @[index] destructively. That means
+ *!   that the array itself is changed and returned, no copy is created.
  *!
- *! If extra arguments are given, they are supposed to be arrays of the
- *! same size as @[index]. Each of these arrays will be modified in the
- *! same way as @[index]. I.e. if index 3 is moved to position 0 in @[index]
- *! index 3 will be moved to position 0 in all the other arrays as well.
+ *!   If extra arguments are given, they are supposed to be arrays of the
+ *!   same size as @[index]. Each of these arrays will be modified in the
+ *!   same way as @[index]. I.e. if index 3 is moved to position 0 in @[index]
+ *!   index 3 will be moved to position 0 in all the other arrays as well.
  *!
- *! @[sort()] can sort strings, integers and floats in ascending order.
- *! Arrays will be sorted first on the first element of each array.
- *! Objects will be sorted in ascending order according to @[`<()], @[`>()]
- *! and @[`==()].
+ *!   @[sort()] can sort strings, integers and floats in ascending order.
+ *!   Arrays will be sorted first on the first element of each array.
+ *!   Objects will be sorted in ascending order according to @[`<()], @[`>()]
+ *!   and @[`==()].
  *!
  *! @returns
- *! The first argument will be returned.
+ *!   The first argument will be returned.
  *! 
  *! @note
- *! The sorting algorithm used is not stable, ie elements that are equal
- *! may get reordered.
+ *!   The sorting algorithm used is not stable, ie elements that are equal
+ *!   may get reordered.
  *!
  *! @seealso
- *! @[reverse()]
+ *!   @[reverse()]
  */
 PMOD_EXPORT void f_sort(INT32 args)
 {
@@ -3788,17 +3796,17 @@ PMOD_EXPORT void f_sort(INT32 args)
 
 /*! @decl array rows(mixed data, array index)
  *!
- *! Select a set of rows from an array.
+ *!   Select a set of rows from an array.
  *!
- *! This function is en optimized equivalent to:
+ *!   This function is en optimized equivalent to:
  *!
- *! @code{map(@[index], lambda(mixed x) { return @[data][x]; })@}
+ *!   @code{map(@[index], lambda(mixed x) { return @[data][x]; })@}
  *!
- *! That is, it indices data on every index in the array index and
- *! returns an array with the results.
+ *!   That is, it indices data on every index in the array index and
+ *!   returns an array with the results.
  *!
  *! @seealso
- *! @[column()]
+ *!   @[column()]
  */
 PMOD_EXPORT void f_rows(INT32 args)
 {
@@ -3839,15 +3847,15 @@ PMOD_EXPORT void f_rows(INT32 args)
 #ifdef PIKE_DEBUG
 /*! @decl void _verify_internals()
  *!
- *! Perform sanity checks.
+ *!   Perform sanity checks.
  *!
- *! This function goes through most of the internal Pike structures and
- *! generates a fatal error if one of them is found to be out of order.
- *! It is only used for debugging.
+ *!   This function goes through most of the internal Pike structures and
+ *!   generates a fatal error if one of them is found to be out of order.
+ *!   It is only used for debugging.
  *!
  *! @note
- *! This function is only available if the Pike runtime has been compiled
- *! with RTL debug.
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
@@ -3863,14 +3871,14 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 
 /*! @decl int _debug(int(0..) level)
  *!
- *! Set the run-time debug level.
+ *!   Set the run-time debug level.
  *!
  *! @returns
- *! The old debug level will be returned.
+ *!   The old debug level will be returned.
  *! 
  *! @note
- *! This function is only available if the Pike runtime has been compiled
- *! with RTL debug.
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__debug(INT32 args)
 {
@@ -3887,14 +3895,14 @@ PMOD_EXPORT void f__debug(INT32 args)
 
 /*! @decl int _optimizer_debug(int(0..) level)
  *!
- *! Set the optimizer debug level.
+ *!   Set the optimizer debug level.
  *!
  *! @returns
- *! The old optimizer debug level will be returned.
+ *!   The old optimizer debug level will be returned.
  *! 
  *! @note
- *! This function is only available if the Pike runtime has been compiled
- *! with RTL debug.
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__optimizer_debug(INT32 args)
 {
@@ -3912,14 +3920,14 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 
 /*! @decl int _assembler_debug(int(0..) level)
  *!
- *! Set the assembler debug level.
+ *!   Set the assembler debug level.
  *!
  *! @returns
- *! The old assembler debug level will be returned.
+ *!   The old assembler debug level will be returned.
  *! 
  *! @note
- *! This function is only available if the Pike runtime has been compiled
- *! with RTL debug.
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__assembler_debug(INT32 args)
 {
@@ -3939,14 +3947,14 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
 
 /*! @decl int _compiler_trace(int(0..) level)
  *!
- *! Set the compiler trace level.
+ *!   Set the compiler trace level.
  *!
  *! @returns
- *! The old compiler trace level will be returned.
+ *!   The old compiler trace level will be returned.
  *! 
  *! @note
- *! This function is only available if the Pike runtime has been compiled
- *! with RTL debug.
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__compiler_trace(INT32 args)
 {
@@ -3992,13 +4000,13 @@ static void encode_struct_tm(struct tm *tm)
 #ifdef HAVE_GMTIME
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
- *! Convert seconds since 1970 into components.
+ *!   Convert seconds since 1970 into components.
  *!
- *! This function works like @[localtime()] but the result is
- *! not adjusted for the local time zone.
+ *!   This function works like @[localtime()] but the result is
+ *!   not adjusted for the local time zone.
  *!
  *! @seealso
- *! @[localtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[localtime()], @[time()], @[ctime()], @[mktime()]
  */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
@@ -4022,38 +4030,38 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 #ifdef HAVE_LOCALTIME
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
- *! Convert seconds since 1970 into components.
+ *!   Convert seconds since 1970 into components.
  *!
  *! @returns
- *! This function returns a mapping with the following components:
- *! @mapping
- *!   @member int(0..60) "sec"
- *!     Seconds over the minute.
- *!   @member int(0..59) "min"
- *!     Minutes over the hour.
- *!   @member int(0..23) "hour"
- *!     Hour of the day.
- *!   @member int(1..31) "mday"
- *!     Day of the month.
- *!   @member int(0..11) "mon"
- *!     Month of the year.
- *!   @member int(0..) "year"
- *!     Year since 1900.
- *!   @member int(0..6) "wday"
- *!     Day of week (0 = Sunday).
- *!   @member int(0..365) "yday"
- *!     Day of the year.
- *!   @member int(0..1) "isdst"
- *!     Is daylight savings time.
- *!   @member int "timezone"
- *!     Offset from UTC.
- *! @endmapping
+ *!   This function returns a mapping with the following components:
+ *!   @mapping
+ *!   	@member int(0..60) "sec"
+ *!   	  Seconds over the minute.
+ *!   	@member int(0..59) "min"
+ *!   	  Minutes over the hour.
+ *!   	@member int(0..23) "hour"
+ *!   	  Hour of the day.
+ *!   	@member int(1..31) "mday"
+ *!   	  Day of the month.
+ *!   	@member int(0..11) "mon"
+ *!   	  Month of the year.
+ *!   	@member int(0..) "year"
+ *!   	  Year since 1900.
+ *!   	@member int(0..6) "wday"
+ *!   	  Day of week (0 = Sunday).
+ *!   	@member int(0..365) "yday"
+ *!   	  Day of the year.
+ *!   	@member int(0..1) "isdst"
+ *!   	  Is daylight savings time.
+ *!   	@member int "timezone"
+ *!   	  Offset from UTC.
+ *!   @endmapping
  *!
  *! @note
- *! The field @tt{"timezone"@} may not be available on all platforms.
+ *!   The field @tt{"timezone"@} may not be available on all platforms.
  *!
  *! @seealso
- *! @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
  */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
@@ -4089,34 +4097,34 @@ PMOD_EXPORT void f_localtime(INT32 args)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int isdst, int tz)
  *!
- *! This function converts information about date and time into an integer
- *! which contains the number of seconds since the beginning of 1970.
+ *!   This function converts information about date and time into an integer
+ *!   which contains the number of seconds since the beginning of 1970.
  *!
- *! You can either call this function with a mapping containing the
- *! following elements:
- *! @mapping
- *!   @member int(0..60) "sec"
- *!     Seconds over the minute.
- *!   @member int(0..59) "min"
- *!     Minutes over the hour.
- *!   @member int(0..23) "hour"
- *!     Hour of the day.
- *!   @member int(1..31) "mday"
- *!     Day of the month.
- *!   @member int(0..11) "mon"
- *!     Month of the year.
- *!   @member int(0..) "year"
- *!     Year since 1900.
- *!   @member int(0..1) "isdst"
- *!     Is daylight savings time.
- *!   @member int(-12..12) "timezone"
- *!     The timezone offset from UTC in hours.
- *! @endmapping
+ *!   You can either call this function with a mapping containing the
+ *!   following elements:
+ *!   @mapping
+ *!   	@member int(0..60) "sec"
+ *!   	  Seconds over the minute.
+ *!   	@member int(0..59) "min"
+ *!   	  Minutes over the hour.
+ *!   	@member int(0..23) "hour"
+ *!   	  Hour of the day.
+ *!   	@member int(1..31) "mday"
+ *!   	  Day of the month.
+ *!   	@member int(0..11) "mon"
+ *!   	  Month of the year.
+ *!   	@member int(0..) "year"
+ *!   	  Year since 1900.
+ *!   	@member int(0..1) "isdst"
+ *!   	  Is daylight savings time.
+ *!   	@member int(-12..12) "timezone"
+ *!   	  The timezone offset from UTC in hours.
+ *!   @endmapping
  *!
- *! Or you can just send them all on one line as the second syntax suggests.
+ *!   Or you can just send them all on one line as the second syntax suggests.
  *!
  *! @seealso
- *! @[time()], @[ctime()], @[localtime()], @[gmtime()]
+ *!   @[time()], @[ctime()], @[localtime()], @[gmtime()]
  */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
@@ -4299,7 +4307,7 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 
 /*! @decl array parse_format(string fmt)
  *!
- *! Parses a sprintf/sscanf-style format string
+ *!   Parses a sprintf/sscanf-style format string
  */
 static void f_parse_format(INT32 args)
 {
@@ -4361,19 +4369,19 @@ static int does_match(struct pike_string *s,int j,
 /*! @decl int(0..1) glob(string glob, string str)
  *! @decl array(string) glob(string glob, array(string) arr)
  *!
- *! Match strings against globs.
+ *!   Match strings against globs.
  *!
- *! In a glob string a question sign matches any character and
- *! an asterisk matches any string.
+ *!   In a glob string a question sign matches any character and
+ *!   an asterisk matches any string.
  *!
- *! When the second argument is a string and @[str] matches
- *! the glob @[glob] @tt{1@} will be returned, @tt{0@} (zero) otherwise.
+ *!   When the second argument is a string and @[str] matches
+ *!   the glob @[glob] @tt{1@} will be returned, @tt{0@} (zero) otherwise.
  *!
- *! If the second array is an array and array containing the strings in
- *! @[arr] that match @[glob] will be returned.
+ *!   If the second array is an array and array containing the strings in
+ *!   @[arr] that match @[glob] will be returned.
  *!
  *! @seealso
- *! @[sscanf()], @[Regexp]
+ *!   @[sscanf()], @[Regexp]
  */
 PMOD_EXPORT void f_glob(INT32 args)
 {
@@ -4438,10 +4446,10 @@ PMOD_EXPORT void f_glob(INT32 args)
 
 /*! @decl array(int) interleave_array(array(mapping(int:mixed)) tab)
  *!
- *! Interleave a sparse matrix.
+ *!   Interleave a sparse matrix.
  *!
- *! Returns an array with offsets that describe how to interleave
- *! the rows of @[tab].
+ *!   Returns an array with offsets that describe how to interleave
+ *!   the rows of @[tab].
  */
 static void f_interleave_array(INT32 args)
 {
@@ -4694,13 +4702,13 @@ static struct array *longest_ordered_sequence(struct array *a)
 
 /*! @decl array(int) longest_ordered_sequence(array a)
  *!
- *! Find the longest ordered sequence of elements.
+ *!   Find the longest ordered sequence of elements.
  *!
- *! This function returns an array of the indices in the longest
- *! ordered sequence of elements in the array.
+ *!   This function returns an array of the indices in the longest
+ *!   ordered sequence of elements in the array.
  *!
  *! @seealso
- *! @[diff()]
+ *!   @[diff()]
  */
 static void f_longest_ordered_sequence(INT32 args)
 {
@@ -5393,13 +5401,13 @@ static struct array* diff_build(struct array *a,
 
 /*! @decl array permute(array in, int number)
  *!
- *! Give a specified permutation of an array.
+ *!   Give a specified permutation of an array.
  *!
- *! The number of permutations is equal to @code{sizeof(@[in])!@}
- *! (the factorial of the size of the given array).
+ *!   The number of permutations is equal to @code{sizeof(@[in])!@}
+ *!   (the factorial of the size of the given array).
  *!
  *! @seealso
- *! @[shuffle()]
+ *!   @[shuffle()]
  */
 PMOD_EXPORT void f_permute( INT32 args )
 {
@@ -5438,15 +5446,16 @@ PMOD_EXPORT void f_permute( INT32 args )
 
 /*! @decl array(array(array)) diff(array a, array b)
  *!
- *! Calculates which parts of the arrays that are common to both, and
- *! which parts that are not.
+ *!   Calculates which parts of the arrays that are common to both, and
+ *!   which parts that are not.
  *!
  *! @returns
- *! Returns an array with two elements, the first is an array of parts in
- *! array @[a], and the second is an array of parts in array @[b].
+ *!   Returns an array with two elements, the first is an array of parts in
+ *!   array @[a], and the second is an array of parts in array @[b].
  *!
  *! @seealso
- *! @[diff_compare_table()], @[diff_longset_sequence()], @[String.fuzzymatch()]
+ *!   @[diff_compare_table()], @[diff_longset_sequence()],
+ *!   @[String.fuzzymatch()]
  */
 PMOD_EXPORT void f_diff(INT32 args)
 {
@@ -5495,11 +5504,11 @@ PMOD_EXPORT void f_diff(INT32 args)
 
 /*! @decl array(array(int)) diff_compare_table(array a, array b)
  *!
- *! Returns an array which maps from index in @[a] to corresponding
- *! indices in @[b].
+ *!   Returns an array which maps from index in @[a] to corresponding
+ *!   indices in @[b].
  *!
  *! @seealso
- *! @[diff()], @[diff_longset_sequence()], @[String.fuzzymatch()]
+ *!   @[diff()], @[diff_longset_sequence()], @[String.fuzzymatch()]
  */
 void f_diff_compare_table(INT32 args)
 {
@@ -5517,11 +5526,11 @@ void f_diff_compare_table(INT32 args)
 
 /*! @decl array(int) diff_longest_sequence(array a, array b)
  *!
- *! Gives the longest sequence of indices in @[b] that have corresponding
- *! values in the same order in @[a].
+ *!   Gives the longest sequence of indices in @[b] that have corresponding
+ *!   values in the same order in @[a].
  *!
  *! @seealso
- *! @[diff()], @[diff_compare_table()], @[String.fuzzymatch()]
+ *!   @[diff()], @[diff_compare_table()], @[String.fuzzymatch()]
  */
 void f_diff_longest_sequence(INT32 args)
 {
@@ -5544,16 +5553,16 @@ void f_diff_longest_sequence(INT32 args)
 
 /*! @decl array(int) diff_dyn_longest_sequence(array a, array b)
  *!
- *! Gives the longest sequence of indices in @[b] that have corresponding
- *! values in the same order in @[a].
+ *!   Gives the longest sequence of indices in @[b] that have corresponding
+ *!   values in the same order in @[a].
  *!
- *! This function performs the same operation as @[diff_longset_sequence()],
- *! but uses a different algorithm, which in some rare cases might be faster
- *! (usually it's slower though).
+ *!   This function performs the same operation as @[diff_longset_sequence()],
+ *!   but uses a different algorithm, which in some rare cases might be faster
+ *!   (usually it's slower though).
  *!
  *! @seealso
- *! @[diff_longest_sequence()], @[diff()], @[diff_compare_table()],
- *! @[String.fuzzymatch()]
+ *!   @[diff_longest_sequence()], @[diff()], @[diff_compare_table()],
+ *!   @[String.fuzzymatch()]
  */
 void f_diff_dyn_longest_sequence(INT32 args)
 {
@@ -5590,17 +5599,17 @@ struct callback *add_memory_usage_callback(callback_func call,
 
 /*! @decl mapping(string:int) _memory_usage()
  *!
- *! Check memory usage.
+ *!   Check memory usage.
  *!
- *! This function is mostly intended for debugging. It delivers a mapping
- *! with information about how many arrays/mappings/strings etc. there
- *! are currently allocated and how much memory they use.
+ *!   This function is mostly intended for debugging. It delivers a mapping
+ *!   with information about how many arrays/mappings/strings etc. there
+ *!   are currently allocated and how much memory they use.
  *!
  *! @note
- *! Exactly what this function returns is version dependant.
+ *!   Exactly what this function returns is version dependant.
  *!
  *! @seealso
- *! @[_verify_internals()]
+ *!   @[_verify_internals()]
  */
 PMOD_EXPORT void f__memory_usage(INT32 args)
 {
@@ -5670,15 +5679,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
 /*! @decl mixed _next(mixed x)
  *!
- *! Find the next object/array/mapping/multiset/program or string.
+ *!   Find the next object/array/mapping/multiset/program or string.
  *!
- *! All objects, arrays, mappings, multisets, programs and strings are
- *! stored in linked lists inside Pike. This function returns the next
- *! item on the corresponding list. It is mainly meant for debugging
- *! the Pike runtime, but can also be used to control memory usage.
+ *!   All objects, arrays, mappings, multisets, programs and strings are
+ *!   stored in linked lists inside Pike. This function returns the next
+ *!   item on the corresponding list. It is mainly meant for debugging
+ *!   the Pike runtime, but can also be used to control memory usage.
  *!
  *! @seealso
- *! @[next_object()], @[_prev()]
+ *!   @[next_object()], @[_prev()]
  */
 PMOD_EXPORT void f__next(INT32 args)
 {
@@ -5715,18 +5724,18 @@ PMOD_EXPORT void f__next(INT32 args)
 
 /*! @decl mixed _prev(mixed x)
  *!
- *! Find the previous object/array/mapping/multiset or program.
+ *!   Find the previous object/array/mapping/multiset or program.
  *!
- *! All objects, arrays, mappings, multisets and programs are
- *! stored in linked lists inside Pike. This function returns the previous
- *! item on the corresponding list. It is mainly meant for debugging
- *! the Pike runtime, but can also be used to control memory usage.
+ *!   All objects, arrays, mappings, multisets and programs are
+ *!   stored in linked lists inside Pike. This function returns the previous
+ *!   item on the corresponding list. It is mainly meant for debugging
+ *!   the Pike runtime, but can also be used to control memory usage.
  *!
  *! @note
- *! Unlike @[_next()] this function does not work on strings.
+ *!   Unlike @[_next()] this function does not work on strings.
  *!
  *! @seealso
- *! @[next_object()], @[_prev()]
+ *!   @[next_object()], @[_next()]
  */
 PMOD_EXPORT void f__prev(INT32 args)
 {
@@ -5761,17 +5770,17 @@ PMOD_EXPORT void f__prev(INT32 args)
 
 /*! @decl int _refs(string|array|mapping|multiset|function|object|program o)
  *!
- *! Return the number of references @[o] has.
+ *!   Return the number of references @[o] has.
  *!
- *! It is mainly meant for debugging the Pike runtime, but can also be
- *! used to control memory usage.
+ *!   It is mainly meant for debugging the Pike runtime, but can also be
+ *!   used to control memory usage.
  *!
  *! @note
- *! Note that the number of references will always be at least one since
- *! the value is located on the stack when this function is executed.
+ *!   Note that the number of references will always be at least one since
+ *!   the value is located on the stack when this function is executed.
  *!
  *! @seealso
- *! @[_next()], @[_prev()]
+ *!   @[_next()], @[_prev()]
  */
 PMOD_EXPORT void f__refs(INT32 args)
 {
@@ -5814,10 +5823,10 @@ PMOD_EXPORT void f__leak(INT32 args)
 
 /*! @decl type _typeof(mixed x)
  *!
- *! Return the runtime type of @[x].
+ *!   Return the runtime type of @[x].
  *!
  *! @seealso
- *! @[typeof()]
+ *!   @[typeof()]
  */
 PMOD_EXPORT void f__typeof(INT32 args)
 {
@@ -5834,17 +5843,17 @@ PMOD_EXPORT void f__typeof(INT32 args)
 
 /*! @decl void replace_master(object o)
  *!
- *! Replace the master object with @[o].
+ *!   Replace the master object with @[o].
  *!
- *! This will let you control many aspects of how Pike works, but beware that
- *! @tt{master.pike@} may be required to fill certain functions, so it is
- *! probably a good idea to have your master inherit the original master and
- *! only re-define certain functions.
+ *!   This will let you control many aspects of how Pike works, but beware that
+ *!   @tt{master.pike@} may be required to fill certain functions, so it is
+ *!   usually a good idea to have your master inherit the original master and
+ *!   only re-define certain functions.
  *!
- *! FIXME: Tell how to inherit the master.
+ *!   FIXME: Tell how to inherit the master.
  *!
  *! @seealso
- *! @[master()]
+ *!   @[master()]
  */
 PMOD_EXPORT void f_replace_master(INT32 args)
 {
@@ -5872,10 +5881,10 @@ PMOD_EXPORT void f_replace_master(INT32 args)
 
 /*! @decl object master();
  *!
- *! Return the current master object.
+ *!   Return the current master object.
  *!
  *! @seealso
- *! @[replace_master()]
+ *!   @[replace_master()]
  */
 PMOD_EXPORT void f_master(INT32 args)
 {
@@ -5932,33 +5941,33 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 /*! @decl array(int|mapping(string:array(int))) @
  *!           get_profiling_info(program prog)
  *!
- *! Get profiling information.
+ *!   Get profiling information.
  *!
  *! @returns
- *! Returns an array with two elements.
- *! @array
- *!   @elem int num_clones
- *!     The first element is the number of times the program @[prog] has been
- *!     instantiated.
- *!   @elem mapping(string:array(int)) fun_prof_info
- *!     The second element is mapping from function name to an
- *!     array with three elements.
- *!     @array
- *!       @elem int num_calls
- *!         The first element is the number of times the function has been
- *!         called.
- *!       @elem int total_time
- *!         The second element is the total time (in milliseconds) spent
- *!         executing this function, and any functions called from it.
- *!       @elem int self_time
- *!         The third element is the time (in milliseconds) actually spent
- *!         in this function so far.
- *!     @endarray
- *! @endarray
+ *!   Returns an array with two elements.
+ *!   @array
+ *!   	@elem int num_clones
+ *!   	  The first element is the number of times the program @[prog] has been
+ *!   	  instantiated.
+ *!   	@elem mapping(string:array(int)) fun_prof_info
+ *!   	  The second element is mapping from function name to an
+ *!   	  array with three elements.
+ *!   	  @array
+ *!   	    @elem int num_calls
+ *!   	      The first element is the number of times the function has been
+ *!   	      called.
+ *!   	    @elem int total_time
+ *!   	      The second element is the total time (in milliseconds) spent
+ *!   	      executing this function, and any functions called from it.
+ *!   	    @elem int self_time
+ *!   	      The third element is the time (in milliseconds) actually spent
+ *!   	      in this function so far.
+ *!   	  @endarray
+ *!   @endarray
  *!
  *! @note
- *! This function is only available if the runtime was compiled with
- *! the option @tt{--with-profiling@}.
+ *!   This function is only available if the runtime was compiled with
+ *!   the option @tt{--with-profiling@}.
  */
 static void f_get_prof_info(INT32 args)
 {
@@ -6003,13 +6012,14 @@ static void f_get_prof_info(INT32 args)
 
 /*! @decl int(0..1) object_variablep(object o, string var)
  *!
- *! Find out if an object identifier is a variable.
+ *!   Find out if an object identifier is a variable.
  *!
- *! This function return @tt{1@} if @[var] exists is a non-static variable
- *! in @[o], @tt{0@} (zero) otherwise.
+ *! @returns
+ *!   This function returns @tt{1@} if @[var] exists as a non-static variable
+ *!   in @[o], and returns @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *! @[indices()], @[values()]
+ *!   @[indices()], @[values()]
  */
 PMOD_EXPORT void f_object_variablep(INT32 args)
 {
@@ -6041,10 +6051,10 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
 
 /*! @decl array uniq(array a)
  *!
- *! Remove elements that are duplicates.
+ *!   Remove elements that are duplicates.
  *!
- *! This function returns an copy of the array <i>a</i> with all duplicate
- *! values removed. The order of the values is kept in the result.
+ *!   This function returns an copy of the array <i>a</i> with all duplicate
+ *!   values removed. The order of the values is kept in the result.
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
@@ -6077,11 +6087,11 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 /*! @decl array(mixed) Array.splice(array(mixed) arr1, array(mixed) arr2, @
  *!                                 array(mixed) ... more_arrays)
  *!
- *! Splice two or more arrays.
+ *!   Splice two or more arrays.
  *!
- *! This means that the the array becomes an array of the first element
- *! in the first given array, the first argument in next array and so on
- *! for all arrays. Then the second elements are added, etc.
+ *!   This means that the the array becomes an array of the first element
+ *!   in the first given array, the first argument in next array and so on
+ *!   for all arrays. Then the second elements are added, etc.
  *!
  *! @seealso
  *!   @[`/()], @[`*()], @[`+()], @[`-()], @[everynth()]
@@ -6125,12 +6135,12 @@ PMOD_EXPORT void f_splice(INT32 args)
 /*! @decl array(mixed) Array.everynth(array(mixed) a, void|int n, @
  *!                                   void|int start)
  *!
- *! Return an array with every @[n]:th element of the array @[a].
+ *!   Return an array with every @[n]:th element of the array @[a].
  *!
- *! If @[n] is zero every other element will be returned.
+ *!   If @[n] is zero every other element will be returned.
  *!
  *! @seealso
- *! @[splice()], @[`/()]
+ *!   @[splice()], @[`/()]
  */
 void f_everynth(INT32 args)
 {
@@ -6289,16 +6299,18 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
 #endif
 
 #ifdef PIKE_DEBUG
-/*! @decl mapping(string:int) _locate_references(string|array|mapping|multiset|function|object|program o)
+/*! @decl mapping(string:int) _locate_references(string|array|mapping| @
+ *!                                              multiset|function|object| @
+ *!                                              program|type o)
  *!
- *! This function is mostly intended for debugging. It will search through
- *! all data structures in Pike looking for @[o] and print the
- *! locations on stderr. @[o] can be anything but @tt{int@} or
- *! @tt{float@}.
+ *!   This function is mostly intended for debugging. It will search through
+ *!   all data structures in Pike looking for @[o] and print the
+ *!   locations on stderr. @[o] can be anything but @tt{int@} or
+ *!   @tt{float@}.
  *!
  *! @note
- *! This function only exists if the Pike runtime has been compiled
- *! with RTL debug.
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__locate_references(INT32 args)
 {
@@ -6329,7 +6341,7 @@ PMOD_EXPORT void f__describe(INT32 args)
  *! @decl array map_array(array(function) arr, int(-1..-1) minus_one, @
  *!                       mixed ... args)
  *!
- *! This function is similar to @[map()].
+ *!   This function is similar to @[map()].
  *!
  *! @note
  *!   This function has been deprecated in favour of @[map()].
@@ -6379,65 +6391,65 @@ PMOD_EXPORT void f_map_array(INT32 args)
  *! @decl string map(string arr, mixed fun, mixed ... extra)
  *! @decl mixed map(object arr, mixed fun, mixed ... extra)
  *!
- *! Map a function over elements.
+ *!   Map a function over elements.
  *!
- *! @section Basic use
- *!   map() loops over all elements in arr and call the
- *!   function fun with the element as first argument, with all "extra"
- *!   arguments following. The result is the same datatype as "arr", but all
- *!   elements is the result from the function call of the corresponding
- *!   element.
- *! @endsection
+ *!   @section Basic use
+ *!   	map() loops over all elements in arr and call the
+ *!   	function fun with the element as first argument, with all "extra"
+ *!   	arguments following. The result is the same datatype as "arr", but all
+ *!   	elements is the result from the function call of the corresponding
+ *!   	element.
+ *!   @endsection
  *!
- *! @section Advanced use
- *!   There are a wide number of valid combinations of types for the arguments
- *!   @[arr] and @[fun].
- *!   @mixed @[arr]
- *!     @type array
- *!     @mixed @[fun]
- *!       @type function|program|object|array
- *!         @code{array ret; ret[i]=fun(arr[i],@@extra);@}
- *!       @type multiset|mapping
- *!         @code{array ret = rows(fun,arr);@}
- *!       @type string
- *!         @code{array ret = arr[fun](@@extra);@}
- *!       @type void|zero
- *!         @code{array ret = arr(@@extra);@}
- *!     @endmixed
- *!     @type mapping|program|function
- *!       @code{mapping ret = mkmapping(indices(arr),
- *!                                     map(values(arr),fun,@@extra));@}
- *!     @type multiset
- *!       @code{multiset ret = (multiset)(map(indices(arr),fun,@@extra));@}
- *!     @type string
- *!       @code{string ret = (string)map((array)arr,fun,@@extra);@}
- *!     @type object
- *!       If @[arr] implements @[_cast()], try casting in turn
- *!       @dl
- *!         @item
- *!           @code{map((array)arr,fun,@@extra);@}
- *!         @item
- *!           @code{map((mapping)arr,fun,@@extra);@}
- *!         @item
- *!           @code{map((multiset)arr,fun,@@extra);@}
- *!       @enddl
- *!       If @[arr] implements both @[_sizeof()], and @[`[]()], 
- *!       assume @[arr] simulates an array.
- *!   @endmixed
- *! @endsection
+ *!   @section Advanced use
+ *!   	There are a wide number of valid combinations of types for the
+ *!     arguments @[arr] and @[fun].
+ *!   	@mixed @[arr]
+ *!   	  @type array
+ *!   	  @mixed @[fun]
+ *!   	    @type function|program|object|array
+ *!   	      @code{array ret; ret[i]=fun(arr[i],@@extra);@}
+ *!   	    @type multiset|mapping
+ *!   	      @code{array ret = rows(fun,arr);@}
+ *!   	    @type string
+ *!   	      @code{array ret = arr[fun](@@extra);@}
+ *!   	    @type void|zero
+ *!   	      @code{array ret = arr(@@extra);@}
+ *!   	  @endmixed
+ *!   	  @type mapping|program|function
+ *!   	    @code{mapping ret = mkmapping(indices(arr),
+ *!   					  map(values(arr),fun,@@extra));@}
+ *!   	  @type multiset
+ *!   	    @code{multiset ret = (multiset)(map(indices(arr),fun,@@extra));@}
+ *!   	  @type string
+ *!   	    @code{string ret = (string)map((array)arr,fun,@@extra);@}
+ *!   	  @type object
+ *!   	    If @[arr] implements @[_cast()], try casting in turn
+ *!   	    @dl
+ *!   	      @item
+ *!   		@code{map((array)arr,fun,@@extra);@}
+ *!   	      @item
+ *!   		@code{map((mapping)arr,fun,@@extra);@}
+ *!   	      @item
+ *!   		@code{map((multiset)arr,fun,@@extra);@}
+ *!   	    @enddl
+ *!   	    If @[arr] implements both @[_sizeof()], and @[`[]()], 
+ *!   	    assume @[arr] simulates an array.
+ *!   	@endmixed
+ *!   @endsection
  *!
  *! @returns
- *! Generally the same datatype as given, but with the subtype set to
- *! the return value of the function; the exception are program and
- *! function that give a mapping back.
+ *!   Generally the same datatype as given, but with the subtype set to
+ *!   the return value of the function; the exception are program and
+ *!   function that give a mapping back.
  *!
  *! @note
- *! You may get unexpected errors if you feed the function with
- *! illegal values; for instance if @[fun] is an array of
- *! non-callables.
+ *!   You may get unexpected errors if you feed the function with
+ *!   illegal values; for instance if @[fun] is an array of
+ *!   non-callables.
  *!
  *! @seealso
- *! @[filter()], @[enumerate()], @[foreach()]
+ *!   @[filter()], @[enumerate()], @[foreach()]
  */
 PMOD_EXPORT void f_map(INT32 args)
 {
@@ -6739,46 +6751,46 @@ PMOD_EXPORT void f_map(INT32 args)
 /*! @decl array filter(array arr, function fun, mixed ...extra)
  *! @decl mixed filter(mixed arr, void|mixed fun, void|mixed ...extra)
  *!
- *! Map a function over elements and filters.
+ *!   Map a function over elements and filters.
  *!
- *! Calls the given function @[fun] for all elements in @[arr], and keeps the
- *! elements in @[arr] that resulted in a non-zero value from the function. 
+ *!   Calls the given function @[fun] for all elements in @[arr], and keeps the
+ *!   elements in @[arr] that resulted in a non-zero value from the function. 
  *!
- *! @mixed @[arr]
- *!   @type array
- *!     If @[fun] is an array:
- *!       @code{for (i=0; i<sizeof(@[arr]); i++) {
- *!               if (fun[i]) res += ({ @[arr][i]});
- *!       @}
- *!     otherwise:
- *!       @code{keep = map(@[arr], @[fun], @@@[extra]);
- *!             for (i=0; i < sizeof(@[arr]); i++) {
- *!               if (keep[i]) res += ({ @[arr][i]});
- *!       @}
- *!   @type multiset
- *!     @code{(multiset)filter((array)@[arr], @[fun], @@@[extra])@}
- *!   @type mapping|program|function
- *!     @code{ind = indices(@[arr]);
- *!           val = values(@[arr]);
- *!           keep = map(val, @[fun], @@@[extra]);
- *!           for (i=0; i<sizeof(keep); i++) 
- *!             if (keep[i]) res[ind[i]] = val[i];
- *!     @}
- *!   @type string
- *!     @code{(string)filter((array)@[arr], @[fun], @@@[extra])@}
- *!   @type object
- *!     if @code{@[arr]->cast@}, try in turn:
- *!       @code{filter((array)@[arr], @[fun], @@@[extra])@}
- *!       @code{filter((mapping)@[arr], @[fun], @@@[extra])@}
- *!       @code{filter((multiset)@[arr], @[fun], @@@[extra])@}
- *! @endmixed
+ *!   @mixed @[arr]
+ *!   	@type array
+ *!   	  If @[fun] is an array:
+ *!   	    @code{for (i=0; i<sizeof(@[arr]); i++) {
+ *!   		    if (fun[i]) res += ({ @[arr][i]});
+ *!   	    @}
+ *!   	  otherwise:
+ *!   	    @code{keep = map(@[arr], @[fun], @@@[extra]);
+ *!   		  for (i=0; i < sizeof(@[arr]); i++) {
+ *!   		    if (keep[i]) res += ({ @[arr][i]});
+ *!   	    @}
+ *!   	@type multiset
+ *!   	  @code{(multiset)filter((array)@[arr], @[fun], @@@[extra])@}
+ *!   	@type mapping|program|function
+ *!   	  @code{ind = indices(@[arr]);
+ *!   		val = values(@[arr]);
+ *!   		keep = map(val, @[fun], @@@[extra]);
+ *!   		for (i=0; i<sizeof(keep); i++) 
+ *!   		  if (keep[i]) res[ind[i]] = val[i];
+ *!   	  @}
+ *!   	@type string
+ *!   	  @code{(string)filter((array)@[arr], @[fun], @@@[extra])@}
+ *!   	@type object
+ *!   	  if @code{@[arr]->cast@}, try in turn:
+ *!   	    @code{filter((array)@[arr], @[fun], @@@[extra])@}
+ *!   	    @code{filter((mapping)@[arr], @[fun], @@@[extra])@}
+ *!   	    @code{filter((multiset)@[arr], @[fun], @@@[extra])@}
+ *!   @endmixed
  *!
  *! @returns
- *! Returns the same datatype as given, the exceptions are program and
- *! function that give a mapping back.
+ *!   Returns the same datatype as given, the exceptions are program and
+ *!   function that give a mapping back.
  *!
  *! @seealso
- *! @[map()], @[foreach()]
+ *!   @[map()], @[foreach()]
  */
 PMOD_EXPORT void f_filter(INT32 args)
 {
@@ -6997,29 +7009,29 @@ static node *fix_map_node_info(node *n)
  *! @decl array enumerate(int n, void|mixed step, void|mixed start, @
  *!                       void|function operator)
  *!
- *! Create an array with an enumeration, useful for initializing arrays
- *! or as first argument to @[map()] or @[foreach()].
+ *!   Create an array with an enumeration, useful for initializing arrays
+ *!   or as first argument to @[map()] or @[foreach()].
  *!
- *! The defaults are: @[step] = 1, @[start] = 0, @[operator] = @[`+]
+ *!   The defaults are: @[step] = 1, @[start] = 0, @[operator] = @[`+]
  *!
- *! @section Advanced use
- *!   The resulting array is calculated like this:
- *!   @code{
- *!     array enumerate(int n, mixed step, mixed start, function operator)
- *!     {
- *!       array res = allocate(n);
- *!       for (int i=0; i < n; i++)
- *!       {
- *!         res[i] = start;
- *!         start = operator(start, step);
- *!       }
- *!       return res;
- *!     }
- *!   @}
- *! @endsection
+ *!   @section Advanced use
+ *!   	The resulting array is calculated like this:
+ *!   	@code{
+ *!   	  array enumerate(int n, mixed step, mixed start, function operator)
+ *!   	  {
+ *!   	    array res = allocate(n);
+ *!   	    for (int i=0; i < n; i++)
+ *!   	    {
+ *!   	      res[i] = start;
+ *!   	      start = operator(start, step);
+ *!   	    }
+ *!   	    return res;
+ *!   	  }
+ *!   	@}
+ *!   @endsection
  *!
  *! @seealso
- *! @[map()], @[foreach()]
+ *!   @[map()], @[foreach()]
  */
 void f_enumerate(INT32 args)
 {
@@ -7141,7 +7153,7 @@ void f_enumerate(INT32 args)
 
 /*! @decl array(program) inherit_list(program p)
  *!
- *! Returns an array with the programs that @[p] has inherited.
+ *!   Returns an array with the programs that @[p] has inherited.
  */
 PMOD_EXPORT void f_inherit_list(INT32 args)
 {
@@ -7232,10 +7244,10 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 
 /*! @decl string defined(function fun)
  *!
- *! Returns a string with filename and linenumber where @[fun]
- *! was defined.
+ *!   Returns a string with filename and linenumber where @[fun]
+ *!   was defined.
  *!
- *! Returns @tt{0@} (zero) for builtin functions.
+ *!   Returns @tt{0@} (zero) for builtin functions.
  */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
