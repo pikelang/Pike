@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.245 2001/02/01 10:27:28 hubbe Exp $
+# $Id: Makefile.in,v 1.246 2001/02/01 15:18:14 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -186,13 +186,13 @@ post_modules: pike
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
 
 post_modules/modlist_headers.h:
-	touch post_modules/modlist_headers.h
+	@test -f post_modules/modlist_headers.h || touch post_modules/modlist_headers.h
 
 post_modules/modlist.h:
-	touch post_modules/modlist.h
+	@test -f post_modules/modlist.h || touch post_modules/modlist.h
 
 post_modules/linker_options:
-	touch post_modules/linker_options
+	@test -f post_modules/linker_options || touch post_modules/linker_options
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
@@ -849,6 +849,8 @@ import_functions.h: import-stamp
 
 export_functions.c: import_functions.h
 	touch export_functions.c
+
+module.o: post_modules/modlist.h post_modules/modlist_headers.h 
 
 @dependencies@
 
