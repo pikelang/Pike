@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.208 2000/09/12 14:28:53 grubba Exp $");
+RCSID("$Id: las.c,v 1.209 2000/09/12 14:41:40 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1749,6 +1749,7 @@ int node_may_overload(node *n, int lfun)
   return type_may_overload(n->type->str, lfun);
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 node **last_cmd(node **a)
 {
   node **n;
