@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.536 2002/09/15 22:42:16 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.537 2002/09/15 23:12:40 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -8953,7 +8953,9 @@ lambda()
    return r->ngets(100);
 }()
 ]],({"hej","hopp","gazonk"}))
-   
+
+test_true(rm("testsuite.tmp"))
+
 // - trace
 test_do(trace(0))
 test_eq(trace(0),0)
