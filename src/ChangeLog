@@ -1,3 +1,12 @@
+Fri Mar 20 14:31:15 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* new function: _exit
+	* Stdio.File->(try)lock added for file locking, not available
+	  on all systems
+	* class pointers can now be casted to raw programs with (program).
+	* configure can now disable any module by using --without-<module>
+	* cpp.c: fixed a bug in #if constant
+
 Tue Feb 24 09:03:37 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* `<, `>, `<=, `>=, `==, `!=, `/, `-, min and max now take
