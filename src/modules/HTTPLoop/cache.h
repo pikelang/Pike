@@ -1,8 +1,8 @@
 struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len, 
-				 char *h, ptrdiff_t hlen,
-				 struct cache *c, int nl, 
-				 struct cache_entry **p, 
-				 int *hv);
+				     char *h, ptrdiff_t hlen,
+				     struct cache *c, int nl, 
+				     struct cache_entry **p, 
+				     size_t *hv);
 
 
 void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
