@@ -32,7 +32,8 @@ RPATH="$RPATH:${LD_LIBRARY_PATH-}"
 
 OLDIFS="$IFS"
 IFS=:
-set -- $RPATH
+set dummy $RPATH
+shift
 IFS="$OLDIFS"
 
 while test x$1 = x -a x$# != x0; do

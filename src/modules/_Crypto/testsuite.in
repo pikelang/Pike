@@ -17,6 +17,9 @@ test_true([[functionp(Crypto.des_parity)]])
 test_true([[functionp(Crypto.hex_to_string)]])
 test_true([[functionp(Crypto.string_to_hex)]])
 
+cond( [[ master()->resolv("Gmp")->mpz ]],
+[[
+
 // Pike programs
 test_true([[programp(Crypto.des3)]])
 test_true([[programp(Crypto.des3_cbc)]])
@@ -134,3 +137,4 @@ test_true([[objectp(Crypto.sha())]])
 test_eq([[Crypto.sha()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
 
+]])
