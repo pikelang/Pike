@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.49 2002/08/26 09:08:33 grendel Exp $");
+RCSID("$Id: zlibmod.c,v 1.50 2002/09/10 14:31:26 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -683,16 +683,20 @@ void gz_file_write(INT32 args)
   push_int(res);
 }
 
+#ifdef HAVE_GZSEEK
 /*! @decl int seek(int pos, void|int type)
- *! Seeks within the file.
+ *!   Seeks within the file.
  *! @param pos
- *! Position relative to the searchtype.
+ *!   Position relative to the searchtype.
  *! @param type
- *! SEEK_SET = set current position in file to pos
- *! SEEK_CUR = new position is current+pos
- *! SEEK_END is not supported.
+ *!   SEEK_SET = set current position in file to pos
+ *!   SEEK_CUR = new position is current+pos
+ *!   SEEK_END is not supported.
  *! @returns 
- *!  New position or negative number if seek failed.
+ *!   New position or negative number if seek failed.
+ *!
+ *! @note
+ *!   Not supported on all operating systems.
  */
 void gz_file_seek(INT32 args)
 {
@@ -727,10 +731,15 @@ void gz_file_seek(INT32 args)
 
   push_int(res);
 }
+#endif /* HAVE_GZSEEK */
 
-/*! @decl int seek()
+#ifdef HAVE_GZTELL
+/*! @decl int tell()
  *! @returns 
  *!  the current position within the file.
+ *!
+ *! @note
+ *!   Not supported on all operating systems.
  */
 void gz_file_tell(INT32 args)
 {
@@ -746,10 +755,15 @@ void gz_file_tell(INT32 args)
   push_int(gztell(THIS->gzfile));
 
 }
+#endif /* HAVE_GZTELL */
 
+#ifdef HAVE_GZEOF
 /*! @decl int(0..1) eof()
  *! @returns 
  *!  1 if EOF has been reached.
+ *!
+ *! @note
+ *!   Not supported on all operating systems.
  */
 void gz_file_eof(INT32 args)
 {
@@ -760,17 +774,22 @@ void gz_file_eof(INT32 args)
 
   push_int(gzeof(THIS->gzfile));
 }
+#endif /* HAVE_GZEOF */
 
+#ifdef HAVE_GZSETPARAMS
 /*! @decl int setparams(int level, int strategy)
- *! Sets the encoding level and strategy
+ *!   Sets the encoding level and strategy
  *! @param level
- *! Level of the compression.
- *! 0 is the least compression, 9 is max. 8 is default.
+ *!   Level of the compression.
+ *!   0 is the least compression, 9 is max. 8 is default.
  *! @param strategy
- *! Set strategy for encoding to one of the following:
- *! Z_DEFAULT_STRATEGY
- *! Z_FILTERED
- *! Z_HUFFMAN_ONLY
+ *!   Set strategy for encoding to one of the following:
+ *!   Z_DEFAULT_STRATEGY
+ *!   Z_FILTERED
+ *!   Z_HUFFMAN_ONLY
+ *!
+ *! @note
+ *!   Not supported on all operating systems.
  */
 void gz_file_setparams(INT32 args)
 {
@@ -792,6 +811,7 @@ void gz_file_setparams(INT32 args)
   pop_n_elems(args);
   push_int(res == Z_OK);
 }
+#endif /* HAVE_GZSETPARAMS */
 
 static void init_gz_file(struct object *o)
 {
@@ -863,10 +883,18 @@ void pike_module_init(void)
   ADD_FUNCTION("close", gz_file_close, tFunc(tVoid, tInt), 0);
   ADD_FUNCTION("read", gz_file_read, tFunc(tInt,tOr(tString,tInt)), 0);
   ADD_FUNCTION("write", gz_file_write, tFunc(tString,tInt), 0);
+#ifdef HAVE_GZSEEK
   ADD_FUNCTION("seek", gz_file_seek, tFunc(tInt tOr(tVoid,tInt), tInt), 0);
+#endif /* HAVE_GZSEEK */
+#ifdef HAVE_GZTELL
   ADD_FUNCTION("tell", gz_file_tell, tFunc(tVoid, tInt), 0);
+#endif /* HAVE_GZTELL */
+#ifdef HAVE_GZEOF
   ADD_FUNCTION("eof", gz_file_eof, tFunc(tVoid, tInt), 0);
+#endif /* HAVE_GZEOF */
+#ifdef HAVE_GZSETPARAMS
   ADD_FUNCTION("setparams", gz_file_setparams, tFunc(tInt tInt, tInt), 0);
+#endif /* HAVE_GZSETPARAMS */
 
   add_integer_constant("SEEK_SET", SEEK_SET, 0);
   add_integer_constant("SEEK_CUR", SEEK_CUR, 0);
