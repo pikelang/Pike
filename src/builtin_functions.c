@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.544 2004/10/11 17:04:08 mast Exp $
+|| $Id: builtin_functions.c,v 1.545 2004/10/11 17:08:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.544 2004/10/11 17:04:08 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.545 2004/10/11 17:08:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3265,7 +3265,7 @@ node *optimize_replace(node *n)
 	  yywarning("Optimizer failure in replace().");
 	  s = format_exception_for_error_msg (&thrown);
 	  if (s) {
-	    yywarning ("%S", s);
+	    if (!s->size_shift) yywarning ("%s", s->str);
 	    free_string (s);
 	  }
 	  free_svalue(&thrown);
