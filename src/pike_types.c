@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.80 1999/11/26 01:08:02 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.81 1999/11/26 01:31:08 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1593,7 +1593,13 @@ static char *low_match_types2(char *a,char *b, int flags)
     if(!(flags & NO_MAX_ARGS))
        max_correct_args=0x7fffffff;
     /* check the returntype */
-    if(!low_match_types(a,b,flags)) return 0;
+    if ((EXTRACT_UCHAR(b) == T_VOID) && (EXTRACT_UCHAR(a) != T_VOID)) {
+      /* Promote b to a function returning zero. */
+      if (!low_match_types(a, tZero, flags)) return 0;
+    } else if ((EXTRACT_UCHAR(a) == T_VOID) && (EXTRACT_UCHAR(b) != T_VOID)) {
+      /* Promote a to a function returning zero. */
+      if(!low_match_types(tZero,b,flags)) return 0;
+    } else if(!low_match_types(a,b,flags)) return 0;
     break;
 
   case T_MAPPING:
@@ -1933,6 +1939,7 @@ static int low_pike_types_le2(char *a,char *b)
     /*
      * function(:int) <= function(int:int)
      * function(int|string:int) <= function(int:int)
+     * function(:int) <= function(:void)
      * function(string:int) != function(int:int)
      * function(int:int) != function(:int)
      */
