@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.31 2001/11/05 00:50:54 nilsson Exp $
+// $Id: client.pike,v 1.32 2001/11/05 11:46:57 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -241,6 +241,9 @@ int _prof_gtim;
     //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
     int count_entries() { return(entrycnt - actnum); }
 
+    //! @decl mapping(string:array(string)) fetch()
+    //! @decl mapping(string:array(string)) fetch(int index)
+    //!
     //! Returns a mapping with an entry for each attribute.
     //! Each entry is an array of values of the attribute.
     //!
@@ -349,7 +352,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.31 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.32 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -964,15 +967,29 @@ int _prof_gtim;
     return(old_dn);
   }
 
-  // API function (ldap_setscope)
-  //
-  // set_scope(string base_dn)
-  //
-  //	scope:		scope; 0: base, 1: onelevel, 2: subtree
-  int set_scope (int scope) {
+  //!
+  //! Sets value of scope for search operation.
+  //!
+  //! @param scope
+  //!  Value can be integer or its corresponding string value.
+  //!  0: base, 1: one, 2: sub
+  //!
+  int set_scope (int|string scope) {
 
     int old_scope = ldap_scope;
 
+    // support for string based values
+    if(stringp(scope))
+      switch (lower_case(scope)) {
+	case "sub": scope = 2; break;
+	case "one": scope = 1; break;
+	case "base": scope = 0; break;
+	default: return (-1);
+      }
+    else
+     if(scope != 0 && scope != 1 && scope != 2)
+       return (-1);
+ 
     ldap_scope = scope;
     DWRITE_HI("client.SET_SCOPE = " + (string)scope + "\n");
     return(old_scope);
