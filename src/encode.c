@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.159 2002/12/07 14:50:57 grubba Exp $
+|| $Id: encode.c,v 1.160 2003/01/07 19:51:26 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.159 2002/12/07 14:50:57 grubba Exp $");
+RCSID("$Id: encode.c,v 1.160 2003/01/07 19:51:26 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -284,11 +284,15 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       goto one_more_type;
     
     case T_ASSIGN:
-      if (((ptrdiff_t)t->car < 0) || ((ptrdiff_t)t->car > 9)) {
-	Pike_fatal("Bad assign marker: %ld\n", (long)(ptrdiff_t)t->car);
+      {
+	ptrdiff_t marker = ((char *)t->car)-(char *)0;
+	if ((marker < 0) || (marker > 9)) {
+	  Pike_fatal("Bad assign marker: %ld\n",
+		     (long)marker);
+	}
+	addchar('0' + marker);
+	t = t->cdr;
       }
-      addchar('0' + (ptrdiff_t)t->car);
-      t = t->cdr;
       goto one_more_type;
 
     case T_FUNCTION:
@@ -322,12 +326,12 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       {
 	ptrdiff_t val;
 
-	val = (ptrdiff_t)t->car;
+	val = ((char *)t->car)-(char *)0;
 	addchar((val >> 24)&0xff);
 	addchar((val >> 16)&0xff);
 	addchar((val >> 8)&0xff);
 	addchar(val & 0xff);
-	val = (ptrdiff_t)t->cdr;
+	val = ((char *)t->cdr)-(char *)0;
 	addchar((val >> 24)&0xff);
 	addchar((val >> 16)&0xff);
 	addchar((val >> 8)&0xff);
@@ -355,14 +359,14 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
     case T_OBJECT:
     {
-      addchar((ptrdiff_t)t->car);
+      addchar(((char *)t->car)-(char *)0);
 
       if(t->cdr)
       {
-	int id = (int)(ptrdiff_t)t->cdr;
+	ptrdiff_t id = ((char *)t->cdr)-(char *)0;
 	if( id >= PROG_DYNAMIC_ID_START )
 	{
-	  struct program *p=id_to_program((ptrdiff_t)t->cdr);
+	  struct program *p=id_to_program(id);
 	  if(p)
 	  {
 	    ref_push_program(p);
