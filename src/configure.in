@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.518 2001/04/25 15:17:16 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.519 2001/05/08 12:38:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3989,11 +3989,11 @@ AC_TRY_RUN([
 #include <stdlib.h>
 #include <stddef.h>
 #endif
-VOLATILE sig_atomic_t sigrun=0;
+VOLATILE sig_atomic_t sigrun[2]= { 0, 0 };
 RETSIGTYPE func(int sig)
 {
   write(2, "func called\n", sizeof("func called\n") - sizeof(""));
-  sigrun=1;
+  sigrun[0] = -1;
 }
 
 int main()
@@ -4028,18 +4028,18 @@ int main()
 
   kill(getpid(), sig);
 #ifdef HAVE_POLL
-  while(!sigrun) poll(0,0,100);
+  while(!strlen((char *)sigrun)) poll(0,0,100);
 #else
-  while(!sigrun) sleep(1);
+  while(!strlen((char *)sigrun)) sleep(1);
 #endif
-  sigrun=0;
+  sigrun[0]=0;
   kill(getpid(), sig);
 #ifdef HAVE_POLL
-  while(!sigrun) poll(0,0,100);
+  while(!strlen((char *)sigrun)) poll(0,0,100);
 #else
-  while(!sigrun) sleep(1);
+  while(!strlen((char *)sigrun)) sleep(1);
 #endif
-  sigrun=0;
+  sigrun[0]=0;
   exit(0);
 }
 ],pike_cv_sys_signal_oneshot=no,pike_cv_sys_signal_oneshot=yes,pike_cv_sys_signal_oneshot=yes)])
