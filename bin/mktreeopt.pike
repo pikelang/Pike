@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.2 1999/11/08 00:04:55 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.3 1999/11/08 02:22:48 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -151,6 +151,32 @@ class node
   }
 }
 
+string fix_extras(string s)
+{
+  array a = s/"$";
+
+  for(int i=1; i < sizeof(a); i++) {
+    string pos;
+    if (a[i] == "") {
+      // $$
+      pos = tpos;
+      i++;
+    } else {
+      int tag;
+      sscanf(a[i], "%d%s", tag, a[i]);
+      if (!(pos = marks[tag])) {
+	fail("%s:%d: Unknown tag %d\n", fname, line, tag);
+      }
+    }
+    if (sizeof(pos)) {
+      a[i] = sprintf("C%sR(n)", pos) + a[i];
+    } else {
+      a[i] = "n" + a[i];
+    }
+  }
+  return a * "";
+}
+
 object read_node()
 {
   object res = node();
@@ -200,7 +226,7 @@ object read_node()
 	  line++;
 	}
       }
-      res->extras += ({ data[start..pos-2] });
+      res->extras += ({ fix_extras(data[start..pos-2]) });
       eat_whitespace();
       c = data[pos];
     }
@@ -229,6 +255,67 @@ object read_node()
     }
   }
   return res;
+}
+
+string fix_action(string s)
+{
+  array(string) a = s/"$$";
+
+  for(int i=1; i < sizeof(a); i++) {
+    int j = search(a[i], ";");
+    if (j < 0) {
+      fail("%s:%d: Syntax error in $$ statement\n", fname, line);
+    }
+    string new_node = a[i][..j];
+    string rest = a[i][j+1..];
+
+    array(string) b = new_node/"$";
+
+    multiset(string) used_nodes = (<>);
+
+    for(int j=1; j < sizeof(b); j++) {
+      int tag = -1;
+      sscanf(b[j], "%d%s", tag, b[j]);
+      if (!marks[tag]) {
+	fail("%s:%s: Unknown tag: $%d\n", fname, line, tag);
+      }
+      if (sizeof(marks[tag])) {
+	string expr = sprintf("C%sR(n)", marks[tag]);
+	used_nodes[expr] = 1;
+	b[j] = expr + b[j];
+      } else {
+	fail("%s:%d: Use of the main node to generate a new node "
+	     "is not supported\n",
+	     fname, line);
+      }
+    }
+
+    new_node = b * "";
+
+    string clean_up = "\n";
+
+    if (sizeof(used_nodes)) {
+      clean_up = "\n" + (indices(used_nodes) * " = ") + " = 0;\n";
+    }
+    a[i] = "tmp1" + new_node + clean_up + "goto use_tmp1;" + rest;
+  }
+  s = a * "";
+
+  a = s/"$";
+
+  for(int i=1; i < sizeof(a); i++) {
+    int tag = -1;
+    sscanf(a[i], "%d%s", tag, a[i]);
+    if (!marks[tag]) {
+      fail("%s:%s: Unknown tag: $%d\n", fname, line, tag);
+    }
+    if (sizeof(marks[tag])) {
+      a[i] = sprintf("C%sR(n)", marks[tag]) + a[i];
+    } else {
+      a[i] = "n" + a[i];
+    }
+  }
+  return a * "";
 }
 
 object read_node2()
@@ -324,7 +411,7 @@ void parse_data()
     expect(':');
     eat_whitespace();
 
-    object(node)|string action;
+    string action;
 
     if (data[pos] == '{') {
       // Code.
@@ -341,8 +428,7 @@ void parse_data()
 	}
       }
 
-      // FIXME: Fix substitutions!
-      action = data[start..pos-1];
+      action = fix_action(data[start..pos-1]);
     } else {
       object(node) n2 = read_node2();
       // werror(sprintf("\t%s;\n\n", n2));
@@ -458,7 +544,7 @@ string generate_cdr_match(array(object(node)) rule_set, string indent)
       res += sprintf("if (CD%sR(n)->token == %s) {\n",
 		     tpos, t);
 
-      res += generate_car_match(cdr_follow[t], "  " + indent);
+      res += generate_extras_match(cdr_follow[t], "  " + indent);
 
       res += indent + "}";
     }
@@ -470,7 +556,7 @@ string generate_cdr_match(array(object(node)) rule_set, string indent)
 
   if (any_follow) {
     // This node is ignored, but nodes further down are interresting.
-    res += generate_car_match(any_follow, indent);
+    res += generate_extras_match(any_follow, indent);
   }
 
   if (back_follow) {
@@ -541,7 +627,7 @@ string generate_car_match(array(object(node)) rule_set, string indent)
       res += sprintf("if (CA%sR(n)->token == %s) {\n",
 		     tpos, t);
 
-      res += generate_car_match(car_follow[t], "  " + indent);
+      res += generate_extras_match(car_follow[t], "  " + indent);
 
       res += indent + "}";
     }
@@ -553,7 +639,7 @@ string generate_car_match(array(object(node)) rule_set, string indent)
 
   if (any_follow) {
     // This node is ignored, but nodes further down are interresting.
-    res += generate_car_match(any_follow, indent);
+    res += generate_extras_match(any_follow, indent);
   }
 
   if (cdr_follow) {
@@ -565,13 +651,45 @@ string generate_car_match(array(object(node)) rule_set, string indent)
   return res;
 }
 
+string generate_extras_match(array(object(node)) rule_set, string indent)
+{
+  string res = "";
+
+  mapping(string:array(object(node))) extra_set = ([]);
+
+  foreach(rule_set, object(node) n) {
+    string t = 0;
+    if (n->extras && sizeof(n->extras)) {
+      t = n->extras * ") && (";
+    }
+    if (!extra_set[t]) {
+      extra_set[t] = ({ n });
+    } else {
+      extra_set[t] += ({ n });
+    }
+  }
+
+  if (extra_set[0]) {
+    res += generate_car_match(extra_set[0], indent);
+    m_delete(extra_set, 0);
+  }
+
+  foreach(indices(extra_set), string code) {
+    res += indent + sprintf("if ((%s)) {\n", code);
+    res += generate_car_match(extra_set[code], indent + "  ");
+    res += indent + "}\n";
+  }
+
+  return res;
+}
+
 string generate_code()
 {
   string res = "";
   // Note: token below can't be 0 or *.
-  foreach(indices(rules), string token) {
+  foreach(sort(indices(rules)), string token) {
     res += "case " + token + ":\n" +
-      generate_car_match(rules[token], "  ") +
+      generate_extras_match(rules[token], "  ") +
       "  break;\n\n";
   }
   return res;
