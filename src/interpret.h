@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.116 2002/11/23 14:43:12 mast Exp $
+|| $Id: interpret.h,v 1.117 2002/11/23 16:38:54 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -51,16 +51,16 @@ struct Pike_interpreter {
 struct pike_frame
 {
   INT32 refs; /* must be first */
-  INT32 args;
-  unsigned INT16 fun;
-  INT16 num_locals;
-  INT16 num_args;
-  unsigned INT16 flags;
+  INT32 args;			/* Actual number of arguments. */
+  unsigned INT16 fun;		/* Function number. */
+  INT16 num_locals;		/* Number of local variables. */
+  INT16 num_args;		/* Number of argument variables. */
+  unsigned INT16 flags;		/* PIKE_FRAME_* */
   INT16 ident;
   struct pike_frame *next;
   struct pike_frame *scope;
-  PIKE_OPCODE_T *pc;
-  struct svalue *locals;
+  PIKE_OPCODE_T *pc;		/* Program counter of last/next opcode. */
+  struct svalue *locals;	/* Start of local variables. */
 
   /*  This is <= locals, and this is where the
    * return value should go.
@@ -182,7 +182,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #define STACK_LEVEL_CHECK(depth)
 #endif /* PIKE_DEBUG */
 
-#define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
+#define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); PIKE_MEM_WO(Pike_sp, sizeof(*Pike_sp)); }while(0)
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
 #ifdef __ECL
@@ -197,6 +197,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
    check__positive(x_, (msg_pop_neg, x_));				\
    Pike_sp -= x_; debug_check_stack();					\
    free_mixed_svalues(Pike_sp, x_);					\
+   PIKE_MEM_WO(Pike_sp, x_*sizeof(*Pike_sp));				\
  } } while (0)
 
 #define stack_pop_n_elems_keep_top(X) \
@@ -253,7 +254,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     Pike_sp=s_;					\
 }while(0)
 
-#define stack_pop_to_no_free(X) (*(X)=*--Pike_sp)
+#define stack_pop_to_no_free(X) do { *(X)=*--Pike_sp; PIKE_MEM_WO(Pike_sp, sizeof(*Pike_sp)); } while(0)
 #define stack_pop_to(X) do { struct svalue *_=(X); free_svalue(_); stack_pop_to_no_free(_); }while(0)
 
 /* This pops a number of arguments from the stack but keeps the top
