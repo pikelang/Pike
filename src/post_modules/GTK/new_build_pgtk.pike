@@ -1379,6 +1379,7 @@ array parse_args( array tokens )
 string parse_pre_file( string file )
 {
   array current_require = ({});
+  array current_unrequire = ({});
   Class current_class;
   mixed current_scope;
 
@@ -1426,13 +1427,24 @@ string parse_pre_file( string file )
            q += ({ tk });
          current_require += ({ (q->text*" ") });
          continue;
+	case "not":
+	 q = ({});
+         while( (tk = GOBBLE() ) != ";" )
+           q += ({ tk });
+         current_unrequire += ({ (q->text*" ") });
+         continue;
        case "endrequire":
          current_require = current_require[ .. sizeof(current_require)-2 ];
          SEMICOLON("endrequire");
          continue;
+       case "endnot":
+         current_unrequire = current_unrequire[ .. sizeof(current_unrequire)-2 ];
+         SEMICOLON("endnot");
+         continue;
       }
     }
-    if( sizeof( current_require ) && !verify_required( current_require ) )
+    if( !verify_required( current_require ) ||
+	(sizeof( current_unrequire ) && verify_required(current_unrequire)))
       continue;
 
     if( objectp( token ) )
