@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.19 2000/08/30 11:15:39 grubba Exp $
+# $Id: configure.in,v 1.20 2000/08/30 11:23:49 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -206,9 +206,11 @@ EOF
   fi
 
   if test "x$pike_cv_odbc" = "xyes"; then
-    AC_CHECKING(if the typedef SQLLEN exists.)
-    AC_CACHE_VAL(pike_cv_have_SQLLEN, [
-      AC_TRY_COMPILE([
+
+    define(PIKE_CHECK_ODBC_TYPEDEF, [
+      AC_CHECKING(if the typedef $1 exists.)
+      AC_CACHE_VAL(pike_cv_have_$1, [
+        AC_TRY_COMPILE([
 #ifdef HAVE_ISQL_H
 #include <isql.h>
 #else /* !HAVE_ISQL_H */
@@ -233,16 +235,19 @@ EOF
 #include <sqlext.h>
 #endif /* HAVE_SQLEXT_H */
 #endif /* HAVE_ISQLEXT_H */
-      ], [
-        SQLLEN len = 17;
-      ], [ pike_cv_have_SQLLEN=yes ], [ pike_cv_have_SQLLEN=no ])
+        ], [
+          $1 len = 17;
+        ], [ pike_cv_have_$1=yes ], [ pike_cv_have_$1=no ])
+      ])
+      if test "x$pike_cv_have_$1" = "xyes"; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_$1)
+      else
+        AC_MSG_RESULT(no)
+      fi
     ])
-    if test "x$pike_cv_have_SQLLEN" = "xyes"; then
-      AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_SQLLEN)
-    else
-      AC_MSG_RESULT(no - try using SQLINTEGER)
-    fi
+    PIKE_CHECK_ODBC_TYPEDEF(SQLLEN)
+    PIKE_CHECK_ODBC_TYPEDEF(SQLULEN)
   else :; fi
 else
   :
