@@ -27,7 +27,24 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.133 2001/09/05 01:42:47 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.134 2001/09/06 08:07:10 hubbe Exp $");
+
+/* #define STRALLOC_USE_PRIMES */
+
+#ifdef STRALLOC_USE_PRIMES 
+
+#define SET_HSIZE(X) htable_size=hashprimes[(X)]
+#define HMODULO(X) ((X) % htable_size)
+
+#else
+
+#define SET_HSIZE(X) htable_mask=(htable_size=(1<<(X)))-1
+#define HMODULO(X) ((X) & (htable_mask))
+
+unsigned INT32 htable_mask;
+
+#endif
+
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -35,7 +52,7 @@ RCSID("$Id: stralloc.c,v 1.133 2001/09/05 01:42:47 hubbe Exp $");
 static PIKE_MUTEX_T *bucket_locks;
 
 #define BUCKETLOCK(HVAL) \
- (bucket_locks + ((hval__ % htable_size) & (BUCKET_LOCKS-1)))
+ (bucket_locks + (HMODULO(hval__) & (BUCKET_LOCKS-1)))
 
 #define LOCK_BUCKET(HVAL) do {						    \
   size_t hval__=(HVAL);							    \
@@ -341,7 +358,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #endif
   size_t h;
   LOCK_BUCKET(hval);
-  h=hval % htable_size;
+  h=HMODULO(hval);
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
 #ifdef PIKE_DEBUG
@@ -432,7 +449,7 @@ static void rehash_string_backwards(struct pike_string *s)
   ptrdiff_t h;
   if(!s) return;
   rehash_string_backwards(s->next);
-  h = s->hval % htable_size;
+  h = HMODULO(s->hval);
   s->next=base_table[h];
   base_table[h]=s;
 }
@@ -461,7 +478,7 @@ static void stralloc_rehash(void)
   for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
 #endif
 
-  htable_size=hashprimes[++hashprimes_entry];
+  SET_HSIZE( ++hashprimes_entry );
 
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
@@ -553,7 +570,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 {
   size_t h;
   LOCK_BUCKET(hval);
-  h=hval % htable_size;
+  h=HMODULO(hval);
   s->refs = 0;
   s->next = base_table[h];
   base_table[h] = s;
@@ -598,7 +615,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	tmp=tmp2->next;
 
 	tmp2->hval=do_hash(tmp2); /* compute new hash value */
-	h2=tmp2->hval % htable_size;
+	h2=HMODULO(tmp2->hval);
 
 	tmp2->next=base_table[h2];    /* and re-hash */
 	base_table[h2]=tmp2;
@@ -878,7 +895,7 @@ PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 {
   size_t h;
   LOCK_BUCKET(s->hval);
-  h= s->hval % htable_size;
+  h= HMODULO(s->hval);
   propagate_shared_string(s,h);
 #ifdef PIKE_DEBUG
   if (base_table[h] != s) {
@@ -1068,7 +1085,7 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
       if(do_hash(s) != s->hval)
 	fatal("Shared string hashed to other number.\n");
 
-      if((s->hval % htable_size) != e)
+      if(HMODULO(s->hval) != e)
       {
 	locate_problem(wrong_hash);
 	fatal("Shared string hashed to wrong place.\n");
@@ -1113,7 +1130,7 @@ PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 {
   struct pike_string *tmp;
-  tmp=propagate_shared_string(foo, foo->hval % htable_size);
+  tmp=propagate_shared_string(foo, HMODULO(foo->hval));
 
 #if 0
   if(!tmp)
@@ -1128,9 +1145,9 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 
     LOCK_BUCKET(foo->hval);
     fprintf(stderr,"------ %p %ld\n",
-	    base_table[foo->hval %htable_size],
+	    base_table[HMODULO(foo->hval)],
 	    foo->hval);
-    for(tmp2=base_table[foo->hval % htable_size];tmp2;tmp2=tmp2->next)
+    for(tmp2=base_table[HMODULO(foo->hval)];tmp2;tmp2=tmp2->next)
     {
       if(tmp2 == tmp)
 	fprintf(stderr,"!!%p!!->",tmp2);
@@ -1148,7 +1165,7 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 	if(tmp2 == tmp)
 	  fprintf(stderr,"String found in hashbin %ld (not %ld)\n",
 		  (long)e,
-		  (long)(foo->hval % htable_size));
+		  (long)HMODULO(foo->hval));
       }
       UNLOCK_BUCKET(e);
     }
@@ -1772,7 +1789,7 @@ void init_shared_string_table(void)
   init_short_pike_string1_blocks();
   init_short_pike_string2_blocks();
   for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
-  htable_size=hashprimes[hashprimes_entry];
+  SET_HSIZE(hashprimes_entry);
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 #ifdef PIKE_RUN_UNLOCKED
@@ -1903,7 +1920,7 @@ struct pike_string *next_pike_string (struct pike_string *s)
     do {
       h++;
       LOCK_BUCKET(h);
-      h %= htable_size;
+      h = HMODULO(h);
       next = base_table[h];
       UNLOCK_BUCKET(h);
     } while (!next);
