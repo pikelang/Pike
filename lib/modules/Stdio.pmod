@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.38 1999/04/21 06:55:40 js Exp $
+// $Id: Stdio.pmod,v 1.39 1999/06/29 16:02:58 mast Exp $
 
 #include <string.h>
 
@@ -23,7 +23,7 @@ class File
     if(!_fd)									\
     {										\
       throw(({									\
-	"Stdio.File(): line "+__LINE__+" on closed file.\n"+				\
+	"Stdio.File(): line "+__LINE__+" on closed file.\n"+			\
 	  (__closed_backtrace ? 						\
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :	\
 	   "This file has never been open.\n" ),				\
@@ -337,6 +337,7 @@ class File
   void set_blocking()
   {
     CHECK_OPEN();
+    ::_disable_callbacks(); // Thread safing
     SET(read_callback,0);
     SET(write_callback,0);
     ___close_callback=0;
@@ -345,6 +346,7 @@ class File
     SET(write_oob_callback,0);
 #endif
     ::set_blocking();
+    ::_enable_callbacks();
   }
 };
 
