@@ -1794,24 +1794,45 @@ int main(int argc, array(string) argv)
   ParseBlock tmp=ParseBlock(x,"");
   x=tmp->code;
   x=recursive(replace,x,PC.Token("INIT",0),tmp->addfuncs);
-  x=recursive(replace,x,PC.Token("EXIT",0),tmp->exitfuncs);
-  x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
-  x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp->declarations);
-
-  if(equal(x,tmp->code))
+  int need_init;
+  if ((need_init = equal(x, tmp->code)))
   {
-    // No INIT / EXIT, add our own stuff..
-    // NOTA BENE: DECLARATIONS are not handled automatically
-    //            on the file level
+    // No INIT, add our own stuff..
 
     x+=({
       "void pike_module_init(void) {\n",
       tmp->addfuncs,
       "}\n",
+    });
+  }
+  tmp->code = x;
+  x=recursive(replace,x,PC.Token("EXIT",0),tmp->exitfuncs);
+  if(equal(x, tmp->code))
+  {
+    // No EXIT, add our own stuff..
+
+    x+=({
       "void pike_module_exit(void) {\n",
-      tmp->exitfuncs,
+      tmp->addfuncs,
       "}\n",
     });
+
+    if (!need_init) {
+      werror("Warning: INIT without EXIT. Added pike_module_exit().\n");
+    }
+  } else if (need_init) {
+    werror("Warning: EXIT without INIT. Added pike_module_init().\n");
+  }
+  tmp->code = x;
+  x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
+  x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp->declarations);
+
+  if(equal(x,tmp->code))
+  {
+    // No OPTIMIZE / DECLARATIONS
+    // FIXME: Add our own stuff...
+    // NOTA BENE: DECLARATIONS are not handled automatically
+    //            on the file level
   }
   if(getenv("PIKE_DEBUG_PRECOMPILER"))
     write(PC.simple_reconstitute(x));
