@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.69 2001/10/04 19:40:02 nilsson Exp $
+ * $Id: builtin.cmod,v 1.70 2001/11/08 23:34:27 nilsson Exp $
  */
 
 #include "global.h"
@@ -1133,7 +1133,14 @@ void low_backtrace(struct Pike_interpreter *i)
 
     if ((bf->prog = f->context.prog)) {
       add_ref(bf->prog);
-      bf->pc = f->pc;
+      bf->pc = f->pc + ( (f->flags & PIKE_FRAME_RETURN_INTERNAL) ?
+#ifndef USE_MACHINE_CODE
+			 -1 : 0
+#else
+			 -1 : (long)(f->context.prog->program)
+#endif
+	);
+
     }
 
     if ((bf->fun.u.object = f->current_object) &&
