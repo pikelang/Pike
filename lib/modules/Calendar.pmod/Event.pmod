@@ -19,7 +19,7 @@ function(mixed...:TimeRange) std_second=master()->resolv("Calendar")["Second"];
 
 //! module Calendar
 //! submodule Event
-//! subclass Event
+//! class Event
 //! 	<ref>Event</ref> is a base class, defining what
 //!	methods an Event need to have.
 
@@ -131,7 +131,7 @@ class NullEvent
 
 //! module Calendar
 //! submodule Event
-//! subclass Day_Event
+//! class Day_Event
 //! 	<ref>Day_Event</ref> is a base class, extending <ref>Event</ref>
 //!	for events that are single days, using julian day numbers
 //!	for the calculations.
@@ -192,7 +192,7 @@ class Day_Event
 
 //! module Calendar
 //! submodule Event
-//! subclass Nameday
+//! class Nameday
 //!	This is created by the <ref>Namedays</ref> classes
 //!	to represent an event for a name.
 
@@ -224,7 +224,7 @@ class Nameday
 
 //! module Calendar
 //! submodule Event
-//! subclass Namedays
+//! class Namedays
 //!	This contains a ruleset about namedays. 
 //! inherits Event
 
@@ -644,7 +644,7 @@ class Julian_Fixed
 
 //! module Calendar
 //! submodule Event
-//! subclass Date
+//! class Date
 //! 	This class represents the event of a given gregorian date.
 //!	For instance, 
 //!	<tt>Event.Date(12,10)->next(Day())</tt>
@@ -698,7 +698,7 @@ class Date
 
 //! module Calendar
 //! submodule Event
-//! subclass Date_Weekday
+//! class Date_Weekday
 //! 	This class represents the event that a given gregorian date appears
 //!	a given weekday.
 //!	For instance, 
@@ -763,7 +763,7 @@ class Date_Weekday
 
 //! module Calendar
 //! submodule Event
-//! subclass Monthday_Weekday
+//! class Monthday_Weekday
 //! 	This class represents the event that a given gregorian 
 //!	day of month appears a given weekday.
 //!	For instance, 
@@ -829,7 +829,7 @@ class Monthday_Weekday
 
 //! module Calendar
 //! submodule Event
-//! subclass Weekday
+//! class Weekday
 //! 	This class represents any given weekday.
 //!	For instance, 
 //!	<tt>Event.Weekday(5)->next(Day())</tt>
@@ -1087,7 +1087,7 @@ class Monthday_Weekday_Relative
 
 //! module Calendar
 //! submodule Event
-//! subclass SuperEvent
+//! class SuperEvent
 //!	This class holds any number of events,
 //!	and adds the functionality of event flags.
 //!

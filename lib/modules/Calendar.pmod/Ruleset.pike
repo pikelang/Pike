@@ -1,5 +1,5 @@
 //! module Calendar
-//! subclass Ruleset
+//! class Ruleset
 //!	This is the container class for rules.
 
 
