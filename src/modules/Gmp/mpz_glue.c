@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.25 1998/03/03 22:30:27 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.26 1998/03/04 22:09:55 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -301,7 +301,7 @@ static void mpzmod_cast(INT32 args)
 #if defined(__GNUC__) && defined(DEBUG_MALLOC)
 #define get_mpz(X,Y) ({ check_svalue(X); debug_get_mpz((X), (Y)); })
 #else
-#define get_mpz(X,Y) debug_get_mpz((X), (Y)
+#define get_mpz(X,Y) debug_get_mpz((X), (Y))
 #endif
 
 static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
