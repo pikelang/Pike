@@ -315,6 +315,8 @@ testfont binary
 /src/modules/DVB/acconfig.h foreign_ident
 /src/modules/DVB/configure.in foreign_ident
 /src/modules/DVB/dvb.c foreign_ident
+/src/modules/DVB/dvb.h foreign_ident
+/src/modules/DVB/psparser.c foreign_ident
 /src/modules/Gdbm/Makefile.in foreign_ident
 /src/modules/Gdbm/acconfig.h foreign_ident
 /src/modules/Gdbm/configure.in foreign_ident
