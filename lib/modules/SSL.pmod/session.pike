@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.10 1999/05/22 23:09:02 mast Exp $
+/* $Id: session.pike,v 1.11 2000/08/04 19:07:11 sigge Exp $
  *
  */
 
@@ -17,6 +17,7 @@ constant Struct = ADT.struct;
 constant State = SSL.state;
 
 string client_certificate;
+string server_certificate;
 
 void set_cipher_suite(int suite)
 {
@@ -60,14 +61,14 @@ string generate_key_block(string client_random, string server_random)
     i++;
     string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
 #ifdef SSL3_DEBUG
-    werror(sprintf("cookie '%s'\n", cookie));
+    werror(sprintf("cookie %O\n", cookie));
 #endif
     key += md5->hash_raw(master_secret +
 			 sha->hash_raw(cookie + master_secret +
 				       server_random + client_random));
   }
 #ifdef SSL3_DEBUG
-//  werror(sprintf("key_block: '%s'\n", key));
+//  werror(sprintf("key_block: %O\n", key));
 #endif
   return key;
 }
@@ -78,7 +79,7 @@ array generate_keys(string client_random, string server_random)
   array keys = allocate(6);
 
 #ifdef SSL3_DEBUG
-  werror(sprintf("client_random: '%s'\nserver_random: '%s'\n",
+  werror(sprintf("client_random: %O\nserver_random: %O\n",
 		client_random, server_random));
 #endif
   /* client_write_MAC_secret */
