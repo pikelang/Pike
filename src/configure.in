@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.44 1997/01/22 00:58:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.45 1997/01/22 03:35:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -148,14 +148,24 @@ fi
 AC_MSG_CHECKING(if ld accepts setting the run-time path with -R)
 AC_CACHE_VAL(pike_cv_ld_accepts_r,
 [
-  OLD_CFLAGS="$CFLAGS"
+  OLD_LDFLAGS="$LDFLAGS"
   pike_cv_ld_accepts_r=yes
   
   for test_path in . .. /lib /usr/lib .:.. /lib:/usr/lib; do
-    CFLAGS="$OLD_CFLAGS -R$test_path"
-    AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no ])
+    if test x$ac_cv_prog_gcc ; then
+      #
+      # On Linux -R apparently only causes a gcc warning otherwise
+      #
+      LDFLAGS="$OLD_LDFLAGS -Xlinker -R$test_path"
+      AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no; break ])
+    else
+      :
+    fi
+
+    LDFLAGS="$OLD_LDFLAGS -R$test_path"
+    AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no; break ])
   done
-  CFLAGS="$OLD_CFLAGS"
+  LDFLAGS="$OLD_LDFLAGS"
 ])
 AC_MSG_RESULT($pike_cv_ld_accepts_r)
 
