@@ -1,7 +1,15 @@
+/*
+ * $Id: mime.c,v 1.3 1997/03/13 02:54:38 marcus Exp $
+ *
+ * RFC1521 functionality for Pike
+ *
+ * Marcus Comstedt 1996-1997
+ */
+
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: mime.c,v 1.2 1997/03/12 11:57:05 marcus Exp $");
+RCSID("$Id: mime.c,v 1.3 1997/03/13 02:54:38 marcus Exp $");
 #include "stralloc.h"
 #include "types.h"
 #include "macros.h"
@@ -11,19 +19,25 @@ RCSID("$Id: mime.c,v 1.2 1997/03/12 11:57:05 marcus Exp $");
 #include "builtin_functions.h"
 #include "error.h"
 
-static void f_decode_base64(INT32 args);
-static void f_encode_base64(INT32 args);
-static void f_decode_qp(INT32 args);
-static void f_encode_qp(INT32 args);
-static void f_decode_uue(INT32 args);
-static void f_encode_uue(INT32 args);
 
-static void f_tokenize(INT32 args);
-static void f_quote(INT32 args);
+/** Forward declarations of functions implementing Pike functions **/
 
-static char base64tab[64]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static void f_decode_base64( INT32 args );
+static void f_encode_base64( INT32 args );
+static void f_decode_qp( INT32 args );
+static void f_encode_qp( INT32 args );
+static void f_decode_uue( INT32 args );
+static void f_encode_uue( INT32 args );
+
+static void f_tokenize( INT32 args );
+static void f_quote( INT32 args );
+
+
+/** Global tables **/
+
+static char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static char base64rtab[0x80-' '];
-static char qptab[16]="0123456789ABCDEF";
+static char qptab[16] = "0123456789ABCDEF";
 static char qprtab[0x80-'0'];
 
 #define CT_CTL     0
@@ -37,70 +51,116 @@ static char qprtab[0x80-'0'];
 #define CT_QUOTE   8
 unsigned char rfc822ctype[256];
 
+
+/** Externally available functions **/
+
 /* Initialize and start module */
-void pike_module_init(void)
+
+void pike_module_init( void )
 {
   int i;
-  memset(base64rtab, -1, sizeof(base64rtab));
-  for(i=0; i<64; i++) base64rtab[base64tab[i]-' ']=i;
-  memset(qprtab, -1, sizeof(qprtab));
-  for(i=0; i<16; i++) qprtab[qptab[i]-'0']=i;
-  for(i=10; i<16; i++) qprtab[qptab[i]-('0'+'A'-'a')]=i;
 
-  memset(rfc822ctype, CT_ATOM, sizeof(rfc822ctype));
-  for(i=0; i<32; i++) rfc822ctype[i]=CT_CTL;
-  rfc822ctype[127]=CT_CTL;
-  rfc822ctype[' ']=CT_WHITE;
-  rfc822ctype['\t']=CT_WHITE;
-  rfc822ctype['(']=CT_LPAR;
-  rfc822ctype[')']=CT_RPAR;
-  rfc822ctype['[']=CT_LBRACK;
-  rfc822ctype[']']=CT_LBRACK;
-  rfc822ctype['"']=CT_QUOTE;
-  for(i=0; i<10; i++) rfc822ctype[(int)"<>@,;:\\/?="[i]]=CT_SPECIAL;
+  /* Init reverse base64 mapping */
+  memset( base64rtab, -1, sizeof(base64rtab) );
+  for (i = 0; i < 64; i++)
+    base64rtab[base64tab[i] - ' '] = i;
 
-  add_function_constant("decode_base64", f_decode_base64, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function_constant("encode_base64", f_encode_base64, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function_constant("decode_qp", f_decode_qp, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function_constant("encode_qp", f_encode_qp, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function_constant("decode_uue", f_decode_uue, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function_constant("encode_uue", f_encode_uue, "function(string,void|string:string)", OPT_TRY_OPTIMIZE);
+  /* Init reverse qp mapping */
+  memset( qprtab, -1, sizeof(qprtab) );
+  for (i = 0; i < 16; i++)
+    qprtab[qptab[i]-'0'] = i;
+  for (i = 10; i < 16; i++)
+    /* Lower case hex digits */
+    qprtab[qptab[i] - ('0' + 'A' - 'a')] = i;
 
-  add_function_constant("tokenize", f_tokenize, "function(string:array(string|int))", OPT_TRY_OPTIMIZE);
-  add_function_constant("quote", f_quote, "function(array(string|int):string)", OPT_TRY_OPTIMIZE);
+  /* Init lexical properties of characters for MIME.tokenize() */
+  memset( rfc822ctype, CT_ATOM, sizeof(rfc822ctype) );
+  for (i = 0; i < 32; i++)
+    rfc822ctype[i] = CT_CTL;
+  rfc822ctype[127] = CT_CTL;
+  rfc822ctype[' '] = CT_WHITE;
+  rfc822ctype['\t'] = CT_WHITE;
+  rfc822ctype['('] = CT_LPAR;
+  rfc822ctype[')'] = CT_RPAR;
+  rfc822ctype['['] = CT_LBRACK;
+  rfc822ctype[']'] = CT_LBRACK;
+  rfc822ctype['"'] = CT_QUOTE;
+  for(i=0; i<10; i++)
+    rfc822ctype[(int)"<>@,;:\\/?="[i]] = CT_SPECIAL;
 
+  /* Add global functions */
+  add_function_constant( "decode_base64", f_decode_base64,
+			 "function(string:string)", OPT_TRY_OPTIMIZE );
+  add_function_constant( "encode_base64", f_encode_base64,
+			 "function(string:string)", OPT_TRY_OPTIMIZE );
+  add_function_constant( "decode_qp", f_decode_qp,
+			 "function(string:string)", OPT_TRY_OPTIMIZE );
+  add_function_constant( "encode_qp", f_encode_qp,
+			 "function(string:string)", OPT_TRY_OPTIMIZE );
+  add_function_constant( "decode_uue", f_decode_uue,
+			 "function(string:string)", OPT_TRY_OPTIMIZE );
+  add_function_constant( "encode_uue", f_encode_uue,
+			 "function(string,void|string:string)",
+			 OPT_TRY_OPTIMIZE);
+
+  add_function_constant( "tokenize", f_tokenize,
+			 "function(string:array(string|int))",
+			 OPT_TRY_OPTIMIZE );
+  add_function_constant( "quote", f_quote,
+			 "function(array(string|int):string)",
+			 OPT_TRY_OPTIMIZE );
 }
 
 /* Restore and exit module */
-void pike_module_exit(void)
+
+void pike_module_exit( void )
 {
 }
 
-static void f_decode_base64(INT32 args)
+
+/** Functions implementing Pike functions **/
+
+/* MIME.decode_base64() */
+
+static void f_decode_base64( INT32 args )
 {
   if(args != 1)
-    error("Wrong number of arguments to MIME.decode_base64()\n");
-  else if(sp[-1].type != T_STRING)
-    error("Wrong type of argument to MIME.decode_base64()\n");
+    error( "Wrong number of arguments to MIME.decode_base64()\n" );
+  else if (sp[-1].type != T_STRING)
+    error( "Wrong type of argument to MIME.decode_base64()\n" );
   else {
+
+    /* Decode the string in sp[-1].u.string.  Any whitespace etc
+       must be ignored, so the size of the result can't be exactly
+       calculated from the input size.  We'll use a dynamic buffer
+       instead. */
+
     dynamic_buffer buf;
     char *src;
-    INT32 cnt, d=1;
-    int pads=0;
+    INT32 cnt, d = 1;
+    int pads = 0;
 
-    buf.s.str=NULL;
-    initialize_buf(&buf);
+    buf.s.str = NULL;
+    initialize_buf( &buf );
 
-    for(src = sp[-1].u.string->str, cnt = sp[-1].u.string->len; cnt--; src++)
+    for (src = sp[-1].u.string->str, cnt = sp[-1].u.string->len; cnt--; src++)
       if(*src>=' ' && base64rtab[*src-' ']>=0) {
+	/* 6 more bits to put into d */
 	if((d=(d<<6)|base64rtab[*src-' '])>=0x1000000) {
+	  /* d now contains 24 valid bits.  Put them in the buffer */
 	  low_my_putchar( d>>16, &buf );
 	  low_my_putchar( d>>8, &buf );
 	  low_my_putchar( d, &buf );
 	  d=1;
 	}
-      } else if(*src=='=') { pads++; d>>=2; }
+      } else if (*src=='=') {
+	/* A pad character has been encountered.
+	   Increase pad count, and remove unused bits from d. */
+	pads++;
+	d>>=2;
+      }
 
+    /* If data size not an even multiple of 3 bytes, output remaining data */
     switch(pads) {
     case 1:
       low_my_putchar( d>>8, &buf );
@@ -108,77 +168,112 @@ static void f_decode_base64(INT32 args)
       low_my_putchar( d, &buf );
     }
 
-    pop_n_elems(1);
-    push_string(low_free_buf(&buf));
+    /* Return result */
+    pop_n_elems( 1 );
+    push_string( low_free_buf( &buf ) );
   }
 }
 
-static int do_b64_encode(INT32 groups, unsigned char **srcp, char **destp)
+/*  Convenience function for encode_base64();  Encode groups*3 bytes from
+ *  *srcp into groups*4 bytes at *destp.
+ */
+static int do_b64_encode( INT32 groups, unsigned char **srcp, char **destp )
 {
-  unsigned char *src=*srcp;
-  char *dest=*destp;
-  int g=0;
-  while(groups--) {
+  unsigned char *src = *srcp;
+  char *dest = *destp;
+  int g = 0;
+
+  while (groups--) {
+    /* Get 24 bits from src */
     INT32 d = *src++<<8;
     d = (*src++|d)<<8;
     d |= *src++;
+    /* Output in encoded from to dest */
     *dest++ = base64tab[d>>18];
     *dest++ = base64tab[(d>>12)&63];
     *dest++ = base64tab[(d>>6)&63];
     *dest++ = base64tab[d&63];
+    /* Insert a linebreak once in a while... */
     if(++g == 19) {
       *dest++ = 13;
       *dest++ = 10;
       g=0;
     }
   }
+
+  /* Update pointers */
   *srcp = src;
   *destp = dest;
   return g;
 }
 
-static void f_encode_base64(INT32 args)
+/* MIME.encode_base64() */
+
+static void f_encode_base64( INT32 args )
 {
   if(args != 1)
-    error("Wrong number of arguments to MIME.encode_base64()\n");
+    error( "Wrong number of arguments to MIME.encode_base64()\n" );
   else if(sp[-1].type != T_STRING)
-    error("Wrong type of argument to MIME.encode_base64()\n");
+    error( "Wrong type of argument to MIME.encode_base64()\n" );
   else {
-    INT32 groups=(sp[-1].u.string->len+2)/3;
-    int last=(sp[-1].u.string->len-1)%3+1;
-    struct pike_string *str = begin_shared_string(groups*4+(groups/19)*2);
-    unsigned char *src=(unsigned char *)sp[-1].u.string->str;
-    char *dest=str->str;
 
-    if(groups) {
-      unsigned char tmp[3], *tmpp=tmp;
+    /* Encode the string in sp[-1].u.string.  First, we need to know
+       the number of 24 bit groups in the input, and the number of
+       bytes actually present in the last group. */
+
+    INT32 groups = (sp[-1].u.string->len+2)/3;
+    int last = (sp[-1].u.string->len-1)%3+1;
+    /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
+    struct pike_string *str = begin_shared_string( groups*4+(groups/19)*2 );
+
+    unsigned char *src = (unsigned char *)sp[-1].u.string->str;
+    char *dest = str->str;
+
+    if (groups) {
+      /* Temporary storage for the last group, as we may have to read
+	 an extra byte or two and don't want to get any page-faults.  */
+      unsigned char tmp[3], *tmpp = tmp;
       int i;
 
-      if(do_b64_encode(groups-1, &src, &dest)==18)
-	str->len-=2;
+      if (do_b64_encode( groups-1, &src, &dest ) == 18)
+	/* Skip the final linebreak if it's not to be followed by anything */
+	str->len -= 2;
 
-      tmp[1]=tmp[2]=0;
-      for(i=0; i<last; i++) tmp[i]=*src++;
-      do_b64_encode(1, &tmpp, &dest);
-      switch(last) {
+      /* Copy the last group to temporary storage */
+      tmp[1] = tmp[2] = 0;
+      for (i = 0; i < last; i++)
+	tmp[i] = *src++;
+
+      /* Encode the last group, and replace output codes with pads as needed */
+      do_b64_encode( 1, &tmpp, &dest );
+      switch (last) {
       case 1:
-	*--dest='=';
+	*--dest = '=';
       case 2:
-	*--dest='=';
+	*--dest = '=';
       }
     }
-    pop_n_elems(1);
-    push_string(end_shared_string(str));
+
+    /* Return the result */
+    pop_n_elems( 1 );
+    push_string( end_shared_string( str ) );
   }
 }
 
-static void f_decode_qp(INT32 args)
+/* MIME.decode_qp() */
+
+static void f_decode_qp( INT32 args )
 {
   if(args != 1)
-    error("Wrong number of arguments to MIME.decode_qp()\n");
+    error( "Wrong number of arguments to MIME.decode_qp()\n" );
   else if(sp[-1].type != T_STRING)
-    error("Wrong type of argument to MIME.decode_qp()\n");
+    error( "Wrong type of argument to MIME.decode_qp()\n" );
   else {
+
+    /* Decode the string in sp[-1].u.string.  We have absolutely no idea
+       how much of the input is raw data and how much is encoded data,
+       so we'll use a dynamic buffer to hold the result. */
+
     dynamic_buffer buf;
     char *src;
     INT32 cnt;
@@ -186,51 +281,72 @@ static void f_decode_qp(INT32 args)
     buf.s.str=NULL;
     initialize_buf(&buf);
 
-    for(src = sp[-1].u.string->str, cnt = sp[-1].u.string->len; cnt--; src++)
-      if(*src == '=') {
-	if(cnt>0 && (src[1]==10 || src[1]==13)) {
-	  if(src[1]==13) { --cnt; src++; }
-	  if(cnt>0 && src[1]==10) { --cnt; src++; }
-	} else if(cnt>=2 && src[1]>='0' && src[2]>='0' &&
-		  qprtab[src[1]-'0']>=0 && qprtab[src[2]-'0']>=0) {
+    for (src = sp[-1].u.string->str, cnt = sp[-1].u.string->len; cnt--; src++)
+      if (*src == '=') {
+	/* Encoded data */
+	if (cnt > 0 && (src[1] == 10 || src[1] == 13)) {
+	  /* A '=' followed by CR, LF or CRLF will be simply ignored. */
+	  if (src[1] == 13) {
+	    --cnt;
+	    src++;
+	  }
+	  if (cnt>0 && src[1]==10) {
+	    --cnt;
+	    src++;
+	  }
+	} else if (cnt >= 2 && src[1] >= '0' && src[2] >= '0' &&
+		   qprtab[src[1]-'0'] >= 0 && qprtab[src[2]-'0'] >= 0) {
+	  /* A '=' followed by a hexadecimal number. */
 	  low_my_putchar( (qprtab[src[1]-'0']<<4)|qprtab[src[2]-'0'], &buf );
 	  cnt -= 2;
 	  src += 2;
 	}
       } else
+	/* Raw data */
 	low_my_putchar( *src, &buf );
 
-    pop_n_elems(1);
-    push_string(low_free_buf(&buf));
+    /* Return the result */
+    pop_n_elems( 1 );
+    push_string( low_free_buf( &buf ) );
   }
 }
 
-static void f_encode_qp(INT32 args)
+/* MIME.encode_qp() */
+
+static void f_encode_qp( INT32 args )
 {
-  if(args != 1)
-    error("Wrong number of arguments to MIME.encode_qp()\n");
-  else if(sp[-1].type != T_STRING)
-    error("Wrong type of argument to MIME.encode_qp()\n");
+  if (args != 1)
+    error( "Wrong number of arguments to MIME.encode_qp()\n" );
+  else if (sp[-1].type != T_STRING)
+    error( "Wrong type of argument to MIME.encode_qp()\n" );
   else {
+
+    /* Encode the string in sp[-1].u.string.  We don't know how
+       much of the data has to be encoded, so let's use that trusty
+       dynamic buffer once again. */
+
     dynamic_buffer buf;
     unsigned char *src = (unsigned char *)sp[-1].u.string->str;
     INT32 cnt;
-    int col=0;
+    int col = 0;
 
-    buf.s.str=NULL;
-    initialize_buf(&buf);
+    buf.s.str = NULL;
+    initialize_buf( &buf );
 
-    for(cnt = sp[-1].u.string->len; cnt--; src++) {
-      if((*src >= 33 && *src <= 60) ||
-	 (*src >= 62 && *src <= 126))
+    for (cnt = sp[-1].u.string->len; cnt--; src++) {
+      if ((*src >= 33 && *src <= 60) ||
+	  (*src >= 62 && *src <= 126))
+	/* These characters can always be encoded as themselves */
 	low_my_putchar( *src, &buf );
       else {
+	/* Better safe than sorry, eh?  Use the dreaded hex escape */
 	low_my_putchar( '=', &buf );
 	low_my_putchar( qptab[(*src)>>4], &buf );
 	low_my_putchar( qptab[(*src)&15], &buf );
 	col += 2;
       }
-      if(++col >= 73) {
+      /* We'd better not let the lines get too long */
+      if (++col >= 73) {
 	low_my_putchar( '=', &buf );
 	low_my_putchar( 13, &buf );
 	low_my_putchar( 10, &buf );
@@ -238,87 +354,122 @@ static void f_encode_qp(INT32 args)
       }
     }
     
-    pop_n_elems(1);
-    push_string(low_free_buf(&buf));
+    /* Return the result */
+    pop_n_elems( 1 );
+    push_string( low_free_buf( &buf ) );
   }
 }
 
+/* MIME.decode_uue() */
 
-static void f_decode_uue(INT32 args)
+static void f_decode_uue( INT32 args )
 {
-  if(args != 1)
-    error("Wrong number of arguments to MIME.decode_uue()\n");
+  if (args != 1)
+    error( "Wrong number of arguments to MIME.decode_uue()\n" );
   else if(sp[-1].type != T_STRING)
-    error("Wrong type of argument to MIME.decode_uue()\n");
+    error( "Wrong type of argument to MIME.decode_uue()\n" );
   else {
+
+    /* Decode string in sp[-1].u.string.  This is done much like in
+       the base64 case, but we'll look for the "begin" line first.  */
+
     dynamic_buffer buf;
     char *src;
     INT32 cnt;
 
-    buf.s.str=NULL;
-    initialize_buf(&buf);
+    buf.s.str = NULL;
+    initialize_buf( &buf );
 
     src = sp[-1].u.string->str;
     cnt = sp[-1].u.string->len;
 
-    while(cnt--)
+    while (cnt--)
       if(*src++=='b' && cnt>5 && !memcmp(src, "egin ", 5))
 	break;
-    if(cnt>=0)
-      while(cnt--)
-	if(*src++=='\n')
+
+    if (cnt>=0)
+      /* We found a the string "begin".  Now skip to EOL */
+      while (cnt--)
+	if (*src++=='\n')
 	  break;
-    if(cnt<0) {
-      pop_n_elems(1);
-      push_int(0);
+
+    if (cnt<0) {
+      /* Could not find "begin.*\n", return 0 */
+      pop_n_elems( 1 );
+      push_int( 0 );
       return;
     }
-    for(;;) {
+
+    for (;;) {
       int l, g;
-      if(cnt<=0 || (l=(*src++)-' ')>=64)
+
+      /* If we run out of input, or the line starts with `, we are done */
+      if (cnt<=0 || (l=(*src++)-' ')>=64)
 	break;
+
+      /* Move past the length byte, calculate the number of groups, and
+	 check that we have sufficient data */
       --cnt;
-      g=(l+2)/3;
-      l-=g*3;
-      if((cnt-=g*4)<0)
+      g = (l+2)/3;
+      l -= g*3;
+      if ((cnt -= g*4) < 0)
 	break;
-      while(g--) {
+
+      while (g--) {
+	/* Read 24 bits of data */
 	INT32 d = ((*src++-' ')&63)<<18;
 	d |= ((*src++-' ')&63)<<12;
 	d |= ((*src++-' ')&63)<<6;
 	d |= ((*src++-' ')&63);
+	/* Output it into the buffer */
 	low_my_putchar( d>>16, &buf );
 	low_my_putchar( d>>8, &buf );
 	low_my_putchar( d, &buf );
       }
-      while(l++)
+
+      /* If the line didn't contain an even multiple of 24 bits, remove
+	 spurious bytes from the buffer */
+      while (l++)
 	low_make_buf_space( -1, &buf );
-      while(cnt-- && *src++!=10);
+
+      /* Skip to EOL */
+      while (cnt-- && *src++!=10);
     }
-    pop_n_elems(1);
-    push_string(low_free_buf(&buf));
+
+    /* Return the result */
+    pop_n_elems( 1 );
+    push_string( low_free_buf( &buf ) );
   }
 }
 
-static void do_uue_encode(INT32 groups, unsigned char **srcp, char **destp,
-			  INT32 last)
+/*  Convenience function for encode_uue();  Encode groups*3 bytes from
+ *  *srcp into groups*4 bytes at *destp, and reserve space for last more.
+ */
+static void do_uue_encode( INT32 groups, unsigned char **srcp, char **destp,
+			   INT32 last )
 {
-  unsigned char *src=*srcp;
-  char *dest=*destp;
+  unsigned char *src = *srcp;
+  char *dest = *destp;
 
-  while(groups || last) {
-    int g=(groups>=15? 15:groups);
-    if(g<15) {
-      *dest++ = ' '+(3*g+last);
+  while (groups || last) {
+    /* A single line can hold at most 15 groups */
+    int g = (groups >= 15? 15 : groups);
+
+    if (g<15) {
+      /* The line isn't filled completely.  Add space for the "last" bytes */
+      *dest++ = ' ' + (3*g + last);
       last = 0;
     } else
-      *dest++ = ' '+(3*g);
+      *dest++ = ' ' + (3*g);
+
     groups -= g;
 
-    while(g--) {
+    while (g--) {
+      /* Get 24 bits of data */
       INT32 d = *src++<<8;
       d = (*src++|d)<<8;
       d |= *src++;
+      /* Output it in encoded form */
       *dest++ = ' '+(d>>18);
       *dest++ = ' '+((d>>12)&63);
       *dest++ = ' '+((d>>6)&63);
@@ -326,208 +477,328 @@ static void do_uue_encode(INT32 groups, unsigned char **srcp, char **destp,
     }
 
     if(groups || last) {
+      /* There's more data to be written, so add a linebreak before looping */
       *dest++ = 13;
       *dest++ = 10;
     }
   }
+
+  /* Update pointers */
   *srcp = src;
   *destp = dest;
 }
 
-static void f_encode_uue(INT32 args)
+/* MIME.encode_uue() */
+
+static void f_encode_uue( INT32 args )
 {
-  if(args != 1 && args != 2)
-    error("Wrong number of arguments to MIME.encode_uue()\n");
-  else if(sp[-args].type != T_STRING ||
-	  (args == 2 && sp[-1].type != T_VOID && sp[-1].type != T_STRING &&
-	   sp[-1].type != T_INT))
-    error("Wrong type of argument to MIME.encode_uue()\n");
+  if (args != 1 && args != 2)
+    error( "Wrong number of arguments to MIME.encode_uue()\n" );
+  else if (sp[-args].type != T_STRING ||
+	   (args == 2 && sp[-1].type != T_VOID && sp[-1].type != T_STRING &&
+	    sp[-1].type != T_INT))
+    error( "Wrong type of argument to MIME.encode_uue()\n" );
   else {
+
+    /* Encode string in sp[-args].u.string.  If args == 2, there may be
+       a filename in sp[-1].u.string.  If we don't get a filename, use
+       the generic filename "attachment"... */
+
+    char *dest, *filename = "attachment";
     struct pike_string *str;
     unsigned char *src = (unsigned char *) sp[-args].u.string->str;
-    INT32 groups=(sp[-args].u.string->len+2)/3;
-    int last=(sp[-args].u.string->len-1)%3+1;
-    char *dest, *filename = "attachment";
-    if(args == 2 && sp[-1].type == T_STRING)
+    /* Calculate number of 24 bit groups, and actual # of bytes in last grp */
+    INT32 groups = (sp[-args].u.string->len + 2)/3;
+    int last= (sp[-args].u.string->len - 1)%3 + 1;
+
+    /* Get the filename if provided */
+    if (args == 2 && sp[-1].type == T_STRING)
       filename = sp[-1].u.string->str;
-    str = begin_shared_string(groups*4+((groups+14)/15)*3+strlen(filename)+20);
+
+    /* Allocate the space we need.  This included space for the actual
+       data, linebreaks and the "begin" and "end" lines (including filename) */
+    str = begin_shared_string( groups*4 + ((groups + 14)/15)*3 +
+			       strlen( filename ) + 20 );
     dest = str->str;
+
+    /* Write the begin line containing the filename */
     sprintf(dest, "begin 644 %s\r\n", filename);
     dest += 12 + strlen(filename);
-    if(groups) {
+
+    if (groups) {
+      /* Temporary storage for the last group, as we may have to read
+	 an extra byte or two and don't want to get any page-faults.  */
       unsigned char tmp[3], *tmpp=tmp;
       char *kp, k;
       int i;
 
-      do_uue_encode(groups-1, &src, &dest, last);
+      do_uue_encode( groups-1, &src, &dest, last );
 
-      tmp[1]=tmp[2]=0;
-      for(i=0; i<last; i++) tmp[i]=*src++;
+      /* Copy the last group into temporary storage */
+      tmp[1] = tmp[2] = 0;
+      for (i = 0; i < last; i++)
+	tmp[i] = *src++;
+
+      /* Remember the address and contents of the last character written.
+	 This will get overwritten by a fake length byte which we will
+	 then replace with the originial character */
       k = *--dest;
       kp = dest;
-      do_uue_encode(1, &tmpp, &dest, 0);
+
+      do_uue_encode( 1, &tmpp, &dest, 0 );
+
+      /* Restore the saved character */
       *kp = k;
-      switch(last) {
+
+      /* Replace final nulls with pad characters if neccesary */
+      switch (last) {
       case 1:
-	dest[-2]='`';
+	dest[-2] = '`';
       case 2:
-	dest[-1]='`';
+	dest[-1] = '`';
       }
+
+      /* Add a final linebreak after the last group */
       *dest++ = 13;
       *dest++ = 10;
     }
-    memcpy(dest, "`\r\nend\r\n", 8);
-    pop_n_elems(args);
-    push_string(end_shared_string(str));
+
+    /* Put a terminating line (length byte `) and the "end" line into buffer */
+    memcpy( dest, "`\r\nend\r\n", 8 );
+
+    /* Return the result */
+    pop_n_elems( args );
+    push_string( end_shared_string( str ) );
   }
 }
 
-static void f_tokenize(INT32 args)
+/* MIME.tokenize() */
+
+static void f_tokenize( INT32 args )
 {
-  if(args != 1)
-    error("Wrong number of arguments to MIME.tokenize()\n");
-  else if(sp[-1].type != T_STRING)
-    error("Wrong type of argument to MIME.tokenize()\n");
+  if (args != 1)
+    error( "Wrong number of arguments to MIME.tokenize()\n" );
+  else if (sp[-1].type != T_STRING)
+    error( "Wrong type of argument to MIME.tokenize()\n" );
   else {
+
+    /* Tokenize string in sp[-1].u.string.  We'll just push the
+       tokens on the stack, and then do an aggregate_array just
+       before exiting. */
+
     unsigned char *src = (unsigned char *)sp[-1].u.string->str;
     struct array *arr;
     struct pike_string *str;
     INT32 cnt = sp[-1].u.string->len, n = 0, l, e;
     char *p;
 
-    while(cnt>0)
-      switch(rfc822ctype[*src]) {
+    while (cnt>0)
+      switch (rfc822ctype[*src]) {
       case CT_SPECIAL:
       case CT_RBRACK:
       case CT_RPAR:
-	/* individual special character */
-	push_int(*src++);
+	/* Individual special character, push as a char (= int) */
+	push_int( *src++ );
 	n++;
 	--cnt;
 	break;
+
       case CT_ATOM:
-	/* atom */
-	for(l=1; l<cnt; l++)
-	  if(rfc822ctype[src[l]] != CT_ATOM)
+	/* Atom, find length then push as a string */
+	for (l=1; l<cnt; l++)
+	  if (rfc822ctype[src[l]] != CT_ATOM)
 	    break;
-	push_string(make_shared_binary_string((char *)src, l));
+
+	push_string( make_shared_binary_string( (char *)src, l ) );
 	n++;
 	src += l;
 	cnt -= l;
 	break;
+
       case CT_QUOTE:
-	/* quoted-string */
-	for(e=0, l=1; l<cnt; l++)
-	  if(src[l] == '"')
+	/* Quoted-string, find length then push as a string while removing
+	   escapes. */
+	for (e = 0, l = 1; l < cnt; l++)
+	  if (src[l] == '"')
 	    break;
-	  else if(src[l] == '\\') { e++; l++; }
+	  else
+	    if (src[l] == '\\') {
+	      e++;
+	      l++;
+	    }
+
+	/* l is the distance to the ending ", and e is the number of \
+	   escapes encountered on the way */
 	str = begin_shared_string( l-e-1 );
-	for(p=str->str, e=1; e<l; e++)
-	  *p++=(src[e]=='\\'? src[++e]:src[e]);
-	push_string(end_shared_string(str));
+
+	/* Copy the string and remove \ escapes */
+	for (p = str->str, e = 1; e < l; e++)
+	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+	/* Push the resulting string */
+	push_string( end_shared_string( str ) );
 	n++;
 	src += l+1;
 	cnt -= l+1;
 	break;
+
       case CT_LBRACK:
-	/* domain literal */
-	for(e=0, l=1; l<cnt; l++)
+	/* Domain literal.  Handled just like quoted-string, except that
+	   ] marks the end of the token, not ". */
+	for (e = 0, l = 1; l < cnt; l++)
 	  if(src[l] == ']')
 	    break;
-	  else if(src[l] == '\\') { e++; l++; }
+	  else
+	    if(src[l] == '\\') {
+	      e++;
+	      l++;
+	    }
+
+	/* l is the distance to the ending ], and e is the number of \
+	   escapes encountered on the way */
 	str = begin_shared_string( l-e+1 );
-	for(p=str->str, e=0; e<=l; e++)
-	  *p++=(src[e]=='\\'? src[++e]:src[e]);
-	push_string(end_shared_string(str));
+
+	/* Copy the literal and remove \ escapes */
+	for (p = str->str, e = 0; e <= l; e++)
+	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+	/* Push the resulting string */
+	push_string( end_shared_string( str ) );
 	n++;
 	src += l+1;
 	cnt -= l+1;
 	break;
+
       case CT_LPAR:
-	/* comment */
-	for(e=1, l=1; l<cnt; l++)
-	  if(src[l] == '(')
+	/* Comment.  Nested comments are allowed, so we'll use e to
+	   keep track of the nesting level. */
+	for (e = 1, l = 1; l < cnt; l++)
+	  if (src[l] == '(')
+	    /* One level deeper nesting */
 	    e++;
 	  else if(src[l] == ')') {
+	    /* End of comment level.  If nesting reaches 0, we're done */
 	    if(!--e)
 	      break;
-	  } else if(src[l] == '\\') l++;
+	  } else
+	    /* Skip escaped characters */
+	    if(src[l] == '\\')
+	      l++;
+
+	/* Skip the comment altogether */
 	src += l+1;
 	cnt -= l+1;
 	break;
+
       case CT_WHITE:
-	/* whitespace */
+	/* Whitespace, just ignore it */
 	src++;
 	--cnt;
 	break;
+
       default:
-	error("invalid character in header field\n");
+	error( "Invalid character in header field\n" );
       }
 
-    arr = aggregate_array(n);
-    pop_n_elems(1);
-    push_array(arr);
+    /* Create the resulting array and push it */
+    arr = aggregate_array( n );
+    pop_n_elems( 1 );
+    push_array( arr );
   }
 }
 
-static int check_atom_chars(unsigned char *str, INT32 len)
+/*  Convenience function for quote() which determines if a sequence of
+ *  characters can be stored as an atom.
+ */
+static int check_atom_chars( unsigned char *str, INT32 len )
 {
   /* Atoms must contain at least 1 character... */
-  if(len<1) return 0;
+  if (len < 1)
+    return 0;
 
-  while(len--)
-    if(*str>=0x80 || rfc822ctype[*str]!=CT_ATOM)
+  /* Check the individual characters */
+  while (len--)
+    if (*str >= 0x80 || rfc822ctype[*str] != CT_ATOM)
       return 0;
     else
       str++;
 
+  /* Ok, it's safe */
   return 1;
 }
 
-static void f_quote(INT32 args)
+/* MIME.quote() */
+
+static void f_quote( INT32 args )
 {
   struct svalue *item;
   INT32 cnt;
   dynamic_buffer buf;
   int prev_atom = 0;
 
-  if(args != 1)
-    error("Wrong number of arguments to MIME.quote()\n");
-  else if(sp[-1].type != T_ARRAY)
-    error("Wrong type of argument to MIME.quote()\n");
+  if (args != 1)
+    error( "Wrong number of arguments to MIME.quote()\n" );
+  else if (sp[-1].type != T_ARRAY)
+    error( "Wrong type of argument to MIME.quote()\n" );
 
-  buf.s.str=NULL;
-  initialize_buf(&buf);
-  for(cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
-    if(item->type == T_INT) {
-      /* single special character */
+  /* Quote array in sp[-1].u.array.  Once again we'll rely on a
+     dynamic_buffer to collect the output string. */
+
+  buf.s.str = NULL;
+  initialize_buf( &buf );
+
+  for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
+
+    if (item->type == T_INT) {
+
+      /* Single special character */
       low_my_putchar( item->u.integer, &buf );
-      prev_atom=0;
-    } else if(item->type != T_STRING) {
-      toss_buffer(&buf);
-      error("Wrong type of argument to MIME.quote()\n");
+      prev_atom = 0;
+
+    } else if (item->type != T_STRING) {
+
+      /* Neither int or string.  Too bad... */
+      toss_buffer( &buf );
+      error( "Wrong type of argument to MIME.quote()\n" );
+
     } else {
-      struct pike_string *str=item->u.string;
-      if(prev_atom)
+
+      /* It's a string, so we'll store it either as an atom, or
+	 as a quoted-string */
+      struct pike_string *str = item->u.string;
+
+      /* In case the previous item was also a string, we'll add a single
+	 whitespace as a delimiter */
+      if (prev_atom)
 	low_my_putchar( ' ', &buf );
-      if(check_atom_chars((unsigned char *)str->str, str->len)) {
-	/* valid atom without quotes... */
-	low_my_binary_strcat(str->str, str->len, &buf);
+
+      if (check_atom_chars((unsigned char *)str->str, str->len)) {
+
+	/* Valid atom without quotes... */
+	low_my_binary_strcat( str->str, str->len, &buf );
+
       } else {
-	/* quote string */
-	INT32 len=str->len;
-	char *src=str->str;
+
+	/* Have to use quoted-string */
+	INT32 len = str->len;
+	char *src = str->str;
 	low_my_putchar( '"', &buf );
 	while(len--) {
 	  if(*src=='"' || *src=='\\' || *src=='\r')
+	    /* Some characters have to be escaped even within quotes... */
 	    low_my_putchar( '\\', &buf );
 	  low_my_putchar( *src++, &buf );
 	}
 	low_my_putchar( '"', &buf );
+
       }
-      prev_atom=1;
+
+      prev_atom = 1;
+
     }
   }
-  pop_n_elems(1);
-  push_string(low_free_buf(&buf));  
+
+  /* Return the result */
+  pop_n_elems( 1 );
+  push_string( low_free_buf( &buf ) );
 }
